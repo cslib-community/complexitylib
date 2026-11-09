@@ -171,20 +171,11 @@ theorem synthesis_transient_forest_reachability
       (foundH z) (foundA z) hHsound hHcomplete hAsound hAcomplete
     rw [hnav]
     have hshortIff : shortBit z = true ↔ ∃ i ≤ 2 * L, f^[i] (inputLeft z) = inputRight z := by
-      simp only [shortBit, decide_eq_true_eq]
-      constructor
-      · rintro ⟨j, hj⟩
-        exact ⟨j.val, Nat.le_of_lt_succ j.isLt, hj⟩
-      · rintro ⟨i, hi, he⟩
-        exact ⟨⟨i, Nat.lt_succ_of_le hi⟩, he⟩
+      simp only [shortBit, decide_eq_true_eq, Fin.exists_iff, Q, K, Nat.lt_add_one_iff, exists_prop]
     have hverifyIff : verifyBit z = true ↔
         ∃ i ≤ 2 * L, f^[i] (anchorState z) = inputRight z := by
-      simp only [verifyBit, decide_eq_true_eq]
-      constructor
-      · rintro ⟨j, hj⟩
-        exact ⟨j.val, Nat.le_of_lt_succ j.isLt, hj⟩
-      · rintro ⟨i, hi, he⟩
-        exact ⟨⟨i, Nat.lt_succ_of_le hi⟩, he⟩
+      simp only [verifyBit, decide_eq_true_eq, Fin.exists_iff, Q, K, Nat.lt_add_one_iff,
+        exists_prop]
     have hintIff (hfH : foundH z = true) (hfA : foundA z = true) :
         intervalBit z = true ↔
           (tables.low (anchorState z) ≤ tables.low hChosen ∧

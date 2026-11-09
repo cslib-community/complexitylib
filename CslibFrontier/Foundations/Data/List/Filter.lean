@@ -70,32 +70,22 @@ theorem two_le_filter_contains_iff {α : Type*} [DecidableEq α]
     induction rs generalizing i j with
     | nil => simp at hi
     | cons r rs ih =>
+      -- If the head and some tail entry both contain `p`, the filter keeps at least two lists.
+      have hhead : ∀ k (hk : k < rs.length), p ∈ r → p ∈ rs[k] →
+          2 ≤ ((r :: rs).filter fun r => r.contains p).length := fun k hk hr hk' => by
+        have hm : rs[k] ∈ rs.filter (fun r => r.contains p) :=
+          List.mem_filter.mpr ⟨List.getElem_mem hk, List.contains_iff_mem.mpr hk'⟩
+        have := List.length_pos_of_mem hm
+        simp only [List.filter_cons, List.contains_iff_mem.mpr hr, ite_true, List.length_cons]
+        omega
       cases i with
       | zero =>
         cases j with
         | zero => exact False.elim (hij rfl)
-        | succ j =>
-          have hj' : j < rs.length := by simpa using hj
-          have hm : rs[j] ∈ rs.filter (fun r => r.contains p) :=
-            List.mem_filter.mpr ⟨List.getElem_mem (by simpa using hj),
-              List.contains_iff_mem.mpr hpj⟩
-          obtain ⟨k, hk, _⟩ := List.mem_iff_getElem.mp hm
-          have hphead : p ∈ r := hpi
-          simp only [List.filter_cons, List.contains_iff_mem.mpr hphead,
-            ite_true, List.length_cons]
-          omega
+        | succ j => exact hhead j (by simpa using hj) hpi hpj
       | succ i =>
         cases j with
-        | zero =>
-          have hi' : i < rs.length := by simpa using hi
-          have hm : rs[i] ∈ rs.filter (fun r => r.contains p) :=
-            List.mem_filter.mpr ⟨List.getElem_mem (by simpa using hi),
-              List.contains_iff_mem.mpr hpi⟩
-          obtain ⟨k, hk, _⟩ := List.mem_iff_getElem.mp hm
-          have hphead : p ∈ r := hpj
-          simp only [List.filter_cons, List.contains_iff_mem.mpr hphead,
-            ite_true, List.length_cons]
-          omega
+        | zero => exact hhead i (by simpa using hi) hpj hpi
         | succ j =>
           have ht := ih i j (by simpa using hi) (by simpa using hj) (by omega) hpi hpj
           rw [List.filter_cons]

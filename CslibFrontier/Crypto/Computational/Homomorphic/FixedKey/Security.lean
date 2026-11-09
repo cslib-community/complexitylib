@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.FixedKey.Reduction
 public import CslibFrontier.Crypto.Computational.Homomorphic.FixedKey.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Security from a single self-encrypted key
@@ -59,10 +60,8 @@ theorem eval_game_keyGen (E : Scheme) (adversary : Encryption.Adversary) (bit : 
     ProbComp.eval (Encryption.game (keyGen E) (encrypt E) adversary bit n) =
       ProbComp.eval (Encryption.circularPublicKey E.keyGen E.encrypt true n >>=
         publicKeyGame E adversary bit n) := by
-  simp only [Encryption.game, Encryption.gameOn, keyGen, encrypt, publicKeyGame,
-    Encryption.circularPublicKey,
-    Scheme.encryptBits, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.pure_bind, publicKeyDecoder_decode_enc]
+  simp only [pmf_norm, Encryption.game, Encryption.gameOn, keyGen, encrypt, publicKeyGame,
+    Encryption.circularPublicKey, Scheme.encryptBits, ↓reduceIte, publicKeyDecoder_decode_enc]
 
 /-- The circular premise applies to the exact serialized public artifact of the construction. -/
 theorem publicKey_indistinguishable_zero {E : Scheme}
@@ -93,8 +92,7 @@ theorem negligible_publicKeyGame {E : Scheme}
         (publicKeyDecoder.computableInPolyTime.comp
           (ComputableInPolyTime.snd encUnary encBits)))
   have h := hcircular _ htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-    publicKeyDecoder.decode_enc, ProbComp.eval_bind] using h
+  simpa only [pmf_norm, distinguishingGame, publicKeyDecoder.decode_enc] using h
 
 /-- Self-encrypted evaluation keys preserve adaptive IND-CPA under ordinary base IND-CPA and
 the separate joint circular premise. Fixed supported secret length is semantic; the reduction

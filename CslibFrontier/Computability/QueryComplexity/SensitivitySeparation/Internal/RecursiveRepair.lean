@@ -99,10 +99,7 @@ theorem rowClause_repair_cases {k r h : ℕ} {I : Type} [DecidableEq ((Fin k × 
   · subst j
     have hton := ((rowClause_eq_true_iff T label F q _ i).mp hf).1 c
     rw [recursiveChild_flip_same] at hton
-    have htoff : F (Fin.last h) (recursiveChild x i c) = false := by
-      cases hc : F (Fin.last h) (recursiveChild x i c)
-      · rfl
-      · exact False.elim (ht (hton.trans hc.symm))
+    have htoff : F (Fin.last h) (recursiveChild x i c) = false := by grind
     have htargets : targetFailures F x i = {c} := by
       ext c'
       simp only [targetFailures, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton]
@@ -122,10 +119,7 @@ theorem rowClause_repair_cases {k r h : ℕ} {I : Type} [DecidableEq ((Fin k × 
     exact Or.inl ⟨hmem, rfl, htoff, hton⟩
   · have hgoff := ((rowClause_eq_true_iff T label F q _ i).mp hf).2 j hij
     rw [recursiveChild_flip_same] at hgoff
-    have hgon : F (gateIndex q) (recursiveChild x j (label i j)) = true := by
-      cases hc : F (gateIndex q) (recursiveChild x j (label i j))
-      · exact False.elim (hg (hgoff.trans hc.symm))
-      · rfl
+    have hgon : F (gateIndex q) (recursiveChild x j (label i j)) = true := by grind
     have htargets : targetFailures F x i = ∅ := by
       apply Finset.eq_empty_iff_forall_notMem.mpr
       intro c' hc'

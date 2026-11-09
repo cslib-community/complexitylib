@@ -61,6 +61,8 @@ randomized strategies are not modelled.
 
 ## Main results
 
+* `Problem.ValidSchedule.induction`: induction along a valid schedule, requests and post-step
+  states in lockstep.
 * `DetStrategy.validSchedule_states`, `DetStrategy.cost_eq_costFrom`: online strategies produce
   valid schedules evaluated in the common cost model.
 * `DetStrategy.amortized_bound`, `DetStrategy.competitive_of_amortized`,
@@ -132,6 +134,31 @@ theorem validSchedule_cons (s s' : P.State) (r : P.Req) (rs : List P.Req) (ss : 
     P.ValidSchedule s (r :: rs) (s' :: ss) ↔ P.ValidStep s r s' ∧ P.ValidSchedule s' rs ss :=
   Iff.rfl
 
+variable {P} in
+/-- Induction along a valid schedule, consuming requests and post-step states in lockstep.
+
+Use it as `induction hv using Problem.ValidSchedule.induction` for a goal about
+`hv : P.ValidSchedule s reqs states`: the two length-mismatch cases are impossible and do not
+appear, and the `cons` case receives the step `P.ValidStep s r s'` and the induction hypothesis for
+the rest of the schedule from `s'`. For a concrete problem whose `State` or `Req` unfolds to
+another type, name it: `induction hv using Problem.ValidSchedule.induction (P := problem α)`. -/
+theorem ValidSchedule.induction {motive : (s : P.State) → (reqs : List P.Req) →
+      (states : List P.State) → P.ValidSchedule s reqs states → Prop}
+    (nil : ∀ s, motive s [] [] trivial)
+    (cons : ∀ s r rs s' ss (hstep : P.ValidStep s r s') (hrest : P.ValidSchedule s' rs ss),
+      motive s' rs ss hrest → motive s (r :: rs) (s' :: ss) ⟨hstep, hrest⟩)
+    {s : P.State} {reqs : List P.Req} {states : List P.State}
+    (hv : P.ValidSchedule s reqs states) : motive s reqs states hv := by
+  induction reqs generalizing s states with
+  | nil =>
+    cases states with
+    | nil => exact nil s
+    | cons _ _ => cases hv
+  | cons r rs ih =>
+    cases states with
+    | nil => cases hv
+    | cons s' ss => exact cons s r rs s' ss hv.1 hv.2 (ih hv.2)
+
 @[simp]
 theorem scheduleCost_nil (s : P.State) : P.scheduleCost s [] [] = 0 := rfl
 
@@ -157,16 +184,9 @@ theorem finalState_append (s : P.State) (ss₁ ss₂ : List P.State) :
 theorem ValidSchedule.length_eq {P : Problem} {s : P.State} {reqs : List P.Req}
     {states : List P.State} (h : P.ValidSchedule s reqs states) :
     states.length = reqs.length := by
-  induction reqs generalizing s states with
-  | nil =>
-    cases states with
-    | nil => rfl
-    | cons _ _ => cases h
-  | cons r rs ih =>
-    cases states with
-    | nil => cases h
-    | cons s' ss =>
-      simp only [List.length_cons, ih h.2]
+  induction h using ValidSchedule.induction with
+  | nil => rfl
+  | cons _ _ _ _ _ _ _ ih => simp only [List.length_cons, ih]
 
 /-- If every valid step lands in `P.ValidInit`, then `P.finalState` along any valid schedule from
 an admissible initial state remains in `P.ValidInit`. -/
@@ -175,15 +195,9 @@ theorem validInit_finalState
     {s : P.State} {reqs : List P.Req} {states : List P.State}
     (hs : P.ValidInit s) (hv : P.ValidSchedule s reqs states) :
     P.ValidInit (P.finalState s states) := by
-  induction reqs generalizing s states with
-  | nil =>
-    cases states with
-    | nil => exact hs
-    | cons _ _ => cases hv
-  | cons _ _ ih =>
-    cases states with
-    | nil => cases hv
-    | cons s' ss => exact @ih s' ss (hstep hs hv.1) hv.2
+  induction hv using ValidSchedule.induction with
+  | nil => exact hs
+  | cons _ _ _ _ _ h _ ih => exact ih (hstep hs h)
 
 /-- Valid schedules compose sequentially when intermediate states match. -/
 theorem validSchedule_append {s : P.State} {reqs₁ reqs₂ : List P.Req}
@@ -191,16 +205,9 @@ theorem validSchedule_append {s : P.State} {reqs₁ reqs₂ : List P.Req}
     (h₁ : P.ValidSchedule s reqs₁ states₁)
     (h₂ : P.ValidSchedule (P.finalState s states₁) reqs₂ states₂) :
     P.ValidSchedule s (reqs₁ ++ reqs₂) (states₁ ++ states₂) := by
-  induction reqs₁ generalizing s states₁ with
-  | nil =>
-    cases states₁ with
-    | nil => exact h₂
-    | cons _ _ => cases h₁
-  | cons r rs ih =>
-    cases states₁ with
-    | nil => cases h₁
-    | cons s' ss =>
-      exact ⟨h₁.1, ih h₁.2 h₂⟩
+  induction h₁ using ValidSchedule.induction with
+  | nil => exact h₂
+  | cons _ _ _ _ _ hstep _ ih => exact ⟨hstep, ih h₂⟩
 
 /-- Schedule costs add across concatenated trajectories of matching lengths. -/
 theorem scheduleCost_append {s : P.State} {reqs₁ reqs₂ : List P.Req}
@@ -239,53 +246,34 @@ theorem runClient_scheduleClient {s : P.State} {reqs : List P.Req} {states : Lis
     (hv : P.ValidSchedule s reqs states) :
     P.offlineSpec.runClient s (P.scheduleClient reqs states) =
       ((), P.finalState s states, reqs.zip states) := by
-  induction reqs generalizing s states with
-  | nil =>
-    cases states with
-    | nil => rfl
-    | cons _ _ => cases hv
-  | cons r rs ih =>
-    cases states with
-    | nil => cases hv
-    | cons s' ss =>
-      change (let rest := P.offlineSpec.runClient s' (P.scheduleClient rs ss)
-        (rest.1, rest.2.1, (r, s') :: rest.2.2)) = _
-      rw [ih hv.2]
-      rfl
+  induction hv using ValidSchedule.induction with
+  | nil => rfl
+  | cons _ r rs s' ss _ _ ih =>
+    change (let rest := P.offlineSpec.runClient s' (P.scheduleClient rs ss)
+      (rest.1, rest.2.1, (r, s') :: rest.2.2)) = _
+    rw [ih]
+    rfl
 
 /-- Every `ValidSchedule` yields an admissible `offlineSpec` operation history. -/
 theorem validHistory_zip {s : P.State} {reqs : List P.Req} {states : List P.State}
     (hv : P.ValidSchedule s reqs states) :
     P.offlineSpec.ValidHistory s (reqs.zip states) := by
-  induction reqs generalizing s states with
-  | nil =>
-    cases states with
-    | nil => trivial
-    | cons _ _ => cases hv
-  | cons r rs ih =>
-    cases states with
-    | nil => cases hv
-    | cons s' ss =>
-      exact ⟨hv.1, ih hv.2⟩
+  induction hv using ValidSchedule.induction with
+  | nil => trivial
+  | cons _ _ _ _ _ hstep _ ih => exact ⟨hstep, ih⟩
 
 /-- Weighted offline charges in `offlineSpec` equal `c * scheduleCost`. -/
 theorem totalCost_zip (c : Nat) {s : P.State} {reqs : List P.Req} {states : List P.State}
     (hv : P.ValidSchedule s reqs states) :
     P.offlineSpec.totalCost (fun s₀ o => c * P.stepCost s₀ o.1 o.2) s (reqs.zip states) =
       c * P.scheduleCost s reqs states := by
-  induction reqs generalizing s states with
-  | nil =>
-    cases states with
-    | nil => rfl
-    | cons _ _ => cases hv
-  | cons r rs ih =>
-    cases states with
-    | nil => cases hv
-    | cons s' ss =>
-      change c * P.stepCost s r s' +
-          P.offlineSpec.totalCost (fun s₀ o => c * P.stepCost s₀ o.1 o.2) s' (rs.zip ss) = _
-      rw [ih hv.2]
-      simp only [scheduleCost_cons, Nat.mul_add]
+  induction hv using ValidSchedule.induction with
+  | nil => rfl
+  | cons s r rs s' ss _ _ ih =>
+    change c * P.stepCost s r s' +
+        P.offlineSpec.totalCost (fun s₀ o => c * P.stepCost s₀ o.1 o.2) s' (rs.zip ss) = _
+    rw [ih]
+    simp only [scheduleCost_cons, Nat.mul_add]
 
 end Problem
 
@@ -533,19 +521,13 @@ theorem exists_executes_scheduleClient (m : A.Mem) {s_off : P.State}
     ∃ traces,
       Executes A.Exec (P.scheduleClient reqs offStates) m () (A.runMem m reqs) traces ∧
         total id traces = A.costFrom m reqs := by
-  induction reqs generalizing m s_off offStates with
-  | nil =>
-    cases offStates with
-    | nil => exact ⟨[], .pure () m, rfl⟩
-    | cons _ _ => cases hv
-  | cons r rs ih =>
-    cases offStates with
-    | nil => cases hv
-    | cons s' ss =>
-      obtain ⟨traces, hexec, htot⟩ := ih (A.step m r) hv.2
-      refine ⟨P.stepCost (A.project m) r (A.project (A.step m r)) :: traces,
-        .call (a := ()) ⟨rfl, rfl⟩ hexec, ?_⟩
-      simp only [total_cons, id_eq, htot, costFrom_cons]
+  induction hv using Problem.ValidSchedule.induction generalizing m with
+  | nil => exact ⟨[], .pure () m, rfl⟩
+  | cons _ r _ _ _ _ _ ih =>
+    obtain ⟨traces, hexec, htot⟩ := ih (A.step m r)
+    refine ⟨P.stepCost (A.project m) r (A.project (A.step m r)) :: traces,
+      .call (a := ()) ⟨rfl, rfl⟩ hexec, ?_⟩
+    simp only [total_cons, id_eq, htot, costFrom_cons]
 
 /-- Telescoping competitive potential bound derived directly from
 `Cslib.DataStructure.Amortized.client`:

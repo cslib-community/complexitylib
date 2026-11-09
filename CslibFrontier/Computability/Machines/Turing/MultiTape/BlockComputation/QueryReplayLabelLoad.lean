@@ -60,19 +60,13 @@ theorem load_inSpace (e : Q ≃ Fin s) :
   have hword := hrest.snd'.snd'
   have hp := budget_comp_linear (Encoding.NativeChecked.parse_inSpace (k := k) e)
     (budget_prod hb hword)
-  have hget : ComputableInSpace (fun o : Option (RawResult k Q) => o.getD empty)
-      (encOption (encRawResult (k := k) (Q := Q))) (encRawResult (k := k) (Q := Q))
-      (fun o => (encOption (encRawResult (k := k) (Q := Q)) o).length) :=
-    of_inO (ComputableInDegree.getD (enc₁ := (encRawResult (k := k) (Q := Q))) empty).inO_one
-  have hraw := budget_comp_linear hget hp
+  have hraw := budget_optionGetD empty hp
   have hargs := budget_prod hN (budget_prod hb (budget_prod horigins hraw))
   have hload := budget_comp_linear (QueryReplay.Load.load_inSpace (k := k) (Q := Q)) hargs
   have hsome := budget_comp_linear
     (of_inO (ComputableInDegree.optionSome (enc₁ := (encConfig (k := k) (Q := Q)))
       (enc := encOption (encConfig (k := k) (Q := Q)))).inO_one) hload
-  have hisSome := budget_comp_linear
-    (of_inO (ComputableInDegree.isSome (encRawResult (k := k) (Q := Q))).inO_one) hp
-  refine (budget_ite hisSome hsome
+  refine (budget_ite (budget_optionIsSome hp) hsome
     (budget_const (encB := encOption (encConfig (k := k) (Q := Q))) none (.refl _))).of_enc_eq ?_
   intro a
   rcases a with ⟨N, b, origins, word⟩

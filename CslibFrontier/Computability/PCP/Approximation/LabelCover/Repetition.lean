@@ -364,9 +364,7 @@ theorem one_sub_unsatVal_pow_le_value_pow [Finite β] [Finite γ] [Nonempty β] 
   let hb : (Fin k → Fin N) → Fin k → γ := fun y => (τ (tupleCode k fun i => y i)).2
   refine le_trans ?_ (((game g hg N hN).pow k).winProb_le_value ha hb)
   have : Nonempty (Fin g.edges.length) := ⟨⟨0, List.length_pos_iff.mpr hg⟩⟩
-  have hpow : (pow k g).edges ≠ [] := by
-    rw [← List.length_pos_iff, length_edges_pow]
-    exact pow_pos (List.length_pos_iff.mpr hg) k
+  have hpow : (pow k g).edges ≠ [] := by grind [length_edges_pow]
   have hq : ((game g hg N hN).pow k).questions =
       (Probability.PMF.uniformOfFintype (Fin k → Fin g.edges.length)).map fun t =>
         (fun i => (⟨(g.edges.get (t i)).src, (hN _ (List.get_mem _ _)).1⟩ : Fin N),

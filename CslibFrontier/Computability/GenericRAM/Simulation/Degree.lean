@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.GenericRAM.Simulation.Run
 public import CslibFrontier.Computability.GenericRAM.Native.Degree
-import CslibFrontier.Tactic.EncLen
 
 /-!
 # Explicit-degree overhead of the finite-state RAM simulation
@@ -92,20 +91,10 @@ theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
           (fun (((address, memory), defaultValue) :
               (M.Address × SparseMemory M.Address M.Value) × M.Value) =>
             SparseMemory.read defaultValue address memory) _ _).HasDegree D := by
-  refine hasDegree_of_space_linear _ (DegreeBounded.mono_deg ⟨32, fun q => ?_⟩ hD)
+  refine hasDegree_of_space_linear _
+    (DegreeBounded.mono_deg ⟨32, SparseMemory.readTime_le_cube enc.address enc.value⟩ hD)
     ⟨32, fun q => ?_⟩ (by omega)
-  · have hq : (SparseMemory.queryEncoding enc.address enc.value q.1).length ≤
-        (SparseMemory.readEncoding enc.address enc.value q).length := by
-      enc_len [SparseMemory.readEncoding]
-    have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
-    have ht := SparseMemory.scanTime_le_cube enc.address enc.value q.1
-    have he : (SparseMemory.readEncoding enc.address enc.value q).length ≤
-        ((SparseMemory.readEncoding enc.address enc.value q).length + 1) ^ 3 := by
-      ring_nf; omega
-    unfold SparseMemory.readTime
-    nlinarith
-  · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value q.1
-    enc_len [SparseMemory.readSpace, SparseMemory.readEncoding, pow_one] at hs ⊢
+  simpa only [pow_one] using SparseMemory.readSpace_le_linear enc.address enc.value q
 
 /-- The raw sparse-memory update is cubic in time and linear in space. -/
 theorem writeRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
@@ -115,22 +104,10 @@ theorem writeRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
           (fun (((address, value), memory) :
               (M.Address × M.Value) × SparseMemory M.Address M.Value) =>
             memory.insert address value) _ _).HasDegree D := by
-  refine hasDegree_of_space_linear _ (DegreeBounded.mono_deg ⟨33, fun q => ?_⟩ hD)
+  refine hasDegree_of_space_linear _
+    (DegreeBounded.mono_deg ⟨33, SparseMemory.writeTime_le_cube enc.address enc.value⟩ hD)
     ⟨33, fun q => ?_⟩ (by omega)
-  · have hq : (SparseMemory.queryEncoding enc.address enc.value (q.1.1, q.2)).length ≤
-        (SparseMemory.writeEncoding enc.address enc.value q).length := by
-      enc_len [SparseMemory.queryEncoding, SparseMemory.writeEncoding]
-    have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
-    have ht := SparseMemory.scanTime_le_cube enc.address enc.value (q.1.1, q.2)
-    have he : (SparseMemory.writeEncoding enc.address enc.value q).length ≤
-        ((SparseMemory.writeEncoding enc.address enc.value q).length + 1) ^ 3 := by
-      ring_nf; omega
-    unfold SparseMemory.writeTime
-    nlinarith
-  · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value (q.1.1, q.2)
-    simp only [SparseMemory.writeSpace, SparseMemory.queryEncoding,
-      SparseMemory.writeEncoding, length_encPair, pow_one] at hs ⊢
-    omega
+  simpa only [pow_one] using SparseMemory.writeSpace_le_linear enc.address enc.value q
 
 theorem readCertificate_hasDegree (enc : M.Encoding)
     (c : NativeCertificate s ei (encoding enc))

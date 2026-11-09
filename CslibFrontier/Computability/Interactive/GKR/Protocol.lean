@@ -14,7 +14,7 @@ import CslibFrontier.Foundations.FieldTheory.Finite.UnitSum
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 
 /-!
 # The GKR protocol
@@ -393,14 +393,9 @@ theorem toOuterMeasure_eval_eq_zero_le {k d : ℕ} {p : MvPolynomial (Fin k) F} 
       (d : ℝ≥0∞) / Fintype.card F := by
   classical
   have hq : 0 < Fintype.card F := Fintype.card_pos
-  have hsz := schwartz_zippel_totalDegree hp (Finset.univ : Finset F)
-  rw [Fintype.piFinset_univ, Finset.card_univ, div_le_div_iff₀ (by positivity) (by positivity)]
-    at hsz
   have hN : (Finset.univ.filter fun r : Fin k → F => eval r p = 0).card * Fintype.card F ≤
-      d * Fintype.card F ^ k := by
-    have : ((Finset.univ.filter fun r : Fin k → F => eval r p = 0).card * Fintype.card F : ℚ≥0) ≤
-        d * Fintype.card F ^ k := hsz.trans (by gcongr)
-    exact_mod_cast this
+      d * Fintype.card F ^ k :=
+    card_filter_eval_eq_zero_mul_card_le hp hdeg
   rw [ProbComp.eval_uniform, Probability.PMF.toOuterMeasure_uniformOfFintype, Fintype.card_fun,
     Fintype.card_fin]
   set N := (Finset.univ.filter (· ∈ {r : Fin k → F | eval r p = 0})).card

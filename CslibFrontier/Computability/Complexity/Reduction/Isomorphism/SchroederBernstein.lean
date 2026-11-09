@@ -105,10 +105,10 @@ include hf hg in
 /-- Fuel beyond the encoded length does not change the outcome of the walk. -/
 private theorem chain_eq_of_le : ∀ (n m : ℕ) (a : α), (encA a).length ≤ n → (encA a).length ≤ m →
     chain f f' g g' n a = chain f f' g g' m a := by
-  intro n
-  induction n with
-  | zero =>
-    intro m a hn hm
+  -- An instance of empty encoding cannot step back (`g (g' a) = a` would make `encA a` longer
+  -- than `encB (g' a)`), so any amount of fuel gives the same outcome as none.
+  have hzero : ∀ m a, (encA a).length ≤ 0 → chain f f' g g' 0 a = chain f f' g g' m a := by
+    intro m a h0
     cases m with
     | zero => rfl
     | succ m =>
@@ -118,16 +118,13 @@ private theorem chain_eq_of_le : ∀ (n m : ℕ) (a : α), (encA a).length ≤ n
         rw [h] at this
         omega
       simp only [chain_zero, chain_succ, ha, ↓reduceIte]
+  intro n
+  induction n with
+  | zero => exact fun m a hn _ => hzero m a hn
   | succ n ih =>
     intro m a hn hm
     cases m with
-    | zero =>
-      have ha : g (g' a) ≠ a := by
-        intro h
-        have := hg (g' a)
-        rw [h] at this
-        omega
-      simp only [chain_zero, chain_succ, ha, ↓reduceIte]
+    | zero => exact (hzero (n + 1) a hm).symm
     | succ m =>
       simp only [chain_succ]
       by_cases ha : g (g' a) = a

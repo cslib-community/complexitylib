@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 public import CslibFrontier.Probability.HashFamily.IntegerBox
 import CslibFrontier.Crypto.Game.CloseTo.Statistical
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.UniformBound
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Option.Bind
@@ -88,8 +89,7 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
       let h ← H A
       let y ← uniformOfFinset (intBox (Fin m) r) (intBox_nonempty r)
       return (cache h).lookup (msg h, A *ᵥ (Int.cast ∘ y) - shift A h) |>.isSome) := by
-    simp only [real, test, PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    simp only [pmf_norm, real, test, PMF.map]
     congr 1
     funext A
     exact PMF.bind_comm _ _ _
@@ -98,8 +98,7 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
       let h ← H A
       let w ← PMF.uniformOfFintype (Fin n → ZMod q)
       return (cache h).lookup (msg h, w - shift A h) |>.isSome) := by
-    simp only [ideal, test, PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    simp only [pmf_norm, ideal, test, PMF.map]
     congr 1
     funext A
     exact PMF.bind_comm _ _ _
@@ -133,8 +132,7 @@ theorem lyubashevsky_commit_lookup_le {Ω M D : Type} [DecidableEq M]
       return (cache h).lookup (msg h, view.1) |>.isSome) true ≤
         Q / (q : ℝ≥0∞) ^ n +
           ENNReal.ofReal (Real.sqrt ((q : ℝ) ^ n / ((2 * γ + 1 : ℕ) : ℝ) ^ m) / 2) := by
-  simpa only [lyubashevsky, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_map, Function.comp_def, sub_zero] using
+  simpa only [pmf_norm, lyubashevsky, sub_zero] using
       intBox_shift_lookup_le n m q γ Q hγ H msg cache (fun _ _ => 0) hcache
 
 /-- The existing simulator's published commitment hits a cache with the exact acceptance factor

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Prefix
-import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.ClogPow
 
 /-!
 # Original-input logarithmic admission for the assembled program
@@ -24,13 +24,6 @@ public section
 namespace Cslib.Algorithms.WordRAM.ExactTriangle.ParameterSelecting
 
 open Cslib.WordRAM Cslib.Algorithms.ExactTriangle
-
-private theorem padding_le {n B : ℕ} (hn : n + 2 ≤ B) :
-    2 ^ Nat.clog 2 n ≤ B ^ 2 := by
-  have hm := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ))
-    (Nat.clog_mono_right 2 (by omega : n ≤ n + 1))
-  have hp := Nat.pow_clog_le_mul (by decide : 1 < (2 : ℕ)) (by omega : n + 1 ≠ 0)
-  exact (hm.trans hp).trans (by nlinarith)
 
 private theorem window_le_pow {n F B κ : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ F)
@@ -73,19 +66,11 @@ private theorem window_le_pow {n F B κ : ℕ} (values : List ℤ)
     (Nat.le_pow_clog (by decide : 1 < (2 : ℕ)) B) _)
   rw [← pow_mul] at hs'
   have hc := Nat.clog_le_of_le_pow hs'
-  have hpB : 2 ^ Nat.clog 2 B ≤ B ^ 2 :=
-    (Nat.pow_clog_le_mul (by decide : 1 < (2 : ℕ)) (by omega : B ≠ 0)).trans
-      (by nlinarith)
   unfold CallableFixedPrime.windowSize CallableFixedPrime.sourceWidth
   calc
-    _ ≤ 2 ^ (6166 * (Nat.clog 2 B * (κ + 9))) := Nat.pow_le_pow_right (by decide)
-      (Nat.mul_le_mul_left _ hc)
-    _ = (2 ^ Nat.clog 2 B) ^ (6166 * (κ + 9)) := by
-      rw [← pow_mul]; congr 1; ring
-    _ ≤ (B ^ 2) ^ (6166 * (κ + 9)) := Nat.pow_le_pow_left hpB _
-    _ = _ := by
-      rw [← pow_mul]
-      exact congrArg (fun q : ℕ => B ^ q) (by omega : 2 * (6166 * (κ + 9)) = 12332 * (κ + 9))
+    _ ≤ 2 ^ ((6166 * (κ + 9)) * Nat.clog 2 B) := Nat.pow_le_pow_right (by decide)
+      ((Nat.mul_le_mul_left _ hc).trans_eq (by ring))
+    _ ≤ _ := Nat.two_pow_mul_clog_le_pow (by omega) (by omega)
 
 /-- Polynomial original scalars and placement bound every intermediate numerical admission.
 The common base also permits direct use with a host's address-plus-magnitude logarithm. -/
@@ -100,7 +85,9 @@ theorem envelope_le_pow {n F b ap bp cp B κ β : ℕ} (values : List ℤ)
   have hB1 : 1 ≤ B := by omega
   have hnB : n ≤ B := by omega
   have hk : k ≤ n := Nat.clog_le_of_le_pow (Nat.lt_two_pow_self.le)
-  have htwo : 2 ^ k ≤ B ^ 2 := padding_le hn
+  have htwo : 2 ^ k ≤ B ^ 2 :=
+    (Nat.pow_le_pow_right (by decide) (Nat.clog_mono_right 2 hnB)).trans
+      (Nat.two_pow_clog_le_sq (by omega))
   have hfour : 4 ^ k ≤ B ^ 4 := by
     calc
       _ = (2 ^ k) ^ 2 := by rw [pow_two, ← mul_pow]; rfl

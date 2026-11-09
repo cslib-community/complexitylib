@@ -147,10 +147,8 @@ theorem wp_bind (p : Prog ι α) (k : α → Prog ι β) (Q : β → (ι → ℕ
     change valid ok w g o ∧ wp ok w (f (step g o).2 >>= k) _ _ ↔ valid ok w g o ∧ wp ok w _ _ _
     rw [ih]
     refine and_congr_right fun _ => Iff.of_eq ?_
-    congr
-    funext a g' t
-    congr
-    funext b g'' t'
+    congr with a g' t : 3
+    congr with b g'' t' : 3
     rw [Nat.add_right_comm]
 
 /-- The weakest precondition holds exactly when the run is admissible and `Q` holds of its answer,

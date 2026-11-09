@@ -25,6 +25,7 @@ certify it.
 
 * `List.eraseDupsBy_eq_foldl`: `eraseDupsBy` as a left fold.
 * `List.eraseDupsBy_sublist`, `List.pairwise_eraseDupsBy`, `List.exists_mem_eraseDupsBy`.
+* `List.nodup_map_eraseDupsBy`: erasing duplicates by equal labels keeps distinct labels.
 * `List.nodup_eraseDupsBy_eq`, `List.mem_eraseDupsBy_eq`: erasing duplicates by equality keeps
   one copy of each entry.
 -/
@@ -88,13 +89,18 @@ theorem exists_mem_eraseDupsBy : ∀ {l : List α} {a : α}, a ∈ l →
       · exact ⟨c, mem_cons_self .., .inr hrc⟩
 termination_by l => l.length
 
+/-- Erasing duplicates by equal labels keeps entries with distinct labels. -/
+theorem nodup_map_eraseDupsBy {κ : Type*} [DecidableEq κ] (f : α → κ) (l : List α) :
+    ((l.eraseDupsBy fun a b => decide (f a = f b)).map f).Nodup :=
+  pairwise_map.2 ((pairwise_eraseDupsBy l).imp fun h => by simpa [eq_comm] using h)
+
 section Eq
 
 variable [DecidableEq α]
 
 /-- Erasing duplicates by equality leaves no duplicates. -/
 theorem nodup_eraseDupsBy_eq (l : List α) : (l.eraseDupsBy fun a b => decide (a = b)).Nodup :=
-  (pairwise_eraseDupsBy l).imp fun h => by simpa [eq_comm] using h
+  by simpa using nodup_map_eraseDupsBy id l
 
 /-- Erasing duplicates by equality keeps every entry. -/
 theorem mem_eraseDupsBy_eq {l : List α} {a : α} :

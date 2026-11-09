@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Step
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
-public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.Window
+public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Bounds
 
 /-!
 # Complete traversal of the actual prepared catalogue
@@ -126,7 +126,7 @@ private theorem exec_body {w m n g p A : ℕ} (values : List ℤ)
         rcases hu with h | h
         · exact Or.inl h
         · exact Or.inr (le_trans (Nat.add_le_add_left
-            (window_mono (recordQueryCount_le n (D m) p V _)) _) h)
+            (CallableProduct.windowSize_mono_right n (recordQueryCount_le n (D m) p V _)) _) h)
       exact (ym u houtside).trans (hz.frame u hu)
     · rw [yi]
       exact Nat.succ_le_of_lt hi

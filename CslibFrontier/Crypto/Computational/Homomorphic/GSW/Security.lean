@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Hiding
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Parameters
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.PolyTime
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Generated-key GSW security from the exact decision-LWE assumption
@@ -83,10 +84,9 @@ theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ)
           (fun state ciphertext =>
             ProbComp.eval (adversary.guess security state (serializeCiphertext ciphertext)))
           bit := by
-  simp only [Encryption.publicKeyGame, LWE.uniformEnsemble, uniformPublicGame,
-    PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, eval_encryptSerialized,
-    Matrix.ofBinary_toBinary, encrypt, ProbComp.eval_bind, ProbComp.eval_pure,
-    eval_sampleCoins, PMF.bind_bind, PMF.pure_bind, serializePublicMatrix]
+  simp only [pmf_norm, Encryption.publicKeyGame, LWE.uniformEnsemble, uniformPublicGame,
+    eval_encryptSerialized, Matrix.ofBinary_toBinary, encrypt, eval_sampleCoins,
+    serializePublicMatrix]
 
 /-- The uniform public-key word gives the typed hiding theorem's full adaptive bound. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)

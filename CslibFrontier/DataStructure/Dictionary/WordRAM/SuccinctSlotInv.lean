@@ -186,14 +186,19 @@ theorem gmTailPtrFlatIdx_lt {n_max d : ℕ} (hb : 0 < bucketBits n_max)
   unfold gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase
   omega
 
+/-- The flat tail descriptor `b * tailCapPerBucket n_max + r` of a bucket `b < numBuckets n_max`
+and a position `r < tailCapPerBucket n_max` indexes the `maxTailItems n_max` tail tables. -/
+theorem mul_tailCapPerBucket_add_lt_maxTailItems {n_max b r : ℕ} (hb : b < numBuckets n_max)
+    (hr : r < tailCapPerBucket n_max) :
+    b * tailCapPerBucket n_max + r < maxTailItems n_max := by
+  unfold maxTailItems
+  rw [Nat.mul_comm b]
+  exact Nat.mul_add_lt_mul_of_lt_of_lt hb hr
+
 theorem gmTailPtrIdx_lt {n_max b r : ℕ} (hb : 0 < bucketBits n_max)
     (hb_lt : b < numBuckets n_max) (hr_lt : r < tailCapPerBucket n_max) :
-    gmTailPtrIdx n_max b r < globalMetaLen n_max := by
-  apply gmTailPtrFlatIdx_lt hb
-  unfold maxTailItems
-  have h1 : (b + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-    Nat.mul_le_mul_right _ hb_lt
-  nlinarith
+    gmTailPtrIdx n_max b r < globalMetaLen n_max :=
+  gmTailPtrFlatIdx_lt hb (mul_tailCapPerBucket_add_lt_maxTailItems hb_lt hr_lt)
 
 theorem gmTailOwnerIdx_lt {n_max t : ℕ} (hb : 0 < bucketBits n_max)
     (ht_lt : t < maxTailItems n_max) :
@@ -557,6 +562,57 @@ theorem r_le_ntails_of_tailBijection {n_max : ℕ} {gm r_fn : ℕ → ℕ} {n_ta
       omega
   simpa using hcard
 
+/-- The flat descriptor owning an active tail offset `t < n_tails` is a valid index into the tail
+tables. -/
+theorem TailBijection.owner_lt_maxTailItems {n_max : ℕ} {gm r_fn : ℕ → ℕ} {n_tails : ℕ}
+    (htail : TailBijection n_max gm r_fn n_tails) {t : ℕ} (ht : t < n_tails) :
+    gm (gmTailOwnerIdx n_max t) < maxTailItems n_max := by
+  obtain ⟨hb, hr, _⟩ := htail.owner_valid t ht
+  rw [← Nat.div_add_mod' (gm (gmTailOwnerIdx n_max t)) (tailCapPerBucket n_max)]
+  exact mul_tailCapPerBucket_add_lt_maxTailItems hb (lt_of_lt_of_le hr (htail.r_le _ hb))
+
+/-- `TailBijection` reads `gm` only through the tail count `gm 1`, the per-bucket tail lengths
+`r_fn`, and the `tailPtr`/`tailOwner` tables, so it transfers to any `gm'` agreeing with `gm` there.
+-/
+theorem TailBijection.congr {n_max : ℕ} {gm gm' : ℕ → ℕ} {r_fn r_fn' : ℕ → ℕ} {n_tails : ℕ}
+    (htail : TailBijection n_max gm r_fn n_tails) (h1 : gm' 1 = gm 1)
+    (hr_fn : ∀ b < numBuckets n_max, r_fn' b = r_fn b)
+    (hmeta : ∀ idx, gmTailPtrBase n_max ≤ idx → idx < gmSlabMetaBase n_max → gm' idx = gm idx) :
+    TailBijection n_max gm' r_fn' (gm' 1) := by
+  have hptr_eq : ∀ b < numBuckets n_max, ∀ r < tailCapPerBucket n_max,
+      gm' (gmTailPtrIdx n_max b r) = gm (gmTailPtrIdx n_max b r) := by
+    intro b hb r hr
+    have hd := mul_tailCapPerBucket_add_lt_maxTailItems hb hr
+    exact hmeta _ (by unfold gmTailPtrIdx gmTailPtrFlatIdx; omega)
+      (by unfold gmTailPtrIdx gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega)
+  have hown_eq : ∀ t < n_tails, gm' (gmTailOwnerIdx n_max t) = gm (gmTailOwnerIdx n_max t) := by
+    intro t ht
+    have ht_max := lt_of_lt_of_le ht htail.ntails_le
+    exact hmeta _ (by unfold gmTailOwnerIdx gmTailOwnerBase; omega)
+      (by unfold gmTailOwnerIdx gmSlabMetaBase; omega)
+  have hnt : gm' 1 = n_tails := h1.trans htail.ntails_eq
+  rw [hnt]
+  refine ⟨hnt, htail.ntails_le, ?_, ?_, ?_, ?_⟩
+  · intro b hb
+    rw [hr_fn b hb]
+    exact htail.r_le b hb
+  · intro b hb r hr
+    rw [hr_fn b hb] at hr
+    rw [hptr_eq b hb r (lt_of_lt_of_le hr (htail.r_le b hb))]
+    exact htail.ptr_lt b hb r hr
+  · intro b hb r hr
+    rw [hr_fn b hb] at hr
+    rw [hptr_eq b hb r (lt_of_lt_of_le hr (htail.r_le b hb)), hown_eq _ (htail.ptr_lt b hb r hr)]
+    exact htail.owner_ptr b hb r hr
+  · intro t ht
+    obtain ⟨hb, hr, hptr⟩ := htail.owner_valid t ht
+    have hd := htail.owner_lt_maxTailItems ht
+    dsimp only
+    rw [hown_eq t ht, hr_fn _ hb]
+    refine ⟨hb, hr, Eq.trans ?_ hptr⟩
+    exact hmeta _ (by unfold gmTailPtrFlatIdx; omega)
+      (by unfold gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega)
+
 theorem q_le_nslabs_of_slabBijection {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_slabs : ℕ}
     (hslab : SlabBijection n_max gm q_fn n_slabs) {b : ℕ} (hb : b < numBuckets n_max) :
     q_fn b ≤ n_slabs := by
@@ -573,6 +629,74 @@ theorem q_le_nslabs_of_slabBijection {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_sl
       exact hown
   simpa using hcard
 
+/-- `slabPtrOf` reads `gm` only through the slab count `gm 0` and the per-slab metadata above
+`gmSlabMetaBase n_max`. -/
+theorem slabPtrOf_congr_of_slabMeta {n_max : ℕ} {gm gm' : ℕ → ℕ} (h0 : gm' 0 = gm 0)
+    (hmeta : ∀ idx, gmSlabMetaBase n_max ≤ idx → gm' idx = gm idx) (b s : ℕ) :
+    slabPtrOf n_max gm' b s = slabPtrOf n_max gm b s :=
+  slabPtrOf_congr h0 (fun p _ => hmeta _ (by unfold gmSlabOwnerBIdx; omega))
+    (fun p _ => hmeta _ (by unfold gmSlabOwnerSIdx; omega)) b s
+
+/-- `SlabBijection` reads `gm` only through the slab count `gm 0`, the per-bucket slab counts
+`q_fn`, the `slabTop`/`slabDir` entries, and the per-slab metadata above `gmSlabMetaBase n_max`, so
+it transfers to any `gm'` agreeing with `gm` there. -/
+theorem SlabBijection.congr {n_max : ℕ} {gm gm' : ℕ → ℕ} {q_fn q_fn' : ℕ → ℕ} {n_slabs : ℕ}
+    (hslab : SlabBijection n_max gm q_fn n_slabs) (h0 : gm' 0 = gm 0)
+    (hq_fn : ∀ b < numBuckets n_max, q_fn' b = q_fn b)
+    (htop : ∀ b < numBuckets n_max, gm' (gmSlabTopIdx b) = gm (gmSlabTopIdx b))
+    (hdir : ∀ b < numBuckets n_max, ∀ s < dirSlabsPerBucket n_max,
+      gm' (gmSlabDirIdx n_max b s) = gm (gmSlabDirIdx n_max b s))
+    (hmeta : ∀ idx, gmSlabMetaBase n_max ≤ idx → gm' idx = gm idx) :
+    SlabBijection n_max gm' q_fn' (gm' 0) := by
+  have hptr := slabPtrOf_congr_of_slabMeta h0 hmeta
+  have hB_ge : ∀ p, gmSlabMetaBase n_max ≤ gmSlabOwnerBIdx n_max p :=
+    fun _ => by unfold gmSlabOwnerBIdx; omega
+  have hS_ge : ∀ p, gmSlabMetaBase n_max ≤ gmSlabOwnerSIdx n_max p :=
+    fun _ => by unfold gmSlabOwnerSIdx; omega
+  have hBel_ge : ∀ p, gmSlabMetaBase n_max ≤ gmSlabBelowIdx n_max p :=
+    fun _ => by unfold gmSlabBelowIdx; omega
+  have hAbv_ge : ∀ p, gmSlabMetaBase n_max ≤ gmSlabAboveIdx n_max p :=
+    fun _ => by unfold gmSlabAboveIdx; omega
+  have hn : gm' 0 = n_slabs := h0.trans hslab.nslabs_eq
+  rw [hn]
+  refine ⟨hn, hslab.nslabs_le, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro b hb s hs
+    rw [hq_fn b hb] at hs
+    rw [hptr]
+    exact hslab.ptr_lt b hb s hs
+  · intro b hb s hs
+    rw [hq_fn b hb] at hs
+    rw [hptr, hmeta _ (hB_ge _)]
+    exact hslab.ownerB_ptr b hb s hs
+  · intro b hb s hs
+    rw [hq_fn b hb] at hs
+    rw [hptr, hmeta _ (hS_ge _)]
+    exact hslab.ownerS_ptr b hb s hs
+  · intro p hp
+    rw [hmeta _ (hB_ge p), hmeta _ (hS_ge p)]
+    obtain ⟨hb_p, hs_p, hptr_p⟩ := hslab.owner_valid p hp
+    refine ⟨hb_p, ?_, ?_⟩
+    · rw [hq_fn _ hb_p]
+      exact hs_p
+    · rw [hptr]
+      exact hptr_p
+  · intro b hb s hs hs_dir
+    rw [hq_fn b hb] at hs
+    rw [hptr, hdir b hb s hs_dir]
+    exact hslab.dir_eq b hb s hs hs_dir
+  · intro b hb s hs hs_top
+    rw [hq_fn b hb] at hs hs_top
+    rw [hptr, htop b hb]
+    exact hslab.top_eq b hb s hs hs_top
+  · intro b hb s hs hs_pos
+    rw [hq_fn b hb] at hs
+    rw [hptr, hptr, hmeta _ (hBel_ge _)]
+    exact hslab.below_eq b hb s hs hs_pos
+  · intro b hb s hs hs_abv
+    rw [hq_fn b hb] at hs hs_abv
+    rw [hptr, hptr, hmeta _ (hAbv_ge _)]
+    exact hslab.above_eq b hb s hs hs_abv
+
 theorem bCount_le_n_max {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotStoreInv n_max gm) (b : ℕ) :
     bCount n_max gm b ≤ n_max := by
   unfold bCount
@@ -587,5 +711,30 @@ theorem bCount_le_n_max {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotStoreInv n_
       Nat.mul_le_mul_right _ hq
     omega
   · exact Nat.zero_le _
+
+/-- The physical slab holding an active logical slab is below the slab-pool capacity. -/
+theorem SlabBijection.ptr_lt_maxFullSlabs {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_slabs : ℕ}
+    (hslab : SlabBijection n_max gm q_fn n_slabs) {b s : ℕ} (hb : b < numBuckets n_max)
+    (hs : s < q_fn b) : slabPtrOf n_max gm b s < maxFullSlabs n_max :=
+  lt_of_lt_of_le (hslab.ptr_lt b hb s hs) hslab.nslabs_le
+
+/-- The top slab of a bucket with at least one full slab is an active physical slab. -/
+theorem SlabBijection.top_lt {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_slabs : ℕ}
+    (hslab : SlabBijection n_max gm q_fn n_slabs) {b : ℕ} (hb : b < numBuckets n_max)
+    (hq : 0 < q_fn b) : gm (gmSlabTopIdx b) < n_slabs := by
+  rw [hslab.top_eq b hb (q_fn b - 1) (by omega) (by omega)]
+  exact hslab.ptr_lt b hb _ (by omega)
+
+/-- An item index `j` past the full slabs of bucket `b` but below `bCount` lies in the bucket's
+tail: its tail offset is below the tail length and hence below the per-bucket tail capacity. -/
+theorem SlotStoreInv.tailOffset_lt {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotStoreInv n_max gm)
+    (hb_pos : 0 < bucketBits n_max) {b j : ℕ} (hb : b < numBuckets n_max)
+    (hj_bc : j < bCount n_max gm b) (hj_tail : ¬j < gm (gmQIdx b) * slabSize n_max) :
+    j - gm (gmQIdx b) * slabSize n_max < gm (gmRIdx b) ∧
+      j - gm (gmQIdx b) * slabSize n_max < tailCapPerBucket n_max := by
+  have hb0 : bucketBits n_max ≠ 0 := by omega
+  simp only [bCount, hb0, ↓reduceIte, hb] at hj_bc
+  have hr_lt : j - gm (gmQIdx b) * slabSize n_max < gm (gmRIdx b) := by omega
+  exact ⟨hr_lt, hr_lt.trans (hinv.multi_r_bounds hb_pos b hb).1⟩
 
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct

@@ -258,41 +258,9 @@ def Witness.bind (hP : Witness B p input answer safeP timeP callsP)
         (Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))) (tmp ∘ left))
   ⟨N, max C₁ C₂, emit, by
     intro r frontier src tmp hi hd hf hs
-    have hleft : Function.Injective (tmp ∘ left) := by
-      intro a b hab
-      apply Fin.ext
-      have h := congrArg Fin.val (hi hab)
-      exact h
-    have hright : Function.Injective (tmp ∘ right) := by
-      intro a b hab
-      apply Fin.ext
-      have h := congrArg Fin.val (hi hab)
-      have hm₁ := Nat.le_max_left n₁ n₂
-      have ha := a.isLt
-      have hb := b.isLt
-      dsimp only [right, bindSharedRight] at h
-      split_ifs at h <;> dsimp only at h <;> omega
-    have hdisjoint (a : Fin l) (b : Fin (m + n₂ + 1)) :
-        tmp (right (Fin.castAdd (n₁ + 1) a)) ≠ tmp (left b) := by
-      intro hab
-      have h := congrArg Fin.val (hi hab)
-      have hm₂ := Nat.le_max_right n₁ n₂
-      have hb := b.isLt
-      simp only [right, bindSharedRight, Fin.val_castAdd, dite_eq_left a.isLt, left,
-        bindSharedLeft] at h
-      omega
+    obtain ⟨hright, hleft, hnextDisjoint, hnextFrontier⟩ := bindShared_layout hi hd hf hs
     let nextSrc : Fin (k + l) → Fin r :=
       Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
-    have hnextDisjoint (i : Fin (k + l)) (j : Fin (m + n₂ + 1)) :
-        nextSrc i ≠ (tmp ∘ left) j := by
-      refine Fin.addCases (fun a => ?_) (fun b => ?_) i
-      · simpa only [nextSrc, Fin.append_left, Function.comp_apply] using hd a (left j)
-      · simpa only [nextSrc, Fin.append_right, Function.comp_apply] using
-          hdisjoint b j
-    have hnextFrontier (i : Fin (k + l)) : nextSrc i ≠ frontier := by
-      refine Fin.addCases (fun a => ?_) (fun b => ?_) i
-      · simpa only [nextSrc, Fin.append_left] using hs a
-      · simpa only [nextSrc, Fin.append_right] using hf (right (Fin.castAdd (n₁ + 1) b))
     obtain ⟨hnwP, hrunP⟩ := hP.code_spec frontier src (tmp ∘ right) hright
       (fun i j => hd i (right j)) (fun j => hf (right j)) hs
     obtain ⟨hnwQ, hrunQ⟩ := hQ.code_spec frontier nextSrc (tmp ∘ left) hleft hnextDisjoint

@@ -573,22 +573,15 @@ def hashedElGamalCipherToKDFDistinguisher {Msg : Type}
   adversary.guess n choice.2 ct
 
 /-- In the real KDF game, `hashedElGamalCipherToKDFDistinguisher` simulates
-`hashedElGamalCipherIdealDDHGame` exactly. -/
+`hashedElGamalCipherIdealDDHGame` exactly: unfolded, this is the ideal DDH game for
+`hashedElGamalCipherToDDHDistinguisher`. -/
 @[simp] theorem kdfRealGame_hashedElGamalCipherToKDFDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.kdfRealGame setup H (F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit) n =
-      F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n := by
-  simp only [kdfRealGame, hashedElGamalCipherToKDFDistinguisher, hashedElGamalCipherIdealDDHGame,
-    hashedElGamalCipherIdealDDHGameOn, ddhPk, ↓reduceIte, ProbComp.eval_bind,
-    PMF.monad_bind_eq_bind]
-  congr 1; funext d
-  congr 1; funext α
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+      F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n :=
+  F.ddhIdealGame_hashedElGamalCipherToDDHDistinguisher setup H encryptSym adversary bit n
 
 /-- In the ideal KDF game, `hashedElGamalCipherToKDFDistinguisher` simulates
 `hashedElGamalCipherUniformKeyGame` exactly. -/
@@ -610,7 +603,8 @@ def hashedElGamalCipherToKDFDistinguisher {Msg : Type}
   rw [PMF.bind_comm]
 
 /-- `hashedElGamalCipherToKDFDistinguisher` is uniform strict PPT whenever `encryptSym` and
-`adversary` are. -/
+`adversary` are: it is `hashedElGamalCipherToDDHDistinguisher` with the identity key derivation
+`H (d, w) = w`. -/
 theorem isPPTOn_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
@@ -620,28 +614,9 @@ theorem isPPTOn_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
       encBool
       (fun input =>
-        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit input.1 input.2) := by
-  let EIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
-  let E0 := encPair encUnary EIn
-  let EChoice := encPair (encPair encMsg encMsg) encBits
-  let E1 := encPair E0 EChoice
-  let hp1 := ComputableInPolyTime.fst encUnary EIn
-  let hp2 := ComputableInPolyTime.snd encUnary EIn
-  let hq1 := ComputableInPolyTime.fst E0 EChoice
-  let hq2 := ComputableInPolyTime.snd E0 EChoice
-  let hr1 := ComputableInPolyTime.fst E1 encBits
-  let hr2 := ComputableInPolyTime.snd E1 encBits
-  exact (hA.choose.on.preprocess
-    (hp1.prod ((hp2.fst'.prod hp2.snd'.fst').encoding_comp))).bind_with
-    ((hencryptSym.preprocess
-      ((hp1.comp' hq1).prod
-        ((hp2.snd'.snd'.snd'.comp' hq1).prod
-          ((ComputableInPolyTime.const (encOut := encBool) bit).ite
-            hq2.fst'.snd' hq2.fst'.fst')))).bind_with
-      (hA.guess.preprocess
-        ((hp1.comp' (hq1.comp' hr1)).prod
-          ((hq2.snd'.comp' hr1).prod
-            (((hp2.snd'.snd'.fst'.comp' (hq1.comp' hr1)).prod hr2).encoding_comp)))))
+        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit input.1 input.2) :=
+  F.isPPTOn_hashedElGamalCipherToDDHDistinguisher (H := fun p => p.2)
+    (ComputableInPolyTime.snd F.encDesc encBits) hencryptSym hA bit
 
 /-- Single hidden-bit KDF distinguisher $\mathcal{B}_{\mathrm{kdf}}$ ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, Equation `(11.18)`, pp. 450–451): sample a uniform challenge
@@ -656,7 +631,8 @@ noncomputable def hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
   return (guess ^^ bit)
 
 /-- `hashedElGamalCipherToKDFHiddenBitDistinguisher` is uniform strict PPT whenever `encryptSym` and
-`adversary` are. -/
+`adversary` are: it is `hashedElGamalCipherToDDHHiddenBitDistinguisher` with the identity key
+derivation `H (d, w) = w`. -/
 theorem isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     {encMsg : Msg ↪ List Bool} {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
@@ -667,23 +643,9 @@ theorem isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
       encBool
       (fun input =>
         F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym adversary
-          input.1 input.2) := by
-  let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
-  let E1 := encPair E0 encBool
-  let hp1 := ComputableInPolyTime.fst E0 encBool
-  let hp2 := ComputableInPolyTime.snd E0 encBool
-  let hq1 := ComputableInPolyTime.fst E1 encBool
-  let hq2 := ComputableInPolyTime.snd E1 encBool
-  have hFalse := F.isPPTOn_hashedElGamalCipherToKDFDistinguisher hencryptSym hA false
-  have hTrue := F.isPPTOn_hashedElGamalCipherToKDFDistinguisher hencryptSym hA true
-  have hStep : IsPPTOn E1 encBool
-      (fun p : (ℕ × F.Desc × List Bool × List Bool × List Bool) × Bool =>
-        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary p.2 p.1.1 p.1.2) :=
-    (IsPPTOn.cond' hp2 (hTrue.preprocess hp1) (hFalse.preprocess hp1)).congr
-      (fun ⟨_, bit⟩ => by cases bit <;> rfl)
-  exact (isPPTOn_uniform_bool E0).bind_with
-    (hStep.bind_with
-      ((ComputableInPolyTime.bool_xor.comp' (hq2.prod (hp2.comp' hq1))).isPPTOn))
+          input.1 input.2) :=
+  F.isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher (H := fun p => p.2)
+    (ComputableInPolyTime.snd F.encDesc encBits) hencryptSym hA
 
 /-- **Quantitative reduction of general-cipher Hashed ElGamal IND-CPA to DDH, `SecureKDF`, and
 Game 2 via two per-bit distinguishers** ([BonehShoup2023], Section 11.5.2, Theorem 11.5,
@@ -808,20 +770,8 @@ private theorem kdfRealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg 
         (F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym adversary) n =
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n).map
-          (fun guess => guess ^^ bit) := by
-  simp only [pmf_norm, ← kdfRealGame_hashedElGamalCipherToKDFDistinguisher, kdfRealGame,
-    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
-  conv_lhs =>
-    enter [2, d, 2, α, 2, β]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d, 2, α]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  rfl
+          (fun guess => guess ^^ bit) :=
+  F.ddhIdealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher setup H encryptSym adversary n
 
 private theorem kdfIdealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (keyLen : ℕ → ℕ)

@@ -142,27 +142,7 @@ private theorem mem_foldl_uncoveredStep (C : VertexCover (Fin n) (Fin n)) (l : L
   | cons j l ih =>
     rw [List.foldl_cons, ih]
     unfold uncoveredStep
-    split_ifs with h
-    · rw [Finset.mem_insert]
-      constructor
-      · rintro ((rfl | hA) | ⟨hl, hc⟩)
-        · exact .inr ⟨List.mem_cons_self .., h⟩
-        · exact .inl hA
-        · exact .inr ⟨List.mem_cons_of_mem _ hl, hc⟩
-      · rintro (hA | ⟨hl, hc⟩)
-        · exact .inl (.inr hA)
-        · rcases List.mem_cons.mp hl with rfl | hl
-          · exact .inl (.inl rfl)
-          · exact .inr ⟨hl, hc⟩
-    · constructor
-      · rintro (hA | ⟨hl, hc⟩)
-        · exact .inl hA
-        · exact .inr ⟨List.mem_cons_of_mem _ hl, hc⟩
-      · rintro (hA | ⟨hl, hc⟩)
-        · exact .inl hA
-        · rcases List.mem_cons.mp hl with rfl | hl
-          · exact absurd hc h
-          · exact .inr ⟨hl, hc⟩
+    split_ifs with h <;> grind
 
 private theorem foldl_uncoveredStep (C : VertexCover (Fin n) (Fin n)) :
     (List.finRange n).foldl (uncoveredStep C) ∅ = C.uncovered := by

@@ -3,6 +3,12 @@
 
 All four inputs must be full commit IDs available locally. Git writes only to a temporary
 repository; the inspected repository is read-only. See aggregate_merge.md for the contract.
+
+A prefix whose `.gitattributes` gives `CslibFrontier.lean` the `merge=leanagg` driver, as `main` does,
+can never be `verified`: the temporary repository configures no merge driver, so the ordinary
+tracked-attribute merge is the same text merge as the neutral one, which must conflict. Only a
+prefix that still tracks `merge=union` can reach `verified`. The canonical aggregate check for a
+restack is `scripts/check_restack.py`.
 """
 
 from __future__ import annotations
@@ -187,7 +193,7 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
                   input_trees={label: git.text("rev-parse", f"{oid}^{{tree}}")
                                           for label, oid in refs.items()})
     empty = git.run("hash-object", "-t", "tree", "--stdin", "-w", data=b"").stdout.decode().strip()
-    # attr.tree must actually disable the tracked union attribute on this Git version.
+    # attr.tree must actually disable the prefix's tracked merge attribute on this Git version.
     attrs = git.run("-c", f"attr.tree={empty}", "check-attr", "-z", "merge", "--", AGGREGATE).stdout
     require(attrs == b"CslibFrontier.lean\0merge\0unspecified\0", "cannot disable tracked attributes")
     status, neutral, conflicts = merge(git, prefix, source, empty)
@@ -229,7 +235,8 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
                   canonical_aggregate_sha256=hashlib.sha256(content).hexdigest(),
                   canonical_import_count=len(content.splitlines()) - 2)
     # A private canonical tree is not an admission mechanism. The ordinary tracked-attribute
-    # merge, in the target-prefix direction, must produce exactly that tree itself.
+    # merge, in the target-prefix direction, must produce exactly that tree itself. Under a tracked
+    # `merge=leanagg`, with no driver configured here, that is the neutral merge, which conflicts.
     status, default, conflicts = merge(git, prefix, source, prefix)
     report.update(default_merge_tree=default, default_conflicts=conflicts)
     if status != 0 or conflicts or default != candidate:

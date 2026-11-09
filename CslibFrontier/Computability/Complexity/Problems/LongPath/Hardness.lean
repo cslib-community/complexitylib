@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian
 public import CslibFrontier.Computability.Complexity.Problems.LongPath
 public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Undirected
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -137,7 +138,7 @@ theorem computableInPolyTime_verifier :
         (fun q : (Graph × ℕ) × List ℕ => min q.2.length q.1.2)
         (encPair (encPair encGraph encNat) (encList encNat)) encUnary :=
       binary_min_unary' ((length_list encNat).comp (snd _ _)) (by fun_prop)
-    have h := (ComputableTidilyInPolyTime.takeUnary encNat).computableInPolyTime.comp
+    have h := (ComputableInDegree.takeUnary encNat).computableInPolyTime.comp
       ((snd _ _).prod hmin)
     convert h using 2 with q
     exact List.take_eq_take_iff.2 (by dsimp only; omega)
