@@ -52,13 +52,16 @@ bound, not polynomial time or `RL = L`; the support argument does not apply to t
 The complete [LogSpaceSavitch client](../../CslibFrontierTests/LogSpaceSavitch.lean) uses the
 existing logspace first-bit reader to place words beginning in `true` in `RL`, obtains the
 quadratic-space native decider, and checks accepted, rejected and empty inputs. Its runtime
-client also checks that the named Savitch accessors preserve the original tuple encoding and
+client also checks that named runtime structures preserve the original framed encoding and
 that projection certificates retain the caller's space budget.
 
 For machine-level reuse, [LogSpace/Savitch.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Savitch.lean)
-keeps the runtime tuple layout but names its counter, mode, round, radix, input length, vertex
-width and recursion state. Their `Runtime.*_budget` certificates use the existing budget-preserving
-pair projections; option inspection/defaults use the shared `ComputableInSpace.budget_option*`
+uses `Runtime`, `SimulationRound`, `RoundSetup` and `EdgeParams` structures.
+Their `enc_structure` encodings preserve the original nesting: parameters and width share a
+frame before the recursion state is paired with them. Generated field and constructor
+certificates drive the space proofs; generated `enc*_budget` projections retain the caller’s
+workspace budget. `SimulationRound.ofRound` is the explicit boundary to the generic Savitch
+round algorithm; option inspection/defaults use the shared `ComputableInSpace.budget_option*`
 rules. Binary vertex width returned in unary uses `ComputableInSpace.natSizeUnary` from
 [InSpace/NatSize.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/InSpace/NatSize.lean),
 also used by the inductive-counting simulator. Keep it distinct from `natSize`, which returns

@@ -50,11 +50,11 @@ private theorem accepts_acceptMachine (w : List Bool) : acceptMachine.Accepts w 
 
 -- While counting, the query machine holds the number of input bits read, and at the end of the
 -- input it starts the recursion.
-example (D : ℕ) : (machine acceptMachine D).run [true, false, true] 2 = (2, false, idle) :=
+example (D : ℕ) : (machine acceptMachine D).run [true, false, true] 2 = ⟨2, false, .ofRound idle⟩ :=
   run_of_le _ (by decide)
 
 example (D : ℕ) :
-    (machine acceptMachine D).run [true, false] 3 = (2, true, initRound acceptMachine D 2) :=
+    (machine acceptMachine D).run [true, false] 3 = ⟨2, true, .ofRound (initRound acceptMachine D 2)⟩ :=
   run_length_succ [true, false]
 
 /-- The recursion on the graph on words decides acceptance, here of every input. -/
@@ -111,16 +111,26 @@ example : ∃ c₁ c₂ t, DecidableInTimeAndSpace startsTrue encBits t
     fun w => c₁ * Nat.log2 (encBits w).length ^ 2 + c₂ :=
   mem_DSPACE_iff.mp (RL_subset_DSPACE_log2_sq startsTrue_mem_RL)
 
-/-! ### Runtime accessors retain the encoded tuple layout -/
+/-! ### Named runtime fields preserve the encoded words -/
 
 example (s : Runtime) : encRuntime s =
     encPair encNat (encPair encBool (Cslib.Reachability.Savitch.encRound encParam))
-      (s.counter, s.started, s.round) := rfl
+      (s.counter, s.started,
+        (((s.round.setup.params.radix, s.round.setup.params.inputLength,
+          s.round.setup.params.symbol), s.round.setup.width), s.round.recursion)) := rfl
+
+example (q : ((ℕ × ℕ × Option Bool) × ℕ) × Cslib.Reachability.Savitch.State) :
+    encSimulationRound (.ofRound q) = Cslib.Reachability.Savitch.encRound encParam q := rfl
 
 example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {s : α → Runtime}
     (hs : ComputableInSpace s enc encRuntime S) :
-    ComputableInSpace (fun a => (s a).radix) enc encNat S :=
-  Runtime.radix_budget hs
+    ComputableInSpace (fun a => (s a).round.setup.params.radix) enc encNat S :=
+  encEdgeParams_radix_budget (encRoundSetup_params_budget
+    (encSimulationRound_setup_budget (encRuntime_round_budget hs)))
+
+example : halted ⟨0, false, ⟨⟨⟨0, 0, none⟩, 0⟩, ⟨[], .ret true⟩⟩⟩ = false := rfl
+example : halted ⟨0, true, ⟨⟨⟨0, 0, none⟩, 0⟩, ⟨[], .ret true⟩⟩⟩ = true := rfl
+example : finish ⟨0, true, ⟨⟨⟨0, 0, none⟩, 0⟩, ⟨[], .ret false⟩⟩⟩ = [false] := rfl
 
 example : ComputableInSpace Nat.size encNat encUnary fun n => (encNat n).length :=
   ComputableInSpace.natSizeUnary
