@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
     paths:
-      - "ComplexityTests/Abstracts/**"
+      - "CslibFrontierTests/Abstracts/**"
       - "abstracts/**"
       - "lakefile.toml"
       - "scripts/abstract_to_tex.py"

@@ -476,10 +476,10 @@ class WorkflowBoundaryTests(unittest.TestCase):
         self.assertIn("abstracts/build/*.pdf", workflow)
         self.assertIn("abstracts/build/provenance.json", workflow)
         for rel in ("README.md", "AGENTS.md", "CONTRIBUTING.md", "abstracts/README.md",
-                    "guide/ComplexityGuide.lean", ".github/workflows/docs.yml"):
+                    "guide/CslibFrontierGuide.lean", ".github/workflows/docs.yml"):
             text = (ROOT / rel).read_text()
             self.assertNotIn("releases/download/formal-abstracts", text)
-            self.assertIn("https://www.cslib.io/complexitylib/abstracts/", text)
+            self.assertIn("https://www.cslib.io/cslib-frontier/abstracts/", text)
 
     def test_cli_download_dir_boundary_with_fake_gh(self):
         cases = [
