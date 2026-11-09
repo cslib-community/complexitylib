@@ -1698,6 +1698,8 @@ public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSc
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.IndependentDomination
 public import Complexity.Computability.Complexity.FineGrained.IndependentDominationInterval
+public import Complexity.Computability.Complexity.FineGrained.InducedMatching
+public import Complexity.Computability.Complexity.FineGrained.InducedMatchingDistribution
 public import Complexity.Computability.Complexity.FineGrained.InducedMatchingInterval
 public import Complexity.Computability.Complexity.FineGrained.InducedMatchingOptimum
 public import Complexity.Computability.Complexity.FineGrained.InducedMatchingWitness
@@ -2618,6 +2620,7 @@ public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.IndependentDomination
 public import Complexity.Computability.PolyTime.CNF.IndependentDominationInterval
+public import Complexity.Computability.PolyTime.CNF.InducedMatching
 public import Complexity.Computability.PolyTime.CNF.InducedMatchingInterval
 public import Complexity.Computability.PolyTime.CNF.PerfectMatchingCut
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter

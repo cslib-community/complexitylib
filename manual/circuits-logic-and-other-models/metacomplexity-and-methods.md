@@ -653,9 +653,10 @@ Small test oracles enumerate original selections only; production uses the prove
 These are native word/resource certificates on explicit framed encodings, with unary declarations,
 binary references and signed binary bounds. They do not add a fresh bit-transition machine
 simulation or arbitrary untrusted-byte graph admission. General finite/cofinite degree-rule and
-labeled partition constructors, the other graph applications beyond the directed-kernel endpoint
-below, induced-matching distributions, upper-domination marking counts, witness/optimum extraction
-and ALL-main remain open.
+labeled partition constructors, upper-domination marking/set counts and other predicates' full
+witness/optimum composition remain open. The continuations cover kernels, matching applications,
+Maximum Induced Matching optimization/witness recovery and the full induced-matching distribution.
+ALL-main remains open.
 
 ### Outgoing-absorbing kernels in directed graphs
 
@@ -700,9 +701,10 @@ The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions remain
 Corollary 7.4 predicates, independent-domination counting with size bounds and kernel counting/
 decision are covered here. The continuations below cover Perfect Matching Cut and Dominating
 Induced Matching and signed-threshold Maximum Induced Matching; upper domination remains open.
-Complete witness/optimum extraction is still separate. Corollary 7.5 still needs the full
-distribution iterator/resources; Proposition 7.6 needs its actual set–marking versus
-set-count constructions. These graph milestones do not complete ALL-main.
+Maximum Induced Matching's optimum/witness extraction and Corollary 7.5's complete distribution
+appear below. The other predicates' full witness/optimum composition and Proposition 7.6's actual
+set–marking versus set-count constructions remain open. These graph milestones do not complete
+ALL-main.
 
 ### Perfect matching cuts with labeled sides
 
@@ -757,9 +759,10 @@ Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed labeled degree m
 bounds remain open. Of the six Corollary 7.4 predicates, independent-domination counting with size
 bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
 The continuations below cover dominating induced matching and signed-threshold Maximum Induced
-Matching. Upper domination, complete witness/optimum recovery, Corollary 7.5's full distribution
-iterator and Proposition 7.6's marking/set-count constructions remain open. This concrete bipartition
-endpoint does not complete the general partition theorem or ALL-main.
+Matching, its complete optimum/witness recovery and Corollary 7.5's full distribution. Upper
+domination, other predicates' full witness/optimum recovery and Proposition 7.6's marking/set-count
+constructions remain open. This concrete bipartition endpoint does not complete the general
+partition theorem or ALL-main.
 
 ### Dominating induced matchings with exact edge-domination counts
 
@@ -815,9 +818,10 @@ Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed degree-matrix fr
 For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
 decision for kernels, perfect matching cuts and dominating induced matchings.
 The continuation below supplies signed-threshold Maximum Induced Matching. Upper domination and
-complete witness/optimum composition for the other graph predicates remain open. Corollary 7.5 still
-needs its full edge-size distribution iterator; its unrestricted matching bijection and total counts
-are covered below. Proposition 7.6 still needs its distinct set–marking versus original-set constructions. ALL-main remains open.
+complete witness/optimum composition for the other graph predicates remain open. Corollary 7.5's
+unrestricted matching bijection, total counts and full size distribution are covered below.
+Proposition 7.6 still needs its distinct set–marking versus original-set constructions. ALL-main
+remains open.
 
 ### Maximum induced matching with a varying binary threshold
 
@@ -862,7 +866,7 @@ uses the certified sharp counter, never an exhaustive auxiliary cube traversal.
 
 This closes the signed-threshold counting/decision specialization; the continuation below supplies
 its optimum value and witness. Threshold zero gives Corollary 7.5's unrestricted total count, using
-the functional size circuit rather than that corollary's sharper no-size-test query budget. The full distribution list, witness/optimum extraction for the other graph predicates,
+the functional size circuit rather than that corollary's sharper no-size-test query budget. Witness/optimum extraction for the other graph predicates and
 general Corollary 7.2 sigma-rho rules, Theorem 7.3 labeled degree matrices and Proposition 7.6
 upper-domination constructions remain open. These remaining source endpoints keep ALL-main open.
 
@@ -911,10 +915,60 @@ approved real construction on original selections/unique traces; production inst
 proved sharp native decider. It is not exhaustive matching search.
 
 The other five graph predicates' full witness/optimum composition remains open, together with
-general sigma-rho rules, labeled degree matrices and Upper Dominating Set. Corollary 7.5 still
-needs its full distribution iterator/output/resources and the sharper no-size-test `2v-1` query
-construction: the existing threshold-zero total count retains the functional size circuit.
-These remaining source clauses keep the paperwide/ALL-main objective open.
+general sigma-rho rules, labeled degree matrices and Upper Dominating Set. The continuation below
+completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
+clauses keep the paperwide/ALL-main objective open.
+
+### Total induced matching counts and the complete size distribution
+
+Import `Complexity.Computability.Complexity.FineGrained.InducedMatchingDistribution` and open
+`Cslib.Logic.PL.InducedMatching`. Reuse the original canonical simple undirected matrix frame,
+`IndependentDomination.Input`, `IndependentDomination.encInput` and
+`IndependentDomination.ofGraph G`, with its unary declaration and framed Boolean cells. This completes Corollary 7.5 / Appendix D.1 (PDF pp. 26, 34) in that encoding.
+
+For a total count without a size test, `build` writes only the selected-degree-one upper clauses
+and selected-neighbor predicates. It adds neither functional size gates nor domination clauses.
+`plan_count` proves exact counts of conventional induced matching subgraphs, with no orientations
+or isolated marks. For $v\ge1$, `query_count`, `query_budget` and `query_cubic_budget` give two
+ordinary width-three queries on exactly $2v-1$ variables and at most $6v^3$ clauses each, with all
+literal indices in range. `exists_count_realEta_certificate` supplies the actual total counter,
+charging construction, sequential counting and reconstruction with sharp time/global polynomial
+workspace. The empty no-size plan has one empty zero-variable query and counts the empty matching.
+
+For the whole size distribution, `Distribution.run` visits exactly the edge indices
+$0,\ldots,\lfloor v/2\rfloor$. `Distribution.caseInput` computes both endpoint bounds as twice the edge index
+and invokes the approved actual functional equality construction. `Distribution.coefficient_count` proves that
+this counts exactly the matchings with that many **unordered edges**. The original graph, current
+index and reverse-ordered binary coefficients persist; final `Distribution.output` reverses the actual list.
+`Distribution.run_eq_map` proves order and length, including trailing zero coefficients.
+Coefficients are at most $2^v$ (`Distribution.coefficient_le_two_pow`), so each takes at most $v+1$ binary bits. The complete
+framed output takes at most $(\lfloor v/2\rfloor+1)(2(v+1)+1)$ bits.
+
+`Distribution.exists_distribution_realEta_certificate` states exact output-list correctness,
+that binary output bound, actual native time $L^{O(1)}2^{O(\eta(v))}$ and global polynomial
+workspace together, where $\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$.
+The rounded certificate includes all smaller/empty graphs. The proof charges every exact-size
+call, current-index encoding, retained input, stored coefficient word/framing, accumulation,
+reversal and output write. Every reached prefix has a polynomial live-state bound. Previously
+stored coefficients are excluded from the next coefficient request; the backend's proved output/
+space bound controls intermediate integer bit lengths uniformly in original input and index.
+The output-size bound is separate from this actual runtime proof. The native resource model is
+unchanged, and graph correctness/sharp time still use the canonical promise. Global polynomial
+workspace holds even for malformed raw frames; a new arbitrary-byte validator or succinct
+vertex declaration is not asserted. The empty graph's complete list is `[1]`, not an empty list.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.InducedMatchingDistribution`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/InducedMatchingDistribution.lean)
+checks total-query execution and full lists on empty/edgeless/edge/path/disjoint-edge/triangle/
+dense/isolate/cycle instances. It retains infeasible-size zeros and checks total counts against
+coefficient sums. A 32-vertex query construction has 63 variables per query without any size gates;
+that construction test enumerates neither selections nor matchings. Tiny query/trace oracles are
+tests only; production certificates instantiate the approved unrestricted-density native counter.
+
+General sigma-rho rules, labeled degree matrices, Upper Dominating Set and the other graph
+predicates' full witness/optimum composition remain open. Corollary 7.5 is covered under the stated
+encoding; that milestone does not close the paperwide/ALL-main objective or alternative admission/
+succinct-encoding transfers.
 
 ## Known Limitations
 

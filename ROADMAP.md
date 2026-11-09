@@ -1319,6 +1319,21 @@ Correctness/sharp time retain the canonical simple-undirected matrix promise and
 invalid-byte admission is not added. This completes this problem's optimization/witness clause,
 not witness extraction for the other five Corollary 7.4 predicates or ALL-main.
 
+`InducedMatching` and `InducedMatching.Distribution` now complete Corollary 7.5 for the explicit
+canonical graph encoding. The actual no-size constructor omits both size gates and domination
+constraints, counts conventional induced matching subgraphs once each, and gives two width-three
+queries on exactly `2v-1` variables for positive `v`, with at most `6v³` clauses. Its total counter
+has complete native sharp time/global polynomial workspace. The actual distribution traversal
+makes `floor(v/2)+1` sequential exact-size calls, accumulates binary coefficients and reverses them
+into original edge-size order. Original-support/edge cardinality gives exact coefficients, each
+at most `2^v`, and at most `v+1` bits each. The full framed output has at most
+`(floor(v/2)+1)*(2(v+1)+1)` bits. Every-prefix stored-word sizes and actual counter/accumulation/
+reversal/output costs are proved, retaining single-loglog sharp time and polynomial peak workspace.
+The empty graph returns `[1]`; trailing zero coefficients and unused declared vertices are kept.
+Global workspace is bounded on all raw frames; correctness/sharp time retain the simple-graph,
+unary-declaration promise and existing native resource model. These are actual constructors and a
+complete output algorithm, not only exact-size instances or output-size-as-runtime estimates.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1340,12 +1355,10 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   decision are covered for the stated explicit encodings. Upper domination remains open. Complete
   witness extraction and optimum-threshold recovery are now composed for Maximum Induced Matching;
   the corresponding clauses for the other five decision predicates remain open.
-- Corollary 7.5: the unrestricted induced-matching endpoint/edge bijection and total counts are
-  covered using the functional size circuit, so the source's sharper no-size-test `2v−1` query budget
-  still needs a separate actual constructor/resource composition. Exact edge-size instances follow
-  from the natural interval construction. The complete distribution list still needs its actual
-  polynomially many sequential calls, accumulation,
-  binary output writing and composed sharp-time/global-space certificate.
+- Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
+  edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
+  are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding
+  transfers remain separate.
 - Proposition 7.6: upper domination's actual width-three set–marking-pair construction/count
   (`4v+a-1` variables), and the alternative width-four original-set count (`5v+a-1` variables),
   remain open. Preserve that count distinction, input thresholds, directed/undirected promises,
