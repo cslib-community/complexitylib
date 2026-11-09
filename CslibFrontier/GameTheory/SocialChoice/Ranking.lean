@@ -107,24 +107,28 @@ def reverse : Ranking A where
 
 @[simp] theorem reverse_prefers {a b : A} : r.reverse.Prefers a b ↔ r.Prefers b a := Iff.rfl
 
-/-- Move `b` to the top of `r`, keeping the order of the other alternatives. -/
-def toTop (b : A) : Ranking A where
-  Prefers x y := x ≠ y ∧ (x = b ∨ (y ≠ b ∧ r.Prefers x y))
-  irrefl x h := h.1 rfl
+/-- Move the alternatives of `S` to the top of `r`, keeping the order within `S` and within its
+complement ([Nisan2007], Definition 9.9). -/
+def toTopSet (S : Set A) : Ranking A where
+  Prefers x y := (x ∈ S ∧ y ∉ S) ∨ ((x ∈ S ↔ y ∈ S) ∧ r.Prefers x y)
+  irrefl x h := h.elim (fun h => h.2 h.1) fun h => r.irrefl x h.2
   trans x y z := by
-    rintro ⟨hxy, hx | ⟨hy, h1⟩⟩ ⟨hyz, hy' | ⟨hz, h2⟩⟩
-    · exact absurd (hx.trans hy'.symm) hxy
-    · exact ⟨by rintro rfl; exact hz hx, Or.inl hx⟩
+    rintro (⟨hx, hy⟩ | ⟨hxy, h1⟩) (⟨hy', hz⟩ | ⟨hyz, h2⟩)
     · exact absurd hy' hy
-    · exact ⟨r.ne_of_prefers (r.trans _ _ _ h1 h2), Or.inr ⟨hz, r.trans _ _ _ h1 h2⟩⟩
+    · exact Or.inl ⟨hx, fun hz => hy (hyz.2 hz)⟩
+    · exact Or.inl ⟨hxy.2 hy', hz⟩
+    · exact Or.inr ⟨hxy.trans hyz, r.trans _ _ _ h1 h2⟩
   total x y hxy := by
-    by_cases hx : x = b
-    · exact Or.inl ⟨hxy, Or.inl hx⟩
-    by_cases hy : y = b
-    · exact Or.inr ⟨hxy.symm, Or.inl hy⟩
-    rcases r.total x y hxy with h | h
-    · exact Or.inl ⟨hxy, Or.inr ⟨hy, h⟩⟩
-    · exact Or.inr ⟨hxy.symm, Or.inr ⟨hx, h⟩⟩
+    by_cases hx : x ∈ S <;> by_cases hy : y ∈ S
+    · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_true hx hy, h⟩)
+        fun h => Or.inr ⟨iff_of_true hy hx, h⟩
+    · exact Or.inl (Or.inl ⟨hx, hy⟩)
+    · exact Or.inr (Or.inl ⟨hy, hx⟩)
+    · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_false hx hy, h⟩)
+        fun h => Or.inr ⟨iff_of_false hy hx, h⟩
+
+/-- Move `b` to the top of `r`, keeping the order of the other alternatives: `toTopSet {b}`. -/
+def toTop (b : A) : Ranking A := r.toTopSet {b}
 
 /-- Move `b` to the bottom of `r`, keeping the order of the other alternatives. -/
 def toBottom (b : A) : Ranking A := (r.reverse.toTop b).reverse
@@ -136,20 +140,15 @@ def toBottom (b : A) : Ranking A := (r.reverse.toTop b).reverse
 @[expose] def IsBottom (b : A) : Prop := ∀ x, x ≠ b → r.Prefers x b
 
 theorem toTop_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
-    (r.toTop b).Prefers x y ↔ r.Prefers x y := by
-  constructor
-  · rintro ⟨-, h | ⟨-, h⟩⟩
-    · exact absurd h hx
-    · exact h
-  · intro h
-    exact ⟨r.ne_of_prefers h, Or.inr ⟨hy, h⟩⟩
+    (r.toTop b).Prefers x y ↔ r.Prefers x y :=
+  ⟨fun h => h.elim (fun h => absurd h.1 hx) And.right, fun h => Or.inr ⟨iff_of_false hx hy, h⟩⟩
 
 theorem toBottom_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
     (r.toBottom b).Prefers x y ↔ r.Prefers x y :=
   r.reverse.toTop_prefers_of_ne hy hx
 
 theorem isTop_toTop (b : A) : (r.toTop b).IsTop b :=
-  fun _ hx => ⟨hx.symm, Or.inl rfl⟩
+  fun _ hx => Or.inl ⟨rfl, hx⟩
 
 theorem isBottom_toBottom (b : A) : (r.toBottom b).IsBottom b :=
   r.reverse.isTop_toTop b
@@ -201,26 +200,6 @@ theorem isTop_top [Finite A] [Nonempty A] : r.IsTop r.top := by
 
 theorem isTop_iff_eq_top [Finite A] [Nonempty A] {a : A} : r.IsTop a ↔ a = r.top :=
   ⟨fun h => h.unique r.isTop_top, fun h => h ▸ r.isTop_top⟩
-
-/-- Move the alternatives of `S` to the top of `r`, keeping the order within `S` and within its
-complement ([Nisan2007], Definition 9.9). -/
-def toTopSet (S : Set A) : Ranking A where
-  Prefers x y := (x ∈ S ∧ y ∉ S) ∨ ((x ∈ S ↔ y ∈ S) ∧ r.Prefers x y)
-  irrefl x h := h.elim (fun h => h.2 h.1) fun h => r.irrefl x h.2
-  trans x y z := by
-    rintro (⟨hx, hy⟩ | ⟨hxy, h1⟩) (⟨hy', hz⟩ | ⟨hyz, h2⟩)
-    · exact absurd hy' hy
-    · exact Or.inl ⟨hx, fun hz => hy (hyz.2 hz)⟩
-    · exact Or.inl ⟨hxy.2 hy', hz⟩
-    · exact Or.inr ⟨hxy.trans hyz, r.trans _ _ _ h1 h2⟩
-  total x y hxy := by
-    by_cases hx : x ∈ S <;> by_cases hy : y ∈ S
-    · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_true hx hy, h⟩)
-        fun h => Or.inr ⟨iff_of_true hy hx, h⟩
-    · exact Or.inl (Or.inl ⟨hx, hy⟩)
-    · exact Or.inr (Or.inl ⟨hy, hx⟩)
-    · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_false hx hy, h⟩)
-        fun h => Or.inr ⟨iff_of_false hy hx, h⟩
 
 theorem toTopSet_prefers_of_mem_of_notMem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∉ S) :
     (r.toTopSet S).Prefers x y :=
