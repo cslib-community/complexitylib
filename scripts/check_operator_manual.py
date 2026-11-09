@@ -22,6 +22,30 @@ from visuals import check_markup
 EXCLUDED = {"_build", "_generated", "__pycache__"}
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})(.*)$")
 
+# A relative `File.lean#L<a>[-L<b>]` link must start where the cited Lean text starts (#3991):
+# an unindented declaration (after optional modifiers), attribute or docstring outside any
+# comment, so not a structure field's docstring. Ranges may also start at a section header;
+# `#L1` links the whole file.
+DECLARATION_START = re.compile(
+    r"(?:@\[|/--|(?:(?:private|protected|public|noncomputable|partial|unsafe|nonrec|meta|scoped"
+    r"|local)\s+)*(?:theorem|lemma|def|abbrev|structure|class|instance|inductive|opaque|example)\b)")
+SECTION_START = re.compile(r"(?:/-!|(?:(?:public|noncomputable)\s+)*(?:section|namespace)\b)")
+STALE_SOURCE_ANCHOR = "source line anchor does not start a declaration"
+# Known stale anchors, as (Lean file, start line), that this check tolerates until they can be
+# repointed without conflicting with queued pull requests. Repoint the manual link and delete
+# the entry (#3991); an entry that no longer matches is listed in the result, not reported as
+# an error, so a pull request that repoints a link does not have to edit this list.
+STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
+    # Stale on main. #3728 edits the manual paragraph that links it.
+    ("CslibFrontier/Crypto/Computational/TreeSignature/Security.lean", 4779),
+    # Stale on main. #3981 moves this file's declarations.
+    ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 243),
+    ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 528),
+    # Stale on main. #3875 moves this file's declarations.
+    *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Interactive.lean", line)
+      for line in (197, 213, 226, 285, 342, 352, 395, 444, 600)),
+}
+
 
 def prose(text: str) -> str:
     """Ignore fenced and inline code when scanning Markdown links/headings."""
@@ -79,6 +103,50 @@ def within(path: Path, root: Path) -> bool:
         return False
 
 
+def comment_depths(lines: list[str]) -> list[int]:
+    """Nesting depth of Lean block comments (`/- … -/`, docstrings included) at each line start.
+
+    Line comments and string literals are skipped so that `--`, `"/-"` or `"-/"` do not count.
+    """
+    depths, depth = [], 0
+    for line in lines:
+        depths.append(depth)
+        i, in_string = 0, False
+        while i < len(line):
+            pair = line[i:i + 2]
+            if depth:
+                depth += (pair == "/-") - (pair == "-/")
+                i += 2 if pair in ("/-", "-/") else 1
+            elif in_string:
+                in_string = line[i] != '"'
+                i += 2 if line[i] == "\\" else 1
+            elif pair == "--":
+                break
+            elif pair == "/-":
+                depth, i = 1, i + 2
+            elif line[i:i + 3] == "'\"'":
+                i += 3
+            else:
+                in_string = line[i] == '"'
+                i += 1
+    return depths
+
+
+def source_anchor_error(fragment: str, lines: list[str]) -> str | None:
+    """Problem with a `L<a>[-L<b>]` fragment into a Lean file with these lines, or `None`."""
+    bounds = [int(n) for n in re.findall(r"\d+", fragment)]
+    if min(bounds) < 1 or max(bounds) > len(lines):
+        return "source line anchor out of bounds"
+    start = bounds[0]
+    if start == 1:
+        return None
+    line = lines[start - 1]
+    if comment_depths(lines[:start])[-1] == 0 and (
+            DECLARATION_START.match(line) or len(bounds) > 1 and SECTION_START.match(line)):
+        return None
+    return STALE_SOURCE_ANCHOR
+
+
 def load_book_builder(data: Path):
     """Import `data/build_manual.py` with its own sibling modules, leaving `sys.modules` as found."""
     siblings = {path.stem for path in data.glob("*.py")}
@@ -119,6 +187,7 @@ def check(repo: Path, manual: Path | None = None) -> dict:
     document_set = set(documents)
     edges = {p: set() for p in documents}
     link_count = 0
+    allowed_stale: set[tuple[str, int]] = set()
     visual_counts = {'diagrams': 0, 'worked_examples': 0}
     for doc in documents:
         try:
@@ -146,9 +215,12 @@ def check(repo: Path, manual: Path | None = None) -> dict:
             if fragment and target.suffix == ".md" and fragment not in anchors(target.read_text()):
                 errors.append(f"{doc.relative_to(manual)}: missing Markdown anchor: {url}")
             elif fragment and target.suffix == ".lean" and re.fullmatch(r"L\d+(?:-L\d+)?", fragment):
-                bounds = [int(n) for n in re.findall(r"\d+", fragment)]
-                if min(bounds) < 1 or max(bounds) > len(target.read_text().splitlines()):
-                    errors.append(f"{doc.relative_to(manual)}: source line anchor out of bounds: {url}")
+                problem = source_anchor_error(fragment, target.read_text().splitlines())
+                known = (target.relative_to(repo).as_posix(), int(re.match(r"L(\d+)", fragment)[1]))
+                if problem == STALE_SOURCE_ANCHOR and known in STALE_SOURCE_ANCHORS:
+                    allowed_stale.add(known)
+                elif problem:
+                    errors.append(f"{doc.relative_to(manual)}: {problem}: {url}")
     start = manual / "README.md"
     if start not in document_set:
         errors.append("Missing manual/README.md entry page")
@@ -232,6 +304,9 @@ def check(repo: Path, manual: Path | None = None) -> dict:
     return {"status": "fail" if errors else "pass", "manual_documents": len(documents),
             "local_links_checked": link_count, "excerpts_checked": len(excerpt_results),
             "book_inputs_checked": book_checked, **visual_counts,
+            "allowed_stale_source_anchors": sorted(f"{path}#L{line}" for path, line in allowed_stale),
+            "unused_stale_source_anchor_entries": sorted(
+                f"{path}#L{line}" for path, line in STALE_SOURCE_ANCHORS - allowed_stale),
             "excerpts": excerpt_results, "errors": errors, "lean_compilation": False,
             "external_links_fetched": False, "historical_revision_checked": False}
 
