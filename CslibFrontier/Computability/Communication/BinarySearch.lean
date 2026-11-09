@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Communication.Operations
+import CslibFrontier.Foundations.Data.Nat.HalvingRecurrence
 
 /-!
 # Binary search for a coordinate where a sum drops
@@ -41,13 +42,6 @@ namespace Cslib.Communication.Protocol
 
 variable {X Y ι : Type*}
 
-/-- A list of at most `⌈m / 2⌉` entries, for `m ≥ 2`, has `⌈log₂⌉` of its length at most
-`⌈log₂ m⌉ - 1`. -/
-private theorem clog_add_one_le_of_le_half {m k : ℕ} (hm : 2 ≤ m) (hk : k ≤ (m + 1) / 2) :
-    Nat.clog 2 k + 1 ≤ Nat.clog 2 m := by
-  rw [Nat.clog_of_two_le one_lt_two hm]
-  exact Nat.add_le_add_right (Nat.clog_mono_right 2 (by omega)) 1
-
 /-- **Binary search for a coordinate where a sum drops.** Suppose that for every list of at most
 `L` indices, Alice holding `x` and Bob holding `y` can decide with `c` bits whether
 `∑ g y < ∑ f x` over the list. Then for every list `l` of at most `L` indices they can find, with
@@ -73,8 +67,8 @@ theorem exists_search_lt (f : X → ι → ℤ) (g : Y → ι → ℤ) (L c : �
       obtain ⟨p₁, hp₁d, hp₁⟩ := ih _ (by omega) (l.take (m / 2)) (by omega) rfl
       obtain ⟨p₂, hp₂d, hp₂⟩ := ih _ (by omega) (l.drop (m / 2)) (by omega) rfl
       obtain ⟨q, hqd, hq⟩ := hcmp (l.take (m / 2)) (by omega)
-      have hc₁ := clog_add_one_le_of_le_half hm2 (k := (l.take (m / 2)).length) (by omega)
-      have hc₂ := clog_add_one_le_of_le_half hm2 (k := (l.drop (m / 2)).length) (by omega)
+      have hc₁ := Nat.clog_two_lt_clog_two_of_le_half hm2 (k := (l.take (m / 2)).length) (by omega)
+      have hc₂ := Nat.clog_two_lt_clog_two_of_le_half hm2 (k := (l.drop (m / 2)).length) (by omega)
       refine ⟨q.bind fun b => bif b then p₁ else p₂, ?_, fun x y hxy => ?_⟩
       · obtain ⟨e, he⟩ : ∃ e, Nat.clog 2 m = e + 1 := ⟨_, Nat.clog_of_two_le one_lt_two hm2⟩
         rw [he, add_one_mul]
