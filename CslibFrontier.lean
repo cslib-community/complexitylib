@@ -3677,6 +3677,7 @@ public import CslibFrontier.Crypto.Computational.GoldreichLevin.Reduction
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordDecoder
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordReduction
 public import CslibFrontier.Crypto.Computational.HardCore
+public import CslibFrontier.Crypto.Computational.HashAndSign
 public import CslibFrontier.Crypto.Computational.Homomorphic.Basic
 public import CslibFrontier.Crypto.Computational.Homomorphic.BitEncryption
 public import CslibFrontier.Crypto.Computational.Homomorphic.BitEncryption.CoinTape
