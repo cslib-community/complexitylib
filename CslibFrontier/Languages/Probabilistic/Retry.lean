@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Expected
 public import CslibFrontier.Languages.Probabilistic.Vector
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 
 /-!
@@ -268,38 +269,16 @@ theorem toOuterMeasure_evalWith_pi_exists_le (programs : (i : Fin m) → OracleC
   induction m with
   | zero => simp
   | succ m ih =>
-    rw [pi_succ, evalWith_bind, PMF.toOuterMeasure_bind_apply, Fin.sum_univ_succ]
-    set rest := ∑ j : Fin m, (evalWith h (programs j.succ)).toOuterMeasure {a | bad j.succ a}
-    have hstep : ∀ a,
-        (evalWith h (Fin.cons a <$> pi fun j : Fin m => programs j.succ)).toOuterMeasure
-          {r | ∃ i, bad i (r i)} ≤ {a | bad 0 a}.indicator 1 a + rest := by
-      intro a
-      rw [evalWith_map, PMF.toOuterMeasure_map_apply]
-      have hsub : (Fin.cons a : ((j : Fin m) → β j.succ) → (i : Fin (m + 1)) → β i) ⁻¹'
-            {r | ∃ i, bad i (r i)} ⊆ {_r | bad 0 a} ∪ {r | ∃ j, bad j.succ (r j)} := by
-        rintro r ⟨i, hi⟩
-        cases i using Fin.cases with
-        | zero => exact Or.inl (by simpa using hi)
-        | succ j => exact Or.inr ⟨j, by simpa using hi⟩
-      refine (MeasureTheory.measure_mono hsub).trans
-        ((MeasureTheory.measure_union_le _ _).trans (add_le_add ?_ (ih _ _)))
-      by_cases ha : bad 0 a
-      · rw [Set.indicator_of_mem (by exact ha), Pi.one_apply]
-        exact Probability.PMF.toOuterMeasure_le_one _ _
-      · simp [ha]
-    calc ∑' a, evalWith h (programs 0) a *
-          (evalWith h (Fin.cons a <$> pi fun j : Fin m => programs j.succ)).toOuterMeasure
-            {r | ∃ i, bad i (r i)}
-        ≤ ∑' a, evalWith h (programs 0) a * ({a | bad 0 a}.indicator 1 a + rest) :=
-          tsum_le_tsum fun a => by gcongr; exact hstep a
-      _ = (evalWith h (programs 0)).toOuterMeasure {a | bad 0 a} + rest := by
-          simp only [mul_add]
-          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun a => ?_
-          by_cases ha : bad 0 a
-          · simp [ha]
-          · simp [ha]
+    rw [pi_succ, evalWith_bind, Fin.sum_univ_succ]
+    refine Probability.PMF.toOuterMeasure_bind_le_add _ _ {a | bad 0 a} _ _ fun a _ ha => ?_
+    rw [evalWith_map, PMF.toOuterMeasure_map_apply]
+    have hsub : (Fin.cons a : ((j : Fin m) → β j.succ) → (i : Fin (m + 1)) → β i) ⁻¹'
+          {r | ∃ i, bad i (r i)} ⊆ {r | ∃ j, bad j.succ (r j)} := by
+      rintro r ⟨i, hi⟩
+      cases i using Fin.cases with
+      | zero => exact (ha (by simpa using hi)).elim
+      | succ j => exact ⟨j, by simpa using hi⟩
+    exact (MeasureTheory.measure_mono hsub).trans (ih _ _)
 
 end Pi
 
