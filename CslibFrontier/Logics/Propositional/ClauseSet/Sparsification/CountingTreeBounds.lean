@@ -241,21 +241,15 @@ private theorem countingLeafWords_of_not_sparse {θ : ℕ → ℕ} (hθ : ∀ j,
 multiplicity across equal or unsatisfiable leaf clause sets. -/
 theorem countingLeaves_eq_map_walk_countingLeafWords (θ : ℕ → ℕ) (ψ : ClauseSet V) :
     countingLeaves θ ψ = (countingLeafWords θ ψ).map ((countingTreeRule θ).tree.walk ψ) := by
-  induction hp : potential ψ using Nat.strong_induction_on generalizing ψ with
-  | _ n ih =>
-    rw [countingLeaves, countingLeafWords]
-    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
-    · rw [ite_eq_left h, ite_eq_left h]
-      dsimp only
-      set ch := chooseBranch θ ψ
-      have hch := (choice_chooseBranch h.1).1
-      have hlt₀ := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 false
-      have hlt₁ := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 true
-      rw [List.map_append, List.map_map, List.map_map, ih _ (hp ▸ hlt₀) _ rfl,
-        ih _ (hp ▸ hlt₁) _ rfl]
-      rfl
-    · rw [ite_eq_right h, ite_eq_right h]
-      rfl
+  fun_induction countingLeaves θ ψ with
+  | case1 ψ h ch ih₀ ih₁ =>
+    rw [countingLeafWords, ite_eq_left h]
+    dsimp only
+    rw [List.map_append, List.map_map, List.map_map, ih₀, ih₁]
+    rfl
+  | case2 ψ h =>
+    rw [countingLeafWords, ite_eq_right h]
+    rfl
 
 /-- The number of leaves in `countingLeaves θ ψ` (counted with list multiplicity) equals the
 number of branch-word addresses in `countingLeafWords θ ψ`. -/
@@ -266,23 +260,15 @@ theorem length_countingLeaves_eq_length_countingLeafWords (θ : ℕ → ℕ) (ψ
 /-- The branch-word addresses in `countingLeafWords θ ψ` are pairwise distinct. -/
 theorem nodup_countingLeafWords (θ : ℕ → ℕ) (ψ : ClauseSet V) :
     (countingLeafWords θ ψ).Nodup := by
-  induction hp : potential ψ using Nat.strong_induction_on generalizing ψ with
-  | _ n ih =>
-    rw [countingLeafWords]
-    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
-    · rw [ite_eq_left h]
-      set ch := chooseBranch θ ψ
-      have hch := (choice_chooseBranch h.1).1
-      have hlt₀ := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 false
-      have hlt₁ := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 true
-      have hnodup₀ := (ih _ (hp ▸ hlt₀) _ rfl).map (List.cons_injective (a := false))
-      have hnodup₁ := (ih _ (hp ▸ hlt₁) _ rfl).map (List.cons_injective (a := true))
-      refine hnodup₀.append hnodup₁ (List.disjoint_left.mpr fun w hw₀ hw₁ => ?_)
-      obtain ⟨u₀, -, rfl⟩ := List.mem_map.mp hw₀
-      obtain ⟨u₁, -, hu₁⟩ := List.mem_map.mp hw₁
-      exact Bool.false_ne_true (List.head_eq_of_cons_eq hu₁).symm
-    · rw [ite_eq_right h]
-      exact List.nodup_singleton []
+  fun_induction countingLeafWords θ ψ with
+  | case1 ψ h ch ih₀ ih₁ =>
+    -- The two halves are injective images, and their words start with different bits.
+    refine (ih₀.map (List.cons_injective (a := false))).append
+      (ih₁.map (List.cons_injective (a := true))) (List.disjoint_left.mpr fun w hw₀ hw₁ => ?_)
+    obtain ⟨u₀, -, rfl⟩ := List.mem_map.mp hw₀
+    obtain ⟨u₁, -, hu₁⟩ := List.mem_map.mp hw₁
+    exact Bool.false_ne_true (List.head_eq_of_cons_eq hu₁).symm
+  | case2 ψ h => exact List.nodup_singleton []
 
 /-- Because `countingLeafWords θ ψ` is duplicate-free, the list length `(countingLeaves θ ψ).length`
 equals the cardinality of the address finset `(countingLeafWords θ ψ).toFinset`. -/
