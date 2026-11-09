@@ -124,8 +124,7 @@ theorem AllowanceBound.mono_coeff {Op : Type u} {Struct : Type v} {d a₀ b₀ b
     linarith
   | struct sOp L =>
     have hbZ : (b₀ : ℤ) ≤ (b : ℤ) := by exact_mod_cast hb
-    have hmul : (b₀ : ℤ) * (t : ℤ) ≤ (b : ℤ) * (t : ℤ) :=
-      mul_le_mul_of_nonneg_right hbZ (Nat.cast_nonneg t)
+    have hmul : (b₀ : ℤ) * (t : ℤ) ≤ (b : ℤ) * (t : ℤ) := by gcongr
     have had : a₀ * d ≤ (a₀ + (b - b₀) * c₀) * d :=
       Nat.mul_le_mul_right d (Nat.le_add_right _ _)
     have hadZ : ((a₀ * d : ℕ) : ℤ) ≤ (((a₀ + (b - b₀) * c₀) * d : ℕ) : ℤ) := by
@@ -141,12 +140,10 @@ theorem AllowanceBound.mono_clock {Op : Type u} {Struct : Type v} {d a b c t₁ 
   | digit op j L =>
     obtain ⟨hj, hL⟩ := h
     refine ⟨by omega, ?_⟩
-    have hmul : (b : ℤ) * ((t₁ : ℤ) - (j : ℤ)) ≤ (b : ℤ) * ((t₂ : ℤ) - (j : ℤ)) :=
-      mul_le_mul_of_nonneg_left (by linarith) (Nat.cast_nonneg b)
+    have hmul : (b : ℤ) * ((t₁ : ℤ) - (j : ℤ)) ≤ (b : ℤ) * ((t₂ : ℤ) - (j : ℤ)) := by gcongr
     linarith
   | struct sOp L =>
-    have hmul : (b : ℤ) * (t₁ : ℤ) ≤ (b : ℤ) * (t₂ : ℤ) :=
-      mul_le_mul_of_nonneg_left htZ (Nat.cast_nonneg b)
+    have hmul : (b : ℤ) * (t₁ : ℤ) ≤ (b : ℤ) * (t₂ : ℤ) := by gcongr
     exact le_trans h (by linarith)
 
 theorem AllowanceBound.shift_clock_up {Op : Type u} {Struct : Type v} {d a b c t k : ℕ}
@@ -439,8 +436,7 @@ stages and telescoped annotated allowance/intrinsic constants. -/
         have hK_right : B ≤ K := (le_max_right _ _).trans (le_max_right _ _)
         calc w + 4 + ((child op).digitProg u).maxIntrinsicBits env₂ sEnv
             ≤ (a₁ + 4 + cInt) * parent.slack + B * t := hsumNat
-          _ ≤ K * parent.slack + K * t :=
-              Nat.add_le_add (Nat.mul_le_mul_right _ hK_left) (Nat.mul_le_mul_right _ hK_right)
+          _ ≤ K * parent.slack + K * t := by gcongr
           _ = K * (parent.slack + t) := (Nat.mul_add K parent.slack t).symm }
 
 /-- Clock-zero structural leaf conditional branch between two `UniformStreamRecipe`s
@@ -621,8 +617,7 @@ theorem maxIntrinsicBits_diffDigitProg_le {Op : Type u} {Struct : Type v} {d C :
       · have h0 := hInt t env sEnv
         calc 8 + (resProg t).maxIntrinsicBits env sEnv
             ≤ 8 + C * (d + t) := Nat.add_le_add_left h0 8
-          _ ≤ 8 * (d + (t + 1)) + C * (d + (t + 1)) :=
-              Nat.add_le_add (by omega) (Nat.mul_le_mul_left C (by omega))
+          _ ≤ 8 * (d + (t + 1)) + C * (d + (t + 1)) := by gcongr <;> omega
           _ = (C + 8) * (d + (t + 1)) := by ring
       · simp only [QueryProg.maxIntrinsicBits, Nat.max_zero]
         have hle : 8 ≤ 8 * (d + (t + 1)) := by omega

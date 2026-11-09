@@ -146,7 +146,7 @@ above assume that every scope has exactly three entries. -/
 @[fun_prop]
 theorem computableInPolyTime_toCNFBounded_parity {V : Type} (encV : V ↪ List Bool) :
     ComputableInPolyTime (CSP.toCNFBounded 3 CSP.paritySem)
-      (encCSP encBool encV) (encList (encList (encPair encV encBool))) :=
+      (encCSP encBool encV) (encCNFOver encV) :=
   computableInPolyTime_toCNFBounded_of_finite encBool encV 3 CSP.paritySem
 
 end Cslib.Complexity.CSP

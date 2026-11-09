@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.A
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.ZipTransducer
 import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.EncLen
 
 /-!
 # Binary addition, bitwise disjunction and multiplication
@@ -168,8 +169,7 @@ theorem natMul :
       (List.foldl NatMul.mulStep (0, p.2) (p.1.bits.take i)).1 ≤
         2 ^ (p.1.bits.take i).length * p.2)
     have hsh := NatMul.size_le_of_le _ h₂.le
-    simp only [encMul, length_encPair, encNat_apply, Nat.size_eq_bits_len] at hacc hsh hi ⊢
-    omega
+    enc_len [encMul, encNat_apply, Nat.size_eq_bits_len] at hacc hsh hi ⊢
   have hround (p : ℕ × ℕ) (i : ℕ) (hi : i < p.1.bits.length) :
       (encPair encMul encBool
         ((p.1.bits.take i).foldl NatMul.mulStep (0, p.2), p.1.bits[i])).length + 1 ≤
@@ -190,8 +190,7 @@ theorem natMul :
     |>.of_enc_eq fun p => ?_
   · simp only [Function.comp_apply, encBits_apply, length_encPair, encNat_apply]
     nlinarith
-  · simp only [Function.comp_apply, encBits_apply, length_encPair, encNat_apply]
-    omega
+  · enc_len [Function.comp_apply, encNat_apply]
   · simp only [Function.comp_apply, NatMul.foldl_mulStep, zero_add]
 
 end Turing.MultiTapeTM.ComputableInO

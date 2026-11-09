@@ -9,7 +9,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [RAM variants](ram-variants.md): unbounded natural registers, unit/logarithmic cost, generic partial operations, exact real/prime-field arithmetic and native representation obligations.
 - [Word-RAM and proved bridges](wordram-and-bridges.md): instruction semantics, uniformity, output conventions, randomized execution, expected time, and actual Turing simulations.
 - [Memory and state-transition specifications](memory-specifications.md): relational adaptive clients, refinement, amortization, memory charges, native callable contracts, framing and traces.
-- [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, Count-Min and native streaming folds.
+- [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, splay-tree amortized bounds (balance, static optimality, static finger, working set), Count-Min and native streaming folds.
 - [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, the `5/2` and `4/3` price-of-anarchy bounds, and the odd number of Nash equilibria of nondegenerate bimatrix games (Lemke–Howson).
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
 - [Representative algorithm endpoints](algorithm-endpoints.md): what the formal abstracts and algorithm modules prove, their cost models (some charge no running time) and their limitations. The page's section headings list the algorithms covered.

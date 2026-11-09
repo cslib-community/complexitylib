@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Probabilistic.LinearHash
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Computability.Probabilistic.CoinTape
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Languages.Probabilistic.Notation
 import Complexity.Crypto.Primitives.PRG.NextBit
 import Complexity.Crypto.Game.Statistical
@@ -389,9 +390,8 @@ private theorem trivialInverter_succ_ge {g : List Bool → List Bool} {imgLen : 
         ∑ x' : BitString k, (PMF.uniformOfFintype (BitString k) x').toReal *
           (if f x' = f x then 1 else 0) := by
     rw [Game.coe_succProbability]
-    simp only [inversionGame, trivialInverter, ProbComp.eval_bind, BitString.eval_sampleList,
-      ProbComp.eval_pure, BitString.uniformList, PMF.bind_map, Function.comp_def,
-      bind_apply_toReal, PMF.pure_apply, hfeq]
+    simp only [pmf_norm, inversionGame, trivialInverter, BitString.eval_sampleList,
+      BitString.uniformList, bind_apply_toReal, PMF.pure_apply, hfeq]
     refine Finset.sum_congr rfl fun x _ => congrArg _ (Finset.sum_congr rfl fun x' _ => ?_)
     by_cases h : f x' = f x <;> simp [h]
   rw [heval]
@@ -958,8 +958,7 @@ private theorem uniformOfFinset_condSeedSet_map_ofFn (imgLen : ℕ → ℕ) (d �
     rw [← uniformOfFinset_map (hs := (hS k).product Finset.univ_nonempty)]
     congr 1
   rw [hpmf, PMF.map_comp, uniformOfFinset_product_univ (hs := hS k)]
-  simp only [RestTuple, ← PMF.uniformOfFintype_prod, PMF.map_bind, PMF.map_comp,
-    Function.comp_def, ofFn_packSeedEmb]
+  simp only [pmf_norm, RestTuple, ← PMF.uniformOfFintype_prod, ofFn_packSeedEmb]
 
 /-! ### Leftover hash statistical distance and conditional entropy preservation -/
 
@@ -1129,8 +1128,7 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
       seed2.map fun h2 => ((h1, hash1 h1 (f x)), (h2, hash2 h2 x))) = _
     rw [PMF.bind_bind, PMF.bind_bind]
     congr 1; funext x₀
-    simp only [source, seededHash, stepF, PMF.bind_map, PMF.map_bind, PMF.map_comp,
-      Function.comp_def, PMF.bind_bind]
+    simp only [pmf_norm, source, seededHash, stepF]
     have hinner (x : { x : BitString k // f x = f x₀ }) :
         (seed1.bind fun h1 =>
           seed2.map fun h2 => ((h1, hash1 h1 (f x.val)), (h2, hash2 h2 x.val))) =
@@ -1148,8 +1146,7 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
       (dist_seededHash_regularityBucket_fiber_le f r hS hm2)
   have hmid_eq : midCore =
       (seededHash seed1 (side.map f) hash1).bind fun p1 => unif2.map (p1, ·) := by
-    simp only [midCore, stepF, seededHash, PMF.bind_bind, PMF.bind_map,
-      PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, midCore, stepF, seededHash]
     have hinner (a : BitString k) :
         (unif2.bind fun x => seed1.map fun h1 => ((h1, hash1 h1 (f a)), x)) =
           seed1.bind fun h1 => unif2.map fun x => ((h1, hash1 h1 (f a)), x) :=
@@ -1270,7 +1267,7 @@ private theorem map_bind_four_eq_bind_three_map {α₁ α₂ α₃ α₄ β γ �
     (p₁.bind fun x₁ => p₂.bind fun x₂ => p₃.bind fun x₃ => p₄.map fun x₄ => F₁ x₁ x₂ x₃ x₄).map F₂ =
       (p₁.bind fun x₁ => p₂.bind fun x₂ => p₃.map fun x₃ => G₁ x₁ x₂ x₃).bind
         (fun c => p₄.map fun x₄ => G₂ c x₄) := by
-  simp only [PMF.map_bind, PMF.bind_map, PMF.bind_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm]
   congr 1; funext x₁; congr 1; funext x₂; congr 1; funext x₃; congr 1; funext x₄
   exact hFG x₁ x₂ x₃ x₄
 
@@ -1292,8 +1289,7 @@ private theorem unifCoreDist_bind_packLHL (k imgLen_k m1 m2 c2 padLen m_lhl : �
             (PMF.uniformOfFintype (BitString m2)).map fun d2 =>
               List.ofFn pad ++ List.ofFn h1 ++ List.ofFn d1 ++
                 List.ofFn h2 ++ List.ofFn d2).map (ofList m_lhl) := by
-    simp only [unifCoreDist, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.map_bind,
-      PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, unifCoreDist]
     exact bind_four_comm_fifth _ _ _ _ _ _
   rw [h1, uniformOfFintype_five_append, hlen, Cslib.BitString.uniformList_ofList]
 
@@ -1689,8 +1685,7 @@ private theorem eval_innerGuessInverter {k imgLen_k : ℕ}
       GoldreichLevin.invertFixed_comp_injective f List.ofFn (fun _ _ h => List.ofFn_inj.mp h)]
   simp only [innerGuessInverter, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
   simp_rw [hdecode, hmatrix]
-  simp only [uniformList, PMF.bind_map, PMF.map_bind,
-    Function.comp_def, Pseudoentropy.guessInverter]
+  simp only [pmf_norm, uniformList, Pseudoentropy.guessInverter]
   rfl
 
 /-- Splicing row `idx` in a flat matrix word agrees with `Function.update` on the block rows. -/
@@ -1799,9 +1794,8 @@ private theorem sum_bool_agreement_eq {k : ℕ} (evalBit : BitString k → Bool 
         ∑ r_bit : Bool, (PMF.uniformOfFintype Bool r_bit).toReal *
           GoldreichLevin.agreement
             (fun query => if evalBit query r_bit then r_bit else !r_bit) x := by
-      simp only [GoldreichLevin.agreement_eq_probability, PRG.guessOfDistinguisher,
-        PMF.monad_bind_eq_bind, PMF.map, PMF.pure_bind,
-        PMF.bind_bind, Function.comp_def, beq_eq_decide]
+      simp only [pmf_norm, GoldreichLevin.agreement_eq_probability, PRG.guessOfDistinguisher,
+        PMF.map, beq_eq_decide]
       rw [PMF.bind_comm, PMF.bind_apply_toReal]
     rw [← hcomm, hguess]
     rfl
@@ -1998,8 +1992,7 @@ private theorem uniformList_four_bind_eq {γ : Type*} (n1 n2 n3 n4 : ℕ)
           (BitString.uniformList n4).bind fun w4 => F w1 w2 w3 w4) =
     (PMF.uniformOfFintype (BitString n1 × BitString n2 × BitString n3 × BitString n4)).bind
       fun a => F (List.ofFn a.1) (List.ofFn a.2.1) (List.ofFn a.2.2.1) (List.ofFn a.2.2.2) := by
-  simp only [← PMF.uniformOfFintype_prod, BitString.uniformList, PMF.bind_map, PMF.bind_bind,
-    Function.comp_def]
+  simp only [pmf_norm, ← PMF.uniformOfFintype_prod, BitString.uniformList]
 
 private theorem bind_map_comm_four {α β γ₁ γ₂ γ₃ δ : Type*}
     (pa : PMF α) (pb : PMF β) (p₁ : PMF γ₁) (p₂ : PMF γ₂) (p₃ : PMF γ₃)
@@ -2008,7 +2001,7 @@ private theorem bind_map_comm_four {α β γ₁ γ₂ γ₃ δ : Type*}
       p₁.bind fun c₁ => p₂.bind fun c₂ => p₃.map fun c₃ => f ab c₁ c₂ c₃) =
     pb.bind fun b => p₁.bind fun c₁ => p₂.bind fun c₂ => p₃.bind fun c₃ =>
       pa.map fun a => f (a, b) c₁ c₂ c₃ := by
-  simp only [PMF.bind_bind, Function.comp_def, PMF.map, PMF.pure_bind]
+  simp only [pmf_norm, PMF.map]
   rw [PMF.bind_comm pa pb]
   congr 1; funext b
   rw [PMF.bind_comm pa p₁]
@@ -2260,8 +2253,7 @@ private theorem single_le_mul_sampleDyadicIndex {α : Type} (bound i : ℕ) (hi 
   have hi_lt : i < dyadicSize bound := lt_of_le_of_lt hi (lt_dyadicSize bound)
   let idx : Fin (dyadicSize bound) := ⟨i, hi_lt⟩
   have hpos : (0 : ℝ) < dyadicSize bound := Nat.cast_pos.mpr (dyadicSize_pos bound)
-  simp only [ProbComp.eval_bind, ProbComp.eval_sampleDyadicIndex, PMF.bind_map, PMF.map_bind,
-    Function.comp_def, PMF.bind_apply_toReal]
+  simp only [pmf_norm, ProbComp.eval_sampleDyadicIndex, PMF.bind_apply_toReal]
   have hle := Finset.single_le_sum
     (f := fun j : Fin (dyadicSize bound) =>
       (PMF.uniformOfFintype (Fin (dyadicSize bound)) j).toReal *
@@ -2283,8 +2275,7 @@ private theorem sum_range_le_mul_sampleDyadicIndex {α : Type} (bound : ℕ)
           true).toReal := by
   have hle : bound ≤ dyadicSize bound := (lt_dyadicSize bound).le
   have hpos : (0 : ℝ) < dyadicSize bound := Nat.cast_pos.mpr (dyadicSize_pos bound)
-  simp only [ProbComp.eval_bind, ProbComp.eval_sampleDyadicIndex, PMF.bind_map, PMF.map_bind,
-    Function.comp_def, PMF.bind_apply_toReal]
+  simp only [pmf_norm, ProbComp.eval_sampleDyadicIndex, PMF.bind_apply_toReal]
   have hsum_eq :
       (∑ j : Fin (dyadicSize bound),
         (PMF.uniformOfFintype (Fin (dyadicSize bound)) j).toReal *
@@ -2420,8 +2411,8 @@ private theorem inversionGame_succProbability_eq (g : List Bool → List Bool) {
         (((ProbComp.eval (adversary k (List.ofFn (f x₀)))).map
           (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal := by
   rw [Game.coe_succProbability]
-  simp only [inversionGame, ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure,
-    BitString.uniformList, PMF.bind_map, Function.comp_def, PMF.bind_apply_toReal, beq_eq_decide]
+  simp only [pmf_norm, inversionGame, BitString.eval_sampleList, BitString.uniformList,
+    PMF.bind_apply_toReal, beq_eq_decide]
   refine Finset.sum_congr rfl fun x₀ _ => ?_
   rw [hf x₀]
   rfl
@@ -2574,7 +2565,7 @@ private theorem bind_comm_five_inner_map {α₀ α₁ α₂ α₃ α₄ α₅ β
     (p₀.bind fun a₀ => (q a₀).map (v a₀)).bind fun b =>
       p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ =>
         p₄.bind fun a₄ => p₅.map fun a₅ => H a₁ a₂ a₃ a₄ a₅ b := by
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm]
   have hinner (a₀ : α₀) :=
     bind_five_comm_sixth p₁ p₂ p₃ p₄ p₅ (q a₀)
       (fun a₁ a₂ a₃ a₄ a₅ a₆ => H a₁ a₂ a₃ a₄ a₅ (v a₀ a₆))
@@ -2673,7 +2664,7 @@ private theorem bind_fiberHybridAcceptDist_zero_eq {k imgLen_k : ℕ}
       (evalCore evaluate pol n padLen m coinLen) := by
   rw [bind_fiberHybridAcceptDist_eq]
   unfold coreLHLDist evalCore
-  simp only [Nat.sub_zero, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, Nat.sub_zero]
   congr 1; funext x
   have h1_eq : BitString.uniformList (k * imgLen_k) =
       (PMF.uniformOfFintype (BitString (k * imgLen_k))).map List.ofFn := rfl
@@ -2728,7 +2719,7 @@ private theorem unifCoreDist_bind_evalCore_eq (k imgLen_k m1 m2 c2 : ℕ)
             (evaluate (n, prefix_word ++ z_tail) coins) ^^ pol := by
     unfold unifCoreDist evalCore
     rw [hpad]
-    simp only [PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm]
     exact bind_four_comm_fifth_bind _ _ _ _ _ _
   rw [hstep1, uniformOfFintype_five_append]
   have hadd :
@@ -2745,7 +2736,7 @@ private theorem unifCoreDist_bind_evalCore_eq (k imgLen_k m1 m2 c2 : ℕ)
         (BitString.uniformList m).map fun z_tail => prefix_word ++ z_tail).bind fun y =>
           (BitString.uniformList coinLen).map fun coins =>
             (evaluate (n, y) coins) ^^ pol := by
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm]
   rw [hbind, hadd]
 
 private theorem bind_map_comm {α β γ : Type*} (pa : PMF α) (pb : PMF β) (f : α → β → γ) :
@@ -2769,7 +2760,7 @@ private theorem bind_top_four_eq {α₀ α₁ α₂ α₃ α₄ β : Type*}
     (p₀.bind fun a₀ => p₂.bind fun a₂ => p₃.bind fun a₃ => p₁.map fun a₁ =>
       v_seed a₀ a₂ a₃ a₁).bind (fun seed => p₄.map fun a₄ => F₂ seed a₄) := by
   subst hu₁; subst hu₂; subst hz₀
-  simp only [PMF.pure_bind, PMF.bind_map, PMF.bind_bind, Function.comp_def]
+  simp only [pmf_norm]
   congr 1; funext a₀
   rw [PMF.bind_comm p₁ p₂]
   congr 1; funext a₂

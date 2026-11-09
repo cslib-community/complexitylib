@@ -188,13 +188,11 @@ theorem generate_distribution (count seedBits bound observationBits labelBits re
     (run coins (tape.take (remainingBits * (count * seedBits)))
       ((tape.drop (remainingBits * (count * seedBits))).take (labelBits * count))
       ((tape.drop (remainingBits * (count * seedBits))).drop (labelBits * count))))]
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   rw [uniformList_bind_split (remainingBits * (count * seedBits)) _
     (fun lastKey tape => PMF.pure
       (run coins lastKey (tape.take (labelBits * count)) (tape.drop (labelBits * count))))]
-  congr 1
-  funext lastKey
+  congr 1 with lastKey : 1
   exact uniformList_bind_split (labelBits * count) _
     (fun middleKey firstKey => PMF.pure (run coins lastKey middleKey firstKey))
 
@@ -241,8 +239,7 @@ theorem eval_generate (count seedBits bound observationBits labelBits remainingB
     ProbComp.eval_replicate_of_uniformList count seedBits _ (fun seed => (evaluate seed, seed))
       (by simp only [bind_pure_comp, ProbComp.eval_map, BitString.eval_sampleList])]
   simp only [PMF.bind_map, Function.comp_def]
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   symm
   apply eval_hashSamples
   · simp only [List.length_map, length_listRows]
