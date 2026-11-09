@@ -700,10 +700,10 @@ Tiny exhaustive query oracles are tests only; production certificates use the pr
 The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions remain open. Of the six
 Corollary 7.4 predicates, independent-domination counting with size bounds and kernel counting/
 decision are covered here. The continuations below cover Perfect Matching Cut and Dominating
-Induced Matching and signed-threshold Maximum Induced Matching; upper domination remains open.
+Induced Matching, signed-threshold Maximum Induced Matching and Upper Dominating Set.
 Maximum Induced Matching's optimum/witness extraction and Corollary 7.5's complete distribution
-appear below. The other predicates' full witness/optimum composition and Proposition 7.6's actual
-set–marking versus set-count constructions remain open. These graph milestones do not complete
+appear below. The other predicates' full witness/optimum composition and Proposition 7.6's
+unique-mark original-set variants remain open. These graph milestones do not complete
 ALL-main.
 
 ### Perfect matching cuts with labeled sides
@@ -759,10 +759,10 @@ Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed labeled degree m
 bounds remain open. Of the six Corollary 7.4 predicates, independent-domination counting with size
 bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
 The continuations below cover dominating induced matching and signed-threshold Maximum Induced
-Matching, its complete optimum/witness recovery and Corollary 7.5's full distribution. Upper
-domination, other predicates' full witness/optimum recovery and Proposition 7.6's marking/set-count
-constructions remain open. This concrete bipartition endpoint does not complete the general
-partition theorem or ALL-main.
+Matching, its complete optimum/witness recovery, Corollary 7.5's full distribution and Upper
+Dominating Set decision. Other predicates' full witness/optimum recovery and Proposition 7.6's
+unique-mark original-set refinements remain open. This concrete bipartition endpoint does not
+complete the general partition theorem or ALL-main.
 
 ### Dominating induced matchings with exact edge-domination counts
 
@@ -817,11 +817,11 @@ only; production uses the instantiated proved sharp counter.
 Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed degree-matrix frontend remain open.
 For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
 decision for kernels, perfect matching cuts and dominating induced matchings.
-The continuation below supplies signed-threshold Maximum Induced Matching. Upper domination and
-complete witness/optimum composition for the other graph predicates remain open. Corollary 7.5's
-unrestricted matching bijection, total counts and full size distribution are covered below.
-Proposition 7.6 still needs its distinct set–marking versus original-set constructions. ALL-main
-remains open.
+The continuations below supply signed-threshold Maximum Induced Matching and Upper Dominating
+Set decision. Complete witness/optimum composition for the other graph predicates remains open.
+Corollary 7.5's unrestricted matching bijection, total counts and full size distribution are covered below.
+Proposition 7.6's unique-mark original-set refinements remain open; its initial set–marking
+construction is supplied below. ALL-main remains open.
 
 ### Maximum induced matching with a varying binary threshold
 
@@ -868,7 +868,8 @@ This closes the signed-threshold counting/decision specialization; the continuat
 its optimum value and witness. Threshold zero gives Corollary 7.5's unrestricted total count, using
 the functional size circuit rather than that corollary's sharper no-size-test query budget. Witness/optimum extraction for the other graph predicates and
 general Corollary 7.2 sigma-rho rules, Theorem 7.3 labeled degree matrices and Proposition 7.6
-upper-domination constructions remain open. These remaining source endpoints keep ALL-main open.
+unique-mark upper-domination refinements remain open; its initial decision construction appears
+below. These remaining source endpoints keep ALL-main open.
 
 ### Returning the optimum value and an actual maximum induced matching
 
@@ -915,8 +916,8 @@ approved real construction on original selections/unique traces; production inst
 proved sharp native decider. It is not exhaustive matching search.
 
 The other five graph predicates' full witness/optimum composition remains open, together with
-general sigma-rho rules, labeled degree matrices and Upper Dominating Set. The continuation below
-completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
+general sigma-rho rules, labeled degree matrices and the unique-mark Upper Dominating Set
+refinements. The continuation below completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
 clauses keep the paperwide/ALL-main objective open.
 
 ### Total induced matching counts and the complete size distribution
@@ -965,10 +966,55 @@ coefficient sums. A 32-vertex query construction has 63 variables per query with
 that construction test enumerates neither selections nor matchings. Tiny query/trace oracles are
 tests only; production certificates instantiate the approved unrestricted-density native counter.
 
-General sigma-rho rules, labeled degree matrices, Upper Dominating Set and the other graph
-predicates' full witness/optimum composition remain open. Corollary 7.5 is covered under the stated
+General sigma-rho rules, labeled degree matrices, unique-mark Upper Dominating Set refinements
+and the other graph predicates' full witness/optimum composition remain open. Corollary 7.5 is covered under the stated
 encoding; that milestone does not close the paperwide/ALL-main objective or alternative admission/
 succinct-encoding transfers.
+
+### Upper domination through private-neighbor markings
+
+Import `Complexity.Computability.Complexity.FineGrained.UpperDomination`.
+This implements the width-three construction of STOC1575 Proposition 7.6, PDF p.27 and
+Appendix D.3 pp.34–35. The original input is an explicitly framed graph with unary declared
+vertex count and a varying signed binary threshold. For a canonical simple graph $G$ on $v$
+vertices, `exists_decide_realEta_certificate` decides whether an inclusion-minimal dominating
+set has at least $k$ vertices. Minimal means inclusion-minimal, not minimum cardinality.
+The foundation `SimpleGraph.minimal_dominatingSet_iff` characterizes these sets by a private
+closed neighbor for every selected vertex.
+
+The actual constructor adds $v$ marking bits after the $v+a$ functional cardinality wires.
+Domination, at most one selected closed neighbor per marked vertex, and a marked closed neighbor
+for each selected vertex are written explicitly. The signed threshold is capped before unary
+cardinality construction; no rank, reduction, desired runtime or witness is input advice.
+`FunctionalCNF.count_extensions_appended` preserves these free marking bits while eliminating
+the unique gate trace. For positive $v$, the constructor yields two width-three CNF queries on
+exactly $4v+a-1$ variables, with at most $6000v^3$ clauses and $a\le952(v+1)$.
+
+`exists_count_sharp_certificate` counts **set–marking pairs**. An edge has two minimal dominating
+sets but six valid pairs, so this is deliberately not an exact unmarked-set count. Positivity
+is exactly the original Upper Dominating Set decision predicate. The complete native count and
+decision machines charge binary threshold processing, query writing, sequential sharp counting,
+reconstruction and the positivity test. They have time $C(L+1)^e2^{A\eta(v)}$, where
+$\eta(v)=v\log_2\log_2 v/\sqrt{\log_2 v}$ for $v\ge16$, and polynomial peak workspace.
+The rounded certificate includes every smaller size. Global workspace is proved on all raw
+frames; correctness and sharp graph time use the canonical simple-graph promise. This retains
+the existing native word-cost model and is not a new simulation by binary Turing transitions.
+Unused declared vertices are retained. The empty graph accepts exactly $k\le0$.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDomination`.
+The [computed client](../../ComplexityTests/PaperEndpoints/UpperDomination.lean) covers empty and
+edgeless graphs, paths, cycles, complete graphs, adjacent selected vertices, pair multiplicity,
+512-bit positive/negative thresholds, actual query metadata and the real-eta decision certificate.
+Its tiny assignment enumeration is a test oracle; the production machine uses the sharp counter.
+
+This completes Proposition 7.6's initial width-three decision construction and Corollary 7.4's
+Upper Dominating Set decision specialization for the stated encoding. The unique-mark width-four
+original-set counter on $5v+a-1$ query variables and the width-three path-marker refinement on
+$6v+a-1$ variables remain open. Upper-domination optimum/witness extraction also remains open.
+All six Corollary 7.4 decision predicates are now covered in their recorded explicit models;
+only Maximum Induced Matching has its full optimum/witness composition. General Corollary 7.2
+finite/cofinite degree rules, Theorem 7.3 labeled degree partitions, alternative admission/succinct
+encodings and the paper-wide independent audit remain outstanding. These limits keep ALL-main open.
 
 ## Known Limitations
 
@@ -1893,6 +1939,6 @@ and the actual source time/space witness. It also covers zero-variable contradic
 and an unbounded invalid-support family rejected in polynomial charged time at declared size zero.
 
 The sharper source counter and parsed ragged weighted execution are now certified as described
-above. Table closure/equation/separator/overlap construction resources, graph endpoints and
-ALL-main remain open. The source composition is OpenAI2026ETH Appendix D.3, PDF p.57, imported
-by STOC1575 Lemma 3.2 p.11.
+above. The table preprocessing/dispatch endpoints are also covered above. General graph
+degree-rule/partition endpoints and the remaining graph clauses keep ALL-main open. The source
+composition is OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.

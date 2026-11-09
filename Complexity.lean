@@ -819,6 +819,7 @@ public import Complexity.Computability.Circuit.Boolean.Formula.Poly
 public import Complexity.Computability.Circuit.Boolean.Formula.Restriction
 public import Complexity.Computability.Circuit.Boolean.Formula.Subbotovskaya
 public import Complexity.Computability.Circuit.Boolean.FunctionalCNF
+public import Complexity.Computability.Circuit.Boolean.FunctionalCNFContext
 public import Complexity.Computability.Circuit.Boolean.GateElimination
 public import Complexity.Computability.Circuit.Boolean.Gates
 public import Complexity.Computability.Circuit.Boolean.Hamming
@@ -1735,6 +1736,7 @@ public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedu
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
 public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import Complexity.Computability.Complexity.FineGrained.TwoBoundaryFrontend
+public import Complexity.Computability.Complexity.FineGrained.UpperDomination
 public import Complexity.Computability.Complexity.FineGrained.VCOneCountingResources
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingPlan
 public import Complexity.Computability.Complexity.FineGrained.WeightedCountingResources
@@ -2626,6 +2628,7 @@ public import Complexity.Computability.PolyTime.CNF.PerfectMatchingCut
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CNF.TwoBoundaryFrontend
+public import Complexity.Computability.PolyTime.CNF.UpperDomination
 public import Complexity.Computability.PolyTime.CNF.VCOneClosure
 public import Complexity.Computability.PolyTime.CNF.VCOneDispatch
 public import Complexity.Computability.PolyTime.CNF.VCOneFrontend
@@ -3609,6 +3612,7 @@ public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingInducedMatching
+public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import Complexity.Foundations.Combinatorics.SimpleGraph.InducedMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SimpleGraph.PerfectMatchingCut

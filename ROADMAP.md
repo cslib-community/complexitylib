@@ -1334,6 +1334,15 @@ Global workspace is bounded on all raw frames; correctness/sharp time retain the
 unary-declaration promise and existing native resource model. These are actual constructors and a
 complete output algorithm, not only exact-size instances or output-size-as-runtime estimates.
 
+`UpperDomination` now implements Proposition 7.6's initial width-three set–marking-pair
+construction. Functional cardinality traces leave the free marking context unchanged, and
+private-neighbor semantics prove positivity exactly equivalent to a sufficiently large
+inclusion-minimal dominating set. The actual two-query constructor has `4v+a-1` variables,
+width three and cubic clause size. Complete native pair-count and original decision certificates
+have sharp single-loglog time and global polynomial workspace, including signed binary thresholds
+and all empty/small cases. Pair counts retain marking multiplicity; they are not unmarked-set
+counts. This completes the Upper Dominating Set decision specialization in the explicit encoding.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1352,17 +1361,18 @@ Remaining STOC1575 objectives, keeping the original inventory open:
 - Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
   kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
   induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
-  decision are covered for the stated explicit encodings. Upper domination remains open. Complete
-  witness extraction and optimum-threshold recovery are now composed for Maximum Induced Matching;
+  decision, plus Upper Dominating Set decision via private-neighbor marking-pair positivity, are
+  covered for the stated explicit encodings. Complete witness extraction and optimum-threshold recovery are now composed for Maximum Induced Matching;
   the corresponding clauses for the other five decision predicates remain open.
 - Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
   edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
   are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding
   transfers remain separate.
-- Proposition 7.6: upper domination's actual width-three set–marking-pair construction/count
-  (`4v+a-1` variables), and the alternative width-four original-set count (`5v+a-1` variables),
-  remain open. Preserve that count distinction, input thresholds, directed/undirected promises,
-  empty graphs and polynomially many distribution/self-reduction calls.
+- Proposition 7.6: the actual initial width-three set–marking-pair construction/count and decision
+  (`4v+a-1` variables) are covered. The alternative unique-mark width-four original-set counter
+  (`5v+a-1` variables) and width-three path-marker refinement (`6v+a-1` variables) remain open.
+  Preserve the pair/set count distinction, input thresholds, empty graphs and polynomially many
+  distribution/self-reduction calls; Upper optimum/witness composition remains open.
 
 Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; generic DNF,
 independent-domination, kernel, perfect-matching-cut, efficient-edge-domination and maximum-induced-
