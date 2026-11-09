@@ -382,8 +382,7 @@ theorem finMinimum_spec {t : Tree d} (ht : t.Valid) :
     exact not_contains_of_bounds_none hb x.val
   | some b =>
     obtain ⟨m, M⟩ := b
-    have he := ht.extrema
-    simp only [Extrema, hb] at he
+    have he := ht.extrema_of_bounds hb
     have hm : m < universeSize d := ht.contains_lt he.2.2.1
     simp only [finMinimum, minimum, hb, Option.map_some, dite_eq_left hm, LeastResult,
       mem_finElements_iff ht]
