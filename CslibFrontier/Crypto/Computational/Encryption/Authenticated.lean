@@ -2963,8 +2963,7 @@ private theorem eval_ciGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher) (c
   rw [ProbOracleComp.runWith_run_interpret]
   simp only [PMF.bind_map, Function.comp_def]
   congr 1
-  congr 2
-  funext request state
+  congr 2 with request state : 2
   change (ProbOracleComp.runWith (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s))
       (ccaToCIHandler n (ctBound n) bit request state.1) state.2).map
     (fun result => (result.1.1, result.1.2, result.2)) =
@@ -3233,8 +3232,7 @@ theorem eval_ciGame_ccaToCIHiddenBitAdversary (E : SymmetricCipher) (ctBound Q :
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
       BitString.eval_sampleList, BitString.uniformList_succ 0, BitString.uniformList_zero]
     simp only [PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
-    congr 1
-    funext bit
+    congr 1 with bit : 1
     cases bit <;> rfl
   simp only [hsample]
   exact PMF.bind_comm _ _ _
@@ -3998,8 +3996,7 @@ private theorem eval_ciOneTimeGame_ccaToCIAtIndexAdversary_key (E : SymmetricCip
   rw [ProbOracleComp.runWith_run_interpret]
   simp only [PMF.bind_map, Function.comp_def]
   congr 1
-  congr 2
-  funext request state
+  congr 2 with request state : 2
   change (ProbOracleComp.runWith (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s))
       (ccaToCIHandler n (ctBound n) bit request state.1) state.2).map
     (fun result => (result.1.1, result.1.2, result.2)) =
@@ -4290,8 +4287,7 @@ theorem eval_ciOneTimeGame_ccaToCIHiddenBitAdversary (E : SymmetricCipher) (ctBo
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
       BitString.eval_sampleList, BitString.uniformList_succ 0, BitString.uniformList_zero]
     simp only [PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
-    congr 1
-    funext bit
+    congr 1 with bit : 1
     cases bit <;> rfl
   simp only [hsample]
   exact PMF.bind_comm _ _ _
