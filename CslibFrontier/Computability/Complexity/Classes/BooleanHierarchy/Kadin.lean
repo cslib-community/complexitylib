@@ -569,6 +569,11 @@ private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
 
 /-! ### Downward induction along the Boolean hierarchy -/
 
+/-- A word of length `k + l` splits as a word of length `k` followed by a word of length `l`. -/
+private theorem exists_append_of_length_eq_add {w : List Bool} {k l : ℕ}
+    (h : w.length = k + l) : ∃ y z, y.length = k ∧ z.length = l ∧ w = y ++ z :=
+  ⟨w.take k, w.drop k, by simp [h], by simp [h], (List.take_append_drop _ _).symm⟩
+
 section KadinInduction
 
 variable (enc) (p₁ p₂ m : Polynomial ℕ) (E : Set (α × List Bool))
@@ -627,12 +632,7 @@ private theorem kadinSoundD_succ {r d : ℕ} {U D D₁ : Set (α × List Bool)}
   intro a s w hs hw hwE hmem
   have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
     simpa [add_smul, one_smul, Nat.add_comm] using hw
-  let y := w.take (m.eval (enc a).length)
-  let z := w.drop (m.eval (enc a).length)
-  have hy : y.length = m.eval (enc a).length := by simp [y, hw']
-  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
-  have hsplit : y ++ z = w := List.take_append_drop _ _
-  rw [← hsplit] at hwE hmem
+  obtain ⟨y, z, hy, hz, rfl⟩ := exists_append_of_length_eq_add hw'
   obtain ⟨_, hzE⟩ := (mem_allWordsIn_succ_append hy).1 hwE
   exact (kadinStrongSoundD₁ enc m E hD₁UD hSoundDiff a s y z hs hy hz hzE hmem).2
 
@@ -643,12 +643,7 @@ private theorem kadinSoundDiff_succ {r d : ℕ} {D B D₁ : Set (α × List Bool
   intro a s w hs hw hwE hmem
   have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
     simpa [add_smul, one_smul, Nat.add_comm] using hw
-  let y := w.take (m.eval (enc a).length)
-  let z := w.drop (m.eval (enc a).length)
-  have hy : y.length = m.eval (enc a).length := by simp [y, hw']
-  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
-  have hsplit : y ++ z = w := List.take_append_drop _ _
-  rw [← hsplit] at hwE hmem
+  obtain ⟨y, z, hy, hz, rfl⟩ := exists_append_of_length_eq_add hw'
   obtain ⟨hyE, hzE⟩ := (mem_allWordsIn_succ_append hy).1 hwE
   have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
     simp [hs, hy, add_smul, one_smul]
@@ -702,16 +697,12 @@ private theorem kadinComp_of_not_exists_kadinIsHard {r d : ℕ} {U D D₁ : Set 
   obtain ⟨w, hw, hwE, hmemD₁⟩ := hnotHard
   have hw' : w.length = m.eval (enc a).length + (d • m).eval (enc a).length := by
     simpa [add_smul, one_smul] using hw
-  let y := w.take (m.eval (enc a).length)
-  let z := w.drop (m.eval (enc a).length)
-  have hy : y.length = m.eval (enc a).length := by simp [y, hw']
-  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw']
-  have hsplit : y ++ z = w := List.take_append_drop _ _
-  rw [← hsplit] at hmemD₁
+  obtain ⟨y, z, hy, hz, rfl⟩ := exists_append_of_length_eq_add hw'
+  rw [List.drop_left' hy] at hwE
   have hyE : (a, y) ∈ E := (kadinStrongSoundD₁ enc m E hD₁UD hSoundDiff a s y z hs hy hz hwE
     hmemD₁).1
-  refine ⟨w, by simpa [add_smul, one_smul, Nat.add_comm] using hw, ?_, by rwa [← hsplit]⟩
-  rw [← hsplit, mem_allWordsIn_succ_append hy]
+  refine ⟨y ++ z, by simpa [add_smul, one_smul, Nat.add_comm] using hw, ?_, hmemD₁⟩
+  rw [mem_allWordsIn_succ_append hy]
   exact ⟨hyE, hwE⟩
 
 private theorem exists_kadin_sigmaP_three (hm : m = p₁ + p₂)

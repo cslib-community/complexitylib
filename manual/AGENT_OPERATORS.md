@@ -111,6 +111,11 @@ coordinator acting for them, who records the push. Existing approval carries for
 `scripts/check_restack.py` passes and CI passes at the new head, as
 [Restacks](../AGENTS.md#restacks) describes.
 
+When several coordinators share one host, give them a single limit on concurrent Lean builds,
+not only a thread count. Their builds can exhaust the kernel's file handles before its
+processors, and then everyone's builds fail
+([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.
 Coordinators check both against the final change. A reasoned finding of no impact is valid;

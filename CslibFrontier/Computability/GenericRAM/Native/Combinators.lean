@@ -434,6 +434,9 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
   have hbodyS : PolyBounded (fun a => (ei a).length)
       (fun a => cs * (2 * (ei a).length + (encOption eb (value a)).length + 1) ^ ds) :=
     polyBounded_pow_of_polyBounded hlen cs ds
+  have hpair (a : α) (b : β) : (encPair ei eb (a, b)).length =
+      2 * (ei a).length + (encOption eb (Option.some b)).length := by
+    simp; omega
   refine ⟨((((PolyBounded.const 2).mul hc.1).add .self).add (hno.1.add hbodyT)).mono fun a => ?_,
     ((((PolyBounded.const 2).mul hc.2).add .self).add (hno.2.add hbodyS)).mono fun a => ?_⟩
   · simp only [option_time]
@@ -441,9 +444,6 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
     | none => simp
     | some b =>
       have hb := hyt (a, b)
-      have hpair : (encPair ei eb (a, b)).length =
-          2 * (ei a).length + (encOption eb (Option.some b)).length := by
-        simp; omega
       rw [hpair] at hb
       simp only [Option.elim_some]
       omega
@@ -452,9 +452,6 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
     | none => simp
     | some b =>
       have hb := hys (a, b)
-      have hpair : (encPair ei eb (a, b)).length =
-          2 * (ei a).length + (encOption eb (Option.some b)).length := by
-        simp; omega
       rw [hpair] at hb
       simp only [Option.elim_some]
       omega

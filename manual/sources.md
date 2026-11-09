@@ -835,7 +835,7 @@ Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Dif
 <a id="ks08"></a>
 ## ks08
 
-Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
+Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, Lecture Notes in Computer Science 5126, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
 
 <a id="lamportshostakpease1982"></a>
 ## lamportshostakpease1982
@@ -1336,3 +1336,8 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 ## zivlempel78
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
+
+<a id="zre15"></a>
+## zre15
+
+Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.

@@ -620,7 +620,7 @@ theorem Simulation.length_encConfig_le {N d : ℕ} {s : Config} (hl : s.1 ≤ P.
     (Simulation.encConfig s).length ≤
       (2 * (encNat P.maxLabel).length + 1 + P.registers * (2 * d + 3)) * (Nat.log2 N + 1) := by
   have hL : 1 ≤ Nat.log2 N + 1 := Nat.le_add_left _ _
-  have hlab := ComputableTidilyInO.length_encNat_mono hl
+  have hlab := length_encNat_mono hl
   have hregs :
       (encList encNat s.2).length ≤ P.registers * (2 * (d + 1) * (Nat.log2 N + 1) + 1) := by
     rw [length_encList, ← hn]

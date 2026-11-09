@@ -220,14 +220,6 @@ theorem length_unframe_le : ∀ w : List Bool, (unframe w).length ≤ w.length
 
 /-! ### Frames followed by a word -/
 
-private theorem length_flatMap_pair (w : List Bool) :
-    (w.flatMap fun b => [true, b]).length = 2 * w.length := by
-  induction w with
-  | nil => rfl
-  | cons b w ih =>
-    simp only [List.flatMap_cons, List.length_append, ih, List.length_cons, List.length_nil]
-    omega
-
 /-- A frame split at a symbol. -/
 theorem frame_append_cons (w v : List Bool) (c : Bool) :
     frame (w ++ c :: v) = (w.flatMap fun b => [true, b]) ++ true :: c :: frame v := by

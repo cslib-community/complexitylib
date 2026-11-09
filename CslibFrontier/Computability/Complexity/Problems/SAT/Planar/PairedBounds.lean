@@ -100,17 +100,6 @@ private theorem cellBound_clause {φ : CNF ℕ} {i : ℕ} (hi : i < φ.length) :
   simp only [CellBound, Layout.center, Nat.cast_add]
   omega
 
-private theorem crossover_variable_bounds : ∀ v,
-    20 ≤ (PairedCrossover.variablePosition v).1 ∧ (PairedCrossover.variablePosition v).1 ≤ 220 ∧
-      20 ≤ (PairedCrossover.variablePosition v).2 ∧ (PairedCrossover.variablePosition v).2 ≤ 220 :=
-  by decide +kernel
-
-private theorem crossover_clause_bounds : ∀ p ∈ PairedCrossover.clausePositions,
-    20 ≤ p.1 ∧ p.1 ≤ 220 ∧ 20 ≤ p.2 ∧ p.2 ≤ 220 := by decide +kernel
-
-private theorem crossover_core_bounds : ∀ e ∈ PairedCrossover.incidenceRoutes, ∀ p ∈ e.2.2,
-    20 ≤ p.1 ∧ p.1 ≤ 220 ∧ 20 ≤ p.2 ∧ p.2 ≤ 220 := by decide +kernel
-
 private theorem outputBound_variable {φ : CNF ℕ} {v : Variable} (hv : CellBound φ v.1) :
     OutputBound φ (variablePosition v) := by
   apply outputBound_add hv
@@ -120,7 +109,7 @@ private theorem outputBound_variable {φ : CNF ℕ} {v : Variable} (hv : CellBou
     simp only [Sum.elim_inl]
     omega
   | inr w =>
-    have hw := crossover_variable_bounds w
+    have hw := PairedCrossover.variable_bounds w
     simp only [Sum.elim_inr]
     omega
 
@@ -223,7 +212,7 @@ private theorem crossingClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < PairedCrossover.clausePositions.length := by
       rw [show PairedCrossover.clausePositions.length = 78 by decide +kernel]
       exact (PairedCrossover.length_formula ▸ (List.mem_zipIdx' hci).1)
-    have hb := crossover_clause_bounds _ (List.getElem_mem hi)
+    have hb := PairedCrossover.clause_bounds _ (List.getElem_mem hi)
     rw [List.getD_eq_getElem _ _ hi]
     omega
   · intro l hl
@@ -234,7 +223,7 @@ private theorem crossingClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     obtain ⟨b, hb, rfl⟩ := List.mem_map.mp ha
     rw [add_comm]
     apply outputBound_add hp
-    have h := crossover_core_bounds e (List.mem_filter.mp he).1 b hb
+    have h := PairedCrossover.core_bounds e (List.mem_filter.mp he).1 b hb
     omega
 
 

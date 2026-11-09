@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 
 /-!
@@ -839,14 +840,6 @@ end MIP
 
 /-! ### The unconditional upper bounds `MIP ⊆ NEXP` and `MIP₂ ⊆ NEXP` -/
 
-private theorem natCast_div_le_natCast_div_iff {a b c d : ℕ} (hb : b ≠ 0) (hd : d ≠ 0) :
-    (a : ℝ≥0∞) / b ≤ c / d ↔ a * d ≤ b * c := by
-  rw [ENNReal.div_le_iff_le_mul (Or.inl (by exact_mod_cast hb)) (Or.inl (ENNReal.natCast_ne_top _)),
-    ← ENNReal.mul_div_right_comm, ENNReal.le_div_iff_mul_le (Or.inl (by exact_mod_cast hd))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-  rw [mul_comm (c : ℝ≥0∞)]
-  exact_mod_cast Iff.rfl
-
 variable {α : Type} (enc : α ↪ List Bool)
 
 /-- **`MIP ⊆ NEXP`** [Babai, Fortnow and Lund][BabaiFortnowLund1991],
@@ -919,7 +912,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
           _ = (goodCard : ℝ≥0∞) / (2 ^ t : ℕ) := by
                 rw [hsumD, ENNReal.div_eq_inv_mul, hcast]
       rw [show (2 / 3 : ℝ≥0∞) = ((2 : ℕ) : ℝ≥0∞) / ((3 : ℕ) : ℝ≥0∞) by norm_num,
-        natCast_div_le_natCast_div_iff (by norm_num) hpos] at hineq
+        ENNReal.natCast_div_le_natCast_div_iff (by norm_num) hpos] at hineq
       have hpow_pos := Nat.one_le_two_pow (n := t)
       have hlt_card : 2 ^ t < 2 * goodCard := by lia
       obtain ⟨cert, hcheck, hlen⟩ := MIP.exists_checkCert_of_detProver M x D hlt_card
@@ -954,7 +947,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
                 haccD.symm
           _ ≤ 1 / 3 := hsound
       rw [show (1 / 3 : ℝ≥0∞) = ((1 : ℕ) : ℝ≥0∞) / ((3 : ℕ) : ℝ≥0∞) by norm_num,
-        natCast_div_le_natCast_div_iff hpos (by norm_num)] at hineq
+        ENNReal.natCast_div_le_natCast_div_iff hpos (by norm_num)] at hineq
       lia
   rw [hpre]
   exact preimage_pad_mem_NEXP hNP hf hn

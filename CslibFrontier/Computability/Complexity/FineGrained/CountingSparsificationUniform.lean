@@ -49,6 +49,7 @@ namespace Cslib.Complexity.CountingSparsify
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
 open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff normalizeDeclaredLeaf)
+open Sparsify (rounds length_encNat_rounds)
 
 variable {P : Type} {encP : P ↪ List Bool}
 
@@ -138,8 +139,7 @@ private theorem rounds_length_polyBounded (BOf : P → ℕ) :
     PolyBounded (fun x : P × CNF ℕ => (encPair encP encCNF x).length)
       (fun x => (encNat (rounds (BOf x.1) x.2)).length) := by
   refine (input_numVars.add (.const 3)).mono fun x => ?_
-  rw [rounds, CNF.length_distinctVars, encNat_two_pow, List.length_append,
-    List.length_replicate, List.length_singleton]
+  rw [length_encNat_rounds]
   have := Nat.div_le_self x.2.numVars (BOf x.1)
   omega
 

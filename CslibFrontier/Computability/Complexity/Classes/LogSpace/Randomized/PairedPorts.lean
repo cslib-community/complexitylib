@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.Randomized
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.PairedPorts
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts.LogSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.CounterBounds
+import CslibFrontier.Foundations.Data.List.IdxOf
 
 /-!
 # Paired-port time-layered reduction for randomized logarithmic space
@@ -90,16 +91,6 @@ private theorem mem_of_map_val_iff {N : ℕ} {l : List (Fin N)} {lNat : List ℕ
     exact ⟨x, hx, rfl⟩
   · rintro ⟨y, hy, hyx⟩
     exact Fin.ext hyx ▸ hy
-
-private theorem idxOf_eq_idxOf_map_val {N : ℕ} :
-    ∀ (l : List (Fin N)) (x : Fin N), (l.map Fin.val).idxOf x.val = l.idxOf x
-  | [], _ => rfl
-  | y :: ys, x => by
-    have hbeq : (y.val == x.val) = (y == x) := by simp [Fin.ext_iff]
-    simp only [List.map_cons, List.idxOf_cons, hbeq]
-    split_ifs
-    · rfl
-    · exact congrArg Nat.succ (idxOf_eq_idxOf_map_val ys x)
 
 end ListFinHelpers
 
@@ -221,7 +212,7 @@ theorem compactPairedPorts_outPort_val (machine : MultiTapePTM k Bool State)
       exact ⟨hg, rfl⟩
     rw [hsome, Option.map_some]
     dsimp only [q]
-    rw [← idxOf_eq_idxOf_map_val, map_val_compactInSources]
+    rw [← List.idxOf_map_of_injective Fin.val_injective, map_val_compactInSources]
 
 /-- Natural-number value of `(compactPairedPorts machine R B w).inPort v q`. -/
 theorem compactPairedPorts_inPort_val (machine : MultiTapePTM k Bool State)
@@ -259,7 +250,7 @@ theorem compactPairedPorts_inPort_val (machine : MultiTapePTM k Bool State)
       exact ⟨hg, rfl⟩
     rw [hsome, Option.map_some]
     dsimp only [p]
-    rw [← idxOf_eq_idxOf_map_val, map_val_compactOutTargets]
+    rw [← List.idxOf_map_of_injective Fin.val_injective, map_val_compactOutTargets]
 
 /-- Outgoing port weight of `compactPairedPorts` in terms of `coinCountWithSymbol`. -/
 theorem compactPairedPorts_outWeight (machine : MultiTapePTM k Bool State)

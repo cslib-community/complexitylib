@@ -52,8 +52,7 @@ theorem Graph.length_encoding (g : Graph C) :
   change (encPair encUnary (encList (Edge.encoding enc)) (g.vertices, g.edges)).length = _
   simp only [length_encPair, encUnary_apply, List.length_replicate, length_encList,
     Edge.length_encoding]
-  congr 3
-  funext edge
+  congr 3 with edge : 1
   ring
 
 /-- Endpoint bounds give a full encoded-size bound for arbitrary bounded descriptors. -/
