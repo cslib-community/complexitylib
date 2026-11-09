@@ -198,8 +198,7 @@ theorem derivableInSize_toFormula_resolvent (c₁ c₂ : Clause V) (v : V) :
   have h3 := g₇.length_of_nil
   have hab : a + b ≤ 2 * max a b := by omega
   calc L₃.length ≤ 10 * (Δ.length + 1) * M₂.length := h3
-    _ ≤ 10 * (a + b + 1) * (40 * a + 2 * b + 23) :=
-      Nat.mul_le_mul (Nat.mul_le_mul_left _ (by omega)) hM₂len
+    _ ≤ 10 * (a + b + 1) * (40 * a + 2 * b + 23) := by gcongr
     _ ≤ stepBound (max a b) := by
       unfold stepBound
       exact Nat.mul_le_mul (Nat.mul_le_mul_left _ (by omega)) (by omega)

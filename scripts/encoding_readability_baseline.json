@@ -90,28 +90,6 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/PolyTime.lean": {
   "encPair eDesc (encPair (encList encUnary) encUnary)": 3
  },
- "Complexity/Computability/PCP/Approximation/BinPacking.lean": {
-  "encList (encList encNat)": 3,
-  "encPair (encList encNat) encNat": 3
- },
- "Complexity/Computability/PCP/Encoded/Composition.lean": {
-  "encPair (encPi (encPi encBool)) (encPair ?1 ?2)": 3,
-  "encPi (encPi encBool)": 3
- },
- "Complexity/Computability/PCP/Encoded/Constraints.lean": {
-  "encPi (encPi encBool)": 5
- },
- "Complexity/Computability/PCP/Encoded/DegreeReduction.lean": {
-  "encOption (encPair encBool ?1)": 3
- },
- "Complexity/Computability/PCP/Encoded/GenericComposition.lean": {
-  "encPair (encPi (encPi encBool)) (encPair ?1 ?2)": 3,
-  "encPi (encPi encBool)": 3
- },
- "Complexity/Computability/PCP/Encoded/ThreeSAT.lean": {
-  "encList (encPair encUnary encBool)": 3,
-  "encPi (encPi encBool)": 3
- },
  "Complexity/Computability/Probabilistic/Memoize.lean": {
   "encList (encPair ?1 ?2)": 4
  },

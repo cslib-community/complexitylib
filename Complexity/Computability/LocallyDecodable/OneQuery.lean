@@ -305,11 +305,9 @@ theorem IsSmoothDecoder.four_mul_card_mul_sq_le [DecidableEq P] [Nonempty Γ]
       nlinarith [sq_nonneg c]
     · -- Square the bound and divide by `K`.
       have hsq : (2 * K * ε) ^ 2 ≤ c ^ 2 * B := by
-        have h1 : (2 * K * ε) ^ 2 ≤ (c / n * X) ^ 2 :=
-          pow_le_pow_left₀ (by positivity) hsum 2
+        have h1 : (2 * K * ε) ^ 2 ≤ (c / n * X) ^ 2 := by gcongr
         have h2 : (c / n * X) ^ 2 = c ^ 2 / n ^ 2 * X ^ 2 := by ring
-        have h3 : c ^ 2 / n ^ 2 * X ^ 2 ≤ c ^ 2 / n ^ 2 * (n ^ 2 * B) :=
-          mul_le_mul_of_nonneg_left hXsq (by positivity)
+        have h3 : c ^ 2 / n ^ 2 * X ^ 2 ≤ c ^ 2 / n ^ 2 * (n ^ 2 * B) := by gcongr
         have h4 : c ^ 2 / n ^ 2 * (n ^ 2 * B) = c ^ 2 * B := by
           field_simp [hn.ne']
         linarith

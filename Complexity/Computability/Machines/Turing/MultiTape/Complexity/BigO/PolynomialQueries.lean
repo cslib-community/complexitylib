@@ -105,8 +105,7 @@ theorem polynomial_queries {answer : α × β → γ} {queries : α → List β}
         T x * U x := by
       calc _ ≤ L x + L x + cq.time x +
             (Q x + 1) * (L x + Q x + O x + T x * B x ^ e) := by
-              exact Nat.add_le_add_left (Nat.mul_le_mul (by omega)
-                (Nat.add_le_add_left hmax _)) _
+              gcongr
         _ ≤ T x * (L x + L x + cq.time x) +
             (Q x + 1) * (T x * (L x + Q x + O x + B x ^ e)) :=
               Nat.add_le_add hfirst (Nat.mul_le_mul_left _ hbody)
