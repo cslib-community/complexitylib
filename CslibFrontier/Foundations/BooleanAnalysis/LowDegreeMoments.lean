@@ -293,8 +293,7 @@ theorem exp_neg_two_mul_div_four_le_dens_lt {k : ℕ} {f : (ι → Bool) → ℝ
   have h1 : m ≤ 4 * Real.exp (2 * k) * (D * m) := by
     calc m ≤ (Real.exp k * (2 * 𝔼 x, E x * g x)) ^ 2 := hsq
       _ = 4 * Real.exp (2 * k) * (𝔼 x, E x * g x) ^ 2 := by rw [hX]; ring
-      _ ≤ 4 * Real.exp (2 * k) * (D * m) :=
-        mul_le_mul_of_nonneg_left hcs (by positivity)
+      _ ≤ 4 * Real.exp (2 * k) * (D * m) := by gcongr
   have h2 : 1 ≤ 4 * Real.exp (2 * k) * D := by
     by_contra hlt
     push Not at hlt

@@ -339,8 +339,7 @@ theorem image_TQBF_mem_PSPACE : encQBF '' TQBF ∈ PSPACE encBits := by
         (w.length + (encQBF .bot).length + 1) ^ e + w.length)) (fun _ => le_rfl) fun w => ?_) ?_
     fun w => ?_
   · have hlen : (encQBF (decodeQBF w)).length ≤ w.length + (encQBF .bot).length := by
-      rw [encQBF_decodeQBF]
-      split_ifs <;> simp
+      grind [encQBF_decodeQBF]
     have := Nat.pow_le_pow_left (Nat.add_le_add_right hlen 1) e
     simp only [encBits_apply]
     split_ifs <;> omega

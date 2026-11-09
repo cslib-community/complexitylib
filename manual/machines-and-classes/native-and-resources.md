@@ -127,13 +127,22 @@ proofs use this rule to transport witness families through the same deterministi
 
 Import
 [`ResourceBounds.Polynomial.Automation`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
-and use `growth_poly` for `Turing.MultiTapeTM.PolyBounded size cost`. Local certificates supply
-the leaves; constants, the original size, sums, products, fixed powers, natural logarithms and
-square roots compose. Existing `Cslib.PolynomiallyBounded` goals use their `fun_prop` rules.
-For substitution, apply `PolyBounded.comp` with the outer certificate and run `growth_poly`
-on the inner size expression. This keeps the intermediate measure explicit.
+and use `growth_poly` for `Turing.MultiTapeTM.PolyBounded size cost`. Constants, the original
+size, sums, products, fixed powers, natural logarithms, square roots, `max`, truncated
+subtraction and division compose. The leaves come from the local context: `PolyBounded` facts,
+also inside conjunctions and definitions such as a native certificate's `IsPolynomial`;
+certificates such as `ComputableInPolyTime f encIn encOut`, through the bound on their encoded
+output (with `encUnary` output, on the value itself); and `Cslib.PolynomiallyBounded` functions
+applied to a bounded argument. Local `let` values and arithmetic definitions are unfolded, and
+`growth_poly [h]` adds a fact that is not in the context. Existing `Cslib.PolynomiallyBounded`
+goals use their `fun_prop` rules.
 
-The tactic closes a polynomial-growth goal or fails. Exponentials, variable exponents and
+Substitution keeps the intermediate measure explicit. With an outer bound
+`hv : PolyBounded size' v` in the context, `growth_poly` bounds `v (g a)` by asking for the inner
+size, `PolyBounded size (fun a => size' (g a))`; it never guesses `size'`.
+
+The tactic follows the syntax of the bound without backtracking: it closes a polynomial-growth
+goal or fails at once, naming the term it could not bound. Exponentials, variable exponents and
 factorials need independent bounds and are rejected by the
 [ordinary-import examples](../../CslibFrontierTests/PolynomialGrowth.lean). Exact instruction
 allowances, encoded-output bounds and physical word fits remain separate obligations; a coarse

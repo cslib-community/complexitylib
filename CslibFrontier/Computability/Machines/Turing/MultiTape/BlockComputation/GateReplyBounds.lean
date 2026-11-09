@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.GateReplyCorrect
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorBounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorGate
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 
 /-!
@@ -17,7 +18,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 Every physical clock of the addressed gate reply is charged, including all native interpolation
 and replay clocks. The prepared point and metadata occur only a constant number of times; only
 the binary field-element width is multiplied by the number of output coordinates. Immediate
-source replies use the same field-width allowance, without a gate-supplier premise.
+source replies use the same field-width allowance, without a gate-supplier premise. The
+correctness statements without the space bound (`exists_runFrom_nodeAt`,
+`exists_runFrom_nodeAt_padded`) are read off from the bounded ones.
 -/
 
 public section
@@ -213,6 +216,55 @@ theorem exists_runFrom_nodeAt_padded_bounded {k q s p r m : ℕ} {Q : Type}
       ∀ t ≤ T, (encState ((machine M e).runFrom w (initial M e args) t)).length ≤
         allowance k s Q args := by
   exact exists_runFrom_nodeAt_bounded M e w b σ path x _
+    (NormalizePoint.normalize_ofFn (Fact.out : p.Prime).pos (blocksEquiv.symm x))
+    hcapacity hb hm hsp h hh
+
+/-- Any explicitly stored point reducing to the canonical typed point gives the existing tree's
+requested gate update. The only hypotheses on storage concern its actual representation. This is
+`exists_runFrom_nodeAt_bounded` without the space bound. -/
+theorem exists_runFrom_nodeAt {k q s p r m : ℕ} {Q : Type} [Finite Q] [Fact p.Prime]
+    (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
+    (b : ℕ) [NeZero b] (σ : ℕ) (path : List (Fin (k * 3 + 1)))
+    (x : Fin (k * 3 + 1) → Fin r → ZMod p) (point : List ℕ)
+    (hpoint : NormalizePoint.normalize p point =
+      List.ofFn (fun a : Fin ((k * 3 + 1) * r) => (blocksEquiv.symm x a).val))
+    (hcapacity : r ≤ ((2 ^ m) ^ ((k * 3 + 1) * r)).size)
+    (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (hsp : 2 ^ m ≤ p)
+    (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
+    let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+      (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
+    let args : Args := ((σ, q, path.map Fin.val), params)
+    ∃ T values, (machine M e).halted ((machine M e).runFrom w (initial M e args) T) = true ∧
+      answer ((machine M e).runFrom w (initial M e args) T) = (0, values) ∧
+      ∀ j : Fin r, (values.getD j.val 0 : ZMod p) =
+        match (encodedTree (MultiTapePTM.ofDeterministic M) w b
+          (scheduleOfNat k q σ) e).nodeAt path with
+        | .gate f => Packed.gateExtension h (Packed.packBits hb) (Packed.unpackBits hb) f x j
+        | _ => 0 := by
+  obtain ⟨T, values, hhalt, hanswer, hvalues, -⟩ :=
+    exists_runFrom_nodeAt_bounded M e w b σ path x point hpoint hcapacity hb hm hsp h hh
+  exact ⟨T, values, hhalt, hanswer, hvalues⟩
+
+/-- The actual modulus-padded register representation discharges normalization internally. -/
+theorem exists_runFrom_nodeAt_padded {k q s p r m : ℕ} {Q : Type} [Finite Q] [Fact p.Prime]
+    (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
+    (b : ℕ) [NeZero b] (σ : ℕ) (path : List (Fin (k * 3 + 1)))
+    (x : Fin (k * 3 + 1) → Fin r → ZMod p)
+    (hcapacity : r ≤ ((2 ^ m) ^ ((k * 3 + 1) * r)).size)
+    (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (hsp : 2 ^ m ≤ p)
+    (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
+    let point := List.ofFn (fun a : Fin ((k * 3 + 1) * r) => p + (blocksEquiv.symm x a).val)
+    let params : GateVector.Params := (((w.length, b, 0, 0, m, 0, r * m),
+      (p, 2 ^ m, (k * 3 + 1) * r), point, (2 ^ m) ^ ((k * 3 + 1) * r)), r)
+    let args : Args := ((σ, q, path.map Fin.val), params)
+    ∃ T values, (machine M e).halted ((machine M e).runFrom w (initial M e args) T) = true ∧
+      answer ((machine M e).runFrom w (initial M e args) T) = (0, values) ∧
+      ∀ j : Fin r, (values.getD j.val 0 : ZMod p) =
+        match (encodedTree (MultiTapePTM.ofDeterministic M) w b
+          (scheduleOfNat k q σ) e).nodeAt path with
+        | .gate f => Packed.gateExtension h (Packed.packBits hb) (Packed.unpackBits hb) f x j
+        | _ => 0 := by
+  exact exists_runFrom_nodeAt M e w b σ path x _
     (NormalizePoint.normalize_ofFn (Fact.out : p.Prime).pos (blocksEquiv.symm x))
     hcapacity hb hm hsp h hh
 

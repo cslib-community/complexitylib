@@ -310,9 +310,7 @@ theorem exists_isCriticalTreeAt_restrictBy (hσ : φ.eval σ = true) (hfr : Froz
       simp [restrict, hxT] at this
     set γ := flipOn (p.toFinset \ T) σ with hγ
     have hγT : ∀ y c, restrict σ T y = some c → γ y = c := fun y c hy => by
-      have hyT : y ∈ T := by
-        by_contra hyT
-        simp [restrict, hyT] at hy
+      have hyT : y ∈ T := by grind [restrict]
       rw [hγ, flipOn_apply_of_notMem (fun h => (mem_sdiff.1 h).2 hyT)]
       exact PPZ.eq_of_restrict_eq_some hy
     by_contra hall

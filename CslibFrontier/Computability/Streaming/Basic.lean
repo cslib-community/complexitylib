@@ -15,7 +15,6 @@ public import Mathlib.Data.Finset.Density
 public import Mathlib.Data.Fintype.Card
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
-import Mathlib.Data.Fintype.Pi
 import Mathlib.Logic.Embedding.Set
 
 /-!

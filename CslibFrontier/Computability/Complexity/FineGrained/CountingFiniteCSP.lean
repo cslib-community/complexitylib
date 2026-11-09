@@ -382,9 +382,7 @@ theorem exists_modelCounter_finiteDomain_of_forall [DecidableEq V] (encRel : Rel
   obtain ⟨count, T, S, A₀, c, e, a, b_space, hcount, hspec, hT₀, hS⟩ :=
     CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared k' hg hvalid hvalid_imp
   refine ⟨count, T, S, A₀ * 8 ^ b, c, e, a, b_space, hcount, fun F hF => ?_, fun F => ?_, hS⟩
-  · have hv : valid F = true := by
-      simp only [valid, List.all_eq_true, decide_eq_true_eq]
-      exact hF
+  · have hv : valid F = true := by grind
     have hd : ∀ c ∈ F.denseRelabel, c.2.length ≤ k := (all_length_le_denseRelabel F).mpr hF
     have hvars : ∀ v ∈ F.denseRelabel.vars, v < F.numVars := fun v hv => by
       have hv' : v ∈ F.denseRelabel.vars.toFinset := List.mem_toFinset.mpr hv
