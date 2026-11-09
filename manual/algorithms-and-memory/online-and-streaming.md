@@ -122,7 +122,7 @@ While a copy holds fewer than `t` keys, it reports their number, which is exactl
 
 The error analysis uses `Finset.forall_mem_lowest_iff`: the `t` lowest hash values of `d ≥ t` items are all below `K` exactly when at least `t` items hash below `K`. The number of such items has variance at most its mean, so Chebyshev's inequality bounds each tail. `dens_abs_kmvEstimate_sub_gt_le` gives a per-copy failure probability `Pr[|estimate − d| > εd] ≤ 2/(tε²)` for `0 < ε ≤ 1` and `d ≤ M`: the upper tail contributes `(1+ε)/(tε²)` and the lower tail `(1−ε)/(tε²)`. The source instead bounds each tail by `1/6` with `t = ⌈96/ε²⌉`.
 
-With `6 ≤ tε²` one copy fails with probability at most `1/3`. The median trick (`Cslib.Probability.dens_abs_median_sub_gt_le`, in [MedianOfMeans.lean](../../CslibFrontier/Probability/MedianOfMeans.lean)) amplifies this: `dens_kmvSketch_error_le` shows that the median of `2r` copies misses `F₀` by more than `εF₀` with probability at most `(8/9)^r`. `solves_kmv` packages the result as `(kmv h t (2r)).Solves δ (fun s Y => |Y − F₀ s| ≤ ε F₀ s) m` whenever `(8/9)^r ≤ δ` and `m ≤ M`. The bound `m ≤ M` on the stream length only serves to guarantee `d ≤ M`.
+With `6 ≤ tε²` one copy fails with probability at most `1/3`. The median trick (`Cslib.Probability.dens_abs_median_sub_gt_le`, in [MedianTrick.lean](../../CslibFrontier/Probability/MedianTrick.lean)) amplifies this: `dens_kmvSketch_error_le` shows that the median of `2r` copies misses `F₀` by more than `εF₀` with probability at most `(8/9)^r`. `solves_kmv` packages the result as `(kmv h t (2r)).Solves δ (fun s Y => |Y − F₀ s| ≤ ε F₀ s) m` whenever `(8/9)^r ≤ δ` and `m ≤ M`. The bound `m ≤ M` on the stream length only serves to guarantee `d ≤ M`.
 
 Ties between hash values are broken by the item, so the source's `1/m` collision term and its requirement `M = m³` disappear; only `d ≤ M` is needed.
 
@@ -155,7 +155,7 @@ Chakrabarti's parameter `k` allows `k − 1` counters, so `misraGries k` is his 
 
 These are equations (5.1)–(5.6) of [chakrabarti25][chakrabarti25]. Only an upper bound on collision probabilities is assumed.
 
-The amplification step is the median trick `dens_abs_median_sub_gt_le`, added to [MedianOfMeans.lean](../../CslibFrontier/Probability/MedianOfMeans.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. `dens_abs_medianOfMeans_sub_gt_le` is now derived from it.
+The amplification step is the median trick `dens_abs_median_sub_gt_le`, in [MedianTrick.lean](../../CslibFrontier/Probability/MedianTrick.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. [MedianOfMeans.lean](../../CslibFrontier/Probability/MedianOfMeans.lean) derives `dens_abs_medianOfMeans_sub_gt_le` from it.
 
 [CslibFrontier/Computability/Streaming/CountSketch.lean](../../CslibFrontier/Computability/Streaming/CountSketch.lean) assembles `2r` rows into the streaming algorithm `countSketch`, and `countSketchRandom` draws its seeds uniformly. Its results:
 

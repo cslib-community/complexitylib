@@ -250,10 +250,8 @@ theorem two_pow_mul_choose_sub_le {b m : ℕ} (hb : 1 ≤ b) (r : ℕ) :
   refine Nat.le_of_mul_le_mul_right ?_ hpos
   calc 2 ^ r * (b * m - m).choose (b * r) * b ^ (b * r)
       = 2 ^ r * ((b * m - m).choose (b * r) * b ^ (b * r)) := by ring
-    _ ≤ 2 ^ r * ((b * m).choose (b * r) * (b - 1) ^ (b * r)) :=
-        Nat.mul_le_mul_left (2 ^ r) hchoose
+    _ ≤ 2 ^ r * ((b * m).choose (b * r) * (b - 1) ^ (b * r)) := by gcongr
     _ = (b * m).choose (b * r) * (2 ^ r * (b - 1) ^ (b * r)) := by ring
-    _ ≤ (b * m).choose (b * r) * b ^ (b * r) :=
-        Nat.mul_le_mul_left _ hpow
+    _ ≤ (b * m).choose (b * r) * b ^ (b * r) := by gcongr
 
 end Nat

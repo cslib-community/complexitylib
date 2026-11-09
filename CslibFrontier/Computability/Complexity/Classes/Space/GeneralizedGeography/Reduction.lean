@@ -445,9 +445,7 @@ private theorem geographyWins_topNode (heven : Even xs.length)
           fun z' => ψ.eval (fun x => (z ++ z').getD (lastIdx xs x) false) = true))
   | 0, z, hz => by
     have hz' : z.length = xs.length := by omega
-    have hpar : (z.length % 2 == 0) = true := by
-      rw [hz', beq_iff_eq, ← Nat.even_iff]
-      exact heven
+    have hpar : (z.length % 2 == 0) = true := by grind
     rw [hpar, iff_true_left rfl, List.replicate_zero, alternation_nil, List.append_nil, hz']
     exact geographyWins_topNode_length hz' hvars
   | k + 1, z, hz => by
@@ -507,9 +505,7 @@ theorem updates_eq_getD_lastIdx (σ : ℕ → Bool) :
           omega, List.getD_cons_succ]
     · obtain rfl : x = v := by simpa [hxs] using hx
       rw [QBF.updates_of_notMem hxs, Function.update_self]
-      have hidx : (x :: vs).reverse.idxOf x = vs.length := by
-        rw [List.reverse_cons, List.idxOf_append_of_notMem (by simpa using hxs),
-          List.length_reverse, List.idxOf_cons_self, Nat.add_zero]
+      have hidx : (x :: vs).reverse.idxOf x = vs.length := by grind
       rw [lastIdx, hidx, List.length_cons, show vs.length + 1 - 1 - vs.length = 0 by omega]
       rfl
 

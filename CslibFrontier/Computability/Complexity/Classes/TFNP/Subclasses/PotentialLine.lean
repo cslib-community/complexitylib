@@ -495,9 +495,7 @@ private theorem violation_of_properSource (hprom : LineSourcePromise n P S a)
     · have hin' : hasIn n P S a u = true := by
         simp only [hasIn, decide_eq_true_eq]
         exact ⟨hSP, hPu, hu⟩
-      have hV : V (a, P (a, u)) < V (a, u) := by
-        simp only [hin', Bool.true_and, decide_eq_true_eq, Nat.not_le] at hc
-        exact hc
+      have hV : V (a, P (a, u)) < V (a, u) := by grind
       have : hasPotentialIn n P S V a u = true := by
         simp [hasPotentialIn, hin', hV]
       rw [hin] at this
@@ -896,9 +894,7 @@ theorem exists_potentialBound (hn : ComputableInPolyTime n enc encUnary)
   refine ⟨m, hm, fun a u hu => ?_⟩
   have hb := hbound (a, u)
   simp only [encNat_apply, length_encPair, encBits_apply, hu] at hb
-  have hbits : (V (a, u)).bits.length ≤ m a := by
-    rw [show 2 * (enc a).length + 1 + n a + 1 = 2 * (enc a).length + n a + 2 by omega] at hb
-    exact hb
+  have hbits : (V (a, u)).bits.length ≤ m a := by grind
   rw [Nat.size_eq_bits_len] at hbits
   exact (Nat.lt_size_self _).trans_le (Nat.pow_le_pow_right (by decide) hbits)
 

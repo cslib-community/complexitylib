@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF
 public import CslibFrontier.Probability.KWiseIndependent
+import CslibFrontier.Logics.Propositional.CNF.Eval
 import Mathlib.Algebra.Order.BigOperators.Expect
 
 /-!
@@ -62,11 +63,7 @@ theorem indicator_eval_eq_false_le_prod (σ : V → Bool) (c : Clause V) {S : Fi
   by_cases hc : c.eval σ = false
   · rw [ite_eq_left hc]
     refine le_of_eq (prod_eq_one fun l hl => ite_eq_left ?_).symm
-    have hl : l ∈ c := List.mem_toFinset.1 (hS hl)
-    have hne : σ l.1 ≠ l.2 := fun h => by
-      rw [← Bool.not_eq_true, Clause.eval_eq_true_iff] at hc
-      exact hc ⟨l, hl, h⟩
-    cases h : σ l.1 <;> cases h' : l.2 <;> simp_all
+    exact (Clause.eval_eq_false_iff σ c).1 hc l (List.mem_toFinset.1 (hS hl))
   · rw [ite_eq_right hc]
     exact prod_nonneg fun _ _ => by positivity
 

@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import Mathlib.Data.List.GetD
 
@@ -345,9 +346,8 @@ positions. -/
 private theorem digitTarget_eq :
     digitTarget φ = ∑ p ∈ range (φ.distinctVars.length + φ.length),
       (if p < φ.distinctVars.length then 1 else 3) * 8 ^ p := by
-  have hlist (n : ℕ) (f : ℕ → ℕ) : ((List.range n).map f).sum = ∑ i ∈ range n, f i := by
-    rw [sum_eq_multiset_sum, range_val, Multiset.range, Multiset.map_coe, Multiset.sum_coe]
-  rw [sum_range_add, digitTarget, hlist, hlist]
+  rw [sum_range_add, digitTarget, List.sum_map_range_eq_sum_range,
+    List.sum_map_range_eq_sum_range]
   congr 1
   · exact sum_congr rfl fun p hp => by simp [mem_range.1 hp]
   · exact sum_congr rfl fun j _ => by simp

@@ -183,10 +183,7 @@ theorem satLits_update_subset {φ : CNF (Fin n)} {τ : Fin n → Option Bool} {y
     satLits φ (update τ y (some b)) ⊆ (satLits φ τ).erase (y, b) := by
   intro l hl
   obtain ⟨hl1, σ, hσ, hσl⟩ := mem_satLits.mp hl
-  have hne : l.1 ≠ y := by
-    rintro h
-    rw [h, update_self] at hl1
-    cases hl1
+  have hne : l.1 ≠ y := by grind
   rw [update_of_ne hne] at hl1
   exact mem_erase.mpr ⟨fun h => hne (congrArg Prod.fst h),
     mem_satLits.mpr ⟨hl1, σ, ((isSatExtension_update_iff hy).mp hσ).1, hσl⟩⟩
