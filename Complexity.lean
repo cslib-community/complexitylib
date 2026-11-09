@@ -3642,6 +3642,7 @@ public import Complexity.Crypto.Computational.Encryption.Basic
 public import Complexity.Crypto.Computational.Encryption.CCA
 public import Complexity.Crypto.Computational.Encryption.CCA.Interleaved
 public import Complexity.Crypto.Computational.Encryption.Circular
+public import Complexity.Crypto.Computational.Encryption.CompositionCounterexamples
 public import Complexity.Crypto.Computational.Encryption.DecryptionBound
 public import Complexity.Crypto.Computational.Encryption.EncryptThenMAC
 public import Complexity.Crypto.Computational.Encryption.Hybrid
