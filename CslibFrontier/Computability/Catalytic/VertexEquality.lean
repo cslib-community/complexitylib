@@ -109,7 +109,7 @@ Turing-machine space certificate.
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
   Section 9.6, Lemma 9.9 (`lem:fp-catalytic`) and Section 11.4, Lemma 11.9 (`lem:ctrl-equality`)
   for the excursion restoration principle and `ZMod 2` key test; the two-stage deterministic
-  `addSqDist` + `keyTest` composition and bit-budget bounds here are original to `complexitylib`.
+  `addSqDist` + `keyTest` composition and bit-budget bounds here are original to cslib-frontier.
 -/
 
 public section

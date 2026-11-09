@@ -8,6 +8,8 @@ Each module has an upstream marker. At the snapshot, the first marker in each of
 
 [`UPSTREAM.md`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/UPSTREAM.md) records the base pin, pending upstream work, local adaptations and relocation decisions. A local copy of unmerged upstream work is permitted only for what the pinned dependency lacks, with original authors and declaration names retained. When the pin incorporates it, the copy should be deleted together with the pin update. Such copies are distinct from original Complexitylib definitions.
 
+The current [marker rules](../../AGENTS.md#file-rules) replace that deletion with a deprecated shim. When the pin adopts a file, whether a copy or a module upstreamed from this library, the pin update leaves at its path a module that publicly imports the upstream module and declares Lean's `deprecated_module`, so downstream imports of the old name keep working with a warning. Shims are deleted six months after their deprecation date.
+
 ## Contributions and source credit
 
 | Stream | Evidence and appropriate credit |
