@@ -1,12 +1,12 @@
 # Upstream reuse and source credit
 
-Complexitylib's rule is that reusable modules should be upstreamable to CSLib with only `CslibFrontier.` import-path rewriting, with documented exceptions for general mathematics intended for Mathlib and local scaffolding. Namespaces already follow the intended upstream home: `Turing` for the multi-tape machine development and generally `Cslib` elsewhere. This rule constrains API placement and reuse; it does not assert that upstream maintainers have accepted every candidate. [complexitylib][complexitylib]
+cslib-frontier's rule is that reusable modules should be upstreamable to CSLib with only `CslibFrontier.` import-path rewriting, with documented exceptions for general mathematics intended for Mathlib and local scaffolding. Namespaces already follow the intended upstream home: `Turing` for the multi-tape machine development and generally `Cslib` elsewhere. This rule constrains API placement and reuse; it does not assert that upstream maintainers have accepted every candidate. [cslib-frontier][complexitylib]
 
 ## Ownership is recorded in the source
 
 Each module has an upstream marker. At the snapshot, the first marker in each of the 3,896 library files classifies 3,813 as candidates, 60 as vendored, 19 as submitted, three as copied subsets and one as local-only. The three subset strings describe portions of `crei/tidy-universal`; the census preserves them literally rather than forcing them into a newer policy vocabulary. These are source declarations of status at the fixed revision, not live GitHub verification of every upstream PR. [Module census script](../data/census.py)
 
-The pinned `lakefile.toml` and `lake-manifest.json` record the base pin; source markers record pending upstream work and copied revisions; `-- vendored:` comments and module docstrings record local adaptations; and [CONTRIBUTING.md](../../CONTRIBUTING.md#upstreaming) lists live coordination threads. A local copy of unmerged upstream work is permitted only for what the pinned dependency lacks, with original authors and declaration names retained. When the pin incorporates it, the copy should be deleted together with the pin update. Such copies are distinct from original Complexitylib definitions.
+The pinned `lakefile.toml` and `lake-manifest.json` record the base pin; source markers record pending upstream work and copied revisions; `-- vendored:` comments and module docstrings record local adaptations; and [CONTRIBUTING.md](../../CONTRIBUTING.md#upstreaming) lists live coordination threads. A local copy of unmerged upstream work is permitted only for what the pinned dependency lacks, with original authors and declaration names retained. When the pin incorporates it, the copy should be deleted together with the pin update. Such copies are distinct from original cslib-frontier definitions.
 
 ## Contributions and source credit
 

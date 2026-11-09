@@ -17,8 +17,6 @@ class ModuleTests(unittest.TestCase):
     def test_module_roles(self) -> None:
         self.assertEqual(lo.module_role("CslibFrontier.Foundations.Data.List.Basic"), "lib")
         self.assertEqual(lo.module_role("CslibFrontierTests.Smoke"), "test")
-        self.assertEqual(lo.module_role("CslibFrontierTests.Abstracts.All"), "abstract")
-        self.assertEqual(lo.module_role("CslibFrontierAbstracts.CookLevinBridge"), "abstract")
 
 
 class OutputCheckTests(unittest.TestCase):
@@ -96,23 +94,23 @@ class OutputCheckTests(unittest.TestCase):
                 {"module": module, "directImports": [[i, False, False, False] for i in imports]}))
 
     def test_outputs_of_deleted_modules_are_ignored(self) -> None:
-        self.write_ileans({"CslibFrontier": ["CslibFrontier.A"], "CslibFrontierAbstracts": [],
+        self.write_ileans({"CslibFrontier": ["CslibFrontier.A"],
                            "CslibFrontier.A": ["Mathlib.Init"], "CslibFrontier.Deleted": []})
         self.assertEqual(list(lo.load_ileans(self.reference, glob=lambda root: [])),
                          ["CslibFrontier.A"])
 
     def test_glob_library_modules_are_read_from_sources(self) -> None:
-        self.write_ileans({"CslibFrontier": [], "CslibFrontierAbstracts": [],
+        self.write_ileans({"CslibFrontier": [],
                            "CslibFrontierTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],
                            "CslibFrontierTests.Stale": []})
         glob = lambda root: ["CslibFrontierTests.T"] if root == "CslibFrontierTests" else []
         self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),
                          ["CslibFrontier.B", "CslibFrontierTests.T"])
         self.assertEqual(lo.root_modules(glob),
-                         ["CslibFrontier", "CslibFrontierTests.T", "CslibFrontierAbstracts"])
+                         ["CslibFrontier", "CslibFrontierTests.T"])
 
     def test_missing_reachable_output_is_refused(self) -> None:
-        self.write_ileans({"CslibFrontier": ["CslibFrontier.Live"], "CslibFrontierAbstracts": [],
+        self.write_ileans({"CslibFrontier": ["CslibFrontier.Live"],
                            "CslibFrontier.Live": ["CslibFrontier.Missing"]})
         with self.assertRaises(SystemExit) as error:
             lo.load_ileans(self.reference, glob=lambda root: [])
@@ -120,10 +118,10 @@ class OutputCheckTests(unittest.TestCase):
                       str(error.exception.code))
 
     def test_missing_root_output_is_refused(self) -> None:
-        self.write_ileans({"CslibFrontier": []})
+        self.write_ileans({"CslibFrontier.A": []})
         with self.assertRaises(SystemExit) as error:
             lo.load_ileans(self.reference, glob=lambda root: [])
-        self.assertIn("CslibFrontierAbstracts.ilean is missing (a root)", str(error.exception.code))
+        self.assertIn("CslibFrontier.ilean is missing (a root)", str(error.exception.code))
 
 
 if __name__ == "__main__":
