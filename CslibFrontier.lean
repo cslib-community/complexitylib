@@ -43,6 +43,7 @@ public import CslibFrontier.Algorithms.Lean.Dijkstra.Cost
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Memory
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Binary
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Domain
+public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Export
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Fibonacci
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
