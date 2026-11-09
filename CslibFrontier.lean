@@ -3885,6 +3885,9 @@ public import CslibFrontier.Crypto.Computational.RSATrapdoor
 public import CslibFrontier.Crypto.Computational.RabinFactoring
 public import CslibFrontier.Crypto.Computational.Rompel
 public import CslibFrontier.Crypto.Computational.SIS.Basic
+public import CslibFrontier.Crypto.Computational.SIS.MLKEM.Compress
+public import CslibFrontier.Crypto.Computational.SIS.MLKEM.KPKE
+public import CslibFrontier.Crypto.Computational.SIS.MLKEM.Security
 public import CslibFrontier.Crypto.Computational.SIS.Module
 public import CslibFrontier.Crypto.Computational.SIS.Module.ApproximateSampling
 public import CslibFrontier.Crypto.Computational.SIS.Module.MatrixSampling
@@ -3980,6 +3983,7 @@ public import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 public import CslibFrontier.Crypto.Protocols.Commitment.World
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
+public import CslibFrontier.Crypto.Protocols.KEM.MLKEM
 public import CslibFrontier.Crypto.Protocols.MAC.CarterWegman
 public import CslibFrontier.Crypto.Protocols.MAC.VariableLength
 public import CslibFrontier.Crypto.Protocols.MPC.Advantage

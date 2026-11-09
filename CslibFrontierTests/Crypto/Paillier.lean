@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Crypto.Computational.Paillier
 import CslibFrontier.Crypto.Computational.Paillier.Security
 import Mathlib.Tactic.NormNum.Prime
