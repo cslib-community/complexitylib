@@ -183,8 +183,8 @@ theorem length_prefix_accumulator_le (test : C × List Bool → Bool) (p : C × 
 /-- The full index/width/context/result state stays polynomial even at the terminal prefix. -/
 theorem length_prefix_le (test : C × List Bool → Bool) (p : C × ℕ) (j : ℕ)
     (hj : j ≤ 2 ^ p.2) :
-    (encPair encNat (encPair encUnary (encPair encC encResult))
-      (runPrefix test p j)).length ≤ 2 * (encC p.1).length + 7 * p.2 + 6 := by
+    (BooleanFold.encStreamState (encPair encC encResult) (runPrefix test p j)).length ≤
+      2 * (encC p.1).length + 7 * p.2 + 6 := by
   exact (BooleanFold.length_prefix_le (step test) p.2 j _ (p.1, none) hj
     (length_prefix_accumulator_le test p j)).trans (by omega)
 
@@ -225,8 +225,7 @@ encoding before invoking the test. -/
 noncomputable def stepCertificate {test : C × List Bool → Bool}
     (ct : NativeCertificate test (encTestInput encC) encBool) :
     NativeCertificate (step test)
-      (encPair (encPair encUnary encBits) (encPair encC encResult))
-      (encPair encC encResult) := by
+      (BooleanFold.encCallbackInput (encPair encC encResult)) (encPair encC encResult) := by
   exact (contextCertificate.prod
     (NativeCertificate.branch
       (resultCertificate.post (ComputableInDegree.isSome (encList encBool)).inO_one)

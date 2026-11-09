@@ -894,9 +894,7 @@ theorem Detached.finish (hD : Detached n K s st m cs E) {st₂ st₃ st' : RawSt
       simp
     · rw [Function.update_of_ne hy, Function.update_of_ne hy]
       exact hD.inHeap y
-  · have hym : y ≠ m := by
-      rintro rfl
-      simp at hy
+  · have hym : y ≠ m := by grind
     rw [Function.update_of_ne hym] at hy
     rw [hkey]
     exact hD.keys y k hy

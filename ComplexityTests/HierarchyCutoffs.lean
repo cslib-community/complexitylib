@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of selected hierarchy cutoffs)
 
-public import Complexity.Foundations.Probability.HierarchyRankCutoffs
+public import Complexity.Computability.LogSpaceDerandomization.HierarchyRankCutoffs
 
 /-! Boundary, support, positive-output and actual H4 sampling regressions. -/
 

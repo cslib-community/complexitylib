@@ -136,10 +136,8 @@ private theorem expandedWord_ofFn {d k n q : ℕ} (hq : 0 < q)
   unfold expandedWord expandedRows ModuleSIS.encodeMatrix GeneralSIS.encodeMatrix
   simp only [List.map_range_eq_ofFn]
   congr 1
-  congr 1
-  funext i
-  congr 1
-  funext j
+  congr 1 with i : 1
+  congr 1 with j : 1
   change rotationResidue n q
     (((List.ofFn fun i => List.ofFn fun j => List.ofFn fun l => (A i j l).val).getD
       (finProdFinEquiv.symm i).1.val []).getD (finProdFinEquiv.symm j).1.val [])
@@ -213,8 +211,7 @@ private theorem sampledMatrixWord_eval (d k n w : ℕ) :
       (PMF.uniformOfFintype (Matrix (Fin d) (Fin k) (Fin n → ZMod (2 ^ w)))).map
         ModuleSIS.encodeMatrix := by
   rw [sampledMatrixWord, ProbComp.eval_map, eval_matrixCoefficients, PMF.map_comp]
-  congr 1
-  funext A
+  congr 1 with A : 1
   exact expandedWord_ofFn (by positivity) A
 
 /-- An exact strict-PPT sampler for the existing structured module-matrix encoding at power-of-two

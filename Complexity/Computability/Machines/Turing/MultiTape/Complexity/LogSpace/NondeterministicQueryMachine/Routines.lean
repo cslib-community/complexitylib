@@ -244,8 +244,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
       calc (2 * cS + 7) * S a + 1 ≤ (2 * cS + 7) * S a + S a := Nat.add_le_add_left (hS1 a) _
         _ = (2 * cS + 8) * S a := by ring
     rw [hU_eq, hG_eq]
-    calc k * (D * (L a + 1)) ≤ 1000 * (m + 5) * (D * ((2 * cS + 8) * S a)) :=
-          Nat.mul_le_mul hk_le (Nat.mul_le_mul_left D hLin)
+    calc k * (D * (L a + 1)) ≤ 1000 * (m + 5) * (D * ((2 * cS + 8) * S a)) := by gcongr
       _ = 1000 * (m + 5) * D * (2 * cS + 8) * S a := by ring
   clear hcN hD hcD hL_eq hU_eq hG_eq
   have hflag (x : Bool) : (flagWord x).length ≤ 1 := by cases x <;> simp [flagWord]

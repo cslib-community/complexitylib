@@ -229,8 +229,7 @@ private theorem depthCost_le (n s M L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) (h
           gcongr <;> omega
       _ = 6912 * P * (L + N / L + 1) := by simp only [P]; ring
   have hscan : (2 * L + 1) * (26 * n + 42) + 4 * (n + 2) + 2 ≤ 200 * (P * (L + N / L + 1)) := by
-    have e1 : (2 * L + 1) * (26 * n + 42) ≤ 3 * L * (42 * P) :=
-      Nat.mul_le_mul (by omega) (by omega)
+    have e1 : (2 * L + 1) * (26 * n + 42) ≤ 3 * L * (42 * P) := by gcongr <;> omega
     have hLP : L * P ≤ P * (L + N / L + 1) := by nlinarith
     nlinarith
   nlinarith [Nat.zero_le (L * s)]
