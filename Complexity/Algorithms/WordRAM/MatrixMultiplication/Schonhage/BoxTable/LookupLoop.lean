@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.LookupStep
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.LookupDigits
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native cube-digit lookup scan
 
@@ -61,23 +63,21 @@ theorem exec_lookupLoop {w L m t C : ℕ} (x : Data registers) (π : Cube L)
       y.regs Reg.invalid = 0 ∧
       (∀ i, ¬LookupLocal i → y.regs i = x.regs i) := by
   let raw := rawCubeDigit π
-  let I (y : Data registers) : Prop :=
-    LookupParameters L C y ∧ y.mem = x.mem ∧ y.regs Reg.level ≤ L ∧
-      y.regs Reg.power = 10 ^ y.regs Reg.level ∧
-      y.regs Reg.completion = lookupCompletion raw (y.regs Reg.level) ∧
-      y.regs Reg.stars = Nat.count (fun i => raw i = 10) (y.regs Reg.level) ∧
-      y.regs Reg.population = Nat.count (fun i => raw i = 9 ∨ raw i = 10) (y.regs Reg.level) ∧
-      y.regs Reg.fixedSeen = (if Nat.count (fun i => raw i = 9) (y.regs Reg.level) = 0
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    LookupParameters L C y ∧ y.mem = x.mem ∧
+      y.regs Reg.power = 10 ^ j ∧
+      y.regs Reg.completion = lookupCompletion raw (j) ∧
+      y.regs Reg.stars = Nat.count (fun i => raw i = 10) (j) ∧
+      y.regs Reg.population = Nat.count (fun i => raw i = 9 ∨ raw i = 10) (j) ∧
+      y.regs Reg.fixedSeen = (if Nat.count (fun i => raw i = 9) (j) = 0
         then 0 else 1) ∧ y.regs Reg.invalid = 0
-  have hi : I x := by
-    refine ⟨hx, rfl, by omega, ?_, ?_, ?_, ?_, ?_, hinvalid⟩
+  have hi : P (x.regs Reg.level) x := by
+    refine ⟨hx, rfl, ?_, ?_, ?_, ?_, ?_, hinvalid⟩
     all_goals simp [hlevel, hpow, hcode, hstars, hpop, hseen, lookupCompletion]
-  have hb (y : Data registers) (hy : I y)
-      (hg : (Cond.lt Reg.level Reg.levels).Holds y) :
-      ∃ z, ExecWithin w lookupDigit y z 16 ∧ I z ∧
-        L - z.regs Reg.level < L - y.regs Reg.level := by
-    obtain ⟨hp, hm, hle, hpower, hc, hs, hf, hv, hinv⟩ := hy
-    have hk : y.regs Reg.level < L := by simpa only [Cond.holds_lt, hp.levels] using hg
+  have hb (y : Data registers) (hy : P (y.regs Reg.level) y) (hk : y.regs Reg.level < L) :
+      ∃ z, ExecWithin w lookupDigit y z 16 ∧ P (y.regs Reg.level + 1) z ∧
+        z.regs Reg.level = y.regs Reg.level + 1 := by
+    obtain ⟨hp, hm, hpower, hc, hs, hf, hv, hinv⟩ := hy
     have hseenle : (if Nat.count (fun i => raw i = 9) (y.regs Reg.level) = 0
         then 0 else 1) ≤ 1 := by split <;> omega
     have horder : raw (y.regs Reg.level) = 10 →
@@ -97,26 +97,21 @@ theorem exec_lookupLoop {w L m t C : ℕ} (x : Data registers) (π : Cube L)
       ⟨(hframe _ (by decide)).trans hp.levels, (hframe _ (by decide)).trans hp.cube,
         (hframe _ (by decide)).trans hp.nil, (hframe _ (by decide)).trans hp.one,
         (hframe _ (by decide)).trans hp.nine, (hframe _ (by decide)).trans hp.ten⟩
-    refine ⟨z, hz, ⟨hpz, hzm.trans hm, by omega, ?_, ?_, ?_, ?_, ?_, hzi⟩, by omega⟩
-    · simpa only [hzl] using hzp
-    · simpa only [hzl, lookupCompletion] using hzc
-    · simpa only [hzl, Nat.count_succ] using hzs
-    · simpa only [hzl, Nat.count_succ] using hzf
-    · rw [hzl, hzv, Nat.count_succ]
+    refine ⟨z, hz, ⟨hpz, hzm.trans hm, ?_, ?_, ?_, ?_, ?_, hzi⟩, hzl⟩
+    · exact hzp
+    · simpa only [lookupCompletion] using hzc
+    · simpa only [Nat.count_succ] using hzs
+    · simpa only [Nat.count_succ] using hzf
+    · rw [hzv, Nat.count_succ]
       by_cases hd : raw (y.regs Reg.level) = 9
       all_goals dsimp only [raw] at hd ⊢; simp [hd]
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => L - y.regs Reg.level) hb hi
-  obtain ⟨hp, hm, hle, hpower, hc, hs, hf, _, hinv⟩ := hIy
-  have hdone : y.regs Reg.level = L := by
-    simp only [Cond.holds_lt, hp.levels, not_lt] at hstop
-    omega
-  refine ⟨y, ?_, hm, hp, hdone, ?_, ?_, ?_, ?_, hinv,
+  obtain ⟨y, hy, ⟨hp, hm, hpower, hc, hs, hf, _, hinv⟩, hdone⟩ :=
+    ExecWithin.loop_count P (fun _ hy => hy.1.levels) hb (by simp [hlevel]) hi
+  refine ⟨y, ?_, hm, hp, hdone, hpower, ?_, ?_, ?_, hinv,
     fun i hi => hy.regs_eq (lookupLoop_preserves i hi)⟩
   · simpa only [hlevel, Nat.sub_zero, Nat.mul_comm] using hy
-  · simpa only [hdone] using hpower
-  · simpa only [hdone, raw, lookupCompletion_rawCubeDigit] using hc
-  · simpa only [hdone, raw, count_rawCubeDigit_stars] using hs
-  · simpa only [hdone, raw, count_rawCubeDigit_population] using hf
+  · simpa only [raw, lookupCompletion_rawCubeDigit] using hc
+  · simpa only [raw, count_rawCubeDigit_stars] using hs
+  · simpa only [raw, count_rawCubeDigit_population] using hf
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable

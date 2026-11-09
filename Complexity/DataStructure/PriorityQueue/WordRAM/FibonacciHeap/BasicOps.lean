@@ -740,61 +740,34 @@ theorem initSetup_exec {n K_max w base : ℕ} {x₁ : Data rFib}
     simpa only [Nat.zero_add, Nat.one_mul] using
       mk_add (a := x₁) (dst := parBase) (src := baseReg) (k := 0) (by decide)
         (by simpa only [Nat.zero_mul, Nat.add_zero] using hb₁) hn
+  have hn1 : s1.regs nReg = n := (e1.regs_eq (by decide)).trans hn
   have e2 :=
     mk_add (a := s1) (dst := childBase) (src := parBase) (k := 1) (by decide)
-      (by simp only [s1, Data.set_regs, Function.update_self, Nat.one_mul])
-      (by simp only [s1, Data.set_regs, Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s1, Data.set_regs, Function.update_self, Nat.one_mul]) hn1
+  have hn2 : s2.regs nReg = n := (e2.regs_eq (by decide)).trans hn1
   have e3 :=
     mk_add (a := s2) (dst := leftBase) (src := childBase) (k := 2) (by decide)
-      (by simp only [s2, Data.set_regs, Function.update_self])
-      (by simp only [s2, s1, Data.set_regs,
-        Function.update_of_ne (by decide : nReg ≠ childBase),
-        Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s2, Data.set_regs, Function.update_self]) hn2
+  have hn3 : s3.regs nReg = n := (e3.regs_eq (by decide)).trans hn2
   have e4 :=
     mk_add (a := s3) (dst := rightBase) (src := leftBase) (k := 3) (by decide)
-      (by simp only [s3, Data.set_regs, Function.update_self])
-      (by simp only [s3, s2, s1, Data.set_regs,
-        Function.update_of_ne (by decide : nReg ≠ leftBase),
-        Function.update_of_ne (by decide : nReg ≠ childBase),
-        Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s3, Data.set_regs, Function.update_self]) hn3
+  have hn4 : s4.regs nReg = n := (e4.regs_eq (by decide)).trans hn3
   have e5 :=
     mk_add (a := s4) (dst := degBase) (src := rightBase) (k := 4) (by decide)
-      (by simp only [s4, Data.set_regs, Function.update_self])
-      (by simp only [s4, s3, s2, s1, Data.set_regs,
-        Function.update_of_ne (by decide : nReg ≠ rightBase),
-        Function.update_of_ne (by decide : nReg ≠ leftBase),
-        Function.update_of_ne (by decide : nReg ≠ childBase),
-        Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s4, Data.set_regs, Function.update_self]) hn4
+  have hn5 : s5.regs nReg = n := (e5.regs_eq (by decide)).trans hn4
   have e6 :=
     mk_add (a := s5) (dst := markBase) (src := degBase) (k := 5) (by decide)
-      (by simp only [s5, Data.set_regs, Function.update_self])
-      (by simp only [s5, s4, s3, s2, s1, Data.set_regs,
-        Function.update_of_ne (by decide : nReg ≠ degBase),
-        Function.update_of_ne (by decide : nReg ≠ rightBase),
-        Function.update_of_ne (by decide : nReg ≠ leftBase),
-        Function.update_of_ne (by decide : nReg ≠ childBase),
-        Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s5, Data.set_regs, Function.update_self]) hn5
+  have hn6 : s6.regs nReg = n := (e6.regs_eq (by decide)).trans hn5
   have e7 :=
     mk_add (a := s6) (dst := inBase) (src := markBase) (k := 6) (by decide)
-      (by simp only [s6, Data.set_regs, Function.update_self])
-      (by simp only [s6, s5, s4, s3, s2, s1, Data.set_regs,
-        Function.update_of_ne (by decide : nReg ≠ markBase),
-        Function.update_of_ne (by decide : nReg ≠ degBase),
-        Function.update_of_ne (by decide : nReg ≠ rightBase),
-        Function.update_of_ne (by decide : nReg ≠ leftBase),
-        Function.update_of_ne (by decide : nReg ≠ childBase),
-        Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s6, Data.set_regs, Function.update_self]) hn6
+  have hn7 : s7.regs nReg = n := (e7.regs_eq (by decide)).trans hn6
   have e8 :=
     mk_add (a := s7) (dst := consBase) (src := inBase) (k := 7) (by decide)
-      (by simp only [s7, Data.set_regs, Function.update_self])
-      (by simp only [s7, s6, s5, s4, s3, s2, s1, Data.set_regs,
-        Function.update_of_ne (by decide : nReg ≠ inBase),
-        Function.update_of_ne (by decide : nReg ≠ markBase),
-        Function.update_of_ne (by decide : nReg ≠ degBase),
-        Function.update_of_ne (by decide : nReg ≠ rightBase),
-        Function.update_of_ne (by decide : nReg ≠ leftBase),
-        Function.update_of_ne (by decide : nReg ≠ childBase),
-        Function.update_of_ne (by decide : nReg ≠ parBase), hn])
+      (by simp only [s7, Data.set_regs, Function.update_self]) hn7
   have he : ExecWithin w initSetup x₁ y 14 := by
     unfold initSetup
     exact (e1.seq <| e2.seq <| e3.seq <| e4.seq <| e5.seq <| e6.seq <| e7.seq <| e8.seq <|

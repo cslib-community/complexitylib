@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPopulation
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Charged materialization of the subset tables
 
@@ -213,20 +215,18 @@ theorem exec_tables {w : ℕ} (L m inv tab : ℕ) (x : Data 96)
     have hf : ∀ i ∈ tableParameterRegisters, i ≠ mask ∧ i ≠ rank := by decide
     simp only [start, Data.set_regs, Function.update_of_ne (hf i hi).1,
       Function.update_of_ne (hf i hi).2])
-  let I (y : Data 96) : Prop :=
-    TableParameters L m inv tab y ∧ y.regs mask ≤ 2 ^ L ∧
-      y.regs rank = prefixCount L m (y.regs mask) ∧
-      TablesPrefix L m inv tab (y.regs mask) x.mem y.mem
-  have hi : I start := by
-    refine ⟨hstart, ?_, ?_, ?_⟩
-    · simp [start, mask, rank]
+  let P (j : ℕ) (y : Data 96) : Prop :=
+    TableParameters L m inv tab y ∧
+      y.regs rank = prefixCount L m j ∧
+      TablesPrefix L m inv tab j x.mem y.mem
+  have hi : P (start.regs mask) start := by
+    refine ⟨hstart, ?_, ?_⟩
     · simp [start, mask, rank, prefixCount_zero]
     · simpa [start, mask, rank] using TablesPrefix.zero L m inv tab x.mem
-  have hb (y : Data 96) (hy : I y) (hc : (Cond.lt mask masks).Holds y) :
-      ∃ z, ExecWithin w tableBody y z (6 * L + 15) ∧ I z ∧
-        2 ^ L - z.regs mask < 2 ^ L - y.regs mask := by
-    obtain ⟨hp, ht, hrank, hmem⟩ := hy
-    have htlt : y.regs mask < 2 ^ L := by simpa only [Cond.holds_lt, hp.masks] using hc
+  have hb (y : Data 96) (hy : P (y.regs mask) y) (htlt : y.regs mask < 2 ^ L) :
+      ∃ z, ExecWithin w tableBody y z (6 * L + 15) ∧ P (y.regs mask + 1) z ∧
+        z.regs mask = y.regs mask + 1 := by
+    obtain ⟨hp, hrank, hmem⟩ := hy
     obtain ⟨u, hu, hpop, humem, huf⟩ := exec_population L (y.regs mask) y hp.levels rfl
       hp.one hp.two (hfit.of_le (by omega))
     have hup : TableParameters L m inv tab u := hp.of_eq (by
@@ -249,32 +249,23 @@ theorem exec_tables {w : ℕ} (L m inv tab : ℕ) (x : Data 96)
         simp only [tableBody, tableWrite, populationCode, Code.Preserves, Op.dest, Op.bin]
         decide
       exact hf i hi)
-    refine ⟨z, he, ⟨hzp, ?_, ?_, ?_⟩, ?_⟩
-    · rw [hzt]
-      omega
-    · simpa only [hzt] using hzr
-    · rw [hzt, hzmem, humem]
-      exact hmem.step htlt hsep
-    · rw [hzt]
-      omega
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => 2 ^ L - y.regs mask) hb hi
-  have ht : y.regs mask = 2 ^ L := by
-    simp only [Cond.holds_lt, hy.1.masks] at hc
-    have := hy.2.1
-    omega
+    refine ⟨z, he, ⟨hzp, hzr, ?_⟩, hzt⟩
+    rw [hzmem, humem]
+    exact hmem.step htlt hsep
+  obtain ⟨y, he, ⟨hyp, hyrank, hymem⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.1.masks) hb (by simp [start, mask, rank]) hi
   have hwhole : ExecWithin w tablesCode x y ((6 * L + 17) * 2 ^ L + 4) := by
     apply (hs.seq he).mono
     have hs0 : start.regs mask = 0 := by simp [start, mask, rank]
     rw [hs0, Nat.sub_zero]
     nlinarith
-  refine ⟨y, hwhole, hy.1, ?_, ?_, hy.2.2.2.frame⟩
+  refine ⟨y, hwhole, hyp, ?_, ?_, hymem.frame⟩
   · intro a ha
-    exact hy.2.2.2.inverse a (ht ▸ ha)
+    exact hymem.inverse a ha
   · intro gh
     have hlookup : lookup L m (selectedMask gh).val ≠ 0 := by rw [lookup_selectedMask]; omega
-    have hb : (selectedMask gh).val < y.regs mask := by rw [ht]; exact (selectedMask gh).isLt
-    have h := hy.2.2.2.forward (selectedMask gh).val hb hlookup
+    have hb : (selectedMask gh).val < 2 ^ L := (selectedMask gh).isLt
+    have h := hymem.forward (selectedMask gh).val hb hlookup
     simpa only [prefixCount_selectedMask] using h
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation

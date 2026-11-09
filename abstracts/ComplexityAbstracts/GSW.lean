@@ -17,8 +17,10 @@ the matrix `[B t + e | B]` in row-major order, with its noisy column first; a se
 indexed by `(i, k)` and columns by `(j, l)`. These words are the direct bitstring inputs and
 outputs of the native GSW algorithms.
 
-Honest key generation and encryption draw independent uniform residues in `0, …, 2 ^ w - 1` and
-independent centered-binomial signed errors supported on `[-noiseWidth, noiseWidth]`.
+Honest key generation draws the secret `t` and the matrix `B` as independent uniform residues in
+`0, …, 2 ^ w - 1` (`residueLaw`) and the errors `e` as independent centered-binomial signed values
+supported on `[-noiseWidth, noiseWidth]` (`errorLaw`). Honest encryption draws only independent fair
+bits, the entries of its `0/1` matrix `R`.
 -/
 
 namespace ComplexityTests.Abstracts.GSW
@@ -26,17 +28,21 @@ namespace ComplexityTests.Abstracts.GSW
 /-- Write exactly `w` digits, least significant first, including leading zeros. -/
 def lowBits (w value : ℕ) : List Bool := (List.range w).map value.testBit
 
-/-- The leading entry of `[B t + e | B]`, reduced by signed Euclidean remainder. -/
-def rowHead (n w : ℕ) (inputs : List ℕ × (List (List ℕ) × List ℤ)) (i : ℕ) : ℕ :=
+/-- The leading entry of row `i` of `[B t + e | B]`, that is, entry `i` of `B t + e`, for the
+secret `t = secret`, the matrix `B = matrix` (a list of rows) and the signed errors `e = errors`,
+reduced by signed Euclidean remainder. -/
+def rowHead (n w : ℕ) (secret : List ℕ) (matrix : List (List ℕ)) (errors : List ℤ) (i : ℕ) : ℕ :=
   (((((List.range n).map fun j =>
-    (inputs.2.1.getD i []).getD j 0 * inputs.1.getD j 0).sum : ℕ) +
-      inputs.2.2.getD i 0 : ℤ) % (2 ^ w : ℤ)).toNat
+    (matrix.getD i []).getD j 0 * secret.getD j 0).sum : ℕ) +
+      errors.getD i 0 : ℤ) % (2 ^ w : ℤ)).toNat
 
-/-- Row-major serialization of the public matrix, with its noisy column first. -/
-def publicWord (n m w : ℕ) (inputs : List ℕ × (List (List ℕ) × List ℤ)) : List Bool :=
+/-- Row-major serialization of the public matrix `[B t + e | B]` for the secret `t = secret`, the
+matrix `B = matrix` and the signed errors `e = errors`, with its noisy column first. -/
+def publicWord (n m w : ℕ) (secret : List ℕ) (matrix : List (List ℕ)) (errors : List ℤ) :
+    List Bool :=
   (List.range m).flatMap fun i =>
-    lowBits w (rowHead n w inputs i) ++
-      (List.range n).flatMap fun j => lowBits w ((inputs.2.1.getD i []).getD j 0 % 2 ^ w)
+    lowBits w (rowHead n w secret matrix errors i) ++
+      (List.range n).flatMap fun j => lowBits w ((matrix.getD i []).getD j 0 % 2 ^ w)
 
 /-- Serialize the secret residues; these bits are not given to the adversary. -/
 def secretWord (n w : ℕ) (secret : List ℕ) : List Bool :=

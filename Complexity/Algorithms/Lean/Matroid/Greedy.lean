@@ -291,11 +291,8 @@ private theorem mergeSort_decide_eq_insertionSort {α : Type*} (r : α → α �
   | [] => by simp
   | a :: l => by
     have tr : ∀ x y z, decide (r x y) = true → decide (r y z) = true → decide (r x z) = true := by
-      intro x y z h1 h2
-      exact decide_eq_true (htrans x y z (of_decide_eq_true h1) (of_decide_eq_true h2))
-    have tot : ∀ x y, (decide (r x y) || decide (r y x)) = true := by
-      intro x y
-      rcases htotal x y with h | h <;> simp [h]
+      grind
+    have tot : ∀ x y, (decide (r x y) || decide (r y x)) = true := by grind
     obtain ⟨l₁, l₂, hcons, hl, hnot⟩ := List.mergeSort_cons tr tot a l
     have hpw : (l₁ ++ a :: l₂).Pairwise (fun x y => decide (r x y) = true) :=
       hcons ▸ List.pairwise_mergeSort tr tot (a :: l)
@@ -418,11 +415,7 @@ private theorem foldl_greedyStep_indep_and_max {M : Matroid α} {indep : Finset 
   | cons x rest ih =>
     simp only [List.foldl_cons]
     have hstep_indep : M.Indep ((greedyStep indep acc x : Finset α) : Set α) := by
-      simp only [greedyStep]
-      split
-      · rename_i htrue
-        exact (hM _).mp htrue
-      · exact hacc
+      grind [greedyStep]
     obtain ⟨hind, hmax⟩ := ih hstep_indep
     refine ⟨hind, fun e he he_not_mem => ?_⟩
     rcases List.mem_cons.mp he with rfl | he_rest
@@ -432,9 +425,7 @@ private theorem foldl_greedyStep_indep_and_max {M : Matroid α} {indep : Finset 
         · exfalso
           have hx_in : e ∈ greedyStep indep acc e := by simp [greedyStep, hbool]
           exact he_not_mem (subset_foldl_greedyStep indep _ rest hx_in)
-      have hnot : ¬ M.Indep ((insert e acc : Finset α) : Set α) := by
-        rw [← hM]
-        simp [hx_false]
+      have hnot : ¬ M.Indep ((insert e acc : Finset α) : Set α) := by grind
       intro hind_final
       apply hnot
       refine hind_final.subset ?_
@@ -521,14 +512,7 @@ private theorem foldl_greedyStep_filter_ne {M : Matroid α} {indep : Finset α �
   | cons y rest ih =>
     by_cases hyx : y = x
     · subst hyx
-      have hstep : greedyStep indep acc y = acc := by
-        rcases hx with hmem | hdep
-        · simp [greedyStep, Finset.insert_eq_of_mem hmem]
-        · have hfalse : indep (insert y acc) = false := by
-            cases hbool : indep (insert y acc)
-            · rfl
-            · exact absurd ((hM _).mp hbool) hdep
-          simp [greedyStep, hfalse]
+      have hstep : greedyStep indep acc y = acc := by grind [greedyStep]
       simp [List.foldl_cons, hstep, ih acc hx]
     · have hkeep : (y :: rest).filter (· ≠ x) = y :: rest.filter (· ≠ x) := by
         simp [hyx]
@@ -1078,11 +1062,7 @@ theorem augment_of_forall_sum_le_greedyMaxBasis
     ∃ e ∈ J, e ∉ I ∧ indep (insert e I) = true := by
   by_contra hno
   push Not at hno
-  have hno_aug : ∀ e ∈ J, e ∉ I → indep (insert e I) = false := by
-    intro e heJ heI
-    cases hb : indep (insert e I)
-    · rfl
-    · exact absurd hb (hno e heJ heI)
+  have hno_aug : ∀ e ∈ J, e ∉ I → indep (insert e I) = false := by grind
   set k := I.card
   let w : α → ℕ := fun x => if x ∈ I then k + 2 else if x ∈ J then k + 1 else 0
   set ys := xs.mergeSort (fun a b => decide (w b ≤ w a))
@@ -1121,9 +1101,7 @@ theorem augment_of_forall_sum_le_greedyMaxBasis
     exact (Nat.mul_le_mul_right (k + 1) hlt).trans h1
   have hopt_J : ∑ u ∈ J, w u ≤ ∑ u ∈ G, w u := hopt w J hJ
   have hcontra : (k + 1) * (k + 1) ≤ k * (k + 2) := hJ_ge.trans (hopt_J.trans hG_le)
-  have hexpand : (k + 1) * (k + 1) = k * (k + 2) + 1 := by
-    simp only [Nat.add_mul, Nat.mul_add]
-    omega
+  have hexpand : (k + 1) * (k + 1) = k * (k + 2) + 1 := by grind
   omega
 
 /-- **Rado–Edmonds Characterization of Matroids** ([Rado1957]; [Edmonds1971], Section 2):

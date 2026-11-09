@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Notation
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # Native natural powers
@@ -61,14 +62,15 @@ theorem exec {w : ℕ} (b n : ℕ) (hb : 1 ≤ b) (x : Data 5)
   have hs : ExecWithin (B := .standard) w
       (ram[ value ← #1; counter ← #0; one ← #1 ]) x start 3 := by
     ram_eval [start, h0, h1, value, counter, one, Fin.mk.injEq]
-  let I (y : Data 5) : Prop :=
-    y.regs base = b ∧ y.regs exponent = n ∧ y.regs one = 1 ∧ y.regs counter ≤ n ∧
-      y.regs value = b ^ y.regs counter ∧ y.mem = x.mem
-  have hi : I start := by simp [I, start, hx, hn, base, exponent, one, counter, value]
-  have hbody (y : Data 5) (hy : I y) (hc : (Cond.lt counter exponent).Holds y) :
-      ∃ z, ExecWithin w body y z 2 ∧ I z ∧ n - z.regs counter < n - y.regs counter := by
-    obtain ⟨hbv, hnv, ho, hc_le, hv, hm⟩ := hy
-    have hc_lt : y.regs counter < n := by simpa only [Cond.holds_lt, hnv] using hc
+  let P (j : ℕ) (y : Data 5) : Prop :=
+    y.regs base = b ∧ y.regs exponent = n ∧ y.regs one = 1 ∧
+      y.regs value = b ^ j ∧ y.mem = x.mem
+  have hi : P (start.regs counter) start := by
+    simp [P, start, hx, hn, base, exponent, one, counter, value]
+  have hbody (y : Data 5) (hy : P (y.regs counter) y) (hc_lt : y.regs counter < n) :
+      ∃ z, ExecWithin w body y z 2 ∧ P (y.regs counter + 1) z ∧
+        z.regs counter = y.regs counter + 1 := by
+    obtain ⟨hbv, hnv, ho, hv, hm⟩ := hy
     have hpn : b ^ (y.regs counter + 1) ≤ b ^ n := Nat.pow_le_pow_right hb (by omega)
     have hp : Fits w (b ^ (y.regs counter + 1)) := hfit.of_le (hpn.trans (by omega))
     have hj : Fits w (y.regs counter + 1) := hfit.of_le (by omega)
@@ -76,23 +78,16 @@ theorem exec {w : ℕ} (b n : ℕ) (hb : 1 ≤ b) (x : Data 5)
     have he : ExecWithin w body y z 2 := by
       ram_eval [body, z, hbv, ho, hv, ← pow_succ, hp, hj,
         value, counter, base, one, Fin.mk.injEq]
-    refine ⟨z, he, ?_, ?_⟩
-    · simpa +decide [I, z, base, exponent, one, counter, value, Function.update_apply] using
-        (show y.regs base = b ∧ y.regs exponent = n ∧ y.regs one = 1 ∧
-          y.regs counter + 1 ≤ n ∧ y.mem = x.mem from ⟨hbv, hnv, ho, by omega, hm⟩)
-    · simp only [z, Data.set_regs, Function.update_self]
-      omega
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => n - y.regs counter) hbody hi
-  have hj : y.regs counter = n := by
-    simp only [Cond.holds_lt, hy.2.1] at hc
-    have := hy.2.2.2.1
-    omega
-  refine ⟨y, ?_, ?_, hj, hy.2.2.1, hy.2.2.2.2.2, hy.1, hy.2.1⟩
+    refine ⟨z, he, ?_, by simp [z]⟩
+    simpa +decide [P, z, base, exponent, one, counter, value, Function.update_apply] using
+      (show y.regs base = b ∧ y.regs exponent = n ∧ y.regs one = 1 ∧ y.mem = x.mem from
+        ⟨hbv, hnv, ho, hm⟩)
+  obtain ⟨y, he, ⟨hyb, hyn, hy1, hyv, hym⟩, hj⟩ := ExecWithin.loop_count P
+    (fun y hy => hy.2.1) hbody (by simp [start, counter, one]) hi
+  refine ⟨y, ?_, hyv, hj, hy1, hym, hyb, hyn⟩
   · apply (hs.seq he).mono
     have hs0 : start.regs counter = 0 := by simp [start, counter, one]
     rw [hs0, Nat.sub_zero]
     omega
-  · simpa only [hj] using hy.2.2.2.2.1
 
 end Cslib.WordRAM.Power

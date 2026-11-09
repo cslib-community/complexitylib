@@ -32,6 +32,8 @@ machine implementing replay from an encoded input and coin tape needs a separate
 * `Turing.MultiTapePTM.runConfigFromCoins_append`: pause and resume at a tape boundary.
 * `Turing.MultiTapePTM.run_interpret_runConfigFrom_eq_coins`: average fixed-coin runs, retaining
   the complete configuration and private state.
+* `Turing.MultiTapePTM.runClosedCoins_ofDeterministic`: replaying a deterministic machine runs it
+  for as many steps as there are coins.
 
 ## References
 
@@ -248,5 +250,24 @@ theorem runClosedCoins_mem_support (machine : MultiTapePTM k Symbol State)
   rw [eval_runClosed_eq_map_coins]
   exact (PMF.mem_support_map_iff _ _ _).mpr
     ⟨coins, BitString.mem_support_uniformList_iff.mpr rfl, rfl⟩
+
+/-- Replaying a deterministic embedding ignores the coins and runs the deterministic machine for
+as many steps as there are coins. -/
+theorem replay_ofDeterministic (machine : MultiTapeTM k Symbol State)
+    (coins : List Bool) (initial : Config k Symbol State Empty input) :
+    (ofDeterministic machine).runClosedConfigFromCoins coins initial =
+      { initial with tapes := machine.runFrom initial.tapes coins.length } := by
+  have h := (ofDeterministic machine).runClosedConfigFromCoins_mem_support coins initial
+  simpa only [eval_runClosedConfigFrom_ofDeterministic, PMF.support_pure,
+    Set.mem_singleton_iff] using h
+
+/-- The closed replay output of a deterministic embedding is the output of the deterministic
+machine after as many steps as there are coins. -/
+theorem runClosedCoins_ofDeterministic (machine : MultiTapeTM k Symbol State)
+    (coins : List Bool) (input : List Symbol) :
+    (ofDeterministic machine).runClosedCoins coins input =
+      (machine.runFrom (machine.initCfg input) coins.length).output := by
+  rw [runClosedCoins, replay_ofDeterministic]
+  rfl
 
 end Turing.MultiTapePTM

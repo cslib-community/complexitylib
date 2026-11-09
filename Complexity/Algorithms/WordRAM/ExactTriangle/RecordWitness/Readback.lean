@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QueryValues
 public import Complexity.Algorithms.ExactTriangle.PieceBounds
+import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.QuerySpan
 
 /-!
 # Protected original data for a real record consumer
@@ -73,28 +74,12 @@ theorem record_view {n D g p : ℕ} (values : ℕ → ℤ) (initial y : Data 64)
     rw [hheap]
     dsimp only [base]
     nlinarith only [hh]
-  have hQ : idx.2.1 * queryCap n D + Q ≤ N := by
-    have hc : C idx.1.val ≤ N := Nat.count_le _
-    have hpositive := RecordProduct.recordQueryCount_pos values hp (by omega) hDn idx hidx
-    change 0 < min (queryCap n D) (C idx.1.val - idx.2.1 * queryCap n D) at hpositive
-    dsimp only [Q, RecordProduct.recordQueryCount]
-    change idx.2.1 * queryCap n D +
-      min (queryCap n D) (C idx.1.val - idx.2.1 * queryCap n D) ≤ N
-    omega
   have hqEnd : q + 2 * Q ≤ y.regs Instances.heap := by
-    have hrho := Nat.mul_le_mul_right (2 * N) (Nat.succ_le_of_lt idx.1.isLt)
-    dsimp only [q, RecordProduct.recordQueries]
-    change 5 + 6 * N + p + 2 * idx.1.val * N +
-      2 * (idx.2.1 * queryCap n D) + 2 * Q ≤ _
+    have hq := RecordProduct.query_end_le_output values hp (by omega) hDn idx hidx
+    change q + 2 * Q ≤ 5 + 6 * N + p + 2 * N * p + 3 * K at hq
     rw [hheap, hout]
-    nlinarith only [hQ, hrho, Nat.zero_le (3 * K),
-      Nat.zero_le (K * H * (6 + 2 * (n * D)))]
-  have hfirst : idx.2.2 * pieceSize D g ≤ n := by
-    have hB := pieceSize_pos hD hg
-    by_contra hh
-    have hc : numPieces n D g ≤ idx.2.2 := (Nat.ceilDiv_le_iff hB).mpr (by omega)
-    change idx.2.2 < numPieces n D g at hj
     omega
+  have hfirst : idx.2.2 * pieceSize D g ≤ n := (piece_start_lt hD hg hj).le
   obtain ⟨hdr, -, -⟩ := PreparationSpec.instance_readback values wAB hp
     (by intro a b; rfl) hD hDn hg h idx hidx
   have hcoord := (RecordProduct.output_query_coordinates values wAB hp (by intro a b; rfl)

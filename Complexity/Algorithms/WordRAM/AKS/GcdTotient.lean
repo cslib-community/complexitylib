@@ -12,6 +12,8 @@ public import Complexity.Computability.WordRAM.RegisterFrame
 public import Mathlib.Data.Nat.Totient
 import Mathlib.Tactic.FinCases
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Step 3 of the AKS algorithm and Euler's totient on the word RAM
 
@@ -108,20 +110,20 @@ private theorem card_filter_coprime_range_succ {R : ℕ} (hR : 2 ≤ R) :
   rw [Finset.range_add_one, Finset.filter_insert]
   simp [Nat.coprime_self, show R ≠ 1 by omega, Nat.totient_eq_card_coprime]
 
-/-- The loop invariant. -/
-private def Inv (N R : ℕ) (y : Data 11) : Prop :=
-  y.regs n = N ∧ y.regs r = R ∧ y.regs one = 1 ∧ y.regs lim = R + 1 ∧ y.regs a ≤ R + 1 ∧
-    y.regs ok ≤ 1 ∧ (y.regs ok = 1 ↔ ∀ b < y.regs a, Nat.gcd N b = 1 ∨ Nat.gcd N b = N) ∧
-    y.regs phi = ((Finset.range (y.regs a)).filter R.Coprime).card
+/-- The semantic prefix of the gcd/totient scan after processing `j` values. -/
+private def Inv (N R j : ℕ) (y : Data 11) : Prop :=
+  y.regs n = N ∧ y.regs r = R ∧ y.regs one = 1 ∧ y.regs lim = R + 1 ∧
+    y.regs ok ≤ 1 ∧ (y.regs ok = 1 ↔ ∀ b < j, Nat.gcd N b = 1 ∨ Nat.gcd N b = N) ∧
+    y.regs phi = ((Finset.range j).filter R.Coprime).card
 
 private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) (y : Data 11)
-    (hy : Inv N R y) (hc : (Cond.lt a lim).Holds y) :
-    ∃ z, ExecWithin w body y z (10 * R + 19) ∧ Inv N R z ∧
-      R + 1 - z.regs a < R + 1 - y.regs a := by
+    (hy : Inv N R (y.regs a) y) (hc : y.regs a < R + 1) :
+    ∃ z, ExecWithin w body y z (10 * R + 19) ∧
+      Inv N R (y.regs a + 1) z ∧ z.regs a = y.regs a + 1 := by
   classical
-  obtain ⟨hyn, hyr, hy1, hyl, hya, hyok, hyiff, hyphi⟩ := hy
+  obtain ⟨hyn, hyr, hy1, hyl, hyok, hyiff, hyphi⟩ := hy
   obtain ⟨A, hA⟩ : ∃ A, y.regs a = A := ⟨_, rfl⟩
-  have hAR : A ≤ R := by simp only [Cond.holds_lt, hA, hyl] at hc; omega
+  have hAR : A ≤ R := by rw [hA] at hc; omega
   rw [hA] at hyiff hyphi
   have hfA : Fits w A := hfR.of_le (by omega)
   have h1f : Fits w 1 := hfR.of_le (by omega)
@@ -182,7 +184,7 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
     · ram_eval [z, ph, hg₄, hg1, hy₄1, hy₄phi, hy₄a, hfA1]
   have hza : z.regs a = A + 1 := by simp [z]
   refine ⟨z, (hrun₁.seq (hrun₂.seq (hrun₃.seq (hrun₄.seq hrun₅)))).mono (by omega), ?_, ?_⟩
-  · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte]
       rw [hy₄' n (by simp) (by decide), hyn]
     · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte]
@@ -190,11 +192,10 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
     · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte]; exact hy₄1
     · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte]
       rw [hy₄' lim (by simp) (by decide), hyl]
-    · rw [hza]; omega
     · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte]
       rw [hy₄ok]; simp only [o]; split_ifs <;> omega
     · have hzo : z.regs ok = o := by simp +decide [z, hy₄ok]
-      rw [hzo, hza]
+      rw [hzo, hA]
       simp only [o]
       constructor
       · intro h b hb
@@ -207,12 +208,12 @@ private theorem body_step {w N R : ℕ} (hfN : Fits w N) (hfR : Fits w (R + 1)) 
         simp only [hc, ↓reduceIte]
         exact hyiff.mpr fun b hb => h b (by omega)
     · have hzp : z.regs phi = ph := by simp +decide [z]
-      rw [hzp, hza, Finset.range_add_one, Finset.filter_insert]
+      rw [hzp, hA, Finset.range_add_one, Finset.filter_insert]
       simp only [ph, hyphi, Nat.Coprime]
       split_ifs with hg
       · rw [Finset.card_insert_of_notMem (by simp)]
       · rfl
-  · rw [hza, hA]; omega
+  · simp only [hza, hA]
 
 /-- **Step 3 and the totient.** For `r ≥ 2`, with the word size holding `n` and `r + 1`, within
 `time r` instructions the flag `ok` is `1` exactly when every `1 ≤ a ≤ r` has `gcd(a, n) = 1` or
@@ -228,13 +229,11 @@ theorem exec {w : ℕ} (x : Data 11) {N R : ℕ} (hn : x.regs n = N) (hr : x.reg
   have hrun₀ : ExecWithin (B := .standard) w
       (ram[ one ← #1; lim ← r + one; a ← #0; ok ← #1; phi ← #0 ]) x x₀ 5 := by
     ram_eval [x₀, hr, h1f, hfR]
-  have hx₀ : Inv N R x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp +decide [x₀, hn, hr]
-  obtain ⟨y, hrun, hy, hc⟩ := ExecWithin.loop_invariant (Inv N R) (fun y => R + 1 - y.regs a)
-    (body_step hfN hfR) hx₀
-  obtain ⟨hyn, hyr, -, hyl, hya, hyok, hyiff, hyphi⟩ := hy
-  have hend : y.regs a = R + 1 := by simp only [Cond.holds_lt, hyl] at hc; omega
-  rw [hend] at hyiff hyphi
+  have hx₀ : Inv N R (x₀.regs a) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp +decide [x₀, hn, hr]
+  obtain ⟨y, hrun, ⟨hyn, hyr, _, _, hyok, hyiff, hyphi⟩, _⟩ :=
+    ExecWithin.loop_count (Inv N R) (fun _ ⟨_, _, _, hlim, _⟩ => hlim)
+      (body_step hfN hfR) (by simp +decide [x₀, a, phi, ok]) hx₀
   refine ⟨y, (hrun₀.seq hrun).mono ?_, hyok, ?_, ?_, hyn, hyr⟩
   · have : x₀.regs a = 0 := by simp +decide [x₀]
     rw [this, Nat.sub_zero, show 10 * R + 19 + 2 = 10 * R + 21 by ring]

@@ -13,8 +13,10 @@ public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
 public import Complexity.Crypto.Computational.Encryption.Basic
 public import Complexity.Crypto.Game.Hybrid
+public import Complexity.Crypto.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Crypto.Computational.Encryption.DecryptionBound
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Crypto.Negligible.Dyadic
 import Complexity.Languages.Probabilistic.Oracle.Simulation
@@ -276,10 +278,9 @@ to message encoding `encMsg`. -/
 structure CCA2AdversaryOf.IsPPT {Msg : Type} (encMsg : Msg ↪ List Bool)
     (adversary : CCA2AdversaryOf Msg) : Prop where
   /-- Phase 1 message selection is uniform strict oracle PPT on `(n, pk)`. -/
-  choose : IsOraclePPT (Operation := Unit) (encPair (encPair encMsg encMsg) encBits)
-    adversary.choose
+  choose : IsOraclePPT (Operation := Unit) (encChoiceOut encMsg) adversary.choose
   /-- Phase 2 guessing is uniform strict oracle PPT on `(n, state, ct)`. -/
-  guess : IsOraclePPTOn (Operation := Unit) (encPair encUnary (encPair encBits encBits)) encBool
+  guess : IsOraclePPTOn (Operation := Unit) encGuessInput encBool
     (fun ⟨n, state, ct⟩ => adversary.guess n state ct)
 
 /-- Per-stage decryption-query bound `(Q₁ n, Q₂ n)` for a `CCA2AdversaryOf Msg`. -/
@@ -447,10 +448,9 @@ private theorem isPPTOn_run_cca2Phase1Oracle_of_choose {Choice Out : Type}
     {choose : ℕ → List Bool → WordOracleComp Unit Choice}
     (hdec : ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hchoose : IsOraclePPT encChoice choose) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encChoice (encFinEnum Unit))
+    IsPPTOn encKeyPairInput (encPair encChoice (encFinEnum Unit))
       (fun ⟨n, pk, sk⟩ =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -505,10 +505,9 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
     {adversary : CCA2AdversaryOf Msg}
     (hdec : ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
+    IsPPTOn encKeyPairInput (encPair (encChoiceOut encMsg) (encFinEnum Unit))
       (fun ⟨n, pk, sk⟩ =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -524,7 +523,7 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
     {adversary : CCA2AdversaryOf Msg}
     (hdec : ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encBits)))
       (encPair encBool (encFinEnum Unit))
@@ -604,13 +603,13 @@ theorem isPPTOn_cca2GameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut
     {adversary : CCA2AdversaryOf Msg}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, pk, msg⟩ => encrypt n pk msg))
     (hdecrypt : ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool (cca2GameOn valid encOut keyGen encrypt decrypt adversary bit) := by
   let E1 := encPair encUnary (encPair encBits encBits)
@@ -700,11 +699,11 @@ theorem isPPTOn_cca2Game {Msg Out : Type} {encMsg : Msg ↪ List Bool} {encOut :
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     {adversary : CCA2AdversaryOf Msg}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, pk, msg⟩ => encrypt n pk msg))
     (hdecrypt : ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool (cca2Game encOut keyGen encrypt decrypt adversary bit) :=
   isPPTOn_cca2GameOn (ComputableTidilyInPolyTime.const true).computableInPolyTime
@@ -751,7 +750,7 @@ theorem CCA2AdversaryOf.IsPPT.restrict {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     {adversary : CCA2AdversaryOf Msg} (hadversary : CCA2AdversaryOf.IsPPT encMsg adversary) :
     CCA2AdversaryOf.IsPPT encMsg (adversary.restrict valid) where
   choose := by
@@ -817,7 +816,7 @@ theorem INDCCA2Of.indcca2On {Msg Out : Type} {encMsg : Msg ↪ List Bool}
     (h : INDCCA2Of encMsg encOut keyGen encrypt decrypt)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     INDCCA2On valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hadversary
   simpa only [eval_cca2Game_restrict] using
@@ -826,7 +825,7 @@ theorem INDCCA2Of.indcca2On {Msg Out : Type} {encMsg : Msg ↪ List Bool}
 private theorem computableInPolyTime_wordValid :
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool × List Bool => p.2.2.1.length == p.2.2.2.length)
-      (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool :=
+      (encChallengePairInput encBits) encBool :=
   (ComputableTidilyInPolyTime.unary_beq
     (ComputableTidilyInPolyTime.length_bits.comp (by fun_prop))
     (ComputableTidilyInPolyTime.length_bits.comp (by fun_prop))).computableInPolyTime
@@ -1161,9 +1160,9 @@ theorem isPPTOn_run_cca2MultiPhase1Oracle {Msg Out : Type} {encMsg : Msg ↪ Lis
     {adversary : MultiCCA2AdversaryOf Msg}
     (hdec : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
+    IsPPTOn encKeyPairInput
       (encPair (encPair (encList (encPair encMsg encMsg)) encBits) (encFinEnum Unit))
       (fun caller : ℕ × List Bool × List Bool =>
         (OracleComp.interpret
@@ -1180,7 +1179,7 @@ theorem isPPTOn_run_cca2MultiPhase2Oracle {Msg Out : Type} {encMsg : Msg ↪ Lis
     {adversary : MultiCCA2AdversaryOf Msg}
     (hdec : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits (encList encBits))))
       (encPair encBool (encFinEnum Unit))
@@ -1262,13 +1261,13 @@ theorem isPPTOn_cca2MultiGameOn {Msg Out : Type} {encMsg : Msg ↪ List Bool}
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool
       (cca2MultiGameOn valid encOut keyGen encrypt decrypt adversary bit) := by
@@ -1392,11 +1391,11 @@ theorem isPPTOn_cca2MultiGame {Msg Out : Type} {encMsg : Msg ↪ List Bool}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     {adversary : MultiCCA2AdversaryOf Msg}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (hA : adversary.IsPPT encMsg) (bit : Bool) :
     IsPPTOn encUnary encBool (cca2MultiGame encOut keyGen encrypt decrypt adversary bit) :=
   isPPTOn_cca2MultiGameOn (ComputableTidilyInPolyTime.const true).computableInPolyTime
@@ -1445,7 +1444,7 @@ theorem MultiCCA2AdversaryOf.IsPPT.restrict {Msg : Type} {encMsg : Msg ↪ List 
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     {adversary : MultiCCA2AdversaryOf Msg}
     (hadversary : MultiCCA2AdversaryOf.IsPPT encMsg adversary) :
     MultiCCA2AdversaryOf.IsPPT encMsg (adversary.restrict valid) where
@@ -1521,7 +1520,7 @@ theorem INDCCA2MultiOf.indcca2MultiOn {Msg Out : Type} {encMsg : Msg ↪ List Bo
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hadversary
   simpa only [eval_cca2MultiGame_restrict] using
@@ -1732,14 +1731,14 @@ theorem isQueryBounded_multiPhase2FilterHandler (decBound : List Bool → ℕ)
 /-- Interpreting `multiPhase2FilterHandler` against `cca2Phase2Oracle` on `ct ∈ cts` has the exact
 same output distribution as running directly against `cca2MultiPhase2Oracle` on `cts`, whenever
 `decBound` upper-bounds every encoded decryption output length. -/
-theorem eval_run_multiPhase2FilterHandler {Out : Type}
+theorem eval_run_multiPhase2FilterHandler {Out α : Type}
     (encOut : Out ↪ List Bool)
     (decrypt : ℕ → List Bool → List Bool → Option Out)
     (decBound : List Bool → ℕ)
     (n : ℕ) (sk ct : List Bool) (cts : List (List Bool))
     (hct : ct ∈ cts)
     (hdecBound : ∀ req, (encOption encOut (decrypt n sk req)).length ≤ decBound req)
-    (prog : WordOracleComp Unit Bool) :
+    (prog : WordOracleComp Unit α) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2Phase2Oracle encOut decrypt n sk ct))
@@ -1787,8 +1786,8 @@ theorem eval_run_multiPhase2FilterHandler {Out : Type}
         simp only [PMF.pure_map, List.take_of_length_le (hdecBound req)])
     prog ()
   have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
-  have hid1 : (fun x : Bool × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
-  have hid2 : (fun x : Bool × Unit => (x.1, ())) = id := rfl
+  have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
+  have hid2 : (fun x : α × Unit => (x.1, ())) = id := rfl
   simpa only [PMF.map_comp, Function.comp_def, hid1, hid2, PMF.map_id] using hfst
 
 /-- Continuation of the multi-challenge hybrid experiment at index `split : ℕ` after
@@ -1926,13 +1925,13 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_choose {Msg : Type} [Inhabited Msg]
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+      (encChallengePairInput encMsg) encBool)
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hA : adversary.IsPPT encMsg) :
     IsOraclePPTOn (Operation := Unit)
       (encPair (encPair encUnary encBits) encUnary)
-      (encPair (encPair encMsg encMsg) encBits)
+      (encChoiceOut encMsg)
       (fun caller : (ℕ × List Bool) × ℕ =>
         (cca2MultiToSingleAt valid encrypt decBound adversary caller.2).choose
           caller.1.1 caller.1.2) := by
@@ -2137,7 +2136,7 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
       (encPair encUnary encBits) encUnary)
     (hA : adversary.IsPPT encMsg) (split : ℕ) :
     IsOraclePPTOn (Operation := Unit)
-      (encPair encUnary (encPair encBits encBits)) encBool
+      encGuessInput encBool
       (fun p =>
         (cca2MultiToSingleAt valid encrypt decBound adversary split).guess
           p.1 p.2.1 p.2.2) := by
@@ -2298,8 +2297,8 @@ theorem isPPT_cca2MultiToSingleAt {Msg : Type} [Inhabited Msg]
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+      (encChallengePairInput encMsg) encBool)
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecBound : ComputableInPolyTime
       (fun p : ℕ × List Bool => decBound p.1 p.2)
@@ -2323,8 +2322,8 @@ theorem isPPT_cca2MultiToSingle {Msg : Type} [Inhabited Msg]
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+      (encChallengePairInput encMsg) encBool)
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecBound : ComputableInPolyTime
       (fun p : ℕ × List Bool => decBound p.1 p.2)
@@ -2433,7 +2432,9 @@ theorem eval_cca2GameOn_cca2MultiToSingle {Msg Out : Type} [Inhabited Msg]
   simp only [hsample, hguess, PMF.bind_bind]
   exact PMF.bind_comm _ _ _
 
-private theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
+/-- If two pairs of continuations satisfy `f₁ a b + g₂ a b = f₂ a b + g₁ a b` on the support of
+`p`, then `(p.bind f₁) b + (p.bind g₂) b = (p.bind f₂) b + (p.bind g₁) b`. -/
+theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
     {f₁ f₂ g₁ g₂ : α → PMF β} {b : β}
     (h : ∀ a ∈ p.support, f₁ a b + g₂ a b = f₂ a b + g₁ a b) :
     p.bind f₁ b + p.bind g₂ b = p.bind f₂ b + p.bind g₁ b := by
@@ -2765,35 +2766,22 @@ theorem INDCCA2On.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (h : INDCCA2On valid encMsg encOut keyGen encrypt decrypt) :
     INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt := by
   intro adversary hA
   obtain ⟨ck, dk, hlenKey⟩ := hkeyGen.length_le
-  obtain ⟨cd, dd, hlenDec⟩ := hdecrypt.tidy.polyBounded_length.exists_le
+  obtain ⟨decBound, hdecBoundPoly, hdecBound⟩ := exists_decryption_length_bound hkeyGen hdecrypt
   obtain ⟨_, _, _, _, cq, dq, _, _, hlenCh⟩ := hA.query_bounds
-  let decBound : ℕ → List Bool → ℕ :=
-    fun n req => cd * (2 * n + 2 * (ck * (n + 1) ^ dk) + req.length + 5) ^ dd
   let Q : ℕ → ℕ := fun n => cq * (n + ck * (n + 1) ^ dk + 2) ^ dq
-  have hdecBoundPoly :
-      ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
-        (encPair encUnary encBits) encUnary := by
-    dsimp only [decBound]; exact ComputableInPolyTime.of_tidy (by fun_prop)
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]; exact ComputableInPolyTime.of_tidy (by fun_prop)
-  have hdecBound (n : ℕ) (keys : List Bool × List Bool)
-      (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support) (req : List Bool) :
-      (encOption encOut (decrypt n keys.2 req)).length ≤ decBound n req := by
-    have hk := hlenKey n keys hkeys
-    have hd := hlenDec (n, keys.2, req)
-    simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hk hd
-    exact hd.trans (Nat.mul_le_mul_left cd (Nat.pow_le_pow_left (by omega) dd))
   have hQ (n : ℕ) (keys : List Bool × List Bool)
       (hkeys : keys ∈ (ProbComp.eval (keyGen n)).support)
       (choiceOut : (List (Msg × Msg) × List Bool) × Unit)
@@ -2827,13 +2815,13 @@ theorem indcca2MultiOn_iff_indcca2On {Msg Out : Type} [Inhabited Msg]
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg =>
         valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut)) :
+      (encKeyedInput encBits) (encOption encOut)) :
     INDCCA2MultiOn valid encMsg encOut keyGen encrypt decrypt ↔
       INDCCA2On valid encMsg encOut keyGen encrypt decrypt :=
   ⟨INDCCA2MultiOn.indcca2On,
@@ -2848,11 +2836,11 @@ theorem INDCCA2Of.indcca2MultiOf {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut))
+      (encKeyedInput encBits) (encOption encOut))
     (h : INDCCA2Of encMsg encOut keyGen encrypt decrypt) :
     INDCCA2MultiOf encMsg encOut keyGen encrypt decrypt :=
   INDCCA2On.indcca2MultiOn (ComputableTidilyInPolyTime.const true).computableInPolyTime
@@ -2867,11 +2855,11 @@ theorem indcca2MultiOf_iff_indcca2Of {Msg Out : Type} [Inhabited Msg]
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Out}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encOut)) :
+      (encKeyedInput encBits) (encOption encOut)) :
     INDCCA2MultiOf encMsg encOut keyGen encrypt decrypt ↔
       INDCCA2Of encMsg encOut keyGen encrypt decrypt :=
   indcca2MultiOn_iff_indcca2On (ComputableTidilyInPolyTime.const true).computableInPolyTime
@@ -2884,11 +2872,11 @@ theorem INDCCA2.indcca2Multi
     {encrypt : ℕ → List Bool → Bool → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Bool}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBool))
+      (encKeyedInput encBits) (encOption encBool))
     (h : INDCCA2 keyGen encrypt decrypt) :
     INDCCA2Multi keyGen encrypt decrypt :=
   INDCCA2Of.indcca2MultiOf hkeyGen hencrypt hdecrypt h
@@ -2901,11 +2889,11 @@ theorem indcca2Multi_iff_indcca2
     {encrypt : ℕ → List Bool → Bool → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option Bool}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBool)) :
+      (encKeyedInput encBits) (encOption encBool)) :
     INDCCA2Multi keyGen encrypt decrypt ↔ INDCCA2 keyGen encrypt decrypt :=
   indcca2MultiOf_iff_indcca2Of hkeyGen hencrypt hdecrypt
 
@@ -2916,11 +2904,11 @@ theorem WordINDCCA2.wordINDCCA2Multi
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option (List Bool)}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBits) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      (encKeyedInput encBits) (encOption encBits))
     (h : WordINDCCA2 keyGen encrypt decrypt) :
     WordINDCCA2Multi keyGen encrypt decrypt :=
   INDCCA2On.indcca2MultiOn computableInPolyTime_wordValid
@@ -2934,11 +2922,11 @@ theorem wordINDCCA2Multi_iff_wordINDCCA2
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
     {decrypt : ℕ → List Bool → List Bool → Option (List Bool)}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBits) encBits
       (fun p => encrypt p.1 p.2.1 p.2.2))
     (hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits)) :
+      (encKeyedInput encBits) (encOption encBits)) :
     WordINDCCA2Multi keyGen encrypt decrypt ↔ WordINDCCA2 keyGen encrypt decrypt :=
   indcca2MultiOn_iff_indcca2On computableInPolyTime_wordValid
     hkeyGen hencrypt hdecrypt

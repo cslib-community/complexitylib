@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -18,6 +18,9 @@ A dominating set is inclusion-minimal exactly when each of its vertices has a pr
 neighbor. Valid private-neighbor markings may mark several private neighbors of the same selected
 vertex; these markings are not unique certificates. This is the interpretation of
 [ChenJiangZhu2027], Proposition 7.6 / Appendix D.3 (PDF pp. 27, 34–35).
+
+The equivalent membership-or-adjacency API from main is retained by
+`isDominatingSet_iff`, together with its monotonicity and nonemptiness lemmas.
 
 ## Main results
 
@@ -46,6 +49,42 @@ theorem ClosedAdj.symm {G : SimpleGraph V} {u v : V} (h : G.ClosedAdj u v) : G.C
 /-- Every vertex has a selected closed neighbor. -/
 @[expose] def IsDominatingSet (G : SimpleGraph V) (S : Set V) : Prop :=
   ∀ w, ∃ u ∈ S, G.ClosedAdj w u
+
+/-- Domination equivalently means membership or an adjacent selected vertex. -/
+theorem isDominatingSet_iff {G : SimpleGraph V} {S : Set V} :
+    G.IsDominatingSet S ↔ ∀ v, v ∈ S ∨ ∃ s ∈ S, G.Adj v s := by
+  constructor
+  · intro h v
+    obtain ⟨u, hu, he | ha⟩ := h v
+    · exact Or.inl (he ▸ hu)
+    · exact Or.inr ⟨u, hu, ha⟩
+  · intro h v
+    rcases h v with hv | ⟨u, hu, ha⟩
+    · exact ⟨v, hv, Or.inl rfl⟩
+    · exact ⟨u, hu, Or.inr ha⟩
+
+instance {G : SimpleGraph V} [Fintype V] [DecidableEq V] [DecidableRel G.Adj]
+    (S : Finset V) : Decidable (G.IsDominatingSet (S : Set V)) :=
+  decidable_of_iff (∀ v, v ∈ S ∨ ∃ s ∈ S, G.Adj v s)
+    (by simp only [isDominatingSet_iff, Finset.mem_coe])
+
+/-- The set of all vertices dominates every graph. -/
+theorem isDominatingSet_univ (G : SimpleGraph V) : G.IsDominatingSet Set.univ :=
+  fun v => ⟨v, Set.mem_univ v, Or.inl rfl⟩
+
+/-- A superset of a dominating set is dominating. -/
+theorem IsDominatingSet.mono {G : SimpleGraph V} {S T : Set V}
+    (h : G.IsDominatingSet S) (hST : S ⊆ T) : G.IsDominatingSet T := by
+  intro v
+  obtain ⟨u, hu, ha⟩ := h v
+  exact ⟨u, hST hu, ha⟩
+
+/-- A dominating set of a graph with a vertex is nonempty. -/
+theorem IsDominatingSet.nonempty {G : SimpleGraph V} {S : Set V} [Nonempty V]
+    (h : G.IsDominatingSet S) : S.Nonempty := by
+  obtain ⟨v⟩ := ‹Nonempty V›
+  obtain ⟨u, hu, _⟩ := h v
+  exact ⟨u, hu⟩
 
 /-- The selected vertex is the unique selected member of a closed neighborhood. -/
 @[expose] def IsPrivateNeighbor (G : SimpleGraph V) (S : Set V) (w u : V) : Prop :=

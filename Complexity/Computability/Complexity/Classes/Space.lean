@@ -49,7 +49,7 @@ when it is moreover in `PSPACE` [Arora and Barak, Section 4.2][AroraBarak09]
 see `Complexity.Computability.Complexity.Classes.Space.TQBF`.
 
 Space counts visited work-tape cells, as upstream does: the input tape is read-only and the output
-tape write-only [Sipser, Section 8.0][Sipser2013].
+tape write-only [Sipser, Section 8.4 and Definition 8.21][Sipser2013].
 
 ## Main definitions
 

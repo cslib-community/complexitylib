@@ -29,6 +29,7 @@ import Complexity.Languages.Probabilistic.Presample
 import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.Product
 import Complexity.Probability.StatisticalDistance.Product
 import Complexity.Tactic.PPT
 
@@ -38,7 +39,7 @@ import Complexity.Tactic.PPT
 This module completes the efficient lazy-sampling Decisional Diffie–Hellman (`DDH`) reduction and
 the universal-hash bit-string pseudorandom-function bridge for the Naor–Reingold PRF over a
 `PrimeOrderGroupFamily` ([BonehShoup2023], Section 10.11, Exercises 10.4, 10.8, 10.11, pp. 424–426,
-and Section 4.11, Exercise 4.18, p. 172; [NaorReingold2004], Section 4.1, Construction 4.1,
+and Section 4.10, Exercise 4.18, p. 172; [NaorReingold2004], Section 4.1, Construction 4.1,
 Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 1. **Inverse-order bound from `DDH`:** `DDH.negligible_expected_inv_order`, imported from
@@ -98,7 +99,7 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  Version 0.6][BonehShoup2023], Section 4.10 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, and 10.11, pp. 424–426).
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
   Functions*][NaorReingold2004], Section 4.1 (Construction 4.1, Theorem 4.1, Lemma 4.2,
@@ -248,44 +249,6 @@ private theorem naorReingoldWordHybridAt_self (F : PrimeOrderGroupFamily) (d : F
     simp [naorReingoldHybridEval]
   simp_rw [hfn, PMF.bind_const]
 
-private def shiftFinAtEquiv {m : ℕ} {α : Type*} [AddGroup α] (i : Fin m) (δ : α) :
-    (Fin m → α) ≃ (Fin m → α) where
-  toFun f := Function.update f i (f i + δ)
-  invFun f := Function.update f i (f i - δ)
-  left_inv f := by
-    funext j
-    by_cases hj : j = i
-    · subst hj; simp
-    · simp [hj]
-  right_inv f := by
-    funext j
-    by_cases hj : j = i
-    · subst hj; simp
-    · simp [hj]
-
-private theorem uniformOfFintype_bind_update_fin {m : ℕ} {α β : Type*}
-    [AddGroup α] [Fintype α] [Nonempty α] (i : Fin m) (g : (Fin m → α) → PMF β) :
-    ((PMF.uniformOfFintype α).bind fun a =>
-      (PMF.uniformOfFintype (Fin m → α)).bind fun f =>
-        g (Function.update f i a)) =
-    (PMF.uniformOfFintype (Fin m → α)).bind g := by
-  rw [PMF.bind_comm]
-  have h1 (f : Fin m → α) :
-      ((PMF.uniformOfFintype α).bind fun a => g (Function.update f i a)) =
-      ((PMF.uniformOfFintype α).bind fun δ => g (shiftFinAtEquiv i δ f)) := by
-    change (PMF.uniformOfFintype α).bind (fun a => g (Function.update f i a)) =
-      (PMF.uniformOfFintype α).bind
-        ((fun a => g (Function.update f i a)) ∘ Equiv.addLeft (f i))
-    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
-  simp_rw [h1]
-  rw [PMF.bind_comm]
-  have h2 (δ : α) :
-      ((PMF.uniformOfFintype (Fin m → α)).bind fun f => g (shiftFinAtEquiv i δ f)) =
-      (PMF.uniformOfFintype (Fin m → α)).bind g := by
-    change (PMF.uniformOfFintype (Fin m → α)).bind (g ∘ shiftFinAtEquiv i δ) = _
-    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
-  simp_rw [h2, PMF.bind_const]
-
 private def wordPrefixTableEquiv (α : Type*) (k : ℕ) :
     (BitString k → α × α) ≃ (BitString (k + 1) → α) :=
   ((Equiv.piCongrRight fun _ : BitString k =>
@@ -381,8 +344,8 @@ private theorem multiDDHRealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGr
       exact congrArg (· • F.generator d) (by ring)
     · simp [hxk, smul_smul, mul_comm]
   simp_rw [hfn]
-  exact uniformOfFintype_bind_update_fin ⟨k, hk⟩
-    (fun α => naorReingoldWordRun F d prog (F.naorReingoldHybridEval d k B α))
+  symm
+  exact PMF.bind_uniformOfFintype_update (⟨k, hk⟩ : Fin m) _
 
 private theorem multiDDHIdealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
     (d : F.Desc) {m : ℕ} (k : ℕ) (hk : k < m) (prog : WordOracleComp Unit Bool) :

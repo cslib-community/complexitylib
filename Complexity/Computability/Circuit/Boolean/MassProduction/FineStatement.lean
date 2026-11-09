@@ -189,8 +189,7 @@ theorem exists_rat_coefficient {γ ε : ℝ} (hγ : 0 ≤ γ) (hγ1 : γ < 1) (h
   have hlead : ((P : ℝ) + 1) * κ ≤ target * P := by nlinarith
   calc ((P : ℝ) + 1) * ρ.den = (((P : ℝ) + 1) * κ) * ((ρ.den - ρ.num.toNat : ℕ) : ℝ) := by
         rw [mul_assoc, hident]
-    _ ≤ target * P * ((ρ.den - ρ.num.toNat : ℕ) : ℝ) :=
-        mul_le_mul_of_nonneg_right hlead (Nat.cast_nonneg _)
+    _ ≤ target * P * ((ρ.den - ρ.num.toNat : ℕ) : ℝ) := by gcongr
 
 /-- A real copy budget `2 ^ (γ n)` below a rational exponent `num / den` is within the core
 budget `2 ^ (⌊num n / den⌋ + 1)`. -/
@@ -236,8 +235,7 @@ theorem realFineMassProduction_of_fine
     calc (P : ℝ) * ((den - num : ℕ) : ℝ) * (n * c) = (P : ℝ) * ((den - num : ℕ) : ℝ) * n * c := by
           ring
       _ ≤ ((P : ℝ) + 1) * den * 2 ^ n := hfinR
-      _ ≤ (1 / (1 - γ) + ε) * P * ((den - num : ℕ) : ℝ) * 2 ^ n :=
-          mul_le_mul_of_nonneg_right hcoef hpow
+      _ ≤ (1 / (1 - γ) + ε) * P * ((den - num : ℕ) : ℝ) * 2 ^ n := by gcongr
       _ = (P : ℝ) * ((den - num : ℕ) : ℝ) * ((1 / (1 - γ) + ε) * 2 ^ n) := by ring
   have hnc := le_of_mul_le_mul_left key hscale
   rw [← mul_div_assoc, le_div_iff₀ hnR]
