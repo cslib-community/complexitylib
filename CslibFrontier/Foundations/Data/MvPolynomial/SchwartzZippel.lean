@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.MvPolynomial.Rename
+import Mathlib.Combinatorics.Nullstellensatz
 
 /-!
 # Schwartz–Zippel over any finite set of variables, and determinant degrees
@@ -18,7 +19,9 @@ import Mathlib.Algebra.MvPolynomial.Rename
 Mathlib's `MvPolynomial.schwartz_zippel_totalDegree` bounds the proportion of the points of
 `S ^ n` at which a nonzero polynomial in the variables `Fin n` vanishes by `totalDegree / |S|`.
 `MvPolynomial.schwartz_zippel_totalDegree_fintype` transports it to the variables of any finite
-type `σ`, by renaming along `Fintype.equivFin σ`.
+type `σ`, by renaming along `Fintype.equivFin σ`. A nonzero polynomial of total degree below `|S|`
+does not vanish on all of `S ^ σ` (`MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card`), a
+consequence of Mathlib's `MvPolynomial.eq_zero_of_eval_zero_at_prod_finset`.
 
 A determinant of polynomials of total degree at most `d` has total degree at most `|ι| * d`
 (`MvPolynomial.totalDegree_det_le`), since each term of the Leibniz expansion is a product of
@@ -29,6 +32,8 @@ at a random point.
 
 * `MvPolynomial.schwartz_zippel_totalDegree_fintype`: the Schwartz–Zippel lemma for variables
   indexed by a finite type.
+* `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card`: a nonzero polynomial of total degree
+  below `|S|` has a nonzero value at a point of `S ^ σ`.
 * `MvPolynomial.totalDegree_det_le`: the total degree of a polynomial determinant.
 -/
 
@@ -69,6 +74,27 @@ theorem schwartz_zippel_totalDegree_fintype {R σ : Type*} [CommRing R] [IsDomai
   · intro g _
     funext i
     simp
+
+/-- The **Schwartz–Zippel lemma** over a finite integral domain with `q` elements, in counting
+form: a nonzero polynomial in `n` variables of total degree at most `d` has at most `d * q ^ n / q`
+zeros, stated without division as `#zeros * q ≤ d * q ^ n`. -/
+theorem card_filter_eval_eq_zero_mul_card_le {R : Type*} [CommRing R] [IsDomain R] [Fintype R]
+    [DecidableEq R] {n d : ℕ} {p : MvPolynomial (Fin n) R} (hp : p ≠ 0) (hd : p.totalDegree ≤ d) :
+    #{x | eval x p = 0} * card R ≤ d * card R ^ n := by
+  have hq : (0 : ℚ≥0) < card R := by exact_mod_cast Fintype.card_pos
+  have hsz := schwartz_zippel_totalDegree hp (univ : Finset R)
+  rw [piFinset_univ, card_univ, div_le_div_iff₀ (pow_pos hq n) hq] at hsz
+  have : (#{x | eval x p = 0} * card R : ℚ≥0) ≤ d * card R ^ n := hsz.trans (by gcongr)
+  exact_mod_cast this
+
+/-- A nonzero polynomial over an integral domain whose total degree is below `|S|` has a nonzero
+value at some point of `S ^ σ`. -/
+theorem exists_eval_ne_zero_of_totalDegree_lt_card {R σ : Type*} [CommRing R] [IsDomain R]
+    [Finite σ] {p : MvPolynomial σ R} (hp : p ≠ 0) {S : Finset R} (hS : p.totalDegree < #S) :
+    ∃ x : σ → R, (∀ i, x i ∈ S) ∧ eval x p ≠ 0 := by
+  by_contra! h
+  exact hp (eq_zero_of_eval_zero_at_prod_finset p (fun _ => S)
+    (fun i => (degreeOf_le_totalDegree p i).trans_lt hS) h)
 
 /-- A determinant of polynomials of total degree at most `d` has total degree at most
 `|ι| * d`. -/

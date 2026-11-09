@@ -371,7 +371,11 @@ The bound comes from two lemmas in
 [MvPolynomial/SchwartzZippel.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SchwartzZippel.lean):
 `MvPolynomial.schwartz_zippel_totalDegree_fintype` extends Mathlib's Schwartz–Zippel lemma from
 the variables `Fin n` to any finite type, and `MvPolynomial.totalDegree_det_le` bounds the total
-degree of a determinant of polynomials. Use them for other symbolic-determinant tests.
+degree of a determinant of polynomials. Use them for other symbolic-determinant tests. The same
+module has two consequences. `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card` finds a
+nonvanishing point of `S ^ σ` when the total degree is below `|S|`; the `exists_det_…_ne_zero`
+theorems use it. `MvPolynomial.card_filter_eval_eq_zero_mul_card_le` is the counting form over a
+finite domain, `#zeros * q ≤ d * q ^ n`.
 
 The [checked clients](../../CslibFrontierTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is
