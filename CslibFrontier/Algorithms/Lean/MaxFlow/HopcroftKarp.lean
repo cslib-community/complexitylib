@@ -1766,30 +1766,7 @@ theorem mem_foldl_hkMatchingStep (mate : Vector (Option (Fin m)) r) (l : List (F
   | cons x l ih =>
     rw [List.foldl_cons, ih]
     unfold hkMatchingStep
-    cases hx : vget mate x with
-    | none =>
-      simp only [List.mem_cons]
-      constructor
-      · rintro (h | ⟨h1, h2⟩)
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl h
-        · rw [hx] at h2
-          exact nomatch h2
-        · exact .inr ⟨h1, h2⟩
-    | some w =>
-      simp only [Finset.mem_insert, Prod.mk.injEq, List.mem_cons]
-      constructor
-      · rintro ((⟨rfl, rfl⟩ | h) | ⟨h1, h2⟩)
-        · exact .inr ⟨.inl rfl, hx⟩
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl (.inr h)
-        · rw [hx] at h2
-          exact .inl (.inl ⟨(Option.some.inj h2).symm, rfl⟩)
-        · exact .inr ⟨h1, h2⟩
+    grind
 
 private theorem mem_foldl_hkCoverLeftStep (dist : Vector (Option ℕ) m) (l : List (Fin m))
     (a : Finset (Fin m)) (u : Fin m) :
@@ -1799,28 +1776,7 @@ private theorem mem_foldl_hkCoverLeftStep (dist : Vector (Option ℕ) m) (l : Li
   | cons x l ih =>
     rw [List.foldl_cons, ih]
     unfold hkCoverLeftStep
-    by_cases hx : vget dist x = none
-    · rw [ite_eq_left hx]
-      simp only [Finset.mem_insert, List.mem_cons]
-      constructor
-      · rintro ((rfl | h) | ⟨h1, h2⟩)
-        · exact .inr ⟨.inl rfl, hx⟩
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl (.inr h)
-        · exact .inl (.inl rfl)
-        · exact .inr ⟨h1, h2⟩
-    · rw [ite_eq_right hx]
-      simp only [List.mem_cons]
-      constructor
-      · rintro (h | ⟨h1, h2⟩)
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl h
-        · exact absurd h2 hx
-        · exact .inr ⟨h1, h2⟩
+    grind
 
 private theorem mem_foldl_hkCoverRightStep (mate : Vector (Option (Fin m)) r)
     (dist : Vector (Option ℕ) m) (l : List (Fin r)) (a : Finset (Fin r)) (v : Fin r) :
@@ -1831,46 +1787,7 @@ private theorem mem_foldl_hkCoverRightStep (mate : Vector (Option (Fin m)) r)
   | cons x l ih =>
     rw [List.foldl_cons, ih]
     unfold hkCoverRightStep
-    cases hx : vget mate x with
-    | none =>
-      simp only [List.mem_cons]
-      constructor
-      · rintro (h | ⟨h1, h2⟩)
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl h
-        · obtain ⟨w, hw, _⟩ := h2
-          rw [hx] at hw
-          exact nomatch hw
-        · exact .inr ⟨h1, h2⟩
-    | some w =>
-      simp only
-      by_cases hd : vget dist w = none
-      · rw [ite_eq_left hd]
-        simp only [List.mem_cons]
-        constructor
-        · rintro (h | ⟨h1, h2⟩)
-          · exact .inl h
-          · exact .inr ⟨.inr h1, h2⟩
-        · rintro (h | ⟨rfl | h1, h2⟩)
-          · exact .inl h
-          · obtain ⟨w', hw', hd'⟩ := h2
-            rw [hx] at hw'
-            rw [← Option.some.inj hw'] at hd'
-            exact absurd hd hd'
-          · exact .inr ⟨h1, h2⟩
-      · rw [ite_eq_right hd]
-        simp only [Finset.mem_insert, List.mem_cons]
-        constructor
-        · rintro ((rfl | h) | ⟨h1, h2⟩)
-          · exact .inr ⟨.inl rfl, w, hx, hd⟩
-          · exact .inl h
-          · exact .inr ⟨.inr h1, h2⟩
-        · rintro (h | ⟨rfl | h1, h2⟩)
-          · exact .inl (.inr h)
-          · exact .inl (.inl rfl)
-          · exact .inr ⟨h1, h2⟩
+    grind
 
 end Extract
 

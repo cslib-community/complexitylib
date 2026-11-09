@@ -3968,6 +3968,7 @@ public import CslibFrontier.Crypto.Protocols.Cipher.FeistelNetworks
 public import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 public import CslibFrontier.Crypto.Protocols.Commitment.World
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 public import CslibFrontier.Crypto.Protocols.MAC.CarterWegman
 public import CslibFrontier.Crypto.Protocols.MAC.VariableLength
 public import CslibFrontier.Crypto.Protocols.MPC.Advantage
@@ -4323,6 +4324,7 @@ public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation
 public import CslibFrontier.Foundations.Analysis.Convex.FirstOrder
 public import CslibFrontier.Foundations.Analysis.Convex.Strong
 public import CslibFrontier.Foundations.Analysis.ENNRealFraction
+public import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 public import CslibFrontier.Foundations.Analysis.ENNRealTsum
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModMultiples
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModProd
@@ -4713,6 +4715,7 @@ public import CslibFrontier.Foundations.Data.ENat.IInf
 public import CslibFrontier.Foundations.Data.Fin.Append
 public import CslibFrontier.Foundations.Data.Fin.Order
 public import CslibFrontier.Foundations.Data.Fin.Tuple
+public import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 public import CslibFrontier.Foundations.Data.Finset.Average
 public import CslibFrontier.Foundations.Data.Finset.Expect
 public import CslibFrontier.Foundations.Data.Finset.ExpectPi

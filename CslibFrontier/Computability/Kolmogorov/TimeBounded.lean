@@ -103,6 +103,9 @@ time-bounded Kolmogorov complexity `Cslib.Kolmogorov.levinKt` (`Kt`).
 * `Cslib.Kolmogorov.plain_le_levinKt`, `Cslib.Kolmogorov.levinKt_le_length_add`,
   `Cslib.Kolmogorov.levinKt_le_natCast_iff`, `Cslib.Kolmogorov.levinKtNat_le_iff`: lower and upper
   bounds and witness characterization for Levin's `Kt`.
+* `Cslib.Kolmogorov.DescriptionMethod.iInf_etimeBoundedComplexity_add_le_natCast_iff`: the
+  witness characterization of $\inf_s \bigl(C_M^s(x) + w(s)\bigr) \le k$ for any description
+  method and weight, shared by `levinKt` and its conditional analogue.
 
 ## References
 
@@ -180,9 +183,7 @@ theorem universalTMRunFor_zero (p : List Bool) : universalTMRunFor p 0 = none :=
 `decodeDesc (unframe p)` and the input string `dropFrame p`. The clock counts steps of the
 described multi-tape machine, and the output is the global output tape contents upon halting. -/
 def universalTM : DescriptionMethod (List Bool) where
-  run p := ⟨universalTMRunFor p, fun _ _ hx => by
-    obtain ⟨out, hout, rfl⟩ := mem_universalTMRunFor_iff.mp hx
-    exact mem_universalTMRunFor_iff.mpr ⟨out, simulate_eq_of_halted (Nat.le_succ _) hout, rfl⟩⟩
+  run p := ⟨universalTMRunFor p, fun t _ hx => universalTMRunFor_mono p t.le_succ hx⟩
 
 /-- `(universalTM.run p).runFor t` is `universalTMRunFor p t`. -/
 @[simp]
@@ -690,30 +691,36 @@ theorem levinKt_ne_top (x : List Bool) : levinKt x ≠ ⊤ :=
 theorem natCast_levinKtNat (x : List Bool) : (levinKtNat x : ℕ∞) = levinKt x :=
   ENat.natCast_toNat (levinKt_ne_top x)
 
+/-- **Threshold characterization of a Levin-style complexity.** For a description method `M` and a
+weight `w` on step counts, $\inf_s \bigl(C_M^s(x) + w(s)\bigr) \le k$ iff some program $p$ outputs
+$x$ within $s$ steps with $|p| + w(s) \le k$. Levin's `levinKt` and its conditional analogue take
+`w = Nat.clog 2`. -/
+theorem DescriptionMethod.iInf_etimeBoundedComplexity_add_le_natCast_iff {α : Type*}
+    {M : DescriptionMethod α} {w : ℕ → ℕ} {x : α} {k : ℕ} :
+    (⨅ s : ℕ, M.etimeBoundedComplexity s x + w s) ≤ k ↔
+      ∃ (p : List Bool) (s : ℕ), x ∈ (M.run p).runFor s ∧ p.length + w s ≤ k := by
+  rw [← ENat.lt_add_one_iff (ENat.natCast_ne_top k), iInf_lt_iff]
+  constructor
+  · rintro ⟨s, hs⟩
+    obtain ⟨p, hp, hlen⟩ :=
+      exists_length_eq_etimeBoundedComplexity (le_self_add.trans_lt hs).ne_top
+    rw [← hlen, ← Nat.cast_add, ← Nat.cast_add_one, ENat.natCast_lt_natCast,
+      Nat.lt_add_one_iff] at hs
+    exact ⟨p, s, hp, hs⟩
+  · rintro ⟨p, s, hp, hle⟩
+    refine ⟨s, ?_⟩
+    have h1 : M.etimeBoundedComplexity s x + w s ≤ (p.length + w s : ℕ) := by
+      rw [Nat.cast_add]
+      exact add_le_add_left (etimeBoundedComplexity_le_length hp) _
+    exact h1.trans_lt (by exact_mod_cast Nat.lt_add_one_of_le hle)
+
 /-- **Threshold characterization of `levinKt`.** $\mathrm{Kt}(x) \le k$ iff some program $p$
 outputs $x$ within $s$ steps with $|p| + \lceil \log_2 s \rceil \le k$. -/
 theorem levinKt_le_natCast_iff {x : List Bool} {k : ℕ} :
     levinKt x ≤ k ↔
       ∃ (p : List Bool) (s : ℕ),
-        x ∈ (universalTM.run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k := by
-  rw [← ENat.lt_add_one_iff (ENat.natCast_ne_top k), levinKt, iInf_lt_iff]
-  constructor
-  · rintro ⟨s, hs⟩
-    have hne : timeBoundedAt s x ≠ ⊤ := by
-      intro htop
-      rw [htop, top_add] at hs
-      exact not_top_lt hs
-    obtain ⟨p, hp, hlen⟩ := exists_length_eq_etimeBoundedComplexity hne
-    rw [timeBoundedAt, ← hlen, ← Nat.cast_add, ← Nat.cast_add_one, ENat.natCast_lt_natCast,
-      Nat.lt_add_one_iff] at hs
-    exact ⟨p, s, hp, hs⟩
-  · rintro ⟨p, s, hp, hle⟩
-    refine ⟨s, ?_⟩
-    have h1 : timeBoundedAt s x + Nat.clog 2 s ≤
-        (p.length + Nat.clog 2 s : ℕ) := by
-      rw [Nat.cast_add]
-      exact add_le_add_left (etimeBoundedComplexity_le_length hp) _
-    exact h1.trans_lt (by exact_mod_cast Nat.lt_add_one_of_le hle)
+        x ∈ (universalTM.run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k :=
+  iInf_etimeBoundedComplexity_add_le_natCast_iff
 
 /-- `ℕ`-valued threshold characterization of `levinKtNat`. -/
 theorem levinKtNat_le_iff {x : List Bool} {k : ℕ} :
