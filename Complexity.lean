@@ -3864,6 +3864,9 @@ public import Complexity.Crypto.Computational.RSATrapdoor
 public import Complexity.Crypto.Computational.RabinFactoring
 public import Complexity.Crypto.Computational.Rompel
 public import Complexity.Crypto.Computational.SIS.Basic
+public import Complexity.Crypto.Computational.SIS.MLKEM.Compress
+public import Complexity.Crypto.Computational.SIS.MLKEM.KPKE
+public import Complexity.Crypto.Computational.SIS.MLKEM.Security
 public import Complexity.Crypto.Computational.SIS.Module
 public import Complexity.Crypto.Computational.SIS.Module.ApproximateSampling
 public import Complexity.Crypto.Computational.SIS.Module.MatrixSampling
@@ -3943,6 +3946,7 @@ public import Complexity.Crypto.Protocols.Cipher.FeistelNetworks
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.Commitment.World
 public import Complexity.Crypto.Protocols.KEM.FujisakiOkamoto
+public import Complexity.Crypto.Protocols.KEM.MLKEM
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Advantage
 public import Complexity.Crypto.Protocols.MPC.Basic

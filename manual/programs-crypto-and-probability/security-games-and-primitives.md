@@ -477,6 +477,28 @@ exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejecti
 with failure probability `1 / 2`), and positive and negative `GammaSpread` and `indCpaAdvantage`
 witnesses on `identityPKE`.
 
+ML-KEM ([fips203][fips203]) lives in
+[`MLKEM/KPKE.lean`](../../Complexity/Crypto/Computational/SIS/MLKEM/KPKE.lean),
+[`MLKEM/Security.lean`](../../Complexity/Crypto/Computational/SIS/MLKEM/Security.lean) and
+[`KEM/MLKEM.lean`](../../Complexity/Crypto/Protocols/KEM/MLKEM.lean). K-PKE reuses
+`ModuleLWEPublicKey`, `moduleSISMap` and `innerPoly`: its uncompressed ciphertext is
+`moduleLWEEncrypt` of the zero message shifted by `messagePoly`, since FIPS 203 encodes the bit `1`
+as `⌈q / 2⌋` rather than `encodePolyMsg`'s `⌊q / 2⌋`. The FIPS 203 rounding maps `compress` and
+`decompress` come with `compress_decompress`, the rounding-error bound
+`natAbs_valMinAbs_decompress_compress_sub_le` and one-bit decoding
+`compress_one_decompress_one_add`, which together give the deterministic bounded-noise correctness
+`decrypt_encrypt_eq_of_noise_le`. Key generation and coins are `ProbComp` programs over
+`sampleCenteredBinomial` with a uniform matrix in place of `SampleNTT`, and `toExplicitCoinPKE`
+feeds the scheme to the FO layer. `indCpaAdvantage_le` bounds its fixed-message IND-CPA advantage by
+four `mlweAdvantage` terms of the explicit reductions `mlweKeyReduction` and `mlweReduction`;
+`mlweAdvantage` takes explicit secret and error samplers because `DecisionModuleLWE` fixes a
+uniform secret. `MLKEMTransform.decapsWith` is the FIPS 203 implicit-rejection wrapper over any
+`ExplicitCoinPKE`, defined through `FujisakiOkamoto.decT` and proved equal to the standard's
+decapsulation algorithm (`decapsWith_eq`). [`ComplexityTests/Crypto/MLKEM.lean`](../../ComplexityTests/Crypto/MLKEM.lean)
+checks the three parameter sets, sharpness of the compression and decoding bounds at `q = 3329`,
+and a toy instance (`n = 2`, `q = 17`) on which the noise hypotheses hold, decryption and
+decapsulation succeed, and a tampered ciphertext is implicitly rejected.
+
 For multi-block symmetric modes of operation over `BitString n`, import
 [`BlockCipher/Modes.lean`](../../Complexity/Crypto/Primitives/BlockCipher/Modes.lean)
 (Katz–Lindell 3rd ed., §3.6.2–§3.6.4 and Exercises 3.21, 3.24, 3.25, 3.29, 3.30, 3.32, 3.33).
@@ -568,6 +590,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [bs23]: ../sources.md#bs23
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
+[fips203]: ../sources.md#fips203
 [fly22]: ../sources.md#fly22
 [ggm86]: ../sources.md#ggm86
 [goldreich04]: ../sources.md#goldreich04

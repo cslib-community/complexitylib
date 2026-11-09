@@ -431,6 +431,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of Pure Nash Equilibria*. Proceedings of the 36th Annual ACM Symposium on Theory of Computing (STOC 2004), 604–612. https://doi.org/10.1145/1007352.1007445 . Bibliographic metadata checked against Crossref on 2026-11-08; the PLS-completeness theorem is attributed as cited in Roughgarden's CS364A Lecture #19, Theorem 3.1. The paper itself was not consulted.
 
+<a id="fips203"></a>
+## fips203
+
+National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, Federal Information Processing Standards Publication 203, 2024. https://doi.org/10.6028/NIST.FIPS.203 . Cited for the rounding maps `Compress_d` and `Decompress_d` (Section 4.2.1), `SamplePolyCBD` (Section 4.2.2, Algorithm 8), K-PKE (Section 5, Algorithms 13–15), the internal ML-KEM algorithms (Section 6, Algorithms 16–18), the ML-KEM interface (Section 7, Algorithms 19–21) and the parameter sets (Section 8, Table 2); the Lean modules record the model differences (uniform matrix, sampled coins, coefficient form). The locators follow the structure of the published standard; the PDF was not re-read in this pass.
+
 <a id="fks84"></a>
 ## fks84
 
