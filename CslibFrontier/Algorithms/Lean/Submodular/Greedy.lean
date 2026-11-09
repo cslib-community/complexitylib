@@ -12,6 +12,7 @@ public import CslibFrontier.Algorithms.Lean.Submodular.Basic
 public import Cslib.Foundations.Control.Monad.IsMonadHom
 public import Mathlib.Analysis.Complex.Exponential
 import CslibFrontier.Foundations.Data.List.EraseDups
+import Mathlib.Data.Nat.Cast.Order.Field
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -351,19 +352,26 @@ theorem subset_submodularGreedyStep (f : Finset α → β) (u : List α) (S : Fi
   | nil => exact Finset.Subset.refl S
   | cons c₀ cs => exact Finset.subset_insert _ S
 
+/-- A greedy round either finds every element of `u` already in `S` and returns `S`, or inserts
+some `x ∈ u` with `x ∉ S`. -/
+private theorem submodularGreedyStep_eq_or (f : Finset α → β) (u : List α) (S : Finset α) :
+    (∀ x ∈ u, x ∈ S) ∧ submodularGreedyStep f u S = S ∨
+      ∃ x ∈ u, x ∉ S ∧ submodularGreedyStep f u S = insert x S := by
+  unfold submodularGreedyStep
+  cases hfilt : u.filter (· ∉ S) with
+  | nil =>
+    exact Or.inl ⟨fun x hx => by simpa using List.filter_eq_nil_iff.mp hfilt x hx, rfl⟩
+  | cons c₀ cs =>
+    have hmem := scanCandidates_fst_mem f S c₀ (f (insert c₀ S)) cs
+    rw [← hfilt, List.mem_filter] at hmem
+    exact Or.inr ⟨_, hmem.1, of_decide_eq_true hmem.2, rfl⟩
+
 theorem submodularGreedyStep_subset_toFinset (f : Finset α → β) {u : List α} {S : Finset α}
     (hS : S ⊆ u.toFinset) :
     submodularGreedyStep f u S ⊆ u.toFinset := by
-  unfold submodularGreedyStep
-  cases hfilt : u.filter (· ∉ S) with
-  | nil => exact hS
-  | cons c₀ cs =>
-    have hmem : (scanCandidates f S c₀ (f (insert c₀ S)) cs).1 ∈ c₀ :: cs :=
-      scanCandidates_fst_mem f S c₀ (f (insert c₀ S)) cs
-    rw [← hfilt] at hmem
-    have hu : (scanCandidates f S c₀ (f (insert c₀ S)) cs).1 ∈ u.toFinset :=
-      List.mem_toFinset.mpr (List.mem_of_mem_filter hmem)
-    exact Finset.insert_subset hu hS
+  rcases submodularGreedyStep_eq_or f u S with ⟨-, heq⟩ | ⟨x, hxu, -, heq⟩ <;> rw [heq]
+  · exact hS
+  · exact Finset.insert_subset (List.mem_toFinset.mpr hxu) hS
 
 theorem submodularGreedyStep_max (f : Finset α → β) (u : List α) (S : Finset α)
     {x : α} (hxu : x ∈ u) (hxS : x ∉ S) :
@@ -409,38 +417,16 @@ theorem card_submodularGreedy_eq_min (f : Finset α → β) (xs : List α) (k : 
     set S := submodularGreedy f xs m
     have hS_sub : S ⊆ u.toFinset := by
       simpa [u, S, List.toFinset_eraseDups] using submodularGreedy_subset_toFinset f xs m
-    by_cases hm : m < u.toFinset.card
-    · have hScard : S.card = m := by omega
-      cases hfilt : u.filter (· ∉ S) with
-      | nil =>
-        exfalso
-        have hu_sub : u.toFinset ⊆ S := by
-          intro a ha
-          have ha_u : a ∈ u := List.mem_toFinset.mp ha
-          by_contra haS
-          have hmem : a ∈ u.filter (· ∉ S) := List.mem_filter.mpr ⟨ha_u, decide_eq_true haS⟩
-          rw [hfilt] at hmem
-          cases hmem
-        have hle : u.toFinset.card ≤ S.card := Finset.card_le_card hu_sub
-        omega
-      | cons c₀ cs =>
-        unfold submodularGreedyStep
-        rw [hfilt]
-        have hmem : (scanCandidates f S c₀ (f (insert c₀ S)) cs).1 ∈ c₀ :: cs :=
-          scanCandidates_fst_mem f S c₀ (f (insert c₀ S)) cs
-        rw [← hfilt] at hmem
-        have hnotS : (scanCandidates f S c₀ (f (insert c₀ S)) cs).1 ∉ S :=
-          of_decide_eq_true (List.mem_filter.mp hmem).2
-        rw [Finset.card_insert_of_notMem hnotS, hScard]
-        omega
-    · have hScard : S.card = u.toFinset.card := by omega
-      have hSeq : S = u.toFinset := Finset.eq_of_subset_of_card_le hS_sub hScard.ge
-      have hfilt : u.filter (· ∉ S) = [] := by
-        rw [List.filter_eq_nil_iff]
-        intro a ha
-        simp [hSeq, ha]
-      unfold submodularGreedyStep
-      rw [hfilt, hScard]
+    rcases submodularGreedyStep_eq_or f u S with ⟨hall, heq⟩ | ⟨x, hxu, hxS, heq⟩
+    · -- no candidate remains, so `S` is all of `u`
+      have hSeq : S.card = u.toFinset.card := congrArg Finset.card <|
+        Finset.Subset.antisymm hS_sub fun a ha => hall a (List.mem_toFinset.mp ha)
+      rw [heq]
+      omega
+    · -- `x ∈ u \ S`, so `S` has not exhausted `u` yet
+      have hlt : S.card < u.toFinset.card := Finset.card_lt_card <|
+        (Finset.ssubset_iff_of_subset hS_sub).2 ⟨x, List.mem_toFinset.mpr hxu, hxS⟩
+      rw [heq, Finset.card_insert_of_notMem hxS]
       omega
 
 theorem card_submodularGreedy_le (f : Finset α → β) (xs : List α) (k : ℕ) :
@@ -516,11 +502,7 @@ theorem sub_submodularGreedy_le_pow_mul
     {OPT : Finset α} (hOPT_sub : OPT ⊆ xs.toFinset) (hOPT_card : OPT.card ≤ k) :
     f OPT - f (submodularGreedy f xs m) ≤
       (1 - 1 / (k : β)) ^ m * (f OPT - f ∅) := by
-  have hk_one : (1 : β) ≤ (k : β) := Nat.one_le_cast.mpr hk
-  have hk_pos : (0 : β) < (k : β) := Nat.cast_pos.mpr hk
-  have hfactor_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := by
-    have hdiv_le : 1 / (k : β) ≤ 1 := div_le_one_of_le₀ hk_one hk_pos.le
-    linarith
+  have hfactor_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := Nat.one_sub_one_div_cast_nonneg k
   have hOPT_u : OPT ⊆ xs.eraseDups.toFinset := by
     rwa [List.toFinset_eraseDups]
   induction m with
@@ -539,11 +521,7 @@ theorem one_sub_pow_mul_le_submodularGreedy_steps
     {xs : List α} {k : ℕ} (hk : 0 < k) (m : ℕ)
     {OPT : Finset α} (hOPT_sub : OPT ⊆ xs.toFinset) (hOPT_card : OPT.card ≤ k) :
     (1 - (1 - 1 / (k : β)) ^ m) * f OPT ≤ f (submodularGreedy f xs m) := by
-  have hk_one : (1 : β) ≤ (k : β) := Nat.one_le_cast.mpr hk
-  have hk_pos : (0 : β) < (k : β) := Nat.cast_pos.mpr hk
-  have hfactor_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := by
-    have hdiv_le : 1 / (k : β) ≤ 1 := div_le_one_of_le₀ hk_one hk_pos.le
-    linarith
+  have hfactor_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := Nat.one_sub_one_div_cast_nonneg k
   have hpow_nonneg : (0 : β) ≤ (1 - 1 / (k : β)) ^ m := pow_nonneg hfactor_nonneg m
   have hrec := sub_submodularGreedy_le_pow_mul hf hmono hk m hOPT_sub hOPT_card
   have hdrop : (1 - 1 / (k : β)) ^ m * (f OPT - f ∅) ≤ (1 - 1 / (k : β)) ^ m * f OPT :=
@@ -574,11 +552,7 @@ theorem one_sub_exp_neg_div_mul_le_submodularGreedy
     {xs : List α} {k : ℕ} (hk : 0 < k) (m : ℕ)
     {OPT : Finset α} (hOPT_sub : OPT ⊆ xs.toFinset) (hOPT_card : OPT.card ≤ k) :
     (1 - Real.exp (-(m : ℝ) / (k : ℝ))) * f OPT ≤ f (submodularGreedy f xs m) := by
-  have hk_one : (1 : ℝ) ≤ (k : ℝ) := Nat.one_le_cast.mpr hk
-  have hk_pos : (0 : ℝ) < (k : ℝ) := Nat.cast_pos.mpr hk
-  have hfactor_nonneg : (0 : ℝ) ≤ 1 - 1 / (k : ℝ) := by
-    have hdiv_le : 1 / (k : ℝ) ≤ 1 := div_le_one_of_le₀ hk_one hk_pos.le
-    linarith
+  have hfactor_nonneg : (0 : ℝ) ≤ 1 - 1 / (k : ℝ) := Nat.one_sub_one_div_cast_nonneg k
   have hexp : (1 - 1 / (k : ℝ)) ^ m ≤ Real.exp (-(m : ℝ) / (k : ℝ)) := by
     calc
       (1 - 1 / (k : ℝ)) ^ m ≤ (Real.exp (-(1 / (k : ℝ)))) ^ m :=
@@ -813,41 +787,29 @@ section OrderedTightness
 
 variable {β : Type*} [Field β] [LinearOrder β] [IsStrictOrderedRing β]
 
+/-- The geometric factor `(1 - 1/k) ^ leftCount k S` of the tight instance is antitone in `S`. -/
+private theorem pow_leftCount_anti (k : ℕ) {A B : Finset (Fin k ⊕ Fin k)} (hAB : A ⊆ B) :
+    (1 - 1 / (k : β)) ^ leftCount k B ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
+  pow_le_pow_of_le_one (Nat.one_sub_one_div_cast_nonneg k) (Nat.one_sub_one_div_cast_le_one k)
+    (leftCount_mono k hAB)
+
 theorem monotone_tightComponent {k : ℕ} (hk : 0 < k) (j : Fin k) :
     Monotone (tightComponent (β := β) k j) := by
-  have hk_pos : (0 : β) < (k : β) := Nat.cast_pos.mpr hk
-  have hk_one : (1 : β) ≤ (k : β) := Nat.one_le_cast.mpr hk
-  have hdiv_nonneg : (0 : β) ≤ 1 / (k : β) := div_nonneg zero_le_one hk_pos.le
-  have hq_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := by
-    have hdiv_le : 1 / (k : β) ≤ 1 := div_le_one_of_le₀ hk_one hk_pos.le
-    linarith
-  have hq_le_one : 1 - 1 / (k : β) ≤ 1 := by linarith
+  have hdiv_nonneg : (0 : β) ≤ 1 / (k : β) := div_nonneg zero_le_one (Nat.cast_pos.mpr hk).le
   intro A B hAB
   unfold tightComponent
   split_ifs with hA hB hB
   · exact le_rfl
   · exact absurd (hAB hA) hB
   · have hpow_nonneg : (0 : β) ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
-      pow_nonneg hq_nonneg _
-    have h1 : 1 - (1 - 1 / (k : β)) ^ leftCount k A ≤ 1 := by linarith
-    calc
-      (1 / (k : β)) * (1 - (1 - 1 / (k : β)) ^ leftCount k A)
-          ≤ (1 / (k : β)) * 1 := mul_le_mul_of_nonneg_left h1 hdiv_nonneg
-      _ = 1 / (k : β) := mul_one _
-  · have hpow : (1 - 1 / (k : β)) ^ leftCount k B ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
-      pow_le_pow_of_le_one hq_nonneg hq_le_one (leftCount_mono k hAB)
-    exact mul_le_mul_of_nonneg_left (by linarith) hdiv_nonneg
+      pow_nonneg (Nat.one_sub_one_div_cast_nonneg k) _
+    exact mul_le_of_le_one_right hdiv_nonneg (by linarith)
+  · exact mul_le_mul_of_nonneg_left (sub_le_sub_left (pow_leftCount_anti k hAB) 1) hdiv_nonneg
 
 theorem isSubmodular_tightComponent {k : ℕ} (hk : 0 < k) (j : Fin k) :
     IsSubmodular (tightComponent (β := β) k j) := by
   rw [isSubmodular_iff_marginalGain_le]
-  have hk_pos : (0 : β) < (k : β) := Nat.cast_pos.mpr hk
-  have hk_one : (1 : β) ≤ (k : β) := Nat.one_le_cast.mpr hk
-  have hdiv_nonneg : (0 : β) ≤ 1 / (k : β) := div_nonneg zero_le_one hk_pos.le
-  have hq_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := by
-    have hdiv_le : 1 / (k : β) ≤ 1 := div_le_one_of_le₀ hk_one hk_pos.le
-    linarith
-  have hq_le_one : 1 - 1 / (k : β) ≤ 1 := by linarith
+  have hdiv_nonneg : (0 : β) ≤ 1 / (k : β) := div_nonneg zero_le_one (Nat.cast_pos.mpr hk).le
   intro A B x hAB hxB
   have hxA : x ∉ A := fun h => hxB (hAB h)
   cases x with
@@ -856,19 +818,16 @@ theorem isSubmodular_tightComponent {k : ℕ} (hk : 0 < k) (j : Fin k) :
     split_ifs with hB hA hA
     · exact le_rfl
     · exact mul_nonneg
-        (mul_nonneg hdiv_nonneg (pow_nonneg hq_nonneg _)) hdiv_nonneg
+        (mul_nonneg hdiv_nonneg (pow_nonneg (Nat.one_sub_one_div_cast_nonneg k) _)) hdiv_nonneg
     · exact absurd (hAB hA) hB
-    · have hpow : (1 - 1 / (k : β)) ^ leftCount k B ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
-        pow_le_pow_of_le_one hq_nonneg hq_le_one (leftCount_mono k hAB)
+    · have hpow := pow_leftCount_anti (β := β) k hAB
       gcongr
   | inr j' =>
     by_cases hjj : j' = j
     · subst hjj
       rw [marginalGain_tightComponent_inr_self k j' hxB,
         marginalGain_tightComponent_inr_self k j' hxA]
-      have hpow : (1 - 1 / (k : β)) ^ leftCount k B ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
-        pow_le_pow_of_le_one hq_nonneg hq_le_one (leftCount_mono k hAB)
-      exact mul_le_mul_of_nonneg_left hpow hdiv_nonneg
+      exact mul_le_mul_of_nonneg_left (pow_leftCount_anti k hAB) hdiv_nonneg
     · rw [marginalGain_tightComponent_inr_ne k hjj B,
         marginalGain_tightComponent_inr_ne k hjj A]
 
