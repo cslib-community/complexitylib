@@ -555,7 +555,7 @@ theorem roAnswerHandler_sim_h1 [Fintype M] [Finite R]
         · have hG := RandomOracle.answer_complete dG tG m'
           simp only [Probability.PMF.monad_bind_eq_bind] at hG
           rw [hG, PMF.bind_map]
-          congr 1; funext G
+          congr 1 with G : 1
           dsimp only [Function.comp_def]
           by_cases henc : S.pke.encDet dk.pk m' (G m') = c <;>
             simp [henc, dH, PMF.map]
@@ -596,7 +596,7 @@ theorem eval_run_roHandler_eq_h1 [Fintype M] [Finite R]
     prog (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache)
   simp only [sim, PMF.bind_map, Function.comp_def] at hsim
   rw [hsim]
-  congr 1; funext G
+  congr 1 with G : 1
   have hproj := congrArg (PMF.map Prod.fst)
     (OracleComp.run_interpret_map_state
       (S.h1Handler G dk cStar) h₂ (fun tH => (G, tH))
@@ -621,7 +621,7 @@ theorem eval_roIndCcaGame_eq_h1 [Fintype M] [Finite R]
   dsimp only [roIndCcaGame]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure]
   congr 1; funext ⟨pk, dk⟩
-  congr 1; funext mStar
+  congr 1 with mStar : 1
   let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
   have hstep (rStar : R) (kReal kRand : K) :
       (ProbComp.eval ((OracleComp.interpret (S.roHandler dk (S.pke.encDet pk mStar rStar))
@@ -644,8 +644,8 @@ theorem eval_roIndCcaGame_eq_h1 [Fintype M] [Finite R]
     ((OracleComp.interpret (S.h1Handler G dk cStar)
       (A (pk, cStar, if b then kRand else kReal))).run
       (RandomOracle.ofList [((false, mStar, cStar), kReal)])).map Prod.fst)]
-  congr 1; funext rStar
-  symm; rw [PMF.bind_comm]; congr 1; funext kReal
+  congr 1 with rStar : 1
+  symm; rw [PMF.bind_comm]; congr 1 with kReal : 1
   exact PMF.bind_comm _ _ _
 
 /-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
@@ -715,7 +715,7 @@ theorem eval_run_h1Handler_eq_eager [Fintype M] [Fintype CT] [Finite K]
         S.h1Handler_sim_eager G dk cStar q s)
     prog tH
   rw [hsim]
-  congr 1; funext H
+  congr 1 with H : 1
   have hro := congrArg (PMF.map Prod.fst)
     (OracleComp.run_interpret_readOnly (fun q H' => S.eagerHandler G H' dk cStar q) prog H)
   change ((OracleComp.interpret h₂ prog).run H).map Prod.fst =
@@ -736,9 +736,9 @@ theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT]
   congr 1; funext ⟨pk, dk⟩
   let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
   rw [PMF.bind_comm (ProbComp.eval S.sampleMsg)]
-  congr 1; funext G
+  congr 1 with G : 1
   rw [← PMF.bind_comm (ProbComp.eval S.sampleMsg)]
-  congr 1; funext mStar
+  congr 1 with mStar : 1
   set cStar := S.pke.encDet pk mStar (G mStar)
   have hstep (kReal kRand : K) :
       ((OracleComp.interpret (S.h1Handler G dk cStar)
@@ -753,7 +753,7 @@ theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT]
     (ProbComp.eval S.sampleKey).bind fun kRand =>
       OracleComp.interpret (S.eagerHandler G H dk cStar)
         (A (pk, cStar, if b then kRand else kReal))))
-  congr 1; funext kReal
+  congr 1 with kReal : 1
   exact PMF.bind_comm _ _ _
 
 /-- The ROM IND-CCA advantage of `A` against `FO-notbot` equals the distinguishing advantage
