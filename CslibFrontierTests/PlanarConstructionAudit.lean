@@ -85,4 +85,3 @@ run_cmd do
   for (linter, failures) in results do
     for (name, message) in failures.toList do
       throwError "construction audit: {linter.name}: {name}: {message}"
-  logInfo m!"Audited {modules} modules and {decls.size} stored declarations"

@@ -379,6 +379,21 @@ coincide. In the selected component, the edge and face counts each increase by o
 same-face premise; its actual name update retains indexed edges and directed port order.
 Arbitrary noninjective relabeling alone is not a genus-preservation result.
 
+`VertexJoinGenus` supplies the complementary case:
+`numericalGenusZero_mergeVertices_of_not_sameComponent r hG hr h k hk hc` merges
+distinct corners' vertices in different actual components. It requires declared endpoints,
+source numerical genus zero, `hk : h.vertex ≠ k.vertex` and
+`hc : ¬ Graph.RotationCertificate.SameComponent G h.vertex k.vertex`;
+it needs no same-face premise.
+The joined components lose one vertex and one face, while all indexed edges and untouched
+closed/point components remain. Import `DisjointGenus` and apply
+`numericalGenusZero_disjointUnion` at the same namespace to two source rotations with
+their endpoint and genus guards.
+The actual `Graph.disjointUnion` tags names by parity and concatenates declaration and edge
+lists without deduplicating occurrences. The [join](../../CslibFrontierTests/RotationVertexJoin.lean)
+and [disjoint](../../CslibFrontierTests/RotationDisjoint.lean) clients check exact tables,
+sparse names, duplicate points, empty blocks and a same-component negative case.
+
 For `r : RotationSystem (lastEdgeGraph G u v)`, `r.deleteLastEdge` removes exactly the final
 listed edge and retains the original graph `G`. `numericalGenusZero_deleteLastEdge r hH hr`
 requires declared source endpoints and source numerical genus zero. It covers splitting
@@ -417,8 +432,12 @@ The general point-insertion, cycle-surgery and selected-orbit APIs live in
 `Equiv.Perm.SelectedOrbits`; they import no graph modules. The complete
 [permutation-only client](../../CslibFrontierTests/PermutationSurgery.lean) uses these imports
 without the graph layer.
+`SelectedOrbitJoin` adds disjoint invariant-support union and different-cycle swap counts,
+including fixed points and empty selections; its [standalone client](../../CslibFrontierTests/SelectedOrbitJoin.lean)
+also imports no graph module.
 These are original permutation/algebraic proofs, with no native runtime or geometric
-realization claim. Full gadget-recipe realization, recognition, Hanani–Tutte and the planar
+realization claim. The static construction grammar is realized below; expanded-language
+macros, recognition, Hanani–Tutte and the planar
 dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Ordered incidence-to-polygon rotations
@@ -835,6 +854,8 @@ From the repository root, import
 `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection` and
 `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic` and
 `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Equality`.
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Construction` for the complete
+existing construction grammar and all these primitive closures.
 The namespace is `Cslib.Complexity.CSP.OrderedBoundary`; gadgets remain the existing
 `Cslib.Logic.PL.CSP.PPGadget`. The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean)
 shows ordinary-import clients, including empty alphabets and nullaries.
@@ -909,9 +930,41 @@ an outgoing successor swap and first-return restriction. Residual arity `n` is s
 is no uniform native runtime bound for arbitrary binary arity or language/template size.
 The [equality client](../../CslibFrontierTests/PlanarEqualityBoundary.lean) proves the complete
 NAE-derived table, executes both checkers, derives disequality with original symbols, and checks
-both OneHot-derived pins. These concrete examples do not replace arbitrary-language attachment
-or expanded recipe proofs. Empty alphabets/bodies, degree five, repeated constraints and false
+both OneHot-derived pins. Generic attachments are supplied below; expanded-language macro
+proofs remain separate. Empty alphabets/bodies, degree five, repeated constraints and false
 nullaries also have nonvacuous tests.
+
+`RelationMinor.Construction.orderedWitness c` supplies `GadgetWitness c.gadget` for every
+existing finite `Construction arity sem R`, on exactly the existing original-language PP
+interpreter. All eight branches are covered: atom, projection, adjacent equality,
+adjacent disequality deletion, cofactor, flip, positive cyclic rotation and binary meet.
+The enabling pin and disequality trees recurse to original atoms. There is no finite-language,
+body-occurrence, degree, connectedness or target-witness provider hypothesis.
+`RelationMinor.Available.nonempty_orderedGadget` packages the existential consequence.
+
+For individual steps, `UnaryAttachment` gives `GadgetWitness.cofactor w j b v` on the exact
+`g.cofactor j b p`; `DifferenceAttachment` gives `w.differentDrop v` on `g.differentDrop d`;
+`FlipAttachment` gives `w.flip j v` on `g.flip j d`; and `BinaryMeet` gives `w.binaryMeet v`
+on `g.conj h` only when both free arities are two. The source pin/disequality gadgets have
+their own actual witnesses; the full tree theorem supplies them recursively. This does not
+assert arbitrary higher-arity conjunction closure. Hidden coordinates and each old auxiliary
+block retain the existing interpreter's row and scope order.
+
+The attachment proof starts with disjoint actual bodies and probes, joins different components,
+then uses adjacent probe corners for the cofacial join. Even wholly unused ports have actual
+probe corners. Flip uses its noncanonical enlarged boundary directly: insert the new last
+marker, remove the selected old marker, swap their names and hide the last coordinate. It
+does not assume that enlarged intermediate has canonical port order.
+
+The [complete tree client](../../CslibFrontierTests/PlanarConstructionBoundary.lean) uses one
+original one-in-three symbol and genuine enabling subtrees to exercise all eight branches,
+accepted structural certificates, satisfying/rejecting semantic rows and a closed result.
+It also checks literal flip/disequality bodies, empty and unused attachments, nullary cofactors,
+repeated constraints and mirrored-order rejection. The [boundary-join client](../../CslibFrontierTests/PlanarBoundaryJoin.lean)
+retains a degree-six cut vertex and nullary rows. The [scoped audit](../../CslibFrontierTests/PlanarConstructionAudit.lean)
+covers stored declarations, including private/generated ones, environment linters and public
+`Cslib.Init` reachability. The [projection import client](../../CslibFrontierTests/PlanarProjectionPublic.lean)
+checks the published injectivity lemma reused by these constructors.
 
 These are static finite constructors. Some inverse occurrence maps use finite choice, so
 general projection and cyclic constructors are intentionally `noncomputable`. Fixing a language
@@ -929,11 +982,13 @@ The lower APIs preserve existing access: import
 of numerical genus. Equal-edge point-declaration transport keeps both endpoint-declaration guards.
 
 Run `scripts/build.sh CslibFrontierTests.PlanarProjectionAll CslibFrontierTests.PlanarCyclicBoundary CslibFrontierTests.PlanarProbeProjection --wfail --iofail`.
+For the complete grammar run
+`scripts/build.sh CslibFrontierTests.PlanarConstructionBoundary CslibFrontierTests.PlanarConstructionAudit CslibFrontierTests.PlanarBoundaryJoin --wfail --iofail`.
 The boundary convention is Dvořák–Kupec's reverse outer port order, printed p. 436; the probe
 and finite surgery are original. Fulla–Živný's indexed positive-arity model and the original
 decision/nullary extension are distinguished from DK's constraint sets; no deduplication or
-geometric equivalence is assumed. Pin/disequality attachment, remaining
-expanded-language recipes, native whole-instance target acceptance, geometric/source comparison
+geometric equivalence is assumed. OneHot3/CROSS macro expansion, normalization caps and
+Figure-1 substitution, native whole-instance target acceptance, geometric/source comparison
 and bare recognition remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 
@@ -974,7 +1029,8 @@ include `Graph.RotationSystem`. The [guide](../../guide/CslibFrontierGuide/NPCom
 provides complete ordinary-import examples for both APIs.
 
 Run `scripts/build.sh CslibFrontierTests.PlanarSelfDualEnabling CslibFrontierTests.CSPGadgetPolymorphism --wfail --iofail`.
-General attachments, meet/NAND, normalization/Figure-1 and expanded original-language
+The existing static grammar now has ordered witnesses. NAND-triangle and OneHot3/CROSS
+macro expansion, normalization/Figure-1 and expanded original-language
 endpoints, native whole-instance target acceptance, geometry/source comparison and recognition
 remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
