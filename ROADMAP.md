@@ -773,7 +773,6 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 The submission program owns the full source-to-Lean acceptance inventory.
 The directions below preserve the original source quantifiers and resource obligations.
 
-- **Exact Cover transposition (1575, Corollary 5.4):** Construct the actual indexed candidate-list frontend and compose exact original counts, sharp native time and polynomial workspace, retaining equal and empty candidates.
 - **Graph solution recovery (1575, Corollary 7.4):** Actual returned solutions for independent domination, directed kernels, perfect matching cuts and dominating induced matchings, with native sharp resources and the source's optimization clauses where applicable.
 - **Refined graph constructions (1575):** The shared-marker width-three refinement of Proposition 7.6 and the compact regular construction of Proposition C.2 for fixed degree at least two, with their stated variable, width and clause bounds.
 - **General degree-rule optimization (1575, Theorem 7.3):** Native minimum/maximum extraction from general finite/cofinite degree rules and labeled partitions, charging the actual traversal, reconstruction and output.

@@ -2067,6 +2067,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.DensityBranchCo
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
 public import CslibFrontier.Computability.Complexity.FineGrained.DigraphKernel
 public import CslibFrontier.Computability.Complexity.FineGrained.DominatingInducedMatching
+public import CslibFrontier.Computability.Complexity.FineGrained.ExactCover
 public import CslibFrontier.Computability.Complexity.FineGrained.ExactOneCountingResources
 public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
@@ -3318,6 +3319,7 @@ public import CslibFrontier.Computability.PolyTime.CNF.DegreePartition
 public import CslibFrontier.Computability.PolyTime.CNF.DegreeThreshold
 public import CslibFrontier.Computability.PolyTime.CNF.DigraphKernel
 public import CslibFrontier.Computability.PolyTime.CNF.DominatingInducedMatching
+public import CslibFrontier.Computability.PolyTime.CNF.ExactCover
 public import CslibFrontier.Computability.PolyTime.CNF.ExactOnePlan
 public import CslibFrontier.Computability.PolyTime.CNF.GreedyParityContext
 public import CslibFrontier.Computability.PolyTime.CNF.GreedyParitySearch

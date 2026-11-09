@@ -243,10 +243,60 @@ This proves the actual rank-derived query existence/correctness portion of
 STOC submission 1575, Theorems 1.2/5.2 and Corollary 5.3, and the Exact Cover
 transposition of Corollary 5.4. The binary rank/dispatch and sharp signed-clause counter are
 completed in the later executable sections (`ExactOneCountingResources`); they support Theorems
-1.2/5.1–5.2 and Corollary 5.3 on the recorded distinct-variable signed-clause encoding. For
-Corollary 5.4, the actual original indexed candidate-list transposition and complete native resource
-composition remain open; equal/empty candidates must retain separate original bits. No curated
-headline abstract is added by this inventory assessment.
+1.2/5.1–5.2 and Corollary 5.3 on the recorded distinct-variable signed-clause encoding. Corollary 5.4 is composed by the actual indexed-list frontend and native counter below.
+No curated headline abstract is added by this endpoint.
+
+### Executable indexed Exact Cover
+
+Import `CslibFrontier.Computability.Complexity.FineGrained.ExactCover` and open
+`Cslib.Logic.PL.ExactCover`. `Input` pairs a unary universe declaration with an indexed list of
+candidate lists; element labels use binary naturals. `encInput` frames the unary declaration,
+then concatenates framed candidate-list words. Candidate-list words concatenate framed binary
+indices. The number of original selection bits is computed from the actual candidate list.
+There is no bound on universe size or incidence density relative to that candidate count.
+
+`transpose` scans original candidate indices for every declared universe element. It writes
+one positive exact-one row, with one literal per containing candidate, using set membership
+rather than occurrence multiplicity. Equal candidate sets remain distinct indexed choices;
+repeated incidences within a set do not repeat its variable. An uncovered element writes an
+empty row. Empty candidates retain optional unused bits, including when the universe is empty.
+`admit` checks every listed label against the declaration and has polynomial binary cost.
+The total constructor intersects arbitrary raw lists with the declared universe; source inputs
+satisfy `admit = true`. This is an encoded-value interface, without a malformed-byte parser or
+succinct-universe declaration transfer.
+
+`backend_eq`, `finiteRows_perm` and the reused `coverScopes_iff` identify the actual rows with
+the conventional indexed-cover predicate `IsCover` on the same original bits. `compile` runs
+the existing normalization/Gram/basis/direct/rank/query dispatcher, and `compile_count` proves
+that its interpreted output counts original covers. It receives no basis, selected subsystem,
+candidate, desired output or runtime bound. `query_count_le` and `query_bounds` give at most two
+ordinary width-three queries, each with at most $2s-2$ declared variables and
+$16s^2+16s+3$ clauses, independently of the number of universe elements. Direct branches emit
+no query, and all written literal indices are valid.
+
+`backend_polytime` and `compile_polytime` certify actual binary incidence lookup, transposition
+and query writing. `exists_count_sharp_certificate` composes the actual frontend with the proved
+unrestricted-density exact-one counter and binary reconstruction. It has global polynomial peak
+workspace, including transposed rows, queries and retained results. Its time is
+$L^{O(1)}2^{O(\eta(s))}$, where $s$ is candidate count and
+$\eta(s)=s\log\log s/\sqrt{\log s}$. The real-exponent wrapper holds for $s\ge16$;
+exact counts and rounded-clock bounds cover every size. `count_bits_le` gives at most $s+1$
+binary output bits, separately from the machine-time proof. The decision certificates compose
+an actual binary positivity test and count original covers, without an oracle premise.
+
+From the checkout root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.ExactCover --wfail --iofail
+```
+
+The [complete computed client](../../CslibFrontierTests/PaperEndpoints/ExactCover.lean)
+executes the real transpose/dispatcher and tiny ordinary-query interpretation. Two equal
+one-element candidates plus an empty candidate give four covers. Other cases cover repeated
+incidences, uncovered elements, empty declarations, a non-Boolean rational candidate, many
+universe elements with two candidates, and huge binary out-of-universe labels. The empty-universe
+80-candidate branch writes $2^{80}$ directly in 82 tagged bits, without assignment enumeration.
+Production uses the proved native counter; only tiny test queries/selections are enumerated.
 
 ## Tables of VC dimension at most one
 
@@ -1185,11 +1235,10 @@ thresholds, the marking/count distinction and actual width/dimension/size metada
 negative conventional marking instances ensure completeness is not vacuous. Tiny trace-based
 selection/mark enumeration is test-only; production uses the certified sharp counter.
 
-This closes the augmented width-four exact-set clause. The source's optional shared path-marker
+This closes the augmented width-four exact-set clause. The source's shared path-marker
 width-three construction on at most $6v+a-1$ variables is still open; ordinary clause splitting
-would add too many variables. The four other recovery specializations,
-the indexed Exact Cover encoded-transposition composition and the remaining explicit inventory
-stay open. The semantic `coverScopes_iff` alone is not that encoded frontend/resource theorem.
+would add too many variables. The four other recovery specializations and the remaining explicit inventory stay open.
+Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 
 ### General fixed finite/cofinite degree rules
@@ -1287,8 +1336,8 @@ multiple labels ($q^v$ universal counts), empty classes, empty graphs, rejecting
 opposite-neighbor rules, query metadata and complete sigma-rho distributions (including finite
 versus cofinite tails and all zero coefficients). Test-only label enumeration derives thresholds
 deterministically; the production theorem uses the certified sharp native counter.
-The current complete source inventory and remaining graph/Exact Cover/refinement clauses are
-recorded in `ROADMAP.md`.
+Remaining graph/refinement directions are recorded in `ROADMAP.md`; issue 2527 owns the
+durable theorem-by-theorem source inventory and completion criteria.
 
 ### Input-bounded labeled partitions and complete size-vector output
 
