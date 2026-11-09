@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 -- upstream: candidate
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.ActualMoment
 
 /-! The compatible capacity schedule admits K beyond 2^64 and preserves a positive,
 uncentered output after a real increment from zero row and default. These deterministic

@@ -31,7 +31,6 @@ theorem exists_le_self_pow {α : Type*} {size u : α → ℕ} (h : PolyBounded s
     c * (size a + 1) ^ d ≤ c * (2 * size a) ^ d :=
       Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
     _ = (c * 2 ^ d) * size a ^ d := by rw [Nat.mul_pow, Nat.mul_assoc]
-    _ ≤ (c * 2 ^ d + d) * size a ^ (c * 2 ^ d + d) :=
-      Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right ha (by omega))
+    _ ≤ (c * 2 ^ d + d) * size a ^ (c * 2 ^ d + d) := by gcongr <;> omega
 
 end Turing.MultiTapeTM.PolyBounded

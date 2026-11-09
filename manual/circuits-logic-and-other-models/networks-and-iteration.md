@@ -2,6 +2,45 @@
 
 The frontier development studies how local constraints or local weights interact with a graph layout. It supports lower bounds by exposing separators and algorithms by organizing contractions. Several neighboring types deliberately use different acceptance semantics. [complexitylib][complexitylib]
 
+## Expander certificates and cut rank
+
+The regular-graph interface uses a `RotationMap` and its normalized spectral expansion: the
+largest absolute eigenvalue of the random walk on mean-zero functions. For a simple degree-`d`
+graph, an ordinary adjacency eigenvalue bound `λ` therefore becomes `λ / d` in this interface.
+[The spectral cut-rank module](../../Complexity/Foundations/Combinatorics/Expander/CutRank.lean)
+combines the sharp mixing lemma, Tanner's full-neighborhood estimate, and a row-support rank
+bound. Over every field, it proves
+`(1 - ρ²) s (n - s) ≤ d r (s + ρ² (n - s))`, where `ρ` is normalized spectral expansion,
+`s` is the size of one side, and `r` is the adjacency cut rank. For degree seven and `ρ ≤ 7/10`,
+every cut with both sides of size at least `n/3` satisfies `n ≤ 41 r`. The graph and its spectral
+certificate are inputs. The theorem does not construct a degree-seven near-Ramanujan family.
+The [support-rank clients](../../ComplexityTests/RankSupport.lean) include finite-field matrices,
+an actual graph cut, and use of the spectral bound.
+
+The degree-two/three matching-path construction needs a different interface because its walk
+is not regular. [MatchingPaths](../../Complexity/Foundations/Combinatorics/Expander/MatchingPaths.lean)
+works directly with the generalized eigenvector equations on the core and the path interiors.
+Its core bounds `μ` and `ν` are for the ordinary Laplacian and signless Laplacian quadratic forms,
+respectively. If `τ < π` and
+`2τ / (ℓ sin τ) + 3τ² / (2ℓ²) < min(μ, ν)`, the equations have no nonzero mode at `±cos θ`
+for `0 < ℓθ ≤ τ`. Sine interpolation accounts for every internal path coordinate. The endpoint
+`-1` has a separate affine-recurrence certificate. The
+[checked matching-path client](../../ComplexityTests/ExpanderMatchingPencil.lean) uses the
+four-vertex core obtained by deleting one edge of `K₄`, including genuine length-ten
+trigonometric parameters. [Path interpolation clients](../../ComplexityTests/ExpanderPathInterpolation.lean)
+also demonstrate why the nonresonance hypothesis is needed. These are finite equation
+certificates: the simple-graph path construction, normalized spectral bridge, explicit core
+family, and asymptotic `π²/8` coefficient remain the construction direction in
+[#3348](https://github.com/cslib-community/complexitylib/issues/3348).
+
+[NeighborDeletion](../../Complexity/Foundations/Combinatorics/Expander/NeighborDeletion.lean)
+transfers lossless expansion from a degree-`D` graph to a supplied spanning degree-`a` subgraph
+with `a > 0`, changing loss `ε` to `ε D / a` while preserving the set-size cutoff. The local-degree version
+can be applied separately on the two sides of a biregular graph. The
+[checked deletion client](../../ComplexityTests/ExpanderNeighborDeletion.lean) deletes a perfect
+matching from `K₄` to obtain `C₄`, with a tight two-vertex bound. Choosing an equivariant subgraph
+and proving its adjacency matrix has full row rank are separate remaining tasks.
+
 ## Constraint networks and read-once branching programs
 
 [Network](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Frontier/Network.lean#L104) is a multigraph whose input coordinates are assigned to vertices. A local predicate at a vertex reads only its incident edge labels and its assigned input coordinates. An input is accepted when some global edge-label assignment satisfies all local predicates. This is existential constraint satisfaction, not arithmetic contraction.

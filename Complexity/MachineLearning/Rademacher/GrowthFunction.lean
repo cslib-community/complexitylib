@@ -107,8 +107,7 @@ theorem empiricalRademacherComplexity_signClass_le (C : ConceptClass α Bool) {m
     (Set.ncard_le_ncard (image_signClass_subset C S) ((Set.toFinite _).image _)).trans
       ((Set.ncard_image_le (Set.toFinite _)).trans (ncard_restriction_le_growthFunction C S))
   refine Real.sqrt_le_sqrt (div_le_div_of_nonneg_right ?_ (Nat.cast_nonneg m))
-  exact mul_le_mul_of_nonneg_left
-    (Real.log_le_log (Nat.cast_pos.2 hpos) (by exact_mod_cast hle)) zero_le_two
+  gcongr
 
 /-- **The VC bound** [MohriRostamizadehTalwalkar2018, Corollaries 3.8 and 3.18]: if every finite
 set shattered by `C` has at most `d ≤ m` points, the empirical Rademacher complexity of

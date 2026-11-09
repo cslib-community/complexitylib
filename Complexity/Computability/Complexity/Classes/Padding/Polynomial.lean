@@ -70,8 +70,7 @@ theorem DTIME_pow_mul_subset_of_subset_max {a b k : ℕ} (hb : 2 ≤ b) (hk : 1 
     all_goals
       have hlen : x.length ≤ (x.length + 1) ^ b :=
         (Nat.le_succ _).trans (Nat.le_self_pow (by omega) _)
-      have hsq : (x.length + 1) ^ 2 ≤ (x.length + 1) ^ b :=
-        Nat.pow_le_pow_right (by omega) hb
+      have hsq : (x.length + 1) ^ 2 ≤ (x.length + 1) ^ b := by gcongr
       dsimp only [Function.comp_apply, encBits_apply]
       split_ifs with hg
       · have hg' := of_decide_eq_true hg

@@ -216,8 +216,40 @@ framing transducer's machine, including pending output and final EOF flushing, a
 the ordinary logspace bridge. It checks nonempty/empty output, present false, both boundary
 movement conventions and already halted configurations.
 
-The supplied header still has to be generated from a live query generator; virtual answer-word
-regeneration also remains open. This extraction does not implement either obligation.
+Import
+[`VirtualWord.Generate`](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Generate.lean)
+to generate the runtime frame. `Generate.prepare_logSpace` takes ordinary native logspace
+programs for the tail and binary cut/suffix/address data and emits `frame (encData d) ++ tail`.
+`Generate.consume` composes that generator with `Native.of_logSpace` through the existing
+`comp_space` theorem. Each requested frame symbol is recomputed; neither the generated frame
+nor the virtual word is allocated in workspace. Its premises bound the whole encoded header
+by $H(\log_2 n+1)$ and the virtual length by $V(n+1)^D$, where $n$ is the caller's **actual encoded
+input length**. Polynomial frame length follows from the generator's logspace certificate.
+The resulting workspace is $O(\log_2 n+1)$, including both binary position counters.
+
+For a live local-query generator, import
+[`RuntimeGenerate`](../../Complexity/Computability/Complexity/Reduction/LocalSelfReducibility/RuntimeGenerate.lean).
+`localQueryData_logSpace` uses `bitsDrop'` to discard the generated query prefix and
+`unaryToBinary` to emit binary cut metadata. Supply an ordinary query program, a cut program
+with streamed unary output, and a binary address program. The unary cut is an intermediate
+output consumed by recomputation; it does not inflate the caller's encoding or workspace.
+`consume_localQuery` proves header and virtual-length bounds from `LocalSelfReductionQuery`,
+the equation identifying that cut, and original-word length at most caller encoding length.
+It still requires the cut program: a general ceiling-logarithmic cut implementation is not
+provided here. Empty words cannot satisfy strict local-query descent; zero-query base cases
+remain with the self-reduction interface.
+
+[The complete generated-frame client](../../ComplexityTests/VirtualWordGenerate.lean) computes
+a varying cut/address from the first live bit and a varying negated suffix, then consumes the
+virtual word with the existing framing transducer. It checks empty and both first-bit cases,
+exact header decoding and the unchanged tail. It also runs a nonconstant live query generator
+through counter-program prefix dropping into a generated frame. From the repository root,
+elaborate this test with the documented build procedure before reusing its imports and programs.
+
+Unbounded virtual answer-word regeneration remains open. A Boolean family certificate is not
+yet a polynomial-count answer-stream generator; the existing `mapToBits_range_of_le` API only
+handles a fixed constant bound. Oracle answers also require a native oracle computation contract,
+rather than an assumed ordinary logspace characteristic function for the target language.
 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is

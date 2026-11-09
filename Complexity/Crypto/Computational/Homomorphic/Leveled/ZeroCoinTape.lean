@@ -171,8 +171,7 @@ theorem eval_zeroLinkAdversary_choose_eq_map_coins (E : Scheme)
           (BitString.listRows (depth n) keyCoins first).map (evaluateKey n))
         (rest.take (depth n * capacity * encCoins))))
       (rest.drop (depth n * capacity * encCoins))))]
-  congr 1
-  funext first
+  congr 1 with first : 1
   rw [BitString.uniformList_bind_split (depth n * capacity * encCoins) chooseCoins
     (fun second third => PMF.pure
     (evaluateChoose (n, encPublicKey

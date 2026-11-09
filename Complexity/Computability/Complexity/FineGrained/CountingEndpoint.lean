@@ -193,8 +193,7 @@ theorem DecidableInSubexpTime.KSAT_of_dense_modelCount_interpolationScale {k : �
         (mul_le_mul_of_nonneg_right (le_max_left _ _) (interpolationScale_nonneg _))
     have ht_le : (t ψ : ℝ) ≤ (2 * c + 1) * (X₀ * P₀) := by
       have h1 := ht ψ
-      have h2 : (2 : ℝ) ^ (A₀ * interpolationScale ψ.numVars) * P₀ ≤ X₀ * P₀ :=
-        mul_le_mul_of_nonneg_right hX_mono (by positivity)
+      have h2 : (2 : ℝ) ^ (A₀ * interpolationScale ψ.numVars) * P₀ ≤ X₀ * P₀ := by gcongr
       have h3 := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg c)
       have h4 : (c : ℝ) ≤ c * (X₀ * P₀) := le_mul_of_one_le_right (Nat.cast_nonneg c) hXP1
       linarith
