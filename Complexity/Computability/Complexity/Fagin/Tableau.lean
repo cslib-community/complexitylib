@@ -143,17 +143,12 @@ omit [DecidableEq State] in
 private theorem realize_cellPosStepRHS {L' : Language.{0, 0}} {r : TableauRels L' m State}
     {B : ℕ} [L'.Structure (Fin B)] (hlt : ∀ x : Fin 2 → Fin B, RelMap r.lt x ↔ x 0 < x 1)
     {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
     (hA : r.AgreesAt cfg t) (i : Fin m) (s : Option Bool)
     (y : Fin 2 → Fin B) (yA : Fin 1 → Fin B) (ht : y 0 = t) :
     (cellStepRHS r tm (r.headPos i) (r.cellPos i) i s (.inl 0) (.inr 0)).Realize (Sum.elim y yA) ↔
       (Feature.cell i (yA 0 : ℤ) s).Holds (tm.step cfg) :=
-  realize_cellStepRHS hlt heB hb huLen huBit hend hcert hA i s (yA 0 : ℤ)
+  realize_cellStepRHS hlt hI hb hA i s (yA 0 : ℤ)
     (r.headPos i) (r.cellPos i) (.inl 0 : Fin 2 ⊕ Fin 1) (.inr 0) (Sum.elim y yA) ht
     (hA.headPos i (yA 0)) (fun s' => hA.cellPos i s' (yA 0))
 
@@ -161,30 +156,19 @@ omit [DecidableEq State] in
 private theorem realize_cellNegStepRHS {L' : Language.{0, 0}} {r : TableauRels L' m State}
     {B : ℕ} [L'.Structure (Fin B)] (hlt : ∀ x : Fin 2 → Fin B, RelMap r.lt x ↔ x 0 < x 1)
     {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
     (hA : r.AgreesAt cfg t) (i : Fin m) (s : Option Bool)
     (y : Fin 2 → Fin B) (yA : Fin 1 → Fin B) (ht : y 0 = t) :
     (cellStepRHS r tm (r.headNeg i) (r.cellNeg i) i s (.inl 0) (.inr 0)).Realize (Sum.elim y yA) ↔
       (Feature.cell i (-(yA 0 : ℤ)) s).Holds (tm.step cfg) :=
-  realize_cellStepRHS hlt heB hb huLen huBit hend hcert hA i s (-(yA 0 : ℤ))
+  realize_cellStepRHS hlt hI hb hA i s (-(yA 0 : ℤ))
     (r.headNeg i) (r.cellNeg i) (.inl 0 : Fin 2 ⊕ Fin 1) (.inr 0) (Sum.elim y yA) ht
     (hA.headNeg i (yA 0)) (fun s' => hA.cellNeg i s' (yA 0))
 
 private theorem agreesAt_step_of_realize_stepSentence {L' : Language.{0, 0}}
     {r : TableauRels L' m State} {B : ℕ} [L'.Structure (Fin B)]
     (hlt : ∀ x : Fin 2 → Fin B, RelMap r.lt x ↔ x 0 < x 1)
-    {u w : List Bool} (hwB : u.length + w.length + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hstepSent : (stepSentence r tm).Realize (Fin B))
+    {u w : List Bool} (hI : r.EncodesInput B u w) (hstepSent : (stepSentence r tm).Realize (Fin B))
     {n : ℕ} (hn : n + 1 < B)
     (hA_t : r.AgreesAt (tm.runFrom (tm.initCfg (u ++ w)) n) (⟨n, by omega⟩ : Fin B)) :
     r.AgreesAt (tm.runFrom (tm.initCfg (u ++ w)) (n + 1)) ⟨n + 1, hn⟩ := by
@@ -198,32 +182,27 @@ private theorem agreesAt_step_of_realize_stepSentence {L' : Language.{0, 0}}
   obtain ⟨⟨⟨hs_state, hs_out⟩, hs_inPos⟩, hs_work⟩ := hstepSent y rfl
   rw [runFrom_succ]
   exact ⟨fun q' => (hs_state q').trans
-      (realize_stateStepRHS hlt hwB hb' huLen huBit hend hcert hA_t q' 0 y rfl),
+      (realize_stateStepRHS hlt hI hb' hA_t q' 0 y rfl),
     fun o => (hs_out o).trans
-      (realize_outStepRHS hlt hwB hb' huLen huBit hend hcert hA_t o 0 y rfl),
+      (realize_outStepRHS hlt hI hb' hA_t o 0 y rfl),
     fun j => (hs_inPos ![j]).trans
-      (realize_inPosStepRHS hlt hwB hb' huLen huBit hend hcert hA_t
+      (realize_inPosStepRHS hlt hI hb' hA_t
         (.inl 0) (.inr 0) (Sum.elim y ![j]) rfl),
     fun i a => (hs_work i ![a]).1.1.trans
-      (realize_headPosStepRHS hlt hwB hb huLen huBit hend hcert hA_t i
+      (realize_headPosStepRHS hlt hI hb hA_t i
         (.inl 0) (.inr 0) (Sum.elim y ![a]) rfl),
     fun i a => (hs_work i ![a]).1.2.trans
-      (realize_headNegStepRHS hlt hwB hb huLen huBit hend hcert hA_t i
+      (realize_headNegStepRHS hlt hI hb hA_t i
         (.inl 0) (.inr 0) (Sum.elim y ![a]) rfl),
     fun i s a => ((hs_work i ![a]).2 s).1.trans
-      (realize_cellPosStepRHS tm hlt hwB hb' huLen huBit hend hcert hA_t i s y ![a] rfl),
+      (realize_cellPosStepRHS tm hlt hI hb' hA_t i s y ![a] rfl),
     fun i s a => ((hs_work i ![a]).2 s).2.trans
-      (realize_cellNegStepRHS tm hlt hwB hb' huLen huBit hend hcert hA_t i s y ![a] rfl)⟩
+      (realize_cellNegStepRHS tm hlt hI hb' hA_t i s y ![a] rfl)⟩
 
 private theorem realize_stepSentence_of_agreesAt {L' : Language.{0, 0}}
     {r : TableauRels L' m State} {B : ℕ} [L'.Structure (Fin B)]
     (hlt : ∀ x : Fin 2 → Fin B, RelMap r.lt x ↔ x 0 < x 1)
-    {u w : List Bool} (hwB : u.length + w.length + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
+    {u w : List Bool} (hI : r.EncodesInput B u w)
     (hAgrees : ∀ t : Fin B, r.AgreesAt (tm.runFrom (tm.initCfg (u ++ w)) (t : ℕ)) t) :
     (stepSentence r tm).Realize (Fin B) := by
   simp only [stepSentence, realize_closeAll, Formula.realize_imp, Formula.realize_inf,
@@ -237,22 +216,22 @@ private theorem realize_stepSentence_of_agreesAt {L' : Language.{0, 0}}
   have hA_t' : r.AgreesAt (tm.step (tm.runFrom (tm.initCfg (u ++ w)) (y 0 : ℕ))) (y 1) := by
     simpa [← runFrom_succ, ← hsucc] using hAgrees (y 1)
   exact ⟨⟨⟨fun q' => (hA_t'.state q').trans
-        (realize_stateStepRHS hlt hwB hb' huLen huBit hend hcert hA_t q' 0 y rfl).symm,
+        (realize_stateStepRHS hlt hI hb' hA_t q' 0 y rfl).symm,
       fun o => (hA_t'.out o).trans
-        (realize_outStepRHS hlt hwB hb' huLen huBit hend hcert hA_t o 0 y rfl).symm⟩,
+        (realize_outStepRHS hlt hI hb' hA_t o 0 y rfl).symm⟩,
       fun yJ => (hA_t'.inPos (yJ 0)).trans
-        (realize_inPosStepRHS hlt hwB hb' huLen huBit hend hcert hA_t
+        (realize_inPosStepRHS hlt hI hb' hA_t
           (.inl 0) (.inr 0) (Sum.elim y yJ) rfl).symm⟩,
     fun i yA => ⟨⟨(hA_t'.headPos i (yA 0)).trans
-        (realize_headPosStepRHS hlt hwB hb huLen huBit hend hcert hA_t i
+        (realize_headPosStepRHS hlt hI hb hA_t i
           (.inl 0) (.inr 0) (Sum.elim y yA) rfl).symm,
       (hA_t'.headNeg i (yA 0)).trans
-        (realize_headNegStepRHS hlt hwB hb huLen huBit hend hcert hA_t i
+        (realize_headNegStepRHS hlt hI hb hA_t i
           (.inl 0) (.inr 0) (Sum.elim y yA) rfl).symm⟩,
       fun s => ⟨(hA_t'.cellPos i s (yA 0)).trans
-          (realize_cellPosStepRHS tm hlt hwB hb' huLen huBit hend hcert hA_t i s y yA rfl).symm,
+          (realize_cellPosStepRHS tm hlt hI hb' hA_t i s y yA rfl).symm,
         (hA_t'.cellNeg i s (yA 0)).trans
-          (realize_cellNegStepRHS tm hlt hwB hb' huLen huBit hend hcert hA_t i s y yA rfl).symm⟩⟩⟩
+          (realize_cellNegStepRHS tm hlt hI hb' hA_t i s y yA rfl).symm⟩⟩⟩
 
 omit [Fintype State] [DecidableEq State] in
 private theorem realize_acceptSentence_iff_of_agreesAt {L' : Language.{0, 0}}
@@ -295,7 +274,7 @@ private theorem realize_tableauMatrix_sound {B : ℕ} [L₀.Structure (Fin B)]
     induction n with
     | zero => simpa [runFrom] using (realize_initSentence hlt0 hB1).1 hinitSent
     | succ n ih =>
-      exact agreesAt_step_of_realize_stepSentence tm hlt0 hwB huLen0 huBit0 hend hcert
+      exact agreesAt_step_of_realize_stepSentence tm hlt0 ⟨hwB, huLen0, huBit0, hend, hcert⟩
         hstepSent hn (ih (by omega))
   have hacc := (realize_acceptSentence_iff_of_agreesAt hB1 hlt0 (hAgrees (B - 1) (by omega))).1
     haccSent
@@ -353,7 +332,7 @@ private theorem realize_tableauMatrix_complete {B : ℕ} [L₀.Structure (Fin B)
   simp only [Sentence.realize_inf]
   exact ⟨⟨⟨realize_endPosSentence_of_canonical hlt0 (Nat.le_add_right _ _) hwB huLen0 hend,
       (realize_initSentence hlt0 hB1).2 (hAgrees ⟨0, by omega⟩)⟩,
-    realize_stepSentence_of_agreesAt tm hlt0 hwB huLen0 huBit0 hend hcert hAgrees⟩,
+    realize_stepSentence_of_agreesAt tm hlt0 ⟨hwB, huLen0, huBit0, hend, hcert⟩ hAgrees⟩,
     (realize_acceptSentence_iff_of_agreesAt hB1 hlt0 (hAgrees ⟨B - 1, by omega⟩)).2 ⟨hhalt, hout⟩⟩
 
 /-- **Correctness of `tableauESOSentence` on `Fin B`.** -/

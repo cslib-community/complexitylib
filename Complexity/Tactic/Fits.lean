@@ -46,27 +46,27 @@ namespace Cslib.Tactic.Fits
 open Lean Meta Elab Tactic
 
 /-- `e` with `Cslib.WordRAM.Fits` unfolded everywhere. -/
-def unfoldFits (e : Expr) : CoreM Expr :=
+private def unfoldFits (e : Expr) : CoreM Expr :=
   deltaExpand e (· == ``Cslib.WordRAM.Fits)
 
 /-- Whether `e` mentions `Cslib.WordRAM.Fits`. -/
-def mentionsFits (e : Expr) : Bool :=
+private def mentionsFits (e : Expr) : Bool :=
   (e.find? (·.isConstOf ``Cslib.WordRAM.Fits)).isSome
 
 /-- Whether `e` is a power of two `2 ^ k` on natural numbers. -/
-def isPowerOfTwo (e : Expr) : Bool :=
+private def isPowerOfTwo (e : Expr) : Bool :=
   match_expr e with
   | HPow.hPow α β _ _ b _ => α.isConstOf ``Nat && β.isConstOf ``Nat && b.nat? == some 2
   | _ => false
 
 /-- Whether `e` is a word-size bound: it mentions `Fits`, or it is `v < 2 ^ k`. -/
-def isWordBound (e : Expr) : Bool :=
+private def isWordBound (e : Expr) : Bool :=
   mentionsFits e || match_expr e with
     | LT.lt _ _ _ b => isPowerOfTwo b
     | _ => false
 
 /-- The hypotheses whose statements mention `Fits`, with `Fits` unfolded in their statements. -/
-def fitsHypotheses : MetaM (Array Hypothesis) := do
+private def fitsHypotheses : MetaM (Array Hypothesis) := do
   (← getLCtx).foldlM (init := #[]) fun acc d => do
     if d.isImplementationDetail then return acc
     let type ← instantiateMVars d.type
@@ -76,7 +76,7 @@ def fitsHypotheses : MetaM (Array Hypothesis) := do
 
 /-- The facts `0 < 2 ^ e` for the powers of two in `es`. `omega` reads `2 ^ e` as an atom without
 knowing that it is positive, which a bound such as `Fits w (2 ^ e - 1)` needs. -/
-def powerFacts (es : Array Expr) : MetaM (Array Hypothesis) := do
+private def powerFacts (es : Array Expr) : MetaM (Array Hypothesis) := do
   let powers ← IO.mkRef (#[] : Array Expr)
   for e in es do
     forEachExpr e fun t => do

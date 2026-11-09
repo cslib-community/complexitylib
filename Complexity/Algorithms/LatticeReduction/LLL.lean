@@ -32,11 +32,18 @@ replaces `μᵢⱼ` by `-1/2`.
 enough is the potential argument of (1.23)–(1.26): every swap divides `D = ∏ dᵢ` by more than
 `4/3`, every other round advances `k`, and `1 ≤ D ≤ B^{n(n-1)/2}`.
 
+The source notes after (1.5) that `3/4` "may be replaced by any fixed real number y with
+1/4 < y < 1". `Cslib.Algorithms.LatticeReduction.lllWith δ` runs the same loop with parameter `δ`
+for `n + 2 (⌈δ/(1-δ)⌉ (⌊log₂ B⌋ + 1) · n(n-1)/2 + 1)` rounds: by Bernoulli's inequality
+`(1/δ)^⌈δ/(1-δ)⌉ ≥ 2`, so each swap still divides `D` by more than `1/δ`. For `δ = 3/4` this is the
+budget of `lll` (`Cslib.Algorithms.LatticeReduction.lll_eq_lllWith`).
+
 ## Main definitions
 
 * `Cslib.Algorithms.LatticeReduction.gramSchmidtRows`: the Gram–Schmidt rows of an integer matrix.
 * `Cslib.Algorithms.LatticeReduction.lllLoop`: the LLL loop with parameter `δ` and a round budget.
 * `Cslib.Algorithms.LatticeReduction.lll`: the LLL algorithm with `δ = 3/4`.
+* `Cslib.Algorithms.LatticeReduction.lllWith`: the LLL algorithm with a parameter `δ`.
 
 ## Main results
 
@@ -45,8 +52,12 @@ enough is the potential argument of (1.23)–(1.26): every swap divides `D = ∏
 * `Cslib.Algorithms.LatticeReduction.isReduced_lll`: on linearly independent rows the output is
   `3/4`-reduced and linearly independent.
 * `Cslib.Algorithms.LatticeReduction.span_lll`: the output spans the same lattice.
+* `Cslib.Algorithms.LatticeReduction.isReduced_lllWith`,
+  `Cslib.Algorithms.LatticeReduction.span_lllWith`: the same for `lllWith δ` with `0 < δ < 1`.
 * `Cslib.Algorithms.LatticeReduction.dotProduct_lll_zero_le`: Proposition (1.11) for the output,
   `|b₀|² ≤ 2ⁿ |x|²` for every nonzero lattice vector `x` of `n + 1` rows.
+* `Cslib.Algorithms.LatticeReduction.dotProduct_lllWith_zero_le`: the same for `lllWith δ` with
+  `1/4 < δ < 1` and the factor `(4/(4δ - 1))ⁿ` of the remark after (1.9).
 * `Cslib.Algorithms.LatticeReduction.linearIndependent_realRows_iff`: linear independence is
   decided by the integer Gram determinant.
 
@@ -576,38 +587,111 @@ bounds `log_{4/3} B^{n(n-1)/2}`. -/
 def swapBudget (n B : ℕ) : ℕ :=
   3 * (Nat.log 2 B + 1) * (n * (n - 1) / 2)
 
-theorem potential_realRows_lt (B : Vector (Vector ℤ m) n) :
-    potential (realRows B) < (((3 / 4 : ℚ) : ℝ))⁻¹ ^ (swapBudget n (sqNormSum B) + 1) := by
+/-- The number of exchange steps per doubling of the potential allowed for the parameter `δ`:
+`⌈δ / (1 - δ)⌉`, so that `δ⁻¹ ^ swapFactor δ ≥ 2` for `0 < δ < 1` (`two_le_inv_pow_swapFactor`).
+For `δ = 3/4` it is `3`. -/
+def swapFactor (δ : ℚ) : ℕ :=
+  ⌈δ / (1 - δ)⌉₊
+
+/-- The number of exchange steps allowed by the potential argument for the parameter `δ`:
+`⌈δ / (1 - δ)⌉ (⌊log₂ B⌋ + 1) · n(n-1)/2` bounds `log_{1/δ} B^{n(n-1)/2}`. -/
+def swapBudgetOf (δ : ℚ) (n B : ℕ) : ℕ :=
+  swapFactor δ * (Nat.log 2 B + 1) * (n * (n - 1) / 2)
+
+theorem swapFactor_three_div_four : swapFactor (3 / 4) = 3 := by
+  rw [swapFactor, show (3 / 4 : ℚ) / (1 - 3 / 4) = ((3 : ℕ) : ℚ) by norm_num, Nat.ceil_natCast]
+
+theorem swapBudgetOf_three_div_four (n B : ℕ) : swapBudgetOf (3 / 4) n B = swapBudget n B := by
+  rw [swapBudgetOf, swapFactor_three_div_four, swapBudget]
+
+/-- Bernoulli's inequality gives `δ⁻¹ ^ ⌈δ / (1 - δ)⌉ ≥ 2` for `0 < δ < 1`. -/
+theorem two_le_inv_pow_swapFactor {δ : ℚ} (hδ0 : 0 < δ) (hδ1 : δ < 1) :
+    (2 : ℝ) ≤ ((δ : ℝ)⁻¹) ^ swapFactor δ := by
+  have hδ0' : (0 : ℝ) < δ := by exact_mod_cast hδ0
+  have hδ1' : (δ : ℝ) < 1 := by exact_mod_cast hδ1
+  have hc : (δ : ℝ) / (1 - δ) ≤ swapFactor δ := by
+    have h := Nat.le_ceil (δ / (1 - δ))
+    rw [swapFactor]
+    exact_mod_cast h
+  have ha : (-2 : ℝ) ≤ (1 - δ) / δ := by
+    have : 0 ≤ (1 - (δ : ℝ)) / δ := div_nonneg (by linarith) hδ0'.le
+    linarith
+  have hb := one_add_mul_le_pow ha (swapFactor δ)
+  have hinv : 1 + (1 - (δ : ℝ)) / δ = (δ : ℝ)⁻¹ := by field_simp; ring
+  rw [hinv] at hb
+  have h1 : (1 : ℝ) ≤ (swapFactor δ : ℝ) * ((1 - δ) / δ) := by
+    have hpos : (0 : ℝ) < (1 - δ) / δ := div_pos (by linarith) hδ0'
+    calc (1 : ℝ) = (δ / (1 - δ)) * ((1 - δ) / δ) := by field_simp
+      _ ≤ (swapFactor δ : ℝ) * ((1 - δ) / δ) := mul_le_mul_of_nonneg_right hc hpos.le
+  linarith
+
+/-- The potential of an integer basis is below `δ⁻¹ ^ (swapBudgetOf δ n B + 1)`, where
+`B = ∑ᵢ ‖bᵢ‖²`, for `0 < δ < 1`. -/
+theorem potential_realRows_lt_inv_pow {δ : ℚ} (hδ0 : 0 < δ) (hδ1 : δ < 1)
+    (B : Vector (Vector ℤ m) n) :
+    potential (realRows B) < ((δ : ℝ)⁻¹) ^ (swapBudgetOf δ n (sqNormSum B) + 1) := by
+  have hδ0' : (0 : ℝ) < δ := by exact_mod_cast hδ0
+  have hδ1' : (δ : ℝ) < 1 := by exact_mod_cast hδ1
+  have hgt : (1 : ℝ) < (δ : ℝ)⁻¹ := one_lt_inv_iff₀.2 ⟨hδ0', hδ1'⟩
   have h1 := potential_le (norm_sq_realRows_le B)
   have h2 : (sqNormSum B : ℝ) ≤ 2 ^ (Nat.log 2 (sqNormSum B) + 1) := by
     exact_mod_cast (Nat.lt_pow_succ_log_self (by norm_num) (sqNormSum B)).le
-  have h3 : (2 : ℝ) ≤ (4 / 3) ^ 3 := by norm_num
-  have hcast : (((3 / 4 : ℚ) : ℝ))⁻¹ = 4 / 3 := by norm_num
-  rw [hcast]
+  have h3 := two_le_inv_pow_swapFactor hδ0 hδ1
   calc potential (realRows B) ≤ (sqNormSum B : ℝ) ^ (n * (n - 1) / 2) := h1
     _ ≤ ((2 : ℝ) ^ (Nat.log 2 (sqNormSum B) + 1)) ^ (n * (n - 1) / 2) :=
         pow_le_pow_left₀ (Nat.cast_nonneg _) h2 _
-    _ ≤ (((4 / 3 : ℝ) ^ 3) ^ (Nat.log 2 (sqNormSum B) + 1)) ^ (n * (n - 1) / 2) :=
+    _ ≤ ((((δ : ℝ)⁻¹) ^ swapFactor δ) ^ (Nat.log 2 (sqNormSum B) + 1)) ^ (n * (n - 1) / 2) :=
         pow_le_pow_left₀ (by positivity) (pow_le_pow_left₀ (by norm_num) h3 _) _
-    _ = (4 / 3 : ℝ) ^ swapBudget n (sqNormSum B) := by
-        rw [← pow_mul, ← pow_mul, swapBudget, mul_assoc]
-    _ < (4 / 3 : ℝ) ^ (swapBudget n (sqNormSum B) + 1) :=
-        pow_lt_pow_right₀ (by norm_num) (Nat.lt_succ_self _)
+    _ = ((δ : ℝ)⁻¹) ^ swapBudgetOf δ n (sqNormSum B) := by
+        rw [← pow_mul, ← pow_mul, swapBudgetOf, mul_assoc]
+    _ < ((δ : ℝ)⁻¹) ^ (swapBudgetOf δ n (sqNormSum B) + 1) :=
+        pow_lt_pow_right₀ hgt (Nat.lt_succ_self _)
+
+/-- The case `δ = 3/4` of `potential_realRows_lt_inv_pow`. -/
+theorem potential_realRows_lt (B : Vector (Vector ℤ m) n) :
+    potential (realRows B) < (((3 / 4 : ℚ) : ℝ))⁻¹ ^ (swapBudget n (sqNormSum B) + 1) := by
+  rw [← swapBudgetOf_three_div_four]
+  exact potential_realRows_lt_inv_pow (by norm_num) (by norm_num) B
+
+/-- The LLL algorithm ([LenstraLenstraLovasz1982], (1.15)–(1.21)) with parameter `δ` in place
+of `3/4` on the rows of an integer matrix, run for at most `n + 2 (swapBudgetOf δ n B + 1)`
+rounds. The source allows any fixed `δ` with `1/4 < δ < 1` (remark after (1.5)); termination and
+reducedness need only `0 < δ < 1` (`isReduced_lllWith`), and `1/4 < δ` is used for the
+approximation bound (`dotProduct_lllWith_zero_le`). -/
+def lllWith (δ : ℚ) (B : Vector (Vector ℤ m) n) : Vector (Vector ℤ m) n :=
+  lllLoop δ (n + 2 * (swapBudgetOf δ n (sqNormSum B) + 1)) B 0
+
+/-- Correctness of LLL with parameter `0 < δ < 1`: on linearly independent rows, the output is
+`δ`-reduced and linearly independent. -/
+theorem isReduced_lllWith {δ : ℚ} (hδ0 : 0 < δ) (hδ1 : δ < 1) (B : Vector (Vector ℤ m) n)
+    (hB : LinearIndependent ℝ (realRows B)) :
+    IsReduced (δ : ℝ) (realRows (lllWith δ B)) ∧
+      LinearIndependent ℝ (realRows (lllWith δ B)) :=
+  lllLoop_spec hδ0 (n + 2 * (swapBudgetOf δ n (sqNormSum B) + 1)) B 0
+    (swapBudgetOf δ n (sqNormSum B) + 1) hB (PrefixReduced.zero _ _)
+    (potential_realRows_lt_inv_pow hδ0 hδ1 B) (by omega)
+
+/-- LLL with any parameter preserves the lattice. -/
+theorem span_lllWith (δ : ℚ) (B : Vector (Vector ℤ m) n) :
+    Submodule.span ℤ (Set.range (rows (lllWith δ B))) =
+      Submodule.span ℤ (Set.range (rows B)) :=
+  span_lllLoop _ _ _ _
 
 /-- The LLL algorithm ([LenstraLenstraLovasz1982], (1.15)–(1.21)) with `δ = 3/4` on the rows of
 an integer matrix, run for at most `n + 2 (swapBudget n B + 1)` rounds. -/
 def lll (B : Vector (Vector ℤ m) n) : Vector (Vector ℤ m) n :=
   lllLoop (3 / 4) (n + 2 * (swapBudget n (sqNormSum B) + 1)) B 0
 
+theorem lll_eq_lllWith (B : Vector (Vector ℤ m) n) : lll B = lllWith (3 / 4) B := by
+  rw [lll, lllWith, swapBudgetOf_three_div_four]
+
 /-- Correctness of LLL: on linearly independent rows, the output is `3/4`-reduced and linearly
 independent. -/
 theorem isReduced_lll (B : Vector (Vector ℤ m) n) (hB : LinearIndependent ℝ (realRows B)) :
     IsReduced (3 / 4) (realRows (lll B)) ∧ LinearIndependent ℝ (realRows (lll B)) := by
-  have h := lllLoop_spec (δ := 3 / 4) (by norm_num)
-    (n + 2 * (swapBudget n (sqNormSum B) + 1)) B 0 (swapBudget n (sqNormSum B) + 1) hB
-    (PrefixReduced.zero _ _) (potential_realRows_lt B) (by omega)
+  have h := isReduced_lllWith (δ := 3 / 4) (by norm_num) (by norm_num) B hB
   have hδ : ((3 / 4 : ℚ) : ℝ) = 3 / 4 := by norm_num
-  rw [hδ] at h
+  rw [hδ, ← lll_eq_lllWith] at h
   exact h
 
 /-- LLL preserves the lattice. -/
@@ -636,6 +720,29 @@ theorem dotProduct_lll_zero_le (B : Vector (Vector ℤ m) (n + 1))
   have h := hred.norm_sq_le (by norm_num) (by norm_num) hmem hne
   have h2 : (4 : ℝ) / (4 * (3 / 4) - 1) = 2 := by norm_num
   rw [h2, norm_sq_intToEuclidean, norm_sq_realRows] at h
+  exact_mod_cast h
+
+/-- Proposition (1.11) of [LenstraLenstraLovasz1982] with the constant of the remark after
+(1.9): for `1/4 < δ < 1` and `n + 1` linearly independent integer rows, the first row of
+`lllWith δ B` satisfies `|b₀|² ≤ (4/(4δ - 1))ⁿ |x|²` for every nonzero `x` in the lattice. As
+`δ → 1` the factor tends to `(4/3)ⁿ`. -/
+theorem dotProduct_lllWith_zero_le {δ : ℚ} (hδ : 1 / 4 < δ) (hδ1 : δ < 1)
+    (B : Vector (Vector ℤ m) (n + 1)) (hB : LinearIndependent ℝ (realRows B)) {x : Fin m → ℤ}
+    (hx : x ∈ Submodule.span ℤ (Set.range (rows B))) (hx0 : x ≠ 0) :
+    ((dotProduct (rows (lllWith δ B) 0) (rows (lllWith δ B) 0) : ℤ) : ℚ) ≤
+      (4 / (4 * δ - 1)) ^ n * ((dotProduct x x : ℤ) : ℚ) := by
+  obtain ⟨hred, -⟩ := isReduced_lllWith (by linarith) hδ1 B hB
+  have hmem : intToEuclidean x ∈ Submodule.span ℤ (Set.range (realRows (lllWith δ B))) := by
+    rw [span_realRows, span_lllWith]
+    exact Submodule.mem_map_of_mem hx
+  have hne : intToEuclidean x ≠ 0 := fun h =>
+    hx0 (intToEuclidean_injective (h.trans (map_zero _).symm))
+  have hδ' : (1 : ℝ) / 4 < δ := by
+    rw [show (1 : ℝ) / 4 = ((1 / 4 : ℚ) : ℝ) by norm_num]
+    exact Rat.cast_lt.2 hδ
+  have hδ1' : (δ : ℝ) ≤ 1 := by exact_mod_cast hδ1.le
+  have h := hred.norm_sq_le hδ' hδ1' hmem hne
+  rw [norm_sq_intToEuclidean, norm_sq_realRows] at h
   exact_mod_cast h
 
 /-- A decidable criterion for the hypothesis of `isReduced_lll`: the integer Gram determinant

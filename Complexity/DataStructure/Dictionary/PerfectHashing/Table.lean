@@ -272,12 +272,7 @@ theorem slot_injOn {D : Description F} {keys : List X} (hD : SecondaryInjective 
 /-- The slot of a stored key holds that key. -/
 theorem memory_slot {D : Description F} {keys : List X} (hD : SecondaryInjective D keys) {x : X}
     (hx : x ∈ keys) : memory D keys (slot D keys x) = .key x := by
-  have hgt : D.top.range + 1 < slot D keys x := by
-    have := Nat.le_add_right (offset D keys (D.top.apply x))
-      ((D.secondary (D.top.apply x)).apply x : ℕ)
-    simp only [offset] at this
-    simp only [slot, offset]
-    omega
+  have hgt : D.top.range + 1 < slot D keys x := by grind [offset, slot]
   rw [memory_of_lt hgt]
   obtain ⟨y, hy⟩ : ∃ y, keys.find? (fun z => slot D keys z = slot D keys x) = some y :=
     Option.isSome_iff_exists.mp (List.find?_isSome.mpr ⟨x, hx, by simp⟩)
@@ -394,9 +389,7 @@ theorem slot_lt_size {D : Description F} {keys : List X} {x : X} (hx : x ∈ key
 /-- The table uses no cell at or beyond `size`. -/
 theorem memory_of_size_le {D : Description F} {keys : List X} {a : ℕ} (ha : size D keys ≤ a) :
     memory D keys a = .empty := by
-  have hgt : D.top.range + 1 < a := by
-    simp only [size] at ha
-    omega
+  have hgt : D.top.range + 1 < a := by grind [size]
   rw [memory_of_lt hgt, List.find?_eq_none.mpr]
   intro x hx
   have := slot_lt_size (D := D) hx

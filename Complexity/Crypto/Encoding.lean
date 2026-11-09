@@ -16,11 +16,13 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 
 Encryption, decryption, keyed hash functions, block ciphers and message authentication all run a
 keyed algorithm at a security parameter `n`, and an experiment that has generated a key pair runs
-its adversary with both keys at hand. Their efficiency certificates take the security parameter
-in unary first, as `1ⁿ`, followed by the bit-word key and the payload. This module names those
-input encodings by role, so that statements need not spell out the nested pairs.
+its adversary with both keys at hand. A zero-knowledge experiment runs a malicious verifier and its
+simulator on an instance and an auxiliary input, and the honest prover also on a witness. Their
+efficiency certificates take the security parameter in unary first, as `1ⁿ`, followed by the
+key and the payload, or by the instance, the witness and the auxiliary input. This module names
+those input encodings by role, so that statements need not spell out the nested pairs.
 
-Both names are reducible abbreviations, so `fun_prop`, instance search and the combinators' lemmas
+All names are reducible abbreviations, so `fun_prop`, instance search and the combinators' lemmas
 see through them. `omega` does not, since it compares atoms syntactically: state the bounds that it
 combines with the same spelling.
 
@@ -28,6 +30,10 @@ combines with the same spelling.
 
 * `Cslib.Crypto.encKeyedInput`: the input `(1ⁿ, key, x)` of a keyed algorithm.
 * `Cslib.Crypto.encKeyPairInput`: the input `(1ⁿ, pk, sk)` of an experiment after key generation.
+* `Cslib.Crypto.encInstanceAuxInput`: the input `(1ⁿ, a, z)` of a malicious verifier and of its
+  simulator.
+* `Cslib.Crypto.encInstanceWitnessAuxInput`: the input `(1ⁿ, a, w, z)` of a zero-knowledge
+  experiment that also runs the honest prover.
 -/
 
 @[expose] public section
@@ -48,5 +54,22 @@ and the secret key as bit words. The parameter and the public key are framed. Th
 of `encKeyedInput encBits`; the name records the role. -/
 abbrev encKeyPairInput : ℕ × List Bool × List Bool ↪ List Bool :=
   encPair encUnary (encPair encBits encBits)
+
+/-- Input `(1ⁿ, a, z)` of a malicious verifier: the security parameter `n` in unary, the instance
+`a` encoded by `enc`, and the verifier's auxiliary input `z` as a bit word. The parameter and the
+instance are framed; `z` is not. A zero-knowledge simulator takes the same input, and a
+distinguisher takes it paired with a view, as `encPair (encInstanceAuxInput enc) encBits`. The
+layout is that of `Cslib.Probability.encAuxTriple encUnary enc`; the name records the role. -/
+abbrev encInstanceAuxInput {α : Type} (enc : α ↪ List Bool) : ℕ × α × List Bool ↪ List Bool :=
+  encPair encUnary (encPair enc encBits)
+
+/-- Input `(1ⁿ, a, w, z)` of a zero-knowledge experiment that runs the honest prover with witness
+`w` against a malicious verifier with auxiliary input `z`, such as the honest interaction or a
+hybrid reduction: the security parameter `n` in unary, the instance `a` encoded by `enc`, then the
+witness and the auxiliary input as bit words. The parameter, the instance and the witness are
+framed; `z` is not. It is `encInstanceAuxInput enc` with the witness inserted before `z`. -/
+abbrev encInstanceWitnessAuxInput {α : Type} (enc : α ↪ List Bool) :
+    ℕ × α × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair enc (encPair encBits encBits))
 
 end Cslib.Crypto

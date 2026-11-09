@@ -49,6 +49,11 @@ jobs:
           go vet ./...
           go test -run='^$' -fuzz=FuzzMapping -fuzztime=10s -parallel=2
           go build -o "$RUNNER_TEMP/cache-origin" .
+      - name: Test dashboard snapshots and frontend
+        run: |
+          python3 -B -m unittest discover -s scripts -p 'test_cache_dashboard.py'
+          node --check tools/cache-origin/dashboard/app.js
+          node scripts/test_cache_dashboard_frontend.cjs
       - name: Install nginx for loopback integration tests
         run: |
           sudo apt-get update

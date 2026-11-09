@@ -119,11 +119,9 @@ theorem wordInverter_eval (f : List Bool → List Bool)
         (maskCount n (precision degree n)) image).map List.ofFn := by
   simp only [wordInverter, ProbComp.eval_bind, ProbComp.eval_uniform, BitString.eval_sampleList,
     ProbComp.eval_pure, invertSigned, invert, PMF.monad_bind_eq_bind, PMF.map_bind]
-  congr 1
-  funext flip
+  congr 1 with flip : 1
   rw [uniformList, PMF.bind_map]
-  congr 1
-  funext seed
+  congr 1 with seed : 1
   simpa only [PMF.map, fixedPredictor, Function.comp_def] using
     uniform_wordDecode f (fun query => evaluate (n, image ++ query) (List.ofFn seed) ^^ flip)
       degree n image
@@ -161,8 +159,7 @@ theorem eval_parityPredictionGame (f : List Bool → List Bool) (adversary : Dis
   simp only [parityPredictionGame, ProbComp.eval_bind, BitString.eval_sampleList,
     ProbComp.eval_pure, uniformList, PMF.bind_map, Function.comp_def,
     ← dotProduct_eq_foldl, predictionExperiment]
-  congr 1
-  funext x
+  congr 1 with x : 1
   simp_rw [← fixedPredictor_distribution adversary evaluate c d hrealize,
     PMF.bind_map, Function.comp_def]
   rw [PMF.bind_comm]
