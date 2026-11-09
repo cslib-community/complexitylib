@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayChunkBits
 import Mathlib.Tactic.FinCases
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 
 /-!
 # Correct initial-source packed chunks
@@ -27,13 +28,6 @@ namespace Turing.MultiTapePTM.BlockComputation.InitialChunk
 open MultiTapeTM Cslib.BitString Cslib.TreeEval.Ary
 
 variable {k s : ℕ} {Q : Type}
-
-private theorem ofBits_replicate_false (n : ℕ) : ofBits (List.replicate n false) = 0 := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    rw [List.replicate_succ, ofBits, List.foldr_cons, ← ofBits, ih]
-    rfl
 
 private theorem readNat_append_false (word : List Bool) (n offset count : ℕ) :
     Encoding.NativeDecode.readNat (word ++ List.replicate n false) offset count =

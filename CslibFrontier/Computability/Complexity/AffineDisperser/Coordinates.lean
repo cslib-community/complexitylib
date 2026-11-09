@@ -284,8 +284,7 @@ private theorem readField_blockPos (B : Basis (Fin n) (ZMod 2) F) {r N : ℕ} (h
     (x : List Bool) (i : Fin r) :
     readField B (blockPos h) (ofList N x) i = fieldOfBits B ((x.drop (n * i)).take n) := by
   rw [readField, fieldOfBits]
-  congr 1
-  funext u
+  congr 1 with u : 1
   rw [List.getD_take_drop x (n * i) u.2]
   simp [blockPos, ofList, finProdFinEquiv_apply_val, add_comm]
 

@@ -143,19 +143,6 @@ theorem IsOdd.foldTable_eq {B : (α → Bool) → Bool} (hB : IsOdd B) (x₀ : �
   funext f
   simp only [foldTable, hB f, Bool.not_not, ite_self]
 
-/-- **An odd function has zero empty Fourier coefficient**: its `±1` values at `f` and
-`f + fun _ => true` cancel. -/
-theorem IsOdd.fourierCoeff_empty [Fintype α] [DecidableEq α] {B : (α → Bool) → Bool}
-    (hB : IsOdd B) : fourierCoeff (fun f => signVal (B f)) ∅ = 0 := by
-  rw [BitString.fourierCoeff_empty]
-  have h1 : (𝔼 f : α → Bool, signVal (B f)) =
-      𝔼 f : α → Bool, signVal (B ((fun _ => true) + f)) :=
-    (Fintype.expect_add_left (fun f : α → Bool => signVal (B f)) (fun _ => true)).symm
-  have h2 (f : α → Bool) : signVal (B ((fun _ => true) + f)) = -signVal (B f) := by
-    rw [add_comm (fun _ => true) f, hB f, signVal_not]
-  simp only [h2, expect_neg_distrib] at h1
-  linarith
-
 /-- An odd function has Fourier coefficient `0` on every set of even cardinality. -/
 theorem IsOdd.fourierCoeff_of_even [Fintype α] [DecidableEq α] {B : (α → Bool) → Bool}
     (hB : IsOdd B) {S : Finset α} (hS : Even #S) :
@@ -177,6 +164,12 @@ theorem IsOdd.fourierCoeff_of_even [Fintype α] [DecidableEq α] {B : (α → Bo
     ring
   simp only [h2, expect_neg_distrib] at h1
   linarith
+
+/-- **An odd function has zero empty Fourier coefficient**: its `±1` values at `f` and
+`f + fun _ => true` cancel. This is the case `S = ∅` of `IsOdd.fourierCoeff_of_even`. -/
+theorem IsOdd.fourierCoeff_empty [Fintype α] [DecidableEq α] {B : (α → Bool) → Bool}
+    (hB : IsOdd B) : fourierCoeff (fun f => signVal (B f)) ∅ = 0 :=
+  hB.fourierCoeff_of_even (by simp)
 
 /-! ### Mod-2 projection of subsets and character pullback -/
 

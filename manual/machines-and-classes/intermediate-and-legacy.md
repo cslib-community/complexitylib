@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Native resource contracts](native-and-resources.md)
 
-The library uses several mathematical execution interfaces between an algorithm and the native transition table. Their abstract steps are specification steps. Finite control, time, and tape space are obtained through a separate compilation/resource theorem. This distinction is essential when a configuration contains a Lean natural number, list, or arbitrary state type. [complexitylib][complexitylib]
+The library uses several mathematical execution interfaces between an algorithm and the native transition table. Their abstract steps are specification steps. Finite control, time, and tape space are obtained through a separate compilation/resource theorem. This distinction is essential when a configuration contains a Lean natural number, list, or arbitrary state type. [cslib-frontier][complexitylib]
 
 ## Intermediate interfaces
 
@@ -55,7 +55,7 @@ The [single-to-multitape compiler](https://github.com/cslib-community/cslib-fron
 
 ## Mathlib TM2 stack machines
 
-TM2 is Mathlib's finite family of stacks with finite control and local auxiliary state. Complexitylib has explicit encodings and simulations in both directions. The forward implementation re-encodes finite stack alphabets as binary words. The reverse compiler encodes each native work tape as two stacks plus a current cell, handles read-only input with two stacks and a boundary flag, and reverses accumulated output during cleanup. [TM2 bridge guide](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/TM2/README.md#L1)
+TM2 is Mathlib's finite family of stacks with finite control and local auxiliary state. cslib-frontier has explicit encodings and simulations in both directions. The forward implementation re-encodes finite stack alphabets as binary words. The reverse compiler encodes each native work tape as two stacks plus a current cell, handles read-only input with two stacks and a boundary flag, and reverses accumulated output during cleanup. [TM2 bridge guide](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/TM2/README.md#L1)
 
 The important endpoint is not merely eventual computational equivalence:
 

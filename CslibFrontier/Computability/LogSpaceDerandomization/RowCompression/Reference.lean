@@ -38,6 +38,8 @@ it agrees with padding by arbitrarily many copies of the default.
 ## Main results
 
 * `Cslib.RowCompression.reference_threshold_le`: the actual threshold is at most `max η q`.
+* `Cslib.RowCompression.firstRank_update_le_of_le`: explicit input rank and threshold ceilings
+  bound the updated padded rank, without reference-row shape hypotheses.
 * `Cslib.RowCompression.reference_firstRank_eq`: ranks above `η` are preserved exactly.
 * `Cslib.RowCompression.reference_update_output_eq`: a gated row output is preserved.
 * `Cslib.RowCompression.reference_iterate_output_eq`: preservation through zero-increment
@@ -63,7 +65,7 @@ default this is the rank obtained by adjoining arbitrarily many copies of `(z,0)
 @[expose] noncomputable def firstRank (s : Finset ι) (K : ℕ) (z : ℝ)
     (w : ι → Fin 2 → ℝ) : ℝ := max z (kthLargest K s fun y => w y 0)
 
-variable {s : Finset ι} {n K : ℕ} {ρ z η : ℝ} {w : ι → Fin 2 → ℝ}
+variable {s : Finset ι} {n K : ℕ} {ρ z η R : ℝ} {w : ι → Fin 2 → ℝ}
 
 theorem firstRank_nonneg : 0 ≤ firstRank s K z w :=
   kthLargest_nonneg.trans (le_max_right _ _)
@@ -83,20 +85,13 @@ theorem reference_threshold_le (hη : 0 ≤ η) (hρ : ρ ≤ η) (hK : 0 < K) (
   have hqQ : firstRank s K z w ≤ Q := le_max_right _ _
   have hQ0 : 0 ≤ Q := hη.trans hηQ
   have hrank : kthLargest n s (fun y => entrySize (w y)) ≤ Q := by
-    by_contra h
-    have hcard := (lt_kthLargest_iff (hK.trans_le hKn) hQ0).mp (lt_of_not_ge h)
-    have hsub : ({y ∈ s | Q < entrySize (w y)} : Finset ι) ⊆ {y ∈ s | Q < w y 0} := by
-      intro y hy
-      obtain ⟨hys, hy⟩ := mem_filter.mp hy
-      refine mem_filter.mpr ⟨hys, ?_⟩
-      by_contra hfirstQ
-      have hsize : entrySize (w y) ≤ Q :=
-        max_le (abs_le.mpr ⟨by linarith [hfirst y hys], not_lt.mp hfirstQ⟩)
-          ((hsecond y hys).trans hηQ)
-      exact (not_lt_of_ge hsize) hy
-    have hfirstRank : Q < kthLargest K s (fun y => w y 0) :=
-      (lt_kthLargest_iff hK hQ0).mpr (hKn.trans (hcard.trans (card_le_card hsub)))
-    exact (not_lt_of_ge (kthLargest_le_firstRank.trans hqQ)) hfirstRank
+    refine kthLargest_le_of_lt_imp hK hKn hQ0 (fun y hys hy => ?_)
+      (kthLargest_le_firstRank.trans hqQ)
+    by_contra hfirstQ
+    have hsize : entrySize (w y) ≤ Q :=
+      max_le (abs_le.mpr ⟨by linarith [hfirst y hys], not_lt.mp hfirstQ⟩)
+        ((hsecond y hys).trans hηQ)
+    exact (not_lt_of_ge hsize) hy
   exact max_le (default_le_firstRank.trans hqQ) (max_le (hρ.trans hηQ) hrank)
 
 /-- The new default is at most the larger of `η` and the old padded rank. -/
@@ -122,30 +117,27 @@ theorem reference_update_bounds (hη : 0 ≤ η) {y : ι}
   · exact (le_min (abs_le.mp hsecond).1 (by linarith)).trans h1.1
   · exact h1.2.trans (max_le (abs_le.mp hsecond).2 hη)
 
+/-- The updated padded first rank remains below a common input rank and threshold ceiling.
+No lower bound on raw first entries or upper bound on second entries is needed. -/
+theorem firstRank_update_le_of_le (hK : 0 < K) (hR : 0 ≤ R)
+    (hq : firstRank s K z w ≤ R) (hu : threshold s n ρ z w ≤ R) :
+    firstRank s K (newDefault s n K ρ z w) (update s n K ρ z w) ≤ R := by
+  have hb : newDefault s n K ρ z w ≤ R :=
+    max_le hu ((min_le_left _ _).trans hq)
+  refine max_le hb (kthLargest_le_of_lt_imp hK le_rfl hR (fun y _ hy => ?_)
+    (kthLargest_le_firstRank.trans hq))
+  by_contra hfirst
+  have hout := (update_mem_Icc (s := s) (n := n) (K := K) (ρ := ρ) (z := z) (w := w) y 0).2
+  change update s n K ρ z w y 0 ≤ max (w y 0) (newDefault s n K ρ z w) at hout
+  exact (not_lt_of_ge (hout.trans (max_le (not_lt.mp hfirst) hb))) hy
+
 /-- The new padded rank is at most the larger of `η` and the old padded rank. -/
 theorem reference_firstRank_le (hη : 0 ≤ η) (hρ : ρ ≤ η) (hK : 0 < K) (hKn : K ≤ n)
     (hfirst : ∀ y ∈ s, -η ≤ w y 0) (hsecond : ∀ y ∈ s, |w y 1| ≤ η) :
     firstRank s K (newDefault s n K ρ z w) (update s n K ρ z w) ≤
-      max η (firstRank s K z w) := by
-  let Q := max η (firstRank s K z w)
-  have hQ0 : 0 ≤ Q := hη.trans (le_max_left _ _)
-  have hb : newDefault s n K ρ z w ≤ Q :=
-    reference_newDefault_le hη hρ hK hKn hfirst hsecond
-  refine max_le hb ?_
-  by_contra h
-  have hcard := (lt_kthLargest_iff hK hQ0).mp (lt_of_not_ge h)
-  have hsub : ({y ∈ s | Q < update s n K ρ z w y 0} : Finset ι) ⊆
-      {y ∈ s | Q < w y 0} := by
-    intro y hy
-    obtain ⟨hys, hy⟩ := mem_filter.mp hy
-    refine mem_filter.mpr ⟨hys, ?_⟩
-    by_contra hfirstQ
-    have hu := (update_mem_Icc (s := s) (n := n) (K := K) (ρ := ρ) (z := z) (w := w) y 0).2
-    change update s n K ρ z w y 0 ≤ max (w y 0) (newDefault s n K ρ z w) at hu
-    exact (not_lt_of_ge (hu.trans (max_le (not_lt.mp hfirstQ) hb))) hy
-  have hfirstRank : Q < kthLargest K s (fun y => w y 0) :=
-    (lt_kthLargest_iff hK hQ0).mpr (hcard.trans (card_le_card hsub))
-  exact (not_lt_of_ge (kthLargest_le_firstRank.trans (le_max_right _ _))) hfirstRank
+      max η (firstRank s K z w) :=
+  firstRank_update_le_of_le hK (hη.trans (le_max_left _ _)) (le_max_right _ _)
+    (reference_threshold_le hη hρ hK hKn hfirst hsecond)
 
 /-- Above the flat rank region, the padded rank is preserved exactly. If the new default
 does not already equal the old rank, all old rank witnesses lie in the identity region. -/

@@ -259,6 +259,14 @@ theorem tsum_scaleMajorant : (∑' h, scaleMajorant h) =
         1 / (1 - (2 : ℝ) ^ (-(1 : ℝ) / 8)) - 1 := by linarith
     _ = _ := by ring
 
+/-- A finite sum whose terms are at most `C` times the scale majorant is at most `C` times the
+majorant's total. -/
+theorem sum_le_mul_tsum_scaleMajorant (s : Finset ℤ) {f : ℤ → ℝ} {C : ℝ} (hC : 0 ≤ C)
+    (hf : ∀ h ∈ s, f h ≤ C * scaleMajorant h) :
+    ∑ h ∈ s, f h ≤ C * ∑' h, scaleMajorant h :=
+  (sum_le_sum hf).trans ((mul_sum _ _ _).symm.le.trans (mul_le_mul_of_nonneg_left
+    (summable_scaleMajorant.sum_le_tsum s fun h _ => scaleMajorant_nonneg h) hC))
+
 /-- Finite actual scale sets have a uniform total child-error budget. This is the scalar
 payment used after the task-specific norm comparisons and Minkowski, without a factor
 counting available scales. The rates and dependency ranks may vary with the scale. -/
@@ -271,15 +279,9 @@ theorem sum_scheduled_child_cost_le {A a u : ℝ} (hA : 0 ≤ A)
     (∑ h ∈ s, binNormCost 4 (h : ℝ) * (2 : ℝ) ^ (Real.logb 2 (u' h / u) / 4) *
       (2 : ℝ) ^ (-precision (16 * c) A (lastBudget M d c h) (i' h) (a' h) (u' h))) ≤
       (2 : ℝ) ^ (-precision (16 * c) A M i a u - A +
-        (d : ℝ) / (16 * c) + 1 / 16) * ∑' h, scaleMajorant h := by
-  calc
-    _ ≤ ∑ h ∈ s, (2 : ℝ) ^ (-precision (16 * c) A M i a u - A +
-        (d : ℝ) / (16 * c) + 1 / 16) * scaleMajorant h :=
-      sum_le_sum fun h hh => scheduled_child_cost_le hA M d c i (i' h) hc h
-        (hi h hh) ha (ha' h hh) hu (huu' h hh) (hscale h hh)
-    _ = (2 : ℝ) ^ (-precision (16 * c) A M i a u - A +
-        (d : ℝ) / (16 * c) + 1 / 16) * ∑ h ∈ s, scaleMajorant h := (mul_sum _ _ _).symm
-    _ ≤ _ := mul_le_mul_of_nonneg_left
-      (summable_scaleMajorant.sum_le_tsum s (fun h _ => scaleMajorant_nonneg h)) (by positivity)
+        (d : ℝ) / (16 * c) + 1 / 16) * ∑' h, scaleMajorant h :=
+  sum_le_mul_tsum_scaleMajorant s (by positivity) fun h hh =>
+    scheduled_child_cost_le hA M d c i (i' h) hc h (hi h hh) ha (ha' h hh) hu (huu' h hh)
+      (hscale h hh)
 
 end Cslib.LogSpaceEstimation

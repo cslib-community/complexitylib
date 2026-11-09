@@ -858,8 +858,7 @@ theorem isRowsFirstBipartite_ofFn_iff {T T' : Type} {k l r : ℕ} (F : Fin k →
   have hc (i : ℕ) : (List.ofFn F).map (fun v => v.1.count i) =
       (List.ofFn F').map (fun v => v.1.count i) := by
     simp only [List.map_ofFn]
-    congr 1
-    funext x
+    congr 1 with x : 1
     exact (h x).count_eq i
   have hm : (∀ v ∈ List.ofFn F, ∀ i ∈ v.1, i < l) ↔ (∀ v ∈ List.ofFn F', ∀ i ∈ v.1, i < l) := by
     simp only [List.mem_ofFn, forall_exists_index, forall_apply_eq_imp_iff]

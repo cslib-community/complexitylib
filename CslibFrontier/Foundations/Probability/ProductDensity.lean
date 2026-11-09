@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PairwiseIndependentHash
+import CslibFrontier.Foundations.Data.Finset.Density
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Fintype.BigOperators
 
@@ -39,7 +40,7 @@ theorem dens_filter_pi_eval {Role A : Type} [Fintype Role] [DecidableEq Role]
     [Fintype A] [Nonempty A] (role : Role) (E : A → Prop) [DecidablePred E] :
     dens {σ : Role → A | E (σ role)} = dens {a | E a} := by
   classical
-  have h := IsPairwiseIndependentHash.dens_filter_comp_equiv
+  have h := Fintype.dens_filter_comp_equiv
     (Equiv.piSplitAt role (fun _ : Role => A)) (fun z => E z.1)
   have hp := dens_filter_fst_and_snd E (fun _ : {j : Role // j ≠ role} → A => True)
   simpa using h.trans (by simpa using hp)
@@ -51,7 +52,7 @@ theorem dens_filter_pi_eval_and_pi_eval {Role A : Type} [Fintype Role] [Decidabl
     dens {σ : Role → A | E (σ i) ∧ F (σ j)} = dens {a | E a} * dens {a | F a} := by
   classical
   let G : ({k : Role // k ≠ i} → A) → Prop := fun σ => F (σ ⟨j, hij⟩)
-  have h := IsPairwiseIndependentHash.dens_filter_comp_equiv
+  have h := Fintype.dens_filter_comp_equiv
     (Equiv.piSplitAt i (fun _ : Role => A)) (fun z => E z.1 ∧ G z.2)
   change dens {σ : Role → A | E (σ i) ∧ F (σ j)} = _ at h
   rw [h, dens_filter_fst_and_snd, dens_filter_pi_eval]

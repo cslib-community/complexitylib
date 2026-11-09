@@ -101,8 +101,7 @@ theorem lsbValue_eq_binaryValue_reverse (w : List Bool) : lsbValue w = binaryVal
 theorem lowBits_eq_ofFn_equivFin_symm (n : ℕ) (k : Fin (2 ^ n)) :
     lowBits n (k : ℕ) = List.ofFn ((equivFin n).symm k) := by
   rw [lowBits_eq_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact (equivFin_symm_apply k i).symm
 
 /-- For any `x < 2 ^ n`, reading `lowBits n x` with `lsbValue` recovers `x`. -/

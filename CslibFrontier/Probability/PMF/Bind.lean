@@ -16,8 +16,8 @@ A two-stage experiment `μ.bind f` gives an outcome `b` the probability `c` when
 second stage does (`bind_apply_of_forall`), and some possible first stage gives `b` at least the
 probability of the whole experiment (`exists_bind_apply_le`). Continuations need agree, or be
 compared, only on outcomes the first stage can produce (`bind_congr_on_support`,
-`le_bind_apply_on_support`, `bind_apply_mono_on_support`, `bind_apply_le_add_on_support`). Averages
-of bounded values are bounded
+`le_bind_apply_on_support`, `bind_apply_mono_on_support`, `bind_apply_le_add_on_support`,
+`bind_apply_le_add_const_on_support`). Averages of bounded values are bounded
 (`tsum_mul_le_of_forall_le`, `tsum_mul_le_card_mul_add`), and the pairing law holds for dependent
 second samples (`bind_sigma_apply`).
 
@@ -29,7 +29,9 @@ second samples (`bind_sigma_apply`).
 * `Cslib.Probability.PMF.le_bind_apply_on_support`,
   `Cslib.Probability.PMF.bind_apply_le_on_support`,
   `Cslib.Probability.PMF.bind_apply_mono_on_support`,
-  `Cslib.Probability.PMF.bind_apply_le_add_on_support`: comparing continuations at one outcome.
+  `Cslib.Probability.PMF.bind_apply_le_add_on_support`,
+  `Cslib.Probability.PMF.bind_apply_le_add_const_on_support`: comparing continuations at one
+  outcome.
 * `Cslib.Probability.PMF.tsum_mul_le_of_forall_le`,
   `Cslib.Probability.PMF.tsum_mul_le_card_mul_add`: averages of bounded values.
 * `Cslib.Probability.PMF.bind_sigma_apply`: the pairing law for dependent second samples.
@@ -62,8 +64,7 @@ theorem bind_sigma_apply {β : α → Type*} (p : PMF α) (f : (a : α) → PMF 
 theorem bind_congr_on_support (p : PMF α) (f g : α → PMF β)
     (h : ∀ a ∈ p.support, f a = g a) : p.bind f = p.bind g := by
   rw [← PMF.bindOnSupport_eq_bind p f, ← PMF.bindOnSupport_eq_bind p g]
-  congr 1
-  funext a ha
+  congr 1 with a ha : 2
   exact h a ha
 
 /-- If every second stage of a two-stage experiment gives the outcome `b` probability `c`, so
@@ -117,6 +118,18 @@ theorem bind_apply_le_add_on_support (μ : PMF α) {f g₁ g₂ : α → PMF β}
   · rw [← mul_add]
     exact mul_le_mul_right (h a ha) _
   · simp [(PMF.apply_eq_zero_iff μ a).2 ha]
+
+/-- If every possible first-stage result gives the outcome `b` at most `c` more probability under
+`f` than under `g`, so does the whole experiment. -/
+theorem bind_apply_le_add_const_on_support (μ : PMF α) {f g : α → PMF β} (b : β) {c : ℝ≥0∞}
+    (h : ∀ a ∈ μ.support, f a b ≤ g a b + c) : μ.bind f b ≤ μ.bind g b + c := by
+  simp only [PMF.bind_apply]
+  calc ∑' a, μ a * f a b ≤ ∑' a, μ a * (g a b + c) := tsum_le_tsum fun a => by
+        by_cases ha : a ∈ μ.support
+        · exact mul_le_mul_right (h a ha) _
+        · simp [(PMF.apply_eq_zero_iff μ a).2 ha]
+    _ = ∑' a, μ a * g a b + c := by
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
 
 /-- Some possible outcome of the first stage of a two-stage experiment does at least as well as
 the experiment. -/

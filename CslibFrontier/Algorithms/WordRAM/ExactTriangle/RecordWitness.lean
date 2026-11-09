@@ -45,7 +45,6 @@ outside the original product window and the low producer bank are preserved.
 
 This is a per-record component. Prime/global parameter selection, the outer ET instance loop,
 aggregate subcubic ET analysis and the full ordinary 3SUM 1.9992 endpoint remain open under #1394.
-No curated headline abstract is affected.
 
 ## References
 

@@ -173,8 +173,7 @@ lemma row_as_vertex {Ω V : Type*} [Fintype Ω] [Fintype V]
     rowNormPow 4 N u X Y f = vertexNormPow 4 N u
       (fun σ (z : V × V) => X σ z.1 ∧ Y σ z.2) (fun σ z => f σ z.1 z.2) := by
   simp only [rowNormPow, vertexNormPow, sum_filter, Fintype.sum_prod_type]
-  congr 2
-  funext σ
+  congr 2 with σ : 1
   apply sum_congr rfl
   intro x _
   by_cases hx : X σ x
@@ -243,8 +242,7 @@ lemma row_mask_subset {Ω V : Type*} [Fintype Ω] [Fintype V]
     rowNormPow 4 N u X Ya (fun σ x y => if Yt σ y then f σ x y else 0) =
       rowNormPow 4 N u X Yt f := by
   unfold rowNormPow
-  congr 2
-  funext σ
+  congr 2 with σ : 1
   apply sum_congr rfl
   intro x _
   simp only [sum_filter]

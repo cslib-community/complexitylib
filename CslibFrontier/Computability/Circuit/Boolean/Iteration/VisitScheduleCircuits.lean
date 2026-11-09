@@ -119,11 +119,8 @@ theorem minimal_period_circuit (c : Circuit signature n n) (L : ℕ)
         Bool.eq_false_iff.mpr (fun h => hy ((hc x).mp h))
       simp only [hfalse, Bool.false_eq_true, ite_false]
       exact (Function.minimalPeriod_eq_zero_of_notMem_periodicPts hy).symm
-  · have hb : n + 1 ≤ powerBudget n c.size (2 ^ n) L := by
-      have hh := Nat.mul_le_mul_left ((n + 1) ^ 3)
-        (show 1 ≤ L + 2 ^ n / L + 1 by lia)
-      unfold powerBudget
-      nlinarith [Nat.zero_le (n ^ 2)]
+  · have hb : n + 1 ≤ powerBudget n c.size (2 ^ n) L :=
+      (Nat.le_self_pow (by decide) _).trans (cube_le_powerBudget n c.size (2 ^ n) L)
     lia
 
 /-- One reachability bit, an `(n + 1)`-bit first visit time, and an `(n + 1)`-bit return period. -/

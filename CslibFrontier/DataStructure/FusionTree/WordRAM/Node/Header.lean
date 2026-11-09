@@ -125,8 +125,7 @@ theorem exec_readHeader {w n q a : ℕ} {keys : Fin n → ℕ} (p : NodeParamete
   let y := v.extend headerBank u
   have hyword (i : Fin 18) :
       y.regs (headerBank ⟨i.val + 1, by omega⟩) = x.mem (a + i.val) := by
-    change Function.extend headerBank v.regs u.regs (headerBank _) = _
-    rw [(bank_injective _).extend_apply, hv.2.2 i, hup]
+    rw [regs_extend_bank, hv.2.2 i, hup]
     rfl
   have hyinput (i : Fin registers) (hi : i.val < 10) : y.regs i = x.regs i := by
     have hn : ¬∃ j, headerBank j = i := by

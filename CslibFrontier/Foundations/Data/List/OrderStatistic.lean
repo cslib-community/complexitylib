@@ -167,27 +167,22 @@ theorem IsOrderStatistic.of_filter_add {q : α → Prop} [DecidablePred q] {xs :
     xs.IsOrderStatistic r (k + xs.countP (fun x => ¬ q x)) y where
   mem := (mem_filter.mp h.mem).1
   countP_lt_le := by
-    have h1 := h.countP_lt_le
-    rw [countP_filter] at h1
-    have hsplit := countP_and_not_add_countP_and (fun x => ¬ r y x) (fun x => q x) xs
-    have hmono : xs.countP (fun x => ¬ q x ∧ ¬ r y x) ≤ xs.countP (fun x => ¬ q x) :=
-      countP_mono_left fun x _ hx => by simp_all
-    have hcongr : xs.countP (fun x => ¬ r y x ∧ q x) =
-        xs.countP (fun x => decide (¬ r y x) && decide (q x)) :=
-      countP_congr fun x _ => by simp
-    omega
+    -- split `xs` into the kept and the rejected elements
+    have hrej : (xs.filter fun x => !decide (q x)).countP (fun x => ¬ r y x) ≤
+        xs.countP (fun x => ¬ q x) := by
+      rw [countP_eq_length_filter (l := xs)]
+      simpa only [decide_not] using countP_le_length
+    rw [countP_eq_countP_filter_add xs (fun x => decide ¬ r y x) fun x => decide (q x)]
+    exact Nat.add_le_add h.countP_lt_le hrej
   lt_countP_le := by
-    have h1 := h.lt_countP_le
-    rw [countP_filter] at h1
-    have hsplit := countP_and_not_add_countP_and (fun x => r x y) (fun x => q x) xs
-    have hcongr₁ : xs.countP (fun x => ¬ q x ∧ r x y) = xs.countP (fun x => ¬ q x) :=
-      countP_congr fun x hx => by
-        simp only [decide_eq_true_eq, and_iff_left_iff_imp]
-        exact hq x hx
-    have hcongr₂ : xs.countP (fun x => r x y ∧ q x) =
-        xs.countP (fun x => decide (r x y) && decide (q x)) :=
-      countP_congr fun x _ => by simp
-    omega
+    have hrej : (xs.filter fun x => !decide (q x)).countP (fun x => r x y) =
+        xs.countP (fun x => ¬ q x) := by
+      rw [countP_eq_length.mpr fun x hx => ?_, countP_eq_length_filter]
+      · simp
+      · simp only [mem_filter, Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not] at hx
+        simpa using hq x hx.1 hx.2
+    rw [countP_eq_countP_filter_add xs (fun x => decide (r x y)) fun x => decide (q x), hrej]
+    exact Nat.add_lt_add_right h.lt_countP_le _
 
 /-- In a linear order, the rank-`k` order statistic of `xs` is the `k`-th entry of
 `xs.mergeSort`. -/

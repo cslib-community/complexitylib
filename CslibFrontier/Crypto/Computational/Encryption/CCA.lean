@@ -886,7 +886,7 @@ theorem eval_cca2GameOn_ofCPA {Msg Out : Type}
       (cca2GameOn valid encOut keyGen encrypt decrypt (CCA2AdversaryOf.ofCPA adversary) bit n) =
       ProbComp.eval (gameOn valid keyGen encrypt adversary bit n) := by
   simp only [cca2GameOn, gameOn, CCA2AdversaryOf.ofCPA, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample, PMF.bind_map,
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_sample, PMF.bind_map,
     PMF.bind_pure, Function.comp_def, apply_ite ProbComp.eval]
 
 /-- Running a lifted CPA adversary in `cca2Game` has the same output distribution as the CPA
@@ -1752,38 +1752,33 @@ theorem eval_run_multiPhase2FilterHandler {Out α : Type}
         (cca2MultiPhase2Oracle encOut decrypt n sk cts))
       prog).run ()) := by
   rw [OracleComp.interpret_map, StateT.run_map, ProbComp.eval_map,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.run_interpret_map_state
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.runWith_run_interpret, PMF.map_comp]
+  have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts q s))
     (oracle' := fun q (state : Unit × Unit) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-          (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s)))
-        ((multiPhase2FilterHandler decBound cts q).run state.1)).run state.2).map
+      (ProbOracleComp.runWith
+          (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s))
+          ((multiPhase2FilterHandler decBound cts q).run state.1) state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
     (represent := fun _ : Unit => ((), ()))
     (step := by
       intro ⟨⟨⟩, req⟩ ⟨⟩
       change (ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts ((), req) ())).map
           (fun x => (x.1, (), ())) =
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s)))
-          (multiPhase2FilterHandler decBound cts ((), req) ())).run ()).map
+        (ProbOracleComp.runWith
+            (fun q s => ProbComp.eval (cca2Phase2Oracle encOut decrypt n sk ct q s))
+            (multiPhase2FilterHandler decBound cts ((), req) ()) ()).map
           (fun result => (result.1.1, result.1.2, result.2))
       by_cases hmem : req ∈ cts
-      · simp [cca2MultiPhase2Oracle, multiPhase2FilterHandler, hmem,
-          OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
+      · simp [cca2MultiPhase2Oracle, multiPhase2FilterHandler, hmem, ProbComp.eval_pure]
       · have hne : (req == ct) = false :=
           beq_eq_false_iff_ne.mpr fun heq => hmem (heq ▸ hct)
         unfold cca2MultiPhase2Oracle multiPhase2FilterHandler
         simp only [hmem, decide_false, Bool.false_eq_true, ↓reduceIte, Functor.map_map,
-          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          cca2Phase2Oracle, hne, _root_.PMF.monad_map_eq_map,
-          ProbComp.eval_pure, PMF.map_comp, PMF.pure_map, Function.comp_def]
-        dsimp only [StateT.run]
-        simp only [PMF.pure_map, List.take_of_length_le (hdecBound req)])
+          ProbOracleComp.runWith_map, ProbOracleComp.runWith_query, cca2Phase2Oracle, hne,
+          ProbComp.eval_pure, PMF.pure_map]
+        simp only [Prod.map_apply, id_eq, List.take_of_length_le (hdecBound req)])
     prog ()
   have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
   have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
@@ -2187,57 +2182,12 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
       EGuess (encPair encUnary (encPair encBits (encList encBits))) :=
     ComputableInPolyTime.prod (by dsimp only [EGuess]; fun_prop)
       (ComputableInPolyTime.prod hstateA hcts)
-  have hmemCond : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        decide (pair.2.1.2 ∈
-          (multiCCA2StateDecoder.decode pair.1.2.1).2.2.1 ++
-            pair.1.2.2 :: (multiCCA2StateDecoder.decode pair.1.2.1).2.2.2))
-      EIn encBool := by
-    have hlist : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-          (multiCCA2StateDecoder.decode pair.1.2.1).2.2.1 ++
-            pair.1.2.2 :: (multiCCA2StateDecoder.decode pair.1.2.1).2.2.2)
-        EIn (encList encBits) :=
-      hcts.comp (by dsimp only [EIn]; fun_prop)
-    have hval : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) => pair.2.1.2)
-        EIn encBits := by
-      dsimp only [EIn]; fun_prop
-    exact ComputableInPolyTime.decide_mem hlist hval
-  have hnoReply : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        pure ([], pair.2.2)) :=
-    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by dsimp only [EIn, EState]; fun_prop)).isOraclePPTOn
-  have hreq : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) => pair.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hlimit : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        decBound pair.1.1 pair.2.1.2)
-      EIn encUnary := by
-    have harg : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-          (pair.1.1, pair.2.1.2))
-        EIn (encPair encUnary encBits) :=
-      ComputableInPolyTime.prod (by dsimp only [EIn, EGuess]; fun_prop) hreq
-    exact hdecBound.comp harg
-  have hqueryReply : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        (fun reply => (reply, pair.2.2)) <$>
-          (List.take (decBound pair.1.1 pair.2.1.2) <$>
-            ProbOracleComp.query ((), pair.2.1.2))) :=
-    (IsOraclePPTOn.query_take' (Operation := Unit) () hreq hlimit).map_with'
-      (ComputableInPolyTime.prod (by fun_prop)
-        (by dsimp only [EIn, EState]; fun_prop))
   have hhandler : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
       (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         multiPhase2FilterHandler (decBound pair.1.1)
           ((multiCCA2StateDecoder.decode pair.1.2.1).2.2.1 ++
             pair.1.2.2 :: (multiCCA2StateDecoder.decode pair.1.2.1).2.2.2)
-          pair.2.1 pair.2.2) :=
-    IsOraclePPTOn.cond' hmemCond hnoReply hqueryReply
+          pair.2.1 pair.2.2) := by ppt [multiPhase2FilterHandler]
   have hres : ComputableInPolyTime
       (fun pair : (ℕ × List Bool × List Bool) × List Bool => decBound pair.1.1 pair.2)
       (encPair EGuess encBits) encUnary :=
@@ -2281,8 +2231,7 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
                 p.2.2 :: (multiCCA2StateDecoder.decode p.2.1).2.2.2)))
           (adversary.guess p.1 (multiCCA2StateDecoder.decode p.2.1).2.1
             ((multiCCA2StateDecoder.decode p.2.1).2.2.1 ++
-              p.2.2 :: (multiCCA2StateDecoder.decode p.2.1).2.2.2))).run ()) :=
-    hrun.map' (ComputableInPolyTime.fst _ _)
+              p.2.2 :: (multiCCA2StateDecoder.decode p.2.1).2.2.2))).run ()) := by ppt
   have hno : IsOraclePPTOn (Operation := Unit) EGuess encBool (fun _ => pure false) :=
     (ComputableInPolyTime.const false).isOraclePPTOn
   exact IsOraclePPTOn.cond' hactive hyes hno
@@ -2334,8 +2283,7 @@ theorem isPPT_cca2MultiToSingle {Msg : Type} [Inhabited Msg]
   choose := by
     have hsample : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encUnary
         (fun caller : ℕ × List Bool =>
-          ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) :=
-      (isPPTOn_sampleDyadicIndex (hQ.comp (by fun_prop))).isOraclePPTOn (Operation := Unit)
+          ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) := by ppt
     exact (hsample.bind_with
       (isOraclePPTOn_cca2MultiToSingleAt_choose hvalid hencrypt hA)).isOraclePPT
   guess := isOraclePPTOn_cca2MultiToSingleAt_guess valid encrypt hdecBound hA 0
@@ -2409,23 +2357,20 @@ theorem eval_cca2GameOn_cca2MultiToSingle {Msg Out : Type} [Inhabited Msg]
             (cca2GameOn valid encOut keyGen encrypt decrypt
               (cca2MultiToSingleAt valid encrypt decBound adversary i.val) bit n)) := by
   simp only [cca2GameOn, cca2MultiToSingle, ProbComp.eval_bind,
-    ProbOracleComp.eval_run_interpret]
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   have hsample (keys : List Bool × List Bool) :
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-          (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s)))
+      ProbOracleComp.runWith
+        (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s))
         (do
           let split ← ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q n))
-          (cca2MultiToSingleAt valid encrypt decBound adversary split).choose n keys.1)).run ()) =
+          (cca2MultiToSingleAt valid encrypt decBound adversary split).choose n keys.1) () =
       (PMF.uniformOfFintype (Fin (dyadicSize (Q n)))).bind (fun i =>
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s)))
-          ((cca2MultiToSingleAt valid encrypt decBound adversary i.val).choose
-            n keys.1)).run ())) := by
-    rw [OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
-      ProbComp.eval_sampleDyadicIndex]
-    simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+        (ProbOracleComp.runWith
+            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s))
+            ((cca2MultiToSingleAt valid encrypt decBound adversary i.val).choose n keys.1)
+            ())) := by
+    rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbComp.eval_sampleDyadicIndex]
+    simp only [PMF.bind_map, Function.comp_def]
   have hguess (i : ℕ) :
       (cca2MultiToSingleAt valid encrypt decBound adversary i).guess =
         (cca2MultiToSingleAt valid encrypt decBound adversary 0).guess := rfl
@@ -2498,10 +2443,9 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
           (choiceOut.1.1.getD split (default, default)).2 = true :=
       List.all_eq_true.mp hall _ (htarget_eq ▸ List.getElem_mem hlt)
     simp only [hcond, ↓reduceIte]
-    rw [ProbOracleComp.eval_run_interpret]
-    simp only [OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
-      OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_bind_eq_bind,
-      Probability.PMF.monad_pure_eq_pure, PMF.bind_map, Function.comp_def, PMF.bind_bind,
+    rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+    simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
+      ProbOracleComp.runWith_pure, PMF.bind_map, Function.comp_def, PMF.bind_bind,
       PMF.pure_bind, hvalid_target, ↓reduceIte]
     have hguess (ctsFront ctsBack : List (List Bool)) (ct : List Bool) :
         ProbComp.eval ((OracleComp.interpret
@@ -2792,7 +2736,7 @@ theorem INDCCA2On.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
       choiceOut.1.1.length ≤ Q n := by
     have hk := hlenKey n keys hkeys
     simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply] at hk
-    rw [ProbOracleComp.eval_run_interpret] at hchoice
+    rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hchoice
     have hch := (hlenCh n keys.1 Unit _ () choiceOut.2 choiceOut.1 hchoice).1
     exact hch.trans (Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq))
   have hsingleNeg := h (cca2MultiToSingle valid encrypt decBound Q adversary)

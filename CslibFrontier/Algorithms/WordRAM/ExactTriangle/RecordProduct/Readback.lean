@@ -15,6 +15,8 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Recor
 `producer_readback` derives the six-word record descriptor, raw left and right zero/one matrix
 spans, ordered query-coordinate words, heap bounds and occurrence sparsity from a genuine
 `Instances.Output`, without importing or executing either per-record product backend.
+`raw_left_block` and `raw_right_block` read a record's realized raw matrix blocks as the ordinary
+product's original input; `producer_readback` and the box record caller both use them.
 -/
 
 public section
@@ -25,8 +27,40 @@ open Cslib.WordRAM Cslib.Algorithms.ExactTriangle Cslib.Matrix
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
--- Nested writer arguments and vector fields require additional elaborator recursion.
-set_option maxRecDepth 4096 in
+/-- A record's raw left block, as written by the producer, reads as the original left input of the
+ordinary queried product. -/
+theorem raw_left_block {m n g p s : ℕ} (values : ℕ → ℤ) (idx : InstanceIndex p)
+    (mem : ℕ → ℕ) (qs : List (Fin n × Fin n))
+    (hleft : (Block.mk s (n * D m)).Realizes mem (fun j =>
+      WriteMatrices.entry false (matrixArgs n (D m) g p idx.1.val idx.2.2)
+        (fun q => (values (2 * (n * n) + q) % (p : ℤ)).toNat) j)) :
+    ∀ a < n * D m, mem (s + a) =
+      (State.init (QueriedProduct.input true (19 * m)
+        (leftMatrix m n g p values idx) (rightMatrix m n g p values idx) qs) :
+          State 160).data.mem (5 + a) := by
+  refine raw_left_words mem _ _ qs fun a k => ?_
+  have hflat : a.val * D m + k.val < n * D m := by
+    rw [Nat.mul_comm a.val]
+    exact Nat.mul_add_lt_mul_of_lt_of_lt a.isLt k.isLt
+  simpa only [leftMatrix, Int.toNat_natCast, Block.Realizes, Block.read] using hleft ⟨_, hflat⟩
+
+/-- A record's raw right block, in its `D×n` storage order, reads as the original right input of
+the ordinary queried product. -/
+theorem raw_right_block {m n g p t : ℕ} (hn : 0 < n) (values : ℕ → ℤ) (idx : InstanceIndex p)
+    (mem : ℕ → ℕ) (qs : List (Fin n × Fin n))
+    (hright : (Block.mk t (n * D m)).Realizes mem (fun j =>
+      WriteMatrices.entry true (matrixArgs n (D m) g p idx.1.val idx.2.2)
+        (fun q => (values (n * n + q) % (p : ℤ)).toNat) j)) :
+    ∀ a < n * D m, mem (t + a) =
+      (State.init (QueriedProduct.input true (19 * m)
+        (leftMatrix m n g p values idx) (rightMatrix m n g p values idx) qs) :
+          State 160).data.mem (5 + n * D m + a) := by
+  refine raw_right_words hn mem _ _ qs fun k a => ?_
+  have hflat : k.val * n + a.val < n * D m := by
+    rw [Nat.mul_comm k.val, Nat.mul_comm n (D m)]
+    exact Nat.mul_add_lt_mul_of_lt_of_lt k.isLt a.isLt
+  simpa only [rightMatrix, Int.toNat_natCast, Block.Realizes, Block.read] using hright ⟨_, hflat⟩
+
 /-- Derive both raw source matrices, ordered coordinate words, protected spans and occurrence
 sparsity from genuine producer output, without invoking either product backend. -/
 theorem producer_readback {m n g p : ℕ} (values : ℕ → ℤ)
@@ -138,26 +172,8 @@ theorem producer_readback {m n g p : ℕ} (values : ℕ → ℤ)
     (by change recordBase + 6 + n * D m ≤ _; omega),
     (by change recordBase + 6 + n * D m + n * D m ≤ _; omega),
     (by simpa only [decodedQueries_length] using hqEnd),
-    (raw_left_words x.mem _ _ qs (by
-      intro a k
-      have hflat : a.val * D m + k.val < n * D m := by
-        have ht := Nat.mul_le_mul_right (D m) a.isLt
-        rw [Nat.succ_mul] at ht
-        have := k.isLt
-        omega
-      simpa +decide only [leftMatrix, matrixArgs, WriteMatrices.entry, Int.toNat_natCast,
-        Block.read, Data.comap_mem, recordBase, out, ord, recordOrdinal, K, C, R, N] using
-        hleft ⟨a.val * D m + k.val, hflat⟩)),
-    (raw_right_words hn x.mem _ _ qs (by
-      intro k a
-      have hflat : k.val * n + a.val < n * D m := by
-        have ht := Nat.mul_le_mul_right n k.isLt
-        rw [Nat.succ_mul, Nat.mul_comm (D m) n] at ht
-        have := a.isLt
-        omega
-      simpa only [rightMatrix, matrixArgs, WriteMatrices.entry, Int.toNat_natCast,
-        Block.read, Data.comap_mem, recordBase, out, ord, recordOrdinal, K, C, R, N] using
-        hright ⟨k.val * n + a.val, hflat⟩)),
+    raw_left_block values idx x.mem qs hleft,
+    raw_right_block hn values idx x.mem qs hright,
     (by simpa only [decodedQueries_length] using decodedQueries_words hn x.mem _ _ hc), ?_⟩
   rw [decodedQueries_length]
   exact (Nat.mul_le_mul_right (2 ^ m) (min_le_left _ _)).trans (queryCap_mul_two_pow_le n m)

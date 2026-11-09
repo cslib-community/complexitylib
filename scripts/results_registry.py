@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 # Released under Apache 2.0 license as described in the file LICENSE.
 # Authors: Christian Reitwiessner
-"""Collect named results alongside the selected abstracts; validate their declaration links.
+"""Collect named results and validate their declaration links.
 
 Authored entries come from the checked Lean registry, never a separately authored JSON file.
 This checks references, not mathematical correspondence or completeness of coverage.
@@ -17,7 +17,6 @@ import re
 import subprocess
 from urllib.parse import quote
 
-import build_abstracts
 import check_hygiene
 import lean_outputs
 
@@ -27,17 +26,9 @@ API = "https://www.cslib.io/cslib-frontier/"
 
 
 def module_path(module: str, root: Path) -> Path:
-    if not re.fullmatch(r"(?:CslibFrontier|CslibFrontierAbstracts)(?:\.[A-Za-z_][A-Za-z0-9_]*)+", module):
+    if not re.fullmatch(r"CslibFrontier(?:\.[A-Za-z_][A-Za-z0-9_]*)+", module):
         raise ValueError(f"Unsupported module: {module}")
-    relative = Path(module.replace(".", "/") + ".lean")
-    return root / (Path("abstracts") / relative if module.startswith("CslibFrontierAbstracts.")
-                   else relative)
-
-
-def module_citations(path: Path) -> list[str]:
-    """Module citations are discovery context, never inferred theorem/source equivalences."""
-    return sorted({key for _, doc in check_hygiene.extract_docstrings(path.read_text())
-                   for _, key in check_hygiene.docstring_citations(doc)})
+    return root / (module.replace(".", "/") + ".lean")
 
 
 def load_lean_registry(root: Path = ROOT) -> dict:
@@ -61,22 +52,12 @@ def collect(root: Path = ROOT) -> list[dict]:
     manifest = load_lean_registry(root)
     if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
         raise ValueError("Unsupported registry schema")
-    if manifest.get("abstract_catalogue") != "abstracts/catalogue.json":
-        raise ValueError("The registry must reuse abstracts/catalogue.json")
-    entries = []
-    for abstract in build_abstracts.load_catalogue(root / manifest["abstract_catalogue"], root):
-        module = abstract["module"]
-        entries.append({"id": abstract["id"], "title": abstract["title"],
-                        "topic": "selected abstracts", "module": module,
-                        "theorems": abstract["headline_theorems"], "scope": abstract["scope"],
-                        "abstract_id": abstract["id"], "source_review": "module-citations",
-                        "sources": [{"bib_key": key, "source_theorem": None, "locator": None}
-                                    for key in module_citations(module_path(module, root))]})
     if not isinstance(manifest.get("results"), list):
         raise ValueError("Registry results must be a list")
+    entries = []
     for entry in manifest["results"]:
         if not isinstance(entry, dict) or entry.get("source_review") != "recorded":
-            raise ValueError("New inventory entries must identify source_review as recorded")
+            raise ValueError("Inventory entries must identify source_review as recorded")
         entries.append(entry)
     validate(entries, root)
     return entries
@@ -105,7 +86,7 @@ def validate(entries: list[dict], root: Path) -> None:
             declarations.add(name)
         if not isinstance(entry.get("sources"), list):
             raise ValueError(f"Sources must be a list: {entry['id']}")
-        if entry["source_review"] == "recorded" and not entry["sources"]:
+        if not entry["sources"]:
             raise ValueError(f"Recorded sources required: {entry['id']}")
         seen = set()
         for reference in entry["sources"]:
@@ -154,7 +135,7 @@ def markdown(entries: list[dict], root: Path = ROOT, papers: bool = False) -> st
     title = "Referenced works: initial inventory" if papers else "Formalized results: initial inventory"
     lines = ["# " + title, "",
              "Incomplete coverage. Source locators are recorded from repository documentation,",
-             "not newly source-verified. Abstract module citations are context, not result mappings.", ""]
+             "not newly source-verified.", ""]
     groups: dict[str, list[dict]] = {}
     for entry in entries:
         keys = [r["bib_key"] for r in entry["sources"]] if papers else [entry["topic"]]
@@ -166,23 +147,15 @@ def markdown(entries: list[dict], root: Path = ROOT, papers: bool = False) -> st
         for entry in results:
             lines.extend([f"### {entry['title']}", "", entry["scope"], ""])
             for name in entry["theorems"]:
-                if entry["module"].startswith("CslibFrontierAbstracts."):
-                    source = module_path(entry["module"], root)
-                    line = build_abstracts.declaration_line(source.read_text(), name)
-                    target = REPOSITORY + source.relative_to(root).as_posix() + f"#L{line}"
-                else:
-                    target = API + entry["module"].replace(".", "/") + ".html#" + quote(name)
+                target = API + entry["module"].replace(".", "/") + ".html#" + quote(name)
                 lines.append(f"- [`{name}`]({target})")
-            if entry.get("abstract_id"):
-                lines.append(f"- [Formal abstract]({API}abstracts/{entry['abstract_id']}.pdf)")
             sources = [f"[{r['bib_key']}]({links[r['bib_key']]})" +
                        (f" ({r['source_theorem']})" if r['source_theorem'] else
                         " (source theorem not yet identified)") +
                        (f" ({r['locator']})" if r.get("locator") else
                         " (section/page locator not collected)")
                        for r in entry["sources"]]
-            lines.extend(["", f"References ({entry['source_review']}): " + (", ".join(sources) or
-                          "none collected; inspect the abstract and bridge documentation"), ""])
+            lines.extend(["", f"References ({entry['source_review']}): " + ", ".join(sources), ""])
     return "\n".join(lines)
 
 
@@ -198,8 +171,8 @@ def main() -> int:
         if args.compiled:
             validate_constants(entries, compiled_constants(entries))
         if args.json:
-            print(json.dumps({"schema_version": 1, "abstract_catalogue": "abstracts/catalogue.json",
-                              "results": entries}, indent=2, ensure_ascii=False))
+            print(json.dumps({"schema_version": 1, "results": entries}, indent=2,
+                             ensure_ascii=False))
         elif args.markdown or args.papers:
             print(markdown(entries, papers=args.papers))
         else:

@@ -71,6 +71,8 @@ and super-polynomial key universes are not formalized here.
   `matching_apply`: termination within `A.card` rounds and canonical injection properties.
 * `expect_roundsOn_le`, `expect_rounds_le`: expected round bound
   `𝔼[T] ≤ ⌈log₂ |A|⌉ + 2 ≤ 3 * ⌈log₂ (max |A| 2)⌉` ([LiLiangYuZhou2024, Claim 3.3]).
+* `expect_le_of_le_add_mul_rounds`: a cost bounded by `a + b * T` has expectation at most
+  `(a + 3 b) * ⌈log₂ (max |A| 2)⌉`.
 * `relocDist_insert_le`, `relocDist_delete_le`, `relocDist_replace_le`,
   `expect_relocDist_insert_le`, `expect_relocDist_delete_le`, `expect_relocDist_replace_le`:
   deterministic `O(T)` and expected `O(log (max |A| 2))` relocation bounds
@@ -210,6 +212,13 @@ private theorem card_activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset
   have hval : (binItem U' b).val = (ballItem n' a).val := congrArg Fin.val heq
   simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
   omega
+
+/-- With no active item there are no balls and no bins. -/
+private theorem eq_empty_of_not_nonempty_activeItems {U' n' : ℕ} {A : Finset (Fin U')}
+    {B : Finset (Fin n')} (h : ¬(activeItems A B).Nonempty) : A = ∅ ∧ B = ∅ := by
+  have hcard := card_activeItems A B
+  rw [not_nonempty_iff_eq_empty.mp h, card_empty] at hcard
+  exact ⟨card_eq_zero.mp (by omega), card_eq_zero.mp (by omega)⟩
 
 /-! ### Clockwise successor on a finite circle subset -/
 
@@ -357,11 +366,8 @@ private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (h
         · rintro ⟨hzP, hxz⟩
           exact ⟨Or.inr hzP, hgap z hzP hxz⟩
       have hmin_eq : (insert pStar P).min' hP' = P.min' hP := by
-        refine le_antisymm (min'_le _ _ (mem_insert_of_mem (min'_mem P hP))) ?_
-        refine le_min' (insert pStar P) hP' (P.min' hP) fun z hz => ?_
-        rcases mem_insert.mp hz with rfl | hzP
-        · exact le_trans (min'_le P x₀ hx₀_P) hx₀_lt.le
-        · exact min'_le P z hzP
+        rw [min'_insert pStar P hP]
+        exact min_eq_right ((min'_le P x₀ hx₀_P).trans hx₀_lt.le)
       dsimp only [clockwiseNextPos]
       simp only [hfilt_eq]
       split_ifs with hgt
@@ -394,11 +400,8 @@ private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (h
           · rintro ⟨hzP, hxz⟩
             exact ⟨Or.inr hzP, hxz⟩
         have hmin_eq : (insert pStar P).min' hP' = P.min' hP := by
-          refine le_antisymm (min'_le _ _ (mem_insert_of_mem (min'_mem P hP))) ?_
-          refine le_min' (insert pStar P) hP' (P.min' hP) fun z hz => ?_
-          rcases mem_insert.mp hz with rfl | hzP
-          · exact le_trans (min'_le P x₀ hx₀_P) hx₀_lt.le
-          · exact min'_le P z hzP
+          rw [min'_insert pStar P hP]
+          exact min_eq_right ((min'_le P x₀ hx₀_P).trans hx₀_lt.le)
         dsimp only [clockwiseNextPos]
         simp only [hfilt_eq]
         split_ifs with hgt
@@ -413,11 +416,8 @@ private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (h
     set x₀ := P.max' hP
     have hx₀_P : x₀ ∈ P := max'_mem P hP
     have hmin_pStar : (insert pStar P).min' hP' = pStar := by
-      refine le_antisymm (min'_le _ pStar (mem_insert_self pStar P)) ?_
-      refine le_min' (insert pStar P) hP' pStar fun z hz => ?_
-      rcases mem_insert.mp hz with rfl | hzP
-      · exact le_rfl
-      · exact (hall_gt z hzP).le
+      rw [min'_insert pStar P hP]
+      exact min_eq_left (le_min' P hP pStar fun z hz => (hall_gt z hz).le)
     refine ⟨x₀, hx₀_P, ?_, ?_, ?_⟩
     · have hgt_empty : ¬((insert pStar P).filter (x₀ < ·)).Nonempty := by
         rintro ⟨z, hz⟩
@@ -1448,13 +1448,7 @@ private theorem roundStep_insert_bin {U' n' : ℕ} (π : RoundPerm U' n') (A : F
       refine ⟨?_, by omega⟩
       simp [pairDiff, hballs, hbins, card_symmDiff_insert_of_notMem hbStar_not_rem]
   · -- `S = ∅`, so `A = ∅` and `B = ∅`
-    have hA : A = ∅ := by
-      ext a; simp only [notMem_empty, iff_false]
-      intro ha; exact hSne ⟨ballItem n' a, ballItem_mem_activeItems.mpr ha⟩
-    have hB : B = ∅ := by
-      ext b; simp only [notMem_empty, iff_false]
-      intro hb; exact hSne ⟨binItem U' b, binItem_mem_activeItems.mpr hb⟩
-    subst hA; subst hB
+    obtain ⟨rfl, rfl⟩ := eq_empty_of_not_nonempty_activeItems hSne
     have hnone : ∀ (B' : Finset (Fin n')) (a : Fin U'), roundMatchOpt π ∅ B' a = none := by
       intro B' a; simp [roundMatchOpt]
     have hrs1 : roundStep π (∅, ∅) = (∅, ∅) := by simp [roundStep]
@@ -1663,13 +1657,7 @@ private theorem roundStep_insert_ball {U' n' : ℕ} (π : RoundPerm U' n') {A : 
               exact hno ⟨a, haA, (hsame_A a ha₁).symm.trans hab⟩
         simp [pairDiff, hballs, hbins, card_symmDiff_erase_of_mem hb₁_rem]
   · -- `S = ∅`, so `A = ∅` and `B = ∅`
-    have hA : A = ∅ := by
-      ext a; simp only [notMem_empty, iff_false]
-      intro ha; exact hSne ⟨ballItem n' a, ballItem_mem_activeItems.mpr ha⟩
-    have hB : B = ∅ := by
-      ext b; simp only [notMem_empty, iff_false]
-      intro hb; exact hSne ⟨binItem U' b, binItem_mem_activeItems.mpr hb⟩
-    subst hA; subst hB
+    obtain ⟨rfl, rfl⟩ := eq_empty_of_not_nonempty_activeItems hSne
     have hnone_empty : ∀ a : Fin U', roundMatchOpt π ∅ ∅ a = none := by
       intro a; simp [roundMatchOpt]
     have hnone_sing : ∀ a : Fin U', roundMatchOpt π {aStar} ∅ a = none := by
@@ -1959,6 +1947,24 @@ theorem relocDist_replace_le {U' n' : ℕ} (h : Scheme U' n')
     (matchOpt h (insert y (A.erase x)))
   omega
 
+/-- A scheme-indexed cost bounded by `a + b * rounds h A` for every scheme `h` has expectation at
+most `(a + 3 b) log (max |A| 2)`: average the pointwise bound and apply `expect_rounds_le`. -/
+theorem expect_le_of_le_add_mul_rounds {U' n' : ℕ} {A : Finset (Fin U')}
+    (hA : A.card ≤ n') (cost : Scheme U' n' → ℕ) (a b : ℕ)
+    (hcost : ∀ h, cost h ≤ a + b * rounds h A) :
+    (∑ h : Scheme U' n', (schemePMF U' n' h).toReal * (cost h : ℝ)) ≤
+      ((a + 3 * b : ℕ) : ℝ) * (Nat.clog 2 (max A.card 2) : ℝ) := by
+  have hpt : ∀ h, (cost h : ℝ) ≤ (a : ℝ) + (b : ℝ) * (rounds h A : ℝ) := fun h => by
+    exact_mod_cast hcost h
+  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
+  have h2 := expect_rounds_le (U' := U') hA
+  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
+    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
+  have hb := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg (α := ℝ) b)
+  have ha := mul_le_mul_of_nonneg_left hclog1 (Nat.cast_nonneg (α := ℝ) a)
+  push_cast
+  linarith
+
 /-- **Lemma 3.2** ([LiLiangYuZhou2024, Section 3.1]) for ball insertion:
 expected relocation cost is `O(log (max |A| 2))`. -/
 theorem expect_relocDist_insert_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin U')
@@ -1967,19 +1973,9 @@ theorem expect_relocDist_insert_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin 
       (schemePMF U' n' h).toReal * (relocDist (matchOpt h A) (matchOpt h (insert x A)) : ℝ)) ≤
       8 * (Nat.clog 2 (max A.card 2) : ℝ) := by
   have hA : A.card ≤ n' := (card_le_card (subset_insert x A)).trans hins
-  have hpt : ∀ h : Scheme U' n',
-      (relocDist (matchOpt h A) (matchOpt h (insert x A)) : ℝ) ≤ 2 + 2 * (rounds h A : ℝ) := by
-    intro h
-    have hnat := relocDist_insert_le h x hins
-    have hR : (relocDist (matchOpt h A) (matchOpt h (insert x A)) : ℝ) ≤
-        ((2 * (rounds h A + 1) : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
-  have h2 := expect_rounds_le (U' := U') hA
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
-  linarith
+  refine (expect_le_of_le_add_mul_rounds hA _ 2 2 fun h => ?_).trans_eq (by norm_num)
+  have := relocDist_insert_le h x hins
+  omega
 
 /-- **Lemma 3.2** for ball deletion: expected relocation cost is `O(log (max |A| 2))`. -/
 theorem expect_relocDist_delete_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin U')
@@ -1987,19 +1983,9 @@ theorem expect_relocDist_delete_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin 
     (∑ h : Scheme U' n',
       (schemePMF U' n' h).toReal * (relocDist (matchOpt h A) (matchOpt h (A.erase x)) : ℝ)) ≤
       8 * (Nat.clog 2 (max A.card 2) : ℝ) := by
-  have hpt : ∀ h : Scheme U' n',
-      (relocDist (matchOpt h A) (matchOpt h (A.erase x)) : ℝ) ≤ 2 + 2 * (rounds h A : ℝ) := by
-    intro h
-    have hnat := relocDist_delete_le h x hA
-    have hR : (relocDist (matchOpt h A) (matchOpt h (A.erase x)) : ℝ) ≤
-        ((2 * (rounds h A + 1) : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
-  have h2 := expect_rounds_le (U' := U') hA
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
-  linarith
+  refine (expect_le_of_le_add_mul_rounds hA _ 2 2 fun h => ?_).trans_eq (by norm_num)
+  have := relocDist_delete_le h x hA
+  omega
 
 /-- **Lemma 3.2** for atomic ball replacement `(A.erase x) ∪ {y}`: expected relocation cost is
 `O(log (max |A| 2))`. -/
@@ -2009,19 +1995,8 @@ theorem expect_relocDist_replace_le {U' n' : ℕ} {A : Finset (Fin U')}
       (schemePMF U' n' h).toReal *
         (relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) : ℝ)) ≤
       18 * (Nat.clog 2 (max A.card 2) : ℝ) := by
-  have hpt : ∀ h : Scheme U' n',
-      (relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) : ℝ) ≤
-        6 + 4 * (rounds h A : ℝ) := by
-    intro h
-    have hnat := relocDist_replace_le h x y hA hrep
-    have hR : (relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) : ℝ) ≤
-        ((4 * rounds h A + 6 : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
-  have h2 := expect_rounds_le (U' := U') hA
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
-  linarith
+  refine (expect_le_of_le_add_mul_rounds hA _ 6 4 fun h => ?_).trans_eq (by norm_num)
+  have := relocDist_replace_le h x y hA hrep
+  omega
 
 end Cslib.DataStructure.Dictionary.DynamicMatching

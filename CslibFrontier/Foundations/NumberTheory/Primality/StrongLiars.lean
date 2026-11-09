@@ -177,10 +177,7 @@ theorem exists_subgroup_ne_top_isStrongLiar {n : ℕ} [NeZero n] (hodd : Odd n) 
     rcases hc with hc | hc
     · have hpm := (hc1 _ (by simpa using congrArg Units.val hc)).trans hm
       have hpn' : p ∣ n := (Dvd.intro_left _ rfl : p ∣ p ^ 2).trans hpn
-      have : p ∣ 1 := by
-        have := Nat.dvd_sub hpn' hpm
-        rwa [show n - (n - 1) = 1 by omega] at this
-      exact hp.one_lt.ne' (Nat.dvd_one.1 this)
+      exact hp.not_dvd_one (Nat.sub_sub_self h1.le ▸ Nat.dvd_sub hpn' hpm)
     · exact hcn _ (by simpa using congrArg Units.val hc)
   · have : NeZero q := ⟨by omega⟩
     obtain ⟨c, hcp, hcq⟩ := exists_unit_castHom_eq hpq

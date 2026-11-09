@@ -163,8 +163,7 @@ theorem run_interpret_pair (cfg : Config k Bool State Oracle input)
   | some state =>
     simp only [hchoose, bind_map_left, OracleComp.interpret_bind, StateT.run_bind,
       Probability.PMF.monad_bind_eq_bind, PMF.map_bind]
-    congr 1
-    funext result
+    congr 1 with result : 1
     rcases result with ⟨instruction, s'⟩
     cases instruction with
     | step action symbol move =>
@@ -172,8 +171,7 @@ theorem run_interpret_pair (cfg : Config k Bool State Oracle input)
     | query op next =>
       simp only [liftInstruction, config_channels, OracleComp.interpret_bind, StateT.run_bind,
         Probability.PMF.monad_bind_eq_bind, PMF.map_bind]
-      congr 1
-      funext result
+      congr 1 with result : 1
       rcases result with ⟨answer, s''⟩
       simp [receive_config, run_interpret_tick machine choose query oracle hpure]
 
