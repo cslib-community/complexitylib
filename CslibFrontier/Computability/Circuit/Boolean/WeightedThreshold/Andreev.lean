@@ -165,6 +165,14 @@ theorem andreev_eq_table_parities (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
 theorem andreevTableIndex_injective (b m : ℕ) : Function.Injective (andreevTableIndex b m) :=
   Fin.castAdd_injective (2 ^ b) (b * m)
 
+/-- The `2 ^ b` truth-table coordinates in `Fin (2 ^ b + b * m)`. -/
+def andreevTableCoords (b m : ℕ) : Finset (Fin (2 ^ b + b * m)) :=
+  univ.map ⟨andreevTableIndex b m, andreevTableIndex_injective b m⟩
+
+/-- `andreevTableCoords b m` has cardinality `2 ^ b`. -/
+@[simp] theorem card_andreevTableCoords (b m : ℕ) : #(andreevTableCoords b m) = 2 ^ b := by
+  simp [andreevTableCoords]
+
 /-- The unnormalized integer Walsh-Fourier score
 `X_S(w) = ∑_{c : BitString b} χ_S(c) * (1 - 2 * x_c(w))`. -/
 def andreevTableScore (b m : ℕ) (S : Finset (Fin b)) (w : BitString (2 ^ b + b * m)) : ℤ :=

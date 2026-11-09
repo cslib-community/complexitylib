@@ -390,14 +390,6 @@ theorem abs_weight_andreevWindowedTopOp_le (b m r B : ℕ)
 
 /-! ### Hoeffding concentration bounds -/
 
-/-- The `2 ^ b` truth-table coordinates of `BitString (2 ^ b + b * m)`. -/
-def andreevTableSupport (b m : ℕ) : Finset (Fin (2 ^ b + b * m)) :=
-  univ.map ⟨andreevTableIndex b m, andreevTableIndex_injective b m⟩
-
-@[simp]
-theorem card_andreevTableSupport (b m : ℕ) : #(andreevTableSupport b m) = 2 ^ b := by
-  simp [andreevTableSupport]
-
 /-- The `#S * m` block coordinates in `BitString (2 ^ b + b * m)` belonging to blocks `j ∈ S`. -/
 def andreevBlockSupport {b : ℕ} (m : ℕ) (S : Finset (Fin b)) : Finset (Fin (2 ^ b + b * m)) :=
   (S ×ˢ (univ : Finset (Fin m))).map
@@ -480,11 +472,11 @@ def andreevFlipTable (b m : ℕ) (S : Finset (Fin b)) :
     funext i; refine Fin.addCases (fun idx => ?_) (fun u => ?_) i <;> simp [andreevTableIndex]
 
 /-- Applying `andreevFlipTable b m S` turns `andreevTableScore b m S` into the unweighted
-truth-table discrepancy `2 ^ b - 2 * #{i ∈ andreevTableSupport b m | w i = true}`. -/
+truth-table discrepancy `2 ^ b - 2 * #{i ∈ andreevTableCoords b m | w i = true}`. -/
 theorem cast_andreevTableScore_flipTable (b m : ℕ) (S : Finset (Fin b))
     (w : BitString (2 ^ b + b * m)) :
     (andreevTableScore b m S (andreevFlipTable b m S w) : ℝ) =
-      -2 * ((#{i ∈ andreevTableSupport b m | w i = true} : ℝ) - (2 ^ b : ℝ) / 2) := by
+      -2 * ((#{i ∈ andreevTableCoords b m | w i = true} : ℝ) - (2 ^ b : ℝ) / 2) := by
   have hxor (p v : Bool) :
       ((-1 : ℝ) ^ p.toNat) * (1 - 2 * ((xor v p).toNat : ℝ)) = 1 - 2 * (v.toNat : ℝ) := by
     cases p <;> cases v <;> norm_num
@@ -499,9 +491,9 @@ theorem cast_andreevTableScore_flipTable (b m : ℕ) (S : Finset (Fin b))
     rw [hchi]
     simpa [andreevFlipTable, andreevTableIndex] using
       hxor (parityOn S c) (w (andreevTableIndex b m (BitString.equivFin b c)))
-  have hcard : (#{i ∈ andreevTableSupport b m | w i = true} : ℝ) =
+  have hcard : (#{i ∈ andreevTableCoords b m | w i = true} : ℝ) =
       ∑ c : BitString b, ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℝ) := by
-    rw [andreevTableSupport, card_filter, sum_map]
+    rw [andreevTableCoords, card_filter, sum_map]
     simp only [Function.Embedding.coeFn_mk, Nat.cast_sum]
     rw [← (BitString.equivFin b).sum_comp
       (fun idx => ((if w (andreevTableIndex b m idx) = true then 1 else 0 : ℕ) : ℝ))]
@@ -519,8 +511,8 @@ theorem card_filter_le_abs_andreevTableScore (b m : ℕ) (S : Finset (Fin b))
       2 * 2 ^ (2 ^ b + b * m) * exp (-(2 * t ^ 2 / (2 ^ b : ℝ))) := by
   have hbij : #{w : BitString (2 ^ b + b * m) | 2 * t ≤ |(andreevTableScore b m S w : ℝ)|} =
       #{w : BitString (2 ^ b + b * m) |
-        t ≤ |(#{i ∈ andreevTableSupport b m | w i = true} : ℝ) -
-          #(andreevTableSupport b m) / 2|} := by
+        t ≤ |(#{i ∈ andreevTableCoords b m | w i = true} : ℝ) -
+          #(andreevTableCoords b m) / 2|} := by
     rw [← card_map (andreevFlipTable b m S).toEmbedding]
     congr 1; ext w
     simp only [mem_filter, mem_univ, true_and, mem_map, Equiv.toEmbedding_apply]
@@ -531,13 +523,13 @@ theorem card_filter_le_abs_andreevTableScore (b m : ℕ) (S : Finset (Fin b))
       have hscore := cast_andreevTableScore_flipTable b m S (andreevFlipTable b m S u)
       rw [hinv] at hscore
       rw [hscore, abs_mul, show |(-2 : ℝ)| = 2 by norm_num] at hu
-      rw [card_andreevTableSupport, Nat.cast_pow, Nat.cast_ofNat]; linarith
+      rw [card_andreevTableCoords, Nat.cast_pow, Nat.cast_ofNat]; linarith
     · intro hw
       refine ⟨andreevFlipTable b m S w, ?_, (andreevFlipTable b m S).apply_symm_apply w⟩
       rw [cast_andreevTableScore_flipTable b m S w, abs_mul, show |(-2 : ℝ)| = 2 by norm_num]
-      rw [card_andreevTableSupport, Nat.cast_pow, Nat.cast_ofNat] at hw; linarith
+      rw [card_andreevTableCoords, Nat.cast_pow, Nat.cast_ofNat] at hw; linarith
   rw [hbij]
   simpa [Fintype.card_fin] using
-    Cslib.BitString.card_filter_le_abs_card_filter_sub_half_le (andreevTableSupport b m) ht
+    Cslib.BitString.card_filter_le_abs_card_filter_sub_half_le (andreevTableCoords b m) ht
 
 end Cslib.Circuits.Boolean.WeightedThreshold
