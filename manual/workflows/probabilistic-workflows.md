@@ -98,7 +98,7 @@ outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its pr
 `n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
 has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
 `expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
-`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+`tendsto_run_none_of_generates` shows that every generator of a `PMF` distribution halts almost
 surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
 (`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
 `ProbComp`; its `eval` is `T.run n`.

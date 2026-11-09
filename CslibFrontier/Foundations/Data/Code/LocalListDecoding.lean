@@ -285,15 +285,15 @@ theorem lineAgree_smul (A : Finset (Fin m → F)) (x u : Fin m → F) {c : F} (h
   · simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq] at ht ⊢
     rwa [smul_smul, mul_assoc, inv_mul_cancel₀ hc, mul_one]
 
-/-- **The decoder at a pair of points.** For `z ≠ x`, with `c = firstNonzero (z - x)` and
+/-- **The decoder at a pair of points.** With `c = firstNonzero (z - x)` and
 `v = c⁻¹ • (z - x)`, the decoder with advice `p z` is Sudan decoding with the hint `p (x + c • v)`
 at `c` on the line `t ↦ x + t • v`. -/
-theorem lineListDecode_eq (g p : (Fin m → F) → F) (d D : ℕ) {x z : Fin m → F} (hxz : z ≠ x) :
+theorem lineListDecode_eq (g p : (Fin m → F) → F) (d D : ℕ) {x z : Fin m → F} :
     lineListDecode g d D z (p z) x =
       hintDecode id (fun t : F => g (x + t • (firstNonzero (z - x))⁻¹ • (z - x))) d D
         (firstNonzero (z - x))
         (p (x + firstNonzero (z - x) • (firstNonzero (z - x))⁻¹ • (z - x))) := by
-  rw [firstNonzero_smul_inv_smul (sub_ne_zero.2 hxz), add_sub_cancel]
+  rw [firstNonzero_smul_inv_smul, add_sub_cancel]
   rfl
 
 /-- **Few bad hint positions on a good line.** If the line `t ↦ x + t • v` has more than `D`
@@ -365,12 +365,12 @@ private theorem card_filter_lineListDecode_ne_of_lt_lineAgree_le {d D : ℕ} (hd
             firstNonzero_eq_zero_iff.not.2 (sub_ne_zero.2 hne)
           simp only [coe_sigma, Set.mem_sigma_iff, mem_coe, mem_filter, normDirs, mem_univ,
             true_and, bad]
-          rw [lineListDecode_eq g p d D hne] at hdec
+          rw [lineListDecode_eq g p d D] at hdec
           exact ⟨⟨by rw [firstNonzero_smul, inv_mul_cancel₀ hl],
             by rwa [lineAgree_smul A _ _ (inv_ne_zero hl)]⟩, hdec⟩
         · simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq] at hz hz'
-          have e1 := firstNonzero_smul_inv_smul (sub_ne_zero.2 hz.1)
-          have e2 := firstNonzero_smul_inv_smul (sub_ne_zero.2 hz'.1)
+          have e1 := firstNonzero_smul_inv_smul (u := z - x)
+          have e2 := firstNonzero_smul_inv_smul (u := z' - x)
           have h1 := congrArg Sigma.fst heq
           have h2 := congrArg Sigma.snd heq
           simp only at h1 h2

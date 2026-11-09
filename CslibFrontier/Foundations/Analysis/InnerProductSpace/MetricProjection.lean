@@ -75,20 +75,20 @@ theorem norm_sub_metricProjection (hne : K.Nonempty) (hc : IsComplete K) (hK : C
   (metricProjection_spec hne hc hK y).2
 
 /-- The variational inequality characterizing the projection. -/
-theorem inner_sub_metricProjection_le_zero (hne : K.Nonempty) (hc : IsComplete K)
-    (hK : Convex ℝ K) (y : E) {z : E} (hz : z ∈ K) :
+theorem inner_sub_metricProjection_le_zero (hc : IsComplete K) (hK : Convex ℝ K) (y : E)
+    {z : E} (hz : z ∈ K) :
     ⟪y - metricProjection K y, z - metricProjection K y⟫ ≤ 0 :=
-  (norm_eq_iInf_iff_real_inner_le_zero hK (metricProjection_mem hne hc hK y)).mp
-    (norm_sub_metricProjection hne hc hK y) z hz
+  (norm_eq_iInf_iff_real_inner_le_zero hK (metricProjection_mem ⟨z, hz⟩ hc hK y)).mp
+    (norm_sub_metricProjection ⟨z, hz⟩ hc hK y) z hz
 
 /-- A point of `K` is the projection of `y` iff it satisfies the variational inequality. -/
 theorem metricProjection_eq_iff (hne : K.Nonempty) (hc : IsComplete K) (hK : Convex ℝ K)
     {y x : E} (hx : x ∈ K) :
     metricProjection K y = x ↔ ∀ z ∈ K, ⟪y - x, z - x⟫ ≤ 0 := by
-  refine ⟨fun h => h ▸ fun z hz => inner_sub_metricProjection_le_zero hne hc hK y hz,
+  refine ⟨fun h => h ▸ fun z hz => inner_sub_metricProjection_le_zero hc hK y hz,
     fun h => ?_⟩
   set p := metricProjection K y
-  have h1 : ⟪y - p, x - p⟫ ≤ 0 := inner_sub_metricProjection_le_zero hne hc hK y hx
+  have h1 : ⟪y - p, x - p⟫ ≤ 0 := inner_sub_metricProjection_le_zero hc hK y hx
   have h2 := h p (metricProjection_mem hne hc hK y)
   have hsum : ‖p - x‖ ^ 2 = ⟪y - p, x - p⟫ + ⟪y - x, p - x⟫ := by
     rw [← real_inner_self_eq_norm_sq, show y - x = (y - p) + (p - x) by abel, inner_add_left,
@@ -111,11 +111,11 @@ theorem metricProjection_eq_iff_forall_norm_le (hne : K.Nonempty) (hc : IsComple
 
 /-- Pythagoras for projections ([Hazan2022] Theorem 2.1): projecting onto `K` does not increase
 the distance to any point of `K`. -/
-theorem norm_metricProjection_sub_le (hne : K.Nonempty) (hc : IsComplete K)
+theorem norm_metricProjection_sub_le (hc : IsComplete K)
     (hK : Convex ℝ K) (y : E) {z : E} (hz : z ∈ K) :
     ‖metricProjection K y - z‖ ≤ ‖y - z‖ := by
   set x := metricProjection K y
-  have h := inner_sub_metricProjection_le_zero hne hc hK y hz
+  have h := inner_sub_metricProjection_le_zero hc hK y hz
   have hsq : ‖y - z‖ ^ 2 = ‖y - x‖ ^ 2 + ‖x - z‖ ^ 2 - 2 * ⟪y - x, z - x⟫ := by
     rw [show y - z = (y - x) - (z - x) by abel, norm_sub_sq_real, norm_sub_rev z x]
     ring
@@ -123,9 +123,9 @@ theorem norm_metricProjection_sub_le (hne : K.Nonempty) (hc : IsComplete K)
   exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp h2
 
 /-- Points of `K` are fixed by the projection. -/
-theorem metricProjection_eq_self (hne : K.Nonempty) (hc : IsComplete K) (hK : Convex ℝ K)
+theorem metricProjection_eq_self (hc : IsComplete K) (hK : Convex ℝ K)
     {y : E} (hy : y ∈ K) : metricProjection K y = y := by
-  have h := norm_metricProjection_sub_le hne hc hK y hy
+  have h := norm_metricProjection_sub_le hc hK y hy
   rw [sub_self, norm_zero] at h
   exact sub_eq_zero.mp (norm_le_zero_iff.mp h)
 
@@ -136,9 +136,9 @@ theorem norm_metricProjection_sub_metricProjection_le (hne : K.Nonempty) (hc : I
   set p := metricProjection K y
   set p' := metricProjection K y'
   have h1 : ⟪y - p, p' - p⟫ ≤ 0 :=
-    inner_sub_metricProjection_le_zero hne hc hK y (metricProjection_mem hne hc hK y')
+    inner_sub_metricProjection_le_zero hc hK y (metricProjection_mem hne hc hK y')
   have h2 : ⟪y' - p', p - p'⟫ ≤ 0 :=
-    inner_sub_metricProjection_le_zero hne hc hK y' (metricProjection_mem hne hc hK y)
+    inner_sub_metricProjection_le_zero hc hK y' (metricProjection_mem hne hc hK y)
   -- `‖p - p'‖² ≤ ⟪y - y', p - p'⟫ ≤ ‖y - y'‖ ‖p - p'‖`
   have hkey : ‖p - p'‖ ^ 2 ≤ ⟪y - y', p - p'⟫ := by
     have e : ⟪y - y', p - p'⟫ = ‖p - p'‖ ^ 2 - ⟪y - p, p' - p⟫ - ⟪y' - p', p - p'⟫ := by
