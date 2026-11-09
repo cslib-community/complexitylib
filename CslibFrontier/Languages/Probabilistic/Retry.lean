@@ -294,8 +294,12 @@ theorem toOuterMeasure_evalWith_pi_exists_le (programs : (i : Fin m) → OracleC
           tsum_le_tsum fun a => by gcongr; exact hstep a
       _ = (evalWith h (programs 0)).toOuterMeasure {a | bad 0 a} + rest := by
           simp only [mul_add]
-          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
+          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, PMF.toOuterMeasure_apply]
+          congr 1
+          refine tsum_congr fun a => ?_
+          by_cases ha : bad 0 a
+          · simp [ha]
+          · simp [ha]
 
 end Pi
 
