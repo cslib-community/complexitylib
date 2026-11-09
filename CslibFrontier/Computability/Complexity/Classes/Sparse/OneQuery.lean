@@ -13,10 +13,8 @@ import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.EraseDupsBy
 import Cslib.Foundations.Data.Polynomial.Monotone
 
@@ -209,30 +207,12 @@ private theorem exists_mem_stage (hkey : ∀ ψ, ψ ∈ SAT ↔ ((key ψ).1 ∈ 
     rw [stage]
     set kept := reps (fun a b => key (Mahaney.disj φ a b)) a rest
     have hnodup : (kept.map fun b => key (Mahaney.disj φ a b)).Nodup :=
-      List.pairwise_map.2 ((List.pairwise_eraseDupsBy _).imp fun h => by
-        simpa [eq_comm] using h)
+      List.nodup_map_eraseDupsBy _ rest
     have hlen : ∀ b ∈ kept, (key (Mahaney.disj φ a b)).1.length ≤ M := fun b hb =>
       hM a (List.mem_cons_self ..) b (List.mem_cons_of_mem _ ((reps_sublist a rest).subset hb))
-    /- A satisfiable node after `a`, when `a` is unsatisfiable, has a satisfiable representative
-    among the kept nodes. -/
-    have hrep : ∀ b ∈ rest, units b ++ φ ∈ SAT → units a ++ φ ∉ SAT →
-        ∃ b' ∈ kept, units b' ++ φ ∈ SAT := by
-      intro b hb hbsat hanot
-      obtain ⟨b', hb', hbb'⟩ := List.exists_mem_eraseDupsBy
-        (r := fun b b' => decide (key (Mahaney.disj φ a b) = key (Mahaney.disj φ a b'))) hb
-      refine ⟨b', hb', ?_⟩
-      rcases hbb' with rfl | hlab
-      · exact hbsat
-      · have hdisj : Mahaney.disj φ a b' ∈ SAT := by
-          rw [hkey, ← of_decide_eq_true hlab, ← hkey]
-          exact Mahaney.disj_mem_SAT_iff.2 (.inr hbsat)
-        exact (Mahaney.disj_mem_SAT_iff.1 hdisj).resolve_left hanot
-    have hcases : units a ++ φ ∈ SAT ∨ ∃ b' ∈ kept, units b' ++ φ ∈ SAT := by
-      by_cases hasat : units a ++ φ ∈ SAT
-      · exact .inl hasat
-      · rcases List.mem_cons.1 hx with rfl | hx
-        · exact absurd hxsat hasat
-        · exact .inr (hrep x hx hxsat hasat)
+    have hcases : units a ++ φ ∈ SAT ∨ ∃ b' ∈ kept, units b' ++ φ ∈ SAT :=
+      Mahaney.exists_mem_eraseDupsBy_of_mem_SAT (lab := fun b => key (Mahaney.disj φ a b))
+        (fun _ _ h => by rw [hkey, hkey, h]) ⟨x, hx, hxsat⟩
     split
     · rename_i hpos
       by_cases hasat : units a ++ φ ∈ SAT
@@ -345,28 +325,16 @@ private theorem computableInPolyTime_stage {key : CNF ℕ → List Bool × Bool}
   fun_prop
 
 /-- A level of the search is polynomial-time, uniformly in the formula, the bound, the nodes and
-the occurrence: every stage keeps a sublist of the expanded level. -/
+the occurrence. -/
 private theorem computableInPolyTime_level {key : CNF ℕ → List Bool × Bool}
     (hkey : ComputableInPolyTime key encCNF (encPair encBits encBool)) :
     ComputableInPolyTime
       (fun q : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ =>
         prune (fun a b => key (Mahaney.disj q.1.1.1 a b)) q.1.1.2 (Fortune.expand q.2 q.1.2))
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes := by
-  have hexpand : ComputableInPolyTime
-      (fun q : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ => Fortune.expand q.2 q.1.2)
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes := by
-    unfold Fortune.expand
-    fun_prop
-  have hcount : ComputableInPolyTime
-      (fun q : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ => (Fortune.expand q.2 q.1.2).length)
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encUnary := by
-    fun_prop
-  unfold prune
-  exact iterateWith (par := fun q => q.1.1)
-    (step := fun r l => stage (fun a b => key (Mahaney.disj r.1 a b)) r.2 l)
-    (fst _ _).fst' hcount hexpand (computableInPolyTime_stage hkey)
-    hexpand.polyBounded_length
-    (fun q i _ => length_encList_sublist _ (iterate_stage_sublist i _))
+      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes :=
+  Mahaney.computableInPolyTime_iterate_expand
+    (step := fun r : CNF ℕ × ℕ => stage (fun a b => key (Mahaney.disj r.1 a b)) r.2)
+    (computableInPolyTime_stage hkey) fun _ i _ => iterate_stage_sublist i _
 
 /-- **The procedure is polynomial-time**, for a polynomial-time signed reduction `key` and a
 bound `t` computed in unary. Each level keeps at most `2 t + 2` nodes, each fixing at most as

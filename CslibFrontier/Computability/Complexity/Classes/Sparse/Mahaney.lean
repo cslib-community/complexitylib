@@ -60,9 +60,13 @@ at most `t + 1` nodes of polynomial size, so the search runs in polynomial time
 
 * `Cslib.Complexity.Mahaney.disj_mem_SAT_iff`: the disjunction of two nodes is satisfiable
   exactly when one of them is.
+* `Cslib.Complexity.Mahaney.exists_mem_eraseDupsBy_of_mem_SAT`: when equal labels give equally
+  satisfiable disjunctions, a satisfiable node has a satisfiable representative.
 * `Cslib.Complexity.Mahaney.length_prune_le`: a pruned level has at most `t + 1` nodes.
 * `Cslib.Complexity.Mahaney.accepts_iff`: the procedure decides satisfiability when the labels
   come from a reduction of `SAT` and few labels of bounded length are in the target.
+* `Cslib.Complexity.Mahaney.computableInPolyTime_iterate_expand`: a level pruned in stages, by a
+  polynomial-time stage keeping a sublist, is polynomial-time.
 * `Cslib.Complexity.Mahaney.computableInPolyTime_accepts`: the procedure is polynomial-time.
 * `Cslib.Complexity.Mahaney.SAT_mem_P`: if `SAT` reduces to a sparse problem, `SAT ∈ P`.
 * `Cslib.Complexity.NPHard.P_eq_NP_of_mem_SPARSE`: **Mahaney's theorem**.
@@ -209,6 +213,29 @@ section Correctness
 
 variable {key : CNF ℕ → List Bool} {K : Set (List Bool)} {t M : ℕ} {φ : CNF ℕ}
 
+/-- **A satisfiable node has a satisfiable representative.** Label each node `b` after `a` by
+`lab b`, where equal labels give equally satisfiable disjunctions `a ∨ b`. If a node of `a :: rest`
+is satisfiable, then so is `a` or one of the nodes of `rest` kept with distinct labels: a
+satisfiable node `b` makes `a ∨ b`, and so `a ∨ b'` for its representative `b'`, satisfiable. -/
+theorem exists_mem_eraseDupsBy_of_mem_SAT {κ : Type*} [DecidableEq κ]
+    {lab : List (Literal ℕ) → κ} {a : List (Literal ℕ)} {rest : List (List (Literal ℕ))}
+    (hlab : ∀ b b', lab b = lab b' → (disj φ a b ∈ SAT ↔ disj φ a b' ∈ SAT))
+    (h : ∃ x ∈ a :: rest, units x ++ φ ∈ SAT) :
+    units a ++ φ ∈ SAT ∨
+      ∃ b' ∈ rest.eraseDupsBy fun b b' => decide (lab b = lab b'), units b' ++ φ ∈ SAT := by
+  obtain ⟨x, hx, hxsat⟩ := h
+  rcases List.mem_cons.1 hx with rfl | hx
+  · exact .inl hxsat
+  by_cases hasat : units a ++ φ ∈ SAT
+  · exact .inl hasat
+  obtain ⟨b', hb', hxb'⟩ := List.exists_mem_eraseDupsBy
+    (r := fun b b' => decide (lab b = lab b')) hx
+  refine .inr ⟨b', hb', ?_⟩
+  rcases hxb' with rfl | hlabel
+  · exact hxsat
+  · have hdisj := (hlab _ _ (of_decide_eq_true hlabel)).1 (disj_mem_SAT_iff.2 (.inr hxsat))
+    exact (disj_mem_SAT_iff.1 hdisj).resolve_left hasat
+
 /-- A stage keeps a satisfiable node, if there is one: when the first node is dropped, more than
 `t` distinct labels remain, so the first node is unsatisfiable. -/
 private theorem exists_mem_stage (hkey : ∀ ψ, ψ ∈ SAT ↔ key ψ ∈ K)
@@ -221,29 +248,15 @@ private theorem exists_mem_stage (hkey : ∀ ψ, ψ ∈ SAT ↔ key ψ ∈ K)
   | a :: rest, hx, hM =>
     rw [stage]
     set kept := rest.eraseDupsBy fun b b' => decide (key (disj φ a b) = key (disj φ a b'))
-    /- A satisfiable node after `a`, when `a` is unsatisfiable, has a satisfiable representative
-    among the kept nodes. -/
-    have hrep : ∀ b ∈ rest, units b ++ φ ∈ SAT → units a ++ φ ∉ SAT →
-        ∃ b' ∈ kept, units b' ++ φ ∈ SAT := by
-      intro b hb hbsat hanot
-      obtain ⟨b', hb', hbb'⟩ := List.exists_mem_eraseDupsBy
-        (r := fun b b' => decide (key (disj φ a b) = key (disj φ a b'))) hb
-      refine ⟨b', hb', ?_⟩
-      rcases hbb' with rfl | hlab
-      · exact hbsat
-      · have hdisj : disj φ a b' ∈ SAT := by
-          rw [hkey, ← of_decide_eq_true hlab, ← hkey]
-          exact disj_mem_SAT_iff.2 (.inr hbsat)
-        exact (disj_mem_SAT_iff.1 hdisj).resolve_left hanot
-    have hcases : units a ++ φ ∈ SAT ∨ ∃ b' ∈ kept, units b' ++ φ ∈ SAT := by grind
+    have hcases : units a ++ φ ∈ SAT ∨ ∃ b' ∈ kept, units b' ++ φ ∈ SAT :=
+      exists_mem_eraseDupsBy_of_mem_SAT (fun _ _ h => by rw [hkey, hkey, h]) ⟨x, hx, hxsat⟩
     split
     · rename_i hlen
       by_cases hasat : units a ++ φ ∈ SAT
       · /- If `a` were satisfiable, every kept label would lie in `K`. -/
         exfalso
         have hnodup : (kept.map fun b => key (disj φ a b)).Nodup :=
-          List.pairwise_map.2 ((List.pairwise_eraseDupsBy _).imp fun h => by
-            simpa [eq_comm] using h)
+          List.nodup_map_eraseDupsBy _ rest
         have hsub := (List.eraseDupsBy_sublist
           (r := fun b b' => decide (key (disj φ a b) = key (disj φ a b'))) rest).subset
         have hle := hc (kept.map fun b => key (disj φ a b)).toFinset fun w hw => by
@@ -318,29 +331,43 @@ private theorem computableInPolyTime_stage {key : CNF ℕ → List Bool}
   unfold disj
   fun_prop
 
+/-- **A level pruned in stages is polynomial-time.** Expanding the nodes by an occurrence, then
+applying a polynomial-time stage that keeps a sublist as many times as there are nodes, is
+polynomial-time, uniformly in the parameters of the stage, the nodes and the occurrence: every
+iterate keeps a sublist of the expanded level. -/
+theorem computableInPolyTime_iterate_expand {π : Type} {encP : π ↪ List Bool}
+    {step : π → List (List (Literal ℕ)) → List (List (Literal ℕ))}
+    (hstep : ComputableInPolyTime (fun r : π × List (List (Literal ℕ)) => step r.1 r.2)
+      (encPair encP encNodes) encNodes)
+    (hsub : ∀ r i l, ((step r)^[i] l).Sublist l) :
+    ComputableInPolyTime
+      (fun q : (π × List (List (Literal ℕ))) × ℕ =>
+        (step q.1.1)^[(Fortune.expand q.2 q.1.2).length] (Fortune.expand q.2 q.1.2))
+      (encPair (encPair encP encNodes) encNat) encNodes := by
+  have hexpand : ComputableInPolyTime
+      (fun q : (π × List (List (Literal ℕ))) × ℕ => Fortune.expand q.2 q.1.2)
+      (encPair (encPair encP encNodes) encNat) encNodes := by
+    unfold Fortune.expand
+    fun_prop
+  have hcount : ComputableInPolyTime
+      (fun q : (π × List (List (Literal ℕ))) × ℕ => (Fortune.expand q.2 q.1.2).length)
+      (encPair (encPair encP encNodes) encNat) encUnary := by
+    fun_prop
+  exact iterateWith (par := fun q => q.1.1) (init := fun q => Fortune.expand q.2 q.1.2)
+    (step := step) (fst _ _).fst' hcount hexpand hstep hexpand.polyBounded_length
+    (fun q i _ => length_encList_sublist _ (hsub _ i _))
+
 /-- A level of the search is polynomial-time, uniformly in the formula, the bound, the nodes and
-the occurrence: every stage keeps a sublist of the expanded level. -/
+the occurrence. -/
 private theorem computableInPolyTime_level {key : CNF ℕ → List Bool}
     (hkey : ComputableInPolyTime key encCNF encBits) :
     ComputableInPolyTime
       (fun q : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ =>
         prune (fun a b => key (disj q.1.1.1 a b)) q.1.1.2 (Fortune.expand q.2 q.1.2))
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes := by
-  have hexpand : ComputableInPolyTime
-      (fun q : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ => Fortune.expand q.2 q.1.2)
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes := by
-    unfold Fortune.expand
-    fun_prop
-  have hcount : ComputableInPolyTime
-      (fun q : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ => (Fortune.expand q.2 q.1.2).length)
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encUnary := by
-    fun_prop
-  unfold prune
-  exact iterateWith (par := fun q => q.1.1) (init := fun q => Fortune.expand q.2 q.1.2)
-    (step := fun r l => stage (fun a b => key (disj r.1 a b)) r.2 l)
-    (fst _ _).fst' hcount hexpand (computableInPolyTime_stage hkey)
-    hexpand.polyBounded_length
-    (fun q i _ => length_encList_sublist _ (iterate_stage_sublist i _))
+      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes :=
+  computableInPolyTime_iterate_expand
+    (step := fun r : CNF ℕ × ℕ => stage (fun a b => key (disj r.1 a b)) r.2)
+    (computableInPolyTime_stage hkey) fun _ i _ => iterate_stage_sublist i _
 
 /-- **The procedure is polynomial-time**, for a polynomial-time `key` and a bound `t` computed in
 unary. Each level keeps at most `t + 1` nodes, each fixing at most as many occurrences as `φ`

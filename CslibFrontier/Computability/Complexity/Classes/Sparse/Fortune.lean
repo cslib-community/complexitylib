@@ -116,11 +116,8 @@ theorem length_prune_le (c : ℕ) (l : List α) : (prune label c l).length ≤ c
 
 /-- The entries kept by `prune` have distinct labels. -/
 theorem nodup_map_prune (c : ℕ) (l : List α) : ((prune label c l).map label).Nodup := by
-  have hpair := List.pairwise_eraseDupsBy (r := fun a b => decide (label a = label b)) l
-  have hnodup : ((l.eraseDupsBy fun a b => decide (label a = label b)).map label).Nodup :=
-    List.pairwise_map.2 (hpair.imp fun h => by simpa [eq_comm] using h)
   rw [prune, List.map_take]
-  exact hnodup.sublist (List.take_sublist _ _)
+  exact (List.nodup_map_eraseDupsBy label l).sublist (List.take_sublist _ _)
 
 /-- Every label of `l` is the label of an entry kept by `prune`, unless `prune` keeps `c + 1`
 entries. -/
