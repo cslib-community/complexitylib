@@ -726,22 +726,27 @@ theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M 
     · simp [(ProbComp.eval (M.keyGen n)).apply_eq_zero_iff km |>.mpr hkm]
   · simp [(ProbComp.eval (E.keyGen n)).apply_eq_zero_iff ke |>.mpr hke]
 
-private theorem exists_mac_tag_length_bound' (M : MACScheme) :
+namespace MACScheme
+
+/-- Every `MACScheme` admits a plain polynomial-time bound `tagBound : ℕ → ℕ` on the length of tags
+produced on `M.msgLen n`-bit messages under keys sampled from `M.keyGen n`. -/
+theorem exists_tag_length_bound_of_length_eq (M : MACScheme) :
     ∃ tagBound : ℕ → ℕ,
       ComputableInPolyTime tagBound encUnary encUnary ∧
-      ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
-        ∀ c, c.length = M.msgLen n →
-        ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n := by
-  obtain ⟨ck, dk, hlenKey⟩ := M.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlenSign⟩ := M.sign_ppt.length_le
-  have hmsgLen := M.msgLen_polyTime.tidy
-  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds,
-    .of_tidy (by fun_prop), fun n km hkm c hc tag htag => ?_⟩
-  have hkmLen := hlenKey n km hkm
-  have htagLen := hlenSign (km, c) tag htag
-  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hkmLen
-  simp only [length_encPair, encBits_apply, hc] at htagLen
-  exact htagLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
+      ∀ n, ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
+        ∀ msg, msg.length = M.msgLen n →
+        ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n := by
+  obtain ⟨ck, dk, hlenk⟩ := M.keyGen_ppt.length_le
+  obtain ⟨cs, ds, hlens⟩ := M.sign_ppt.length_le
+  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds, by fun_prop,
+    fun n sk hsk msg hmsg tag htag => ?_⟩
+  have hskLen := hlenk n sk hsk
+  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hskLen
+  have h1 := hlens (sk, msg) tag htag
+  simp only [length_encPair, encBits_apply, hmsg] at h1
+  exact h1.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
+
+end MACScheme
 
 /-- **Encrypt-then-MAC `EncForge` security under `EUFCMA`**
 ([KatzLindell2020], Exercise 5.5, printed p. 165): if `M` satisfies ordinary fresh-message
@@ -753,7 +758,7 @@ theorem encForge_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (heuf : M.EUFCMA) :
     (encryptThenMAC E M hctLen).EncForge := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound' M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.EncForge.of_negligible
   intro adversary hadversary
   refine negligible_of_le
@@ -1488,24 +1493,6 @@ theorem OneTimeEUFCMA.redundantTag {M : MACScheme} (h : M.OneTimeEUFCMA) :
   have h2 := h.negligible (tailTagForger adversary) (isOraclePPT_tailTagForger hadversary)
   exact negligible_of_le (h1.add h2)
     (M.succProbability_eufOneTimeGame_redundantTag_le adversary)
-
-/-- Every `MACScheme` admits a plain polynomial-time bound `tagBound : ℕ → ℕ` on the length of tags
-produced on `M.msgLen n`-bit messages under keys sampled from `M.keyGen n`. -/
-theorem exists_tag_length_bound_of_length_eq (M : MACScheme) :
-    ∃ tagBound : ℕ → ℕ,
-      ComputableInPolyTime tagBound encUnary encUnary ∧
-      ∀ n, ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
-        ∀ msg, msg.length = M.msgLen n →
-        ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n := by
-  obtain ⟨ck, dk, hlenk⟩ := M.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := M.sign_ppt.length_le
-  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds, by fun_prop,
-    fun n sk hsk msg hmsg tag htag => ?_⟩
-  have hskLen := hlenk n sk hsk
-  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hskLen
-  have h1 := hlens (sk, msg) tag htag
-  simp only [length_encPair, encBits_apply, hmsg] at h1
-  exact h1.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
 
 /-- One-query strong-MAC forger against `M.redundantTag`: queries `0^(M.msgLen n)` (truncating the
 reply to `tagBound n`) and prepends `false` to the returned tag. -/

@@ -578,7 +578,7 @@ while breaking `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDC
 `PseudorandomFunction.tailFallback_prfEncryptThenMAC_counterexample`, Exercise 5.10); and
 `MACScheme.redundantTag` (accepting `tag` or `tag.tail`) preserves `EUFCMA` while breaking `SUFCMA`,
 so `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` yet fails
-`CiphertextIntegrity` and `INDCCA` with one-query advantage `1`
+`CiphertextIntegrity` and `INDCCA` with advantage `1`
 (`encryptThenMAC_redundantTag_counterexample`,
 `PseudorandomFunction.prfEncryptThenMACRedundantTag_counterexample`, Exercise 5.4). Concrete
 evaluations and composed `IsPPT` / `IsOraclePPT` checks on `echoFamily` are in
