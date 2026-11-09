@@ -4694,6 +4694,7 @@ public import CslibFrontier.Foundations.Data.Code.SelfCorrection
 public import CslibFrontier.Foundations.Data.Code.Singleton
 public import CslibFrontier.Foundations.Data.Code.Sudan
 public import CslibFrontier.Foundations.Data.Code.SudanInterpolant
+public import CslibFrontier.Foundations.Data.ENat.IInf
 public import CslibFrontier.Foundations.Data.Fin.Append
 public import CslibFrontier.Foundations.Data.Fin.Order
 public import CslibFrontier.Foundations.Data.Fin.Tuple
