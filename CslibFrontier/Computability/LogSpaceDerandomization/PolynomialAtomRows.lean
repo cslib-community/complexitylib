@@ -31,7 +31,7 @@ The bridges to `Matrix.atomPrep` and `Matrix.auxScore` use their existing zero-p
 
 These results instantiate the scalar laws in the stationary-reference portion of
 [OpenAI2026LogSpace, Lemma 8.2] for the three pre-incoming row functions of Section 5.5.
-They belong to the fourth-moment adaptation in complexitylib issue #1721; the pinned paper
+They belong to the fourth-moment adaptation in cslib-frontier issue #1721; the pinned paper
 uses eighth roots. Normalized main atoms, incoming-gate assembly, enumeration, post-overflow
 stability, and a machine-space certificate remain separate.
 

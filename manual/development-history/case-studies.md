@@ -16,7 +16,7 @@ The subsequent transcript contains the human direction to recover the ambitious 
 
 On October 22 at 21:30:38 UTC the user asked for inspection of claim accuracy and drift from human intent (e07). The conversation then requested comprehensible formal abstracts, a higher threshold for headlines, and a smaller selection replacing the prose/TeX list (e08–e10). This is direct evidence that editorial scope was human-directed.
 
-The snapshot's implementation has a 25-group Lean catalogue with presentation/bridge files, dependency audits and generated PDFs. The [assurance section](../design-and-assurance/assurance.md) describes what those checks establish. It would be inaccurate to say that the transcript proves every headline was subsequently verified by a human. It establishes the decision and the requested standard; source and CI establish the present mechanism.
+The snapshot's implementation had a 25-group Lean catalogue with presentation/bridge files, dependency audits and generated PDFs. The [assurance section](../design-and-assurance/assurance.md#retired-formal-abstracts-and-comparator-contracts) describes what those checks established and why the abstracts were retired on 2026-11-08 in favor of the results inventory. It would be inaccurate to say that the transcript proves every headline was subsequently verified by a human. It establishes the decision and the requested standard; source and CI established the mechanism.
 
 ## Circuit synthesis: removing bookkeeping while retaining costs
 

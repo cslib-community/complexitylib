@@ -13,14 +13,24 @@ For setup, start with [Build a checkout](README.md#build-a-checkout). The
 
 ## Proposing and contributing work
 
-Use this repository's Issues or pull requests to agree on a substantial development
-before implementing it.
-State the mathematical endpoint, cite its source, identify existing APIs and missing dependencies,
-and propose a first independently useful milestone. [ROADMAP.md](ROADMAP.md) lists open directions;
-an item there is not an assignment or a claim that its prerequisites are complete.
+Agree on a substantial development before implementing it. An issue in this repository, written
+with the [development template](.github/ISSUE_TEMPLATE/development.md), is one good way to
+propose a new direction; a pull request can also start the discussion. There is no separate
+roadmap repository. State the endpoint, cite its source, identify existing APIs and missing
+dependencies, and propose a first independently useful milestone. If you write an issue on
+someone else's behalf, for example from their short description, name them in its "Originated
+by" field. [ROADMAP.md](ROADMAP.md) lists the accepted directions; an item there is not an
+assignment or a claim that its prerequisites are complete.
 Small fixes and API improvements can go directly to a pull request. Use the existing issue or
 PR to record ownership and handoffs; do not create duplicate task records. Prioritize fixes and
 landing open PRs when review or integration is the bottleneck.
+
+A new file's `Copyright` and `Authors:` lines name the originator(s) of the issue or proposal it
+implements and the person whose agents did the implementation (the human, not a fleet or bot
+account); the [file rules](AGENTS.md#file-rules) give the details. The originator is the person
+named in the issue's "Originated by" field when present, and otherwise the issue's author. The
+rule applies going forward: existing headers stay unless someone asks for a correction, and ports
+keep their original authors.
 
 Keep a pull request small enough to review as one mathematical or engineering change. Batch
 related mechanical fixes when they share a contract and validation; split at independently useful
@@ -71,7 +81,7 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    list the actual public API; each area has a chapter in the guide.
 8. **Tests.** Checked, nonvacuous examples exercise concrete inputs, runs, counterexamples or
    meaningful client behavior such as inference, imports and automation. Merely restating a
-   signature adds no behavioral coverage (curated abstracts separately pin public claims).
+   signature adds no behavioral coverage.
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
@@ -117,7 +127,7 @@ state paired with the bit read, with the state framed. Because the name is reduc
 statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
 see through it; syntactic tools such as `omega` do not. New and changed statements follow the
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
-checks the repetition rule. Abstracts stay fully spelled out.
+checks the repetition rule.
 
 To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
@@ -165,7 +175,8 @@ also loads private information, so such edits do reach its clients.
   Write `attribute [local fun_prop] helper` instead. Private `simp` lemmas, Aesop rules and
   instances stay local.
 - Ordinary imports cannot name private declarations. When privatizing, update the tests and
-  abstracts that name them in the same PR, or give a companion module `import all`.
+  results inventory entries that name them in the same PR, or give a companion module
+  `import all`.
 - For an audit, `python3 scripts/audit_queries.py references PREFIX` lists where each declaration
   under a source path is referenced, and `duplicates` lists declarations with alpha-equivalent
   statements in different modules. Uses through `rfl`, `decide`, simp sets or instances leave no
@@ -236,6 +247,14 @@ library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has,
 universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
 CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
+On pull requests CI also runs a third advisory notice, `python3 scripts/proof_copies.py`, which
+reads only the sources. It lists tactic blocks of four or more lines, on lines a change adds or
+modifies, that repeat a block of another proof, or of the same proof, in the same file or
+directory up to local names and at most two renamed constants
+([#3725](https://github.com/cslib-community/cslib-frontier/issues/3725)). If both blocks make the
+same argument and a lemma would make both proofs clearer, prove it once and use it in both;
+otherwise leave them. Its candidates, and those that `--all` lists for the whole library, are not
+a count to drive down.
 
 The helper hard-links package sources by default, copies root and dependency build caches with
 independent files (including symlink targets), isolates dependency `.git` directories and pointer
@@ -266,7 +285,7 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only, grouped by area.
+ROADMAP lists accepted directions only, grouped by area.
 Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
 linked inline as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`.
 Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
@@ -353,29 +372,6 @@ the existing code review; an additional reviewer is needed
 only for an uncovered question. Compilation, excerpt checks and a completed PR field do not by
 themselves establish that the manual is usable or correct.
 
-## Maintaining the headline abstracts
-
-The small selection in [abstracts/catalogue.json](abstracts/catalogue.json) is the public headline
-catalogue. Every selected result has a checked Lean abstract and bridge, with explicit definitions,
-models, encodings, hypotheses, bounds and limitations. The library contains many other results;
-selection is an editorial decision, not an automatic consequence of adding a theorem. A headline
-must establish a substantial full endpoint with conventional semantics and nonvacuous premises.
-Keep incomplete endpoints in `ROADMAP.md` and credit mathematical and formalization sources.
-List every selected entry in the top-level README's selected results and in the table of
-[abstracts/README.md](abstracts/README.md); `scripts/check_hygiene.py` checks both lists against
-the catalogue.
-
-Follow [the abstract requirements](AGENTS.md#curated-formal-abstracts) for impact assessment,
-source layout, independent review and `#check_abstract` audits. These apply to affected claims
-and artifacts; unrelated edits need no no-impact boilerplate or repeated PDF inspection.
-
-When selection or abstract sources change, run `python3 -B scripts/build_abstracts.py --check`.
-When abstracts or rendering change, inspect affected rendered pages and declaration links before
-integration and link the artifact/run and source revision. The **Formal abstract PDFs** workflow
-generates review artifacts; **API documentation** publishes main builds under
-`https://www.cslib.io/cslib-frontier/abstracts/`. See [the build guide](abstracts/README.md) for local
-generation. Generated TeX and PDFs stay untracked.
-
 ## Upstreaming
 
 ```bash
@@ -391,7 +387,7 @@ and head SHA in the module's `-- upstream:` marker.
 
 Coordinate cross-cutting abstractions with CSLib before proposing them upstream. Follow
 [AGENTS.md](AGENTS.md#staying-current-with-upstream) for pin updates, synchronization checks,
-and removal of superseded local copies.
+and replacing superseded local files with deprecated shims.
 
 Upstream status is recorded in source. Each module's `-- upstream:` marker gives its status, PR
 number, copied revision and, when it is not the mirrored CSLib path, its destination; markers can

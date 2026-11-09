@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 public import CslibFrontier.Crypto.Computational.Commitment
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Three-copy masked-3SAT commitment protocol for GMW zero-knowledge
@@ -697,13 +698,12 @@ theorem run_gmwProver_fst {α : Type} (generator : List Bool → List Bool) (s m
         (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
         prog).run P.init).bind (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
       (P.run prog P.init).map Prod.fst := by
-    simp only [Prover.run, PMF.map_bind, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, Prover.run]
     have hconst : ∀ x : α × P.State, PMF.map (fun _ : State' => x.1) (relate x.2) = PMF.pure x.1 :=
       fun _ => PMF.map_const _ _
     simp only [hconst]; rfl
   rw [hlhs] at hmap; rw [hmap]
-  simp only [P, gmwProver, relate, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.map_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, P, gmwProver, relate]
   congr 1; funext coins
   have hstate := ProbOracleComp.run_interpret_map_state
     (fun q (st : ℕ × List Bool) => PMF.pure (twoRoundStep (honestReply1 generator m φ coins)

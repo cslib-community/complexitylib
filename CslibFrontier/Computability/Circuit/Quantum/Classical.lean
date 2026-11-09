@@ -268,16 +268,8 @@ theorem exists_toPlacedGate?_eval_apply {g : GateCode} (h₁ : g.1 = false) (h�
     ∃ pg, toPlacedGate? m g = some pg ∧
       ∀ (ψ : Qubits m) y, (pg.eval ψ).ofLp y = ψ.ofLp (classicalStep g y) := by
   obtain ⟨pg, hpg, hket⟩ := exists_toPlacedGate?_eval_ket h₁ h₂
-  refine ⟨pg, hpg, fun ψ y => ?_⟩
-  have hinv := classicalStep_classicalStep (m := m) (target_notMem_of_wellFormed h₁ h₂)
-  have hrow (z : Fin m → Bool) :
-      (pg.matrix : Matrix _ _ ℂ) y z = if z = classicalStep g y then 1 else 0 := by
-    rw [← PlacedGate.eval_ket_apply, hket, ket_apply]
-    refine if_congr ⟨fun h => ?_, fun h => ?_⟩ rfl rfl
-    · rw [h, hinv]
-    · rw [h, hinv]
-  simp only [PlacedGate.eval, unitaryEquiv_apply, Matrix.mulVec, dotProduct, hrow, ite_mul,
-    one_mul, zero_mul, sum_ite_eq', mem_univ, ite_true]
+  exact ⟨pg, hpg, pg.eval_apply_of_involutive
+    (classicalStep_classicalStep (target_notMem_of_wellFormed h₁ h₂)) hket⟩
 
 
 /-! ### Swapping a qubit into qubit `0` -/

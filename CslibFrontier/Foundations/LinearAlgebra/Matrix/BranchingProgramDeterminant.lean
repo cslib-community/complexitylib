@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.LinearAlgebra.Matrix.Adjugate
-import Mathlib.LinearAlgebra.Matrix.Block
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.StrictUpperTriangular
 
 /-!
 # Branching programs as determinants
@@ -74,11 +74,8 @@ theorem eq_det_submatrix_sub_one_of_eq_single_add_vecMul
     {q : Fin (m + 1) → R} (hq : q = Pi.single 0 1 + q ᵥ* N) :
     q (Fin.last m) = ((N - 1).submatrix Fin.castSucc Fin.succ).det := by
   have hdet : (1 - N).det = 1 := by
-    rw [det_of_isUpperTriangular]
-    · simp [hN]
-    · intro i j hij
-      have hij' : j < i := hij
-      rw [Matrix.sub_apply, one_apply_ne hij'.ne', hN i j hij'.le, sub_zero]
+    rw [sub_eq_add_neg]
+    exact IsStrictUpperTriangular.det_one_add fun i j hij => by simp [hN i j (not_lt.1 hij)]
   rw [eq_det_neg_submatrix_of_vecMul_eq_single (1 - N) hdet (q := q)]
   · congr 1
     ext i j

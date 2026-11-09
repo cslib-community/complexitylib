@@ -1043,20 +1043,6 @@ private theorem singletonPolyTime' {c : α → List ℕ}
     ComputableInPolyTime (fun x => [c x]) encIn (encList (encList encNat)) :=
   ComputableInPolyTime.cons' hc (ComputableInPolyTime.const [])
 
-/-- The length of a polynomial with `J` small coefficients is polynomially bounded. -/
-private theorem polyBounded_polyLength {p J : α → ℕ} {fl : α → List ℕ}
-    (hp : ComputableInPolyTime p encIn encUnary)
-    (hfl : ComputableInPolyTime fl encIn (encList encNat))
-    (hJ : ComputableInPolyTime J encIn encUnary) :
-    PolyBounded (fun x => (encIn x).length)
-      (fun x => J x * (2 * ((fl x).length * (2 * (p x + 1) + 1)) + 1)) := by
-  have hpl := ComputableInPolyTime.polyBounded hp
-  have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
-    (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
-  exact (ComputableInPolyTime.polyBounded hJ).mul (((PolyBounded.const 2).mul
-    (hfll.mul (((PolyBounded.const 2).mul (hpl.add (PolyBounded.const 1))).add
-      (PolyBounded.const 1)))).add (PolyBounded.const 1))
-
 private theorem length_encList_mul_le (N : ℕ) (fl c d : List ℕ) :
     (encList encNat (mul N fl c d)).length ≤ fl.length * (2 * N + 1) :=
   length_encList_le (length_mul N fl c d) fun _ h => lt_of_mem_mul h
@@ -1241,7 +1227,7 @@ theorem computableInPolyTime_mulGeomPow {N J m : α → ℕ} {fl c : α → List
     ⟨ComputableInPolyTime.range.comp hm, computableInPolyTime_tmul (hN.comp hx) (hfl.comp hx)
       (hJ.comp hx) hP (computableInPolyTime_geom (hN.comp hx) (hfl.comp hx) (hJ.comp hx)
         (hc.comp hx)), inferInstance, inferInstance⟩
-    ⟨polyBounded_polyLength hN hfl hJ, fun x R _ _ => by
+    ⟨polyBounded_polyLength hN hfl hJ.polyBounded, fun x R _ _ => by
       have := length_encPoly_tmul_le (N x) (fl x) (J x) R (geom (N x) (fl x) (J x) (c x))
       omega⟩
 
@@ -1272,7 +1258,7 @@ theorem computableInPolyTime_recip {N a u h k J : α → ℕ} {fl : α → List 
         (ha.comp hx) (hk.comp hx) hk')
       (computableInPolyTime_mult (ha.comp hx) (hL.comp hx) (hu.comp hx) (hh.comp hx) hk') hP,
       inferInstance, inferInstance⟩
-    ⟨polyBounded_polyLength hN hfl hJ, fun x R k' _ => by
+    ⟨polyBounded_polyLength hN hfl hJ.polyBounded, fun x R k' _ => by
       rcases mulGeomPow_eq_or (N x) (fl x) (J x) (slopeConst (N x) (fl x) (a x) (k x) k')
         (mult (a x) (u x) (h x) k') R with h0 | ⟨R', h1⟩
       · rw [h0]; omega

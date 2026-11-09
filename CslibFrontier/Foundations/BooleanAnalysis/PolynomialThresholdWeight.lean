@@ -72,26 +72,8 @@ theorem IsPTF.exp_neg_two_mul_le_sum_fourierCoeff_sq {k : ℕ} {f : (ι → Bool
   have hmpos : 0 < m := Finset.expect_pos (fun x _ => by
     have : p x ≠ 0 := fun h => by have := hpos x; rw [h, mul_zero] at this; exact lt_irrefl _ this
     positivity) univ_nonempty
-  -- Theorem 9.22 with `p = 1`: `√m ≤ e^k ‖p‖₁`
-  have h22 := lpNorm_two_le_exp_mul_lpNorm_one (mem_lowDegree_iff_fourierCoeff_eq_zero.2 hpdeg)
-  rw [lpNorm_two, ← hm, lpNorm_one] at h22
-  have hsq := pow_le_pow_left₀ (Real.sqrt_nonneg _) h22 2
-  rw [Real.sq_sqrt hmpos.le] at hsq
-  have hX : Real.exp (2 * k) = Real.exp k ^ 2 := by
-    rw [sq, ← Real.exp_add]; ring_nf
-  have h1 : m ≤ Real.exp (2 * k) * (W * m) := by
-    calc m ≤ (Real.exp k * 𝔼 x, |p x|) ^ 2 := hsq
-      _ = Real.exp (2 * k) * (𝔼 x, |p x|) ^ 2 := by rw [hX]; ring
-      _ ≤ Real.exp (2 * k) * (W * m) := mul_le_mul_of_nonneg_left hcs (by positivity)
-  have h2 : 1 ≤ Real.exp (2 * k) * W := by
-    by_contra hlt
-    push Not at hlt
-    have := mul_lt_mul_of_pos_right hlt hmpos
-    linarith
-  have hee : Real.exp (-(2 * k)) * Real.exp (2 * k) = 1 := by
-    rw [← Real.exp_add, neg_add_cancel, Real.exp_zero]
-  have h3 := mul_le_mul_of_nonneg_left h2 (Real.exp_pos (-(2 * k))).le
-  rw [mul_one, ← mul_assoc, hee, one_mul] at h3
-  exact h3
+  -- Theorem 9.22 with `p = 1` turns `(𝔼 |p|) ^ 2 ≤ W m` into `e ^ (-2 k) ≤ W`
+  exact exp_neg_two_mul_le_of_sq_expect_abs_le (mem_lowDegree_iff_fourierCoeff_eq_zero.2 hpdeg)
+    hmpos hcs
 
 end Cslib.BitString

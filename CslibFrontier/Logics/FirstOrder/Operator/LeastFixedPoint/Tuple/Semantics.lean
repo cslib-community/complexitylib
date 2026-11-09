@@ -187,8 +187,7 @@ theorem realize_onFormula {Γ : List ℕ} {α : Type} (φ : RawFormula L' Γ α)
         | there r => exact hρ r zs
       rw [ih 0 _ _ hρ']
       apply iff_of_eq
-      congr 1
-      funext a
+      congr 1 with a : 1
       cases a <;> rfl
     simpa only [xs, Equiv.apply_symm_apply] using prefixed_equiv ea
       (fun S ys => b.Realize interpretation (Operator.RelEnv.cons S ρs)

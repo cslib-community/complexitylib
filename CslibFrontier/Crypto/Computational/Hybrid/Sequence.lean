@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Computability.Probabilistic.Repeat
 public import CslibFrontier.Computability.Probabilistic.UniformNat
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -82,8 +83,7 @@ theorem eval_spliceTest_original (replacement original : ProbComp α) (before af
         let front ← OracleComp.replicate before replacement
         let back ← OracleComp.replicate (after + 1) original
         test (front ++ back)) := by
-  simp only [spliceTest, OracleComp.replicate_succ, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, spliceTest, OracleComp.replicate_succ]
   exact PMF.bind_comm _ _ _
 
 /-- A replacement challenge supplies the last draw of the replacement segment. -/
@@ -94,8 +94,8 @@ theorem eval_spliceTest_replacement (replacement original : ProbComp α) (before
         let front ← OracleComp.replicate (before + 1) replacement
         let back ← OracleComp.replicate after original
         test (front ++ back)) := by
-  simp only [spliceTest, OracleComp.replicate_snoc, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.bind_bind, PMF.bind_map, Function.comp_def, List.append_assoc, List.singleton_append]
+  simp only [pmf_norm, spliceTest, OracleComp.replicate_snoc, List.append_assoc,
+    List.singleton_append]
   exact PMF.bind_comm _ _ _
 
 /-- Inserting an original challenge gives the earlier adjacent hybrid. -/
@@ -286,11 +286,11 @@ theorem ComputationallyIndistinguishable.replicate_bind {orig repl : ℕ → Pro
   have horig_eq : distinguishingGame
       (ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= process n)) (adversary n) =
       ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= test n) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, test, ProbComp.eval_bind, PMF.bind_bind]
+    simp only [pmf_norm, distinguishingGame, test]
   have hrepl_eq : distinguishingGame
       (ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= process n)) (adversary n) =
       ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= test n) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, test, ProbComp.eval_bind, PMF.bind_bind]
+    simp only [pmf_norm, distinguishingGame, test]
   have hred_orig : distinguishingGame (ProbComp.eval (orig n)) (red n) =
       ProbComp.eval (orig n >>= sequenceTest (repl n) (orig n) (count n) (test n)) := by
     simp only [distinguishingGame, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]

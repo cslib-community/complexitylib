@@ -701,14 +701,19 @@ theorem getD_naorMaskBits (openFlags bits : List Bool) (i : ℕ) :
       | cons flag flags =>
         simpa only [naorMaskBits, List.tail_cons, List.getD_cons_succ] using ih flags i
 
+/-- A list of length `n` whose entries, read with `getD`, are `g i` is `(List.range n).map g`. -/
+private theorem eq_map_range_of_getD {α : Type} {l : List α} {d : α} {n : ℕ} {g : ℕ → α}
+    (hl : l.length = n) (h : ∀ i < n, l.getD i d = g i) : l = (List.range n).map g := by
+  subst hl
+  apply List.ext_getElem (by simp only [List.length_map, List.length_range])
+  intro i hi _
+  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
+    List.getElem_map, List.getElem_range] using h i hi
+
 theorem naorMaskBits_eq_map (openFlags bits : List Bool) :
     naorMaskBits openFlags bits =
-      (List.range bits.length).map (fun i => openFlags.getD i false && bits.getD i false) := by
-  apply List.ext_getElem (by simp only [length_naorMaskBits, List.length_map, List.length_range])
-  intro i hi hi'
-  have h := getD_naorMaskBits openFlags bits i
-  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
-    List.getElem_map, List.getElem_range] using h
+      (List.range bits.length).map (fun i => openFlags.getD i false && bits.getD i false) :=
+  eq_map_range_of_getD (length_naorMaskBits _ _) fun i _ => getD_naorMaskBits openFlags bits i
 
 @[fun_prop]
 theorem computableInPolyTime_naorMaskBits {α : Type} {input : α ↪ List Bool}
@@ -767,14 +772,9 @@ theorem naorCommitSplit_eq_map (generator : List Bool → List Bool) (r : List B
     naorCommitSplit generator r openFlags bits seeds pads =
       (List.range bits.length).map (fun i =>
         naorCommitAt generator r (openFlags.getD i false) (bits.getD i false)
-          (seeds.getD i []) (pads.getD i [])) := by
-  apply List.ext_getElem
-    (by simp only [length_naorCommitSplit, List.length_map, List.length_range])
-  intro i hi hi'
-  have hlt : i < bits.length := by simpa only [length_naorCommitSplit] using hi
-  have h := getD_naorCommitSplit generator r openFlags bits seeds pads i hlt
-  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
-    List.getElem_map, List.getElem_range] using h
+          (seeds.getD i []) (pads.getD i [])) :=
+  eq_map_range_of_getD (length_naorCommitSplit ..) fun i hi =>
+    getD_naorCommitSplit generator r openFlags bits seeds pads i hi
 
 @[fun_prop]
 theorem computableInPolyTime_naorCommitSplit {α : Type} {input : α ↪ List Bool}
@@ -916,15 +916,9 @@ theorem naorSelectSeeds_eq_map (s : ℕ) (openFlags bits : List Bool)
     naorSelectSeeds s openFlags bits seeds =
       (List.range bits.length).map (fun i =>
         if openFlags.getD i false then BitString.listRow s 0 (seeds.getD i [])
-        else List.replicate s false) := by
-  apply List.ext_getElem
-    (by simp only [length_naorSelectSeeds, List.length_map, List.length_range])
-  intro i hi hi'
-  have hlt : i < bits.length := by simpa only [length_naorSelectSeeds] using hi
-  have h := getD_naorSelectSeeds s openFlags bits seeds i hlt
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi] at h
-  simp only [List.getElem_map, List.getElem_range, List.getD_eq_getElem?_getD]
-  exact h
+        else List.replicate s false) :=
+  eq_map_range_of_getD (length_naorSelectSeeds ..) fun i hi =>
+    getD_naorSelectSeeds s openFlags bits seeds i hi
 
 @[simp] theorem naorSelectSeeds_naorMaskBits (s : ℕ) (openFlags bits : List Bool)
     (seeds : List (List Bool)) :

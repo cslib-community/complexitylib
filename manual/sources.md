@@ -304,6 +304,11 @@ Yoeng-Jin Chu and Tseng-Hong Liu. "On the Shortest Arborescence of a Directed Gr
 
 Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 4 for the Klee–Minty programs and the `2^n - 1` pivots of the largest-coefficient rule on them; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `CslibFrontierTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
 
+<a id="ckkz12"></a>
+## ckkz12
+
+Seung Geol Choi, Jonathan Katz, Ranjit Kumaresan and Hong-Sheng Zhou. "On the Security of the 'Free-XOR' Technique." *Theory of Cryptography (TCC 2012)*, 39–53, 2012. https://doi.org/10.1007/978-3-642-28914-9_3 ; full version: Cryptology ePrint Archive, Report 2011/510, https://eprint.iacr.org/2011/510 . Cited at paper level for circular correlation robustness and the security of free XOR; no theorem numbers are claimed.
+
 <a id="cks20"></a>
 ## cks20
 
@@ -317,7 +322,7 @@ Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *In
 <a id="complexitylib"></a>
 ## complexitylib
 
-Complexitylib contributors. *Complexitylib*, source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
+cslib-frontier contributors. *cslib-frontier* (named Complexitylib at this snapshot), source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
 
 <a id="cook74"></a>
 ## cook74
@@ -526,6 +531,11 @@ E. N. Gilbert and H. O. Pollak. *Steiner Minimal Trees*. SIAM Journal on Applied
 
 Shafi Goldwasser, Yael Tauman Kalai and Guy N. Rothblum. *Delegating Computation: Interactive Proofs for Muggles*. JACM 62(4), article 27, 2015. https://doi.org/10.1145/2699436 .
 
+<a id="gkwy20"></a>
+## gkwy20
+
+Chun Guo, Jonathan Katz, Xiao Wang and Yu Yu. "Efficient and Secure Multiparty Computation from Fixed-Key Block Ciphers." *2020 IEEE Symposium on Security and Privacy (SP 2020)*, 825–841, 2020. https://doi.org/10.1109/SP40000.2020.00016 ; full version: Cryptology ePrint Archive, Report 2019/074, https://eprint.iacr.org/2019/074 . Cited at paper level for tweakable circular correlation robustness and its restriction on queries; no theorem or definition numbers are claimed.
+
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
 
@@ -682,6 +692,11 @@ William M. Hoza. *Better Pseudodistributions and Derandomization for Space-Bound
 
 Falk Hüffner. "Algorithm Engineering for Optimal Graph Bipartization." *Journal of Graph Algorithms and Applications* 13(2), 77–98, 2009. https://doi.org/10.7155/jgaa.00177 . Journal PDF inspected on 2026-11-08 (https://jgaa.info/index.php/jgaa/article/download/paper177/2776): Section 3, Lemma 2 (p. 84; the disjoint-compression characterization by valid colourings and vertex cuts, after subdividing the edges at the old solution), the Compress-OCC routine (p. 85), and the running-time paragraph with Theorem 1 (p. 86). There Hüffner records that Reed, Smith and Vetta state `O(4^k · kmn)`, and shows that assigning each vertex of the old solution one of three roles (deleted, or one of two colourings of its neighbours) gives `3^k` minimum vertex cut problems and `O(3^k · kmn)` (Theorem 1). [OddCycleTransversal](../CslibFrontier/Algorithms/Lean/IterativeCompression/OddCycleTransversal.lean) credits the `3^k` count to this theorem; the improvement to `O(3^k · mn)` (Theorem 2, p. 88) is not formalized.
 
+<a id="iknp03"></a>
+## iknp03
+
+Yuval Ishai, Joe Kilian, Kobbi Nissim and Erez Petrank. "Extending Oblivious Transfers Efficiently." *Advances in Cryptology – CRYPTO 2003*, Lecture Notes in Computer Science 2729, 145–161, Springer, 2003. https://doi.org/10.1007/978-3-540-45146-4_9 . Bibliographic data from the DOI record; the full text was not inspected in this pass. The manual cites Section 3 for the semi-honest protocol (Figure 1) and Definition 1 for correlation robustness, as reported by secondary descriptions; theorem and lemma numbers are not claimed.
+
 <a id="immerman1988"></a>
 ## immerman1988
 
@@ -811,6 +826,11 @@ Bernhard Korte and Jens Vygen. *Combinatorial Optimization: Theory and Algorithm
 ## kov17
 
 Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Differential Privacy*. IEEE Transactions on Information Theory 63(6), 4037–4049, 2017. https://doi.org/10.1109/TIT.2017.2685505 ; theorem numbering cited from arXiv:1311.0776v4, 2015. Theorem 3.4 (equation (7)) was checked against the arXiv v4 PDF on 2026-11-07; the journal metadata was checked against Crossref.
+
+<a id="ks08"></a>
+## ks08
+
+Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
 
 <a id="lamportshostakpease1982"></a>
 ## lamportshostakpease1982
@@ -1215,7 +1235,7 @@ Justin Thaler. *Proofs, Arguments, and Zero-Knowledge*. Foundations and Trends i
 <a id="thorup13"></a>
 ## thorup13
 
-Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the pinned abstract and library source.
+Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the formal abstract at the pinned revision (since retired) and the library source.
 
 <a id="toda1991"></a>
 ## toda1991

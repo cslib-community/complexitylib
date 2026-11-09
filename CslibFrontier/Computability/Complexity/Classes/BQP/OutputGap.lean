@@ -41,25 +41,14 @@ rank decoder only requests prefixes at most as long as the wire list. -/
 @[expose] def prefixGap (gs : List GateCode) (X : List Bool) (S : List ℕ)
     (pre : List Bool) : ℕ := patternGap gs X (S.zip pre)
 
-private theorem wellFormed_append_pattern {gs : List GateCode} {X : List Bool}
-    (hgs : ∀ g ∈ gs, g.WellFormed X.length) {ps : List (ℕ × Bool)}
-    (hvalid : ∀ p ∈ ps, p.1 < X.length) :
-    ∀ g ∈ gs ++ GateCode.flipCodes (patternZeros ps), g.WellFormed X.length := by
-  intro g hg
-  rcases List.mem_append.mp hg with hg | hg
-  · exact hgs g hg
-  · refine (GateCode.isClassical_flipCodes (S := patternZeros ps) ?_ g hg).2
-    intro j hj
-    obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ((patternZeros_sublist ps).subset hj)
-    exact hvalid p hp
-
 /-- The simulator's pattern numerator has the original circuit's Hadamard denominator. -/
 theorem patternProb_eq_patternGap {gs : List GateCode} {X : List Bool}
     (hgs : ∀ g ∈ gs, g.WellFormed X.length) {ps : List (ℕ × Bool)}
     (hps : (patternWires ps).Nodup) (hvalid : ∀ p ∈ ps, p.1 < X.length) :
     patternProb X.length gs ps X = (patternGap gs X ps : ℝ) / 2 ^ hadamardCount gs := by
   rw [← onesProb_append_flipCodes_eq_patternProb gs hps hvalid X,
-    onesProb_eq_gapValue (wellFormed_append_pattern hgs hvalid) _ le_rfl,
+    onesProb_eq_gapValue (GateCode.wellFormed_append_flipCodes hgs (patternZeros_lt hvalid)) _
+      le_rfl,
     hadamardCount_append_flipCodes]
   simp [patternGap]
 
@@ -194,7 +183,8 @@ theorem exists_expTimePolySpace_prefixGap {gs : α → List GateCode} {X : α �
     (zip encUnary encBool).comp (hS.prod (bitsToList.comp hpre))
   have hcodes := listAppend' hgs (poly_flipCodes (poly_patternZeros hps))
   obtain ⟨A, c, hc⟩ := exists_expTimePolySpace_gapValue (poly_patternWires hps) hcodes hX
-    (fun a => wellFormed_append_pattern (hwf a) (valid_zip (hvalid a) (pre a)))
+    (fun a => GateCode.wellFormed_append_flipCodes (hwf a)
+      (patternZeros_lt (valid_zip (hvalid a) (pre a))))
   refine ⟨2 * A, c, hc.mono fun a => ?_⟩
   exact prefix_exponent_le A (gs a) (S a) (pre a) (hsize a)
 

@@ -641,8 +641,7 @@ theorem IsDegen.rank_of_natDegree_le [Finite X] [Finite Y] [Finite Z] {h D r : �
     refine ⟨α.map (Polynomial.evalRingHom (k : K)), β.map (Polynomial.evalRingHom (k : K)),
       γ.map (Polynomial.evalRingHom (k : K)), ?_⟩
     rw [map_restrict]
-    congr 1
-    funext i j l
+    congr 1 with i j l : 3
     simp only [Tensor.map_apply, unit_apply, Polynomial.coe_evalRingHom]
     split_ifs <;> simp
   have h₂ : IsRestriction T (Tensor.dsum fun _ : Fin (D + 1) => (unit r : Tensor K _ _ _)) := by

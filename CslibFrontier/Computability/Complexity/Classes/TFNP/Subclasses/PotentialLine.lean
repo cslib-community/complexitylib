@@ -880,23 +880,11 @@ theorem exists_potentialBound (hn : ComputableInPolyTime n enc encUnary)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat) :
     ∃ m : α → ℕ, ComputableInPolyTime m enc encUnary ∧
       ∀ a u, u.length = n a → V (a, u) < 2 ^ m a := by
-  obtain ⟨c, d, hbound⟩ := hV.polyBounded_length.exists_le
-  let m (a : α) := c * (2 * (enc a).length + n a + 2) ^ d
-  have hm : ComputableInPolyTime m enc encUnary :=
-    ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const c)
-      ((ComputableInPolyTime.unary_pow d).comp
-        (ComputableInPolyTime.unary_add'
-          (ComputableInPolyTime.unary_add'
-            (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-              (ComputableInPolyTime.encoding_length enc))
-            hn)
-          (ComputableInPolyTime.const 2)))
+  obtain ⟨m, hm, hbits⟩ := exists_length_bits_le hn hV
   refine ⟨m, hm, fun a u hu => ?_⟩
-  have hb := hbound (a, u)
-  simp only [encNat_apply, length_encPair, encBits_apply, hu] at hb
-  have hbits : (V (a, u)).bits.length ≤ m a := by grind
-  rw [Nat.size_eq_bits_len] at hbits
-  exact (Nat.lt_size_self _).trans_le (Nat.pow_le_pow_right (by decide) hbits)
+  have hsize := hbits a u hu
+  rw [Nat.size_eq_bits_len] at hsize
+  exact (Nat.lt_size_self _).trans_le (Nat.pow_le_pow_right (by decide) hsize)
 
 /-- Whether `u` lies on a potential line: `u = 0 ^ (n a)` or `u` has a potential-increasing incoming
 edge. -/
