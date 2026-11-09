@@ -27,7 +27,8 @@ The argument has three steps.
 2. A pointwise virtual-welfare maximizer has the largest expected virtual welfare among feasible
    allocation rules.
 3. If every distribution is regular, a virtual-welfare maximizer is monotone, whatever the
-   tie-breaking (`IsVirtualWelfareMaximizing.isMonotone`). This is the exchange argument for
+   tie-breaking (`IsVirtualWelfareMaximizing.isMonotone`, in
+   `CslibFrontier.GameTheory.Mechanism.SingleParameter`). This is the exchange argument for
    welfare maximization, with `φᵢ` in place of the identity. By Myerson's Lemma the maximizer with
    Myerson's payments is then DSIC.
 
@@ -46,8 +47,6 @@ DSIC mechanisms. The stronger optimality among Bayesian incentive-compatible mec
 
 ## Main definitions
 
-* `SingleParameter.IsVirtualWelfareMaximizing`: an allocation rule that maximizes
-  `∑ᵢ φᵢ(bᵢ) yᵢ` over a feasible set at every nonnegative bid profile.
 * `SingleParameter.IsReserveThreshold`, `SingleParameter.reservePrice`: the reserve price of a
   virtual valuation.
 * `SingleParameter.Vickrey.reserveAllocation`: highest bidder wins if its virtual valuation is
@@ -55,8 +54,6 @@ DSIC mechanisms. The stronger optimality among Bayesian incentive-compatible mec
 
 ## Main results
 
-* `SingleParameter.IsVirtualWelfareMaximizing.isMonotone`: under regularity, virtual-welfare
-  maximization is monotone.
 * `SingleParameter.myerson_isDSIC_of_isVirtualWelfareMaximizing`: Myerson's optimal auction is
   DSIC.
 * `SingleParameter.integral_sum_payment_le_myerson`: **Myerson's optimal auction theorem**.
@@ -84,42 +81,7 @@ namespace Cslib.GameTheory.SingleParameter
 
 variable {ι : Type*}
 
-/-! ### Virtual-welfare maximization -/
-
-/-- `x` maximizes **virtual welfare** `∑ᵢ φᵢ(bᵢ) yᵢ` over the feasible allocations `X` at every
-nonnegative bid profile ([Roughgarden2013CS364A], Lecture 5, §3.1). Ties may be broken
-arbitrarily. -/
-@[expose] def IsVirtualWelfareMaximizing [Fintype ι] (φ : ι → ℝ → ℝ) (X : Set (ι → ℝ))
-    (x : (ι → ℝ) → ι → ℝ) : Prop :=
-  ∀ b, 0 ≤ b → x b ∈ X ∧ ∀ y ∈ X, ∑ i, φ i (b i) * y i ≤ ∑ i, φ i (b i) * x b i
-
-private theorem sum_update_weight [Fintype ι] [DecidableEq ι] (φ : ι → ℝ → ℝ) (b y : ι → ℝ)
-    (i : ι) (z : ℝ) :
-    ∑ j, φ j (Function.update b i z j) * y j =
-      φ i z * y i + ∑ j ∈ Finset.univ.erase i, φ j (b j) * y j := by
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i), Function.update_self]
-  congr 1
-  refine Finset.sum_congr rfl fun j hj => ?_
-  rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
-
-/-- **Virtual-welfare maximization is monotone** when every `φᵢ` is strictly increasing on
-`[0, ∞)`, whatever the tie-breaking ([Roughgarden2013CS364A], Lecture 5, §3.1). Comparing the
-optimality of `x(z, b₋ᵢ)` and of `x(z', b₋ᵢ)` against each other gives
-`(φᵢ(z') − φᵢ(z))(xᵢ(z', b₋ᵢ) − xᵢ(z, b₋ᵢ)) ≥ 0`. -/
-theorem IsVirtualWelfareMaximizing.isMonotone [Fintype ι] [DecidableEq ι] {φ : ι → ℝ → ℝ}
-    {X : Set (ι → ℝ)} {x : (ι → ℝ) → ι → ℝ} (hx : IsVirtualWelfareMaximizing φ X x)
-    (hφ : ∀ i, StrictMonoOn (φ i) (Ici 0)) : IsMonotone x := by
-  intro i b hb z hz z' hz' hzz'
-  change x (Function.update b i z) i ≤ x (Function.update b i z') i
-  rcases hzz'.lt_or_eq with hlt | rfl
-  · have h1 := (hx _ (update_nonneg hb i hz)).2 _ (hx _ (update_nonneg hb i hz')).1
-    have h2 := (hx _ (update_nonneg hb i hz')).2 _ (hx _ (update_nonneg hb i hz)).1
-    simp only [sum_update_weight φ b _ i] at h1 h2
-    have hφlt := hφ i hz hz' hlt
-    by_contra hcon
-    have := lt_of_not_ge hcon
-    nlinarith
-  · exact le_rfl
+/-! ### Myerson's optimal auction is DSIC -/
 
 /-- **Myerson's optimal auction is DSIC**: under regularity, a virtual-welfare maximizer is
 monotone, so Myerson's payments make it DSIC. -/

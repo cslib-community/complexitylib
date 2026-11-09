@@ -199,12 +199,7 @@ theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
     gmSlabBelowIdx_lt hb_pos hp_lt
   have habv_lt : 0 < q_b → gmSlabMetaBase n_max + 4 * top_old + 3 < globalMetaLen n_max := by
     intro hq_pos
-    have htop_eq := hslab.top_eq b hb (q_b - 1) (by omega) (by omega)
-    have htop_lt : top_old < p_new := by
-      dsimp only [top_old, p_new]
-      rw [htop_eq]
-      exact hslab.ptr_lt b hb (q_b - 1) (by omega)
-    exact gmSlabAboveIdx_lt hb_pos (lt_trans htop_lt hp_lt)
+    exact gmSlabAboveIdx_lt hb_pos ((hslab.top_lt hb hq_pos).trans hp_lt)
   have hdir_lt : q_b < dirSlabsPerBucket n_max →
       gmSlabDirBase n_max + b * dirSlabsPerBucket n_max + q_b < globalMetaLen n_max :=
     fun hdir => gmSlabDirIdx_lt hb_pos hb hdir
@@ -331,10 +326,7 @@ private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × �
   · intro hq_pos
     rw [heqb] at hq_pos
     rw [hetop]
-    have htop_eq := hslab.top_eq d.2 hb (gm (gmQIdx d.2) - 1) (by omega) (by omega)
-    have htop_lt : gm (gmSlabTopIdx d.2) < gm 0 := by
-      rw [htop_eq]; exact hslab.ptr_lt d.2 hb (gm (gmQIdx d.2) - 1) (by omega)
-    exact gmSlabAboveIdx_lt hb_pos (lt_trans htop_lt hp_lt)
+    exact gmSlabAboveIdx_lt hb_pos ((hslab.top_lt hb hq_pos).trans hp_lt)
   · intro hdir
     rw [heqb] at hdir ⊢
     exact gmSlabDirIdx_lt hb_pos hb hdir
@@ -491,9 +483,7 @@ theorem gmUnlinkTopSlabProg_effect {U V w n_max h_space base b : ℕ}
   set bel_del := gm (gmSlabBelowIdx n_max p_del)
   have hq_idx_lt : 4 + 3 * b < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have htop_idx_lt : 4 + 3 * b + 2 < globalMetaLen n_max := gmSlabTopIdx_lt hb_pos hb
-  have htop_eq := hslab.top_eq b hb (q_b - 1) (by omega) (by omega)
-  have hp_del_lt : p_del < gm 0 := by
-    dsimp only [p_del]; rw [htop_eq]; exact hslab.ptr_lt b hb (q_b - 1) (by omega)
+  have hp_del_lt : p_del < gm 0 := hslab.top_lt hb hq_pos
   have hp_del_cap : p_del < maxFullSlabs n_max := lt_of_lt_of_le hp_del_lt hslab.nslabs_le
   have hbel_idx_lt : gmSlabMetaBase n_max + 4 * p_del + 2 < globalMetaLen n_max :=
     gmSlabBelowIdx_lt hb_pos hp_del_cap
@@ -556,11 +546,8 @@ private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ
   have hs1 : s1 = s := rfl
   have hepdel : e_pdel = gm (gmSlabTopIdx d.2) := by
     dsimp only [e_pdel]; rw [hs1]; exact clientResult_readGMProg s htop_idx_lt
-  have htop_eq := hslab.top_eq d.2 hb (gm (gmQIdx d.2) - 1) (by omega) (by omega)
-  have hp_del_lt : gm (gmSlabTopIdx d.2) < gm 0 := by
-    rw [htop_eq]; exact hslab.ptr_lt d.2 hb (gm (gmQIdx d.2) - 1) (by omega)
   have hp_del_cap : gm (gmSlabTopIdx d.2) < maxFullSlabs n_max :=
-    lt_of_lt_of_le hp_del_lt hslab.nslabs_le
+    lt_of_lt_of_le (hslab.top_lt hb hq_pos) hslab.nslabs_le
   refine ⟨hq_idx_lt, htop_idx_lt,
     by rw [hepdel]; exact gmSlabBelowIdx_lt hb_pos hp_del_cap,
     by rw [heqb]; exact hq_pos⟩
@@ -1516,9 +1503,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     fun _ => by unfold gmSlabBelowIdx gmSlabMetaBase gmTailOwnerBase gmTailPtrBase; omega
   have hAbv_ge : ∀ p, gmSlabDirBase n_max ≤ gmSlabAboveIdx n_max p :=
     fun _ => by unfold gmSlabAboveIdx gmSlabMetaBase gmTailOwnerBase gmTailPtrBase; omega
-  have htop_eq := hslab.top_eq b hb (gm (gmQIdx b) - 1) (by omega) (by omega)
-  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := by
-    rw [htop_eq]; exact hslab.ptr_lt b hb (gm (gmQIdx b) - 1) (by omega)
+  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := hslab.top_lt hb hq_pos
   unfold GmCompactSlabInv GmMovedSlabInv
   dsimp only
   rw [hres, hgm, hu0]
@@ -1536,7 +1521,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     have hbel_eq := hslab.below_eq _ hb_last _ hs_last hs_pos
     rw [hptr_last] at hbel_eq
     rw [hbel_eq]
-    exact lt_of_lt_of_le (hslab.ptr_lt _ hb_last _ (by omega)) hslab.nslabs_le
+    exact hslab.ptr_lt_maxFullSlabs hb_last (by omega)
   · intro hs_lt_q
     rw [huQ _ hb_last] at hs_lt_q
     have hs1_lt : gm (gmSlabOwnerSIdx n_max (gm 0 - 1)) + 1 <
@@ -1547,7 +1532,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     have habv_eq := hslab.above_eq _ hb_last _ hs_last hs1_lt
     rw [hptr_last] at habv_eq
     rw [habv_eq]
-    exact lt_of_lt_of_le (hslab.ptr_lt _ hb_last _ hs1_lt) hslab.nslabs_le
+    exact hslab.ptr_lt_maxFullSlabs hb_last hs1_lt
 
 theorem gmCompactSlabPre_of_gmPopSlabPre {U V w₀ n_max h_space w base b : ℕ} {s : Memory.State}
     (hw : 0 < w₀)

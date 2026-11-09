@@ -99,6 +99,13 @@ theorem computableInPolyTime_verifier :
 theorem mem_NP : OneSAT ∈ NP encCNF :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
+/-- A language cut out of exact-one satisfiability by a polynomial-time guard belongs to NP. -/
+private theorem mem_NP_of_guard {L : Set (CNF ℕ)} {check : CNF ℕ → Bool}
+    (hc : ComputableInPolyTime check encCNF encBool)
+    (h : ∀ φ, φ ∈ L ↔ check φ = true ∧ φ ∈ OneSAT) : L ∈ NP encCNF := by
+  obtain rfl : L = {φ | check φ = true ∧ φ ∈ OneSAT} := Set.ext h
+  exact ⟨Polynomial.X, fun x => check x.1 && verifier x, by fun_prop, isVerifier.guard⟩
+
 /-- Check that all literal polarities are positive. -/
 def positiveCheck (φ : CNF ℕ) : Bool := φ.all fun c => c.all Prod.snd
 
@@ -186,14 +193,14 @@ theorem computableInPolyTime_syntaxCheck :
     ComputableInPolyTime syntaxCheck encCNF encBool := by
   fun_prop [syntaxCheck, encCNF]
 
+/-- Membership is the syntax guard together with exact-one satisfiability. -/
+theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
+    φ ∈ PositiveOneInThreeSAT ↔ syntaxCheck φ = true ∧ φ ∈ OneSAT := by
+  simp [PositiveOneInThreeSAT, syntaxCheck_iff, OneSAT, and_assoc]
+
 /-- Positive width-three exact-one satisfiability belongs to NP. -/
-theorem mem_NP : PositiveOneInThreeSAT ∈ NP encCNF := by
-  have h : PositiveOneInThreeSAT = {φ | syntaxCheck φ = true ∧ φ ∈ OneSAT} := by
-    ext φ
-    simp [PositiveOneInThreeSAT, syntaxCheck_iff, OneSAT, and_assoc]
-  rw [h]
-  exact ⟨Polynomial.X, fun x => syntaxCheck x.1 && OneSAT.verifier x,
-    by fun_prop, OneSAT.isVerifier.guard⟩
+theorem mem_NP : PositiveOneInThreeSAT ∈ NP encCNF :=
+  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
 
 end PositiveOneInThreeSAT
 
@@ -215,14 +222,14 @@ theorem computableInPolyTime_syntaxCheck :
     ComputableInPolyTime syntaxCheck encCNF encBool := by
   fun_prop [syntaxCheck, encCNF]
 
+/-- Membership is the syntax guard together with exact-one satisfiability. -/
+theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
+    φ ∈ PositiveOneInExactThreeSAT ↔ syntaxCheck φ = true ∧ φ ∈ OneSAT := by
+  simp [PositiveOneInExactThreeSAT, syntaxCheck_iff, OneSAT, and_assoc]
+
 /-- Positive exact-three exact-one satisfiability belongs to NP. -/
-theorem mem_NP : PositiveOneInExactThreeSAT ∈ NP encCNF := by
-  have h : PositiveOneInExactThreeSAT = {φ | syntaxCheck φ = true ∧ φ ∈ OneSAT} := by
-    ext φ
-    simp [PositiveOneInExactThreeSAT, syntaxCheck_iff, OneSAT, and_assoc]
-  rw [h]
-  exact ⟨Polynomial.X, fun x => syntaxCheck x.1 && OneSAT.verifier x,
-    by fun_prop, OneSAT.isVerifier.guard⟩
+theorem mem_NP : PositiveOneInExactThreeSAT ∈ NP encCNF :=
+  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
 
 end PositiveOneInExactThreeSAT
 
@@ -245,15 +252,15 @@ theorem syntaxCheck_iff (φ : CNF ℕ) :
       OneSAT.positiveCheck φ = true ∧ ∀ v, φ.vars.count v ≤ 3 := by
   simp [syntaxCheck, ThreeSATThree.syntaxCheck_iff, and_assoc, and_comm]
 
+/-- Membership is the syntax guard together with exact-one satisfiability. -/
+theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
+    φ ∈ PositiveOneInThreeSATThree ↔ syntaxCheck φ = true ∧ φ ∈ OneSAT := by
+  simp [PositiveOneInThreeSATThree, PositiveOneInThreeSAT, syntaxCheck_iff, OneSAT,
+    and_assoc, and_comm, and_left_comm]
+
 /-- Positive width-three exact-one satisfiability with occurrence bound three belongs to NP. -/
-theorem mem_NP : PositiveOneInThreeSATThree ∈ NP encCNF := by
-  have h : PositiveOneInThreeSATThree = {φ | syntaxCheck φ = true ∧ φ ∈ OneSAT} := by
-    ext φ
-    simp [PositiveOneInThreeSATThree, PositiveOneInThreeSAT, syntaxCheck_iff, OneSAT,
-      and_assoc, and_comm, and_left_comm]
-  rw [h]
-  exact ⟨Polynomial.X, fun x => syntaxCheck x.1 && OneSAT.verifier x,
-    by fun_prop, OneSAT.isVerifier.guard⟩
+theorem mem_NP : PositiveOneInThreeSATThree ∈ NP encCNF :=
+  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
 
 end PositiveOneInThreeSATThree
 
@@ -283,15 +290,15 @@ theorem syntaxCheck_iff (φ : CNF ℕ) :
   · rintro ⟨hc, hp, hv⟩
     exact ⟨⟨hc, hp⟩, (fun c h => (hc c h).1.le), hv⟩
 
+/-- Membership is the syntax guard together with exact-one satisfiability. -/
+theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
+    φ ∈ PositiveOneInExactThreeSATThree ↔ syntaxCheck φ = true ∧ φ ∈ OneSAT := by
+  simp [PositiveOneInExactThreeSATThree, PositiveOneInExactThreeSAT, syntaxCheck_iff,
+    OneSAT, and_assoc, and_comm, and_left_comm]
+
 /-- Positive exact-three exact-one satisfiability with occurrence bound three belongs to NP. -/
-theorem mem_NP : PositiveOneInExactThreeSATThree ∈ NP encCNF := by
-  have h : PositiveOneInExactThreeSATThree = {φ | syntaxCheck φ = true ∧ φ ∈ OneSAT} := by
-    ext φ
-    simp [PositiveOneInExactThreeSATThree, PositiveOneInExactThreeSAT, syntaxCheck_iff,
-      OneSAT, and_assoc, and_comm, and_left_comm]
-  rw [h]
-  exact ⟨Polynomial.X, fun x => syntaxCheck x.1 && OneSAT.verifier x,
-    by fun_prop, OneSAT.isVerifier.guard⟩
+theorem mem_NP : PositiveOneInExactThreeSATThree ∈ NP encCNF :=
+  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
 
 end PositiveOneInExactThreeSATThree
 
@@ -318,47 +325,31 @@ def SharpPositiveOneInExactThreeSATThree (φ : CNF ℕ) : ℕ :=
 theorem SharpOneSAT.mem_OneSAT_iff {φ : CNF ℕ} : φ ∈ OneSAT ↔ 0 < SharpOneSAT φ := by
   simp [OneSAT, SharpOneSAT, CNF.oneModelCount_pos_iff]
 
+/-- A count guarded by `b` is positive exactly when `b` holds and the formula is exact-one
+satisfiable. -/
+private theorem pos_ite_sharpOneSAT_iff {b : Bool} {φ : CNF ℕ} :
+    (0 < if b then SharpOneSAT φ else 0) ↔ b = true ∧ φ ∈ OneSAT := by
+  cases b <;> simp [SharpOneSAT.mem_OneSAT_iff]
+
 /-- Membership in the positive width-three language is positivity of its guarded count. -/
 theorem SharpPositiveOneInThreeSAT.mem_PositiveOneInThreeSAT_iff {φ : CNF ℕ} :
-    φ ∈ PositiveOneInThreeSAT ↔ 0 < SharpPositiveOneInThreeSAT φ := by
-  have h : φ ∈ PositiveOneInThreeSAT ↔
-      PositiveOneInThreeSAT.syntaxCheck φ = true ∧ φ.OneSatisfiable := by
-    simp [PositiveOneInThreeSAT, PositiveOneInThreeSAT.syntaxCheck_iff, and_assoc]
-  rw [h]
-  unfold SharpPositiveOneInThreeSAT
-  split <;> simp_all [SharpOneSAT, CNF.oneModelCount_pos_iff]
+    φ ∈ PositiveOneInThreeSAT ↔ 0 < SharpPositiveOneInThreeSAT φ :=
+  (PositiveOneInThreeSAT.mem_iff_syntaxCheck φ).trans pos_ite_sharpOneSAT_iff.symm
 
 /-- Membership in the positive exact-three language is positivity of its guarded count. -/
 theorem SharpPositiveOneInExactThreeSAT.mem_PositiveOneInExactThreeSAT_iff {φ : CNF ℕ} :
-    φ ∈ PositiveOneInExactThreeSAT ↔ 0 < SharpPositiveOneInExactThreeSAT φ := by
-  have h : φ ∈ PositiveOneInExactThreeSAT ↔
-      PositiveOneInExactThreeSAT.syntaxCheck φ = true ∧ φ.OneSatisfiable := by
-    simp [PositiveOneInExactThreeSAT, PositiveOneInExactThreeSAT.syntaxCheck_iff, and_assoc]
-  rw [h]
-  unfold SharpPositiveOneInExactThreeSAT
-  split <;> simp_all [SharpOneSAT, CNF.oneModelCount_pos_iff]
+    φ ∈ PositiveOneInExactThreeSAT ↔ 0 < SharpPositiveOneInExactThreeSAT φ :=
+  (PositiveOneInExactThreeSAT.mem_iff_syntaxCheck φ).trans pos_ite_sharpOneSAT_iff.symm
 
 /-- Membership in the positive width-three, occurrence-three language is a positive count. -/
 theorem SharpPositiveOneInThreeSATThree.mem_PositiveOneInThreeSATThree_iff {φ : CNF ℕ} :
-    φ ∈ PositiveOneInThreeSATThree ↔ 0 < SharpPositiveOneInThreeSATThree φ := by
-  have h : φ ∈ PositiveOneInThreeSATThree ↔
-      PositiveOneInThreeSATThree.syntaxCheck φ = true ∧ φ.OneSatisfiable := by
-    simp [PositiveOneInThreeSATThree, PositiveOneInThreeSAT,
-      PositiveOneInThreeSATThree.syntaxCheck_iff, and_assoc, and_comm, and_left_comm]
-  rw [h]
-  unfold SharpPositiveOneInThreeSATThree
-  split <;> simp_all [SharpOneSAT, CNF.oneModelCount_pos_iff]
+    φ ∈ PositiveOneInThreeSATThree ↔ 0 < SharpPositiveOneInThreeSATThree φ :=
+  (PositiveOneInThreeSATThree.mem_iff_syntaxCheck φ).trans pos_ite_sharpOneSAT_iff.symm
 
 /-- Membership in the positive exact-three, occurrence-three language is a positive count. -/
 theorem SharpPositiveOneInExactThreeSATThree.mem_PositiveOneInExactThreeSATThree_iff
     {φ : CNF ℕ} :
-    φ ∈ PositiveOneInExactThreeSATThree ↔ 0 < SharpPositiveOneInExactThreeSATThree φ := by
-  have h : φ ∈ PositiveOneInExactThreeSATThree ↔
-      PositiveOneInExactThreeSATThree.syntaxCheck φ = true ∧ φ.OneSatisfiable := by
-    simp [PositiveOneInExactThreeSATThree, PositiveOneInExactThreeSAT,
-      PositiveOneInExactThreeSATThree.syntaxCheck_iff, and_assoc, and_comm, and_left_comm]
-  rw [h]
-  unfold SharpPositiveOneInExactThreeSATThree
-  split <;> simp_all [SharpOneSAT, CNF.oneModelCount_pos_iff]
+    φ ∈ PositiveOneInExactThreeSATThree ↔ 0 < SharpPositiveOneInExactThreeSATThree φ :=
+  (PositiveOneInExactThreeSATThree.mem_iff_syntaxCheck φ).trans pos_ite_sharpOneSAT_iff.symm
 
 end Cslib.Complexity

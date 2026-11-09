@@ -57,11 +57,18 @@ example (x : Data 4) :
 
 /-- A fitting condition that neither `simp` nor the discharger proves remains as a goal, tagged
 `hfit`, after the main goal. -/
-example (w : ℕ) (x : Data 4) (h : x.regs a = 3) (h7 : Fits w 7) :
+example (w : ℕ) (x : Data 4) (h : x.regs a = 3) (h7 : 7 ≤ w) :
     ∃ y, ExecWithin w ram[ b ← a + a ] x y 1 ∧ y.regs b = 6 := by
   wram_exec [h]
   · wram_simp
-  case hfit => exact h7.of_le (by omega)
+  case hfit => exact (fits_self w).of_le (by omega)
+
+/-- The default discharger proves a fitting condition from the word-size facts in context with
+`fits`. -/
+example (w : ℕ) (x : Data 4) (h : x.regs a = 3) (h7 : Fits w 7) :
+    ∃ y, ExecWithin w ram[ b ← a + a ] x y 1 ∧ y.regs b = 6 := by
+  wram_exec [h]
+  wram_simp
 
 /-! ## Symbolic values -/
 
@@ -81,7 +88,7 @@ example (w p : ℕ) (x : Data 4) (ha : x.regs a = p) (hb : x.regs b = 1) (hfit :
     ∃ y, ExecWithin w shiftDecrement x y 9 ∧ y.mem (p + 1) = x.mem p ∧
       y.regs d = x.mem p - 1 := by
   unfold shiftDecrement
-  wram_exec (disch := first | omega | exact hv.of_le (by omega)) [ha, hb, hfit]
+  wram_exec [ha, hb, hfit]
   case pos => wram_simp; omega
   case neg => wram_simp
 
@@ -90,7 +97,7 @@ example (w p : ℕ) (x : Data 4) (ha : x.regs a = p) (hb : x.regs b = 1) (hfit :
     (hv : Fits w (x.mem p)) (hpos : 0 < x.mem p) :
     ∃ y, ExecWithin w shiftDecrement x y 10 ∧ y.regs d + 1 = x.mem p := by
   unfold shiftDecrement
-  wram_exec (disch := first | omega | exact hv.of_le (by omega)) [ha, hb, hfit]
+  wram_exec [ha, hb, hfit]
   wram_simp
   omega
 

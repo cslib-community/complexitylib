@@ -1,6 +1,6 @@
 # Borrowed registers and native Tree Evaluation
 
-The catalytic material has two distinct levels. `Catalytic/Comparison.lean` proves algebraic operations that restore arbitrary borrowed memory exactly. The Tree Evaluation development additionally constructs a native machine and proves a workspace bound for an explicitly encoded problem. Restoring an algebraic register file alone is not a native catalytic-space class theorem [complexitylib][complexitylib].
+The catalytic material has two distinct levels. `Catalytic/Comparison.lean` proves algebraic operations that restore arbitrary borrowed memory exactly. The Tree Evaluation development additionally constructs a native machine and proves a workspace bound for an explicitly encoded problem. Restoring an algebraic register file alone is not a native catalytic-space class theorem [cslib-frontier][complexitylib].
 
 ## Arbitrary contents and exact restoration
 

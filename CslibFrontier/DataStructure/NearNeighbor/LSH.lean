@@ -143,8 +143,7 @@ theorem countP_candidates (g : ι → X → Y) {L : ℕ} (s : Fin L → ι) (P :
   congr 1
   refine List.map_congr_left fun j _ => ?_
   rw [Function.comp_apply, List.countP_filter]
-  congr 1
-  funext x
+  congr 1 with x : 1
   simp only [Bool.decide_and, Bool.and_comm]
 
 /-- **The failure event.** If a point `x` that is not far from `q` collides with `q` in some table

@@ -46,27 +46,22 @@ def wire (sites : List Point) (r : Route) : List (PairedWire.Cell Variable) :=
   r.dropLast.zipIdx.map fun (p, i) lane =>
     (signal sites p (r.getD (i - 1) p) lane, signal sites p (r.getD (i + 1) p) lane)
 
+/-- Mapping over an indexed list while ignoring the index is mapping over the list. -/
+private theorem map_zipIdx_fst {α β : Type*} (f : α → β) (l : List α) :
+    (l.zipIdx.map fun c => f c.1) = l.map f :=
+  List.map_map.symm.trans (congrArg (List.map f) (List.zipIdx_map_fst 0 l))
+
 /-- The two local clause tables retain their exact formulas under variable tagging. -/
 theorem map_fst_ordinaryClauses (p : Point) :
     (ordinaryClauses p).map Prod.fst =
-      OrdinaryRing.formula.relabel (fun v => ((p, Sum.inl v) : Variable)) := by
-  change (OrdinaryRing.formula.zipIdx.map fun c =>
-    c.1.relabel (fun v => ((p, Sum.inl v) : Variable))) = _
-  calc
-    _ = (OrdinaryRing.formula.zipIdx.map Prod.fst).map
-        (Clause.relabel (fun v => ((p, Sum.inl v) : Variable))) := by rw [List.map_map]; rfl
-    _ = _ := by rw [List.zipIdx_map_fst]; rfl
+      OrdinaryRing.formula.relabel (fun v => ((p, Sum.inl v) : Variable)) :=
+  List.map_map.trans (map_zipIdx_fst (Clause.relabel _) _)
 
 /-- The crossover clause table is exactly the renamed paired-port formula. -/
 theorem map_fst_crossingClauses (p : Point) :
     (crossingClauses p).map Prod.fst =
-      PairedCrossover.formula.relabel (fun v => ((p, Sum.inr v) : Variable)) := by
-  change (PairedCrossover.formula.zipIdx.map fun c =>
-    c.1.relabel (fun v => ((p, Sum.inr v) : Variable))) = _
-  calc
-    _ = (PairedCrossover.formula.zipIdx.map Prod.fst).map
-        (Clause.relabel (fun v => ((p, Sum.inr v) : Variable))) := by rw [List.map_map]; rfl
-    _ = _ := by rw [List.zipIdx_map_fst]; rfl
+      PairedCrossover.formula.relabel (fun v => ((p, Sum.inr v) : Variable)) :=
+  List.map_map.trans (map_zipIdx_fst (Clause.relabel _) _)
 
 /-- The emitted formula evaluates precisely its original, ordinary, crossing, and link blocks. -/
 theorem eval_rawFormula_iff (φ : CNF ℕ) (σ : Variable → Bool) :
@@ -149,18 +144,12 @@ theorem wire_cells_agree {φ : CNF ℕ}
       simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 2
     have ht : side p (p + (0, 1)) = 3 := by
       simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 3
-    rcases PlanarCompile.occurrencePath_crossing_straight hw hv ho hp hpo with hs | hs
+    -- a straight crossing enters and leaves on opposite sides of the same axis
+    rcases PlanarCompile.occurrencePath_crossing_straight hw hv ho hp hpo with hs | hs <;>
     · obtain ⟨_, _, hnb⟩ := hs.getD_neighbors (PlanarCompile.occurrencePath_nodup ho) hk' heq'
       rcases hnb with ⟨hprev, hnext⟩ | ⟨hprev, hnext⟩
       all_goals
-        simp only [PairedWire.Cell.Agree, hprev, hnext, signal, hl, hr]
-        intro lane
-        rw [crossing_port_value h hp, crossing_port_value h hp, crossing_port_value h hp]
-        simp
-    · obtain ⟨_, _, hnb⟩ := hs.getD_neighbors (PlanarCompile.occurrencePath_nodup ho) hk' heq'
-      rcases hnb with ⟨hprev, hnext⟩ | ⟨hprev, hnext⟩
-      all_goals
-        simp only [PairedWire.Cell.Agree, hprev, hnext, signal, hb, ht]
+        simp only [PairedWire.Cell.Agree, hprev, hnext, signal, hl, hr, hb, ht]
         intro lane
         rw [crossing_port_value h hp, crossing_port_value h hp, crossing_port_value h hp]
         simp
@@ -312,8 +301,7 @@ theorem eval_originalClauses_of_values (φ : CNF ℕ) (sites : List Point)
           simp only [Function.comp_def, Literal.eval]
           rw [hvalues _ ho]
           rfl
-        _ = (c.1.zipIdx.map Prod.fst).map (Literal.eval τ) := by rw [List.map_map]; rfl
-        _ = _ := by rw [List.zipIdx_map_fst]
+        _ = _ := map_zipIdx_fst (Literal.eval τ) c.1
     have he := congrArg (fun bs : List Bool => bs.any id) hm
     simpa only [List.any_map, Function.comp_def, id_eq, Clause.eval] using he
   have hm : ((originalClauses φ sites).map Prod.fst).map (Clause.eval σ) =
@@ -323,8 +311,7 @@ theorem eval_originalClauses_of_values (φ : CNF ℕ) (sites : List Point)
         simp only [originalClauses, List.map_map, Function.comp_def]
         apply List.map_congr_left
         exact hc
-      _ = (φ.zipIdx.map Prod.fst).map (Clause.eval τ) := by rw [List.map_map]; rfl
-      _ = _ := by rw [List.zipIdx_map_fst]
+      _ = _ := map_zipIdx_fst (Clause.eval τ) φ
   have he := congrArg (fun bs : List Bool => bs.all id) hm
   simpa only [List.all_map, Function.comp_def, id_eq, CNF.eval] using he
 

@@ -213,17 +213,14 @@ variable {L : Language.{u, v}} {O : Type s} {shape : O → Shape}
     apply exists_congr
     intro x
     apply iff_of_eq
-    congr 1
-    funext y
+    congr 1 with y : 1
     cases y <;> rfl
   | op o body args ih =>
     simp only [relabel, Realize, Term.realize_relabel]
     simp_rw [ih]
     apply iff_of_eq
-    congr 1
-    funext i δ xs
-    congr 1
-    funext y
+    congr 1 with i δ xs : 3
+    congr 1 with y : 1
     cases y <;> rfl
 
 /-- Disjunction as a derived connective. -/

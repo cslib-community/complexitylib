@@ -172,8 +172,7 @@ private theorem runFrom_scan_loop {p : ℕ} [Fact p.Prime] {fr : Frame} {st : Li
 /-- The bit of a table at position `k * ℓ + i`. -/
 theorem tableBit_mul_add (f : Gate ℓ) (k : ℕ) (i : Fin ℓ) :
     tableBit f (k * ℓ + i) = f (lowBits ℓ k) (highBits ℓ k) i := by
-  have hmod : (k * ℓ + i) % ℓ = i := by
-    rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt i.isLt]
+  have hmod : (k * ℓ + i) % ℓ = i := Nat.mul_add_mod_of_lt i.isLt
   simp only [tableBit, Nat.mul_add_div_fin, hmod, i.isLt, dite_true]
 
 /-- **The update of a round**: from phase `1`, the pass over the table of the gate subtracts `±`

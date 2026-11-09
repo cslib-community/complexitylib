@@ -2,7 +2,7 @@
 
 ## Relational operations and adaptive clients
 
-[StateTransitionSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition.lean#L95) gives a state type, operation type, dependent result type, valid-operation predicate and relational step. A specification need not be deterministic or total; those are separate properties. A priority-queue insertion may choose any fresh handle and an extract-min may choose any tied minimum [complexitylib][complexitylib].
+[StateTransitionSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition.lean#L95) gives a state type, operation type, dependent result type, valid-operation predicate and relational step. A specification need not be deterministic or total; those are separate properties. A priority-queue insertion may choose any fresh handle and an extract-min may choose any tied minimum [cslib-frontier][complexitylib].
 
 `Client` is a typed free program whose next operation can depend on the previous result. `DemonicValid` requires every continuation to remain valid for every allowed result. `ClientRun` records an actual permitted path and transcript. Totality turns demonic validity into existence of a run. `ofFn` specializes a deterministic transition function; `toLTS` and `toFLTS` connect with upstream transition-system interfaces.
 

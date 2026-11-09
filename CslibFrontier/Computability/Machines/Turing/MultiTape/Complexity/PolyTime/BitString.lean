@@ -154,15 +154,8 @@ theorem bitsGetElem? {α : Type} {input : α ↪ List Bool}
 
 /-- Remove the framing from a list of bits. -/
 @[fun_prop]
-theorem listToBits : ComputableTidilyInPolyTime (fun l => l) (encList encBool) encBits := by
-  have h := foldl_of_bounded_growth (encA := encBool)
-    (step := fun acc bit => acc ++ [bit]) (init := fun _ => [])
-    (id' (encIn := encList encBool)) (const [])
-    (show ComputableTidilyInPolyTime (fun p : List Bool × Bool => p.1 ++ [p.2])
-      (encPair encBits encBool) encBits by fun_prop)
-    (growth := 1) (fun _ _ => by simp)
-  simpa only [List.foldl_append_eq_append, List.nil_append, List.flatten_eq_flatMap,
-    List.flatMap_map, id_eq, List.flatMap_singleton'] using h
+theorem listToBits : ComputableTidilyInPolyTime (fun l => l) (encList encBool) encBits :=
+  ComputableInPolyTime.listToBits.tidy
 
 /-- Repeat a fixed bit a unary number of times. -/
 @[fun_prop]

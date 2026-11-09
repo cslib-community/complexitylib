@@ -582,12 +582,6 @@ theorem clearedJointScore_le_iff_normalizedPartialScore_le {E m n Q r : ℕ} (hr
 private theorem binary_sum_polyTime :
     ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
 
-private theorem binary_add_polyTime {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encNat) (hb : ComputableInPolyTime b encIn encNat) :
-    ComputableInPolyTime (fun x => a x + b x) encIn encNat :=
-  (show ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
-    (encPair encNat encNat) encNat by fun_prop).comp (ha.prod hb)
-
 private theorem computableInPolyTime_clearedPartialCollision {α γ : Type} [DecidableEq α]
     {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {cardL i j : γ → ℕ} {assigned : γ → List (Option α)}
@@ -707,7 +701,7 @@ private theorem computableInPolyTime_coordProject :
   have hec := heLen.binary_mul' hC; have hincPot := hincCol.binary_sub' he2
   have hgrpPot := hgrpCol.binary_sub' (hQBin.binary_mul' hn2)
   unfold clearedJointScore clearedIncidencePotential clearedGroupPotential
-  exact binary_add_polyTime
+  exact ComputableInPolyTime.binary_add'
     (.ite_decide (hec.decide_eq' (.const 0)) (.const 0)
       (hincPot.binary_mul' (hrBin.binary_mul' (computableInPolyTime_binary_max1 hqn))))
     (.ite_decide (hqn.decide_eq' (.const 0)) (.const 0)

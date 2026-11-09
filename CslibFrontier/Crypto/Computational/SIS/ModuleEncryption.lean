@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.SIS.Module
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic.Abel
@@ -824,7 +825,7 @@ theorem uniformKeyEncryptionLaw_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
     uniformKeyEncryptionLaw k n q noise m =
       (ModuleLWE.sampleLaw (k + 1) k n q noise).map (maskExtendedSampleEquiv m) := by
   unfold uniformKeyEncryptionLaw ModuleLWE.sampleLaw
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
+  simp only [pmf_norm]
   congr 1 with r : 1
   have hpk :
       PMF.uniformOfFintype (Matrix (Fin (k + 1)) (Fin k) (Fin n → ZMod q)) =
@@ -832,8 +833,7 @@ theorem uniformKeyEncryptionLaw_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
     (PMF.uniformOfFintype_map_equiv (extendPublicKeyEquiv k n q)).symm
   rw [hpk, PMF.bind_map, PMF.pi_fin_succ k noise]
   congr 1 with pk : 1
-  simp only [Function.comp_def, extendPublicKeyEquiv, Equiv.coe_fn_mk, PMF.bind_bind,
-    PMF.bind_map, extendCiphertext_moduleLWEEncrypt]
+  simp only [pmf_norm, extendPublicKeyEquiv, Equiv.coe_fn_mk, extendCiphertext_moduleLWEEncrypt]
   rfl
 
 /-- Masking the second component of a uniform `(k + 1) × k` Module-LWE sample by
@@ -908,8 +908,8 @@ theorem hybridEncryptionView_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
         (uniformKeyEncryptionLaw k n q noise m).map
           (fun p => (unextendPublicKeyMatrix p.1, unextendCiphertext p.2)) := by
     unfold hybridEncryptionView encryptionViewOfKeyLaw uniformKeyEncryptionLaw
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
-      unextendPublicKeyMatrix_extendPublicKeyMatrix, unextendCiphertext_extendCiphertext]
+    simp only [pmf_norm, unextendPublicKeyMatrix_extendPublicKeyMatrix,
+      unextendCiphertext_extendCiphertext]
     rw [PMF.bind_comm]
   rw [hcomm, uniformKeyEncryptionLaw_eq_sampleLaw_map, PMF.map_comp]
   rfl
@@ -948,14 +948,13 @@ theorem advantage_realEncryptionView_uniform_le {k n q : ℕ} [NeZero q]
       (realEncryptionView k n q noise m).bind D =
         (ModuleLWE.sampleLaw k k n q noise).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D := by
-    simp only [realEncryptionView, moduleLWEPublicKeyLaw_eq_sampleLaw, encryptionViewOfKeyLaw,
-      PMF.monad_bind_eq_bind, PMF.pure_bind, PMF.bind_bind]
+    simp only [pmf_norm, realEncryptionView, moduleLWEPublicKeyLaw_eq_sampleLaw,
+      encryptionViewOfKeyLaw]
   have hhyb1 :
       (hybridEncryptionView k n q noise m).bind D =
         (PMF.uniformOfFintype (ModuleLWEPublicKey k n q)).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D := by
-    simp only [hybridEncryptionView, encryptionViewOfKeyLaw, PMF.monad_bind_eq_bind,
-      PMF.pure_bind, PMF.bind_bind]
+    simp only [pmf_norm, hybridEncryptionView, encryptionViewOfKeyLaw]
   have hhyb2 :
       (hybridEncryptionView k n q noise m).bind D =
         (ModuleLWE.sampleLaw (k + 1) k n q noise).bind (D ∘ unextendMaskedSample m) := by

@@ -62,13 +62,11 @@ private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
   apply congrArg List.flatten
   apply List.map_congr_left
   rintro ⟨pc, i⟩ hi
-  have hi' := List.mem_zipIdx_iff_getElem?.mp hi
-  have hg : pcs.getD i ([], (0, 0), []) = pc := by
-    rw [List.getD_eq_getElem?_getD, hi']
-    rfl
+  obtain ⟨hi', hpc⟩ := List.mem_zipIdx' hi
+  have hg : pcs.getD i ([], (0, 0), []) = pc := (List.getD_eq_getElem _ _ hi').trans hpc.symm
   change pc.1.zipIdx.map (fun x => (pcs.getD i ([], (0, 0), [])).2.2.getD x.2 []) = _
   rw [hg]
-  exact List.map_getD_zipIdx pc.1 pc.2.2 [] (hc pc (List.mem_of_getElem? hi'))
+  exact List.map_getD_zipIdx pc.1 pc.2.2 [] (hc pc (List.fst_mem_of_mem_zipIdx hi))
 
 /-- The occurrence-indexed view has exactly the compiler's actual position and route lists. -/
 theorem positiveFormulaDrawing_drawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
@@ -152,17 +150,15 @@ theorem positiveClauseBlock_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDrawin
   have hl : l.1 = profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) c lit.1 :=
     (congrArg (fun a => a.1.1) hnames).symm
   have hr : r = positiveIncidenceRoute φ d i c e := (congrArg Prod.snd hnames).symm
-  have hget := List.mem_zipIdx_iff_getElem?.mp hj
-  have hjlt := (List.getElem?_eq_some_iff.mp hget).choose
+  obtain ⟨hjlt, hcl⟩ := List.mem_zipIdx' hj
   have hbound := profileFormula_length_le (clauseProfile c)
-  have hecl : (profileFormula (clauseProfile c)).getD j [] = cl := by
-    rw [List.getD_eq_getElem?_getD, hget]
-    rfl
+  have hecl : (profileFormula (clauseProfile c)).getD j [] = cl :=
+    (List.getD_eq_getElem _ _ hjlt).trans hcl.symm
   have hidx := clauseGeometry_literal_indices φ d i c ⟨j, by omega⟩
     (hecl ▸ hle)
   have hlvar : lit.1 ∈ profileVariables (clauseProfile c) := by
     apply CNF.mem_distinctVars.mpr
-    exact CNF.mem_vars.mpr ⟨cl, List.mem_of_getElem? hget, lit.2, hparts.1⟩
+    exact CNF.mem_vars.mpr ⟨cl, List.fst_mem_of_mem_zipIdx hj, lit.2, hparts.1⟩
   refine ⟨e, he.1, hr, ?_, ?_⟩
   · simp only [hei]
   · rw [hidx, List.getD_eq_getElem _ _ (List.idxOf_lt_length_of_mem hlvar),
@@ -181,10 +177,8 @@ theorem positiveFormulaDrawing_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDra
           ((profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0))) := by
   obtain ⟨pc, hpc, hp, hlr⟩ := positiveFormulaDrawing_occurrence φ d ho
   obtain ⟨⟨c, i⟩, hci, hpc⟩ := List.mem_flatMap.mp hpc
-  obtain ⟨hi, hc⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hci)
-  change i < φ.length at hi
-  change φ[i] = c at hc
-  subst c
+  obtain ⟨hi, hc⟩ := List.mem_zipIdx' hci
+  rw [hc] at hpc
   obtain ⟨e, he, hr, hpos, hvar⟩ := positiveClauseBlock_incidence φ d i φ[i] hpc hlr
   exact ⟨i, hi, e, he, hr, hp.symm.trans hpos, hvar⟩
 

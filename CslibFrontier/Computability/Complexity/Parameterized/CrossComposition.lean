@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.BitString.ShortWords
 import CslibFrontier.Foundations.Data.List.EraseDupsBy
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Cross-composition and kernelization lower bounds
@@ -210,9 +211,7 @@ private theorem exists_orCompression_of_orCrossComposition {r : α × α → Boo
     fun l hl hrel => ?_, by fun_prop, fun n l hlen hl hrel => ?_⟩
   · -- the parameter of the cross-composed instance is polynomially bounded
     have hbound : PolyBounded (fun l : List α => (encList enc l).length)
-        fun l => κ (C []) + cg * (2 * (encList enc l).length + 1) ^ dg :=
-      (PolyBounded.const _).add ((PolyBounded.const cg).mul
-        ((((PolyBounded.const 2).mul .self).add (.const 1)).pow dg))
+        fun l => κ (C []) + cg * (2 * (encList enc l).length + 1) ^ dg := by growth_poly
     refine hbound.mono fun l => ?_
     by_cases hne : select r l = []
     · simp only [hne]

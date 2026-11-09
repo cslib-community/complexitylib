@@ -45,7 +45,7 @@ Estimated copy-weight/routing-fraction root-error comparisons and the full thres
 with root/complement regularity are still needed for mean prefixes. The structural rank and
 range identities do not provide statistical-budget induction. Paired raw differences,
 full-coordinate walks/noise, compression, strong recursion and native workspace/class equality
-remain outside this bounded client. No selected formal abstract changes.
+remain outside this bounded client.
 -/
 
 public section
