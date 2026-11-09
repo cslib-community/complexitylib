@@ -8,7 +8,7 @@ repository's workflow, file layout, proof, validation and review requirements. U
 submissions follow the target repository's current process.
 
 For setup, start with [Build a checkout](README.md#build-a-checkout). The
-[guide](https://www.cslib.io/complexitylib/guide/) and
+[guide](https://www.cslib.io/cslib-frontier/guide/) and
 [checked examples](README.md#start-here) introduce the APIs before you change them.
 
 ## Proposing and contributing work
@@ -50,7 +50,7 @@ imports shown. Record the scope of validation and review accurately.
 
 The bar is Mathlib's [style guidelines](https://leanprover-community.github.io/contribute/style.html)
 and CSLib's [CODESTYLE](https://github.com/leanprover/cslib/blob/main/CODESTYLE.md), applied
-uniformly to every area ([#587](https://github.com/cslib-community/complexitylib/issues/587)).
+uniformly to every area ([#587](https://github.com/cslib-community/cslib-frontier/issues/587)).
 Mathlib's standard linter set already enforces the mechanical part; reviews enforce the rest:
 
 1. **Reuse.** Use existing abstractions, in CSLib, Mathlib or this library, instead of parallel
@@ -76,7 +76,7 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    become weaker inequalities, and regression cases must not become tautologies.
 
 **Named components instead of positional projections**
-([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Public statements and
+([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Public statements and
 the bodies of public definitions do not reach into nested tuples with projection chains such as
 `c.1.2` or `s.1.1.2`. A reader should not have to reconstruct the tuple layout. In order of
 preference:
@@ -101,10 +101,10 @@ Two places keep projections, as standing exceptions:
   certificate. Keep the projection form there.
 - **Section `variable` hypotheses in `module` files.** On the current toolchain a destructuring
   lambda in a section `variable` of a `public section` elaborates to `sorry`, with only a warning
-  ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
+  ([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
 
-**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+**Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
 reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
 module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
@@ -119,7 +119,7 @@ see through it; syntactic tools such as `omega` do not. New and changed statemen
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
 checks the repetition rule. Abstracts stay fully spelled out.
 
-To sweep an area, `python3 scripts/check_encoding_readability.py --list Complexity/Logics` lists
+To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
 notations that abbreviate a compound encoding. A sweep must leave every statement unchanged:
 compare each changed public declaration's type with its type on `main`, either after
@@ -139,7 +139,7 @@ genuinely semantic objects: ideal distributions, the laws of games and the distr
 in a statistical argument. A program can be run against different oracles, budgeted, realized by a
 machine and substituted into a reduction. A `PMF`-valued algorithm can do none of these, and
 needs a separate hypothesis that some program realizes it. Exact theorems stay exact, as
-statements about `evalWith`; see `Complexity/Languages/Probabilistic/Semantics.lean`.
+statements about `evalWith`; see `CslibFrontier/Languages/Probabilistic/Semantics.lean`.
 
 ### Public surface under the module system
 
@@ -156,7 +156,7 @@ also loads private information, so such edits do reach its clients.
   of public definitions that a user of those definitions would expect: characterizations (`_iff`),
   bounds, monotonicity and closure properties, simp and extensionality equations, invariance
   lemmas, and named results from the literature. Move general mathematics (lists, finsets,
-  probability, bit strings) to `Complexity/Foundations` instead of making it private. Reference
+  probability, bit strings) to `CslibFrontier/Foundations` instead of making it private. Reference
   counts are evidence about current use, not the criterion; privatize by intent.
 - **Reuse before re-proving.** If a fact you need already exists as a private declaration, make it
   public, moving it to its natural home if needed, instead of proving it again. Reviewers treat a
@@ -199,7 +199,7 @@ elaboration with `scripts/cache/ensure.sh`; retry for missing outputs or changed
 not merely a new commit with warm artifacts. See the
 [cache guide](scripts/cache/README.md#automatic-restoration) for actual retries and opt-out.
 
-The test suite audits the axiom dependencies of every declaration stored in imported `Complexity`
+The test suite audits the axiom dependencies of every declaration stored in imported `CslibFrontier`
 modules. Named `#print axioms` checks are added only for results meant to depend on fewer axioms
 than the standard `propext`, `Classical.choice` and `Quot.sound`, such as choice-free results. The
 audit trusts the compiled Lean artifacts and permits `Classical.choice`; it does not certify
@@ -224,7 +224,7 @@ candidate modules). After a build,
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
 than restate signatures with `example … := name`. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
-public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
 enforces its baseline only in the modules a pull request changes, and merge groups only report,
 so `main` can drift above the baseline; the next change to a drifted module names the encoding
 or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
@@ -268,14 +268,14 @@ Keep each fact in one maintained location. The README explains the purpose and p
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
 ROADMAP lists open directions only, grouped by area.
 Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
-linked inline as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`.
+linked inline as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`.
 Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
 direction, and a direction leaves ROADMAP only when it is completed or deliberately dropped.
 `scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600
 characters of Markdown (a link counts as its text): definitions appended to the end of the file and
 growing progress notes conflicted between PRs in the merge queue.
-UPSTREAM records coordination and exceptional integration decisions, while source markers record
-module status.
+[Upstreaming](#upstreaming) lists live coordination threads, while source markers record module
+status and module docstrings record provenance.
 Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
@@ -294,7 +294,7 @@ The [README](README.md#build-and-use) explains how to generate API documentation
 [doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide with
 [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
-library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update complexitylib`
+library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update cslib-frontier`
 and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in
 `docbuild/lakefile.toml` and the Verso tag in `guide/lakefile.toml`, both named after the Lean
 version, and run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
@@ -328,7 +328,7 @@ participant procedures in the Operator's Manual and historical evidence in its s
 Place a new section where its topic belongs in a chapter rather than at the end: sections that
 concurrent PRs append at the same place conflict in the merge queue.
 
-Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
+Keep executable Lean examples in `CslibFrontierTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second
 independently maintained copy. Check new or changed examples with Lean; source comparison alone
 does not establish that an example elaborates. The live checker and its controls are required
@@ -373,13 +373,13 @@ When selection or abstract sources change, run `python3 -B scripts/build_abstrac
 When abstracts or rendering change, inspect affected rendered pages and declaration links before
 integration and link the artifact/run and source revision. The **Formal abstract PDFs** workflow
 generates review artifacts; **API documentation** publishes main builds under
-`https://www.cslib.io/complexitylib/abstracts/`. See [the build guide](abstracts/README.md) for local
+`https://www.cslib.io/cslib-frontier/abstracts/`. See [the build guide](abstracts/README.md) for local
 generation. Generated TeX and PDFs stay untracked.
 
 ## Upstreaming
 
 ```bash
-python3 scripts/upstream.py Complexity.Computability.DecisionTree.Basic --cslib ../cslib --dry-run
+python3 scripts/upstream.py CslibFrontier.Computability.DecisionTree.Basic --cslib ../cslib --dry-run
 ```
 
 This previews copying a module to its mirrored CSLib path, rewriting imports, and removing the
@@ -392,3 +392,78 @@ and head SHA in the module's `-- upstream:` marker.
 Coordinate cross-cutting abstractions with CSLib before proposing them upstream. Follow
 [AGENTS.md](AGENTS.md#staying-current-with-upstream) for pin updates, synchronization checks,
 and removal of superseded local copies.
+
+Upstream status is recorded in source. Each module's `-- upstream:` marker gives its status, PR
+number, copied revision and, when it is not the mirrored CSLib path, its destination; markers can
+also introduce copied blocks. `-- vendored:` comments record local adaptations of copies, and
+module docstrings and [NOTICE](NOTICE) record provenance and credit. `lakefile.toml`,
+`lake-manifest.json` and `lean-toolchain` pin versions. `python3 scripts/upstream_sync.py --offline`
+lists copies; without `--offline` it compares recorded revisions and the base pin with upstream
+(head revisions only, not source equality).
+
+### Coordination threads
+
+These are pointers to upstream discussions that affect local work, not a record of live PR status;
+check the thread before starting or submitting overlapping work. Add a line when a thread starts to
+affect local work and remove it when it no longer does; keep details in the linked thread or the
+module docstring. A destination named in a `candidate` marker is a proposal for upstream review,
+not a decision.
+
+* **Machine calculus (Christian Reitwiessner).** The calculus copies
+  [`crei/tidy-universal`](https://github.com/crei/cslib/tree/crei/tidy-universal),
+  [#1111](https://github.com/leanprover/cslib/pull/1111) and
+  [#1138](https://github.com/leanprover/cslib/pull/1138); the branch's `IterateWhile` supersedes
+  [#1112](https://github.com/leanprover/cslib/pull/1112). Shared encodings are coordinated in
+  [#611](https://github.com/leanprover/cslib/issues/611) and
+  [#590](https://github.com/leanprover/cslib/issues/590) (`TapeEncodable`). Markers at
+  `@9cce4cc7` name an unpublished later revision of the branch, so `upstream_sync.py` reports them
+  as moved until it is published.
+* **Complexity classes.** [#767](https://github.com/leanprover/cslib/pull/767) proposes
+  language-indexed `DTIME`/`DSPACE`. Check it before adding space-to-time inclusions or overlapping
+  classes; once it lands, derive the local encoded-instance `DSPACE`, `L`, `DTIME` and `EXP` from
+  it (see `Classes/Space`).
+* **Probability and security games.** Local copies of
+  [#1129](https://github.com/leanprover/cslib/pull/1129),
+  [#1062](https://github.com/leanprover/cslib/pull/1062),
+  [#1069](https://github.com/leanprover/cslib/pull/1069),
+  [#1070](https://github.com/leanprover/cslib/pull/1070) and
+  [#1072](https://github.com/leanprover/cslib/pull/1072). Coordinate `PFunctor.FreeM` with
+  [#1086](https://github.com/leanprover/cslib/pull/1086)–[#1089](https://github.com/leanprover/cslib/pull/1089),
+  the arbitrary-type metric with [#1065](https://github.com/leanprover/cslib/pull/1065), and
+  `Crypto/Primitives/PRG/Game` with [#1071](https://github.com/leanprover/cslib/pull/1071).
+* **Decision trees.** Align `Computability/DecisionTree` with
+  [#925](https://github.com/leanprover/cslib/pull/925), and coordinate its certificate follow-up
+  `D ≤ C₀ C₁`.
+* **Word RAM and algorithm models.** `Computability/WordRAM` adapts Erik Demaine's
+  [lean-trominoes](https://github.com/edemaine/lean-trominoes); coordinate submission and
+  attribution with him. Before submitting WordRAM, GenericRAM or `DataStructure/StateTransition`,
+  coordinate with Shreyas Srinivas's [#685](https://github.com/leanprover/cslib/pull/685) and his
+  Algolean register models, and with the merged [#401](https://github.com/leanprover/cslib/pull/401).
+* **PAC learning.** `PACLearning/Realizable` is an unchanged copy of
+  [#858](https://github.com/leanprover/cslib/pull/858).
+  [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
+  `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
+  `AgnosticFiniteClass` and `GrowthFunction`. Before submission, reconcile names with
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
+  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
+* **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
+  [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
+  [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and
+  [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
+  candidate; the module docstring records the differences. Renaming to match the unmerged PRs is
+  not required.
+* **Oracle codes.** Upstream `Foundations/Computability/RecursiveInCode` by reconciling with
+  [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (oracle codes, a
+  relativized `evaln` and the jump), not by competing with it; the module docstring records the
+  design differences. The prefix-based `evaln`, the use principle and `KleenePost` are what that PR
+  lacks.
+* **Withdrawn submissions.** The redos of
+  [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
+  (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests
+  for abstract word encodings and textbook sources. The review of
+  [#874](https://github.com/leanprover/cslib/pull/874) (series #869, #871–#875) asked for
+  composition above the configuration level; `TransformsTapes`-style specifications are the local
+  answer.
+
+Earlier coordination notes, placement suggestions and the pre-release deprecation list are in
+[`UPSTREAM.md` at its retirement](https://github.com/cslib-community/cslib-frontier/blob/0bbbdafaf2d44d77661d080b1edec5daac176cab/UPSTREAM.md).

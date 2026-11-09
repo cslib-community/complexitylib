@@ -2,14 +2,15 @@
 
 Complexitylib is a Lean 4 library of computational complexity theory built on **cslib**
 (`leanprover/cslib`). Library modules must be upstreamable unchanged apart from rewriting
-`Complexity.` → `Cslib.`. General mathematics destined for Mathlib and local project scaffolding
-are documented exceptions; see `UPSTREAM.md` and the source markers.
+`CslibFrontier.` → `Cslib.`. General mathematics destined for Mathlib and local project scaffolding
+are documented exceptions, recorded in each module's `-- upstream:` marker.
 
 Read the pinned cslib `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md` in
 `.lake/packages/cslib` (or a checkout at the same revision). Follow its mathematical, API and
 style conventions. This repository's workflow, validation and test layout are defined here and
 in `CONTRIBUTING.md`; when submitting upstream, follow that repository's current process.
-`ROADMAP.md` records outstanding directions; `UPSTREAM.md` records coordination decisions.
+`ROADMAP.md` records outstanding directions; `CONTRIBUTING.md` (Upstreaming) lists live upstream
+coordination threads.
 
 At the start of work and when resuming, read the current checkout's instructions. Old task text
 and copied policy snapshots may describe superseded decisions. Surface material conflicts with
@@ -127,7 +128,8 @@ tooling.
 - Resolve ownership and dependency conflicts, and help stale tasks reach a useful next step.
 - Require review of both the Operator's Manual and the Agent Operator's Manual, including any
   reason that no edit is needed. Make this part of reviewing and integrating each change.
-  Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
+  Check affected `ROADMAP.md`, `abstracts/catalogue.json`, upstream markers, the coordination
+  threads in `CONTRIBUTING.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
 - Merge only with required validation and independent review of the current revision. Reviewers
   queue the heads they approve ([Approve and queue](#approve-and-queue)); coordinators queue any
@@ -270,12 +272,12 @@ ambiguous change/import analysis fall back to all six gates. The one exception i
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
 
-`lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
-`ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
+`lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
+`CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
 
 ## File rules
 
-1. **Path and namespace mirror cslib.** `Complexity/Foundations/Data/Encoding.lean` is destined
+1. **Path and namespace mirror cslib.** `CslibFrontier/Foundations/Data/Encoding.lean` is destined
    for `Cslib/Foundations/Data/Encoding.lean`; multi-tape machine files use the upstream root
    namespace `Turing`, everything else `Cslib.*` as upstream does.
 2. **File template:** use the Apache header below, `module`, an `-- upstream:` marker,
@@ -294,7 +296,7 @@ requirement above; documentation-only checks need not invoke quick mode.
    module
    -- upstream: candidate
 
-   public import Complexity.Init
+   public import CslibFrontier.Init
 
    /-!
    # <Module topic>
@@ -314,11 +316,11 @@ requirement above; documentation-only checks need not invoke quick mode.
    `Copyright (c) 2026 Bolton Bailey, Samuel Schlesinger` and `Authors: Bolton Bailey, Samuel
    Schlesinger`; ports of Christian Reitwiessner's work carry his name likewise. Check the v1
    file's `Authors:` line before porting.
-4. **Every module publicly imports `Cslib.Init`** (through `Complexity.Init`); the test driver
+4. **Every module publicly imports `Cslib.Init`** (through `CslibFrontier.Init`); the test driver
    runs `checkInitImports`.
 5. **Reuse upstream first.** Before defining anything, search cslib (`.lake/packages/cslib/Cslib`,
-   or the local `../cslib/Cslib` checkout) and the
-   in-flight PRs recorded in source markers, and consult `UPSTREAM.md`. A thin local copy of an
+   or the local `../cslib/Cslib` checkout) and the in-flight PRs recorded in source markers, and
+   consult the coordination threads in `CONTRIBUTING.md` (Upstreaming). A thin local copy of an
    unmerged upstream PR (or an unsubmitted branch of an upstream contributor) is allowed at the
    mirrored path, keeping the
    original authors and declaration names, marked `-- upstream: submitted #N @SHA` (or
@@ -342,10 +344,11 @@ fixing breakage in the same change; update it within another task when that task
 upstream code or removes a merged copy. Merely inspecting upstream does not require a pin bump.
 
 Run `scripts/upstream_sync.py` during synchronization work. Inspect changed, merged or closed
-upstream PRs against source markers and `UPSTREAM.md`; preserve documented local adaptations
-and contributor work rather than blindly replacing copies. When adopting merged work, advance
+upstream PRs against source markers, `-- vendored:` comments and module docstrings; preserve
+documented local adaptations and contributor work rather than blindly replacing copies. When adopting merged work, advance
 the pin past it and remove the superseded local copy together. Record unresolved decisions in
-`UPSTREAM.md` or a linked task instead of expanding an unrelated PR.
+the module's marker or docstring, the coordination threads in `CONTRIBUTING.md`, or a linked issue
+instead of expanding an unrelated PR.
 
 ## Proof hygiene
 
@@ -376,7 +379,7 @@ purpose, not its letter.
   (library, tests, abstracts and guide) and remove the superseded interface in the same change.
   Remove obsolete aliases as part of the relevant migration, not unrelated cleanup. Revisit
   compatibility guarantees before supporting external consumers.
-- `ComplexityTests/Axioms.lean` audits all declarations stored in imported `Complexity` modules
+- `CslibFrontierTests/Axioms.lean` audits all declarations stored in imported `CslibFrontier` modules
   for dependencies beyond `propext`, `Classical.choice` and `Quot.sound`. Because that audit
   already covers the standard set, add a named `#print axioms` guard only when a result is meant
   to depend on fewer axioms than these three, for example a choice-free result; place it in the
@@ -469,8 +472,15 @@ Merge `main` into a PR only when it conflicts with `main`, needs a change on `ma
 lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
 does not require branches to be up to date, so refreshing an approved PR only replaces the approved
 head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
-[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
-`merge=union` result, which keeps deleted imports and can misorder added ones.
+[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them and then check them
+with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
+never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
+
+A branch that forked before the module root was renamed from Complexity to CslibFrontier is
+restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
+`main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
+converts the branch's own module names and paths; `--verify-carry` compares the result with
+the approved head. See the script's documentation.
 
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
 passes and CI passes at the new head. The script replays the approved change onto the `main` that
@@ -514,7 +524,7 @@ and usage harder.
 An encoding is part of what a statement claims, so statements show every encoding; but a reader
 should not have to parse the same nested encoding again and again. New declarations, and
 declarations whose statements change, follow these rules. Existing code is brought into line by
-a tracked sweep ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)), and the
+a tracked sweep ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)), and the
 encoding-readability lint checks rule 1 against a per-module baseline that may only fall.
 
 1. **Name repeated compound encodings.** A *compound encoding* is a term of type
@@ -558,8 +568,8 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
 ## Curated formal abstracts
 
 `abstracts/catalogue.json` selects the public headline results. Each selected group has a checked
-`*Abstract.lean` and `*Bridge.lean` under `abstracts/ComplexityAbstracts/`, imported by the
-dedicated `ComplexityAbstracts` library. `ComplexityTests/Abstracts/All.lean` imports that library,
+`*Abstract.lean` and `*Bridge.lean` under `abstracts/CslibFrontierAbstracts/`, imported by the
+dedicated `CslibFrontierAbstracts` library. `CslibFrontierTests/Abstracts/All.lean` imports that library,
 and its regression tests sit beside it. Existing declaration namespaces remain stable across the
 source relocation. The Lean definitions and statements are the source of truth; PDFs are generated
 from them, with proof bodies omitted. There is no separately maintained paper/TeX index.
@@ -587,7 +597,7 @@ the PR. Do not imply human editorial approval.
 `scripts/build_abstracts.py` generates individual PDFs, a combined catalogue and provenance with
 source digests and exact declaration links. The **Formal abstract PDFs** workflow uploads review
 and main artifacts, and the **API documentation** workflow publishes main builds under
-`https://www.cslib.io/complexitylib/abstracts/`. When abstracts or rendering
+`https://www.cslib.io/cslib-frontier/abstracts/`. When abstracts or rendering
 change, inspect affected rendered pages and declaration links before integration; record the
 artifact/run and revisions. Unaffected abstracts and rendering need no new PDF review. Local
 generation is supported. Generated TeX, PDFs and auxiliary products are not versioned.
