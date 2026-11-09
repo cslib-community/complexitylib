@@ -704,24 +704,6 @@ theorem norm_sq_intToEuclidean (v : Fin m → ℤ) :
   rw [intToEuclidean_eq_ratToEuclidean, norm_sq_ratToEuclidean]
   simp [dotProduct]
 
-/-- For `n + 1` linearly independent integer rows, the first output row satisfies
-`|b₀|² ≤ 2ⁿ |x|²` for every nonzero `x` in the lattice. This is (1.11) of
-[LenstraLenstraLovasz1982], `|b₁|² ≤ 2ⁿ⁻¹ |x|²` for `n` vectors in the source's indexing. -/
-theorem dotProduct_lll_zero_le (B : Vector (Vector ℤ m) (n + 1))
-    (hB : LinearIndependent ℝ (realRows B)) {x : Fin m → ℤ}
-    (hx : x ∈ Submodule.span ℤ (Set.range (rows B))) (hx0 : x ≠ 0) :
-    dotProduct (rows (lll B) 0) (rows (lll B) 0) ≤ 2 ^ n * dotProduct x x := by
-  obtain ⟨hred, -⟩ := isReduced_lll B hB
-  have hmem : intToEuclidean x ∈ Submodule.span ℤ (Set.range (realRows (lll B))) := by
-    rw [span_realRows, span_lll]
-    exact Submodule.mem_map_of_mem hx
-  have hne : intToEuclidean x ≠ 0 := fun h =>
-    hx0 (intToEuclidean_injective (h.trans (map_zero _).symm))
-  have h := hred.norm_sq_le (by norm_num) (by norm_num) hmem hne
-  have h2 : (4 : ℝ) / (4 * (3 / 4) - 1) = 2 := by norm_num
-  rw [h2, norm_sq_intToEuclidean, norm_sq_realRows] at h
-  exact_mod_cast h
-
 /-- Proposition (1.11) of [LenstraLenstraLovasz1982] with the constant of the remark after
 (1.9): for `1/4 < δ < 1` and `n + 1` linearly independent integer rows, the first row of
 `lllWith δ B` satisfies `|b₀|² ≤ (4/(4δ - 1))ⁿ |x|²` for every nonzero `x` in the lattice. As
@@ -743,6 +725,18 @@ theorem dotProduct_lllWith_zero_le {δ : ℚ} (hδ : 1 / 4 < δ) (hδ1 : δ < 1)
   have hδ1' : (δ : ℝ) ≤ 1 := by exact_mod_cast hδ1.le
   have h := hred.norm_sq_le hδ' hδ1' hmem hne
   rw [norm_sq_intToEuclidean, norm_sq_realRows] at h
+  exact_mod_cast h
+
+/-- For `n + 1` linearly independent integer rows, the first output row satisfies
+`|b₀|² ≤ 2ⁿ |x|²` for every nonzero `x` in the lattice. This is (1.11) of
+[LenstraLenstraLovasz1982], `|b₁|² ≤ 2ⁿ⁻¹ |x|²` for `n` vectors in the source's indexing. -/
+theorem dotProduct_lll_zero_le (B : Vector (Vector ℤ m) (n + 1))
+    (hB : LinearIndependent ℝ (realRows B)) {x : Fin m → ℤ}
+    (hx : x ∈ Submodule.span ℤ (Set.range (rows B))) (hx0 : x ≠ 0) :
+    dotProduct (rows (lll B) 0) (rows (lll B) 0) ≤ 2 ^ n * dotProduct x x := by
+  have h := dotProduct_lllWith_zero_le (δ := 3 / 4) (by norm_num) (by norm_num) B hB hx hx0
+  rw [← lll_eq_lllWith] at h
+  norm_num at h
   exact_mod_cast h
 
 /-- A decidable criterion for the hypothesis of `isReduced_lll`: the integer Gram determinant
