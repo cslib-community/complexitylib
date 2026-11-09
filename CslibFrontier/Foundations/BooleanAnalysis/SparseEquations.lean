@@ -69,8 +69,8 @@ monomials per equation, and decomposes `commonZeroCount` additively across the b
   `𝔽₂` polynomial equations on `ι → Bool` and their count.
 * `Cslib.BitString.varIncidence`, `Cslib.BitString.totalIncidence`, `Cslib.BitString.heavyVars`:
   variable-equation incidence counts and heavy-variable set above threshold `b₀`.
-* `Cslib.BitString.patchAssignment`, `Cslib.BitString.restrictMonomials`: patching a branch
-  assignment on `S` and reducing a monomial family modulo `2` after specializing `S`.
+* `Cslib.BitString.restrictMonomials`: reducing a monomial family modulo `2` after specializing
+  the variables in `S`.
 * `Cslib.BitString.parityBaseDigitCleared`, `Cslib.BitString.hPolyCleared`,
   `Cslib.BitString.parityFactorCleared`, `Cslib.BitString.clearedMonomialPoly`,
   `Cslib.BitString.clearedMonomialSumPoly`: cleared-denominator parity factors and degree-`k`
@@ -428,47 +428,32 @@ theorem varIncidence_sdiff_heavyVars_le [DecidableEq ι] (U : Finset ι) (F : Fi
     rw [hzero]
     exact Nat.zero_le _
 
-/-! ### 5. Exact branching on a variable subset `S` (§5.5) -/
+/-! ### 5. Exact branching on a variable subset `S` (§5.5)
 
-/-- The assignment that takes values from `b` on `S` and from `y` outside `S`. -/
-def patchAssignment [DecidableEq ι] (S : Finset ι) (b y : ι → Bool) (v : ι) : Bool :=
-  if v ∈ S then b v else y v
+The assignment that takes values from a branch `b` on `S` and from `y` outside `S` is Mathlib's
+`S.piecewise b y`. -/
 
-/-- On `S`, `patchAssignment S b y` agrees with `b`. -/
-@[simp]
-theorem patchAssignment_of_mem [DecidableEq ι] {S : Finset ι} {b y : ι → Bool} {v : ι}
-    (hv : v ∈ S) :
-    patchAssignment S b y v = b v :=
-  ite_eq_left hv
-
-/-- Outside `S`, `patchAssignment S b y` agrees with `y`. -/
-@[simp]
-theorem patchAssignment_of_notMem [DecidableEq ι] {S : Finset ι} {b y : ι → Bool} {v : ι}
-    (hv : v ∉ S) :
-    patchAssignment S b y v = y v :=
-  ite_eq_right hv
-
-/-- A monomial `M` evaluated on `patchAssignment S b y` factors into the indicator that `b` is all
+/-- A monomial `M` evaluated on `S.piecewise b y` factors into the indicator that `b` is all
 `true` on `M ∩ S` times `monomial R (M \ S) y`. -/
-theorem monomial_patchAssignment (R : Type*) [CommRing R] [DecidableEq ι] (S : Finset ι)
+theorem monomial_piecewise (R : Type*) [CommRing R] [DecidableEq ι] (S : Finset ι)
     (b y : ι → Bool) (M : Finset ι) :
-    monomial R M (patchAssignment S b y) =
+    monomial R M (S.piecewise b y) =
       (if ∀ v ∈ M ∩ S, b v = true then 1 else 0) * monomial R (M \ S) y := by
   rw [monomial_apply, monomial_apply]
-  have hiff : (∀ v ∈ M, patchAssignment S b y v = true) ↔
+  have hiff : (∀ v ∈ M, S.piecewise b y v = true) ↔
       (∀ v ∈ M ∩ S, b v = true) ∧ (∀ v ∈ M \ S, y v = true) := by
     constructor
     · intro h
       refine ⟨fun v hv => ?_, fun v hv => ?_⟩
       · rw [mem_inter] at hv
-        simpa only [patchAssignment, hv.2, ↓reduceIte] using h v hv.1
+        simpa only [Finset.piecewise, hv.2, ↓reduceIte] using h v hv.1
       · rw [mem_sdiff] at hv
-        simpa only [patchAssignment, hv.2, ↓reduceIte] using h v hv.1
+        simpa only [Finset.piecewise, hv.2, ↓reduceIte] using h v hv.1
     · rintro ⟨h1, h2⟩ v hv
       by_cases hvs : v ∈ S
-      · simp only [patchAssignment, hvs, ↓reduceIte]
+      · simp only [Finset.piecewise, hvs, ↓reduceIte]
         exact h1 v (mem_inter.mpr ⟨hv, hvs⟩)
-      · simp only [patchAssignment, hvs, ↓reduceIte]
+      · simp only [Finset.piecewise, hvs, ↓reduceIte]
         exact h2 v (mem_sdiff.mpr ⟨hv, hvs⟩)
   by_cases h1 : ∀ v ∈ M ∩ S, b v = true
   · by_cases h2 : ∀ v ∈ M \ S, y v = true
@@ -507,32 +492,32 @@ theorem card_restrictMonomials_le [DecidableEq ι] (S : Finset ι) (b : ι → B
     #(restrictMonomials S b 𝓜) ≤ #𝓜 :=
   (card_filter_le _ _).trans card_image_le
 
-/-- Over any commutative ring `R`, `monomialSum R 𝓜 (patchAssignment S b y)` groups by restricted
+/-- Over any commutative ring `R`, `monomialSum R 𝓜 (S.piecewise b y)` groups by restricted
 monomials `M' ∈ 𝓜.image (· \ S)`. -/
-theorem monomialSum_patchAssignment_eq_sum_image (R : Type*) [CommRing R] [DecidableEq ι]
+theorem monomialSum_piecewise_eq_sum_image (R : Type*) [CommRing R] [DecidableEq ι]
     (S : Finset ι) (b y : ι → Bool) (𝓜 : Finset (Finset ι)) :
-    monomialSum R 𝓜 (patchAssignment S b y) =
+    monomialSum R 𝓜 (S.piecewise b y) =
       ∑ M' ∈ 𝓜.image (· \ S),
         (#{M ∈ 𝓜 | M \ S = M' ∧ ∀ v ∈ M ∩ S, b v = true} : R) * monomial R M' y := by
   unfold monomialSum
   rw [← sum_fiberwise_of_maps_to (fun M hM => mem_image_of_mem (· \ S) hM)]
   refine sum_congr rfl fun M' _ => ?_
   have hcongr :
-      (∑ M ∈ {M ∈ 𝓜 | M \ S = M'}, monomial R M (patchAssignment S b y)) =
+      (∑ M ∈ {M ∈ 𝓜 | M \ S = M'}, monomial R M (S.piecewise b y)) =
         ∑ M ∈ {M ∈ 𝓜 | M \ S = M'},
           (if ∀ v ∈ M ∩ S, b v = true then (1 : R) else 0) * monomial R M' y := by
     refine sum_congr rfl fun M hM => ?_
     rw [mem_filter] at hM
-    rw [monomial_patchAssignment, hM.2]
+    rw [monomial_piecewise, hM.2]
   rw [hcongr, ← sum_mul, sum_boole, filter_filter]
 
 /-- **§5.5 (exact `𝔽₂` specialization)**: over `ZMod 2`, evaluating `restrictMonomials S b 𝓜` at
-`y` equals evaluating the original family `𝓜` at `patchAssignment S b y`. -/
+`y` equals evaluating the original family `𝓜` at `S.piecewise b y`. -/
 theorem monomialSum_zmod_two_restrictMonomials [DecidableEq ι] (S : Finset ι) (b y : ι → Bool)
     (𝓜 : Finset (Finset ι)) :
     monomialSum (ZMod 2) (restrictMonomials S b 𝓜) y =
-      monomialSum (ZMod 2) 𝓜 (patchAssignment S b y) := by
-  rw [monomialSum_patchAssignment_eq_sum_image, monomialSum, restrictMonomials, sum_filter]
+      monomialSum (ZMod 2) 𝓜 (S.piecewise b y) := by
+  rw [monomialSum_piecewise_eq_sum_image, monomialSum, restrictMonomials, sum_filter]
   refine sum_congr rfl fun M' _ => ?_
   by_cases hodd : Odd #{M ∈ 𝓜 | M \ S = M' ∧ ∀ v ∈ M ∩ S, b v = true}
   · have hcast : (#{M ∈ 𝓜 | M \ S = M' ∧ ∀ v ∈ M ∩ S, b v = true} : ZMod 2) = 1 := by
@@ -546,11 +531,11 @@ theorem monomialSum_zmod_two_restrictMonomials [DecidableEq ι] (S : Finset ι) 
       (ZMod.natCast_eq_zero_iff_even.mpr heven)
     simp only [hodd, ↓reduceIte, hcast, zero_mul]
 
-/-- `patchAssignment S b y` is a common zero of `P` if and only if `y` is a common zero of the
+/-- `S.piecewise b y` is a common zero of `P` if and only if `y` is a common zero of the
 specialized system `fun i => restrictMonomials S b (P i)`. -/
-theorem isCommonZero_patchAssignment_iff [DecidableEq ι] (S : Finset ι) (b y : ι → Bool)
+theorem isCommonZero_piecewise_iff [DecidableEq ι] (S : Finset ι) (b y : ι → Bool)
     (I : Finset κ) (P : κ → Finset (Finset ι)) :
-    IsCommonZero I P (patchAssignment S b y) ↔
+    IsCommonZero I P (S.piecewise b y) ↔
       IsCommonZero I (fun i => restrictMonomials S b (P i)) y := by
   unfold IsCommonZero
   refine forall₂_congr fun i _ => ?_
@@ -657,11 +642,11 @@ theorem commonZeroCount_eq_sum_branches [Fintype ι] [DecidableEq ι] (S : Finse
   have hbij :
       #{x : ι → Bool | IsCommonZero I P x} =
         ∑ p ∈ branchAssignments S ×ˢ subproblemAssignments S,
-          if IsCommonZero I P (patchAssignment S p.1 p.2) then 1 else 0 := by
+          if IsCommonZero I P (S.piecewise p.1 p.2) then 1 else 0 := by
     rw [card_filter]
     refine sum_nbij' (fun x => (fun v => if v ∈ S then x v else false,
         fun v => if v ∈ S then false else x v))
-      (fun p => patchAssignment S p.1 p.2) ?_ ?_ ?_ ?_ ?_
+      (fun p => S.piecewise p.1 p.2) ?_ ?_ ?_ ?_ ?_
     · intro x _
       rw [mem_product, branchAssignments, subproblemAssignments, mem_filter, mem_filter]
       refine ⟨⟨mem_univ _, fun v hv => ite_eq_right hv⟩, ⟨mem_univ _, fun v hv => ite_eq_left hv⟩⟩
@@ -669,28 +654,28 @@ theorem commonZeroCount_eq_sum_branches [Fintype ι] [DecidableEq ι] (S : Finse
       exact mem_univ _
     · intro x _
       funext v
-      by_cases hv : v ∈ S <;> simp only [patchAssignment, hv, ↓reduceIte]
+      by_cases hv : v ∈ S <;> simp only [Finset.piecewise, hv, ↓reduceIte]
     · intro p hp
       rw [mem_product, branchAssignments, subproblemAssignments, mem_filter, mem_filter] at hp
       ext v
       · by_cases hv : v ∈ S
-        · simp only [patchAssignment, hv, ↓reduceIte]
+        · simp only [Finset.piecewise, hv, ↓reduceIte]
         · simp only [hv, ↓reduceIte, (hp.1.2 v hv).symm]
       · by_cases hv : v ∈ S
         · simp only [hv, ↓reduceIte, (hp.2.2 v hv).symm]
-        · simp only [patchAssignment, hv, ↓reduceIte]
+        · simp only [Finset.piecewise, hv, ↓reduceIte]
     · intro x _
       have hx :
-          patchAssignment S (fun v => if v ∈ S then x v else false)
+          S.piecewise (fun v => if v ∈ S then x v else false)
             (fun v => if v ∈ S then false else x v) = x := by
         funext v
-        by_cases hv : v ∈ S <;> simp only [patchAssignment, hv, ↓reduceIte]
+        by_cases hv : v ∈ S <;> simp only [Finset.piecewise, hv, ↓reduceIte]
       rw [hx]
   rw [commonZeroCount, hbij, sum_product]
   refine sum_congr rfl fun b _ => ?_
   rw [card_filter]
   refine sum_congr rfl fun y _ => ?_
-  simp only [isCommonZero_patchAssignment_iff]
+  simp only [isCommonZero_piecewise_iff]
 
 /-! ### 6. Cleared-denominator homogenization and `ℓ₁`-norm bounds (§5.4 & Appendix B.2) -/
 
