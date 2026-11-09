@@ -4465,6 +4465,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.MatchingPaths
 public import CslibFrontier.Foundations.Combinatorics.Expander.MatchingPencil
 public import CslibFrontier.Foundations.Combinatorics.Expander.Mixing
 public import CslibFrontier.Foundations.Combinatorics.Expander.Multigraph
+public import CslibFrontier.Foundations.Combinatorics.Expander.MultigraphExistence
 public import CslibFrontier.Foundations.Combinatorics.Expander.NeighborDeletion
 public import CslibFrontier.Foundations.Combinatorics.Expander.PairShearTranslation
 public import CslibFrontier.Foundations.Combinatorics.Expander.PathInterpolation
