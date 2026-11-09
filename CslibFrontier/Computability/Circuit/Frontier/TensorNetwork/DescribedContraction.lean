@@ -704,9 +704,9 @@ noncomputable def contractionCertificate [Inhabited Y] (hops : ops.PolyTime encQ
 /-- The number of edges and the number of vertices are at most the encoded length. -/
 theorem length_numEdges_vertices_le (d : DescribedNetwork T) :
     d.numEdges + d.vertices.length ≤ (encDescribed encT d).length := by
-  have h := length_le_length_encList (encPair (encList encNat) encT) d.vertices
+  have h := length_le_length_encList (encVertex encT) d.vertices
   change d.numEdges + d.vertices.length ≤
-    (encPair encUnary (encList (encPair (encList encNat) encT)) (d.numEdges, d.vertices)).length
+    (encPair encUnary (encList (encVertex encT)) (d.numEdges, d.vertices)).length
   enc_len
 
 /-- An encoded vertex is at most the encoded network long. -/
@@ -833,11 +833,10 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       obtain ⟨hq, -, -, -⟩ := hx
       rw [hq] at hmem
       have h3 := hvlen v hmem
-      have hxv {c e : ℕ} : c * ((encPair (encNode encQ encT) (encPair (encList encNat) encT)
+      have hxv {c e : ℕ} : c * ((encPair (encNode encQ encT) (encVertex encT)
           (x, v)).length + 1) ^ e ≤ c * (11 * z + 16) ^ e := by
         refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
-        have := length_encPair (enc₁ := encNode encQ encT)
-          (enc₂ := encPair (encList encNat) encT) (x, v)
+        have := length_encPair (enc₁ := encNode encQ encT) (enc₂ := encVertex encT) (x, v)
         dsimp only at this
         omega
       have h4 := (hqt (x, v)).trans hxv
