@@ -11,6 +11,8 @@ public import CslibFrontier.Crypto.Computational.MAC
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
+import CslibFrontier.Foundations.Data.BitString.List.LowBits
+import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
@@ -113,7 +115,7 @@ abbrev Tag : Type := List Bool × List (List Bool)
 in the order in which the fixed-length signing oracle logs them. -/
 def authenticatedInputs (E : Encoder) (L : ℕ) (log : List (List Bool × Tag)) :
     List (List Bool) :=
-  log.flatMap fun entry => (blockInputs E L entry.2.1 entry.1).reverse
+  log.flatMap fun (m, (r, _)) => (blockInputs E L r m).reverse
 
 /-- The first block input of `msg`, paired with its tag, that the logged queries do not cover,
 or `([], [])` if every block input is covered. -/
@@ -121,16 +123,6 @@ def freshBlockPair (E : Encoder) (L : ℕ) (log : List (List Bool × Tag)) (msg 
     (tag : Tag) : List Bool × List Bool :=
   (((blockInputs E L tag.1 msg).zip tag.2).find? fun p =>
     !(authenticatedInputs E L log).contains p.1).getD ([], [])
-
-private theorem lowBits_injective {w x y : ℕ} (hx : x < 2 ^ w) (hy : y < 2 ^ w)
-    (h : BitString.lowBits w x = BitString.lowBits w y) : x = y := by
-  rw [BitString.lowBits_eq_ofFn, BitString.lowBits_eq_ofFn] at h
-  refine Nat.eq_of_testBit_eq fun j => ?_
-  by_cases hj : j < w
-  · exact congrFun (List.ofFn_injective h) ⟨j, hj⟩
-  · have hle : 2 ^ w ≤ 2 ^ j := Nat.pow_le_pow_right (by norm_num) (by omega)
-    rw [Nat.testBit_lt_two_pow (lt_of_lt_of_le hx hle),
-      Nat.testBit_lt_two_pow (lt_of_lt_of_le hy hle)]
 
 theorem four_mul_fieldWidth_le (L : ℕ) : 4 * fieldWidth L ≤ L := Nat.mul_div_le L 4
 
@@ -215,7 +207,8 @@ private theorem eq_of_mem_blockInputs_full {L len idx : ℕ} {r r' m block : Lis
     have hcount := blockCount_le hw hm.1
     have hm2 := hm.2
     obtain ⟨hr, hl, hx, hb⟩ := fullEncoder_inj (length_messageBlock _ _ _) hblock heq
-    exact ⟨hr, lowBits_injective hm.2 hlen hl, i, hi', lowBits_injective (by omega) hidx hx, hb⟩
+    exact ⟨hr, BitString.lowBits_injective_of_lt hm.2 hlen hl, i, hi',
+      BitString.lowBits_injective_of_lt (by omega) hidx hx, hb⟩
   · simp at h
 
 private theorem source_of_mem_authenticatedInputs {E : Encoder} {L : ℕ}
@@ -290,11 +283,6 @@ private theorem length_noIndexEncoder {L len idx : ℕ} {r b : List Bool}
     List.length_replicate, hr, hb]
   omega
 
-private theorem two_mul_lt_two_pow {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
-  induction w, hw using Nat.le_induction with
-  | base => norm_num
-  | succ k hk ih => rw [pow_succ]; omega
-
 private theorem messageBlock_zero {w : ℕ} {u v : List Bool} (hu : u.length = w) :
     messageBlock w (u ++ v) 0 = u := by
   rw [messageBlock, Nat.zero_mul, List.drop_zero, List.append_assoc, List.take_left' hu]
@@ -318,7 +306,7 @@ private theorem blockInputs_two_blocks {E : Encoder} {L : ℕ} (hw : 3 ≤ field
     unfold blockCount; exact Nat.div_eq_of_lt_le (by omega) (by omega)
   rw [blockInputs, hlen, ite_eq_left
     (show 0 < 2 * fieldWidth L ∧ 2 * fieldWidth L < 2 ^ fieldWidth L from
-      ⟨by omega, two_mul_lt_two_pow hw⟩), hcount]
+      ⟨by omega, Nat.two_mul_lt_two_pow hw⟩), hcount]
   simp only [show List.range 2 = [0, 1] from rfl, List.map_cons, List.map_nil, zero_add,
     messageBlock_zero hu, messageBlock_one hu hv]
 
@@ -333,7 +321,7 @@ private theorem blockInputs_replicate {E : Encoder} {L : ℕ} (hw : 3 ≤ fieldW
     (r : List Bool) (a : Bool) :
     blockInputs E L r (List.replicate (fieldWidth L) a) =
       [E (fieldWidth L) L r (fieldWidth L) 1 (List.replicate (fieldWidth L) a)] := by
-  have hlt : fieldWidth L < 2 ^ fieldWidth L := by have := two_mul_lt_two_pow hw; omega
+  have hlt : fieldWidth L < 2 ^ fieldWidth L := by have := Nat.two_mul_lt_two_pow hw; omega
   have hcount : blockCount (fieldWidth L) (fieldWidth L) = 1 := by
     unfold blockCount; exact Nat.div_eq_of_lt_le (by omega) (by omega)
   rw [blockInputs, List.length_replicate, ite_eq_left (show 0 < fieldWidth L ∧
@@ -399,19 +387,19 @@ noncomputable def blockwiseSigningOracle (n : ℕ) (sk m : List Bool) :
 outputs a message it never queried together with a tag that `blockwiseVerify` accepts. -/
 noncomputable def blockwiseGame (A : BlockwiseMACAdversary) (n : ℕ) : ProbComp Bool := do
   let sk ← M.keyGen n
-  let out ← (OracleComp.interpret
+  let ((msg, tag), log) ← (OracleComp.interpret
     (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.blockwiseSigningOracle E n sk)) (A n)).run []
-  return !(out.2.map Prod.fst).contains out.1.1 && M.blockwiseVerify E n sk out.1.1 out.1.2
+  return !(log.map Prod.fst).contains msg && M.blockwiseVerify E n sk msg tag
 
 /-- The same experiment, reporting instead whether two signing queries received the same
 identifier. -/
 noncomputable def blockwiseRepeatGame (A : BlockwiseMACAdversary) (n : ℕ) : ProbComp Bool := do
   let sk ← M.keyGen n
-  let out ← (OracleComp.interpret
+  let (_, log) ← (OracleComp.interpret
     (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.blockwiseSigningOracle E n sk)) (A n)).run []
-  return !decide (out.2.map fun entry => entry.2.1).Nodup
+  return !decide (log.map fun (_, (r, _)) => r).Nodup
 
 /-- Answers a blockwise signing query with fixed-length signing queries, one per block input,
 and logs the query. -/
@@ -427,10 +415,10 @@ noncomputable def blockwiseSimulator (n : ℕ) (m : List Bool) :
 `blockwiseSimulator`, then output the first block input of its message that no simulated query
 covered, with the matching block tag. -/
 noncomputable def blockwiseReduction (A : BlockwiseMACAdversary) : Forger := fun n _ => do
-  let out ← (OracleComp.interpret
+  let ((msg, tag), log) ← (OracleComp.interpret
     (OracleComp.sumHandler (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
       (M.blockwiseSimulator E n)) (A n)).run []
-  return freshBlockPair E (M.msgLen n) out.2 out.1.1 out.1.2
+  return freshBlockPair E (M.msgLen n) log msg tag
 
 /-- Output distribution of the blockwise adversary together with the final log. -/
 private noncomputable def blockwiseRun (A : BlockwiseMACAdversary) (n : ℕ) (sk : List Bool) :
@@ -698,7 +686,9 @@ theorem blockwiseRepeatGame_le (A : BlockwiseMACAdversary) (n Q : ℕ)
   exact h
 
 /-- Concrete security of the blockwise construction against an adversary with at most `Q`
-signing queries ([KatzLindell2020], Theorem 4.8). -/
+signing queries: this is the concrete inequality behind [KatzLindell2020], Theorem 4.8. No query
+or time budget is stated yet for `blockwiseReduction`, so the asymptotic statement (a secure
+fixed-length scheme gives a secure variable-length scheme) does not follow from it yet. -/
 theorem blockwiseGame_le (A : BlockwiseMACAdversary) (n Q : ℕ)
     (hA : ProbOracleComp.IsQueryBounded (A n) Q) :
     ProbComp.eval (M.blockwiseGame fullEncoder A n) true ≤
@@ -776,7 +766,7 @@ theorem blockwiseGame_noIndex (n : ℕ) (hw : 3 ≤ fieldWidth (M.msgLen n)) :
   · simp only [List.map_cons, List.map_nil, List.mem_singleton]
     exact replicate_append_ne (by omega) (by decide)
   · simp only [List.length_append, List.length_replicate]
-    exact ⟨by omega, by have := two_mul_lt_two_pow hw; omega⟩
+    exact ⟨by omega, by have := Nat.two_mul_lt_two_pow hw; omega⟩
   · rw [blockInputs_replicate_append hw]
     exact .cons h2' (.cons h1 .nil)
 
@@ -801,7 +791,7 @@ theorem blockwiseGame_noLength (n : ℕ) (hw : 3 ≤ fieldWidth (M.msgLen n)) :
     simp only [List.length_append, List.length_replicate] at this
     omega
   · simp only [List.length_replicate]
-    exact ⟨by omega, by have := two_mul_lt_two_pow hw; omega⟩
+    exact ⟨by omega, by have := Nat.two_mul_lt_two_pow hw; omega⟩
   · rw [blockInputs_replicate hw]
     exact .cons h1 .nil
 
@@ -829,7 +819,7 @@ theorem blockwiseGame_noIdentifier (n : ℕ) (hw : 3 ≤ fieldWidth (M.msgLen n)
     exact ⟨replicate_append_ne (by omega) (by decide),
       replicate_append_ne (by omega) (by decide)⟩
   · simp only [List.length_append, List.length_replicate]
-    exact ⟨by omega, by have := two_mul_lt_two_pow hw; omega⟩
+    exact ⟨by omega, by have := Nat.two_mul_lt_two_pow hw; omega⟩
   · rw [blockInputs_replicate_append hw]
     exact .cons h1 (.cons hs2 .nil)
 
