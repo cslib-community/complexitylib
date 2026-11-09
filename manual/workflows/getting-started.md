@@ -15,8 +15,8 @@ Do not replace them with the historical survey's pins.
 **Start:** a shell with Git and `elan` available, outside an existing checkout. Run:
 
 ```bash
-git clone https://github.com/cslib-community/complexitylib.git
-cd complexitylib
+git clone https://github.com/cslib-community/cslib-frontier.git
+cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
@@ -169,7 +169,7 @@ In a TOML Lake project, add this template, replacing the placeholder with that S
 ```toml
 [[require]]
 name = "complexitylib"
-git = "https://github.com/cslib-community/complexitylib"
+git = "https://github.com/cslib-community/cslib-frontier"
 rev = "<the-full-commit-SHA-you-selected>"
 ```
 

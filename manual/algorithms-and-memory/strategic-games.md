@@ -434,9 +434,9 @@ congestion games (Theorems 2.8 and 3.2) and for hardness of finding equilibria: 
 of congestion games are in `PLS`, but their PLS-completeness (Lecture #19, Theorem 3.1) and
 PPAD-completeness of mixed equilibria are not formalized. Neither are exponentially long
 better-response paths or the polynomial-time algorithm for symmetric network congestion games. These
-are ROADMAP directions under [#2900](https://github.com/cslib-community/complexitylib/issues/2900).
+are ROADMAP directions under [#2900](https://github.com/cslib-community/cslib-frontier/issues/2900).
 Two-player Nash in PPAD, degenerate bimatrix games and the Lemke–Howson algorithm are tracked in
-[#3391](https://github.com/cslib-community/complexitylib/issues/3391). Hedge dynamics are
+[#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge dynamics are
 full-information and deterministic: they work with expected costs, not sampled play or bandit
 feedback, and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as

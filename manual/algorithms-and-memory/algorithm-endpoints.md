@@ -180,7 +180,7 @@ These are pure Lean functions on adjacency lists, with `TimeM` cost models (as f
 - **Topological sort.** Import `Complexity.Algorithms.Lean.DFS.TopologicalSort` ([source](../../Complexity/Algorithms/Lean/DFS/TopologicalSort.lean)). `topologicalSort adj vs` lists the vertices in reverse finishing order. When `vs` lists every vertex, `isTopologicalOrder_topologicalSort_iff` says that the output is a topological order exactly when `Relation.Acyclic (Edge adj)` holds [Cormen et al., Theorem 22.12][clrs09]. `time_topologicalSortM` gives the exact cost `|vs| + ∑ v, |adj v|`.
 - **Bellman–Ford.** Import `Complexity.Algorithms.Lean.BellmanFord.Basic` ([source](../../Complexity/Algorithms/Lean/BellmanFord/Basic.lean)). Weights may be negative: they lie in a linearly ordered cancellative additive commutative monoid such as `ℤ`. Walks are `Quiver.Path`s, as for Dijkstra's `Instance.dist`. For a list `vs` of all the vertices, `bellmanFord_eq_none_iff` says that the algorithm returns `none` exactly when a negative cycle is reachable from the source. Otherwise `isShortestDist_of_bellmanFord_eq_some` says that each returned value is the least walk weight, or `⊤` with no walk. Together these are [Cormen et al., Theorem 24.4][clrs09] without the predecessor tree. `time_bellmanFordM` gives the exact cost `n + n (n + m)` for `n = |vs|` and `m` adjacency-list entries.
 
-The [DFS examples](../../ComplexityTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order. The [Bellman–Ford examples](../../ComplexityTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Strongly connected components and linear-time 2-SAT are tracked in [#3053](https://github.com/cslib-community/complexitylib/issues/3053).
+The [DFS examples](../../ComplexityTests/DFS.lean) include a triangle and a self-loop, on which topological sort is not a topological order. The [Bellman–Ford examples](../../ComplexityTests/BellmanFord.lean) include a negative edge, a reachable negative cycle and an unreachable one, with exact tick counts. Strongly connected components and linear-time 2-SAT are tracked in [#3053](https://github.com/cslib-community/cslib-frontier/issues/3053).
 
 ## Context-free membership and CYK
 
@@ -189,7 +189,7 @@ Like Bellman–Ford, this is a pure Lean function with a `TimeM` cost model, not
 - **Grammars in Chomsky normal form.** Import `Complexity.Computability.Languages.ChomskyNormalForm` ([source](../../Complexity/Computability/Languages/ChomskyNormalForm.lean)). A `ChomskyNormalFormGrammar` has a list of rules `A → a` (`leaf`) and `A → B C` (`node`), and a flag `nilRule` for the rule `S → ε`. Sipser's definition [Sipser, Definition 2.8][sipser13] forbids the start symbol on every right-hand side; the bundled invariant forbids it only when `nilRule` is set, so Hopcroft, Motwani and Ullman's `ε`-free form, with the start symbol allowed on right-hand sides, is covered too. `toCFG` reads the grammar as a Mathlib `ContextFreeGrammar`, and every statement is about Mathlib's `Derives` and `language` for it. `derives_iff_of_ne_nil` describes the derivations of a nonempty word by a first rule and a split. It rests on `ContextFreeGrammar.derives_append_iff` in [Foundations/Computability/ContextFreeGrammar.lean](../../Complexity/Foundations/Computability/ContextFreeGrammar.lean), which splits a derivation from `u ++ v` into derivations from `u` and from `v`.
 - **CYK.** Import `Complexity.Algorithms.Lean.CYK.Basic` ([source](../../Complexity/Algorithms/Lean/CYK/Basic.lean)). `cyk G w` fills the table of nonterminals deriving each subword, level by level, following [Kasami][kasami65], [Younger][younger67] and [Hopcroft, Motwani and Ullman, Section 7.4.4][hmu06]. `mem_table_iff` says that each cell lists exactly the nonterminals deriving its subword. `cyk_eq_true_iff` says that `cyk G w = true` iff `w ∈ G.toCFG.language`, and `decidableMemLanguage` makes membership decidable. `time_cykM` gives the exact cost `(|R| + 1) (n + C(n + 1, 3))` for `|R|` rules and a word of length `n`, and `time_cykM_le` bounds it by `(|R| + 1) (n + 1)³`. One unit is charged per rule examined in each scan, and per split point (or letter) read. Table reads and writes, cell membership tests and insertions are constant-time steps, as on a RAM holding an array of nonterminal sets. Insertion skips nonterminals already present, and `nodup_table_and_length_le` shows that every cell is a list without repetitions of at most `|R|` nonterminals. The pure `cyk` is a specification for proofs and `decide`, not a fast executable (its table is a chain of function updates); the cost statements concern `cykM`.
 
-The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/complexitylib/issues/3303)).
+The [CYK examples](../../ComplexityTests/Algorithms/Lean/CYK.lean) decide accepted and rejected words, including the empty word, for `{aⁿbⁿ}` and for balanced parentheses with `S → ε`, using `decide`, and check exact tick counts. This is the algorithm of [Sipser, Theorem 7.16][sipser13] (every context-free language is in P) **only for grammars already in Chomsky normal form**. Conversion of arbitrary grammars, a machine-level `ComputableInPolyTime` decider, Valiant's subcubic parsing, the pumping lemma, and CFG emptiness and universality are not formalized ([ROADMAP](../../ROADMAP.md#structure-time-and-space), [#3303](https://github.com/cslib-community/cslib-frontier/issues/3303)).
 
 ## Edit distance and longest common subsequence
 
@@ -201,7 +201,7 @@ Like CYK, these are pure Lean functions with a `TimeM` cost model, not machine p
 
 The [examples](../../ComplexityTests/Algorithms/Lean/EditDistance.lean) use `decide`. They check kitten/sitting (`3`, with its traceback), flaw/lawn (`2`), and empty words. They check costs that are neither unit nor symmetric, where a replacement beats a deletion plus an insertion but a swap does not. They check the strings of the running example of CLRS Section 15.4 (`lcsLength = 4`), a replacement returned by `optScript Costs.indel` next to an equal-cost script without it, and the exact tick counts.
 
-**Scope.** Costs are arbitrary: no triangle inequality or symmetry is assumed. The theorem is the trace (alignment) form of Wagner–Fischer. The equivalence with sequences of edit operations applied at arbitrary positions, which Wagner and Fischer prove under their cost conditions, is not formalized. For unit costs, neither the metric properties nor the characterization as the least number of single-letter edits is formalized. Also not formalized: Hirschberg's linear-space recovery of an optimal alignment, a machine-level `ComputableInPolyTime` statement, and the `OV` hardness of edit distance and LCS ([#3472](https://github.com/cslib-community/complexitylib/issues/3472), [#3037](https://github.com/cslib-community/complexitylib/issues/3037)).
+**Scope.** Costs are arbitrary: no triangle inequality or symmetry is assumed. The theorem is the trace (alignment) form of Wagner–Fischer. The equivalence with sequences of edit operations applied at arbitrary positions, which Wagner and Fischer prove under their cost conditions, is not formalized. For unit costs, neither the metric properties nor the characterization as the least number of single-letter edits is formalized. Also not formalized: Hirschberg's linear-space recovery of an optimal alignment, a machine-level `ComputableInPolyTime` statement, and the `OV` hardness of edit distance and LCS ([#3472](https://github.com/cslib-community/cslib-frontier/issues/3472), [#3037](https://github.com/cslib-community/cslib-frontier/issues/3037)).
 
 ## Optimal binary search trees and the Knuth–Yao speedup
 
@@ -258,7 +258,7 @@ The generic retry combinator, with its geometric failure and cost bounds, is in 
 - a top seed that fails the `4n` test;
 - a successful construction run.
 
-Remaining work ([#3276](https://github.com/cslib-community/complexitylib/issues/3276)) includes:
+Remaining work ([#3276](https://github.com/cslib-community/cslib-frontier/issues/3276)) includes:
 
 - dynamic perfect hashing;
 - a word-RAM realization and a bridge to `w`-bit cell probes;
@@ -330,7 +330,7 @@ The [checked examples](../../ComplexityTests/StoerWagner.lean) test three graphs
 - enumeration of all minimum cuts;
 - Nagamochi–Ibaraki sparse certificates;
 - Karger's near-linear algorithm;
-- Queyranne's symmetric submodular minimization ([#3369](https://github.com/cslib-community/complexitylib/issues/3369)).
+- Queyranne's symmetric submodular minimization ([#3369](https://github.com/cslib-community/cslib-frontier/issues/3369)).
 
 The contraction API (`mergePair`, `embedCompact`, `contractMatrix`, `contractPart`, `contractCut`, `isContractionOf_contract`) lives in `Cslib.WeightedCut` and imports no probability, so this deterministic module does not depend on the randomized Karger development. The [checked examples](../../ComplexityTests/WeightedCutContraction.lean) contract a weighted 4-cycle.
 
@@ -382,7 +382,7 @@ Limitations:
 - Only Edmonds–Karp is available as the maximum flow oracle; `gomoryHuM_time_le_of_forall` takes any per-call bound.
 - Minimum cuts are not enumerated.
 
-[#3422](https://github.com/cslib-community/complexitylib/issues/3422) tracks the remaining work.
+[#3422](https://github.com/cslib-community/cslib-frontier/issues/3422) tracks the remaining work.
 
 ## Minimum vertex separators
 
@@ -403,7 +403,7 @@ Import `Complexity.Algorithms.Lean.MaxFlow.Preflow` ([Complexity/Algorithms/Lean
 
 `pushRelabelWith N vs norm` scans the vertex list `vs` for the first active vertex and pushes along its first admissible arc, or relabels it. `pushRelabelWith_correct` assumes that `vs` lists every vertex, that `norm` is the identity (`∀ σ, norm σ = σ`) and that `s ≠ t`. Under these hypotheses it shows that the function performs a run of at most `maxOps N` operations and returns a maximum flow and a minimum cut of equal value. `pushRelabel` on `Fin n` takes `vs = List.finRange n` and `norm = tabulate`, which stores the state as a matrix and a vector after every operation, so the kernel can evaluate it. `pushRelabel_correct` then needs only `s ≠ t`. The [checked client](../../ComplexityTests/PushRelabel.lean) evaluates it by `decide +kernel` on the CLRS six-vertex network (value `23`, `29` operations). It evaluates it by `decide` on edge cases: antiparallel arcs, an unreachable sink, a single arc `s → t`, and `s = t`.
 
-Limitations: the bounds count operations and do not charge the selection of an operation, so there is no `TimeM` running-time bound. The FIFO, relabel-to-front and highest-label rules, the gap and global-relabelling heuristics and dynamic trees are not formalized ([#3373](https://github.com/cslib-community/complexitylib/issues/3373)).
+Limitations: the bounds count operations and do not charge the selection of an operation, so there is no `TimeM` running-time bound. The FIFO, relabel-to-front and highest-label rules, the gap and global-relabelling heuristics and dynamic trees are not formalized ([#3373](https://github.com/cslib-community/cslib-frontier/issues/3373)).
 
 ## Menger's theorem
 
@@ -436,7 +436,7 @@ Limitations:
 - Infinite graphs and the Erdős–Menger conjecture (Aharoni–Berger) are not formalized.
 - No algorithm or running time is given for computing local connectivity.
 
-[#3409](https://github.com/cslib-community/complexitylib/issues/3409) tracks the remaining work.
+[#3409](https://github.com/cslib-community/cslib-frontier/issues/3409) tracks the remaining work.
 
 ## Bipartite matching and Hopcroft–Karp
 
@@ -484,7 +484,7 @@ The [checked instances](../../ComplexityTests/GeneralMatching.lean) cover three 
 - On the `5`-cycle, `U = ∅` certifies the matching `{01, 23}`.
 - On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
 
-Still open ([#3337](https://github.com/cslib-community/complexitylib/issues/3337)):
+Still open ([#3337](https://github.com/cslib-community/cslib-frontier/issues/3337)):
 - Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
 - an executable blossom algorithm with its `O(|V|²|E|)` bound;
 - weighted general matching;
@@ -506,7 +506,7 @@ The executable solver is in `Complexity.Algorithms.Lean.Matroid.Intersection.Sol
 - a colourful-forest run (a graphic matroid against a colour partition matroid) that exchanges an edge, with 40 queries;
 - the correctness theorem at `Type 1`.
 
-`TimeM` costs for the host computation (the search, the list filters and the symmetric difference) are not charged yet; that remaining work is tracked in [#2018](https://github.com/cslib-community/complexitylib/issues/2018). Weighted matroid intersection and infinite ground sets are not treated.
+`TimeM` costs for the host computation (the search, the list filters and the symmetric difference) are not charged yet; that remaining work is tracked in [#2018](https://github.com/cslib-community/cslib-frontier/issues/2018). Weighted matroid intersection and infinite ground sets are not treated.
 
 ## Stable matching
 
@@ -520,7 +520,7 @@ Import `Complexity.Algorithms.Lean.StableMatching.Incomplete.RuralHospitals` and
 
 `IncompleteInstance.deferredAcceptance` is a `decide`-evaluable implementation of proposer-proposing deferred acceptance. A proposer whose list runs out stays unmatched. The run reaches a fixed point within `totalLength` steps (`step_run_fixed`) and makes at most `totalLength` rejections in total (`sum_finalState_le`), where `totalLength` is the total length of the proposers' lists. The module proves that the output is stable (`isStable_deferredAcceptance`), proposer-optimal (`isProposerOptimal_deferredAcceptance`) and receiver-pessimal. Running the algorithm on the swapped market gives `receiverDeferredAcceptance`, which is receiver-optimal. The rural hospitals theorem in the form of [Roth and Sotomayor][rothsotomayor90], Theorem 2.22, is `unmatched_eq_of_isStable`: any two stable matchings leave the same proposers and the same receivers unmatched. `matchedProposers_eq_of_isStable` and `matchedReceivers_eq_of_isStable` state it for the `Finset`s of matched agents. The proof uses optimality and pessimality of deferred acceptance, together with `PartialMatching.card_matchedReceivers` (a matching matches as many proposers as receivers).
 
-`Instance.toIncompleteInstance` turns a complete-list market into a market in which everyone lists everyone. `isStable_toIncompleteInstance_iff_exists` shows that its stable matchings are exactly the stable perfect matchings `μ.toPEquiv` of the original market. `deferredAcceptance_toIncompleteInstance` shows that the two implementations agree. The complete-list API (lattice, blocking lemma, incentives) has not been generalized to incomplete lists. [ComplexityTests/StableMatchingIncomplete.lean](../../ComplexityTests/StableMatchingIncomplete.lean) checks a market with two stable matchings in which one proposer is unmatched in every stable matching. It also checks a receiver that stays unmatched even though it lists an unmatched proposer, and agreement with the complete-list implementation on Roth's market. Ties, many-to-one markets and the capacitated rural hospitals theorem are not modeled; [#2990](https://github.com/cslib-community/complexitylib/issues/2990) tracks these directions.
+`Instance.toIncompleteInstance` turns a complete-list market into a market in which everyone lists everyone. `isStable_toIncompleteInstance_iff_exists` shows that its stable matchings are exactly the stable perfect matchings `μ.toPEquiv` of the original market. `deferredAcceptance_toIncompleteInstance` shows that the two implementations agree. The complete-list API (lattice, blocking lemma, incentives) has not been generalized to incomplete lists. [ComplexityTests/StableMatchingIncomplete.lean](../../ComplexityTests/StableMatchingIncomplete.lean) checks a market with two stable matchings in which one proposer is unmatched in every stable matching. It also checks a receiver that stays unmatched even though it lists an unmatched proposer, and agreement with the complete-list implementation on Roth's market. Ties, many-to-one markets and the capacitated rural hospitals theorem are not modeled; [#2990](https://github.com/cslib-community/cslib-frontier/issues/2990) tracks these directions.
 
 ## Assignment problem: Bertsekas's auction algorithm
 
@@ -531,7 +531,7 @@ Import `Complexity.Algorithms.Lean.Assignment.Auction` ([Complexity/Algorithms/L
 - **Quality:** `auctionPerm c hε` is the output. `sum_auctionPerm_le` shows that it is within `n * ε` of every permutation (Props. 1.4 and 7.2). `sum_auctionPerm_le_rowPotential` turns the final prices into the feasible dual `(rowPotential c p, -p)` certifying this.
 - **Exactness:** `scaledAuction c` runs the auction on `(n + 1) * c` with `ε = 1`, and `scaledAuctionPerm c` is its assignment. `sum_scaledAuctionPerm_le` proves it optimal, and `bids_scaledAuction_le` bounds the bids by `n ((n + 1) C + 1) + 1`.
 
-The general layer [Complexity/Algorithms/Lean/Assignment/Basic.lean](../../Complexity/Algorithms/Lean/Assignment/Basic.lean) states `ε`-complementary slackness, weak duality over permutations and the `n ε` bound for any finite index type and ordered additive group. The cost measure is the number of bids: the `O(n)` scan per bid is not charged and there is no `TimeM` accounting. The bound is pseudo-polynomial, linear in `C / ε`. The `ε`-scaling version with its `O(n A log (n C))` bound (Prop. 7.3), the Jacobi, reverse and asymmetric auctions, rectangular or sparse instances, and a bridge to the potentials of the [Hungarian method](#assignment-problem-and-the-hungarian-method) are open; [#3317](https://github.com/cslib-community/complexitylib/issues/3317) tracks these directions. [ComplexityTests/AuctionAssignment.lean](../../ComplexityTests/AuctionAssignment.lean) contains the checked instances:
+The general layer [Complexity/Algorithms/Lean/Assignment/Basic.lean](../../Complexity/Algorithms/Lean/Assignment/Basic.lean) states `ε`-complementary slackness, weak duality over permutations and the `n ε` bound for any finite index type and ordered additive group. The cost measure is the number of bids: the `O(n)` scan per bid is not charged and there is no `TimeM` accounting. The bound is pseudo-polynomial, linear in `C / ε`. The `ε`-scaling version with its `O(n A log (n C))` bound (Prop. 7.3), the Jacobi, reverse and asymmetric auctions, rectangular or sparse instances, and a bridge to the potentials of the [Hungarian method](#assignment-problem-and-the-hungarian-method) are open; [#3317](https://github.com/cslib-community/cslib-frontier/issues/3317) tracks these directions. [ComplexityTests/AuctionAssignment.lean](../../ComplexityTests/AuctionAssignment.lean) contains the checked instances:
 
 - a `3 × 3` optimum checked against all six permutations, with its dual certificate;
 - a `2 × 2` instance on which the unscaled auction is suboptimal, showing that the scaling is needed;
@@ -549,7 +549,7 @@ Import `Complexity.Algorithms.Lean.HousingMarket.Incentives` (which also brings 
 - `isCompetitive_ttc`, `IsCompetitive.inStrictCore` and `exists_isCompetitive_iff`: TTC is competitive (every agent can afford its house and prefers it to every house it can afford) at the prices `ttcPrice`, the number of agents present in the round in which the house leaves. Competitive allocations lie in the strict core, so an allocation is competitive at some `ℕ` prices iff it is the TTC allocation.
 - `HousingMechanism.isStrategyProof_topTradingCycles`: the TTC mechanism is strategy-proof ([Roth][roth82]; [Schummer and Vohra][schummervohra07], Theorem 10.7; [CS364A][roughgarden13cs364a], Lecture #9, Theorem 3.1). A misreport by agent `i` can only change the pointers of agent `i`. Before agent `i` leaves, the cycles that do not contain `i` are unchanged, and every house that agent `i` can reach is one it could reach under truthful reporting.
 
-Scope: preferences are strict, every agent owns exactly one house, the market size `n` is fixed by `Fin n`, and only individual (not group) strategy-proofness is proved. No running time is charged: `ttc` is a mathematical function, not a `TimeM` or RAM program, so the `O(n²)` bound for TTC is not stated. House allocation with existing tenants (Abdulkadiroğlu–Sönmez), Ma's characterization of TTC, group strategy-proofness and indifferences are directions recorded in [#3286](https://github.com/cslib-community/complexitylib/issues/3286). [ComplexityTests/HousingMarket.lean](../../ComplexityTests/HousingMarket.lean) contains the checked instances: a three-cycle, a two-cycle followed by a fixed point, TTC prices, uniqueness by enumeration, and two small mechanisms: keeping the endowment is strategy-proof but not Pareto efficient, and a two-agent mechanism is manipulable.
+Scope: preferences are strict, every agent owns exactly one house, the market size `n` is fixed by `Fin n`, and only individual (not group) strategy-proofness is proved. No running time is charged: `ttc` is a mathematical function, not a `TimeM` or RAM program, so the `O(n²)` bound for TTC is not stated. House allocation with existing tenants (Abdulkadiroğlu–Sönmez), Ma's characterization of TTC, group strategy-proofness and indifferences are directions recorded in [#3286](https://github.com/cslib-community/cslib-frontier/issues/3286). [ComplexityTests/HousingMarket.lean](../../ComplexityTests/HousingMarket.lean) contains the checked instances: a three-cycle, a two-cycle followed by a fixed point, TTC prices, uniqueness by enumeration, and two small mechanisms: keeping the endowment is strategy-proof but not Pareto efficient, and a two-agent mechanism is manipulable.
 
 ## Scheduling bounds
 
@@ -1178,7 +1178,7 @@ These are graph invariants with no algorithm attached yet. They are the mathemat
 - [LovaszTheta.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) defines `IsOrthonormalRepresentation` (unit vectors, orthogonal on *nonadjacent* distinct pairs, as in [Lovász][lovasz1979]) and `lovaszTheta G`. The latter is the infimum over representations `u` in some `ℝᵈ` and unit handles `c` of `max_v 1/⟪c, u v⟫²`; `lovaszTheta_le_of_rep` accepts representations in any real inner product space. It proves the sandwich `indepNum_le_lovaszTheta` and `lovaszTheta_le_chromaticNumber_compl`, that is `α(G) ≤ ϑ(G) ≤ χ(Gᶜ)` for finite `G` (`lovaszTheta_le_of_cliqueCover` states the upper half for a cover by cliques), together with `lovaszTheta_strongProd_le` and `shannonCapacity_le_lovaszTheta`. The [Knuth][knuth1994] locators in the module docstring give the sandwich and product lemmas.
 - [Pentagon.lean](../../Complexity/Foundations/Combinatorics/SimpleGraph/Pentagon.lean) gives Shannon's five-word code in `C₅ ⊠ C₅` [Shannon][shannon1956] and Lovász's umbrella in `ℝ³`. Together they prove `shannonCapacity_cycleGraph_five` and `lovaszTheta_cycleGraph_five` (both `√5`) and `indepNum_cycleGraph_five`.
 
-The theta function is a real infimum without a computational interface. Its SDP and eigenvalue characterizations, polynomial-time approximation (Grötschel–Lovász–Schrijver) and the resulting perfect-graph algorithms are open ([#2998](https://github.com/cslib-community/complexitylib/issues/2998)). The [checked examples](../../ComplexityTests/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) compute `ϑ` for empty, complete and edgeless graphs and `Θ` for empty and edgeless graphs. They separate `α(C₅) = 2` from `Θ(C₅) = √5`, and restate the Shannon-capacity statement of the pentagon from first principles.
+The theta function is a real infimum without a computational interface. Its SDP and eigenvalue characterizations, polynomial-time approximation (Grötschel–Lovász–Schrijver) and the resulting perfect-graph algorithms are open ([#2998](https://github.com/cslib-community/cslib-frontier/issues/2998)). The [checked examples](../../ComplexityTests/Foundations/Combinatorics/SimpleGraph/LovaszTheta.lean) compute `ϑ` for empty, complete and edgeless graphs and `Θ` for empty and edgeless graphs. They separate `α(C₅) = 2` from `Θ(C₅) = √5`, and restate the Shannon-capacity statement of the pentagon from first principles.
 
 ## Linear-programming duality over ordered fields
 
@@ -1262,7 +1262,7 @@ Import `Complexity.Algorithms.Lean.MaxCut.GoemansWilliamson` ([GoemansWilliamson
 - **Guarantee against the true optimum:** `sdpValue_signVector` shows that a cut's `±u` vector solution has objective equal to the cut's weight. Hence `goemansWilliamsonConstant_mul_sub_le_integral` gives `α (cutValue side - ε) ≤ E[cutValue (hyperplaneSide v r)]` for every cut `side`, when `v` are unit vectors within `ε` of optimal. `goemansWilliamsonConstant_mul_cutValue_le_integral` is the exact-optimum form. `exists_forall_goemansWilliamsonConstant_mul_sub_le` picks one hyperplane achieving the bound, and `exists_isMaxOn_sdpValue` shows that optimal unit vectors exist in every nontrivial finite-dimensional space.
 - **Bridge:** in [GoemansWilliamsonCutWeight.lean](../../Complexity/Algorithms/Lean/MaxCut/GoemansWilliamsonCutWeight.lean), kept separate so the analysis does not import the machine-level `MaxCut` development, `cutValue_eq_cutWeight` identifies `cutValue` on an edge list with `Cslib.Complexity.MaxCut.cutWeight`, the weight used by the NP-complete `MaxCut` problem. `goemansWilliamsonConstant_mul_cutWeight_le_integral` restates the guarantee there.
 
-The [checked examples](../../ComplexityTests/GoemansWilliamsonMaxCut.lean) use the triangle with three unit vectors at `120°`. Their objective `9 / 4` is optimal because `‖a + b + c‖² ≥ 0`, so the headline hypotheses are satisfiable. The rounded cut has expected weight exactly `2`, the maximum cut. Not formalized: polynomial-time SDP solving to precision `ε`, a `ProbComp` realization of the Gaussian, tightness (the Feige–Schechtman integrality gap), the MAX-2SAT and MAX-DICUT extensions and derandomization ([#3230](https://github.com/cslib-community/complexitylib/issues/3230)).
+The [checked examples](../../ComplexityTests/GoemansWilliamsonMaxCut.lean) use the triangle with three unit vectors at `120°`. Their objective `9 / 4` is optimal because `‖a + b + c‖² ≥ 0`, so the headline hypotheses are satisfiable. The rounded cut has expected weight exactly `2`, the maximum cut. Not formalized: polynomial-time SDP solving to precision `ε`, a `ProbComp` realization of the Gaussian, tightness (the Feige–Schechtman integrality gap), the MAX-2SAT and MAX-DICUT extensions and derandomization ([#3230](https://github.com/cslib-community/cslib-frontier/issues/3230)).
 
 ## Freivalds' matrix-product verification
 
@@ -1341,7 +1341,7 @@ Limitations:
 - `edmonds` is executable but not efficient, and no running-time bound is proved. Each recursion level receives the contracted arcs and costs as unmemoised closures over the previous level's. Evaluating them repeats work, so the worst case is exponential in the number of nested contractions. A polynomial version (such as `O(n m)`) needs materialised per-level arc and cost tables. Neither Tarjan's `O(m log n)` implementation nor the Gabow–Galil–Spencer–Tarjan `O(m + n log n)` implementation is formalized.
 - The source is [Edmonds][edmonds67b]. His Theorem 1 (stated in §3) asserts a polynomially bounded algorithm for optimum branchings, and §4 gives the algorithm and its proof. The library proves correctness and optimality of that contraction algorithm, specialised to rooted minimum-cost spanning arborescences. It proves neither the polynomial-time content of Theorem 1 nor the branching version (maximum-weight forests). The branching polytope (his Theorem 2) is not formalized.
 
-[#3526](https://github.com/cslib-community/complexitylib/issues/3526) tracks the remaining work.
+[#3526](https://github.com/cslib-community/cslib-frontier/issues/3526) tracks the remaining work.
 
 ## String algorithms
 

@@ -21,7 +21,7 @@ strict coarsening from distance `2` to `0`, unequal masses, and the canonical me
 map from `ℝ` to `UnitAddCircle`. Run `scripts/build.sh ComplexityTests.TotalVariationMap`.
 The theorem transports an existing bound; it does not identify the output laws. The Gaussian
 projection and mod-one bounds of
-[issue #2734](https://github.com/cslib-community/complexitylib/issues/2734) apply it to actual laws.
+[issue #2734](https://github.com/cslib-community/cslib-frontier/issues/2734) apply it to actual laws.
 
 ## Combine component and mixture-weight errors
 
@@ -44,7 +44,7 @@ examples and a tagged mixture on `Fin 6 × ℝ`. In that client, actual finite-P
 to one; component errors bounded by `4 * ε` and a weight discrepancy bounded by `δ` give a
 joint error of `4 * ε + δ`. The tags are actual measurable pushforwards, so map contraction
 supplies their component bounds. Run `scripts/build.sh ComplexityTests.TotalVariationMixture`.
-The [Regev joint experiment](https://github.com/cslib-community/complexitylib/issues/2767) still
+The [Regev joint experiment](https://github.com/cslib-community/cslib-frontier/issues/2767) still
 has to discharge those bounds for its actual Gaussian laws and residue marginal.
 
 ## Condition and compare finite PMFs
@@ -230,7 +230,7 @@ uniform inputs, defined in
 
 The thresholds are constants with `0 ≤ β < α² ≤ 1`, and the circuits are De Morgan circuits with
 common input and output counts. SZK itself is not formalized yet;
-[issue #3205](https://github.com/cslib-community/complexitylib/issues/3205) tracks it. The checked
+[issue #3205](https://github.com/cslib-community/cslib-frontier/issues/3205) tracks it. The checked
 clients in [StatisticalDifference.lean](../../ComplexityTests/StatisticalDifference.lean) cover:
 
 - parity completion;
@@ -660,7 +660,7 @@ loop, show that the incidence reduction of a loop has parallel edges and has non
 removal, and instantiate both hardness theorems. Run
 `scripts/build.sh ComplexityTests.LabelCoverRepetition ComplexityTests.LabelCoverSmallSoundness`.
 Håstad's reductions from Label Cover remain open
-([#886](https://github.com/cslib-community/complexitylib/issues/886)).
+([#886](https://github.com/cslib-community/cslib-frontier/issues/886)).
 
 ## Project a continuous Gaussian density
 
@@ -676,7 +676,7 @@ as `gaussianReal 0 (((s * ‖z‖)^2 / (2 * Real.pi)).toNNReal)`. The theorem in
 [checked clients](../../ComplexityTests/GaussianStandard.lean) recover the standard law
 at width `√(2π)` and compute variance `32/π` at width `4` with scalar projection `2`.
 These are analytic measure identities. Projection of a discrete-coset Gaussian convolution
-and its mod-one error bound are proved in [#2734](https://github.com/cslib-community/complexitylib/issues/2734);
+and its mod-one error bound are proved in [#2734](https://github.com/cslib-community/cslib-frontier/issues/2734);
 no sampler or runtime certificate follows from this identification.
 
 ## Describe a discrete Gaussian law
@@ -695,7 +695,7 @@ Use `map_add_discreteGaussian` to move the law along a lattice translation, and
 lattice at the off-lattice center `1/2`, distinguish its law from a point mass, and check the
 zero lattice. This is a mathematical distribution, with no efficient sampler or smoothing
 bound. Regev's quantum worst-case/average-case reduction remains open in
-[issue #1213](https://github.com/cslib-community/complexitylib/issues/1213).
+[issue #1213](https://github.com/cslib-community/cslib-frontier/issues/1213).
 
 For a quantitative radius estimate, import
 [Gaussian/DiscreteTail.lean](../../Complexity/Foundations/Probability/Gaussian/DiscreteTail.lean).
@@ -844,8 +844,8 @@ the representative is `2`, the scalar lattice contains `12`, and the conditional
 `scripts/build.sh ComplexityTests.DiscreteGaussianCoefficientFiber` to check the clients.
 
 This is the exact conditioning step used in Regev's Lemma 3.11, not its joint LWE sample
-bound or an efficient sampling procedure. The [joint experiment](https://github.com/cslib-community/complexitylib/issues/2767)
-and the [full reduction](https://github.com/cslib-community/complexitylib/issues/1213) remain separate.
+bound or an efficient sampling procedure. The [joint experiment](https://github.com/cslib-community/cslib-frontier/issues/2767)
+and the [full reduction](https://github.com/cslib-community/cslib-frontier/issues/1213) remain separate.
 
 ## Fold a density onto a quotient
 
@@ -937,7 +937,7 @@ Gaussian by an atom and recover the variance-two Gaussian from two variance-one 
 A noncommutative permutation-group example checks the order of translation; infinite-density
 and zero-input cases check the absence of hidden finiteness premises. Run
 `scripts/build.sh ComplexityTests.ConvolutionDensity` from the repository root.
-The [lattice Gaussian convolution bound](https://github.com/cslib-community/complexitylib/issues/2707)
+The [lattice Gaussian convolution bound](https://github.com/cslib-community/cslib-frontier/issues/2707)
 below supplies its actual discrete weights, completion of the square and quantitative error proof.
 
 ## Add continuous Gaussian noise to a coset Gaussian
@@ -1593,7 +1593,7 @@ For a coarser source, `source_incoming_cost_le` quantifies the generic incoming 
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
 lower-child budget induction, native realization and RL=L remain in
-[issue #1721](https://github.com/cslib-community/complexitylib/issues/1721).
+[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721).
 
 ## Extract an emitted pseudorandom prefix
 

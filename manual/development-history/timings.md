@@ -54,7 +54,7 @@ The [timing analysis script](data/analyze.py) computes predecessor cohorts separ
 | Universal simulation #1852 | Oct 30 22:10:41 → Oct 31 15:12:40: **17h1m59s** | PR lead time; implementation began before PR creation |
 | Named-cell Fibonacci insertion #2228 | Nov 1 23:46:44 → Nov 2 04:01:01: **4h14m17s** | PR lead time for a stacked milestone, not a complete Fibonacci-heap proof |
 
-The transcript verifies #520's request timestamp and the public API verifies the PR dates. The other two rows have public PR evidence but no complete matched local authoring transcript. They cannot be labelled end-to-end autonomous completion times. [Excerpt verifier](data/transcript_excerpts.py), [PR #520](https://github.com/cslib-community/complexitylib/pull/520), [PR #1852](https://github.com/cslib-community/complexitylib/pull/1852), [PR #2228](https://github.com/cslib-community/complexitylib/pull/2228).
+The transcript verifies #520's request timestamp and the public API verifies the PR dates. The other two rows have public PR evidence but no complete matched local authoring transcript. They cannot be labelled end-to-end autonomous completion times. [Excerpt verifier](data/transcript_excerpts.py), [PR #520](https://github.com/cslib-community/cslib-frontier/pull/520), [PR #1852](https://github.com/cslib-community/cslib-frontier/pull/1852), [PR #2228](https://github.com/cslib-community/cslib-frontier/pull/2228).
 
 ## Continuous integration
 
@@ -71,6 +71,6 @@ For the exact snapshot's successful merge-group job, explicit start/completion t
 | Reclaim hosted-runner SDK space | 91 |
 | Stage merge-group outputs | 57 |
 
-Other setup, hygiene, validation and bookkeeping steps fill the remainder. This is one observed cached CI job on a particular revision, not a cold-build benchmark or a measured cache speedup. The optional controlled handoff measurement was skipped in this job. Its measurement plan remains distinct from completed evidence. [Recorded CI run](https://github.com/cslib-community/complexitylib/actions/runs/41384852164), [measurement source](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/scripts/cache/MEASUREMENT.md)
+Other setup, hygiene, validation and bookkeeping steps fill the remainder. This is one observed cached CI job on a particular revision, not a cold-build benchmark or a measured cache speedup. The optional controlled handoff measurement was skipped in this job. Its measurement plan remains distinct from completed evidence. [Recorded CI run](https://github.com/cslib-community/cslib-frontier/actions/runs/41384852164), [measurement source](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/scripts/cache/MEASUREMENT.md)
 
 No token-price, billing-cost or energy estimate is made. The available records do not supply a verified, uniformly defined all-provider/all-machine resource denominator.

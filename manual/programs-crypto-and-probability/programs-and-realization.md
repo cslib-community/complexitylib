@@ -98,9 +98,9 @@ an actual certified oracle-PPT program, fixes one bit per native instruction, an
 replay whose polynomial-length uniform coin tape reproduces the joint encoded-output and external
 state law for every stateful handler. Replies remain on their original channels; replay does not
 copy an unbounded reply into a configuration encoding. This completes the replay prerequisite
-[#2579](https://github.com/cslib-community/complexitylib/issues/2579). The Schnorr signing/hash/cache
+[#2579](https://github.com/cslib-community/cslib-frontier/issues/2579). The Schnorr signing/hash/cache
 and freshness bridge for the full ROM forking reduction remains
-[#2568](https://github.com/cslib-community/complexitylib/issues/2568).
+[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568).
 
 [`Oracle/ReplayParameter.lean`](../../Complexity/Computability/Probabilistic/Oracle/ReplayParameter.lean)
 derives a public-key length bound `keyC * (n + 1)^keyD` from actual strict-PPT key generation.
@@ -115,7 +115,7 @@ bounds calls on every fixed tape, including tapes outside the intended sampling 
 transports such joint-state mixtures through the existing shared-world signature game. Its
 `eval_worldRealize_eq_bind` includes the cache and signing log before final verification, and works
 with any acceptance rule. In particular, final-message freshness permits repeated signing queries.
-These shared laws complete [#2652](https://github.com/cslib-community/complexitylib/issues/2652);
+These shared laws complete [#2652](https://github.com/cslib-community/cslib-frontier/issues/2652);
 the full efficient Schnorr reduction remains open.
 
 [`Signature/WordRandomOracle.lean`](../../Complexity/Crypto/Computational/Signature/WordRandomOracle.lean)
@@ -131,7 +131,7 @@ obeys the parameter-only call bounds, including tapes outside the sampling suppo
 `ComputableInPolyTime.encoding_comp` supplies the encoded machine input.
 
 This completes the generic word-forger adapter
-[#2636](https://github.com/cslib-community/complexitylib/issues/2636). The scheme's signer, hash
+[#2636](https://github.com/cslib-community/cslib-frontier/issues/2636). The scheme's signer, hash
 handler and final verifier still run in the existing typed shared world. Native realizations of
 those components, Schnorr's concrete query encoding, and the full efficient forking reduction are
 separate obligations. Repeated signing/hash and fresh/replayed-message examples are checked in

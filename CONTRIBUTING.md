@@ -8,19 +8,29 @@ repository's workflow, file layout, proof, validation and review requirements. U
 submissions follow the target repository's current process.
 
 For setup, start with [Build a checkout](README.md#build-a-checkout). The
-[guide](https://www.cslib.io/complexitylib/guide/) and
+[guide](https://www.cslib.io/cslib-frontier/guide/) and
 [checked examples](README.md#start-here) introduce the APIs before you change them.
 
 ## Proposing and contributing work
 
-Use this repository's Issues or pull requests to agree on a substantial development
-before implementing it.
-State the mathematical endpoint, cite its source, identify existing APIs and missing dependencies,
-and propose a first independently useful milestone. [ROADMAP.md](ROADMAP.md) lists open directions;
-an item there is not an assignment or a claim that its prerequisites are complete.
+Agree on a substantial development before implementing it. An issue in this repository, written
+with the [development template](.github/ISSUE_TEMPLATE/development.md), is one good way to
+propose a new direction; a pull request can also start the discussion. There is no separate
+roadmap repository. State the endpoint, cite its source, identify existing APIs and missing
+dependencies, and propose a first independently useful milestone. If you write an issue on
+someone else's behalf, for example from their short description, name them in its "Originated
+by" field. [ROADMAP.md](ROADMAP.md) lists the accepted directions; an item there is not an
+assignment or a claim that its prerequisites are complete.
 Small fixes and API improvements can go directly to a pull request. Use the existing issue or
 PR to record ownership and handoffs; do not create duplicate task records. Prioritize fixes and
 landing open PRs when review or integration is the bottleneck.
+
+A new file's `Copyright` and `Authors:` lines name the originator(s) of the issue or proposal it
+implements and the person whose agents did the implementation (the human, not a fleet or bot
+account); the [file rules](AGENTS.md#file-rules) give the details. The originator is the person
+named in the issue's "Originated by" field when present, and otherwise the issue's author. The
+rule applies going forward: existing headers stay unless someone asks for a correction, and ports
+keep their original authors.
 
 Keep a pull request small enough to review as one mathematical or engineering change. Batch
 related mechanical fixes when they share a contract and validation; split at independently useful
@@ -50,7 +60,7 @@ imports shown. Record the scope of validation and review accurately.
 
 The bar is Mathlib's [style guidelines](https://leanprover-community.github.io/contribute/style.html)
 and CSLib's [CODESTYLE](https://github.com/leanprover/cslib/blob/main/CODESTYLE.md), applied
-uniformly to every area ([#587](https://github.com/cslib-community/complexitylib/issues/587)).
+uniformly to every area ([#587](https://github.com/cslib-community/cslib-frontier/issues/587)).
 Mathlib's standard linter set already enforces the mechanical part; reviews enforce the rest:
 
 1. **Reuse.** Use existing abstractions, in CSLib, Mathlib or this library, instead of parallel
@@ -76,7 +86,7 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    become weaker inequalities, and regression cases must not become tautologies.
 
 **Named components instead of positional projections**
-([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Public statements and
+([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Public statements and
 the bodies of public definitions do not reach into nested tuples with projection chains such as
 `c.1.2` or `s.1.1.2`. A reader should not have to reconstruct the tuple layout. In order of
 preference:
@@ -101,10 +111,10 @@ Two places keep projections, as standing exceptions:
   certificate. Keep the projection form there.
 - **Section `variable` hypotheses in `module` files.** On the current toolchain a destructuring
   lambda in a section `variable` of a `public section` elaborates to `sorry`, with only a warning
-  ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
+  ([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
 
-**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+**Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
 reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
 module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
@@ -225,7 +235,7 @@ candidate modules). After a build,
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
 than restate signatures with `example … := name`. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
-public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
 enforces its baseline only in the modules a pull request changes, and merge groups only report,
 so `main` can drift above the baseline; the next change to a drifted module names the encoding
 or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
@@ -267,9 +277,9 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only, grouped by area.
+ROADMAP lists accepted directions only, grouped by area.
 Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
-linked inline as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`.
+linked inline as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`.
 Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
 direction, and a direction leaves ROADMAP only when it is completed or deliberately dropped.
 `scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600

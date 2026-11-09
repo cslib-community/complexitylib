@@ -1,7 +1,7 @@
 # Report an aggregate-only merge conflict
 
 `aggregate_merge.py` checks the narrow generated `Complexity.lean` case from
-[#2274](https://github.com/cslib-community/complexitylib/issues/2274). Run it against immutable,
+[#2274](https://github.com/cslib-community/cslib-frontier/issues/2274). Run it against immutable,
 locally available commits:
 
 ```sh

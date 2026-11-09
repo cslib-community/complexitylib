@@ -221,7 +221,7 @@ proof; they do not prove its full forest or whole-blossom contraction invariants
 an even delta-matroid of three weight-two tuples. [Exchange tests](../../ComplexityTests/DeltaMatroid.lean)
 include odd exactly-one relations, the empty-coordinate case, and failures of exchange/evenness.
 These mathematical prerequisites provide no planar embedding algorithm, edge-CSP solver or
-planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Occurrences, explicit tables and ordered incidence rotations
 
@@ -262,7 +262,7 @@ and [constraint-order tests](../../ComplexityTests/CSPRotationSystem.lean).
 
 Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
 realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
-separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
@@ -290,7 +290,7 @@ common parity. The empty-scope relation is rejected under the nonempty delta-mat
 incompatible shared coordinates, empty external coordinates, arbitrary scope lengths, ordered
 outside ports, empty selections, nullary tables, and malformed guards. Native operation and size
 certificates remain those of `PolyTime.CSP.Table`. Whole-instance blossom contraction/lifting,
-solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Prefix-valid walks and augmentation
 
@@ -324,7 +324,7 @@ constraints, actual returned paths, odd unsatisfiable units, repeated constraint
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
 prefix is invalid. The routine takes an improving comparison labeling as input: finding that
 labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
-Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations
 
@@ -442,13 +442,13 @@ The [checked examples](../../ComplexityTests/ProofComplexity/CuttingPlanes.lean)
 Import `Complexity.Logics.Propositional.Frege.Resolution` for everything below, or
 `Complexity.Logics.Propositional.Frege` for the proof system alone.
 
-[The Frege module](../../Complexity/Logics/Propositional/Frege.lean) fixes one Hilbert-style proof system. Cook and Reckhow [cookreckhow79][cookreckhow79] require a Frege system to have finitely many sound schemes and rules that are also implicationally complete. This system is complete by the standard argument for its classical axiomatization, but the library does not prove that yet ([#3069](https://github.com/cslib-community/complexitylib/issues/3069)). Formulas are cslib's `Cslib.Logic.PL.Proposition` over the atoms `WithBot V` (`Cslib.Logic.PL.Frege.Formula`), with cslib's `⊥`, the atom `⊥`, read as falsity, and cslib's `Proposition.neg φ = φ → ⊥`. `Formula.eval σ` evaluates a formula under `σ : V → Bool`, because cslib's propositions carry no Boolean semantics. `IsAxiom` lists the schemes K, S and double-negation elimination for `→` and `⊥`, together with introduction and elimination schemes for `∧` and `∨`; modus ponens is the only rule. `IsProof Γ L` lists a proof from the hypotheses `Γ` from its last line to its first, as resolution and cutting planes do, and its size is the number of lines. `DerivableInSize Γ φ n` says that `φ` has a proof of at most `n` lines, as for cutting planes. `IsProof.eval` gives soundness.
+[The Frege module](../../Complexity/Logics/Propositional/Frege.lean) fixes one Hilbert-style proof system. Cook and Reckhow [cookreckhow79][cookreckhow79] require a Frege system to have finitely many sound schemes and rules that are also implicationally complete. This system is complete by the standard argument for its classical axiomatization, but the library does not prove that yet ([#3069](https://github.com/cslib-community/cslib-frontier/issues/3069)). Formulas are cslib's `Cslib.Logic.PL.Proposition` over the atoms `WithBot V` (`Cslib.Logic.PL.Frege.Formula`), with cslib's `⊥`, the atom `⊥`, read as falsity, and cslib's `Proposition.neg φ = φ → ⊥`. `Formula.eval σ` evaluates a formula under `σ : V → Bool`, because cslib's propositions carry no Boolean semantics. `IsAxiom` lists the schemes K, S and double-negation elimination for `→` and `⊥`, together with introduction and elimination schemes for `∧` and `∨`; modus ponens is the only rule. `IsProof Γ L` lists a proof from the hypotheses `Γ` from its last line to its first, as resolution and cutting planes do, and its size is the number of lines. `DerivableInSize Γ φ n` says that `φ` has a proof of at most `n` lines, as for cutting planes. `IsProof.eval` gives soundness.
 
 Two lemmas build proofs with explicit line counts. `IsProof.cut` replays a proof from `Γ ++ Δ` on top of a proof from `Γ` that already contains the formulas of `Δ`, adding at most as many lines as the replayed proof has, so later steps can reuse earlier lines. `IsProof.deduction` is the deduction theorem with linear overhead. A proof from `Γ ++ Δ` becomes a proof from `Γ` that contains `Δ ⇒ φ` (`Formula.imps`) for each line `φ`, with at most `10 (|Δ| + 1)` lines per original line. Discharging the hypotheses one at a time would instead multiply the size by a constant for each hypothesis.
 
 [The simulation module](../../Complexity/Logics/Propositional/Frege/Resolution.lean) translates a clause into `¬ℓ₁ → ⋯ → ¬ℓₖ → ⊥` over its distinct literals (`Clause.toFormula`, with `Clause.eval_toFormula`). `Frege.derivableInSize_toFormula_resolvent` derives the formula of a resolvent from the formulas of its premises in at most `stepBound w = 10 (2 w + 1) (42 w + 23)` lines, where `w` is the larger premise width. The pivot need not occur in either premise. `CNF.IsProof.frege` turns an `s`-line resolution proof of width at most `w` into a Frege proof of at most `stepBound w * s` lines that contains the formula of every line. `CNF.RefutableInSize.frege` turns an `s`-line refutation of a CNF on `N` variables into a Frege proof of `⊥` of at most `stepBound (2 N) * s` lines. `CNF.exists_frege_refutation_iff_not_satisfiable` combines this with resolution completeness and Frege soundness: Frege refutes exactly the unsatisfiable CNFs.
 
-These are line counts. Each translated line has `O(w)` connectives, but formula size is not measured, and none of these results is a p-simulation between `ProofSystem` instances. The library does not yet have implicational completeness of Frege, machine-level p-simulations, the mutual p-simulation of Frege systems or Extended Frege; [#3069](https://github.com/cslib-community/complexitylib/issues/3069) tracks them.
+These are line counts. Each translated line has `O(w)` connectives, but formula size is not measured, and none of these results is a p-simulation between `ProofSystem` instances. The library does not yet have implicational completeness of Frege, machine-level p-simulations, the mutual p-simulation of Frege systems or Extended Frege; [#3069](https://github.com/cslib-community/cslib-frontier/issues/3069) tracks them.
 
 The [checked examples](../../ComplexityTests/ProofComplexity/Frege.lean) include a five-line proof of `p → p` built from the constructors, clause formulas and their semantics, a translated refutation of `x ∧ ¬x`, soundness on a satisfiable CNF, and one resolution step on width-10 clauses. Check them with `scripts/build.sh ComplexityTests.ProofComplexity.Frege`.
 

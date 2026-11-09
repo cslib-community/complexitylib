@@ -1,7 +1,7 @@
 # HTTP cache origin
 
-Optional MIT cache origin for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
-and [#2506](https://github.com/cslib-community/complexitylib/pull/2506). The
+Optional MIT cache origin for [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503)
+and [#2506](https://github.com/cslib-community/cslib-frontier/pull/2506). The
 [migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
 GCS remains an active CI publisher and the default reader. MIT CI publication is enabled;
 reader cutover remains a separate decision. The source and examples do not provision infrastructure

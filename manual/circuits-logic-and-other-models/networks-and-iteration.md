@@ -31,7 +31,7 @@ trigonometric parameters. [Path interpolation clients](../../ComplexityTests/Exp
 also demonstrate why the nonresonance hypothesis is needed. These are finite equation
 certificates: the simple-graph path construction, normalized spectral bridge, explicit core
 family, and asymptotic `π²/8` coefficient remain the construction direction in
-[#3348](https://github.com/cslib-community/complexitylib/issues/3348).
+[#3348](https://github.com/cslib-community/cslib-frontier/issues/3348).
 
 [NeighborDeletion](../../Complexity/Foundations/Combinatorics/Expander/NeighborDeletion.lean)
 transfers lossless expansion from a degree-`D` graph to a supplied spanning degree-`a` subgraph
@@ -57,7 +57,7 @@ The network-to-program bridge preserves acceptance. When the network has a uniqu
 
 [Nisan's generator](../../Complexity/Crypto/Primitives/PRG/Nisan.lean) works by recursive doubling: from a block `x` and `k` seeds of a pairwise independent family `h : ι → X → X` it outputs `2^k` blocks. `abs_dens_eval_blocks_sub_le` bounds the difference in acceptance probability for every program with state type `S` by `(2^k − 1)|S|/(2√|X|)`, and `secure_generator` restates this bound as `Generator.Secure` against `IsReadOnceTest w`. The proof is Nisan's hashing argument in exact expectation form. The [hash mixing lemma](../../Complexity/Probability/PairwiseIndependentHash/Mixing.lean) computes the variance of `dens {x ∈ A | h i x ∈ B}` exactly, and an induction over all start distributions bounds the expected ℓ¹ error of the transition matrices. On bit strings, the [Toeplitz hash over `Bool`](../../Complexity/Probability/BitString/ToeplitzHash.lean) gives [`bitGenerator`](../../Complexity/Crypto/Primitives/PRG/Nisan/Bits.lean), which has `n + k(3n − 1)` seed bits and `2^k n` output bits. For `n = 2(k + a + d)`, `secure_bitGenerator_of_le` bounds the error by `2^(−d)` against width at most `2^a` [nisan92][nisan92].
 
-These theorems are information-theoretic statements about distributions. The [checked examples](../../ComplexityTests/NisanGenerator.lean) cover the block order, read-once tests that hold at width `2` and fail at width `1`, and an instance that stretches `734` seed bits into `24576` output bits with error `1/2` against width `2`. Several pieces remain open under [#474](https://github.com/cslib-community/complexitylib/issues/474), among them space-efficient computability of the generator, a bridge from the configuration graphs of randomized logspace machines to `ReadOnceProgram`, `BPL ⊆ L²` and the Saks–Zhou theorem `BPL ⊆ L^{3/2}`.
+These theorems are information-theoretic statements about distributions. The [checked examples](../../ComplexityTests/NisanGenerator.lean) cover the block order, read-once tests that hold at width `2` and fail at width `1`, and an instance that stretches `734` seed bits into `24576` output bits with error `1/2` against width `2`. Several pieces remain open under [#474](https://github.com/cslib-community/cslib-frontier/issues/474), among them space-efficient computability of the generator, a bridge from the configuration graphs of randomized logspace machines to `ReadOnceProgram`, `BPL ⊆ L²` and the Saks–Zhou theorem `BPL ⊆ L^{3/2}`.
 
 ## Tensor networks and their explicit representations
 
