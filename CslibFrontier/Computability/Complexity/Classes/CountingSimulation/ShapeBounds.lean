@@ -25,6 +25,10 @@ procedures.
 * If the root has `m ≥ D + 81` edges and precision at most `D m ²`, a call of its shape has
   precision at most `m ^ 4` (`FastContraction.Shape.prec_le_pow_four`).
 
+The declarations live in the `FastContraction` namespace so that dot notation on `Shape` reaches
+them, but the file sits beside its only clients under `Classes/CountingSimulation`, as the
+`FastContraction.Reach` lemmas of `CountingSimulation.FastLeaves` do.
+
 ## Main results
 
 * `Cslib.Circuits.Frontier.FastContraction.Shape.length_le_pow`: polynomial sizes.

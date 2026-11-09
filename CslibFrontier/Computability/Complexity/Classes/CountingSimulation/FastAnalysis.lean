@@ -169,8 +169,8 @@ private theorem activeBounds_onSchedule_root {P D C : ℕ} {G : ℕ × ExplicitT
     (hg : fastGuard G = true) (hm : D + 2 ≤ G.2.numEdges)
     (hp : (ExplicitTensorNetwork.capPrecision (P, G)).1 ≤ D * G.2.numEdges)
     (hC : C = (ExplicitTensorNetwork.capPrecision (P, G)).1 / G.2.numEdges + 1)
-    (hA : ∀ C ≤ D + 1, ∀ d M p, Active C G.2.numEdges d M p →
-      ActiveBounds C G.2.numEdges d M p) :
+    (hA : ∀ C' ≤ D + 1, ∀ d M p, Active C' G.2.numEdges d M p →
+      ActiveBounds C' G.2.numEdges d M p) :
     (∀ d M p, Active C G.2.numEdges d M p → ActiveBounds C G.2.numEdges d M p) ∧
       OnSchedule C G.2.numEdges (root (ExplicitTensorNetwork.capPrecision (P, G))) := by
   subst hC

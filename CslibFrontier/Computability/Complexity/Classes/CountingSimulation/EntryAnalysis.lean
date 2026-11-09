@@ -126,6 +126,25 @@ theorem le_normalizedPrecision_root {m P : ℕ} (hm : 0 < m) :
     omega
   exact hp.trans (Nat.mul_le_mul_right _ hq)
 
+/-- **The root call's schedule constant.** With `m` edges, `D + 2 ≤ m` and normalized precision
+`q ≤ D m`, the guarded root call is on the schedule for the constant `C = q / m + 1 ≤ D + 1`, so the
+schedule's certificate for all constants up to `D + 1` at scale `m` covers `C`. This is the entry
+counterpart of the explicit root's constant in `CountingSimulation.FastAnalysis`; the roots and
+their schedule lemmas differ (logarithmic rather than capped precision). -/
+private theorem activeBounds_onSchedule_rootCall {P D C r : ℕ} {G : DescribedNetwork T}
+    (hg : EntryContraction.guard (P, modulus G.numEdges, r, G) = true) (hm : D + 2 ≤ G.numEdges)
+    (hq : normalizedPrecision G.numEdges P ≤ D * G.numEdges)
+    (hC : C = normalizedPrecision G.numEdges P / G.numEdges + 1)
+    (hA : ∀ C' ≤ D + 1, ∀ d M p, Active C' G.numEdges d M p →
+      ActiveBounds C' G.numEdges d M p) :
+    (∀ d M p, Active C G.numEdges d M p → ActiveBounds C G.numEdges d M p) ∧
+      OnSchedule C G.numEdges (rootCall (P, modulus G.numEdges, r, G)) := by
+  subst hC
+  have hC1 : normalizedPrecision G.numEdges P / G.numEdges + 1 ≤ D + 1 :=
+    Nat.add_le_add_right (Nat.div_le_of_le_mul (by rw [Nat.mul_comm]; exact hq)) 1
+  have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < G.numEdges)
+  exact ⟨hA _ hC1, onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC⟩
+
 /-- **The clock is subexponential on admissible inputs**: with `s ≤ m ≤ C s` edges and precision
 `P ≤ D s (⌊log₂ s⌋ + 1)`, it is at most `2 ^ (K₀ (C + D) s / √⌊log₂ s⌋)`. -/
 theorem clock_le {C D s P r : ℕ} {fl : List ℕ} {G : DescribedNetwork T} (hs : 2 ≤ s)
@@ -223,11 +242,8 @@ theorem entry_reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P r : ℕ) (G : Describ
         _ = D * m ^ 2 := by ring)
     rw [hsc]
     exact hsh.prec_le_pow_four rfl rfl (show D + 81 ≤ m by omega) hp₂
-  · have hC1 : normalizedPrecision m P / m + 1 ≤ D + 1 :=
-      Nat.add_le_add_right (Nat.div_le_of_le_mul (by rw [Nat.mul_comm]; exact hq₀)) 1
-    have hB := hsA m (by omega) (normalizedPrecision m P / m + 1) hC1
-    have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < m)
-    have h := hy.onSchedule hB (onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC)
+  · obtain ⟨hB, hroot⟩ := activeBounds_onSchedule_rootCall hg (by omega) hq₀ rfl (hsA m (by omega))
+    have h := hy.onSchedule hB hroot
     rw [hsc]
     exact h.edges_le_leafSize hB hl
 
@@ -406,14 +422,10 @@ theorem exists_entryAnalysis
         H ≤ m + 1 := by
     by_cases hs₀ : max sA (D + 2) ≤ s
     · have hm2 : D + 2 ≤ m := by omega
-      have hC1 : normalizedPrecision m P / m + 1 ≤ D + 1 := by
-        have := Nat.div_le_div_right (c := m) hq₀
-        rw [Nat.mul_div_cancel _ (by omega)] at this
-        omega
-      have hB := hsA m (by omega) (normalizedPrecision m P / m + 1) hC1
-      have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < m)
-      obtain ⟨N, H, he, hN, hH⟩ := FastContraction.exists_eval_onSchedule entry hB
-        (onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
+      obtain ⟨hB, hroot⟩ :=
+        activeBounds_onSchedule_rootCall hg hm2 hq₀ rfl (hsA m (by omega))
+      obtain ⟨N, H, he, hN, hH⟩ := FastContraction.exists_eval_onSchedule entry hB hroot rfl
+        (by omega)
       exact ⟨N, H, he, fun _ => two_mul_sub_one_le_fuel hm2 hq₀ hN,
         hH.trans ((Nat.log_lt_self 2 (by omega)).le.trans (Nat.le_succ _))⟩
     · obtain ⟨N, H, he, hH⟩ := FastContraction.exists_eval_reachInv (ev := entry) (mk := nativeMk)
