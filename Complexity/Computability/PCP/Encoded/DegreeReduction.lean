@@ -25,6 +25,7 @@ uniform certificate for the numerical cloud rotation.
 * `Cslib.PCP.Encoded.Graph.halfEdgeNumber`: number the half-edges by consecutive naturals.
 * `Cslib.PCP.Encoded.Graph.degreeReduce`: the executable edge-list transformation.
 * `Cslib.PCP.Encoded.Graph.degreeReduceEval`: interpret original and equality constraints.
+* `Cslib.PCP.Encoded.Graph.encDegreeReduceConstraint`: the encoding of the output descriptors.
 
 ## Main results
 
@@ -94,6 +95,12 @@ def degreeReduceEval [DecidableEq α] (eval : C → α → α → Bool)
     (constraint : Option (Bool × C)) (a b : α) : Bool :=
   constraint.elim (decide (a = b)) fun p => if p.1 then eval p.2 b a else eval p.2 a b
 
+/-- Constraint descriptor of a degree-reduced edge (`degreeReduceEdge`): `none`, for a cloud
+equality, is the empty word, and `some (reverse, c)`, for an original constraint `c`, is `true`
+followed by the framed orientation bit `reverse` and then `c` encoded by `enc`, unframed. -/
+abbrev encDegreeReduceConstraint (enc : C ↪ List Bool) : Option (Bool × C) ↪ List Bool :=
+  encOption (encPair encBool enc)
+
 /-- Enumerating all darts of degree reduction charges the full output list. -/
 @[fun_prop]
 theorem isPolyTime_degreeReduceDarts {graph : Input → Graph C}
@@ -126,7 +133,7 @@ theorem isPolyTime_degreeReduceEdge {graph : Input → Graph C}
     (fallback : C) :
     ComputableInPolyTime
       (fun x => (graph x).degreeReduceEdge fallback rotate (dart x))
-      input (Edge.encoding (encOption (encPair encBool enc))) := by
+      input (Edge.encoding (encDegreeReduceConstraint enc)) := by
   unfold degreeReduceEdge
   fun_prop
 
@@ -138,7 +145,7 @@ theorem isPolyTime_degreeReduce (fallback : C) (labels : List D)
     (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
     ComputableInPolyTime (degreeReduce fallback rotate labels)
-      (encoding enc) (encoding (encOption (encPair encBool enc))) := by
+      (encoding enc) (encoding (encDegreeReduceConstraint enc)) := by
   have hdarts := isPolyTime_degreeReduceDarts (enc := enc)
     (labelEncoding := labelEncoding) (ComputableInPolyTime.id' (encIn := encoding enc)) labels
   unfold degreeReduce
@@ -153,7 +160,7 @@ theorem isPolyTime_degreeReduceEval [DecidableEq α] {alphabet : α ↪ List Boo
       (encPair enc (encPair alphabet alphabet)) encBool) :
     ComputableInPolyTime
       (fun p : Option (Bool × C) × α × α => degreeReduceEval eval p.1 p.2.1 p.2.2)
-      (encPair (encOption (encPair encBool enc)) (encPair alphabet alphabet)) encBool := by
+      (encPair (encDegreeReduceConstraint enc) (encPair alphabet alphabet)) encBool := by
   unfold degreeReduceEval
   polytime
 

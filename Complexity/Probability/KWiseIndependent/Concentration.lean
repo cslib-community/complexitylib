@@ -294,8 +294,7 @@ theorem expect_sum_sub_expect_pow_le {ι X Y : Type*} [Fintype ι] [Fintype Y] [
     calc (3 : ℝ) ^ r * (m : ℝ) ^ (2 * m - r) * μ ^ r
         = (m : ℝ) ^ m * ((m : ℝ) ^ (m - r) * (3 * μ) ^ r) := by
           rw [h2mr, pow_add, mul_pow]; ring
-      _ ≤ (m : ℝ) ^ m * (((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ m) :=
-          mul_le_mul_of_nonneg_left hhalf (by positivity)
+      _ ≤ (m : ℝ) ^ m * (((1 : ℝ) / 2) ^ (m - r) * (3 * μ) ^ m) := by gcongr
       _ = ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := by rw [mul_pow]; ring
   have hgeom : ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) ≤ 2 := by
     have hbij : ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) = ∑ j ∈ range m, ((1 : ℝ) / 2) ^ j := by
@@ -315,8 +314,7 @@ theorem expect_sum_sub_expect_pow_le {ι X Y : Type*} [Fintype ι] [Fintype Y] [
             ∏ z ∈ univ.image t, p z := hpart
     _ ≤ ∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r) * (3 * (m : ℝ) * μ) ^ m := sum_le_sum hr_bound
     _ = (∑ r ∈ Icc 1 m, ((1 : ℝ) / 2) ^ (m - r)) * (3 * (m : ℝ) * μ) ^ m := (sum_mul _ _ _).symm
-    _ ≤ 2 * (3 * (m : ℝ) * μ) ^ m :=
-        mul_le_mul_of_nonneg_right hgeom (by positivity)
+    _ ≤ 2 * (3 * (m : ℝ) * μ) ^ m := by gcongr
 
 /-- **Markov tail bound for `2m`-wise independent `[0, 1]` sums**
 (cf. [SchmidtSiegelSrinivasan1995, Theorem 5]): when `1 ≤ m`, `2 * m ≤ 3 * μ`, and `0 < a`, the sum

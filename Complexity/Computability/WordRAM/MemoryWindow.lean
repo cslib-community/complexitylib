@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.WordRAM.Structured
-import Complexity.Computability.WordRAM.SymbolicExec
 
 /-!
 # Native programs in a caller-owned memory window

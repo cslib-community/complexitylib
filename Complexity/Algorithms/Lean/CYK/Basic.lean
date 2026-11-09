@@ -279,9 +279,7 @@ private theorem mem_cell_iff {tbl : Table G} {L i : ℕ} (hi : i + (L + 1) ≤ w
     A ∈ cell G w tbl i (L + 1) ↔
       G.toCFG.Derives [.nonterminal A] (((w.drop i).take (L + 1)).map .terminal) := by
   set s := (w.drop i).take (L + 1) with hs
-  have hlen : s.length = L + 1 := by
-    simp only [hs, List.length_take, List.length_drop]
-    omega
+  have hlen : s.length = L + 1 := by grind
   have hne : s ≠ [] := List.ne_nil_of_length_pos (by omega)
   rw [derives_iff_of_ne_nil hne]
   rcases L with _ | L
