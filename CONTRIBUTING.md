@@ -238,8 +238,8 @@ CI runs that notice too. `--all` examines the whole library: `python3 scripts/pa
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
 On pull requests CI also runs a third advisory notice, `python3 scripts/proof_copies.py`, which
 reads only the sources. It lists tactic blocks of four or more lines, on lines a change adds or
-modifies, that repeat a block of another proof in the same file or directory up to local names
-and at most two renamed constants
+modifies, that repeat a block of another proof, or of the same proof, in the same file or
+directory up to local names and at most two renamed constants
 ([#3725](https://github.com/cslib-community/cslib-frontier/issues/3725)). If both blocks make the
 same argument and a lemma would make both proofs clearer, prove it once and use it in both;
 otherwise leave them. Its candidates, and those that `--all` lists for the whole library, are not

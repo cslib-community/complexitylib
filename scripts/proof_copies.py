@@ -13,7 +13,8 @@ By default it examines the `CslibFrontier/` files changed since the merge base o
 `origin/main`), as `scripts/parallel_defs.py` does, and compares their proofs with every proof in
 the same directory. It reports a pair when at least one of its two blocks contains an added or
 modified line, so a new copy of an old block is reported and untouched old repetition is not.
-With `--all` it examines the whole library, as an audit (well under a minute).
+A renamed or moved file counts as added, so its old repetition is reported again. With `--all`
+it examines the whole library, as an audit (well under a minute).
 
 Each proof body becomes a list of logical lines: comments are dropped, whitespace is collapsed, a
 line continues while a bracket is open, and leading `·` bullets and `by` are dropped. Local names
@@ -404,7 +405,8 @@ def is_local(token: str) -> bool:
 def score(copy: Copy) -> Copy:
     """Compute the renamed pairs, the substantive lines, the weight and the distinct shapes of a
     copy's alike lines. Two local names, or projections of them (`hp.pos`, `hq.pos`), are not a
-    renaming."""
+    renaming, nor is the same name, local in one proof and not in the other (a section `variable`
+    is not seen as local)."""
     renamed: set[tuple[str, str]] = set()
     shapes = set()
     for k in range(copy.n):
@@ -412,7 +414,7 @@ def score(copy: Copy) -> Copy:
         if x.shape != y.shape:
             continue
         renamed |= {(u, v) for s, t, u, v in zip(x.norm, y.norm, x.words, y.words)
-                    if s != t and not (is_local(s) and is_local(t))}
+                    if s != t and u != v and not (is_local(s) and is_local(t))}
         shapes.add(x.shape)
         if x.substantive:
             copy.substantive += 1

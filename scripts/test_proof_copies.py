@@ -141,6 +141,22 @@ class DetectionTests(unittest.TestCase):
         self.assertIn("with `Nat.add_comm` in place of `Nat.mul_comm`", copy.text())
         self.assertEqual(self.pairs(max_renamed=0), [])
 
+    def test_section_variable_is_not_a_renaming(self) -> None:
+        # `V` is a section `variable` in one file and a binder in the other; the copy's text is
+        # identical, so `V.accepts` is not a renamed pair.
+        uses = ("  have h1 := V.accepts_mono (Nat.le_of_lt_succ h)\n"
+                "  rw [V.accepts_def, Nat.add_comm, Nat.add_sub_cancel] at h1\n"
+                "  refine Nat.le_trans (V.bound_le 1) (Nat.le_add_right 5 1)\n"
+                "  exact Nat.succ_le_succ (Nat.zero_le (List.length (List.replicate 3 true)))\n"
+                "  exact absurd (Nat.lt_irrefl 0) (Nat.not_lt_zero 0)\n")
+        self.write("CslibFrontier/Area/A.lean", "variable (V : Verifier)\n\n"
+                   + theorem("first", uses))
+        self.write("CslibFrontier/Area/B.lean",
+                   theorem("second", uses).replace("(n : Nat)", "(V : Verifier) (n : Nat)"))
+        copy, = self.find()
+        self.assertEqual((copy.n, copy.renamed), (5, ()))
+        self.assertNotIn("in place of", copy.text())
+
     def test_one_differing_line_is_bridged(self) -> None:
         tail = ("  have hq := Nat.lt_of_lt_of_le (Nat.zero_lt_succ 4) (Nat.le_refl 5)\n"
                 "  rw [Nat.mul_comm, Nat.mul_one] at hq\n"
