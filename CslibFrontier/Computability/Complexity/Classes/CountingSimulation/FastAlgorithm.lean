@@ -348,6 +348,53 @@ theorem exists_clockedRun_le (K₁ Ka c d r₁ e₁ r₂ e₂ kf : ℕ) :
   exact Nat.mul_le_mul (Nat.mul_le_mul hMK hEK)
     (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))))
 
+/-- **The output step of a clocked run**, shared by the fast machines
+(`CountingSimulation.fastCertificate_le`, `CountingSimulation.exists_fastCore_le`). A value with
+tag `0` is decoded; any other value, or no value, falls back to direct summation. If decoding a
+value of the run costs at most `Y`, direct summation costs at most `Z` below a size `s₀`, and from
+`s₀` on the run returns a value with tag `0`, then the output step costs at most `2 Y + 2 Z` in
+time and space together. -/
+theorem outputStep_le {β : Type*} {o : Option (ℕ × β)} {valid : ℕ × β → Prop}
+    {tagT tagS decT decS fstT fstS : ℕ × β → ℕ} {dirT dirS s s₀ Y Z : ℕ} {w : β}
+    (hval : ∀ v, o = some v → valid v)
+    (hdec : ∀ v, valid v → tagT v + tagS v + decT v + decS v + fstT v + fstS v ≤ Y)
+    (hbig : s₀ ≤ s → o = some (0, w)) (hdir : s < s₀ → dirT ≤ Z) (hdirS : dirS ≤ Z) :
+    (o.elim dirT fun v => tagT v + if decide (v.1 = 0) = true then decT v else fstT v + dirT) +
+        (o.elim dirS fun v => tagS v + if decide (v.1 = 0) = true then decS v else fstS v + dirS) ≤
+      2 * Y + 2 * Z := by
+  rcases hr : o with _ | v
+  · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by rw [hbig h] at hr; cases hr
+    have := hdir hs₀
+    simp only [Option.elim_none]
+    omega
+  · have hd := hdec v (hval v hr)
+    simp only [Option.elim_some]
+    split_ifs with h0
+    · omega
+    · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by
+        rw [hbig h] at hr
+        cases hr
+        simp at h0
+      have := hdir hs₀
+      omega
+
+/-- **The cost of decoding a value**, for the output step of a clocked run (`outputStep_le`): a
+cost polynomial in the length of the pair `(q, v)` is at most `c (Ka + 2) ^ d B ^ ((Ka + 1) d)` when
+`B` is one more than the length of `q` and `v` is at most `Ka B ^ Ka` long. -/
+theorem le_of_le_encPair {γ β : Type} {encIn : γ ↪ List Bool} {encV : β ↪ List Bool}
+    {q : γ} {v : β} {t c d Ka F B : ℕ}
+    (ht : t ≤ c * ((encPair encIn encV (q, v)).length + 1) ^ d) (hB : B = (encIn q).length + 1)
+    (hv : (encV v).length ≤ F) (hF : F ≤ Ka * B ^ Ka) :
+    t ≤ c * (Ka + 2) ^ d * B ^ ((Ka + 1) * d) := by
+  refine ht.trans ?_
+  rw [Nat.mul_assoc, pow_mul, ← mul_pow]
+  refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
+  have hB1 : B ≤ B ^ (Ka + 1) := Nat.le_self_pow (by omega) _
+  have hBK := Nat.mul_le_mul_left Ka
+    (Nat.pow_le_pow_right (by omega : 1 ≤ B) (by omega : Ka ≤ Ka + 1))
+  simp only [length_encPair, add_mul]
+  omega
+
 variable {mk}
 
 /-- **The fast machine within the interface's bounds.** Given polynomial-time components of the
@@ -397,26 +444,7 @@ theorem fastCertificate_le
     (ExplicitTensorNetwork.capPrecision q) _ N H he
   have hrT' : (runCertificate hpoly).time (ExplicitTensorNetwork.capPrecision q) ≤ _ := hrT
   have hrS' : (runCertificate hpoly).space (ExplicitTensorNetwork.capPrecision q) ≤ _ := hrS
-  -- Decoding a value of the run, and direct summation below `s₀`.
-  have hdec (v : ℕ × List ℕ) (hv : I.value v) :
-      (NativeCertificate.ofPolyTime tag_polyTime).time (q, v) +
-        (NativeCertificate.ofPolyTime tag_polyTime).space (q, v) +
-        (NativeCertificate.ofPolyTime decode_polyTime).time (q, v) +
-        (NativeCertificate.ofPolyTime decode_polyTime).space (q, v) +
-        (NativeCertificate.ofPolyTime
-          (ComputableInPolyTime.fst FastContraction.encInput encValue)).time (q, v) +
-        (NativeCertificate.ofPolyTime
-          (ComputableInPolyTime.fst FastContraction.encInput encValue)).space (q, v) ≤
-        c₂ * (Ka + 2) ^ d₂ * B ^ ((Ka + 1) * d₂) := by
-    refine (h₂ (q, v)).trans ?_
-    rw [Nat.mul_assoc, pow_mul, ← mul_pow]
-    refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
-    have := hvalue v hv
-    have hB1 : B ≤ B ^ (Ka + 1) := Nat.le_self_pow (by omega) _
-    have hBK := Nat.mul_le_mul_left Ka
-      (Nat.pow_le_pow_right (by omega : 1 ≤ B) (by omega : Ka ≤ Ka + 1))
-    simp only [length_encPair (enc₁ := FastContraction.encInput) (enc₂ := encValue), add_mul]
-    omega
+  -- Direct summation below `s₀`.
   have h2 : 1 ≤ 2 ^ (C * s₀) := Nat.one_le_two_pow
   have hdir (hs₀ : s < s₀) :
       ExplicitTensorNetwork.directContractionBinaryCertificate.time q ≤
@@ -447,18 +475,8 @@ theorem fastCertificate_le
               ExplicitTensorNetwork.directContractionBinaryCertificate.space q) ≤
       2 * (c₂ * (Ka + 2) ^ d₂) * B ^ ((Ka + 1) * d₂) + 2 * (K₂ * 2 ^ (C * s₀)) * B ^ K₂ := by
     rw [Nat.mul_assoc 2, Nat.mul_assoc 2]
-    rcases hr : (scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)
-      with _ | v
-    · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by rw [hbig h] at hr; cases hr
-      have := hdir hs₀
-      simp only [Option.elim_none]; omega
-    · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
-      simp only [Option.elim_some]
-      split_ifs with h0
-      · omega
-      · have hs₀ : s < s₀ := Nat.lt_of_not_le fun h => by
-          rw [hbig h] at hr; cases hr; simp at h0
-        have := hdir hs₀; omega
+    exact outputStep_le (fun _ => Scheme.value_of_run_eq_some he)
+      (fun v hv => le_of_le_encPair (h₂ (q, v)) hB (hvalue v hv) (by omega)) hbig hdir hdirS
   rw [fastCertificate_time, fastCertificate_space]
   exact (hK (n := (FastContraction.encInput q).length)
     (pre := 2 * (NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).time q)

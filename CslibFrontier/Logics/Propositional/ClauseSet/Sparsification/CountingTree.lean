@@ -554,10 +554,12 @@ theorem modelCountOn_toCNF_reduce (ψ : ClauseSet V) (declared : Finset V) :
   ext σ
   simp only [mem_filter, mem_univ, true_and, ClauseSet.eval_toCNF_eq_true_iff, sat_reduce_iff]
 
-/-- **CNF assignment partition.** Evaluating `L.toCNF` across `countingLeaves θ φ.toClauseSet`
-accepts each assignment `x` at `1` leaf occurrence when `φ.eval x = true` and `0` otherwise. -/
-theorem countP_eval_toCNF_countingLeaves (θ : ℕ → ℕ) (φ : CNF V) (x : V → Bool) :
-    ((countingLeaves θ φ.toClauseSet).map ClauseSet.toCNF).countP (fun F => F.eval x) =
+/-- **CNF assignment partition, general root.** Evaluating `L.toCNF` across `countingLeaves θ ψ`
+accepts `x` at `1` leaf occurrence when `φ.eval x = true` and `0` otherwise, for any CNF `φ` that
+`x` satisfies exactly when it satisfies the root `ψ`. -/
+theorem countP_eval_toCNF_countingLeaves_of_sat_iff (θ : ℕ → ℕ) {ψ : ClauseSet V} {φ : CNF V}
+    {x : V → Bool} (h : ψ.Sat x ↔ φ.eval x = true) :
+    ((countingLeaves θ ψ).map ClauseSet.toCNF).countP (fun F => F.eval x) =
       if φ.eval x then 1 else 0 := by
   rw [List.countP_map]
   have hcongr : (Function.comp (fun F : CNF V => F.eval x) ClauseSet.toCNF) =
@@ -566,10 +568,14 @@ theorem countP_eval_toCNF_countingLeaves (θ : ℕ → ℕ) (φ : CNF V) (x : V 
     exact Bool.eq_iff_iff.mpr
       ((ClauseSet.eval_toCNF_eq_true_iff L x).trans decide_eq_true_iff.symm)
   rw [hcongr, countP_sat_countingLeaves]
-  by_cases hev : φ.eval x = true
-  · rw [ite_eq_left ((CNF.sat_toClauseSet_iff φ x).mpr hev), ite_eq_left hev]
-  · have hnsat : ¬ φ.toClauseSet.Sat x := fun hs => hev ((CNF.sat_toClauseSet_iff φ x).mp hs)
-    rw [ite_eq_right hnsat, ite_eq_right hev]
+  exact if_congr h rfl rfl
+
+/-- **CNF assignment partition.** Evaluating `L.toCNF` across `countingLeaves θ φ.toClauseSet`
+accepts each assignment `x` at `1` leaf occurrence when `φ.eval x = true` and `0` otherwise. -/
+theorem countP_eval_toCNF_countingLeaves (θ : ℕ → ℕ) (φ : CNF V) (x : V → Bool) :
+    ((countingLeaves θ φ.toClauseSet).map ClauseSet.toCNF).countP (fun F => F.eval x) =
+      if φ.eval x then 1 else 0 :=
+  countP_eval_toCNF_countingLeaves_of_sat_iff θ (CNF.sat_toClauseSet_iff φ x)
 
 /-- **CNF declared-variable support preservation.** If `φ.vars.toFinset ⊆ declared`, then every
 leaf formula `L.toCNF` produced from `φ.toClauseSet` has its occurring variables contained in

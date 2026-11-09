@@ -499,14 +499,28 @@ implicit-rejection `FO-notbot` (§3.2.2, Fig. 12; `ImplicitSK`, `Scheme.keyGenNo
 `Scheme.encapsNotBot`, `Scheme.decapsNotBot`, `decapsNotBot_encT_eq`,
 `decapsNotBot_of_reencrypt_ne`) that tags `H : Bool × M × CT → K` with `false` for valid key
 derivations and `true` for fallback rejection keys `H(true, dk.fallback, c)` in place of HHK17's
-untagged `H(s, c)`. Only the transform definitions, correctness/spreadness predicates, and
-deterministic recovery and re-encryption rigidity lemmas are established in this module;
-random-oracle IND-CCA games and security reductions remain separate objectives. Checked clients in
+untagged `H(s, c)`. For Random Oracle Model (ROM) IND-CCA games and the keyless IND-CPA reduction
+on `FO-notbot`, import
+[`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean).
+It defines the ROM query family `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting
+`c = cStar` with `none`), pathwise `(qG, qH)` query budgets `ROQueryBounds` via
+`OracleComp.IsCostBounded`, the lazy-cached executable game `Scheme.roIndCcaGame`
+(`Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
+eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
+`Scheme.indCcaRomAdvantage_eq_eager`), and the keyless simulator `Scheme.simHandler` and IND-CPA
+reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
+the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
+`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). No IND-CCA bound for `FO-notbot` is
+proved in this module; multi-hop game transitions relating `indCcaRomAdvantage` / `eagerIndCcaGame`
+to `simHitProb` via fallback-seed decoupling, simulator consistency, and `δ`-correctness bad-event
+bounds remain separate objectives. Checked clients in
 [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)
 exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
 `maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
-with failure probability `1 / 2`), and positive and negative `GammaSpread` and `indCpaAdvantage`
-witnesses on `identityPKE`.
+with failure probability `1 / 2`), positive and negative `GammaSpread` and `indCpaAdvantage`
+witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`, positive
+`indCcaRomAdvantage`, and eager/lazy/averaging witnesses on `identityScheme`,
+`identityUnifKeyScheme`, and `maskedShiftScheme`.
 
 For multi-block symmetric modes of operation over `BitString n`, import
 [`BlockCipher/Modes.lean`](../../CslibFrontier/Crypto/Primitives/BlockCipher/Modes.lean)

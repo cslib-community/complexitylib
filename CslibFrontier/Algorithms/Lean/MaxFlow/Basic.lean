@@ -452,36 +452,15 @@ private theorem sum_ite_mem_fst [Fintype V] [DecidableEq V] {q : List (V × V)} 
     · intro hb
       exact absurd (Finset.mem_univ b) hb
 
+/-- The in-arc count of `u` in `q`, obtained from `sum_ite_mem_fst` on the reversed arcs. -/
 private theorem sum_ite_mem_snd [Fintype V] [DecidableEq V] {q : List (V × V)} (hq : q.Nodup)
     (u : V) :
     (∑ v : V, if (v, u) ∈ q then (1 : ℤ) else 0) =
       (q.map fun e => if e.2 = u then (1 : ℤ) else 0).sum := by
-  induction q with
-  | nil => simp
-  | cons e q' ih =>
-    rcases e with ⟨a, b⟩
-    obtain ⟨hab, hq'⟩ := List.nodup_cons.mp hq
-    have hsplit : ∀ v : V,
-        (if (v, u) ∈ (a, b) :: q' then (1 : ℤ) else 0) =
-          (if v = a ∧ u = b then 1 else 0) + (if (v, u) ∈ q' then 1 else 0) := by
-      intro v
-      simp only [List.mem_cons, Prod.mk.injEq]
-      by_cases hvu : v = a ∧ u = b
-      · rcases hvu with ⟨rfl, rfl⟩
-        simp [hab]
-      · simp [hvu]
-    simp only [hsplit, Finset.sum_add_distrib, List.map_cons, List.sum_cons, ih hq']
-    congr 1
-    rw [Finset.sum_eq_single a]
-    · by_cases hub : u = b
-      · subst hub
-        simp
-      · have hne : b ≠ u := fun h => hub h.symm
-        simp [hub, hne]
-    · intro v _ hva
-      simp [hva]
-    · intro ha
-      exact absurd (Finset.mem_univ a) ha
+  have hmem : ∀ v, (v, u) ∈ q ↔ (u, v) ∈ q.map Prod.swap := fun v =>
+    (List.mem_map_of_injective (a := (v, u)) Prod.swap_injective).symm
+  simp only [hmem, sum_ite_mem_fst (hq.map Prod.swap_injective) u, List.map_map]
+  rfl
 
 private theorem map_pathArcs_sub_sum [DecidableEq V] {p : List V} {s t : V}
     (hs : p.head? = some s) (ht : p.getLast? = some t) (u : V) :

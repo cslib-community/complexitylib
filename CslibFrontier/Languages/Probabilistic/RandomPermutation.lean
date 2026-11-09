@@ -1745,22 +1745,9 @@ theorem toOuterMeasure_bad_choose_two_le {ι σ β : Type} {spec : ι → Type}
           ring
 
 omit [Nonempty α] in
-private theorem card_filter_lookup_isSome_le (cache : Cache α) :
-    (Finset.univ.filter fun x : α => (cache.lookup x).isSome = true).card ≤ cache.length := by
-  have hsub : (Finset.univ.filter fun x : α => (cache.lookup x).isSome = true) ⊆
-      (cache.map Prod.fst).toFinset := by
-    intro x hx
-    rw [Finset.mem_filter, Option.isSome_iff_exists] at hx
-    obtain ⟨_, y, hy⟩ := hx
-    rw [List.mem_toFinset, List.mem_map]
-    exact ⟨(x, y), mem_of_lookup_eq_some hy, rfl⟩
-  exact (Finset.card_le_card hsub).trans
-    ((List.toFinset_card_le _).trans (by simp))
-
-omit [Nonempty α] in
 private theorem card_filter_invLookup_isSome_le (cache : Cache α) :
     (Finset.univ.filter fun y : α => (invLookup cache y).isSome = true).card ≤ cache.length := by
-  simpa [invLookup] using card_filter_lookup_isSome_le (cache.map Prod.swap)
+  simpa [invLookup] using RandomOracle.card_filter_lookup_isSome_le (cache.map Prod.swap)
 
 /-- Over an `n`-query-bounded program starting from `(cache, false)`, `forgetfulWithBad` reaches
 `bad = true` with probability at most `(n * cache.length + n.choose 2) * |α|⁻¹`. -/
@@ -1802,7 +1789,7 @@ private theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
           simp
         rw [PMF.toOuterMeasure_map_apply, hpre, PMF.toOuterMeasure_uniformOfFintype]
         gcongr
-        exact Nat.cast_le.mpr (card_filter_lookup_isSome_le c)
+        exact Nat.cast_le.mpr (RandomOracle.card_filter_lookup_isSome_le c)
   · intro q ⟨c, b⟩ _ p hp _
     cases q with
     | forward x =>

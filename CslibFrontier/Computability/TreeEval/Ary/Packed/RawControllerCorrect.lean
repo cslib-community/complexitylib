@@ -104,15 +104,7 @@ private theorem toRegs_subBank_expected (E : Gate d b → (Fin d → Fin r → Z
     toRegs_ofRegs, ZMod.natCast_zmod_val]
   unfold Ary.Iter.updateAt
   cases hread : read (Ary.Iter.path st) with
-  | none =>
-    have hv : ∀ i : Fin r, (values.getD i 0 : ZMod p) = 0 := by
-      simpa only [expectedGate, hread, Pi.zero_apply] using hvalues
-    have hzero : (fun i : Fin r => S t i - c * (values.getD i 0 : ZMod p)) = S t := by
-      funext i
-      rw [hv i, mul_zero, sub_zero]
-    rw [hzero]
-    exact Function.update_eq_self t S
-  | leaf v =>
+  | none | leaf _ =>
     have hv : ∀ i : Fin r, (values.getD i 0 : ZMod p) = 0 := by
       simpa only [expectedGate, hread, Pi.zero_apply] using hvalues
     have hzero : (fun i : Fin r => S t i - c * (values.getD i 0 : ZMod p)) = S t := by

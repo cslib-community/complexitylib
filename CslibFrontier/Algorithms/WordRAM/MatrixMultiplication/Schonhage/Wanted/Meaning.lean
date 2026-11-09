@@ -85,8 +85,7 @@ theorem pack_queryIndex {L m : ℕ} (w : OutStr L) (h : (innerSetO w).card = m) 
     calc
       _ = Nat.ofDigits 2 (List.ofFn fun i =>
           ((if i ∈ innerSetO w then 1 else 0) : Fin 2).val) := by
-        congr 2
-        funext i
+        congr 2 with i : 1
         by_cases hi : (w i).IsInner <;> simp [innerSetO, hi]
       _ = _ := Nat.ofDigits_finFunctionFinEquiv _
   have hr : Nat.ofDigits 3 (((List.ofFn w).filter fun z => ¬z.IsInner).map

@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.BitString.List
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.Nonuniform.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -125,12 +126,12 @@ theorem real_distribution (count seedBits outputBits : ℕ) (generator : ℕ →
         (fun j seed => if j = i.val then challenge else generator j seed))) =
       (uniformList (count * seedBits)).map (generate count seedBits outputBits generator) := by
   simp_rw [generate_distribution]
-  simp only [uniformList, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, uniformList]
   let evaluate := fun seeds : Fin count → BitString seedBits =>
     List.ofFn (∑ j : Fin count, ofList outputBits (generator j.val (List.ofFn (seeds j))))
   have h := congrArg (PMF.map evaluate)
     (PMF.uniformOfFintype_update (γ := BitString seedBits) i)
-  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at h
+  simp only [pmf_norm] at h
   refine Eq.trans ?_ h
   congr 1 with fresh : 1
   congr 1 with seeds : 1
@@ -148,7 +149,7 @@ theorem ideal_distribution (count seedBits outputBits : ℕ) (generator : ℕ �
         (fun j seed => if j = i.val then challenge else generator j seed))) =
       uniformList outputBits := by
   simp_rw [generate_distribution]
-  simp only [uniformList, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, uniformList]
   simp only [PMF.map]
   rw [PMF.bind_comm]
   calc
@@ -220,8 +221,7 @@ theorem advantage_eq (count seedBits outputBits : ℕ) (generator : ℕ → List
           ProbComp.eval (test count seedBits outputBits generator i.val adversary word))) := by
   conv_lhs => rw [← real_distribution count seedBits outputBits generator i,
     ← ideal_distribution count seedBits outputBits generator i]
-  simp only [test, ProbComp.eval_bind, BitString.eval_sampleList, PMF.monad_bind_eq_bind,
-    PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, test, BitString.eval_sampleList]
 
 /-- One secure choice in a uniformly efficient family makes the XOR computationally uniform
 relative to fixed advice. The combiner evaluates the whole family; only the reduction receives the
