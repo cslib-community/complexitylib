@@ -1164,7 +1164,7 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
       (fun x => evalClearedMonomialJet (J x) (k x) (dDen x) (varJets x) (mon x))
       encIn (encList encIntBin) := by
   have hexp := unary_sub.comp (hk.prod ((length_list encNat).comp hmon))
-  have hscale := singleton_intBin_polytime (intBin_pow_polytime hdDen hexp)
+  have hscale := singleton_intBin_polytime (intBin_pow' hdDen hexp)
   unfold evalClearedMonomialJet
   exact computableInPolyTime_mulZJet hJ hscale (prodMonomialJet_polytime hJ hvarJets hmon)
 
@@ -1258,7 +1258,7 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
     ComputableInPolyTime
       (fun x => evalEquationParityFactorJet (J x) (ℓ x) (k x) (dDen x) (varJets x) (eq x))
       encIn encIntTable := by
-  exact computableInPolyTime_evalParityFactorJet hJ hℓ (intBin_pow_polytime hdDen hk)
+  exact computableInPolyTime_evalParityFactorJet hJ hℓ (intBin_pow' hdDen hk)
     (computableInPolyTime_evalClearedEquationJet hJ hk hdDen hvarJets heq)
 
 end PolyTime
