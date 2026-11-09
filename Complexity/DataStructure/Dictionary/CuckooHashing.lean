@@ -2200,8 +2200,7 @@ private theorem sum_cuckooWalkRounds_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [F
         rw [Finset.mem_filter] at hθ ⊢
         rw [Finset.mem_Ico] at hr
         exact ⟨Finset.mem_univ _, lt_cuckooWalkRounds_imp_dichotomy hr.1 hu hθ.2⟩
-    _ ≤ Fintype.card (Θ₁ × Θ₂) + Fintype.card (Θ₁ × Θ₂) :=
-        Nat.add_le_add_left htail _
+    _ ≤ Fintype.card (Θ₁ × Θ₂) + Fintype.card (Θ₁ × Θ₂) := by gcongr
     _ = 2 * Fintype.card (Θ₁ × Θ₂) := by ring
 
 /-- At `r = MaxLoop ≥ maxEvictions n_max`, the number of seeds satisfying `WalkBadAt` is bounded by
@@ -2238,8 +2237,7 @@ private theorem two_mul_walkBadAt_maxLoop_le {Θ₁ Θ₂ : Type*} [Fintype Θ�
     have hpow_le : 8 * (max n_max 1 * max MaxLoop 1) ≤ 32 ^ ℓ := by
       calc 8 * (max n_max 1 * max MaxLoop 1)
           = 2 ^ 3 * max n_max 1 * max MaxLoop 1 := by ring
-        _ ≤ 2 ^ 3 * 2 ^ Nat.clog 2 (max n_max 2) * 2 ^ MaxLoop :=
-            Nat.mul_le_mul (Nat.mul_le_mul_left (2 ^ 3) hclog_le) hloop_pow
+        _ ≤ 2 ^ 3 * 2 ^ Nat.clog 2 (max n_max 2) * 2 ^ MaxLoop := by gcongr
         _ = 2 ^ (Nat.clog 2 (max n_max 2) + MaxLoop + 3) := by
             rw [← pow_add, ← pow_add]
             congr 1; omega
@@ -2328,8 +2326,7 @@ private theorem two_mul_card_not_goodForSet_le {Θ₁ Θ₂ : Type*} [Fintype Θ
               have h1 : S.card ≤ max n_max 1 := by omega
               have h2 : 1 ≤ max MaxLoop 1 := by omega
               calc 2 * S.card ≤ 2 * (max n_max 1 * 1) := by omega
-                _ ≤ 2 * (max n_max 1 * max MaxLoop 1) :=
-                    Nat.mul_le_mul_left 2 (Nat.mul_le_mul_left _ h2)
+                _ ≤ 2 * (max n_max 1 * max MaxLoop 1) := by gcongr
             exact le_trans (Nat.mul_le_mul_right _ hscard_le) hstep
         _ = S.card * Fintype.card (Θ₁ × Θ₂) := by rw [Finset.sum_const, smul_eq_mul]
         _ = Fintype.card (Θ₁ × Θ₂) * S.card := Nat.mul_comm _ _
@@ -2838,8 +2835,7 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
           refine Nat.mul_le_mul_right N_top ?_
           have hB_sq : B ≤ B * B := Nat.le_mul_of_pos_left B hB_ge
           nlinarith
-        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top :=
-          Nat.mul_le_mul_right N_top (Nat.pow_le_pow_left hbound 2)
+        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top := by gcongr
         _ = 2 ^ (6 * b) * N_top := by
           rw [← Nat.pow_mul]
           congr 2
@@ -2878,8 +2874,7 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
       calc U ≤ max n_max 4 ^ c_exp := hU
         _ ≤ max n_max 4 ^ max c_exp 1 :=
           Nat.pow_le_pow_right (by omega) (le_max_left c_exp 1)
-        _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 :=
-          Nat.pow_le_pow_left hmax_le_2b (max c_exp 1)
+        _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 := by gcongr
         _ = 2 ^ (c * b) := by
           rw [← Nat.pow_mul]
           congr 1
@@ -2927,8 +2922,7 @@ private theorem isCuckooHashPair_seedAux (reg : Bool) {c_exp n_max U M : ℕ}
             doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2)
           = max n_max 1 * (2 * max (maxEvictions n_max) 1) *
               doubleTabCodeBound c (8 * c) 4 (2 * maxEvictions n_max + 2) := by ring
-        _ ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) :=
-            Nat.mul_le_mul (Nat.mul_le_mul hmax1_le h2ev_sq) hcode_pow
+        _ ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) := by gcongr
         _ = 2 ^ (2 * b) * b ^ (24 * c + 7) := by
             rw [Nat.mul_assoc, ← Nat.pow_add]
             congr 2
