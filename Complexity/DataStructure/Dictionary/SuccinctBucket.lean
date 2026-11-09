@@ -959,8 +959,7 @@ theorem tsum_uniform_probeExcess_twoStage_le {ι₁ ι₂ : Type*}
           sum_le_sum fun i₁ _ => hinner i₁
       _ = (∑ i₁ : ι₁, (if i₁ ∈ G then 3 else 2 * #(S.erase u))) * Fintype.card ι₂ := by
           rw [← sum_mul]
-      _ ≤ ((3 + C_bad) * Fintype.card ι₁) * Fintype.card ι₂ :=
-          Nat.mul_le_mul_right _ houter
+      _ ≤ ((3 + C_bad) * Fintype.card ι₁) * Fintype.card ι₂ := by gcongr
       _ = (3 + C_bad) * Fintype.card (ι₁ × ι₂) := by
           rw [Fintype.card_prod, mul_assoc]
   calc (∑' p : ι₁ × ι₂,
@@ -1219,8 +1218,7 @@ theorem globalMetaLen_le_of_bucketBits_pos {n : ℕ} (hb : 0 < bucketBits n) :
   have hS2_16 : 16 ≤ slabSize n := by
     rw [hK]
     nlinarith
-  have hdiv : n / slabSize n ≤ n / 16 :=
-    Nat.div_le_div_left hS2_16 (by decide)
+  have hdiv : n / slabSize n ≤ n / 16 := by gcongr
   have h5 : 3 + 4 * slabScale n + 2 * (2 * (slabScale n) ^ 2) ≤ 5 * (slabScale n) ^ 2 := by
     nlinarith
   have hm5 :
