@@ -872,7 +872,7 @@ private theorem exists_computableInO_mkDesignPair :
     unfold BalancedSchedules.encScheduleParams prepScheduleParams
     exact (hn'.prod (((length_list (encList encNat)).comp haug).prod hQu)).prod
       (((unary_to_binary.comp hru).prod
-        (bi_binary_add' BranchEvalInput.computableInPolyTime_factorIncidence
+        (binary_add' BranchEvalInput.computableInPolyTime_factorIncidence
           BranchEvalInput.computableInPolyTime_factorWidth)).prod
         (computableInPolyTime_scopeIncidencesList hn' haug))
   let eSchOut := encPair (encList (encList encNat)) (encList (encList encNat))
