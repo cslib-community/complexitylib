@@ -1397,8 +1397,12 @@ success by the binomial tail for `limits.turns`, with no extra trial for complet
 Import `CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline` for the exact
 physical deadline refinement described below.
 
-`Retained.completion` uses the existing local dual retention test and residual-count
-proof to obtain actual retained-cover probability at least the binomial upper tail.
+`Retained.completion` takes an explicit receipt parser and uses the existing local
+dual retention test and residual-count proof to obtain actual retained-cover
+probability at least the binomial upper tail. Candidate indices need not form a
+finite type: each proposal and the ground set are finite. Existing finite-mask
+clients pass `Coverage.proposal m`; runtime row-index clients use
+`NativeRetention.BatchReceipts.proposal x`.
 `failure` gives its survival complement. `cost_tail_sum` uses the operational
 stop-at-retained-cover contract and selected invoice upper envelope to bound the
 actual accrued bill by $c$ times the binomial survival sum. `cost_mean` derives the
@@ -1408,8 +1412,11 @@ only the issued-turn budget; `History.final_expected_static` removes the final s
 completion epoch. These results assume neither
 an expected stopping mean nor an integrable/bounded total bill. The productivity
 envelope includes no-call decisions: a native machine that halts or diverges before
-completion generally fails it. Proving that envelope and actual certified output
-for a uniform selector remains an implementation obligation.
+completion generally fails it. For the constructed block selector,
+`NativeRetention.BatchUpper.exists_native_upper_controller` derives this no-call
+extension from actual stopping and needs source productivity only on issued batches.
+The final certified-output success-event transfer and common-oracle optimum
+comparison remain separate assembly obligations.
 
 The progress client derives its posterior envelope from a real concurrent batch,
 with nonempty coverage probability $1/2$, shared private randomness, cancellation
@@ -1976,22 +1983,48 @@ With opportunity and reservation budgets covering the turn horizon,
 `run_live_before_horizon` proves that the same feedback kernel stays live before
 that horizon exactly when its retained sets are incomplete. The reservation
 condition matters: zero reservations can stop an incomplete instance initially.
-These are pathwise statements for the kernel in the proved native execution law;
-the conditional-law connection at selected native epochs, and hence the numerical
-upper survival-sum and optimum bounds for that code, remain open.
+These are pathwise statements for the kernel in the proved native execution law.
+`BatchReceipts.aligned_completion_eq` additionally identifies the guard with
+`NativeBatch.Retained.complete` on exact authenticated source receipts, preserving
+proposal order and canceled-call behavior. `Aligned.reports` records the complete
+raw report history, rather than only its provenance union.
+
+For numerical bounds for that same controller, import
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper`.
+`exists_native_stopping_controller` constructs the program and proves, at every
+positive-probability selected epoch before its horizon, that issued batches have
+incomplete retained coverage and no-call decisions have complete retained coverage.
+This uses the actual joint terminal law and backward propagation of receipt-prefix
+safety through native epochs; it assumes no runtime-state representation contract.
+Initial reservations and opportunity allowances must cover the entire turn horizon.
+
+`exists_native_upper_controller` consequently needs productivity and conditional
+mean invoice envelopes only on reached, issued batches. It derives binomial
+retained-completion probability, the complete actual accrued-bill survival sum,
+the bound $c r_a/p$, and finite expected bill for finite $c$ and positive $p$.
+It assumes neither integrability nor a bounded total bill. The source sampler,
+private seed and native process are the same throughout. The candidate parser
+embeds the source finite masks into the original natural row indices without
+truncating the response alphabet or hidden metadata. The final certified-output
+success event and common-oracle optimum comparison are not yet assembled.
 
 The [admitted batch client](../../CslibFrontierTests/NativeRetentionBatchAdmission.lean)
 checks fresh concurrent pairs, shared unbounded hidden invoices, cancellation and
-original-context/history-dependent next requests. From the repository root:
+original-context/history-dependent next requests and actual selected-epoch stopping.
+The [upper boundary client](../../CslibFrontierTests/NativeRetentionUpper.lean) checks
+zero expected cost for the actual original-input program on empty ground and a
+zero horizon, with arbitrary source sampler and hidden seed. The correlated client
+has unbounded history-dependent invoices and is not a uniform finite conditional
+invoice-envelope example. From the repository root:
 
 ```bash
-scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission --wfail --iofail
+scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
+  CslibFrontierTests.NativeRetentionUpper --wfail --iofail
 ```
 
 This establishes a concrete supported scheduler and source-admitted native loop.
-Reached productivity/bill envelopes and the quantitative upper success,
-survival-sum bill, deadline and common-oracle optimum comparison for this same code
-remain open. Theorem 6's WSC/subinstance/role/residual specialization, external
+The complete certified-output success/deadline event and common-oracle optimum
+comparison for this same code remain open. Theorem 6's WSC/subinstance/role/residual specialization, external
 encodings, general measurable interfaces, compiled physical clocks and divergent
 path cost/integrability limits remain distinct obligations.
 

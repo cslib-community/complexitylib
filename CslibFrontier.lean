@@ -5807,7 +5807,9 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAdmission
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchPlanner
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchReceipts
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Correctness
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Execution
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Feedback

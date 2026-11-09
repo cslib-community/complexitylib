@@ -383,7 +383,8 @@ private theorem productivity_envelope : ∀ t < 2, ∀ o ∈ ((Quantitative.sele
 /-- The upper tail-sum/mean theorem also applies through native output and
 halting. Both bounds equal the actual invoice in this nonempty `p = 1` case. -/
 example : Quantitative.expected limits sample machine Trace.charge 2 start ≤ 2 := by
-  have h := Retained.complete_cost_mean limits sample machine coverInstance 1 1 1
+  have h := Retained.complete_cost_mean limits sample machine coverInstance 1
+    (Coverage.proposal 1) 1 1
     (by simp [coverInstance]) ⟨1, by norm_num⟩ (by norm_num) 2 start
     (NativeBatch.initial_invariant limits ())
     (fun t ht => productivity_envelope t (by change t < 1 at ht; omega))

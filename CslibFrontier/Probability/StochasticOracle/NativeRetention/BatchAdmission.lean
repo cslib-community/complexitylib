@@ -63,6 +63,10 @@ structure Aligned (limits : Limits n) (width budget : ℕ) (ell : ℝ≥0)
   /-- Every stored report has the source parser's exact candidate-family meaning. -/
   packets : ∀ m word, word ∈ state.work.history →
     Packets.families n m word = (parseProposals n m word).map sourceIndices
+  /-- Exact receipt order and full raw reports, including cancellation/metadata.
+  This strengthens provenance-set equality to a history law usable by retention. -/
+  reports : state.work.history =
+    memory.privateState.history.map (fun receipt => (replyOf receipt).word)
 
 /-- Fresh original input, not a preinstalled State/history, establishes alignment. -/
 theorem initial_aligned (limits : Limits n) (width : ℕ) (ell : ℝ≥0)
@@ -70,7 +74,7 @@ theorem initial_aligned (limits : Limits n) (width : ℕ) (ell : ℝ≥0)
     Aligned limits width data.startup.turns ell (GuardedStartup.state data)
       ⟨ConcurrentBatch.initial seed, []⟩ := by
   refine ⟨NativeBatch.initial_invariant limits seed, hn, ?_, ?_, ?_, ?_, rfl, rfl,
-    by intros; contradiction⟩
+    by intros; contradiction, rfl⟩
   · simpa [GuardedStartup.state, RuntimeControl.initial, ConcurrentBatch.initial] using hn
   · simp [GuardedStartup.state, RuntimeControl.initial, ConcurrentBatch.initial]
   · simp [ConcurrentBatch.initial, BatchPlanner.consumed]
@@ -158,7 +162,7 @@ theorem after_reply_aligned (limits : Limits n) (sample : Sampler n Private)
   have hpositive : state.opportunities ≠ 0 := by
     intro hz
     simp [RuntimeControl.stopped, hz] at hs
-  refine ⟨hinv, ha.opportunityInterface, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨hinv, ha.opportunityInterface, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simp only [RuntimeControl.afterReply, Memory.record, commit, List.length_cons]
     omega
   · simp only [RuntimeControl.afterReply, Memory.record, commit, List.length_cons]
@@ -179,6 +183,10 @@ theorem after_reply_aligned (limits : Limits n) (sample : Sampler n Private)
     rcases List.mem_cons.mp hword with rfl | hword
     · simp only [replyOf, Packets.families_report, parseProposals_report]
     · exact ha.packets m word hword
+  · simpa only [RuntimeControl.afterReply, Memory.record, commit, List.map_cons] using
+      congrArg (List.cons (replyOf (observe limits
+        (limits.deadline - memory.privateState.elapsed)
+        ⟨BatchPlanner.slots n width state, nonempty⟩ paths)).word) ha.reports
 
 /-- Actual retained-source input equals the validated source-history construction;
 caller-supplied proposals do not acquire provenance. -/

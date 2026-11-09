@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping
+import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper
 import CslibFrontierTests.NativeBatchMetadata
 import Mathlib.Tactic
 
@@ -460,5 +460,51 @@ example :
   refine ⟨by simp [RuntimeControl.stopped], ?_⟩
   have hd := (Bool.or_eq_false_iff.mp initial_live).2
   exact hd
+
+/-- The first actual concurrent receipt has one returned proposal and one canceled
+call. Natural row indices agree with the source finite mask, in actual order. -/
+example (seed first : ℕ) :
+    BatchReceipts.proposal (data 3).startup.system [] (some (exchange1 seed first)) = [{0}] := by
+  rw [BatchReceipts.proposal_eq]
+  dsimp only [Option.elim_some]
+  rw [first_report]
+  norm_num [data, proposals, List.ofFn_succ, decodeFamily, List.filterMap_cons]
+  decide
+
+/-- Exact authenticated receipt completion, rather than a union-of-provenance
+approximation, remains false after the first real partial-cover batch. -/
+example (seed first : ℕ) :
+    NativeBatch.Retained.complete (instanceOf (data 3).startup.system original_valid) 1
+      (BatchReceipts.proposal (data 3).startup.system)
+      ((memory1 seed first).privateState.history.map some) = false := by
+  have hc := BatchReceipts.aligned_completion_eq limits 2 3 1
+    (state1 seed first) (memory1 seed first) (first_aligned seed first) original_valid
+  rw [(Bool.or_eq_false_iff.mp (first_live seed first)).2] at hc
+  simpa only [state1, RuntimeControl.afterReply, initial, GuardedStartup.state,
+    RuntimeControl.initial, data, Rat.cast_one] using hc.symm
+
+/-- The constructed native controller's actual selected epochs stop precisely at
+computed completion, for the same correlated, unbounded-metadata source. -/
+theorem native_epoch_stopping : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
+    (program : MultiTapePTM tapes Bool R Unit), ∀ seed t, t < 3 →
+      ∀ o ∈ ((NativeBatch.Quantitative.select limits (sample false) program
+        (NativeBatch.Trace.law limits (sample false) program t
+          ⟨program.initialConfig (GuardedStartup.encoding (data 3)), start seed⟩)).map
+            (NativeBatch.Quantitative.observe limits)).support,
+      (o.issued = true → NativeBatch.Retained.complete
+        (instanceOf (data 3).startup.system original_valid) 1
+        (BatchReceipts.proposal (data 3).startup.system) o.history = false) ∧
+      (o.issued = false → NativeBatch.Retained.complete
+        (instanceOf (data 3).startup.system original_valid) 1
+        (BatchReceipts.proposal (data 3).startup.system) o.history = true) := by
+  obtain ⟨tapes, R, hR, program, hp⟩ :=
+    BatchUpper.exists_native_stopping_controller (n := 6) 2
+  refine ⟨tapes, R, hR, program, ?_⟩
+  intro seed t ht o ho
+  have hrho : ((data 3).startup.system.rho : ℝ) = 1 := by norm_num [data]
+  simpa only [hrho] using hp ℕ limits (sample false) (data 3) seed 1 rfl (by decide)
+    (by decide)
+    (by norm_num) (by intro _; norm_num [limits]) (by norm_num [data, limits])
+    rfl (by decide) original_valid t ht o ho
 
 end CslibFrontierTests.NativeRetentionBatchAdmission

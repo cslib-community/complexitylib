@@ -23,8 +23,10 @@ budgets, and derives completion from a productive-count threshold.
 The decoder processes complete raw replies in their actual chronological order;
 no finite response alphabet or independent responses are required. Source admission
 and history authentication are supplied by `BatchAdmission.run_aligned` for the
-constructed native program. This is the pathwise guard/progress connection, not yet
-its selected-epoch conditional-law or probability/cost upper theorem.
+constructed native program. This is the pathwise guard/progress connection.
+`BatchReceipts` and `BatchUpper` build its selected-epoch and numerical receipt-cost
+transfer. Complete certified-output success/deadline transfer and the common-oracle
+optimum comparison remain open.
 -/
 
 public section

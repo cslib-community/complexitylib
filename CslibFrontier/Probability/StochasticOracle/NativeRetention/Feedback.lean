@@ -497,7 +497,7 @@ private theorem finish_buffer {P : Type} (request : List Bool) (memory : Memory 
 
 /-- With enough remaining turns, the mathematical kernel ends only at an actual
 computed completion or exhausted policy allowance. -/
-private theorem run_stopped_with_request {P : Type} (env : Environment Unit P) (fuel : ℕ)
+theorem run_stopped_with_request {P : Type} (env : Environment Unit P) (fuel : ℕ)
     (state : RuntimeControl.State) (channels : Unit → Channel Bool) (memory : Memory Unit P)
     (hf : state.turns ≤ fuel) (outcome : Outcome P)
     (request : RuntimeControl.State → List Bool)

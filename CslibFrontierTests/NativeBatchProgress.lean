@@ -52,7 +52,8 @@ private theorem actual_productivity (u : Bool) :
 
 /-- The local dual test actually accepts the covering proposal; the canceled
 concurrent call does not manufacture a second proposal. -/
-example (u : Bool) : Retained.complete coverInstance 1 (traceOne u).records = u := by
+example (u : Bool) : Retained.complete coverInstance 1 (Coverage.proposal 1)
+    (traceOne u).records = u := by
   cases u <;> norm_num [Retained.complete, traceOne, selected, Coverage.proposal,
     first_proposals, Instance.retain, Instance.Certified, coverInstance,
     Instance.covered, Instance.cost]
@@ -105,8 +106,9 @@ not only a resource-only or zero-ground fixture. -/
 example : ENNReal.ofReal (∫ j, (if 1 ≤ j then (1 : ℝ) else 0)
       ∂ProbabilityTheory.binomial 1 ⟨1 / 2, by norm_num⟩) ≤
     (Trace.law limits sample machine 1 start).map
-      (fun state => Retained.complete coverInstance 1 state.records) true :=
-  Retained.completion limits sample machine coverInstance 1 1 1 1 (by simp [coverInstance])
+      (fun state => Retained.complete coverInstance 1 (Coverage.proposal 1) state.records) true :=
+  Retained.completion limits sample machine coverInstance 1 (Coverage.proposal 1)
+    1 1 1 (by simp [coverInstance])
     ⟨1 / 2, by norm_num⟩ start productivity_envelope
 
 /-- Source per-selected-batch cost is computed from both correlated branches. -/
@@ -135,7 +137,8 @@ private theorem cost_envelope : ∀ t < 1, ∀ o ∈ ((Quantitative.select limit
 
 private theorem stop_envelope : ∀ t < 1, ∀ o ∈ ((Quantitative.select limits sample machine
       (Trace.law limits sample machine t start)).map (Quantitative.observe limits)).support,
-    o.issued = true → Retained.complete coverInstance 1 o.history = false := by
+    o.issued = true →
+      Retained.complete coverInstance 1 (Coverage.proposal 1) o.history = false := by
   intro t ht o ho _
   have ht0 : t = 0 := by omega
   subst t
@@ -149,7 +152,7 @@ private theorem stop_envelope : ∀ t < 1, ∀ o ∈ ((Quantitative.select limit
 /-- The stopped survival-sum result applies to real native receipts and a nonzero
 cost. The later policy is not claimed to be a uniform stopping selector. -/
 example : Quantitative.expected limits sample machine Trace.charge 1 start ≤ 7 := by
-  have h := Retained.cost_tail_sum limits sample machine coverInstance 1 1 1 1
+  have h := Retained.cost_tail_sum limits sample machine coverInstance 1 (Coverage.proposal 1) 1 1 1
     (by simp [coverInstance]) ⟨1 / 2, by norm_num⟩ 7 start
     productivity_envelope stop_envelope cost_envelope
   simpa [binomialFailure, bernoulliExpectation] using h
@@ -193,8 +196,9 @@ with zero required productive turns, including the certain-progress edge paramet
 example : ENNReal.ofReal (∫ j, (if 0 ≤ j then (1 : ℝ) else 0)
       ∂ProbabilityTheory.binomial 0 ⟨1, by norm_num⟩) ≤
     (Trace.law limits sample machine 0 start).map
-      (fun state => Retained.complete emptyInstance 1 state.records) true :=
-  Retained.completion limits sample machine emptyInstance 1 1 0 0 (by simp [emptyInstance])
+      (fun state => Retained.complete emptyInstance 1 (Coverage.proposal 1) state.records) true :=
+  Retained.completion limits sample machine emptyInstance 1 (Coverage.proposal 1)
+    1 0 0 (by simp [emptyInstance])
     ⟨1, by norm_num⟩ start (by intro t ht; omega)
 
 /-- Zero ground and `p = 1` are admitted without a positive target-count premise. -/

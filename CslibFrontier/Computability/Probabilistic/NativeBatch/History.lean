@@ -46,6 +46,51 @@ theorem step_records (state next : State n k Private Control input)
   obtain ⟨phase, _, rfl⟩ := hn
   exact ⟨_, rfl⟩
 
+/-- A receipt-history property closed under deleting the newest decision can be
+read at any actual prefix from its validity at a later horizon. Every PMF step has
+supported continuations, even when the hidden native execution has diverged. -/
+theorem law_prefix_property (P : List (Record n) → Prop)
+    (hdrop : ∀ record history, P (record :: history) → P history)
+    (total : ℕ) (world : World k Control Unit (ServerState n Private) input)
+    (H : ∀ state ∈ (law limits sample machine total world).support, P state.records)
+    (turns : ℕ) (ht : turns ≤ total) (state : State n k Private Control input)
+    (hs : state ∈ (law limits sample machine turns world).support) : P state.records := by
+  obtain ⟨remaining, rfl⟩ := Nat.exists_eq_add_of_le ht
+  clear ht
+  induction remaining generalizing turns state with
+  | zero => exact H state hs
+  | succ remaining ih =>
+    obtain ⟨next, hn⟩ := (Trace.step limits sample machine state).support_nonempty
+    have hnext : next ∈ (law limits sample machine (turns + 1) world).support :=
+      (PMF.mem_support_bind_iff _ _ _).mpr ⟨state, hs, hn⟩
+    have hp := ih (turns + 1) next hnext
+      (by simpa only [Nat.add_assoc, Nat.add_comm 1] using H)
+    obtain ⟨record, he⟩ := step_records limits sample machine state next hn
+    rw [he] at hp
+    exact hdrop record state.records hp
+
+/-- A halted/divergent trace has a supported continuation to any later horizon
+with exactly the same accepted receipts. Only no-call decisions are appended. -/
+theorem done_continuation (world : World k Control Unit (ServerState n Private) input)
+    (turns remaining : ℕ) (state : State n k Private Control input)
+    (hs : state ∈ (law limits sample machine turns world).support)
+    (hd : state.hidden = none ∨ ∃ next, state.hidden = some (.ready next) ∧
+      NativeUnboundedExecution.halted next) :
+    ∃ final ∈ (law limits sample machine (turns + remaining) world).support,
+      final.records.filterMap id = state.records.filterMap id := by
+  induction remaining generalizing turns state with
+  | zero => exact ⟨state, hs, rfl⟩
+  | succ remaining ih =>
+    let next : State n k Private Control input := ⟨state.hidden, none :: state.records⟩
+    have hn : next ∈ (law limits sample machine (turns + 1) world).support := by
+      apply (PMF.mem_support_bind_iff _ _ _).mpr
+      refine ⟨state, hs, ?_⟩
+      rw [Trace.step_done limits sample machine state hd]
+      exact (PMF.mem_support_pure_iff _ _).mpr rfl
+    obtain ⟨final, hf, he⟩ := ih (turns + 1) next hn hd
+    refine ⟨final, ?_, he⟩
+    simpa only [Nat.add_assoc, Nat.add_comm 1] using hf
+
 /-- Conditional responses at positive-mass observations retain the entire true
 previous receipt history. No finite history abstraction is assumed. -/
 theorem conditional_records (prior : PMF (State n k Private Control input)) (o : Observation n)
@@ -61,6 +106,48 @@ theorem conditional_records (prior : PMF (State n k Private Control input)) (o :
   simp only [respond, PMF.mem_support_map_iff] at hn
   obtain ⟨phase, _, rfl⟩ := hn
   exact ⟨_, congrArg (_ :: ·) hh⟩
+
+/-- A supported zero-call conditional decision is actual halt or silent divergence,
+not an unobserved source response. -/
+theorem conditional_no_call_done (prior : PMF (State n k Private Control input))
+    (o : Observation n)
+    (ho : o ∈ ((select limits sample machine prior).map (Quantitative.observe limits)).support)
+    (hz : o.issued = false) (next : State n k Private Control input)
+    (hn : next ∈ (conditional limits sample machine prior o).support) :
+    next.hidden = none ∨ ∃ world, next.hidden = some (.ready world) ∧
+      NativeUnboundedExecution.halted world := by
+  simp only [conditional, PMF.mem_support_bind_iff] at hn
+  obtain ⟨picked, hp, hn⟩ := hn
+  obtain ⟨hp, he⟩ := PMF.mem_support_of_posterior _ _ _ ho _ hp
+  have hb := selected_boundary limits sample machine prior picked hp
+  have hi := congrArg Observation.issued he
+  change batchIssued limits picked.checkpoint = o.issued at hi
+  rw [hz] at hi
+  simp only [respond, PMF.mem_support_map_iff] at hn
+  obtain ⟨phase, hr, rfl⟩ := hn
+  cases hh : picked.checkpoint with
+  | none =>
+    simp only [hh, respondSource, PMF.mem_support_pure_iff] at hr
+    exact Or.inl hr
+  | some hit =>
+    have hb := hb hit hh
+    cases hit with
+    | ready world =>
+      change NativeUnboundedExecution.halted world at hb
+      have hs : world.config.tapes.state = none := hb
+      simp only [hh, respondSource, phaseStep, hs, Option.isNone_none, ↓reduceIte,
+        PMF.pure_map, PMF.mem_support_pure_iff] at hr
+      exact Or.inr ⟨world, hr, hb⟩
+    | pending chosen =>
+      cases chosen with
+      | halted world => exact hb.elim
+      | «local» world => exact hb.elim
+      | query world op control =>
+        cases op
+        cases ha : admit limits world.memory.privateState
+            (world.config.channels ()).queryBuffer with
+        | none => simp [sourceBoundary, ha] at hb
+        | some batch => simp [hh, batchIssued, sourceSignal, ha] at hi
 
 /-- The source selection stage changes no earlier receipt history, even when
 silent native computation is unbounded or divergent. -/
