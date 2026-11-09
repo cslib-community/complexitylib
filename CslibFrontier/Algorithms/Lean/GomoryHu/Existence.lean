@@ -102,6 +102,82 @@ private theorem step_swap {E : Set (CEdge V)} {x₀ y₀ a b : V}
   Relation.ReflTransGen.mono (fun _ _ ⟨e, he, hsep, hends⟩ =>
     ⟨e, he, by tauto, by tauto⟩) _ _ (Relation.reflTransGen_swap.mpr h)
 
+/-- A property of all edges of `E₁`, `E₂` and the edge `e` holds on `E₁ ∪ E₂ ∪ {e}`, the edge
+set of a glued tree. -/
+private theorem forall_mem_union_singleton {E₁ E₂ : Set (CEdge V)} {e : CEdge V}
+    {P : CEdge V → Prop} (h₁ : ∀ e ∈ E₁, P e) (h₂ : ∀ e ∈ E₂, P e) (he : P e) :
+    ∀ e' ∈ E₁ ∪ E₂ ∪ {e}, P e' :=
+  Set.forall_mem_union.mpr ⟨Set.forall_mem_union.mpr ⟨h₁, h₂⟩, Set.forall_mem_singleton.mpr he⟩
+
+/-! ### From a partial tree on all vertices to a Gomory–Hu tree -/
+
+section Tree
+
+variable [Preorder β] {f : Finset V → β} {L : Finset V → Prop} {R : Finset V}
+
+/-- The graph on `V` whose edges are the endpoint pairs of the labelled edges `E`. -/
+private def treeOf (E : Set (CEdge V)) : SimpleGraph V :=
+  SimpleGraph.fromRel fun x y => ∃ e ∈ E, e.u = x ∧ e.v = y
+
+/-- Two vertices are adjacent in `treeOf E` when an edge of `E` joins them, in either
+orientation. -/
+private theorem Inv.treeOf_adj {E : Set (CEdge V)} (I : Inv f L R E) {x y : V} :
+    (treeOf E).Adj x y ↔ ∃ e ∈ E, (e.u = x ∧ e.v = y) ∨ (e.u = y ∧ e.v = x) := by
+  simp only [treeOf, SimpleGraph.fromRel_adj]
+  constructor
+  · rintro ⟨_, ⟨e, he, h⟩ | ⟨e, he, h⟩⟩
+    · exact ⟨e, he, Or.inl h⟩
+    · exact ⟨e, he, Or.inr h⟩
+  · rintro ⟨e, he, ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩⟩
+    · exact ⟨(I.edge e he).ne, Or.inl ⟨e, he, rfl, rfl⟩⟩
+    · exact ⟨(I.edge e he).ne.symm, Or.inr ⟨e, he, rfl, rfl⟩⟩
+
+/-- A tree edge other than that of `e` does not cross the label of `e`. -/
+private theorem Inv.mem_iff_of_adj {E : Set (CEdge V)} (I : Inv f L R E) {e : CEdge V}
+    (he : e ∈ E) {x y : V}
+    (hxy : (treeOf E).Adj x y) (hne : s(x, y) ≠ s(e.u, e.v)) : x ∈ e.S ↔ y ∈ e.S := by
+  obtain ⟨e', he', hends⟩ := I.treeOf_adj.mp hxy
+  have hee' : e ≠ e' := by
+    rintro rfl
+    rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · exact hne rfl
+    · exact hne Sym2.eq_swap
+  rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact I.nest e he e' he' hee'
+  · exact (I.nest e he e' he' hee').symm
+
+/-- Deleting the edge of `e` from the tree leaves no path across the label of `e`. -/
+private theorem Inv.mem_iff_of_reachable {E : Set (CEdge V)} (I : Inv f L R E) {e : CEdge V}
+    (he : e ∈ E) {x y : V}
+    (h : ((treeOf E).deleteEdges {s(e.u, e.v)}).Reachable x y) : x ∈ e.S ↔ y ∈ e.S := by
+  rw [SimpleGraph.reachable_iff_reflTransGen] at h
+  induction h with
+  | refl => exact Iff.rfl
+  | tail _ hbc ih =>
+    rw [SimpleGraph.deleteEdges_adj, Set.mem_singleton_iff] at hbc
+    exact ih.trans (I.mem_iff_of_adj he hbc.1 hbc.2)
+
+/-- A partial tree on all vertices is a spanning tree. -/
+private theorem Inv.isTree [Fintype V] [Nonempty V] {E : Set (CEdge V)}
+    (I : Inv f L Finset.univ E) :
+    (treeOf E).IsTree := by
+  refine ⟨⟨fun x y => ?_⟩, ?_⟩
+  · rw [SimpleGraph.reachable_iff_reflTransGen]
+    exact Relation.ReflTransGen.mono
+      (fun a b ⟨e, he, _, hends⟩ => I.treeOf_adj.mpr ⟨e, he, hends⟩) _ _
+      (I.chain x (Finset.mem_univ x) y (Finset.mem_univ y))
+  · rw [SimpleGraph.isAcyclic_iff_forall_adj_isBridge]
+    intro p q hpq
+    obtain ⟨e, he, hends⟩ := I.treeOf_adj.mp hpq
+    rw [SimpleGraph.isBridge_iff]
+    have hS := I.edge e he
+    rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · exact fun h => hS.right_notMem ((I.mem_iff_of_reachable he h).mp hS.left_mem)
+    · rw [Sym2.eq_swap]
+      exact fun h => hS.right_notMem ((I.mem_iff_of_reachable he h).mpr hS.left_mem)
+
+end Tree
+
 section Construction
 
 variable [Fintype V] [DecidableEq V]
@@ -131,6 +207,13 @@ private theorem good_restrict {L : Finset V → Prop} (hL : Good L) (U : Finset 
       · exact Or.inl (Finset.inter_subset_right.trans h')
       · exact Or.inr (Finset.subset_inter h h')
 
+/-- A set that does not split `Uᶜ` contains both or neither of two vertices outside `U`. -/
+private theorem Restrict.mem_iff {L : Finset V → Prop} {U X : Finset V} (h : Restrict L U X)
+    {x y : V} (hx : x ∉ U) (hy : y ∉ U) : x ∈ X ↔ y ∈ X := by
+  rcases h.2 with h | h
+  · exact ⟨fun hx' => absurd (h hx') hx, fun hy' => absurd (h hy') hy⟩
+  · exact ⟨fun _ => h (Finset.mem_compl.mpr hy), fun _ => h (Finset.mem_compl.mpr hx)⟩
+
 /-- **Gluing.** Partial trees on the two sides of a minimum `s`–`t` cut `U`, joined by an edge
 labelled `U`, form a partial tree. -/
 private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
@@ -140,23 +223,22 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
     ∃ E, Inv f L R E := by
   have hsU : s ∈ U := hU.left_mem
   have htU : t ∉ U := hU.right_notMem
+  -- Endpoints of `E₁` lie in `U` and those of `E₂` outside it.
+  have inU₁ : ∀ e ∈ E₁, e.u ∈ U ∧ e.v ∈ U := fun e he =>
+    ⟨Finset.mem_of_mem_inter_right (I₁.mem e he).1,
+      Finset.mem_of_mem_inter_right (I₁.mem e he).2⟩
+  have outU₂ : ∀ e ∈ E₂, e.u ∉ U ∧ e.v ∉ U := fun e he =>
+    ⟨Finset.mem_compl.mp (Finset.mem_of_mem_inter_right (I₂.mem e he).1),
+      Finset.mem_compl.mp (Finset.mem_of_mem_inter_right (I₂.mem e he).2)⟩
   -- Labels of `E₁` do not split `Uᶜ`; labels of `E₂` do not split `U`.
-  have side₁ : ∀ e ∈ E₁, ∀ x y, x ∉ U → y ∉ U → (x ∈ e.S ↔ y ∈ e.S) := by
-    intro e he x y hx hy
-    rcases (I₁.good e he).2 with h | h
-    · exact ⟨fun hx' => absurd (h hx') hx, fun hy' => absurd (h hy') hy⟩
-    · exact ⟨fun _ => h (Finset.mem_compl.mpr hy), fun _ => h (Finset.mem_compl.mpr hx)⟩
-  have side₂ : ∀ e ∈ E₂, ∀ x y, x ∈ U → y ∈ U → (x ∈ e.S ↔ y ∈ e.S) := by
-    intro e he x y hx hy
-    rcases (I₂.good e he).2 with h | h
-    · exact ⟨fun hx' => absurd hx (Finset.mem_compl.mp (h hx')),
-        fun hy' => absurd hy (Finset.mem_compl.mp (h hy'))⟩
-    · rw [compl_compl] at h
-      exact ⟨fun _ => h hy, fun _ => h hx⟩
+  have side₁ : ∀ e ∈ E₁, ∀ x y, x ∉ U → y ∉ U → (x ∈ e.S ↔ y ∈ e.S) := fun e he _ _ =>
+    (I₁.good e he).mem_iff
+  have side₂ : ∀ e ∈ E₂, ∀ x y, x ∈ U → y ∈ U → (x ∈ e.S ↔ y ∈ e.S) := fun e he _ _ hx hy =>
+    (I₂.good e he).mem_iff (Finset.notMem_compl.mpr hx) (Finset.notMem_compl.mpr hy)
   obtain ⟨r₁, hr₁, hr₁t⟩ := I₁.rep t
   obtain ⟨r₂, hr₂, hr₂s⟩ := I₂.rep s
-  have hr₁U : r₁ ∈ U := (Finset.mem_inter.mp hr₁).2
-  have hr₂U : r₂ ∉ U := Finset.mem_compl.mp (Finset.mem_inter.mp hr₂).2
+  have hr₁U : r₁ ∈ U := Finset.mem_of_mem_inter_right hr₁
+  have hr₂U : r₂ ∉ U := Finset.mem_compl.mp (Finset.mem_of_mem_inter_right hr₂)
   have out₁ : ∀ e ∈ E₁, ∀ x, x ∉ U → (x ∈ e.S ↔ r₁ ∈ e.S) := fun e he x hx =>
     (side₁ e he x t hx htU).trans (hr₁t e he)
   have in₂ : ∀ e ∈ E₂, ∀ x, x ∈ U → (x ∈ e.S ↔ r₂ ∈ e.S) := fun e he x hx =>
@@ -171,7 +253,7 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
       have hst : s ∈ e.S ↔ t ∉ e.S := by grind
       exact (hU.le_of_separates hsym hst).trans ((I₂.edge e he).le_of_separates hsym hY)
     · exact hU.le hsY htY
-    · exact hU.le_of_separates hsym (by tauto)
+    · exact hU.le_of_separates hsym (iff_of_false hsY (not_not.mpr htY))
     · obtain ⟨e, he, hsep, hY⟩ := exists_cross (Y := Yᶜ) (I₁.chain s hsR₁ r₁ hr₁)
         (Finset.mem_compl.mpr hsY) (fun h => Finset.mem_compl.mp h h₁)
       have hst : s ∈ e.S ↔ t ∉ e.S := by grind
@@ -179,34 +261,17 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
       exact (hU.le_of_separates hsym hst).trans ((I₁.edge e he).le_of_separates hsym hY')
   let enew : CEdge V := ⟨r₁, r₂, U⟩
   refine ⟨E₁ ∪ E₂ ∪ {enew}, ⟨?_, ?_, ?_, ?_, ?_, ?_⟩⟩
-  · intro e he
-    rcases he with (he | he) | he
-    · obtain ⟨h1, h2⟩ := I₁.mem e he
-      exact ⟨(Finset.mem_inter.mp h1).1, (Finset.mem_inter.mp h2).1⟩
-    · obtain ⟨h1, h2⟩ := I₂.mem e he
-      exact ⟨(Finset.mem_inter.mp h1).1, (Finset.mem_inter.mp h2).1⟩
-    · rw [Set.mem_singleton_iff] at he
-      subst he
-      exact ⟨(Finset.mem_inter.mp hr₁).1, (Finset.mem_inter.mp hr₂).1⟩
-  · intro e he
-    rcases he with (he | he) | he
-    · exact (I₁.good e he).1
-    · exact (I₂.good e he).1
-    · rw [Set.mem_singleton_iff] at he
-      subst he
-      exact hLU
-  · intro e he
-    rcases he with (he | he) | he
-    · exact I₁.edge e he
-    · exact I₂.edge e he
-    · rw [Set.mem_singleton_iff] at he
-      subst he
-      exact newEdge
-  · have inU₁ : ∀ e ∈ E₁, e.u ∈ U ∧ e.v ∈ U := fun e he =>
-      ⟨(Finset.mem_inter.mp (I₁.mem e he).1).2, (Finset.mem_inter.mp (I₁.mem e he).2).2⟩
-    have outU₂ : ∀ e ∈ E₂, e.u ∉ U ∧ e.v ∉ U := fun e he =>
-      ⟨Finset.mem_compl.mp (Finset.mem_inter.mp (I₂.mem e he).1).2,
-        Finset.mem_compl.mp (Finset.mem_inter.mp (I₂.mem e he).2).2⟩
+  · exact forall_mem_union_singleton
+      (fun e he => ⟨Finset.mem_of_mem_inter_left (I₁.mem e he).1,
+        Finset.mem_of_mem_inter_left (I₁.mem e he).2⟩)
+      (fun e he => ⟨Finset.mem_of_mem_inter_left (I₂.mem e he).1,
+        Finset.mem_of_mem_inter_left (I₂.mem e he).2⟩)
+      ⟨Finset.mem_of_mem_inter_left hr₁, Finset.mem_of_mem_inter_left hr₂⟩
+  · exact forall_mem_union_singleton (fun e he => (I₁.good e he).1) (fun e he => (I₂.good e he).1)
+      hLU
+  · exact forall_mem_union_singleton I₁.edge I₂.edge newEdge
+  · -- Nesting: within each side by induction, across the sides by `side₁`/`side₂`, and for the
+    -- new edge because each side lies on one side of `U`.
     intro e he e' he' hne
     rcases he with (he | he) | he <;> rcases he' with (he' | he') | he'
     · exact I₁.nest e he e' he' hne
@@ -228,19 +293,20 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
     · rw [Set.mem_singleton_iff] at he he'
       subst he he'
       exact absurd rfl hne
-  · have cross : ∀ x ∈ R, ∀ y ∈ R, x ∈ U → y ∉ U →
+  · -- Chains: within each side, and across `U` through the new edge `r₁ r₂`.
+    have cross : ∀ x ∈ R, ∀ y ∈ R, x ∈ U → y ∉ U →
         Relation.ReflTransGen (Step (E₁ ∪ E₂ ∪ {enew}) x y) x y := by
       intro x hx y hy hxU hyU
       have c₁ : Relation.ReflTransGen (Step (E₁ ∪ E₂ ∪ {enew}) x y) x r₁ :=
-        step_mono (fun e he => ⟨Or.inl (Or.inl he), fun hsep => by
-          have := out₁ e he y hyU
-          tauto⟩) (I₁.chain x (Finset.mem_inter.mpr ⟨hx, hxU⟩) r₁ hr₁)
+        step_mono (fun e he => ⟨Or.inl (Or.inl he), fun hsep =>
+          hsep.trans (not_congr (out₁ e he y hyU)).symm⟩)
+          (I₁.chain x (Finset.mem_inter.mpr ⟨hx, hxU⟩) r₁ hr₁)
       have c₂ : Step (E₁ ∪ E₂ ∪ {enew}) x y r₁ r₂ :=
         ⟨enew, Or.inr rfl, ⟨fun _ => hyU, fun _ => hxU⟩, Or.inl ⟨rfl, rfl⟩⟩
       have c₃ : Relation.ReflTransGen (Step (E₁ ∪ E₂ ∪ {enew}) x y) r₂ y :=
-        step_mono (fun e he => ⟨Or.inl (Or.inr he), fun hsep => by
-          have := in₂ e he x hxU
-          tauto⟩) (I₂.chain r₂ hr₂ y (Finset.mem_inter.mpr ⟨hy, Finset.mem_compl.mpr hyU⟩))
+        step_mono (fun e he => ⟨Or.inl (Or.inr he), fun hsep =>
+          (in₂ e he x hxU).trans hsep⟩)
+          (I₂.chain r₂ hr₂ y (Finset.mem_inter.mpr ⟨hy, Finset.mem_compl.mpr hyU⟩))
       exact c₁.trans (Relation.ReflTransGen.head c₂ c₃)
     intro x hx y hy
     by_cases hxU : x ∈ U <;> by_cases hyU : y ∈ U
@@ -251,25 +317,18 @@ private theorem glue [Preorder β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ =
     · exact step_mono (fun e he => ⟨Or.inl (Or.inr he), id⟩)
         (I₂.chain x (Finset.mem_inter.mpr ⟨hx, Finset.mem_compl.mpr hxU⟩) y
           (Finset.mem_inter.mpr ⟨hy, Finset.mem_compl.mpr hyU⟩))
-  · intro z
+  · -- Representatives: from the side of `U` containing the vertex.
+    intro z
     by_cases hz : z ∈ U
     · obtain ⟨r, hr, hzr⟩ := I₁.rep z
-      refine ⟨r, (Finset.mem_inter.mp hr).1, fun e he => ?_⟩
-      rcases he with (he | he) | he
-      · exact hzr e he
-      · exact side₂ e he z r hz (Finset.mem_inter.mp hr).2
-      · rw [Set.mem_singleton_iff] at he
-        subst he
-        exact ⟨fun _ => (Finset.mem_inter.mp hr).2, fun _ => hz⟩
+      have hrU : r ∈ U := Finset.mem_of_mem_inter_right hr
+      exact ⟨r, Finset.mem_of_mem_inter_left hr, forall_mem_union_singleton hzr
+        (fun e he => side₂ e he z r hz hrU) ⟨fun _ => hrU, fun _ => hz⟩⟩
     · obtain ⟨r, hr, hzr⟩ := I₂.rep z
-      have hrU : r ∉ U := Finset.mem_compl.mp (Finset.mem_inter.mp hr).2
-      refine ⟨r, (Finset.mem_inter.mp hr).1, fun e he => ?_⟩
-      rcases he with (he | he) | he
-      · exact side₁ e he z r hz hrU
-      · exact hzr e he
-      · rw [Set.mem_singleton_iff] at he
-        subst he
-        exact ⟨fun h => absurd h hz, fun h => absurd h hrU⟩
+      have hrU : r ∉ U := Finset.mem_compl.mp (Finset.mem_of_mem_inter_right hr)
+      exact ⟨r, Finset.mem_of_mem_inter_left hr, forall_mem_union_singleton
+        (fun e he => side₁ e he z r hz hrU) hzr
+        ⟨fun h => absurd h hz, fun h => absurd h hrU⟩⟩
 
 variable [AddCommMonoid β] [LinearOrder β] [IsOrderedCancelAddMonoid β]
 
@@ -334,94 +393,20 @@ theorem exists_isGomoryHuTree [Nonempty V] {f : Finset V → β} (hsym : ∀ X, 
   obtain ⟨E, I⟩ := exists_inv hsym hsub Finset.univ (fun _ => True) ⟨r, Finset.mem_univ r⟩
     ⟨fun _ _ => trivial, fun _ _ _ _ => trivial⟩
     (fun a _ b _ hab => (exists_isMinCutBetween f hab).imp fun X hX => ⟨trivial, hX⟩)
-  have hne : ∀ e ∈ E, e.u ≠ e.v := fun e he => (I.edge e he).ne
-  let T : SimpleGraph V := SimpleGraph.fromRel fun x y => ∃ e ∈ E, e.u = x ∧ e.v = y
-  have hadj : ∀ x y, T.Adj x y ↔ ∃ e ∈ E, (e.u = x ∧ e.v = y) ∨ (e.u = y ∧ e.v = x) := by
-    intro x y
-    simp only [T, SimpleGraph.fromRel_adj]
-    constructor
-    · rintro ⟨_, ⟨e, he, h⟩ | ⟨e, he, h⟩⟩
-      · exact ⟨e, he, Or.inl h⟩
-      · exact ⟨e, he, Or.inr h⟩
-    · rintro ⟨e, he, ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩⟩
-      · exact ⟨hne e he, Or.inl ⟨e, he, rfl, rfl⟩⟩
-      · exact ⟨(hne e he).symm, Or.inr ⟨e, he, rfl, rfl⟩⟩
-  -- Distinct edges have distinct endpoint pairs.
-  have hsym2 : ∀ e ∈ E, ∀ e' ∈ E, e' ≠ e → s(e'.u, e'.v) ≠ s(e.u, e.v) := by
-    intro e he e' he' hne' heq
-    have hn := I.nest e he e' he' hne'.symm
-    rcases Sym2.eq_iff.mp heq with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · rw [h1, h2] at hn
-      exact (I.edge e he).right_notMem (hn.mp (I.edge e he).left_mem)
-    · rw [h1, h2] at hn
-      exact (I.edge e he).right_notMem (hn.mpr (I.edge e he).left_mem)
-  -- Deleting the edge of `e` leaves exactly the two sides of `e.S`.
-  have hreach : ∀ e ∈ E, ∀ x y,
-      (T.deleteEdges {s(e.u, e.v)}).Reachable x y ↔ (x ∈ e.S ↔ y ∈ e.S) := by
-    intro e he x y
-    constructor
-    · intro h
-      rw [SimpleGraph.reachable_iff_reflTransGen] at h
-      induction h with
-      | refl => exact Iff.rfl
-      | @tail b c _ hbc ih =>
-        rw [SimpleGraph.deleteEdges_adj, hadj] at hbc
-        obtain ⟨⟨e', he', hends⟩, hnot⟩ := hbc
-        have hne' : e' ≠ e := by
-          rintro rfl
-          rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-          · exact hnot rfl
-          · exact hnot Sym2.eq_swap
-        have hn := I.nest e he e' he' hne'.symm
-        rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-        · exact ih.trans hn
-        · exact ih.trans hn.symm
-    · intro hxy
-      rw [SimpleGraph.reachable_iff_reflTransGen]
-      refine Relation.ReflTransGen.mono (fun a b ⟨e', he', hsep, hends⟩ => ?_) _ _
-        (I.chain x (Finset.mem_univ x) y (Finset.mem_univ y))
-      have hne' : e' ≠ e := by grind
-      rw [SimpleGraph.deleteEdges_adj, hadj]
-      refine ⟨⟨e', he', hends⟩, fun h => hsym2 e he e' he' hne' ?_⟩
-      rw [Set.mem_singleton_iff] at h
-      rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-      · exact h
-      · exact Sym2.eq_swap.trans h
-  have htree : T.IsTree := by
-    refine ⟨⟨fun x y => ?_⟩, ?_⟩
-    · rw [SimpleGraph.reachable_iff_reflTransGen]
-      exact Relation.ReflTransGen.mono (fun a b ⟨e, he, _, hends⟩ => (hadj a b).mpr ⟨e, he, hends⟩)
-        _ _ (I.chain x (Finset.mem_univ x) y (Finset.mem_univ y))
-    · rw [SimpleGraph.isAcyclic_iff_forall_adj_isBridge]
-      intro p q hpq
-      obtain ⟨e, he, hends⟩ := (hadj p q).mp hpq
-      rw [SimpleGraph.isBridge_iff]
-      rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-      · rw [hreach e he]
-        exact fun h => (I.edge e he).right_notMem (h.mp (I.edge e he).left_mem)
-      · rw [Sym2.eq_swap, hreach e he]
-        exact fun h => (I.edge e he).right_notMem (h.mpr (I.edge e he).left_mem)
-  refine ⟨T, htree, fun u v huv => ?_⟩
-  obtain ⟨e, he, hends⟩ := (hadj u v).mp huv
+  have htree := I.isTree
+  refine ⟨treeOf E, htree, fun u v huv => ?_⟩
+  obtain ⟨e, he, hends⟩ := I.treeOf_adj.mp huv
+  have hS := I.edge e he
+  have hadj : (treeOf E).Adj e.u e.v := I.treeOf_adj.mpr ⟨e, he, Or.inl ⟨rfl, rfl⟩⟩
+  -- No other tree edge crosses `e.S`, so it is the side of the edge of `e` containing `e.u`.
+  have hside : edgeSide (treeOf E) e.u e.v = e.S :=
+    SimpleGraph.edgeSide_eq_of_forall_adj htree hadj hS.left_mem hS.right_notMem
+      fun _ _ => I.mem_iff_of_adj he
   rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-  · have : edgeSide T e.u e.v = e.S := by
-      ext x
-      rw [mem_edgeSide, hreach e he]
-      exact ⟨fun h => h.mp (I.edge e he).left_mem, fun h => ⟨fun _ => h, fun _ =>
-        (I.edge e he).left_mem⟩⟩
-    rw [this]
-    exact I.edge e he
-  · have : edgeSide T e.v e.u = e.Sᶜ := by
-      ext x
-      rw [mem_edgeSide, Sym2.eq_swap, hreach e he, Finset.mem_compl]
-      have h1 := (I.edge e he).right_notMem
-      constructor
-      · intro h hx
-        exact h1 (h.mpr hx)
-      · intro h
-        exact ⟨fun hv => absurd hv h1, fun hx => absurd hx h⟩
-    rw [this]
-    exact (I.edge e he).compl hsym
+  · rw [hside]
+    exact hS
+  · rw [SimpleGraph.edgeSide_swap htree hadj, hside]
+    exact hS.compl hsym
 
 end Construction
 

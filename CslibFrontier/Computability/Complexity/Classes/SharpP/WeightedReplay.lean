@@ -20,8 +20,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 An instruction-indexed transcript supplies a Boolean reply at each machine instruction. Query
 instructions use a GapP numerator, while local instructions assign zero weight to `true`.
-Each pair of branch weights sums to `2 ^ R(a)`. Summing the accepting transcript products gives
-an ordinary GapP function by uniform indexed products and uniform Boolean sums.
+Each pair of branch weights sums to a per-instance GapP denominator `D a`. Summing the accepting
+transcript products gives an ordinary GapP function by uniform indexed products and uniform
+Boolean sums. AWPP lowness uses the dyadic denominator `D a = 2 ^ R a`; the exact `SPP` and `LWPP`
+simulations use `D a = 1` and a length-dependent product of targets.
 
 ## Main definitions
 
@@ -29,7 +31,7 @@ an ordinary GapP function by uniform indexed products and uniform Boolean sums.
 
 ## Main results
 
-* `GapP.weightedReplay_mem`: polynomial-time input and unary clock and precision bounds give
+* `GapP.weightedReplay_mem`: polynomial-time input, a unary clock and a GapP denominator give
   ordinary GapP membership, uniformly for every GapP request numerator.
 
 ## References
@@ -48,52 +50,45 @@ open Probability.AdaptiveWeights Finset
 variable {α : Type} {enc : α ↪ List Bool}
 variable {k : ℕ} {Control Operation : Type} [DecidableEq Operation]
 
-/-- Total accepting weight of the instruction-indexed replay tree. Local instructions use the
-canonical padding bit `false`, with weight equal to the common denominator. -/
+/-- Total accepting weight of the instruction-indexed replay tree with per-instance integer
+denominator `D a`. Query instructions use the request numerator `H (a, w)`, while local
+instructions assign zero weight to `true` and weight `D a` to the canonical padding bit
+`false`. -/
 def weightedReplay (machine : MultiTapePTM k Bool Control Operation)
-    (input : α → List Bool) (T R : α → ℕ) (H : α × List Bool → ℤ) (a : α) : ℤ :=
-  acceptWeight ((2 : ℤ) ^ R a)
+    (input : α → List Bool) (T : α → ℕ) (D : α → ℤ) (H : α × List Bool → ℤ) (a : α) : ℤ :=
+  acceptWeight (D a)
     (fun cfg => if (machine.pendingQuery cfg).isSome then H (a, machine.pendingRequest cfg) else 0)
     machine.replyStep (fun cfg => cfg.tapes.output.headD false) (T a)
     (FiniteConfig.init machine.initial (input a))
 
-/-- A finite oracle computation with GapP request numerators has an ordinary GapP accepting
-weight. The clock and denominator exponent are computed in unary; no oracle closure axiom or
+/-- A finite oracle computation with a GapP denominator and GapP request numerators has an
+ordinary GapP accepting weight. The clock is computed in unary; no oracle closure axiom or
 positivity assumption on the numerators is needed. -/
 theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
     (machine : MultiTapePTM k Bool Control Operation)
-    {input : α → List Bool} {T R : α → ℕ} {H : α × List Bool → ℤ}
+    {input : α → List Bool} {T : α → ℕ} {D : α → ℤ} {H : α × List Bool → ℤ}
     (hinput : Turing.MultiTapeTM.ComputableInPolyTime input enc encBits)
     (hT : Turing.MultiTapeTM.ComputableInPolyTime T enc encUnary)
-    (hR : Turing.MultiTapeTM.ComputableInPolyTime R enc encUnary)
+    (hD : D ∈ GapP enc)
     (hH : H ∈ GapP (encPair enc encBits)) :
-    weightedReplay machine input T R H ∈ GapP enc := by
-  let _ := Fintype.ofFinite Operation
-  let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
-    fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableInPolyTime cfg
-      (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.computableInPolyTime_replayPrefix.comp
-      (g := fun x : (α × List Bool) × ℕ => ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableInPolyTime
-      (fun x => (machine.pendingQuery (cfg x)).isSome)
-      (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hrequest : ComputableInPolyTime
-      (fun x : (α × List Bool) × ℕ => (x.1.1, machine.pendingRequest (cfg x)))
-      (encPair (encPair enc encBits) encUnary) (encPair enc encBits) := by
-    have hinstance : ComputableInPolyTime
-        (fun x : (α × List Bool) × ℕ => x.1.1)
-        (encPair (encPair enc encBits) encUnary) enc := by fun_prop
-    exact hinstance.prod (machine.pendingRequest_pt.comp hcfg)
+    weightedReplay machine input T D H ∈ GapP enc := by
+  -- reindex to the argument shape of the replay-prefix polynomial-time lemmas; the
+  -- compositions are elaborated without an expected type, which keeps unification first-order
+  have hreplay : ComputableInPolyTime
+      (fun x : (α × List Bool) × ℕ => ((input x.1.1, x.1.2), x.2))
+      (encPair (encPair enc encBits) encUnary) (encPair (encPair encBits encBits) encUnary) := by
+    fun_prop
+  have hquery := machine.replayPrefix_isQuery_pt.comp hreplay
+  have hrequest := ((ComputableInPolyTime.fst _ _).comp (.fst _ _)).prod
+    (machine.replayPrefix_pendingRequest_pt.comp hreplay)
   let p : (α × List Bool) × ℕ → ℤ := fun x =>
-    if (machine.pendingQuery (cfg x)).isSome then H (x.1.1, machine.pendingRequest (cfg x)) else 0
+    let cfg := machine.replayPrefix (input x.1.1) x.1.2 x.2
+    if (machine.pendingQuery cfg).isSome then H (x.1.1, machine.pendingRequest cfg) else 0
   have hp : p ∈ GapP (encPair (encPair enc encBits) encUnary) :=
     GapP.ite_mem hquery (GapP.comp_mem hH hrequest) GapP.zero_mem
-  have hdenom : (fun x : (α × List Bool) × ℕ => (2 : ℤ) ^ R x.1.1) ∈
+  have hdenom : (fun x : (α × List Bool) × ℕ => D x.1.1) ∈
       GapP (encPair (encPair enc encBits) encUnary) :=
-    mem_GapP_of_polyTime (by fun_prop)
+    GapP.comp_mem hD (by fun_prop)
   have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop

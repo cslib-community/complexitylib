@@ -100,9 +100,8 @@ def initSteps (U n_max : ℕ) : ℕ :=
   2 + ReducedKWise.initTableSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) +
     ReducedKWise.resampleSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) 3
 
-theorem qBits_pos (U n_max : ℕ) : 0 < qBits U n_max := by
-  unfold qBits
-  omega
+theorem qBits_pos (U n_max : ℕ) : 0 < qBits U n_max :=
+  lt_max_of_lt_right Nat.one_pos
 
 theorem quotientBits_le_qBits (U n_max : ℕ) : quotientBits U n_max ≤ qBits U n_max :=
   le_max_left _ _

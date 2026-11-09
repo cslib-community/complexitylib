@@ -62,6 +62,7 @@ public section
 namespace Cslib.Circuits.Boolean.ModelChecking.Ordered
 
 open FirstOrder FirstOrder.Language
+open Cslib.Logic.FO (Atom atomsOf)
 open Cslib.Logic.FO.Ordered (language)
 
 variable {L : Language} [L.IsRelational] {n N : ℕ} [Fact (2 ≤ n)]

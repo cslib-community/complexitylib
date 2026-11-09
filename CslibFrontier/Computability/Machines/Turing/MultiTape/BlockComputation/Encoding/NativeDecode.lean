@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
@@ -398,11 +399,6 @@ private theorem slice_ofFn {n : ℕ} (bits : BitString n) (offset count : ℕ)
     omega
   · intro i hi hj
     simp only [List.getElem_take, List.getElem_drop, List.getElem_ofFn]
-
-private theorem ofBits_ofFn {n : ℕ} (bits : BitString n) :
-    ofBits (List.ofFn bits) = (equivFin n bits).val := by
-  rw [← lsbValue_ofFn]
-  exact (lsbValue_eq_foldr_bit _).symm
 
 /-- Reading an in-range numeric field agrees with the existing finite bit-string numbering. -/
 theorem readNat_ofFn {n : ℕ} (bits : BitString n) (offset count : ℕ)

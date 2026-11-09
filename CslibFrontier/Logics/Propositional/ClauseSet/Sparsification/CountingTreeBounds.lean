@@ -185,27 +185,9 @@ complementary literals within each clause. -/
 theorem nontautological_of_mem_countingLeaves {θ : ℕ → ℕ} (hθ : ∀ r, 1 ≤ θ r)
     {ψ L : ClauseSet V} (hnt : ∀ C ∈ ψ, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C)
     (hL : L ∈ countingLeaves θ ψ) :
-    ∀ C ∈ L, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := by
-  suffices ∀ n (ψ : ClauseSet V), potential ψ = n →
-      (∀ C ∈ ψ, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C) → L ∈ countingLeaves θ ψ →
-      ∀ C ∈ L, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C from
-    this (potential ψ) ψ rfl hnt hL
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro ψ hp hnt hL
-    rw [countingLeaves] at hL
-    by_cases h : ¬ Sparse θ ψ ∧ 2 ≤ (flower ψ (chooseBranch θ ψ).1 (chooseBranch θ ψ).2).card
-    · rw [ite_eq_left h, List.mem_append] at hL
-      set ch := chooseBranch θ ψ
-      have hch := (choice_chooseBranch h.1).1
-      rcases hL with hL | hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 false
-        exact ih _ (hp ▸ hlt) _ rfl (nontautological_countingChild hθ hnt hch false) hL
-      · have hlt := potential_countingChild_lt_of_two_le_card_flower hch.1 hch.2.1 h.2 true
-        exact ih _ (hp ▸ hlt) _ rfl (nontautological_countingChild hθ hnt hch true) hL
-    · rw [ite_eq_right h, List.mem_singleton] at hL
-      exact hL ▸ hnt
+    ∀ C ∈ L, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C :=
+  of_mem_countingLeaves (P := fun L => ∀ C ∈ L, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C)
+    (fun _ _ _ hch _ hnt b => nontautological_countingChild hθ hnt hch.1 b) hnt hL
 
 /-! ### Branch-word representation bridge between `countingLeaves` and `CountingBranchingRule` -/
 

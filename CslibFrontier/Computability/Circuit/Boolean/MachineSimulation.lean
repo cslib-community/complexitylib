@@ -97,11 +97,6 @@ private theorem featureFn_eq_true {t : ℕ} {φ : Feature k State} {x : Fin n �
     featureFn tm t φ x = true ↔ φ.Holds (cfgAt tm t x) :=
   decide_eq_true_iff
 
-/-- `featureFn tm t φ x` is `false` iff the feature `φ` does not hold at step `t` on input `x`. -/
-theorem featureFn_eq_false {t : ℕ} {φ : Feature k State} {x : Fin n → Bool} :
-    featureFn tm t φ x = false ↔ ¬φ.Holds (cfgAt tm t x) :=
-  decide_eq_false_iff_not
-
 /-! ### Feature sets -/
 
 section Sets

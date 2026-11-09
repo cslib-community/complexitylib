@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Primitives.Garbling.Privacy
 public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Yao's two-party protocol in the oblivious-transfer hybrid model
@@ -272,7 +273,7 @@ private theorem evalWith_yaoSteps [Fintype K] [Nonempty K] (C : Circuit σ (n₀
       PMF.pure (yaoReceived C I F tw st) := by
   refine (Steps.evalWith_message _ _ _ _).trans ?_
   refine (congrArg (PMF.map _) (Steps.evalWith_oracle _ _ _ _)).trans ?_
-  simp only [Steps.evalWith_done, batchOTWorld, ProbComp.eval_pure, PMF.pure_bind, PMF.pure_map]
+  simp only [pmf_norm, Steps.evalWith_done, batchOTWorld]
   rfl
 
 /-- Independent coin sampling draws the garbler's coins. -/
@@ -336,8 +337,7 @@ private theorem eval_garble [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n�
     (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T) :
     ProbComp.eval (garble C I F tw) =
       (ProbComp.eval (sampleGarblerCoins C K)).map fun c => garbleWith C I F tw c.1 c.2 := by
-  simp only [garble, sampleGarblerCoins, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind,
-    PMF.pure_map]
+  simp only [pmf_norm, garble, sampleGarblerCoins]
 
 /-- The evaluator's view in a run with the garbler's coins `c`. -/
 private theorem yaoReceived_one (C : Circuit σ (n₀ + n₁) m)
@@ -420,8 +420,7 @@ theorem idealJoint_yao_garbler [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + 
     ProbComp.eval (idealJoint (yaoFunctionality C I) {0} (yaoGarblerSim C K) x) =
       (yaoProtocol C I F tw).realJoint (batchOTWorld n₁ (K × Bool)) {0} x := by
   rw [realJoint_yao_garbler]
-  simp only [idealJoint, yaoFunctionality, Functionality.ofDeterministic, yaoGarblerSim,
-    ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind, PMF.bind_bind]
+  simp only [pmf_norm, idealJoint, yaoFunctionality, Functionality.ofDeterministic, yaoGarblerSim]
   rw [← PMF.bind_pure_comp]
   rfl
 
@@ -462,8 +461,8 @@ theorem semiHonestAdvantage_yao_evaluator_le (C : Circuit σ (n₀ + n₁) m)
   have hideal : ProbComp.eval (idealJoint (yaoFunctionality C I) {1} (yaoEvaluatorSim C F tw) x >>=
       D) = simGame C I F tw (yaoInput x)
         (yaoEvaluatorDistinguisher C (x 1) (C.eval I (yaoInput x)) D) := by
-    simp only [idealJoint, yaoFunctionality, Functionality.ofDeterministic, yaoEvaluatorSim,
-      simGame, ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind, PMF.bind_bind]
+    simp only [pmf_norm, idealJoint, yaoFunctionality, Functionality.ofDeterministic,
+      yaoEvaluatorSim, simGame]
     rfl
   have hreal : ((yaoProtocol C I F tw).realJoint (batchOTWorld n₁ (K × Bool)) {1} x).bind
       (fun r => ProbComp.eval (D r)) = realGame C I F tw (yaoInput x)

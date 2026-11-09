@@ -90,9 +90,8 @@ theorem sound_of_knowledgeSound [Nonempty WitOut] {V : Verifier OracleSpec.empty
     simp only [P', bind_assoc, plainLaw_bind, PMF.map_bind]
     congr 1
     funext st
-    rw [← plainLaw_bind, plainLaw_bindLeaf_run]
-    simp only [plainLaw_pure, PMF.pure_map]
-    exact PMF.bind_pure_comp _ _
+    rw [← plainLaw_bind]
+    exact plainLaw_bindLeaf_pure_run _ _ _ _
   have hk := h x P'
   rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply, hlaw,
     PMF.toOuterMeasure_map_apply] at hk
