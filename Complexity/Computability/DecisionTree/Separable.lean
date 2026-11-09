@@ -265,8 +265,7 @@ theorem card_mul_le_mul_leafCount_sq_biMonotone (t : DecisionTree (BiMonotoneCom
     t.exists_leaf_rectangle_biMonotone A B hA hB
   have harea := hR A' hA' B' hB' (t.eval fun q => q.eval x₀ y₀) fun x hx y hy =>
     t.eval_eq_of_path_eq ((hp x hx y hy).trans (hp x₀ hx₀ y₀ hy₀).symm)
-  calc A.card * B.card ≤ (A'.card * t.leafCount) * (B'.card * t.leafCount) :=
-      Nat.mul_le_mul hAc hBc
+  calc A.card * B.card ≤ (A'.card * t.leafCount) * (B'.card * t.leafCount) := by gcongr
     _ = (A'.card * B'.card) * t.leafCount ^ 2 := by ring
     _ ≤ R * t.leafCount ^ 2 := Nat.mul_le_mul_right _ harea
 

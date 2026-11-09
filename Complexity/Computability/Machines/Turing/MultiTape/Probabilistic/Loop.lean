@@ -143,51 +143,39 @@ variable (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)
 absorbed because the remaining loop halts within its own clock. -/
 theorem run_interpret_runOracleConfigFrom_add (cfg : Config k Bool State Operation x)
     (fuel rest : ℕ) (s : OracleState)
-    (hrest : ∀ result ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      (body.runOracleConfigFrom fuel cfg)).run s).support,
-      ∀ final ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        ((repeatUntilBlank i body).runOracleConfigFrom rest (runConfig result.1))).run
+    (hrest : ∀ result ∈ (ProbOracleComp.runWith oracle (body.runOracleConfigFrom fuel cfg)
+        s).support,
+      ∀ final ∈ (ProbOracleComp.runWith oracle
+          ((repeatUntilBlank i body).runOracleConfigFrom rest (runConfig result.1))
           result.2).support,
         final.1.tapes.state = none) :
-    (OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      ((repeatUntilBlank i body).runOracleConfigFrom (fuel + rest) (runConfig cfg))).run s =
-    ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      (body.runOracleConfigFrom fuel cfg)).run s).bind (fun result =>
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        ((repeatUntilBlank i body).runOracleConfigFrom rest (runConfig result.1))).run
-          result.2) := by
+    ProbOracleComp.runWith oracle
+        ((repeatUntilBlank i body).runOracleConfigFrom (fuel + rest) (runConfig cfg)) s =
+    (ProbOracleComp.runWith oracle (body.runOracleConfigFrom fuel cfg) s).bind (fun result =>
+      ProbOracleComp.runWith oracle
+          ((repeatUntilBlank i body).runOracleConfigFrom rest (runConfig result.1)) result.2) := by
   induction fuel generalizing cfg s with
   | zero =>
     simp only [Nat.zero_add, runOracleConfigFrom, MultiTapePTM.runConfigFrom,
-      MultiTapeMachine.runConfigFrom_zero, OracleComp.interpret_pure, StateT.run_pure,
-      Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
+      MultiTapeMachine.runConfigFrom_zero, ProbOracleComp.runWith_pure, PMF.pure_bind]
   | succ fuel ih =>
     by_cases hhalt : cfg.tapes.state = none
     · have hpure : body.runOracleConfigFrom (fuel + 1) cfg = pure cfg :=
         MultiTapeMachine.runConfigFrom_halted _ _ _ _ cfg hhalt
       have hrest' := hrest (cfg, s) (by
-        simp only [hpure, OracleComp.interpret_pure, StateT.run_pure,
-          Probability.PMF.monad_pure_eq_pure, PMF.support_pure, Set.mem_singleton_iff])
-      rw [hpure, OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-        PMF.pure_bind, Nat.add_comm (fuel + 1) rest]
+        simp only [hpure, ProbOracleComp.runWith_pure, PMF.support_pure, Set.mem_singleton_iff])
+      rw [hpure, ProbOracleComp.runWith_pure, PMF.pure_bind, Nat.add_comm (fuel + 1) rest]
       exact run_interpret_runOracleConfigFrom_add_of_halted _ oracle _ rest (fuel + 1) s hrest'
     · rw [show fuel + 1 + rest = 1 + (fuel + rest) by lia, runOracleConfigFrom_add,
         runOracleConfigFrom_one_runConfig i body cfg hhalt, bind_map_left,
-        OracleComp.interpret_bind, StateT.run_bind, Probability.PMF.monad_bind_eq_bind,
-        show fuel + 1 = 1 + fuel by lia, runOracleConfigFrom_add, OracleComp.interpret_bind,
-        StateT.run_bind, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind]
+        ProbOracleComp.runWith_bind, show fuel + 1 = 1 + fuel by lia, runOracleConfigFrom_add,
+        ProbOracleComp.runWith_bind, PMF.bind_bind]
       apply Probability.PMF.bind_congr_on_support
       rintro ⟨next, s'⟩ hnext
       apply ih
       intro result hresult
       apply hrest result
-      rw [show fuel + 1 = 1 + fuel by lia, runOracleConfigFrom_add, OracleComp.interpret_bind,
-        StateT.run_bind, Probability.PMF.monad_bind_eq_bind]
+      rw [show fuel + 1 = 1 + fuel by lia, runOracleConfigFrom_add, ProbOracleComp.runWith_bind]
       exact (PMF.mem_support_bind_iff _ _ _).mpr ⟨(next, s'), hnext, hresult⟩
 
 /-- An instruction that writes nothing and moves no head changes only the control state of a word
@@ -225,8 +213,8 @@ theorem RunsWords.fromCheck_nil (i : Fin k) (body : MultiTapePTM k Bool State Op
   dsimp only
   rw [hrun, hstep]
   simp only [runOracleConfigFrom, MultiTapePTM.runConfigFrom, MultiTapeMachine.runConfigFrom_zero,
-    OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_map,
-    List.append_nil, PMF.support_pure, Set.mem_singleton_iff, forall_eq, true_and]
+    ProbOracleComp.runWith_pure, PMF.pure_map, List.append_nil, PMF.support_pure,
+    Set.mem_singleton_iff, forall_eq, true_and]
   exact hbuf
 
 /-- At the blank test on a non-empty word, the loop restarts its body after one instruction. -/
@@ -265,9 +253,7 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
     (h₁ : body.RunsWords x ws₀ out₀ t₁ prog₁ ws₁ emit₁)
     (h₂ : ∀ a (OracleState : Type)
       (oracle : Operation × List Bool → StateT OracleState PMF (List Bool)) (s s' : OracleState),
-      (a, s') ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        prog₁).run s).support →
+      (a, s') ∈ (ProbOracleComp.runWith oracle prog₁ s).support →
       (fromCheck i body).RunsWords x (ws₁ a) (out₀ ++ emit₁ a) t₂ (prog₂ a) (ws₂ a) (emit₂ a)) :
     (repeatUntilBlank i body).RunsWords x ws₀ out₀ (t₁ + t₂)
       (prog₁ >>= fun a => (fun b => (a, b)) <$> prog₂ a)
@@ -290,13 +276,10 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
         wordsCfg x (some (fromCheck i body).initial) (ws₁ a) (out₀ ++ emit₁ a) := by
     simp only [runConfig, hmid, f, mapState_wordsCfg, Option.elim_none]
     rfl
-  have hrest : ∀ result ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      (body.runOracleConfigFrom t₁ cfg₀)).run s).support,
-      ∀ final ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        ((repeatUntilBlank i body).runOracleConfigFrom t₂ (runConfig result.1))).run
-          result.2).support,
+  have hrest : ∀ result ∈ (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀)
+      s).support,
+      ∀ final ∈ (ProbOracleComp.runWith oracle
+          ((repeatUntilBlank i body).runOracleConfigFrom t₂ (runConfig result.1)) result.2).support,
         final.1.tapes.state = none := by
     rintro ⟨mid, s₁⟩ hmid
     obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid
@@ -310,18 +293,14 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
     let g (p : Cfg k Bool State x × OracleState) :
         PMF (Cfg k Bool (RepeatUntilBlankState State) x × OracleState) :=
       if h : ∃ a, p.1 = f a then
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (prog₂ (Classical.choose h))).run p.2).map
+        (ProbOracleComp.runWith oracle (prog₂ (Classical.choose h)) p.2).map
           (fun (b, s₂) =>
             (wordsCfg x none (ws₂ (Classical.choose h) b)
               (out₀ ++ (emit₁ (Classical.choose h) ++ emit₂ (Classical.choose h) b)), s₂))
       else PMF.pure (wordsCfg x none ws₀ out₀, p.2)
     have hg (a : α) (s₁ : OracleState) :
         g (f a, s₁) =
-          ((OracleComp.interpret
-            (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-            (prog₂ a)).run s₁).map
+          (ProbOracleComp.runWith oracle (prog₂ a) s₁).map
             (fun (b, s₂) =>
               (wordsCfg x none (ws₂ a b) (out₀ ++ (emit₁ a ++ emit₂ a b)), s₂)) := by
       have hex : ∃ a', f a = f a' := ⟨a, rfl⟩
@@ -329,18 +308,13 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
       change (if h : ∃ a', f a = f a' then _ else _) = _
       simp only [hex, ↓reduceDIte, hchoose]
     have hcongr :
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (body.runOracleConfigFrom t₁ cfg₀)).run s).bind
+        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
           (fun result =>
             PMF.map (fun (final, s') => (final.tapes, s'))
-              ((OracleComp.interpret
-                (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-                ((repeatUntilBlank i body).runOracleConfigFrom t₂
-                  (runConfig result.1))).run result.2)) =
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (body.runOracleConfigFrom t₁ cfg₀)).run s).bind
+              (ProbOracleComp.runWith oracle
+                  ((repeatUntilBlank i body).runOracleConfigFrom t₂ (runConfig result.1))
+                  result.2)) =
+        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
           (fun result => g (result.1.tapes, result.2)) := by
       apply PMF.bind_congr_on_support
       rintro ⟨mid, s₁⟩ hmid
@@ -355,20 +329,15 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
       simp only [List.append_assoc]
     rw [hcongr]
     have hmapBind :
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (body.runOracleConfigFrom t₁ cfg₀)).run s).bind
+        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
           (fun result => g (result.1.tapes, result.2)) =
-        (((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (body.runOracleConfigFrom t₁ cfg₀)).run s).map
+        ((ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).map
           (fun (final, s') => (final.tapes, s'))).bind g := by
       rw [PMF.bind_map]
       rfl
     rw [hmapBind, (h₁ OracleState oracle s cfg₀ rfl hbuf).1, PMF.bind_map]
-    simp only [OracleComp.interpret_bind, OracleComp.interpret_map, StateT.run_bind,
-      StateT.run_map, Probability.PMF.monad_bind_eq_bind, PMF.monad_map_eq_map,
-      PMF.map_bind, PMF.map_comp, Function.comp_def]
+    simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map, PMF.map_bind, PMF.map_comp,
+      Function.comp_def]
     congr 1
     funext ⟨a, s₁⟩
     exact hg a s₁
@@ -395,15 +364,12 @@ theorem RunsWords.repeatUntilBlank (i : Fin k) {body : MultiTapePTM k Bool State
     (hpreserve : ∀ n < rounds, ∀ s, invariant n s →
       ∀ (OracleState : Type) (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
         (st st' : OracleState) (s' : σ),
-        (s', st') ∈ ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (step s)).run st).support → invariant (n + 1) s' ∧ ws s' i ≠ [])
+        (s', st') ∈ (ProbOracleComp.runWith oracle (step s)
+            st).support → invariant (n + 1) s' ∧ ws s' i ≠ [])
     (hstop : ∀ s, invariant rounds s →
       ∀ (OracleState : Type) (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
         (st st' : OracleState) (s' : σ),
-        (s', st') ∈ ((OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (last s)).run st).support → ws s' i = []) :
+        (s', st') ∈ (ProbOracleComp.runWith oracle (last s) st).support → ws s' i = []) :
     (repeatUntilBlank i body).RunsWords x (ws s₀) out₀ ((rounds + 1) * (t + 1))
       (OracleComp.iterate rounds step s₀ >>= last) ws (fun _ => []) := by
   have hinj : Function.Injective (fun s => (ws s, ([] : List Bool))) :=

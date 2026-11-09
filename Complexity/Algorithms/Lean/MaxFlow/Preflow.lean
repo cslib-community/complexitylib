@@ -532,11 +532,7 @@ Section 26.4, procedure `PUSH`). -/
   out_le_in x hx := by
     have key := sum_pushFun_sub f.toFun u v (f.pushAmount u v) x
     have hex := f.excess_nonneg hx
-    have hδ : x = u → (f.pushAmount u v : ℤ) ≤ f.excess x := by
-      rintro rfl
-      unfold pushAmount
-      have := min_le_left (f.excess x).toNat (f.resCap x v)
-      omega
+    have hδ : x = u → (f.pushAmount u v : ℤ) ≤ f.excess x := by grind [pushAmount]
     unfold excess at hex hδ
     have h0 : (0 : ℤ) ≤ (∑ y, (pushFun f u v (f.pushAmount u v) y x : ℤ)) -
         ∑ y, (pushFun f u v (f.pushAmount u v) x y : ℤ) := by
@@ -644,9 +640,7 @@ theorem resNbrs_nonempty (f : N.Preflow) {u : V} (hu : 0 < f.excess u) :
   rw [Finset.not_nonempty_iff_eq_empty] at hne
   have hz : ∀ w, f w u = 0 := by
     intro w
-    have hw : w ∉ f.resNbrs u := by
-      rw [hne]
-      exact Finset.notMem_empty w
+    have hw : w ∉ f.resNbrs u := by grind
     rw [mem_resNbrs, not_lt] at hw
     unfold resCap at hw
     omega

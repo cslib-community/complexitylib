@@ -169,8 +169,7 @@ theorem SigmaTwoTIME_succ_pow_subset_NTIME_succ_pow {t' : ℕ → ℕ} {p q a b 
   have hm' : m + 1 ≤ (3 * C₁ + 1) * (n + 1) ^ a := by nlinarith
   have hpow : t' m ^ q ≤ (M * (n + 1) ^ b) ^ q := by
     calc t' m ^ q ≤ C * (m + 1) ^ p := ht' m
-      _ ≤ C * ((3 * C₁ + 1) * (n + 1) ^ a) ^ p :=
-        Nat.mul_le_mul_left C (Nat.pow_le_pow_left hm' p)
+      _ ≤ C * ((3 * C₁ + 1) * (n + 1) ^ a) ^ p := by gcongr
       _ = C * (3 * C₁ + 1) ^ p * (n + 1) ^ (a * p) := by rw [mul_pow, ← pow_mul, Nat.mul_assoc]
       _ ≤ M * (n + 1) ^ (b * q) :=
         Nat.mul_le_mul (Nat.le_succ _) (Nat.pow_le_pow_right (Nat.succ_pos n) hpq)

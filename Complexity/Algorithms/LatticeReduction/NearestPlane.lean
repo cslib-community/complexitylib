@@ -265,8 +265,7 @@ theorem IsNearestPlane.norm_sq_le {δ : ℝ} {b : Fin (n + 1) → E} (hb : IsRed
       _ ≤ α ^ (n - (j : ℕ)) * ‖g k‖ ^ 2 / 4 := by
           gcongr
       _ = α ^ (n - (j : ℕ)) * (‖g k‖ ^ 2 / 4) := by ring
-      _ ≤ α ^ (n - (j : ℕ)) * T d' k :=
-          mul_le_mul_of_nonneg_left hTk (pow_nonneg hα0 _)
+      _ ≤ α ^ (n - (j : ℕ)) * T d' k := by gcongr
   -- sum the termwise bounds
   let V : Fin (n + 1) → ℝ := fun j => if k < j then T d' j else 0
   have hterm : ∀ j, T d j ≤ α ^ (n - (j : ℕ)) * T d' k + V j := by

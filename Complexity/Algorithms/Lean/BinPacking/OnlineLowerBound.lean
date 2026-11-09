@@ -168,10 +168,7 @@ theorem sum_map_yaoWeight_le_run {l₁ l₂ l₃ : List ℕ} (h₂ : 6 ∉ l₂)
       (A.run l₁).countP (fun b => b.any (· == 6)) := by
     rw [append_assoc, run_append]
     refine A.countP_any_runFrom fun a ha => ?_
-    have : a ≠ 6 := by
-      rintro rfl
-      rcases mem_append.1 ha with ha | ha
-      exacts [h₂ ha, h₃.1 ha]
+    have : a ≠ 6 := by grind
     simpa using this
   have c2 : (A.run (l₁ ++ l₂ ++ l₃)).countP (fun b => b.any (fun a => a == 6 || a == 14)) =
       (A.run (l₁ ++ l₂)).countP (fun b => b.any (fun a => a == 6 || a == 14)) := by

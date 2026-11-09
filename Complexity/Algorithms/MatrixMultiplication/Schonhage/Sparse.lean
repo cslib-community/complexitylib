@@ -289,8 +289,7 @@ theorem card_leaves_le_saving {m : ℕ} (U : Finset (OutStr (19 * m)))
     mul_le_mul_of_nonneg_left (sum_alpha_small_orders_le m) (Nat.cast_nonneg (α := ℝ) U.card)
   have hlarge := (sum_beta_large_orders_lt m).le
   calc ((leaves U).card : ℝ) ≤ _ := hsplit
-    _ ≤ (U.card : ℝ) * ((2 : ℝ) ^ m * saving m) + 2 * saving m * (M (19 * m) m : ℝ) :=
-        add_le_add hsmall hlarge
+    _ ≤ (U.card : ℝ) * ((2 : ℝ) ^ m * saving m) + 2 * saving m * (M (19 * m) m : ℝ) := by gcongr
     _ = _ := by ring
 
 /-- Combine the order-wise minimum bound on `leaves U` with the explicit real bound available

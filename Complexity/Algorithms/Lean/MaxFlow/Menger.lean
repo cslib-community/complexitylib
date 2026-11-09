@@ -471,10 +471,7 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
       have := (hT v).mp hv
       simp [this.1, this.2]
     have hone : ∀ v ∈ T, (splitNetwork G s t).cap (v, false) (v, true) = 1 := by
-      intro v hv
-      have hvs : v ≠ s := fun h => hsT (h ▸ hv)
-      have hvt : v ≠ t := fun h => htT (h ▸ hv)
-      simp [splitNetwork_cap_ft, hvs, hvt]
+      grind [splitNetwork_cap_ft]
     calc T.card = ∑ v ∈ T, (splitNetwork G s t).cap (v, false) (v, true) := by
           rw [Finset.sum_congr rfl hone, Finset.sum_const, smul_eq_mul, mul_one]
       _ = ∑ x ∈ T.image (fun v => ((v, false), (v, true))),
@@ -620,9 +617,7 @@ private theorem isDipath_support {G : SimpleGraph V} {u v : V} {w : G.Walk u v}
 private theorem exists_walk_of_isDipath {G : SimpleGraph V} {u v : V} {p : List V}
     (hp : IsDipath (toDigraph G) u v p) : ∃ w : G.Walk u v, w.IsPath ∧ w.support = p := by
   obtain ⟨hnd, hu, hv, hadj⟩ := hp
-  have hne : p ≠ [] := by
-    rintro rfl
-    simp at hu
+  have hne : p ≠ [] := by grind
   have hchain : p.IsChain G.Adj := forall_mem_pathArcs_iff_isChain.mp hadj
   have hu' : p.head hne = u := by
     rw [List.head?_eq_some_head hne] at hu
@@ -707,9 +702,7 @@ theorem exists_edgeDisjoint_eq_not_reachable [Finite V] (G : SimpleGraph V) {u v
   have hle := le_encard_of_edgeDisjoint_of_not_reachable W hWdisj hCreach
   rw [Set.encard_coe_eq_coe_finsetCard] at hle
   have hle' : (outArcs (toDigraph G) S).card ≤ C.card := by exact_mod_cast hle
-  have hCle : C.card ≤ (outArcs (toDigraph G) S).card := by
-    rw [hC]
-    exact Finset.card_image_le
+  have hCle : C.card ≤ (outArcs (toDigraph G) S).card := by grind
   exact ⟨_, W, hW, hWdisj, C, le_antisymm hCle hle', hCreach⟩
 
 /-- **Menger's theorem, undirected edge form** ([Menger1927]; [Diestel2025],

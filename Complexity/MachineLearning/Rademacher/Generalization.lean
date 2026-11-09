@@ -457,10 +457,8 @@ theorem empiricalRademacherComplexity_generalization_bound (D : PMF Z) {m : ℕ}
     _ ≤ (P.toOuterMeasure {S | (∑ S', (P S').toReal * Φ S') + ε ≤ Φ S}).toReal +
         (P.toOuterMeasure
           {S | empiricalRademacherComplexity F S ≤ rademacherComplexity D F m - ε}).toReal := by
-        rw [← ENNReal.toReal_add (Probability.PMF.toOuterMeasure_ne_top _ _)
-          (Probability.PMF.toOuterMeasure_ne_top _ _)]
-        exact ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨Probability.PMF.toOuterMeasure_ne_top _ _,
-          Probability.PMF.toOuterMeasure_ne_top _ _⟩) (MeasureTheory.measure_union_le _ _)
+        exact ENNReal.toReal_le_add (MeasureTheory.measure_union_le _ _)
+          (Probability.PMF.toOuterMeasure_ne_top _ _) (Probability.PMF.toOuterMeasure_ne_top _ _)
     _ ≤ δ / 2 + δ / 2 := add_le_add (htail1.trans hexp) (htail2.trans hexp)
     _ = δ := add_halves δ
 

@@ -190,8 +190,7 @@ theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
           (fun ⟨_, msg⟩ => ROMSignature.logSigning (.inl msg)))
         (adversary n pk) := by
     rw [OracleComp.interpret_interpret]
-    congr 1
-    funext q
+    congr 1 with q : 1
     cases q with
     | inl k =>
       simp [OracleComp.sumHandler, ProbOracleComp.sample, ProbComp.unifFin,

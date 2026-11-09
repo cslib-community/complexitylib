@@ -784,8 +784,7 @@ theorem dens_childRouter_bucketLoad_outside_le {c q b s T : ℕ}
         (2 ^ (2 * (q - 1) * b) : ℝ) := by exact_mod_cast hsq_nat
     linarith
   have hch : (2 ^ (s + 1) : ℝ) * (3 * (m : ℝ) * μ / a ^ 2) ^ m ≤ 1 / (8 * (#S : ℝ) ^ 2) := by
-    have hpow_le : (3 * (m : ℝ) * μ / a ^ 2) ^ m ≤ ((1 : ℝ) / 2) ^ m :=
-      pow_le_pow_left₀ (by positivity) hrat m
+    have hpow_le : (3 * (m : ℝ) * μ / a ^ 2) ^ m ≤ ((1 : ℝ) / 2) ^ m := by gcongr
     have h2m_nat : 8 * #S ^ 2 * 2 ^ (s + 1) ≤ 2 ^ m := by
       set Ln := Nat.clog 2 (max #S 2)
       have hSn : #S ≤ 2 ^ Ln := (le_max_left #S 2).trans (Nat.le_pow_clog (by decide) _)
@@ -931,10 +930,7 @@ theorem le_two_pow_mul_childRouterCharBits {c T : ℕ} (hc : 1 ≤ c) :
     have hlt := Nat.mod_lt (LT + c - 1) hc
     rw [Nat.mul_comm]
     omega
-  have hle_exp : LT ≤ c * childRouterCharBits c T := by
-    dsimp only [childRouterCharBits]
-    rw [hmax_c, Nat.mul_comm]
-    exact hdiv.trans (Nat.mul_le_mul_right c (le_max_right 1 _))
+  have hle_exp : LT ≤ c * childRouterCharBits c T := by grind [childRouterCharBits, Nat.mul_comm]
   calc T ≤ max T 2 := le_max_left T 2
     _ ≤ 2 ^ LT := Nat.le_pow_clog (by decide) _
     _ ≤ 2 ^ (c * childRouterCharBits c T) := Nat.pow_le_pow_right (by decide) hle_exp
@@ -994,16 +990,14 @@ theorem childRouterSeedBits_pow_le (ε_inv α_inv s : ℕ) {T : ℕ} (hT : 1 ≤
       _ ≤ 2 ^ u := hu_pow
       _ = 2 ^ (4 * c ^ 2) * 2 ^ LT * 2 ^ s := by
           dsimp [u]; rw [Nat.pow_add, Nat.pow_add]
-      _ ≤ 2 ^ (4 * c ^ 2) * (4 * T) * 2 ^ s :=
-          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hpow_LT)
+      _ ≤ 2 ^ (4 * c ^ 2) * (4 * T) * 2 ^ s := by gcongr
       _ = 2 ^ (4 * c ^ 2 + 2) * (2 ^ s * T) := by
           have h4 : (4 : ℕ) = 2 ^ 2 := by decide
           rw [h4, Nat.pow_add]; ring
   have hsq : ((2 ^ b * (c * b + s)) ^ E) ^ 2 ≤ (2 ^ (2 * c ^ 2 + c + 2) * (2 ^ s * T)) ^ 2 := by
     calc ((2 ^ b * (c * b + s)) ^ E) ^ 2
         = ((2 ^ b) ^ E) ^ 2 * ((c * b + s) ^ E) ^ 2 := by rw [Nat.mul_pow, Nat.mul_pow]
-      _ ≤ (2 ^ (c + 1) * (2 ^ s * T)) * (2 ^ (4 * c ^ 2 + 2) * (2 ^ s * T)) :=
-          Nat.mul_le_mul hfac1 hfac2
+      _ ≤ (2 ^ (c + 1) * (2 ^ s * T)) * (2 ^ (4 * c ^ 2 + 2) * (2 ^ s * T)) := by gcongr
       _ = (2 ^ (c + 1) * 2 ^ (4 * c ^ 2 + 2)) * (2 ^ s * T) ^ 2 := by ring
       _ = 2 ^ (4 * c ^ 2 + c + 3) * (2 ^ s * T) ^ 2 := by
           rw [← Nat.pow_add]; congr 2; ring
@@ -1016,8 +1010,7 @@ theorem childRouterSeedBits_pow_le (ε_inv α_inv s : ℕ) {T : ℕ} (hT : 1 ≤
   dsimp only [childRouterSeedBits, childRouterSpaceConst]
   calc (2 * q * c * 2 ^ b * (c * b + s)) ^ E
       = (2 * q * c) ^ E * (2 ^ b * (c * b + s)) ^ E := by rw [Nat.mul_assoc, Nat.mul_pow]
-    _ ≤ (2 * q * c) ^ E * (2 ^ (2 * c ^ 2 + c + 2) * (2 ^ s * T)) :=
-        Nat.mul_le_mul_left _ hprod_le
+    _ ≤ (2 * q * c) ^ E * (2 ^ (2 * c ^ 2 + c + 2) * (2 ^ s * T)) := by gcongr
     _ = (2 * q * c) ^ E * 2 ^ (2 * c ^ 2 + c + 2) * (2 ^ s * T) := by ring
 
 private theorem childRouter_code_le_of_threshold {ε_inv α_inv s T : ℕ}
