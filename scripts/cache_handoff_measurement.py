@@ -30,7 +30,7 @@ MAX_SAMPLES = 16
 MAX_BYTES = 32 * 1024 ** 3
 MAX_SECONDS = 7200
 CHECKS = [
-    ["lake", "build", "--wfail", "--iofail", "@complexitylib", "@/mk_all",
+    ["lake", "build", "--wfail", "--iofail", "@cslib-frontier", "@/mk_all",
      "@/checkInitImports", "@mathlib/lint-style"],
     ["lake", "test", "--wfail", "--iofail"],
     ["lake", "lint"],

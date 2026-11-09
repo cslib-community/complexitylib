@@ -2,14 +2,14 @@
 """Prepare a module of this library for a cslib pull request.
 
 Usage:
-    scripts/upstream.py Complexity.Foundations.Data.Encoding [more modules] \
+    scripts/upstream.py CslibFrontier.Foundations.Data.Encoding [more modules] \
         [--cslib ../cslib] [--no-mk-all] [--dry-run]
 
 For each module the script
-  * locates `Complexity/<Path>.lean` and the mirrored destination `<cslib>/Cslib/<Path>.lean`,
+  * locates `CslibFrontier/<Path>.lean` and the mirrored destination `<cslib>/Cslib/<Path>.lean`,
   * rewrites local imports, including `public`, `meta` and `all` modifiers, to `Cslib.`,
-    mapping `Complexity.Init` to `Cslib.Init`, and likewise backticked module names
-    (`` `Complexity.Foo.Bar` `` naming an existing module) in comments and docstrings,
+    mapping `CslibFrontier.Init` to `Cslib.Init`, and likewise backticked module names
+    (`` `CslibFrontier.Foo.Bar` `` naming an existing module) in comments and docstrings,
   * drops standalone `-- upstream:` marker comments,
   * refuses to continue if the module imports a local module whose marker is not
     `merged`/`submitted` (those must be upstreamed first, in the same stack),
@@ -30,7 +30,7 @@ import sys
 from proof_lengths import masks
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-LIB = "Complexity"
+LIB = "CslibFrontier"
 UPSTREAM_LIB = "Cslib"
 
 HEADER_RE = re.compile(r"\s*(?:module\s+)?(?:prelude\s+)?")
@@ -39,7 +39,7 @@ COMMENT_RE = re.compile(r"/-|--")
 BLOCK_DELIMITER_RE = re.compile(r"/-|-/")
 MARKER_RE = re.compile(r"^--\s*upstream:\s*(?P<status>.*?)\s*$")
 TITLE_RE = re.compile(r"^#\s+(?P<title>.+?)\s*$", re.M)
-MODULE_REF_RE = re.compile(r"`Complexity(?P<rest>(?:\.[A-Z][A-Za-z0-9_']*)+)`")
+MODULE_REF_RE = re.compile(r"`CslibFrontier(?P<rest>(?:\.[A-Z][A-Za-z0-9_']*)+)`")
 
 
 def module_to_path(module: str, root: pathlib.Path = ROOT) -> pathlib.Path:
