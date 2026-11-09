@@ -36,10 +36,15 @@ properties.
 * `Cslib.Crypto.Encryption.AdversaryOf`, `Cslib.Crypto.Encryption.Adversary`,
   `Cslib.Crypto.Encryption.WordAdversary`: message selection and guessing with explicit saved
   state, for typed, bit, and bit-word messages.
+* `Cslib.Crypto.Encryption.encChoiceOut`, `Cslib.Crypto.Encryption.encGuessInput`,
+  `Cslib.Crypto.Encryption.encChallengePairInput`: the encodings of the message-selection output,
+  of the guessing-stage input, and of the input of the admissibility predicate.
 * `Cslib.Crypto.Encryption.AdversaryOf.IsPPT`, `Cslib.Crypto.Encryption.Adversary.IsPPT`,
   `Cslib.Crypto.Encryption.WordAdversary.IsPPT`: native uniform admissibility of both stages.
 * `Cslib.Crypto.Encryption.gameOn`, `Cslib.Crypto.Encryption.game`: the key-generation and
   challenge-encryption experiment, with and without a challenge-pair admissibility predicate.
+* `Cslib.Crypto.Encryption.advantage`: the advantage between the two sides of an experiment
+  indexed by the challenge bit, such as `gameOn`, at one security parameter.
 * `Cslib.Crypto.Encryption.INDCPAOn`, `Cslib.Crypto.Encryption.INDCPAOf`,
   `Cslib.Crypto.Encryption.INDCPA`, `Cslib.Crypto.Encryption.WordINDCPA`: negligible distinguishing
   advantage for every admissible adversary, fixed before the security parameter.
@@ -67,6 +72,7 @@ properties.
 namespace Cslib.Crypto.Encryption
 
 open Probability Turing.MultiTapeTM
+open scoped NNReal
 
 /-- A chosen-message adversary over message space `Msg`. The saved word contains all data retained
 between stages. -/
@@ -76,15 +82,36 @@ structure AdversaryOf (Msg : Type) where
   /-- Receive the saved state and challenge ciphertext, then return a distinguishing bit. -/
   guess : ℕ → List Bool → List Bool → ProbComp Bool
 
+/-- Message-selection output `((m₀, m₁), state)`: the two challenge messages, each encoded by
+`encMsg`, then the saved state word. The message pair is framed, and `m₀` is framed again inside
+it. -/
+abbrev encChoiceOut {Msg : Type} (encMsg : Msg ↪ List Bool) :
+    (Msg × Msg) × List Bool ↪ List Bool :=
+  encPair (encPair encMsg encMsg) encBits
+
+/-- Guessing-stage input `(1ⁿ, state, ct)`: the security parameter `n` in unary, then the state
+saved by message selection and the challenge ciphertext, both as bit words. The parameter and the
+state are framed. The layout is that of the keyed-algorithm input `Cslib.Crypto.encKeyedInput
+encBits`; the name records the role. -/
+abbrev encGuessInput : ℕ × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair encBits encBits)
+
+/-- Input `(1ⁿ, pk, (m₀, m₁))` of a challenge-pair admissibility predicate `valid`: the security
+parameter `n` in unary, the public key as a bit word, and the two challenge messages, each encoded
+by `encMsg`. The parameter, the public key and `m₀` are framed. -/
+abbrev encChallengePairInput {Msg : Type} (encMsg : Msg ↪ List Bool) :
+    ℕ × List Bool × Msg × Msg ↪ List Bool :=
+  encPair encUnary (encPair encBits (encPair encMsg encMsg))
+
 /-- One finite-machine certificate for each whole stage over message encoding `encMsg`, including
 the full saved-state cost. There is no parameter-dependent advice or separate algorithm for each
 security parameter. -/
 structure AdversaryOf.IsPPT {Msg : Type} (encMsg : Msg ↪ List Bool)
     (adversary : AdversaryOf Msg) : Prop where
   /-- Message selection is uniform strict PPT on the parameter and public key. -/
-  choose : Probability.IsPPT (encPair (encPair encMsg encMsg) encBits) adversary.choose
+  choose : Probability.IsPPT (encChoiceOut encMsg) adversary.choose
   /-- Guessing is uniform strict PPT on the parameter, saved state, and challenge ciphertext. -/
-  guess : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
+  guess : IsPPTOn encGuessInput encBool
     (fun ⟨n, state, ciphertext⟩ => adversary.guess n state ciphertext)
 
 /-- A chosen-message adversary for single-bit messages (`Bool`). -/
@@ -148,6 +175,13 @@ abbrev game {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool :=
   gameOn (fun _ _ _ _ => true) keyGen encrypt adversary bit n
+
+/-- The distinguishing advantage of a two-sided experiment `experiment bit n` at parameter `n`:
+the advantage between its runs with `bit = false` and `bit = true`. The adversary is already part
+of `experiment`, as in `gameOn valid keyGen encrypt adversary`; `INDCPAOn` asks that this advantage
+be negligible for every admissible adversary. -/
+noncomputable abbrev advantage (experiment : Bool → ℕ → ProbComp Bool) (n : ℕ) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (experiment false n)) (ProbComp.eval (experiment true n))
 
 /-- Single-challenge IND-CPA for encryption over message encoding `encMsg` with challenge-pair
 admissibility predicate `valid`, against every uniform strict PPT adversary. The negligible bound

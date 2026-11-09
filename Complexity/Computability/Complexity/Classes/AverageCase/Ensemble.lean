@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
+public import Complexity.Foundations.Data.BitString.List.BinaryOrder
 public import Complexity.Probability.BitString
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
@@ -20,8 +21,8 @@ import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Languages.Probabilistic.BitString
 import Complexity.Probability.PMF.Uniform
 import Complexity.Tactic.PolyTime
-import Mathlib.Data.List.Lex
-import Mathlib.Tactic.Ring
+import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Union
 
 /-!
 # Distribution ensembles for average-case complexity
@@ -52,17 +53,19 @@ The uniform ensemble `Cslib.Complexity.Ensemble.uniform` lies in both classes.
 ## Main definitions
 
 * `Cslib.Complexity.Ensemble`: distributions on words of each length.
-* `Cslib.Complexity.Ensemble.cdf`, `Cslib.Complexity.Ensemble.PComp`,
-  `Cslib.Complexity.Ensemble.PSamp`.
+* `Cslib.Complexity.Ensemble.cdf`, `Cslib.Complexity.Ensemble.cdfLo`,
+  `Cslib.Complexity.Ensemble.PComp`, `Cslib.Complexity.Ensemble.PSamp`.
 * `Cslib.Complexity.Ensemble.uniform`: the uniform ensemble.
 
 ## Main results
 
-* `Cslib.BitString.binaryValue_le_iff_le`, `Cslib.BitString.binaryValue_lt_iff_lt`: on words of
-  equal length, the numeric order is the lexicographic order.
+* `Cslib.Complexity.Ensemble.cdf_eq_cdfLo_add`: the cumulative distribution at `x` is the
+  probability below `x` plus that of `x`.
 * `Cslib.Complexity.Ensemble.uniform_apply`: a word has uniform probability `2^{-|x|}`.
 * `Cslib.Complexity.Ensemble.cdf_uniform`: the uniform cumulative distribution is
   `(binaryValue x + 1) / 2^{|x|}`.
+* `Cslib.Complexity.Ensemble.uniform_toOuterMeasure_binaryValue_lt`: the words of length `N` with
+  value below `K ≤ 2^N` have uniform probability `K / 2^N`.
 * `Cslib.Complexity.Ensemble.uniform_pComp`, `Cslib.Complexity.Ensemble.uniform_pSamp`.
 
 ## References
@@ -71,57 +74,6 @@ The uniform ensemble `Cslib.Complexity.Ensemble.uniform` lies in both classes.
 -/
 
 public section
-
-namespace Cslib.BitString
-
-private theorem foldl_binaryValue (a : ℕ) (t : List Bool) :
-    t.foldl (fun value bit => 2 * value + bit.toNat) a =
-      a * 2 ^ t.length + binaryValue t := by
-  induction t generalizing a with
-  | nil => simp [binaryValue]
-  | cons b t ih =>
-    have h0 : binaryValue (b :: t) =
-        b.toNat * 2 ^ t.length + binaryValue t := by
-      change List.foldl _ 0 (b :: t) = _
-      rw [List.foldl_cons, ih]
-      ring
-    rw [List.foldl_cons, ih, h0, List.length_cons, pow_succ]
-    ring
-
-private theorem binaryValue_cons (b : Bool) (t : List Bool) :
-    binaryValue (b :: t) = b.toNat * 2 ^ t.length + binaryValue t := by
-  change List.foldl _ 0 (b :: t) = _
-  rw [List.foldl_cons, foldl_binaryValue]
-  ring
-
-/-- On words of equal length, the numeric order of `binaryValue` is the strict lexicographic order
-(with `false < true`). -/
-theorem binaryValue_lt_iff_lt {x y : List Bool} (h : x.length = y.length) :
-    binaryValue x < binaryValue y ↔ x < y := by
-  induction x generalizing y with
-  | nil =>
-    obtain rfl : y = [] := List.length_eq_zero_iff.mp h.symm
-    simp
-  | cons a s ih =>
-    obtain ⟨b, t, rfl⟩ := List.exists_cons_of_length_eq_add_one h.symm
-    simp only [List.length_cons, Nat.add_right_cancel_iff] at h
-    rw [binaryValue_cons, binaryValue_cons, List.cons_lt_cons_iff, ← ih h, h]
-    have hs := binaryValue_lt_two_pow s
-    have ht := binaryValue_lt_two_pow t
-    rw [h] at hs
-    cases a <;> cases b
-    all_goals simp only [Bool.toNat_false, Bool.toNat_true, zero_mul, one_mul, zero_add,
-      lt_self_iff_false, true_and, false_or, Bool.false_lt_true, Bool.false_eq_true,
-      Bool.true_eq_false, false_and, or_false, iff_true, gt_iff_lt, add_lt_add_iff_left]
-    all_goals first | omega | exact iff_of_false (by omega) (by decide)
-
-/-- On words of equal length, the numeric order of `binaryValue` is the lexicographic order (with
-`false < true`). -/
-theorem binaryValue_le_iff_le {x y : List Bool} (h : x.length = y.length) :
-    binaryValue x ≤ binaryValue y ↔ x ≤ y := by
-  rw [← not_lt, ← not_lt, binaryValue_lt_iff_lt h.symm]
-
-end Cslib.BitString
 
 namespace Cslib.Complexity
 
@@ -144,6 +96,65 @@ length by their binary value (equivalently, lexicographically:
 @[expose] noncomputable def cdf (D : Ensemble) (x : List Bool) : ℝ≥0∞ :=
   (D.dist x.length).toOuterMeasure
     {y | BitString.binaryValue y ≤ BitString.binaryValue x}
+
+/-- The probability `D_{|x|}({y : y < x})` of the words of length `|x|` below `x`. -/
+noncomputable def cdfLo (D : Ensemble) (x : List Bool) : ℝ≥0∞ :=
+  (D.dist x.length).toOuterMeasure
+    {y | BitString.binaryValue y < BitString.binaryValue x}
+
+/-- The cumulative distribution is the probability below `x` plus that of `x`. -/
+theorem cdf_eq_cdfLo_add (D : Ensemble) (x : List Bool) :
+    D.cdf x = D.cdfLo x + D.dist x.length x := by
+  have hset : {y : List Bool | BitString.binaryValue y ≤ BitString.binaryValue x} =
+      {y | BitString.binaryValue y < BitString.binaryValue x} ∪
+        {y | BitString.binaryValue y = BitString.binaryValue x} := by
+    ext y
+    simp only [Set.mem_ofPred_eq, Set.mem_union]
+    omega
+  have hdisj : Disjoint {y : List Bool | BitString.binaryValue y < BitString.binaryValue x}
+      {y | BitString.binaryValue y = BitString.binaryValue x} := by
+    rw [Set.disjoint_left]
+    intro y h1 h2
+    simp only [Set.mem_ofPred_eq] at h1 h2
+    omega
+  rw [cdf, cdfLo, hset, Probability.PMF.toOuterMeasure_union_of_disjoint _ hdisj]
+  congr 1
+  rw [PMF.toOuterMeasure_apply, tsum_eq_single x]
+  · simp
+  · intro y hy
+    by_cases hyx : BitString.binaryValue y = BitString.binaryValue x
+    · rw [Set.indicator_of_mem (by exact hyx)]
+      by_contra hne
+      have hsupp : y ∈ (D.dist x.length).support := (PMF.mem_support_iff _ _).mpr hne
+      exact hy (BitString.binaryValue_injective_of_length_eq (D.length_eq _ _ hsupp) hyx)
+    · rw [Set.indicator_of_notMem (by exact hyx)]
+
+/-- Nothing lies below a word of value `0`. -/
+theorem cdfLo_of_binaryValue_eq_zero (D : Ensemble) {x : List Bool}
+    (h : BitString.binaryValue x = 0) : D.cdfLo x = 0 := by
+  rw [cdfLo, h]
+  simp
+
+/-- Below a word of nonzero value lies the cumulative distribution of its predecessor. -/
+theorem cdfLo_eq_cdf_predWord (D : Ensemble) {x : List Bool}
+    (h : BitString.binaryValue x ≠ 0) : D.cdfLo x = D.cdf (BitString.predWord x) := by
+  rw [cdfLo, cdf, BitString.length_predWord, BitString.binaryValue_predWord]
+  congr 1
+  ext y
+  simp only [Set.mem_ofPred_eq]
+  omega
+
+/-- The cumulative distribution at `x` is at most the probability below any later word of the same
+length. -/
+theorem cdf_le_cdfLo (D : Ensemble) {x x' : List Bool} (hlen : x.length = x'.length)
+    (h : BitString.binaryValue x < BitString.binaryValue x') : D.cdf x ≤ D.cdfLo x' := by
+  rw [cdf, cdfLo, hlen]
+  refine PMF.toOuterMeasure_mono _ fun y hy => ?_
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq] at hy ⊢
+  omega
+
+theorem cdf_le_one (D : Ensemble) (x : List Bool) : D.cdf x ≤ 1 :=
+  Probability.PMF.toOuterMeasure_le_one _ _
 
 /-- **Polynomial-time computable ensembles**
 [Bogdanov and Trevisan, Definition 2][BogdanovTrevisan2006]: the cumulative distribution is a
@@ -214,6 +225,21 @@ theorem cdf_uniform (x : List Bool) :
   simp only [Set.mem_preimage]
   rw [card_le_binaryValue x, div_eq_mul_inv]
   simp
+
+/-- The words of length `N` with value below `K ≤ 2^N` have uniform probability `K / 2^N`. -/
+theorem uniform_toOuterMeasure_binaryValue_lt {N K : ℕ} (hK : K ≤ 2 ^ N) :
+    (uniform.dist N).toOuterMeasure {r | BitString.binaryValue r < K} =
+      (K : ℝ≥0∞) / (2 ^ N : ℕ) := by
+  rcases Nat.eq_zero_or_pos K with rfl | hK0
+  · simp
+  · obtain ⟨u, hu⟩ := BitString.exists_binaryValue_eq (t := N) (k := K - 1) (by omega)
+    have h := cdf_uniform (List.ofFn u)
+    rw [cdf, List.length_ofFn, hu, show K - 1 + 1 = K by omega] at h
+    rw [← h]
+    congr 1
+    ext r
+    simp only [Set.mem_ofPred_eq]
+    omega
 
 /-- The uniform ensemble is polynomial-time computable. -/
 theorem uniform_pComp : uniform.PComp :=

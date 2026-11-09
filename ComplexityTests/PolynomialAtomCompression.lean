@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual compression event assembly)
 
-public import Complexity.Foundations.Probability.PolynomialAtomCompression
+public import Complexity.Computability.LogSpaceDerandomization.PolynomialAtomCompression
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 

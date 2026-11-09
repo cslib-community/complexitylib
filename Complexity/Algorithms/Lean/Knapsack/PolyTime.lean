@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Op
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
+import Complexity.Tactic.EncLen
 
 /-!
 # The knapsack dynamic program and FPTAS run in polynomial time
@@ -92,8 +93,7 @@ private theorem sum_map_le_length_encList (hpl : ∀ a, p a ≤ (encI a).length)
   | nil => simp
   | cons a l ih =>
     have := hpl a
-    simp only [List.map_cons, List.sum_cons, encList_cons, List.length_append, length_frame]
-    omega
+    enc_len [List.map_cons, List.sum_cons, encList_cons]
 
 private theorem length_encList_table_le (hpl : ∀ a, p a ≤ (encI a).length) {l : List ι}
     {T : List (Option (List ι))} (hT : TableSpec w p l T) :
@@ -109,8 +109,7 @@ private theorem length_encList_table_le (hpl : ∀ a, p a ≤ (encI a).length) {
     | some s =>
       obtain ⟨q, hq⟩ := List.mem_iff_getElem?.mp ho
       have := length_encList_sublist encI (hT.sound q s hq).1
-      simp only [encOption_some, List.length_cons]
-      omega
+      enc_len
 
 /-- **The profit table is pseudo-polynomial**: with the profits in unary, and each profit at most
 the length of its item's encoding, it is computable in polynomial time. -/

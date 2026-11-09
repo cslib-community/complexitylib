@@ -66,15 +66,14 @@ theorem computableInPolyTime_paritySample :
 polynomial-time. -/
 theorem computableInPolyTime_countUnsat_mem :
     ComputableInPolyTime (fun p : CNF V × List V => p.1.countUnsat fun v => decide (v ∈ p.2))
-      (encPair (encList (encList (encPair enc encBool))) (encList enc)) encUnary := by
+      (encPair (encCNFOver enc) (encList enc)) encUnary := by
   unfold CNF.countUnsat Clause.eval Literal.eval
   fun_prop
 
 /-- One step of the search, reading the formula, is polynomial-time. -/
 theorem computableInPolyTime_betterCandidate :
     ComputableInPolyTime (fun p : (CNF V × List V) × List V => betterCandidate p.1.1 p.1.2 p.2)
-      (encPair (encPair (encList (encList (encPair enc encBool))) (encList enc)) (encList enc))
-      (encList enc) := by
+      (encPair (encPair (encCNFOver enc) (encList enc)) (encList enc)) (encList enc) := by
   have h := computableInPolyTime_countUnsat_mem enc
   have hp := fst (encPair (encList (encList (encPair enc encBool))) (encList enc)) (encList enc)
   have hlt := unary_lt' (h.comp (hp.fst'.prod (snd _ _))) (h.comp (hp.fst'.prod hp.snd'))
@@ -110,7 +109,7 @@ theorem sublist_of_mem_parityCandidates {vs T : List V} (hT : T ∈ parityCandid
 the variables. -/
 theorem computableInPolyTime_paritySearch :
     ComputableInPolyTime (paritySearch (V := V))
-      (encList (encList (encPair enc encBool))) (encList enc) := by
+      (encCNFOver enc) (encList enc) := by
   have hcands := (computableInPolyTime_parityCandidates enc).comp
     (CNF.computableInPolyTime_distinctVars enc)
   have hfold := foldlWithInput_of_bounded_growth

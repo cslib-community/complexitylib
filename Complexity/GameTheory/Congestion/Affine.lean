@@ -37,6 +37,8 @@ cost is exactly `5/2` times that of another profile.
 
 ## Main results
 
+* `Cslib.GameTheory.CongestionGame.HasAffineLatencies.monotone_latency`: nonnegative affine
+  latencies are nondecreasing.
 * `Cslib.GameTheory.CongestionGame.mul_add_one_le_five_thirds_sq_add_one_third_sq`: the
   Christodoulou–Koutsoupias inequality `y (z + 1) ≤ 5/3 y² + 1/3 z²` on natural numbers.
 * `Cslib.GameTheory.CongestionGame.isSmooth_of_hasAffineLatencies` ([Roughgarden2015],
@@ -67,6 +69,16 @@ variable {ι : Type*} {S : ι → Type*} {E : Type*} [Fintype ι] [DecidableEq E
 every resource `e` and load `k`. -/
 @[expose] def HasAffineLatencies : Prop :=
   ∃ a b : E → ℝ, (∀ e, 0 ≤ a e) ∧ (∀ e, 0 ≤ b e) ∧ ∀ e (k : ℕ), C.latency e k = a e * k + b e
+
+omit [Fintype ι] [DecidableEq E] in
+/-- Nonnegative affine latencies are nondecreasing. -/
+theorem HasAffineLatencies.monotone_latency {C : CongestionGame ι S E} (h : C.HasAffineLatencies)
+    (e : E) : Monotone (C.latency e) := by
+  obtain ⟨a, b, ha, -, hl⟩ := h
+  intro k l hkl
+  rw [hl, hl]
+  have : (k : ℝ) ≤ l := by exact_mod_cast hkl
+  nlinarith [ha e]
 
 /-- The inequality of Christodoulou and Koutsoupias [ChristodoulouKoutsoupias2005], as cited in
 [Roughgarden2015], Example 2.5: `y (z + 1) ≤ 5/3 y² + 1/3 z²` for all natural numbers `y`, `z`. -/
