@@ -424,8 +424,7 @@ theorem exists_decidableInTimeAndSpace_of_onesProb (hTn : ∀ n, max n 2 ≤ T n
     have hY := Nat.add_one_pow_le_two_pow_div_sqrt_log_two e hT2 hnT
     have hZ : 2 ^ (A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
         ((enc a).length + 1) ^ e ≤ 2 ^ D₀ * 2 ^ (C₀ * Q) := by
-      calc _ ≤ 2 ^ (2 * A * (c₁ + c₂ + 2) * Q + D₀) * 2 ^ (2 * e * Q) :=
-            Nat.mul_le_mul (Nat.pow_le_pow_right (by norm_num) hE) hY
+      calc _ ≤ 2 ^ (2 * A * (c₁ + c₂ + 2) * Q + D₀) * 2 ^ (2 * e * Q) := by gcongr
         _ = 2 ^ D₀ * 2 ^ (C₀ * Q) := by
             rw [← pow_add, ← pow_add]
             congr 1
@@ -445,8 +444,7 @@ theorem exists_decidableInTimeAndSpace_of_onesProb (hTn : ∀ n, max n 2 ≤ T n
             Nat.sqrt (Nat.log 2 (T (enc a).length))) + K := by ring
       _ ≤ _ := hfinal
   · -- space
-    have hpow : ((enc a).length + 1) ^ e ≤ (T (enc a).length + 1) ^ e :=
-      Nat.pow_le_pow_left (by omega) e
+    have hpow : ((enc a).length + 1) ^ e ≤ (T (enc a).length + 1) ^ e := by gcongr
     have := Nat.mul_add_one_pow_add_le_pow (a := K) (b := K) (d := e) hT2
     calc K * (((enc a).length + 1) ^ e + 1) ≤ K * (T (enc a).length + 1) ^ e + K := by
           rw [Nat.mul_add, Nat.mul_one]

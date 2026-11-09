@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 
-/-! # FO(positive TC) ⊆ NL clients -/
+/-! # FO(TC) ⊆ NL clients -/
 
 @[expose] public section
 
@@ -17,7 +17,12 @@ namespace Cslib.Tests.TransitiveClosureNL
 
 open FirstOrder Language Cslib.Logic Cslib.Logic.FO Cslib.Logic.FO.Ordered Cslib.Complexity
 
-/-- The headline applies to every query defined by a sentence with positive closures. -/
+/-- The headline applies to every query defined by an FO(TC) sentence. -/
+example {L : Language} [L.IsRelational] (v : Vocabulary L) {K : Ordered.Query L}
+    (hK : TCDefinable K) : K.encodedLanguage v ∈ NL encStructure :=
+  hK.encodedLanguage_mem_NL v
+
+/-- In particular to every query defined by a sentence with positive closures. -/
 example {L : Language} [L.IsRelational] (v : Vocabulary L) {K : Ordered.Query L}
     (hK : PosTCDefinable K) : K.encodedLanguage v ∈ NL encStructure :=
   hK.encodedLanguage_mem_NL v
@@ -101,5 +106,28 @@ example : TC.Positive reach.neg.neg true := positive_reach
 
 /-- The closure has width one. -/
 example : TC.width reach = 1 := rfl
+
+/-! ### Non-reachability: a negated closure -/
+
+/-- `max` is not reachable from `0`. -/
+def nonReach : Operator.Formula (language G) TC.shape [] Empty := reach.neg
+
+/-- The non-reachability query. -/
+def NonReach : Ordered.Query G := Reachᶜ
+
+/-- The sentence `nonReach` defines the non-reachability query. -/
+theorem realize_nonReach (M : Ordered.Structure G) :
+    M ∈ NonReach ↔
+      nonReach.Realize (M := M) TC.interpretation Operator.RelEnv.empty Empty.elim := by
+  rw [nonReach, Operator.Formula.realize_neg, ← realize_reach]
+  rfl
+
+/-- `nonReach` lies outside the positive fragment. -/
+example : ¬ TC.Positive nonReach true := fun h => Bool.false_ne_true h.1
+
+/-- **Directed non-reachability is in native `NL`**, through the inductive-counting block for
+negated closures. -/
+example : NonReach.encodedLanguage vocabulary ∈ NL encStructure :=
+  TCDefinable.encodedLanguage_mem_NL ⟨nonReach, realize_nonReach⟩ vocabulary
 
 end Cslib.Tests.TransitiveClosureNL

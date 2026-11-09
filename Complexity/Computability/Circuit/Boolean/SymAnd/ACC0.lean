@@ -54,21 +54,32 @@ The seeded OR test is wrong for a gate only if the seed is a root of a nonzero p
 degree below `n + s` (`Cslib.BitString.card_filter_sum_pow_eq_zero_le`), so on every input fewer
 than half of the seeds are bad. The majority over the seeds of the output slot is a
 `SYM ∘ AND` circuit of fan-in `1` on top of the towers; it collapses through them
-(`SymAnd.exists_eval_eq_eval_run`, from [BeigelTarui1994, Lemma 2.8]), and restricting the
-non-input slots to their initial value `false` (`SymAnd.restrict`) gives a circuit over the inputs.
+(`SymAnd.collapseRun`, from [BeigelTarui1994, Lemma 2.8]), and restricting the non-input slots to
+their initial value `false` (`SymAnd.restrict`) gives a circuit over the inputs.
 
 Beigel and Tarui isolate a true argument of an OR gate by the Valiant–Vazirani lemma
 [BeigelTarui1994, Lemma 2.3]; the seeded OR test here instead uses the powering construction of
-Alon, Goldreich, Håstad and Peralta [AlonGoldreichHastadPeralta1992, Section 3]. Both give seeds
-and degrees of `O(log s)`. The source handles `MOD_m` through stratified circuits with one modulus
-`m` per level [BeigelTarui1994, Lemma 2.5]; here each `MOD_m` gate becomes `MOD_p` digit tests, so
-every layer of the tower has a prime modulus. The exponent `5 ^ (d (m + 2))` is not optimized.
+Alon, Goldreich, Håstad and Peralta [AlonGoldreichHastadPeralta1992, Section 3]: a seed is one
+element of `𝔽_{2^κ}`, `κ = O(log (n + s))` bits, and every test has degree `κ`. The source handles
+`MOD_m` through stratified circuits with one modulus `m` per level [BeigelTarui1994, Section 2.2];
+here each `MOD_m` gate becomes `MOD_p` digit tests, so every layer of the tower has a prime modulus.
+The exponent `5 ^ (d (m + 2))` is not optimized.
 
-This is the existence statement. Williams's algorithm also needs the `SYM ∘ AND` circuit to be
-constructed in time `2 ^ polylog(s)` [Williams2014]; that is not formalized here.
+The circuit is canonical: `Circuit.toSymAnd C m` is built from `C` and `m` by the steps above,
+with no witness taken from an existence proof (`Circuit.eval_toSymAnd`, `Circuit.fanIn_toSymAnd_le`,
+`Circuit.size_toSymAnd_le`): the seed field uses its least irreducible modulus and each collapse
+uses the canonical Möbius circuit. Equality in the seed field is decided classically, so the
+definition is not executable as a Lean term. Williams's algorithm needs the circuit to be
+constructed in time `2 ^ polylog(s)` [Williams2014]; that computation is not formalized here.
+
+## Main definitions
+
+* `Cslib.Circuits.Circuit.toSymAnd`: the explicit `SYM ∘ AND` circuit of an ACC⁰ circuit.
 
 ## Main results
 
+* `Cslib.Circuits.Circuit.eval_toSymAnd`, `Cslib.Circuits.Circuit.fanIn_toSymAnd_le`,
+  `Cslib.Circuits.Circuit.size_toSymAnd_le`: what it computes, and its fan-in and size bounds.
 * `Cslib.Circuits.Circuit.exists_symAnd_eval_eq`: an ACC⁰ circuit is a `SYM ∘ AND` circuit with
   explicit bounds.
 * `Cslib.Circuits.Boolean.exists_symAnd_of_mem_AC0Mod`, `exists_symAnd_of_mem_ACC0`: languages of
@@ -714,55 +725,71 @@ theorem slotInput_elim (x : Fin n → Bool) (t : Seed ℓ × Slot n g m) :
     (slotInput t).elim false x = init x t.2 := by
   obtain ⟨r, (i | k) | a⟩ := t <;> rfl
 
+/-- The explicit `SYM ∘ AND` circuit of a program `P` with output wire `o`, for `MOD_m` gates,
+seeds of `2ℓ + 2` bits and `d` rounds: the majority over the seeds of slot `o`, collapsed through
+the towers (`SymAnd.collapseRun` with bound `3 ((m + 1) ^ 2 + ℓ + 1)`) and restricted to the
+inputs. -/
+noncomputable def compile (P : Program Unbounded.extSignature n g) (m ℓ d : ℕ) (o : Wire n g) :
+    SymAnd (Fin n) :=
+  (SymAnd.collapseRun (top ℓ (Sum.inl o : Slot n g m)) ((towerS P m ℓ d).map SLayer.lift)
+    (3 * ((m + 1) ^ 2 + ℓ + 1))).restrict slotInput
+
 end ACC0ToSymAnd
 
 open ACC0ToSymAnd in
-/-- **ACC⁰ circuits are quasi-polynomial `SYM ∘ AND` circuits** (Yao; Beigel–Tarui
-[BeigelTarui1994, Theorem 1.1]). A circuit `C` with NOT, unbounded AND/OR and `MOD_m` gates,
-`m > 0`, of depth `d`, with `s` gates on `n` inputs, computes the same function as a `SYM ∘ AND`
-circuit of fan-in at most `(2B) ^ (5 ^ (d (m + 2)))` with at most `2 ^ ((2B) ^ (5 ^ (d (m + 2))))`
-AND gates, where `B = 3 ((m + 1) ^ 2 + ⌊log₂ (n + s)⌋ + 2)`. -/
-theorem _root_.Cslib.Circuits.Circuit.exists_symAnd_eval_eq {n : ℕ}
-    (C : Circuit Unbounded.extSignature n 1) {m : ℕ} (hm : 0 < m) :
-    ∃ C' : SymAnd (Fin n),
-      C'.eval = (fun x => C.eval (Unbounded.extInterpretation (modGate m)) x 0) ∧
-      C'.fanIn ≤ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
+/-- **The explicit `SYM ∘ AND` circuit of an ACC⁰ circuit**: `compile` with seeds of
+`2 (⌊log₂ (n + s)⌋ + 1) + 2` bits and `d` rounds, where `s` is the size and `d` the depth of `C`.
+It is specified only for `m > 0` (`Circuit.eval_toSymAnd`); for `m = 0` it is well-typed but no
+theorem describes it. -/
+noncomputable def _root_.Cslib.Circuits.Circuit.toSymAnd {n : ℕ}
+    (C : Circuit Unbounded.extSignature n 1) (m : ℕ) : SymAnd (Fin n) :=
+  compile C.program m (Nat.log 2 (n + C.size) + 1) C.depth (C.outputs 0)
+
+open ACC0ToSymAnd in
+private theorem toSymAnd_spec {n : ℕ} (C : Circuit Unbounded.extSignature n 1) {m : ℕ}
+    (hm : 0 < m) :
+    (C.toSymAnd m).eval = (fun x => C.eval (Unbounded.extInterpretation (modGate m)) x 0) ∧
+      (C.toSymAnd m).fanIn ≤ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
         5 ^ (C.depth * (m + 2)) ∧
-      C'.size ≤ 2 ^ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
+      (C.toSymAnd m).size ≤ 2 ^ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
         5 ^ (C.depth * (m + 2)) := by
-  obtain ⟨ℓ, hℓ⟩ : ∃ ℓ, ℓ = Nat.log 2 (n + C.size) + 1 := ⟨_, rfl⟩
+  rw [Circuit.toSymAnd]
+  generalize hℓ : Nat.log 2 (n + C.size) + 1 = ℓ
   have hN : n + C.size < 2 ^ ℓ := hℓ ▸ Nat.lt_pow_succ_log_self one_lt_two _
   have hBeq : 3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2) =
       3 * ((m + 1) ^ 2 + ℓ + 1) := by omega
   rw [hBeq]
   set B := 3 * ((m + 1) ^ 2 + ℓ + 1) with hB
   have hmB : m + 1 ≤ (m + 1) ^ 2 := Nat.le_self_pow two_ne_zero _
-  obtain ⟨C₁, hC₁, hf₁, hs₁⟩ := SymAnd.exists_eval_eq_eval_run (top ℓ (Sum.inl (C.outputs 0) :
-      Slot n C.size m)) (((towerS C.program m ℓ C.depth)).map SLayer.lift) (B := B)
-    (fun L hL => by
+  have hLs : ∀ L ∈ (towerS C.program m ℓ C.depth).map SLayer.lift,
+      L.p.Prime ∧ L.p ≤ B ∧ ∀ t, L.q t ∈ lowDegree ℤ (Seed ℓ × Slot n C.size m) B :=
+    fun L hL => by
       obtain ⟨L₀, hL₀, rfl⟩ := List.mem_map.1 hL
       obtain ⟨hp, hpB, hq⟩ := layer_ok C.program hm (mem_macroS_of_mem_towerS C.program hL₀)
       exact ⟨hp, by change L₀.p ≤ B; omega, SLayer.lift_mem_lowDegree L₀ fun r s =>
-        lowDegree_mono (by omega) (hq r s)⟩)
-    (by
-      have := card_seed_slot_lt (m := m) hN
-      have h : 2 ^ (3 * ℓ + 2 + (m + 1) ^ 2) ≤ 2 ^ B := Nat.pow_le_pow_right (by norm_num)
-        (by omega)
-      exact this.trans_le h)
-    ((fanIn_top_le _).trans (by omega))
-    (by
-      rw [size_top, Cslib.BinaryField.card (by omega)]
-      exact Nat.pow_le_pow_right (by norm_num) (by omega))
-  have hlen : (((towerS C.program m ℓ C.depth)).map SLayer.lift).length ≤ C.depth * (m + 2) := by
+        lowDegree_mono (by omega) (hq r s)⟩
+  have hT : Fintype.card (Seed ℓ × Slot n C.size m) + 1 ≤ 2 ^ B := by
+    have := card_seed_slot_lt (m := m) hN
+    have h : 2 ^ (3 * ℓ + 2 + (m + 1) ^ 2) ≤ 2 ^ B := Nat.pow_le_pow_right (by norm_num)
+      (by omega)
+    exact this.trans_le h
+  have hf : (top ℓ (Sum.inl (C.outputs 0) : Slot n C.size m)).fanIn ≤ B :=
+    (fanIn_top_le _).trans (by omega)
+  have hs : (top ℓ (Sum.inl (C.outputs 0) : Slot n C.size m)).size ≤ 2 ^ B := by
+    rw [size_top, Cslib.BinaryField.card (by omega)]
+    exact Nat.pow_le_pow_right (by norm_num) (by omega)
+  have hlen : ((towerS C.program m ℓ C.depth).map SLayer.lift).length ≤ C.depth * (m + 2) := by
     rw [List.length_map, length_towerS]
     exact Nat.mul_le_mul_left _ (by have := length_primes_le m; omega)
-  have hexp : (2 * B) ^ 5 ^ (((towerS C.program m ℓ C.depth)).map SLayer.lift).length ≤
+  have hexp : (2 * B) ^ 5 ^ ((towerS C.program m ℓ C.depth).map SLayer.lift).length ≤
       (2 * B) ^ 5 ^ (C.depth * (m + 2)) :=
     Nat.pow_le_pow_right (by omega) (Nat.pow_le_pow_right (by norm_num) hlen)
-  refine ⟨C₁.restrict slotInput, funext fun x => ?_,
-    (SymAnd.fanIn_restrict_le _ _).trans (hf₁.trans hexp),
-    (SymAnd.size_restrict_le _ _).trans (hs₁.trans (Nat.pow_le_pow_right (by norm_num) hexp))⟩
-  rw [SymAnd.eval_restrict, hC₁, eval_top]
+  refine ⟨funext fun x => ?_,
+    (SymAnd.fanIn_restrict_le _ _).trans
+      ((SymAnd.fanIn_collapseRun_le _ _ hLs hT hf hs).trans hexp),
+    (SymAnd.size_restrict_le _ _).trans ((SymAnd.size_collapseRun_le _ _ hLs hT hf hs).trans
+      (Nat.pow_le_pow_right (by norm_num) hexp))⟩
+  rw [compile, SymAnd.eval_restrict, SymAnd.eval_collapseRun _ _ hLs hT hf hs, eval_top]
   refine decide_majority (fun r => Good C.program m x r) _ _ (fun r hr => ?_) ?_
   · rw [SLayer.run_lift]
     simp only [slotInput_elim]
@@ -772,11 +799,46 @@ theorem _root_.Cslib.Circuits.Circuit.exists_symAnd_eval_eq {n : ℕ}
     have h3 : C.size * (2 * (n + C.size)) = 2 * (C.size * (n + C.size)) := by ring
     omega
 
-/-- **`AC⁰[m]` has quasi-polynomial `SYM ∘ AND` circuits.** For `m > 0`, every language of
-`AC0Mod m` is decided at every length `n` by `SYM ∘ AND` circuits of fan-in at most
-`(c (⌊log₂ n⌋ + 1)) ^ c` with at most `2 ^ ((c (⌊log₂ n⌋ + 1)) ^ c)` AND gates, for a constant `c`
-depending on the language. -/
-theorem exists_symAnd_of_mem_AC0Mod {m : ℕ} (hm : 0 < m) {L : Language Bool}
+/-- **What the explicit circuit computes** (Yao; Beigel–Tarui [BeigelTarui1994, Theorem 1.1]):
+for `m > 0`, `C.toSymAnd m` computes the function of the circuit `C` with NOT, unbounded AND/OR and
+`MOD_m` gates. -/
+theorem _root_.Cslib.Circuits.Circuit.eval_toSymAnd {n : ℕ}
+    (C : Circuit Unbounded.extSignature n 1) {m : ℕ} (hm : 0 < m) :
+    (C.toSymAnd m).eval = fun x => C.eval (Unbounded.extInterpretation (modGate m)) x 0 :=
+  (toSymAnd_spec C hm).1
+
+/-- The explicit circuit has fan-in at most `(2B) ^ (5 ^ (d (m + 2)))`, where
+`B = 3 ((m + 1) ^ 2 + ⌊log₂ (n + s)⌋ + 2)`. -/
+theorem _root_.Cslib.Circuits.Circuit.fanIn_toSymAnd_le {n : ℕ}
+    (C : Circuit Unbounded.extSignature n 1) {m : ℕ} (hm : 0 < m) :
+    (C.toSymAnd m).fanIn ≤ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
+      5 ^ (C.depth * (m + 2)) :=
+  (toSymAnd_spec C hm).2.1
+
+/-- The explicit circuit has at most `2 ^ ((2B) ^ (5 ^ (d (m + 2))))` AND gates, where
+`B = 3 ((m + 1) ^ 2 + ⌊log₂ (n + s)⌋ + 2)`. -/
+theorem _root_.Cslib.Circuits.Circuit.size_toSymAnd_le {n : ℕ}
+    (C : Circuit Unbounded.extSignature n 1) {m : ℕ} (hm : 0 < m) :
+    (C.toSymAnd m).size ≤ 2 ^ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
+      5 ^ (C.depth * (m + 2)) :=
+  (toSymAnd_spec C hm).2.2
+
+/-- **ACC⁰ circuits are quasi-polynomial `SYM ∘ AND` circuits** (Yao; Beigel–Tarui
+[BeigelTarui1994, Theorem 1.1]). A circuit `C` with NOT, unbounded AND/OR and `MOD_m` gates,
+`m > 0`, of depth `d`, with `s` gates on `n` inputs, computes the same function as a `SYM ∘ AND`
+circuit of fan-in at most `(2B) ^ (5 ^ (d (m + 2)))` with at most `2 ^ ((2B) ^ (5 ^ (d (m + 2))))`
+AND gates, where `B = 3 ((m + 1) ^ 2 + ⌊log₂ (n + s)⌋ + 2)`. The circuit is `C.toSymAnd m`. -/
+theorem _root_.Cslib.Circuits.Circuit.exists_symAnd_eval_eq {n : ℕ}
+    (C : Circuit Unbounded.extSignature n 1) {m : ℕ} (hm : 0 < m) :
+    ∃ C' : SymAnd (Fin n),
+      C'.eval = (fun x => C.eval (Unbounded.extInterpretation (modGate m)) x 0) ∧
+      C'.fanIn ≤ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
+        5 ^ (C.depth * (m + 2)) ∧
+      C'.size ≤ 2 ^ (2 * (3 * ((m + 1) ^ 2 + Nat.log 2 (n + C.size) + 2))) ^
+        5 ^ (C.depth * (m + 2)) :=
+  ⟨C.toSymAnd m, toSymAnd_spec C hm⟩
+
+private theorem exists_symAnd_of_mem_AC0Mod_of_pos {m : ℕ} (hm : 0 < m) {L : Language Bool}
     (hL : L ∈ AC0Mod m) : ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = L.slice n ∧
       C'.fanIn ≤ (c * (Nat.log 2 n + 1)) ^ c ∧ C'.size ≤ 2 ^ (c * (Nat.log 2 n + 1)) ^ c := by
   obtain ⟨d, s, hs, hC⟩ := ConstDepth.mem_iff.1 hL
@@ -819,6 +881,15 @@ theorem exists_symAnd_of_mem_ACC0 {L : Language Bool} (hL : L ∈ ACC0) :
     ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = L.slice n ∧
       C'.fanIn ≤ (c * (Nat.log 2 n + 1)) ^ c ∧ C'.size ≤ 2 ^ (c * (Nat.log 2 n + 1)) ^ c := by
   obtain ⟨q, hq, hLq⟩ := mem_ACC0_iff.1 hL
-  exact exists_symAnd_of_mem_AC0Mod (by omega) hLq
+  exact exists_symAnd_of_mem_AC0Mod_of_pos (by omega) hLq
+
+/-- **`AC⁰[m]` has quasi-polynomial `SYM ∘ AND` circuits.** Every language of `AC0Mod m` is
+decided at every length `n` by `SYM ∘ AND` circuits of fan-in at most `(c (⌊log₂ n⌋ + 1)) ^ c` with
+at most `2 ^ ((c (⌊log₂ n⌋ + 1)) ^ c)` AND gates, for a constant `c` depending on the language. The
+case `m = 0` goes through `AC0Mod 0 ⊆ ACC0` (`AC0Mod_subset_ACC0`). -/
+theorem exists_symAnd_of_mem_AC0Mod {m : ℕ} {L : Language Bool} (hL : L ∈ AC0Mod m) :
+    ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = L.slice n ∧
+      C'.fanIn ≤ (c * (Nat.log 2 n + 1)) ^ c ∧ C'.size ≤ 2 ^ (c * (Nat.log 2 n + 1)) ^ c :=
+  exists_symAnd_of_mem_ACC0 (AC0Mod_subset_ACC0 m hL)
 
 end Cslib.Circuits.Boolean

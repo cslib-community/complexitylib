@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PairedCompile
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.PathPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
+import Complexity.Computability.PolyTime.Int.Compare
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -79,14 +80,7 @@ def encVariable : Variable ↪ List Bool :=
 def encPlacedClause : PlacedClause ↪ List Bool :=
   encPair (encList (encPair encVariable encBool)) (encPair encPoint (encList encRoute))
 
-private theorem computable_intLt {α : Type} {enc : α ↪ List Bool} {f g : α → ℤ}
-    (hf : ComputableInPolyTime f enc encIntBin)
-    (hg : ComputableInPolyTime g enc encIntBin) :
-    ComputableInPolyTime (fun a => decide (f a < g a)) enc encBool :=
-  (show ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.1 < p.2))
-    (encPair encIntBin encIntBin) encBool by fun_prop).comp (hf.prod hg)
-
-attribute [local fun_prop] PlanarCompile.computable_intAdd computable_intLt
+attribute [local fun_prop] PlanarCompile.computable_intAdd
   PlanarCompile.computable_natCast PlanarCompile.computable_layoutCenter
 
 private theorem computable_side :

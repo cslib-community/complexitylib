@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Interactive.Plain
 import Complexity.Computability.Interactive.Security
 import Complexity.Crypto.Protocols.SigmaProtocol.Basic
+import Complexity.Probability.StatisticalDistance.CloseTo
 
 /-!
 # Zero knowledge and special soundness with unbounded simulators and extractors
@@ -39,7 +40,7 @@ A meaningful instance of any of these notions needs an efficient simulator or ex
 
 namespace ComplexityTests.UnboundedSimulators
 
-open Cslib Cslib.Interactive Spec
+open Cslib Cslib.Interactive Spec Probability
 open scoped ENNReal
 
 /-! ### Interactive HVZK -/

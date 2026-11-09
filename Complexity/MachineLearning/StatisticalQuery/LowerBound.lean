@@ -41,7 +41,9 @@ The bound assumes only `LearnsStateless`, so it applies to every learner (`Learn
 and to queries with values in `[-1, 1]`, which include the predicates of [Kearns1998].
 When only the one-sided bound `corr D (f i) (f j) ≤ γ` holds, the first term doubles
 (`StatisticalQuery.LearnsStateless.card_le_of_corr_le`). Take `γ = 1 / d` for `d = |κ|`, so that
-the statistical query dimension [Reyzin, Definition 11][Reyzin2020] is at least `d`. Requiring
+the one-sided variant of the statistical query dimension [Reyzin, Definition 11][Reyzin2020], which
+drops the absolute value, is at least `d` (`StatisticalQuery.sqDimOneSided` in
+`Complexity/MachineLearning/StatisticalQuery/Dimension.lean`). Requiring
 accuracy `τ`, that is `1 - 2 ε ≥ τ`, as in [Reyzin, Theorem 12][Reyzin2020], gives
 `d τ ^ 2 - 1 ≤ 2 q + 1`
 (`StatisticalQuery.LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one`). For exact learning,
@@ -332,8 +334,9 @@ theorem LearnsStateless.card_le_of_corr_le {κ : Type} [Fintype κ] {D : PMF X}
 /-- **The statistical query dimension bound for exact learning**: the special case `ε = 0` of
 [Reyzin, Theorem 12][Reyzin2020], which assumes only accuracy `τ`
 (`LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one`). If `C` contains
-`d ≥ 2` concepts with pairwise correlations at most `1 / d` under `D`, so that the statistical
-query dimension of `C` under `D` is at least `d` [Reyzin, Definition 11][Reyzin2020], then a
+`d ≥ 2` concepts with pairwise correlations at most `1 / d` under `D`, so that the one-sided
+variant of the statistical query dimension [Reyzin, Definition 11][Reyzin2020] of `C` under `D`,
+which drops the absolute value, is at least `d`, then a
 learner learning `C` exactly under `D` from at most `q` queries of tolerance `τ ≥ 0` has
 `d τ ^ 2 - 1 ≤ 2 q`, Reyzin's query count. -/
 theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul {κ : Type} [Fintype κ] {D : PMF X}
@@ -409,8 +412,7 @@ theorem LearnsStateless.card_mul_sq_sub_one_le_two_mul_add_one {κ : Type} [Fint
     rw [sub_nonneg, div_le_one hdpos]
     exact hd1
   have hpos : 0 < τ ^ 2 - 1 / d := sub_pos.2 hγτ
-  have h2 : (1 - 1 / d) / ((1 - 2 * ε) ^ 2 - 1 / d) ≤ (1 - 1 / d) / (τ ^ 2 - 1 / d) :=
-    div_le_div_of_nonneg_left hnum hpos (by linarith)
+  have h2 : (1 - 1 / d) / ((1 - 2 * ε) ^ 2 - 1 / d) ≤ (1 - 1 / d) / (τ ^ 2 - 1 / d) := by gcongr
   have h' : d ≤ (2 * q + 1) * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) := by
     calc d ≤ _ := h
       _ ≤ 2 * q * ((1 - 1 / d) / (τ ^ 2 - 1 / d)) + (1 - 1 / d) / (τ ^ 2 - 1 / d) := by
