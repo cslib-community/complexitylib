@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Prepare
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Exec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Original
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Failures
 

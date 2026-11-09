@@ -187,6 +187,20 @@ theorem run_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : �
     (g := fun acc word => body ((p, word), acc))
     (l := List.range (count p)) (init := initial)).symm
 
+/-- Streaming state `(j, ((c, D), acc))` of `runPrefix`, a `StreamState β`: the current index `j`
+in binary, then the dimension `c` in unary and the radius `D` in binary, then the captured
+accumulator under `encB`. The index, the parameter pair and `c` inside it are framed; `D` and
+the accumulator are not. -/
+abbrev encStreamState (encB : β ↪ List Bool) : ℕ × ((ℕ × ℕ) × β) ↪ List Bool :=
+  encPair encNat (encPair (encPair encUnary encNat) encB)
+
+/-- Input `(((c, D), values), acc)` of one callback: the dimension `c` in unary and the radius `D`
+in binary, then the signed measurement values as a list of binary integers (`encIntBin`), then the
+captured accumulator under `encB`. The triple `((c, D), values)` is framed, and inside it so are
+the parameter pair, `c` and each value; `D` and the accumulator are not. -/
+abbrev encCallbackInput (encB : β ↪ List Bool) : ((ℕ × ℕ) × List ℤ) × β ↪ List Bool :=
+  encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB
+
 variable {encB : β ↪ List Bool}
 
 /-- Full encoded persistent-state bound under the actual prefix accumulator bound. It includes
@@ -194,8 +208,7 @@ both retained parameters and the final binary counter, including at base one/dim
 theorem length_prefix_le (body : ((ℕ × ℕ) × List ℤ) × β → β)
     (c D j B : ℕ) (initial : β) (hj : j ≤ count (c, D))
     (hB : (encB (StreamState.payload (runPrefix body (c, D) j initial)).2).length ≤ B) :
-    (encPair encNat (encPair (encPair encUnary encNat) encB)
-      (runPrefix body (c, D) j initial)).length ≤
+    (encStreamState encB (runPrefix body (c, D) j initial)).length ≤
       2 * (c * (D.size + 1) + 1) + 4 * c + 2 * D.size + 4 + B := by
   have hs : (encPair (encPair encUnary encNat) encB
       (runPrefix body (c, D) j initial).2).length ≤
@@ -216,8 +229,7 @@ theorem length_prefix_le (body : ((ℕ × ℕ) × List ℤ) × β → β)
 /-- Preparing a callback charges both parameters, every signed coordinate and the full captured
 accumulator. This bound is about the encoded input, not uncharged machine scratch. -/
 theorem length_callback_input_le (c D j : ℕ) (acc : β) :
-    (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB
-      (((c, D), Cslib.Radix.measurementValues c D j), acc)).length ≤
+    (encCallbackInput encB (((c, D), Cslib.Radix.measurementValues c D j), acc)).length ≤
       4 * (2 * c + 1 + D.size) + 2 * (c * (2 * (D.size + 1) + 1)) + 3 +
         (encB acc).length := by
   simp only [length_encPair, encUnary_apply, List.length_replicate]
@@ -230,8 +242,7 @@ theorem length_callback_input_le (c D j : ℕ) (acc : β) :
 theorem prepare_polyTime :
     ComputableInPolyTime (fun ((j, (c, D), acc) : ℕ × ((ℕ × ℕ) × β)) =>
       (((c, D), Cslib.Radix.measurementValues c D j), acc))
-      (encPair encNat (encPair (encPair encUnary encNat) encB))
-      (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB) := by
+      (encStreamState encB) (encCallbackInput encB) := by
   have hs := ComputableInPolyTime.snd encNat (encPair (encPair encUnary encNat) encB)
   have hp := (ComputableInPolyTime.fst (encPair encUnary encNat) encB).comp hs
   have hi := ComputableInPolyTime.fst encNat (encPair (encPair encUnary encNat) encB)
@@ -241,19 +252,15 @@ theorem prepare_polyTime :
 
 /-- The actual captured callback uses the proved direct decoder, retaining both parameters. -/
 noncomputable def visitCertificate {body : ((ℕ × ℕ) × List ℤ) × β → β}
-    (cb : NativeCertificate body
-      (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB) encB) :
-    NativeCertificate (visit body)
-      (encPair encNat (encPair (encPair encUnary encNat) encB))
-      (encPair (encPair encUnary encNat) encB) :=
+    (cb : NativeCertificate body (encCallbackInput encB) encB) :
+    NativeCertificate (visit body) (encStreamState encB) (encPair (encPair encUnary encNat) encB) :=
   (NativeCertificate.linear ((ComputableInO.fst (encPair encUnary encNat) encB).comp_linear
     (ComputableInO.snd encNat (encPair (encPair encUnary encNat) encB)))).prod
       (cb.comp (NativeCertificate.ofPolyTime prepare_polyTime))
 
 /-- Polynomial per-visit bounds are derived from the actual callback and decoder machines. -/
 theorem visitCertificate_isPolynomial {body : ((ℕ × ℕ) × List ℤ) × β → β}
-    (cb : NativeCertificate body
-      (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB) encB)
+    (cb : NativeCertificate body (encCallbackInput encB) encB)
     (hcb : cb.IsPolynomial) : (visitCertificate cb).IsPolynomial := by
   apply NativeCertificate.prod_isPolynomial
   · exact NativeCertificate.linear_isPolynomial _
@@ -267,10 +274,8 @@ noncomputable def certificate {α : Type} {encIn : α ↪ List Bool}
     {parameters : α → ℕ × ℕ} {initial : α → β} {body : ((ℕ × ℕ) × List ℤ) × β → β}
     (cp : NativeCertificate parameters encIn (encPair encUnary encNat))
     (ci : NativeCertificate initial encIn encB)
-    (cb : NativeCertificate body
-      (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB) encB) :
-    NativeCertificate (fun a => run body (parameters a) (initial a))
-      encIn (encPair encNat (encPair (encPair encUnary encNat) encB)) :=
+    (cb : NativeCertificate body (encCallbackInput encB) encB) :
+    NativeCertificate (fun a => run body (parameters a) (initial a)) encIn (encStreamState encB) :=
   IndexFold.certificate (clock.comp cp) (cp.prod ci) (visitCertificate cb)
 
 end Cslib.GenericRAM.MeasurementFold

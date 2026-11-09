@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # Merkle trees
@@ -244,7 +245,9 @@ private theorem merkleInputs_append (leaf : List Bool) (i : ℕ) (path : List (L
       merkleInputsStep H k (path.foldl (merkleInputsStep H k) ([leaf], i)) sibling :=
   List.foldl_concat _ _ _ _
 
-private theorem snd_foldl_merkleInputsStep (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
+/-- After folding `merkleInputsStep` along `path` from `(leaf, i)`, the position component is
+`i / 2 ^ path.length`. -/
+theorem snd_foldl_merkleInputsStep (leaf : List Bool) (i : ℕ) (path : List (List Bool)) :
     (path.foldl (merkleInputsStep H k) ([leaf], i)).2 = i / 2 ^ path.length := by
   induction path using List.reverseRecOn with
   | nil => simp
@@ -481,12 +484,10 @@ private theorem computableTidilyInPolyTime_iterate_merkleParents
     ?_ ?_).1
   · refine PolyBounded.of_forall_le 9 2 fun p => ?_
     have h1 : p.1.length ≤ (encPair encBits (encList encBits) p).length := by
-      simp only [encPair_apply, encBits_apply, List.length_append, length_frame]
-      omega
+      enc_len [encPair_apply]
     have h2 : p.2.length ≤ (encPair encBits (encList encBits) p).length := by
       have := length_le_length_encList encBits p.2
-      simp only [length_encPair, encBits_apply]
-      omega
+      enc_len
     set s := (encPair encBits (encList encBits) p).length
     calc (2 * p.2.length + 1) * (2 * p.1.length + 1) ≤ (2 * s + 1) * (2 * s + 1) := by
           gcongr
@@ -594,16 +595,12 @@ private theorem computableTidilyInPolyTime_merklePath
   · refine PolyBounded.of_forall_le 40 2 fun p => ?_
     set s := (encPair encBits (encPair (encList encBits) encUnary) p).length
     have h1 : p.1.length ≤ s := by
-      simp only [s, encPair_apply, encBits_apply, List.length_append, length_frame]
-      omega
+      enc_len [s, encPair_apply]
     have h2 : p.2.1.length ≤ s := by
       have := length_le_length_encList encBits p.2.1
-      simp only [s, encPair_apply, encBits_apply, List.length_append, length_frame]
-      omega
+      enc_len [s, encPair_apply]
     have h3 : p.2.2 ≤ s := by
-      simp only [s, encPair_apply, encBits_apply, encUnary_apply, List.length_append,
-        length_frame, List.length_replicate]
-      omega
+      enc_len [s, encPair_apply]
     calc 3 * ((2 * p.2.1.length + 1) * (2 * p.1.length + 1)) + 2 * p.2.2 + 2 ≤
         3 * ((2 * s + 1) * (2 * s + 1)) + 2 * s + 2 := by gcongr
       _ ≤ 40 * (s + 1) ^ 2 := by nlinarith

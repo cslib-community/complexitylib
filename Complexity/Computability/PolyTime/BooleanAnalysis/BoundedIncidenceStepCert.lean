@@ -79,8 +79,6 @@ namespace Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
 open Finset Cslib Cslib.BitString Cslib.CommonCountingAccum Cslib.Complexity Cslib.GenericRAM
 open Cslib.LinearAlgebra Turing.MultiTapeTM
 
-local notation "encSys" => encList (encList (encList encNat))
-
 /-! ### 1. Stage Encodings and Polynomial-Time Step Helpers -/
 
 section StageHelpers
@@ -243,21 +241,21 @@ private theorem bi_listGetD_nat_dyn {α : Type} {encIn : α ↪ List Bool}
 /-- `validBranchEvalParams` is computable in polynomial time on `encBranchEvalInput`. -/
 theorem computableInPolyTime_validBranchEvalParams :
     ComputableInPolyTime validBranchEvalParams encBranchEvalInput encBool := by
-  unfold validBranchEvalParams encBranchEvalInput
-  let encQuad := encPair encNat (encPair encNat (encPair encNat encNat))
-  let eR := encPair encQuad (encPair encQuad encSys)
-  have hp1 := fst (encPair encUnary encUnary) eR; have hp2 := snd (encPair encUnary encUnary) eR
-  have hn' := hp1.fst'; have hk' := hp1.snd'
-  have hsched := hp2.snd'.fst'; have heqs := hp2.snd'.snd'
-  have hr := hsched.fst'; have hQ := hsched.snd'.fst'
-  have hR := hsched.snd'.snd'.fst'; have hA₀ := hsched.snd'.snd'.snd'
+  unfold validBranchEvalParams
+  have hn' := BranchEvalInput.computableInPolyTime_numVars
+  have hk' := BranchEvalInput.computableInPolyTime_maxDegree
+  have heqs := BranchEvalInput.computableInPolyTime_equations
+  have hr := BranchEvalInput.computableInPolyTime_numGroups
+  have hQ := BranchEvalInput.computableInPolyTime_numNodes
+  have hR := BranchEvalInput.computableInPolyTime_rowBound
+  have hA₀ := BranchEvalInput.computableInPolyTime_intervalStart
   have hn_b := unary_to_binary.comp hn'; have hk_b := unary_to_binary.comp hk'
   have hQu := binary_min_unary' hn' hQ
   have hru := binary_min_unary' hn' hr
   have h2Qu := unary_add.comp (hQu.prod hQu)
   have hpow : ComputableInPolyTime
-      (fun inp : BranchEvalInput => (min inp.1.1 inp.2.2.1.1) ^ (2 * min inp.1.1 inp.2.2.1.2.1))
-      (encPair (encPair encUnary encUnary) eR) encNat := by fun_prop
+      (fun inp : BranchEvalInput => (min inp.numVars inp.numGroups) ^
+        (2 * min inp.numVars inp.numNodes)) encBranchEvalInput encNat := by fun_prop
   have hc1 := binary_le' (const 1) hn_b; have hc2 := binary_le' (const 2) hr
   have hc3 := binary_le' (const 1) hR; have hc4 := binary_lt' hR hQ
   have hc5 := binary_le' hQ hn_b; have hc6 := binary_le' hr hn_b
@@ -408,7 +406,7 @@ private theorem computableInPolyTime_checkRestrictedGroup {α : Type} {encIn : �
 private theorem computableInPolyTime_buildEqRowTables {α : Type} {encIn : α ↪ List Bool}
     {n' : α → ℕ} {eqs' : α → List (List (List ℕ))} {data : α → ReplacementDesignData}
     (hn' : ComputableInPolyTime n' encIn encUnary)
-    (heqs : ComputableInPolyTime eqs' encIn encSys)
+    (heqs : ComputableInPolyTime eqs' encIn encSparseSystem)
     (hdata : ComputableInPolyTime data encIn encReplacementDesignData) :
     ComputableInPolyTime (fun x => buildEqRowTables (n' x) (eqs' x) (data x))
       encIn (encList (encList (encList (encList encIntBin)))) := by
@@ -427,7 +425,7 @@ private theorem computableInPolyTime_buildEqRowTables {α : Type} {encIn : α �
 private theorem computableInPolyTime_groupEquationsAt {α : Type} {encIn : α ↪ List Bool}
     {eqs' : α → List (List (List ℕ))} {factorGroups : α → List (List ℕ)}
     {eqRowTables : α → List (List (List (List ℤ)))} {t g : α → ℕ}
-    (heqs : ComputableInPolyTime eqs' encIn encSys)
+    (heqs : ComputableInPolyTime eqs' encIn encSparseSystem)
     (hfg : ComputableInPolyTime factorGroups encIn (encList (encList encNat)))
     (htab : ComputableInPolyTime eqRowTables encIn
       (encList (encList (encList (encList encIntBin)))))

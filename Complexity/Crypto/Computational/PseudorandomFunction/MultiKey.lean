@@ -295,15 +295,13 @@ private theorem interpret_prfMultiReduction (family : List Bool → List Bool �
   rw [show OracleComp.interpret ProbComp.unifOracle (BitString.sampleList (t * n)) =
     ProbComp.eval (BitString.sampleList (t * n)) from rfl, BitString.eval_sampleList,
     Probability.PMF.monad_bind_eq_bind]
-  congr 1
-  funext key
+  congr 1 with key : 1
   have hhom : IsMonadHom (ProbOracleComp (fun _ : Unit × List Bool => List Bool)) PMF
       (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
         (fun request : Unit × List Bool => PMF.pure (external request.2)))) :=
     OracleComp.isMonadHom_evalWith _
   rw [OracleComp.map_run_interpret hhom, PMF.monad_map_eq_map]
-  congr 3
-  funext q cache
+  congr 3 with q cache : 2
   rcases q with k | ⟨i, query⟩
   · simp [StateT.lift, ProbOracleComp.interpret_sample, ProbComp.unifFin, PMF.map,
       Function.comp_def]
@@ -401,11 +399,9 @@ private theorem uniformList_bind_keyBlock {β : Type} (t n : ℕ) (f : (Fin t �
   let e : BitString (t * n) ≃ (Fin t → BitString n) :=
     (finProdFinEquiv.arrowCongr (Equiv.refl Bool)).symm.trans (Equiv.curry (Fin t) (Fin n) Bool)
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, BitString.uniformList, PMF.bind_map]
-  congr 1
-  funext w
+  congr 1 with w : 1
   simp only [Function.comp_apply]
-  congr 1
-  funext i
+  congr 1 with i : 1
   apply List.ext_getElem
   · simp only [keyBlock, List.length_take, List.length_drop, List.length_ofFn]
     have := Nat.mul_le_mul_right n (Nat.succ_le_of_lt i.isLt)
@@ -419,17 +415,6 @@ private theorem uniformList_bind_keyBlock {β : Type} (t n : ℕ) (f : (Fin t �
     ext
     simp only [finProdFinEquiv_apply_val]
     ring
-
-/-- Replacing one coordinate of a uniform tuple by an independent uniform value preserves the law
-of any experiment on the tuple. -/
-private theorem bind_uniformOfFintype_update {γ β : Type} [Fintype γ] [Nonempty γ] (i : Fin t)
-    (F : (Fin t → γ) → PMF β) :
-    (PMF.uniformOfFintype (Fin t → γ)).bind F =
-      (PMF.uniformOfFintype γ).bind fun value =>
-        (PMF.uniformOfFintype (Fin t → γ)).bind fun values =>
-          F (Function.update values i value) := by
-  conv_lhs => rw [← PMF.uniformOfFintype_update i]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
 
 /-- Keyed replies to valid queries have the key's length. -/
 private theorem length_prfOracle_le (hfamily : PseudorandomFunction family) {n : ℕ}
@@ -457,12 +442,12 @@ private def hybridOracle (family : List Bool → List Bool → List Bool) (t j n
 
 /-- The `j`-th hybrid experiment, with eager keys and tables. -/
 private noncomputable def hybridGame (family : List Bool → List Bool → List Bool) (t j : ℕ)
-    (adversary : MultiKeyDistinguisher t) (n : ℕ) : PMF Bool :=
-  (PMF.uniformOfFintype (Fin t → BitString n)).bind fun keys =>
-    (PMF.uniformOfFintype (Fin t → BitString n → BitString n)).bind fun tables =>
-      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-        PMF.pure (hybridOracle family t j n (fun i => List.ofFn (keys i)) tables request)))
-        (adversary n [])
+    (adversary : MultiKeyDistinguisher t) (n : ℕ) : PMF Bool := do
+  let keys ← PMF.uniformOfFintype (Fin t → BitString n)
+  let tables ← PMF.uniformOfFintype (Fin t → BitString n → BitString n)
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
+    PMF.pure (hybridOracle family t j n (fun i => List.ofFn (keys i)) tables request)))
+    (adversary n [])
 
 private theorem eval_prfMultiRealGame (family : List Bool → List Bool → List Bool)
     (adversary : MultiKeyDistinguisher t) (n : ℕ) :
@@ -473,12 +458,14 @@ private theorem eval_prfMultiRealGame (family : List Bool → List Bool → List
     OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
       (fun request : Fin t × List Bool =>
         PMF.pure (prfOracle family n (blocks request.1) request.2))) (adversary n []))).trans ?_
-  simp only [hybridGame, hybridOracle, Nat.not_lt_zero, ↓reduceIte, PMF.bind_const]
+  simp only [hybridGame, PMF.monad_bind_eq_bind, hybridOracle, Nat.not_lt_zero, ↓reduceIte,
+    PMF.bind_const]
 
 private theorem eval_prfMultiIdealGame (family : List Bool → List Bool → List Bool)
     (adversary : MultiKeyDistinguisher t) (n : ℕ) :
     ProbComp.eval (prfMultiIdealGame t adversary n) = hybridGame family t t adversary n := by
-  simp only [prfMultiIdealGame, hybridGame, hybridOracle, Fin.is_lt, ↓reduceIte, PMF.bind_const,
+  simp only [prfMultiIdealGame, hybridGame, PMF.monad_bind_eq_bind, hybridOracle, Fin.is_lt,
+    ↓reduceIte, PMF.bind_const,
     ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
 
 /-- Against the real PRF game, the `j`-th reduction is the `j`-th hybrid. -/
@@ -490,9 +477,9 @@ private theorem eval_prfRealGame_prfMultiReduction (hfamily : PseudorandomFuncti
   simp only [prfRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
-  rw [hybridGame, bind_uniformOfFintype_update ⟨j, hj⟩, BitString.uniformList, PMF.bind_map]
-  congr 1
-  funext value
+  simp only [hybridGame, PMF.monad_bind_eq_bind]
+  rw [PMF.bind_uniformOfFintype_update ⟨j, hj⟩, BitString.uniformList, PMF.bind_map]
+  congr 1 with value : 1
   refine (uniformList_bind_keyBlock t n (fun blocks =>
     (PMF.uniformOfFintype (Fin t → BitString n → BitString n)).bind fun tables =>
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
@@ -520,14 +507,13 @@ private theorem eval_prfIdealGame_prfMultiReduction (hfamily : PseudorandomFunct
   simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
-  rw [hybridGame]
+  simp only [hybridGame, PMF.monad_bind_eq_bind]
   conv_rhs =>
     arg 2
     ext keys
-    rw [bind_uniformOfFintype_update ⟨j, hj⟩]
+    rw [PMF.bind_uniformOfFintype_update ⟨j, hj⟩]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext table
+  congr 1 with table : 1
   refine (uniformList_bind_keyBlock t n (fun blocks =>
     (PMF.uniformOfFintype (Fin t → BitString n → BitString n)).bind fun tables =>
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle

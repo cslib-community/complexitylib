@@ -274,8 +274,7 @@ private theorem two_mul_complexity_le {P q p h c : ℕ} (hq : 32 * (P + 1) ≤ q
           Nat.mul_le_mul_left _ hle
       _ = 2 * P * (q + 1) * (2 ^ p / (q - 2)) + 2 * P * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) := by
           ring
-      _ ≤ (2 * P + 1) * 2 ^ p + 2 * P * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) :=
-          Nat.add_le_add_right hmain _
+      _ ≤ (2 * P + 1) * 2 ^ p + 2 * P * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) := by gcongr
   · have hhq : h ≤ q * h := Nat.le_mul_of_pos_left h (by omega)
     have hle := (complexityOn_le_partialBound ((q + 1) * h) (p - h) D u hJpos).trans
       (partialBound_le hhp hk le_rfl (by omega) (by omega) hJ hD)
@@ -285,8 +284,7 @@ private theorem two_mul_complexity_le {P q p h c : ℕ} (hq : 32 * (P + 1) ≤ q
           Nat.mul_le_mul_left _ hle
       _ = 2 * P * p * (2 ^ p / (c * h)) + 2 * P * p * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) := by
           ring
-      _ ≤ (2 * P + 1) * 2 ^ p + 2 * P * p * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) :=
-          Nat.add_le_add_right hmain _
+      _ ≤ (2 * P + 1) * 2 ^ p + 2 * P * p * (32 * (p + 1) ^ 3 * 2 ^ (p - h)) := by gcongr
 
 /-- **Uniform sparse and partial synthesis, in natural numbers.** For every `P`, for all large
 `p`, the indicator of a set of at most `2 ^ p` of the `2 ^ (2 p)` inputs costs at most
@@ -439,8 +437,7 @@ private theorem eventually_mul_dist_complexity_le (P : ℕ) :
     _ = P * complexity interpretation (single fun x => decide (x ∈ D)) +
           P * ∑ i, complexityOn interpretation D
             (single fun x => f x (select i) ^^ g x (select i)) + P * (5 * #O) := by ring
-    _ ≤ (P + 1) * 2 ^ p + 2 * ((P + 1) * 2 ^ p) + 2 ^ p :=
-        Nat.add_le_add (Nat.add_le_add hind hlabels') hgates
+    _ ≤ (P + 1) * 2 ^ p + 2 * ((P + 1) * 2 ^ p) + 2 ^ p := by gcongr
     _ = (3 * P + 4) * 2 ^ p := by ring
 
 /-- **Square-root continuity of circuit complexity.** For every `ε > 0` and all large `p`,

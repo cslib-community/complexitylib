@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.TreeEval.Reader.Cert.Residue
 public import Complexity.Computability.TreeEval.Reader.Encode
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 
 /-!
 # Register operations within linear work space
@@ -152,40 +153,26 @@ theorem modifyAt_inSpace {l : α → List ℕ} {i p c : α → ℕ}
   simp only [length_encPair] at *
   nlinarith
 
-/-- A step of subtracting `c` times the sums `acc` from a register, on `((p, c, acc), i, out)`. -/
-private def subStep (s : (ℕ × ℕ × List ℕ) × ℕ × List ℕ) (v : ℕ) : (ℕ × ℕ × List ℕ) × ℕ × List ℕ :=
-  (s.1, s.2.1 + 1, s.2.2 ++ [addMod s.1.1 v (negMod s.1.1 (mulMod s.1.1 s.1.2.1
-    (s.1.2.2.getD s.2.1 0)))])
-
-private theorem foldl_subStep (p c : ℕ) (acc l : List ℕ) (j : ℕ) (out : List ℕ) :
-    l.foldl subStep ((p, c, acc), j, out) = ((p, c, acc), j + l.length, out ++ l.mapIdx fun i v =>
-      addMod p v (negMod p (mulMod p c (acc.getD (j + i) 0)))) := by
-  induction l generalizing j out with
-  | nil => simp
-  | cons v l ih =>
-    have hf : (fun i w => addMod p w (negMod p (mulMod p c (acc.getD (j + 1 + i) 0)))) =
-        (fun i w => addMod p w (negMod p (mulMod p c (acc.getD (j + (i + 1)) 0)))) := by
-      funext i w; rw [show j + 1 + i = j + (i + 1) by omega]
-    rw [List.foldl_cons, subStep, ih, List.mapIdx_cons, hf]
-    simp only [List.length_cons, List.append_assoc, List.singleton_append, add_zero,
-      Prod.mk.injEq, true_and, and_true]
-    omega
+/-- A coordinate of subtracting `c` times a sum `a` from a register, with parameters `(p, c)`. -/
+private def subElem (q : ℕ × ℕ) (v : ℕ) (a : Option ℕ) : ℕ :=
+  addMod q.1 v (negMod q.1 (mulMod q.1 q.2 (a.getD 0)))
 
 private theorem subtractSums_eq (p c : ℕ) (t : Fin 3) (acc : List ℕ) (R : Regs) :
-    subtractSums p c t acc R = R.set t (((R.get t).foldl subStep ((p, c, acc), 0, [])).2.2) := by
-  rw [foldl_subStep, subtractSums]
+    subtractSums p c t acc R = R.set t
+      (zipFold (fun q v a => some (subElem q v a)) (p, c) (R.get t) acc) := by
+  rw [subtractSums, zipFold_some]
   congr 1
   refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
   have hi : i < (R.get t).length := by simpa using h₁
-  simp [List.getElem_mapIdx, List.getD_eq_getElem?_getD, hi]
+  simp [List.getElem_mapIdx, List.getD_eq_getElem?_getD, hi, subElem]
 
-/-- The encoding of the parameters `(p, c, acc)` of `subStep`. -/
-private abbrev encSubPar : ℕ × ℕ × List ℕ ↪ List Bool := encPair encNat
-    (encPair encNat (encList encNat))
+/-- The encoding of the arguments of `subElem`. -/
+private abbrev encSubArg : (ℕ × ℕ) × ℕ × Option ℕ ↪ List Bool :=
+  encPair (encPair encNat encNat) (encPair encNat (encOption encNat))
 
-/-- The encoding of the states of `subStep`. -/
-private abbrev encSubState : (ℕ × ℕ × List ℕ) × ℕ × List ℕ ↪ List Bool :=
-  encPair encSubPar (encPair encNat (encList encNat))
+/-- The encoding of the parameters, the register and the sums. -/
+private abbrev encSubInput : (ℕ × ℕ) × List ℕ × List ℕ ↪ List Bool :=
+  encPair (encPair encNat encNat) (encPair (encList encNat) (encList encNat))
 
 private theorem length_subElem_le (p c v a : ℕ) :
     (encNat (addMod p v (negMod p (mulMod p c a)))).length ≤ (encNat p).length + (encNat v).length
@@ -195,27 +182,18 @@ private theorem length_subElem_le (p c v a : ℕ) :
   · have := length_encNat_mono (Nat.mod_lt (v + negMod p (mulMod p c a)) hp).le
     simp only [addMod]; omega
 
-private theorem subStep_inSpace :
-    ComputableInSpace (fun q : ((ℕ × ℕ × List ℕ) × ℕ × List ℕ) × ℕ => subStep q.1 q.2)
-      (encPair encSubState encNat) encSubState
-      fun q => 64 * ((encPair encSubState encNat q).length + 1) := by
-  have hl : (fun q => (encPair encSubState encNat q).length) ≼
-      fun q => 64 * ((encPair encSubState encNat q).length + 1) := .of_le fun _ => by omega
-  have hs := (fst encSubState encNat).weaken hl
-  have hv := (snd encSubState encNat).weaken hl
-  have hpar := fst' hs
+private theorem subElem_inSpace :
+    ComputableInSpace (fun q : (ℕ × ℕ) × ℕ × Option ℕ => some (subElem q.1 q.2.1 q.2.2)) encSubArg
+      (encOption encNat) fun q => (encSubArg q).length := by
+  have hpar := fst (encPair encNat encNat) (encPair encNat (encOption encNat))
+  have harg := snd (encPair encNat encNat) (encPair encNat (encOption encNat))
   have hp := fst' hpar
-  have hc := fst' (snd' hpar)
-  have hacc := snd' (snd' hpar)
-  have hj := fst' (snd' hs)
-  have hout := snd' (snd' hs)
-  have ha := budget_comp_lin getD (linear_mul _) (budget_prod hacc hj)
-  have hm := budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod hc ha))
+  have ha := budget_comp_linear (of_inO (ComputableInDegree.optionGetD encNat 0).inO_one)
+    (snd' harg)
+  have hm := budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod (snd' hpar) ha))
   have hn := budget_comp_linear negMod_inSpace (budget_prod hp hm)
-  have he := budget_comp_linear addMod_inSpace (budget_prod hp (budget_prod hv hn))
-  have happ := budget_snoc hout he
-  have hsucc := budget_comp_lin natSucc linear_succ hj
-  exact budget_prod hpar (budget_prod hsucc happ)
+  have he := budget_comp_linear addMod_inSpace (budget_prod hp (budget_prod (fst' harg) hn))
+  exact budget_comp_linear (of_inO (ComputableInDegree.optionSome (enc₁ := encNat)).inO_one) he
 
 private theorem length_encList_mapIdx_le (l : List ℕ) (f : ℕ → ℕ → ℕ) (P : ℕ)
     (hf : ∀ i v, (encNat (f i v)).length ≤ P + (encNat v).length) :
@@ -229,61 +207,23 @@ private theorem length_encList_mapIdx_le (l : List ℕ) (f : ℕ → ℕ → ℕ
     simp only [length_encList, List.map_cons, List.sum_cons, List.length_cons] at h₁ h₂ ⊢
     nlinarith
 
-/-- **The register with `c` times the sums subtracted**, from `((p, c, acc), r)`. -/
+/-- **The register with `c` times the sums subtracted**, from `((p, c), r, acc)`. -/
 private theorem subtractList_inSpace :
-    ComputableInSpace
-      (fun q : (ℕ × ℕ × List ℕ) × List ℕ => (q.2.foldl subStep (q.1, 0, [])).2.2)
-      (encPair encSubPar (encList encNat)) (encList encNat)
-      fun q => 8192 * ((encPair encSubPar (encList encNat) q).length +
-        q.2.length * ((encNat q.1.1).length + 1) + 1) := by
-  have hl : (fun q => (encPair encSubPar (encList encNat) q).length) ≼
-      fun q => 2048 * ((encPair encSubPar (encList encNat) q).length +
-        q.2.length * ((encNat q.1.1).length + 1) + 1) := .of_le fun _ => by nlinarith
-  have hlist := (snd encSubPar (encList encNat)).weaken hl
-  have hinit := budget_prod ((fst encSubPar (encList encNat)).weaken hl)
-    (budget_prod (budget_const (encB := encNat) 0 hl)
-      (budget_const (encB := encList encNat) ([] : List ℕ) hl))
-  have hlen (l : List ℕ) : l.length ≤ (encList encNat l).length := by
-    rw [length_encList]
-    induction l with
-    | nil => simp
-    | cons a l ih => simp only [List.length_cons, List.map_cons, List.sum_cons]; omega
-  have hstate (q : (ℕ × ℕ × List ℕ) × List ℕ) (j : ℕ) (hj : j ≤ q.2.length) :
-      (encSubState ((q.2.take j).foldl subStep (q.1, 0, []))).length ≤
-        4 * ((encPair encSubPar (encList encNat) q).length +
-          q.2.length * ((encNat q.1.1).length + 1) + 1) := by
-    obtain ⟨⟨p, c, acc⟩, r⟩ := q
-    rw [foldl_subStep]
-    have h₁ := length_encList_mapIdx_le (r.take j)
-      (fun i v => addMod p v (negMod p (mulMod p c (acc.getD (0 + i) 0)))) (encNat p).length
-      fun i v => length_subElem_le p c v _
-    have h₂ := length_encList_take_le encNat r j
-    have h₃ : (encNat (0 + (r.take j).length)).length ≤ r.length := by
-      rw [length_encNat_eq_size]
-      exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans (by rw [zero_add, List.length_take]; omega)
-    have h₄ := hlen r
-    have h₅ : (r.take j).length * (2 * (encNat p).length) ≤ r.length * (2 * (encNat p).length) :=
-      Nat.mul_le_mul_right _ (by simp)
-    simp only [length_encPair, List.nil_append] at h₁ ⊢
-    nlinarith
-  have h := foldl (encL := encList encNat) (list := fun q : (ℕ × ℕ × List ℕ) × List ℕ => q.2)
-    (step := subStep) hlist hinit subStep_inSpace
-    (Q := fun q => 64 * (2 * (4 * ((encPair encSubPar (encList encNat) q).length +
-      q.2.length * ((encNat q.1.1).length + 1) + 1)) + 1 +
-      (encPair encSubPar (encList encNat) q).length + 1))
-    (B := fun q => 4 * ((encPair encSubPar (encList encNat) q).length +
-      q.2.length * ((encNat q.1.1).length + 1) + 1))
-    (fun q i hi => by
-      have h₁ := hstate q i hi.le
-      have h₂ := length_le_encList_of_mem encNat (List.getElem_mem hi)
-      have h₃ : (encList encNat q.2).length ≤ (encPair encSubPar (encList encNat) q).length := by
-        rw [length_encPair]; omega
-      rw [length_encPair]; dsimp only; omega)
-    (fun q i hi => hstate q i hi)
-  refine (snd' (snd' h)).mono_le fun q => ?_
-  have : (encList encNat q.2).length ≤ (encPair encSubPar (encList encNat) q).length := by
-    rw [length_encPair]; omega
-  omega
+    ∃ K, ComputableInSpace
+      (fun q : (ℕ × ℕ) × List ℕ × List ℕ =>
+        zipFold (fun q v a => some (subElem q v a)) q.1 q.2.1 q.2.2)
+      encSubInput (encList encNat)
+      fun q => K * ((encSubInput q).length + 2 * ((encSubInput q).length +
+        q.2.1.length * ((encNat q.1.1).length + 1)) + 1) := by
+  refine ComputableInSpace.zipFold subElem_inSpace fun ⟨⟨p, c⟩, r, acc⟩ i => ?_
+  rw [zipFold_some]
+  have h₁ := length_encList_mapIdx_le (r.take i)
+    (fun j v => subElem (p, c) v acc[j]?) (encNat p).length fun _ _ => length_subElem_le ..
+  have h₂ := length_encList_take_le encNat r i
+  have h₃ : (r.take i).length * (2 * (encNat p).length) ≤ r.length * (2 * (encNat p).length) :=
+    Nat.mul_le_mul_right _ (by simp)
+  simp only [length_encPair] at h₁ ⊢
+  nlinarith
 
 /-- **Subtracting `c` times the sums of a pass from a register**, within a budget that covers the
 register with every entry as long as the prime. -/
@@ -296,9 +236,11 @@ theorem subtractSums_inSpace {p c : α → ℕ} {t : α → Fin 3} {acc : α →
     (hB : (fun x => ((R x).get (t x)).length * ((encNat (p x)).length + 1)) ≼ Bs) :
     ComputableInSpace (fun x => subtractSums (p x) (c x) (t x) (acc x) (R x)) encIn encRegs Bs
     := by
-  have harg := budget_prod (budget_prod hp (budget_prod hc hacc)) (get_inSpace hR ht)
-  have hsub := budget_comp subtractList_inSpace harg (by
-    refine .const_mul 8192 (((length_le harg).add hB).add (.const 1 _)))
+  have harg := budget_prod (budget_prod hp hc) (budget_prod (get_inSpace hR ht) hacc)
+  obtain ⟨K, hlist⟩ := subtractList_inSpace
+  have hsub := budget_comp hlist harg
+    (.const_mul K (((length_le harg).add (.const_mul 2 ((length_le harg).add hB))).add
+      (.const 1 _)))
   exact (set_inSpace hR ht hsub).of_enc_eq fun x => by rw [subtractSums_eq]
 
 /-- **The bits of a register**, `l.map (· == 1)`, encoded as themselves. -/

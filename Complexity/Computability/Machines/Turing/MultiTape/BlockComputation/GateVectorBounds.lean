@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorCorrect
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Complexity.Foundations.Data.List.Lookup
+import Complexity.Tactic.EncLen
 
 /-!
 # Physical space for complete native gate vectors
@@ -54,8 +55,7 @@ theorem prefixState_encoding_le (params : Params) (values : ℕ → ℕ) (j : �
   simp only [List.length_ofFn] at hl
   have hmul := Nat.mul_le_mul_right (2 * (encNat p).length + 1) hj
   dsimp only at hc hmul
-  simp only [prefixState, encCaller, encParams, length_encPair, callerSpace]
-  omega
+  enc_len [prefixState, encCaller, encParams, callerSpace]
 
 /-- Every clock of one call pays for one suspended vector prefix and one actual callee. -/
 theorem runFrom_one_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s)
@@ -157,8 +157,7 @@ theorem setChunk_encoding_mono (params : QueryGate.Params Interpolation.Context)
       (QueryGate.encParams Interpolation.encContext (setChunk params b)).length := by
   rcases params with ⟨⟨N, block, σ, i, m, previous, stride⟩, parameters, point, limit⟩
   have h := length_encNat_mono hab
-  simp only [setChunk, QueryGate.encParams, Interpolation.encContext, length_encPair]
-  omega
+  enc_len [setChunk, QueryGate.encParams, Interpolation.encContext]
 
 omit [Finite Q] in
 /-- The replay allowance is monotone in the binary chunk-index metadata. -/
@@ -166,8 +165,7 @@ theorem calleeSpace_chunk_mono (N block σ i m stride : ℕ) {a b : ℕ} (hab : 
     Interpolation.calleeSpace k s Q (N, block, σ, i, m, a, stride) ≤
       Interpolation.calleeSpace k s Q (N, block, σ, i, m, b, stride) := by
   have h := length_encNat_mono hab
-  simp only [Interpolation.calleeSpace, SupplierChunk.encContext, length_encPair]
-  omega
+  enc_len [Interpolation.calleeSpace, SupplierChunk.encContext]
 
 /-- The complete selected-field vector is returned with a bound at every physical clock. -/
 theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]

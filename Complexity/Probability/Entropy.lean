@@ -13,6 +13,7 @@ public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Analysis.Convex.Jensen
 
 /-!
@@ -63,8 +64,7 @@ noncomputable def surprisal (p : PMF α) (a : α) : ℝ := -Real.logb 2 (p a).to
 /-- Information content is nonnegative, including the chosen value at null outcomes. -/
 theorem surprisal_nonneg (p : PMF α) (a : α) : 0 ≤ surprisal p a := by
   apply neg_nonneg.mpr
-  exact Real.logb_nonpos (by norm_num) ENNReal.toReal_nonneg
-    (by simpa using ENNReal.toReal_mono ENNReal.one_ne_top (p.coe_le_one a))
+  exact Real.logb_nonpos (by norm_num) ENNReal.toReal_nonneg (toReal_apply_le_one p a)
 
 /-- A lower bound on the outcome's probability bounds its information content. -/
 theorem surprisal_le_of_mass_ge (p : PMF α) (a : α) {bound : ℝ}

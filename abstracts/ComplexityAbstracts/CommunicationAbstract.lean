@@ -14,8 +14,9 @@ Alice and Bob each hold an `n`-bit string and exchange bits to compute a joint a
 Disjointness and parity of the intersection both require linearly many communicated bits,
 even with shared randomness and error at most one third on every input pair.
 
-Local computation is free. Cost is the worst case over inputs and coins; protocols may be
-chosen separately at each input length. Both players learn the answer, so exact deterministic
+Local computation is free. Cost bounds the depth of every tree in the support, including
+branches unreachable by any input; protocols may be chosen separately at each input length.
+Both players learn the answer, so exact deterministic
 equality costs `n + 1` bits for `n > 0`: Alice sends her input and Bob replies with the answer.
 
 The only allowlisted model is the binary protocol tree described below. Cost and per-input
@@ -43,7 +44,8 @@ abbrev Protocol (n : ℕ) := Cslib.Communication.Protocol (Input n) (Input n) Bo
 /-- Follow the sent bits from the root to a leaf and return its announced answer. -/
 def answer {n : ℕ} (p : Protocol n) (x y : Input n) : Bool := p.run x y
 
-/-- Tree depth: leaves cost zero, and sending one bit costs one plus the larger branch cost. -/
+/-- Tree depth: leaves cost zero, and sending one bit costs one plus the larger branch cost,
+including branches unreachable by any input. -/
 def cost {n : ℕ} (p : Protocol n) : ℕ := p.depth
 
 /-- Shared randomness selects a deterministic tree independently of the inputs.
