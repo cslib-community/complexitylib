@@ -47,7 +47,7 @@ The package is `cslib-frontier`; imports start with `CslibFrontier.`. Most decla
 | `guide/` | Explanatory chapters with Lean examples |
 | `results/` and `CslibFrontierResults/` | Checked inventory of named results and their sources, linked to the API documentation |
 | `ROADMAP.md` | Outstanding directions and incomplete endpoints |
-| `UPSTREAM.md` and source markers | CSLib coordination and local-copy status |
+| `-- upstream:` markers and `CONTRIBUTING.md` (Upstreaming) | Local-copy status and live CSLib/Mathlib coordination |
 
 Import a topic module or tactic module first. `import CslibFrontier` imports the entire library and is usually unnecessary for a small client. The [architecture reference](../design-and-assurance/architecture.md) explains the layers.
 

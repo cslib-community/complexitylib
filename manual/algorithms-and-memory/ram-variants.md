@@ -36,7 +36,7 @@ The local documentation maps the real instance to Erickson–van der Hoog–Milt
 
 ## Known Limitations
 
-The source survey does not establish a uniform finite encoding of exact real inputs, nor a native certificate for every algebraic interpretation. It does not identify the natural RAM, generic RAM and upstream typed-bank RAM by naming alone. `UPSTREAM.md` records coordination with an upstream typed RAM design; no local semantic identification with that design was found in the inspected sources.
+The source survey does not establish a uniform finite encoding of exact real inputs, nor a native certificate for every algebraic interpretation. It does not identify the natural RAM, generic RAM and upstream typed-bank RAM by naming alone. An upstream typed-bank RAM proposal (CSLib #1158) was closed unmerged on 2026-11-02; no local semantic identification with that design was found in the inspected sources.
 
 [complexitylib]: ../sources.md#complexitylib
 [cookreckhow73]: ../sources.md#cookreckhow73

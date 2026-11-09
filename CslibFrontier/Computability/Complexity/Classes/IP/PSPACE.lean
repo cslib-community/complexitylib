@@ -559,12 +559,8 @@ number of coin values: completeness `2 / 3` and the optimal prover give more tha
 theorem mem_iff_two_pow_lt_value {V : α → WordOracleComp Unit Bool} {A : Set α}
     {M : MultiTapePTM k Bool Control Unit} {fuel : α → ℕ}
     (hV : ∀ a (S : Type) (oracle : Unit × List Bool → StateT S PMF (List Bool)) s,
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (encBool <$> V a)).run s =
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (M.runOracle (fuel a) (enc a))).run s)
+      ProbOracleComp.runWith oracle (encBool <$> V a) s =
+      ProbOracleComp.runWith oracle (M.runOracle (fuel a) (enc a)) s)
     (hA : IsInteractiveProof V A (2 / 3) (1 / 3)) (a : α) :
     a ∈ A ↔ 2 ^ fuel a < 2 * value (coinFamily M (fuel a) (enc a)) (fuel a) (fuel a) [] := by
   set t := fuel a

@@ -303,10 +303,7 @@ private theorem computableInPolyTime_countTake {γ : Type} {encIn : γ ↪ List 
       (hg.comp (ComputableInPolyTime.fst _ _))
   have h := ComputableInPolyTime.countPWithInput (test := fun x a => decide (a = g x)) htake htest
   refine h.of_enc_eq fun x => ?_
-  have htk : (groups x).take (min (groups x).length (v x)) = (groups x).take (v x) := by
-    rcases le_total (groups x).length (v x) with hle | hle
-    · rw [min_eq_left hle, List.take_length, List.take_of_length_le hle]
-    · rw [min_eq_right hle]
+  have htk : (groups x).take (min (groups x).length (v x)) = (groups x).take (v x) := by grind
   rw [htk, List.count]
   congr 2
 

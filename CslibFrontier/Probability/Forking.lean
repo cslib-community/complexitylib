@@ -164,8 +164,7 @@ private theorem acceptAt_eq_once (first : PMF S) (A : S → (Fin q → H) → Op
         (fun x t r => decide ((A x.1 (glue j x.2 t r)).1 = some j)) := by
   simp only [Rewinding.once, firstAt, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext s
+  congr 1 with s : 1
   exact (bind_glue j fun h => PMF.pure (decide ((A s h).1 = some j))).symm
 
 variable [DecidableEq H]
@@ -184,20 +183,16 @@ private theorem forkAt_eq_twice (first : PMF S) (A : S → (Fin q → H) → Opt
         (fun x t r => decide ((A x.1 (glue j x.2 t r)).1 = some j)) := by
   simp only [Rewinding.twice, firstAt, Probability.PMF.monad_bind_eq_bind,
     Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext s
+  congr 1 with s : 1
   rw [← bind_glue j]
-  congr 1
-  funext b
-  congr 1
-  funext t
+  congr 1 with b : 1
+  congr 1 with t : 1
   conv_lhs => enter [2, r]; rw [← bind_glue j]
   simp only [splice_glue, glue_self, PMF.bind_const]
   rw [PMF.bind_comm]
   congr 1
   funext t'
-  congr 1
-  funext r
+  congr 1 with r : 1
   congr 1
   funext r'
   congr 1

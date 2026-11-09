@@ -57,6 +57,8 @@ sizes `n₁`, `n₂`, its scratch size is `l + max n₁ n₂`; the factor remain
 component factor. The original safe-domain and valid-history obligations still apply at the
 actual intermediate state. `Witness.bind_execWithin` can tighten the two component execution
 budgets on that same code and add them, retaining the full memory, output and register frame.
+A new sequential constructor over the same `bindSharedLeft`/`bindSharedRight` layout gets both
+stages' register premises from `bindShared_layout`, as `RealizesRand.Witness.bind` does.
 
 The complete checked [dependent-read client](../../CslibFrontierTests/WordRAMRealizationBindScratch.lean)
 reads a pointer and then its target using one supplied emitter. Its generic Backend has five

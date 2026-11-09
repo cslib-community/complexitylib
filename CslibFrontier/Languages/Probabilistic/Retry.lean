@@ -31,15 +31,10 @@ When one run fails with probability `q` (under answer distributions `h`, as in
   (`OracleComp.expectedCost_retry_le_two_mul`): the expected number of runs is at most `2`.
 
 `OracleComp.pi` runs a family of programs one after the other and collects their results. Over an
-arbitrary interface its possible results are coordinatewise (`OracleComp.mem_supportWith_pi_iff`),
-its expected cost is the sum of the expected costs (`OracleComp.expectedCost_pi`), and the
-probability that some coordinate is bad is at most the sum of the probabilities
-(`OracleComp.toOuterMeasure_evalWith_pi_exists_le`, a union bound). These complement the
-`ProbComp` statements of `CslibFrontier.Languages.Probabilistic.Vector`.
-`ProbComp.mem_support_pi_iff`
-there is the special case of `OracleComp.mem_supportWith_pi_iff` for uniform replies, with the same
-proof. Deriving it from the general lemma would make `Vector` import `Semantics`, so it is left as a
-follow-up.
+arbitrary interface its expected cost is the sum of the expected costs
+(`OracleComp.expectedCost_pi`), and the probability that some coordinate is bad is at most the sum
+of the probabilities (`OracleComp.toOuterMeasure_evalWith_pi_exists_le`, a union bound). These
+complement the support and law statements of `CslibFrontier.Languages.Probabilistic.Vector`.
 
 ## Main definitions
 
@@ -53,9 +48,8 @@ follow-up.
   `P(a) (1 + q + ⋯ + q ^ (fuel - 1))`, where `P(a)` is the probability that one run returns `a`.
 * `Cslib.OracleComp.expectedCost_retry`, `Cslib.OracleComp.expectedCost_retry_le_two_mul`: the
   expected cost of the loop is a geometric sum, at most twice a run when `q ≤ 1 / 2`.
-* `Cslib.OracleComp.mem_supportWith_pi_iff`, `Cslib.OracleComp.expectedCost_pi`,
-  `Cslib.OracleComp.toOuterMeasure_evalWith_pi_exists_le`: support, expected cost and union bound
-  for `OracleComp.pi`.
+* `Cslib.OracleComp.expectedCost_pi`, `Cslib.OracleComp.toOuterMeasure_evalWith_pi_exists_le`:
+  expected cost and union bound for `OracleComp.pi`.
 -/
 
 public section
@@ -252,29 +246,6 @@ end Partial
 section Pi
 
 variable {m : ℕ} {β : Fin m → Type v}
-
-/-- A tuple is a possible result of `pi programs` exactly when each coordinate is a possible
-result of its program. -/
-theorem mem_supportWith_pi_iff (possible : (q : ι) → Set (spec q))
-    (programs : (i : Fin m) → OracleComp spec (β i)) (r : (i : Fin m) → β i) :
-    r ∈ supportWith possible (pi programs) ↔ ∀ i, r i ∈ supportWith possible (programs i) := by
-  induction m with
-  | zero =>
-    have hr : r = fun i => i.elim0 := funext fun i => i.elim0
-    subst hr
-    simp
-  | succ m ih =>
-    simp only [pi_succ, mem_supportWith_bind_iff, mem_supportWith_map_iff, ih]
-    constructor
-    · rintro ⟨first, hfirst, rest, hrest, rfl⟩ i
-      refine Fin.cases ?_ ?_ i
-      · simpa using hfirst
-      · intro j
-        simpa using hrest j
-    · intro hr
-      refine ⟨r 0, hr 0, fun j => r j.succ, fun j => hr j.succ, ?_⟩
-      ext i
-      exact Fin.cases rfl (fun _ => rfl) i
 
 variable (h : (q : ι) → PMF (spec q))
 

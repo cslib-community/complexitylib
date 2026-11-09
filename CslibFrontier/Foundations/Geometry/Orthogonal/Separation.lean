@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import CslibFrontier.Foundations.Geometry.Orthogonal
+public import CslibFrontier.Foundations.Geometry.Orthogonal.Simple
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -32,12 +32,15 @@ that an incidence route avoids a nonincident vertex.
 ## Main results
 
 * `Cslib.Orthogonal.segmentContactCheck_sound`: every real intersection is an allowed grid point.
+* `Cslib.Orthogonal.isSimple_of_segmentContactCheck`: consecutive-bend checks prove simplicity.
 * `Cslib.Orthogonal.disjoint_support_of_routeBoxDisjoint`: disjoint route boxes have disjoint
   continuous supports.
 * `Cslib.Orthogonal.routeContactCheck_sound`: the corresponding certificate for route supports.
 * `Cslib.Orthogonal.disjoint_support_of_routeContactCheck`: an empty contact list proves
   disjointness.
 * `Cslib.Orthogonal.not_mem_support_of_routeContactCheck`: a singleton check excludes a vertex.
+* `Cslib.Orthogonal.routeContactCheck_ite_sound`: a conditional single-contact check identifies
+  the only possible contact.
 
 ## References
 
@@ -111,6 +114,22 @@ theorem segmentContactCheck_sound {allowed : List Point} {a b c d : Point}
     · change p.2 = (ly : ℝ)
       rw [← hyy] at hy
       exact le_antisymm hy.2 hy.1
+
+/-- A route without repeated listed points is simple when every pair of distinct segments passes
+the contact check whose only allowed contact is their consecutive shared bend. -/
+theorem isSimple_of_segmentContactCheck {r : Route} (hnodup : r.Nodup)
+    (h : ∀ a ∈ r.consecutivePairs, ∀ b ∈ r.consecutivePairs, a ≠ b →
+      segmentContactCheck (consecutiveContact a b) a.1 a.2 b.1 b.2 = true) :
+    IsSimple r := by
+  refine ⟨hnodup, fun a ha b hb hne p hp hq => ?_⟩
+  obtain ⟨q, hq, hpq⟩ := segmentContactCheck_sound (h a ha b hb hne) hp hq
+  unfold consecutiveContact at hq
+  split_ifs at hq with hab hba
+  · rw [List.mem_singleton.mp hq] at hpq
+    exact ⟨Or.inr hpq, Or.inl (hpq.trans (congrArg realPoint hab))⟩
+  · rw [List.mem_singleton.mp hq] at hpq
+    exact ⟨Or.inl hpq, Or.inr (hpq.trans (congrArg realPoint hba.symm))⟩
+  · exact False.elim (List.not_mem_nil hq)
 
 /-- Segment pieces for a route, including degenerate pieces for isolated listed points. -/
 def segmentPieces (r : Route) : List (Point × Point) :=
@@ -263,5 +282,14 @@ theorem not_mem_support_of_routeContactCheck {r : Route} {q : Point}
   intro hr
   obtain ⟨p, hp, _⟩ := routeContactCheck_sound h hr (Or.inl ⟨q, by simp, rfl⟩)
   exact List.not_mem_nil hp
+
+/-- A check that allows the single contact `q` exactly when `P` holds: any real contact proves
+`P` and is `q`. This is the usual form of an access-to-terminal certificate. -/
+theorem routeContactCheck_ite_sound {P : Prop} [Decidable P] {q : Point} {r s : Route}
+    (h : routeContactCheck (if P then [q] else []) r s = true) {p : ℝ × ℝ}
+    (hr : p ∈ support r) (hs : p ∈ support s) : P ∧ p = realPoint q := by
+  obtain ⟨q', hq', hpq⟩ := routeContactCheck_sound h hr hs
+  obtain ⟨hP, hq'⟩ := List.mem_ite_nil_right.mp hq'
+  exact ⟨hP, List.eq_of_mem_singleton hq' ▸ hpq⟩
 
 end Cslib.Orthogonal

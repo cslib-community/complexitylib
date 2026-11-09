@@ -484,22 +484,19 @@ theorem doubleCoverage_costFrom_le {n : Nat} (s s_off : Fin (n + 1) → Int) (re
     2 * (doubleCoverage n).costFrom s reqs ≤
       2 * (n + 1) * (problem NatMetric.line (n + 1)).scheduleCost s_off reqs offStates +
         (2 * (n + 1) * matchCost NatMetric.line s s_off + pairSum NatMetric.line s) := by
-  induction reqs generalizing s s_off offStates with
+  induction hv using Problem.ValidSchedule.induction (P := problem NatMetric.line (n + 1))
+    generalizing s with
   | nil => exact (Nat.mul_zero 2).symm ▸ Nat.zero_le _
-  | cons r rs ih =>
-    cases offStates with
-    | nil => cases hv
-    | cons o' os =>
-      obtain ⟨hstep, hrest⟩ := hv
-      have hih := ih (dcStep s r) o' os hrest
-      have hamort := dcStep_amortized_offline s s_off o' hstep
-      change 2 * (moveCost NatMetric.line s (dcStep s r) +
-          (doubleCoverage n).costFrom (dcStep s r) rs) ≤
-        2 * (n + 1) * (moveCost NatMetric.line s_off o' +
-          (problem NatMetric.line (n + 1)).scheduleCost o' rs os) + _
-      generalize 2 * (n + 1) = K at hih hamort ⊢
-      rw [Nat.mul_add, Nat.mul_add]
-      omega
+  | cons s_off r rs o' os hstep _ ih =>
+    have hih := ih (dcStep s r)
+    have hamort := dcStep_amortized_offline s s_off o' hstep
+    change 2 * (moveCost NatMetric.line s (dcStep s r) +
+        (doubleCoverage n).costFrom (dcStep s r) rs) ≤
+      2 * (n + 1) * (moveCost NatMetric.line s_off o' +
+        (problem NatMetric.line (n + 1)).scheduleCost o' rs os) + _
+    generalize 2 * (n + 1) = K at hih hamort ⊢
+    rw [Nat.mul_add, Nat.mul_add]
+    omega
 
 /-- **Chrobak–Karloff–Payne–Vishwanathan.** With `k = n + 1` servers on the line, Double
 Coverage from `s₀` costs at most `k` times any valid offline schedule from any `s_off`, plus

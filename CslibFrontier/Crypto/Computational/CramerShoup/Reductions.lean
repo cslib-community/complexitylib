@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Certified PPT Reductions and Probabilistic Operations for Cramer–Shoup
@@ -952,8 +953,7 @@ def decodeCramerShoupSK (w : List Bool) : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ 
 theorem decodeCramerShoupSK_encCramerShoupSK (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
     decodeCramerShoupSK (encCramerShoupSK sk) = sk := by
   rcases sk with ⟨⟨s, t⟩, ⟨⟨s₁, t₁⟩, ⟨s₂, t₂⟩⟩⟩
-  have hbits (n : ℕ) : ofBits n.bits = n := Nat.foldr_bit_bits n
-  simp [encCramerShoupSK, decodeCramerShoupSK, encPair_apply, encNat_apply, hbits,
+  simp [encCramerShoupSK, decodeCramerShoupSK, encPair_apply, encNat_apply,
     unframe_frame_append, dropFrame_frame_append]
 
 private theorem computableTidilyInPolyTime_decodeCramerShoupSK :

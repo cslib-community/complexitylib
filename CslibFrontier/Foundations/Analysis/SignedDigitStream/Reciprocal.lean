@@ -129,8 +129,7 @@ theorem abs_tail_recipCutoff_le {x : ℕ → ℤ} (hx : IsSignedStream x) (t : �
     unfold recipCutoff
     calc (128 : ℝ) = (2 : ℝ) ^ (7 : ℕ) := by norm_num
       _ ≤ (2 : ℝ) ^ (t / 2 + 7) := pow_le_pow_right₀ (by norm_num) (by omega)
-  have hdiv : (6 : ℝ) / (2 : ℝ) ^ recipCutoff t ≤ 6 / 128 :=
-    div_le_div_of_nonneg_left (by norm_num) (by norm_num) hpow
+  have hdiv : (6 : ℝ) / (2 : ℝ) ^ recipCutoff t ≤ 6 / 128 := by gcongr
   linarith
 
 theorem recipPrefixRat_mem_Icc {x : ℕ → ℤ} (hx : IsSignedStream x)
@@ -295,9 +294,7 @@ private theorem abs_recipTaylor_remainder_le {x : ℕ → ℤ} (hx : IsSignedStr
     calc (2 : ℝ) ^ t * e ^ 2
         ≤ (2 : ℝ) ^ t * (36 / (2 : ℝ) ^ (2 * recipCutoff t)) :=
           mul_le_mul_of_nonneg_left he_sq (by positivity)
-      _ ≤ (2 : ℝ) ^ t * (36 / (2 : ℝ) ^ (t + 13)) :=
-          mul_le_mul_of_nonneg_left
-            (div_le_div_of_nonneg_left (by norm_num) (by positivity) hpow_le) (by positivity)
+      _ ≤ (2 : ℝ) ^ t * (36 / (2 : ℝ) ^ (t + 13)) := by gcongr
       _ = 36 / (2 : ℝ) ^ (13 : ℕ) := by
           rw [pow_add]
           field_simp

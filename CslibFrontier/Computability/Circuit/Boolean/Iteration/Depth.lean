@@ -243,17 +243,9 @@ theorem checkpoint_depth_circuit (c : Circuit signature n n) (L : ℕ) (hL : 0 <
       (∀ x, word (out.eval interpretation x) =
         BitVec.ofNat (n + 2) (transientDepth (c.eval interpretation) x)) ∧
       out.size ≤ 50000 * powerBudget n c.size (2 ^ n) L := by
-  classical
-  obtain ⟨H, hcard, hcover⟩ := exists_checkpoints_finite (c.eval interpretation) hL
-  let cp : Fin H.card → BitString n := fun j => (H.equivFin.symm j).val
-  have hcp : Function.Injective cp := fun _ _ h => H.equivFin.symm.injective (Subtype.ext h)
-  have hcov (x : BitString n) : Repeats (c.eval interpretation) x L ∨
-      ∃ t < 2 * L, ∃ j, (c.eval interpretation)^[t] x = cp j := by
-    rcases hcover x with hr | ⟨t, ht, hm⟩
-    · exact Or.inl hr
-    · exact Or.inr ⟨t, ht, H.equivFin ⟨_, hm⟩, by simp [cp]⟩
+  obtain ⟨M, cp, hcp, hM, hcov⟩ := exists_checkpoints_fin (c.eval interpretation) hL
   obtain ⟨out, ho, hs⟩ := depth_from_checkpoints c L hL hLN cp hcp hcov
-  exact ⟨out, ho, hs.trans (depthCost_le _ _ _ _ hL hLN (by simpa using hcard))⟩
+  exact ⟨out, ho, hs.trans (depthCost_le _ _ _ _ hL hLN (by simpa using hM))⟩
 
 /-- **Square-root transient depths.** Some circuit of size at most
 `150000 * optimizedBudget n c.size (2 ^ n)` computes the transient depth of every state in

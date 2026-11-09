@@ -138,8 +138,7 @@ example (fresh : Bool) (n : ℕ) :
     eufCmaGame scheme (explicitForger fresh) := by
   rw [eufCmaGame_eq_worldGame]
   simp only [worldGame, scheme, explicitForger, PMF.monad_bind_eq_bind, PMF.pure_bind]
-  congr 2
-  funext verified msig pairs
+  congr 2 with verified msig pairs : 3
   simp only [List.contains_eq_mem]
   congr 2
   exact decide_eq_decide.mpr Iff.rfl

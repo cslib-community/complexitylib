@@ -156,12 +156,6 @@ theorem eval_bitExprWith {a : EncodedStructure} (ha : v.WellFormed a) {regs : Li
   simp only [bitExprWith, eval_add, eval_mul, eval_const, eval_startExpr ha h0 hi,
     eval_tupleExprWith values h0 x hx]
 
-private theorem eval_bitExpr {a : EncodedStructure} (ha : v.WellFormed a) {regs : List ℕ}
-    (h0 : regs.getD 0 0 = a.1) {i : ℕ} (hi : i ≤ v.count) {l : ℕ} (vars : Fin l → ℕ)
-    (x : Fin l → Fin a.1) (hx : ∀ m, regs.getD (vars m) 0 = x m) :
-    (bitExpr v i vars).eval regs = tableStart a i + 2 * tupleIndex x + 1 :=
-  eval_bitExprWith ha h0 hi _ x hx
-
 /-! ### Checking the shape of the input -/
 
 section Shape
@@ -578,6 +572,28 @@ private theorem length_formulaCode {α : Type*} (fv : α → ℕ) (base : ℕ) {
 
 variable {v}
 
+/-- **Reading a relation table.** In a well-formed input, a read instruction at the table bit of
+`R` for computed values `x` branches to `T` exactly when `R` holds at `x` in the decoded structure.
+This is the relation case of both the order-free and the ordered atomic compilers. -/
+theorem reaches_read_bitExprWith {a : EncodedStructure} (ha : v.WellFormed a) {r : ℕ}
+    (R : L.Relations r) {values : Fin r → Expr} {x : Fin r → Fin a.1} {P : CounterProgram}
+    {b T F B : ℕ} {regs : List ℕ} (h0 : regs.getD 0 0 = a.1) (hB : ∀ y ∈ regs, y ≤ B)
+    (hinstr : P.instr b = .read (bitExprWith v (v.index ⟨_, R⟩) values) T F F)
+    (hx : ∀ m, (values m).eval regs = x m) :
+    ∃ res : Bool, (res = true ↔ (letI := v.decode a; RelMap R x)) ∧
+      P.Reaches (encStructure a) (P.Running B) (b, regs) (if res then T else F, regs) := by
+  have hi : v.index ⟨_, R⟩ < a.2.length := ha.1 ▸ v.index_lt _
+  have htab : v.table a ⟨_, R⟩ = a.2[v.index ⟨_, R⟩] := List.getD_eq_getElem _ _ hi
+  have hj : tupleIndex x < a.2[v.index ⟨_, R⟩].length := by
+    rw [← htab, ha.length_table]
+    exact tupleIndex_lt x
+  refine ⟨a.2[v.index ⟨_, R⟩][tupleIndex x], ?_, Reaches.read hinstr hB ?_⟩
+  · simp only [relMap_decode, htab]
+    rw [List.getD_eq_getElem _ _ hj]
+  · rw [eval_bitExprWith ha h0 (v.index_lt ⟨_, R⟩).le values x hx,
+      getElem?_encStructure_tableStart_two_mul_add_one hi hj]
+    cases a.2[v.index ⟨_, R⟩][tupleIndex x] <;> exact Reaches.refl _
+
 /-- The order-free handlers implement their actual table/variable semantics. -/
 theorem atomicCompiler_correct {a : EncodedStructure} (ha : v.WellFormed a)
     {α : Type*} (fv : α → ℕ) (base : ℕ) (val : α → Fin a.1) :
@@ -588,21 +604,7 @@ theorem atomicCompiler_correct {a : EncodedStructure} (ha : v.WellFormed a)
   · intro k regs xs _ hv hxs t
     exact getD_termReg hv hxs t
   · intro k r R ts P b T F B regs xs h0 hv hxs hB hinstr
-    set x : Fin r → Fin a.1 := fun m => (ts m).realize (Sum.elim val xs)
-    have hi : v.index ⟨_, R⟩ < a.2.length := ha.1 ▸ v.index_lt _
-    have htab : v.table a ⟨_, R⟩ = a.2[v.index ⟨_, R⟩] := List.getD_eq_getElem _ _ hi
-    have hj : tupleIndex x < a.2[v.index ⟨_, R⟩].length := by
-      rw [← htab, ha.length_table]
-      exact tupleIndex_lt x
-    have hpos := eval_bitExpr ha h0 (v.index_lt ⟨_, R⟩).le
-      (fun m => termReg fv base (ts m)) x (fun m => getD_termReg hv hxs (ts m))
-    refine ⟨a.2[v.index ⟨_, R⟩][tupleIndex x], ?_, ?_⟩
-    · change _ ↔ RelMap R x
-      simp only [relMap_decode, htab]
-      rw [List.getD_eq_getElem _ _ hj]
-    · refine Reaches.read hinstr hB ?_
-      rw [hpos, getElem?_encStructure_tableStart_two_mul_add_one hi hj]
-      cases a.2[v.index ⟨_, R⟩][tupleIndex x] <;> exact Reaches.refl _
+    exact reaches_read_bitExprWith ha R h0 hB hinstr fun m => getD_termReg hv hxs (ts m)
 
 /-- **The compiled code of a formula decides its truth** in the decoded structure of a well-formed
 input: from the code of `φ` at `b`, with the cardinality in register `0`, the values `val` of the

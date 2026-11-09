@@ -10,6 +10,21 @@ Copies and memory moves rely on a bounded-state invariant rather than rechecking
 
 Structured [CslibFrontier/Computability/WordRAM/Structured.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Structured.lean) has operations, sequencing, branches and loops. Its `Exec` relation counts actual branch/jump overhead, and assembly preserves exact counts. Hoare and potential rules prove executions of this code; they do not treat a source-language loop as one machine instruction.
 
+## Running concrete programs in tests
+
+`Code.eval` runs a structured program on concrete data, and `Exec.of_eval` turns a successful
+result into an execution. It keeps registers and memory as `Function.update` chains, so a compiled
+`#eval` or `#guard` of a run takes time quadratic in its length. For a run longer than a few
+thousand instructions, import
+[`Structured.FastEval`](../../CslibFrontier/Computability/WordRAM/Structured/FastEval.lean) in the
+test file. Its proved `@[csimp]` lemma makes compiled code use an array-backed interpreter, and the
+observations do not change. For example,
+[`NativeChanHeVisitor`](../../CslibFrontierTests/NativeChanHeVisitor.lean) drops from about nine
+minutes to under ten seconds. The import affects only compiled evaluation. `decide` and `rfl`
+still reduce `Code.eval` in the kernel. When such a check is slow in its tactic step rather than in
+type checking (see `set_option profiler true`), `decide +kernel` skips the elaborator's evaluation.
+Keep the library modules that define programs free of this import, so that it stays a leaf.
+
 ## Proving a constant-cost counting loop
 
 Import [`CountingLoop`](../../CslibFrontier/Computability/WordRAM/CountingLoop.lean) for a native
@@ -50,6 +65,16 @@ existing separate rules. Missing word fits, alias conditions or a mismatched rou
 proof. Open the complete ordinary-import
 [call examples](../../CslibFrontierTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
+
+`wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
+also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
+round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
+`f a`, or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates.
+Other names stay unread. Memory passed whole to a definition, as in `swapMem y.mem i j`, becomes
+`Function.update`; reads at an address still go through the discharger. `Data.set_set` drops an
+overwritten register. The
+[symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each case,
+including names left unread.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)

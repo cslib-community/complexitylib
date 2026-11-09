@@ -4,13 +4,15 @@ cslib-frontier is the frontier formalization library for **cslib** (`leanprover/
 library covering computer science generally, including algorithms and data structures,
 complexity, cryptography, logic and models of computation. Library modules must be upstreamable
 unchanged apart from rewriting `CslibFrontier.` → `Cslib.`. General mathematics destined for Mathlib
-and local project scaffolding are documented exceptions; see `UPSTREAM.md` and the source markers.
+and local project scaffolding are documented exceptions, recorded in each module's `-- upstream:`
+marker.
 
 Read the pinned cslib `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md` in
 `.lake/packages/cslib` (or a checkout at the same revision). Follow its mathematical, API and
 style conventions. This repository's workflow, validation and test layout are defined here and
 in `CONTRIBUTING.md`; when submitting upstream, follow that repository's current process.
-`ROADMAP.md` records outstanding directions; `UPSTREAM.md` records coordination decisions.
+`ROADMAP.md` records outstanding directions; `CONTRIBUTING.md` (Upstreaming) lists live upstream
+coordination threads.
 
 At the start of work and when resuming, read the current checkout's instructions. Old task text
 and copied policy snapshots may describe superseded decisions. Surface material conflicts with
@@ -127,8 +129,8 @@ tooling.
 - Resolve ownership and dependency conflicts, and help stale tasks reach a useful next step.
 - Require review of both the Operator's Manual and the Agent Operator's Manual, including any
   reason that no edit is needed. Make this part of reviewing and integrating each change.
-  Check affected `ROADMAP.md`, the [results inventory](results/README.md), `UPSTREAM.md` and other
-  documentation.
+  Check affected `ROADMAP.md`, the [results inventory](results/README.md), upstream markers, the
+  coordination threads in `CONTRIBUTING.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
 - Merge only with required validation and independent review of the current revision. Reviewers
   queue the heads they approve ([Approve and queue](#approve-and-queue)); coordinators queue any
@@ -324,8 +326,8 @@ requirement above; documentation-only checks need not invoke quick mode.
 4. **Every module publicly imports `Cslib.Init`** (through `CslibFrontier.Init`); the test driver
    runs `checkInitImports`.
 5. **Reuse upstream first.** Before defining anything, search cslib (`.lake/packages/cslib/Cslib`,
-   or the local `../cslib/Cslib` checkout) and the
-   in-flight PRs recorded in source markers, and consult `UPSTREAM.md`. A thin local copy of an
+   or the local `../cslib/Cslib` checkout) and the in-flight PRs recorded in source markers, and
+   consult the coordination threads in `CONTRIBUTING.md` (Upstreaming). A thin local copy of an
    unmerged upstream PR (or an unsubmitted branch of an upstream contributor) is allowed at the
    mirrored path, keeping the
    original authors and declaration names, marked `-- upstream: submitted #N @SHA` (or
@@ -349,10 +351,11 @@ fixing breakage in the same change; update it within another task when that task
 upstream code or removes a merged copy. Merely inspecting upstream does not require a pin bump.
 
 Run `scripts/upstream_sync.py` during synchronization work. Inspect changed, merged or closed
-upstream PRs against source markers and `UPSTREAM.md`; preserve documented local adaptations
-and contributor work rather than blindly replacing copies. When adopting merged work, advance
+upstream PRs against source markers, `-- vendored:` comments and module docstrings; preserve
+documented local adaptations and contributor work rather than blindly replacing copies. When adopting merged work, advance
 the pin past it and remove the superseded local copy together. Record unresolved decisions in
-`UPSTREAM.md` or a linked task instead of expanding an unrelated PR.
+the module's marker or docstring, the coordination threads in `CONTRIBUTING.md`, or a linked issue
+instead of expanding an unrelated PR.
 
 ## Proof hygiene
 
@@ -476,8 +479,9 @@ Merge `main` into a PR only when it conflicts with `main`, needs a change on `ma
 lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
 does not require branches to be up to date, so refreshing an approved PR only replaces the approved
 head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
-[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
-`merge=union` result, which keeps deleted imports and can misorder added ones.
+[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them and then check them
+with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
+never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
