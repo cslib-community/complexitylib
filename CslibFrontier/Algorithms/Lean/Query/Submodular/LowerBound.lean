@@ -181,91 +181,41 @@ private def highAdv (E : Finset α) (e : α) : Finset α → ℝ :=
 private def lowAdv (E : Finset α) (e : α) : Finset α → ℝ :=
   cappedModular E (fun x => if x = e then 59 else 100) 159
 
-omit [DecidableEq α] in
-private theorem exists_other_of_mem_of_ne_singleton {I : Finset α} {e : α}
-    (heI : e ∈ I) (hne : I ≠ {e}) : ∃ y ∈ I, y ≠ e := by
-  by_contra h
-  push Not at h
-  apply hne
-  ext y
-  simp only [Finset.mem_singleton]
-  exact ⟨fun hy => h y hy, fun hy => hy ▸ heI⟩
-
-omit [DecidableEq α] in
-private theorem sum_pair_le_of_nonneg {I : Finset α} {w : α → ℝ}
-    (hw : ∀ x ∈ I, 0 ≤ w x) {e y : α} (he : e ∈ I) (hy : y ∈ I) (hne : y ≠ e) :
-    w e + w y ≤ ∑ x ∈ I, w x := by
-  classical
-  have hsub : ({e, y} : Finset α) ⊆ I := by
-    intro z hz
-    simp only [Finset.mem_insert, Finset.mem_singleton] at hz
-    rcases hz with rfl | rfl <;> assumption
-  have he_not : e ∉ ({y} : Finset α) := by simp [hne.symm]
-  calc
-    w e + w y = ∑ x ∈ ({e, y} : Finset α), w x := by simp [Finset.sum_insert he_not]
-    _ ≤ ∑ x ∈ I, w x := Finset.sum_le_sum_of_subset_of_nonneg hsub fun x hx _ => hw x hx
+/-- Two capped-modular functions whose weights differ only at `e` agree on every `S` whose
+intersection with `E` is not `{e}`, once any two elements of `E` including `e` reach the cap under
+both weightings. -/
+private theorem cappedModular_eq_of_inter_ne {E S : Finset α} {e : α} {w w' : α → ℝ} {cap : ℝ}
+    (hne : S ∩ E ≠ {e}) (hw : ∀ x, 0 ≤ w x) (hw' : ∀ x, 0 ≤ w' x) (hwe : ∀ x, x ≠ e → w x = w' x)
+    (hcap : ∀ y, y ≠ e → cap ≤ w e + w y) (hcap' : ∀ y, y ≠ e → cap ≤ w' e + w' y) :
+    cappedModular E w cap S = cappedModular E w' cap S := by
+  rw [cappedModular_eq_min_sum_inter, cappedModular_eq_min_sum_inter]
+  by_cases he : e ∈ S ∩ E
+  · -- `S ∩ E` holds `e` and another element `y`, so both sums reach the cap.
+    obtain ⟨y, hy, hye⟩ := ((Finset.nontrivial_iff_ne_singleton he).2 hne).exists_ne e
+    rw [min_eq_right ((hcap y hye).trans
+        (Finset.add_le_sum (fun x _ => hw x) he hy hye.symm)),
+      min_eq_right ((hcap' y hye).trans
+        (Finset.add_le_sum (fun x _ => hw' x) he hy hye.symm))]
+  · congr 1
+    exact Finset.sum_congr rfl fun x hx => hwe x fun h => he (h ▸ hx)
 
 private theorem halfBaseAdv_eq_halfHighAdv_of_inter_ne {E S : Finset α} {e : α}
     (hne : S ∩ E ≠ {e}) :
-    halfBaseAdv E S = halfHighAdv E e S := by
-  rw [halfBaseAdv, halfHighAdv, cappedModular_eq_min_sum_inter, cappedModular_eq_min_sum_inter]
-  by_cases he : e ∈ S ∩ E
-  · obtain ⟨y, hy, hy_ne⟩ := exists_other_of_mem_of_ne_singleton he hne
-    have h1 : (2 : ℝ) ≤ ∑ _x ∈ S ∩ E, (1 : ℝ) := by
-      have hp := sum_pair_le_of_nonneg (w := fun _ => (1 : ℝ)) (fun _ _ => by norm_num) he hy hy_ne
-      linarith
-    have h2 : (2 : ℝ) ≤ ∑ x ∈ S ∩ E, (if x = e then (2 : ℝ) else 1) := by
-      have hp := sum_pair_le_of_nonneg (w := fun x => if x = e then (2 : ℝ) else 1)
-        (fun x _ => by split_ifs <;> norm_num) he hy hy_ne
-      simp only [↓reduceIte, hy_ne] at hp
-      linarith
-    rw [min_eq_right h1, min_eq_right h2]
-  · congr 1
-    refine Finset.sum_congr rfl fun x hx => ?_
-    have hxe : x ≠ e := fun h => he (h ▸ hx)
-    simp [hxe]
+    halfBaseAdv E S = halfHighAdv E e S :=
+  cappedModular_eq_of_inter_ne hne (fun _ => by norm_num) (fun x => by split_ifs <;> norm_num)
+    (fun x hx => by simp [hx]) (fun _ _ => by norm_num) (fun y hy => by simp [hy])
 
 private theorem baseAdv_eq_highAdv_of_inter_ne {E S : Finset α} {e : α}
     (hne : S ∩ E ≠ {e}) :
-    baseAdv E S = highAdv E e S := by
-  rw [baseAdv, highAdv, cappedModular_eq_min_sum_inter, cappedModular_eq_min_sum_inter]
-  by_cases he : e ∈ S ∩ E
-  · obtain ⟨y, hy, hy_ne⟩ := exists_other_of_mem_of_ne_singleton he hne
-    have h1 : (159 : ℝ) ≤ ∑ _x ∈ S ∩ E, (100 : ℝ) := by
-      have hp := sum_pair_le_of_nonneg (w := fun _ => (100 : ℝ))
-        (fun _ _ => by norm_num) he hy hy_ne
-      linarith
-    have h2 : (159 : ℝ) ≤ ∑ x ∈ S ∩ E, (if x = e then (159 : ℝ) else 100) := by
-      have hp := sum_pair_le_of_nonneg (w := fun x => if x = e then (159 : ℝ) else 100)
-        (fun x _ => by split_ifs <;> norm_num) he hy hy_ne
-      simp only [↓reduceIte, hy_ne] at hp
-      linarith
-    rw [min_eq_right h1, min_eq_right h2]
-  · congr 1
-    refine Finset.sum_congr rfl fun x hx => ?_
-    have hxe : x ≠ e := fun h => he (h ▸ hx)
-    simp [hxe]
+    baseAdv E S = highAdv E e S :=
+  cappedModular_eq_of_inter_ne hne (fun _ => by norm_num) (fun x => by split_ifs <;> norm_num)
+    (fun x hx => by simp [hx]) (fun _ _ => by norm_num) (fun y hy => by simp [hy])
 
 private theorem baseAdv_eq_lowAdv_of_inter_ne {E S : Finset α} {e : α}
     (hne : S ∩ E ≠ {e}) :
-    baseAdv E S = lowAdv E e S := by
-  rw [baseAdv, lowAdv, cappedModular_eq_min_sum_inter, cappedModular_eq_min_sum_inter]
-  by_cases he : e ∈ S ∩ E
-  · obtain ⟨y, hy, hy_ne⟩ := exists_other_of_mem_of_ne_singleton he hne
-    have h1 : (159 : ℝ) ≤ ∑ _x ∈ S ∩ E, (100 : ℝ) := by
-      have hp := sum_pair_le_of_nonneg (w := fun _ => (100 : ℝ))
-        (fun _ _ => by norm_num) he hy hy_ne
-      linarith
-    have h2 : (159 : ℝ) ≤ ∑ x ∈ S ∩ E, (if x = e then (59 : ℝ) else 100) := by
-      have hp := sum_pair_le_of_nonneg (w := fun x => if x = e then (59 : ℝ) else 100)
-        (fun x _ => by split_ifs <;> norm_num) he hy hy_ne
-      simp only [↓reduceIte, hy_ne] at hp
-      linarith
-    rw [min_eq_right h1, min_eq_right h2]
-  · congr 1
-    refine Finset.sum_congr rfl fun x hx => ?_
-    have hxe : x ≠ e := fun h => he (h ▸ hx)
-    simp [hxe]
+    baseAdv E S = lowAdv E e S :=
+  cappedModular_eq_of_inter_ne hne (fun _ => by norm_num) (fun x => by split_ifs <;> norm_num)
+    (fun x hx => by simp [hx]) (fun _ _ => by norm_num) (fun y hy => by norm_num [hy])
 
 /-! ## Lower-bound theorems -/
 
@@ -380,7 +330,7 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_le_countQueries
           intro hEq
           rw [hEq, Finset.card_singleton] at hcard
           omega
-        exact exists_other_of_mem_of_ne_singleton heE hne
+        exact ((Finset.nontrivial_iff_ne_singleton heE).2 hne).exists_ne e
       rcases hex_other with ⟨y, hyE, hye⟩
       have hlow_sub : IsSubmodular (lowAdv E e) :=
         isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
