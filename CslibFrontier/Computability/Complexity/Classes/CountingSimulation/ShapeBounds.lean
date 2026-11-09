@@ -12,21 +12,27 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.FastCon
 /-!
 # Polynomial bounds along the native contraction recursion
 
-The two bounds that the resource analyses of the native recursion
-(`CountingSimulation.fastSizes` and `CountingSimulation.entry_length_le_of_reach`) take from the
-shape of a reached call, stated for a root whose numbers fit a single parameter `Y`:
+Two bounds on a call reached by the native recursion (`FastContraction.nativeMk`), from its shape
+(`FastContraction.Shape`), stated for a root whose numbers fit a single parameter. Both resource
+analyses of the recursion use them: `CountingSimulation.fastSizes` for explicit networks and
+`CountingSimulation.entry_length_le_of_reach` / `CountingSimulation.entry_reach_facts` for entry
+procedures.
 
-* when the root's edges, precision, vertices, rows and descriptors are at most `Y` (the vertices
-  and rows together at most `2 Y`) and its 0/1 modulus has at most `32 Y ^ 2` coefficients, a call
+* Suppose the root's edges, precision and descriptors are below `Y`, its vertices and rows
+  together take at most `2 Y`, and its 0/1 modulus has at most `32 Y ^ 2` coefficients. Then a call
   of its shape, its tagged value and its frames are at most `2 ^ 55 Y ^ 24` long
-  (`FastContraction.Shape.length_le_pow`, from `FastContraction.Shape.length_le`);
-* when the root has `m ≥ D + 81` edges and precision at most `D m ²`, a call of its shape has
+  (`FastContraction.Shape.length_le_pow`, from `FastContraction.Shape.length_le`).
+* If the root has `m ≥ D + 81` edges and precision at most `D m ²`, a call of its shape has
   precision at most `m ^ 4` (`FastContraction.Shape.prec_le_pow_four`).
 
 ## Main results
 
 * `Cslib.Circuits.Frontier.FastContraction.Shape.length_le_pow`: polynomial sizes.
 * `Cslib.Circuits.Frontier.FastContraction.Shape.prec_le_pow_four`: precision at most `m ^ 4`.
+
+## References
+
+* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Appendix D.4.7 (p. 64).
 -/
 
 public section

@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
-import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.FastContractionPolyBounds
+import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ShapeBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
