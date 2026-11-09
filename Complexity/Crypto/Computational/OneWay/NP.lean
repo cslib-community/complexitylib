@@ -16,6 +16,7 @@ import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Tactic.EncLen
 
 /-!
 # One-way functions separate P from NP
@@ -107,8 +108,7 @@ def preimagePrefixVerifier (f : List Bool → List Bool)
 /-- The unary length is at most as long as the encoded instance. -/
 private theorem le_length_encPreimagePrefix (p : ℕ × List Bool × List Bool) :
     p.1 ≤ (encPreimagePrefix p).length := by
-  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-  omega
+  enc_len
 
 /-- The verifier accepts some certificate of the length of the encoded instance exactly for the
 members. -/
@@ -120,8 +120,7 @@ theorem isVerifier_preimagePrefixVerifier (f : List Bool → List Bool) :
     simp only [preimagePrefixVerifier, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
     rw [mem_preimagePrefix]
     refine ⟨u ++ w.take (n - u.length), ?_, List.prefix_append _ _, h.2⟩
-    simp only [List.length_append, List.length_take] at hw ⊢
-    omega
+    enc_len [List.length_take] at hw ⊢
   · obtain ⟨x, hx, ⟨v, rfl⟩, hfx⟩ := mem_preimagePrefix.mp hmem
     have hn := le_length_encPreimagePrefix (n, y, u)
     simp only [List.length_append] at hx
