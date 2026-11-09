@@ -1120,8 +1120,7 @@ theorem bipartiteMatchingM_time_le {m r : ℕ} (G : Fin m × Fin r → Bool) :
       (N_v * N_v * (N_v / 2) + 2) * (N_v * N_v + 5 * N_v) :=
     edmondsKarpDenseM_time_le (bipartiteFinNetwork G)
   have hcov := extractCoverM_time_le G (edmondsKarpDenseM (bipartiteFinNetwork G)).ret.cut
-  have hprod : m * (r + 1) ≤ N_v * N_v :=
-    Nat.mul_le_mul (by omega) (by omega)
+  have hprod : m * (r + 1) ≤ N_v * N_v := by gcongr <;> omega
   have hpost : m * (r + 1) + (extractCoverM G
       (edmondsKarpDenseM (bipartiteFinNetwork G)).ret.cut).time ≤
       2 * (N_v * N_v + 5 * N_v) := by

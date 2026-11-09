@@ -684,8 +684,7 @@ theorem maxOps_le (N : Network V) :
   rw [hn, hP]
   rw [hP] at hS
   have h1 : (n - 2) * (2 * n - 1) ≤ n * (2 * n) := Nat.mul_le_mul (by omega) (by omega)
-  have h2 : 2 * n * (n * N.symArcs.card) ≤ 2 * n * (n * (2 * P)) :=
-    Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hS)
+  have h2 : 2 * n * (n * N.symArcs.card) ≤ 2 * n * (n * (2 * P)) := by gcongr
   have h3 : n * (2 * n) = 2 * n ^ 2 := by ring
   have h4 : 2 * n * (n * (2 * P)) = 4 * n ^ 2 * P := by ring
   have h5 : 4 * n ^ 2 * (1 + P) = 4 * n ^ 2 + 4 * n ^ 2 * P := by ring
