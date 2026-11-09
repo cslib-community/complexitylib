@@ -176,17 +176,10 @@ def ofBlum (d : ModulusDesc) (h : IsBlumModulus d.p d.q) : KeyDesc :=
     { prime_p := d.prime_p, prime_q := d.prime_q, ne_pq := d.ne_pq,
       two_lt_p := d.two_lt_p, two_lt_q := d.two_lt_q,
       exists_posNonresidue := by
-        have hN1 : 1 < d.p * d.q := by have := d.two_lt_p; have := d.two_lt_q; nlinarith
+        have : Fact (1 < d.p * d.q) := ⟨by have := d.two_lt_p; have := d.two_lt_q; nlinarith⟩
         refine ⟨-1, neg_one_mem_positiveNonresidues d.p d.q h, ?_⟩
-        have hcast : ((d.p * d.q - 1 : ℕ) : ZMod (d.p * d.q)) = -1 := by
-          apply eq_neg_of_add_eq_zero_left
-          have h1 : (d.p * d.q - 1) + 1 = d.p * d.q := by omega
-          simpa only [Nat.cast_add, Nat.cast_one] using
-            (congrArg (Nat.cast : ℕ → ZMod (d.p * d.q)) h1).trans (ZMod.natCast_self _)
-        calc (-1 : (ZMod (d.p * d.q))ˣ).val.val
-            = (-1 : ZMod (d.p * d.q)).val := Units.val_neg (1 : (ZMod (d.p * d.q))ˣ) ▸ rfl
-          _ = ((d.p * d.q - 1 : ℕ) : ZMod (d.p * d.q)).val := by rw [hcast]
-          _ = d.p * d.q - 1 := by rw [ZMod.val_natCast, Nat.mod_eq_of_lt (by omega)] }⟩
+        change (-1 : (ZMod (d.p * d.q))ˣ).val.val = d.p * d.q - 1
+        rw [Units.val_neg, Units.val_one, ZMod.val_neg_of_ne_zero, ZMod.val_one] }⟩
 
 end KeyDesc
 
@@ -228,13 +221,7 @@ theorem ciphertext_eq_unit_val {N z r : ℕ} [NeZero N] (hz : z.Coprime N) (hr :
     rw [natCast_ciphertext (NeZero.ne N), Units.val_mul, Units.val_pow_eq_pow_val,
       ZMod.coe_unitOfCoprime]
     cases m <;> simp [ZMod.coe_unitOfCoprime]
-  rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr (NeZero.ne N)) with hN1 | hN1
-  · subst hN1
-    have hlt1 := ZMod.val_lt
-      ((if m then ZMod.unitOfCoprime z hz else 1) * (ZMod.unitOfCoprime r hr) ^ 2).val
-    simp only [ciphertext, Nat.mod_one]; omega
-  · have hlt : ciphertext N z m r < N := Nat.mod_lt _ (by omega)
-    rw [← ZMod.val_natCast_of_lt hlt, hcast]
+  rw [← ZMod.val_natCast_of_lt (a := ciphertext N z m r) (Nat.mod_lt _ (NeZero.pos N)), hcast]
 
 private theorem powMod_half_eq_one_iff_isSquare (P : ℕ) [Fact P.Prime] (hP : 2 < P)
     (c : ℕ) (v : (ZMod P)ˣ) (hcv : (c : ZMod P) = v.val) :
@@ -262,20 +249,13 @@ theorem isQuadResidueNat_unit_eq (d : ModulusDesc) (u : (ZMod (d.p * d.q))ˣ) :
   have hcrt : IsSquare u ↔ IsSquare (e u).1 ∧ IsSquare (e u).2 :=
     ⟨fun ⟨r, hr⟩ => ⟨⟨(e r).1, by rw [hr, map_mul]; rfl⟩, ⟨(e r).2, by rw [hr, map_mul]; rfl⟩⟩,
       fun ⟨⟨a, ha⟩, ⟨b, hb⟩⟩ => ⟨e.symm (a, b), e.injective (by ext <;> simp [ha, hb])⟩⟩
-  have hcast_p : (u.val.val : ZMod d.p) = (e u).1.val := by
-    let f : ZMod (d.p * d.q) →+* ZMod d.p :=
-      (RingHom.fst (ZMod d.p) (ZMod d.q)).comp crt.toRingHom
-    calc (u.val.val : ZMod d.p) = f (u.val.val : ZMod (d.p * d.q)) := (map_natCast f _).symm
-      _ = f u.val := by rw [ZMod.natCast_zmod_val]
-      _ = (e u).1.val := rfl
-  have hcast_q : (u.val.val : ZMod d.q) = (e u).2.val := by
-    let g : ZMod (d.p * d.q) →+* ZMod d.q :=
-      (RingHom.snd (ZMod d.p) (ZMod d.q)).comp crt.toRingHom
-    calc (u.val.val : ZMod d.q) = g (u.val.val : ZMod (d.p * d.q)) := (map_natCast g _).symm
-      _ = g u.val := by rw [ZMod.natCast_zmod_val]
-      _ = (e u).2.val := rfl
-  have hp := powMod_half_eq_one_iff_isSquare d.p d.two_lt_p u.val.val (e u).1 hcast_p
-  have hq := powMod_half_eq_one_iff_isSquare d.q d.two_lt_q u.val.val (e u).2 hcast_q
+  have hcast {R : Type} [CommRing R] (f : ZMod (d.p * d.q) →+* R) :
+      (u.val.val : R) = f u.val := by
+    rw [← map_natCast f, ZMod.natCast_zmod_val]
+  have hp := powMod_half_eq_one_iff_isSquare d.p d.two_lt_p u.val.val (e u).1
+    (hcast ((RingHom.fst _ _).comp crt.toRingHom))
+  have hq := powMod_half_eq_one_iff_isSquare d.q d.two_lt_q u.val.val (e u).2
+    (hcast ((RingHom.snd _ _).comp crt.toRingHom))
   unfold isQuadResidueNat
   exact Bool.eq_iff_iff.mpr (by
     simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq, hp, hq, hcrt])
@@ -291,10 +271,7 @@ private theorem isSquare_cond_mul_sq_iff {G : Type*} [CommGroup G] {z : G} (hz :
   cases m
   · simp only [Bool.false_eq_true, ↓reduceIte, one_mul, iff_true]; exact ⟨r, pow_two r⟩
   · simp only [↓reduceIte, Bool.true_eq_false, iff_false]
-    rintro ⟨w, hw⟩; apply hz; refine ⟨w * r⁻¹, ?_⟩
-    have h1 : (w * r⁻¹) * (w * r⁻¹) = (w * w) * (r * r)⁻¹ := by
-      rw [mul_inv_rev, mul_assoc, mul_left_comm r⁻¹, ← mul_assoc]
-    rw [h1, ← hw, pow_two, mul_assoc, mul_inv_cancel, mul_one]
+    exact fun h => hz (by simpa only [mul_div_cancel_right] using h.div (IsSquare.sq r))
 
 /-- **Arithmetic correctness of Goldwasser–Micali decryption** ([KatzLindell2020],
 Construction 15.28): for any non-square unit `z` and coprime `r`, `decryptNat` recovers `m`. -/
@@ -316,16 +293,10 @@ theorem KeyDesc.decryptNat_ciphertext (k : KeyDesc) {r : ℕ} (hr : r.Coprime k.
 theorem mulCiphertextsNat_ciphertext {N : ℕ} (hN : N ≠ 0) (z : ℕ) (b₁ b₂ : Bool) (r₁ r₂ : ℕ) :
     mulCiphertextsNat N (ciphertext N z b₁ r₁) (ciphertext N z b₂ r₂) =
       ciphertext N z (b₁ ^^ b₂) ((if b₁ && b₂ then z else 1) * r₁ * r₂) := by
-  rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr hN) with rfl | hN1
-  · simp only [mulCiphertextsNat, ciphertext, Nat.mod_one]
-  · have hlt₁ : mulCiphertextsNat N (ciphertext N z b₁ r₁) (ciphertext N z b₂ r₂) < N :=
-      Nat.mod_lt _ (by omega)
-    have hlt₂ : ciphertext N z (b₁ ^^ b₂) ((if b₁ && b₂ then z else 1) * r₁ * r₂) < N :=
-      Nat.mod_lt _ (by omega)
-    rw [← ZMod.val_natCast_of_lt hlt₁, ← ZMod.val_natCast_of_lt hlt₂]
-    congr 1
-    simp only [mulCiphertextsNat, ZMod.natCast_mod, Nat.cast_mul, natCast_ciphertext hN]
-    cases b₁ <;> cases b₂ <;> simp <;> ring
+  refine (ZMod.natCast_eq_natCast_iff' _ _ N).mp ?_
+  simp only [Nat.cast_mul, natCast_ciphertext hN, powMod_of_ne_zero hN, ZMod.natCast_mod,
+    Nat.cast_pow]
+  cases b₁ <;> cases b₂ <;> simp <;> ring
 
 /-! ### Word-level 1-bit scheme and efficiency certificates -/
 
@@ -491,11 +462,9 @@ theorem decrypt_mulCiphertexts {gen : ℕ → ProbComp KeyDesc} {n : ℕ} {keys 
   have hsk : keys.2 = encPair encNat encNat (k.p, k.q) := congrArg Prod.snd hkeq
   obtain ⟨r₁, hr₁, rfl⟩ := exists_of_mem_support_encrypt hpk hct₁
   obtain ⟨r₂, hr₂, rfl⟩ := exists_of_mem_support_encrypt hpk hct₂
-  have hr' : ((if b₁ && b₂ then k.z else 1) * r₁ * r₂).Coprime k.modulus := by
-    refine Nat.Coprime.mul_left (Nat.Coprime.mul_left ?_ hr₁) hr₂
-    cases b₁ && b₂
-    · exact Nat.coprime_one_left _
-    · exact k.coprime_z
+  have hr' : ((if b₁ && b₂ then k.z else 1) * r₁ * r₂).Coprime k.modulus :=
+    (Nat.Coprime.mul_left (by cases b₁ && b₂; exacts [Nat.coprime_one_left _, k.coprime_z])
+      hr₁).mul_left hr₂
   rw [hpk, hsk, mulCiphertexts, unframe_encPair_encNat, ofBits_encNat, ofBits_encNat, ofBits_encNat,
     mulCiphertextsNat_ciphertext (NeZero.ne k.modulus), decrypt_encPair]
   exact k.decryptNat_ciphertext hr' (b₁ ^^ b₂)
@@ -521,12 +490,8 @@ theorem rerandomize_idealEncryptUnit_eq (N : ℕ) [NeZero N] (z r₀ : (ZMod N)�
     ((PMF.uniformOfFintype (ZMod N)ˣ).map fun r => ((if m then z else 1) * r₀ ^ 2) * r ^ 2) =
       idealEncryptUnit N z m := by
   unfold idealEncryptUnit
-  conv_rhs => rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.mulLeft r₀)]
-  rw [PMF.map_comp]
-  refine congrArg _ (funext fun r => ?_)
-  change PMF.pure (((if m then z else 1) * r₀ ^ 2) * r ^ 2) =
-    PMF.pure ((if m then z else 1) * (r₀ * r) ^ 2)
-  rw [mul_pow, mul_assoc]
+  conv_rhs => rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.mulLeft r₀), PMF.map_comp]
+  congr 1; funext r; simp [mul_pow, mul_assoc]
 
 /-- Word-level ciphertext re-randomization via `mulCiphertexts` with a fresh draw from
 `idealEncrypt N z false`. -/
@@ -538,20 +503,10 @@ theorem rerandomize_idealEncrypt_eq (N : ℕ) [NeZero N] (z r₀ : (ZMod N)ˣ) (
       idealEncrypt N z m := by
   have hval (u v : (ZMod N)ˣ) : mulCiphertextsNat N u.val.val v.val.val = (u * v).val.val := by
     simp only [mulCiphertextsNat, Units.val_mul, ZMod.val_mul]
-  have hbind_eq_map :
-      (do
-        let ct ← idealEncrypt N z false
-        pure (mulCiphertexts (encPair encNat encNat (N, z.val.val))
-          (encNat ((if m then z else 1) * r₀ ^ 2).val.val) ct)) =
-      (idealEncrypt N z false).map (fun ct =>
-        mulCiphertexts (encPair encNat encNat (N, z.val.val))
-          (encNat ((if m then z else 1) * r₀ ^ 2).val.val) ct) := by
-    rw [← PMF.monad_map_eq_map, ← bind_pure_comp]
-  rw [hbind_eq_map, idealEncrypt, idealEncryptUnit, PMF.map_comp, PMF.map_comp,
-    idealEncrypt, ← rerandomize_idealEncryptUnit_eq N z r₀ m, PMF.map_comp]
-  refine congrArg (PMF.map · (PMF.uniformOfFintype (ZMod N)ˣ)) (funext fun r => ?_)
-  simp only [Function.comp_apply, Bool.false_eq_true, ↓reduceIte, one_mul, mulCiphertexts,
-    unframe_encPair_encNat, ofBits_encNat, hval]
+  conv_rhs => rw [idealEncrypt, ← rerandomize_idealEncryptUnit_eq N z r₀ m]
+  simp only [idealEncrypt, idealEncryptUnit, PMF.map, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, Function.comp_def, Bool.false_eq_true,
+    ↓reduceIte, one_mul, mulCiphertexts, unframe_encPair_encNat, ofBits_encNat, hval]
 
 /-- **Distributional XOR homomorphism on `(ZMod N)ˣ`** ([KatzLindell2020], Exercise 15.11). -/
 theorem idealEncryptUnit_mul_eq (N : ℕ) [NeZero N] (z : (ZMod N)ˣ) (b₁ b₂ : Bool) :
@@ -562,33 +517,13 @@ theorem idealEncryptUnit_mul_eq (N : ℕ) [NeZero N] (z : (ZMod N)ˣ) (b₁ b₂
       idealEncryptUnit N z (b₁ ^^ b₂) := by
   have halg (r₁ r₂ : (ZMod N)ˣ) :
       ((if b₁ then z else 1) * r₁ ^ 2) * ((if b₂ then z else 1) * r₂ ^ 2) =
-        (if (b₁ ^^ b₂) then z else 1) * (((if b₁ && b₂ then z else 1) * r₁) * r₂) ^ 2 := by
+        ((if (b₁ ^^ b₂) then z else 1) * ((if b₁ && b₂ then z else 1) * r₁) ^ 2) * r₂ ^ 2 := by
     cases b₁ <;> cases b₂ <;> simp [pow_two, mul_comm, mul_left_comm]
-  have hinner (r₁ : (ZMod N)ˣ) :
-      ((idealEncryptUnit N z b₂).map fun c₂ => ((if b₁ then z else 1) * r₁ ^ 2) * c₂) =
-        idealEncryptUnit N z (b₁ ^^ b₂) := by
-    unfold idealEncryptUnit; rw [PMF.map_comp]
-    conv_rhs =>
-      rw [← Probability.PMF.uniformOfFintype_map_equiv
-        (Equiv.mulLeft ((if b₁ && b₂ then z else 1) * r₁))]
-    rw [PMF.map_comp]
-    exact congrArg (PMF.map · (PMF.uniformOfFintype (ZMod N)ˣ)) (funext (halg r₁))
-  have hm (c₁ : (ZMod N)ˣ) :
-      (do let c₂ ← idealEncryptUnit N z b₂; pure (c₁ * c₂)) =
-        (idealEncryptUnit N z b₂).map (fun c₂ => c₁ * c₂) := by
-    rw [← PMF.monad_map_eq_map, ← bind_pure_comp]
-  change ((PMF.uniformOfFintype (ZMod N)ˣ).map fun r₁ => (if b₁ then z else 1) * r₁ ^ 2).bind
-      (fun c₁ => do let c₂ ← idealEncryptUnit N z b₂; pure (c₁ * c₂)) =
-    idealEncryptUnit N z (b₁ ^^ b₂)
-  rw [PMF.bind_map]
-  have hstep : (fun r₁ : (ZMod N)ˣ =>
-      (do let c₂ ← idealEncryptUnit N z b₂; pure (((if b₁ then z else 1) * r₁ ^ 2) * c₂))) =
-      fun _ => idealEncryptUnit N z (b₁ ^^ b₂) :=
-    funext fun r₁ => (hm _).trans (hinner r₁)
-  change (PMF.uniformOfFintype (ZMod N)ˣ).bind (fun r₁ =>
-      do let c₂ ← idealEncryptUnit N z b₂; pure (((if b₁ then z else 1) * r₁ ^ 2) * c₂)) =
-    idealEncryptUnit N z (b₁ ^^ b₂)
-  rw [hstep, PMF.bind_const]
+  have hre (r₁ : (ZMod N)ˣ) :=
+    rerandomize_idealEncryptUnit_eq N z ((if b₁ && b₂ then z else 1) * r₁) (b₁ ^^ b₂)
+  simp only [idealEncryptUnit, PMF.map, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.bind_bind, PMF.pure_bind, Function.comp_def] at hre ⊢
+  simp only [halg, hre, PMF.bind_const]
 
 /-- **Exercise 15.11** ([KatzLindell2020], p. 568, and Definition 15.14, second clause):
 multiplying two independent ideal ciphertexts of `b₁` and `b₂` with `mulCiphertexts` produces the
@@ -613,11 +548,8 @@ theorem idealEncryptUnit_of_isSquare (N : ℕ) [NeZero N] {y : (ZMod N)ˣ} (hy :
   cases m
   · rfl
   · obtain ⟨s, rfl⟩ := hy
-    have h1 : idealEncryptUnit N (s * s) true =
-        ((PMF.uniformOfFintype (ZMod N)ˣ).map fun r =>
-          ((if false then s * s else 1) * s ^ 2) * r ^ 2) := by
-      simp only [idealEncryptUnit, ↓reduceIte, Bool.false_eq_true, one_mul, pow_two]
-    exact h1.trans (rerandomize_idealEncryptUnit_eq N (s * s) s false)
+    simpa only [idealEncryptUnit, ↓reduceIte, Bool.false_eq_true, one_mul, pow_two] using
+      rerandomize_idealEncryptUnit_eq N (s * s) s false
 
 /-- Word-level lossiness on quadratic-residue keys: when `IsSquare y`, `idealEncrypt N y m` is
 independent of `m`. -/
@@ -663,14 +595,8 @@ theorem advantage_encrypt_idealEncrypt_le (d : ModulusDesc) (n : ℕ)
   rw [encrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat]
   simp only [idealEncrypt, idealEncryptUnit, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind, PMF.bind_map, Function.comp_def]
-  have hrhs : ((PMF.uniformOfFintype (ZMod (d.p * d.q))ˣ).bind fun u =>
-        k (encNat ((if m then y else 1) * u ^ 2).val.val)) =
-      (PMF.uniformOfFintype (ZMod (d.p * d.q))ˣ).bind fun u =>
-        k (encNat (ciphertext (d.p * d.q) y.val.val m u.val.val)) :=
-    congrArg _ (funext fun u => by rw [hct u])
-  rw [hrhs]
-  exact advantage_sampleModNat_unitOrOne_le d n hsize
-    (fun r => k (encNat (ciphertext (d.p * d.q) y.val.val m r)))
+  simpa only [hct] using advantage_sampleModNat_unitOrOne_le d n hsize
+    fun r => k (encNat (ciphertext (d.p * d.q) y.val.val m r))
 
 /-! ### Theorem 15.29: single-bit IND-CPA security under Quadratic Residuosity -/
 
@@ -687,6 +613,20 @@ noncomputable def qrPublicKeyLaw (setup : ℕ → PMF ModulusDesc) (n : ℕ) : P
   let d ← setup n
   let y ← PMF.uniformOfFintype (quadResidueSet d.p d.q)
   pure (encPair encNat encNat (d.p * d.q, y.1.val.val))
+
+private theorem distinguishingGame_publicKeyLaw (setup : ℕ → PMF ModulusDesc) (D : Distinguisher)
+    (n : ℕ) :
+    distinguishingGame (publicKeyLaw setup n) (D n) =
+      qrIdealGame setup (fun n input => D n (encPair encNat encNat input)) n := by
+  simp only [distinguishingGame, publicKeyLaw, qrIdealGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+
+private theorem distinguishingGame_qrPublicKeyLaw (setup : ℕ → PMF ModulusDesc)
+    (D : Distinguisher) (n : ℕ) :
+    distinguishingGame (qrPublicKeyLaw setup n) (D n) =
+      qrRealGame setup (fun n input => D n (encPair encNat encNat input)) n := by
+  simp only [distinguishingGame, qrPublicKeyLaw, qrRealGame, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
 /-- **Single-bit QR reduction distinguisher** ([KatzLindell2020], proof of Theorem 15.29). -/
 noncomputable def qrDistinguisher (adversary : Encryption.Adversary) (n : ℕ)
@@ -735,8 +675,7 @@ theorem advantage_publicKeyGame_qrPublicKeyLaw_le {setup : ℕ → PMF ModulusDe
           advantage_encrypt_idealEncrypt_le d n (hsize d hd) y.1 _ _
   have h4 := Game.advantage_four_hop_le (hhop false) (hhop true)
   rw [hideal_eq, Game.advantage_self, add_zero] at h4
-  calc _ ≤ (5 : ℝ≥0) / 2 ^ n + 5 / 2 ^ n := h4
-    _ = 10 / 2 ^ n := by ring
+  exact h4.trans_eq (by ring)
 
 /-- **Quantitative Theorem 15.29 bound** ([KatzLindell2020], pp. 554–556): single-bit IND-CPA
 advantage under `publicKeyLaw setup n` is at most twice `qrDistinguisher adversary`'s QR advantage
@@ -752,17 +691,8 @@ theorem advantage_publicKeyGame_le_qr {setup : ℕ → PMF ModulusDesc} {n : ℕ
       10 / 2 ^ n := by
   have hrep := Encryption.advantage_publicKeyGame_le
     (publicKeyLaw setup n) (qrPublicKeyLaw setup n) encrypt adversary n
-  have hqrI : distinguishingGame (publicKeyLaw setup n)
-      (Encryption.keyDistinguisher encrypt adversary n) =
-      qrIdealGame setup (qrDistinguisher adversary) n := by
-    simp only [distinguishingGame, publicKeyLaw, qrIdealGame, qrDistinguisher,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  have hqrR : distinguishingGame (qrPublicKeyLaw setup n)
-      (Encryption.keyDistinguisher encrypt adversary n) =
-      qrRealGame setup (qrDistinguisher adversary) n := by
-    simp only [distinguishingGame, qrPublicKeyLaw, qrRealGame, qrDistinguisher,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [hqrI, hqrR, Game.advantage_comm (qrIdealGame setup (qrDistinguisher adversary) n)] at hrep
+  rw [distinguishingGame_publicKeyLaw, distinguishingGame_qrPublicKeyLaw,
+    Game.advantage_comm (qrIdealGame _ _ n)] at hrep
   exact hrep.trans (add_le_add le_rfl (advantage_publicKeyGame_qrPublicKeyLaw_le hsize adversary))
 
 /-- **Asymptotic IND-CPA security for `publicKeyLaw`** ([KatzLindell2020], Theorem 15.29). -/
@@ -912,17 +842,11 @@ theorem advantage_encryptBits_idealEncryptBits_le (d : ModulusDesc) (n : ℕ)
     let pk := encPair encNat encNat (d.p * d.q, y.val.val)
     let mid : Game := (idealEncrypt (d.p * d.q) y b).bind fun ct =>
       (ProbComp.eval (encryptBits n pk bs)).bind fun cts => k (ct :: cts)
-    refine (Game.advantage_triangle _ mid _).trans ?_
     have hhead := advantage_encrypt_idealEncrypt_le d n hsize y b
       (fun ct => (ProbComp.eval (encryptBits n pk bs)).bind fun cts => k (ct :: cts))
-    have htail :
-        Game.advantage mid ((idealEncrypt (d.p * d.q) y b).bind fun ct =>
-          (idealEncryptBits (d.p * d.q) y bs).bind fun cts => k (ct :: cts)) ≤
-          (bs.length : ℝ≥0) * (5 / 2 ^ n) :=
-      Game.advantage_bind_le_nnreal _ _ _ fun ct => ih (fun cts => k (ct :: cts))
-    calc _ ≤ 5 / 2 ^ n + (bs.length : ℝ≥0) * (5 / 2 ^ n) := add_le_add hhead htail
-      _ = ((b :: bs).length : ℝ≥0) * (5 / 2 ^ n) := by
-          simp only [List.length_cons, Nat.cast_add, Nat.cast_one]; ring
+    refine (Game.advantage_triangle _ mid _).trans ((add_le_add hhead
+      (Game.advantage_bind_le_nnreal _ _ _ fun ct => ih fun cts => k (ct :: cts))).trans_eq ?_)
+    simp only [List.length_cons, Nat.cast_add, Nat.cast_one]; ring
 
 /-- Admissibility predicate for bounded equal-length bit-word challenges. -/
 def validBoundedWords (maxLen : ℕ → ℕ) (n : ℕ) (_pk : List Bool) (m₀ m₁ : List Bool) : Bool :=
@@ -1028,9 +952,8 @@ private theorem advantage_publicKeyWordGame_le (maxLen : ℕ → ℕ) (real idea
       Game.succProbability (publicKeyWordGame maxLen ideal adversary true n)) 0
   have hscale (a b c d : ℝ) :
       2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    calc 2 * |(1 + a - b) / 2 - (1 + c - d) / 2|
-        = |2 * ((1 + a - b) / 2 - (1 + c - d) / 2)| := by rw [abs_mul]; norm_num
-      _ = |(a - b) - (c - d)| := by congr 1; ring
+    rw [show (1 + a - b) / 2 - (1 + c - d) / 2 = ((a - b) - (c - d)) / 2 by ring, abs_div,
+      abs_two]; ring
   simpa only [hscale, sub_zero] using h
 
 /-- **Quantitative multi-bit Goldwasser–Micali IND-CPA bound**: via lossy quadratic-residue public
@@ -1048,18 +971,8 @@ theorem advantage_publicKeyWordGame_le_qr (maxLen : ℕ → ℕ) {setup : ℕ �
       (10 * maxLen n : ℝ≥0) / 2 ^ n := by
   have hrep := advantage_publicKeyWordGame_le maxLen (publicKeyLaw setup n) (qrPublicKeyLaw setup n)
     adversary n
-  have hqrI : distinguishingGame (publicKeyLaw setup n)
-      (wordKeyDistinguisher maxLen adversary n) =
-      qrIdealGame setup (qrWordDistinguisher maxLen adversary) n := by
-    simp only [distinguishingGame, publicKeyLaw, qrIdealGame, qrWordDistinguisher,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  have hqrR : distinguishingGame (qrPublicKeyLaw setup n)
-      (wordKeyDistinguisher maxLen adversary n) =
-      qrRealGame setup (qrWordDistinguisher maxLen adversary) n := by
-    simp only [distinguishingGame, qrPublicKeyLaw, qrRealGame, qrWordDistinguisher,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [hqrI, hqrR,
-    Game.advantage_comm (qrIdealGame setup (qrWordDistinguisher maxLen adversary) n)] at hrep
+  rw [distinguishingGame_publicKeyLaw, distinguishingGame_qrPublicKeyLaw,
+    Game.advantage_comm (qrIdealGame _ _ n)] at hrep
   let idealWordGame (bit : Bool) : Game := do
     let d ← setup n
     let y ← PMF.uniformOfFintype (quadResidueSet d.p d.q)
