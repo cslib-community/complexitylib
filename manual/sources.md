@@ -24,6 +24,11 @@ Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenst
 
 Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibliographic Search." *Communications of the ACM* 18(6), 333–340, 1975. https://doi.org/10.1145/360825.360855 . Scanned copy in D. J. Bernstein's bibliography archive, https://cr.yp.to/bib/1975/aho.pdf , checked 2026-11-08 for Algorithms 1 and 3, Lemmas 1–3, Theorems 1, 2 and 4, and Figures 1 and 2.
 
+<a id="aik11"></a>
+## aik11
+
+Benny Applebaum, Yuval Ishai, Eyal Kushilevitz. "How to Garble Arithmetic Circuits." *52nd Annual IEEE Symposium on Foundations of Computer Science (FOCS 2011)*, 120–129, 2011. https://doi.org/10.1109/FOCS.2011.40 . Bibliographic data from the DOI record and secondary listings. The full text was not inspected in this pass, so no section or lemma numbers are claimed. Cited at paper level for the framework of affine key encodings over a ring (with per-wire keys) and for affinization gadgets in the sense of randomized encodings.
+
 <a id="alonbabaisuzuki1991"></a>
 ## alonbabaisuzuki1991
 
@@ -516,6 +521,11 @@ E. N. Gilbert and H. O. Pollak. *Steiner Minimal Trees*. SIAM Journal on Applied
 
 Shafi Goldwasser, Yael Tauman Kalai and Guy N. Rothblum. *Delegating Computation: Interactive Proofs for Muggles*. JACM 62(4), article 27, 2015. https://doi.org/10.1145/2699436 .
 
+<a id="gm94"></a>
+## gm94
+
+Torbjörn Granlund, Peter L. Montgomery. "Division by Invariant Integers using Multiplication." *Proceedings of the ACM SIGPLAN 1994 Conference on Programming Language Design and Implementation (PLDI 1994)*, 61–72, 1994. https://doi.org/10.1145/178243.178249 . Bibliographic data from the DOI record and secondary listings. Cited at paper level for the multiply-and-shift method of dividing by a constant; the bounds formalized here are proved in the Lean source and no theorem number is claimed.
+
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
 
@@ -841,6 +851,11 @@ Carsten Lund, Lance Fortnow, Howard Karloff and Noam Nisan. *Algebraic Methods f
 ## liupass20
 
 Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOCS 2020, 1243–1254. https://doi.org/10.1109/FOCS46700.2020.00118 . Definition/theorem locators refer to the full version https://arxiv.org/abs/2009.11514v1 , §§2.3 and 3, pp. 8–9.
+
+<a id="ll24"></a>
+## ll24
+
+Hanjun Li, Tianren Liu. "How to Garble Mixed Circuits that Combine Boolean and Arithmetic Computations." *Advances in Cryptology – EUROCRYPT 2024, Part VI*, LNCS 14656, Springer, 2024. https://doi.org/10.1007/978-3-031-58751-1_12 . Full version: Cryptology ePrint Archive, Report 2023/1584. Bibliographic data from the DOI record and secondary listings. The constructions were compared at paper level with the ePrint full version during independent review. No section, figure, lemma or page numbers are claimed.
 
 <a id="lll82"></a>
 ## lll82

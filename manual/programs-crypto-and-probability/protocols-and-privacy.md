@@ -676,6 +676,12 @@ realization, composition/UC and full malicious MPC remain separate obligations.
 
 The statement is concrete and single-instance: the circuit, input and distinguisher are fixed and the keyed function is arbitrary, so the bound is meaningful only when the reductions' PRF advantages are small. In the prv.sim game of [bhr12][bhr12] the adversary chooses the circuit and input itself; a bound for that game follows by averaging over its choice, but this transfer is not formalized. Running time is not tracked: there are no cost bounds for garbling, evaluation, the simulator or the reductions. Nothing here is asymptotic or polynomial-time; there is no connection to the word-level `PseudorandomFunction`; and free-XOR, half-gates and other table-size optimizations are absent. These remain in [#3236](https://github.com/cslib-community/complexitylib/issues/3236). Theorem numbers of [bhr12][bhr12] and [lp09][lp09] were not checked, since their full texts were inaccessible in this pass. Checked instances are in [ComplexityTests/Crypto/Garbling.lean](../../ComplexityTests/Crypto/Garbling.lean).
 
+### Arithmetic garbling foundations
+
+The modules under [Primitives/Garbling/Arithmetic](../../Complexity/Crypto/Primitives/Garbling/Arithmetic/AffineLabel.lean) formalize the information-theoretic layer of arithmetic and mixed garbling following Applebaum–Ishai–Kushilevitz [aik11][aik11] and Li–Liu [ll24][ll24]. An arithmetic wire carrying `x : R` has the affine label `affineLabel k s x = k + x • s`; in [ll24][ll24] the slope is a global offset. With a shared slope, sums and public linear combinations of labels are labels (`affineLabel_add_affineLabel`, `sum_smul_affineLabel`), and a slope with a unit coordinate makes the label determine `x` (`affineLabel_injective`). The multiplication gadget `mulEncodeWith`, a degree-two affinization gadget in the sense of [aik11][aik11], splits the label of `x * y` into two values affine in `x` and two affine in `y`; `decode_mulEncodeWith` is its correctness and `eval_mulEncode` its perfect privacy against the simulator `mulSimulate`, which sees only the output label. [BitComposition.lean](../../Complexity/Crypto/Primitives/Garbling/Arithmetic/BitComposition.lean) defines bit decomposition and composition over `ℤ/p^k` (`bitComp_bitDecomp`) and the linear bit-composition gadget: `linCompEval_linCompTable` is its correctness for arbitrary pads, and `eval_activeShares` shows that the unpadded active rows are a uniform additive sharing of the output label, reusing `ProbComp.sampleAdditiveShares`. [ConstantDivision.lean](../../Complexity/Crypto/Primitives/Garbling/Arithmetic/ConstantDivision.lean) proves the multiply-and-shift identity of Granlund–Montgomery [gm94][gm94] (`mul_div_pow_eq_div`) and the exactness of division and remainder by a constant `N` in `ℤ/p^(2k+1)` on inputs below `p ^ k` (`constDiv_eq_div`, `constMod_eq_mod`). [CRT.lean](../../Complexity/Crypto/Primitives/Garbling/Arithmetic/CRT.lean) shows that the CRT combination of the residues of `x` modulo pairwise coprime `m i` is `x` modulo `∏ i, m i` (`crtSum_modEq`), never exceeds `(∏ i, m i - 1) ^ 2` (`crtSum_le_sq`), and is reduced to `x mod ∏ i, m i` by `constMod` when `(∏ i, m i) ^ 2 ≤ p ^ k` (`constMod_crtSum`).
+
+These are building blocks, not a garbling scheme: the random-oracle pads that hide inactive rows, key extension, the Boolean–arithmetic conversion gadgets as garbled tables, and an end-to-end privacy theorem for mixed circuits are not formalized. Checked instances are in [ComplexityTests/Crypto/GarblingArithmetic.lean](../../ComplexityTests/Crypto/GarblingArithmetic.lean).
+
 ### Yao's two-party protocol
 
 [Protocols/MPC/Yao.lean](../../Complexity/Crypto/Protocols/MPC/Yao.lean) runs Yao's protocol [yao86][yao86] in the form analysed by Lindell–Pinkas [lp09][lp09], inside the synchronous MPC framework. The circuit is `C : Circuit σ (n₀ + n₁) m`. Party `0`, the garbler, holds `x₀ : Fin n₀ → Bool`, and party `1`, the evaluator, holds `x₁ : Fin n₁ → Bool`. The garbler samples uniform keys and permutation bits (`sampleGarblerCoins`), garbles `C`, and sends a `YaoMessage`: the table, the labels of its own input bits and the decoding bits. One call to the ideal batched oblivious transfer `batchOTSpec n₁ (K × Bool)` of [Protocols/MPC/BatchOT.lean](../../Complexity/Crypto/Protocols/MPC/BatchOT.lean) then gives the evaluator the labels of its own bits. This oracle is `n₁` parallel 1-out-of-2 transfers of values in an arbitrary type, the `k = 2` case of Goldreich's 1-out-of-`k` OT (Section 7.3.2, Eq. 7.20) [goldreich04][goldreich04]. The evaluator evaluates and decodes. `yaoFunctionality C I` gives the evaluator `C.eval I (Fin.append x₀ x₁)` and the garbler nothing.
@@ -754,6 +760,7 @@ The [covering-code examples](../../ComplexityTests/Crypto/PIRCoveringCode.lean) 
 
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
+[aik11]: ../sources.md#aik11
 [bcs16]: ../sources.md#bcs16
 [bhr12]: ../sources.md#bhr12
 [bmr90]: ../sources.md#bmr90
@@ -763,9 +770,11 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [cks20]: ../sources.md#cks20
 [cslib]: ../sources.md#cslib
 [dworkroth14]: ../sources.md#dworkroth14
+[gm94]: ../sources.md#gm94
 [goldreich04]: ../sources.md#goldreich04
 [grs12]: ../sources.md#grs12
 [kov17]: ../sources.md#kov17
+[ll24]: ../sources.md#ll24
 [lp09]: ../sources.md#lp09
 [yao86]: ../sources.md#yao86
 [yekhanin12]: ../sources.md#yekhanin12

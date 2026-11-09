@@ -3922,6 +3922,10 @@ public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Crypto.Negligible.Dyadic
 public import Complexity.Crypto.Primitives.BlockCipher.CBCMAC
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
+public import Complexity.Crypto.Primitives.Garbling.Arithmetic.AffineLabel
+public import Complexity.Crypto.Primitives.Garbling.Arithmetic.BitComposition
+public import Complexity.Crypto.Primitives.Garbling.Arithmetic.CRT
+public import Complexity.Crypto.Primitives.Garbling.Arithmetic.ConstantDivision
 public import Complexity.Crypto.Primitives.Garbling.Basic
 public import Complexity.Crypto.Primitives.Garbling.Privacy
 public import Complexity.Crypto.Primitives.PRF.Finite
