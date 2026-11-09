@@ -1383,7 +1383,7 @@ declarations and native charged-word conventions, not undocumented admission or 
 | Lemma 3.2; Proposition 4.2 | `IncidenceGeneralResources`, generic frontend composition | Actual general-density single-loglog fixed-width counter and sequential resource composition. The old squared-loglog interpolation algorithm is not relabeled. |
 | Lemma 3.1 | Row-selection mathematics and integer Gram/binary backend | General row-selection semantics reused; actual weighted/exact-one integer inputs are covered. A standalone arbitrary-rational byte frontend/resource transfer is not supplied. |
 | Lemma 3.3; Appendix A.1 | `FunctionalCNF`, `CardinalityInterval`, `PaddedCardinality` | Actual functional cardinality circuits, binary target normalization, linear gate/clause bounds and unique extensions; padded per-class refinement now composed. |
-| Lemma A.1; Corollary A.2 | Not yet mapped to a complete frontend | Generic polynomially bounded integer weights, signed literals, linear functional 3-CNF and complete joint weighted distributions remain open. Unit-weight cardinality and fixed normalized-demand equations do not establish this source claim. |
+| Lemma A.1; Corollary A.2 | `WeightedSum.{Grouping,Circuit,Comparisons,Joint,Code}`, `WeightedComparison.Frontend` | Actual general polynomial-weight signed-literal comparisons, full functional 3-CNF/unique extensions and explicit linear gates/clauses; simultaneous correlated tests and exact signed-coefficient normalization. Binary gate-list writing equals the typed construction. Original binary frames/admission/derived-width resources covered. Whole generator-time and native two-query/joint-distribution resources remain open. |
 | Theorem 7.1 | `WeightedRaggedResources` | Parsed arbitrary ragged positive-binary-weight rows, repeated/mixed literals and signed targets, fixed normalized-demand bound, actual all-cases sharp counting. |
 | Corollary 7.2; Lemma C.1 | `DegreeThreshold`, `SigmaRhoInput`, `SigmaRhoCountingResources`, `SigmaRhoDistribution` | Arbitrary fixed finite/cofinite pair, optional binary natural interval, original-set counts and full ordered cardinality distribution, including sharp native resources/output. General signed-bound wrapper is a remaining encoding extension. |
 | Theorem 7.3 | `DegreePartition`, `BoundedDegreePartitionCountingResources`, `DegreePartitionDistribution` | Actual fixed finite/cofinite labeled matrices, runtime binary natural class bounds, original counts and all tagged size vectors with exact order/coverage/output bounds; source query budgets and complete sharp native resources. Explicit canonical graph/unary/native model. |
@@ -1399,13 +1399,26 @@ alternative is not supplied by the existing two-query Theorem 7.1 endpoint; it r
 
 Remaining STOC1575 objectives, keeping the original inventory open:
 
-- Lemma A.1 / Corollary A.2 (PDF pp.28–29): actual signed-literal comparisons with arbitrary
-  nonnegative integer weights bounded by n^c (fixed c), binary integer targets, a uniform O_c(n)
-  functional 3-CNF construction, its ordinary two-query transfer and full joint weight-distribution
-  traversal/resources remain unmapped. Existing cardinality tests are unit-weight specializations;
-  Theorem 7.1's arbitrary binary row weights with a fixed normalized-demand cap are a different
-  scope, not a proof of this general linear-auxiliary weighted-comparison tool. Do not conflate
-  these with monomial-weighted interpolation or connected-domination methods from other papers.
+- Lemma A.1 / Corollary A.2 (PDF pp.28–29): `WeightedSum` now constructs general
+  nonnegative weights <=n^c for fixed natural exponent c and mixed-polarity literals, all weak/
+  equality/strict binary integer targets, simultaneous correlated tests and full unique-extension
+  3-CNF. The actual radix is 2^(floor(clog2(n+1)/2)+1), with 2c+1 positions and a derived
+  full-total word width. The group-size partition and reconstructed original sum, no-overflow
+  arithmetic and explicit O_c(n+1) gates/clauses are proved; no fixed-demand cap or unit-weight
+  substitution is used. Negative coefficients are a proved extension by literal flip and exact
+  negative constant offset, under the same magnitude promise. Direct gate-list generators have
+  exact code/CNF correspondence and a separate polynomial serialized-output bound. Original
+  binary frames preserve unary-declared zero-weight inputs; actual admission and derived-width
+  computations have polynomial certificates.
+  The complete gate-list/CNF generator's binary time and peak intermediate storage, original
+  two-query/native sharp counter transfer and complete joint weighted-distribution traversal/
+  output/resources remain open. Serialized output and linear gate counts are not runtime proofs.
+  The formal exponent is natural; the cofinal enlargement of a fixed real source exponent and
+  the source's direct n<=1 handling are not separately packaged as a real-parameter theorem.
+  Next certify the actual code combinators/filtering/group arithmetic under original encInput,
+  then append the proved functional clauses to the finished base counter and run polynomially
+  many joint exact-target calls. No desired encoder/runtime/distribution contract is assumed.
+  Do not conflate these tests with monomial interpolation or connected-domination techniques.
 
 - Theorems 1.1–1.2 / 5.1–5.2 / Corollary 5.3: actual generic bounded-term DNF constructor/count/resource transfer and the
   signed-equation/side-2-CNF route are covered for the explicit encodings above. Alternative byte

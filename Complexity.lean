@@ -1000,6 +1000,11 @@ public import Complexity.Computability.Circuit.Boolean.Tribes
 public import Complexity.Computability.Circuit.Boolean.Tseitin
 public import Complexity.Computability.Circuit.Boolean.Unbounded
 public import Complexity.Computability.Circuit.Boolean.Unbounded.Restriction
+public import Complexity.Computability.Circuit.Boolean.WeightedSum.Circuit
+public import Complexity.Computability.Circuit.Boolean.WeightedSum.Code
+public import Complexity.Computability.Circuit.Boolean.WeightedSum.Comparisons
+public import Complexity.Computability.Circuit.Boolean.WeightedSum.Grouping
+public import Complexity.Computability.Circuit.Boolean.WeightedSum.Joint
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activation
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity
@@ -2651,6 +2656,7 @@ public import Complexity.Computability.PolyTime.CNF.VCOneClosure
 public import Complexity.Computability.PolyTime.CNF.VCOneDispatch
 public import Complexity.Computability.PolyTime.CNF.VCOneFrontend
 public import Complexity.Computability.PolyTime.CNF.VCOneSeparator
+public import Complexity.Computability.PolyTime.CNF.WeightedComparison.Frontend
 public import Complexity.Computability.PolyTime.CNF.WeightedNormalization
 public import Complexity.Computability.PolyTime.CNF.WeightedPlan
 public import Complexity.Computability.PolyTime.CNF.WeightedQuery

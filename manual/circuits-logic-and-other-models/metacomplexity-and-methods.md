@@ -1298,6 +1298,60 @@ with two universal labels there are four labelings; the vector $(1,1)$ has coeff
 original-label enumeration computes deterministic traces only in this client; production uses the
 proved native counter. The complete native endpoint types are checked by the same client.
 
+### General polynomial-weight comparisons
+
+Import `Complexity.Computability.PolyTime.CNF.WeightedComparison.Frontend` and open
+`Cslib.Circuits.Boolean.WeightedSum`. This supplies the actual linear functional construction
+underlying Lemma A.1 (PDF pp.28–29), with an explicit formal promise: for a fixed natural exponent
+$c$, each nonnegative coefficient is at most $n^c$. Literals may be positive or negative; weights
+may be zero. `Comparison` includes weak upper/lower, equality and both strict integer relations.
+Targets are arbitrary signed binary integers. Strict tests shift by one in the integers, and
+out-of-range comparisons become constant circuits without a target-sized loop.
+
+`group` actually filters original indices by radix digit. `reconstruct` proves equation (32),
+retaining all literal correlations. The radix is a power of two on the square-root scale, with
+$2c+1$ digit positions. Population counters, known-constant modular multipliers and a carry-save
+sum produce the original weighted value; `width_budget` prevents any modular overflow.
+The word width is computed from $n^{c+1}+1$, rather than supplied. `size_sumCircuit_linear` and
+`linear_bounds` charge every polarity, counter, constant, multiplication, reduction and comparison
+gate. For `comparisonBudget c = C`, a single test has at most $C(n+1)$ gates and
+$1+3C(n+1)$ clauses of width three. This is the general weighted construction, with no normalized
+demand cap. Including zero-digit groups does not alter the linear bound.
+
+`testCode` and `jointCode` generate the full binary gate lists directly; their correspondence
+lemmas identify every gate/output with the typed circuit. `writeTest` and `writeJoint` then write
+all truth-table clauses and true output units. `eval_formula_iff` characterizes the unique full
+trace, while `count_formula` and `count_jointFormula` preserve an arbitrary predicate on the
+original assignments. A fixed family shares the original bits, has disjoint functional gates
+and incurs only the fixed family-size factor. Existing source annotation multiplicities are
+retained. `signed_normalization` and `signedTest` additionally support negative coefficients:
+flip the corresponding literal, and subtract the sum of negative coefficients from the target.
+Taking absolute values alone would give the wrong answer. This extension assumes the same
+polynomial magnitude bound; it is distinct from the primary source's nonnegative-weight promise.
+
+`BinaryFrontend.Input` records the unary declared variable count, binary weight/polarity list
+and binary integer target. `ofData` writes one entry per original variable, including unused
+zero-weight variables. `admit` actually checks record length and the coefficient promise and has
+a polynomial binary certificate; so does derived width computation. `build_ofData` connects
+actual original-input writing to the proved functional formula. Raw construction is total,
+with zero defaults for missing positions; correctness uses the canonical admitted source frame.
+
+The complete generator-time/intermediate-space certificate and Corollary A.2's actual sharp
+native counter/joint-distribution composition remain open. The separate serialized-output bound
+is not a runtime proof. The formal exponent is natural; a real-parameter cofinal-enlargement
+wrapper is not supplied. This milestone does not complete Lemma A.1's full binary-resource
+statement, Corollary A.2 or ALL-main. Reuse the grouped construction and unique-extension proofs
+when adding the remaining resource composition.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.WeightedComparison`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/WeightedComparison.lean)
+executes actual generated gate lists and full CNF on deterministic traces, enumerating only tiny
+original assignments. It checks nonunit/zero weights, mixed polarities, negative targets and
+coefficients, exact cancellation/strict boundaries, shared-bit correlated tests, empty input/test
+families, huge binary cutoffs and admission rejection. For $2x_0+\neg x_1=1$, exactly one original
+assignment works. A zero-weight declared variable remains free. Production construction never
+searches the auxiliary cube.
+
 ## Known Limitations
 
 The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
