@@ -38,7 +38,7 @@ theorem isFar_top : IsFar (⊤ : SimpleGraph (Fin 3)) (fun H => H.CliqueFree 3) 
 
 -- A triangle-free graph is never far, for any nonnegative proximity.
 example : ¬ IsFar (⊥ : SimpleGraph (Fin 3)) (fun H => H.CliqueFree 3) (1 / 10) :=
-  not_isFar_of (cliqueFree_bot (by norm_num)) (by norm_num)
+  not_isFar_of_property (cliqueFree_bot (by norm_num)) (by norm_num)
 
 -- Exact acceptance probabilities: one trial on the triangle hits it with probability
 -- `6 / 27 = 2 / 9`, and the empty graph is always accepted.
@@ -62,7 +62,7 @@ example : IsOneSidedTester (triangleTester 3 5) (fun G => G.CliqueFree 3) (1 / 1
     classical
     have hne : (G.cliqueFinset 3).Nonempty := by
       rw [nonempty_iff_ne_empty, Ne, cliqueFinset_eq_empty_iff]
-      exact fun h => not_isFar_of h (by norm_num) hG
+      exact fun h => not_isFar_of_property h (by norm_num) hG
     have hle : #(G.cliqueFinset 3) ≤ 1 := card_cliqueFinset_le.trans (by simp)
     rw [acceptProb_triangleTester, le_antisymm hle hne.card_pos]
     norm_num
