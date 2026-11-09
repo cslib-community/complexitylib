@@ -249,7 +249,6 @@ theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
     · wram_simp [xs, x_c, hfr₁]
     · obtain ⟨h₁, h₂, h₃⟩ := hpar j
       wram_simp [xs, x_c, hpar₁]
-  case hfit => exact hfit_stop.of_le (by omega)
   case neg =>
     have hsp0 : space = 0 := by omega
     refine fun hb => ⟨by omega, hb, by wram_simp [hb₁], by wram_simp [hfr₁], fun j => ?_,
