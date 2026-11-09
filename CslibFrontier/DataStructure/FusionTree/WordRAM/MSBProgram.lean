@@ -329,84 +329,6 @@ theorem size_code (w : ℕ) : (code w).size ≤ 200000 := by
     simp only [code, ite_eq_right hw, Code.size, Bank.size_input]
     omega
 
-/-- The complete standard-basis program executes at the original physical width, from the
-ordinary singleton RAM input, within a constant instruction count independent of width.
-No preloaded wide constants, digit encodings, or MSB oracle are assumptions. -/
-theorem exec_code {w z : ℕ} (hw : 2 ≤ w) (hz : z < 2 ^ w) :
-    ∃ y, ExecWithin w (code w) (Data.init [z]) y 200000 ∧
-      y.regs output = z.log2 ∧ y.mem = (Data.init [z] : Data (Bank.capacity 44 + 4)).mem := by
-  by_cases hw2 : w = 2
-  · subst w
-    have hdiv : Fits 2 (z / 2) := (show Fits 2 z from hz).of_le (Nat.div_le_self z 2)
-    have he : ∃ y, Exec 2 twoBitCode (Data.init [z]) y 4 ∧ y.regs output = z / 2 ∧
-        y.mem = (Data.init [z] : Data (Bank.capacity 44 + 4)).mem := by
-      let y : Data (Bank.capacity 44 + 4) :=
-        ((((Data.init [z]).set Bank.inputReg 1).set Bank.inputReg z).set zeroTest 2).set
-          output (z / 2)
-      refine ⟨y, ?_, ?_, rfl⟩
-      · ram_eval [twoBitCode, y, Data.init, Bank.inputReg, zeroTest, output, hdiv]
-        simp [hdiv]
-      · simp [y]
-    obtain ⟨y, he, hy, hm⟩ := he
-    have hlog : z / 2 = z.log2 := by
-      have hz4 : z < 4 := hz
-      interval_cases z <;> rfl
-    refine ⟨y, ?_, hy.trans hlog, hm⟩
-    change ExecWithin 2 twoBitCode (Data.init [z]) y 200000
-    exact he.within.mono (by decide)
-  · have hw3 : 3 ≤ w := by omega
-    obtain ⟨u, heu, hu, hum, huz⟩ := Bank.exec_input hw hz (0 : Fin 44)
-    let t := u.set zeroTest 0
-    have het : Exec (B := .standard) w (.op (.const zeroTest 0)) u t 1 :=
-      Exec.const (fits_zero w)
-    have htp : Bank.Encodes w t (Function.update (fun _ => 0) (0 : Fin 44) z) := by
-      intro j
-      have he (i : Fin (Bank.capacity 44 + 4)) (hi : i ∈ Bank.regs j) :
-          t.regs i = u.regs i := by
-        have hh := Bank.mem_regs hi
-        have hine : i ≠ zeroTest := by
-          intro h
-          have := congrArg Fin.val h
-          dsimp only [zeroTest] at this
-          omega
-        simp only [t, Data.set_regs, Function.update_of_ne hine]
-      refine ⟨fun i hi => ?_, ?_⟩
-      · rw [he i hi]; exact (hu j).1 i hi
-      · exact (congrArg (Nat.ofDigits (radix w)) (List.map_congr_left he)).trans (hu j).2
-    have htin : t.regs Bank.inputReg = z := by
-      simpa only [t, Data.set_regs, Function.update_of_ne (by decide :
-        (Bank.inputReg : Fin (Bank.capacity 44 + 4)) ≠ zeroTest)] using huz
-    have htzero : t.regs zeroTest = 0 := by simp [t]
-    by_cases hz0 : z = 0
-    · let y := t.set output 0
-      have hezero : Exec (B := .standard) w (.op (.const output 0)) t y 1 :=
-        Exec.const (fits_zero w)
-      have hbranch := Exec.branch_pos (c := Cond.eq Bank.inputReg zeroTest)
-        (neg := positiveCode w)
-        (by simpa only [Cond.holds_eq, htin, htzero] using hz0) hezero
-      refine ⟨y, ?_, ?_, hum⟩
-      · have hh := heu.seq (het.seq hbranch)
-        simpa only [code, ite_eq_right hw2] using hh.within.mono (by decide : 49 ≤ 200000)
-      · simp [y, hz0]
-    · have hprefix : Function.update (fun _ => 0) (0 : Fin 44) z =
-          Circuit.prefix (values (clusterSize w) z) 1 := by
-        funext i
-        by_cases hi : i = 0
-        · subst i; simp [Circuit.prefix, values_input]
-        · have hi0 : 1 ≤ i.val := by
-            have : i.val ≠ 0 := fun h => hi (Fin.ext h)
-            omega
-          simp only [Function.update_of_ne hi, Circuit.prefix,
-            ite_eq_right (by omega : ¬i.val < 1)]
-      rw [hprefix] at htp
-      obtain ⟨y, hey, hy, hym⟩ := exec_positiveCode hw3 (by omega) hz t htp
-      have hbranch := ExecWithin.branch_neg (cond := Cond.eq Bank.inputReg zeroTest)
-        (pos := .op (.const output 0))
-        (by simpa only [Cond.holds_eq, htin, htzero] using hz0) hey
-      refine ⟨y, ?_, hy, hym.trans hum⟩
-      have hh := heu.within.seq (het.within.seq hbranch)
-      simpa only [code, ite_eq_right hw2] using hh.mono (by decide : 172094 ≤ 200000)
-
 /-- Zero dispatch and positive arithmetic after the input bank entry has been established. -/
 def finishCode (w : ℕ) : Code .standard (Bank.capacity 44 + 4) :=
   .seq (.op (.const zeroTest 0))
@@ -462,6 +384,37 @@ private theorem exec_finishCode {w z : ℕ} (hw : 3 ≤ w) (hz : z < 2 ^ w)
       (pos := .op (.const output 0))
       (by simpa only [Cond.holds_eq, htin, htzero] using hz0) hey
     exact ⟨y, het.within.seq heb, hy, hym⟩
+
+/-- The complete standard-basis program executes at the original physical width, from the
+ordinary singleton RAM input, within a constant instruction count independent of width.
+No preloaded wide constants, digit encodings, or MSB oracle are assumptions. -/
+theorem exec_code {w z : ℕ} (hw : 2 ≤ w) (hz : z < 2 ^ w) :
+    ∃ y, ExecWithin w (code w) (Data.init [z]) y 200000 ∧
+      y.regs output = z.log2 ∧ y.mem = (Data.init [z] : Data (Bank.capacity 44 + 4)).mem := by
+  by_cases hw2 : w = 2
+  · subst w
+    have hdiv : Fits 2 (z / 2) := (show Fits 2 z from hz).of_le (Nat.div_le_self z 2)
+    have he : ∃ y, Exec 2 twoBitCode (Data.init [z]) y 4 ∧ y.regs output = z / 2 ∧
+        y.mem = (Data.init [z] : Data (Bank.capacity 44 + 4)).mem := by
+      let y : Data (Bank.capacity 44 + 4) :=
+        ((((Data.init [z]).set Bank.inputReg 1).set Bank.inputReg z).set zeroTest 2).set
+          output (z / 2)
+      refine ⟨y, ?_, ?_, rfl⟩
+      · ram_eval [twoBitCode, y, Data.init, Bank.inputReg, zeroTest, output, hdiv]
+        simp [hdiv]
+      · simp [y]
+    obtain ⟨y, he, hy, hm⟩ := he
+    have hlog : z / 2 = z.log2 := by
+      have hz4 : z < 4 := hz
+      interval_cases z <;> rfl
+    refine ⟨y, ?_, hy.trans hlog, hm⟩
+    change ExecWithin 2 twoBitCode (Data.init [z]) y 200000
+    exact he.within.mono (by decide)
+  · obtain ⟨u, heu, hu, hum, huz⟩ := Bank.exec_input hw hz (0 : Fin 44)
+    obtain ⟨y, hey, hy, hym⟩ := exec_finishCode (by omega) hz u hu huz
+    refine ⟨y, ?_, hy, hym.trans hum⟩
+    have hh := heu.within.seq hey
+    simpa only [code, finishCode, ite_eq_right hw2] using hh.mono (by decide : 172094 ≤ 200000)
 
 /-- Register entry point for composition. The caller supplies its fitting input in physical
 register four. All 792 bank digits are cleared, the input is split in 44 instructions, and
