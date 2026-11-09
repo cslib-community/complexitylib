@@ -194,6 +194,11 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
 
+<a id="bmr16"></a>
+## bmr16
+
+Marshall Ball, Tal Malkin, Mike Rosulek. "Garbling Gadgets for Boolean and Arithmetic Circuits." *Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS '16)*, 565–577, 2016. https://doi.org/10.1145/2976749.2978410 . Full version: Cryptology ePrint Archive, Report 2016/969. Bibliographic data from the DOI record. Read in the ePrint text on 2026-11-09. Locators checked there: Figure 1 (the garbling scheme for mixed-moduli simple circuits, with free addition and constant multiplication and projection gates of at most `m - 1` ciphertexts after choosing `W_j^0 = -H(g, W_i^{-τ}) - φ(-τ)Δ_n`), the oracle `O(g, i, j, X, a, c) = H(g, X + aΔ_{m_i}) + cΔ_{m_j}`, and Definition 1 (mixed-modulus circular correlation robustness against adversaries that query their oracle on distinct `g` values and `a ≠ 0`). Section numbers were not checked.
+
 <a id="bmr90"></a>
 ## bmr90
 
