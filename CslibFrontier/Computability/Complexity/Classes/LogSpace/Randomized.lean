@@ -213,8 +213,7 @@ theorem toNTM_ofDeterministic (tm : MultiTapeTM k Bool State) :
   cases tm with
   | mk ntm det =>
   simp only [toNTM, branches, MultiTapeMachine.toNTM, ofDeterministic]
-  congr
-  funext q s w a
+  congr with q s w a : 4
   simp only [Set.mem_range, exists_const]
   apply propext
   rw [eq_comm, Equiv.symm_apply_eq]

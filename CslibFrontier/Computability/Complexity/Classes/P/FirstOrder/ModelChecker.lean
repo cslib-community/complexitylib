@@ -137,8 +137,7 @@ theorem getD_tableOf {n k : ℕ} (f : (Fin k → ℕ) → Bool) (xs : Fin k → 
     (tableOf n k f).getD (tupleIndex xs) false = f (fun j => (xs j : ℕ)) := by
   rw [List.getD_eq_getElem _ _ (by simpa only [length_tableOf] using tupleIndex_lt xs)]
   simp only [tableOf, List.getElem_map, List.getElem_range]
-  congr 1
-  funext j
+  congr 1 with j : 1
   simpa only [tupleIndex, Equiv.symm_apply_apply] using
     (finFunctionFinEquiv_symm_apply_val (finFunctionFinEquiv xs) j).symm
 
@@ -217,14 +216,12 @@ private theorem foEval_eq_true_iff {α : Type w} (σ : α → Fin a.1) {k : ℕ}
     · intro h x
       apply (ih (Fin.snoc xs x)).mp
       convert h x x.isLt using 1
-      congr 1
-      funext i
+      congr 1 with i : 1
       exact (Fin.lastCases (by simp) (fun j => by simp) i)
     · intro h x hx
       have := (ih (Fin.snoc xs ⟨x, hx⟩)).mpr (h ⟨x, hx⟩)
       convert this using 1
-      congr 1
-      funext i
+      congr 1 with i : 1
       exact (Fin.lastCases (by simp) (fun j => by simp) i)
 
 /-- The bounded evaluator agrees with the semantics of every well-formed, possibly nested LFP
@@ -259,21 +256,18 @@ private theorem eval_correct {Γ : List ℕ} {α : Type w}
     · rintro ⟨x, hx, heval⟩
       refine ⟨⟨x, hx⟩, (ih hφ tables (Option.elim · ⟨x, hx⟩ σ)).mp ?_⟩
       convert heval using 1
-      congr 1
-      funext y
+      congr 1 with y : 1
       cases y <;> rfl
     · rintro ⟨x, hx⟩
       refine ⟨x, x.isLt, ?_⟩
       have := (ih hφ tables (Option.elim · x σ)).mpr hx
       convert this using 1
-      congr 1
-      funext y
+      congr 1 with y : 1
       cases y <;> rfl
   | @op Γ α k body ts ih =>
     have hop : Operator.Formula.op k body ts = lfp (body 0) ts := by
       unfold lfp
-      congr 1
-      funext i
+      congr 1 with i : 1
       have hi : i = 0 := Subsingleton.elim i 0
       subst i
       rfl

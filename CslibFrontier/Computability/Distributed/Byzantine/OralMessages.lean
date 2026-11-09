@@ -129,8 +129,7 @@ theorem solvesByzantineAgreement_om1 (hn : 4 ≤ Fintype.card P) {R : ℕ} (hR :
   constructor
   · intro F hF adv x i hi i' hi'
     rw [hdec, hdec]
-    congr 1
-    funext k
+    congr 1 with k : 1
     by_cases hk : k ∈ F
     · -- A faulty `k` is relayed only by correct processes, identically to everyone.
       refine strictMajorityOn_congr fun j hj => ?_
