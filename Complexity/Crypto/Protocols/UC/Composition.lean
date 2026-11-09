@@ -52,6 +52,18 @@ sessions, and the hybrid argument that replaces them one at a time, are not cove
 parties of the composed protocol act through the outer router `UC.corruptRouter C`, and the
 adversary reaches their subroutine inputs through the routed network port of the subroutine.
 
+The source is the journal version of Canetti's paper [Canetti2020]. `UC.Emulates.compose` adapts
+Theorem 3 in its Section 2.3 (universal composition for the restricted model, where a single session
+of the subroutine protocol is replaced), and `UC.Realizes.compose` and `UC.Realizes.compose_trans`
+adapt the corollaries (a) and (b) stated after that theorem. The adaptation is to typed machines,
+one subroutine instance fixed in advance, and statistical security against participants whose
+calls, not running times, are polynomially bounded. The general theorem of the paper is Theorem 22
+of Section 6.1, with Corollaries 23 and 24. Its setting of probabilistic polynomial-time interactive
+Turing machines (running-time bounds, computational indistinguishability) is not modeled here, and
+neither are its dynamic-session premises (a compliant calling protocol, subroutine-respecting and
+subroutine-exposing protocols, identity-bounded environments) or its operation that replaces many
+sessions in one step.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.UC.HybridProtocol`,
@@ -84,9 +96,10 @@ adversary reaches their subroutine inputs through the routed network port of the
 
 ## References
 
-* [R. Canetti, *Universally Composable Security*][Canetti2020]: the composition operation and the
-  universal composition theorem, proved through the dummy adversary. Here corruptions are static,
-  one subroutine instance is replaced, and polynomial time is replaced by polynomial call budgets.
+* [R. Canetti, *Universally Composable Security*][Canetti2020], J. ACM 67(5), Article 28, 2020:
+  Section 2.3 (Theorem 3 and the corollaries after it, with the dummy-adversary proof sketch), which
+  the composition theorems here adapt, and Section 6.1 (Theorem 22 and Corollaries 23 and 24), the
+  general statement whose polynomial-time and dynamic-session premises are not modeled here.
 -/
 
 public section
@@ -112,12 +125,11 @@ theorem runFrom_interpret_of_forward (M : Machine I E)
     (program : ProbOracleComp K α) (s : M.State) :
     M.runFrom (OracleComp.interpret h₁ program) s =
       (fun a => (a, s)) <$> OracleComp.interpret h₂ program := by
-  induction program using OracleComp.induction with
-  | pure a => rfl
-  | query_bind q cont ih =>
-    rw [OracleComp.interpret_bind, OracleComp.interpret_query, runFrom_bind, h, bind_map_left,
-      OracleComp.interpret_bind, OracleComp.interpret_query, map_bind]
-    exact bind_congr fun a => ih a
+  have hforward : (fun q => OracleComp.interpret M.handler (h₁ q)) =
+      fun q s => (fun a => (a, s)) <$> h₂ q := by
+    funext q s
+    exact h q s
+  rw [runFrom, OracleComp.interpret_interpret, hforward, OracleComp.run_interpret_stateless]
 
 /-- A state representation `f` that commutes with every activation commutes with every run. -/
 theorem runFrom_map_state (M₁ M₂ : Machine I E) (f : M₂.State → M₁.State)
@@ -259,13 +271,13 @@ theorem exec_compose_dummy (ρ : HybridProtocol n In Out NetQ NetR SubIn SubOut)
 
 /-- A reply of the composed network port, read as a reply of the subroutine's routed network port.
 Replies of `ρ`'s own ports do not occur where it is used. -/
-@[expose] def subReply : RoutedNetR Out (NetR ⊕ RoutedNetR SubOut NR) → RoutedNetR SubOut NR
+private def subReply : RoutedNetR Out (NetR ⊕ RoutedNetR SubOut NR) → RoutedNetR SubOut NR
   | .inr (.inr r) => r
   | _ => .inl none
 
 /-- A reply of `ρ^φ`'s network port to a query for `ρ`, read as a reply of `ρ^π`'s network port.
 Replies of the subroutine part do not occur where it is used. -/
-@[expose] def outerReply :
+private def outerReply :
     RoutedNetR Out (NetR ⊕ RoutedNetR SubOut NR₂) → RoutedNetR Out (NetR ⊕ RoutedNetR SubOut NR₁)
   | .inl o => .inl o
   | .inr (.inl r) => .inr (.inl r)
@@ -273,7 +285,7 @@ Replies of the subroutine part do not occur where it is used. -/
 
 /-- A program calling the subroutine's routed network port, as a program calling the composed
 network port: the call `q` becomes `.inr (.inr q)`. -/
-@[expose] def liftSubNet
+private def liftSubNet
     (program : ProbOracleComp (netSpec (RoutedNetQ n SubIn NQ) (RoutedNetR SubOut NR)) α) :
     ProbOracleComp (netSpec (RoutedNetQ n In (NetQ ⊕ RoutedNetQ n SubIn NQ))
       (RoutedNetR Out (NetR ⊕ RoutedNetR SubOut NR))) α :=
@@ -289,7 +301,7 @@ network port: the call `q` becomes `.inr (.inr q)`. -/
 
 /-- The composed simulator's machine: queries for `ρ` are forwarded, and queries for the
 subroutine are answered by the subroutine simulator `S`. -/
-@[expose] def hybridSimMachine
+def hybridSimMachine
     (S : Machine (netSpec (RoutedNetQ n SubIn NQ₂) (RoutedNetR SubOut NR₂))
       (netSpec (RoutedNetQ n SubIn NQ₁) (RoutedNetR SubOut NR₁))) :
     Machine (netSpec (RoutedNetQ n In (NetQ ⊕ RoutedNetQ n SubIn NQ₂))
@@ -630,7 +642,7 @@ theorem isQueryBounded_liftParty {program : ProbOracleComp (partySpec n In Out) 
   | inr p => exact OracleComp.IsCostBounded.query _
 
 /-- Lifting to the composed network port makes the same number of calls. -/
-theorem isQueryBounded_liftSubNet
+private theorem isQueryBounded_liftSubNet
     {program : ProbOracleComp (netSpec (RoutedNetQ n SubIn NQ) (RoutedNetR SubOut NR)) α}
     {m : ℕ} (h : program.IsQueryBounded m) :
     (liftSubNet (In := In) (Out := Out) (NetQ := NetQ) (NetR := NetR) program).IsQueryBounded
@@ -749,7 +761,8 @@ theorem EmulatesWithin.compose {pρ g : Polynomial ℕ}
     Polynomial.eval_comp]
   gcongr
 
-/-- The UC composition theorem: if `π` UC-emulates `φ`, then `ρ^π` UC-emulates `ρ^φ` for every
+/-- The UC composition theorem, adapting Theorem 3 of Section 2.3 of [Canetti2020] (see the
+module docstring for the model): if `π` UC-emulates `φ`, then `ρ^π` UC-emulates `ρ^φ` for every
 hybrid protocol `ρ` with a polynomial budget. -/
 theorem Emulates.compose {pρ : Polynomial ℕ} (hρ : ρ.PolyBounded pρ) (h : Emulates π φ) :
     Emulates (compose ρ π) (compose ρ φ) := by
@@ -761,16 +774,18 @@ theorem Emulates.compose {pρ : Polynomial ℕ} (hρ : ρ.PolyBounded pρ) (h : 
   rw [advantage_compose]
   exact hbound C _ (absorbHybrid_polyBounded C hρ hZ) κ z
 
-/-- Replacing an ideal functionality by a protocol that realizes it: if `π` UC-realizes `F`, then
-`ρ^π` UC-emulates the `F`-hybrid protocol `ρ^F`. -/
+/-- Replacing an ideal functionality by a protocol that realizes it, corollary (a) after Theorem 3
+of Section 2.3 of [Canetti2020]: if `π` UC-realizes `F`, then `ρ^π` UC-emulates the `F`-hybrid
+protocol `ρ^F`. -/
 theorem Realizes.compose {BackQ BackR : Type} {π : Protocol n SubIn SubOut NQ NR}
     {F : IdealFunctionality n SubIn SubOut BackQ BackR} {pρ : Polynomial ℕ}
     (hρ : ρ.PolyBounded pρ) (h : Realizes π F) :
     Emulates (compose ρ π) (compose ρ F.toProtocol) :=
   Emulates.compose hρ h
 
-/-- Modular protocol design: if `ρ^F` UC-realizes `G` in the `F`-hybrid model and `π` UC-realizes
-`F`, then `ρ^π` UC-realizes `G`. -/
+/-- Modular protocol design, corollary (b) after Theorem 3 of Section 2.3 of [Canetti2020]: if
+`ρ^F` UC-realizes `G` in the `F`-hybrid model and `π` UC-realizes `F`, then `ρ^π` UC-realizes
+`G`. -/
 theorem Realizes.compose_trans {BackQ BackR GQ GR : Type} {π : Protocol n SubIn SubOut NQ NR}
     {F : IdealFunctionality n SubIn SubOut BackQ BackR} {G : IdealFunctionality n In Out GQ GR}
     {pρ : Polynomial ℕ} (hρ : ρ.PolyBounded pρ) (hπ : Realizes π F)
