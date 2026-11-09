@@ -1750,6 +1750,29 @@ emission and internal class-search lifetimes. Regenerated counts fit the
 half-exponential total time but do not prove the source's faster quarter-time
 reachable-state-DP all-count prepass, which remains open.
 
+[`AddXNORSearchResources.lean`](../../Complexity/Cryptanalysis/AddXNORSearchResources.lean)
+normalizes the actual class-pair and full-state producers, using the approved
+quarter/sort/count and matcher bounds. `classSearch_bounds` closes all selected
+direct searches, including actual count-selected orientation/materialization,
+both generated classes and matching/input/output/internal tapes. Its time sums
+computed class populations; its workspace uses the materialization test to derive
+that the opposite class fits the retained class plus $Q$, then bounds the smaller
+class by actual computed balance $\mu$. No desired class-memory bound is a premise.
+`restartTime` and `restartSpace` are the sum/max of the installed search allowances
+on classes selecting restart, conservatively including classes skipped after a hit.
+`sourceCertificate_restart_bounds` now gives
+$$
+T_{\mathrm{source}}\le (R_T+2^{\lfloor q/2\rfloor})P(I),\qquad
+S_{\mathrm{source}}\le (R_S+2^{\lfloor q/4\rfloor}+\mu)P(I).
+$$
+The direct-branch client derives both whole-source bounds on a real original input
+with two colliding low-bit classes, and checks a full-state miss with complete
+projected collisions. The arithmetic fallback client checks that the residual still
+contains its full class-search costs. General sharp normalization of $R_T,R_S$
+remains open: the actual restarted window scan/cut/division, label/control/callback
+frames and simultaneous temporaries still require composition. These residual
+expressions are not supplied runtime hypotheses or a completed Theorem 7 bound.
+
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
 real time/space profile and the derived wire bound $2^p(2p+1)$; the capped source

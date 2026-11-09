@@ -261,9 +261,15 @@ now normalizes the complete installed scalar prepass, including both count callb
 min/max, label generation, copies and every prefix. At the actual source cut it fits
 half-exponential time and quarter-exponential workspace in original input widths.
 `sourceCertificate_search_bounds` composes this into the unchanged whole run; only
-class-search sum/max remain explicit costs. Next close those costs, including window
-scan/cut/division, retained/group emission and actual ambient frames. Neither these
-residual expressions nor the normalized prepass alone prove sharp whole-run bounds.
+class-search sum/max remain explicit costs in that envelope. `SearchResources` now
+normalizes generated class pairs/full states and selected direct searches, including
+orientation/materialization and both producer/matcher temporaries. Its whole-source
+composition leaves only the selected restarted-search sum/max explicit, including
+classes skipped after hits. Next normalize those actual restarted-window, label/control,
+callback/frame and simultaneous workspace costs; do not repeat the completed prepass,
+direct branch or envelope proofs. The residuals are cost expressions, not runtime
+hypotheses or sharp whole-run bounds. The direct-only checked client is not a general
+restart theorem; the fallback guard verifies that its costs have not disappeared.
 Orientation recomputes counts; no cached-size oracle is input. The faster source
 reachable-state-DP all-count and quarter-time prepass remain separate open endpoints.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to

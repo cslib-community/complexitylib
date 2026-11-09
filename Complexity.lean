@@ -2990,6 +2990,7 @@ public import Complexity.Cryptanalysis.AddXNORSearch
 public import Complexity.Cryptanalysis.AddXNORSortedMeet
 public import Complexity.Cryptanalysis.AddXNORSortedQuarterMachine
 public import Complexity.Cryptanalysis.AddXNORSortedRecords
+public import Complexity.Cryptanalysis.AddXNORSearchResources
 public import Complexity.Cryptanalysis.AddXNORSource
 public import Complexity.Cryptanalysis.AddXNORSourceQuarter
 public import Complexity.Cryptanalysis.AddXNORSpectrum

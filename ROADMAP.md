@@ -382,9 +382,15 @@ callback sums versus workspace maxima. `BalanceResources` closes the installed b
 prepass: regenerated counts, scalar min/max, labels, copies and every prefix fit
 half-exponential time and quarter-exponential space at the actual source cut, with
 polynomial factors in original physical input width. Its `sourceCertificate_search_bounds`
-composes this into the whole run. Sharp normalization remains necessary for the actual
-class-search sum and maximum, including window/control/retained emission and internal
-lifetimes. The source reachable-state-DP all-count and faster quarter-time prepass remain open.
+composes this into the whole run. `SearchResources` additionally normalizes actual
+class-pair/full-state emission and all selected direct-search clocks/workspaces,
+including computed orientation/materialization and producer/matcher tapes. Its
+`sourceCertificate_restart_bounds` leaves the installed selected restarted-search sum/max
+explicit, conservatively including skipped classes. Sharp normalization of those costs
+still needs actual window scan/cut/division, label/control/callback frames and simultaneous
+temporaries. A checked direct-only input closes both resource inequalities but does not
+replace that general obligation. The source reachable-state-DP all-count and faster
+quarter-time prepass remain open.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their
 interpreter without removing their costs from their own certificates. A real

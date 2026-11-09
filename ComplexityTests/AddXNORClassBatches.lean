@@ -7,7 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import Complexity.Cryptanalysis.AddXNORBalanceResources
+public import Complexity.Cryptanalysis.AddXNORSearchResources
+import all Complexity.Cryptanalysis.AddXNORSearchResources
 import all Complexity.Computability.GenericRAM.Native.StreamingFoldBounds
 import all Complexity.Cryptanalysis.AddXNORJoinedDissection
 import all Complexity.Cryptanalysis.AddXNORClassBatches
@@ -193,7 +194,7 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
   obtain ⟨P, hP, mono, bound⟩ := WholeRunResources.sourceCertificate_bounds
   refine ⟨P, hP, mono, ?_⟩
   rw [originalEq]
-  exact bound 3 0 0 (List.replicate 14 0 ++ [1])
+  with_reducible exact bound 3 0 0 (List.replicate 14 0 ++ [1])
 
 -- Both scalar prepasses execute and compute the actual maximum, including the zero-width case.
 example : ClassBalance.balance (Source.prepare restartArithmeticHit) = 64 := by decide +kernel
@@ -216,7 +217,15 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
   · have originalEq : restartArithmeticHit =
         Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
     rw [originalEq]
-    exact bound 3 0 0 (List.replicate 14 0 ++ [1])
+    have instantiated := bound 3 0 0 (List.replicate 14 0 ++ [1])
+    have timePow : (2 : ℕ)^((List.replicate 14 (0 : BitVec 3) ++ [1]).length/2) = 128 := by
+      decide +kernel
+    have spacePow : (2 : ℕ)^((List.replicate 14 (0 : BitVec 3) ++ [1]).length/4) = 8 := by
+      decide +kernel
+    dsimp only at instantiated
+    with_reducible
+      rw [timePow, spacePow] at instantiated
+      exact instantiated
   · simpa only [List.length_nil, Nat.zero_div, pow_zero, one_mul] using
       bound 0 9 0 []
 
@@ -234,4 +243,71 @@ example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
   have originalEq : restartArithmeticHit =
       Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
   rw [originalEq]
-  exact bound 3 0 0 (List.replicate 14 0 ++ [1])
+  have instantiated := bound 3 0 0 (List.replicate 14 0 ++ [1])
+  have timePow : (2 : ℕ)^((List.replicate 14 (0 : BitVec 3) ++ [1]).length/2) = 128 := by
+    decide +kernel
+  have spacePow : (2 : ℕ)^((List.replicate 14 (0 : BitVec 3) ++ [1]).length/4) = 8 := by
+    decide +kernel
+  dsimp only at instantiated
+  with_reducible
+    rw [timePow, spacePow] at instantiated
+    exact instantiated
+
+-- Both low-bit classes have collisions, and computed counts select the actual direct branch.
+/-- Original four-operator input whose two computed classes select direct matching. -/
+def directSource : Source.Input := Source.ofWords 1 (0 : BitVec 3) [1, 1, 1, 1]
+
+example : (List.range 2).map (JoinedDissection.materialize (Source.prepare directSource)) =
+    [true, true] := by decide +kernel
+example : ClassBalance.balance (Source.prepare directSource) = 2 := by decide +kernel
+example : (JoinedDissection.run directSource).2.isSome = true := by decide +kernel
+/-- Non-unit full states miss despite complete projected collisions in the direct branch. -/
+def directMiss : Source.Input := Source.ofWords 0 (2 : BitVec 5) [0, 0, 0, 1]
+
+example : JoinedDissection.materialize (Source.prepare directMiss) 0 = true := by decide +kernel
+example : ClassBalance.balance (Source.prepare directMiss) = 4 := by decide +kernel
+example : (JoinedDissection.run directMiss).2 = none := by decide +kernel
+
+example : SearchResources.restartTime (Source.prepare directSource) = 0 := by rfl
+example : SearchResources.restartSpace (Source.prepare directSource) = 0 := by rfl
+
+-- The residual keeps the actual fallback costs when its branch is selected.
+example : SearchResources.restartTime (Source.prepare restartArithmeticHit) =
+    WholeRunResources.classTime (Source.prepare restartArithmeticHit) := by
+  have depthEq : ClassBalance.depth (Source.prepare restartArithmeticHit) = 0 := by decide +kernel
+  have selected : JoinedDissection.materialize (Source.prepare restartArithmeticHit) 0 = false := by
+    decide +kernel
+  dsimp only [SearchResources.restartTime, WholeRunResources.classTime]
+  rw [depthEq]
+  simp only [pow_zero, Finset.range_one, Finset.sum_singleton, selected,
+    Bool.false_eq_true, ite_false]
+example : SearchResources.restartSpace (Source.prepare restartArithmeticHit) =
+    WholeRunResources.classSpace (Source.prepare restartArithmeticHit) := by
+  have depthEq : ClassBalance.depth (Source.prepare restartArithmeticHit) = 0 := by decide +kernel
+  have selected : JoinedDissection.materialize (Source.prepare restartArithmeticHit) 0 = false := by
+    decide +kernel
+  dsimp only [SearchResources.restartSpace, WholeRunResources.classSpace]
+  rw [depthEq]
+  simp only [pow_zero, Finset.range_one, Finset.sup_singleton, selected,
+    Bool.false_eq_true, ite_false]
+
+-- An actual original-input run closes both resource bounds here, without runtime premises.
+-- This checked direct-only input is not a substitute for the missing general restart bound.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    JoinedDissection.sourceCertificate.time directSource ≤
+        4*P ((Source.encoding directSource).length) ∧
+      JoinedDissection.sourceCertificate.space directSource ≤
+        4*P ((Source.encoding directSource).length) := by
+  obtain ⟨P, hP, mono, bound⟩ := SearchResources.sourceCertificate_restart_bounds
+  refine ⟨P, hP, mono, ?_⟩
+  have instantiated := bound 3 1 0 [1, 1, 1, 1]
+  have timeEq : SearchResources.restartTime (Source.prepare directSource) = 0 := by rfl
+  have spaceEq : SearchResources.restartSpace (Source.prepare directSource) = 0 := by rfl
+  have balanceEq : ClassBalance.balance (Source.prepare directSource) = 2 := by decide +kernel
+  dsimp only at instantiated
+  rw [show Source.ofWords 1 (0 : BitVec 3) [1, 1, 1, 1] = directSource from rfl] at instantiated
+  have timePow : (2 : ℕ)^(([1, 1, 1, 1] : List (BitVec 3)).length/2) = 4 := by decide +kernel
+  have spacePow : (2 : ℕ)^(([1, 1, 1, 1] : List (BitVec 3)).length/4) = 2 := by decide +kernel
+  with_reducible
+    rw [timePow, spacePow, timeEq, spaceEq, balanceEq] at instantiated
+    simpa only [Nat.zero_add, Nat.reduceAdd] using instantiated
