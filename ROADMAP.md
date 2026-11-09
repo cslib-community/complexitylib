@@ -314,7 +314,7 @@ For generated groups G is at most N; selected M is bounded by computed balance.
 Filtered runs, current group and materialized class output are all charged. `ClassBalance` now derives unique complete
 half words, exact original-half counter counts in both directions, computed
 balance and count-selected retention. `JoinedDissection` assembles that retention
-with `JoinedProbe`'s actual opposite-quarter group consumption, bounded batches,
+with actual opposite-quarter batch generation,
 fixed all-class release/iteration, source preparation and original witness
 readback; witness/miss and returned computed-balance correctness are proved.
 Actual counts now also select a single whole-class match when the larger
@@ -323,10 +323,20 @@ avoids per-pair dictionary/buffer state copies. The allowance is at most `11*2^k
 on the source cut; every direct list prefix has a derived quarter-plus-balance
 wire bound and total direct matched record volume is at most the two half
 populations. These are list/record bounds, not internal TM resource inequalities.
-Otherwise nested folds feed generated pairs directly to bounded batches without
-materializing the larger class or scanning the whole opposite half space. Empty dictionaries skip opposite generation by proved matcher
-soundness. The total matching-pair iteration domain across classes is bounded by
-the two half populations, without a class-mean hypothesis. This is a traversal
+The installed fallback is now `ClassBatches`, replacing the per-pair dictionary/
+growing-buffer path. It regenerates quarter groups for a bounded row-aligned
+window and sends only completed batches to the retained matcher, then releases
+them. Selected-left/right Cartesian emission skips unselected pairs; binary
+rank/count state and output emission use the real streaming kernel. The retained
+dictionary is projected out before pair/full-state callbacks. Capacity includes
+quarter volume, which pays for restart scans. Derived window coverage/provenance,
+capacity-plus-quarter output size, quarter-scale labels and global repeated-input
+volume include padding, collisions, empty groups and partial rows. Every logical
+output prefix has a computed balance-plus-quarter wire bound. These are record/
+wire charges, not closed bit-resource inequalities. No full opposite class or
+half-space scan is executed by this fallback. Empty dictionaries skip opposite generation by proved matcher
+soundness. The total class pair population across classes is bounded by
+the two half populations, without a class-mean hypothesis. This is a population
 bound, not bit time. Count-table and simultaneous retained/live-buffer prefix
 encodings are bounded separately from machine temporaries; generated-record
 prefixes no longer need a packed-counter-limit hypothesis.
@@ -342,10 +352,11 @@ The actual balance certificate now streams count minima into one scalar maximum,
 with derived prefix width, bypassing table construction/reversal/reduction.
 Preparation, half-array construction and the installed readback machine have proved polynomial bounds
 in the physical original input, using derived search-result payload size.
-Sharp resources still require persistent retained/buffer tapes for fallback
-classes and tight callback/matcher/quarter-count/global profile normalization.
-Captured dictionaries and growing buffers remain copied per matching pair in
-that fallback; direct classes avoid those feeds. Neither a traversal sum nor
+The per-pair retained/buffer copy path is no longer installed. Sharp resources
+still require closed bounds for actual scalar callback widths, quarter generation/
+sorting, full-state evaluation, matching and global profile composition, including
+all simultaneous intermediates. Per-batch parameter copies and repeated quarter
+scans are now explicitly amortized by actual class populations plus capacity. Neither a traversal sum nor
 the now-composed actual bit clock establishes the target source asymptotics.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their

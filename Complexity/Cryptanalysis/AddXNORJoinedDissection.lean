@@ -10,7 +10,9 @@ module
 public import Complexity.Cryptanalysis.AddXNORClassBalance
 public import Complexity.Cryptanalysis.AddXNORBatchedAccess
 public import Complexity.Cryptanalysis.AddXNORJoinedProbe
+public import Complexity.Cryptanalysis.AddXNORClassBatches
 import all Complexity.Cryptanalysis.AddXNORJoinedProbe
+import all Complexity.Cryptanalysis.AddXNORClassBatches
 import all Complexity.Cryptanalysis.AddXNORClassBalance
 import all Complexity.Cryptanalysis.AddXNORBatchedAccess
 import all Complexity.Cryptanalysis.AddXNORClassStreaming
@@ -24,37 +26,40 @@ import all Complexity.Computability.GenericRAM.Native.Combinators
 
 Actual forward/backward quarter-query counts determine the retained side.
 Its generated full-state class feeds either one whole-class match (when computed
-counts give a quarter-plus-retained record allowance) or the bounded opposite-quarter
-consumer. The fixed outer class counter then releases it. The source
+counts give a quarter-plus-retained record allowance) or restarted row-aligned
+opposite-quarter batches. The fixed outer class counter then releases it. The source
 frontend computes the cut, capped projection depth, first-operand seed and zero
 target. Count-only balance preprocessing and original witness readback are
 included in the uniform bit execution.
 
 This assembles the class producer with an executable search endpoint for
 [WangLvShenZhang2027], Lemma 8/Theorem 7, pp. 21–22. No opposite half-space scan
-is executed. The direct branch avoids per-pair dictionary/buffer state; the
-streaming fallback retains its actual copy costs. Balance reduction uses one
+is executed. Both installed branches avoid per-pair dictionary/buffer state. Restarted
+windows keep the dictionary outside pair generation and release completed batches.
+Actual per-batch copies, quarter rescans and all callback tapes remain charged.
+Balance reduction uses one
 scalar. Preparation/readback have derived polynomial physical-input resource
 bounds. Logical list occupancy does not imply sharp internal TM workspace.
 Sharp global bit resources remain open.
 
 ## Main definitions
 
-* `materialize`, `directSearch`, `search`: count-selected direct or streamed class matching.
+* `materialize`, `directSearch`, `search`: count-selected direct or restarted class matching.
 * `allSearch`: uniform all-class search and release.
 * `run`: original-input preprocessing, computed balance, search and witness readback.
 
 ## Main results
 
 * `original_correct`, `original_balance`: original witness/miss and exact computed balance.
-* `direct_prefix_wire`, `simultaneous_wire`: direct/streamed physical logical-prefix storage.
+* `direct_prefix_wire`, `restart_prefix_wire`: physical logical-prefix storage.
+* `restart_prefix_records`, `sum_restartCopyWork`: actual batch size and global copy allowance.
 * `quarterBudget_source`: derived quarter allowance, including every residue.
 * `sum_directRecordWork`: single-match record volume, distinct from bit time.
 * `allSearch_wire`, `preparation_readback_bounds`: actual result size and boundary resource costs.
 * `halvesCertificate`, `readbackCertificate`: installed boundary machines.
-* `sum_pairVisits`: total generated pair visits are bounded by the two half populations.
+* `sum_pairVisits`: produced-class pair populations are bounded by the two half populations.
 * `allSearch_eq_fold`: the fixed counter agrees with actual class-index streaming.
-* `sourceCertificate`: actual uniform bit execution, with captured-state copying costs retained.
+* `sourceCertificate`: actual uniform bit execution, including batch copies and callback tapes.
 -/
 
 public section
@@ -117,7 +122,7 @@ def directSearch (input : ClassBalance.Input) (g : ℕ) : Option (ℕ × ℕ) :=
 
 /-- Use one match when computed populations permit it, otherwise the bounded streaming route. -/
 def search (input : ClassBalance.Input) (g : ℕ) : Option (ℕ × ℕ) :=
-  if materialize input g then directSearch input g else JoinedProbe.run (probeContext input g) g
+  if materialize input g then directSearch input g else ClassBatches.run (probeContext input g) g
 
 /-- Logical output prefix of the directly materialized opposite class, empty in the
 streaming branch. The actual producer's internal temporaries are charged separately. -/
@@ -152,6 +157,48 @@ theorem direct_prefix_records (input : ClassBalance.Input) (g n : ℕ)
   · simp only [directPrefix, h, Bool.false_eq_true, ite_false, List.length_nil, Nat.add_zero]
     omega
 
+/-- The actual produced quarter input is part of the original four-quarter allowance. -/
+theorem restart_quarter_le (input : ClassBalance.Input) (g : ℕ) :
+    ClassBatches.quarterVolume (probeContext input g) ≤ quarterBudget input := by
+  rcases input with ⟨⟨⟨width, depth⟩, seed, target⟩, ⟨first, second⟩, third, fourth⟩
+  have ha := Nat.zero_le (2 ^ first.length)
+  have hb := Nat.zero_le (2 ^ second.length)
+  have hc := Nat.zero_le (2 ^ third.length)
+  have hd := Nat.zero_le (2 ^ fourth.length)
+  cases h : ClassBalance.retainRight (((width, depth), (seed, target)),
+    ((first, second), (third, fourth))) g <;>
+    simp only [ClassBatches.quarterVolume, probeContext, probeTask, h, Bool.not_true,
+      Bool.not_false, ClassBalance.halfInput, Bool.false_eq_true, ite_false, ite_true,
+      List.length_reverse, quarterBudget] <;> omega
+
+private theorem restart_capacity_eq (input : ClassBalance.Input) (g : ℕ) :
+    ClassBatches.capacity (probeContext input g) = (ClassBalance.retain input g).length + 1 +
+      ClassBatches.quarterVolume (probeContext input g) := by
+  change ClassBalance.count input (ClassBalance.retainRight input g) g + 1 + _ = _
+  rw [ClassBalance.retain, ClassBalance.records_length]
+
+/-- Dictionary and every actual restarted-batch output prefix fit computed balance plus
+quarter volume. No growing per-pair buffer is executed by this fallback. -/
+theorem restart_prefix_records (input : ClassBalance.Input) (g i n : ℕ)
+    (hg : g < 2 ^ ClassBalance.depth input) :
+    (ClassBalance.retain input g).length +
+      ((ClassBatches.batch (probeContext input g) g i).take n).length ≤
+        2 * ClassBalance.balance input + 2 * quarterBudget input + 1 := by
+  have hk := ClassBalance.class_le_balance input g hg
+  have hb := ClassBatches.batch_length (probeContext input g) g i
+  have htake : ((ClassBatches.batch (probeContext input g) g i).take n).length ≤
+      (ClassBatches.batch (probeContext input g) g i).length := by
+    rw [List.length_take]; exact Nat.min_le_right _ _
+  rw [restart_capacity_eq] at hb
+  have hq := restart_quarter_le input g
+  omega
+
+/-- Capacity volume copied per generated restart label, including quarter regeneration.
+Direct and empty classes may skip this budget; it conservatively covers all classes. -/
+def restartCopyWork (input : ClassBalance.Input) (g : ℕ) : ℕ :=
+  let context := probeContext input g
+  (ClassBatches.labels context g).length * ClassBatches.capacity context
+
 private theorem search_none_records (input : ClassBalance.Input) (g : ℕ)
     (fits : let (((width, _), _), _) := input
       ∀ r ∈ ClassBalance.retain input g ++
@@ -161,7 +208,7 @@ private theorem search_none_records (input : ClassBalance.Input) (g : ℕ)
   let parameter := BatchedAccess.parameters (probeTask input g)
   let rows := ClassBalance.records input (!(ClassBalance.retainRight input g)) g
   have hd := BatchedAccess.match_none parameter rows fits
-  have hs := JoinedProbe.run_none (probeContext input g) g fits
+  have hs := ClassBatches.run_none (probeContext input g) g fits
   rw [search]
   split
   · exact hd
@@ -175,7 +222,7 @@ private theorem search_sound_records (input : ClassBalance.Input) (g : ℕ) (out
   rw [search] at hit
   split at hit
   · exact BatchedAccess.match_sound (BatchedAccess.parameters (probeTask input g)) _ out hit
-  · exact JoinedProbe.run_sound (probeContext input g) g out hit
+  · exact ClassBatches.run_sound (probeContext input g) g out hit
 
 private theorem halves_original {m p : ℕ} (as bs cs ds : List (BitVec m)) (s : BitVec m) :
     halves (ProgramGeneration.originalSource p as bs cs ds s 0) =
@@ -270,7 +317,8 @@ theorem search_sound {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
   · exact ⟨b, by simpa only [h, Bool.not_true] using hb, a, by simpa only [h] using ha,
       hk.symm, by simpa only [h, ite_true] using ho⟩
 
-/-- Matching-quarter iteration slots in one actually generated opposite class. -/
+/-- Produced-class pair domain (the preserved per-pair consumer's iteration slots).
+Restarted-machine costs are bounded separately by `sum_restartCopyWork`. -/
 def pairVisits (input : ClassBalance.Input) (g : ℕ) : ℕ :=
   JoinedProbe.visits (probeContext input g) g
 
@@ -346,6 +394,43 @@ theorem sum_directRecordWork {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (Bit
   rw [Finset.sum_add_distrib, sum_counts hp as bs cs ds s false,
     sum_counts hp as bs cs ds s true] at h
   exact h
+
+/-- Global repeated quarter/retained input volume of the installed fallback is bounded by
+the half populations and class count times quarter volume. This is not yet a bit-time theorem:
+actual scalar widths, sorting and callback profiles remain separately charged. -/
+theorem sum_restartCopyWork {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    (∑ g : BitVec p, restartCopyWork input g.toNat) ≤
+      6 * (2 ^ (as.length+bs.length) + 2 ^ (cs.length+ds.length)) +
+        4 * 2 ^ p * (quarterBudget input+1) := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  have bound (g : BitVec p) : restartCopyWork input g.toNat ≤
+      6 * (ClassBalance.count input false g.toNat + ClassBalance.count input true g.toNat) +
+        4 * (quarterBudget input+1) := by
+    have charge := ClassBatches.copyAllowance (probeContext input g.toNat) g.toNat
+    change restartCopyWork input g.toNat ≤ _ at charge
+    rw [restart_capacity_eq, ClassBalance.retained_length] at charge
+    have q := restart_quarter_le input g.toNat
+    have pop : ClassBatches.population (probeContext input g.toNat) g.toNat ≤
+        ClassBalance.count input false g.toNat + ClassBalance.count input true g.toNat := by
+      cases h : ClassBalance.retainRight input g.toNat <;>
+        simp only [ClassBatches.population, probeContext, probeTask, h, Bool.not_true,
+          Bool.not_false] <;> omega
+    omega
+  have total := Finset.sum_le_sum (fun g (_ : g ∈ Finset.univ) => bound g)
+  have populations : (∑ g : BitVec p,
+      (ClassBalance.count input false g.toNat + ClassBalance.count input true g.toNat)) =
+        2 ^ (as.length+bs.length) + 2 ^ (cs.length+ds.length) := by
+    rw [Finset.sum_add_distrib, sum_counts hp as bs cs ds s false,
+      sum_counts hp as bs cs ds s true]
+    simp only [Bool.false_eq_true, ite_false, ite_true]
+  have constant : (∑ _g : BitVec p, 4 * (quarterBudget input+1)) =
+      2 ^ p * (4 * (quarterBudget input+1)) := by
+    simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+      Fintype.card_congr BitVec.equivFin.toEquiv, Fintype.card_fin, Nat.cast_id]
+  rw [Finset.sum_add_distrib, ← Finset.mul_sum, populations, constant] at total
+  exact total.trans_eq (by ring)
 
 /-- Each class releases its retained dictionary and live batch; only a found pair survives. -/
 def allStep (input : ClassBalance.Input) (state : ℕ × Option (ℕ × ℕ)) :
@@ -546,12 +631,13 @@ theorem source_count_prefix_wire {m : ℕ} (p : ℕ) (s : BitVec m)
     omega
   exact h.trans (Nat.mul_le_mul hn coeff)
 
-/-- Actual streaming-fallback batch after a prefix of generated opposite-class matches. -/
+/-- Buffer observer of the preserved older `JoinedProbe` component. The installed fallback
+uses restarted `ClassBatches` and does not execute this per-pair buffer path. -/
 def buffer (input : ClassBalance.Input) (g n : ℕ) : List (ℕ × ℕ) :=
   JoinedProbe.buffer (probeContext input g) g n
 
-/-- Every generated-record prefix is bounded by computed balance. The auxiliary tapes of the
-actual nested-fold machine remain charged separately. -/
+/-- The preserved per-pair consumer has this logical prefix bound. It is not the installed
+fallback; restarted-batch prefix bounds are provided separately below. -/
 theorem buffer_bound (input : ClassBalance.Input) (g n : ℕ)
     (hg : g < 2 ^ ClassBalance.depth input) :
     (buffer input g n).length ≤ ClassBalance.balance input := by
@@ -565,8 +651,7 @@ theorem buffer_bound (input : ClassBalance.Input) (g n : ℕ)
   have hl := ClassBalance.class_le_balance input g hg
   omega
 
-/-- In the streaming branch, dictionary and live buffer coexist within twice the computed
-balance in record count at every logical probing prefix. Other tapes remain separately charged. -/
+/-- Preserved per-pair dictionary/buffer bound, separate from the installed restarted batches. -/
 theorem simultaneous_records (input : ClassBalance.Input) (g n : ℕ)
     (hg : g < 2 ^ ClassBalance.depth input) :
     (ClassBalance.retain input g).length + (buffer input g n).length ≤
@@ -576,7 +661,7 @@ theorem simultaneous_records (input : ClassBalance.Input) (g n : ℕ)
   omega
 
 /-- Every simultaneously retained/live buffered record has its derived full-state/payload
-width. This bounds physical dictionary/buffer encodings at every streaming-branch logical prefix;
+width. This bounds the preserved older `JoinedProbe` component's dictionary/buffer wire;
 internal bit-machine callback tapes remain separately charged by the actual certificate. -/
 theorem simultaneous_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
     (s : BitVec m) (g : BitVec p) (n : ℕ) :
@@ -645,8 +730,39 @@ theorem direct_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVe
   rw [← Nat.add_mul] at joined
   exact joined.trans (Nat.mul_le_mul_right _ records)
 
-/-- The generated retained population also pays the batch reread volume, including the final
-partial batch. This is a record-volume charge, not a bit-time or auxiliary-space theorem. -/
+/-- Physical dictionary and restarted output-prefix wire for original inputs. Internal
+producer/matcher tapes remain included in the actual certificate's separate prefix-space profile. -/
+theorem restart_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) (g : BitVec p) (i n : ℕ) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    let q := as.length + bs.length + cs.length + ds.length
+    (encList (encPair encNat encNat) (ClassBalance.retain input g.toNat)).length +
+      (encList (encPair encNat encNat)
+        ((ClassBatches.batch (probeContext input g.toNat) g.toNat i).take n)).length ≤
+          (2 * ClassBalance.balance input + 2 * quarterBudget input + 1) * (4 * m + 2 * q + 3) := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  let context := probeContext input g.toNat
+  let q := as.length + bs.length + cs.length + ds.length
+  let batch := (ClassBatches.batch context g.toNat i).take n
+  have row (r : ℕ × ℕ) (hr : r ∈ batch) : (encPair encNat encNat r).length ≤ 2*m+1+q := by
+    have original := ClassBatches.batch_sound context g.toNat i r (List.mem_of_mem_take hr)
+    exact ClassBalance.record_wire hp as bs cs ds s _ g r original
+  have output := length_encList_le (encPair encNat encNat) batch row
+  have kept := ClassBalance.records_prefix_wire hp as bs cs ds s
+    (ClassBalance.retainRight input g.toNat) g (ClassBalance.retain input g.toNat).length
+  change (encList (encPair encNat encNat)
+    ((ClassBalance.retain input g.toNat).take (ClassBalance.retain input g.toNat).length)).length ≤
+      ((ClassBalance.retain input g.toNat).take (ClassBalance.retain input g.toNat).length).length *
+        (4*m+2*q+3) at kept
+  rw [List.take_length] at kept
+  have records := restart_prefix_records input g.toNat i n g.isLt
+  have joined := Nat.add_le_add kept output
+  have outputFactor : 2 * (2*m+1+q)+1 = 4*m+2*q+3 := by ring
+  rw [outputFactor, ← Nat.add_mul] at joined
+  exact joined.trans (Nat.mul_le_mul_right _ records)
+
+/-- Reread volume for the preserved older per-pair consumer, including its final partial batch.
+The installed fallback uses `ClassBatches` instead. This is a record-volume charge only. -/
 theorem probe_recordWork (input : ClassBalance.Input) (g : ℕ) (rows : List (ℕ × ℕ)) :
     let task := probeTask input g
     let parameter := BatchedAccess.parameters task
@@ -687,10 +803,10 @@ private theorem classInput_polyTime : ComputableInPolyTime
     ((ClassBalance.depth_polyTime.comp original).prod
       (ComputableInPolyTime.snd ClassBalance.encoding encNat))).of_enc_eq (fun _ => rfl)
 
-/-- Actual smaller-class generation and nested generated-match probing. All quarter/list
-replay, captured-state copying and batch matching costs remain in the bit profile. -/
-private noncomputable def streamSearchCertificate : NativeCertificate
-    (fun q : ClassBalance.Input × ℕ => JoinedProbe.run (probeContext q.1 q.2) q.2)
+/-- Actual smaller-class generation and restarted row-window matching. Quarter rescans,
+per-batch parameter copies, full-state reconstruction and matcher temporaries are charged. -/
+private noncomputable def batchSearchCertificate : NativeCertificate
+    (fun q : ClassBalance.Input × ℕ => ClassBatches.run (probeContext q.1 q.2) q.2)
     (encPair ClassBalance.encoding encNat) (encOption (encPair encNat encNat)) := by
   let original : NativeCertificate (id : ClassBalance.Input × ℕ → _)
       classEncoding classEncoding := .linear (.of_eq (fun _ => rfl))
@@ -711,7 +827,7 @@ private noncomputable def streamSearchCertificate : NativeCertificate
   let parameter := BatchedAccess.parametersCertificate.comp raw.snd
   let context := (raw.fst.prod opposite).prod (parameter.prod raw.snd.snd)
   let prepared := context.comp packed
-  exact NativeCertificate.congr (JoinedProbe.runCertificate.comp
+  exact NativeCertificate.congr (ClassBatches.runCertificate.comp
     (prepared.prod original.snd)) (fun _ => rfl)
 
 private theorem quarterBudget_polyTime : ComputableInPolyTime quarterBudget
@@ -782,13 +898,13 @@ private noncomputable def directSearchCertificate : NativeCertificate
     (parameter.prod generated)) (fun _ => rfl)
 
 /-- One count-selected uniform machine uses a single match for a class that fits the
-quarter-plus-retained allowance, and the approved bounded streaming machine otherwise.
+quarter-plus-retained allowance, and the bounded restarted-window machine otherwise.
 All count, materialization, matching, copy and callback temporaries remain charged. -/
 noncomputable def searchCertificate : NativeCertificate
     (fun q : ClassBalance.Input × ℕ => search q.1 q.2)
     (encPair ClassBalance.encoding encNat) (encOption (encPair encNat encNat)) :=
   NativeCertificate.congr (NativeCertificate.branch materializeCertificate
-    directSearchCertificate streamSearchCertificate) (fun _ => rfl)
+    directSearchCertificate batchSearchCertificate) (fun _ => rfl)
 
 private noncomputable def allStepCertificate : NativeCertificate
     (fun q : ClassBalance.Input × (ℕ × Option (ℕ × ℕ)) => allStep q.1 q.2)
@@ -919,8 +1035,9 @@ private noncomputable def solveCertificate : NativeCertificate solve ClassBalanc
     (halvesCertificate.prod allCertificate)) (fun _ => rfl)
 
 /-- One uniform original-input bit execution computes both counts/balance, generated smaller
-classes, generated opposite streams, outer control and decoded output. Charged profiles include
-captured-state copying, preprocessing and control. Sharp global resources remain open. -/
+classes, restarted opposite windows, outer control and decoded output. Charged profiles include
+per-batch copying, internal callbacks, preprocessing and control.
+Sharp global resources remain open. -/
 noncomputable def sourceCertificate : NativeCertificate run Source.encoding
     (encPair encNat (encOption encBits)) :=
   NativeCertificate.congr ((ClassBalance.balanceCertificate.prod solveCertificate).comp

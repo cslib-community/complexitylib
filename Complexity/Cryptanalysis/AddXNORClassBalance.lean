@@ -47,7 +47,8 @@ for [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
 
 * `original_records`: exhaustive original half-word semantics in both directions.
 * `count_eq_counter`, `balance_eq_counter`: exact agreement with original-half counters.
-* `records_prefix_wire`, `retained_prefix_wire`, `table_prefix_wire`: physical prefix wires.
+* `record_wire`, `records_prefix_wire`: physical widths of actual records and prefixes.
+* `retained_prefix_wire`, `table_prefix_wire`: retained/count-table prefix wires.
 * `balance_eq_prefix`, `balancePrefix_le`, `balancePrefix_wire`: scalar prepass correctness/width.
 * `retained_join_volume`: streamed selected-class join cost uses the computed balance.
 * `retainCertificate`, `balanceCertificate`: actual generated retention and count-only prepass.
@@ -853,6 +854,25 @@ theorem balancePrefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVe
   simpa only [encNat_apply, ← Nat.size_eq_bits_len] using
     Nat.size_le.mpr (upper.trans_lt hpow)
 
+/-- One actual full-state class record has a width derived from original words and packed
+half indices, even when values collide. -/
+theorem record_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) (right : Bool) (g : BitVec p) (r : ℕ × ℕ)
+    (hr : r ∈ records (ProgramGeneration.originalSource p as bs cs ds s 0) right g.toNat) :
+    let q := as.length + bs.length + cs.length + ds.length
+    (encPair encNat encNat r).length ≤ 2 * m + 1 + q := by
+  let q := as.length + bs.length + cs.length + ds.length
+  obtain ⟨hk, hv⟩ := records_fit hp as bs cs ds s 0 right g r hr
+  have hkey : (encNat r.1).length ≤ m := by
+    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.size_le.mpr hk
+  have hval : (encNat r.2).length ≤ q := by
+    have hl : (if right then cs.length + ds.length
+      else as.length + bs.length) ≤ q := by split <;> dsimp only [q] <;> omega
+    have hsize := (Nat.size_le.mpr hv).trans hl
+    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using hsize
+  simp only [length_encPair]
+  omega
+
 /-- Physical full-state/payload wire of either generated class prefix, in terms of its
 actual record count. Internal producer workspace is separate. -/
 theorem records_prefix_wire {m p : ℕ} (hp : p ≤ m)
@@ -864,18 +884,8 @@ theorem records_prefix_wire {m p : ℕ} (hp : p ≤ m)
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   let q := as.length + bs.length + cs.length + ds.length
   have hrecord (r : ℕ × ℕ) (hr : r ∈ (records input right g.toNat).take j) :
-      (recEncoding r).length ≤ 2 * m + 1 + q := by
-    have hh := List.mem_of_mem_take hr
-    obtain ⟨hk, hv⟩ := records_fit hp as bs cs ds s 0 _ g r hh
-    have hkey : (encNat r.1).length ≤ m := by
-      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.size_le.mpr hk
-    have hval : (encNat r.2).length ≤ q := by
-      have hl : (if right then cs.length + ds.length
-        else as.length + bs.length) ≤ q := by split <;> dsimp only [q] <;> omega
-      have hsize := (Nat.size_le.mpr hv).trans hl
-      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using hsize
-    simp only [recEncoding, length_encPair]
-    omega
+      (recEncoding r).length ≤ 2 * m + 1 + q :=
+    record_wire hp as bs cs ds s right g r (List.mem_of_mem_take hr)
   have hw := length_encList_le recEncoding ((records input right g.toNat).take j) hrecord
   exact hw.trans_eq (by ring)
 

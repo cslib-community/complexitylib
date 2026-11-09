@@ -1896,6 +1896,7 @@ public import Complexity.Computability.GenericRAM.Native.Nat
 public import Complexity.Computability.GenericRAM.Native.PolynomialOverhead
 public import Complexity.Computability.GenericRAM.Native.StackRecursion
 public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
+public import Complexity.Computability.GenericRAM.Native.StreamingEmit
 public import Complexity.Computability.GenericRAM.Native.StreamingFold
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
@@ -1964,6 +1965,7 @@ public import Complexity.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatch
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinStream
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
@@ -2906,6 +2908,7 @@ public import Complexity.Cryptanalysis.AddXNORBits
 public import Complexity.Cryptanalysis.AddXNORChain
 public import Complexity.Cryptanalysis.AddXNORChainReverse
 public import Complexity.Cryptanalysis.AddXNORClassBalance
+public import Complexity.Cryptanalysis.AddXNORClassBatches
 public import Complexity.Cryptanalysis.AddXNORClassEnumeration
 public import Complexity.Cryptanalysis.AddXNORClassJoin
 public import Complexity.Cryptanalysis.AddXNORClassStreaming

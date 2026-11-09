@@ -209,8 +209,11 @@ plus a quarter allowance; it does not materialize an arbitrary larger class.
 Empty retained dictionaries skip opposite generation by matcher soundness. Its
 certificate uses the encoded streaming kernel with actual finite-prefix maxima,
 not supplied completion/resource assumptions. `sum_pairVisits` bounds total
-matching-pair visits by the two half populations; it is not a bit-time theorem.
-Use the new complete online consumer client alongside the original-input client.
+class pair population by the two half populations; it is not a bit-time theorem.
+The installed fallback now uses `ClassBatches`: completed row-aligned windows
+are generated without retained dictionary/growing-buffer callback state, matched,
+and released. Use the complete restarted-batch client alongside the original-input
+client; the old online consumer remains available as a separate component.
 
 The actual solver balance prepass now streams one scalar maximum of computed
 count minima; no count table/reversal/reduction is executed. Its derived prefix
@@ -222,17 +225,21 @@ resource bounds on the actual searched output. These are boundary phases only.
 
 Keep its resource limits visible: separate count-table and retained/live-buffer prefix
 encodings have derived bounds, but actual machine profiles also charge
-repeated quarter/count generation and captured dictionary/buffer copies. Each
+repeated quarter/count generation, per-batch retained-parameter copies and all
+callback tapes. Capacity includes quarter volume; `copyAllowance` and
+`sum_restartCopyWork` derive the global repeated-input volume, while
+`restart_prefix_wire` derives logical dictionary/output prefix wire. Neither is
+a closed global bit-time/auxiliary-space theorem. Each
 consumer list is read once; time sums actual rounds, while space takes actual
 callback/prefix-state/token maxima and separately charges returned state. The
 all-class search uses that same fixed kernel with actually generated index data,
 whose `2^p(2p+1)` wire is quarter scale at the capped source depth. Class work is
 summed and only a found pair survives a released class. The remaining bound
-normalization must still charge fallback persistent-state copying, count/quarter
-callbacks and matcher temporaries. Orientation recomputes counts; no cached-size oracle is input.
+normalization must still bound actual count/quarter/window/full-state callbacks
+and matcher temporaries in scalar widths, with simultaneous lifetimes. Orientation recomputes counts; no cached-size oracle is input.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
-sharp source TM bounds. Persistent tape reuse and sharp global inequalities
-remain required. The old solvers and
+sharp source TM bounds. The per-pair copy path is no longer installed, but sharp
+global inequalities remain required. The old solvers and
 all their charges remain intact; the new direct route bypasses their interpreter.
 
 ## Correct course and hand work over

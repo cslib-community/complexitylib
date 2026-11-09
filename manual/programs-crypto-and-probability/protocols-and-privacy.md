@@ -1579,8 +1579,8 @@ For each class, actual counts select the smaller retained side. `materialize`
 also computes whether the nonempty retained class plus the four quarter
 populations can hold the opposite class. If so, `directSearch` generates that
 class and invokes the radix matcher once: no dictionary or growing buffer is
-passed through a per-pair feed. Otherwise `JoinedProbe.run` uses the approved
-bounded batches and final partial flush. Empty retained dictionaries still skip
+passed through a per-pair feed. Otherwise the installed fallback is now `ClassBatches.run`, which regenerates
+bounded row-aligned quarter windows and matches each completed batch. Empty retained dictionaries still skip
 opposite generation by matcher soundness. Class release, original-order decoding,
 `original_correct` witness/miss semantics and `original_balance` are preserved.
 Orientation/branch selection use generated counts, not cached-size advice.
@@ -1592,8 +1592,8 @@ prefix by $(2\mu+Q)(4m+2q+3)$ bits, where $Q$ is this computed quarter allowance
 `sum_directRecordWork` bounds all directly matched dictionary/opposite input
 record volumes by the two half populations. These logical wire/record-volume
 bounds do not bound internal matcher/producer workspace or establish bit time.
-The fallback's `simultaneous_wire` still bounds dictionary plus live buffer by
-$2\mu(4m+2q+3)$ for every generated-record prefix. The separate table API retains
+The preserved older `JoinedProbe` component retains `simultaneous_wire`; it is
+not the installed fallback. The separate table API retains
 `source_count_prefix_wire`; its table is not an accumulator of this solver.
 Here $\mu$ is the computed maximum, not an expectation.
 
@@ -1631,11 +1631,11 @@ the installed machine through `witnessesCertificate`. This remains a join-phase
 bound; preparation, quarter generation/sorting and full-state readback have
 separate composed profiles.
 
-`sum_pairVisits` proves that all generated matching-pair slots across classes total
+`sum_pairVisits` bounds the source class pair populations across classes by
 at most $2^{|Q_1|+|Q_2|}+2^{|Q_3|+|Q_4|}$. Duplicate full states still correspond
 to distinct packed words; both orientations, empty-dictionary skipping and
 early-hit parking are included.
-This bounds the new traversal domain, not its bit cost.
+This bounds the pair domain, not the restarted machine's bit cost.
 
 The consumer and class loop reuse
 [`NativeCertificate.foldlStream`](../../Complexity/Computability/GenericRAM/Native/StreamingFold.lean),
@@ -1645,9 +1645,40 @@ prefix-state and token maxima; the returned state is charged separately, without
 adding the entire loop clock to workspace. These prefix measures are derived,
 not supplied invariants. Scalar index/full-state callbacks receive isolated
 records/original input; side filters use the proved physical-width streaming
-filter. In the fallback, retained dictionaries and growing buffers still occur
-in captured state and are copied per matching pair. The direct branch avoids
-those feeds for fitting classes; this does not bound every fallback class.
+filter. `ClassBatches` now replaces that per-pair fallback in the assembled
+solver. Its window producer receives only source operands, side, class and binary
+rank bounds; it never receives the retained dictionary or a growing batch state.
+`KeyJoinBatch.window` selects whole right occurrence rows whose first Cartesian
+rank falls in the batch interval. It scans quarter lists and emits only selected
+cross products, avoiding per-pair lookup or generation of skipped Cartesian pairs.
+A row crossing an interval boundary is emitted in full by its starting window.
+`window_cover` and `window_mem_join` prove coverage/provenance, including empty
+groups and collisions; `window_length` bounds output by capacity plus quarter input.
+
+Capacity is retained count plus one plus produced quarter volume $N$. Each
+restart uses actual generated labels, padded to a power of two and guarded before
+batch generation. `batchCount_le_quarter` and `labels_wire` bound this data by
+quarter scale with binary framing. The fixed label loop holds only the retained
+parameter and optional witness; it releases a batch before the next one. The
+parameter is copied per batch rather than per pair. Pair/full-state callbacks
+receive isolated records/original input, and count/cut state uses binary scalars.
+`NativeCertificate.emitFoldCertificate` reuses the real framed kernel, accumulating
+output on the output tape rather than in the evolving callback state. Actual
+callback clocks, framing, both filtered runs, selected output, scalar state,
+setup/finalization and matcher tapes remain charged.
+
+`restart_prefix_wire` bounds dictionary plus every logical output prefix by
+$(2\mu+2Q+1)(4m+2q+3)$ bits, where $Q$ is the four-quarter allowance.
+`copyAllowance` charges all generated restart labels by at most $2M+4C$, with
+produced population $M$ and computed capacity $C$. Regenerating quarters is paid
+because $C\ge N$; retained input is paid because $C$ exceeds retained size.
+`sum_restartCopyWork` bounds this allowance over all classes by
+$6(2^{|Q_1|+|Q_2|}+2^{|Q_3|+|Q_4|})+4\cdot2^p(Q+1)$.
+This is a global repeated-input volume bound, not a proved global bit-time bound.
+The actual machine profiles still need composition/normalization in scalar widths.
+The complete restarted client checks a genuine fallback residue, batches crossing
+rows, padded labels, non-self-inverse addition, a returned original witness and
+an exhaustive miss, rather than only the selected single-match branch.
 
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
@@ -1660,14 +1691,19 @@ released before the next and only a found pair surviving. Index generation,
 framing, setup and readback remain charged.
 
 This composes an actual global bit-clock/prefix-space profile, but does not prove
-the requested sharp source inequalities. Persistent retained/buffer tape reuse in the fallback, internal matcher/full-state
-callback profiles, repeated count/quarter generation and their global resource
-normalization still need work. The installed scalar prepass removes table
+the requested sharp source inequalities. The installed fallback no longer executes the per-pair retained/growing-buffer
+copy path. Closed scalar-width bounds for all installed callbacks, quarter
+generation/sorting, matching and the summed global time/simultaneous workspace
+profiles still need to be proved. The installed scalar prepass removes table
 reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
 occupancy or matching-pair totals do not remove those machine costs. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;
 the new direct multitape route bypasses that interpreter but retains the costs
 just listed. Lemma 8/Theorem 7 resources and the whole-paper objective remain open.
+
+The installed fallback is checked by
+[`ComplexityTests/AddXNORClassBatches.lean`](../../ComplexityTests/AddXNORClassBatches.lean),
+including actual hit/miss runs with non-self-inverse addition in the inverse direction.
 
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORJoinedDissection`, then run
@@ -1675,7 +1711,8 @@ From the repository root, build
 `lake env lean ComplexityTests/AddXNORJoinedDissection.lean`; also run
 `lake env lean ComplexityTests/KeyCount.lean` for the direct streamed counter and
 `lake env lean ComplexityTests/KeyJoinStream.lean` for the retained join and
-`lake env lean ComplexityTests/AddXNORJoinedProbe.lean` for the online opposite
+`lake env lean ComplexityTests/AddXNORClassBatches.lean` for the installed restarted fallback;
+use `lake env lean ComplexityTests/AddXNORJoinedProbe.lean` for the online opposite
 consumer. The
 [class-balance client](../../ComplexityTests/AddXNORClassBalance.lean) checks
 unequal computed populations, both orientations, empty backward classes and
