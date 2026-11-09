@@ -1537,17 +1537,20 @@ and they do not compute $\mu_p$.
 `ClassJoin` now generates the forward first quarter and genuine inverse
 second-quarter queries, tags and sorts their union, and feeds the same one-pass
 group writer. `KeyJoin` emits every cross-side occurrence pair in a group;
-its count pass instead multiplies the two group populations and sums, without
-constructing the pairs. Collisions and duplicate occurrences contribute to the
-count. `original_witnesses` and `mem_fullStates` prove exhaustive packed-pair
-semantics and actual original full-width states, with inverse payloads reversed
+the installed count machine instead feeds the sorted tagged records directly
+to `KeyCount.run`. It keeps the previous key, two run populations and the
+accumulated pair count, adding the opposite population on each record. No group
+or Cartesian product is built on this count path. `count_streaming` proves exact
+agreement with the grouped definition. Collisions and duplicate occurrences
+contribute to the count. `original_witnesses` and `mem_fullStates` prove exhaustive
+packed-pair semantics and actual original full-width states, with inverse payloads reversed
 back to original operator order. Full-state reconstruction uses a real streamed
 per-pair callback, charging the original input and one packed pair.
 
 `ClassJoin.table` is a fixed runtime-counter program visiting all $2^p$ computed
-forward classes, producing binary counts and releasing each round's quarter/group
+forward classes, producing binary counts and releasing each round's quarter/sort
 temporaries. `tableCertificate` composes actual preparation, generation, inverse
-execution, sorting/grouping, counting and loop control. `original_table_zero_iff`
+execution, sorting, direct record counting and loop control. `original_table_zero_iff`
 proves an indexed zero is an exhaustive original-input class miss. `table_wire`
 bounds the stored table by $2^p(4k+7)$ bits; it does **not** bound the machine's
 internal workspace by that table size.
@@ -1582,7 +1585,17 @@ Here $\mu$ is the actual computed balance, not a class expectation. The uniform
 control, input copying, output and readback. The four-record-volume amortization
 of batch rereads is not substituted for bit time.
 
-The generic join/count consumers still pay polynomial cost in whole grouped wire
+The actual count consumer has $O(I+(n+1)P(B))$ bit time and
+$O(I+P(B))$ charged peak space, where $I$ is the sorted record wire,
+$n$ its record count, and $B$ the maximum record width plus the binary length of
+$n^2+1$ and one. The latter covers all three counters at every prefix, including
+an entirely colliding run. Callback tapes, state/token framing, initialization
+and binary output are charged by `KeyCount.run_computable`. This bound replaces
+the former whole-group polynomial count callback in the assembled certificates;
+it is a count-consumer bound, not a global solver theorem. Quarter generation,
+sorting, all-class control and their materialized phase boundaries remain charged.
+
+The generic join emitters still pay polynomial cost in whole grouped wire
 volume. The new route recomputes quarters/counts per class, scans opposite half
 words for each class, and copies captured retained/buffer state. The count
 prepass also charges table copying/reversal/reduction. The outer certificate uses
@@ -1598,10 +1611,13 @@ just listed. Lemma 8/Theorem 7 resources and the whole-paper objective remain op
 From the repository root, build
 `lake build Complexity.Cryptanalysis.AddXNORJoinedDissection`, then run
 `lake env lean ComplexityTests/AddXNORClassBalance.lean` and
-`lake env lean ComplexityTests/AddXNORJoinedDissection.lean`. The
+`lake env lean ComplexityTests/AddXNORJoinedDissection.lean`; also run
+`lake env lean ComplexityTests/KeyCount.lean` for the direct streamed counter. The
 [class-balance client](../../ComplexityTests/AddXNORClassBalance.lean) checks
 unequal computed populations, both orientations, empty backward classes and
-fourth-quarter residue. The complete
+fourth-quarter residue, including execution of the actual new count path in
+both directions. The [counter client](../../ComplexityTests/KeyCount.lean) checks
+empty/one-sided runs, repeated occurrences and key changes. The complete
 [joined dissection client](../../ComplexityTests/AddXNORJoinedDissection.lean)
 executes original non-self-inverse additions/collisions through decoded hits and
 exhaustive misses, including zero/empty/capped input. It also applies the general

@@ -192,11 +192,15 @@ the count-selected smaller class. `JoinedDissection.run` is the assembled
 original-input route through generated retention, bounded-batch counter probing,
 fixed outer release/iteration and original witness readback. Its correctness and
 returned balance are proved; use both complete new clients linked in the
-Operator's Manual when handing it over.
+Operator's Manual when handing it over. The installed count certificate now
+feeds the sorted quarter records directly to `KeyCount.run`, bypassing grouped
+materialization in both directions. Its one-key/three-counter state has proved
+near-linear record bit time and small callback prefix space, including binary
+count widths; this improves the count consumer, not the whole solver bound.
 
 Keep its resource limits visible: count-table and retained/live-buffer prefix
 encodings have derived bounds, but actual machine profiles also charge grouped
-polynomial consumers, repeated quarter/count generation, opposite half scans,
+polynomial join emitters, repeated quarter/count generation, opposite half scans,
 captured dictionary/buffer copying and all internal temporaries. Orientation
 recomputes the counts; no cached-size oracle is input. Do not promote the list
 bounds or batch record-volume accounting to sharp TM time/peak space. A joined

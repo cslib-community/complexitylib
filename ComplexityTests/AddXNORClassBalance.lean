@@ -17,6 +17,7 @@ import all Complexity.Cryptanalysis.AddXNORDecision
 import all Complexity.Cryptanalysis.AddXNORNativeEnumeration
 import all Complexity.Cryptanalysis.AddXNORProgramGeneration
 import all Complexity.Cryptanalysis.AddXNORBitInput
+import all Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
 import all Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
 import all Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
 import all Complexity.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatch
@@ -82,3 +83,16 @@ example := ClassBalance.recordsCertificate.computes
 example := ClassBalance.retainCertificate.computes
 example := ClassBalance.tableCertificate.computes
 example := ClassBalance.balanceCertificate.computes
+
+-- The actual new counter consumes generated sorted quarter rows in both orientations.
+-- These are not precomputed class sizes supplied to the machine.
+example : (List.range 4).map (fun g =>
+    let input := Source.prepare backwardSmallerFixture
+    (KeyCount.run (ClassJoin.sortedRecords (ClassBalance.queryInput input false g)),
+      KeyCount.run (ClassJoin.sortedRecords (ClassBalance.queryInput input true g)))) =
+    [(8, 6), (0, 4), (0, 2), (8, 4)] := by decide +kernel
+
+example (input : ClassBalance.Input) (right : Bool) (g : ℕ) :
+    KeyCount.run (ClassJoin.sortedRecords (ClassBalance.queryInput input right g)) =
+      ClassBalance.count input right g :=
+  (ClassJoin.count_streaming _).symm

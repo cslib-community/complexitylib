@@ -9,7 +9,7 @@ module
 
 public import Complexity.Cryptanalysis.AddXNORGroupedQuarter
 public import Complexity.Cryptanalysis.AddXNORSortedMeet
-public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
 import all Complexity.Cryptanalysis.AddXNORClassStreaming
 import all Complexity.Cryptanalysis.AddXNORSortedMeet
 import all Complexity.Cryptanalysis.AddXNORSource
@@ -32,19 +32,22 @@ pairs. Reversing inverse-quarter payloads restores original operator order.
 
 This implements the class-join semantics in [WangLvShenZhang2027], Lemma 8,
 PDF pp. 21–22. The source-input preparation computes the cut, projection and
-zero-target conventions. The current generic count consumer is polynomial in
-total grouped wire volume: its certificate charges that overhead and does not
-establish near-linear counting, fused retention/probing, or sharp global time
-and simultaneous peak space. The complete old uniform solver is unchanged.
+zero-target conventions. Counts now consume sorted tagged records directly with
+near-linear bit time and logarithmic counters, bypassing grouped materialization.
+The join emitter still pays a grouped-volume polynomial; fused retention/probing
+and sharp global time and simultaneous peak space remain open. The complete old
+uniform solver is unchanged.
 
 ## Main definitions
 
-* `groups`, `count`, `fullStates`: generated class joins, counts and full-state records.
+* `sortedRecords`, `groups`, `count`, `fullStates`: generated quarter records, class joins,
+  counts and full-state records.
 * `table`: a fixed runtime-counter loop counting every computed forward class.
 
 ## Main results
 
 * `mem_fullStates`, `original_zero_iff`: original-input witness and exhaustive-miss semantics.
+* `count_streaming`: direct sorted-record counting feeds the existing class semantics.
 * `fullRecords_computable`: per-pair streamed full-state reconstruction.
 * `tableCertificate`, `original_table_zero_iff`: actual uniform all-class counting.
 * `table_wire`: quarter-scale stored counts, separately from internal machine workspace.
@@ -67,10 +70,13 @@ def batches (input : Input) : SortedMatch.Input :=
   (width, (SortedQuarterMachine.run ((width, seed), first),
     SortedMeet.inverse ((width, target), second)))
 
-/-- Actual generation, tagging, sorting and one-pass group emission. -/
-def groups (input : Input) : List (List (ℕ × ℕ)) :=
+/-- Quarter records, tagged by direction and radix sorted by projected state. -/
+def sortedRecords (input : Input) : List (ℕ × ℕ) :=
   let (width, _) := batches input
-  KeyGrouping.run (RadixSort.sort (width, SortedMatch.tagged (batches input)))
+  RadixSort.sort (width, SortedMatch.tagged (batches input))
+
+/-- Actual generation, tagging, sorting and one-pass group emission. -/
+def groups (input : Input) : List (List (ℕ × ℕ)) := KeyGrouping.run (sortedRecords input)
 
 /-- Every pair of colliding quarter occurrences, without replacing inverse addition by addition. -/
 def witnesses (input : Input) : List (ℕ × ℕ) := KeyJoin.join (groups input)
@@ -124,9 +130,9 @@ theorem count_zero_iff {p : ℕ} (as bs : List (BitVec p)) (s g : BitVec p) :
   rw [count_eq_length, List.length_eq_zero_iff, List.eq_nil_iff_forall_not_mem]
   simp only [mem_witnesses, not_exists]
 
-/-- All generation, inverse conjugation, sort and grouping phases have actual bit executions. -/
-noncomputable def groupsCertificate :
-    NativeCertificate groups encoding KeyGrouping.outputEncoding := by
+/-- Actual quarter generation, inverse queries, tags and radix sorting, before any groups. -/
+noncomputable def sortedCertificate : NativeCertificate sortedRecords encoding
+    (encList (encPair encNat encNat)) := by
   let original : NativeCertificate (id : Input → _) encoding encoding :=
     .linear (.of_eq (fun _ => rfl))
   let quarters := SortedMeet.quarterCertificate.comp
@@ -140,16 +146,29 @@ noncomputable def groupsCertificate :
     ((NativeCertificate.const (em := encBool) true).prod batch.snd.snd)
   let tag := (left.prod right).post (ComputableInO.append' (enc := (encPair encNat encNat)))
   let sort := SortedMatch.sortCertificate.comp (original.fst.fst.fst.prod tag)
+  exact NativeCertificate.congr sort (fun _ => rfl)
+
+/-- Grouped emission is used by the occurrence producer, independently of the count path. -/
+noncomputable def groupsCertificate :
+    NativeCertificate groups encoding KeyGrouping.outputEncoding := by
   let h := (Classical.choose_spec KeyGrouping.run_computable).2.2
   let writer : NativeCertificate KeyGrouping.run (encList (encPair encNat encNat))
       KeyGrouping.outputEncoding := ⟨_, _, h⟩
-  exact NativeCertificate.congr (writer.comp sort) (fun _ => rfl)
+  exact NativeCertificate.congr (writer.comp sortedCertificate) (fun _ => rfl)
 
-/-- One uniform machine counts generated classes without materializing half spaces.
-The profile includes the generic grouped-wire polynomial consumer, not a desired sharp bound. -/
-noncomputable def countCertificate : NativeCertificate count encoding encNat :=
-  NativeCertificate.congr ((NativeCertificate.ofPolyTime KeyJoin.count_polyTime).comp
-    groupsCertificate) (fun _ => rfl)
+/-- A direct record pass computes the same class size, without constructing any groups. -/
+theorem count_streaming (input : Input) : count input = KeyCount.run (sortedRecords input) :=
+  (KeyCount.run_eq_count _).symm
+
+/-- One uniform count machine bypasses grouping and Cartesian products. Its consumer charges
+input volume plus record count times a polynomial of physical row and binary counter widths;
+the quarter-generation and sorting phase profiles are charged separately by composition. -/
+noncomputable def countCertificate : NativeCertificate count encoding encNat := by
+  let h := (Classical.choose_spec KeyCount.run_computable).2.2
+  let consumer : NativeCertificate KeyCount.run (encList (encPair encNat encNat)) encNat :=
+    ⟨_, _, h⟩
+  exact NativeCertificate.congr (consumer.comp sortedCertificate)
+    (fun input => (count_streaming input).symm)
 
 /-- The executable join, including its current polynomial grouped-list overhead. -/
 noncomputable def witnessesCertificate : NativeCertificate witnesses encoding
@@ -437,7 +456,9 @@ theorem count_le_quarters (input : Input) :
   have h := KeyJoin.count_le_square (groups input)
   have hl : (groups input).flatten.length =
       2 ^ input.1.2.1.length + 2 ^ input.1.2.2.length := by
-    rw [groups, KeyGrouping.flatten_run, RadixSort.sort,
+    change (KeyGrouping.run (RadixSort.sort
+      ((batches input).1, SortedMatch.tagged (batches input)))).flatten.length = _
+    rw [KeyGrouping.flatten_run, RadixSort.sort,
       (RadixSort.prefix_invariants (SortedMatch.tagged (batches input))
         (batches input).1).2.length_eq]
     simp only [SortedMatch.tagged, batches, List.length_append, List.length_map,

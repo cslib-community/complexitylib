@@ -77,3 +77,6 @@ example := ClassJoin.sourceCertificate.computes
 example := ClassJoin.fullStatesCertificate.computes
 example := ClassJoin.tableCertificate.computes
 example := ClassJoin.fullRecords_computable
+
+example (input : ClassJoin.Input) := ClassJoin.count_streaming input
+example := ClassJoin.sortedCertificate.computes

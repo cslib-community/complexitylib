@@ -301,8 +301,12 @@ reconstruction from original input. Its fixed runtime outer loop visits every
 computed forward class and produces a binary count table; zero counts have
 original packed-word exhaustive-miss semantics. The stored table has the derived
 quarter-scale bound `2^p (4k+7)`. Actual uniform bit certificates include every
-composed phase and table/control copying, but generic join/count callbacks still
-pay polynomial grouped-wire cost. `ClassBalance` now derives unique complete
+composed phase and table/control copying. The installed count consumer now
+bypasses groups: one pass over sorted tagged quarter records stores one key and
+three binary counters. Its actual multitape time is `I+(n+1)P(B)` and charged
+all-prefix space is `I+P(B)`, where `B` includes the maximum physical row and
+the binary encoding of `n^2+1`. Generic join emitters still pay polynomial
+grouped-wire cost. `ClassBalance` now derives unique complete
 half words, exact original-half counter counts in both directions, computed
 balance and count-selected retention. `JoinedDissection` assembles that retention
 with the actual bounded-batch counter probe, fixed all-class release/iteration,
