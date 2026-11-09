@@ -2615,6 +2615,7 @@ public import Complexity.Computability.Probabilistic.NativeBatch.ProgressCompari
 public import Complexity.Computability.Probabilistic.NativeBatch.Quantitative
 public import Complexity.Computability.Probabilistic.NativeBatch.Retained
 public import Complexity.Computability.Probabilistic.NativeBatch.Trace
+public import Complexity.Computability.Probabilistic.NativeContextLoader
 public import Complexity.Computability.Probabilistic.NativeEpoch
 public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
@@ -4412,6 +4413,7 @@ public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn
 public import Complexity.Probability.StochasticOracle.NativeRetention
 public import Complexity.Probability.StochasticOracle.NativeRetention.Correctness
 public import Complexity.Probability.StochasticOracle.NativeRetention.Execution
+public import Complexity.Probability.StochasticOracle.NativeRetention.InitialContext
 public import Complexity.Probability.StochasticOracle.NativeRetention.Packets
 public import Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution
 public import Complexity.Probability.StochasticOracle.NativeRetention.Selector

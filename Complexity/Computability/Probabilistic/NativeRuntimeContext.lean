@@ -26,7 +26,7 @@ context into a continuation or resetting the shared oracle state.
 This is a transport milestone for [Wang2027], model PDF pp. 4--6 and Theorem 5,
 PDF p. 12/App. A.5 p. 16. The supported scheduler submits the updated context word;
 it does not compile arbitrary schedulers or certify the source concurrent-batch
-codec, retention/stopping policy, quantitative upper endupdateConfig or full selector.
+codec, retention/stopping policy, quantitative upper endpoint or full selector.
 -/
 
 public section
@@ -699,6 +699,19 @@ all response buffers and flags start blank. -/
     (memory : Memory Unit P) :=
   NativeResponseExecution.startFrom restoring request memory
     (NativeResponseExecution.Workspace.words ![context, []])
+
+/-- Canonical storage produced by the retained-context entry, stated against the
+actual program's initial control for consumers that prepend native input loading. -/
+theorem restoringEntry_tapes {P : Type} (input context : List Bool)
+    (memory : Memory Unit P) :
+    (restoringEntry input context memory).config.tapes =
+      wordsCfg input (some restoringProgram.initial)
+        (Function.update (fun _ => []) 0 context) [] := by
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
+  · funext i; fin_cases i <;>
+      simp [restoringEntry, NativeResponseExecution.startFrom,
+        NativeResponseExecution.Workspace.words, wordsCfg, Fin.append, Fin.addCases]
+  · funext i; fin_cases i <;> rfl
 
 /-- Whole stopped law of the complete concrete two-response/cleanup native program. -/
 theorem terminal_restoringProgram {P : Type} (env : Environment Unit P)

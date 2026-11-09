@@ -233,8 +233,20 @@ appends the first full reply's frame to a runtime word, issues the resulting wor
 as its second request and restores the context head/inner flag using native
 rewind/erase instructions. Its derived full-world and readback laws preserve the
 same private oracle state, correlated replies, invoices and external durations.
-Its entry context is already on a native work tape; an original-input loader is
-not constructed. An injective header format carries original encoded data, old raw histories,
+Its original entry context is already on a native work tape. A constructed pure
+initializer now loads that tape from original rational-instance/startup input on
+blank native work tapes, clears scratch storage and restores the input cursor
+before the same two-query carrier. The derived whole-law/readback connection
+preserves arbitrary native consumer divergence and shared resource observations.
+The concrete initializer computes empty-history completion, ignores fabricated
+initial proposals, and records zero turn/opportunity allowances in the stop bit.
+One machine works for all encoded startup data and a fixed correlated geometric
+source, including a nonempty feasible-dual cover instance, unbounded first replies,
+zero allowances and empty ground. The carrier still issues its two raw calls even
+with a true computed stop bit; semantic post-response/control enforcement and
+source-admitted query selection are not yet realized. This is a concrete binary
+startup ABI, not a conventional external source/PTM encoding bridge.
+An injective header format carries original encoded data, old raw histories,
 private storage and budget/availability/stop/output fields. Those header fields
 are transported, not semantically updated by the append transducer. The second
 request depends on both original context and reply, checked on a fixed geometric

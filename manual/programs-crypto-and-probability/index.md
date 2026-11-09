@@ -1752,6 +1752,43 @@ zero charges. From the same matching warm checkout, run:
 scripts/build.sh ComplexityTests.NativeRuntimeContext
 ```
 
+For initial loading, import
+`Complexity.Probability.StochasticOracle.NativeRetention.InitialContext`.
+`Startup` encodes the original rational instance with runtime unary turn/opportunity
+counts and a private selector word. It contains no precomputed context or machine
+witness. The native initializer computes the header, clears scratch storage, writes
+the reserved context tape, rewinds that head and restores the real input head before
+entering the runtime carrier. Initial completion ignores caller-supplied proposals;
+the stored stop bit also records zero turns or opportunities. This bit is computed
+from the original input, rather than supplied as an input certificate.
+
+`exists_original_input_runtime` constructs one finite native machine for all startup
+inputs and all shared-state response kernels. Its execution starts at the ordinary
+blank-work-tape `machine.initialConfig`, not `restoringEntry` with an installed
+context. The actual two-query law and both invoices/durations remain unchanged.
+The reusable `NativeContextLoader.exists_load_then` derives loading followed by
+any actual four-tape consumer, including divergent consumers; its computational
+premise concerns only the pure initializer. It assumes no consumer success or
+representation law. The concrete initializer's computability is proved internally.
+
+The [original-input client](../../ComplexityTests/NativeContextLoader.lean) checks one
+machine for all runtime inputs against a fixed correlated geometric source with
+unbounded reply lengths, original-instance readback in the actual second request,
+a nonempty feasible-dual instance with ignored fabricated proposals, zero allowances
+and empty ground. From the same matching warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeContextLoader
+```
+
+This closes the preinstalled-context requirement for this binary startup ABI. It
+still does not load a conventional external PTM/source encoding, generate an
+admitted batch from the original instance, or update/enforce control fields after
+responses. The checked zero-allowance client deliberately exposes that the raw
+carrier still makes two calls with a true stored stop bit. Semantic availability,
+private-control and budget updates, initial-completion stopping, repeated buffer
+reuse/restart and the native quantitative upper/optimum endpoint remain open.
+
 Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
 raw-parser/rational-retention computability proof. One complete native program
