@@ -127,6 +127,41 @@ def toTopSet (S : Set A) : Ranking A where
     · exact (r.total x y hxy).imp (fun h => Or.inr ⟨iff_of_false hx hy, h⟩)
         fun h => Or.inr ⟨iff_of_false hy hx, h⟩
 
+/-- `toTopSet S` ranks `x` above `y` when `x ∈ S` and `y ∉ S`, or when `x` and `y` are on the same
+side of `S` and `r` ranks `x` above `y`. -/
+theorem toTopSet_prefers_iff {S : Set A} {x y : A} :
+    (r.toTopSet S).Prefers x y ↔ (x ∈ S ∧ y ∉ S) ∨ ((x ∈ S ↔ y ∈ S) ∧ r.Prefers x y) :=
+  Iff.rfl
+
+theorem toTopSet_prefers_of_mem_of_notMem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∉ S) :
+    (r.toTopSet S).Prefers x y :=
+  Or.inl ⟨hx, hy⟩
+
+theorem toTopSet_prefers_iff_of_mem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∈ S) :
+    (r.toTopSet S).Prefers x y ↔ r.Prefers x y :=
+  ⟨fun h => h.elim (fun h => absurd hy h.2) And.right,
+    fun h => Or.inr ⟨iff_of_true hx hy, h⟩⟩
+
+/-- If `x ∈ S`, `toTopSet S` ranks `x` above `y` exactly when `y ∉ S` or `r` ranks `x` above
+`y`. -/
+theorem toTopSet_prefers_of_mem {S : Set A} {x y : A} (hx : x ∈ S) :
+    (r.toTopSet S).Prefers x y ↔ y ∉ S ∨ r.Prefers x y := by
+  by_cases hy : y ∈ S
+  · rw [r.toTopSet_prefers_iff_of_mem hx hy]
+    exact ⟨Or.inr, fun h => h.resolve_left (not_not.2 hy)⟩
+  · exact iff_of_true (r.toTopSet_prefers_of_mem_of_notMem hx hy) (Or.inl hy)
+
+/-- If `x ∉ S`, `toTopSet S` ranks `x` above `y` exactly when `y ∉ S` and `r` ranks `x` above
+`y`. -/
+theorem toTopSet_prefers_of_notMem {S : Set A} {x y : A} (hx : x ∉ S) :
+    (r.toTopSet S).Prefers x y ↔ y ∉ S ∧ r.Prefers x y := by
+  rw [toTopSet_prefers_iff]
+  constructor
+  · rintro (⟨hx', -⟩ | ⟨hxy, h⟩)
+    · exact absurd hx' hx
+    · exact ⟨fun hy => hx (hxy.2 hy), h⟩
+  · exact fun ⟨hy, h⟩ => Or.inr ⟨iff_of_false hx hy, h⟩
+
 /-- Move `b` to the top of `r`, keeping the order of the other alternatives: `toTopSet {b}`. -/
 def toTop (b : A) : Ranking A := r.toTopSet {b}
 
@@ -141,14 +176,14 @@ def toBottom (b : A) : Ranking A := (r.reverse.toTop b).reverse
 
 theorem toTop_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
     (r.toTop b).Prefers x y ↔ r.Prefers x y :=
-  ⟨fun h => h.elim (fun h => absurd h.1 hx) And.right, fun h => Or.inr ⟨iff_of_false hx hy, h⟩⟩
+  (r.toTopSet_prefers_of_notMem hx).trans (and_iff_right hy)
 
 theorem toBottom_prefers_of_ne {b x y : A} (hx : x ≠ b) (hy : y ≠ b) :
     (r.toBottom b).Prefers x y ↔ r.Prefers x y :=
   r.reverse.toTop_prefers_of_ne hy hx
 
 theorem isTop_toTop (b : A) : (r.toTop b).IsTop b :=
-  fun _ hx => Or.inl ⟨rfl, hx⟩
+  fun _ hx => r.toTopSet_prefers_of_mem_of_notMem rfl hx
 
 theorem isBottom_toBottom (b : A) : (r.toBottom b).IsBottom b :=
   r.reverse.isTop_toTop b
@@ -201,24 +236,6 @@ theorem isTop_top [Finite A] [Nonempty A] : r.IsTop r.top := by
 theorem isTop_iff_eq_top [Finite A] [Nonempty A] {a : A} : r.IsTop a ↔ a = r.top :=
   ⟨fun h => h.unique r.isTop_top, fun h => h ▸ r.isTop_top⟩
 
-theorem toTopSet_prefers_of_mem_of_notMem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∉ S) :
-    (r.toTopSet S).Prefers x y :=
-  Or.inl ⟨hx, hy⟩
-
-theorem toTopSet_prefers_iff_of_mem {S : Set A} {x y : A} (hx : x ∈ S) (hy : y ∈ S) :
-    (r.toTopSet S).Prefers x y ↔ r.Prefers x y :=
-  ⟨fun h => h.elim (fun h => absurd hy h.2) And.right,
-    fun h => Or.inr ⟨iff_of_true hx hy, h⟩⟩
-
-/-- If `x ∈ S`, `toTopSet S` ranks `x` above `y` exactly when `y ∉ S` or `r` ranks `x` above
-`y`. -/
-theorem toTopSet_prefers_of_mem {S : Set A} {x y : A} (hx : x ∈ S) :
-    (r.toTopSet S).Prefers x y ↔ y ∉ S ∨ r.Prefers x y := by
-  by_cases hy : y ∈ S
-  · rw [r.toTopSet_prefers_iff_of_mem hx hy]
-    exact ⟨Or.inr, fun h => h.resolve_left (not_not.2 hy)⟩
-  · exact iff_of_true (r.toTopSet_prefers_of_mem_of_notMem hx hy) (Or.inl hy)
-
 /-- Extend a ranking `s` of the alternatives in `S` to all alternatives, ranking `S` above its
 complement, which is ordered by `r`. -/
 def extend {S : Set A} (s : Ranking S) : Ranking A where
@@ -269,23 +286,6 @@ def restrict (S : Set A) : Ranking S where
 
 @[simp] theorem restrict_prefers {S : Set A} {x y : S} :
     (r.restrict S).Prefers x y ↔ r.Prefers x y := Iff.rfl
-
-/-- `toTopSet S` ranks `x` above `y` when `x ∈ S` and `y ∉ S`, or when `x` and `y` are on the same
-side of `S` and `r` ranks `x` above `y`. -/
-theorem toTopSet_prefers_iff {S : Set A} {x y : A} :
-    (r.toTopSet S).Prefers x y ↔ (x ∈ S ∧ y ∉ S) ∨ ((x ∈ S ↔ y ∈ S) ∧ r.Prefers x y) :=
-  Iff.rfl
-
-/-- If `x ∉ S`, `toTopSet S` ranks `x` above `y` exactly when `y ∉ S` and `r` ranks `x` above
-`y`. -/
-theorem toTopSet_prefers_of_notMem {S : Set A} {x y : A} (hx : x ∉ S) :
-    (r.toTopSet S).Prefers x y ↔ y ∉ S ∧ r.Prefers x y := by
-  rw [toTopSet_prefers_iff]
-  constructor
-  · rintro (⟨hx', -⟩ | ⟨hxy, h⟩)
-    · exact absurd hx' hx
-    · exact ⟨fun hy => hx (hxy.2 hy), h⟩
-  · exact fun ⟨hy, h⟩ => Or.inr ⟨iff_of_false hx hy, h⟩
 
 /-- `r.extend s` ranks `x` above `y` when both lie in `S` and `s` ranks `x` above `y`, when
 `x ∈ S` and `y ∉ S`, or when neither lies in `S` and `r` ranks `x` above `y`. -/
