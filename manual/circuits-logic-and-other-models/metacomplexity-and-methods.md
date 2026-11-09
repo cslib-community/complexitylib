@@ -815,9 +815,9 @@ Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed degree-matrix fr
 For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
 decision for kernels, perfect matching cuts and dominating induced matchings.
 The continuation below supplies signed-threshold Maximum Induced Matching. Upper domination and
-complete witness/optimum composition remain open. Corollary 7.5 still needs its full edge-size
-distribution iterator; its unrestricted matching bijection and total counts are covered below. Proposition 7.6
-still needs its distinct set–marking versus original-set constructions. ALL-main remains open.
+complete witness/optimum composition for the other graph predicates remain open. Corollary 7.5 still
+needs its full edge-size distribution iterator; its unrestricted matching bijection and total counts
+are covered below. Proposition 7.6 still needs its distinct set–marking versus original-set constructions. ALL-main remains open.
 
 ### Maximum induced matching with a varying binary threshold
 
@@ -860,10 +860,61 @@ The client checks actual query writing, exact endpoint-size coefficients, and ne
 512-bit thresholds. It computes unique circuit traces for tiny original selections; production
 uses the certified sharp counter, never an exhaustive auxiliary cube traversal.
 
-This closes the signed-threshold counting/decision specialization, and threshold zero gives
-Corollary 7.5's unrestricted total count. The full distribution list, witness/optimum extraction,
+This closes the signed-threshold counting/decision specialization; the continuation below supplies
+its optimum value and witness. Threshold zero gives Corollary 7.5's unrestricted total count, using
+the functional size circuit rather than that corollary's sharper no-size-test query budget. The full distribution list, witness/optimum extraction for the other graph predicates,
 general Corollary 7.2 sigma-rho rules, Theorem 7.3 labeled degree matrices and Proposition 7.6
 upper-domination constructions remain open. These remaining source endpoints keep ALL-main open.
+
+### Returning the optimum value and an actual maximum induced matching
+
+Import `Complexity.Computability.Complexity.FineGrained.InducedMatchingWitness` and open
+`Cslib.Logic.PL.InducedMatchingInterval.Maximum`. The original input is just
+`IndependentDomination.Input`, encoded by `IndependentDomination.encInput`; the user supplies
+neither an optimum value nor a matching. The complete native endpoint is
+`Witness.exists_optimalWitness_realEta_certificate` (and its rounded sharp counterpart).
+Its `Output` contains a binary edge count and an original-vertex bit word. Read these through
+`Witness.value` and `Witness.vertices`, and use `Witness.decode G` to obtain the conventional
+Mathlib subgraph. The theorem proves that the word has the original declared length, the decoded
+subgraph is both matching and induced, its unordered edge count equals the returned value, and
+**every** induced matching has at most that many edges. This is the optimum and witness clause
+of Corollary 7.4 / Appendix D.5 (PDF pp. 26, 37), not merely another threshold decision.
+
+`Optimum.run` scans edge thresholds $0,ldots,v$, keeping the greatest feasible value.
+`Optimum.run_optimal` proves attainment and global optimality using the proved two-endpoints-per-
+edge bound. This uses $v+1$ tests instead of the paper's logarithmic binary search; it preserves
+the stated sharp asymptotic bound. `Witness.run` then inspects the $v$ original vertices. It
+writes a restricted graph, isolating a vertex exactly when that restriction still admits the
+computed optimum threshold. `Witness.restrict_ofGraph` proves that every written query is the
+canonical matrix of the intended simple graph with the same vertex declaration. Because matching
+supports cannot contain isolated marks, restriction is equivalent to fixing that original bit
+false. The feasibility/forced-bit invariant proves that the **returned** final support is itself
+a matching; it does not leave decoding to an existentially chosen extension.
+
+`Witness.solve` composes the actual value and witness passes. The native certificates charge
+all threshold calls, repeated restricted-matrix writing, retained original input, every-prefix
+live state, and binary value/selection output. They give global polynomial workspace and
+$L^{O(1)}2^{O(eta(v))}$ time on canonical simple graphs, with the same single-loglog
+$eta(v)=vloglog v/sqrt{log v}$ for $vge16$. Rounded certificates include all smaller
+and empty cases. An empty graph returns zero and the empty word; an edgeless graph returns zero
+with every declared vertex unselected. No vertices or artificial positive weights are added.
+Raw malformed frames still have a total algorithm and polynomial workspace; graph correctness
+and sharp time use the existing canonical promise, not an added validation/admission theorem.
+The encoding remains nonsuccinct with a unary declaration, in the existing native resource model.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.InducedMatchingOptimum`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/InducedMatchingOptimum.lean)
+checks actual returned values and words for empty/edgeless graphs, an edge, paths, disjoint edges,
+a triangle, a dense graph and declared isolates. On a five-vertex path it returns the two outer
+edges' four endpoints and clears the middle vertex. The tiny threshold oracle evaluates the
+approved real construction on original selections/unique traces; production instantiates the
+proved sharp native decider. It is not exhaustive matching search.
+
+The other five graph predicates' full witness/optimum composition remains open, together with
+general sigma-rho rules, labeled degree matrices and Upper Dominating Set. Corollary 7.5 still
+needs its full distribution iterator/output/resources and the sharper no-size-test `2v-1` query
+construction: the existing threshold-zero total count retains the functional size circuit.
+These remaining source clauses keep the paperwide/ALL-main objective open.
 
 ## Known Limitations
 

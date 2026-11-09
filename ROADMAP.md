@@ -1304,6 +1304,21 @@ oversized thresholds are included in the same proved algorithm. Threshold zero g
 unrestricted induced-matching counts. Natural endpoint-equality intervals also count exact edge
 sizes, but the complete Corollary 7.5 distribution iterator/resources are still open.
 
+`InducedMatchingOptimum` and `InducedMatchingWitness` now complete the Maximum Induced Matching
+optimum-value and witness clause of Corollary 7.4 / Appendix D.5. The actual value pass scans
+`v+1` edge thresholds (rather than the source's logarithmic binary search); the witness pass makes
+`v` original-vertex restriction tests. A written restriction isolates forbidden vertices without
+changing the declaration. Its proved equivalence to a fixed-false selection bit permits reuse of
+the approved threshold decider. Every retained final vertex is forced in every surviving support,
+so the returned original bits themselves decode to a conventional induced matching. The binary
+output value equals its unordered edge count and bounds every induced matching, including empty
+and edgeless graphs. Complete native certificates charge both actual passes, restricted matrix
+writes, retained input/intermediate encodings and binary-value/selection output. Time remains
+`L^O(1)*2^O(eta(v))` with one loglog, and workspace is polynomial globally on all raw frames.
+Correctness/sharp time retain the canonical simple-undirected matrix promise and unary declaration;
+invalid-byte admission is not added. This completes this problem's optimization/witness clause,
+not witness extraction for the other five Corollary 7.4 predicates or ALL-main.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1323,11 +1338,13 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
   induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
   decision are covered for the stated explicit encodings. Upper domination remains open. Complete
-  witness extraction and optimum-threshold recovery are not yet composed, including for the covered
-  decision predicates.
+  witness extraction and optimum-threshold recovery are now composed for Maximum Induced Matching;
+  the corresponding clauses for the other five decision predicates remain open.
 - Corollary 7.5: the unrestricted induced-matching endpoint/edge bijection and total counts are
-  covered. Exact edge-size instances follow from the natural interval construction. The complete
-  distribution list still needs its actual polynomially many sequential calls, accumulation,
+  covered using the functional size circuit, so the source's sharper no-size-test `2v−1` query budget
+  still needs a separate actual constructor/resource composition. Exact edge-size instances follow
+  from the natural interval construction. The complete distribution list still needs its actual
+  polynomially many sequential calls, accumulation,
   binary output writing and composed sharp-time/global-space certificate.
 - Proposition 7.6: upper domination's actual width-three set–marking-pair construction/count
   (`4v+a-1` variables), and the alternative width-four original-set count (`5v+a-1` variables),

@@ -1699,6 +1699,8 @@ public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.IndependentDomination
 public import Complexity.Computability.Complexity.FineGrained.IndependentDominationInterval
 public import Complexity.Computability.Complexity.FineGrained.InducedMatchingInterval
+public import Complexity.Computability.Complexity.FineGrained.InducedMatchingOptimum
+public import Complexity.Computability.Complexity.FineGrained.InducedMatchingWitness
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.MaxSAT
 public import Complexity.Computability.Complexity.FineGrained.MaxSAT.Histogram
