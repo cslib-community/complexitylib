@@ -1890,6 +1890,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing
+public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Bouquet
 public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
 public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
 public import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
@@ -1918,6 +1919,8 @@ public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.PermutationCycles
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Basic
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
+public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.BouquetOrder
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Star
 public import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Transport
@@ -4325,8 +4328,11 @@ public import Complexity.Foundations.Geometry.Orthogonal.Subdivision
 public import Complexity.Foundations.Geometry.Orthogonal.Trim
 public import Complexity.Foundations.Geometry.Polygonal.Germs
 public import Complexity.Foundations.Geometry.Polygonal.Neighborhood
+public import Complexity.Foundations.Geometry.Polygonal.Noncrossing
+public import Complexity.Foundations.Geometry.Polygonal.NoncrossingOrder
 public import Complexity.Foundations.Geometry.Polygonal.Route
 public import Complexity.Foundations.Geometry.Polygonal.Segment
+public import Complexity.Foundations.Geometry.Polygonal.Translation
 public import Complexity.Foundations.GroupTheory.Perm.CycleSurgery
 public import Complexity.Foundations.GroupTheory.Perm.Doubled
 public import Complexity.Foundations.GroupTheory.Perm.Fin

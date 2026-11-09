@@ -45,6 +45,7 @@ import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.VertexM
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
 import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import Complexity.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
+import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
 import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
 import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
 import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
@@ -975,11 +976,11 @@ For permutation-only proofs, import `Complexity.Foundations.GroupTheory.Perm.Ins
 
 # Polygonal Geometry Prerequisites
 
-These prerequisites do not prove equivalence between numerical genus zero and
-geometric realization. The missing steps are an explicit noninterlacing bouquet
-drawing, geometric restoration of nonloop contractions by directed contiguous
-vertex splits, and the finite segment-to-face-color converse with subdivision
-and suppression. Topological taming, indexed FZ versus DK set conventions and
+The loop-only forward realization is proved below. The general equivalence
+between numerical genus zero and geometric realization remains unproved.
+Its remaining steps are geometric restoration of nonloop contractions by
+directed contiguous vertex splits and the finite segment-to-face-color converse
+with subdivision and suppression. Topological taming, indexed FZ versus DK set conventions and
 source comparison, frozen-switch completeness, Hanani–Tutte recognition and the
 full #3091 endpoint remain open.
 
@@ -1079,6 +1080,51 @@ environment linters; `ComplexityTests/RotationIntersection.lean` uses the
 extracted loop constructor in finite parity clients. These are original
 geometric constructions, with no DK, FKP or Hanani–Tutte formalization,
 coordinate bit bound or native runtime claim.
+
+## Loop-only Forward Realization
+
+Import `Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet`.
+Every listed edge must be a loop. Declared endpoints and numerical genus zero
+then suffice for an actual embedding realizing the exact given clockwise
+rotation, with no noncrossing or geometric provider premise:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hr : r.NumericalGenusZero)
+    (hloop : ∀ e : Fin G.2.length,
+      (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true)) :
+    ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r :=
+  r.exists_polygonalDrawing_of_loops hG hr hloop
+```
+
+This includes sparse or repeated declarations and disconnected isolates.
+Here the actual two-loop certificate supplies the numerical premise:
+
+```lean
+open Cslib.Complexity Graph in
+example : ∃ D : PolygonalDrawing
+    ([7, 7, 1000], [(7, 7), (7, 7)]), D.IsEmbedding := by
+  let G : Graph := ([7, 7, 1000], [(7, 7), (7, 7)])
+  let c : RotationCertificate := ⟨[2, 0, 3, 1]⟩
+  have hc : RotationCertificate.verifyRotation G c = true := by decide
+  let r := RotationCertificate.decode G c hc
+  have hr : r.NumericalGenusZero :=
+    (RotationCertificate.verifyEuler_eq_true_iff hc).mp (by decide)
+  obtain ⟨D, hD, _⟩ :=
+    r.exists_polygonalDrawing_of_loops (by decide) hr (by decide)
+  exact ⟨D, hD⟩
+```
+
+`PolygonalDrawing.bouquet r hloop` is the explicit drawing. Each loop has
+five affine segments, with radial ports ranked in literal clockwise order.
+Numerical nonalternation supplies disjoint or nested port intervals; the
+construction proves actual real-parameter nonintersection internally.
+`ComplexityTests/PolygonalBouquet.lean` also checks a nonvacuous unbounded-degree
+family, nested/disjoint loops, interlacing obstruction and reversed-order
+rejection. This loop-only forward theorem leaves nonloop restoration and the
+geometric converse open, without a coordinate-bit or native-runtime claim.
 
 # Ordered Incidence-to-Polygon Rotations
 

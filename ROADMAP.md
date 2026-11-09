@@ -477,10 +477,12 @@ index links to canonical definitions rather than keeping a second set.
   internally. Arbitrary-degree stars embed; arbitrary-degree star realization is not proved.
   Edgeless sparse/repeated declarations realize every rotation. Literal clockwise germ order
   fixes orientation without reflection; numerical noninterlacing of distinct loops retains hG.
-  The full numerical-genus / polygonal-realization bridge still needs three proofs: an explicit
-  noninterlacing bouquet drawing, geometric restoration of nonloop contractions by directed
-  contiguous vertex splits, and a finite segment-to-face-color converse with subdivision and
-  suppression. The vertex ball is not a topological disk or splitting patch. Topological taming,
+  The loop-only forward realization is proved: internally derived nonalternation yields
+  five-segment loop drawings realizing the exact clockwise rotation, including arbitrary
+  degrees, repeated loop pairs, disconnected vertices and isolates. The general numerical-genus
+  / polygonal-realization bridge still needs geometric restoration of nonloop contractions by
+  directed contiguous vertex splits and a finite segment-to-face-color converse with subdivision
+  and suppression. The vertex ball is not a topological disk or splitting patch. Topological taming,
   indexed FZ versus DK set conventions and source comparison, frozen-switch completeness and
   Hanani–Tutte recognition remain open. These original prerequisites assert no DK/FKP/HT
   formalization, coordinate bit bound or native runtime theorem and do not complete #3091.

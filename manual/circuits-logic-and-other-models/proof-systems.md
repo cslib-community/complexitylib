@@ -351,9 +351,10 @@ dichotomy remain open under [#3091](https://github.com/cslib-community/complexit
 
 ## Polygonal geometry prerequisites
 
-The numerical-genus / polygonal-realization equivalence remains unproved. Its three missing
-obligations are an explicit noninterlacing bouquet drawing, geometric restoration of nonloop
-contractions by directed contiguous vertex splits, and a finite segment-to-face-color converse
+Loop-only numerical-genus-zero rotations now have actual polygonal embeddings with their
+exact clockwise order, as documented below. The general numerical-genus / polygonal-realization
+equivalence remains unproved. Its two remaining obligations are geometric restoration of nonloop
+contractions by directed contiguous vertex splits and a finite segment-to-face-color converse
 including subdivision and suppression. Topological taming, indexed FZ versus DK set conventions
 and source comparison, frozen-switch completeness, Hanani–Tutte recognition and the full
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) endpoint remain open.
@@ -420,6 +421,32 @@ clockwise sign and reverse-order rejection. The [scoped audit](../../ComplexityT
 checks stored declarations and environment linters; the [intersection clients](../../ComplexityTests/RotationIntersection.lean)
 reuse the extracted loop constructor. This is original geometric infrastructure, with no
 DK, FKP or Hanani–Tutte formalization, coordinate bit bound or native runtime theorem.
+
+### Loop-only clockwise realization
+
+Import `Complexity.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet`.
+For `r : RotationSystem G`, `r.exists_polygonalDrawing_of_loops hG hr hloop` returns
+`∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r`. Its hypotheses declare every
+incident endpoint (`hG`), require `r.NumericalGenusZero` (`hr`), and require each listed edge's
+two endpoint names to agree (`hloop`). There is no noncrossing, drawing, disk or provider
+hypothesis. Repeated loop pairs, disconnected vertices, sparse or duplicate declarations,
+isolates and the empty graph are included, with no degree bound.
+
+The construction derives nonalternation from numerical genus zero, ranks actual darts in
+clockwise order, and draws each loop with five real affine segments. Disjoint or nested rank
+intervals have disjoint interiors; positive port coordinates fix the clockwise germ order.
+A common spacing separates distinct vertex names. `PolygonalDrawing.bouquet` is the explicit
+drawing, with `bouquet_isEmbedding` and `bouquet_realizes` supplying its contracts. This is an
+original coordinate construction, with no coordinate-bit or native-runtime bound claimed.
+
+The [checked guide](../../guide/ComplexityGuide/NPCompleteness.lean) applies the theorem and
+constructs a two-loop embedding with a repeated declaration and a disconnected isolate.
+The [bouquet tests](../../ComplexityTests/PolygonalBouquet.lean) supply a nonvacuous family
+at every degree, nested/disjoint loops, negative interlacing and reversed-order cases;
+[their audit](../../ComplexityTests/PolygonalBouquetAudit.lean) checks stored declarations.
+Run `scripts/build.sh ComplexityTests.PolygonalBouquet ComplexityTests.PolygonalBouquetAudit --wfail --iofail`.
+This proves the loop-only forward direction. Nonloop restoration and the geometric converse
+remain open, along with the full planar objective.
 
 ## Ordered incidence-to-polygon rotations
 
