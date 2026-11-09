@@ -96,7 +96,8 @@ lemma cellAt_move (t : Tape) (m : SignType) (z : ℤ) : (t.move m).cellAt z = t.
   · rw [show (t.head + 1 - z - 1).toNat = (t.head - z - 1).toNat + 1 by omega]
     simp
 
-lemma head_move (t : Tape) (m : SignType) : (t.move m).head = t.head + m := by
+/-- Moving a tape moves its head by the direction. -/
+public lemma head_move (t : Tape) (m : SignType) : (t.move m).head = t.head + m := by
   rcases m with _ | _ | _ <;> simp [move, SignType.cast, sub_eq_add_neg]
 
 end Tape

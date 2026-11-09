@@ -258,9 +258,7 @@ reflexive–transitive chain of `r`-steps (`List.relationReflTransGen_of_exists_
 theorem reflTransGen_of_pathArcs {r : V → V → Prop} {p : List V} {u v : V}
     (hu : p.head? = some u) (hv : p.getLast? = some v) (hp : ∀ e ∈ pathArcs p, r e.1 e.2) :
     Relation.ReflTransGen r u v := by
-  have hne : p ≠ [] := by
-    rintro rfl
-    simp at hu
+  have hne : p ≠ [] := by grind
   rw [List.head?_eq_some_head hne, Option.some.injEq] at hu
   rw [List.getLast?_eq_some_getLast hne, Option.some.injEq] at hv
   subst hu hv
@@ -298,11 +296,7 @@ theorem exists_mem_pathArcs_snd_eq :
     by_cases hyv : y = v
     · subst hyv
       exact ⟨x, by simp⟩
-    · have hv' : v ∈ y :: rest := by
-        rcases List.mem_cons.mp hv with h | h
-        · subst h
-          exact (hh rfl).elim
-        · exact h
+    · have hv' : v ∈ y :: rest := by grind
       obtain ⟨u, hu⟩ := exists_mem_pathArcs_snd_eq (p := y :: rest) hv'
         (by simpa using hyv)
       exact ⟨u, by simp [hu]⟩
@@ -328,10 +322,7 @@ private theorem suffixFrom_eq_cons_and_suffix [DecidableEq V] {ys : List V} {x :
     by_cases hxy : y = x
     · subst hxy
       exact ⟨ys', by simp, List.suffix_refl _⟩
-    · have hx' : x ∈ ys' := by
-        rcases List.mem_cons.mp hx with rfl | hmem
-        · exact absurd rfl hxy
-        · exact hmem
+    · have hx' : x ∈ ys' := by grind
       obtain ⟨rest, hdrop, hsuf⟩ := ih hx'
       exact ⟨rest, by simp [hxy, hdrop], hsuf.trans (List.suffix_cons y ys')⟩
 

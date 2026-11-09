@@ -136,10 +136,8 @@ theorem collisionProb_triangle (seed : PMF ι) (hash : ι → X → Y) (x y z : 
     have hset : {i | hash i a = hash i b}ᶜ = {i | hash i a ≠ hash i b} := rfl
     rw [hset] at h
     linarith
-  rw [hcompl, hcompl, hcompl, ← ENNReal.toReal_add (PMF.toOuterMeasure_ne_top _ _)
-    (PMF.toOuterMeasure_ne_top _ _)]
-  refine ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨PMF.toOuterMeasure_ne_top _ _,
-    PMF.toOuterMeasure_ne_top _ _⟩) ?_
+  rw [hcompl, hcompl, hcompl]
+  refine ENNReal.toReal_le_add ?_ (PMF.toOuterMeasure_ne_top _ _) (PMF.toOuterMeasure_ne_top _ _)
   have hsub : {i | hash i x ≠ hash i z} ⊆
       {i | hash i x ≠ hash i y} ∪ {i | hash i y ≠ hash i z} := by
     intro i hi
@@ -344,8 +342,7 @@ theorem exists_sCurve_gap {p₁ p₂ δ δ' : ℝ} (hp₂ : 0 ≤ p₂) (hp₁�
     have hdiv : c / p₁ ^ k * p₂ ^ k = c * (p₂ / p₁) ^ k := by
       rw [div_pow]
       field_simp
-    calc (⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ : ℝ) * p₂ ^ k ≤ (c / p₁ ^ k + 1) * p₂ ^ k :=
-          mul_le_mul_of_nonneg_right hL (pow_nonneg hp₂ k)
+    calc (⌈Real.log δ⁻¹ / p₁ ^ k⌉₊ : ℝ) * p₂ ^ k ≤ (c / p₁ ^ k + 1) * p₂ ^ k := by gcongr
       _ = c * (p₂ / p₁) ^ k + p₂ ^ k := by rw [add_mul, one_mul, hdiv]
       _ ≤ c * (δ' / (2 * (c + 1))) + δ' / 2 := by gcongr
       _ ≤ δ' / 2 + δ' / 2 := by

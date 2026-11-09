@@ -42,7 +42,7 @@ machine-backed efficiency certificates for `SigmaProtocol.lyubashevsky`:
      `boxShift B u = (u : ℤ) - B`.
    - Every sample stays inside `[-B, B]` (`abs_sampleIntBoxCoins_le`,
      `abs_le_of_mem_support_sampleIntBox`, `mem_intBox_of_mem_support_sampleIntBoxVec`).
-   - Statistical distance (`Interactive.CloseTo`) from the exact uniform distribution
+   - Statistical distance (`Cslib.Probability.CloseTo`) from the exact uniform distribution
      `uniformBox1D B` on `[-B, B]` is at most `(2 * B + 1) / 2 ^ width`
      (`closeTo_uniformBox1D_sampleIntBox`), and for `m` independent coordinates at most
      `m * ((2 * B + 1) / 2 ^ width)` (`closeTo_uniform_intBox_sampleIntBoxVec`,

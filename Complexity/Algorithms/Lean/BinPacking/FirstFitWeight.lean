@@ -134,9 +134,7 @@ theorem sum_map_firstFitWeight_le {C : ℕ} {b : List ℕ} (hb : b.sum ≤ C) :
     simp only [List.sum_cons, List.map_cons] at hs hm
     have hrest := sum_map_firstFitBonus_le (C := C) (l := b.erase L) (by omega)
     have h1 : firstFitBonus C L = 4 * C := by simp [firstFitBonus, hL]
-    have h2 : firstFitBonus C (b.erase L).sum ≤ C := by
-      unfold firstFitBonus
-      split_ifs <;> omega
+    have h2 : firstFitBonus C (b.erase L).sum ≤ C := by grind [firstFitBonus]
     omega
   · push Not at hL
     have := sum_map_firstFitBonus_le_three_mul (C := C) (l := b) (fun a ha => by
