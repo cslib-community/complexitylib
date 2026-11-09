@@ -59,6 +59,17 @@
       "namespace": "ComplexityTests.Abstracts.SavitchAbstract"
     },
     {
+      "id": "alternation",
+      "title": "Chandra–Kozen–Stockmeyer: AP equals PSPACE and APSPACE equals EXP",
+      "module": "ComplexityAbstracts.AlternationAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.AlternationAbstract.ap_eq_pspace",
+        "ComplexityAbstracts.AlternationAbstract.apspace_eq_exp"
+      ],
+      "summary": "Alternation trades one exponential between time and space: alternating polynomial time is deterministic polynomial space, and alternating polynomial space is deterministic exponential time.",
+      "scope": "One finite-state alternating multi-tape machine per problem, with two transition functions as in Arora–Barak and least-fixed-point acceptance; every branch halting; polynomial time or polynomial space; arbitrary injective encodings. AL = P is not included: the library proves only AL ⊆ P."
+    },
+    {
       "id": "reingold",
       "title": "Reingold: undirected reachability is in L",
       "module": "ComplexityAbstracts.USTCONAbstract",
@@ -357,6 +368,17 @@
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation"
       ]
+    },
+    {
+      "id": "matrix-multiplication",
+      "title": "Matrix multiplication: the exponent is at most 9/4",
+      "module": "ComplexityAbstracts.MatrixMultiplicationAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.MatrixMultiplicationAbstract.circuits_nine_quarters",
+        "ComplexityAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters"
+      ],
+      "summary": "Exact matrix multiplication over every characteristic-zero field has nonuniform arithmetic circuits of size O(n^(9/4 + γ)) for every γ > 0.",
+      "scope": "Binary addition and multiplication and field constants, every gate charged one; inputs and outputs free. Existential circuits, without uniform generation, computable parameter extraction, explicit constants or integer bit complexity."
     }
   ]
 }

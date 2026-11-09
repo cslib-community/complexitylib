@@ -191,24 +191,6 @@ theorem crossings_palWord_injective {ι : Bool → Symbol} {yes : Symbol} {T : �
     rcases hhead with h' | h' <;> rw [h'] <;> assumption
   exact ((palindrome_mixWord_iff hxy).mp (hMy.mp hMp)).symm
 
-omit [Inhabited Symbol] [Fintype Symbol] in
-/-- At most `(|α| + 1) ^ L` elements have pairwise distinct images that are lists of length
-`< L` over `α`. -/
-private lemma card_filter_length_lt_le {ι α : Type*} [Fintype α] {s : Finset ι} {f : ι → List α}
-    (hf : Set.InjOn f s) (L : ℕ) :
-    (s.filter fun x => (f x).length < L).card ≤ (Fintype.card α + 1) ^ L := by
-  classical
-  have h := Finset.card_le_card_of_injOn (s := s.filter fun x => (f x).length < L)
-    (t := (Finset.univ : Finset (Fin L → Option α))) (fun x j => (f x)[(j : ℕ)]?)
-    (fun _ _ => Finset.mem_coe.mpr (Finset.mem_univ _)) ?_
-  · simpa [Fintype.card_option] using h
-  · intro x hx y hy hxy
-    simp only [Finset.coe_filter, Set.mem_ofPred_eq] at hx hy
-    refine hf hx.1 hy.1 (List.ext_getElem? fun j => ?_)
-    by_cases hj : j < L
-    · exact congrFun hxy ⟨j, hj⟩
-    · rw [List.getElem?_eq_none (by omega), List.getElem?_eq_none (by omega)]
-
 /-- **Averaging step.** If at most half of the `2 ^ m` hard inputs can have a crossing sequence
 shorter than `L` at any boundary, some hard input of length `2m + r` crosses the `r + 1` middle
 boundaries at least `(r + 1) L / 2` times in total. -/
@@ -227,21 +209,8 @@ theorem crossing_bound {ι : Bool → Symbol} {yes : Symbol} {T : ℕ → ℕ}
       (x := List.ofFn x) (y := List.ofFn y) (by simp) (by simpa [cs, t] using hxy)
     exact List.ofFn_injective h
   have hgood (i : ℕ) (hi : i ≤ r) : (2 ^ m - P) * L ≤ ∑ x, (cs i x).length := by
-    have hbad := card_filter_length_lt_le (hinj i hi) L
-    have hsplit := Finset.card_filter_add_card_filter_not
-      (s := (Finset.univ : Finset (Fin m → Bool))) (fun x => (cs i x).length < L)
-    simp only [Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] at hsplit
-    calc (2 ^ m - P) * L
-        ≤ ((Finset.univ : Finset (Fin m → Bool)).filter fun x => ¬ (cs i x).length < L).card
-          * L := Nat.mul_le_mul_right _ (by omega)
-      _ ≤ ∑ x ∈ Finset.univ.filter fun x => ¬ (cs i x).length < L, (cs i x).length := by
-          rw [← smul_eq_mul]
-          exact Finset.card_nsmul_le_sum _ _ _ fun x hx => by
-            rw [Finset.mem_filter] at hx
-            omega
-      _ ≤ ∑ x, (cs i x).length :=
-          Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _) fun _ _ _ =>
-            Nat.zero_le _
+    have h := card_sub_pow_mul_le_sum_length (hinj i hi) L
+    rwa [Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] at h
   have hupper (x : Fin m → Bool) : ∑ i ∈ Finset.range (r + 1), (cs i x).length ≤ t := by
     have h := AbsCfg.sum_length_crossings_le
       ((Finset.range (r + 1)).image fun i : ℕ => ((m + i : ℕ) : ℤ))

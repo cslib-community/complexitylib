@@ -126,8 +126,7 @@ theorem encodings_ninth_blocks (k N : ℕ) (hN : D (9 * k) ^ 18 ≤ N) :
     calc (B : ℝ) ^ 2 * (21 : ℝ) ^ (9 * k) * (N0' : ℝ) ^ 2
         ≤ (B : ℝ) ^ 2 * (4 * (K0' : ℝ) ^ 2) * (N0' : ℝ) ^ 2 := by gcongr
       _ = 4 * ((B : ℝ) * ((K0' : ℝ) * (N0' : ℝ))) ^ 2 := by ring
-      _ ≤ 4 * (2 * (N : ℝ)) ^ 2 :=
-        mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (by positivity) hpad 2) (by norm_num)
+      _ ≤ 4 * (2 * (N : ℝ)) ^ 2 := by gcongr
       _ = _ := by ring
   have hbase : (10 : ℝ) ^ 378 ≤
       (21 : ℝ) ^ 9 * (3 : ℝ) ^ 360 * (4 : ℝ) ^ 324 * (9 / 20 : ℝ) ^ 2 := by
@@ -166,8 +165,7 @@ theorem encodings_ninth_blocks (k N : ℕ) (hN : D (9 * k) ^ 18 ≤ N) :
           (N : ℝ) ^ 2 * ((9 / 20 : ℝ) ^ k) ^ 2) := by gcongr
       _ = ((B : ℝ) ^ 2 * (21 : ℝ) ^ (9 * k) * (N0' : ℝ) ^ 2) *
           ((N : ℝ) ^ 2 * ((9 / 20 : ℝ) ^ k) ^ 2) := by ring
-      _ ≤ (16 * (N : ℝ) ^ 2) * ((N : ℝ) ^ 2 * ((9 / 20 : ℝ) ^ k) ^ 2) :=
-        mul_le_mul_of_nonneg_right hcount (by positivity)
+      _ ≤ (16 * (N : ℝ) ^ 2) * ((N : ℝ) ^ 2 * ((9 / 20 : ℝ) ^ k) ^ 2) := by gcongr
       _ = _ := by ring
   exact le_of_sq_le_sq hsq (by positivity)
 

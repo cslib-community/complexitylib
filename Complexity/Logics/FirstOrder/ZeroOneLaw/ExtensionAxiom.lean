@@ -71,6 +71,13 @@ upstream candidate for `Mathlib/ModelTheory/Graph.lean`. -/
 instance isEmpty_relations_zero : IsEmpty (Language.graph.Relations 0) :=
   ⟨fun r => nomatch r⟩
 
+/-- The graph language has finitely many relation symbols, so Fagin's 0-1 law for finite
+relational vocabularies (`Complexity.Logics.FirstOrder.ZeroOneLaw.Relational`) applies to it. An
+upstream candidate for `Mathlib/ModelTheory/Graph.lean`. -/
+instance finite_relations : Finite (Σ l, Language.graph.Relations l) :=
+  Finite.of_surjective (fun _ : Unit => (⟨2, .adj⟩ : Σ l, Language.graph.Relations l))
+    (fun ⟨_, r⟩ => by cases r; exact ⟨(), rfl⟩)
+
 variable {M : Type*} [Language.graph.Structure M]
 
 /-- `z` witnesses the extension of the tuple `x` by the adjacency pattern `s`: it differs from

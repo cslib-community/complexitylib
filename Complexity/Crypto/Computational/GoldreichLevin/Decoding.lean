@@ -13,6 +13,7 @@ public import Complexity.Probability.Uniform
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Powerset
 public import Mathlib.Data.Matrix.Mul
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
 /-!
@@ -295,7 +296,7 @@ theorem agreement_eq_probability {n : ℕ} (predictor : BitString n → Bool) (x
 theorem agreement_le_one {n : ℕ} (predictor : BitString n → Bool) (x : BitString n) :
     agreement predictor x ≤ 1 := by
   rw [agreement_eq_probability]
-  exact (ENNReal.toReal_mono (by simp) (PMF.coe_le_one _ _)).trans_eq (by simp)
+  exact PMF.toReal_apply_le_one _ _
 
 /-- Every possible output of the decoder has at most `2 ^ k` candidates. -/
 theorem card_le_of_mem_support_decode {n k : ℕ} (predictor : BitString n → Bool)

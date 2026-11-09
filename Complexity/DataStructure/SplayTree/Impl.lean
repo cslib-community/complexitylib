@@ -184,9 +184,7 @@ private theorem logb_two_add_one_le_nat_log (n : ℕ) :
     Nat.lt_pow_succ_log_self (by decide) (n + 1)
   have hle : ((n : ℝ) + 1) ≤ (2 : ℝ) ^ (Nat.log 2 (n + 1) + 1) := by
     exact_mod_cast hlt.le
-  have hpos : (0 : ℝ) < (n : ℝ) + 1 := by
-    have : (0 : ℝ) ≤ n := Nat.cast_nonneg n
-    linarith
+  have hpos : (0 : ℝ) < (n : ℝ) + 1 := by grind
   have hlog := Real.logb_le_logb_of_le (b := 2) (by norm_num) hpos hle
   rw [Real.logb_pow, Real.logb_self_eq_one (b := 2) (by norm_num)] at hlog
   push_cast at hlog

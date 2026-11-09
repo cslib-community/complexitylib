@@ -52,6 +52,8 @@ unencoded semantic bridges to `Complexity.Foundations.LinearAlgebra.ExchangeRepl
 * `Cslib.LinearAlgebra.decodeAuxDigits`, `Cslib.LinearAlgebra.encodeAuxDigits`,
   `Cslib.LinearAlgebra.encodeAuxLabel`, `Cslib.LinearAlgebra.decodeAuxLabel`,
   `Cslib.LinearAlgebra.auxLabelEquivFin`: mixed-radix `AuxLabel Q r` encoding and decoding.
+* `Cslib.LinearAlgebra.encAuxDigits`: the tape encoding of digit-list pairs `(u₁, u₂)`, with
+  digits in binary.
 * `Cslib.LinearAlgebra.size_commonDenom_le`, `Cslib.LinearAlgebra.computableInPolyTime_commonDenom`:
   bit-length bounds and polynomial-time certificates for `commonDenom Q R`.
 * `Cslib.LinearAlgebra.auxMeasurementRowsBounded`, `Cslib.LinearAlgebra.auxMeasurementRows`,
@@ -990,7 +992,6 @@ section PolyTime
 open ComputableInPolyTime
 
 local notation "CPT" => ComputableInPolyTime
-local notation "encDigits" => encPair (encList encNat) (encList encNat)
 variable {α : Type} {input : α ↪ List Bool}
 
 private theorem er_ite_decide {β : Type} {encB : β ↪ List Bool}
@@ -1046,19 +1047,25 @@ private theorem er_min_D_cap {D_cap Q r : α → ℕ}
     CPT (fun a => min (D_cap a) (r a ^ (2 * Q a))) input encUnary := by
   exact binary_min_unary' hD (binary_pow' (unary_to_binary.comp' hr) (unary_mul' (.const 2) hQ))
 
+/-- Pairs `(u₁, u₂)` of base-`r` digit lists of an auxiliary label, with digits in binary: the
+framed list `u₁`, then the list `u₂`, each the concatenation of its framed digits, each encoded by
+`encNat`. -/
+abbrev encAuxDigits : List ℕ × List ℕ ↪ List Bool :=
+  encPair (encList encNat) (encList encNat)
+
 /-- `decodeAuxDigits` is computable in polynomial time from unary `Q` and binary `(r, idx)`. -/
 @[fun_prop] theorem computableInPolyTime_decodeAuxDigits {Q r idx : α → ℕ}
     (hQ : ComputableInPolyTime Q input encUnary) (hr : ComputableInPolyTime r input encNat)
     (hidx : ComputableInPolyTime idx input encNat) :
     ComputableInPolyTime (fun a => decodeAuxDigits (Q a) (r a) (idx a))
-      input (encPair (encList encNat) (encList encNat)) := by
+      input encAuxDigits := by
   have hp1 := fst input encUnary; have hp2 := snd input encUnary
   have hr1 := hr.comp' hp1; have hidx1 := hidx.comp' hp1
   exact (er_map (unary_range' hQ) (er_radixDigit hr1 hidx1 hp2)).prod
     (er_map (unary_range' hQ) (er_radixDigit hr1 hidx1 (unary_add' (hQ.comp' hp1) hp2)))
 private theorem er_decodeAuxDigits_unary {Q r idx : α → ℕ}
     (hQ : CPT Q input encUnary) (hr : CPT r input encUnary) (hidx : CPT idx input encUnary) :
-    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits := by
+    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encAuxDigits := by
   exact computableInPolyTime_decodeAuxDigits hQ (unary_to_binary.comp' hr)
     (unary_to_binary.comp' hidx)
 private theorem er_pairBasisNat {a d x y : α → ℕ} (ha : CPT a input encNat)
@@ -1074,7 +1081,7 @@ private theorem er_pairBasisNat {a d x y : α → ℕ} (ha : CPT a input encNat)
 /-- `encodeAuxDigits` is computable in polynomial time from binary `r` and digit lists `u`. -/
 @[fun_prop] theorem computableInPolyTime_encodeAuxDigits {r : α → ℕ} {u : α → List ℕ × List ℕ}
     (hr : ComputableInPolyTime r input encNat)
-    (hu : ComputableInPolyTime u input (encPair (encList encNat) (encList encNat))) :
+    (hu : ComputableInPolyTime u input encAuxDigits) :
     ComputableInPolyTime (fun a => encodeAuxDigits (r a) (u a)) input encNat := by
   have hlist := (of_tidy (.listReverse encNat)).comp' (hu.fst'.listAppend' hu.snd')
   have hstep : CPT (fun q : (ℕ × ℕ) × ℕ => q.2 + q.1.1 * q.1.2)
@@ -1183,7 +1190,7 @@ private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
       omega
 private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
     {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hA₀ : CPT A₀ input encUnary)
-    (hR : CPT R input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    (hR : CPT R input encUnary) (hu : CPT u input encAuxDigits) (hy : CPT y input encAuxDigits) :
     CPT (fun a => m0ScaledIntDigits (Q a) (A₀ a) (R a) (u a) (y a)) input encIntBin := by
   have hp1 := fst input encUnary; have hp2 := snd input encUnary
   have hu1 := hu.comp' hp1; have hy1 := hy.comp' hp1
@@ -1204,15 +1211,15 @@ private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
         (listGetDWithInput (er_fallingOrbitWeights (hm.comp' hp1) (hA₀.comp' hp1) hp2)
           (hd.comp' hp1) 0)))) (.const 0)
 private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
-    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hu : CPT u input encDigits)
-    (hy : CPT y input encDigits) :
+    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hu : CPT u input encAuxDigits)
+    (hy : CPT y input encAuxDigits) :
     CPT (fun a => mismatchAnnihilatorCoeffsDigits (Q a) (u a) (y a))
       input (encList encIntBin) := by
   unfold mismatchAnnihilatorCoeffsDigits
   let stepFn : ((List ℕ × List ℕ) × (List ℕ × List ℕ)) → List ℤ → ℕ → List ℤ := fun par p s =>
     if par.2.1.getD s 0 = par.1.2.getD s 0 then p.map (((s : ℤ) + 1) * ·)
     else mulLinearSub p ((s : ℤ) + 1)
-  let encS := encPair (encPair encDigits encDigits) (encList encIntBin)
+  let encS := encPair (encPair encAuxDigits encAuxDigits) (encList encIntBin)
   have hq1 := fst encS encUnary; have hq2 := snd encS encUnary
   have hp := hq1.snd'; have ht := er_intBin_add (er_intBin_natCast_unary hq2) (.const 1)
   have hm1 := fst (encPair encS encUnary) encIntBin
@@ -1234,7 +1241,7 @@ private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
       (fun a => (Q a + 1) * (2 * (Q a * Q a + Q a + 3) + 1)) :=
     (pQ.add (.const 1)).mul
       (((PolyBounded.const 2).mul (((pQ.mul pQ).add pQ).add (.const 3))).add (.const 1))
-  refine foldlWith (encP := encPair encDigits encDigits) (encA := encUnary)
+  refine foldlWith (encP := encPair encAuxDigits encAuxDigits) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (step := stepFn) (hu.prod hy)
     (range.comp hQ) (init := fun _ => [1]) (const [1]) hstep hB fun a i _ => ?_
   rw [List.take_range]
@@ -1258,8 +1265,8 @@ private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
 @[fun_prop] theorem computableInPolyTime_auxReplacementRowCoeffsDigits {Q A₀ R : α → ℕ}
     {u y : α → List ℕ × List ℕ} (hQ : ComputableInPolyTime Q input encUnary)
     (hA₀ : ComputableInPolyTime A₀ input encUnary) (hR : ComputableInPolyTime R input encUnary)
-    (hu : ComputableInPolyTime u input (encPair (encList encNat) (encList encNat)))
-    (hy : ComputableInPolyTime y input (encPair (encList encNat) (encList encNat))) :
+    (hu : ComputableInPolyTime u input encAuxDigits)
+    (hy : ComputableInPolyTime y input encAuxDigits) :
     ComputableInPolyTime (fun a => auxReplacementRowCoeffsDigits (Q a) (A₀ a) (R a) (u a) (y a))
       input (encList encIntBin) := by
   have hp1 := fst input encUnary; have hp2 := snd input encUnary
