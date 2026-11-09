@@ -8,13 +8,16 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Event
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
 /-!
-# Additivity of discrete outer measures
+# Additivity and the union bound for discrete outer measures
 
 The outer measure of a discrete distribution is additive on disjoint events: every set is
-Carathéodory-measurable for it (`PMF.toOuterMeasure_caratheodory`).
+Carathéodory-measurable for it (`PMF.toOuterMeasure_caratheodory`). For arbitrary events it is
+subadditive; since every probability is finite, the union bound also holds for the real-valued
+probabilities `(p.toOuterMeasure s).toReal`.
 
 ## Main results
 
@@ -62,10 +65,8 @@ events is at most the sum of their probabilities. -/
 theorem toOuterMeasure_toReal_biUnion_finset_le {ι : Type*} (p : PMF α) (J : Finset ι)
     (B : ι → Set α) :
     (p.toOuterMeasure (⋃ j ∈ J, B j)).toReal ≤ ∑ j ∈ J, (p.toOuterMeasure (B j)).toReal := by
-  have hfin (s : Set α) : p.toOuterMeasure s ≠ ⊤ := by
-    simpa only [PMF.toOuterMeasure_apply] using p.tsum_coe_indicator_ne_top s
-  rw [← ENNReal.toReal_sum fun j _ => hfin (B j)]
-  exact ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun j _ => hfin (B j))
+  rw [← ENNReal.toReal_sum fun j _ => toOuterMeasure_ne_top p (B j)]
+  exact ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun j _ => toOuterMeasure_ne_top p (B j))
     (MeasureTheory.measure_biUnion_finset_le J B)
 
 end Cslib.Probability.PMF
