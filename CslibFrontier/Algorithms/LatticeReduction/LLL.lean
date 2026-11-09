@@ -735,8 +735,7 @@ theorem dotProduct_lll_zero_le (B : Vector (Vector ℤ m) (n + 1))
     (hx : x ∈ Submodule.span ℤ (Set.range (rows B))) (hx0 : x ≠ 0) :
     dotProduct (rows (lll B) 0) (rows (lll B) 0) ≤ 2 ^ n * dotProduct x x := by
   have h := dotProduct_lllWith_zero_le (δ := 3 / 4) (by norm_num) (by norm_num) B hB hx hx0
-  rw [← lll_eq_lllWith] at h
-  norm_num at h
+  rw [← lll_eq_lllWith, show (4 : ℚ) / (4 * (3 / 4) - 1) = 2 by norm_num] at h
   exact_mod_cast h
 
 /-- A decidable criterion for the hypothesis of `isReduced_lll`: the integer Gram determinant
