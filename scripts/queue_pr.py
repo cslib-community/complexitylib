@@ -28,7 +28,7 @@ import subprocess
 import sys
 import time
 
-REPO = "cslib-community/complexitylib"
+REPO = "cslib-community/cslib-frontier"
 # The checks the `main` ruleset requires (Settings → Rules → main), each with the GitHub App that
 # must report it (15368 is GitHub Actions), as the ruleset pins them; keep in sync with it.
 REQUIRED_CHECKS = {"ci-checks": 15368}
