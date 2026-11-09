@@ -208,8 +208,7 @@ theorem _root_.Cslib.IsMonadHom.map_scanCandidatesM
   | nil => simp [scanCandidatesM, hφ.map_pure]
   | cons c cs ih =>
     simp only [scanCandidatesM, hφ.map_bind]
-    congr 1
-    funext v
+    congr 1 with v : 1
     split_ifs <;> exact ih _ _
 
 @[grind .]
@@ -223,11 +222,9 @@ theorem _root_.Cslib.IsMonadHom.map_submodularGreedyStepM
   | nil => simp [hφ.map_pure]
   | cons c₀ cs =>
     simp only [hφ.map_bind]
-    congr 1
-    funext v₀
+    congr 1 with v₀ : 1
     rw [hφ.map_scanCandidatesM]
-    congr 1
-    funext p
+    congr 1 with p : 1
     exact hφ.map_pure _
 
 @[grind .]
@@ -240,8 +237,7 @@ theorem _root_.Cslib.IsMonadHom.map_submodularGreedyLoopM
   | zero => simp [submodularGreedyLoopM, hφ.map_pure]
   | succ k ih =>
     simp only [submodularGreedyLoopM, hφ.map_bind, hφ.map_submodularGreedyStepM]
-    congr 1
-    funext S'
+    congr 1 with S' : 1
     exact ih S'
 
 @[grind .]

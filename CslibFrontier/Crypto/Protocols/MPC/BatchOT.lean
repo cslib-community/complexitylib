@@ -24,6 +24,8 @@ times in one round; the library's `ot14Spec` is the 1-out-of-4 transfer of bits.
 * `Cslib.Crypto.Protocols.MPC.batchOTSpec`, `Cslib.Crypto.Protocols.MPC.batchOTAnswer`,
   `Cslib.Crypto.Protocols.MPC.batchOTWorld`: the oracle specification, its answer and its ideal
   world.
+* `Cslib.Crypto.Protocols.MPC.batchOTFunctionality`: the same transfer as a two-party
+  functionality, for protocols that realize it.
 
 ## References
 
@@ -53,5 +55,11 @@ def batchOTAnswer {k : ℕ} {L : Type} (q : (s : Fin 2) → (batchOTSpec k L).Qu
 /-- The ideal memoryless world of `batchOTSpec k L`. -/
 def batchOTWorld (k : ℕ) (L : Type) : MultiOracleWorld (batchOTSpec k L) :=
   fun _ q => pure (batchOTAnswer q)
+
+/-- `batchOTSpec k L` as a two-party functionality: the inputs are the query parts of the two
+slots and the outputs are their answer parts. -/
+def batchOTFunctionality (k : ℕ) (L : Type) :
+    Functionality 2 ((batchOTSpec k L).Query ()) ((batchOTSpec k L).Answer ()) :=
+  .ofDeterministic batchOTAnswer
 
 end Cslib.Crypto.Protocols.MPC

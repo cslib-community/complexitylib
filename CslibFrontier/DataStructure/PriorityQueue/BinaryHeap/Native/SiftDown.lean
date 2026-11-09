@@ -106,21 +106,15 @@ theorem step_eq (d : Argument × ℕ) :
       else sink L S k (2 * k) vk kk vl kl) := by
   unfold step
   dsimp only
-  congr 1
-  funext vk
-  congr 1
-  funext kk
-  congr 1
-  funext vl
-  congr 1
-  funext kl
+  congr 1 with vk : 1
+  congr 1 with kk : 1
+  congr 1 with vl : 1
+  congr 1 with kl : 1
   by_cases hr : 2 * d.2 < d.1.1.2
   · have hr' : 2 * d.2 + 1 ≤ d.1.1.2 := by omega
     simp only [hr, hr', ↓reduceIte]
-    congr 1
-    funext vr
-    congr 1
-    funext kr
+    congr 1 with vr : 1
+    congr 1 with kr : 1
     by_cases h : kr < kl
     · simp [IndexedMinPQ.RawPrioLT, h]
     · by_cases he : kr = kl <;> by_cases hv : vr < vl <;>
@@ -172,8 +166,7 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
       rw [sink_eq, BinaryHeap.Memory.sink]
       split
       · simp only [bind_assoc, pure_bind]
-        congr 1
-        funext _
+        congr 1 with _ : 1
         apply ih c (by omega)
         have hl := log_child hk hc
         have hm := Nat.log_mono_right (b := 2) hcS
@@ -183,21 +176,15 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
     by_cases hg : guard d k
     · have hsrc := (guard_iff ht hk).mp hg
       simp only [boundedWhile, hg, hsrc, ↓reduceIte, step_eq, bind_assoc]
-      congr 1
-      funext vk
-      congr 1
-      funext kk
-      congr 1
-      funext vl
-      congr 1
-      funext kl
+      congr 1 with vk : 1
+      congr 1 with kk : 1
+      congr 1 with vl : 1
+      congr 1 with kl : 1
       split
       next hr =>
         simp only [bind_assoc]
-        congr 1
-        funext vr
-        congr 1
-        funext kr
+        congr 1 with vr : 1
+        congr 1 with kr : 1
         split
         · exact hsink (2 * k + 1) vk kk vr kr (by omega) hr
         · exact hsink (2 * k) vk kk vl kl (by omega) hsrc.2

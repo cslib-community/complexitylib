@@ -48,8 +48,7 @@ theorem realizes_isEmpty :
     all_goals exact h.1 ▸ hwords 2
   exact h.congr fun d => by
     unfold Memory.isEmpty
-    congr 1
-    funext S
+    congr 1 with S : 1
     by_cases hz : S = 0 <;> simp [hz]
 
 /-- The original optional lookup on a runtime handle word. The bound is part of the explicit

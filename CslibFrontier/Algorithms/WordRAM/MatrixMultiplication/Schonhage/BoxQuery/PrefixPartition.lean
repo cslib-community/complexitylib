@@ -51,8 +51,7 @@ private def privateTail {L : ℕ} (η : OutStr L) (k n : ℕ) : List Term :=
 private theorem privateTail_succ {L : ℕ} (η : OutStr L) (k n : ℕ) :
     privateTail η k (n + 1) = (outAt η k).privateTerm :: privateTail η (k + 1) n := by
   simp only [privateTail, List.ofFn_succ, Fin.val_zero, Nat.add_zero, Fin.val_succ]
-  congr 2
-  funext i
+  congr 2 with i : 1
   congr 2
   omega
 

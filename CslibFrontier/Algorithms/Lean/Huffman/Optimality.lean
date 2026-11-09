@@ -122,15 +122,6 @@ theorem IsHuffmanBuild.leaves_perm {α β : Type*} [Add β] [LE β] {w : α → 
 
 /-! ## Monoid rearrangement and depth-weighted list swaps -/
 
-private theorem nsmul_le_nsmul_of_le {β : Type*} [AddCommMonoid β] [PartialOrder β]
-    [IsOrderedAddMonoid β] {w₁ w₂ : β} (hw : w₁ ≤ w₂) (k : ℕ) :
-    k • w₁ ≤ k • w₂ := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    simp only [succ_nsmul]
-    exact add_le_add ih hw
-
 /-- Subtraction-free rearrangement inequality: if `d₁ ≤ d₂` and `w₁ ≤ w₂`, assigning the larger
 depth `d₂` to the smaller weight `w₁` does not exceed assigning `d₂` to `w₂`. -/
 theorem rearrangement_nsmul_le {β : Type*} [AddCommMonoid β] [PartialOrder β]
@@ -140,7 +131,7 @@ theorem rearrangement_nsmul_le {β : Type*} [AddCommMonoid β] [PartialOrder β]
   rw [hd_eq, add_nsmul, add_nsmul]
   have hbase : (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₁ ≤
       (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₂ :=
-    add_le_add le_rfl (nsmul_le_nsmul_of_le hw (d₂ - d₁))
+    add_le_add le_rfl (nsmul_le_nsmul_right hw (d₂ - d₁))
   have hlhs : (d₁ • w₁ + (d₂ - d₁) • w₁) + d₁ • w₂ =
       (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₁ := by ac_rfl
   have hrhs : d₁ • w₁ + (d₁ • w₂ + (d₂ - d₁) • w₂) =

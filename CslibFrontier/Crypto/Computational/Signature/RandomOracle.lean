@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Signature
 public import CslibFrontier.Crypto.Computational.WordSignature
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
@@ -218,11 +219,10 @@ theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
           (fun ⟨⟨a, b⟩, c⟩ => (a, b, c))).map
             (fun ⟨a, s'⟩ => (a, s'.1.map Prod.fst)) =
         ProbComp.eval (S.signingOracle sk ((), msg) (pairs.map Prod.fst))
-      simp only [ROMSignature.logSigning, ROMSignature.forgerWorldImpl, toROMSignatureScheme,
-        signingOracle, OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_bind,
-        OracleComp.interpret_pure, OracleComp.interpret_query, StateT.run_bind, StateT.run_pure,
-        ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.map_bind, PMF.pure_map, List.map_cons]
+      simp only [pmf_norm, ROMSignature.logSigning, ROMSignature.forgerWorldImpl,
+        toROMSignatureScheme, signingOracle, OracleComp.sumHandler, ProbOracleComp.query,
+        OracleComp.interpret_bind, OracleComp.interpret_pure, OracleComp.interpret_query,
+        StateT.run_bind, StateT.run_pure, List.map_cons]
       rw [StateT.run, PMF.bind_bind]
       refine PMF.bind_congr_on_support _ _ _ fun sig _ => ?_
       simp)
