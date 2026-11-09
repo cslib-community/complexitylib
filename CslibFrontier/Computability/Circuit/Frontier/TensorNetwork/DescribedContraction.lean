@@ -705,6 +705,28 @@ theorem length_numEdges_vertices_le (d : DescribedNetwork T) :
     (encPair encUnary (encList (encPair (encList encNat) encT)) (d.numEdges, d.vertices)).length
   enc_len
 
+/-- An encoded vertex is at most the encoded network long. -/
+theorem length_vertex_le (d : DescribedNetwork T) {v : List ℕ × T} (hv : v ∈ d.vertices) :
+    (encPair (encList encNat) encT v).length ≤ (encDescribed encT d).length := by
+  have h1 := List.le_sum_of_mem
+    (List.mem_map_of_mem (f := fun a => (encPair (encList encNat) encT a).length) hv)
+  have h2 := sum_length_le_length_encList (encPair (encList encNat) encT) d.vertices
+  have h3 : (encList (encPair (encList encNat) encT) d.vertices).length ≤
+      (encDescribed encT d).length := by
+    change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
+      (d.numEdges, d.vertices)).length
+    enc_len
+  omega
+
+/-- The encoded argument of the evaluator at a vertex and bits on its ports is at most three
+times the encoded network length plus a constant. -/
+theorem length_entryInput_le (d : DescribedNetwork T) {v : List ℕ × T} (hv : v ∈ d.vertices)
+    {bs : List Bool} (hbs : bs.length = v.1.length) :
+    (encPair encT encBits (v.2, bs)).length + 1 ≤ 3 * ((encDescribed encT d).length + 1) := by
+  have h1 := d.length_vertex_le (encT := encT) hv
+  have h2 := length_le_length_encList encNat v.1
+  enc_len at h1 ⊢
+
 /-- A node of the right shape is at most `5 n + 7` long, for `n` the length of the input. -/
 theorem length_encNode_le {q : Q × DescribedNetwork T} {x : Node Q T} (hx : NodeShape q x) :
     (encNode encQ encT x).length ≤ 5 * (encInput encQ encT q).length + 7 := by
@@ -782,16 +804,8 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
   have hmk := length_numEdges_vertices_le (encT := encT) d
   -- Every vertex is at most `n` long.
   have hvlen (v : List ℕ × T) (hv : v ∈ d.vertices) :
-      (encPair (encList encNat) encT v).length ≤ n := by
-    have h1 := List.le_sum_of_mem (List.mem_map_of_mem (f := fun a =>
-      (encPair (encList encNat) encT a).length) hv)
-    have h2 := sum_length_le_length_encList (encPair (encList encNat) encT) d.vertices
-    have h3 : (encList (encPair (encList encNat) encT) d.vertices).length ≤
-        (encDescribed encT d).length := by
-      change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-        (d.numEdges, d.vertices)).length
-      enc_len
-    omega
+      (encPair (encList encNat) encT v).length ≤ n :=
+    (d.length_vertex_le hv).trans (by omega)
   have hnode (x : Node Q T) (hx : (sumInvariant ops eval (P, d)).node x) :
       (encNode encQ encT x).length ≤ 5 * z + 7 := (length_encNode_le hx).trans (by omega)
   -- The leaf step: the vertex lookup, and the zero or the query and the evaluator.
