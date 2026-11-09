@@ -494,8 +494,7 @@ theorem sub_submodularGreedyStep_le
         f OPT - f S ≤ ∑ _x ∈ OPT \ S, (f (submodularGreedyStep f u S) - f S) := h1.trans h2
         _ = ((OPT \ S).card : β) * (f (submodularGreedyStep f u S) - f S) := by
           rw [Finset.sum_const, nsmul_eq_mul]
-        _ ≤ (k : β) * (f (submodularGreedyStep f u S) - f S) :=
-          mul_le_mul_of_nonneg_right hcard_le hstep_nonneg
+        _ ≤ (k : β) * (f (submodularGreedyStep f u S) - f S) := by gcongr
     have hmul_target : (k : β) * (f OPT - f (submodularGreedyStep f u S)) ≤
         (k : β) * ((1 - 1 / (k : β)) * (f OPT - f S)) := by
       have hid : (k : β) * (1 - 1 / (k : β)) = (k : β) - 1 := by
@@ -861,8 +860,7 @@ theorem isSubmodular_tightComponent {k : ℕ} (hk : 0 < k) (j : Fin k) :
     · exact absurd (hAB hA) hB
     · have hpow : (1 - 1 / (k : β)) ^ leftCount k B ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
         pow_le_pow_of_le_one hq_nonneg hq_le_one (leftCount_mono k hAB)
-      exact mul_le_mul_of_nonneg_right
-        (mul_le_mul_of_nonneg_left hpow hdiv_nonneg) hdiv_nonneg
+      gcongr
   | inr j' =>
     by_cases hjj : j' = j
     · subst hjj
