@@ -173,25 +173,6 @@ theorem hardCounterPowers_card_ge (k q : ℕ) :
   have hle := easyCounterPowers_card_le k q
   omega
 
-/-- The description budget at `lowerBudget k` leaves an additive margin of `2 ^ (k - 1)` in the
-binary exponent. -/
-private theorem lowerBudget_description_margin (k : ℕ) (hk : 64 ≤ k) :
-    let q := lowerBudget k
-    3 * q + (k + 2) * (2 * q + (k + k) + 1) + k + 2 ^ (k - 1) ≤ 2 ^ k - 1 := by
-  dsimp only
-  have hq : lowerBudget k * (1024 * (k + 1)) ≤ 2 ^ k := Nat.div_mul_le_self _ _
-  have hs := square_le_exponential k hk
-  have hpoly : (k + 2) * (k + k + 1) + k + 2 ≤ 4 * (k + 2) ^ 2 := by nlinarith
-  have hcoef : (2 * (k + 2) + 3) * 128 ≤ 1024 * (k + 1) := by omega
-  have hq' := Nat.mul_le_mul_right (lowerBudget k) hcoef
-  have htotal : 128 * (3 * lowerBudget k +
-      (k + 2) * (2 * lowerBudget k + (k + k) + 1) + k + 2) ≤ 5 * 2 ^ k := by
-    nlinarith
-  have hhalf : 2 ^ (k - 1) * 2 = 2 ^ k := by
-    rw [← pow_succ, Nat.sub_add_cancel (by omega : 1 ≤ k)]
-  have hN : 1 ≤ 2 ^ k := Nat.one_le_two_pow
-  omega
-
 /-- **Almost every counter power is hard.** At most a `2 ^ (-2 ^ (k - 1))` fraction of exponents
 below `ModulusCounter.period k` have circuits of size at most `lowerBudget k`. -/
 theorem almost_all_counter_powers_hard (k : ℕ) (hk : 64 ≤ k) :

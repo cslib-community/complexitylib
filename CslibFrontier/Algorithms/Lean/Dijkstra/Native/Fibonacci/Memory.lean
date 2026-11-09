@@ -153,32 +153,16 @@ theorem inv_input (G : ListInstance) {w K V : ℕ}
     let s' : Memory.State := ⟨s₀.mem, s₀.frontier + G.n + (9 * G.n + 5)⟩
     (framed hn hK (s₀.frontier + G.n) hT hA G.adj).inv s' ∧
       (framed hn hK (s₀.frontier + G.n) hT hA G.adj).abs s' = init G := by
-  set s₀ := Memory.State.init G.encode
-  set f := s₀.frontier
-  have hf : s₀.frontier = G.n + 2 * G.m + 4 := by
-    simp only [s₀, Memory.State.init, G.encode_length]
-  have hf₁ : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := hf
-  have hz : ZeroAbove s₀ := zeroAbove_init _
-  obtain ⟨hHinv, hHabs⟩ := FibonacciHeap.framed_allocDirty hn hK (hz.allocDirty G.n)
-  obtain ⟨hTinv, hTabs⟩ := Dictionary.Memory.inv_alloc (U := G.n) hz
-  refine ⟨⟨hHinv, ⟨Block.Allocated.mono hTinv (by simp only; omega),
-    ⟨by simp only [Memory.inputGraph, Block.Allocated]; omega,
-      by simp only [Memory.inputGraph, Block.Allocated]; omega, Memory.holds_inputGraph G⟩,
-      ?_⟩, ?_⟩, Prod.ext hHabs (Prod.ext hTabs rfl)⟩
-  · refine ⟨?_, hfit⟩
-    simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
-    rw [Finset.disjoint_left]
-    intro a ha hb
-    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
-      Memory.inputGraph, Finset.mem_union] at ha hb
-    omega
-  · refine ⟨?_, hfit⟩
-    simp only [Memory.Framed.prod_footprint, FibonacciHeap.framed_footprint,
-      Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
-    rw [Finset.disjoint_left]
-    intro a ha hb
-    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
-      FibonacciHeap.footprint, Memory.inputGraph, Finset.mem_union, Finset.mem_Ico] at ha hb
-    omega
+  intro s₀ s'
+  obtain ⟨hHinv, hHabs⟩ := FibonacciHeap.framed_allocDirty hn hK
+    ((zeroAbove_init G.encode).allocDirty G.n)
+  obtain ⟨hTAinv, hTAabs, hTAlt⟩ := Memory.inv_tableGraph G hT hA (by omega) hfit
+  refine ⟨⟨hHinv, hTAinv, ?_, hfit⟩, Prod.ext hHabs hTAabs⟩
+  -- The heap lies past the table and the graph.
+  rw [Finset.disjoint_left]
+  intro a ha hb
+  simp only [s₀, FibonacciHeap.framed_footprint, FibonacciHeap.footprint, Finset.mem_Ico] at ha
+  have := hTAlt _ a hb
+  omega
 
 end Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci

@@ -195,9 +195,7 @@ theorem universal_bounds_unary (i : Desc × List ℕ × ℕ) :
         _ ≤ 200 * (n + 1) ^ 2 * (t + 1) := h₂
         _ ≤ 200 * (n + 1) ^ 2 * (n + 1) := Nat.mul_le_mul_left _ ht
         _ = 200 * (n + 1) ^ 3 := by ring
-    have hB : 5 * n + 2 ≤ 5 * (n + 1) ^ 3 := by
-      have : n + 1 ≤ (n + 1) ^ 3 := Nat.le_self_pow (by omega) _
-      omega
+    have hB : 5 * n + 2 ≤ 5 * (n + 1) ^ 3 := by grind
     omega
 
 /-- **The universal function with a unary clock is polynomial-time**: written in unary, the number

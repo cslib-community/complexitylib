@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.BoundedQuery
 public import CslibFrontier.Computability.Complexity.Classes.PH
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Oracle
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
-import CslibFrontier.Computability.Complexity.Classes.Oracle.Deterministic
+import CslibFrontier.Computability.Complexity.Classes.Oracle.CanonicalReplay
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Lowness
 import CslibFrontier.Computability.Complexity.Classes.PH.Closure
 import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
@@ -135,26 +135,21 @@ open Classical in
 an `NP` certificate for every such bit, through a `#P` product. -/
 theorem oracleTranscriptYes_mem_NP [Finite Control] [Finite Operation] (hA : A ∈ NP encBits) :
     oracleTranscriptYes machine enc A ∈ NP (encPair enc encBits) := by
-  let _ := Fintype.ofFinite Operation
   obtain ⟨fA, hfA, hA⟩ := mem_NP_iff_exists_SharpP.mp hA
-  have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits := ComputableInPolyTime.id'
-  let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
-    fun y => machine.replayPrefix (enc y.1.1) y.1.2 y.2
-  have hcfg : ComputableInPolyTime cfg (encPair (encPair enc encBits) encUnary)
-      encFiniteConfig :=
-    machine.computableInPolyTime_replayPrefix.comp (g := fun y : (α × List Bool) × ℕ =>
-      ((enc y.1.1, y.1.2), y.2)) (by fun_prop)
-  have hquery : ComputableInPolyTime (fun y => (machine.pendingQuery (cfg y)).isSome)
-      (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableInPolyTime.of_finite Option.isSome).comp (machine.pendingQuery_pt.comp hcfg)
-  have hreq : ComputableInPolyTime (fun y => machine.pendingRequest (cfg y))
-      (encPair (encPair enc encBits) encUnary) encBits :=
-    machine.pendingRequest_pt.comp hcfg
+  -- reindex to the argument shape of the replay-prefix polynomial-time lemmas; the
+  -- compositions are elaborated without an expected type, which keeps unification first-order
+  have hreplay : ComputableInPolyTime
+      (fun y : (α × List Bool) × ℕ => ((enc y.1.1, y.1.2), y.2))
+      (encPair (encPair enc encBits) encUnary) (encPair (encPair encBits encBits) encUnary) := by
+    fun_prop
+  have hquery := machine.replayPrefix_isQuery_pt.comp hreplay
+  have hreq := machine.replayPrefix_pendingRequest_pt.comp hreplay
   have hbit : ComputableInPolyTime (fun y : (α × List Bool) × ℕ => y.1.2.getD y.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
   let factor : (α × List Bool) × ℕ → ℕ := fun y =>
+    let cfg := machine.replayPrefix (enc y.1.1) y.1.2 y.2
     if y.1.2.getD y.2 false then
-      (if (machine.pendingQuery (cfg y)).isSome then fA (machine.pendingRequest (cfg y)) else 0)
+      (if (machine.pendingQuery cfg).isSome then fA (machine.pendingRequest cfg) else 0)
     else 1
   have hfactor : factor ∈ SharpP (encPair (encPair enc encBits) encUnary) :=
     SharpP.ite_mem hbit (SharpP.ite_mem hquery (SharpP.comp_mem hfA hreq) SharpP.zero_mem)
@@ -164,7 +159,7 @@ theorem oracleTranscriptYes_mem_NP [Finite Control] [Finite Operation] (hA : A �
   rw [CanonicallyOrderedAdd.prod_pos]
   simp only [mem_oracleTranscriptYes, Finset.mem_range]
   refine forall₂_congr fun i _ => ?_
-  simp only [factor, cfg]
+  simp only [factor]
   cases x.2.getD i false
   · simp
   · cases (machine.pendingQuery (machine.replayPrefix (enc x.1) x.2 i)).isSome
@@ -266,10 +261,7 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_SigmaP_two {f : α → β}
     (hf : ComputableInPolyTimeWithOracle A f enc output)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBool) :
     {a | P (a, output (f a)) = true} ∈ SigmaP 2 enc := by
-  obtain ⟨program, hcert, hprogram⟩ := hf
-  obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  let T : Polynomial ℕ := Polynomial.C c * (Polynomial.X + 1) ^ d
-  have hT (a : α) : T.eval (enc a).length = c * ((enc a).length + 1) ^ d := by simp [T]
+  obtain ⟨k, m, machine, T, hout⟩ := hf.exists_replayOutput
   -- the replayed output of a transcript satisfies `P`
   let good : Set (α × List Bool) :=
     {x | P (x.1, machine.replayOutput (enc x.1) x.2) = true}
@@ -289,15 +281,11 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_SigmaP_two {f : α → β}
   have hB := inter_mem_SigmaP hgood (inter_mem_SigmaP hYes hNo)
   convert mem_SigmaP_of_exists (by omega) hB T using 1
   ext a
-  simp only [Set.mem_ofPred_eq, hT]
+  simp only [Set.mem_ofPred_eq]
   let g : List Bool → Bool := fun q => decide (q ∈ A)
-  have hout : machine.replayOutput (enc a)
-      (machine.oracleReplies g (c * ((enc a).length + 1) ^ d) (enc a)) = output (f a) := by
-    rw [machine.replayOutput_oracleReplies]
-    exact (hrun a (languageOracle A)).trans (congrArg output (hprogram a))
   constructor
   · intro h
-    refine ⟨machine.oracleReplies g (c * ((enc a).length + 1) ^ d) (enc a),
+    refine ⟨machine.oracleReplies g (T.eval (enc a).length) (enc a),
       machine.length_oracleReplies _ _ _, ?_,
       mem_oracleTranscriptYes_inter_oracleTranscriptNo.mpr ?_⟩
     · change P (a, _) = true
