@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.WordRAM.Width
 public import CslibFrontier.Computability.GenericRAM.Signed.Fits
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.WordRAM.Admission
+import CslibFrontier.Algorithms.WordRAM.NatClog
 
 /-!
 # Initialized native ExactTriangle preparation
@@ -305,15 +306,10 @@ private theorem pow_width_lt (n D g p A : ℕ) :
   let V := envelope n D g p A
   let k := Nat.clog 2 V
   have hV : 1 < V := by dsimp only [V, envelope]; omega
-  have hkpos : 0 < k := Nat.clog_pos (by decide) hV
-  have hk : k.pred + 1 = k := Nat.succ_pred_eq_of_pos hkpos
-  have hpred : 2 ^ k.pred < V := Nat.pow_pred_clog_lt_self (by decide) hV
+  have h : 2 ^ k < 2 * V := NatClog.two_pow_clog_lt_two_mul hV
   change 2 ^ (k + 3) < 16 * V
-  calc
-    2 ^ (k + 3) = 2 ^ k * 8 := by rw [Nat.pow_add]
-    _ = 2 ^ (k.pred + 1) * 8 := congrArg (fun j => 2 ^ j * 8) hk.symm
-    _ = (2 ^ k.pred * 2) * 8 := by rw [Nat.pow_succ]
-    _ < 16 * V := by omega
+  rw [pow_add]
+  omega
 
 /-- All actual run prefixes, at every admitted physical width, have bounded words and zero
 memory beyond one original-input polynomial. Width independence identifies each such prefix

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Width
 public import CslibFrontier.Computability.WordRAM.Width
 import Mathlib.Data.List.GetD
+import CslibFrontier.Algorithms.WordRAM.NatClog
 
 /-!
 # Actual initialized halting modular counter and every-wide-width prefixes
@@ -57,15 +58,10 @@ private theorem pow_width_lt (n p A : ℕ) :
   have hB : 0 < addressBudget n p (Nat.clog 2 n) (3 + 3 * (n * n)) 3 (3 + n * n)
       (3 + 2 * (n * n)) := by unfold addressBudget; positivity
   have hE : 1 < E := by dsimp only [E, envelope]; omega
-  have hkpos : 0 < k := Nat.clog_pos (by decide) hE
-  have hk : k.pred + 1 = k := Nat.succ_pred_eq_of_pos hkpos
-  have hpred : 2 ^ k.pred < E := Nat.pow_pred_clog_lt_self (by decide) hE
+  have h : 2 ^ k < 2 * E := NatClog.two_pow_clog_lt_two_mul hE
   change 2 ^ (k + 3) < 16 * E
-  calc
-    _ = 2 ^ k * 8 := by rw [Nat.pow_add]
-    _ = 2 ^ (k.pred + 1) * 8 := congrArg (fun j => 2 ^ j * 8) hk.symm
-    _ = (2 ^ k.pred * 2) * 8 := by rw [Nat.pow_succ]
-    _ < 16 * E := by omega
+  rw [pow_add]
+  omega
 
 /-- Every successful prefix has original-input bounded words and zero memory beyond the same
 width-independent support envelope. The premise is an actual program prefix, not a supplied
