@@ -31,8 +31,10 @@ values with the product distribution `PMF.pi`.
 * `Cslib.OracleComp.replicateFin_eq_pi`: `replicateFin` is the constant-family specialization of
   `pi`.
 * `Cslib.OracleComp.map_ofFn_replicateFin`: agreement with list-valued repetition.
-* `Cslib.ProbComp.mem_support_pi_iff`, `Cslib.ProbComp.mem_support_replicateFin_iff`: support is
-  coordinatewise, even for infinite types.
+* `Cslib.OracleComp.mem_supportWith_pi_iff`: the possible results of `pi` over any interface are
+  coordinatewise.
+* `Cslib.ProbComp.mem_support_pi_iff`, `Cslib.ProbComp.mem_support_replicateFin_iff`: its special
+  case for closed programs, even for infinite types.
 * `Cslib.ProbComp.eval_pi`, `Cslib.ProbComp.eval_replicateFin`: independent finite coordinates have
   the product law `PMF.pi`.
 * `Cslib.ProbComp.eval_pi_map`, `Cslib.ProbComp.eval_replicateFin_map_coords`: coordinatewise maps
@@ -122,6 +124,29 @@ theorem replicateFin_succ (count : ℕ) (program : OracleComp spec α) :
   | succ count ih =>
     simp [replicateFin_succ, replicate_succ, map_bind, Functor.map_map, List.ofFn_succ, ← ih]
 
+/-- A tuple is a possible result of `pi programs` exactly when each coordinate is a possible
+result of its program. -/
+theorem mem_supportWith_pi_iff (possible : (q : Query) → Set (spec q)) {m : ℕ}
+    {β : Fin m → Type v} (programs : (i : Fin m) → OracleComp spec (β i)) (r : (i : Fin m) → β i) :
+    r ∈ supportWith possible (pi programs) ↔ ∀ i, r i ∈ supportWith possible (programs i) := by
+  induction m with
+  | zero =>
+    have hr : r = fun i => i.elim0 := funext fun i => i.elim0
+    subst hr
+    simp
+  | succ m ih =>
+    simp only [pi_succ, mem_supportWith_bind_iff, mem_supportWith_map_iff, ih]
+    constructor
+    · rintro ⟨first, hfirst, rest, hrest, rfl⟩ i
+      refine Fin.cases ?_ ?_ i
+      · simpa using hfirst
+      · intro j
+        simpa using hrest j
+    · intro hr
+      refine ⟨r 0, hr 0, fun j => r j.succ, fun j => hr j.succ, ?_⟩
+      ext i
+      exact Fin.cases rfl (fun _ => rfl) i
+
 end OracleComp
 
 namespace ProbComp
@@ -135,24 +160,8 @@ its coordinate program. -/
 theorem mem_support_pi_iff {m : ℕ} {α : Fin m → Type}
     (programs : (i : Fin m) → ProbComp (α i)) (r : (i : Fin m) → α i) :
     r ∈ (eval (OracleComp.pi programs)).support ↔ ∀ i, r i ∈ (eval (programs i)).support := by
-  induction m with
-  | zero =>
-    have hr : r = fun i => i.elim0 := funext fun i => i.elim0
-    subst hr
-    simp
-  | succ m ih =>
-    simp only [OracleComp.pi_succ, eval_bind, eval_map, PMF.mem_support_bind_iff,
-      PMF.mem_support_map_iff, ih]
-    constructor
-    · rintro ⟨first, hfirst, rest, hrest, rfl⟩ i
-      refine Fin.cases ?_ ?_ i
-      · simpa using hfirst
-      · intro j
-        simpa using hrest j
-    · intro h
-      refine ⟨r 0, h 0, fun j => r j.succ, fun j => h j.succ, ?_⟩
-      ext i
-      exact Fin.cases rfl (fun _ => rfl) i
+  simp only [support_eval]
+  exact OracleComp.mem_supportWith_pi_iff _ programs r
 
 /-- Evaluating `pi programs` depends only on the distributions of the individual programs. -/
 theorem eval_pi_congr {m : ℕ} {α : Fin m → Type}

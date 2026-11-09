@@ -11,8 +11,8 @@ on:
 # A new run for a pull request cancels that pull request's superseded run. Push runs on `main`
 # share `lean-ci-main` without `cancel-in-progress`: the active `main` run finishes and uploads the
 # `.lake` and remote caches, while intermediate `main` pushes are replaced by the latest `main` tip
-# while pending (which is also the only revision `abstracts.yml` and `scripts/check_abstract_ci.py`
-# publish). Merge-queue groups and manual runs each use their own run id so all of them complete.
+# while pending. Merge-queue groups and manual runs each use their own run id so all of them
+# complete.
 concurrency:
   group: >-
     lean-ci-${{
@@ -275,7 +275,7 @@ jobs:
           python3 -B -m unittest scripts/test_parallel_defs.py
       # Advisory only: backticked Lean names in the PR description that the checked-out merge
       # commit does not declare (renamed or dropped while the PR evolved). It reads the sources of
-      # the library, the tests, the abstracts, `.lake/packages` and the toolchain, so it runs after
+      # the library, the tests, `.lake/packages` and the toolchain, so it runs after
       # the build; names that the base declared are marked as removed by the PR. Findings go to the
       # job summary and a notice; the step never fails the job. The body is the event payload's,
       # i.e. as of the latest push; after editing the description, run

@@ -9,8 +9,8 @@ included. Proofs inside definitions/instances and generated declarations are not
 The scanner relies on the project's unindented top-level command convention;
 unrecognized theorem bodies cause an error rather than being silently omitted.
 
-The command and statement scanner here is shared with the formal-abstract renderer
-(`abstract_to_tex.py`) and the hygiene checks.
+The command and statement scanner here is shared with the hygiene checks and other
+source-reading tools.
 """
 
 from __future__ import annotations

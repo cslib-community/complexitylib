@@ -384,30 +384,29 @@ theorem cvIter_shift (k : ℕ) (w : ℤ → ℕ) (j : ℤ) :
   toFun w := cvIter (2 * s) w (-(s : ℤ))
   dependsOn _ _ h := cvIter_congr fun i hi₁ hi₂ => h i ⟨hi₁, by push_cast at hi₂; omega⟩
 
+/-- A proper colouring of the cycle is proper along every window. -/
+private theorem window_ne_window_add_one {n : ℕ} {x : ZMod n → ℕ} (hx : IsProperColoring x)
+    (v : ZMod n) (j : ℤ) : window x v j ≠ window x v (j + 1) := by
+  simp only [window]
+  push_cast
+  rw [← add_assoc]
+  exact hx _
+
 theorem cvRule_apply_isProperColoring {n : ℕ} {x : ZMod n → ℕ} (hx : IsProperColoring x)
     (s : ℕ) : IsProperColoring ((cvRule s).apply x) := by
   intro v
-  have hw : ∀ j, window x v j ≠ window x v (j + 1) := fun j => by
-    simp only [window]
-    push_cast
-    rw [← add_assoc]
-    exact hx _
   have hshift : window x (v + 1) = fun i => window x v (i + 1) := by
     funext i
     simp only [window]
     push_cast
     rw [add_assoc, add_comm (1 : ZMod n)]
   simp only [LocalRule.apply, cvRule, hshift, cvIter_shift]
-  exact cvIter_ne hw _ _
+  exact cvIter_ne (window_ne_window_add_one hx v) _ _
 
 theorem cvRule_apply_lt {n N : ℕ} {x : ZMod n → ℕ} (hx : IsProperColoring x) (hN : ∀ v, x v < N)
     {s : ℕ} (hs : Nat.logStar N ≤ 2 * s) (v : ZMod n) : (cvRule s).apply x v < 6 := by
-  have hw : ∀ j, window x v j ≠ window x v (j + 1) := fun j => by
-    simp only [window]
-    push_cast
-    rw [← add_assoc]
-    exact hx _
-  exact lt_of_lt_of_le (cvIter_lt hw (fun j => hN _) _ _) (iterate_cvBound_le_six hs)
+  exact lt_of_lt_of_le (cvIter_lt (window_ne_window_add_one hx v) (fun j => hN _) _ _)
+    (iterate_cvBound_le_six hs)
 
 /-- The fast Cole–Vishkin algorithm: `2s` bit-index reductions in `s` rounds (each round a node
 learns one more colour on each side), then three colour-removal rounds. -/

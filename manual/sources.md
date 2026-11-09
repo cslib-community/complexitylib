@@ -104,6 +104,11 @@ Shai Ben-David, Benny Chor, Oded Goldreich and Michael Luby. *On the Theory of A
 
 Eli Ben-Sasson, Alessandro Chiesa and Nicholas Spooner. *Interactive Oracle Proofs*. TCC 2016-B II, 31–60. https://doi.org/10.1007/978-3-662-53644-5_2 .
 
+<a id="bdfkk18"></a>
+## bdfkk18
+
+Chris Brzuska, Antoine Delignat-Lavaud, Cédric Fournet, Konrad Kohbrok and Markulf Kohlweiss. *State Separation for Code-Based Game-Playing Proofs*. ASIACRYPT 2018, Lecture Notes in Computer Science 11274, 222–249. https://doi.org/10.1007/978-3-030-03332-3_9 . Bibliographic metadata as in the library bibliography. The primary text was not inspected, and no theorem number is claimed. The manual attributes to this paper only the package calculus: packages composed sequentially and side by side, and the reduction and hybrid steps built from them.
+
 <a id="beigelgill92"></a>
 ## beigelgill92
 
@@ -249,6 +254,11 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 
 Gruia Călinescu, Chandra Chekuri, Martin Pál, Jan Vondrák. “Maximizing a Monotone Submodular Function subject to a Matroid Constraint.” *SIAM Journal on Computing* 40(6), 1740–1766, 2011. https://doi.org/10.1137/080733991 . The `p`-system definition and the greedy ratios `1/p` (modular) and `1/(p+1)` (monotone submodular) in Section 1, and the proof of the `1/(p+1)` bound in Appendix B (“Analysis of Greedy for p-systems”), were checked on 2026-11-08 against the authors' manuscript dated September 21, 2009, at https://theory.stanford.edu/~jvondrak/data/submod-matroid.pdf ; the journal pagination was not checked. The manual reports the original Fisher–Nemhauser–Wolsey and Jenkyns attributions as stated in this paper.
 
+<a id="cdpw07"></a>
+## cdpw07
+
+Ran Canetti, Yevgeniy Dodis, Rafael Pass and Shabsi Walfish. *Universally Composable Security with Global Setup*. TCC 2007, Lecture Notes in Computer Science 4392, 61–85; full version Cryptology ePrint Archive 2006/432. https://doi.org/10.1007/978-3-540-70936-7_4 . The primary text was not inspected, and no theorem number is claimed. The manual attributes to this paper only the setting of sessions that share a global functionality which the environment also queries directly.
+
 <a id="cgks98"></a>
 ## cgks98
 
@@ -299,6 +309,11 @@ Yoeng-Jin Chu and Tseng-Hong Liu. "On the Shortest Arborescence of a Directed Gr
 
 Vašek Chvátal. *Linear Programming*. W. H. Freeman, New York, 1983. Bibliographic data from library and search summaries; the book was not inspected in this pass. The chapter locators used in the manual and docstrings (Chapter 2 for dictionaries, pivoting and the optimality test; Chapters 2–3 for the unboundedness test, which search summaries of the table of contents place in Chapter 3; Chapter 3 for cycling, the cycling example and the smallest-subscript rule; Chapter 4 for the Klee–Minty programs and the `2^n - 1` pivots of the largest-coefficient rule on them; Chapter 5 for duality and the dual solution read off the final dictionary) come from secondary summaries and memory of the book, not from a copy, and are unverified. The coefficients of the cycling example in `CslibFrontierTests/Algorithms/Lean/Simplex.lean` were taken from those summaries and checked by running Dantzig's rule on them, which returns to the initial basis after six degenerate pivots.
 
+<a id="ckkz12"></a>
+## ckkz12
+
+Seung Geol Choi, Jonathan Katz, Ranjit Kumaresan and Hong-Sheng Zhou. "On the Security of the 'Free-XOR' Technique." *Theory of Cryptography (TCC 2012)*, 39–53, 2012. https://doi.org/10.1007/978-3-642-28914-9_3 ; full version: Cryptology ePrint Archive, Report 2011/510, https://eprint.iacr.org/2011/510 . Cited at paper level for circular correlation robustness and the security of free XOR; no theorem numbers are claimed.
+
 <a id="cks20"></a>
 ## cks20
 
@@ -312,7 +327,7 @@ Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *In
 <a id="complexitylib"></a>
 ## complexitylib
 
-Complexitylib contributors. *Complexitylib*, source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
+cslib-frontier contributors. *cslib-frontier* (named Complexitylib at this snapshot), source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
 
 <a id="cook74"></a>
 ## cook74
@@ -520,6 +535,11 @@ E. N. Gilbert and H. O. Pollak. *Steiner Minimal Trees*. SIAM Journal on Applied
 ## gkr15
 
 Shafi Goldwasser, Yael Tauman Kalai and Guy N. Rothblum. *Delegating Computation: Interactive Proofs for Muggles*. JACM 62(4), article 27, 2015. https://doi.org/10.1145/2699436 .
+
+<a id="gkwy20"></a>
+## gkwy20
+
+Chun Guo, Jonathan Katz, Xiao Wang and Yu Yu. "Efficient and Secure Multiparty Computation from Fixed-Key Block Ciphers." *2020 IEEE Symposium on Security and Privacy (SP 2020)*, 825–841, 2020. https://doi.org/10.1109/SP40000.2020.00016 ; full version: Cryptology ePrint Archive, Report 2019/074, https://eprint.iacr.org/2019/074 . Cited at paper level for tweakable circular correlation robustness and its restriction on queries; no theorem or definition numbers are claimed.
 
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
@@ -806,6 +826,11 @@ Bernhard Korte and Jens Vygen. *Combinatorial Optimization: Theory and Algorithm
 ## kov17
 
 Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Differential Privacy*. IEEE Transactions on Information Theory 63(6), 4037–4049, 2017. https://doi.org/10.1109/TIT.2017.2685505 ; theorem numbering cited from arXiv:1311.0776v4, 2015. Theorem 3.4 (equation (7)) was checked against the arXiv v4 PDF on 2026-11-07; the journal metadata was checked against Crossref.
+
+<a id="ks08"></a>
+## ks08
+
+Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
 
 <a id="lamportshostakpease1982"></a>
 ## lamportshostakpease1982
@@ -1210,7 +1235,7 @@ Justin Thaler. *Proofs, Arguments, and Zero-Knowledge*. Foundations and Trends i
 <a id="thorup13"></a>
 ## thorup13
 
-Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the pinned abstract and library source.
+Mikkel Thorup. “Simple Tabulation, Fast Expanders, Double Tabulation, and High Independence.” *FOCS 2013*, 90–99. https://doi.org/10.1109/FOCS.2013.18 ; author preprint https://arxiv.org/abs/1311.3121v2 . Bibliographic record checked; the formalization's quantitative adaptation is grounded in the formal abstract at the pinned revision (since retired) and the library source.
 
 <a id="toda1991"></a>
 ## toda1991

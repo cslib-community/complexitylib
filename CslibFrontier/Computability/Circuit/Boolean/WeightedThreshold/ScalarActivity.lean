@@ -120,12 +120,8 @@ theorem eval_eq_of_weightedSum_between (p : Program signature n g) (w : Fin n �
     have hgate₃ := eval_gate_eq p x₃ j
     rw [sum_inputWeight_eq_mul_weightedSum hc] at hgate₁ hgate₂ hgate₃
     have hsum₂₁ : (∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₂ k).toNat) =
-        ∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₁ k).toNat := by
-      refine sum_congr rfl fun k _ => ?_
-      by_cases hkj : k < j
-      · rw [ih k hkj]
-      · rw [gateWeight_eq_zero_of_le p j k (le_of_not_gt hkj)]
-        ring
+        ∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₁ k).toNat :=
+      sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p j) ih
     have hsum₃₁ : (∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₃ k).toNat) =
         ∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₁ k).toNat := by
       rw [heval₁₃]
@@ -167,13 +163,8 @@ theorem eval_eq_of_weightedSum_eq (p : Program signature n g) (w : Fin n → ℝ
   | h j ih =>
     obtain ⟨c, hc⟩ := hw j
     rw [eval_gate_eq, eval_gate_eq, sum_inputWeight_eq_mul_weightedSum hc,
-      sum_inputWeight_eq_mul_weightedSum hc, h]
-    congr 3
-    refine sum_congr rfl fun k _ => ?_
-    by_cases hkj : k < j
-    · rw [ih k hkj]
-    · rw [gateWeight_eq_zero_of_le p j k (le_of_not_gt hkj)]
-      ring
+      sum_inputWeight_eq_mul_weightedSum hc, h,
+      sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p j) ih]
 
 /-- Inputs with equal scalar score have identical input-reading transcripts. -/
 private theorem transcript_eq_of_weightedSum_eq (p : Program signature n g) (w : Fin n → ℝ)

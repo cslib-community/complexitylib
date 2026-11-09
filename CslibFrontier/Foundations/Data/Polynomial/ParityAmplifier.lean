@@ -747,18 +747,7 @@ theorem coeff_parityFactor {A : Type*} [CommRing A] (ℓ : ℕ) (y : A) (s : ℕ
     (parityFactor ℓ y).coeff s =
       if s < ℓ then evalInt y (parityBaseDigit ℓ s) * evalInt y hPoly ^ s else 0 := by
   rw [parityFactor, finsetSum_coeff]
-  simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero]
-  by_cases hs : s < ℓ
-  · rw [ite_eq_left hs, sum_eq_single s]
-    · simp only [↓reduceIte]
-    · intro j _ hjs
-      exact ite_eq_right (Ne.symm hjs)
-    · intro hns
-      exact absurd (mem_range.mpr hs) hns
-  · rw [ite_eq_right hs]
-    refine sum_eq_zero fun j hj => ?_
-    rw [mem_range] at hj
-    exact ite_eq_right (by omega)
+  simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, sum_ite_eq, mem_range]
 
 /-- Evaluating `parityFactor ℓ y` at `V = 1` recovers `p_ℓ(y)`. -/
 theorem eval_one_parityFactor {A : Type*} [CommRing A] (ℓ : ℕ) (y : A) :

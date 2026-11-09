@@ -8,7 +8,7 @@ Usage: python3 scripts/audit_queries.py references [--unused] PREFIX...
 PREFIX is a repository-relative source path prefix, such as `CslibFrontier/Computability/Circuit/`.
 
 * `references` lists each public declaration written under the prefixes with the other modules
-  that refer to it: library modules, tests and abstracts. `--unused` keeps only those no other
+  that refer to it: library modules and tests. `--unused` keeps only those no other
   module refers to. Declarations with an attribute through which they are used without being
   named (`simp`, `fun_prop`, `aesop`, instances, notation, …) are marked, since such uses leave
   no reference; definitional unfolding by `rfl` or `decide` leaves none either.
@@ -253,7 +253,7 @@ def classify(decls: dict[str, dict]) -> None:
     for decl in decls.values():
         if decl["lib_refs"]:
             category = "outside"
-        elif decl["test_refs"] or decl["abstract_refs"]:
+        elif decl["test_refs"]:
             category = "tests_only"
         elif decl["local_uses"]:
             category = "module_only"
@@ -308,7 +308,7 @@ def reference_lines(decls: dict[str, dict], prefixes: list[str], unused: bool) -
                 and not (unused and d["category"] in ("outside", "tests_only"))]
     for decl in sorted(selected, key=lambda d: (d["path"], d["range"] or [0])):
         users = [f"{label} {', '.join(sorted(decl[key]))}" for label, key in
-                 (("library", "lib_refs"), ("tests", "test_refs"), ("abstracts", "abstract_refs"))
+                 (("library", "lib_refs"), ("tests", "test_refs"))
                  if decl[key]]
         where = "; ".join(users) or ("only its own module" if decl["local_uses"] else "nowhere")
         implicit = f" [used implicitly through {', '.join(decl['implicit'])}?]" \

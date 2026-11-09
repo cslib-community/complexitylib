@@ -1,6 +1,6 @@
 # Parameterized computation and kernelization
 
-Parameterized complexity keeps encoded input length and an instance parameter separate. The parameter is an arbitrary map `κ : α → Nat`; a language is a set of typed instances with an injective encoding `enc : α ↪ List Bool`. The native machine reads only `enc a`. Declaring a parameter does not give it a separate register or an oracle for the parameter's value. The models here are native deterministic resource contracts and polynomial-time preprocessing interfaces. [complexitylib][complexitylib]
+Parameterized complexity keeps encoded input length and an instance parameter separate. The parameter is an arbitrary map `κ : α → Nat`; a language is a set of typed instances with an injective encoding `enc : α ↪ List Bool`. The native machine reads only `enc a`. Declaring a parameter does not give it a separate register or an oracle for the parameter's value. The models here are native deterministic resource contracts and polynomial-time preprocessing interfaces. [cslib-frontier][complexitylib]
 
 ## One algorithm, potentially ineffective bounds
 

@@ -170,11 +170,6 @@ private theorem bi_unary_min : ComputableInPolyTime (fun p : ℕ × ℕ => min p
 private theorem bi_unary_max : ComputableInPolyTime (fun p : ℕ × ℕ => max p.1 p.2)
     (encPair encUnary encUnary) encUnary := by fun_prop
 
-private theorem bi_binary_add' {α : Type} {encIn : α ↪ List Bool} {a b : α → ℕ}
-    (ha : ComputableInPolyTime a encIn encNat) (hb : ComputableInPolyTime b encIn encNat) :
-    ComputableInPolyTime (fun x => a x + b x) encIn encNat :=
-  binary_add.comp (ha.prod hb)
-
 private theorem bi_intBin_add : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 + p.2)
     (encPair encIntBin encIntBin) encIntBin := by fun_prop
 
@@ -248,7 +243,7 @@ theorem computableInPolyTime_validBranchEvalParams :
   have hc1 := binary_le' (const 1) hn_b; have hc2 := binary_le' (const 2) hr
   have hc3 := binary_le' (const 1) hR; have hc4 := binary_lt' hR hQ
   have hc5 := binary_le' hQ hn_b; have hc6 := binary_le' hr hn_b
-  have hc7 := binary_le' (bi_binary_add' hA₀ hR) (bi_binary_add' hQ (const 1))
+  have hc7 := binary_le' (binary_add' hA₀ hR) (binary_add' hQ (const 1))
   have hc8 := binary_le' hpow hn_b
   have hc9 := computableInPolyTime_checkVarsLt.comp (hn'.prod heqs)
   have hc10 := computableInPolyTime_checkCanonicalSystem.comp heqs

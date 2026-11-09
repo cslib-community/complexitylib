@@ -426,18 +426,17 @@ theorem computableInPolyTime_pmulLinear {p : α → ℕ} {fl v : α → List ℕ
       (computableInPolyTime_mul (hp.comp h1) (hfl.comp h1) (hv.comp h1)
         (getDPolyTime (hP.comp h1) h2)))
 
-private theorem polyBounded_small {p : α → ℕ} {fl : α → List ℕ} {n : α → ℕ}
+/-- The bound `n (2 e (2 (p + 1) + 1) + 1)` of `length_encPoly_le`, on the encoding of at most `n`
+small coefficient lists, is polynomially bounded when `n` is. -/
+theorem polyBounded_polyLength {p : α → ℕ} {fl : α → List ℕ} {n : α → ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
     (hn : PolyBounded (fun x => (encIn x).length) n) :
     PolyBounded (fun x => (encIn x).length)
-      (fun x => n x * (2 * ((fl x).length * (2 * (p x + 1) + 1)) + 1)) := by
-  have hpl : PolyBounded (fun x => (encIn x).length) p := by
-    simpa using (ComputableInPolyTime.polyBounded_length hp)
-  have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
-    (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
-  exact hn.mul (((PolyBounded.const 2).mul (hfll.mul (((PolyBounded.const 2).mul
-    (hpl.add (PolyBounded.const 1))).add (PolyBounded.const 1)))).add (PolyBounded.const 1))
+      (fun x => n x * (2 * ((fl x).length * (2 * (p x + 1) + 1)) + 1)) :=
+  hn.mul (((PolyBounded.const 2).mul ((lengthPolyTime hfl).polyBounded.mul
+    (((PolyBounded.const 2).mul (hp.polyBounded.add (PolyBounded.const 1))).add
+      (PolyBounded.const 1)))).add (PolyBounded.const 1))
 
 /-- **Evaluation is polynomial-time**, with the precision in unary. -/
 @[fun_prop]
@@ -459,7 +458,7 @@ theorem computableInPolyTime_peval {p : α → ℕ} {fl z : α → List ℕ} {P 
     (encA := encList encNat) (encL := encList (encList encNat))
     (step := fun x acc a => add (p x) (fl x) a (mul (p x) (fl x) (z x) acc)) hzero
     ⟨ComputableInPolyTime.listReverseWithInput hP, hstep, inferInstance, inferInstance⟩
-    ⟨(polyBounded_small hp hfl (PolyBounded.const 1)), fun x acc a _ => by
+    ⟨(polyBounded_polyLength hp hfl (PolyBounded.const 1)), fun x acc a _ => by
       have := length_encList_le_of_small (small_add (p := p x) (fl := fl x) a
         (mul (p x) (fl x) (z x) acc))
       omega⟩
@@ -494,7 +493,8 @@ theorem computableInPolyTime_basisNum {p : α → ℕ} {fl : α → List ℕ} {v
       · split
         · exact hP.2
         · exact fun c hc => small_of_mem_pmulLinear hc)
-    (polyBounded_small hp hfl ((lengthPolyTime hv).polyBounded_length.add (PolyBounded.const 1)))
+    (polyBounded_polyLength hp hfl
+      ((lengthPolyTime hv).polyBounded_length.add (PolyBounded.const 1)))
     (fun x consumed P hpre hP => by
       have hlen : consumed.length ≤ (v x).length := by
         simpa using hpre.length_le
@@ -522,7 +522,7 @@ theorem computableInPolyTime_basisDen {p : α → ℕ} {fl : α → List ℕ} {v
       else mul (p x) (fl x) d (sub (p x) (fl x) ((v x).getD (i x) []) ((v x).getD j [])))
     (computableInPolyTime_one hfl)
     ⟨ComputableInPolyTime.range.comp (lengthPolyTime hv), hstep, inferInstance, inferInstance⟩
-    ⟨polyBounded_small hp hfl (PolyBounded.const 1), fun x d j _ => by
+    ⟨polyBounded_polyLength hp hfl (PolyBounded.const 1), fun x d j _ => by
       split
       · omega
       · have := length_encList_le_of_small (small_mul (p := p x) (fl := fl x) d
@@ -557,7 +557,8 @@ theorem computableInPolyTime_interp {p : α → ℕ} {fl : α → List ℕ} {v y
       refine ⟨?_, fun c hc => small_of_mem_padd hc⟩
       rw [length_padd, length_psmul]
       exact max_le hP.1 (length_basisNum_le _ _))
-    (polyBounded_small hp hfl ((lengthPolyTime hv).polyBounded_length.add (PolyBounded.const 1)))
+    (polyBounded_polyLength hp hfl
+      ((lengthPolyTime hv).polyBounded_length.add (PolyBounded.const 1)))
     (fun x consumed P _ hP => by
       refine (length_encPoly_le hP.1 hP.2).trans ?_
       simp [encUnary_apply])

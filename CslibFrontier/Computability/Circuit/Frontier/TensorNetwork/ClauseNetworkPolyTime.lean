@@ -130,7 +130,7 @@ theorem computableInPolyTime_falsifier {os : α → List (Occurrence ℕ)}
     mapWithInput hps (bool_not.comp (computableInPolyTime_pol (hos.comp (fst _ _))
       (unary_div.comp ((snd _ _).prod (const 3)))))
   have hbits := (bits_encList_polyTime encBool).2.comp hlist
-  have hnum := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.bitsToNat).comp hbits
+  have hnum := ComputableInPolyTime.bitsToNat.comp hbits
   simpa only [falsifier, lsbValue_eq_ofBits, Function.comp_def] using hnum
 
 /-- **Row vertices are polynomial-time** when every entry of the row tables, at a fixed word

@@ -201,12 +201,6 @@ end Bounds
 
 /-! ### The theorem -/
 
-/-- If `m` is coprime to `r`, so is its residue `m % r`. -/
-private theorem coprime_mod_of_coprime {m r : ℕ} (h : m.Coprime r) : (m % r).Coprime r := by
-  unfold Nat.Coprime
-  rw [← Nat.gcd_rec]
-  exact h.symm
-
 /-- **Correctness of the AKS tests** [Agrawal, Kayal, Saxena, Theorem 4.1][AKS2004]: if `n ≥ 2`
 passes the tests of the AKS algorithm for an `r` such that the multiplicative order of `n` modulo
 `r` exceeds `log₂² n`, then `n` is prime. -/
@@ -284,7 +278,7 @@ theorem prime_of_passes {n r : ℕ} (hn : 2 ≤ n)
     simp only [coe_filter, mem_range, Set.mem_ofPred_eq]
     refine ⟨ZMod.val_lt _, ?_⟩
     rw [ZMod.val_natCast]
-    exact (coprime_mod_of_coprime
+    exact ((ZMod.coprime_mod_iff_coprime _ r).mpr
       (Nat.coprime_mul_iff_left.mpr ⟨hcopq.pow_left i, hcopp.pow_left j⟩)).symm
   have htot_lt : r.totient < r := Nat.totient_lt r (by omega)
   -- The parameter `B = ⌊√t log₂ n⌋`.
