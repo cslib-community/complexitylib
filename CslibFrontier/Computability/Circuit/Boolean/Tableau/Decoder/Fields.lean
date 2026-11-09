@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.Tseitin
+import CslibFrontier.Foundations.Data.Nat.Div
 import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 
@@ -358,12 +359,6 @@ private theorem chainWire_lt {k i P : ℕ} (hk : k < 14) (hi : i < P) : k * P + 
   have : k * P + P ≤ 14 * P := by rw [← Nat.succ_mul]; exact Nat.mul_le_mul_right _ hk
   omega
 
-private theorem chainWire_div {k i P : ℕ} (hi : i < P) : (k * P + i) / P = k := by
-  rw [Nat.mul_comm, Nat.mul_add_div (by omega), Nat.div_eq_of_lt hi, Nat.add_zero]
-
-private theorem chainWire_mod {k i P : ℕ} (hi : i < P) : (k * P + i) % P = i := by
-  rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hi]
-
 theorem fieldVal_input (idx : ℕ) {w : ℕ} (hw : w < 4 + (s + cb + tb)) :
     fieldVal s cb tb x n T idx w = idx.testBit w := by
   simp only [fieldVal, hw, ↓reduceIte]
@@ -399,8 +394,8 @@ theorem fieldVal_chain (idx : ℕ) {k i : ℕ} (hk : k < 14) (hi : i < s + cb + 
       treeBase (4 + (s + cb + tb)) (s + cb + tb) := by simp only [treeBase]; omega
   have h₆ : chainBase (4 + (s + cb + tb)) + k * (s + cb + tb) + i -
       chainBase (4 + (s + cb + tb)) = k * (s + cb + tb) + i := by omega
-  simp only [fieldVal, h₁, h₂, h₃, h₄, h₅, h₆, ↓reduceIte, chainWire_div hi,
-    chainWire_mod hi]
+  simp only [fieldVal, h₁, h₂, h₃, h₄, h₅, h₆, ↓reduceIte,
+    Nat.mul_add_div_of_lt k hi, Nat.mul_add_mod_of_lt hi]
 
 theorem fieldVal_tree (idx : ℕ) {ℓ q : ℕ} (hℓ : ℓ ≤ Nat.size x.length) (hq : q < 2 ^ ℓ) :
     fieldVal s cb tb x n T idx (treeBase (4 + (s + cb + tb)) (s + cb + tb) + (2 ^ ℓ - 1) + q) =
