@@ -1,0 +1,367 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
+public import CslibFrontier.Foundations.Data.BitString.Binary
+public import CslibFrontier.Foundations.Data.BitString.Enumeration
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
+import Mathlib.Data.Nat.Size
+
+/-!
+# Streaming local Boolean assignments
+
+The runtime dimension is unary and the current index is binary. The existing `lowBits` decoder
+returns exactly that many bits, padding or truncating on arbitrary indices. Its certificate below
+is derived from direct native list/bit primitives; no legacy polynomial-time bridge is used.
+The assignment list in the correctness specification is not constructed by the streaming loop.
+
+This is the local Boolean-vector component of the enumeration in [OpenAI2026ETH], Lemma 3.2 and
+Proposition 3.4, pp. 22–26. It is not a mixed-radix or subset-pair enumerator, and gives no
+polynomial-time bound for a whole loop with exponentially many rounds. `certificate_bounds` gives
+the loop's explicit bounds instead: when the components are polynomial and every prefix keeps its
+accumulator polynomially bounded, the workspace is polynomial and the time is `2 ^ n + 1` times a
+polynomial.
+-/
+
+@[expose] public section
+
+namespace Cslib.GenericRAM.BooleanFold
+
+open Turing.MultiTapeTM
+open Cslib.BitString
+
+
+/-- The fixed decoder reads its runtime width in unary and its runtime index in binary.
+The actual machine has polynomial time and charged workspace in their complete pair encoding. -/
+theorem decoder_polyTime :
+    ComputableInPolyTime (fun p : ℕ × ℕ => lowBits p.1 p.2)
+      (encPair encUnary encNat) encBits := by
+  have hw := ComputableInPolyTime.fst encUnary encNat
+  have hv := ComputableInPolyTime.snd encUnary encNat
+  have hl := ComputableInPolyTime.range.comp hw
+  have hf : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2.testBit p.2)
+      (encPair (encPair encUnary encNat) encUnary) encBool :=
+    ComputableInPolyTime.binary_testBit
+      (hv.comp (ComputableInPolyTime.fst (encPair encUnary encNat) encUnary))
+      (ComputableInPolyTime.snd (encPair encUnary encNat) encUnary)
+  have hm := ComputableInPolyTime.mapWithInput (f := fun p i => p.2.testBit i)
+    (encB := encBool) hl hf
+  simpa only [lowBits, Function.comp_def] using ComputableInPolyTime.listToBits.comp hm
+
+/-- Bounds selected from the direct fixed decoder machine; the machine is uniform in both
+runtime width and index. This is not a separate finite machine for every width. -/
+noncomputable def decoder :
+    NativeCertificate (fun p : ℕ × ℕ => lowBits p.1 p.2)
+      (encPair encUnary encNat) encBits :=
+  NativeCertificate.ofPolyTime decoder_polyTime
+
+/-- Both selected decoder resource bounds are polynomial in the full encoded input length. -/
+theorem decoder_isPolynomial : decoder.IsPolynomial :=
+  NativeCertificate.ofPolyTime_isPolynomial decoder_polyTime
+
+/-- Each valid binary index decodes to its word in the existing finite enumeration order. -/
+theorem lowBits_eq_word (n : ℕ) (j : Fin (2 ^ n)) :
+    lowBits n j = List.ofFn ((equivFin n).symm j) := by
+  rw [lowBits_eq_ofFn]
+  congr 1
+  funext i
+  exact (equivFin_symm_apply j i).symm
+
+/-- The conceptual sequence of decoded indices is exactly the old materializing enumeration.
+Only this specification uses the list of all indices. -/
+theorem decoded_range_eq_enumList (n : ℕ) :
+    (List.range (2 ^ n)).map (lowBits n) = enumList n := by
+  apply List.ext_getElem (by simp)
+  intro i hi hi'
+  simp only [List.getElem_map, List.getElem_range, enumList_eq_ofFn, List.getElem_ofFn]
+  exact lowBits_eq_word n ⟨i, by simpa using hi⟩
+
+/-- Distinct valid indices decode to distinct runtime words. -/
+theorem decoder_injective (n : ℕ) :
+    Function.Injective (fun j : Fin (2 ^ n) => lowBits n j) := by
+  intro i j h
+  apply (equivFin n).symm.injective
+  exact List.ofFn_inj.mp (by simpa only [lowBits_eq_word] using h)
+
+/-- Every runtime word of the declared length is decoded by exactly one valid index. -/
+theorem decoder_coverage (n : ℕ) (word : List Bool) (hw : word.length = n) :
+    ∃! j : Fin (2 ^ n), lowBits n j = word := by
+  have hm : word ∈ enumList n := mem_enumList.mpr hw
+  rw [← decoded_range_eq_enumList] at hm
+  obtain ⟨j, hj, heq⟩ := List.mem_map.mp hm
+  refine ⟨⟨j, List.mem_range.mp hj⟩, heq, ?_⟩
+  intro k hk
+  exact decoder_injective n (hk.trans heq.symm)
+
+private theorem bits_power (n : ℕ) : (2 ^ n).bits = List.replicate n false ++ [true] := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [pow_succ, Nat.mul_comm, Nat.bit0_bits _ (by positivity), ih]
+    rfl
+
+private def clockTransducer : Transducer Bool Unit where
+  q₀ := ()
+  step _ _ := ((), [false])
+  final _ := [true]
+  length_step_le _ _ := by decide
+  length_final_le _ := by decide
+
+private theorem clockRun (n : ℕ) :
+    clockTransducer.run () (List.replicate n true) = List.replicate n false ++ [true] := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    change false :: clockTransducer.run () (List.replicate n true) = _
+    rw [ih]
+    rfl
+
+/-- Construct the exponential visit count in binary, in linear time in the unary dimension.
+Only `n + 1` output bits are produced; no unary representation of `2 ^ n` is constructed. -/
+def clock : NativeCertificate (fun n : ℕ => 2 ^ n) encUnary encNat where
+  time n := (encUnary n).length
+  space n := (encUnary n).length
+  computes := by
+    apply ComputableInO.of_linear
+    apply ComputableInDegree.of_transducer clockTransducer
+    intro n
+    change (2 ^ n).bits = clockTransducer.run () (List.replicate n true)
+    rw [bits_power, clockRun]
+
+/-- The binary visit count has exactly one more bit than the dimension. -/
+theorem length_clock (n : ℕ) : (encNat (2 ^ n)).length = n + 1 := by
+  change (2 ^ n).bits.length = n + 1
+  simp [bits_power]
+
+variable {β : Type}
+
+/-- Decode the current index, retain the runtime dimension and invoke the full captured body. -/
+def visit (body : (ℕ × List Bool) × β → β) (p : ℕ × (ℕ × β)) : ℕ × β :=
+  (p.2.1, body ((p.2.1, lowBits p.2.1 p.1), p.2.2))
+
+/-- A prefix of the streaming assignment traversal, retaining width and captured accumulator. -/
+def runPrefix (body : (ℕ × List Bool) × β → β) (n j : ℕ) (initial : β) : ℕ × (ℕ × β) :=
+  IndexFold.run (visit body) j (n, initial)
+
+/-- The whole traversal, including its completed index and retained dimension. -/
+def run (body : (ℕ × List Bool) × β → β) (n : ℕ) (initial : β) : ℕ × (ℕ × β) :=
+  runPrefix body n (2 ^ n) initial
+
+/-- The dimension is preserved at every prefix, independent of the body. -/
+@[simp] theorem prefix_width (body : (ℕ × List Bool) × β → β) (n j : ℕ) (initial : β) :
+    (runPrefix body n j initial).2.1 = n := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    change (IndexFold.run (visit body) (j + 1) (n, initial)).2.1 = n
+    rw [IndexFold.run_succ]
+    exact ih
+
+/-- Every prefix visits the decoded words in increasing index order. -/
+theorem prefix_accumulator (body : (ℕ × List Bool) × β → β) (n j : ℕ) (initial : β) :
+    (runPrefix body n j initial).2.2 =
+      (List.range j).foldl (fun acc i => body ((n, lowBits n i), acc)) initial := by
+  induction j with
+  | zero => rfl
+  | succ j ih =>
+    change (IndexFold.run (visit body) (j + 1) (n, initial)).2.2 = _
+    rw [IndexFold.run_succ]
+    change body (((runPrefix body n j initial).2.1,
+      lowBits (runPrefix body n j initial).2.1 (runPrefix body n j initial).1),
+      (runPrefix body n j initial).2.2) = _
+    rw [prefix_width, show (runPrefix body n j initial).1 = j from IndexFold.run_index _ _ _, ih]
+    simp [List.range_succ, List.foldl_append]
+
+/-- The streaming traversal agrees with the existing enumeration, hence covers every runtime
+word of length `n` exactly once in that enumeration's order. The right side is
+specification-only. -/
+theorem run_accumulator (body : (ℕ × List Bool) × β → β) (n : ℕ) (initial : β) :
+    (run body n initial).2.2 =
+      (enumList n).foldl (fun acc word => body ((n, word), acc)) initial := by
+  rw [run, prefix_accumulator]
+  have h := List.foldl_map (f := lowBits n) (g := fun acc word => body ((n, word), acc))
+    (l := List.range (2 ^ n)) (init := initial)
+  simpa only [decoded_range_eq_enumList] using h.symm
+
+/-- Streaming state `(j, (n, acc))` of `runPrefix`: the current index `j` in binary, then the
+width `n` in unary, then the captured accumulator under `encB`. The index and the width are
+framed; the accumulator is not. -/
+abbrev encStreamState (encB : β ↪ List Bool) : ℕ × (ℕ × β) ↪ List Bool :=
+  encPair encNat (encPair encUnary encB)
+
+/-- Input `((n, word), acc)` of one callback: the width `n` in unary and the decoded word as a bit
+word, then the captured accumulator under `encB`. The pair `(n, word)` is framed, and so is `n`
+inside it; the word and the accumulator are not. -/
+abbrev encCallbackInput (encB : β ↪ List Bool) : (ℕ × List Bool) × β ↪ List Bool :=
+  encPair (encPair encUnary encBits) encB
+
+variable {encB : β ↪ List Bool}
+
+/-- The full live state contains the binary index, retained unary width and accumulator.
+No word list or exponential history contributes to this prefix bound. -/
+theorem length_prefix_le (body : (ℕ × List Bool) × β → β) (n j B : ℕ) (initial : β)
+    (hj : j ≤ 2 ^ n) (hB : (encB (runPrefix body n j initial).2.2).length ≤ B) :
+    (encStreamState encB (runPrefix body n j initial)).length ≤ 4 * n + 4 + B := by
+  simp only [length_encPair, prefix_width, encUnary_apply, List.length_replicate]
+  have hi : (runPrefix body n j initial).1 = j := IndexFold.run_index _ _ _
+  rw [hi]
+  have hn : (encNat j).length ≤ (encNat (2 ^ n)).length := by
+    simpa [Nat.size_eq_bits_len] using Nat.size_le_size hj
+  rw [length_clock] at hn
+  omega
+
+/-- The decoded word itself always has the declared runtime dimension, even on arbitrary
+indices. This bounds temporary callback input as well as the persistent state. -/
+theorem length_callback_input (n j : ℕ) (acc : β) :
+    (encCallbackInput encB ((n, lowBits n j), acc)).length =
+      6 * n + 3 + (encB acc).length := by
+  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply, length_lowBits]
+  omega
+
+/-- Prepare the complete runtime width/word/captured-accumulator input for one callback. -/
+theorem prepare_polyTime :
+    ComputableInPolyTime (fun p : ℕ × (ℕ × β) =>
+      ((p.2.1, lowBits p.2.1 p.1), p.2.2))
+      (encStreamState encB) (encCallbackInput encB) := by
+  have hs := ComputableInPolyTime.snd encNat (encPair encUnary encB)
+  have hn := (ComputableInPolyTime.fst encUnary encB).comp hs
+  have hi := ComputableInPolyTime.fst encNat (encPair encUnary encB)
+  exact (hn.prod (decoder_polyTime.comp (hn.prod hi))).prod
+    ((ComputableInPolyTime.snd encUnary encB).comp hs)
+
+/-- Construct the actual native captured callback, retaining width outside the user body.
+Only the supplied body's certificate is assumed; decoder/preparation efficiency is proved here. -/
+noncomputable def visitCertificate {body : (ℕ × List Bool) × β → β}
+    (cb : NativeCertificate body (encCallbackInput encB) encB) :
+    NativeCertificate (visit body) (encStreamState encB) (encPair encUnary encB) :=
+  (NativeCertificate.linear ((ComputableInO.fst encUnary encB).comp_linear
+    (ComputableInO.snd encNat (encPair encUnary encB)))).prod
+    (cb.comp (NativeCertificate.ofPolyTime prepare_polyTime))
+
+/-- A polynomial native body gives a polynomial native visit, in the COMPLETE encoded
+index/width/captured-state input. This is a per-visit result, not a whole-loop bound. -/
+theorem visitCertificate_isPolynomial {body : (ℕ × List Bool) × β → β}
+    (cb : NativeCertificate body (encCallbackInput encB) encB)
+    (hcb : cb.IsPolynomial) : (visitCertificate cb).IsPolynomial := by
+  apply NativeCertificate.prod_isPolynomial
+  · exact NativeCertificate.linear_isPolynomial _
+  · exact NativeCertificate.comp_isPolynomial cb _ hcb
+      (NativeCertificate.ofPolyTime_isPolynomial prepare_polyTime)
+
+/-- A single native machine handles all runtime dimensions. Count construction, initialization,
+decoding and captured callback costs are included. The inherited IndexFold bounds retain maximum
+live-state/workspace and linear-in-visit-count time; no exponential whole-loop PT claim is made. -/
+noncomputable def certificate {α : Type} {encIn : α ↪ List Bool}
+    {dimension : α → ℕ} {initial : α → β} {body : (ℕ × List Bool) × β → β}
+    (cn : NativeCertificate dimension encIn encUnary)
+    (ci : NativeCertificate initial encIn encB)
+    (cb : NativeCertificate body (encCallbackInput encB) encB) :
+    NativeCertificate (fun a => run body (dimension a) (initial a)) encIn (encStreamState encB) :=
+  IndexFold.certificate (clock.comp cn) (cn.prod ci) (visitCertificate cb)
+
+/-- The clock is linear in the unary dimension. -/
+theorem clock_isPolynomial : clock.IsPolynomial := ⟨.self, .self⟩
+
+private theorem add_mul_le_mul_add {N X Y Y' : ℕ} (h : Y ≤ Y') :
+    X + (N + 1) * Y ≤ (N + 1) * (X + Y') := by
+  rw [Nat.mul_add]
+  exact Nat.add_le_add (Nat.le_mul_of_pos_left X (Nat.succ_pos N)) (Nat.mul_le_mul_left _ h)
+
+/-- **Explicit bounds of a streaming traversal.** Suppose the dimension, the initial state and
+the body have polynomial certificates, and every prefix keeps its accumulator within a polynomial
+bound `B` in the encoded input length. Then the traversal of all `2 ^ n` words, for `n` the
+dimension, uses polynomial workspace, and its time is `2 ^ n + 1` times a polynomial. The
+traversal count enters only the time. -/
+theorem certificate_bounds {α : Type} {encIn : α ↪ List Bool}
+    {dimension : α → ℕ} {initial : α → β} {body : (ℕ × List Bool) × β → β}
+    {cn : NativeCertificate dimension encIn encUnary}
+    {ci : NativeCertificate initial encIn encB}
+    {cb : NativeCertificate body (encCallbackInput encB) encB}
+    (hcn : cn.IsPolynomial) (hci : ci.IsPolynomial) (hcb : cb.IsPolynomial)
+    {B : α → ℕ} (hB : PolyBounded (fun a => (encIn a).length) B)
+    (hstate : ∀ a j, j ≤ 2 ^ dimension a →
+      (encB (runPrefix body (dimension a) j (initial a)).2.2).length ≤ B a) :
+    PolyBounded (fun a => (encIn a).length) (certificate cn ci cb).space ∧
+      ∃ T : α → ℕ, PolyBounded (fun a => (encIn a).length) T ∧
+        ∀ a, (certificate cn ci cb).time a ≤ (2 ^ dimension a + 1) * T a := by
+  let cstep := IndexFold.roundCertificate (visitCertificate cb)
+  have hcstep : cstep.IsPolynomial :=
+    IndexFold.roundCertificate_isPolynomial _ (visitCertificate_isPolynomial cb hcb)
+  obtain ⟨ct, dt, hct⟩ := hcstep.1.exists_le
+  obtain ⟨cs, ds, hcs⟩ := hcstep.2.exists_le
+  have hdim : PolyBounded (fun a => (encIn a).length) dimension := by
+    simpa only [encUnary_apply, List.length_replicate] using
+      (cn.polyTime hcn).polyBounded_length
+  -- Every live state: the binary index, the unary width and the accumulator.
+  let S := fun a => 4 * dimension a + 4 + B a
+  have hS : PolyBounded (fun a => (encIn a).length) S :=
+    (((PolyBounded.const 4).mul hdim).add (.const 4)).add hB
+  have hstateS (a : α) (j : ℕ) (hj : j ≤ 2 ^ dimension a) :
+      (encPair encNat (encPair encUnary encB)
+        ((IndexFold.step (visit body))^[j] (0, (dimension a, initial a)))).length ≤ S a :=
+    length_prefix_le body _ j _ _ hj (hstate a j hj)
+  have hmaxS (a : α) :
+      NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+        (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) ≤ S a :=
+    NativeCertificate.maxStateLength_le _ _ _ _ (hstateS a)
+  have hmaxRT (a : α) :
+      NativeCertificate.maxRoundTime cstep (2 ^ dimension a) (0, (dimension a, initial a)) ≤
+        ct * (S a + 1) ^ dt :=
+    NativeCertificate.maxRoundTime_le cstep _ _ fun j hj => (hct _).trans
+      (Nat.mul_le_mul_left ct (Nat.pow_le_pow_left (by have := hstateS a j hj; omega) dt))
+  have hmaxRS (a : α) :
+      NativeCertificate.maxRoundSpace cstep (2 ^ dimension a) (0, (dimension a, initial a)) ≤
+        cs * (S a + 1) ^ ds :=
+    NativeCertificate.maxRoundSpace_le cstep _ _ fun j hj => (hcs _).trans
+      (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by have := hstateS a j hj; omega) ds))
+  have htime (a : α) : (certificate cn ci cb).time a =
+      (cn.time a + (encUnary (dimension a)).length) +
+        ((encIn a).length + (cn.time a + ci.time a)) +
+        (2 ^ dimension a + 1) *
+          (NativeCertificate.maxRoundTime cstep (2 ^ dimension a) (0, (dimension a, initial a)) +
+            NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+              (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
+            ((encNat (2 ^ dimension a)).length + 1) ^ 2) := rfl
+  have hspace (a : α) : (certificate cn ci cb).space a =
+      (cn.space a + (encUnary (dimension a)).length) +
+        ((encIn a).length + (cn.space a + ci.space a)) +
+        NativeCertificate.maxRoundSpace cstep (2 ^ dimension a) (0, (dimension a, initial a)) +
+        NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+          (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
+        (encNat (2 ^ dimension a)).length := rfl
+  refine ⟨?_, fun a => 2 * cn.time a + dimension a + (encIn a).length + ci.time a +
+      (ct * (S a + 1) ^ dt + S a + (dimension a + 1 + 1) ^ 2), ?_, fun a => ?_⟩
+  · refine (((((((PolyBounded.const 2).mul hcn.2).add hdim).add .self).add hci.2).add
+      (NativeCertificate.polyBounded_pow_of_polyBounded hS cs ds)).add
+        (hS.add (hdim.add (.const 1)))).mono fun a => ?_
+    rw [hspace a]
+    simp only [encUnary_apply, List.length_replicate, length_clock]
+    have := hmaxRS a
+    have := hmaxS a
+    omega
+  · exact ((((((PolyBounded.const 2).mul hcn.1).add hdim).add .self).add hci.1).add
+      (((NativeCertificate.polyBounded_pow_of_polyBounded hS ct dt).add hS).add
+        (((hdim.add (.const 1)).add (.const 1)).pow 2)))
+  · have hY : NativeCertificate.maxRoundTime cstep (2 ^ dimension a)
+            (0, (dimension a, initial a)) +
+          NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+            (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
+          ((encNat (2 ^ dimension a)).length + 1) ^ 2 ≤
+        ct * (S a + 1) ^ dt + S a + (dimension a + 1 + 1) ^ 2 := by
+      rw [length_clock]
+      exact Nat.add_le_add (Nat.add_le_add (hmaxRT a) (hmaxS a)) le_rfl
+    refine le_trans (le_of_eq ?_) (add_mul_le_mul_add (N := 2 ^ dimension a)
+      (X := 2 * cn.time a + dimension a + (encIn a).length + ci.time a) hY)
+    rw [htime a, encUnary_apply, List.length_replicate]
+    omega
+
+end Cslib.GenericRAM.BooleanFold
