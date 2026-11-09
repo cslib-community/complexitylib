@@ -1816,6 +1816,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Operators
 public import CslibFrontier.Computability.Complexity.Classes.Oracle
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.BakerGillSolovay
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.BoundedQuery
+public import CslibFrontier.Computability.Complexity.Classes.Oracle.CanonicalReplay
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.Collapse
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.Counting
