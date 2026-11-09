@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Thin
+import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.ThinEnvelopes
 
 /-!
 # Source-regime logarithmic width for actual queried products
@@ -29,7 +30,7 @@ open Cslib.WordRAM
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
 /-- The source regime controls every original power, computed band count and address term.
-The deliberately loose integer constants leave a uniform logarithmic-width margin. -/
+This is the level-`19 * m` case of `thin_envelopes_of_le`. -/
 public theorem thin_envelopes (m N Q A : ℕ) (hN : D m ^ 18 ≤ N) :
     magnitudeBound (19 * m) A + wordBudget (19 * m) m N Q + 1 ≤
         2 ^ 40 * (N + Q + A + 2) ^ 10 ∧
