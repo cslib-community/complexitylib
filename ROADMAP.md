@@ -551,7 +551,11 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 - **Flows and matching:** native augmenting-path algorithms with charged runtime, then weighted bipartite matching (including rectangular and sparse instances) and minimum-cost flow through common residual-network and duality machinery.
   Matching also covers the decomposition of `M ⊕ M*` into vertex-disjoint augmenting paths and a sparse Hopcroft–Karp entry point whose cost includes building the adjacency lists.
 - **General matching** ([#3337](https://github.com/cslib-community/cslib-frontier/issues/3337)): unweighted and weighted matching in non-bipartite graphs with blossoms, through Berge's lemma, the Tutte–Berge formula and Edmonds' blossom-contraction lemma, with an executable blossom algorithm and its `O(|V|²|E|)` bound.
-  Also the Gallai–Edmonds decomposition.
+  The native framed-graph unweighted perfect/maximum search follow-up
+  ([#4022](https://github.com/cslib-community/cslib-frontier/issues/4022)) specializes the
+  even-delta-matroid solver, with correctness in the existing Mathlib subgraph model and
+  polynomial bit complexity. The tight Edmonds operation bound, weighted matching and
+  Gallai–Edmonds objectives remain open.
 - **Chain decompositions** ([#3371](https://github.com/cslib-community/cslib-frontier/issues/3371)): for finite posets, Mirsky's theorem, Dilworth's theorem by Fulkerson's reduction to König's theorem, and a Hopcroft–Karp minimum chain cover with an `O(n^{5/2})` charged bound.
   Also the Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite posets of finite width by compactness, the perfection of comparability graphs and their complements, weighted versions, a sparse entry point that charges building the comparability lists, and a RAM-model or Turing-machine realization of the chain-cover solver.
 - **Global minimum cut** ([#3369](https://github.com/cslib-community/cslib-frontier/issues/3369)): Karger's and Karger–Stein's contraction algorithms with their per-cut bounds and the `C(n, 2)` bound on the number of minimum cuts ([#3489](https://github.com/cslib-community/cslib-frontier/issues/3489)), and Stoer–Wagner via maximum adjacency orderings in `O(n³)` and `O(n m + n² log n)` time and over real weights.

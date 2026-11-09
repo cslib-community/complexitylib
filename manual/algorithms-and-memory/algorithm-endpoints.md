@@ -464,7 +464,7 @@ Egerváry's theorem is available without running the algorithm. `exists_isMinCos
 
 ## General matching: Berge's lemma and the Tutte–Berge formula
 
-These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above, and there is no executable algorithm yet.
+These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above. This mathematical layer is complemented by the native unweighted endpoint below.
 
 [CslibFrontier/Foundations/Combinatorics/SimpleGraph/Berge.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Berge.lean) defines:
 - `Subgraph.IsAugmentingPath M p`: a path between distinct uncovered vertices that alternates in Mathlib's `IsAlternating` sense;
@@ -483,6 +483,53 @@ The [checked instances](../../CslibFrontierTests/GeneralMatching.lean) cover thr
 - On the path `0 - 1 - 2 - 3`, an explicit walk is an augmenting path for `{12}`.
 - On the `5`-cycle, `U = ∅` certifies the matching `{01, 23}`.
 - On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
+
+### Native unweighted perfect and maximum matching
+
+From a bootstrapped repository root, import
+`CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Endpoint` and open
+`Cslib.Complexity` and `Cslib.Complexity.Graph`. The complete
+[checked client](../../CslibFrontierTests/NativeMatching.lean) and
+[guide chapter](../../guide/CslibFrontierGuide/Matching.lean) show both endpoints and their certificates.
+Run `lake build CslibFrontierTests.NativeMatching --wfail --iofail` to check the client.
+
+A `Graph` is a pair of lists: declared binary natural-number names and original endpoint pairs.
+`G.maximumMatching` returns a list of selected original pairs; `G.perfectMatching` returns
+`some edges` exactly when a perfect matching exists, and `G.decidePerfectMatching` is its Boolean
+decision. On the path with edge order `[(1, 2), (0, 1), (2, 3)]`, both searches select
+`[(0, 1), (2, 3)]`; a greedy first-edge choice would miss the perfect matching.
+`maximumMatching_cardinality G M hM` proves that every actual Mathlib matching `M` has at most
+as many edges as the output. `maximumMatchingSubgraph_isMaximumMatching` gives the existing
+`Subgraph.IsMaximumMatching` predicate, and `maximumMatchingSubgraph_adj_iff` identifies its
+edges with the returned pairs in either orientation. `perfectMatching_spec` certifies successful
+search; `decidePerfectMatching_eq_true` gives the full existence equivalence.
+
+All raw graphs follow `G.induced`: repeated declarations are harmless, loops and edges with
+undeclared endpoints are discarded, and reversed/parallel duplicates become one edge. The output
+keeps the first retained orientation in `G.edgeList`. The empty graph has the empty perfect
+matching. Isolates prevent perfect matching and remain unmatched in maximum search. These
+normalization rules also apply to disconnected and nonbipartite inputs; callers supply no
+canonicality or degree hypothesis. For position-based clients, `maximumMatchingPositions` returns
+canonical normalized edge positions and `edgesAtPositions` converts them executably.
+
+`computableInPolyTime_maximumMatching`, `computableInPolyTime_perfectMatching` and
+`computableInPolyTime_decidePerfectMatching` use ordinary native multitape bit complexity on the
+complete framed `encGraph` input, with framed original pairs in `encMatching` and optional output
+in `encOption encMatching`. Every retained name bit, explicit one-hot row, scope width,
+solver state and output bit is charged by polynomial composition. Enumeration uses actual lists,
+never an interval below a raw name; the regressions include the sparse name `2 ^ 250`.
+`perfectMatchingProblem_mem_P` is the native P corollary. As with other typed native certificates,
+this is a claim on encoded graph values, not a parser for malformed bit strings.
+
+The algorithm specializes the certified Kazda–Kolmogorov–Rolinek even-delta-matroid optimizer
+([source and references](../../CslibFrontier/Computability/PolyTime/CSP/Edge/Solver/Endpoint.lean)).
+Each vertex chooses an incident original edge or a private unmatched port pinned false at its
+other end. Mutual original choices form a matching, and
+`defects_add_two_mul_positions` proves `defects + 2 * selected edges = distinct vertices`.
+Every actual matching supplies a feasible comparison labeling, so minimum defect proves maximum
+cardinality without an extra oracle. The native certificates impose no artificial table bound
+or finite-language premise. This endpoint does not establish weighted/min-cost matching or a
+tight classical cubic or `O(|V|²|E|)` operation count.
 
 Still open ([#3337](https://github.com/cslib-community/cslib-frontier/issues/3337)):
 - Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
