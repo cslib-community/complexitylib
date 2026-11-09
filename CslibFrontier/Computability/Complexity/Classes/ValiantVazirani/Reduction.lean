@@ -49,6 +49,8 @@ injective `Cslib.Complexity.splitVarToNat`.
 
 * `Cslib.Complexity.ValiantVazirani.computableInPolyTime_reduce`: polynomial time.
 * `Cslib.Complexity.ValiantVazirani.reduce_mem_UNSAT`: soundness.
+* `Cslib.Complexity.ValiantVazirani.three_mul_two_pow_le_card_filter_card_filter_eq_one`: the
+  Valiant–Vazirani lemma for affine seeds, in integers.
 * `Cslib.Complexity.ValiantVazirani.three_mul_two_pow_le_card_reduce_mem_USAT`,
   `Cslib.Complexity.ValiantVazirani.three_div_le_dens_reduce_mem_USAT`: success probability
   `Ω(1 / n)`.
@@ -461,20 +463,6 @@ theorem solutions_nonempty {φ : CNF ℕ} (hφ : φ.Satisfiable) : (solutions φ
   let ⟨σ, hσ⟩ := hφ
   ⟨_, mem_solutions.2 ⟨σ, hσ, rfl⟩⟩
 
-/-- `2 ^ goodRows φ` is at most four times the number of solutions. -/
-private theorem two_pow_goodRows_le {φ : CNF ℕ} (hφ : φ.Satisfiable) :
-    2 ^ goodRows φ ≤ 4 * (solutions φ).card := by
-  have := Nat.pow_log_le_self 2 (solutions_nonempty hφ).card_pos.ne'
-  rw [goodRows, pow_add]
-  omega
-
-/-- `2 ^ goodRows φ` is at least twice the number of solutions. -/
-private theorem two_mul_card_solutions_le (φ : CNF ℕ) : 2 *
-    (solutions φ).card ≤ 2 ^ goodRows φ := by
-  have := Nat.lt_pow_succ_log_self (b := 2) (by decide) (solutions φ).card
-  rw [goodRows, pow_add, pow_succ] at *
-  omega
-
 /-- At most `2 ^ φ.vars.length` solutions need at most `φ.vars.length + 2` equations. -/
 private theorem goodRows_le (φ : CNF ℕ) : goodRows φ ≤ φ.vars.length + 2 := by
   have hcard : (solutions φ).card ≤ 2 ^ φ.vars.length :=
@@ -488,42 +476,46 @@ private theorem goodRows_le (φ : CNF ℕ) : goodRows φ ≤ φ.vars.length + 2 
 private theorem goodRows_lt_two_pow_hashBits (φ : CNF ℕ) : goodRows φ < 2 ^ hashBits φ :=
   (goodRows_le φ).trans_lt (lt_two_pow_hashBits φ)
 
-open Classical in
-/-- **The Valiant–Vazirani lemma for the formula**: with `goodRows φ` random equations, exactly
-one solution of a satisfiable `φ` satisfies them with probability at least `3 / 16`. -/
-private theorem three_sixteenths_le_dens {φ : CNF ℕ} (hφ : φ.Satisfiable) :
-    3 / 16 ≤ Finset.dens (Finset.univ.filter
-      fun p : (Fin (goodRows φ) → BitString φ.vars.length) × BitString (goodRows φ) =>
-        Isolates φ p) := by
-  classical
-  have hY : Fintype.card (BitString (goodRows φ)) = 2 ^ goodRows φ := by simp
-  have hpi := isPairwiseIndependentHash_affineHash (goodRows φ) φ.vars.length
-  convert hpi.three_sixteenths_le_dens_filter_card_filter_eq_one 0
-    (hY ▸ two_pow_goodRows_le hφ) (hY ▸ two_mul_card_solutions_le φ) using 3
-  exact Iff.rfl
-
-open Classical in
-/-- The density bound in integers: at least `3 / 16` of the `2 ^ (k * n + k)` seeds isolate a
-solution. -/
-private theorem three_mul_two_pow_le_card_isolates {φ : CNF ℕ} (hφ : φ.Satisfiable) :
-    3 * 2 ^ (goodRows φ * φ.vars.length + goodRows φ) ≤
+/-- **The Valiant–Vazirani lemma in integers**: for a nonempty set `S` of bit strings of length
+`M`, with `k = log₂ #S + 2` random equations, exactly one element of `S` satisfies them for at
+least `3 / 16` of the `2 ^ (k M + k)` affine seeds. -/
+theorem three_mul_two_pow_le_card_filter_card_filter_eq_one {M : ℕ} {S : Finset (BitString M)}
+    (hS : S.Nonempty) :
+    3 * 2 ^ ((Nat.log 2 S.card + 2) * M + (Nat.log 2 S.card + 2)) ≤
       16 * (Finset.univ.filter fun p :
-        (Fin (goodRows φ) → BitString φ.vars.length) × BitString (goodRows φ) =>
-          Isolates φ p).card := by
+        (Fin (Nat.log 2 S.card + 2) → BitString M) × BitString (Nat.log 2 S.card + 2) =>
+          (S.filter fun x => affineHash p x = 0).card = 1).card := by
   classical
-  have hdens := three_sixteenths_le_dens hφ
+  set k := Nat.log 2 S.card + 2 with hk
+  have hY : Fintype.card (BitString k) = 2 ^ k := by simp
+  have hlog := Nat.pow_log_le_self 2 hS.card_pos.ne'
+  have hlog' := Nat.lt_pow_succ_log_self (b := 2) (by decide) S.card
+  have hdens :=
+    (isPairwiseIndependentHash_affineHash k M).three_sixteenths_le_dens_filter_card_filter_eq_one
+    (S := S) 0 (by rw [hY, hk, pow_add]; omega) (by rw [hY, hk, pow_add, pow_succ] at *; omega)
   rw [Finset.dens, Fintype.card_prod, Fintype.card_fun, Fintype.card_fun, Fintype.card_fun,
     Fintype.card_bool, Fintype.card_fin, Fintype.card_fin, le_div_iff₀ (by positivity)] at hdens
-  have h : (3 * 2 ^ (goodRows φ * φ.vars.length + goodRows φ) : ℚ≥0) ≤
-      16 * (Finset.univ.filter fun p :
-        (Fin (goodRows φ) → BitString φ.vars.length) × BitString (goodRows φ) =>
-          Isolates φ p).card := by
+  have h : (3 * 2 ^ (k * M + k) : ℚ≥0) ≤ 16 * (Finset.univ.filter fun p :
+      (Fin k → BitString M) × BitString k =>
+        (S.filter fun x => affineHash p x = 0).card = 1).card := by
     rw [pow_add, pow_mul', ← mul_assoc]
     have := mul_le_mul_of_nonneg_left hdens (by norm_num : (0 : ℚ≥0) ≤ 16)
     convert this using 1
     push_cast
     ring
   exact_mod_cast h
+
+open Classical in
+/-- The Valiant–Vazirani lemma for the formula: with `goodRows φ` random equations, at least
+`3 / 16` of the `2 ^ (k * n + k)` seeds isolate a solution of a satisfiable `φ`. -/
+private theorem three_mul_two_pow_le_card_isolates {φ : CNF ℕ} (hφ : φ.Satisfiable) :
+    3 * 2 ^ (goodRows φ * φ.vars.length + goodRows φ) ≤
+      16 * (Finset.univ.filter fun p :
+        (Fin (goodRows φ) → BitString φ.vars.length) × BitString (goodRows φ) =>
+          Isolates φ p).card := by
+  delta goodRows
+  convert three_mul_two_pow_le_card_filter_card_filter_eq_one (solutions_nonempty hφ) using 4
+  exact Iff.rfl
 
 /-! ### Counting random words -/
 

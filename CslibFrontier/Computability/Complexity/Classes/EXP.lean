@@ -10,8 +10,8 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy
 public import CslibFrontier.Computability.Complexity.Classes.Time
 public import CslibFrontier.Computability.Complexity.Reduction
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
-import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
@@ -35,8 +35,8 @@ is within `2 ^ n ^ 2` from `n = 4` on, and is not in `P` by the diagonal argumen
 hierarchy theorem [Arora and Barak, Theorem 3.1][AroraBarak09], [Sipser, Theorem 9.10][Sipser2013].
 
 Polynomial-time computation on a bit word `y` paired with unary padding `2 ^ |y|` gives a problem
-in `E` (`Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`), by writing the padding
-in exponential time and applying the timed-reduction API.
+in `E` (`Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`): the padding is written and
+`Ψ` run in time `2 ^ O(|y|)` (`Turing.MultiTapeTM.ComputableInPolyTime.exists_computableInO_pad`).
 
 ## Main definitions
 
@@ -183,64 +183,23 @@ theorem P_ssubset_EXP : P encBits ⊂ EXP encBits :=
 /-! ### Exponential padding -/
 
 /-- **Padding to exponential length.** If `Ψ` is polynomial-time on pairs of a bit word and a
-unary number, then the words `y` with `Ψ (y, 2 ^ |y|)` form a problem in `E`: the padding
-`y ↦ (y, 2 ^ |y|)` is written within time `O(4 ^ |y|)`, and the problem decided by `Ψ` is in
-`DTIME (n ↦ c (n + 1) ^ d)` (`preimage_mem_DTIME`). -/
+unary number, then the words `y` with `Ψ (y, 2 ^ |y|)` form a problem in `E`: writing the padding
+`2 ^ |y|` and running `Ψ` takes time `C 2 ^ (D |y|) (|y| + 1) ^ D`
+(`Turing.MultiTapeTM.ComputableInPolyTime.exists_computableInO_pad`), which is `2 ^ O(|y|)`. -/
 theorem setOf_mem_E_of_computableInPolyTime_pad {Ψ : List Bool × ℕ → Bool}
     (hΨ : ComputableInPolyTime Ψ (encPair encBits encUnary) encBool) :
     {y : List Bool | Ψ (y, 2 ^ y.length) = true} ∈ E encBits := by
-  obtain ⟨t, s, ht, hs, h⟩ := hΨ
-  obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp (ht.add hs)
-  -- the problem decided by `Ψ`, within polynomial time
-  have hB : {x | Ψ x = true} ∈ DTIME (encPair encBits encUnary) fun n => c * (n + 1) ^ d :=
-    setOf_mem_DTIME_of_computableInO
-      (T := fun x => t (encPair encBits encUnary x).length + s (encPair encBits encUnary x).length)
-      (S := fun x => t (encPair encBits encUnary x).length + s (encPair encBits encUnary x).length)
-      (.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
-        fun x => (h.length_le x).trans (by omega)) fun x => hcd _
-  -- the padding `y ↦ (y, 2 ^ |y|)`
-  have hgO : ComputableInO (fun y : List Bool => (y, 2 ^ y.length)) encBits
-      (encPair encBits encUnary) (fun y => 3 * 4 ^ y.length) fun y => 3 * 4 ^ y.length := by
-    have h₁ := (ComputableInO.of_linear
-      (.of_eq (f := fun y : List Bool => y) (encMid := encBits) fun _ => rfl)).prod
-      (ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary)
-    have hbound : ∀ y : List Bool, y.length + (y.length + (y.length + 1) * 2 ^ y.length) ≤
-        3 * 4 ^ y.length := fun y => by
-      have h2 : y.length + 1 ≤ 2 ^ y.length := Nat.lt_two_pow_self
-      have h4 : 4 ^ y.length = 2 ^ y.length * 2 ^ y.length := by
-        rw [← mul_pow]
-        norm_num
-      nlinarith
-    refine h₁.mono_le (fun y => ?_) fun y => ?_
-    · simpa only [encBits_apply, Function.comp_apply] using hbound y
-    · have h2 : y.length + 1 ≤ 2 ^ y.length := Nat.lt_two_pow_self
-      have := hbound y
-      simp only [encBits_apply]
-      nlinarith
-  refine mem_E_iff.2 ⟨d + 2, preimage_mem_DTIME (C := c * 4 ^ d + 3) hB hgO fun y => ?_⟩
-  -- the time bound is `2 ^ O(n)`
-  set n := (encBits y).length
-  have hn : n = y.length := by simp [n, encBits_apply]
-  have hlen : (encPair encBits encUnary (y, 2 ^ y.length)).length + 1 ≤ 2 ^ (n + 2) := by
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, hn]
-    rw [pow_add]
-    have : y.length + 1 ≤ 2 ^ y.length := Nat.lt_two_pow_self
-    omega
-  have h4 : 4 ^ n ≤ 2 ^ ((d + 2) * n) := by
-    rw [show (4 : ℕ) = 2 ^ 2 by norm_num, ← pow_mul]
-    exact Nat.pow_le_pow_right (by norm_num) (by nlinarith)
-  have h2 : (2 ^ (n + 2)) ^ d ≤ 4 ^ d * 2 ^ ((d + 2) * n) := by
-    calc (2 ^ (n + 2)) ^ d = 4 ^ d * 2 ^ (d * n) := by
-          rw [← pow_mul, show (n + 2) * d = 2 * d + d * n by ring, pow_add, pow_mul]
-          norm_num
-      _ ≤ 4 ^ d * 2 ^ ((d + 2) * n) :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by nlinarith))
-  rw [← hn]
-  calc 3 * 4 ^ n + c * ((encPair encBits encUnary (y, 2 ^ y.length)).length + 1) ^ d
-      ≤ 3 * 2 ^ ((d + 2) * n) + c * (4 ^ d * 2 ^ ((d + 2) * n)) := by
+  -- write the padding `2 ^ |y|`, then run `Ψ`
+  obtain ⟨C, D, h⟩ := hΨ.exists_computableInO_pad ComputableInPolyTime.length_bits
+  -- the time bound is `2 ^ O(n)`, since `n + 1 ≤ 2 ^ n`
+  refine mem_E_iff.2 ⟨2 * D, DTIME_mono_of_le_mul_add (C := C) (fun _ => le_rfl)
+    (setOf_mem_DTIME_of_computableInO (t := fun n => C * 2 ^ (2 * D * n) + C) h fun y => ?_)⟩
+  simp only [encBits_apply]
+  calc C * 2 ^ (D * y.length) * (y.length + 1) ^ D
+      ≤ C * 2 ^ (D * y.length) * (2 ^ y.length) ^ D := by
         gcongr
-        exact (Nat.pow_le_pow_left hlen d).trans h2
-    _ = (c * 4 ^ d + 3) * 2 ^ ((d + 2) * n) := by ring
+        exact Nat.lt_two_pow_self
+    _ = C * 2 ^ (2 * D * y.length) := by ring
     _ ≤ _ := Nat.le_add_right _ _
 
 /-- **`EXP` is closed under polynomial-time many-one reductions.** -/
@@ -249,21 +208,15 @@ theorem PolyTimeReducible.mem_EXP {α β : Type} {encA : α ↪ List Bool} {encB
     A ∈ EXP encA := by
   obtain ⟨f, hf, hred⟩ := hAB
   obtain ⟨k, hk⟩ := mem_EXP_iff.mp hB
-  obtain ⟨t, s, ht, hs, h⟩ := hf
-  obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp (ht.add hs)
-  have hfO : ComputableInO f encA encB (fun a => c * ((encA a).length + 1) ^ d)
-      (fun a => c * ((encA a).length + 1) ^ d) :=
-    (ComputableInO.of_bounds h 1 (T := fun a => t (encA a).length + s (encA a).length)
-      (S := fun a => t (encA a).length + s (encA a).length) (fun _ => by omega)
-      (fun _ => by omega) fun a => (h.length_le a).trans (by omega)).mono_le
-      (fun a => hcd _) (fun a => hcd _)
-  have hlen (a : α) : (encB (f a)).length ≤ c * ((encA a).length + 1) ^ d :=
-    (h.length_le a).trans ((Nat.le_add_right _ _).trans (hcd _))
+  obtain ⟨T, S, hT, -, hfO⟩ := hf.exists_computableInO
+  -- one polynomial bounds both the time of `f` and the length of its output
+  obtain ⟨c, d, hcd⟩ := (hT.add hf.polyBounded_length).exists_le
   have hpre : f ⁻¹' B ∈ DTIME encA
       (fun n => c * (n + 1) ^ d + 2 ^ (c * (n + 1) ^ d) ^ k) := by
     refine preimage_mem_DTIME (C := 1) hk hfO fun a => ?_
+    have hca := hcd a
     have hpow : 2 ^ (encB (f a)).length ^ k ≤ 2 ^ (c * ((encA a).length + 1) ^ d) ^ k :=
-      Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_left (hlen a) k)
+      Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_left (by omega) k)
     omega
   have hA_eq : A = f ⁻¹' B := Set.ext hred
   rw [hA_eq]

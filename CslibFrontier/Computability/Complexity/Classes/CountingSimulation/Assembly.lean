@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # The deterministic counting simulation, assembled from its interfaces
@@ -228,22 +229,12 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
   -- Collect the polynomial overhead.
   let V : List Bool × ℕ → ℕ := fun c => pG (sz c) + sz c + 2 * (a * (sz c + 1) ^ d + U c)
   have hszp : PolyBounded sz sz := PolyBounded.self
-  have hcntp : PolyBounded sz fun c => (encNat (scheduleCount F.heads c.2)).length :=
-    hcnt.polyBounded_length
+  have hcntp : PolyBounded sz fun c => (encNat (scheduleCount F.heads c.2)).length := by growth_poly
   have hPcp : PolyBounded sz fun c => (encNat (paddedTime c.2 + 1)).length := hPc.polyBounded_length
-  have hZp : PolyBounded sz Z :=
-    (((PolyBounded.const 2).mul hszp).add (PolyBounded.const 1)).add hcntp
-  have hYp : PolyBounded sz Y :=
-    ((((PolyBounded.const 2).mul hPcp).add (PolyBounded.const 1))).add
-      ((PolyBounded.const an).mul ((hZp.add (PolyBounded.const 1)).pow dn))
-  have hUp : PolyBounded sz U :=
-    (((PolyBounded.of_polynomiallyBounded id hpP).comp hZp).add
-      ((PolyBounded.of_polynomiallyBounded id hpN).comp hZp)).add
-      ((PolyBounded.const K).mul ((hYp.add (PolyBounded.const 1)).pow K))
-  have hVp : PolyBounded sz V :=
-    (((PolyBounded.of_polynomiallyBounded id hpG).comp hszp).add hszp).add
-      ((PolyBounded.const 2).mul (((PolyBounded.const a).mul
-        ((hszp.add (PolyBounded.const 1)).pow d)).add hUp))
+  have hZp : PolyBounded sz Z := by growth_poly
+  have hYp : PolyBounded sz Y := by growth_poly
+  have hUp : PolyBounded sz U := by growth_poly
+  have hVp : PolyBounded sz V := by growth_poly
   obtain ⟨k₀, d₀, hV⟩ := hVp.exists_le
   -- The simulation's time and space.
   have htime (c : List Bool × ℕ) :

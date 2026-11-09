@@ -153,93 +153,59 @@ theorem foundBelow_iff {r : α → α → Prop} {T : List (α × α)} {x : α} :
   rintro ⟨a, b, hab, -⟩
   simp at hab
 
+/-- Appending one comparison `(a, b)` to `T` adds exactly that comparison to an existential
+over the comparisons of `T`; the six `append_singleton` lemmas below specialize it. -/
+private theorem exists_mem_append_singleton_iff {T : List (α × α)} {a b : α}
+    {P : α → α → Prop} :
+    (∃ c d, (c, d) ∈ T ++ [(a, b)] ∧ P c d) ↔ (∃ c d, (c, d) ∈ T ∧ P c d) ∨ P a b := by
+  simp only [List.mem_append, List.mem_singleton, Prod.mk.injEq, or_and_right, exists_or,
+    exists_and_left, exists_eq_left, and_assoc]
+
 /-- A comparison `a ≤ b` with `a ≠ b` answered true finds `b` above. -/
 theorem foundAbove_append_singleton_of_rel {r : α → α → Prop} {T : List (α × α)} {a b : α}
     (hab : a ≠ b) (h : r a b) (x : α) :
     FoundAbove r (T ++ [(a, b)]) x ↔ FoundAbove r T x ∨ x = b := by
-  constructor
-  · rintro ⟨c, d, hcd, hne, hx⟩
-    rcases List.mem_append.mp hcd with hcd | hcd
-    · exact Or.inl ⟨c, d, hcd, hne, hx⟩
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp hcd)
-    rcases hx with ⟨hx, -⟩ | ⟨-, hn⟩
-    · exact Or.inr hx
-    · exact absurd h hn
-  · rintro (⟨c, d, hcd, hne, hx⟩ | hx)
-    · exact ⟨c, d, List.mem_append_left _ hcd, hne, hx⟩
-    · exact ⟨a, b, List.mem_append_right _ (List.mem_singleton_self _), hab, Or.inl ⟨hx, h⟩⟩
+  unfold FoundAbove
+  rw [exists_mem_append_singleton_iff]
+  simp [hab, h]
 
 /-- A comparison `a ≤ b` with `a ≠ b` answered false finds `a` above. -/
 theorem foundAbove_append_singleton_of_not_rel {r : α → α → Prop} {T : List (α × α)} {a b : α}
     (hab : a ≠ b) (h : ¬ r a b) (x : α) :
     FoundAbove r (T ++ [(a, b)]) x ↔ FoundAbove r T x ∨ x = a := by
-  constructor
-  · rintro ⟨c, d, hcd, hne, hx⟩
-    rcases List.mem_append.mp hcd with hcd | hcd
-    · exact Or.inl ⟨c, d, hcd, hne, hx⟩
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp hcd)
-    rcases hx with ⟨-, hr⟩ | ⟨hx, -⟩
-    · exact absurd hr h
-    · exact Or.inr hx
-  · rintro (⟨c, d, hcd, hne, hx⟩ | hx)
-    · exact ⟨c, d, List.mem_append_left _ hcd, hne, hx⟩
-    · exact ⟨a, b, List.mem_append_right _ (List.mem_singleton_self _), hab, Or.inr ⟨hx, h⟩⟩
+  unfold FoundAbove
+  rw [exists_mem_append_singleton_iff]
+  simp [hab, h]
 
 /-- A comparison `a ≤ b` with `a ≠ b` answered true finds `a` below. -/
 theorem foundBelow_append_singleton_of_rel {r : α → α → Prop} {T : List (α × α)} {a b : α}
     (hab : a ≠ b) (h : r a b) (x : α) :
     FoundBelow r (T ++ [(a, b)]) x ↔ FoundBelow r T x ∨ x = a := by
-  constructor
-  · rintro ⟨c, d, hcd, hne, hx⟩
-    rcases List.mem_append.mp hcd with hcd | hcd
-    · exact Or.inl ⟨c, d, hcd, hne, hx⟩
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp hcd)
-    rcases hx with ⟨hx, -⟩ | ⟨-, hn⟩
-    · exact Or.inr hx
-    · exact absurd h hn
-  · rintro (⟨c, d, hcd, hne, hx⟩ | hx)
-    · exact ⟨c, d, List.mem_append_left _ hcd, hne, hx⟩
-    · exact ⟨a, b, List.mem_append_right _ (List.mem_singleton_self _), hab, Or.inl ⟨hx, h⟩⟩
+  unfold FoundBelow
+  rw [exists_mem_append_singleton_iff]
+  simp [hab, h]
 
 /-- A comparison `a ≤ b` with `a ≠ b` answered false finds `b` below. -/
 theorem foundBelow_append_singleton_of_not_rel {r : α → α → Prop} {T : List (α × α)} {a b : α}
     (hab : a ≠ b) (h : ¬ r a b) (x : α) :
     FoundBelow r (T ++ [(a, b)]) x ↔ FoundBelow r T x ∨ x = b := by
-  constructor
-  · rintro ⟨c, d, hcd, hne, hx⟩
-    rcases List.mem_append.mp hcd with hcd | hcd
-    · exact Or.inl ⟨c, d, hcd, hne, hx⟩
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp hcd)
-    rcases hx with ⟨-, hr⟩ | ⟨hx, -⟩
-    · exact absurd hr h
-    · exact Or.inr hx
-  · rintro (⟨c, d, hcd, hne, hx⟩ | hx)
-    · exact ⟨c, d, List.mem_append_left _ hcd, hne, hx⟩
-    · exact ⟨a, b, List.mem_append_right _ (List.mem_singleton_self _), hab, Or.inr ⟨hx, h⟩⟩
+  unfold FoundBelow
+  rw [exists_mem_append_singleton_iff]
+  simp [hab, h]
 
 /-- A comparison of an element with itself finds nothing above. -/
 theorem foundAbove_append_singleton_self {r : α → α → Prop} {T : List (α × α)} (a x : α) :
     FoundAbove r (T ++ [(a, a)]) x ↔ FoundAbove r T x := by
-  constructor
-  · rintro ⟨c, d, hcd, hne, h⟩
-    rcases List.mem_append.mp hcd with hcd | hcd
-    · exact ⟨c, d, hcd, hne, h⟩
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp hcd)
-    exact absurd rfl hne
-  · rintro ⟨c, d, hcd, hne, h⟩
-    exact ⟨c, d, List.mem_append_left _ hcd, hne, h⟩
+  unfold FoundAbove
+  rw [exists_mem_append_singleton_iff]
+  simp
 
 /-- A comparison of an element with itself finds nothing below. -/
 theorem foundBelow_append_singleton_self {r : α → α → Prop} {T : List (α × α)} (a x : α) :
     FoundBelow r (T ++ [(a, a)]) x ↔ FoundBelow r T x := by
-  constructor
-  · rintro ⟨c, d, hcd, hne, h⟩
-    rcases List.mem_append.mp hcd with hcd | hcd
-    · exact ⟨c, d, hcd, hne, h⟩
-    obtain ⟨rfl, rfl⟩ := Prod.mk.inj (List.mem_singleton.mp hcd)
-    exact absurd rfl hne
-  · rintro ⟨c, d, hcd, hne, h⟩
-    exact ⟨c, d, List.mem_append_left _ hcd, hne, h⟩
+  unfold FoundBelow
+  rw [exists_mem_append_singleton_iff]
+  simp
 
 theorem AgreeOn.refl (r : α → α → Prop) (T : List (α × α)) : AgreeOn r r T :=
   fun _ _ _ => Iff.rfl
