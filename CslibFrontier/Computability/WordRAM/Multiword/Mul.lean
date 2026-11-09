@@ -321,10 +321,8 @@ private theorem exec_rows {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
     refine ⟨y, ?_, ?_, ?_, ?_⟩
     · ram_eval [rows, rowCost, y]
     · simpa only [List.append_nil, Bounded] using fun i hi => (hy i hi) ▸ hd i hi
-    · simp only [List.append_nil, value, List.map_nil, Nat.ofDigits_nil, zero_mul,
-        add_zero]
-      congr 1
-      exact List.map_congr_left hy
+    · rw [List.append_nil, value_congr hy]
+      simp [value]
     · simpa only [List.append_nil] using hf
   | cons a as ih =>
     cases os with
@@ -546,11 +544,7 @@ theorem exec {w : ℕ} (hw : 2 ≤ w) (as bs ds os : List (Fin (r + 4)))
     (fun i hi => by rw [hui i (by simp [hi])]; exact ha i hi)
     (fun i hi => by rw [hui i (by simp [hi])]; exact hb i hi)
     (fun i hi => by rw [hu i hi]; have := one_lt_radix hw; omega)
-  have huval : value (radix w) u ds = 0 := by
-    unfold value
-    have hm : ds.map u.regs = List.replicate ds.length 0 := by
-      simpa only [List.map_const'] using List.map_congr_left hu
-    rw [hm, Nat.ofDigits_replicate_zero]
+  have huval : value (radix w) u ds = 0 := value_eq_zero_of_forall hu
   have hvals (es : List (Fin (r + 4))) (hes : es ⊆ as ++ bs) :
       value (radix w) u es = value (radix w) x es :=
     value_congr fun i hi => hui i (hes hi)

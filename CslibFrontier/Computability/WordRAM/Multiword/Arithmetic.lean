@@ -305,10 +305,7 @@ theorem exec_truncating {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
       have := one_lt_radix hw
       omega
     · rw [Nat.sub_eq_zero_of_le (Nat.le_of_lt hlt)]
-      unfold Multiword.value
-      have hm : ds.map y.regs = List.replicate ds.length 0 := by
-        simpa only [List.map_const'] using List.map_congr_left hy
-      rw [hm, Nat.ofDigits_replicate_zero]
+      exact Multiword.value_eq_zero_of_forall hy
   · have hc0 : z.regs borrow = 0 := by omega
     let y := z.set borrow (z.regs borrow)
     have hey : Exec w (.op (.copy (B := .standard) borrow borrow)) z y 1 := by
