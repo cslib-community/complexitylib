@@ -13,7 +13,7 @@ public import CslibFrontier.Foundations.Data.Finset.Median
 public import CslibFrontier.Probability.KWiseIndependent
 public import CslibFrontier.Probability.UniversalHash
 import CslibFrontier.Probability.KWiseIndependent.CountSketch
-import CslibFrontier.Probability.MedianOfMeans
+import CslibFrontier.Probability.MedianTrick
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.BigOperators.Group.List
