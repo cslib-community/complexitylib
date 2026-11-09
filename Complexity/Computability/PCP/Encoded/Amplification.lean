@@ -72,7 +72,7 @@ theorem isPolyTime_amplify {Input : Type} {input : Input ↪ List Bool}
     (coins : List (Fin 5 × Rand (PowerAlphabet D α T))) (queries : List (Fin 6)) :
     ComputableInPolyTime
       (fun x => (graph x).amplify eval fallback rotate T q walks number coins queries)
-      input (encoding (encPi (encPi encBool))) := by
+      input (encoding encConstraintTable) := by
   unfold amplify
   fun_prop
 

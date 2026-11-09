@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Foundations.Combinatorics.Expander.TannerCode
+import Complexity.Foundations.Data.BitString.Parity.DotProduct
 
 /-! Tests for Tanner codes on small-bias Cayley graphs. -/
 

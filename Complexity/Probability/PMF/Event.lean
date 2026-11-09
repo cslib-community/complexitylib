@@ -35,6 +35,8 @@ masses of `true` and `false` under a Boolean distribution sum to one
 
 * `Cslib.Probability.PMF.toOuterMeasure_ne_top`, `Cslib.Probability.PMF.toOuterMeasure_le_one`:
   events have probability at most one.
+* `Cslib.Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator`: an event's probability is the
+  expectation of its indicator.
 * `Cslib.Probability.PMF.toOuterMeasure_abs_sub_ge_le`,
   `Cslib.Probability.PMF.toOuterMeasure_abs_sub_ge_toReal_le`: two-sided tail bounds from upper
   and lower tails.
@@ -84,6 +86,13 @@ theorem toOuterMeasure_ne_top (p : PMF α) (event : Set α) : p.toOuterMeasure e
 theorem toOuterMeasure_le_one (p : PMF α) (event : Set α) : p.toOuterMeasure event ≤ 1 := by
   rw [PMF.toOuterMeasure_apply, ← p.tsum_coe]
   exact tsum_le_tsum (fun a => Set.indicator_apply_le (fun _ => le_rfl))
+
+/-- The probability of an event is the expectation of its indicator. -/
+theorem toOuterMeasure_eq_tsum_mul_indicator (p : PMF α) (event : Set α) :
+    p.toOuterMeasure event = ∑' a, p a * event.indicator 1 a := by
+  classical
+  rw [PMF.toOuterMeasure_apply]
+  exact tsum_congr fun a => by by_cases ha : a ∈ event <;> simp [ha]
 
 /-- The event that `f a` deviates from `m` by at least `ε` is covered by the upper tail
 `m + ε ≤ f a` and the lower tail `f a ≤ m - ε`. -/

@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Op
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 import Complexity.Foundations.Data.List.Append
+import Complexity.Tactic.EncLen
 
 /-!
 # `IP ⊆ PSPACE`
@@ -107,8 +108,7 @@ private theorem decodeWord_encodeWord (L : ℕ) (w : List Bool) : decodeWord
 
 private theorem length_encodeWord {L : ℕ} {w : List Bool} (hw : w.length ≤ L) :
     (encodeWord L w).length = L + 1 := by
-  simp only [encodeWord, List.length_append, List.length_replicate, List.length_cons]
-  lia
+  enc_len [encodeWord]
 
 private theorem true_mem_encodeWord (L : ℕ) (w : List Bool) : true ∈ encodeWord L w := by
   simp [encodeWord]
@@ -495,16 +495,14 @@ theorem length_encEvalState_iterate_le (a : α) (j : ℕ) :
     obtain ⟨hu, hw, hs, ha⟩ := hgood.frames f hf
     have hs' := length_encNat_le hs
     have ha' := length_encNat_le ha
-    simp only [encFrame, length_encPair, encBits_apply, hu, hw] at hs' ha' ⊢
-    lia
+    enc_len [encFrame, hu, hw] at hs' ha' ⊢
   have hlist := length_encList_le encFrame st.1 hframe
   have hdepth := Nat.mul_le_mul_right (2 * (7 * fuel a + 10) + 1) hgood.length
   have hret : (encOption encNat st.2).length ≤ fuel a + 2 := by
     rcases hst : st.2 with _ | v
     · simp
     · have := length_encNat_le (hgood.value v hst)
-      simp only [encOption_some, List.length_cons]
-      lia
+      enc_len
   simp only [encEvalState, length_encPair]
   nlinarith
 

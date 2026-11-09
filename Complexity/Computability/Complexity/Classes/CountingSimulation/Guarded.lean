@@ -117,8 +117,7 @@ noncomputable def ContractionAlgorithm.ofGuarded
       (NativeCertificate.ofPolyTime (hguard.comp (ComputableInPolyTime.snd encNat encG))).space
         (P, G) + (if guard G = true then fast.space (P, G)
           else directContractionBinaryCertificate.space (P, G)) ≤ _
-    have hpowK {e : ℕ} (he : e ≤ K) : (n + 1) ^ e ≤ (n + 1) ^ K :=
-      Nat.pow_le_pow_right (Nat.succ_pos _) he
+    have hpowK {e : ℕ} (he : e ≤ K) : (n + 1) ^ e ≤ (n + 1) ^ K := by gcongr
     cases hg : guard G
     · -- The guard fails: `s ≤ s₀`, so direct summation costs a constant factor.
       have hsm := hs₀ s G hA hg

@@ -21,14 +21,90 @@ with one hard link. Do not replace/unlink that lock. The service also validates 
 ancestors. `nginx-tmp/` is separately nginx-owned on the same bounded filesystem. Run GC via
 `sudo -u cache-origin /usr/local/bin/cache-origin gc --root /srv/cache-origin [--apply]`.
 
+## Storage and layout
+
+Keep the existing separate ext4 data filesystem. Its directory-index feature supports the
+flat hash-key artifact namespace; the current few thousand entries do not justify a storage
+schema change. Public objects and staging must remain on the same filesystem for atomic
+hard-link installation, and nginx's upload buffers belong on the data disk rather than the
+small OS disk. A 4 GiB upload can temporarily need space for both its nginx buffer and staged
+files in addition to retained objects. Monitor free bytes as well as the 100,000-entry budget.
+
+The host uses `relatime`, so reads already avoid an access-time update on every request.
+Changing to another filesystem, adding directory shards or using a RAM disk needs a measured
+bottleneck first. SSD backing can matter for cold reads, but a virtual disk's rotational flag
+does not establish its physical backing. Preserve ext4 and the current layout while measuring
+download behavior after removing bandwidth limits; do not drop system caches on the live host.
+
 ## Publication credential and rotation
 
 Install `apache2-utils` for `htpasswd`. Use [publisher-credential.py](examples/publisher-credential.py)
-to generate a fresh 32-byte CSPRNG token, install its bcrypt cost-12 hash and write a private
+to generate a fresh 32-byte CSPRNG token, install its bcrypt cost-4 hash and write a private
 handoff. The 43-character base64url shape checked by the client is not proof of entropy: do
 not choose a password manually or reuse a token. The installed hash file is
 `root:cache-origin-proxy 0640`; only the hash is kept there. Plaintext belongs only in the
 private operator handoff and GitHub's protected Environment secret.
+Cost 4 is intentional for this generated 256-bit token: password stretching adds little
+protection against guessing such a token, while nginx verifies bcrypt synchronously in a worker.
+This policy is unsuitable for human-chosen passwords. Existing cost-12 installations can rehash
+the same generated token privately through `htpasswd -niBC 4` using stdin, then atomically replace
+the hash file with the same owner/group/mode; the token and GitHub secret do not need to change.
+
+For this dedicated, single-account installation, run the following from the reviewed repository
+checkout on the server. Paste the **existing generated token** at the hidden prompt; do not
+generate a new one. It verifies the token against the current hash before replacing anything,
+and uses the installer's fsynced atomic replacement. It refuses unexpected ownership, modes,
+symlinks or additional accounts. MIT has already completed this rehash; no repeat is needed.
+
+```bash
+sudo python3 -B - <<'PY'
+import base64, getpass, grp, importlib.util, os, re, stat, subprocess, warnings
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("credential", "tools/cache-origin/examples/publisher-credential.py")
+credential = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(credential)
+target = Path("/etc/nginx/cache-publish.htpasswd")
+user = "cache-publisher"
+gid = grp.getgrnam("cache-origin-proxy").gr_gid
+info, parent = target.lstat(), target.parent.lstat()
+if (os.geteuid() != 0 or not stat.S_ISDIR(parent.st_mode) or parent.st_uid != 0
+        or parent.st_mode & 0o022 or not stat.S_ISREG(info.st_mode)
+        or info.st_uid != 0 or info.st_gid != gid or stat.S_IMODE(info.st_mode) != 0o640
+        or info.st_nlink != 1):
+    raise SystemExit("Unsafe credential file or directory; nothing changed")
+previous = target.read_bytes()
+pattern = re.escape(user.encode()) + rb":\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}\n"
+if not re.fullmatch(pattern, previous):
+    raise SystemExit("Expected one bcrypt publisher account; nothing changed")
+warnings.simplefilter("error", getpass.GetPassWarning)
+token = getpass.getpass("Existing generated publisher token: ")
+if (not re.fullmatch(r"[A-Za-z0-9_-]{43}", token)
+        or base64.urlsafe_b64encode(base64.urlsafe_b64decode(token + "=")).decode().rstrip("=") != token):
+    raise SystemExit("Expected a canonical generated 32-byte token; nothing changed")
+secret = (token + "\n").encode()
+verified = subprocess.run(["htpasswd", "-vi", str(target), user], input=secret, capture_output=True)
+if verified.returncode:
+    raise SystemExit("Existing token did not verify; nothing changed")
+hashed = subprocess.run(["htpasswd", "-niBC", "4", user], input=secret, capture_output=True, check=True)
+record = hashed.stdout.rstrip(b"\n") + b"\n"
+if not re.fullmatch(re.escape(user.encode()) + rb":\$2[aby]\$04\$[./A-Za-z0-9]{53}\n", record):
+    raise SystemExit("Unexpected bcrypt output; nothing changed")
+credential.atomic_hash(target, record, gid)
+if subprocess.run(["htpasswd", "-vi", str(target), user], input=secret, capture_output=True).returncode:
+    credential.atomic_hash(target, previous, gid)
+    raise SystemExit("Verification failed; previous hash restored")
+print("Rehashed at cost 4; publisher token unchanged")
+PY
+sudo nginx -t
+```
+
+The token stays out of shell history, argv and files created by this recipe. nginx reads the
+credential file on each authentication attempt, so this rehash requires no nginx restart or
+GitHub secret update. For multiple accounts or another deployment layout, adapt and review the
+recipe before using it; do not overwrite an unrelated credential file.
+
+For an initial installation, generate a new token instead:
 
 ```bash
 sudo install -d -m 0700 /root/cache-origin-handoff
@@ -70,28 +146,56 @@ Install the reviewed files as follows (root-owned, non-writable by other account
 | `cache-origin-usage-service.conf` | `/etc/systemd/system/systemd-journald@cache-origin-usage.service.d/cache-origin.conf` |
 | `cache-origin-fail2ban.conf` | `/etc/fail2ban/jail.d/cache-origin.local` |
 
-nginx's upload request/connection limits apply before expensive password verification; rejected
+nginx's upload request/connection limits apply before password verification; rejected
 requests return `429`. Read limits allow the native Lake curl client's parallel transfers.
-`limit_rate` paces each response, but is **not** a hard aggregate egress cap for short requests.
-Install the separate [tc egress unit](examples/cache-origin-egress.service) only after inspecting
-the actual default-route interface and its current queue discipline:
+Upload limits are per IP; there is no small shared upload bucket or connection pool that
+anonymous clients can consume instead of the legitimate publisher. Broader server-wide
+request/connection limits still protect the host, so this does not promise immunity to a
+large traffic flood. Bandwidth is uncapped: neither nginx `limit_rate` nor a cache-owned traffic
+shaper is installed. The upload-size bound is 4 GiB, buffered and staged on the data filesystem;
+allow space for both copies plus retained objects. Byte/count/memory limits remain independent.
+Aggregate authentication work has no small shared upload bound: many source IPs can still
+occupy nginx workers despite per-IP limits and Fail2ban. Cost 4 makes each comparison cheaper
+without solving general CPU or traffic exhaustion. If IPv6 is enabled, limits/bans apply to
+individual addresses rather than a client's whole prefix; rotating addresses can evade them.
+
+The 4 GiB upload limit is a size ceiling, not a promise that every 4 GiB upload finishes in
+time. curl allows 360 seconds per attempt with a 600-second retry window; the GitHub publisher
+job has a 15-minute ceiling. The Go origin has five-minute read/write deadlines after nginx
+starts forwarding its buffered body. nginx's body timeout is 60 seconds between reads, and its
+proxy read/send timeouts are six minutes between operations. These cover different phases and
+must be considered together when changing them. Keep the current deadlines while successful
+publications remain comfortably below them; investigate network, staging/fsync and size growth
+before increasing budgets together. The usage journal's PUT duration measures the whole nginx
+request, while the CI publish step also includes local packaging. Neither response-body bytes
+in usage records nor the configured size ceiling measures uploaded package bytes.
+
+When updating an older installation that has the previous bandwidth cap, inspect its actual
+default-route interface and queue configuration before removing anything:
 
 ```bash
 ip route show default
 sudo tc -s qdisc show dev <primary-interface>
 ```
 
-Save that output privately for rollback. If the host has an existing custom shaper, do not
-overwrite it; integrate an equivalent bound with its owner. For a dedicated host with only its
-distro-default qdisc, set `CACHE_INTERFACE` in the unit to the inspected interface, install the
-unit under `/etc/systemd/system/`, and enable it. It uses a token bucket at **128 Mbit/s** with a
-256 KiB burst and bounded queue latency for the entire interface, including short requests.
-nginx requires this unit before starting. Check `tc -s qdisc show` after restart and measure
-long and short download bursts; record the rate, burst and drops rather than claiming an
-instantaneous byte-per-second ceiling. Stopping the unit leaves its cap in place. For rollback,
-inspect the current qdisc and explicitly restore the saved configuration; do not delete a
-replacement shaper installed by another operator. This shapes SSH/mail too, so retain an operator console during
-the initial change. No extra network listener is installed.
+Save that output and the old unit privately for rollback. Remove nginx's old
+`Requires`/`After=cache-origin-egress.service` dependency, reload systemd, and disable/stop the
+obsolete `cache-origin-egress.service`. Stopping that service alone leaves its queue in place.
+Only after confirming the root queue is the cache-owned TBF (128 Mbit/s, handle `1:`, 256 KB
+burst, 400 ms latency) and there is no unrelated policy, replace that specific queue with
+the recorded uncapped queue (or the kernel default when no prior policy was recorded).
+For the MIT host's recorded queue, after the ownership checks above:
+
+```bash
+sudo tc qdisc replace dev ens3 root pfifo_fast
+sudo tc -s qdisc show dev ens3
+```
+
+To choose the kernel default instead, use `sudo tc qdisc del dev <primary-interface> root`
+and verify it with `sudo tc -s qdisc show dev <primary-interface>`. Remove the obsolete unit
+file and reload systemd again. Never delete or replace an unknown shaper; resolve ownership first. Keep SSH
+and an operator console available, and verify the live queue and nginx dependency list after
+the change. On fresh installations these migration steps are unnecessary.
 
 The dedicated-host journal policy caps persistent logs at 64 MiB and runtime logs at 16 MiB,
 retaining at most seven days. Do not leave an additional unbounded nginx/rsyslog file sink.
@@ -110,10 +214,13 @@ Use underscore-only syslog tags and `nohostname` as in the example so journald r
 `ForwardToSyslog=no`. Inspect rsyslog pulling inputs such as `imjournal` too; disabling journal
 forwarding alone does not stop them. The dedicated MIT host uses journald with rsyslog disabled.
 The hourly health timer checks mount presence and 80% byte/inode use on both data and OS
-filesystems. Publisher, GC, nginx, egress and health failures invoke the alert service. nginx's
+filesystems. Publisher, GC, nginx and health failures invoke the alert service. nginx's
 service drop-in also bounds its memory and task count; the Go services retain their own limits.
 
 ## Usage statistics
+
+The [dashboard](DASHBOARD.md) presents these aggregates as a static public status page.
+Its guide covers installation, metric definitions, validation and rollback.
 
 The second nginx access sink writes one JSON record per completed HTTPS request into the
 **separate** `cache-origin-usage` journal namespace. It includes timestamp, method, object path,
@@ -186,7 +293,7 @@ long-term trends, export summaries before the underlying records rotate away.
 
 Back up the existing binary/configuration privately before applying a reviewed update. Install
 the binary and root-owned examples, run `systemd-analyze verify` and `nginx -t`, reload systemd,
-restart the publisher/nginx where group membership changed, and enable the GC, egress and
+restart the publisher/nginx where group membership changed, and enable the GC and
 health timers/services. Apply the journald policy and start/reload Fail2ban only after its
 filter matches an actual nginx failure record with the expected journal identifier. Start the
 usage namespace before nginx and verify a real GET, HEAD and missing-object request produce
@@ -200,14 +307,15 @@ DELETE/private/listing paths, and `429` rate/connection responses. Use an isolat
 abuse/GC tests; do not ban the operator's SSH source or shorten production retention. Test a
 controlled service-failure notification through the installed alert unit and confirm inbox
 delivery; inspect the Postfix queue. Test byte/inode threshold behavior in a fixture without
-filling production disks. Verify actual egress shaping and bounded journal storage too.
+filling production disks. Verify bandwidth caps are absent and journal storage remains bounded.
 
 Rollback means restoring the saved binary/configuration and permissions, removing only these
-new unit drop-ins if necessary, explicitly restoring the saved qdisc after inspection, running `nginx -t` and restarting
+new unit drop-ins if necessary, inspecting any queue policy before restoring a saved one, running `nginx -t` and restarting
 the affected services. Keep the original mounted store intact; neither update nor rollback
 formats disks, deletes real build objects or replaces `state/lock`. Never roll back to exposed
-credentials. Before enabling CI publication or default MIT readers, obtain exact-head human
-review, complete a real-build cold restore and exercise the recovery procedure. Keep GCS
+credentials. For a new installation, obtain exact-head human review and complete host
+commissioning before enabling CI publication. Before selecting MIT as the default reader,
+complete a real-build cold restore, exercise recovery and obtain separate cutover approval. Keep GCS
 publication and the opt-in MIT-first/GCS-second mirror list during testing.
 
 References: [nginx request limits](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html),

@@ -17,12 +17,16 @@ const (
 	scope          = "cslib-community/complexitylib"
 	artifactPrefix = "a0/" + scope + "/"
 	mappingPrefix  = "r0/" + scope + "/tc/"
-	maxFiles       = 10000
-	maxMetadata    = 4 << 20
-	maxMapping     = 8 << 20
-	maxPackage     = 1 << 30
-	maxArtifact    = 256 << 20
-	maxObjects     = 100000
+	// A publication must not have a smaller entry budget than the public store.
+	// Admission still counts retained objects and namespace directories together.
+	maxFiles = maxObjects
+	// The Python publisher permits 16 MiB; this fits all maxFiles entries,
+	// including its JSON separator whitespace and the longest toolchain name.
+	maxMetadata = 16 << 20
+	maxMapping  = 8 << 20
+	maxPackage  = 4 << 30
+	maxArtifact = 256 << 20
+	maxObjects  = 100000
 )
 
 var (

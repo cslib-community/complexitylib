@@ -6,6 +6,7 @@ No Lean, external listener, production credential or root access is required.
 
 import base64
 from datetime import datetime
+from http.client import HTTPSConnection
 import hashlib
 import io
 import json
@@ -50,6 +51,12 @@ class RealNginxCacheTests(unittest.TestCase):
         self.store = self.root / "store"
         self.store.mkdir()
         (self.store / "nginx-tmp").mkdir()
+        self.dashboard = self.root / "dashboard"
+        self.dashboard.mkdir()
+        (self.dashboard / "index.html").write_text("<!doctype html><title>Cache dashboard fixture</title>")
+        (self.dashboard / "app.js").write_text("'use strict';")
+        (self.dashboard / "style.css").write_text("body { margin: 0; }")
+        (self.dashboard / "stats.json").write_text('{"schema":1}')
         self.socket = self.root / "origin.sock"
         self.cert, key = self.root / "cert.pem", self.root / "key.pem"
         subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
@@ -57,9 +64,9 @@ class RealNginxCacheTests(unittest.TestCase):
                         "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost"],
                        check=True, capture_output=True, timeout=15)
         self.user, self.password = "fixture-publisher", secrets.token_urlsafe(32)
-        password_record = subprocess.check_output(["htpasswd", "-niBC", "12", self.user],
+        password_record = subprocess.check_output(["htpasswd", "-niBC", "4", self.user],
                                                   input=(self.password + "\n").encode()).decode().strip()
-        self.assertTrue(password_record.startswith(self.user + ":$2y$12$"))
+        self.assertTrue(password_record.startswith(self.user + ":$2y$04$"))
         password_file = self.root / "htpasswd"
         password_file.write_text(password_record + "\n")
         password_file.chmod(0o640)
@@ -92,6 +99,8 @@ class RealNginxCacheTests(unittest.TestCase):
             "/etc/letsencrypt/live/cache.example.edu/privkey.pem": nginx_string(key),
             "/srv/cache-origin/public": nginx_string(self.store / "public"),
             "/srv/cache-origin/nginx-tmp": nginx_string(self.store / "nginx-tmp"),
+            "/usr/local/share/cache-dashboard": nginx_string(self.dashboard),
+            "/var/lib/cache-dashboard/stats.json": nginx_string(self.dashboard / "stats.json"),
             "/etc/nginx/cache-publish.htpasswd": nginx_string(password_file),
             "http://unix:/run/cache-origin/http.sock": nginx_string(f"http://unix:{self.socket}"),
             # Keep the real syslog options/tags. Changing only the transport
@@ -147,14 +156,23 @@ class RealNginxCacheTests(unittest.TestCase):
 
     def nginx_ready(self):
         try:
-            return self.request("GET", "/")[0] == 404
+            return self.request("GET", "/")[0] == 200
         except (URLError, OSError):
             return False
 
-    def request(self, method, path, body=None, credentials=None):
+    def request(self, method, path, body=None, credentials=None, source_ip=None):
         headers = {"Content-Type": "application/x-tar"} if body is not None else {}
         if credentials is not None:
             headers["Authorization"] = "Basic " + base64.b64encode(credentials.encode()).decode()
+        if source_ip is not None:
+            connection = HTTPSConnection("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1]), timeout=5,
+                context=ssl.create_default_context(cafile=str(self.cert)), source_address=(source_ip, 0))
+            try:
+                connection.request(method, path, body=body, headers=headers)
+                response = connection.getresponse()
+                return response.status, response.read(), response.headers
+            finally:
+                connection.close()
         request = Request(self.endpoint + path, data=body, headers=headers, method=method)
         try:
             response = self.http.open(request, timeout=5)
@@ -291,7 +309,7 @@ class RealNginxCacheTests(unittest.TestCase):
         head = self.request("HEAD", shared)
         self.assertEqual(head[:2], (200, b""))
         self.assertEqual(head[2]["Content-Length"], str(len(b"shared")))
-        for path in ("/", f"/a0/{SCOPE}/", "/private"):
+        for path in (f"/a0/{SCOPE}/", "/private"):
             self.assertEqual(self.request("GET", path)[0], 404)
         self.assertEqual(self.request("DELETE", shared)[0], 403)
         self.assertEqual(self.request("DELETE", path_a, credentials=credentials)[0], 403)
@@ -341,9 +359,26 @@ class RealNginxCacheTests(unittest.TestCase):
         records = self.usage_records()
         self.assertTrue(any(r["status"] == "429" and r["method"] == "PUT" for r in records))
 
-    def test_simultaneous_upload_connection_limit(self):
+    def test_dashboard_is_static_read_only_and_confined(self):
+        status, html, headers = self.request("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIn(b"Cache dashboard fixture", html)
+        self.assertIn("script-src 'self'", headers["Content-Security-Policy"])
+        self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(self.request("GET", "/stats.json")[:2], (200, b'{"schema":1}'))
+        self.assertEqual(self.request("GET", "/stats.json")[2]["Cache-Control"], "no-store")
+        self.assertIn("javascript", self.request("GET", "/app.js")[2]["Content-Type"])
+        self.assertIn("text/css", self.request("GET", "/style.css")[2]["Content-Type"])
+        self.assertEqual(self.request("HEAD", "/stats.json")[:2], (200, b""))
+        for path in ("/", "/stats.json", "/app.js", "/style.css"):
+            self.assertEqual(self.request("PUT", path, b"replacement")[0], 403)
+        for path in ("/collect.py", "/preview-data.json", "/dashboard/", "/state", "/stats.json/extra"):
+            self.assertEqual(self.request("GET", path)[0], 404)
+
+    def hold_upload(self, source_ip="127.0.0.1"):
         tls = ssl.create_default_context(cafile=str(self.cert))
-        raw = socket.create_connection(("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1])), timeout=5)
+        raw = socket.create_connection(("127.0.0.1", int(self.endpoint.rsplit(":", 1)[1])), timeout=5,
+                                       source_address=(source_ip, 0))
         held = tls.wrap_socket(raw, server_hostname="127.0.0.1")
         self.addCleanup(held.close)
         authorization = base64.b64encode((self.user + ":" + self.password).encode()).decode()
@@ -355,7 +390,32 @@ class RealNginxCacheTests(unittest.TestCase):
                       "Content-Type: application/x-tar\r\nContent-Length: 100000\r\n"
                       "Expect: 100-continue\r\n\r\n").encode())
         self.assertIn(b"100 Continue", held.recv(4096))
+        return path
+
+    def test_simultaneous_upload_connection_limit(self):
+        path = self.hold_upload()
         self.assertEqual(self.request("PUT", path, b"small", self.user + ":" + self.password)[0], 429)
+
+    def test_anonymous_rate_exhaustion_does_not_starve_another_publisher(self):
+        path = "/publish/" + "c" * 40
+        # Several sources exhaust their own allowances. A shared 12/min bucket
+        # would let them exhaust CI's allowance too, without knowing a password.
+        for address in ("127.0.0.2", "127.0.0.3", "127.0.0.4"):
+            statuses = [self.request("PUT", path, b"invalid", source_ip=address)[0] for _ in range(12)]
+            self.assertIn(401, statuses)
+            self.assertIn(429, statuses)
+        _, package, _, _ = self.publication("f" * 40, {1: b"independent publisher"})
+        self.assertEqual(self.request("PUT", "/publish/" + "f" * 40, package,
+                                      self.user + ":" + self.password)[0], 201)
+
+    def test_other_sources_cannot_reserve_all_upload_connections(self):
+        # Pending bodies from two other IPs must not consume a special shared
+        # two-upload pool. They have not reached the Go publication lock yet.
+        self.hold_upload("127.0.0.2")
+        self.hold_upload("127.0.0.3")
+        _, package, _, _ = self.publication("f" * 40, {1: b"third source"})
+        self.assertEqual(self.request("PUT", "/publish/" + "f" * 40, package,
+                                      self.user + ":" + self.password)[0], 201)
 
 
 if __name__ == "__main__":
