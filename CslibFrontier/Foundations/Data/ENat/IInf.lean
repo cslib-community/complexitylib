@@ -9,13 +9,15 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Data.ENat.Lattice
+import Mathlib.Order.SuccPred.CompleteLinearOrder
 
 /-!
 # Finite bounds on an infimum of natural numbers in `ℕ∞`
 
 A complexity measure defined as `⨅ w, cost w` over a type of witnesses is at most a finite budget
-`k` exactly when some witness costs at most `k`. The infimum of a nonempty family is attained
-(`ENat.exists_eq_iInf`), and an empty family has infimum `⊤`, which exceeds every `k`.
+`k` exactly when some witness costs at most `k`. This is the `ℕ∞` case of Mathlib's
+`iInf_le_iff_of_not_isPredPrelimit`: a finite `k` is covered by `k + 1`, so it is not a
+predecessor prelimit. The lemmas below discharge that side condition once for their clients.
 
 ## Main results
 
@@ -29,13 +31,11 @@ namespace ENat
 
 variable {ι : Sort*}
 
-/-- An infimum in `ℕ∞` is at most a finite `k` exactly when some term is. -/
-theorem iInf_le_natCast_iff {f : ι → ℕ∞} {k : ℕ} : ⨅ i, f i ≤ k ↔ ∃ i, f i ≤ k := by
-  refine ⟨fun h => ?_, fun ⟨i, hi⟩ => (iInf_le f i).trans hi⟩
-  rcases isEmpty_or_nonempty ι with hι | hι
-  · simp at h
-  obtain ⟨i, hi⟩ := exists_eq_iInf f
-  exact ⟨i, hi.trans_le h⟩
+/-- An infimum in `ℕ∞` is at most a finite `k` exactly when some term is: the `ℕ∞` case of
+`iInf_le_iff_of_not_isPredPrelimit`. -/
+theorem iInf_le_natCast_iff {f : ι → ℕ∞} {k : ℕ} : ⨅ i, f i ≤ k ↔ ∃ i, f i ≤ k :=
+  iInf_le_iff_of_not_isPredPrelimit fun h =>
+    h _ (Order.covBy_succ_of_not_isMax (not_isMax_iff_ne_top.2 (natCast_ne_top k)))
 
 /-- An infimum of natural numbers is at most `k` exactly when some term is. -/
 theorem iInf_natCast_le_natCast_iff {f : ι → ℕ} {k : ℕ} :
