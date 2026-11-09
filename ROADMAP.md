@@ -314,18 +314,30 @@ For generated groups G is at most N; selected M is bounded by computed balance.
 Filtered runs, current group and materialized class output are all charged. `ClassBalance` now derives unique complete
 half words, exact original-half counter counts in both directions, computed
 balance and count-selected retention. `JoinedDissection` assembles that retention
-with the actual bounded-batch counter probe, fixed all-class release/iteration,
-source preparation and original witness readback; witness/miss and returned
-computed-balance correctness are proved. Count-table and simultaneous retained/
-live-buffer prefix encodings are bounded separately from machine temporaries.
+with `JoinedProbe`'s actual opposite-quarter group consumption, bounded batches,
+fixed all-class release/iteration, source preparation and original witness
+readback; witness/miss and returned computed-balance correctness are proved.
+The larger class is no longer materialized or scanned as a whole half space:
+nested folds evaluate generated matching pairs and feed each directly to the
+matcher. Empty dictionaries skip opposite generation by proved matcher
+soundness. The total matching-pair iteration domain across classes is bounded by
+the two half populations, without a class-mean hypothesis. This is a traversal
+bound, not bit time. Count-table and simultaneous retained/live-buffer prefix
+encodings are bounded separately from machine temporaries; generated-record
+prefixes no longer need a packed-counter-limit hypothesis.
 The source's fast reachable-state count prepass remains unimplemented on this
-sorted-list route. Sharp resources still require a joined opposite-class producer and persistent
-retained-tape fusion, plus tight preprocessing/readback/global composition: the current route
-regenerates counts/quarters per class, scans opposite half words and copies
-captured retained/buffer state; count-table reversal/reduction and outer control
-also retain their actual certificate costs, including polynomial captured-input
-callback bounds. The materializing join must not be substituted for the missing
-online larger-class producer.
+sorted-list route. Nested consumer loops now use the encoded streaming kernel:
+each list is read once, time sums actual callback/framing/state-copy rounds,
+and workspace uses actual callback/prefix-state/token maxima. The all-class
+search uses the same fixed loop on uniformly generated binary class-index data;
+its derived wire is `2^p(2p+1)`, within quarter scale at the capped source depth.
+It sums executed class rounds rather than multiplying maximum class time.
+Class dictionaries are released; only a found pair survives into the next round.
+Sharp resources still require persistent retained/buffer tapes and tight
+preprocessing/readback/profile normalization. Captured dictionaries and growing
+buffers are still copied per matching pair; count-table reversal/reduction and
+preprocessing control retain their actual profiles. Neither a traversal sum nor
+the now-composed actual bit clock establishes the target source asymptotics.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their
 interpreter without removing their costs from their own certificates. A real

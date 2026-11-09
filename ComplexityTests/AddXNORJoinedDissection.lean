@@ -8,6 +8,7 @@ module
 -- upstream: local-only (joined original-input dissection integration regression tests)
 
 public import Complexity.Cryptanalysis.AddXNORJoinedDissection
+import all Complexity.Cryptanalysis.AddXNORJoinedProbe
 import all Complexity.Cryptanalysis.AddXNORJoinedDissection
 import all Complexity.Cryptanalysis.AddXNORClassBalance
 import all Complexity.Cryptanalysis.AddXNORClassJoin
@@ -63,11 +64,8 @@ example {m : ℕ} (p : ℕ) (s : BitVec m) (tail : List (BitVec m)) (n : ℕ)
 example (input : ClassBalance.Input) (g n : ℕ) (hg : g < 2 ^ ClassBalance.depth input) :=
   JoinedDissection.simultaneous_records input g n hg
 example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
-    (s : BitVec m) (g : BitVec p) (n : ℕ)
-    (hn : let input := ProgramGeneration.originalSource p as bs cs ds s 0
-      n ≤ ClassStreaming.limit (JoinedDissection.classInput input g.toNat)
-        (!ClassBalance.retainRight input g.toNat)) :=
-  JoinedDissection.simultaneous_wire hp as bs cs ds s g n hn
+    (s : BitVec m) (g : BitVec p) (n : ℕ) :=
+  JoinedDissection.simultaneous_wire hp as bs cs ds s g n
 example (input : ClassBalance.Input) (g : ℕ) (rows : List (ℕ × ℕ)) :=
   JoinedDissection.probe_recordWork input g rows
 
@@ -76,3 +74,19 @@ example (input : ClassBalance.Input) (g : ℕ) (rows : List (ℕ × ℕ)) :=
 example := JoinedDissection.sourceCertificate.computes
 example := JoinedDissection.searchCertificate.computes
 example := JoinedDissection.allCertificate.computes
+
+-- Produced iteration slots total actual opposite class sizes, rather than half words per class.
+example : (List.range 4).map
+    (JoinedDissection.pairVisits (Source.prepare joinedFixture)) = [8, 0, 0, 8] := by
+  decide +kernel
+example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m) :=
+  JoinedDissection.sum_pairVisits hp as bs cs ds s
+example : (JoinedDissection.buffer (Source.prepare joinedFixture) 0 6).length = 6 := by
+  decide +kernel
+example : (JoinedDissection.buffer (Source.prepare joinedFixture) 0 7).length = 0 := by
+  decide +kernel
+
+example (input : ClassBalance.Input) := JoinedDissection.allSearch_eq_fold input
+-- The actually generated class-index data is quarter scale at the source frontend's depth.
+example (input : ClassBalance.Input) :=
+  SortedQuarterMachine.indices_wire (ClassBalance.depth input)

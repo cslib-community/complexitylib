@@ -1565,9 +1565,14 @@ counter counts, and `balance_eq_counter` proves equality of the computed maximum
 smaller population. Counts or dictionary correctness are not supplied as advice.
 
 `JoinedDissection.run` assembles those producers with the existing actual
-bounded-batch opposite-side counter probe. It receives the original source input,
+bounded-batch consumer of generated opposite quarter matches. It receives the original source input,
 computes both count tables and their balance, generates only the selected smaller
-class, probes it in bounded batches, releases the class before the next outer
+class, then `JoinedProbe.run` generates the opposite projected-quarter groups.
+An empty retained dictionary skips opposite generation entirely, as a proved
+consequence of matcher soundness. Otherwise nested occurrence folds evaluate
+each matching pair at original width and feed it directly to a bounded batch; no larger full-state class list or half-space
+counter is an executed intermediate. The final partial batch is matched, the
+class is released before the next outer
 counter round, and decodes the original-order output. `original_correct` proves
 exhaustive original-input misses and sound witnesses for arbitrary requested
 depths, including the frontend's physical-width/quarter-depth caps. `original_balance`
@@ -1579,7 +1584,9 @@ $O^*(2^p)$ count preprocessing is not supplied by this quarter-join prepass.
 `source_count_prefix_wire` bounds every count-table prefix by $2^p(12k+15)$ bits.
 `ClassBalance.retained_prefix_wire` bounds every generated retained prefix by
 $\mu(4m+2q+3)$ bits, and `simultaneous_wire` bounds the retained dictionary plus
-live opposite buffer by $2\mu(4m+2q+3)$ at every executed logical probe prefix.
+live opposite buffer by $2\mu(4m+2q+3)$ at every generated-record prefix, including
+prefix lengths beyond completion by saturation. The obsolete packed-counter-limit
+hypothesis was removed from the theorem and its client.
 Here $\mu$ is the actual computed balance, not a class expectation. The uniform
 `sourceCertificate` separately charges internal callback tapes, preparation,
 control, input copying, output and readback. The four-record-volume amortization
@@ -1611,17 +1618,38 @@ the installed machine through `witnessesCertificate`. This remains a join-phase
 bound; preparation, quarter generation/sorting and full-state readback have
 separate composed profiles.
 
-The route still recomputes quarters/counts per class, scans opposite half
-words for each class, and copies captured retained/buffer state. The count
-prepass also charges table copying/reversal/reduction. Probe callbacks and table
-reduction still have polynomial bounds in their captured/list input volume. The
-new materializing join is used only for retention; it cannot replace an online
-opposite-class producer when that class exceeds the computed balance. The outer certificate uses
-a maximum-round time bound; a sharp sum over actual class work is not proved.
-These actual costs prevent
-a sharp global time or internal peak-space conclusion; the physical list bounds
-above do not remove them. A joined opposite class stream, persistent-tape
-producer/probe fusion and tight preprocessing/readback/global composition remain required. The old
+`sum_pairVisits` proves that all generated matching-pair slots across classes total
+at most $2^{|Q_1|+|Q_2|}+2^{|Q_3|+|Q_4|}$. Duplicate full states still correspond
+to distinct packed words; both orientations, empty-dictionary skipping and
+early-hit parking are included.
+This bounds the new traversal domain, not its bit cost.
+
+The consumer and class loop reuse
+[`NativeCertificate.foldlStream`](../../Complexity/Computability/GenericRAM/Native/StreamingFold.lean),
+the actual encoded streaming kernel: each list is read once. Time charges input/setup and finalization plus the sum of actual callback
+time and current/next state/token framing. Space takes actual callback,
+prefix-state and token maxima; the returned state is charged separately, without
+adding the entire loop clock to workspace. These prefix measures are derived,
+not supplied invariants. Scalar index/full-state callbacks receive isolated
+records/original input; side filters use the proved physical-width streaming
+filter. Retained dictionaries and growing buffers still occur in captured state
+and are copied per matching pair, so these sums do not yield the sharp time bound.
+
+The all-class search uses the same fixed streaming kernel over an actually
+generated class-index list. The approved uniform index generator supplies its
+real time/space profile and the derived wire bound $2^p(2p+1)$; the capped source
+depth makes this extra data quarter scale. It is data for a fixed machine, not
+input-dependent program advice. `allSearch_eq_fold` connects that execution to
+the approved fixed class counter. Its clock sums executed class rounds, including
+found-hit parking; workspace takes their actual prefix maximum, with each class
+released before the next and only a found pair surviving. Index generation,
+framing, setup and readback remain charged.
+
+This composes an actual global bit-clock/prefix-space profile, but does not prove
+the requested sharp source inequalities. Persistent retained/buffer tape reuse,
+count-table reversal/reduction, recomputed count preprocessing and readback still
+need sharper costs/normalization in the original source parameters. Logical
+occupancy or matching-pair totals do not remove those machine costs. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;
 the new direct multitape route bypasses that interpreter but retains the costs
 just listed. Lemma 8/Theorem 7 resources and the whole-paper objective remain open.
@@ -1631,14 +1659,19 @@ From the repository root, build
 `lake env lean ComplexityTests/AddXNORClassBalance.lean` and
 `lake env lean ComplexityTests/AddXNORJoinedDissection.lean`; also run
 `lake env lean ComplexityTests/KeyCount.lean` for the direct streamed counter and
-`lake env lean ComplexityTests/KeyJoinStream.lean` for the installed join. The
+`lake env lean ComplexityTests/KeyJoinStream.lean` for the retained join and
+`lake env lean ComplexityTests/AddXNORJoinedProbe.lean` for the online opposite
+consumer. The
 [class-balance client](../../ComplexityTests/AddXNORClassBalance.lean) checks
 unequal computed populations, both orientations, empty backward classes and
 fourth-quarter residue, including execution of the actual new count path in
 both directions. The [counter client](../../ComplexityTests/KeyCount.lean) checks
 empty/one-sided runs, repeated occurrences and key changes. The
 [join client](../../ComplexityTests/KeyJoinStream.lean) checks ordering, duplicates,
-empty groups and the uniform input/output-sensitive resource theorem. The complete
+empty groups and the uniform input/output-sensitive resource theorem. The
+[online consumer client](../../ComplexityTests/AddXNORJoinedProbe.lean) exercises
+full-batch release/parking, final partial flushes, empty dictionaries/classes,
+zero width/quarters and raw zero capacity. The complete
 [joined dissection client](../../ComplexityTests/AddXNORJoinedDissection.lean)
 executes original non-self-inverse additions/collisions through decoded hits and
 exhaustive misses, including zero/empty/capped input. It also applies the general

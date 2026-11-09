@@ -189,7 +189,7 @@ buckets with complete two-quarter classes or their maximum balance.
 occurrence joins. `ClassBalance` now derives unique complete half words, exact
 forward/backward counter counts and the computed balance, then generates only
 the count-selected smaller class. `JoinedDissection.run` is the assembled
-original-input route through generated retention, bounded-batch counter probing,
+original-input route through generated retention, opposite-quarter batch probing,
 fixed outer release/iteration and original witness readback. Its correctness and
 returned balance are proved; use both complete new clients linked in the
 Operator's Manual when handing it over. The installed count certificate now
@@ -201,18 +201,28 @@ filters and nested streaming charge run replays to emitted pairs, avoiding the
 whole-group polynomial join callback. Its charged prefix space includes filtered
 runs, current group, callback tapes and materialized class output; the selected
 join volume is derived from quarter sizes and computed balance. These phase
-bounds do not establish the whole solver bound.
+bounds do not establish the whole solver bound. `JoinedProbe` now consumes actual
+opposite quarter groups with nested occurrence folds and immediate full-state
+batch feeds, avoiding a materialized larger class or per-class half-space scan.
+Empty retained dictionaries skip opposite generation by matcher soundness. Its
+certificate uses the encoded streaming kernel with actual finite-prefix maxima,
+not supplied completion/resource assumptions. `sum_pairVisits` bounds total
+matching-pair visits by the two half populations; it is not a bit-time theorem.
+Use the new complete online consumer client alongside the original-input client.
 
 Keep its resource limits visible: count-table and retained/live-buffer prefix
 encodings have derived bounds, but actual machine profiles also charge
-repeated quarter/count generation, opposite half scans,
-captured dictionary/buffer copying, polynomial captured-input callback bounds
-and all internal temporaries. The new materializing join is for the retained
-side; using it to store the larger opposite class would lose the space target. Orientation
-recomputes the counts; no cached-size oracle is input. Do not promote the list
-bounds or batch record-volume accounting to sharp TM time/peak space. A joined
-opposite producer and persistent retained-tape fusion still need implementation,
-with tight preprocessing/readback costs and global resource proofs. The old solvers and
+repeated quarter/count generation and captured dictionary/buffer copies. Each
+consumer list is read once; time sums actual rounds, while space takes actual
+callback/prefix-state/token maxima and separately charges returned state. The
+all-class search uses that same fixed kernel with actually generated index data,
+whose `2^p(2p+1)` wire is quarter scale at the capped source depth. Class work is
+summed and only a found pair survives a released class. The remaining bound
+normalization must still charge persistent-state copying, table preprocessing
+and readback. Orientation recomputes counts; no cached-size oracle is input.
+Do not promote pair/batch traversal sums or unnormalized machine profiles to
+sharp source TM bounds. Persistent tape reuse and sharp global inequalities
+remain required. The old solvers and
 all their charges remain intact; the new direct route bypasses their interpreter.
 
 ## Correct course and hand work over
