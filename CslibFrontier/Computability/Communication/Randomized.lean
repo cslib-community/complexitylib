@@ -11,11 +11,11 @@ public import CslibFrontier.Computability.Communication.Protocol
 public import Cslib.Foundations.Data.BitString
 public import Cslib.Probability.PMF
 public import Mathlib.Basic.Real.Basic
+import CslibFrontier.Foundations.Data.ENat.IInf
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.Minimax
 import CslibFrontier.Probability.PMF
-import Mathlib.Order.SuccPred.ENat
 
 /-!
 # Randomized communication protocols
@@ -171,13 +171,7 @@ theorem le_ecomplexity_iff {k : ℕ∞} :
 
 theorem ecomplexity_le_iff {k : ℕ} :
     ecomplexity ε R A B ≤ k ↔ ∃ μ : PublicCoin X Y Z, μ.Solves ε R A B ∧ μ.depth ≤ k := by
-  refine ⟨fun h => ?_, fun ⟨μ, hμ, hk⟩ => (ecomplexity_le_depth hμ).trans hk⟩
-  by_contra! hlt
-  have : ((k + 1 : ℕ) : ℕ∞) ≤ ecomplexity ε R A B :=
-    le_ecomplexity_iff.mpr fun μ hμ => by exact_mod_cast Order.add_one_le_of_lt (hlt μ hμ)
-  have := this.trans h
-  norm_cast at this
-  omega
+  simp only [ecomplexity, ENat.iInf_le_natCast_iff, Subtype.exists, exists_prop]
 
 /-- Allowing more error makes a relation easier. -/
 theorem ecomplexity_anti (hε : ε ≤ ε') : ecomplexity ε' R A B ≤ ecomplexity ε R A B :=
@@ -314,14 +308,7 @@ theorem le_ecomplexity_iff {k : ℕ∞} :
 theorem ecomplexity_le_iff {k : ℕ} :
     ecomplexity ε R A B ≤ k ↔
       ∃ a b, ∃ P : PrivateCoin a b X Y Z, P.Solves ε R A B ∧ P.depth ≤ k := by
-  refine ⟨fun h => ?_, fun ⟨a, b, P, hP, hk⟩ =>
-    (ecomplexity_le_depth hP).trans (by exact_mod_cast hk)⟩
-  by_contra! hlt
-  have : ((k + 1 : ℕ) : ℕ∞) ≤ ecomplexity ε R A B :=
-    le_ecomplexity_iff.mpr fun a b P hP => by exact_mod_cast hlt a b P hP
-  have := this.trans h
-  norm_cast at this
-  omega
+  simp only [ecomplexity, ENat.iInf_le_natCast_iff, Nat.cast_le, Subtype.exists, exists_prop]
 
 /-- Allowing more error makes a relation easier. -/
 theorem ecomplexity_anti (hε : ε ≤ ε') : ecomplexity ε' R A B ≤ ecomplexity ε R A B :=

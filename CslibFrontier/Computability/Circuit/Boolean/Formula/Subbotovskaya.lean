@@ -537,9 +537,7 @@ theorem exists_extensions_formulaSize_sq_mul_pow_three_le (f : BooleanFunction n
     have hs : 2 ≤ #ρ₀.free := by omega
     obtain ⟨i, hi, b, hstep⟩ := exists_mem_free_formulaSize_sq_mul_pow_three_le f hs
     let ρ₁ : PartialAssignment (Fin n) := update ρ₀ i (some b)
-    have hfree₁ : #ρ₁.free = k + d := by
-      rw [PartialAssignment.free_update, card_erase_of_mem hi]
-      omega
+    have hfree₁ : #ρ₁.free = k + d := by grind [PartialAssignment.free_update]
     have hk₁ : k ≤ #ρ₁.free := by omega
     obtain ⟨ρ, hρ, hih⟩ := ih ρ₁ hk₁ hfree₁
     obtain ⟨hext₁, hfree⟩ := PartialAssignment.mem_extensions.1 hρ

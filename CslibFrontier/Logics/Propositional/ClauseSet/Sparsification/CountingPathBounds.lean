@@ -93,12 +93,7 @@ theorem intro_subset_counting_new {θ : ℕ → ℕ} (hθ : ∀ r, 1 ≤ θ r)
     {m : ℕ} (hm : m < N) :
     intro (ψ m) (c m) (H m) (b m) ⊆
       countingIntro (ψ m) (c m) (H m) (b m) \ (ψ m ∪ ψ 0) := by
-  have hredm : Reduced (ψ m) := by
-    cases m with
-    | zero => exact hred
-    | succ m =>
-      rw [hstep m (by omega), countingChild_eq_reduce_union]
-      exact reduced_reduce _
+  have hredm := reduced_counting_node N ψ c H b hstep hred hm.le
   intro C hC
   have hCI : C ∈ countingIntro (ψ m) (c m) (H m) (b m) := by
     cases hb : b m with

@@ -1,6 +1,6 @@
 # Work with randomized and oracle programs
 
-Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
+Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
 ## Transport a distribution bound through a map
 
@@ -1815,8 +1815,7 @@ it does not supply nonzero detector variation or finite-walk mixing error.
 
 Full well-founded approximate evaluation remains open: later pilot/correction iterations,
 general finite bin sums, recursive closure and growth, copy routing, native workspace and
-RL=L are not supplied by this single-bin first-pilot fragment. This partial construction is not
-a selected headline abstract.
+RL=L are not supplied by this single-bin first-pilot fragment.
 
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank

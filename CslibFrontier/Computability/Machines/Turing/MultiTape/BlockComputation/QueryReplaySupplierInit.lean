@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayLoad
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadPort
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadRow
+import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.WidthSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 
@@ -56,21 +57,6 @@ abbrev Args := ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ
       .inr ((positive, negative, ScheduleRead.fullrow k (σ, i)),
         Load.load (N, b, (positive, negative), raw))
 
-private theorem labelWidth_inSpace (k s : ℕ) :
-    ComputableInSpace (Encoding.width k s) encNat encNat (fun b => (encNat b).length) := by
-  have hb : ComputableInSpace (fun b : ℕ => b) encNat encNat
-      (fun b => (encNat b).length) :=
-    of_inO (ComputableInO.of_eq (f := id) fun _ => rfl)
-  have hsize := budget_comp_linear natSize hb
-  have hwindow := budget_natMul (budget_const (encB := encNat) k (.refl _))
-    (budget_natMul (budget_const (encB := encNat) 3 (.refl _))
-      (budget_natMul hb (budget_const (encB := encNat) 2 (.refl _))))
-  exact (budget_natSucc (budget_natAdd
-    (budget_const (encB := encNat) (s + 1).size (.refl _))
-    (budget_natAdd (budget_natMul (budget_const (encB := encNat) (k + 1) (.refl _)) hsize)
-      (budget_natAdd (budget_const (encB := encNat) 2 (.refl _)) hwindow)))).of_enc_eq
-    fun _ => rfl
-
 /-- All preparation work uses native space linear in actual binary metadata and assignment
 storage. Original input symbols remain on the query input, outside this state. -/
 theorem prepare_inSpace (e : Q ≃ Fin s) :
@@ -87,7 +73,7 @@ theorem prepare_inSpace (e : Q ≃ Fin s) :
   have hcounter := hrest.snd'.snd'.snd'.snd'.fst'
   have hstride := hrest.snd'.snd'.snd'.snd'.snd'
   have haddress := budget_prod hσ hi
-  have hwidth := budget_comp_linear (labelWidth_inSpace k s) hb
+  have hwidth := budget_comp_linear (Encoding.width_inSpace k s) hb
   have hwords := budget_comp_linear (Assignments.labels_inSpace k)
     (budget_prod hlimit (budget_prod hcounter (budget_prod hstride hwidth)))
   have hports := budget_comp_linear (ScheduleRead.providerMap_inSpace k) haddress

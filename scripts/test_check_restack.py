@@ -39,7 +39,7 @@ def bib(*entries: str) -> str:
 
 LAKEFILE = 'name = "fixture"\n\n[[lean_lib]]\nname = "CslibFrontier"\n'
 PREAMBLE = "module  -- shake: keep-all --deprecated_module: ignore\n\n"
-# The style of `CslibFrontierResults.lean` and `abstracts/CslibFrontierAbstracts.lean`.
+# The style of `CslibFrontierResults.lean`.
 PLAIN = {"preamble": "", "keyword": "import"}
 
 

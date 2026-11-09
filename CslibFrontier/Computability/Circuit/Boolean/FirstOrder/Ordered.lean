@@ -134,13 +134,9 @@ theorem eval_toUnbounded_atomsOf [L.Structure (Fin n)] (e : Atom L n ≃ Fin N) 
       cases R <;>
         simp only [toUnbounded, eval_constUnbounded, decide_eq_true_iff, BoundedFormula.Realize,
           termValue_eq_realize] <;> rfl
-  | imp φ ψ ihφ ihψ =>
-    simp only [toUnbounded, Formula.eval_gate, Unbounded.interpretation_or,
-      BoundedFormula.Realize, ← ihφ, ← ihψ]
-    simp [Fin.exists_fin_two, imp_iff_not_or]
+  | imp φ ψ ihφ ihψ => simp only [toUnbounded, eval_imp_iff, ihφ, ihψ, BoundedFormula.Realize]
   | all φ ih =>
-    simp only [toUnbounded, Formula.eval_gate, Unbounded.interpretation_and, decide_eq_true_iff,
-      BoundedFormula.Realize]
+    simp only [toUnbounded, eval_all_iff, BoundedFormula.Realize]
     exact forall_congr' fun a => ih _
 
 /-- The compiled formula's depth is bounded independently of the universe size. -/
@@ -148,102 +144,30 @@ theorem depth_toUnbounded_le (e : Atom L n ≃ Fin N) {k : ℕ}
     (φ : (language L).BoundedFormula Empty k) (xs : Fin k → Fin n) :
     (toUnbounded e φ xs).depth ≤ foDepth φ := by
   induction φ with
-  | falsum => simp [toUnbounded, constUnbounded, foDepth]
-  | equal t₁ t₂ =>
-    simp only [toUnbounded, constUnbounded, foDepth]
-    split_ifs <;> simp
-  | rel R ts =>
-    cases R with
-    | inl R => simp [toUnbounded, foDepth]
-    | inr R =>
-      cases R <;> simp only [toUnbounded, constUnbounded, foDepth] <;> split_ifs <;> simp
-  | imp φ ψ ihφ ihψ =>
-    rw [toUnbounded, foDepth, Formula.depth_gate]
-    refine (Nat.add_le_add_right (Finset.sup_le (a := max (foDepth φ) (foDepth ψ) + 1)
-      fun j _ => ?_) 1).trans (by omega)
-    fin_cases j
-    · change (Formula.gate _ _).depth ≤ _
-      rw [Formula.depth_gate]
-      refine (Nat.add_le_add_right (Finset.sup_le (a := foDepth φ) fun j _ => ?_) 1).trans
-        (by omega)
-      fin_cases j
-      exact ihφ xs
-    · exact (ihψ xs).trans (by omega)
-  | all φ ih =>
-    simp only [toUnbounded, Formula.depth_gate, foDepth]
-    exact Nat.add_le_add_right (Finset.sup_le fun a _ => ih _) 1
+  | falsum | equal => simp [toUnbounded, foDepth]
+  | rel R ts => rcases R with R | (_ | _) <;> simp [toUnbounded, foDepth]
+  | imp φ ψ ihφ ihψ => exact depth_imp_le (ihφ xs) (ihψ xs)
+  | all φ ih => exact depth_all_le fun a => ih _
 
 /-- The compiled formula's size is polynomial in the universe size for each fixed formula. -/
 theorem size_toUnbounded_le (e : Atom L n ≃ Fin N) {k : ℕ}
     (φ : (language L).BoundedFormula Empty k) (xs : Fin k → Fin n) :
     (toUnbounded e φ xs).size ≤ foSize φ * (n + 2) ^ foSize φ := by
   induction φ with
-  | falsum => simp [toUnbounded, constUnbounded, foSize]
-  | equal t₁ t₂ =>
-    simp only [toUnbounded, constUnbounded, foSize]
-    split_ifs <;> simp
-  | rel R ts =>
-    cases R with
-    | inl R => simp [toUnbounded, foSize]
-    | inr R =>
-      cases R <;> simp only [toUnbounded, constUnbounded, foSize] <;> split_ifs <;> simp
-  | imp φ ψ ihφ ihψ =>
-    have h₁ := ihφ xs
-    have h₂ := ihψ xs
-    simp only [toUnbounded, Formula.size_gate, Fin.sum_univ_two, Matrix.cons_val_zero,
-      Matrix.cons_val_one, Fin.sum_univ_one, foSize]
-    have hφ : (n + 2) ^ foSize φ ≤ (n + 2) ^ (foSize φ + foSize ψ + 1) :=
-      Nat.pow_le_pow_right (by omega) (by omega)
-    have hψ : (n + 2) ^ foSize ψ ≤ (n + 2) ^ (foSize φ + foSize ψ + 1) :=
-      Nat.pow_le_pow_right (by omega) (by omega)
-    have hpos : 2 ≤ (n + 2) ^ (foSize φ + foSize ψ + 1) :=
-      (show 2 ≤ n + 2 by omega).trans (Nat.le_self_pow (by omega) _)
-    nlinarith [Nat.mul_le_mul_left (foSize φ) hφ, Nat.mul_le_mul_left (foSize ψ) hψ]
-  | all φ ih =>
-    simp only [toUnbounded, Formula.size_gate, foSize]
-    have hsum : ∑ a : Fin n, (toUnbounded e φ (Fin.snoc xs a)).size ≤
-        n * (foSize φ * (n + 2) ^ foSize φ) :=
-      (Finset.sum_le_card_nsmul _ _ _ fun a _ => ih _).trans_eq (by simp)
-    have hpos : 1 ≤ (n + 2) ^ foSize φ := Nat.one_le_pow _ _ (by omega)
-    have := foSize_pos φ
-    calc _ ≤ n * (foSize φ * (n + 2) ^ foSize φ) + 1 := Nat.add_le_add_right hsum 1
-      _ ≤ (foSize φ + 1) * (n + 2) ^ (foSize φ + 1) := by
-        rw [pow_succ]
-        nlinarith
+  | falsum | equal => simp [toUnbounded, foSize]
+  | rel R ts => rcases R with R | (_ | _) <;> simp [toUnbounded, foSize]
+  | imp φ ψ ihφ ihψ => exact size_imp_le (ihφ xs) (ihψ xs)
+  | all φ ih => exact size_all_le (foSize_pos φ) fun a => ih _
 
 /-- The number of input leaves is polynomial in the universe size. -/
 theorem leafSize_toUnbounded_le (e : Atom L n ≃ Fin N) {k : ℕ}
     (φ : (language L).BoundedFormula Empty k) (xs : Fin k → Fin n) :
     (toUnbounded e φ xs).leafSize ≤ (n + 2) ^ foSize φ := by
   induction φ with
-  | falsum => simp [toUnbounded, constUnbounded]
-  | equal t₁ t₂ =>
-    simp only [toUnbounded, constUnbounded]
-    split_ifs <;> simp
-  | rel R ts =>
-    cases R with
-    | inl R => simp [toUnbounded, foSize]
-    | inr R =>
-      cases R <;> simp only [toUnbounded, constUnbounded] <;> split_ifs <;> simp
-  | imp φ ψ ihφ ihψ =>
-    have h₁ := ihφ xs
-    have h₂ := ihψ xs
-    simp only [toUnbounded, Formula.leafSize_gate, Fin.sum_univ_two, Matrix.cons_val_zero,
-      Matrix.cons_val_one, Fin.sum_univ_one, foSize]
-    have hφ : (n + 2) ^ foSize φ ≤ (n + 2) ^ (foSize φ + foSize ψ) :=
-      Nat.pow_le_pow_right (by omega) (by omega)
-    have hψ : (n + 2) ^ foSize ψ ≤ (n + 2) ^ (foSize φ + foSize ψ) :=
-      Nat.pow_le_pow_right (by omega) (by omega)
-    rw [pow_succ]
-    nlinarith
-  | all φ ih =>
-    simp only [toUnbounded, Formula.leafSize_gate, foSize]
-    have hsum : ∑ a : Fin n, (toUnbounded e φ (Fin.snoc xs a)).leafSize ≤
-        n * (n + 2) ^ foSize φ :=
-      (Finset.sum_le_card_nsmul _ _ _ fun a _ => ih _).trans_eq (by simp)
-    refine hsum.trans ?_
-    rw [pow_succ, mul_comm]
-    exact Nat.mul_le_mul_left _ (by omega)
+  | falsum | equal => simp [toUnbounded]
+  | rel R ts => rcases R with R | (_ | _) <;> simp [toUnbounded, foSize]
+  | imp φ ψ ihφ ihψ => exact leafSize_imp_le (ihφ xs) (ihψ xs)
+  | all φ ih => exact leafSize_all_le fun a => ih _
 
 /-- For each universe size at least two, one constant-depth, polynomial-size formula decides
 the ordered sentence on every interpretation of the input relations. Only the original input
