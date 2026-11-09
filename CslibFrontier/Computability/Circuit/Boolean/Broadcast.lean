@@ -139,8 +139,7 @@ private theorem eval_scans {count width : ℕ} (source : Fin width → BitString
         (finProdFinEquiv.symm index).2) link) (finProdFinEquiv (bit, record)) =
       (propagateCircuit count).eval interpretation (Fin.append (source bit) link) record := by
   rw [scans, Circuit.eval_comp, Circuit.eval_replicate_apply]
-  congr 2
-  funext index
+  congr 2 with index : 1
   cases index using Fin.addCases <;>
     simp [Circuit.eval_wiringOn, directProductInput,
       -finProdFinEquiv_symm_apply, -Fin.natAdd_eq_addNat]
