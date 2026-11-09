@@ -3777,6 +3777,9 @@ public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Crypto.Computational.LWE.Basic
+public import Complexity.Crypto.Computational.LWE.DualRegev
+public import Complexity.Crypto.Computational.LWE.Regev
+public import Complexity.Crypto.Computational.LWE.Regev.Security
 public import Complexity.Crypto.Computational.LubyRackoff
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
