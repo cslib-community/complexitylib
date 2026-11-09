@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.It
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PolyTime.Init
+import Complexity.Tactic.EncLen
 
 /-!
 # Quantitative certificates for polynomial PRG stretch
@@ -93,8 +94,7 @@ def stretch (generator : List Bool → List Bool) (count : ℕ → ℕ) (seed : 
 theorem length_step {generator : List Bool → List Bool}
     (hlen : ∀ seed, (generator seed).length = seed.length + 1) (n : ℕ) (word : List Bool) :
     (step generator n word).length = word.length + 1 := by
-  simp only [step, List.length_append, hlen, List.length_take, List.length_drop]
-  lia
+  enc_len [step, hlen, List.length_take, List.length_drop]
 
 /-- The loop's length invariant. -/
 theorem length_iterate {generator : List Bool → List Bool}
@@ -161,8 +161,7 @@ theorem polyTime_iterate {α : Type} {input : α ↪ List Bool}
   have hbound : (generator a (state.take (seedBits a))).length ≤
       c * (2 * (input a).length + seedBits a + 2) ^ d :=
     h.trans (Nat.mul_le_mul_left c (Nat.pow_le_pow_left (by lia) d))
-  simp only [step, List.length_append, List.length_drop, encBits_apply]
-  lia
+  enc_len [step, List.length_drop]
 
 attribute [program_certificate] polyTime_iterate
 
@@ -593,8 +592,7 @@ theorem computableInDegree_stretch
         apply Finset.sum_le_sum
         intro i _
         have ht := hctG (seedAt generator seed i)
-        simp only [encBits_apply, length_seedAt_of_forall hlen] at ht
-        omega
+        enc_len [length_seedAt_of_forall hlen] at ht
       _ = count seed.length * (ctG * (seed.length + 1) ^ dGen + seed.length + 1) := by
         simp [Finset.sum_const, Finset.card_range, smul_eq_mul]
   have hout : DegreeBounded size (fun seed => (encBits (stretch generator count seed)).length)
@@ -680,8 +678,7 @@ theorem computableInTimeAndSpace_forwardIterate_captured {α : Type}
   have hS (x : (α × List Bool) × ℕ) (i : ℕ) :
       (encS (x.1.1, seedAt (generator x.1.1) x.1.2 i)).length =
         2 * (encParam x.1.1).length + x.1.2.length + 1 := by
-    simp only [encS, length_encPair, encBits_apply, length_seedAt_of_forall (hlen x.1.1)]
-    omega
+    enc_len [encS, length_seedAt_of_forall (hlen x.1.1)]
   have hSd (x : (α × List Bool) × ℕ) (i : ℕ) :
       (encS (x.1.1, (generator x.1.1 (seedAt (generator x.1.1) x.1.2 i)).dropLast)).length =
         2 * (encParam x.1.1).length + x.1.2.length + 1 := by

@@ -39,6 +39,7 @@ import Complexity.Computability.Complexity.Problems.HornSAT
 import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
+import Complexity.Logics.BooleanClone.Post
 import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
@@ -441,12 +442,19 @@ instantiates its local clauses in native polynomial time and uses the existing
 native 2SAT theorem; no solver hypothesis is needed.
 
 The positive-arity Boolean clone classification is proved in
-{module}`Complexity.Logics.Polymorphism.BooleanClone`:
+{module}`Complexity.Logics.BooleanClone.Classification`:
 {name}`Cslib.Logic.BooleanClone.classification` covers every positive arity.
 For a language lacking the six common operations,
 {name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
 identifies every polymorphism as a projection or negated projection. This supplies
 the algebraic ingredient used by the native hardness application below.
+
+Post's functional-completeness criterion shares this same classification:
+{name}`Cslib.Logic.BooleanClone.functionallyComplete_iff` characterizes generating
+families by witnesses outside the five closed classes. Its completeness notion
+quantifies over positive input arities, with unary constant functions. In particular,
+NAND is complete in that sense; the stronger circuit notion also requires zero-input
+functions. No circuit-size bound is asserted by this criterion.
 
 For reductions between fixed Boolean languages,
 {name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
