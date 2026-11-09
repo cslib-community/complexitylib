@@ -354,25 +354,8 @@ outputs $x$ given $y$ within $s$ steps with $|p| + \lceil \log_2 s \rceil \le k$
 theorem condLevinKt_le_natCast_iff {x y : List Bool} {k : ℕ} :
     condLevinKt x y ≤ k ↔
       ∃ (p : List Bool) (s : ℕ),
-        x ∈ ((condUniversalTM y).run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k := by
-  rw [← ENat.lt_add_one_iff (ENat.natCast_ne_top k), condLevinKt, iInf_lt_iff]
-  constructor
-  · rintro ⟨s, hs⟩
-    have hne : condTimeBoundedAt s x y ≠ ⊤ := by
-      intro htop
-      rw [htop, top_add] at hs
-      exact not_top_lt hs
-    obtain ⟨p, hp, hlen⟩ := exists_length_eq_etimeBoundedComplexity hne
-    rw [condTimeBoundedAt, ← hlen, ← Nat.cast_add, ← Nat.cast_add_one, ENat.natCast_lt_natCast,
-      Nat.lt_add_one_iff] at hs
-    exact ⟨p, s, hp, hs⟩
-  · rintro ⟨p, s, hp, hle⟩
-    refine ⟨s, ?_⟩
-    have h1 : condTimeBoundedAt s x y + Nat.clog 2 s ≤
-        (p.length + Nat.clog 2 s : ℕ) := by
-      rw [Nat.cast_add]
-      exact add_le_add_left (etimeBoundedComplexity_le_length hp) _
-    exact h1.trans_lt (by exact_mod_cast Nat.lt_add_one_of_le hle)
+        x ∈ ((condUniversalTM y).run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k :=
+  iInf_etimeBoundedComplexity_add_le_natCast_iff
 
 /-- Exponential-step characterization of `condLevinKt`: $\mathrm{Kt}(x \mid y) \le k$ iff some
 program $p$ of length at most $k$ outputs $x$ given $y$ within $2^{k - |p|}$ steps. -/
@@ -436,14 +419,12 @@ theorem exists_condTimeBoundedAt_apply_le {f : List Bool → List Bool}
     hf.comp (ComputableInPolyTime.snd encBits encBits)
   obtain ⟨q, c, hq_ge, hq_mono, hbound⟩ :=
     exists_condTimeBoundedAt_le_of_computableInPolyTime hF
+  have hlen (y : List Bool) : (encPair encBits encBits ([], y)).length = y.length + 1 := by
+    simp
   refine ⟨q, c, hq_ge, hq_mono, fun {t} y ht => ?_, fun y => ?_⟩
-  · have hlen : (encPair encBits encBits ([], y)).length = y.length + 1 := by
-      simp
-    simpa using hbound [] y (hlen ▸ ht)
-  · have hlen : (encPair encBits encBits ([], y)).length = y.length + 1 := by
-      simp
-    exact (condPlain_le_condTimeBoundedAt (q.eval (y.length + 1)) (f y) y).trans
-      (by simpa using hbound [] y (hlen ▸ le_rfl))
+  · simpa using hbound [] y (hlen y ▸ ht)
+  · exact (condPlain_le_condTimeBoundedAt (q.eval (y.length + 1)) (f y) y).trans
+      (by simpa using hbound [] y (hlen y ▸ le_rfl))
 
 /-- **Self-conditioning ($K^t(y \mid y) \le O(1)$):** there exist a monotone polynomial `q` and a
 constant `c` such that `condTimeBoundedAt t y y ≤ c` whenever `q.eval (y.length + 1) ≤ t`, and
@@ -471,14 +452,13 @@ theorem exists_condTimeBoundedAt_le_length_add :
   obtain ⟨q, c, hq_ge, hq_mono, hbound⟩ :=
     exists_condTimeBoundedAt_le_of_computableInPolyTime
       (ComputableInPolyTime.fst encBits encBits)
+  have hlen (x y : List Bool) :
+      (encPair encBits encBits (x, y)).length = 2 * x.length + 1 + y.length := by
+    simp
   refine ⟨q, c, hq_ge, hq_mono, fun {t} x y ht => ?_, fun x y => ?_⟩
-  · have hlen : (encPair encBits encBits (x, y)).length = 2 * x.length + 1 + y.length := by
-      simp
-    exact hbound x y (hlen ▸ ht)
-  · have hlen : (encPair encBits encBits (x, y)).length = 2 * x.length + 1 + y.length := by
-      simp
-    exact (condPlain_le_condTimeBoundedAt (q.eval (2 * x.length + 1 + y.length)) x y).trans
-      (hbound x y (hlen ▸ le_rfl))
+  · exact hbound x y (hlen x y ▸ ht)
+  · exact (condPlain_le_condTimeBoundedAt (q.eval (2 * x.length + 1 + y.length)) x y).trans
+      (hbound x y (hlen x y ▸ le_rfl))
 
 /-- Conditional plain complexity `condPlain x y` is always finite. -/
 theorem condPlain_ne_top (x y : List Bool) : condPlain x y ≠ ⊤ := by
