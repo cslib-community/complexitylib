@@ -1102,7 +1102,7 @@ private theorem adaptive_isOraclePPTOn : IsOraclePPTOn encBits encBits adaptive 
   fun_prop
 ```
 
-First specify the operation set and request representation. Then bound the amount of each reply inspected or retained, prove deterministic preprocessing efficient, and compose the query/conditional rules.
+First specify the operation set and request representation. Then bound the amount of each reply inspected or retained, prove deterministic preprocessing efficient, and compose the query/conditional rules. With `CslibFrontier.Tactic.PPT` imported, `ppt [adaptive]` does both steps: it unfolds the hint and composes the oracle program with the same plain rules. It also unfolds local encoding `let`s and uses certificates stored in fields of local structures, so a reduction's handler that samples with a scheme `S` needs no separate `have` for `S.encrypt_ppt`. The [oracle `ppt` client](../../CslibFrontierTests/OraclePPTTactic.lean) certifies the encrypt-then-MAC handler this way and checks the failure cases.
 
 **Result:** one machine and clock work for every input, state type, stateful handler and initial state, preserving the joint law of output and final oracle state. The certificate charges request construction and reply access; the external handler's computation remains external.
 

@@ -127,10 +127,7 @@ entries. -/
 theorem exists_mem_prune_or_length_eq {c : ℕ} {l : List α} {a : α} (ha : a ∈ l) :
     (∃ b ∈ prune label c l, label b = label a) ∨ (prune label c l).length = c + 1 := by
   obtain ⟨b, hb, hab⟩ := List.exists_mem_eraseDupsBy (r := fun a b => decide (label a = label b)) ha
-  have hlabel : label b = label a := by
-    rcases hab with rfl | hab
-    · rfl
-    · exact (of_decide_eq_true hab).symm
+  have hlabel : label b = label a := by grind
   by_cases hlen : (l.eraseDupsBy fun a b => decide (label a = label b)).length ≤ c + 1
   · exact .inl ⟨b, by rwa [prune, List.take_of_length_le hlen], hlabel⟩
   · exact .inr (List.length_take_of_le (by omega))

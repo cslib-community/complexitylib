@@ -33,9 +33,13 @@ from an exact specification.
 
 The registers and memory cells an instruction reads are simplified as it executes, with the simp
 set `wram_simps`. Reads after `Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce by
-the simplification procedures `Cslib.WordRAM.Data.reduceRegs`, which compares register names that
-evaluate to literals, and `Cslib.WordRAM.Data.reduceMem`, which asks the discharger whether two
-addresses are equal; the given simp lemmas rewrite the values, so facts such as
+the simplification procedures `Cslib.WordRAM.Data.reduceRegs` and `Cslib.WordRAM.Data.reduceMem`.
+The first compares register names by evaluation when they are literals, and otherwise by hypotheses
+`j ≠ i`, `j ∉ Set.range f` and `Function.Injective f`, or by the discharger on their values, as for
+`Fin.castAdd` and names `⟨k + 9, _⟩`; the second asks the discharger whether two addresses are
+equal. Memory that is not read at an address, such as an argument of a definition, becomes
+`Function.update` (`Cslib.WordRAM.Data.reduceWriteMem`). The given simp lemmas rewrite the values,
+so facts such as
 `x.regs zeroP = 0` replace the registers of the initial data. A conditional takes the branch its
 simplified condition decides, by `simp` or by the discharger, and otherwise splits into both
 alternatives with the hypothesis `hc`; `wram_exec -split` stops there instead, so that
@@ -63,8 +67,9 @@ a program.
 * `wram_exec`: symbolic execution of the straight-line parts of structured code.
 * `wram_simp`: reads of registers and memory after writes, with the simp set of `wram_exec`.
 * `wram_bounded`: word-sizedness of data built by writes.
-* `Cslib.WordRAM.Data.reduceRegs`, `Cslib.WordRAM.Data.reduceMem`: simplification procedures
-  reading registers and memory after writes.
+* `Cslib.WordRAM.Data.reduceRegs`, `Cslib.WordRAM.Data.reduceMem`,
+  `Cslib.WordRAM.Data.reduceWriteMem`: simplification procedures reading registers and memory
+  after writes.
 
 ## Main results
 
@@ -466,8 +471,64 @@ meta def discharge (tac : Simp.Discharge) (p : Expr) : SimpM (Option Expr) := do
   if let some h ← assumption? p then return some h
   tac p
 
-/-- Read a register after `Data.set` and `Data.write`, one layer at a time. Register names are
-compared by evaluation, so a name with free variables is left to the simp lemmas. -/
+/-- The value of the register name `i : Fin n`, and whether it unfolds to a constructor `⟨k, _⟩`, as
+`Fin.castAdd`, `Fin.natAdd` and abbreviations such as `⟨k + 9, _⟩` do; otherwise `i.val`. -/
+private meta def finVal (n i : Expr) : MetaM (Expr × Bool) := do
+  let i' ← whnfD i
+  if i'.isAppOfArity ``Fin.mk 3 then return (i'.getArg! 1, true)
+  return (mkApp2 (mkConst ``Fin.val) n i, false)
+
+/-- A hypothesis `j ∉ Set.range f` when `i` is `f a`, giving `j ≠ i`. -/
+private meta def outsideRange? (j i : Expr) : MetaM (Option Expr) := do
+  let .app f a := i | return none
+  let some hj ← (← getLCtx).findDeclRevM? fun d => do
+      if d.isImplementationDetail then return none
+      let_expr Not p := (← instantiateMVars d.type).cleanupAnnotations | return none
+      let_expr Membership.mem _ _ _ s j' := p | return none
+      let_expr Set.range _ _ f' := s | return none
+      return if f' == f && j' == j then some d.toExpr else none
+    | return none
+  let hmem ← mkAppOptM ``Set.mem_range_self #[none, none, some f, some a]
+  mkAppM ``Ne.symm #[← mkAppM ``ne_of_mem_of_not_mem #[hmem, hj]]
+
+/-- A hypothesis `Function.Injective f`. -/
+private meta def injective? (f : Expr) : MetaM (Option Expr) := do
+  (← getLCtx).findDeclRevM? fun d => do
+    if d.isImplementationDetail then return none
+    let_expr Function.Injective _ _ f' := (← instantiateMVars d.type).cleanupAnnotations
+      | return none
+    return if f' == f then some d.toExpr else none
+
+/-- A proof that the register names `j` and `i` differ, for names that need not evaluate to
+literals: by evaluation if they have no free variables; by a hypothesis `j ≠ i` or `i ≠ j`, also
+stated as `¬j = i` as `by_cases` gives it; by a hypothesis `j ∉ Set.range f` when `i` is `f a`, or
+symmetrically; by a hypothesis `Function.Injective f` when they are `f b` and `f a` with `b` and `a`
+different; and otherwise by the discharger on their values, when one of them unfolds to a
+constructor `⟨k, _⟩` (`finVal`). -/
+private meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
+  let p ← mkAppM ``Ne #[j, i]
+  if let some r ← decideClosed? p then return r
+  for q in [p, mkNot (← mkEq j i)] do
+    if let some h ← assumption? q then return some h
+  for q in [← mkAppM ``Ne #[i, j], mkNot (← mkEq i j)] do
+    if let some h ← assumption? q then return some (← mkAppM ``Ne.symm #[h])
+  if let some h ← outsideRange? j i then return some h
+  if let some h ← outsideRange? i j then return some (← mkAppM ``Ne.symm #[h])
+  if let (.app f b, .app f' a) := (j, i) then
+    if f == f' then
+      if let some hf ← injective? f then
+        if let some h ← regNe? b a then return some (← mkAppM ``Function.Injective.ne #[hf, h])
+  let_expr Fin n := ← whnfR (← inferType j) | return none
+  let (vj, cj) ← finVal n j
+  let (vi, ci) ← finVal n i
+  unless cj || ci do return none
+  let some h ← Simp.withPreservedCache <| (← Simp.getMethods).discharge? (← mkAppM ``Ne #[vj, vi])
+    | return none
+  return some (mkApp4 (mkConst ``Fin.ne_of_val_ne) n j i h)
+
+/-- Read a register after `Data.set` and `Data.write`, one layer at a time. Register names that
+evaluate to literals are compared by evaluation; others are equal when they are the same term or
+unfold to constructors with the same value, and different by `regNe?`. -/
 meta def reduceRegsStep (e : Expr) : SimpM Simp.Step := do
   let_expr Data.regs r d j := e | return .continue
   let read x := mkApp3 (mkConst ``Data.regs) r x j
@@ -476,19 +537,26 @@ meta def reduceRegsStep (e : Expr) : SimpM Simp.Step := do
     return .visit
       { expr := read x, proof? := mkAppN (mkConst ``Data.write_regs_apply) #[r, x, a, v, j] }
   | Data.set _ x i v =>
-    let some iv ← regValue? r i | return .continue
-    let some jv ← regValue? r j | return .continue
-    if iv = jv then
-      let h ← mkDecideProof (← mkEq j i)
-      return .visit
-        { expr := v, proof? := mkAppN (mkConst ``Data.set_regs_of_eq) #[r, x, i, j, h, v] }
-    let h ← mkDecideProof (mkNot (← mkEq j i))
-    return .visit
+    let same (h : Expr) : Simp.Step :=
+      .visit { expr := v, proof? := mkAppN (mkConst ``Data.set_regs_of_eq) #[r, x, i, j, h, v] }
+    let other (h : Expr) : Simp.Step := .visit
       { expr := read x, proof? := mkAppN (mkConst ``Data.set_regs_of_ne) #[r, x, i, j, h, v] }
+    if let (some iv, some jv) := (← regValue? r i, ← regValue? r j) then
+      if iv = jv then return same (← mkDecideProof (← mkEq j i))
+      return other (← mkDecideProof (mkNot (← mkEq j i)))
+    let i ← instantiateMVars i
+    if i == (← instantiateMVars j) then return same (← mkEqRefl i)
+    let (vi, ci) ← finVal r i
+    let (vj, cj) ← finVal r j
+    if ci && cj && vi == vj then
+      return same (mkApp4 (mkConst ``Fin.ext) r j i (← mkEqRefl vj))
+    let some h ← regNe? j i | return .continue
+    return other h
   | _ => return .continue
 
 /-- Read memory after `Data.set` and `Data.write`, one layer at a time. Two addresses are equal
-when they are the same term; otherwise the discharger decides them, first unequal, then equal. -/
+when they are the same term; otherwise the discharger decides them, first unequal, then equal.
+A read after a write it cannot decide is final, so that `reduceWriteMemStep` leaves it alone. -/
 meta def reduceMemStep (e : Expr) : SimpM Simp.Step := do
   let_expr Data.mem r d b := e | return .continue
   let read x := mkApp3 (mkConst ``Data.mem) r x b
@@ -508,8 +576,19 @@ meta def reduceMemStep (e : Expr) : SimpM Simp.Step := do
     if let some h ← Simp.withPreservedCache <| disch (← mkEq b a) then
       return .visit
         { expr := v, proof? := mkAppN (mkConst ``Data.write_mem_of_eq) #[r, x, a, b, h, v] }
-    return .continue
+    return .done { expr := e }
   | _ => return .continue
+
+/-- The memory after `Data.write` as a whole, `(x.write a v).mem = Function.update x.mem a v`
+(`Data.write_mem`). A read `(x.write a v).mem b` is the same expression applied to `b`, so `simp`
+offers it to this procedure too, but only after `reduceMemStep`, whose exact match comes first and
+which ends the simplification of every read after a write. -/
+private meta def reduceWriteMemStep (e : Expr) : SimpM Simp.Step := do
+  let_expr Data.mem r d := e | return .continue
+  let_expr Data.write _ x a v := d | return .continue
+  let proof := mkAppN (mkConst ``Data.write_mem) #[r, x, a, v]
+  let some (_, _, rhs) := (← inferType proof).eq? | return .continue
+  return .visit { expr := rhs, proof? := proof }
 
 /-- Close the goal `g` with the tactic `tac`, or restore the state and report failure. -/
 meta def closesWith (tac : TSyntax `tactic) (g : MVarId) : TacticM Bool := do
@@ -526,14 +605,19 @@ end WP.Exec
 
 namespace Data
 
-/-- `simp` procedure reading a register after `Data.set` with a register name that evaluates to a
-literal, and after `Data.write`. It is a pre-procedure (`↓`), so that the data is not simplified
-first. -/
+/-- `simp` procedure reading a register after `Data.set` and `Data.write`. Register names that
+evaluate to literals are compared by evaluation; others by hypotheses `j ≠ i`, `j ∉ Set.range f`
+and `Function.Injective f`, or by the discharger on their values. It is a pre-procedure (`↓`), so
+that the data is not simplified first. -/
 simproc ↓ [wram_simps] reduceRegs (Data.regs _ _) := WP.Exec.reduceRegsStep
 
 /-- `simp` procedure reading memory after `Data.set` and `Data.write`, deciding whether two
 addresses are equal with the discharger. -/
 simproc [wram_simps] reduceMem (Data.mem _ _) := WP.Exec.reduceMemStep
+
+/-- `simp` procedure rewriting the memory after `Data.write`, when it is not read at an address, to
+`Function.update` (`Data.write_mem`), for instance as the argument of a definition. -/
+simproc [wram_simps] reduceWriteMem (Data.mem _) := WP.Exec.reduceWriteMemStep
 
 end Data
 
