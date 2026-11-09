@@ -23,9 +23,11 @@ optimal. Together with its submodule `LinearTest`, this module formalizes the an
 the MAX-E3LIN proof: the completeness and soundness of Håstad's noisy 3-bit linear test on folded
 Long Code tables over a Label Cover projection `π : β → γ`
 [Håstad, Lemmas 5.1 and 5.2][Hastad2001]. It does not prove a hardness result: no reduction to
-MAX-E3LIN or MAX-E3SAT is constructed, and NP-hardness of Label Cover (the PCP theorem with
-parallel repetition) is not formalized. The stronger statement for satisfiable E3-CNF formulas
-[Håstad, Theorem 6.5][Hastad2001] uses a different test and is not addressed here.
+MAX-E3LIN or MAX-E3SAT is constructed. NP-hardness of Label Cover with arbitrarily small soundness
+(the PCP theorem with parallel repetition) is `Cslib.Complexity.exists_GapLabelCover_npHard` in
+`Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness`. The stronger statement for
+satisfiable E3-CNF formulas [Håstad, Theorem 6.5][Hastad2001] uses a different test and is not
+addressed here.
 
 1. The **Long Code** of `x : α` (`Cslib.BitString.longCode`) evaluates each Boolean function
    `g : α → Bool` at `x`. A table `B : (γ → Bool) → Bool` is **folded**, that is, odd

@@ -130,9 +130,7 @@ theorem ops_triple (hT : Valid T w U V) {s : Memory.State} (hs : Inv T s) (o : D
     by_cases hu : u' = u
     · subst hu
       simp [abs]
-    · have : (T.base + u' : ℕ) ≠ T.base + u := by
-        have := Fin.val_ne_of_ne hu
-        omega
+    · have : (T.base + u' : ℕ) ≠ T.base + u := by grind
       simp [abs, hu, Function.update_of_ne this]
 
 /-- The run of an operation, by `ops_triple`. -/

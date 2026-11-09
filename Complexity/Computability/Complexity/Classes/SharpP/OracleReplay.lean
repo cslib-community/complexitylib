@@ -122,38 +122,6 @@ private theorem replayStepFactor_pos_iff (machine : MultiTapePTM k Bool Control 
     · simp [← hNo (machine.pendingRequest cfg)]
     · simp [← hYes (machine.pendingRequest cfg)]
 
-/-- A transcript satisfying every canonical reply equation agrees with every canonical prefix. -/
-private theorem take_eq_take_oracleReplies_of_forall_getD
-    (machine : MultiTapePTM k Bool Control Operation) (g : List Bool → Bool)
-    (input answers : List Bool)
-    (h : ∀ i < answers.length, answers.getD i false =
-      let cfg := machine.replayPrefix input answers i
-      if (machine.pendingQuery cfg).isSome then g (machine.pendingRequest cfg) else false) :
-    ∀ m ≤ answers.length,
-      answers.take m = (machine.oracleReplies g answers.length input).take m := by
-  set oracle := machine.oracleReplies g answers.length input
-  have hlen_or : oracle.length = answers.length :=
-    machine.length_oracleReplies g answers.length input
-  intro m hm
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    have hm_lt : m < answers.length := Nat.lt_of_succ_le hm
-    have hm_or : m < oracle.length := hlen_or ▸ hm_lt
-    have ih_m : answers.take m = oracle.take m := ih hm_lt.le
-    have hcfg : machine.replayPrefix input answers m =
-        machine.replayPrefix input oracle m := by
-      simp only [replayPrefix, ih_m]
-    have hbit : answers[m] = oracle[m] := by
-      rw [← List.getD_eq_getElem answers false hm_lt,
-        ← List.getD_eq_getElem oracle false hm_or,
-        h m hm_lt, machine.getD_oracleReplies g answers.length input m hm_lt, hcfg]
-    calc
-      answers.take (m + 1) = answers.take m ++ [answers[m]] :=
-        List.take_succ_eq_append_getElem hm_lt
-      _ = oracle.take m ++ [oracle[m]] := by rw [ih_m, hbit]
-      _ = oracle.take (m + 1) := (List.take_succ_eq_append_getElem hm_or).symm
-
 /-- A path count is positive exactly on the canonical instruction-indexed oracle transcript. -/
 theorem replayPathCount_pos_iff (machine : MultiTapePTM k Bool Control Operation)
     (input : α → List Bool) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
@@ -162,19 +130,9 @@ theorem replayPathCount_pos_iff (machine : MultiTapePTM k Bool Control Operation
     0 < replayPathCount machine input fYes fNo (a, answers) ↔
       answers = machine.oracleReplies g answers.length (input a) := by
   unfold replayPathCount
-  rw [CanonicallyOrderedAdd.prod_pos]
+  rw [CanonicallyOrderedAdd.prod_pos, machine.eq_oracleReplies_iff]
   simp only [mem_range,
     replayStepFactor_pos_iff machine input hYes hNo a answers]
-  constructor
-  · intro h
-    have htake := take_eq_take_oracleReplies_of_forall_getD machine g (input a) answers h
-      answers.length le_rfl
-    have hlen : (machine.oracleReplies g answers.length (input a)).length = answers.length :=
-      machine.length_oracleReplies g answers.length (input a)
-    rwa [List.take_length, List.take_of_length_le hlen.le] at htake
-  · intro h i hi
-    have hstep := machine.getD_oracleReplies g answers.length (input a) i hi
-    rwa [← h] at hstep
 
 /-- Unambiguous oracle certificate counts give an unambiguous step certificate. -/
 private theorem replayStepFactor_le_one (machine : MultiTapePTM k Bool Control Operation)

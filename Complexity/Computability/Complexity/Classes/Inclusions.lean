@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Tactic.EncLen
 
 /-!
 # Inclusions between complexity classes
@@ -162,9 +163,7 @@ theorem PSPACE_subset_EXP : PSPACE enc ⊆ EXP enc := by
         cE * (2 * L + 3 * w + 3) ^ dE :=
     listMax_le fun u hu => listMax_le fun v hv => by
       refine (hE _).trans (Nat.mul_le_mul_left cE (Nat.pow_le_pow_left ?_ dE))
-      simp only [encE, length_encPair, encBits_apply, Cslib.BitString.mem_enumList.mp hu,
-        Cslib.BitString.mem_enumList.mp hv]
-      omega
+      enc_len [encE, Cslib.BitString.mem_enumList.mp hu, Cslib.BitString.mem_enumList.mp hv]
   set B : ℕ → ℕ := fun n => 2 * (cW * (n + 1) ^ dW) + 2
   obtain ⟨K, hK⟩ := exists_eventually_le_two_pow_pow (P := fun n => cT * (n + 1) ^ dT)
     (Q := fun n => (B n + 2) * (B n + 1))

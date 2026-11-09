@@ -25,6 +25,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Complexity.Tactic.EncLen
 
 /-!
 # Sequential initial-test search and shortened Tanner check matrices
@@ -43,6 +44,7 @@ operations and `poly(n, m, B)` working space via `Cslib.GenericRAM.IndexFold.run
 * `checkSmallBiasShifts`, `checkLocalCodeDistance`, `findSmallBiasShifts`, `findLocalCheckMatrix`:
   streaming `IndexFold.run` checkers and sequential searchers.
 * `buildShortenedTannerRows`, `initialTestsRows`: shortened Tanner check-matrix assembly.
+* `encLocalCodeParams`: the encoding of local check-matrix parameters `(c, d, minDist)` in unary.
 
 ## Main results
 
@@ -463,9 +465,7 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
       (encSt (IndexFold.run (searchMatrixStep rowsOf colsOf check) j
         (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))).2).length ≤ B a := by
     obtain ⟨hq_eq, ⟨w, hw⟩, -, -⟩ := run_searchMatrixStep_inv rowsOf colsOf check j (qOf a)
-    simp only [encSt, encPay, length_encPair, encBool_apply, List.length_singleton, hq_eq, hw,
-      length_encList_listRows, B]
-    omega
+    enc_len [encSt, encPay, List.length_singleton, hq_eq, hw, length_encList_listRows, B]
   exact (HasKPolyCert.indexFold (K := fun a => 2 ^ wCheck (qOf a) + 1) (B := B)
     (fun _ => Nat.le_add_left 1 _) (binary_two_pow.comp (hrcQ.comp hq)) hinit hStep hBP
     (fun a j _ => Nat.le_of_eq (congrArg (fun x => 2 ^ wCheck x + 1)
@@ -635,8 +635,11 @@ theorem checkSmallBiasShifts_polyTime_of_two_pow_le {α : Type} {encIn : α ↪ 
     ((((PolyBounded.const 2).mul (polyBounded hm)).add (.const 1)).mono hle)
 private abbrev LocalHdr := ℕ × ℕ × ℕ
 private abbrev LocalQ := LocalHdr × List (List Bool)
-private abbrev encLocalHdr : LocalHdr ↪ List Bool := encPair encUnary (encPair encUnary encUnary)
-private abbrev encLocalQ : LocalQ ↪ List Bool := encPair encLocalHdr (encList encBits)
+/-- Parameters `(c, d, minDist)` of a local check matrix, all in unary: the row count `c`, the row
+length `d` and the required minimum distance `minDist`. The unary `c` is framed, then the unary `d`
+is framed, then the unary `minDist` follows. -/
+abbrev encLocalCodeParams : ℕ × ℕ × ℕ ↪ List Bool := encPair encUnary (encPair encUnary encUnary)
+private abbrev encLocalQ : LocalQ ↪ List Bool := encPair encLocalCodeParams (encList encBits)
 /-- Streaming local-code distance checker ([OpenAI2026ETH], Lemma 6.1) via `IndexFold.run`:
 checks that `H0` has `c` rows of length `d` and every nonzero `w ∈ {0, 1} ^ d \ {0}` in its
 `GF(2)` kernel has Hamming weight at least `minDist`, returning `false` on any violation. -/
@@ -685,7 +688,8 @@ theorem checkLocalCodeDistance_eq_true_iff (c d minDist : ℕ) (H0 : List (List 
 private theorem checkLocalCodeDistance_cert_aux :
     HasKPolyCert (fun q : LocalQ => checkLocalCodeDistance q.1.1 q.1.2.1 q.1.2.2 q.2)
       encLocalQ encBool (fun q => 2 ^ q.1.2.1 + 1) := by
-  have hq1 := fst encLocalHdr (encList encBits); have hq2 := snd encLocalHdr (encList encBits)
+  have hq1 := fst encLocalCodeParams (encList encBits)
+  have hq2 := snd encLocalCodeParams (encList encBits)
   have hdQ := hq1.snd'.fst'
   have hshape := checkMatrixShape_polyTime (encIn := encLocalQ) (fun q => q.1.1)
     (fun q => q.1.2.1) (fun q => q.2) hq1.fst' hdQ hq2
@@ -706,7 +710,7 @@ private theorem checkLocalCodeDistance_cert_aux :
 /-- Native `ComputableInO` certificate for `checkLocalCodeDistance`. -/
 theorem checkLocalCodeDistance_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
-      let encQ := encPair (encPair encUnary (encPair encUnary encUnary)) (encList encBits)
+      let encQ := encPair encLocalCodeParams (encList encBits)
       ComputableInO (fun ((c, d, minDist), H0) =>
           checkLocalCodeDistance c d minDist H0) encQ encBool
         (fun q => let ((_, d, _), _) := q; (2 ^ d + 1) * pT (encQ q).length)
@@ -812,15 +816,16 @@ private theorem findLocalCheckMatrix_cert_aux {α : Type} {encIn : α ↪ List B
 /-- Native `ComputableInO` certificate for `findLocalCheckMatrix`. -/
 theorem findLocalCheckMatrix_computableInO :
     ∃ pT pS : ℕ → ℕ, Cslib.PolynomiallyBounded pT ∧ Cslib.PolynomiallyBounded pS ∧
-      let encH := encPair encUnary (encPair encUnary encUnary)
+      let encH := encLocalCodeParams
       ComputableInO (fun (c, d, minDist) => findLocalCheckMatrix c d minDist)
         encH (encList encBits)
         (fun p => let (c, d, _) := p; (2 ^ (c * d) + 1) * (2 ^ d + 1) * pT (encH p).length)
         (fun p => pS (encH p).length) := by
   have hp2 := snd encUnary (encPair encUnary encUnary)
-  obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ := findLocalCheckMatrix_cert_aux (encIn := encLocalHdr)
-    (fun p => p.1) (fun p => p.2.1) (fun p => p.2.2)
-    (fst encUnary (encPair encUnary encUnary)) hp2.fst' hp2.snd'
+  obtain ⟨cert, pT, pS, hpT, hpS, hT, hS⟩ :=
+    findLocalCheckMatrix_cert_aux (encIn := encLocalCodeParams)
+      (fun p => p.1) (fun p => p.2.1) (fun p => p.2.2)
+      (fst encUnary (encPair encUnary encUnary)) hp2.fst' hp2.snd'
   exact ⟨pT, pS, hpT, hpS, cert.computes.mono_le hT hS⟩
 
 /-! ### Shortened Tanner parity-check matrix builder -/
@@ -1140,7 +1145,7 @@ private theorem exists_pow_of_polyBounded_mb {u : ℕ × ℕ → ℕ}
     (PolyBounded.const c).add ((PolyBounded.const d).mul (PolyBounded.self.add (.const 4))),
     fun p => ?_⟩
   have hlen : (encMB p).length + 1 = 2 * p.1 + 2 + p.2 := by
-    simp only [encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+    enc_len [encMB]
   rw [Nat.pow_add]; refine (hle p).trans (Nat.mul_le_mul Nat.lt_two_pow_self.le ?_)
   rw [Nat.mul_comm, Nat.pow_mul, hlen]; exact Nat.pow_le_pow_left (linear_mb_le_two_pow p.1 p.2) d
 private abbrev encMid := encPair encMB (encPair (encList encBits) (encList encBits))
@@ -1176,7 +1181,7 @@ theorem initialTestsRows_computableInO :
       (hSh.prod hLo)).polyPost (fun _ => Nat.le_add_right 1 _) hBuild).congr (fun _ => rfl)
   have hLenSum : PolyBounded (fun p : ℕ × ℕ => p.1 + p.2) lenMB :=
     (((PolyBounded.const 2).mul PolyBounded.self).add (.const 1)).mono fun p => by
-      simp only [lenMB, encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+      enc_len [lenMB, encMB]
   obtain ⟨S, hS_poly, hSpace⟩ := ((pOf lenMB hpS).mono hS).comp hLenSum
   obtain ⟨Ep, hEpP, hEp⟩ := exists_pow_of_polyBounded_mb (pOf lenMB hpT)
   have hB_X : PolyBounded X Prod.snd := PolyBounded.self.mono fun _ => by dsimp only [X]; omega
@@ -1220,7 +1225,7 @@ theorem initialTestsRows_computableInO_nmb :
     (NativeCertificate.linear (ComputableInO.snd encUnary encMB))
   have hLenNMB : PolyBounded sz (fun p => (encNMB p).length) :=
     (((PolyBounded.const 4).mul PolyBounded.self).add (.const 3)).mono fun p => by
-      simp only [sz, encNMB, encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+      enc_len [sz, encNMB, encMB]
   obtain ⟨S', hS', hSpace⟩ := hLenNMB.add ((pOf id hS).comp ((PolyBounded.self (size := sz)).mono
     (u := fun p : ℕ × ℕ × ℕ => p.2.1 + p.2.2) fun _ => by dsimp only [sz]; omega))
   let q' (X : ℕ) : ℕ := q X + (X + 5)
@@ -1229,7 +1234,7 @@ theorem initialTestsRows_computableInO_nmb :
       2 * (p.1 + 2 ^ q' (p.2.2 + Nat.log 2 (p.2.1 + 2)) + 1)
     set X := p.2.2 + Nat.log 2 (p.2.1 + 2)
     have hlen : (encNMB p).length = 2 * p.1 + (2 * p.2.1 + 2 + p.2.2) := by
-      simp only [encNMB, encMB, length_encPair, encUnary_apply, List.length_replicate]; omega
+      enc_len [encNMB, encMB]
     have h1 := Nat.pow_le_pow_right (by decide : 0 < 2) (by omega : X + 4 ≤ q X + (X + 4))
     have h2 := Nat.pow_le_pow_right (by decide : 0 < 2) (by omega : q X ≤ q X + (X + 4))
     have h3 : 2 ^ q' X = 2 * 2 ^ (q X + (X + 4)) := by
