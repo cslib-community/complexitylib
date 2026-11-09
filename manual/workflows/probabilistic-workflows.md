@@ -375,7 +375,11 @@ degree of a determinant of polynomials. Use them for other symbolic-determinant 
 module has two consequences. `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card` finds a
 nonvanishing point of `S ^ σ` when the total degree is below `|S|`; the `exists_det_…_ne_zero`
 theorems use it. `MvPolynomial.card_filter_eval_eq_zero_mul_card_le` is the counting form over a
-finite domain, `#zeros * q ≤ d * q ^ n`.
+finite domain, `#zeros * q ≤ d * q ^ n`. For one variable under a uniform `PMF`,
+[PMF/PolynomialAgreement.lean](../../CslibFrontier/Probability/PMF/PolynomialAgreement.lean) has
+`Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_eval_eq`: two distinct polynomials of
+degree at most `d` agree at a uniform point with probability at most `d / |R|`. The round
+soundness proofs of the sum-check and GKR protocols use it.
 
 The [checked clients](../../CslibFrontierTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is

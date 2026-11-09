@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Interactive.Sequential
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.PolynomialAgreement
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.MvPolynomial.Degrees
@@ -270,20 +271,9 @@ theorem round_rbrSound (hP : ∀ j, P.degreeOf j ≤ d) {i : ℕ} (hi : i < n) :
     change (ProbComp.eval (ProbComp.uniform F)).toOuterMeasure
       {c | accepts d x.2 g ∧ g.eval c = (roundPoly P x.1).eval c} ≤ (d : ℝ≥0∞) / Fintype.card F
     by_cases hacc : accepts d x.2 g
-    · have hne : g - roundPoly P x.1 ≠ 0 := sub_ne_zero.mpr fun h => hS ⟨hacc, h⟩
-      classical
-      rw [ProbComp.eval_uniform, Probability.PMF.toOuterMeasure_uniformOfFintype, div_eq_mul_inv]
-      gcongr
-      have hsub : Finset.univ.filter
-          (· ∈ {c | accepts d x.2 g ∧ g.eval c = (roundPoly P x.1).eval c}) ⊆
-          (g - roundPoly P x.1).roots.toFinset := by
-        intro c hc
-        simp only [Finset.mem_filter, Set.mem_ofPred_eq] at hc
-        rw [Multiset.mem_toFinset, Polynomial.mem_roots hne, Polynomial.IsRoot,
-          Polynomial.eval_sub, hc.2.2, sub_self]
-      exact_mod_cast (Finset.card_le_card hsub).trans ((Multiset.toFinset_card_le _).trans
-        ((Polynomial.card_roots' _).trans ((Polynomial.natDegree_sub_le _ _).trans
-          (max_le hacc.1 (natDegree_roundPoly_le d P hP hi x.1)))))
+    · rw [ProbComp.eval_uniform]
+      exact Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_eval_eq
+        (fun h => hS ⟨hacc, h⟩) hacc.1 (natDegree_roundPoly_le d P hP hi x.1) fun _ hc => hc.2
     · simp [hacc]
   · rintro hS ⟨x', ⟨_, hx'⟩, hout⟩
     rw [round_outputOn] at hout
