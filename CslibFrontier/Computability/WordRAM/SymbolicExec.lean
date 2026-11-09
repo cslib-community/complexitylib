@@ -733,7 +733,7 @@ meta def opRule? (o : Expr) : Option Name :=
   | _ => none
 
 /-- The rule of `WP.Exact` with the same name as the rule `rule` of `WP`. -/
-meta def exactRule (rule : Name) : Name :=
+private meta def exactRule (rule : Name) : Name :=
   .str ``WP.Exact rule.getString!
 
 mutual
