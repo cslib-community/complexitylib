@@ -129,17 +129,21 @@ public instance : Finite InState :=
 /-- The events of a symbol: its unary digits, then the end. -/
 @[expose] public def tok (n : ℕ) : List Bool := List.replicate n true ++ [false]
 
-lemma run_frame (w v : List Bool) : inTr.run .descMarker (frame w ++ v) = inTr.run .marker v := by
+/-- The translator skips a framed word at the start of the input. -/
+public lemma inTr_run_frame (w v : List Bool) :
+    inTr.run .descMarker (frame w ++ v) = inTr.run .marker v := by
   induction w with
   | nil => rfl
   | cons b w ih => cases b <;> exact ih
 
-lemma run_steps (v : List Bool) : inTr.run .steps v = (.steps, []) := by
+/-- After the framed list of symbols, the translator emits nothing. -/
+public lemma inTr_run_steps (v : List Bool) : inTr.run .steps v = (.steps, []) := by
   induction v with
   | nil => rfl
   | cons b v ih => simp [Translator.run, ih]
 
-lemma run_symbol (n : ℕ) (v : List Bool) :
+/-- The translator turns a symbol of the framed list into its events. -/
+public lemma inTr_run_symbol (n : ℕ) (v : List Bool) :
     inTr.run .marker (doubled (frame (List.replicate n true)) ++ v) =
       ((inTr.run .marker v).1, tok n ++ (inTr.run .marker v).2) := by
   induction n with
@@ -150,21 +154,26 @@ lemma run_symbol (n : ℕ) (v : List Bool) :
       inTr_step_digitMarker, inTr_step_digit, ih, tok, List.replicate_succ]
     simp
 
-/-- **The events of the encoded input** are the events of the symbols of `x`. -/
-public theorem events_eIn (d : Desc) (x : List ℕ) (t : ℕ) :
-    inTr.events (eIn (d, x, t)) = (x.map tok).flatten := by
+/-- The events of an input made of a framed word, a framed list of symbols `x` and anything else
+are the events of the symbols of `x`. -/
+public theorem inTr_events_frame (w : List Bool) (x : List ℕ) (v : List Bool) :
+    inTr.events (frame w ++ (frame (encList encUnary x) ++ v)) = (x.map tok).flatten := by
   have hx : ∀ v, inTr.run .marker (doubled (encList encUnary x) ++ v) =
       ((inTr.run .marker v).1, (x.map tok).flatten ++ (inTr.run .marker v).2) := by
     intro v
     induction x with
     | nil => simp
     | cons n x ih =>
-      rw [encList_cons, doubled_append, List.append_assoc, encUnary_apply, run_symbol, ih]
+      rw [encList_cons, doubled_append, List.append_assoc, encUnary_apply, inTr_run_symbol, ih]
       simp
-  rw [Translator.events, show eIn (d, x, t) = frame (eDesc d) ++ (frame (encList encUnary x) ++
-    encNat t) from rfl, show inTr.q₀ = .descMarker from rfl, run_frame, frame_eq_doubled,
+  rw [Translator.events, show inTr.q₀ = .descMarker from rfl, inTr_run_frame, frame_eq_doubled,
     List.append_assoc, hx, List.singleton_append]
-  simp [Translator.run, run_steps]
+  simp [Translator.run, inTr_run_steps]
+
+/-- **The events of the encoded input** are the events of the symbols of `x`. -/
+public theorem events_eIn (d : Desc) (x : List ℕ) (t : ℕ) :
+    inTr.events (eIn (d, x, t)) = (x.map tok).flatten :=
+  inTr_events_frame _ _ _
 
 /-! ### The countdown -/
 
@@ -173,7 +182,8 @@ public theorem events_eIn (d : Desc) (x : List ℕ) (t : ℕ) :
 @[expose] public def scan (p : ℕ × ℕ) (b : Bool) : ℕ × ℕ :=
   if b then (p.1, if p.1 = 1 then p.2 + 1 else p.2) else (p.1 - 1, p.2)
 
-lemma foldl_scan_replicate (k cur j : ℕ) :
+/-- Along unary digits, the countdown stays and the symbol read grows while it is at `1`. -/
+public lemma foldl_scan_replicate (k cur j : ℕ) :
     (List.replicate j true).foldl scan (k, cur) = (k, if k = 1 then cur + j else cur) := by
   induction j generalizing cur with
   | zero => simp
@@ -187,7 +197,8 @@ public lemma scan_tok (k cur n : ℕ) :
     (tok n).foldl scan (k, cur) = (k - 1, if k = 1 then cur + n else cur) := by
   simp [tok, List.foldl_append, foldl_scan_replicate, scan]
 
-lemma scan_zero (l : List Bool) (cur : ℕ) : l.foldl scan (0, cur) = (0, cur) := by
+/-- A finished countdown stays finished. -/
+public lemma scan_zero (l : List Bool) (cur : ℕ) : l.foldl scan (0, cur) = (0, cur) := by
   induction l with
   | nil => rfl
   | cons b l ih => cases b <;> simp [scan, ih]
@@ -282,7 +293,7 @@ public lemma run_succ' (d : Desc) (x : List ℕ) (j : ℕ) :
   simp only [run, Function.iterate_succ_apply', stepOut]
 
 /-- The end of pass `i`, after the countdown over the input. -/
-lemma stepAt_scan (d : Desc) (x : List ℕ) (c : SCfg) (r : ℕ) :
+public lemma stepAt_scan (d : Desc) (x : List ℕ) (c : SCfg) (r : ℕ) :
     stepAt ((d, c), (r, (events x).foldl scan (c.inputPos, 0))) =
       if r = 0 then (c, none) else step d x c := by
   rw [stepAt, step_eq_stepWith, inputSymbol_scan]
@@ -549,9 +560,9 @@ public instance : Finite ExState :=
       cases q
       exacts [⟨0, rfl⟩, ⟨1, rfl⟩, ⟨2, rfl⟩, ⟨3, rfl⟩, ⟨4, rfl⟩]
 
-/-- Copies the framed description, drops the framed input and copies the number of steps. -/
-@[simps q₀ step final]
-def extractT : Transducer Bool ExState where
+/-- Copies the framed description, drops the framed input and copies the rest, the number of
+steps (`Turing.MultiTapeTM.Universal.extractT_run_frame`). -/
+public def extractT : Transducer Bool ExState where
   q₀ := .descMarker
   step
     | .descMarker, true => (.descBit, [true])
@@ -565,22 +576,23 @@ def extractT : Transducer Bool ExState where
   length_step_le q b := by cases q <;> cases b <;> simp
   length_final_le _ := by simp
 
-lemma extractT_run (d : Desc) (x : List ℕ) (t : ℕ) :
-    extractT.run extractT.q₀ (eIn (d, x, t)) = encPair eDesc encNat (d, t) := by
+/-- The extracting transducer copies a framed word and drops the framed word after it. -/
+public lemma extractT_run_frame (w u v : List Bool) :
+    extractT.run extractT.q₀ (frame w ++ (frame u ++ v)) = frame w ++ v := by
   have h₁ (w v : List Bool) :
       extractT.run .descMarker (frame w ++ v) = frame w ++ extractT.run .marker v := by
     induction w with
     | nil => rfl
-    | cons b w ih => cases b <;> simp [ih]
+    | cons b w ih => exact congrArg (fun l => true :: b :: l) ih
   have h₂ (w v : List Bool) : extractT.run .marker (frame w ++ v) = extractT.run .steps v := by
     induction w with
     | nil => rfl
-    | cons b w ih => cases b <;> simp [ih]
+    | cons b w ih => exact ih
   have h₃ (w : List Bool) : extractT.run .steps w = w := by
     induction w with
     | nil => rfl
-    | cons b w ih => simp [ih]
-  simp only [eIn, encPair_apply, extractT_q₀, h₁, h₂, h₃]
+    | cons b w ih => exact congrArg (b :: ·) ih
+  simp only [show extractT.q₀ = .descMarker from rfl, h₁, h₂, h₃]
 
 /-- The initial state, in the space of the description and the number of steps. -/
 public lemma foldInit_inO : ComputableTidilyInO foldInit eIn eSt
@@ -588,7 +600,7 @@ public lemma foldInit_inO : ComputableTidilyInO foldInit eIn eSt
     fun i => (encPair eDesc encNat (i.1, i.2.2)).length + 1 := by
   have hext := ComputableTidilyInO.of_transducer extractT (f := fun i : Desc × List ℕ × ℕ =>
     (i.1, i.2.2)) (encIn := eIn) (encOut := encPair eDesc encNat)
-    fun i => (extractT_run i.1 i.2.1 i.2.2).symm
+    fun i => (extractT_run_frame (eDesc i.1) (encList encUnary i.2.1) (encNat i.2.2)).symm
   have hd := fst eDesc encNat
   have ht := snd eDesc encNat
   have hg := (hd.prod (init_inO.comp hd)).prod
@@ -605,7 +617,7 @@ public lemma foldInit_inO : ComputableTidilyInO foldInit eIn eSt
 
 /-- Along the events of a symbol, the countdown does not go up and the symbol read grows by at
 most the symbol. -/
-lemma scan_take_tok (n k cur j : ℕ) :
+public lemma scan_take_tok (n k cur j : ℕ) :
     (((tok n).take j).foldl scan (k, cur)).1 ≤ k ∧
       (((tok n).take j).foldl scan (k, cur)).2 ≤ cur + n ∧
       ((((tok n).take j).foldl scan (k, cur)).2 = cur ∨ k = 1) := by
@@ -618,7 +630,7 @@ lemma scan_take_tok (n k cur j : ℕ) :
 
 /-- **Along the events of the input**, the countdown does not go up and the symbol read stays
 within the largest symbol. -/
-lemma scan_take (x : List ℕ) (k cur j : ℕ) :
+public lemma scan_take (x : List ℕ) (k cur j : ℕ) :
     (((events x).take j).foldl scan (k, cur)).1 ≤ k ∧
       (((events x).take j).foldl scan (k, cur)).2 ≤ cur + x.foldr max 0 := by
   induction x generalizing k cur j with
@@ -691,7 +703,7 @@ def encInState : InState ↪ List Bool :=
     cases a <;> cases b <;> simp_all [InState.toFin]⟩
 
 /-- The time of the universal machine, simplified. -/
-lemma final_time (c N t L P E : ℕ) (hP : P ≤ L) (hE : E ≤ L) :
+public lemma final_time (c N t L P E : ℕ) (hP : P ≤ L) (hE : E ≤ L) :
     c * (N + (P + 1) ^ 2 + (E + 1) ^ 3 + (t - 1 + 1) * (N + (N + 1) * (9 * (L + 1) ^ 3 + L + 1)))
       ≤ 20 * c * ((t + 1) * (N + 1) ^ 2 * (L + 1) ^ 3) := by
   have hA : 1 ≤ (L + 1) ^ 3 := Nat.one_le_pow _ _ (by omega)

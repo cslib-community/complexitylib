@@ -13,6 +13,7 @@ public import Complexity.Crypto.Computational.OneWay
 public import Complexity.Crypto.Computational.Signature
 public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.UniformNat
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Bind
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -253,10 +254,9 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
   have hgame_eq : ProbComp.eval (S.eufOneTimeGame forger n) =
       (PMF.uniformOfFintype (Fin (dyadicSize (schedule (n + 1))))).bind
         (fun idx => trial idx.val) := by
-    simp only [SignatureScheme.eufOneTimeGame, forger, sigToOwfForgerBody, ProbComp.eval_bind,
-      ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample,
-      PMF.bind_map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, eval_sampleDyadicIndex,
-      List.length_replicate, beq_self_eq_true, Bool.true_and]
+    simp only [pmf_norm, SignatureScheme.eufOneTimeGame, forger, sigToOwfForgerBody,
+      ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample,
+      eval_sampleDyadicIndex, List.length_replicate, beq_self_eq_true, Bool.true_and]
     rw [PMF.bind_comm]
     rfl
   have hstep1 : Game.succProbability (ProbComp.eval (inversionGame f adversary size)) ≤
@@ -264,8 +264,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
     apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
     dsimp only [trial, inversionGame]
     rw [hlaw n size hbudget, PMF.monad_bind_eq_bind, PMF.bind_map]
-    simp only [ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
-      Function.comp_def]
+    simp only [pmf_norm, BitString.eval_sampleList]
     refine PMF.bind_apply_mono_on_support _ true fun seed hseed => ?_
     have hseed_len : seed.length = size := BitString.length_of_mem_support_uniformList hseed
     have hf_seed : f seed = encPair encUnary encBits (n, (evaluate n seed).1) := by
@@ -461,8 +460,7 @@ private theorem eval_replicate_split {α : Type} (prog : ProbComp α) {m j : ℕ
           front ++ xStar :: back) := by
   have hm : m = j + (m - j - 1 + 1) := by omega
   conv_lhs => rw [hm, OracleComp.replicate_add, OracleComp.replicate_succ]
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm]
   rw [PMF.bind_comm]
   rfl
 
@@ -783,9 +781,8 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     (ProbComp.eval (inverterAt j (f xStar))).map fun cand => f cand == f xStar
   have hinv_eq : ProbComp.eval (inversionGame f inverter n) =
       (PMF.uniformOfFintype (Fin (dyadicSize (2 * n)))).bind (fun j => trial j.val) := by
-    simp only [inversionGame, inverter, lamportInverter, trial, inverterAt,
-      ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, eval_sampleDyadicIndex,
-      PMF.bind_map, PMF.bind_bind, Function.comp_def]
+    simp only [pmf_norm, inversionGame, inverter, lamportInverter, trial, inverterAt,
+      BitString.eval_sampleList, eval_sampleDyadicIndex]
     rw [PMF.bind_comm]
     rfl
   have htrial_eq : ∀ j < 2 * n,

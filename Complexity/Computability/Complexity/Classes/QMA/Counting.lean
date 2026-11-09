@@ -234,8 +234,7 @@ private theorem PromiseQMA_subset_promiseClass_PP_of_threshold {c s : ℕ → �
     have hs : 0 ≤ s (enc a).length :=
       (V.acceptProb_nonneg (enc a) (ket 0)).trans ((hV a).2 hno (ket 0) (norm_ket _))
     have hT := V.traceGap_le (enc a) ((hV a).2 hno) (J a)
-    have hsD : (s (enc a).length * e a) ^ J a ≤ (b a : ℝ) ^ J a :=
-      pow_le_pow_left₀ (mul_nonneg hs (Nat.cast_nonneg _)) hsB' _
+    have hsD : (s (enc a).length * e a) ^ J a ≤ (b a : ℝ) ^ J a := by gcongr
     have hbern := two_pow_mul_pow_le hb1 (m a)
     have : (G a : ℝ) ≤ 0 := by
       rw [hGr, sub_nonpos]
