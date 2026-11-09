@@ -1343,6 +1343,13 @@ have sharp single-loglog time and global polynomial workspace, including signed 
 and all empty/small cases. Pair counts retain marking multiplicity; they are not unmarked-set
 counts. This completes the Upper Dominating Set decision specialization in the explicit encoding.
 
+`UpperDomination.Optimum` now computes an attained global maximum cardinality of an
+inclusion-minimal dominating set. It instantiates the actual approved native threshold decider in
+the existing bounded graph-state scan, making `v+1` calls and charging every-prefix state lengths,
+query writes, iteration and binary output. Sharp single-loglog time and global polynomial peak
+workspace are proved on the recorded explicit/native model, including the empty graph. This is
+the source Corollary 7.4 / Appendix D.5 optimum-value clause, not a returned witness.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1356,14 +1363,22 @@ Remaining STOC1575 objectives, keeping the original inventory open:
 - Corollary 7.2: general fixed finite/cofinite sigma-rho degree-rule construction and full count/
   resource transfer remain open. Fixed cutoff D must not grow with the input. The independent-
   domination rule and functional signed cardinality tests are covered, including input bounds.
+  The general source budget is `(2D+1)v+a-1`, width at most `D+2`, with `a=0` without size
+  tests; the full cardinality distribution is also a remaining general-rule clause.
 - Theorem 7.3: fixed q,D labeled degree matrices and optional per-class input cardinality tests
   still need their actual class/neighbor-threshold construction and complete resource/count proof.
+  Preserve labeled classes (empty unless input bounds forbid this), input-varying per-class bounds,
+  `q(2D+1)v+a-1` variables, width at most `max(q,D+2)`, `a=O_q(v)` (zero without tests),
+  polynomially many class-size tuples, and the absence of any connectivity requirement.
 - Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
   kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
   induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
   decision, plus Upper Dominating Set decision via private-neighbor marking-pair positivity, are
-  covered for the stated explicit encodings. Complete witness extraction and optimum-threshold recovery are now composed for Maximum Induced Matching;
-  the corresponding clauses for the other five decision predicates remain open.
+  covered for the stated explicit encodings. Full optimum/witness composition is covered for
+  Maximum Induced Matching. Upper domination also has actual attained/global optimum-value
+  recovery; its witness output remains open. The other four predicates still need both recovery
+  clauses. For Upper witness, pointwise selection/functional-extension correspondence under added
+  unit clauses and the actual native self-reduction/output resource composition remain to prove.
 - Corollary 7.5: total counts with the sharper no-size-test `2v-1` query construction, exact
   edge-size coefficients and the full ordered distribution/output/sharp-time/global-space endpoint
   are covered for the stated canonical explicit encoding. Alternative admission/succinct encoding
@@ -1372,7 +1387,7 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   (`4v+a-1` variables) are covered. The alternative unique-mark width-four original-set counter
   (`5v+a-1` variables) and width-three path-marker refinement (`6v+a-1` variables) remain open.
   Preserve the pair/set count distinction, input thresholds, empty graphs and polynomially many
-  distribution/self-reduction calls; Upper optimum/witness composition remains open.
+  distribution/self-reduction calls. Upper optimum value is covered; witness output remains open.
 
 Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; generic DNF,
 independent-domination, kernel, perfect-matching-cut, efficient-edge-domination and maximum-induced-

@@ -1010,11 +1010,48 @@ Its tiny assignment enumeration is a test oracle; the production machine uses th
 This completes Proposition 7.6's initial width-three decision construction and Corollary 7.4's
 Upper Dominating Set decision specialization for the stated encoding. The unique-mark width-four
 original-set counter on $5v+a-1$ query variables and the width-three path-marker refinement on
-$6v+a-1$ variables remain open. Upper-domination optimum/witness extraction also remains open.
+$6v+a-1$ variables remain open. Upper-domination optimum-value extraction is supplied below; witness output remains open.
 All six Corollary 7.4 decision predicates are now covered in their recorded explicit models;
-only Maximum Induced Matching has its full optimum/witness composition. General Corollary 7.2
+only Maximum Induced Matching has its full optimum/witness composition. Upper domination now
+also has the optimum value, as described below. General Corollary 7.2
 finite/cofinite degree rules, Theorem 7.3 labeled degree partitions, alternative admission/succinct
 encodings and the paper-wide independent audit remain outstanding. These limits keep ALL-main open.
+
+### Compute the upper-domination optimum value
+
+Import `Complexity.Computability.Complexity.FineGrained.UpperDominationOptimum`.
+Corollary 7.4 and Appendix D.5, PDF pp.26,37, explicitly claim optimum-threshold and witness
+recovery. `UpperDomination.Optimum.run` computes the value using the existing original-graph
+threshold iterator, instantiated with the actual Upper Dominating Set decider. It makes $v+1$
+tests from zero through $v$, retaining only the graph, next threshold and best feasible value.
+This polynomial scan replaces the source's binary search and preserves the same asymptotic bound.
+It enumerates neither vertex sets nor private-neighbor markings.
+
+`run_optimal` proves that the computed value is attained by an inclusion-minimal dominating set
+and is at least every such set's cardinality. Every finite graph has a minimal dominating set,
+including the empty graph; thus the initial zero threshold is valid without input advice.
+The output is the maximum cardinality of an inclusion-minimal set, not the minimum dominating-set
+size and not the number of markings. `exists_optimum_realEta_certificate` instantiates the proved
+native decider, charging threshold writes, every loop update, binary output and intermediate live
+state. It gives time $C(L+1)^e2^{A\eta(v)}$ for $v\ge16$ and global polynomial peak workspace;
+the rounded certificate covers every smaller size. Every-prefix graph-state encodings have length
+at most $5(L+1)$, and the loop uses maximum round workspace rather than multiplying space by
+its time. The same canonical graph/unary-declaration/native word-cost conventions apply as above.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.UpperDominationOptimum`.
+The [computed client](../../ComplexityTests/PaperEndpoints/UpperDominationOptimum.lean) covers empty
+graphs, declared isolates, edges, paths, stars, cycles and complete graphs. A three-vertex path
+returns two, although a singleton dominates it; an edge returns one despite six valid marking
+pairs. It checks acceptance at the returned threshold and rejection at the next threshold.
+
+Attainment is an existential correctness theorem, not an algorithm returning the attaining set.
+Upper-domination witness output remains open: the source fixes original selection bits by adding
+unit clauses while leaving marking bits free. This needs pointwise functional-extension/selection
+correspondence under those extra clauses, followed by actual native traversal and output-resource
+composition. Graph restriction by deleting edges is not a substitute because it changes minimal
+domination. The other four non-MIM graph predicates still need full optimum/witness composition;
+general degree-rule/partition and unique-mark Proposition 7.6 refinements remain open. This value
+endpoint does not complete the entire Corollary 7.4 recovery clause or the paperwide audit.
 
 ## Known Limitations
 
