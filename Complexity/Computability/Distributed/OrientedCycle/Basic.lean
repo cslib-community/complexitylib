@@ -52,6 +52,8 @@ standard convention `{1, …, n}` is the same up to a shift by one, made precise
 * `Cslib.Distributed.OrientedCycle.Algorithm.seq`: running one algorithm after another.
 * `Cslib.Distributed.OrientedCycle.LocalRule`: rules of radius `r` on input windows.
 * `Cslib.Distributed.OrientedCycle.LocalRule.andThen`: a rule followed by an algorithm.
+* `Cslib.Distributed.OrientedCycle.LocalRule.comp`: a rule applied to the outputs of a rule.
+* `Cslib.Distributed.OrientedCycle.Algorithm.const`: the 0-round algorithm with a constant output.
 * `Cslib.Distributed.OrientedCycle.IsProperColoring`: proper colourings of the oriented cycle.
 * `Cslib.Distributed.OrientedCycle.Algorithm.ColorsCycle`: `A` properly `c`-colours every oriented
   `n`-cycle with identifiers `{0, …, n - 1}` in `t` rounds.
@@ -63,6 +65,7 @@ standard convention `{1, …, n}` is the same up to a shift by one, made precise
 * `Cslib.Distributed.OrientedCycle.LocalRule.toAlgorithm_run`: every radius-`r` rule is computed
   in `r` rounds.
 * `Cslib.Distributed.OrientedCycle.LocalRule.andThen_run`: composition of a rule and an algorithm.
+* `Cslib.Distributed.OrientedCycle.LocalRule.apply_comp`: composition of rules.
 * `Cslib.Distributed.OrientedCycle.Algorithm.seq_run`: sequential composition of algorithms.
 * `Cslib.Distributed.OrientedCycle.MessageAlgorithm.toAlgorithm_state`: message passing as state
   exchange.
@@ -148,6 +151,15 @@ def comapInput {I' : Type*} (f : I' → I) : Algorithm I' S O where
     (A.comapInput f).run x r v = A.run (f ∘ x) r v := by
   simp only [run, comapInput_state]
   rfl
+
+/-- The algorithm that outputs `a` at every node, whatever its input. -/
+@[expose] def const (a : O) : Algorithm I Unit O where
+  init _ := ()
+  step _ _ _ _ := ()
+  output _ := a
+
+@[simp] theorem const_run (a : O) (x : ZMod n → I) (r : ℕ) (v : ZMod n) :
+    (const a : Algorithm I Unit O).run x r v = a := rfl
 
 end Algorithm
 
@@ -367,6 +379,27 @@ theorem andThen_run {S' O' : Type*} (F : LocalRule I O r) (B : Algorithm O S' O'
   congr 1
   funext u
   exact F.toAlgorithm_run x u
+
+/-- The composite of a rule `F` of radius `r` and a rule `G` of radius `r'` on the outputs of `F`:
+a rule of radius `r + r'`. -/
+def comp {P : Type*} {r' : ℕ} (G : LocalRule O P r') (F : LocalRule I O r) :
+    LocalRule I P (r + r') where
+  toFun w := G.toFun fun i => F.toFun fun j => w (i + j)
+  dependsOn _ _ h := G.toFun_congr fun _ _ _ => F.toFun_congr fun _ _ _ =>
+    h _ ⟨by push_cast; omega, by push_cast; omega⟩
+
+/-- **Composition of rules.** Applying `G.comp F` is applying `G` to the outputs of `F`. -/
+theorem apply_comp {P : Type*} {r' : ℕ} (G : LocalRule O P r') (F : LocalRule I O r) {n : ℕ}
+    (x : ZMod n → I) : (G.comp F).apply x = G.apply (F.apply x) := by
+  funext v
+  simp only [apply, comp, window]
+  congr 1
+  funext i
+  congr 1
+  funext j
+  congr 1
+  push_cast
+  ring
 
 end LocalRule
 

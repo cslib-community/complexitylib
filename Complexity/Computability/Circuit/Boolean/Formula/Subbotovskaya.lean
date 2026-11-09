@@ -689,21 +689,17 @@ theorem sum_extensions_formulaSize_sub_sq_le (f : BooleanFunction n)
       change (m + 2) * (2 * (m + 2) - 3) ^ 2 ≤ 4 * (m + 1) ^ 3
       change (m + 2) * (2 * m + 1) ^ 2 ≤ 4 * (m + 1) ^ 3
       nlinarith
-    have hsq : ((s - k) * (S_k - k * N_k)) ^ 2 ≤ ((2 * t - 3) * (S_t - t * N_t)) ^ 2 :=
-      Nat.pow_le_pow_left hsub_rec 2
+    have hsq : ((s - k) * (S_k - k * N_k)) ^ 2 ≤ ((2 * t - 3) * (S_t - t * N_t)) ^ 2 := by gcongr
     have hsk : 0 < s - k := by omega
     have hpos : 0 < 4 * t ^ 3 * (s - k) ^ 2 := by positivity
     refine Nat.le_of_mul_le_mul_right ?_ hpos
     calc (S_k - k * N_k) ^ 2 * s ^ 3 * (4 * t ^ 3 * (s - k) ^ 2)
         = 4 * t ^ 3 * s ^ 3 * ((s - k) * (S_k - k * N_k)) ^ 2 := by ring
-      _ ≤ 4 * t ^ 3 * s ^ 3 * ((2 * t - 3) * (S_t - t * N_t)) ^ 2 :=
-          Nat.mul_le_mul_left _ hsq
+      _ ≤ 4 * t ^ 3 * s ^ 3 * ((2 * t - 3) * (S_t - t * N_t)) ^ 2 := by gcongr
       _ = 4 * t ^ 3 * (2 * t - 3) ^ 2 * ((S_t - t * N_t) ^ 2 * s ^ 3) := by ring
-      _ ≤ 4 * t ^ 3 * (2 * t - 3) ^ 2 * (L₀ ^ 2 * t ^ 3 * N_t ^ 2) :=
-          Nat.mul_le_mul_left _ hih
+      _ ≤ 4 * t ^ 3 * (2 * t - 3) ^ 2 * (L₀ ^ 2 * t ^ 3 * N_t ^ 2) := by gcongr
       _ = t * (2 * t - 3) ^ 2 * (L₀ ^ 2 * t ^ 3 * (2 * t * N_t) ^ 2) := by ring
-      _ ≤ 4 * k ^ 3 * (L₀ ^ 2 * t ^ 3 * (2 * t * N_t) ^ 2) :=
-          Nat.mul_le_mul_right _ hpoly
+      _ ≤ 4 * k ^ 3 * (L₀ ^ 2 * t ^ 3 * (2 * t * N_t) ^ 2) := by gcongr
       _ = 4 * k ^ 3 * (L₀ ^ 2 * t ^ 3 * ((s - k) * N_k) ^ 2) := by rw [← hcard_rec]
       _ = L₀ ^ 2 * k ^ 3 * N_k ^ 2 * (4 * t ^ 3 * (s - k) ^ 2) := by ring
 
@@ -736,8 +732,7 @@ theorem exists_mem_formulaSize_sub_sq_le (f : BooleanFunction n)
     have : L' * N_k ≤ 2 * S_k := by nlinarith
     rw [Nat.sub_mul, Nat.mul_sub_left_distrib, show 2 * (k * N_k) = 2 * k * N_k by ring]
     omega
-  have hsq : ((L' - 2 * k) * N_k) ^ 2 ≤ (2 * (S_k - k * N_k)) ^ 2 :=
-    Nat.pow_le_pow_left h2 2
+  have hsq : ((L' - 2 * k) * N_k) ^ 2 ≤ (2 * (S_k - k * N_k)) ^ 2 := by gcongr
   have havg := sum_extensions_formulaSize_sub_sq_le f ρ₀ hk1 hk
   have hpos : 0 < N_k ^ 2 := by positivity
   refine Nat.le_of_mul_le_mul_right ?_ hpos

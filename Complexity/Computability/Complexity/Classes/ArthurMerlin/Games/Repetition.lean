@@ -113,7 +113,9 @@ private theorem inf'_equiv {α β : Type} [Fintype α] [Fintype β] [Nonempty α
       rwa [Equiv.apply_symm_apply] at this)
     (le_inf' _ _ fun a _ => inf'_le φ (mem_univ _))
 
-private theorem copyTranscript_ofFn_append {m n : ℕ} (i : Fin m) (b : AMMove)
+/-- Copy `i` of a transcript that starts with a move of `m * n` bits starts with block `i` of
+that move. -/
+theorem copyTranscript_ofFn_append {m n : ℕ} (i : Fin m) (b : AMMove)
     (g : List (AMMove × ℕ))
     (r : Fin (m * n) → Bool) (t : List Bool) :
     copyTranscript m i ((b, n) :: g) (List.ofFn r ++ t) =

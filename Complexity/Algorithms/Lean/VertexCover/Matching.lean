@@ -193,11 +193,7 @@ theorem exists_endpoint_mem_foldl_matchingStep (es : List (V × V)) (M : List (V
     · have hsub := endpoints_subset_of_subset (subset_foldl_matchingStep es (matchingStep M e))
       simp only [List.foldl_cons]
       by_cases h : e.1 ∈ endpoints M ∨ e.2 ∈ endpoints M
-      · have hstep : endpoints M ⊆ endpoints (matchingStep M e) := by
-          unfold matchingStep
-          split_ifs
-          · exact endpoints_subset_of_subset (List.subset_append_left M [e])
-          · exact List.Subset.refl _
+      · have hstep : endpoints M ⊆ endpoints (matchingStep M e) := by grind [matchingStep]
         exact h.imp (fun h => hsub (hstep h)) (fun h => hsub (hstep h))
       · rw [not_or] at h
         have : matchingStep M e = M ++ [e] := ite_eq_left ⟨hne, h.1, h.2⟩
