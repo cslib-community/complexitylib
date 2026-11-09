@@ -7,8 +7,8 @@ name: Guide
 on:
   pull_request:
     paths:
-      - "Complexity/**"
-      - "Complexity.lean"
+      - "CslibFrontier/**"
+      - "CslibFrontier.lean"
       - "guide/**"
       - "lakefile.toml"
       - "lake-manifest.json"
@@ -86,7 +86,7 @@ jobs:
       - name: Check documentation pins
         run: python3 scripts/check_docs.py --config-only
       - name: Compile guide examples
-        run: lake -q -d guide build --log-level=error ComplexityGuide
+        run: lake -q -d guide build --log-level=error CslibFrontierGuide
       - name: Build the guide
         if: steps.changes.outputs.render == 'true'
         run: scripts/guide.sh
