@@ -20,8 +20,9 @@ of a real normed space with first minimum `λ₁(L)` (`ZLattice.minimum`) and su
 * search `SVP_γ`: find a nonzero `v ∈ L` with `‖v‖ ≤ γ · λ₁(L)` (`Cslib.Crypto.SVP.IsSolution`);
 * the promise problem `GapSVP_γ`: on input `(L, d)`, accept when `λ₁(L) ≤ d` and reject when
   `γ · d < λ₁(L)` (`Cslib.Crypto.GapSVP.IsCorrect`);
-* `SIVP_γ`: find `n` linearly independent vectors of `L`, each of norm at most `γ · λ_n(L)`
-  (`Cslib.Crypto.SIVP.IsSolution`);
+* `SIVP_γ`: find `n = rank L` linearly independent vectors of `L`, each of norm at most
+  `γ · λ_n(L)` (`Cslib.Crypto.SIVP.IsSolution`); the number of vectors is fixed by `L`, not chosen
+  by the solver;
 * Hermite `HSVP_γ` in `EuclideanSpace ℝ ι`, `n = |ι|`: find a nonzero `v ∈ L` with
   `‖v‖ ≤ γ · det(L)^{1/n}` (`Cslib.Crypto.HSVP.IsSolution`).
 
@@ -139,27 +140,33 @@ section SIVP
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- `v` solves `SIVP_γ` on `L`: its `n` vectors are linearly independent vectors of `L`, each of
-norm at most `γ · λ_n(L)`. For a full-rank lattice `n` is the dimension of the space. -/
-def SIVP.IsSolution (γ : ℝ) (L : Submodule ℤ E) {n : ℕ} (v : Fin n → E) : Prop :=
-  LinearIndependent ℝ v ∧ ∀ i, v i ∈ L ∧ ‖v i‖ ≤ γ * successiveMinimum L n
+/-- `v` solves `SIVP_γ` on `L`: its `n = rank L` vectors are linearly independent vectors of `L`,
+each of norm at most `γ · λ_n(L)`. The family is indexed by `Fin (finrank ℤ L)`, so a solver cannot
+return fewer vectors than the rank; for a full-rank lattice `n` is the dimension of the space
+(`ZLattice.rank`). For a discrete lattice in a finite-dimensional space `finrank ℤ L` is its rank;
+on a `ℤ`-submodule that is not finitely generated `finrank ℤ L` is the junk value `0`, so the
+predicate is meant for discrete lattices. -/
+def SIVP.IsSolution (γ : ℝ) (L : Submodule ℤ E) (v : Fin (finrank ℤ L) → E) : Prop :=
+  LinearIndependent ℝ v ∧ ∀ i, v i ∈ L ∧ ‖v i‖ ≤ γ * successiveMinimum L (finrank ℤ L)
 
-theorem SIVP.IsSolution.mono {γ γ' : ℝ} {L : Submodule ℤ E} {n : ℕ} {v : Fin n → E}
+theorem SIVP.IsSolution.mono {γ γ' : ℝ} {L : Submodule ℤ E} {v : Fin (finrank ℤ L) → E}
     (hv : SIVP.IsSolution γ L v) (hγ : γ ≤ γ') : SIVP.IsSolution γ' L v :=
   ⟨hv.1, fun i => ⟨(hv.2 i).1, (hv.2 i).2.trans
-    (mul_le_mul_of_nonneg_right hγ (successiveMinimum_nonneg L n))⟩⟩
+    (mul_le_mul_of_nonneg_right hγ (successiveMinimum_nonneg L _))⟩⟩
 
 /-- On a full-rank discrete lattice of positive dimension `n` in a finite-dimensional space,
 `SIVP_γ` has solutions only for `γ ≥ 1`. -/
 theorem SIVP.IsSolution.one_le [FiniteDimensional ℝ E] [ProperSpace E] {γ : ℝ}
-    {L : Submodule ℤ E} [DiscreteTopology L] [IsZLattice ℝ L] {v : Fin (finrank ℝ E) → E}
+    {L : Submodule ℤ E} [DiscreteTopology L] [IsZLattice ℝ L] {v : Fin (finrank ℤ L) → E}
     (hv : SIVP.IsSolution γ L v) (hn : 0 < finrank ℝ E) : 1 ≤ γ := by
-  let i₀ : Fin (finrank ℝ E) := ⟨0, hn⟩
+  have hrank : finrank ℤ L = finrank ℝ E := ZLattice.rank ℝ L
+  have hn' : 1 ≤ finrank ℤ L := by omega
+  let i₀ : Fin (finrank ℤ L) := ⟨0, hn'⟩
   have hL : L ≠ ⊥ := (Submodule.ne_bot_iff L).2 ⟨v i₀, (hv.2 i₀).1, hv.1.ne_zero i₀⟩
-  have hr : 0 ≤ γ * successiveMinimum L (finrank ℝ E) := (norm_nonneg _).trans (hv.2 i₀).2
+  have hr : 0 ≤ γ * successiveMinimum L (finrank ℤ L) := (norm_nonneg _).trans (hv.2 i₀).2
   have hle := successiveMinimum_le_of_linearIndependent hv.1 (fun i => (hv.2 i).1) hr
     (fun i => (hv.2 i).2)
-  have hpos := (minimum_pos hL).trans_le (minimum_le_successiveMinimum L hL hn le_rfl)
+  have hpos := (minimum_pos hL).trans_le (minimum_le_successiveMinimum L hL hn' hrank.le)
   by_contra hγ
   nlinarith
 
@@ -192,7 +199,10 @@ section Hermite
 variable {ι : Type*} [Fintype ι]
 
 /-- `v` solves Hermite `HSVP_γ` on a lattice `L` in `EuclideanSpace ℝ ι`, `n = |ι|`: it is a
-nonzero vector of `L` with `‖v‖ ≤ γ · det(L)^{1/n}`. -/
+nonzero vector of `L` with `‖v‖ ≤ γ · det(L)^{1/n}`. The predicate carries no full-rank or
+discreteness assumption, and `covolume L` has its meaning as the lattice determinant only for
+full-rank discrete lattices (`[DiscreteTopology L] [IsZLattice ℝ L]`), which is where the
+predicate should be read. -/
 def HSVP.IsSolution (γ : ℝ) (L : Submodule ℤ (EuclideanSpace ℝ ι)) (v : EuclideanSpace ℝ ι) :
     Prop :=
   v ∈ L ∧ v ≠ 0 ∧ ‖v‖ ≤ γ * covolume L ^ ((Fintype.card ι : ℝ)⁻¹)

@@ -143,7 +143,9 @@ section SuccessiveMinimum
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- The `k`-th successive minimum `λ_k(L)`: the infimum of the radii `r ≥ 0` such that the
-vectors of `L` of norm at most `r` span a real subspace of dimension at least `k`. -/
+vectors of `L` of norm at most `r` span a real subspace of dimension at least `k`. When `k` exceeds
+the dimension of the real span of `L`, the set is empty and `successiveMinimum L k = 0`; this is why
+`successiveMinimum_mono` assumes `k ≤ finrank ℝ E` and a full-rank lattice. -/
 noncomputable def successiveMinimum (L : Submodule ℤ E) (k : ℕ) : ℝ :=
   sInf {r : ℝ | 0 ≤ r ∧ k ≤ finrank ℝ (Submodule.span ℝ {v : E | v ∈ L ∧ ‖v‖ ≤ r})}
 
