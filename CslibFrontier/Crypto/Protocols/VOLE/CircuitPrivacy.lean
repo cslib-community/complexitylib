@@ -140,8 +140,7 @@ private theorem interpret_liftVerifier {n : ℕ} {α : Type} (c : VOLECorrelatio
     OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
       (fun _ => PMF.pure c.receiverView)) program := by
   rw [liftVerifier, OracleComp.interpret_interpret]
-  congr 1
-  funext q
+  congr 1 with q : 1
   cases q <;> simp [OracleComp.sumHandler, ProbOracleComp.query]
 
 /-- The circuit interaction is the existing masked-batch interaction with reconstructed linear
@@ -168,8 +167,7 @@ theorem circuitReceiverView_eq_expand (C : Circuit (arithSignature F) (p + k) m)
     ProbOracleComp.interpret_query, OracleComp.sumHandler, VOLECorrelation.senderView,
     interpret_liftVerifier]
   simp only [pmf_norm, circuitReceiverAdapter, OracleComp.interpret_bind, OracleComp.interpret_pure]
-  congr 1
-  funext verifier
+  congr 1 with verifier : 1
   simp [circuitCheck, maskedMulCheck, liftProver, ProbOracleComp.query,
     OracleComp.sumHandler, runAgainst, ProverStrategy.hoist, VerifierStrategy.hoist,
     circuitCheckSpec, maskedMulCheckSpec, SigmaProtocol.sigmaSpec,
