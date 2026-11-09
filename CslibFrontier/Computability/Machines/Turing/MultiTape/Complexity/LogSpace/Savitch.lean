@@ -233,30 +233,44 @@ abbrev encParam : ℕ × ℕ × Option Bool ↪ List Bool :=
 
 /-- Edge-test parameters, with the input bit read last. -/
 structure EdgeParams where
+  /-- Radix used to encode the simulated machine registers. -/
   radix : ℕ
+  /-- Length of the original read-only input. -/
   inputLength : ℕ
+  /-- Input bit just read, or `none` beyond the input. -/
   symbol : Option Bool
 
 /-- The parameters and unary vertex width share one frame. -/
 structure RoundSetup where
+  /-- Parameters shared by all edge tests in this round. -/
   params : EdgeParams
+  /-- Bit width of vertices, stored in unary. -/
   width : ℕ
 
 /-- A round of midpoint recursion. -/
 structure SimulationRound where
+  /-- Edge-test parameters and vertex width. -/
   setup : RoundSetup
+  /-- Current continuation stack and recursion register. -/
   recursion : Savitch.State
 
 /-- The input counter, startup flag, and current simulation round. -/
 structure Runtime where
+  /-- Number of input bits counted; the input length after startup. -/
   counter : ℕ
+  /-- Whether input counting has finished and recursion has started. -/
   started : Bool
+  /-- Current midpoint-recursion round. -/
   round : SimulationRound
 
+/-- Binary radix and input length followed by the optional input bit, in field order. -/
 enc_structure encEdgeParams : EdgeParams where
   radix : encNat, inputLength : encNat, symbol : (encOption encBool)
+/-- Framed edge parameters followed by the unary vertex width. -/
 enc_structure encRoundSetup : RoundSetup where params : encEdgeParams, width : encUnary
+/-- Framed round setup followed by the encoded recursion state. -/
 enc_structure encSimulationRound : SimulationRound where setup : encRoundSetup, recursion : encState
+/-- Binary counter, startup bit and simulation round, in field order. -/
 enc_structure encRuntime : Runtime where
   counter : encNat, started : encBool, round : encSimulationRound
 
