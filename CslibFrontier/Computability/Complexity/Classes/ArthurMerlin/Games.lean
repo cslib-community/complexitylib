@@ -422,26 +422,12 @@ theorem isAMGameVerifier_iff_value {enc : α ↪ List Bool} {G : List (AMMove ×
         (fun t => ((V (a, t)).toNat : ℚ)) ≤ 1) := by
   refine forall_congr' fun a => and_congr (imp_congr_right fun _ => ?_)
     (imp_congr_right fun _ => ?_)
-  · rw [← Nat.cast_le (α := ℚ)]
+  all_goals
+    rw [← Nat.cast_le (α := ℚ)]
     push_cast
     rw [count_eq]
-    constructor
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
-  · rw [← Nat.cast_le (α := ℚ)]
-    push_cast
-    rw [count_eq]
-    constructor
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
+    have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
+    constructor <;> intro h <;> nlinarith
 
 theorem AMGameClass_insert {enc : α ↪ List Bool} (σ τ : List AMMove) (x : AMMove) :
     AMGameClass enc (σ ++ τ) ⊆ AMGameClass enc (σ ++ x :: τ) := by

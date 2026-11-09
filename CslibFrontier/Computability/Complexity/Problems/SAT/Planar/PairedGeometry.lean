@@ -228,20 +228,8 @@ private theorem finalLocalRoute_simple_check : ∀ s, ∀ a ∈ (finalLocalRoute
     ∀ b ∈ (finalLocalRoute s).consecutivePairs, a ≠ b →
       segmentContactCheck (consecutiveContact a b) a.1 a.2 b.1 b.2 = true := by decide +kernel
 
-private theorem finalLocalRoute_simple (s : Fin 4) : IsSimple (finalLocalRoute s) := by
-  refine ⟨finalLocalRoute_nodup s, ?_⟩
-  intro a ha b hb hne p hp hq
-  obtain ⟨q, hq, hpq⟩ := segmentContactCheck_sound
-    (finalLocalRoute_simple_check s a ha b hb hne) hp hq
-  unfold consecutiveContact at hq
-  split_ifs at hq with h h'
-  · have hqa : q = a.2 := List.mem_singleton.mp hq
-    subst q
-    exact ⟨Or.inr hpq, Or.inl (hpq.trans (congrArg realPoint h))⟩
-  · have hqa : q = a.1 := List.mem_singleton.mp hq
-    subst q
-    exact ⟨Or.inl hpq, Or.inr (hpq.trans (congrArg realPoint h'.symm))⟩
-  · exact False.elim (List.not_mem_nil hq)
+private theorem finalLocalRoute_simple (s : Fin 4) : IsSimple (finalLocalRoute s) :=
+  isSimple_of_segmentContactCheck (finalLocalRoute_nodup s) (finalLocalRoute_simple_check s)
 
 /-- Every actual final literal route is proper, orthogonal and continuously simple. -/
 theorem lastLiteral_route_regular (sites : List Point) (r : Route) (b : Bool)

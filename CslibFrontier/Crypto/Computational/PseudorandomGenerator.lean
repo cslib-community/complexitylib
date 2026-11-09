@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.Game
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Languages.Probabilistic.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Tactic.PPT
 
@@ -99,17 +100,14 @@ theorem PRG.wordFamily_realExperiment {generator : List Bool → List Bool} {len
       (fun bits => ProbComp.eval (adversary n (List.ofFn bits))) =
         distinguishingGame (generatorEnsemble generator n) (adversary n) := by
   rw [generatorEnsemble_eq_outputDist hlen]
-  simp only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-    PRG.Generator.realExperiment]
+  simp only [pmf_norm, distinguishingGame, PRG.Generator.realExperiment]
 
 /-- The ideal finite test sees exactly the uniform word of the declared output length. -/
 theorem PRG.wordFamily_idealExperiment (length : ℕ → ℕ) (adversary : Distinguisher) (n : ℕ) :
     Generator.idealExperiment
       (fun bits : BitString (length n) => ProbComp.eval (adversary n (List.ofFn bits))) =
         distinguishingGame (BitString.uniformList (length n)) (adversary n) := by
-  simp only [Generator.idealExperiment, distinguishingGame, PMF.monad_bind_eq_bind,
-    BitString.uniformList,
-    PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, Generator.idealExperiment, distinguishingGame, BitString.uniformList]
 
 /-- Finite-family security against uniformly realizable tests is exactly computational
 indistinguishability of the generated and uniform word ensembles. -/

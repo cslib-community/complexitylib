@@ -100,14 +100,12 @@ theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
         p ∈ Set.Icc 0 1 ∧
         (a ∈ A → 2 / 3 ≤ p x₀) ∧ (a ∉ A → p x₀ ≤ 1 / 3) := by
   classical
-  obtain ⟨k, State, _, M, c, hM⟩ := h
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
   let : Fintype State := Fintype.ofFinite State
-  obtain ⟨d, hd⟩ := M.toNTM.exists_runsInTime_polynomial_of_runsInSpace_log c
   refine ⟨k, State, inferInstance, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, t, ht, hmem, hnot⟩ := hM a
+  obtain ⟨hs, hT, hmem, hnot⟩ := hM a
   refine ⟨hs, ?_⟩
   dsimp only
-  have hT := hd hs ht
   have hP0 := compactCoinMatrix_nonneg (machine := M) (R := ℝ)
     (radix (radixExponent State c) (enc a).length) (enc a)
   have hP1 := compactCoinMatrix_mulVec_one_le (machine := M) (R := ℝ)
@@ -124,21 +122,14 @@ theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
     dsimp only [Function.comp_apply]
     split_ifs <;> simp
   · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance]
-    have hn := (M.two_pow_mul_le_iff ht hT 2 3).mp (hmem ha)
-    have hc : (2 : ℝ) * 2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-        3 * (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) := by
-      exact_mod_cast hn
-    rw [le_div_iff₀ (by positivity)]
+    rw [finTimeLayer_compactCoinMatrix_acceptance, le_div_iff₀ (by positivity)]
+    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
+    push_cast at hc
     linarith
   · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance]
-    have hn := (M.mul_le_two_pow_iff ht hT 1 3).mp (by simpa only [one_mul] using hnot ha)
-    simp only [one_mul] at hn
-    have hc : (3 : ℝ) * (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) ≤
-        2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) := by
-      exact_mod_cast hn
-    rw [div_le_iff₀ (by positivity)]
+    rw [finTimeLayer_compactCoinMatrix_acceptance, div_le_iff₀ (by positivity)]
+    have hc := (Nat.cast_le (α := ℝ)).mpr (hnot ha)
+    push_cast at hc
     linarith
 
 end Cslib.Complexity

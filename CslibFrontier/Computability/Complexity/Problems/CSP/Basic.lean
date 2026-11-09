@@ -36,6 +36,8 @@ claimed.
 
 ## Main results
 
+* `Cslib.Complexity.CSPSAT.polyTimeReducible_of_guard`: a compiler that is faithful on
+  well-formed instances, guarded by exact arity, is a polynomial-time reduction.
 * `Cslib.Complexity.CSPSAT.mem_NP`: membership in native NP for a finite relation alphabet.
 -/
 
@@ -58,9 +60,25 @@ variable {Rel : Type}
 theorem mem_iff (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (F : CSP Rel ℕ) :
     F ∈ CSPSAT arity sem ↔ F.WellFormed arity ∧ F.Satisfiable sem := Iff.rfl
 
-private def toSAT (k : ℕ) (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
-    (F : CSP Rel ℕ) : CNF ℕ :=
-  if F.validArity arity then F.toCNFBounded k sem else [[]]
+/-- **Guarded compilation.** A polynomial-time compiler that is faithful on well-formed
+instances, followed by an exact-arity guard sending every malformed instance to a fixed instance
+outside the target, reduces `CSPSAT` to the target. -/
+theorem polyTimeReducible_of_guard [Finite Rel] {β : Type} {encB : β ↪ List Bool}
+    {B : Set β} (encRel : Rel ↪ List Bool) (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    {compile : CSP Rel ℕ → β} (reject : β)
+    (hcompile : ComputableInPolyTime compile (encCSP encRel encNat) encB)
+    (hcorrect : ∀ F, F.WellFormed arity → (F.Satisfiable sem ↔ compile F ∈ B))
+    (hreject : reject ∉ B) :
+    PolyTimeReducible (encCSP encRel encNat) encB (CSPSAT arity sem) B := by
+  refine ⟨fun F => if F.validArity arity then compile F else reject,
+    (CSP.computableInPolyTime_validArity encRel arity).ite hcompile
+      (ComputableInPolyTime.const reject), fun F => ?_⟩
+  dsimp only
+  by_cases hF : F.WellFormed arity
+  · rw [ite_eq_left ((CSP.validArity_eq_true_iff arity F).mpr hF), mem_iff, and_iff_right hF]
+    exact hcorrect F hF
+  · rw [ite_eq_right (mt (CSP.validArity_eq_true_iff arity F).mp hF), mem_iff]
+    exact iff_of_false (fun h => hF h.1) hreject
 
 /-- Every fixed finite Boolean constraint language has a native NP satisfiability problem,
 under framed list/pair encodings with binary variable indices. -/
@@ -70,21 +88,12 @@ theorem mem_NP [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel → ℕ)
   let _ := Fintype.ofFinite Rel
   let k := Finset.univ.sup arity
   have hbound (R : Rel) : arity R ≤ k := Finset.le_sup (Finset.mem_univ R)
-  have hf : ComputableInPolyTime (toSAT k arity sem) (encCSP encRel encNat) encCNF := by
-    exact (CSP.computableInPolyTime_validArity encRel arity).ite
-      (CSP.computableInPolyTime_toCNFBounded_of_finite encRel encNat k sem)
-      (ComputableInPolyTime.const [[]])
   have hred : PolyTimeReducible (encCSP encRel encNat) encCNF (CSPSAT arity sem) SAT := by
-    refine ⟨toSAT k arity sem, hf, fun F => ?_⟩
-    by_cases hF : F.WellFormed arity
-    · have hw : ∀ c ∈ F, c.2.length ≤ k := fun c hc => (hF c hc).le.trans (hbound c.1)
-      simp [toSAT, (CSP.validArity_eq_true_iff arity F).mpr hF, mem_iff, hF, mem_SAT,
-        CSP.toCNFBounded_eq_toCNF hw, CSP.satisfiable_toCNF]
-    · have hguard : F.validArity arity = false := by
-        cases hg : F.validArity arity
-        · rfl
-        · exact (hF ((CSP.validArity_eq_true_iff arity F).mp hg)).elim
-      simp [toSAT, hguard, mem_iff, hF, mem_SAT, CNF.Satisfiable, CNF.eval, Clause.eval]
+    refine polyTimeReducible_of_guard encRel arity sem [[]]
+      (CSP.computableInPolyTime_toCNFBounded_of_finite encRel encNat k sem) (fun F hF => ?_)
+      (by simp [mem_SAT, CNF.Satisfiable, CNF.eval, Clause.eval])
+    have hw : ∀ c ∈ F, c.2.length ≤ k := fun c hc => (hF c hc).le.trans (hbound c.1)
+    rw [mem_SAT, CSP.toCNFBounded_eq_toCNF hw, CSP.satisfiable_toCNF]
   exact hred.mem_NP SAT.mem_NP
 
 end CSPSAT

@@ -620,6 +620,71 @@ theorem kruskalScan_isSpanningForestFrom {n : ℕ} {W : Type} (p : Partition n)
   ⟨(kruskalScan_sublist p es).subperm, kruskalScan_isAcyclicFrom p es,
     edgePartitionFrom_kruskalScan p es⟩
 
+/-- A relative spanning forest `H` of `e :: es` over `p` is one of `es` when `e`'s endpoints are
+already related in `p`: an acyclic `H` cannot use the redundant edge `e`. -/
+private theorem isSpanningForestFrom_of_cons_of_rel {n : ℕ} {W : Type} {p : Partition n}
+    {e : WeightedEdge n W} {es H : List (WeightedEdge n W)} (hrel : p.rel e.u e.v = true)
+    (hH : IsSpanningForestFrom p (e :: es) H) : IsSpanningForestFrom p es H := by
+  obtain ⟨⟨l, hlH, hsub_l⟩, hacyc, hpart⟩ := hH
+  cases hsub_l with
+  | cons _ hsl =>
+    have hpart' : edgePartitionFrom p H = edgePartitionFrom p es := by
+      rw [hpart, edgePartitionFrom_cons, Partition.merge_of_rel hrel]
+    exact ⟨hlH.symm.subperm.trans hsl.subperm, hacyc, hpart'⟩
+  | cons_cons _ _ =>
+    have hfalse := (isAcyclicFrom_cons.mp ((Perm.isAcyclicFrom_iff hlH.symm).mp hacyc)).1
+    rw [hrel] at hfalse
+    cases hfalse
+
+/-- Exchange step shared by Kruskal's optimality and uniqueness proofs: when `e`'s endpoints lie in
+distinct classes of `p`, a relative spanning forest `H` of `e :: es` over `p` is a permutation of
+some `f :: H'` with `H'` a relative spanning forest of `es` over `p.merge e.u e.v`, where `f = e`
+if `H` uses `e` and `f ∈ es` otherwise. -/
+private theorem exists_perm_cons_isSpanningForestFrom_merge {n : ℕ} {W : Type}
+    {p : Partition n} {e : WeightedEdge n W} {es H : List (WeightedEdge n W)}
+    (hrel : p.rel e.u e.v = false) (hH : IsSpanningForestFrom p (e :: es) H) :
+    ∃ f H', H.Perm (f :: H') ∧ (f = e ∨ f ∈ es) ∧
+      IsSpanningForestFrom (p.merge e.u e.v) es H' := by
+  obtain ⟨⟨l, hlH, hsub_l⟩, hacyc, hpart⟩ := hH
+  have hHl := hlH.symm
+  let p' := p.merge e.u e.v
+  cases hsub_l with
+  | cons _ hsl =>
+    -- `H` avoids this copy of `e`: `l.Sublist es`, so `H.Subperm es`, and `H` has exactly one
+    -- redundant merge over `p' = p.merge e.u e.v`.
+    have he_rel : (edgePartitionFrom p H).rel e.u e.v = true := by
+      rw [hpart]
+      exact rel_edgePartitionFrom_of_mem p List.mem_cons_self
+    have hp'H : edgePartitionFrom p' H = edgePartitionFrom p H := by
+      rw [edgePartitionFrom_merge, Partition.merge_of_rel he_rel]
+    have hp'es : edgePartitionFrom p' H = edgePartitionFrom p' es := by
+      rw [hp'H, hpart, edgePartitionFrom_cons]
+    have hm : p'.numComponents + 1 = p.numComponents :=
+      Partition.numComponents_merge_of_not_rel hrel
+    have hsucc : (edgePartitionFrom p' H).numComponents + H.length = p'.numComponents + 1 := by
+      rw [hp'H]
+      have ha : (edgePartitionFrom p H).numComponents + H.length = p.numComponents := hacyc
+      omega
+    obtain ⟨f, H', hHperm, hH'part, hH'acyc⟩ :=
+      exists_perm_cons_of_numComponents_add_length_eq_succ hsucc
+    have hH_sub : H.Subperm es := hHl.subperm.trans hsl.subperm
+    have hH'_sub : H'.Subperm es :=
+      ((List.sublist_cons_self f H').subperm.trans hHperm.symm.subperm).trans hH_sub
+    exact ⟨f, H', hHperm, Or.inr (hH_sub.subset (hHperm.mem_iff.mpr List.mem_cons_self)),
+      hH'_sub, hH'acyc, hH'part.trans hp'es⟩
+  | cons_cons _ hsl =>
+    -- `H` contains this copy of `e`: `H.Perm (e :: l')` with `l'.Sublist es`.
+    rename_i l'
+    have hl'_acyc : IsAcyclicFrom p' l' :=
+      (isAcyclicFrom_cons.mp ((Perm.isAcyclicFrom_iff hHl).mp hacyc)).2
+    have hl'_part : edgePartitionFrom p' l' = edgePartitionFrom p' es := by
+      calc
+        edgePartitionFrom p' l' = edgePartitionFrom p (e :: l') := rfl
+        _ = edgePartitionFrom p H := (Perm.edgePartitionFrom_eq hHl p).symm
+        _ = edgePartitionFrom p (e :: es) := hpart
+        _ = edgePartitionFrom p' es := rfl
+    exact ⟨e, l', hHl, Or.inl rfl, hsl.subperm, hl'_acyc, hl'_part⟩
+
 /-- Core exchange-inductive optimality of `kruskalScan` on weight-sorted inputs: for any initial
 partition `p` and any relative spanning forest `H` of `sorted` over `p`, `kruskalScan p sorted` has
 total weight at most `totalWeight H`. -/
@@ -635,69 +700,20 @@ theorem totalWeight_kruskalScan_le {n : ℕ} {W : Type}
     rw [List.subperm_nil.mp hH.1, totalWeight_nil]
   | cons e es ih =>
     obtain ⟨he_le, hes_sorted⟩ := List.pairwise_cons.mp hsorted
-    obtain ⟨hsub, hacyc, hpart⟩ := hH
-    obtain ⟨l, hlH, hsub_l⟩ := hsub
-    have hHl := hlH.symm
     rw [kruskalScan_cons]
     cases hrel : p.rel e.u e.v
-    · simp only [Bool.not_false, ↓reduceIte, totalWeight_cons]
-      let p' := p.merge e.u e.v
-      cases hsub_l with
-      | cons _ hsl =>
-        -- `H` avoids this copy of `e`: `l.Sublist es`, so `H.Subperm es`, and `H` has exactly one
-        -- redundant merge over `p' = p.merge e.u e.v`.
-        have he_rel : (edgePartitionFrom p H).rel e.u e.v = true := by
-          rw [hpart]
-          exact rel_edgePartitionFrom_of_mem p List.mem_cons_self
-        have hp'H : edgePartitionFrom p' H = edgePartitionFrom p H := by
-          rw [edgePartitionFrom_merge, Partition.merge_of_rel he_rel]
-        have hp'es : edgePartitionFrom p' H = edgePartitionFrom p' es := by
-          rw [hp'H, hpart, edgePartitionFrom_cons]
-        have hm : p'.numComponents + 1 = p.numComponents :=
-          Partition.numComponents_merge_of_not_rel hrel
-        have hsucc : (edgePartitionFrom p' H).numComponents + H.length = p'.numComponents + 1 := by
-          rw [hp'H]
-          have ha : (edgePartitionFrom p H).numComponents + H.length = p.numComponents := hacyc
-          omega
-        obtain ⟨f, H', hHperm, hH'part, hH'acyc⟩ :=
-          exists_perm_cons_of_numComponents_add_length_eq_succ hsucc
-        have hf_es : f ∈ es :=
-          hsl.subset (hHl.mem_iff.mp (hHperm.mem_iff.mpr List.mem_cons_self))
-        have hef : e.weight ≤ f.weight := he_le f hf_es
-        have hH'_sub : H'.Subperm es := by
-          have h₁ : H'.Subperm (f :: H') := (List.Sublist.cons f (List.Sublist.refl H')).subperm
-          exact (h₁.trans hHperm.symm.subperm).trans (hHl.subperm.trans hsl.subperm)
-        have hH'_sf : IsSpanningForestFrom p' es H' :=
-          ⟨hH'_sub, hH'acyc, hH'part.trans hp'es⟩
-        have hrec := ih p' hes_sorted hH'_sf
-        rw [Perm.totalWeight_eq hHperm, totalWeight_cons]
-        exact add_le_add hef hrec
-      | cons_cons _ hsl =>
-        -- `H` contains this copy of `e`: `H.Perm (e :: l')` with `l'.Sublist es`.
-        rename_i l'
-        have hl'_acyc : IsAcyclicFrom p' l' :=
-          (isAcyclicFrom_cons.mp ((Perm.isAcyclicFrom_iff hHl).mp hacyc)).2
-        have hl'_part : edgePartitionFrom p' l' = edgePartitionFrom p' es := by
-          calc
-            edgePartitionFrom p' l' = edgePartitionFrom p (e :: l') := rfl
-            _ = edgePartitionFrom p H := (Perm.edgePartitionFrom_eq hHl p).symm
-            _ = edgePartitionFrom p (e :: es) := hpart
-            _ = edgePartitionFrom p' es := rfl
-        have hl'_sf : IsSpanningForestFrom p' es l' := ⟨hsl.subperm, hl'_acyc, hl'_part⟩
-        have hrec := ih p' hes_sorted hl'_sf
-        rw [Perm.totalWeight_eq hHl, totalWeight_cons]
-        exact add_le_add le_rfl hrec
-    · simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte]
-      cases hsub_l with
-      | cons _ hsl =>
-        have hpart' : edgePartitionFrom p H = edgePartitionFrom p es := by
-          rw [hpart, edgePartitionFrom_cons, Partition.merge_of_rel hrel]
-        exact ih p hes_sorted ⟨hHl.subperm.trans hsl.subperm, hacyc, hpart'⟩
-      | cons_cons _ _ =>
-        have hcons_acyc := (Perm.isAcyclicFrom_iff hHl).mp hacyc
-        have hfalse := (isAcyclicFrom_cons.mp hcons_acyc).1
-        rw [hrel] at hfalse
-        cases hfalse
+    · -- Kruskal accepts `e`; it replaces an edge `f` of `H` that is no lighter.
+      simp only [Bool.not_false, ↓reduceIte, totalWeight_cons]
+      obtain ⟨f, H', hHperm, hf, hH'⟩ := exists_perm_cons_isSpanningForestFrom_merge hrel hH
+      have hef : e.weight ≤ f.weight := by
+        rcases hf with rfl | hf_es
+        · exact le_rfl
+        · exact he_le f hf_es
+      rw [Perm.totalWeight_eq hHperm, totalWeight_cons]
+      exact add_le_add hef (ih _ hes_sorted hH')
+    · -- Kruskal rejects the redundant edge `e`, which `H` cannot use either.
+      simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte]
+      exact ih p hes_sorted (isSpanningForestFrom_of_cons_of_rel hrel hH)
 
 /-- Uniqueness of the minimum relative spanning forest on weight-sorted inputs with distinct
 weights. -/
@@ -716,75 +732,25 @@ theorem perm_kruskalScan_of_totalWeight_le_of_nodup_weights {n : ℕ} {W : Type}
   | cons e es ih =>
     obtain ⟨he_le, hes_sorted⟩ := List.pairwise_cons.mp hsorted
     obtain ⟨he_not_mem, hes_nodup⟩ := List.nodup_cons.mp hnodup
-    obtain ⟨hsub, hacyc, hpart⟩ := hH
-    obtain ⟨l, hlH, hsub_l⟩ := hsub
-    have hHl := hlH.symm
     rw [kruskalScan_cons] at hopt ⊢
     cases hrel : p.rel e.u e.v
     · rw [hrel] at hopt
       simp only [Bool.not_false, ↓reduceIte] at hopt ⊢
-      let p' := p.merge e.u e.v
-      cases hsub_l with
-      | cons _ hsl =>
-        exfalso
-        have he_rel : (edgePartitionFrom p H).rel e.u e.v = true := by
-          rw [hpart]
-          exact rel_edgePartitionFrom_of_mem p List.mem_cons_self
-        have hp'H : edgePartitionFrom p' H = edgePartitionFrom p H := by
-          rw [edgePartitionFrom_merge, Partition.merge_of_rel he_rel]
-        have hp'es : edgePartitionFrom p' H = edgePartitionFrom p' es := by
-          rw [hp'H, hpart, edgePartitionFrom_cons]
-        have hm : p'.numComponents + 1 = p.numComponents :=
-          Partition.numComponents_merge_of_not_rel hrel
-        have hsucc : (edgePartitionFrom p' H).numComponents + H.length = p'.numComponents + 1 := by
-          rw [hp'H]
-          have ha : (edgePartitionFrom p H).numComponents + H.length = p.numComponents := hacyc
-          omega
-        obtain ⟨f, H', hHperm, hH'part, hH'acyc⟩ :=
-          exists_perm_cons_of_numComponents_add_length_eq_succ hsucc
-        have hf_es : f ∈ es :=
-          hsl.subset (hHl.mem_iff.mp (hHperm.mem_iff.mpr List.mem_cons_self))
-        have hne_w : e.weight ≠ f.weight := fun heq =>
+      obtain ⟨f, H', hHperm, hf, hH'⟩ := exists_perm_cons_isSpanningForestFrom_merge hrel hH
+      rw [Perm.totalWeight_eq hHperm, totalWeight_cons, totalWeight_cons] at hopt
+      rcases hf with rfl | hf_es
+      · -- `H` uses `e` as well: cancel it and recurse.
+        exact hHperm.trans ((ih _ hes_sorted hes_nodup hH' (le_of_add_le_add_left hopt)).cons _)
+      · -- `H` trades `e` for a strictly heavier `f ∈ es`, contradicting `hopt`.
+        have hlt_w : e.weight < f.weight := (he_le f hf_es).lt_of_ne fun heq =>
           he_not_mem (heq ▸ List.mem_map_of_mem hf_es)
-        have hlt_w : e.weight < f.weight := lt_of_le_of_ne (he_le f hf_es) hne_w
-        have hH'_sub : H'.Subperm es := by
-          have h₁ : H'.Subperm (f :: H') := (List.Sublist.cons f (List.Sublist.refl H')).subperm
-          exact (h₁.trans hHperm.symm.subperm).trans (hHl.subperm.trans hsl.subperm)
-        have hH'_sf : IsSpanningForestFrom p' es H' :=
-          ⟨hH'_sub, hH'acyc, hH'part.trans hp'es⟩
-        have hrec := totalWeight_kruskalScan_le p' hes_sorted hH'_sf
-        have hstrict :
-            totalWeight (e :: kruskalScan p' es) < totalWeight H := by
-          rw [totalWeight_cons, Perm.totalWeight_eq hHperm, totalWeight_cons]
-          exact add_lt_add_of_lt_of_le hlt_w hrec
-        exact not_lt_of_ge hopt hstrict
-      | cons_cons _ hsl =>
-        rename_i l'
-        have hl'_acyc : IsAcyclicFrom p' l' :=
-          (isAcyclicFrom_cons.mp ((Perm.isAcyclicFrom_iff hHl).mp hacyc)).2
-        have hl'_part : edgePartitionFrom p' l' = edgePartitionFrom p' es := by
-          calc
-            edgePartitionFrom p' l' = edgePartitionFrom p (e :: l') := rfl
-            _ = edgePartitionFrom p H := (Perm.edgePartitionFrom_eq hHl p).symm
-            _ = edgePartitionFrom p (e :: es) := hpart
-            _ = edgePartitionFrom p' es := rfl
-        have hl'_sf : IsSpanningForestFrom p' es l' := ⟨hsl.subperm, hl'_acyc, hl'_part⟩
-        have hopt' : totalWeight l' ≤ totalWeight (kruskalScan p' es) := by
-          rw [Perm.totalWeight_eq hHl, totalWeight_cons, totalWeight_cons] at hopt
-          exact le_of_add_le_add_left hopt
-        exact hHl.trans ((ih p' hes_sorted hes_nodup hl'_sf hopt').cons e)
+        have hstrict : e.weight + totalWeight (kruskalScan (p.merge e.u e.v) es) <
+            f.weight + totalWeight H' :=
+          add_lt_add_of_lt_of_le hlt_w (totalWeight_kruskalScan_le _ hes_sorted hH')
+        exact absurd hopt (not_le_of_gt hstrict)
     · rw [hrel] at hopt
       simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte] at hopt ⊢
-      cases hsub_l with
-      | cons _ hsl =>
-        have hpart' : edgePartitionFrom p H = edgePartitionFrom p es := by
-          rw [hpart, edgePartitionFrom_cons, Partition.merge_of_rel hrel]
-        exact ih p hes_sorted hes_nodup ⟨hHl.subperm.trans hsl.subperm, hacyc, hpart'⟩ hopt
-      | cons_cons _ _ =>
-        have hcons_acyc := (Perm.isAcyclicFrom_iff hHl).mp hacyc
-        have hfalse := (isAcyclicFrom_cons.mp hcons_acyc).1
-        rw [hrel] at hfalse
-        cases hfalse
+      exact ih p hes_sorted hes_nodup (isSpanningForestFrom_of_cons_of_rel hrel hH) hopt
 
 /-- Sort an edge list by nondecreasing weight using `List.mergeSort`. -/
 @[expose] def sortEdges {n : ℕ} {W : Type} [LE W] [DecidableLE W]

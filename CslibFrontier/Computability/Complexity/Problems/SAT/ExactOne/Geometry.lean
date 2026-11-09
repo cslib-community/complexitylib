@@ -169,13 +169,8 @@ theorem access_contact {g : LocalGeometry} (h : Check g)
     {p : ℝ × ℝ} (hp : p ∈ support (g.accessRoutes.getD i []))
     (hq : p ∈ support e.2.2) :
     e.2.1 = g.terminalVariables.getD i 0 ∧
-      p = realPoint (g.variablePosition (g.terminalVariables.getD i 0)) := by
-  obtain ⟨q, hq, hpq⟩ := routeContactCheck_sound
-    ((h.2.2.2.2.2.2.2.2 i).2.2.2.2.2.2.2.1 e he) hp hq
-  split_ifs at hq with heq
-  · have hq' := List.mem_singleton.mp hq
-    exact ⟨heq, hq' ▸ hpq⟩
-  · exact False.elim (List.not_mem_nil hq)
+      p = realPoint (g.variablePosition (g.terminalVariables.getD i 0)) :=
+  routeContactCheck_ite_sound ((h.2.2.2.2.2.2.2.2 i).2.2.2.2.2.2.2.1 e he) hp hq
 
 end LocalGeometry
 

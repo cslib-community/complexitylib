@@ -60,11 +60,8 @@ variable {ι : Type*} [DecidableEq ι]
 of the parts of `U` inside and outside `J`. -/
 theorem chi_piecewise {R : Type*} [CommRing R] (U J : Finset ι) (x z : ι → Bool) :
     chi R U (J.piecewise x z) = chi R (U ∩ J) x * chi R (U \ J) z := by
-  rw [chi, ← prod_filter_mul_prod_filter_not U (· ∈ J), filter_mem_eq_inter, ← sdiff_eq_filter,
-    chi, chi]
-  congr 1
-  · exact prod_congr rfl fun i hi => by rw [piecewise_eq_of_mem _ _ _ (mem_inter.1 hi).2]
-  · exact prod_congr rfl fun i hi => by rw [piecewise_eq_of_notMem _ _ _ (mem_sdiff.1 hi).2]
+  rw [chi, chi, chi, ← prod_piecewise]
+  exact prod_congr rfl fun i _ => by by_cases hi : i ∈ J <;> simp [hi]
 
 variable [Fintype ι]
 

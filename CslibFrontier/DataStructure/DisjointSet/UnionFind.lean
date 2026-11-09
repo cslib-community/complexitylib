@@ -636,6 +636,44 @@ private theorem link_eq_of_eq {u v : Batteries.UnionFind} (h : u = v)
   obtain rfl : y₁ = y₂ := Fin.ext hy
   rfl
 
+/-- A compressing `find` preserves the root rank-size invariant. -/
+private theorem ValidRank.compressWithSteps {uf : Batteries.UnionFind} (h : ValidRank uf)
+    (x : Fin uf.size) : ValidRank (UnionFind.compressWithSteps uf x).1 := by
+  rw [compressWithSteps_fst]
+  exact h.find x
+
+/-- A compressing `find` keeps every root of the original forest. -/
+private theorem rootD_compressWithSteps (uf : Batteries.UnionFind) (x : Fin uf.size) (i : ℕ) :
+    (compressWithSteps uf x).1.rootD i = uf.rootD i := by
+  rw [compressWithSteps_fst, Batteries.UnionFind.find_root_1]
+
+/-- A compressing `find` keeps the equivalence relation of the original forest. -/
+private theorem equiv_compressWithSteps (uf : Batteries.UnionFind) (x : Fin uf.size) (a b : ℕ) :
+    (compressWithSteps uf x).1.Equiv a b ↔ uf.Equiv a b := by
+  rw [compressWithSteps_fst, Batteries.UnionFind.equiv_find]
+
+/-- Comparing the roots returned by two successive compressing finds decides equivalence in the
+original forest. -/
+private theorem compressWithSteps_root_beq_iff (uf : Batteries.UnionFind) (x : Fin uf.size)
+    (y : Fin (compressWithSteps uf x).1.size) :
+    ((compressWithSteps uf x).2.1.1 == (compressWithSteps (compressWithSteps uf x).1 y).2.1.1) =
+      true ↔ uf.Equiv x.1 y.1 := by
+  rw [beq_iff_eq, compressWithSteps_root, compressWithSteps_root, rootD_compressWithSteps]
+  rfl
+
+/-- Two successive compressing finds in a rank-valid forest of size `n` inspect at most
+`2 * (Nat.log 2 n + 1)` nodes. -/
+private theorem compressWithSteps_steps_add_le {uf : Batteries.UnionFind} {n : ℕ}
+    (h : ValidRank uf) (hn : uf.size = n) (x : Fin uf.size)
+    (y : Fin (compressWithSteps uf x).1.size) :
+    (compressWithSteps uf x).2.2 + (compressWithSteps (compressWithSteps uf x).1 y).2.2 ≤
+      2 * (Nat.log 2 n + 1) := by
+  have h₁ := h.findSteps_le_log_add_one x
+  have h₂ := (h.compressWithSteps x).findSteps_le_log_add_one y
+  simp only [compressWithSteps_size, hn] at h₁ h₂
+  simp only [compressWithSteps_steps]
+  omega
+
 /-! ### Stateful realization of `DisjointSet.spec` -/
 
 /-- Concrete union-find state over `Fin n`: a `Batteries.UnionFind` forest of size `n` paired with
@@ -757,29 +795,12 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     have hsz₁ : c₁.1.size = n := (compressWithSteps_size s.uf x').trans s.size_eq
     let y' : Fin c₁.1.size := ⟨y.1, hsz₁.symm ▸ y.2⟩
     let c₂ := compressWithSteps c₁.1 y'
-    have hroot₁ : (c₁.2.1 : ℕ) = s.uf.rootD x.1 := compressWithSteps_root s.uf x'
-    have hroot₂ : (c₂.2.1 : ℕ) = s.uf.rootD y.1 := by
-      rw [compressWithSteps_root]
-      change c₁.1.rootD y.1 = s.uf.rootD y.1
-      rw [compressWithSteps_fst, Batteries.UnionFind.find_root_1]
-    have hans : (c₁.2.1.1 == c₂.2.1.1) = p.rel x y := by
-      rw [Bool.eq_iff_iff, beq_iff_eq, hroot₁, hroot₂, hrel]
-      rfl
-    have hrank₂ : ValidRank c₂.1 := by
-      have hr₁ : ValidRank c₁.1 := by
-        change ValidRank (compressWithSteps s.uf x').1
-        rw [compressWithSteps_fst]
-        exact hrank.find x'
-      change ValidRank (compressWithSteps c₁.1 y').1
-      rw [compressWithSteps_fst]
-      exact hr₁.find y'
-    have hequiv₂ : ∀ u v : Fin n, p.rel u v = true ↔ c₂.1.Equiv u.1 v.1 := by
-      intro u v
-      rw [hrel u v]
-      change s.uf.Equiv u.1 v.1 ↔ (compressWithSteps c₁.1 y').1.Equiv u.1 v.1
-      rw [compressWithSteps_fst, Batteries.UnionFind.equiv_find]
-      change s.uf.Equiv u.1 v.1 ↔ (compressWithSteps s.uf x').1.Equiv u.1 v.1
-      rw [compressWithSteps_fst, Batteries.UnionFind.equiv_find]
+    have hans : (c₁.2.1.1 == c₂.2.1.1) = p.rel x y :=
+      Bool.eq_iff_iff.mpr ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
+    have hrank₂ : ValidRank c₂.1 := (hrank.compressWithSteps x').compressWithSteps y'
+    have hequiv₂ : ∀ u v : Fin n, p.rel u v = true ↔ c₂.1.Equiv u.1 v.1 := fun u v =>
+      (hrel u v).trans ((equiv_compressWithSteps c₁.1 y' u.1 v.1).trans
+        (equiv_compressWithSteps s.uf x' u.1 v.1)).symm
     exact ⟨hans, hrank₂, hequiv₂, hcomp⟩
   | union x y =>
     let x' : Fin s.uf.size := ⟨x.1, s.size_eq.symm ▸ x.2⟩
@@ -788,24 +809,9 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     have hsz₁ : c₁.1.size = n := (compressWithSteps_size s.uf x').trans s.size_eq
     let y' : Fin c₁.1.size := ⟨y.1, hsz₁.symm ▸ y.2⟩
     let c₂ := compressWithSteps c₁.1 y'
-    have hroot₁ : (c₁.2.1 : ℕ) = s.uf.rootD x.1 := compressWithSteps_root s.uf x'
-    have hroot₂ : (c₂.2.1 : ℕ) = s.uf.rootD y.1 := by
-      rw [compressWithSteps_root]
-      change c₁.1.rootD y.1 = s.uf.rootD y.1
-      rw [compressWithSteps_fst, Batteries.UnionFind.find_root_1]
-    have hmerged : (c₁.2.1.1 != c₂.2.1.1) = !p.rel x y := by
-      rw [Bool.eq_iff_iff, bne_iff_ne, Bool.not_eq_true']
-      constructor
-      · intro hne
-        cases hpxy : p.rel x y
-        · rfl
-        · exfalso
-          exact hne (by rw [hroot₁, hroot₂]; exact (hrel x y).mp hpxy)
-      · intro hfalse heq
-        rw [hroot₁, hroot₂] at heq
-        have htrue := (hrel x y).mpr heq
-        rw [hfalse] at htrue
-        cases htrue
+    have hmerged : (c₁.2.1.1 != c₂.2.1.1) = !p.rel x y :=
+      congrArg (!·) <| Bool.eq_iff_iff.mpr
+        ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
     have huf_eq : (step s (.union x y)).1.uf = s.uf.union x' y₀ := step_union_uf_eq s x y
     refine ⟨hmerged, ?_, ?_, ?_⟩
     · rw [huf_eq]
@@ -859,37 +865,10 @@ private theorem step_steps_le {n : ℕ} {p : Partition n} {s : State n} (o : Op 
   | numComponents =>
     exact Nat.le_refl 1
   | same x y =>
-    let x' : Fin s.uf.size := ⟨x.1, s.size_eq.symm ▸ x.2⟩
-    let c₁ := compressWithSteps s.uf x'
-    have hsz₁ : c₁.1.size = n := (compressWithSteps_size s.uf x').trans s.size_eq
-    let y' : Fin c₁.1.size := ⟨y.1, hsz₁.symm ▸ y.2⟩
-    have ht₁ : c₁.2.2 ≤ Nat.log 2 n + 1 := by
-      change findSteps s.uf x' ≤ Nat.log 2 n + 1
-      simpa only [s.size_eq] using hrank.findSteps_le_log_add_one x'
-    have hr₁ : ValidRank c₁.1 := by
-      change ValidRank (compressWithSteps s.uf x').1
-      rw [compressWithSteps_fst]
-      exact hrank.find x'
-    have ht₂ : (compressWithSteps c₁.1 y').2.2 ≤ Nat.log 2 n + 1 := by
-      simpa only [compressWithSteps_steps, hsz₁] using hr₁.findSteps_le_log_add_one y'
-    change c₁.2.2 + (compressWithSteps c₁.1 y').2.2 ≤ 2 * (Nat.log 2 n + 1)
-    omega
+    exact compressWithSteps_steps_add_le hrank s.size_eq ⟨x.1, s.size_eq.symm ▸ x.2⟩ _
   | union x y =>
-    let x' : Fin s.uf.size := ⟨x.1, s.size_eq.symm ▸ x.2⟩
-    let c₁ := compressWithSteps s.uf x'
-    have hsz₁ : c₁.1.size = n := (compressWithSteps_size s.uf x').trans s.size_eq
-    let y' : Fin c₁.1.size := ⟨y.1, hsz₁.symm ▸ y.2⟩
-    have ht₁ : c₁.2.2 ≤ Nat.log 2 n + 1 := by
-      change findSteps s.uf x' ≤ Nat.log 2 n + 1
-      simpa only [s.size_eq] using hrank.findSteps_le_log_add_one x'
-    have hr₁ : ValidRank c₁.1 := by
-      change ValidRank (compressWithSteps s.uf x').1
-      rw [compressWithSteps_fst]
-      exact hrank.find x'
-    have ht₂ : (compressWithSteps c₁.1 y').2.2 ≤ Nat.log 2 n + 1 := by
-      simpa only [compressWithSteps_steps, hsz₁] using hr₁.findSteps_le_log_add_one y'
-    change c₁.2.2 + (compressWithSteps c₁.1 y').2.2 + 1 ≤ 2 * (Nat.log 2 n + 1) + 1
-    omega
+    exact Nat.add_le_add_right
+      (compressWithSteps_steps_add_le hrank s.size_eq ⟨x.1, s.size_eq.symm ▸ x.2⟩ _) 1
 
 /-- Per-operation logarithmic step certificate for `impl n`. -/
 theorem stepBound (n : ℕ) : Bound (impl n) id (charge n) := by

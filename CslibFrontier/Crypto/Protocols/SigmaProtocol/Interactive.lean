@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Composition
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Efficient
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Linear
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
@@ -250,10 +251,9 @@ theorem plainLaw_toInteractiveProver_runStrategy
     plainLaw (P.toInteractiveProver sampleCommit y x >>=
         runStrategy P.interactiveSpec P.toInteractiveVerifier.samplers) =
       (P.conversation x y).map fun tcz => (P.transcriptOfConversation tcz, ((), ())) := by
-  simp only [toInteractiveProver, toInteractiveVerifier, runStrategy,
-    plainLaw_bind, plainLaw_sample, plainLaw_pure, ProbComp.eval_uniform, hcommit x y,
-    conversation, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    PMF.map_bind, PMF.pure_map, transcriptOfConversation]
+  simp only [pmf_norm, toInteractiveProver, toInteractiveVerifier, runStrategy, plainLaw_bind,
+    plainLaw_sample, plainLaw_pure, ProbComp.eval_uniform, hcommit x y, conversation,
+    transcriptOfConversation]
 
 /-- The full plain-model execution law of `P.toInteractiveReduction sampleCommit`. -/
 theorem eval_toInteractiveReduction_run
@@ -434,8 +434,7 @@ theorem SpecialHVZK.hvzk {R : X → Y → Prop} {simulate : Y → C → PMF (T �
   intro y x hyx
   rw [P.map_fst_eval_toInteractiveReduction_run hcommit y x, h.conversation_eq hyx,
     P.eval_interactiveSim simComp y]
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
-    transcriptOfConversation, interactiveTranscript]
+  simp only [pmf_norm, transcriptOfConversation, interactiveTranscript]
   exact CloseTo.bind_right (PMF.uniformOfFintype C) fun c _ =>
     (hsim y c).map fun tz => (tz.1, c, tz.2, ())
 
@@ -589,8 +588,7 @@ theorem simulatorRealizedBy_interactiveSimWord
             (pack (enc.challenge i c)) := by
     change ProbComp.eval (interactiveSimWord program sampleChallengeWord
         (i, enc.statement i y)) = _
-    simp only [interactiveSimWord, ProbComp.eval_map, ProbComp.eval_bind,
-      hchalWord i, PMF.map_bind, PMF.bind_map, PMF.map_comp, Function.comp_def, pack]
+    simp only [pmf_norm, interactiveSimWord, hchalWord i, pack]
   rw [hlhs, hrhs]
   exact CloseTo.bind (hchal i) fun c _ => (hreal i y c).map (pack (enc.challenge i c))
 
@@ -710,8 +708,7 @@ theorem commitRealizedBy_andProof {sample₀ : X₀ → Y₀ → ProbComp (T₀ 
     (h₀ : P₀.CommitRealizedBy sample₀) (h₁ : P₁.CommitRealizedBy sample₁) :
     (P₀.andProof P₁).CommitRealizedBy (andCommit sample₀ sample₁) := by
   intro x y
-  simp only [andCommit, andProof, ProbComp.eval_bind, ProbComp.eval_pure, h₀ x.1 y.1, h₁ x.2 y.2,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, andCommit, andProof, h₀ x.1 y.1, h₁ x.2 y.2]
 
 theorem eval_andSimComp {simulate₀ : Y₀ → C → PMF (T₀ × Z₀)}
     {simulate₁ : Y₁ → C → PMF (T₁ × Z₁)}
@@ -720,8 +717,7 @@ theorem eval_andSimComp {simulate₀ : Y₀ → C → PMF (T₀ × Z₀)}
     (h₁ : ∀ y c, ProbComp.eval (sim₁ y c) = simulate₁ y c)
     (y : Y₀ × Y₁) (c : C) :
     ProbComp.eval (andSimComp sim₀ sim₁ y c) = andSimulate simulate₀ simulate₁ y c := by
-  simp only [andSimComp, andSimulate, ProbComp.eval_bind, ProbComp.eval_pure, h₀ y.1 c, h₁ y.2 c,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, andSimComp, andSimulate, h₀ y.1 c, h₁ y.2 c]
 
 variable [AddCommGroup C] [Fintype C] [Nonempty C]
 
@@ -762,10 +758,8 @@ theorem commitRealizedBy_orProof
     (orProof P₀ P₁ simulate₀ simulate₁).CommitRealizedBy
       (orCommit sample₀ sample₁ sim₀ sim₁) := by
   rintro (x | x) y
-  · simp only [orCommit, orProof, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-      h₀ x y.1, hs₁, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  · simp only [orCommit, orProof, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-      h₁ x y.2, hs₀, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  · simp only [pmf_norm, orCommit, orProof, ProbComp.eval_uniform, h₀ x y.1, hs₁]
+  · simp only [pmf_norm, orCommit, orProof, ProbComp.eval_uniform, h₁ x y.2, hs₀]
 
 theorem eval_orSimComp
     {simulate₀ : Y₀ → C → PMF (T₀ × Z₀)} {simulate₁ : Y₁ → C → PMF (T₁ × Z₁)}
@@ -774,8 +768,7 @@ theorem eval_orSimComp
     (hs₁ : ∀ y c, ProbComp.eval (sim₁ y c) = simulate₁ y c)
     (y : Y₀ × Y₁) (c : C) :
     ProbComp.eval (orSimComp sim₀ sim₁ y c) = orSimulate simulate₀ simulate₁ y c := by
-  simp only [orSimComp, orSimulate, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-    hs₀, hs₁, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, orSimComp, orSimulate, ProbComp.eval_uniform, hs₀, hs₁]
 
 end Composition
 

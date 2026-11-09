@@ -80,8 +80,7 @@ private theorem computableInPolyTime_profitStep (hw : ComputableInPolyTime w enc
   have hm : ∀ (T : List (Option (List ι))) (a : ι),
       T.map (Option.map (· ++ [a])) = T.map fun o => o.elim none fun s => some (s ++ [a]) := by
     intro T a
-    congr 1
-    funext o
+    congr 1 with o : 1
     cases o <;> rfl
   unfold profitStep
   simp only [hz, hm]
