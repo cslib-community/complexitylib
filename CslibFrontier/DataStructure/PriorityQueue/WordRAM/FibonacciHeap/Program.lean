@@ -844,79 +844,90 @@ theorem ofData_set_sz {n base : ℕ} (x : Data rFib) (v : ℕ) :
 
 /-! The `ofData_write_*` lemmas: a write into one of the nine arrays updates that field of
 `RawState.ofData` and leaves the other eight arrays alone, because the arrays occupy disjoint
-address ranges. Each proof compares the two sides field by field and lets `omega` separate the
-address ranges. -/
+address ranges. Each proof compares the two sides field by field: `Function.update_of_ne`, with
+`omega` separating the address ranges, clears the untouched fields, and a case split on the
+written slot finishes the updated one. -/
 
 theorem ofData_write_key {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + v.val) val) =
       { RawState.ofData n base x with
         key := Function.update (RawState.ofData n base x).key v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_par {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + n + v.val) val) =
       { RawState.ofData n base x with
         par := Function.update (RawState.ofData n base x).par v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_child {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 2 * n + v.val) val) =
       { RawState.ofData n base x with
         child := Function.update (RawState.ofData n base x).child v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_left {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 3 * n + v.val) val) =
       { RawState.ofData n base x with
         left := Function.update (RawState.ofData n base x).left v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_right {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 4 * n + v.val) val) =
       { RawState.ofData n base x with
         right := Function.update (RawState.ofData n base x).right v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_deg {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 5 * n + v.val) val) =
       { RawState.ofData n base x with
         deg := Function.update (RawState.ofData n base x).deg v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_mark {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 6 * n + v.val) val) =
       { RawState.ofData n base x with
         mark := Function.update (RawState.ofData n base x).mark v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_inHeap {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 7 * n + v.val) val) =
       { RawState.ofData n base x with
         inHeap := Function.update (RawState.ofData n base x).inHeap v val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
-    split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_write_cons {n base d : ℕ} (hd : d ≤ n) (x : Data rFib) (val : ℕ) :
     RawState.ofData n base (x.write (base + 8 * n + d) val) =
       { RawState.ofData n base x with
         cons := Function.update (RawState.ofData n base x).cons d val } := by
   simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
-  and_intros <;> funext u <;> simp only [Function.update_apply] <;> split_ifs <;> omega
+  and_intros <;> funext u <;>
+    simp (disch := omega) only [Function.update_of_ne, Function.update_apply]
+  split_ifs <;> first | rfl | omega
 
 theorem ofData_supported {n base : ℕ} {x x' : Data rFib}
     (hreg : ∀ i : Fin rFib, inputReg i = false → x'.regs i = x.regs i)
