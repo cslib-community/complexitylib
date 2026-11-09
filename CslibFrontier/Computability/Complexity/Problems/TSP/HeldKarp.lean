@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.TSP.HeldKarp
 public import CslibFrontier.Computability.Complexity.Problems.TSP
-import Mathlib.Data.List.Rotate
 
 /-!
 # Deciding `TSP` by the Bellman–Held–Karp algorithm
@@ -82,10 +81,8 @@ theorem mem_TSP_iff_heldKarp_le {D : List (List ℕ)} {b n : ℕ} (hn : D.length
     rw [hn] at hp
     obtain ⟨A, B, rfl⟩ := List.append_of_mem (hp.symm.subset (List.mem_range.2 (Nat.succ_pos n)))
     have hp' : (0 :: (B ++ A)).Perm (List.range (n + 1)) := List.perm_append_comm.symm.trans hp
-    have hrot : tourLength D (A ++ 0 :: B) = tourLength D (0 :: (B ++ A)) := by
-      rw [tourLength_eq_cycleCost, tourLength_eq_cycleCost,
-        ← cycleCost_rotate (dist D) (A ++ 0 :: B) A.length, List.rotate_append_length_eq]
-      rfl
+    have hrot : tourLength D (A ++ 0 :: B) = tourLength D (0 :: (B ++ A)) :=
+      cycleCost_append_comm (dist D) A (0 :: B)
     have hnd := hp'.nodup_iff.2 List.nodup_range
     have hpos : ∀ x ∈ B ++ A, x ≠ 0 := fun x hx h => (List.nodup_cons.1 hnd).1 (h ▸ hx)
     have hR : ∀ x ∈ B ++ A, x - 1 < n := fun x hx => by
