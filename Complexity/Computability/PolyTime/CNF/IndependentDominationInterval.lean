@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.PolyTime.CNF.IndependentDomination
 public import Complexity.Computability.PolyTime.CNF.CardinalityInterval
 import all Complexity.Computability.PolyTime.CNF.VCOneDispatch
+import Complexity.Logics.Propositional.DNF.Relabel
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
@@ -117,14 +118,6 @@ private theorem lift_cnf {N : ℕ} (C : CNF ℕ) (hv : ∀ c ∈ C, ∀ l ∈ c,
     _ = C := by simpa only [List.map_id, id_eq] using
         (List.attach_map_val (l := C) (f := id))
 
-private theorem eval_dnf_relabel {V W : Type} (f : V → W) (σ : W → Bool) (p : DNF V) :
-    DNF.eval σ (CNF.relabel f p) = DNF.eval (σ ∘ f) p := by
-  simp only [DNF.eval, CNF.relabel, List.any_map, Function.comp_def]
-  congr 1
-  funext t
-  simp only [Term.eval, Clause.relabel, List.all_map, Function.comp_def]
-  congr 1
-
 open Classical in
 /-- The actual source input has a finite presentation with proved widths and exact original
 count. All circuit/auxiliary data are computed; these witnesses are semantic proof objects only. -/
@@ -212,11 +205,11 @@ theorem representation {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] 
         · intro h p hp
           have hmem : CNF.relabel ι p ∈ P := List.mem_map.mpr ⟨p, hp, rfl⟩
           have ht := h _ hmem
-          rwa [eval_dnf_relabel] at ht
+          rwa [DNF.eval_relabel] at ht
         · intro h p hp
           change p ∈ (IndependentDomination.finiteCoverage G).map (CNF.relabel ι) at hp
           obtain ⟨p0, hp0, heq⟩ := List.mem_map.mp hp
-          rw [← heq, eval_dnf_relabel]
+          rw [← heq, DNF.eval_relabel]
           exact h p0 hp0
       simp only [B, CNF.eval_append, Bool.and_eq_true, CNF.eval_relabel, hFE, hPE]
       rw [← IndependentDomination.finite_semantics G (fun u => y (ι u))]

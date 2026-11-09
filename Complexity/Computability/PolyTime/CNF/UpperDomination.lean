@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Boolean.FunctionalCNFContext
 public import Complexity.Computability.PolyTime.CNF.IndependentDominationInterval
 import all Complexity.Computability.PolyTime.CNF.IndependentDomination
 import all Complexity.Computability.PolyTime.CNF.IndependentDominationInterval
+import Complexity.Logics.Propositional.DNF.Relabel
 
 /-!
 # Actual Upper Dominating Set set–marking construction
@@ -138,7 +139,7 @@ theorem finiteDomination_eval {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel 
     (∀ p ∈ finiteDomination G a, DNF.eval y p = true) ↔
       G.IsDominatingSet {u | y (selection a u) = true} := by
   simp only [finiteDomination, List.forall_mem_map,
-    IndependentDominationInterval.eval_dnf_relabel]
+    DNF.eval_relabel]
   simp [IndependentDomination.finiteCoverage, DNF.eval_eq_true_iff, Term.eval, Literal.eval,
     SimpleGraph.IsDominatingSet, SimpleGraph.ClosedAdj, Function.comp_def, and_comm]
 

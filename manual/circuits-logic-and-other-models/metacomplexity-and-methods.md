@@ -1137,10 +1137,60 @@ selection/mark enumeration is test-only; production uses the certified sharp cou
 
 This closes the augmented width-four exact-set clause. The source's optional shared path-marker
 width-three construction on at most $6v+a-1$ variables is still open; ordinary clause splitting
-would add too many variables. General degree rules/partitions, four other recovery specializations,
+would add too many variables. General labeled degree partitions, four other recovery specializations,
 the indexed Exact Cover encoded-transposition composition and the remaining explicit inventory
 stay open. The semantic `coverScopes_iff` alone is not that encoded frontend/resource theorem.
 This does not complete ALL-main or the independent paperwide audit.
+
+### General fixed finite/cofinite degree rules
+
+Import `Complexity.Computability.Complexity.FineGrained.SigmaRhoCountingResources`.
+This implements the general count and optional input-size interval of Corollary 7.2 / Appendix C.2
+(PDF pp.24–25,31–32), rather than only independent domination. `SimpleGraph.IsSigmaRhoSet`
+uses ordinary open-neighbor counts: selected vertices follow $\sigma$, other vertices follow
+$\rho$. The two sets are fixed and each is finite or cofinite. `DegreeRule` is a fixed table whose
+last entry represents **every** count at least the positive cutoff $D$, not just degree $D$.
+`exists_degreeRules` proves that every source pair has a common fixed table representation.
+The graph varies at runtime; neither the cutoff nor the rule table is instance-dependent advice.
+
+`SigmaRho.BinaryFrontend.build` consumes the existing explicit adjacency matrix/unary declaration
+and two binary natural bounds. `active = true` imposes the inclusive interval; equality, only a
+lower bound (upper bound $v$), or only an upper bound (lower bound zero) are specializations.
+`active = false` ignores both bound fields and creates no size gates. Bounds above $v$ are capped
+by the actual functional interval generator; inconsistent intervals reject. The empty graph has
+one feasible selection exactly when the active interval contains zero, independently of the rules.
+This entry does not yet expose a signed-bound wrapper for general rules.
+
+`DegreeThreshold.forward` and `reverse` enumerate neighbor sublists of each fixed length at most
+$D$, never a full powerset. They derive exactly $Dv$ threshold bits and predicates. The
+`functional` theorem forces the unique actual count thresholds, and forbidden-state clauses test
+the compiled rules. `representation` forgets the uniquely determined thresholds and size gates,
+proving equality with the count of original vertex sets. No trace, rank, output or fast counter is
+supplied by the caller. `build_polytime` charges binary index arithmetic, candidate traversal,
+rule evaluation, all literal writes and actual functional gate construction.
+
+For positive $v$, `query_count`, `query_budget` and `query_volume` give exactly two queries,
+$N=(2D+1)v+a-1$, width at most $D+2$, valid literal indices and the explicit polynomial clause bound
+$2+2856(v+1)+3Dv(v+1)^D+(4D+2)v$. Here $a\le952(v+1)$ and $a=0$ without size tests.
+This clause bound is separate from the runtime proof. `exists_count_finiteCofinite_certificate`
+composes the actual constructor and the unrestricted-density native counter with binary output:
+$C(L+1)^e2^{A\eta(v)}$ time for $v\ge16$, where
+$\eta(v)=v\log\log v/\sqrt{\log v}$, and global polynomial peak workspace on all raw frames.
+Constants depend only on the fixed rule pair/test mode. Rounded bounds cover all smaller graphs;
+actual linear dimension rescaling preserves the single loglog exponent. The recorded canonical
+simple-graph promise, nonsuccinct unary declarations and native charged-word conventions remain.
+No malformed-byte admission or binary-transition simulation theorem is added.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.SigmaRho`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/SigmaRho.lean) checks overlapping
+open neighborhoods, exact finite rules versus cofinite tails, empty/rejecting rules, isolates,
+contradictory/512-bit bounds and actual query metadata. Test-only original-selection enumeration
+computes auxiliary traces deterministically; production uses the proved sharp counter.
+
+The full general-rule cardinality-distribution traversal is still open. Theorem 7.3 also still needs
+the actual fixed $q$-class labeled matrix construction, varying class bounds and tuple traversal;
+this two-state selected/complement result does not establish that theorem. The current complete
+source inventory and remaining graph/Exact Cover/refinement clauses are in `ROADMAP.md`.
 
 ## Known Limitations
 

@@ -11,6 +11,7 @@ public import Complexity.Computability.PolyTime.CNF.IndependentDominationInterva
 public import Complexity.Computability.PolyTime.CNF.DominatingInducedMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.InducedMatching
 import all Complexity.Computability.PolyTime.CNF.IndependentDominationInterval
+import Complexity.Logics.Propositional.DNF.Relabel
 import all Complexity.Computability.PolyTime.CNF.DominatingInducedMatching
 
 /-!
@@ -161,11 +162,11 @@ theorem representation {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] 
         · intro h p hp
           have hmem : CNF.relabel ι p ∈ P := List.mem_map.mpr ⟨p, hp, rfl⟩
           have ht := h _ hmem
-          rwa [eval_dnf_relabel] at ht
+          rwa [DNF.eval_relabel] at ht
         · intro h p hp
           change p ∈ (DominatingInducedMatching.finiteConditions G).map (CNF.relabel ι) at hp
           obtain ⟨p0, hp0, heq⟩ := List.mem_map.mp hp
-          rw [← heq, eval_dnf_relabel]
+          rw [← heq, DNF.eval_relabel]
           exact h p0 hp0
       simp only [B, CNF.eval_append, Bool.and_eq_true, CNF.eval_relabel, hFE, hPE]
       rw [← DominatingInducedMatching.regular_semantics G (fun u => y (ι u))]

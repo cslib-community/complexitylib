@@ -1382,7 +1382,7 @@ declarations and native charged-word conventions, not undocumented admission or 
 | Theorem 6.3 | `VCOneDispatch`, `VCOneCountingResources` | Complete actual table counter, arbitrary overlapping injective scopes, direct/empty branches and original count. |
 | Lemma 3.2; Proposition 4.2 | `IncidenceGeneralResources`, generic frontend composition | Actual general-density single-loglog fixed-width counter and sequential resource composition. The old squared-loglog interpolation algorithm is not relabeled. |
 | Theorem 7.1 | `WeightedRaggedResources` | Parsed arbitrary ragged positive-binary-weight rows, repeated/mixed literals and signed targets, fixed normalized-demand bound, actual all-cases sharp counting. |
-| Corollary 7.2; Lemma C.1 | Current independent-domination specialization | General fixed finite/cofinite rules and their threshold-bit construction/distribution remain open. |
+| Corollary 7.2; Lemma C.1 | `DegreeThreshold`, `SigmaRhoInput`, `SigmaRhoCountingResources` | Actual arbitrary fixed finite/cofinite pair, functional thresholds, optional binary natural interval, original-set count and complete sharp native resources/query budgets. Full distribution and general signed-bound wrapper remain open. |
 | Theorem 7.3 | Current perfect-matching-cut specialization | General fixed labeled degree matrices, varying class bounds and tuple traversal remain open. |
 | Corollary 7.4; Propositions D.1–D.5 | Existing graph counter modules; MIM/Upper witness modules | All six decision specializations covered. Full optimum/witness for MIM and Upper; four other recovery specializations remain open. |
 | Corollary 7.5 | `InducedMatching.Distribution` | Full ordered edge-size distribution and sharper no-size-test total construction, including output resources. |
@@ -1406,11 +1406,14 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   Alternative raw table formats/parser/admission transfers remain separate.
 - Theorem 7.1: the parsed ragged weighted-row counting/reduction is covered for the explicit
   nonsuccinct unary-declaration input encoding, with actual sharp time/polynomial space.
-- Corollary 7.2: general fixed finite/cofinite sigma-rho degree-rule construction and full count/
-  resource transfer remain open. Fixed cutoff D must not grow with the input. The independent-
-  domination rule and functional signed cardinality tests are covered, including input bounds.
-  The general source budget is `(2D+1)v+a-1`, width at most `D+2`, with `a=0` without size
-  tests; the full cardinality distribution is also a remaining general-rule clause.
+- Corollary 7.2 / Lemma C.1: the actual general fixed finite/cofinite sigma-rho constructor,
+  unique threshold/gate extension, ordinary original-set count and complete sharp-time/global
+  polynomial-space composition are covered by `SigmaRhoCountingResources`. Runtime input is an
+  explicit canonical simple graph with unary declaration and binary natural interval bounds;
+  fixed rules/cutoff are compiled problem parameters. Actual query variable/width/polynomial
+  clause bounds are proved, including all gates; no-test mode has zero gates. The full ordered
+  cardinality-distribution traversal and general signed-bound wrapper remain open. Reuse the
+  finished point counter rather than re-proving its functional or resource stages.
 - Theorem 7.3: fixed q,D labeled degree matrices and optional per-class input cardinality tests
   still need their actual class/neighbor-threshold construction and complete resource/count proof.
   Preserve labeled classes (empty unless input bounds forbid this), input-varying per-class bounds,
