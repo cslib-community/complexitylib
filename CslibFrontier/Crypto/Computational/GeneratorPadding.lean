@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PolyTime.Init
 import CslibFrontier.Tactic.PPT
 
@@ -114,7 +115,7 @@ theorem generate_distribution {seedBits commonBits : ℕ} (generator : List Bool
   rw [uniformList_bind_split seedBits (commonBits - seedBits)
     (fun front padding => PMF.pure
       ((generator front ++ padding).take (commonBits + 1)))]
-  simp only [PMF.monad_bind_eq_bind, PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  simp only [pmf_norm, PMF.map]
 
 /-- Uniform raw output and independent padding give exactly the desired uniform output. -/
 theorem ideal_distribution {seedBits outputBits commonBits : ℕ}
@@ -126,7 +127,7 @@ theorem ideal_distribution {seedBits outputBits commonBits : ℕ}
       uniformList (commonBits + 1) := by
   rw [← uniformList_take (n := outputBits + (commonBits - seedBits))
     (k := commonBits + 1) (by lia), uniformList_add, PMF.map_bind]
-  simp only [PMF.monad_bind_eq_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm]
 
 /-- A distinguisher for padded output is an ordinary randomized postprocessing of raw output. -/
 noncomputable def test (seedBits commonBits : ℕ) (adversary : List Bool → ProbComp Bool)
@@ -164,7 +165,6 @@ theorem advantage_eq {seedBits outputBits commonBits : ℕ} (generator : List Bo
         (fun word => ProbComp.eval (test seedBits commonBits adversary word))) := by
   rw [generate_distribution generator hfits, ← ideal_distribution hexpands]
   simp only [PMF.monad_bind_eq_bind]
-  simp only [test, ProbComp.eval_bind, BitString.eval_sampleList, PMF.bind_bind, PMF.bind_map,
-    Function.comp_def]
+  simp only [pmf_norm, test, BitString.eval_sampleList]
 
 end Cslib.Crypto.GeneratorPadding

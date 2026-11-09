@@ -11,6 +11,8 @@ public import CslibFrontier.Computability.Circuit.Frontier.Layouts.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Order.Prod.Lex.Basic
 import Mathlib.SetTheory.Cardinal.NatCard
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Positivity
 
 /-!
 # Compressions of multigraphs
@@ -445,3 +447,50 @@ theorem exists_width_le [Finite V] [Finite E] (σ : Layout c.blocks) :
 end Compression
 
 end Cslib.Circuits.Frontier.Multigraph
+
+namespace Cslib.Circuits.Frontier
+
+/-- **Layout bounds from saturated quotients.** For `0 ≤ A`, the layout hypothesis
+`LayoutBound d A` follows once, for each `η > 0` and some `N₀`, every saturated compression of a
+connected multigraph into more than `max 1 N₀` blocks has a quotient layout of width at most
+`(A + η) β₁`. Smaller quotients have at most `d (N₀ + 1)` edges, and expanding a quotient layout
+costs `d log₂ |V|`. -/
+theorem LayoutBound.of_saturated {d : ℕ} {A : ℝ} (hA : 0 ≤ A)
+    (h : ∀ η > 0, ∃ N₀ : ℕ, ∀ (V E : Type) [Finite V] [Finite E] (G : Multigraph V E)
+      (Q : G.Compression d), G.toSimpleGraph.Connected → Q.Saturated →
+        1 < Nat.card Q.blocks → N₀ < Nat.card Q.blocks →
+        ∃ σ : Layout Q.blocks, (Q.quotient.width σ : ℝ) ≤ (A + η) * G.cycleRank) :
+    LayoutBound d A := by
+  refine LayoutBound.of_natLog (D := d) fun η hη => ?_
+  obtain ⟨N₀, hN₀⟩ := h η hη
+  refine ⟨d * (N₀ + 1), fun V E _ _ G hG _ hdeg => ?_⟩
+  obtain ⟨Q, hQ⟩ := Multigraph.Compression.exists_saturated hdeg
+  have hβ : 0 ≤ (A + η) * G.cycleRank := mul_nonneg (by linarith) (Nat.cast_nonneg _)
+  -- A layout of the quotient.
+  obtain ⟨σ, hσ⟩ : ∃ σ : Layout Q.blocks,
+      (Q.quotient.width σ : ℝ) ≤ (A + η) * G.cycleRank + d * (N₀ + 1) := by
+    by_cases hbig : 1 < Nat.card Q.blocks ∧ N₀ < Nat.card Q.blocks
+    · obtain ⟨σ, hσ⟩ := hN₀ V E G Q hG hQ hbig.1 hbig.2
+      exact ⟨σ, hσ.trans (le_add_of_nonneg_right (by positivity))⟩
+    · -- A small quotient has few edges.
+      refine ⟨Classical.arbitrary _, ?_⟩
+      have hw := Q.quotient.width_le_card (Classical.arbitrary _)
+      have hsum := Q.sum_ncard_edgeCut
+      have hle : ∑ B : Q.blocks, (G.edgeCut {v | v ∈ B.1}).ncard ≤ ∑ _B : Q.blocks, d :=
+        Finset.sum_le_sum fun B _ => Q.ncard_edgeCut_le _ B.2
+      rw [Finset.sum_const, Finset.card_univ, smul_eq_mul, ← Nat.card_eq_fintype_card] at hle
+      have hv := Nat.mul_le_mul_right d (show Nat.card Q.blocks ≤ N₀ + 1 by omega)
+      have : Q.quotient.width (Classical.arbitrary _) ≤ d * (N₀ + 1) := by
+        rw [Nat.mul_comm d]
+        omega
+      have : (Q.quotient.width (Classical.arbitrary _) : ℝ) ≤ d * (N₀ + 1) := by
+        exact_mod_cast this
+      linarith
+  -- Expand it.
+  obtain ⟨τ, hτ⟩ := Q.exists_width_le σ
+  refine ⟨τ, ?_⟩
+  have : (G.width τ : ℝ) ≤ Q.quotient.width σ + d * Nat.log 2 (Nat.card V) := by
+    exact_mod_cast hτ
+  linarith
+
+end Cslib.Circuits.Frontier

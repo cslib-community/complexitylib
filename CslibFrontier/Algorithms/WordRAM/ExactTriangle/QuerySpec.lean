@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.Classes
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import CslibFrontier.Algorithms.ExactTriangle.Splitting
 public import Mathlib.Data.Nat.Nth
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Native query ranks and the finite ExactTriangle chunks
@@ -181,9 +182,7 @@ theorem chunk_readback (D : ℕ) (rho : Fin p) (mem : ℕ → ℕ) (base : ℕ)
   have hrRem := hr.trans_le (min_le_right _ _)
   have hglobal : k * queryCap n D + r < (residueClass wAB p rho).card := by omega
   obtain ⟨q, hq, huniq⟩ := query_readback wAB hp R hR rho mem base hread _ hglobal
-  have hdiv : (k * queryCap n D + r) / queryCap n D = k := by
-    rw [Nat.mul_comm k (queryCap n D), Nat.mul_add_div hcap,
-      Nat.div_eq_of_lt hrCap, Nat.add_zero]
+  have hdiv : (k * queryCap n D + r) / queryCap n D = k := Nat.mul_add_div_of_lt k hrCap
   have hchunk : q ∈ chunkOf wAB D p rho k := by
     rw [mem_chunkOf wAB hp R hR]
     refine ⟨(mem_class wAB hp R hR rho q).mp hq.1, ?_⟩
