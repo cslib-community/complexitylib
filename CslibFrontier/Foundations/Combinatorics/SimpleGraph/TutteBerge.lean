@@ -206,7 +206,7 @@ private theorem ncard_oddComponents_deleteVerts_addUniversalVerts [Finite V] {d 
 /-- If `U'` misses a new vertex of `G.addUniversalVerts d`, then deleting `U'` leaves a connected
 graph, since the missed vertex is adjacent to every other remaining vertex: there is at most one
 odd component. -/
-private theorem ncard_oddComponents_deleteVerts_addUniversalVerts_le_one [Finite V] {d : ℕ}
+private theorem ncard_oddComponents_deleteVerts_addUniversalVerts_le_one {d : ℕ}
     {U' : Set (V ⊕ Fin d)} {i : Fin d} (hi : Sum.inr i ∉ U') :
     ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe.oddComponents.ncard ≤ 1 := by
   set H := ((⊤ : (G.addUniversalVerts d).Subgraph).deleteVerts U').coe
@@ -265,7 +265,7 @@ private theorem not_isTutteViolator_addUniversalVerts [Finite V] {U₀ : Set V} 
 /-- **Restricting the perfect matching.** A perfect matching of `G.addUniversalVerts d` restricts
 to a matching of `G` that misses at most `d` vertices: the partners of the missed vertices are
 distinct new vertices. -/
-private theorem exists_isMatching_ncard_compl_le_of_isPerfectMatching [Finite V] {d : ℕ}
+private theorem exists_isMatching_ncard_compl_le_of_isPerfectMatching {d : ℕ}
     {M' : (G.addUniversalVerts d).Subgraph} (hM' : M'.IsPerfectMatching) :
     ∃ M : G.Subgraph, M.IsMatching ∧ M.vertsᶜ.ncard ≤ d := by
   classical
