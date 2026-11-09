@@ -787,6 +787,40 @@ theorem run_history_matches {P : Type} (env : Environment Unit P) (fuel : ℕ)
       exact ih _ _ _
         (RuntimeControl.afterReply_history_matches seed state memory reply next hh) _ ho
 
+/-- Every actual transaction consumes exactly one of each scalar allowance.
+The native feedback theorem uses this same kernel; this is conservation of
+executed calls, rather than a supplied stopping-time or runtime bound. -/
+theorem run_allowances {P : Type} (env : Environment Unit P) (fuel : ℕ)
+    (state : RuntimeControl.State) (channels : Unit → Channel Bool) (memory : Memory Unit P)
+    (request : RuntimeControl.State → List Bool) (outcome : Outcome P)
+    (ho : outcome ∈ (run env fuel state channels memory request).support) :
+    outcome.state.turns + outcome.memory.events.length = state.turns + memory.events.length ∧
+      outcome.state.opportunities + outcome.memory.events.length =
+        state.opportunities + memory.events.length ∧
+      outcome.state.allotments + outcome.memory.events.length =
+        state.allotments + memory.events.length := by
+  induction fuel generalizing state channels memory outcome with
+  | zero =>
+    simp only [run, PMF.mem_support_pure_iff] at ho
+    cases ho
+    exact ⟨rfl, rfl, rfl⟩
+  | succ fuel ih =>
+    cases hs : RuntimeControl.stopped state with
+    | true =>
+      simp only [run, hs, ↓reduceIte, PMF.mem_support_pure_iff] at ho
+      cases ho
+      exact ⟨rfl, rfl, rfl⟩
+    | false =>
+      have ht : state.turns ≠ 0 := by intro h; simp [RuntimeControl.stopped, h] at hs
+      have hp : state.opportunities ≠ 0 := by intro h; simp [RuntimeControl.stopped, h] at hs
+      have ha : state.allotments ≠ 0 := by intro h; simp [RuntimeControl.stopped, h] at hs
+      simp only [run, hs, Bool.false_eq_true, ↓reduceIte, PMF.monad_bind_eq_bind,
+        PMF.mem_support_bind_iff] at ho
+      obtain ⟨⟨reply, next⟩, _, ho⟩ := ho
+      have hb := ih _ _ _ _ ho
+      simp only [RuntimeControl.afterReply, Memory.record, List.length_cons] at hb
+      omega
+
 /-- Guarded feedback issues no more turns than any initial scalar allowance.
 This is an actual-call count bound, not a labeled source-opportunity used-set or
 measured physical deadline guarantee. -/

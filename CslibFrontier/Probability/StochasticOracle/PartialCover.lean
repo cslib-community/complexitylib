@@ -79,6 +79,14 @@ open scoped Classical in
   | C, [] => C
   | C, P :: ps => I.retain ρ (if I.Certified ρ C P then C ∪ P else C) ps
 
+/-- Processing consecutive proposal lists is sequential retention from the first result. -/
+theorem retain_append (ρ : ℝ) (C : Finset J) (ps qs : List (Finset J)) :
+    I.retain ρ C (ps ++ qs) = I.retain ρ (I.retain ρ C ps) qs := by
+  classical
+  induction ps generalizing C with
+  | nil => rfl
+  | cons P ps ih => simpa only [List.cons_append, retain] using ih _
+
 /-- Coverage respects unions of original subfamilies. -/
 theorem covered_union (C P : Finset J) :
     I.covered (C ∪ P) = I.covered C ∪ I.covered P := by

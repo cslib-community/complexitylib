@@ -47,6 +47,17 @@ variable {E J Ω : Type*} [DecidableEq E] [DecidableEq J]
   | [] => ∅
   | x :: h => I.retain ρ (selected I ρ proposal h) (proposal h x)
 
+/-- A history-independent response parser gives exactly the chronological concatenation
+of proposals, even when the response law itself depends on the entire hidden history. -/
+theorem selected_eq_retain (I : Instance E J) (ρ : ℝ)
+    (parse : Ω → List (Finset J)) (h : List Ω) :
+    selected I ρ (fun _ => parse) h = I.retain ρ ∅ (h.reverse.flatMap parse) := by
+  induction h with
+  | nil => rfl
+  | cons x h ih =>
+    simp only [selected, ih, List.reverse_cons, List.flatMap_append,
+      List.flatMap_cons, List.flatMap_nil, List.append_nil, I.retain_append]
+
 /-- The actual retained family carries the dual certificate throughout execution. -/
 theorem selected_bound (I : Instance E J) (ρ : ℝ)
     (proposal : List Ω → Ω → List (Finset J)) (h : List Ω) :

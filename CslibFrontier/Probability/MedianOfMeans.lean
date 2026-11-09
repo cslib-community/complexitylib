@@ -27,12 +27,23 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 
 /-!
-# Median-of-means estimators
+# The median-of-means estimator
 
-`medianOfMeans` is the existing finite-uniform statistic: it takes `2 r` blocks,
-averages each block and reports their median. Its concentration statement uses
-finite densities and the `(8 / 9) ^ r` median trick for the streaming applications
-[AlonMatiasSzegedy1999, Theorem 2.2; Chakrabarti2025, Section 2.4].
+Given an estimator `g : Ω → ℝ` of its mean `𝔼 g`, with sample `x` drawn uniformly from a finite
+type `Ω`, the **median-of-means** estimator `Cslib.Probability.medianOfMeans g ω` draws `2 r`
+groups of `k` independent samples `ω i l`, averages each group, and reports the median of the
+`2 r` averages. An average of `k` samples has `k` times smaller variance
+(`Cslib.Probability.expect_expect_sub_sq`), so by Chebyshev's inequality at most a third of the
+groups miss `𝔼 g` by more than `t` once the variance of `g` is at most `k t² / 3`; the median
+misses only when at least half of the groups do, which happens for at most an `(8 / 9) ^ r`
+fraction of the samples (`Cslib.Probability.dens_abs_medianOfMeans_sub_gt_le`). This is the
+amplification step of the frequency moment estimators of Alon, Matias and Szegedy
+[AlonMatiasSzegedy1999, Theorem 2.2]. Probabilities over the samples are densities `Finset.dens`.
+
+The last step is the **median trick** [Chakrabarti2025, Section 2.4]
+(`Cslib.Probability.dens_abs_median_sub_gt_le`, in `CslibFrontier.Probability.MedianTrick`), which
+holds for any estimate that misses by more than `t` with probability at most `1 / 3`, whatever its
+distribution; the Count-Sketch uses it for estimates that are not averages.
 
 `blockMedianOfMeans` is the separate measure-valued statistic used by adaptive
 auditing. It takes explicit block sizes `m`, `k` and uses the total lower median,
@@ -40,18 +51,18 @@ expressed by finite maxima and minima. It is Borel measurable, including ties an
 even block counts. Its sample experiment is the actual rectangular independent
 product of the sample law; no concentration conclusion is a model field.
 
+Its API includes `lowerMedian`, `blockMean`, `blockSampleLaw`,
+`blockMedianOfMeans_confidence` and `blockMedianOfMeans_zero_length`.
+
 ## Main definitions
 
-* `medianOfMeans`: the finite-uniform median of `2 r` block averages.
-* `lowerMedian`, `blockMean`: total lower median and arithmetic block mean.
-* `blockSampleLaw`, `blockMedianOfMeans`: product sample law and measure-valued estimator.
+* `Cslib.Probability.medianOfMeans`: the median of `2 r` averages of `k` samples.
 
 ## Main results
 
-* `expect_expect_sub_sq`: variance of a finite-uniform average.
-* `dens_abs_medianOfMeans_sub_gt_le`: finite-density concentration.
-* `blockMedianOfMeans_confidence`: confidence with constants 4 and 8.
-* `blockMedianOfMeans_zero_length`: explicit zero-sample output.
+* `Cslib.Probability.expect_expect_sub_sq`: the variance of an average of `k` independent samples.
+* `Cslib.Probability.dens_abs_medianOfMeans_sub_gt_le`: the median of means misses the mean by
+  more than `t` with probability at most `(8 / 9) ^ r`.
 
 ## References
 
@@ -382,7 +393,9 @@ theorem blockMedianOfMeans_zero_length {Ω : Type*} (Y : Ω → ℝ) (k : ℕ)
 
 end Cslib.Probability
 
+end
 
+end
 
 public section
 
@@ -395,8 +408,7 @@ variable {Ω : Type*} [Fintype Ω]
 
 /-- The **median-of-means** estimate from `2 r` groups of `k` samples of `g`: the median of the
 `2 r` group averages. -/
-@[expose] noncomputable def medianOfMeans {r k : ℕ} (g : Ω → ℝ)
-    (ω : Fin (2 * r) → Fin k → Ω) : ℝ :=
+@[expose] noncomputable def medianOfMeans {r k : ℕ} (g : Ω → ℝ) (ω : Fin (2 * r) → Fin k → Ω) : ℝ :=
   median fun i => 𝔼 l, g (ω i l)
 
 /-- The average of `k` independent samples of `g` has `k` times smaller variance. -/

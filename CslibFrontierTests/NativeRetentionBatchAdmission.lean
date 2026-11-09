@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAdmission
+import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping
 import CslibFrontierTests.NativeBatchMetadata
 import Mathlib.Tactic
 
@@ -375,5 +375,90 @@ example (seed first : ℕ) :
     (state1 seed first).work.system = (data 3).startup.system ∧
     (state1 seed first).work.history = [(replyOf (exchange1 seed first)).word] := by
   exact ⟨rfl, rfl, rfl⟩
+
+/-- The correlated first receipt is genuinely incomplete under the abstract local
+retention test as well as under the executed native guard. -/
+example (seed first : ℕ) :
+    let state := state1 seed first
+    let hx : Valid state.work.system := original_valid
+    (instanceOf state.work.system hx).covered
+      (AdaptiveSelection.selected (instanceOf state.work.system hx) state.work.system.rho
+        (BatchStopping.proposal state.work) state.work.history) ≠
+          (instanceOf state.work.system hx).ground :=
+  ((BatchStopping.live_iff (state1 seed first) original_valid).mp
+    (first_live seed first)).2.2.2
+
+/-- Exact counters are checked on the same correlated two-batch execution used by
+its native-law client, including the cancellation invoices. -/
+example (seed first second : ℕ) :
+    ∃ outcome ∈ (Feedback.run (environment limits (sample false)) 3 initial
+        (fun _ => ⟨[], [], 0⟩) (start seed) (BatchPlanner.request 6 2)).support,
+      outcome.state.turns = 1 ∧ outcome.state.opportunities = 4 ∧
+        outcome.state.allotments = 1 := by
+  obtain ⟨outcome, ho, hs, hm⟩ := kernel_supported seed first second
+  refine ⟨outcome, ho, ?_⟩
+  have hb := Feedback.run_allowances _ _ _ _ _ _ outcome ho
+  rw [hm] at hb
+  have hlen : (memory2 seed first second).events.length = 2 := rfl
+  rw [hlen] at hb
+  change outcome.state.turns + 2 = 3 ∧ outcome.state.opportunities + 2 = 6 ∧
+    outcome.state.allotments + 2 = 3 at hb
+  omega
+
+/-- A single actual full response supplies the nonzero productive-count threshold;
+the generic count theorem returns both the cover and its dual certificate. -/
+example (seed first : ℕ) :
+    let state := fullState seed first
+    let hx : Valid state.work.system := original_valid
+    let I := instanceOf state.work.system hx
+    I.covered ((outputFamily (Packets.assemble state.work)).image Fin.val) = I.ground ∧
+      I.cost ((outputFamily (Packets.assemble state.work)).image Fin.val) ≤
+        (state.work.system.rho : ℝ) * ∑ e ∈ I.ground, I.dual e := by
+  let state := fullState seed first
+  have hx : Valid state.work.system := original_valid
+  let I := instanceOf state.work.system hx
+  have hd : (Packets.decision state.work).1 = true := by
+    by_contra h
+    have hz : RuntimeControl.result state = [] := by
+      simp only [RuntimeControl.result, h, ↓reduceIte]
+    have hf := (full_stops seed first).2
+    rw [hf] at hz
+    have hl := congrArg List.length hz
+    norm_num at hl
+  have hg := (BatchStopping.completion_iff state.work hx).mp hd
+  change I.covered (AdaptiveSelection.selected I state.work.system.rho
+    (BatchStopping.proposal state.work) state.work.history) = I.ground at hg
+  have hr : AdaptiveSelection.residual I state.work.system.rho
+      (BatchStopping.proposal state.work) state.work.history = 0 := by
+    simp only [AdaptiveSelection.residual, hg, Finset.sdiff_self, Finset.card_empty]
+  have hcard : I.ground.card = 2 := by
+    norm_num [I, instanceOf, ground, state, fullState, RuntimeControl.afterReply,
+      initial, GuardedStartup.state, RuntimeControl.initial, data, List.range_succ]
+  have hc : I.ground.card ≤ 2 * AdaptiveSelection.count
+      (AdaptiveSelection.productive I state.work.system.rho
+        (BatchStopping.proposal state.work) 2) state.work.history := by
+    rw [hcard]
+    change 2 ≤ 2 * (0 + if AdaptiveSelection.productive I state.work.system.rho
+      (BatchStopping.proposal state.work) 2 []
+        (replyOf (fullExchange seed first)).word then 1 else 0)
+    have hp : AdaptiveSelection.productive I state.work.system.rho
+        (BatchStopping.proposal state.work) 2 []
+          (replyOf (fullExchange seed first)).word = true := by
+      change decide (AdaptiveSelection.residual I state.work.system.rho
+        (BatchStopping.proposal state.work) state.work.history ≤ _) = true
+      rw [hr]
+      simp
+    rw [hp]
+    decide
+  exact (BatchStopping.count_completed state hx 2 hc).2.2
+
+/-- An exhausted reservation really can stop before a cover: the allowance
+hypothesis in the horizon theorem cannot be dropped. -/
+example :
+    RuntimeControl.stopped { initial with allotments := 0 } = true ∧
+      (Packets.decision { initial.work with history := [] }).1 = false := by
+  refine ⟨by simp [RuntimeControl.stopped], ?_⟩
+  have hd := (Bool.or_eq_false_iff.mp initial_live).2
+  exact hd
 
 end CslibFrontierTests.NativeRetentionBatchAdmission

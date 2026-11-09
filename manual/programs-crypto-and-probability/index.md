@@ -1965,6 +1965,21 @@ accrued tokens. The handler enforces cutoffs and the absolute oracle-time deadli
 the planner's fitting allotments prevent rejection before its last allowed turn.
 Local native instructions are excluded from that duration, as in the paper.
 
+To compare the executed guard with the mathematical progress process, import
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping`.
+`retained_eq` identifies packet parsing and rational local retention with
+`AdaptiveSelection.selected` on the actual chronological raw history.
+`count_completed` derives a computed stop, the actual output mask, full coverage
+and its dual weight certificate from the productive-count threshold.
+`Feedback.run_allowances` conserves each allowance plus the actual number of events.
+With opportunity and reservation budgets covering the turn horizon,
+`run_live_before_horizon` proves that the same feedback kernel stays live before
+that horizon exactly when its retained sets are incomplete. The reservation
+condition matters: zero reservations can stop an incomplete instance initially.
+These are pathwise statements for the kernel in the proved native execution law;
+the conditional-law connection at selected native epochs, and hence the numerical
+upper survival-sum and optimum bounds for that code, remain open.
+
 The [admitted batch client](../../CslibFrontierTests/NativeRetentionBatchAdmission.lean)
 checks fresh concurrent pairs, shared unbounded hidden invoices, cancellation and
 original-context/history-dependent next requests. From the repository root:
