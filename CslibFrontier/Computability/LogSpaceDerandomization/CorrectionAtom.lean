@@ -221,9 +221,7 @@ theorem card_filter_incomingGate_lt_one_mul_le (X : ι → V → Prop)
   rw [mem_filter] at hs ⊢
   refine ⟨hs.1, ?_⟩
   have hlt : τ₀ < kthLargest Kc {w | X s w} fun w => auxScore I K f G T w y := by
-    by_contra hle
-    rw [incomingGate, hττ _ (not_lt.mp hle)] at hs
-    exact lt_irrefl _ hs.2
+    grind [incomingGate]
   refine ((lt_kthLargest_iff hKc hτ₀).mp hlt).trans (card_le_card fun w hw => ?_)
   rw [mem_filter] at hw ⊢
   refine ⟨?_, by simpa using hw.1⟩

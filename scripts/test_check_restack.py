@@ -39,6 +39,8 @@ def bib(*entries: str) -> str:
 
 LAKEFILE = 'name = "fixture"\n\n[[lean_lib]]\nname = "CslibFrontier"\n'
 PREAMBLE = "module  -- shake: keep-all --deprecated_module: ignore\n\n"
+# The style of `CslibFrontierResults.lean` and `abstracts/CslibFrontierAbstracts.lean`.
+PLAIN = {"preamble": "", "keyword": "import"}
 
 
 def aggregate(*names: str, preamble: str = PREAMBLE, keyword: str = "public import") -> str:
@@ -166,6 +168,44 @@ class RestackTests(unittest.TestCase):
         code, out = self.check(approved, regenerated)
         self.assertEqual(code, 0, out)
         self.assertIn("unlike the replay: CslibFrontier.lean", out)
+
+    def test_plain_aggregate_conflicting_on_its_first_line_passes(self) -> None:
+        # Like `CslibFrontierResults.lean`: plain style and no merge attribute. Both sides insert an
+        # import before the first one, so the replay conflicts on line 1 and shows no style.
+        self.on_main({".gitattributes": "# no aggregate merge driver\n", "CslibFrontier/A.lean": None,
+                      "CslibFrontier.lean": aggregate("C", "E", **PLAIN)})
+        approved = self.feature({"CslibFrontier.lean": aggregate("B", "C", "E", **PLAIN),
+                                 **modules("B")})
+        self.on_main({"CslibFrontier.lean": aggregate("Bb", "C", "E", **PLAIN), **modules("Bb")})
+        new = self.merge_main({"CslibFrontier.lean": aggregate("B", "Bb", "C", "E", **PLAIN)})
+        replayed, conflicts = check_restack.replay(
+            self.root, self.git("merge-base", "main", approved), approved, self.git("rev-parse", "main"))
+        self.assertIn("CslibFrontier.lean", conflicts)
+        self.assertTrue(self.git("cat-file", "blob", f"{replayed}:CslibFrontier.lean").startswith("<<<<<<<"))
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 0, out)
+        self.assertIn("unlike the replay: CslibFrontier.lean", out)
+        # The style still comes from the other versions, so switching it is reported.
+        module = self.commit("module", {"CslibFrontier.lean": aggregate("B", "Bb", "C", "E")})
+        code, out = self.check(approved, module)
+        self.assertEqual(code, 1, out)
+        self.assertIn("CslibFrontier.lean: not what `lake exe mk_all` writes", out)
+
+    def test_style_switched_by_the_approved_change_passes(self) -> None:
+        # The PR switches the aggregate to plain imports while `main` adds a module. The headers
+        # differ, so the driver leaves a text merge, which conflicts from line 1 on.
+        self.on_main({".gitattributes": "CslibFrontier.lean merge=leanagg\n"})
+        approved = self.feature({"CslibFrontier.lean": aggregate("A", "C", "E", **PLAIN)})
+        self.on_main({"CslibFrontier.lean": aggregate("A", "Bb", "C", "E"), **modules("Bb")})
+        new = self.merge_main({"CslibFrontier.lean": aggregate("A", "Bb", "C", "E", **PLAIN)})
+        code, out = self.check(approved, new)
+        self.assertEqual(code, 0, out)
+        self.assertIn("the approved change switches CslibFrontier.lean to plain style", out)
+        # Regenerating in `main`'s module style would undo the reviewed switch.
+        module = self.commit("module", {"CslibFrontier.lean": aggregate("A", "Bb", "C", "E")})
+        code, out = self.check(approved, module)
+        self.assertEqual(code, 1, out)
+        self.assertIn("in plain style, which the approved change switches it to", out)
 
     def stack(self, lower_final: str) -> tuple[str, str, str]:
         """An upper PR approved on a lower PR that then lands, squashed, as `lower_final`.
@@ -557,6 +597,33 @@ class EnvironmentTests(unittest.TestCase):
         self.assertEqual(env["GIT_NO_REPLACE_OBJECTS"], "1")
 
 
+class AggregateStyleTests(unittest.TestCase):
+    MODULE = (PREAMBLE + "public import X\n").encode()
+    PLAIN = b"import X\n"
+    CONFLICT = b"<<<<<<< ours\nimport A\n=======\nimport B\n>>>>>>> theirs\n"
+
+    def style(self, base: bytes | None, onto: bytes | None, approved: bytes | None,
+              replayed: bytes) -> tuple[bool, bool]:
+        return check_restack.aggregate_style((base, onto, approved), replayed)
+
+    def test_agreeing_versions_settle_the_style(self) -> None:
+        self.assertEqual(self.style(self.PLAIN, self.PLAIN, self.PLAIN, self.CONFLICT), (False, False))
+        self.assertEqual(self.style(None, None, self.MODULE, self.CONFLICT), (True, False))
+
+    def test_the_approved_change_switching_the_style_wins(self) -> None:
+        self.assertEqual(self.style(self.MODULE, self.MODULE, self.PLAIN, self.MODULE), (False, True))
+        self.assertEqual(self.style(self.PLAIN, self.MODULE, self.MODULE, self.CONFLICT), (True, True))
+
+    def test_otherwise_the_replay_decides(self) -> None:
+        # Only `main` switches the style, the base is missing, or a version itself has markers.
+        for versions in ((self.MODULE, self.PLAIN, self.MODULE), (None, self.PLAIN, self.MODULE),
+                         (self.CONFLICT, self.PLAIN, self.PLAIN)):
+            with self.subTest(versions=versions):
+                self.assertEqual(self.style(*versions, self.PLAIN), (False, False))
+                with self.assertRaises(check_restack.Underivable):
+                    self.style(*versions, self.CONFLICT)
+
+
 class AggregateListTests(unittest.TestCase):
     def test_listed_aggregates_exist(self) -> None:
         for path in check_restack.AGGREGATES:
@@ -566,8 +633,10 @@ class AggregateListTests(unittest.TestCase):
     def test_committed_aggregates_are_what_mk_all_writes(self) -> None:
         # Keeps the derivation in step with `scripts/MkAll.lean` and the Lake layout.
         head = check_restack.out(ROOT, "rev-parse", "HEAD")
-        canonical, wrong, underivable = check_restack.check_aggregates(ROOT, head, head)
+        canonical, wrong, underivable, switched = check_restack.check_aggregates(
+            ROOT, (head, head, head), head, head)
         self.assertEqual(sorted(canonical), sorted(check_restack.AGGREGATES), (wrong, underivable))
+        self.assertEqual(switched, {})
 
 
 if __name__ == "__main__":
