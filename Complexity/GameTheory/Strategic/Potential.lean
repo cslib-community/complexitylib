@@ -55,6 +55,8 @@ lowers the deviator's cost.
   if it has a generalized ordinal potential.
 * `Cslib.GameTheory.CostGame.HasFIP.exists_reflTransGen_isPureNash`: under the FIP,
   better-response dynamics started from any profile reach a pure Nash equilibrium.
+* `Cslib.GameTheory.CostGame.IsGeneralizedOrdinalPotential.le_of_reflTransGen`: a generalized
+  ordinal potential does not increase along improvement paths.
 * `Cslib.GameTheory.CostGame.IsExactPotential.sub_eq_sub` ([MondererShapley1996], Lemma 2.7):
   with finitely many players, two exact potentials differ by a constant.
 
@@ -174,6 +176,17 @@ theorem HasFIP.exists_reflTransGen_isPureNash (h : G.HasFIP) (s : ∀ i, S i) :
       obtain ⟨t, ht⟩ := hs
       obtain ⟨u, htu, hu⟩ := ih t ht
       exact ⟨u, Relation.ReflTransGen.head ht htu, hu⟩
+
+/-- A generalized ordinal potential does not increase along an improvement path: if better-response
+dynamics lead from `s` to `t`, then `Φ t ≤ Φ s`. -/
+theorem IsGeneralizedOrdinalPotential.le_of_reflTransGen {Φ : (∀ i, S i) → ℝ}
+    (h : G.IsGeneralizedOrdinalPotential Φ) {s t : ∀ i, S i}
+    (hst : Relation.ReflTransGen (flip G.Improves) s t) : Φ t ≤ Φ s := by
+  induction hst with
+  | refl => exact le_rfl
+  | tail _ hbc ih =>
+    obtain ⟨i, a, rfl, hlt⟩ := hbc
+    exact (h _ i a hlt).le.trans ih
 
 /-- [MondererShapley1996], Corollary 2.2, for generalized ordinal potentials: a game with finitely
 many (and at least one) profiles and a generalized ordinal potential has a pure Nash equilibrium.

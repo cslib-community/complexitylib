@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Languages.StarFree
-public import Complexity.Logics.SecondOrder.WordMSO.Separation
+public import Complexity.Logics.SecondOrder.WordMSO.FirstOrder
+import Complexity.Logics.SecondOrder.WordMSO.Separation
 
 /-!
 # Star-free languages are first-order definable
@@ -29,12 +30,13 @@ proof sketch quantifies over a split point `x` only, which leaves this case impl
 With `not_foDefinable_even` this gives [Libkin, Corollary 7.27][Libkin2004]: even length is
 regular but not star-free (over a one-letter alphabet, `(aa)*`), over any nonempty alphabet.
 
-The converse, FO ⇒ star-free, holds over a finite alphabet [Libkin, Theorem 7.26][Libkin2004] and
-is not formalized here. It fails over an infinite alphabet, where `{ε}` is first-order definable
-but not star-free (`exists_foDefinable_not_isStarFree`). This is an elementary remark outside the
-finite-alphabet setting of the cited sources, not a result taken from them. For the connections
-between automata, logical definability and circuit complexity, Libkin refers to Straubing's book
-[Straubing1994].
+The converse, FO ⇒ star-free, holds over a finite alphabet [Libkin, Theorem 7.26][Libkin2004]:
+it is `FODefinable.isStarFree` in the module `WordMSO.McNaughtonPapert`, which combines both
+directions into `foDefinable_iff_isStarFree`. It fails over an infinite alphabet, where `{ε}` is
+first-order definable but not star-free (`exists_foDefinable_not_isStarFree`). This is an
+elementary remark outside the finite-alphabet setting of the cited sources, not a result taken from
+them. For the connections between automata, logical definability and circuit complexity, Libkin
+refers to Straubing's book [Straubing1994].
 
 ## Main definitions
 
@@ -42,10 +44,14 @@ between automata, logical definability and circuit complexity, Libkin refers to 
 
 ## Main results
 
+* `Cslib.Logic.WordMSO.isFO_starFreeSentence`: the translation is first-order.
 * `Cslib.Logic.WordMSO.starFreeSentence_language`: it defines the language of the expression.
 * `Cslib.Language.IsStarFree.foDefinable`: star-free languages are first-order definable.
+* `Cslib.Language.IsStarFree.exists_sentence`: a star-free language is the language of a Mathlib
+  first-order sentence over the word vocabulary.
 * `Cslib.Logic.WordMSO.not_isStarFree_even`, `Cslib.Logic.WordMSO.exists_isRegular_not_isStarFree`:
   even length is regular but not star-free.
+* `Cslib.Logic.WordMSO.foDefinable_one`: `{ε}` is first-order definable.
 * `Cslib.Logic.WordMSO.exists_foDefinable_not_isStarFree`: over an infinite alphabet, some
   first-order definable language is not star-free.
 

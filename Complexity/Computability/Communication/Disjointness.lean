@@ -222,8 +222,7 @@ private theorem slack_le {r s : ℕ} (hs : 48 * r ≤ s) (hs1 : 1 ≤ s) :
     calc (((12 * r : ℕ) : ℝ) + 1) * 2 ^ (12 * r) * (3 / 4) ^ s
         ≤ s * (2 ^ (12 * r) * (3 / 4) ^ (48 * r)) := by
           rw [mul_assoc]
-          exact mul_le_mul h1 (mul_le_mul_of_nonneg_left h2 (by positivity)) (by positivity)
-            (by positivity)
+          gcongr
       _ ≤ s * (27 / 32) ^ r := mul_le_mul_of_nonneg_left h3 (by positivity)
   linarith
 

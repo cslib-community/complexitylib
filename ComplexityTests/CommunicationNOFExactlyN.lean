@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Communication.NOF.Discrepancy
 import Complexity.Computability.Communication.NOF.ExactlyN
 
 /-!
@@ -31,11 +32,11 @@ example : twoRounds.leafCount = 3 := by
 
 /-- The input `(1, 1, 1)` reaches the rightmost leaf. -/
 example : (twoRounds.leaf ![true, true, true] : ℕ) = 2 := by
-  simp [twoRounds, NOF.Protocol.leaf_speak, NOF.Protocol.leaf_output]
+  simp [twoRounds]
 
 /-- The input `(1, 0, 1)` reaches the leftmost leaf. -/
 example : (twoRounds.leaf ![true, false, true] : ℕ) = 0 := by
-  simp [twoRounds, NOF.Protocol.leaf_speak, NOF.Protocol.leaf_output]
+  simp [twoRounds]
 
 /-- The inputs reaching a leaf form a cylinder intersection. -/
 example (l : Fin twoRounds.leafCount) :

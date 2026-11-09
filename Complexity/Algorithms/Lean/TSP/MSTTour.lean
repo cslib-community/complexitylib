@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.Kruskal.Basic
-public import Mathlib.Data.List.Rotate
+public import Complexity.Algorithms.Lean.TSP.Walk
 import Mathlib.Algebra.Order.Group.Nat
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.List.Zip
@@ -25,7 +25,8 @@ inserted immediately after it.
 ## Model
 
 Vertices are `Fin n` and `δ : Fin n → Fin n → ℕ` is an arbitrary cost function. The cost of a
-closed walk visiting the entries of a list in order is `cycleCost δ t`. The approximation bound
+closed walk visiting the entries of a list in order is `cycleCost δ t`
+(`Complexity.Algorithms.Lean.TSP.Walk`). The approximation bound
 assumes only that `δ` is symmetric and satisfies the triangle inequality for all triples, including
 `i = k`, so each diagonal entry is at most twice any cost from its vertex; diagonal entries need not
 be zero. Costs are natural numbers, hence nonnegative.
@@ -50,7 +51,6 @@ stated against every tour, in particular an optimal one.
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.TSP.cycleCost`: the cost of a closed walk.
 * `Cslib.Algorithms.Lean.TSP.insertAfter`: insertion immediately after a given vertex.
 * `Cslib.Algorithms.Lean.TSP.growTour`: grow a tour along the edges of a forest.
 * `Cslib.Algorithms.Lean.TSP.completeEdges`: the complete graph weighted by `δ`.
@@ -83,48 +83,14 @@ section Cycle
 
 variable {α : Type*}
 
-/-- The cost of the closed walk visiting the entries of `t` in order and returning to the first:
-`δ t₀ t₁ + δ t₁ t₂ + ⋯ + δ tₖ t₀`. A single vertex `a` costs `δ a a`; the empty walk costs `0`. -/
-@[expose] def cycleCost (δ : α → α → ℕ) (t : List α) : ℕ :=
-  (List.zipWith δ t (t.rotate 1)).sum
-
-/-- A closed walk costs the same from any starting point. -/
-theorem cycleCost_rotate (δ : α → α → ℕ) (t : List α) (k : ℕ) :
-    cycleCost δ (t.rotate k) = cycleCost δ t := by
-  unfold cycleCost
-  rw [List.rotate_rotate, Nat.add_comm, ← List.rotate_rotate,
-    ← List.zipWith_rotate_distrib _ _ _ _ (List.length_rotate t 1).symm]
-  exact (List.rotate_perm _ _).sum_eq
-
-/-- A closed walk on two vertices goes there and back. -/
-theorem cycleCost_pair (δ : α → α → ℕ) (u v : α) : cycleCost δ [u, v] = δ u v + δ v u :=
-  rfl
-
-/-- The cost of the walk from `a` through the entries of `L` in order to `b`. -/
-private def pathCost (δ : α → α → ℕ) : α → List α → α → ℕ
-  | a, [], b => δ a b
-  | a, x :: L, b => δ a x + pathCost δ x L b
-
-private theorem sum_zipWith_append_singleton (δ : α → α → ℕ) (a x : α) (L : List α) :
-    (List.zipWith δ (x :: L) (L ++ [a])).sum = pathCost δ x L a := by
-  induction L generalizing x with
-  | nil => simp [pathCost]
-  | cons y L ih =>
-    simp only [List.cons_append, List.zipWith_cons_cons, List.sum_cons, ih, pathCost]
-
-private theorem cycleCost_cons (δ : α → α → ℕ) (a : α) (L : List α) :
-    cycleCost δ (a :: L) = pathCost δ a L a := by
-  rw [cycleCost, (List.rotate_cons_succ L a 0).trans (List.rotate_zero _),
-    sum_zipWith_append_singleton]
-
-private theorem pathCost_le (δ : α → α → ℕ) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z)
-    (u v : α) (L : List α) : pathCost δ v L u ≤ δ v u + pathCost δ u L u := by
+private theorem walkCost_le (δ : α → α → ℕ) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z)
+    (u v : α) (L : List α) : walkCost δ v L u ≤ δ v u + walkCost δ u L u := by
   cases L with
   | nil =>
-    simp only [pathCost]
+    simp only [walkCost]
     omega
   | cons x L =>
-    simp only [pathCost]
+    simp only [walkCost]
     have := htri v u x
     omega
 
@@ -138,8 +104,8 @@ theorem cycleCost_append_cons_cons_le (δ : α → α → ℕ) (htri : ∀ x y z
   rw [hrot, hrot]
   simp only [List.cons_append]
   rw [cycleCost_cons, cycleCost_cons]
-  simp only [pathCost]
-  have := pathCost_le δ htri u v (B ++ A)
+  simp only [walkCost]
+  have := walkCost_le δ htri u v (B ++ A)
   omega
 
 variable [DecidableEq α]
