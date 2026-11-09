@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.EncLen
 
 /-!
 # Polynomial-time Jacobi symbol on binary naturals
@@ -272,9 +273,7 @@ private theorem length_encPair_iterate_jacobiStep_le (p : ℕ × ℕ) (i : ℕ) 
       omega
   have hs1 : s.1.size ≤ p.2.size + 1 := (Nat.size_le_size (hlt.le.trans hle)).trans hm
   have hs2 : s.2.1.size ≤ p.2.size + 1 := (Nat.size_le_size hle).trans hm
-  simp only [length_encPair, encNat_apply, encBool_apply, List.length_singleton,
-    Nat.size_eq_bits_len] at hs1 hs2 ⊢
-  omega
+  enc_len [encNat_apply, List.length_singleton, Nat.size_eq_bits_len] at hs1 hs2 ⊢
 
 end Turing.MultiTapeTM.BinaryJacobi
 
