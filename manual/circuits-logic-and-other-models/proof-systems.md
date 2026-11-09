@@ -1,4 +1,4 @@
-# Propositional models and resolution proof complexity
+# Propositional models and proof complexity
 
 cslib-frontier represents propositional syntax as concrete finite data and distinguishes satisfiability, derivability and resource-bounded proof objects. This supports reductions, model counting and lower bounds without identifying a proof's length with the time needed to find it. [cslib-frontier][complexitylib]
 
@@ -356,6 +356,71 @@ prefix is invalid. The routine takes an improving comparison labeling as input: 
 labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
 Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
+## Algebraic proof systems
+
+Nullstellensatz (NS) certificates and Polynomial Calculus (PC) proofs use coefficients in a
+commutative semiring `R`, in the namespaces `Cslib.Logic.PL.NS` and `Cslib.Logic.PL.PC`.
+The caller supplies all input axioms for the chosen encoding and basis. Standard Boolean and
+complementary axioms such as `x² - x` and `x + x̄ - 1` require a ring. In the two proof modules,
+`NS.IsProof.eval_eq_zero` and `PC.IsProof.eval_eq_zero` show that every proved polynomial vanishes
+at any common zero of the inputs. Their `exists_eval_ne_zero` lemmas
+require `Nontrivial R` and show that a refutable system has no common zero.
+[NS proof module](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Proof.lean),
+[PC proof module](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Proof.lean).
+
+The computable `NS.size` is the sum of products of input and multiplier support sizes, exactly
+the standard NS size `∑ᵢ ‖pᵢ‖ ‖fᵢ‖` in de Rezende et al., §8.1 (STOC 2021, p. 217), where
+`‖p‖` counts nonzero monomials. `PC.size` sums support sizes across all proof lines, counting
+repeated lines separately. `NS.degree` bounds sums of input and multiplier total degrees for
+nonzero multipliers. A nonzero multiplier of a zero input still contributes its degree.
+`PC.degree` is the maximum total degree of a proof line. Both degrees return `0` on empty data.
+The lemmas `NS.degree_le_iff` and `PC.degree_le_iff` recover the term and line bounds. These
+measures concern formal polynomials, so a Boolean or other basis change needs its own resource
+comparison. [de Rezende et al.](https://www.ias.edu/sites/default/files/deRezendeGoNoPiRoSo_Automating.pdf)
+
+`PC.exists_isProof_of_ns` translates an NS certificate for any nonzero target polynomial `q`,
+of size at most `s` and total degree at most `d`, into one PC proof containing `q`, of size at
+most `s² + (d + 1)s` and total degree at most `d`. Under `Nontrivial R`,
+`PC.exists_refutation_of_ns` specializes this to refutations (`q = 1`). Fact 8.1 (p. 218)
+addresses arbitrary target polynomials, including zero, and block degree over fields; here the
+target must be nonzero and only total degree is treated.
+[NS-to-PC simulation](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Nullstellensatz.lean).
+
+For input total degrees at most `d₀`, `PC.RefutableInSize.of_ns` gives PC size at most
+`(d₀ + 1)s² + s` from NS size at most `s`, under the same nontriviality assumption. Its auxiliary
+gap-truncation bound `NS.IsProof.exists_degree_le_mul_size`, proved here, first supplies a
+replacement NS certificate of no larger size and degree at most `d₀` times the original size.
+The replacement discards high-degree cancellation and multipliers of zero inputs.
+
+Over every commutative semiring, `NS.exists_isProof_of_pc` gives a certificate for every PC
+proof line, without a size or degree bound.
+[PC-to-NS conversion](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/PolynomialCalculus.lean).
+
+The clause-only CNF arithmetization uses `Literal.toPolyAssignment` to assign each literal its
+Boolean truth value in the coefficient semiring. Over a ring, positive and negative coordinates
+are `a` and `1 - a`. A clause polynomial multiplies the coordinates of complementary literals,
+so `x ∨ ¬y` becomes `x̄ · y`. These are the twin variables of polynomial calculus resolution
+(PCR), as in [Alekhnovich et al., §4.1, p. 1197](https://doi.org/10.1137/S0097539700366735).
+The identity `Clause.eval_toPoly` gives value `0` for a satisfied
+clause and `1` for a falsified clause. With `Nontrivial R`,
+`CNF.eval_eq_true_iff_forall_eval_toPoly_eq_zero` characterizes satisfaction by the vanishing of
+every clause polynomial at that same Boolean assignment. Arbitrary literal coordinates can give
+a spurious solution to contradictory unit clauses.
+[Pointwise CNF encoding](../../CslibFrontier/Logics/Propositional/Algebraic/CNF.lean).
+
+The checked [proof-system examples](../../CslibFrontierTests/ProofComplexity/AlgebraicProofSystems.lean)
+exercise the simulations over semirings and rings with zero divisors, including a nonconstant
+nonzero target and a satisfiable system with no refutation. The
+[CNF examples](../../CslibFrontierTests/ProofComplexity/AlgebraicCNF.lean) cover both literal
+polarities, the empty clause and spurious zeros at noncomplementary coordinates. Each file
+includes its imports. From the repository root, check them with:
+
+```bash
+scripts/build.sh \
+  CslibFrontierTests.ProofComplexity.AlgebraicProofSystems \
+  CslibFrontierTests.ProofComplexity.AlgebraicCNF
+```
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |
@@ -510,7 +575,7 @@ The [checked examples](../../CslibFrontierTests/ProofComplexity/SumOfSquares.lea
 
 ## Known Limitations
 
-This section inventories resolution, including clause space, cutting planes, semantic derivations, Frege proofs, sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates, polynomial calculus, sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [barak-steurer16]: ../sources.md#barak-steurer16
 [beyersdorffgalesilauria10]: ../sources.md#beyersdorffgalesilauria10
