@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Opening.PolyTime
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import Mathlib.Data.List.GetD
 
 /-!
@@ -77,8 +78,7 @@ private theorem eval_senderTablesWith
   induction k generalizing st with
   | zero => rfl
   | succ k ih =>
-    simp only [senderTablesWith, ProbComp.eval_bind, ProbComp.eval_pure, senderTables_succ,
-      senderOfPrograms, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    simp only [pmf_norm, senderTablesWith, senderTables_succ, senderOfPrograms]
     exact congrArg ((ProbComp.eval (choose k st)).bind) (funext fun ts => by rw [ih]; rfl)
 
 /-- Program interpretation preserves the semantic sender transcript and commit-final state. -/
@@ -229,10 +229,8 @@ theorem eval_senderClosedProgram
         (fun final => (ProbComp.eval (finish k final)).map
           (fun (submission, out) => (decodeOpening k submission, out))) .idle).map Prod.fst := by
   rw [senderClosedProgram_eq, senderIdeal_run]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, eval_senderViewProgram,
-    BitString.eval_sampleList, BitString.uniformList, simulatedOpening,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.pure_bind, PMF.map_bind, PMF.bind_map]
+  simp only [pmf_norm, eval_senderViewProgram, BitString.eval_sampleList, BitString.uniformList,
+    simulatedOpening]
   apply congrArg ((senderTables (senderOfPrograms choose receive) k st).bind)
   apply funext
   rintro ⟨ts, final⟩
@@ -300,12 +298,10 @@ theorem senderIdealProgram_schedule
       (senderIdealProgram choose receive k st finish) (.idle, [])).support) :
     ∃ committed release : Bool, log.map Sigma.fst =
       [.inr (), .inl (if release then .open else .abort), .inr (), .inl (.commit committed)] := by
-  simp only [senderIdealProgram,
-    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-    ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
-    OracleComp.withTranscript, Phased.handler, OracleComp.sumHandler,
-    Phased.advance, Phased.observe, PMF.monad_pure_eq_pure,
-    PMF.pure_map, PMF.pure_bind, PMF.bind_map, Function.comp_def] at h
+  simp only [pmf_norm, senderIdealProgram, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
+    OracleComp.withTranscript, Phased.handler, OracleComp.sumHandler, Phased.advance,
+    Phased.observe] at h
   simp only [PMF.mem_support_bind_iff] at h
   obtain ⟨⟨tables, final⟩, _, choices, _, ⟨submission, out⟩, _, h⟩ := h
   let committed := extractPairs (tables.map fun t =>

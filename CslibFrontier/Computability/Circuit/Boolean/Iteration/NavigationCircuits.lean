@@ -77,19 +77,9 @@ theorem navigation_circuit (c : Circuit signature n n) (L : ℕ)
 /-- Every component of `navigationBudget` fits within `4500000 * powerBudget`. -/
 theorem navigationBudget_le (n s L : ℕ) :
     navigationBudget n s L ≤ 4500000 * powerBudget n s (2 ^ n) L := by
-  have hb : (n + 1) ^ 3 ≤ powerBudget n s (2 ^ n) L := by
-    have hh := Nat.mul_le_mul_left ((n + 1) ^ 3) (show 1 ≤ L + 2 ^ n / L + 1 by lia)
-    unfold powerBudget
-    nlinarith
-  have hfour : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 3 := by
-    have h1 : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 2 := by
-      have := Nat.pow_le_pow_left (show n + 4 ≤ 4 * (n + 1) by omega) 2
-      nlinarith
-    have h2 : (n + 1) ^ 2 ≤ (n + 1) ^ 3 := Nat.pow_le_pow_right (by omega) (by decide)
-    nlinarith
-  have hn1 : n + 1 ≤ (n + 1) ^ 3 := by nlinarith [Nat.zero_le (n ^ 2)]
+  have h := navigationOverhead_le n s (2 ^ n) L
   unfold navigationBudget
-  nlinarith
+  omega
 
 /-- **Reachability and first hitting time**, with an explicit optimized gate bound. -/
 theorem reachability_hitting_time (c : Circuit signature n n) :

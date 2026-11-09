@@ -417,12 +417,12 @@ theorem IPGame.computableInPolyTime_repeatVerifierDec {enc : α ↪ List Bool}
     (hn.comp hx1) (ht.comp hx1) hi (hw.comp hx1)
   have hrow := ComputableInPolyTime.bitsRowWithInput (hρ.comp hx1) hi (hc.comp hx1)
   have hd := hdec.comp (((ComputableInPolyTime.fst _ _).comp hx1).prod (hrow.prod hcopy))
-  refine (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.allWithInput
+  refine (ComputableInPolyTime.allWithInput
     (test := fun (x : α × List Bool × List Bool) (i : ℕ) =>
     dec (x.1, BitString.listRow (ρ.eval (enc x.1).length) i x.2.1,
       AMGame.copyTranscript (T.eval (enc x.1).length) i
         (AMGame.evalShape (G.map fun x => (x.1.toAM, x.2)) (enc x.1).length) x.2.2))
-    (ComputableInPolyTime.range.comp ht).tidy hd.tidy)).of_enc_eq fun x => congrArg _ ?_
+    (ComputableInPolyTime.range.comp ht) hd).of_enc_eq fun x => congrArg _ ?_
   simp only [repeatVerifierDec, repeatDec, toAM_evalShape]
   rfl
 

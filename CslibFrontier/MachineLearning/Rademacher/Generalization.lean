@@ -10,6 +10,7 @@ module
 public import CslibFrontier.MachineLearning.Rademacher.Basic
 public import CslibFrontier.Probability.BoundedDifferences
 public import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.MachineLearning.PACLearning.DoubleSample
 import CslibFrontier.Probability.BitString.Massart
 import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -103,6 +104,8 @@ private theorem bddAbove_range_sub [Fintype Z] (D : PMF Z) {m : ℕ} (hm : 0 < m
 
 section Symmetrization
 
+open PACLearning (fst_swapSamples_apply snd_swapSamples_apply swapSamples swapSamples_involutive)
+
 variable [Fintype Z]
 
 /-- Averaged over the sample, the empirical mean is the population mean. -/
@@ -139,42 +142,30 @@ private theorem ciSup_sub_le_sum (D : PMF Z) {m : ℕ} (hm : 0 < m) {F : Set (Z 
     _ ≤ _ := Finset.sum_le_sum fun S' _ =>
         mul_le_mul_of_nonneg_left (le_ciSup (hbdd S') f) ENNReal.toReal_nonneg
 
-/-- Exchange the coordinates of two samples at the positions where `σ` is `true`. -/
-private def swapAt {m : ℕ} (σ : Fin m → Bool) (p : (Fin m → Z) × (Fin m → Z)) :
-    (Fin m → Z) × (Fin m → Z) :=
-  (fun i => if σ i then p.2 i else p.1 i, fun i => if σ i then p.1 i else p.2 i)
-
-omit [Fintype Z] in
-private theorem swapAt_involutive {m : ℕ} (σ : Fin m → Bool) :
-    Function.Involutive (swapAt (Z := Z) σ) := by
-  rintro ⟨x, y⟩
-  simp only [swapAt, Prod.mk.injEq]
-  constructor <;> funext i <;> cases σ i <;> rfl
-
 -- `Probability.PMF.pi` is computed from the `Fintype` instance of its coordinate type.
 set_option linter.unusedFintypeInType false in
 /-- Exchanging coordinates of two independent samples preserves their joint weight. -/
-private theorem weight_swapAt (D : PMF Z) {m : ℕ} (σ : Fin m → Bool)
+private theorem weight_swapSamples (D : PMF Z) {m : ℕ} (σ : Fin m → Bool)
     (p : (Fin m → Z) × (Fin m → Z)) :
-    ((Probability.PMF.pi fun _ : Fin m => D) (swapAt σ p).1).toReal *
-        ((Probability.PMF.pi fun _ : Fin m => D) (swapAt σ p).2).toReal =
+    ((Probability.PMF.pi fun _ : Fin m => D) (swapSamples σ p).1).toReal *
+        ((Probability.PMF.pi fun _ : Fin m => D) (swapSamples σ p).2).toReal =
       ((Probability.PMF.pi fun _ : Fin m => D) p.1).toReal *
         ((Probability.PMF.pi fun _ : Fin m => D) p.2).toReal := by
   simp only [Probability.PMF.pi_apply, ENNReal.toReal_prod, ← Finset.prod_mul_distrib]
   refine Finset.prod_congr rfl fun i _ => ?_
-  simp only [swapAt]
+  simp only [fst_swapSamples_apply, snd_swapSamples_apply]
   cases σ i
   · rfl
   · exact mul_comm _ _
 
 omit [Fintype Z] in
 /-- Exchanging the coordinates where `σ` is `true` flips the sign of those differences. -/
-private theorem expect_sub_swapAt {m : ℕ} (σ : Fin m → Bool) (p : (Fin m → Z) × (Fin m → Z))
+private theorem expect_sub_swapSamples {m : ℕ} (σ : Fin m → Bool) (p : (Fin m → Z) × (Fin m → Z))
     (f : Z → ℝ) :
-    𝔼 i, (f ((swapAt σ p).2 i) - f ((swapAt σ p).1 i)) =
+    𝔼 i, (f ((swapSamples σ p).2 i) - f ((swapSamples σ p).1 i)) =
       𝔼 i, signVal (σ i) * (f (p.2 i) - f (p.1 i)) := by
   refine Finset.expect_congr rfl fun i _ => ?_
-  simp only [swapAt]
+  simp only [fst_swapSamples_apply, snd_swapSamples_apply]
   cases σ i
   · simp only [Bool.false_eq_true, ite_false, signVal_false, one_mul]
   · simp only [ite_true, signVal_true]
@@ -183,15 +174,15 @@ private theorem expect_sub_swapAt {m : ℕ} (σ : Fin m → Bool) (p : (Fin m �
 omit [Fintype Z] in
 /-- For a fixed sign vector, the swapped ghost-sample gap splits into two Rademacher
 correlations. -/
-private theorem ciSup_expect_sub_swapAt_le {m : ℕ} {F : Set (Z → ℝ)} {B : ℝ}
+private theorem ciSup_expect_sub_swapSamples_le {m : ℕ} {F : Set (Z → ℝ)} {B : ℝ}
     (hF : ∀ f ∈ F, ∀ z, |f z| ≤ B) (σ : Fin m → Bool) (p : (Fin m → Z) × (Fin m → Z)) :
-    ⨆ f : F, 𝔼 i, ((f : Z → ℝ) ((swapAt σ p).2 i) - (f : Z → ℝ) ((swapAt σ p).1 i)) ≤
+    ⨆ f : F, 𝔼 i, ((f : Z → ℝ) ((swapSamples σ p).2 i) - (f : Z → ℝ) ((swapSamples σ p).1 i)) ≤
       (⨆ f : F, 𝔼 i, signVal (σ i) * (f : Z → ℝ) (p.2 i)) +
         ⨆ f : F, 𝔼 i, signVal (!σ i) * (f : Z → ℝ) (p.1 i) := by
   rcases isEmpty_or_nonempty F with hFe | hFe
   · simp only [Real.iSup_of_isEmpty, add_zero, le_refl]
   refine ciSup_le fun f => ?_
-  rw [expect_sub_swapAt]
+  rw [expect_sub_swapSamples]
   have hsplit : 𝔼 i, signVal (σ i) * ((f : Z → ℝ) (p.2 i) - (f : Z → ℝ) (p.1 i)) =
       𝔼 i, signVal (σ i) * (f : Z → ℝ) (p.2 i) +
         𝔼 i, signVal (!σ i) * (f : Z → ℝ) (p.1 i) := by
@@ -209,14 +200,14 @@ private theorem ciSup_expect_sub_swapAt_le {m : ℕ} {F : Set (Z → ℝ)} {B : 
 omit [Fintype Z] in
 /-- Averaged over the signs, the swapped ghost-sample gap is at most the sum of the two empirical
 Rademacher complexities. -/
-private theorem expect_ciSup_swapAt_le {m : ℕ} {F : Set (Z → ℝ)} {B : ℝ}
+private theorem expect_ciSup_swapSamples_le {m : ℕ} {F : Set (Z → ℝ)} {B : ℝ}
     (hF : ∀ f ∈ F, ∀ z, |f z| ≤ B) (p : (Fin m → Z) × (Fin m → Z)) :
     𝔼 σ : Fin m → Bool,
-        ⨆ f : F, 𝔼 i, ((f : Z → ℝ) ((swapAt σ p).2 i) - (f : Z → ℝ) ((swapAt σ p).1 i)) ≤
+        ⨆ f : F, 𝔼 i, ((f : Z → ℝ) ((swapSamples σ p).2 i) - (f : Z → ℝ) ((swapSamples σ p).1 i)) ≤
       empiricalRademacherComplexity F p.2 + empiricalRademacherComplexity F p.1 := by
   have hinv : Function.Involutive fun (σ : Fin m → Bool) i => !σ i :=
     fun σ => funext fun i => Bool.not_not _
-  refine (Finset.expect_le_expect fun σ _ => ciSup_expect_sub_swapAt_le hF σ p).trans_eq ?_
+  refine (Finset.expect_le_expect fun σ _ => ciSup_expect_sub_swapSamples_le hF σ p).trans_eq ?_
   rw [Finset.expect_add_distrib, empiricalRademacherComplexity_def,
     empiricalRademacherComplexity_def, rademacherAverage_def, rademacherAverage_def]
   congr 1
@@ -238,24 +229,24 @@ private theorem sum_sum_ciSup_le (D : PMF Z) {m : ℕ} {F : Set (Z → ℝ)} {B 
       ⨆ f : F, 𝔼 i, ((f : Z → ℝ) (S' i) - (f : Z → ℝ) (S i)) = ∑ p, W p * G p := by
     rw [← Finset.univ_product_univ, Finset.sum_product]
     simp only [Finset.mul_sum, mul_assoc, W, G]
-  have hsym (σ : Fin m → Bool) : ∑ p, W p * G p = ∑ p, W p * G (swapAt σ p) :=
-    (Fintype.sum_equiv (Function.Involutive.toPerm _ (swapAt_involutive σ)) _ _ fun p => by
-      change W p * G (swapAt σ p) = W (swapAt σ p) * G (swapAt σ p)
-      rw [show W (swapAt σ p) = W p from weight_swapAt D σ p]).symm
-  have hexp : ∑ p, W p * G p = ∑ p, W p * 𝔼 σ : Fin m → Bool, G (swapAt σ p) := by
+  have hsym (σ : Fin m → Bool) : ∑ p, W p * G p = ∑ p, W p * G (swapSamples σ p) :=
+    (Fintype.sum_equiv (Function.Involutive.toPerm _ (swapSamples_involutive σ)) _ _ fun p => by
+      change W p * G (swapSamples σ p) = W (swapSamples σ p) * G (swapSamples σ p)
+      rw [show W (swapSamples σ p) = W p from weight_swapSamples D σ p]).symm
+  have hexp : ∑ p, W p * G p = ∑ p, W p * 𝔼 σ : Fin m → Bool, G (swapSamples σ p) := by
     calc ∑ p, W p * G p = 𝔼 σ : Fin m → Bool, ∑ p, W p * G p := (Fintype.expect_const _).symm
-      _ = 𝔼 σ : Fin m → Bool, ∑ p, W p * G (swapAt σ p) :=
+      _ = 𝔼 σ : Fin m → Bool, ∑ p, W p * G (swapSamples σ p) :=
           Finset.expect_congr rfl fun σ _ => hsym σ
-      _ = ∑ p, 𝔼 σ : Fin m → Bool, W p * G (swapAt σ p) := Finset.expect_sum_comm ..
-      _ = ∑ p, W p * 𝔼 σ : Fin m → Bool, G (swapAt σ p) := by simp only [Finset.mul_expect]
+      _ = ∑ p, 𝔼 σ : Fin m → Bool, W p * G (swapSamples σ p) := Finset.expect_sum_comm ..
+      _ = ∑ p, W p * 𝔼 σ : Fin m → Bool, G (swapSamples σ p) := by simp only [Finset.mul_expect]
   have hR : ∑ S : Fin m → Z, (P S).toReal * empiricalRademacherComplexity F S =
       rademacherComplexity D F m := (rademacherComplexity_def D F m).symm
   have hP : ∑ S : Fin m → Z, (P S).toReal = 1 := Probability.PMF.sum_toReal P
   calc _ = ∑ p, W p * G p := hLHS
-    _ = ∑ p, W p * 𝔼 σ : Fin m → Bool, G (swapAt σ p) := hexp
+    _ = ∑ p, W p * 𝔼 σ : Fin m → Bool, G (swapSamples σ p) := hexp
     _ ≤ ∑ p, W p * (empiricalRademacherComplexity F p.2 + empiricalRademacherComplexity F p.1) :=
         Finset.sum_le_sum fun p _ =>
-          mul_le_mul_of_nonneg_left (expect_ciSup_swapAt_le hF p) (by positivity)
+          mul_le_mul_of_nonneg_left (expect_ciSup_swapSamples_le hF p) (by positivity)
     _ = 2 * rademacherComplexity D F m := by
         rw [← Finset.univ_product_univ, Finset.sum_product]
         have h1 : ∀ S : Fin m → Z, ∑ S' : Fin m → Z, W (S, S') *

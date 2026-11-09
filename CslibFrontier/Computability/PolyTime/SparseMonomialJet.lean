@@ -426,10 +426,7 @@ theorem rowEntry_evalAffineInputZJetTable_eq_coeff_affineInput {J n j : ℕ} (hj
           (fun i : Fin n => ofCoeffList ((rowsCoeffs.getD v []).getD i []))
           t (fun i : Fin n => x.getD i false)).map
         (MvPolynomial.eval fun i : Fin n => bitVal ℤ (U.getD i false))).coeff j := by
-  have hlen : (rowsCoeffs.getD v []).length ≤ n := by
-    by_cases hv : v < rowsCoeffs.length
-    · rw [List.getD_eq_getElem _ [] hv]; exact hrows _ (List.getElem_mem hv)
-    · rw [List.getD_eq_default rowsCoeffs [] (by omega)]; exact Nat.zero_le n
+  have hlen : (rowsCoeffs.getD v []).length ≤ n := by grind
   rw [rowEntry_evalAffineInputZJetTable_of_lt hj]
   exact getD_evalAffineInputZJet_eq_coeff_affineInput_fin hj t hlen U x
 
@@ -1167,7 +1164,7 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
       (fun x => evalClearedMonomialJet (J x) (k x) (dDen x) (varJets x) (mon x))
       encIn (encList encIntBin) := by
   have hexp := unary_sub.comp (hk.prod ((length_list encNat).comp hmon))
-  have hscale := singleton_intBin_polytime (intBin_pow_polytime hdDen hexp)
+  have hscale := singleton_intBin_polytime (intBin_pow' hdDen hexp)
   unfold evalClearedMonomialJet
   exact computableInPolyTime_mulZJet hJ hscale (prodMonomialJet_polytime hJ hvarJets hmon)
 
@@ -1261,7 +1258,7 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
     ComputableInPolyTime
       (fun x => evalEquationParityFactorJet (J x) (ℓ x) (k x) (dDen x) (varJets x) (eq x))
       encIn encIntTable := by
-  exact computableInPolyTime_evalParityFactorJet hJ hℓ (intBin_pow_polytime hdDen hk)
+  exact computableInPolyTime_evalParityFactorJet hJ hℓ (intBin_pow' hdDen hk)
     (computableInPolyTime_evalClearedEquationJet hJ hk hdDen hvarJets heq)
 
 end PolyTime

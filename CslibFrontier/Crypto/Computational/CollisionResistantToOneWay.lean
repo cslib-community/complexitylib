@@ -15,6 +15,7 @@ import CslibFrontier.Crypto.Computational.MerkleDamgard
 import CslibFrontier.Crypto.Computational.Rompel
 import CslibFrontier.Crypto.Negligible
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Probability.Guessing.Leakage
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -147,19 +148,6 @@ private theorem bind_pure_beq_apply (P : PMF (List Bool)) (φ : List Bool → Li
   · simp [h]
   · simp [h, Ne.symm h]
 
-/-- A guess that depends on a uniform `m`-bit word only through a hint taking values in a finite
-set `T` equals the word with probability at most `|T| / 2 ^ m`. -/
-private theorem tsum_uniformList_mul_le {m : ℕ} (hint : List Bool → List Bool)
-    (T : Finset (List Bool)) (hT : ∀ x, hint x ∈ T) (guess : List Bool → PMF (List Bool)) :
-    ∑' x, BitString.uniformList m x * guess (hint x) x ≤ T.card * (1 / 2 ^ m) := by
-  calc ∑' x, BitString.uniformList m x * guess (hint x) x
-      ≤ ∑' x, 1 / 2 ^ m * ∑ t ∈ T, guess t x :=
-        tsum_le_tsum fun x => mul_le_mul' (BitString.uniformList_apply_le m x)
-          (Finset.single_le_sum (f := fun t => guess t x) (fun _ _ => zero_le) (hT x))
-    _ = T.card * (1 / 2 ^ m) := by
-        rw [ENNReal.tsum_mul_left, Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
-        simp only [PMF.tsum_coe, Finset.sum_const, nsmul_eq_mul, mul_one, mul_comm]
-
 /-- Every word of length `n` is the list of some function `Fin n → Bool`. -/
 private theorem mem_image_ofFn {n : ℕ} {word : List Bool} (h : word.length = n) :
     word ∈ (Finset.univ : Finset (Fin n → Bool)).image List.ofFn := by
@@ -201,7 +189,7 @@ theorem succProbability_inversionGame_le {H : List Bool → List Bool → List B
     have hklen := BitString.length_of_mem_support_uniformList hkey
     rw [PMF.bind_apply]
     simp only [bind_pure_beq_apply]
-    refine (tsum_uniformList_mul_le (H key)
+    refine (PMF.tsum_mul_apply_le_card_mul _ (BitString.uniformList_apply_le _) (H key)
       ((Finset.univ : Finset (Fin n → Bool)).image List.ofFn)
       (fun message => mem_image_ofFn ((hlen key message).trans hklen))
       (fun digest => (ProbComp.eval (adversary (3 * n + r) (key ++ digest))).map

@@ -295,11 +295,7 @@ theorem finishRuntime_iterate_binaryStep (machine : MultiTapeCTM k Bool State)
     subst word
     simp [finishRuntime, binaryIndices, BitString.listRows, output]
   | succ count ih =>
-    have htake : (word.take width).length = width := by
-      simp only [List.length_take]
-      apply Nat.min_eq_left
-      rw [h, Nat.succ_mul]
-      exact Nat.le_add_left _ _
+    have htake : (word.take width).length = width := by grind
     have hdrop : (word.drop width).length = count * width := by
       simp only [List.length_drop, h, Nat.succ_mul, Nat.add_sub_cancel]
     have hrows := BitString.listRows_succ_append count width htake (word.drop width)

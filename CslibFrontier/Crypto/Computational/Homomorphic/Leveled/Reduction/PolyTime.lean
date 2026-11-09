@@ -123,7 +123,8 @@ theorem isPPT_zeroLinkAdversary
     ppt
 
 omit hencrypt hadversary in
-private theorem computableInPolyTime_tagLeveledChoice (first second : Bool) :
+/-- Prepending the two selector bits to a chosen message pair's saved state is polynomial time. -/
+theorem computableInPolyTime_tagLeveledChoice (first second : Bool) :
     ComputableInPolyTime (tagLeveledChoice first second)
       (encPair (encPair encBool encBool) encBits)
       (encPair (encPair encBool encBool) encBits) := by
@@ -134,7 +135,8 @@ private theorem computableInPolyTime_tagLeveledChoice (first second : Bool) :
         (ComputableInPolyTime.snd _ _)))
 
 omit hencrypt hadversary in
-private theorem computableInPolyTime_swapLeveledChoice :
+/-- Swapping the two chosen messages is polynomial time. -/
+theorem computableInPolyTime_swapLeveledChoice :
     ComputableInPolyTime swapLeveledChoice
       (encPair (encPair encBool encBool) encBits)
       (encPair (encPair encBool encBool) encBits) := by

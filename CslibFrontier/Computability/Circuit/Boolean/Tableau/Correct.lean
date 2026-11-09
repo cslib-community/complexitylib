@@ -242,6 +242,30 @@ variable (T x) in
 private noncomputable def termVal (t c : ℕ) (p : Ref k State × Ref k State) : Bool :=
   val tm T x (p.1.resolve x.length T t c) && val tm T x (p.2.resolve x.length T t c)
 
+/-- **Running disjunctions.** If `v 0` holds iff `p 0`, and `v (j + 1)` iff `v j` or `p (j + 1)`,
+then `v j` holds iff `p j'` for some `j' ≤ j`. The disjunction gadgets of the features are such
+chains. -/
+private theorem iff_exists_le_of_or_chain {n : ℕ} {v p : Fin (n + 1) → Prop} (hzero : v 0 ↔ p 0)
+    (hsucc : ∀ j : Fin n, v j.succ ↔ v j.castSucc ∨ p j.succ) :
+    ∀ j, v j ↔ ∃ j' ≤ j, p j' := by
+  intro j
+  induction j using Fin.induction with
+  | zero =>
+    rw [hzero]
+    exact ⟨fun h => ⟨0, le_rfl, h⟩, fun ⟨j', hj', h⟩ => by rwa [Fin.le_zero_iff.1 hj'] at h⟩
+  | succ j ih =>
+    rw [hsucc, ih]
+    simp only [Fin.le_iff_val_le_val, Fin.val_castSucc, Fin.val_succ]
+    constructor
+    · rintro (⟨j', hj', h⟩ | h)
+      · exact ⟨j', by omega, h⟩
+      · exact ⟨j.succ, by simp only [Fin.val_succ, le_refl], h⟩
+    · rintro ⟨j', hj', h⟩
+      rcases Nat.lt_or_ge j'.val (j.val + 1) with h' | h'
+      · exact Or.inl ⟨j', by omega, h⟩
+      · obtain rfl : j' = j.succ := Fin.ext (by simp only [Fin.val_succ]; omega)
+        exact Or.inr h
+
 section Step
 
 variable {t : ℕ} (hinv : Invariant tm T x t)
@@ -502,31 +526,19 @@ private theorem val_gf_or (htT : t + 1 ≤ T) (f : GFeat State) (j : Fin 8) :
     val tm T x (wire (k := k) x.length T (t + 1) (.gf f true j) 0) = true ↔
       ∃ j' : Fin 8, j' ≤ j ∧
         termVal tm T x (t + 1) 0 ((gfTerms f).getD j' (.fls, .fls)) = true := by
-  induction j using Fin.induction with
-  | zero =>
-    rw [val_wire tm (l := .gf f true 0) rfl htT]
+  revert j
+  refine iff_exists_le_of_or_chain ?_ fun j => ?_
+  · rw [val_wire tm (l := .gf f true 0) rfl htT]
     simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_zero, val_resolve_fls,
       Bool.false_or]
     rw [val_resolve_node]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
     rw [val_gf_and tm htT]
-    exact ⟨fun h => ⟨0, le_rfl, h⟩, fun ⟨j', hj', h⟩ => by rwa [Fin.le_zero_iff.1 hj'] at h⟩
-  | succ j ih =>
-    rw [val_wire tm (l := .gf f true j.succ) rfl htT]
+  · rw [val_wire tm (l := .gf f true j.succ) rfl htT]
     simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_succ]
     rw [val_resolve_node, val_resolve_node, Bool.or_eq_true]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
-    rw [ih, val_gf_and tm htT]
-    simp only [Fin.le_iff_val_le_val, Fin.val_castSucc, Fin.val_succ]
-    constructor
-    · rintro (⟨j', hj', h⟩ | h)
-      · exact ⟨j', by omega, h⟩
-      · exact ⟨j.succ, by simp only [Fin.val_succ, le_refl], h⟩
-    · rintro ⟨j', hj', h⟩
-      rcases Nat.lt_or_ge j'.val (j.val + 1) with h' | h'
-      · exact Or.inl ⟨j', by omega, h⟩
-      · obtain rfl : j' = j.succ := Fin.ext (by simp only [Fin.val_succ]; omega)
-        exact Or.inr h
+    rw [val_gf_and tm htT]
 
 omit hinv in
 private theorem val_col_and (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T)
@@ -542,31 +554,19 @@ private theorem val_col_or (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T)
     val tm T x (wire (State := State) x.length T (t + 1) (.col f true j) c) = true ↔
       ∃ j' : Fin 8, j' ≤ j ∧
         termVal tm T x (t + 1) c ((colTerms f).getD j' (.fls, .fls)) = true := by
-  induction j using Fin.induction with
-  | zero =>
-    rw [val_wire tm (l := .col f true 0) hc htT]
+  revert j
+  refine iff_exists_le_of_or_chain ?_ fun j => ?_
+  · rw [val_wire tm (l := .col f true 0) hc htT]
     simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_zero, val_resolve_fls,
       Bool.false_or]
     rw [val_resolve_node]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
     rw [val_col_and tm htT hc]
-    exact ⟨fun h => ⟨0, le_rfl, h⟩, fun ⟨j', hj', h⟩ => by rwa [Fin.le_zero_iff.1 hj'] at h⟩
-  | succ j ih =>
-    rw [val_wire tm (l := .col f true j.succ) hc htT]
+  · rw [val_wire tm (l := .col f true j.succ) hc htT]
     simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_succ]
     rw [val_resolve_node, val_resolve_node, Bool.or_eq_true]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
-    rw [ih, val_col_and tm htT hc]
-    simp only [Fin.le_iff_val_le_val, Fin.val_castSucc, Fin.val_succ]
-    constructor
-    · rintro (⟨j', hj', h⟩ | h)
-      · exact ⟨j', by omega, h⟩
-      · exact ⟨j.succ, by simp only [Fin.val_succ, le_refl], h⟩
-    · rintro ⟨j', hj', h⟩
-      rcases Nat.lt_or_ge j'.val (j.val + 1) with h' | h'
-      · exact Or.inl ⟨j', by omega, h⟩
-      · obtain rfl : j' = j.succ := Fin.ext (by simp only [Fin.val_succ]; omega)
-        exact Or.inr h
+    rw [val_col_and tm htT hc]
 
 end Step
 
