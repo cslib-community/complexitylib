@@ -377,7 +377,9 @@ and the extra hypothesis `hsize`: every description in the support of `gen n` ha
 and is uniform strict PPT (`isPPTOn_dcrDistinguisher`). The book samples the encryption randomness
 uniformly from the units modulo `N`; here `encrypt` uses the dyadic sampler with `unitOrOne`, which is
 within `N / 2 ^ (n + |N|) + (N - φ(N)) / N` of uniform on the units. Under `hsize` this costs at most
-`5 / 2 ^ n` per real hop, so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
+`5 / 2 ^ n` per real hop (`Game.advantage_sampleModNat_units_le` in
+[`UnitSampling.lean`](../../Complexity/Crypto/Computational/UnitSampling.lean), also used for
+Goldwasser–Micali below), so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
 advantages; without a growth condition on the primes the non-unit loss need not be negligible. The
 distributional-homomorphism gap above is unaffected.
 [`ComplexityTests/Crypto/Paillier.lean`](../../ComplexityTests/Crypto/Paillier.lean) checks the
