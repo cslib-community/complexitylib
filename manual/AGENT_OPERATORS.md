@@ -236,7 +236,14 @@ all-class search uses that same fixed kernel with actually generated index data,
 whose `2^p(2p+1)` wire is quarter scale at the capped source depth. Class work is
 summed and only a found pair survives a released class. The remaining bound
 normalization must still bound actual count/quarter/window/full-state callbacks
-and matcher temporaries in scalar widths, with simultaneous lifetimes. Orientation recomputes counts; no cached-size oracle is input.
+in scalar widths, with simultaneous lifetimes. `SortedMatchBounds.runCertificate_bounds`
+and `MatcherResources.original_restart_bounds` now close the installed fallback matching
+component: actual tagging/sorting/scan clocks, argument copies, all-class/batch
+clock sum and every matching-prefix workspace are bounded in original physical
+widths. Build the complete restarted client for this result; it includes both
+orientations and non-unit-width collision records. These are matching-only
+profiles, not count/division/producer clocks or a global source resource theorem.
+Orientation recomputes counts; no cached-size oracle is input.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
 sharp source TM bounds. The per-pair copy path is no longer installed, but sharp
 global inequalities remain required. The old solvers and

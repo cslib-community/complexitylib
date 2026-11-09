@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import Complexity.Cryptanalysis.AddXNORJoinedDissection
+public import Complexity.Cryptanalysis.AddXNORMatcherResources
 import all Complexity.Cryptanalysis.AddXNORJoinedDissection
 import all Complexity.Cryptanalysis.AddXNORClassBatches
 import all Complexity.Cryptanalysis.AddXNORJoinedProbe
@@ -111,3 +111,16 @@ example := KeyJoinBatch.windowCertificate.computes
 example := ClassBatches.batchCertificate.computes
 example := ClassBatches.runCertificate.computes
 example := JoinedDissection.sourceCertificate.computes
+
+-- One fixed polynomial handles real non-unit-width collision records in both orientations.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ right : Bool,
+      BatchedAccess.matchCertificate.time ((3, (right, [(0, 0), (0, 1)])), [(0, 2), (7, 3)]) +
+        BatchedAccess.matchCertificate.space ((3, (right, [(0, 0), (0, 1)])), [(0, 2), (7, 3)]) ≤
+          5 * P 20 := by
+  obtain ⟨P, hP, mono, bound⟩ := MatcherResources.matchCertificate_bounds
+  refine ⟨P, hP, mono, ?_⟩
+  intro right
+  exact bound 3 20 right [(0, 0), (0, 1)] [(0, 2), (7, 3)] (by omega) (by decide +kernel)
+
+example := MatcherResources.original_restart_bounds

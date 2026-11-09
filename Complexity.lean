@@ -1970,6 +1970,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.KeyJ
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
 public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatch
+public import Complexity.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatchBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
@@ -2926,6 +2927,7 @@ public import Complexity.Cryptanalysis.AddXNORGuard
 public import Complexity.Cryptanalysis.AddXNORGuardedChain
 public import Complexity.Cryptanalysis.AddXNORJoinedDissection
 public import Complexity.Cryptanalysis.AddXNORJoinedProbe
+public import Complexity.Cryptanalysis.AddXNORMatcherResources
 public import Complexity.Cryptanalysis.AddXNORNPComplete
 public import Complexity.Cryptanalysis.AddXNORNative
 public import Complexity.Cryptanalysis.AddXNORNativeAllClasses

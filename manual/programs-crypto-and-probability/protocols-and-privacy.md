@@ -1676,6 +1676,19 @@ because $C\ge N$; retained input is paid because $C$ exceeds retained size.
 $6(2^{|Q_1|+|Q_2|}+2^{|Q_3|+|Q_4|})+4\cdot2^p(Q+1)$.
 This is a global repeated-input volume bound, not a proved global bit-time bound.
 The actual machine profiles still need composition/normalization in scalar widths.
+[`SortedMatchBounds.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Algorithms/SortedMatchBounds.lean)
+now bounds the installed tagging/radix-sort/witness-scan certificate by record
+volume times one fixed monotone polynomial in physical key/record width.
+[`AddXNORMatcherResources.lean`](../../Complexity/Cryptanalysis/AddXNORMatcherResources.lean)
+includes the two-orientation wrapper's framed argument copies and derives row
+width $B=2m+1+q$ from original words and packed indices. Its
+`original_restart_bounds` proves actual fallback matching clock sum at most
+$4[6(2^{|Q_1|+|Q_2|}+2^{|Q_3|+|Q_4|})+4\cdot2^p(Q+1)]P(B)$ and each
+matching machine's all-prefix workspace at most $2(\mu+Q+1)P(B)$.
+The polynomial is fixed before all input widths/classes; collisions, empty and
+padded batches require no unit-cost-record assumption. These bounds include
+matcher auxiliaries but exclude count/division, regenerated-quarter/window/
+full-state producers and outer control, so they are not a global solver bound.
 The complete restarted client checks a genuine fallback residue, batches crossing
 rows, padded labels, non-self-inverse addition, a returned original witness and
 an exhaustive miss, rather than only the selected single-match branch.
@@ -1693,7 +1706,7 @@ framing, setup and readback remain charged.
 This composes an actual global bit-clock/prefix-space profile, but does not prove
 the requested sharp source inequalities. The installed fallback no longer executes the per-pair retained/growing-buffer
 copy path. Closed scalar-width bounds for all installed callbacks, quarter
-generation/sorting, matching and the summed global time/simultaneous workspace
+generation/sorting and the summed global time/simultaneous workspace
 profiles still need to be proved. The installed scalar prepass removes table
 reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
 occupancy or matching-pair totals do not remove those machine costs. The old
