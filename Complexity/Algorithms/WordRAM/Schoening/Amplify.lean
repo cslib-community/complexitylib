@@ -12,6 +12,7 @@ import Complexity.Computability.WordRAM.MemoryView
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
 public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
+public import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 public import Mathlib.Analysis.Complex.Exponential
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.ToReal
@@ -137,15 +138,6 @@ theorem repeatTrial_false_toReal (φ : CNF (Fin n)) (R : ℕ) :
           · simp only [hσ, Bool.false_eq_true, ↓reduceIte, ih, mul_one]
       _ = (1 - succeedProb φ (trial φ)) ^ R * (1 - succeedProb φ (trial φ)) := by
           rw [← Finset.sum_mul, hsum, mul_comm]
-
-/-- `(1 - p) ^ R ≤ e ^ (-c)` once `c ≤ R p`. -/
-theorem one_sub_pow_le_exp {p c : ℝ} {R : ℕ} (hp1 : p ≤ 1) (hc : c ≤ R * p) :
-    (1 - p) ^ R ≤ Real.exp (-c) := by
-  calc (1 - p) ^ R ≤ Real.exp (-p) ^ R :=
-        pow_le_pow_left₀ (by linarith) (by linarith [Real.add_one_le_exp (-p)]) R
-    _ = Real.exp (-(R * p)) := by rw [← Real.exp_nat_mul]; ring_nf
-    _ ≤ Real.exp (-c) := Real.exp_le_exp.mpr (by linarith)
-
 
 /-! ### The program -/
 
@@ -861,7 +853,7 @@ theorem ampProgram_failure_le_exp {k c : ℕ} (hk : 3 ≤ k) {φ : CNF (Fin n)} 
   have hp1 : succeedProb φ (trial φ) ≤ 1 := by
     rw [succeedProb]
     exact Probability.PMF.toOuterMeasure_toReal_le_one _ _
-  refine one_sub_pow_le_exp hp1 ?_
+  refine Real.one_sub_pow_le_exp hp1 ?_
   rw [schoeningTrials, hinv]
   push_cast
   calc (c : ℝ) = (P₀⁻¹ * c) * P₀ := by field_simp

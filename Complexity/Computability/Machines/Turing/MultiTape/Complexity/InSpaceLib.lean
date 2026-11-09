@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Lengt
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import Complexity.Tactic.EncLen
 
 /-!
 # Basic functions within linear work space
@@ -263,14 +264,13 @@ theorem natDivMod :
       (Nat.min_le_right _ _).trans (Nat.div_le_self _ _))
     have h₂ := Turing.MultiTapeTM.length_encNat_mono
       (show p.1 - p.2 * min k (p.1 / p.2) ≤ p.1 from Nat.sub_le _ _)
-    simp only [length_encPair] at h₁ h₂ ⊢
-    omega
+    enc_len at h₁ h₂ ⊢
   have h := iterate (n := fun p : ℕ × ℕ => p.1) (fst _ _) hinit divStep_inSpace
     (Q := fun p => 3 * ((encPair encNat encNat p).length + 1) + 1)
     (B := fun p => 3 * ((encPair encNat encNat p).length + 1))
     (fun p k _ => by have := hlen p k; omega) (fun p k _ => hlen p k)
   refine (snd' h).mono_le (fun p => ?_) |>.of_enc_eq fun p => ?_
-  · simp only [length_encPair]; omega
+  · enc_len
   · rw [iterate_divStep_self]
 
 /-- The quotient. -/
@@ -311,7 +311,7 @@ theorem getD :
       fun l => (encList encNat l).length :=
     of_inO (.of_linear (ListEncoding.headD 0))
   refine (budget_comp_linear hhead h).mono_le (fun p => ?_) |>.of_enc_eq fun p => ?_
-  · simp only [length_encPair]; omega
+  · enc_len
   · rw [List.tail_iterate]
     simp [List.getD_eq_getElem?_getD, List.headD_eq_head?_getD, List.head?_drop]
 
@@ -329,9 +329,7 @@ theorem foldl_setStep (i v : ℕ) (l : List ℕ) (j : ℕ) (acc : List ℕ) :
         (fun k b => if j + (k + 1) = i then v else b) := by
       funext k b; rw [show j + 1 + k = j + (k + 1) by omega]
     rw [List.foldl_cons, setStep, ih, List.mapIdx_cons, hf]
-    simp only [List.length_cons, List.append_assoc, List.singleton_append, add_zero,
-      Prod.mk.injEq, true_and, and_true]
-    omega
+    enc_len [List.append_assoc, List.singleton_append, add_zero, Prod.mk.injEq, true_and, and_true]
 
 theorem set_eq_mapIdx (l : List ℕ) (i v : ℕ) :
     l.set i v = l.mapIdx fun k a => if k = i then v else a := by
@@ -402,8 +400,7 @@ theorem set :
     have h₂ := length_encList_take_le encNat p.1 k
     have h₃ : (encNat k).length ≤ (encList encNat p.1).length :=
       (length_encNat_le_self k).trans (hk.trans (length_le_length_encList _ _))
-    simp only [length_encPair, hset] at h₁ ⊢
-    omega
+    enc_len [hset] at h₁ ⊢
   have hmem (p : List ℕ × ℕ × ℕ) (i : ℕ) (hi : i < p.1.length) :
       (encNat p.1[i]).length ≤ (encList encNat p.1).length :=
     length_le_encList_of_mem encNat (List.getElem_mem hi)
@@ -420,7 +417,7 @@ theorem set :
       omega)
     (fun p i hi => hstate p i hi)
   refine (snd' (snd' h)).mono_le (fun p => ?_) |>.of_enc_eq fun p => ?_
-  · simp only [length_encPair]; omega
+  · enc_len
   · rw [foldl_setStep, set_eq_mapIdx]
     simp
 
@@ -466,7 +463,7 @@ theorem replicate [Inhabited ε] :
   have h₁ : (encPair encNat enc p).length ≤ (p.1 + 1) * ((encPair encNat enc p).length + 1) := by
     nlinarith
   have h₂ : (encNat p.1).length ≤ (encPair encNat enc p).length := by
-    simp only [length_encPair]; omega
+    enc_len
   have h₃ : 1 ≤ (p.1 + 1) * ((encPair encNat enc p).length + 1) := Nat.one_le_iff_ne_zero.mpr
     (Nat.mul_ne_zero (by omega) (by omega))
   omega
