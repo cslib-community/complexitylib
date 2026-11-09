@@ -804,37 +804,21 @@ theorem evictRounds_le_cuckooWalkRounds {U m : ℕ} {h₁ h₂ : Fin U → Fin m
     evictRounds h₁ h₂ maxLoop tbl ⟨u, idx⟩ ≤ cuckooWalkRounds h₁ h₂ maxLoop S u :=
   le_csSup (bddAbove_cuckooWalkRounds_set h₁ h₂ maxLoop S u) ⟨tbl, hvp, idx, rfl⟩
 
+/-- `cuckooWalkRounds` is at most any common bound on the `evictRounds` of the valid placements
+it ranges over (the supremum of the empty set is `0`). -/
+private theorem cuckooWalkRounds_le_of_forall {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {maxLoop : ℕ}
+    {S : Finset (Fin U)} {u : Fin U} {B : ℕ}
+    (h : ∀ tbl, ValidPlacement h₁ h₂ S tbl → ∀ idx, evictRounds h₁ h₂ maxLoop tbl ⟨u, idx⟩ ≤ B) :
+    cuckooWalkRounds h₁ h₂ maxLoop S u ≤ B := by
+  unfold cuckooWalkRounds
+  refine csSup_le' ?_
+  rintro r ⟨tbl, hvp, idx, rfl⟩
+  exact h tbl hvp idx
+
 theorem cuckooWalkRounds_le_maxLoop {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (maxLoop : ℕ)
     (S : Finset (Fin U)) (u : Fin U) :
-    cuckooWalkRounds h₁ h₂ maxLoop S u ≤ maxLoop := by
-  unfold cuckooWalkRounds
-  by_cases hne : ({r : ℕ | ∃ tbl : PureTable U m, ValidPlacement h₁ h₂ S tbl ∧
-      ∃ idx : ℕ, r = evictRounds h₁ h₂ maxLoop tbl ⟨u, idx⟩}).Nonempty
-  · refine csSup_le hne ?_
-    rintro r ⟨tbl, _, idx, rfl⟩
-    exact evictRounds_le h₁ h₂ maxLoop tbl ⟨u, idx⟩
-  · rw [ Set.not_nonempty_iff_eq_empty.mp hne, csSup_empty]
-    exact Nat.zero_le _
-
-theorem cuckooWalkRounds_empty {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (maxLoop : ℕ) (u : Fin U) :
-    cuckooWalkRounds h₁ h₂ maxLoop ∅ u ≤ 1 := by
-  unfold cuckooWalkRounds
-  by_cases hne : ({r : ℕ | ∃ tbl : PureTable U m, ValidPlacement h₁ h₂ ∅ tbl ∧
-      ∃ idx : ℕ, r = evictRounds h₁ h₂ maxLoop tbl ⟨u, idx⟩}).Nonempty
-  · refine csSup_le hne ?_
-    rintro r ⟨tbl, hvp, idx, rfl⟩
-    cases maxLoop with
-    | zero => exact Nat.zero_le _
-    | succ k =>
-      have ht1 : tbl.t1 (h₁ u) = none := by
-        cases h : tbl.t1 (h₁ u) with
-        | none => rfl
-        | some e =>
-          exfalso
-          exact Finset.notMem_empty e.key (hvp.2 e.key ⟨e, Or.inl ⟨h₁ u, h⟩, rfl⟩)
-      simp [evictRounds, pureEvictRound, putT1, ht1]
-  · rw [Set.not_nonempty_iff_eq_empty.mp hne, csSup_empty]
-    exact Nat.zero_le _
+    cuckooWalkRounds h₁ h₂ maxLoop S u ≤ maxLoop :=
+  cuckooWalkRounds_le_of_forall fun tbl _ idx => evictRounds_le h₁ h₂ maxLoop tbl ⟨u, idx⟩
 
 /-- In any valid placement of a key set `S` of cardinality at most `1`, if `T₁` contains an entry
 `e₁`, then every slot of `T₂` is empty (by key disjointness between `T₁` and `T₂`). -/
@@ -869,25 +853,24 @@ most `1` displacement round for every hash pair `(h₁, h₂)`. -/
 theorem cuckooWalkRounds_le_one_of_card_le_one {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (maxLoop : ℕ)
     {S : Finset (Fin U)} (hcard : S.card ≤ 1) (u : Fin U) :
     cuckooWalkRounds h₁ h₂ maxLoop S u ≤ 1 := by
-  unfold cuckooWalkRounds
-  by_cases hne : ({r : ℕ | ∃ tbl : PureTable U m, ValidPlacement h₁ h₂ S tbl ∧
-      ∃ idx : ℕ, r = evictRounds h₁ h₂ maxLoop tbl ⟨u, idx⟩}).Nonempty
-  · refine csSup_le hne ?_
-    rintro r ⟨tbl, hvp, idx, rfl⟩
-    cases maxLoop with
-    | zero => exact Nat.zero_le _
-    | succ k =>
-      unfold evictRounds
-      cases h : pureEvictRound h₁ h₂ tbl ⟨u, idx⟩ with
-      | mk tbl' oe =>
-        have hoe : oe = none := by
-          have := pureEvictRound_snd_eq_none_of_card_le_one hvp hcard ⟨u, idx⟩
-          rw [h] at this
-          exact this
-        subst hoe
-        exact le_rfl
-  · rw [Set.not_nonempty_iff_eq_empty.mp hne, csSup_empty]
-    exact Nat.zero_le _
+  refine cuckooWalkRounds_le_of_forall fun tbl hvp idx => ?_
+  cases maxLoop with
+  | zero => exact Nat.zero_le _
+  | succ k =>
+    unfold evictRounds
+    cases h : pureEvictRound h₁ h₂ tbl ⟨u, idx⟩ with
+    | mk tbl' oe =>
+      have hoe : oe = none := by
+        have := pureEvictRound_snd_eq_none_of_card_le_one hvp hcard ⟨u, idx⟩
+        rw [h] at this
+        exact this
+      subst hoe
+      exact le_rfl
+
+/-- Inserting into a valid placement of the empty set takes at most one displacement round. -/
+theorem cuckooWalkRounds_empty {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (maxLoop : ℕ) (u : Fin U) :
+    cuckooWalkRounds h₁ h₂ maxLoop ∅ u ≤ 1 :=
+  cuckooWalkRounds_le_one_of_card_le_one h₁ h₂ maxLoop (by simp) u
 
 /-- Finset of hash seeds `θ : Θ` under which insertion-order replay
 `pureReplay (h₁ θ) (h₂ θ) maxLoop ks` succeeds without exhausting the displacement cap `maxLoop`. -/
@@ -1234,6 +1217,36 @@ theorem le_singleHashSpace (c_exp n_max : ℕ) :
       nlinarith
     nlinarith
 
+/-- Below `doubleTabThreshold c_exp`, a single hash instance occupies a `cuckooK`-wise polynomial
+table. -/
+private theorem singleHashSpace_of_lt {c_exp n_max : ℕ} (h : n_max < doubleTabThreshold c_exp) :
+    singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
+  simp only [singleHashSpace, DoubleTabulation.provableSpace, h, ↓reduceIte]
+
+/-- From `doubleTabThreshold c_exp` on, a single hash instance occupies a Double Tabulation
+table. -/
+private theorem singleHashSpace_of_not_lt {c_exp n_max : ℕ}
+    (h : ¬ n_max < doubleTabThreshold c_exp) :
+    singleHashSpace c_exp n_max =
+      DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+        (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+  simp only [singleHashSpace, DoubleTabulation.provableSpace, h, ↓reduceIte]
+
+/-- The `2 ^ b` cells of one Double Tabulation character table fit in its whole footprint. -/
+private theorem two_pow_provableB_le_space (c_exp n_max : ℕ) :
+    2 ^ DoubleTabulation.provableB n_max ≤
+      DoubleTabulation.space (DoubleTabulation.provableC c_exp)
+        (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
+  have hc : 1 ≤ DoubleTabulation.provableC c_exp := DoubleTabulation.one_le_provableC c_exp
+  have hd : 1 ≤ DoubleTabulation.provableD c_exp := by
+    dsimp only [DoubleTabulation.provableD]; omega
+  have hle : 1 * 2 ^ DoubleTabulation.provableB n_max ≤
+      ((DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp) *
+        2 ^ DoubleTabulation.provableB n_max :=
+    Nat.mul_le_mul_right _ (by nlinarith)
+  dsimp only [DoubleTabulation.space]
+  omega
+
 theorem le_hashPairSpace (c_exp n_max : ℕ) :
     49 ≤ hashPairSpace c_exp n_max := by
   have := le_singleHashSpace c_exp n_max
@@ -1401,8 +1414,7 @@ theorem SingleTableRep.congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem'
   cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro htab
   · trivial
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hsp := singleHashSpace_of_lt hlt
     have hk := thirtyEight_le_cuckooK n_max
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
@@ -1428,8 +1440,7 @@ theorem SingleTableRep.of_copy_from_hashBase {hashBase c_exp n_max U M : ℕ} {m
   cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro htab
   · trivial
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hsp := singleHashSpace_of_lt hlt
     have hk := thirtyEight_le_cuckooK n_max
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
@@ -1469,14 +1480,10 @@ theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
   revert θ hseed
   cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro θ hseed
   · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
-    have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
+    have hsp := singleHashSpace_of_not_lt hge
     exact hseed.congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hsp := singleHashSpace_of_lt hlt
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
@@ -1513,14 +1520,10 @@ theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem m
   unfold SingleSeed extractSingleSeed
   cases h : decide (n_max < doubleTabThreshold c_exp)
   · have hge : ¬ (n_max < doubleTabThreshold c_exp) := of_decide_eq_false h
-    have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hge]
+    have hsp := singleHashSpace_of_not_lt hge
     exact DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hsp := singleHashSpace_of_lt hlt
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
@@ -1678,8 +1681,7 @@ theorem initTableHashPairCode_execWithin {w hashBase c_exp n_max U M : ℕ} {x :
       (∀ a, (a < hashBase ∨ hashBase + hashPairSpace c_exp n_max ≤ a) → y.mem a = x.mem a) := by
   unfold initTableHashPairCode
   split_ifs with hlt
-  · have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+  · have hsp := singleHashSpace_of_lt hlt
     have hle_sp := le_singleHashSpace c_exp n_max
     have hfit_kw : Fits w (hashBase + KWise.space n_max (cuckooK n_max)) :=
       hfit_space.of_le (by dsimp only [hashPairSpace]; omega)
@@ -1910,8 +1912,7 @@ theorem resampleSingleCode_execRand {w base c_exp n_max U M : ℕ} {x : Data 19}
       (resampleSingleComp base c_exp n_max U M x) := by
   unfold resampleSingleCode resampleSingleComp
   split_ifs with hlt
-  · have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+  · have hsp := singleHashSpace_of_lt hlt
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
@@ -1922,25 +1923,11 @@ theorem resampleSingleCode_execRand {w base c_exp n_max U M : ℕ} {x : Data 19}
       rwa [decide_eq_true hlt] at htab
     have hbase18 : (x.comap cast18To19).regs 0 = base := hbase
     exact (KWise.resampleCode_execRand htab_kw hbase18 hfit_end hfit_q).rename injective_cast18To19
-  · have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+  · have hsp := singleHashSpace_of_not_lt hlt
     have hfit_dt : Fits w (base + DoubleTabulation.space (DoubleTabulation.provableC c_exp)
         (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max)) := by
       rwa [← hsp]
-    have hpow_b_le : 2 ^ DoubleTabulation.provableB n_max ≤
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      have hc : 1 ≤ DoubleTabulation.provableC c_exp := DoubleTabulation.one_le_provableC c_exp
-      have hd : 1 ≤ DoubleTabulation.provableD c_exp := by
-        dsimp only [DoubleTabulation.provableD]; omega
-      have hle : 1 * 2 ^ DoubleTabulation.provableB n_max ≤
-          ((DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp) *
-            2 ^ DoubleTabulation.provableB n_max :=
-        Nat.mul_le_mul_right _ (by nlinarith)
-      dsimp only [DoubleTabulation.space]
-      omega
+    have hpow_b_le := two_pow_provableB_le_space c_exp n_max
     have hfit_mask_b : Fits w (2 ^ DoubleTabulation.provableB n_max - 1) :=
       hfit_dt.of_le (by omega)
     have hfit_mask_M : Fits w (2 ^ M - 1) :=
@@ -1972,8 +1959,7 @@ theorem mem_support_resampleSingleComp {base c_exp n_max U M : ℕ} {x : Data 19
     have h0' : (z₀.1.extend cast18To19 x).regs 0 = base := by
       change ((z₀.1.extend cast18To19 x).comap cast18To19).regs 0 = base
       rw [Data.comap_extend injective_cast18To19, hz0]
-    have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hsp := singleHashSpace_of_lt hlt
     have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
     have hkw : KWise.space n_max (cuckooK n_max) =
         8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
@@ -1993,10 +1979,7 @@ theorem mem_support_resampleSingleComp {base c_exp n_max U M : ℕ} {x : Data 19
     have h0' : (z₀.1.extend cast12To19 x).regs 0 = base := by
       change ((z₀.1.extend cast12To19 x).comap cast12To19).regs 0 = base
       rw [Data.comap_extend injective_cast12To19, hz0]
-    have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+    have hsp := singleHashSpace_of_not_lt hlt
     refine ⟨by simp [resampleSingleSteps, hlt, hsteps], h0', ?_, ?_,
       fun a ha => hout a (by rwa [← hsp])⟩
     · unfold SingleTableRep
@@ -2300,8 +2283,7 @@ theorem evalSingleCode_execWithin {w base c_exp n_max U M : ℕ}
       y.mem = x.mem := by
   unfold evalSingleCode evalSingleSteps
   split_ifs with hlt
-  · have hsp : singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+  · have hsp := singleHashSpace_of_lt hlt
     have hfit_kw : Fits w (base + KWise.space n_max (cuckooK n_max)) := by
       rwa [← hsp]
     have htab_kw : KWise.TableRep base (KWise.chunkBits n_max) U M (cuckooK n_max) x.mem := by
@@ -2326,25 +2308,11 @@ theorem evalSingleCode_execWithin {w base c_exp n_max U M : ℕ}
     · change ((y_kw.extend cast18To19 x).comap cast18To19).regs 2 =
         (trinomialPolyHash (trinomialStep U M) (cuckooK n_max) U M θ₀ u).val
       rw [Data.comap_extend injective_cast18To19, hy2]
-  · have hsp : singleHashSpace c_exp n_max =
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      simp [singleHashSpace, DoubleTabulation.provableSpace, hlt]
+  · have hsp := singleHashSpace_of_not_lt hlt
     have hfit_dt : Fits w (base + DoubleTabulation.space (DoubleTabulation.provableC c_exp)
         (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max)) := by
       rwa [← hsp]
-    have hpow_b_le : 2 ^ DoubleTabulation.provableB n_max ≤
-        DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-          (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-      have hc : 1 ≤ DoubleTabulation.provableC c_exp := DoubleTabulation.one_le_provableC c_exp
-      have hd : 1 ≤ DoubleTabulation.provableD c_exp := by
-        dsimp only [DoubleTabulation.provableD]; omega
-      have hle : 1 * 2 ^ DoubleTabulation.provableB n_max ≤
-          ((DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp) *
-            2 ^ DoubleTabulation.provableB n_max :=
-        Nat.mul_le_mul_right _ (by nlinarith)
-      dsimp only [DoubleTabulation.space]
-      omega
+    have hpow_b_le := two_pow_provableB_le_space c_exp n_max
     have hfit_pow_b : Fits w (2 ^ DoubleTabulation.provableB n_max) :=
       hfit_dt.of_le (by omega)
     have hq_pos : 0 < Probability.trinomialDeg U M := by
