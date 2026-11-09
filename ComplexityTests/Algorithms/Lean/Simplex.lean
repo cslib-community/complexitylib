@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
+public import Complexity.Algorithms.Lean.Simplex.Dantzig
 public import Complexity.Algorithms.Lean.Simplex.LinearProgram
 import Mathlib.Algebra.Order.Ring.Rat
 import Mathlib.Tactic.FinCases
@@ -28,8 +29,8 @@ These kernel-checked examples (using no `native_decide`) exercise
 2. Chvátal's cycling example ([Chvatal1983], Chapter 3):
    `max 10x₁ - 57x₂ - 9x₃ - 24x₄` subject to
    `x₁/2 - 11x₂/2 - 5x₃/2 + 9x₄ ≤ 0`, `x₁/2 - 3x₂/2 - x₃/2 + x₄ ≤ 0`, `x₁ ≤ 1`, `x ≥ 0`. With
-   Dantzig's largest-coefficient rule (ties broken toward the smallest index) the method returns to
-   the initial basis after six degenerate pivots, so the hypothesis of
+   Dantzig's largest-coefficient rule (`dantzigRun`, ties broken toward the smallest index) the
+   method returns to the initial basis after six degenerate pivots, so the hypothesis of
    `basis_ne_of_blandPivot` that the pivots follow Bland's rule cannot be dropped. Bland's rule
    instead reaches the optimum `1` after seven pivots.
 3. Edge cases: an unbounded program, a program whose slack dictionary is already optimal, and a
@@ -62,6 +63,12 @@ def isUnbounded {ι K : Type*} : Outcome ι K → Bool
 def isOutOfFuel {ι K : Type*} : Outcome ι K → Bool
   | .outOfFuel _ => true
   | _ => false
+
+/-- The dictionary returned by a run, whatever the outcome. -/
+def lastDict {ι K : Type*} : Outcome ι K → Dictionary ι K
+  | .optimal D => D
+  | .unbounded D _ => D
+  | .outOfFuel D => D
 
 /-! ### 1. Chvátal's introductory example -/
 
@@ -147,27 +154,17 @@ example : isOutOfFuel (run (slackDictionary A₂ b₂ c₂) 6) = true ∧
     optimum? (run (slackDictionary A₂ b₂ c₂) 7) = some ({0, 2, 4}, 1) := by
   decide +kernel
 
-/-- Dantzig's entering rule: the largest reduced cost, ties broken toward the smallest index. -/
-def dantzigEntering {n : ℕ} (D : Dictionary (Fin n) ℚ) : Option (Fin n) :=
-  minOpt (D.enteringCandidates.filter fun j =>
-    ∀ k ∈ D.enteringCandidates, D.objCoeff k ≤ D.objCoeff j)
-
-/-- One pivot with Dantzig's entering rule and the smallest-index ratio test. -/
-def dantzigPivot {n : ℕ} (D : Dictionary (Fin n) ℚ) : Dictionary (Fin n) ℚ :=
-  match dantzigEntering D with
-  | none => D
-  | some s =>
-    match D.blandLeaving s with
-    | none => D
-    | some r => D.pivot r s
-
-/-- Dantzig's rule cycles: six degenerate pivots lead back to the initial basis. -/
-example : (List.range 7).map (fun k => (dantzigPivot^[k] (slackDictionary A₂ b₂ c₂)).basis) =
+/-- Dantzig's rule cycles: with fuel `k ≤ 6` the run is still pivoting, and after six degenerate
+pivots it is back at the initial basis. -/
+example : (List.range 7).map (fun k => isOutOfFuel ((slackDictionary A₂ b₂ c₂).dantzigRun k)) =
+    List.replicate 7 true ∧
+    (List.range 7).map (fun k => (lastDict ((slackDictionary A₂ b₂ c₂).dantzigRun k)).basis) =
     [{4, 5, 6}, {0, 5, 6}, {0, 1, 6}, {1, 2, 6}, {2, 3, 6}, {3, 4, 6}, {4, 5, 6}] := by
   decide +kernel
 
 /-- The cycle consists of degenerate pivots: the objective value stays `0`. -/
-example : (List.range 7).map (fun k => (dantzigPivot^[k] (slackDictionary A₂ b₂ c₂)).objConst) =
+example : (List.range 7).map
+    (fun k => (lastDict ((slackDictionary A₂ b₂ c₂).dantzigRun k)).objConst) =
     List.replicate 7 0 := by
   decide +kernel
 

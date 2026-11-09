@@ -44,12 +44,21 @@ measures, functions of disjoint sets of coordinates are independent
 * `ProbabilityTheory.variance_sum_indicator_le`: the variance of a count of events with a
   dependency relation.
 * `ProbabilityTheory.measureReal_le_abs_sum_indicator_sub_le`: the corresponding deviation bound.
+* `ProbabilityTheory.integral_sum_indicator_one`: the expected number of events that occur.
+* `ProbabilityTheory.measureReal_nonpos_le_variance_div_sq`: the second moment method,
+  `P(X ≤ 0) ≤ Var X / (E X) ^ 2` for square integrable `X` with `E X > 0`.
+* `ProbabilityTheory.measureReal_forall_notMem_le`: the second moment method for a count of
+  measurable events with positive mean `S`, stated through the pair probabilities `P(A k ∩ A l)`.
 * `ProbabilityTheory.exists_measurable_comp_restrict`: a measurable function of finitely many
   coordinates factors measurably through the restriction to them.
 * `ProbabilityTheory.indepFun_pi_of_dependsOn`, `ProbabilityTheory.indepSet_pi_of_dependsOn`:
   functions and events of disjoint sets of coordinates are independent under a product measure.
 * `ProbabilityTheory.measureReal_pi_le_abs_sum_indicator_sub_le`: the deviation bound for local
   events in a product space.
+
+## References
+
+* [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 4.3][AlonSpencer2016]
 -/
 
 @[expose] public section
@@ -92,6 +101,13 @@ private theorem covariance_indicator_one {s t : Set Ω} (hs : MeasurableSet s)
     ← Set.inter_indicator_one, integral_indicator_one (hs.inter ht), integral_indicator_one hs,
     integral_indicator_one ht]
 
+/-- The expected number of events `A k`, `k ∈ F`, that occur is `∑ k ∈ F, P(A k)`. -/
+theorem integral_sum_indicator_one (F : Finset κ) {A : κ → Set Ω}
+    (hA : ∀ k ∈ F, MeasurableSet (A k)) :
+    ∫ ω, ∑ k ∈ F, (A k).indicator (1 : Ω → ℝ) ω ∂P = ∑ k ∈ F, P.real (A k) := by
+  rw [integral_finsetSum _ fun k hk => (memLp_indicator_one (hA k hk)).integrable one_le_two]
+  exact sum_congr rfl fun k hk => integral_indicator_one (hA k hk)
+
 /-- **The variance of a count of events.** If events `A k` and `A l` with `¬ G k l` are
 independent, and each `k ∈ F` is related by `G` to at most `D` indices of `F`, then the number of
 events `A k`, `k ∈ F`, that occur has variance at most `|F| D`. -/
@@ -128,15 +144,56 @@ theorem measureReal_le_abs_sum_indicator_sub_le (F : Finset κ) {A : κ → Set 
       #F * D / c ^ 2 := by
   have hY : MemLp (fun ω => ∑ k ∈ F, (A k).indicator (1 : Ω → ℝ) ω) 2 P :=
     memLp_finsetSum F fun k hk => memLp_indicator_one (hA k hk)
-  have hmean : ∫ ω, ∑ k ∈ F, (A k).indicator (1 : Ω → ℝ) ω ∂P = ∑ k ∈ F, P.real (A k) := by
-    rw [integral_finsetSum _ fun k hk => (memLp_indicator_one (hA k hk)).integrable one_le_two]
-    exact sum_congr rfl fun k hk => integral_indicator_one (hA k hk)
+  have hmean := integral_sum_indicator_one (P := P) F hA
   have cheb := meas_ge_le_variance_div_sq hY hc
   rw [hmean] at cheb
   rw [measureReal_def]
   refine ENNReal.toReal_le_of_le_ofReal (by positivity) (cheb.trans ?_)
   exact ENNReal.ofReal_le_ofReal
     (by gcongr; exact variance_sum_indicator_le F hA G hG hD)
+
+/-- **The second moment method** [Alon and Spencer, Section 4.3][AlonSpencer2016]: under a
+probability measure, a square integrable random variable `X` with `E X > 0` is nonpositive with
+probability at most `Var X / (E X) ^ 2`. -/
+theorem measureReal_nonpos_le_variance_div_sq {X : Ω → ℝ} (hX : MemLp X 2 P) (hX₀ : 0 < P[X]) :
+    P.real {ω | X ω ≤ 0} ≤ Var[X; P] / P[X] ^ 2 := by
+  have hsub : {ω | X ω ≤ 0} ⊆ {ω | P[X] ≤ |X ω - P[X]|} := fun ω hω => by
+    rw [Set.mem_ofPred_eq] at hω ⊢
+    rw [abs_sub_comm]
+    exact le_abs.2 (Or.inl (by linarith))
+  calc P.real {ω | X ω ≤ 0} ≤ P.real {ω | P[X] ≤ |X ω - P[X]|} := measureReal_mono hsub
+    _ ≤ Var[X; P] / P[X] ^ 2 := by
+      rw [measureReal_def]
+      exact ENNReal.toReal_le_of_le_ofReal (div_nonneg (variance_nonneg _ _) (sq_nonneg _))
+        (meas_ge_le_variance_div_sq hX hX₀)
+
+/-- **The second moment method for a count of events**
+[Alon and Spencer, Section 4.3][AlonSpencer2016]. Under a probability measure, if the events `A k`
+are measurable and `S = ∑ k ∈ F, P(A k) > 0`, then the probability that none of the events `A k`,
+`k ∈ F`, occurs is at most `(∑ k ∈ F, ∑ l ∈ F, P(A k ∩ A l) - S ^ 2) / S ^ 2`: the variance of
+the number of events that occur, divided by the square of its mean. -/
+theorem measureReal_forall_notMem_le (F : Finset κ) {A : κ → Set Ω}
+    (hA : ∀ k ∈ F, MeasurableSet (A k)) (hS : 0 < ∑ k ∈ F, P.real (A k)) :
+    P.real {ω | ∀ k ∈ F, ω ∉ A k} ≤
+      (∑ k ∈ F, ∑ l ∈ F, P.real (A k ∩ A l) - (∑ k ∈ F, P.real (A k)) ^ 2) /
+        (∑ k ∈ F, P.real (A k)) ^ 2 := by
+  set Y : Ω → ℝ := fun ω => ∑ k ∈ F, (A k).indicator (1 : Ω → ℝ) ω with hYdef
+  have hY : MemLp Y 2 P := memLp_finsetSum F fun k hk => memLp_indicator_one (hA k hk)
+  have hmean : P[Y] = ∑ k ∈ F, P.real (A k) := integral_sum_indicator_one F hA
+  have hvar : Var[Y; P] =
+      ∑ k ∈ F, ∑ l ∈ F, P.real (A k ∩ A l) - (∑ k ∈ F, P.real (A k)) ^ 2 := by
+    rw [hYdef, variance_fun_sum' fun k hk => memLp_indicator_one (hA k hk), sq, sum_mul_sum,
+      ← sum_sub_distrib]
+    refine sum_congr rfl fun k hk => ?_
+    rw [← sum_sub_distrib]
+    exact sum_congr rfl fun l hl => covariance_indicator_one (hA k hk) (hA l hl)
+  have hsub : {ω | ∀ k ∈ F, ω ∉ A k} ⊆ {ω | Y ω ≤ 0} := fun ω hω => by
+    rw [Set.mem_ofPred_eq] at hω ⊢
+    change ∑ k ∈ F, (A k).indicator (1 : Ω → ℝ) ω ≤ 0
+    rw [sum_eq_zero fun k hk => Set.indicator_of_notMem (hω k hk) _]
+  calc P.real {ω | ∀ k ∈ F, ω ∉ A k} ≤ P.real {ω | Y ω ≤ 0} := measureReal_mono hsub
+    _ ≤ Var[Y; P] / P[Y] ^ 2 := measureReal_nonpos_le_variance_div_sq hY (hmean ▸ hS)
+    _ = _ := by rw [hvar, hmean]
 
 end General
 

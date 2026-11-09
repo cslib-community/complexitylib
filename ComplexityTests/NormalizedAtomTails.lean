@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 -- upstream: candidate
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.ClippedTail
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.ClippedTail
 
 /-! Nonconstant correlated endpoint moments and genuine zero-extension behavior.
 The exact moment catches an invalid independence/rarity discount on noise. -/
