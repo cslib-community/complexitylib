@@ -82,6 +82,22 @@ rank-one `moduleLWEKeyGen` coefficient computation. Full native encryption, seed
 small-secret security still remain separate obligations. This arithmetic certificate does not
 remove the existing restrictions on exact native samplers or imply small-secret security.
 
+ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../Complexity/Crypto/Computational/MLDSA/Decompose.lean),
+[`MLDSA/Basic.lean`](../../Complexity/Crypto/Computational/MLDSA/Basic.lean) and
+[`MLDSA/KeyOnly.lean`](../../Complexity/Crypto/Computational/MLDSA/KeyOnly.lean). `decompose`,
+`highBits` and `lowBits` follow the FIPS 204 rounding with its `q - 1` wrap-around rule; the
+reusable facts are uniqueness of the decomposition (`decompose_intCast_mul_add`) and stability of
+the high bits under `β`-short perturbations (`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
+`sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
+function and mask sampler (no Power2Round, hints, byte encodings or seed expansion), and
+`verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
+satisfy. `succProbability_koaGame_le` bounds key-only forgery by the honest-versus-uniform key
+advantage of `forgeryDistinguisher` plus the self-target MSIS success of `selfTargetReduction`;
+chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
+formalized. The [checked examples](../../ComplexityTests/Crypto/MLDSA.lean) cover the wrap-around
+case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
+solution.
+
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. The LWE interface exposes only the serialized public matrix `[B*t+e | B]`, with independent errors and one shared uniform secret; in [`SIS/Module.lean`](../../Complexity/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`ComplexityTests/Crypto/ModuleSIS.lean`](../../ComplexityTests/Crypto/ModuleSIS.lean)), and [`SIS/ModuleEncryption.lean`](../../Complexity/Crypto/Computational/SIS/ModuleEncryption.lean) builds dual-Regev public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`ComplexityTests/Crypto/ModuleEncryption.lean`](../../ComplexityTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
 For deterministic native key generation, import

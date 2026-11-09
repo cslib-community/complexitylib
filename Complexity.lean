@@ -3779,6 +3779,9 @@ public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Crypto.Computational.LWE.Basic
 public import Complexity.Crypto.Computational.LubyRackoff
 public import Complexity.Crypto.Computational.MAC
+public import Complexity.Crypto.Computational.MLDSA.Basic
+public import Complexity.Crypto.Computational.MLDSA.Decompose
+public import Complexity.Crypto.Computational.MLDSA.KeyOnly
 public import Complexity.Crypto.Computational.MerkleDamgard
 public import Complexity.Crypto.Computational.MerkleSignature
 public import Complexity.Crypto.Computational.MerkleSignature.Security
