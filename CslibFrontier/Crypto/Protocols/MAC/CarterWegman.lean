@@ -2681,10 +2681,8 @@ theorem maskedNonceStrongGame_toReal_le_add_advantage {seed : PMF K} {hash : K �
       hash forger).symm
   have hinv_ne_top : (Fintype.card Y : ℝ≥0∞)⁻¹ ≠ ⊤ := by simp
   have hle : (nonceStrongGame seed hash forger true).toReal ≤
-      ε.toReal + ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal := by
-    rw [← ENNReal.toReal_add hε hinv_ne_top]
-    exact ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hε, hinv_ne_top⟩)
-      (nonceStrongGame_le hh forger)
+      ε.toReal + ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal :=
+    ENNReal.toReal_le_add (nonceStrongGame_le hh forger) hε hinv_ne_top
   rw [maskedNonceStrongGame_eq_bind_nonceFnDistinguisher, hunif,
     Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
   linarith [le_abs_self (((rfDist.bind (nonceFnDistinguisher seed hash forger)) true).toReal -
@@ -3438,9 +3436,8 @@ theorem sufCmaGame_carterWegmanNonceMAC_toReal_le
         ε.toReal + ((2 : ℝ) ^ n)⁻¹ := by
     have hle := (eval_prfIdealGame_prfNonceToPrfDistinguisher_le hh adversary).trans
       (max_le_add_of_nonneg zero_le zero_le)
-    have htr := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hε, hinv_ne_top⟩) hle
-    simpa only [ENNReal.toReal_add hε hinv_ne_top, ENNReal.toReal_inv, ENNReal.toReal_pow,
-      ENNReal.toReal_ofNat] using htr
+    have htr := ENNReal.toReal_le_add hle hε hinv_ne_top
+    simpa only [ENNReal.toReal_inv, ENNReal.toReal_pow, ENNReal.toReal_ofNat] using htr
   rw [Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
   linarith [le_abs_self
     ((ProbComp.eval
@@ -4014,11 +4011,9 @@ theorem maskedRandomNonceStrongGame_toReal_le_add_advantage {seed : PMF K} {hash
   have hle : (randomNonceStrongGame seed hash forger true).toReal ≤
       ((Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N)).toReal +
         ((Fintype.card Y : ℝ≥0∞)⁻¹).toReal + ε.toReal := by
-    rw [← ENNReal.toReal_add hcol_ne_top hinv_ne_top,
-      ← ENNReal.toReal_add (ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩) hε]
-    exact ENNReal.toReal_mono
-      (ENNReal.add_ne_top.mpr ⟨ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩, hε⟩)
-      (randomNonceStrongGame_le hh hforger)
+    rw [← ENNReal.toReal_add hcol_ne_top hinv_ne_top]
+    exact ENNReal.toReal_le_add (randomNonceStrongGame_le hh hforger)
+      (ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩) hε
   rw [maskedRandomNonceStrongGame_eq_bind_randomNonceFnDistinguisher, hunif,
     Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
   linarith [le_abs_self
@@ -5165,11 +5160,10 @@ theorem sufCmaGame_carterWegmanRandomMAC_toReal_le
         (prfIdealGame
           (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal ≤
         (Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ε.toReal := by
-    have htr := ENNReal.toReal_mono
-      (ENNReal.add_ne_top.mpr ⟨ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩, hε⟩)
+    have htr := ENNReal.toReal_le_add
       (eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le hh hq)
-    simpa only [ENNReal.toReal_add (ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩) hε,
-      ENNReal.toReal_add hcol_ne_top hinv_ne_top, ENNReal.toReal_div, ENNReal.toReal_pow,
+      (ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩) hε
+    simpa only [ENNReal.toReal_add hcol_ne_top hinv_ne_top, ENNReal.toReal_div, ENNReal.toReal_pow,
       ENNReal.toReal_natCast, ENNReal.toReal_mul, ENNReal.toReal_ofNat,
       ENNReal.toReal_inv] using htr
   rw [Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
