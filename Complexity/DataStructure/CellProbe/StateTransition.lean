@@ -15,8 +15,8 @@ public import Complexity.DataStructure.StateTransition.Amortized
 # Deterministic Cell-Probe State-Transition Implementations
 
 This file connects deterministic adaptive cell-probe schemes (`Cslib.CellProbe.Scheme`,
-[Miltersen1999]; [Yao1981]) to the general relational data-structure specification hierarchy
-(`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009], Chapter 17).
+[Miltersen1999], §1.2) to the general relational data-structure specification hierarchy
+(`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009], Section 17.3).
 
 A `Cslib.DataStructure.CellProbe.StateTransitionImpl D P s₀` certifies that a time-invariant
 cell-probe scheme `P : Cslib.CellProbe.Scheme D.Op D.Result cells w` implements `D` starting from
@@ -69,9 +69,8 @@ From a single `StateTransitionImpl`, this file derives:
 ## References
 
 * [P. B. Miltersen, *Cell Probe Complexity — a Survey*][Miltersen1999]
-* [A. C.-C. Yao, *Should Tables Be Sorted?*][Yao1981]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
-  Chapter 17][CLRS2009]
+  Section 17.3][CLRS2009]
 -/
 
 public section

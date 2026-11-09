@@ -19,9 +19,9 @@ import Complexity.Probability.PMF.Map
 # Randomized Cell-Probe State-Transition Implementations
 
 This file extends `Cslib.DataStructure.CellProbe.StateTransitionImpl` to randomized cell-probe
-schemes (`Cslib.CellProbe.Randomized.Scheme`, [Miltersen1999]) implementing relational
-state-transition specifications (`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009], Chapter 17;
-[MitzenmacherUpfal2017], Sections 2.1, 2.3, and 2.4).
+schemes (`Cslib.CellProbe.Randomized.Scheme`, [Miltersen1999], §1.2) implementing relational
+state-transition specifications (`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009],
+Section 17.3; [MitzenmacherUpfal2017], Sections 2.1 and 2.3).
 
 A `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl D P s₀` couples cell-probe
 execution with a latent seed type `Seed : Type`, a reference distribution `seedLaw : PMF Seed` up to
@@ -55,6 +55,11 @@ amortized-in-expectation probe inequality:
 
 ## Main results
 
+* `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.runFrom_cons_fst`,
+  `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.runFrom_append_fst`,
+  `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.expectedProbesFrom_cons`,
+  `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.expectedProbesFrom_append`:
+  structural decomposition of `Randomized.Scheme.runFrom` and `expectedProbesFrom`.
 * `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.seq_expected_amortized`:
   multi-operation coupled transcript and expected-amortized probe telescope over any demonically
   admissible sequence `D.ValidOpSeq s₀ ops`.
@@ -73,9 +78,9 @@ amortized-in-expectation probe inequality:
 
 * [P. B. Miltersen, *Cell Probe Complexity — a Survey*][Miltersen1999]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
-  Chapter 17][CLRS2009]
+  Section 17.3][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing: Randomization and Probabilistic
-  Techniques in Algorithms and Data Analysis*][MitzenmacherUpfal2017]
+  Techniques in Algorithms and Data Analysis*, Sections 2.1 and 2.3][MitzenmacherUpfal2017]
 -/
 
 public section
@@ -832,7 +837,9 @@ theorem padCells_singleState (h : cells ≤ cells') (C : StateTransitionImpl D P
 
 /-! ### Sequence-level expected-amortized probe bounds and transcript contracts -/
 
-private theorem runFrom_cons_fst {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- First-component `(transcript, postMem)` decomposition of `Randomized.Scheme.runFrom` on
+`o :: ops`. -/
+theorem runFrom_cons_fst {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (o : Op) (ops : List Op) :
     (Q.runFrom m (o :: ops)).map Prod.fst =
@@ -842,7 +849,9 @@ private theorem runFrom_cons_fst {Op : Type v} {Result : Op → Type} {cells w :
   refine congrArg (PMF.bind ((Q.step o).run m)) (funext fun ((a, m'), _) => ?_)
   simp only [Function.comp_def, PMF.map_comp]
 
-private theorem runFrom_append_fst {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- First-component `(transcript, postMem)` decomposition of `Randomized.Scheme.runFrom` across
+`ops₁ ++ ops₂`. -/
+theorem runFrom_append_fst {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (ops₁ ops₂ : List Op) :
     (Q.runFrom m (ops₁ ++ ops₂)).map Prod.fst =
@@ -860,7 +869,8 @@ private theorem runFrom_append_fst {Op : Type v} {Result : Op → Type} {cells w
     refine congrArg (PMF.bind ((Q.runFrom m' rest).map Prod.fst)) (funext fun (tr₁, m₁) => ?_)
     simp only [Function.comp_def, PMF.map_comp, List.cons_append]
 
-private theorem expectedProbesFrom_cons {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- Stepwise expected-probe recurrence for `Randomized.Scheme.expectedProbesFrom` on `o :: ops`. -/
+theorem expectedProbesFrom_cons {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (o : Op) (ops : List Op) :
     Q.expectedProbesFrom m (o :: ops) =
@@ -885,7 +895,8 @@ private theorem expectedProbesFrom_cons {Op : Type v} {Result : Op → Type} {ce
   simp only [hterm, tsum_add]
   rfl
 
-private theorem expectedProbesFrom_append {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- Append decomposition for `Randomized.Scheme.expectedProbesFrom` across `ops₁ ++ ops₂`. -/
+theorem expectedProbesFrom_append {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (ops₁ ops₂ : List Op) :
     Q.expectedProbesFrom m (ops₁ ++ ops₂) =
