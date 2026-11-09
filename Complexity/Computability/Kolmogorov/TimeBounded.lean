@@ -266,6 +266,13 @@ private theorem universalTM_runFor_machineHeader_append {k : ℕ} {State : Type}
     decodeDesc_eDesc, dropFrame_frame_append, ← tm.runFor_eq_simulate eS w t]
   rfl
 
+/-- Running `universalTMRunFor` on the framed description of a finite-state binary `MultiTapeTM`
+followed by an input `w` is running the machine itself on `w`, step for step. -/
+theorem universalTMRunFor_frame_eDesc_append {k : ℕ} {State : Type} [Fintype State]
+    (eS : State ↪ ℕ) (tm : MultiTapeTM k Bool State) (w : List Bool) (t : ℕ) :
+    universalTMRunFor (frame (eDesc (desc eS eBit tm)) ++ w) t = tm.runFor w t :=
+  universalTM_runFor_machineHeader_append eS tm w t
+
 /-- **`universalTM` simulates every finite-state binary `MultiTapeTM` with constant program overhead
 and zero time overhead.** -/
 private noncomputable def universalTMSimulation {k : ℕ} {State : Type} [Fintype State]

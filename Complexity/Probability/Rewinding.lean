@@ -12,6 +12,7 @@ public import Cslib.Probability.PMF
 public import Mathlib.Analysis.Real.Sqrt
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Expect
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # The rewinding lemma
@@ -113,8 +114,7 @@ private theorem pass_nonneg (answer : S → T → PMF A) (ok : S → T → A →
 
 private theorem pass_le_one (answer : S → T → PMF A) (ok : S → T → A → Bool) (s : S) (t : T) :
     pass answer ok s t ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one
-    (by rw [ENNReal.ofReal_one]; exact PMF.coe_le_one _ true)
+  PMF.toReal_apply_le_one _ true
 
 variable [Fintype T]
 

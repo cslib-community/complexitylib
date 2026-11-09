@@ -12,6 +12,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Tactic.PolyTime.Init
+import Complexity.Tactic.EncLen
 
 /-!
 # The Merkle–Damgård transform
@@ -82,7 +83,7 @@ We formalize the transform and its collision-extraction reduction at two levels:
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
   Section 8.4 (Figure 8.5 and Theorem 8.3).
-* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 5.2.
+* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 6.2.
 -/
 
 @[expose] public section
@@ -100,8 +101,7 @@ def padOrTake (n : ℕ) (w : List Bool) : List Bool :=
 
 @[simp]
 theorem length_padOrTake (n : ℕ) (w : List Bool) : (padOrTake n w).length = n := by
-  simp only [padOrTake, List.length_take, List.length_append, List.length_replicate]
-  omega
+  enc_len [padOrTake, List.length_take]
 
 @[simp]
 theorem padOrTake_eq_self {n : ℕ} {w : List Bool} (hw : w.length = n) :
@@ -275,9 +275,7 @@ private theorem computableTidilyInPolyTime_chainTrace
   have hhlen : (h (k a) (padOrTake (k a).length state.1 ++ padOrTake (k a).length b)).length =
       (k a).length :=
     hlen (k a) _ hxlen
-  simp only [chainTraceStep, length_encPair, encList_cons, List.length_append, length_frame,
-    encBits_apply, hhlen, hxlen]
-  lia
+  enc_len [chainTraceStep, encList_cons, hhlen, hxlen]
 
 /-- Computing `chainTrace` is polynomial-time for any polynomial-time compression function `h`. -/
 @[program_certificate]
@@ -541,8 +539,7 @@ theorem length_mdEndBlock (n : ℕ) : (mdEndBlock n).length = n :=
 
 @[simp]
 theorem length_mdDataBlock (n : ℕ) (b : Bool) : (mdDataBlock n b).length = n := by
-  simp only [mdDataBlock, List.length_take, List.length_cons, List.length_replicate]
-  omega
+  enc_len [mdDataBlock, List.length_take]
 
 private theorem length_of_mem_mdBlocks {n : ℕ} {msg : List Bool} {b : List Bool}
     (hb : b ∈ mdBlocks n msg) : b.length = n := by

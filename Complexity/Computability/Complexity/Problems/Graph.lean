@@ -72,8 +72,9 @@ This module holds the tools these problems share:
 * `Cslib.Complexity.Graph.isVerifier_verifySubset`,
   `Cslib.Complexity.Graph.computableInPolyTime_verifySubset`: the subset verifier is a
   polynomial-time verifier.
-* `Cslib.Complexity.Graph.length_vertices_le_encGraph`: a graph has no more declared vertices than
-  the length of its encoding.
+* `Cslib.Complexity.Graph.length_vertices_le_encGraph`,
+  `Cslib.Complexity.Graph.length_vertices_add_length_edges_le_encGraph`: a graph lists no more
+  vertices, or vertices and edges, than the length of its encoding.
 * `Cslib.Complexity.countP_unaryBlocks`: counting the set bits of a block reads its number.
 * `Cslib.Complexity.Graph.exists_decodeVertexList_eq`,
   `Cslib.Complexity.Graph.isVerifier_verifyOrdering`,
@@ -127,6 +128,14 @@ namespace Graph
 theorem length_vertices_le_encGraph (G : Graph) : G.1.length ≤ (encGraph G).length := by
   calc G.1.length ≤ (encList encNat G.1).length := length_le_length_encList encNat G.1
     _ ≤ (encGraph G).length := by enc_len [encGraph]
+
+/-- A graph lists no more vertices and edges than the length of its encoding. -/
+theorem length_vertices_add_length_edges_le_encGraph (G : Graph) :
+    G.1.length + G.2.length ≤ (encGraph G).length := by
+  have h₁ := length_le_length_encList encNat G.1
+  have h₂ := length_le_length_encList (encPair encNat encNat) G.2
+  rw [encGraph, length_encPair]
+  omega
 
 /-- The declared vertices of `G` without repetitions, in the order of their first occurrences. -/
 def distinctVertices (G : Graph) : List ℕ := selectDistinct G.1 (List.replicate G.1.length true)

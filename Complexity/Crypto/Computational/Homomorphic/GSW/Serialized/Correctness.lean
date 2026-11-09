@@ -128,8 +128,7 @@ theorem publicMatrixSerialized_serializeKeyInputs {n m w : ℕ} (inputs : KeyInp
 theorem secretSerialized_serializeKeyInputs {n m w : ℕ} (inputs : KeyInputs n m w) :
     secretSerialized n w (serializeKeyInputs inputs).1 = serializeSecret inputs.secret := by
   rw [secretSerialized_eq]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp [serializeKeyInputs]
 
 /-- Serialization commutes with the actual typed encryption on canonical inputs. -/

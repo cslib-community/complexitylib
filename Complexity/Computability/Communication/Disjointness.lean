@@ -68,6 +68,8 @@ and majority votes of `72` runs (`PublicCoin.ecomplexityFun_le_two_mul_mul_one_t
   `Cslib.Communication.PublicCoin.le_mul_ecomplexityFun_disjointness_add`,
   `Cslib.Communication.PrivateCoin.le_mul_ecomplexityFun_disjointness_add`: disjointness of `n`
   bits needs `Ω(n)` bits with bounded error.
+* `Cslib.Communication.PublicCoin.le_of_ecomplexityFun_disjointness_le`: the same for any error
+  `ε ≤ 1 / 2`, after amplification, in the form used by reductions.
 
 ## References
 
@@ -220,8 +222,7 @@ private theorem slack_le {r s : ℕ} (hs : 48 * r ≤ s) (hs1 : 1 ≤ s) :
     calc (((12 * r : ℕ) : ℝ) + 1) * 2 ^ (12 * r) * (3 / 4) ^ s
         ≤ s * (2 ^ (12 * r) * (3 / 4) ^ (48 * r)) := by
           rw [mul_assoc]
-          exact mul_le_mul h1 (mul_le_mul_of_nonneg_left h2 (by positivity)) (by positivity)
-            (by positivity)
+          gcongr
       _ ≤ s * (27 / 32) ^ r := mul_le_mul_of_nonneg_left h3 (by positivity)
   linarith
 
@@ -718,5 +719,29 @@ theorem PrivateCoin.le_mul_ecomplexityFun_disjointness_add (n : ℕ) :
       (disjointness : BitString n → BitString n → Bool) + 2 ^ 12 :=
   (PublicCoin.le_mul_ecomplexityFun_disjointness_add n).trans
     (by gcongr; exact PublicCoin.ecomplexityFun_le_privateCoin)
+
+/-- **Disjointness needs `Ω(n)` bits with public coins and error `ε ≤ 1 / 2`**, in the form used by
+reductions: if a public-coin protocol decides disjointness of `n` bits with error `ε` and cost at
+most `c`, then `n ≤ 2 ^ 10 r c + 2 ^ 12` for every `r` with `(4 ε (1 - ε)) ^ r ≤ 1 / 64`, by
+majority votes of `2 r` runs (`PublicCoin.ecomplexityFun_le_two_mul_mul`). For `ε < 1 / 2` such an
+`r` exists. -/
+theorem PublicCoin.le_of_ecomplexityFun_disjointness_le {n c r : ℕ} {ε : ℝ} (hε : ε ≤ 1 / 2)
+    (hr : (4 * ε * (1 - ε)) ^ r ≤ 1 / 64)
+    (hc : PublicCoin.ecomplexityFun ε (disjointness : BitString n → BitString n → Bool) ≤ c) :
+    n ≤ 2 ^ 10 * r * c + 2 ^ 12 := by
+  have h1 := PublicCoin.le_mul_ecomplexityFun_disjointness_add_of_le hr n
+  have h2 := PublicCoin.ecomplexityFun_le_two_mul_mul
+    (f := (disjointness : BitString n → BitString n → Bool)) hε r
+  have h3 : (n : ℕ∞) ≤ ((2 ^ 10 * r * c + 2 ^ 12 : ℕ) : ℕ∞) := by
+    refine h1.trans ?_
+    calc 2 ^ 9 * PublicCoin.ecomplexityFun ((4 * ε * (1 - ε)) ^ r)
+          (disjointness : BitString n → BitString n → Bool) + 2 ^ 12
+        ≤ 2 ^ 9 * (2 * r * (c : ℕ∞)) + 2 ^ 12 := by
+          gcongr
+          exact h2.trans (by gcongr)
+      _ = ((2 ^ 10 * r * c + 2 ^ 12 : ℕ) : ℕ∞) := by
+          push_cast
+          ring
+  exact_mod_cast h3
 
 end Cslib.Communication
