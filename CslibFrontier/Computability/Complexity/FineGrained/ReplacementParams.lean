@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.CountingScale
 public import CslibFrontier.Foundations.Combinatorics.BinomialTail
 public import Mathlib.Data.Nat.Log
 public import Mathlib.Order.Interval.Finset.Nat
+import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Algebra.Order.Floor.Semiring
 import Mathlib.Analysis.Asymptotics.Lemmas
@@ -657,10 +658,6 @@ private theorem clog_two_le_mul_log {m : ℕ} (hm : 3 ≤ m) :
   rw [div_mul_eq_mul_div, le_div_iff₀ hlog2]
   nlinarith
 
-private theorem tendsto_clog_atTop : Tendsto (Nat.clog 2) atTop atTop :=
-  tendsto_atTop_atTop.mpr fun b => ⟨2 ^ b, fun _ hn =>
-    (Nat.clog_pow 2 b one_lt_two).symm.trans_le (Nat.clog_mono_right 2 hn)⟩
-
 private theorem tendsto_clog_pow_div_sqrt (k : ℕ) :
     Tendsto (fun m : ℕ => (Nat.clog 2 m : ℝ) ^ k / Real.sqrt m) atTop (𝓝 0) := by
   have hbase : Tendsto (fun m : ℕ =>
@@ -720,9 +717,10 @@ private theorem eventually_thresholds {β : ℕ} (hβ : 1 ≤ β) :
       20 ≤ n ∧ 2 ≤ numGroups n ∧ 32 ≤ rowBound β n ∧ 6 * rowBound β n ≤ numNodes n ∧
         4 * Nat.clog 2 n ^ β * 2 ^ (2 * (Nat.clog 2 n / 128)) ≤ n ∧
         2 * numNodes n * numGroups n ^ 2 ≤ n := by
-  have ht2 := (tendsto_clog_pow_div_sqrt 2).comp tendsto_clog_atTop
-  have ht1 := (tendsto_clog_pow_div_sqrt 1).comp tendsto_clog_atTop
-  have hlam_ge := tendsto_clog_atTop.eventually (eventually_ge_atTop 256)
+  have hclog := Nat.tendsto_clog_atTop one_lt_two
+  have ht2 := (tendsto_clog_pow_div_sqrt 2).comp hclog
+  have ht1 := (tendsto_clog_pow_div_sqrt 1).comp hclog
+  have hlam_ge := hclog.eventually (eventually_ge_atTop 256)
   have hev2 := ht2.eventually (gt_mem_nhds (show (0 : ℝ) < 1 / 4 by norm_num))
   have hev1 := ht1.eventually (gt_mem_nhds
     (show (0 : ℝ) < 1 / (2048 * ((β : ℝ) + 3)) by positivity))
@@ -918,7 +916,8 @@ theorem isBigO_rowCost {β : ℕ} (hβ : 1 ≤ β) :
 /-- The counting-cost factor `rowCost β n` tends to `0` as `n → ∞`. -/
 theorem tendsto_rowCost {β : ℕ} (hβ : 1 ≤ β) :
     Tendsto (rowCost β) atTop (𝓝 0) :=
-  (isBigO_rowCost hβ).trans_tendsto ((tendsto_clog_pow_div_sqrt 2).comp tendsto_clog_atTop)
+  (isBigO_rowCost hβ).trans_tendsto
+    ((tendsto_clog_pow_div_sqrt 2).comp (Nat.tendsto_clog_atTop one_lt_two))
 
 /-- `rowCost β` is `o(1)` as `n → ∞`. -/
 theorem isLittleO_rowCost_one {β : ℕ} (hβ : 1 ≤ β) :
@@ -940,7 +939,8 @@ theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} (hβ : 1 ≤ β) :
     set K : ℝ := 2 / Real.log 2 * (Real.log (2 / Real.log 2) + 1)
     refine IsBigO.of_bound (K ^ 2 * Real.sqrt 2) ?_
     filter_upwards [eventually_ge_atTop 16, hll_tendsto.eventually (eventually_ge_atTop 1),
-        tendsto_clog_atTop.eventually (eventually_ge_atTop 3)] with n hn16 hll1 hlam3
+        (Nat.tendsto_clog_atTop one_lt_two).eventually (eventually_ge_atTop 3)]
+      with n hn16 hll1 hlam3
     set L := Real.log ((n : ℝ) + 16)
     set LL := Real.log L
     set lam := Nat.clog 2 n
