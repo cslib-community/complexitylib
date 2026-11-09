@@ -52,13 +52,6 @@ theorem nsmul_point_injective {k : ℕ} (hk : k ≠ 0) :
   simp only [Prod.smul_mk, Int.nsmul_eq_mul, Prod.mk.injEq] at h
   exact Prod.ext (mul_left_cancel₀ hk' h.1) (mul_left_cancel₀ hk' h.2)
 
-private theorem real_nsmul_point_injective {k : ℕ} (hk : k ≠ 0) :
-    Function.Injective (fun p : ℝ × ℝ => (k : ℝ) • p) := by
-  rintro ⟨ax, ay⟩ ⟨bx, by'⟩ h
-  have hk' : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk
-  simp only [Prod.smul_mk, smul_eq_mul, Prod.mk.injEq] at h
-  exact Prod.ext (mul_left_cancel₀ hk' h.1) (mul_left_cancel₀ hk' h.2)
-
 /-- The segment between dilated endpoints is the dilation of the original real segment. -/
 theorem segment_nsmul (k : ℕ) (a b : Point) :
     segment (k • a) (k • b) = (fun p : ℝ × ℝ => (k : ℝ) • p) '' segment a b := by
@@ -72,7 +65,7 @@ theorem segment_nsmul (k : ℕ) (a b : Point) :
 theorem mem_segment_nsmul_iff {k : ℕ} (hk : k ≠ 0) (a b : Point) (p : ℝ × ℝ) :
     (k : ℝ) • p ∈ segment (k • a) (k • b) ↔ p ∈ segment a b := by
   rw [segment_nsmul]
-  exact (real_nsmul_point_injective hk).mem_set_image
+  exact (smul_right_injective (ℝ × ℝ) (Nat.cast_ne_zero.mpr hk)).mem_set_image
 
 /-- Dilation maps the consecutive segments in their unchanged order. -/
 theorem consecutivePairs_dilateRoute (k : ℕ) (r : Route) :
@@ -140,10 +133,9 @@ theorem endpointContacts_nsmul_iff {k : ℕ} (hk : k ≠ 0) (a b c d : Point) :
     have hh := h ((k : ℝ) • p) ((mem_segment_nsmul_iff hk a b p).2 hp)
       ((mem_segment_nsmul_iff hk c d p).2 hq)
     simp only [realPoint_nsmul] at hh
-    exact ⟨hh.1.imp (fun h => real_nsmul_point_injective hk h)
-        (fun h => real_nsmul_point_injective hk h),
-      hh.2.imp (fun h => real_nsmul_point_injective hk h)
-        (fun h => real_nsmul_point_injective hk h)⟩
+    have hinj := smul_right_injective (ℝ × ℝ) (Nat.cast_ne_zero.mpr hk : (k : ℝ) ≠ 0)
+    exact ⟨hh.1.imp (fun h => hinj h) (fun h => hinj h),
+      hh.2.imp (fun h => hinj h) (fun h => hinj h)⟩
   · intro h p hp hq
     obtain ⟨q, hqa, rfl⟩ := (segment_nsmul k a b) ▸ hp
     have hqc := (mem_segment_nsmul_iff hk c d q).1 hq
