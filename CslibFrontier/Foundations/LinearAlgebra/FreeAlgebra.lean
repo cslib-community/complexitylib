@@ -82,8 +82,7 @@ theorem ofFn_cons {k : ℕ} (x : X) (u : Fin k → X) :
 theorem ofFn_cons_comp_rev {k : ℕ} (x : X) (u : Fin k → X) :
     ofFn ((Fin.cons x u : Fin (k + 1) → X) ∘ Fin.rev) = ofFn (u ∘ Fin.rev) * of x := by
   rw [← ofFn_snoc]
-  congr 1
-  funext i
+  congr 1 with i : 1
   refine Fin.lastCases ?_ (fun j => ?_) i
   · simp
   · simp [Fin.rev_castSucc]

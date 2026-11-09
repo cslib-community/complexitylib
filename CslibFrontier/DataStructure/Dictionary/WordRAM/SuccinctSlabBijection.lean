@@ -738,8 +738,7 @@ theorem slabBijection_gmPopSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
   rcases hu with ⟨hu0, _, _, huQ, huTop, huGe, huPtr⟩
   have htop_b : gm (gmSlabTopIdx b) = slabPtrOf n_max gm b (gm (gmQIdx b) - 1) :=
     hslab.top_eq b hb (gm (gmQIdx b) - 1) (by omega) (by omega)
-  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := by
-    rw [htop_b]; exact hslab.ptr_lt b hb (gm (gmQIdx b) - 1) (by omega)
+  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := hslab.top_lt hb (by omega)
   have hs_old_of_new : ∀ b' < numBuckets n_max,
       ∀ s < gmUnlinkTopSlab n_max gm b (gmQIdx b'),
       s < gm (gmQIdx b') ∧ slabPtrOf n_max gm b' s ≠ gm (gmSlabTopIdx b) := by

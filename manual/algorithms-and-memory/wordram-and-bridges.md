@@ -2,7 +2,7 @@
 
 ## Concrete machine and operation basis
 
-[CslibFrontier/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [complexitylib][complexitylib].
+[CslibFrontier/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [cslib-frontier][complexitylib].
 
 `Basis` separates ALU symbols/arity from their interpretation. `standard` uses natural truncated subtraction and Lean's total division/modulo conventions; `exact` faults on subtraction underflow and division/modulo by zero. Both check result width rather than silently wrapping arithmetic modulo `2^w`. Restricted additive/arithmetic bases expose which operations an algorithm uses. `Basis.Hom` preserves interpretation; successful-run simulations can relate a partial basis to a more total one.
 
@@ -69,12 +69,28 @@ its actual continuation, a variable allowance and rejected wrong-code/insufficie
 `wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
 also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
 round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
-`f a`, or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates.
-Other names stay unread. Memory passed whole to a definition, as in `swapMem y.mem i j`, becomes
-`Function.update`; reads at an address still go through the discharger. `Data.set_set` drops an
-overwritten register. The
+`f a`, an instance of a quantified disequality `∀ xs, a ≠ b` or `∀ xs, ¬a = b` either way round,
+or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates. A
+quantified hypothesis such as `∀ i j, src i ≠ tmp j` separates two renamed banks. It is used only
+when matching its two sides against the names determines every bound variable. A hypothesis with
+a premise, such as `∀ i j, i ≠ j → tmp i ≠ tmp j`, is never instantiated; state that fact as
+`Function.Injective tmp`. Other names stay unread. Memory passed whole to a definition, as in
+`swapMem y.mem i j`, becomes `Function.update`; reads at an address still go through the
+discharger. `Data.set_set` drops an overwritten register. The
 [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each case,
-including names left unread.
+including two banks separated by quantified hypotheses, a premise-bearing hypothesis left unused,
+and names left unread.
+
+`wram_exec` also runs `Op.alu` instructions through `WP.alu`, for a basis given by a definition,
+such as `Basis.additive` (including `Op.addAdditive`), or for `Basis.standard` written with the
+constructor. `Basis.reduceInterp` unfolds the operation on the argument registers' values, and
+execution continues only when the result is `some v`. The fitting condition `Fits w v` is
+proved like other fitting conditions or left as a goal, and the instruction is charged as one
+instruction. An operation that does not unfold to `some v` without comparing the values, such as
+`Basis.exact` subtraction, stops `wram_exec` with a `could not evaluate` error; write such
+instructions as `Op.exactBin`, which has its own rules. The
+[other-bases examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check additive and
+standard instructions and that failure.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
@@ -218,7 +234,7 @@ conditional but still uses the delivered-argument, body-only calling convention 
 This explicit route does not retain concrete witnesses through every bind, loop or
 randomized constructor. Existing existential Backend clients remain available through the
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
-resource proofs; no selected abstract bound follows from this example.
+resource proofs; no fixed-resource Karger bound follows from this example.
 
 ### Retain scalar code and share its scratch bank
 

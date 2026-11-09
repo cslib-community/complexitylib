@@ -112,24 +112,34 @@ theorem flat_descriptor_inj {n_max b₁ r₁ b₂ r₂ : ℕ}
   · rw [← h1.1, heq, h2.1]
   · rw [← h1.2, heq, h2.2]
 
-theorem gmAppendTail_preserves_nonTail {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ}
-    (hb : b < numBuckets n_max) (hr : gm (gmRIdx b) < tailCapPerBucket n_max)
-    (ht : gm 1 < maxTailItems n_max) :
-    gmAppendTail n_max gm b 0 = gm 0 ∧
-    gmAppendTail n_max gm b 1 = gm 1 + 1 ∧
-    gmAppendTail n_max gm b (gmRIdx b) = gm (gmRIdx b) + 1 ∧
-    (∀ b' < numBuckets n_max, b' ≠ b → gmAppendTail n_max gm b (gmRIdx b') = gm (gmRIdx b')) ∧
-    (∀ b' < numBuckets n_max, gmAppendTail n_max gm b (gmQIdx b') = gm (gmQIdx b')) ∧
-    (∀ b' < numBuckets n_max, gmAppendTail n_max gm b (gmSlabTopIdx b') = gm (gmSlabTopIdx b')) ∧
+/-- The four-cell `GlobalMeta` write shared by `gmAppendTail` and `gmRemoveTail`: point descriptor
+`d` at physical tail `t`, record `d` as the owner of `t`, set bucket `b`'s tail count to `r` and the
+total tail count to `nt`. -/
+private def gmTailWrite (n_max : ℕ) (gm : ℕ → ℕ) (b d t r nt : ℕ) : ℕ → ℕ :=
+  Function.update
+    (Function.update
+      (Function.update
+        (Function.update gm (gmTailPtrFlatIdx n_max d) t)
+        (gmTailOwnerIdx n_max t) d)
+      (gmRIdx b) r)
+    1 nt
+
+/-- `gmTailWrite` changes no cell outside the tail-pointer and tail-owner arrays other than the
+total and bucket-`b` tail counts. -/
+private theorem gmTailWrite_preserves_nonTail {n_max : ℕ} (gm : ℕ → ℕ) {b d t : ℕ} (r nt : ℕ)
+    (hb : b < numBuckets n_max) (hd : d < maxTailItems n_max) (ht : t < maxTailItems n_max) :
+    gmTailWrite n_max gm b d t r nt 0 = gm 0 ∧
+    gmTailWrite n_max gm b d t r nt 1 = nt ∧
+    gmTailWrite n_max gm b d t r nt (gmRIdx b) = r ∧
+    (∀ b' < numBuckets n_max, b' ≠ b →
+      gmTailWrite n_max gm b d t r nt (gmRIdx b') = gm (gmRIdx b')) ∧
+    (∀ b' < numBuckets n_max, gmTailWrite n_max gm b d t r nt (gmQIdx b') = gm (gmQIdx b')) ∧
+    (∀ b' < numBuckets n_max,
+      gmTailWrite n_max gm b d t r nt (gmSlabTopIdx b') = gm (gmSlabTopIdx b')) ∧
     (∀ b' < numBuckets n_max, ∀ s < dirSlabsPerBucket n_max,
-      gmAppendTail n_max gm b (gmSlabDirIdx n_max b' s) = gm (gmSlabDirIdx n_max b' s)) ∧
-    (∀ idx, gmSlabMetaBase n_max ≤ idx → gmAppendTail n_max gm b idx = gm idx) := by
-  have hd_lt : b * tailCapPerBucket n_max + gm (gmRIdx b) < maxTailItems n_max :=
-    mul_tailCapPerBucket_add_lt_maxTailItems hb hr
-  unfold gmAppendTail
-  generalize gm (gmRIdx b) = r₀ at hr hd_lt ⊢
-  generalize gm 1 = t₀ at ht ⊢
-  unfold gmQIdx gmRIdx gmSlabTopIdx gmSlabDirIdx gmTailPtrFlatIdx gmTailOwnerIdx
+      gmTailWrite n_max gm b d t r nt (gmSlabDirIdx n_max b' s) = gm (gmSlabDirIdx n_max b' s)) ∧
+    (∀ idx, gmSlabMetaBase n_max ≤ idx → gmTailWrite n_max gm b d t r nt idx = gm idx) := by
+  unfold gmTailWrite gmQIdx gmRIdx gmSlabTopIdx gmSlabDirIdx gmTailPtrFlatIdx gmTailOwnerIdx
     gmSlabMetaBase gmTailOwnerBase gmTailPtrBase gmSlabDirBase
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
@@ -156,6 +166,47 @@ theorem gmAppendTail_preserves_nonTail {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ
     rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
       Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
 
+/-- `gmTailWrite` points descriptor `d` at `t` and makes `d` the owner of `t`, leaving the other
+tail pointers and owners unchanged. -/
+private theorem gmTailWrite_tail {n_max : ℕ} (gm : ℕ → ℕ) {b d : ℕ} (t r nt : ℕ)
+    (hb : b < numBuckets n_max) (hd : d < maxTailItems n_max) :
+    (∀ d' < maxTailItems n_max,
+      gmTailWrite n_max gm b d t r nt (gmTailPtrFlatIdx n_max d') =
+        if d' = d then t else gm (gmTailPtrFlatIdx n_max d')) ∧
+    (∀ t' < maxTailItems n_max,
+      gmTailWrite n_max gm b d t r nt (gmTailOwnerIdx n_max t') =
+        if t' = t then d else gm (gmTailOwnerIdx n_max t')) := by
+  unfold gmTailWrite gmRIdx gmTailPtrFlatIdx gmTailOwnerIdx gmTailOwnerBase gmTailPtrBase
+    gmSlabDirBase
+  refine ⟨?_, ?_⟩
+  · intro d' hd'
+    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
+      Function.update_of_ne (by omega)]
+    split_ifs with heq
+    · rw [heq, Function.update_self]
+    · rw [Function.update_of_ne (by omega)]
+  · intro t' ht'
+    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+    split_ifs with heq
+    · rw [heq, Function.update_self]
+    · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+
+theorem gmAppendTail_preserves_nonTail {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ}
+    (hb : b < numBuckets n_max) (hr : gm (gmRIdx b) < tailCapPerBucket n_max)
+    (ht : gm 1 < maxTailItems n_max) :
+    gmAppendTail n_max gm b 0 = gm 0 ∧
+    gmAppendTail n_max gm b 1 = gm 1 + 1 ∧
+    gmAppendTail n_max gm b (gmRIdx b) = gm (gmRIdx b) + 1 ∧
+    (∀ b' < numBuckets n_max, b' ≠ b → gmAppendTail n_max gm b (gmRIdx b') = gm (gmRIdx b')) ∧
+    (∀ b' < numBuckets n_max, gmAppendTail n_max gm b (gmQIdx b') = gm (gmQIdx b')) ∧
+    (∀ b' < numBuckets n_max, gmAppendTail n_max gm b (gmSlabTopIdx b') = gm (gmSlabTopIdx b')) ∧
+    (∀ b' < numBuckets n_max, ∀ s < dirSlabsPerBucket n_max,
+      gmAppendTail n_max gm b (gmSlabDirIdx n_max b' s) = gm (gmSlabDirIdx n_max b' s)) ∧
+    (∀ idx, gmSlabMetaBase n_max ≤ idx → gmAppendTail n_max gm b idx = gm idx) := by
+  have hd_lt : b * tailCapPerBucket n_max + gm (gmRIdx b) < maxTailItems n_max :=
+    mul_tailCapPerBucket_add_lt_maxTailItems hb hr
+  exact gmTailWrite_preserves_nonTail gm (gm (gmRIdx b) + 1) (gm 1 + 1) hb hd_lt ht
+
 theorem gmAppendTail_tail {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ}
     (hb : b < numBuckets n_max) (hr : gm (gmRIdx b) < tailCapPerBucket n_max)
     (_ht : gm 1 < maxTailItems n_max) :
@@ -169,22 +220,7 @@ theorem gmAppendTail_tail {n_max : ℕ} (gm : ℕ → ℕ) {b : ℕ}
         else gm (gmTailOwnerIdx n_max t)) := by
   have hd_lt : b * tailCapPerBucket n_max + gm (gmRIdx b) < maxTailItems n_max :=
     mul_tailCapPerBucket_add_lt_maxTailItems hb hr
-  unfold gmAppendTail
-  generalize gm (gmRIdx b) = r₀ at hr hd_lt ⊢
-  generalize gm 1 = t₀
-  unfold gmRIdx gmTailPtrFlatIdx gmTailOwnerIdx gmTailOwnerBase gmTailPtrBase gmSlabDirBase
-  refine ⟨?_, ?_⟩
-  · intro d hd
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega)]
-    split_ifs with heq
-    · rw [heq, Function.update_self]
-    · rw [Function.update_of_ne (by omega)]
-  · intro t ht_lt
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-    split_ifs with heq
-    · rw [heq, Function.update_self]
-    · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+  exact gmTailWrite_tail gm (gm 1) (gm (gmRIdx b) + 1) (gm 1 + 1) hb hd_lt
 
 theorem tailBijection_gmAppendTail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max)
@@ -341,6 +377,18 @@ theorem slotOf_gmAppendTail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
         omega
       rw [gmTailPtrIdx, hptr_val _ hd'_lt, ite_eq_right hne]
 
+/-- The relocated tail `t_del` and the relinked descriptor `d_last` of `gmRemoveTail` are in
+range. -/
+private theorem gmRemoveTail_indices_lt {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
+    (hb : b < numBuckets n_max) (hr_pos : 1 ≤ gm (gmRIdx b))
+    (htail : TailBijection n_max gm (fun b' => gm (gmRIdx b')) (gm 1)) :
+    gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) < maxTailItems n_max ∧
+    gm (gmTailOwnerIdx n_max (gm 1 - 1)) < maxTailItems n_max := by
+  have hr_del_lt : gm (gmRIdx b) - 1 < gm (gmRIdx b) := by omega
+  have ht_del_lt : gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) < gm 1 :=
+    htail.ptr_lt b hb _ hr_del_lt
+  exact ⟨lt_of_lt_of_le ht_del_lt htail.ntails_le, htail.owner_lt_maxTailItems (by omega)⟩
+
 theorem gmRemoveTail_preserves_nonTail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max) (hr_pos : 1 ≤ gm (gmRIdx b))
     (htail : TailBijection n_max gm (fun b' => gm (gmRIdx b')) (gm 1)) :
@@ -353,44 +401,8 @@ theorem gmRemoveTail_preserves_nonTail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ
     (∀ b' < numBuckets n_max, ∀ s < dirSlabsPerBucket n_max,
       gmRemoveTail n_max gm b (gmSlabDirIdx n_max b' s) = gm (gmSlabDirIdx n_max b' s)) ∧
     (∀ idx, gmSlabMetaBase n_max ≤ idx → gmRemoveTail n_max gm b idx = gm idx) := by
-  have hr_del_lt : gm (gmRIdx b) - 1 < gm (gmRIdx b) := by omega
-  have ht_del_lt : gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) < gm 1 :=
-    htail.ptr_lt b hb _ hr_del_lt
-  have ht_del_max : gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) < maxTailItems n_max :=
-    lt_of_lt_of_le ht_del_lt htail.ntails_le
-  have hd_last_max : gm (gmTailOwnerIdx n_max (gm 1 - 1)) < maxTailItems n_max :=
-    htail.owner_lt_maxTailItems (by omega)
-  unfold gmRemoveTail
-  generalize gm (gmTailOwnerIdx n_max (gm 1 - 1)) = d_last at hd_last_max ⊢
-  generalize gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) = t_del at ht_del_max ⊢
-  generalize gm (gmRIdx b) - 1 = r_del
-  generalize gm 1 - 1 = t_last
-  unfold gmQIdx gmRIdx gmSlabTopIdx gmSlabDirIdx gmTailPtrFlatIdx gmTailOwnerIdx
-    gmSlabMetaBase gmTailOwnerBase gmTailPtrBase gmSlabDirBase
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-  · rw [Function.update_self]
-  · rw [Function.update_of_ne (by omega), Function.update_self]
-  · intro b' hb' hne
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-  · intro b' hb'
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-  · intro b' hb'
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-  · intro b' hb' s hs
-    have hmul : b' * dirSlabsPerBucket n_max + s < numBuckets n_max * dirSlabsPerBucket n_max := by
-      have h1 : (b' + 1) * dirSlabsPerBucket n_max ≤
-          numBuckets n_max * dirSlabsPerBucket n_max := Nat.mul_le_mul_right _ hb'
-      nlinarith
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-  · intro idx hidx
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+  obtain ⟨ht_del_max, hd_last_max⟩ := gmRemoveTail_indices_lt hb hr_pos htail
+  exact gmTailWrite_preserves_nonTail gm (gm (gmRIdx b) - 1) (gm 1 - 1) hb hd_last_max ht_del_max
 
 theorem gmRemoveTail_tail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max) (hr_pos : 1 ≤ gm (gmRIdx b))
@@ -405,31 +417,9 @@ theorem gmRemoveTail_tail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
         if t = gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) then
           gm (gmTailOwnerIdx n_max (gm 1 - 1))
         else gm (gmTailOwnerIdx n_max t)) := by
-  have hr_del_lt : gm (gmRIdx b) - 1 < gm (gmRIdx b) := by omega
-  have ht_del_lt : gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) < gm 1 :=
-    htail.ptr_lt b hb _ hr_del_lt
-  have ht_del_max : gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) < maxTailItems n_max :=
-    lt_of_lt_of_le ht_del_lt htail.ntails_le
-  have hd_last_max : gm (gmTailOwnerIdx n_max (gm 1 - 1)) < maxTailItems n_max :=
-    htail.owner_lt_maxTailItems (by omega)
-  unfold gmRemoveTail
-  generalize gm (gmTailOwnerIdx n_max (gm 1 - 1)) = d_last at hd_last_max ⊢
-  generalize gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1)) = t_del at ht_del_max ⊢
-  generalize gm (gmRIdx b) - 1 = r_del
-  generalize gm 1 - 1 = t_last
-  unfold gmRIdx gmTailPtrFlatIdx gmTailOwnerIdx gmTailOwnerBase gmTailPtrBase gmSlabDirBase
-  refine ⟨?_, ?_⟩
-  · intro d hd
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega)]
-    split_ifs with heq
-    · rw [heq, Function.update_self]
-    · rw [Function.update_of_ne (by omega)]
-  · intro t ht_lt
-    rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
-    split_ifs with heq
-    · rw [heq, Function.update_self]
-    · rw [Function.update_of_ne (by omega), Function.update_of_ne (by omega)]
+  obtain ⟨ht_del_max, hd_last_max⟩ := gmRemoveTail_indices_lt hb hr_pos htail
+  exact gmTailWrite_tail gm (gm (gmTailPtrIdx n_max b (gm (gmRIdx b) - 1))) (gm (gmRIdx b) - 1)
+    (gm 1 - 1) hb hd_last_max
 
 theorem tailBijection_gmRemoveTail {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (hb : b < numBuckets n_max) (hr_pos : 1 ≤ gm (gmRIdx b))

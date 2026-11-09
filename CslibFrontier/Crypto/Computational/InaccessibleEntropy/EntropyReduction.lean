@@ -335,6 +335,27 @@ Lemma 5.4, pp. 27–28). -/
   inDigest := zeroPadPrefix n₁ j (Cslib.BitString.LinearHash.hash w.inRows w.base)
 
 open Classical in
+/-- If an event on hash seeds forces a collision of `x` with another candidate, a two-universal
+family bounds its probability by `|candidates| / |Output|`. -/
+private theorem sum_ite_toReal_le_card_div_of_imp {Seed X Y : Type} [Fintype Seed] [Fintype Y]
+    {seed : PMF Seed} {hash : Seed → X → Y} (hhash : IsTwoUniversal seed hash)
+    (cand : Finset X) (x : X) {P : Seed → Prop} {_ : DecidablePred P}
+    (hP : ∀ s, P s → ∃ y ∈ cand, y ≠ x ∧ hash s y = hash s x) :
+    (∑ s, if P s then (seed s).toReal else 0) ≤ (#cand : ℝ) / Fintype.card Y := by
+  calc (∑ s, if P s then (seed s).toReal else 0)
+      ≤ ∑ s, if ∃ y ∈ cand, y ≠ x ∧ hash s y = hash s x then (seed s).toReal else 0 :=
+        sum_le_sum fun s _ => by
+          split_ifs with h₁ h₂
+          · exact le_rfl
+          · exact absurd (hP s h₁) h₂
+          · exact ENNReal.toReal_nonneg
+          · exact le_rfl
+    _ ≤ ((cand.erase x).card : ℝ) / Fintype.card Y := hhash.collision_with_set_le cand x
+    _ ≤ (#cand : ℝ) / Fintype.card Y := by
+      gcongr
+      exact erase_subset _ _
+
+open Classical in
 /-- **`[HHRVW2020]`, Section 5.1.2, Lemma 5.4(ii) (p. 28)**: by two-universality of matrix prefixes
 (`LinearHash.isTwoUniversal_prefix`), the probability over `inRows` that some distinct
 $z' \in L$ collides with $z$ under `inputHashFin f₁ j` is at most $|L| / 2^{\min(j, n_1)}$. -/
@@ -345,42 +366,16 @@ theorem inputHashFin_accessible_collision_le {n₁ m₁ : ℕ} (f₁ : BitString
           ((PMF.uniformOfFintype (Fin n₁ → BitString n₁)) rows).toReal
         else 0) ≤
       (#L : ℝ) / (2 : ℝ) ^ (min j n₁) := by
-  have huniv := (Cslib.BitString.LinearHash.isTwoUniversal_prefix
-    (n := n₁) (Nat.min_le_right j n₁)).collision_with_set_le L z
-  have hcard_out : (Fintype.card (BitString (min j n₁)) : ℝ) = (2 : ℝ) ^ (min j n₁) := by
+  have hcard : (Fintype.card (BitString (min j n₁)) : ℝ) = (2 : ℝ) ^ (min j n₁) := by
     simp [BitString]
-  rw [hcard_out] at huniv
-  have hpoint (rows : Fin n₁ → BitString n₁) :
-      (if ∃ z' ∈ L, z' ≠ z ∧ inputHashFin f₁ j ⟨z', rows⟩ = inputHashFin f₁ j ⟨z, rows⟩ then
-        ((PMF.uniformOfFintype (Fin n₁ → BitString n₁)) rows).toReal else 0) ≤
-      (if ∃ z' ∈ L, z' ≠ z ∧
-          Cslib.BitString.LinearHash.hash (rows ∘ Fin.castLE (Nat.min_le_right j n₁)) z' =
-            Cslib.BitString.LinearHash.hash (rows ∘ Fin.castLE (Nat.min_le_right j n₁)) z then
-        ((PMF.uniformOfFintype (Fin n₁ → BitString n₁)) rows).toReal else 0) := by
-    split_ifs with h₁ h₂
-    · exact le_rfl
-    · obtain ⟨z', hz', hne, heq⟩ := h₁
+  rw [← hcard]
+  exact sum_ite_toReal_le_card_div_of_imp
+    (Cslib.BitString.LinearHash.isTwoUniversal_prefix (n := n₁) (Nat.min_le_right j n₁)) L z
+    fun rows h => by
+      obtain ⟨z', hz', hne, heq⟩ := h
       have hdig := congrArg InputHashedOutput.inDigest heq
       dsimp only [inputHashFin] at hdig
-      have hpref := (zeroPadPrefix_eq_iff_prefixProj_eq _ _).mp hdig
-      exact False.elim (h₂ ⟨z', hz', hne, hpref⟩)
-    · exact ENNReal.toReal_nonneg
-    · exact le_rfl
-  calc
-    (∑ rows : Fin n₁ → BitString n₁,
-        if ∃ z' ∈ L, z' ≠ z ∧ inputHashFin f₁ j ⟨z', rows⟩ = inputHashFin f₁ j ⟨z, rows⟩ then
-          ((PMF.uniformOfFintype (Fin n₁ → BitString n₁)) rows).toReal
-        else 0)
-      ≤ ∑ rows : Fin n₁ → BitString n₁,
-          if ∃ z' ∈ L, z' ≠ z ∧
-              Cslib.BitString.LinearHash.hash (rows ∘ Fin.castLE (Nat.min_le_right j n₁)) z' =
-                Cslib.BitString.LinearHash.hash (rows ∘ Fin.castLE (Nat.min_le_right j n₁)) z then
-            ((PMF.uniformOfFintype (Fin n₁ → BitString n₁)) rows).toReal
-          else 0 := sum_le_sum fun rows _ => hpoint rows
-    _ ≤ (#L : ℝ) / (2 : ℝ) ^ (min j n₁) := by
-      refine le_trans (le_of_eq (sum_congr rfl fun rows _ => by congr 1)) (huniv.trans ?_)
-      gcongr
-      exact @erase_subset _ (Classical.decEq _) z L
+      exact ⟨z', hz', hne, (zeroPadPrefix_eq_iff_prefixProj_eq _ _).mp hdig⟩
 
 private def unpadPrefix (k r : ℕ) (p : BitString (min r k)) : BitString k :=
   fun i => if h : i.val < min r k then p ⟨i.val, h⟩ else false
@@ -546,44 +541,14 @@ theorem shrunkHashFin_false_positive_le {n₁ m₁ : ℕ} (f₁ : BitString n₁
       (fun outRows y => Cslib.BitString.LinearHash.hash outRows (encOut y)) :=
     (Cslib.BitString.LinearHash.isTwoUniversal
       (inputHashOutLen n₁ m₁) (outHashLen n₁)).precompose encOut.injective
-  have huniv := htwo.collision_with_set_le cand (inputHashFin f₁ j w)
-  have hcard_out : (Fintype.card (BitString (outHashLen n₁)) : ℝ) =
-      (2 : ℝ) ^ (outHashLen n₁) := by simp [BitString]
-  rw [hcard_out] at huniv
-  have hpoint (outRows : Fin (outHashLen n₁) → BitString (inputHashOutLen n₁ m₁)) :
-      (if ∃ w' : InputHashedInput n₁,
-          inputHashFin f₁ j w' ≠ inputHashFin f₁ j w ∧
-          shrunkHashFin f₁ j ⟨w', outRows⟩ = shrunkHashFin f₁ j ⟨w, outRows⟩ then
-        ((PMF.uniformOfFintype _) outRows).toReal else 0) ≤
-      (if ∃ y' ∈ cand, y' ≠ inputHashFin f₁ j w ∧
-          Cslib.BitString.LinearHash.hash outRows (encOut y') =
-            Cslib.BitString.LinearHash.hash outRows (encOut (inputHashFin f₁ j w)) then
-        ((PMF.uniformOfFintype _) outRows).toReal else 0) := by
-    split_ifs with h₁ h₂
-    · exact le_rfl
-    · obtain ⟨w', hne, heq⟩ := h₁
-      have hdig := congrArg ShrunkHashOutput.outDigest heq
-      dsimp only [shrunkHashFin] at hdig
-      exact False.elim (h₂ ⟨inputHashFin f₁ j w', mem_image_of_mem _ (mem_univ w'), hne, hdig⟩)
-    · exact ENNReal.toReal_nonneg
-    · exact le_rfl
-  calc
-    (∑ outRows : Fin (outHashLen n₁) → BitString (inputHashOutLen n₁ m₁),
-        if ∃ w' : InputHashedInput n₁,
-            inputHashFin f₁ j w' ≠ inputHashFin f₁ j w ∧
-            shrunkHashFin f₁ j ⟨w', outRows⟩ = shrunkHashFin f₁ j ⟨w, outRows⟩ then
-          ((PMF.uniformOfFintype _) outRows).toReal
-        else 0)
-      ≤ ∑ outRows : Fin (outHashLen n₁) → BitString (inputHashOutLen n₁ m₁),
-          if ∃ y' ∈ cand, y' ≠ inputHashFin f₁ j w ∧
-              Cslib.BitString.LinearHash.hash outRows (encOut y') =
-                Cslib.BitString.LinearHash.hash outRows (encOut (inputHashFin f₁ j w)) then
-            ((PMF.uniformOfFintype _) outRows).toReal
-          else 0 := sum_le_sum fun outRows _ => hpoint outRows
-    _ ≤ (#cand : ℝ) / (2 : ℝ) ^ (outHashLen n₁) := by
-      refine le_trans (le_of_eq (sum_congr rfl fun outRows _ => by congr 1)) (huniv.trans ?_)
-      gcongr
-      exact erase_subset _ _
+  have hcard : (Fintype.card (BitString (outHashLen n₁)) : ℝ) = (2 : ℝ) ^ (outHashLen n₁) := by
+    simp [BitString]
+  rw [← hcard]
+  exact sum_ite_toReal_le_card_div_of_imp htwo cand (inputHashFin f₁ j w) fun outRows h => by
+    obtain ⟨w', hne, heq⟩ := h
+    have hdig := congrArg ShrunkHashOutput.outDigest heq
+    dsimp only [shrunkHashFin] at hdig
+    exact ⟨inputHashFin f₁ j w', mem_image_of_mem _ (mem_univ w'), hne, hdig⟩
 
 /-! ### Word-level evaluators and polynomial-time certificates -/
 
@@ -1169,10 +1134,10 @@ private theorem shrunkBadOut_sum_le {w₁ out₁ j₀ : ℕ} (hw₁ : 1 ≤ w₁
         if shrunkBadOut f₁ j₀ ⟨z, iRows⟩ oRows then 1 else 0)
       ≤ ∑ z : BitString w₁, ((PMF.uniformOfFintype (BitString w₁)) z).toReal *
           ∑ iRows : Fin w₁ → BitString w₁,
-            ((PMF.uniformOfFintype (Fin w₁ → BitString w₁)) iRows).toReal * C :=
-        sum_le_sum fun z _ => mul_le_mul_of_nonneg_left
-          (sum_le_sum fun iRows _ => mul_le_mul_of_nonneg_left
-            (hper_w z iRows) ENNReal.toReal_nonneg) ENNReal.toReal_nonneg
+            ((PMF.uniformOfFintype (Fin w₁ → BitString w₁)) iRows).toReal * C := by
+        dsimp only [shrunkExpect]
+        gcongr with z _ iRows _
+        exact hper_w z iRows
     _ = C := by simp only [← sum_mul, PMF.sum_toReal, one_mul]
 
 /-- **Combined concrete bound for `[HHRVW2020]`, Sections 5.1.2–5.1.3, Lemmas 5.4 and 5.5
@@ -1219,14 +1184,10 @@ theorem shrunkHash_randomCollision_le (n₁ m₁ j : ℕ → ℕ)
         ((ProbComp.eval (A n (ShrunkHashInput.mk ⟨z, iRows⟩ oRows).packWord) >>= fun raw =>
             PMF.pure (decide (shrunkEscPred w₁ (evalWord₁ n) (L₁ n) z raw))) true).toReal +
           (if shrunkBadIn f₁ j₀ (L₁ n) z iRows then 1 else 0) +
-          (if shrunkBadOut f₁ j₀ ⟨z, iRows⟩ oRows then 1 else 0)) :=
-    sum_le_sum fun z _ => mul_le_mul_of_nonneg_left
-      (sum_le_sum fun iRows _ => mul_le_mul_of_nonneg_left
-        (sum_le_sum fun oRows _ => mul_le_mul_of_nonneg_left
-          (shrunkHash_pointwise_toReal_le (evalWord₁ n) (L₁ n) hlen₁ _ z iRows oRows)
-          ENNReal.toReal_nonneg)
-        ENNReal.toReal_nonneg)
-      ENNReal.toReal_nonneg
+          (if shrunkBadOut f₁ j₀ ⟨z, iRows⟩ oRows then 1 else 0)) := by
+    dsimp only [shrunkExpect]
+    gcongr with z _ iRows _ oRows _
+    exact shrunkHash_pointwise_toReal_le (evalWord₁ n) (L₁ n) hlen₁ _ z iRows oRows
   have hsplit :
       shrunkExpect w₁ out₁ (fun z iRows oRows =>
         ((ProbComp.eval (A n (ShrunkHashInput.mk ⟨z, iRows⟩ oRows).packWord) >>= fun raw =>

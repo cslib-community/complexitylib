@@ -225,9 +225,6 @@ theorem ChargeBound.demonic {M : Module D E} {lower : E.State → E.Op → Nat}
     exact ⟨s, [], .pure s a, hr, Nat.le_refl 0⟩
   | liftBind o k ih =>
     obtain ⟨hv_o, hv_k⟩ := (D.demonicValid_liftBind_iff s o k).mp hv
-    have heq : link M.methods (.liftBind o k) =
-        (M.methods o).bind (fun r => link M.methods (k r)) := rfl
-    rw [heq] at hrun_E
     obtain ⟨res, e₁, tr₁, tr₂, hrun₁, hrun₂, rfl⟩ := E.clientRun_bind_iff.mp hrun_E
     obtain ⟨s₁, hstep₁, hr₁⟩ := M.correct o hr hv_o hrun₁
     have hm := B o hr hv_o hrun₁

@@ -533,8 +533,7 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
           (fun _ h => h) (by omega) le_rfl
         rw [stepWith_of_eq_none hfo, uniform_map_val_congr hfz.one_eq
           (fun v => F (z.set res v)), ← uniform_two_map_bit, PMF.map_comp]
-        congr 1
-        funext k₂
+        congr 1 with k₂ : 1
         simp +decide [F, hjz]
       · rw [hfo] at hzr
         have hc : ¬(Cond.eq res two).Holds z := by
@@ -559,8 +558,7 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
   refine (hall.congr_law ?_).mono (fun _ h => h) (by omega) le_rfl
   simp only [Data.set_regs, Function.update_self]
   rw [uniform_map_val_congr hx₂j (fun v => v), PMF.bind_map]
-  congr 1
-  funext p
+  congr 1 with p : 1
   simp only [Function.comp_apply, κ, p.isLt, ↓reduceDIte]
 
 /-- **One step of a round of PPZ** draws the position `p` uniformly from the `m + 1` unprocessed
@@ -625,11 +623,9 @@ theorem roundLoopWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
     have hT' := Nat.add_mul m 1 (T + 18)
     refine (h.congr_law ?_).mono (fun _ h => h) (by omega) (by omega)
     rw [PMF.bind_bind]
-    congr 1
-    funext p
+    congr 1 with p : 1
     rw [PMF.bind_map]
-    congr 1
-    funext b
+    congr 1 with b : 1
     simp only [Function.comp_apply, κ, p.isLt, ↓reduceDIte]
 
 /-- **The steps of a round of PPZ** from step `i`, with the unprocessed variables

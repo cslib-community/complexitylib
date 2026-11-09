@@ -266,6 +266,16 @@ theorem horizon_admissible (H : Horizon P) {k : ℕ} (hk : k ≤ H.maxExponent) 
   norm_num only [one_mul]
   exact_mod_cast (le_trans (Nat.pow_le_pow_right (by decide : 1 ≤ 2) hk) H.side_admissible)
 
+/-- On the declared exponent horizon, the frame mass `(side P k / P) ^ 4` is at most `16` times
+the grid rate. -/
+theorem side_div_pow_four_le (H : Horizon P) {k : ℕ} (hk : k ≤ H.maxExponent) :
+    ((side P k : ℝ) / P) ^ 4 ≤ 16 * rate k := by
+  have h := (affineRetains_rates (P := P) (H := 4) (horizon_admissible H hk)
+    (show ((2 : ℝ) ^ k)⁻¹ ≤ 1 from inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num)))).2.2.1
+  rw [← side_eq_ceil] at h
+  norm_num only [show (2 : ℝ) ^ 4 = 16 by norm_num] at h
+  exact h
+
 /-- Frame detector constants are exactly (1, 16, 32, 8), independently of P and stage. -/
 theorem retention {D : ZMod P} (hD : D ≠ 0) (suffix : List (ZMod P))
     (H : Horizon P) {k : ℕ} (hk : k ≤ H.maxExponent) :
@@ -307,11 +317,7 @@ theorem mixed_pair_density (role : Fin J) (H : Horizon P) {k : ℕ}
     (by decide) (side_le P k) hLt hwy
   have hq := one_div_two_le_frameDensity (P := P) (H := 4) (r := 1) (by decide)
   have hq0 : 0 < frameDensity P 4 1 := by linarith
-  have hh := (affineRetains_rates (P := P) (H := 4) (horizon_admissible H hk)
-    (show ((2: ℝ) ^ k)⁻¹ ≤ 1 from inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num)))).2.2.1
-  rw [← side_eq_ceil] at hh
-  norm_num only at hh
-  change ((side P k: ℝ) / P) ^ 4 ≤ 16 * rate k at hh
+  have hh := side_div_pow_four_le H hk
   apply hp.trans
   rw [div_le_iff₀ hq0]
   have hr := rate_pos k

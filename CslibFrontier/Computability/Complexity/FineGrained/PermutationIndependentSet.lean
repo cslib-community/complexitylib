@@ -813,22 +813,6 @@ private theorem computableInPolyTime_nat_bits :
   of_eq fun _ => rfl
 
 @[local fun_prop]
-private theorem computableInPolyTime_unary_div'
-    {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encUnary)
-    (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => a x / b x) encIn encUnary :=
-  unary_div.comp (ha.prod hb)
-
-@[local fun_prop]
-private theorem computableInPolyTime_unary_mod'
-    {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encUnary)
-    (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => a x % b x) encIn encUnary :=
-  unary_mod.comp (ha.prod hb)
-
-@[local fun_prop]
 private theorem computableInPolyTime_blockSize :
     ComputableInPolyTime blockSize encUnary encUnary := by
   unfold blockSize
@@ -936,13 +920,6 @@ private theorem computableInPolyTime_invalidBucketEdges :
   unfold invalidBucketEdges
   fun_prop
 
-private theorem computableInPolyTime_bool_or'
-    {α : Type} {encA : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableInPolyTime left encA encBool)
-    (hright : ComputableInPolyTime right encA encBool) :
-    ComputableInPolyTime (fun a => left a || right a) encA encBool :=
-  bool_or.comp (hleft.prod hright)
-
 @[local fun_prop]
 private theorem computableInPolyTime_innerConflictTest
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ j₂ : γ → ℕ}
@@ -956,7 +933,7 @@ private theorem computableInPolyTime_innerConflictTest
       (fun x => innerConflictTest (N x) (r x) (p x) (q x) (j₁ x) (j₂ x))
       encIn encBool := by
   unfold innerConflictTest
-  exact bool_and' (computableInPolyTime_bool_or' (by fun_prop) (by fun_prop)) (by fun_prop)
+  exact bool_and' (bool_or' (by fun_prop) (by fun_prop)) (by fun_prop)
 
 @[local fun_prop]
 private theorem computableInPolyTime_innerConflictBuckets

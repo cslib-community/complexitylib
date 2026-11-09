@@ -144,25 +144,24 @@ theorem rankCombination_unrankCombination {m k r : ℕ} (hr : r < m.choose k) :
   have hunr := unrankCombination_rankCombination bs
   rwa [hlen, hcnt] at hunr
 
+/-- The indicator list of a `k`-element subset of `Fin m` has `k` entries `true`. -/
+private theorem count_true_ofFn_decide_mem {m k : ℕ} {S : Finset (Fin m)} (hS : S.card = k) :
+    (List.ofFn fun u : Fin m => decide (u ∈ S)).count true = k := by
+  rw [← card_supportOfList_of_length List.length_ofFn, supportOfList_ofFn_decide, hS]
+
 /-- Computable bijection between `k`-element subsets of `Fin m` and `Fin (m.choose k)`, obtained by
 composing `rankCombination` / `unrankCombination` with `supportOfList`. -/
 def subsetEquiv (m k : ℕ) : { S : Finset (Fin m) // S.card = k } ≃ Fin (m.choose k) where
   toFun S := ⟨rankCombination (List.ofFn fun u : Fin m => decide (u ∈ S.1)), by
-    have hlen : (List.ofFn fun u : Fin m => decide (u ∈ S.1)).length = m := List.length_ofFn
-    have hcnt : (List.ofFn fun u : Fin m => decide (u ∈ S.1)).count true = k := by
-      rw [← card_supportOfList_of_length hlen, supportOfList_ofFn_decide, S.2]
-    have hlt := rankCombination_lt_choose (List.ofFn fun u : Fin m => decide (u ∈ S.1))
-    rwa [hlen, hcnt] at hlt⟩
+    simpa only [List.length_ofFn, count_true_ofFn_decide_mem S.2] using
+      rankCombination_lt_choose (List.ofFn fun u : Fin m => decide (u ∈ S.1))⟩
   invFun r := ⟨supportOfList m (unrankCombination m k r.val), by
     rw [card_supportOfList_of_length (length_unrankCombination m k r.val)]
     exact count_true_unrankCombination r.isLt⟩
   left_inv S := Subtype.ext <| by
     dsimp only
-    have hlen : (List.ofFn fun u : Fin m => decide (u ∈ S.1)).length = m := List.length_ofFn
-    have hcnt : (List.ofFn fun u : Fin m => decide (u ∈ S.1)).count true = k := by
-      rw [← card_supportOfList_of_length hlen, supportOfList_ofFn_decide, S.2]
     have hunr := unrankCombination_rankCombination (List.ofFn fun u : Fin m => decide (u ∈ S.1))
-    rw [hlen, hcnt] at hunr
+    rw [List.length_ofFn, count_true_ofFn_decide_mem S.2] at hunr
     rw [hunr, supportOfList_ofFn_decide]
   right_inv r := Fin.ext <| by
     dsimp only

@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Sampling
 public import CslibFrontier.Computability.Probabilistic.CenteredBinomial
 public import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Tactic.PPT
 
@@ -142,10 +143,8 @@ theorem eval_sampleKeyInputsSerialized (n m w η : ℕ) :
   change _ = (ProbComp.eval (sampleMatrix m n w)).map _ at hpublicPart
   rw [eval_sampleVector] at hsecret
   rw [eval_sampleMatrix] at hpublicPart
-  simp only [sampleKeyInputsSerialized, ProbComp.eval_bind, ProbComp.eval_pure,
-    hsecret, hpublicPart, herror, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    Matrix, PMF.bind_map, PMF.map_bind, PMF.pure_map, serializeKeyInputs,
-    Function.comp_def, id]
+  simp only [pmf_norm, sampleKeyInputsSerialized, hsecret, hpublicPart, herror, Matrix,
+    serializeKeyInputs, id]
 
 /-- The efficient coin sampler has exactly the typed binary matrix's full joint law. -/
 theorem eval_sampleCoinsSerialized (n m w : ℕ) :
