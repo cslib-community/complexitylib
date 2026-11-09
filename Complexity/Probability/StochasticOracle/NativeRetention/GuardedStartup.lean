@@ -64,7 +64,8 @@ private theorem fields : ComputableInPolyTime
     (fun data : Input => (data.startup, data.allotments)) encoding
     (encPair InitialContext.encoding encUnary) := .of_eq fun _ => rfl
 
-private theorem computable_state : ComputableInPolyTime state encoding RuntimeControl.encoding := by
+/-- Uniform original-input initialization computes the actual fresh runtime State. -/
+theorem computable_state : ComputableInPolyTime state encoding RuntimeControl.encoding := by
   have hf := InitialContext.fields.comp fields.fst'
   have hh : ComputableInPolyTime (fun _ : Input => ([] : List (List Bool)))
       encoding (encList encBits) := .const []

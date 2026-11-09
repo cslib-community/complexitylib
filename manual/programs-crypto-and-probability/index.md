@@ -1889,11 +1889,56 @@ source-admitted batch packet. The opportunity count is a
 single-opportunity planning allowance, not a verified consumed-opportunity ledger
 for arbitrary concurrent batches. Allotments reserve latency units; the native
 interface does not expose the ledger's real elapsed time. A live final packet's
-payload must still be handed to a source-valid next batch planner and the next
-query entered by the same code before a feedback loop is obtained. The outer reader's reply buffer
-and marker also remain to be cleared, and the virtual-input cursors normalized.
-Executed final emission alone is not an executed guarded restart or native
-upper-policy/optimum theorem.
+payload must still be handed to a source-valid next batch planner. These one-phase
+APIs do not restart; the raw-State feedback controller below supplies native
+cleanup/re-entry. Neither final emission nor raw feedback supplies source batch
+admission or a native upper-policy/optimum theorem.
+
+For actual same-code runtime feedback, import
+`Complexity.Probability.StochasticOracle.NativeRetention.Feedback`.
+`Feedback.exists_native_controller` constructs one finite native program before
+quantifying over original `GuardedStartup.Input`, environments and hidden memory.
+It starts with blank work tapes, computes the fresh runtime packet, tests the
+actual stopping bit before every query, and repeats on the updated State. Query
+preparation copies bytes from the current tape packet; no state or continuation
+is supplied between turns. Each round erases the full reply buffer and its marker
+at cell $-1$, then the virtual query buffer and its marker, with every work head
+and the real original-input cursor restored. Previous answer channels are retained;
+the next query replaces its answer only after the new request is fully formed.
+
+The theorem identifies the actual unbounded native terminal law with `Feedback.run`.
+That recursion is a mathematical kernel used to state the correspondence, not the
+execution implementation. The implementation is the finite native loop in
+`NativeFeedbackLoop.machine`; its boundary law allows response-dependent local
+clocks and divergence in a general body. The concrete turn-bounded controller
+terminates almost surely under this total finite-word response interface, without
+assuming termination or a common reply clock. `exists_round` states the complete
+canonical storage invariant. `run_history_matches` authenticates raw histories
+and private words against events from a matching initial ledger; fresh original
+input matches an empty ledger, not arbitrary previous external events.
+`run_call_bounds` bounds issued calls by each initial scalar allowance.
+
+The [feedback client](../../ComplexityTests/NativeRetentionFeedback.lean) runs one
+consistent source with correlated unbounded invoice reports. A first cancellation
+updates the actual history/private word and therefore the second query. A second
+accepted two-row cover emits `[true, true]` before a third still-allowed call.
+The joint law retains both invoices and durations. The same code stops after a
+first cover, on a last reservation, on zero initial turns and on initial empty-ground
+completion; empty zero-bill replies exercise both cleanup layers. From the same
+matching warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRetentionFeedback
+```
+
+This completes this concrete raw-State transport controller. Its request remains
+framed State bytes, not a preselected nonempty source batch packet, and its scalar
+opportunity count is not an exactly-once labeled used-set. Reservation exhaustion
+is not observed physical deadline enforcement. Source batch planning/admission,
+reached selected-batch envelopes and native upper success/survival-sum bill/deadline/
+common-oracle optimum comparison for that same admitted controller remain open,
+along with external encodings, general measurable interfaces and divergent-path
+cost packaging. No unrestricted Theorem 5/6 or ALL-main completion is claimed.
 
 Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing

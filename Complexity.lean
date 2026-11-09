@@ -2617,6 +2617,7 @@ public import Complexity.Computability.Probabilistic.NativeBatch.Retained
 public import Complexity.Computability.Probabilistic.NativeBatch.Trace
 public import Complexity.Computability.Probabilistic.NativeContextLoader
 public import Complexity.Computability.Probabilistic.NativeEpoch
+public import Complexity.Computability.Probabilistic.NativeFeedbackLoop
 public import Complexity.Computability.Probabilistic.NativeGuardedContext
 public import Complexity.Computability.Probabilistic.NativeInterface
 public import Complexity.Computability.Probabilistic.NativeOneTurn
@@ -2626,6 +2627,7 @@ public import Complexity.Computability.Probabilistic.NativeOutputBuffer
 public import Complexity.Computability.Probabilistic.NativeQueryAll
 public import Complexity.Computability.Probabilistic.NativeReplyContext
 public import Complexity.Computability.Probabilistic.NativeResponseExecution
+public import Complexity.Computability.Probabilistic.NativeResponseReuse
 public import Complexity.Computability.Probabilistic.NativeRuntimeContext
 public import Complexity.Computability.Probabilistic.NativeSequential
 public import Complexity.Computability.Probabilistic.NativeStopGuard
@@ -4416,6 +4418,7 @@ public import Complexity.Probability.StochasticOracle.NativeResidualOneTurn
 public import Complexity.Probability.StochasticOracle.NativeRetention
 public import Complexity.Probability.StochasticOracle.NativeRetention.Correctness
 public import Complexity.Probability.StochasticOracle.NativeRetention.Execution
+public import Complexity.Probability.StochasticOracle.NativeRetention.Feedback
 public import Complexity.Probability.StochasticOracle.NativeRetention.FinalizedResponse
 public import Complexity.Probability.StochasticOracle.NativeRetention.GuardedStartup
 public import Complexity.Probability.StochasticOracle.NativeRetention.InitialContext

@@ -32,10 +32,12 @@ Appendix A.5 p. 16; local instructions are excluded from the external deadline.
 
 * `machine`: full query, actual buffer preparation and virtual-input continuation.
 * `Workspace`, `startFrom`, `localStartFrom`: actual retained ordinary storage.
+* `startWithChannels`: entry on actual previous answer channels.
 
 ## Main results
 
 * `terminal_from`: retained-storage whole-configuration law, including divergence.
+* `terminal_from_channels`: the same law with a retained, empty-query-buffer channel.
 * `terminal_machine`: the original blank-storage specialization.
 -/
 
@@ -232,15 +234,6 @@ private def readerStart {k : ℕ} {P : Type} (request : List Bool)
     World (k + 2) NativeQueryAll.Control Unit P request :=
   reserve (NativeOutputBuffer.world (queryStart request memory workspace))
 
-private theorem reader_terminal {k : ℕ} {P : Type} (env : Environment Unit P)
-    (request : List Bool) (memory : Memory Unit P) (workspace : Workspace k) :
-    NativeUnboundedExecution.terminal (reader k) env (readerStart request memory workspace) =
-      (env ((), request) memory).map fun (reply, next) =>
-        some (received (k := k) request memory reply next workspace) := by
-  rw [readerStart, reader, terminal_reserve, NativeOutputBuffer.terminal_buffer,
-    NativeQueryAll.terminal_from () env _ rfl rfl rfl, PMF.map_comp, PMF.map_comp]
-  rfl
-
 private def buffer (k : ℕ) (request word : List Bool) (workspace : Workspace k) :
     Cfg (k + 2) Bool NativeQueryAll.Control request :=
   ⟨none, ⟨request.length + 1, by omega⟩,
@@ -421,29 +414,55 @@ private theorem after_reader {k : ℕ} {S P : Type}
   funext value
   cases value <;> rfl
 
-/-- Exact full-configuration law of one actual native query followed by actual
-reply processing, including arbitrary divergent continuation mass. The buffer,
-marker and cursor are produced by the program itself; clocks may depend on the
-received word. No prepared-input, termination or representation contract occurs. -/
-theorem terminal_from {k : ℕ} {S P : Type}
+/-- Actual entry with retained answer channels; only its query buffer must be empty. -/
+@[expose] def startWithChannels {k : ℕ} {S P : Type}
+    (continuation : MultiTapePTM k Bool S Unit) (request : List Bool)
+    (memory : Memory Unit P) (workspace : Workspace k) (channels : Unit → Channel Bool) :
+    World (k + 2) (NativeQueryAll.Control ⊕ (MarkWorkState ⊕ RewindWorkState) ⊕ S)
+      Unit P request :=
+  ⟨{ (startFrom continuation request memory workspace).config with channels := channels }, memory⟩
+
+private theorem reader_terminal_channels {k : ℕ} {P : Type} (env : Environment Unit P)
+    (request : List Bool) (memory : Memory Unit P) (workspace : Workspace k)
+    (channels : Unit → Channel Bool) (hb : (channels ()).queryBuffer = []) :
+    NativeUnboundedExecution.terminal (reader k) env
+      (reserve (NativeOutputBuffer.world
+        (⟨{ (queryStart request memory workspace).config with channels := channels }, memory⟩ :
+          World k NativeQueryAll.Control Unit P request))) =
+      (env ((), request) memory).map fun (reply, next) =>
+        some (received (k := k) request memory reply next workspace) := by
+  rw [reader, terminal_reserve, NativeOutputBuffer.terminal_buffer,
+    NativeQueryAll.terminal_from () env _ rfl rfl hb, PMF.map_comp, PMF.map_comp]
+  congr 1
+
+/-- The actual retained-storage response pipeline accepts previous answer channels.
+The first query overwrites its answer only after forming the full new request;
+no channel-reset operation, independence assumption or restart contract is supplied. -/
+theorem terminal_from_channels {k : ℕ} {S P : Type}
     (continuation : MultiTapePTM k Bool S Unit) (env : Environment Unit P)
-    (request : List Bool) (memory : Memory Unit P) (workspace : Workspace k) :
+    (request : List Bool) (memory : Memory Unit P) (workspace : Workspace k)
+    (channels : Unit → Channel Bool) (hb : (channels ()).queryBuffer = []) :
     NativeUnboundedExecution.terminal (machine continuation) env
-      (startFrom continuation request memory workspace) =
+      (startWithChannels continuation request memory workspace channels) =
         (env ((), request) memory).bind fun (reply, next) =>
           (NativeUnboundedExecution.terminal continuation env
             (localStartFrom continuation request memory reply next workspace)).map
               (Option.map (resultWorld request)) := by
-  have he : ((startFrom continuation request memory workspace) :
+  let base := (⟨{ (queryStart request memory workspace).config with channels := channels },
+    memory⟩ : World k NativeQueryAll.Control Unit P request)
+  let readerEntry := reserve (NativeOutputBuffer.world base)
+  have he : ((startWithChannels continuation request memory workspace channels) :
       World (k + 2) _ Unit P request) =
       NativeSequential.left ((prepare k).seq continuation.inputFromTape)
-        (readerStart request memory workspace) := by
-    simp only [startFrom, readerStart, queryStart, NativeOutputBuffer.world, reserve,
+        readerEntry := by
+    simp only [startWithChannels, startFrom, readerEntry, base, queryStart,
+      NativeOutputBuffer.world, reserve,
       Config.embed, OutputToTape.config, embed_castSucc, NativeSequential.left,
       Sequential.left, machine, MultiTapeMachine.initialConfig, Cfg.init, outCfg, append_two,
       Cfg.mapState, tapeOfList_nil]
     rfl
-  rw [he, machine, NativeSequential.terminal_seq, reader_terminal, PMF.bind_map]
+  rw [he, machine, NativeSequential.terminal_seq,
+    reader_terminal_channels env request memory workspace channels hb, PMF.bind_map]
   apply PMF.bind_congr_on_support
   intro pair hp
   obtain ⟨reply, next⟩ := pair
@@ -462,6 +481,19 @@ theorem terminal_from {k : ℕ} {S P : Type}
   congr 1
   funext value
   cases value <;> rfl
+
+/-- The original fresh-channel entry is a specialization of retained-channel execution. -/
+theorem terminal_from {k : ℕ} {S P : Type}
+    (continuation : MultiTapePTM k Bool S Unit) (env : Environment Unit P)
+    (request : List Bool) (memory : Memory Unit P) (workspace : Workspace k) :
+    NativeUnboundedExecution.terminal (machine continuation) env
+      (startFrom continuation request memory workspace) =
+        (env ((), request) memory).bind fun (reply, next) =>
+          (NativeUnboundedExecution.terminal continuation env
+            (localStartFrom continuation request memory reply next workspace)).map
+              (Option.map (resultWorld request)) := by
+  exact terminal_from_channels continuation env request memory workspace
+    (fun _ => ⟨[], [], 0⟩) rfl
 
 /-- Existing blank-workspace entry is the special case of retained-context transport. -/
 theorem terminal_machine {k : ℕ} {S P : Type}

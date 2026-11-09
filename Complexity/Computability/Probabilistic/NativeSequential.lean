@@ -30,6 +30,7 @@ time or diverge. No terminating clock or representation contract is supplied.
 * `terminal_seq`: exact whole-state unbounded native sequential composition.
 * `terminal_mapControl`: structural transition-table control relabeling.
 * `terminal_embedStorage`: actual tape embedding preserves the unbounded law.
+* `boundary`, `prefix_step`: exact first-phase execution paused at its handoff.
 -/
 
 public section
@@ -175,26 +176,29 @@ private theorem step_right (first : MultiTapePTM k Bool First Operation)
     PMF.monad_map_eq_map, PMF.map_comp]
   rfl
 
-private def boundary (w : World k (First ⊕ Second) Operation Private input) : Prop :=
+/-- The first sequential phase has halted or handed control to the second. -/
+@[expose] def boundary (w : World k (First ⊕ Second) Operation Private input) : Prop :=
   match w.config.tapes.state with
   | none => True
   | some (.inl _) => False
   | some (.inr _) => True
 
-private instance : DecidablePred
+instance : DecidablePred
     (boundary (k := k) (First := First) (Second := Second) (Operation := Operation)
       (Private := Private) (input := input)) := fun w => by
   unfold boundary
   split <;> infer_instance
 
 omit [DecidableEq Operation] in
-private theorem boundary_left (second : MultiTapePTM k Bool Second Operation)
+/-- The first-phase boundary is reached exactly at its actual halt. -/
+theorem boundary_left (second : MultiTapePTM k Bool Second Operation)
     (w : World k First Operation Private input) :
     boundary (left second w) ↔ NativeUnboundedExecution.halted w := by
   cases hs : w.config.tapes.state <;>
     simp [boundary, left, Sequential.left, Cfg.mapState, NativeUnboundedExecution.halted, hs]
 
-private theorem prefix_step (first : MultiTapePTM k Bool First Operation)
+/-- Actual sequential execution paused at its first handoff has the first-phase step law. -/
+theorem prefix_step (first : MultiTapePTM k Bool First Operation)
     (second : MultiTapePTM k Bool Second Operation) (env : Environment Operation Private)
     (w : World k First Operation Private input) :
     StoppedProcess.beforeBoundary (NativeOpenExecution.step (first.seq second) env)

@@ -262,8 +262,9 @@ cancellation, unbounded correlated reports and exhausted-counter clients exercis
 that same code. This is one native phase. Requests are raw framed runtime states,
 not source-admitted concurrent batches; the planning opportunity count is not yet
 an actual source used-set and allotments are not observed real elapsed time.
-Reading the new guard, handing its payload to a source-valid next planner, clearing
-the outer reply buffer/marker and constructing repeated feedback remain open.
+That older frontend does not read its final guard or restart. Later controllers
+below supply executed dispatch and raw runtime feedback; a source-valid next batch
+planner remains open.
 The older phase frontend still always queries. `GuardedStartup.exists_guarded_phase`
 now constructs one blank-tape program from original Startup data plus a reservation
 allowance: it computes and executes the initial guard, clears its packet, converts
@@ -279,10 +280,20 @@ are followed by the executed native guard on the actual answer channels. A stopp
 packet emits its stored mask (or failure word); a live packet enters a silent
 terminal continuation. The integrated client observes a genuine two-row cover mask
 and correlated unbounded invoice/duration, not merely a stored flag. This closes
-one-response finalization, not repeated feedback: native next-query re-entry,
-outer buffer/marker/cursor normalization and actual batch admission remain open;
-no native upper theorem follows yet.
-It supplies neither native upper quantitative guarantees nor an optimum comparison.
+one-response finalization. The newer `Feedback.exists_native_controller` now
+constructs one finite program before quantifying over original inputs and the
+consistent hidden-state source. It loops on the updated actual State, forms the
+next raw request from its stored packet, clears both virtual-query and full-reply
+buffers/negative-cell markers, restores all work heads and the real input cursor,
+and stops before querying on completion or exhausted allowances. The exact native
+law retains the full request/reply/invoice/duration ledger; raw history/private
+bytes remain authenticated from a matching initial ledger. A correlated
+unbounded-report client cancels the first response, checks the changed second
+request and emits the completed two-row mask before a third still-allowed call.
+This finishes the concrete raw-State feedback loop, not source batch admission:
+preformed nonempty selected batches, labeled consumed opportunities and physical
+deadline conventions still need connection. Native upper success/survival-sum bill/
+deadline/common-oracle optimum transfer and unrestricted Theorem 5 remain open.
 An injective header format carries original encoded data, old raw histories,
 private storage and budget/availability/stop/output fields. Those header fields
 are transported, not semantically updated by the append transducer. The second
@@ -290,9 +301,9 @@ request depends on both original context and reply, checked on a fixed geometric
 source with unbounded reply lengths and empty/zero-cost edges. This concrete raw
 append scheduler is not a source concurrent-batch selector. The outer reply buffer
 and marker remain retained, and full buffer reuse/repeated restart are unproved.
-Native semantic context/private-state updates, dynamically generated next batches, buffer/workspace
-cleanup and reuse, post-response stopping, and the repeated adaptive
-query/stop/output loop still need concrete composition. The raw-program/native-local joint-law composition is not a theorem
+For the source-admitted selector, dynamically generated batch packets and a
+verified opportunity used-set still need native composition with the finished
+raw-State feedback controller. The raw-program/native-local joint-law composition is not a theorem
 that one native online machine implements that composition.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
 supply that realization. This obstruction is now proved on one fixed actual
