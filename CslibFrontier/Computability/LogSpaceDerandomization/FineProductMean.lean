@@ -239,23 +239,6 @@ theorem rowNormPow_fineMean_le {s : ℕ} {N u c πa πb : ℝ} (hs : s ≠ 0)
 
 end ProductSlices
 
-private theorem sum_mul_le_of_row_cap {α : Type*} (T : Finset α) {A D : α → ℝ}
-    {CA CD : ℝ} {K : ℕ} (hCA : 0 ≤ CA) (hCD : 0 ≤ CD)
-    (hA : ∀ z, A z ≤ CA) (hD0 : ∀ z, 0 ≤ D z) (hD : ∀ z, D z ≤ CD)
-    (hK : #{z ∈ T | A z ≠ 0} ≤ K) : ∑ z ∈ T, A z * D z ≤ K * CA * CD := by
-  classical
-  have hsum : ∑ z ∈ T, A z * D z = ∑ z ∈ T with A z ≠ 0, A z * D z := by
-    rw [sum_filter]
-    refine sum_congr rfl fun z _ => ?_
-    by_cases hz : A z = 0 <;> simp [hz]
-  rw [hsum]
-  calc
-    _ ≤ ∑ z ∈ T with A z ≠ 0, CA * CD :=
-      sum_le_sum fun z _ => mul_le_mul (hA z) (hD z) (hD0 z) hCA
-    _ = (#{z ∈ T | A z ≠ 0} : ℝ) * (CA * CD) := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ K * (CA * CD) := mul_le_mul_of_nonneg_right (by exact_mod_cast hK) (mul_nonneg hCA hCD)
-    _ = _ := by ring
-
 /-- **Ordinary coupled product errors**. Both left row caps bound each actual product by
 `Kf * CF * CB`. The resulting ordinary-versus-root factor is explicit, and the remaining
 product estimate retains the exact source-release factor `f / u`. -/
@@ -289,11 +272,11 @@ theorem rowNormPow_product_sub_le {s Kf Kr Kc : ℕ} {N u f CF CB : ℝ}
     refine rowNormPow_sub_le_rootDistPow hs (by positivity) ?_ ?_
     · intro σ x y hx _
       exact ⟨sum_nonneg fun z _ => mul_nonneg (hF σ x z) (hB σ z y),
-        sum_mul_le_of_row_cap _ hCF hCB (hFbound σ x) (fun z => hB σ z y)
+        sum_mul_le_of_card_support_le _ hCF hCB (hFbound σ x) (fun z => hB σ z y)
           (fun z => hBbound σ z y) (hleft σ x hx)⟩
     · intro σ x y hx _
       exact ⟨sum_nonneg fun z _ => mul_nonneg (hF' σ x z) (hB' σ z y),
-        sum_mul_le_of_row_cap _ hCF hCB (hF'bound σ x) (fun z => hB' σ z y)
+        sum_mul_le_of_card_support_le _ hCF hCB (hF'bound σ x) (fun z => hB' σ z y)
           (fun z => hB'bound σ z y) (hleft' σ x hx)⟩
   calc
     _ ≤ _ := hproduct

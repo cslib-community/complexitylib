@@ -125,21 +125,20 @@ private theorem root_sum_mul_sub_pow_le {α : Type*} (T : Finset α) {s : ℕ} (
       rw [show 2 * (s - 1) = (s - 1) + (s - 1) by omega, pow_add]
       ring
 
-private theorem sum_le_mul_of_card_support_le {α : Type*} (T : Finset α) {v : α → ℝ}
-    {C : ℝ} (hC : 0 ≤ C) (hv : ∀ z, v z ≤ C) {K : ℕ} (hK : #{z ∈ T | v z ≠ 0} ≤ K) :
-    ∑ z ∈ T, v z ≤ K * C := by
-  classical
-  have hsum : ∑ z ∈ T, v z = ∑ z ∈ T with v z ≠ 0, v z := by
-    rw [sum_filter]
-    refine sum_congr rfl fun z _ => ?_
-    split_ifs with hz
-    · rfl
-    · exact not_ne_iff.mp hz
-  rw [hsum]
+/-- A sum of products `A z * D z` in which at most `K` factors `A z` are nonzero, each at most
+`CA`, and every `D z` lies in `[0, CD]`, is at most `K * CA * CD`. -/
+theorem sum_mul_le_of_card_support_le {α : Type*} (T : Finset α) {A D : α → ℝ}
+    {CA CD : ℝ} {K : ℕ} (hCA : 0 ≤ CA) (hCD : 0 ≤ CD)
+    (hA : ∀ z, A z ≤ CA) (hD0 : ∀ z, 0 ≤ D z) (hD : ∀ z, D z ≤ CD)
+    (hK : #{z ∈ T | A z ≠ 0} ≤ K) : ∑ z ∈ T, A z * D z ≤ K * CA * CD := by
   calc
-    _ ≤ ∑ z ∈ T with v z ≠ 0, C := sum_le_sum fun z _ => hv z
-    _ = (#{z ∈ T | v z ≠ 0} : ℝ) * C := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ K * C := mul_le_mul_of_nonneg_right (by exact_mod_cast hK) hC
+    _ = ∑ z ∈ T with A z ≠ 0, A z * D z :=
+      (sum_filter_of_ne fun _ _ h => left_ne_zero_of_mul h).symm
+    _ ≤ #{z ∈ T | A z ≠ 0} • (CA * CD) :=
+      sum_le_card_nsmul _ _ _ fun z _ => mul_le_mul (hA z) (hD z) (hD0 z) hCA
+    _ ≤ K * CA * CD := by
+      rw [nsmul_eq_mul, mul_assoc]
+      exact mul_le_mul_of_nonneg_right (by exact_mod_cast hK) (mul_nonneg hCA hCD)
 
 variable {Ω V : Type*} [Fintype Ω] [Fintype V]
   {s : ℕ} {N u f : ℝ} {X Z Y : Ω → V → Prop}
@@ -175,10 +174,8 @@ theorem rootDistPow_mul_le (hs : s ≠ 0) (hN : 0 < N) (hu : 0 < u) (hf : 0 < f)
           ∑ z ∈ ({z | Z σ z} : Finset V), ((Kr : ℝ) * CB) * eF σ x z := by
         refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (by positivity)
         refine sum_le_sum fun x _ => sum_le_sum fun z hz => ?_
-        rw [← sum_mul]
-        exact mul_le_mul_of_nonneg_right
-          (sum_le_mul_of_card_support_le _ hCB (hBbound σ z) (hrow σ z (by simpa using hz)))
-          (heF σ x z)
+        exact sum_mul_le_of_card_support_le _ hCB (heF σ x z) (hBbound σ z)
+          (fun _ => heF σ x z) (fun _ => le_rfl) (hrow σ z (by simpa using hz))
       _ = _ := by
         simp only [rootDistPow, rowNormPow, eF, ← mul_sum, ← mul_expect]
         ring
