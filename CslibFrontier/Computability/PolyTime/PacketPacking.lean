@@ -818,7 +818,7 @@ private theorem computableInPolyTime_packetOf :
   have hblock : ComputableInPolyTime (fun q : ((ℕ × ℕ) × (List ℕ × List ℕ)) × ℕ =>
       (q.1.1.2 * q.1.1.2) ^ q.1.1.1 * (q.2 / 2 ^ q.1.1.1)) encEdgeIn encNat :=
     ComputableInPolyTime.binary_mul' (ComputableInPolyTime.binary_pow' hrr ha)
-      (ComputableInPolyTime.binary_div.comp (hc.prod (ComputableInPolyTime.binary_two_pow.comp ha)))
+      (ComputableInPolyTime.binary_div' hc (ComputableInPolyTime.binary_two_pow.comp ha))
   let encI := encPair encEdgeIn encUnary
   have hx : ComputableInPolyTime (fun p : (((ℕ × ℕ) × (List ℕ × List ℕ)) × ℕ) × ℕ =>
       p.1.1.2.1.getD p.2 0) encI encNat := by fun_prop
@@ -923,8 +923,8 @@ private theorem computableInPolyTime_numPacketsOf :
   have hload := ComputableInPolyTime.unary_to_binary.comp computableInPolyTime_maxLoadOf
   unfold numPacketsOf
   exact ComputableInPolyTime.binary_mul'
-    (ComputableInPolyTime.binary_div.comp ((ComputableInPolyTime.binary_add' hload
-      (ComputableInPolyTime.binary_sub' h2a (.const 1))).prod h2a))
+    (ComputableInPolyTime.binary_div' (ComputableInPolyTime.binary_add' hload
+      (ComputableInPolyTime.binary_sub' h2a (.const 1))) h2a)
     (ComputableInPolyTime.binary_pow' (ComputableInPolyTime.binary_mul' hr hr) ha)
 
 /-- **The packing for given words is polynomial-time.** -/
@@ -981,10 +981,10 @@ theorem computableInPolyTime_packetSymbols {γ : Type} {encIn : γ ↪ List Bool
   have hrr := ComputableInPolyTime.binary_mul' hr hr
   have hd : ComputableInPolyTime (fun x => p x % (r x * r x) ^ a x / (r x * r x) ^ i x %
       (r x * r x)) encIn encNat :=
-    ComputableInPolyTime.binary_mod.comp ((ComputableInPolyTime.binary_div.comp
-      ((ComputableInPolyTime.binary_mod.comp (hp.prod (ComputableInPolyTime.binary_pow' hrr
-        ha))).prod (ComputableInPolyTime.binary_pow' hrr hi))).prod hrr)
-  have hq := ComputableInPolyTime.binary_div.comp (hd.prod hr)
+    ComputableInPolyTime.binary_mod.comp ((ComputableInPolyTime.binary_div'
+      (ComputableInPolyTime.binary_mod.comp (hp.prod (ComputableInPolyTime.binary_pow' hrr ha)))
+      (ComputableInPolyTime.binary_pow' hrr hi)).prod hrr)
+  have hq := ComputableInPolyTime.binary_div' hd hr
   have hm := ComputableInPolyTime.binary_mod.comp (hd.prod hr)
   have h := (binary_min' hq hm).prod (binary_max' hq hm)
   exact h
