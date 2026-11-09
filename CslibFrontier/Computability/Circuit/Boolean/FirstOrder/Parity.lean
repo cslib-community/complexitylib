@@ -170,10 +170,7 @@ private theorem exists_formula_computes_parity [Finite (Σ l, L.Relations l)] (P
     rw [Nat.even_iff] at hreal
     cases hv : (G.bind sub).eval Unbounded.interpretation y
     · rw [hv] at hreal
-      have : #S % 2 = 1 := by
-        rcases Nat.mod_two_eq_zero_or_one #S with h0 | h1
-        · exact absurd (hreal.2 h0) (by simp)
-        · exact h1
+      have : #S % 2 = 1 := by grind
       simp [this]
     · have := hreal.1 hv
       simp [this]
