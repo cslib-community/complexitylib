@@ -4697,7 +4697,6 @@ public import CslibFrontier.Foundations.Data.Finset.PowerSum
 public import CslibFrontier.Foundations.Data.Finset.Quantile
 public import CslibFrontier.Foundations.Data.Finset.Quotient
 public import CslibFrontier.Foundations.Data.Finset.Sampling
-public import CslibFrontier.Foundations.Data.Finset.Scan
 public import CslibFrontier.Foundations.Data.Finset.SubsetSum
 public import CslibFrontier.Foundations.Data.Finset.SymmDiff
 public import CslibFrontier.Foundations.Data.Finset.Tournament

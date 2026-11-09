@@ -11,7 +11,6 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.Basic
 public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Data.Fintype.Card
 public import Mathlib.Data.Fintype.Prod
-import CslibFrontier.Foundations.Data.Finset.Scan
 import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Finset.Card
@@ -713,11 +712,7 @@ theorem mem_filterFinsetM_ret {α : Type*} [DecidableEq α] (p : α → Bool)
   | nil => simp [filterFinsetM]
   | cons v vs' ih =>
     simp only [filterFinsetM, TimeM.ret_bind, ih]
-    split_ifs with hpv
-    · apply Finset.mem_insert_or_and_iff_cons
-      exact hpv
-    · apply Finset.mem_or_and_iff_cons
-      exact hpv
+    split_ifs with hpv <;> grind
 
 @[simp]
 theorem filterFinsetM_time {α : Type*} [DecidableEq α] (p : α → Bool)

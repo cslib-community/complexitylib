@@ -11,7 +11,6 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import CslibFrontier.Computability.Circuit.BipartiteMatching
 public import Mathlib.Algebra.Group.Action.Defs
 public import Mathlib.Data.Fintype.Sum
-import CslibFrontier.Foundations.Data.Finset.Scan
 import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -962,18 +961,13 @@ private theorem mem_extractCoverLeftLoopM_ret {m r : ℕ} (G : Fin m × Fin r �
     simp only [extractCoverLeftLoopM, TimeM.ret_bind]
     by_cases hu : bipartiteFinEquiv m r (.left u) ∉ cut
     · simp only [decide_eq_true hu, ↓reduceIte, ih]
-      apply Finset.mem_insert_or_and_iff_cons
-      exact .inl hu
+      grind
     · simp only [decide_eq_false hu, Bool.false_eq_true, ↓reduceIte, TimeM.ret_bind, ih]
       -- The scan of the right side reports exactly whether `u` has an uncovered neighbour.
       have hhit : (hasUncoveredRightM G cut u (List.finRange r)).ret = true ↔
           ∃ v : Fin r, G (u, v) = true ∧ bipartiteFinEquiv m r (.right v) ∉ cut := by
         simp [hasUncoveredRightM_ret, List.mem_finRange]
-      split_ifs with h
-      · apply Finset.mem_insert_or_and_iff_cons
-        exact .inr (hhit.mp h)
-      · apply Finset.mem_or_and_iff_cons
-        exact not_or.mpr ⟨hu, mt hhit.mpr h⟩
+      split_ifs with h <;> grind
 
 private theorem extractCoverLeftLoopM_time_le {m r : ℕ} (G : Fin m × Fin r → Bool)
     (cut : Finset (Fin (2 + (m + r)))) (us : List (Fin m)) (acc : Finset (Fin m)) :

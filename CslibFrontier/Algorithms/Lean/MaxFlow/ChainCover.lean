@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Algorithms.Lean.MaxFlow.Dilworth
 public import CslibFrontier.Algorithms.Lean.MaxFlow.HopcroftKarp
-import CslibFrontier.Foundations.Data.Finset.Scan
 
 /-!
 # Minimum chain cover by Hopcroft–Karp
@@ -143,11 +142,7 @@ private theorem mem_foldl_uncoveredStep (C : VertexCover (Fin n) (Fin n)) (l : L
   | cons j l ih =>
     rw [List.foldl_cons, ih]
     unfold uncoveredStep
-    split_ifs with h
-    · apply Finset.mem_insert_or_and_iff_cons
-      exact h
-    · apply Finset.mem_or_and_iff_cons
-      exact h
+    split_ifs with h <;> grind
 
 private theorem foldl_uncoveredStep (C : VertexCover (Fin n) (Fin n)) :
     (List.finRange n).foldl (uncoveredStep C) ∅ = C.uncovered := by
