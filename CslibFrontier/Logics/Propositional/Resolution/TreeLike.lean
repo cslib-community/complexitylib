@@ -156,48 +156,34 @@ theorem restrict (v : V) (b : Bool) (d : φ.Derivation c) (hvc : (v, b) ∉ c) :
   | @resolvent c₁ c₂ u d₁ d₂ hu₁ hu₂ ih₁ ih₂ =>
     by_cases hv₁ : (v, b) ∈ c₁
     · -- `v = u` and `b = true`: the second premise will do
-      have huv : (v, b) = (u, true) := by
-        by_contra hne
-        exact hvc (Clause.mem_resolvent.2 (Or.inl ⟨hv₁, hne⟩))
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj huv
+      obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Clause.eq_of_mem_of_notMem_resolvent_left hv₁ hvc)
       obtain ⟨c₂', d₂', hsub₂, hsize₂⟩ :=
         ih₂ fun hv₂ => hvc (Clause.mem_resolvent.2 (Or.inr ⟨hv₂, by simp⟩))
-      refine ⟨c₂', d₂', fun l hl => Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, ?_⟩), ?_⟩
-      · rintro rfl
-        exact d₂'.fst_ne_of_restrict hl rfl
+      refine ⟨c₂', d₂', Clause.subset_resolvent_right hsub₂ ?_, ?_⟩
+      · exact fun hv => d₂'.fst_ne_of_restrict hv rfl
       · rw [size_resolvent]
         omega
     by_cases hv₂ : (v, b) ∈ c₂
-    · have huv : (v, b) = (u, false) := by
-        by_contra hne
-        exact hvc (Clause.mem_resolvent.2 (Or.inr ⟨hv₂, hne⟩))
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj huv
+    · obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Clause.eq_of_mem_of_notMem_resolvent_right hv₂ hvc)
       obtain ⟨c₁', d₁', hsub₁, hsize₁⟩ := ih₁ hv₁
-      refine ⟨c₁', d₁', fun l hl => Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, ?_⟩), ?_⟩
-      · rintro rfl
-        exact d₁'.fst_ne_of_restrict hl rfl
+      refine ⟨c₁', d₁', Clause.subset_resolvent_left hsub₁ ?_, ?_⟩
+      · exact fun hv => d₁'.fst_ne_of_restrict hv rfl
       · rw [size_resolvent]
         omega
     obtain ⟨c₁', d₁', hsub₁, hsize₁⟩ := ih₁ hv₁
     obtain ⟨c₂', d₂', hsub₂, hsize₂⟩ := ih₂ hv₂
     by_cases hu₁' : (u, true) ∈ c₁'
     · by_cases hu₂' : (u, false) ∈ c₂'
-      · refine ⟨_, .resolvent u d₁' d₂' hu₁' hu₂', fun l hl => ?_, ?_⟩
-        · rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-          · exact Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, hne⟩)
-          · exact Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, hne⟩)
-        · simp only [size_resolvent]
-          omega
-      · refine ⟨c₂', d₂', fun l hl => Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, ?_⟩), ?_⟩
-        · rintro rfl
-          exact hu₂' hl
-        · rw [size_resolvent]
-          omega
-    · refine ⟨c₁', d₁', fun l hl => Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, ?_⟩), ?_⟩
-      · rintro rfl
-        exact hu₁' hl
-      · rw [size_resolvent]
+      · refine ⟨_, .resolvent u d₁' d₂' hu₁' hu₂',
+          Clause.resolvent_subset_resolvent hsub₁ hsub₂, ?_⟩
+        simp only [size_resolvent]
         omega
+      · refine ⟨c₂', d₂', Clause.subset_resolvent_right hsub₂ hu₂', ?_⟩
+        rw [size_resolvent]
+        omega
+    · refine ⟨c₁', d₁', Clause.subset_resolvent_left hsub₁ hu₁', ?_⟩
+      rw [size_resolvent]
+      omega
 
 /-! ### Decision trees -/
 

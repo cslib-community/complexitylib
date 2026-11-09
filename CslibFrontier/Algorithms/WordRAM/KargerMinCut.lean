@@ -172,15 +172,8 @@ theorem fits_highProbTrials_of_logWidth_three {n w : ℕ} (hn : 2 ≤ n) (hw : l
 `InputFits w (n :: flattenMatrix W)`. -/
 theorem inputFits_single {n w : ℕ} {W : Fin n → Fin n → ℕ} (hn : 2 ≤ n)
     (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
-    InputFits w (n :: flattenMatrix W) := by
-  have hws := fits_workspace_of_logWidth_three hn hw
-  refine ⟨?_, ?_⟩
-  · simp only [List.length_cons, length_flattenMatrix]
-    exact hws.of_le (by omega)
-  · intro v hv
-    rcases List.mem_cons.mp hv with rfl | hmem
-    · exact hws.of_le (by omega)
-    · exact htot.of_le (mem_flattenMatrix_le_totalDoubledWeight W hmem)
+    InputFits w (n :: flattenMatrix W) :=
+  inputFits_cons_flattenMatrix (fits_workspace_of_logWidth_three hn hw) (by omega) (by omega) htot
 
 /-- `logWidth 3 n ≤ w`, `Fits w R`, and `Fits w (totalDoubledWeight W)` suffice for
 `InputFits w (R :: n :: flattenMatrix W)`. -/
@@ -197,27 +190,6 @@ theorem inputFits_amplified {R n w : ℕ} {W : Fin n → Fin n → ℕ} (hn : 2 
     · rcases List.mem_cons.mp hv' with rfl | hmem
       · exact hws.of_le (by omega)
       · exact htot.of_le (mem_flattenMatrix_le_totalDoubledWeight W hmem)
-
-/-- In `Data.init (pfx ++ flattenMatrix W)`, the flattened matrix occupies memory starting at
-`1 + pfx.length` with stride `n`. -/
-theorem holdsMatrix_init_append {r n : ℕ} (pfx : List ℕ) (W : Fin n → Fin n → ℕ) :
-    HoldsMatrix (Data.init (r := r) (pfx ++ flattenMatrix W)).mem (1 + pfx.length) n W := by
-  intro i j
-  have haddr : (1 + pfx.length) + i.val * n + j.val =
-      (pfx.length + (i.val * n + j.val)) + 1 := by omega
-  rw [haddr, Data.init_mem_succ]
-  have hlt : i.val * n + j.val < (flattenMatrix W).length := by
-    rw [length_flattenMatrix]
-    nlinarith [i.isLt, j.isLt]
-  rw [List.getD_eq_getElem?_getD,
-    List.getElem?_append_right (Nat.le_add_right pfx.length _)]
-  simp only [Nat.add_sub_cancel_left, List.getElem?_eq_getElem hlt, Option.getD_some]
-  exact getElem_flattenMatrix W i j
-
-/-- In `Data.init (n :: flattenMatrix W)`, memory holds `W` at base `2` with stride `n`. -/
-theorem holdsMatrix_init_single {r n : ℕ} (W : Fin n → Fin n → ℕ) :
-    HoldsMatrix (Data.init (r := r) (n :: flattenMatrix W)).mem 2 n W :=
-  holdsMatrix_init_append [n] W
 
 /-- In `Data.init (R :: n :: flattenMatrix W)`, memory holds `W` at base `3` with stride `n`. -/
 theorem holdsMatrix_init_amplified {r R n : ℕ} (W : Fin n → Fin n → ℕ) :

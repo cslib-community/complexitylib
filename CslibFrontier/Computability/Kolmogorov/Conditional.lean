@@ -12,7 +12,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Polynomial
+import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
 # Conditional Time-Bounded Kolmogorov Complexity (`K(x | y)`, `K^t(x | y)`, and `Kt(x | y)`)
@@ -408,36 +409,13 @@ theorem exists_condTimeBoundedAt_le_of_computableInPolyTime
         pF.eval (encPair encBits encBits (w, y)).length ≤ t →
           condTimeBoundedAt t (F (w, y)) y ≤ (w.length + c : ℕ) := by
   obtain ⟨tF, sF, htF, _, k, State, hfin, tm, htm⟩ := hF
-  obtain ⟨c_tm, d_tm, hle⟩ := polynomiallyBounded_iff_le.mp htF
+  obtain ⟨pF, hpF⟩ := htF.exists_polynomial_le
   obtain ⟨c_sim, hsim⟩ :=
     exists_etimeBoundedComplexity_condUniversalTM_le_ofMultiTapeTM tm
-  let pF : Polynomial ℕ := Polynomial.C (c_tm + 1) * (Polynomial.X + 1) ^ (d_tm + 1)
-  have hpF_eval (n : ℕ) : pF.eval n = (c_tm + 1) * (n + 1) ^ (d_tm + 1) := by
-    simp [pF]
-  have hpF_ge (n : ℕ) : n + 1 ≤ pF.eval n := by
-    rw [hpF_eval, pow_succ']
-    have hpow : 1 ≤ (n + 1) ^ d_tm := Nat.one_le_pow _ _ (by omega)
-    calc
-      n + 1 = 1 * ((n + 1) * 1) := by ring
-      _ ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-        Nat.mul_le_mul (by omega) (Nat.mul_le_mul_left _ hpow)
-  have hpF_mono : Monotone pF.eval := by
-    intro a b hab
-    dsimp only
-    rw [hpF_eval, hpF_eval]
-    exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
-  have htF_le (n : ℕ) : tF n ≤ pF.eval n := by
-    rw [hpF_eval, pow_succ']
-    have h1 := hle n
-    have h2 : c_tm * (n + 1) ^ d_tm ≤ (c_tm + 1) * (n + 1) ^ d_tm :=
-      Nat.mul_le_mul_right _ (by omega)
-    have h3 : (c_tm + 1) * (n + 1) ^ d_tm ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-      Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
-    omega
-  refine ⟨pF, c_sim, hpF_ge, hpF_mono, fun {t} w y ht => ?_⟩
+  refine ⟨pF, c_sim, fun n => (hpF n).1, pF.monotone_eval, fun {t} w y ht => ?_⟩
   have hcomp := htm (w, y)
   have hstep : tF (encPair encBits encBits (w, y)).length ≤ t :=
-    (htF_le _).trans ht
+    (hpF _).2.trans ht
   exact (condTimeBoundedAt_anti hstep).trans
     (hsim _ w y (F (w, y)) hcomp.2.1 hcomp.1)
 

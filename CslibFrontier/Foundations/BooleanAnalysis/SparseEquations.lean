@@ -739,18 +739,8 @@ theorem coeff_parityFactorCleared {A : Type*} [CommRing A] (ℓ : ℕ) (Δ A_i :
         Δ ^ (2 * (ℓ - 1 - s)) * parityBaseDigitCleared ℓ s Δ A_i * hPolyCleared Δ A_i ^ s
       else 0 := by
   rw [parityFactorCleared, Polynomial.finsetSum_coeff]
-  simp only [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, mul_ite, mul_one, mul_zero]
-  by_cases hs : s < ℓ
-  · rw [ite_eq_left hs, sum_eq_single s]
-    · simp only [↓reduceIte]
-    · intro j _ hjs
-      exact ite_eq_right (Ne.symm hjs)
-    · intro hns
-      exact absurd (mem_range.mpr hs) hns
-  · rw [ite_eq_right hs]
-    refine sum_eq_zero fun j hj => ?_
-    rw [mem_range] at hj
-    exact ite_eq_right (by omega)
+  simp only [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, mul_ite, mul_one, mul_zero,
+    sum_ite_eq, mem_range]
 
 /-- **§5.4 & Appendix B.2 (single-factor denominator clearing, $\Gamma = \Delta^{2\ell-1}$)**: for
 `ℓ ≥ 1`, `parityFactorCleared ℓ Δ (Δ * y) = C (Δ ^ (2 * ℓ - 1)) * parityFactor ℓ y`. -/

@@ -166,6 +166,40 @@ end Reg
 def HoldsMatrix (mem : ℕ → ℕ) (wb str : ℕ) {k : ℕ} (W : Fin k → Fin k → ℕ) : Prop :=
   ∀ i j : Fin k, mem (wb + i.val * str + j.val) = W i j
 
+/-- In `Data.init (pfx ++ flattenMatrix W)`, the flattened matrix occupies memory starting at
+`1 + pfx.length` with stride `n`. -/
+theorem holdsMatrix_init_append {r n : ℕ} (pfx : List ℕ) (W : Fin n → Fin n → ℕ) :
+    HoldsMatrix (Data.init (r := r) (pfx ++ flattenMatrix W)).mem (1 + pfx.length) n W := by
+  intro i j
+  have haddr : (1 + pfx.length) + i.val * n + j.val =
+      (pfx.length + (i.val * n + j.val)) + 1 := by omega
+  rw [haddr, Data.init_mem_succ]
+  have hlt : i.val * n + j.val < (flattenMatrix W).length := by
+    rw [length_flattenMatrix]
+    nlinarith [i.isLt, j.isLt]
+  rw [List.getD_eq_getElem?_getD,
+    List.getElem?_append_right (Nat.le_add_right pfx.length _)]
+  simp only [Nat.add_sub_cancel_left, List.getElem?_eq_getElem hlt, Option.getD_some]
+  exact getElem_flattenMatrix W i j
+
+/-- In `Data.init (n :: flattenMatrix W)`, memory holds `W` at base `2` with stride `n`. -/
+theorem holdsMatrix_init_single {r n : ℕ} (W : Fin n → Fin n → ℕ) :
+    HoldsMatrix (Data.init (r := r) (n :: flattenMatrix W)).mem 2 n W :=
+  holdsMatrix_init_append [n] W
+
+/-- The input `a :: flattenMatrix W` fits word size `w` when one fitting bound `B` covers both
+the input length `1 + n * n` and the leading word `a`, and the matrix total fits. -/
+theorem inputFits_cons_flattenMatrix {w a n B : ℕ} {W : Fin n → Fin n → ℕ} (hB : Fits w B)
+    (hlen : 1 + n * n ≤ B) (ha : a ≤ B) (htot : Fits w (totalDoubledWeight W)) :
+    InputFits w (a :: flattenMatrix W) := by
+  refine ⟨?_, ?_⟩
+  · simp only [List.length_cons, length_flattenMatrix]
+    exact hB.of_le (by omega)
+  · intro v hv
+    rcases List.mem_cons.mp hv with rfl | hmem
+    · exact hB.of_le ha
+    · exact htot.of_le (mem_flattenMatrix_le_totalDoubledWeight W hmem)
+
 /-- Memory `mem` stores `W : Fin k → Fin k → ℕ` at `(wb, str)` and its row degrees `rowDeg W` at
 `db`. -/
 def HoldsWorkspace (mem : ℕ → ℕ) (wb db str : ℕ) {k : ℕ} (W : Fin k → Fin k → ℕ) : Prop :=

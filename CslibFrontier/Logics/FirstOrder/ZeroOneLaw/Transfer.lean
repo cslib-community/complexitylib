@@ -45,6 +45,8 @@ even number of elements, agrees with no sentence on all large structures.
 * `Cslib.Logic.FO.tendsto_sentenceProb_one_iff_of_isComplete`,
   `Cslib.Logic.FO.tendsto_sentenceProb_zero_iff_of_isComplete`: the limit is `1` exactly for the
   consequences of `T`, and `0` exactly for the sentences that `T` refutes.
+* `Cslib.Logic.FO.not_tendsto_structProb_even`: the probability of an even number of elements has
+  no limit.
 * `Cslib.Logic.FO.not_exists_sentence_of_not_tendsto`,
   `Cslib.Logic.FO.not_exists_sentence_even_card_of_zero_one_law`: under a 0-1 law, such properties
   as an even number of elements are not first-order definable.
@@ -269,14 +271,11 @@ theorem not_exists_sentence_of_not_tendsto
   · exact h0 (h.congr' heq)
   · exact h1 (h.congr' heq)
 
-/-- Under a 0-1 law, having an even number of elements agrees with no sentence on all
-sufficiently large structures: its probability alternates between `1` and `0`. -/
-theorem not_exists_sentence_even_card_of_zero_one_law
-    (hzo : ∀ φ : L.Sentence,
-      Tendsto (fun n => sentenceProb (μ n) φ) atTop (nhds 0) ∨
-        Tendsto (fun n => sentenceProb (μ n) φ) atTop (nhds 1)) :
-    ¬∃ φ : L.Sentence, ∀ᶠ n in atTop,
-      ∀ S : L.Structure (Fin n), @Sentence.Realize L _ S φ ↔ Even n := by
+/-- The probability of an even number of elements alternates between `1` and `0`, so it has no
+limit. -/
+theorem not_tendsto_structProb_even (c : ℝ) :
+    ¬Tendsto (fun n => structProb (μ n) fun _ => Even n) atTop (nhds c) := by
+  intro h
   have hval : ∀ n, structProb (μ n) (fun _ => Even n) = if Even n then 1 else 0 := fun n => by
     by_cases hn : Even n
     · simp only [hn, ↓reduceIte, structProb_true]
@@ -284,15 +283,23 @@ theorem not_exists_sentence_even_card_of_zero_one_law
   have hev : Tendsto (fun m : ℕ => 2 * m) atTop atTop := tendsto_id.const_mul_atTop' two_pos
   have hodd : Tendsto (fun m : ℕ => 2 * m + 1) atTop atTop :=
     tendsto_atTop_mono (fun m => Nat.le_succ (2 * m)) hev
-  refine not_exists_sentence_of_not_tendsto μ hzo (fun n _ => Even n) (fun h => ?_) (fun h => ?_)
-  · -- Along even `n` the probability is `1`.
-    have := h.comp hev
-    simp only [Function.comp_def, hval, even_two_mul, ↓reduceIte] at this
-    exact one_ne_zero (tendsto_const_nhds_iff.1 this)
-  · -- Along odd `n` the probability is `0`.
-    have := h.comp hodd
-    simp only [Function.comp_def, hval, Nat.not_even_two_mul_add_one, ↓reduceIte] at this
-    exact zero_ne_one (tendsto_const_nhds_iff.1 this)
+  -- Along even `n` the probability is `1`, along odd `n` it is `0`.
+  have h1 := h.comp hev
+  have h0 := h.comp hodd
+  simp only [Function.comp_def, hval, even_two_mul, Nat.not_even_two_mul_add_one,
+    ↓reduceIte] at h1 h0
+  exact one_ne_zero ((tendsto_const_nhds_iff.1 h1).trans (tendsto_const_nhds_iff.1 h0).symm)
+
+/-- Under a 0-1 law, having an even number of elements agrees with no sentence on all
+sufficiently large structures: its probability alternates between `1` and `0`. -/
+theorem not_exists_sentence_even_card_of_zero_one_law
+    (hzo : ∀ φ : L.Sentence,
+      Tendsto (fun n => sentenceProb (μ n) φ) atTop (nhds 0) ∨
+        Tendsto (fun n => sentenceProb (μ n) φ) atTop (nhds 1)) :
+    ¬∃ φ : L.Sentence, ∀ᶠ n in atTop,
+      ∀ S : L.Structure (Fin n), @Sentence.Realize L _ S φ ↔ Even n :=
+  not_exists_sentence_of_not_tendsto μ hzo (fun n _ => Even n)
+    (not_tendsto_structProb_even μ 0) (not_tendsto_structProb_even μ 1)
 
 end Transfer
 
