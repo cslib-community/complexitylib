@@ -78,6 +78,9 @@ verifier time) is in `CslibFrontier.Crypto.Computational.Kilian.Succinct`.
   to different bits give a binding break.
 * `Cslib.Crypto.accepts_kilianProof`: an accepted response consistent with a position table makes
   the PCP verifier accept `kilianProof`.
+* `Cslib.Crypto.toOuterMeasure_kilianChallenges_accepts_le`: a fixed proof of a false statement
+  passes `m` independent PCP repetitions with probability at most `(1 / 2) ^ m`; Micali's
+  Fiat–Shamir bound uses it too.
 * `Cslib.Crypto.succProbability_kilianSoundnessGame_le`: the exact soundness bound.
 * `Cslib.Crypto.isPPT_kilianBindingAdversary`: the reduction is efficient.
 * `Cslib.Crypto.succProbability_kilianSoundnessGame_le_collision`: the same bound in terms of
@@ -370,23 +373,38 @@ private theorem map_fst_kilianRun (P : KilianProver α) (n : ℕ)
   simp only [kilianRun, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
     PMF.bind_const, PMF.bind_pure]
 
-/-- One PCP repetition accepts a fixed proof of a statement outside `L` with probability at most
-one half. -/
-private theorem toReal_accepts_le {x : α} {π : List Bool}
+variable (V) in
+/-- One PCP repetition accepts a fixed candidate proof `π` of a statement `x` with soundness
+bound `2 * acceptCount ... ≤ 2 ^ V.coins x` with probability at most `1 / 2` in `ℝ≥0∞`. -/
+theorem toOuterMeasure_sampleList_accepts_le {x : α} {π : List Bool}
     (hsound : 2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x) :
-    ((ProbComp.eval (BitString.sampleList (V.coins x))).toOuterMeasure
-      {ρ | V.accepts x π ρ = true}).toReal ≤ 1 / 2 := by
+    (ProbComp.eval (BitString.sampleList (V.coins x))).toOuterMeasure
+      {ρ | V.accepts x π ρ = true} ≤ 1 / 2 := by
   have hmap : (ProbComp.eval (BitString.sampleList (V.coins x))).toOuterMeasure
       {ρ | V.accepts x π ρ = true} =
       ((BitString.uniformList (V.coins x)).map fun ρ => V.accepts x π ρ) true := by
     rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
       BitString.eval_sampleList]
     rfl
-  rw [hmap, uniformList_acceptCount_toReal (V := fun y => V.accepts y.1 π y.2),
-    div_le_iff₀ (by positivity)]
-  have : (2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) : ℝ) ≤ 2 ^ V.coins x := by
-    exact_mod_cast hsound
-  linarith
+  rw [hmap, uniformList_acceptCount (V := fun y => V.accepts y.1 π y.2),
+    ENNReal.div_le_iff_le_mul (Or.inl (by positivity)) (Or.inl (by finiteness))]
+  calc (acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) : ENNReal)
+      = 1 / 2 * (2 * (acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) : ENNReal)) := by
+        rw [← mul_assoc, ENNReal.div_mul_cancel (by norm_num) (by norm_num), one_mul]
+    _ ≤ 1 / 2 * (2 : ENNReal) ^ V.coins x := by
+        gcongr
+        exact_mod_cast hsound
+
+variable (V) in
+/-- Across `m` independent PCP challenge strings `kilianChallenges V m x`, a fixed candidate proof
+`π` for `x` with per-repetition soundness error `≤ 1 / 2` is accepted on all `m` repetitions with
+probability at most `(1 / 2) ^ m`. -/
+theorem toOuterMeasure_kilianChallenges_accepts_le (m : ℕ) {x : α} {π : List Bool}
+    (hsound : 2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x) :
+    (ProbComp.eval (kilianChallenges V m x)).toOuterMeasure
+      {ρs | ∀ ρ ∈ ρs, V.accepts x π ρ = true} ≤ (1 / 2) ^ m := by
+  rw [kilianChallenges, ProbComp.toOuterMeasure_replicate_forall]
+  exact pow_le_pow_left' (toOuterMeasure_sampleList_accepts_le V hsound) m
 
 /-- **Exact soundness of Kilian's protocol.** For a PCP verifier whose soundness error on
 statements outside `L` is at most one half per repetition, and a cheating prover `P` all of whose
@@ -432,11 +450,10 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
           (length_of_mem_support_kilianRun hr ρ hρ)
         exact hcons (kilianPosition V s.2.1.1 o.1) o.2.1
           (List.any_eq_true.mpr ⟨o, ho, by simp⟩)
-      rw [← PMF.toOuterMeasure_map_apply, map_fst_kilianRun, kilianChallenges,
-        ProbComp.toOuterMeasure_replicate_forall] at hsub
-      refine (ENNReal.toReal_mono (by simp [Probability.PMF.toOuterMeasure_ne_top]) hsub).trans ?_
-      rw [ENNReal.toReal_pow]
-      exact pow_le_pow_left₀ ENNReal.toReal_nonneg (toReal_accepts_le (hsound _ hx _)) n
+      rw [← PMF.toOuterMeasure_map_apply, map_fst_kilianRun] at hsub
+      refine (ENNReal.toReal_mono (by simp) (hsub.trans
+        (toOuterMeasure_kilianChallenges_accepts_le V n (hsound _ hx _)))).trans_eq ?_
+      simp
   rw [eval_kilianSoundnessGame] at *
   have hdis := disagreement_le_merkleBindingGame H V L P n M
   rw [← NNReal.coe_le_coe]
