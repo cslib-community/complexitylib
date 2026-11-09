@@ -58,8 +58,7 @@ exactly those in `gather`; its continuation is exposed for the shared iteration 
 private theorem gather_succ (k d : ℕ) :
     gather (k + 1) d = (do let d' ← gatherStep d; gather k d') := by
   simp only [gather, gatherStep, bind_assoc]
-  congr 1
-  funext c
+  congr 1 with c : 1
   by_cases h : c = 0 <;> simp [h]
 
 /-- Linking the existing gather program into memory is exactly a fixed number of applications
@@ -74,8 +73,7 @@ theorem link_gather_eq_iterate {n : ℕ} (L : Record.Layout (Cell.ok n)) (w k d 
   | succ k ih =>
     rw [gather_succ]
     simp only [Realization.iterate, DataStructure.link, PFunctor.FreeM.liftM_bind, bind_assoc]
-    congr 1
-    funext d'
+    congr 1 with d' : 1
     exact ih d'
 
 /-- Scatter one root and retain the next root and largest placed degree. Preparation performs
@@ -113,8 +111,7 @@ theorem link_scatterList_eq_iterate {n : ℕ} (L : Record.Layout (Cell.ok n))
   | succ k ih =>
     rw [scatterList_succ]
     simp only [Realization.iterate, DataStructure.link, PFunctor.FreeM.liftM_bind, bind_assoc]
-    congr 1
-    funext a
+    congr 1 with a : 1
     exact ih a.1 a.2
 
 /-- One cascading-cut step. `none` records the original stop at a root or after marking;
@@ -140,13 +137,11 @@ private theorem cascade_succ (fuel z : ℕ) :
       | none => pure ()
       | some p => cascade fuel p) := by
   simp only [cascade, cascadeStep, bind_assoc]
-  congr 1
-  funext pz
+  congr 1 with pz : 1
   by_cases hp : pz = 0
   · simp [hp]
   · simp only [hp, ite_false, bind_assoc]
-    congr 1
-    funext mk
+    congr 1 with mk : 1
     by_cases hm : mk = 0 <;> simp [hm, bind_assoc]
 
 /-- One source cascade step preserves both stopping branches and the recursive parent exactly.
@@ -159,8 +154,7 @@ theorem link_cascade_succ_eq_step {n : ℕ} (L : Record.Layout (Cell.ok n)) (w f
       | some p => DataStructure.link (L.methods w) (cascade fuel p)) := by
   rw [cascade_succ]
   simp only [DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext next
+  congr 1 with next : 1
   cases next <;> rfl
 
 /-- The existing cascade is exactly the shared finite while source, with an explicit presence
@@ -183,8 +177,7 @@ theorem link_cascade_eq_boundedWhile {n : ℕ} (L : Record.Layout (Cell.ok n)) (
       Matrix.cons_val_one]
     erw [ite_eq_left (by decide : (1 : ℕ) ≠ 0)]
     simp only [bind_assoc]
-    congr 1
-    funext next
+    congr 1 with next : 1
     cases next with
     | none =>
       rw [Realization.boundedWhile_of_not _ _ () fuel none (by decide)]
@@ -211,10 +204,8 @@ private theorem scatter_succ (fuel u md : ℕ) :
       | none => pure a.2
       | some u' => scatter fuel u' a.2) := by
   simp only [scatter, scatterStep, bind_assoc]
-  congr 1
-  funext d
-  congr 1
-  funext c
+  congr 1 with d : 1
+  congr 1 with c : 1
   by_cases hc : c = 0 <;> simp [hc, bind_assoc]
 
 /-- The linked consolidation recursion has exactly the original stop/continue memory effect
@@ -227,8 +218,7 @@ theorem link_scatter_succ_eq_step {n : ℕ} (L : Record.Layout (Cell.ok n)) (w f
       | some u' => DataStructure.link (L.methods w) (scatter fuel u' a.2)) := by
   rw [scatter_succ]
   simp only [DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext a
+  congr 1 with a : 1
   rcases a with ⟨next, md'⟩
   cases next <;> rfl
 
@@ -253,8 +243,7 @@ theorem link_scatter_eq_boundedWhile {n : ℕ} (L : Record.Layout (Cell.ok n))
       Matrix.cons_val_one]
     erw [ite_eq_left (by decide : (1 : ℕ) ≠ 0)]
     simp only [bind_assoc]
-    congr 1
-    funext next
+    congr 1 with next : 1
     rcases next with ⟨next, md'⟩
     cases next with
     | none =>

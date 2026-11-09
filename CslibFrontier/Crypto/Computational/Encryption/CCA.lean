@@ -2182,57 +2182,12 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
       EGuess (encPair encUnary (encPair encBits (encList encBits))) :=
     ComputableInPolyTime.prod (by dsimp only [EGuess]; fun_prop)
       (ComputableInPolyTime.prod hstateA hcts)
-  have hmemCond : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        decide (pair.2.1.2 ∈
-          (multiCCA2StateDecoder.decode pair.1.2.1).2.2.1 ++
-            pair.1.2.2 :: (multiCCA2StateDecoder.decode pair.1.2.1).2.2.2))
-      EIn encBool := by
-    have hlist : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-          (multiCCA2StateDecoder.decode pair.1.2.1).2.2.1 ++
-            pair.1.2.2 :: (multiCCA2StateDecoder.decode pair.1.2.1).2.2.2)
-        EIn (encList encBits) :=
-      hcts.comp (by dsimp only [EIn]; fun_prop)
-    have hval : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) => pair.2.1.2)
-        EIn encBits := by
-      dsimp only [EIn]; fun_prop
-    exact ComputableInPolyTime.decide_mem hlist hval
-  have hnoReply : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        pure ([], pair.2.2)) :=
-    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by dsimp only [EIn, EState]; fun_prop)).isOraclePPTOn
-  have hreq : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) => pair.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hlimit : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        decBound pair.1.1 pair.2.1.2)
-      EIn encUnary := by
-    have harg : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-          (pair.1.1, pair.2.1.2))
-        EIn (encPair encUnary encBits) :=
-      ComputableInPolyTime.prod (by dsimp only [EIn, EGuess]; fun_prop) hreq
-    exact hdecBound.comp harg
-  have hqueryReply : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
-      (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        (fun reply => (reply, pair.2.2)) <$>
-          (List.take (decBound pair.1.1 pair.2.1.2) <$>
-            ProbOracleComp.query ((), pair.2.1.2))) :=
-    (IsOraclePPTOn.query_take' (Operation := Unit) () hreq hlimit).map_with'
-      (ComputableInPolyTime.prod (by fun_prop)
-        (by dsimp only [EIn, EState]; fun_prop))
   have hhandler : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
       (fun pair : (ℕ × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
         multiPhase2FilterHandler (decBound pair.1.1)
           ((multiCCA2StateDecoder.decode pair.1.2.1).2.2.1 ++
             pair.1.2.2 :: (multiCCA2StateDecoder.decode pair.1.2.1).2.2.2)
-          pair.2.1 pair.2.2) :=
-    IsOraclePPTOn.cond' hmemCond hnoReply hqueryReply
+          pair.2.1 pair.2.2) := by ppt [multiPhase2FilterHandler]
   have hres : ComputableInPolyTime
       (fun pair : (ℕ × List Bool × List Bool) × List Bool => decBound pair.1.1 pair.2)
       (encPair EGuess encBits) encUnary :=
@@ -2276,8 +2231,7 @@ theorem isOraclePPTOn_cca2MultiToSingleAt_guess {Msg : Type} [Inhabited Msg]
                 p.2.2 :: (multiCCA2StateDecoder.decode p.2.1).2.2.2)))
           (adversary.guess p.1 (multiCCA2StateDecoder.decode p.2.1).2.1
             ((multiCCA2StateDecoder.decode p.2.1).2.2.1 ++
-              p.2.2 :: (multiCCA2StateDecoder.decode p.2.1).2.2.2))).run ()) :=
-    hrun.map' (ComputableInPolyTime.fst _ _)
+              p.2.2 :: (multiCCA2StateDecoder.decode p.2.1).2.2.2))).run ()) := by ppt
   have hno : IsOraclePPTOn (Operation := Unit) EGuess encBool (fun _ => pure false) :=
     (ComputableInPolyTime.const false).isOraclePPTOn
   exact IsOraclePPTOn.cond' hactive hyes hno
@@ -2329,8 +2283,7 @@ theorem isPPT_cca2MultiToSingle {Msg : Type} [Inhabited Msg]
   choose := by
     have hsample : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encUnary
         (fun caller : ℕ × List Bool =>
-          ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) :=
-      (isPPTOn_sampleDyadicIndex (hQ.comp (by fun_prop))).isOraclePPTOn (Operation := Unit)
+          ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) := by ppt
     exact (hsample.bind_with
       (isOraclePPTOn_cca2MultiToSingleAt_choose hvalid hencrypt hA)).isOraclePPT
   guess := isOraclePPTOn_cca2MultiToSingleAt_guess valid encrypt hdecBound hA 0

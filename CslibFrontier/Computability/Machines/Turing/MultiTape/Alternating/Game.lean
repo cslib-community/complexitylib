@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 
 /-!
 # The strict table of an alternating machine
@@ -22,8 +23,8 @@ coins on each step of the machine: it stores the first coin, and on the second t
 the machine with the second coin in a universal state and with the first in an existential state.
 The coin that is not used is a vacuous move.
 
-Replaying a fixed finite fair-coin table is polynomial-time
-(`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`), so the game verifier on the
+Testing the output of a replayed fixed finite fair-coin table is polynomial-time
+(`Turing.MultiTapePTM.computableInPolyTime_decide_runClosedCoins`), so the game verifier on the
 strict table (`Turing.MultiTapeATM.gameVerifier`) is computable in polynomial time
 (`Turing.MultiTapeATM.computableInPolyTime_gameVerifier`).
 
@@ -150,14 +151,7 @@ def gameVerifier (atm : MultiTapeATM k Bool State) (enc : α ↪ List Bool)
 fair-coin table. -/
 @[fun_prop]
 theorem computableInPolyTime_gameVerifier (atm : MultiTapeATM k Bool State) :
-    ComputableInPolyTime (atm.gameVerifier enc) (encPair enc encBits) encBool := by
-  have hswap : ComputableInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
-      (encPair enc encBits) (encPair encBits encBits) :=
-    (ComputableInPolyTime.snd enc encBits).prod
-      ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
-        (ComputableInPolyTime.fst enc encBits))
-  exact ComputableInPolyTime.decide_eq'
-    ((MultiTapePTM.computableInPolyTime_runClosedCoins atm.strict).comp hswap)
-    (ComputableInPolyTime.const [true])
+    ComputableInPolyTime (atm.gameVerifier enc) (encPair enc encBits) encBool :=
+  MultiTapePTM.computableInPolyTime_decide_runClosedCoins atm.strict
 
 end Turing.MultiTapeATM

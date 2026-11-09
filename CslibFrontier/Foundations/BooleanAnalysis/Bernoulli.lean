@@ -393,8 +393,7 @@ theorem bernoulliAverage_hits (p : ℝ) (s : ι → Bool) :
   let f (P : {i // s i = true} → Bool) : ℝ := if ∃ i, P i = true then 1 else 0
   calc
     _ = bernoulliAverage p (fun P : ι → Bool => f (fun i => P i)) := by
-      congr 1
-      funext P
+      congr 1 with P : 1
       simp [f]
     _ = bernoulliAverage p f := bernoulliAverage_restrict p s f
     _ = _ := by
@@ -436,10 +435,8 @@ theorem bernoulliAverage_bernoulliAverage_eq_sum {β : Type*} [Fintype β] [Deci
   calc
     _ = bernoulliAverage p (fun P => bernoulliAverage q (fun Q =>
         ∑ a, f a * ∏ i, (if φ (P i) (Q i) = a i then (1 : ℝ) else 0))) := by
-      congr 1
-      funext P
-      congr 1
-      funext Q
+      congr 1 with P : 1
+      congr 1 with Q : 1
       exact hf _
     _ = _ := by
       simp_rw [bernoulliAverage_sum, bernoulliAverage_const_mul, hinner, houter]

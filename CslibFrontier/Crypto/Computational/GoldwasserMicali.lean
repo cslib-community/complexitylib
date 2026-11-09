@@ -934,16 +934,9 @@ private theorem advantage_publicKeyWordGame_le (maxLen : ℕ → ℕ) (real idea
         (distinguishingGame ideal (wordKeyDistinguisher maxLen adversary n)) +
       Game.advantage (publicKeyWordGame maxLen ideal adversary false n)
         (publicKeyWordGame maxLen ideal adversary true n) := by
-  have hprob (keys : PMF (List Bool)) :
-      (Game.succProbability
-        (distinguishingGame keys (wordKeyDistinguisher maxLen adversary n)) : ℝ) =
-        (1 + (Game.succProbability (publicKeyWordGame maxLen keys adversary false n) : ℝ) -
-          Game.succProbability (publicKeyWordGame maxLen keys adversary true n)) / 2 := by
-    rw [distinguishingGame_wordKeyDistinguisher]
-    simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-      PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-    norm_num [PMF.toReal_false_eq_one_sub]; ring
-  exact Encryption.advantage_le_of_hiddenBit (hprob real) (hprob ideal)
+  rw [distinguishingGame_wordKeyDistinguisher, distinguishingGame_wordKeyDistinguisher]
+  exact Game.advantage_le_two_mul_uniform_bool_xor (publicKeyWordGame maxLen real adversary · n)
+    (publicKeyWordGame maxLen ideal adversary · n)
 
 /-- **Quantitative multi-bit Goldwasser–Micali IND-CPA bound**: via lossy quadratic-residue public
 keys, bitwise encryption of equal-length words of length at most `maxLen n` reduces to

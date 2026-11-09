@@ -16,13 +16,14 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.Probability
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Foundations.Analysis.ENNRealFraction
 import CslibFrontier.Probability.PMF.Map
 import Mathlib.Data.Set.Finite.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Time classes
@@ -60,7 +61,7 @@ verifiers reading random strings, this is the characterisation by probabilistic 
 verifier is run on sampled coins by a fair-coin machine compiled with a halting polynomial clock
 (`Cslib.Probability.IsPPTOn.exists_halting_machine`), and a fair-coin machine halting within `T`
 steps is a verifier replaying `T` coins
-(`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`).
+(`Turing.MultiTapePTM.computableInPolyTime_decide_runClosedCoins`).
 
 ## Timed reductions
 
@@ -330,12 +331,7 @@ theorem BPTIME_mono_of_eventually_le {enc : α ↪ List Bool} {t₁ t₂ : ℕ �
 
 /-- A bound `O(n ^ k)` is polynomially bounded. -/
 private theorem polyBounded_linear_pow (enc : α ↪ List Bool) (c₁ c₂ k : ℕ) :
-    PolyBounded (fun a => (enc a).length) fun a => c₁ * (enc a).length ^ k + c₂ :=
-  .of_forall_le (c₁ + c₂) k fun a => by
-    have h₁ : (enc a).length ^ k ≤ ((enc a).length + 1) ^ k :=
-      Nat.pow_le_pow_left (Nat.le_succ _) k
-    have h₂ : 1 ≤ ((enc a).length + 1) ^ k := Nat.one_le_pow _ _ (Nat.succ_pos _)
-    nlinarith
+    PolyBounded (fun a => (enc a).length) fun a => c₁ * (enc a).length ^ k + c₂ := by growth_poly
 
 /-- **`P` is the union of the classes `DTIME (n ^ k)`**, the definition of `P` in the classes
 proposed upstream [Arora and Barak, Definition 1.13][AroraBarak09]. -/
@@ -409,12 +405,7 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     -- replay the coins
     refine ⟨Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂,
       fun x => decide (machine.runClosedCoins x.2 (enc x.1) = [true]),
-      ComputableInPolyTime.decide_eq'
-        ((MultiTapePTM.computableInPolyTime_runClosedCoins machine).comp
-          ((ComputableInPolyTime.snd enc encBits).prod
-            ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
-              (ComputableInPolyTime.fst enc encBits))))
-        (ComputableInPolyTime.const [true]), fun a => ?_⟩
+      MultiTapePTM.computableInPolyTime_decide_runClosedCoins machine, fun a => ?_⟩
     have heval : (Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂).eval (enc a).length =
         c₁ * (enc a).length ^ d + c₂ := by
       simp

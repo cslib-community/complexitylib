@@ -73,13 +73,7 @@ private theorem verdictCount_mem_SharpP [Finite State]
     (verdict : Bool) :
     (fun a => machine.branchCount (fun out => (out == [true]) == verdict)
       (clock.eval (enc a).length) (Cfg.init machine.initial (enc a))) ∈ Complexity.SharpP enc := by
-  obtain ⟨bound, hbound⟩ := machine.exists_branchBound
-  let width := bound + 1
-  have hwidth : 0 < width := Nat.zero_lt_succ _
-  have hcodes (input : List Bool) (cfg : Cfg k Bool State input) :
-      (machine.actions cfg).length ≤ 2 ^ width :=
-    (hbound input cfg).trans ((Nat.le_succ bound).trans
-      (show width < 2 ^ width from Nat.lt_two_pow_self).le)
+  obtain ⟨width, hwidth, hcodes⟩ := machine.exists_branchWidth
   refine ⟨clock * Polynomial.C width,
     fun p => Checker.checkBinary machine width verdict (enc p.1, p.2), ?_, ?_⟩
   · exact (Checker.computableInPolyTime_checkBinary machine width verdict).comp (by fun_prop)

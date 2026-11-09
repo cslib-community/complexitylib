@@ -169,10 +169,7 @@ theorem exec_clear {w : ℕ} (hw : 2 ≤ w) (x : Data (capacity n + 4)) :
     · rw [hzero j i hi]
       have := one_lt_radix hw
       omega
-    · have hh := List.map_congr_left (g := fun _ => 0) (hzero j)
-      have hmap : (regs j).map y.regs = List.replicate 18 0 := by
-        simpa only [List.map_const', length_regs] using hh
-      simp only [value, hmap, Nat.ofDigits_replicate_zero]
+    · exact value_eq_zero_of_forall (hzero j)
   · intro hi
     obtain ⟨i, heq⟩ := List.mem_ofFn.mp hi
     have hh := congrArg Fin.val heq
@@ -208,16 +205,12 @@ theorem exec_input {w z : ℕ} (hw : 2 ≤ w) (hz : Fits w z) (d : Fin n) :
     simp only [u, Data.set_regs, Function.update_of_ne hine, Data.init_regs]
   have hu : Encodes w u (fun _ => 0) := by
     intro j
-    have hm : (regs j).map u.regs = List.replicate 18 0 := by
-      have hh := List.map_congr_left (l := regs j)
-        (g := fun _ => 0) (fun i hi => hzero i (by have := mem_regs hi; omega))
-      simpa only [List.map_const', length_regs] using hh
     refine ⟨?_, ?_⟩
     · intro i hi
       rw [hzero i (by have := mem_regs hi; omega)]
       have := one_lt_radix hw
       omega
-    · simp only [value, hm, Nat.ofDigits_replicate_zero]
+    · exact value_eq_zero_of_forall fun i hi => hzero i (by have := mem_regs hi; omega)
   have huz : u.regs inputReg = z := by simp [u]
   obtain ⟨y, hey, hyb, hyv, hyf, hyp⟩ := Transfer.exec_split_eighteen hw inputReg
     (regs d) (length_regs d) (by dsimp [IsDigit, inputReg]; omega)

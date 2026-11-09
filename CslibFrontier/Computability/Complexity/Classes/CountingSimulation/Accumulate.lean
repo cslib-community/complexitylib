@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Data.Nat.ResidueSum
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Streamed sums modulo a computed modulus
@@ -93,11 +94,6 @@ private theorem foldl_add_mod_lt {f : ℕ → ℕ} {m : ℕ} (hm : 0 < m) (j : �
   | succ j =>
     rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
     exact Nat.mod_lt _ hm
-
-private theorem polyBounded_comp_poly {size u : C → ℕ} {p : ℕ → ℕ}
-    (hp : Cslib.PolynomiallyBounded p) (hu : PolyBounded size u) :
-    PolyBounded size fun c => p (u c) :=
-  (PolyBounded.of_polynomiallyBounded id hp).comp hu
 
 /-- **Resource bound of the streamed sum.** Suppose the number of terms and the modulus are
 computable in polynomial time, the modulus is positive, every summed term lies below it, and a
@@ -247,23 +243,11 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
   -- Collect the polynomial overhead.
   let V : C → ℕ := fun c => pK (L c) + (L c + pI (L c)) + 2 * (2 * lk c + 1 + B c) +
     2 * (lk c + 1) ^ 2 + (lk c + 1) + lk c + U c
-  have hSp : PolyBounded L S :=
-    ((((PolyBounded.const 2).mul hlkp).add ((PolyBounded.const 2).mul hLp)).add hlmp).add
-      (PolyBounded.const 2)
+  have hSp : PolyBounded L S := by growth_poly
   have hS'p : PolyBounded L S' := ((PolyBounded.const 5).mul hlmp).add (PolyBounded.const 2)
-  have hBp : PolyBounded L B :=
-    ((((PolyBounded.const 2).mul hLp).add (PolyBounded.const 1))).add hlmp
-  have hUp : PolyBounded L U :=
-    ((((((polyBounded_comp_poly hpT hSp).add (polyBounded_comp_poly hpC hSp)).add
-      (polyBounded_comp_poly hpA hSp)).add (polyBounded_comp_poly hpW hSp)).add
-      (polyBounded_comp_poly hpM hSp)).add (polyBounded_comp_poly hpD hS'p)).add
-      (polyBounded_comp_poly hpN hSp)
-  have hVp : PolyBounded L V :=
-    ((((((polyBounded_comp_poly hpK hLp).add (hLp.add (polyBounded_comp_poly hpI hLp))).add
-      ((PolyBounded.const 2).mul ((((PolyBounded.const 2).mul hlkp).add
-        (PolyBounded.const 1)).add hBp))).add
-      ((PolyBounded.const 2).mul ((hlkp.add (PolyBounded.const 1)).pow 2))).add
-      (hlkp.add (PolyBounded.const 1))).add hlkp).add hUp
+  have hBp : PolyBounded L B := by growth_poly
+  have hUp : PolyBounded L U := by growth_poly
+  have hVp : PolyBounded L V := by growth_poly
   obtain ⟨a, d, hV⟩ := hVp.exists_le
   refine ⟨a, d, (hout.mono_le (fun c => ?_) fun c => ?_).of_enc_eq fun c => rfl⟩
   · have hK := (bK c).1

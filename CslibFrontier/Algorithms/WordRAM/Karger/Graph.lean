@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Supervertex contractions and Karger's survival bounds
@@ -113,11 +114,8 @@ theorem getElem_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) (u v : Fin
       rw [length_flattenMatrix]
       nlinarith [u.isLt, v.isLt]) = W u v := by
   simp only [flattenMatrix, List.getElem_ofFn]
-  have hn : 0 < n := Nat.zero_lt_of_lt u.isLt
-  have hdiv : (u.val * n + v.val) / n = u.val := by
-    rw [Nat.mul_comm u.val n, Nat.mul_add_div hn, Nat.div_eq_of_lt v.isLt, add_zero]
-  have hmod : (u.val * n + v.val) % n = v.val := by
-    rw [Nat.mul_comm u.val n, Nat.mul_add_mod, Nat.mod_eq_of_lt v.isLt]
+  have hdiv : (u.val * n + v.val) / n = u.val := Nat.mul_add_div_of_lt _ v.isLt
+  have hmod : (u.val * n + v.val) % n = v.val := Nat.mul_add_mod_of_lt v.isLt
   congr 1 <;> exact Fin.ext (by assumption)
 
 theorem mem_flattenMatrix_le_totalDoubledWeight {n : ℕ} (W : Fin n → Fin n → ℕ)

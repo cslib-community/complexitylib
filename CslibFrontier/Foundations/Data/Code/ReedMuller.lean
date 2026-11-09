@@ -12,7 +12,7 @@ public import Mathlib.FieldTheory.Finite.Polynomial
 public import Mathlib.RingTheory.MvPolynomial.Basic
 import CslibFrontier.Foundations.Data.Code.Linear
 import Mathlib.Algebra.MvPolynomial.CommRing
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 
 /-!
 # Reed–Muller codes
@@ -20,10 +20,9 @@ import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 The *Reed–Muller code* of degree `d` in `m` variables over a finite field `F` with `q` elements
 consists of the evaluation tables on `Fin m → F` of the polynomials of total degree at most `d`
 (`Cslib.Code.reedMuller`) [Reed1954], [Muller1954], [GuruswamiRudraSudan2019]. By the
-Schwartz–Zippel lemma
-`MvPolynomial.schwartz_zippel_totalDegree`, a nonzero polynomial of total degree at most `d`
-vanishes on at most a `d / q` fraction of the points, so two distinct codewords differ on at least
-a `1 - d / q` fraction of the `q ^ m` points
+Schwartz–Zippel lemma, in the counting form `MvPolynomial.card_filter_eval_eq_zero_mul_card_le`, a
+nonzero polynomial of total degree at most `d` vanishes on at most a `d / q` fraction of the
+points, so two distinct codewords differ on at least a `1 - d / q` fraction of the `q ^ m` points
 (`Cslib.Code.card_sub_mul_pow_le_mul_hammingDist_of_mem_reedMuller`). For `d < q` this is exact:
 the product of `X 0 - t` over `d` field elements `t` vanishes exactly where the first coordinate
 is one of them, so in `m + 1` variables the minimum distance is `(q - d) * q ^ m`
@@ -97,15 +96,10 @@ theorem card_sub_mul_pow_le_mul_hammingNorm_of_mem_reedMuller {f : (Fin m → F)
   have hP0 : P ≠ 0 := by
     rintro rfl
     exact hf0 (funext fun _ => map_zero _)
-  have hq : 0 < Fintype.card F := Fintype.card_pos
   -- at most a `d / q` fraction of the points are zeros
-  have hsz := schwartz_zippel_totalDegree hP0 (univ : Finset F)
-  rw [Fintype.piFinset_univ, card_univ, div_le_div_iff₀ (by positivity) (by positivity)] at hsz
   have hzero : Fintype.card F * #{x | eval x P = 0} ≤ d * Fintype.card F ^ m := by
-    have : (#{x | eval x P = 0} * Fintype.card F : ℚ≥0) ≤ d * Fintype.card F ^ m :=
-      hsz.trans (by gcongr)
     rw [mul_comm]
-    exact_mod_cast this
+    exact card_filter_eval_eq_zero_mul_card_le hP0 hP
   -- the zeros and the nonzeros make up all `q ^ m` points
   have hsum : #{x | eval x P = 0} + hammingNorm (fun x => eval x P) = Fintype.card F ^ m := by
     rw [hammingNorm, card_filter_add_card_filter_not, card_univ, Fintype.card_fun,

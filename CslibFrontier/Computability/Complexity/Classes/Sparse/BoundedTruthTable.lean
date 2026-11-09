@@ -138,31 +138,9 @@ theorem accepts_iff (hnest : ∀ j ψ, C (j + 1) ψ → C j ψ)
     (hM : ∀ j < 2 * D, ∀ a : List (Literal ℕ), (∀ l ∈ a, l.1 ∈ φ.vars) →
       a.length ≤ φ.vars.length → ∀ w ∈ key j (atLeast a ++ φ), w ≤ M)
     (hs : M + 1 ≤ s) :
-    accepts key D s φ = true ↔ φ ∈ SAT := by
-  have hsub : ∀ l : List (List (Literal ℕ)),
-      (((prune (fun j a => key j (atLeast a ++ φ)) s D l.reverse).reverse).Sublist l) :=
-    fun l => by simpa using (prune_sublist (Q := fun j a => key j (atLeast a ++ φ)) (s := s)
-      (D := D) (N := l.reverse)).reverse
-  obtain ⟨hfst, -, hlarge⟩ := Fortune.searchWith_induction
-    (prune := fun l => (prune (fun j a => key j (atLeast a ++ φ)) s D l.reverse).reverse) (φ := φ)
-    (fun pre nodes => (∀ a ∈ nodes, a.map Prod.fst = pre) ∧
-      (nodes.Pairwise fun a b => b.map Prod.snd < a.map Prod.snd) ∧
-      (φ ∈ SAT → ∃ a ∈ nodes, IsLargest φ a))
-    ⟨by simp, by simp, fun h => ⟨[], by simp, by simpa [units] using h, fun b hb _ => by
-      simp only [List.map_nil, List.map_eq_nil_iff] at hb
-      simp [hb]⟩⟩
-    fun pre v nodes hpre ⟨hfst, hsort, hlarge⟩ => by
-      have hexp : ∀ b ∈ Fortune.expand v nodes, b.map Prod.fst = pre ++ [v] :=
-        fun b hb => Fortune.map_fst_of_mem_expand hfst hb
-      have hsort' := pairwise_expand v hfst hsort
-      refine ⟨fun b hb => hexp b ((hsub _).subset hb), hsort'.sublist (hsub _), fun hφ => ?_⟩
-      obtain ⟨a, ha, halarge⟩ := hlarge hφ
-      obtain ⟨x, hx⟩ := exists_isLargest_child halarge v
-      refine ⟨_, mem_prune_of_isLargest hnest hsat hkey hM hs hpre hexp hsort' ?_ hx, hx⟩
-      simp only [Fortune.expand, List.mem_flatMap]
-      exact ⟨a, ha, by cases x <;> simp⟩
-  exact Fortune.acceptsWith_iff_of_searchWith hfst fun h =>
-    (hlarge h).imp fun _ ⟨ha, hlarge⟩ => ⟨ha, hlarge.1⟩
+    accepts key D s φ = true ↔ φ ∈ SAT :=
+  acceptsWith_iff_of_isLargest_mem_prune (fun _ => List.sublist_reverse_iff.1 prune_sublist)
+    (mem_prune_of_isLargest hnest hsat hkey hM hs)
 
 end Correctness
 

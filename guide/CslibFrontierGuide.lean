@@ -13,23 +13,23 @@ open Verso.Genre Manual
 
 set_option pp.rawOnError true
 
-#doc (Manual) "A Guide to Complexitylib" =>
+#doc (Manual) "A Guide to cslib-frontier" =>
 %%%
-shortTitle := "Complexitylib guide"
+shortTitle := "cslib-frontier guide"
 %%%
 
-Complexitylib is a Lean 4 library of computational complexity theory, built on [CSLib][cslib] and
-Mathlib. This guide introduces the library one area at a time, in the order a newcomer needs it:
-what the objects are, how to state an ordinary claim, and how to prove one. Every Lean example is
-elaborated against the library when the guide is built, so an example that no longer matches the
-library fails the build.
+cslib-frontier is the frontier formalization library for [CSLib][cslib], built on CSLib and
+Mathlib; its scope is computer science generally, from algorithms and data structures to
+complexity, cryptography and logic. This guide introduces the library one area at a time, in the
+order a newcomer needs it: what the objects are, how to state an ordinary claim, and how to prove
+one. Every Lean example is elaborated against the library when the guide is built, so an example
+that no longer matches the library fails the build.
 
 Names in the examples link to the [API documentation][api], which lists every declaration with its
 docstring and source. Other entry points:
 
 * The README's [Start here][start] table points to checked examples for each kind of task.
-* The [selected formal abstracts][abstracts] state the library's headline results with every
-  definition they use, also as [PDFs][pdfs].
+* The [results inventory][results] collects named results with their theorem names and sources.
 * [ROADMAP.md][roadmap] records outstanding work, and [CONTRIBUTING.md][contributing] explains how
   to propose and review changes.
 
@@ -40,8 +40,7 @@ fixed in the library rather than documented around.
 [cslib]: https://github.com/leanprover/cslib
 [api]: https://www.cslib.io/cslib-frontier/
 [start]: https://github.com/cslib-community/cslib-frontier#start-here
-[abstracts]: https://github.com/cslib-community/cslib-frontier/blob/main/abstracts/README.md
-[pdfs]: https://www.cslib.io/cslib-frontier/abstracts/catalogue.pdf
+[results]: https://github.com/cslib-community/cslib-frontier/blob/main/results/README.md
 [roadmap]: https://github.com/cslib-community/cslib-frontier/blob/main/ROADMAP.md
 [contributing]: https://github.com/cslib-community/cslib-frontier/blob/main/CONTRIBUTING.md
 

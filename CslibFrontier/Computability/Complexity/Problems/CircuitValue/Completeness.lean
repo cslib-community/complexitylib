@@ -192,6 +192,21 @@ theorem numGates_inSpace {T : α → ℕ} (hT : ComputableInSpace T encIn encNat
   budget_natAdd (budget_const 2 hin) (budget_natMul (budget_natAdd hT (budget_const 1 hin))
     (blockSize_inSpace (k := k) (State := State) hT hin))
 
+/-- The end of a gate list, a framed wire number and a fixed suffix preserve a space budget: the
+shape of the trailer emitted by the tableau writers after their gates. -/
+theorem trailerWire_inSpace (suffix : List Bool) {w : α → ℕ}
+    (hw : ComputableInSpace w encIn encNat Bs) :
+    ComputableInSpace (fun x => [true, false] ++
+      doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++ suffix) encIn encBits Bs := by
+  have hmid := budget_comp_linear doubled_inSpace
+    (budget_comp_linear (ComputableInSpace.frame encNat) hw)
+  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))))
+    (encD := encBits) fun _ => rfl
+  exact ((h₁.weaken (.add (.refl _) (.refl _))).append (budget_const (encB := encBits) suffix hin)
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++ suffix)
+    (encD := encBits) fun _ => rfl).weaken (.add (.refl _) (.refl _))
+
 private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs)
     (hi : ComputableInSpace i encIn encNat Bs) :
     ComputableInSpace (fun x => gateChunk tm C d (n x) (i x)) encIn encBits Bs :=
@@ -201,24 +216,18 @@ private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableInSpace n e
 
 omit [DecidableEq State] in
 private theorem trailer_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
-    ComputableInSpace (fun x => trailer k State C d (n x)) encIn encBits Bs := by
-  have hT := timeBound_inSpace C d hin hn
-  have ho : ComputableInSpace (fun x => outWire k State (n x) (timeBound C d (n x)))
-      encIn encNat Bs :=
-    budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-      (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
-      (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
-  have hmid := budget_comp_linear doubled_inSpace
-    (budget_comp_linear (ComputableInSpace.frame encNat) ho)
-  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
-    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (outWire k State (n x)
-      (timeBound C d (n x)))))) (encD := encBits) fun _ => rfl
-  have h₂ := (h₁.weaken (.add (.refl _) (.refl _))).append
-    (budget_const (encB := encBits) [false] hin) (encD := encBits)
-    (g := fun x => trailer k State C d (n x)) fun _ => rfl
-  exact h₂.weaken (.add (.refl _) (.refl _))
+    ComputableInSpace (fun x => trailer k State C d (n x)) encIn encBits Bs :=
+  trailerWire_inSpace hin [false]
+    (outWire_inSpace (k := k) (State := State) (timeBound_inSpace C d hin hn) hin hn)
 
 end Components
+
+omit [DecidableEq State] in
+/-- The number of gates of the tableau for `timeBound C d n` steps is polynomial in `n`. -/
+theorem polynomiallyBounded_numGates_timeBound :
+    PolynomiallyBounded fun n => numGates k State (timeBound C d n) := by
+  simp only [numGates, blockSize, colStart, gfStart, globStart, numCols, timeBound]
+  fun_prop
 
 /-- **The instances are computable in logarithmic space**, from the framed input. -/
 theorem computableInLogSpace_tableauInstance :
@@ -230,13 +239,11 @@ theorem computableInLogSpace_tableauInstance :
   have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)
-  refine (tableauSpec tm C d).computableInLogSpace (tableauSpec_output tm C d)
+  exact (tableauSpec tm C d).computableInLogSpace (tableauSpec_output tm C d)
     (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin hn))
     (gateChunk_inSpace tm C d hin hn hi)
-    (trailer_inSpace (k := k) (State := State) C d hin hn) ?_
-  change PolynomiallyBounded fun n => numGates k State (timeBound C d n)
-  simp only [numGates, blockSize, colStart, gfStart, globStart, numCols, timeBound]
-  fun_prop
+    (trailer_inSpace (k := k) (State := State) C d hin hn)
+    (polynomiallyBounded_numGates_timeBound C d)
 
 end Space
 

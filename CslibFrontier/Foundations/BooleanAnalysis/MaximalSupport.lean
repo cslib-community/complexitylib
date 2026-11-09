@@ -16,7 +16,8 @@ import CslibFrontier.Foundations.BooleanAnalysis.Influence
 If `S` has a nonzero Fourier coefficient and every strict superset has coefficient zero, then
 every face obtained by fixing the coordinates outside `S` contains a nonzero value. If `S` is
 nonempty, the function is nonconstant on each such face. Differentiating in a coordinate of `S`
-reduces both claims to a smaller support.
+reduces both claims to a smaller support. The base case, a function whose Fourier coefficients
+vanish on every nonempty set is constant, is `BitString.apply_eq_fourierCoeff_empty_of_maximal`.
 
 The nonconstant-face statement is the Fourier form of the maximal-monomial observation in
 [Midrijanis2004], Lemma 3. A support of maximum cardinality is also maximal under inclusion, so
@@ -42,6 +43,16 @@ open Finset Function
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
+/-- If `∅` is a maximal Fourier support of `f`, that is, every nonempty set has coefficient zero,
+then `f` is the constant `fourierCoeff f ∅`. -/
+theorem apply_eq_fourierCoeff_empty_of_maximal {f : (ι → Bool) → ℝ}
+    (hT : ∀ T, ∅ ⊂ T → fourierCoeff f T = 0) (x : ι → Bool) : f x = fourierCoeff f ∅ := by
+  rw [← sum_fourierCoeff_mul_chi f x, sum_eq_single (∅ : Finset ι)]
+  · rw [chi_empty, mul_one]
+  · intro T _ hT0
+    rw [hT T (empty_ssubset.2 (nonempty_iff_ne_empty.2 hT0)), zero_mul]
+  · exact fun h => absurd (mem_univ _) h
+
 /-- A maximal nonzero Fourier coefficient forces a nonzero value on every face obtained by
 fixing the coordinates outside its support. -/
 theorem exists_ne_zero_on_face_of_fourierCoeff_maximal (S : Finset ι) :
@@ -52,13 +63,7 @@ theorem exists_ne_zero_on_face_of_fourierCoeff_maximal (S : Finset ι) :
   | empty =>
     intro f hS hT x
     refine ⟨x, fun _ _ => rfl, ?_⟩
-    have hconst : f x = fourierCoeff f ∅ := by
-      rw [← sum_fourierCoeff_mul_chi f x, sum_eq_single (∅ : Finset ι)]
-      · rw [chi_empty, mul_one]
-      · intro T _ hT0
-        rw [hT T (empty_ssubset.2 (nonempty_iff_ne_empty.2 hT0)), zero_mul]
-      · exact fun h => absurd (mem_univ _) h
-    rwa [hconst]
+    rwa [apply_eq_fourierCoeff_empty_of_maximal hT x]
   | insert i S hi ih =>
     intro f hS hT x
     have h₁ : fourierCoeff (derivative i f) S ≠ 0 := by

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.Decision.Input
 public import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.ClogPow
 
 /-!
 # Polynomial words and space for every ordinary-host prefix
@@ -33,15 +34,8 @@ open Cslib.WordRAM
 
 /-- The fixed minimum-width word universe has polynomial magnitude in the original length. -/
 theorem two_pow_width_le (κ d n : ℕ) :
-    2 ^ width κ d n ≤ (n + 2) ^ (2 * widthCoefficient κ d) := by
-  have hpow := Nat.pow_clog_le_mul (by decide : 1 < 2) (by omega : n + 2 ≠ 0)
-  have hsq : 2 * (n + 2) ≤ (n + 2) ^ 2 := by nlinarith
-  calc
-    2 ^ width κ d n = (2 ^ Nat.clog 2 (n + 2)) ^ widthCoefficient κ d := by
-      rw [width, ← pow_mul, Nat.mul_comm]
-    _ ≤ (2 * (n + 2)) ^ widthCoefficient κ d := Nat.pow_le_pow_left hpow _
-    _ ≤ ((n + 2) ^ 2) ^ widthCoefficient κ d := Nat.pow_le_pow_left hsq _
-    _ = _ := by rw [← pow_mul]
+    2 ^ width κ d n ≤ (n + 2) ^ (2 * widthCoefficient κ d) :=
+  Nat.two_pow_mul_clog_le_pow (by omega) le_rfl
 
 /-- Every prefix has polynomial words and zero memory above the same envelope, uniformly
 at every admitted physical width. -/
