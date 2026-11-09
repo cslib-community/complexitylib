@@ -293,10 +293,7 @@ private theorem nodup_parseAux (fuel : ℕ) (dict : List (List α)) (x : List α
       rcases hr : parseAux fuel (dict ++ [p]) r with _ | ⟨w, R⟩
       · simpa using hd
       · rw [List.dropLast_cons_of_ne_nil (List.cons_ne_nil _ _)]
-        have hpr : r ≠ [] := by
-          intro h0
-          rw [h0, parseAux_eq_nil_of_nil] at hr
-          exact List.cons_ne_nil _ _ hr.symm
+        have hpr : r ≠ [] := by grind [parseAux_eq_nil_of_nil]
         have hp : p ∉ dict := splitPhrase_notMem dict _ hpr
         have hd' : (dict ++ [p]).Nodup := List.nodup_append.2 ⟨hd, List.nodup_singleton _,
           fun b hb c hc => by

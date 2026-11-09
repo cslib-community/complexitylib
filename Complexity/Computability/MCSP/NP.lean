@@ -524,8 +524,7 @@ theorem computableInPolyTime_checkCertificate_table {α : Type} {encT : List α 
     have hlog : 2 * Nat.log 2 T + 1 ≤ 2 * T + 1 := by
       have := Nat.log_le_self 2 T
       omega
-    calc 2 ^ Nat.log 2 T * (2 * Nat.log 2 T + 1) ≤ (T + 1) * (2 * T + 1) :=
-          Nat.mul_le_mul hpow hlog
+    calc 2 ^ Nat.log 2 T * (2 * Nat.log 2 T + 1) ≤ (T + 1) * (2 * T + 1) := by gcongr
       _ ≤ (encIn r).length * (encIn r).length :=
           Nat.mul_le_mul (by omega) hT_enc
   have hproj : ComputableInPolyTime

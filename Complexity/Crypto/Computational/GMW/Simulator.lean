@@ -16,6 +16,7 @@ import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Foundations.Data.BitString.Basic
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Probability.BitString.List
 import Complexity.Probability.PMF.Bind
@@ -204,8 +205,7 @@ private theorem eval_bind_runTwoRound_reply1 {α β : Type} (μ : ProbComp β)
       have hmap := congrArg
         (fun d => d.bind (fun ans => ProbComp.eval (runTwoRound (fun _ => []) r2 (k ans) (1, ch₀))))
         (hf q.2)
-      simpa only [ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def]
-        using hmap
+      simpa only [pmf_norm] using hmap
 
 private theorem eval_runTwoRound_of_two_le (r1 r2 : List Bool → List Bool) (ch_guess : List Bool)
     (prog : WordOracleComp Unit (List Bool)) {s : ℕ × List Bool}
@@ -359,8 +359,7 @@ theorem eval_game0_eq_bind_bernoulliAttempt (generator : List Bool → List Bool
         (honestReply2 s φ coins)
         ch_guess prog (0, [false, false, false])).symm
   simp only [game0, ProbComp.eval_bind, BitString.eval_sampleList, hguess]
-  simp only [ProbComp.eval_map, ProbComp.eval_pure, PMF.bind_bind,
-    PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm]
   rw [PMF.bind_comm]
   refine Probability.PMF.bind_congr_on_support _ _ _ fun coins _ => ?_
   rw [PMF.bind_comm]
@@ -372,7 +371,7 @@ theorem eval_game0_eq_bind_bernoulliAttempt (generator : List Bool → List Bool
 private theorem bind_bernoulliAttempt_ite (μ ν : PMF (List Bool)) :
     (μ.bind bernoulliAttempt).bind
       (fun x => if x.headD false then PMF.pure x.tail else ν) = mixThree μ ν := by
-  simp only [bernoulliAttempt, mixThree, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, bernoulliAttempt, mixThree]
   rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun ch_guess => ?_)
   by_cases h : ([false, false, false] == ch_guess) = true
@@ -385,8 +384,7 @@ private theorem eval_gmwFirstSuccess_replicate_eq_repeatAttempt {g : ProbComp (L
   induction k with
   | zero => simp [repeatAttempt, gmwFirstSuccess_nil]
   | succ k ih =>
-    simp only [OracleComp.replicate_succ, map_bind, ProbComp.eval_bind, ProbComp.eval_map,
-      PMF.map_comp, Function.comp_def, gmwFirstSuccess_cons, repeatAttempt]
+    simp only [pmf_norm, OracleComp.replicate_succ, map_bind, gmwFirstSuccess_cons, repeatAttempt]
     have hstep (x : List Bool) :
         (ProbComp.eval (OracleComp.replicate k g)).map
           (fun xs => if x.headD false then x.tail else gmwFirstSuccess xs) =
@@ -414,8 +412,7 @@ theorem advantage_mixThree (g1 g2 : Game) :
   have hunif : mixThree g1 g2 =
       (PMF.uniformOfFintype (BitString 3)).bind
         (fun v => if v = 0 then g1 else g2) := by
-    simp only [mixThree, BitString.uniformList, PMF.monad_bind_eq_bind, PMF.bind_map,
-      Function.comp_def]
+    simp only [pmf_norm, mixThree, BitString.uniformList]
     refine congrArg (PMF.bind _) (funext fun v => ?_)
     by_cases hv : v = 0
     · subst hv; rfl
@@ -542,8 +539,7 @@ theorem eval_game0Pads_eq_eval_game0 (generator : List Bool → List Bool) (s m 
       return if p.2.2 == ch_guess then true :: p.1 else [])
   have hselect := congrArg (fun d => d.bind cont)
     (eval_replicate_naorSelectPads s generator openFlags bits)
-  simp only [hbits, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, PMF.bind_bind,
-    PMF.bind_map, PMF.pure_bind, Function.comp_def, cont] at hselect
+  simp only [pmf_norm, hbits, cont] at hselect
   have hhon1 (seeds : List (List Bool)) :
       honestReply1 generator m φ (realBits φ w m₀ m₁ m₂, seeds) =
         fun r => proverReply1 generator m r (List.replicate (totalLen φ) true)
@@ -642,12 +638,11 @@ private theorem eval_pads_runTwoRound_mask (generator : List Bool → List Bool)
         (PMF.map fun xs : List (List Bool) => xs.flatten.take (bits.length * m))
         (eval_replicate_map_naorCommitSplit m generator (BitString.listRow m 0 r)
           openFlags bits seeds)
-      simpa only [ProbComp.eval_map, PMF.map_comp, Function.comp_def,
-        proverReply1, length_naorMaskBits] using hsplit) prog [false, false, false]
+      simpa only [pmf_norm, proverReply1,
+        length_naorMaskBits] using hsplit) prog [false, false, false]
   have hmap := congrArg (PMF.map (fun p : List Bool × (ℕ × List Bool) =>
       if p.2.2 == ch_guess then true :: p.1 else [])) h1
-  simpa only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
-    PMF.map, PMF.bind_bind, Function.comp_def] using hmap
+  simpa only [pmf_norm, PMF.map] using hmap
 
 theorem eval_game1_eq_eval_gmwSimAttempt (generator : List Bool → List Bool) {s m : ℕ}
     {φ : CNF ℕ} {w : List Bool} (hw : ThreeSAT.verifier (φ, w) = true)
@@ -824,8 +819,7 @@ theorem gmwView_advantage_le {α : Type} (generator : List Bool → List Bool)
         (adversary n a z) =
       ProbComp.eval (OracleComp.replicate (n + 1) g >>=
         fun attempts => adversary n a z (gmwFirstSuccess attempts)) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_map, ProbComp.eval_bind,
-      PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, distinguishingGame]
   have hzero : ProbComp.eval (gmwFirstSuccess <$> OracleComp.replicate (n + 1)
       (gmwRealPRGPads generator (n + 7) (length (n + 7)) (f a) w (Vstar n a z))) = guess := by
     simp only [guess, ProbComp.eval_map,
@@ -1250,8 +1244,8 @@ theorem gmwView_indistinguishable_gmwSimulator {α : Type} {enc : α ↪ List Bo
   have herr := (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).shift 1
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind, ProbComp.eval_map,
-    BitString.eval_sampleList, generatorEnsemble, Nat.cast_mul, red] using
+  simpa only [pmf_norm, distinguishingGame, BitString.eval_sampleList, generatorEnsemble,
+    Nat.cast_mul, red] using
     gmwView_advantage_le generator length f Vstar (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) (hw_sat n)
 

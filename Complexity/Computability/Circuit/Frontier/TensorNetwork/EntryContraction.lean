@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListBinaryLookup
 import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.Nat.Asymptotics
+import Complexity.Tactic.EncLen
 
 /-!
 # Contraction with entry procedures: the interface
@@ -330,9 +331,7 @@ private theorem lengths_le (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNet
       (DescribedNetwork.encInput (encPair encUnary (encList encNat)) encT
         ((P, fl), G)).length ≤ 2 * (encInput encT (P, fl, r, G)).length := by
   have h := length_le_length_encList encNat fl
-  simp only [encInput, DescribedNetwork.encInput, length_encPair, encUnary_apply,
-    List.length_replicate] at h ⊢
-  omega
+  enc_len [encInput, DescribedNetwork.encInput] at h ⊢
 
 private theorem mul_pow_le {c W d E : ℕ} (hW : 1 ≤ W) (hd : d ≤ E) : c * W ^ d ≤ c * W ^ E :=
   Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hW hd)

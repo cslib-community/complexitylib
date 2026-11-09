@@ -196,8 +196,7 @@ theorem lookRun_inO [Inhabited π] {R B : π × (SCfg × List ℕ) × List Bool 
       simp only [length_encPair, encBits_apply]
       omega
     have hn := length_encNat_ofBits_le q.2.2
-  · have hX : ((encNat (ofBits q.2.2)).length + 1) ^ 2 ≤ (q.2.2.length + 1) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
+  · have hX : ((encNat (ofBits q.2.2)).length + 1) ^ 2 ≤ (q.2.2.length + 1) ^ 2 := by gcongr
     have h₁ : 2 * B q + R q + B q + ((encNat (ofBits q.2.2)).length + 1) ^ 2 ≤
         3 * (R q + B q + (q.2.2.length + 1) ^ 2) := by
       omega

@@ -226,8 +226,7 @@ private theorem hybridView_update (C : Circuit σ n m) (I : Interpretation σ Bo
         simp only [act]
         congr 1
         rw [C.program.trace_gate]
-        congr 1
-        funext k
+        congr 1 with k : 1
         rw [hρ k]
         have hcancel : ∀ a b : Bool, a = a + b + b := fun a b => by
           rw [add_assoc, BooleanRing.add_self, add_zero]
@@ -462,8 +461,7 @@ private theorem realGame_reduction (C : Circuit σ n m) (I : Interpretation σ B
   simp only [PMF.bind_comm (PMF.uniformOfFintype (Wire n C.size × Bool → K))
       (PMF.uniformOfFintype (Wire n C.size → Bool)),
     PMF.bind_comm (PMF.uniformOfFintype K) (PMF.uniformOfFintype (Wire n C.size → Bool))]
-  congr 1
-  funext perm
+  congr 1 with perm : 1
   conv_rhs => rw [← Cslib.Probability.PMF.uniformOfFintype_update (w, !act C I x perm w) (γ := K)]
   simp only [PMF.bind_bind, PMF.bind_map]
   rfl
@@ -483,10 +481,8 @@ private theorem idealGame_reduction (C : Circuit σ n m) (I : Interpretation σ 
       (PMF.uniformOfFintype (Wire n C.size × Bool → K)),
     PMF.bind_comm (PMF.uniformOfFintype (T → K × Bool))
       (PMF.uniformOfFintype (Wire n C.size → Bool))]
-  congr 1
-  funext key
-  congr 1
-  funext perm
+  congr 1 with key : 1
+  congr 1 with perm : 1
   let Ω := (T → K × Bool) × (Row C.topology → K × Bool)
   let G : (Row C.topology → K × Bool) → PMF Bool := fun tab =>
     ProbComp.eval (D ⟨tab, encode (inputEncoding key perm) x, outputDecoding C perm⟩)
