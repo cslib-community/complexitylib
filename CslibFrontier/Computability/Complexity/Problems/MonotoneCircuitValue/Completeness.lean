@@ -307,15 +307,7 @@ theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set
     fun a => ?_⟩
   rw [mem_dualTableauInstance_iff, hAf a, mem_CircuitValue]
   simp only [tableauInstance]
-  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
-  rw [Tableau.eval_circuit tm (by simp only [timeBound]; omega), hw]
-  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
-    have := htle (enc a).length
-    simp only [timeBound]
-    omega
-  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
-  rw [hout, encBool_apply]
-  cases f a <;> simp [OutView.ofList]
+  rw [CircuitValue.eval_tableau_of_computesFun tm C d htm htle]
 
 /-- Monotone circuit value is `P`-hard under logarithmic-space reductions [Goldschlager1977]. -/
 theorem logSpaceHard : LogSpaceHard @P encMonotoneCircuitValue MonotoneCircuitValue :=
