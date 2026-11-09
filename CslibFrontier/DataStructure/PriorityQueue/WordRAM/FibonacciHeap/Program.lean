@@ -842,257 +842,91 @@ theorem ofData_set_sz {n base : ℕ} (x : Data rFib) (v : ℕ) :
   simp only [RawState.ofData, Data.set_mem, Data.set_regs, Function.update_self]
   rfl
 
-private theorem update_mem_slot {n : ℕ} (base k : ℕ) (m : ℕ → ℕ) (v : Fin n) (val : ℕ) :
-    (fun u : Fin n => Function.update m (base + k * n + v.val) val (base + k * n + u.val)) =
-      Function.update (fun u : Fin n => m (base + k * n + u.val)) v val := by
-  funext u
-  by_cases huv : u = v
-  · subst huv; simp only [Function.update_self]
-  · have hne : base + k * n + u.val ≠ base + k * n + v.val := by
-      have := Fin.val_ne_of_ne huv; omega
-    simp only [Function.update_of_ne hne, Function.update_of_ne huv]
-
-private theorem update_mem_other_slot {n : ℕ} (base k₁ k₂ : ℕ) (hk : k₁ ≠ k₂) (m : ℕ → ℕ)
-    (v : Fin n) (val : ℕ) :
-    (fun u : Fin n => Function.update m (base + k₁ * n + v.val) val (base + k₂ * n + u.val)) =
-      fun u : Fin n => m (base + k₂ * n + u.val) := by
-  funext u
-  have hv := v.isLt
-  have hu := u.isLt
-  have hne : base + k₂ * n + u.val ≠ base + k₁ * n + v.val := by
-    rcases Nat.lt_or_gt_of_ne hk with hlt | hgt
-    · have : (k₁ + 1) * n ≤ k₂ * n := Nat.mul_le_mul_right n hlt
-      rw [Nat.add_mul, Nat.one_mul] at this
-      omega
-    · have : (k₂ + 1) * n ≤ k₁ * n := Nat.mul_le_mul_right n hgt
-      rw [Nat.add_mul, Nat.one_mul] at this
-      omega
-  exact Function.update_of_ne hne val m
-
-private theorem update_mem_cons_preserved {n : ℕ} (base k : ℕ) (hk : k < 8) (m : ℕ → ℕ)
-    (v : Fin n) (val : ℕ) :
-    (fun d : ℕ =>
-        if d ≤ n then Function.update m (base + k * n + v.val) val (base + 8 * n + d) else 0) =
-      fun d : ℕ => if d ≤ n then m (base + 8 * n + d) else 0 := by
-  funext d
-  by_cases hd : d ≤ n
-  · have hv := v.isLt
-    have hkn : (k + 1) * n ≤ 8 * n := Nat.mul_le_mul_right n hk
-    rw [Nat.add_mul, Nat.one_mul] at hkn
-    have hne : base + 8 * n + d ≠ base + k * n + v.val := by omega
-    simp only [hd, ↓reduceIte, Function.update_of_ne hne]
-  · simp only [hd, ↓reduceIte]
+/-! The `ofData_write_*` lemmas: a write into one of the nine arrays updates that field of
+`RawState.ofData` and leaves the other eight arrays alone, because the arrays occupy disjoint
+address ranges. Each proof compares the two sides field by field and lets `omega` separate the
+address ranges. -/
 
 theorem ofData_write_key {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + v.val) val) =
       { RawState.ofData n base x with
         key := Function.update (RawState.ofData n base x).key v val } := by
-  have h0 := update_mem_slot base 0 x.mem v val
-  have h1 := update_mem_other_slot base 0 1 (by decide) x.mem v val
-  have h2 := update_mem_other_slot base 0 2 (by decide) x.mem v val
-  have h3 := update_mem_other_slot base 0 3 (by decide) x.mem v val
-  have h4 := update_mem_other_slot base 0 4 (by decide) x.mem v val
-  have h5 := update_mem_other_slot base 0 5 (by decide) x.mem v val
-  have h6 := update_mem_other_slot base 0 6 (by decide) x.mem v val
-  have h7 := update_mem_other_slot base 0 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 0 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_par {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + n + v.val) val) =
       { RawState.ofData n base x with
         par := Function.update (RawState.ofData n base x).par v val } := by
-  have h0 := update_mem_other_slot base 1 0 (by decide) x.mem v val
-  have h1 := update_mem_slot base 1 x.mem v val
-  have h2 := update_mem_other_slot base 1 2 (by decide) x.mem v val
-  have h3 := update_mem_other_slot base 1 3 (by decide) x.mem v val
-  have h4 := update_mem_other_slot base 1 4 (by decide) x.mem v val
-  have h5 := update_mem_other_slot base 1 5 (by decide) x.mem v val
-  have h6 := update_mem_other_slot base 1 6 (by decide) x.mem v val
-  have h7 := update_mem_other_slot base 1 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 1 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_child {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 2 * n + v.val) val) =
       { RawState.ofData n base x with
         child := Function.update (RawState.ofData n base x).child v val } := by
-  have h0 := update_mem_other_slot base 2 0 (by decide) x.mem v val
-  have h1 := update_mem_other_slot base 2 1 (by decide) x.mem v val
-  have h2 := update_mem_slot base 2 x.mem v val
-  have h3 := update_mem_other_slot base 2 3 (by decide) x.mem v val
-  have h4 := update_mem_other_slot base 2 4 (by decide) x.mem v val
-  have h5 := update_mem_other_slot base 2 5 (by decide) x.mem v val
-  have h6 := update_mem_other_slot base 2 6 (by decide) x.mem v val
-  have h7 := update_mem_other_slot base 2 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 2 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_left {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 3 * n + v.val) val) =
       { RawState.ofData n base x with
         left := Function.update (RawState.ofData n base x).left v val } := by
-  have h0 := update_mem_other_slot base 3 0 (by decide) x.mem v val
-  have h1 := update_mem_other_slot base 3 1 (by decide) x.mem v val
-  have h2 := update_mem_other_slot base 3 2 (by decide) x.mem v val
-  have h3 := update_mem_slot base 3 x.mem v val
-  have h4 := update_mem_other_slot base 3 4 (by decide) x.mem v val
-  have h5 := update_mem_other_slot base 3 5 (by decide) x.mem v val
-  have h6 := update_mem_other_slot base 3 6 (by decide) x.mem v val
-  have h7 := update_mem_other_slot base 3 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 3 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_right {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 4 * n + v.val) val) =
       { RawState.ofData n base x with
         right := Function.update (RawState.ofData n base x).right v val } := by
-  have h0 := update_mem_other_slot base 4 0 (by decide) x.mem v val
-  have h1 := update_mem_other_slot base 4 1 (by decide) x.mem v val
-  have h2 := update_mem_other_slot base 4 2 (by decide) x.mem v val
-  have h3 := update_mem_other_slot base 4 3 (by decide) x.mem v val
-  have h4 := update_mem_slot base 4 x.mem v val
-  have h5 := update_mem_other_slot base 4 5 (by decide) x.mem v val
-  have h6 := update_mem_other_slot base 4 6 (by decide) x.mem v val
-  have h7 := update_mem_other_slot base 4 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 4 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_deg {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 5 * n + v.val) val) =
       { RawState.ofData n base x with
         deg := Function.update (RawState.ofData n base x).deg v val } := by
-  have h0 := update_mem_other_slot base 5 0 (by decide) x.mem v val
-  have h1 := update_mem_other_slot base 5 1 (by decide) x.mem v val
-  have h2 := update_mem_other_slot base 5 2 (by decide) x.mem v val
-  have h3 := update_mem_other_slot base 5 3 (by decide) x.mem v val
-  have h4 := update_mem_other_slot base 5 4 (by decide) x.mem v val
-  have h5 := update_mem_slot base 5 x.mem v val
-  have h6 := update_mem_other_slot base 5 6 (by decide) x.mem v val
-  have h7 := update_mem_other_slot base 5 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 5 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_mark {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 6 * n + v.val) val) =
       { RawState.ofData n base x with
         mark := Function.update (RawState.ofData n base x).mark v val } := by
-  have h0 := update_mem_other_slot base 6 0 (by decide) x.mem v val
-  have h1 := update_mem_other_slot base 6 1 (by decide) x.mem v val
-  have h2 := update_mem_other_slot base 6 2 (by decide) x.mem v val
-  have h3 := update_mem_other_slot base 6 3 (by decide) x.mem v val
-  have h4 := update_mem_other_slot base 6 4 (by decide) x.mem v val
-  have h5 := update_mem_other_slot base 6 5 (by decide) x.mem v val
-  have h6 := update_mem_slot base 6 x.mem v val
-  have h7 := update_mem_other_slot base 6 7 (by decide) x.mem v val
-  have hc := update_mem_cons_preserved base 6 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_inHeap {n base : ℕ} (x : Data rFib) (v : Fin n) (val : ℕ) :
     RawState.ofData n base (x.write (base + 7 * n + v.val) val) =
       { RawState.ofData n base x with
         inHeap := Function.update (RawState.ofData n base x).inHeap v val } := by
-  have h0 := update_mem_other_slot base 7 0 (by decide) x.mem v val
-  have h1 := update_mem_other_slot base 7 1 (by decide) x.mem v val
-  have h2 := update_mem_other_slot base 7 2 (by decide) x.mem v val
-  have h3 := update_mem_other_slot base 7 3 (by decide) x.mem v val
-  have h4 := update_mem_other_slot base 7 4 (by decide) x.mem v val
-  have h5 := update_mem_other_slot base 7 5 (by decide) x.mem v val
-  have h6 := update_mem_other_slot base 7 6 (by decide) x.mem v val
-  have h7 := update_mem_slot base 7 x.mem v val
-  have hc := update_mem_cons_preserved base 7 (by decide) x.mem v val
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7 hc
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply, Fin.ext_iff] <;>
+    split_ifs <;> omega
 
 theorem ofData_write_cons {n base d : ℕ} (hd : d ≤ n) (x : Data rFib) (val : ℕ) :
     RawState.ofData n base (x.write (base + 8 * n + d) val) =
       { RawState.ofData n base x with
         cons := Function.update (RawState.ofData n base x).cons d val } := by
-  have v_pres : ∀ (k : ℕ), k < 8 →
-      (fun u : Fin n => Function.update x.mem (base + 8 * n + d) val (base + k * n + u.val)) =
-        fun u : Fin n => x.mem (base + k * n + u.val) := by
-    intro k hk
-    funext u
-    have hu := u.isLt
-    have hkn : (k + 1) * n ≤ 8 * n := Nat.mul_le_mul_right n hk
-    rw [Nat.add_mul, Nat.one_mul] at hkn
-    have hne : base + k * n + u.val ≠ base + 8 * n + d := by omega
-    exact Function.update_of_ne hne val x.mem
-  have h0 := v_pres 0 (by decide)
-  have h1 := v_pres 1 (by decide)
-  have h2 := v_pres 2 (by decide)
-  have h3 := v_pres 3 (by decide)
-  have h4 := v_pres 4 (by decide)
-  have h5 := v_pres 5 (by decide)
-  have h6 := v_pres 6 (by decide)
-  have h7 := v_pres 7 (by decide)
-  simp only [Nat.zero_mul, Nat.add_zero, Nat.one_mul] at h0 h1 h2 h3 h4 h5 h6 h7
-  have hc : (fun d' : ℕ =>
-      if d' ≤ n then Function.update x.mem (base + 8 * n + d) val (base + 8 * n + d') else 0) =
-      Function.update (fun d' : ℕ => if d' ≤ n then x.mem (base + 8 * n + d') else 0) d val := by
-    funext d'
-    by_cases hdd : d' = d
-    · subst hdd; simp only [hd, ↓reduceIte, Function.update_self]
-    · have hne : base + 8 * n + d' ≠ base + 8 * n + d := by omega
-      simp only [Function.update_of_ne hdd, Function.update_of_ne hne]
-  simp only [RawState.ofData, Data.write_mem, Data.write_regs, h0, h1, h2, h3, h4, h5, h6, h7, hc]
+  simp only [RawState.ofData, Data.write_mem, Data.write_regs, RawState.mk.injEq, and_true]
+  and_intros <;> funext u <;> simp only [Function.update_apply] <;> split_ifs <;> omega
 
 theorem ofData_supported {n base : ℕ} {x x' : Data rFib}
     (hreg : ∀ i : Fin rFib, inputReg i = false → x'.regs i = x.regs i)
     (hmem : ∀ a ∈ (Block.mk base (space n)).footprint, x'.mem a = x.mem a) :
     RawState.ofData n base x' = RawState.ofData n base x := by
-  have mem_arr : ∀ k < 8, ∀ u : Fin n,
-      x'.mem (base + k * n + u.val) = x.mem (base + k * n + u.val) := by
-    intro k hk u
-    apply hmem
-    rw [Block.mem_footprint, Block.Owns]
-    dsimp only
-    have hu := u.isLt
-    have hkn : (k + 1) * n ≤ 8 * n := Nat.mul_le_mul_right n hk
-    rw [Nat.add_mul, Nat.one_mul] at hkn
-    unfold space
-    omega
-  have mem_cons : ∀ d ≤ n, x'.mem (base + 8 * n + d) = x.mem (base + 8 * n + d) := by
-    intro d hd
-    apply hmem
-    rw [Block.mem_footprint, Block.Owns]
-    dsimp only
-    unfold space
-    omega
-  have h0 : (fun u : Fin n => x'.mem (base + u.val)) = fun u => x.mem (base + u.val) := by
-    funext u
-    simpa only [Nat.zero_mul, Nat.add_zero] using mem_arr 0 (by decide) u
-  have h1 : (fun u : Fin n => x'.mem (base + n + u.val)) = fun u => x.mem (base + n + u.val) := by
-    funext u
-    simpa only [Nat.one_mul] using mem_arr 1 (by decide) u
-  have h2 : (fun u : Fin n => x'.mem (base + 2 * n + u.val)) =
-      fun u => x.mem (base + 2 * n + u.val) := funext (mem_arr 2 (by decide))
-  have h3 : (fun u : Fin n => x'.mem (base + 3 * n + u.val)) =
-      fun u => x.mem (base + 3 * n + u.val) := funext (mem_arr 3 (by decide))
-  have h4 : (fun u : Fin n => x'.mem (base + 4 * n + u.val)) =
-      fun u => x.mem (base + 4 * n + u.val) := funext (mem_arr 4 (by decide))
-  have h5 : (fun u : Fin n => x'.mem (base + 5 * n + u.val)) =
-      fun u => x.mem (base + 5 * n + u.val) := funext (mem_arr 5 (by decide))
-  have h6 : (fun u : Fin n => x'.mem (base + 6 * n + u.val)) =
-      fun u => x.mem (base + 6 * n + u.val) := funext (mem_arr 6 (by decide))
-  have h7 : (fun u : Fin n => x'.mem (base + 7 * n + u.val)) =
-      fun u => x.mem (base + 7 * n + u.val) := funext (mem_arr 7 (by decide))
-  have hc : (fun d : ℕ => if d ≤ n then x'.mem (base + 8 * n + d) else 0) =
-      fun d => if d ≤ n then x.mem (base + 8 * n + d) else 0 := by
-    funext d
-    by_cases hd : d ≤ n
-    · simp only [hd, ↓reduceIte, mem_cons d hd]
-    · simp only [hd, ↓reduceIte]
-  simp only [RawState.ofData, h0, h1, h2, h3, h4, h5, h6, h7, hc,
-    hreg minRootReg (by decide), hreg numRootsReg (by decide),
-    hreg numMarkedReg (by decide), hreg szReg (by decide)]
+  have hmem' : ∀ a, base ≤ a → a < base + (9 * n + 1) → x'.mem a = x.mem a := fun a h₁ h₂ =>
+    hmem a (by simp only [Block.mem_footprint, Block.Owns, space]; omega)
+  simp only [RawState.ofData, RawState.mk.injEq, hreg minRootReg (by decide),
+    hreg numRootsReg (by decide), hreg numMarkedReg (by decide), hreg szReg (by decide), and_true]
+  and_intros <;> funext u <;> (try split_ifs) <;> first | rfl | exact hmem' _ (by omega) (by omega)
 
 theorem FibInv.supported {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x x' : Data rFib}
     (hreg : ∀ i : Fin rFib, inputReg i = false → x'.regs i = x.regs i)
