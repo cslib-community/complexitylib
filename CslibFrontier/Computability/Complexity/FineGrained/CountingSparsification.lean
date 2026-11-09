@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
+import CslibFrontier.Computability.Complexity.FineGrained.SearchStep
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Foundations.Data.List.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
@@ -555,7 +556,8 @@ private theorem computableInPolyTime_inner (M K : ℕ) :
   unfold encState encCNF
   fun_prop
 
-private theorem computableInPolyTime_leafUpdate :
+/-- Popping a sparse leaf and adding its weighted count is polynomial-time. -/
+theorem computableInPolyTime_leafUpdate :
     ComputableInPolyTime (fun p : State × ℕ => leafUpdate p.1 p.2)
       (encPair encState encNat) encState := by
   have hvars := SAT.computableInPolyTime_distinctVars
@@ -603,47 +605,12 @@ private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u
           u (s.2.1.headD []) +
             ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ d
         else 0) := by
-  obtain ⟨dE, eE, hE⟩ :=
+  have h := exists_computableInO_searchStep
     (by unfold encState; fun_prop :
-      ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState encBool).exists_degree
-  obtain ⟨dI, eI, hI⟩ := (id' (encIn := encState)).exists_degree
-  obtain ⟨dS, eS, hS⟩ := (computableInPolyTime_isSparse_head M K).exists_degree
-  obtain ⟨dH, eH, hH⟩ := computableInPolyTime_headCNF.exists_degree
-  obtain ⟨dN, eN, hN⟩ := (computableInPolyTime_inner M K).exists_degree
-  obtain ⟨dU, eU, hU⟩ := computableInPolyTime_leafUpdate.exists_degree
-  set D := dE + dI + dS + dH + dN + dU + 1
-  have hE' := (hE.mono (d' := D) (e' := eE) (by omega) le_rfl).inO
-  have hI' := (hI.mono (d' := D) (e' := eI) (by omega) le_rfl).inO
-  have hS' := (hS.mono (d' := D) (e' := eS) (by omega) le_rfl).inO
-  have hH' := (hH.mono (d' := D) (e' := eH) (by omega) le_rfl).inO
-  have hN' := (hN.mono (d' := D) (e' := eN) (by omega) le_rfl).inO
-  have hU' := (hU.mono (d' := D) (e' := eU) (by omega) le_rfl).inO
-  have hleaf := hU'.comp (hI'.prod (hg.comp hH'))
-  have h := hE'.ite hI' (hS'.ite hleaf hN')
-  have hpair_le (s : State) (c : ℕ) :
-      ((encPair encState encNat (s, c)).length + 1) ^ D ≤
-        4 ^ D * ((encState s).length + (encNat c).length + 1) ^ D := by
-    rw [← mul_pow]
-    refine Nat.pow_le_pow_left ?_ D
-    simp only [length_encPair]
-    omega
-  refine ⟨D, h.mono (4 ^ D + 5) (fun s => ?_) (fun s => ?_)⟩ <;>
-  · simp only [Function.comp_apply]
-    have hp := hpair_le s (g (s.2.1.headD []))
-    have h4D : 1 ≤ 4 ^ D := Nat.one_le_pow _ _ (by decide)
-    generalize 4 ^ D = F at hp h4D ⊢
-    generalize ((encState s).length + 1) ^ D = P
-    generalize t (s.2.1.headD []) = T
-    generalize u (s.2.1.headD []) = U
-    generalize ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ D = Q at hp ⊢
-    generalize ((encPair encState encNat (s, g (s.2.1.headD []))).length + 1) ^ D = R at hp ⊢
-    have hFP := Nat.le_mul_of_pos_left P h4D
-    have hFT := Nat.le_mul_of_pos_left T h4D
-    have hFU := Nat.le_mul_of_pos_left U h4D
-    cases s.2.1.isEmpty <;>
-      cases isSparse (countingThreshold M) K (s.2.1.headD []) <;>
-      simp only [Bool.false_eq_true, ite_false, ite_true, and_true, and_false,
-        Bool.true_eq_false, Nat.add_mul, Nat.mul_add] <;> omega
+      ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState encBool)
+    (computableInPolyTime_isSparse_head M K) computableInPolyTime_headCNF
+    (computableInPolyTime_inner M K) computableInPolyTime_leafUpdate hg
+  exact h
 
 end PolyTime
 
