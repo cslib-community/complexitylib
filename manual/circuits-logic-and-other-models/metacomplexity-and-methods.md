@@ -1187,10 +1187,61 @@ open neighborhoods, exact finite rules versus cofinite tails, empty/rejecting ru
 contradictory/512-bit bounds and actual query metadata. Test-only original-selection enumeration
 computes auxiliary traces deterministically; production uses the proved sharp counter.
 
-The full general-rule cardinality-distribution traversal is still open. Theorem 7.3 also still needs
-the actual fixed $q$-class labeled matrix construction, varying class bounds and tuple traversal;
-this two-state selected/complement result does not establish that theorem. The current complete
-source inventory and remaining graph/Exact Cover/refinement clauses are in `ROADMAP.md`.
+The full general-rule cardinality distribution is now provided by
+`Complexity.Computability.Complexity.FineGrained.SigmaRhoDistribution`.
+`SigmaRho.Distribution.run` performs the actual successive exact-size calls for $k=0,\ldots,v$,
+accumulates binary counts and reverses them into increasing size order. The
+`exists_distribution_finiteCofinite_certificate` theorem instantiates the proved point counter
+for every fixed finite/cofinite pair. It proves the complete ordered list of ordinary set counts,
+sharp time and global polynomial peak workspace, charging intermediate encodings, accumulation,
+reversal and output writes. Each coefficient has at most $v+1$ bits; the entire framed output has
+length at most $(v+1)(2(v+1)+1)$. This output-size theorem is separate from the actual runtime proof.
+Zero coefficients are retained, and the empty graph produces the sole coefficient one.
+
+### General labeled degree matrices without class-size tests
+
+Import `Complexity.Computability.Complexity.FineGrained.DegreePartitionCountingResources`.
+`SimpleGraph.IsDegreePartition` is an ordered family of $q$ original vertex sets: every vertex
+belongs to exactly one class, and a vertex in source class $i$ has its open-neighbor count in
+target class $j$ accepted by matrix entry $M[i,j]$. Labels are retained; empty classes are allowed
+and there is no connectivity requirement. `exists_degreeMatrixRules` compiles every fixed finite/
+cofinite $q\times q$ matrix to a common positive cutoff. Both $q$ and the matrix are fixed problem
+data; they are not runtime advice or parameters permitted to grow with the graph.
+
+`DegreePartition.BinaryFrontend.build` consumes the original explicit matrix/unary declaration.
+The existing exactly-one writer enforces class membership. There are $q$ selection/threshold blocks;
+each target class receives the existing fixed-length neighbor-sublist construction. Matrix-state
+implications reuse that target's thresholds and the source class's membership bit. The
+`representation` theorem connects the actual erased writer to ordinary labeled set families via
+a forgetful bijection, with no auxiliary multiplicity. All $qDv$ thresholds are derived; no edge,
+subset, class labeling, rank or output is supplied by the caller.
+
+`query_count` and `query_budget` prove exactly two queries for positive $q,D,v$, on
+$N=q(2D+1)v-1$ variables with width at most $\max(q,D+2)$ and valid literal indices.
+`build_polytime` charges the actual binary shifts, one-hot clauses, fixed matrix-state traversal,
+bounded subset enumeration and all writes. `exists_count_finiteCofinite_certificate` composes the
+actual writer, native counting, reconstruction and binary output, proving sharp
+$C(L+1)^e2^{A\eta(v)}$ time for $v\ge16$ and global polynomial peak workspace on all raw frames.
+Rounded bounds cover smaller and empty graphs; the empty graph has one labeled family of empty
+classes. Declared isolates are preserved. The explicit canonical simple-graph/unary declaration
+and native charged-word conventions apply; no new byte-admission, succinct representation or
+binary-transition realization theorem is asserted.
+
+This completes the **no-size-test** general matrix counter. Theorem 7.3 is still incomplete:
+the actual input-varying per-class bound circuits, their unique extensions and combined resources,
+full ordered size-vector traversal/output, and a separate explicit vertex-polynomial clause-volume
+bound remain to be connected. `SimpleGraph.InClassBounds` states the conventional size condition;
+its boundary examples are semantic checks, not an encoded bounded-partition algorithm.
+Do not apply the no-test counter as if it already imposed a size vector.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.DegreePartition`.
+The [complete computed client](../../ComplexityTests/PaperEndpoints/DegreePartition.lean) checks
+multiple labels ($q^v$ universal counts), empty classes, empty graphs, rejecting matrices, exact
+opposite-neighbor rules, query metadata and complete sigma-rho distributions (including finite
+versus cofinite tails and all zero coefficients). Test-only label enumeration derives thresholds
+deterministically; the production theorem uses the certified sharp native counter.
+The current complete source inventory and remaining graph/Exact Cover/refinement clauses are
+recorded in `ROADMAP.md`.
 
 ## Known Limitations
 

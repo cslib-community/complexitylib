@@ -1382,8 +1382,8 @@ declarations and native charged-word conventions, not undocumented admission or 
 | Theorem 6.3 | `VCOneDispatch`, `VCOneCountingResources` | Complete actual table counter, arbitrary overlapping injective scopes, direct/empty branches and original count. |
 | Lemma 3.2; Proposition 4.2 | `IncidenceGeneralResources`, generic frontend composition | Actual general-density single-loglog fixed-width counter and sequential resource composition. The old squared-loglog interpolation algorithm is not relabeled. |
 | Theorem 7.1 | `WeightedRaggedResources` | Parsed arbitrary ragged positive-binary-weight rows, repeated/mixed literals and signed targets, fixed normalized-demand bound, actual all-cases sharp counting. |
-| Corollary 7.2; Lemma C.1 | `DegreeThreshold`, `SigmaRhoInput`, `SigmaRhoCountingResources` | Actual arbitrary fixed finite/cofinite pair, functional thresholds, optional binary natural interval, original-set count and complete sharp native resources/query budgets. Full distribution and general signed-bound wrapper remain open. |
-| Theorem 7.3 | Current perfect-matching-cut specialization | General fixed labeled degree matrices, varying class bounds and tuple traversal remain open. |
+| Corollary 7.2; Lemma C.1 | `DegreeThreshold`, `SigmaRhoInput`, `SigmaRhoCountingResources`, `SigmaRhoDistribution` | Arbitrary fixed finite/cofinite pair, optional binary natural interval, original-set counts and full ordered cardinality distribution, including sharp native resources/output. General signed-bound wrapper is a remaining encoding extension. |
+| Theorem 7.3 | `DegreePartition`, `DegreePartitionCountingResources` | Actual arbitrary fixed labeled finite/cofinite matrices without size tests, original partition counts, source dimension/width and complete sharp native resources. Input class bounds, size-vector traversal/output and separate explicit vertex-clause bound remain open. |
 | Corollary 7.4; Propositions D.1–D.5 | Existing graph counter modules; MIM/Upper witness modules | All six decision specializations covered. Full optimum/witness for MIM and Upper; four other recovery specializations remain open. |
 | Corollary 7.5 | `InducedMatching.Distribution` | Full ordered edge-size distribution and sharper no-size-test total construction, including output resources. |
 | Proposition 7.6 / Appendix D.3 | `UpperDomination`, `UpperDominationUnique` | Initial pair count/decision and augmented width-four exact original-set counter covered. Shared-marker width-three refinement remains open. |
@@ -1412,13 +1412,20 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   explicit canonical simple graph with unary declaration and binary natural interval bounds;
   fixed rules/cutoff are compiled problem parameters. Actual query variable/width/polynomial
   clause bounds are proved, including all gates; no-test mode has zero gates. The full ordered
-  cardinality-distribution traversal and general signed-bound wrapper remain open. Reuse the
-  finished point counter rather than re-proving its functional or resource stages.
-- Theorem 7.3: fixed q,D labeled degree matrices and optional per-class input cardinality tests
-  still need their actual class/neighbor-threshold construction and complete resource/count proof.
-  Preserve labeled classes (empty unless input bounds forbid this), input-varying per-class bounds,
-  `q(2D+1)v+a-1` variables, width at most `max(q,D+2)`, `a=O_q(v)` (zero without tests),
-  polynomially many class-size tuples, and the absence of any connectivity requirement.
+  cardinality distribution is now covered by `SigmaRhoDistribution`, including actual traversal,
+  prefix encodings, output and sharp native resources. A general signed-bound wrapper remains an
+  encoding extension. Reuse these finished point/distribution counters and threshold proofs.
+- Theorem 7.3: `DegreePartitionCountingResources` now covers arbitrary fixed finite/cofinite
+  q-by-q matrices without size tests: executable one-hot/threshold/state writing, exact ordinary
+  labeled partition counts, no label quotient or auxiliary multiplicity, actual binary polynomial
+  construction, source no-test dimension/width and complete sharp native time/global workspace.
+  All labels and empty classes are retained; no connectivity condition is imposed. The actual
+  input-varying per-class cardinality frontend, its unique gate extension/combined resources,
+  full size-vector traversal/output and explicit vertex-polynomial clause-volume bound remain
+  open. `InClassBounds` is only the ordinary semantic predicate, not the missing constructor.
+  Preserve `q(2D+1)v+a-1` variables, width `max(q,D+2)`, `a=O_q(v)` (zero without tests),
+  input-bound intersection with `[0,v]`, and polynomially many ordered class-size tuples. Reuse
+  the finished general no-test matrix counter instead of repeating its construction/count proof.
 - Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
   kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
   induced-matching counting/decision and maximum-induced-matching signed-threshold counting/

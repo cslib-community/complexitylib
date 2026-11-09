@@ -1689,6 +1689,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifica
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUniform
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
+public import Complexity.Computability.Complexity.FineGrained.DegreePartitionCountingResources
 public import Complexity.Computability.Complexity.FineGrained.DensityBranchCounting
 public import Complexity.Computability.Complexity.FineGrained.DigraphKernel
 public import Complexity.Computability.Complexity.FineGrained.DominatingInducedMatching
@@ -1730,6 +1731,7 @@ public import Complexity.Computability.Complexity.FineGrained.ReplacementSchedul
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.SharpCountingSchedule
 public import Complexity.Computability.Complexity.FineGrained.SigmaRhoCountingResources
+public import Complexity.Computability.Complexity.FineGrained.SigmaRhoDistribution
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
@@ -2620,6 +2622,7 @@ public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounte
 public import Complexity.Computability.PolyTime.BudgetTuples
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.CardinalityInterval
+public import Complexity.Computability.PolyTime.CNF.DegreePartition
 public import Complexity.Computability.PolyTime.CNF.DegreeThreshold
 public import Complexity.Computability.PolyTime.CNF.DigraphKernel
 public import Complexity.Computability.PolyTime.CNF.DominatingInducedMatching
@@ -3620,6 +3623,7 @@ public import Complexity.Foundations.Combinatorics.PowersetTail
 public import Complexity.Foundations.Combinatorics.ReplacementCounting
 public import Complexity.Foundations.Combinatorics.ReplacementDesignBridge
 public import Complexity.Foundations.Combinatorics.SharedSummaries
+public import Complexity.Foundations.Combinatorics.SimpleGraph.DegreePartition
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DegreeRules
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingInducedMatching
 public import Complexity.Foundations.Combinatorics.SimpleGraph.DominatingSet
@@ -4176,6 +4180,7 @@ public import Complexity.Logics.Propositional.CNF.Coding
 public import Complexity.Logics.Propositional.CNF.Compact
 public import Complexity.Logics.Propositional.CNF.Compact.ModelCount
 public import Complexity.Logics.Propositional.CNF.Compact.Relabel
+public import Complexity.Logics.Propositional.CNF.DegreePartition
 public import Complexity.Logics.Propositional.CNF.ExactOne
 public import Complexity.Logics.Propositional.CNF.ExactOne.BlockBounds
 public import Complexity.Logics.Propositional.CNF.ExactOne.Blocks
@@ -4191,6 +4196,7 @@ public import Complexity.Logics.Propositional.CNF.ExactOneElimination
 public import Complexity.Logics.Propositional.CNF.ExactOnePathPlan
 public import Complexity.Logics.Propositional.CNF.ExactTests
 public import Complexity.Logics.Propositional.CNF.ExactlyOne
+public import Complexity.Logics.Propositional.CNF.ExactlyOneRelabel
 public import Complexity.Logics.Propositional.CNF.Gadgets
 public import Complexity.Logics.Propositional.CNF.ImplicationChain
 public import Complexity.Logics.Propositional.CNF.ImplicationCycle
