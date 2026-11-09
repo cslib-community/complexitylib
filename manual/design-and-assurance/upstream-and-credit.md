@@ -8,6 +8,8 @@ Each module has an upstream marker. At the snapshot, the first marker in each of
 
 The pinned `lakefile.toml` and `lake-manifest.json` record the base pin; source markers record pending upstream work and copied revisions; `-- vendored:` comments and module docstrings record local adaptations; and [CONTRIBUTING.md](../../CONTRIBUTING.md#upstreaming) lists live coordination threads. A local copy of unmerged upstream work is permitted only for what the pinned dependency lacks, with original authors and declaration names retained. When the pin incorporates it, the copy should be deleted together with the pin update. Such copies are distinct from original cslib-frontier definitions.
 
+The current [marker rules](../../AGENTS.md#file-rules) replace that deletion with a deprecated shim. When the pin adopts a file, whether a copy or a module upstreamed from this library, the pin update leaves at its path a module that publicly imports the upstream module and declares Lean's `deprecated_module`, so downstream imports of the old name keep working with a warning. Shims are deleted six months after their deprecation date.
+
 ## Contributions and source credit
 
 | Stream | Evidence and appropriate credit |

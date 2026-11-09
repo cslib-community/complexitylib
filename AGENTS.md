@@ -315,9 +315,31 @@ requirement above; documentation-only checks need not invoke quick mode.
    the original authors (rule 3).
 3. **Upstream marker** values: `candidate`, `submitted #N @SHA` (a copy of an open cslib pull
    request at its head `SHA`), `vendored <owner>:<branch> @SHA (unsubmitted)` (a copy of a branch
-   of a contributor's cslib fork that has no pull request yet), `merged @SHA` (delete the file and
-   bump the pin in the same commit), `local-only (reason)`. Nothing is `local-only` without a
-   reason; valid reasons are project scaffolding and tests of local-only files.
+   of a contributor's cslib fork that has no pull request yet), `merged @SHA` (a deprecated shim
+   for a module that cslib provides from its commit `SHA`; see below), `local-only (reason)`.
+   Nothing is `local-only` without a reason; valid reasons are project scaffolding and tests of
+   local-only files.
+   When the pin adopts a module, whether it was upstreamed from here or copied from upstream
+   work, the commit that bumps the pin replaces the file with a deprecated shim instead of
+   deleting it, so that downstream `import CslibFrontier.X` keeps working with a warning. The shim
+   keeps the file's copyright header and otherwise contains only the following, where `Cslib.X`
+   is the upstream module and the date is that of the pin bump:
+   ```lean
+   module -- shake: keep-all
+   -- upstream: merged @SHA
+
+   public import Cslib.X
+
+   deprecated_module "upstreamed to cslib" (since := "YYYY-MM-DD")
+   ```
+   `deprecated_module` is Lean's core command, and Mathlib writes its stubs the same way:
+   importing the shim warns and names `Cslib.X` as the replacement. Because `--wfail` builds fail
+   on that warning, the same commit points every in-repository import at `Cslib.X`; only the
+   generated `CslibFrontier.lean` imports the shim, under its `-- deprecated_module: ignore`
+   pragma. Shims are the one exception to the rule against compatibility wrappers under
+   [Proof hygiene](#proof-hygiene). Delete a shim once its `since` date is six months old,
+   Mathlib's window for removing deprecations; a pin bump that moves or removes `Cslib.X`
+   repoints or deletes the shim itself.
    A port keeps the authors of the files it is ported from: v1's PCP internals, Sipser–Lautemann
    and containment internals are by Bolton Bailey, so their ports carry
    `Copyright (c) 2026 Bolton Bailey, Samuel Schlesinger` and `Authors: Bolton Bailey, Samuel
@@ -332,7 +354,8 @@ requirement above; documentation-only checks need not invoke quick mode.
    mirrored path, keeping the
    original authors and declaration names, marked `-- upstream: submitted #N @SHA` (or
    `vendored …`). A copy holds only what the pinned cslib lacks: when a PR modifies an existing
-   cslib file, the copy contains just its additions. Copies are deleted when the pin adopts the merged work.
+   cslib file, the copy contains just its additions. When the pin adopts the merged work, the
+   copy becomes a deprecated shim (rule 3).
 6. **Bit strings.** Declarations about bit strings and the cube `ι → Bool` (operations, sampling,
    Fourier analysis, sensitivity, influence, codes) live in `Cslib.BitString`; only the named
    Boolean functions `parityOn`, `parity`, `threshold`, `majority`, `strictMajority` sit in `Cslib`
@@ -348,12 +371,14 @@ requirement above; documentation-only checks need not invoke quick mode.
 
 Keep the cslib pin on an upstream `main` SHA. Coordinate updates in focused dependency PRs,
 fixing breakage in the same change; update it within another task when that task needs new
-upstream code or removes a merged copy. Merely inspecting upstream does not require a pin bump.
+upstream code or turns a merged module into its shim. Merely inspecting upstream does not
+require a pin bump.
 
 Run `scripts/upstream_sync.py` during synchronization work. Inspect changed, merged or closed
 upstream PRs against source markers, `-- vendored:` comments and module docstrings; preserve
-documented local adaptations and contributor work rather than blindly replacing copies. When adopting merged work, advance
-the pin past it and remove the superseded local copy together. Record unresolved decisions in
+documented local adaptations and contributor work rather than blindly replacing copies. When
+adopting merged work, advance the pin past it and, in the same commit, replace the superseded
+local file with its deprecated shim ([file rule 3](#file-rules)). Record unresolved decisions in
 the module's marker or docstring, the coordination threads in `CONTRIBUTING.md`, or a linked issue
 instead of expanding an unrelated PR.
 

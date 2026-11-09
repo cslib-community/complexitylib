@@ -379,7 +379,7 @@ and head SHA in the module's `-- upstream:` marker.
 
 Coordinate cross-cutting abstractions with CSLib before proposing them upstream. Follow
 [AGENTS.md](AGENTS.md#staying-current-with-upstream) for pin updates, synchronization checks,
-and removal of superseded local copies.
+and replacing superseded local files with deprecated shims.
 
 Upstream status is recorded in source. Each module's `-- upstream:` marker gives its status, PR
 number, copied revision and, when it is not the mirrored CSLib path, its destination; markers can
