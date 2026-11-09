@@ -159,6 +159,22 @@ theorem computableInPolyTime_binaryValue_le :
     ((ComputableInPolyTime.bitsBinaryValue.comp (.fst encBits encBits)).prod
       (ComputableInPolyTime.bitsBinaryValue.comp (.snd encBits encBits)))
 
+/-- A polynomial-time number-valued function `C` on a family of cubes `{0, 1} ^ (n a)` has a
+polynomial-time width: some `m`, computed in unary, bounds the binary length of `C (a, u)` for
+every `u` of length `n a`. -/
+theorem exists_length_bits_le {enc : α ↪ List Bool} {n : α → ℕ} {C : α × List Bool → ℕ}
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hC : ComputableInPolyTime C (encPair enc encBits) encNat) :
+    ∃ m : α → ℕ, ComputableInPolyTime m enc encUnary ∧
+      ∀ a u, u.length = n a → (C (a, u)).bits.length ≤ m a := by
+  obtain ⟨c, d, hbound⟩ := hC.polyBounded_length.exists_le
+  refine ⟨fun a => c * (2 * (enc a).length + n a + 2) ^ d, ?_, fun a u hu => ?_⟩
+  · exact unary_mul' (const c) ((unary_pow d).comp
+      (unary_add' (unary_add' (unary_mul' (const 2) (encoding_length enc)) hn) (const 2)))
+  · have hb := hbound (a, u)
+    simp only [encNat_apply, length_encPair, encBits_apply, hu] at hb
+    grind
+
 /-! ### `FNP` and `TFNP` membership of the family relations -/
 
 @[fun_prop]
