@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # Computing the packing of Lemma D.3 in polynomial time
@@ -400,8 +401,7 @@ theorem computableInPolyTime_bestLabel :
         (encStepIn q).length + 2 := by
     have hm : q.1.1.2.length ≤ (encStepIn q).length := by
       refine (length_le_length_encList (enc := encPair encNat encNat) q.1.1.2).trans ?_
-      simp only [encStepIn, encLabelParams, length_encPair]
-      omega
+      enc_len [encStepIn, encLabelParams]
     unfold cappedLength
     split_ifs with h
     · omega
@@ -522,8 +522,7 @@ theorem computableInPolyTime_labelPass :
     have hcap : cappedLength a r (edges.map Prod.swap).length ≤ a := by
       unfold cappedLength; split_ifs <;> omega
     have ⟨hr, hn, ha⟩ : (encNat r).length ≤ L ∧ nR + nC ≤ 2 * L ∧ a ≤ L := by
-      simp only [L, encPackingInput, length_encPair, encUnary_apply, List.length_replicate]
-      omega
+      enc_len [L, encPackingInput]
     exact Nat.add_le_add_right (Nat.mul_le_mul (Nat.mul_le_mul_left 2 hn)
       (Nat.add_le_add_right (Nat.mul_le_mul (Nat.mul_le_mul_left 2 (hcap.trans ha))
         (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hr) 1)) 3)) 1
@@ -914,9 +913,8 @@ private theorem computableInPolyTime_maxLoadOf :
   have hlen : (edgeWordPairs y.1.2.1 y.1.2.2 y.2).length ≤ (encWordsInput y).length := by
     refine (le_of_eq (List.length_map _)).trans ((length_le_length_encList
       (enc := encPair encNat encNat) y.2).trans ?_)
-    simp only [encWordsInput, length_encPair]; omega
-  simp only [encUnary_apply, List.length_replicate]
-  omega
+    enc_len [encWordsInput]
+  enc_len
 
 private theorem computableInPolyTime_numPacketsOf :
     ComputableInPolyTime (fun y : WordsInput =>

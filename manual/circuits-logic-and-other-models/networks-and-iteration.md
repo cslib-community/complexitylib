@@ -2,6 +2,45 @@
 
 The frontier development studies how local constraints or local weights interact with a graph layout. It supports lower bounds by exposing separators and algorithms by organizing contractions. Several neighboring types deliberately use different acceptance semantics. [complexitylib][complexitylib]
 
+## Expander certificates and cut rank
+
+The regular-graph interface uses a `RotationMap` and its normalized spectral expansion: the
+largest absolute eigenvalue of the random walk on mean-zero functions. For a simple degree-`d`
+graph, an ordinary adjacency eigenvalue bound `λ` therefore becomes `λ / d` in this interface.
+[The spectral cut-rank module](../../Complexity/Foundations/Combinatorics/Expander/CutRank.lean)
+combines the sharp mixing lemma, Tanner's full-neighborhood estimate, and a row-support rank
+bound. Over every field, it proves
+`(1 - ρ²) s (n - s) ≤ d r (s + ρ² (n - s))`, where `ρ` is normalized spectral expansion,
+`s` is the size of one side, and `r` is the adjacency cut rank. For degree seven and `ρ ≤ 7/10`,
+every cut with both sides of size at least `n/3` satisfies `n ≤ 41 r`. The graph and its spectral
+certificate are inputs. The theorem does not construct a degree-seven near-Ramanujan family.
+The [support-rank clients](../../ComplexityTests/RankSupport.lean) include finite-field matrices,
+an actual graph cut, and use of the spectral bound.
+
+The degree-two/three matching-path construction needs a different interface because its walk
+is not regular. [MatchingPaths](../../Complexity/Foundations/Combinatorics/Expander/MatchingPaths.lean)
+works directly with the generalized eigenvector equations on the core and the path interiors.
+Its core bounds `μ` and `ν` are for the ordinary Laplacian and signless Laplacian quadratic forms,
+respectively. If `τ < π` and
+`2τ / (ℓ sin τ) + 3τ² / (2ℓ²) < min(μ, ν)`, the equations have no nonzero mode at `±cos θ`
+for `0 < ℓθ ≤ τ`. Sine interpolation accounts for every internal path coordinate. The endpoint
+`-1` has a separate affine-recurrence certificate. The
+[checked matching-path client](../../ComplexityTests/ExpanderMatchingPencil.lean) uses the
+four-vertex core obtained by deleting one edge of `K₄`, including genuine length-ten
+trigonometric parameters. [Path interpolation clients](../../ComplexityTests/ExpanderPathInterpolation.lean)
+also demonstrate why the nonresonance hypothesis is needed. These are finite equation
+certificates: the simple-graph path construction, normalized spectral bridge, explicit core
+family, and asymptotic `π²/8` coefficient remain the construction direction in
+[#3348](https://github.com/cslib-community/complexitylib/issues/3348).
+
+[NeighborDeletion](../../Complexity/Foundations/Combinatorics/Expander/NeighborDeletion.lean)
+transfers lossless expansion from a degree-`D` graph to a supplied spanning degree-`a` subgraph
+with `a > 0`, changing loss `ε` to `ε D / a` while preserving the set-size cutoff. The local-degree version
+can be applied separately on the two sides of a biregular graph. The
+[checked deletion client](../../ComplexityTests/ExpanderNeighborDeletion.lean) deletes a perfect
+matching from `K₄` to obtain `C₄`, with a tight two-vertex bound. Choosing an equivariant subgraph
+and proving its adjacency matrix has full row rank are separate remaining tasks.
+
 ## Constraint networks and read-once branching programs
 
 [Network](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Frontier/Network.lean#L104) is a multigraph whose input coordinates are assigned to vertices. A local predicate at a vertex reads only its incident edge labels and its assigned input coordinates. An input is accepted when some global edge-label assignment satisfies all local predicates. This is existential constraint satisfaction, not arithmetic contraction.
@@ -11,6 +50,14 @@ A layout orders vertices, and a sweep retains information on edges crossing the 
 The network-to-program bridge preserves acceptance. When the network has a unique satisfying edge assignment, the compiled program is unambiguous. Frontier size then controls available states and transitions. This gives a concrete route from separator structure to branching-program size bounds. It is different from [monoid/permutation programs](circuits-and-formulas.md), which deterministically multiply input-selected monoid elements and measure instruction length. See [frontier programs](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Frontier/BranchingProgram.lean) and [network semantics](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Frontier/Network.lean).
 
 [DecomposableDAG](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Decomposable.lean#L90) supplies a related but more semantic model. Nodes carry variable scopes and sets of assignments. A union node has children of the same scope; a product node combines disjoint scopes; leaves accept at most one assignment; a rank enforces acyclicity. This captures the decomposition pattern used by rectangle arguments without assuming that every assignment set comes with a compact executable code. A native knowledge-compilation interpretation therefore requires more than the semantic DAG alone.
+
+## Deterministic read-once programs and Nisan's generator
+
+[ReadOnceProgram](../../Complexity/Computability/BranchingProgram/ReadOnce.lean) is a deterministic read-once branching program in standard order. It has a start state, a time-indexed transition `step : Fin L → S → X → S` and an accepting predicate, and its width is the number of states. Unlike `ReadOnceNBP` it is deterministic and reads one letter per step, in the fixed order. `toMonoidProgram` turns it into a monoid program over `Function.End S`, and `blocks` regroups `m * n` letters into `m` blocks with the same states. The predicate `IsReadOnceTest w` in [Nisan.lean](../../Complexity/Crypto/Primitives/PRG/Nisan.lean) admits exactly the deterministic tests computed by width-`w` programs, for use as the admissibility predicate of `Generator.Secure`.
+
+[Nisan's generator](../../Complexity/Crypto/Primitives/PRG/Nisan.lean) works by recursive doubling: from a block `x` and `k` seeds of a pairwise independent family `h : ι → X → X` it outputs `2^k` blocks. `abs_dens_eval_blocks_sub_le` bounds the difference in acceptance probability for every program with state type `S` by `(2^k − 1)|S|/(2√|X|)`, and `secure_generator` restates this bound as `Generator.Secure` against `IsReadOnceTest w`. The proof is Nisan's hashing argument in exact expectation form. The [hash mixing lemma](../../Complexity/Probability/PairwiseIndependentHash/Mixing.lean) computes the variance of `dens {x ∈ A | h i x ∈ B}` exactly, and an induction over all start distributions bounds the expected ℓ¹ error of the transition matrices. On bit strings, the [Toeplitz hash over `Bool`](../../Complexity/Probability/BitString/ToeplitzHash.lean) gives [`bitGenerator`](../../Complexity/Crypto/Primitives/PRG/Nisan/Bits.lean), which has `n + k(3n − 1)` seed bits and `2^k n` output bits. For `n = 2(k + a + d)`, `secure_bitGenerator_of_le` bounds the error by `2^(−d)` against width at most `2^a` [nisan92][nisan92].
+
+These theorems are information-theoretic statements about distributions. The [checked examples](../../ComplexityTests/NisanGenerator.lean) cover the block order, read-once tests that hold at width `2` and fail at width `1`, and an instance that stretches `734` seed bits into `24576` output bits with error `1/2` against width `2`. Several pieces remain open under [#474](https://github.com/cslib-community/complexitylib/issues/474), among them space-efficient computability of the generator, a bridge from the configuration graphs of randomized logspace machines to `ReadOnceProgram`, `BPL ⊆ L²` and the Saks–Zhou theorem `BPL ⊆ L^{3/2}`.
 
 ## Tensor networks and their explicit representations
 
@@ -45,3 +92,4 @@ Its circuit theorems are conditional on a representation of reachable configurat
 The network inventory distinguishes existential, unambiguous and weighted semantics, as well as semantic and serialized presentations. The substantial recursion/truncated-arithmetic implementation underneath native contraction has not been independently proof-audited here. Its resource claims must be assessed at the native endpoint rather than inferred from the abstract tensor definition.
 
 [complexitylib]: ../sources.md#complexitylib
+[nisan92]: ../sources.md#nisan92

@@ -200,7 +200,9 @@ For a hardness-of-approximation statement in this style, state the algorithm as 
 a plain `ComputableInPolyTime` hypothesis, a validity hypothesis and a ratio hypothesis. Derive
 `P = NP` from a known `NPComplete` problem through `NPComplete.P_eq_NP_of_mem_P`, as
 [PCP/Approximation/BinPacking.lean](../../Complexity/Computability/PCP/Approximation/BinPacking.lean)
-does from `Partition`.
+does from `Partition` and
+[PCP/Approximation/KCenter.lean](../../Complexity/Computability/PCP/Approximation/KCenter.lean)
+does from `DominatingSet`.
 
 Check the clients with
 `scripts/build.sh ComplexityTests.KnapsackFPTAS ComplexityTests.BinPackingApprox`. The
@@ -208,6 +210,24 @@ Check the clients with
 scheme is not optimal but meets its bound. The [BinPackingApprox client](../../ComplexityTests/BinPackingApprox.lean)
 shows that an exact, non-polynomial algorithm satisfies the hardness hypotheses other than
 running time, and that First Fit violates the ratio hypothesis.
+
+For a ratio of a greedy packing that pairing cannot give, use a weighting function, as
+[BinPacking/FirstFitWeight.lean](../../Complexity/Algorithms/Lean/BinPacking/FirstFitWeight.lean)
+does for First Fit's `17/10`. Keep the weights in `ℕ` by scaling them by `10 * C`, so each case
+of the piecewise weight closes with `split_ifs <;> omega`. Bound the weight of one bin
+(`sum_map_firstFitWeight_le`) and transfer it to a packing with
+`IsPacking.sum_map_le_mul_length`. Then lower-bound the algorithm's bins from the invariant of
+its rule: for First Fit, every item of a later bin overflows every earlier bin
+(`pairwise_forall_lt_sum_add_firstFit`), which is stronger than pairwise overfull bins. The
+result `ten_mul_length_firstFit_le` gives `10 * FF ≤ 17 * OPT + 8` against every packing, and
+`length_firstFit_le_ceil` gives `FF ≤ ⌈17/10 * OPT⌉`. The absolute bound
+`FF ≤ ⌊17/10 * OPT⌋` of [Dósa and Sgall][dosasgall2013] is not formalized. The
+[BinPackingFirstFitWeight client](../../ComplexityTests/BinPackingFirstFitWeight.lean) checks a bin
+attaining the weight bound and an instance with `OPT = 9` where First Fit uses `15` bins; check it
+with `scripts/build.sh ComplexityTests.BinPackingFirstFitWeight`. If a case of the weight bounds
+does not close under `omega`, check the scaling and whether each breakpoint of the weight is open
+or closed as in the source; if the lower bound fails, check that it uses the algorithm's rule, not
+only pairwise overfull bins.
 
 **When it fails:** if the `foldl'` states-bound premise fails, bound the encoded table through the
 invariant (its length and the subsequence property of every entry), not by the number of steps.
@@ -313,3 +333,4 @@ theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
 `PolyTimeReducible.mem_P` instead transports a target's P algorithm backward to the source. Use the [reduction reference](../machines-and-classes/reductions.md) when the desired reduction is stronger than polynomial-time many-one reducibility.
 
 [complexitylib]: ../sources.md#complexitylib
+[dosasgall2013]: ../sources.md#dosasgall2013

@@ -47,6 +47,18 @@ example : acceptProb 1 [(true, 0, [])] [] = 1 / 2 := by
   rw [this, show acceptGap [(true, 0, [])] [false] = 1 by decide]
   norm_num
 
+/-! ### Overlaps as pair counts -/
+
+-- `H|0⟩ = (|0⟩ + |1⟩)/√2` and `H|1⟩ = (|0⟩ - |1⟩)/√2`: on the accepting outcome `|1⟩` the overlap
+-- of the two final states is `1 · (-1) / 2`, so the pair gap is `-1`; each diagonal gap is `1`.
+example : onesPairGap [0] [(true, 0, [])] [false] [true] = -1 := by decide
+example : onesPairGap [0] [(true, 0, [])] [true] [true] = 1 := by decide
+example : onesPairGap [0] [(true, 0, [])] [false] [false] = acceptGap [(true, 0, [])] [false] := by
+  decide
+
+-- Over all outcomes (`S = []`) the final states are orthogonal: the pair gap vanishes.
+example : onesPairGap [] [(true, 0, [])] [false] [true] = 0 := by decide
+
 /-! ### The inclusions -/
 
 example : FirstBit ∈ AWPP encBits := BQP_subset_AWPP firstBit_mem_BQP

@@ -26,7 +26,7 @@ has fewer than `q` neighbors, so some color is unused among the neighbors colore
 * `SimpleGraph.chromaticNumber_le_maxDegree_add_one`: `χ(G) ≤ Δ(G) + 1`.
 -/
 
-@[expose] public section
+public section
 
 namespace SimpleGraph
 

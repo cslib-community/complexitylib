@@ -471,7 +471,7 @@ theorem computableInPolyTime_coeffRows {c : α → ℤ} {M : α → ℕ}
     (hc : ComputableInPolyTime c encIn encIntBin)
     (hM : ComputableInPolyTime M encIn encUnary) :
     ComputableInPolyTime (fun x => coeffRows (c x) (M x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   unfold coeffRows
   fun_prop
 
@@ -480,8 +480,8 @@ theorem computableInPolyTime_coeffRows {c : α → ℤ} {M : α → ℕ}
 theorem computableInPolyTime_testTerm {M u v q : α → ℕ} {minus plus : α → List (List ℤ)}
     {t : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
-    (hminus : ComputableInPolyTime minus encIn (encList (encList encIntBin)))
-    (hplus : ComputableInPolyTime plus encIn (encList (encList encIntBin)))
+    (hminus : ComputableInPolyTime minus encIn encIntTable)
+    (hplus : ComputableInPolyTime plus encIn encIntTable)
     (ht : ComputableInPolyTime t encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
     (hv : ComputableInPolyTime v encIn encUnary)
@@ -497,8 +497,8 @@ theorem computableInPolyTime_testTerm {M u v q : α → ℕ} {minus plus : α �
 theorem computableInPolyTime_testTerms {M u v : α → ℕ} {minus plus : α → List (List ℤ)}
     {t : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
-    (hminus : ComputableInPolyTime minus encIn (encList (encList encIntBin)))
-    (hplus : ComputableInPolyTime plus encIn (encList (encList encIntBin)))
+    (hminus : ComputableInPolyTime minus encIn encIntTable)
+    (hplus : ComputableInPolyTime plus encIn encIntTable)
     (ht : ComputableInPolyTime t encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
     (hv : ComputableInPolyTime v encIn encUnary) :
@@ -514,8 +514,8 @@ theorem computableInPolyTime_testEntry {M N u v : α → ℕ} {minus plus : α �
     {t : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
     (hN : ComputableInPolyTime N encIn encUnary)
-    (hminus : ComputableInPolyTime minus encIn (encList (encList encIntBin)))
-    (hplus : ComputableInPolyTime plus encIn (encList (encList encIntBin)))
+    (hminus : ComputableInPolyTime minus encIn encIntTable)
+    (hplus : ComputableInPolyTime plus encIn encIntTable)
     (ht : ComputableInPolyTime t encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
     (hv : ComputableInPolyTime v encIn encUnary) :
@@ -533,7 +533,7 @@ theorem computableInPolyTime_testRows {M N : α → ℕ} {a t : α → ℤ}
     (ha : ComputableInPolyTime a encIn encIntBin)
     (ht : ComputableInPolyTime t encIn encIntBin) :
     ComputableInPolyTime (fun x => testRows (M x) (N x) (a x) (t x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   unfold testRows
   fun_prop
 
@@ -555,7 +555,7 @@ theorem computableInPolyTime_liftTerm {M Dg u v i j a k : α → ℕ}
     {T : α → List (List ℤ)} {p r : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
     (hDg : ComputableInPolyTime Dg encIn encUnary)
-    (hT : ComputableInPolyTime T encIn (encList (encList encIntBin)))
+    (hT : ComputableInPolyTime T encIn encIntTable)
     (hp : ComputableInPolyTime p encIn encIntBin)
     (hr : ComputableInPolyTime r encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
@@ -576,7 +576,7 @@ theorem computableInPolyTime_liftTerms {M Dg u v i j a : α → ℕ}
     {T : α → List (List ℤ)} {p r : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
     (hDg : ComputableInPolyTime Dg encIn encUnary)
-    (hT : ComputableInPolyTime T encIn (encList (encList encIntBin)))
+    (hT : ComputableInPolyTime T encIn encIntTable)
     (hp : ComputableInPolyTime p encIn encIntBin)
     (hr : ComputableInPolyTime r encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
@@ -596,7 +596,7 @@ theorem computableInPolyTime_liftSums {M Dg u v i j : α → ℕ}
     {T : α → List (List ℤ)} {p r : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
     (hDg : ComputableInPolyTime Dg encIn encUnary)
-    (hT : ComputableInPolyTime T encIn (encList (encList encIntBin)))
+    (hT : ComputableInPolyTime T encIn encIntTable)
     (hp : ComputableInPolyTime p encIn encIntBin)
     (hr : ComputableInPolyTime r encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
@@ -615,7 +615,7 @@ theorem computableInPolyTime_liftEntry {M Dg u v i j : α → ℕ}
     {T : α → List (List ℤ)} {p r : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
     (hDg : ComputableInPolyTime Dg encIn encUnary)
-    (hT : ComputableInPolyTime T encIn (encList (encList encIntBin)))
+    (hT : ComputableInPolyTime T encIn encIntTable)
     (hp : ComputableInPolyTime p encIn encIntBin)
     (hr : ComputableInPolyTime r encIn encIntBin)
     (hu : ComputableInPolyTime u encIn encUnary)
@@ -634,12 +634,12 @@ theorem computableInPolyTime_liftTable {M Dg : α → ℕ}
     {T : α → List (List ℤ)} {p r : α → ℤ}
     (hM : ComputableInPolyTime M encIn encUnary)
     (hDg : ComputableInPolyTime Dg encIn encUnary)
-    (hT : ComputableInPolyTime T encIn (encList (encList encIntBin)))
+    (hT : ComputableInPolyTime T encIn encIntTable)
     (hp : ComputableInPolyTime p encIn encIntBin)
     (hr : ComputableInPolyTime r encIn encIntBin) :
     ComputableInPolyTime
       (fun x => liftTable (M x) (Dg x) (T x) (p x) (r x))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   unfold liftTable
   fun_prop
 
@@ -656,7 +656,7 @@ theorem computableInPolyTime_liftRows {n N M Dg t p r : α → ℕ}
     (hr : ComputableInPolyTime r encIn encUnary) :
     ComputableInPolyTime
       (fun x => liftRows (n x) (N x) (M x) (Dg x) (t x) (p x) (r x))
-      encIn (encList (encList (encList encIntBin))) := by
+      encIn (encList encIntTable) := by
   unfold liftRows
   fun_prop
 
@@ -668,7 +668,7 @@ theorem liftRows_polytime :
         liftRows q.1 q.2.1 q.2.2.1 q.2.2.2.1 q.2.2.2.2.1 q.2.2.2.2.2.1 q.2.2.2.2.2.2)
       (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
         (encPair encUnary (encPair encUnary encUnary))))))
-      (encList (encList (encList encIntBin))) := by
+      (encList encIntTable) := by
   fun_prop
 
 end Rational
