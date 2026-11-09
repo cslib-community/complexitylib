@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.Expander.Multigraph
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.Tseitin
-import CslibFrontier.Foundations.Combinatorics.Expander.Existence
+import CslibFrontier.Foundations.Combinatorics.Expander.MultigraphExistence
 
 /-!
 # Tseitin parity systems on expanders need linear sum-of-squares degree
@@ -95,31 +95,12 @@ theorem exists_forall_sos_refutableInDegree_le :
         SOS.RefutableInDegree (P.toPolys R) d → n ≤ 18000 * d := by
   intro n hn
   have : NeZero n := ⟨by omega⟩
-  have : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 hn
-  set G := RotationMap.expander (Fin n)
-  let f : Fin (Fintype.card G.edges) ≃ G.edges := (Fintype.equivFin G.edges).symm
-  let ends := G.edgeEnds ∘ f
+  obtain ⟨m, hm, ends, hdeg, hG, hcut⟩ := Multigraph.exists_expander n hn
   let χ : Fin n → Bool := fun v => decide (v = 0)
-  have hdeg (v : Fin n) : #(Multigraph.incidence ends v) ≤ 120 := by
-    rw [Multigraph.card_incidence_comp]
-    simpa using G.card_incidence_edgeEnds_le v
-  have hm : Fintype.card G.edges ≤ 120 * n := by
-    rw [Fintype.card_coe, mul_comm]
-    simpa using G.card_edges_le
-  refine ⟨_, hm, tseitin ends χ, by simp, fun e he => ?_,
+  refine ⟨m, hm, tseitin ends χ, by simp, fun e he => ?_,
     not_holds_tseitin (by simp [χ, parityOn, filter_eq']), fun R _ _ _ d hd => ?_⟩
   · obtain ⟨v, rfl⟩ := mem_tseitin.1 he
     exact hdeg v
-  -- the edge expansion is at least `1 / 6000`, so `e(G) ≥ n / 18000`
-  have hh := RotationMap.le_edgeExpansion_expander (Fin n)
-  have he : (n : ℝ) / 18000 ≤ Multigraph.minBalancedCut ends := by
-    rw [Multigraph.minBalancedCut_comp]
-    have := G.edgeExpansion_mul_card_div_three_le_minBalancedCut
-    simp only [Fintype.card_fin] at this
-    nlinarith [(n.cast_nonneg : (0 : ℝ) ≤ n)]
-  have hG : (Multigraph.toSimpleGraph ends).Connected := by
-    rw [Multigraph.toSimpleGraph_comp, G.toSimpleGraph_edgeEnds]
-    exact G.connected_toSimpleGraph_of_edgeExpansion_pos (by linarith)
   have h' : (Multigraph.minBalancedCut ends : ℝ) ≤ d := by
     exact_mod_cast Tseitin.minBalancedCut_le_of_sos_refutableInDegree hG hd
   have : (n : ℝ) ≤ 18000 * d := by linarith
