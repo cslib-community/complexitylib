@@ -1,6 +1,6 @@
 # Choose a model and state its contract
 
-Start with the claim you need: a function runs in polynomial time, a transducer uses logarithmic workspace, a circuit has bounded depth, or a stateful client makes few operations. These conclusions use different currencies. Select the predicate before implementing the algorithm. The [complete model map](../model-map.md) and [resource conventions](../machines-and-classes/native-and-resources.md) supply the reference details. [complexitylib][complexitylib]
+Start with the claim you need: a function runs in polynomial time, a transducer uses logarithmic workspace, a circuit has bounded depth, or a stateful client makes few operations. These conclusions use different currencies. Select the predicate before implementing the algorithm. The [complete model map](../model-map.md) and [resource conventions](../machines-and-classes/native-and-resources.md) supply the reference details. [cslib-frontier][complexitylib]
 
 ## Choose an entry point
 

@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.Pol
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Polynomial-time finite table operations
@@ -43,12 +44,8 @@ variable {α Index Value : Type} {input : α ↪ List Bool} {enc : Value ↪ Lis
 @[fun_prop]
 theorem ofFn {count : ℕ} {values : α → Fin count → Value}
     (hvalues : ∀ i, ComputableTidilyInPolyTime (fun a => values a i) input enc) :
-    ComputableTidilyInPolyTime (fun a => List.ofFn (values a)) input (encList enc) := by
-  induction count with
-  | zero => simpa using (const (encIn := input) (encMid := encList enc) [])
-  | succ count ih =>
-    simpa only [List.ofFn_succ] using (hvalues 0).cons'
-      (ih (values := fun a i => values a i.succ) (fun i => hvalues i.succ))
+    ComputableTidilyInPolyTime (fun a => List.ofFn (values a)) input (encList enc) :=
+  (ComputableInPolyTime.ofFn fun i => (hvalues i).computableInPolyTime).tidy
 
 /-- Construct a table by computing each entry, retaining the original input in each computation. -/
 @[fun_prop]
@@ -60,19 +57,8 @@ theorem pi [Fintype Index] {values : α → Index → Value}
 /-- Read a fixed entry, charging for the stored prefix without requiring a default value. -/
 @[fun_prop]
 theorem pi_apply [Fintype Index] (enc : Value ↪ List Bool) (i : Index) :
-    ComputableTidilyInPolyTime (fun values : Index → Value => values i) (encPi enc) enc := by
-  classical
-  cases isEmpty_or_nonempty Value with
-  | inl hempty =>
-    let : IsEmpty (Index → Value) := ⟨fun values => isEmptyElim (values i)⟩
-    exact of_finite _
-  | inr hnonempty =>
-    have hlist : ComputableTidilyInPolyTime (fun values : Index → Value =>
-        List.ofFn (fun j => values ((Fintype.equivFin Index).symm j)))
-        (encPi enc) (encList enc) := of_eq (fun _ => rfl)
-    have hlookup := (listGetD (encA := enc) (Classical.choice hnonempty)).comp
-      (hlist.prod (const (encMid := encUnary) (Fintype.equivFin Index i).val))
-    simpa [Function.comp_def] using hlookup
+    ComputableTidilyInPolyTime (fun values : Index → Value => values i) (encPi enc) enc :=
+  (ComputableInPolyTime.pi_apply enc i).tidy
 
 /-- Update a fixed table entry while charging for all preserved entries. -/
 @[fun_prop]
@@ -81,13 +67,9 @@ theorem pi_update [Fintype Index] [DecidableEq Index]
     (hvalues : ComputableTidilyInPolyTime values input (encPi enc))
     (hvalue : ComputableTidilyInPolyTime value input enc) (i : Index) :
     ComputableTidilyInPolyTime (fun a => Function.update (values a) i (value a))
-      input (encPi enc) := by
-  apply pi
-  intro j
-  by_cases h : j = i
-  · subst j
-    simpa using hvalue
-  · simpa [Function.update_of_ne h, Function.comp_def] using (pi_apply enc j).comp hvalues
+      input (encPi enc) :=
+  (ComputableInPolyTime.pi_update hvalues.computableInPolyTime hvalue.computableInPolyTime
+    i).tidy
 
 /-- Read a computed index of a fixed finite table, charging the index and all stored entries. -/
 theorem pi_apply' [Fintype Index] {indexEncoding : Index ↪ List Bool}

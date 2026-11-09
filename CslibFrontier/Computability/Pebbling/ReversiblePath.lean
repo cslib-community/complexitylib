@@ -105,6 +105,13 @@ first run backwards to remove the midpoint. -/
     rw [pow_succ]
     omega
 
+/-- On the path, the only predecessor of `v` is `v - 1`, so a configuration with a pebble on
+`v - 1` covers the predecessors of `v`. This is how the recursive call on the second half of a
+block sees the pebble on the midpoint. -/
+private theorem mem_insert_sub_one_of_adj {u v : ℕ} (C : Finset ℕ) (hu : pathDigraph.Adj u v) :
+    u ∈ insert (v - 1) C :=
+  Finset.mem_insert.2 (.inl (by rw [pathDigraph_adj] at hu; omega))
+
 /-- **Bennett's strategy.** If the configuration `C` has no pebble on the block
 `a, …, a + 2 ^ k - 1` and a pebble on `a - 1` (or `a = 0`), then `bennettMoves a k` pebbles
 `a + 2 ^ k - 1` and changes nothing else, using `k + 1` pebbles beyond those of `C`. -/
@@ -132,20 +139,12 @@ theorem bennettMoves_mTr (k : ℕ) {a : ℕ} {C : Finset ℕ} (hC : ∀ x ∈ C,
     have h₁ := ih (a := a) (C := C) (fun x hx => by have := hC x hx; omega) ha
     -- Pebble the end from the midpoint.
     have h₂ := ih (a := a + 2 ^ k) (C := insert m C)
-      (fun x hx => by
-        rcases Finset.mem_insert.1 hx with rfl | hx
-        · omega
-        · have := hC x hx; omega)
-      (fun u hu => by
-        rw [pathDigraph_adj] at hu
-        exact Finset.mem_insert.2 (.inl (by omega)))
+      ((Finset.forall_mem_insert _ _ _).2 ⟨by omega, fun x hx => by have := hC x hx; omega⟩)
+      (fun _ => mem_insert_sub_one_of_adj C)
     -- Remove the midpoint by playing the first run backwards, with the end pebbled.
     have h₃ := reversiblePebbleGame_mTr_reverse pathDigraph_irrefl
       (ih (a := a) (C := insert top C)
-        (fun x hx => by
-          rcases Finset.mem_insert.1 hx with rfl | hx
-          · omega
-          · have := hC x hx; omega)
+        ((Finset.forall_mem_insert _ _ _).2 ⟨by omega, fun x hx => by have := hC x hx; omega⟩)
         (fun u hu => Finset.mem_insert_of_mem (ha u hu)))
       (by rw [Finset.card_insert_of_notMem htopC]; omega)
     rw [Finset.card_insert_of_notMem hmC] at h₂
@@ -189,20 +188,12 @@ theorem exists_mTr_insert_pathDigraph (k : ℕ) {a v : ℕ} {C : Finset ℕ} (ha
       have hmC : m ∉ C := fun h => by have := hC m h; omega
       have h₁ := bennettMoves_mTr k (a := a) (C := C) (fun x hx => by have := hC x hx; omega) ha
       obtain ⟨ms₂, h₂⟩ := ih (a := a + 2 ^ k) (C := insert m C) (by omega) (by omega)
-        (fun x hx => by
-          rcases Finset.mem_insert.1 hx with rfl | hx
-          · omega
-          · have := hC x hx; omega)
-        (fun u hu => by
-          rw [pathDigraph_adj] at hu
-          exact Finset.mem_insert.2 (.inl (by omega)))
+        ((Finset.forall_mem_insert _ _ _).2 ⟨by omega, fun x hx => by have := hC x hx; omega⟩)
+        (fun _ => mem_insert_sub_one_of_adj C)
       have hvC : v ∉ C := fun h => by have := hC v h; omega
       have h₃ := reversiblePebbleGame_mTr_reverse pathDigraph_irrefl
         (bennettMoves_mTr k (a := a) (C := insert v C)
-          (fun x hx => by
-            rcases Finset.mem_insert.1 hx with rfl | hx
-            · omega
-            · have := hC x hx; omega)
+          ((Finset.forall_mem_insert _ _ _).2 ⟨by omega, fun x hx => by have := hC x hx; omega⟩)
           (fun u hu => Finset.mem_insert_of_mem (ha u hu)))
         (by rw [Finset.card_insert_of_notMem hvC]; omega)
       rw [Finset.card_insert_of_notMem hmC, Finset.insert_comm] at h₂
@@ -231,13 +222,8 @@ private theorem exists_mTr_mem_pathDigraph (k : ℕ) {a v : ℕ} {C : Finset ℕ
       · exact ⟨_, _, reversiblePebbleGame_mTr_mono (by omega) h₁,
           hvm ▸ Finset.mem_insert_self m C⟩
       obtain ⟨ms₂, D, h₂, hvD⟩ := ih (a := a + 2 ^ k) (C := insert m C) (by omega) (by omega)
-        (fun x hx => by
-          rcases Finset.mem_insert.1 hx with rfl | hx
-          · omega
-          · have := hC x hx; omega)
-        (fun u hu => by
-          rw [pathDigraph_adj] at hu
-          exact Finset.mem_insert.2 (.inl (by omega)))
+        ((Finset.forall_mem_insert _ _ _).2 ⟨by omega, fun x hx => by have := hC x hx; omega⟩)
+        (fun _ => mem_insert_sub_one_of_adj C)
       rw [Finset.card_insert_of_notMem hmC] at h₂
       exact ⟨_, D, LTS.MTr.comp _ (reversiblePebbleGame_mTr_mono (by omega) h₁)
         (reversiblePebbleGame_mTr_mono (by omega) h₂), hvD⟩

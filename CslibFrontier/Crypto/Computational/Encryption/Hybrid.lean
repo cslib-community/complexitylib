@@ -981,10 +981,7 @@ theorem probability_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
         Game.succProbability (ProbComp.eval
           (game keyGen (hybridEncrypt encaps encryptSym) adversary true n))) / 2 := by
   rw [eval_kemRealGame_hybridToKEMHiddenBitDistinguisher]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, PMF.monad_bind_eq_bind,
-    PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- Success probability of `hybridToKEMHiddenBitDistinguisher` in `kemIdealGame` is one half plus
 half the signed `hybridIdealGame` gap. -/
@@ -1001,10 +998,7 @@ theorem probability_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} 
         Game.succProbability (ProbComp.eval
           (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))) / 2 := by
   rw [eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, PMF.monad_bind_eq_bind,
-    PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- **Quantitative KEM–DEM reduction via two per-bit KEM distinguishers** (two-distinguisher
 variant of [BonehShoup2023], Exercise 11.9(b)): the hybrid IND-CPA advantage is bounded by the sum
@@ -1076,26 +1070,12 @@ theorem advantage_hybridGame_le_two_mul {Msg : Type} (keyLen : ℕ → ℕ)
         (ProbComp.eval
           (demKeyGame keyLen encryptSym
             (hybridToDEMAdversary keyGen encaps adversary) true n)) := by
-  rw [eval_demKeyGame_hybridToDEMAdversary, eval_demKeyGame_hybridToDEMAdversary]
-  apply NNReal.coe_le_coe.mp
-  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage,
-    probability_kemRealGame_hybridToKEMHiddenBitDistinguisher,
-    probability_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
-  have h := abs_sub_le
-    ((Game.succProbability (ProbComp.eval
-      (game keyGen (hybridEncrypt encaps encryptSym) adversary false n)) : ℝ) -
-      Game.succProbability (ProbComp.eval
-        (game keyGen (hybridEncrypt encaps encryptSym) adversary true n)))
-    ((Game.succProbability (ProbComp.eval
-      (hybridIdealGame keyLen keyGen encaps encryptSym adversary false n)) : ℝ) -
-      Game.succProbability (ProbComp.eval
-        (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))) 0
-  have hscale (a b c d : ℝ) :
-      2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    calc
-      _ = |2 * ((1 + a - b) / 2 - (1 + c - d) / 2)| := by rw [abs_mul]; norm_num
-      _ = _ := by congr 1; ring
-  simpa only [hscale, sub_zero] using h
+  rw [eval_demKeyGame_hybridToDEMAdversary, eval_demKeyGame_hybridToDEMAdversary,
+    eval_kemRealGame_hybridToKEMHiddenBitDistinguisher,
+    eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
+  exact Game.advantage_le_two_mul_uniform_bool_xor
+    (fun bit => ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary bit n))
+    (fun bit => ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n))
 
 /-- **IND-CPA security of KEM–DEM hybrid encryption** ([BonehShoup2023], Exercise 11.9(b)):
 if `(keyGen, encaps)` is an IND-CPA secure KEM and `encryptSym` is a one-time IND-CPA secure DEM

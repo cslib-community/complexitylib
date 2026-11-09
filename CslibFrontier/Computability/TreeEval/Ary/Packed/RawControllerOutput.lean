@@ -124,14 +124,8 @@ private theorem valid_inSpace :
   have hpad := budget_comp_linear bankPadding_inSpace (budget_prod hp hbank)
   refine (hand (hand (hand (hand hpos hwidth) hcapacity) hrows) hpad).of_enc_eq ?_
   intro q
-  have hle (a b : ℕ) : (!decide (a < b)) = decide (b ≤ a) := by
-    by_cases h : a < b
-    · simp [h, show ¬b ≤ a by omega]
-    · simp [h, show b ≤ a by omega]
-  have hpos' : (!decide (q.1.2.1 = 0)) = decide (0 < q.1.2.1) := by
-    by_cases h : q.1.2.1 = 0
-    · simp [h]
-    · simp [h, Nat.pos_of_ne_zero h]
+  have hle (a b : ℕ) : (!decide (a < b)) = decide (b ≤ a) := by grind
+  have hpos' : (!decide (q.1.2.1 = 0)) = decide (0 < q.1.2.1) := by grind
   simp only [valid, hle, hpos']
 
 private theorem step_inSpace :

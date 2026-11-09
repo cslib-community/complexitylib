@@ -92,65 +92,13 @@ theorem exists_compression_root_bound (hθ : 0 < θ) :
   refine ⟨max An At, le_trans hAn (le_max_left _ _), ?_⟩
   intro ι S n Δ a truth K m heavy hK ha hfirst hsecond hcapacity ε hε herr
     εfinal hεfinal herrfinal hfalse y hy
-  have hpre0 : 0 ≤ ∑ i ∈ range m, dyadicFloor η m i * ε i :=
-    sum_nonneg fun i hi => mul_nonneg (dyadicFloor_nonneg hη.le _ _) (hε i (mem_range.mp hi))
-  have htail0 : 0 ≤ ∑ j ∈ range m,
-      if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ a j ∧ heavy j then
-        ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0 := by
-    refine sum_nonneg fun j _ => ?_
-    split_ifs
-    · exact sum_nonneg fun i hi => mul_nonneg (by positivity) (hε i (mem_Ico.mp hi).2)
-    · exact le_rfl
-  by_cases hnone : ∀ i < m, stepThreshold S n (fun _ => K) (dyadicFloor η m) Δ a i ≤
-      dyadicFloor η m i
-  · rw [ite_eq_left hnone]
-    have hbound := hn S n Δ a truth K hK ha m hnone hfirst hsecond ε hε
-      (fun i hi z hz _ => herr i hi z hz) εfinal hεfinal herrfinal y hy
-    have hp := mul_le_mul_of_nonneg_right (le_max_left An At) hpre0
-    have hf := mul_le_mul_of_nonneg_right (le_max_left Cf Ct) hεfinal
-    have htail := mul_nonneg (hCf.trans (le_max_left Cf Ct)) htail0
-    linarith
-  · have hex : ∃ j, j < m ∧ dyadicFloor η m j <
-        stepThreshold S n (fun _ => K) (dyadicFloor η m) Δ a j := by
-      push Not at hnone
-      exact hnone
-    let j := Nat.find hex
-    have hj := Nat.find_spec hex
-    have hjm : j < m := hj.1
-    have hjover : IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ a j := by
-      refine ⟨?_, hj.2⟩
-      intro i hi
-      exact le_of_not_gt fun h => Nat.find_min hex hi ⟨by omega, h⟩
-    have hheavy : heavy j := by
-      by_contra h
-      exact hfalse ⟨j, hjm, hjover, h⟩
-    have hbound := ht S n Δ a truth K hK ha m j hjm hjover hfirst hsecond
-      (fun i _ hi => hcapacity i hi) ε hε
-      (fun i hi z hz _ => herr i (hi.trans hjm) z hz)
-      (fun i _ hi z hz => herr i hi z hz) y hy
-    have hprefix : (∑ i ∈ range j, dyadicFloor η m i * ε i) ≤
-        ∑ i ∈ range m, dyadicFloor η m i * ε i := by
-      apply sum_le_sum_of_subset_of_nonneg (range_mono hjm.le)
-      intro i hi _
-      exact mul_nonneg (dyadicFloor_nonneg hη.le _ _) (hε i (mem_range.mp hi))
-    have hselected : (∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i) ≤
-        ∑ j ∈ range m,
-          if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ a j ∧ heavy j then
-            ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0 := by
-      have h := single_le_sum (s := range m)
-        (f := fun j => if IsFirstOverflow S n (fun _ => K) (dyadicFloor η m) Δ a j ∧
-          heavy j then ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0)
-        (fun i _ => by
-          split_ifs
-          · exact sum_nonneg fun z hz => mul_nonneg (by positivity) (hε z (mem_Ico.mp hz).2)
-          · exact le_rfl) (mem_range.mpr hjm)
-      simpa only [hjover, hheavy, and_self, ↓reduceIte] using h
-    rw [ite_eq_right hnone, mul_zero, add_zero]
-    have hp := (mul_le_mul_of_nonneg_left hprefix hAt).trans
-      (mul_le_mul_of_nonneg_right (le_max_right An At) hpre0)
-    have htail := (mul_le_mul_of_nonneg_left hselected hCt).trans
-      (mul_le_mul_of_nonneg_right (le_max_right Cf Ct) htail0)
-    linarith
+  exact le_of_noOverflow_of_firstOverflow S n (fun _ => K) (dyadicFloor η m) Δ a m heavy ε
+    (dyadicFloor_nonneg hη.le m) hε hεfinal hAt hCf hCt hfalse
+    (fun hnone => hn S n Δ a truth K hK ha m hnone hfirst hsecond ε hε
+      (fun i hi z hz _ => herr i hi z hz) εfinal hεfinal herrfinal y hy)
+    (fun j hjm hjover => ht S n Δ a truth K hK ha m j hjm hjover hfirst hsecond
+      (fun i _ hi => hcapacity i hi) ε hε (fun i hi z hz _ => herr i (hi.trans hjm) z hz)
+      (fun i _ hi z hz => herr i hi z hz) y hy)
 
 private theorem add_add_pow_four_le {a b c : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) :
     (a + b + c) ^ 4 ≤ 64 * (a ^ 4 + b ^ 4 + c ^ 4) := by

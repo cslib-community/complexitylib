@@ -290,38 +290,24 @@ theorem IsProof.restrict (h : φ.IsProof ls) (v : V) (b : Bool) :
           l.1 ≠ v := h'.fst_ne_of_restrict hc' hl
       by_cases hv₁ : (v, b) ∈ c₁
       · -- `v = u` and `b = true`: the second premise is not satisfied, and its subclause will do
-        have huv : (v, b) = (u, true) := by
-          by_contra hne'
-          exact hvc (Clause.mem_resolvent.2 (Or.inl ⟨hv₁, hne'⟩))
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj huv
+        obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Clause.eq_of_mem_of_notMem_resolvent_left hv₁ hvc)
         obtain ⟨c₂', hc₂', hsub₂⟩ := hsub c₂ h₂ fun hv₂ =>
           hvc (Clause.mem_resolvent.2 (Or.inr ⟨hv₂, by simp⟩))
-        refine ⟨c₂', Or.inl hc₂', fun l hl => Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, ?_⟩)⟩
-        rintro rfl
-        exact hne _ hc₂' _ hl rfl
+        exact ⟨c₂', Or.inl hc₂',
+          Clause.subset_resolvent_right hsub₂ fun hv => hne _ hc₂' _ hv rfl⟩
       by_cases hv₂ : (v, b) ∈ c₂
-      · have huv : (v, b) = (u, false) := by
-          by_contra hne'
-          exact hvc (Clause.mem_resolvent.2 (Or.inr ⟨hv₂, hne'⟩))
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj huv
+      · obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Clause.eq_of_mem_of_notMem_resolvent_right hv₂ hvc)
         obtain ⟨c₁', hc₁', hsub₁⟩ := hsub c₁ h₁ hv₁
-        refine ⟨c₁', Or.inl hc₁', fun l hl => Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, ?_⟩)⟩
-        rintro rfl
-        exact hne _ hc₁' _ hl rfl
+        exact ⟨c₁', Or.inl hc₁',
+          Clause.subset_resolvent_left hsub₁ fun hv => hne _ hc₁' _ hv rfl⟩
       obtain ⟨c₁', hc₁', hsub₁⟩ := hsub c₁ h₁ hv₁
       obtain ⟨c₂', hc₂', hsub₂⟩ := hsub c₂ h₂ hv₂
       by_cases hu₁' : (u, true) ∈ c₁'
       · by_cases hu₂' : (u, false) ∈ c₂'
-        · refine ⟨_, Or.inr ⟨c₁', c₂', hc₁', hc₂', hu₁', hu₂', rfl⟩, fun l hl => ?_⟩
-          rcases Clause.mem_resolvent.1 hl with ⟨hl, hne'⟩ | ⟨hl, hne'⟩
-          · exact Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, hne'⟩)
-          · exact Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, hne'⟩)
-        · refine ⟨c₂', Or.inl hc₂', fun l hl => Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, ?_⟩)⟩
-          rintro rfl
-          exact hu₂' hl
-      · refine ⟨c₁', Or.inl hc₁', fun l hl => Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, ?_⟩)⟩
-        rintro rfl
-        exact hu₁' hl
+        · exact ⟨_, Or.inr ⟨c₁', c₂', hc₁', hc₂', hu₁', hu₂', rfl⟩,
+            Clause.resolvent_subset_resolvent hsub₁ hsub₂⟩
+        · exact ⟨c₂', Or.inl hc₂', Clause.subset_resolvent_right hsub₂ hu₂'⟩
+      · exact ⟨c₁', Or.inl hc₁', Clause.subset_resolvent_left hsub₁ hu₁'⟩
     obtain ⟨c', hc' | ⟨c₁', c₂', hc₁', hc₂', hu₁', hu₂', rfl⟩, hsub'⟩ := key
     · refine ⟨ls', h', hlen.trans (Nat.le_succ _), fun e he hve => ?_,
         fun w => countP_le_cons (hcount w)⟩
@@ -349,14 +335,10 @@ theorem IsProof.lift {v : V} {b : Bool} (h : (φ.restrict v b).IsProof ls') :
   | nil => exact ⟨[], .nil, by simp, by simp⟩
   | @mem ls' c' _ hc' ih =>
     obtain ⟨ls, h, hup, hdown⟩ := ih
-    obtain ⟨d, hd, -, rfl⟩ := mem_restrict.1 hc'
-    have hd' : ∀ l ∈ d, l ∈ d.filter (· ≠ (v, !b)) ∨ l = (v, !b) := fun l hl => by
-      by_cases hlv : l = (v, !b)
-      · exact Or.inr hlv
-      · exact Or.inl (List.mem_filter.2 ⟨hl, by simpa using hlv⟩)
+    obtain ⟨d, hd, hsub, hd'⟩ := exists_of_mem_restrict hc'
     refine ⟨d :: ls, h.mem hd, fun e he => ?_, fun e he => ?_⟩
     · rcases List.mem_cons.1 he with rfl | he
-      · exact ⟨d, List.mem_cons_self, fun l hl => (List.mem_filter.1 hl).1, hd'⟩
+      · exact ⟨d, List.mem_cons_self, hsub, hd'⟩
       · obtain ⟨e', he', h₁, h₂⟩ := hup e he
         exact ⟨e', List.mem_cons_of_mem _ he', h₁, h₂⟩
     · rcases List.mem_cons.1 he with rfl | he
@@ -367,17 +349,12 @@ theorem IsProof.lift {v : V} {b : Bool} (h : (φ.restrict v b).IsProof ls') :
     obtain ⟨ls, h, hup, hdown⟩ := ih
     obtain ⟨d₁, hd₁, hsub₁, hsup₁⟩ := hup c₁' h₁
     obtain ⟨d₂, hd₂, hsub₂, hsup₂⟩ := hup c₂' h₂
-    have hd : ∀ l ∈ d₁.resolvent d₂ u, l ∈ c₁'.resolvent c₂' u ∨ l = (v, !b) := fun l hl => by
-      rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-      · exact (hsup₁ l hl).imp_left fun hl' => Clause.mem_resolvent.2 (Or.inl ⟨hl', hne⟩)
-      · exact (hsup₂ l hl).imp_left fun hl' => Clause.mem_resolvent.2 (Or.inr ⟨hl', hne⟩)
+    have hd : ∀ l ∈ d₁.resolvent d₂ u, l ∈ c₁'.resolvent c₂' u ∨ l = (v, !b) :=
+      Clause.resolvent_subset_resolvent_or_eq hsup₁ hsup₂
     refine ⟨_ :: ls, h.resolvent u hd₁ hd₂ (hsub₁ _ hu₁) (hsub₂ _ hu₂), fun e he => ?_,
       fun e he => ?_⟩
     · rcases List.mem_cons.1 he with rfl | he
-      · refine ⟨_, List.mem_cons_self, fun l hl => ?_, hd⟩
-        rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-        · exact Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, hne⟩)
-        · exact Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, hne⟩)
+      · exact ⟨_, List.mem_cons_self, Clause.resolvent_subset_resolvent hsub₁ hsub₂, hd⟩
       · obtain ⟨e', he', h₁, h₂⟩ := hup e he
         exact ⟨e', List.mem_cons_of_mem _ he', h₁, h₂⟩
     · rcases List.mem_cons.1 he with rfl | he
@@ -483,45 +460,31 @@ theorem IsProof.restrictBy (h : φ.IsProof ls) (ρ : V → Option Bool) :
       · -- `ρ` satisfies the first premise only through `u = true`, so not the second premise
         push Not at hv₁
         obtain ⟨l, hl, hρl⟩ := hv₁
-        have hlu : l = (u, true) := by
-          by_contra hlu
-          exact hsat l (Clause.mem_resolvent.2 (Or.inl ⟨hl, hlu⟩)) hρl
-        subst hlu
+        obtain rfl := Clause.eq_of_mem_of_notMem_resolvent_left hl fun h => hsat _ h hρl
         obtain ⟨c₂', hc₂', hsub₂⟩ := hsub c₂ h₂ fun l hl hρ => by
           by_cases hl' : l = (u, false)
           · subst hl'
             exact absurd (hρl.symm.trans hρ) (by simp)
           · exact hsat l (Clause.mem_resolvent.2 (Or.inr ⟨hl, hl'⟩)) hρ
-        refine ⟨c₂', Or.inl hc₂', fun l hl => Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, ?_⟩)⟩
-        rintro rfl
-        exact absurd (hρl.symm.trans (hne _ hc₂' (u, false) hl)) (by simp)
+        refine ⟨c₂', Or.inl hc₂', Clause.subset_resolvent_right hsub₂ fun hu => ?_⟩
+        exact absurd (hρl.symm.trans (hne _ hc₂' (u, false) hu)) (by simp)
       by_cases hv₂ : ∀ l ∈ c₂, ρ l.1 ≠ some l.2
       swap
       · -- `ρ` satisfies the second premise only through `u = false`
         push Not at hv₂
         obtain ⟨l, hl, hρl⟩ := hv₂
-        have hlu : l = (u, false) := by
-          by_contra hlu
-          exact hsat l (Clause.mem_resolvent.2 (Or.inr ⟨hl, hlu⟩)) hρl
-        subst hlu
+        obtain rfl := Clause.eq_of_mem_of_notMem_resolvent_right hl fun h => hsat _ h hρl
         obtain ⟨c₁', hc₁', hsub₁⟩ := hsub c₁ h₁ hv₁
-        refine ⟨c₁', Or.inl hc₁', fun l hl => Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, ?_⟩)⟩
-        rintro rfl
-        exact absurd (hρl.symm.trans (hne _ hc₁' (u, true) hl)) (by simp)
+        refine ⟨c₁', Or.inl hc₁', Clause.subset_resolvent_left hsub₁ fun hu => ?_⟩
+        exact absurd (hρl.symm.trans (hne _ hc₁' (u, true) hu)) (by simp)
       obtain ⟨c₁', hc₁', hsub₁⟩ := hsub c₁ h₁ hv₁
       obtain ⟨c₂', hc₂', hsub₂⟩ := hsub c₂ h₂ hv₂
       by_cases hu₁' : (u, true) ∈ c₁'
       · by_cases hu₂' : (u, false) ∈ c₂'
-        · refine ⟨_, Or.inr ⟨c₁', c₂', hc₁', hc₂', hu₁', hu₂', rfl⟩, fun l hl => ?_⟩
-          rcases Clause.mem_resolvent.1 hl with ⟨hl, hne'⟩ | ⟨hl, hne'⟩
-          · exact Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, hne'⟩)
-          · exact Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, hne'⟩)
-        · refine ⟨c₂', Or.inl hc₂', fun l hl => Clause.mem_resolvent.2 (Or.inr ⟨hsub₂ l hl, ?_⟩)⟩
-          rintro rfl
-          exact hu₂' hl
-      · refine ⟨c₁', Or.inl hc₁', fun l hl => Clause.mem_resolvent.2 (Or.inl ⟨hsub₁ l hl, ?_⟩)⟩
-        rintro rfl
-        exact hu₁' hl
+        · exact ⟨_, Or.inr ⟨c₁', c₂', hc₁', hc₂', hu₁', hu₂', rfl⟩,
+            Clause.resolvent_subset_resolvent hsub₁ hsub₂⟩
+        · exact ⟨c₂', Or.inl hc₂', Clause.subset_resolvent_right hsub₂ hu₂'⟩
+      · exact ⟨c₁', Or.inl hc₁', Clause.subset_resolvent_left hsub₁ hu₁'⟩
     obtain ⟨c', hc' | ⟨c₁', c₂', hc₁', hc₂', hu₁', hu₂', rfl⟩, hsub'⟩ := key
     · refine ⟨ls', h', fun e he hfe => ?_, ks, hks.cons _, hfree, hF⟩
       rcases List.mem_cons.1 he with rfl | he

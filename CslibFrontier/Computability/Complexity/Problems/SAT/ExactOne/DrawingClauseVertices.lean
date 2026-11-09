@@ -140,7 +140,7 @@ theorem positiveVariablePoint_ne_clause {φ : CNF ℕ} {d : Graph.OrthogonalDraw
   have hp' := hp
   rw [positiveClauseBlock_positions] at hp'
   obtain ⟨q, hq, hqp⟩ := List.mem_map.mp hp'
-  obtain ⟨hi, hci⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hc')
+  obtain ⟨hi, hci⟩ := List.mem_zipIdx' hc'
   obtain ⟨vp, hvp⟩ := positivePositionTable_covers φ d hv
   rw [positiveVariablePoint_of_mem φ d (positivePositionTable_keys_nodup φ d) hvp]
   intro he
@@ -156,7 +156,7 @@ theorem positiveVariablePoint_ne_clause {φ : CNF ℕ} {d : Graph.OrthogonalDraw
     have hlt := List.idxOf_lt_length_of_mem hn
     omega
   · obtain ⟨c'', j, hcj, w, hw, hwa, _, hwp⟩ := positiveAuxiliaryPositions_origin φ d haux
-    obtain ⟨hj, hcj'⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hcj)
+    obtain ⟨hj, hcj'⟩ := List.mem_zipIdx' hcj
     have hplaced := hwp.symm.trans (he.trans hqp.symm)
     have hcenters := positiveBox_owner_injective (clauseGeometry_auxiliary_bounds φ d j c'' hw hwa)
       (clauseGeometry_clause_bounds φ d i c hq) hplaced
@@ -164,7 +164,7 @@ theorem positiveVariablePoint_ne_clause {φ : CNF ℕ} {d : Graph.OrthogonalDraw
       (sourceClause_declared φ hi) hcenters
     have hji : j = i := Nat.add_left_cancel hlabels
     subst j
-    have hcc : c'' = c := hcj'.symm.trans hci
+    have hcc : c'' = c := hcj'.trans hci.symm
     subst c''
     exact clauseGeometry_auxiliary_ne_clause φ d i c hw hwa hq (add_left_cancel hplaced)
 

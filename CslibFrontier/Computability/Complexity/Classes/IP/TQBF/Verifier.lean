@@ -600,9 +600,6 @@ private lemma cond_pt {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪
     ComputableInPolyTime (fun x => if c x then f x else g x) encIn encOut :=
   ite hc hf hg
 
-private lemma qbf_tokens_pt : ComputableInPolyTime QBF.tokens encQBF (encList encToken) :=
-  computableInPolyTime_tokens
-
 private lemma isQuantifier_pt :
     ComputableInPolyTime QBF.Kind.isQuantifier encKind encBool := of_finite _
 
@@ -613,7 +610,7 @@ private lemma lin_pt {α : Type} {enc : α ↪ List Bool} :
     ComputableInPolyTime (fun _ : α => ArithQBF.Kind.lin) enc (encFinEnum ArithQBF.Kind) :=
   const _
 
-attribute [local fun_prop] cond_pt qbf_tokens_pt isQuantifier_pt arith_pt lin_pt
+attribute [local fun_prop] cond_pt isQuantifier_pt arith_pt lin_pt
 
 private lemma linVars_pt : ComputableInPolyTime linVars encQBF (encList encNat) := by
   unfold linVars

@@ -236,10 +236,8 @@ theorem encode_congr {M N : Type} [L.Structure M] [L.Structure N] {m n : ℕ} (e
     v.encode M e₁ = v.encode N e₂ := by
   subst h
   simp only [encode, relTable]
-  congr 2
-  funext i
-  congr 1
-  funext j
+  congr 2 with i : 1
+  congr 1 with j : 1
   exact decide_eq_decide.mpr (hrel _ _)
 
 /-- The structure decoded from an encoding of `M` interprets a relation of the tuples numbering

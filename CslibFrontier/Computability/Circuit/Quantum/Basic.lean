@@ -199,6 +199,18 @@ theorem eval_ket_apply (g : PlacedGate n) (x y : Fin n → Bool) :
     (g.eval (ket x)).ofLp y = (g.matrix : Matrix _ _ ℂ) y x := by
   simp [eval, mulVec, dotProduct]
 
+/-- A placed gate that permutes basis states by an involution `f` reads each amplitude at the
+permuted basis string. -/
+theorem eval_apply_of_involutive (g : PlacedGate n) {f : (Fin n → Bool) → Fin n → Bool}
+    (hf : Function.Involutive f) (hket : ∀ x, g.eval (ket x) = ket (f x))
+    (ψ : Qubits n) (y : Fin n → Bool) :
+    (g.eval ψ).ofLp y = ψ.ofLp (f y) := by
+  have hrow (z : Fin n → Bool) : (g.matrix : Matrix _ _ ℂ) y z = if z = f y then 1 else 0 := by
+    rw [← eval_ket_apply, hket, ket_apply]
+    exact if_congr (eq_comm.trans hf.eq_iff) rfl rfl
+  simp only [eval, unitaryEquiv_apply, mulVec, dotProduct, hrow, ite_mul, one_mul, zero_mul,
+    sum_ite_eq', mem_univ, ite_true]
+
 end PlacedGate
 
 /-! ### Circuits -/

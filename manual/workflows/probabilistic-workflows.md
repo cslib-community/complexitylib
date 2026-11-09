@@ -1,6 +1,6 @@
 # Work with randomized and oracle programs
 
-Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
+Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
 ## Transport a distribution bound through a map
 
@@ -371,7 +371,11 @@ The bound comes from two lemmas in
 [MvPolynomial/SchwartzZippel.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SchwartzZippel.lean):
 `MvPolynomial.schwartz_zippel_totalDegree_fintype` extends Mathlib's Schwartz–Zippel lemma from
 the variables `Fin n` to any finite type, and `MvPolynomial.totalDegree_det_le` bounds the total
-degree of a determinant of polynomials. Use them for other symbolic-determinant tests.
+degree of a determinant of polynomials. Use them for other symbolic-determinant tests. The same
+module has two consequences. `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card` finds a
+nonvanishing point of `S ^ σ` when the total degree is below `|S|`; the `exists_det_…_ne_zero`
+theorems use it. `MvPolynomial.card_filter_eval_eq_zero_mul_card_le` is the counting form over a
+finite domain, `#zeros * q ≤ d * q ^ n`.
 
 The [checked clients](../../CslibFrontierTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is
@@ -1102,7 +1106,7 @@ private theorem adaptive_isOraclePPTOn : IsOraclePPTOn encBits encBits adaptive 
   fun_prop
 ```
 
-First specify the operation set and request representation. Then bound the amount of each reply inspected or retained, prove deterministic preprocessing efficient, and compose the query/conditional rules.
+First specify the operation set and request representation. Then bound the amount of each reply inspected or retained, prove deterministic preprocessing efficient, and compose the query/conditional rules. With `CslibFrontier.Tactic.PPT` imported, `ppt [adaptive]` does both steps: it unfolds the hint and composes the oracle program with the same plain rules. It also unfolds local encoding `let`s and uses certificates stored in fields of local structures, so a reduction's handler that samples with a scheme `S` needs no separate `have` for `S.encrypt_ppt`. The [oracle `ppt` client](../../CslibFrontierTests/OraclePPTTactic.lean) certifies the encrypt-then-MAC handler this way and checks the failure cases.
 
 **Result:** one machine and clock work for every input, state type, stateful handler and initial state, preserving the joint law of output and final oracle state. The certificate charges request construction and reply access; the external handler's computation remains external.
 
@@ -1815,8 +1819,7 @@ it does not supply nonzero detector variation or finite-walk mixing error.
 
 Full well-founded approximate evaluation remains open: later pilot/correction iterations,
 general finite bin sums, recursive closure and growth, copy routing, native workspace and
-RL=L are not supplied by this single-bin first-pilot fragment. This partial construction is not
-a selected headline abstract.
+RL=L are not supplied by this single-bin first-pilot fragment.
 
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank

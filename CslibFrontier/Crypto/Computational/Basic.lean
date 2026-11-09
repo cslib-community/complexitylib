@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Game
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
 
@@ -88,7 +89,7 @@ theorem distinguishingGame_map (distribution : PMF (List Bool))
     (adversary : List Bool → ProbComp Bool) (f : Bool → Bool) :
     distinguishingGame distribution (fun word => f <$> adversary word) =
       (distinguishingGame distribution adversary).map f := by
-  simp only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_map, PMF.map_bind]
+  simp only [pmf_norm, distinguishingGame]
 
 /-- Each uniform strict PPT distinguisher has negligible advantage between the two ensembles.
 Neither ensemble is required to be efficiently sampleable or polynomially bounded in length. -/
@@ -133,8 +134,7 @@ theorem ComputationallyIndistinguishable.bind {X Y : ℕ → PMF (List Bool)}
   have hefficient : IsPPT encBool (fun n word => do
       let result ← process n word
       adversary n result) := by ppt
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
-    PMF.bind_bind] using h _ hefficient
+  simpa only [pmf_norm, distinguishingGame] using h _ hefficient
 
 /-- Efficient parameter-dependent deterministic postprocessing preserves indistinguishability. -/
 theorem ComputationallyIndistinguishable.map {X Y : ℕ → PMF (List Bool)}

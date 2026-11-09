@@ -1235,157 +1235,7 @@ private theorem isOraclePPTOn_interleavedInnerRound {Msg : Type} [Inhabited Msg]
       encInterleavedLoopState
       (fun p : (ℕ × List Bool) × InterleavedLoopState =>
         interleavedInnerRound valid encrypt decBound adversary roundBit p.1.1 p.1.2 p.2) := by
-  let ECaller := encPair encUnary encBits
-  let EState := encInterleavedLoopState
-  let EIn := encPair ECaller EState
-  let EStepOut := encPair (encCCAQuery encMsg) encBits
-  let E2 := encPair EIn EStepOut
-  have hstep : IsOraclePPTOn (Operation := Unit) EIn EStepOut
-      (fun p : (ℕ × List Bool) × InterleavedLoopState =>
-        adversary.step p.1.1 p.1.2 p.2.1 p.2.2.1) :=
-    hA.step.preprocess'
-      (ComputableInPolyTime.prod (by dsimp only [EIn, ECaller]; fun_prop)
-        (ComputableInPolyTime.prod (by dsimp only [EIn, ECaller]; fun_prop)
-          (ComputableInPolyTime.prod
-            (by dsimp only [EIn, EState, encInterleavedLoopState]; fun_prop)
-            (by dsimp only [EIn, EState, encInterleavedLoopState]; fun_prop))))
-  have hq : ComputableTidilyInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        r.2.1)
-      E2 (encCCAQuery encMsg) := by
-    dsimp only [E2, EStepOut]; fun_prop
-  have hisChal : ComputableInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        r.2.1.isChallenge)
-      E2 encBool :=
-    ((computableTidilyInPolyTime_isChallenge encMsg).comp hq).computableInPolyTime
-  have hpair : ComputableTidilyInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        r.2.1.challengePair)
-      E2 (encPair encMsg encMsg) :=
-    (computableTidilyInPolyTime_challengePair encMsg).comp hq
-  have hm0 : ComputableTidilyInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        r.2.1.challengePair.1)
-      E2 encMsg :=
-    (ComputableTidilyInPolyTime.fst _ _).comp hpair
-  have hm1 : ComputableTidilyInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        r.2.1.challengePair.2)
-      E2 encMsg :=
-    (ComputableTidilyInPolyTime.snd _ _).comp hpair
-  have hvalidCond : ComputableInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        valid r.1.1.1 r.1.1.2 r.2.1.challengePair.1 r.2.1.challengePair.2)
-      E2 encBool := by
-    have harg : ComputableTidilyInPolyTime
-        (fun r :
-          ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-          (r.1.1.1, r.1.1.2, r.2.1.challengePair.1, r.2.1.challengePair.2))
-        E2 (encPair encUnary (encPair encBits (encPair encMsg encMsg))) :=
-      ComputableTidilyInPolyTime.prod (by dsimp only [E2, EIn, ECaller]; fun_prop)
-        (ComputableTidilyInPolyTime.prod (by dsimp only [E2, EIn, ECaller]; fun_prop)
-          (ComputableTidilyInPolyTime.prod hm0 hm1))
-    exact (hvalid.tidy.comp harg).computableInPolyTime
-  have hmsgSel : ComputableTidilyInPolyTime
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        if roundBit then r.2.1.challengePair.2 else r.2.1.challengePair.1)
-      E2 encMsg := by
-    cases roundBit <;> simp [hm0, hm1]
-  have hencSample : IsOraclePPTOn (Operation := Unit) E2 encBits
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        ProbOracleComp.sample
-          (encrypt r.1.1.1 r.1.1.2
-            (if roundBit then r.2.1.challengePair.2 else r.2.1.challengePair.1))) := by
-    have harg : ComputableInPolyTime
-        (fun r :
-          ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-          (r.1.1.1, r.1.1.2,
-            if roundBit then r.2.1.challengePair.2 else r.2.1.challengePair.1))
-        E2 (encPair encUnary (encPair encBits encMsg)) :=
-      (ComputableTidilyInPolyTime.prod (by dsimp only [E2, EIn, ECaller]; fun_prop)
-        (ComputableTidilyInPolyTime.prod
-          (by dsimp only [E2, EIn, ECaller]; fun_prop) hmsgSel)).computableInPolyTime
-    exact (hencrypt.preprocess harg).isOraclePPTOn
-  have hchalValid : IsOraclePPTOn (Operation := Unit) E2 EState
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        do
-          let ct ← ProbOracleComp.sample
-            (encrypt r.1.1.1 r.1.1.2
-              (if roundBit then r.2.1.challengePair.2 else r.2.1.challengePair.1))
-          return (r.2.2, true :: ct, ct :: r.1.2.2.2)) := by
-    have hpost : ComputableInPolyTime
-        (fun q :
-          (((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool)) ×
-            List Bool =>
-          (q.1.2.2, true :: q.2, q.2 :: q.1.1.2.2.2))
-        (encPair E2 encBits) EState := by
-      dsimp only [EState, encInterleavedLoopState]
-      have hst' : ComputableInPolyTime
-          (fun q :
-            (((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool)) ×
-              List Bool => q.1.2.2)
-          (encPair E2 encBits) encBits := by
-        dsimp only [E2, EStepOut]; fun_prop
-      have hreply : ComputableInPolyTime
-          (fun q :
-            (((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool)) ×
-              List Bool => true :: q.2)
-          (encPair E2 encBits) encBits :=
-        (ComputableTidilyInPolyTime.bitsCons (ComputableTidilyInPolyTime.const true)
-          (by fun_prop)).computableInPolyTime
-      have hS' : ComputableInPolyTime
-          (fun q :
-            (((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool)) ×
-              List Bool => q.2 :: q.1.1.2.2.2)
-          (encPair E2 encBits) (encList encBits) :=
-        ComputableInPolyTime.cons' (by fun_prop)
-          (by dsimp only [E2, EIn, EState, encInterleavedLoopState]; fun_prop)
-      exact ComputableInPolyTime.prod hst' (ComputableInPolyTime.prod hreply hS')
-    simpa only [bind_pure_comp] using hencSample.map_with' hpost
-  have hchalInvalid : IsOraclePPTOn (Operation := Unit) E2 EState
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        pure (r.2.2, [], r.1.2.2.2)) := by
-    dsimp only [EState, encInterleavedLoopState]
-    exact (ComputableInPolyTime.prod (by dsimp only [E2, EStepOut]; fun_prop)
-      (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-        (by dsimp only [E2, EIn, EState, encInterleavedLoopState]; fun_prop))).isOraclePPTOn
-  have hdecBranch : IsOraclePPTOn (Operation := Unit) E2 EState
-      (fun r : ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-        do
-          let reply ←
-            List.take (decBound r.1.1.1 r.2.1.decryptCiphertext) <$>
-              ProbOracleComp.query ((), r.2.1.decryptCiphertext)
-          return (r.2.2, reply, r.1.2.2.2)) := by
-    have hct : ComputableInPolyTime
-        (fun r :
-          ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-          r.2.1.decryptCiphertext)
-        E2 encBits :=
-      ((computableTidilyInPolyTime_decryptCiphertext encMsg).comp hq).computableInPolyTime
-    have hlim : ComputableInPolyTime
-        (fun r :
-          ((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool) =>
-          decBound r.1.1.1 r.2.1.decryptCiphertext)
-        E2 encUnary :=
-      hdecBound.comp
-        (ComputableInPolyTime.prod (by dsimp only [E2, EIn, ECaller]; fun_prop) hct)
-    have hqTake := IsOraclePPTOn.query_take' (Operation := Unit) () hct hlim
-    have hpost : ComputableInPolyTime
-        (fun q :
-          (((ℕ × List Bool) × InterleavedLoopState) × (CCAQuery Msg (List Bool) × List Bool)) ×
-            List Bool =>
-          (q.1.2.2, q.2, q.1.1.2.2.2))
-        (encPair E2 encBits) EState := by
-      dsimp only [EState, encInterleavedLoopState]
-      exact ComputableInPolyTime.prod (by dsimp only [E2, EStepOut]; fun_prop)
-        (ComputableInPolyTime.prod (by fun_prop)
-          (by dsimp only [E2, EIn, EState, encInterleavedLoopState]; fun_prop))
-    simpa only [bind_pure_comp] using hqTake.map_with' hpost
-  exact hstep.bind_with
-    (IsOraclePPTOn.cond' hisChal
-      (IsOraclePPTOn.cond' hvalidCond hchalValid hchalInvalid)
-      hdecBranch)
+  ppt [interleavedInnerRound]
 
 /-- `interleavedOpenRoundStep` is uniformly strict oracle PPT on `((n, pk), st)`. -/
 private theorem isOraclePPTOn_interleavedOpenRoundStep {Msg : Type} [Inhabited Msg]
@@ -2056,36 +1906,30 @@ private theorem eval_run_multiPhase2FilterHandler_phase1 {Out α : Type}
         (cca2MultiPhase2Oracle encOut decrypt n sk cts))
       prog).run ()) := by
   rw [OracleComp.interpret_map, StateT.run_map, ProbComp.eval_map,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.run_interpret_map_state
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.runWith_run_interpret, PMF.map_comp]
+  have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts q s))
     (oracle' := fun q (state : Unit × Unit) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-          (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n sk q s)))
-        ((multiPhase2FilterHandler decBound cts q).run state.1)).run state.2).map
+      (ProbOracleComp.runWith (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n sk q s))
+          ((multiPhase2FilterHandler decBound cts q).run state.1) state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
     (represent := fun _ : Unit => ((), ()))
     (step := by
       intro ⟨⟨⟩, req⟩ ⟨⟩
       change (ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts ((), req) ())).map
           (fun x => (x.1, (), ())) =
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n sk q s)))
-          (multiPhase2FilterHandler decBound cts ((), req) ())).run ()).map
+        (ProbOracleComp.runWith
+            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n sk q s))
+            (multiPhase2FilterHandler decBound cts ((), req) ()) ()).map
           (fun result => (result.1.1, result.1.2, result.2))
       by_cases hmem : req ∈ cts
-      · simp [cca2MultiPhase2Oracle, multiPhase2FilterHandler, hmem,
-          OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
+      · simp [cca2MultiPhase2Oracle, multiPhase2FilterHandler, hmem, ProbComp.eval_pure]
       · unfold cca2MultiPhase2Oracle multiPhase2FilterHandler
         simp only [hmem, decide_false, Bool.false_eq_true, ↓reduceIte, Functor.map_map,
-          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          cca2Phase1Oracle, _root_.PMF.monad_map_eq_map,
-          ProbComp.eval_pure, PMF.map_comp, PMF.pure_map, Function.comp_def]
-        dsimp only [StateT.run]
-        simp only [PMF.pure_map, List.take_of_length_le (hdecBound req)])
+          ProbOracleComp.runWith_map, ProbOracleComp.runWith_query, cca2Phase1Oracle,
+          ProbComp.eval_pure, PMF.pure_map]
+        simp only [Prod.map_apply, id_eq, List.take_of_length_le (hdecBound req)])
     prog ()
   have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
   have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
@@ -2120,12 +1964,10 @@ private theorem eval_interpret_interleavedInnerRound {Msg Out : Type} [Inhabited
       interleavedCcaWordOracle, interleavedCcaOracle]
     by_cases hv : valid n pk m₀ m₁ = true
     · simp only [hv, ↓reduceIte]
-      rw [ProbOracleComp.eval_run_interpret]
-      simp only [OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
-        OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.bind_map, Function.comp_def, PMF.bind_bind,
-        PMF.pure_bind, ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_map,
-        encodeCCAResponseWord_inl_some]
+      rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+      simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
+        ProbOracleComp.runWith_pure, PMF.bind_map, Function.comp_def, PMF.bind_bind, PMF.pure_bind,
+        ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_map, encodeCCAResponseWord_inl_some]
     · simp [hv, OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
   | decrypt c =>
     simp only [CCAQuery.isChallenge, Bool.false_eq_true, ↓reduceIte,
@@ -2702,23 +2544,20 @@ theorem eval_cca2GameOn_interleavedToSingle {Msg Out : Type} [Inhabited Msg]
             (cca2GameOn valid encOut keyGen encrypt decrypt
               (interleavedToSingleAt valid encrypt decBound adversary i.val) bit n)) := by
   simp only [cca2GameOn, interleavedToSingle, ProbComp.eval_bind,
-    ProbOracleComp.eval_run_interpret]
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   have hsample (keys : List Bool × List Bool) :
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-          (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s)))
+      ProbOracleComp.runWith
+        (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s))
         (do
           let split ← ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q n))
-          (interleavedToSingleAt valid encrypt decBound adversary split).choose n keys.1)).run ()) =
+          (interleavedToSingleAt valid encrypt decBound adversary split).choose n keys.1) () =
       (PMF.uniformOfFintype (Fin (dyadicSize (Q n)))).bind (fun i =>
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s)))
-          ((interleavedToSingleAt valid encrypt decBound adversary i.val).choose
-            n keys.1)).run ())) := by
-    rw [OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
-      ProbComp.eval_sampleDyadicIndex]
-    simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+        (ProbOracleComp.runWith
+            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s))
+            ((interleavedToSingleAt valid encrypt decBound adversary i.val).choose n keys.1)
+            ())) := by
+    rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbComp.eval_sampleDyadicIndex]
+    simp only [PMF.bind_map, Function.comp_def]
   have hguess (i : ℕ) :
       (interleavedToSingleAt valid encrypt decBound adversary i).guess =
         (interleavedToSingleAt valid encrypt decBound adversary 0).guess := rfl

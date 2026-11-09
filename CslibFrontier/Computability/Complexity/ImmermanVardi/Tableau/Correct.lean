@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Tableau.Step
+import CslibFrontier.Computability.Machines.Turing.MultiTape.InputAt
 
 /-!
 # Correctness of the positive native tableau rules
@@ -104,13 +105,6 @@ theorem elsewhere_row (hb : ∀ i, |cfg.workTapePos i| < B)
       · right
         simp only [offset, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at *
         exact ⟨hb'.symm, by omega⟩
-
-private theorem inputAt_eq_none_iff (j : ℕ) :
-    inputAt input j = none ↔ j = 0 ∨ input.length < j := by
-  by_cases hj : j = 0
-  · simp [inputAt, hj]
-  · simp only [inputAt, hj, ↓reduceIte, List.getElem?_eq_none_iff, false_or]
-    omega
 
 /-- The positive input-head predecessor rule describes the native clamped move. -/
 theorem inputPrev_row (hn : input.length + 1 < B) (d : SignType) (a : Fin B) :

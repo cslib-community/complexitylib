@@ -173,9 +173,7 @@ private theorem halted_replay_unchecked {J₀ : ℕ}
       rw [step_overflowed ntm input ho, ← roundRadix_succ] at hinv'
       have hncl := not_closed_of_overflowed (card_lt_roundRadix _ _)
         (by simpa only [graphBad, Bool.false_eq_true, ↓reduceIte] using hi) ho
-      have hjJ' : j < J₀ := by
-        by_contra h
-        exact hncl (hJ₀.mono (card_lt_roundRadix _ _) (roundRadix_mono _ (by omega)))
+      have hjJ' : j < J₀ := by grind
       first
       | omega
       | exact ihm (j + 1) (by omega) _ rest hinv' (by

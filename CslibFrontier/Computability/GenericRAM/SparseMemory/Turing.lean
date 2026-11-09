@@ -34,8 +34,11 @@ work for all inputs, for each fixed choice of address and value encodings.
 * `SparseMemory.read_inO`, `insert_inO`: native TM read/write implementations with
   parameterized time and space, including argument extraction and a uniform read default.
 * `SparseMemory.length_encoding_le`: stored-cell and word-length bound on the encoding.
-* `SparseMemory.read_inO_cube`, `insert_inO_cube`: cubic time and linear workspace in full
-  encoded input length; these conservative bounds are not optimality claims.
+* `SparseMemory.readTime_le_cube`, `readSpace_le_linear`, `writeTime_le_cube`,
+  `writeSpace_le_linear`: the read and write charges are cubic in time and linear in workspace in
+  the full encoded input length.
+* `SparseMemory.read_inO_cube`, `insert_inO_cube`: the certificates with those bounds; these
+  conservative bounds are not optimality claims.
 * `SparseMemory.read_polytime`, `insert_polytime`: registered polynomial-time corollaries.
 
 ## References
@@ -324,26 +327,55 @@ theorem read_inO :
     (funext q; exact read_eq_find q.2 q.1.1 q.1.2) |
     (funext q; simp only [readTime, readSpace, readEncoding]; omega)
 
+omit [DecidableEq Address] in
+/-- The charged write time is cubic in the encoded write input. -/
+theorem writeTime_le_cube (q : (Address × Value) × SparseMemory Address Value) :
+    writeTime encA encV q ≤ 33 * ((writeEncoding encA encV q).length + 1) ^ 3 := by
+  have hq : (queryEncoding encA encV (q.1.1, q.2)).length ≤
+      (writeEncoding encA encV q).length := by enc_len [queryEncoding, writeEncoding]
+  have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
+  have ht := scanTime_le_cube encA encV (q.1.1, q.2)
+  have he : (writeEncoding encA encV q).length ≤
+      ((writeEncoding encA encV q).length + 1) ^ 3 := by ring_nf; omega
+  unfold writeTime
+  nlinarith
+
+omit [DecidableEq Address] in
+/-- The charged write workspace is linear in the encoded write input. -/
+theorem writeSpace_le_linear (q : (Address × Value) × SparseMemory Address Value) :
+    writeSpace encA encV q ≤ 33 * ((writeEncoding encA encV q).length + 1) := by
+  have hs := scanSpace_le_linear encA encV (q.1.1, q.2)
+  enc_len [writeSpace, queryEncoding, writeEncoding] at hs ⊢
+
+omit [DecidableEq Address] in
+/-- The charged read time is cubic in the encoded read input. -/
+theorem readTime_le_cube (q : (Address × SparseMemory Address Value) × Value) :
+    readTime encA encV q ≤ 32 * ((readEncoding encA encV q).length + 1) ^ 3 := by
+  have hq : (queryEncoding encA encV q.1).length ≤ (readEncoding encA encV q).length := by
+    enc_len [readEncoding]
+  have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
+  have ht := scanTime_le_cube encA encV q.1
+  have he : (readEncoding encA encV q).length ≤
+      ((readEncoding encA encV q).length + 1) ^ 3 := by ring_nf; omega
+  unfold readTime
+  nlinarith
+
+omit [DecidableEq Address] in
+/-- The charged read workspace is linear in the encoded read input. -/
+theorem readSpace_le_linear (q : (Address × SparseMemory Address Value) × Value) :
+    readSpace encA encV q ≤ 32 * ((readEncoding encA encV q).length + 1) := by
+  have hs := scanSpace_le_linear encA encV q.1
+  enc_len [readSpace, readEncoding] at hs ⊢
+
 /-- A cubic-time, linear-space specialization of the parameterized write certificate. -/
 theorem insert_inO_cube :
     ComputableInO
       (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
       (writeEncoding encA encV) (encoding encA encV)
       (fun q => ((writeEncoding encA encV q).length + 1) ^ 3)
-      (fun q => (writeEncoding encA encV q).length) := by
-  apply (insert_inO encA encV).mono 40
-  · intro q
-    have hq : (queryEncoding encA encV (q.1.1, q.2)).length ≤
-        (writeEncoding encA encV q).length := by enc_len [queryEncoding, writeEncoding]
-    have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
-    have ht := scanTime_le_cube encA encV (q.1.1, q.2)
-    have he : (writeEncoding encA encV q).length ≤
-        ((writeEncoding encA encV q).length + 1) ^ 3 := by ring_nf; omega
-    unfold writeTime
-    nlinarith
-  · intro q
-    have hs := scanSpace_le_linear encA encV (q.1.1, q.2)
-    enc_len [writeSpace, queryEncoding, writeEncoding] at hs ⊢
+      (fun q => (writeEncoding encA encV q).length) :=
+  (insert_inO encA encV).mono 33 (fun q => by have := writeTime_le_cube encA encV q; omega)
+    fun q => writeSpace_le_linear encA encV q
 
 /-- A cubic-time, linear-space specialization of the parameterized read certificate. -/
 theorem read_inO_cube :
@@ -351,20 +383,9 @@ theorem read_inO_cube :
       (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
       (readEncoding encA encV) encV
       (fun q => ((readEncoding encA encV q).length + 1) ^ 3)
-      (fun q => (readEncoding encA encV q).length) := by
-  apply (read_inO encA encV).mono 40
-  · intro q
-    have hq : (queryEncoding encA encV q.1).length ≤ (readEncoding encA encV q).length := by
-      enc_len [readEncoding]
-    have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
-    have ht := scanTime_le_cube encA encV q.1
-    have he : (readEncoding encA encV q).length ≤
-        ((readEncoding encA encV q).length + 1) ^ 3 := by ring_nf; omega
-    unfold readTime
-    nlinarith
-  · intro q
-    have hs := scanSpace_le_linear encA encV q.1
-    enc_len [readSpace, readEncoding] at hs ⊢
+      (fun q => (readEncoding encA encV q).length) :=
+  (read_inO encA encV).mono 32 (fun q => by have := readTime_le_cube encA encV q; omega)
+    fun q => readSpace_le_linear encA encV q
 
 /-- Polynomial-time writes are a corollary of the native parameterized certificate. -/
 @[fun_prop]

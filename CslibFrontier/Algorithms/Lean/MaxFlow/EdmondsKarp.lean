@@ -711,27 +711,8 @@ theorem mem_filterFinsetM_ret {α : Type*} [DecidableEq α] (p : α → Bool)
   induction vs generalizing acc with
   | nil => simp [filterFinsetM]
   | cons v vs' ih =>
-    simp only [filterFinsetM, TimeM.ret_bind, ih, List.mem_cons]
-    by_cases hpv : p v = true
-    · simp only [hpv, ↓reduceIte, Finset.mem_insert]
-      constructor
-      · rintro ((rfl | hacc) | ⟨hvs, hpx⟩)
-        · exact .inr ⟨.inl rfl, hpv⟩
-        · exact .inl hacc
-        · exact .inr ⟨.inr hvs, hpx⟩
-      · rintro (hacc | ⟨rfl | hvs, hpx⟩)
-        · exact .inl (.inr hacc)
-        · exact .inl (.inl rfl)
-        · exact .inr ⟨hvs, hpx⟩
-    · simp only [hpv, Bool.false_eq_true, ↓reduceIte]
-      constructor
-      · rintro (hacc | ⟨hvs, hpx⟩)
-        · exact .inl hacc
-        · exact .inr ⟨.inr hvs, hpx⟩
-      · rintro (hacc | ⟨rfl | hvs, hpx⟩)
-        · exact .inl hacc
-        · exact absurd hpx hpv
-        · exact .inr ⟨hvs, hpx⟩
+    simp only [filterFinsetM, TimeM.ret_bind, ih]
+    split_ifs with hpv <;> grind
 
 @[simp]
 theorem filterFinsetM_time {α : Type*} [DecidableEq α] (p : α → Bool)
