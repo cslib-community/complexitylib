@@ -88,6 +88,7 @@ namespace Cslib.Algorithms.Lean.Simplex
 /-- A **simplex dictionary** ([Chvatal1983], Chapter 2) on the variables `ι`: each basic variable
 `i ∈ basis` is expressed as `x i = rhs i + ∑ j ∉ basis, coeff i j * x j`, and the objective as
 `objConst + ∑ j ∉ basis, objCoeff j * x j`. Entries outside these index ranges are ignored. -/
+@[ext]
 structure Dictionary (ι K : Type*) where
   /-- The basic variables. -/
   basis : Finset ι

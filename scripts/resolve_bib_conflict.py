@@ -11,8 +11,8 @@ Entry text is never rewritten; the separators between entries become one blank l
 
 Commit mode (default) merges BASE (default `origin/main`) into HEAD with `git merge-tree`,
 without a checkout or worktree. That merge reads no attributes: tracked `.gitattributes`,
-`core.attributesFile` and the system file are disabled, so neither the tracked `merge=union`
-lines nor a configured `bibkeys` driver can resolve a conflict that a plain text merge reports.
+`core.attributesFile` and the system file are disabled, so neither a configured `leanagg` nor
+`bibkeys` driver can resolve a conflict that a plain text merge reports.
 The script refuses when `$GIT_DIR/info/attributes`, which git cannot disable, sets anything.
 When the merge is clean, nothing is written. When git's report lists exactly one conflict, a
 content conflict in `references.bib`, and the entry merge resolves it, the script writes a merge

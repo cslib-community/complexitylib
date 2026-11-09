@@ -12,6 +12,7 @@ public import Complexity.Computability.Interactive.Plain
 public import Complexity.Computability.Interactive.Efficient
 public import Complexity.Computability.Complexity.Classes.IP
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
+public import Complexity.Probability.StatisticalDistance.CloseTo
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.ShortWords
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
@@ -708,7 +709,7 @@ def PerChallenge.CloseTo :
   | [], (), (), () => True
   | .prover _ _ :: s, smp₁, smp₂, δ => PerChallenge.CloseTo s smp₁ smp₂ δ
   | .verifier _ :: s, (d₁, smp₁), (d₂, smp₂), (ε, δ) =>
-      Interactive.CloseTo (ProbComp.eval d₁) (ProbComp.eval d₂) ε ∧
+      Probability.CloseTo (ProbComp.eval d₁) (ProbComp.eval d₂) ε ∧
         PerChallenge.CloseTo s smp₁ smp₂ δ
 
 @[simp]
@@ -718,7 +719,7 @@ theorem PerChallenge.closeTo_refl :
   | [], () => trivial
   | .prover _ _ :: s, smp => PerChallenge.closeTo_refl s smp
   | .verifier _ :: s, (d, smp) =>
-      ⟨Interactive.CloseTo.refl (ProbComp.eval d), PerChallenge.closeTo_refl s smp⟩
+      ⟨Probability.CloseTo.refl (ProbComp.eval d), PerChallenge.closeTo_refl s smp⟩
 
 /-- Replacing challenge samplers `smp₁` by `δ`-close challenge samplers `smp₂` changes the
 word-level execution distribution of `runWordRounds` by at most `PerChallenge.sum s δ` in total
@@ -728,7 +729,7 @@ theorem closeTo_runWordRounds :
       {δ : PerChallenge (fun _ => ℝ≥0∞) s},
       PerChallenge.CloseTo s smp₁ smp₂ δ →
       ∀ (P : Complexity.Prover Unit) (pState : P.State),
-        Interactive.CloseTo
+        Probability.CloseTo
           (ProbOracleComp.runWith P.respond (runWordRounds s codecs smp₁) pState)
           (ProbOracleComp.runWith P.respond (runWordRounds s codecs smp₂) pState)
           (PerChallenge.sum s δ)
@@ -737,14 +738,14 @@ theorem closeTo_runWordRounds :
   | .prover _ _ :: s, (c, cs), smp₁, smp₂, δ, hClose, P, pState => by
       simp only [runWordRounds, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map,
         ProbOracleComp.runWith_query, PMF.bind_map, Function.comp_def, PerChallenge.sum]
-      exact Interactive.CloseTo.bind_right (P.respond ((), []) pState) fun ⟨w, pState'⟩ _ =>
+      exact Probability.CloseTo.bind_right (P.respond ((), []) pState) fun ⟨w, pState'⟩ _ =>
         (closeTo_runWordRounds s cs hClose P pState').map _
   | .verifier _ :: s, (c, cs), (d₁, smp₁), (d₂, smp₂), (ε, δ), ⟨hd, hClose⟩, P, pState => by
       simp only [runWordRounds, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map,
         ProbOracleComp.runWith_sample, ProbOracleComp.runWith_query, PMF.bind_map,
         Function.comp_def, PerChallenge.sum]
-      exact Interactive.CloseTo.bind hd fun ch _ =>
-        Interactive.CloseTo.bind_right (P.respond ((), c.encode ch) pState) fun ⟨_, pState'⟩ _ =>
+      exact Probability.CloseTo.bind hd fun ch _ =>
+        Probability.CloseTo.bind_right (P.respond ((), c.encode ch) pState) fun ⟨_, pState'⟩ _ =>
           (closeTo_runWordRounds s cs hClose P pState').map _
 
 /-- If `PerChallenge.CloseTo s smp₁ smp₂ δ`, then the acceptance probabilities of
@@ -754,7 +755,7 @@ theorem Verifier.closeTo_wordVerifierWith
     (V : Verifier OracleSpec.empty s Statement OutStmt) (codecs : RoundCodecs s)
     {smp₁ smp₂ : PerChallenge ProbComp s} {δ : PerChallenge (fun _ => ℝ≥0∞) s}
     (hClose : PerChallenge.CloseTo s smp₁ smp₂ δ) (x : Statement) (P : Complexity.Prover Unit) :
-    Interactive.CloseTo
+    Probability.CloseTo
       ((P.run (V.wordVerifierWith codecs smp₁ x) P.init).map Prod.fst)
       ((P.run (V.wordVerifierWith codecs smp₂ x) P.init).map Prod.fst)
       (PerChallenge.sum s δ) := by

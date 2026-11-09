@@ -8,10 +8,15 @@ name heads. This script replays the approved change, from its base to APPROVED, 
 commit that NEW is based on, using `git merge-tree`. That replay is what the merge
 queue would build from the approved head on that `main`. NEW passes when its tree equals the replay
 exactly: every path, mode and byte. The only exceptions are the `mk_all` aggregates (`AGGREGATES`).
-Their merges can order lines differently, so they pass when they contain the same lines in any
-order; CI's `lake exe mk_all --check` rejects any order but the canonical one. A replay conflict on any other file,
-and any other difference, is reported, so moving, reordering or editing the PR's lines during a
-conflict resolution never passes.
+Each one in NEW passes exactly when it is what `lake exe mk_all` writes for NEW's own tree: the
+sorted imports of every module below the library root that NEW's `lakefile.toml` names, in the
+style (`module` with `public import`, or plain `import`) of the replay's version. The replay's
+aggregate is not a reference, since a merge can keep deleted imports or misorder added ones, and
+CI's `lake exe mk_all --check` pins the content anyway. When that content cannot be derived (an
+unsupported Lake layout, a symbolic link, or a module path that `mk_all` would escape), the
+aggregate is compared with the replay like any other file, and the result says so. A replay
+conflict on any other file, and any other difference, is reported, so moving, reordering or
+editing the PR's lines during a conflict resolution never passes.
 
 Bases: NEW is based on its merge base with `--base` (default `origin/main`; run `git fetch origin`
 first, since a stale ref only produces a false "differs"). APPROVED is based on its merge base
@@ -23,7 +28,8 @@ not reviewed in this PR, and they would carry the approval if the lower PR never
 The replay uses the attributes in the new head's base commit (`--attr-source`) and no others: it
 ignores `core.attributesFile` and the system file, and refuses to run when `info/attributes` sets
 anything. It pins the merge settings, including the rename limit. It runs the tracked `bibkeys`
-driver of `references.bib` as this checkout's `scripts/resolve_bib_conflict.py`, makes every other
+driver of `references.bib` and `leanagg` driver of the aggregates as this checkout's
+`scripts/resolve_bib_conflict.py` and `scripts/resolve_aggregate_conflict.py`, makes every other
 configured merge driver report a conflict, and refuses a configured driver that would shadow a
 built-in one (`text`, `binary`, `union`). History is read without replace refs, grafts or the
 commit-graph file, `GIT_TEST_*` variables are dropped, and a shallow repository is refused.
@@ -45,12 +51,14 @@ merge queue tests in any case. The carry-forward rule is in AGENTS.md ("Restacks
 from __future__ import annotations
 
 import argparse
+import difflib
 import os
+import posixpath
 import re
 import shlex
 import subprocess
 import sys
-from collections import Counter
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,14 +78,26 @@ BUILTIN_DRIVERS = frozenset({"text", "binary", "union"})
 # `GIT_TEST_*` variables are dropped too: `GIT_TEST_COMMIT_GRAPH`, for one, loads the commit-graph
 # file whatever `core.commitGraph` says.
 UNSET_VARIABLES = ("GIT_ATTR_SOURCE", "GIT_CONFIG", "GIT_SHALLOW_FILE")
-# The driver that `.gitattributes` names for `references.bib`, and this checkout's implementation.
+# The drivers that `.gitattributes` names for `references.bib` and the aggregates, and this
+# checkout's implementations.
 BIB_DRIVER = "bibkeys"
 BIB_RESOLVER = ROOT / "scripts" / "resolve_bib_conflict.py"
+AGGREGATE_DRIVER = "leanagg"
+AGGREGATE_RESOLVER = ROOT / "scripts" / "resolve_aggregate_conflict.py"
 CONFLICT_MARKER = re.compile(rb"^(<{7}|={7}|>{7})( |$)")
+# What `scripts/MkAll.lean` writes before the `public import` lines of a module-style aggregate.
+MODULE_PREAMBLE = b"module  -- shake: keep-all --deprecated_module: ignore\n\n"
+# A module path component that `mk_all` writes unescaped (the convention of `quick_check.py`).
+COMPONENT = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
+REGULAR_MODES = ("100644", "100755")
 
 
 class GitError(Exception):
     pass
+
+
+class Underivable(Exception):
+    """The content that `mk_all` writes for an aggregate cannot be derived with confidence."""
 
 
 def environment() -> dict[str, str]:
@@ -137,13 +157,14 @@ def check_local_attributes(root: Path) -> None:
 
 
 def driver_config(root: Path) -> list[str]:
-    """`-c` options pinning every merge driver the replay could run: `bibkeys` runs this checkout's
-    resolver, and every other configured driver reports a conflict without merging."""
+    """`-c` options pinning every merge driver the replay could run: `bibkeys` and `leanagg` run
+    this checkout's resolvers, and every other configured driver reports a conflict without
+    merging."""
     listed = git(root, "config", "--null", "--name-only", "--get-regexp",
                  r"^merge\..*\.driver$", ok=(0, 1))
     names = {key[len("merge."):-len(".driver")]
              for key in listed.stdout.decode("utf-8", "surrogateescape").split("\0") if key}
-    names.discard(BIB_DRIVER)
+    names -= {BIB_DRIVER, AGGREGATE_DRIVER}
     if names & BUILTIN_DRIVERS:
         raise GitError(f"configured merge drivers {', '.join(sorted(names & BUILTIN_DRIVERS))} "
                        "would replace Git's built-in ones; run the check in another clone")
@@ -151,9 +172,10 @@ def driver_config(root: Path) -> list[str]:
         raise GitError("a configured merge driver name contains `=` or a newline, so the replay "
                        "cannot disable it; run the check in another clone")
     # Git expands `%` in a driver command, so a literal `%` in a path is doubled.
-    python, script = (shlex.quote(str(p)).replace("%", "%%") for p in (sys.executable, BIB_RESOLVER))
-    resolver = f"{python} {script} --driver %O %A %B"
-    options = ["-c", f"merge.{BIB_DRIVER}.driver={resolver}"]
+    python, bib, aggregate = (shlex.quote(str(p)).replace("%", "%%")
+                              for p in (sys.executable, BIB_RESOLVER, AGGREGATE_RESOLVER))
+    options = ["-c", f"merge.{BIB_DRIVER}.driver={python} {bib} --driver %O %A %B",
+               "-c", f"merge.{AGGREGATE_DRIVER}.driver={python} {aggregate} %O %A %B"]
     for name in sorted(names):
         options += ["-c", f"merge.{name}.driver=exit 1"]
     return options
@@ -178,28 +200,142 @@ def changed_paths(root: Path, left: str, right: str) -> list[str]:
     return [p.decode("utf-8", "surrogateescape") for p in raw.stdout.split(b"\0") if p]
 
 
-def blob_lines(root: Path, treeish: str, path: str) -> list[bytes] | None:
+def blob(root: Path, treeish: str, path: str) -> bytes | None:
     result = git(root, "cat-file", "blob", f"{treeish}:{path}", ok=(0, 128))
-    return result.stdout.split(b"\n") if result.returncode == 0 else None
+    return result.stdout if result.returncode == 0 else None
 
 
-def same_lines(root: Path, replayed: str, new: str, path: str) -> bool:
-    """Whether `path` holds the same lines in both trees, in any order, ignoring conflict markers."""
-    left, right = blob_lines(root, replayed, path), blob_lines(root, new, path)
-    if left is None or right is None:
-        return left is right
-    left = [line for line in left if not CONFLICT_MARKER.match(line)]
-    return Counter(line for line in left if line) == Counter(line for line in right if line)
+def tree_entries(root: Path, commit: str) -> dict[str, str]:
+    """The mode of every path in `commit`'s tree, directories included."""
+    raw = git(root, "ls-tree", "-r", "-t", "-z", "--full-tree", commit).stdout
+    rows = (row.split(b"\t", 1) for row in raw.split(b"\0") if row)
+    return {path.decode("utf-8", "surrogateescape"): info.split(b" ", 1)[0].decode()
+            for info, path in rows}
+
+
+def directory_parts(value: object) -> list[str]:
+    """The components of a Lake `srcDir` below the repository root."""
+    path = posixpath.normpath(value) if isinstance(value, str) and "\\" not in value else "/"
+    if path.startswith("/") or path == ".." or path.startswith("../"):
+        raise Underivable(f"unsupported source directory {value!r} in `lakefile.toml`")
+    return [] if path == "." else path.split("/")
+
+
+def library_roots(root: Path, commit: str, entries: dict[str, str]) -> dict[str, tuple[str, str]]:
+    """Each aggregate that `mk_all` writes for `commit`, one per root of each `[[lean_lib]]`, mapped
+    to its library's source directory and its module directory (`""` is the top level)."""
+    if "lakefile.lean" in entries:
+        raise Underivable("Lake reads `lakefile.lean`, which this check does not interpret")
+    content = blob(root, commit, "lakefile.toml")
+    if content is None or entries.get("lakefile.toml") not in REGULAR_MODES:
+        raise Underivable("there is no regular `lakefile.toml`")
+    try:
+        config = tomllib.loads(content.decode())
+    except (UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
+        raise Underivable(f"`lakefile.toml` does not parse: {error}") from None
+    libraries = config.get("lean_lib", [])
+    if not isinstance(libraries, list) or not all(isinstance(lib, dict) for lib in libraries):
+        raise Underivable("`lakefile.toml` has an unexpected `lean_lib` table")
+    roots: dict[str, tuple[str, str]] = {}
+    for library in libraries:
+        source = directory_parts(config.get("srcDir", ".")) + directory_parts(
+            library.get("srcDir", "."))
+        names = library.get("roots", [library.get("name")])
+        for name in names if isinstance(names, list) else [names]:
+            parts = name.split(".") if isinstance(name, str) else []
+            if not parts or not all(COMPONENT.fullmatch(part) for part in parts):
+                raise Underivable(f"unsupported library root {name!r} in `lakefile.toml`")
+            module_parts = source + parts
+            # `mk_all` resolves symbolic links; only plain directories are followed here.
+            for depth in range(1, len(module_parts) + 1):
+                if entries.get("/".join(module_parts[:depth]), "040000") != "040000":
+                    raise Underivable(f"`{'/'.join(module_parts[:depth])}` is not a directory")
+            directory = "/".join(module_parts)
+            if entries.get(directory) != "040000":
+                raise Underivable(f"the library root directory `{directory}` is missing")
+            if f"{directory}.lean" in roots:
+                raise Underivable(f"two library roots write `{directory}.lean`")
+            roots[f"{directory}.lean"] = ("/".join(source), directory)
+    return roots
+
+
+def canonical_aggregate(entries: dict[str, str], source: str, directory: str,
+                        module_style: bool) -> bytes:
+    """What `scripts/MkAll.lean` writes for the library root `directory`: an import of every module
+    file below it, named relative to the library's `source` directory and sorted by name, after
+    the module-style preamble when `module_style` holds."""
+    names = []
+    for path, mode in entries.items():
+        if not path.startswith(f"{directory}/"):
+            continue
+        if mode not in (*REGULAR_MODES, "040000"):
+            raise Underivable(f"`{path}` is a symbolic link or submodule")
+        if path.endswith(".lean"):
+            parts = path[len(source) + 1 if source else 0:-len(".lean")].split("/")
+            if mode not in REGULAR_MODES or not all(COMPONENT.fullmatch(part) for part in parts):
+                raise Underivable(f"`mk_all` would not import `{path}` by a plain module name")
+            names.append(".".join(parts))
+    keyword = b"public import " if module_style else b"import "
+    imports = b"\n".join(keyword + name.encode() for name in sorted(names))
+    return (MODULE_PREAMBLE if module_style else b"") + imports + b"\n"
+
+
+def module_style(content: bytes) -> bool:
+    """Whether an aggregate is module-style, which `mk_all` infers from the file's header."""
+    first = content.split(b"\n", 1)[0]
+    if CONFLICT_MARKER.match(first):
+        raise Underivable("the replay conflicted in its header")
+    return re.match(rb"module(\s|$)", first) is not None
+
+
+def check_aggregates(root: Path, replayed: str, new: str
+                     ) -> tuple[list[str], dict[str, list[str]], dict[str, str]]:
+    """Sort the aggregates in the new head into those that are exactly what `mk_all` writes for its
+    tree, those that are not (with a diff from that content), and those whose content cannot be
+    derived (with the reason). The style is the replay's, so a restack cannot switch it."""
+    entries = tree_entries(root, new)
+    present = [path for path in AGGREGATES if path in entries]
+    canonical: list[str] = []
+    wrong: dict[str, list[str]] = {}
+    underivable: dict[str, str] = {}
+    try:
+        roots = library_roots(root, new, entries)
+    except Underivable as error:
+        return canonical, wrong, {path: str(error) for path in present}
+    for path in present:
+        replayed_content = blob(root, replayed, path)
+        try:
+            if path not in roots:
+                raise Underivable("`lakefile.toml` names no library root that `mk_all` writes here")
+            if replayed_content is None:
+                raise Underivable("the replay has no such file to take the module style from")
+            expected = canonical_aggregate(entries, *roots[path], module_style(replayed_content))
+        except Underivable as error:
+            underivable[path] = str(error)
+            continue
+        actual = blob(root, new, path)
+        if actual == expected and entries[path] == "100644":
+            canonical.append(path)
+            continue
+        diff = difflib.unified_diff(expected.decode().split("\n"),
+                                    (actual or b"").decode("utf-8", "replace").split("\n"),
+                                    f"mk_all/{path}", f"new/{path}", lineterm="", n=1)
+        mode = [] if entries[path] == "100644" else [f"new mode {entries[path]}, not 100644"]
+        wrong[path] = excerpt(mode + list(diff))
+    return canonical, wrong, underivable
+
+
+def excerpt(lines: list[str]) -> list[str]:
+    shown = ["  " + line.replace("\r", "\\r") for line in lines[:MAX_DIFF_LINES] if line]
+    if len(lines) > MAX_DIFF_LINES:
+        shown.append(f"  ... {len(lines) - MAX_DIFF_LINES} more lines")
+    return shown
 
 
 def show(root: Path, replayed: str, new: str, path: str) -> list[str]:
     diff = git(root, "diff", "--no-ext-diff", "--no-textconv", "--no-color", "--no-renames",
                "--src-prefix=replayed/", "--dst-prefix=new/", replayed, new, "--", path)
-    lines = diff.stdout.decode("utf-8", "replace").split("\n")
-    shown = ["  " + line.replace("\r", "\\r") for line in lines[:MAX_DIFF_LINES] if line]
-    if len(lines) > MAX_DIFF_LINES:
-        shown.append(f"  ... {len(lines) - MAX_DIFF_LINES} more lines")
-    return shown
+    return excerpt(diff.stdout.decode("utf-8", "replace").split("\n"))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -231,20 +367,23 @@ def main(argv: list[str] | None = None) -> int:
         differing = [] if replayed == new_tree else changed_paths(root, replayed, new_tree)
         if replayed != new_tree and not differing:
             raise GitError("the trees differ but no differing path was found")
+        canonical, wrong, underivable = check_aggregates(root, replayed, new)
     except GitError as error:
         print(f"check_restack: {error}", file=sys.stderr)
         return 2
     heads = (f"approved {approved[:12]} (from {approved_base[:12]}) replayed onto "
              f"{new_base[:12]}, new {new[:12]}")
     # A conflicted path needs review even when the new head matches the replay's tentative content
-    # (as when it keeps a file that `main` deleted), unless it is an aggregate with the same lines.
-    # Identical trees pass only without conflicts.
-    suspect = sorted(set(differing) | conflicts)
-    accepted = [p for p in suspect if p in AGGREGATES and same_lines(root, replayed, new, p)]
-    rejected = [p for p in suspect if p not in accepted]
+    # (as when it keeps a file that `main` deleted). Identical trees pass only without conflicts.
+    # An aggregate is judged by what `mk_all` writes for the new head instead, where that is known.
+    suspect = set(differing) | conflicts
+    accepted = sorted(suspect & set(canonical))
+    rejected = sorted((suspect - set(canonical)) | set(wrong))
     if not rejected:
-        note = (f"; aggregates differing only in line order: {', '.join(accepted)}"
-                if accepted else "")
+        note = (f"; aggregates as `lake exe mk_all` writes them for the new head, unlike the "
+                f"replay: {', '.join(accepted)}" if accepted else "")
+        note += "".join(f"; {path} compared with the replay only, since its `mk_all` content "
+                        f"could not be derived: {reason}" for path, reason in underivable.items())
         print(f"Restack check: identical to the approved change: {heads}{note}. "
               f"Command: python3 scripts/check_restack.py {approved} {new}"
               + (f" --approved-base {args.approved_base}" if args.approved_base else "")
@@ -252,10 +391,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     print(f"Restack check: differs from the approved change: {heads}.")
     for path in rejected:
-        reason = ("the replay conflicted here; review how it was resolved" if path in conflicts
-                  else "the new head differs from the replayed approved change")
+        if path in wrong:
+            reason = ("not what `lake exe mk_all` writes for the new head's tree; "
+                      "regenerate it with `lake exe mk_all`")
+        else:
+            reason = ("the replay conflicted here; review how it was resolved" if path in conflicts
+                      else "the new head differs from the replayed approved change")
+            if path in underivable:
+                reason += f" (its `mk_all` content could not be derived: {underivable[path]})"
         print(f"{path!r}: {reason}" if not path.isprintable() else f"{path}: {reason}")
-        print("\n".join(show(root, replayed, new, path)))
+        print("\n".join(wrong[path] if path in wrong else show(root, replayed, new, path)))
     return 1
 
 

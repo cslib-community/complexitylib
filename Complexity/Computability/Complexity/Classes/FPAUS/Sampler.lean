@@ -69,10 +69,11 @@ pointwise bounds, and pointwise lower bounds `(1 - ε) / |W x|` suffice for clos
 
 ## Scope
 
-* Only the **output-distribution** half of `Cslib.Complexity.IsFPAUS` is proved. The runtime half
-  (a strict probabilistic polynomial-time certificate for the sampler when `A` is one) is not
-  proved here, so this file does not conclude `FPRAS ⇒ FPAUS` as a class inclusion. The sampler
-  makes at most `1 + 2 ℓ · trials q` counter calls, linear in `q`.
+* This file proves the **output-distribution** half of `Cslib.Complexity.IsFPAUS`. The runtime
+  half, and with it `FPRAS ⇒ FPAUS` as a class inclusion, is
+  `Cslib.Complexity.SelfReducible.isFPAUS_of_isFPRAS` in
+  `Complexity.Computability.Complexity.Classes.FPAUS.OfFPRAS`. The sampler makes at most
+  `1 + 2 ℓ · trials q` counter calls, linear in `q`.
 * The self-reduction fixes one bit per step (`Cslib.Complexity.SelfReducible`).
 * The counter must be accurate to relative error `1 / (4 ℓ + 3)` on every intermediate instance,
   as in Sinclair's sketch (accuracy `1 + O(1 / ℓ)`). Sinclair and Jerrum's weighted random walk,
@@ -99,52 +100,63 @@ variable {α : Type} {enc : α ↪ List Bool} {W : α → Finset (List Bool)}
 
 /-- The inverse relative error `p = 4 ℓ + 3` requested from the counter, for witness length
 `ℓ`. -/
+@[expose]
 def counterAccuracy (ℓ : ℕ) : ℕ := 4 * ℓ + 3
 
 /-- The precision `q + ℓ + 4`: the counter's confidence parameter, and the number of extra bits of
 each branching coin. -/
+@[expose]
 def precision (ℓ q : ℕ) : ℕ := q + ℓ + 4
 
 /-- The number of trials, `6 (q + 2)`. -/
+@[expose]
 def trials (q : ℕ) : ℕ := 6 * (q + 2)
 
 /-- The damping denominator `m = 2 ℓ + 2`: every level continues with probability about
 `1 - 1 / m`. -/
+@[expose]
 def damping (ℓ : ℕ) : ℕ := 2 * ℓ + 2
 
 /-- The estimate of the number of witnesses of `y`, as a fraction `(num, den)`: exact at witness
 length `0`, otherwise the counter's answer with relative error `1 / p` and confidence `t`. -/
+@[expose]
 noncomputable def nodeEstimate (R : SelfReducible enc W) (A : α → ℕ → ℕ → ProbComp (ℕ × ℕ))
     (p t : ℕ) (y : α) : ProbComp (ℕ × ℕ) :=
   if R.len y = 0 then pure (if [] ∈ W y then 1 else 0, 1) else A y p t
 
 /-- The outcome of the branching coin for the draw `r`: `some true` below `g₁`, `some false` from
 `g₁` to `g₁ + g₀`, and `none` above. -/
+@[expose]
 def coinOutcome (g₀ g₁ r : ℕ) : Option Bool :=
   if r < g₁ then some true else if r < g₁ + g₀ then some false else none
 
 /-- One draw of `k` fair bits, compared with the thresholds `g₁` and `g₁ + g₀`: `some true` with
 probability `min g₁ 2ᵏ / 2ᵏ`, `some false` with probability `g₀ / 2ᵏ` when `g₀ + g₁ ≤ 2ᵏ`, and
 `none` otherwise. -/
+@[expose]
 noncomputable def branch (k g₀ g₁ : ℕ) : ProbComp (Option Bool) :=
   coinOutcome g₀ g₁ <$> ProbComp.sampleBinaryNat k
 
 /-- The branching weight of the child `c` at a node with estimate `e = a / b` whose children have
 estimates `e₀ = a₀ / b₀` and `e₁ = a₁ / b₁`: together with `total`, the child `c` is to be chosen
 with probability `weight / total = (1 - 1 / m) (a_c / b_c) / (a / b)`. -/
+@[expose]
 def weight (m : ℕ) (e e₀ e₁ : ℕ × ℕ) (c : Bool) : ℕ :=
   (m - 1) * (cond c e₁ e₀).1 * (cond c e₀ e₁).2 * e.2
 
 /-- The common denominator `m a b₀ b₁` of the branching weights. -/
+@[expose]
 def total (m : ℕ) (e e₀ e₁ : ℕ × ℕ) : ℕ :=
   m * e.1 * e₀.2 * e₁.2
 
 /-- The number of fair bits of the branching coin: the size of `total` plus `extra`. -/
+@[expose]
 def coinWidth (m extra : ℕ) (e e₀ e₁ : ℕ × ℕ) : ℕ :=
   (total m e e₀ e₁).size + extra
 
 /-- The branching coin at a node, with `extra` bits of precision beyond the size of `total`:
 child `c` with probability about `weight c / total`, otherwise reject. -/
+@[expose]
 noncomputable def choose (m extra : ℕ) (e e₀ e₁ : ℕ × ℕ) : ProbComp (Option Bool) :=
   branch (coinWidth m extra e e₀ e₁)
     (weight m e e₀ e₁ false * 2 ^ coinWidth m extra e e₀ e₁ / total m e e₀ e₁)
@@ -152,6 +164,7 @@ noncomputable def choose (m extra : ℕ) (e e₀ e₁ : ℕ × ℕ) : ProbComp (
 
 /-- Continue after the branching coin: reject on `none`, and on `some c` run `next c` and prefix
 its result with `c`. -/
+@[expose]
 noncomputable def descend (next : Bool → ProbComp (Option (List Bool))) :
     Option Bool → ProbComp (Option (List Bool))
   | none => pure none
@@ -160,6 +173,7 @@ noncomputable def descend (next : Bool → ProbComp (Option (List Bool))) :
 /-- One walk down `n` levels from `y`, whose current estimate is `e`: estimate both children,
 branch (or reject), and continue in the chosen child. At witness length `0` it returns the empty
 word exactly when it is a witness. -/
+@[expose]
 noncomputable def walk (R : SelfReducible enc W) (A : α → ℕ → ℕ → ProbComp (ℕ × ℕ))
     (p t m extra : ℕ) : ℕ → α → ℕ × ℕ → ProbComp (Option (List Bool))
   | 0, y, _ => pure (if [] ∈ W y then some [] else none)
@@ -172,6 +186,7 @@ noncomputable def walk (R : SelfReducible enc W) (A : α → ℕ → ℕ → Pro
 /-- One trial of the sampler for accuracy `q` from the root `x` with estimate `e`: a walk down all
 `R.len x` levels with counter accuracy `counterAccuracy`, confidence `precision`, damping
 `damping`, and `precision` extra bits per branching coin. -/
+@[expose]
 noncomputable def trial (R : SelfReducible enc W) (A : α → ℕ → ℕ → ProbComp (ℕ × ℕ)) (x : α)
     (q : ℕ) (e : ℕ × ℕ) : ProbComp (Option (List Bool)) :=
   R.walk A (counterAccuracy (R.len x)) (precision (R.len x) q) (damping (R.len x))
@@ -180,6 +195,7 @@ noncomputable def trial (R : SelfReducible enc W) (A : α → ℕ → ℕ → Pr
 /-- **The counting-to-sampling sampler** with total-variation error `2 ^ (-q)`: estimate the
 number of witnesses of `x` once, then run at most `trials q` independent trials from `x` and return
 the first witness found, or `none`. -/
+@[expose]
 noncomputable def sampler (R : SelfReducible enc W) (A : α → ℕ → ℕ → ProbComp (ℕ × ℕ)) (x : α)
     (q : ℕ) : ProbComp (Option (List Bool)) := do
   let e ← R.nodeEstimate A (counterAccuracy (R.len x)) (precision (R.len x) q) x
@@ -1023,7 +1039,7 @@ the sampler built from `A` has output law within statistical distance `2 ^ (-q)`
 on the witnesses of `x`. -/
 theorem closeTo_sampler (R : SelfReducible enc W) {A : α → ℕ → ℕ → ProbComp (ℕ × ℕ)}
     (hA : ∀ p t, 0 < p → CounterAccurate W A p t) (x : α) (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
+    Probability.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) := by
   have hA' : CounterAccurate W A (counterAccuracy (R.len x)) (precision (R.len x) q) :=
     hA _ _ (by rw [counterAccuracy]; omega)
@@ -1066,7 +1082,7 @@ distance `2 ^ (-q)` of the uniform law on the witnesses, for every instance and 
 is the output-distribution half of `IsFPAUS`; its runtime half is not proved here. -/
 theorem closeTo_sampler_of_isFPRAS (R : SelfReducible enc W) {A : α → ℕ → ℕ → ProbComp (ℕ × ℕ)}
     (hA : IsFPRAS enc (fun x => (W x).card) A) (x : α) (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
+    Probability.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) :=
   R.closeTo_sampler (fun p t hp x => hA.2 x p t hp) x q
 

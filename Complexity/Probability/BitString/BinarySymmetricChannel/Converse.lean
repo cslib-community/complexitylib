@@ -243,8 +243,7 @@ theorem le_expect_decodingError_of_lt_rate [Fintype M] [Nonempty M] (p : I) {R :
   have hR0 : 0 < R := hC0.trans_lt hR
   rw [div_le_iff₀ (by positivity)]
   by_cases hPe1 : Pe ≤ 1
-  · have h1 : (1 - Pe) * (R * n) ≤ (1 - Pe) * Real.logb 2 (Fintype.card M) :=
-      mul_le_mul_of_nonneg_left hM (sub_nonneg.mpr hPe1)
+  · have h1 : (1 - Pe) * (R * n) ≤ (1 - Pe) * Real.logb 2 (Fintype.card M) := by gcongr
     have hn0 : 0 < n := pos_of_mul_pos_right (by linarith) (sub_pos.mpr hR).le
     refine le_of_mul_le_mul_right ?_ hn0
     linarith

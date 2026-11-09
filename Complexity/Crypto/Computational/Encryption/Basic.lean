@@ -43,6 +43,8 @@ properties.
   `Cslib.Crypto.Encryption.WordAdversary.IsPPT`: native uniform admissibility of both stages.
 * `Cslib.Crypto.Encryption.gameOn`, `Cslib.Crypto.Encryption.game`: the key-generation and
   challenge-encryption experiment, with and without a challenge-pair admissibility predicate.
+* `Cslib.Crypto.Encryption.advantage`: the advantage between the two sides of an experiment
+  indexed by the challenge bit, such as `gameOn`, at one security parameter.
 * `Cslib.Crypto.Encryption.INDCPAOn`, `Cslib.Crypto.Encryption.INDCPAOf`,
   `Cslib.Crypto.Encryption.INDCPA`, `Cslib.Crypto.Encryption.WordINDCPA`: negligible distinguishing
   advantage for every admissible adversary, fixed before the security parameter.
@@ -70,6 +72,7 @@ properties.
 namespace Cslib.Crypto.Encryption
 
 open Probability Turing.MultiTapeTM
+open scoped NNReal
 
 /-- A chosen-message adversary over message space `Msg`. The saved word contains all data retained
 between stages. -/
@@ -172,6 +175,13 @@ abbrev game {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool :=
   gameOn (fun _ _ _ _ => true) keyGen encrypt adversary bit n
+
+/-- The distinguishing advantage of a two-sided experiment `experiment bit n` at parameter `n`:
+the advantage between its runs with `bit = false` and `bit = true`. The adversary is already part
+of `experiment`, as in `gameOn valid keyGen encrypt adversary`; `INDCPAOn` asks that this advantage
+be negligible for every admissible adversary. -/
+noncomputable abbrev advantage (experiment : Bool → ℕ → ProbComp Bool) (n : ℕ) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (experiment false n)) (ProbComp.eval (experiment true n))
 
 /-- Single-challenge IND-CPA for encryption over message encoding `encMsg` with challenge-pair
 admissibility predicate `valid`, against every uniform strict PPT adversary. The negligible bound

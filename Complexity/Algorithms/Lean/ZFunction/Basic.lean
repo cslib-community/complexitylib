@@ -206,9 +206,7 @@ private theorem zLoopM_spec (s : Array α) (i l r : ℕ) (z : Array ℕ) (hi1 : 
     · simp only [hcopy, ↓reduceIte]
       have hir : i < r := by omega
       have hmin := hbox hir
-      have hval : z.getD (i - l) 0 = List.lcpLen s.toList (s.toList.drop i) := by
-        rw [hzil hir] at hcopy ⊢
-        omega
+      have hval : z.getD (i - l) 0 = List.lcpLen s.toList (s.toList.drop i) := by grind
       refine ih (i + 1) l r (z.push (z.getD (i - l) 0)) (by omega) (by omega)
         (by rw [Array.size_push, hz]) (fun j hj => ?_) (by omega) hl0 hrl hr (by omega)
       rw [Array.getElem_push]
@@ -217,12 +215,7 @@ private theorem zLoopM_spec (s : Array α) (i l r : ℕ) (z : Array ℕ) (hi1 : 
       · rw [show j = i by omega]
         exact hval
     · simp only [hcopy, ↓reduceIte, TimeM.ret_bind]
-      have hh : r - i ≤ List.lcpLen s.toList (s.toList.drop i) := by
-        by_cases hir : i < r
-        · have hmin := hbox hir
-          rw [hzil hir] at hcopy
-          omega
-        · omega
+      have hh : r - i ≤ List.lcpLen s.toList (s.toList.drop i) := by grind
       have hext : (extendM s 0 i (r - i)).ret = List.lcpLen s.toList (s.toList.drop i) := by
         rw [ret_extendM, List.lcpLen_eq_add_lcpLen_drop hh, List.drop_drop, Nat.zero_add]
       rw [hext]
