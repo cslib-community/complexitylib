@@ -8,8 +8,8 @@ import Complexity.Computability.Complexity.Problems.Graph.RotationSystem.CycleSp
 import Mathlib.Tactic.FinCases
 
 /-!
-Algebraic converse tests with explicit colors, without a numerical-genus premise. These are
-not tests of a geometric converse: no such endpoint is supplied by the new modules.
+Algebraic converse tests with explicit colors, without a numerical-genus premise. These test
+the cycle-space criterion; the completed geometric endpoint is tested in `PolygonalConverse`.
 -/
 
 namespace ComplexityTests.RotationCycleSpaceConverse

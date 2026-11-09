@@ -10,8 +10,9 @@ import Complexity.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star
 import Complexity.Foundations.Geometry.Polygonal.Noncrossing
 
 /-!
-Actual real-parameter and half-open endpoint tests. The drawing tests use genuine embeddings,
-but test local ray parity only: the geometric-to-numerical converse is still unproved.
+Actual real-parameter and half-open endpoint tests. The drawing tests use genuine embeddings
+and test local ray parity. The completed geometric-to-numerical endpoint is tested separately
+in `PolygonalConverse`.
 -/
 
 namespace ComplexityTests.PolygonalRayParity

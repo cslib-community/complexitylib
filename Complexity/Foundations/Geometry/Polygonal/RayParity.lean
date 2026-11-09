@@ -78,7 +78,8 @@ theorem horizontalIntercept_right {a b : ℂ} (hab : a.im ≠ b.im) :
     horizontalIntercept a b b.im = b.re := by
   rw [← horizontalIntercept_reverse hab, horizontalIntercept_left]
 
-private theorem lineMap_im (a b : ℂ) (t : ℝ) :
+/-- The imaginary coordinate along a real affine segment is affine in its parameter. -/
+theorem lineMap_im (a b : ℂ) (t : ℝ) :
     (AffineMap.lineMap a b t).im = a.im + t * (b.im - a.im) := by
   simp only [AffineMap.lineMap_apply_module', Complex.add_im, Complex.real_smul,
     Complex.mul_im, Complex.ofReal_re, Complex.sub_im, Complex.ofReal_im, zero_mul, add_zero]

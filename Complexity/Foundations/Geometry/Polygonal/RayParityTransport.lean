@@ -98,10 +98,7 @@ the horizontal ray excludes its base point. -/
 theorem not_rayCrosses_lineMap {a b : ℂ} (hab : a.im ≠ b.im) (t : ℝ) :
     ¬RayCrosses a b (AffineMap.lineMap a b t) := by
   have hden : b.im - a.im ≠ 0 := sub_ne_zero.mpr hab.symm
-  have him : (AffineMap.lineMap a b t).im = a.im + t * (b.im - a.im) := by
-    simp only [AffineMap.lineMap_apply_module', Complex.add_im, Complex.real_smul,
-      Complex.mul_im, Complex.ofReal_re, Complex.sub_im, Complex.ofReal_im, zero_mul, add_zero]
-    ring
+  have him := lineMap_im a b t
   have hre : (AffineMap.lineMap a b t).re = horizontalIntercept a b
       (AffineMap.lineMap a b t).im := by
     rw [him]
@@ -141,10 +138,8 @@ theorem rayParity_lineMap_eq_of_even {ι : Type*} [Fintype ι]
   have hlocal : IsLocallyConstant color := by
     apply (IsLocallyConstant.iff_eventually_eq color).mpr
     intro t
-    have him : (point t).im = (a i).im + t.val * ((b i).im - (a i).im) := by
-      simp only [point, AffineMap.lineMap_apply_module', Complex.add_im, Complex.real_smul,
-        Complex.mul_im, Complex.ofReal_re, Complex.sub_im, Complex.ofReal_im, zero_mul, add_zero]
-      ring
+    have him : (point t).im = (a i).im + t.val * ((b i).im - (a i).im) :=
+      lineMap_im (a i) (b i) t.val
     have ha : (a i).im ≠ (point t).im := by
       rw [him]
       rcases lt_or_gt_of_ne (hheight i) with h | h <;> nlinarith [t.property.1]
