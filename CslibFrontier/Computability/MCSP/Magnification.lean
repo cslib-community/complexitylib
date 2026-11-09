@@ -278,7 +278,7 @@ private theorem PPolyOn_imp {α : Type} {enc : α ↪ List Bool} {P Q : α → P
 
 /-! #### Polynomial-time projections of a `MergeInput`
 
-The header fields `n`, `s` and `j` are read in unary and `p` as raw bits; the derived widths
+The arity `n` and size bound `s` are read from the header in unary; the derived widths
 `certLength n s` and `stateWidth n s` are then unary arithmetic. -/
 
 open ComputableInPolyTime in
@@ -292,18 +292,6 @@ open ComputableInPolyTime in
 private theorem computableInPolyTime_mergeSize :
     ComputableInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
   (snd encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-
-open ComputableInPolyTime in
-/-- The subcube prefix `p` of a merge query is polynomial-time. -/
-private theorem computableInPolyTime_mergePrefix :
-    ComputableInPolyTime (fun a : MergeInput => a.1.2.1) encMerge encBits :=
-  (fst encBits encUnary).comp ((snd _ _).comp (fst encHeader encBits))
-
-open ComputableInPolyTime in
-/-- The output bit index `j` of a merge query is polynomial-time in unary. -/
-private theorem computableInPolyTime_mergeIndex :
-    ComputableInPolyTime (fun a : MergeInput => a.1.2.2) encMerge encUnary :=
-  (snd encBits encUnary).comp ((snd _ _).comp (fst encHeader encBits))
 
 /-- The certificate length `certLength n s` of a merge query is polynomial-time in unary. -/
 private theorem computableInPolyTime_mergeCertLength :
@@ -348,7 +336,8 @@ private theorem isMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) 
     fst encMerge encBits
   have hn := computableInPolyTime_mergeArity.comp' hq1
   have hs := computableInPolyTime_mergeSize.comp' hq1
-  have hp := computableInPolyTime_mergePrefix.comp' hq1
+  have hp : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.2.1) encQ encBits :=
+    (fst encBits encUnary).comp ((snd _ _).comp ((fst encHeader encBits).comp hq1))
   have hw₀ := computableInPolyTime_mergeCert₀.comp' hq1
   have hw₁ := computableInPolyTime_mergeCert₁.comp' hq1
   have hcert := computableInPolyTime_mergeCertLength.comp' hq1
@@ -431,7 +420,8 @@ theorem circuitMinMergeLanguage_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBit
     simpa [Bool.and_eq_true] using PPolyOn_of_computableInPolyTime (bool_and' hok₀ hok₁)
   have hj_q : ComputableInPolyTime
       (fun q : MergeInput × List Bool => q.1.1.2.2) encQ encUnary :=
-    computableInPolyTime_mergeIndex.comp' (fst encMerge encBits)
+    (snd encBits encUnary).comp ((snd _ _).comp
+      ((fst encHeader encBits).comp (fst encMerge encBits)))
   have hbit_q : {q : MergeInput × List Bool |
       (q.1.1.2.2 == 0 || q.2.getD (q.1.1.2.2 - 1) false) = true} ∈ PPolyOn encQ := by
     have hj0 : ComputableInPolyTime
