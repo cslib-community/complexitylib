@@ -5124,6 +5124,7 @@ public import CslibFrontier.Logics.BooleanClone.Classification
 public import CslibFrontier.Logics.BooleanClone.Formula
 public import CslibFrontier.Logics.BooleanClone.Generated
 public import CslibFrontier.Logics.BooleanClone.Post
+public import CslibFrontier.Logics.FirstOrder.Atom
 public import CslibFrontier.Logics.FirstOrder.Basic
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
