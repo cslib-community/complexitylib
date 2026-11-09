@@ -588,4 +588,29 @@ theorem bCount_le_n_max {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotStoreInv n_
     omega
   · exact Nat.zero_le _
 
+/-- The physical slab holding an active logical slab is below the slab-pool capacity. -/
+theorem SlabBijection.ptr_lt_maxFullSlabs {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_slabs : ℕ}
+    (hslab : SlabBijection n_max gm q_fn n_slabs) {b s : ℕ} (hb : b < numBuckets n_max)
+    (hs : s < q_fn b) : slabPtrOf n_max gm b s < maxFullSlabs n_max :=
+  lt_of_lt_of_le (hslab.ptr_lt b hb s hs) hslab.nslabs_le
+
+/-- The top slab of a bucket with at least one full slab is an active physical slab. -/
+theorem SlabBijection.top_lt {n_max : ℕ} {gm q_fn : ℕ → ℕ} {n_slabs : ℕ}
+    (hslab : SlabBijection n_max gm q_fn n_slabs) {b : ℕ} (hb : b < numBuckets n_max)
+    (hq : 0 < q_fn b) : gm (gmSlabTopIdx b) < n_slabs := by
+  rw [hslab.top_eq b hb (q_fn b - 1) (by omega) (by omega)]
+  exact hslab.ptr_lt b hb _ (by omega)
+
+/-- An item index `j` past the full slabs of bucket `b` but below `bCount` lies in the bucket's
+tail: its tail offset is below the tail length and hence below the per-bucket tail capacity. -/
+theorem SlotStoreInv.tailOffset_lt {n_max : ℕ} {gm : ℕ → ℕ} (hinv : SlotStoreInv n_max gm)
+    (hb_pos : 0 < bucketBits n_max) {b j : ℕ} (hb : b < numBuckets n_max)
+    (hj_bc : j < bCount n_max gm b) (hj_tail : ¬j < gm (gmQIdx b) * slabSize n_max) :
+    j - gm (gmQIdx b) * slabSize n_max < gm (gmRIdx b) ∧
+      j - gm (gmQIdx b) * slabSize n_max < tailCapPerBucket n_max := by
+  have hb0 : bucketBits n_max ≠ 0 := by omega
+  simp only [bCount, hb0, ↓reduceIte, hb] at hj_bc
+  have hr_lt : j - gm (gmQIdx b) * slabSize n_max < gm (gmRIdx b) := by omega
+  exact ⟨hr_lt, hr_lt.trans (hinv.multi_r_bounds hb_pos b hb).1⟩
+
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct
