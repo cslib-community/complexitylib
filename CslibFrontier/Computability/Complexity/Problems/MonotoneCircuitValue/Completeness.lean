@@ -247,8 +247,8 @@ private theorem dualChunk_inSpace {n j : α → ℕ}
 private theorem dualTrailer_inSpace {n : α → ℕ}
     (hn : ComputableInSpace n encIn encNat Bs) :
     ComputableInSpace (fun x => (dualSpec tm C d).trailer (n x)) encIn encBits Bs :=
-  trailerWire_inSpace hin [false, true]
-    (railWire_inSpace true hin (outWire_inSpace (k := k) (State := State) C d hin hn))
+  trailerWire_inSpace hin [false, true] (railWire_inSpace true hin
+    (Tableau.outWire_inSpace (k := k) (State := State) (timeBound_inSpace C d hin hn) hin hn))
 
 end Space
 

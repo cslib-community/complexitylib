@@ -190,15 +190,6 @@ theorem numGates_inSpace {T : α → ℕ} (hT : ComputableInSpace T encIn encNat
   budget_natAdd (budget_const 2 hin) (budget_natMul (budget_natAdd hT (budget_const 1 hin))
     (blockSize_inSpace (k := k) (State := State) hT hin))
 
-omit [DecidableEq State] in
-/-- Computing the output wire of the tableau preserves a space budget. -/
-theorem outWire_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
-    ComputableInSpace (fun x => outWire k State (n x) (timeBound C d (n x))) encIn encNat Bs := by
-  have hT := timeBound_inSpace C d hin hn
-  exact budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-    (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
-    (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
-
 /-- The end of a gate list, a framed wire number and a fixed suffix preserve a space budget: the
 shape of the trailer emitted by the tableau writers after their gates. -/
 theorem trailerWire_inSpace (suffix : List Bool) {w : α → ℕ}
@@ -224,7 +215,8 @@ private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableInSpace n e
 omit [DecidableEq State] in
 private theorem trailer_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
     ComputableInSpace (fun x => trailer k State C d (n x)) encIn encBits Bs :=
-  trailerWire_inSpace hin [false] (outWire_inSpace (k := k) (State := State) C d hin hn)
+  trailerWire_inSpace hin [false]
+    (outWire_inSpace (k := k) (State := State) (timeBound_inSpace C d hin hn) hin hn)
 
 end Components
 
