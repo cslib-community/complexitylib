@@ -37,6 +37,8 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
   `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
   function to a finite subset gives the uniform distribution on that subset.
+* `Cslib.Probability.PMF.uniformOfFintype_bind_bind_adaptiveUpdate`: resampling the value at a
+  point chosen from the function itself.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_bind_fst_equiv`: resampling along an equivalence.
 * `Cslib.Probability.PMF.toOuterMeasure_uniformOfFinset`,
@@ -147,6 +149,22 @@ theorem uniformOfFintype_bind_bind_fst_equiv (e : α × β ≃ γ × δ) (f : γ
   rw [← uniformOfFintype_bind_map_fst_equiv e]
   simp only [PMF.bind_bind, PMF.bind_map]
   rfl
+
+/-- **Adaptive resampling**: a uniform function whose value at a point `p f`, chosen from the
+function itself, is replaced by a fresh uniform value is uniform, provided that replacing that
+value does not move the point. `(f, v) ↦ (Function.update f (p f) v, f (p f))` is an involution. -/
+theorem uniformOfFintype_bind_bind_adaptiveUpdate {ι κ : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype κ] [Nonempty κ] (p : (ι → κ) → ι)
+    (hp : ∀ f v, p (Function.update f (p f) v) = p f) (g : (ι → κ) → PMF ε) :
+    ((uniformOfFintype (ι → κ)).bind fun f =>
+      (uniformOfFintype κ).bind fun v => g (Function.update f (p f) v)) =
+      (uniformOfFintype (ι → κ)).bind g := by
+  let swap : (ι → κ) × κ → (ι → κ) × κ := fun fv =>
+    (Function.update fv.1 (p fv.1) fv.2, fv.1 (p fv.1))
+  have hswap : Function.Involutive swap := by
+    rintro ⟨f, v⟩
+    simp only [swap, hp, Function.update_self, Function.update_idem, Function.update_eq_self]
+  exact uniformOfFintype_bind_bind_fst_equiv hswap.toPerm g
 
 end Uniform
 

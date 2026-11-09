@@ -511,6 +511,11 @@ Allan Gibbard. "Manipulation of Voting Schemes: A General Result." *Econometrica
 
 E. N. Gilbert and H. O. Pollak. *Steiner Minimal Trees*. SIAM Journal on Applied Mathematics 16(1), 1–29, 1968. https://doi.org/10.1137/0116001 . Cited only because the Chapter 12 Notes of [Williamson and Shmoys](#williamsonshmoys11) attribute the MST factor-2 heuristic for Steiner tree to Moore, as described in this paper. The paper itself was not checked.
 
+<a id="gkwy20"></a>
+## gkwy20
+
+Chun Guo, Jonathan Katz, Xiao Wang, Yu Yu. “Efficient and Secure Multiparty Computation from Fixed-Key Block Ciphers.” *2020 IEEE Symposium on Security and Privacy*, 825–841. https://doi.org/10.1109/SP40000.2020.00016 . Bibliographic data from secondary listings; the text was not inspected, so no definition number is cited. Cited at paper level for tweakable variants of circular correlation robustness; the form used in the library is Definition 1 of [hkn24](#hkn24).
+
 <a id="gkr15"></a>
 ## gkr15
 
@@ -606,6 +611,16 @@ Jason D. Hartline. *Mechanism Design and Approximation*, book manuscript; chapte
 ## hartmanis1968
 
 Juris Hartmanis. "Computational Complexity of One-Tape Turing Machine Computations." *Journal of the ACM* 15(2), 325–339, 1968. https://doi.org/10.1145/321450.321464 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it for the `n log n` lower bound on one-tape recognition of nonregular languages, as attributed in [Pighizzini 2009](#pighizzini2009), §1 and §4.
+
+<a id="hk21"></a>
+## hk21
+
+David Heath, Vladimir Kolesnikov. “One Hot Garbling.” *ACM CCS 2021*, 574–593. https://doi.org/10.1145/3460120.3484764 . Bibliographic data from the reference list of [hkn24](#hkn24); the paper itself was not read. Cited as the origin of one-hot garbling and of the binary-to-one-hot gadget and its simulation, which [hkn24](#hkn24) credits to it; the library's construction follows a reconstruction checked against the interface in [hkn24](#hkn24).
+
+<a id="hkn24"></a>
+## hkn24
+
+David Heath, Vladimir Kolesnikov, Lucien K. L. Ng. “Garbled Circuit Lookup Tables with Logarithmic Number of Ciphertexts.” *EUROCRYPT 2024*. Full version: Cryptology ePrint Archive, Paper 2024/369, https://eprint.iacr.org/2024/369 . The ePrint full text was read in this pass for Definition 1 (circular correlation robustness, following Zahur–Rosulek–Evans, with `Δ ∈ 1{0,1}^{κ−1}`), Figure 1 (the interface of one-hot garbling, credited to [hk21](#hk21)), Lemma 1 and the display after it (`T(f)ᵀ · H(x) = f(x)` and its garbled form), Theorem 1 (cost `2ⁿm + (n − 1)κ + nmκ` per gate) and the proof of Theorem 3 (obliviousness; the `n − 1` one-hot rows are simulated by uniform strings, as shown in [hk21](#hk21)).
 
 <a id="heldkarp62"></a>
 ## heldkarp62
@@ -796,6 +811,11 @@ Kojiro Kobayashi. "On proving time constructibility of functions." *Theoretical 
 ## kortevygen18
 
 Bernhard Korte and Jens Vygen. *Combinatorial Optimization: Theory and Algorithms*, sixth edition. Springer, Algorithms and Combinatorics 21, 2018. https://doi.org/10.1007/978-3-662-56039-6 . Cited for Section 2.4 (Eulerian and bipartite graphs), which characterizes connected graphs with a closed Eulerian walk by even degrees (Euler, Hierholzer). The section was located from secondary sources and not checked against the printed book; its theorem number is not cited.
+
+<a id="ks08"></a>
+## ks08
+
+Vladimir Kolesnikov, Thomas Schneider. “Improved Garbled Circuit: Free XOR Gates and Applications.” *ICALP 2008*, LNCS 5126, 486–498. https://doi.org/10.1007/978-3-540-70583-3_40 . Bibliographic data from secondary listings; cited at paper level for Free-XOR labels.
 
 <a id="kov17"></a>
 ## kov17

@@ -154,16 +154,13 @@ section Uniform
 variable {ι β : Type*} [Fintype ι] [DecidableEq ι] [Fintype β] [Nonempty β]
 
 /-- Overwriting one coordinate of a uniform function by an independent uniform value leaves it
-uniform: `(r, z) ↦ (Function.update z i r, z i)` is an equivalence. -/
+uniform: the constant-point case of `uniformOfFintype_bind_bind_adaptiveUpdate`. -/
 private theorem uniformOfFintype_bind_bind_update {γ : Type*} (i : ι) (f : (ι → β) → PMF γ) :
     ((uniformOfFintype β).bind fun r =>
       (uniformOfFintype (ι → β)).bind fun z => f (Function.update z i r)) =
-      (uniformOfFintype (ι → β)).bind f :=
-  uniformOfFintype_bind_bind_fst_equiv
-    { toFun := fun p => (Function.update p.2 i p.1, p.2 i)
-      invFun := fun q => (q.1 i, Function.update q.1 i q.2)
-      left_inv := fun p => by simp
-      right_inv := fun q => by simp } f
+      (uniformOfFintype (ι → β)).bind f := by
+  rw [PMF.bind_comm]
+  exact uniformOfFintype_bind_bind_adaptiveUpdate (fun _ => i) (fun _ _ => rfl) f
 
 end Uniform
 
