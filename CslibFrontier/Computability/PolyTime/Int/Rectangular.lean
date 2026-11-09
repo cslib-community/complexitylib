@@ -55,7 +55,7 @@ open Matrix Circuits.Rational Turing.MultiTapeTM
 /-- Rectangular system: framed (framed unary width, binary integer row table), followed
 by the framed-list binary integer right-hand side. Missing entries default to zero. -/
 abbrev encRectangularSystem : ((ℕ × List (List ℤ)) × List ℤ) ↪ List Bool :=
-  encPair (encPair encUnary encIntRows) (encList encIntBin)
+  encPair (encPair encUnary encIntTable) (encList encIntBin)
 
 /-- Multiply a selected-row vector by the transpose of its original coefficient
 matrix, materializing exactly the declared number of columns. -/
@@ -83,7 +83,7 @@ The denominator is nonzero even when the rectangular input has dependent rows. -
     {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {A : α → List (List ℤ)}
     {ids : α → List ℕ} {y : α → List ℤ}
     (hn : ComputableInPolyTime n enc encUnary)
-    (hA : ComputableInPolyTime A enc encIntRows)
+    (hA : ComputableInPolyTime A enc encIntTable)
     (hi : ComputableInPolyTime ids enc (encList encUnary))
     (hy : ComputableInPolyTime y enc (encList encIntBin)) :
     ComputableInPolyTime (fun x => transposeNumerators (n x) (A x) (ids x) (y x))
@@ -109,7 +109,7 @@ unary, all matrix and RHS integers are binary, and no rank/basis advice is input
       encUnary from by fun_prop)
     (show ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ => p.1.2)
       encRectangularSystem
-      encIntRows from by fun_prop) hi
+      encIntTable from by fun_prop) hi
   have hr : ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ =>
       (gramRowBasis p.1.1 p.1.2).map fun i => p.2.getD i 0)
       encRectangularSystem

@@ -382,10 +382,11 @@ feasibility for nonsingular squares. A singular input is rejected even if it has
 Boolean solutions; use the existing general functional preprocessing for such inputs.
 
 `cramerCertificate_polytime` and `cramerBoolean_polytime` certify uniform multitape
-Turing-machine polynomial time under `encPair encIntRows (encList encIntBin)`,
-with the dimension varying with the input. `Cslib.LinearSystem.encIntRows` names the framed
-list of framed rows of signed binary integers; its reducible abbreviation preserves the words. These certificates
-include binary arithmetic. For entries and RHS magnitudes below $2^\beta$,
+Turing-machine polynomial time under `encPair encIntTable (encList encIntBin)`,
+with the dimension varying with the input. `Cslib.encIntTable` is the existing integer-table
+encoding: the concatenation of the framed rows, each row the concatenation of its framed
+sign-magnitude binary entries. These certificates include binary arithmetic.
+For entries and RHS magnitudes below $2^\beta$,
 `cramerCertificate_bits_le` bounds each emitted integer's sign-magnitude code length
 by $\beta+n(1+n+\beta)+2$, where $n=A.length$.
 `cramerColumnRows_stage_bits_le` controls the actual numerator determinant stages;
@@ -431,9 +432,10 @@ for `x+y=1` the recovered point is `(1/2,1/2)`, although Boolean solutions exist
 `gramRowBasis_polytime`, `rectangularCertificate_polytime` and
 `rectangularConsistent_polytime` give uniform multitape polynomial binary time,
 with unary declared width and framed binary integer lists.
-`encRectangularSystem` names the input: a framed pair of unary width and `encIntRows`,
-followed by the framed-list binary right-hand side. These certificates include basis selection, every determinant, transpose multiplication and the scan
-of all original equations. For original entry/RHS magnitudes below $2^\beta$, set
+`encRectangularSystem` names the input: a pair of the unary width with `encIntTable`,
+paired with the binary right-hand side under `encList encIntBin`.
+These certificates include basis selection, every determinant, transpose multiplication and
+the scan of all original equations. For original entry/RHS magnitudes below $2^\beta$, set
 $g=n+2\beta$ and $B=g+n(1+n+g)+2$. The denominator has at most $B$ sign-magnitude
 bits and each final numerator at most $n+\beta+B+1$ bits.
 `rowGram_partial_sum_natAbs_lt`, `rowGram_stage_bits_le` and
@@ -1608,8 +1610,8 @@ certified binary normalizer/backend stage in namespace
 `Cslib.Logic.PL.WeightedRow.BinaryNormalization`. `Input` stores an explicit list
 of `(variable, sign, integer weight)` occurrences and a signed integer target.
 `encInput` frames unary variable indices and binary integer weights/targets;
-`encSystem` names the outer input: a framed unary declared width followed by a framed list
-of rows. Query and all-cases plan signatures reuse `BinaryNormalization.encSystem`;
+`encSystem` names the outer input: the pair of a unary declared width and the concatenation
+of the framed rows. Query and all-cases plan signatures reuse `BinaryNormalization.encSystem`;
 this is a reducible abbreviation of the same encoded words.
 `ofOccurrences` serializes the reviewed positive-weight finite input directly.
 The total raw program also runs on malformed lists; semantic correspondence is

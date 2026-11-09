@@ -41,8 +41,8 @@ abbrev Input := List Entry × ℤ
 /-- Framed row encoding, with binary weights and target. -/
 @[expose] def encInput : Input ↪ List Bool := encPair (encList encEntry) encIntBin
 
-/-- Original system: framed unary variable declaration, followed by the framed list of
-occurrence rows. Each row retains unary indices and signed binary weights and target. -/
+/-- Original system: the pair of a unary variable declaration and the concatenation of the
+framed occurrence rows. Each row retains unary indices and signed binary weights and target. -/
 abbrev encSystem : (ℕ × List Input) ↪ List Bool := encPair encUnary (encList encInput)
 
 /-- Sum exactly the occurrences of one variable and polarity. -/
@@ -221,7 +221,7 @@ attribute [local fun_prop] le_polytime lt_polytime
 @[fun_prop] theorem materialize_polytime :
     ComputableInPolyTime (fun p : ℕ × List Input => materialize p.1 p.2)
       encSystem
-      (encPair (encList (encList encIntBin)) (encList encIntBin)) := by
+      (encPair encIntTable (encList encIntBin)) := by
   unfold materialize
   fun_prop
 
@@ -587,7 +587,7 @@ theorem original_certificate_bits {n t d : ℕ} {m : Fin t → ℕ}
 /-- Output storage is polynomial as a consequence of the proved machine-time certificate. -/
 theorem materialize_output_polyBounded :
     PolyBounded (fun p : ℕ × List Input => (encSystem p).length)
-      (fun p => (encPair (encList (encList encIntBin)) (encList encIntBin)
+      (fun p => (encPair encIntTable (encList encIntBin)
         (materialize p.1 p.2)).length) :=
   ((ComputableInPolyTime.encoding_length _).comp materialize_polytime).polyBounded
 

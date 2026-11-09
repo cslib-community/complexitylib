@@ -73,10 +73,10 @@ open Matrix Circuits.Rational Turing.MultiTapeTM
     {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {A : α → List (List ℤ)}
     {ids : α → List ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
-    (hA : ComputableInPolyTime A enc encIntRows)
+    (hA : ComputableInPolyTime A enc encIntTable)
     (hi : ComputableInPolyTime ids enc (encList encUnary)) :
     ComputableInPolyTime (fun x => rowGram (n x) (A x) (ids x))
-      enc encIntRows := by
+      enc encIntTable := by
   unfold rowGram
   apply computableInPolyTime_tabulateTable (by fun_prop) (by fun_prop)
   dsimp only [TableIndex.ctx, TableIndex.row, TableIndex.col, TableIndex.rowCtx]
@@ -87,7 +87,7 @@ open Matrix Circuits.Rational Turing.MultiTapeTM
     {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {A : α → List (List ℤ)}
     {ids : α → List ℕ} {i : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
-    (hA : ComputableInPolyTime A enc encIntRows)
+    (hA : ComputableInPolyTime A enc encIntTable)
     (hs : ComputableInPolyTime ids enc (encList encUnary))
     (hi : ComputableInPolyTime i enc encUnary) :
     ComputableInPolyTime (fun x => gramRowStep (n x) (A x) (ids x) (i x))
@@ -100,19 +100,19 @@ rows. The accumulator stores only original unary indices, growing by one index p
 input row; determinant intermediate sizes are covered by `detRows_polytime`. -/
 @[fun_prop] theorem gramRowBasis_polytime :
     ComputableInPolyTime (fun p : ℕ × List (List ℤ) => gramRowBasis p.1 p.2)
-      (encPair encUnary encIntRows) (encList encUnary) := by
+      (encPair encUnary encIntTable) (encList encUnary) := by
   unfold gramRowBasis
   refine ComputableInPolyTime.foldlWith_of_bounded_growth
     (par := fun p : ℕ × List (List ℤ) => p)
-    (encP := encPair encUnary encIntRows)
+    (encP := encPair encUnary encIntTable)
     (encA := encUnary) (by fun_prop) (by fun_prop) (by fun_prop)
     (step := fun p ids i => gramRowStep p.1 p.2 ids i) (by fun_prop)
     (growth := fun p => 2 * p.2.length + 1) (by
       have hl : PolyBounded (fun p : ℕ × List (List ℤ) =>
-          ((encPair encUnary encIntRows) p).length)
+          ((encPair encUnary encIntTable) p).length)
           (fun p => p.2.length) :=
         (show ComputableInPolyTime (fun p : ℕ × List (List ℤ) => p.2.length)
-          (encPair encUnary encIntRows) encUnary from by fun_prop).polyBounded
+          (encPair encUnary encIntTable) encUnary from by fun_prop).polyBounded
       exact ((PolyBounded.const 2).mul hl).add (PolyBounded.const 1)) ?_
   intro p ids i hi
   have hi' : i < p.2.length := List.mem_range.mp hi

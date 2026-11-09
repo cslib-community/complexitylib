@@ -768,12 +768,10 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 - **Divide-and-conquer recurrences** ([#3042](https://github.com/cslib-community/cslib-frontier/issues/3042)): A master theorem over `ℕ` with explicit constants for inequality recurrences in all three polynomial cases, with `IsBigO` forms, matching `Θ` bounds for equality recurrences, and case 3 under the general regularity condition.
   Move hand-solved recurrences onto it where the generic constant suffices, keeping cslib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.
 
-### STOC 2027 source correspondence
+### STOC 2027 source correspondence ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527))
 
-The [submission program](https://github.com/cslib-community/cslib-frontier/issues/2527) owns the full
-source-to-Lean acceptance inventory. The [STOC1575 implementation record](https://github.com/cslib-community/cslib-frontier/pull/2532#issuecomment-6736341839)
-links the theorem-by-theorem mapping, explicit encodings, native model and remaining clauses;
-the directions below preserve the original source quantifiers and resource obligations.
+The submission program owns the full source-to-Lean acceptance inventory.
+The directions below preserve the original source quantifiers and resource obligations.
 
 - **Exact Cover transposition (1575, Corollary 5.4):** Construct the actual indexed candidate-list frontend and compose exact original counts, sharp native time and polynomial workspace, retaining equal and empty candidates.
 - **Graph solution recovery (1575, Corollary 7.4):** Actual returned solutions for independent domination, directed kernels, perfect matching cuts and dominating induced matchings, with native sharp resources and the source's optimization clauses where applicable.
@@ -788,8 +786,8 @@ Review Lance Fortnow's [expository rewrites](https://github.com/fortnow/AI-Paper
 Prove each against Complexitylib's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
 The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
 
-- **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter with arbitrary-density time `2^{O_k(n log log n / √log n)}` by recursive tensor contraction.
-  Connect the fixed-density bound and native incidence branch/array/parity composition (`IncidenceGeneralResources`) to each claimed source interface, preserving its encoding and resource model; remaining source/model transfers are tracked in [#2527](https://github.com/cslib-community/cslib-frontier/issues/2527).
+- **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter running in time `2^{O_k(n log log n / √log n)}` at arbitrary density, by recursive tensor contraction.
+  The intended route combines the fixed-density bound `2^{O_{k,D}(n / √log n)}` (Theorem D.1 with `ℓ = 1`) with the Lemma D.2 construction, applied natively to the model-counter interface.
 - **Exact optimization:** Exact MAX-SAT score distributions and optima in contraction time measured by literal occurrences plus clauses, with `2^{O_{k,c}(n / √log n)}` time and polynomial space for sparse fixed-width instances, and native extraction of an optimizing assignment.
   Neither these bounds nor ordinary SAT sparsification gives a variable-count rate for dense exact MAX-SAT.
 - **Large weights:** Exact contraction of natural tensor tables whose bit lengths are polynomial in the structural size, applied natively to weighted-CSP partition functions, and signed or rational weight interfaces.
