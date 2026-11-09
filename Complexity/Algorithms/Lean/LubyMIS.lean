@@ -12,6 +12,7 @@ public import Mathlib.Combinatorics.SimpleGraph.Clique
 public import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
+import Complexity.Probability.UniformOrder
 import Mathlib.Data.Nat.Choose.Bounds
 
 /-!
@@ -322,47 +323,12 @@ theorem isIndepSet_of_mem_support_lubyMIS {k : ℕ} {S : Finset V}
 
 /-! ### Random rankings -/
 
-private theorem swap_least {S : Finset V} {a b : V} (hb : b ∈ S) {σ : Ranking V}
-    (hσ : ∀ w ∈ S, w ≠ a → σ a < σ w) :
-    ∀ w ∈ S, w ≠ b → ((Equiv.swap a b).trans σ) b < ((Equiv.swap a b).trans σ) w := by
-  intro w hw hwb
-  simp only [Equiv.trans_apply, Equiv.swap_apply_right]
-  by_cases hwa : w = a
-  · rw [hwa, Equiv.swap_apply_left]
-    exact hσ b hb (fun h => hwb (hwa.trans h.symm))
-  · rw [Equiv.swap_apply_of_ne_of_ne hwa hwb]
-    exact hσ w hw hwa
-
 /-- In a uniform ranking, each vertex of a nonempty set `S` is the least of `S` with probability
 `1 / |S|`: exactly `(card V)! / |S|` rankings put `u` first among `S`. -/
 theorem card_filter_least_mul_card {S : Finset V} {u : V} (hu : u ∈ S) :
     (univ.filter fun σ : Ranking V => ∀ w ∈ S, w ≠ u → σ u < σ w).card * S.card =
-      Fintype.card (Ranking V) := by
-  set E : V → Finset (Ranking V) := fun x => univ.filter fun σ => ∀ w ∈ S, w ≠ x → σ x < σ w
-  have hconj {a b : V} (hb : b ∈ S) {σ : Ranking V} (hσ : σ ∈ E a) :
-      (Equiv.swap a b).trans σ ∈ E b := by
-    simp only [E, mem_filter, mem_univ, true_and] at hσ ⊢
-    exact swap_least hb hσ
-  have heq : ∀ x ∈ S, (E x).card = (E u).card := fun x hx =>
-    card_nbij' (fun σ => (Equiv.swap x u).trans σ) (fun σ => (Equiv.swap u x).trans σ)
-      (fun σ hσ => hconj hu hσ) (fun σ hσ => hconj hx hσ)
-      (fun σ _ => by ext v; simp [Equiv.swap_comm u x])
-      (fun σ _ => by ext v; simp [Equiv.swap_comm u x])
-  have hcover : (univ : Finset (Ranking V)) = S.biUnion E := by
-    ext σ
-    simp only [mem_univ, mem_biUnion, true_iff]
-    obtain ⟨x, hx, hmin⟩ := S.exists_min_image σ ⟨u, hu⟩
-    refine ⟨x, hx, ?_⟩
-    simp only [E, mem_filter, mem_univ, true_and]
-    exact fun w hw hwx => lt_of_le_of_ne (hmin w hw) (fun h => hwx (σ.injective h).symm)
-  have hdisj : (S : Set V).PairwiseDisjoint E := by
-    intro x _ y _ hxy
-    refine disjoint_left.2 fun σ hx hy => ?_
-    simp only [E, mem_filter, mem_univ, true_and] at hx hy
-    exact lt_asymm (hx y ‹_› (Ne.symm hxy)) (hy x ‹_› hxy)
-  have hcard : Fintype.card (Ranking V) = (univ : Finset (Ranking V)).card := card_univ.symm
-  change (E u).card * S.card = _
-  rw [hcard, hcover, card_biUnion hdisj, sum_congr rfl heq, sum_const, smul_eq_mul, mul_comm]
+      Fintype.card (Ranking V) :=
+  Cslib.Probability.card_filter_least_mul_card hu
 
 /-! ### Progress -/
 

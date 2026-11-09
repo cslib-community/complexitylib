@@ -132,8 +132,7 @@ theorem mul_card_frozenColorings_le_card_erase (hq : G.maxDegree < q) {b : V →
       · rw [hstat w hwU] at key
         calc r ^ (insert w F).card = r ^ F.card * r := by
               rw [Finset.card_insert_of_notMem hwF, pow_succ]
-          _ ≤ (∑ x, (π x).toReal * if ∀ u ∈ F, x u ≠ b v then 1 else 0) * r :=
-              mul_le_mul_of_nonneg_right ih' hr0
+          _ ≤ (∑ x, (π x).toReal * if ∀ u ∈ F, x u ≠ b v then 1 else 0) * r := by gcongr
           _ = r * ∑ x, (π x).toReal * if ∀ u ∈ F, x u ≠ b v then 1 else 0 := mul_comm _ _
           _ ≤ _ := key
       intro x _ hx

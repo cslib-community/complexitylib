@@ -137,10 +137,8 @@ theorem eval_eq_of_weightedSum_between (p : Program signature n g) (w : Fin n �
     rw [hgate₂, hgate₁, Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff]
     rw [Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff] at hj₁₃
     rcases le_total 0 c with hc0 | hc0
-    · have hle₁₂ : c * weightedSum w x₁ ≤ c * weightedSum w x₂ :=
-        mul_le_mul_of_nonneg_left h₁₂ hc0
-      have hle₂₃ : c * weightedSum w x₂ ≤ c * weightedSum w x₃ :=
-        mul_le_mul_of_nonneg_left h₂₃ hc0
+    · have hle₁₂ : c * weightedSum w x₁ ≤ c * weightedSum w x₂ := by gcongr
+      have hle₂₃ : c * weightedSum w x₂ ≤ c * weightedSum w x₃ := by gcongr
       exact ⟨fun h₂ => hj₁₃.mpr (by linarith), fun h₁ => by linarith⟩
     · have hle₂₁ : c * weightedSum w x₂ ≤ c * weightedSum w x₁ :=
         mul_le_mul_of_nonpos_left h₁₂ hc0
