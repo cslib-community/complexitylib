@@ -17,7 +17,6 @@ public import Mathlib.Algebra.GroupWithZero.Units.Fintype
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Prod
 import CslibFrontier.Foundations.Data.BitString.Weight
-import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 import Mathlib.FieldTheory.Finiteness
 
 /-!

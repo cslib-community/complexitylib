@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Choose.Sum
+import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Positivity
@@ -18,10 +19,9 @@ import Mathlib.Tactic.Linarith
 /-!
 # Elementary binary Hamming-ball bounds
 
-Weighted binomial estimates for finite Hamming balls. These proofs by Samuel
-Schlesinger are moved from `Code.Justesen` without changing their statements or
-proofs; the small-radius bound is now public so that finite code existence can
-reuse it without assuming finite fields or concatenated codes.
+Weighted binomial estimates for finite Hamming balls, moved from `Code.Justesen` without
+changing their statements; the small-radius bound is now public so that finite code existence
+can reuse it without assuming finite fields or concatenated codes.
 -/
 
 public section
@@ -31,37 +31,10 @@ namespace Cslib.Code
 open Finset
 
 /-- **A binomial estimate** for the size of a Hamming ball: `V * 4 ^ ℓ ≤ 4 ^ r * 5 ^ ℓ` for
-`V = ∑_{j ≤ r} C(ℓ, j)`, since `5 ^ ℓ = ∑_j C(ℓ, j) * 4 ^ (ℓ - j)`. -/
+`V = ∑_{j ≤ r} C(ℓ, j)`, derived from `Cslib.sum_range_choose_mul_pow_le`. -/
 theorem sum_range_choose_mul_four_pow_le (ℓ r : ℕ) :
-    (∑ j ∈ range (r + 1), ℓ.choose j) * 4 ^ ℓ ≤ 4 ^ r * 5 ^ ℓ := by
-  have hterm : ∀ j ∈ range (r + 1),
-      ℓ.choose j * 4 ^ ℓ ≤ 4 ^ r * (1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j) := by
-    intro j hj
-    rcases lt_or_ge ℓ j with hℓj | hjℓ
-    · rw [Nat.choose_eq_zero_of_lt hℓj, zero_mul]
-      exact Nat.zero_le _
-    have hjr := Nat.lt_succ_iff.1 (mem_range.1 hj)
-    calc ℓ.choose j * 4 ^ ℓ = ℓ.choose j * (4 ^ j * 4 ^ (ℓ - j)) := by
-          rw [← pow_add, Nat.add_sub_cancel' hjℓ]
-      _ ≤ ℓ.choose j * (4 ^ r * 4 ^ (ℓ - j)) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hjr))
-      _ = 4 ^ r * (1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j) := by ring
-  -- the binomial expansion of `5 ^ ℓ`, whose terms beyond `ℓ` vanish
-  have htail : ∑ j ∈ range (r + 1), 1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j ≤ 5 ^ ℓ := by
-    calc ∑ j ∈ range (r + 1), 1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j
-        ≤ ∑ j ∈ range (ℓ + 1 + (r + 1)), 1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j :=
-          sum_le_sum_of_subset (range_subset_range.2 (by omega))
-      _ = 5 ^ ℓ := by
-          have h0 : ∑ j ∈ range (r + 1), 1 ^ (ℓ + 1 + j) * 4 ^ (ℓ - (ℓ + 1 + j)) *
-              ℓ.choose (ℓ + 1 + j) = 0 :=
-            sum_eq_zero fun j _ => by rw [Nat.choose_eq_zero_of_lt (by omega), mul_zero]
-          rw [sum_range_add, h0, add_zero, show (5 : ℕ) = 1 + 4 by rfl, add_pow]
-          simp only [Nat.cast_id]
-  calc (∑ j ∈ range (r + 1), ℓ.choose j) * 4 ^ ℓ
-      = ∑ j ∈ range (r + 1), ℓ.choose j * 4 ^ ℓ := sum_mul _ _ _
-    _ ≤ ∑ j ∈ range (r + 1), 4 ^ r * (1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j) := sum_le_sum hterm
-    _ = 4 ^ r * ∑ j ∈ range (r + 1), 1 ^ j * 4 ^ (ℓ - j) * ℓ.choose j := (mul_sum _ _ _).symm
-    _ ≤ 4 ^ r * 5 ^ ℓ := Nat.mul_le_mul_left _ htail
+    (∑ j ∈ range (r + 1), ℓ.choose j) * 4 ^ ℓ ≤ 4 ^ r * 5 ^ ℓ :=
+  sum_range_choose_mul_pow_le 4 ℓ r
 
 /-- For `s ≥ 1`, the Hamming ball of radius `s` in `32 s` bits has at most `2 ^ (16 s - 2)`
 words. -/
