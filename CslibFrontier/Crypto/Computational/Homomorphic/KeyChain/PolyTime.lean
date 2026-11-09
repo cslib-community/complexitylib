@@ -67,22 +67,12 @@ theorem isPPTOn_encryptKeyLinks
     (hkeys : ComputableInPolyTime keys input (encList (encPair encBits encBits))) :
     IsPPTOn input (encList (encList encBits))
       (fun a => E.encryptKeyLinks (n a) (keys a)) := by
-  have hlist : ComputableInPolyTime
-      (fun a => (keys a).zip (keys a).tail)
-      input (encList (encPair (encPair encBits encBits) (encPair encBits encBits))) := by
-    have hzip : ComputableInPolyTime
-        (fun p : List (List Bool × List Bool) × List (List Bool × List Bool) => p.1.zip p.2)
-        (encPair (encList (encPair encBits encBits)) (encList (encPair encBits encBits)))
-        (encList (encPair (encPair encBits encBits) (encPair encBits encBits))) := by fun_prop
-    have htail : ComputableInPolyTime
-        (List.tail (α := List Bool × List Bool))
-        (encList (encPair encBits encBits)) (encList (encPair encBits encBits)) := by fun_prop
-    exact hzip.comp (hkeys.prod (htail.comp hkeys))
+  -- Pair each input with every adjacent key pair.
   have hpairs : ComputableInPolyTime
       (fun a => ((keys a).zip (keys a).tail).map fun b => (a, b))
       input (encList (encPair input
-        (encPair (encPair encBits encBits) (encPair encBits encBits)))) :=
-    ComputableInPolyTime.mapWithInput hlist .id'
+        (encPair (encPair encBits encBits) (encPair encBits encBits)))) := by
+    fun_prop
   have hstep : IsPPTOn
       (encPair input (encPair (encPair encBits encBits) (encPair encBits encBits)))
       (encList encBits)

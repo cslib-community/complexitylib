@@ -2,13 +2,28 @@
 
 ## Concrete machine and operation basis
 
-[CslibFrontier/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [complexitylib][complexitylib].
+[CslibFrontier/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [cslib-frontier][complexitylib].
 
 `Basis` separates ALU symbols/arity from their interpretation. `standard` uses natural truncated subtraction and Lean's total division/modulo conventions; `exact` faults on subtraction underflow and division/modulo by zero. Both check result width rather than silently wrapping arithmetic modulo `2^w`. Restricted additive/arithmetic bases expose which operations an algorithm uses. `Basis.Hom` preserves interpretation; successful-run simulations can relate a partial basis to a more total one.
 
 Copies and memory moves rely on a bounded-state invariant rather than rechecking every existing word. The program counter is naturally unbounded in the base Word-RAM; code-length/address restrictions are separate. An instruction can explicitly read the width, and `ReadsWidth` tracks that feature. Without it, successful runs have a width-monotonicity theorem.
 
 Structured [CslibFrontier/Computability/WordRAM/Structured.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Structured.lean) has operations, sequencing, branches and loops. Its `Exec` relation counts actual branch/jump overhead, and assembly preserves exact counts. Hoare and potential rules prove executions of this code; they do not treat a source-language loop as one machine instruction.
+
+## Running concrete programs in tests
+
+`Code.eval` runs a structured program on concrete data, and `Exec.of_eval` turns a successful
+result into an execution. It keeps registers and memory as `Function.update` chains, so a compiled
+`#eval` or `#guard` of a run takes time quadratic in its length. For a run longer than a few
+thousand instructions, import
+[`Structured.FastEval`](../../CslibFrontier/Computability/WordRAM/Structured/FastEval.lean) in the
+test file. Its proved `@[csimp]` lemma makes compiled code use an array-backed interpreter, and the
+observations do not change. For example,
+[`NativeChanHeVisitor`](../../CslibFrontierTests/NativeChanHeVisitor.lean) drops from about nine
+minutes to under ten seconds. The import affects only compiled evaluation. `decide` and `rfl`
+still reduce `Code.eval` in the kernel. When such a check is slow in its tactic step rather than in
+type checking (see `set_option profiler true`), `decide +kernel` skips the elaborator's evaluation.
+Keep the library modules that define programs free of this import, so that it stays a leaf.
 
 ## Proving a constant-cost counting loop
 
@@ -50,6 +65,16 @@ existing separate rules. Missing word fits, alias conditions or a mismatched rou
 proof. Open the complete ordinary-import
 [call examples](../../CslibFrontierTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
+
+`wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
+also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
+round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
+`f a`, or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates.
+Other names stay unread. Memory passed whole to a definition, as in `swapMem y.mem i j`, becomes
+`Function.update`; reads at an address still go through the discharger. `Data.set_set` drops an
+overwritten register. The
+[symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each case,
+including names left unread.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
@@ -193,7 +218,7 @@ conditional but still uses the delivered-argument, body-only calling convention 
 This explicit route does not retain concrete witnesses through every bind, loop or
 randomized constructor. Existing existential Backend clients remain available through the
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
-resource proofs; no selected abstract bound follows from this example.
+resource proofs; no fixed-resource Karger bound follows from this example.
 
 ### Retain scalar code and share its scratch bank
 

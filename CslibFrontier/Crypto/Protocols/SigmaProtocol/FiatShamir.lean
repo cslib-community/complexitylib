@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Identification
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
 public import CslibFrontier.Languages.Probabilistic.Forking
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Languages.Probabilistic.Presample
@@ -292,13 +293,11 @@ private theorem realHandler_map (P : SigmaProtocol X Y T C Z) (keyGen : PMF (X �
       handler (fiatShamir hashPoint P keyGen) key q st.1 := by
   cases q with
   | inl m =>
-    simp only [realHandler, handler, fiatShamir, interpret_map, interpret_query, StateT.run_map,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.monad_map_eq_map, PMF.map_bind,
-      PMF.map_comp, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, realHandler, handler, fiatShamir, interpret_map, interpret_query,
+      StateT.run_map]
     exact congrArg (PMF.bind _) (funext fun ts => (PMF.bind_pure_comp _ _).symm)
   | inr x =>
-    simp only [realHandler, handler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, realHandler, handler]
     rfl
 
 omit [DecidableEq M] in
@@ -320,7 +319,7 @@ private theorem identicalUntilBad (P : SigmaProtocol X Y T C Z) (key : X × Y) :
           exact hst' (by rw [← (Prod.mk.inj hr).2]; simp)
       | none =>
         rw [oracle, memoize_of_none _ _ _ hlookup]
-        simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
+        simp only [pmf_norm]
         exact DFunLike.congr_fun (PMF.bind_pure_comp _ _) _
   absorb_first q st hst x hx := by
     cases q with
@@ -469,10 +468,8 @@ private theorem programHandler_map {P : SigmaProtocol X Y T C Z} {R : X → Y �
       (simulateConversation simulate key.2).bind fun v => simulatedHandler hashPoint v q st.1 := by
   cases q with
   | inl m =>
-    simp only [programHandler, simulatedHandler, simulateConversation, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp, PMF.bind_bind, PMF.pure_bind,
-      hzk.transcript_eq key.1 key.2 hkey, SigmaProtocol.transcript, PMF.bind_map,
-      Function.comp_def]
+    simp only [pmf_norm, programHandler, simulatedHandler, simulateConversation,
+      hzk.transcript_eq key.1 key.2 hkey, SigmaProtocol.transcript]
     rw [PMF.bind_comm]
     rfl
   | inr x =>
@@ -614,8 +611,7 @@ private theorem map_run_forkingProgram (P : SigmaProtocol X Y T C Z)
     rfl]
     at hsim
   rw [forkingProgram, interpret_bind, StateT.run_bind, run_interpret_run_interpret, ← hsim]
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.map_bind, PMF.bind_map,
-    Function.comp_def]
+  simp only [pmf_norm]
   exact congrArg (PMF.bind _) (funext fun r => map_run_finish hashPoint P s.1 r.1 r.2.1 r.2.2)
 
 /-! ### The reduction's runs on fixed answers -/
@@ -792,7 +788,7 @@ private theorem map_run_le_accept (P : SigmaProtocol X Y T C Z)
         (fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
   have hbound := isQueryBounded_forkingProgram hashPoint P A hQro s
   rw [run_interpret_countingUniform_eq (Classical.arbitrary C) _ hbound]
-  simp only [← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  simp only [pmf_norm, ← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun h _ => ?_
   obtain ⟨hwin, hnamed⟩ := runWithAnswers_forkingProgram hashPoint P A s (List.ofFn h) rfl
   by_cases hw : (runWithAnswers (Classical.arbitrary C) (forkingProgram hashPoint P A s)
@@ -834,7 +830,7 @@ private theorem fork_le_oneWayGame {P : SigmaProtocol X Y T C Z}
         (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (forkingProgram hashPoint P A)) := by
     simp only [Forking.fork, PMF.monad_bind_eq_bind, PMF.bind_bind]
   rw [hfork, PMF.map_bind]
-  simp only [oneWayGame, reduction, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map]
+  simp only [pmf_norm, oneWayGame, reduction]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun key hkey => ?_
   rw [← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun result hresult => ?_

@@ -79,13 +79,8 @@ noncomputable def totalStableInfluence (ρ : ℝ) (f : (ι → Bool) → ℝ) : 
 /-- **The Fourier formula for the stable influence**:
 `Infᵢ^{(ρ)}[f] = ∑_{S ∋ i} ρ ^ (|S| - 1) f̂(S) ^ 2` [O'Donnell, Definition 2.52][ODonnell2014]. -/
 theorem stableInfluence_eq_sum (ρ : ℝ) (i : ι) (f : (ι → Bool) → ℝ) :
-    stableInfluence ρ i f = ∑ S with i ∈ S, ρ ^ (#S - 1) * fourierCoeff f S ^ 2 := by
-  rw [stableInfluence, noiseStability_eq_sum, sum_filter_mem_eq_sum_filter_notMem i, sum_filter]
-  refine sum_congr rfl fun T _ => ?_
-  rw [fourierCoeff_derivative]
-  split_ifs with hT
-  · simp
-  · rw [card_insert_of_notMem hT, Nat.add_sub_cancel]
+    stableInfluence ρ i f = ∑ S with i ∈ S, ρ ^ (#S - 1) * fourierCoeff f S ^ 2 :=
+  noiseStability_derivative_eq_sum ρ i f
 
 /-- At `ρ = 1` the stable influence is the influence. -/
 theorem stableInfluence_one (i : ι) (f : (ι → Bool) → ℝ) :

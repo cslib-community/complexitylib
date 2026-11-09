@@ -239,17 +239,13 @@ theorem blockSensitivityAt_comp_piecewise_add_one_le {S B₀ : Finset (Fin n)}
   have hinj : Set.InjOn (· \ S) (F : Set (Block n)) := fun B₁ hB₁ B₂ hB₂ h => by
     by_contra hne
     obtain ⟨i, hi⟩ := hfree B₁ hB₁
-    have hi' : i ∈ B₂ \ S := by
-      change B₁ \ S = B₂ \ S at h
-      rwa [← h]
+    have hi' : i ∈ B₂ \ S := by grind
     exact disjoint_left.1 (hF.2 hB₁ hB₂ hne) (mem_sdiff.1 hi).1 (mem_sdiff.1 hi').1
   set x' := S.piecewise a z
   have hB₀F : B₀ ∉ F.image (· \ S) := fun h => by
     obtain ⟨B, hB, hBeq⟩ := mem_image.1 h
     obtain ⟨i, hi⟩ := hfree B hB
-    have hi₀ : i ∈ B₀ := by
-      rw [← show B \ S = B₀ from hBeq]
-      exact hi
+    have hi₀ : i ∈ B₀ := by grind
     exact (mem_sdiff.1 hi).2 (hB₀S hi₀)
   have hG : IsSensitiveFamily f x' (insert B₀ (F.image (· \ S))) := by
     refine ⟨fun B hB => ?_, ?_⟩

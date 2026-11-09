@@ -102,9 +102,8 @@ theorem Reduction.plainLaw_run_bundle {smp : PerChallenge ProbComp s}
   rw [PMF.map_bind]
   congr 1
   funext st
-  rw [← plainLaw_bind, plainLaw_bindLeaf_run]
-  simp only [plainLaw_pure, PMF.pure_map]
-  exact PMF.bind_pure_comp _ _
+  rw [← plainLaw_bind]
+  exact plainLaw_bindLeaf_pure_run _ _ _ _
 
 /-- **Completeness of a bundle**, with the common error. -/
 theorem Reduction.Complete.bundle {smp : PerChallenge ProbComp s}

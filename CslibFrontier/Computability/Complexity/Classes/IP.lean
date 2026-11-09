@@ -91,9 +91,7 @@ variable {Operation α β : Type} (P : Prover Operation)
 interacts with `P` starting from the prover state `s`. Private coins are fresh fair samples. -/
 noncomputable def run (program : WordOracleComp Operation α) (s : P.State) :
     PMF (α × P.State) :=
-  (OracleComp.interpret
-    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
-      program).run s
+  ProbOracleComp.runWith P.respond program s
 
 /-- `Prover.run` is the run against the prover as a stateful oracle with word queries and
 replies. -/
@@ -106,23 +104,21 @@ theorem run_eq_runWith (program : WordOracleComp Operation α) (s : P.State) :
 theorem run_bind (program : WordOracleComp Operation α) (next : α → WordOracleComp Operation β)
     (s : P.State) :
     P.run (program >>= next) s = (P.run program s).bind fun x => P.run (next x.1) x.2 := by
-  simp only [run, OracleComp.interpret_bind, StateT.run_bind]
-  rfl
+  simp only [run, ProbOracleComp.runWith_bind]
 
 theorem run_map (f : α → β) (program : WordOracleComp Operation α) (s : P.State) :
     P.run (f <$> program) s = (P.run program s).map (Prod.map f id) := by
-  simp only [run, OracleComp.interpret_map, StateT.run_map]
-  rfl
+  simp only [run, ProbOracleComp.runWith_map]
 
 /-- Private coins do not involve the prover, whose state is unchanged. -/
 @[simp] theorem run_sample (program : ProbComp α) (s : P.State) :
     P.run (ProbOracleComp.sample program) s = (ProbComp.eval program).map (·, s) :=
-  ProbOracleComp.run_interpret_sample _ _ _
+  ProbOracleComp.runWith_sample _ _ _
 
 /-- A message is answered by the prover's response function. -/
 @[simp] theorem run_query (q : Operation × List Bool) (s : P.State) :
-    P.run (ProbOracleComp.query q) s = (P.respond q).run s := by
-  simp only [run, ProbOracleComp.interpret_query]
+    P.run (ProbOracleComp.query q) s = (P.respond q).run s :=
+  ProbOracleComp.runWith_query _ _ _
 
 /-- The deterministic prover answering every message with `reply`. -/
 noncomputable def const (reply : List Bool) : Prover Operation where
