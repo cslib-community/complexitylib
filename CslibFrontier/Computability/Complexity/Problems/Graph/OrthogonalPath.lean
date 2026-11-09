@@ -285,9 +285,7 @@ theorem unitPath_interior_index (G : Graph)
 
 private theorem pair_mem_at {r : Route} {k : ℕ} (hk : k + 1 < r.length) :
     (r[k], r[k + 1]) ∈ r.consecutivePairs := by
-  have hlen : k < r.consecutivePairs.length := by
-    simp only [List.consecutivePairs, List.length_zip, List.length_tail]
-    omega
+  have hlen : k < r.consecutivePairs.length := by grind
   have hm : r.consecutivePairs[k] ∈ r.consecutivePairs := List.getElem_mem hlen
   simpa only [List.consecutivePairs, List.getElem_zip, List.getElem_tail] using hm
 
@@ -515,12 +513,8 @@ private theorem listed_on_upper_track {n e f u v : ℕ} (hu : u < n) (hv : v < n
     (s t : Fin 3) {p : Point} (hp : p ∈ Layout.route n f u v s t)
     (hy : p.2 = Layout.track n e) :
     p = (Layout.column u s, Layout.track n f) ∨ p = (Layout.column v t, Layout.track n f) := by
-  have hcu : (Layout.center u).2 < Layout.track n e := by
-    simp only [Layout.center, Layout.track]
-    omega
-  have hcv : (Layout.center v).2 < Layout.track n e := by
-    simp only [Layout.center, Layout.track]
-    omega
+  have hcu : (Layout.center u).2 < Layout.track n e := by grind [Layout.center, Layout.track]
+  have hcv : (Layout.center v).2 < Layout.track n e := by grind [Layout.center, Layout.track]
   have heu := Layout.elbow_below_track (e := e) hu s
   have hev := Layout.elbow_below_track (e := e) hv t
   simp only [Layout.route, List.mem_cons, List.not_mem_nil, or_false] at hp

@@ -747,9 +747,7 @@ theorem mulApprox_isScaledApprox {x y : ℕ → ℤ}
               |(streamPrefix x N - streamVal x) * streamVal y| := abs_add_le _ _
         _ = |streamPrefix x N| * |streamPrefix y N - streamVal y| +
               |streamPrefix x N - streamVal x| * |streamVal y| := by rw [abs_mul, abs_mul]
-        _ ≤ 12 * (6 / (2 : ℝ) ^ N) + (6 / (2 : ℝ) ^ N) * 12 :=
-              add_le_add (mul_le_mul hx_pre hy_tail (abs_nonneg _) (by norm_num))
-                (mul_le_mul hx_tail hy_val (abs_nonneg _) (by positivity))
+        _ ≤ 12 * (6 / (2 : ℝ) ^ N) + (6 / (2 : ℝ) ^ N) * 12 := by gcongr
         _ = 144 / (2 : ℝ) ^ N := by ring
     rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)]
     have hN_ge : t + 20 ≤ N := by omega
@@ -759,9 +757,7 @@ theorem mulApprox_isScaledApprox {x y : ℕ → ℤ}
     calc (2 : ℝ) ^ t * |streamPrefix x N * streamPrefix y N - streamVal x * streamVal y|
         ≤ (2 : ℝ) ^ t * (144 / (2 : ℝ) ^ N) :=
           mul_le_mul_of_nonneg_left hprod_err (by positivity)
-      _ ≤ (2 : ℝ) ^ t * (144 / ((2 : ℝ) ^ t * (2 : ℝ) ^ 20)) :=
-          mul_le_mul_of_nonneg_left
-            (div_le_div_of_nonneg_left (by norm_num) (by positivity) hpow_ge) (by positivity)
+      _ ≤ (2 : ℝ) ^ t * (144 / ((2 : ℝ) ^ t * (2 : ℝ) ^ 20)) := by gcongr
       _ = 144 / (2 : ℝ) ^ 20 := by field_simp
   have htri1 := abs_sub_le ((bandFold x y t K / (2 : ℤ) ^ mulBaseMargin : ℤ) : ℝ)
     ((bandFold x y t K : ℝ) / (2 : ℝ) ^ mulBaseMargin)

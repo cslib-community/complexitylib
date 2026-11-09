@@ -1378,9 +1378,7 @@ private theorem lastStep_mem {φ : CNF ℕ} {o : Occurrence ℕ}
     lastStep (occurrencePath φ o) ∈ (occurrencePath φ o).consecutivePairs := by
   let r := occurrencePath φ o
   have hlen : 2 ≤ r.length := PlanarCompile.occurrencePath_length_ge_two ho
-  have hk : r.length - 2 < r.consecutivePairs.length := by
-    simp only [List.consecutivePairs, List.length_zip, List.length_tail]
-    omega
+  have hk : r.length - 2 < r.consecutivePairs.length := by grind
   have heq : r.consecutivePairs[r.length - 2] = lastStep r := by
     rw [List.getElem_zip, List.getElem_tail]
     apply Prod.ext

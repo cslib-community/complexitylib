@@ -201,9 +201,7 @@ theorem profileCollarRoute_contact (p : ClauseProfile)
   have hve (ht : e.2.1 ∈ (profilePrefixGeometry p).terminalVariables) : e.2.1 ≠ f.2.1 := by
     intro hv
     exact profile_prefix_shared_variable_not_terminal p he hf hne hv ht
-  have hvf (ht : f.2.1 ∈ (profilePrefixGeometry p).terminalVariables) : f.2.1 ≠ e.2.1 := by
-    intro hv
-    exact profile_prefix_shared_variable_not_terminal p hf he (Ne.symm hne) hv ht
+  have hvf (ht : f.2.1 ∈ (profilePrefixGeometry p).terminalVariables) : f.2.1 ≠ e.2.1 := by grind
   unfold profileCollarRoute at hz hw
   split_ifs at hz with hte <;> split_ifs at hw with htf
   · have hle := (LocalGeometry.prefix_incidence_endpoints h he).2.2.2
@@ -296,9 +294,7 @@ theorem profileCollarRoute_source_not_mem_support (p : ClauseProfile)
     cases hr : (collarRoutes s).getD i [] with
     | nil => rw [hr] at hhead; cases hhead
     | cons a as =>
-      have ha : a = collarOuterPort (s.side i) := by
-        rw [hr] at hhead
-        exact Option.some.inj hhead
+      have ha : a = collarOuterPort (s.side i) := by grind
       rw [← ha]
       exact List.mem_cons_self
   have hsupp : realPoint (collarOuterPort (s.side i)) ∈
