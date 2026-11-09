@@ -18,18 +18,18 @@ class RegistryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="codex-results-registry-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        (self.root / "Complexity").mkdir()
-        (self.root / "Complexity/Example.lean").write_text("/-! [Example2026] -/\n")
+        (self.root / "CslibFrontier").mkdir()
+        (self.root / "CslibFrontier/Example.lean").write_text("/-! [Example2026] -/\n")
         (self.root / "references.bib").write_text("@article{Example2026, title={An example}}\n")
         self.entry = {"id": "example", "title": "A result", "topic": "examples",
-                      "module": "Complexity.Example", "theorems": ["Cslib.example"],
+                      "module": "CslibFrontier.Example", "theorems": ["Cslib.example"],
                       "scope": "One bounded model.", "source_review": "recorded",
                       "sources": [{"bib_key": "Example2026", "source_theorem": "Theorem 1",
                                    "locator": "Section 2, p. 3"}]}
-        self.constant = {"m": "Complexity.Example", "k": "thm", "e": "axiom"}
+        self.constant = {"m": "CslibFrontier.Example", "k": "thm", "e": "axiom"}
 
     def test_missing_paper_module_and_duplicate(self):
-        for change in (lambda e: e.update(module="Complexity.Missing"),
+        for change in (lambda e: e.update(module="CslibFrontier.Missing"),
                        lambda e: e["sources"][0].update(bib_key="Missing2026"),
                        lambda e: e.update(module="Complexity../Example")):
             entry = copy.deepcopy(self.entry)
@@ -69,7 +69,7 @@ class RegistryTests(unittest.TestCase):
         variants = [{}, {"Cslib.example": dict(self.constant, e="")},
                     {"Cslib.example": dict(self.constant, k="def")},
                     {"Cslib.example": dict(self.constant, k="axiom")},
-                    {"Cslib.example": dict(self.constant, m="Complexity.Other")}]
+                    {"Cslib.example": dict(self.constant, m="CslibFrontier.Other")}]
         for constants in variants:
             with self.subTest(constants=constants), self.assertRaises(ValueError):
                 registry.validate_constants([self.entry], constants)
@@ -83,12 +83,12 @@ class RegistryTests(unittest.TestCase):
             load.assert_not_called()
 
     def test_abstract_metadata_is_reused_and_citations_are_context(self):
-        source = self.root / "abstracts/ComplexityAbstracts/ExampleAbstract.lean"
+        source = self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean"
         source.parent.mkdir(parents=True)
         source.write_text("/-! [Example2026] -/\nnamespace Abstract\n"
                           "theorem example : True := trivial\nend Abstract\n")
         abstract = {"id": "example", "title": "Current catalogue title", "scope": "Current scope",
-                    "module": "ComplexityAbstracts.ExampleAbstract",
+                    "module": "CslibFrontierAbstracts.ExampleAbstract",
                     "headline_theorems": ["Abstract.example"]}
         with patch.object(registry, "load_lean_registry", return_value={
                 "schema_version": 1, "abstract_catalogue": "abstracts/catalogue.json", "results": []}), \
@@ -99,8 +99,8 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(entries[0]["source_review"], "module-citations")
         self.assertEqual(entries[0]["sources"], [{"bib_key": "Example2026", "source_theorem": None, "locator": None}])
         rendered = registry.markdown(entries, self.root)
-        self.assertIn("abstracts/ComplexityAbstracts/ExampleAbstract.lean#L3", rendered)
-        self.assertNotIn("ComplexityAbstracts/ExampleAbstract.html", rendered)
+        self.assertIn("abstracts/CslibFrontierAbstracts/ExampleAbstract.lean#L3", rendered)
+        self.assertNotIn("CslibFrontierAbstracts/ExampleAbstract.html", rendered)
 
     def test_lean_export_checks_freshness_then_runs_exporter_in_requested_root(self):
         manifest = {"schema_version": 1, "abstract_catalogue": "abstracts/catalogue.json",
@@ -110,7 +110,7 @@ class RegistryTests(unittest.TestCase):
                 subprocess.CompletedProcess([], 0, json.dumps(manifest), "")]) as run:
             self.assertEqual(registry.load_lean_registry(self.root), manifest)
         self.assertEqual([call.args[0] for call in run.call_args_list], [
-            ["lake", "build", "--no-build", "ComplexityResults"],
+            ["lake", "build", "--no-build", "CslibFrontierResults"],
             ["lake", "env", "lean", "--run", "scripts/ExportResults.lean"]])
         for call in run.call_args_list:
             self.assertEqual(call.kwargs, dict(cwd=self.root, text=True, check=True,
@@ -134,7 +134,7 @@ class RegistryTests(unittest.TestCase):
 
     def test_indexes_resolve_declaration_and_bibliography_targets(self):
         text = registry.markdown([self.entry], self.root)
-        self.assertIn("Complexity/Example.html#Cslib.example", text)
+        self.assertIn("CslibFrontier/Example.html#Cslib.example", text)
         self.assertIn("references.bib#L1", text)
         self.assertIn("Theorem 1", text)
         self.assertIn("Section 2, p. 3", text)
