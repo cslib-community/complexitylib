@@ -307,7 +307,6 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Properties
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Receive
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Setup
-public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Source
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.SourceBounds
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.TimeBound
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Width
