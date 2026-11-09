@@ -54,7 +54,7 @@ def run(*args: str) -> str:
 
 def markers() -> list[tuple[pathlib.Path, str]]:
     found = []
-    for path in sorted((ROOT / "Complexity").rglob("*.lean")):
+    for path in sorted((ROOT / "CslibFrontier").rglob("*.lean")):
         for status in upstream_markers(path.read_text(encoding="utf-8")):
             found.append((path.relative_to(ROOT), status))
     return found
