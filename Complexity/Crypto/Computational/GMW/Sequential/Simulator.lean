@@ -21,6 +21,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Probability.PMF.Bind
 
@@ -273,9 +274,8 @@ theorem eval_replicate_sessionWithPadsStep {tapes : ℕ} {Control : Type}
     (PMF.map (fun p : Option (ℕ × FiniteConfig tapes Bool Control Unit) × List (List Bool) =>
       (p.1.getD st, p.2)))
     (eval_replicate_iterate_attemptWithPadsStep machine generator s m limit φ w st d_pad att B none)
-  simpa only [sessionWithPadsStep, bind_pure_comp, bind_map_left, ProbComp.eval_bind,
-    ProbComp.eval_map, ProbComp.eval_pure, PMF.map_bind, PMF.bind_map, PMF.map_comp,
-    PMF.pure_map, Function.comp_def, getD_foldl_or_none] using hmap
+  simpa only [pmf_norm, sessionWithPadsStep, bind_pure_comp, bind_map_left,
+    getD_foldl_or_none] using hmap
 
 theorem eval_replicate_iterate_sessionWithPadsStep {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
@@ -332,8 +332,7 @@ theorem eval_replicate_runAllSessionsWithPads_prg {tapes : ℕ} {Control : Type}
     (generator <$> BitString.sampleList s) K (limit, FiniteConfig.init machine.initial word)
   have hbind := congrArg
     (fun d => d.bind (fun st' => ProbComp.eval (finishSessionRun machine limit st'))) hiter
-  simp only [runAllSessionsWithPads, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.bind_bind, PMF.bind_map, Function.comp_def] at hbind ⊢
+  simp only [pmf_norm, runAllSessionsWithPads] at hbind ⊢
   exact hbind
 
 theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : Type} [Finite Control]
@@ -366,8 +365,7 @@ theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : T
   rw [eval_iterate_congr hcongr] at hiter
   have hbind := congrArg
     (fun d => d.bind (fun st' => ProbComp.eval (finishSessionRun machine limit st'))) hiter
-  simp only [runAllSessionsWithPads, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.bind_bind, PMF.bind_map, Function.comp_def] at hbind ⊢
+  simp only [pmf_norm, runAllSessionsWithPads] at hbind ⊢
   exact hbind
 
 /-! ### Step 3: Strict polynomial-time certificates for session and multi-session loops -/
@@ -989,8 +987,7 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
     rw [← eval_gmwSeqInteract,
       eval_gmwSeqInteract_eq_machine_of_isOraclePPTOn generator s m K φ w machine c d hspec n a z,
       eval_gmwSeqInteract_runOracle_eq_iterate_realSessionStep]
-    simp only [distinguishingGame, post, st₀, T, word, encIn, ProbComp.eval_bind,
-      PMF.monad_bind_eq_bind, PMF.bind_bind]
+    simp only [pmf_norm, distinguishingGame, post, st₀, T, word, encIn]
     rfl
   let guessGame : Game :=
     (ProbComp.eval (OracleComp.iterate K
@@ -1000,9 +997,8 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
       (adversary n a z) =
     (ProbComp.eval (OracleComp.iterate K
       (simSessionStep machine generator s m T att φ) st₀)).bind post := by
-    simp only [gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d,
-      distinguishingGame, post, st₀, T, word, s, m, att, K, φ,
-      ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
+    simp only [pmf_norm, gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d, distinguishingGame,
+      post, st₀, T, word, s, m, att, K, φ]
     rfl
   have h1 : Game.advantage
       ((ProbComp.eval (OracleComp.iterate K
@@ -1276,8 +1272,7 @@ theorem gmwSeqView_indistinguishable_gmwSeqSimulator {α : Type} {enc : α ↪ L
   have herr := hgeom.polynomiallyBounded_mul hk_poly
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind, ProbComp.eval_map,
-    BitString.eval_sampleList, generatorEnsemble, red] using
+  simpa only [pmf_norm, distinguishingGame, BitString.eval_sampleList, generatorEnsemble, red] using
     gmwSeqView_advantage_le generator length f k hV (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) (hw_sat n)
 

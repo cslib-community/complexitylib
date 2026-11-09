@@ -135,14 +135,10 @@ theorem ofMask_toMask (L : List V) (S : Finset V) : ofMask L (toMask L S) = S �
     have hdiv : ((if v ∈ S then 1 else 0) + 2 * toMask L S) / 2 = toMask L S := by
       split_ifs <;> omega
     by_cases hv : v ∈ S
-    · have hmod : ((if v ∈ S then 1 else 0) + 2 * toMask L S) % 2 = 1 := by
-        rw [ite_eq_left hv]
-        omega
+    · have hmod : ((if v ∈ S then 1 else 0) + 2 * toMask L S) % 2 = 1 := by grind
       simp only [toMask, ofMask, hmod, hdiv, ih, ite_true, List.toFinset_cons]
       rw [Finset.inter_insert_of_mem hv]
-    · have hmod : ¬((if v ∈ S then 1 else 0) + 2 * toMask L S) % 2 = 1 := by
-        rw [ite_eq_right hv]
-        omega
+    · have hmod : ¬((if v ∈ S then 1 else 0) + 2 * toMask L S) % 2 = 1 := by grind
       simp only [toMask, ofMask, hmod, hdiv, ih, ite_false, List.toFinset_cons]
       rw [Finset.inter_insert_of_notMem hv]
 
@@ -155,9 +151,7 @@ theorem toMask_ofMask {L : List V} (hL : L.Nodup) {m : ℕ} (hm : m < 2 ^ L.leng
     omega
   | cons v L ih =>
     rw [List.nodup_cons] at hL
-    have hm' : m / 2 < 2 ^ L.length := by
-      rw [List.length_cons, pow_succ] at hm
-      omega
+    have hm' : m / 2 < 2 ^ L.length := by grind
     have hrest : toMask L (ofMask (v :: L) m) = toMask L (ofMask L (m / 2)) := by
       refine toMask_congr fun x hx => ?_
       have hxv : x ≠ v := fun h => hL.1 (h ▸ hx)

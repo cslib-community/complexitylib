@@ -119,10 +119,6 @@ theorem write_mem_of_ne {x : Data r} {a b : ℕ} (h : b ≠ a) (v : ℕ) :
     (x.write a v).mem b = x.mem b := by
   rw [write_mem, Function.update_of_ne h]
 
-/-- Setting a register twice keeps the second value. -/
-theorem set_set (x : Data r) (i : Fin r) (u v : ℕ) : (x.set i u).set i v = x.set i v := by
-  simp only [set, Function.update_idem]
-
 end Data
 
 /-! ## Weakest preconditions -/
@@ -320,13 +316,13 @@ meta def discharge (tac : Simp.Discharge) (p : Expr) : SimpM (Option Expr) := do
 
 /-- The value of the register name `i : Fin n`, and whether it unfolds to a constructor `⟨k, _⟩`, as
 `Fin.castAdd`, `Fin.natAdd` and abbreviations such as `⟨k + 9, _⟩` do; otherwise `i.val`. -/
-meta def finVal (n i : Expr) : MetaM (Expr × Bool) := do
+private meta def finVal (n i : Expr) : MetaM (Expr × Bool) := do
   let i' ← whnfD i
   if i'.isAppOfArity ``Fin.mk 3 then return (i'.getArg! 1, true)
   return (mkApp2 (mkConst ``Fin.val) n i, false)
 
 /-- A hypothesis `j ∉ Set.range f` when `i` is `f a`, giving `j ≠ i`. -/
-meta def outsideRange? (j i : Expr) : MetaM (Option Expr) := do
+private meta def outsideRange? (j i : Expr) : MetaM (Option Expr) := do
   let .app f a := i | return none
   let some hj ← (← getLCtx).findDeclRevM? fun d => do
       if d.isImplementationDetail then return none
@@ -339,7 +335,7 @@ meta def outsideRange? (j i : Expr) : MetaM (Option Expr) := do
   mkAppM ``Ne.symm #[← mkAppM ``ne_of_mem_of_not_mem #[hmem, hj]]
 
 /-- A hypothesis `Function.Injective f`. -/
-meta def injective? (f : Expr) : MetaM (Option Expr) := do
+private meta def injective? (f : Expr) : MetaM (Option Expr) := do
   (← getLCtx).findDeclRevM? fun d => do
     if d.isImplementationDetail then return none
     let_expr Function.Injective _ _ f' := (← instantiateMVars d.type).cleanupAnnotations
@@ -352,7 +348,7 @@ stated as `¬j = i` as `by_cases` gives it; by a hypothesis `j ∉ Set.range f` 
 symmetrically; by a hypothesis `Function.Injective f` when they are `f b` and `f a` with `b` and `a`
 different; and otherwise by the discharger on their values, when one of them unfolds to a
 constructor `⟨k, _⟩` (`finVal`). -/
-meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
+private meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
   let p ← mkAppM ``Ne #[j, i]
   if let some r ← decideClosed? p then return r
   for q in [p, mkNot (← mkEq j i)] do
@@ -430,7 +426,7 @@ meta def reduceMemStep (e : Expr) : SimpM Simp.Step := do
 (`Data.write_mem`). A read `(x.write a v).mem b` is the same expression applied to `b`, so `simp`
 offers it to this procedure too, but only after `reduceMemStep`, whose exact match comes first and
 which ends the simplification of every read after a write. -/
-meta def reduceWriteMemStep (e : Expr) : SimpM Simp.Step := do
+private meta def reduceWriteMemStep (e : Expr) : SimpM Simp.Step := do
   let_expr Data.mem r d := e | return .continue
   let_expr Data.write _ x a v := d | return .continue
   let proof := mkAppN (mkConst ``Data.write_mem) #[r, x, a, v]
@@ -454,8 +450,8 @@ namespace Data
 
 /-- `simp` procedure reading a register after `Data.set` and `Data.write`. Register names that
 evaluate to literals are compared by evaluation; others by hypotheses `j ≠ i`, `j ∉ Set.range f`
-and `Function.Injective f`, or by the discharger on their values (`WP.Exec.regNe?`). It is a
-pre-procedure (`↓`), so that the data is not simplified first. -/
+and `Function.Injective f`, or by the discharger on their values. It is a pre-procedure (`↓`), so
+that the data is not simplified first. -/
 simproc ↓ [wram_simps] reduceRegs (Data.regs _ _) := WP.Exec.reduceRegsStep
 
 /-- `simp` procedure reading memory after `Data.set` and `Data.write`, deciding whether two
