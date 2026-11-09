@@ -63,7 +63,8 @@ theorem execute_local (env : Environment Unit Private) (x : Input)
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
     ((MultiTapePTM.ofDeterministic compiled.machine).runOracleConfigFrom t
       (localStart x memory).config)).run memory).map _ = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic]
   rw [PMF.pure_map]
   rfl
 

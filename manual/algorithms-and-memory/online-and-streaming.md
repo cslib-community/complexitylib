@@ -157,7 +157,9 @@ Chakrabarti's parameter `k` allows `k − 1` counters, so `misraGries k` is his 
 
 These are equations (5.1)–(5.6) of [chakrabarti25][chakrabarti25]. Only an upper bound on collision probabilities is assumed.
 
-The amplification step is the median trick `dens_abs_median_sub_gt_le`, in [MedianTrick.lean](../../CslibFrontier/Probability/MedianTrick.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. [MedianOfMeans.lean](../../CslibFrontier/Probability/MedianOfMeans.lean) derives `dens_abs_medianOfMeans_sub_gt_le` from it.
+The amplification step is the median trick `dens_abs_median_sub_gt_le`, in [MedianTrick.lean](../../CslibFrontier/Probability/MedianTrick.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. [MedianOfMeans.lean](../../CslibFrontier/Probability/MedianOfMeans.lean) derives `dens_abs_medianOfMeans_sub_gt_le` from it. The finite-uniform estimator is named
+`uniformMedianOfMeans`; the measure-valued `medianOfMeans` used by adaptive
+auditing is a separate statistic with explicit block sizes and sample law.
 
 [CslibFrontier/Computability/Streaming/CountSketch.lean](../../CslibFrontier/Computability/Streaming/CountSketch.lean) assembles `2r` rows into the streaming algorithm `countSketch`, and `countSketchRandom` draws its seeds uniformly. Its results:
 

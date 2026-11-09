@@ -514,7 +514,8 @@ theorem execute_decision {Private : Type} (env : Environment Unit Private)
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
     ((MultiTapePTM.ofDeterministic compiled.machine).runOracleConfigFrom t
       (start w memory).config)).run memory).map _ = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   rfl
 
 /-- Actual unbounded execution of the native raw-history decision terminates

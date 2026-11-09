@@ -230,13 +230,13 @@ private theorem cast_sum_map_sign [DecidableEq α] (u : List α) (θ : ι) :
 the two relations. -/
 theorem run_joinSketch [DecidableEq α] (ω : Fin (2 * r) → Fin k → ι) (s : List (α ⊕ α)) :
     (joinSketch h sgn r k ω).run s =
-      medianOfMeans (fun θ =>
+      uniformMedianOfMeans (fun θ =>
         (∑ a ∈ (s.filterMap Sum.getLeft?).toFinset,
           ((s.filterMap Sum.getLeft?).count a : ℝ) * sgn (h θ a)) *
         ∑ a ∈ (s.filterMap Sum.getRight?).toFinset,
           ((s.filterMap Sum.getRight?).count a : ℝ) * sgn (h θ a)) ω := by
   rw [Algorithm.run, state_joinSketch]
-  simp only [joinSketch, medianOfMeans, cast_sum_map_sign]
+  simp only [joinSketch, uniformMedianOfMeans, cast_sum_map_sign]
 
 /-- The median-of-means estimate from the tug-of-war sums of two streams `u` and `v` with shared
 signs misses `joinSize u v` by more than `η √(F₂ u F₂ v)` for at most an `(8 / 9) ^ r` fraction of
@@ -246,7 +246,7 @@ private theorem dens_medianOfMeans_joinSize_error_le [Fintype ι] [DecidableEq �
     (hsum : ∑ y, sgn y = 0) {η : ℝ} (hη : 0 < η) (hk : 6 ≤ k * η ^ 2) (u v : List α) :
     (dens {ω : Fin (2 * r) → Fin k → ι |
       η * √((freqMoment 2 u : ℝ) * freqMoment 2 v) <
-        |medianOfMeans (fun θ => (∑ a ∈ u.toFinset, (u.count a : ℝ) * sgn (h θ a)) *
+        |uniformMedianOfMeans (fun θ => (∑ a ∈ u.toFinset, (u.count a : ℝ) * sgn (h θ a)) *
           ∑ a ∈ v.toFinset, (v.count a : ℝ) * sgn (h θ a)) ω - joinSize u v|} : ℝ) ≤
       (8 / 9) ^ r := by
   classical
@@ -299,11 +299,12 @@ private theorem dens_medianOfMeans_joinSize_error_le [Fintype ι] [DecidableEq �
       have := (Finset.expect_eq_zero_iff_of_nonneg (fun _ _ => sq_nonneg _)).1 h0 θ (mem_univ θ)
       exact sub_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 this)
     have hempty : ({ω : Fin (2 * r) → Fin k → ι |
-        η * √B < |medianOfMeans g ω - μ|} : Finset _) = ∅ := by
+        η * √B < |uniformMedianOfMeans g ω - μ|} : Finset _) = ∅ := by
       have : Nonempty (Fin (2 * r)) := ⟨⟨0, by omega⟩⟩
       refine filter_false_of_mem fun ω _ => ?_
       have hk0 : NeZero k := ⟨by rintro rfl; norm_num at hk⟩
-      simp only [medianOfMeans, hconst, Fintype.expect_const, median_const, sub_self, abs_zero,
+      simp only [uniformMedianOfMeans, hconst, Fintype.expect_const, median_const,
+        sub_self, abs_zero,
         not_lt]
       positivity
     rw [hempty, dens_empty, NNRat.cast_zero]

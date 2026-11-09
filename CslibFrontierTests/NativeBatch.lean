@@ -54,7 +54,8 @@ theorem packet_memory_law :
   simp only [execute, PMF.map_comp, Function.comp_def]
   dsimp only [machine]
   refine hm.trans ?_
-  simp only [OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
+  simp only [ProbOracleComp.runWith, OracleComp.runWith, OracleComp.interpret_map,
+    StateT.run_map, ProbOracleComp.interpret_query,
     PMF.monad_map_eq_map, PMF.map_comp]
   change ((serve limits sample (encodeBatch first) (initial false)).map
     (fun out => (out.1.word, start.memory.record ((), encodeBatch first) out.1 out.2))).map

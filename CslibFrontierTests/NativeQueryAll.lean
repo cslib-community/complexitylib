@@ -204,7 +204,8 @@ example {tapes : ℕ} {Controls : Type} (competitor : MultiTapePTM tapes Bool Co
     (fuel : ℕ) :
     ((OracleComp.interpret
       (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-        (handler (environment CslibFrontierTests.ConcurrentBatch.limits NativeBatchMetadata.sample)))
+        (handler (environment CslibFrontierTests.ConcurrentBatch.limits
+          NativeBatchMetadata.sample)))
       (competitor.runOracle fuel (encodeBatch CslibFrontierTests.NativeBatchPolicy.first))).run
       NativeBatchMetadata.start.memory) ≠
         handler (environment CslibFrontierTests.ConcurrentBatch.limits NativeBatchMetadata.sample)

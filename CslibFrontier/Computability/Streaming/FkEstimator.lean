@@ -397,7 +397,7 @@ theorem run_fkSketch (ω : Fin (2 * r) → Fin K → Fin m) (s : List α) :
 basic estimator at the sampled positions. -/
 theorem run_fkSketch_eq_medianOfMeans (s : List α) (ω : Fin (2 * r) → Fin K → Fin s.length) :
     (fkSketch k s.length r K ω).run s =
-      medianOfMeans (fun p : Fin s.length => fkBasicEstimate k s p) ω := by
+      uniformMedianOfMeans (fun p : Fin s.length => fkBasicEstimate k s p) ω := by
   rw [run_fkSketch]
   rfl
 

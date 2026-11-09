@@ -33,6 +33,8 @@ The lower median is expressed by finite maxima and minima. This makes the
 estimator Borel measurable, including ties and an even number of blocks.
 The statistical experiment consists of an actual rectangular independent
 product of the sample law; no concentration conclusion is a model field.
+The separate finite-uniform statistic `uniformMedianOfMeans` uses `2 r` blocks
+and finite densities for the streaming applications in the final section.
 
 ## Main definitions
 
@@ -371,7 +373,7 @@ end Cslib.Probability
 # The median-of-means estimator
 
 Given an estimator `g : Ω → ℝ` of its mean `𝔼 g`, with sample `x` drawn uniformly from a finite
-type `Ω`, the **median-of-means** estimator `Cslib.Probability.medianOfMeans g ω` draws `2 r`
+type `Ω`, the **median-of-means** estimator `Cslib.Probability.uniformMedianOfMeans g ω` draws `2 r`
 groups of `k` independent samples `ω i l`, averages each group, and reports the median of the
 `2 r` averages. An average of `k` samples has `k` times smaller variance
 (`Cslib.Probability.expect_expect_sub_sq`), so by Chebyshev's inequality at most a third of the
@@ -388,7 +390,7 @@ distribution; the Count-Sketch uses it for estimates that are not averages.
 
 ## Main definitions
 
-* `Cslib.Probability.medianOfMeans`: the median of `2 r` averages of `k` samples.
+* `Cslib.Probability.uniformMedianOfMeans`: the median of `2 r` averages of `k` samples.
 
 ## Main results
 
@@ -414,7 +416,8 @@ variable {Ω : Type*} [Fintype Ω]
 
 /-- The **median-of-means** estimate from `2 r` groups of `k` samples of `g`: the median of the
 `2 r` group averages. -/
-@[expose] noncomputable def medianOfMeans {r k : ℕ} (g : Ω → ℝ) (ω : Fin (2 * r) → Fin k → Ω) : ℝ :=
+@[expose] noncomputable def uniformMedianOfMeans {r k : ℕ} (g : Ω → ℝ)
+    (ω : Fin (2 * r) → Fin k → Ω) : ℝ :=
   median fun i => 𝔼 l, g (ω i l)
 
 /-- The average of `k` independent samples of `g` has `k` times smaller variance. -/
@@ -438,7 +441,7 @@ theorem expect_expect_sub_sq [Nonempty Ω] {k : ℕ} [NeZero k] (g : Ω → ℝ)
 the mean of `g` for at most an `(8 / 9) ^ r` fraction of the samples. -/
 theorem dens_abs_medianOfMeans_sub_gt_le [Nonempty Ω] {r k : ℕ} [NeZero k] (g : Ω → ℝ) {t : ℝ}
     (ht : 0 < t) (hvar : 3 * 𝔼 x, (g x - 𝔼 y, g y) ^ 2 ≤ k * t ^ 2) :
-    (dens {ω : Fin (2 * r) → Fin k → Ω | t < |medianOfMeans g ω - 𝔼 x, g x|} : ℝ) ≤
+    (dens {ω : Fin (2 * r) → Fin k → Ω | t < |uniformMedianOfMeans g ω - 𝔼 x, g x|} : ℝ) ≤
       (8 / 9) ^ r := by
   classical
   set μ := 𝔼 x, g x

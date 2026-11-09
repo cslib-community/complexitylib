@@ -418,7 +418,8 @@ theorem terminal_transform {k : ℕ} {S P : Type}
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
     ((MultiTapePTM.ofDeterministic code).runOracleConfigFrom time
       (wordWorld input (some code.q₀) words channels memory).config)).run memory).map _ = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   change PMF.pure (⟨⟨code.runFrom (wordsCfg input (some code.q₀) words []) time,
     channels⟩, memory⟩ : World k S Unit P input) = _
   rw [hr]

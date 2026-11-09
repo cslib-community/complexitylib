@@ -373,7 +373,8 @@ private theorem prepare_terminal {k : ℕ} {S P : Type}
         (NativeSequential.resume (prepare k)
           (received (k := k) request memory reply next workspace)).memory).map
           (fun p => (⟨p.1, p.2⟩ : World (k + 2) _ Unit P request)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map,
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map,
     prepare_run continuation]
   rfl
 

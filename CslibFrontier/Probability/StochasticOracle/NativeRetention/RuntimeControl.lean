@@ -56,7 +56,9 @@ This is not a compiler for arbitrary `Selector.Scheduler` functions. -/
 structure State where
   /-- Original input, total opportunity count and stored raw replies, newest first. -/
   work : Packets.Work
-  /-- Actually submitted raw requests, newest first. -/
+  /-- Framed prior States, newest first. These are wire requests in the raw-State
+  ABI; the source-batch planner retains them as a context cache and records its
+  different actual batch request bytes in the native oracle ledger. -/
   requests : List (List Bool)
   /-- Private seed followed by framed visible replies. -/
   privateWord : List Bool
@@ -86,7 +88,8 @@ or requests. The allotment count is an explicit reservation budget. -/
     data.turns, data.opportunities, allotments⟩
 
 /-- Semantic update after one actual full reply. The raw request of this supported
-transport ABI is the framed encoding of the old runtime state. -/
+transport ABI is the framed encoding of the old runtime state. Other request
+planners retain that frame as a cache, while recording their actual wire word in memory. -/
 @[expose] def afterReply (state : State) (reply : List Bool) : State :=
   ⟨{ state.work with history := reply :: state.work.history },
     frame (encoding state) :: state.requests, state.privateWord ++ frame reply,
@@ -138,6 +141,10 @@ private theorem fields : ComputableInPolyTime
     (fun s : State => (s.work, s.requests, s.privateWord, s.turns, s.opportunities, s.allotments))
     encoding (encPair Packets.encWork (encPair (encList encBits)
       (encPair encBits (encPair encUnary (encPair encUnary encUnary))))) := .of_eq fun _ => rfl
+
+/-- Read the remaining planning allowance from the actual runtime encoding. -/
+theorem computable_opportunities : ComputableInPolyTime State.opportunities encoding encUnary :=
+  fields.snd'.snd'.snd'.snd'.fst'
 
 private abbrev inputEncoding := encPair encoding NativeReplyContext.framedBits
 

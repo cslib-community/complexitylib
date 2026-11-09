@@ -131,7 +131,8 @@ private theorem prepare_terminal {width : ℕ} [NeZero width] {scratch : ℕ} {R
     ((MultiTapePTM.ofDeterministic loader).runOracleConfigFrom time
       ((MultiTapePTM.ofDeterministic loader).initialConfig input))).run memory).map
       (fun p => (⟨p.1, p.2⟩ : World (width + scratch) R Unit P input)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   have hi : ((MultiTapePTM.ofDeterministic (Oracle := Unit) loader).initialConfig input).tapes =
       wordsCfg input (some loader.q₀) (fun _ => []) [] := by
     refine Cfg.ext rfl rfl ?_ rfl rfl

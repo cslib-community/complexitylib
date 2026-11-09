@@ -152,7 +152,8 @@ private theorem marker_terminal {width : ℕ} {P : Type} (env : Environment Unit
       (NativeContextLoader.loadedStart (marker width) input word memory).config)).run
         memory).map _ = _
   unfold marker
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   congr 1
   apply congrArg (fun cfg => (⟨cfg, memory⟩ : World (4 + width) MarkWorkState Unit P input))
   apply Config.ext

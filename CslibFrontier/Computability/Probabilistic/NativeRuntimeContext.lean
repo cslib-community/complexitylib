@@ -294,7 +294,8 @@ private theorem update_terminal {P : Type} (env : Environment Unit P)
     ((MultiTapePTM.ofDeterministic update).runOracleConfigFrom
       (context.length + 2 * input.length + 2) (start input context channel memory).config)).run
       memory).map (fun p => (⟨p.1, p.2⟩ : World 2 Control Unit P input)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   change PMF.pure (⟨⟨update.runFrom (updateConfig (input := input) (some .scan)
     0 (by omega) context 0 []) (context.length + 2 * input.length + 2), fun _ => channel⟩,
       memory⟩ : World 2 Control Unit P input) = _
@@ -357,7 +358,8 @@ private theorem prepare_terminal {P : Type} (env : Environment Unit P)
       (NativeSequential.resume (NativeResponseExecution.prepare 0)
         (updated input context channel memory)).config)).run memory).map
       (fun p => (⟨p.1, p.2⟩ : World 2 (MarkWorkState ⊕ RewindWorkState) Unit P input)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map,
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map,
     prepare_run]
   rfl
 
@@ -548,7 +550,8 @@ private theorem rewind_terminal {P : Type} (env : Environment Unit P)
         (NativeQueryAll.finishFrom () (queryStart word channel memory) reply next)).config)).run
       (memory.record ((), word) reply next)).map
       (fun p => (⟨p.1, p.2⟩ : World 0 RewindState Unit P word)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   have hr := runFrom_rewindInput (Symbol := Bool)
     (input := word) (⟨word.length + 1, by omega⟩ : Fin (word.length + 2))
     (fun _ _ => none) (fun _ => 0) (word ++ reply.word)
@@ -600,7 +603,8 @@ private theorem erase_terminal {P : Type} (env : Environment Unit P)
           input ⟨input.length + 1, by omega⟩)).config)).run
       (memory.record ((), context ++ frame input) reply next)).map
       (fun p => (⟨p.1, p.2⟩ : World 2 MarkWorkState Unit P input)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   congr 1
   apply congrArg (fun cfg => (⟨cfg, memory.record ((), context ++ frame input) reply next⟩ :
     World 2 MarkWorkState Unit P input))

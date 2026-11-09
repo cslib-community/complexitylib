@@ -108,7 +108,8 @@ theorem exists_query_retention (context : Packets.Work) :
       (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
       ((MultiTapePTM.ofDeterministic code).runOracleConfigFrom clock initial.config)).run
         initial.memory).map _ = _
-    rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+    rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   have hhalt : NativeUnboundedExecution.halted final := hh
   have ht := terminal_of_clock continuation env initial final clock he hhalt
   change ((NativeUnboundedExecution.terminal continuation env initial).map

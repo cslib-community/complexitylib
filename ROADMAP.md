@@ -248,8 +248,9 @@ blank-tape initializer and preserves prior oracle memory/resources; a correlated
 unbounded-reply client checks the live branch of the same machine. The older
 unconditional carrier remains available. The guarded live branch still makes two
 raw calls without a post-response check (and can exceed a one-turn allowance);
-semantic post-response/control enforcement and source-admitted query selection
-are not yet realized. This is a concrete binary
+that older carrier does not realize semantic post-response/control enforcement
+or source-admitted query selection. Later controllers below supply those steps
+for a supported scheduler. This is a concrete binary
 startup ABI, not a conventional external source/PTM encoding bridge.
 A separate runtime-control ABI now has uniform native semantic post-response
 processing: actual histories/private words and turn/planning/allotment counts are
@@ -262,8 +263,8 @@ that same code. This is one native phase. Requests are raw framed runtime states
 not source-admitted concurrent batches; the planning opportunity count is not yet
 an actual source used-set and allotments are not observed real elapsed time.
 That older frontend does not read its final guard or restart. Later controllers
-below supply executed dispatch and raw runtime feedback; a source-valid next batch
-planner remains open.
+below supply executed dispatch, runtime feedback and a concrete source-valid
+fresh-block batch planner. General scheduler compilation remains open.
 The older phase frontend still always queries. `GuardedStartup.exists_guarded_phase`
 now constructs one blank-tape program from original Startup data plus a reservation
 allowance: it computes and executes the initial guard, clears its packet, converts
@@ -289,21 +290,24 @@ law retains the full request/reply/invoice/duration ledger; raw history/private
 bytes remain authenticated from a matching initial ledger. A correlated
 unbounded-report client cancels the first response, checks the changed second
 request and emits the completed two-row mask before a third still-allowed call.
-This finishes the concrete raw-State feedback loop, not source batch admission:
-preformed nonempty selected batches, labeled consumed opportunities and physical
-deadline conventions still need connection. Native upper success/survival-sum bill/
-deadline/common-oracle optimum transfer and unrestricted Theorem 5 remain open.
-An injective header format carries original encoded data, old raw histories,
-private storage and budget/availability/stop/output fields. Those header fields
-are transported, not semantically updated by the append transducer. The second
-request depends on both original context and reply, checked on a fixed geometric
-source with unbounded reply lengths and empty/zero-cost edges. This concrete raw
-append scheduler is not a source concurrent-batch selector. The outer reply buffer
-and marker remain retained, and full buffer reuse/repeated restart are unproved.
-For the source-admitted selector, dynamically generated batch packets and a
-verified opportunity used-set still need native composition with the finished
-raw-State feedback controller. The raw-program/native-local joint-law composition is not a theorem
-that one native online machine implements that composition.
+The concrete raw-State feedback loop is finished. The source-batch extension now
+constructs consecutive fresh blocks, encodes all requests before any response,
+keeps query bytes separate from the retained runtime State, and executes the same
+native reader/update/cleanup/restart loop from original input. `BatchAdmission`
+derives nonempty preformed batch acceptance, exactly-once consumed labels,
+authenticated reports and joint actual bill/concurrent-duration/provenance meters
+from configured cutoff allotments and fitting turn/block/deadline budgets. The
+constructed controller also satisfies native `SelectionOnly` at every instruction
+prefix, with provenance derived from actual output decoding. Its
+finite opportunity interface and block width are code parameters; this does not
+compile arbitrary schedulers or establish one native machine over arbitrary
+runtime interface sizes. The private word and original input remain runtime data.
+The correlated batch client includes unbounded invoices and charged cancellation.
+Native upper success/survival-sum bill/deadline/common-oracle optimum transfer from
+reached source envelopes for this same admitted controller remains open, along
+with source WSC/subinstance/role/residual Theorem 6 specialization, external
+encoding, general measurable kernels, compiled physical clocks and divergent
+path cost/integrability. No unrestricted Theorem 5/6 or ALL-main completion is claimed.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
 supply that realization. This obstruction is now proved on one fixed actual
 geometric-invoice source: for every instruction budget there is a positively

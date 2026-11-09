@@ -27,10 +27,13 @@ State. No state is compiled into a continuation or supplied between turns. Nativ
 local time may depend on the complete reply. The same consistent environment and
 actual answer channels survive across rounds.
 
-This is the concrete append-private-word/rational-retention controller in the raw
-State transport ABI. Its scalar opportunity/reservation counts are not a labeled
-source used-set or measured physical clock. Source-admitted concurrent batch
-planning and Theorem 5 upper/optimum transfer remain open, as do the broader source
+The default is the concrete append-private-word/rational-retention controller in
+the raw State transport ABI. The `_with_request` constructors compile a pure
+request planner on a separate query tape while retaining the State context;
+`BatchPlanner` and `BatchAdmission` instantiate and prove fresh source batches.
+The default scalar opportunity/reservation counts are not a labeled
+source used-set or measured physical clock. General source-admitted planning
+and Theorem 5 upper/optimum transfer remain open, as do the broader source
 representation and Theorem 6 specialization gaps. The source conventions are
 [Wang2027], model pp. 4--6, Theorem 5 p. 12/Appendix A.5 p. 16.
 
@@ -164,10 +167,94 @@ private theorem exists_prepare (base : ℕ) :
     le_rfl le_rfl
   exact ⟨_, _, (hp'.seq_eq hclear).seq_eq hcopy⟩
 
-private theorem prepare_words {width : ℕ} [NeZero width] (hw : 0 < width) (word : List Bool) :
-    Function.update (Function.update (fun _ : Fin (width + 2) => []) 0 word)
-      (Fin.natAdd width (0 : Fin 2)) word =
-      Fin.append (Function.update (fun _ : Fin width => []) 0 word) ![word, []] := by
+private def requestTapes (width scratch : ℕ) (h : scratch < width) :
+    Fin (scratch + 1 + 2) ↪ Fin (width + 2) :=
+  ⟨fun i => ⟨if i.val < scratch then i.val + 1
+    else if i.val = scratch then width
+    else if i.val = scratch + 1 then 0 else width + 1, by
+      split_ifs <;> omega⟩, by
+    intro i j hij
+    apply Fin.ext
+    have hv := congrArg Fin.val hij
+    dsimp only at hv
+    split_ifs at hv <;> omega⟩
+
+private theorem exists_prepare_request (request : RuntimeControl.State → List Bool)
+    (hc : ComputableInPolyTime request
+      (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits) (base : ℕ) :
+    ∃ (width : ℕ) (_ : base ≤ width) (_ : 0 < width) (R : Type) (_ : Finite R)
+      (code : MultiTapeTM (width + 2) Bool R), ∀ state : RuntimeControl.State, ∃ time space,
+        TransformsTapes code
+          (fun _ ws => ws = Function.update (fun _ => []) 0 (RuntimeControl.packet state))
+          (fun _ _ ws' emitted => ws' = Function.update
+            (Function.update (fun _ => []) 0 (frame (RuntimeControl.encoding state)))
+            (Fin.natAdd width (0 : Fin 2)) (request state) ∧ emitted = []) time space := by
+  obtain ⟨t, s, _, _, hc⟩ := hc
+  obtain ⟨_, ht⟩ := ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace hc
+  obtain ⟨scratch, S, hS, processor, hp⟩ := ht
+  obtain ⟨width, hwidth, hw, R, hR, prepare, hprepare⟩ := exists_prepare (base + scratch + 1)
+  let e := requestTapes width scratch (by omega)
+  let q : Fin (width + 2) := Fin.natAdd width 0
+  have hin : e (Fin.natAdd (scratch + 1) 0) = 0 := by
+    apply Fin.ext
+    change (if scratch + 1 < scratch then scratch + 1 + 1 else
+      if scratch + 1 = scratch then width else
+      if scratch + 1 = scratch + 1 then 0 else width + 1) = 0
+    simp
+  have hout : e ((Fin.last scratch).castAdd 2) = q := by
+    apply Fin.ext
+    change (if scratch < scratch then scratch + 1 else
+      if scratch = scratch then width else
+      if scratch = scratch + 1 then 0 else width + 1) = width
+    simp
+  have hn : q ≠ 0 := by
+    intro h
+    have hv := congrArg Fin.val h
+    change width = 0 at hv
+    omega
+  let clear := (clearWork Bool).extendTapes (tapeEmb q)
+  let compute := (processor.onWords true).extendTapes e
+  let code := (prepare.seq clear).seq compute
+  refine ⟨width, by omega, hw, _, inferInstance, code, ?_⟩
+  intro state
+  let context := frame (RuntimeControl.encoding state)
+  obtain ⟨time, space, ht⟩ := hprepare (RuntimeControl.packet state)
+  have hfirst := ht.imp
+    (P' := fun _ ws => ws = Function.update (fun _ => []) 0 (RuntimeControl.packet state))
+    (Q' := fun _ _ ws' em => ws' = Function.update
+      (Function.update (fun _ => []) 0 context) q context ∧ em = [])
+    (fun _ _ h => h) (fun _ _ _ _ _ h => by simpa only [queryWord_packet] using h)
+    le_rfl le_rfl
+  have hclear := (transformsTapes_clearWork_tapeEmb q context).imp
+    (P' := fun _ ws =>
+      ws = Function.update (Function.update (fun _ => []) 0 context) q context)
+    (Q' := fun _ _ ws' em => ws' = Function.update (fun _ => []) 0 context ∧ em = [])
+    (fun _ _ h => by rw [h, Function.update_self])
+    (fun _ ws ws' em h hh => by
+      refine ⟨?_, hh.2⟩
+      rw [hh.1, h, Function.update_idem]
+      funext i
+      by_cases hi : i = q
+      · subst i
+        rw [Function.update_self, Function.update_of_ne hn]
+      · rw [Function.update_of_ne hi]) le_rfl le_rfl
+  have hcomputed := (hp state).onWords_extendTapes true hin hout
+  simp only [Function.Embedding.trans_apply, NativeReplyContext.framedBits,
+    Function.Embedding.coeFn_mk, encBits_apply] at hcomputed
+  have hcompute := hcomputed.imp
+    (P' := fun _ ws => ws = Function.update (fun _ => []) 0 context)
+    (Q' := fun _ _ ws' em => ws' = Function.update
+      (Function.update (fun _ => []) 0 context) q (request state) ∧ em = [])
+    (fun _ _ h => h)
+    (fun _ ws ws' em h hh => by simpa only [h, encBits_apply] using hh)
+    le_rfl le_rfl
+  exact ⟨_, _, (hfirst.seq_eq hclear).seq_eq hcompute⟩
+
+private theorem prepare_words {width : ℕ} [NeZero width] (hw : 0 < width)
+    (context request : List Bool) :
+    Function.update (Function.update (fun _ : Fin (width + 2) => []) 0 context)
+      (Fin.natAdd width (0 : Fin 2)) request =
+      Fin.append (Function.update (fun _ : Fin width => []) 0 context) ![request, []] := by
   funext i
   cases i using Fin.addCases with
   | left j =>
@@ -197,29 +284,30 @@ private def marker (width : ℕ) :=
   (markWork Bool (some true)).extendTapes (tapeEmb (Fin.natAdd width (1 : Fin 2)))
 
 private theorem mark_terminal {width : ℕ} [NeZero width] (hw : 0 < width) {P : Type}
-    (env : Environment Unit P) (input request : List Bool)
+    (env : Environment Unit P) (input context request : List Bool)
     (channels : Unit → Channel Bool) (memory : Memory Unit P) :
     NativeUnboundedExecution.terminal (MultiTapePTM.ofDeterministic (marker width)) env
       (NativeReplyContext.wordWorld input (some (marker width).q₀)
-        (Function.update (Function.update (fun _ => []) 0 request)
+        (Function.update (Function.update (fun _ => []) 0 context)
           (Fin.natAdd width (0 : Fin 2)) request) channels memory) =
       PMF.pure (some (NativeResponseExecution.inputWorld
         (NativeReplyContext.wordWorld request (S := MarkWorkState) none
-          (Function.update (fun _ : Fin width => []) 0 request) channels memory) input 1)) := by
+          (Function.update (fun _ : Fin width => []) 0 context) channels memory) input 1)) := by
   apply NativeResponseExecution.terminal_of_clock _ env _
     (NativeResponseExecution.inputWorld
       (NativeReplyContext.wordWorld request (S := MarkWorkState) none
-        (Function.update (fun _ : Fin width => []) 0 request) channels memory) input 1)
+        (Function.update (fun _ : Fin width => []) 0 context) channels memory) input 1)
     2 ?_ rfl
   unfold execute
   change ((OracleComp.interpret
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
     ((MultiTapePTM.ofDeterministic (Oracle := Unit) (marker width)).runOracleConfigFrom 2
       (NativeReplyContext.wordWorld input (some (marker width).q₀)
-        (Function.update (Function.update (fun _ => []) 0 request)
+        (Function.update (Function.update (fun _ => []) 0 context)
           (Fin.natAdd width (0 : Fin 2)) request) channels memory).config)).run memory).map
       (fun pair => (⟨pair.1, pair.2⟩ : World (width + 2) _ Unit P input)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   congr 1
   apply congrArg (fun cfg => (⟨cfg, memory⟩ : World (width + 2) _ Unit P input))
   apply Config.ext
@@ -243,7 +331,9 @@ private theorem mark_terminal {width : ℕ} [NeZero width] (hw : 0 < width) {P :
 configuration is a canonical updated packet with every scratch/buffer/marker
 cleared, every head restored, and actual response channels and ledger retained.
 This round is unguarded; a surrounding native loop must test the packet first. -/
-theorem exists_round :
+theorem exists_round_with_request (requestWord : RuntimeControl.State → List Bool)
+    (hrequest : ComputableInPolyTime requestWord
+      (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits) :
     ∃ (width : ℕ) (_ : 4 ≤ width) (R : Type) (_ : Finite R)
       (body : MultiTapePTM (width + 2) Bool R Unit),
       ∀ (P : Type) (env : Environment Unit P) (input : List Bool)
@@ -252,15 +342,16 @@ theorem exists_round :
         NativeUnboundedExecution.terminal body env
           (NativeReplyContext.wordWorld input (some body.initial)
             (Function.update (fun _ => []) 0 (RuntimeControl.packet state)) channels memory) =
-        (env ((), frame (RuntimeControl.encoding state)) memory).map fun (reply, next) =>
+        (env ((), requestWord state) memory).map fun (reply, next) =>
           some (NativeReplyContext.wordWorld input (S := R) none
             (Function.update (fun _ => []) 0
               (RuntimeControl.packet (RuntimeControl.afterReply state reply.word)))
-            (NativeQueryAll.finish (k := 0) () (frame (RuntimeControl.encoding state))
+            (NativeQueryAll.finish (k := 0) () (requestWord state)
               memory reply next).config.channels
-            (memory.record ((), frame (RuntimeControl.encoding state)) reply next)) := by
+            (memory.record ((), requestWord state) reply next)) := by
   obtain ⟨k, S, hS, processor, hprocessor⟩ := RuntimeControl.exists_native_processor
-  obtain ⟨width, hwidth, hw, R, hR, prepare, hprepare⟩ := exists_prepare ((3 + k) + 2)
+  obtain ⟨width, hwidth, hw, R, hR, prepare, hprepare⟩ :=
+    exists_prepare_request requestWord hrequest ((3 + k) + 2)
   have : NeZero width := ⟨by omega⟩
   let e : Fin ((3 + k) + 2) ↪ Fin width := Fin.castLEEmb hwidth
   let source := NativeResponseReuse.phase processor
@@ -271,19 +362,20 @@ theorem exists_round :
   let body := (MultiTapePTM.ofDeterministic (Oracle := Unit) prepare).seq post
   refine ⟨width, by omega, _, inferInstance, body, ?_⟩
   intro P env input state channels hb memory
-  let request := frame (RuntimeControl.encoding state)
-  obtain ⟨time, space, hp⟩ := hprepare (RuntimeControl.packet state)
+  let request := requestWord state
+  let context := frame (RuntimeControl.encoding state)
+  obtain ⟨time, space, hp⟩ := hprepare state
   have hp' := hp.imp
     (P' := fun inp ws => inp = input ∧
       ws = Function.update (fun _ => []) 0 (RuntimeControl.packet state))
     (Q' := fun _ _ ws' emitted => ws' = Function.update
-      (Function.update (fun _ => []) 0 request)
+      (Function.update (fun _ => []) 0 context)
         (Fin.natAdd width (0 : Fin 2)) request ∧ emitted = [])
     (fun _ _ h => h.2) (fun _ _ _ _ _ h => by simpa only [queryWord_packet] using h)
     le_rfl le_rfl
   have hpure := NativeReplyContext.terminal_transform prepare env input
     (Function.update (fun _ => []) 0 (RuntimeControl.packet state))
-    (Function.update (Function.update (fun _ => []) 0 request)
+    (Function.update (Function.update (fun _ => []) 0 context)
       (Fin.natAdd width (0 : Fin 2)) request) channels memory time space hp'
   have hi : NativeReplyContext.wordWorld input (some body.initial)
       (Function.update (fun _ => []) 0 (RuntimeControl.packet state)) channels memory =
@@ -292,23 +384,23 @@ theorem exists_round :
   rw [hi, NativeSequential.terminal_seq, hpure, PMF.pure_bind]
   dsimp only
   have hr : NativeSequential.resume post (NativeReplyContext.wordWorld input (S := R) none
-      (Function.update (Function.update (fun _ => []) 0 request)
+      (Function.update (Function.update (fun _ => []) 0 context)
         (Fin.natAdd width (0 : Fin 2)) request) channels memory) =
       NativeSequential.left tail (NativeReplyContext.wordWorld input (some (marker width).q₀)
-        (Function.update (Function.update (fun _ => []) 0 request)
+        (Function.update (Function.update (fun _ => []) 0 context)
           (Fin.natAdd width (0 : Fin 2)) request) channels memory) := rfl
   rw [hr, NativeSequential.terminal_seq, mark_terminal hw, PMF.pure_bind]
   dsimp only
   have hv : NativeSequential.resume tail (NativeResponseExecution.inputWorld
       (NativeReplyContext.wordWorld request (S := MarkWorkState) none
-        (Function.update (fun _ : Fin width => []) 0 request) channels memory) input 1) =
+        (Function.update (fun _ : Fin width => []) 0 context) channels memory) input 1) =
       NativeSequential.left (NativeResponseReuse.cleanup width)
         (NativeResponseExecution.inputWorld (NativeReplyContext.wordWorld request
-          (some extended.initial) (Function.update (fun _ : Fin width => []) 0 request)
+          (some extended.initial) (Function.update (fun _ : Fin width => []) 0 context)
           channels memory) input 1) := rfl
   have hs : NativeUnboundedExecution.terminal extended env
       (NativeReplyContext.wordWorld request (some extended.initial)
-        (Function.update (fun _ : Fin width => []) 0 request) channels memory) =
+        (Function.update (fun _ : Fin width => []) 0 context) channels memory) =
       (env ((), request) memory).map fun (reply, next) =>
         some (NativeReplyContext.wordWorld request (S := NativeResponseReuse.PhaseControl S) none
           (Function.update (fun _ : Fin width => []) 0
@@ -317,9 +409,9 @@ theorem exists_round :
           (memory.record ((), request) reply next)) := by
     change NativeUnboundedExecution.terminal (source.extendTapes e) env
       (NativeReplyContext.wordWorld request (some source.initial)
-        (Function.update (fun _ : Fin width => []) 0 request) channels memory) = _
+        (Function.update (fun _ : Fin width => []) 0 context) channels memory) = _
     rw [← NativeReplyContext.wordWorld_embed_zero e (Fin.ext rfl),
-      ← NativeResponseReuse.entry_context processor request request channels memory,
+      ← NativeResponseReuse.entry_context processor request context channels memory,
       NativeSequential.terminal_embedStorage,
       NativeResponseReuse.terminal_phase _ _ _ _ _ (hprocessor state) _ hb,
       PMF.map_comp]
@@ -342,6 +434,30 @@ theorem exists_round :
   simp only [PMF.pure_map, Function.comp_apply, Option.map_some]
   rfl
 
+private theorem raw_request_computable : ComputableInPolyTime
+    (fun s : RuntimeControl.State => frame (RuntimeControl.encoding s))
+    (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits :=
+  .of_eq fun _ => rfl
+
+/-- The original raw-State transport round, as a concrete request-planner instance. -/
+theorem exists_round :
+    ∃ (width : ℕ) (_ : 4 ≤ width) (R : Type) (_ : Finite R)
+      (body : MultiTapePTM (width + 2) Bool R Unit),
+      ∀ (P : Type) (env : Environment Unit P) (input : List Bool)
+        (state : RuntimeControl.State) (channels : Unit → Channel Bool)
+        (_ : (channels ()).queryBuffer = []) (memory : Memory Unit P),
+        NativeUnboundedExecution.terminal body env
+          (NativeReplyContext.wordWorld input (some body.initial)
+            (Function.update (fun _ => []) 0 (RuntimeControl.packet state)) channels memory) =
+        (env ((), frame (RuntimeControl.encoding state)) memory).map fun (reply, next) =>
+          some (NativeReplyContext.wordWorld input (S := R) none
+            (Function.update (fun _ => []) 0
+              (RuntimeControl.packet (RuntimeControl.afterReply state reply.word)))
+            (NativeQueryAll.finish (k := 0) () (frame (RuntimeControl.encoding state))
+              memory reply next).config.channels
+            (memory.record ((), frame (RuntimeControl.encoding state)) reply next)) :=
+  exists_round_with_request _ raw_request_computable
+
 /-- Final runtime state, live channels and the full actual oracle/resource ledger. -/
 structure Outcome (P : Type) where
   /-- Updated instance/history/private-word/counter data. -/
@@ -354,16 +470,18 @@ structure Outcome (P : Type) where
 /-- The finite mathematical kernel used to state the native feedback law. It is
 not an execution implementation: `exists_native_controller` constructs and proves the
 same-code native implementation independently of this recursion. -/
-@[expose] def run {P : Type} (env : Environment Unit P) :
-    ℕ → RuntimeControl.State → (Unit → Channel Bool) → Memory Unit P → PMF (Outcome P)
-  | 0, state, channels, memory => PMF.pure ⟨state, memory, channels⟩
-  | fuel + 1, state, channels, memory =>
+@[expose] def run {P : Type} (env : Environment Unit P) (fuel : ℕ)
+    (state : RuntimeControl.State) (channels : Unit → Channel Bool) (memory : Memory Unit P)
+    (request : RuntimeControl.State → List Bool := fun s => frame (RuntimeControl.encoding s)) :
+    PMF (Outcome P) :=
+  match fuel with
+  | 0 => PMF.pure ⟨state, memory, channels⟩
+  | fuel + 1 =>
     if RuntimeControl.stopped state then PMF.pure ⟨state, memory, channels⟩ else do
-      let (reply, next) ← env ((), frame (RuntimeControl.encoding state)) memory
+      let (reply, next) ← env ((), request state) memory
       run env fuel (RuntimeControl.afterReply state reply.word)
-        (NativeQueryAll.finish (k := 0) () (frame (RuntimeControl.encoding state))
-          memory reply next).config.channels
-        (memory.record ((), frame (RuntimeControl.encoding state)) reply next)
+        (NativeQueryAll.finish (k := 0) () (request state) memory reply next).config.channels
+        (memory.record ((), request state) reply next) request
 
 /-- A computed stop is absorbing for every remaining turn budget. -/
 theorem run_of_stopped {P : Type} (env : Environment Unit P) (fuel : ℕ)
@@ -379,10 +497,11 @@ private theorem finish_buffer {P : Type} (request : List Bool) (memory : Memory 
 
 /-- With enough remaining turns, the mathematical kernel ends only at an actual
 computed completion or exhausted policy allowance. -/
-theorem run_stopped {P : Type} (env : Environment Unit P) (fuel : ℕ)
+private theorem run_stopped_with_request {P : Type} (env : Environment Unit P) (fuel : ℕ)
     (state : RuntimeControl.State) (channels : Unit → Channel Bool) (memory : Memory Unit P)
     (hf : state.turns ≤ fuel) (outcome : Outcome P)
-    (ho : outcome ∈ (run env fuel state channels memory).support) :
+    (request : RuntimeControl.State → List Bool)
+    (ho : outcome ∈ (run env fuel state channels memory request).support) :
     RuntimeControl.stopped outcome.state = true := by
   induction fuel generalizing state channels memory outcome with
   | zero =>
@@ -402,7 +521,16 @@ theorem run_stopped {P : Type} (env : Environment Unit P) (fuel : ℕ)
       obtain ⟨⟨reply, next⟩, _, ho⟩ := ho
       exact ih _ _ _ (by simp only [RuntimeControl.afterReply]; omega) _ ho
 
+/-- The raw-State specialization ends only at a computed stop. -/
+theorem run_stopped {P : Type} (env : Environment Unit P) (fuel : ℕ)
+    (state : RuntimeControl.State) (channels : Unit → Channel Bool) (memory : Memory Unit P)
+    (hf : state.turns ≤ fuel) (outcome : Outcome P)
+    (ho : outcome ∈ (run env fuel state channels memory).support) :
+    RuntimeControl.stopped outcome.state = true :=
+  run_stopped_with_request env fuel state channels memory hf outcome _ ho
+
 private theorem terminal_loop {width : ℕ} {R P : Type}
+    (request : RuntimeControl.State → List Bool)
     (body : MultiTapePTM (width + 2) Bool R Unit)
     (hbody : ∀ (P : Type) (env : Environment Unit P) (input : List Bool)
       (state : RuntimeControl.State) (channels : Unit → Channel Bool)
@@ -410,20 +538,20 @@ private theorem terminal_loop {width : ℕ} {R P : Type}
       NativeUnboundedExecution.terminal body env
         (NativeReplyContext.wordWorld input (some body.initial)
           (Function.update (fun _ => []) 0 (RuntimeControl.packet state)) channels memory) =
-      (env ((), frame (RuntimeControl.encoding state)) memory).map fun (reply, next) =>
+      (env ((), request state) memory).map fun (reply, next) =>
         some (NativeReplyContext.wordWorld input (S := R) none
           (Function.update (fun _ => []) 0
             (RuntimeControl.packet (RuntimeControl.afterReply state reply.word)))
-          (NativeQueryAll.finish (k := 0) () (frame (RuntimeControl.encoding state))
+          (NativeQueryAll.finish (k := 0) () (request state)
             memory reply next).config.channels
-          (memory.record ((), frame (RuntimeControl.encoding state)) reply next)))
+          (memory.record ((), request state) reply next)))
     (env : Environment Unit P) (input : List Bool) (fuel : ℕ)
     (state : RuntimeControl.State) (channels : Unit → Channel Bool)
     (hb : (channels ()).queryBuffer = []) (memory : Memory Unit P) (hf : state.turns ≤ fuel) :
     NativeUnboundedExecution.terminal (NativeFeedbackLoop.machine 0 body) env
       (NativeFeedbackLoop.check (NativeReplyContext.wordWorld input (S := R) none
         (Function.update (fun _ => []) 0 (RuntimeControl.packet state)) channels memory)) =
-      (run env fuel state channels memory).map fun outcome =>
+      (run env fuel state channels memory request).map fun outcome =>
         some (NativeReplyContext.wordWorld input (S := R ⊕ Unit) none
           (Function.update (fun _ => []) 0 (RuntimeControl.packet outcome.state))
           outcome.channels outcome.memory) := by
@@ -504,9 +632,12 @@ private theorem emit_terminal {width : ℕ} [NeZero width] {P : Type}
 work tapes, executes repeated feedback on the updated State, and emits only the
 computed final mask/failure word. It uses one consistent stateful environment and
 preserves the complete request/reply/invoice/duration ledger. This is the concrete
-raw-State transport controller, not source batch admission or an arbitrary Scheduler
-compiler; its reservation counter does not measure physical time. -/
-theorem exists_native_controller :
+controller with a compiled request planner. It does not assume a realization law
+or compile arbitrary Scheduler functions; source admission is a separate derived
+property and its reservation counter does not measure physical time. -/
+theorem exists_native_controller_with_request (request : RuntimeControl.State → List Bool)
+    (hrequest : ComputableInPolyTime request
+      (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits) :
     ∃ (width : ℕ) (R : Type) (_ : Finite R)
       (program : MultiTapePTM width Bool R Unit) (context : Fin width),
       ∀ (P : Type) (env : Environment Unit P) (data : GuardedStartup.Input)
@@ -515,11 +646,11 @@ theorem exists_native_controller :
           ⟨program.initialConfig (GuardedStartup.encoding data), memory⟩).map
           (Option.map (NativeReplyContext.observe context)) =
         let state := GuardedStartup.state data
-        (run env state.turns state (fun _ => ⟨[], [], 0⟩) memory).map fun outcome =>
+        (run env state.turns state (fun _ => ⟨[], [], 0⟩) memory request).map fun outcome =>
           some (⟨tapeOfList (RuntimeControl.packet outcome.state),
             RuntimeControl.result outcome.state,
             outcome.memory⟩ : NativeReplyContext.Observation P) := by
-  obtain ⟨width, hw, R, hR, body, hbody⟩ := exists_round
+  obtain ⟨width, hw, R, hR, body, hbody⟩ := exists_round_with_request request hrequest
   let loop := NativeFeedbackLoop.machine (0 : Fin (width + 2)) body
   let g : Fin 4 ↪ Fin (width + 2) := Fin.castLEEmb (by omega)
   let emit := (NativeStopGuard.machine
@@ -532,7 +663,7 @@ theorem exists_native_controller :
           (RuntimeControl.packet (GuardedStartup.state data)) memory)).map
           (Option.map (NativeReplyContext.observe 0)) =
       (run env (GuardedStartup.state data).turns (GuardedStartup.state data)
-        (fun _ => ⟨[], [], 0⟩) memory).map fun outcome =>
+        (fun _ => ⟨[], [], 0⟩) memory request).map fun outcome =>
           some (⟨tapeOfList (RuntimeControl.packet outcome.state),
             RuntimeControl.result outcome.state,
             outcome.memory⟩ : NativeReplyContext.Observation P) := by
@@ -548,13 +679,14 @@ theorem exists_native_controller :
         (S := (R ⊕ Unit) ⊕ (Fin 3 ⊕ Unit)) (some (.inl q)) words channels memory)
         (NativeFeedbackLoop.machine_initial 0 body)
     rw [hi, NativeSequential.terminal_seq,
-      terminal_loop body hbody env input state.turns state channels rfl memory le_rfl,
+      terminal_loop request body hbody env input state.turns state channels rfl memory le_rfl,
       PMF.bind_map, PMF.map_bind]
     conv_rhs => rw [PMF.map]
     apply PMF.bind_congr_on_support
     intro outcome ho
     dsimp only [Function.comp_apply, Option.map_some]
-    have hs := run_stopped env state.turns state channels memory le_rfl outcome ho
+    have hs := run_stopped_with_request env state.turns state channels memory le_rfl
+      outcome request ho
     trans (NativeUnboundedExecution.terminal emit env
       (NativeReplyContext.wordWorld input (some emit.initial)
         (Function.update (fun _ => []) 0 (RuntimeControl.packet outcome.state))
@@ -588,6 +720,47 @@ theorem exists_native_controller :
       exact congrArg some (NativeReplyContext.observe_embedStorage
         0 (Fin.castAddEmb scratch) world)
   · exact hconsumer P env data memory
+
+/-- Original blank-input raw-State feedback, with all previous transport conventions. -/
+theorem exists_native_controller :
+    ∃ (width : ℕ) (R : Type) (_ : Finite R)
+      (program : MultiTapePTM width Bool R Unit) (context : Fin width),
+      ∀ (P : Type) (env : Environment Unit P) (data : GuardedStartup.Input)
+        (memory : Memory Unit P),
+        (NativeUnboundedExecution.terminal program env
+          ⟨program.initialConfig (GuardedStartup.encoding data), memory⟩).map
+          (Option.map (NativeReplyContext.observe context)) =
+        let state := GuardedStartup.state data
+        (run env state.turns state (fun _ => ⟨[], [], 0⟩) memory).map fun outcome =>
+          some (⟨tapeOfList (RuntimeControl.packet outcome.state),
+            RuntimeControl.result outcome.state,
+            outcome.memory⟩ : NativeReplyContext.Observation P) :=
+  exists_native_controller_with_request _ raw_request_computable
+
+/-- The original instance survives every actual reply and every feedback iteration,
+for any compiled request planner and correlated environment. -/
+theorem run_original_system {P : Type} (env : Environment Unit P) (fuel : ℕ)
+    (state : RuntimeControl.State) (channels : Unit → Channel Bool) (memory : Memory Unit P)
+    (request : RuntimeControl.State → List Bool) (outcome : Outcome P)
+    (ho : outcome ∈ (run env fuel state channels memory request).support) :
+    outcome.state.work.system = state.work.system := by
+  induction fuel generalizing state channels memory outcome with
+  | zero =>
+    simp only [run, PMF.mem_support_pure_iff] at ho
+    cases ho
+    rfl
+  | succ fuel ih =>
+    cases hs : RuntimeControl.stopped state with
+    | true =>
+      simp only [run, hs, ↓reduceIte, PMF.mem_support_pure_iff] at ho
+      cases ho
+      rfl
+    | false =>
+      simp only [run, hs, Bool.false_eq_true, ↓reduceIte, PMF.monad_bind_eq_bind,
+        PMF.mem_support_bind_iff] at ho
+      obtain ⟨⟨reply, next⟩, _, ho⟩ := ho
+      have hp := ih (RuntimeControl.afterReply state reply.word) _ _ outcome ho
+      simpa only [RuntimeControl.afterReply] using hp
 
 /-- Actual raw event histories/private bytes remain authenticated through every
 round of the mathematical kernel used by the native correspondence theorem. -/

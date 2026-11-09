@@ -1942,6 +1942,44 @@ common-oracle optimum comparison for that same admitted controller remain open,
 along with external encodings, general measurable interfaces and divergent-path
 cost packaging. No unrestricted Theorem 5/6 or ALL-main completion is claimed.
 
+For a constructed source-batch request planner, import
+`CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAdmission`.
+`BatchPlanner.exists_native_controller n width` forms actual concurrent source
+packets on a separate query tape, preserving the complete runtime State for the
+same reader/update/cleanup/restart loop. Its code is fixed for a finite opportunity
+interface and positive block width; original instances, histories, private words
+and unbounded replies are runtime data. This is weaker than one size-uniform
+machine reading arbitrary interface sizes, and does not compile arbitrary schedulers.
+
+`BatchAdmission.exists_native_admitted_controller` derives acceptance for every
+live iteration from fitting original turn/block budgets, positive cutoff allotments
+and a deadline covering those allotments. No batch validity, used-set, execution-law
+or success witness is supplied. `Aligned` identifies actual accepted source history,
+consumed labels, authenticated reply history and the joint bill/duration/provenance
+ledger. `exists_selectionOnly_controller` additionally derives the existing native
+`SelectionOnly` predicate at every instruction prefix from the standard original
+WSC promises and computed output provenance. Each scalar opportunity allowance now
+counts one whole block; the source
+used-set counts its labels. Cancellation still consumes those labels and charges
+accrued tokens. The handler enforces cutoffs and the absolute oracle-time deadline;
+the planner's fitting allotments prevent rejection before its last allowed turn.
+Local native instructions are excluded from that duration, as in the paper.
+
+The [admitted batch client](../../CslibFrontierTests/NativeRetentionBatchAdmission.lean)
+checks fresh concurrent pairs, shared unbounded hidden invoices, cancellation and
+original-context/history-dependent next requests. From the repository root:
+
+```bash
+scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission --wfail --iofail
+```
+
+This establishes a concrete supported scheduler and source-admitted native loop.
+Reached productivity/bill envelopes and the quantitative upper success,
+survival-sum bill, deadline and common-oracle optimum comparison for this same code
+remain open. Theorem 6's WSC/subinstance/role/residual specialization, external
+encodings, general measurable interfaces, compiled physical clocks and divergent
+path cost/integrability limits remain distinct obligations.
+
 Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
 raw-parser/rational-retention computability proof. One complete native program

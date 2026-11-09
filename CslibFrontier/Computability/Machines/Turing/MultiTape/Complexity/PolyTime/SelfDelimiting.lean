@@ -21,6 +21,8 @@ require a huge unary counter. Capping changes neither `take` nor `drop`.
 
 ## Main results
 
+* `Turing.MultiTapeTM.ComputableInPolyTime.selfDelimitingCode`: native encoding of the
+  source request format, distinct from work-tape framing.
 * `Turing.MultiTapeTM.ComputableInPolyTime.decodeSelfDelimiting`: native decoding of the
   original self-delimiting format, including malformed words.
 -/
@@ -45,6 +47,24 @@ private theorem boundedSplit_eq (word : List Bool) :
   · rw [Nat.min_comm, ← List.drop_eq_drop_min]
 
 namespace ComputableInPolyTime
+
+/-- Encode the source's original binary-length self-delimiting request format.
+This differs from the native work-tape `frame` convention. -/
+@[fun_prop] theorem selfDelimitingCode : ComputableInPolyTime
+    Kolmogorov.selfDelimitingCode encBits encBits := by
+  have hl : ComputableInPolyTime (fun w : List Bool => w.length) encBits encUnary := by
+    fun_prop
+  have hb : ComputableInPolyTime (fun w : List Bool => w.length.bits) encBits encBits :=
+    (unary_to_binary.comp hl).of_enc_eq fun _ => rfl
+  have hs : ComputableInPolyTime (fun w : List Bool => w.length.bits.length)
+      encBits encUnary := by fun_prop
+  have hp : ComputableInPolyTime
+      (fun w : List Bool => List.replicate w.length.bits.length true) encBits encBits :=
+    hs.of_enc_eq fun _ => rfl
+  change ComputableInPolyTime (fun w : List Bool =>
+    List.replicate w.length.size true ++ false :: (w.length.bits ++ w)) encBits encBits
+  simpa only [Nat.size_eq_bits_len] using
+    bitsAppend hp (bitsCons (const false) (bitsAppend hb id'))
 
 /-- Decode the existing total self-delimiting format with a native polynomial
 local clock. No numerical header bound or validity promise is required. -/

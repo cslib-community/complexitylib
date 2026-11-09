@@ -146,7 +146,8 @@ private theorem restore_terminal {k : ℕ} {T P : Type} (env : Environment Unit 
       (position.val - 1 + 2 + 2) ⟨marked input reply position (some (restore k).q₀) words,
         channels⟩)).run memory).map
       (fun pair => (⟨pair.1, pair.2⟩ : World (k + 2) _ Unit P input)) = _
-  rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
+  rw [← OracleComp.runWith, ← ProbOracleComp.runWith,
+    MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   have hr := restore_run input reply position words
   congr 1
   change (⟨⟨(restore k).runFrom _ _, channels⟩, memory⟩ : World _ _ Unit P input) = _
