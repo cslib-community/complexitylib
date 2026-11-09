@@ -9,6 +9,8 @@ The [native exact-counting chapter](native-counting.md) separately treats the fi
 
 ## Completeness and containment map
 
+The [inclusion tables](class-inclusions.md) give every pairwise inclusion between the standard classes, generated from the library's theorems.
+
 | Endpoint | Models connected | Exact formal boundary and source |
 |---|---|---|
 | Cook–Levin | Native polynomial-time verifier → encoded CNF SAT | [SAT_npComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/CookLevin/Completeness.lean#L52) includes a constructed native polynomial-time reduction. [UNSAT_coNPComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/CookLevin/Completeness.lean#L56) follows for the complement. |

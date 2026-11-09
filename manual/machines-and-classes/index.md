@@ -11,6 +11,7 @@ The underlying cslib machine contributes read-only input, two-way work tapes, ap
 - [Verifiers, counting, and interaction](verifiers-counting-interaction.md) covers NP/PH, randomized and counting predicates, oracle programs, MA/AM, IP/MIP, and PCP.
 - [Search relations and promises](search-and-promises.md) covers FNP/TFNP, PLS/PPP/PPAD/PPA and promises, with their distinct totality contracts.
 - [Major endpoints and quantitative boundaries](endpoints-and-hierarchies.md) records completeness, containment, hierarchy, and oracle results with their actual scope.
+- [Inclusions between complexity classes](class-inclusions.md) tabulates which standard classes the library proves contained in which, beside what is known and what is open.
 - [Native exact counting and SAT endpoints](native-counting.md) records the unconditional fixed-width counter, encodings, independent resource bounds, manuscript mapping and ETH/SETH consequences.
 - [Computability and description methods](computability-and-description.md) covers universal descriptions, halting, Rice, partial recursion, Post's correspondence problem, Kolmogorov models, and their different clocks.
 - [Parameterized complexity and kernelization](parameterized-complexity.md) covers FPT/XP quantifiers, parameter-respecting reductions, kernel contracts and the native vertex-cover kernel.
