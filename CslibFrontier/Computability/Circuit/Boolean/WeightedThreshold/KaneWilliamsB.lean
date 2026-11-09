@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Data.BitString.Parity
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Probability.SmallBias
 import CslibFrontier.Foundations.Data.BitString.Discriminator
+import CslibFrontier.Foundations.Data.Finset.Markov
 import CslibFrontier.Probability.SmallBias.Correlation
 import CslibFrontier.Probability.SmallBias.Powering
 
@@ -23,8 +24,8 @@ Andreev's function by a code with small bias. The `n + k * ℓ` inputs are a mes
 `x ∈ {0,1}^n` and `k` blocks of `ℓ` bits; with `z ∈ {0,1}^k` the block parities and rows
 `r : BitString k → BitString n`, the value is `B(x, a) = ⟨r_z, x⟩` (`kaneWilliamsB`,
 [KaneWilliams2016], Definition 6.1, whose rows form a small-bias set as in their Proposition 2
-and Corollary 6.1). For `δ`-biased rows, at most `1 / (γ ^ 2 - δ)` messages have a word
-`z ↦ ⟨r_z, x⟩` with correlation `γ` with any fixed word
+and Corollary 6.1). For `δ`-biased rows and `γ ^ 2 > δ`, at most `1 / (γ ^ 2 - δ)` messages have a
+word `z ↦ ⟨r_z, x⟩` with correlation `γ` with any fixed word
 (`Cslib.BitString.card_le_abs_sum_signVal_mul_signVal_dotProduct_mul_le`, an explicit form of
 [KaneWilliams2016], Lemma 6.1).
 
@@ -302,17 +303,6 @@ private theorem sum_signVal_add_eq (h F : BitString k → Bool) (c : BitString k
   refine Fintype.sum_equiv (Equiv.addRight c) _ _ fun u => ?_
   simp only [Equiv.coe_addRight, add_assoc, hcc, add_zero]
 
-/-- **Markov's inequality** for counts: at most `(∑ U) / (Q + 1)` points have `U > Q`. -/
-private theorem add_one_mul_card_filter_lt_le {α : Type*} (s : Finset α) (U : α → ℕ) (Q : ℕ) :
-    ((Q : ℝ) + 1) * #{a ∈ s | Q < U a} ≤ ∑ a ∈ s, (U a : ℝ) := by
-  classical
-  calc ((Q : ℝ) + 1) * #{a ∈ s | Q < U a} = #{a ∈ s | Q < U a} • ((Q : ℝ) + 1) := by
-        rw [nsmul_eq_mul, mul_comm]
-    _ ≤ ∑ a ∈ s with Q < U a, (U a : ℝ) := card_nsmul_le_sum _ _ _ fun a ha => by
-        exact_mod_cast Nat.succ_le_of_lt (mem_filter.mp ha).2
-    _ ≤ ∑ a ∈ s, (U a : ℝ) :=
-        sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun _ _ _ => Nat.cast_nonneg _
-
 open scoped Classical in
 /-- The messages `x` whose word `u ↦ r u ⬝ᵥ x` has sign correlation at least `γ 2 ^ k` in absolute
 value with a translate `u ↦ h (u + c)` of a function `h` in `IsDepthTwoOverWeights (W σ) Q`, for
@@ -325,7 +315,8 @@ private noncomputable def badMessages (r : BitString k → BitString n)
 
 /-- **Few messages are bad**: the fixed weight vectors of the restricted circuits leave at most
 `ℓ ^ k * 2 ^ k * ((2 ^ k + 1) * M) ^ Q * (2 ^ k + 1) ^ (Q + k + 1)` restricted functions and
-translations, and each correlates with at most `1 / (γ ^ 2 - δ)` words. -/
+translations, and each correlates with at most `1 / (γ ^ 2 - δ)` words when `γ ^ 2 > δ`; the bound
+is stated multiplied by `γ ^ 2 - δ`, so it holds trivially otherwise. -/
 private theorem card_badMessages_mul_le {r : BitString k → BitString n} {δ γ : ℝ} (hδ : 0 ≤ δ)
     (hγ : 0 ≤ γ) (hr : IsSmallBias δ ((PMF.uniformOfFintype (BitString k)).map r))
     (W : (Fin k → Fin ℓ) → Finset (Fin k → ℝ)) {M : ℕ} (hM : ∀ σ, #(W σ) + 1 ≤ M) (Q : ℕ) :
@@ -507,7 +498,10 @@ theorem card_eval_eq_kaneWilliamsB_le_of_unforced_mean_le (hℓ : 0 < ℓ)
   have hmarkov : ((Q : ℝ) + 1) * ∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ)
       ≤ S * N * B := by
     rw [mul_sum]
-    exact (sum_le_sum fun σ _ => add_one_mul_card_filter_lt_le univ (U σ) Q).trans hmean
+    refine (sum_le_sum fun σ _ => (mul_comm _ _).trans_le <|
+      card_filter_mul_le_sum univ _ (fun w => (U σ w : ℝ)) (fun _ _ => Nat.cast_nonneg _)
+        fun _ _ h => ?_).trans hmean
+    exact_mod_cast Nat.succ_le_of_lt h
   have hsumσ := sum_le_sum fun σ (_ : σ ∈ (univ : Finset (Fin k → Fin ℓ))) => hσ σ
   rw [sum_const, card_univ, nsmul_eq_mul, sum_add_distrib, sum_add_distrib, sum_const, sum_const,
     card_univ, nsmul_eq_mul, nsmul_eq_mul, ← mul_sum, ← hS] at hsumσ
@@ -581,7 +575,10 @@ theorem one_le_of_threshold_eq_kaneWilliamsB_of_unforced_mean_le {t : ℕ} (hℓ
     have hmarkov : ((Q : ℝ) + 1) *
         ∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ) ≤ S * N * B := by
       rw [mul_sum]
-      exact (sum_le_sum fun σ _ => add_one_mul_card_filter_lt_le univ (U σ) Q).trans hmean
+      refine (sum_le_sum fun σ _ => (mul_comm _ _).trans_le <|
+        card_filter_mul_le_sum univ _ (fun w => (U σ w : ℝ)) (fun _ _ => Nat.cast_nonneg _)
+          fun _ _ h => ?_).trans hmean
+      exact_mod_cast Nat.succ_le_of_lt h
     have hsumσ := sum_le_sum fun σ (_ : σ ∈ (univ : Finset (Fin k → Fin ℓ))) => hcover σ
     rw [sum_const, card_univ, nsmul_eq_mul, sum_add_distrib, sum_const, card_univ,
       nsmul_eq_mul, ← hS] at hsumσ

@@ -25,8 +25,9 @@ or is the word of the nonzero message `x + y`. This is the code of [KaneWilliams
 `arXiv:1511.07860v1`, Proposition 2 and Corollary 6.1 (labels `eps-biased` and `uncorrFunctCor`),
 in `±1` correlation form.
 
-Few codewords then correlate with any fixed word `T : Z → Bool`: for `δ, γ ≥ 0`, at most
-`1 / (γ ^ 2 - δ)` messages `x` have `|∑ z, signVal (T z) * signVal (r z ⬝ᵥ x)| ≥ γ |Z|`
+Few codewords then correlate with any fixed word `T : Z → Bool`: for `δ, γ ≥ 0`, the number `N` of
+messages `x` with `|∑ z, signVal (T z) * signVal (r z ⬝ᵥ x)| ≥ γ |Z|` satisfies
+`N * (γ ^ 2 - δ) ≤ 1`, so `N ≤ 1 / (γ ^ 2 - δ)` when `γ ^ 2 > δ`
 (`Cslib.BitString.card_le_abs_sum_signVal_mul_signVal_dotProduct_mul_le`). This is
 [KaneWilliams2016], Lemma 6.1 (label `uncorrAgreeLem`), with explicit constants; it follows from
 `card_mul_sub_le_one_of_abs_inner_ge` for the `±1` words in `EuclideanSpace ℝ Z`.
@@ -108,7 +109,8 @@ private theorem norm_signWord_sq (f : Z → Bool) : ‖signWord f‖ ^ 2 = Finty
 /-- **Few codewords correlate with a fixed word** ([KaneWilliams2016], `arXiv:1511.07860v1`,
 Lemma 6.1, with explicit constants): if the list `r` is `δ`-biased with `δ ≥ 0` and `γ ≥ 0`, then
 the messages `x` whose words have correlation at least `γ |Z|` in absolute value with a fixed word
-`T` number at most `1 / (γ ^ 2 - δ)`, in the form `#{x | …} * (γ ^ 2 - δ) ≤ 1`. -/
+`T` satisfy `#{x | …} * (γ ^ 2 - δ) ≤ 1`; so when `γ ^ 2 > δ` they number at most
+`1 / (γ ^ 2 - δ)`. -/
 theorem card_le_abs_sum_signVal_mul_signVal_dotProduct_mul_le [Nonempty Z] {δ γ : ℝ} (hδ : 0 ≤ δ)
     (hγ : 0 ≤ γ) {r : Z → ι → Bool} (hr : IsSmallBias δ ((PMF.uniformOfFintype Z).map r))
     (T : Z → Bool) :
