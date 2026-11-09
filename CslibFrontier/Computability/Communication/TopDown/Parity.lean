@@ -84,8 +84,7 @@ theorem parity_isDensityLimit {n : ℕ} {p : ℝ} (hp : 0 ≤ p) (hp' : p ≤ 1)
       (fun P : Fin n → Bool => if ∃ i, P i = true then (1 : ℝ) else 0) =
         1 - (1 - p) ^ n := by
     convert bernoulliAverage_nonempty (ι := Fin n) p using 1
-    · congr 1
-      funext P
+    · congr 1 with P : 1
       split_ifs <;> rfl
     · simp
   rw [he] at hh
