@@ -52,6 +52,11 @@ namespace Cslib.LinearSystem
 
 open Matrix Circuits.Rational Turing.MultiTapeTM
 
+/-- Rectangular system: framed (framed unary width, binary integer row table), followed
+by the framed-list binary integer right-hand side. Missing entries default to zero. -/
+abbrev encRectangularSystem : ((ℕ × List (List ℤ)) × List ℤ) ↪ List Bool :=
+  encPair (encPair encUnary encIntRows) (encList encIntBin)
+
 /-- Multiply a selected-row vector by the transpose of its original coefficient
 matrix, materializing exactly the declared number of columns. -/
 @[expose] def transposeNumerators (n : ℕ) (A : List (List ℤ)) (ids : List ℕ)
@@ -78,7 +83,7 @@ The denominator is nonzero even when the rectangular input has dependent rows. -
     {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {A : α → List (List ℤ)}
     {ids : α → List ℕ} {y : α → List ℤ}
     (hn : ComputableInPolyTime n enc encUnary)
-    (hA : ComputableInPolyTime A enc (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A enc encIntRows)
     (hi : ComputableInPolyTime ids enc (encList encUnary))
     (hy : ComputableInPolyTime y enc (encList encIntBin)) :
     ComputableInPolyTime (fun x => transposeNumerators (n x) (A x) (ids x) (y x))
@@ -91,23 +96,23 @@ unary, all matrix and RHS integers are binary, and no rank/basis advice is input
 @[fun_prop] theorem rectangularCertificate_polytime :
     ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ =>
       rectangularCertificate p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
+      encRectangularSystem
       (encPair encIntBin (encList encIntBin)) := by
   unfold rectangularCertificate
   have hi : ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ =>
       gramRowBasis p.1.1 p.1.2)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
+      encRectangularSystem
       (encList encUnary) := gramRowBasis_polytime.comp (by fun_prop)
   have hG := computableInPolyTime_rowGram
     (show ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ => p.1.1)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
+      encRectangularSystem
       encUnary from by fun_prop)
     (show ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ => p.1.2)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
-      (encList (encList encIntBin)) from by fun_prop) hi
+      encRectangularSystem
+      encIntRows from by fun_prop) hi
   have hr : ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ =>
       (gramRowBasis p.1.1 p.1.2).map fun i => p.2.getD i 0)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
+      encRectangularSystem
       (encList encIntBin) := by
     apply ComputableInPolyTime.mapWithInput hi
     fun_prop
@@ -119,7 +124,7 @@ unary, all matrix and RHS integers are binary, and no rank/basis advice is input
 @[fun_prop] theorem rectangularConsistent_polytime :
     ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ =>
       rectangularConsistent p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
+      encRectangularSystem
       encBool := by
   unfold rectangularConsistent
   have hc := rectangularCertificate_polytime
@@ -333,7 +338,7 @@ solution may exist, so this test alone is not a feasibility decision procedure. 
 @[fun_prop] theorem rectangularBoolean_polytime :
     ComputableInPolyTime (fun p : (ℕ × List (List ℤ)) × List ℤ =>
       rectangularBoolean p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin))
+      encRectangularSystem
       encBool := by
   unfold rectangularBoolean
   have hbool : ComputableInPolyTime (fun cert : ℤ × List ℤ =>

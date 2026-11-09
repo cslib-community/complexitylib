@@ -79,7 +79,7 @@ answer or resource conclusion is supplied. No assignment enumeration occurs at l
 /-- The one/two-assignment direct branch is uniformly polynomial on explicit binary input. -/
 @[fun_prop] theorem smallAnswer_polytime :
     ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => smallAnswer p.1 p.2)
-      (encPair encUnary (encList BinaryNormalization.encInput)) encNat := by
+      BinaryNormalization.encSystem encNat := by
   unfold smallAnswer
   fun_prop
 
@@ -125,8 +125,8 @@ private theorem largeOutput_polytime (d : ℕ) {α : Type} {enc : α ↪ List Bo
 space for fixed d, including direct count bits, both query lists and declared-variable output. -/
 @[fun_prop] theorem compile_polytime (d : ℕ) :
     ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => compile d p.1 p.2)
-      (encPair encUnary (encList BinaryNormalization.encInput)) encOutput := by
-  let encI := encPair encUnary (encList BinaryNormalization.encInput)
+      BinaryNormalization.encSystem encOutput := by
+  let encI := BinaryNormalization.encSystem
   have hn : ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => p.1)
       encI encUnary := by fun_prop
   have hr : ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => p.2)
@@ -374,7 +374,7 @@ theorem compile_direct_bits {n t d a : ℕ} {m : Fin t → ℕ} (R : (j : Fin t)
 theorem compile_output_polyBounded (d : ℕ) :
     PolyBounded
       (fun p : ℕ × List BinaryNormalization.Input =>
-        (encPair encUnary (encList BinaryNormalization.encInput) p).length)
+        (BinaryNormalization.encSystem p).length)
       (fun p => (encOutput (compile d p.1 p.2)).length) :=
   ((ComputableInPolyTime.encoding_length _).comp (compile_polytime d)).polyBounded
 

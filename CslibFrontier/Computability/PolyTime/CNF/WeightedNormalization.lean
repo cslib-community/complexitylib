@@ -41,6 +41,10 @@ abbrev Input := List Entry × ℤ
 /-- Framed row encoding, with binary weights and target. -/
 @[expose] def encInput : Input ↪ List Bool := encPair (encList encEntry) encIntBin
 
+/-- Original system: framed unary variable declaration, followed by the framed list of
+occurrence rows. Each row retains unary indices and signed binary weights and target. -/
+abbrev encSystem : (ℕ × List Input) ↪ List Bool := encPair encUnary (encList encInput)
+
 /-- Sum exactly the occurrences of one variable and polarity. -/
 @[expose] def aggregate (p : Input) (i : ℕ) (s : Bool) : ℤ :=
   (p.1.map fun (j, (t, w)) => if j = i ∧ t = s then w else 0).sum
@@ -216,7 +220,7 @@ attribute [local fun_prop] le_polytime lt_polytime
 /-- Uniform binary polynomial time for normalization/capping and matrix/RHS writing. -/
 @[fun_prop] theorem materialize_polytime :
     ComputableInPolyTime (fun p : ℕ × List Input => materialize p.1 p.2)
-      (encPair encUnary (encList encInput))
+      encSystem
       (encPair (encList (encList encIntBin)) (encList encIntBin)) := by
   unfold materialize
   fun_prop
@@ -360,7 +364,7 @@ only at full computed rank; it is not interpreted as feasibility at deficient ra
 
 private theorem rejects_polytime :
     ComputableInPolyTime (fun p : ℕ × List Input => rejects p.1 p.2)
-      (encPair encUnary (encList encInput)) encBool := by
+      encSystem encBool := by
   unfold rejects
   exact ComputableInPolyTime.anyWithInput (by fun_prop) (by fun_prop)
 
@@ -368,10 +372,10 @@ private theorem rejects_polytime :
 selection, consistency and the full-rank candidate test. No desired bound is supplied. -/
 @[fun_prop] theorem analyze_polytime :
     ComputableInPolyTime (fun p : ℕ × List Input => analyze p.1 p.2)
-      (encPair encUnary (encList encInput))
+      encSystem
       (encPair encBool (encPair (encList encUnary) (encPair encBool encBool))) := by
   have hn : ComputableInPolyTime (fun p : ℕ × List Input => p.1)
-      (encPair encUnary (encList encInput)) encUnary := by fun_prop
+      encSystem encUnary := by fun_prop
   have hA := materialize_polytime.fst'
   have hb := materialize_polytime.snd'
   have hids := LinearSystem.gramRowBasis_polytime.comp (hn.prod hA)
@@ -379,7 +383,7 @@ selection, consistency and the full-rank candidate test. No desired bound is sup
   have hbool := LinearSystem.rectangularBoolean_polytime.comp ((hn.prod hA).prod hb)
   have hl : ComputableInPolyTime
       (fun p : ℕ × List Input => (LinearSystem.gramRowBasis p.1 (materialize p.1 p.2).1).length)
-      (encPair encUnary (encList encInput)) encUnary := by fun_prop
+      encSystem encUnary := by fun_prop
   have ht := (ComputableInPolyTime.of_tidy
     (ComputableTidilyInPolyTime.decide_eq encUnary)).comp (hl.prod hn)
   exact rejects_polytime.prod (hids.prod (hc.prod (ht.ite' hbool (by fun_prop))))
@@ -582,7 +586,7 @@ theorem original_certificate_bits {n t d : ℕ} {m : Fin t → ℕ}
 
 /-- Output storage is polynomial as a consequence of the proved machine-time certificate. -/
 theorem materialize_output_polyBounded :
-    PolyBounded (fun p : ℕ × List Input => (encPair encUnary (encList encInput) p).length)
+    PolyBounded (fun p : ℕ × List Input => (encSystem p).length)
       (fun p => (encPair (encList (encList encIntBin)) (encList encIntBin)
         (materialize p.1 p.2)).length) :=
   ((ComputableInPolyTime.encoding_length _).comp materialize_polytime).polyBounded

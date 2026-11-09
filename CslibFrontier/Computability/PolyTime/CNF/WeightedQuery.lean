@@ -378,16 +378,16 @@ theorem query_ofRows {n d h : ℕ} (R : Fin (h + 1) → Row (Fin n) d) (β : Boo
 /-- Original-row filtering and normalized-data writing include their encoded output costs. -/
 @[fun_prop] theorem preparedRows_polytime :
     ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => preparedRows p.1 p.2)
-      (encPair encUnary (encList BinaryNormalization.encInput)) (encList encRow) := by
+      BinaryNormalization.encSystem (encList encRow) := by
   unfold preparedRows
   fun_prop
 
 /-- Original-row selection is composed with actual binary normalization and lookup. -/
 @[fun_prop] theorem selectedRows_polytime :
     ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => selectedRows p.1 p.2)
-      (encPair encUnary (encList BinaryNormalization.encInput)) (encList encRow) := by
+      BinaryNormalization.encSystem (encList encRow) := by
   have hn : ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input => p.1)
-      (encPair encUnary (encList BinaryNormalization.encInput)) encUnary := by fun_prop
+      BinaryNormalization.encSystem encUnary := by fun_prop
   have hA := BinaryNormalization.materialize_polytime.fst'
   have hi := LinearSystem.gramRowBasis_polytime.comp (hn.prod hA)
   unfold selectedRows
@@ -401,12 +401,12 @@ bounded subset enumeration, global deduplication and all ordinary query writes. 
     ComputableInPolyTime (fun p : (ℕ × List BinaryNormalization.Input) × Bool =>
       let ((n, rows), β) := p
       selectedQuery d n rows β)
-      (encPair (encPair encUnary (encList BinaryNormalization.encInput)) encBool) encCNF := by
+      (encPair BinaryNormalization.encSystem encBool) encCNF := by
   have hrows := selectedRows_polytime.comp
-    (ComputableInPolyTime.fst (encPair encUnary (encList BinaryNormalization.encInput)) encBool)
+    (ComputableInPolyTime.fst BinaryNormalization.encSystem encBool)
   have hn : ComputableInPolyTime
       (fun p : (ℕ × List BinaryNormalization.Input) × Bool => p.1.1)
-      (encPair (encPair encUnary (encList BinaryNormalization.encInput)) encBool) encUnary := by
+      (encPair BinaryNormalization.encSystem encBool) encUnary := by
     fun_prop
   exact (query_polytime d).comp ((hn.prod hrows).prod (by fun_prop))
 
@@ -422,7 +422,7 @@ including peak workspace and output writes, with no supplied resource advice. -/
 @[fun_prop] theorem originalQueryStage_polytime (d : ℕ) :
     ComputableInPolyTime (fun p : ℕ × List BinaryNormalization.Input =>
       originalQueryStage d p.1 p.2)
-      (encPair encUnary (encList BinaryNormalization.encInput))
+      BinaryNormalization.encSystem
       (encPair (encPair encBool (encPair (encList encUnary) (encPair encBool encBool)))
         (encPair encCNF encCNF)) := by
   have hf := (selectedQuery_polytime d).comp
@@ -604,7 +604,7 @@ theorem upper_candidate_bound {n d : ℕ} (R : Row (Fin n) d) :
 theorem selectedQuery_output_polyBounded (d : ℕ) :
     PolyBounded
       (fun p : (ℕ × List BinaryNormalization.Input) × Bool =>
-        (encPair (encPair encUnary (encList BinaryNormalization.encInput)) encBool p).length)
+        (encPair BinaryNormalization.encSystem encBool p).length)
       (fun p => let ((n, rows), β) := p; (encCNF (selectedQuery d n rows β)).length) :=
   ((ComputableInPolyTime.encoding_length _).comp (selectedQuery_polytime d)).polyBounded
 

@@ -26,12 +26,26 @@ Domination is also the source problem for the metric k-center hardness reduction
 `Cslib.Complexity.DominatingSet_npComplete`; the metric bridge is
 `Cslib.Algorithms.Lean.KCenter.isDominatingSet_of_radius_le_mul`.
 
+## Main definitions
+
+* `SimpleGraph.ClosedAdj`: adjacency including the vertex itself.
+* `SimpleGraph.IsDominatingSet`: every vertex has a selected closed neighbor.
+
 ## Main results
+
+* `SimpleGraph.isDominatingSet_iff`: membership-or-adjacency characterization.
+* `SimpleGraph.isDominatingSet_univ`, `SimpleGraph.IsDominatingSet.mono`,
+  `SimpleGraph.IsDominatingSet.nonempty`: the basic domination API.
 
 * `SimpleGraph.minimal_dominatingSet_iff`: private-neighbor characterization of inclusion
   minimality.
 * `SimpleGraph.exists_privateMarking_iff`: markings decide minimal domination, without asserting
   one marking per original set.
+
+## References
+
+* [ChenJiangZhu2027], Proposition 7.6 / Appendix D.3.
+* [WilliamsonShmoys2011], Section 2.2.
 -/
 
 public section

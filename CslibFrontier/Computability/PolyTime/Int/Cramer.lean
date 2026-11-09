@@ -46,6 +46,9 @@ namespace Cslib.LinearSystem
 open Circuits.Rational Matrix
 open Turing.MultiTapeTM
 
+/-- Integer row table: a framed list of framed rows of sign-magnitude binary integers. -/
+abbrev encIntRows : List (List ℤ) ↪ List Bool := encList (encList encIntBin)
+
 /-- Replace column `c` of the square normalization of `A` by `b` (defaulting to zero). -/
 @[expose] def cramerColumnRows (A : List (List ℤ)) (b : List ℤ) (c : ℕ) : List (List ℤ) :=
   tabulateTable A.length A.length fun i j => if j = c then b.getD i 0 else rowEntry A i j
@@ -90,11 +93,11 @@ theorem cramerCertificate_correct (A : List (List ℤ)) (b : List ℤ) (i : Fin 
 integer encodings and unary column indices. -/
 @[fun_prop] theorem computableInPolyTime_cramerColumnRows
     {α : Type} {enc : α ↪ List Bool} {A : α → List (List ℤ)} {b : α → List ℤ} {c : α → ℕ}
-    (hA : ComputableInPolyTime A enc (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A enc encIntRows)
     (hb : ComputableInPolyTime b enc (encList encIntBin))
     (hc : ComputableInPolyTime c enc encUnary) :
     ComputableInPolyTime (fun x => cramerColumnRows (A x) (b x) (c x))
-      enc (encList (encList encIntBin)) := by
+      enc encIntRows := by
   unfold cramerColumnRows
   apply computableInPolyTime_tabulateTable (by fun_prop) (by fun_prop)
   dsimp only [TableIndex.ctx, TableIndex.row, TableIndex.col, TableIndex.rowCtx]
@@ -105,7 +108,7 @@ integers. The dimension is the row count of `A`, not a fixed external parameter.
 The determinant certificate already controls all Bird-stage intermediate bit lengths. -/
 @[fun_prop] theorem cramerCertificate_polytime :
     ComputableInPolyTime (fun p : List (List ℤ) × List ℤ => cramerCertificate p.1 p.2)
-      (encPair (encList (encList encIntBin)) (encList encIntBin))
+      (encPair encIntRows (encList encIntBin))
       (encPair encIntBin (encList encIntBin)) := by
   unfold cramerCertificate
   apply ComputableInPolyTime.prod
@@ -161,7 +164,7 @@ inputs are rejected; they need the rectangular selection/consistency algorithm. 
 /-- Booleanity testing includes the cost of constructing every numerator. -/
 @[fun_prop] theorem cramerBoolean_polytime :
     ComputableInPolyTime (fun p : List (List ℤ) × List ℤ => cramerBoolean p.1 p.2)
-      (encPair (encList (encList encIntBin)) (encList encIntBin)) encBool := by
+      (encPair encIntRows (encList encIntBin)) encBool := by
   unfold cramerBoolean
   fun_prop
 

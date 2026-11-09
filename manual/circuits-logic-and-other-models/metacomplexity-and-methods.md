@@ -382,8 +382,9 @@ feasibility for nonsingular squares. A singular input is rejected even if it has
 Boolean solutions; use the existing general functional preprocessing for such inputs.
 
 `cramerCertificate_polytime` and `cramerBoolean_polytime` certify uniform multitape
-Turing-machine polynomial time under `encPair (encList (encList encIntBin))
-(encList encIntBin)`, with the dimension varying with the input. These certificates
+Turing-machine polynomial time under `encPair encIntRows (encList encIntBin)`,
+with the dimension varying with the input. `Cslib.LinearSystem.encIntRows` names the framed
+list of framed rows of signed binary integers; its reducible abbreviation preserves the words. These certificates
 include binary arithmetic. For entries and RHS magnitudes below $2^\beta$,
 `cramerCertificate_bits_le` bounds each emitted integer's sign-magnitude code length
 by $\beta+n(1+n+\beta)+2$, where $n=A.length$.
@@ -429,8 +430,9 @@ for `x+y=1` the recovered point is `(1/2,1/2)`, although Boolean solutions exist
 
 `gramRowBasis_polytime`, `rectangularCertificate_polytime` and
 `rectangularConsistent_polytime` give uniform multitape polynomial binary time,
-with unary declared width and framed binary integer lists. These certificates
-include basis selection, every determinant, transpose multiplication and the scan
+with unary declared width and framed binary integer lists.
+`encRectangularSystem` names the input: a framed pair of unary width and `encIntRows`,
+followed by the framed-list binary right-hand side. These certificates include basis selection, every determinant, transpose multiplication and the scan
 of all original equations. For original entry/RHS magnitudes below $2^\beta$, set
 $g=n+2\beta$ and $B=g+n(1+n+g)+2$. The denominator has at most $B$ sign-magnitude
 bits and each final numerator at most $n+\beta+B+1$ bits.
@@ -1606,7 +1608,9 @@ certified binary normalizer/backend stage in namespace
 `Cslib.Logic.PL.WeightedRow.BinaryNormalization`. `Input` stores an explicit list
 of `(variable, sign, integer weight)` occurrences and a signed integer target.
 `encInput` frames unary variable indices and binary integer weights/targets;
-the outer input uses unary declared width and a framed list of rows.
+`encSystem` names the outer input: a framed unary declared width followed by a framed list
+of rows. Query and all-cases plan signatures reuse `BinaryNormalization.encSystem`;
+this is a reducible abbreviation of the same encoded words.
 `ofOccurrences` serializes the reviewed positive-weight finite input directly.
 The total raw program also runs on malformed lists; semantic correspondence is
 proved for serialized `Occurrences`, not for an unvalidated parser.
