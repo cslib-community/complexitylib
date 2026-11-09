@@ -60,6 +60,8 @@ stated against every tour, in particular an optimal one.
 
 * `cycleCost_insertAfter_le`: an insertion costs at most `δ u v + δ v u` (triangle inequality).
 * `mstTour_perm`: `mstTour δ` visits every vertex exactly once.
+* `totalWeight_kruskalEdges_completeEdges_le`: Kruskal's tree on the complete graph weighs at most
+  any duplicate-free connected list of its edges.
 * `totalWeight_kruskalEdges_le_cycleCost`: the minimum spanning tree costs at most any tour.
 * `cycleCost_mstTour_le_two_mul_totalWeight`: for `n ≥ 2`, the tour costs at most twice the tree.
 * `cycleCost_mstTour_le_two_mul`: for symmetric `δ` with the triangle inequality, the tour costs
@@ -406,6 +408,26 @@ private theorem eqvGen_getElem_zero {α : Type*} {R : α → α → Prop} {q : L
   | zero => exact .refl _
   | succ i ih => exact .trans _ _ _ (ih (by omega)) (.rel _ _ (hR i hi))
 
+/-- Kruskal's tree on the complete graph weighs at most any duplicate-free list of its edges that
+connects all vertices. -/
+theorem totalWeight_kruskalEdges_completeEdges_le (δ : Fin n → Fin n → ℕ)
+    {H : List (WeightedEdge n ℕ)} (hHnd : H.Nodup) (hHw : ∀ e ∈ H, e.weight = δ e.u e.v)
+    (hconn : ∀ x y : Fin n, Relation.EqvGen (fun a b => ∃ e ∈ H, a = e.u ∧ b = e.v) x y) :
+    totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight H := by
+  have hHsub : H.Subperm (completeEdges δ) :=
+    hHnd.subperm fun e he => mem_completeEdges.2 (hHw e he)
+  have hpart : edgePartition H = edgePartition (completeEdges δ) := by
+    ext x y
+    rw [(rel_edgePartition_iff_eqvGen _ x y).2 (hconn x y),
+      (rel_edgePartition_iff_eqvGen _ x y).2
+        (.rel _ _ ⟨⟨x, y, δ x y⟩, mem_completeEdges.2 rfl, rfl, rfl⟩)]
+  have hsf : IsSpanningForest (completeEdges δ) (kruskalEdges H) :=
+    ⟨(kruskalEdges_subperm H).trans hHsub, kruskalEdges_isAcyclic H,
+      (edgePartition_kruskalEdges H).trans hpart⟩
+  calc totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight (kruskalEdges H) :=
+        (kruskalEdges_isMinSpanningForest _).2 _ hsf
+    _ ≤ totalWeight H := totalWeight_kruskalEdges_le H fun _ _ => Nat.zero_le _
+
 /-- **The lower bound** ([WilliamsonShmoys2011], Lemma 2.10): the minimum spanning tree of the
 complete graph costs at most any closed walk visiting every vertex exactly once. The tour's edges
 form a connected subgraph of the complete graph, so Kruskal's forest of them is a spanning forest,
@@ -419,39 +441,27 @@ theorem totalWeight_kruskalEdges_le_cycleCost (δ : Fin n → Fin n → ℕ) {q 
     simp only [totalWeight, hH, cycleCost, List.map_map]
     rw [← List.map_uncurry_zip_eq_zipWith]
     rfl
-  have hHnd : H.Nodup := by
-    have hmap : H.map WeightedEdge.u = q := by
+  rw [← hHw]
+  refine totalWeight_kruskalEdges_completeEdges_le δ ?_ ?_ ?_
+  · have hmap : H.map WeightedEdge.u = q := by
       simp only [hH, List.map_map]
       exact List.map_fst_zip (by simp)
     exact List.Nodup.of_map _ (hmap ▸ hq)
-  have hHsub : H.Subperm (completeEdges δ) := hHnd.subperm fun e he => by
+  · intro e he
     obtain ⟨p, -, rfl⟩ := List.mem_map.1 he
-    exact mem_completeEdges.2 rfl
-  have hconn : edgePartition H = edgePartition (completeEdges δ) := by
-    ext x y
-    have h1 : (edgePartition (completeEdges δ)).rel x y = true :=
-      (rel_edgePartition_iff_eqvGen _ x y).2
-        (.rel _ _ ⟨⟨x, y, δ x y⟩, mem_completeEdges.2 rfl, rfl, rfl⟩)
-    have h2 : (edgePartition H).rel x y = true := by
-      rw [rel_edgePartition_iff_eqvGen]
-      obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem (hcov x)
-      obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem (hcov y)
-      have h0 : 0 < q.length := by omega
-      have hR : ∀ k (hk : k + 1 < q.length), ∃ e ∈ H, q[k] = e.u ∧ q[k + 1] = e.v := by
-        intro k hk
-        refine ⟨H[k]'(by simp [hH]; omega), List.getElem_mem _, ?_, ?_⟩
-        · simp [hH]
-        · simp [hH, List.getElem_rotate, Nat.mod_eq_of_lt hk]
-      exact .trans _ _ _ (.symm _ _ (eqvGen_getElem_zero hR h0 i hi))
-        (eqvGen_getElem_zero hR h0 j hj)
-    rw [h1, h2]
-  have hsf : IsSpanningForest (completeEdges δ) (kruskalEdges H) :=
-    ⟨(kruskalEdges_subperm H).trans hHsub, kruskalEdges_isAcyclic H,
-      (edgePartition_kruskalEdges H).trans hconn⟩
-  calc totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight (kruskalEdges H) :=
-        (kruskalEdges_isMinSpanningForest _).2 _ hsf
-    _ ≤ totalWeight H := totalWeight_kruskalEdges_le H fun _ _ => Nat.zero_le _
-    _ = cycleCost δ q := hHw
+    rfl
+  · -- the tour's consecutive vertices are joined by its edges, so all vertices are connected
+    intro x y
+    obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem (hcov x)
+    obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem (hcov y)
+    have h0 : 0 < q.length := by omega
+    have hR : ∀ k (hk : k + 1 < q.length), ∃ e ∈ H, q[k] = e.u ∧ q[k + 1] = e.v := by
+      intro k hk
+      refine ⟨H[k]'(by simp [hH]; omega), List.getElem_mem _, ?_, ?_⟩
+      · simp [hH]
+      · simp [hH, List.getElem_rotate, Nat.mod_eq_of_lt hk]
+    exact .trans _ _ _ (.symm _ _ (eqvGen_getElem_zero hR h0 i hi))
+      (eqvGen_getElem_zero hR h0 j hj)
 
 /-! ### The factor 2 -/
 
