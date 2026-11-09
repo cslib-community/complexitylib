@@ -1898,6 +1898,7 @@ public import Complexity.Computability.GenericRAM.Native.StackRecursion
 public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.GenericRAM.Native.StreamingEmit
 public import Complexity.Computability.GenericRAM.Native.StreamingFold
+public import Complexity.Computability.GenericRAM.Native.StreamingFoldBounds
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
 public import Complexity.Computability.GenericRAM.Signed.Fits
@@ -2996,6 +2997,7 @@ public import Complexity.Cryptanalysis.AddXNORSubsetSum
 public import Complexity.Cryptanalysis.AddXNORSwap
 public import Complexity.Cryptanalysis.AddXNORTransfer
 public import Complexity.Cryptanalysis.AddXNORUniformExecution
+public import Complexity.Cryptanalysis.AddXNORWholeRunResources
 public import Complexity.Cryptanalysis.AddXNORWidth
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant

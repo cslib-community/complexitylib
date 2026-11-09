@@ -371,7 +371,17 @@ Full-state reconstruction of actual windows also has a summed phase allowance an
 prefix workspace bound, including pair/output/callback tapes. These results are not the total
 assembled profiles: window scan/cut/division, retained-join/group emission composition,
 scalar balance/orientation and outer/label control plus simultaneous ambient frames remain
-unclosed. The source reachable-state-DP all-count and quarter-time prepass remain open.
+unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
+original-input preparation-to-readback envelope: time is bounded by the installed balance
+prepass allowance plus `(classTime + numberOfClasses + 1) * P(originalInputBits)`, and space
+by the prepass workspace plus `(classSpace + numberOfClasses + 1) * P(originalInputBits)`.
+`classTime` is the sum of installed searches, `classSpace` their maximum, including all
+internal search costs; neither is a supplied runtime contract. The installed outer-loop
+callback copies, every prefix state, generated labels and boundary phases are now composed
+in original widths. A generic envelope for the unchanged streaming fold supplies actual
+callback sums versus workspace maxima. Sharp normalization remains necessary for those
+balance/search allowances, including window/control/retained emission and internal lifetimes.
+The source reachable-state-DP all-count and quarter-time prepass remain open.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their
 interpreter without removing their costs from their own certificates. A real

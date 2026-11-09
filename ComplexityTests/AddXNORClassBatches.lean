@@ -7,7 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import Complexity.Cryptanalysis.AddXNORProducerResources
+public import Complexity.Cryptanalysis.AddXNORWholeRunResources
+import all Complexity.Computability.GenericRAM.Native.StreamingFoldBounds
 import all Complexity.Cryptanalysis.AddXNORJoinedDissection
 import all Complexity.Cryptanalysis.AddXNORClassBatches
 import all Complexity.Cryptanalysis.AddXNORJoinedProbe
@@ -158,3 +159,38 @@ example (i : ℕ) : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monoton
   rw [sourceEq]
   exact (bound (by decide : 0 ≤ 3) (List.replicate 3 0) (List.replicate 3 0)
     (List.replicate 3 0) (List.replicate 5 0 ++ [1]) 0).2 (0 : BitVec 0) i
+
+-- These numeric envelopes include the initial prefix and non-unit record/copy wires.
+private def resetStep (_ : Bool) (_ _ : ℕ) : ℕ := 0
+private def resetBody : Cslib.GenericRAM.NativeCertificate
+    (fun _ : (Bool × ℕ) × ℕ => 0) (encPair (encPair encBool encNat) encNat) encNat := .const 0
+
+example : Cslib.GenericRAM.NativeCertificate.foldStateWidth encNat resetStep
+    (false, (3, [1, 2])) = 2 := by decide +kernel
+example : Cslib.GenericRAM.NativeCertificate.foldTimeBudget encBool encNat encNat resetStep
+    resetBody (false, (3, [1, 2])) = 56 := by decide +kernel
+example : Cslib.GenericRAM.NativeCertificate.foldSpaceBudget encBool encNat encNat resetStep
+    resetBody (false, (3, [1, 2])) = 34 := by decide +kernel
+example : Cslib.GenericRAM.NativeCertificate.foldTimeBudget encBool encNat encNat resetStep
+    resetBody (false, (3, [])) = 13 := by decide +kernel
+example : Cslib.GenericRAM.NativeCertificate.foldSpaceBudget encBool encNat encNat resetStep
+    resetBody (false, (3, [])) = 12 := by decide +kernel
+
+-- Apply the whole installed source-certificate envelope to the real arithmetic fallback.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    let original := restartArithmeticHit
+    let prepared := Source.prepare original
+    let classes := 2^ClassBalance.depth prepared
+    JoinedDissection.sourceCertificate.time original ≤
+        ClassBalance.balanceCertificate.time prepared+
+          (WholeRunResources.classTime prepared+classes+1)*P ((Source.encoding original).length) ∧
+      JoinedDissection.sourceCertificate.space original ≤
+        ClassBalance.balanceCertificate.space prepared+
+          (WholeRunResources.classSpace prepared+classes+1)*
+            P ((Source.encoding original).length) := by
+  have originalEq : restartArithmeticHit =
+      Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
+  obtain ⟨P, hP, mono, bound⟩ := WholeRunResources.sourceCertificate_bounds
+  refine ⟨P, hP, mono, ?_⟩
+  rw [originalEq]
+  exact bound 3 0 0 (List.replicate 14 0 ++ [1])

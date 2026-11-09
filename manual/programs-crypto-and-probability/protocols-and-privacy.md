@@ -1711,6 +1711,29 @@ These phase allowances reuse the approved matcher bound; window scan/cut/divisio
 retained/group-emission composition, balance/orientation/loop/label control and
 simultaneously live ambient frames remain separate obligations.
 
+[`AddXNORWholeRunResources.lean`](../../Complexity/Cryptanalysis/AddXNORWholeRunResources.lean)
+now connects those outer/boundary costs to the actual installed `sourceCertificate`.
+For original physical input length $I$, computed class count $G$, installed balance
+allowances $T_b,S_b$, search-time sum $T_c$ and search-workspace maximum $S_c$,
+`sourceCertificate_bounds` proves
+$$
+T_{\mathrm{source}}\le T_b+(T_c+G+1)P(I),\qquad
+S_{\mathrm{source}}\le S_b+(S_c+G+1)P(I).
+$$
+One monotone polynomial is fixed before all inputs. These are real installed
+subprogram allowances, with no supplied execution or runtime conclusions.
+The unchanged streaming fold's actual callback-time sum and prefix-space maximum
+are exposed by
+[`StreamingFoldBounds.lean`](../../Complexity/Computability/GenericRAM/Native/StreamingFoldBounds.lean).
+Captured parameters, every prefix state, input/output/framing and generated
+class-index data are charged. Parked packed-witness widths follow from original
+soundness, including empty lists and early hits. The complete client computes
+non-unit/empty fold budgets and applies the envelope to the actual arithmetic fallback.
+This is a whole-run envelope, not the sharp Theorem 7 inequality: $T_b,S_b,T_c,S_c$
+still need closed bounds in original widths and computed balance. In particular,
+window scan/cut/division, retained/group emission and internal class-search
+lifetimes remain in those costs. The source fast reachable-state prepass remains open.
+
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
 real time/space profile and the derived wire bound $2^p(2p+1)$; the capped source
