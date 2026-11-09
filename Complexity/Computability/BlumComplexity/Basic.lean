@@ -91,6 +91,13 @@ theorem dom_cost_of_total {f : ℕ → ℕ} {c : Code} (hc : ∀ n, f n ∈ c.ev
     (Φ.cost c n).Dom :=
   (Φ.dom_cost_iff c n).2 (Part.dom_iff_mem.2 ⟨_, hc n⟩)
 
+/-- For a program that computes a total function, a property holds of every value of its cost at
+`n` exactly when it holds of some value: the cost is defined and single-valued. -/
+theorem forall_mem_cost_iff_exists_of_total {f : ℕ → ℕ} {c : Code} (hc : ∀ n, f n ∈ c.eval n)
+    {p : ℕ → Prop} (n : ℕ) : (∀ m ∈ Φ.cost c n, p m) ↔ ∃ m ∈ Φ.cost c n, p m := by
+  obtain ⟨m, hm⟩ := Part.dom_iff_mem.1 (Φ.dom_cost_of_total hc n)
+  exact ⟨fun h => ⟨m, hm, h m hm⟩, fun ⟨m', hm', h⟩ m'' hm'' => Part.mem_unique hm' hm'' ▸ h⟩
+
 /-- Every complexity measure is partial recursive: the least `m` with `Φ c n = m` is found by
 unbounded search. -/
 theorem partrec_cost : Partrec₂ Φ.cost := by

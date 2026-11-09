@@ -47,13 +47,18 @@ between the two models is proved yet.
   ([Roughgarden2013CS364A], Lecture 3, Definition 4.2).
 * `SingleParameter.IsImplementable`: some payment rule makes the allocation rule DSIC
   (Lecture 3, Definition 4.1).
+* `SingleParameter.IsTruthfulOn X P s`: one-dimensional incentive compatibility of an allocation
+  curve `X` and a payment curve `P` on a set of types `s`.
 * `SingleParameter.IsWelfareMaximizing`: on every nonnegative bid profile the rule picks a feasible
   allocation maximizing the reported welfare `∑ bᵢ xᵢ`.
 
 ## Main results
 
-* `SingleParameter.Mechanism.IsDSIC.isMonotone`: DSIC allocation rules are monotone (the "payment
-  difference sandwich", Lecture 3 (4)); `IsImplementable.isMonotone` restates it.
+* `SingleParameter.IsTruthfulOn.monotoneOn`: incentive-compatible allocation curves are monotone
+  (the "payment difference sandwich", Lecture 3 (4)).
+* `SingleParameter.Mechanism.IsDSIC.isTruthfulOn`, `SingleParameter.Mechanism.IsDSIC.isMonotone`:
+  along one bidder's own bid a DSIC mechanism is incentive compatible on `[0, ∞)`, so DSIC
+  allocation rules are monotone; `IsImplementable.isMonotone` restates it.
 * `SingleParameter.IsWelfareMaximizing.isMonotone`: every welfare-maximizing allocation rule, with
   any tie-breaking, is monotone.
 * `SingleParameter.exists_isWelfareMaximizing`: a welfare-maximizing rule exists for every finite
@@ -67,6 +72,7 @@ The converse direction of Myerson's Lemma and the payment formula are in
 * [T. Roughgarden, *CS364A: Algorithmic Game Theory*, lecture notes][Roughgarden2013CS364A]
 * [T. Roughgarden, *Twenty Lectures on Algorithmic Game Theory*][Roughgarden2016]
 * [R. B. Myerson, *Optimal auction design*][Myerson1981]
+* [J. D. Hartline, *Mechanism Design and Approximation*][Hartline2021]
 -/
 
 public section
@@ -110,6 +116,28 @@ nonnegative bids of the others. -/
 
 end Mechanism
 
+/-- One-dimensional incentive compatibility on `s`: a type `v ∈ s` facing the allocation curve `X`
+and payment curve `P` prefers its own outcome to that of any other type `w ∈ s`,
+`v X(w) − P(w) ≤ v X(v) − P(v)`. With `s = Ici 0` and the curves of one bidder's own bid this is
+DSIC (`Mechanism.IsDSIC.isTruthfulOn`); for interim rules it is the condition of [Hartline2021],
+Proposition 2.4.1. -/
+@[expose] def IsTruthfulOn (X P : ℝ → ℝ) (s : Set ℝ) : Prop :=
+  ∀ v ∈ s, ∀ w ∈ s, v * X w - P w ≤ v * X v - P v
+
+/-- Incentive-compatible allocation curves are monotone: adding the constraints for `v` and `w`
+gives `(v − w)(X(v) − X(w)) ≥ 0` (the "payment difference sandwich", [Roughgarden2013CS364A],
+Lecture 3, (4)). -/
+theorem IsTruthfulOn.monotoneOn {X P : ℝ → ℝ} {s : Set ℝ} (hT : IsTruthfulOn X P s) :
+    MonotoneOn X s := by
+  intro w hw v hv hwv
+  have h1 := hT v hv w hw
+  have h2 := hT w hw v hv
+  by_contra hlt'
+  have hlt := not_le.1 hlt'
+  rcases hwv.lt_or_eq with hwv' | rfl
+  · nlinarith
+  · exact lt_irrefl _ hlt
+
 variable {ι : Type*}
 
 section DecidableEq
@@ -142,19 +170,20 @@ theorem Mechanism.IsDSIC.utility_update_le {M : Mechanism ι} (hM : M.IsDSIC) (i
   have := hM i (Function.update b i z) v (update_nonneg hb i hz) hv
   simpa only [Mechanism.utility, Function.update_idem] using this
 
+/-- Along one bidder's own bid, with the others' nonnegative bids fixed, the allocation and payment
+curves of a DSIC mechanism are incentive compatible on `[0, ∞)`. -/
+theorem Mechanism.IsDSIC.isTruthfulOn {M : Mechanism ι} (hM : M.IsDSIC) (i : ι) {b : ι → ℝ}
+    (hb : 0 ≤ b) :
+    IsTruthfulOn (fun z => M.allocation (Function.update b i z) i)
+      (fun z => M.payment (Function.update b i z) i) (Set.Ici 0) :=
+  fun _ hv _ hz => hM.utility_update_le i hb hv hz
+
 /-- **Myerson's Lemma, necessity** ([Roughgarden2013CS364A], Lecture 3, Theorem 4.3 (a), "only
 if"): the allocation rule of a DSIC mechanism is monotone. Adding the two swap inequalities for
-bids `z ≤ y` gives `(y − z)(x(y) − x(z)) ≥ 0`. -/
+bids `z ≤ y` gives `(y − z)(x(y) − x(z)) ≥ 0` (`IsTruthfulOn.monotoneOn`). -/
 theorem Mechanism.IsDSIC.isMonotone {M : Mechanism ι} (hM : M.IsDSIC) :
-    IsMonotone M.allocation := by
-  intro i b hb z hz y hy hzy
-  have h1 := hM.utility_update_le i hb hy hz
-  have h2 := hM.utility_update_le i hb hz hy
-  by_contra hlt'
-  have hlt := not_le.1 hlt'
-  rcases hzy.lt_or_eq with hzy' | rfl
-  · nlinarith
-  · exact lt_irrefl _ hlt
+    IsMonotone M.allocation :=
+  fun i _ hb => (hM.isTruthfulOn i hb).monotoneOn
 
 /-- Implementable allocation rules are monotone. -/
 theorem IsImplementable.isMonotone {x : (ι → ℝ) → ι → ℝ} (hx : IsImplementable x) :

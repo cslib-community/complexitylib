@@ -17,10 +17,14 @@ import Complexity.Probability.PMF.Bind
 
 * `Cslib.Probability.PMF.map_equiv_apply`: point masses after an equivalence.
 * `Cslib.Probability.PMF.map_congr_on_support`: only supported inputs need equal outputs.
+* `Cslib.Probability.PMF.map_apply_le_mul`: relabeling preserves a pointwise ratio bound.
 * `Cslib.Probability.PMF.map_apply_toReal`: finite fiber sums.
 * `Cslib.Probability.PMF.uniformOfFintype_map_apply`: uniform image masses from fiber sizes.
 * `Cslib.Probability.PMF.bind_map_prodMk_apply`: point masses of a pairing bind.
 * `Cslib.Probability.PMF.map_injective`: injective encodings preserve equality of distributions.
+* `Cslib.Probability.PMF.map_apply_of_injective`: an injective map preserves point masses.
+* `Cslib.Probability.PMF.forall_map_apply_le_mul_iff`: domination of an image at every outcome is
+  domination on the support of the dominating law together with preservation of supports.
 
 ## References
 
@@ -52,6 +56,16 @@ theorem map_equiv_apply (p : PMF α) (e : α ≃ β) (b : β) :
 theorem map_congr_on_support (p : PMF α) (f g : α → β)
     (h : ∀ a ∈ p.support, f a = g a) : p.map f = p.map g :=
   PMF.bind_congr_on_support p _ _ (fun a ha => congrArg PMF.pure (h a ha))
+
+/-- A pointwise likelihood-ratio bound `p ≤ c · q` survives relabeling by any map. -/
+theorem map_apply_le_mul {p q : PMF α} {c : ℝ≥0∞} (h : ∀ a, p a ≤ c * q a) (f : α → β)
+    (b : β) : p.map f b ≤ c * q.map f b := by
+  classical
+  rw [PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_mul_left]
+  refine tsum_le_tsum fun a => ?_
+  split_ifs
+  · exact h a
+  · simp
 
 /-- The mass of a deterministic image is the sum of the masses in its fiber. -/
 theorem map_apply_toReal [Fintype α] [DecidableEq β] (p : PMF α) (f : α → β) (b : β) :
@@ -92,5 +106,34 @@ theorem map_injective {f : α → β} (hf : Function.Injective f) :
   intro p q h
   ext a
   simpa only [PMF.map_apply, hf.eq_iff, tsum_ite_eq'] using congrArg (fun law => law (f a)) h
+
+/-- An injective map preserves the mass of each outcome. -/
+theorem map_apply_of_injective (p : PMF α) {f : α → β} (hf : Function.Injective f) (a : α) :
+    p.map f (f a) = p a := by
+  classical
+  simp only [PMF.map_apply, hf.eq_iff, tsum_ite_eq']
+
+/-- Domination of an image law at every outcome is domination on the support of the dominating law
+together with preservation of supports. -/
+theorem forall_map_apply_le_mul_iff {p : PMF α} {q : PMF β} {f : α → β} {c : ℝ≥0∞} :
+    (∀ b, p.map f b ≤ c * q b) ↔
+      (∀ b ∈ q.support, p.map f b ≤ c * q b) ∧ ∀ a ∈ p.support, f a ∈ q.support := by
+  constructor
+  · intro h
+    refine ⟨fun b _ => h b, fun a ha => ?_⟩
+    rw [PMF.mem_support_iff] at ha ⊢
+    intro h0
+    have h2 := h (f a)
+    rw [h0, mul_zero] at h2
+    exact ha (le_antisymm ((le_map_apply p f a).trans h2) zero_le)
+  · rintro ⟨h, hsupp⟩ b
+    by_cases hb : b ∈ q.support
+    · exact h b hb
+    · have hmap : p.map f b = 0 := by
+        rw [PMF.apply_eq_zero_iff, PMF.support_map]
+        rintro ⟨a, ha, rfl⟩
+        exact hb (hsupp a ha)
+      rw [hmap]
+      exact zero_le
 
 end Cslib.Probability.PMF

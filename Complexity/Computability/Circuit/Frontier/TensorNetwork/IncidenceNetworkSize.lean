@@ -222,8 +222,7 @@ theorem exists_size (c : ℕ) : ∃ C n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ (K :
         omega
       have hns36 : n ^ 36 ≤ sizeParam n ^ 36 := Nat.pow_le_pow_left hns _
       calc (((a + 1) * lam ^ c) ^ 10) ^ 4 = ((a + 1) ^ 4) ^ 10 * lam ^ (40 * c) := by ring
-        _ ≤ (16 * (c' ^ 4 + 1) * n ^ 3) ^ 10 * lam ^ (40 * c) :=
-            Nat.mul_le_mul_right _ (Nat.pow_le_pow_left ha1 _)
+        _ ≤ (16 * (c' ^ 4 + 1) * n ^ 3) ^ 10 * lam ^ (40 * c) := by gcongr
         _ = n ^ 30 * (B * lam ^ (40 * c)) := by ring
         _ ≤ n ^ 30 * n ^ 6 := Nat.mul_le_mul_left _ (hB.trans (Nat.le_self_pow (by norm_num) _))
         _ = n ^ 36 := by ring

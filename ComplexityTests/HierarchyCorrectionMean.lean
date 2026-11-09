@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of genuine correction means)
 
-import Complexity.Foundations.Probability.HierarchyCorrectionMean
+import Complexity.Computability.LogSpaceDerandomization.HierarchyCorrectionMean
 import ComplexityTests.HierarchyCutoffs
 
 /-! Positive actual single-environment means and nonconstant finite-horizon channels. -/

@@ -11,8 +11,10 @@ public import Complexity.Init
 public import Cslib.Foundations.Data.BitString
 public import Cslib.Probability.PMF
 public import Mathlib.Basic.Real.Basic
+public import Mathlib.Data.Finset.Density
 public import Mathlib.Data.Fintype.Card
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.Uniform
 import Mathlib.Data.Fintype.Pi
 import Mathlib.Logic.Embedding.Set
 
@@ -66,6 +68,8 @@ between problems.
   `Cslib.Streaming.Randomized.errorProb_map_reduce_le`: reductions keep memory and error.
 * `Cslib.Streaming.Randomized.solves_pure`, `Cslib.Streaming.Randomized.spaceLE_pure`:
   deterministic algorithms as randomized ones.
+* `Cslib.Streaming.Randomized.errorProb_map_uniformOfFintype`: the error of an algorithm drawn
+  with a uniform seed is the fraction of bad seeds.
 
 ## References
 
@@ -242,6 +246,17 @@ theorem spaceLE_pure {A : Algorithm σ α β} {m b : ℕ} (hA : A.SpaceLE m b) :
   intro A' hA'
   rw [PMF.support_pure, Set.mem_singleton_iff] at hA'
   exact hA' ▸ hA
+
+/-- The error of an algorithm drawn with a uniformly random seed is the fraction of the seeds on
+which it errs. -/
+theorem errorProb_map_uniformOfFintype {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    (F : Ω → Algorithm σ α β) (R : List α → β → Prop) (s : List α)
+    [DecidablePred fun ω => ¬R s ((F ω).run s)] :
+    errorProb ((Probability.PMF.uniformOfFintype Ω).map F) R s =
+      Finset.dens {ω | ¬R s ((F ω).run s)} := by
+  unfold errorProb
+  rw [PMF.toOuterMeasure_map_apply, Finset.nnratCast_dens]
+  exact Probability.PMF.toOuterMeasure_uniformOfFintype_toReal {ω | ¬R s ((F ω).run s)}
 
 /-- Reducing every algorithm drawn from `μ` to `R'` by `Algorithm.reduce` keeps the error, when
 the answer of `A` related to the reduced stream by `R` is mapped by `d` to an answer related to the

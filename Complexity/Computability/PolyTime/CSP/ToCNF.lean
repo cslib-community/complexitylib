@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CSP.ToCNF
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -140,8 +141,7 @@ theorem computableInPolyTime_toCNFBounded_of_forall (encRel : Rel ↪ List Bool)
     (hsem : ∀ w : List Bool, w.length ≤ k →
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ComputableInPolyTime (CSP.toCNFBounded k sem)
-      (encCSP encRel encV)
-      (encList (encList (encPair encV encBool))) := by
+      (encCSP encRel encV) (encCNFOver encV) := by
   have hc := computableInPolyTime_constraintToCNFBounded encRel encV k sem hsem
   exact flatMapWithInput (id' (encIn := encCSP encRel encV))
     (hc.comp (snd (encCSP encRel encV) (encConstraint encRel encV)))
@@ -154,8 +154,7 @@ theorem computableInPolyTime_toCNFBounded (encRel : Rel ↪ List Bool)
     (hsem : ComputableInPolyTime (fun p : Rel × List Bool => sem p.1 p.2)
       (encPair encRel encBits) encBool) :
     ComputableInPolyTime (CSP.toCNFBounded k sem)
-      (encCSP encRel encV)
-      (encList (encList (encPair encV encBool))) :=
+      (encCSP encRel encV) (encCNFOver encV) :=
   computableInPolyTime_toCNFBounded_of_forall encRel encV k sem fun w _ =>
     hsem.comp (id'.prod (const w))
 
@@ -164,8 +163,7 @@ polynomial time for any finite relation alphabet `Rel`. -/
 theorem computableInPolyTime_toCNFBounded_of_finite [Finite Rel] (encRel : Rel ↪ List Bool)
     (encV : V ↪ List Bool) (k : ℕ) (sem : Rel → List Bool → Bool) :
     ComputableInPolyTime (CSP.toCNFBounded k sem)
-      (encCSP encRel encV)
-      (encList (encList (encPair encV encBool))) :=
+      (encCSP encRel encV) (encCNFOver encV) :=
   computableInPolyTime_toCNFBounded_of_forall encRel encV k sem fun _ _ => of_finite _
 
 end CSP
