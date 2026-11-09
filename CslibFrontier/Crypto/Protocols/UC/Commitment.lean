@@ -17,7 +17,7 @@ import CslibFrontier.Probability.PMF
 This module defines the two-party ideal bit-commitment functionality `fcom` in the Universally
 Composable (UC) framework with static corruptions
 (`CslibFrontier/Crypto/Protocols/UC/Execution.lean`)
-and proves the Canetti–Fischlin impossibility theorem ([CanettiFischlin2001], Theorem 1): no
+and proves the Canetti–Fischlin impossibility theorem ([CanettiFischlin2001], Theorem 6): no
 plain-model two-party commitment protocol with nontrivial completeness can UC-realize `fcom`.
 
 In the plain model (`PlainCommitmentScheme`), committer `0 : Fin 2` and receiver `1 : Fin 2` share
@@ -109,7 +109,8 @@ Combining both experiments via the triangle inequality yields the quantitative t
 ## References
 
 * [R. Canetti, M. Fischlin, *Universally Composable Commitments*][CanettiFischlin2001]: Figure 2
-  ($\mathcal{F}_{\mathrm{com}}$) and Theorem 1 (impossibility in the plain model).
+  ($\mathcal{F}_{\mathrm{com}}$) and Theorem 6 (impossibility in the plain model), numbered as in
+  the full version (Cryptology ePrint Archive, Report 2001/055).
 * [R. Canetti, *Universally Composable Security*][Canetti2020]: UC execution and emulation.
 -/
 
@@ -1679,7 +1680,7 @@ theorem acceptProb_le_ideal_add_advantage [DecidableEq CommitMsg] [DecidableEq O
      Game.succProbability (exec fcom.toProtocol S₀ {0} (corruptCommitterEnv S₁ b) κ z₀).eval)
   linarith
 
-/-- **Canetti–Fischlin Quantitative Trade-off ([CanettiFischlin2001], Theorem 1):** for any
+/-- **Canetti–Fischlin Quantitative Trade-off ([CanettiFischlin2001], Theorem 6):** for any
 plain-model commitment scheme `scheme` and any simulators `S₁` (for `C = {1}`) and `S₀` (for
 `C = {0}`), the sum of `scheme.acceptProb κ false` and `scheme.acceptProb κ true` is at most `1`
 plus the four distinguishing advantages of `corruptReceiverEnv` and `corruptCommitterEnv` on `false`
@@ -1782,7 +1783,7 @@ theorem not_realizesWithin_fcom [DecidableEq CommitMsg] [DecidableEq OpenMsg]
   obtain ⟨pD, hg, hdummy⟩ := hreal.emulatesDummyWithin
   exact not_emulatesDummyWithin_fcom hV pD (ε 1) κ (hgap pD hg) hdummy
 
-/-- **Canetti–Fischlin Impossibility Theorem ([CanettiFischlin2001], Theorem 1):** no plain-model
+/-- **Canetti–Fischlin Impossibility Theorem ([CanettiFischlin2001], Theorem 6):** no plain-model
 two-party commitment scheme whose verification is polynomial-call bounded and whose honest
 acceptance probabilities on `false` and `true` eventually sum to at least `1 + c` (for some `c > 0`)
 can UC-realize `fcom`. -/
