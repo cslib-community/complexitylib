@@ -115,10 +115,11 @@ private theorem τ₁_le_one : P.τ₁ ≤ 1 := by
   rw [P.τ₁_eq]
   norm_num
 
-/-- The incoming column cap `⌈4 (1 + 32 R)⌉₊` of both samplers is positive. -/
-private theorem incomingCap_pos : 0 < ⌈4 * (1 + 32 * P.R)⌉₊ := by
+/-- The incoming column cap `⌈4 (1 + 32 R)⌉₊` of the correction and pilot samplers is positive,
+since `4 J ≤ R` (`R_rank`). -/
+theorem incomingCap_pos : 0 < ⌈4 * (1 + 32 * P.R)⌉₊ := by
   have h := P.R_rank
-  norm_num at h
+  norm_num only [one_mul] at h
   exact Nat.ceil_pos.mpr (by linarith [(Nat.cast_nonneg P.J : (0 : ℝ) ≤ P.J)])
 
 section Clients
