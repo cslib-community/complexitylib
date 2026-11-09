@@ -16,11 +16,12 @@ public import Complexity.Foundations.Data.BitString.Basic
 
 Nondeterministic communication complexity for the answer `z : Bool` is defined by covers
 [Kushilevitz and Nisan, Definition 2.3, p. 18][KushilevitzNisan1997]. For a relation
-`R : X → Y → Bool → Prop`, a *`z`-cover* of `R` on `A × B` by `2 ^ k` rectangles is a family of
-rectangles indexed by the `k`-bit guesses such that `z` is an acceptable answer on the part of each
-rectangle inside `A × B`, and every pair of `A × B` on which `!z` is not acceptable lies in some
-rectangle (`Nondeterministic.IsCover`). The complexity `Nondeterministic.ecomplexity z R A B` is the
-least such `k`, or `⊤` if there is none; in particular it is `⊤` if no answer is acceptable on some
+`R : X → Y → Bool → Prop`, a *`z`-cover* of `R` on `A × B` is a family of rectangles, indexed by any
+type, such that `z` is an acceptable answer on the part of each rectangle inside `A × B`, and every
+pair of `A × B` on which `!z` is not acceptable lies in some rectangle (`Nondeterministic.IsCover`).
+A cover by `2 ^ k` rectangles is one indexed by the `k`-bit guesses (`Nondeterministic.HasCover`).
+The complexity `Nondeterministic.ecomplexity z R A B` is the least such `k`, or `⊤` if there is
+none; in particular it is `⊤` if no answer is acceptable on some
 pair of `A × B`, as for `Protocol.ecomplexity`. For a function `f : X → Y → Bool`,
 `Nondeterministic.ecomplexityFun z f A B` is the complexity of the relation `f x y = b`; its
 `z`-covers are families of rectangles on which `f` is `z` inside `A × B` that contain every pair of
@@ -105,7 +106,8 @@ Deterministic protocols give covers directly (`Nondeterministic.ecomplexity_le_p
   `Cslib.Communication.Nondeterministic.ecomplexity_le_of_imp`: a weaker relation is no harder.
 * `Cslib.Communication.Nondeterministic.ecomplexity_not`,
   `Cslib.Communication.Nondeterministic.ecomplexityFun_not`: `N⁰` is `N¹` of the negation.
-* `Cslib.Communication.Nondeterministic.HasCover.card_le`,
+* `Cslib.Communication.Nondeterministic.IsCover.card_le`,
+  `Cslib.Communication.Nondeterministic.HasCover.card_le`,
   `Cslib.Communication.Nondeterministic.le_ecomplexityFun_of_isFoolingSet`: a fooling set of
   `2 ^ n` pairs with value `z` forces `n`.
 * `Cslib.Communication.Nondeterministic.HasCover.card_le_two_pow_mul`: on a finite domain, if every
@@ -133,11 +135,12 @@ open Finset
 
 variable {X Y : Type*}
 
-/-- `C` is a `z`-cover of the relation `R` on `A × B` by `2 ^ k` rectangles: `z` is an acceptable
-answer on the part of each rectangle inside `A × B`, and every pair of `A × B` on which `!z` is not
-acceptable lies in some rectangle. -/
-@[expose] def IsCover (z : Bool) (R : X → Y → Bool → Prop) (A : Set X) (B : Set Y) {k : ℕ}
-    (C : BitString k → Set X × Set Y) : Prop :=
+/-- `C` is a `z`-cover of the relation `R` on `A × B` by rectangles indexed by `κ`: `z` is an
+acceptable answer on the part of each rectangle inside `A × B`, and every pair of `A × B` on which
+`!z` is not acceptable lies in some rectangle. For nondeterministic protocols `κ` is `BitString k`,
+the guesses of `k` bits (`Nondeterministic.HasCover`). -/
+@[expose] def IsCover (z : Bool) (R : X → Y → Bool → Prop) (A : Set X) (B : Set Y) {κ : Type*}
+    (C : κ → Set X × Set Y) : Prop :=
   (∀ w, ∀ x ∈ A, x ∈ (C w).1 → ∀ y ∈ B, y ∈ (C w).2 → R x y z) ∧
     ∀ x ∈ A, ∀ y ∈ B, ¬R x y (!z) → ∃ w, x ∈ (C w).1 ∧ y ∈ (C w).2
 
@@ -163,7 +166,7 @@ variable {R R' : X → Y → Bool → Prop} {f : X → Y → Bool} {z : Bool} {A
 
 /-- A `z`-cover of a function: `f` is `z` on the part of each rectangle inside `A × B`, and every
 pair of `A × B` on which `f` is `z` lies in some rectangle. -/
-theorem isCover_fun_iff {C : BitString k → Set X × Set Y} :
+theorem isCover_fun_iff {κ : Type*} {C : κ → Set X × Set Y} :
     IsCover z (fun x y b => f x y = b) A B C ↔
       (∀ w, ∀ x ∈ A, x ∈ (C w).1 → ∀ y ∈ B, y ∈ (C w).2 → f x y = z) ∧
         ∀ x ∈ A, ∀ y ∈ B, f x y = z → ∃ w, x ∈ (C w).1 ∧ y ∈ (C w).2 := by
@@ -260,27 +263,39 @@ theorem ecomplexity_not :
 
 /-! ### Lower bounds -/
 
+/-- **The fooling-set bound, for covers indexed by a finite type.** A fooling set for `f` with
+value `z` inside `A × B` has at most `|κ|` pairs if `C : κ → Set X × Set Y` is a `z`-cover of `f`
+on `A × B`: no rectangle contains two of its pairs. -/
+theorem IsCover.card_le {κ : Type*} [Fintype κ] {C : κ → Set X × Set Y} {S : Finset (X × Y)}
+    (hS : IsFoolingSet f z S) (hSAB : ∀ q ∈ S, q.1 ∈ A ∧ q.2 ∈ B)
+    (hC : IsCover z (fun x y b => f x y = b) A B C) :
+    #S ≤ Fintype.card κ := by
+  classical
+  obtain ⟨hmem, hcov⟩ := isCover_fun_iff.mp hC
+  have hw : ∀ q ∈ S, ∃ w, q.1 ∈ (C w).1 ∧ q.2 ∈ (C w).2 := fun q hq =>
+    hcov _ (hSAB q hq).1 _ (hSAB q hq).2 (hS.1 q hq)
+  rcases isEmpty_or_nonempty κ with hκ | hκ
+  · rw [card_eq_zero.2 (eq_empty_of_forall_notMem fun q hq => (hw q hq).elim fun w _ =>
+      hκ.elim w)]
+    exact Nat.zero_le _
+  choose! g hg using hw
+  rw [← card_univ]
+  refine card_le_card_of_injOn g (by intro _ _; exact mem_univ _) ?_
+  intro q hq q' hq' hqq
+  refine hS.2 q hq q' hq' ?_ ?_
+  · exact hmem (g q) _ (hSAB q hq).1 (hg q hq).1 _ (hSAB q' hq').2
+      (by rw [hqq]; exact (hg q' hq').2)
+  · exact hmem (g q) _ (hSAB q' hq').1 (by rw [hqq]; exact (hg q' hq').1) _
+      (hSAB q hq).2 (hg q hq).2
+
 /-- **The fooling-set bound, for covers.** A fooling set for `f` with value `z` inside `A × B`
 has at most `2 ^ k` pairs if `f` has a `z`-cover on `A × B` by `2 ^ k` rectangles: no rectangle
 contains two of its pairs. -/
 theorem HasCover.card_le {S : Finset (X × Y)} (hS : IsFoolingSet f z S)
     (hSAB : ∀ q ∈ S, q.1 ∈ A ∧ q.2 ∈ B) (h : HasCover z (fun x y b => f x y = b) A B k) :
     #S ≤ 2 ^ k := by
-  classical
   obtain ⟨C, hC⟩ := h
-  obtain ⟨hmem, hcov⟩ := isCover_fun_iff.mp hC
-  have hw : ∀ q ∈ S, ∃ w, q.1 ∈ (C w).1 ∧ q.2 ∈ (C w).2 := fun q hq =>
-    hcov _ (hSAB q hq).1 _ (hSAB q hq).2 (hS.1 q hq)
-  choose! g hg using hw
-  calc #S ≤ #(univ : Finset (BitString k)) := by
-        refine card_le_card_of_injOn g (by intro _ _; exact mem_univ _) ?_
-        intro q hq q' hq' hqq
-        refine hS.2 q hq q' hq' ?_ ?_
-        · exact hmem (g q) _ (hSAB q hq).1 (hg q hq).1 _ (hSAB q' hq').2
-            (by rw [hqq]; exact (hg q' hq').2)
-        · exact hmem (g q) _ (hSAB q' hq').1 (by rw [hqq]; exact (hg q' hq').1) _
-            (hSAB q hq).2 (hg q hq).2
-    _ = 2 ^ k := by rw [card_univ, BitString.card]
+  exact (hC.card_le hS hSAB).trans_eq BitString.card
 
 /-- **The fooling-set bound on nondeterministic complexity.** A fooling set of at least `2 ^ n`
 pairs for `f` with value `z` inside `A × B` forces `n`. -/

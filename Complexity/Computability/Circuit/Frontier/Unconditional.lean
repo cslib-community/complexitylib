@@ -61,32 +61,24 @@ variable {U : Type u} [Finite U] [Nontrivial U] {S : ∀ n, Set (Fin n → U)} {
 every circuit of fan-in at most `r` deciding `S_n`, over any basis and interpretation on `U`, has
 `s` inner gates with `(r - 1) s > (2 - ε) n`. -/
 theorem eventually_two_sub_mul_lt_mul_innerSize {r : ℕ} (hr : 2 ≤ r)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost r → c.Decides I Acc (S n) →
         (2 - ε) * n < (r - 1) * c.innerSize := by
   simpa only [div_one, one_add_one_eq_two] using
-    eventually_lt_mul_innerSize hr one_pos (layoutBound_one (r + 1)) hfree hK hdense hε
+    eventually_lt_mul_innerSize hr one_pos (layoutBound_one (r + 1)) hSK hε
 
 /-- **The unconditional frontier lower bound for fan-in two.** Under the hypotheses of
 `eventually_two_sub_mul_lt_mul_innerSize`, for every `ε > 0` and all large `n`, every circuit of
 fan-in at most two deciding `S_n`, over any basis and interpretation on `U`, has more than
 `(2 - ε) n` inner gates. -/
 theorem eventually_two_sub_mul_lt_innerSize
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 2 → c.Decides I Acc (S n) →
         (2 - ε) * n < c.innerSize := by
   simpa only [div_one, one_add_one_eq_two] using
-    eventually_lt_innerSize one_pos (layoutBound_one 3) hfree hK hdense hε
+    eventually_lt_innerSize one_pos (layoutBound_one 3) hSK hε
 
 /-- **The unconditional worst-case claim with coefficient two**: circuits of fan-in at most two
 deciding dense `K_n`-rectangle-free sets with `log K_n = o(n)` need more than `(2 - ε) n` inner
