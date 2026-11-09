@@ -44,6 +44,8 @@ string listing their certificates (`familyAdvice`, `evalAdvice`) in polynomial t
 
 * `Cslib.Circuits.Boolean.PPoly.of_advice`: hardwiring advice of polynomial length into circuits
   of polynomial size.
+* `Cslib.Circuits.Boolean.PPolyOn.of_polyTime_advice`: a problem decided in polynomial time from
+  advice of polynomial length is in `P/poly`.
 * `Cslib.Circuits.Boolean.PPoly.exists_evalAdvice`: advice strings of polynomial length deciding a
   language in `P/poly` up to any polynomial input-length bound.
 * `Cslib.Circuits.Boolean.computableInPolyTime_evalAdvice`,
@@ -85,6 +87,22 @@ theorem PPoly.of_advice {L M : Language Bool} (hM : M ∈ PPoly) (α : ℕ → L
       substitute_prependInputs, List.ofFn_fin_append, h, List.length_ofFn, ha]
   have hc := complexity_substitute_le (prependInputs a) (M.slice ((frame (α n)).length + n))
   rwa [← hslice, length_frame] at hc
+
+universe u in
+/-- **Polynomial time with advice gives `P/poly`.** If `a ∈ A` exactly when a Boolean function
+`g`, computable in polynomial time, accepts the advice `adv |enc a|` paired with `a`, and the
+advice has encoded length polynomial in `n`, then `A` is in `PPolyOn enc`: the pairs accepted by
+`g` are the preimage of a language in `P/poly` (`PPoly.exists_of_polyTime`), and hardwiring the
+encoded advice (`PPoly.of_advice`) gives circuits for `A`. -/
+theorem PPolyOn.of_polyTime_advice {α β : Type u} {enc : α ↪ List Bool} {encAdv : β ↪ List Bool}
+    {A : Set α} {g : β × α → Bool} (hg : ComputableInPolyTime g (encPair encAdv enc) encBool)
+    (adv : ℕ → β) (hadv : PolynomiallyBounded fun n => (encAdv (adv n)).length)
+    (hA : ∀ a, a ∈ A ↔ g (adv (enc a).length, a) = true) : A ∈ PPolyOn enc := by
+  obtain ⟨M, hM, hgM⟩ := PPoly.exists_of_polyTime hg
+  refine ⟨{x : List Bool | frame (encAdv (adv x.length)) ++ x ∈ M},
+    PPoly.of_advice hM (fun n => encAdv (adv n)) hadv (fun _ => Iff.rfl), fun a => ?_⟩
+  change a ∈ A ↔ frame (encAdv (adv (enc a).length)) ++ enc a ∈ M
+  rw [hA, hgM, encPair_apply]
 
 /-! ### Advice strings for circuit families -/
 

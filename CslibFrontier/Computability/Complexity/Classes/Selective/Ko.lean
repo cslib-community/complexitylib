@@ -145,13 +145,7 @@ open Circuits.Boolean in
 theorem PSel_subset_PPolyOn {α : Type} {enc : α ↪ List Bool} : PSel enc ⊆ PPolyOn enc := by
   intro A hA
   obtain ⟨D, hD, adv, hadv, hA⟩ := exists_advice_polyTime_of_mem_PSel hA
-  obtain ⟨M, hM, hDM⟩ := PPoly.exists_of_polyTime hD
-  let w : ℕ → List Bool := fun n => encList enc (adv n)
-  have hw : PolynomiallyBounded fun n => (w n).length :=
-    PolynomiallyBounded.mono_of_le (g := fun n => (n + 1) * (2 * n + 1)) (by fun_prop) hadv
-  refine ⟨{x : List Bool | frame (w x.length) ++ x ∈ M}, PPoly.of_advice hM w hw
-    (fun _ => Iff.rfl), fun a => ?_⟩
-  change a ∈ A ↔ frame (w (enc a).length) ++ enc a ∈ M
-  rw [hA, hDM (adv (enc a).length, a), encPair_apply]
+  exact PPolyOn.of_polyTime_advice hD adv
+    (PolynomiallyBounded.mono_of_le (g := fun n => (n + 1) * (2 * n + 1)) (by fun_prop) hadv) hA
 
 end Cslib.Complexity

@@ -233,13 +233,8 @@ theorem PolyTimeReducible.mem_PPolyOn {β : Type} {encB : β ↪ List Bool} {A :
   let g : List Bool × α → Bool := fun x =>
     evalAdvice (S.eval (enc x.2).length) (W.eval (enc x.2).length) x.1 (encB (f x.2))
   have hg : ComputableInPolyTime g (encPair encBits enc) encBool := by fun_prop
-  obtain ⟨M, hM, hgM⟩ := PPoly.exists_of_polyTime hg
-  let L : Language Bool := {x : List Bool | frame (α_adv x.length) ++ x ∈ M}
-  refine ⟨L, PPoly.of_advice hM α_adv hα (fun _ => Iff.rfl), fun a => ?_⟩
-  change a ∈ A ↔ frame (α_adv (enc a).length) ++ enc a ∈ M
-  have hgM' := hgM (α_adv (enc a).length, a)
-  rw [encPair_apply, encBits_apply] at hgM'
-  rw [hiff a, hLB (f a), ← hgM']
+  refine PPolyOn.of_polyTime_advice hg α_adv hα fun a => ?_
+  rw [hiff a, hLB (f a)]
   exact (h_eval (enc a).length (encB (f a)) (hN a)).symm
 
 /-- **Nonuniform quantifier elimination.** If every language in `NP` over `Bool` is in `P/poly`

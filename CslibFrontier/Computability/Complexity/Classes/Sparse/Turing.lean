@@ -107,18 +107,11 @@ theorem PWithOracle_subset_PPolyOn (hS : S ∈ SPARSE encBits) (enc : α ↪ Lis
       (encPair (encList encBits) enc) encBool :=
     hF.comp (g := fun x : List (List Bool) × α => (x.2, x.1))
       ((ComputableInPolyTime.snd _ _).prod (.fst _ _))
-  obtain ⟨M, hM, hFM⟩ := PPoly.exists_of_polyTime hF'
   obtain ⟨c, d, hadv⟩ := exists_length_encList_shortMembers_le hS
-  let adv : ℕ → List Bool := fun n => encList encBits (shortMembers S (q.eval n))
-  have hadvPoly : PolynomiallyBounded fun n => (adv n).length := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => c * (q.eval n + 1) ^ d) (by fun_prop)
-      fun n => hadv _
-  let L' : Language Bool := {x : List Bool | frame (adv x.length) ++ x ∈ M}
-  refine ⟨L', PPoly.of_advice hM adv hadvPoly (fun _ => Iff.rfl), fun a => ?_⟩
-  change a ∈ L ↔ frame (adv (enc a).length) ++ enc a ∈ M
-  have hFM' := hFM (shortMembers S (q.eval (enc a).length), a)
-  rw [encPair_apply] at hFM'
-  rw [hL a, ← hFM', hFS a _ fun w hw => by simp only [mem_shortMembers, hw, and_true]]
+  refine PPolyOn.of_polyTime_advice hF' (fun n => shortMembers S (q.eval n))
+    (PolynomiallyBounded.mono_of_le (g := fun n => c * (q.eval n + 1) ^ d) (by fun_prop)
+      fun n => hadv _) fun a => ?_
+  rw [hL a, hFS a _ fun w hw => by simp only [mem_shortMembers, hw, and_true]]
 
 /-- **A sparse Turing-hard set for `NP` collapses `PH` to `Σ₂`**: if `SAT` is decided in
 polynomial time relative to a sparse oracle language, then `SAT` has circuits of polynomial size,
