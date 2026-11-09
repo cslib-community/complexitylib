@@ -71,6 +71,8 @@ and super-polynomial key universes are not formalized here.
   `matching_apply`: termination within `A.card` rounds and canonical injection properties.
 * `expect_roundsOn_le`, `expect_rounds_le`: expected round bound
   `𝔼[T] ≤ ⌈log₂ |A|⌉ + 2 ≤ 3 * ⌈log₂ (max |A| 2)⌉` ([LiLiangYuZhou2024, Claim 3.3]).
+* `expect_le_of_le_add_mul_rounds`: a cost bounded by `a + b * T` has expectation at most
+  `(a + 3 b) * ⌈log₂ (max |A| 2)⌉`.
 * `relocDist_insert_le`, `relocDist_delete_le`, `relocDist_replace_le`,
   `expect_relocDist_insert_le`, `expect_relocDist_delete_le`, `expect_relocDist_replace_le`:
   deterministic `O(T)` and expected `O(log (max |A| 2))` relocation bounds
@@ -1945,9 +1947,9 @@ theorem relocDist_replace_le {U' n' : ℕ} (h : Scheme U' n')
     (matchOpt h (insert y (A.erase x)))
   omega
 
-/-- A relocation cost bounded by `a + b * rounds h A` for every scheme `h` has expectation at most
-`(a + 3 b) log (max |A| 2)`: average the pointwise bound and apply `expect_rounds_le`. -/
-private theorem expect_le_of_le_add_mul_rounds {U' n' : ℕ} {A : Finset (Fin U')}
+/-- A scheme-indexed cost bounded by `a + b * rounds h A` for every scheme `h` has expectation at
+most `(a + 3 b) log (max |A| 2)`: average the pointwise bound and apply `expect_rounds_le`. -/
+theorem expect_le_of_le_add_mul_rounds {U' n' : ℕ} {A : Finset (Fin U')}
     (hA : A.card ≤ n') (cost : Scheme U' n' → ℕ) (a b : ℕ)
     (hcost : ∀ h, cost h ≤ a + b * rounds h A) :
     (∑ h : Scheme U' n', (schemePMF U' n' h).toReal * (cost h : ℝ)) ≤
