@@ -3777,6 +3777,7 @@ public import Complexity.Crypto.Computational.Kilian.NP
 public import Complexity.Crypto.Computational.Kilian.Soundness
 public import Complexity.Crypto.Computational.Kilian.Succinct
 public import Complexity.Crypto.Computational.LWE.Basic
+public import Complexity.Crypto.Computational.Lattice.ShortestVector
 public import Complexity.Crypto.Computational.LubyRackoff
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
@@ -4300,6 +4301,7 @@ public import Complexity.Foundations.Analysis.InnerProductSpace.MetricProjection
 public import Complexity.Foundations.Analysis.Lattice.Covolume
 public import Complexity.Foundations.Analysis.Lattice.Dual
 public import Complexity.Foundations.Analysis.Lattice.Fourier
+public import Complexity.Foundations.Analysis.Lattice.Minimum
 public import Complexity.Foundations.Analysis.Lattice.Periodization
 public import Complexity.Foundations.Analysis.Lattice.Poisson
 public import Complexity.Foundations.Analysis.Lattice.QuotientMeasure
