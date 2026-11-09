@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Game.Hybrid
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Probability.PMF.Bind
@@ -464,9 +465,8 @@ private theorem eval_prfMultiRealGame (family : List Bool → List Bool → List
 private theorem eval_prfMultiIdealGame (family : List Bool → List Bool → List Bool)
     (adversary : MultiKeyDistinguisher t) (n : ℕ) :
     ProbComp.eval (prfMultiIdealGame t adversary n) = hybridGame family t t adversary n := by
-  simp only [prfMultiIdealGame, hybridGame, PMF.monad_bind_eq_bind, hybridOracle, Fin.is_lt,
-    ↓reduceIte, PMF.bind_const,
-    ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
+  simp only [pmf_norm, prfMultiIdealGame, hybridGame, hybridOracle, Fin.is_lt, ↓reduceIte,
+    PMF.bind_const, ProbComp.eval_uniform, ProbOracleComp.eval_interpret]
 
 /-- Against the real PRF game, the `j`-th reduction is the `j`-th hybrid. -/
 private theorem eval_prfRealGame_prfMultiReduction (hfamily : PseudorandomFunction family)

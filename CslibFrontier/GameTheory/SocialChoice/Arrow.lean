@@ -117,14 +117,14 @@ theorem IsIIA.prefers_iff (hF : F.IsIIA) {P Q : Profile V A} {a b : A}
   refine not_congr (hF P Q b a fun i => ?_)
   rw [← (P i).not_prefers_iff hab, ← (Q i).not_prefers_iff hab, h i]
 
-/-- Two profiles in which `b` is at the top of, or at the bottom of, each voter's ranking,
-consistently, agree on every comparison involving `b`. -/
-private theorem prefers_iff_of_extremal {P Q : Profile V A} {b x y : A}
-    (hPQ : ∀ i, ((P i).IsTop b ∧ (Q i).IsTop b) ∨ ((P i).IsBottom b ∧ (Q i).IsBottom b))
-    (hxy : x = b ∨ y = b) (i : V) : (P i).Prefers x y ↔ (Q i).Prefers x y := by
-  rcases hPQ i with ⟨hP, hQ⟩ | ⟨hP, hQ⟩
-  · exact (P i).prefers_iff_of_isTop hP hQ hxy
-  · exact (P i).prefers_iff_of_isBottom hP hQ hxy
+/-- Two rankings that both have `b` at the top, or both at the bottom, agree on every comparison
+involving `b`. -/
+private theorem prefers_iff_of_extremal {r s : Ranking A} {b x y : A}
+    (hrs : (r.IsTop b ∧ s.IsTop b) ∨ (r.IsBottom b ∧ s.IsBottom b))
+    (hxy : x = b ∨ y = b) : r.Prefers x y ↔ s.Prefers x y := by
+  rcases hrs with ⟨hr, hs⟩ | ⟨hr, hs⟩
+  · exact r.prefers_iff_of_isTop hr hs hxy
+  · exact r.prefers_iff_of_isBottom hr hs hxy
 
 /-- There is a third alternative distinct from any two given ones. -/
 private theorem exists_ne_ne (h3 : ∃ a b c : A, a ≠ b ∧ a ≠ c ∧ b ≠ c) (x y : A) :
@@ -185,8 +185,8 @@ theorem isTop_or_isBottom_of_extremal (hP : F.IsPareto) (hI : F.IsIIA)
       exact (((P i).toTop c).toTop_prefers_of_ne hcb hab).2 ((P i).isTop_toTop c a hac)
     · simp only [Q, ht, ite_false]
       exact (((P i).toTop c).toBottom_prefers_of_ne hcb hab).2 ((P i).isTop_toTop c a hac)
-  have h1 := (hI P Q a b (prefers_iff_of_extremal hQ (Or.inr rfl))).1 hab'
-  have h2 := (hI P Q b c (prefers_iff_of_extremal hQ (Or.inl rfl))).1 hbc'
+  have h1 := (hI P Q a b fun i => prefers_iff_of_extremal (hQ i) (Or.inr rfl)).1 hab'
+  have h2 := (hI P Q b c fun i => prefers_iff_of_extremal (hQ i) (Or.inl rfl)).1 hbc'
   exact hP Q c a hca ((F Q).trans _ _ _ h1 h2)
 
 /-- `F` turns a profile in which `b` is at the top or bottom of every ranking, with society
@@ -272,9 +272,7 @@ private theorem IsPivot.prefers (hI : F.IsIIA) {b : A} {n : V} (hn : IsPivot F b
     · subst hj
       rw [hQn]
       exact iff_of_true (h₁n x hxb) (((P j).toTop b).isTop_toTop x b hxb.symm)
-    · rcases hQ j hj with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
-      · exact (P₁ j).prefers_iff_of_isTop h₁ h₂ (Or.inr rfl)
-      · exact (P₁ j).prefers_iff_of_isBottom h₁ h₂ (Or.inr rfl)
+    · exact prefers_iff_of_extremal (hQ j hj) (Or.inr rfl)
   -- Society ranks `b` above `y` at `Q`, as at `P₂`.
   have h2 : (F Q).Prefers b y := by
     refine (hI.prefers_iff fun j => ?_).1 (hF₂ y hyb)
@@ -285,9 +283,7 @@ private theorem IsPivot.prefers (hI : F.IsIIA) {b : A} {n : V} (hn : IsPivot F b
       rw [((P j).toTop b).toTop_prefers_of_ne hxb.symm (Ne.symm hxy')]
       exact (P j).isTop_toTop b y hyb
     · rw [← hP₁₂ j hj]
-      rcases hQ j hj with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
-      · exact (P₁ j).prefers_iff_of_isTop h₁ h₂ (Or.inl rfl)
-      · exact (P₁ j).prefers_iff_of_isBottom h₁ h₂ (Or.inl rfl)
+      exact prefers_iff_of_extremal (hQ j hj) (Or.inl rfl)
   -- `Q` agrees with `P` on `x` versus `y`.
   refine (hI.prefers_iff fun j => ?_).2 ((F Q).prefers_trans h1 h2)
   by_cases hj : j = n

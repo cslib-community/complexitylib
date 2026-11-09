@@ -135,8 +135,7 @@ private theorem projectionAverage_uniformDensity_fiber (X : Finset (ι → Bool)
   rw [he, projectionAverage_const_mul,
     projectionAverage_comp_completePattern (fun y => if y ∈ X then 1 else 0),
     coordinateDensity_eq_projectionAverage]
-  congr 2
-  funext i
+  congr 2 with i : 1
   by_cases hs : s i = true <;> simp [hs]
 
 private theorem coordinateFiber_light_patterns (X : Finset (ι → Bool)) (hX : X.Nonempty)

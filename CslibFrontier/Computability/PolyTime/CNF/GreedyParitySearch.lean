@@ -603,7 +603,8 @@ theorem exists_fin_selectBestTestRow (countSys : List (List Bool) → ℕ)
     (greedyParityRows countSys n m P initRows).length = initRows.length + 3 * n :=
   length_greedyParityRowsAt countSys m P initRows (3 * n)
 
-private theorem mem_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
+/-- Every greedy row is an initial row or a selected row of length `m` and weight at most `P`. -/
+theorem mem_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
     {m P : ℕ} {initRows : List (List Bool)} {i : ℕ} {r : List Bool}
     (hr : r ∈ greedyParityRowsAt countSys m P initRows i) :
     r ∈ initRows ∨ (r.length = m ∧ r.count true ≤ P) := by

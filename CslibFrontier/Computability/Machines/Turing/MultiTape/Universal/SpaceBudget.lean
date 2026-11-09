@@ -278,8 +278,8 @@ private lemma length_eSSt_le (t i j : ℕ) :
     · exact hb'.trans (le_max_left _ _)
   have hpos : (run d x j').inputPos ≤ x.length + 1 := (inv_iterate d x j').1.inputPos
   obtain ⟨hk, hcur⟩ := scan_take x (run d x j').inputPos 0 j
-  have hr := ComputableTidilyInO.length_encNat_mono (show t - i ≤ t by omega)
-  have hk' := ComputableTidilyInO.length_encNat_mono (hk.trans hpos)
+  have hr := length_encNat_mono (show t - i ≤ t by omega)
+  have hk' := length_encNat_mono (hk.trans hpos)
   have ho := length_encList_le encUnary (((stepOut d x)^[j'] (init d, [])).2.take 2)
     (b := descLen d) fun o ho => by rw [encUnary_apply, List.length_replicate]; exact hval o ho
   have ho' := Nat.mul_le_mul_right (2 * descLen d + 1) hout

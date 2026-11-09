@@ -129,18 +129,10 @@ private theorem length_encList_evaluateLayer_le (n w : ℕ) (wires : List (List 
     (layer : List Layered.Node) :
     (encList encBits (evaluateLayer n w wires layer)).length ≤
       layer.length * (2 * ((n + 1) * w) ^ 2 + 1) := by
-  rw [length_encList]
-  calc
-    ((evaluateLayer n w wires layer).map fun c => 2 * (encBits c).length + 1).sum ≤
-        ((evaluateLayer n w wires layer).map fun _ => 2 * ((n + 1) * w) ^ 2 + 1).sum := by
-      apply List.sum_le_sum
-      intro c hc
+  simpa only [evaluateLayer, List.length_map] using
+    length_encList_le encBits (evaluateLayer n w wires layer) fun c hc => by
       obtain ⟨node, _, rfl⟩ := List.mem_map.mp hc
-      have := length_evaluateNode_le n w wires node
-      simp only [encBits_apply]
-      omega
-    _ = layer.length * (2 * ((n + 1) * w) ^ 2 + 1) := by
-      simp [evaluateLayer, Function.comp_def, List.map_const', List.sum_replicate]
+      simpa only [encBits_apply] using length_evaluateNode_le n w wires node
 
 /-- Evaluate all layers in order, with a uniform polynomial clock on arbitrary inputs. Each layer
 adds at most its node count times the encoded ciphertext width. -/

@@ -262,7 +262,7 @@ public theorem length_eCfg_le_space (j : ℕ) :
   obtain ⟨hinv, -, -⟩ := inv_iterate d x j
   have hk := length_run_workTapes d x j
   have h₁ := length_eSym_le hinv.state
-  have h₂ := ComputableTidilyInO.length_encNat_mono hinv.inputPos
+  have h₂ := length_encNat_mono hinv.inputPos
   have h₃ : (encList eTape (run d x j).workTapes).length ≤
       ∑ i ∈ Finset.range d.tapes, (2 * (3 * (2 * descLen d + 5) * (visited d x j i).card) + 1) := by
     rw [length_encList_eq_sum, hk]

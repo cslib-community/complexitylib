@@ -273,11 +273,7 @@ theorem Clause.sum_falsifyMonomials_eq_zero_iff (c : Clause V) (σ : V → Bool)
 theorem Clause.sum_falsifyMonomials_mem_lowDegree (c : Clause V) :
     (fun σ => ∑ M ∈ c.falsifyMonomials, monomial (ZMod 2) M σ) ∈
       lowDegree (ZMod 2) V c.length := by
-  have hfn : (fun σ => ∑ M ∈ c.falsifyMonomials, monomial (ZMod 2) M σ) =
-      ∑ M ∈ c.falsifyMonomials, monomial (ZMod 2) M := by
-    funext σ
-    simp only [Finset.sum_apply]
-  rw [hfn]
+  rw [← Finset.sum_fn]
   exact sum_mem_lowDegree _ fun M hM =>
     monomial_mem_lowDegree (Clause.card_le_length_of_mem_falsifyMonomials hM)
 
@@ -397,11 +393,7 @@ theorem CNF.sum_parityRowMonomials_mem_lowDegree {φ : CNF V} {k : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (r : Fin φ.length → Bool) :
     (fun σ => ∑ M ∈ φ.parityRowMonomials r, monomial (ZMod 2) M σ) ∈
       lowDegree (ZMod 2) V k := by
-  have hfn : (fun σ => ∑ M ∈ φ.parityRowMonomials r, monomial (ZMod 2) M σ) =
-      ∑ M ∈ φ.parityRowMonomials r, monomial (ZMod 2) M := by
-    funext σ
-    simp only [Finset.sum_apply]
-  rw [hfn]
+  rw [← Finset.sum_fn]
   exact sum_mem_lowDegree _ fun M hM =>
     monomial_mem_lowDegree (CNF.card_le_of_mem_parityRowMonomials hk hM)
 

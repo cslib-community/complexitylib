@@ -307,8 +307,7 @@ theorem initialPilotDetector_allocated
     (div_nonneg (mul_nonneg (Nat.cast_nonneg _) (rate_pos kt).le)
       (mul_pos (rate_pos ks) hπ).le)) using 1;
       dsimp only [rowNormPow, initialPilotDetector, A, r, initialDetectorRequest, X, Y, Yt];
-      congr 3
-  funext σ
+      congr 3 with σ : 1
   apply sum_congr (by ext x; simp only [mem_filter, mem_univ, true_and])
   intro x hx
   apply sum_congr (by ext y; simp only [mem_filter, mem_univ, true_and])

@@ -692,8 +692,8 @@ public lemma length_eCSt_le (dg df : Desc) (w : List Bool) (y : List ℕ) (uf ug
         simp only [List.mem_range] at hj ⊢
         omega) ((run dg y (i / (uf + 1))).inputPos) 0 (by omega) (fun _ => rfl)
   obtain ⟨hkx, hcur⟩ := bitScan_le (w.take j) ((run df x (i % (uf + 1))).inputPos) 0 (by omega)
-  have h₁ := ComputableTidilyInO.length_encNat_mono (hk.trans hp)
-  have h₂ := ComputableTidilyInO.length_encNat_mono (hkx.trans hpf)
+  have h₁ := length_encNat_mono (hk.trans hp)
+  have h₂ := length_encNat_mono (hkx.trans hpf)
   simp only [emitCount] at hk hfound h₁ ⊢
   simp only [length_encPair, encUnary_apply, List.length_replicate, composeSpace, descLen,
     List.length_map, x] at *
@@ -993,10 +993,10 @@ public theorem ComputableInTimeAndSpace.comp_logSpace {α β γ : Type} {encIn :
         (encNat ((encMid (f a)).length + 1)).length + 1 ≤
           M * (encNat ((encIn a).length + 1)).length := by
     have hℓ : 1 ≤ (encNat ((encIn a).length + 1)).length :=
-      ComputableTidilyInO.length_encNat_mono (m := 1) (by omega)
+      length_encNat_mono (m := 1) (by omega)
     have hy : (encNat ((encMid (f a)).length + 1)).length ≤
         (d + 1) * (encNat ((encIn a).length + 1)).length :=
-      (ComputableTidilyInO.length_encNat_mono (hlen a)).trans
+      (length_encNat_mono (hlen a)).trans
         ((length_encNat_pow_le _ d).trans (by nlinarith))
     have := Nat.mul_le_mul_left kg hy
     have e : M * (encNat ((encIn a).length + 1)).length =

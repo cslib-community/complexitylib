@@ -141,7 +141,7 @@ private theorem inputSymbol_pair_inO :
   have hstate (q : ℕ × List ℕ) (j : ℕ) :
       (encNat (streamState q.1 inputNext q.2 j)).length ≤ B q := by
     rw [input_state]
-    exact ComputableTidilyInO.length_encNat_mono (Nat.sub_le _ _)
+    exact length_encNat_mono (Nat.sub_le _ _)
   have helem (q : ℕ × List ℕ) (j : ℕ) (hj : j < q.2.length) : q.2[j] ≤ N q := by
     simpa [encUnary_apply] using length_le_encList_of_mem encUnary (List.getElem_mem hj)
   have hstream := ComputableTidilyInTimeAndSpace.streamFold_pair_sum

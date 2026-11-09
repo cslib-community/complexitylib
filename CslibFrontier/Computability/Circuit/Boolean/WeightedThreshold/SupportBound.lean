@@ -138,13 +138,13 @@ private theorem cut_deficit_lt_of_rectangleFree (p : Program signature n g)
     (readout : (Fin g → Bool) → Bool) {f : Cslib.BooleanFunction n} {K k : ℕ}
     (hreadout : ∀ x, readout (p.eval interpretation x) = f x)
     (hf : ∀ b : Bool, Frontier.RectangleFree {x | f x = b} K) (hK : K ≤ 2 ^ k)
-    (U A B : Finset (Fin n)) (hA : A ⊆ U) (hB : B ⊆ Uᶜ) :
+    (U A B : Finset (Fin n)) :
     U.card - A.card < (univ.filter fun j => ¬ inputSupport p j ∩ U ⊆ A).card + k ∨
       Uᶜ.card - B.card < (univ.filter fun j => ¬ inputSupport p j ∩ Uᶜ ⊆ B).card + k := by
   classical
   by_contra h
   push Not at h
-  obtain ⟨P, Q, v, hv, hP, hQ⟩ := exists_rectangle_of_cut_with_fixed p U A B hA hB
+  obtain ⟨P, Q, v, hv, hP, hQ⟩ := exists_rectangle_of_cut_with_fixed p U A B
   have hPK := le_card_of_pow_le hP h.1 hK
   have hQK := le_card_of_pow_le hQ h.2 hK
   have hmono : ∀ x ∈ P, ∀ y ∈ Q, f (glue U x y) = readout v := by
@@ -169,7 +169,6 @@ private theorem residual_deficit_lt (p : Program signature n g)
     intro i hiF hiV
     obtain ⟨j, _, rfl⟩ := mem_image.mp hiV
     exact (mem_compl.mp j.property) hiF
-  have hFsub : F ⊆ Vᶜ := subset_compl_iff_disjoint_right.mpr hFV
   have hcards : V.card + F.card ≤ n := by
     rw [← card_union_of_disjoint hFV.symm]
     simpa using card_le_univ (V ∪ F)
@@ -230,7 +229,6 @@ private theorem residual_deficit_lt (p : Program signature n g)
     simp_rw [hright]
     exact (card_filter_inputGates p _ (fun gate => hmem gate Uᶜ)).symm
   have h := cut_deficit_lt_of_rectangleFree p readout hreadout hf hK V ∅ F
-    (empty_subset _) hFsub
   rw [card_empty, Nat.sub_zero, hV, hVc, hLc, hRc] at h
   rcases h with h | h
   · left
@@ -279,7 +277,6 @@ private theorem disjoint_deficit_lt (p : Program signature n g)
       exact mem_sdiff.mpr ⟨(mem_inter.mp hi).2,
         fun hiV => disjoint_left.mp h (mem_inter.mp hi).1 hiV⟩
   have h := cut_deficit_lt_of_rectangleFree p readout hreadout hf hK U ∅ (Uᶜ \ V)
-    (empty_subset _) sdiff_subset
   simpa only [card_empty, Nat.sub_zero, hcard, hleft, hright] using h
 
 private theorem residual_disjoint_deficit_lt (p : Program signature n g)
