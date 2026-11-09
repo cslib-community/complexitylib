@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib; placement needs agreement)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Order.BigOperators.Ring.Finset

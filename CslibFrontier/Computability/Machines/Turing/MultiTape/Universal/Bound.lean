@@ -85,6 +85,8 @@ public lemma write_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) {ta : Tap
   simp only [eAct_apply, length_encPair] at *
   omega
 
+-- vendored: `q₀_le`, `tapes_le` and `table_le` are public for `Classes/TimeSpace/Speedup` and
+-- `Universal/WindowedBound`; keep them public when resynchronizing.
 /-- The initial state of a description is within its length. -/
 public lemma q₀_le : d.q₀ ≤ descLen d := by
   simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega

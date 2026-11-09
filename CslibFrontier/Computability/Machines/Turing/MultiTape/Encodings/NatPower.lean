@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (tidy branch Encodings/Nat)
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat

@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside lattice Gaussian convolution)
 
 public import CslibFrontier.Foundations.Probability.Gaussian.Convolution
 public import CslibFrontier.Foundations.Probability.Gaussian.Standard

@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside the linfty_opNorm lemmas, Analysis/Matrix/Normed)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Matrix.Mul

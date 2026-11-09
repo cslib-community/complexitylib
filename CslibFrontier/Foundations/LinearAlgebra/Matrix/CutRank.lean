@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, LinearAlgebra/Matrix/Rank)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Set.Card

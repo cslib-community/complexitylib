@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside norm_pow_le' in Analysis/Normed/Ring/Basic)
 
 public import CslibFrontier.Init
 public import Mathlib.Analysis.Normed.Ring.Basic

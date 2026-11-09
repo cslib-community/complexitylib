@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/LinearAlgebra/Matrix/Farkas.lean`)
+-- upstream: candidate (Mathlib, `Mathlib/LinearAlgebra/Matrix/Farkas.lean`; or PointedCone.DualFG)
 
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import Mathlib.Data.Matrix.ColumnRowPartitioned

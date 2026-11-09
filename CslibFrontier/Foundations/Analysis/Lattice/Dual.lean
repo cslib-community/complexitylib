@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, extending the ZLattice API)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Module.ZLattice.Basic

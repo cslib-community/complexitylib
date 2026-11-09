@@ -29,6 +29,10 @@ Algorithmic correctness theorems are stated in consumer modules.
 
 * [V. Vassilevska Williams and R. Williams, *Finding, minimizing, and counting weighted
   subgraphs*][VassilevskaWilliamsWilliams2013]
+
+Adapted from `TriangleInstance.HasZeroTriangle` in `PaperStatements.lean` (directory
+`3sum-apsp`), lines 885–906, at `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`,
+specialized to `ℤ` weights and with the three weight matrices passed as separate arguments.
 -/
 
 @[expose] public section

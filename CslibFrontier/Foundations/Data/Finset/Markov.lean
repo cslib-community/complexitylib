@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, Algebra/Order/BigOperators/Group/Finset)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset

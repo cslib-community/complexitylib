@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (consider Mathlib, Data/List/GetD or Data/List/Basic)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.List.Basic

@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside MeasureTheory/Measure/Haar/Quotient)
 
 public import CslibFrontier.Init
 public import Mathlib.MeasureTheory.Group.FundamentalDomain

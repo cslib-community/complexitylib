@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, beside Analysis/Fourier/PoissonSummation)
 
 public import CslibFrontier.Foundations.Analysis.Lattice.Poisson
 public import CslibFrontier.Foundations.Probability.Gaussian.Fourier

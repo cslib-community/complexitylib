@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (consider merging into Circuit/Formula)
 
 public import CslibFrontier.Computability.Circuit.Depth
 public import CslibFrontier.Computability.Circuit.Formula
