@@ -4745,6 +4745,7 @@ public import CslibFrontier.Foundations.Data.List.SelectDistinct
 public import CslibFrontier.Foundations.Data.List.SortedCount
 public import CslibFrontier.Foundations.Data.List.SumIndicator
 public import CslibFrontier.Foundations.Data.List.TwoBitTable
+public import CslibFrontier.Foundations.Data.List.UnaryCode
 public import CslibFrontier.Foundations.Data.Matrix.Binary
 public import CslibFrontier.Foundations.Data.Matrix.IntegerBits
 public import CslibFrontier.Foundations.Data.Matrix.PairChunks
