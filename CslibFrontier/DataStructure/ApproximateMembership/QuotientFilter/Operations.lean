@@ -402,12 +402,6 @@ theorem IntervalValid.calcRunStart_eq {U b f : ℕ} {S : Finset (Fin U)}
   refine length_filter_range_eq_of_iff hle _ fun i hi => ?_
   rw [decide_eq_true_eq, ← hinv.lt_runOffset_iff hocc ha hi]
 
-/-- Split `List.range n` around an index `a < n`. Shared by
-`IntervalValid.remAt_probeSlot_eq_getElem` and `flatMap_taggedRun_three_split`. -/
-private theorem range_eq_split {a n : ℕ} (ha : a < n) :
-    List.range n = List.range a ++ [a] ++ (List.range (n - (a + 1))).map (a + 1 + ·) := by
-  rw [← List.range_succ, ← List.range_add, Nat.add_sub_of_le ha]
-
 theorem IntervalValid.remAt_probeSlot_eq_getElem {U b f : ℕ} {S : Finset (Fin U)}
     {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)}
     {st : FilterState b f} {o : Fin (2 ^ b)} {ℓ : ℕ}
