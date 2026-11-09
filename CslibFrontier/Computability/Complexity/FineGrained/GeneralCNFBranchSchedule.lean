@@ -166,20 +166,8 @@ theorem CNF.countP_eval_toCNF_prop64Leaves [Fintype V] [DecidableEq V]
     ((φ.prop64Leaves k).map ClauseSet.toCNF).countP (fun F => F.eval x) =
       if φ.eval x then 1 else 0 := by
   unfold CNF.prop64Leaves
-  rw [List.countP_map]
-  have hcongr : (Function.comp (fun F : CNF V => F.eval x) ClauseSet.toCNF) =
-      fun L : ClauseSet V => decide (L.Sat x) := by
-    funext L
-    exact Bool.eq_iff_iff.mpr
-      ((ClauseSet.eval_toCNF_eq_true_iff L x).trans decide_eq_true_iff.symm)
-  rw [hcongr, countP_sat_countingLeaves]
-  by_cases hev : φ.eval x = true
-  · have hsat : (reduce φ.toClauseSet).Sat x :=
-      sat_reduce_iff.mpr ((CNF.sat_toClauseSet_iff φ x).mpr hev)
-    rw [ite_eq_left hsat, ite_eq_left hev]
-  · have hnsat : ¬ (reduce φ.toClauseSet).Sat x := fun hs =>
-      hev ((CNF.sat_toClauseSet_iff φ x).mp (sat_reduce_iff.mp hs))
-    rw [ite_eq_right hnsat, ite_eq_right hev]
+  exact countP_eval_toCNF_countingLeaves_of_sat_iff _
+    (sat_reduce_iff.trans (CNF.sat_toClauseSet_iff φ x))
 
 /-- **Proposition 6.4 leaf width, variable-occurrence, and clause-density bounds:**
 If `∀ c ∈ φ, c.length ≤ k`, then for every leaf `L ∈ φ.prop64Leaves k`:

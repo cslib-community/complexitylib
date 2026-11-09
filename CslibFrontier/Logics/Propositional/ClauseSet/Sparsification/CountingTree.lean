@@ -555,8 +555,8 @@ theorem modelCountOn_toCNF_reduce (ψ : ClauseSet V) (declared : Finset V) :
   simp only [mem_filter, mem_univ, true_and, ClauseSet.eval_toCNF_eq_true_iff, sat_reduce_iff]
 
 /-- **CNF assignment partition, general root.** Evaluating `L.toCNF` across `countingLeaves θ ψ`
-accepts `x` at `1` leaf occurrence when `x` satisfies the root `ψ` and `0` otherwise, for any
-formula `φ` that `x` satisfies exactly when it satisfies `ψ`. -/
+accepts `x` at `1` leaf occurrence when `φ.eval x = true` and `0` otherwise, for any CNF `φ` that
+`x` satisfies exactly when it satisfies the root `ψ`. -/
 theorem countP_eval_toCNF_countingLeaves_of_sat_iff (θ : ℕ → ℕ) {ψ : ClauseSet V} {φ : CNF V}
     {x : V → Bool} (h : ψ.Sat x ↔ φ.eval x = true) :
     ((countingLeaves θ ψ).map ClauseSet.toCNF).countP (fun F => F.eval x) =
