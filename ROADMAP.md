@@ -1290,6 +1290,20 @@ count/decision certificates charge construction, sequential counting/reconstruct
 positivity, with global polynomial workspace and original-vertex single-loglog time. This covers
 efficient edge domination, not unrestricted induced-matching counts or witness extraction.
 
+`InducedMatchingInterval` now supplies Proposition D.1's actual unrestricted degree-one/support
+reduction with functional endpoint-size tests. A general matching lemma proves exactly two
+endpoints per unordered edge, and a size-preserving bijection counts conventional induced matching
+subgraphs without orientations, isolated marks or domination. `Maximum.prepare` computes the
+endpoint interval from the varying signed binary edge threshold; binary multiplication/sign
+normalization and the capped cardinality generator have actual polynomial construction resources.
+The actual plan emits two width-three queries for positive vertex counts, on `2v+a-1` variables,
+with `a ≤ 952(v+1)` and cubic clauses. Complete native count/decision certificates compose the
+writer, sequential sharp counters/reconstruction and binary positivity, with global polynomial
+workspace and original-vertex single-loglog time. Empty graphs, declared isolates, negative and
+oversized thresholds are included in the same proved algorithm. Threshold zero gives total
+unrestricted induced-matching counts. Natural endpoint-equality intervals also count exact edge
+sizes, but the complete Corollary 7.5 distribution iterator/resources are still open.
+
 Remaining STOC1575 objectives, keeping the original inventory open:
 
 - Theorems 1.1–1.2: actual generic bounded-term DNF constructor/count/resource transfer and the
@@ -1307,19 +1321,22 @@ Remaining STOC1575 objectives, keeping the original inventory open:
   still need their actual class/neighbor-threshold construction and complete resource/count proof.
 - Corollary 7.4: independent-domination counting with input size bounds, outgoing-absorbing
   kernel counting/decision, labeled perfect-matching-cut counting/decision and actual dominating-
-  induced-matching counting/decision are covered for the stated explicit encodings. Maximum
-  induced matching and upper domination remain open. Complete witness extraction and optimum-
-  threshold recovery are not yet composed, including for the covered decision predicates.
-- Corollary 7.5: the unrestricted induced-matching endpoint-set bijection, total counts and edge-size
-  distribution iterator/resources remain open; a functional size test alone does not supply them.
+  induced-matching counting/decision and maximum-induced-matching signed-threshold counting/
+  decision are covered for the stated explicit encodings. Upper domination remains open. Complete
+  witness extraction and optimum-threshold recovery are not yet composed, including for the covered
+  decision predicates.
+- Corollary 7.5: the unrestricted induced-matching endpoint/edge bijection and total counts are
+  covered. Exact edge-size instances follow from the natural interval construction. The complete
+  distribution list still needs its actual polynomially many sequential calls, accumulation,
+  binary output writing and composed sharp-time/global-space certificate.
 - Proposition 7.6: upper domination's actual width-three set–marking-pair construction/count
   (`4v+a-1` variables), and the alternative width-four original-set count (`5v+a-1` variables),
   remain open. Preserve that count distinction, input thresholds, directed/undirected promises,
   empty graphs and polynomially many distribution/self-reduction calls.
 
 Remaining graph/general-rule and other-paper/ALL-main endpoints remain open; generic DNF,
-independent-domination, kernel, perfect-matching-cut and efficient-edge-domination milestones do not
-complete ALL-main.
+independent-domination, kernel, perfect-matching-cut, efficient-edge-domination and maximum-induced-
+matching milestones do not complete ALL-main.
 
 The older interpolation counter is unchanged; its extra loglog and nu²-denominator schedule are
 not relabeled. Graph endpoints and other-paper objectives remain open.

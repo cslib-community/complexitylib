@@ -699,9 +699,9 @@ Tiny exhaustive query oracles are tests only; production certificates use the pr
 The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions remain open. Of the six
 Corollary 7.4 predicates, independent-domination counting with size bounds and kernel counting/
 decision are covered here. The continuations below cover Perfect Matching Cut and Dominating
-Induced Matching; maximum induced matching and upper domination remain open.
-Complete witness/optimum extraction is still separate. Corollary 7.5 needs the induced-matching
-bijection and distribution iterator/resources; Proposition 7.6 needs its actual set–marking versus
+Induced Matching and signed-threshold Maximum Induced Matching; upper domination remains open.
+Complete witness/optimum extraction is still separate. Corollary 7.5 still needs the full
+distribution iterator/resources; Proposition 7.6 needs its actual set–marking versus
 set-count constructions. These graph milestones do not complete ALL-main.
 
 ### Perfect matching cuts with labeled sides
@@ -756,8 +756,8 @@ production certificates instantiate the proved sharp counter.
 Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed labeled degree matrices/per-class
 bounds remain open. Of the six Corollary 7.4 predicates, independent-domination counting with size
 bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
-The continuation below covers dominating induced matching. Maximum induced matching, upper
-domination, complete witness/optimum recovery, Corollary 7.5's unrestricted bijection/distribution
+The continuations below cover dominating induced matching and signed-threshold Maximum Induced
+Matching. Upper domination, complete witness/optimum recovery, Corollary 7.5's full distribution
 iterator and Proposition 7.6's marking/set-count constructions remain open. This concrete bipartition
 endpoint does not complete the general partition theorem or ALL-main.
 
@@ -814,10 +814,56 @@ only; production uses the instantiated proved sharp counter.
 Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed degree-matrix frontend remain open.
 For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
 decision for kernels, perfect matching cuts and dominating induced matchings.
-Maximum induced matching, upper domination and complete witness/optimum composition remain open.
-Corollary 7.5 still needs the **unrestricted** induced-matching bijection, total counts and full
-edge-size distribution; the efficiently dominating subfamily is not a substitute. Proposition 7.6
+The continuation below supplies signed-threshold Maximum Induced Matching. Upper domination and
+complete witness/optimum composition remain open. Corollary 7.5 still needs its full edge-size
+distribution iterator; its unrestricted matching bijection and total counts are covered below. Proposition 7.6
 still needs its distinct set–marking versus original-set constructions. ALL-main remains open.
+
+### Maximum induced matching with a varying binary threshold
+
+Import `Complexity.Computability.Complexity.FineGrained.InducedMatchingInterval` and open
+`Cslib.Logic.PL.InducedMatchingInterval.Maximum`. `Input` is the existing canonical simple-graph
+matrix frame paired with a signed binary edge threshold. `ofGraph G k` retains the unary vertex
+declaration, including isolated vertices. `prepare` computes the natural endpoint interval
+`((2*k).toNat, v)` and passes it to the actual degree-one/functional-cardinality construction.
+The binary multiplier and sign normalization are certified computations; the cardinality generator
+caps oversized thresholds before unary construction. No supplied matching, rank, circuit or
+runtime is accepted. This is Proposition D.1 (PDF pp. 33–34), with Corollary 7.4's sharp resources.
+
+`SimpleGraph.Subgraph.IsMatching.card_verts_eq_twice_edges` proves exactly two endpoints per
+unordered matching edge. `SimpleGraph.card_inducedMatching_supports_eq` gives a size-preserving
+bijection between degree-one Boolean supports and conventional induced matching subgraphs.
+Unlike efficient edge domination, the actual `InducedMatchingInterval.build` omits edge-cover
+clauses. Isolated vertices cannot be selected. The empty matching is included, and each actual
+matching is counted once, without orientations or auxiliary gate multiplicity.
+`count_correspondence` connects the computed endpoint interval to at least `k` unordered edges.
+
+`InducedMatchingInterval.query_count` and `query_budget` certify two ordinary width-three queries
+for $v\ge1$, on $N=2v+a-1$ variables, where the actual cardinality circuit has
+$a\le952(v+1)$ gates. Each query has at most
+$v^3+3v^2+2v+2+2856(v+1)$ clauses, and every written literal is in range. `query_cubic_budget` bounds this by $6000v^3$.
+`Maximum.exists_count_sharp_certificate` composes preparation, actual construction, sequential
+counting and reconstruction with global polynomial workspace and
+$L^{O(1)}2^{O(\eta(v))}$ native time. `Maximum.exists_decide_sharp_certificate` additionally
+charges binary positivity. Their real-eta versions use
+$\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$; rounded certificates include all smaller
+and empty cases. Thresholds are varying signed binary inputs. Nonpositive thresholds count all
+induced matchings; impossible thresholds count zero, without exponential threshold decoding.
+The resource model remains the existing native word/resource model, with binary encodings,
+not a new bit-transition simulation or arbitrary-byte graph admission theorem.
+
+From the checkout root run `scripts/build.sh ComplexityTests.PaperEndpoints.InducedMatchingInterval`.
+The [complete checked client](../../ComplexityTests/PaperEndpoints/InducedMatchingInterval.lean)
+executes empty, isolated, single-edge, path, disjoint-edge, triangle, cycle and dense cases.
+Two disjoint edges admit a size-two matching; the two outer edges of a four-vertex path do not.
+The client checks actual query writing, exact endpoint-size coefficients, and negative/oversized
+512-bit thresholds. It computes unique circuit traces for tiny original selections; production
+uses the certified sharp counter, never an exhaustive auxiliary cube traversal.
+
+This closes the signed-threshold counting/decision specialization, and threshold zero gives
+Corollary 7.5's unrestricted total count. The full distribution list, witness/optimum extraction,
+general Corollary 7.2 sigma-rho rules, Theorem 7.3 labeled degree matrices and Proposition 7.6
+upper-domination constructions remain open. These remaining source endpoints keep ALL-main open.
 
 ## Known Limitations
 
