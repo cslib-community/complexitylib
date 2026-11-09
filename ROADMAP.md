@@ -139,7 +139,6 @@ Information-theoretic private information retrieval, following Chorâ€“Goldreichâ
 
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.
-  The universal composition theorem for one subroutine instance, with static corruptions and call-budgeted participants, is in `CslibFrontier/Crypto/Protocols/UC/Composition.lean`; several and concurrent sessions remain.
 - **Quantum-secure cryptography**: Define uniform quantum-efficient distinguishers and computational indistinguishability with quantum side information, and justify security reductions for concrete constructions in that model.
   Connect the quantum-computation and lattice tracks through these adversary models.
   Later targets include quantum oracle access, the quantum random-oracle model, and extraction or rewinding under their precise hypotheses.
