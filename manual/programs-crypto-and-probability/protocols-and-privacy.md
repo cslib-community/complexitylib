@@ -2362,9 +2362,9 @@ not just copied input. It is not the source's reachable-state-DP fast prepass.
 $4VR(B+q)$ and each reconstruction prefix by $2(\mu+Q+1)R(B+q)$, including
 pair input, reconstructed output and internal callback tapes. Pair widths are
 derived from actual original quarter witnesses, even with collisions.
-These phase allowances reuse the approved matcher bound; window scan/cut/division,
-retained/group-emission composition, internal class-search control and
-simultaneously live ambient frames remain separate obligations.
+These phase allowances reuse the approved matcher bound. The window scan/cut/division
+phase is now normalized below; retained/group-emission composition, internal
+class-search control and simultaneously live ambient frames still require composition.
 
 [`AddXNORWholeRunResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORWholeRunResources.lean)
 now connects those outer/boundary costs to the actual installed `sourceCertificate`.
@@ -2424,8 +2424,8 @@ The direct-branch client derives both whole-source bounds on a real original inp
 with two colliding low-bit classes, and checks a full-state miss with complete
 projected collisions. The arithmetic fallback client checks that the residual still
 contains its full class-search costs. General sharp normalization of $R_T,R_S$
-remains open: the actual restarted window scan/cut/division, label/control/callback
-frames and simultaneous temporaries still require composition. These residual
+remains open: the now-normalized window phase still needs composition with actual
+label/control/callback frames, retained preparation and simultaneous ambient temporaries. These residual
 expressions are not supplied runtime hypotheses or a completed Theorem 7 bound.
 
 [`StreamingEmitBounds.lean`](../../CslibFrontier/Computability/GenericRAM/Native/StreamingEmitBounds.lean)
@@ -2439,10 +2439,34 @@ exceeds the original scalar widths. At each prefix, emitted population plus
 remaining capacity is at most initial capacity plus quarter records scanned;
 empty groups, collisions, zero capacity and a cut Cartesian row are included.
 The complete batch client applies the certificate to arbitrary runtime source
-contexts and checks uneven groups. The actual count/division/filter/cross
-callback clocks and workspace remain explicit. This closes the cumulative
-emitter/window framing inequality, **not** their scalar-polynomial normalization
-or the general restarted-search sum/max and sharp whole-source theorem.
+contexts and checks uneven groups.
+
+[`KeyJoinBatchCallbackBounds.lean`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Algorithms/KeyJoinBatchCallbackBounds.lean)
+now normalizes the actual callback profiles: binary length scans, side filters,
+population multiplication, ceiling division, cut scans and selected Cartesian
+emission. The fixed polynomial sees binary scalar and individual-record wires;
+whole-group list length is only a linear factor. Actual callback time is summed;
+workspace uses its prefix maximum and charges input/output/internal tapes.
+[`AddXNORRestartResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORRestartResources.lean)
+derives these scalar widths from original operands and generated labels in both
+computed orientations. `original_window_bounds` charges each actual window and
+its callbacks by capacity times a fixed polynomial in original widths.
+`original_window_sum` amortizes the installed window clocks over every class/label
+using computed capacities, and bounds each window's workspace by computed balance
+plus quarter volume. `source_window_bounds` specializes the actual source cut to
+$2^{\lfloor q/2\rfloor}P(I)$ summed window allowances and
+$(2^{\lfloor q/4\rfloor}+\mu_p)P(I)$ simultaneous window workspace.
+These are **window-phase bounds**, not a complete solver theorem: captured retained
+frames, the surrounding class-control program, retained preparation, matching and
+readback still need full composition. Source reachable-state-DP all-count/fast
+prepass and the other paper objectives remain open.
+
+The binary layouts in these public APIs use documented reducible names:
+`encNatPairList` frames each binary pair, `encNatPairOption` uses an empty word for
+`none` and a true bit before a `some` pair, `encFoldStep` frames the parameter/state
+pair before the record, and `subsetSumEncoding` frames the binary number list
+before its binary target. They preserve the existing encodings without defaults
+or typeclass selection.
 
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
@@ -2456,9 +2480,10 @@ framing, setup and readback remain charged.
 
 This composes an actual global bit-clock/prefix-space profile, but does not prove
 the requested sharp source inequalities. The installed fallback no longer executes the per-pair retained/growing-buffer
-copy path. The remaining window/control/retained-emission bounds and the summed complete
-time/simultaneous workspace profiles still need to be proved; the normalized
-count and reconstruction phase allowances above do not establish them. The installed scalar prepass removes table
+copy path. The normalized window phase still needs class-control/retained-emission
+composition before complete summed-time and simultaneous-space bounds follow.
+The individual count, reconstruction and window phase allowances do not by
+themselves establish that composition. The installed scalar prepass removes table
 reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
 occupancy or matching-pair totals do not remove those machine costs. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;

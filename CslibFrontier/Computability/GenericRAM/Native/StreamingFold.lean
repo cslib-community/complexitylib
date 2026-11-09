@@ -25,6 +25,7 @@ need a different callback construction to avoid those costs.
 
 ## Main definitions
 
+* `encFoldStep`: explicitly framed parameter/state pair followed by one record.
 * `foldlStream`: a single-pass fold certificate from an actual callback certificate.
 -/
 
@@ -32,12 +33,17 @@ public section
 namespace Cslib.GenericRAM.NativeCertificate
 open Turing.MultiTapeTM
 
+/-- Fold callback input `((parameter, state), record)`. The parameter is framed before
+its state, and that pair is framed before the record. -/
+abbrev encFoldStep {π σ α : Type} (ep : π ↪ List Bool) (es : σ ↪ List Bool)
+    (ea : α ↪ List Bool) : (π × σ) × α ↪ List Bool := encPair (encPair ep es) ea
+
 /-- Execute a fold with one framed-list read, summing actual round costs and
 bounding workspace by actual callback/state/token prefix maxima. -/
 noncomputable def foldlStream {π σ α : Type} (ep : π ↪ List Bool)
     (es : σ ↪ List Bool) (ea : α ↪ List Bool) (step : π → σ → α → σ)
     (body : NativeCertificate (fun q : (π × σ) × α => step q.1.1 q.1.2 q.2)
-      (encPair (encPair ep es) ea) es) :
+      (encFoldStep ep es ea) es) :
     NativeCertificate (fun q : π × (σ × List α) => q.2.2.foldl (step q.1) q.2.1)
       (encPair ep (encPair es (encList ea))) es := by
   let estate := encPair ep es

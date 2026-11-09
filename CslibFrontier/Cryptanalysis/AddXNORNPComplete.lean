@@ -22,6 +22,10 @@ are discarded, retaining indexed positive entries. Targets above the total map
 to a fixed no-instance. All other inputs use the actual guarded construction,
 including the empty source list and target zero.
 
+## Main definitions
+
+* `subsetSumEncoding`: the framed binary number list followed by its binary target.
+
 ## Main results
 
 * `toAddXNOR_mem_iff`, `toAddXNOR_polyTime`, `Decision_npComplete`:
@@ -39,6 +43,10 @@ namespace Cslib.Cryptanalysis.AddXNOR
 
 open Turing.MultiTapeTM Cslib.Complexity
 open scoped List
+
+/-- Binary Subset-Sum input: a list of individually framed binary numbers, itself framed
+before the binary target. Order, zero entries and repetitions are retained. -/
+abbrev subsetSumEncoding : List ℕ × ℕ ↪ List Bool := encPair (encList encNat) encNat
 
 /-- Natural-number implementation of the alternating gadget operands. -/
 @[expose] def rawGadgets (m : ℕ) (numbers : List ℕ) : List ℕ :=
@@ -268,8 +276,8 @@ theorem rawOperands_polyTime :
 /-- The actual total construction is computed in polynomial time under the
 binary Subset-Sum encoding and the explicit unary-width/binary-operand encoding. -/
 @[fun_prop] theorem toAddXNOR_polyTime :
-    ComputableInPolyTime toAddXNOR (encPair (encList encNat) encNat) encInstance := by
-  let input := encPair (encList encNat) encNat
+    ComputableInPolyTime toAddXNOR subsetSumEncoding encInstance := by
+  let input := subsetSumEncoding
   have hnums : ComputableInPolyTime (fun p : List ℕ × ℕ => positiveNumbers p.1)
       input (encList encNat) := by
     unfold positiveNumbers
@@ -308,7 +316,7 @@ binary Subset-Sum encoding and the explicit unary-width/binary-operand encoding.
 /-- Binary Subset-Sum many-one reduces to balanced Add/XNOR by the actual
 constructed operand list. -/
 theorem polyTimeReducible_SubsetSum_AddXNOR :
-    PolyTimeReducible (encPair (encList encNat) encNat) encInstance SubsetSum Decision :=
+    PolyTimeReducible subsetSumEncoding encInstance SubsetSum Decision :=
   ⟨toAddXNOR, toAddXNOR_polyTime, fun x => (toAddXNOR_mem_iff x).symm⟩
 
 /-- Theorem 1: balanced Add/XNOR is NP-complete under deterministic
@@ -421,7 +429,7 @@ private theorem sum_size_le_encoding (numbers : List ℕ) :
 
 /-- Explicit linear construction width in the binary source encoding length. -/
 theorem toAddXNOR_width_le_input (x : List ℕ × ℕ) :
-    (toAddXNOR x).1 ≤ 5 * (encPair (encList encNat) encNat x).length + 3 := by
+    (toAddXNOR x).1 ≤ 5 * (subsetSumEncoding x).length + 3 := by
   have h := toAddXNOR_width_le x.1 x.2
   change (toAddXNOR x).1 ≤ 4 * x.1.length + x.1.sum.size + 3 at h
   have hsize := sum_size_le_encoding x.1
@@ -433,8 +441,8 @@ theorem toAddXNOR_width_le_input (x : List ℕ × ℕ) :
 separate machine-level polynomial-time certificate `toAddXNOR_polyTime`. -/
 theorem toAddXNOR_encoding_length_le (x : List ℕ × ℕ) :
     (encInstance (toAddXNOR x)).length ≤
-      2 * (5 * (encPair (encList encNat) encNat x).length + 3) ^ 2 +
-        3 * (5 * (encPair (encList encNat) encNat x).length + 3) + 1 := by
+      2 * (5 * (subsetSumEncoding x).length + 3) ^ 2 +
+        3 * (5 * (subsetSumEncoding x).length + 3) + 1 := by
   have hvalid : (toAddXNOR x).2.length = (toAddXNOR x).1 ∧
       ∀ a ∈ (toAddXNOR x).2, a < 2 ^ (toAddXNOR x).1 := by
     unfold toAddXNOR

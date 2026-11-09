@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Containers
 public import CslibFrontier.Cryptanalysis.AddXNORGroupedQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORSortedMeet
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
@@ -135,7 +136,7 @@ theorem count_zero_iff {p : ℕ} (as bs : List (BitVec p)) (s g : BitVec p) :
 
 /-- Actual quarter generation, inverse queries, tags and radix sorting, before any groups. -/
 noncomputable def sortedCertificate : NativeCertificate sortedRecords encoding
-    (encList (encPair encNat encNat)) := by
+    (encNatPairList) := by
   let original : NativeCertificate (id : Input → _) encoding encoding :=
     .linear (.of_eq (fun _ => rfl))
   let quarters := SortedMeet.quarterCertificate.comp
@@ -155,7 +156,7 @@ noncomputable def sortedCertificate : NativeCertificate sortedRecords encoding
 noncomputable def groupsCertificate :
     NativeCertificate groups encoding KeyGrouping.outputEncoding := by
   let h := (Classical.choose_spec KeyGrouping.run_computable).2.2
-  let writer : NativeCertificate KeyGrouping.run (encList (encPair encNat encNat))
+  let writer : NativeCertificate KeyGrouping.run (encNatPairList)
       KeyGrouping.outputEncoding := ⟨_, _, h⟩
   exact NativeCertificate.congr (writer.comp sortedCertificate) (fun _ => rfl)
 
@@ -168,7 +169,7 @@ input volume plus record count times a polynomial of physical row and binary cou
 the quarter-generation and sorting phase profiles are charged separately by composition. -/
 noncomputable def countCertificate : NativeCertificate count encoding encNat := by
   let h := (Classical.choose_spec KeyCount.run_computable).2.2
-  let consumer : NativeCertificate KeyCount.run (encList (encPair encNat encNat)) encNat :=
+  let consumer : NativeCertificate KeyCount.run (encNatPairList) encNat :=
     ⟨_, _, h⟩
   exact NativeCertificate.congr (consumer.comp sortedCertificate)
     (fun input => (count_streaming input).symm)
@@ -176,10 +177,10 @@ noncomputable def countCertificate : NativeCertificate count encoding encNat := 
 /-- Actual nested streaming emits the retained class. Its time and charged prefix space
 are linear in quarter/class occurrence volume times a polynomial in physical record width. -/
 noncomputable def witnessesCertificate : NativeCertificate witnesses encoding
-    (encList (encPair encNat encNat)) := by
+    (encNatPairList) := by
   let h := (Classical.choose_spec KeyJoinStream.join_computable).2.2
   let emit : NativeCertificate KeyJoin.join KeyGrouping.outputEncoding
-      (encList (encPair encNat encNat)) := ⟨_, _, h⟩
+      (encNatPairList) := ⟨_, _, h⟩
   exact NativeCertificate.congr (emit.comp groupsCertificate) (fun _ => rfl)
 
 /-- Original source operands and a runtime class index. -/
@@ -420,11 +421,11 @@ private theorem state_emit_polyTime : ComputableInPolyTime
 in the original input and one packed pair, not polynomial in the complete retained class. -/
 theorem fullRecords_computable : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
     ComputableInO (fun q : Source.Input × List (ℕ × ℕ) => q.2.map (fullRecord q.1))
-      (encPair Source.encoding (encList (encPair encNat encNat)))
+      (encPair Source.encoding (encNatPairList))
       (encList (encPair encNat (encPair encNat encNat)))
-      (fun q => (encPair Source.encoding (encList (encPair encNat encNat)) q).length +
+      (fun q => (encPair Source.encoding (encNatPairList) q).length +
         (q.2.length + 1) * P (streamFilterWidth Source.encoding (encPair encNat encNat) q))
-      (fun q => (encPair Source.encoding (encList (encPair encNat encNat)) q).length +
+      (fun q => (encPair Source.encoding (encNatPairList) q).length +
         (q.2.length + 1) * P (streamFilterWidth Source.encoding (encPair encNat encNat) q)) := by
   obtain ⟨P, hp, hm, h⟩ := ComputableInO.flatMap_stream state_emit_polyTime
   refine ⟨P, hp, hm, h.of_enc_eq ?_⟩
@@ -441,7 +442,7 @@ noncomputable def fullStatesCertificate : NativeCertificate fullStates sourceEnc
   let indices := witnessesCertificate.comp prepared
   let h := (Classical.choose_spec fullRecords_computable).2.2
   let emit : NativeCertificate (fun q : Source.Input × List (ℕ × ℕ) =>
-      q.2.map (fullRecord q.1)) (encPair Source.encoding (encList (encPair encNat encNat)))
+      q.2.map (fullRecord q.1)) (encPair Source.encoding (encNatPairList))
       (encList (encPair encNat (encPair encNat encNat))) := ⟨_, _, h⟩
   exact NativeCertificate.congr (emit.comp (original.fst.prod indices)) (fun _ => rfl)
 

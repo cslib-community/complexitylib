@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Containers
 public import CslibFrontier.Cryptanalysis.AddXNORClassBalance
 public import CslibFrontier.Cryptanalysis.AddXNORBatchedAccess
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedProbe
@@ -494,10 +495,10 @@ input size from actual search provenance, including the empty/miss result. -/
 theorem allSearch_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let q := as.length + bs.length + cs.length + ds.length
-    (encOption (encPair encNat encNat) (allSearch input)).length ≤ 3 * q + 2 := by
+    (encNatPairOption (allSearch input)).length ≤ 3 * q + 2 := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   let q := as.length + bs.length + cs.length + ds.length
-  change (encOption (encPair encNat encNat) (allSearch input)).length ≤ 3 * q + 2
+  change (encNatPairOption (allSearch input)).length ≤ 3 * q + 2
   cases h : allSearch input with
   | none => simp
   | some out =>
@@ -615,7 +616,7 @@ theorem source_count_prefix_wire {m : ℕ} (p : ℕ) (s : BitVec m)
     (hn : n ≤ 2 ^ ClassBalance.depth (Source.prepare (Source.ofWords p s tail))) :
     let input := Source.prepare (Source.ofWords p s tail)
     let k := tail.length / 4
-    (encList (encPair encNat encNat) (((ClassBalance.countStep input)^[n] (0, [])).2)).length ≤
+    (encNatPairList (((ClassBalance.countStep input)^[n] (0, [])).2)).length ≤
       2 ^ ClassBalance.depth input * (12 * k + 15) := by
   dsimp only
   rw [Source.prepare_ofWords] at hn ⊢
@@ -667,8 +668,8 @@ theorem simultaneous_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec
     (s : BitVec m) (g : BitVec p) (n : ℕ) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let q := as.length + bs.length + cs.length + ds.length
-    (encList (encPair encNat encNat) (ClassBalance.retain input g.toNat)).length +
-      (encList (encPair encNat encNat) (buffer input g.toNat n)).length ≤
+    (encNatPairList (ClassBalance.retain input g.toNat)).length +
+      (encNatPairList (buffer input g.toNat n)).length ≤
         2 * ClassBalance.balance input * (4 * m + 2 * q + 3) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   let right := ClassBalance.retainRight input g.toNat
@@ -694,11 +695,11 @@ theorem simultaneous_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec
   have hbuffer := hb.trans (Nat.mul_le_mul_right (2 * (2 * m + 1 + q) + 1) hlen)
   have hkept := ClassBalance.retained_prefix_wire hp as bs cs ds s g
     (ClassBalance.retain input g.toNat).length
-  change (encList (encPair encNat encNat)
+  change (encNatPairList
     ((ClassBalance.retain input g.toNat).take (ClassBalance.retain input g.toNat).length)).length ≤
       ClassBalance.balance input * (4 * m + 2 * q + 3) at hkept
   rw [List.take_length] at hkept
-  have hbuffer' : (encList (encPair encNat encNat) (buffer input g.toNat n)).length ≤
+  have hbuffer' : (encNatPairList (buffer input g.toNat n)).length ≤
       ClassBalance.balance input * (4 * m + 2 * q + 3) := hbuffer.trans_eq (by ring)
   exact (Nat.add_le_add hkept hbuffer').trans_eq (by ring)
 
@@ -708,8 +709,8 @@ theorem direct_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVe
     (s : BitVec m) (g : BitVec p) (n : ℕ) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let q := as.length + bs.length + cs.length + ds.length
-    (encList (encPair encNat encNat) (ClassBalance.retain input g.toNat)).length +
-      (encList (encPair encNat encNat) (directPrefix input g.toNat n)).length ≤
+    (encNatPairList (ClassBalance.retain input g.toNat)).length +
+      (encNatPairList (directPrefix input g.toNat n)).length ≤
         (2 * ClassBalance.balance input + quarterBudget input) * (4 * m + 2 * q + 3) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   let right := ClassBalance.retainRight input g.toNat
@@ -719,7 +720,7 @@ theorem direct_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVe
   dsimp only [right] at kept
   rw [← ClassBalance.retain] at kept
   rw [List.take_length] at kept
-  have opposite : (encList (encPair encNat encNat) (directPrefix input g.toNat n)).length ≤
+  have opposite : (encNatPairList (directPrefix input g.toNat n)).length ≤
       (directPrefix input g.toNat n).length * (4 * m + 2 * q + 3) := by
     by_cases h : materialize input g.toNat = true
     · simpa only [directPrefix, h, ite_true] using
@@ -736,8 +737,8 @@ theorem restart_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitV
     (s : BitVec m) (g : BitVec p) (i n : ℕ) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let q := as.length + bs.length + cs.length + ds.length
-    (encList (encPair encNat encNat) (ClassBalance.retain input g.toNat)).length +
-      (encList (encPair encNat encNat)
+    (encNatPairList (ClassBalance.retain input g.toNat)).length +
+      (encNatPairList
         ((ClassBatches.batch (probeContext input g.toNat) g.toNat i).take n)).length ≤
           (2 * ClassBalance.balance input + 2 * quarterBudget input + 1) * (4 * m + 2 * q + 3) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
@@ -750,7 +751,7 @@ theorem restart_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitV
   have output := length_encList_le (encPair encNat encNat) batch row
   have kept := ClassBalance.records_prefix_wire hp as bs cs ds s
     (ClassBalance.retainRight input g.toNat) g (ClassBalance.retain input g.toNat).length
-  change (encList (encPair encNat encNat)
+  change (encNatPairList
     ((ClassBalance.retain input g.toNat).take (ClassBalance.retain input g.toNat).length)).length ≤
       ((ClassBalance.retain input g.toNat).take (ClassBalance.retain input g.toNat).length).length *
         (4*m+2*q+3) at kept
@@ -807,7 +808,7 @@ private theorem classInput_polyTime : ComputableInPolyTime
 per-batch parameter copies, full-state reconstruction and matcher temporaries are charged. -/
 private noncomputable def batchSearchCertificate : NativeCertificate
     (fun q : ClassBalance.Input × ℕ => ClassBatches.run (probeContext q.1 q.2) q.2)
-    (encPair ClassBalance.encoding encNat) (encOption (encPair encNat encNat)) := by
+    (encPair ClassBalance.encoding encNat) (encNatPairOption) := by
   let original : NativeCertificate (id : ClassBalance.Input × ℕ → _)
       classEncoding classEncoding := .linear (.of_eq (fun _ => rfl))
   let orientation := ClassBalance.orientationCertificate
@@ -902,7 +903,7 @@ quarter-plus-retained allowance, and the bounded restarted-window machine otherw
 All count, materialization, matching, copy and callback temporaries remain charged. -/
 noncomputable def searchCertificate : NativeCertificate
     (fun q : ClassBalance.Input × ℕ => search q.1 q.2)
-    (encPair ClassBalance.encoding encNat) (encOption (encPair encNat encNat)) :=
+    (encPair ClassBalance.encoding encNat) (encNatPairOption) :=
   NativeCertificate.congr (NativeCertificate.branch materializeCertificate
     directSearchCertificate batchSearchCertificate) (fun _ => rfl)
 
@@ -929,7 +930,7 @@ private noncomputable def allStepCertificate : NativeCertificate
 executed class rounds; peak workspace takes their actual prefix maximum and includes the index
 list/setup, state copies and final readback. No maximum-class-time multiplication is used. -/
 noncomputable def allCertificate : NativeCertificate allSearch ClassBalance.encoding
-    (encOption (encPair encNat encNat)) := by
+    (encNatPairOption) := by
   let e := encPair (encPair ClassBalance.encoding (encOption recEncoding)) encNat
   let original : NativeCertificate
       (id : (ClassBalance.Input × Option (ℕ × ℕ)) × ℕ → _) e e :=
@@ -957,7 +958,7 @@ noncomputable def halvesCertificate : NativeCertificate halves ClassBalance.enco
 /-- The actual packed-witness decoder used by the assembled source solver. -/
 noncomputable def readbackCertificate : NativeCertificate
     (fun q : SortedMeet.Input × Option (ℕ × ℕ) => q.2.map (SortedMeet.decodeWitness q.1))
-    (encPair SortedMeet.encoding (encOption (encPair encNat encNat))) (encOption encBits) :=
+    (encPair SortedMeet.encoding (encNatPairOption)) (encOption encBits) :=
   .ofPolyTime SortedMeet.readback_polyTime
 
 /-- Preparation, half-array construction and final decoding cost only a polynomial
@@ -1005,10 +1006,10 @@ theorem preparation_readback_bounds : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBou
       dsimp only [size, original, Source.ofWords, Source.encoding]
       simp only [length_encPair]
       omega
-    have witnessSize : (encOption (encPair encNat encNat) (allSearch prepared)).length ≤
+    have witnessSize : (encNatPairOption (allSearch prepared)).length ≤
         3 * size + 2 := by dsimp only [prepared, original]; omega
     have halfSize : (SortedMeet.encoding (halves prepared)).length ≤ B size := boundB original
-    have inputSize : (encPair SortedMeet.encoding (encOption (encPair encNat encNat))
+    have inputSize : (encPair SortedMeet.encoding (encNatPairOption)
         (halves prepared, allSearch prepared)).length ≤ 2 * B size + 3 * size + 3 := by
       simp only [length_encPair]
       omega

@@ -279,13 +279,20 @@ classes skipped after hits. The installed emitter/window envelopes in
 bound scalar states at every prefix. Their cumulative population potential pays
 emissions from remaining capacity plus quarter records scanned. Use these with
 the complete batch client; do not reintroduce maximum group size times group
-count. The actual count/division/filter/cross callback sum/max are still explicit,
-so these envelopes are not sharp global bounds. Next normalize those actual
-restarted-window, label/control,
-callback/frame and simultaneous workspace costs; do not repeat the completed prepass,
+count. `KeyJoinBatchCallbackBounds` now normalizes the installed count/division/filter/cut/cross
+profiles in scalar/record widths. `RestartResources.original_window_bounds` derives those
+widths from original source operands and generated labels; `original_window_sum` and
+`source_window_bounds` close the all-class window phase using computed capacity/balance.
+These are not sharp whole-run bounds: next compose the remaining label/control,
+retained preparation, callback/frame and simultaneous ambient workspace costs.
+Do not repeat the completed window phase, prepass,
 direct branch or envelope proofs. The residuals are cost expressions, not runtime
 hypotheses or sharp whole-run bounds. The direct-only checked client is not a general
 restart theorem; the fallback guard verifies that its costs have not disappeared.
+Public binary pair containers and fold/Subset-Sum inputs now use documented reducible
+encoding names (`encNatPairList`, `encNatPairOption`, `encFoldStep`, `subsetSumEncoding`).
+Run the changed-module encoding ratchet against the PR base; do not exempt new modules
+by raising the baseline. These names preserve layout and do not introduce defaults.
 Orientation recomputes counts; no cached-size oracle is input. The faster source
 reachable-state-DP all-count and quarter-time prepass remain separate open endpoints.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to

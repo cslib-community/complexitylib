@@ -27,8 +27,9 @@ Normalize the actual forward/inverse quarter generation, projected record sortin
 and one-pass count certificates. Reversal, reflection and sorting are executed;
 no supplied producer or resource contract is used. These bounds are components
 of the sorted-list route to [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
-Window emission, scalar count/division control and complete solver profile composition
-remain separate obligations; count and reconstruction phase sums are not total clocks.
+Window emission and its scalar count/division control are normalized separately in
+`AddXNORRestartResources`; complete solver profile composition remains open.
+Count and reconstruction phase sums are not total clocks.
 
 ## Main definitions
 

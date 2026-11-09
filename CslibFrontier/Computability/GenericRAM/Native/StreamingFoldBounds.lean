@@ -44,7 +44,7 @@ def foldStateWidth {π σ α : Type} (es : σ ↪ List Bool) (step : π → σ �
 def foldTimeBudget {π σ α : Type} (ep : π ↪ List Bool) (es : σ ↪ List Bool)
     (ea : α ↪ List Bool) (step : π → σ → α → σ)
     (body : NativeCertificate (fun q : (π × σ) × α => step q.1.1 q.1.2 q.2)
-      (encPair (encPair ep es) ea) es) (input : π × (σ × List α)) : ℕ :=
+      (encFoldStep ep es ea) es) (input : π × (σ × List α)) : ℕ :=
   let (parameter, (initial, rows)) := input
   (encPair ep (encPair es (encList ea)) input).length +
     (∑ j ∈ Finset.range rows.length, if h : j < rows.length then
@@ -57,7 +57,7 @@ No total running time or sum of callback workspaces is substituted for simultane
 def foldSpaceBudget {π σ α : Type} (ep : π ↪ List Bool) (es : σ ↪ List Bool)
     (ea : α ↪ List Bool) (step : π → σ → α → σ)
     (body : NativeCertificate (fun q : (π × σ) × α => step q.1.1 q.1.2 q.2)
-      (encPair (encPair ep es) ea) es) (input : π × (σ × List α)) : ℕ :=
+      (encFoldStep ep es ea) es) (input : π × (σ × List α)) : ℕ :=
   let (parameter, (initial, rows)) := input
   (encPair ep (encPair es (encList ea)) input).length +
     (Finset.range rows.length).sup (fun j => if h : j < rows.length then
@@ -69,7 +69,7 @@ of input length, visited states, callback outcomes and early-exit parking. -/
 theorem foldlStream_bounds {π σ α : Type} (ep : π ↪ List Bool) (es : σ ↪ List Bool)
     (ea : α ↪ List Bool) (step : π → σ → α → σ)
     (body : NativeCertificate (fun q : (π × σ) × α => step q.1.1 q.1.2 q.2)
-      (encPair (encPair ep es) ea) es) :
+      (encFoldStep ep es ea) es) :
     ∃ K : ℕ, ∀ input,
       (foldlStream ep es ea step body).time input ≤ K*foldTimeBudget ep es ea step body input ∧
       (foldlStream ep es ea step body).space input ≤

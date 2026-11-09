@@ -354,7 +354,7 @@ with derived prefix width, bypassing table construction/reversal/reduction.
 Preparation, half-array construction and the installed readback machine have proved polynomial bounds
 in the physical original input, using derived search-result payload size.
 The per-pair retained/buffer copy path is no longer installed. Sharp resources
-still require the remaining window/control/retained-emission bounds and complete
+still require complete class-control/retained-emission composition and
 profile composition, including all simultaneous intermediates. Per-batch parameter copies and repeated quarter
 scans are now explicitly amortized by actual class populations plus capacity. Neither a traversal sum nor
 the now-composed actual bit clock establishes the target source asymptotics.
@@ -370,7 +370,7 @@ and binary counter widths. Both count orientations have an original-input all-cl
 sum; opposite counting repeated at generated restart labels is amortized by actual capacity.
 Full-state reconstruction of actual windows also has a summed phase allowance and every-batch
 prefix workspace bound, including pair/output/callback tapes. These results are not the total
-assembled profiles: window scan/cut/division, retained-join/group emission composition,
+assembled profiles: the separately normalized window phase, retained-join/group emission,
 internal class-search control and simultaneous ambient frames remain unclosed. `WholeRunResources.sourceCertificate_bounds` now gives an actual whole
 original-input preparation-to-readback envelope: time is bounded by the installed balance
 prepass allowance plus `(classTime + numberOfClasses + 1) * P(originalInputBits)`, and space
@@ -388,13 +388,14 @@ class-pair/full-state emission and all selected direct-search clocks/workspaces,
 including computed orientation/materialization and producer/matcher tapes. Its
 `sourceCertificate_restart_bounds` leaves the installed selected restarted-search sum/max
 explicit, conservatively including skipped classes. Sharp normalization of those costs
-still needs scalar-polynomial normalization of the actual window count/division/filter/cross
-callback profiles, label/control frames and simultaneous temporaries. The installed
-emitter/window envelopes now sum group wires rather than group-count times maximum group
-wire, preserve original binary rank widths at every prefix, and bound cumulative callback
-emissions by capacity plus scanned quarter records. These are actual certificate envelopes,
-not sharp normalized callback or whole-run bounds. A checked direct-only input closes both resource inequalities but does not
-replace that general obligation. The source reachable-state-DP all-count and faster
+still needs complete class-control/retained-preparation/callback-frame and simultaneous
+ambient workspace composition. Installed window callbacks are now normalized in binary
+scalar/record widths, including count scans, filters, multiplication/division, cutting and
+Cartesian emission. `RestartResources` derives original-source widths and charges all
+class/label windows using computed capacities. Its source-cut half-time and
+quarter-plus-computed-balance space bounds cover the window phase, not the complete solver.
+A checked direct-only input closes both resource inequalities but does not replace that
+general obligation. The source reachable-state-DP all-count and faster
 quarter-time prepass remain open.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their

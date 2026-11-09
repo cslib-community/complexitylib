@@ -2573,6 +2573,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.K
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchCallbackBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinStream
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
@@ -2909,6 +2910,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Mu
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Arithmetic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Containers
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Division
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Subtraction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
@@ -3737,6 +3739,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORProducerResources
 public import CslibFrontier.Cryptanalysis.AddXNORProgramGeneration
 public import CslibFrontier.Cryptanalysis.AddXNORProgramTemplate
 public import CslibFrontier.Cryptanalysis.AddXNORReachability
+public import CslibFrontier.Cryptanalysis.AddXNORRestartResources
 public import CslibFrontier.Cryptanalysis.AddXNORRuns
 public import CslibFrontier.Cryptanalysis.AddXNORSearch
 public import CslibFrontier.Cryptanalysis.AddXNORSearchResources

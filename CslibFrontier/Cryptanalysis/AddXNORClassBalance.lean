@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Containers
 public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingFold
@@ -560,7 +561,7 @@ binary populations and list framing, separately from internal callback workspace
 theorem table_prefix_wire {m p : ℕ} (hp : p ≤ m)
     (as bs cs ds : List (BitVec m)) (s : BitVec m) (n : ℕ) (hn : n ≤ 2 ^ p) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
-    (encList (encPair encNat encNat) (((countStep input)^[n] (0, [])).2)).length ≤
+    (encNatPairList (((countStep input)^[n] (0, [])).2)).length ≤
       n * (4 * (as.length + bs.length) + 2 * (cs.length + ds.length) + 9) := by
   dsimp only
   rw [table_prefix, length_encList_reverse]
@@ -712,7 +713,7 @@ private noncomputable def emitCertificate : NativeCertificate
 readback form one uniform bit computation. All intermediate phase profiles are charged. -/
 noncomputable def recordsCertificate : NativeCertificate
     (fun q : (Input × Bool) × ℕ => records q.1.1 q.1.2 q.2)
-    (encPair (encPair encoding encBool) encNat) (encList (encPair encNat encNat)) := by
+    (encPair (encPair encoding encBool) encNat) (encNatPairList) := by
   let original : NativeCertificate (id : (Input × Bool) × ℕ → _) taskEncoding taskEncoding :=
     .linear (.of_eq (fun _ => rfl))
   let query := NativeCertificate.ofPolyTime queryInput_polyTime
@@ -740,7 +741,7 @@ private noncomputable def orientationCertificate : NativeCertificate
 /-- Counts are computed before only the selected side is generated and retained. -/
 noncomputable def retainCertificate : NativeCertificate
     (fun q : Input × ℕ => retain q.1 q.2) (encPair encoding encNat)
-    (encList (encPair encNat encNat)) := by
+    (encNatPairList) := by
   let original : NativeCertificate (id : Input × ℕ → _) classEncoding classEncoding :=
     .linear (.of_eq (fun _ => rfl))
   exact NativeCertificate.congr (recordsCertificate.comp
@@ -767,7 +768,7 @@ private noncomputable def countStepCertificate : NativeCertificate
 
 /-- Actual finite-counter prepass for both directions, with table and control copying charged. -/
 noncomputable def tableCertificate : NativeCertificate table encoding
-    (encList (encPair encNat encNat)) := by
+    (encNatPairList) := by
   have clock : ComputableInPolyTime (fun input : Input => 2 ^ depth input) encoding encNat :=
     ComputableInPolyTime.binary_pow' (.const 2) depth_polyTime
   let loop := ClassStreaming.loopCertificate encoding (encList recEncoding)
@@ -879,7 +880,7 @@ theorem records_prefix_wire {m p : ℕ} (hp : p ≤ m)
     (as bs cs ds : List (BitVec m)) (s : BitVec m) (right : Bool) (g : BitVec p) (j : ℕ) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let q := as.length + bs.length + cs.length + ds.length
-    (encList (encPair encNat encNat) ((records input right g.toNat).take j)).length ≤
+    (encNatPairList ((records input right g.toNat).take j)).length ≤
       ((records input right g.toNat).take j).length * (4 * m + 2 * q + 3) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   let q := as.length + bs.length + cs.length + ds.length
@@ -895,7 +896,7 @@ theorem retained_prefix_wire {m p : ℕ} (hp : p ≤ m)
     (as bs cs ds : List (BitVec m)) (s : BitVec m) (g : BitVec p) (j : ℕ) :
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     let q := as.length + bs.length + cs.length + ds.length
-    (encList (encPair encNat encNat) ((retain input g.toNat).take j)).length ≤
+    (encNatPairList ((retain input g.toNat).take j)).length ≤
       balance input * (4 * m + 2 * q + 3) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
   have hw := records_prefix_wire hp as bs cs ds s (retainRight input g.toNat) g j

@@ -30,6 +30,7 @@ resource theorem of [WangLvShenZhang2027], Lemma 8/Theorem 7 (PDF pp. 21–22).
 
 ## Main results
 
+* `join_record_wire`: binary output-pair width from actual tagged quarter records.
 * `pairs_computable`: filtered bucket emission with output-sensitive bit resources.
 * `volume_eq`: the resource volume is quarter input plus class output and group control.
 * `join_computable`: uniform grouped emission, including simultaneous materialized output.
@@ -53,6 +54,25 @@ private theorem emit_polyTime : ComputableInPolyTime emit (encPair er er) el := 
   have single : ComputableTidilyInPolyTime (fun r : ℕ × ℕ => [r]) er el :=
     .of_linear (.of_frame (fun _ => by simp))
   exact .of_tidy (single.comp pair)
+
+/-- Generated quarter pairs have binary wire bounded by the actual tagged input records.
+Both packed coordinates are divided by two when the direction tags are removed. -/
+theorem join_record_wire (groups : List (List (ℕ × ℕ))) (B : ℕ)
+    (rows : ∀ r ∈ groups.flatten, (RadixPartition.recordEncoding r).length ≤ B) :
+    ∀ pair ∈ KeyJoin.join groups, (RadixPartition.recordEncoding pair).length ≤ 3*B+1 := by
+  intro pair hp
+  simp only [KeyJoin.join, KeyJoin.pairs, List.mem_flatMap, List.mem_map] at hp
+  obtain ⟨group, hg, a, ha, b, hb, rfl⟩ := hp
+  have aw := rows a (List.mem_flatten.mpr ⟨group, hg, (List.mem_filter.mp ha).1⟩)
+  have bw := rows b (List.mem_flatten.mpr ⟨group, hg, (List.mem_filter.mp hb).1⟩)
+  have aSize : (encNat (a.2/2)).length ≤ (encNat a.2).length := by
+    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using
+      Nat.size_le_size (Nat.div_le_self a.2 2)
+  have bSize : (encNat (b.2/2)).length ≤ (encNat b.2).length := by
+    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using
+      Nat.size_le_size (Nat.div_le_self b.2 2)
+  simp only [RadixPartition.recordEncoding, length_encPair] at aw bw ⊢
+  omega
 
 /-- Nested occurrence enumeration, holding the right run while streaming the left run. -/
 private def cross (input : List SortedMatch.Record × List SortedMatch.Record) : List (ℕ × ℕ) :=

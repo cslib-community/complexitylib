@@ -7,8 +7,9 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (restarted class-batch source integration regression tests)
 
-public import CslibFrontier.Cryptanalysis.AddXNORSearchResources
+public import CslibFrontier.Cryptanalysis.AddXNORRestartResources
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
+import all CslibFrontier.Cryptanalysis.AddXNORRestartResources
 import all CslibFrontier.Cryptanalysis.AddXNORSearchResources
 import all CslibFrontier.Computability.GenericRAM.Native.StreamingFoldBounds
 import all CslibFrontier.Cryptanalysis.AddXNORJoinedDissection
@@ -366,3 +367,63 @@ example (j : ℕ) :
     (encPair encNat encNat (streamState bounds (fun q => KeyJoinBatch.advance q.1 q.2)
       (JoinedProbe.groups context 0) j)).length ≤ (encPair encNat encNat bounds).length := by
   exact KeyJoinBatch.window_state_wire _ _ j
+
+-- The named binary layouts retain the existing framing and empty-option convention.
+example : encNatPairOption none = [] := rfl
+example : (encNatPairOption (some (3, 5))).length = 9 := by decide +kernel
+example : (encNatPairList [(3, 5), (0, 7)]).length = 26 := by decide +kernel
+example (xs : List (ℕ × ℕ)) : encNatPairList xs = encList (encPair encNat encNat) xs := rfl
+
+-- The installed callback theorem includes actual count/division/filter/cut/cross clocks.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    KeyJoinBatch.windowCallbackTime (1, 3) unevenWindowGroups+
+      KeyJoinBatch.windowCallbackSpace (1, 3) unevenWindowGroups ≤
+        (3+unevenWindowGroups.flatten.length+unevenWindowGroups.length+1)*
+          P (KeyJoinBatch.windowWidth (1, 3) unevenWindowGroups) := by
+  obtain ⟨P, hP, mP, bound⟩ := KeyJoinBatch.windowCallback_bounds
+  exact ⟨P, hP, mP, bound (1, 3) unevenWindowGroups⟩
+
+-- All source residue cases use original input bits; this is the window phase only.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ (m p : ℕ) (s : BitVec m) (tail : List (BitVec m)),
+      let original := Source.ofWords p s tail
+      let input := Source.prepare original
+      (∑ g : BitVec (ClassBalance.depth input),
+        ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
+          (RestartResources.windowAllowance input g.toNat)).sum) ≤
+        2^(tail.length/2)*P ((Source.encoding original).length) ∧
+      ∀ (g : BitVec (ClassBalance.depth input)) (i : ℕ),
+        i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
+        RestartResources.windowAllowance input g.toNat i ≤
+          (2^(tail.length/4)+ClassBalance.balance input)*P ((Source.encoding original).length) := by
+  exact RestartResources.source_window_bounds
+
+-- The arithmetic fallback pays actual window clocks over its generated labels.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    let input := Source.prepare restartArithmeticHit
+    (∑ g : BitVec (ClassBalance.depth input),
+      ((ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat).map
+        (RestartResources.windowAllowance input g.toNat)).sum) ≤
+      128*P ((Source.encoding restartArithmeticHit).length) := by
+  obtain ⟨P, hP, mP, bound⟩ := RestartResources.source_window_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  have eq : restartArithmeticHit =
+      Source.ofWords 0 (0 : BitVec 3) (List.replicate 14 0 ++ [1]) := by decide +kernel
+  rw [eq]
+  have h := (bound 3 0 0 (List.replicate 14 0 ++ [1])).1
+  have powEq : (2 : ℕ)^((List.replicate 14 (0 : BitVec 3) ++ [1]).length/2) = 128 := by
+    decide +kernel
+  rw [powEq] at h
+  exact h
+
+-- Zero physical width/no operators and an overlarge requested depth require no extra premise.
+example : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    let original := Source.ofWords 9 (0 : BitVec 0) []
+    let input := Source.prepare original
+    ∀ (g : BitVec (ClassBalance.depth input)) (i : ℕ),
+      i ∈ ClassBatches.labels (JoinedDissection.probeContext input g.toNat) g.toNat →
+      RestartResources.windowAllowance input g.toNat i ≤
+        (1+ClassBalance.balance input)*P ((Source.encoding original).length) := by
+  obtain ⟨P, hP, mP, bound⟩ := RestartResources.source_window_bounds
+  refine ⟨P, hP, mP, ?_⟩
+  simpa only [List.length_nil, Nat.zero_div, pow_zero] using (bound 0 9 0 []).2

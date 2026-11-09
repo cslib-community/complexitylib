@@ -119,23 +119,6 @@ private theorem groups_count_le (rows : List (ℕ × ℕ)) :
         List.length_pos_iff.mpr (KeyGrouping.group_nonempty rows group hg))
     _ = rows.length := by rw [← List.length_flatten, KeyGrouping.flatten_run]
 
-private theorem pair_wire (groups : List (List (ℕ × ℕ))) (B : ℕ)
-    (rows : ∀ r ∈ groups.flatten, (er r).length ≤ B) :
-    ∀ pair ∈ KeyJoin.join groups, (er pair).length ≤ 3*B+1 := by
-  intro pair hp
-  simp only [KeyJoin.join, KeyJoin.pairs, List.mem_flatMap, List.mem_map] at hp
-  obtain ⟨group, hg, a, ha, b, hb, rfl⟩ := hp
-  have aw := rows a (List.mem_flatten.mpr ⟨group, hg, (List.mem_filter.mp ha).1⟩)
-  have bw := rows b (List.mem_flatten.mpr ⟨group, hg, (List.mem_filter.mp hb).1⟩)
-  have aSize : (encNat (a.2/2)).length ≤ (encNat a.2).length := by
-    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using
-      Nat.size_le_size (Nat.div_le_self a.2 2)
-  have bSize : (encNat (b.2/2)).length ≤ (encNat b.2).length := by
-    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using
-      Nat.size_le_size (Nat.div_le_self b.2 2)
-  simp only [er, RadixPartition.recordEncoding, length_encPair] at aw bw ⊢
-  omega
-
 /-- Actual quarter generation, sorting, grouping and class-pair emission, including every
 internal prefix and the materialized class output. The class population is computed by
 this same construction, not supplied as a size hypothesis. -/
@@ -231,7 +214,7 @@ theorem witnessesCertificate_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P
       have rows (r : ℕ × ℕ) (hr : r ∈ groups.flatten) : (er r).length ≤ D B := by
         rw [flatten] at hr
         exact (le_listMax (f := fun row => (er row).length) hr).trans maxRow
-      have pairWidth := pair_wire groups (D B) rows pair hp
+      have pairWidth := KeyJoinStream.join_record_wire groups (D B) rows pair hp
       have upper : 3*D B+1 ≤ P B := by dsimp only [P]; omega
       exact pairWidth.trans upper
 
