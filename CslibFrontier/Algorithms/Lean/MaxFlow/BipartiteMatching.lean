@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.EdmondsKarp
 public import CslibFrontier.Computability.Circuit.BipartiteMatching
 public import Mathlib.Algebra.Group.Action.Defs
 public import Mathlib.Data.Fintype.Sum
+import CslibFrontier.Foundations.Data.Finset.Scan
 import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -958,47 +959,21 @@ private theorem mem_extractCoverLeftLoopM_ret {m r : ℕ} (G : Fin m × Fin r �
   induction us generalizing acc with
   | nil => simp [extractCoverLeftLoopM]
   | cons u us' ih =>
-    simp only [extractCoverLeftLoopM, TimeM.ret_bind, List.mem_cons]
+    simp only [extractCoverLeftLoopM, TimeM.ret_bind]
     by_cases hu : bipartiteFinEquiv m r (.left u) ∉ cut
-    · simp only [decide_eq_true hu, ↓reduceIte, ih, Finset.mem_insert]
-      constructor
-      · rintro ((rfl | hacc) | ⟨hus, hp⟩)
-        · exact .inr ⟨.inl rfl, .inl hu⟩
-        · exact .inl hacc
-        · exact .inr ⟨.inr hus, hp⟩
-      · rintro (hacc | ⟨rfl | hus, hp⟩)
-        · exact .inl (.inr hacc)
-        · exact .inl (.inl rfl)
-        · exact .inr ⟨hus, hp⟩
+    · simp only [decide_eq_true hu, ↓reduceIte, ih]
+      apply Finset.mem_insert_or_and_iff_cons
+      exact .inl hu
     · simp only [decide_eq_false hu, Bool.false_eq_true, ↓reduceIte, TimeM.ret_bind, ih]
-      by_cases hhit : (hasUncoveredRightM G cut u (List.finRange r)).ret = true
-      · simp only [hhit, ↓reduceIte, Finset.mem_insert]
-        have hex : ∃ v : Fin r, G (u, v) = true ∧ bipartiteFinEquiv m r (.right v) ∉ cut := by
-          simpa [List.mem_finRange] using
-            (hasUncoveredRightM_ret G cut u (List.finRange r)).mp hhit
-        constructor
-        · rintro ((rfl | hacc) | ⟨hus, hp⟩)
-          · exact .inr ⟨.inl rfl, .inr hex⟩
-          · exact .inl hacc
-          · exact .inr ⟨.inr hus, hp⟩
-        · rintro (hacc | ⟨rfl | hus, hp⟩)
-          · exact .inl (.inr hacc)
-          · exact .inl (.inl rfl)
-          · exact .inr ⟨hus, hp⟩
-      · simp only [hhit, Bool.false_eq_true, ↓reduceIte]
-        have hno : ¬ ∃ v : Fin r, G (u, v) = true ∧ bipartiteFinEquiv m r (.right v) ∉ cut := by
-          intro hex
-          apply hhit
-          exact (hasUncoveredRightM_ret G cut u (List.finRange r)).mpr
-            (let ⟨v, hG, hnv⟩ := hex; ⟨v, List.mem_finRange v, hG, hnv⟩)
-        constructor
-        · rintro (hacc | ⟨hus, hp⟩)
-          · exact .inl hacc
-          · exact .inr ⟨.inr hus, hp⟩
-        · rintro (hacc | ⟨rfl | hus, hp⟩)
-          · exact .inl hacc
-          · exact absurd hp (not_or.mpr ⟨hu, hno⟩)
-          · exact .inr ⟨hus, hp⟩
+      -- The scan of the right side reports exactly whether `u` has an uncovered neighbour.
+      have hhit : (hasUncoveredRightM G cut u (List.finRange r)).ret = true ↔
+          ∃ v : Fin r, G (u, v) = true ∧ bipartiteFinEquiv m r (.right v) ∉ cut := by
+        simp [hasUncoveredRightM_ret, List.mem_finRange]
+      split_ifs with h
+      · apply Finset.mem_insert_or_and_iff_cons
+        exact .inr (hhit.mp h)
+      · apply Finset.mem_or_and_iff_cons
+        exact not_or.mpr ⟨hu, mt hhit.mpr h⟩
 
 private theorem extractCoverLeftLoopM_time_le {m r : ℕ} (G : Fin m × Fin r → Bool)
     (cut : Finset (Fin (2 + (m + r)))) (us : List (Fin m)) (acc : Finset (Fin m)) :
