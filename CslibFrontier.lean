@@ -3189,15 +3189,12 @@ public import CslibFrontier.Computability.PCP.DegreeReduction
 public import CslibFrontier.Computability.PCP.Encoded.AddTrivial
 public import CslibFrontier.Computability.PCP.Encoded.Amplification
 public import CslibFrontier.Computability.PCP.Encoded.Amplification.Arithmetic
-public import CslibFrontier.Computability.PCP.Encoded.Amplification.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Amplification.Iteration
 public import CslibFrontier.Computability.PCP.Encoded.AssignmentTester
 public import CslibFrontier.Computability.PCP.Encoded.AssignmentTester.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Basic
 public import CslibFrontier.Computability.PCP.Encoded.Cloud
 public import CslibFrontier.Computability.PCP.Encoded.CloudRotation
-public import CslibFrontier.Computability.PCP.Encoded.Composition
-public import CslibFrontier.Computability.PCP.Encoded.Composition.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Constraints
 public import CslibFrontier.Computability.PCP.Encoded.Count
 public import CslibFrontier.Computability.PCP.Encoded.DegreeReduction
@@ -3213,7 +3210,6 @@ public import CslibFrontier.Computability.PCP.Encoded.Preprocess
 public import CslibFrontier.Computability.PCP.Encoded.Preprocess.Programs
 public import CslibFrontier.Computability.PCP.Encoded.SelectedAssignmentTester
 public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition
-public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Size
 public import CslibFrontier.Computability.PCP.Encoded.ThreeSAT
 public import CslibFrontier.Computability.PCP.Encoded.Verifier
