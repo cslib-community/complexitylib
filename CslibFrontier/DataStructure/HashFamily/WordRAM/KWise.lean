@@ -75,6 +75,8 @@ The initialization is factored into two reusable stages:
 * `Cslib.DataStructure.HashFamily.WordRAM.KWise.two_pow_two_mul_chunkBits_le`,
   `Cslib.DataStructure.HashFamily.WordRAM.KWise.two_pow_two_mul_chunkBits_pow_three_le`: coarse
   $\max(4, n_{\max})$ and sublinear $n_{\max}^{2/3}$ bounds on the Four-Russians table size.
+* `Cslib.DataStructure.HashFamily.WordRAM.KWise.fits_two_pow_trinomialDeg`: the word-width
+  bound `2 * trinomialDeg U M ≤ w` makes `2 ^ trinomialDeg U M` fit in a word.
 * `Cslib.DataStructure.HashFamily.WordRAM.KWise.extractSeeds_eq_of_seedRep`,
   `Cslib.DataStructure.HashFamily.WordRAM.KWise.SeedRep.congr_of_footprint`,
   `Cslib.DataStructure.HashFamily.WordRAM.KWise.extractSeeds_congr_of_footprint`: seed-extraction
@@ -197,6 +199,15 @@ theorem space_le (n_max k : ℕ) : space n_max k ≤ 8 + k + max 4 n_max := by
   dsimp only [space, spaceFromB]
   have := two_pow_two_mul_chunkBits_le n_max
   omega
+
+/-- The width bound `2 * trinomialDeg U M ≤ w` makes the field size `2 ^ trinomialDeg U M` fit in
+a word. -/
+theorem fits_two_pow_trinomialDeg {w U M : ℕ} (hw : 2 * trinomialDeg U M ≤ w) :
+    Fits w (2 ^ trinomialDeg U M) := by
+  have hq_pos : 0 < trinomialDeg U M := by
+    dsimp only [trinomialDeg]
+    positivity
+  exact Nat.pow_lt_pow_right one_lt_two (by omega)
 
 /-- Deterministic table representation predicate `TableRep base b U M k mem`:
 stores the 8 header parameters `(r, q, 2 ^ r - 1, 2 ^ q - 1, 2 ^ M - 1, b, 2 ^ b - 1, L)` at
