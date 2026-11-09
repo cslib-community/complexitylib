@@ -161,6 +161,28 @@ theorem onSchedule_root_capPrecision {P C : ℕ} {G : ℕ × ExplicitTensorNetwo
   obtain ⟨w, hw, rfl⟩ := hv
   exact hdeg w hw
 
+/-- **The root's schedule constant.** With `m` edges, `D + 2 ≤ m` and capped precision
+`q ≤ D m`, the guarded root is on the schedule for the constant `C = q / m + 1 ≤ D + 1`, so the
+schedule's certificate for all constants up to `D + 1` at scale `m` covers `C`. -/
+private theorem activeBounds_onSchedule_root {P D C : ℕ} {G : ℕ × ExplicitTensorNetwork ℕ}
+    (hg : fastGuard G = true) (hm : D + 2 ≤ G.2.numEdges)
+    (hp : (ExplicitTensorNetwork.capPrecision (P, G)).1 ≤ D * G.2.numEdges)
+    (hC : C = (ExplicitTensorNetwork.capPrecision (P, G)).1 / G.2.numEdges + 1)
+    (hA : ∀ C ≤ D + 1, ∀ d M p, Active C G.2.numEdges d M p →
+      ActiveBounds C G.2.numEdges d M p) :
+    (∀ d M p, Active C G.2.numEdges d M p → ActiveBounds C G.2.numEdges d M p) ∧
+      OnSchedule C G.2.numEdges (root (ExplicitTensorNetwork.capPrecision (P, G))) := by
+  subst hC
+  set q := ExplicitTensorNetwork.capPrecision (P, G)
+  set m := G.2.numEdges
+  have hC1 : q.1 / m + 1 ≤ D + 1 := by
+    have := Nat.div_le_div_right (c := m) hp
+    rw [Nat.mul_div_cancel _ (by omega)] at this
+    omega
+  have hpC : q.1 ≤ (q.1 / m + 1) * m :=
+    (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
+  exact ⟨hA _ hC1, onSchedule_root_capPrecision hg (Nat.le_add_left 1 _) hpC⟩
+
 /-- The number of edges of an explicit network is below the length of an encoded input. -/
 theorem numEdges_lt_length_encInput (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) :
     G.2.numEdges < (FastContraction.encInput (P, G)).length := by
@@ -229,15 +251,8 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
         (max sA (D + 2) ≤ s → 2 * N - 1 ≤ fuel q) ∧ H ≤ m + 1 := by
     by_cases hs₀ : max sA (D + 2) ≤ s
     · have hm2 : D + 2 ≤ m := by omega
-      have hC1 : q.1 / m + 1 ≤ D + 1 := by
-        have := Nat.div_le_div_right (c := m) hp₀
-        rw [Nat.mul_div_cancel _ (by omega)] at this
-        omega
-      have hB := hsA m (by omega) (q.1 / m + 1) hC1
-      have hpC : q.1 ≤ (q.1 / m + 1) * m :=
-        (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
-      obtain ⟨N, H, he, hN, hH⟩ := exists_eval_onSchedule tableEntry hB
-        (onSchedule_root_capPrecision hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
+      obtain ⟨hB, hroot⟩ := activeBounds_onSchedule_root hg hm2 hp₀ rfl (hsA m (by omega))
+      obtain ⟨N, H, he, hN, hH⟩ := exists_eval_onSchedule tableEntry hB hroot rfl (by omega)
       refine ⟨N, H, he, fun _ => ?_, hH.trans ((Nat.log_lt_self 2 (by omega)).le.trans
         (Nat.le_succ _))⟩
       exact two_mul_sub_one_le_fuel hm2 hp₀ hN
@@ -446,16 +461,8 @@ theorem reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P : ℕ) (G : ℕ × Explicit
     have := prec_arith (m := m) (D := D) (by omega)
     rw [hsc]
     omega
-  · have hm2 : D + 2 ≤ m := by omega
-    have hC1 : q.1 / m + 1 ≤ D + 1 := by
-      have := Nat.div_le_div_right (c := m) hp₀
-      rw [Nat.mul_div_cancel _ (by omega)] at this
-      omega
-    have hB := hsA m (by omega) (q.1 / m + 1) hC1
-    have hpC : q.1 ≤ (q.1 / m + 1) * m :=
-      (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
-    have h := hx.onSchedule hB (onSchedule_root_capPrecision hg (Nat.le_add_left 1 _) hpC)
+  · obtain ⟨hB, hroot⟩ := activeBounds_onSchedule_root hg (by omega) hp₀ rfl (hsA m (by omega))
     rw [hsc]
-    exact h.edges_le_leafSize hB hl
+    exact (hx.onSchedule hB hroot).edges_le_leafSize hB hl
 
 end Cslib.Complexity.CountingSimulation
