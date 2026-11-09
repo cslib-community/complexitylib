@@ -1232,21 +1232,6 @@ private theorem singleHashSpace_of_not_lt {c_exp n_max : ℕ}
         (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
   simp only [singleHashSpace, DoubleTabulation.provableSpace, h, ↓reduceIte]
 
-/-- The `2 ^ b` cells of one Double Tabulation character table fit in its whole footprint. -/
-private theorem two_pow_provableB_le_space (c_exp n_max : ℕ) :
-    2 ^ DoubleTabulation.provableB n_max ≤
-      DoubleTabulation.space (DoubleTabulation.provableC c_exp)
-        (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max) := by
-  have hc : 1 ≤ DoubleTabulation.provableC c_exp := DoubleTabulation.one_le_provableC c_exp
-  have hd : 1 ≤ DoubleTabulation.provableD c_exp := by
-    dsimp only [DoubleTabulation.provableD]; omega
-  have hle : 1 * 2 ^ DoubleTabulation.provableB n_max ≤
-      ((DoubleTabulation.provableC c_exp + 1) * DoubleTabulation.provableD c_exp) *
-        2 ^ DoubleTabulation.provableB n_max :=
-    Nat.mul_le_mul_right _ (by nlinarith)
-  dsimp only [DoubleTabulation.space]
-  omega
-
 theorem le_hashPairSpace (c_exp n_max : ℕ) :
     49 ≤ hashPairSpace c_exp n_max := by
   have := le_singleHashSpace c_exp n_max
@@ -1927,7 +1912,7 @@ theorem resampleSingleCode_execRand {w base c_exp n_max U M : ℕ} {x : Data 19}
     have hfit_dt : Fits w (base + DoubleTabulation.space (DoubleTabulation.provableC c_exp)
         (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max)) := by
       rwa [← hsp]
-    have hpow_b_le := two_pow_provableB_le_space c_exp n_max
+    have hpow_b_le := DoubleTabulation.two_pow_provableB_le_space c_exp n_max
     have hfit_mask_b : Fits w (2 ^ DoubleTabulation.provableB n_max - 1) :=
       hfit_dt.of_le (by omega)
     have hfit_mask_M : Fits w (2 ^ M - 1) :=
@@ -2312,7 +2297,7 @@ theorem evalSingleCode_execWithin {w base c_exp n_max U M : ℕ}
     have hfit_dt : Fits w (base + DoubleTabulation.space (DoubleTabulation.provableC c_exp)
         (DoubleTabulation.provableD c_exp) (DoubleTabulation.provableB n_max)) := by
       rwa [← hsp]
-    have hpow_b_le := two_pow_provableB_le_space c_exp n_max
+    have hpow_b_le := DoubleTabulation.two_pow_provableB_le_space c_exp n_max
     have hfit_pow_b : Fits w (2 ^ DoubleTabulation.provableB n_max) :=
       hfit_dt.of_le (by omega)
     have hq_pos : 0 < Probability.trinomialDeg U M := by
