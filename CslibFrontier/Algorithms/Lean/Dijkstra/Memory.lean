@@ -47,8 +47,11 @@ file does not provide.
 ## Main results
 
 * `dijkstra_eq`: the client does not depend on the key and value bounds of its interfaces.
+* `frontier_init`: the initial frontier of the input words.
 * `holds_inputGraph`: the input holds the graph in the adjacency arrays.
+* `inputGraph_degree`, `inputGraph_edge`: what degree and edge queries read from those arrays.
 * `inv_input`: after allocation, the structures represent the initial state.
+* `eq_encodeDist`: a distance-table cell that decodes to the distance holds its encoding.
 * `run_spec`: admissibility, distances and memory cost of `run`.
 * `exists_run_logLinear`: the same with an `O((m + 1) log n)` cost function.
 
@@ -151,6 +154,11 @@ def run : Prog Unit := do
 
 /-! ## The input -/
 
+/-- The input words of `G` end just below address `n + 2 m + 4`, the initial frontier. -/
+theorem frontier_init (G : ListInstance) :
+    (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := by
+  simp only [Memory.State.init, G.encode_length]
+
 /-- The input convention holds the graph in the adjacency arrays `inputGraph`. -/
 theorem holds_inputGraph (G : ListInstance) :
     AdjacencyList.Memory.Holds (inputGraph G.n G.m) G.adj (Memory.State.init G.encode).mem := by
@@ -173,6 +181,59 @@ theorem holds_inputGraph (G : ListInstance) :
       2 * (G.offset u + i) + G.n + 5 by omega]
     exact G.init_weight (r := 0) u hi
 
+/-- What a degree query reads from the input adjacency arrays: the offsets of `u` and `u + 1` lie
+below the frontier, and differ by the out-degree of `u`. -/
+theorem inputGraph_degree {n m : ℕ} {adj : AdjacencyList.State n} {s : Memory.State}
+    (hA : AdjacencyList.Memory.Inv (inputGraph n m) adj s) (u : Fin n) :
+    3 + u.val < s.frontier ∧ 3 + (u.val + 1) < s.frontier ∧
+      s.mem (3 + (u.val + 1)) = s.mem (3 + u.val) + (adj u).length :=
+  ⟨hA.offsets_allocated.lt_frontier (Nat.lt_succ_of_lt u.isLt),
+    hA.offsets_allocated.lt_frontier (Nat.succ_lt_succ u.isLt), hA.holds.offset_succ u⟩
+
+/-- What an edge query reads from the input adjacency arrays: the offset of `u` and both words of
+its edge `i` lie below the frontier, and the words hold the target and the weight of the edge. -/
+theorem inputGraph_edge {n m : ℕ} {adj : AdjacencyList.State n} {s : Memory.State}
+    (hA : AdjacencyList.Memory.Inv (inputGraph n m) adj s) (u : Fin n) {i : ℕ}
+    (hi : i < (adj u).length) :
+    3 + u.val < s.frontier ∧ n + 4 + (2 * (s.mem (3 + u.val) + i) + 1) < s.frontier ∧
+      s.mem (n + 4 + 2 * (s.mem (3 + u.val) + i)) = ((adj u)[i]).1.val ∧
+      s.mem (n + 4 + (2 * (s.mem (3 + u.val) + i) + 1)) = ((adj u)[i]).2 :=
+  ⟨(inputGraph_degree hA u).1, hA.edges_allocated.lt_frontier (hA.holds.edge_lt u hi),
+    hA.holds.target u i hi, hA.holds.weight u i hi⟩
+
+/-- **The distance table and the graph after allocation.** Past the input of `G`, a distance table
+allocated without clearing, together with the adjacency arrays of the input, represent an empty
+distance map and the graph at every later frontier `F` that fits a word, and all their cells lie
+below `f + n`, where `f` is the initial frontier. This is what both heaps' `inv_input` share. -/
+theorem inv_tableGraph (G : ListInstance) {w V F : ℕ}
+    (hT : Dictionary.Memory.Valid ⟨(Memory.State.init G.encode).frontier, G.n⟩ w G.n V)
+    (hA : (inputGraph G.n G.m).Valid G.n)
+    (hF : (Memory.State.init G.encode).frontier + G.n ≤ F) (hfit : Fits w F) :
+    ((Dictionary.Memory.framed (n_max := G.n) hT).prod
+        (AdjacencyList.Memory.framed G.adj hA)).inv ⟨(Memory.State.init G.encode).mem, F⟩ ∧
+      ((Dictionary.Memory.framed (n_max := G.n) hT).prod
+        (AdjacencyList.Memory.framed G.adj hA)).abs ⟨(Memory.State.init G.encode).mem, F⟩ =
+        (Dictionary.empty G.n, G.adj) ∧
+      ∀ s, ∀ a ∈ ((Dictionary.Memory.framed (n_max := G.n) hT).prod
+        (AdjacencyList.Memory.framed G.adj hA)).footprint s,
+          a < (Memory.State.init G.encode).frontier + G.n := by
+  have hf := frontier_init G
+  obtain ⟨hTinv, hTabs⟩ := Dictionary.Memory.inv_alloc (U := G.n) (zeroAbove_init G.encode)
+  refine ⟨⟨Block.Allocated.mono hTinv hF,
+      ⟨by simp only [inputGraph, Block.Allocated]; omega,
+        by simp only [inputGraph, Block.Allocated]; omega, holds_inputGraph G⟩, ?_, hfit⟩,
+    Prod.ext hTabs rfl, fun s a ha => ?_⟩
+  · simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
+    rw [Finset.disjoint_left]
+    intro a ha hb
+    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
+      inputGraph, Finset.mem_union] at ha hb
+    omega
+  · simp only [Memory.Framed.prod_footprint, Dictionary.Memory.framed_footprint,
+      AdjacencyList.Memory.framed_footprint, Block.mem_footprint, Block.Owns,
+      AdjacencyList.Memory.Layout.footprint, inputGraph, Finset.mem_union] at ha
+    omega
+
 /-- **The structures after allocation.** Past the input of `G`, a distance table and then a heap,
 allocated without clearing, together with the adjacency arrays of the input, represent the
 initial state of Dijkstra's algorithm on `G`: an empty queue, an empty distance map and the
@@ -190,39 +251,22 @@ theorem inv_input (G : ListInstance) {w K V : ℕ}
       (framed hH hT hA G.adj).abs ⟨(Memory.State.init G.encode).mem,
         (Memory.State.init G.encode).frontier + G.n + 1 +
           PriorityQueue.BinaryHeap.space G.n⟩ = init G := by
-  set s₀ := Memory.State.init G.encode with hs₀
-  have hf₀ : s₀.frontier = G.n + 2 * G.m + 4 := by
-    simp only [s₀, Memory.State.init, G.encode_length]
-  have hz : ZeroAbove s₀ := zeroAbove_init _
-  set f := s₀.frontier with hf
-  have hf₁ : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := hf₀
-  obtain ⟨hHinv, hHabs⟩ := BinaryHeap.Memory.inv_allocated (s := ⟨s₀.mem, f + G.n⟩)
-    (hz.allocDirty G.n)
-  obtain ⟨hTinv, hTabs⟩ := Dictionary.Memory.inv_alloc (U := G.n) hz
-  have hsp : PriorityQueue.BinaryHeap.space G.n = 3 * G.n + 1 := rfl
-  refine ⟨⟨hHinv, ⟨Block.Allocated.mono hTinv (by simp only; omega),
-    ⟨by simp only [inputGraph, Block.Allocated]; omega,
-      by simp only [inputGraph, Block.Allocated]; omega, holds_inputGraph G⟩, ?_⟩, ?_⟩,
-    Prod.ext hHabs (Prod.ext hTabs rfl)⟩
-  · refine ⟨?_, hfit⟩
-    simp only [Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
-    rw [Finset.disjoint_left]
-    intro a ha hb
-    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
-      inputGraph, Finset.mem_union] at ha hb
-    omega
-  · refine ⟨?_, hfit⟩
-    simp only [Memory.Framed.prod_footprint, BinaryHeap.Memory.framed_footprint,
-      Dictionary.Memory.framed_footprint, AdjacencyList.Memory.framed_footprint]
-    rw [Finset.disjoint_left]
-    intro a ha hb
-    simp only [Block.mem_footprint, Block.Owns, AdjacencyList.Memory.Layout.footprint,
-      BinaryHeap.Memory.Layout.footprint, inputGraph, Finset.mem_union, hsp] at ha hb
-    omega
+  obtain ⟨hHinv, hHabs⟩ := BinaryHeap.Memory.inv_allocated
+    (s := ⟨(Memory.State.init G.encode).mem, (Memory.State.init G.encode).frontier + G.n⟩)
+    ((zeroAbove_init G.encode).allocDirty G.n)
+  obtain ⟨hTAinv, hTAabs, hTAlt⟩ := inv_tableGraph G hT hA (by omega) hfit
+  refine ⟨⟨hHinv, hTAinv, ?_, hfit⟩, Prod.ext hHabs hTAabs⟩
+  -- The heap lies past the table and the graph.
+  rw [Finset.disjoint_left]
+  intro a ha hb
+  simp only [BinaryHeap.Memory.framed_footprint] at ha
+  have := BinaryHeap.Memory.le_of_mem_footprint_allocated ha
+  have := hTAlt _ a hb
+  omega
 
 /-- A cell whose decoded value is `some d` exactly when the distance `D` is `d` holds the encoded
 distance. -/
-private theorem eq_encodeDist {x : ℕ} {D : ℕ∞}
+theorem eq_encodeDist {x : ℕ} {D : ℕ∞}
     (h : ∀ d : ℕ, Dictionary.Memory.decode x = some d ↔ D = d) : x = encodeDist D := by
   cases x with
   | zero =>
@@ -259,8 +303,7 @@ theorem run_triple (G : ListInstance) {w : ℕ}
     Triple w (Memory.State.init G.encode) run (memCost G.n G.m)
       fun _ s' => ∀ v : Fin G.n, s'.mem (G.outAddr v) = encodeDist (G.dist G.source v) := by
   set s₀ := Memory.State.init G.encode with hs₀
-  have hf₀ : s₀.frontier = G.n + 2 * G.m + 4 := by
-    simp only [s₀, Memory.State.init, G.encode_length]
+  have hf₀ : s₀.frontier = G.n + 2 * G.m + 4 := frontier_init G
   have hz : ZeroAbove s₀ := zeroAbove_init _
   have hn1 : s₀.mem 1 = G.n := rfl
   have hsrc : s₀.mem 2 = G.source := rfl

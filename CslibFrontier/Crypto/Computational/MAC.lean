@@ -584,8 +584,8 @@ theorem eval_run_signingOracle_eq_map_fst_signingPairOracle (M : MACScheme)
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk)) prog).run [])).map
       (fun (a, s') => (a, s'.map Prod.fst)) := by
-  rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
-  exact (ProbOracleComp.run_interpret_map_state
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.eval_run_interpret_eq_runWith]
+  exact (ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (M.signingPairOracle sk q s))
     (oracle' := fun q s => ProbComp.eval (M.signingOracle sk q s))
     (represent := List.map Prod.fst)
@@ -666,8 +666,8 @@ private theorem mem_support_signingPairOracle (M : MACScheme) (sk : List Bool)
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.signingPairOracle sk)) prog).run [])).support) :
     ∀ pair ∈ queriedPairs, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support := by
-  rw [ProbOracleComp.eval_run_interpret] at hmem
-  refine ProbOracleComp.run_interpret_invariant
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hmem
+  refine ProbOracleComp.runWith_invariant
     (fun q s => ProbComp.eval (M.signingPairOracle sk q s))
     (fun s => ∀ pair ∈ s, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support)
     ?_ prog [] (by simp) result queriedPairs hmem
@@ -871,15 +871,14 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningPairOracle (M : MACScheme)
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningPairOracle sk)) prog).run []) := by
-  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.run_interpret_map_state
+  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_run_interpret,
+    PMF.map_comp]
+  have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (M.oneTimeSigningPairOracle sk q s))
     (oracle' := fun q (state : Bool × List (List Bool × List Bool)) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (fun q s => ProbComp.eval (M.signingPairOracle sk q s)))
-        ((SignatureScheme.oneTimeFilterHandler bound (n, []) q).run state.1)).run state.2).map
+      (ProbOracleComp.runWith (fun q s => ProbComp.eval (M.signingPairOracle sk q s))
+          ((SignatureScheme.oneTimeFilterHandler bound (n, []) q).run state.1) state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
     (represent := fun queriedPairs => (!queriedPairs.isEmpty, queriedPairs))
     (step := by
@@ -934,8 +933,8 @@ theorem eval_run_oneTimeSigningOracle_eq_map_fst_oneTimeSigningPairOracle (M : M
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningPairOracle sk)) prog).run [])).map
       (fun (a, s') => (a, s'.map Prod.fst)) := by
-  rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
-  exact (ProbOracleComp.run_interpret_map_state
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.eval_run_interpret_eq_runWith]
+  exact (ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (M.oneTimeSigningPairOracle sk q s))
     (oracle' := fun q s => ProbComp.eval (M.oneTimeSigningOracle sk q s))
     (represent := List.map Prod.fst)
@@ -1002,8 +1001,8 @@ private theorem mem_support_oneTimeSigningPairOracle (M : MACScheme) (sk : List 
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (M.oneTimeSigningPairOracle sk)) prog).run [])).support) :
     ∀ pair ∈ queriedPairs, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support := by
-  rw [ProbOracleComp.eval_run_interpret] at hmem
-  refine ProbOracleComp.run_interpret_invariant
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hmem
+  refine ProbOracleComp.runWith_invariant
     (fun q s => ProbComp.eval (M.oneTimeSigningPairOracle sk q s))
     (fun s => ∀ pair ∈ s, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support)
     ?_ prog [] (by simp) result queriedPairs hmem
@@ -2085,8 +2084,8 @@ private theorem mem_support_signingPairOracle (M : NonceMACScheme) (sk : List Bo
         (M.signingPairOracle sk)) prog).run [])).support) :
     ∀ triple ∈ queriedTriples,
       triple.2 ∈ (ProbComp.eval (M.sign sk triple.1.1 triple.1.2)).support := by
-  rw [ProbOracleComp.eval_run_interpret] at hmem
-  refine ProbOracleComp.run_interpret_invariant
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hmem
+  refine ProbOracleComp.runWith_invariant
     (fun q s => ProbComp.eval (M.signingPairOracle sk q s))
     (fun s => ∀ triple ∈ s,
       triple.2 ∈ (ProbComp.eval (M.sign sk triple.1.1 triple.1.2)).support)

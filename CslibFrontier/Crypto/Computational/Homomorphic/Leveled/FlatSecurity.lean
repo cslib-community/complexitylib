@@ -91,19 +91,8 @@ theorem isPPT_flatLeveledAdversary {E : Scheme}
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     (flatLeveledAdversary E attempts depth capacity adversary).IsPPT := by
-  have htag (first second : Bool) :
-      ComputableInPolyTime (tagLeveledChoice first second)
-        (encPair (encPair encBool encBool) encBits)
-        (encPair (encPair encBool encBool) encBits) := by
-    unfold tagLeveledChoice
-    exact (ComputableInPolyTime.fst _ _).prod
-      (ComputableInPolyTime.bitsCons (by fun_prop)
-        (ComputableInPolyTime.bitsCons (by fun_prop) (ComputableInPolyTime.snd _ _)))
-  have hswap : ComputableInPolyTime swapLeveledChoice
-      (encPair (encPair encBool encBool) encBits)
-      (encPair (encPair encBool encBool) encBits) := by
-    unfold swapLeveledChoice
-    fun_prop
+  have htag := computableInPolyTime_tagLeveledChoice
+  have hswap := computableInPolyTime_swapLeveledChoice
   have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
   have hlev := isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity
   constructor

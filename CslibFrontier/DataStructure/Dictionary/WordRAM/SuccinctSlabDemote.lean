@@ -617,11 +617,8 @@ theorem demoteArrInv_step {α : Type*} {n_max b k : ℕ} {gm₀ gm : ℕ → ℕ
   · intro r hr
     have hr_cap' : r < tailCapPerBucket n_max := by
       unfold tailCapPerBucket; rw [ite_eq_right hb0]; omega
-    have hd_lt : b * tailCapPerBucket n_max + r < maxTailItems n_max := by
-      unfold maxTailItems
-      have h1 : (b + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb
-      nlinarith
+    have hd_lt : b * tailCapPerBucket n_max + r < maxTailItems n_max :=
+      mul_tailCapPerBucket_add_lt_maxTailItems hb hr_cap'
     rw [gmTailPtrIdx, hptr_val _ hd_lt]
     by_cases hreq : r = k
     · subst hreq
@@ -746,11 +743,8 @@ theorem demoteLoopInv_step {U V w₀ n_max h_space base b k : ℕ}
     have hr_eq := hloop.r_other b' hb' hne
     have hr_le := hloop.tail_bij.r_le b' hb'
     omega
-  have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-    unfold maxTailItems
-    have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-      Nat.mul_le_mul_right _ hb'
-    nlinarith
+  have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max :=
+    mul_tailCapPerBucket_add_lt_maxTailItems hb' hr_cap'
   have hd_ne : b' * tailCapPerBucket n_max + r ≠
       b * tailCapPerBucket n_max + gm (gmRIdx b) := by
     intro heq
@@ -1010,11 +1004,8 @@ theorem slotOf_gmPopSlab_preserve {α : Type*} {n_max b : ℕ} {gm₀ gm : ℕ �
         dsimp only [r]; omega
       have hr_cap : r < tailCapPerBucket n_max := by
         unfold tailCapPerBucket; rw [ite_eq_right hb0]; omega
-      have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-        unfold maxTailItems
-        have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-          Nat.mul_le_mul_right _ hb'
-        nlinarith
+      have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max :=
+        mul_tailCapPerBucket_add_lt_maxTailItems hb' hr_cap
       rw [hf.2.2.2.2 _ (by unfold gmTailPtrIdx gmTailPtrFlatIdx; omega)
         (by unfold gmTailPtrIdx gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega)]
       rw [harr.demoted_tail r hr_lt, htop_eq0]
@@ -1040,11 +1031,8 @@ theorem slotOf_gmPopSlab_preserve {α : Type*} {n_max b : ℕ} {gm₀ gm : ℕ �
       set r := j - gm₀ (gmQIdx b') * slabSize n_max
       have hr_lt : r < gm₀ (gmRIdx b') := by dsimp only [r]; omega
       have hr_cap : r < tailCapPerBucket n_max := lt_of_lt_of_le hr_lt (htail₀.r_le b' hb')
-      have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-        unfold maxTailItems
-        have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-          Nat.mul_le_mul_right _ hb'
-        nlinarith
+      have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max :=
+        mul_tailCapPerBucket_add_lt_maxTailItems hb' hr_cap
       rw [hf.2.2.2.2 _ (by unfold gmTailPtrIdx gmTailPtrFlatIdx; omega)
         (by unfold gmTailPtrIdx gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega),
         htail_other b' hb' hbeq r hr_lt]

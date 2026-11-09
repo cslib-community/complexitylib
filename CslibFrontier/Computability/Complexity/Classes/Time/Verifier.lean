@@ -143,8 +143,7 @@ theorem exists_verifier_of_mem_NTIME {A : Set α} {t : ℕ → ℕ} (hA : A ∈ 
       have hc := hcr p
       simp only [Function.comp_apply, encBits_apply] at hc
       have hle : (enc p.1).length ≤ (encPair enc encBits p).length := by
-        simp only [encPair_apply, List.length_append, length_frame, encBits_apply]
-        omega
+        grind [encPair_apply, List.length_append, length_frame, encBits_apply]
       have hsw : (encPair encBits encBits (p.2, enc p.1)).length ≤
           2 * (encPair enc encBits p).length := by
         simp only [encPair_apply, List.length_append, length_frame, encBits_apply]

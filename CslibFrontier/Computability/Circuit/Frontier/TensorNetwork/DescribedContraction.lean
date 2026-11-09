@@ -17,6 +17,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.Pol
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -453,6 +454,9 @@ abbrev encNode : Node Q T ↪ List Bool :=
 /-- The encoding of an accumulator: the counter in binary and the value. -/
 abbrev encAcc : ℕ × Y ↪ List Bool := encPair encNat encY
 
+/-- The encoding of a vertex: its framed list of ports in binary, then its descriptor. -/
+abbrev encVertex : List ℕ × T ↪ List Bool := encPair (encList encNat) encT
+
 variable {encQ encY encT}
 
 attribute [local irreducible] ComputableInPolyTime
@@ -466,7 +470,7 @@ theorem numEdges_polyTime :
 /-- The vertices of a described network. -/
 theorem vertices_polyTime :
     ComputableInPolyTime (fun d : DescribedNetwork T => d.vertices) (encDescribed encT)
-      (encList (encPair (encList encNat) encT)) :=
+      (encList (encVertex encT)) :=
   (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.of_eq (f := equivProd) fun _ => rfl)
 
 /-- The kind of a node. -/
@@ -572,12 +576,12 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
 /-- The descriptor of a vertex and the bits of the node's word on its ports. -/
 theorem query_polyTime :
     ComputableInPolyTime (fun p : Node Q T × (List ℕ × T) => (p.2.2, wordBits p.1.2.2.1 p.2.1))
-      (encPair (encNode encQ encT) (encPair (encList encNat) encT)) (encPair encT encBits) := by
-  have hv := ComputableInPolyTime.snd (encNode encQ encT) (encPair (encList encNat) encT)
+      (encPair (encNode encQ encT) (encVertex encT)) (encPair encT encBits) := by
+  have hv := ComputableInPolyTime.snd (encNode encQ encT) (encVertex encT)
   have hports := (ComputableInPolyTime.fst (encList encNat) encT).comp hv
   have hword := word_polyTime.comp (ComputableInPolyTime.fst (encNode encQ encT)
-    (encPair (encList encNat) encT))
-  let E := encPair (encNode encQ encT) (encPair (encList encNat) encT)
+    (encVertex encT))
+  let E := encPair (encNode encQ encT) (encVertex encT)
   have hbit : ComputableInPolyTime (fun z : (Node Q T × (List ℕ × T)) × ℕ =>
       z.1.1.2.2.1.getD z.2 false) (encPair E encNat) encBool :=
     ComputableInPolyTime.listGetD_binary (encA := encBool) (encL := encBits) false
@@ -589,14 +593,14 @@ theorem query_polyTime :
 /-- The vertex of a node, if its index is in range. -/
 noncomputable def vertexCertificate :
     NativeCertificate (fun x : Node Q T => x.2.1.2.vertices[x.2.2.2]?) (encNode encQ encT)
-      (encOption (encPair (encList encNat) encT)) :=
+      (encOption (encVertex encT)) :=
   NativeCertificate.ofPolyTime (ComputableInPolyTime.getElem?
     (vertices_polyTime.comp network_polyTime) index_polyTime)
 
 /-- The query to the evaluator: the descriptor and the bits on the ports. -/
 noncomputable def queryCertificate :
     NativeCertificate (fun p : Node Q T × (List ℕ × T) => (p.2.2, wordBits p.1.2.2.1 p.2.1))
-      (encPair (encNode encQ encT) (encPair (encList encNat) encT)) (encPair encT encBits) :=
+      (encPair (encNode encQ encT) (encVertex encT)) (encPair encT encBits) :=
   NativeCertificate.ofPolyTime query_polyTime
 
 /-- The zero at the precision of a node. -/
@@ -700,10 +704,26 @@ noncomputable def contractionCertificate [Inhabited Y] (hops : ops.PolyTime encQ
 /-- The number of edges and the number of vertices are at most the encoded length. -/
 theorem length_numEdges_vertices_le (d : DescribedNetwork T) :
     d.numEdges + d.vertices.length ≤ (encDescribed encT d).length := by
-  have h := length_le_length_encList (encPair (encList encNat) encT) d.vertices
+  have h := length_le_length_encList (encVertex encT) d.vertices
   change d.numEdges + d.vertices.length ≤
-    (encPair encUnary (encList (encPair (encList encNat) encT)) (d.numEdges, d.vertices)).length
+    (encPair encUnary (encList (encVertex encT)) (d.numEdges, d.vertices)).length
   enc_len
+
+/-- An encoded vertex is at most the encoded network long. -/
+theorem length_vertex_le (d : DescribedNetwork T) {v : List ℕ × T} (hv : v ∈ d.vertices) :
+    (encVertex encT v).length ≤ (encDescribed encT d).length := by
+  refine (length_le_encList_of_mem (encVertex encT) hv).trans ?_
+  change _ ≤ (encPair encUnary (encList (encVertex encT)) (d.numEdges, d.vertices)).length
+  enc_len
+
+/-- The encoded argument of the evaluator at a vertex and bits on its ports is at most three
+times the encoded network length plus a constant. -/
+theorem length_entryInput_le (d : DescribedNetwork T) {v : List ℕ × T} (hv : v ∈ d.vertices)
+    {bs : List Bool} (hbs : bs.length = v.1.length) :
+    (encPair encT encBits (v.2, bs)).length + 1 ≤ 3 * ((encDescribed encT d).length + 1) := by
+  have h1 := d.length_vertex_le (encT := encT) hv
+  have h2 := length_le_length_encList encNat v.1
+  enc_len at h1 ⊢
 
 /-- A node of the right shape is at most `5 n + 7` long, for `n` the length of the input. -/
 theorem length_encNode_le {q : Q × DescribedNetwork T} {x : Node Q T} (hx : NodeShape q x) :
@@ -782,16 +802,8 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
   have hmk := length_numEdges_vertices_le (encT := encT) d
   -- Every vertex is at most `n` long.
   have hvlen (v : List ℕ × T) (hv : v ∈ d.vertices) :
-      (encPair (encList encNat) encT v).length ≤ n := by
-    have h1 := List.le_sum_of_mem (List.mem_map_of_mem (f := fun a =>
-      (encPair (encList encNat) encT a).length) hv)
-    have h2 := sum_length_le_length_encList (encPair (encList encNat) encT) d.vertices
-    have h3 : (encList (encPair (encList encNat) encT) d.vertices).length ≤
-        (encDescribed encT d).length := by
-      change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-        (d.numEdges, d.vertices)).length
-      enc_len
-    omega
+      (encVertex encT v).length ≤ n :=
+    (d.length_vertex_le hv).trans (by omega)
   have hnode (x : Node Q T) (hx : (sumInvariant ops eval (P, d)).node x) :
       (encNode encQ encT x).length ≤ 5 * z + 7 := (length_encNode_le hx).trans (by omega)
   -- The leaf step: the vertex lookup, and the zero or the query and the evaluator.
@@ -821,11 +833,10 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
       obtain ⟨hq, -, -, -⟩ := hx
       rw [hq] at hmem
       have h3 := hvlen v hmem
-      have hxv {c e : ℕ} : c * ((encPair (encNode encQ encT) (encPair (encList encNat) encT)
+      have hxv {c e : ℕ} : c * ((encPair (encNode encQ encT) (encVertex encT)
           (x, v)).length + 1) ^ e ≤ c * (11 * z + 16) ^ e := by
         refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
-        have := length_encPair (enc₁ := encNode encQ encT)
-          (enc₂ := encPair (encList encNat) encT) (x, v)
+        have := length_encPair (enc₁ := encNode encQ encT) (enc₂ := encVertex encT) (x, v)
         dsimp only at this
         omega
       have h4 := (hqt (x, v)).trans hxv

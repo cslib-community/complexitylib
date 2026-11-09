@@ -1092,6 +1092,64 @@ private theorem HKVisLe.vset (vis : Vector Bool r) (v : Fin r) : HKVisLe vis (vs
   · rw [vget_vset_ne vis true (Ne.symm hxv)]
     exact hx
 
+/-- A layered path whose first edge ends at a right vertex `v` matched to `w` continues with a
+layered path from `w` in the next layer. -/
+private theorem IsLayeredPath.of_mate {mate : Vector (Option (Fin m)) r} {U : Finset (Fin r)}
+    {u w : Fin m} {v : Fin r} {i : ℕ} {q : List (Fin m × Fin r)} (hw : (w, v) ∈ mateMatching mate)
+    (h : IsLayeredPath G (mateMatching mate) U k u i ((u, v) :: q)) :
+    IsLayeredPath G (mateMatching mate) U k w (i + 1) q := by
+  rcases h.cons_cases.2.2 with ⟨_, hfree⟩ | ⟨w', hw', hp⟩
+  · exact absurd (mem_matchedRight.mpr ⟨w, hw⟩) hfree
+  · rwa [← mate_unique hw hw'] at hp
+
+/-- Marking `v` visited while pushing it on the search stack preserves the visited invariant. -/
+private theorem HKVisInv.push {acc : List (Fin m × Fin r)} {S : Finset (Fin r)}
+    {vis : Vector Bool r} (h : HKVisInv G M k acc S vis) (v : Fin r) :
+    HKVisInv G M k acc (insert v S) (vset vis v true) := by
+  refine ⟨fun x hx => HKVisLe.vset vis v x (h.acc_vis x hx), fun x hx => ?_⟩
+  by_cases hxv : x = v
+  · subst hxv
+    exact .inr (.inl (Finset.mem_insert_self _ _))
+  · rw [vget_vset_ne vis true (Ne.symm hxv)] at hx
+    rcases h.vis_cases x hx with h | h | h
+    · exact .inl h
+    · exact .inr (.inl (Finset.mem_insert_of_mem h))
+    · exact .inr (.inr h)
+
+/-- Prepending a visited edge `(u, v)` to the accumulated paths moves `v` from the search stack
+to the matched vertices. -/
+private theorem HKVisInv.cons {acc : List (Fin m × Fin r)} {S : Finset (Fin r)}
+    {vis : Vector Bool r} {u : Fin m} {v : Fin r} (h : HKVisInv G M k acc (insert v S) vis)
+    (hv : vget vis v = true) : HKVisInv G M k ((u, v) :: acc) S vis := by
+  refine ⟨fun x hx => ?_, fun x hx => ?_⟩
+  · rcases mem_matchedRight_cons.mp hx with rfl | hx
+    · exact hv
+    · exact h.acc_vis x hx
+  · rcases h.vis_cases x hx with h | h | h
+    · exact .inl (matchedRight_subset_cons _ _ h)
+    · rcases Finset.mem_insert.mp h with rfl | h
+      · exact .inl (mem_matchedRight_cons.mpr (.inl rfl))
+      · exact .inr (.inl h)
+    · exact .inr (.inr (h.mono (matchedRight_subset_cons _ _)))
+
+/-- Popping `v` from the search stack after the scan from its mate `w` in layer `j` found no
+layered path preserves the visited invariant: `v` is now dead. -/
+private theorem HKVisInv.pop {mate : Vector (Option (Fin m)) r} {acc : List (Fin m × Fin r)}
+    {S : Finset (Fin r)} {vis : Vector Bool r} {w : Fin m} {v : Fin r} {j : ℕ}
+    (h : HKVisInv G (mateMatching mate) k acc (insert v S) vis) (hw : (w, v) ∈ mateMatching mate)
+    (hwl : IsLayer G (mateMatching mate) w j)
+    (hblk : ∀ q, ¬ IsLayeredPath G (mateMatching mate) (matchedRight acc.toFinset) k w j q) :
+    HKVisInv G (mateMatching mate) k acc S vis := by
+  refine ⟨h.acc_vis, fun x hx => ?_⟩
+  rcases h.vis_cases x hx with h | h | h
+  · exact .inl h
+  · rcases Finset.mem_insert.mp h with rfl | h
+    · refine .inr (.inr ⟨w, hw, fun i' q hq => ?_⟩)
+      obtain rfl := hwl.unique hq.isLayer
+      exact hblk q hq
+    · exact .inr (.inl h)
+  · exact .inr (.inr h)
+
 /-- Postcondition of a depth-first scan from `u` in layer `i`. On success the found path is
 prepended to `acc`; on failure `blocked` holds. -/
 private structure HKDfsPost (G : Fin m × Fin r → Bool) (M : Finset (Fin m × Fin r)) (k : ℕ)
@@ -1102,10 +1160,38 @@ private structure HKDfsPost (G : Fin m × Fin r → Bool) (M : Finset (Fin m × 
     IsLayeredPath G M (matchedRight acc.toFinset) k u i q ∧ HKVisInv G M k p S res.1
   fail : res.2 = none → HKVisInv G M k acc S res.1 ∧ blocked
 
+/-- Skipping a candidate `v` from which no layered path through `(u, v)` exists, and then
+scanning the rest `vs` from a larger visited table, satisfies the postcondition for `v :: vs`. -/
+private theorem HKDfsPost.skip {u : Fin m} {i : ℕ} {acc : List (Fin m × Fin r)}
+    {S : Finset (Fin r)} {vis vis' : Vector Bool r} {v : Fin r} {vs : List (Fin r)}
+    {res : Vector Bool r × Option (List (Fin m × Fin r))}
+    (h : HKDfsPost G M k u i acc S vis'
+      (∀ v' ∈ vs, ∀ q, ¬ IsLayeredPath G M (matchedRight acc.toFinset) k u i ((u, v') :: q)) res)
+    (hle : HKVisLe vis vis')
+    (hv : ∀ q, ¬ IsLayeredPath G M (matchedRight acc.toFinset) k u i ((u, v) :: q)) :
+    HKDfsPost G M k u i acc S vis
+      (∀ v' ∈ v :: vs, ∀ q, ¬ IsLayeredPath G M (matchedRight acc.toFinset) k u i ((u, v') :: q))
+      res := by
+  refine ⟨hle.trans h.le, h.found, fun hn => ⟨(h.fail hn).1, fun v' hv' => ?_⟩⟩
+  rcases List.mem_cons.mp hv' with rfl | hv'
+  · exact hv
+  · exact (h.fail hn).2 v' hv'
+
 /-- Right vertices on the search stack are matched to left vertices of layers `≤ i`. -/
 private def HKStackOK (G : Fin m × Fin r → Bool) (M : Finset (Fin m × Fin r)) (S : Finset (Fin r))
     (i : ℕ) : Prop :=
   ∀ v ∈ S, ∃ w j, (w, v) ∈ M ∧ IsLayer G M w j ∧ j ≤ i
+
+/-- Pushing the right vertex `v`, matched to `w` in layer `i + 1`, keeps the stack invariant one
+layer down. -/
+private theorem HKStackOK.insert {S : Finset (Fin r)} {i : ℕ} {w : Fin m} {v : Fin r}
+    (hS : HKStackOK G M S i) (hw : (w, v) ∈ M) (hwl : IsLayer G M w (i + 1)) :
+    HKStackOK G M (insert v S) (i + 1) := by
+  intro x hx
+  rcases Finset.mem_insert.mp hx with rfl | hx
+  · exact ⟨w, i + 1, hw, hwl, le_rfl⟩
+  · obtain ⟨w', j, h1, h2, h3⟩ := hS x hx
+    exact ⟨w', j, h1, h2, by omega⟩
 
 /-- Specification of a depth-first search procedure from layer `i`. -/
 private def HKDfsSpec (G : Fin m × Fin r → Bool) (M : Finset (Fin m × Fin r)) (k i : ℕ)
@@ -1142,51 +1228,24 @@ private theorem hkDfsLevelM_post
       fun _ => ⟨hinv, fun v hv => absurd hv List.not_mem_nil⟩⟩
   | cons v vs ih =>
     intro vis hinv
-    have skip : ∀ vis', HKVisLe vis vis' → HKVisInv G (mateMatching mate) k acc S vis' →
-        (∀ q, ¬ IsLayeredPath G (mateMatching mate) (matchedRight acc.toFinset) k u i
-          ((u, v) :: q)) →
-        HKDfsPost G (mateMatching mate) k u i acc S vis
-          (∀ v' ∈ v :: vs, ∀ q, ¬ IsLayeredPath G (mateMatching mate)
-            (matchedRight acc.toFinset) k u i ((u, v') :: q))
-          (hkDfsLevelM G mate dist accept i next u vs vis' acc).ret := by
-      intro vis' hle hinv' hblk
-      have h := ih vis' hinv'
-      refine ⟨hle.trans h.le, h.found, fun hn => ⟨(h.fail hn).1, fun v' hv' => ?_⟩⟩
-      rcases List.mem_cons.mp hv' with rfl | hv'
-      · exact hblk
-      · exact (h.fail hn).2 v' hv'
     simp only [hkDfsLevelM, TimeM.ret_bind]
     by_cases hc : G (u, v) = true ∧ vget vis v = false
     · rw [ite_eq_left hc]
-      have hvU : v ∉ matchedRight acc.toFinset := fun h => by
-        have := hinv.acc_vis v h
-        rw [hc.2] at this
-        exact nomatch this
+      have hvU : v ∉ matchedRight acc.toFinset := fun h =>
+        Bool.false_ne_true (hc.2.symm.trans (hinv.acc_vis v h))
       cases hm : vget mate v with
       | none =>
         simp only
         by_cases ha : accept = true
-        · rw [ite_eq_left ha, TimeM.ret_pure]
-          have hik' : i = k := hacc.mp ha
-          subst hik'
+        · -- The last layer: `v` is free, so `(u, v)` completes an augmenting path.
+          rw [ite_eq_left ha, TimeM.ret_pure]
+          obtain rfl : i = k := hacc.mp ha
           refine ⟨HKVisLe.vset vis v, fun p hp => ?_, fun hp => (nomatch hp)⟩
-          have hp' : p = (u, v) :: acc := (Option.some.inj hp).symm
-          subst hp'
-          refine ⟨[(u, v)], rfl,
-            .last hu hc.1 (vget_mate_eq_none_iff.mp hm) hvU, ⟨fun x hx => ?_, fun x hx => ?_⟩⟩
-          · rcases mem_matchedRight_cons.mp hx with rfl | hx
-            · exact vget_vset_self vis _ true
-            · exact HKVisLe.vset vis v x (hinv.acc_vis x hx)
-          · by_cases hxv : x = v
-            · subst hxv
-              exact .inl (mem_matchedRight_cons.mpr (.inl rfl))
-            · rw [vget_vset_ne vis true (Ne.symm hxv)] at hx
-              rcases hinv.vis_cases x hx with h | h | h
-              · exact .inl (matchedRight_subset_cons _ _ h)
-              · exact .inr (.inl h)
-              · exact .inr (.inr (h.mono (matchedRight_subset_cons _ _)))
+          obtain rfl : p = (u, v) :: acc := (Option.some.inj hp).symm
+          exact ⟨[(u, v)], rfl, .last hu hc.1 (vget_mate_eq_none_iff.mp hm) hvU,
+            (hinv.push v).cons (vget_vset_self vis _ true)⟩
         · rw [ite_eq_right ha]
-          refine skip vis (HKVisLe.refl vis) hinv fun q hq => ?_
+          refine (ih vis hinv).skip (HKVisLe.refl vis) fun q hq => ?_
           rcases hq.cons_cases.2.2 with ⟨hik', _⟩ | ⟨w, hw, _⟩
           · exact ha (hacc.mpr hik')
           · rw [mem_mateMatching, hm] at hw
@@ -1194,103 +1253,52 @@ private theorem hkDfsLevelM_post
       | some w =>
         simp only
         have hwM : (w, v) ∈ mateMatching mate := mem_mateMatching.mpr hm
-        have hvM : v ∈ matchedRight (mateMatching mate) := mem_matchedRight.mpr ⟨w, hwM⟩
         by_cases hb : accept = false ∧ vget dist w = some (i + 1)
-        · rw [ite_eq_left hb]
+        · -- Recurse from the mate `w` of `v` in the next layer, with `v` on the stack.
+          rw [ite_eq_left hb]
           simp only [TimeM.ret_bind]
-          have hik1 : i + 1 ≤ k := by
-            rcases Nat.lt_or_eq_of_le hik with h | h
-            · omega
-            · have := hacc.mpr h
-              rw [hb.1] at this
-              exact nomatch this
+          have hik1 : i + 1 ≤ k :=
+            lt_of_le_of_ne hik fun h => Bool.false_ne_true (hb.1.symm.trans (hacc.mpr h))
           have hwl : IsLayer G (mateMatching mate) w (i + 1) := (hex w (i + 1) hik1).mp hb.2
-          have hS' : HKStackOK G (mateMatching mate) (insert v S) (i + 1) := by
-            intro x hx
-            rcases Finset.mem_insert.mp hx with rfl | hx
-            · exact ⟨w, i + 1, hwM, hwl, le_rfl⟩
-            · obtain ⟨w', j, h1, h2, h3⟩ := hS x hx
-              exact ⟨w', j, h1, h2, by omega⟩
-          have hinv' : HKVisInv G (mateMatching mate) k acc (insert v S) (vset vis v true) := by
-            refine ⟨fun x hx => HKVisLe.vset vis v x (hinv.acc_vis x hx), fun x hx => ?_⟩
-            by_cases hxv : x = v
-            · subst hxv
-              exact .inr (.inl (Finset.mem_insert_self _ _))
-            · rw [vget_vset_ne vis true (Ne.symm hxv)] at hx
-              rcases hinv.vis_cases x hx with h | h | h
-              · exact .inl h
-              · exact .inr (.inl (Finset.mem_insert_of_mem h))
-              · exact .inr (.inr h)
-          have hspec := hnext hb.1 w (vset vis v true) acc (insert v S) hwl hS' hinv'
+          have hspec := hnext hb.1 w (vset vis v true) acc (insert v S) hwl (hS.insert hwM hwl)
+            (hinv.push v)
           generalize (next w (vset vis v true) acc).ret = res at hspec ⊢
           obtain ⟨vis', o⟩ := res
           have hle : HKVisLe vis vis' := (HKVisLe.vset vis v).trans hspec.le
           cases o with
           | some p' =>
             simp only [TimeM.ret_pure]
-            obtain ⟨q, hq_eq, hqpath, hqinv⟩ := hspec.found p' rfl
+            obtain ⟨q, rfl, hqpath, hqinv⟩ := hspec.found p' rfl
             refine ⟨hle, fun p hp => ?_, fun hp => (nomatch hp)⟩
-            have hp' : p = (u, v) :: p' := (Option.some.inj hp).symm
-            subst hp'
-            refine ⟨(u, v) :: q, by rw [hq_eq]; rfl, .cons hu hc.1 hwM hvU hqpath,
-              ⟨fun x hx => ?_, fun x hx => ?_⟩⟩
-            · rcases mem_matchedRight_cons.mp hx with rfl | hx
-              · exact hspec.le _ (vget_vset_self vis _ true)
-              · exact hqinv.acc_vis x hx
-            · rcases hqinv.vis_cases x hx with h | h | h
-              · exact .inl (matchedRight_subset_cons _ _ h)
-              · rcases Finset.mem_insert.mp h with rfl | h
-                · exact .inl (mem_matchedRight_cons.mpr (.inl rfl))
-                · exact .inr (.inl h)
-              · exact .inr (.inr (h.mono (matchedRight_subset_cons _ _)))
+            obtain rfl : p = (u, v) :: (q ++ acc) := (Option.some.inj hp).symm
+            exact ⟨(u, v) :: q, rfl, .cons hu hc.1 hwM hvU hqpath,
+              hqinv.cons (hspec.le _ (vget_vset_self vis _ true))⟩
           | none =>
             simp only
             obtain ⟨hinv1, hblk⟩ := hspec.fail rfl
-            refine skip vis' hle ⟨hinv1.acc_vis, fun x hx => ?_⟩ fun q hq => ?_
-            · rcases hinv1.vis_cases x hx with h | h | h
-              · exact .inl h
-              · rcases Finset.mem_insert.mp h with rfl | h
-                · refine .inr (.inr ⟨w, hwM, fun i' q hq => ?_⟩)
-                  have := hwl.unique hq.isLayer
-                  subst this
-                  exact hblk q hq
-                · exact .inr (.inl h)
-              · exact .inr (.inr h)
-            · rcases hq.cons_cases.2.2 with ⟨_, hfree⟩ | ⟨w', hw', hp⟩
-              · exact hfree hvM
-              · rw [← mate_unique hwM hw'] at hp
-                exact hblk q hp
-        · rw [ite_eq_right hb]
-          refine skip vis (HKVisLe.refl vis) hinv fun q hq => ?_
-          rcases hq.cons_cases.2.2 with ⟨_, hfree⟩ | ⟨w', hw', hp⟩
-          · exact hfree hvM
-          · rw [← mate_unique hwM hw'] at hp
-            refine hb ⟨?_, (hex w (i + 1) hp.le).mpr hp.isLayer⟩
-            cases ha : accept with
-            | false => rfl
-            | true =>
-              have := hacc.mp ha
-              have := hp.le
-              omega
-    · rw [ite_eq_right hc]
-      refine skip vis (HKVisLe.refl vis) hinv fun q hq => ?_
-      obtain ⟨hG, hU, hcase⟩ := hq.cons_cases
-      have hvis : vget vis v = true := by
-        cases h : vget vis v with
-        | true => rfl
-        | false => exact absurd ⟨hG, h⟩ hc
+            exact (ih vis' (hinv1.pop hwM hwl hblk)).skip hle fun q hq => hblk q (hq.of_mate hwM)
+        · -- The mate of `v` is not in the next layer, so no layered path uses `(u, v)`.
+          rw [ite_eq_right hb]
+          refine (ih vis hinv).skip (HKVisLe.refl vis) fun q hq => ?_
+          have hp := hq.of_mate hwM
+          refine hb ⟨?_, (hex w (i + 1) hp.le).mpr hp.isLayer⟩
+          cases ha : accept with
+          | false => rfl
+          | true =>
+            have := hacc.mp ha
+            have := hp.le
+            omega
+    · -- `(u, v)` is not an edge or `v` was already visited.
+      rw [ite_eq_right hc]
+      refine (ih vis hinv).skip (HKVisLe.refl vis) fun q hq => ?_
+      obtain ⟨hG, hU, -⟩ := hq.cons_cases
+      have hvis : vget vis v = true := Bool.of_not_eq_false fun h => hc ⟨hG, h⟩
       rcases hinv.vis_cases v hvis with h | h | ⟨w, hw, hdead⟩
       · exact hU h
       · obtain ⟨w, j, hw, hwl, hj⟩ := hS v h
-        rcases hcase with ⟨_, hfree⟩ | ⟨w', hw', hp⟩
-        · exact hfree (mem_matchedRight.mpr ⟨w, hw⟩)
-        · rw [← mate_unique hw hw'] at hp
-          have := hwl.unique hp.isLayer
-          omega
-      · rcases hcase with ⟨_, hfree⟩ | ⟨w', hw', hp⟩
-        · exact hfree (mem_matchedRight.mpr ⟨w, hw⟩)
-        · rw [← mate_unique hw hw'] at hp
-          exact hdead _ q hp
+        have := hwl.unique (hq.of_mate hw).isLayer
+        omega
+      · exact hdead _ q (hq.of_mate hw)
 
 end DfsLevel
 
