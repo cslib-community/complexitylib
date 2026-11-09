@@ -227,25 +227,6 @@ private theorem intCast_odd {R : Type*} [CommRing R] {u : ℤ} (hu : Odd u) :
 
 /-! ### Odd parts -/
 
-/-- An integer is `2 ^ v₂(n)` times its odd part. -/
-private theorem two_pow_mul_ediv (n : ℤ) : 2 ^ padicValInt 2 n * (n / 2 ^ padicValInt 2 n) = n :=
-  Int.mul_ediv_cancel' (by exact_mod_cast padicValInt_dvd (p := 2) n)
-
-/-- The odd part of a nonzero integer is odd. -/
-theorem odd_ediv_two_pow {n : ℤ} (hn : n ≠ 0) : Odd (n / 2 ^ padicValInt 2 n) := by
-  rw [← Int.not_even_iff_odd, even_iff_two_dvd]
-  rintro ⟨c, hc⟩
-  have h2 : (2 : ℤ) ^ (padicValInt 2 n + 1) ∣ n := ⟨c, by
-    calc n = 2 ^ padicValInt 2 n * (n / 2 ^ padicValInt 2 n) := (two_pow_mul_ediv n).symm
-      _ = 2 ^ (padicValInt 2 n + 1) * c := by rw [hc, pow_succ]; ring⟩
-  have h := (padicValInt_dvd_iff (p := 2) (padicValInt 2 n + 1) n).mp (by exact_mod_cast h2)
-  omega
-
-/-- The odd part of a nonzero integer is nonzero. -/
-private theorem ediv_two_pow_ne_zero {n : ℤ} (hn : n ≠ 0) : n / 2 ^ padicValInt 2 n ≠ 0 := by
-  intro h
-  exact hn (by rw [← two_pow_mul_ediv n, h, mul_zero])
-
 /-- An integer not divisible by `2 ^ (i + 1)` has valuation at most `i`. -/
 theorem padicValInt_le_of_not_dvd {n : ℤ} {i : ℕ} (hn : ¬ (2 : ℤ) ^ (i + 1) ∣ n) :
     padicValInt 2 n ≤ i := by
