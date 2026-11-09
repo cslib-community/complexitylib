@@ -285,9 +285,7 @@ theorem iterate_card_halting [Fintype Q] [Fintype Γ] (M : Machine Q Γ h)
   · obtain ⟨t₀, _, hp, hfirst, he⟩ := absorb_iterate_card M.step H z ⟨t, ht⟩
     rw [ha] at he
     rw [he]
-    have ht₀ : t₀ ≤ t := by
-      by_contra hc
-      exact hfirst t (by omega) ht
+    have ht₀ : t₀ ≤ t := by grind
     have hfix := Function.iterate_fixed (M.step_of_halting hM _ hp) (t - t₀)
     rw [← Function.iterate_add_apply, Nat.sub_add_cancel ht₀] at hfix
     exact hfix.symm
