@@ -391,8 +391,8 @@ theorem pairwise_expand {pre : List ℕ} {nodes : List (List (Literal ℕ))} (v 
     rcases hx with rfl | rfl <;> rcases hy with rfl | rfl <;>
       simpa using List.append_lt_append_of_lt_of_length_eq hlt hlen _ _
 
-/-- **Correctness of a search that keeps the largest satisfiable node.** Let the rule `prune` keep
-only nodes of the level it prunes, and, on a level in decreasing order whose nodes follow a prefix
+/-- **Correctness of a search that keeps the largest satisfiable node.** Let the rule `prune` return
+a sublist of the level it prunes, and, on a level in decreasing order whose nodes follow a prefix
 of the occurrences of `φ`, keep the largest satisfiable node of the level. Then the search accepts
 exactly the satisfiable `φ`. The conjunctive and the bounded truth-table procedures are both of this
 form. -/
