@@ -49,29 +49,36 @@ theorem exec_readLength {w : ℕ} (x : Data 16) (h3 : Fits w 3) :
   dsimp only
   ram_eval [readLength, address, inputLength, three, answer, h3, Fin.mk.injEq]
 
-/-- Every admitted empty, singleton or two-entry input follows the actual false-verdict path. -/
-theorem exec_small {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
-    (hn : input.length < 3) (h3 : Fits w 3) :
-    ∃ y, ExecWithin w (program κ c) (Data.init (input.map Signed.encode)) y 6 ∧
+/-- Header initialization exposes its three controls and preserves the preprocessing input. -/
+theorem exec_readLength_init {w r : ℕ} (input : List ℤ) (h3 : Fits w 3) :
+    ∃ y, ExecWithin w (readLength.rename (controllerRegisters r))
+        (Data.init (input.map Signed.encode)) y 4 ∧
       y.regs (controllerRegisters r answer) = 0 ∧
-      ¬Cslib.Algorithms.ThreeSum.HasSolution (fun i : Fin input.length => input[i]) := by
+      y.regs (controllerRegisters r inputLength) = input.length ∧
+      y.regs (controllerRegisters r three) = 3 ∧
+      y.comap (preprocessingRegisters r) = Data.init (input.map Signed.encode) := by
   let x : Data (registerCount r) := Data.init (input.map Signed.encode)
   let a := (x.comap (controllerRegisters r)).set address 0
     |>.set inputLength input.length |>.set three 3 |>.set answer 0
-  let y := a.extend (controllerRegisters r) x
-  have hr : ExecWithin w (readLength.rename (controllerRegisters r)) x y 4 := by
-    apply ExecWithin.rename (controller_injective r)
-    simpa only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] using
-      exec_readLength (x.comap (controllerRegisters r)) h3
-  have ha : y.regs (controllerRegisters r answer) = 0 := by
-    rw [extend_controller]
-    simp +decide [a, answer, three, inputLength, address]
-  have hlen : y.regs (controllerRegisters r inputLength) = input.length := by
-    rw [extend_controller]
-    simp +decide [a, answer, three, inputLength, address]
-  have ht : y.regs (controllerRegisters r three) = 3 := by
-    rw [extend_controller]
-    simp +decide [a, answer, three]
+  have hcall : ∃ a, ExecWithin w readLength (x.comap (controllerRegisters r)) a 4 ∧
+      a.regs answer = 0 ∧ a.regs inputLength = input.length ∧ a.regs three = 3 ∧
+      a.mem = x.mem := by
+    refine ⟨a, ?_, ?_, ?_, ?_, rfl⟩
+    · simpa only [Data.comap_mem, x, Data.init_mem_zero, List.length_map] using
+        exec_readLength (x.comap (controllerRegisters r)) h3
+    all_goals simp +decide [a, answer, three, inputLength, address]
+  obtain ⟨y, hy, ⟨ha, hn, ht, hm⟩, hframe⟩ :=
+    ExecWithin.rename_post (controller_injective r) hcall
+  refine ⟨y, hy, ha, hn, ht, Data.ext (funext fun i => ?_) hm⟩
+  exact hframe _ (fun j => controller_ne_preprocessing j i)
+
+/-- Every admitted empty, singleton or two-entry input follows the actual false-verdict path. -/
+theorem exec_small {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
+    (hn : input.length < 3) (h3 : Fits w 3) :
+    ∃ y, ExecWithin w (program κ c.code) (Data.init (input.map Signed.encode)) y 6 ∧
+      y.regs (controllerRegisters r answer) = 0 ∧
+      ¬Cslib.Algorithms.ThreeSum.HasSolution (fun i : Fin input.length => input[i]) := by
+  obtain ⟨y, hr, ha, hlen, ht, _⟩ := exec_readLength_init (r := r) input h3
   have hcopy : ExecWithin (B := .standard) w
       (.op (.copy (controllerRegisters r answer) (controllerRegisters r answer))) y y 1 := by
     have hself : y.set (controllerRegisters r answer) (y.regs (controllerRegisters r answer)) =
@@ -79,7 +86,7 @@ theorem exec_small {κ w r : ℕ} (input : List ℤ) (c : Host.Callee r)
     simpa only [hself] using (ExecWithin.copy (B := .standard) (w := w)
       (x := y) (d := controllerRegisters r answer) (s := controllerRegisters r answer))
   refine ⟨y, ?_, ha, not_hasSolution_of_length_lt_three _ hn⟩
-  have he := hr.seq (hcopy.branch_pos (neg := large κ c) (show
+  have he := hr.seq (hcopy.branch_pos (neg := large κ c.code) (show
       (Cond.lt (controllerRegisters r inputLength) (controllerRegisters r three)).Holds y by
     simpa only [Cond.holds_lt, hlen, ht] using hn))
   simpa only [program] using he

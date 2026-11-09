@@ -46,7 +46,7 @@ private theorem run_counting (reply : ℕ → List Bool) (request : Bool × List
 -- The unselected branch makes no call: the counter records exactly one external request.
 example (word : List Bool) :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (counting fun _ => [false, true])) (adaptive word)).run 0 = PMF.pure ([], 1) := by
   simp [adaptive, run_counting]
 
@@ -54,7 +54,7 @@ example (word : List Bool) :
 -- reply is truncated to the input length.
 example :
     (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (counting fun calls => List.replicate (calls + 5) true))
           (adaptive [false, false, false])).run 0 = PMF.pure ([true, true, true], 2) := by
   simp [adaptive, run_counting]
@@ -114,8 +114,8 @@ example : ¬ IsOraclePPTOn encUnary encBits (fun n => List.take 1 <$>
   have hcall := (hbound n).2.forall_mem_transcript (fun _ (s : Unit) => PMF.pure ([], s))
     (s := ()) (s' := ()) (result := [])
     (transcript := [⟨((), List.replicate (2 ^ n) true), []⟩]) (by
-      rw [OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query]
-      simp [OracleComp.withTranscript, StateT.run]) _ List.mem_cons_self
+      rw [ProbOracleComp.runWith_map, ProbOracleComp.runWith_query]
+      simp [OracleComp.withTranscript]) _ List.mem_cons_self
   simp only [List.length_replicate, encUnary_apply] at hcall
   lia
 

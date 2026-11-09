@@ -53,7 +53,7 @@ example {α β γ : Type*} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     ComputableInO (f ∘ g) encA encC T S ∧
     ComputableInO (fun a => (f₁ a).1) encA₁ encB₁ T₁ S₁ ∧
     ComputableInO f₀ encA₀ encB₀ T₀ S₀ := by
-  have hframe : ComputableInLinearTimeAndSpace frame word word := .of_frame fun _ => rfl
+  have hframe : ComputableInDegree frame word word 1 1 := .of_frame fun _ => rfl
   refine ⟨.constZero _, (ComputableInO.of_linear hframe).comp_linear copy,
     copy.append copy fun _ => rfl, copy.prod (ComputableInO.constZero false),
     hf.comp_linear hg, hf₁.fst', ?_⟩

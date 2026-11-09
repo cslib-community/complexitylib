@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingVertexBoxes
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Nodup
 
@@ -43,16 +44,6 @@ theorem clauseGeometry_clause_length (φ : CNF ℕ) (d : Graph.OrthogonalDrawing
   simpa only [clauseGeometry, collaredPrefixGeometry, profilePrefixGeometry,
     LocalGeometry.toPrefix, List.length_map] using profileGeometry_clause_length (clauseProfile c)
 
-/-- Mapping `ys.getD a.2 fallback` over `xs.zipIdx` recovers `ys` when `ys.length = xs.length`. -/
-theorem map_getD_zipIdx {A B : Type*} (xs : List A) (ys : List B) (fallback : B)
-    (hlen : ys.length = xs.length) :
-    (xs.zipIdx.map fun a => ys.getD a.2 fallback) = ys := by
-  apply List.ext_getElem
-  · simpa using hlen.symm
-  · intro i hi hj
-    simp only [List.getElem_map, List.getElem_zipIdx, Nat.zero_add]
-    rw [List.getD_eq_getElem _ _ hj]
-
 /-- A clause block lists precisely the translated local clause positions in order. -/
 theorem positiveClauseBlock_positions (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
     (i : ℕ) (c : Clause ℕ) :
@@ -60,7 +51,7 @@ theorem positiveClauseBlock_positions (φ : CNF ℕ) (d : Graph.OrthogonalDrawin
       (clauseGeometry φ d i c).clausePositions.map (positiveBoxOrigin φ d i + ·) := by
   simp only [positiveClauseBlock, List.map_map, Function.comp_def]
   have he := congrArg (List.map (positiveBoxOrigin φ d i + ·))
-    (map_getD_zipIdx (profileFormula (clauseProfile c))
+    (List.map_getD_zipIdx (profileFormula (clauseProfile c))
       (clauseGeometry φ d i c).clausePositions (0, 0) (clauseGeometry_clause_length φ d i c))
   simpa only [List.map_map, Function.comp_def, LocalGeometry.clausePosition] using he
 

@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
@@ -228,9 +228,7 @@ private theorem bounds_aux {n A D N J L I E cD cO M K : ℕ} (hJ : 1 ≤ J)
   · have hO2 : (E + 1) ^ 2 ≤ 44100 * (cO + 1) ^ 2 * (M ^ 5 * J ^ 3) := by
       calc (E + 1) ^ 2 ≤ (210 * (cO + 1) * (M ^ 2 * J)) ^ 2 := Nat.pow_le_pow_left hE' 2
         _ = 44100 * (cO + 1) ^ 2 * (M ^ 4 * J ^ 2) := by ring
-        _ ≤ 44100 * (cO + 1) ^ 2 * (M ^ 5 * J ^ 3) := Nat.mul_le_mul_left _
-            (Nat.mul_le_mul (Nat.pow_le_pow_right hM1 (by omega))
-              (Nat.pow_le_pow_right hJ (by omega)))
+        _ ≤ 44100 * (cO + 1) ^ 2 * (M ^ 5 * J ^ 3) := by gcongr <;> omega
     have hIn2 : (2 * D + 1 + (2 * N + 1 + (n + 1)) + 1) ^ 2 ≤ 49 * (M ^ 5 * J ^ 3) := by
       have h₁ : 2 * D + 1 + (2 * N + 1 + (n + 1)) + 1 ≤ 7 * M := by omega
       have h₂ : M ^ 2 ≤ M ^ 5 * J ^ 3 :=
@@ -269,10 +267,9 @@ theorem computableInO_diagonal :
       fun x => 2 ^ (2 * x.length) := by
   have this : ComputableTidilyInO diagonal encBits encBool (fun x => 2 ^ (4 * x.length))
       fun x => 2 ^ (2 * x.length) := by
-    obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-    have hu : ComputableTidilyInDegree unframe encBits encBits 1 1 :=
-      .of_linear (.of_unframe fun _ => rfl)
-    have hdesc := (hdec.comp hu).inO
+    obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
+    have hu := Internal.DecoderWords.unframe_degree
+    have hdesc := (hdec.comp hu).inO.tidy
     have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
     have hclock := (ComputableTidilyInDegree.two_pow_length encBits).inO_one
     have hpre := hdesc.prod (hsym.prod hclock)
@@ -308,16 +305,14 @@ theorem computableInO_diagonal :
         ring
       have := hC x.length
       calc _ ≤ K * (_ ^ 5 * (2 ^ x.length) ^ 3) := h₁
-        _ ≤ K * (C * 2 ^ x.length * (2 ^ x.length) ^ 3) :=
-            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
+        _ ≤ K * (C * 2 ^ x.length * (2 ^ x.length) ^ 3) := by gcongr
         _ ≤ K * C * (2 ^ (4 * x.length) + 1) := by rw [hJ4]; nlinarith
     · obtain ⟨-, h₂⟩ := hbounds x
       simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at h₂ ⊢
       have hJ2 : 2 ^ (2 * x.length) = 2 ^ x.length * 2 ^ x.length := by rw [two_mul, pow_add]
       have := hC x.length
       calc _ ≤ K * (_ ^ 5 * 2 ^ x.length) := h₂
-        _ ≤ K * (C * 2 ^ x.length * 2 ^ x.length) :=
-            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
+        _ ≤ K * (C * 2 ^ x.length * 2 ^ x.length) := by gcongr
         _ ≤ K * C * (2 ^ (2 * x.length) + 1) := by rw [hJ2]; nlinarith
   simpa only [computableInO_iff_computableTidilyInO] using this
 

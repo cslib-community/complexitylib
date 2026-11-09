@@ -121,7 +121,10 @@ private theorem reduced_countingChild (ψ : ClauseSet V) (c : ℕ) (H : Finset (
     (b : Bool) : Reduced (countingChild ψ c H b) := by
   cases b <;> exact reduced_reduce _
 
-private theorem disjoint_flower_countingChild (ψ : ClauseSet V) {c : ℕ} {H : Finset (Literal V)}
+/-- The flower `flower ψ c H` is disjoint from both counting children `countingChild ψ c H b`:
+on `false` every flower clause strictly contains `H`, and on `true` every flower clause `C`
+strictly contains its petal `C \ H`. -/
+theorem disjoint_flower_countingChild (ψ : ClauseSet V) {c : ℕ} {H : Finset (Literal V)}
     (h1 : 1 ≤ H.card) (hlt : H.card < c) (b : Bool) :
     Disjoint (flower ψ c H) (countingChild ψ c H b) := by
   rw [Finset.disjoint_left]
@@ -140,7 +143,8 @@ private theorem disjoint_flower_countingChild (ψ : ClauseSet V) {c : ℕ} {H : 
     refine hmin (C \ H) ?_ (sdiff_ssubset hHC (card_pos.mp h1))
     exact mem_union_left _ (mem_union_right _ (mem_petals.mpr ⟨C, hC, rfl⟩))
 
-private theorem card_le_of_mem_countingChild {ψ : ClauseSet V} {c k : ℕ} {H : Finset (Literal V)}
+/-- Counting children keep the clause width `≤ k` when the flower `flower ψ c H` is nonempty. -/
+theorem card_le_of_mem_countingChild {ψ : ClauseSet V} {c k : ℕ} {H : Finset (Literal V)}
     (h1 : 1 ≤ H.card) (hlt : H.card < c) (hF : (flower ψ c H).Nonempty)
     (hk : ∀ C ∈ ψ, C.card ≤ k) {b : Bool} {C : Finset (Literal V)}
     (hC : C ∈ countingChild ψ c H b) : C.card ≤ k := by

@@ -109,7 +109,7 @@ theorem pcp_theorem {α : Type} (enc : α ↪ List Bool) :
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.PCPAbstract`:
-7 root declarations, 85 dependencies checked
+7 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.PCPAbstract allowing [

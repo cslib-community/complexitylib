@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.Id
 import Mathlib.Data.Fintype.Lattice
@@ -88,5 +88,10 @@ theorem of_encIn_eq {α' : Type*} {encIn' : α' ↪ List Bool} {f : α → β}
   · simpa only [henc a] using hs (map a)
   · simpa only [henc a, Function.comp_apply] using htm (map a)
   · simpa only [henc a, Function.comp_apply] using hl (map a)
+
+/-- Restricting inputs preserves the same machine and both degrees. -/
+theorem restrict {f : α → β} (h : ComputableInDegree f encIn encMid d e) (p : α → Prop) :
+    ComputableInDegree (f ∘ Subtype.val) ((Function.Embedding.subtype p).trans encIn) encMid d e :=
+  h.of_encIn_eq Subtype.val fun _ => rfl
 
 end Turing.MultiTapeTM.ComputableInDegree

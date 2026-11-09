@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Simulation
-public import Complexity.Languages.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.Oracle.Interaction
 
 /-!
 # Fair-coin machines with external oracle calls
@@ -58,14 +58,13 @@ noncomputable def runOracle (machine : MultiTapePTM k Symbol State Operation)
 theorem length_output_runOracle_le (machine : MultiTapePTM k Symbol State Operation)
     (oracle : Operation × List Symbol → StateT OracleState PMF (List Symbol))
     (fuel : ℕ) (input output : List Symbol) (s s' : OracleState)
-    (h : (output, s') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        (machine.runOracle fuel input)).run s).support) : output.length ≤ fuel := by
+    (h : (output, s') ∈ (ProbOracleComp.runWith oracle (machine.runOracle fuel input)
+        s).support) : output.length ≤ fuel := by
   have hbound := MultiTapeMachine.length_output_runFrom_le machine
     (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
     (fun op word => ProbOracleComp.query
       (spec := fun _ : Operation × List Symbol => List Symbol) (op, word))
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) fuel
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) fuel
     (machine.initialConfig input) s s' output h
   simpa only [initialConfig, Cfg.init, List.length_nil, Nat.zero_add] using hbound
 
@@ -73,14 +72,12 @@ theorem length_output_runOracle_le (machine : MultiTapePTM k Symbol State Operat
 theorem run_interpret_runOracle_ofDeterministic (machine : MultiTapeTM k Symbol State)
     (oracle : Operation × List Symbol → StateT OracleState PMF (List Symbol))
     (fuel : ℕ) (input : List Symbol) (s : OracleState) :
-    (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        ((ofDeterministic machine).runOracle fuel input)).run s =
+    ProbOracleComp.runWith oracle ((ofDeterministic machine).runOracle fuel input) s =
       PMF.pure ((machine.runFrom (machine.initCfg input) fuel).output, s) := by
   apply run_interpret_ofDeterministic machine (ProbOracleComp.sample (ProbComp.uniform Bool))
     (fun op word => ProbOracleComp.query
       (spec := fun _ : Operation × List Symbol => List Symbol) (op, word))
-    (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
     (PMF.uniformOfFintype Bool)
   intro state
   simp only [ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform]
@@ -155,10 +152,8 @@ output distribution. -/
 theorem run_interpret_runOracle_ofClosed (machine : MultiTapePTM k Bool State)
     (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
     (fuel : ℕ) (input : List Bool) (s : OracleState) :
-    (OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        ((ofClosed machine).runOracle fuel input)).run s =
+    ProbOracleComp.runWith oracle ((ofClosed machine).runOracle fuel input) s =
       (ProbComp.eval (machine.runClosed fuel input)).map (·, s) := by
-  rw [runOracle_ofClosed, ProbOracleComp.run_interpret_sample]
+  rw [runOracle_ofClosed, ProbOracleComp.runWith_sample]
 
 end Turing.MultiTapePTM

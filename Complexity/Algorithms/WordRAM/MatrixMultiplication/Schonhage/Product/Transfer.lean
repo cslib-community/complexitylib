@@ -48,27 +48,31 @@ public theorem exec_saveInput {w L m N Q : ℕ} (x : Data 160)
     ∃ y, ExecWithin w saveInput x y (7 * inputEnd m N Q + 10) ∧
       Parameters L m N Q y ∧
       y.mem = ArrayCopy.copyPrefix x.mem 0 (snapshotBase L m N Q) (inputEnd m N Q) := by
-  let z := ((x.set source 0).set destination (snapshotBase L m N Q)).set length (inputEnd m N Q)
+  let z :=
+    ((x.set Reg.source 0).set Reg.destination (snapshotBase L m N Q)).set Reg.length
+      (inputEnd m N Q)
   have hz : ExecWithin (B := .standard) w (ram[
-      source ← zero; destination ← snapshot; length ← inputSize ]) x z 3 := by
-    ram_eval [z, hp.zero, hp.snapshot, hp.inputSize, source, destination, length,
-      zero, snapshot, inputSize]
+      Reg.source ← Reg.zero;
+      Reg.destination ← Reg.snapshot;
+      Reg.length ← Reg.inputSize ]) x z 3 := by
+    ram_eval [z, hp.zero, hp.snapshot, hp.inputSize, Reg.source, Reg.destination, Reg.length,
+      Reg.zero, Reg.snapshot, Reg.inputSize]
   have zp : Parameters L m N Q z :=
-    ((hp.set_work source (by decide) 0).set_work destination (by decide) _).set_work
-      length (by decide) _
+    ((hp.set_work Reg.source (by decide) 0).set_work Reg.destination (by decide) _).set_work
+      Reg.length (by decide) _
   have hb := transfer_bounds L m N Q
   have hi : Fits w (inputEnd m N Q) := allocated_fits hfit (by omega)
   have hs : Fits w (snapshotBase L m N Q + inputEnd m N Q) :=
     allocated_fits hfit (by omega)
   obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, source, destination, length] using hi)
-    (by simpa [z, source, destination, length] using hs)
-    (Or.inl (by simpa [z, source, destination, length] using hb.1))
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hi)
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hs)
+    (Or.inl (by simpa [z, Reg.source, Reg.destination, Reg.length] using hb.1))
   refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_⟩
-  · have hlen : z.regs length = inputEnd m N Q := by simp [z]
+  · have hlen : z.regs Reg.length = inputEnd m N Q := by simp [z]
     rw [hlen] at he
     exact (hz.seq he).mono (by omega)
-  · simpa [z, source, destination, length] using hm
+  · simpa [z, Reg.source, Reg.destination, Reg.length] using hm
 
 /-- Real coordinate words are copied from the protected original input to address five.
 The caller's original prefix remains protected in its snapshot for final restoration. -/
@@ -77,8 +81,9 @@ public theorem exec_prepareQueries {w L m N Q : ℕ} (x : Data 160)
     ∃ y, ExecWithin w prepareQueries x y (14 * Q + 10) ∧ Parameters L m N Q y ∧
       y.mem = ArrayCopy.copyPrefix x.mem
         (snapshotBase L m N Q + queryInputBase m N) 5 (2 * Q) := by
-  let z := ((x.set source (snapshotBase L m N Q + queryInputBase m N)).set destination 5).set
-    length (Q * 2)
+  let z :=
+    ((x.set Reg.source (snapshotBase L m N Q + queryInputBase m N)).set Reg.destination 5).set
+      Reg.length (Q * 2)
   have hb := transfer_bounds L m N Q
   have hs : Fits w (snapshotBase L m N Q + queryInputBase m N) :=
     allocated_fits hfit (by omega)
@@ -88,26 +93,29 @@ public theorem exec_prepareQueries {w L m N Q : ℕ} (x : Data 160)
       offsetBase snapshotBase inputEnd
     omega)
   have hz : ExecWithin (B := .standard) w (ram[
-      source ← snapshot + queryOffset; destination ← five; length ← queryCount * two ])
+      Reg.source ← Reg.snapshot + Reg.queryOffset;
+      Reg.destination ← Reg.five;
+      Reg.length ← Reg.queryCount * Reg.two ])
       x z 3 := by
     ram_eval [z, hp.snapshot, hp.queryOffset, hp.five, hp.queryCount, hp.two, hs, hn,
-      source, destination, length, snapshot, queryOffset, five, queryCount, two]
+      Reg.source, Reg.destination, Reg.length, Reg.snapshot, Reg.queryOffset, Reg.five,
+      Reg.queryCount, Reg.two]
   have zp : Parameters L m N Q z :=
-    ((hp.set_work source (by decide) _).set_work destination (by decide) _).set_work
-      length (by decide) _
+    ((hp.set_work Reg.source (by decide) _).set_work Reg.destination (by decide) _).set_work
+      Reg.length (by decide) _
   obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, source, destination, length, Nat.mul_comm] using
+    (by simpa [z, Reg.source, Reg.destination, Reg.length, Nat.mul_comm] using
       allocated_fits hfit (show snapshotBase L m N Q + queryInputBase m N + 2 * Q ≤
         memoryEnd L m N Q + 16 by omega))
-    (by simpa [z, source, destination, length, Nat.mul_comm] using
+    (by simpa [z, Reg.source, Reg.destination, Reg.length, Nat.mul_comm] using
       allocated_fits hfit (show 5 + 2 * Q ≤ memoryEnd L m N Q + 16 by omega))
     (Or.inr (Or.inl (by
-      simpa [z, source, destination, length, Nat.mul_comm] using hb.2.2.1)))
+      simpa [z, Reg.source, Reg.destination, Reg.length, Nat.mul_comm] using hb.2.2.1)))
   refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_⟩
-  · have hlen : z.regs length = Q * 2 := by simp [z]
+  · have hlen : z.regs Reg.length = Q * 2 := by simp [z]
     rw [hlen] at he
     exact (hz.seq he).mono (by omega)
-  · simpa [z, source, destination, length, Nat.mul_comm] using hm
+  · simpa [z, Reg.source, Reg.destination, Reg.length, Nat.mul_comm] using hm
 
 /-- Restore the entire original prefix through the same actual copy routine. Answers and
 all memory outside the prefix remain unchanged. -/
@@ -116,26 +124,30 @@ public theorem exec_restoreInput {w L m N Q : ℕ} (x : Data 160)
     ∃ y, ExecWithin w restoreInput x y (7 * inputEnd m N Q + 10) ∧
       Parameters L m N Q y ∧
       y.mem = ArrayCopy.copyPrefix x.mem (snapshotBase L m N Q) 0 (inputEnd m N Q) := by
-  let z := ((x.set source (snapshotBase L m N Q)).set destination 0).set length (inputEnd m N Q)
+  let z :=
+    ((x.set Reg.source (snapshotBase L m N Q)).set Reg.destination 0).set Reg.length
+      (inputEnd m N Q)
   have hz : ExecWithin (B := .standard) w (ram[
-      source ← snapshot; destination ← zero; length ← inputSize ]) x z 3 := by
-    ram_eval [z, hp.zero, hp.snapshot, hp.inputSize, source, destination, length,
-      zero, snapshot, inputSize]
+      Reg.source ← Reg.snapshot;
+      Reg.destination ← Reg.zero;
+      Reg.length ← Reg.inputSize ]) x z 3 := by
+    ram_eval [z, hp.zero, hp.snapshot, hp.inputSize, Reg.source, Reg.destination, Reg.length,
+      Reg.zero, Reg.snapshot, Reg.inputSize]
   have zp : Parameters L m N Q z :=
-    ((hp.set_work source (by decide) _).set_work destination (by decide) 0).set_work
-      length (by decide) _
+    ((hp.set_work Reg.source (by decide) _).set_work Reg.destination (by decide) 0).set_work
+      Reg.length (by decide) _
   have hb := transfer_bounds L m N Q
   have hi : Fits w (inputEnd m N Q) := allocated_fits hfit (by omega)
   have hs : Fits w (snapshotBase L m N Q + inputEnd m N Q) :=
     allocated_fits hfit (by omega)
   obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, source, destination, length] using hs)
-    (by simpa [z, source, destination, length] using hi)
-    (Or.inr (Or.inl (by simpa [z, source, destination, length] using hb.1)))
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hs)
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hi)
+    (Or.inr (Or.inl (by simpa [z, Reg.source, Reg.destination, Reg.length] using hb.1)))
   refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_⟩
-  · have hlen : z.regs length = inputEnd m N Q := by simp [z]
+  · have hlen : z.regs Reg.length = inputEnd m N Q := by simp [z]
     rw [hlen] at he
     exact (hz.seq he).mono (by omega)
-  · simpa [z, source, destination, length] using hm
+  · simpa [z, Reg.source, Reg.destination, Reg.length] using hm
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

@@ -30,64 +30,66 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 -- Name the fifty-update state once; separating execution from admission keeps each proof
 -- within the default heartbeat limit without changing the actual header code.
 private def layoutState (x : Data 160) (L m N Q : ℕ) : Data 160 :=
-  ((((((((((((((((((((((((((((((((((((((((((((((((((x.set depth (L)).set inner (m)).set
-      rows (N)).set address (4)).set queryCount (Q)).set columns (D m)).set masks (2 ^ L)).set
-      cells (7 ^ L)).set leaves (10 ^ L)).set bands (numBands L m N)).set catalogue
-      (BandPreparation.catalogueBase L m N)).set zero (0)).set one (1)).set two (2)).set three
-      (3)).set four (4)).set five (5)).set six (6)).set tiles ((numBands L m N) * (numBands L m
-      N))).set matrixWords ((N) * (D m))).set matrixWords (((N) * (D m)) * (2))).set queryOffset
-      ((((N) * (D m)) * (2)) + (5))).set inputSize ((Q) * (2))).set inputSize (((Q) * (2)) +
-      ((((N) * (D m)) * (2)) + (5)))).set bandEnd ((numBands L m N) * (10 ^ L))).set bandEnd
-      (((numBands L m N) * (10 ^ L)) * (2))).set bandEnd ((((numBands L m N) * (10 ^ L)) * (2)) +
-      (BandPreparation.catalogueBase L m N))).set wantedEnd ((Q) * (4))).set wantedEnd (((Q) *
-      (4)) + (6))).set temporary ((2 ^ L) * (2))).set wantedEnd ((((Q) * (4)) + (6)) + ((2 ^ L) *
-      (2)))).set temporary (((numBands L m N) * (numBands L m N)) * (3))).set wantedEnd (((((Q) *
-      (4)) + (6)) + ((2 ^ L) * (2))) + (((numBands L m N) * (numBands L m N)) * (3)))).set
-      snapshot (((((numBands L m N) * (10 ^ L)) * (2)) + (BandPreparation.catalogueBase L m N)) +
-      (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) + (((numBands L m N) * (numBands L m N)) *
-      (3))))).set snapshot ((((((numBands L m N) * (10 ^ L)) * (2)) +
+  ((((((((((((((((((((((((((((((((((((((((((((((((((x.set Reg.depth (L)).set Reg.inner (m)).set
+      Reg.rows (N)).set Reg.address (4)).set Reg.queryCount (Q)).set Reg.columns (D m)).set
+      Reg.masks (2 ^ L)).set Reg.cells (7 ^ L)).set Reg.leaves (10 ^ L)).set Reg.bands
+      (numBands L m N)).set Reg.catalogue (BandPreparation.catalogueBase L m N)).set Reg.zero
+      (0)).set Reg.one (1)).set Reg.two (2)).set Reg.three (3)).set Reg.four (4)).set Reg.five
+      (5)).set Reg.six (6)).set Reg.tiles ((numBands L m N) * (numBands L m N))).set
+      Reg.matrixWords ((N) * (D m))).set Reg.matrixWords (((N) * (D m)) * (2))).set Reg.queryOffset
+      ((((N) * (D m)) * (2)) + (5))).set Reg.inputSize ((Q) * (2))).set Reg.inputSize (((Q) * (2)) +
+      ((((N) * (D m)) * (2)) + (5)))).set Reg.bandEnd ((numBands L m N) * (10 ^ L))).set
+      Reg.bandEnd (((numBands L m N) * (10 ^ L)) * (2))).set Reg.bandEnd ((((numBands L m N) *
+      (10 ^ L)) * (2)) + (BandPreparation.catalogueBase L m N))).set Reg.wantedEnd ((Q) * (4))).set
+      Reg.wantedEnd (((Q) * (4)) + (6))).set Reg.temporary ((2 ^ L) * (2))).set Reg.wantedEnd
+      ((((Q) * (4)) + (6)) + ((2 ^ L) * (2)))).set Reg.temporary (((numBands L m N) *
+      (numBands L m N)) * (3))).set Reg.wantedEnd (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
+      (((numBands L m N) * (numBands L m N)) * (3)))).set Reg.snapshot (((((numBands L m N) *
+      (10 ^ L)) * (2)) + (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) +
+      ((2 ^ L) * (2))) + (((numBands L m N) * (numBands L m N)) * (3))))).set Reg.snapshot
+      ((((((numBands L m N) * (10 ^ L)) * (2)) + (BandPreparation.catalogueBase L m N)) +
+      (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) + (((numBands L m N) * (numBands L m N)) * (3)))) +
+      (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5))))).set Reg.offsets (((((((numBands L m N) *
+      (10 ^ L)) * (2)) + (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) +
+      ((2 ^ L) * (2))) + (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) +
+      ((((N) * (D m)) * (2)) + (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5))))).set
+      Reg.codes ((((((((numBands L m N) * (10 ^ L)) * (2)) +
       (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
-      (5))))).set offsets (((((((numBands L m N) * (10 ^ L)) * (2)) +
-      (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
-      (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
-      (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5))))).set codes ((((((((numBands L m N) *
-      (10 ^ L)) * (2)) + (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L)
-      * (2))) + (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) *
-      (2)) + (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) *
-      (numBands L m N)))).set codes (((((((((numBands L m N) * (10 ^ L)) * (2)) +
-      (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
-      (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
-      (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
-      N))) + (1))).set originals ((((((((((numBands L m N) * (10 ^ L)) * (2)) +
-      (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
-      (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
-      (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
-      N))) + (1)) + (Q))).set grouped (((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) *
+      (numBands L m N)))).set Reg.codes (((((((((numBands L m N) * (10 ^ L)) * (2)) +
       (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
       (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
-      N))) + (1)) + (Q)) + (Q))).set output ((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      N))) + (1))).set Reg.originals ((((((((((numBands L m N) * (10 ^ L)) * (2)) +
       (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
       (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
-      N))) + (1)) + (Q)) + (Q)) + (Q))).set scratch (((((((((((((numBands L m N) * (10 ^ L)) *
+      N))) + (1)) + (Q))).set Reg.grouped (((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
+      (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
+      (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
+      N))) + (1)) + (Q)) + (Q))).set Reg.output ((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
+      (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
+      (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
+      N))) + (1)) + (Q)) + (Q)) + (Q))).set Reg.scratch (((((((((((((numBands L m N) * (10 ^ L)) *
       (2)) + (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
       (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
-      N))) + (1)) + (Q)) + (Q)) + (Q)) + (Q))).set temporary ((L) + (1))).set temporary (((L) +
-      (1)) * (4))).set stamps ((((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      N))) + (1)) + (Q)) + (Q)) + (Q)) + (Q))).set Reg.temporary ((L) + (1))).set Reg.temporary
+      (((L) + (1)) * (4))).set Reg.stamps ((((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
       (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
       (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
-      N))) + (1)) + (Q)) + (Q)) + (Q)) + (Q)) + (((L) + (1)) * (4)))).set temporary ((L) +
-      (1))).set temporary (((L) + (1)) * (10 ^ L))).set temporary ((((L) + (1)) * (10 ^ L)) *
-      (2))).set stamps (((((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      N))) + (1)) + (Q)) + (Q)) + (Q)) + (Q)) + (((L) + (1)) * (4)))).set Reg.temporary ((L) +
+      (1))).set Reg.temporary (((L) + (1)) * (10 ^ L))).set Reg.temporary ((((L) + (1)) *
+      (10 ^ L)) * (2))).set Reg.stamps (((((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
       (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
       (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
       N))) + (1)) + (Q)) + (Q)) + (Q)) + (Q)) + (((L) + (1)) * (4))) + ((((L) + (1)) * (10 ^ L)) *
-      (2)))).set memoryLimit ((((((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
+      (2)))).set Reg.memoryLimit ((((((((((((((((numBands L m N) * (10 ^ L)) * (2)) +
       (BandPreparation.catalogueBase L m N)) + (((((Q) * (4)) + (6)) + ((2 ^ L) * (2))) +
       (((numBands L m N) * (numBands L m N)) * (3)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) +
       (5)))) + (((Q) * (2)) + ((((N) * (D m)) * (2)) + (5)))) + ((numBands L m N) * (numBands L m
@@ -192,11 +194,12 @@ private theorem exec_layout_raw {w L m N Q : ℕ} (x : Data 160)
   ram_eval [layout, layoutState, hQ, hf0, hf1, hf2, hf3, hf4, hf5, hf6, hf7, hf8, hf9, hf10, hf11,
     hf12,
       hf13, hf14, hf15, hf16, hf17, hf18, hf19, hf20, hf21, hf22, hf23, hf24, hf25, hf26, hf27,
-      hf28, hf29, hf30, hf31, hf32, hf33, hf34, hf35, hf36, hf37, depth, inner, rows, address,
-      queryCount, columns, masks, cells, leaves, bands, catalogue, zero, one, two, three, four,
-      five, six, tiles, matrixWords, queryOffset, inputSize, bandEnd, wantedEnd, temporary,
-      snapshot, offsets, codes, originals, grouped, output, scratch, stamps, memoryLimit, hb0,
-      hb1, hb2, hb3, hb4, hb5, hb6, hb7, hb8]
+      hf28, hf29, hf30, hf31, hf32, hf33, hf34, hf35, hf36, hf37, Reg.depth, Reg.inner, Reg.rows,
+      Reg.address, Reg.queryCount, Reg.columns, Reg.masks, Reg.cells, Reg.leaves, Reg.bands,
+      Reg.catalogue, Reg.zero, Reg.one, Reg.two, Reg.three, Reg.four, Reg.five, Reg.six, Reg.tiles,
+      Reg.matrixWords, Reg.queryOffset, Reg.inputSize, Reg.bandEnd, Reg.wantedEnd, Reg.temporary,
+      Reg.snapshot, Reg.offsets, Reg.codes, Reg.originals, Reg.grouped, Reg.output, Reg.scratch,
+      Reg.stamps, Reg.memoryLimit, hb0, hb1, hb2, hb3, hb4, hb5, hb6, hb7, hb8]
 
 /-- Actual native layout calculation, preserving all original memory. -/
 public theorem exec_layout {w L m N Q : ℕ} (x : Data 160)
@@ -487,12 +490,12 @@ public theorem exec_layout {w L m N Q : ℕ} (x : Data 160)
       hf34 hf35 hf36 hf37
   refine ⟨y, he, ?_, rfl⟩
   constructor <;>
-    simp +decide only [y, layoutState, Data.set_regs, Function.update_apply, depth, inner, rows,
-      address,
-      queryCount, columns, masks, cells, leaves, bands, catalogue, zero, one, two, three, four,
-      five, six, tiles, matrixWords, queryOffset, inputSize, bandEnd, wantedEnd, temporary,
-      snapshot, offsets, codes, originals, grouped, output, scratch, stamps, memoryLimit,
-      ↓reduceIte] <;>
+    simp +decide only [y, layoutState, Data.set_regs, Function.update_apply, Reg.depth, Reg.inner,
+      Reg.rows, Reg.address, Reg.queryCount, Reg.columns, Reg.masks, Reg.cells, Reg.leaves,
+      Reg.bands, Reg.catalogue, Reg.zero, Reg.one, Reg.two, Reg.three, Reg.four, Reg.five, Reg.six,
+      Reg.tiles, Reg.matrixWords, Reg.queryOffset, Reg.inputSize, Reg.bandEnd, Reg.wantedEnd,
+      Reg.temporary, Reg.snapshot, Reg.offsets, Reg.codes, Reg.originals, Reg.grouped, Reg.output,
+      Reg.scratch, Reg.stamps, Reg.memoryLimit, ↓reduceIte] <;>
     (try simp only [inputEnd, queryInputBase, snapshotBase, offsetBase, codeBase,
       originalBase, groupedBase, outputBase, scratchBase, stampBase, memoryEnd,
       BandPreparation.memoryEnd, Wanted.memoryLimit_eq, pow_two]) <;> ring

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import pathlib
 import subprocess
 import sys
@@ -252,6 +253,30 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertTrue(any("forbidden custom `axiom`" in e for e in errors))
         self.assertTrue(any("non-terminal bare `simp`" in e for e in errors))
         self.assertTrue(any("forbidden `sorry`" in e for e in errors))
+
+    def test_simp_closed_by_finishing_tactic_is_terminal(self) -> None:
+        p = self.write(
+            "Complexity/FinishingSimp.lean",
+            "module\n"
+            "-- upstream: candidate\n\n"
+            "theorem t1 (n : Nat) (h : n < 3) : n < 4 := by\n"
+            "  simp [Nat.lt_succ_iff] at h\n"
+            "  omega\n"
+            "theorem t2 (n : Nat) : n < 4 ∨ True := by\n"
+            "  constructor\n"
+            "  · simp\n"
+            "    omega\n"
+            "  · trivial\n"
+            "theorem t3 (n : Nat) (h : n < 3) : n < 4 := by\n"
+            "  simp at h\n"
+            "  omega\n"
+            "  done\n"
+            "theorem t4 (n : Nat) (h : n < 3) : n < 4 := by\n"
+            "  simp at h\n"
+            "  rw [h]\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root, check_simp=True)
+        self.assertEqual(sorted(int(e.split(":")[1]) for e in errors), [13, 17])
 
     def test_quote_characters_do_not_hide_forbidden_theorem(self) -> None:
         for literal in ("'\"'", r"'\"'"):
@@ -557,6 +582,139 @@ class BibliographyTests(unittest.TestCase):
     def test_repository_bibliography_is_sorted(self) -> None:
         text = (check_hygiene.ROOT / "references.bib").read_text(encoding="utf-8")
         self.assertEqual(check_hygiene.check_bibliography(text), [])
+
+
+class AbstractReadmeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = pathlib.Path(tmp.name)
+        (self.root / "abstracts").mkdir()
+        catalogue = {"entries": [
+            {"id": "a", "module": "ComplexityAbstracts.AAbstract"},
+            {"id": "b", "module": "ComplexityAbstracts.BAbstract"},
+        ]}
+        (self.root / "abstracts/catalogue.json").write_text(json.dumps(catalogue),
+                                                            encoding="utf-8")
+
+    def write_readmes(self, top: str, abstracts: str) -> None:
+        (self.root / "README.md").write_text(top, encoding="utf-8")
+        (self.root / "abstracts/README.md").write_text(abstracts, encoding="utf-8")
+
+    def test_every_entry_listed_passes(self) -> None:
+        self.write_readmes(
+            "* [A](abstracts/ComplexityAbstracts/AAbstract.lean)\n"
+            "* [B](abstracts/ComplexityAbstracts/BAbstract.lean); see also "
+            "[A](abstracts/ComplexityAbstracts/AAbstract.lean) and the shared "
+            "[encoding](abstracts/ComplexityAbstracts/Encoding.lean).\n",
+            "| [A](ComplexityAbstracts/AAbstract.lean) |\n"
+            "| [B](ComplexityAbstracts/BAbstract.lean) |\n",
+        )
+        self.assertEqual(check_hygiene.check_abstract_readmes(self.root), [])
+
+    def test_missing_stale_and_misrooted_links_fail(self) -> None:
+        self.write_readmes(
+            "* [A](abstracts/ComplexityAbstracts/AAbstract.lean)\n"
+            "* [C](abstracts/ComplexityAbstracts/CAbstract.lean)\n",
+            "| [A](ComplexityAbstracts/AAbstract.lean) |\n"
+            "| [B](abstracts/ComplexityAbstracts/BAbstract.lean) |\n",
+        )
+        self.assertEqual(check_hygiene.check_abstract_readmes(self.root), [
+            "README.md: catalogue entry `b` is not listed; add a line linking "
+            "`abstracts/ComplexityAbstracts/BAbstract.lean`",
+            "README.md: links `abstracts/ComplexityAbstracts/CAbstract.lean`, which is not a "
+            "catalogue entry of `abstracts/catalogue.json` (or uses the wrong relative path)",
+            "abstracts/README.md: catalogue entry `b` is not listed; add a line linking "
+            "`ComplexityAbstracts/BAbstract.lean`",
+            "abstracts/README.md: links `abstracts/ComplexityAbstracts/BAbstract.lean`, which is "
+            "not a catalogue entry of `abstracts/catalogue.json` (or uses the wrong relative path)",
+        ])
+
+    def test_malformed_catalogue_fails(self) -> None:
+        (self.root / "abstracts/catalogue.json").write_text('{"entries": [{"id": "a"}]}',
+                                                            encoding="utf-8")
+        self.write_readmes("", "")
+        errors = check_hygiene.check_abstract_readmes(self.root)
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith("abstracts/catalogue.json: cannot read"))
+
+    def test_repository_readmes_list_the_catalogue(self) -> None:
+        self.assertEqual(check_hygiene.check_abstract_readmes(), [])
+
+
+class RoadmapTests(unittest.TestCase):
+    URL = "https://github.com/cslib-community/complexitylib/issues/"
+
+    def errors(self, text: str) -> list[str]:
+        return check_hygiene.check_roadmap(text)
+
+    def test_inline_links_and_short_entries_pass(self) -> None:
+        text = (f"# Roadmap\n\n- **Direction** ([#585]({self.URL}585)): Prove the theorem.\n"
+                f"  A second sentence, [with a link]({self.URL}1).\n\n| Program | [#2]({self.URL}2) |\n"
+                "\nIndependent of that order:\n\n1. **Ordered**: short.\n")
+        self.assertEqual(self.errors(text), [])
+
+    def test_reference_definitions_fail(self) -> None:
+        text = f"- **Direction**\n\n[#585]: {self.URL}585\n   [archive]: {self.URL}1\n"
+        self.assertEqual(self.errors(text), [
+            "ROADMAP.md:3: reference definition `[#585]:`; write the link inline instead, since "
+            "definitions collected at the end of the file conflict across queued PRs "
+            "(CONTRIBUTING.md, Documentation)",
+            "ROADMAP.md:4: reference definition `[archive]:`; write the link inline instead, "
+            "since definitions collected at the end of the file conflict across queued PRs "
+            "(CONTRIBUTING.md, Documentation)",
+        ])
+
+    def test_continuation_line_is_not_a_definition(self) -> None:
+        self.assertEqual(self.errors("- **D**: scope\n  [Lemma 3]: the key step.\n"), [])
+
+    def test_issue_references_must_be_inline(self) -> None:
+        text = "- **Direction** ([#9999]); see [the issue][#9998] and [#7][] or [#12]: text\n"
+        self.assertEqual(self.errors(text), [
+            f"ROADMAP.md:1: `[#9999]` is not an inline link; write it as `[#9999]({self.URL}9999)`",
+            f"ROADMAP.md:1: `[#9998]` is not an inline link; write it as `[#9998]({self.URL}9998)`",
+            f"ROADMAP.md:1: `[#7]` is not an inline link; write it as `[#7]({self.URL}7)`",
+            f"ROADMAP.md:1: `[#12]` is not an inline link; write it as `[#12]({self.URL}12)`",
+        ])
+
+    def test_nested_items_fail_also_after_a_blank_line(self) -> None:
+        for text in ("- **D**: scope.\n  - a sub-point\n",
+                     "- **D**: scope.\n  1. another\n",
+                     "- **D**: scope.\n\n  - Progress: did X.\n  - Remaining: Y.\n"):
+            errors = self.errors(text)
+            self.assertEqual(len(errors), 1, text)
+            self.assertTrue(errors[0].startswith("ROADMAP.md:1: nested list item"), errors[0])
+
+    def test_long_entry_fails_and_links_count_as_their_text(self) -> None:
+        limit = check_hygiene.ROADMAP_ENTRY_MAX
+        url = self.URL + "1" * 300
+        fits = f"- [x]({url}) " + "a" * (limit - len("- x "))
+        self.assertEqual(self.errors(fits + "\n"), [])
+        over = "- **D**: " + "b" * limit + "\n  continued.\n"
+        errors = self.errors(over)
+        self.assertEqual(len(errors), 1)
+        self.assertIn(f"ROADMAP.md:1: entry has {len('- **D**: ') + limit + len(' continued.')} "
+                      f"characters of Markdown, counting links as their text (limit {limit})",
+                      errors[0])
+
+    def test_length_counts_loose_lazy_and_ordered_items(self) -> None:
+        long = "x" * check_hygiene.ROADMAP_ENTRY_MAX
+        for text in (f"- **D**: s.\n\n  {long}\n",
+                     f"- **D**: s.\n{long}\n",
+                     f"1. **D**: {long}\n"):
+            errors = self.errors(text)
+            self.assertEqual(len(errors), 1, text[:30])
+            self.assertIn("characters of Markdown", errors[0])
+
+    def test_entry_ends_at_blocks_and_unindented_paragraphs(self) -> None:
+        long = "y" * check_hygiene.ROADMAP_ENTRY_MAX
+        for text in (f"- **D**: s.\n| {long} |\n", f"- **D**: s.\n# {long}\n",
+                     f"- **D**: s.\n\n{long}\n"):
+            self.assertEqual(self.errors(text), [], text[:30])
+
+    def test_repository_roadmap_passes(self) -> None:
+        text = (check_hygiene.ROOT / "ROADMAP.md").read_text(encoding="utf-8")
+        self.assertEqual(check_hygiene.check_roadmap(text), [])
 
 
 class CitationTests(unittest.TestCase):

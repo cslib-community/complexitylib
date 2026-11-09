@@ -19,7 +19,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Produ
 * `QueriedProduct.reconstruct`: restore the original request order from actual stored indices.
 
 All three existing 96-register callees use the low bank. The caller's 64 additional
-registers retain its scalar layout and counters. Copying, initial directory clearing,
+registers (`QueriedProduct.Reg`) retain its scalar layout and counters without colliding with
+finite `Schonhage` names. Copying, initial directory clearing,
 header adaptation, raw-entry doubling, dispatch, reporting and restoration are real instructions.
 Supporting code definitions are exposed for execution proofs; they are implementation APIs.
 -/
@@ -32,6 +33,8 @@ open Cslib.WordRAM
 @[expose] public def bank (i : Fin 96) : Fin 160 := ⟨i.val, by omega⟩
 /-- The unchanged copy routine uses the first seven low registers. -/
 @[expose] public def copyBank (i : Fin 7) : Fin 160 := ⟨i.val, by omega⟩
+
+namespace Reg
 
 /-- Persistent caller depth. -/
 public abbrev depth : Fin 160 := 96
@@ -130,6 +133,8 @@ public abbrev catalogue : Fin 160 := 145
 /-- Persistent constant three used in the router allocation. -/
 public abbrev three : Fin 160 := 146
 
+end Reg
+
 /-- Compute genuine band scalars before selecting a protected caller area. No memory writes. -/
 @[expose] public def parameters : Code .standard 160 :=
   .seq (BandPreparation.header.rename bank) (BandPreparation.countCode.rename bank)
@@ -146,29 +151,31 @@ public abbrev three : Fin 160 := 146
   let bBands := bank BandPreparation.bands
   let bCatalogue := bank BandPreparation.catalogue
   ram[
-  depth ← bLevels; inner ← bInner; rows ← bRows;
-  address ← #4; queryCount ← *address;
-  columns ← bColumns; masks ← bMasks; cells ← bCells; leaves ← bLeaves;
-  bands ← bBands; catalogue ← bCatalogue;
-  zero ← #0; one ← #1; two ← #2; three ← #3; four ← #4; five ← #5; six ← #6;
-  tiles ← bands * bands;
-  matrixWords ← rows * columns; matrixWords ← matrixWords * two;
-  queryOffset ← matrixWords + five;
-  inputSize ← queryCount * two; inputSize ← inputSize + queryOffset;
-  bandEnd ← bands * leaves; bandEnd ← bandEnd * two; bandEnd ← bandEnd + catalogue;
-  wantedEnd ← queryCount * four; wantedEnd ← wantedEnd + six;
-  temporary ← masks * two; wantedEnd ← wantedEnd + temporary;
-  temporary ← tiles * three; wantedEnd ← wantedEnd + temporary;
-  snapshot ← bandEnd + wantedEnd; snapshot ← snapshot + inputSize;
-  offsets ← snapshot + inputSize;
-  codes ← offsets + tiles; codes ← codes + one;
-  originals ← codes + queryCount; grouped ← originals + queryCount;
-  output ← grouped + queryCount; scratch ← output + queryCount;
-  temporary ← depth + one; temporary ← temporary * four;
-  stamps ← scratch + temporary;
-  temporary ← depth + one; temporary ← temporary * leaves;
-  temporary ← temporary * two; stamps ← stamps + temporary;
-  memoryLimit ← stamps + leaves ]
+  Reg.depth ← bLevels; Reg.inner ← bInner; Reg.rows ← bRows;
+  Reg.address ← #4; Reg.queryCount ← *Reg.address;
+  Reg.columns ← bColumns; Reg.masks ← bMasks; Reg.cells ← bCells; Reg.leaves ← bLeaves;
+  Reg.bands ← bBands; Reg.catalogue ← bCatalogue;
+  Reg.zero ← #0; Reg.one ← #1; Reg.two ← #2; Reg.three ← #3; Reg.four ← #4; Reg.five ← #5;
+  Reg.six ← #6;
+  Reg.tiles ← Reg.bands * Reg.bands;
+  Reg.matrixWords ← Reg.rows * Reg.columns; Reg.matrixWords ← Reg.matrixWords * Reg.two;
+  Reg.queryOffset ← Reg.matrixWords + Reg.five;
+  Reg.inputSize ← Reg.queryCount * Reg.two; Reg.inputSize ← Reg.inputSize + Reg.queryOffset;
+  Reg.bandEnd ← Reg.bands * Reg.leaves; Reg.bandEnd ← Reg.bandEnd * Reg.two;
+  Reg.bandEnd ← Reg.bandEnd + Reg.catalogue;
+  Reg.wantedEnd ← Reg.queryCount * Reg.four; Reg.wantedEnd ← Reg.wantedEnd + Reg.six;
+  Reg.temporary ← Reg.masks * Reg.two; Reg.wantedEnd ← Reg.wantedEnd + Reg.temporary;
+  Reg.temporary ← Reg.tiles * Reg.three; Reg.wantedEnd ← Reg.wantedEnd + Reg.temporary;
+  Reg.snapshot ← Reg.bandEnd + Reg.wantedEnd; Reg.snapshot ← Reg.snapshot + Reg.inputSize;
+  Reg.offsets ← Reg.snapshot + Reg.inputSize;
+  Reg.codes ← Reg.offsets + Reg.tiles; Reg.codes ← Reg.codes + Reg.one;
+  Reg.originals ← Reg.codes + Reg.queryCount; Reg.grouped ← Reg.originals + Reg.queryCount;
+  Reg.output ← Reg.grouped + Reg.queryCount; Reg.scratch ← Reg.output + Reg.queryCount;
+  Reg.temporary ← Reg.depth + Reg.one; Reg.temporary ← Reg.temporary * Reg.four;
+  Reg.stamps ← Reg.scratch + Reg.temporary;
+  Reg.temporary ← Reg.depth + Reg.one; Reg.temporary ← Reg.temporary * Reg.leaves;
+  Reg.temporary ← Reg.temporary * Reg.two; Reg.stamps ← Reg.stamps + Reg.temporary;
+  Reg.memoryLimit ← Reg.stamps + Reg.leaves ]
 
 /-- Real argument setup followed by the unchanged dynamic-length native copy. -/
 @[expose] public def copyCall : Code .standard 160 :=
@@ -176,32 +183,36 @@ public abbrev three : Fin 160 := 146
   let copyDst : Fin 160 := 1
   let copyLen : Fin 160 := 2
   ram[
-  copySrc ← source; copyDst ← destination; copyLen ← length;
+  copySrc ← Reg.source; copyDst ← Reg.destination; copyLen ← Reg.length;
   ⟪ArrayCopy.program.rename copyBank⟫ ]
 
 /-- Save the entire ordinary input, including its length word and coordinate list. -/
 @[expose] public def saveInput : Code .standard 160 :=
-  .seq (ram[ source ← zero; destination ← snapshot; length ← inputSize ]) copyCall
+  .seq (ram[ Reg.source ← Reg.zero; Reg.destination ← Reg.snapshot; Reg.length ← Reg.inputSize ])
+    copyCall
 
 /-- Put the original raw coordinate pairs in the actual Wanted input convention. -/
 @[expose] public def prepareQueries : Code .standard 160 :=
-  .seq (ram[ source ← snapshot + queryOffset; destination ← five;
-    length ← queryCount * two ]) copyCall
+  .seq (ram[ Reg.source ← Reg.snapshot + Reg.queryOffset; Reg.destination ← Reg.five;
+    Reg.length ← Reg.queryCount * Reg.two ]) copyCall
 
 /-- Save every computed tile offset, including the terminal offset. -/
 @[expose] public def saveOffsets : Code .standard 160 :=
   let wOffsets := bank Wanted.offsets
-  .seq (ram[ source ← wOffsets; destination ← offsets; length ← tiles + one ]) copyCall
+  .seq (ram[ Reg.source ← wOffsets; Reg.destination ← Reg.offsets;
+    Reg.length ← Reg.tiles + Reg.one ]) copyCall
 
 /-- Save the actual grouped query codes. -/
 @[expose] public def saveCodes : Code .standard 160 :=
   let wCodes := bank Wanted.codes
-  .seq (ram[ source ← wCodes; destination ← codes; length ← queryCount ]) copyCall
+  .seq (ram[ Reg.source ← wCodes; Reg.destination ← Reg.codes; Reg.length ← Reg.queryCount ])
+    copyCall
 
 /-- Save the actual original-position permutation. -/
 @[expose] public def saveOriginals : Code .standard 160 :=
   let wOriginals := bank Wanted.originals
-  .seq (ram[ source ← wOriginals; destination ← originals; length ← queryCount ]) copyCall
+  .seq (ram[ Reg.source ← wOriginals; Reg.destination ← Reg.originals;
+    Reg.length ← Reg.queryCount ]) copyCall
 
 /-- Preserve the computed arrays before the band producer reuses the low work area. -/
 @[expose] public def saveGroups : Code .standard 160 :=
@@ -209,24 +220,26 @@ public abbrev three : Fin 160 := 146
 
 /-- One actual load, unsigned doubling and store converts a raw 0/1 matrix entry. -/
 @[expose] public def bitCopyStep : Code .standard 160 := ram[
-  address ← source + index; value ← *address; value ← value * two;
-  address ← four + index; *address ← value; index ← index + one ]
+  Reg.address ← Reg.source + Reg.index; Reg.value ← *Reg.address; Reg.value ← Reg.value * Reg.two;
+  Reg.address ← Reg.four + Reg.index; *Reg.address ← Reg.value; Reg.index ← Reg.index + Reg.one ]
 
 /-- Copy real matrix words into the band producer's adjacent front input blocks.
 The bit-input variant executes the conversion instruction at every entry. -/
 @[expose] public def prepareMatrices (bits : Bool) : Code .standard 160 :=
   if bits then
-    .seq (ram[ source ← snapshot + five; index ← #0 ])
-      (.loop (.lt index matrixWords) bitCopyStep)
+    .seq (ram[ Reg.source ← Reg.snapshot + Reg.five; Reg.index ← #0 ])
+      (.loop (.lt Reg.index Reg.matrixWords) bitCopyStep)
   else
-    .seq (ram[ source ← snapshot + five; destination ← four; length ← matrixWords ]) copyCall
+    .seq (ram[ Reg.source ← Reg.snapshot + Reg.five; Reg.destination ← Reg.four;
+      Reg.length ← Reg.matrixWords ]) copyCall
 
 /-- Initialize the one timestamp directory by actual stores, once for the entire product. -/
 @[expose] public def initializeDirectory : Code .standard 160 := ram[
-  index ← #0;
-  while index < leaves do [
-    address ← stamps + index; *address ← zero; index ← index + one ];
-  epoch ← #0; index ← #0 ]
+  Reg.index ← #0;
+  while Reg.index < Reg.leaves do [
+    Reg.address ← Reg.stamps + Reg.index; *Reg.address ← Reg.zero;
+    Reg.index ← Reg.index + Reg.one ];
+  Reg.epoch ← #0; Reg.index ← #0 ]
 
 /-- Load actual group endpoints and compute both shared catalogue pointers and kernel ABI. -/
 @[expose] public def tileArguments : Code .standard 160 :=
@@ -239,40 +252,42 @@ The bit-input variant executes the conversion instruction at every entry. -/
   let kScratch := bank PrunedQuery.scratch
   let kEpoch := bank PrunedQuery.epoch
   ram[
-  address ← offsets + index; first ← *address;
-  address ← address + one; stop ← *address;
-  rowBand ← index / bands; colBand ← index % bands;
-  leftPointer ← rowBand * leaves; leftPointer ← leftPointer + catalogue;
-  rightPointer ← colBand + bands; rightPointer ← rightPointer * leaves;
-  rightPointer ← rightPointer + catalogue;
-  queryPointer ← codes + first; answerPointer ← grouped + first;
-  kDepth ← depth; kLeft ← leftPointer; kRight ← rightPointer;
-  kQueries ← queryPointer; kCount ← stop - first; kOutput ← answerPointer;
-  kScratch ← scratch; kEpoch ← epoch ]
+  Reg.address ← Reg.offsets + Reg.index; Reg.first ← *Reg.address;
+  Reg.address ← Reg.address + Reg.one; Reg.stop ← *Reg.address;
+  Reg.rowBand ← Reg.index / Reg.bands; Reg.colBand ← Reg.index % Reg.bands;
+  Reg.leftPointer ← Reg.rowBand * Reg.leaves; Reg.leftPointer ← Reg.leftPointer + Reg.catalogue;
+  Reg.rightPointer ← Reg.colBand + Reg.bands; Reg.rightPointer ← Reg.rightPointer * Reg.leaves;
+  Reg.rightPointer ← Reg.rightPointer + Reg.catalogue;
+  Reg.queryPointer ← Reg.codes + Reg.first; Reg.answerPointer ← Reg.grouped + Reg.first;
+  kDepth ← Reg.depth; kLeft ← Reg.leftPointer; kRight ← Reg.rightPointer;
+  kQueries ← Reg.queryPointer; kCount ← Reg.stop - Reg.first; kOutput ← Reg.answerPointer;
+  kScratch ← Reg.scratch; kEpoch ← Reg.epoch ]
 
 /-- One real pruned-kernel call, with the returned epoch propagated to the next tile. -/
 @[expose] public def tileStep : Code .standard 160 :=
   let kEpoch := bank PrunedQuery.epoch
   .seq tileArguments (.seq (PrunedQuery.kernel.rename bank)
-    (ram[ epoch ← kEpoch; index ← index + one ]))
+    (ram[ Reg.epoch ← kEpoch; Reg.index ← Reg.index + Reg.one ]))
 
 /-- Compute all tiles from the actual group arrays; the zero-tile case never divides by zero. -/
 @[expose] public def evaluateTiles : Code .standard 160 :=
-  .loop (.lt index tiles) tileStep
+  .loop (.lt Reg.index Reg.tiles) tileStep
 
 /-- Read one actual original index and scatter its computed answer into request order. -/
 @[expose] public def reconstructStep : Code .standard 160 := ram[
-  address ← originals + index; temporary ← *address;
-  address ← grouped + index; value ← *address;
-  address ← output + temporary; *address ← value; index ← index + one ]
+  Reg.address ← Reg.originals + Reg.index; Reg.temporary ← *Reg.address;
+  Reg.address ← Reg.grouped + Reg.index; Reg.value ← *Reg.address;
+  Reg.address ← Reg.output + Reg.temporary; *Reg.address ← Reg.value;
+  Reg.index ← Reg.index + Reg.one ]
 
 /-- Every original occurrence is reconstructed by charged native reads and stores. -/
 @[expose] public def reconstruct : Code .standard 160 := ram[
-  index ← #0; while index < queryCount do [ ⟪reconstructStep⟫ ] ]
+  Reg.index ← #0; while Reg.index < Reg.queryCount do [ ⟪reconstructStep⟫ ] ]
 
 /-- Restore the complete actual input after all private low-memory reuse has finished. -/
 @[expose] public def restoreInput : Code .standard 160 :=
-  .seq (ram[ source ← snapshot; destination ← zero; length ← inputSize ]) copyCall
+  .seq (ram[ Reg.source ← Reg.snapshot; Reg.destination ← Reg.zero; Reg.length ← Reg.inputSize ])
+    copyCall
 
 /-- Complete actual routing preparation and protected preservation of the original input. -/
 @[expose] public def prepareRouting : Code .standard 160 :=

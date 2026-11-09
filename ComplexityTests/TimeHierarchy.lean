@@ -41,9 +41,14 @@ example :
 
 /-- Every word decodes to a description of polynomial encoded length. -/
 example : ∃ e c : ℕ, ∀ w : List Bool, (eDesc (decodeDesc w)).length ≤ c * (w.length + 1) ^ e := by
-  obtain ⟨_d, e, h⟩ := exists_computableTidilyInDegree_decodeDesc
+  obtain ⟨_d, e, h⟩ := exists_computableInDegree_decodeDesc
   obtain ⟨c, hc⟩ := h.2
   exact ⟨e, c, fun w => hc w⟩
+
+/-- Plain automation composes description decoding with framing of its input. -/
+example : ComputableInPolyTime (fun w : List Bool => (decodeDesc w, frame w)) encBits
+    (encPair eDesc encBits) := by
+  fun_prop
 
 /-! ### The clock -/
 

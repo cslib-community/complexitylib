@@ -105,32 +105,10 @@ private theorem card_mul_expect_mul (x y : EuclideanSpace ℝ V) :
   rw [Fintype.card_mul_expect, EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct]
   exact sum_congr rfl fun _ _ ↦ mul_comm _ _
 
-/-- The squared Euclidean norm on `EuclideanSpace ℝ V` is the second moment scaled by `|V|`. -/
-private theorem card_mul_expect_sq (x : EuclideanSpace ℝ V) :
-    (Fintype.card V : ℝ) * 𝔼 v, x.ofLp v ^ 2 = ‖x‖ ^ 2 := by
-  rw [EuclideanSpace.real_norm_sq_eq, Fintype.card_mul_expect]
-
 /-- The walk operator on `EuclideanSpace ℝ V` is symmetric. -/
 theorem isSymmetric_walkEuclidean : G.walkEuclidean.IsSymmetric := fun x y ↦ by
   rw [← card_mul_expect_mul, ← card_mul_expect_mul, ofLp_walkEuclidean, ofLp_walkEuclidean,
     G.expect_mul_walk_comm]
-
-/-- The subspace of `EuclideanSpace ℝ V` orthogonal to the constant functions. -/
-noncomputable def orthogonalSubmodule (V : Type*) [Fintype V] :
-    Submodule ℝ (EuclideanSpace ℝ V) :=
-  (ℝ ∙ WithLp.toLp 2 (fun _ ↦ 1 : V → ℝ))ᗮ
-
-/-- A vector in `EuclideanSpace ℝ V` is orthogonal to the constants iff its coordinates have
-expectation zero. -/
-theorem mem_orthogonalSubmodule_iff (f : V → ℝ) :
-    WithLp.toLp 2 f ∈ orthogonalSubmodule V ↔ 𝔼 v, f v = 0 := by
-  rw [orthogonalSubmodule, Submodule.mem_orthogonal_singleton_iff_inner_right,
-    EuclideanSpace.inner_toLp_toLp, Fintype.expect_eq_sum_div_card, div_eq_zero_iff,
-    or_iff_left_of_imp]
-  · simp [dotProduct]
-  · intro h
-    have : IsEmpty V := Fintype.card_eq_zero_iff.1 (Nat.cast_eq_zero.1 h)
-    simp
 
 /-- The walk operator preserves `orthogonalSubmodule V`. -/
 theorem walkEuclidean_mem_orthogonalSubmodule {x : EuclideanSpace ℝ V}
@@ -276,9 +254,9 @@ theorem spectralExpansion_eq_ciSup_abs_eigenvalues :
       exact pow_le_pow_left₀ (abs_nonneg _) hi 2
     exact mul_le_mul_of_nonneg_right hi2 (sq_nonneg _)
   have hnorm_u : ‖u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
-    (card_mul_expect_sq (WithLp.toLp 2 f)).symm
+    (card_mul_expect_sq f).symm
   have hnorm_wu : ‖G.orthogonalWalk u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, G.walk f v ^ 2 :=
-    (card_mul_expect_sq (WithLp.toLp 2 (G.walk f))).symm
+    (card_mul_expect_sq (G.walk f)).symm
   rw [hnorm_wu, hnorm_u, mul_left_comm] at hle
   rcases (Fintype.card V).eq_zero_or_pos with hV | hV
   · have : IsEmpty V := Fintype.card_eq_zero_iff.1 hV
@@ -318,7 +296,7 @@ theorem secondEigenvalue_eq_orthogonalWalk_eigenvalues_zero (h0 : 0 < n) :
   have hinner : ⟪u, G.orthogonalWalk u⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
     (card_mul_expect_mul (WithLp.toLp 2 f) (WithLp.toLp 2 (G.walk f))).symm
   have hnorm : ‖u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
-    (card_mul_expect_sq (WithLp.toLp 2 f)).symm
+    (card_mul_expect_sq f).symm
   rw [hinner, hnorm, mul_left_comm] at hle
   exact le_of_mul_le_mul_left hle (Nat.cast_pos.2 Fintype.card_pos)
 
@@ -409,8 +387,8 @@ private theorem le_secondEigenvalue_of_mul_norm_sq_le_inner [Nonempty V]
     expect_pos' (fun _ _ ↦ sq_nonneg _) ⟨v₀, mem_univ v₀, sq_pos_iff.2 hv₀⟩
   have hinner : ⟪u, G.walkEuclidean u⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
     (card_mul_expect_mul u (G.walkEuclidean u)).symm
-  have hnorm : ‖u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
-    (card_mul_expect_sq u).symm
+  have hnorm : ‖u‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 := by
+    simpa [f] using (card_mul_expect_sq f).symm
   rw [hinner, hnorm, mul_left_comm] at hu_quad
   have hle₁ := le_of_mul_le_mul_left hu_quad (Nat.cast_pos.2 Fintype.card_pos)
   have hle₂ := G.expect_mul_walk_le_secondEigenvalue_mul hu_exp
@@ -487,7 +465,7 @@ private theorem secondEigenvalue_le_walkEuclidean_eigenvalues_one [Nonempty D] (
   have hinner : ⟪x, G.walkEuclidean x⟫ = (Fintype.card V : ℝ) * 𝔼 v, f v * G.walk f v :=
     (card_mul_expect_mul x (G.walkEuclidean x)).symm
   have hnorm : ‖x‖ ^ 2 = (Fintype.card V : ℝ) * 𝔼 v, f v ^ 2 :=
-    (card_mul_expect_sq x).symm
+    (card_mul_expect_sq f).symm
   rw [hinner, hnorm, mul_left_comm] at hle
   exact le_of_mul_le_mul_left hle (Nat.cast_pos.2 Fintype.card_pos)
 

@@ -48,6 +48,8 @@ each isolated true input, and parity has only isolated inputs.
   along an equivalence.
 * `Cslib.BitString.eq_of_singleton_invariant`: a function invariant under all single-coordinate
   flips is constant.
+* `Cslib.BitString.update_not_injective`: flipping distinct coordinates gives distinct
+  neighbors.
 
 ## References
 
@@ -218,5 +220,14 @@ theorem isolatedInputs_not (g : (ι → Bool) → Bool) (b : Bool) :
   cases b <;> simp
 
 end Isolated
+
+/-- Flipping distinct coordinates gives distinct neighbors. -/
+theorem update_not_injective (x : ι → Bool) :
+    Function.Injective fun i => Function.update x i (!x i) := by
+  intro i j h
+  by_contra hij
+  have := congrFun h i
+  simp only [Function.update_self, Function.update_of_ne hij] at this
+  cases x i <;> simp at this
 
 end Cslib.BitString

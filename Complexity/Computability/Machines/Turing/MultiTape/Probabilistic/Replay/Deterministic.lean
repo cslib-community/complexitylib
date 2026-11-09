@@ -134,10 +134,9 @@ theorem mem_support_runConfigFrom_pure {σ : Type} (machine : MultiTapePTM k Sym
     (cfg : Config k Symbol State Oracle input) :
     (OracleComp.interpret (m := Id) answer (machine.runConfigFrom (pure bit)
         (fun oracle word => OracleComp.query (oracle, word)) fuel cfg), s) ∈
-      ((OracleComp.interpret (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
-          (fun q s => PMF.pure (answer q, s)))
+      (ProbOracleComp.runWith (fun q s => PMF.pure (answer q, s))
         (machine.runConfigFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
-          (fun oracle word => ProbOracleComp.query (oracle, word)) fuel cfg)).run s).support := by
+          (fun oracle word => ProbOracleComp.query (oracle, word)) fuel cfg) s).support := by
   have hbit : bit ∈ (Probability.PMF.uniformOfFintype Bool).support := by
     rw [PMF.mem_support_iff, Probability.PMF.uniformOfFintype_apply]
     exact ENNReal.inv_ne_zero.mpr (ENNReal.natCast_ne_top _)
@@ -152,16 +151,15 @@ theorem mem_support_runConfigFrom_pure {σ : Type} (machine : MultiTapePTM k Sym
     | some state =>
       simp only [map_pure] at ih
       simp only [MultiTapeMachine.runConfigFrom, hs, map_pure, pure_bind, bind_map_left,
-        OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
-        ProbComp.eval_uniform, Probability.PMF.monad_bind_eq_bind, PMF.bind_map,
-        PMF.mem_support_bind_iff, Function.comp_apply]
+        ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbComp.eval_uniform,
+        PMF.bind_map, PMF.mem_support_bind_iff, Function.comp_apply]
       refine ⟨bit, hbit, ?_⟩
       cases machine.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit
         with
       | step action symbol move => exact ih _
       | query oracle next =>
-        simp only [OracleComp.interpret_bind, ProbOracleComp.interpret_query, StateT.run_bind,
-          Probability.PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff]
+        simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
+          PMF.mem_support_bind_iff]
         exact ⟨(answer (oracle, (cfg.channels oracle).queryBuffer), s),
           (PMF.mem_support_pure_iff _ _).mpr rfl, ih _⟩
 

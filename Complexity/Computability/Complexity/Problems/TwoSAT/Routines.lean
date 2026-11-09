@@ -52,10 +52,6 @@ open _root_.Turing _root_.Turing.CounterProgram _root_.Turing.CounterProgram.Ins
 
 variable {P : CounterProgram} {w : List Bool} {B : ℕ}
 
-private theorem set_getD_self {regs : List ℕ} {i : ℕ} (hi : i < regs.length) :
-    regs.set i (regs.getD i 0) = regs := by
-  rw [List.getD_eq_getElem _ _ hi, List.set_getElem_self]
-
 /-- The register `r` of a bounded list is bounded. -/
 private theorem getD_le {regs : List ℕ} (hB : ∀ r ∈ regs, r ≤ B) (i : ℕ) :
     regs.getD i 0 ≤ B := by

@@ -13,6 +13,7 @@ public import Complexity.Probability.Entropy.BitString
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Algebra.Polynomial.Eval.Defs
 
 /-!
@@ -260,18 +261,6 @@ theorem sum_uniform_timeBoundedNat_lt_le {t : ℕ → ℕ} {n : ℕ} (ht : n + 1
     simp only [hnk, Nat.not_lt_zero, ↓reduceIte, mul_zero, Finset.sum_const_zero]
     positivity
 
-private theorem pmf_bool_true_add_false_toReal (μ : PMF Bool) :
-    (μ true).toReal + (μ false).toReal = 1 := by
-  have h : μ true + μ false = 1 := by simpa [tsum_bool] using μ.tsum_coe
-  have h' := congrArg ENNReal.toReal h
-  rwa [ENNReal.toReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _), ENNReal.toReal_one] at h'
-
-private theorem pmf_bool_true_toReal_le_one (μ : PMF Bool) :
-    (μ true).toReal ≤ 1 := by
-  have h := pmf_bool_true_add_false_toReal μ
-  have h0 : 0 ≤ (μ false).toReal := ENNReal.toReal_nonneg
-  linarith
-
 private theorem pmf_map_true_le_one_sub_of_imp_false {α : Type*} (q : PMF α) (P Q : α → Bool)
     (hdisj : ∀ v, P v = true → Q v = false) :
     ((q.map P) true).toReal ≤ 1 - ((q.map Q) true).toReal := by
@@ -284,7 +273,7 @@ private theorem pmf_map_true_le_one_sub_of_imp_false {α : Type*} (q : PMF α) (
     · simp [hp]
   have hle' : ((q.map P) true).toReal ≤ ((q.map Q) false).toReal :=
     ENNReal.toReal_mono (PMF.apply_ne_top _ _) hle
-  have hsum := pmf_bool_true_add_false_toReal (q.map Q)
+  have hsum := Cslib.Probability.PMF.toReal_true_add_toReal_false (q.map Q)
   linarith
 
 private theorem pmf_map_true_le_of_imp_true {α : Type*} (q : PMF α) (P Q : α → Bool)
@@ -318,7 +307,7 @@ theorem uniformList_threshold_accept_ge {t : ℕ → ℕ} {m : ℕ} (ht : m + 1 
           if timeBoundedNat t (List.ofFn x) < m - k then (1 : ℝ) else 0 := by
     by_cases hlt : timeBoundedNat t (List.ofFn x) < m - k
     · simp only [hlt, ↓reduceIte]
-      have h1 := pmf_bool_true_toReal_le_one (approx (List.ofFn x))
+      have h1 := toReal_apply_le_one (approx (List.ofFn x)) true
       have h2 : 0 ≤ (accept (List.ofFn x) true).toReal := ENNReal.toReal_nonneg
       linarith
     · simp only [hlt, ↓reduceIte, add_zero]
@@ -362,7 +351,7 @@ theorem generator_threshold_accept_le {t : ℕ → ℕ} {m : ℕ} (hm : 1 ≤ m)
     (q y).map fun v => decide (m - k - g_err ≤ v)
   let fail (x : BitString m) : ℝ := 1 - (approx (List.ofFn x) true).toReal
   have hfail_nonneg (x : BitString m) : 0 ≤ fail x := by
-    have := pmf_bool_true_toReal_le_one (approx (List.ofFn x))
+    have := toReal_apply_le_one (approx (List.ofFn x)) true
     dsimp [fail]
     linarith
   have hpoint (x : BitString m) :
@@ -401,7 +390,7 @@ theorem generator_threshold_accept_le {t : ℕ → ℕ} {m : ℕ} (hm : 1 ≤ m)
     have hle1 : ∑ x ∈ Sᶜ, (pG x).toReal * (accept (List.ofFn x) true).toReal ≤
         ∑ x ∈ Sᶜ, (pG x).toReal * 1 := by
       refine Finset.sum_le_sum fun x _ => mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
-      exact pmf_bool_true_toReal_le_one _
+      exact toReal_apply_le_one _ true
     simp only [mul_one] at hle1
     linarith
   have hfail_sum :

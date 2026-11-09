@@ -60,7 +60,7 @@ It uses no distinct-set bound on list multiplicity. -/
 public theorem sum_tileCharge {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × Fin N)) :
     (∑ t ∈ Finset.range (numBands L m N ^ 2), tileCharge hm qs t) =
       (4 * L + 66) * numBands L m N ^ 2 + 29 * qs.length +
-        ∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N,
+        ∑ T ∈ tiles L m N,
           PrunedQuery.traceWeight (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2) := by
   have hkey (i : ℕ) (hi : i < qs.length) :
       (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) i < numBands L m N ^ 2 :=
@@ -73,25 +73,22 @@ public theorem sum_tileCharge {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × 
   have htiles := sum_tile_indices (numBands L m N) (fun T =>
     PrunedQuery.traceWeight (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2))
   rw [hcount, htiles]
-  unfold Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles
+  unfold tiles
   ring
 
 /-- Sum the actual native kernel trace charges using the existing contributing-leaf bound. -/
 public theorem sum_traceWeight_le {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × Fin N)) :
-    (∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N,
+    (∑ T ∈ tiles L m N,
       PrunedQuery.traceWeight (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)) ≤
       8192 * (L + 1) *
-        (∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N,
-          (Cslib.Algorithms.MatrixMultiplication.Schonhage.leaves
-            (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card) +
+        (∑ T ∈ tiles L m N,
+          (leaves (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card) +
         4096 * numBands L m N ^ 2 := by
-  have h := Finset.sum_le_sum (s := Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N)
+  have h := Finset.sum_le_sum (s := tiles L m N)
     (fun T _ => PrunedQuery.traceWeight_le
       (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2))
-  have hc : (Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N).card =
-      numBands L m N ^ 2 := by
-    simp only [Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles,
-      Finset.card_product, Finset.card_range, pow_two]
+  have hc : (tiles L m N).card = numBands L m N ^ 2 := by
+    simp only [tiles, Finset.card_product, Finset.card_range, pow_two]
   have heq (v : ℕ) : 4096 * (2 * (L + 1) * v + 1) = 8192 * (L + 1) * v + 4096 := by ring
   simp_rw [heq] at h
   simpa only [Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_const, smul_eq_mul,
@@ -103,17 +100,14 @@ public theorem timeBound_le {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × Fi
     timeBound hm qs + 1 ≤ 65536 * (L + 1) *
       (1 + N * D m + qs.length + 2 ^ L + (numBands L m N + 1) * 10 ^ L +
         numBands L m N ^ 2 +
-        ∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N,
-          (Cslib.Algorithms.MatrixMultiplication.Schonhage.leaves
-            (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card) := by
+        ∑ T ∈ tiles L m N,
+          (leaves (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card) := by
   have htrace := sum_traceWeight_le hm qs
-  have hleaves := Nat.zero_le (∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N,
-    (Cslib.Algorithms.MatrixMultiplication.Schonhage.leaves
-      (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card)
+  have hleaves := Nat.zero_le (∑ T ∈ tiles L m N,
+    (leaves (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card)
   have hLleaves := Nat.zero_le (L *
-    (∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N,
-      (Cslib.Algorithms.MatrixMultiplication.Schonhage.leaves
-        (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card))
+    (∑ T ∈ tiles L m N,
+      (leaves (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card))
   rw [timeBound, sum_tileCharge]
   unfold routingTimeBound Wanted.timeBound BandPreparation.timeBound inputEnd
   nlinarith only [htrace, hleaves, hLleaves, Nat.zero_le L, Nat.zero_le (2 ^ L),

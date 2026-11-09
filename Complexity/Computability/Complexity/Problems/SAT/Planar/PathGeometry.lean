@@ -41,22 +41,6 @@ namespace Cslib.Complexity.SAT.PlanarCompile
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
 
-/-- Unit-adjacent integer cells differ by exactly one of the four cardinal displacements. -/
-theorem unit_neighbor_cases {p q : Point} (h : Orthogonal.length p q = 1) :
-    q = p + (-1, 0) ∨ q = p + (1, 0) ∨ q = p + (0, -1) ∨ q = p + (0, 1) := by
-  rcases p with ⟨px, py⟩
-  rcases q with ⟨qx, qy⟩
-  simp only [Orthogonal.length] at h
-  simp only [Prod.mk_add_mk, Prod.mk.injEq]
-  omega
-
-/-- Neighboring unit cells use exactly the same geometric midpoint for their shared port. -/
-theorem shared_cellPort {p q : Point} (h : Orthogonal.length p q = 1) :
-    cellPort 120 p (side p q) = cellPort 120 q (side q p) := by
-  rcases p with ⟨px, py⟩
-  rcases unit_neighbor_cases h with rfl | rfl | rfl | rfl <;>
-    norm_num [side, cellPort, cellOrigin, Prod.ext_iff] <;> omega
-
 private theorem consecutivePair_index {r : Route} {a b : Point}
     (h : (a, b) ∈ r.consecutivePairs) :
     ∃ (k : ℕ) (hk : k + 1 < r.length), r[k] = a ∧ r[k + 1] = b := by

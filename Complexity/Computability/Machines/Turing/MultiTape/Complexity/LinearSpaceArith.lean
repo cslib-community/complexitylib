@@ -14,8 +14,8 @@ public import Mathlib.Data.Nat.Size
 /-!
 # Arithmetic in binary within linear work space
 
-Binary addition reexports the shared consuming schoolbook certificate: time is quadratic in the
-encoded input length and charged workspace is linear. The remaining facts bound lengths of
+Binary addition reexports the linear zip-transducer certificate, weakened to time quadratic in
+the encoded input length and linear charged workspace. The remaining facts bound lengths of
 arithmetic outputs and identify successor iteration, for clients with fixed workspace budgets.
 
 ## Main results

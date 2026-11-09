@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Interactive.Basic
+public import Complexity.Probability.StatisticalDistance.CloseTo
+import Complexity.Probability.PMF.Event
 
 /-!
 # Security of interactive reductions
@@ -38,11 +40,13 @@ the prover, are a different notion. Knowledge soundness and zero knowledge are s
 model: in an oracle world the extractor would need the prover's queries and the simulator the
 oracle's view, which these definitions do not provide. Extractors and simulators are named
 arguments, so a property cannot hold vacuously through an unconstrained existential. Their
-efficiency is a separate layer.
+efficiency is a separate layer: `Verifier.EfficientKnowledgeSound` and `Reduction.EfficientHVZK`
+in `Complexity.Computability.Interactive.Efficient` add a polynomial-time extractor and a strict
+PPT simulator over an indexed family of reductions.
 
 ## Main definitions
 
-* `Interactive.language`, `Interactive.Accept`, `Interactive.CloseTo`.
+* `Interactive.language`, `Interactive.Accept`.
 * `Interactive.Reduction.Complete`, `Interactive.Verifier.Sound`,
   `Interactive.Verifier.KnowledgeSound`.
 * `Interactive.Prefix`, `Interactive.Prefix.empty`, `Interactive.PerChallenge.sum`,
@@ -60,7 +64,7 @@ efficiency is a separate layer.
 namespace Cslib.Interactive
 
 open scoped ENNReal
-open Spec
+open Spec Probability
 
 variable {ιP ιV : Type} {oP : OracleSpec ιP} {oV : OracleSpec ιV} {s : Spec}
   {StmtIn WitIn StmtOut WitOut : Type}
@@ -70,24 +74,6 @@ def language {Stmt Wit : Type} (rel : Stmt → Wit → Prop) : Set Stmt := {x | 
 
 /-- The trivial relation that proof systems reduce to: acceptance. -/
 def Accept : Unit → Unit → Prop := fun _ _ => True
-
-/-- `μ` is within statistical distance `ε` of `ν`: no event is more likely under `μ` than under
-`ν` by more than `ε`. Quantifying over all events makes this symmetric, and it is the total
-variation distance on any type, finite or not. -/
-def CloseTo {α : Type} (μ ν : PMF α) (ε : ℝ≥0∞) : Prop :=
-  ∀ event : Set α, μ.toOuterMeasure event ≤ ν.toOuterMeasure event + ε
-
-/-- Statistical closeness is preserved by postprocessing. -/
-theorem CloseTo.map {α β : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) (f : α → β) :
-    CloseTo (μ.map f) (ν.map f) ε := fun event => by
-  simpa only [PMF.toOuterMeasure_map_apply] using h (f ⁻¹' event)
-
-/-- Statistical closeness errors add along a chain. -/
-theorem CloseTo.trans {α : Type} {μ ν ρ : PMF α} {ε δ : ℝ≥0∞} (h₁ : CloseTo μ ν ε)
-    (h₂ : CloseTo ν ρ δ) : CloseTo μ ρ (ε + δ) := fun event =>
-  (h₁ event).trans <| by
-    rw [add_comm ε δ, ← add_assoc]
-    exact add_le_add (h₂ event) le_rfl
 
 /-! ### Completeness, soundness and knowledge soundness -/
 
@@ -108,7 +94,8 @@ def Verifier.Sound (W : World oP oV) (V : Verifier oV s StmtIn StmtOut)
 /-- Straight-line knowledge soundness with error `ε`, in the plain model: whenever a prover
 strategy, ending with an output witness, makes the verifier output a statement for which that
 witness is valid, the extractor `E` recovers a valid input witness from the statement, the
-transcript and the output witness, except with probability `ε`. -/
+transcript and the output witness, except with probability `ε`. The extractor is an arbitrary
+function; `Verifier.EfficientKnowledgeSound` adds the efficiency requirement. -/
 def Verifier.KnowledgeSound (V : Verifier OracleSpec.empty s StmtIn StmtOut)
     (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut → WitOut → Prop)
     (E : StmtIn → Transcript s → WitOut → WitIn) (ε : ℝ≥0∞) : Prop :=
@@ -169,7 +156,8 @@ def Verifier.RbrSound (V : Verifier OracleSpec.empty s StmtIn StmtOut) (langIn :
 
 /-- Honest-verifier zero knowledge with statistical error `ε` (perfect for `ε = 0`), in the plain
 model: on every `(x, w)` in `relIn`, the simulator's transcript law is `ε`-close to the honest
-one. -/
+one. The simulator need not be efficient; `Reduction.EfficientHVZK` adds the efficiency
+requirement. -/
 def Reduction.HVZK (R : Reduction OracleSpec.empty OracleSpec.empty s StmtIn WitIn StmtOut WitOut)
     (relIn : StmtIn → WitIn → Prop) (Sim : StmtIn → ProbComp (Transcript s)) (ε : ℝ≥0∞) :
     Prop :=

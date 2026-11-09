@@ -3,5 +3,5 @@
 # Usage: scripts/build.sh [Lake build arguments]
 set -u
 cd "$(dirname "$0")/.." || exit 1
-scripts/cache/ensure.sh
+scripts/cache/ensure.sh || exit $?
 exec lake build "$@"

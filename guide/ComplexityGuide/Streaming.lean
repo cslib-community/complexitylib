@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 import VersoManual
-import Complexity.Algorithms.Streaming.CountMin.LinearHash
-import Complexity.Algorithms.Streaming.CountMin.Program
+import Complexity.DataStructure.CountMin.LinearHash
+import Complexity.DataStructure.CountMin.Program
 
 open Verso.Genre Manual
 open Verso.Genre.Manual.InlineLean
@@ -25,18 +25,18 @@ of a large overestimate.
 
 This chapter uses weighted insertions. An event `(x, c)` adds the natural number `c` to item `x`;
 the stream is a `List (X × ℕ)`. The list describes the input to the correctness theorem. The
-stored table contains only counters, and {name}`Cslib.CountMin.update` can process one new event
-from the current table.
+stored table contains only counters, and {name}`Cslib.DataStructure.CountMin.update` can process
+one new event from the current table.
 
 ```
-import Complexity.Algorithms.Streaming.CountMin.LinearHash
-import Complexity.Algorithms.Streaming.CountMin.Program
+import Complexity.DataStructure.CountMin.LinearHash
+import Complexity.DataStructure.CountMin.Program
 
-open Cslib.CountMin
+open Cslib.DataStructure.CountMin
 ```
 
 ```lean -show
-open Cslib.CountMin
+open Cslib.DataStructure.CountMin
 ```
 
 # Updates and Queries
@@ -44,9 +44,10 @@ open Cslib.CountMin
 tag := "count-min-updates"
 %%%
 
-{name}`Cslib.CountMin.Table` `d w` is a vector of `d` rows, each with `w` natural-number counters.
-A hash bank `h : Fin d → X → Fin w` selects one bucket per row for each item. An update adds its
-weight to those buckets. {name}`Cslib.CountMin.run` folds the update function over the stream,
+{name}`Cslib.DataStructure.CountMin.Table` `d w` is a vector of `d` rows, each with `w`
+natural-number counters. A hash bank `h : Fin d → X → Fin w` selects one bucket per row for each
+item. An update adds its weight to those buckets. {name}`Cslib.DataStructure.CountMin.run` folds
+the update function over the stream,
 starting from zero. A query takes the minimum of its addressed counters, so queries require
 at least one row.
 
@@ -72,7 +73,7 @@ example : List.ofFn (fun x : Fin 4 =>
 
 The true frequencies are `2, 3, 5, 0`. Collisions increase the estimates for items `0` and `3`.
 An absent item can therefore have a positive estimate. The deterministic guarantee is
-{name}`Cslib.CountMin.frequency_le_estimate_run`:
+{name}`Cslib.DataStructure.CountMin.frequency_le_estimate_run`:
 
 ```lean
 example (x : Fin 4) : frequency exampleStream x ≤
@@ -86,9 +87,9 @@ tag := "count-min-merging"
 %%%
 
 Tables computed with the same hash bank merge by adding corresponding counters.
-{name}`Cslib.CountMin.run_append` identifies this operation with processing the concatenated
-streams. The equality concerns the whole table; taking minima does not make point estimates
-additive.
+{name}`Cslib.DataStructure.CountMin.run_append` identifies this operation with processing the
+concatenated streams. The equality concerns the whole table; taking minima does not make point
+estimates additive.
 
 ```lean
 example : merge (run exampleHash [(0, 2)])
@@ -96,8 +97,8 @@ example : merge (run exampleHash [(0, 2)])
   decide
 ```
 
-For online processing, {name}`Cslib.CountMin.run_append_singleton` identifies appending one
-event to the input with applying one update to the current table.
+For online processing, {name}`Cslib.DataStructure.CountMin.run_append_singleton` identifies
+appending one event to the input with applying one update to the current table.
 
 # Randomness and Accuracy
 %%%
@@ -109,25 +110,26 @@ probability of any two distinct items by the reciprocal of the number of buckets
 needs independent row seeds as well: the guarantee samples a uniform tuple of seeds, rather
 than reusing one seed across all rows.
 
-For a stream and query fixed before sampling, let `M` be {name}`Cslib.CountMin.mass` of the
-stream and let `f` be the queried frequency. The theorem
-{name}`Cslib.CountMin.dens_estimate_error_le` bounds the probability that the estimate exceeds
-`f + ε * M` by `(w * ε)⁻¹ ^ d`, for positive `ε`, `w`, and `d`.
-{name}`Cslib.CountMin.dens_estimate_error_le_inv_two_pow` specializes this to `2⁻ᵈ` when
-`2 ≤ w * ε`. With four buckets, three rows, and `ε = 1/2`, the bound is `1/8`.
+For a stream and query fixed before sampling, let `M` be
+{name}`Cslib.DataStructure.CountMin.mass` of the stream and let `f` be the queried frequency. The
+theorem {name}`Cslib.DataStructure.CountMin.dens_estimate_error_le` bounds the probability that
+the estimate exceeds `f + ε * M` by `(w * ε)⁻¹ ^ d`, for positive `ε`, `w`, and `d`.
+{name}`Cslib.DataStructure.CountMin.dens_estimate_error_le_inv_two_pow` specializes this to
+`2⁻ᵈ` when `2 ≤ w * ε`. With four buckets, three rows, and `ε = 1/2`, the bound is `1/8`.
 Zero total weight is included and gives an identically zero table.
 
-The concrete family {name}`Cslib.CountMin.indexedHash` hashes `n`-bit items to `2^m` buckets
-using a binary matrix with `m` rows. Its collision guarantee is
-{name}`Cslib.CountMin.isTwoUniversal_indexedHash`. Each row of the sketch needs a separate
-matrix seed with `m * n` bits.
+The concrete family {name}`Cslib.DataStructure.CountMin.indexedHash` hashes `n`-bit items to
+`2^m` buckets using a binary matrix with `m` rows. Its collision guarantee is
+{name}`Cslib.DataStructure.CountMin.isTwoUniversal_indexedHash`. Each row of the sketch needs a
+separate matrix seed with `m * n` bits.
 
-{name}`Cslib.CountMin.sampleSketch` is a `ProbComp` program that calls a supplied seed sampler
-independently for each row, then processes the stream. Its result stores the seeds and counter
-table; later queries must use the same hash family. The evaluation theorem assumes that one
-call to the sampler is exactly uniform. {name}`Cslib.CountMin.sampleQuery` constructs a sketch
-and returns one fixed query, and {name}`Cslib.CountMin.sampleQuery_error_le_inv_two_pow`
-proves the same failure bound for the actual program's output law.
+{name}`Cslib.DataStructure.CountMin.sampleSketch` is a `ProbComp` program that calls a supplied
+seed sampler independently for each row, then processes the stream. Its result stores the seeds
+and counter table; later queries must use the same hash family. The evaluation theorem assumes
+that one call to the sampler is exactly uniform.
+{name}`Cslib.DataStructure.CountMin.sampleQuery` constructs a sketch and returns one fixed query,
+and {name}`Cslib.DataStructure.CountMin.sampleQuery_error_le_inv_two_pow` proves the same failure
+bound for the actual program's output law.
 
 These results formalize Count-Min's insertion-only point-query guarantee from
 [Cormode and Muthukrishnan, Section 4.1, Theorem 1][count-min]. They do not cover adaptive

@@ -86,7 +86,7 @@ theorem local_fits {w L m N : ℕ} (hfit : Fits w (wordBudget L m N)) :
 /-- Compute the root and band counts with the actual native loops. -/
 theorem exec_countCode {w L m N : ℕ} (x : Data 96)
     (hx : HeaderPost L m N x) (hfit : Fits w (wordBudget L m N)) :
-    ∃ y, ExecWithin w countCode x y ((6 * L + 16) * 2 ^ L + 14) ∧
+    ∃ y, ExecWithin w countCode x y ((6 * L + 16) * 2 ^ L + 16) ∧
       BandParameters L m N y ∧ y.mem = x.mem := by
   have hl := local_fits hfit
   have hK : K L m ≤ 2 ^ L := Nat.choose_le_two_pow _ _
@@ -101,17 +101,16 @@ theorem exec_countCode {w L m N : ℕ} (x : Data 96)
       simp only [countMasks, countBody, populationCode, Code.Preserves, Op.dest, Op.bin]
       decide
     exact hp i hi)
-  obtain ⟨r, hr, hroot, hsquare, hrmem, _⟩ := exec_root (K L m) c hcount hcp.fixed.one
+  obtain ⟨r, hr, hroot, hsquare, hrmem, hrframe⟩ := exec_root (K L m) c hcount hcp.fixed.one
     (hl.of_le (by
       nlinarith only [hK, Nat.zero_le L, Nat.zero_le N,
         Nat.zero_le (N * D m), Nat.zero_le (2 ^ L), Nat.zero_le (10 ^ L)]))
   have hrp : HeaderPost L m N r := headerPost_reframe hcp (by
     intro i hi
-    apply hr.regs_eq
-    have hp : ∀ i ∈ headerRegisters, rootCode.Preserves i := by
-      simp only [rootCode, rootBody, Code.Preserves, Op.dest, Op.bin]
-      decide
-    exact hp i hi)
+    have hdisj : ∀ i ∈ headerRegisters,
+        i ≠ root ∧ i ≠ square ∧ i ≠ temporary ∧ i ≠ limit := by decide
+    obtain ⟨h1, h2, h3, h4⟩ := hdisj i hi
+    exact hrframe i h1 h2 h3 h4)
   have hB : bandSize L m ≤ 7 ^ L := bandSize_le_seven_pow L m
   have h7 : 7 ^ L ≤ 10 ^ L := Nat.pow_le_pow_left (by decide) _
   have hbfit : Fits w (bandSize L m) := hl.of_le (by
@@ -132,16 +131,15 @@ theorem exec_countCode {w L m N : ℕ} (x : Data 96)
     ram_eval [bandCount, y, hroot0, hrp.outerSize, hrp.fixed.rows, hrp.fixed.one,
       bandSize, numBands, hbfit, hnfit, hnsubfit, hdivfit,
       temporary, root, outerSize, bands, rows, one, Fin.mk.injEq]
-  have he : ExecWithin w countCode x y ((6 * L + 16) * 2 ^ L + 14) := by
+  have he : ExecWithin w countCode x y ((6 * L + 16) * 2 ^ L + 16) := by
     apply (hc.seq (hr.seq hy)).mono
     have hsqrt : Nat.sqrt (K L m) ≤ 2 ^ L := (Nat.sqrt_le_self _).trans hK
     nlinarith
-  have hyp : HeaderPost L m N y := headerPost_reframe hx (by
+  have hyp : HeaderPost L m N y := headerPost_reframe hrp (by
     intro i hi
-    apply he.regs_eq
-    have hp : ∀ i ∈ headerRegisters, countCode.Preserves i := by
-      simp only [countCode, countMasks, countBody, populationCode, rootCode, rootBody,
-        bandCount, Code.Preserves, Op.dest, Op.bin]
+    apply hy.regs_eq
+    have hp : ∀ i ∈ headerRegisters, bandCount.Preserves i := by
+      simp only [bandCount, Code.Preserves, Op.dest, Op.bin]
       decide
     exact hp i hi)
   refine ⟨y, he, ⟨hyp, ?_, ?_, ?_⟩, hrmem.trans hcmem⟩

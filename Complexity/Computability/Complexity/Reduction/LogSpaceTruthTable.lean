@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Complexity.Reduction.TruthTable
 public import Complexity.Computability.Complexity.Reduction.TruthTableVariants
+import Complexity.Tactic.LogSpace
+import Complexity.Foundations.Data.List.Filter
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Words
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
@@ -222,7 +224,7 @@ theorem LogSpaceDTTReducible.logSpacePTTReducible (h : LogSpaceDTTReducible encA
     LogSpacePTTReducible encA encB A B := by
   obtain ⟨r, q, hr, hq, hA⟩ := h
   refine ⟨r, q, fun p => p.2.any id, hr, hq, by fun_prop,
-    fun _ _ _ huv => any_id_le_of_forall₂ huv, fun a => ?_⟩
+    fun _ _ _ huv => List.any_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hA a]
   simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
 
@@ -232,7 +234,7 @@ theorem LogSpaceCTTReducible.logSpacePTTReducible (h : LogSpaceCTTReducible encA
     LogSpacePTTReducible encA encB A B := by
   obtain ⟨r, q, hr, hq, hA⟩ := h
   refine ⟨r, q, fun p => p.2.all id, hr, hq, by fun_prop,
-    fun _ _ _ huv => all_id_le_of_forall₂ huv, fun a => ?_⟩
+    fun _ _ _ huv => List.all_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hA a]
   simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
 
@@ -450,11 +452,8 @@ theorem kTruthTable_mem_L {k : ℕ} {r : α → ℕ} {q : α × ℕ → β} {d :
     (hB : B ∈ L encB) : A ∈ L encA := by
   classical
   obtain ⟨decB, hdecB, hBmem⟩ := hB
-  have hans : ComputableInLogSpace
-      (fun a => (List.range (r a)).map fun i => decB (q (a, i))) encA encBits :=
-    ComputableInLogSpace.mapToBits_range_of_le k hr hrk (hdecB.comp hq)
   refine ⟨fun a => d (a, (List.range (r a)).map fun i => decB (q (a, i))),
-    hd.comp (ComputableInLogSpace.pair .id hans), fun a => ?_⟩
+    by logspace, fun a => ?_⟩
   have hdec_eq : ∀ b, decB b = decide (b ∈ B) := fun b =>
     Bool.eq_iff_iff.mpr (by simp [← hBmem b])
   rw [hA a, truthTableAnswers_eq_map_range]
@@ -503,13 +502,10 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
       (encPair (encPair encA encBits) encUnary) encBool := by
     simp only [innerAns]
     fun_prop
-  have h_outerList : ComputableInLogSpace
-      (fun p : α × List Bool => (List.range (r₁ p.1)).map fun i => innerAns (p, i))
-      (encPair encA encBits) encBits :=
-    ComputableInLogSpace.mapToBits_range_of_le k₁ (by fun_prop) (fun p => hr₁k p.1) h_innerAns
   have hd : ComputableInLogSpace d (encPair encA encBits) encBool := by
+    have hbound : ∀ p : α × List Bool, r₁ p.1 ≤ k₁ := fun p => hr₁k p.1
     simp only [d]
-    fun_prop
+    logspace
   refine ⟨r, q, d, hr, hq, hd, fun a => Nat.mul_le_mul_right k₂ (hr₁k a), fun a => ?_⟩
   rw [hA a, truthTableAnswers_eq_map_range]
   dsimp only [d]

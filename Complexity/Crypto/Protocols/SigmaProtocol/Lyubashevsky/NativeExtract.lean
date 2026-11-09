@@ -68,11 +68,7 @@ def decodeLyubashevskyExtractInput (word : List Bool) : LyubashevskyExtractInput
 
 private theorem extractInput_decoder :
     ∃ D : Decoder encLyubashevskyExtractInput, D.decode = decodeLyubashevskyExtractInput := by
-  let integer : Decoder encIntBin := {
-    decode := decodeIntBin
-    decode_enc := decodeIntBin_encIntBin
-    computable := computableInPolyTime_decodeIntBin.exists_degree }
-  let row := Decoder.pair Decoder.bits (Decoder.option (Decoder.list integer))
+  let row := Decoder.pair Decoder.bits (Decoder.option (Decoder.list Decoder.intBin))
   let decoder := Decoder.pair (Decoder.pair Decoder.unary Decoder.unary) (Decoder.pair row row)
   exact ⟨decoder, rfl⟩
 
@@ -101,8 +97,9 @@ def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List ℤ :=
       (if input.2.1.1.getD i false then (1 : ℤ) else 0))
 
 /-- Extraction always writes the two declared segments, even on malformed-length inputs. -/
-@[simp] theorem length_lyubashevskyExtractList (input : LyubashevskyExtractInput) :
-    (lyubashevskyExtractList input).length = input.1.1 + input.1.2 := by
+@[simp] theorem length_lyubashevskyExtractList (m k : ℕ)
+    (cz cz' : List Bool × Option (List ℤ)) :
+    (lyubashevskyExtractList ((m, k), cz, cz')).length = m + k := by
   simp [lyubashevskyExtractList]
 
 /-- One native extractor handles runtime dimensions and all binary integer magnitudes. -/

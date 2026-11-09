@@ -63,7 +63,7 @@ theorem exists_decrypt_parameter_bound :
     ∃ (time space : ℕ × List Bool × List Bool → ℕ) (bound : ℕ → ℕ),
       PolynomiallyBounded bound ∧
         (∀ budget : ℕ → ℕ, ComputableInTimeAndSpace
-          (fun p : ℕ × List Bool × List Bool => (scheme D budget).decrypt p.1 p.2.1 p.2.2)
+          (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D budget).decrypt n sk c)
           (encPair encUnary (encPair encBits encBits)) encBool time space) ∧
         ∀ n (sk ciphertext : List Bool),
           sk.length = 3 * secretWidth n + 1 →
@@ -206,11 +206,8 @@ theorem exists_uniform_decrypt_circuits
     have hlen_unary : ComputableInPolyTime (fun n => (circuits n).code.1.length)
         encUnary encUnary :=
       (ComputableInPolyTime.length_list Boolean.encGate).comp hcode.fst'
-    have hlength : PolynomiallyBounded (fun n => (circuits n).code.1.length) :=
-      (show PolyBounded (fun n : ℕ => n) (fun n => (circuits n).code.1.length) by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hlen_unary.polyBounded_length).polynomiallyBounded
-    exact hlength.mono_of_le fun n => (Circuit.length_code_fst (circuits n)).ge
+    exact hlen_unary.polynomiallyBounded.mono_of_le
+      fun n => (Circuit.length_code_fst (circuits n)).ge
   refine ⟨circuits, hgen, hsize, ?_⟩
   intro budget n sk ciphertext hsk hciphertext
   have hwlen : (sk ++ ciphertext).length = W n := by simp [W, K, hsk, hciphertext]

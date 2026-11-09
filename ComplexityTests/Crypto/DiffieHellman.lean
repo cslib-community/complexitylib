@@ -613,26 +613,27 @@ example {keys : List Bool × List Bool}
     (schnorrGroups.generator d23) hct
 
 /-- Concrete instantiation of `DDH.kemINDCPA_hashedElGamalEncapsProb`,
-`DDH.wordINDCPA_hybrid_hashedElGamal` (with `otpWordEncrypt`),
+`DDH.wordINDCPA_hybrid_hashedElGamal` (with a `2 * n`-bit one-time pad),
 `DDH.indcpaOn_elGamalEncryptProb`, and `DDH.indcpa_elGamalBitEncryptProb`. -/
 example (d : ℕ → schnorrGroups.Desc)
     (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
     (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n)))
     (H : schnorrGroups.Desc × List Bool → List Bool)
-    (hKDF : schnorrGroups.SecureKDF (fun n => PMF.pure (d n)) H (fun n => n))
+    (hKDF : schnorrGroups.SecureKDF (fun n => PMF.pure (d n)) H (fun n => 2 * n))
     (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits) :
-    Encryption.KEMINDCPA (schnorrGroups.elGamalKeyGenProb d)
+    Encryption.KEMINDCPA (fun n => 2 * n) (schnorrGroups.elGamalKeyGenProb d)
       (schnorrGroups.hashedElGamalEncapsProb H d) ∧
     Encryption.WordINDCPA (schnorrGroups.elGamalKeyGenProb d)
       (Encryption.hybridEncrypt (schnorrGroups.hashedElGamalEncapsProb H d)
-        Encryption.otpWordEncrypt) ∧
+        (Encryption.otpKeyWordEncrypt (fun n => 2 * n))) ∧
     Encryption.INDCPAOn twoElements encBits (schnorrGroups.elGamalKeyGenProb d)
       (schnorrGroups.elGamalEncryptProb (fun _ x => x) d) ∧
     Encryption.INDCPA (schnorrGroups.elGamalKeyGenProb d)
       (schnorrGroups.elGamalEncryptProb schnorrGroups.encodeBit d) :=
   ⟨hDDH.kemINDCPA_hashedElGamalEncapsProb hKDF hH,
-    hDDH.wordINDCPA_hybrid_hashedElGamal hKDF Encryption.demOneTimeWordINDCPA_otpWordEncrypt
-      hH hd Encryption.isPPTOn_otpWordEncrypt,
+    hDDH.wordINDCPA_hybrid_hashedElGamal hKDF
+      (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun n => 2 * n))
+      hH hd (Encryption.isPPTOn_otpKeyWordEncrypt (by fun_prop)),
     hDDH.indcpaOn_elGamalEncryptProb computableInPolyTime_twoElements
       admitsGroupElements_twoElements (by fun_prop),
     hDDH.indcpa_elGamalBitEncryptProb⟩
@@ -784,5 +785,98 @@ theorem advantage_hashedElGamalCipherCPAGameOn_identitySym
       firstBitCipherAdversary, hval]
   rw [h0, h1, Game.advantage, Game.succProbability, Game.succProbability]
   simp
+
+/-- Positive-side non-`n` key-length instantiation (`outLen := fun _ => 4`) of
+`DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn` with a
+4-bit one-time pad symmetric cipher `Encryption.otpKeyWordEncrypt (fun _ => 4)`
+(`Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun _ => 4)`): IND-CPA security holds
+under `schnorrGroups.DDH` and `2 ^ n ≤ schnorrGroups.order d` at constant 4-bit symmetric key
+length. -/
+example (setupProb : ℕ → ProbComp schnorrGroups.Desc)
+    (hsetup : IsPPTOn encUnary schnorrGroups.encDesc setupProb)
+    (hDDH : schnorrGroups.DDH (fun n => ProbComp.eval (setupProb n)))
+    (keyLen : schnorrGroups.Desc → ℕ)
+    (hkey_poly : ComputableInPolyTime keyLen schnorrGroups.encDesc encUnary)
+    (hkey : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support, keyLen d = 4)
+    (hsize : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support,
+      2 ^ n ≤ schnorrGroups.order d) :
+    Negligible fun n =>
+      Game.advantage
+        (schnorrGroups.withSeed.hashedElGamalCipherCPAGameOn equalLengthWords
+          (schnorrGroups.seededSetup (fun m => ProbComp.eval (setupProb m))
+            (schnorrGroups.linearHashSeedLen (fun _ => 4)
+              (fun d => (schnorrGroups.encDesc d).length)))
+          (schnorrGroups.linearHashKDF keyLen (fun d => (schnorrGroups.encDesc d).length))
+          (Encryption.otpKeyWordEncrypt (fun _ => 4)) hashedWordAdversary false n)
+        (schnorrGroups.withSeed.hashedElGamalCipherCPAGameOn equalLengthWords
+          (schnorrGroups.seededSetup (fun m => ProbComp.eval (setupProb m))
+            (schnorrGroups.linearHashSeedLen (fun _ => 4)
+              (fun d => (schnorrGroups.encDesc d).length)))
+          (schnorrGroups.linearHashKDF keyLen (fun d => (schnorrGroups.encDesc d).length))
+          (Encryption.otpKeyWordEncrypt (fun _ => 4)) hashedWordAdversary true n) := by
+  have hout_poly : ComputableInPolyTime (fun _ : ℕ => 4) encUnary encUnary :=
+    ComputableInPolyTime.const 4
+  refine hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn
+    (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun _ => 4)) hsetup hout_poly hkey_poly
+    (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
+    (fun _ => Nat.two_pow_pos _) hkey (fun _ d _ x => schnorrGroups_encode_length_le d x)
+    hsize ?_ computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
+    (Encryption.isPPTOn_otpKeyWordEncrypt hout_poly) hashedWordAdversary_isPPT
+  have h : (fun n => (2 : ℝ≥0) ^ 4 / ((2 ^ n : ℕ) : ℝ≥0)) =
+      fun n => (16 : ℝ≥0) * (1 / (2 ^ n : ℕ) : ℝ≥0) := by
+    funext n
+    push_cast
+    ring
+  rw [h]
+  exact negligible_inv_two_pow.const_mul 16
+
+/-- A uniform strict-PPT standalone symmetric word adversary that submits `([false], [true])` and
+returns the first bit of the symmetric ciphertext `ct`. -/
+noncomputable def firstBitSymAdversary : Encryption.WordAdversary where
+  choose _ _ := pure (([false], [true]), [])
+  guess _ _ ct := pure (ct.headD false)
+
+/-- `firstBitSymAdversary` is uniform strict PPT. -/
+theorem firstBitSymAdversary_isPPT : firstBitSymAdversary.IsPPT where
+  choose := (ComputableInPolyTime.const _).isPPTOn
+  guess := by
+    have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool :=
+      by fun_prop
+    have hct : ComputableInPolyTime
+        (fun p : ℕ × List Bool × List Bool => p.2.2.headD false)
+        (encPair encUnary (encPair encBits encBits)) encBool :=
+      hhead.comp (by fun_prop)
+    exact hct.isPPTOn
+
+/-- Refutation test for `DEMOneTimeKeyWordINDCPA` at non-`n` key length (`keyLen = fun _ => 4`):
+`identitySym` is not one-time semantically secure at 4-bit key length. -/
+theorem not_demOneTimeKeyWordINDCPA_identitySym :
+    ¬ Encryption.DEMOneTimeKeyWordINDCPA (fun _ => 4) identitySym := by
+  intro hsec
+  have hneg := hsec firstBitSymAdversary firstBitSymAdversary_isPPT
+  have hadv (n : ℕ) :
+      Game.advantage
+        (ProbComp.eval
+          (Encryption.demKeyGameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) (fun _ => 4)
+            identitySym firstBitSymAdversary false n))
+        (ProbComp.eval
+          (Encryption.demKeyGameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) (fun _ => 4)
+            identitySym firstBitSymAdversary true n)) = 1 := by
+    have h0 :
+        ProbComp.eval
+          (Encryption.demKeyGameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) (fun _ => 4)
+            identitySym firstBitSymAdversary false n) = PMF.pure false := by
+      simp [Encryption.demKeyGameOn, identitySym, firstBitSymAdversary, PMF.map,
+        Function.comp_def, PMF.bind_const]
+    have h1 :
+        ProbComp.eval
+          (Encryption.demKeyGameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) (fun _ => 4)
+            identitySym firstBitSymAdversary true n) = PMF.pure true := by
+      simp [Encryption.demKeyGameOn, identitySym, firstBitSymAdversary, PMF.map,
+        Function.comp_def, PMF.bind_const]
+    rw [h0, h1, Game.advantage, Game.succProbability, Game.succProbability]
+    simp
+  simp only [hadv] at hneg
+  exact not_negligible_const one_ne_zero hneg
 
 end ComplexityTests.Crypto.DiffieHellman

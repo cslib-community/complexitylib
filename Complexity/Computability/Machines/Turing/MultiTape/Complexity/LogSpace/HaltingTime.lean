@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Configurations
 public import Cslib.Foundations.Relation.RelatesInSteps
+import Complexity.Foundations.Relation.RelatesWithinSteps
 
 /-!
 # Halting within the number of reachable views
@@ -45,16 +46,6 @@ open Cslib.Turing
 namespace Turing.MultiTapeNTM
 
 variable {k : ℕ} {State : Type} {ntm : MultiTapeNTM k Bool State} {input : List Bool}
-
-/-- **Pumping a cycle.** A path to `b` followed by any number of rounds of a cycle at `b`. -/
-private theorem relatesInSteps_pump {α : Type*} {r : α → α → Prop} {i m : ℕ} {a b : α}
-    (h : Relation.RelatesInSteps r a b i) (hcycle : Relation.RelatesInSteps r b b m)
-    (rounds : ℕ) : Relation.RelatesInSteps r a b (i + rounds * m) := by
-  induction rounds with
-  | zero => simpa using h
-  | succ rounds ih =>
-    have := ih.trans hcycle
-    rwa [Nat.add_assoc, ← Nat.succ_mul] at this
 
 /-- **Views along a computation path.** A computation path has a chain of views from the initial
 view, one view per configuration, each representing its configuration. -/
@@ -189,35 +180,12 @@ theorem runsInTime_of_runsInSpace {s t : ℕ} (hs : ntm.RunsInSpace input s)
     have := hchain.relatesInSteps_getElem i (j - i) (by omega)
     simp only [Nat.add_sub_cancel' hij.le] at this
     rwa [← heq] at this
-  have hlong := relatesInSteps_pump hpre hcycle t
+  have hlong := hpre.add_mul_of_cycle hcycle t
   obtain ⟨q, hq, hqrep⟩ := exists_computationPath_of_relatesInSteps hlong
   have hhalt := ht q (by rw [hq]; nlinarith [Nat.sub_pos_of_lt hij])
   -- the repeated view is running
   have hstate := (hrep i (by omega)).state
   exact hrun ⟨i, by omega⟩ (hstate.symm.trans (hqrep.state.trans hhalt))
-
-/-- The polynomial clock of `exists_runsInTime_polynomial_of_runsInSpace_log`, with its exponent
-spelled out. -/
-private theorem runsInTime_polynomial_of_runsInSpace_log {c t : ℕ}
-    (hs : ntm.RunsInSpace input (c * (Nat.log2 input.length + 1)))
-    (ht : ntm.RunsInTime input t) :
-    ntm.RunsInTime input (2 * (2 * (input.length + 1)) ^
-      (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1))) := by
-  refine (runsInTime_of_runsInSpace hs ht).mono ?_
-  set K := 8 + 2 * Nat.card (Option State) + 200 * k
-  set L := Nat.log2 input.length
-  have hlog : 2 ^ L ≤ input.length + 1 := by
-    rcases Nat.eq_zero_or_pos input.length with h | h
-    · simp [L, h]
-    · rw [show L = Nat.log 2 input.length from Nat.log2_eq_log_two]
-      exact (Nat.pow_log_le_self 2 h.ne').trans (Nat.le_succ _)
-  have hcore : coreLengthBound k State input.length (c * (L + 1)) = K * (c + 1) * (L + 1) := by
-    simp only [coreLengthBound, K, L]
-    ring
-  have hbase : 2 ^ (L + 1) ≤ 2 * (input.length + 1) := by rw [pow_succ]; omega
-  calc 2 ^ (2 * coreLengthBound k State input.length (c * (L + 1)) + 1)
-      = 2 * (2 ^ (L + 1)) ^ (2 * K * (c + 1)) := by rw [hcore, ← pow_mul, pow_succ]; ring_nf
-    _ ≤ 2 * (2 * (input.length + 1)) ^ (2 * K * (c + 1)) := by gcongr
 
 /-- **Logarithmic space gives a polynomial clock.** For every space constant `c` there is an
 exponent `d` such that on every input of length `n`, if every computation path stays within space
@@ -227,6 +195,7 @@ theorem exists_runsInTime_polynomial_of_runsInSpace_log (ntm : MultiTapeNTM k Bo
     (c : ℕ) : ∃ d, ∀ {input : List Bool} {t : ℕ},
       ntm.RunsInSpace input (c * (Nat.log2 input.length + 1)) → ntm.RunsInTime input t →
         ntm.RunsInTime input (2 * (2 * (input.length + 1)) ^ d) :=
-  ⟨_, fun hs ht => runsInTime_polynomial_of_runsInSpace_log hs ht⟩
+  ⟨_, fun hs ht =>
+    (runsInTime_of_runsInSpace hs ht).mono (two_pow_coreLengthBound_log_le k State c _)⟩
 
 end Turing.MultiTapeNTM

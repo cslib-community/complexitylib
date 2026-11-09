@@ -130,9 +130,8 @@ verification key opens leaf `u` of the depth-`depth k.length` tree with root `ro
 signature verifies on `H k msg`. -/
 def verify (pk : List Bool) (u : ℕ) (msg sig : List Bool) : Bool :=
   let k := unframe pk
-  let forged := signatureDecoder.decode sig
-  merkleVerify H k (depth k.length) (dropFrame pk) u forged.1 forged.2.2 &&
-    S.verify forged.1 (H k msg) forged.2.1
+  let (vk, ots, path) := signatureDecoder.decode sig
+  merkleVerify H k (depth k.length) (dropFrame pk) u vk path && S.verify vk (H k msg) ots
 
 /-! ### Completeness -/
 
@@ -248,7 +247,7 @@ include hH hlen in
 /-- Merkle signing is uniformly strict PPT. -/
 theorem isPPTOn_sign :
     IsPPTOn (encPair encBits (encPair encUnary encBits)) encBits
-      (fun p => sign S H p.1 p.2.1 p.2.2) := by
+      (fun (sk, u, msg) => sign S H sk u msg) := by
   let E := encPair encBits (encPair encUnary encBits)
   have hdec : ComputableTidilyInPolyTime (fun p : List Bool × ℕ × List Bool =>
       secretKeyDecoder.decode p.1) E (encPair encBits (encList (encPair encBits encBits))) :=
@@ -289,7 +288,8 @@ include hH hlen hcap in
 /-- Merkle verification is computable in polynomial time. -/
 theorem computableInPolyTime_verify :
     ComputableInPolyTime
-      (fun p : List Bool × ℕ × List Bool × List Bool => verify S H depth p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun ((pk, u, msg, sig) : List Bool × ℕ × List Bool × List Bool) =>
+        verify S H depth pk u msg sig)
       (encPair encBits (encPair encUnary (encPair encBits encBits))) encBool := by
   apply ComputableInPolyTime.of_tidy
   let E := encPair encBits (encPair encUnary (encPair encBits encBits))

@@ -42,16 +42,6 @@ namespace Cslib.Complexity.SAT.ExactOne
 
 open Cslib.Logic.PL Orthogonal
 
-private theorem collarRoute_points_bounds (reflected : Bool) {r : Route}
-    (hr : ∀ q ∈ r, 0 ≤ q.1 ∧ q.1 ≤ 180000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 180000) :
-    ∀ q ∈ collarRoute reflected r,
-      0 ≤ q.1 ∧ q.1 ≤ 540000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 540000 := by
-  intro q hq
-  rw [collarRoute_eq_map] at hq
-  obtain ⟨a, ha, rfl⟩ := List.mem_map.mp hq
-  have hb := hr a ha
-  cases reflected <;> dsimp [collarPoint, collarOffset, mirrorPoint] <;> omega
-
 private theorem collarPrefixRoute_points_bounds {s : PortAssignment} (hs : s.Distinct)
     (i : Fin 3) {r : Route}
     (hr : ∀ q ∈ r, 0 ≤ q.1 ∧ q.1 ≤ 180000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 180000) :

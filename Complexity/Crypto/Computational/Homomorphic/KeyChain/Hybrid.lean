@@ -80,7 +80,9 @@ number of links and number of bit encryptions in each link are retained. -/
 def encryptZeroKeyLinks (n : ℕ) (keys : List (List Bool × List Bool)) :
     ProbComp (List (List (List Bool))) :=
   (keys.zip keys.tail).mapM (fun adjacent =>
-    E.encryptBits n adjacent.2.1 (List.replicate adjacent.1.2.length false))
+    let prev := adjacent.1
+    let next := adjacent.2
+    E.encryptBits n next.1 (List.replicate prev.2.length false))
 
 /-- Encrypt real secrets in the first `cut` links, and zero words in the remaining links.
 The two key segments overlap at their boundary key; each link is sampled exactly once. -/
@@ -251,8 +253,7 @@ theorem eval_spliceEncryptedKeyLink_original (n : ℕ) (before : List (List Bool
   simp only [spliceEncryptedKeyLink, encryptKeyLinkHybrid, ProbComp.eval_bind,
     ProbComp.eval_pure]
   rw [PMF.bind_comm]
-  congr 1
-  funext front
+  congr 1 with front : 1
   rw [← PMF.bind_bind, hmiddle]
 
 /-- A zero-bit challenge recovers the full next hybrid distribution, retaining all other
@@ -269,8 +270,7 @@ theorem eval_spliceEncryptedKeyLink_zero (n : ℕ) (before : List (List Bool × 
   simp only [spliceEncryptedKeyLink, encryptKeyLinkHybrid, ProbComp.eval_bind,
     ProbComp.eval_pure]
   rw [PMF.bind_comm]
-  congr 1
-  funext front
+  congr 1 with front : 1
   rw [← PMF.bind_bind, hmiddle]
 
 /-- Sample an intermediate bit hybrid with the target key drawn first. Only public keys and
@@ -293,16 +293,13 @@ theorem eval_publicKeyLinkHybrid_zero (n beforeCount afterCount : ℕ) :
   simp only [publicKeyLinkHybrid, publicKeyChainHybrid, ProbComp.eval_bind]
   rw [← E.eval_generateKeys_splice n beforeCount afterCount]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext next
+  congr 1 with next : 1
   apply Probability.PMF.bind_congr_on_support
   intro before hbefore
   have hlength := ((ProbComp.mem_support_replicate_iff beforeCount (E.keyGen n) before).mp
     hbefore).1
-  congr 1
-  funext predecessor
-  congr 1
-  funext after
+  congr 1 with predecessor : 1
+  congr 1 with after : 1
   rw [← hlength, ← E.encryptKeyLinkHybrid_zero]
 
 /-- With a fixed supported secret length, the final bit boundary is the preceding link
@@ -314,16 +311,14 @@ theorem eval_publicKeyLinkHybrid_length (n beforeCount afterCount width : ℕ)
   simp only [publicKeyLinkHybrid, publicKeyChainHybrid, ProbComp.eval_bind]
   rw [← E.eval_generateKeys_splice n beforeCount afterCount]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext next
+  congr 1 with next : 1
   apply Probability.PMF.bind_congr_on_support
   intro before hbefore
   have hlength := ((ProbComp.mem_support_replicate_iff beforeCount (E.keyGen n) before).mp
     hbefore).1
   apply Probability.PMF.bind_congr_on_support
   intro predecessor hpredecessor
-  congr 1
-  funext after
+  congr 1 with after : 1
   rw [← hlength, ← hwidth predecessor hpredecessor, ← E.encryptKeyLinkHybrid_length]
 
 end Cslib.Crypto.Homomorphic.Scheme

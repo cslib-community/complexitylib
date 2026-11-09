@@ -6,3 +6,6 @@ __pycache__/
 
 # Formal abstract PDFs and generated TeX are built by CI.
 /abstracts/build/
+
+# Intentional comparator challenge placeholders and configurations, generated before checking.
+/comparator/ComplexityComparatorChallenges/

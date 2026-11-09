@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.AccumulateStep
 public import Complexity.Computability.WordRAM.Heap
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native accumulation over a distinct parent list
 
@@ -62,46 +64,44 @@ theorem exec_accumulateLoop {w N capacity : ℕ} (x : Data registers) (input : �
   let newValue (a : ℕ) :=
     encode (V (a - x.regs valueBase) + B ((a - x.regs valueBase) / 10))
   let x0 := x.set index 0
-  let I (y : Data registers) : Prop := y.regs index ≤ N ∧
-    y.mem = (written (y.regs index)).piecewise newValue x.mem ∧
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    y.mem = (written j).piecewise newValue x.mem ∧
     (∀ i, ¬AccumulateStepLocal i → y.regs i = x.regs i)
-  have hinit : I x0 := by
-    refine ⟨by simp [x0], ?_, ?_⟩
+  have hinit : P (x0.regs index) x0 := by
+    refine ⟨?_, ?_⟩
     · funext a
       simp [x0, written, Finset.piecewise]
     · intro i hi
       have hne : i ≠ index := by intro h; subst h; exact hi (by decide)
       simp [x0, hne]
-  have houtside (y : Data registers) (hy : I y) (a : ℕ)
+  have houtside (j : ℕ) (y : Data registers) (hj : j ≤ N) (hy : P j y) (a : ℕ)
       (ha : ¬(Block.mk (x.regs valueBase) capacity).Owns a) : y.mem a = x.mem a := by
-    have hnot : a ∉ written (y.regs index) := by
+    have hnot : a ∉ written j := by
       rintro h
       obtain ⟨i, hi, rfl⟩ := mem_image.mp h
       have hik := mem_range.mp (mem_filter.mp hi).1
-      have hq := hcode i (lt_of_lt_of_le hik hy.1)
+      have hq := hcode i (lt_of_lt_of_le hik hj)
       apply ha
       change x.regs valueBase ≤ x.regs valueBase + input i ∧
         x.regs valueBase + input i < x.regs valueBase + capacity
       omega
-    rw [hy.2.1]
+    rw [hy.1]
     simp only [Finset.piecewise, hnot, ↓reduceIte]
-  have hread (y : Data registers) (hy : I y) (i : ℕ) (hi : i < N) :
+  have hread (j : ℕ) (y : Data registers) (hj : j ≤ N) (hy : P j y) (i : ℕ) (hi : i < N) :
       y.mem (x.regs listBase + i) = input i := by
-    rw [houtside y hy]
+    rw [houtside j y hj hy]
     · exact hinput i hi
     · change ¬(x.regs valueBase ≤ x.regs listBase + i ∧
         x.regs listBase + i < x.regs valueBase + capacity)
       rcases hsepSource with h | h <;> omega
-  have hstep (y : Data registers) (hy : I y) (hc : (Cond.lt index count).Holds y) :
-      ∃ z, ExecWithin (w + 2) accumulateStep y z 29 ∧ I z ∧
-        N - z.regs index < N - y.regs index := by
-    obtain ⟨hle, hmem, hf⟩ := hy
-    have hcount := (hf count (by decide)).trans hN
+  have hstep (y : Data registers) (hy : P (y.regs index) y) (hk : y.regs index < N) :
+      ∃ z, ExecWithin (w + 2) accumulateStep y z 29 ∧ P (y.regs index + 1) z ∧
+        z.regs index = y.regs index + 1 := by
+    obtain ⟨hmem, hf⟩ := hy
     have hb := hf listBase (by decide)
     have hv := hf valueBase (by decide)
     have hcptr := hf childValues (by decide)
     have ht := hf term (by decide)
-    have hk : y.regs index < N := by simpa only [Cond.holds_lt, hcount] using hc
     have hq := hcode (y.regs index) hk
     have hquot : input (y.regs index) / 10 < capacity :=
       lt_of_le_of_lt (Nat.div_le_self _ _) hq
@@ -109,7 +109,7 @@ theorem exec_accumulateLoop {w N capacity : ℕ} (x : Data registers) (input : �
       rintro h
       obtain ⟨j, hj, he⟩ := mem_image.mp h
       have hjk := mem_range.mp (mem_filter.mp hj).1
-      have hji := hinj (lt_of_lt_of_le hjk hle) hk (Nat.add_left_cancel he)
+      have hji := hinj (lt_of_lt_of_le hjk hk.le) hk (Nat.add_left_cancel he)
       omega
     have hleft : y.mem (y.regs valueBase + input (y.regs index)) =
         encode (V (input (y.regs index))) := by
@@ -119,25 +119,25 @@ theorem exec_accumulateLoop {w N capacity : ℕ} (x : Data registers) (input : �
     have hright (hs : selected true (y.regs term) (input (y.regs index))) :
         y.mem (y.regs childValues + input (y.regs index) / 10) =
           encode (B (input (y.regs index) / 10)) := by
-      rw [hcptr, houtside y ⟨hle, hmem, hf⟩]
+      rw [hcptr, houtside (y.regs index) y hk.le ⟨hmem, hf⟩]
       · exact hchild _ hk (by simpa only [ht] using hs)
       · change ¬(x.regs valueBase ≤ x.regs childValues + input (y.regs index) / 10 ∧
           x.regs childValues + input (y.regs index) / 10 < x.regs valueBase + capacity)
         rcases hsepChild with h | h <;> omega
     obtain ⟨z, hz, hi, hm, hregs⟩ := exec_accumulateStep (hV _ hk) (hB _ hk) y
-      (input (y.regs index)) (by rw [hb]; exact hread y ⟨hle, hmem, hf⟩ _ hk)
+      (input (y.regs index)) (by rw [hb]; exact hread (y.regs index) y hk.le ⟨hmem, hf⟩ _ hk)
       ((hf one (by decide)).trans h1) ((hf nine (by decide)).trans h9)
       ((hf ten (by decide)).trans h10) (fun _ => hleft) hright
       (hw.of_le (by omega)) (hw.of_le (by rw [hb]; omega))
       (hw.of_le (by rw [hv]; omega)) (hw.of_le (by rw [hcptr]; omega)) (hw.of_le (by omega))
-    refine ⟨z, hz, ⟨by omega, ?_, fun i hi => (hregs i hi).trans (hf i hi)⟩, by omega⟩
+    refine ⟨z, hz, ⟨?_, fun i hi => (hregs i hi).trans (hf i hi)⟩, hi⟩
     have hnext : written (y.regs index + 1) =
         if selected true (x.regs term) (input (y.regs index)) then
           insert (x.regs valueBase + input (y.regs index)) (written (y.regs index))
         else written (y.regs index) := by
       by_cases hs : selected true (x.regs term) (input (y.regs index)) <;>
         simp [written, range_add_one, filter_insert, hs]
-    rw [hm, ht, hv, hmem, hi, hnext]
+    rw [hm, ht, hv, hmem, hnext]
     funext a
     by_cases hs : selected true (x.regs term) (input (y.regs index))
     · by_cases he : a = x.regs valueBase + input (y.regs index)
@@ -145,12 +145,8 @@ theorem exec_accumulateLoop {w N capacity : ℕ} (x : Data registers) (input : �
         simp [hs, Finset.piecewise, newValue]
       · simp [hs, Finset.piecewise, he, newValue]
     · simp [hs, Finset.piecewise, newValue]
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I (fun y => N - y.regs index)
-    hstep hinit
-  have hcount := (hIy.2.2 count (by decide)).trans hN
-  have hindex : y.regs index = N := by
-    simp only [Cond.holds_lt, hcount, not_lt] at hstop
-    omega
+  obtain ⟨y, hy, hIy, hindex⟩ := ExecWithin.loop_count P
+    (fun _ hy => (hy.2 count (by decide)).trans hN) hstep (by simp [x0]) hinit
   have hsetup : ExecWithin (w + 2) (ram[ index ← #0 ] : Code .standard registers) x x0 1 := by
     ram_eval [x0]
   have hloop : ExecWithin (w + 2) (Code.loop (.lt index count) accumulateStep) x0 y
@@ -158,12 +154,8 @@ theorem exec_accumulateLoop {w N capacity : ℕ} (x : Data registers) (input : �
     simpa only [x0, Data.set_regs, Function.update_self, Nat.sub_zero, Nat.mul_comm] using hy
   have he : ExecWithin (w + 2) accumulateLoop x y (31 * N + 3) :=
     (hsetup.seq hloop).mono (by omega)
-  refine ⟨y, he, hindex, ?_, ?_, hread y hIy,
-    fun i hi => he.regs_eq (accumulateLoop_preserves i hi)⟩
-  · change y.mem = (written N).piecewise newValue x.mem
-    rw [← hindex]
-    exact hIy.2.1
-  · intro a ha
-    exact houtside y hIy a (by simpa only [Block.mem_footprint] using ha)
+  exact ⟨y, he, hindex, hIy.1,
+    fun a ha => houtside N y le_rfl hIy a (by simpa only [Block.mem_footprint] using ha),
+    hread N y le_rfl hIy, fun i hi => he.regs_eq (accumulateLoop_preserves i hi)⟩
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery

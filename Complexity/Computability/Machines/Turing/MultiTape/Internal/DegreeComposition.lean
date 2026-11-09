@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Comp
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelComp
 
 /-!
 # Direct composition at independent resource and output degrees

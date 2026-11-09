@@ -16,6 +16,7 @@ import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Tactic.EncLen
 
 /-!
 # One-way functions separate P from NP
@@ -80,7 +81,13 @@ open Complexity Probability Turing.MultiTapeTM ComputableTidilyInPolyTime
 /-- **The preimage-prefix problem** of `f`: the instances `(n, y, u)` such that some input `x` of
 length `n` that starts with `u` satisfies `f x = y`. -/
 def preimagePrefix (f : List Bool → List Bool) : Set (ℕ × List Bool × List Bool) :=
-  {p | ∃ x : List Bool, x.length = p.1 ∧ p.2.2 <+: x ∧ f x = p.2.1}
+  {(n, y, u) : ℕ × List Bool × List Bool | ∃ x : List Bool, x.length = n ∧ u <+: x ∧ f x = y}
+
+/-- Membership in `preimagePrefix f`: `(n, y, u) ∈ preimagePrefix f` iff `y` has an `n`-bit
+preimage under `f` with prefix `u`. -/
+@[simp] theorem mem_preimagePrefix {f : List Bool → List Bool} {n : ℕ} {y u : List Bool} :
+    (n, y, u) ∈ preimagePrefix f ↔ ∃ x : List Bool, x.length = n ∧ u <+: x ∧ f x = y := by
+  simp [preimagePrefix]
 
 /-- The encoding of instances of the preimage-prefix problem: the length `n` in unary, then the
 image and the prefix. -/
@@ -95,26 +102,26 @@ variable {f : List Bool → List Bool}
 prefix. -/
 def preimagePrefixVerifier (f : List Bool → List Bool)
     (p : (ℕ × List Bool × List Bool) × List Bool) : Bool :=
-  decide (p.1.2.2.length ≤ p.1.1) && f (p.1.2.2 ++ p.2.take (p.1.1 - p.1.2.2.length)) == p.1.2.1
+  let ((n, y, u), rest) := p
+  decide (u.length ≤ n) && f (u ++ rest.take (n - u.length)) == y
 
 /-- The unary length is at most as long as the encoded instance. -/
 private theorem le_length_encPreimagePrefix (p : ℕ × List Bool × List Bool) :
     p.1 ≤ (encPreimagePrefix p).length := by
-  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-  omega
+  enc_len
 
 /-- The verifier accepts some certificate of the length of the encoded instance exactly for the
 members. -/
 theorem isVerifier_preimagePrefixVerifier (f : List Bool → List Bool) :
     IsVerifier encPreimagePrefix Polynomial.X (preimagePrefixVerifier f) (preimagePrefix f) := by
-  refine IsVerifier.of_padding (fun ⟨n, y, u⟩ w hw h => ?_) fun ⟨n, y, u⟩ ⟨x, hx, hux, hfx⟩ => ?_
+  refine IsVerifier.of_padding (fun ⟨n, y, u⟩ w hw h => ?_) fun ⟨n, y, u⟩ hmem => ?_
   · rw [Polynomial.eval_X] at hw
     have hn := le_length_encPreimagePrefix (n, y, u)
     simp only [preimagePrefixVerifier, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at h
+    rw [mem_preimagePrefix]
     refine ⟨u ++ w.take (n - u.length), ?_, List.prefix_append _ _, h.2⟩
-    simp only [List.length_append, List.length_take] at hw ⊢
-    omega
-  · obtain ⟨v, rfl⟩ := hux
+    enc_len [List.length_take] at hw ⊢
+  · obtain ⟨x, hx, ⟨v, rfl⟩, hfx⟩ := mem_preimagePrefix.mp hmem
     have hn := le_length_encPreimagePrefix (n, y, u)
     simp only [List.length_append] at hx
     refine ⟨v, ?_, fun k => ?_⟩
@@ -131,7 +138,11 @@ theorem computableInPolyTime_preimagePrefixVerifier
     (hf : ComputableInPolyTime f encBits encBits) :
     ComputableInPolyTime (preimagePrefixVerifier f) (encPair encPreimagePrefix encBits)
       encBool := by
-  unfold preimagePrefixVerifier
+  change ComputableInPolyTime
+    (fun p : (ℕ × List Bool × List Bool) × List Bool =>
+      decide (p.1.2.2.length ≤ p.1.1) &&
+        f (p.1.2.2 ++ p.2.take (p.1.1 - p.1.2.2.length)) == p.1.2.1)
+    (encPair encPreimagePrefix encBits) encBool
   fun_prop
 
 /-- **The preimage-prefix problem is in `NP`** for every function computable in polynomial
@@ -171,15 +182,15 @@ theorem preimageSearchStep_mem {D : ℕ × List Bool × List Bool → Bool}
     (n, y, preimageSearchStep D (n, y) u) ∈ preimagePrefix f := by
   rw [preimageSearchStep]
   cases hb : D (n, y, u ++ [false])
-  · obtain ⟨x, hx, ⟨v, rfl⟩, hfx⟩ := hu
+  · obtain ⟨x, hx, ⟨v, rfl⟩, hfx⟩ := mem_preimagePrefix.mp hu
     simp only [List.length_append] at hx
     obtain ⟨b, v, rfl⟩ : ∃ b v', v = b :: v' := List.exists_cons_of_length_pos (by omega)
     cases b
     · have hmem : (n, y, u ++ [false]) ∈ preimagePrefix f :=
-        ⟨u ++ false :: v, by simpa using hx, ⟨v, by simp⟩, hfx⟩
+        mem_preimagePrefix.mpr ⟨u ++ false :: v, by simpa using hx, ⟨v, by simp⟩, hfx⟩
       rw [hD, hb] at hmem
       exact absurd hmem Bool.false_ne_true
-    · exact ⟨u ++ true :: v, by simpa using hx, ⟨v, by simp⟩, hfx⟩
+    · exact mem_preimagePrefix.mpr ⟨u ++ true :: v, by simpa using hx, ⟨v, by simp⟩, hfx⟩
   · exact (hD _).2 hb
 
 /-- **Search to decision.** With a decision procedure for the preimage-prefix problem, the search
@@ -191,14 +202,13 @@ theorem apply_preimageSearch {D : ℕ × List Bool × List Bool → Bool}
       (x.length, f x, (preimageSearchStep D (x.length, f x))^[i] []) ∈ preimagePrefix f := by
     intro i hi
     induction i with
-    | zero => exact ⟨x, rfl, List.nil_prefix, rfl⟩
+    | zero => exact mem_preimagePrefix.mpr ⟨x, rfl, List.nil_prefix, rfl⟩
     | succ i ih =>
       rw [Function.iterate_succ_apply']
       exact preimageSearchStep_mem hD (ih (by omega))
         (by rw [length_iterate_preimageSearchStep]; omega)
-  obtain ⟨x', hx', hpre, hfx'⟩ := hmem x.length le_rfl
+  obtain ⟨x', hx', hpre, hfx'⟩ := mem_preimagePrefix.mp (hmem x.length le_rfl)
   have heq := hpre.eq_of_length (by rw [length_iterate_preimageSearchStep]; exact hx'.symm)
-  dsimp only at heq hfx'
   change f ((preimageSearchStep D (x.length, f x))^[x.length] []) = f x
   rw [heq]
   exact hfx'

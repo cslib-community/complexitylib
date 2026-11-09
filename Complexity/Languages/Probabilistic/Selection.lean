@@ -53,8 +53,9 @@ universe u
 variable {Query : Type u} {spec : OracleSpec.{u, 0} Query}
 
 /-- Update the next index, best index, and best success count, preferring later indices on ties. -/
-def selectUpdate (state : ℕ × ℕ × ℕ) (successes : ℕ) : ℕ × ℕ × ℕ :=
-  (state.1 + 1, if state.2.2 ≤ successes then (state.1, successes) else state.2)
+def selectUpdate : ℕ × ℕ × ℕ → ℕ → ℕ × ℕ × ℕ
+  | (next, best, count), successes =>
+    (next + 1, if count ≤ successes then (next, successes) else (best, count))
 
 /-- Estimate one candidate and update the running empirical maximum. -/
 def selectStep (trials : ℕ) (test : ℕ → OracleComp spec Bool)
@@ -65,7 +66,7 @@ def selectStep (trials : ℕ) (test : ℕ → OracleComp spec Bool)
 When there are no candidates, return zero. -/
 def selectBest (count trials : ℕ) (test : ℕ → OracleComp spec Bool) :
     OracleComp spec ℕ :=
-  (fun state => state.2.1) <$> iterate count (selectStep trials test) (0, 0, 0)
+  (fun (_, best, _) => best) <$> iterate count (selectStep trials test) (0, 0, 0)
 
 /-- Select an empirically best value from a list, returning the fallback for an empty list. -/
 def selectFrom {α : Type} (values : List α) (trials : ℕ)
@@ -112,15 +113,16 @@ theorem sampleBest_support {α : Type} (count trials : ℕ) (source : ProbComp �
 /-- Candidate selection keeps both indices within the elapsed count and the success count within
 the trial budget on every execution, regardless of statistical estimation errors. -/
 theorem selectStep_bounded (trials : ℕ) (test : ℕ → ProbComp Bool) (i : ℕ)
-    (state : ℕ × ℕ × ℕ) (hstate : state.1 = i ∧ state.2.1 ≤ i ∧ state.2.2 ≤ trials)
-    (next : ℕ × ℕ × ℕ) (hnext : next ∈ (eval (OracleComp.selectStep trials test state)).support) :
-    next.1 = i + 1 ∧ next.2.1 ≤ i + 1 ∧ next.2.2 ≤ trials := by
+    (next best count : ℕ) (hstate : next = i ∧ best ≤ i ∧ count ≤ trials)
+    (next' best' count' : ℕ)
+    (hnext : (next', best', count') ∈
+      (eval (OracleComp.selectStep trials test (next, best, count))).support) :
+    next' = i + 1 ∧ best' ≤ i + 1 ∧ count' ≤ trials := by
   rw [OracleComp.selectStep, eval_map, PMF.mem_support_map_iff] at hnext
-  obtain ⟨successes, hsuccesses, rfl⟩ := hnext
-  have hbound := countTrue_le trials (test state.1) hsuccesses
-  dsimp only [OracleComp.selectUpdate]
-  split_ifs <;> simp_all
-  lia
+  obtain ⟨successes, hsuccesses, hupdate⟩ := hnext
+  have hbound := countTrue_le trials (test next) hsuccesses
+  dsimp only [OracleComp.selectUpdate] at hupdate
+  split_ifs at hupdate <;> simp_all <;> lia
 
 private def SelectionInvariant (trials : ℕ) (rate : ℕ → ℝ) (ε : ℝ)
     (i : ℕ) (state : ℕ × ℕ × ℕ) : Prop :=
@@ -132,12 +134,13 @@ private theorem SelectionInvariant.update {trials i : ℕ} {rate : ℕ → ℝ} 
     {state : ℕ × ℕ × ℕ} (hstate : SelectionInvariant trials rate ε i state)
     (successes : ℕ) (haccurate : |(successes : ℝ) / trials - rate i| ≤ ε) :
     SelectionInvariant trials rate ε (i + 1) (OracleComp.selectUpdate state successes) := by
+  rcases state with ⟨next, best, count⟩
   obtain ⟨hindex, hzero, hchosen, hall⟩ := hstate
   obtain ⟨hlower, hupper⟩ := abs_le.mp haccurate
   have htrials : (0 : ℝ) ≤ trials := by positivity
-  dsimp only [SelectionInvariant, OracleComp.selectUpdate]
+  dsimp only [SelectionInvariant, OracleComp.selectUpdate] at hindex hzero hchosen hall ⊢
   split_ifs with hscore
-  · have hcompare : (state.2.2 : ℝ) / trials ≤ successes / trials :=
+  · have hcompare : (count : ℝ) / trials ≤ successes / trials :=
       div_le_div_of_nonneg_right (by exact_mod_cast hscore) htrials
     refine ⟨by lia, by simp, fun _ => ⟨by lia, ?_⟩, ?_⟩
     · simpa only [hindex] using (show (successes : ℝ) / trials ≤ rate i + ε by linarith)
@@ -152,10 +155,10 @@ private theorem SelectionInvariant.update {trials i : ℕ} {rate : ℕ → ℝ} 
         linarith
   · have hi : 0 < i := by
       by_contra h
-      have hz := hzero (by lia)
-      simp [hz] at hscore
-    have hcompare : (successes : ℝ) / trials ≤ state.2.2 / trials :=
-      div_le_div_of_nonneg_right (by exact_mod_cast (show successes ≤ state.2.2 by lia)) htrials
+      obtain ⟨rfl, rfl⟩ := hzero (by lia)
+      simp at hscore
+    have hcompare : (successes : ℝ) / trials ≤ count / trials :=
+      div_le_div_of_nonneg_right (by exact_mod_cast (show successes ≤ count by lia)) htrials
     obtain ⟨hchosenIndex, hchosenRate⟩ := hchosen hi
     refine ⟨by lia, by simp, fun _ => ⟨by lia, hchosenRate⟩, ?_⟩
     intro j hj
@@ -194,7 +197,7 @@ theorem selectBest_error_le (count trials : ℕ) (hcount : 0 < count)
   refine le_trans ?_ hrun
   apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
   apply MeasureTheory.measure_mono
-  intro state hbad hstate
+  rintro ⟨next, best, count⟩ hbad hstate
   obtain ⟨_, _, hchosen, hall⟩ := hstate
   obtain ⟨hindex, hselected⟩ := hchosen hcount
   apply hbad

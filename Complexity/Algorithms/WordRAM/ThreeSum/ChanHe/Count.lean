@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
+import Complexity.Computability.WordRAM.Call
 
 /-!
 # Native Chan–He collision counting
@@ -128,25 +129,17 @@ theorem exec {w M : ℕ} (x : Data 28) (values : ℕ → ℤ) (hM : 0 < M)
       y.mem = memory x.mem values (x.regs len) M (x.regs scratch) (x.regs dst) ∧
       y.regs total = Histogram.pairs (fun i => (values i % (M : ℤ)).toNat) (x.regs len) ∧
       ∀ i, ((9 ≤ i.val ∧ i.val ≤ 12) ∨ i = dst) → y.regs i = x.regs i := by
-  obtain ⟨a, ha, ham, har⟩ := Residues.exec (x.comap residuesRegisters) values hM hmod
-    hmodreg hfit hs hk hsk hinput
-  let y := a.extend residuesRegisters x
-  have hy : ExecWithin (w + 2) (Residues.program.rename residuesRegisters) x y
-      (23 * x.regs len + 4) := ha.rename residues_injective
-  have hyr (i : Fin 16) : y.regs (residuesRegisters i) = a.regs i :=
-    residues_injective.extend_apply _ _ i
-  have hys : y.regs scratch = x.regs scratch :=
-    (hyr Residues.dst).trans (har Residues.dst (by decide))
-  have hyl : y.regs len = x.regs len := (hyr Residues.len).trans (har Residues.len (by decide))
+  obtain ⟨y, hy, ⟨ham, har⟩, hframe⟩ := ExecWithin.rename_post residues_injective
+    (Residues.exec (x.comap residuesRegisters) values hM hmod hmodreg hfit hs hk hsk hinput)
+  have hys : y.regs scratch = x.regs scratch := har Residues.dst (by decide)
+  have hyl : y.regs len = x.regs len := har Residues.len (by decide)
   have hym : y.regs modulus = encode (M : ℤ) :=
-    (hyr Residues.modulus).trans ((har Residues.modulus (by decide)).trans hmodreg)
-  have hyd : y.regs dst = x.regs dst := by
-    change Function.extend residuesRegisters a.regs x.regs dst = x.regs dst
-    apply Function.extend_apply'
-    rintro ⟨i, hi⟩
-    have := congrArg Fin.val hi
-    dsimp [residuesRegisters, dst] at this
-    omega
+    (har Residues.modulus (by decide)).trans hmodreg
+  have hyd : y.regs dst = x.regs dst := hframe dst (by
+    intro i he
+    have := congrArg Fin.val he
+    dsimp only [residuesRegisters, dst] at this
+    omega)
   let q := ((((y.set (histogramRegisters Histogram.src) (x.regs scratch)).set
       (histogramRegisters Histogram.dst) (x.regs dst)).set
       (histogramRegisters Histogram.len) (x.regs len)).set
@@ -174,7 +167,8 @@ theorem exec {w M : ℕ} (x : Data 28) (values : ℕ → ℤ) (hM : 0 < M)
     simp [q]
   have hqm : q.mem = Residues.memory x.mem values M (x.regs scratch) (x.regs len) := ham
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
-  obtain ⟨b, hb, hbm, hbt, _⟩ := Histogram.exec (q.comap histogramRegisters)
+  obtain ⟨b, hb, ⟨hbm, hbt, _⟩, _⟩ := ExecWithin.rename_post histogram_injective
+    (Histogram.exec (q.comap histogramRegisters)
     (fun i => (values i % (M : ℤ)).toNat) h1
     (by simpa only [hqs, hql] using hk) (by simpa only [hqd, hqb] using hd)
     (by simpa only [hql] using ht) (by simpa only [hqs, hql, hqd] using hkd)
@@ -188,19 +182,18 @@ theorem exec {w M : ℕ} (x : Data 28) (values : ℕ → ℤ) (hM : 0 < M)
       intro i hi
       have hi' : i < x.regs len := by simpa only [hql] using hi
       rw [Data.comap_mem, hqm, hqs]
-      simp [Residues.memory, hi'])
-  have he := (hy.seq (hprep.seq (hb.rename histogram_injective))).mono
+      simp [Residues.memory, hi']))
+  have he := (hy.seq (hprep.seq hb)).mono
     (show (23 * x.regs len + 4) + (5 + (5 * (q.comap histogramRegisters).regs Histogram.bins +
       11 * (q.comap histogramRegisters).regs Histogram.len + 9)) ≤
         34 * x.regs len + 5 * M + 18 by rw [hql, hqb]; omega)
-  refine ⟨b.extend histogramRegisters q, he, ?_, ?_, fun i hi =>
+  refine ⟨b, he, ?_, ?_, fun i hi =>
     ExecWithin.regs_eq he (preserves_parameters i hi)⟩
-  · change b.mem = _
-    rw [hbm, Data.comap_mem, hqm, hqd, hqb, hql]
+  · simp only [Data.comap_mem] at hbm
+    rw [hbm, hqm, hqd, hqb, hql]
     rfl
-  · change Function.extend histogramRegisters b.regs q.regs
-      (histogramRegisters Histogram.total) = _
-    rw [histogram_injective.extend_apply, hbt, hql]
+  · change (b.comap histogramRegisters).regs Histogram.total = _
+    rw [hbt, hql]
 
 /-- For an injective integer array, the composed program returns exactly the collision
 count used by the existing Chan–He prime searches. -/

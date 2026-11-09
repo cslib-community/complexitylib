@@ -219,34 +219,34 @@ theorem instr_of_accepts {choices : List Bool}
 
 section LogSpace
 
-open MultiTapeTM ComputableTidilyInSpace Simulation
+open MultiTapeTM ComputableInSpace Simulation
 
 /-- Overwriting register `0` by a choice is computed in linear space. -/
 private theorem withChoice_inSpace :
-    ComputableTidilyInSpace (fun q : Config × Bool => withChoice q.1 q.2)
+    ComputableInSpace (fun q : Config × Bool => withChoice q.1 q.2)
       (encPair encConfig encBool) encConfig fun q => (encPair encConfig encBool q).length := by
-  have hs : ComputableTidilyInSpace (fun q : Config × Bool => q.1) (encPair encConfig encBool)
+  have hs : ComputableInSpace (fun q : Config × Bool => q.1) (encPair encConfig encBool)
       encConfig fun q => (encPair encConfig encBool q).length := fst _ _
-  have hregs : ComputableTidilyInSpace (fun q : Config × Bool => q.1.2)
+  have hregs : ComputableInSpace (fun q : Config × Bool => q.1.2)
       (encPair encConfig encBool) (encList encNat)
       fun q => (encPair encConfig encBool q).length :=
     budget_comp_lin (snd _ _) (.refl _) hs
   have hv := budget_prod hregs (budget_prod (budget_const (encB := encNat) 0 (.refl _))
     (budget_finite (encC := encNat) Bool.toNat (snd encConfig encBool)))
   exact budget_prod (budget_comp_lin (fst _ _) (.refl _) hs)
-    (budget_comp ComputableTidilyInSpace.set hv
+    (budget_comp ComputableInSpace.set hv
       (.const_mul 128 (.add hv.length_le (.const 1 _))))
 
 /-- The transition of the nondeterministic query machine is computed in linear space. -/
 private theorem next_inSpace :
-    ComputableTidilyInSpace (fun p : Config × Option Bool × Bool => withChoice (P.exec p.1 p.2.1)
+    ComputableInSpace (fun p : Config × Option Bool × Bool => withChoice (P.exec p.1 p.2.1)
       p.2.2) (encPair encConfig (encPair (encOption encBool) encBool)) encConfig
       fun p => (encPair encConfig (encPair (encOption encBool) encBool) p).length := by
-  have hrest : ComputableTidilyInSpace (fun p : Config × Option Bool × Bool => p.2)
+  have hrest : ComputableInSpace (fun p : Config × Option Bool × Bool => p.2)
       (encPair encConfig (encPair (encOption encBool) encBool))
       (encPair (encOption encBool) encBool)
       fun p => (encPair encConfig (encPair (encOption encBool) encBool) p).length := snd _ _
-  have hread : ComputableTidilyInSpace (fun p : Config × Option Bool × Bool => (p.1, p.2.1))
+  have hread : ComputableInSpace (fun p : Config × Option Bool × Bool => (p.1, p.2.1))
       (encPair encConfig (encPair (encOption encBool) encBool)) encConfigRead
       fun p => (encPair encConfig (encPair (encOption encBool) encBool) p).length :=
     budget_prod (fst _ _) (budget_comp_lin (fst _ _) (.refl _) hrest)
@@ -260,7 +260,7 @@ private theorem next_inSpace :
 
 /-- The acceptance test of the nondeterministic query machine is computed in linear space. -/
 private theorem accept_inSpace :
-    ComputableTidilyInSpace P.toNondeterministicQueryMachine.accept encConfig encBool
+    ComputableInSpace P.toNondeterministicQueryMachine.accept encConfig encBool
       fun s => (encConfig s).length :=
   dispatch P.code (.halt []) (fun i _ => decide (i.finish = [true]))
     (fun _ => budget_const _ (.refl _)) (fst _ _)
@@ -299,7 +299,7 @@ theorem exists_decidesInLogSpace (P : CounterProgram) {α : Type} {enc : α ↪ 
     (hA : ∀ a, a ∈ A ↔ P.toNondeterministicQueryMachine.Accepts (enc a)) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (ntm : MultiTapeNTM k Bool State) (c : ℕ),
       ntm.DecidesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1) := by
-  have hnext : ComputableTidilyInSpace P.toNondeterministicQueryMachine.next
+  have hnext : ComputableInSpace P.toNondeterministicQueryMachine.next
       (encPair encConfig (encPair (encOption encBool) encBool)) encConfig
       fun p => (encPair encConfig (encPair (encOption encBool) encBool) p).length :=
     next_inSpace (P := P)

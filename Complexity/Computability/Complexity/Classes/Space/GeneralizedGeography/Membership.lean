@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Foundations.Data.List.Counting
+import Complexity.Tactic.EncLen
 
 /-!
 # Generalized Geography is in `PSPACE`
@@ -395,8 +396,7 @@ private theorem length_le_length_encode (x : Graph × ℕ) :
       x.1.1.length ≤ (encPair encGraph encNat x).length := by
   have h₁ := length_le_length_encList (encPair encNat encNat) x.1.2
   have h₂ := length_le_length_encList encNat x.1.1
-  simp only [length_encPair, encGraph]
-  omega
+  enc_len [encGraph]
 
 /-- **The replay is a game verifier of Generalized Geography**, with `2 * (n + 1) ^ 2` single-bit
 moves on instances of encoded length `n`. -/
@@ -498,8 +498,7 @@ private theorem length_encNat_le_of_mem {G : Graph} {e : ℕ × ℕ} (he : e ∈
   have h₂ := List.le_sum_of_mem (List.mem_map_of_mem (f := fun a =>
     (encPair encNat encNat a).length) he)
   have h₃ := length_le_encPair_right encNat encNat e
-  simp only [encGraph, length_encPair] at h₁ h₂ h₃ ⊢
-  omega
+  enc_len [encGraph] at h₁ h₂ h₃ ⊢
 
 /-- **A block adds at most one vertex to a play.** -/
 theorem length_encPlay_step_le (G : Graph) (B : ℕ) (st : Play) (block : List Bool) :
@@ -516,12 +515,8 @@ theorem length_encPlay_step_le (G : Graph) (B : ℕ) (st : Play) (block : List B
       have hw := length_encNat_le_of_mem (G := G)
         (List.getElem_mem (l := G.2) (n := choice (moverBits B first block)) hi)
       rw [← arc_eq hi] at hw
-      simp only [length_encPair, encOption_none, encList_cons, List.length_append, length_frame,
-        encBool_apply, List.length_cons, List.length_nil, List.length_nil] at hw ⊢
-      omega
-    · simp only [length_encPair, encOption_none, encOption_some, List.length_cons,
-        encBool_apply, List.length_nil]
-      omega
+      enc_len [encList_cons] at hw ⊢
+    · enc_len
 
 /-- The inputs of the verifier: a graph with a start vertex, and the moves. -/
 private abbrev encInput : (Graph × ℕ) × List Bool ↪ List Bool :=

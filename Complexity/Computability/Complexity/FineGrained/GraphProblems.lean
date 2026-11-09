@@ -51,7 +51,11 @@ measures `|V|` and `|E|` are the lengths of these lists. They are at least the n
 vertices and edges, so the lower bounds for them imply the lower bounds for the distinct counts
 (`Cslib.Complexity.DecidableInSubexpTime.mono_measure`). As for `ETH` itself, time is measured up
 to a polynomial in the length of the encoded instance, and a lower bound says: for some `δ > 0`, no
-decider runs within time `2 ^ (δ μ)` times a polynomial.
+decider runs within time `2 ^ (δ * μ)` times a polynomial.
+
+**The hypothesis is refuted.** `Cslib.Complexity.CountingNativeEndpoint.not_ETH` proves that `ETH`
+is false, so the `ETH`-conditional lower bounds below hold vacuously. They are kept as conditional
+statements; the reductions and size bounds behind them are unconditional.
 
 ## Main results
 

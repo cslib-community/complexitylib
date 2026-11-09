@@ -60,6 +60,9 @@ are original extensions built on `Cslib.Circuits.Frontier.Compiler` and `Cslib.L
   `Cslib.Circuits.Frontier.Compiler.length_le_of_mem_toCNF`: constraint scopes and clauses have
   length at most `k + 1` when `c.FanInAtMost k`.
 * `Cslib.Circuits.Frontier.Compiler.numVars_toCNF_le`: `(toCNF c I acc).numVars ≤ k * c.size + m`.
+* `Cslib.Circuits.Frontier.Compiler.length_toCNF_le_numVars`: `toCNF c I acc` has at most
+  `2 ^ (k + 1) * (numVars + m)` clauses, since every reachable gate's wire is one of its variables
+  (`Cslib.Circuits.Frontier.Compiler.reachGateCountCode_le_numVars_toCNFCode`).
 * `Cslib.Circuits.Frontier.Compiler.acceptCount_eq_two_pow_freeShift_mul_modelCount`,
   `Cslib.Circuits.Frontier.Compiler.satCount_eq_two_pow_satFreeShift_mul_modelCount`:
   exact counting identities reducing `#Circuit-SAT` to bounded-width `#SAT`.
@@ -443,6 +446,63 @@ theorem numVars_toCNF_le_add_size (c : Circuit σ n m) (I : Interpretation σ Bo
         Finset.card_le_card (vars_toCNF_subset c I acc)
     _ ≤ (Finset.range (n + c.size)).card := Finset.card_le_card hsub
     _ = n + c.size := Finset.card_range _
+
+/-- The serialized CSP has one constraint for each reachable gate and one for each output. -/
+theorem length_toCSPCode (code : List (σ.Op × List ℕ) × List ℕ) :
+    (toCSPCode m n code).length = reachGateCountCode n code + m := by
+  simp only [toCSPCode, List.length_append, List.length_map, List.length_finRange,
+    reachGateCountCode, List.countP_eq_length_filter]
+
+/-- Every reachable gate wire is a variable of the compiled formula: a gate constraint forbids the
+local tuple with the wrong output bit, and that clause mentions the gate's wire. -/
+theorem reachGateCountCode_le_numVars_toCNFCode (I : Interpretation σ Bool)
+    (acc : Fin m → Bool → Bool) (code : List (σ.Op × List ℕ) × List ℕ) :
+    reachGateCountCode n code ≤ (toCNFCode I acc n code).numVars := by
+  classical
+  set P : (σ.Op × List ℕ) × ℕ → Bool := fun gj => (reachWiresCode n code).any (· == n + gj.2)
+  set L := code.1.zipIdx.filter P
+  have hcount : reachGateCountCode n code = L.length := List.countP_eq_length_filter
+  have hnodup : (L.map fun gj => n + gj.2).Nodup := by
+    have hidx : (code.1.zipIdx.map Prod.snd).Nodup := by
+      rw [List.zipIdx_map_snd]
+      exact List.nodup_range'
+    have hsub : (L.map Prod.snd).Sublist (code.1.zipIdx.map Prod.snd) :=
+      List.filter_sublist.map _
+    have := (hsub.nodup hidx).map (f := (n + ·)) fun a b h => by simpa using h
+    simpa [List.map_map, Function.comp_def] using this
+  rw [hcount, ← List.length_map (f := fun gj => n + gj.2), ← List.toFinset_card_of_nodup hnodup]
+  refine Finset.card_le_card fun w hw => ?_
+  simp only [List.mem_toFinset, List.mem_map] at hw
+  obtain ⟨⟨g, j⟩, hgj, rfl⟩ := hw
+  set inBits : List Bool := List.replicate g.2.length false
+  set bits : List Bool := (!I g.1 fun a => inBits.getD a.val false) :: inBits
+  have hcon : ((Sum.inl g.1, (n + j) :: g.2) : Cslib.Logic.PL.Constraint (CircuitRel σ m) ℕ) ∈
+      toCSPCode m n code := by
+    simp only [toCSPCode]
+    exact List.mem_append_left _ (List.mem_map_of_mem hgj)
+  have hcl : Cslib.Logic.PL.Constraint.forbidClause ((n + j) :: g.2) bits ∈
+      toCNFCode I acc n code := by
+    simp only [toCNFCode, CSP.toCNF]
+    refine List.mem_flatMap.mpr ⟨_, hcon, ?_⟩
+    simp only [Cslib.Logic.PL.Constraint.toCNF]
+    refine List.mem_map_of_mem (List.mem_filter.mpr ⟨?_, ?_⟩)
+    · simp [bits, inBits]
+    · simp [circuitSem, bits]
+  simp only [List.mem_toFinset, CNF.vars, List.mem_map, List.mem_flatten]
+  exact ⟨(n + j, !(!I g.1 fun a => inBits.getD a.val false)), ⟨_, hcl, by simp [bits]⟩, rfl⟩
+
+/-- **Clause density.** When `c.FanInAtMost k`, `toCNF c I acc` has at most
+`2 ^ (k + 1) * (numVars + m)` clauses: there are `2 ^ (k + 1)` clauses for each reachable gate
+and each output, and each reachable gate's wire is a variable. -/
+theorem length_toCNF_le_numVars {c : Circuit σ n m} (I : Interpretation σ Bool)
+    (acc : Fin m → Bool → Bool) {k : ℕ} (hfan : c.FanInAtMost k) :
+    (toCNF c I acc).length ≤ 2 ^ (k + 1) * ((toCNF c I acc).numVars + m) :=
+  calc (toCNF c I acc).length ≤ 2 ^ (k + 1) * (toCSP c).length :=
+        CSP.length_toCNF_le _ fun _ hcon => length_scope_le_of_mem_toCSP hfan hcon
+    _ = 2 ^ (k + 1) * (reachGateCountCode n c.code + m) := by rw [toCSP, length_toCSPCode]
+    _ ≤ 2 ^ (k + 1) * ((toCNF c I acc).numVars + m) :=
+        Nat.mul_le_mul_left _
+          (Nat.add_le_add_right (reachGateCountCode_le_numVars_toCNFCode I acc c.code) m)
 
 end StructuralBounds
 

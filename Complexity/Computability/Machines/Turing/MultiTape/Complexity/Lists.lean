@@ -10,6 +10,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.EncLen
 
 /-!
 # List operations with bounds of given degrees
@@ -17,16 +18,13 @@ import Mathlib.Tactic.Linarith
 Operations on lists encoded by `Turing.MultiTapeTM.encList`, with explicit degrees
 (`Turing.MultiTapeTM.ComputableTidilyInDegree`): adding an element at either end and concatenation
 in linear time; finding the first element that passes a test and keeping the elements that pass a
-test, one degree above the test; and dropping a number of elements in quadratic time. The tests may
-depend on a parameter.
+test, one degree above the test. The tests may depend on a parameter.
 
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.cons`, `.snoc`, `.listAppend`.
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.findWith`: the first element passing a test.
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.filterWith`: the elements passing a test.
-* `Turing.MultiTapeTM.ComputableTidilyInDegree.dropUnary`: dropping a number of elements, given
-  in unary.
 -/
 
 namespace Turing.MultiTapeTM
@@ -137,8 +135,7 @@ public theorem findWith {t : π × α → Bool} {par : γ → π} {list : γ →
     · have hmem := List.mem_of_find?_eq_some h
       have := length_le_encList_of_mem enc hmem
       have := length_encList_take_le enc (list x) i
-      simp only [encOption_some, List.length_cons]
-      omega
+      enc_len
 
 /-- One step of keeping the elements that pass the test `t`. -/
 @[expose] public def filterStep (t : π × α → Bool) (p : π) (acc : List α) (a : α) : List α :=
@@ -181,29 +178,6 @@ public theorem filterWith {t : π × α → Bool} {par : γ → π} {list : γ �
       (le_max_of_le_right (Nat.add_le_add_left (Nat.mul_le_mul (by omega) (by omega)) 1))) using 1
   funext x
   rw [foldl_filterStep, List.nil_append]
-
-/-- Dropping the first `n` elements, with `n` in unary. -/
-public theorem dropUnary (enc : α ↪ List Bool) :
-    ComputableTidilyInDegree (fun p : List α × ℕ => p.1.drop p.2)
-      (encPair (encList enc) encUnary) (encList enc) 2 1 := by
-  have hrep (l : List α) (n : ℕ) : (List.replicate n true).foldl (fun acc _ => acc.tail) l =
-      l.drop n := by
-    simp [List.foldl_const, List.tail_iterate]
-  have hfold := foldl' (encA := encBool) (encL := encBits) (encB := encList enc)
-    (list := fun p : List α × ℕ => List.replicate p.2 true) (step := fun acc _ => acc.tail)
-    ((of_eq (f := fun n => List.replicate n true) (encIn := encUnary) (encMid := encBits)
-      fun _ => rfl).comp (snd (encList enc) encUnary))
-    (fst (encList enc) encUnary)
-    ((tail (enc₁ := enc)).comp (fst (encList enc) encBool))
-    (B := fun p => (encPair (encList enc) encUnary p).length) .self (fun p i hi => by
-      rw [List.take_replicate, hrep]
-      have := SizedListEncoding.length_drop_le (encA := enc) (encL := encList enc) p.1
-        (min i p.2)
-      simp only [length_encPair]
-      omega)
-  convert hfold.mono (d' := 2) (e' := 1) using 1
-  funext p
-  rw [hrep]
 
 /-- One step of mapping with the parameter `p`. -/
 @[expose] public def mapStep {β : Type} (f : π × α → β) (p : π) (acc : List β) (a : α) :
@@ -290,21 +264,21 @@ public theorem unary_min :
   simp only [Function.comp_apply]
   omega
 
-lemma int_head : ComputableTidilyInDegree (fun z : ℤ => ((encInt z).take 1).headD false)
-    encInt encBool 1 1 :=
+lemma int_head : ComputableTidilyInDegree (fun z : ℤ => ((encIntUnary z).take 1).headD false)
+    encIntUnary encBool 1 1 :=
   ((headD (enc₁ := encBool) false).comp
-    (of_linear (.of_take_one (f := fun z : ℤ => (encInt z).take 1) (encOut := encBits)
+    (of_linear (.of_take_one (f := fun z : ℤ => (encIntUnary z).take 1) (encOut := encBits)
       fun _ => rfl))).mono
 
-lemma int_tailEmpty : ComputableTidilyInDegree (fun z : ℤ => (encInt z).tail.isEmpty)
-    encInt encBool 1 1 :=
+lemma int_tailEmpty : ComputableTidilyInDegree (fun z : ℤ => (encIntUnary z).tail.isEmpty)
+    encIntUnary encBool 1 1 :=
   ((isEmpty (enc₁ := encBool)).comp
-    (of_linear (.of_tail (f := fun z : ℤ => (encInt z).tail) (encOut := encBits)
+    (of_linear (.of_tail (f := fun z : ℤ => (encIntUnary z).tail) (encOut := encBits)
       fun _ => rfl))).mono
 
 /-- Whether an integer is positive. -/
 public theorem int_pos :
-    ComputableTidilyInDegree (fun z : ℤ => decide (0 < z)) encInt encBool 1 0 := by
+    ComputableTidilyInDegree (fun z : ℤ => decide (0 < z)) encIntUnary encBool 1 0 := by
   convert ((of_finite (encIn := encPair encBool encBool) (encMid := encBool)
     (fun t : Bool × Bool => !t.1 && !t.2)).comp (int_head.prod int_tailEmpty)).mono
       (d' := 1) (e' := 0) using 1
@@ -313,7 +287,7 @@ public theorem int_pos :
 
 /-- Whether an integer is negative. -/
 public theorem int_neg :
-    ComputableTidilyInDegree (fun z : ℤ => decide (z < 0)) encInt encBool 1 1 := by
+    ComputableTidilyInDegree (fun z : ℤ => decide (z < 0)) encIntUnary encBool 1 1 := by
   convert int_head using 1
   funext z
   rcases z with n | n <;> simp
@@ -326,20 +300,6 @@ public theorem isSome (enc : α ↪ List Bool) :
       fun o => by cases o <;> simp))).mono (d' := 1) (e' := 0) using 1
   funext o
   cases o <;> rfl
-
-/-- The length of a list, in unary. -/
-public theorem length (enc : α ↪ List Bool) :
-    ComputableTidilyInDegree (fun l : List α => l.length) (encList enc) encUnary 2 1 := by
-  have hfold := foldl' (encL := encList enc) (encB := encUnary) (list := id)
-    (init := fun _ => 0) (step := fun n _ => n + 1) (of_eq fun _ => rfl) (const 0)
-    (unary_succ.comp (fst encUnary enc)) (B := fun l => (encList enc l).length) .self
-    (fun l i hi => by
-      have := length_le_length_encList enc l
-      simp [List.foldl_const]
-      omega)
-  convert hfold.mono (d' := 2) (e' := 1) using 1
-  funext l
-  simp [List.foldl_const]
 
 /-- A list of `n` copies of an element. -/
 public theorem replicate (enc : α ↪ List Bool) :
@@ -362,9 +322,7 @@ public theorem replicate (enc : α ↪ List Bool) :
       rw [h]
       refine (length_encList_le enc _ (b := (enc p.2).length) fun b hb => by
         rw [List.eq_of_mem_replicate hb]).trans (Nat.mul_le_mul ?_ ?_)
-      · simp only [List.length_replicate, List.length_take, encPair_apply, encUnary_apply,
-          List.length_append, length_frame, List.nil_append]
-        omega
+      · enc_len [List.length_take, encPair_apply, List.nil_append]
       · simp only [length_encPair]
         omega)
   convert hfold.mono (d' := 3) (e' := 2) using 1

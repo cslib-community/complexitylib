@@ -53,8 +53,8 @@ open Probability BitString Turing.MultiTapeTM
 def hashSamples (count seedBits bound observationBits labelBits remainingBits : ℕ)
     (samples : List ((List Bool × Bool) × List Bool))
     (firstKey middleKey lastKey : List Bool) : List Bool :=
-  let observations := ((samples.map (fun sample => sample.1.1)).map (padWord bound)).flatten
-  let labels := listRow count 0 (samples.map (fun sample => sample.1.2))
+  let observations := ((samples.map sampleObservation).map (padWord bound)).flatten
+  let labels := listRow count 0 (samples.map sampleLabel)
   let seeds := listRow (count * seedBits) 0 (samples.map Prod.snd).flatten
   ((firstKey ++ LinearHash.wordHash observationBits firstKey observations) ++
     (middleKey ++ LinearHash.wordHash labelBits middleKey labels)) ++
@@ -188,13 +188,11 @@ theorem generate_distribution (count seedBits bound observationBits labelBits re
     (run coins (tape.take (remainingBits * (count * seedBits)))
       ((tape.drop (remainingBits * (count * seedBits))).take (labelBits * count))
       ((tape.drop (remainingBits * (count * seedBits))).drop (labelBits * count))))]
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   rw [uniformList_bind_split (remainingBits * (count * seedBits)) _
     (fun lastKey tape => PMF.pure
       (run coins lastKey (tape.take (labelBits * count)) (tape.drop (labelBits * count))))]
-  congr 1
-  funext lastKey
+  congr 1 with lastKey : 1
   exact uniformList_bind_split (labelBits * count) _
     (fun middleKey firstKey => PMF.pure (run coins lastKey middleKey firstKey))
 
@@ -202,12 +200,12 @@ theorem generate_distribution (count seedBits bound observationBits labelBits re
 probabilistic hashing calls exactly. Only the observation padding requires a size bound. -/
 theorem eval_hashSamples (count seedBits bound observationBits labelBits remainingBits : ℕ)
     (samples : List ((List Bool × Bool) × List Bool)) (hcount : samples.length = count)
-    (hbound : ∀ sample ∈ samples, sample.1.1.length ≤ bound) :
+    (hbound : ∀ sample ∈ samples, (sampleObservation sample).length ≤ bound) :
     ProbComp.eval (do
       let third ← extractWordSeeds count seedBits remainingBits samples
       let middle ← extractWordLabels count labelBits third.1
       let front ← finish bound observationBits middle
-      return front ++ (third.2.1 ++ third.2.2)) =
+      return front ++ (extractedSeed third ++ extractedDigest third)) =
       (do
         let lastKey ← uniformList (remainingBits * (count * seedBits))
         let middleKey ← uniformList (labelBits * count)
@@ -241,8 +239,7 @@ theorem eval_generate (count seedBits bound observationBits labelBits remainingB
     ProbComp.eval_replicate_of_uniformList count seedBits _ (fun seed => (evaluate seed, seed))
       (by simp only [bind_pure_comp, ProbComp.eval_map, BitString.eval_sampleList])]
   simp only [PMF.bind_map, Function.comp_def]
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   symm
   apply eval_hashSamples
   · simp only [List.length_map, length_listRows]

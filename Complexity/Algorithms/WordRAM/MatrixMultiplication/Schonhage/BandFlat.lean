@@ -60,7 +60,8 @@ theorem program_length_le : (program.program catalogue).length ≤ 16384 := by
   simp only [Code.program, List.length_append, Code.length_assemble,
     List.length_cons, List.length_nil] at hl hr ⊢
   simp only [program, header, headerLoads, headerPowers, headerLayout, powerCode,
-    saveInput, countCode, countMasks, countBody, populationCode, rootCode, rootBody,
+    saveInput, countCode, countMasks, countBody, populationCode, rootCode,
+    NatSqrt.program, NatSqrt.body,
     bandCount, tablesCode, tableBody, tableWrite, encodeBands, bandBody, prepareBand,
     prepareHead, prepareBody, splitCode, splitHead, splitBody, readCell, collectBand,
     collectHead, restoreInput, Code.size, Code.size_rename, Power.program, Power.body,

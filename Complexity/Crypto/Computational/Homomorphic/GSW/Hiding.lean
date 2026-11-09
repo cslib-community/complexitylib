@@ -72,8 +72,9 @@ The second stage receives that same state and the actual challenge ciphertext. -
 noncomputable def uniformPublicGame (bit : Bool) : PMF Bool := do
   let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))
   let choice ← choose A
+  let ((m₀, m₁), state) := choice
   let R ← PMF.uniformOfFintype (Matrix (Fin (n + 1) × Fin w) (Fin m) Bool)
-  guess choice.2 (encryptWithCoins A (if bit then choice.1.2 else choice.1.1) R)
+  guess state (encryptWithCoins A (if bit then m₁ else m₀) R)
 
 /-- The common ideal experiment retains the first-stage state. Its ciphertext no longer depends
 on either chosen message. The state type need not be finite. -/
@@ -119,19 +120,16 @@ private theorem maskedMatrices_bind_shiftedGuess (bit : Bool) :
       uniformPublicGame choose guess bit := by
   simp only [maskedMatrices, shiftedGuess, uniformPublicGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, encryptWithCoins_eq_decomposeMatrix]
-  congr 1
-  funext A
+  congr 1 with A : 1
   exact PMF.bind_comm _ _ _
 
 private theorem independentMatrices_bind_shiftedGuess (bit : Bool) :
     (independentMatrices n m w).bind (shiftedGuess choose guess bit) = idealGame choose guess := by
   simp only [independentMatrices, shiftedGuess, idealGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext A
+  congr 1 with A : 1
   rw [PMF.bind_comm _ (choose A)]
-  congr 1
-  funext choice
+  congr 1 with choice : 1
   have h := congrArg (fun law => law.bind (guess choice.2))
     (uniform_decomposeMatrix_add
       (((if bit then choice.1.2 else choice.1.1).toNat : ZMod (2 ^ w)) • gadgetMatrix n w))

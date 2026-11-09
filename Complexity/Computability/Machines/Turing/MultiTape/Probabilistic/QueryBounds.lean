@@ -58,32 +58,28 @@ theorem query_bounds_runFrom (machine : MultiTapePTM k Symbol Control Operation)
     (s s' : State) (transcript transcript' : OracleComp.Transcript
       (fun _ : Query => List Symbol)) (output : List Symbol)
     (htranscript : ∀ entry ∈ transcript, size entry.1 ≤ bound)
-    (h : (output, s', transcript') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
-        (OracleComp.withTranscript oracle))
+    (h : (output, s', transcript') ∈ (ProbOracleComp.runWith (OracleComp.withTranscript oracle)
       (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
-        (fun op word => ProbOracleComp.query (request op word)) fuel cfg)).run
+        (fun op word => ProbOracleComp.query (request op word)) fuel cfg)
           (s, transcript)).support) :
     transcript'.length ≤ transcript.length + fuel ∧
       ∀ entry ∈ transcript', size entry.1 ≤ bound + fuel := by
   induction fuel generalizing cfg bound s transcript with
   | zero =>
-    simp only [runFrom_zero, OracleComp.interpret_pure, StateT.run_pure,
-      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at h
+    simp only [runFrom_zero, ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff,
+      Prod.mk.injEq] at h
     rw [h.2.2]
     exact ⟨by simp, by simpa using htranscript⟩
   | succ fuel ih =>
     cases hs : cfg.tapes.state with
     | none =>
-      simp only [runFrom_succ, hs, OracleComp.interpret_pure, StateT.run_pure,
-        Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at h
+      simp only [runFrom_succ, hs, ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff,
+        Prod.mk.injEq] at h
       rw [h.2.2]
       exact ⟨by simp, fun entry hentry => (htranscript entry hentry).trans (Nat.le_add_right ..)⟩
     | some control =>
-      simp only [runFrom_succ, hs, OracleComp.interpret_bind, StateT.run_bind,
-        ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform,
-        Probability.PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-        PMF.mem_support_bind_iff] at h
+      simp only [runFrom_succ, hs, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
+        ProbComp.eval_uniform, PMF.bind_map, Function.comp_def, PMF.mem_support_bind_iff] at h
       obtain ⟨coin, _, h⟩ := h
       cases ha : machine.tr control cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols
           cfg.answerSymbols coin with
@@ -98,9 +94,8 @@ theorem query_bounds_runFrom (machine : MultiTapePTM k Symbol Control Operation)
           (fun entry hentry => (htranscript entry hentry).trans (Nat.le_add_right ..)) h
         exact ⟨by lia, fun entry hentry => by have := hsize entry hentry; lia⟩
       | query op next =>
-        simp only [ha, OracleComp.interpret_bind, StateT.run_bind,
-          Probability.PMF.monad_bind_eq_bind, ProbOracleComp.interpret_query] at h
-        simp only [StateT.run, OracleComp.withTranscript, PMF.bind_map, Function.comp_def,
+        simp only [ha, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query] at h
+        simp only [OracleComp.withTranscript, PMF.bind_map, Function.comp_def,
           PMF.mem_support_bind_iff] at h
         obtain ⟨⟨answer, nextState⟩, _, h⟩ := h
         have hnext : ∀ operation,
@@ -126,10 +121,8 @@ theorem query_bounds_runOracle (machine : MultiTapePTM k Symbol Control Operatio
   have hrun (State : Type) (oracle : Operation × List Symbol → StateT State PMF (List Symbol))
       (s s' : State) (output : List Symbol)
       (transcript : OracleComp.Transcript (fun _ : Operation × List Symbol => List Symbol))
-      (h : (output, s', transcript) ∈ ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
-          (OracleComp.withTranscript oracle)) (machine.runOracle fuel input)).run
-            (s, [])).support) :
+      (h : (output, s', transcript) ∈ (ProbOracleComp.runWith (OracleComp.withTranscript oracle)
+          (machine.runOracle fuel input) (s, [])).support) :
       transcript.length ≤ fuel ∧ ∀ entry ∈ transcript, entry.1.2.length ≤ fuel := by
     simpa using query_bounds_runFrom machine (fun op word => (op, word))
       (fun request => request.2.length) (by intros; exact le_rfl) oracle fuel

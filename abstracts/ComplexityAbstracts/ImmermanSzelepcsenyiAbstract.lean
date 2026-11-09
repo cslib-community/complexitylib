@@ -139,7 +139,7 @@ theorem stcon_compl_mem_nl : STCONᶜ ∈ NL encInstance :=
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.ImmermanSzelepcsenyiAbstract`:
-18 root declarations, 75 dependencies checked
+18 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.ImmermanSzelepcsenyiAbstract

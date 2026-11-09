@@ -50,37 +50,14 @@ namespace Cslib.Logic.PL.CNF.Crossover
 
 open Orthogonal
 
-private theorem support_bounds_of_points {r : Route}
-    (h : ∀ q ∈ r, 20 ≤ q.1 ∧ q.1 ≤ 220 ∧ 20 ≤ q.2 ∧ q.2 ≤ 220)
-    {p : ℝ × ℝ} (hp : p ∈ support r) :
-    20 ≤ p.1 ∧ p.1 ≤ 220 ∧ 20 ≤ p.2 ∧ p.2 ≤ 220 := by
-  have cast_bounds (q : Point) (hq : q ∈ r) :
-      (20 : ℝ) ≤ q.1 ∧ (q.1 : ℝ) ≤ 220 ∧ 20 ≤ (q.2 : ℝ) ∧ (q.2 : ℝ) ≤ 220 := by
-    exact_mod_cast h q hq
-  rcases hp with ⟨q, hq, rfl⟩ | ⟨e, he, hp⟩
-  · exact cast_bounds q hq
-  · have he' := List.of_mem_zip he
-    have ha := cast_bounds e.1 he'.1
-    have hb := cast_bounds e.2 (List.mem_of_mem_tail he'.2)
-    obtain ⟨hx, hy⟩ := mem_segment_bounds hp
-    rw [Set.mem_uIcc] at hx hy
-    have hx' : 20 ≤ p.1 ∧ p.1 ≤ 220 := by
-      rcases hx with hx | hx <;> constructor <;> linarith [ha.1, ha.2.1, hb.1, hb.2.1]
-    have hy' : 20 ≤ p.2 ∧ p.2 ≤ 220 := by
-      rcases hy with hy | hy <;> constructor <;>
-        linarith [ha.2.2.1, ha.2.2.2, hb.2.2.1, hb.2.2.2]
-    exact ⟨hx'.1, hx'.2, hy'.1, hy'.2⟩
-
 /-- Every real point of the core drawing is strictly inside the outer 240-by-240 box. -/
 theorem core_support_interior {e : ℕ × SplitVariable × Route} (he : e ∈ incidenceRoutes)
     {p : ℝ × ℝ} (hp : p ∈ support e.2.2) :
     0 < p.1 ∧ p.1 < 240 ∧ 0 < p.2 ∧ p.2 < 240 := by
-  have h := support_bounds_of_points (core_bounds e he) hp
-  constructor
-  · linarith [h.1]
-  constructor
-  · linarith [h.2.1]
-  constructor <;> linarith [h.2.2.1, h.2.2.2]
+  have h := support_bounds_of_points (x₀ := 20) (x₁ := 220) (y₀ := 20) (y₁ := 220)
+    (core_bounds e he) hp
+  norm_num at h
+  exact ⟨by linarith [h.1], by linarith [h.2.1], by linarith [h.2.2.1], by linarith [h.2.2.2]⟩
 
 /-- Distinct segments of a route intersect only at their consecutive shared bend. -/
 theorem incidence_simple {e : ℕ × SplitVariable × Route} (he : e ∈ incidenceRoutes)
@@ -196,15 +173,6 @@ theorem access_contact {i : Fin 4} {e : ℕ × SplitVariable × Route}
   · have hq' : q = variablePosition (splitTerminal i) := List.mem_singleton.mp hq
     exact ⟨h, hq' ▸ hpq⟩
   · exact False.elim (List.not_mem_nil hq)
-
-private theorem mem_support_pair {a b : Point} {p : ℝ × ℝ} :
-    p ∈ support [a, b] ↔ p ∈ segment a b := by
-  rw [support_cons_cons]
-  change (p ∈ segment a b ∨ p ∈ support [b]) ↔ _
-  have hright : realPoint b ∈ segment a b := _root_.right_mem_segment ℝ _ _
-  have hs : p ∈ support [b] ↔ p = realPoint b := by simp [support, List.consecutivePairs]
-  rw [hs]
-  exact ⟨fun h => h.elim id (fun h => h ▸ hright), Or.inl⟩
 
 /-- Every point of an access route lies in the outer box. Its only boundary point is the
 prescribed geometric access port; all other access points are strictly inside. -/

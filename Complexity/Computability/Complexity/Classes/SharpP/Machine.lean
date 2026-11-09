@@ -61,43 +61,12 @@ theorem Checker.acceptCount_checkBinary (machine : MultiTapeCTM k Bool State)
     Complexity.acceptCount (Checker.checkBinary machine width verdict) input (count * width) =
       machine.branchCount (fun out => (out == [true]) == verdict) count
         (Cfg.init machine.initial input) := by
-  rw [← machine.certificateCount_eq_branchCount]
-  unfold Complexity.acceptCount certificateCount
-  refine Finset.card_bij (fun word _ => binaryIndices count width (List.ofFn word)) ?_ ?_ ?_
-  · intro word hword
-    have hcheck := (Finset.mem_filter.mp hword).2
-    rw [Checker.checkBinary_eq_certificateAccepts machine hwidth verdict input
-      List.length_ofFn] at hcheck
-    refine Finset.mem_filter.mpr ⟨(machine.mem_certificates_iff _ _ _).mpr ⟨by simp, ?_⟩,
-      hcheck⟩
-    unfold certificateAccepts at hcheck
-    cases hdecode : machine.decodeCertificate (Cfg.init machine.initial input)
-        (binaryIndices count width (List.ofFn word)) <;>
-      simp_all
-  · intro left _ right _ heq
-    apply List.ofFn_injective
-    calc
-      List.ofFn left = binaryCertificate width (binaryIndices count width (List.ofFn left)) :=
-        (binaryCertificate_binaryIndices List.length_ofFn).symm
-      _ = binaryCertificate width (binaryIndices count width (List.ofFn right)) :=
-        congrArg (binaryCertificate width) heq
-      _ = List.ofFn right := binaryCertificate_binaryIndices List.length_ofFn
-  · intro indices hindices
-    obtain ⟨hcert, hverdict⟩ := Finset.mem_filter.mp hindices
-    obtain ⟨hlen, hvalid⟩ := (machine.mem_certificates_iff _ _ _).mp hcert
-    obtain ⟨⟨choices, final⟩, hdecode⟩ := Option.isSome_iff_exists.mp hvalid
-    have hsmall := machine.decodeCertificate_indices_lt (by positivity) hbound hdecode
-    have hlength : (binaryCertificate width indices).length = count * width := by
-      rw [length_binaryCertificate hsmall, hlen]
-    let word := BitString.ofList (count * width) (binaryCertificate width indices)
-    have hword : List.ofFn word = binaryCertificate width indices :=
-      BitString.ofFn_ofList hlength
-    have hround : binaryIndices count width (List.ofFn word) = indices := by
-      rw [hword, ← hlen, binaryIndices_binaryCertificate hsmall]
-    refine ⟨word, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩, hround⟩
-    rw [Checker.checkBinary_eq_certificateAccepts machine hwidth verdict input
-      List.length_ofFn, hround]
-    exact hverdict
+  unfold Complexity.acceptCount
+  have heq (word : BitString (count * width)) :=
+    Checker.checkBinary_eq_certificateAccepts machine hwidth verdict input
+      (word := List.ofFn word) List.length_ofFn
+  simp_rw [heq]
+  exact machine.card_binaryCertificateAccepts _ hbound count _
 
 private theorem verdictCount_mem_SharpP [Finite State]
     (machine : MultiTapeCTM k Bool State) (enc : α ↪ List Bool) (clock : Polynomial ℕ)

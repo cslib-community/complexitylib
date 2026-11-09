@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
+import Complexity.Tactic.EncLen
 
 /-!
 # Structural consequences of the NP-hardness of MCSP
@@ -138,9 +139,7 @@ private theorem length_encPair_decodePair_le :
   | false :: b :: v => by simp [decodePair, unframe, dropFrame]
   | true :: b :: v => by
     have ih := length_encPair_decodePair_le v
-    simp only [decodePair, unframe, dropFrame, length_encPair, encBits_apply,
-      List.length_cons] at ih ⊢
-    omega
+    enc_len [decodePair, unframe, dropFrame] at ih ⊢
 
 /-- If `EXP encBits ⊆ PPolyOn encBits`, then `EXP` on paired bitstrings `encPair encBits encBits`
 also lies in `PPolyOn (encPair encBits encBits)`. -/
@@ -254,8 +253,7 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     calc 2 ^ cLen a * (2 * cLen a + 1)
         ≤ (K a + 1) * (2 * (K a + 1)) := Nat.mul_le_mul hpow_le hlin_le
       _ = 2 * (K a + 1) ^ 2 := by ring
-      _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 :=
-          Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left hKa 2)
+      _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 := by gcongr
   have henum : ComputableInPolyTime (fun a => BitString.enumList (cLen a))
       encIn (encList encBits) :=
     bitsEnumList hcLen hsize_enum hbudget_enum
@@ -280,14 +278,11 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     have hlenT_le : lenT + 1 ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by
       calc lenT + 1
           ≤ c_T * ((encIn p.1).length + 1) ^ d_T + 1 := Nat.add_le_add_right (hT_len p.1) 1
-        _ ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 :=
-            Nat.add_le_add_right
-              (Nat.mul_le_mul_left c_T (Nat.pow_le_pow_left (by omega) d_T)) 1
+        _ ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by gcongr
     calc 2 ^ m p.1 * (2 * m p.1 + 1)
         ≤ (lenT + 1) * (2 * (lenT + 1)) := Nat.mul_le_mul hpow hlog
       _ = 2 * (lenT + 1) ^ 2 := by ring
-      _ ≤ 2 * (c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1) ^ 2 :=
-          Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left hlenT_le 2)
+      _ ≤ 2 * (c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1) ^ 2 := by gcongr
   have haccept : ComputableInPolyTime
       (fun q : ((γ × List Bool) × List Bool) × Bool =>
         q.2 == tableValue (T q.1.1.1) q.1.2)
@@ -414,8 +409,7 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   have harity (x : List Bool) : (R (z x)).arity ≤ m_bound x.length := by
     set n := x.length
     have h2_arity : 2 ^ (R (z x)).arity ≤ (MCSP.encInstance (R (z x))).length := by
-      rw [MCSP.encInstance_apply, length_encPair, encBits_apply, List.length_ofFn]
-      omega
+      enc_len [MCSP.encInstance_apply, List.length_ofFn]
     have hn_le : n + 1 ≤ 2 ^ f n :=
       (Nat.lt_two_pow_self (n := n)).trans_le (Nat.pow_le_pow_right (by norm_num) (hnf n))
     have hzx_len : (z x).length + 1 ≤ 2 ^ (f n + 2) := by
@@ -454,9 +448,7 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
             (single (M.slice (2 * x.length + 1 + (R (z x)).arity))) + 2 := hc
       _ ≤ c_M * (2 * x.length + 1 + (R (z x)).arity + 1) ^ d_M + 2 :=
           Nat.add_le_add_right (hM_size _) 2
-      _ ≤ c_M * (2 * x.length + 1 + m_bound x.length + 1) ^ d_M + 2 :=
-          Nat.add_le_add_right (Nat.mul_le_mul_left c_M
-            (Nat.pow_le_pow_left (by omega) d_M)) 2
+      _ ≤ c_M * (2 * x.length + 1 + m_bound x.length + 1) ^ d_M + 2 := by gcongr
   -- Compose the unary bounds explicitly: one `fun_prop` over the unfolded nest is too slow.
   have hid : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary := .id'
   have hc (a : ℕ) : ComputableInPolyTime (fun _ : ℕ => a) encUnary encUnary := .const a

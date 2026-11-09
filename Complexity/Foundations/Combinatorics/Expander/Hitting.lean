@@ -130,18 +130,6 @@ section Hitting
 
 variable [Fintype V] [Fintype D]
 
-/-- By the second moment method (`Fintype.sq_expect_le_dens_mul_expect_sq`), the squared average
-of a function vanishing outside `C` is at most the density of `C` times its second moment. -/
-private theorem sq_expect_le_dens_mul_expect_sq {C : Finset V} {x : V → ℝ}
-    (hx : ∀ v ∉ C, x v = 0) :
-    (𝔼 v, x v) ^ 2 ≤ dens C * 𝔼 v, x v ^ 2 := by
-  classical
-  refine (Fintype.sq_expect_le_dens_mul_expect_sq x).trans ?_
-  have hsub : ({v : V | x v ≠ 0} : Finset V) ⊆ C := fun v hv =>
-    by_contra fun hvC => (mem_filter.mp hv).2 (hx v hvC)
-  exact mul_le_mul_of_nonneg_right (by exact_mod_cast dens_le_dens hsub)
-    (expect_nonneg fun _ _ => sq_nonneg _)
-
 /-- Subtracting `(1 - λ(G))` times the mean from `G.walk x` leaves second moment at most
 `λ(G) ^ 2` times the second moment of `x`. -/
 theorem expect_walk_sub_one_sub_spectralExpansion_sq_le [Nonempty V] [Nonempty D]
@@ -203,7 +191,7 @@ theorem expect_ite_mem_walk_sq_le [Nonempty D] {B C : Finset V} {μ : ℝ} (hB :
       _ ≤ μ * (μ * 𝔼 v, x v ^ 2) := by
           have := expect_nonneg (s := (univ : Finset V)) fun v _ => sq_nonneg (x v)
           gcongr
-          exact (sq_expect_le_dens_mul_expect_sq hx).trans (by gcongr)
+          exact (Fintype.sq_expect_le_dens_mul_expect_sq_of_eq_zero hx).trans (by gcongr)
       _ = μ ^ 2 * 𝔼 v, x v ^ 2 := by ring
   · refine le_trans (expect_le_expect fun v _ => ?_)
       (G.expect_walk_sub_one_sub_spectralExpansion_sq_le x)
@@ -268,7 +256,8 @@ theorem dens_filter_forall_walkAt_mem_le [Nonempty D] {B : ℕ → Finset V} {μ
     simp only [h, prod_ite_zero, prod_const_one, mem_range, Nat.lt_succ_iff]
   rw [hprob]
   have hbound : (𝔼 v, G.weightedWalk t h v) ^ 2 ≤ (μ * c ^ t) ^ 2 :=
-    (sq_expect_le_dens_mul_expect_sq fun _ => G.weightedWalk_ite_eq_zero_of_notMem t B).trans <|
+    (Fintype.sq_expect_le_dens_mul_expect_sq_of_eq_zero fun _ =>
+      G.weightedWalk_ite_eq_zero_of_notMem t B).trans <|
       (mul_le_mul (hB 0) (G.expect_weightedWalk_ite_sq_le t B hB)
         (expect_nonneg fun _ _ => sq_nonneg _) hμ).trans_eq (by ring)
   calc 𝔼 v, G.weightedWalk t h v ≤ μ * c ^ t := (abs_le_of_sq_le_sq' hbound (by positivity)).2

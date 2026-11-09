@@ -60,7 +60,7 @@ theorem barrington (L : Language Bool) : InNC1 L ↔ HasWidthFivePrograms L :=
   BarringtonBridge.barrington L
 
 /-- info: abstract audit passed for `ComplexityTests.Abstracts.BarringtonAbstract`: 3 root
-declarations, 60 dependencies checked -/
+declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.BarringtonAbstract allowing [
   Complexity.Computability.BranchingProgram.MonoidProgram

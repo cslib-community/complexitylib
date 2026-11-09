@@ -15,6 +15,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
+import Complexity.Tactic.EncLen
 
 /-!
 # Efficient memoized sampling
@@ -99,8 +100,7 @@ theorem memoize_cache_growth_le {Key Value : Type} [BEq Key]
   · simp only [hnext]
     lia
   · have := hvalues _ hvalue
-    simp only [hnext, encList_cons, List.length_append, length_frame, length_encPair]
-    lia
+    enc_len [hnext, encList_cons]
 
 /-- A cached call preserves a reply-size invariant and adds at most one encoded entry. The bound
 charges the complete key and value, including both layers of framing. -/
@@ -136,7 +136,7 @@ theorem memoize_cache_size_le {α Key Value : Type} [BEq Key]
       (keyEncoding entry.1).length ≤ maxKey ∧ (valueEncoding entry.2).length ≤ maxValue)
     (result : α)
     (h : (result, cache') ∈ ((OracleComp.interpret
-      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
         (memoize distribution)) program).run cache).support) :
     (encList (encPair keyEncoding valueEncoding) cache').length ≤
       (cache.length + calls) * (4 * maxKey + 2 * maxValue + 3) := by
@@ -150,8 +150,7 @@ theorem memoize_cache_size_le {α Key Value : Type} [BEq Key]
       rcases hentries entry hentry with h | ⟨hkey, hvalue⟩
       · exact hcache entry h
       · exact ⟨hkey, hvalues entry.1 hkey entry.2 hvalue⟩
-    simp only [length_encPair]
-    lia
+    enc_len
   have hlength := (length_encList_le _ _ hentry).trans
     (Nat.mul_le_mul_right (2 * (2 * maxKey + maxValue + 1) + 1) hcount)
   convert hlength using 1

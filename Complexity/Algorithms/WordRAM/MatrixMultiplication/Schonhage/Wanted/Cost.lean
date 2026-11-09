@@ -33,7 +33,7 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
 /-- Prefix instruction budget, before the final flat halt. All initialization and loops count. -/
 def timeBound (L m N Q : ℕ) : ℕ :=
-  16 * L + (12 * L + 33) * 2 ^ L + 15 * numBands L m N ^ 2 + (15 * L + 57) * Q + 98
+  16 * L + (12 * L + 33) * 2 ^ L + 15 * numBands L m N ^ 2 + (15 * L + 57) * Q + 100
 
 /-- Including halt, routing is polynomial in depth times the original query, tile and
 subset-table sizes. In particular it does not scan `10^L` cells per query or tile. -/

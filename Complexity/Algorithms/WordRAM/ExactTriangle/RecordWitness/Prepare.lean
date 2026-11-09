@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Width
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.First
 
 /-!
 # Real initialized preparation for candidate recovery

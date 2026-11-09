@@ -28,6 +28,8 @@ the per-round errors (`Interactive.Verifier.RbrSound.sound`), against arbitrary 
 ## Main results
 
 * `Interactive.World.plain_eval_execute`: the law of an execution in the plain model.
+* `Interactive.rbrFrom_le`: from a doomed prefix, the rest of a run wins with probability at most
+  the remaining errors.
 * `Interactive.Verifier.RbrSound.sound`: round-by-round soundness implies soundness.
 
 ## References
@@ -45,30 +47,30 @@ open Spec
 
 /-- The law of a program without external oracles: its private coins are fair. -/
 noncomputable def plainLaw {α : Type} (p : ProbOracleComp OracleSpec.empty α) : PMF α :=
-  OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle fun e => e.elim) p
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle fun e => e.elim) p
 
 /-- The law of a joint program in the plain model. -/
 private noncomputable def runLaw {α : Type}
     (p : ProbOracleComp (OracleSpec.empty ⊕ₒ OracleSpec.empty) α) : PMF α :=
-  OracleComp.interpret (ProbOracleComp.handler ProbComp.unifOracle
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
     (OracleComp.sumHandler (fun e => e.elim) fun e => e.elim)) p
 
 private theorem plain_eval {α : Type}
     (p : ProbOracleComp (OracleSpec.empty ⊕ₒ OracleSpec.empty) α) :
     World.plain.eval p = runLaw p := by
   have h := OracleComp.run_interpret_stateless (m := PMF) (State := Unit)
-    (ProbOracleComp.handler ProbComp.unifOracle
+    (OracleComp.sumHandler ProbComp.unifOracle
       (OracleComp.sumHandler (fun e => e.elim) fun e => e.elim)) p ()
-  have hh : (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+  have hh : (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
       World.plain.impl) =
-      fun q s => (fun a => (a, s)) <$> ProbOracleComp.handler ProbComp.unifOracle
+      fun q s => (fun a => (a, s)) <$> OracleComp.sumHandler ProbComp.unifOracle
         (OracleComp.sumHandler (fun e => e.elim) fun e => e.elim) q := by
     funext q s
     rcases q with n | e | e
     · rfl
     · exact e.elim
     · exact e.elim
-  unfold World.eval ProbOracleComp.runWith
+  unfold World.eval ProbOracleComp.runWith OracleComp.runWith
   erw [hh, h]
   exact (PMF.map_comp _ _ _).trans (PMF.map_id _)
 
@@ -78,7 +80,7 @@ private theorem runLaw_liftProver {α : Type} (p : ProbOracleComp OracleSpec.emp
   congr 1
   funext q
   rcases q with n | e
-  · simp [ProbOracleComp.handler]
+  · simp [OracleComp.sumHandler]
   · exact e.elim
 
 
@@ -142,12 +144,6 @@ private theorem runLaw_output {s : Spec} {StmtIn StmtOut : Type}
   · exact e.elim
   · rfl
 
-/-- A uniform upper bound on `(f a).toOuterMeasure t` bounds `(p.bind f).toOuterMeasure t`. -/
-theorem toOuterMeasure_bind_le {α β : Type} (p : PMF α) (f : α → PMF β) (t : Set β)
-    {K : ℝ≥0∞} (h : ∀ a, (f a).toOuterMeasure t ≤ K) : (p.bind f).toOuterMeasure t ≤ K := by
-  rw [PMF.toOuterMeasure_bind_apply]
-  exact Probability.PMF.tsum_mul_le_of_forall_le _ h
-
 private theorem toOuterMeasure_bind_pure {α β : Type} (p : PMF α) (g : α → β) (t : Set β) :
     (p.bind fun a => PMF.pure (g a)).toOuterMeasure t = p.toOuterMeasure (g ⁻¹' t) := by
   rw [← PMF.toOuterMeasure_map_apply]
@@ -166,7 +162,7 @@ theorem World.plain_eval_execute {s : Spec} {StmtIn StmtOut α : Type}
   rfl
 
 /-- From a doomed prefix, the rest of a run wins with probability at most the remaining errors. -/
-private theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
+theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
     (ε : PerChallenge (fun _ => ℝ≥0∞) s) (S : Prefix s → Prop) (wins : Transcript s → Prop),
     RbrFrom s smp ε S wins → ¬ S (Prefix.empty s) →
     ∀ {α : Type} (st : ProverStrategy (ProbOracleComp OracleSpec.empty) s α),
@@ -176,7 +172,7 @@ private theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
     simp [runStrategy, hw]
   | .prover M I :: s, smp, ε, S, wins, h, hS, _, st => by
     simp only [runStrategy, plainLaw_bind]
-    refine toOuterMeasure_bind_le _ _ _ fun p => ?_
+    refine Probability.PMF.toOuterMeasure_bind_le _ _ _ fun p => ?_
     rcases p with ⟨msg, st'⟩
     simp only [plainLaw_pure]
     rw [toOuterMeasure_bind_pure]
@@ -195,7 +191,7 @@ private theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
         rw [Set.indicator_of_mem hc]
         exact Probability.PMF.toOuterMeasure_le_one _ _
       · rw [Set.indicator_of_notMem hc, zero_add]
-        refine toOuterMeasure_bind_le _ _ _ fun st' => ?_
+        refine Probability.PMF.toOuterMeasure_bind_le _ _ _ fun st' => ?_
         simp only [plainLaw_pure]
         rw [toOuterMeasure_bind_pure]
         exact rbrFrom_le s smp.2 ε.2 (fun p => S (some (c, p))) (fun τ => wins (c, τ)) (h.2 c) hc
@@ -220,7 +216,7 @@ theorem Verifier.RbrSound.sound {s : Spec} {StmtIn StmtOut : Type}
   obtain ⟨S, hinit, hround⟩ := h
   intro x hx α P
   rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply, plainLaw_bind]
-  exact toOuterMeasure_bind_le _ _ _ fun st => rbrFrom_le s V.samplers ε (S x) _ (hround x)
-    (hinit x hx) st
+  exact Probability.PMF.toOuterMeasure_bind_le _ _ _ fun st =>
+    rbrFrom_le s V.samplers ε (S x) _ (hround x) (hinit x hx) st
 
 end Cslib.Interactive

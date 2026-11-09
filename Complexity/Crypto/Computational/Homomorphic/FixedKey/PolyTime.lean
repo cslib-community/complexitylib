@@ -174,9 +174,7 @@ theorem polynomiallyBounded_widths :
       (fun c : Σ m, Circuit Boolean.signature m 1 => (c.1, c.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
   have htotal : PolynomiallyBounded (fun n => secretWidth n + ciphertextWidth n) :=
-    (show PolyBounded (fun n : ℕ => n) (fun n => secretWidth n + ciphertextWidth n) by
-      simpa only [encUnary_apply, List.length_replicate, Function.comp_def] using
-        (hview.fst'.comp hD).polyBounded_length).polynomiallyBounded
+    (hview.fst'.comp hD).polynomiallyBounded
   exact ⟨htotal.mono_of_le (fun n => Nat.le_add_right (secretWidth n) (ciphertextWidth n)),
     htotal.mono_of_le (fun n => Nat.le_add_left (ciphertextWidth n) (secretWidth n))⟩
 
@@ -189,11 +187,7 @@ theorem polynomiallyBounded_decryptionSize :
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
   have hlen : ComputableInPolyTime (fun n => (D.circuit n).code.1.length) encUnary encUnary :=
     (ComputableInPolyTime.length_list Boolean.encGate).comp (hview.snd'.fst'.comp hD)
-  have hlength : PolynomiallyBounded (fun n => (D.circuit n).code.1.length) :=
-    (show PolyBounded (fun n : ℕ => n) (fun n => (D.circuit n).code.1.length) by
-      simpa only [encUnary_apply, List.length_replicate] using
-        hlen.polyBounded_length).polynomiallyBounded
-  exact hlength.mono_of_le (fun n => (Circuit.length_code_fst (D.circuit n)).ge)
+  exact hlen.polynomiallyBounded.mono_of_le (fun n => (Circuit.length_code_fst (D.circuit n)).ge)
 
 include hkeyGen hencrypt in
 /-- The constructed scheme's actual key generator is strict PPT. -/
@@ -207,7 +201,7 @@ include hencrypt in
 @[fun_prop]
 theorem isPPTOn_scheme_encrypt :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => (scheme D).encrypt p.1 p.2.1 p.2.2) := by
+      (fun (n, pk, bit) => (scheme D).encrypt n pk bit) := by
   apply isPPTOn_encrypt hencrypt <;> fun_prop
 
 include hD in
@@ -215,7 +209,7 @@ include hD in
 @[fun_prop]
 theorem computableInPolyTime_scheme_decrypt :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => (scheme D).decrypt p.1 p.2.1 p.2.2)
+      (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D).decrypt n sk c)
       (encPair encUnary (encPair encBits encBits)) encBool := by
   apply computableInPolyTime_decrypt D hD <;> fun_prop
 
@@ -225,7 +219,7 @@ include hencrypt hevaluate hD in
 theorem isPPTOn_scheme_evaluate :
     IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p => (scheme D).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) := by
+      encBits (fun (n, pk, C, cts) => (scheme D).evaluate n pk C cts) := by
   apply isPPTOn_evaluate hencrypt D hD hevaluate <;> fun_prop
 
 end Cslib.Crypto.Homomorphic.FixedKey

@@ -93,7 +93,7 @@ example : ∀ s ≤ 2 + 4, (encPair encNat encOuterAcc
       2100 :=
   fun _ hs => (length_encOuterState_run_valid_le (n := 2) (m := 4) (Q := 2) (r := 2) (C := 4)
     (edges := testEdges) hs (by decide +kernel)).trans (by decide +kernel)
-example : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => (slotOfIndex p.1.1 p.1.2 p.2).isSome)
+example : ComputableInPolyTime (fun ((n, m), s) => (slotOfIndex n m s).isSome)
     (encPair (encPair encUnary encUnary) encNat) encBool := by fun_prop
 private def testParams : ScheduleParams := ((2, 4, 2), (2, 4), testEdges)
 /-- info: constructBalancedSchedulesCertificate.time testParams : ℕ -/

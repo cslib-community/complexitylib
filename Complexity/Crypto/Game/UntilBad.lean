@@ -93,7 +93,7 @@ open scoped ENNReal NNReal
 noncomputable def runStatelessOracle {α : Type} (o : List Bool → List Bool)
     (prog : WordOracleComp Unit α) (next : α → Game) : Game :=
   (ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (fun req (s : Unit) => pure (o req.2, s)))
     prog).run ())).bind (fun out => next out.1)
 
@@ -111,7 +111,7 @@ theorem runStatelessOracle_query_inl {α : Type} (o : List Bool → List Bool)
     runStatelessOracle o (OracleComp.query (Sum.inl m) >>= k) next =
       (PMF.uniformOfFintype (Fin (m + 1))).bind
         (fun x => runStatelessOracle o (k x) next) := by
-  simp [runStatelessOracle, ProbOracleComp.handler, StateT.run_bind,
+  simp [runStatelessOracle, OracleComp.sumHandler, StateT.run_bind,
     ProbComp.eval_bind, PMF.bind_bind]
 
 theorem runStatelessOracle_query_inr {α : Type} (o : List Bool → List Bool)
@@ -122,7 +122,7 @@ theorem runStatelessOracle_query_inr {α : Type} (o : List Bool → List Bool)
     runStatelessOracle o (OracleComp.query (Sum.inr req) >>= k) next =
       runStatelessOracle o (k (o req.2)) next := by
   rw [runStatelessOracle, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind]
+    OracleComp.sumHandler, StateT.run_bind]
   rfl
 
 /-- **Stateless oracle until-bad bound**: if `prog` makes at most `Q` oracle queries, `o₁ τ req`
@@ -239,7 +239,7 @@ theorem advantage_runStatelessOracle_le_of_support {α : Type}
     (o : List Bool → List Bool) (prog : WordOracleComp Unit α)
     (next₁ next₂ : α → Game) {ε : ℝ≥0}
     (h : ∀ out ∈ (ProbComp.eval ((OracleComp.interpret
-      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (fun req (s : Unit) => pure (o req.2, s))) prog).run ())).support,
       Game.advantage (next₁ out.1) (next₂ out.1) ≤ ε) :
     Game.advantage (runStatelessOracle o prog next₁) (runStatelessOracle o prog next₂) ≤ ε :=
@@ -282,7 +282,7 @@ noncomputable def runFinderOracle {α : Type} (o₂ : List Bool → List Bool)
     (prog : WordOracleComp Unit α) (s : Option (List Bool))
     (isGood : List Bool → Bool) : Game :=
   (ProbComp.eval ((OracleComp.interpret
-    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (finderPhase2Oracle o₂ isBad extract))
     prog).run s)).bind (fun out => PMF.pure (out.2.elim false isGood))
 
@@ -302,7 +302,7 @@ theorem runFinderOracle_query_inl {α : Type} (o₂ : List Bool → List Bool)
     runFinderOracle o₂ isBad extract (OracleComp.query (Sum.inl m) >>= k) s isGood =
       (PMF.uniformOfFintype (Fin (m + 1))).bind
         (fun x => runFinderOracle o₂ isBad extract (k x) s isGood) := by
-  simp [runFinderOracle, ProbOracleComp.handler, StateT.run_bind,
+  simp [runFinderOracle, OracleComp.sumHandler, StateT.run_bind,
     ProbComp.eval_bind, PMF.bind_bind]
 
 theorem runFinderOracle_query_inr {α : Type} (o₂ : List Bool → List Bool)
@@ -315,7 +315,7 @@ theorem runFinderOracle_query_inr {α : Type} (o₂ : List Bool → List Bool)
       runFinderOracle o₂ isBad extract (k (o₂ req.2))
         (if isBad req.2 then some (extract req.2) else s) isGood := by
   rw [runFinderOracle, OracleComp.interpret_bind, OracleComp.interpret_query,
-    ProbOracleComp.handler, StateT.run_bind]
+    OracleComp.sumHandler_inr, StateT.run_bind]
   rfl
 
 /-- Once `s` satisfies `s.elim false isGood = true`, `runFinderOracle` succeeds with

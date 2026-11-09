@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Combinatorics.Expander.Basic
 public import Mathlib.Analysis.Real.Sqrt
 import Complexity.Foundations.Data.Finset.Expect
+import Complexity.Foundations.Data.Finset.Variance
 import Mathlib.Algebra.BigOperators.Balance
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.FieldSimp
@@ -48,6 +49,8 @@ says that spectral expanders are edge expanders [Arora and Barak, Section 21.2][
   expectations plus the correlation of the centered functions.
 * `Cslib.RotationMap.sq_expect_mul_walk_pow_sub_le`: the mixing lemma for functions and walks of
   any length.
+* `Cslib.RotationMap.expect_walk_pow_sub_expect_sq_le`: walks of length `t` contract the
+  variance by `λ(G) ^ (2 t)`.
 * `Cslib.RotationMap.abs_card_interedges_sub_le`,
   `Cslib.RotationMap.abs_card_interedges_sub_le_mul_sqrt`: the expander mixing lemma.
 * `Cslib.RotationMap.le_card_interedges_compl_of_expect_mul_walk_le`,
@@ -77,15 +80,6 @@ variable {V D : Type*} [Fintype V] [Fintype D] (G : RotationMap V D)
 private theorem expect_sub_expect (f : V → ℝ) : 𝔼 v, (f v - 𝔼 w, f w) = 0 :=
   Fintype.expect_balance f
 
-/-- The second moment of the centered function is the variance. -/
-private theorem expect_sub_expect_sq (f : V → ℝ) :
-    𝔼 v, (f v - 𝔼 w, f w) ^ 2 = 𝔼 v, f v ^ 2 - (𝔼 v, f v) ^ 2 := by
-  rcases isEmpty_or_nonempty V with hV | hV
-  · simp
-  · simp only [sub_sq, expect_add_distrib, expect_sub_distrib, ← expect_mul, ← mul_expect,
-      Fintype.expect_const]
-    ring
-
 section Mixing
 
 variable [Nonempty D]
@@ -105,6 +99,18 @@ theorem expect_mul_walk_pow_eq (t : ℕ) (f g : V → ℝ) :
     Fintype.expect_const]
   ring
 
+/-- **Variance decay along walks**: a walk of length `t` multiplies the variance of a function,
+its second moment about the mean, by at most `λ(G) ^ (2 t)`; the mean is preserved by
+`expect_walk_pow`. -/
+theorem expect_walk_pow_sub_expect_sq_le (t : ℕ) (f : V → ℝ) :
+    𝔼 v, ((G.walk ^ t) f v - 𝔼 w, f w) ^ 2 ≤
+      G.spectralExpansion ^ (2 * t) * 𝔼 v, (f v - 𝔼 w, f w) ^ 2 := by
+  have hf : (G.walk ^ t) (fun w ↦ f w - 𝔼 u, f u) = fun v ↦ (G.walk ^ t) f v - 𝔼 u, f u := by
+    rw [show (fun w ↦ f w - 𝔼 u, f u) = f - fun _ ↦ 𝔼 u, f u from rfl, map_sub, walk_pow_const]
+    rfl
+  have h := G.expect_walk_pow_sq_le_spectralExpansion_pow_mul (expect_sub_expect f) t
+  rwa [hf] at h
+
 /-- **The mixing lemma for functions**: the correlation `𝔼 v, f v * (G.walk ^ t) g v` of `f` with
 `g` along walks of length `t` differs from the product of their expectations by at most
 `λ(G) ^ t` times their standard deviations. Squared: the square of the difference is at most
@@ -113,8 +119,8 @@ theorem sq_expect_mul_walk_pow_sub_le (t : ℕ) (f g : V → ℝ) :
     (𝔼 v, f v * (G.walk ^ t) g v - (𝔼 v, f v) * 𝔼 v, g v) ^ 2 ≤
       G.spectralExpansion ^ (2 * t) * (𝔼 v, f v ^ 2 - (𝔼 v, f v) ^ 2) *
         (𝔼 v, g v ^ 2 - (𝔼 v, g v) ^ 2) := by
-  rw [G.expect_mul_walk_pow_eq, add_sub_cancel_left, ← expect_sub_expect_sq,
-    ← expect_sub_expect_sq]
+  rw [G.expect_mul_walk_pow_eq, add_sub_cancel_left, ← Fintype.expect_sub_expect_sq,
+    ← Fintype.expect_sub_expect_sq]
   calc
     _ ≤ (𝔼 v, (f v - 𝔼 w, f w) ^ 2) *
           𝔼 v, (G.walk ^ t) (fun w ↦ g w - 𝔼 u, g u) v ^ 2 :=
@@ -130,16 +136,6 @@ end Mixing
 section Sets
 
 variable [DecidableEq V]
-
-/-- The expectation of an indicator function is the density of the set. -/
-private theorem expect_boole_mem (S : Finset V) :
-    𝔼 v, (if v ∈ S then (1 : ℝ) else 0) = #S / Fintype.card V := by
-  rw [Fintype.expect_boole_mem, nnratCast_dens]
-
-/-- An indicator function is its own square. -/
-private theorem expect_boole_mem_sq (S : Finset V) :
-    𝔼 v, (if v ∈ S then (1 : ℝ) else 0) ^ 2 = #S / Fintype.card V := by
-  rw [Fintype.expect_boole_mem_sq, nnratCast_dens]
 
 /-- The correlation of the indicator function of `S` with the walk operator applied to that of `T`
 is the proportion of the darts from `S` to `T`. -/
@@ -175,8 +171,9 @@ theorem abs_card_interedges_sub_le (S T : Finset V) :
   have hd : (0 : ℝ) < Fintype.card D := Nat.cast_pos.2 Fintype.card_pos
   have h := G.sq_expect_mul_walk_pow_sub_le 1 (fun v ↦ if v ∈ S then 1 else 0)
     (fun v ↦ if v ∈ T then 1 else 0)
-  rw [pow_one, mul_one, expect_boole_mem_mul_walk, expect_boole_mem, expect_boole_mem,
-    expect_boole_mem_sq, expect_boole_mem_sq] at h
+  rw [pow_one, mul_one, expect_boole_mem_mul_walk, Fintype.expect_boole_mem,
+    Fintype.expect_boole_mem, Fintype.expect_boole_mem_sq, Fintype.expect_boole_mem_sq,
+    nnratCast_dens, nnratCast_dens] at h
   have := G.spectralExpansion_nonneg
   refine abs_le_of_sq_le_sq ?_ (by positivity)
   rw [div_pow, mul_pow, mul_pow, Real.sq_sqrt (by positivity), card_compl_eq, card_compl_eq]
@@ -233,8 +230,8 @@ theorem le_card_interedges_compl_of_expect_mul_walk_le {μ : ℝ}
     (fun v ↦ if v ∈ S then 1 else 0)
   rw [pow_one] at hc
   rw [← add_sub_cancel_left ((𝔼 v, if v ∈ S then (1 : ℝ) else 0) * 𝔼 v, if v ∈ S then 1 else 0)
-    (𝔼 v, _ * G.walk _ v), ← hc, expect_sub_expect_sq, expect_boole_mem_mul_walk, expect_boole_mem,
-    expect_boole_mem_sq] at h
+    (𝔼 v, _ * G.walk _ v), ← hc, Fintype.expect_sub_expect_sq, expect_boole_mem_mul_walk,
+    Fintype.expect_boole_mem, Fintype.expect_boole_mem_sq, nnratCast_dens] at h
   have he : (#(G.interedges S S) : ℝ) + #(G.interedges S Sᶜ) = #S * Fintype.card D := by
     exact_mod_cast G.card_interedges_add_card_interedges_compl S S
   rw [card_compl_eq, div_le_iff₀ hn]

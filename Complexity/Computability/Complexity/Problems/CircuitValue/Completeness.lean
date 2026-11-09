@@ -12,8 +12,10 @@ public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Circuit.Boolean.Tableau.Correct
 public import Complexity.Computability.Circuit.Boolean.Tableau.Space
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # The circuit value problem is `P`-complete
@@ -222,9 +224,7 @@ theorem computableInLogSpace_tableauInstance :
   have hin : (fun p => (WriterSpec.encStepIn p).length) ≼ fun p => wBudget p.1 :=
     .of_le_linear 2 0 fun p => by
       simp only [length_encPair, encBool_apply, wBudget]
-      simp only [encNat_apply, List.length_cons, List.length_nil, zero_add, add_zero,
-        Order.add_one_le_iff]
-      omega
+      enc_len [encNat_apply, zero_add, add_zero, Order.add_one_le_iff]
   have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)

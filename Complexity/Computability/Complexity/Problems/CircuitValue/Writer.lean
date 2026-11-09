@@ -9,9 +9,11 @@ module
 
 public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Machines.ReadMachine.Tidy
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # Writing circuits chunk by chunk in logarithmic space
@@ -282,9 +284,7 @@ private theorem step_inSpace
   have hin : (fun p => (encStepIn p).length) ≼ fun p => wBudget p.1 :=
     .of_le_linear 2 0 fun p => by
       simp only [length_encPair, encBool_apply, wBudget]
-      simp only [encNat_apply, List.length_cons, List.length_nil, zero_add, add_zero,
-        Order.add_one_le_iff]
-      omega
+      enc_len [encNat_apply, zero_add, add_zero, Order.add_one_le_iff]
   have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hb := (ComputableInSpace.snd encNat3 encBool).weaken hin
   have hph := fst' hs
@@ -346,8 +346,7 @@ private theorem stateS_le (w : List Bool) {q : (ℕ × ℕ × ℕ) × ℕ}
   have e₂ := hm q.1.2.1 (by omega)
   have e₃ := hm q.1.2.2 (by omega)
   have e₄ := hm q.2 (by omega)
-  simp only [ReadMachine.stateS, wBudget, length_encPair]
-  omega
+  enc_len [ReadMachine.stateS, wBudget]
 
 /-- **A writer runs in logarithmic space** when it has polynomially many chunks and its chunks
 and trailer are computed within the budget of its states. -/

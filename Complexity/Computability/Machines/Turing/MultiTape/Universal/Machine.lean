@@ -75,7 +75,8 @@ lemma round_inO : ComputableTidilyInO round eRun eRun (fun s => stepTime s.1 + (
     fun s => (eRun s).length := by
   have hctx := fst eCtx (encList encUnary)
   have hout := snd eCtx (encList encUnary)
-  have hstep := step_inO.comp hctx
+  -- bridge for #862: tidy client of the plain `step_inO`
+  have hstep := step_inO.tidy.comp hctx
   have hnewout := ((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear
     hstep.snd').ite ((ComputableTidilyInDegree.snoc encUnary).inO_one.comp_linear
       (hout.prod ((ComputableTidilyInDegree.getD (enc₁ := encUnary) 0).inO_one.comp_linear
@@ -206,7 +207,8 @@ public theorem computableTidilyInO_universal :
       exact length_eRun_le i.1 i.2.1 hk)).tidy
   have hhalted := (ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
     (fun b : Bool => !b)).inO_one.comp_linear ((ComputableTidilyInDegree.isSome encUnary).inO_one
-      |>.comp_linear (state_inO.comp_linear hiter.fst'.snd'))
+      -- bridge for #862: tidy client of the plain `state_inO`
+      |>.comp_linear (state_inO.tidy.comp_linear hiter.fst'.snd'))
   refine ((hiter.snd'.prod hhalted).mono 16 (fun i => ?_) fun i => ?_).of_enc_eq fun i => ?_
   · have h₁ : (eDesc i.1).length ≤ (eIn i).length := length_le_encPair_left _ _ i
     have h₂ := Nat.pow_le_pow_left (Nat.add_le_add_right h₁ 1) 2

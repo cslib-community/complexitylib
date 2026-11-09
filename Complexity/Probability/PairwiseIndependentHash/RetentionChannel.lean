@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
+public import Complexity.Foundations.Probability.ProductDensity
 public import Complexity.Probability.PairwiseIndependentHash.Affine
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Mathlib.Algebra.Field.ZMod
@@ -50,9 +51,12 @@ only for the later averaging walks, so they are not needed here.
 
 ## Main results
 
+* `Cslib.Probability.mem_retentionBox`: membership in the box, coordinatewise.
 * `Cslib.Probability.card_retentionBox`: the box has `L ^ H` points.
 * `Cslib.Probability.dens_affineRetains`, `Cslib.Probability.dens_affineRetains_and`: exact
   retention probabilities of one identifier and of two distinct ones.
+* `Cslib.Probability.affineRetains_of_le`, `Cslib.Probability.dens_affineRetains_and_affineRetains`:
+  nested boxes and the joint retention probability at two rates.
 * `Cslib.Probability.dens_two_mul_card_filter_affineRetains_lt_le`: the lower tail of the number
   of retained identifiers of a set.
 * `Cslib.Probability.dens_filter_fst_and_snd`: events about independent seeds are independent.
@@ -72,17 +76,6 @@ namespace Cslib.Probability
 open Finset
 open scoped BigOperators
 
-/-- **Independence of separate seeds**: on the product of two seed spaces, an event about the
-first seed and an event about the second have probability equal to the product of their
-probabilities. -/
-theorem dens_filter_fst_and_snd {ι κ : Type*} [Fintype ι] [Fintype κ] (p : ι → Prop)
-    (q : κ → Prop) [DecidablePred p] [DecidablePred q] :
-    dens {z : ι × κ | p z.1 ∧ q z.2} = dens {i | p i} * dens {j | q j} := by
-  rw [dens_eq_card_div_card, dens_eq_card_div_card, dens_eq_card_div_card,
-    ← univ_product_univ, filter_product, card_product, Fintype.card_prod]
-  push_cast
-  rw [mul_div_mul_comm]
-
 variable (P H L : ℕ) [NeZero P]
 
 /-- The **retention box** `{v | ∀ j, (v j).val < L}` in `ZMod P ^ H`: every coordinate, read as
@@ -91,6 +84,11 @@ def retentionBox : Finset (Fin H → ZMod P) :=
   Fintype.piFinset fun _ ↦ {a : ZMod P | a.val < L}
 
 variable {P H L}
+
+/-- A vector lies in the retention box when each coordinate has representative less than `L`. -/
+@[simp]
+theorem mem_retentionBox {v : Fin H → ZMod P} : v ∈ retentionBox P H L ↔ ∀ j, (v j).val < L := by
+  simp [retentionBox]
 
 /-- `L` residues of `ZMod P` have representatives less than `L ≤ P`. -/
 private theorem card_filter_val_lt (hL : L ≤ P) : #{a : ZMod P | a.val < L} = L := by
@@ -147,6 +145,31 @@ theorem dens_affineRetains_and (hL : L ≤ P) {w y : ZMod P} (hwy : w ≠ y) :
   rw [card_retentionBox hL, Fintype.card_fun, Fintype.card_fin, ZMod.card] at h
   unfold affineRetains
   rw [h, div_pow]
+  push_cast
+  rfl
+
+omit [Fact P.Prime] in
+/-- **Nested boxes**: an identifier retained with side `L₂` is retained with every side
+`L₁ ≥ L₂`, by the same seed. So a channel at a lower rate retains a subset. -/
+theorem affineRetains_of_le {L₁ L₂ : ℕ} (hL : L₂ ≤ L₁) {s} {y : ZMod P}
+    (h : affineRetains P H L₂ s y) : affineRetains P H L₁ s y := by
+  simp only [affineRetains, retentionBox, Fintype.mem_piFinset, mem_filter, mem_univ,
+    true_and] at h ⊢
+  exact fun j => (h j).trans_le hL
+
+/-- **Pairwise independent retention at two rates**: for distinct identifiers `w ≠ y`, the seed
+retains `w` with side `L₁` and `y` with side `L₂` with probability
+`(L₁ / P) ^ H * (L₂ / P) ^ H`. -/
+theorem dens_affineRetains_and_affineRetains {L₁ L₂ : ℕ} (hL₁ : L₁ ≤ P) (hL₂ : L₂ ≤ P)
+    {w y : ZMod P} (hwy : w ≠ y) :
+    dens {s | affineRetains P H L₁ s w ∧ affineRetains P H L₂ s y} =
+      ((L₁ : ℚ≥0) / P) ^ H * ((L₂ : ℚ≥0) / P) ^ H := by
+  have h := isPairwiseIndependentHash_affineIdentifier.dens_filter_apply_mem_and_apply_mem hwy
+    (retentionBox P H L₁) (retentionBox P H L₂)
+  rw [card_retentionBox hL₁, card_retentionBox hL₂, Fintype.card_fun, Fintype.card_fin,
+    ZMod.card] at h
+  unfold affineRetains
+  rw [h, div_pow, div_pow]
   push_cast
   rfl
 

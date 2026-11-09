@@ -173,4 +173,10 @@ theorem occurrencePaths_eq_paths (φ : CNF ℕ) :
     rw [(Cslib.Logic.PL.occurrences_nodup φ).idxOf_getElem i (by simpa using hi),
       List.getD_eq_getElem _ _ hj]
 
+/-- An actual occurrence selects a member of the canonical path list. -/
+theorem occurrencePath_mem_paths {φ : CNF ℕ} {o : Occurrence ℕ}
+    (ho : o ∈ Cslib.Logic.PL.occurrences φ) : occurrencePath φ o ∈ paths φ := by
+  rw [← occurrencePaths_eq_paths]
+  exact List.mem_map_of_mem ho
+
 end Cslib.Complexity.SAT.PlanarCompile

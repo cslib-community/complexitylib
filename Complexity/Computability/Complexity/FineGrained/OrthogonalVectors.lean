@@ -49,6 +49,11 @@ The orthogonal vectors hypothesis is stated with a polynomial factor in the dime
 dimension `c log N`, which follows from the strong exponential time hypothesis with the
 sparsification lemma, is not proved here.
 
+**The hypothesis is refuted.** `Cslib.Complexity.CountingNativeEndpoint.not_SETH` proves that
+`SETH` is false, so `Cslib.Complexity.OVH_of_SETH` holds vacuously and gives no evidence for `OVH`,
+which this library neither proves nor refutes. The reduction from a fast `OV` decider to a fast
+`SAT` decider is unconditional.
+
 ## Main definitions
 
 * `Cslib.Complexity.OV.clauseVector`, `Cslib.Complexity.OV.halfVectors`: the vectors of the
@@ -345,7 +350,7 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
     (hwrap.comp computableInPolyTime_clauseVector).exists_degree
   obtain ⟨tE, sE, ⟨cE, htE⟩, ⟨cE', hsE⟩, hE⟩ := Internal.NormalForm.degree hE_deg
   obtain ⟨cF, hF⟩ := Internal.NormalForm.linear
-    (ComputableInLinearTimeAndSpace.const (encIn := encStreamState) (encMid := encBits) fin)
+    (ComputableInDegree.const (encIn := encStreamState) (encMid := encBits) fin)
   set D := dN + dE + 1
   set B : StreamState × ℕ → ℕ := fun x =>
     2 * (encPair encCNF (encList encNat) x.1.1).length + 1 + (encNat (x.1.2 + x.2)).length
@@ -360,8 +365,7 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
     omega
   have hpowN (x : StreamState × ℕ) (s : StreamState) (hs : (encStreamState s).length ≤ B x) :
       (encStreamState s).length + 1 ≤ (B x + 1) := by omega
-  have hD (x : StreamState × ℕ) (d : ℕ) (hd : d ≤ D) : (B x + 1) ^ d ≤ (B x + 1) ^ D :=
-    Nat.pow_le_pow_right (Nat.succ_pos _) hd
+  have hD (x : StreamState × ℕ) (d : ℕ) (hd : d ≤ D) : (B x + 1) ^ d ≤ (B x + 1) ^ D := by gcongr
   obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.iterate_unary_stream_sum hN hE hF
     (R := fun x _ => (cN + cE + 3) * (B x + 1) ^ D) (Q := fun x => (cN' + cE') * (B x + 1) ^ D)
     (B := B)

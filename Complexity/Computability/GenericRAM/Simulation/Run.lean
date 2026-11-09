@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.GenericRAM.Simulation.Turing
+import Complexity.Tactic.EncLen
 
 /-!
 # Clocked multi-step execution and whole-run native transport for generic RAMs
@@ -31,6 +32,8 @@ together with automatic whole-run algorithm transport (`FiniteState.transportCer
   certificates.
 * `FiniteState.runCertificate`, `FiniteState.evalCertificate`, `FiniteState.runTime`,
   `FiniteState.runSpace`: native clocked whole-run certificates and parameterized resource bounds.
+* `FiniteState.runCertificateOf`: the clocked run from computed step budget, configuration and
+  initial state, on the original input.
 * `FiniteState.transportCertificate`: automatic whole-run transport of `GenericRAM.Executes`
   certificates to native multitape Turing machines.
 
@@ -45,6 +48,8 @@ together with automatic whole-run algorithm transport (`FiniteState.transportCer
 * `FiniteState.step_polyTime`, `FiniteState.transport_inO`, `FiniteState.transport_polyTime`,
   `FiniteState.transport_polyTime_of_le_const`: parameterized and polynomial-time whole-run
   transport theorems.
+* `FiniteState.runCertificateOf_isPolynomial`: a clocked run, halting or not, is polynomial when
+  its step budget and the encoded outcomes along it are polynomially bounded.
 
 ## References
 
@@ -822,6 +827,16 @@ theorem le_runSpace_of_run_eq_inl (enc : M.Encoding) (N : M.NativePrimitives enc
 
 /-! ### Automatic whole-run algorithm transport -/
 
+/-- The clocked run of `p` for `steps a` steps from `initState a` at `cfg a`, as a native
+certificate on the original input. The run need not halt. -/
+def runCertificateOf (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program M r)
+    {cfg : α → M.Config} {initState : α → FiniteState M r} {steps : α → ℕ}
+    (cSteps : NativeCertificate steps ei encNat)
+    (cCfg : NativeCertificate cfg ei enc.config)
+    (cInit : NativeCertificate initState ei (encoding enc)) :
+    NativeCertificate (fun a => run (cfg a) p (steps a) (initState a)) ei (resultEncoding enc) :=
+  (runCertificate enc N p).comp (prod cSteps (prod cCfg cInit))
+
 theorem unoption_inO (ev : M.Value ↪ List Bool) :
     ComputableInO (fun o : Option M.Value => (encOption ev o).tail)
       (encOption ev) encBits
@@ -935,7 +950,7 @@ theorem readCertificate_isPolynomial (enc : M.Encoding)
     refine ⟨.of_forall_le 32 3 fun q => ?_, .of_forall_le 32 1 fun q => ?_⟩
     · have hq : (SparseMemory.queryEncoding enc.address enc.value q.1).length ≤
           (SparseMemory.readEncoding enc.address enc.value q).length := by
-        simp only [SparseMemory.readEncoding, length_encPair]; omega
+        enc_len [SparseMemory.readEncoding]
       have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
       have ht := SparseMemory.scanTime_le_cube enc.address enc.value q.1
       have he : (SparseMemory.readEncoding enc.address enc.value q).length ≤
@@ -944,9 +959,7 @@ theorem readCertificate_isPolynomial (enc : M.Encoding)
       unfold SparseMemory.readTime
       nlinarith
     · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value q.1
-      simp only [SparseMemory.readSpace, SparseMemory.readEncoding,
-        length_encPair, pow_one] at hs ⊢
-      omega
+      enc_len [SparseMemory.readSpace, SparseMemory.readEncoding, pow_one] at hs ⊢
   exact comp_isPolynomial _
     (prod (prod address (snd (snd (snd (fields enc c))))) (fst (snd (snd (fields enc c)))))
     hread (prod_isPolynomial _ _ (prod_isPolynomial _ _ ha hc) hc)
@@ -964,8 +977,7 @@ theorem writeCertificate_isPolynomial (enc : M.Encoding)
     refine ⟨.of_forall_le 33 3 fun q => ?_, .of_forall_le 33 1 fun q => ?_⟩
     · have hq : (SparseMemory.queryEncoding enc.address enc.value (q.1.1, q.2)).length ≤
           (SparseMemory.writeEncoding enc.address enc.value q).length := by
-        simp only [SparseMemory.queryEncoding, SparseMemory.writeEncoding, length_encPair]
-        omega
+        enc_len [SparseMemory.queryEncoding, SparseMemory.writeEncoding]
       have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
       have ht := SparseMemory.scanTime_le_cube enc.address enc.value (q.1.1, q.2)
       have he : (SparseMemory.writeEncoding enc.address enc.value q).length ≤
@@ -1155,10 +1167,52 @@ theorem initConstCertificate_isPolynomial (enc : M.Encoding)
   initCertificate_isPolynomial enc _ default memory
     (constRegsCertificate_isPolynomial enc initReg hreg) hdef hmem
 
+/-- **A clocked run is polynomial** when the scalar primitives, the step budget, the configuration
+and the initial state are, the step budget `steps a` is polynomially bounded, and the encoded
+outcomes along `0 ≤ j ≤ steps a` are bounded by a polynomially bounded function `B`. The run need
+not halt. -/
+theorem runCertificateOf_isPolynomial (enc : M.Encoding) (N : M.NativePrimitives enc)
+    (p : Program M r) {cfg : α → M.Config} {initState : α → FiniteState M r} {steps : α → ℕ}
+    (cSteps : NativeCertificate steps ei encNat)
+    (cCfg : NativeCertificate cfg ei enc.config)
+    (cInit : NativeCertificate initState ei (encoding enc))
+    (hN : N.IsPolynomial)
+    (hSteps : cSteps.IsPolynomial) (hCfg : cCfg.IsPolynomial) (hInit : cInit.IsPolynomial)
+    (hStepsBound : PolyBounded (fun a => (ei a).length) steps)
+    {B : α → ℕ} (hB : PolyBounded (fun a => (ei a).length) B)
+    (hOutLen : ∀ a, ∀ j ≤ steps a,
+      (resultEncoding enc (run (cfg a) p j (initState a))).length ≤ B a) :
+    (runCertificateOf enc N p cSteps cCfg cInit).IsPolynomial := by
+  have hIter : (iterate cSteps (prod cCfg (some (inl cInit enc.value)))
+      (roundCertificate enc N p)).IsPolynomial :=
+    iterate_isPolynomial cSteps _ (roundCertificate enc N p)
+      hSteps (prod_isPolynomial _ _ hCfg (some_isPolynomial _ (inl_isPolynomial _ _ hInit)))
+      (roundCertificate_isPolynomial enc N p hN) hStepsBound
+      ((((PolyBounded.const 2).mul (cCfg.polyTime hCfg).polyBounded_length).add (.const 1)).add hB)
+      fun a j hj => by
+        rw [iterate_round_inl]
+        have := hOutLen a j hj
+        enc_len [loopEncoding]
+  have hInLen : PolyBounded (fun a => (ei a).length)
+      (fun a => (runInputEncoding enc (steps a, (cfg a, initState a))).length) :=
+    ((prod cSteps (prod cCfg cInit)).polyTime
+      (prod_isPolynomial _ _ hSteps (prod_isPolynomial _ _ hCfg hInit))).polyBounded_length
+  refine ⟨(hIter.1.add ((PolyBounded.const 3).mul hInLen)).mono fun a => ?_,
+    (hIter.2.add ((PolyBounded.const 3).mul hInLen)).mono fun a => ?_⟩
+  · simp only [runCertificateOf, comp_time, runCertificate, congr_time, snd_time,
+      iterate_time, initLoopCertificate, prod_time, fst_time, some_time, inl_time,
+      linear_time, resultEncoding]
+    omega
+  · simp only [runCertificateOf, comp_space, runCertificate, congr_space, snd_space,
+      iterate_space, initLoopCertificate, prod_space, fst_space, some_space, inl_space,
+      linear_space, resultEncoding]
+    omega
+
 /-- Polynomial-time whole-run transport: if scalar primitives, step-budget certificate,
 configuration certificate, and initial-state certificate are polynomial, the step budget `steps a`
 is polynomially bounded, and the encoded outcomes along `0 ≤ j ≤ steps a` are bounded by a
-polynomially bounded function `B`, then the transported certificate is polynomial. -/
+polynomially bounded function `B`, then the transported certificate is polynomial. Its bounds are
+those of the run (`FiniteState.runCertificateOf_isPolynomial`). -/
 theorem transportCertificate_isPolynomial (enc : M.Encoding) (N : M.NativePrimitives enc)
     (p : Program M r) {f : α → M.Value} {cfg : α → M.Config}
     {initState : α → FiniteState M r} {steps : α → ℕ}
@@ -1173,32 +1227,10 @@ theorem transportCertificate_isPolynomial (enc : M.Encoding) (N : M.NativePrimit
     {B : α → ℕ} (hB : PolyBounded (fun a => (ei a).length) B)
     (hOutLen : ∀ a, ∀ j ≤ steps a,
       (resultEncoding enc (run (cfg a) p j (initState a))).length ≤ B a) :
-    (transportCertificate enc N p cSteps cCfg cInit hExec).IsPolynomial := by
-  have hIter : (iterate cSteps (prod cCfg (some (inl cInit enc.value)))
-      (roundCertificate enc N p)).IsPolynomial :=
-    iterate_isPolynomial cSteps _ (roundCertificate enc N p)
-      hSteps (prod_isPolynomial _ _ hCfg (some_isPolynomial _ (inl_isPolynomial _ _ hInit)))
-      (roundCertificate_isPolynomial enc N p hN) hStepsBound
-      ((((PolyBounded.const 2).mul (cCfg.polyTime hCfg).polyBounded_length).add (.const 1)).add hB)
-      fun a j hj => by
-        rw [iterate_round_inl]
-        have := hOutLen a j hj
-        simp only [loopEncoding, length_encPair]
-        omega
-  have hInLen : PolyBounded (fun a => (ei a).length)
-      (fun a => (runInputEncoding enc (steps a, (cfg a, initState a))).length) :=
-    ((prod cSteps (prod cCfg cInit)).polyTime
-      (prod_isPolynomial _ _ hSteps (prod_isPolynomial _ _ hCfg hInit))).polyBounded_length
-  refine ⟨(hIter.1.add ((PolyBounded.const 3).mul hInLen)).mono fun a => ?_,
-    (hIter.2.add ((PolyBounded.const 3).mul hInLen)).mono fun a => ?_⟩
-  · simp only [transportCertificate_time, runTime, runCertificate, congr_time, snd_time,
-      iterate_time, initLoopCertificate, prod_time, fst_time, snd_time, some_time, inl_time,
-      linear_time, resultEncoding]
-    omega
-  · simp only [transportCertificate_space, runSpace, runCertificate, congr_space, snd_space,
-      iterate_space, initLoopCertificate, prod_space, fst_space, snd_space, some_space, inl_space,
-      linear_space, resultEncoding]
-    omega
+    (transportCertificate enc N p cSteps cCfg cInit hExec).IsPolynomial :=
+  have h := runCertificateOf_isPolynomial enc N p cSteps cCfg cInit hN hSteps hCfg hInit
+    hStepsBound hB hOutLen
+  ⟨h.1.mono fun _ => le_rfl, h.2.mono fun _ => le_rfl⟩
 
 /-- Automatic `ComputableInPolyTime` transport corollary from `GenericRAM.Executes`. -/
 theorem transport_polyTime (enc : M.Encoding) (N : M.NativePrimitives enc)
@@ -1258,8 +1290,7 @@ theorem polyBounded_length_run (enc : M.Encoding) (N : M.NativePrimitives enc)
     (roundIterCertificate_isPolynomial enc N p cCfg cInit hN hCfg hInit j)).polyBounded_length
   refine hloop.mono fun a => ?_
   rw [iterate_round_inl]
-  simp only [loopEncoding, length_encPair]
-  omega
+  enc_len [loopEncoding]
 
 /-- Automatic `ComputableInPolyTime` transport for a constant step-budget bound
 `∀ a, steps a ≤ K`: the intermediate outcome lengths along `0 ≤ j ≤ K` are bounded by induction on

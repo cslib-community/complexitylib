@@ -23,10 +23,7 @@ has direct plain closure rules — inclusion of polynomial time, identity, compo
 conditionals and binary-counted iteration — proved directly via
 `Turing.MultiTapeTM.ComputableInSpace` without routing through tidy computability.
 
-The plain predicate and its closure rules are registered with `fun_prop`. It also agrees with its
-tidy counterpart `Turing.MultiTapeTM.ComputableTidilyInPolySpace` via
-`Turing.MultiTapeTM.ComputableInPolySpace.tidy` and
-`Turing.MultiTapeTM.ComputableInPolySpace.of_tidy`.
+The plain predicate and its closure rules are registered with `fun_prop`.
 
 ## Main results
 
@@ -35,8 +32,6 @@ tidy counterpart `Turing.MultiTapeTM.ComputableTidilyInPolySpace` via
 * `Turing.MultiTapeTM.ComputableInPolySpace.comp`, `.prod`, `.ite`, `.congr`: closure properties.
 * `Turing.MultiTapeTM.ComputableInPolySpace.iterate`: iteration within polynomial space.
 * `Turing.MultiTapeTM.ComputableInPolyTime.increment`: the binary counter in polynomial time.
-* `Turing.MultiTapeTM.computableInPolySpace_iff_computableTidilyInPolySpace`: equivalence with the
-  tidy counterpart.
 -/
 
 @[expose] public section
@@ -46,34 +41,6 @@ namespace Turing.MultiTapeTM
 attribute [fun_prop] ComputableInPolySpace
 
 variable {α β : Type} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
-
-/-- A function computable within polynomial space is tidily computable within polynomial space. -/
-theorem ComputableInPolySpace.tidy (h : ComputableInPolySpace f encIn encOut) :
-    ComputableTidilyInPolySpace f encIn encOut :=
-  let ⟨_, _, hs, hc, hl⟩ := h
-  ⟨_, _, .of_polynomiallyBounded _ hs, hc.computableTidilyInO hl⟩
-
-/-- A function tidily computable within polynomial space is computable within polynomial space, by
-the same machine. -/
-theorem ComputableInPolySpace.of_tidy (h : ComputableTidilyInPolySpace f encIn encOut) :
-    ComputableInPolySpace f encIn encOut := by
-  obtain ⟨T, S, ⟨b, hb, hS⟩, c, hc, hl⟩ := h
-  have hcS (a : α) : c * (S a + 1) ≤ c * (b (encIn a).length + 1) :=
-    Nat.mul_le_mul_left c (Nat.add_le_add_right (hS a) 1)
-  exact ⟨_, fun n => c * (b n + 1), by fun_prop,
-    hc.computableInTimeAndSpace.mono (fun _ => le_rfl) hcS, fun a => (hl a).trans (hcS a)⟩
-
-/-- `Turing.MultiTapeTM.ComputableInPolySpace.of_tidy` for dot notation on a tidy hypothesis and
-the transition used by `fun_prop` to prove plain goals from tidy certificates. -/
-@[fun_prop]
-theorem ComputableTidilyInPolySpace.computableInPolySpace
-    (h : ComputableTidilyInPolySpace f encIn encOut) : ComputableInPolySpace f encIn encOut :=
-  .of_tidy h
-
-/-- **Plain and tidy computability within polynomial space agree.** -/
-theorem computableInPolySpace_iff_computableTidilyInPolySpace :
-    ComputableInPolySpace f encIn encOut ↔ ComputableTidilyInPolySpace f encIn encOut :=
-  ⟨ComputableInPolySpace.tidy, ComputableInPolySpace.of_tidy⟩
 
 namespace ComputableInPolySpace
 

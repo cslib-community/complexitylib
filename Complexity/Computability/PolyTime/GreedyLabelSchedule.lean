@@ -63,7 +63,7 @@ or missing positions to `0` via `wordToSchedule`.
 * `greedySchedulePass`, `normalizeEmptyFactorSchedules`, `constructBalancedSchedules`: full greedy
   pass, empty-scope factor normalization, and complete schedule constructor.
 * `constructedVarSchedule`, `constructedFactorSchedule`: typed schedule bridges.
-* `encScheduleParams`, `encOuterAcc`, `greedySchedulePassCertificate`,
+* `encScheduleParams`, `encOuterAcc`, `encCompleteSchedules`, `greedySchedulePassCertificate`,
   `constructBalancedSchedulesCertificate`: encodings and uniform `NativeCertificate`s.
 
 ## Main results
@@ -111,23 +111,43 @@ abbrev ScheduleParams : Type := (ℕ × ℕ × ℕ) × (ℕ × ℕ) × List (ℕ
 def pendingSlotOfState
     (state : ℕ × (ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ))))) :
     Option (Bool × ℕ) :=
-  (slotOfIndex state.2.1.1.1 state.2.1.1.2.1 state.1).elim none fun slot =>
-    if (readSlotSchedule slot state.2.2).isSome then none else some slot
+  let s := state.1
+  let acc := state.2
+  let p := acc.1
+  let scheds := acc.2
+  let nmQ := p.1
+  let n := nmQ.1
+  let mQ := nmQ.2
+  let m := mQ.1
+  (slotOfIndex n m s).elim none fun slot =>
+    if (readSlotSchedule slot scheds).isSome then none else some slot
 
 /-- Outer `IndexFold.run` callback fixing unassigned slot `s < n + m` via `streamBestSlotLabel`. -/
 def greedySlotStepBody
     (state : ℕ × (ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ))))) :
     ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ))) :=
-  (pendingSlotOfState state).elim state.2 fun slot =>
-    let p := state.2.1
-    let chosen := streamBestSlotLabel p.1.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2 state.2.2 slot
-    (p, updateSlotSchedules slot (some chosen) state.2.2)
+  let acc := state.2
+  let p := acc.1
+  let scheds := acc.2
+  (pendingSlotOfState state).elim acc fun slot =>
+    let nmQ := p.1
+    let n := nmQ.1
+    let mQ := nmQ.2
+    let Q := mQ.2
+    let rC_edges := p.2
+    let rC := rC_edges.1
+    let r := rC.1
+    let C := rC.2
+    let edges := rC_edges.2
+    let chosen := streamBestSlotLabel n Q r C edges scheds slot
+    (p, updateSlotSchedules slot (some chosen) scheds)
 
 /-- Full `(n + m)`-slot greedy partial-schedule pass implemented with `IndexFold.run`. -/
 def greedySchedulePass (n m Q r C : ℕ) (edges : List (ℕ × ℕ)) :
     List (Option (List ℕ)) × List (Option (List ℕ)) :=
-  (IndexFold.run greedySlotStepBody (n + m)
-    (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2.2
+  let acc := (IndexFold.run greedySlotStepBody (n + m)
+    (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2
+  acc.2
 
 /-- Replace schedules of empty-scope factors (`∀ e ∈ edges, e.1 ≠ f`) with `List.replicate Q 0`. -/
 def normalizeEmptyFactorSchedules (Q : ℕ) (edges : List (ℕ × ℕ))
@@ -157,8 +177,9 @@ private theorem run_greedySlotStepBody_params (params : ScheduleParams)
 /-- Outer-loop prefix invariant: at every slot prefix `s`, `varSched` has length `n`, `facSched`
 has length `m`, and every assigned word has length `Q` with digits `< max r 1`. -/
 theorem run_greedySlotStepBody_wf (n m Q r C : ℕ) (edges : List (ℕ × ℕ)) (s : ℕ) :
-    let scheds := (IndexFold.run greedySlotStepBody s
-      (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2.2
+    let acc := (IndexFold.run greedySlotStepBody s
+      (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2
+    let scheds := acc.2
     scheds.1.length = n ∧ scheds.2.length = m ∧
       (∀ o ∈ scheds.1, ∀ w, o = some w → w.length = Q ∧ ∀ x ∈ w, x < max r 1) ∧
       (∀ o ∈ scheds.2, ∀ w, o = some w → w.length = Q ∧ ∀ x ∈ w, x < max r 1) := by
@@ -555,6 +576,12 @@ def encOuterAcc :
     (ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ)))) ↪ List Bool :=
   encPair encScheduleParams encPartialSchedules
 
+/-- Encoding of a pair `(varSched, facSched)` of complete schedule tables, with labels in binary:
+the framed list of variable schedule words, then the list of factor schedule words. Each list is
+the concatenation of its framed words, each word the concatenation of its framed labels. -/
+abbrev encCompleteSchedules : List (List ℕ) × List (List ℕ) ↪ List Bool :=
+  encPair (encList (encList encNat)) (encList (encList encNat))
+
 end Cslib.BalancedSchedules
 
 end
@@ -600,22 +627,21 @@ theorem length_encPartialSchedules_le {n m Q r : ℕ}
       | none => simp only [encOption_none, List.length_nil]; omega
       | some w =>
         obtain ⟨hlw, hmw⟩ := hw (some w) ho w rfl
-        have hwl := length_encList_word_le hlw hmw
+        have hwl := (length_encList_word_le hlw hmw).trans_eq
+          (show Q * (2 * (encNat r).length + 1) = Q * (2 * (encNat r).length + 1) from rfl)
         simp only [encOption_some, List.length_cons]
-        linarith [show 2 * Q * (2 * (encNat r).length + 1) =
-          2 * (Q * (2 * (encNat r).length + 1)) by ring]
+        rw [Nat.mul_assoc 2 Q]; omega
     simpa only [List.length_map, smul_eq_mul] using
       List.sum_le_length_nsmul _ (2 * Q * (2 * (encNat r).length + 1) + 3) hle
   rw [encPartialSchedules, length_encPair]
   have hb1 := hlist h1 hw1; have hb2 := hlist h2 hw2
-  have hnm : 2 * n + m ≤ 2 * (n + m) := by omega
   calc 2 * (encList (encOption (encList encNat)) scheds.1).length + 1 +
         (encList (encOption (encList encNat)) scheds.2).length
       ≤ 2 * (n * (2 * Q * (2 * (encNat r).length + 1) + 3)) + 1 +
           m * (2 * Q * (2 * (encNat r).length + 1) + 3) := by omega
     _ = (2 * n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1 := by ring
     _ ≤ 2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1 :=
-          Nat.add_le_add_right (Nat.mul_le_mul_right _ hnm) 1
+          Nat.add_le_add_right (Nat.mul_le_mul_right _ (by omega)) 1
 
 /-- Explicit `O((n + m + 1) * (Q + 1) * log(r + 2) + |E| * log(n + m + 2) + log(C + 2))` inner-loop
 prefix bit-length bound for valid hypergraph incidences and partial schedules. -/
@@ -638,28 +664,24 @@ theorem length_encSlotSelectState_run_valid_le {n m Q r C : ℕ} {edges : List (
   refine (length_encSlotSelectState_run_le n Q r C edges scheds slot hj).trans ?_
   simp only [encStreamSlotIn, encScoreParams, length_encPair, encUnary_apply, List.length_replicate,
     encBool_apply, List.length_singleton]
-  have hcub : 16 * ((n + m) * Q * (encNat r).length) + 8 * ((n + m) * Q) +
-      8 * (Q * (encNat r).length) + 34 * (n + m) + 14 * Q + 18 * (encNat r).length + 36 ≤
+  have hcub : 2 * (2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1) +
+      8 * Q * (encNat r).length + 22 * (n + m) + 14 * Q + 18 * (encNat r).length + 34 ≤
       36 * (n + m + 1) * (Q + 1) * ((encNat r).length + 1) := by
-    have h0 := Nat.zero_le (20 * ((n + m) * Q * (encNat r).length) + 28 * ((n + m) * Q) +
-      36 * ((n + m) * (encNat r).length) + 28 * (Q * (encNat r).length))
-    linarith [show 36 * (n + m + 1) * (Q + 1) * ((encNat r).length + 1) =
-      (16 * ((n + m) * Q * (encNat r).length) + 8 * ((n + m) * Q) +
-        8 * (Q * (encNat r).length) + 34 * (n + m) + 14 * Q + 18 * (encNat r).length + 36) +
+    rw [show 36 * (n + m + 1) * (Q + 1) * ((encNat r).length + 1) =
+      (2 * (2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1) +
+        8 * Q * (encNat r).length + 22 * (n + m) + 14 * Q + 18 * (encNat r).length + 34) +
       (20 * ((n + m) * Q * (encNat r).length) + 28 * ((n + m) * Q) +
-        36 * ((n + m) * (encNat r).length) + 28 * (Q * (encNat r).length)) +
-      2 * (n + m) + 22 * Q + 18 * (encNat r).length by ring]
-  have hsch' : (encPartialSchedules scheds).length ≤
-      8 * ((n + m) * Q * (encNat r).length) + 4 * ((n + m) * Q) + 6 * (n + m) + 1 := by
-    linarith [hsch, show 2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1 =
-      8 * ((n + m) * Q * (encNat r).length) + 4 * ((n + m) * Q) + 6 * (n + m) + 1 by ring]
+        36 * ((n + m) * (encNat r).length) + 28 * (Q * (encNat r).length) +
+        2 * (n + m) + 22 * Q + 18 * (encNat r).length) by ring]
+    exact Nat.le_add_right _ _
   have hed' : 4 * (encList (encPair encNat encNat) edges).length +
       2 * (encNat edges.length).length ≤ 28 * edges.length * ((encNat (n + m)).length + 1) := by
-    linarith [hed, helen, show 28 * edges.length * ((encNat (n + m)).length + 1) =
-      4 * (edges.length * (6 * (encNat (n + m)).length + 3)) +
-      4 * (edges.length * (encNat (n + m)).length) + 16 * edges.length by ring,
-      Nat.zero_le (edges.length * (encNat (n + m)).length)]
-  linarith
+    refine (Nat.add_le_add (Nat.mul_le_mul_left 4 hed) (Nat.mul_le_mul_left 2 helen)).trans ?_
+    rw [show 28 * edges.length * ((encNat (n + m)).length + 1) =
+      (4 * (edges.length * (6 * (encNat (n + m)).length + 3)) + 2 * edges.length) +
+      (4 * (edges.length * (encNat (n + m)).length) + 14 * edges.length) by ring]
+    exact Nat.le_add_right _ _
+  omega
 
 /-- All-prefix live-state bit-length bound for the outer `(n + m)`-slot `IndexFold.run` loop across
 every visited slot prefix `s ≤ n + m`, in terms of input parameters and valid edges. -/
@@ -685,28 +707,24 @@ theorem length_encOuterState_run_valid_le {n m Q r C : ℕ} {edges : List (ℕ �
       (((n, m, Q), (r, C), edges), init)).2.2 := by simp only [hst]
   subst hpar; rw [← hsc_eq] at hsch
   simp only [encOuterAcc, encScheduleParams, length_encPair, encUnary_apply, List.length_replicate]
-  have hcub : 8 * ((n + m) * Q * (encNat r).length) + 4 * ((n + m) * Q) +
-      16 * (n + m) + 4 * Q + 8 * (encNat r).length + 24 ≤
+  have hcub : (2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1) +
+      10 * (n + m) + 4 * Q + 8 * (encNat r).length + 23 ≤
       24 * (n + m + 1) * (Q + 1) * ((encNat r).length + 1) := by
-    have h0 := Nat.zero_le (16 * ((n + m) * Q * (encNat r).length) + 20 * ((n + m) * Q) +
-      24 * ((n + m) * (encNat r).length) + 24 * (Q * (encNat r).length))
-    linarith [show 24 * (n + m + 1) * (Q + 1) * ((encNat r).length + 1) =
-      (8 * ((n + m) * Q * (encNat r).length) + 4 * ((n + m) * Q) +
-        16 * (n + m) + 4 * Q + 8 * (encNat r).length + 24) +
+    rw [show 24 * (n + m + 1) * (Q + 1) * ((encNat r).length + 1) =
+      ((2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1) +
+        10 * (n + m) + 4 * Q + 8 * (encNat r).length + 23) +
       (16 * ((n + m) * Q * (encNat r).length) + 20 * ((n + m) * Q) +
-        24 * ((n + m) * (encNat r).length) + 24 * (Q * (encNat r).length)) +
-      8 * (n + m) + 20 * Q + 16 * (encNat r).length by ring]
-  have hsch' : (encPartialSchedules sc).length ≤
-      8 * ((n + m) * Q * (encNat r).length) + 4 * ((n + m) * Q) + 6 * (n + m) + 1 := by
-    linarith [hsch, show 2 * (n + m) * (2 * Q * (2 * (encNat r).length + 1) + 3) + 1 =
-      8 * ((n + m) * Q * (encNat r).length) + 4 * ((n + m) * Q) + 6 * (n + m) + 1 by ring]
+        24 * ((n + m) * (encNat r).length) + 24 * (Q * (encNat r).length) +
+        8 * (n + m) + 20 * Q + 16 * (encNat r).length) by ring]
+    exact Nat.le_add_right _ _
   have hed' : 2 * (encList (encPair encNat encNat) edges).length ≤
       28 * edges.length * ((encNat (n + m)).length + 1) := by
-    linarith [hed, show 28 * edges.length * ((encNat (n + m)).length + 1) =
+    refine (Nat.mul_le_mul_left 2 hed).trans ?_
+    rw [show 28 * edges.length * ((encNat (n + m)).length + 1) =
       2 * (edges.length * (6 * (encNat (n + m)).length + 3)) +
-      16 * (edges.length * (encNat (n + m)).length) + 22 * edges.length by ring,
-      Nat.zero_le (edges.length * (encNat (n + m)).length)]
-  linarith
+      (16 * (edges.length * (encNat (n + m)).length) + 22 * edges.length) by ring]
+    exact Nat.le_add_right _ _
+  omega
 
 private theorem scheduleParams_parts_le (p : ScheduleParams) :
     p.1.1 + p.1.2.1 ≤ (encScheduleParams p).length ∧
@@ -719,10 +737,11 @@ private theorem scheduleParams_parts_le (p : ScheduleParams) :
 
 /-- Unconditional all-prefix live-state bit-length bound for the outer `(n + m)`-slot
 `IndexFold.run` loop in terms of input bit length `L = |encScheduleParams p|`. -/
-theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ} (hs : s ≤ p.1.1 + p.1.2.1) :
+theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ}
+    (hs : let ((n, m, _), _) := p; s ≤ n + m) :
     (encPair encNat encOuterAcc
       (IndexFold.run greedySlotStepBody s
-        (p, (List.replicate p.1.1 none, List.replicate p.1.2.1 none)))).length ≤
+        (let ((n, m, _), _) := p; (p, (List.replicate n none, List.replicate m none))))).length ≤
       8 * (encScheduleParams p).length ^ 3 + 4 * (encScheduleParams p).length ^ 2 +
         10 * (encScheduleParams p).length + 3 := by
   let L := (encScheduleParams p).length; have hparts := scheduleParams_parts_le p
@@ -734,10 +753,10 @@ theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ} (hs : s ≤ p
   have hsch := length_encPartialSchedules_le h1 h2 hw1 hw2
   have hslen : (encNat s).length ≤ L := (length_encNat_le_self s).trans (hs.trans hparts.1)
   have hprod : 2 * (p.1.1 + p.1.2.1) * (2 * p.1.2.2 * (2 * (encNat p.2.1.1).length + 1) + 3) ≤
-      2 * L * (2 * L * (2 * L + 1) + 3) :=
-    Nat.mul_le_mul (Nat.mul_le_mul_left 2 hparts.1)
+      8 * L ^ 3 + 4 * L ^ 2 + 6 * L :=
+    (Nat.mul_le_mul (Nat.mul_le_mul_left 2 hparts.1)
       (Nat.add_le_add_right (Nat.mul_le_mul (Nat.mul_le_mul_left 2 hparts.2.1)
-        (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hparts.2.2.1) 1)) 3)
+        (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hparts.2.2.1) 1)) 3)).trans_eq (by ring)
   rw [IndexFold.length_run]
   rcases hst : (IndexFold.run greedySlotStepBody s (p, init)).2 with ⟨par, sc⟩
   have hpar : par = p := by simpa only [init, hst] using hp
@@ -746,29 +765,24 @@ theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ} (hs : s ≤ p
   simp only [encOuterAcc, length_encPair]
   change 2 * (encNat s).length + 1 + (2 * L + 1 + (encPartialSchedules sc).length) ≤
     8 * L ^ 3 + 4 * L ^ 2 + 10 * L + 3
-  linarith [hprod, show 2 * L * (2 * L * (2 * L + 1) + 3) = 8 * L ^ 3 + 4 * L ^ 2 + 6 * L by ring]
+  omega
 
 /-- `slotOfIndex` is computable in polynomial time. -/
 @[fun_prop] theorem computableInPolyTime_slotOfIndex :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => slotOfIndex p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun ((n, m), s) => slotOfIndex n m s)
       (encPair (encPair encUnary encUnary) encNat) (encOption (encPair encBool encUnary)) := by
-  let eIn := encPair (encPair encUnary encUnary) encNat
-  have hsCap : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => min (p.1.1 + p.1.2) p.2)
-      eIn encUnary := by unfold eIn; fun_prop
-  have hnBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1) eIn encNat :=
-    ComputableInPolyTime.unary_to_binary.comp (by unfold eIn; fun_prop)
-  have hnmBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1 + p.1.2) eIn encNat :=
-    ComputableInPolyTime.unary_to_binary.comp (by unfold eIn; fun_prop)
-  have hsBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2) eIn encNat := by
-    unfold eIn; fun_prop
-  have hlt1 := ComputableInPolyTime.binary_lt' hsBin hnBin
-  have hlt2 := ComputableInPolyTime.binary_lt' hsBin hnmBin
-  have hb1 : ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × ℕ => (some (false, min (p.1.1 + p.1.2) p.2) : Option (Bool × ℕ)))
-      eIn (encOption (encPair encBool encUnary)) := by fun_prop
-  have hb2 : ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × ℕ => (some (true, min (p.1.1 + p.1.2) p.2 - p.1.1) : Option (Bool × ℕ)))
-      eIn (encOption (encPair encBool encUnary)) := by unfold eIn; fun_prop
+  have h1 := ComputableInPolyTime.fst (encPair encUnary encUnary) encNat
+  have hsBin := ComputableInPolyTime.snd (encPair encUnary encUnary) encNat
+  have hn := h1.fst'; have hnm := ComputableInPolyTime.unary_add' hn h1.snd'
+  have hsCap := ComputableInPolyTime.binary_min_unary' hnm hsBin
+  have hlt1 := ComputableInPolyTime.binary_lt' hsBin (ComputableInPolyTime.unary_to_binary.comp' hn)
+  have hlt2 :=
+    ComputableInPolyTime.binary_lt' hsBin (ComputableInPolyTime.unary_to_binary.comp' hnm)
+  have hb1 := (ComputableInPolyTime.optionSome (encPair encBool encUnary)).comp'
+    ((ComputableInPolyTime.const (encOut := encBool) false).prod hsCap)
+  have hb2 := (ComputableInPolyTime.optionSome (encPair encBool encUnary)).comp'
+    ((ComputableInPolyTime.const (encOut := encBool) true).prod
+      (ComputableInPolyTime.unary_sub.comp' (hsCap.prod hn)))
   refine (hlt1.ite' hb1 (hlt2.ite' hb2 (.const none))).of_enc_eq fun p => ?_
   unfold slotOfIndex
   by_cases h1 : p.2 < p.1.1
@@ -785,27 +799,19 @@ private abbrev encOuterSlot : (OuterSt × (Bool × ℕ)) ↪ List Bool :=
   encPair encOuterSt (encPair encBool encUnary)
 private abbrev encFinIn : ((OuterSt × (Bool × ℕ)) × List ℕ) ↪ List Bool :=
   encPair encOuterSlot (encList encNat)
-private abbrev encOutWords : (List (List ℕ) × List (List ℕ)) ↪ List Bool :=
-  encPair (encList (encList encNat)) (encList (encList encNat))
 
 private theorem computableInPolyTime_pendingSlotOfState :
     ComputableInPolyTime pendingSlotOfState encOuterSt encSlotOpt := by
-  have hsl : ComputableInPolyTime
-      (fun st : OuterSt => slotOfIndex st.2.1.1.1 st.2.1.1.2.1 st.1) encOuterSt encSlotOpt :=
-    computableInPolyTime_slotOfIndex.comp
-      (show ComputableInPolyTime (fun st : OuterSt => ((st.2.1.1.1, st.2.1.1.2.1), st.1))
-          encOuterSt (encPair (encPair encUnary encUnary) encNat) by
-        unfold encOuterSt encOuterAcc encScheduleParams; fun_prop)
-  unfold pendingSlotOfState encSlotOpt
-  refine ComputableInPolyTime.optionElimWithInput hsl (.const none) ?_
-  have his : ComputableInPolyTime
-      (fun q : OuterSt × (Bool × ℕ) => (readSlotSchedule q.2 q.1.2.2).isSome)
-      (encPair encOuterSt (encPair encBool encUnary)) encBool :=
-    ComputableInPolyTime.optionIsSome (computableInPolyTime_readSlotSchedule.comp
-      (show ComputableInPolyTime (fun q : OuterSt × (Bool × ℕ) => (q.2, q.1.2.2))
-        (encPair encOuterSt (encPair encBool encUnary)) _ by
-        unfold encOuterSt encOuterAcc; fun_prop))
-  exact his.ite' (.const none) (by fun_prop)
+  have hst := ComputableInPolyTime.fst encNat encOuterAcc
+  have hacc := ComputableInPolyTime.snd encNat encOuterAcc; have hp := hacc.fst'.fst'
+  have hsl := computableInPolyTime_slotOfIndex.comp' ((hp.fst'.prod hp.snd'.fst').prod hst)
+  have hq1 := ComputableInPolyTime.fst encOuterSt (encPair encBool encUnary)
+  have hq2 := ComputableInPolyTime.snd encOuterSt (encPair encBool encUnary)
+  have his :=
+    (computableInPolyTime_readSlotSchedule.comp' (hq2.prod (hacc.snd'.comp' hq1))).optionIsSome
+  exact ComputableInPolyTime.optionElimWithInput hsl (.const none)
+    (his.ite' (.const none)
+      ((ComputableInPolyTime.optionSome (encPair encBool encUnary)).comp' hq2))
 
 private def streamSlotInOfOuter (q : OuterSt × (Bool × ℕ)) : StreamSlotIn :=
   (((q.1.2.1.1.1, q.1.2.1.1.2.2), q.1.2.1.2), (q.2, q.1.2.2))
@@ -815,19 +821,19 @@ private def finishGreedySlotStep (q : (OuterSt × (Bool × ℕ)) × List ℕ) : 
 
 private theorem computableInPolyTime_streamSlotInOfOuter :
     ComputableInPolyTime streamSlotInOfOuter encOuterSlot encStreamSlotIn := by
-  unfold streamSlotInOfOuter encOuterSlot encOuterSt encOuterAcc encScheduleParams encStreamSlotIn
-    encScoreParams
-  fun_prop
+  have hq1 := ComputableInPolyTime.fst encOuterSt (encPair encBool encUnary)
+  have hq2 := ComputableInPolyTime.snd encOuterSt (encPair encBool encUnary)
+  have hacc := (ComputableInPolyTime.snd encNat encOuterAcc).comp' hq1; have hp := hacc.fst'
+  exact ((hp.fst'.fst'.prod hp.fst'.snd'.snd').prod hp.snd').prod (hq2.prod hacc.snd')
 
 private theorem computableInPolyTime_finishGreedySlotStep :
     ComputableInPolyTime finishGreedySlotStep encFinIn encOuterAcc := by
-  have hupd := computableInPolyTime_updateSlotSchedules.comp
-    (show ComputableInPolyTime (fun q : _ => ((q.1.2, some q.2), q.1.1.2.2)) encFinIn
-        (encPair (encPair (encPair encBool encUnary) (encOption (encList encNat)))
-          encPartialSchedules) by
-      unfold encFinIn encOuterSlot encOuterSt encOuterAcc; fun_prop)
-  exact (show ComputableInPolyTime (fun q : _ => q.1.1.2.1) encFinIn encScheduleParams by
-    unfold encFinIn encOuterSlot encOuterSt encOuterAcc; fun_prop).prod hupd
+  have hq1 := ComputableInPolyTime.fst encOuterSlot (encList encNat)
+  have hq2 := ComputableInPolyTime.snd encOuterSlot (encList encNat)
+  have hacc := (ComputableInPolyTime.snd encNat encOuterAcc).comp' hq1.fst'
+  have hupd := computableInPolyTime_updateSlotSchedules.comp'
+    ((hq1.snd'.prod ((ComputableInPolyTime.optionSome (encList encNat)).comp' hq2)).prod hacc.snd')
+  exact hacc.fst'.prod hupd
 
 private noncomputable def mkGreedyStepCert
     (cPend : NativeCertificate pendingSlotOfState encOuterSt encSlotOpt)
@@ -844,8 +850,7 @@ private noncomputable def mkGreedyStepCert
 
 private noncomputable def greedySlotStepBodyCertificate :
     NativeCertificate greedySlotStepBody encOuterSt encOuterAcc :=
-  mkGreedyStepCert
-    (NativeCertificate.ofPolyTime computableInPolyTime_pendingSlotOfState)
+  mkGreedyStepCert (NativeCertificate.ofPolyTime computableInPolyTime_pendingSlotOfState)
     (NativeCertificate.ofPolyTime computableInPolyTime_streamSlotInOfOuter)
     streamBestSlotCertificate
     (NativeCertificate.ofPolyTime computableInPolyTime_finishGreedySlotStep)
@@ -862,53 +867,50 @@ private def finalizeBalancedSchedules (q : OuterAcc) : List (List ℕ) × List (
 
 private theorem computableInPolyTime_outerCount :
     ComputableInPolyTime outerCount encScheduleParams encNat := by
-  unfold outerCount encScheduleParams
-  exact ComputableInPolyTime.unary_to_binary.comp (by fun_prop)
+  have hp := (ComputableInPolyTime.fst _ _ : ComputableInPolyTime Prod.fst encScheduleParams _)
+  exact ComputableInPolyTime.unary_to_binary.comp'
+    (ComputableInPolyTime.unary_add' hp.fst' hp.snd'.fst')
 
 private theorem computableInPolyTime_outerInit :
     ComputableInPolyTime outerInit encScheduleParams encOuterAcc := by
-  unfold outerInit encOuterAcc encScheduleParams encPartialSchedules; fun_prop
+  have hp := (ComputableInPolyTime.fst _ _ : ComputableInPolyTime Prod.fst encScheduleParams _)
+  exact ComputableInPolyTime.id'.prod
+    ((ComputableInPolyTime.replicate hp.fst' (.const none)).prod
+      (ComputableInPolyTime.replicate hp.snd'.fst' (.const none)))
 
 private theorem computableInPolyTime_finalizeBalancedSchedules :
-    ComputableInPolyTime finalizeBalancedSchedules encOuterAcc encOutWords := by
-  unfold finalizeBalancedSchedules normalizeEmptyFactorSchedules encOuterAcc encScheduleParams
-    encPartialSchedules encOutWords
+    ComputableInPolyTime finalizeBalancedSchedules encOuterAcc encCompleteSchedules := by
   let eEdges := encList (encPair encNat encNat)
   let ePar := encPair (encPair encUnary (encPair encUnary encUnary))
     (encPair (encPair encNat encNat) eEdges)
   let eOpt := encOption (encList encNat)
   let eIn := encPair ePar (encPair (encList eOpt) (encList eOpt))
-  have hvar : ComputableInPolyTime
-      (fun q : OuterAcc => q.2.1.map fun o => o.getD (List.replicate q.1.1.2.2 0))
-      eIn (encList (encList encNat)) := by fun_prop
-  have hraw2 : ComputableInPolyTime
-      (fun q : OuterAcc => q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0))
-      eIn (encList (encList encNat)) := by fun_prop
-  have hfac : ComputableInPolyTime
-      (fun q : OuterAcc =>
-        (List.range (q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0)).length).map fun f =>
-          if q.1.2.2.any (fun e => decide (e.1 = f)) then
-            (q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0)).getD f []
-          else List.replicate q.1.1.2.2 0)
-      eIn (encList (encList encNat)) := by
-    refine ComputableInPolyTime.mapWithInput
-      (ComputableInPolyTime.range.comp
-        ((ComputableInPolyTime.length_list (encList encNat)).comp hraw2)) ?_
-    have hany : ComputableInPolyTime
-        (fun r : OuterAcc × ℕ => r.1.1.2.2.any fun e => decide (e.1 = r.2))
-        (encPair eIn encUnary) encBool :=
-      ComputableInPolyTime.anyWithInput (by fun_prop)
-        (ComputableInPolyTime.decide_eq' (by fun_prop)
-          (ComputableInPolyTime.unary_to_binary.comp (by fun_prop)))
-    have hthen : ComputableInPolyTime
-        (fun r : OuterAcc × ℕ =>
-          (r.1.2.2.map fun o => o.getD (List.replicate r.1.1.1.2.2 0)).getD r.2 [])
-        (encPair eIn encUnary) (encList encNat) :=
-      (ComputableInPolyTime.listGetD []).comp
-        ((hraw2.comp (ComputableInPolyTime.fst _ _)).prod
-          (ComputableInPolyTime.snd _ _))
-    exact hany.ite' hthen (by fun_prop)
-  exact hvar.prod hfac
+  have h1 := ComputableInPolyTime.fst ePar (encPair (encList eOpt) (encList eOpt))
+  have h2 := ComputableInPolyTime.snd ePar (encPair (encList eOpt) (encList eOpt))
+  have hdef := ComputableInPolyTime.replicate h1.fst'.snd'.snd' (.const (encOut := encNat) 0)
+  have hmap {l : OuterAcc → List (Option (List ℕ))}
+      (hl : ComputableInPolyTime l eIn (encList eOpt)) :
+      ComputableInPolyTime
+        (fun q : OuterAcc => (l q).map fun o => o.getD (List.replicate q.1.1.2.2 0))
+        eIn (encList (encList encNat)) :=
+    ComputableInPolyTime.mapWithInput hl
+      (ComputableInPolyTime.optionGetDWithInput (ComputableInPolyTime.snd eIn eOpt)
+        (hdef.comp' (ComputableInPolyTime.fst eIn eOpt)))
+  have hvar := hmap h2.fst'; have hraw2 := hmap h2.snd'
+  have hp1 := ComputableInPolyTime.fst eIn encUnary
+  have hf := ComputableInPolyTime.snd eIn encUnary
+  have hany : ComputableInPolyTime
+      (fun q : OuterAcc × ℕ => q.1.1.2.2.any fun e => decide (e.1 = q.2))
+      (encPair eIn encUnary) encBool :=
+    ComputableInPolyTime.anyWithInput (h1.snd'.snd'.comp' hp1)
+      (ComputableInPolyTime.decide_eq'
+        (ComputableInPolyTime.snd (encPair eIn encUnary) (encPair encNat encNat)).fst'
+        (ComputableInPolyTime.unary_to_binary.comp'
+          (hf.comp' (ComputableInPolyTime.fst (encPair eIn encUnary) (encPair encNat encNat)))))
+  exact hvar.prod (ComputableInPolyTime.mapWithInput
+    (ComputableInPolyTime.range.comp'
+      ((ComputableInPolyTime.length_list (encList encNat)).comp' hraw2))
+    (hany.ite' (ComputableInPolyTime.listGetDWithInput (hraw2.comp' hp1) hf []) (hdef.comp' hp1)))
 
 private noncomputable def mkOuterAccCert
     (cCnt : NativeCertificate outerCount encScheduleParams encNat)
@@ -923,11 +925,11 @@ private noncomputable def mkConstructCert
     (cAcc : NativeCertificate
       (fun p : ScheduleParams => (IndexFold.run greedySlotStepBody (outerCount p) (outerInit p)).2)
       encScheduleParams encOuterAcc)
-    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encOutWords) :
+    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encCompleteSchedules) :
     NativeCertificate
       (fun p : ScheduleParams =>
         constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
-      encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) :=
+      encScheduleParams encCompleteSchedules :=
   (cFinal.comp cAcc).congr fun ⟨⟨n, m, Q⟩, ⟨r, C⟩, edges⟩ => by
     have hp := run_greedySlotStepBody_params ((n, m, Q), (r, C), edges)
       (List.replicate n none, List.replicate m none) (n + m)
@@ -938,7 +940,7 @@ private noncomputable def mkConstructCert
 /-- Uniform native machine certificate for `greedySchedulePass`. -/
 noncomputable def greedySchedulePassCertificate :
     NativeCertificate
-      (fun p : ScheduleParams => greedySchedulePass p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+      (fun ((n, m, Q), (r, C), edges) => greedySchedulePass n m Q r C edges)
       encScheduleParams encPartialSchedules :=
   NativeCertificate.snd (mkOuterAccCert
     (NativeCertificate.ofPolyTime computableInPolyTime_outerCount)
@@ -949,9 +951,9 @@ noncomputable def greedySchedulePassCertificate :
 Lemma 4.5, p. 31). -/
 noncomputable def constructBalancedSchedulesCertificate :
     NativeCertificate
-      (fun p : ScheduleParams =>
-        constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
-      encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) :=
+      (fun ((n, m, Q), (r, C), edges) =>
+        constructBalancedSchedules n m Q r C edges)
+      encScheduleParams encCompleteSchedules :=
   mkConstructCert
     (mkOuterAccCert
       (NativeCertificate.ofPolyTime computableInPolyTime_outerCount)
@@ -1007,8 +1009,12 @@ private theorem mkGreedyStepCert_bounds
   let pOver (L : ℕ) := 2 * pPend (bOuter L) + 2 * bOuter L + bPair L + pIn (bPair L) +
     pFin (bFinIn L)
   let pStep (L : ℕ) := pOver L + pSlot (bSlotIn L)
+  have hbOuter : Cslib.PolynomiallyBounded bOuter := by dsimp only [bOuter]; fun_prop
+  have hbPair : Cslib.PolynomiallyBounded bPair := by dsimp only [bPair]; fun_prop
+  have hbSlotIn : Cslib.PolynomiallyBounded bSlotIn := by dsimp only [bSlotIn]; fun_prop
+  have hbFinIn : Cslib.PolynomiallyBounded bFinIn := by dsimp only [bFinIn]; fun_prop
   have hpStep : Cslib.PolynomiallyBounded pStep := by
-    dsimp only [pStep, pOver, bFinIn, bSlotIn, bPair, bOuter, pPend, pIn, pFin]; fun_prop
+    dsimp only [pStep, pOver, pPend, pIn, pFin]; fun_prop
   refine ⟨pStep, hpStep, fun p s hs => ?_⟩
   dsimp only; set L := (encScheduleParams p).length; set rq := p.2.1.1 ^ p.1.2.2
   set runAt := IndexFold.run greedySlotStepBody s (outerInit p)
@@ -1042,18 +1048,9 @@ private theorem mkGreedyStepCert_bounds
       (hIn q).trans (Nat.mul_le_mul_left cS (Nat.pow_le_pow_left (Nat.add_le_add_right hqL 1) dS))
     let a := streamSlotInOfOuter q
     have hSlotInL : (encStreamSlotIn a).length ≤ bSlotIn L := by
-      obtain ⟨h1, h2, hw1, hw2⟩ :=
-        run_greedySlotStepBody_wf p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2 s
       have hsch : (encPartialSchedules runAt.2.2).length ≤ bOuter L := by
-        have hsch0 := length_encPartialSchedules_le h1 h2 hw1 hw2
-        have hp3 : 2 * (p.1.1 + p.1.2.1) * (2 * p.1.2.2 * (2 * (encNat p.2.1.1).length + 1) + 3) ≤
-            2 * L * (2 * L * (2 * L + 1) + 3) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left 2 hparts.1)
-            (Nat.add_le_add_right (Nat.mul_le_mul (Nat.mul_le_mul_left 2 hparts.2.1)
-              (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hparts.2.2.1) 1)) 3)
-        dsimp only [runAt, outerInit, bOuter]
-        linarith [hsch0, hp3,
-          show 2 * L * (2 * L * (2 * L + 1) + 3) = 8 * L ^ 3 + 4 * L ^ 2 + 6 * L by ring]
+        have hstL' := hstL; rw [encOuterSt, encOuterAcc, length_encPair, length_encPair] at hstL'
+        omega
       simp only [a, streamSlotInOfOuter, q, hp_eq, encStreamSlotIn, encScoreParams, length_encPair,
         encUnary_apply, List.length_replicate, encBool_apply, List.length_singleton]
       dsimp only [bSlotIn]; omega
@@ -1068,13 +1065,12 @@ private theorem mkGreedyStepCert_bounds
         (length_streamBestSlotLabel a.1.1.1 a.1.1.2 a.1.2.1.1 a.1.2.1.2 a.1.2.2 a.2.2 a.2.1)
         (fun _ hx => mem_streamBestSlotLabel_lt_max a.1.1.1 a.1.1.2 a.1.2.1.1 a.1.2.1.2 a.1.2.2
           a.2.2 a.2.1 hx)
-      have hq1 : a.1.1.2 = p.1.2.2 := by simp only [a, streamSlotInOfOuter, q, hp_eq]
-      have hq2 : a.1.2.1.1 = p.2.1.1 := by simp only [a, streamSlotInOfOuter, q, hp_eq]
-      have hp2 : 2 * p.1.2.2 * (2 * (encNat p.2.1.1).length + 1) ≤ 2 * L * (2 * L + 1) :=
-        Nat.mul_le_mul (Nat.mul_le_mul_left 2 hparts.2.1)
-          (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hparts.2.2.1) 1)
-      rw [hq1, hq2] at hw
-      linarith [hw, hp2, show 2 * L * (2 * L + 1) = 4 * L ^ 2 + 2 * L by ring]
+      have hp2 : p.1.2.2 * (2 * (encNat p.2.1.1).length + 1) ≤ 2 * L ^ 2 + L :=
+        (Nat.mul_le_mul hparts.2.1
+          (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hparts.2.2.1) 1)).trans_eq (by ring)
+      rw [show a.1.1.2 = p.1.2.2 from congrArg (·.1.2.2) hp_eq,
+        show a.1.2.1.1 = p.2.1.1 from congrArg (·.2.1.1) hp_eq] at hw
+      omega
     have hFinL : (encFinIn (q, chosen)).length ≤ bFinIn L := by
       unfold encFinIn; rw [length_encPair]; dsimp only [bFinIn]; omega
     have hFin_qc : cFin.time (q, chosen) + cFin.space (q, chosen) ≤ pFin (bFinIn L) :=
@@ -1121,9 +1117,11 @@ private theorem mkOuterAccCert_bounds
         (mkOuterAccCert cCnt cInit cStep).space p ≤ poly (encScheduleParams p).length := by
   let pCnt (n : ℕ) := cC * (n + 1) ^ dC; let pInit (n : ℕ) := cI * (n + 1) ^ dI
   let bOuter (L : ℕ) := 8 * L ^ 3 + 4 * L ^ 2 + 10 * L + 3
-  let rawPoly (L : ℕ) := pCnt L + L + pInit L + (L + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L)
+  let rawPoly (L : ℕ) :=
+    pCnt L + L + pInit L + (L + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L)
+  have hbOuterP : Cslib.PolynomiallyBounded bOuter := by dsimp only [bOuter]; fun_prop
   have hraw : Cslib.PolynomiallyBounded rawPoly := by
-    dsimp only [rawPoly, bOuter, pCnt, pInit]; fun_prop
+    dsimp only [rawPoly, pCnt, pInit]; fun_prop
   obtain ⟨cP, dP, hleP⟩ := (PolyBounded.of_polynomiallyBounded id hraw).exists_le
   let poly (n : ℕ) := cP * (n + 1) ^ dP
   refine ⟨poly, by dsimp only [poly]; fun_prop,
@@ -1195,8 +1193,10 @@ private theorem mkOuterAccCert_bounds
 `O((r ^ Q + 1) * poly(|input|))` native time and polynomial workspace. -/
 theorem greedySchedulePassCertificate_bounds :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧ Monotone poly ∧
-      ∀ p : ScheduleParams, greedySchedulePassCertificate.time p ≤
-          (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length ∧
+      ∀ p : ScheduleParams,
+        let ((_, _, Q), (r, _), _) := p
+        greedySchedulePassCertificate.time p ≤
+          (r ^ Q + 1) * poly (encScheduleParams p).length ∧
         greedySchedulePassCertificate.space p ≤ poly (encScheduleParams p).length := by
   obtain ⟨cC, dC, hCnt⟩ := ofPolyTime_exists_bound computableInPolyTime_outerCount
   obtain ⟨cI, dI, hInit⟩ := ofPolyTime_exists_bound computableInPolyTime_outerInit
@@ -1213,9 +1213,9 @@ workspace. -/
 theorem computableInO_greedySchedulePass :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
-        (fun p : ScheduleParams => greedySchedulePass p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+        (fun ((n, m, Q), (r, C), edges) => greedySchedulePass n m Q r C edges)
         encScheduleParams encPartialSchedules
-        (fun p => (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length)
+        (fun p => let ((_, _, Q), (r, _), _) := p; (r ^ Q + 1) * poly (encScheduleParams p).length)
         (fun p => poly (encScheduleParams p).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := greedySchedulePassCertificate_bounds
   exact ⟨poly, hpoly, greedySchedulePassCertificate.computes.mono_le
@@ -1224,7 +1224,7 @@ theorem computableInO_greedySchedulePass :
 /-- `greedySchedulePass` runs in polynomial workspace (`ComputableInPolySpace`). -/
 theorem computableInPolySpace_greedySchedulePass :
     ComputableInPolySpace
-      (fun p : ScheduleParams => greedySchedulePass p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+      (fun ((n, m, Q), (r, C), edges) => greedySchedulePass n m Q r C edges)
       encScheduleParams encPartialSchedules := by
   obtain ⟨poly, hpoly, c, hc, hl⟩ := computableInO_greedySchedulePass
   exact ⟨_, fun n => c * (poly n + 1), by fun_prop, hc, hl⟩
@@ -1233,7 +1233,7 @@ private theorem mkConstructCert_bounds
     (cAcc : NativeCertificate
       (fun p : ScheduleParams => (IndexFold.run greedySlotStepBody (outerCount p) (outerInit p)).2)
       encScheduleParams encOuterAcc)
-    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encOutWords)
+    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encCompleteSchedules)
     {pPass : ℕ → ℕ} {cFinalC dFinal : ℕ}
     (hpPass : Cslib.PolynomiallyBounded pPass) (hmPass : Monotone pPass)
     (hPass : ∀ p : ScheduleParams,
@@ -1278,8 +1278,10 @@ private theorem mkConstructCert_bounds
 `constructBalancedSchedulesCertificate` ([OpenAI2026ETH], Lemma 4.5, pp. 30–31). -/
 theorem constructBalancedSchedulesCertificate_bounds :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧ Monotone poly ∧
-      ∀ p : ScheduleParams, constructBalancedSchedulesCertificate.time p ≤
-          (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length ∧
+      ∀ p : ScheduleParams,
+        let ((_, _, Q), (r, _), _) := p
+        constructBalancedSchedulesCertificate.time p ≤
+          (r ^ Q + 1) * poly (encScheduleParams p).length ∧
         constructBalancedSchedulesCertificate.space p ≤ poly (encScheduleParams p).length := by
   obtain ⟨pPass, hpPass, hmPass, hPass⟩ := greedySchedulePassCertificate_bounds
   obtain ⟨cFinal, dFinal, hFinal⟩ :=
@@ -1292,10 +1294,10 @@ and polynomial workspace. For valid incidence endpoints, this gives
 theorem computableInO_constructBalancedSchedules :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
-        (fun p : ScheduleParams =>
-          constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
-        encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat)))
-        (fun p => (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length)
+        (fun ((n, m, Q), (r, C), edges) =>
+          constructBalancedSchedules n m Q r C edges)
+        encScheduleParams encCompleteSchedules
+        (fun p => let ((_, _, Q), (r, _), _) := p; (r ^ Q + 1) * poly (encScheduleParams p).length)
         (fun p => poly (encScheduleParams p).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := constructBalancedSchedulesCertificate_bounds
   exact ⟨poly, hpoly, constructBalancedSchedulesCertificate.computes.mono_le
@@ -1305,9 +1307,9 @@ theorem computableInO_constructBalancedSchedules :
 materializing `r ^ Q` candidate words. -/
 theorem computableInPolySpace_constructBalancedSchedules :
     ComputableInPolySpace
-      (fun p : ScheduleParams =>
-        constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
-      encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) := by
+      (fun ((n, m, Q), (r, C), edges) =>
+        constructBalancedSchedules n m Q r C edges)
+      encScheduleParams encCompleteSchedules := by
   obtain ⟨poly, hpoly, c, hc, hl⟩ := computableInO_constructBalancedSchedules
   exact ⟨_, fun n => c * (poly n + 1), by fun_prop, hc, hl⟩
 

@@ -36,10 +36,15 @@ properties.
 * `Cslib.Crypto.Encryption.AdversaryOf`, `Cslib.Crypto.Encryption.Adversary`,
   `Cslib.Crypto.Encryption.WordAdversary`: message selection and guessing with explicit saved
   state, for typed, bit, and bit-word messages.
+* `Cslib.Crypto.Encryption.encChoiceOut`, `Cslib.Crypto.Encryption.encGuessInput`,
+  `Cslib.Crypto.Encryption.encChallengePairInput`: the encodings of the message-selection output,
+  of the guessing-stage input, and of the input of the admissibility predicate.
 * `Cslib.Crypto.Encryption.AdversaryOf.IsPPT`, `Cslib.Crypto.Encryption.Adversary.IsPPT`,
   `Cslib.Crypto.Encryption.WordAdversary.IsPPT`: native uniform admissibility of both stages.
 * `Cslib.Crypto.Encryption.gameOn`, `Cslib.Crypto.Encryption.game`: the key-generation and
   challenge-encryption experiment, with and without a challenge-pair admissibility predicate.
+* `Cslib.Crypto.Encryption.advantage`: the advantage between the two sides of an experiment
+  indexed by the challenge bit, such as `gameOn`, at one security parameter.
 * `Cslib.Crypto.Encryption.INDCPAOn`, `Cslib.Crypto.Encryption.INDCPAOf`,
   `Cslib.Crypto.Encryption.INDCPA`, `Cslib.Crypto.Encryption.WordINDCPA`: negligible distinguishing
   advantage for every admissible adversary, fixed before the security parameter.
@@ -67,6 +72,7 @@ properties.
 namespace Cslib.Crypto.Encryption
 
 open Probability Turing.MultiTapeTM
+open scoped NNReal
 
 /-- A chosen-message adversary over message space `Msg`. The saved word contains all data retained
 between stages. -/
@@ -76,19 +82,66 @@ structure AdversaryOf (Msg : Type) where
   /-- Receive the saved state and challenge ciphertext, then return a distinguishing bit. -/
   guess : ℕ → List Bool → List Bool → ProbComp Bool
 
+/-- Message-selection output `((m₀, m₁), state)`: the two challenge messages, each encoded by
+`encMsg`, then the saved state word. The message pair is framed, and `m₀` is framed again inside
+it. -/
+abbrev encChoiceOut {Msg : Type} (encMsg : Msg ↪ List Bool) :
+    (Msg × Msg) × List Bool ↪ List Bool :=
+  encPair (encPair encMsg encMsg) encBits
+
+/-- Guessing-stage input `(1ⁿ, state, ct)`: the security parameter `n` in unary, then the state
+saved by message selection and the challenge ciphertext, both as bit words. The parameter and the
+state are framed. The layout is that of the keyed-algorithm input `Cslib.Crypto.encKeyedInput
+encBits`; the name records the role. -/
+abbrev encGuessInput : ℕ × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair encBits encBits)
+
+/-- Input `(1ⁿ, pk, (m₀, m₁))` of a challenge-pair admissibility predicate `valid`: the security
+parameter `n` in unary, the public key as a bit word, and the two challenge messages, each encoded
+by `encMsg`. The parameter, the public key and `m₀` are framed. -/
+abbrev encChallengePairInput {Msg : Type} (encMsg : Msg ↪ List Bool) :
+    ℕ × List Bool × Msg × Msg ↪ List Bool :=
+  encPair encUnary (encPair encBits (encPair encMsg encMsg))
+
 /-- One finite-machine certificate for each whole stage over message encoding `encMsg`, including
 the full saved-state cost. There is no parameter-dependent advice or separate algorithm for each
 security parameter. -/
 structure AdversaryOf.IsPPT {Msg : Type} (encMsg : Msg ↪ List Bool)
     (adversary : AdversaryOf Msg) : Prop where
   /-- Message selection is uniform strict PPT on the parameter and public key. -/
-  choose : Probability.IsPPT (encPair (encPair encMsg encMsg) encBits) adversary.choose
+  choose : Probability.IsPPT (encChoiceOut encMsg) adversary.choose
   /-- Guessing is uniform strict PPT on the parameter, saved state, and challenge ciphertext. -/
-  guess : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
-    (fun p => adversary.guess p.1 p.2.1 p.2.2)
+  guess : IsPPTOn encGuessInput encBool
+    (fun ⟨n, state, ciphertext⟩ => adversary.guess n state ciphertext)
 
 /-- A chosen-message adversary for single-bit messages (`Bool`). -/
 abbrev Adversary : Type := AdversaryOf Bool
+
+/-- Phase 1 choice `((msg₀, msg₁), state)` returned by an `AdversaryOf Msg`. -/
+abbrev ChoiceOut (Msg : Type) : Type := (Msg × Msg) × List Bool
+
+/-- Challenge message pair `(msg₀, msg₁)` of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.msgs {Msg : Type} (c : ChoiceOut Msg) : Msg × Msg := c.1
+
+/-- First challenge message `msg₀` of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.msg₀ {Msg : Type} (c : ChoiceOut Msg) : Msg :=
+  (ChoiceOut.msgs c).1
+
+/-- Second challenge message `msg₁` of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.msg₁ {Msg : Type} (c : ChoiceOut Msg) : Msg :=
+  (ChoiceOut.msgs c).2
+
+/-- Saved adversary state of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.state {Msg : Type} (c : ChoiceOut Msg) : List Bool := c.2
+
+@[simp] theorem ChoiceOut.msg₀_mk {Msg : Type} (msgs : Msg × Msg) (st : List Bool) :
+    ChoiceOut.msg₀ (msgs, st) = msgs.1 := rfl
+
+@[simp] theorem ChoiceOut.msg₁_mk {Msg : Type} (msgs : Msg × Msg) (st : List Bool) :
+    ChoiceOut.msg₁ (msgs, st) = msgs.2 := rfl
+
+@[simp] theorem ChoiceOut.state_mk {Msg : Type} (msgs : Msg × Msg) (st : List Bool) :
+    ChoiceOut.state (msgs, st) = st := rfl
 
 /-- Native uniform strict PPT admissibility for a bit chosen-message adversary. -/
 abbrev Adversary.IsPPT (adversary : Adversary) : Prop := AdversaryOf.IsPPT encBool adversary
@@ -110,8 +163,9 @@ def gameOn {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choice ← adversary.choose n keys.1
-  if valid n keys.1 choice.1.1 choice.1.2 then
-    let ciphertext ← encrypt n keys.1 (if bit then choice.1.2 else choice.1.1)
+  if valid n keys.1 (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+    let ciphertext ← encrypt n keys.1
+      (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
     adversary.guess n choice.2 ciphertext
   else
     return false
@@ -121,6 +175,13 @@ abbrev game {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool :=
   gameOn (fun _ _ _ _ => true) keyGen encrypt adversary bit n
+
+/-- The distinguishing advantage of a two-sided experiment `experiment bit n` at parameter `n`:
+the advantage between its runs with `bit = false` and `bit = true`. The adversary is already part
+of `experiment`, as in `gameOn valid keyGen encrypt adversary`; `INDCPAOn` asks that this advantage
+be negligible for every admissible adversary. -/
+noncomputable abbrev advantage (experiment : Bool → ℕ → ProbComp Bool) (n : ℕ) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (experiment false n)) (ProbComp.eval (experiment true n))
 
 /-- Single-challenge IND-CPA for encryption over message encoding `encMsg` with challenge-pair
 admissibility predicate `valid`, against every uniform strict PPT adversary. The negligible bound
@@ -162,9 +223,10 @@ theorem eval_gameOn {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → 
       (do
         let pk ← (ProbComp.eval (keyGen n)).map Prod.fst
         let choice ← ProbComp.eval (adversary.choose n pk)
-        if valid n pk choice.1.1 choice.1.2 then
-          let ciphertext ← ProbComp.eval (encrypt n pk (if bit then choice.1.2 else choice.1.1))
-          ProbComp.eval (adversary.guess n choice.2 ciphertext)
+        if valid n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+          let ciphertext ← ProbComp.eval
+            (encrypt n pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
+          ProbComp.eval (adversary.guess n (ChoiceOut.state choice) ciphertext)
         else
           pure false) := by
   simp only [gameOn, ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
@@ -178,8 +240,9 @@ theorem eval_game {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Boo
       (do
         let pk ← (ProbComp.eval (keyGen n)).map Prod.fst
         let choice ← ProbComp.eval (adversary.choose n pk)
-        let ciphertext ← ProbComp.eval (encrypt n pk (if bit then choice.1.2 else choice.1.1))
-        ProbComp.eval (adversary.guess n choice.2 ciphertext)) := by
+        let ciphertext ← ProbComp.eval
+          (encrypt n pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
+        ProbComp.eval (adversary.guess n (ChoiceOut.state choice) ciphertext)) := by
   simp only [game, eval_gameOn, ↓reduceIte]
 
 /-- Equal public-key marginals and equal encryption laws preserve `INDCPAOn`. -/
@@ -226,7 +289,8 @@ def AdversaryOf.restrict {Msg : Type} (valid : ℕ → List Bool → Msg → Msg
     (adversary : AdversaryOf Msg) : AdversaryOf Msg where
   choose n pk := do
     let choice ← adversary.choose n pk
-    return (choice.1, valid n pk choice.1.1 choice.1.2 :: choice.2)
+    return (choice.1,
+      valid n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) :: choice.2)
   guess n state ciphertext :=
     if state.headD false then adversary.guess n state.tail ciphertext else pure false
 
@@ -238,7 +302,8 @@ theorem eval_game_restrict {Msg : Type} (valid : ℕ → List Bool → Msg → M
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     ProbComp.eval (game keyGen encrypt (adversary.restrict valid) bit n) =
       ProbComp.eval (gameOn valid keyGen encrypt adversary bit n) := by
-  simp only [game, gameOn, AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind,
+  simp only [game, gameOn, AdversaryOf.restrict, ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁,
+    ↓reduceIte, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
   congr 1; funext keys
   congr 1; funext choice

@@ -11,7 +11,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Capabilities
 
 run_cmd do
   let env ← Lean.getEnv
-  for n in [``Turing.MultiTapeTM.ComputableInLinearTimeAndSpace,
+  for n in [``Turing.MultiTapeTM.ComputableInDegree,
       ``Turing.MultiTapeTM.PairEncoding, ``Turing.MultiTapeTM.ListEncoding,
       ``Turing.MultiTapeTM.OptionEncoding] do
     unless env.contains n do throwError "missing plain capability {n}"

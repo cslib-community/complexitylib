@@ -17,8 +17,9 @@ public import Mathlib.Data.ENat.Lattice
 Alice holds `x : X` and Bob holds `y : Y`. A deterministic protocol is a binary tree whose internal
 nodes are owned by one of the players, who sends one bit computed from their input to choose the
 branch, and whose leaves are labelled by outputs (`Protocol.run`)
-[Kushilevitz and Nisan, Chapter 1][KushilevitzNisan1997]. Its depth is the number of bits sent in
-the worst case, and a protocol of depth `d` has at most `2 ^ d` leaves
+[Kushilevitz and Nisan, Chapter 1][KushilevitzNisan1997]. Its tree depth bounds the number of bits
+sent on any input, counting even branches unreachable by any input. A protocol of depth `d`
+has at most `2 ^ d` leaves
 (`Protocol.leafCount_le_two_pow_depth`). A function of the two inputs *solves* a relation `R` on
 inputs from `A × B` when its value on every such pair is related to the pair (`Solves`), and a
 protocol solves `R` when its output does (`Protocol.Solves`); the communication complexity of `R`
@@ -45,8 +46,9 @@ announces the value (`Protocol.ecomplexityFun_le_succ`).
 
 ## Main results
 
-* `Cslib.Communication.Protocol.leafCount_le_two_pow_depth`: a protocol has at most `2 ^ depth`
-  leaves.
+* `Cslib.Communication.Protocol.leafCount_pos`,
+  `Cslib.Communication.Protocol.leafCount_le_two_pow_depth`: a protocol has at least one and at
+  most `2 ^ depth` leaves.
 * `Cslib.Communication.Protocol.ecomplexity_le_iff`,
   `Cslib.Communication.Protocol.le_ecomplexity_iff`: upper and lower bounds on communication
   complexity.
@@ -106,7 +108,8 @@ def run : Protocol X Y Z → X → Y → Z
   | alice send p₀ p₁, x, y => cond (send x) (p₁.run x y) (p₀.run x y)
   | bob send p₀ p₁, x, y => cond (send y) (p₁.run x y) (p₀.run x y)
 
-/-- The number of bits sent in the worst case. -/
+/-- The tree depth, counting even unreachable branches. It bounds the number of bits sent
+on every input. -/
 def depth : Protocol X Y Z → ℕ
   | output _ => 0
   | alice _ p₀ p₁ => max p₀.depth p₁.depth + 1
@@ -159,6 +162,14 @@ theorem leafCount_le_two_pow_depth (p : Protocol X Y Z) : p.leafCount ≤ 2 ^ p.
     have h₀ := ih₀.trans (Nat.pow_le_pow_right (by decide) (le_max_left p₀.depth p₁.depth))
     have h₁ := ih₁.trans (Nat.pow_le_pow_right (by decide) (le_max_right p₀.depth p₁.depth))
     simp only [leafCount_alice, leafCount_bob, depth_alice, depth_bob, pow_succ]
+    omega
+
+/-- Every protocol has a leaf. -/
+theorem leafCount_pos (p : Protocol X Y Z) : 0 < p.leafCount := by
+  induction p with
+  | output z => simp
+  | alice send p₀ p₁ ih₀ ih₁ | bob send p₀ p₁ ih₀ ih₁ =>
+    simp only [leafCount_alice, leafCount_bob]
     omega
 
 /-- A protocol solves the relation `R` on `A × B` when its output does: its output on every pair

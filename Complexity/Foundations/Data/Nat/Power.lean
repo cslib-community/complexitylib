@@ -1,13 +1,14 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
 -- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Basic.lean`)
 
 public import Complexity.Init
+import Mathlib.Algebra.Order.Ring.Abs
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -25,6 +26,14 @@ and bounds by exponentials.
   `1 ≤ k → x ≤ 2 ^ (a * k) → y ≤ 2 ^ (b * k) → x + y ≤ 2 ^ ((a + b + 1) * k)`.
 * `Nat.le_two_pow_mul`: `1 ≤ k → c ≤ 2 ^ (c * k)`.
 * `Nat.mul_add_one_pow_le`: `(R + 1) * d ≤ M → R * (M + 1) ^ d ≤ (R + 1) * M ^ d`.
+* `Nat.sq_le_two_pow`: `4 ≤ s → s ^ 2 ≤ 2 ^ s`.
+* `Nat.pow_le_two_pow`: `1 ≤ D → 4 * D ^ 2 ≤ b → b ^ D ≤ 2 ^ b`.
+* `Nat.succ_pow_sub_pow_le`: `(c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j`.
+
+## References
+
+* [N. Alon, Y. Matias, M. Szegedy, *The space complexity of approximating the frequency
+  moments*, proof of Theorem 2.1][AlonMatiasSzegedy1999]
 -/
 
 @[expose] public section
@@ -92,5 +101,58 @@ theorem mul_add_one_pow_le {R M d : ℕ} (h : (R + 1) * d ≤ M) :
         rw [show d + r - d = r by omega]
         nlinarith
     _ = (R + 1) * M ^ d * (M - d) := by ring
+
+/-- For `s ≥ 4`, `s ^ 2 ≤ 2 ^ s`. -/
+theorem sq_le_two_pow : ∀ {s : ℕ}, 4 ≤ s → s ^ 2 ≤ 2 ^ s
+  | s, hs => by
+    obtain ⟨n, rfl⟩ : ∃ n, s = n + 4 := ⟨s - 4, by omega⟩
+    clear hs
+    induction n with
+    | zero => decide
+    | succ n ih =>
+      have hnn : 0 ≤ n * n := Nat.zero_le _
+      have hlin : (n + 1 + 4) ^ 2 ≤ 2 * (n + 4) ^ 2 := by nlinarith
+      calc (n + 1 + 4) ^ 2 ≤ 2 * (n + 4) ^ 2 := hlin
+        _ ≤ 2 * 2 ^ (n + 4) := Nat.mul_le_mul_left 2 ih
+        _ = 2 ^ (n + 1 + 4) := by rw [← pow_succ']
+
+/-- For `1 ≤ D` and `4 * D ^ 2 ≤ b`, `b ^ D ≤ 2 ^ b`. -/
+theorem pow_le_two_pow {D b : ℕ} (hD : 1 ≤ D) (hb : 4 * D ^ 2 ≤ b) :
+    b ^ D ≤ 2 ^ b := by
+  let s := b / D
+  have hs_ge : 4 * D ≤ s := by
+    refine (Nat.le_div_iff_mul_le hD).mpr ?_
+    calc 4 * D * D = 4 * D ^ 2 := by ring
+      _ ≤ b := hb
+  have hs4 : 4 ≤ s := by nlinarith
+  have hb_le_sq : b ≤ s ^ 2 := by
+    have hdiv : b < (s + 1) * D := by
+      have hmod := Nat.div_add_mod b D
+      have hlt := Nat.mod_lt b hD
+      calc b = D * s + b % D := hmod.symm
+        _ < D * s + D := Nat.add_lt_add_left hlt _
+        _ = (s + 1) * D := by ring
+    nlinarith
+  calc b ^ D ≤ (s ^ 2) ^ D := Nat.pow_le_pow_left hb_le_sq D
+    _ ≤ (2 ^ s) ^ D := Nat.pow_le_pow_left (sq_le_two_pow hs4) D
+    _ = 2 ^ (s * D) := (Nat.pow_mul 2 s D).symm
+    _ ≤ 2 ^ b := Nat.pow_le_pow_right (by decide) (Nat.div_mul_le_self b D)
+
+/-- Consecutive `(j + 1)`-th powers differ by at most `(j + 1) (c + 1) ^ j`, the case `a = b + 1`
+of `a ^ k - b ^ k ≤ (a - b) k a ^ (k - 1)` [AlonMatiasSzegedy1999, proof of Theorem 2.1]; a
+specialization of Mathlib's `abs_pow_sub_pow_le`. -/
+theorem succ_pow_sub_pow_le (c j : ℕ) :
+    (c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j := by
+  have h := abs_pow_sub_pow_le ((c : ℤ) + 1) (c : ℤ) (j + 1)
+  have hle : c ^ (j + 1) ≤ (c + 1) ^ (j + 1) := Nat.pow_le_pow_left (Nat.le_succ c) _
+  have hc : (0 : ℤ) ≤ c := Int.natCast_nonneg c
+  have hmax : max |(c : ℤ) + 1| |(c : ℤ)| = (c : ℤ) + 1 := by
+    rw [abs_of_nonneg (by linarith), abs_of_nonneg hc]
+    exact max_eq_left (by linarith)
+  rw [hmax, add_sub_cancel_left, abs_one, one_mul, Nat.add_sub_cancel,
+    abs_of_nonneg (sub_nonneg.2 (pow_le_pow_left₀ hc (by linarith) _))] at h
+  zify [hle]
+  push_cast at h ⊢
+  linarith
 
 end Nat

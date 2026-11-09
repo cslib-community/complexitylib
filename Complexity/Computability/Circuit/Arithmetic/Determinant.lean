@@ -1,14 +1,14 @@
 /-
-Copyright (c) 2026 Paul Cadman, Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Paul Cadman, Samuel Schlesinger, Aviv Bar Natan. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Paul Cadman, Samuel Schlesinger
+Authors: Paul Cadman, Samuel Schlesinger, Aviv Bar Natan
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Arithmetic.VP
-public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import Mathlib.LinearAlgebra.Matrix.MvPolynomial
 public import Mathlib.LinearAlgebra.Matrix.Permanent
 public import Complexity.Computability.Circuit.Bird
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
@@ -33,8 +33,8 @@ entries, which a sharper count would exploit. Only the gate count is certified; 
 obtained from a synthesis bound, not constructed by a certified uniform procedure.
 
 The permanent family `permFamily K` of generic permanents is also a p-family
-(`isPFamily_permFamily`). Nothing here places it in `VP` or proves Valiant's `VNP`-completeness of
-the permanent.
+(`isPFamily_permFamily`). The separate `Arithmetic/Permanent` module proves membership in `VNP`.
+Nothing here places it in `VP` or proves Valiant's `VNP`-completeness of the permanent.
 
 ## Main definitions
 
@@ -44,6 +44,8 @@ the permanent.
 
 ## Main results
 
+* `Cslib.Circuits.Arithmetic.genericMatrix_eq_map_rename`: the generic matrix is Mathlib's
+  matrix of variables renamed to row-major order.
 * `Cslib.Circuits.Arithmetic.det_eq_birdDetSpec`: Bird's algorithm computes the determinant over
   every commutative ring.
 * `Cslib.Circuits.Arithmetic.totalDegree_det_genericMatrix_le`: the generic determinant has degree
@@ -93,6 +95,14 @@ end Bird
 noncomputable def genericMatrix (K : Type u) [CommSemiring K] (n : ℕ) :
     Matrix (Fin n) (Fin n) (MvPolynomial (Fin (n * n)) K) :=
   Matrix.of fun i j => X (finProdFinEquiv (i, j))
+
+/-- The generic matrix of `Cslib.Circuits.Arithmetic.genericMatrix` renames the variables of
+`Matrix.mvPolynomialX` to row-major order. -/
+theorem genericMatrix_eq_map_rename {K : Type u} [CommSemiring K] {n : ℕ} :
+    Arithmetic.genericMatrix K n =
+      (Matrix.mvPolynomialX (Fin n) (Fin n) K).map (rename finProdFinEquiv) := by
+  ext i j
+  simp [Arithmetic.genericMatrix]
 
 /-- The determinant family over `K`: its `n`-th member is the determinant of the generic
 `n × n` matrix, a polynomial in `n * n` variables. -/

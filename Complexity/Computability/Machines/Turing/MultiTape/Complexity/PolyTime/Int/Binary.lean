@@ -31,6 +31,10 @@ the binary length bounds of `Int.size_natAbs_add_le` and `Int.size_natAbs_mul_le
 
 ## Main results
 
+* `Turing.MultiTapeTM.ComputableInPolyTime.intBin_isNeg`, `.intBin_natAbs`,
+  `.intBin_signMagnitude`: inspect and assemble binary sign-magnitude integers.
+* `Turing.MultiTapeTM.ComputableInPolyTime.intBin_prod`, `.intBin_pow`, `.intBin_pow'`:
+  list products and powers to unary exponents, including computed operands.
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_mul'`: multiply two plain-certified binary
   integers from the same complete input encoding.
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_prod_range`: the product of a plain-certified
@@ -382,6 +386,43 @@ theorem intBin_prod_range {α : Type} {enc : α ↪ List Bool}
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- Whether a binary integer is negative. -/
+@[fun_prop]
+theorem intBin_isNeg :
+    ComputableInPolyTime (fun z : ℤ => decide (z < 0)) encIntBin encBool :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_isNeg
+
+/-- The binary magnitude of a binary integer. -/
+@[fun_prop]
+theorem intBin_natAbs : ComputableInPolyTime Int.natAbs encIntBin encNat :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_natAbs
+
+/-- Assemble a binary integer from its sign and binary magnitude, normalizing signed zero. -/
+@[fun_prop]
+theorem intBin_signMagnitude :
+    ComputableInPolyTime (fun p : Bool × ℕ => if p.1 then -(p.2 : ℤ) else p.2)
+      (encPair encBool encNat) encIntBin :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_signMagnitude
+
+/-- The product of a list of binary integers. -/
+@[fun_prop]
+theorem intBin_prod : ComputableInPolyTime List.prod (encList encIntBin) encIntBin :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_prod
+
+/-- A binary integer raised to a unary exponent. -/
+@[fun_prop]
+theorem intBin_pow : ComputableInPolyTime (fun p : ℤ × ℕ => p.1 ^ p.2)
+    (encPair encIntBin encUnary) encIntBin :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_pow
+
+/-- Raise a computed binary integer to a computed unary exponent, fixing their encodings. -/
+@[fun_prop]
+theorem intBin_pow' {α : Type} {input : α ↪ List Bool} {base : α → ℤ} {exponent : α → ℕ}
+    (hbase : ComputableInPolyTime base input encIntBin)
+    (hexponent : ComputableInPolyTime exponent input encUnary) :
+    ComputableInPolyTime (fun a => base a ^ exponent a) input encIntBin :=
+  intBin_pow.comp (hbase.prod hexponent)
 
 /-- Multiply computed binary integers, preserving the complete input encoding. -/
 @[fun_prop]

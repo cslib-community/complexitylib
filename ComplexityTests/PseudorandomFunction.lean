@@ -36,7 +36,7 @@ private noncomputable def repeatQuery (n : ℕ) (_ : List Bool) : WordOracleComp
 example (n : ℕ) :
     ProbComp.eval (prfIdealGame repeatQuery n) = PMF.uniformOfFintype Bool ∧
       ProbComp.eval (Prod.fst <$> (OracleComp.interpret
-        (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           (fun request => cachedRandomFunctionOracle n request.2)) (repeatQuery n [])).run []) =
         PMF.uniformOfFintype Bool := by
   have h : ProbComp.eval (prfIdealGame repeatQuery n) = PMF.uniformOfFintype Bool := by

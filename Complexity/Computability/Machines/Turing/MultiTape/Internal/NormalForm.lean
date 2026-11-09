@@ -44,7 +44,7 @@ variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Boo
   {encOut : γ ↪ List Bool}
 
 /-- Absorb an additive constant into the factor of `n + 1`. -/
-private theorem le_mul_succ {u A B C n : ℕ} (h : u ≤ A * (n + 1) + B) (hC : A + B ≤ C) :
+theorem le_mul_succ {u A B C n : ℕ} (h : u ≤ A * (n + 1) + B) (hC : A + B ≤ C) :
     u ≤ C * (n + 1) := by
   have hB : B ≤ B * (n + 1) := Nat.le_mul_of_pos_right B (Nat.succ_pos n)
   have : A * (n + 1) + B ≤ (A + B) * (n + 1) := by rw [Nat.add_mul]; omega
@@ -130,9 +130,15 @@ theorem inO {f : α → β} {T S : α → ℕ}
   exact ⟨C, hC, fun a => (hl a).trans (Nat.mul_le_mul_right _ hle)⟩
 
 /-- Linear certificates normalize at a common linear bound without changing the encoding. -/
-theorem linear {f : α → β} (h : ComputableInLinearTimeAndSpace f encIn encMid) :
+theorem linear {f : α → β} {e : ℕ} (h : ComputableInDegree f encIn encMid 1 e) :
     ∃ c, ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : MultiTapeTM k Bool State),
       ∀ a, tm.ComputesTidilyInTimeAndSpace (encIn a) (encMid (f a))
-        (c * ((encIn a).length + 1)) (c * ((encIn a).length + 1)) := bigO h
+        (c * ((encIn a).length + 1)) (c * ((encIn a).length + 1)) := by
+  obtain ⟨t, s, ⟨ct, ht⟩, ⟨cs, hs⟩, k, Q, hfin, tm, htm⟩ := degree h
+  refine ⟨ct + cs, k, Q, hfin, tm, fun a => (htm a).mono ?_ ?_⟩
+  · simpa only [pow_one] using (ht a).trans
+      (Nat.mul_le_mul_right _ (Nat.le_add_right ct cs))
+  · simpa only [pow_one] using (hs a).trans
+      (Nat.mul_le_mul_right _ (Nat.le_add_left cs ct))
 
 end Turing.MultiTapeTM.Internal.NormalForm

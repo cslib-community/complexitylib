@@ -88,11 +88,11 @@ theorem budget_finite {f : γ → β} [Finite β] (g : β → δ)
 length. -/
 theorem pairFalse_inSpace {α : Type} {enc : α ↪ List Bool} {B : α × Bool → ℕ}
     (hB : ∀ x, (encPair enc encBool (x, false)).length ≤ B (x, false)) :
-    ComputableTidilyInSpace (fun x : α => (x, false)) enc (encPair enc encBool)
+    ComputableInSpace (fun x : α => (x, false)) enc (encPair enc encBool)
       fun x => B (x, false) :=
-  (ComputableTidilyInSpace.budget_prod
-    (ComputableTidilyInSpace.of_inO (.of_linear (.of_eq (f := id) fun _ => rfl)))
-    (ComputableTidilyInSpace.budget_const (encB := encBool) false (.refl _))).weaken
+  (ComputableInSpace.budget_prod
+    (ComputableInSpace.of_inO (.of_linear (.of_eq (f := id) fun _ => rfl)))
+    (ComputableInSpace.budget_const (encB := encBool) false (.refl _))).weaken
       (.of_le fun x => by
         have := hB x
         simp only [length_encPair] at this ⊢
@@ -102,9 +102,9 @@ theorem pairFalse_inSpace {α : Type} {enc : α ↪ List Bool} {B : α × Bool �
 step. -/
 theorem comp_pairFalse_inSpace {α : Type} {enc : α ↪ List Bool} {B : α × Bool → ℕ}
     (hB : ∀ x, (encPair enc encBool (x, false)).length ≤ B (x, false)) {f : α × Bool → β}
-    (h : ComputableTidilyInSpace f (encPair enc encBool) encB B) :
-    ComputableTidilyInSpace (fun x : α => f (x, false)) enc encB fun x => B (x, false) :=
-  ComputableTidilyInSpace.budget_comp h (pairFalse_inSpace hB) (.refl _)
+    (h : ComputableInSpace f (encPair enc encBool) encB B) :
+    ComputableInSpace (fun x : α => f (x, false)) enc encB fun x => B (x, false) :=
+  ComputableInSpace.budget_comp h (pairFalse_inSpace hB) (.refl _)
 
 end Budget
 
@@ -279,16 +279,16 @@ theorem toStepMachine_resourceCertificate (hhalt : ComputableInO m.halt encS enc
       (budget_prod hisN (budget_prod he (budget_prod hl (budget_prod ha hz)))) hst
     -- the three results
     have hres₁ := budget_prod (encB := encPair encS encNat) (budget_prod (fst' hr) hpos)
-      (budget_prod (encB := encMove) (budget_const (0 : SignType) hin hst) (snd' hr))
+      (budget_prod (encB := encSign) (budget_const (0 : SignType) hin hst) (snd' hr))
     have hres₂ := budget_prod (encB := encPair encS encNat) (budget_prod hq
       (budget_comp natSucc hpos (sq_bigOLe hpos.length_le)
         (.add hpos.length_le (.const 1 _))))
-      (budget_prod (encB := encMove) (budget_const (1 : SignType) hin hst)
+      (budget_prod (encB := encSign) (budget_const (1 : SignType) hin hst)
         (budget_const (encB := encBits) ([] : List Bool) hin hst))
     have hres₃ := budget_prod (encB := encPair encS encNat) (budget_prod hq
       (budget_comp natPred hpos (sq_bigOLe hpos.length_le)
         (.add hpos.length_le (.const 1 _))))
-      (budget_prod (encB := encMove) (budget_const (-1 : SignType) hin hst)
+      (budget_prod (encB := encSign) (budget_const (-1 : SignType) hin hst)
         (budget_const (encB := encBits) ([] : List Bool) hin hst))
     have hall := budget_ite hc hres₁ (budget_ite hl hres₂ hres₃)
     refine ((hall.of_enc_eq fun p => by rw [← stepBy_eq]; rfl).mono 4 (fun p => ?_)

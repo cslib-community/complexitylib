@@ -23,6 +23,8 @@ certificate, in terms of the input.
 * `Turing.MultiTapeTM.length_encList`: the exact length.
 * `Turing.MultiTapeTM.sum_length_le_length_encList`: the encoded elements are no longer, in total,
   than the encoded list.
+* `Turing.MultiTapeTM.length_unframe_add_dropFrame_le`: the unframed prefix and remaining suffix
+  of any bit list satisfy `2 * (unframe v).length + (dropFrame v).length ≤ v.length`.
 -/
 
 @[expose] public section
@@ -49,5 +51,16 @@ theorem sum_length_le_length_encList (l : List α) :
   induction l with
   | nil => simp
   | cons a l ih => simp only [List.map_cons, List.sum_cons]; omega
+
+/-- The unframed prefix and remaining suffix of any bit list satisfy
+`2 * (unframe v).length + (dropFrame v).length ≤ v.length`. -/
+theorem length_unframe_add_dropFrame_le :
+    ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
+  | [] | [true] => by simp [unframe, dropFrame]
+  | false :: v => by simp [unframe, dropFrame]
+  | true :: b :: v => by
+    have ih := length_unframe_add_dropFrame_le v
+    simp only [unframe, dropFrame, List.length_cons]
+    omega
 
 end Turing.MultiTapeTM

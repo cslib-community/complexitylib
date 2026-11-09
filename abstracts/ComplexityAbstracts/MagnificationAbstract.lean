@@ -193,7 +193,7 @@ theorem p_ne_np_of_mcsp_hard (k : ℕ)
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.MagnificationAbstract`:
-17 root declarations, 103 dependencies checked
+17 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.MagnificationAbstract allowing [

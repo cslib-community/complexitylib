@@ -96,7 +96,7 @@ info: 'ComplexityTests.Abstracts.ResolutionAbstract.haken' depends on axioms:
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.ResolutionAbstract`: 12 root
-declarations, 68 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.ResolutionAbstract

@@ -45,13 +45,13 @@ private structure Progress {L m N : ℕ} (hm : m ≤ L)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (qs : List (Fin N × Fin N)) (old initial : ℕ → ℕ) (z : Data 160) : Prop where
   fixed : Parameters L m N qs.length z
-  index_le : z.regs index ≤ numBands L m N ^ 2
-  epoch_le : z.regs epoch ≤ z.regs index * (1 + PrunedQuery.epochAllowance L)
+  index_le : z.regs Reg.index ≤ numBands L m N ^ 2
+  epoch_le : z.regs Reg.epoch ≤ z.regs Reg.index * (1 + PrunedQuery.epochAllowance L)
   groups : SavedGroups L m N qs.length old z.mem
   catalogue : EncodedBands hm X Y z.mem
-  marks : ∀ j < 10 ^ L, z.mem (stampBase L m N qs.length + j) ≤ z.regs epoch
+  marks : ∀ j < 10 ^ L, z.mem (stampBase L m N qs.length + j) ≤ z.regs Reg.epoch
   answers : ∀ i : Fin qs.length,
-    (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) i.val < z.regs index →
+    (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) i.val < z.regs Reg.index →
       z.mem (groupedBase L m N qs.length +
           CountingSort.position (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) qs.length i) =
         Signed.encode ((X * Y) (qs.get i).1 (qs.get i).2)
@@ -63,7 +63,7 @@ division, and repeated requested coordinates retain their distinct grouped posit
 public theorem exec_evaluateTiles {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (qs : List (Fin N × Fin N)) (old : ℕ → ℕ) (x : Data 160)
-    (hp : Parameters L m N qs.length x) (hi : x.regs index = 0) (hE : x.regs epoch = 0)
+    (hp : Parameters L m N qs.length x) (hi : x.regs Reg.index = 0) (hE : x.regs Reg.epoch = 0)
     (hg : SavedGroups L m N qs.length old x.mem) (he : EncodedBands hm X Y x.mem)
     (hvalues : ∀ i : Fin qs.length,
       old (Wanted.codeAddress L m N qs.length +
@@ -91,7 +91,7 @@ public theorem exec_evaluateTiles {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L)
   let key := Wanted.tileKey L m N ∘ Wanted.inputPairs qs
   let T := numBands L m N ^ 2
   let I := Progress hm X Y qs old x.mem
-  let Φ (z : Data 160) := ∑ t ∈ Finset.Ico (z.regs index) T, tileCharge hm qs t
+  let Φ (z : Data 160) := ∑ t ∈ Finset.Ico (z.regs Reg.index) T, tileCharge hm qs t
   have hout : groupedBase L m N qs.length + qs.length = outputBase L m N qs.length := rfl
   have hfree : outputBase L m N qs.length ≤ scratchBase L m N qs.length := by
     unfold scratchBase
@@ -99,10 +99,10 @@ public theorem exec_evaluateTiles {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L)
   have hstart : I x := ⟨hp, by rw [hi]; omega, by rw [hi, hE]; simp,
     hg, he, by intro j hj; rw [hmarks j hj, hE],
     by intro i hk; rw [hi] at hk; omega, by intro p _ _; rfl⟩
-  have hbody (z : Data 160) (hz : I z) (hc : (Cond.lt index tiles).Holds z) :
+  have hbody (z : Data 160) (hz : I z) (hc : (Cond.lt Reg.index Reg.tiles).Holds z) :
       ∃ y C, ExecWithin (w + 2) tileStep z y C ∧ I y ∧ C + 2 + Φ y ≤ Φ z := by
-    have ht : z.regs index < T := by simpa only [Cond.holds_lt, hz.fixed.tiles, T] using hc
-    have hepoch : z.regs epoch ≤ epochBound L m N := by
+    have ht : z.regs Reg.index < T := by simpa only [Cond.holds_lt, hz.fixed.tiles, T] using hc
+    have hepoch : z.regs Reg.epoch ≤ epochBound L m N := by
       have h := hz.epoch_le.trans
         (Nat.mul_le_mul_right (1 + PrunedQuery.epochAllowance L) hz.index_le)
       simpa only [epochBound] using h
@@ -111,11 +111,11 @@ public theorem exec_evaluateTiles {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L)
     have ha := (hz.groups.offsets _ ht.le).trans (hoffsets _ ht.le)
     have hb := (hz.groups.offsets _ (Nat.succ_le_of_lt ht)).trans
       (hoffsets _ (Nat.succ_le_of_lt ht))
-    have hdiff : z.mem (offsetBase L m N qs.length + z.regs index + 1) -
-        z.mem (offsetBase L m N qs.length + z.regs index) =
-      Nat.count (fun k => key k = z.regs index) qs.length := by
-      rw [show offsetBase L m N qs.length + z.regs index + 1 =
-          offsetBase L m N qs.length + (z.regs index + 1) by omega, hb, ha,
+    have hdiff : z.mem (offsetBase L m N qs.length + z.regs Reg.index + 1) -
+        z.mem (offsetBase L m N qs.length + z.regs Reg.index) =
+      Nat.count (fun k => key k = z.regs Reg.index) qs.length := by
+      rw [show offsetBase L m N qs.length + z.regs Reg.index + 1 =
+          offsetBase L m N qs.length + (z.regs Reg.index + 1) by omega, hb, ha,
         CountingSort.count_lt_succ]
       dsimp only [key]
       omega
@@ -126,13 +126,13 @@ public theorem exec_evaluateTiles {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L)
         have h := hz.epoch_le
         omega
       · intro i hik
-        change key i.val < y.regs index at hik
-        by_cases hki : key i.val = z.regs index
+        change key i.val < y.regs Reg.index at hik
+        by_cases hki : key i.val = z.regs Reg.index
         · exact yvalues i hki
-        · have hold : key i.val < z.regs index := by rw [yi] at hik; omega
+        · have hold : key i.val < z.regs Reg.index := by rw [yi] at hik; omega
           have hs := (CountingSort.position_mem key i.isLt).2
           have hmcount : Nat.count (fun k => key k < key i.val + 1) qs.length ≤
-              Nat.count (fun k => key k < z.regs index) qs.length :=
+              Nat.count (fun k => key k < z.regs Reg.index) qs.length :=
             Nat.count_mono_left (fun k _ hk => by omega)
           have hpos := CountingSort.position_lt key i.isLt
           dsimp only [key] at hs hmcount hpos
@@ -148,7 +148,7 @@ public theorem exec_evaluateTiles {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L)
       dsimp only [tileCharge, key]
       omega
   obtain ⟨y, hr, hy, hc⟩ := ExecWithin.loop_potential I Φ hbody hstart
-  have hlast : y.regs index = T := by
+  have hlast : y.regs Reg.index = T := by
     have h := hy.index_le
     simp only [Cond.holds_lt, hy.fixed.tiles] at hc
     dsimp only [T] at *

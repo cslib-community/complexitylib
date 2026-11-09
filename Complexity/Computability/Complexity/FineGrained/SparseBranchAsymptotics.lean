@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
@@ -92,7 +93,6 @@ public section
 namespace Cslib.Complexity.SubexponentialSAT.ReplacementParams
 
 open Cslib.Complexity.SubexponentialSAT
-open Cslib.Logic.PL (clog_two_le_two_mul_of_le_two_mul)
 
 /-! ### 1. Free-variable (`n / 2 ≤ n' ≤ n`) to original-variable (`n`) `rowCost` transfer -/
 
@@ -118,7 +118,7 @@ theorem Feasible.mul_rowCost_le_of_le_two_mul {β n n' b_occ w_width M' : ℕ}
   have hsqrt_le : Real.sqrt (Nat.clog 2 n) ≤ 2 * Real.sqrt (Nat.clog 2 n') := by
     have hclog_le : (Nat.clog 2 n : ℝ) ≤ (2 : ℝ) ^ 2 * (Nat.clog 2 n' : ℝ) := by
       have hnat : Nat.clog 2 n ≤ 2 * Nat.clog 2 n' :=
-        clog_two_le_two_mul_of_le_two_mul hn_le (by omega)
+        Nat.clog_two_le_two_mul_of_le_two_mul hn_le (by omega)
       have hcast : (Nat.clog 2 n : ℝ) ≤ 2 * (Nat.clog 2 n' : ℝ) := by exact_mod_cast hnat
       have hnn : (0 : ℝ) ≤ (Nat.clog 2 n' : ℝ) := Nat.cast_nonneg _
       linarith
@@ -312,8 +312,7 @@ theorem div_sqrt_clog_le_interpolationScale {n : ℕ} (hn : 16384 ≤ n) :
         2 * ((n : ℝ) * (nu : ℝ) ^ 2 / Real.sqrt (lam : ℝ)) := by
     refine Nat.cast_div_le.trans ?_
     rw [mul_div_assoc', div_le_div_iff₀ (Nat.cast_pos.mpr hsqrt_pos) hsqrt_real_pos]
-    have hmul1 : (n : ℝ) * Real.sqrt (lam : ℝ) ≤ (n : ℝ) * (2 * (lam.sqrt : ℝ)) :=
-      mul_le_mul_of_nonneg_left hsqrt_le (Nat.cast_nonneg n)
+    have hmul1 : (n : ℝ) * Real.sqrt (lam : ℝ) ≤ (n : ℝ) * (2 * (lam.sqrt : ℝ)) := by gcongr
     have hmul2 : (n : ℝ) * (2 * (lam.sqrt : ℝ)) ≤
         2 * ((n : ℝ) * (nu : ℝ) ^ 2) * (lam.sqrt : ℝ) := by
       have : (n : ℝ) ≤ (n : ℝ) * (nu : ℝ) ^ 2 :=

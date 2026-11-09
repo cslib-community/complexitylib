@@ -119,11 +119,9 @@ theorem wordInverter_eval (f : List Bool → List Bool)
         (maskCount n (precision degree n)) image).map List.ofFn := by
   simp only [wordInverter, ProbComp.eval_bind, ProbComp.eval_uniform, BitString.eval_sampleList,
     ProbComp.eval_pure, invertSigned, invert, PMF.monad_bind_eq_bind, PMF.map_bind]
-  congr 1
-  funext flip
+  congr 1 with flip : 1
   rw [uniformList, PMF.bind_map]
-  congr 1
-  funext seed
+  congr 1 with seed : 1
   simpa only [PMF.map, fixedPredictor, Function.comp_def] using
     uniform_wordDecode f (fun query => evaluate (n, image ++ query) (List.ofFn seed) ^^ flip)
       degree n image
@@ -161,8 +159,7 @@ theorem eval_parityPredictionGame (f : List Bool → List Bool) (adversary : Dis
   simp only [parityPredictionGame, ProbComp.eval_bind, BitString.eval_sampleList,
     ProbComp.eval_pure, uniformList, PMF.bind_map, Function.comp_def,
     ← dotProduct_eq_foldl, predictionExperiment]
-  congr 1
-  funext x
+  congr 1 with x : 1
   simp_rw [← fixedPredictor_distribution adversary evaluate c d hrealize,
     PMF.bind_map, Function.comp_def]
   rw [PMF.bind_comm]
@@ -207,7 +204,7 @@ theorem negligible_parityPrediction {f : List Bool → List Bool} (hf : OneWay f
   apply negligible_prediction_of_negligible_inversion
   intro degree
   simpa only [eval_wordInversionGame f] using
-    hf.inversion_negligible _ (isPPT_wordInverter hf.polyTime (.of_tidy hefficient) c d degree)
+    hf.inversion_negligible _ (isPPT_wordInverter hf.polyTime hefficient c d degree)
 
 /-- One efficient typed evaluator witnesses the concrete reduction at every precision degree.
 When `f` is efficient, `isPPT_wordInverter` certifies each resulting inverter. -/
@@ -219,15 +216,9 @@ theorem exists_word_reduction (f : List Bool → List Bool) (adversary : Disting
       ∀ degree n, |Pr[parityPredictionGame f adversary n] - 1 / 2| ≤
         1 / (precision degree n : ℝ) +
           8 * Pr[inversionGame f (wordInverter f evaluate c d degree) n] := by
-  have this : ∃ (c d : ℕ) (evaluate : (ℕ × List Bool) → List Bool → Bool),
-    ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × List Bool => evaluate p.1 p.2) (encPair
-    (encPair encUnary encBits) encBits) encBool ∧ ∀ degree n, |Pr[parityPredictionGame f
-    adversary n] - 1 / 2| ≤ 1 / (precision degree n : ℝ) + 8 * Pr[inversionGame f (wordInverter f
-    evaluate c d degree) n] := by
-    obtain ⟨c, d, evaluate, hefficient, hrealize⟩ := hPPT.on.exists_seeded_evaluator
-    exact ⟨c, d, evaluate, hefficient, fun degree n =>
-      word_prediction_advantage_le f adversary evaluate c d
-        (fun n input => hrealize (n, input)) degree n⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨c, d, evaluate, hefficient, hrealize⟩ := hPPT.on.exists_seeded_evaluator
+  exact ⟨c, d, evaluate, hefficient, fun degree n =>
+    word_prediction_advantage_le f adversary evaluate c d
+      (fun n input => hrealize (n, input)) degree n⟩
 
 end Cslib.Crypto.GoldreichLevin

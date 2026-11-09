@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Reduction.TruthTable
+import Complexity.Foundations.Data.List.Filter
+import Complexity.Foundations.Data.List.RowMajor
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -145,25 +147,6 @@ The composite of `(r, q, d)` from `L` to `B` and `(r', q', d')` from `B` to `C` 
 first-stage query `q (a, i)`, its second-stage queries in a block of `M a ≥ r' (q (a, i))`
 positions starting at `i * M a`, and evaluates `d'` on each block and `d` on the results. -/
 
-/-- Indexing a flattened list whose blocks all have length `M`. -/
-private theorem getElem?_flatMap_of_length_eq {ι δ : Type*} (l : List ι) (f : ι → List δ) (M : ℕ)
-    (hf : ∀ x ∈ l, (f x).length = M) {i j : ℕ} (hi : i < l.length) (hj : j < M) :
-    (l.flatMap f)[i * M + j]? = (f l[i])[j]? := by
-  induction l generalizing i with
-  | nil => simp at hi
-  | cons x l ih =>
-    have hx := hf x (by simp)
-    rw [List.flatMap_cons]
-    cases i with
-    | zero =>
-      simp only [zero_mul, zero_add, List.getElem_cons_zero]
-      rw [List.getElem?_append_left (by omega)]
-    | succ i =>
-      rw [List.getElem?_append_right (by rw [hx]; nlinarith), hx]
-      have : (i + 1) * M + j - M = i * M + j := by rw [Nat.succ_mul]; omega
-      rw [this, ih (fun y hy => hf y (by simp [hy])) (by simpa using hi)]
-      simp
-
 /-- A block of a word of answers. -/
 private theorem take_drop_ofFn {n : ℕ} (g : Fin n → Bool) (s c : ℕ) (h : s + c ≤ n) :
     ((List.ofFn g).drop s).take c = List.ofFn fun j : Fin c => g ⟨s + j, by omega⟩ := by
@@ -212,7 +195,7 @@ private theorem ttComp_spec {r : α → ℕ} {q : α × ℕ → β} {d : α × L
     funext j
     have hj : j.1 < M a := lt_of_lt_of_le j.2 (hM a i hi)
     simp only [Set.mem_preimage, ttCompQuery, ttCompQueries]
-    rw [getElem?_flatMap_of_length_eq _ _ _ hlen (by simpa using hi) hj]
+    rw [List.getElem?_flatMap_mul_add _ _ _ hlen (by simpa using hi) hj]
     simp [hj]
   rw [hblock]
   cases h : d' (q (a, i), truthTableAnswers (q' ⁻¹' C) r' (q (a, i))) <;> simp [hB, h]
@@ -396,30 +379,12 @@ theorem PolyTimePTTReducible.polyTimeTruthTableReducible (h : PolyTimePTTReducib
   let ⟨r, q, d, hr, hq, hd, _, hL⟩ := h
   ⟨r, q, d, hr, hq, hd, hL⟩
 
-/-- `List.any id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
-theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
-    u.any id ≤ v.any id := by
-  induction h with
-  | nil => exact le_rfl
-  | cons hab _ ih =>
-    simp only [List.any_cons, id]
-    exact max_le_max hab ih
-
-/-- `List.all id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
-theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
-    u.all id ≤ v.all id := by
-  induction h with
-  | nil => exact le_rfl
-  | cons hab _ ih =>
-    simp only [List.all_cons, id]
-    exact min_le_min hab ih
-
 /-- A disjunctive reduction is positive, with the disjunction of the answers as combiner. -/
 theorem PolyTimeDTTReducible.polyTimePTTReducible (h : PolyTimeDTTReducible encA encB L B) :
     PolyTimePTTReducible encA encB L B := by
   obtain ⟨r, q, hr, hq, hL⟩ := h
   refine ⟨r, q, fun x => x.2.any id, hr, hq, by fun_prop,
-    fun _ _ _ huv => any_id_le_of_forall₂ huv, fun a => ?_⟩
+    fun _ _ _ huv => List.any_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hL a]
   simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
 
@@ -428,7 +393,7 @@ theorem PolyTimeCTTReducible.polyTimePTTReducible (h : PolyTimeCTTReducible encA
     PolyTimePTTReducible encA encB L B := by
   obtain ⟨r, q, hr, hq, hL⟩ := h
   refine ⟨r, q, fun x => x.2.all id, hr, hq, by fun_prop,
-    fun _ _ _ huv => all_id_le_of_forall₂ huv, fun a => ?_⟩
+    fun _ _ _ huv => List.all_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hL a]
   simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
 

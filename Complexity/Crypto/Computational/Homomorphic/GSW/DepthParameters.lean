@@ -224,25 +224,23 @@ theorem computableInPolyTime_modulus :
     ComputableInPolyTime modulus encUnary encNat :=
   binary_pow' (const 2) DepthParameters.computableInPolyTime_width
 
-open Parameters (polynomiallyBounded_of_unary)
-
 /-- All unary parameters have polynomial bounds; the modulus is deliberately excluded. -/
 theorem polynomiallyBounded_parameters :
     PolynomiallyBounded dimension ∧ PolynomiallyBounded noise ∧ PolynomiallyBounded width ∧
       PolynomiallyBounded rows ∧ PolynomiallyBounded samples ∧ PolynomiallyBounded depthBudget :=
-  ⟨polynomiallyBounded_of_unary Parameters.computableInPolyTime_dimension,
-    polynomiallyBounded_of_unary Parameters.computableInPolyTime_noise,
-    polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_width,
-    polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_rows,
-    polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_samples,
-    polynomiallyBounded_of_unary computableInPolyTime_depthBudget⟩
+  ⟨Parameters.computableInPolyTime_dimension.polynomiallyBounded,
+    Parameters.computableInPolyTime_noise.polynomiallyBounded,
+    DepthParameters.computableInPolyTime_width.polynomiallyBounded,
+    DepthParameters.computableInPolyTime_rows.polynomiallyBounded,
+    DepthParameters.computableInPolyTime_samples.polynomiallyBounded,
+    computableInPolyTime_depthBudget.polynomiallyBounded⟩
 
 /-- The actual shared-public-matrix error bound is negligible for this new family. -/
 theorem negligible_statistical_error :
     Negligible (fun security => (rows security : ℝ≥0) *
       NNReal.sqrt ((2 : ℝ≥0) ^ rows security / 2 ^ samples security)) :=
   negligible_mul_sqrt_pow_two_div_pow_two
-    (polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_rows)
+    DepthParameters.computableInPolyTime_rows.polynomiallyBounded
     (Filter.Eventually.of_forall entropy_margin)
 
 end Cslib.Crypto.Homomorphic.GSW.DepthParameters

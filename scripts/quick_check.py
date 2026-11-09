@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict, deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -19,10 +20,22 @@ class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
 
 
+# Data files that no Lean gate reads, each with the source-only check that does read it. A change
+# to one runs that check (with `{base}`, the merge base) instead of falling back to all six gates.
+# Any other non-Lean change, including every Python change under `scripts/`, still falls back.
+DATA_CHECKS = {
+    # Read only by its ratchet, which needs no build (`.github/workflows/lean_action_ci.yml`).
+    "scripts/encoding_readability_baseline.json": (
+        "encoding readability ratchet",
+        [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"]),
+}
+
+
 @dataclass
 class Plan:
     base: str
     targets: list[str]
+    checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
 
 
 @dataclass
@@ -60,7 +73,7 @@ def imports_from_lean(root: Path, paths: list[str]) -> dict[str, list[str]]:
         raise FullCheck(f"invalid native header-parser response: {error}") from error
 
 
-def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str]]:
+def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str], set[str]]:
     if (root / "lakefile.lean").exists():
         raise FullCheck("dynamic Lake configuration is outside quick-check scope")
     try:
@@ -76,10 +89,17 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str]]:
     physical_sources: set[Path] = set()
     aggregates: set[str] = set()
     roots: set[str] = set()
-    allowed = {"name", "srcDir", "leanOptions", "allowNonModules", "roots", "globs"}
+    on_demand: set[str] = set()
+    allowed = {"name", "srcDir", "leanOptions", "allowNonModules", "roots", "globs",
+               "defaultFacets"}
     for library in libraries:
         if not isinstance(library, dict) or set(library) - allowed:
             raise FullCheck("custom Lake library options need full checks")
+        # Lake reads `defaultFacets` only for a bare build of the library target; `[]` makes that
+        # build nothing. Module targets, which quick mode builds explicitly, are unaffected.
+        on_demand_library = "defaultFacets" in library
+        if on_demand_library and library["defaultFacets"] != []:
+            raise FullCheck("custom Lake library default facets need full checks")
         name = library.get("name", "")
         if not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*(\.[A-Za-z_][A-Za-z_0-9]*)*", name):
             raise FullCheck("unsupported library name")
@@ -96,6 +116,11 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str]]:
             raise FullCheck("custom Lake library roots/globs need full checks")
         if globbed and aggregator.exists():
             raise FullCheck(f"glob library {name} also has an aggregator file")
+        if on_demand_library and globbed and not os.path.lexists(directory):
+            # Sources generated on demand (comparator challenges) may be absent. The root stays
+            # registered, so importing one of its modules is a missing local import below.
+            roots.add(name)
+            continue
         if (not globbed and not aggregator.is_file()) or not directory.is_dir():
             raise FullCheck(f"missing library root {name}")
         # rglob does not descend through directory symlinks: reject them explicitly,
@@ -118,7 +143,9 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str]]:
                 raise FullCheck("overlapping library source paths need full checks")
             physical_sources.add(path.resolve())
             modules[module] = path.relative_to(root).as_posix()
-    return modules, aggregates, roots
+            if on_demand_library:
+                on_demand.add(module)
+    return modules, aggregates, roots, on_demand
 
 
 def executable_sources(root: Path) -> list[Executable]:
@@ -169,11 +196,18 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     for status, path in changes:
         if status not in {"A", "M"}:
             raise FullCheck(f"deleted, renamed or unusual change: {path}")
-        if not path.endswith(".lean"):
+        if not path.endswith(".lean") and path not in DATA_CHECKS:
             raise FullCheck(f"non-Lean change: {path}")
-    modules, aggregates, roots = source_modules(root)
-    by_path = {path: module for module, path in modules.items()}
+    checks = [(label, [base if part == "{base}" else part for part in command])
+              for path, (label, command) in DATA_CHECKS.items() if path in {p for _, p in changes}]
+    changes = [(status, path) for status, path in changes if path not in DATA_CHECKS]
+    modules, aggregates, roots, on_demand = source_modules(root)
     visible = set(git(root, "ls-files", "-z").split("\0")) | {p for _, p in changes}
+    # Ignored sources of a library with empty default facets are generated inputs, such as the
+    # comparator challenges with their deliberate `sorry`. No gate builds them unless a module
+    # imports them, and such an import is a missing local import below.
+    modules = {m: p for m, p in modules.items() if m not in on_demand or p in visible}
+    by_path = {path: module for module, path in modules.items()}
     if set(by_path) - visible:
         raise FullCheck("ignored local Lean source has no reliable Git change record")
     changed: set[str] = set()
@@ -215,7 +249,7 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
-    return Plan(base, sorted((affected - aggregates) | executable_targets))
+    return Plan(base, sorted((affected - aggregates) | executable_targets), checks)
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -249,6 +283,10 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected build targets.",
           flush=True)
     print("This is not full validation: global test, lint, style and init-import gates are skipped.", flush=True)
+    for label, command in plan.checks:
+        status = run_check(root, command, label)
+        if status:
+            return status
     if not plan.targets:
         print("No Lean source changes; checking import aggregates only.", flush=True)
     for offset in range(0, len(plan.targets), 100):

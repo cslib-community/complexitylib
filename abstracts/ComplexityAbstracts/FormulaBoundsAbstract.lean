@@ -28,7 +28,7 @@ statement boundary.
 * [P. Spira, *On time-hardware complexity tradeoffs for Boolean functions*][Spira1971]
 * [V. Khrapchenko, *Method of determining lower bounds for the complexity of Pi-schemes*]
   [Khrapchenko1971b]
-* [S. Yablonskii, *On superpositions of functions of the algebra of logic*][Yablonskii1954]
+* [S. Yablonskii, *Realization of a linear function in the class of π-schemes*][Yablonskii1954]
 * [B. Subbotovskaya, *Realizations of linear functions by formulas*][Subbotovskaya1961]
 * [A. Andreev, *On a method of obtaining more than quadratic effective lower bounds*][Andreev1987]
 * [S. Jukna, *Boolean Function Complexity*][Jukna2012]
@@ -152,7 +152,7 @@ theorem andreev_lower_bound :
   FormulaBoundsBridge.andreev_lower_bound
 
 /-- info: abstract audit passed for `ComplexityTests.Abstracts.FormulaBoundsAbstract`: 21 root
-declarations, 119 dependencies checked -/
+declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.FormulaBoundsAbstract allowing [
   Complexity.Computability.Circuit.Formula

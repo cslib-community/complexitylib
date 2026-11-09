@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Cslib.Computability.Circuit.Boolean.Basic
+public import Complexity.Computability.Circuit.WireNumber
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
@@ -19,9 +20,10 @@ import Mathlib.Data.List.GetD
 
 A circuit is written down as data by listing its gates in program order. Wires are numbered as in
 `Cslib.Circuits.Circuit.trace`: input `i` is wire `i` and gate `j` is wire `n + j`, where `n` is the
-number of inputs (`Wire.toNat`). A line is written as its operation and the numbers of the wires it
-reads (`Line.code`), a program as the list of its lines (`Program.code`), and a circuit as its
-program and the numbers of its output wires (`Circuit.code`). The size of a circuit is the length
+number of inputs (`Wire.toNat`, from `Complexity.Computability.Circuit.WireNumber`). A line is
+written as its operation and the numbers of the wires it reads (`Line.code`), a program as the list
+of its lines (`Program.code`), and a circuit as its program and the numbers of its output wires
+(`Circuit.code`). The size of a circuit is the length
 of its gate list (`Program.length_code`).
 
 Decoding (`Program.ofCode`, `Circuit.ofCode`) checks that every line has as many arguments as its
@@ -42,8 +44,6 @@ logarithmically many bits.
 
 ## Main definitions
 
-* `Cslib.Circuits.Wire.equivFin`, `Cslib.Circuits.Wire.toNat`, `Cslib.Circuits.Wire.ofNat`: wire
-  numbers.
 * `Cslib.Circuits.Line.code`, `Cslib.Circuits.Program.code`, `Cslib.Circuits.Circuit.code`: circuits
   as lists of gates.
 * `Cslib.Circuits.Line.ofCode`, `Cslib.Circuits.Program.pushCode`, `Cslib.Circuits.Program.ofCode`,
@@ -87,56 +87,6 @@ open Turing.MultiTapeTM
 universe v
 
 variable {σ : Signature.{v}} {n k m : ℕ}
-
-/-! ### Wire numbers -/
-
-namespace Wire
-
-/-- Wires numbered inputs first: input `i` is `i` and gate `j` is `inputCount + j`, the order of
-`Circuit.trace`. -/
-def equivFin (inputCount gateCount : ℕ) :
-    Wire inputCount gateCount ≃ Fin (inputCount + gateCount) :=
-  (equiv inputCount gateCount).trans finSumFinEquiv
-
-/-- Input wire `i` maps to `Fin.castAdd k i` under `equivFin`. -/
-@[simp] theorem equivFin_input (i : Fin n) : equivFin n k (input i) = Fin.castAdd k i := rfl
-
-/-- Gate wire `j` maps to `Fin.natAdd n j` under `equivFin`. -/
-@[simp] theorem equivFin_gate (j : Fin k) : equivFin n k (gate j) = Fin.natAdd n j := rfl
-
-/-- The number of a wire: input `i` is `i` and gate `j` is `inputCount + j`. -/
-def toNat (w : Wire n k) : ℕ := (equivFin n k w).val
-
-/-- Input wire `i` has wire number `i`. -/
-@[simp] theorem toNat_input (i : Fin n) : (input i : Wire n k).toNat = i := rfl
-
-/-- Gate wire `j` has wire number `n + j`. -/
-@[simp] theorem toNat_gate (j : Fin k) : (gate j : Wire n k).toNat = n + j := rfl
-
-/-- Every wire in a circuit with `n` inputs and `k` gates has wire number strictly less than
-`n + k`. -/
-theorem toNat_lt (w : Wire n k) : w.toNat < n + k := (equivFin n k w).isLt
-
-/-- The wire with number `i`, for `i < inputCount + gateCount`. -/
-def ofNat (i : ℕ) (h : i < n + k) : Wire n k := (equivFin n k).symm ⟨i, h⟩
-
-/-- Decoding the wire number of `w` recovers `w`. -/
-@[simp] theorem ofNat_toNat (w : Wire n k) : ofNat w.toNat w.toNat_lt = w :=
-  (equivFin n k).symm_apply_apply w
-
-/-- The wire number of `ofNat i h` is `i`. -/
-@[simp] theorem toNat_ofNat (i : ℕ) (h : i < n + k) : (ofNat i h : Wire n k).toNat = i := by
-  simp [ofNat, toNat]
-
-/-- Wire numbering `toNat` is injective. -/
-theorem toNat_injective : Function.Injective (toNat : Wire n k → ℕ) :=
-  fun _ _ h => (equivFin n k).injective (Fin.ext h)
-
-/-- Widening a wire by `castSucc` preserves its wire number. -/
-@[simp] theorem toNat_castSucc (w : Wire n k) : w.castSucc.toNat = w.toNat := by
-  cases w <;> rfl
-
-end Wire
 
 /-! ### Lines -/
 

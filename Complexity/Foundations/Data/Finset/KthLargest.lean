@@ -1,13 +1,14 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Mathlib.Algebra.Order.Group.Abs
 public import Mathlib.Data.Finset.Max
 
 /-!
@@ -26,11 +27,16 @@ is at least `t` exactly when at least `k` values are at least `t` (`Finset.le_kt
 ## Main definitions
 
 * `Finset.kthLargest`: the `k`-th largest value, padded with zeros.
+* `Finset.abs_le_kthLargest_one`: absolute values are bounded by the full-slice maximum.
 
 ## Main results
 
 * `Finset.kthLargest_nonneg`, `Finset.kthLargest_le`: bounds.
+* `Finset.kthLargest_congr`: congruence under pointwise equality on `s`.
 * `Finset.lt_kthLargest_iff`, `Finset.le_kthLargest_iff`: the threshold characterizations.
+* `Finset.kthLargest_eq_of_eq_or_gt`: replacing values strictly above a bounded rank preserves it.
+* `Finset.kthLargest_le_kthLargest_add`, `Finset.abs_kthLargest_sub_kthLargest_le`: stability
+  under perturbation of the values.
 
 ## References
 
@@ -61,6 +67,23 @@ theorem kthLargest_le (ht : 0 ≤ t) (hh : ∀ x ∈ s, h x ≤ t) : kthLargest 
   · exact ht
   · obtain ⟨x, hx, rfl⟩ := mem_image.mp ha
     exact hh x (mem_filter.mp hx).1
+
+/-- `kthLargest` depends only on the values of the function on `s`. -/
+theorem kthLargest_congr {f g : α → R} (hfg : ∀ x ∈ s, f x = g x) :
+    kthLargest k s f = kthLargest k s g := by
+  unfold kthLargest
+  have hflt : (s.filter fun x => k ≤ #{w ∈ s | f x ≤ f w}) =
+      s.filter fun x => k ≤ #{w ∈ s | g x ≤ g w} := by
+    refine filter_congr fun x hx => ?_
+    have hinner : ({w ∈ s | f x ≤ f w} : Finset α) = {w ∈ s | g x ≤ g w} := by
+      refine filter_congr fun w hw => ?_
+      rw [hfg x hx, hfg w hw]
+    rw [hinner]
+  have himg : ((s.filter fun x => k ≤ #{w ∈ s | f x ≤ f w}).image f) =
+      (s.filter fun x => k ≤ #{w ∈ s | g x ≤ g w}).image g := by
+    rw [hflt]
+    exact image_congr fun x hx => hfg x (mem_filter.mp hx).1
+  simp_rw [himg]
 
 /-- A value of `s` reached or exceeded by at least `k` values is at most the `k`-th largest. -/
 private theorem le_kthLargest_of_le_card {x : α} (hx : x ∈ s)
@@ -112,5 +135,78 @@ theorem le_kthLargest_iff (hk : 0 < k) (ht : 0 < t) :
   · intro hcard
     obtain ⟨x, hxs, htx, hkx⟩ := exists_le_card hk (t ≤ ·) hcard
     exact htx.trans (le_kthLargest_of_le_card hxs hkx)
+
+/-- Changing only values strictly above a nonnegative ceiling preserves every positive-order
+rank at most that ceiling. The bound may be an equality, and other values may be negative. -/
+theorem kthLargest_eq_of_eq_or_gt {f g : α → R} (hk : 0 < k) (ht : 0 ≤ t)
+    (h : ∀ x ∈ s, f x = g x ∨ (t < f x ∧ t < g x))
+    (hg : kthLargest k s g ≤ t) : kthLargest k s f = kthLargest k s g := by
+  classical
+  have hfilter (a : R) (ha : a ≤ t) :
+      ({x ∈ s | a < f x} : Finset α) = {x ∈ s | a < g x} := by
+    ext x
+    by_cases hx : x ∈ s
+    · rcases h x hx with heq | ⟨hf, hg⟩
+      · simp [heq]
+      · simp [hx, ha.trans_lt hf, ha.trans_lt hg]
+    · simp [hx]
+  have hf : kthLargest k s f ≤ t := by
+    refine not_lt.mp fun hlt => ?_
+    have hc := (lt_kthLargest_iff hk ht).mp hlt
+    rw [hfilter t le_rfl] at hc
+    exact (not_lt_of_ge hg) ((lt_kthLargest_iff hk ht).mpr hc)
+  apply le_antisymm
+  · refine not_lt.mp fun hlt => ?_
+    have hc := (lt_kthLargest_iff hk kthLargest_nonneg).mp hlt
+    rw [hfilter _ hg] at hc
+    exact lt_irrefl _ ((lt_kthLargest_iff hk kthLargest_nonneg).mpr hc)
+  · refine not_lt.mp fun hlt => ?_
+    have hc := (lt_kthLargest_iff hk kthLargest_nonneg).mp hlt
+    rw [← hfilter _ hf] at hc
+    exact lt_irrefl _ ((lt_kthLargest_iff hk kthLargest_nonneg).mpr hc)
+
+section Stability
+
+variable {R : Type*} [AddCommGroup R] [LinearOrder R] [IsOrderedAddMonoid R] {k : ℕ}
+  {s : Finset α} {h₁ h₂ : α → R} {ε : R}
+
+/-- **Rank stability, one side** [OpenAI2026LogSpace, (5.4)]: if every value of `h₁` exceeds the
+corresponding value of `h₂` by at most `ε ≥ 0`, so does the `k`-th largest value. -/
+theorem kthLargest_le_kthLargest_add (hk : 0 < k) (hε : 0 ≤ ε) (h : ∀ x ∈ s, h₁ x ≤ h₂ x + ε) :
+    kthLargest k s h₁ ≤ kthLargest k s h₂ + ε := by
+  set r := kthLargest k s h₁
+  rcases le_or_gt r ε with hr | hr
+  · exact hr.trans (le_add_of_nonneg_left kthLargest_nonneg)
+  have hr0 : 0 < r := hε.trans_lt hr
+  have hcard := (le_kthLargest_iff hk hr0).mp le_rfl
+  have hlo : r - ε ≤ kthLargest k s h₂ := by
+    refine (le_kthLargest_iff hk (sub_pos.mpr hr)).mpr (hcard.trans (card_le_card fun x hx => ?_))
+    rw [mem_filter] at hx ⊢
+    exact ⟨hx.1, sub_le_iff_le_add.mpr (hx.2.trans (h x hx.1))⟩
+  exact sub_le_iff_le_add.mp hlo
+
+/-- **Rank stability** [OpenAI2026LogSpace, (5.4)]: `|rank_k h₁ − rank_k h₂| ≤ sup |h₁ − h₂|`.
+If the values differ by at most `ε ≥ 0` everywhere on `s`, so do their `k`-th largest values. -/
+theorem abs_kthLargest_sub_kthLargest_le (hk : 0 < k) (hε : 0 ≤ ε)
+    (h : ∀ x ∈ s, |h₁ x - h₂ x| ≤ ε) : |kthLargest k s h₁ - kthLargest k s h₂| ≤ ε := by
+  rw [abs_sub_le_iff]
+  constructor
+  · exact sub_le_iff_le_add'.mpr (kthLargest_le_kthLargest_add hk hε fun x hx =>
+      sub_le_iff_le_add'.mp (le_of_abs_le (h x hx)))
+  · exact sub_le_iff_le_add'.mpr (kthLargest_le_kthLargest_add hk hε fun x hx =>
+      sub_le_iff_le_add'.mp (le_of_abs_le ((abs_sub_comm _ _).trans_le (h x hx))))
+
+end Stability
+
+open Classical in
+/-- A retained endpoint's magnitude is bounded by the full row maximum, including zero. -/
+lemma abs_le_kthLargest_one {ι R' : Type*} [AddCommGroup R'] [LinearOrder R']
+    [IsOrderedAddMonoid R'] (S : Finset ι) (b : ι → R') (y : ι) (hy : y ∈ S) :
+    |b y| ≤ kthLargest 1 S (fun z => |b z|) := by
+  by_cases hz : b y = 0
+  · simpa only [hz, abs_zero] using (kthLargest_nonneg (k := 1) (s := S) (h := fun z => |b z|))
+  · exact (le_kthLargest_iff (by decide : 0 < 1) (abs_pos.mpr hz)).mpr
+      (card_pos.mpr ⟨y, mem_filter.mpr ⟨hy, le_rfl⟩⟩)
+
 
 end Finset

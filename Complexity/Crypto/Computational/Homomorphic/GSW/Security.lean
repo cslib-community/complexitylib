@@ -111,20 +111,16 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
 advantage plus the shared-public-matrix statistical error. No efficiency is needed for this law. -/
 theorem advantage_game_le (n m w η : ℕ → ℕ)
     (adversary : Encryption.Adversary) (security : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game
-        (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
-        (fun k => encryptSerialized (n k) (m k) (w k)) adversary false security))
-      (ProbComp.eval (Encryption.game
-        (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
-        (fun k => encryptSerialized (n k) (m k) (w k)) adversary true security)) ≤
+    Encryption.advantage (Encryption.game (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
+      (fun k => encryptSerialized (n k) (m k) (w k)) adversary) security ≤
       2 * Game.advantage
         (distinguishingGame (LWE.realEnsemble n m w (fun k => noiseLaw (w k) (η k)) security)
           (lweDistinguisher n m w adversary security))
         (distinguishingGame (LWE.uniformEnsemble n m w security)
           (lweDistinguisher n m w adversary security)) +
             hidingError (n security) (m security) (w security) := by
-  simp only [Encryption.eval_game_eq_publicKeyGame, eval_keyGenSerialized_publicWord]
+  simp only [Encryption.advantage, Encryption.eval_game_eq_publicKeyGame,
+    eval_keyGenSerialized_publicWord]
   exact (Encryption.advantage_publicKeyGame_le _ (LWE.uniformEnsemble n m w security)
     _ adversary security).trans
       (add_le_add le_rfl (advantage_uniformEnsemble_le n m w adversary security))
@@ -144,14 +140,8 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
   have hsource := hLWE (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have hrows : PolynomiallyBounded (fun k => (n k + 1) * w k) := by
-    have : PolynomiallyBounded n :=
-      (show PolyBounded (fun k : ℕ => k) n by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hn.polyBounded_length).polynomiallyBounded
-    have : PolynomiallyBounded w :=
-      (show PolyBounded (fun k : ℕ => k) w by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hw.polyBounded_length).polynomiallyBounded
+    have : PolynomiallyBounded n := hn.polynomiallyBounded
+    have : PolynomiallyBounded w := hw.polynomiallyBounded
     fun_prop
   have herror := negligible_mul_sqrt_pow_two_div_pow_two hrows hmargin
   apply negligible_of_le

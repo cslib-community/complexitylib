@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.PPoly
+public import Complexity.Computability.Complexity.Classes.Sparse
 
 /-!
 # Sparse and unary languages have circuits of polynomial size
@@ -19,13 +20,16 @@ polynomially many words of each length, a *sparse* language, is therefore in `P/
 of each length, and its slice at `n` is a constant or the conjunction of the `n` inputs, so it has
 circuits of `n + 1` gates (`mem_SIZE_of_unary`). Since the circuits at different lengths need not be
 related, unary languages that no machine decides are in `P/poly` [Arora and Barak, Section
-6.1][AroraBarak09].
+6.1][AroraBarak09]. The class `Cslib.Complexity.SPARSE` counts the words of length at most `n`
+rather than exactly `n`; its members are in `P/poly` as well (`PPoly.of_mem_SPARSE`).
 
 ## Main results
 
 * `Cslib.Circuits.Boolean.complexity_slice_le_of_card_le`: a slice with few words has a small
   circuit.
 * `Cslib.Circuits.Boolean.PPoly.of_sparse`: sparse languages are in `P/poly`.
+* `Cslib.Circuits.Boolean.PPoly.of_mem_SPARSE`: languages in `Cslib.Complexity.SPARSE` are in
+  `P/poly`.
 * `Cslib.Circuits.Boolean.mem_SIZE_of_unary`, `Cslib.Circuits.Boolean.PPoly.of_unary`: unary
   languages have circuits of `n + 1` gates, so they are in `P/poly`.
 
@@ -64,6 +68,24 @@ theorem PPoly.of_sparse {s : ℕ → ℕ} (hs : PolynomiallyBounded s)
     (h : ∀ n, #{x : BitString n | L.slice n x = true} ≤ s n) : L ∈ PPoly :=
   PolynomiallyBounded.mono_of_le (g := fun n => s n * (2 * n + 2) + 1) (by fun_prop)
     fun n => complexity_slice_le_of_card_le (h n)
+
+/-- **Sparse languages are in P/poly**, for sparseness in the census form of
+`Cslib.Complexity.SPARSE`: the words of length exactly `n` are among those of length at most `n`. -/
+theorem PPoly.of_mem_SPARSE
+    (h : (L : Set (List Bool)) ∈ Complexity.SPARSE Turing.MultiTapeTM.encBits) : L ∈ PPoly := by
+  obtain ⟨p, hp, hL⟩ := h
+  refine PPoly.of_sparse hp fun n => ?_
+  have hsub : ((({x : BitString n | L.slice n x = true} : Finset (BitString n)).image
+      List.ofFn : Finset (List Bool)) : Set (List Bool)) ⊆
+      {w ∈ (L : Set (List Bool)) | (Turing.MultiTapeTM.encBits w).length ≤ n} := by
+    intro w hw
+    simp only [coe_image, coe_filter, mem_univ, true_and, Set.mem_image, Set.mem_ofPred_eq,
+      Language.slice_eq_true_iff] at hw
+    obtain ⟨x, hx, rfl⟩ := hw
+    exact ⟨hx, by simp⟩
+  have hle := (Set.encard_le_encard hsub).trans (hL n)
+  rw [Set.encard_coe_eq_coe_finsetCard, card_image_of_injective _ List.ofFn_injective] at hle
+  exact Nat.cast_le.mp hle
 
 /-- The word of length `n` is all `true` exactly when every one of its bits is. -/
 private theorem ofFn_eq_replicate_true_iff {n : ℕ} {x : BitString n} :

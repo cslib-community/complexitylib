@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Languages.Probabilistic.Oracle.Support
 import Complexity.Probability.Uniform
+import Complexity.Tactic.EncLen
 
 /-!
 # Truth tables of word oracles
@@ -109,23 +110,21 @@ theorem isOraclePPTOn_queryTable : IsOraclePPTOn (encList encBits) encBits query
     cases words with
     | nil =>
       simp only [queryTableStep, List.isEmpty_nil, ite_true] at hnext
-      rw [ProbOracleComp.eq_of_mem_support_pure hnext]
+      rw [OracleComp.eq_of_mem_supportWith_pure hnext]
       simp
     | cons word words =>
       simp only [queryTableStep, List.isEmpty_cons, Bool.false_eq_true, ite_false] at hnext
-      obtain ⟨reply, -, rfl⟩ := ProbOracleComp.mem_support_map hnext
-      simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton,
-        List.tail_cons, length_encList, List.map_cons, List.sum_cons]
-      omega
+      obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
+      enc_len [List.length_singleton, List.tail_cons, length_encList, List.map_cons, List.sum_cons]
 
 /-- Against a deterministic oracle, `queryTable` returns the first bits of the replies. -/
 theorem interpret_queryTable {m : Type → Type*} [Monad m] [LawfulMonad m]
     (random : (n : ℕ) → m (Fin (n + 1))) (oracle : List Bool → List Bool)
     (words : List (List Bool)) :
-    OracleComp.interpret (ProbOracleComp.handler random fun request => pure (oracle request.2))
+    OracleComp.interpret (OracleComp.sumHandler random fun request => pure (oracle request.2))
       (queryTable words) = pure (words.map fun word => (oracle word).headD false) := by
   have key : ∀ (words : List (List Bool)) (acc : List Bool),
-      OracleComp.interpret (ProbOracleComp.handler random fun request => pure (oracle request.2))
+      OracleComp.interpret (OracleComp.sumHandler random fun request => pure (oracle request.2))
         (OracleComp.iterate words.length queryTableStep (words, acc)) =
         pure ([], acc ++ words.map fun word => (oracle word).headD false) := by
     intro words
@@ -135,7 +134,7 @@ theorem interpret_queryTable {m : Type → Type*} [Monad m] [LawfulMonad m]
       intro acc
       rw [List.length_cons, OracleComp.iterate_succ_bind, OracleComp.interpret_bind]
       have hstep : OracleComp.interpret
-          (ProbOracleComp.handler random fun request => pure (oracle request.2))
+          (OracleComp.sumHandler random fun request => pure (oracle request.2))
           (queryTableStep (word :: words, acc)) =
             pure (words, acc ++ [(oracle word).headD false]) := by
         simp only [queryTableStep, List.isEmpty_cons, Bool.false_eq_true, ite_false,
@@ -184,9 +183,7 @@ theorem exists_complexity_restriction_le {family : List Bool → List Bool → L
   set t : List (Fin m ⊕ Bool) :=
     (frame key ++ List.replicate (key.length - m) false).map Sum.inr ++ List.ofFn Sum.inl
   have hlen : t.length = 3 * key.length + 1 := by
-    simp only [t, List.length_append, List.length_map, length_frame, List.length_replicate,
-      List.length_ofFn]
-    omega
+    enc_len [t, List.length_map, List.length_ofFn]
   have hfun : restriction (family key) key.length m =
       fun z => L.slice t.length (substitute (fun j => t[j]) z) := by
     funext z
@@ -243,8 +240,7 @@ theorem uniformOfFintype_map_restrictTable {n m : ℕ} (hn : 0 < n) (hm : m ≤ 
     have := congrArg List.ofFn h
     simp only [emb] at this
     have hlen (z : BitString m) : (List.replicate (n - m) false ++ List.ofFn z).length = n := by
-      simp only [List.length_append, List.length_replicate, List.length_ofFn]
-      omega
+      enc_len [List.length_ofFn]
     rw [BitString.ofFn_ofList (hlen z), BitString.ofFn_ofList (hlen z')] at this
     exact List.ofFn_injective (List.append_cancel_left this)
   refine ⟨fun x _ => if h : ∃ z, emb z = x then φ h.choose else false, funext fun z => ?_⟩

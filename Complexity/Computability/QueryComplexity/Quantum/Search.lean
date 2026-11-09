@@ -19,23 +19,37 @@ linear isometries `U₀, …, U_T` of a finite-dimensional state space `ℂ^{Fin
 query register, a control bit and a workspace `W`, with `T` applications of the *controlled phase
 oracle* `O_x |i, b, w⟩ = (-1)^{b · x_i} |i, b, w⟩` (`Cslib.Quantum.phaseOracle`,
 `Cslib.Quantum.run`). Up to Hadamard gates on the control bit this is the standard bit oracle
-`|i, b⟩ ↦ |i, b ⊕ x_i⟩`, so the model is the standard one of [Bennett, Bernstein, Brassard,
-Vazirani][BBBV1997]. Its output is the measurement of the query register: the probability of
-outcome `i` is `∑_{b, w} |ψ(i, b, w)|²` (`Cslib.Quantum.regProb`).
+`|i, b⟩ ↦ |i, b ⊕ x_i⟩`, so the model is the standard quantum query model. Its output is the
+measurement of the query register: the probability of outcome `i` is `∑_{b, w} |ψ(i, b, w)|²`
+(`Cslib.Quantum.regProb`).
 
-**Bennett–Bernstein–Brassard–Vazirani.** Searching for a single marked item among `N` takes
-`Ω(√N)` queries: if, for every `z`, the algorithm outputs `z` with probability at least `2 / 3` on
-the input `e_z` marking only `z`, then `N - 2 ≤ 144 T²` (`Cslib.Quantum.card_sub_two_le`)
-[Bennett, Bernstein, Brassard, Vazirani][BBBV1997].
+**The search lower bound.** Searching for a single marked item among `N` takes `Ω(√N)` queries:
+if, for every `z`, the algorithm outputs `z` with probability at least `2 / 3` on the input `e_z`
+marking only `z`, then `N - 2 ≤ 144 T²` (`Cslib.Quantum.card_sub_two_le`). The proof is the
+hybrid argument of [Bennett, Bernstein, Brassard, Vazirani][BBBV1997].
 
-The proof is the hybrid argument. On the all-zero input the oracle is the identity; replacing it by
-`O_{e_z}` at one query moves the state by `2 ‖Π_z φ‖`, where `Π_z` projects onto query index `z`
-with control bit `1` (`Cslib.Quantum.ctrlProj`) and `φ` is the state before that query. So the
-final states differ by at most `2 ∑_{t < T} ‖Π_z φ_t‖`, and by Cauchy–Schwarz and
-`∑_z ‖Π_z φ‖² ≤ ‖φ‖² = 1`,
+On the all-zero input the oracle is the identity; replacing it by `O_{e_z}` at one query moves
+the state by `2 ‖Π_z φ‖`, where `Π_z` projects onto query index `z` with control bit `1`
+(`Cslib.Quantum.ctrlProj`) and `φ` is the state before that query. So the final states differ by
+at most `2 ∑_{t < T} ‖Π_z φ_t‖`, and by Cauchy–Schwarz and `∑_z ‖Π_z φ‖² ≤ ‖φ‖² = 1`,
 `∑_z ‖ψ_T^{e_z} - ψ_T^0‖² ≤ 4 T²` (`Cslib.Quantum.sum_sq_norm_run_sub_le`). Success on `e_z` but
 not on the all-zero input, for all but at most two `z`, forces each of these distances to be at
 least `1 / 6`.
+
+**Source mapping** (numbering of arXiv:quant-ph/9701001v1, the preprint of [BBBV1997]). The source
+works with oracle quantum Turing machines. Its query magnitude `q_y(|φ_i⟩)` (Definition 3.2) is
+the squared norm of the part of the state that queries `y`; here this is `‖ctrlProj z φ‖²`, the
+part with query index `z` and control bit `1`, which is the part the oracle of `e_z` acts on.
+Theorem 3.3 bounds how far the final state moves when the answers to a set of queries of small
+total query magnitude are changed; `norm_run_sub_le` is the case of the query `z` at every time,
+in the triangle-inequality form `2 ∑_s ‖Π_z φ_s‖`, and `sum_sq_norm_run_sub_le` adds
+Cauchy–Schwarz and `∑_z q_z ≤ 1`, as in the proof of Corollary 3.4. Theorem 3.1 compares the
+outcome distributions of nearby states (total variation at most `4ε`); `regProb_sub_le` is the
+per-outcome bound used here. The source applies Corollary 3.4 to prove that relative to a random
+oracle `NP` is not contained in `BQTime(o(2^{n/2}))` (Theorem 3.5), which is not formalized here;
+`card_sub_two_le` is the search lower bound in its standard query-model form, with the constants
+of this proof. The decision form, for computing `OR_N`, is
+`Cslib.Quantum.card_le_sixteen_mul_sq_of_threshold_one_right`, by the polynomial method.
 
 ## Main definitions
 
@@ -258,9 +272,9 @@ theorem regProb_sub_le {ψ φ : State N W} (hψ : ‖ψ‖ = 1) (hφ : ‖φ‖ 
   have h3 : 0 ≤ ‖proj z ψ‖ + ‖proj z φ‖ := by positivity
   nlinarith [norm_nonneg (ψ - φ), norm_nonneg (proj z ψ), norm_nonneg (proj z φ)]
 
-/-- **The BBBV lower bound for search** [Bennett, Bernstein, Brassard, Vazirani][BBBV1997]: if a
-`T`-query algorithm with a unit initial state outputs `z` with probability at least `2 / 3` on the
-input marking only `z`, for every `z`, then `N - 2 ≤ 144 T²`. -/
+/-- **The quantum search lower bound** by the hybrid argument of [Bennett, Bernstein, Brassard,
+Vazirani][BBBV1997]: if a `T`-query algorithm with a unit initial state outputs `z` with probability
+at least `2 / 3` on the input marking only `z`, for every `z`, then `N - 2 ≤ 144 T²`. -/
 theorem card_sub_two_le (U : ℕ → State N W →ₗᵢ[ℂ] State N W) {ψ₀ : State N W}
     (hψ₀ : ‖ψ₀‖ = 1) (T : ℕ) (hsucc : ∀ z, 2 / 3 ≤ regProb (run U ψ₀ (marked z) T) z) :
     (N : ℝ) - 2 ≤ 144 * (T : ℝ) ^ 2 := by

@@ -190,17 +190,17 @@ example :
     (match ModelChecker.formulaCode graphVocabulary Empty.elim 3 forwardEdge 0 1 2 with
       | [.read e _ _ _] => e.eval [3]
       | _ => 0) = 20 ∧
-    ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1.testBit p.2)
+    ComputableInSpace (fun p : ℕ × ℕ => p.1.testBit p.2)
       (encPair encNat encNat) encBool (fun p => (encPair encNat encNat p).length) ∧
     (Expr.bit (.const 8) (.const 3)).eval [] = 1 ∧
     (Expr.bit (.const 8) (.const 8)).eval [] = 0 ∧
     (Expr.sub (.const 0) (.const 1)).eval [] = 0 ∧
     (Expr.bit (.sub (.reg 0) (.const 1)) (.const 0)).eval [9] = 0 ∧
-    ComputableTidilyInSpace
+    ComputableInSpace
       (fun regs => (Expr.bit (.sub (.reg 0) (.const 1)) (.reg 1)).eval regs)
       (encList encNat) encNat (fun regs => (encList encNat regs).length) :=
   ⟨by decide,
-    ComputableTidilyInSpace.natTestBit.weaken (ComputableTidilyInSpace.linear_mul 32),
+    ComputableInSpace.natTestBit.weaken (ComputableInSpace.linear_mul 32),
     by decide, by decide, rfl, by decide,
     Expr.eval_inSpace _⟩
 

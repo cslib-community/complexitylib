@@ -12,7 +12,7 @@ public import Complexity.Logics.SecondOrder.Existential
 public import Complexity.Computability.Complexity.Classes.NP
 public import Mathlib.SetTheory.Cardinal.NatCard
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 
 /-!
 # Existential second-order definable classes are in NP
@@ -52,6 +52,8 @@ is not proved here.
 
 * `Cslib.Logic.ESO.Sentence.Layout.eval_eq_true_iff`: the evaluator decides truth in the expansion
   of the decoded structure by the certificate relations.
+* `Cslib.Logic.ESO.Sentence.Layout.exists_certificate`: every family of witness relations is
+  represented by a certificate of the prescribed polynomial length.
 * `Cslib.Logic.ESO.Sentence.Layout.realize_iff_exists_certificate`: a decoded structure satisfies
   the sentence exactly when some certificate is accepted.
 * `Cslib.Logic.ESO.Sentence.Layout.computableInPolyTime_verifier`: the verifier is
@@ -178,6 +180,15 @@ private theorem certRel_certificate {n N : ℕ} (hn : n ≤ N) (hN : 0 < N)
     obtain ⟨rfl, hxy⟩ := ℓ.position_injective N hx hy' he
     rwa [tupleIndex_injective hxy]
   · exact fun hx => ⟨i, x, rfl, hx⟩
+
+/-- Every family of witness relations has a certificate of the prescribed polynomial length,
+provided the input-length parameter bounds the universe size. This is independent of the base
+language, so it also applies when the base has canonical numeric constants. -/
+theorem exists_certificate {n N : ℕ} (hn : n ≤ N) (hN : 0 < N)
+    (R : ∀ i, Set (Fin (Φ.arity i) → Fin n)) :
+    ∃ w : List Bool, w.length = ℓ.polynomial.eval N ∧ ℓ.certRel n N w = R :=
+  ⟨ℓ.certificate n N R, (ℓ.length_certificate n N R).trans (ℓ.eval_polynomial N).symm,
+    ℓ.certRel_certificate hn hN R⟩
 
 /-! ### The evaluator -/
 
@@ -368,14 +379,6 @@ open ComputableInPolyTime
 
 variable {v} {γ : Type} {encIn : γ ↪ List Bool}
 
-private theorem unary_beq_plain {left right : γ → ℕ}
-    (hleft : ComputableInPolyTime left encIn encUnary)
-    (hright : ComputableInPolyTime right encIn encUnary) :
-    ComputableInPolyTime (fun a => left a == right a) encIn encBool :=
-  (bool_and' (unary_le' hleft hright) (unary_le' hright hleft)).of_enc_eq fun _ => by
-    rw [encBool.injective.eq_iff, Bool.eq_iff_iff]
-    simp [Nat.le_antisymm_iff]
-
 omit [L.IsRelational] in
 /-- Reading a table of the input is polynomial-time. -/
 @[fun_prop]
@@ -396,8 +399,8 @@ omit [L.IsRelational] in
 theorem _root_.Cslib.Logic.Vocabulary.computableInPolyTime_checkShape :
     ComputableInPolyTime v.checkShape encStructure encBool := by
   unfold Vocabulary.checkShape
-  refine bool_and' (unary_beq_plain ((length_list encBits).comp (snd encUnary (encList encBits)))
-    (const v.count)) (allConst _ fun i _ => unary_beq_plain ?_ ?_)
+  refine bool_and' (unary_beq' ((length_list encBits).comp (snd encUnary (encList encBits)))
+    (const v.count)) (allConst _ fun i _ => unary_beq' ?_ ?_)
   · exact length_bits_comp (listGetDWithInput (snd encUnary (encList encBits))
       (const (i : ℕ)) [])
   · exact (unary_pow _).comp (computableInPolyTime_card id')
@@ -448,7 +451,7 @@ theorem computableInPolyTime_eval {k : ℕ}
   induction φ generalizing γ with
   | falsum => exact const false
   | equal t₁ t₂ =>
-    exact unary_beq_plain (computableInPolyTime_termValue hσ t₁)
+    exact unary_beq' (computableInPolyTime_termValue hσ t₁)
       (computableInPolyTime_termValue hσ t₂)
   | rel R ts =>
     exact ℓ.computableInPolyTime_relBit R ha hN hw

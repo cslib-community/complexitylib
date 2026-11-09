@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Algorithms.Lean.SearchTree.Stateful
+public import Complexity.DataStructure.SearchTree.Impl
 public import ComplexityTests.OrderedSet
 
 /-!
@@ -26,7 +26,7 @@ the kernel, with no `native_decide`.
 
 namespace ComplexityTests.SearchTree
 
-open Cslib.Algorithms.Lean.SearchTree Cslib.OrderedSet Cslib.Stateful
+open Cslib.DataStructure.SearchTree Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
 def build (xs : List Nat) : BinaryTree Nat := (run .nil (insertAll xs)).2.1
 
@@ -87,6 +87,46 @@ example :
       successor 5 (build [5]) = none ∧
       successor 4 (build [5]) = some 5 :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+-- The shared deletion operation uses successor splicing at a root with two children and retains
+-- the exact charge, including for missing keys and an empty initial tree.
+example :
+    run medianFirst (.liftBind (.delete 4) .pure) = ((), erase 4 medianFirst, [3]) ∧
+      run sortedFirst (.liftBind (.delete 4) .pure) = ((), erase 4 sortedFirst, [5]) ∧
+      run medianFirst (.liftBind (.delete 8) .pure) = ((), medianFirst, [3]) ∧
+      run (.nil : BinaryTree Nat) (.liftBind (.delete 0) .pure) = ((), .nil, [0]) :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
+private def deleteTwiceAndCheck (x : Nat) : (spec Nat).Client Bool := do
+  PFunctor.FreeM.lift (P := (spec Nat).signature) (.delete x)
+  PFunctor.FreeM.lift (P := (spec Nat).signature) (.delete x)
+  PFunctor.FreeM.lift (P := (spec Nat).signature) (.contains x)
+
+-- A repeated deletion is still charged for its unsuccessful search, and later queries see the
+-- updated state through the same interpreter and representation-independent correctness theorem.
+example :
+    (run medianFirst (deleteTwiceAndCheck 4)).1 = false ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).2.1 = erase 4 medianFirst ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).2.2 = [3, 3, 3] ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).1 =
+        ((spec Nat).runClient (elements medianFirst) (deleteTwiceAndCheck 4)).1 :=
+  ⟨rfl, rfl, rfl, (run_correct _ ⟨ordered_build _, rfl⟩).1⟩
+
+-- Minimum extraction charges the query and the answer-dependent deletion separately. Their
+-- costs differ on the two shapes even though both implement the same finite-set client.
+example :
+    run medianFirst extractMin = (some 1, erase 1 medianFirst, [3, 3]) ∧
+      run sortedFirst extractMin = (some 1, erase 1 sortedFirst, [1, 2]) ∧
+      run (build [5]) extractMin = (some 5, .nil, [1, 1]) ∧
+      run (.nil : BinaryTree Nat) extractMin = (none, .nil, [0]) :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
+-- The generic resource certificate applies to the new adaptive deleting client unchanged.
+example :
+    total id (run medianFirst extractMin).2.2 ≤
+      (spec Nat).totalCost (fun s _ => s.card) (elements medianFirst)
+        ((spec Nat).runClient (elements medianFirst) extractMin).2.2 :=
+  (run_correct extractMin ⟨ordered_build _, rfl⟩).2.2
 
 -- The exact native trace counts minimum and the answer-dependent successor separately, and agrees
 -- with finite-set semantics through the shared realization theorem.

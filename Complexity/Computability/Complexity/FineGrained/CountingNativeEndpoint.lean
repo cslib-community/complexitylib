@@ -12,7 +12,7 @@ import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUni
 import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParametersPolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -25,6 +25,7 @@ import Complexity.Computability.Complexity.FineGrained.CountingSparsification
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
+import Complexity.Tactic.EncLen
 public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 
 /-!
@@ -71,7 +72,6 @@ namespace Cslib.Complexity.CountingNativeEndpointPrep
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
 open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff)
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM
-open Turing.MultiTapeTM.Universal (encUnit encUnit_apply)
 open CountingSparsify SubexponentialSAT SubexponentialSAT.ReplacementParams
 open SubexponentialSAT.SparseCountingScale Filter
 
@@ -130,8 +130,7 @@ private theorem treeBound (k : ℕ) (p : Context) :
   countingTreeBound_countingThresholdBase _ (one_le_divisor p)
 
 private theorem declaredSize_le_inputSize (x : Input) : x.1 ≤ inputSize x := by
-  simp only [inputSize, encInput, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [inputSize, encInput]
 
 private theorem polyBounded_depthCoeff (k : ℕ) :
     PolyBounded inputSize (fun x => depthCoeff k ((), x.1)) :=
@@ -154,9 +153,7 @@ private theorem length_prepare (x : Input) :
 
 private theorem length_leaf_input (N : ℕ) (ψ : CNF ℕ) :
     (encPair encContext encCNF (((), N), ψ)).length = 2 * N + 3 + (encCNF ψ).length := by
-  simp only [encContext, length_encPair, encUnit_apply, List.length_nil, encUnary_apply,
-    List.length_replicate]
-  omega
+  enc_len [encContext, encUnit_apply]
 
 private theorem divisor_eq_numGroups {p : Context} (h : 1 ≤ numGroups p.2) :
     divisor p = numGroups p.2 := max_eq_right h
@@ -310,8 +307,7 @@ private theorem computableInPolyTime_declareInput :
 private theorem length_declareInput (φ : CNF ℕ) :
     (encInput (declareInput φ)).length + 1 ≤ 3 * ((encCNF φ).length + 1) := by
   have hn := φ.numVars_le_length_vars.trans (SAT.length_vars_le φ)
-  simp only [declareInput, encInput, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [declareInput, encInput]
 
 private theorem dense_spec {k : ℕ} {count : Input → ℕ}
     (hspec : ∀ x, count x = if validDeclaredInput k x.1 x.2 then
@@ -426,7 +422,6 @@ namespace Cslib.Complexity.CountingNativeEndpointPrep
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.CNF.Sparsification
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM Cslib.GenericRAM
-open Turing.MultiTapeTM.Universal (encUnit encUnit_apply)
 open CountingSparsify SubexponentialSAT SubexponentialSAT.SparsePolyCounter
 open BranchedSparseCNFCounter
 
@@ -440,9 +435,7 @@ private def leafSize (k : ℕ) (x : FullInput) : ℕ :=
 private theorem polyBounded_leafSize (k : ℕ) :
     PolyBounded (fun x : FullInput => (encFullInput x).length) (leafSize k) := by
   have hN : PolyBounded (fun x : FullInput => (encFullInput x).length) (fun x => x.2.1) :=
-    PolyBounded.self.mono fun x => by
-      simp only [encFullInput, encInput, length_encPair, encUnary_apply, List.length_replicate]
-      omega
+    PolyBounded.self.mono fun x => by enc_len [encFullInput, encInput]
   have hL : PolyBounded (fun x : FullInput => (encFullInput x).length)
       (fun x => (encCNF x.2.2).length) :=
     PolyBounded.self.mono fun x =>

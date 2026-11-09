@@ -32,7 +32,7 @@ vanish on every set of even cardinality (`BitString.IsOdd.fourierCoeff_of_even`)
 For a map `π : β → γ`, the *mod-2 projection* `BitString.projectSet π T` of `T : Finset β` is the
 set of points of `γ` with an odd number of preimages in `T`. Pulling a character back along `π`
 projects its frequency set: `chi T (f ∘ π) = chi (projectSet π T) f`
-(`BitString.chi_comp_eq_chi_projectSet`) [Håstad][Hastad2001], [O'Donnell, Chapter 7][ODonnell2014].
+(`BitString.chi_comp_eq_chi_projectSet`) [Håstad][Hastad2001].
 
 ## Main definitions
 

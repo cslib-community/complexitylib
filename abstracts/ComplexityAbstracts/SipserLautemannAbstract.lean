@@ -106,7 +106,7 @@ info: 'ComplexityAbstracts.SipserLautemannAbstract.sipserLautemann' depends on a
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.SipserLautemannAbstract`: 10 root
-declarations, 67 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.SipserLautemannAbstract

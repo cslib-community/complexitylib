@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingData
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingCounts
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingClauseVertices
+import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -67,7 +68,7 @@ private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
     rfl
   change pc.1.zipIdx.map (fun x => (pcs.getD i ([], (0, 0), [])).2.2.getD x.2 []) = _
   rw [hg]
-  exact map_getD_zipIdx pc.1 pc.2.2 [] (hc pc (List.mem_of_getElem? hi'))
+  exact List.map_getD_zipIdx pc.1 pc.2.2 [] (hc pc (List.mem_of_getElem? hi'))
 
 /-- The occurrence-indexed view has exactly the compiler's actual position and route lists. -/
 theorem positiveFormulaDrawing_drawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :

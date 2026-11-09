@@ -389,7 +389,7 @@ theorem gateCode_inSpace {g : α → ℕ} (hg : ComputableInSpace g encIn encNat
   congr 1
   have hgs' : globStart k (T x) ≤ gfStart k State (T x) := Nat.le_add_right _ _
   have hgc' : gfStart k State (T x) ≤ colStart k State (T x) := Nat.le_add_right _ _
-  simp only [gateCode, decide_eq_true_eq]
+  simp only [gateCode, posOf, decide_eq_true_eq]
   have hgw : gfStart k State (T x) = globStart k (T x) + globWidth k State := rfl
   have hcw : colStart k State (T x) = gfStart k State (T x) + gfWidth State := rfl
   split_ifs with h₀ h₁ h₂ h₃ h₄

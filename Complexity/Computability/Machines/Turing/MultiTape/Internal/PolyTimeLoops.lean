@@ -31,16 +31,6 @@ private theorem unaryWordCertificate {α : Type} {input : α ↪ List Bool} {cou
     ComputableInPolyTime (fun x => List.replicate (count x) true) input encBits := by
   exact h.of_enc_eq fun _ => rfl
 
-private theorem foldlCapture {π β α : Type} (par : π) (step : π → β → α → β)
-    (list : List α) (init : β) :
-    list.foldl (fun state value => (state.1, step state.1 state.2 value)) (par, init) =
-      (par, list.foldl (step par) init) := by
-  induction list generalizing init with
-  | nil => rfl
-  | cons a list ih =>
-    simp only [List.foldl_cons]
-    exact ih (step par init a)
-
 namespace ComputableInPolyTime
 
 /-- A unary-output certificate bounds the actual numeric value by a polynomial in input size. -/
@@ -48,6 +38,12 @@ theorem polyBounded {α : Type*} {input : α ↪ List Bool} {f : α → ℕ}
     (hf : ComputableInPolyTime f input encUnary) :
     PolyBounded (fun x => (input x).length) f := by
   simpa only [encUnary_apply, List.length_replicate] using hf.polyBounded_length
+
+/-- A unary-output polynomial-time function is polynomially bounded in its unary input. -/
+theorem polynomiallyBounded {f : ℕ → ℕ} (hf : ComputableInPolyTime f encUnary encUnary) :
+    PolynomiallyBounded f :=
+  (show PolyBounded (fun n : ℕ => n) f by
+    simpa only [encUnary_apply, List.length_replicate] using hf.polyBounded).polynomiallyBounded
 
 
 /-- A polynomial bound on the encoded accumulators of reachable prefixes suffices for a
@@ -136,12 +132,12 @@ theorem foldlWith {γ α β π : Type} {encIn : γ ↪ List Bool} {encA : α ↪
     (step := fun state value => (state.1, step state.1 state.2 value))
     hlist hstart hjoint (B := C) (PolyBounded.of_forall_le c d hC) (by
       intro x i hi
-      simp only [foldlCapture, length_encPair]
+      simp only [List.foldl_keep_fst, length_encPair]
       dsimp [C]
       exact Nat.add_le_add_left (hstates x i hi) _)
   have hsecond : ComputableInPolyTime (fun p : π × β => p.2) (encPair encP encB) encB :=
     ComputableInPolyTime.snd encP encB
-  simpa only [Function.comp_def, foldlCapture] using ComputableInPolyTime.comp hsecond hfold
+  simpa only [Function.comp_def, List.foldl_keep_fst] using ComputableInPolyTime.comp hsecond hfold
 
 /-- A computed captured parameter and a unary loop count give a uniform loop when every
 reachable iterate has polynomially bounded encoded size. -/

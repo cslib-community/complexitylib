@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Crypto.Computational.Commitment
+public import Complexity.Crypto.Computational.Commitment.Basic
 public import Complexity.Crypto.Computational.DiscreteLog
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
@@ -104,6 +104,9 @@ establish:
   `Cslib.Crypto.PrimeOrderGroupFamily.negligible_advantage_pedersenHidingGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.pedersenScheme_statisticalHiding`: perfect hiding for
   `h ≠ 0` and unconditional `1 / m` hiding bound over uniform `α : ZMod (F.order d)`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_pedersenExtractNat`: polynomial-time
+  discrete-logarithm extraction from two openings, shared with the discrete-logarithm hash
+  reduction in `Complexity.Crypto.Computational.DiscreteLog.GroupHash`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_pedersenBindingGame_le_discreteLogGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_pedersenToDLAdversary`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.pedersenBinding`,
@@ -182,9 +185,8 @@ theorem pedersenCommit_smul_generator_eq_iff (d : F.Desc) (α m₀ r₀ m₁ r�
 /-- Pedersen commitment on encoded group elements: given `(d, encode h, m, r)`, compute
 `encode (m • g + r • h)`. -/
 def encodePedersenCommit (input : F.Desc × List Bool × ℕ × ℕ) : List Bool :=
-  F.add (input.1,
-    F.smul (input.1, input.2.2.1, F.encode input.1 (F.generator input.1)),
-    F.smul (input.1, input.2.2.2, input.2.1))
+  let (d, h, m, r) := input
+  F.add (d, F.smul (d, m, F.encode d (F.generator d)), F.smul (d, r, h))
 
 /-- `encodePedersenCommit` computes `F.encode d (F.pedersenCommit d h m r)` on encoded group
 elements. -/
@@ -510,9 +512,13 @@ Section 10.6.1, Fact 10.3). -/
 theorem pedersenExtractNat_eq_of_isBindingCollision (d : F.Desc) (α : ZMod (F.order d))
     {out : List Bool × (List Bool × List Bool) × (List Bool × List Bool)}
     (hcoll : F.pedersenScheme.isBindingCollision ⟨d, α • F.generator d⟩ out = true) :
+    let openings := out.2
+    let open₀ := openings.1
+    let open₁ := openings.2
     (pedersenExtractNat (F.order d)
-      (ofBits out.2.1.1) (ofBits out.2.1.2)
-      (ofBits out.2.2.1) (ofBits out.2.2.2) : ZMod (F.order d)) = α := by
+      (ofBits open₀.1) (ofBits open₀.2)
+      (ofBits open₁.1) (ofBits open₁.2) : ZMod (F.order d)) = α := by
+  dsimp only
   simp only [CommitmentScheme.isBindingCollision, pedersenScheme, pedersenVerify,
     Bool.and_eq_true, decide_eq_true_eq] at hcoll
   rcases hcoll with ⟨⟨hne, ⟨hm₀_lt, hm₀_bits⟩, hc₀⟩, ⟨hm₁_lt, hm₁_bits⟩, hc₁⟩
@@ -548,9 +554,12 @@ def pedersenToDLAdversary
       ProbComp (List Bool × (List Bool × List Bool) × (List Bool × List Bool)))
     (n : ℕ) (input : F.Desc × List Bool) : ProbComp (List Bool) := do
   let out ← adversary n (encPair F.encDesc encBits input)
+  let openings := out.2
+  let open₀ := openings.1
+  let open₁ := openings.2
   return (pedersenExtractNat (F.order input.1)
-    (ofBits out.2.1.1) (ofBits out.2.1.2)
-    (ofBits out.2.2.1) (ofBits out.2.2.2)).bits
+    (ofBits open₀.1) (ofBits open₀.2)
+    (ofBits open₁.1) (ofBits open₁.2)).bits
 
 /-- **Exact binding-to-discrete-logarithm reduction** ([BonehShoup2023], Section 10.6.1,
 Theorem 10.4, pp. 414–415; [Pedersen1991], Section 3, Theorem 3.1): for every security parameter
@@ -584,30 +593,35 @@ theorem succProbability_pedersenBindingGame_le_discreteLogGame (setup : ℕ → 
     simp [hcoll, hbits]
   · simp [Bool.eq_false_iff.mpr hcoll]
 
-private theorem computableTidilyInPolyTime_pedersenExtractNat {α : Type} {input : α ↪ List Bool}
-    {d : α → F.Desc} {m₀ r₀ m₁ r₁ : α → ℕ}
-    (hd : ComputableTidilyInPolyTime d input F.encDesc)
-    (hm₀ : ComputableTidilyInPolyTime m₀ input encNat)
-    (hr₀ : ComputableTidilyInPolyTime r₀ input encNat)
-    (hm₁ : ComputableTidilyInPolyTime m₁ input encNat)
-    (hr₁ : ComputableTidilyInPolyTime r₁ input encNat) :
-    ComputableTidilyInPolyTime
-      (fun a => pedersenExtractNat (F.order (d a)) (m₀ a) (r₀ a) (m₁ a) (r₁ a))
-      input encNat := by
-  have hq : ComputableTidilyInPolyTime (fun a => F.order (d a)) input encNat :=
-    F.computableInPolyTime_order.tidy.comp hd
-  have hdiff {x y : α → ℕ} (hx : ComputableTidilyInPolyTime x input encNat)
-      (hy : ComputableTidilyInPolyTime y input encNat) :
+/-- **Polynomial-time discrete-logarithm extraction**: from a group description `d` and two
+opening pairs `(m₀, r₀)`, `(m₁, r₁)`, the extracted exponent
+`pedersenExtractNat (F.order d) m₀ r₀ m₁ r₁` is computable in polynomial time. This is the shared
+extraction certificate of the Pedersen-binding and discrete-logarithm hash reductions. -/
+theorem computableInPolyTime_pedersenExtractNat :
+    ComputableInPolyTime
+      (fun p : F.Desc × (ℕ × ℕ) × (ℕ × ℕ) =>
+        pedersenExtractNat (F.order p.1) p.2.1.1 p.2.1.2 p.2.2.1 p.2.2.2)
+      (encPair F.encDesc (encPair (encPair encNat encNat) (encPair encNat encNat))) encNat := by
+  refine .of_tidy ?_
+  have hq : ComputableTidilyInPolyTime (fun p : F.Desc × (ℕ × ℕ) × (ℕ × ℕ) => F.order p.1)
+      (encPair F.encDesc (encPair (encPair encNat encNat) (encPair encNat encNat))) encNat :=
+    F.computableInPolyTime_order.tidy.comp (by fun_prop)
+  have hdiff {x y : F.Desc × (ℕ × ℕ) × (ℕ × ℕ) → ℕ}
+      (hx : ComputableTidilyInPolyTime x
+        (encPair F.encDesc (encPair (encPair encNat encNat) (encPair encNat encNat))) encNat)
+      (hy : ComputableTidilyInPolyTime y
+        (encPair F.encDesc (encPair (encPair encNat encNat) (encPair encNat encNat))) encNat) :
       ComputableTidilyInPolyTime
-        (fun a => (x a % F.order (d a) + F.order (d a) - y a % F.order (d a)) % F.order (d a))
-        input encNat :=
+        (fun p => (x p % F.order p.1 + F.order p.1 - y p % F.order p.1) % F.order p.1)
+        (encPair F.encDesc (encPair (encPair encNat encNat) (encPair encNat encNat))) encNat :=
     .binary_mod' (.binary_sub' (.binary_add' (.binary_mod' hx hq) hq) (.binary_mod' hy hq)) hq
-  have hpow := (ComputableInPolyTime.binary_powMod (ComputableInPolyTime.of_tidy (hdiff hr₁ hr₀))
+  have hpow := (ComputableInPolyTime.binary_powMod
+    (ComputableInPolyTime.of_tidy (hdiff (x := fun p => p.2.2.2) (y := fun p => p.2.1.2)
+      (by fun_prop) (by fun_prop)))
     (ComputableInPolyTime.of_tidy (.binary_sub' hq (.const 2)))
-    (ComputableInPolyTime.of_tidy hq) fun a => (F.prime_order (d a)).pos).tidy
-  exact .binary_mod' (.binary_mul' hpow (hdiff hm₀ hm₁)) hq
-
-attribute [local fun_prop] computableTidilyInPolyTime_pedersenExtractNat
+    (ComputableInPolyTime.of_tidy hq) fun p => (F.prime_order p.1).pos).tidy
+  exact .binary_mod' (.binary_mul' hpow
+    (hdiff (x := fun p => p.2.1.1) (y := fun p => p.2.2.1) (by fun_prop) (by fun_prop))) hq
 
 /-- `pedersenToDLAdversary` is uniform strict PPT whenever the binding adversary is. -/
 theorem isPPTOn_pedersenToDLAdversary
@@ -640,6 +654,14 @@ theorem isPPTOn_pedersenToDLAdversary
           (ofBits p.2.2.1.1) (ofBits p.2.2.1.2)
           (ofBits p.2.2.2.1) (ofBits p.2.2.2.2)))
       _ encBits
+    have hpe := F.computableInPolyTime_pedersenExtractNat.tidy.comp'
+      (g := fun p :
+          (ℕ × F.Desc × List Bool) ×
+            (List Bool × (List Bool × List Bool) × (List Bool × List Bool)) =>
+        (p.1.2.1, (ofBits p.2.2.1.1, ofBits p.2.2.1.2), (ofBits p.2.2.2.1, ofBits p.2.2.2.2)))
+      (encIn := encPair (encPair encUnary (encPair F.encDesc encBits))
+        (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
+      (by fun_prop)
     exact ComputableTidilyInPolyTime.id'.comp (by fun_prop)
   exact hextract.isPPTOn
 
