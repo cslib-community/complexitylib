@@ -31,7 +31,7 @@ second-channel, detector/maximum and reward comparisons, including source releas
 cutoff/gate root and complement regularity ladder, and summable omitted-bin payments. The
 true-atom means alone do not provide those comparisons. Paired raw differences, full-coordinate
 walks and summed noise, compression, statistical-budget induction and native workspace/class
-equality remain open. No selected abstract or catalogue claim changes.
+equality remain open.
 -/
 
 public section

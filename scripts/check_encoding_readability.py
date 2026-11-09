@@ -34,7 +34,7 @@ the restated input encoding in `fun p => (encPair encS (encOption encBool) p).le
 Only public declarations count: in a `module`, those inside a `public section` or marked `public`,
 and not `private` or `local`. Declarations in a namespace with an `Internal` component, and modules
 with an `Internal` path component, are not counted. Every module under `CslibFrontier/` is checked; the
-abstracts and the tests are not.
+tests are not.
 
 A declaration counts towards a term when it spells the term out other than inside an occurrence
 of a longer violation, which is reported instead: naming the longer term fixes both. The result is

@@ -6,7 +6,7 @@ The human directing agents should start with the separate
 [Agent Operator's Manual](../AGENT_OPERATORS.md) for assignment and intervention procedures.
 A short Lean proof can certify an unintended statement; a merged milestone can leave the
 original objective unresolved. The [development study](../development-history/index.md)
-supplies historical evidence separately. [complexitylib][complexitylib]
+supplies historical evidence separately. [cslib-frontier][complexitylib]
 
 ## Specify a bounded task and a visible endpoint
 

@@ -10,9 +10,9 @@ dropped while the PR evolved, costs a review round. This tool extracts the backt
 Markdown text (the body of PR N fetched with `gh pr view N --json body`, a file, `-` for standard
 input, or the `pull_request` event payload that GitHub Actions stores at `$GITHUB_EVENT_PATH`),
 keeps those that look like Lean names, and reports the ones not declared in the sources of the
-checked-out revision (or of `--root DIR`): `CslibFrontier/`, `CslibFrontierTests/`, `abstracts/`,
-`scripts/`, every package under `.lake/packages` (cslib, Mathlib, Batteries, ...) and, when `lean`
-is on the path, the toolchain's `Init`, `Std` and `Lean` sources. Run it on the PR's head checkout.
+checked-out revision (or of `--root DIR`): `CslibFrontier/`, `CslibFrontierTests/`, `scripts/`, every
+package under `.lake/packages` (cslib, Mathlib, Batteries, ...) and, when `lean` is on the path,
+the toolchain's `Init`, `Std` and `Lean` sources. Run it on the PR's head checkout.
 
 The check reads source text, not the compiled environment, and errs towards accepting a name:
 
@@ -62,7 +62,7 @@ from pathlib import Path
 from proof_lengths import masks
 
 ROOT = Path(__file__).resolve().parents[1]
-LOCAL_DIRS = ("CslibFrontier", "CslibFrontierTests", "abstracts", "scripts")
+LOCAL_DIRS = ("CslibFrontier", "CslibFrontierTests", "scripts")
 
 # --- Extracting candidate names from Markdown -----------------------------------------------------
 
@@ -90,7 +90,7 @@ TACTICS = {
     "field_simp", "fin_cases", "first_order", "interval_cases", "native_decide", "norm_cast",
     "norm_num", "push_cast", "push_neg", "rw_mod_cast", "simp_all", "simp_arith", "simp_rw",
     "split_ifs", "nlinarith", "decide_eq_true", "ring_nf", "set_option", "maxHeartbeats",
-    "maxRecDepth", "autoImplicit", "relaxedAutoImplicit", "check_abstract", "print_axioms",
+    "maxRecDepth", "autoImplicit", "relaxedAutoImplicit", "print_axioms",
     "lake", "mk_all", "lint_style", "checkInitImports", "runLinter", "pull_request",
     "merge_group", "workflow_dispatch", "to_additive", "to_dual", "simps", "irreducible_def",
     "fun_prop", "reducible_and_instances",

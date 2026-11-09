@@ -1,6 +1,6 @@
 # Diagnose proof and build failures
 
-First identify the failed layer: elaboration, a mathematical obligation, certificate search, or the build environment. A tactic timeout does not identify which definition is wrong; a missing compiled import does not refute a theorem. Reduce the failure to the smallest relevant client before changing the interface. [complexitylib][complexitylib]
+First identify the failed layer: elaboration, a mathematical obligation, certificate search, or the build environment. A tactic timeout does not identify which definition is wrong; a missing compiled import does not refute a theorem. Reduce the failure to the smallest relevant client before changing the interface. [cslib-frontier][complexitylib]
 
 ## Read the remaining goal
 
@@ -54,7 +54,7 @@ One Lake build runs roughly as many `lean` processes at once as its thread pool 
 
 ## Distinguish the checks that passed
 
-A focused build, quick changed-client check, whole-library build, six-gate run, axiom audit, abstract audit and comparator run have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.
+A focused build, quick changed-client check, whole-library build, six-gate run and axiom audit have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.
 
 If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the README](../../README.md#build-the-documentation). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
 

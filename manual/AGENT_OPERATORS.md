@@ -1,6 +1,6 @@
-# Complexitylib Agent Operator's Manual
+# cslib-frontier Agent Operator's Manual
 
-This short manual is for people directing agents in Complexitylib. It explains whom to ask,
+This short manual is for people directing agents in cslib-frontier. It explains whom to ask,
 what to ask for, and how to judge the handoff. The substantial [Operator's Manual](README.md)
 explains how to work in the codebase: its tactics, models, proof patterns, examples and procedures.
 Both humans and agents use that reference. You do not need an agent to follow it.
@@ -79,8 +79,8 @@ Assign review to an agent that did not design or implement the change. For examp
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
 > encodings, hypotheses and resource bounds. Review the impact on both manuals and any affected
-> formal abstract. Report concrete findings and a verdict, stating what you checked and what
-> remains uncertain.
+> results-inventory entry. Report concrete findings and a verdict, stating what you checked and
+> what remains uncertain.
 
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether
