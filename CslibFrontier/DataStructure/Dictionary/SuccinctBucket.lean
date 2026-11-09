@@ -706,6 +706,16 @@ def feistelLocalMicro {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
     exact (H i (qOf u)).isLt⟩
 
 omit [Fintype ι] in
+/-- The Feistel XOR only touches the low `bucketBits n_max` bits, so the high bits of
+`feistelMicroHash` are the local micro-bucket `feistelLocalMicro`. -/
+theorem feistelMicroHash_val_div {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
+    (H : ι → Q → Fin (2 ^ totalMicroBits n_max)) (i : ι) (u : Fin U) :
+    (feistelMicroHash n_max qOf H i u).val / 2 ^ bucketBits n_max =
+      (feistelLocalMicro n_max qOf H i u).val := by
+  dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
+  rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u.val), Nat.xor_zero]
+
+omit [Fintype ι] in
 /-- `(feistelMicroHash n_max qOf H i u).val` decomposes into `feistelBucketHash` in the low
 `bucketBits n_max` bits and `feistelLocalMicro` in the high `microBits n_max` bits. -/
 theorem feistelMicroHash_val_eq {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
@@ -713,10 +723,7 @@ theorem feistelMicroHash_val_eq {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
     (feistelMicroHash n_max qOf H i u).val =
       (feistelLocalMicro n_max qOf H i u).val * 2 ^ bucketBits n_max +
         (feistelBucketHash n_max qOf H i u).val := by
-  have hdiv : (feistelMicroHash n_max qOf H i u).val / 2 ^ bucketBits n_max =
-      (feistelLocalMicro n_max qOf H i u).val := by
-    dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
-    rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u.val), Nat.xor_zero]
+  have hdiv := feistelMicroHash_val_div n_max qOf H i u
   have hmod : (feistelMicroHash n_max qOf H i u).val % 2 ^ bucketBits n_max =
       (feistelBucketHash n_max qOf H i u).val := rfl
   have h := Nat.div_add_mod (feistelMicroHash n_max qOf H i u).val (2 ^ bucketBits n_max)
@@ -733,17 +740,9 @@ theorem feistelMicroHash_eq_iff {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
         feistelLocalMicro n_max qOf H i u₁ = feistelLocalMicro n_max qOf H i u₂ := by
   constructor
   · intro h
-    have hval := congrArg Fin.val h
-    have hdiv : (feistelMicroHash n_max qOf H i u₁).val / 2 ^ bucketBits n_max =
-        (feistelLocalMicro n_max qOf H i u₁).val := by
-      dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
-      rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u₁.val), Nat.xor_zero]
-    have hdiv2 : (feistelMicroHash n_max qOf H i u₂).val / 2 ^ bucketBits n_max =
-        (feistelLocalMicro n_max qOf H i u₂).val := by
-      dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
-      rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u₂.val), Nat.xor_zero]
     refine ⟨congrArg (projLowBits (bucketBits_le_totalMicroBits n_max)) h, Fin.ext ?_⟩
-    rw [← hdiv, ← hdiv2, hval]
+    rw [← feistelMicroHash_val_div n_max qOf H i u₁, ← feistelMicroHash_val_div n_max qOf H i u₂,
+      h]
   · rintro ⟨hb, hm⟩
     apply Fin.ext
     rw [feistelMicroHash_val_eq, feistelMicroHash_val_eq, hb, hm]
@@ -983,6 +982,20 @@ end ProbabilityBounds
 
 /-! ## Section 4: Cardinality bounds for injective bucket and micro-bucket slot maps -/
 
+/-- Counting core of the slot bounds below: an injective family `f` on `J` of members of `S`
+satisfying `P` has at most `1 + #{x ∈ S.erase u | P x}` elements, the `1` accounting for `u`
+itself. -/
+private theorem card_le_one_add_card_filter_erase {α β : Type*} [DecidableEq α]
+    (J : Finset β) (f : β → α) (hinj : Set.InjOn f J) (S : Finset α) (u : α)
+    (P : α → Prop) [DecidablePred P] (hmem : ∀ j ∈ J, f j ∈ S ∧ P (f j)) :
+    #J ≤ 1 + #{x ∈ S.erase u | P x} := by
+  have hJ : #J ≤ #{x ∈ S | P x} :=
+    card_le_card_of_injOn f (fun j hj => mem_filter.mpr (hmem j hj)) hinj
+  have herase : #{x ∈ S | P x} - 1 ≤ #{x ∈ S.erase u | P x} := by
+    rw [filter_erase]
+    exact pred_card_le_card_erase
+  omega
+
 /-- If a finset `J : Finset ℕ` of local slot indices injects via `keyAt : ℕ → Fin U` into the keys
 of `S` landing in `u`'s micro-bucket, then `#J ≤ 1 + microCollCount n_max qOf H i S u`. -/
 theorem card_microSlots_le {ι Q : Type*} {U n_max : ℕ}
@@ -992,25 +1005,9 @@ theorem card_microSlots_le {ι Q : Type*} {U n_max : ℕ}
     (hinj : Set.InjOn keyAt J)
     (hmem : ∀ j ∈ J, keyAt j ∈ S ∧
       feistelMicroHash n_max qOf H i (keyAt j) = feistelMicroHash n_max qOf H i u) :
-    #J ≤ 1 + microCollCount n_max qOf H i S u := by
-  classical
-  let target : Finset (Fin U) :=
-    insert u {x ∈ S.erase u | feistelMicroHash n_max qOf H i x = feistelMicroHash n_max qOf H i u}
-  have hsub : J.image keyAt ⊆ target := by
-    intro x hx
-    rcases mem_image.mp hx with ⟨j, hj, rfl⟩
-    rcases hmem j hj with ⟨hjS, hjM⟩
-    by_cases hju : keyAt j = u
-    · rw [hju]
-      exact mem_insert_self u _
-    · exact mem_insert_of_mem (mem_filter.mpr ⟨mem_erase.mpr ⟨hju, hjS⟩, hjM⟩)
-  calc #J = #(J.image keyAt) := (card_image_of_injOn hinj).symm
-    _ ≤ #target := card_le_card hsub
-    _ ≤ 1 + microCollCount n_max qOf H i S u := by
-        have := card_insert_le u
-          {x ∈ S.erase u | feistelMicroHash n_max qOf H i x = feistelMicroHash n_max qOf H i u}
-        dsimp only [target, microCollCount] at this ⊢
-        omega
+    #J ≤ 1 + microCollCount n_max qOf H i S u :=
+  card_le_one_add_card_filter_erase J keyAt hinj S u
+    (fun x => feistelMicroHash n_max qOf H i x = feistelMicroHash n_max qOf H i u) hmem
 
 /-- If a bucket contains `c_b` items that inject via `keyAt : Fin c_b → Fin U` into the keys of `S`
 landing in `u`'s Feistel bucket, then the overflow count `c_b - effBucketCap n_max` is at most
@@ -1023,29 +1020,10 @@ theorem bucketOverflow_le {ι Q : Type*} {U n_max c_b : ℕ}
     (hmem : ∀ j : Fin c_b, keyAt j ∈ S ∧
       feistelBucketHash n_max qOf H i (keyAt j) = feistelBucketHash n_max qOf H i u) :
     c_b - effBucketCap n_max ≤ 1 + bucketOvfCount n_max qOf H i S u := by
-  classical
-  let target : Finset (Fin U) :=
-    insert u {x ∈ S.erase u |
-      feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u}
-  have hsub : univ.image keyAt ⊆ target := by
-    intro x hx
-    rcases mem_image.mp hx with ⟨j, _, rfl⟩
-    rcases hmem j with ⟨hjS, hjB⟩
-    by_cases hju : keyAt j = u
-    · rw [hju]
-      exact mem_insert_self u _
-    · exact mem_insert_of_mem (mem_filter.mpr ⟨mem_erase.mpr ⟨hju, hjS⟩, hjB⟩)
-  have hcb : c_b ≤ 1 +
-      #{x ∈ S.erase u | feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u} := by
-    calc c_b = #(univ : Finset (Fin c_b)) := by simp
-      _ = #(univ.image keyAt) := (card_image_of_injective univ hinj).symm
-      _ ≤ #target := card_le_card hsub
-      _ ≤ 1 + #{x ∈ S.erase u |
-          feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u} := by
-        have := card_insert_le u
-          {x ∈ S.erase u | feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u}
-        dsimp only [target] at this ⊢
-        omega
+  have hcb := card_le_one_add_card_filter_erase univ keyAt hinj.injOn S u
+    (fun x => feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u)
+    (fun j _ => hmem j)
+  rw [card_univ, Fintype.card_fin] at hcb
   unfold bucketOvfCount
   omega
 
