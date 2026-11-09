@@ -597,17 +597,8 @@ theorem subtreeWeight_eq_sum_elements (w : α → ℝ) {t : BinaryTree α} (ht :
   induction t with
   | nil => simp [elements]
   | node a l r ihl ihr =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      refine Finset.disjoint_left.mpr fun y hyl hyr => ?_
-      exact lt_asymm (hla y hyl) (har y hyr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro hmem
-      rcases Finset.mem_union.mp hmem with hmem | hmem
-      · exact lt_irrefl a (hla a hmem)
-      · exact lt_irrefl a (har a hmem)
-    simp only [subtreeWeight_node, elements, Finset.sum_insert ha,
-      Finset.sum_union hdis, ihl hl, ihr hr]
+    simp only [subtreeWeight_node, elements, Finset.sum_insert ht.notMem_elements_union,
+      Finset.sum_union ht.disjoint_elements, ihl ht.1, ihr ht.2.1]
     ring
 
 theorem le_subtreeWeight_of_mem {w : α → ℝ} (hw : ∀ y, 0 ≤ w y) {t : BinaryTree α}
@@ -756,22 +747,14 @@ theorem sum_logb_weight_le_potential {w : α → ℝ} (hw : ∀ y, 0 < w y)
   induction t with
   | nil => simp [elements]
   | node a l r ihl ihr =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      refine Finset.disjoint_left.mpr fun y hyl hyr => ?_
-      exact lt_asymm (hla y hyl) (har y hyr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro hmem
-      rcases Finset.mem_union.mp hmem with hmem | hmem
-      · exact lt_irrefl a (hla a hmem)
-      · exact lt_irrefl a (har a hmem)
     have ha_le : Real.logb 2 (w a) ≤ nodeRank w (.node a l r) := by
       apply Real.logb_le_logb_of_le (by norm_num) (hw a)
       have hwl := subtreeWeight_nonneg (fun y => (hw y).le) l
       have hwr := subtreeWeight_nonneg (fun y => (hw y).le) r
       simp only [subtreeWeight_node]; linarith
-    simp only [elements, Finset.sum_insert ha, Finset.sum_union hdis, potential_node]
-    linarith [ihl hl, ihr hr]
+    simp only [elements, Finset.sum_insert ht.notMem_elements_union,
+      Finset.sum_union ht.disjoint_elements, potential_node]
+    linarith [ihl ht.1, ihr ht.2.1]
 
 /-- Upper potential bound: if the total weight is at most `W`, every rank is at most `log₂ W`, so
 `Φ(t) ≤ ∑ y ∈ t, log₂ W` ([SleatorTarjan1985b], Section 2, p. 659). -/
@@ -781,15 +764,6 @@ theorem potential_le_sum_logb_of_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
   induction t with
   | nil => simp [elements]
   | node a l r ihl ihr =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      refine Finset.disjoint_left.mpr fun y hyl hyr => ?_
-      exact lt_asymm (hla y hyl) (har y hyr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro hmem
-      rcases Finset.mem_union.mp hmem with hmem | hmem
-      · exact lt_irrefl a (hla a hmem)
-      · exact lt_irrefl a (har a hmem)
     have hwl : subtreeWeight w l ≤ W := by
       have hwa := hw a
       have hwr := subtreeWeight_nonneg (fun y => (hw y).le) r
@@ -800,8 +774,9 @@ theorem potential_le_sum_logb_of_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
       simp only [subtreeWeight_node] at hW; linarith
     have hrk : nodeRank w (.node a l r) ≤ Real.logb 2 W :=
       Real.logb_le_logb_of_le (by norm_num) (subtreeWeight_pos hw (by simp)) hW
-    simp only [elements, Finset.sum_insert ha, Finset.sum_union hdis, potential_node]
-    linarith [ihl hl hwl, ihr hr hwr]
+    simp only [elements, Finset.sum_insert ht.notMem_elements_union,
+      Finset.sum_union ht.disjoint_elements, potential_node]
+    linarith [ihl ht.1 hwl, ihr ht.2.1 hwr]
 
 /-- **Fixed-Weight Potential Drop Bound** ([SleatorTarjan1985b], Section 2, p. 659):
 between any two `Ordered` trees `t₁` and `t₂` representing the same set of keys, if

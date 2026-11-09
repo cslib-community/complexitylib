@@ -54,14 +54,8 @@ theorem provider_inSpace (k : ℕ) (p : Fin (k * 3)) :
   have hn := snd encNat encNat
   have hsearch := budget_comp_linear (ScheduleRead.search_inSpace k (hd.1.val + 1))
     (budget_prod hs (budget_prod hn (budget_const (encB := encNat) hd.2.val (.refl _))))
-  have hget : ComputableInSpace (fun o : Option ℕ => o.getD 0)
-      (encOption encNat) encNat (fun o => (encOption encNat o).length) :=
-    of_inO (ComputableInDegree.getD (enc₁ := encNat) 0).inO_one
-  have hsome : ComputableInSpace (fun o : Option ℕ => o.isSome)
-      (encOption encNat) encBool (fun o => (encOption encNat o).length) :=
-    of_inO (ComputableInDegree.isSome encNat).inO_one
-  have hindex := budget_natSucc (budget_comp_linear hget hsearch)
-  refine (budget_ite (budget_comp_linear hsome hsearch) hindex
+  have hindex := budget_natSucc (budget_optionGetD 0 hsearch)
+  refine (budget_ite (budget_optionIsSome hsearch) hindex
     (budget_const (encB := encNat) 0 (.refl _))).of_enc_eq ?_
   rintro ⟨σ, n⟩
   change encNat (((ScheduleRead.search k (hd.1.val + 1) (σ, n, hd.2.val)).map

@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Cslib.Computability.Circuit.RelativeComplexity
 public import Cslib.Computability.Circuit.Simulation
 import CslibFrontier.Computability.Circuit.Simulation
+import CslibFrontier.Foundations.Data.ENat.IInf
 
 /-!
 # Weighted circuit complexity from supplied values
@@ -166,14 +167,7 @@ theorem exists_computesFrom_cost_eq_ecomplexityFrom
 theorem ecomplexityFrom_le_iff {k : ℕ} :
     ecomplexityFrom I cost target sources ≤ k ↔
       ∃ c : Circuit σ n m, c.ComputesFrom I target sources ∧ c.program.cost cost ≤ k := by
-  constructor
-  · intro h
-    have hne := ne_top_of_le_ne_top (ENat.natCast_ne_top k) h
-    obtain ⟨c, hc, hcost⟩ :=
-      exists_computesFrom_cost_eq_ecomplexityFrom (ecomplexityFrom_ne_top_iff.mp hne)
-    exact ⟨c, hc, by exact_mod_cast hcost.trans_le h⟩
-  · rintro ⟨c, hc, hk⟩
-    exact (ecomplexityFrom_le_of_computesFrom c hc).trans (by exact_mod_cast hk)
+  simp only [ecomplexityFrom, ENat.iInf_natCast_le_natCast_iff, Subtype.exists, exists_prop]
 
 /-- A lower bound holds exactly when it holds for every implementing circuit. -/
 theorem le_ecomplexityFrom_iff {k : ℕ∞} :

@@ -465,8 +465,7 @@ theorem toQueryProg_eval (regenScratch : ℕ) (tree : CondBoolTree Op Struct)
   induction tree with
   | const b => rfl
   | notGate c ih => simp [toQueryProg, eval, QueryProg.eval, ih]
-  | andGate l r ihl ihr => simp [toQueryProg, eval, QueryProg.eval, ihl, ihr]
-  | orGate l r ihl ihr => simp [toQueryProg, eval, QueryProg.eval, ihl, ihr]
+  | andGate l r ihl ihr | orGate l r ihl ihr => simp [toQueryProg, eval, QueryProg.eval, ihl, ihr]
   | condGate s t f ihs iht ihf =>
     simp only [toQueryProg, eval, QueryProg.eval, QueryProg.eval_bindOverhead, ihs]
     cases s.eval env sEnv <;> simp [QueryProg.eval_bindOverhead, QueryProg.eval, iht, ihf]
@@ -490,20 +489,7 @@ theorem toQueryProg_retainedBits_le (regenScratch : ℕ) (tree : CondBoolTree Op
     rw [QueryEvent.retained_addBits, depth]
     have h := ih hev₀
     omega
-  | andGate l r ihl ihr =>
-    simp only [toQueryProg, QueryProg.activeQueries, QueryProg.activeQueries_bindOverhead,
-      List.append_nil, List.mem_append, List.mem_map] at hev
-    rw [depth]
-    rcases hev with ⟨ev₀, hev₀, rfl⟩ | ⟨ev₀, hev₀, rfl⟩
-    · rw [QueryEvent.retained_addBits]
-      have h := ihl hev₀
-      have hle : l.depth ≤ max l.depth r.depth := le_max_left _ _
-      omega
-    · rw [QueryEvent.retained_addBits]
-      have h := ihr hev₀
-      have hle : r.depth ≤ max l.depth r.depth := le_max_right _ _
-      omega
-  | orGate l r ihl ihr =>
+  | andGate l r ihl ihr | orGate l r ihl ihr =>
     simp only [toQueryProg, QueryProg.activeQueries, QueryProg.activeQueries_bindOverhead,
       List.append_nil, List.mem_append, List.mem_map] at hev
     rw [depth]
@@ -542,11 +528,7 @@ theorem toQueryProg_retainedBits_le (regenScratch : ℕ) (tree : CondBoolTree Op
         have hle : t.depth ≤ max s.depth (max t.depth f.depth) :=
           (le_max_left _ _).trans (le_max_right _ _)
         omega
-  | digitBit op j pred =>
-    simp only [toQueryProg, QueryProg.activeQueries, List.mem_singleton] at hev
-    subst hev
-    simp [QueryEvent.retained, depth]
-  | structLeaf sOp =>
+  | digitBit op j pred | structLeaf sOp =>
     simp only [toQueryProg, QueryProg.activeQueries, List.mem_singleton] at hev
     subst hev
     simp [QueryEvent.retained, depth]
@@ -565,17 +547,7 @@ theorem toQueryProg_intrinsic_le (regenScratch : ℕ) (tree : CondBoolTree Op St
     refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
     · omega
     · simp [QueryProg.maxIntrinsicBits]
-  | andGate l r ihl ihr =>
-    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
-    have hl : l.depth ≤ max l.depth r.depth := le_max_left _ _
-    have hr : r.depth ≤ max l.depth r.depth := le_max_right _ _
-    refine max_le (Nat.le_add_right _ _) ?_
-    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · omega
-    · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-      · omega
-      · simp [QueryProg.maxIntrinsicBits]
-  | orGate l r ihl ihr =>
+  | andGate l r ihl ihr | orGate l r ihl ihr =>
     simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
     have hl : l.depth ≤ max l.depth r.depth := le_max_left _ _
     have hr : r.depth ≤ max l.depth r.depth := le_max_right _ _
@@ -596,16 +568,11 @@ theorem toQueryProg_intrinsic_le (regenScratch : ℕ) (tree : CondBoolTree Op St
     refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
     · omega
     · rw [toQueryProg_eval]
-      cases s.eval env sEnv
-      · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-        · omega
-        · simp [QueryProg.maxIntrinsicBits]
-      · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-        · omega
-        · simp [QueryProg.maxIntrinsicBits]
-  | digitBit _ _ _ =>
-    simp [toQueryProg, QueryProg.maxIntrinsicBits, depth]
-  | structLeaf _ =>
+      -- Either selected branch is a `bindOverhead` around a child bounded by its hypothesis.
+      cases s.eval env sEnv <;>
+        exact (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans
+          (max_le (by omega) (by simp [QueryProg.maxIntrinsicBits]))
+  | digitBit _ _ _ | structLeaf _ =>
     simp [toQueryProg, QueryProg.maxIntrinsicBits, depth]
 
 end CondBoolTree

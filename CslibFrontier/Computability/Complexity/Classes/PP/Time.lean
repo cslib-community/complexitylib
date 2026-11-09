@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.Probability
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -217,12 +217,7 @@ theorem mem_PP_iff_exists_mem_PPTIME {α : Type} {enc : α ↪ List Bool} {A : S
     -- replay the coins
     refine ⟨Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂,
       fun x => decide (machine.runClosedCoins x.2 (enc x.1) = [true]),
-      ComputableInPolyTime.decide_eq'
-        ((MultiTapePTM.computableInPolyTime_runClosedCoins machine).comp
-          ((ComputableInPolyTime.snd enc encBits).prod
-            ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
-              (ComputableInPolyTime.fst enc encBits))))
-        (ComputableInPolyTime.const [true]), fun a => ?_⟩
+      MultiTapePTM.computableInPolyTime_decide_runClosedCoins machine, fun a => ?_⟩
     have heval : (Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂).eval (enc a).length =
         c₁ * (enc a).length ^ d + c₂ := by
       simp

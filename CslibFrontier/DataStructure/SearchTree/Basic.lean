@@ -84,6 +84,17 @@ def successor (x : α) : BinaryTree α → Option α
     x ∈ elements (.node a l r) ↔ x = a ∨ x ∈ elements l ∨ x ∈ elements r := by
   simp [elements]
 
+/-- The two subtrees of an ordered node store disjoint key sets. -/
+theorem Ordered.disjoint_elements {a : α} {l r : BinaryTree α} (h : Ordered (.node a l r)) :
+    Disjoint (elements l) (elements r) :=
+  Finset.disjoint_left.mpr fun x hxl hxr => lt_asymm (h.2.2.1 x hxl) (h.2.2.2 x hxr)
+
+/-- The root key of an ordered node is stored in neither subtree. -/
+theorem Ordered.notMem_elements_union {a : α} {l r : BinaryTree α} (h : Ordered (.node a l r)) :
+    a ∉ elements l ∪ elements r := fun ha =>
+  (Finset.mem_union.mp ha).elim (fun hl => lt_irrefl a (h.2.2.1 a hl))
+    fun hr => lt_irrefl a (h.2.2.2 a hr)
+
 /-- Search is correct for any shape satisfying the invariant. -/
 theorem contains_eq_true {t : BinaryTree α} (ht : Ordered t) (x : α) :
     contains x t = true ↔ x ∈ elements t := by
@@ -181,14 +192,8 @@ theorem card_elements {t : BinaryTree α} (ht : Ordered t) :
   induction t with
   | nil => rfl
   | node a l r il ir =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      apply Finset.disjoint_left.mpr
-      intro x hxl hxr
-      exact lt_asymm (hla x hxl) (har x hxr)
-    have ha : a ∉ elements l ∪ elements r := by grind
-    simp only [elements, Finset.card_insert_of_notMem ha,
-      Finset.card_union_of_disjoint hdis, il hl, ir hr, BinaryTree.numNodes]
+    simp only [elements, Finset.card_insert_of_notMem ht.notMem_elements_union,
+      Finset.card_union_of_disjoint ht.disjoint_elements, il ht.1, ir ht.2.1, BinaryTree.numNodes]
 
 /-- Left descent returns the least element, with the empty case accounted for. -/
 theorem minimum_spec {t : BinaryTree α} (ht : Ordered t) :

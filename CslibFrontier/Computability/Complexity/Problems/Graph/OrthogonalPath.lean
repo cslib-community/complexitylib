@@ -254,6 +254,27 @@ theorem unitPath_declared_center_iff (G : Graph)
   rw [unitPath_center_iff G hG hloop hi (List.idxOf_lt_length_iff.2 hv)]
   simp only [List.idxOf_inj hv]
 
+/-- Nonvertex occupied cells are neither end of a canonical path. -/
+theorem unitPath_not_endpoints (G : Graph)
+    (hG : ∀ edge ∈ G.2, edge.1 ∈ G.1 ∧ edge.2 ∈ G.1)
+    (hloop : ∀ edge ∈ G.2, edge.1 ≠ edge.2) {i : ℕ} (hi : i < G.2.length)
+    {p : Point} (hcenter : p ∉ G.orthogonalPositions) :
+    (G.unitPath i).head? ≠ some p ∧ (G.unitPath i).getLast? ≠ some p := by
+  have hcenters (side : Bool) : Layout.center (G.1.idxOf (G.edgeEndpoint i side)) ∈
+      G.orthogonalPositions :=
+    List.mem_map.2 ⟨_, List.mem_range.2
+      (List.idxOf_lt_length_iff.2 (edgeEndpoint_mem G hG hi side)), rfl⟩
+  have he := unitPath_endpoints G hG hloop hi
+  constructor
+  · intro hp
+    apply hcenter
+    rw [← Option.some.inj (he.1.symm.trans hp)]
+    exact hcenters false
+  · intro hp
+    apply hcenter
+    rw [← Option.some.inj (he.2.symm.trans hp)]
+    exact hcenters true
+
 /-- An occupied point away from source centers has a genuine predecessor and successor at
 every occurrence index. Together with `unitPath_nodup`, that occurrence index is unique. -/
 theorem unitPath_interior_index (G : Graph)
@@ -261,27 +282,16 @@ theorem unitPath_interior_index (G : Graph)
     (hloop : ∀ edge ∈ G.2, edge.1 ≠ edge.2) {i k : ℕ} (hi : i < G.2.length)
     (hk : k < (G.unitPath i).length) {p : Point} (heq : (G.unitPath i)[k] = p)
     (hcenter : p ∉ G.orthogonalPositions) : 0 < k ∧ k + 1 < (G.unitPath i).length := by
-  have hcenters (side : Bool) : Layout.center (G.1.idxOf (G.edgeEndpoint i side)) ∈
-      G.orthogonalPositions :=
-    List.mem_map.2 ⟨_, List.mem_range.2
-      (List.idxOf_lt_length_iff.2 (edgeEndpoint_mem G hG hi side)), rfl⟩
-  have he := unitPath_endpoints G hG hloop hi
+  have hne := unitPath_not_endpoints G hG hloop hi hcenter
   constructor
   · by_contra h
-    have hk0 : k = 0 := by omega
-    subst k
-    have hh : (G.unitPath i).head? = some p := by
-      rw [List.head?_eq_getElem?, List.getElem?_eq_getElem hk, heq]
-    apply hcenter
-    rw [← Option.some.inj (he.1.symm.trans hh)]
-    exact hcenters false
+    apply hne.1
+    obtain rfl : k = 0 := by omega
+    rw [List.head?_eq_getElem?, List.getElem?_eq_getElem hk, heq]
   · by_contra h
-    have hkl : k = (G.unitPath i).length - 1 := by omega
-    have hh : (G.unitPath i).getLast? = some p := by
-      rw [List.getLast?_eq_getElem?, ← hkl, List.getElem?_eq_getElem hk, heq]
-    apply hcenter
-    rw [← Option.some.inj (he.2.symm.trans hh)]
-    exact hcenters true
+    apply hne.2
+    rw [List.getLast?_eq_getElem?, show (G.unitPath i).length - 1 = k by omega,
+      List.getElem?_eq_getElem hk, heq]
 
 private theorem pair_mem_at {r : Route} {k : ℕ} (hk : k + 1 < r.length) :
     (r[k], r[k + 1]) ∈ r.consecutivePairs := by
@@ -320,27 +330,6 @@ theorem unitPath_neighbors_distinct (G : Graph)
   intro h
   have hindex := (unitPath_nodup G hG hloop hi).getElem_inj_iff.1 h
   omega
-
-/-- Nonvertex occupied cells are neither end of a canonical path. -/
-theorem unitPath_not_endpoints (G : Graph)
-    (hG : ∀ edge ∈ G.2, edge.1 ∈ G.1 ∧ edge.2 ∈ G.1)
-    (hloop : ∀ edge ∈ G.2, edge.1 ≠ edge.2) {i : ℕ} (hi : i < G.2.length)
-    {p : Point} (hcenter : p ∉ G.orthogonalPositions) :
-    (G.unitPath i).head? ≠ some p ∧ (G.unitPath i).getLast? ≠ some p := by
-  have hcenters (side : Bool) : Layout.center (G.1.idxOf (G.edgeEndpoint i side)) ∈
-      G.orthogonalPositions :=
-    List.mem_map.2 ⟨_, List.mem_range.2
-      (List.idxOf_lt_length_iff.2 (edgeEndpoint_mem G hG hi side)), rfl⟩
-  have he := unitPath_endpoints G hG hloop hi
-  constructor
-  · intro hp
-    apply hcenter
-    rw [← Option.some.inj (he.1.symm.trans hp)]
-    exact hcenters false
-  · intro hp
-    apply hcenter
-    rw [← Option.some.inj (he.2.symm.trans hp)]
-    exact hcenters true
 
 /-- The vertical column assigned to one canonical graph incidence. -/
 def pathColumn (G : Graph) (i : ℕ) (side : Bool) : ℤ :=

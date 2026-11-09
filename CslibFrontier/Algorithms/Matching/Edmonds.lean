@@ -177,13 +177,8 @@ matching: some choice of them makes the Edmonds matrix nonsingular. -/
 theorem exists_det_edmondsEval_ne_zero [IsDomain R] {G : V × V → Bool}
     (hG : HasPerfectMatching G) {S : Finset R} (hS : Fintype.card V < #S) :
     ∃ r : V × V → R, (∀ e, r e ∈ S) ∧ (edmondsEval G r).det ≠ 0 := by
-  classical
-  by_contra! h
-  have hb := card_det_edmondsEval_eq_zero_div_le hG S
-  rw [filter_true_of_mem fun r hr => h r (Fintype.mem_piFinset.1 hr), Fintype.card_piFinset,
-    prod_const, card_univ] at hb
-  have hpos : (0 : ℚ≥0) < #S := by exact_mod_cast (Nat.zero_le _).trans_lt hS
-  rw [Nat.cast_pow, div_self (pow_ne_zero _ hpos.ne'), le_div_iff₀ hpos, one_mul] at hb
-  exact absurd hb (not_le.2 (by exact_mod_cast hS))
+  simp_rw [det_edmondsEval]
+  exact exists_eval_ne_zero_of_totalDegree_lt_card (det_edmondsMatrix_ne_zero hG)
+    ((totalDegree_det_edmondsMatrix_le G).trans_lt hS)
 
 end Cslib.Algorithms.Matching

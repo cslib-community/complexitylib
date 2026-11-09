@@ -6,7 +6,7 @@
 
 The underlying native configuration is cslib's [Turing.Cfg](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Machines/Turing/MultiTape/Configuration.lean#L97). Its input is a fixed list; the input head lies in `Fin (input.length + 2)`, with one blank boundary position on each side. Movement clamps at the boundaries. Each work tape is a function from integer positions to optional symbols, with an integer head. Output is a list to which a transition can append at most one symbol. Input is read-only and output is not readable. The action simultaneously chooses each work-tape write/move, input movement, optional output, and next optional control state. `none` in the control state denotes halting. [cslib][cslib]
 
-A raw machine can have an arbitrary state or symbol type. Complexity predicates quantify one fixed number of tapes, finite state type, and binary-alphabet machine before quantifying over inputs. Encodings are explicit embeddings `α ↪ List Bool`; they do not by themselves promise a computable decoder or a decidable image. Native correctness therefore applies to all valid encoded values. A theorem over an encoded graph type does not automatically recognize malformed graph strings. [complexitylib][complexitylib]
+A raw machine can have an arbitrary state or symbol type. Complexity predicates quantify one fixed number of tapes, finite state type, and binary-alphabet machine before quantifying over inputs. Encodings are explicit embeddings `α ↪ List Bool`; they do not by themselves promise a computable decoder or a decidable image. Native correctness therefore applies to all valid encoded values. A theorem over an encoded graph type does not automatically recognize malformed graph strings. [cslib-frontier][complexitylib]
 
 The native execution model keeps data access and resource accounting separate:
 
@@ -76,7 +76,7 @@ For alternation, [AcceptsWithin](https://github.com/cslib-community/cslib-fronti
 
 The base predicate [ComputableInTimeAndSpace](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Machines/Turing/MultiTape/Deterministic.lean#L352) keeps time and workspace independent. Workspace counts cells visited on the work tapes, including transient use; input and append-only output are excluded. The initial heads already occupy work cells. A time upper bound does not replace a separately asserted space bound.
 
-Complexitylib deliberately has both output-uncharged and output-charged APIs:
+cslib-frontier deliberately has both output-uncharged and output-charged APIs:
 
 | Predicate | Time | Workspace | Extra output charge |
 |---|---|---|---|

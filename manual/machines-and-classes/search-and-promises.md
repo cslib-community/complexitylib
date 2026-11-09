@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Verifier models](verifiers-counting-interaction.md)
 
-A decision language, a search relation and a promise problem impose different obligations. Complexitylib makes those obligations explicit while reusing the native polynomial-time machine interface. This avoids treating finite failure to find an answer as a solution to an unrestricted total-search task. [complexitylib][complexitylib]
+A decision language, a search relation and a promise problem impose different obligations. cslib-frontier makes those obligations explicit while reusing the native polynomial-time machine interface. This avoids treating finite failure to find an answer as a solution to an unrestricted total-search task. [cslib-frontier][complexitylib]
 
 ## Search relations
 
