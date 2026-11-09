@@ -437,10 +437,8 @@ theorem measureProb_simonAlg_le (E : Fin N ≃ (Fin n → Bool) × Fin n) (i₀ 
             = c ^ 4 *
                 ‖∑ a with simonG E X a = p.2.2.2, ((signVal (a ⬝ᵥ p.2.2.1) : ℝ) : ℂ)‖ ^ 2 := by
               ring
-          _ ≤ c ^ 4 * (#{a | simonG E X a = p.2.2.2} : ℝ) ^ 2 :=
-              mul_le_mul_of_nonneg_left h1 (by positivity)
-          _ ≤ c ^ 4 * (K * #{a | simonG E X a = p.2.2.2}) :=
-              mul_le_mul_of_nonneg_left h2 (by positivity)
+          _ ≤ c ^ 4 * (#{a | simonG E X a = p.2.2.2} : ℝ) ^ 2 := by gcongr
+          _ ≤ c ^ 4 * (K * #{a | simonG E X a = p.2.2.2}) := by gcongr
           _ = c ^ 4 * K * #{a | simonG E X a = p.2.2.2} := by ring
       · push Not at hs
         obtain ⟨r₀, hr⟩ := hs

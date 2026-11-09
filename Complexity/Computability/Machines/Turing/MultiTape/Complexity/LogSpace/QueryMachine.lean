@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Multi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.SpaceNormalForm
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # Machines with random access to their input, in logarithmic space
@@ -209,8 +210,7 @@ theorem streamState_passNext (s : σ) {j : ℕ} (hj : j ≤ w.length) :
           simp only [List.length_take]
           omega
         have h₂ : (List.take j w ++ [w[j]]).length ≤ M.query s := by
-          simp only [List.length_append, List.length_take, List.length_singleton]
-          omega
+          enc_len [List.length_take, List.length_singleton]
         rw [List.getElem?_eq_none h₁, List.getElem?_eq_none h₂]
       · have h₁ : M.query s < (List.take j w).length := by
           simp only [List.length_take]
@@ -360,8 +360,7 @@ theorem length_encPass_le {τ : Type} (encS : τ ↪ List Bool) (q : PassState �
     (encPass encS q).length ≤ 2 * (encS q.1).length + 2 * (encNat q.2.1).length + 4 := by
   obtain ⟨s, j, fd⟩ := q
   have : (encOption encBool fd).length ≤ 2 := by cases fd <;> simp
-  simp only [length_encPair]
-  omega
+  enc_len
 
 end Simulation
 

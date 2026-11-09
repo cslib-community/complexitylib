@@ -139,11 +139,7 @@ theorem exists_isFlowPath (f : N.Flow) (hpos : 0 < f.value) : ∃ p, f.IsFlowPat
       refine ⟨by simp [R, Relation.ReflTransGen.refl], ?_⟩
       simpa [R] using hreach
     have hval := f.value_eq_netFlow_across_cut hR
-    have hzero : ∀ u ∈ R, ∀ v ∈ Finset.univ \ R, f u v = 0 := by
-      intro u hu v hv
-      by_contra hne
-      simp only [R, Finset.mem_sdiff, Finset.mem_univ, Finset.mem_filter, true_and] at hu hv
-      exact hv (hu.tail (Nat.pos_of_ne_zero hne))
+    have hzero : ∀ u ∈ R, ∀ v ∈ Finset.univ \ R, f u v = 0 := by grind
     have hout : (∑ u ∈ R, ∑ v ∈ Finset.univ \ R, (f u v : ℤ)) = 0 :=
       Finset.sum_eq_zero fun u hu => Finset.sum_eq_zero fun v hv => by simp [hzero u hu v hv]
     have hin : 0 ≤ ∑ u ∈ R, ∑ v ∈ Finset.univ \ R, (f v u : ℤ) :=

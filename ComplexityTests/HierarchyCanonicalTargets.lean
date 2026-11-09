@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of canonical hierarchy target transport)
 
-import Complexity.Foundations.Probability.HierarchyCanonicalTargets
+import Complexity.Computability.LogSpaceDerandomization.HierarchyCanonicalTargets
 import all ComplexityTests.HierarchySourceSampling
 
 /-! Nonzero true targets across actual residual request roles, different suffixes and

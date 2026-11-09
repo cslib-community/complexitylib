@@ -13,6 +13,7 @@ public import Complexity.Logics.SecondOrder.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Foundations.ModelTheory.Basic
 
 /-!
 # Materializing existential relation witnesses
@@ -120,13 +121,9 @@ theorem decode_witnessInput [K.IsRelational] (a : EncodedStructure) (w : List Bo
     (v.sum (varLanguage.vocabulary Φ.arity e)).decode (ℓ.witnessInput e (a, w)) =
       @sumStructure K (varLanguage Φ.arity) (Fin a.1) (v.decode a)
         (varLanguage.structure (ℓ.certRel a.1 (encStructure a).length w)) := by
-  apply FirstOrder.Language.Structure.ext
-  · funext k f
-    exact isEmptyElim f
-  · funext k r x
-    change Fin k → Fin a.1 at x
-    apply propext
-    cases r with
+  refine FirstOrder.Language.Structure.ext_of_isRelational fun {k} r x => ?_
+  change Fin _ → Fin a.1 at x
+  cases r with
     | inl r =>
       change ((v.sum (varLanguage.vocabulary Φ.arity e)).table
         (a.1, a.2 ++ List.ofFn fun j : Fin m => ℓ.witnessTable a w (e j))

@@ -368,6 +368,17 @@
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation"
       ]
+    },
+    {
+      "id": "matrix-multiplication",
+      "title": "Matrix multiplication: the exponent is at most 9/4",
+      "module": "ComplexityAbstracts.MatrixMultiplicationAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.MatrixMultiplicationAbstract.circuits_nine_quarters",
+        "ComplexityAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters"
+      ],
+      "summary": "Exact matrix multiplication over every characteristic-zero field has nonuniform arithmetic circuits of size O(n^(9/4 + γ)) for every γ > 0.",
+      "scope": "Binary addition and multiplication and field constants, every gate charged one; inputs and outputs free. Existential circuits, without uniform generation, computable parameter extraction, explicit constants or integer bit complexity."
     }
   ]
 }

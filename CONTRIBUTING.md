@@ -32,6 +32,11 @@ branches that add entries between the same neighbours conflict as text;
 `scripts/resolve_bib_conflict.py` merges the file entry by entry and refuses when both sides
 changed one entry. To have `git merge` use it for `references.bib`, run once per clone:
 `git config merge.bibkeys.driver 'python3 scripts/resolve_bib_conflict.py --driver %O %A %B'`.
+The `mk_all` import aggregates have a similar opt-in driver, which merges their import lines as
+sets and writes them sorted:
+`git config merge.leanagg.driver 'python3 scripts/resolve_aggregate_conflict.py %O %A %B'`.
+Without it, git merges them as text; regenerate them with `lake exe mk_all` rather than trusting a
+hand or `merge=union` merge.
 
 Develop against representative clients and state the public contract: model or encodings,
 mathematical behavior, and resource or security claim. Test automation on ordinary expressions,
@@ -211,8 +216,8 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
 forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
-every docstring citation key has an entry there and that `ROADMAP.md` adds no `[#N]:` link
-definitions
+every docstring citation key has an entry there and that `ROADMAP.md` entries are short scope
+statements with inline links
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
@@ -261,12 +266,16 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. Write a new issue or PR link in ROADMAP inline,
-as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`, rather than as a
-`[#N]: …` reference definition appended to the end of the file: such appended lines conflict
-between PRs in the merge queue, and `scripts/check_hygiene.py` rejects new ones. UPSTREAM records
-coordination and exceptional integration decisions, while source markers record module status.
+ROADMAP lists open directions only, grouped by area.
+Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
+linked inline as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`.
+Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
+direction, and a direction leaves ROADMAP only when it is completed or deliberately dropped.
+`scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600
+characters of Markdown (a link counts as its text): definitions appended to the end of the file and
+growing progress notes conflicted between PRs in the merge queue.
+UPSTREAM records coordination and exceptional integration decisions, while source markers record
+module status.
 Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.

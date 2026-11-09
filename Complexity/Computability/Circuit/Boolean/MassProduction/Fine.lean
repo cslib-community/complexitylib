@@ -224,9 +224,7 @@ theorem exists_complexity_le_of_bounds {A₁ E₁ A₂ E₂ : ℕ} (hS : Schedul
     have hsched_le : sched.size ≤ A₁ * (2 ^ p + 2 ^ (D + b)) * B ^ (E₁ + E₂) := by
       calc sched.size ≤ A₁ * 2 ^ D * (2 ^ b - 1 + 1) * (D + ℓ * b + 2) ^ E₁ := hsize
         _ = A₁ * 2 ^ (D + b) * (D + ℓ * b + 2) ^ E₁ := by rw [hs1, ← hDb]; ring
-        _ ≤ A₁ * (2 ^ p + 2 ^ (D + b)) * B ^ (E₁ + E₂) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left _ (Nat.le_add_left _ _))
-            (pow_le_pow (by omega) hB1 (Nat.le_add_right _ _))
+        _ ≤ A₁ * (2 ^ p + 2 ^ (D + b)) * B ^ (E₁ + E₂) := by gcongr <;> omega
     have hpipe_le : A₂ * (2 ^ p + 2 ^ D * 2 ^ b + copies * N) *
         (p + w + ℓ * b + Nat.log 2 (2 ^ D + copies) + 2) ^ E₂ ≤
         4 * A₂ * (2 ^ p + 2 ^ (D + b)) * B ^ (E₁ + E₂) := by
