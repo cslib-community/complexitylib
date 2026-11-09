@@ -11,6 +11,8 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
 import all CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
 import CslibFrontier.Foundations.Combinatorics.SharedSummaries
+import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Foundations.Data.List.OfFn
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -284,6 +286,8 @@ private theorem formalEqParityFactor_congr {n' : ℕ} (dDen : ℤ) (k' ℓ : ℕ
   refine Finset.prod_congr rfl fun v hvM => ?_
   exact h v (Finset.mem_biUnion.mpr ⟨M, hM, hvM⟩)
 
+/-- Local bit assignments with equal group measurements and equal bits on the factor's group
+give equal cleared parity factors for any equation scoped inside that factor. -/
 private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : ℕ} {τ : ℚ}
     {augScopes sv ss : List (List ℕ)} {data : ReplacementDesignData}
     (hdata : data = buildReplacementDesignData n' D_cap Q r A₀ R augScopes sv ss)
@@ -398,6 +402,7 @@ private def eqScopeIndex (n' : ℕ) (eqs' : List (List (List ℕ))) (f : Fin eqs
   withNeutralScopesIndexEquiv (eqs'.map equationVars) n'
     (Sum.inl ⟨f.1, by simp only [List.length_map]; exact f.2⟩)
 
+/-- The equation scope index has the equation's own index as its value. -/
 private theorem val_eqScopeIndex (n' : ℕ) (eqs' : List (List (List ℕ))) (f : Fin eqs'.length) :
     (eqScopeIndex n' eqs' f).1 = f.1 :=
   val_withNeutralScopesIndexEquiv_inl _ _ _
@@ -454,22 +459,12 @@ private theorem sliceBlocks_iff_eq_flatten {r m : ℕ} (L : Fin r → List ℤ)
 private theorem natAbs_evalBoolRow_le_sum (row : List ℤ) (bs : List Bool) :
     (BooleanMeasurements.evalBoolRow row bs).natAbs ≤ (row.map Int.natAbs).sum := by
   unfold BooleanMeasurements.evalBoolRow
-  have hrow : row = (List.range row.length).map fun j => row.getD j 0 :=
-    List.ext_getElem (by simp only [List.length_map, List.length_range]) fun j hj _ => by
-      simp only [List.getElem_map, List.getElem_range, List.getD_eq_getElem row 0 hj]
-  conv_rhs => rw [hrow, List.map_map]
-  have hpt : ∀ js : List ℕ,
-      ((js.map fun j => if bs.getD j false = true then row.getD j 0 else 0).sum).natAbs ≤
-      (js.map (Int.natAbs ∘ fun j => row.getD j 0)).sum := by
-    intro js
-    induction js with
-    | nil => exact le_rfl
-    | cons j js ih =>
-      simp only [List.map_cons, List.sum_cons, Function.comp_apply]
-      refine (Int.natAbs_add_le _ _).trans (Nat.add_le_add ?_ ih)
-      cases bs.getD j false <;>
-        simp only [Bool.false_eq_true, ↓reduceIte, Int.natAbs_zero, Nat.zero_le, le_rfl]
-  exact hpt (List.range row.length)
+  conv_rhs => rw [← List.map_getD_range row 0, List.map_map]
+  rw [List.sum_map_range, List.sum_map_range]
+  refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun j _ => ?_)
+  split_ifs
+  · exact le_rfl
+  · exact Nat.zero_le _
 
 /-- On the scope of the `f`-th equation, `eqDesignRows` is the scaled integer replacement row of
 the corresponding incidence. -/
@@ -494,12 +489,6 @@ private theorem foldl_fixedContext {γ α β ι : Type*} (step : γ × α → ι
   | cons w ws ih =>
     have hst : step (c, acc) w = (c, (step (c, acc) w).2) := Prod.ext (hstep acc w).1 rfl
     rw [List.foldl_cons, List.foldl_cons, hst, ih, (hstep acc w).2]
-
-private theorem foldl_add_eq_add_sum {ι M : Type*} [AddMonoid M] (F : ι → M) (ws : List ι)
-    (a : M) : ws.foldl (fun acc w => acc + F w) a = a + (ws.map F).sum := by
-  induction ws generalizing a with
-  | nil => rw [List.foldl_nil, List.map_nil, List.sum_nil, add_zero]
-  | cons w ws ih => rw [List.foldl_cons, ih, List.map_cons, List.sum_cons, add_assoc]
 
 /-- Reindexing decoded signed measurement words by the measurement box. When every local
 measurement is a length-`m` word with entries in `[-D, D]`, each realizable measurement tuple is
@@ -600,11 +589,8 @@ private theorem toJetTable_prodJet_groupEquationsAt {n' Q r A₀ R J ℓ k' : �
             (HeavyBranchFold.toFinsetEquation n' (eqs'[f.1]'f.isLt))) := by
   rw [CommonCountingAccum.toJetTable_prodJet]
   unfold groupEquationsAt
-  have hrange_fin : List.range eqs'.length = (List.finRange eqs'.length).map Fin.val :=
-    List.ext_getElem (by simp only [List.length_range, List.length_map, List.length_finRange])
-      fun _ _ _ => by simp only [List.getElem_range, List.getElem_map, List.getElem_finRange,
-        Fin.val_cast]
-  rw [hrange_fin, List.filter_map, List.map_map, List.map_map, List.map_map]
+  rw [← List.map_coe_finRange_eq_range, List.filter_map, List.map_map, List.map_map,
+    List.map_map]
   let p_pred : Fin eqs'.length → Bool := fun f =>
     decide ((data.factorGroups.getD f.1 []).getD t.1 0 = g.1)
   let F_jet : Fin eqs'.length → JetTable J ℓ ℤ := fun f =>
@@ -655,6 +641,9 @@ private theorem toJetTable_prodJet_groupEquationsAt {n' Q r A₀ R J ℓ k' : �
     rw [← val_eqScopeIndex n' eqs' f, href.2.2.2.1 (eqScopeIndex n' eqs' f) t, Fin.ext_iff]
   rw [hfil_set]
 
+/-- At node `t`, the executable measurement fold over all decoded measurement words computes the
+sum, over the `indE`-restricted Boolean cube, of the jets at `indU` of the product of formal
+cleared parity factors with the design's replacement rows. -/
 private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ : ℚ}
     {eqs' : List (List (List ℕ))} {sv ss : List (List ℕ)}
     (hr1 : 1 ≤ r) (hcan : ∀ eq ∈ eqs', IsCanonicalEquation eq)
@@ -844,8 +833,8 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
     foldl_fixedContext (fun st w => measurementStepBody (((r * m_rows, r ^ (2 * Q)), w), st))
       (CommonCountingAccum.toJetTable J ℓ) (fun T w => T + fiber (split w)) measCtx
       (fun acc w => hstep _ w acc),
-    CommonCountingAccum.toJetTable_zeroJet, List.foldl_map, foldl_add_eq_add_sum, zero_add,
-    ← List.sum_toFinset _ List.nodup_range, List.toFinset_range, ← Fin.sum_univ_eq_sum_range]
+    CommonCountingAccum.toJetTable_zeroJet, ← List.foldl_map, ← List.sum_eq_foldl, List.map_map,
+    List.sum_map_range]
   -- Each local measurement is a length-`m_rows` word with entries in `[-r ^ (2Q), r ^ (2Q)]`, and
   -- only realizable tuples contribute, so the decoded words are reindexed by the measurement box.
   have hlen : ∀ g ug, (meas g ug).length = m_rows := fun g ug => by
