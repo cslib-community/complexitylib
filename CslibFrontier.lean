@@ -3098,6 +3098,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.TrackedRun
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bit
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bound
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Clocked
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Complexity
