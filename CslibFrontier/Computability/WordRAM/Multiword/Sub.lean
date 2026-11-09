@@ -209,14 +209,8 @@ theorem exec_digits {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
         (fun i hi => by rw [hzds i hi]; exact hd i (by simp [hi])) hzc
       have hyd0 : y.regs d = z.regs d :=
         hyf.2 d (List.nodup_cons.mp hnd).1 (digit_ne hd0).1 (digit_ne hd0).2.1
-      have hvalbs : value (radix w) z bs = value (radix w) x bs := by
-        unfold value
-        congr 1
-        exact List.map_congr_left hzbs
-      have hvalds : value (radix w) z ds = value (radix w) x ds := by
-        unfold value
-        congr 1
-        exact List.map_congr_left hzds
+      have hvalbs : value (radix w) z bs = value (radix w) x bs := value_congr hzbs
+      have hvalds : value (radix w) z ds = value (radix w) x ds := value_congr hzds
       refine ⟨y, ?_, ?_, hyc, ?_, ?_⟩
       · have hseq := he.seq hey
         simpa only [digits, List.length_cons, Nat.mul_add, Nat.mul_one,
@@ -278,14 +272,8 @@ theorem exec {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
   have hz (i : Fin (r + 4)) (hi : IsDigit i) : z.regs i = x.regs i := by
     obtain ⟨_, hc, hb, ho⟩ := digit_ne hi
     simp only [z, Data.set_regs, Function.update_apply, hc, hb, ho, ↓reduceIte]
-  have hzbs : value (radix w) z bs = value (radix w) x bs := by
-    unfold value
-    congr 1
-    exact List.map_congr_left fun i hi => hz i (hbs i hi)
-  have hzds : value (radix w) z ds = value (radix w) x ds := by
-    unfold value
-    congr 1
-    exact List.map_congr_left fun i hi => hz i (hds i hi)
+  have hzbs : value (radix w) z bs = value (radix w) x bs := value_congr fun i hi => hz i (hbs i hi)
+  have hzds : value (radix w) z ds = value (radix w) x ds := value_congr fun i hi => hz i (hds i hi)
   obtain ⟨y, he, hyd, hyc, hyeq, hyf⟩ := exec_digits hw bs ds hlen hbs hds hnd hdis z
     (by simp [z, base, one, borrow]) (by simp [z, one, borrow])
     (fun i hi => by rw [hz i (hbs i hi)]; exact hb i hi)
