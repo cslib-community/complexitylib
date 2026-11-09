@@ -1702,9 +1702,40 @@ clock. Also, `Selector.Scheduler` is an arbitrary input/history-to-closed-progra
 function: pointwise closed syntax does not supply uniform native scheduler code.
 Do not infer such code from that type alone.
 
-These native computations start with `encWork` on the input tape. The continuation
-must still rewind/frame the live reader buffer and prepare that ABI. The full
-native scheduler and adaptive stop/output loop are not realized by these theorems. Consequently they do
+For an actual reader-to-continuation program, import
+`Complexity.Computability.Probabilistic.NativeResponseExecution`.
+`NativeResponseExecution.machine continuation` sequences the full reader/output
+buffer, real native marker/rewind code, and virtual-input continuation. The flag
+tape starts blank; preparation takes the received word's length plus four local
+instructions. `terminal_machine` derives the entire stopped native configuration
+law from these instructions. It preserves arbitrary continuation divergence,
+channels and shared memory. The continuation starts with its own work tapes blank,
+the received word on its virtual input, and the real input head at the request's
+right boundary. No caller supplies a prepared intermediate configuration.
+
+Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
+for `exists_query_retention`. Its continuation code is derived from the existing
+raw-parser/rational-retention computability proof. One complete native program
+queries, copies the actual full report, prepares its buffer and computes the
+retained source mask; it emits the mask on computed completion and `[]` otherwise.
+The [complete source client](../../ComplexityTests/NativeRetentionResponse.lean)
+checks two hidden response branches with a billed cancellation, one fixed source
+with unbounded geometric invoice packets, original nonempty cover data, rejection,
+empty ground, and the existing whole-policy native trace transfer. From a matching
+warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRetentionResponse
+```
+
+The specialization fixes `Packets.Work` at code construction: its quantifiers are
+one code for all replies at each fixed context, not one native loop over runtime
+contexts. It still issues its one query on an already complete instance. The
+previous uniform processor still starts from `encWork` on its input tape; this new
+program does not construct a dynamic `encWork` history there. A complete selector
+must retain runtime context/private state, compute subsequent requests, clear and
+reuse its buffers/workspace, and implement initial-completion/budget/deadline
+stopping and repeated native restart. Those are not realized by these theorems. Consequently they do
 not yet supply the native upper success, tail-sum cost or common-oracle optimum
 comparison. An optional terminal value `none` records divergence; it is not a
 halted failure and must not be assigned a zero accrued prefix bill. The existing

@@ -2622,6 +2622,7 @@ public import Complexity.Computability.Probabilistic.NativeOpenExecution
 public import Complexity.Computability.Probabilistic.NativeOpenSelection
 public import Complexity.Computability.Probabilistic.NativeOutputBuffer
 public import Complexity.Computability.Probabilistic.NativeQueryAll
+public import Complexity.Computability.Probabilistic.NativeResponseExecution
 public import Complexity.Computability.Probabilistic.NativeSequential
 public import Complexity.Computability.Probabilistic.NativeUnboundedExecution
 public import Complexity.Computability.Probabilistic.Oracle
@@ -4411,6 +4412,7 @@ public import Complexity.Probability.StochasticOracle.NativeRetention
 public import Complexity.Probability.StochasticOracle.NativeRetention.Correctness
 public import Complexity.Probability.StochasticOracle.NativeRetention.Execution
 public import Complexity.Probability.StochasticOracle.NativeRetention.Packets
+public import Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution
 public import Complexity.Probability.StochasticOracle.NativeRetention.Selector
 public import Complexity.Probability.StochasticOracle.PartialCover
 public import Complexity.Probability.StochasticOracle.PartialCoverGreedy

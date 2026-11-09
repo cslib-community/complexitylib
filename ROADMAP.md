@@ -216,10 +216,20 @@ decoder without a supplied source-validity premise. Actual native local stopping
 and the joint word/memory law preserve hidden correlation, provenance and both
 resource ledgers; a correlated two-query client derives the successful native local
 output from actual source execution. The processor starts with an encoded raw
-history on its input tape. This is not yet a uniform native upper oracle policy:
-rewind/framing/input preparation from the live reader buffer, native scheduler
-realization and the repeated adaptive query/stop/output loop still need concrete
-composition. The raw-program/native-local joint-law composition is not a theorem
+history on its input tape. A combined actual native response program now copies
+the full report to a real buffer, reserves/writes the boundary marker, rewinds the
+buffer and executes a native continuation through virtual-input redirection. Its
+whole-configuration unbounded law preserves channels, oracle memory and divergent
+continuation mass; no prepared-buffer or common-clock premise is supplied. The
+retention specialization derives a native continuation from the parser/rational
+computability proof and emits a source mask on computed completion. Correlated
+cancellation and unbounded geometric-invoice sources check the same complete native
+program, including nonempty covers and whole-policy trace compatibility.
+Context is fixed when this specialization's code is constructed: this is a
+query/retention program, not the uniform adaptive selector. Native runtime-context
+and private-state storage, dynamically generated next batches, buffer/workspace
+cleanup and reuse, initial-completion stopping, and the repeated adaptive
+query/stop/output loop still need concrete composition. The raw-program/native-local joint-law composition is not a theorem
 that one native online machine implements that composition.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not
 supply that realization. This obstruction is now proved on one fixed actual
