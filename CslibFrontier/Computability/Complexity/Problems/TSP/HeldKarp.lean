@@ -21,8 +21,8 @@ This file connects the Bellman–Held–Karp dynamic program
 An instance `(D, b)` with `D.length = n + 1` has the cities `0, …, n` at distances
 `TSP.dist D i j`, and it belongs to `TSP` when some ordering of all cities has closed tour length
 at most `b`. The tour length is the closed-walk cost `cycleCost (dist D)`
-(`TSP.tourLength_eq_cycleCost`), which is invariant under rotation (`cycleCost_rotate`), so such a
-tour can be taken to start at city `0`, which is the normal form `heldKarp` optimizes over.
+(`TSP.tourLength_eq_cycleCost`), which is invariant under rotation (`cycleCost_append_comm`), so
+such a tour can be taken to start at city `0`, which is the normal form `heldKarp` optimizes over.
 `TSP.heldKarpDecide` therefore decides `TSP` in at most `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities,
 in the unit-cost model of `heldKarp`: one tick per addition-and-comparison of natural numbers,
 whatever their bit length. Composing with the reduction `HamCycle.toTSP` decides Hamiltonian

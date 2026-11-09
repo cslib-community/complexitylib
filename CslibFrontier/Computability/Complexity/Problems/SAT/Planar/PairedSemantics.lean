@@ -46,19 +46,22 @@ def wire (sites : List Point) (r : Route) : List (PairedWire.Cell Variable) :=
   r.dropLast.zipIdx.map fun (p, i) lane =>
     (signal sites p (r.getD (i - 1) p) lane, signal sites p (r.getD (i + 1) p) lane)
 
+/-- Mapping over an indexed list while ignoring the index is mapping over the list. -/
+private theorem map_zipIdx_fst {α β : Type*} (f : α → β) (l : List α) :
+    (l.zipIdx.map fun c => f c.1) = l.map f :=
+  List.map_map.symm.trans (congrArg (List.map f) (List.zipIdx_map_fst 0 l))
+
 /-- The two local clause tables retain their exact formulas under variable tagging. -/
 theorem map_fst_ordinaryClauses (p : Point) :
     (ordinaryClauses p).map Prod.fst =
       OrdinaryRing.formula.relabel (fun v => ((p, Sum.inl v) : Variable)) :=
-  List.map_map.symm.trans (congrArg (List.map (Clause.relabel _))
-    (List.zipIdx_map_fst 0 OrdinaryRing.formula))
+  List.map_map.trans (map_zipIdx_fst (Clause.relabel _) _)
 
 /-- The crossover clause table is exactly the renamed paired-port formula. -/
 theorem map_fst_crossingClauses (p : Point) :
     (crossingClauses p).map Prod.fst =
       PairedCrossover.formula.relabel (fun v => ((p, Sum.inr v) : Variable)) :=
-  List.map_map.symm.trans (congrArg (List.map (Clause.relabel _))
-    (List.zipIdx_map_fst 0 PairedCrossover.formula))
+  List.map_map.trans (map_zipIdx_fst (Clause.relabel _) _)
 
 /-- The emitted formula evaluates precisely its original, ordinary, crossing, and link blocks. -/
 theorem eval_rawFormula_iff (φ : CNF ℕ) (σ : Variable → Bool) :
@@ -298,8 +301,7 @@ theorem eval_originalClauses_of_values (φ : CNF ℕ) (sites : List Point)
           simp only [Function.comp_def, Literal.eval]
           rw [hvalues _ ho]
           rfl
-        _ = _ := List.map_map.symm.trans
-          (congrArg (List.map (Literal.eval τ)) (List.zipIdx_map_fst 0 c.1))
+        _ = _ := map_zipIdx_fst (Literal.eval τ) c.1
     have he := congrArg (fun bs : List Bool => bs.any id) hm
     simpa only [List.any_map, Function.comp_def, id_eq, Clause.eval] using he
   have hm : ((originalClauses φ sites).map Prod.fst).map (Clause.eval σ) =
@@ -309,8 +311,7 @@ theorem eval_originalClauses_of_values (φ : CNF ℕ) (sites : List Point)
         simp only [originalClauses, List.map_map, Function.comp_def]
         apply List.map_congr_left
         exact hc
-      _ = _ := List.map_map.symm.trans
-        (congrArg (List.map (Clause.eval τ)) (List.zipIdx_map_fst 0 φ))
+      _ = _ := map_zipIdx_fst (Clause.eval τ) φ
   have he := congrArg (fun bs : List Bool => bs.all id) hm
   simpa only [List.all_map, Function.comp_def, id_eq, CNF.eval] using he
 
