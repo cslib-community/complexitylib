@@ -1713,6 +1713,45 @@ channels and shared memory. The continuation starts with its own work tapes blan
 the received word on its virtual input, and the real input head at the request's
 right boundary. No caller supplies a prepared intermediate configuration.
 
+For retained ordinary storage, use `Workspace`, `startFrom`, `localStartFrom` and
+`terminal_from`. The same compiler now preserves arbitrary ordinary tape functions
+and nonzero head positions; the fresh response/marker tapes alone start blank.
+`localStartFrom_workspace` states that preservation directly. The old
+`terminal_machine` remains the blank-storage entry, rather than silently changing
+its initial-state convention.
+
+Import `Complexity.Computability.Probabilistic.NativeRuntimeContext` for a concrete
+runtime transport client. `restoringProgram` is one finite-control program for all
+context words, supplied once on its entry work tape: it issues the initial request,
+receives the complete first reply,
+appends its frame to the context on ordinary tape zero, submits that updated word
+as its second request and receives the complete second reply. Native virtual-input
+rewinding moves both inner heads back to zero, and native marker erasure leaves
+the inner flag blank. `terminal_restoringProgram` gives the entire joint stopped
+world law; `restoring_program_observation` reads the updated context tape, output,
+head, reusable inner flag and the same oracle memory. Neither theorem assumes a
+representation law, successful cover, finite reply alphabet or independent calls.
+Local instructions add no oracle invoice or external duration. This is a native
+resume-world entry, not a loader from the original instance encoding.
+
+`Header` has an injective byte format for the original encoded instance, old raw
+request/reply histories, private selector word, remaining turns/opportunities and
+stop/output data. A framed header followed by framed replies has a checked byte
+roundtrip. The concrete transducer appends the new reply trailer; it does not
+interpret or update the header's control fields. The supported scheduler simply
+submits the updated context word, which is not in general an admitted source batch
+encoding. The outer first-response buffer/flag remain retained. General buffer
+reuse, repeated adaptive selection, source admission and semantic budget/stopping
+updates are still open; this is not a complete native selector or Theorem 5 upper
+bound. See the [complete context client](../../ComplexityTests/NativeRuntimeContext.lean)
+for one correlated geometric source, genuine unbounded reply lengths, both
+context/reply-dependent second requests, unchanged joint invoices, empty words and
+zero charges. From the same matching warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRuntimeContext
+```
+
 Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
 raw-parser/rational-retention computability proof. One complete native program

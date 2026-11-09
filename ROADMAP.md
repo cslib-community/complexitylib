@@ -226,8 +226,22 @@ computability proof and emits a source mask on computed completion. Correlated
 cancellation and unbounded geometric-invoice sources check the same complete native
 program, including nonempty covers and whole-policy trace compatibility.
 Context is fixed when this specialization's code is constructed: this is a
-query/retention program, not the uniform adaptive selector. Native runtime-context
-and private-state storage, dynamically generated next batches, buffer/workspace
+query/retention program, not the uniform adaptive selector. A separate runtime-context
+transport milestone now preserves arbitrary ordinary tape functions and nonzero
+heads through that response compiler. One actual finite-control two-query program
+appends the first full reply's frame to a runtime word, issues the resulting word
+as its second request and restores the context head/inner flag using native
+rewind/erase instructions. Its derived full-world and readback laws preserve the
+same private oracle state, correlated replies, invoices and external durations.
+Its entry context is already on a native work tape; an original-input loader is
+not constructed. An injective header format carries original encoded data, old raw histories,
+private storage and budget/availability/stop/output fields. Those header fields
+are transported, not semantically updated by the append transducer. The second
+request depends on both original context and reply, checked on a fixed geometric
+source with unbounded reply lengths and empty/zero-cost edges. This concrete raw
+append scheduler is not a source concurrent-batch selector. The outer reply buffer
+and marker remain retained, and full buffer reuse/repeated restart are unproved.
+Native semantic context/private-state updates, dynamically generated next batches, buffer/workspace
 cleanup and reuse, initial-completion stopping, and the repeated adaptive
 query/stop/output loop still need concrete composition. The raw-program/native-local joint-law composition is not a theorem
 that one native online machine implements that composition.
