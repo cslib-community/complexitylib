@@ -175,12 +175,8 @@ element. -/
 
 /-- When `0 < b`, `limbCountFromB b q * b` is at least `q`. -/
 theorem le_limbCountFromB_mul {b : ℕ} (hb : 0 < b) (q : ℕ) :
-    q ≤ limbCountFromB b q * b := by
-  dsimp only [limbCountFromB]
-  have hmod := Nat.div_add_mod (q + b - 1) b
-  have hlt : (q + b - 1) % b < b := Nat.mod_lt _ hb
-  rw [Nat.mul_comm]
-  omega
+    q ≤ limbCountFromB b q * b :=
+  (Nat.le_mul_iff_le_left hb).mpr le_rfl
 
 /-- `limbCount n_max U M * chunkBits n_max` covers all `trinomialDeg U M` bits. -/
 theorem trinomialDeg_le_limbCount_mul_chunkBits (n_max U M : ℕ) :
