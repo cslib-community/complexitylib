@@ -1713,8 +1713,7 @@ private theorem recip64Approx_emod_sixteen {x : ℕ → ℤ}
   have hpow_ge : (256 : ℝ) ≤ (2 : ℝ) ^ (s + 8) := by
     calc (256 : ℝ) = (2 : ℝ) ^ (8 : ℕ) := by norm_num
       _ ≤ (2 : ℝ) ^ (s + 8) := pow_le_pow_right₀ (by norm_num) (by omega)
-  have herr_le : (6 : ℝ) / (2 : ℝ) ^ (s + 8) ≤ 6 / 256 :=
-    div_le_div_of_nonneg_left (by norm_num) (by norm_num) hpow_ge
+  have herr_le : (6 : ℝ) / (2 : ℝ) ^ (s + 8) ≤ 6 / 256 := by gcongr
   have hpref_le : |streamPrefix y (s + 8)| ≤ 1 / 2 := by
     have htri := abs_sub_le (streamPrefix y (s + 8)) (streamVal y) 0
     simp only [sub_zero] at htri
@@ -1836,8 +1835,7 @@ theorem mem_activeQueries_recipOuterProg {Struct : Type v} (s : ℕ)
       have hleZ : (((22 + 4) + l : ℕ) : ℤ) ≤
           ((26 + H.coeffA + 8 * H.coeffB + H.coeffB * s : ℕ) : ℤ) := by
         have huZ : (u : ℤ) ≤ (s : ℤ) + 8 := by exact_mod_cast hu
-        have hmul : (H.coeffB : ℤ) * (u : ℤ) ≤ (H.coeffB : ℤ) * ((s : ℤ) + 8) :=
-          mul_le_mul_of_nonneg_left huZ (Nat.cast_nonneg _)
+        have hmul : (H.coeffB : ℤ) * (u : ℤ) ≤ (H.coeffB : ℤ) * ((s : ℤ) + 8) := by gcongr
         push_cast at hAllH ⊢
         linarith
       exact_mod_cast hleZ

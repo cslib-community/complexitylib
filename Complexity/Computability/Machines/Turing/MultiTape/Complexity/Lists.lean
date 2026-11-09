@@ -10,6 +10,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.EncLen
 
 /-!
 # List operations with bounds of given degrees
@@ -134,8 +135,7 @@ public theorem findWith {t : π × α → Bool} {par : γ → π} {list : γ →
     · have hmem := List.mem_of_find?_eq_some h
       have := length_le_encList_of_mem enc hmem
       have := length_encList_take_le enc (list x) i
-      simp only [encOption_some, List.length_cons]
-      omega
+      enc_len
 
 /-- One step of keeping the elements that pass the test `t`. -/
 @[expose] public def filterStep (t : π × α → Bool) (p : π) (acc : List α) (a : α) : List α :=
@@ -322,9 +322,7 @@ public theorem replicate (enc : α ↪ List Bool) :
       rw [h]
       refine (length_encList_le enc _ (b := (enc p.2).length) fun b hb => by
         rw [List.eq_of_mem_replicate hb]).trans (Nat.mul_le_mul ?_ ?_)
-      · simp only [List.length_replicate, List.length_take, encPair_apply, encUnary_apply,
-          List.length_append, length_frame, List.nil_append]
-        omega
+      · enc_len [List.length_take, encPair_apply, List.nil_append]
       · simp only [length_encPair]
         omega)
   convert hfold.mono (d' := 3) (e' := 2) using 1
