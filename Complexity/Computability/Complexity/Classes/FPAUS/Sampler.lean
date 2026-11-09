@@ -1039,7 +1039,7 @@ the sampler built from `A` has output law within statistical distance `2 ^ (-q)`
 on the witnesses of `x`. -/
 theorem closeTo_sampler (R : SelfReducible enc W) {A : α → ℕ → ℕ → ProbComp (ℕ × ℕ)}
     (hA : ∀ p t, 0 < p → CounterAccurate W A p t) (x : α) (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
+    Probability.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) := by
   have hA' : CounterAccurate W A (counterAccuracy (R.len x)) (precision (R.len x) q) :=
     hA _ _ (by rw [counterAccuracy]; omega)
@@ -1082,7 +1082,7 @@ distance `2 ^ (-q)` of the uniform law on the witnesses, for every instance and 
 is the output-distribution half of `IsFPAUS`; its runtime half is not proved here. -/
 theorem closeTo_sampler_of_isFPRAS (R : SelfReducible enc W) {A : α → ℕ → ℕ → ProbComp (ℕ × ℕ)}
     (hA : IsFPRAS enc (fun x => (W x).card) A) (x : α) (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
+    Probability.CloseTo (ProbComp.eval (R.sampler A x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) :=
   R.closeTo_sampler (fun p t hp x => hA.2 x p t hp) x q
 

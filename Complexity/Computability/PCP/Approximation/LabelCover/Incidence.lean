@@ -289,7 +289,7 @@ private theorem isPolyTime_block (pairs : List (α × α)) (fallback : α × α)
     (encA : α ↪ List Bool) :
     ComputableInPolyTime
       (fun p : Edge (α → α → Bool) × ℕ => block pairs fallback p.1 p.2)
-      (encPair (Edge.encoding (encPi (encPi encBool))) encUnary)
+      (encPair (Edge.encoding encConstraintTable) encUnary)
       (encList (Edge.encoding (encPi encA))) := by
   have hproj₁ : ComputableInPolyTime
       (fun R : α → α → Bool => fun p : α × α => (repair pairs fallback R p).1)
@@ -329,7 +329,7 @@ omit [DecidableEq α] in
 private theorem isPolyTime_incidence (pairs : List (α × α)) (fallback : α × α)
     (encA : α ↪ List Bool) :
     ComputableInPolyTime (incidence pairs fallback)
-      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi encA)) := by
+      (Graph.encoding encConstraintTable) (Graph.encoding (encPi encA)) := by
   have hb := isPolyTime_block pairs fallback encA
   have hget : ComputableInPolyTime
       (fun p : Graph (α → α → Bool) × ℕ =>
@@ -373,7 +373,7 @@ charged under the existing graph encodings. -/
 @[fun_prop]
 theorem isPolyTime_reduce (pairs : List (α × α)) (a b : α) (encA : α ↪ List Bool) :
     ComputableInPolyTime (reduce pairs a b)
-      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi encA)) := by
+      (Graph.encoding encConstraintTable) (Graph.encoding (encPi encA)) := by
   have htest : ComputableInPolyTime
       (fun R : α → α → Bool => !(pairs.any fun p => R p.1 p.2))
       (encPi (encPi encBool)) encBool := .of_finite _
@@ -394,7 +394,7 @@ completeness and losing a factor of at most two in unsatisfied fraction. -/
 theorem polyTimeReducible_GapTwoCSP_GapLabelCover {α : Type} [Fintype α] [DecidableEq α]
     (pairs : List (α × α)) (hpairs : ∀ p, p ∈ pairs) (a b : α) (hab : a ≠ b)
     (encA : α ↪ List Bool) (s : ℝ) :
-    PromiseProblem.PolyTimeReducible (Graph.encoding (encPi (encPi encBool)))
+    PromiseProblem.PolyTimeReducible (Graph.encoding encConstraintTable)
       (Graph.encoding (encPi encA)) (GapTwoCSP α s)
       (GapLabelCover (α × α) α 1 ((1 + s) / 2)) := by
   let : Nonempty α := ⟨a⟩

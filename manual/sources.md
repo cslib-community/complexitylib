@@ -39,6 +39,11 @@ Noga Alon, Phillip B. Gibbons, Yossi Matias, Mario Szegedy. “Tracking Join and
 
 Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating the Frequency Moments.” *Journal of Computer and System Sciences* 58(1), 137–147, 1999; preliminary version in STOC 1996. https://doi.org/10.1006/jcss.1997.1545 . Author-hosted copy of the journal version: https://www.tau.ac.il/~nogaa/PDFS/amsz4.pdf . An independent agent review checked the theorem locators and statements (Theorem 2.2 for the `F₂` sketch, Proposition 3.1 for the `F∞` lower bound) against that copy on 2026-11-07 UTC. The JCSS page numbers were taken from secondary search summaries and were not checked against the typeset journal PDF.
 
+<a id="alonspencer2016"></a>
+## alonspencer2016
+
+Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.3 for the bound `Pr[X = 0] ≤ Var X / (E X) ^ 2`, §4.4 for random graphs and threshold functions) were taken from secondary tables of contents and from an agent review, which placed the bound at Theorem 4.3.1. The book was not inspected in this pass, and the library cites section numbers only.
+
 <a id="alonyusterzwick1995"></a>
 ## alonyusterzwick1995
 
@@ -696,6 +701,11 @@ Piotr Indyk, Rajeev Motwani. “Approximate Nearest Neighbors: Towards Removing 
 ## irani91
 
 Sandy Irani. "Two Results on the List Update Problem." *Information Processing Letters* 38(6), 301–306, 1991. https://doi.org/10.1016/0020-0190(91)90086-W . Crossref metadata checked on 2026-11-07; the full text was not inspected in this pass. The manual uses it only as the place where secondary sources say the deterministic `2n/(n+1)` list-update lower bound of Karp and Raghavan is reported.
+
+<a id="jansonluczakrucinski2000"></a>
+## jansonluczakrucinski2000
+
+Svante Janson, Tomasz Łuczak and Andrzej Ruciński. *Random Graphs*. Wiley-Interscience Series in Discrete Mathematics and Optimization, Wiley, 2000. https://doi.org/10.1002/9781118032718 . Bibliographic data from secondary records of the DOI. The chapter locator (Chapter 3, small subgraphs and the threshold `n ^ (-1 / m(H))`) was taken from secondary descriptions; the book was not inspected in this pass, and no theorem number is claimed.
 
 <a id="johnsonlindenstrauss84"></a>
 ## johnsonlindenstrauss84

@@ -82,10 +82,8 @@ theorem modulusSwitchRows_encodeMatrix_extendCiphertext {k n q p : ℕ}
   let : NeZero q := ⟨hq.ne'⟩
   congr 1
   simp only [modulusSwitchRows, List.map_ofFn, Function.comp_def]
-  congr 1
-  funext i
-  congr 1
-  funext j
+  congr 1 with i : 1
+  congr 1 with j : 1
   rw [ZMod.modulusSwitchResidue_eq_val hq hp]
   simp only [Int.cast_natCast, ZMod.natCast_zmod_val]
   cases i using Fin.cases <;> rfl

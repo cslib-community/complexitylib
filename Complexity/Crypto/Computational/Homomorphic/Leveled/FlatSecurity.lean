@@ -245,8 +245,7 @@ private theorem eval_flatLeveledAdversary (E : Scheme) (attempts depth capacity 
   dsimp only [Encryption.game, Encryption.gameOn, flatLeveledAdversary]
   simp only [bind_assoc, ProbComp.eval_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext index
+  congr 1 with index : 1
   cases index with
   | none =>
     simp [leveledAdversary, rejectLeveledChoice, ProbComp.eval_bind]
@@ -344,18 +343,12 @@ theorem advantage_flatLeveledAdversary {E : Scheme}
     (attempts budget capacity : ℕ → ℕ) (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-        (flatLeveledAdversary E attempts (fun n => 2 * budget n) capacity adversary) false n))
-      (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-        (flatLeveledAdversary E attempts (fun n => 2 * budget n) capacity adversary) true n)) =
+    Encryption.advantage (Encryption.game E.keyGen E.encrypt
+      (flatLeveledAdversary E attempts (fun n => 2 * budget n) capacity adversary)) n =
     intervalSuccess (2 * (2 * budget n * capacity n) + 1) (attempts n) /
       (2 * (2 * budget n * capacity n) + 1 : ℕ) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-          adversary false n))
-        (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-          adversary true n)) := by
+      Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+        adversary) n := by
   dsimp only [scheme]
   apply NNReal.eq
   rw [NNReal.coe_mul, NNReal.coe_div, NNReal.coe_natCast, Game.coe_advantage,
@@ -419,18 +412,11 @@ theorem advantage_scheme_le_flatLeveledAdversary {E : Scheme}
     (attempts budget capacity : ℕ → ℕ) (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) (hattempts : 3 ≤ attempts n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n ≤
     (8 / 7 : ℝ≥0) * (2 * (2 * budget n * capacity n) + 1 : ℕ) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (flatLeveledAdversary E attempts (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (flatLeveledAdversary E attempts (fun n => 2 * budget n) capacity adversary)
-            true n)) := by
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (flatLeveledAdversary E attempts (fun n => 2 * budget n) capacity adversary)) n := by
   have hs := flat_success_lower (2 * budget n) (capacity n) (attempts n) hattempts
   rw [advantage_flatLeveledAdversary D attempts budget capacity adversary n width
     hwidth hcapacity]
@@ -444,10 +430,7 @@ theorem advantage_scheme_le_flatLeveledAdversary {E : Scheme}
     field_simp
     nlinarith
   simpa only [one_mul, mul_assoc] using mul_le_mul_of_nonneg_right hc
-    (show 0 ≤ Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) from zero_le)
+    (show 0 ≤ Encryption.advantage (Encryption.game (scheme D budget).keyGen
+      (scheme D budget).encrypt adversary) n from zero_le)
 
 end Cslib.Crypto.Homomorphic.Leveled

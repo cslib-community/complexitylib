@@ -210,7 +210,7 @@ example :
   efficientNonAbortSpecialHVZK_lyubashevsky (fun _ => 1)
 
 example (c : BitString params.k) :
-    Interactive.CloseTo
+    CloseTo
       (((lyubashevskyFamily params).acceptedTranscript S (A, T) c).map
         (Option.map fun tz =>
           (lyubashevskyEncoding.commitment params tz.1,

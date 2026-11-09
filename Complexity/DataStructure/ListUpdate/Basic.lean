@@ -168,9 +168,7 @@ theorem inversions_triangle [Fintype α] (l₁ : List α) {l₂ : List α} (h₂
   rintro ⟨x, y⟩ h
   rw [Finset.mem_union, mem_inversionSet, mem_inversionSet]
   rw [mem_inversionSet] at h
-  have hxy : x ≠ y := by
-    rintro rfl
-    omega
+  have hxy : x ≠ y := by grind
   have hne : l₂.idxOf x ≠ l₂.idxOf y := fun he => hxy (h₂.idxOf_inj.1 he)
   omega
 
@@ -228,9 +226,7 @@ theorem idxOf_le_card_crossBefore_add [Fintype α] {l l' : List α}
   intro x hx
   rw [Finset.mem_union, mem_crossBefore]
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
-  have hxr : x ≠ r := by
-    rintro rfl
-    omega
+  have hxr : x ≠ r := by grind
   have hne : l'.idxOf x ≠ l'.idxOf r := fun he => hxr (hl'.idxOf_inj.1 he)
   omega
 

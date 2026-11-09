@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListBinaryLookup
 import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.Nat.Asymptotics
+import Complexity.Tactic.EncLen
 
 /-!
 # Contraction with entry procedures: the interface
@@ -186,8 +187,7 @@ theorem exists_mul_ceilNineTenths_le (A : ℕ) :
     rwa [ContractionSchedule.degreeBound, ← hLdef] at this
   have hpow : 2 ^ L ≤ s := hLdef ▸ Nat.pow_log_le_self 2 hs0
   rw [← hLdef, Nat.le_div_iff_mul_le hsq0]
-  calc A * ceilNineTenths s * Nat.sqrt L ≤ A * 2 ^ (9 * L / 10 + 2) * (L + 1) :=
-        Nat.mul_le_mul (Nat.mul_le_mul_left _ hD) hsq
+  calc A * ceilNineTenths s * Nat.sqrt L ≤ A * 2 ^ (9 * L / 10 + 2) * (L + 1) := by gcongr
     _ = 2 ^ (9 * L / 10) * (4 * A * (L + 1)) := by rw [pow_add]; ring
     _ ≤ 2 ^ (9 * L / 10) * 2 ^ (L / 10) := Nat.mul_le_mul_left _ h1
     _ = 2 ^ (9 * L / 10 + L / 10) := (pow_add _ _ _).symm
@@ -331,9 +331,7 @@ private theorem lengths_le (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNet
       (DescribedNetwork.encInput (encPair encUnary (encList encNat)) encT
         ((P, fl), G)).length ≤ 2 * (encInput encT (P, fl, r, G)).length := by
   have h := length_le_length_encList encNat fl
-  simp only [encInput, DescribedNetwork.encInput, length_encPair, encUnary_apply,
-    List.length_replicate] at h ⊢
-  omega
+  enc_len [encInput, DescribedNetwork.encInput] at h ⊢
 
 private theorem mul_pow_le {c W d E : ℕ} (hW : 1 ≤ W) (hd : d ≤ E) : c * W ^ d ≤ c * W ^ E :=
   Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hW hd)
@@ -526,8 +524,7 @@ theorem exists_directCore_le
   constructor
   · calc _ ≤ 2 * (Y * X) * ((A₀ + 2 * c₀) * X ^ e * Y) := hT.trans (Nat.mul_le_mul hcount hinner)
       _ = 2 * (A₀ + 2 * c₀) * X ^ (e + 1) * (Y * Y) := by rw [pow_succ]; ring
-      _ ≤ K * X ^ K * 2 ^ (K * s) :=
-          Nat.mul_le_mul (Nat.mul_le_mul hKc (Nat.pow_le_pow_right hX1 hKe)) hKY
+      _ ≤ K * X ^ K * 2 ^ (K * s) := by gcongr
   · have h1 : ES ≤ c₀ * X ^ e := hES ▸ Nat.mul_le_mul_left _ hXe2
     calc _ ≤ A₀ * X ^ e + c₀ * X ^ e :=
           hS.trans (Nat.add_le_add (hpoly.trans (Nat.mul_le_mul_left _ hXe1)) h1)
