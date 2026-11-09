@@ -258,6 +258,9 @@ theorem Circuit.matrix_flatMap_mapWires (C : Circuit m) (L : List (Fin m ↪ Fin
 /-- The gate code `g` with every qubit number increased by `o`. -/
 def GateCode.shift (o : ℕ) (g : GateCode) : GateCode := (g.1, g.2.1 + o, g.2.2.map (· + o))
 
+@[simp] theorem GateCode.shift_zero (g : GateCode) : g.shift 0 = g := by
+  simp [GateCode.shift]
+
 /-- The block of qubits `o, …, o + m - 1` of an `N`-qubit register. -/
 def blockEmb (o : ℕ) (h : o + m ≤ N) : Fin m ↪ Fin N :=
   ⟨fun i => ⟨i + o, by omega⟩, fun i j hij => Fin.ext (by simpa using congrArg Fin.val hij)⟩

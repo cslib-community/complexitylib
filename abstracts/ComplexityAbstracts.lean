@@ -46,6 +46,8 @@ import ComplexityAbstracts.KargerMinCutAbstract
 import ComplexityAbstracts.KargerMinCutBridge
 import ComplexityAbstracts.MagnificationAbstract
 import ComplexityAbstracts.MagnificationBridge
+import ComplexityAbstracts.MatrixMultiplicationAbstract
+import ComplexityAbstracts.MatrixMultiplicationBridge
 import ComplexityAbstracts.PCPAbstract
 import ComplexityAbstracts.PCPBridge
 import ComplexityAbstracts.PartialMCSPAbstract

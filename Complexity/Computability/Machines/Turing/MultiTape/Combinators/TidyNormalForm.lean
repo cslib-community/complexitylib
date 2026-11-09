@@ -75,8 +75,7 @@ theorem ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace {α β : 
     ring
   have e₂ : (4 * k * k + 6 * k + 4) * (s a + 1) =
       (4 * k * k + 6 * k + 4) * s a + (4 * k * k + 6 * k + 4) := by ring
-  have : (6 * k + 2) * s a ≤ (4 * k * k + 6 * k + 4) * s a :=
-    Nat.mul_le_mul_right _ (by generalize 4 * k * k = m; omega)
+  have : (6 * k + 2) * s a ≤ (4 * k * k + 6 * k + 4) * s a := by gcongr <;> omega
   rw [e₁, e₂]
   exact Nat.add_le_add this (by generalize 4 * k * k = m; omega)
 

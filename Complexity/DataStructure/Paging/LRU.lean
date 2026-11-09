@@ -378,10 +378,7 @@ private theorem one_add_sdiff_le_maxWeightFrom_snoc :
         maxWeightFrom (init.length + 1) s (init ++ [last])
   | [], last, p, s, _, hcard, hps, hpnot, hlast => by
     have hne : p ≠ last := fun h => hpnot (by simp [h])
-    have hsub : ({p, last} : Finset α) ⊆ s := by
-      intro z hz
-      simp only [Finset.mem_insert, Finset.mem_singleton] at hz
-      rcases hz with rfl | rfl <;> assumption
+    have hsub : ({p, last} : Finset α) ⊆ s := by grind
     have h2 : 2 ≤ s.card := by
       have hc := Finset.card_le_card hsub
       rw [Finset.card_pair hne] at hc
@@ -495,10 +492,7 @@ theorem lruPotential_step {k : Nat} (hk : 0 < k) {s s' : Finset α} {q : List α
           rw [this]
           exact le_max_right _ _
         · have hqlen : q.length = k := by omega
-          have hqne : q ≠ [] := by
-            intro hnil
-            rw [hnil, List.length_nil] at hqlen
-            omega
+          have hqne : q ≠ [] := by grind
           have hsnoc : q.dropLast ++ [q.getLast hqne] = q := List.dropLast_append_getLast hqne
           set init := q.dropLast
           set last := q.getLast hqne

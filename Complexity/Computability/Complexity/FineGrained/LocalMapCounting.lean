@@ -1310,8 +1310,7 @@ public theorem exists_localMapPreimageFinder_declared (k : ℕ) :
       exact_mod_cast hT_le_N.trans hT_le_poly
     have hY0 : (0 : ℝ) ≤ Y ^ d_T :=
       pow_nonneg (add_nonneg (Nat.cast_nonneg _) zero_le_one) d_T
-    have hmul1 : (N_exp q : ℝ) * ((C_T : ℝ) * Y ^ d_T) ≤ 2 * X * ((C_T : ℝ) * Y ^ d_T) :=
-      mul_le_mul_of_nonneg_right hNX (mul_nonneg (Nat.cast_nonneg C_T) hY0)
+    have hmul1 : (N_exp q : ℝ) * ((C_T : ℝ) * Y ^ d_T) ≤ 2 * X * ((C_T : ℝ) * Y ^ d_T) := by gcongr
     have hZ0 : (0 : ℝ) ≤ X * Y ^ d_T := mul_nonneg (zero_le_one.trans hX1) hY0
     have hring : ((2 * C_T + 1 : ℕ) : ℝ) * (X * Y ^ d_T) =
         2 * X * ((C_T : ℝ) * Y ^ d_T) + X * Y ^ d_T := by
