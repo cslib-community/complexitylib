@@ -47,6 +47,8 @@ Unlike the target collision-resistant construction `TCRSignature.wordScheme`
 to every signature because a universal one-way hash family cannot expose its key before the target
 message is chosen, full collision resistance allows a single hash key `s` to be fixed once in the
 public key so that signatures carry no hash-key overhead (`sign` returns a raw `S`-signature).
+Following `CollisionResistant` and `HashFamily`, hash keys and digests both have length `n` with
+uniform key sampling, specializing Construction 13.3 to digest length `ℓ(n) = n` and uniform `Gen`.
 
 For the security reduction ([KatzLindell2020], Theorem 13.4, p. 468), any execution of an
 `EUFCMA` forger producing a fresh valid forgery `(m*, σ*)` against `HashAndSign.scheme` splits
@@ -62,10 +64,10 @@ terms, and hence `SignatureScheme.EUFCMA.wordEUFCMA_hashAndSign`,
 `SignatureScheme.EUFCMA.wordEUFCMA_of_hashFamily`, and
 `SignatureScheme.EUFCMA.wordEUFCMA_merkleDamgard`.
 
-Conversely, `HashAndSign.not_eufCMA_scheme_of_collision` shows that collision resistance is
-necessary: if two distinct messages `m₀ ≠ m₁` collide under every hash key `s`, a one-query forger
-queries `m₀` and outputs its signature on `m₁`, winning `eufCmaGame` with probability `1` at every
-security parameter `n` regardless of the underlying `SignatureScheme` `S`.
+In the negative direction, `HashAndSign.not_eufCMA_scheme_of_collision` shows that key-independent
+collisions break the scheme: if two distinct messages `m₀ ≠ m₁` collide under every hash key `s`,
+a one-query forger queries `m₀` and outputs its signature on `m₁`, winning `eufCmaGame` with
+probability `1` at every security parameter `n` regardless of the underlying `SignatureScheme` `S`.
 
 ## Main definitions
 
@@ -87,7 +89,8 @@ security parameter `n` regardless of the underlying `SignatureScheme` `S`.
   `HashFamily`.
 * `Cslib.Crypto.SignatureScheme.EUFCMA.wordEUFCMA_merkleDamgard`: specialization to a
   `CompressionFamily` via Merkle–Damgård domain extension.
-* `Cslib.Crypto.HashAndSign.not_eufCMA_scheme_of_collision`: necessity of collision resistance.
+* `Cslib.Crypto.HashAndSign.not_eufCMA_scheme_of_collision`: key-independent collisions break the
+  scheme.
 
 ## References
 
@@ -587,7 +590,7 @@ private theorem exists_sigLengthBound :
   refine hsigLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left ?_ ds))
   omega
 
-/-! ### Necessity of Collision Resistance -/
+/-! ### Key-Independent Collisions Break the Scheme -/
 
 /-- One-query forger that queries `m₀`, truncates the reply to `bound n` bits, and outputs it as a
 forgery on `m₁`. Whenever `m₀ ≠ m₁` and `H s m₀ = H s m₁`, this attacker breaks
@@ -653,7 +656,7 @@ theorem succProbability_eufCmaGame_fixedCollisionForger
     rfl
   simp [Game.succProbability, heval]
 
-/-- **Necessity of collision resistance in Construction 13.3**: if two distinct messages `m₀ ≠ m₁`
+/-- **Key-independent collisions break Construction 13.3**: if two distinct messages `m₀ ≠ m₁`
 collide under every hash key `s`, then `(scheme S H hH hlen)` is not `EUFCMA` secure for any
 underlying `SignatureScheme` `S`. -/
 theorem not_eufCMA_scheme_of_collision
