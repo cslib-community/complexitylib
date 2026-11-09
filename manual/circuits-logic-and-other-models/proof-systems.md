@@ -865,6 +865,47 @@ expanded-language recipes, native whole-instance target acceptance, geometric/so
 and bare recognition remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 
+## Original-language ordered disequality
+
+Import `Complexity.Logics.Propositional.CSP.Planar.Embedding.SelfDual` and open
+`Cslib.Complexity.CSP.OrderedBoundary`. `exists_disequality_of_common_not` takes only a
+common unary NOT operation and failure of the unary false-constant operation:
+`HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0))` and
+`¬HasPolymorphism arity sem (fun _ : Fin 1 → Bool => false)`.
+It returns an actual `PPGadget arity sem RelationMinor.disequality` together with
+`Nonempty (GadgetWitness g)`. There is no finite-alphabet, pin, template, PP-definition,
+target-rotation or genus-provider premise. The supplied gadget uses original symbols;
+its witness checks both the actual body and the ordered structural probe.
+
+The minimum ranges over actual gadgets with actual accepted boundaries, nonempty relations
+and a missing all-zero tuple. An arbitrary-arity original atom seeds it; proved projection
+and adjacent equality provide every descent step. Common NOT excludes the unary outcome,
+leaving binary disequality. This follows DK Lemma 3, printed pp. 437–438, with the semantic
+descent adapted from Erik Demaine's relation-minor proof and original actual-body/certificate
+reconstruction. It does not assume arbitrary PP operations preserve ordered boundaries.
+
+The minimum is classical, static language preprocessing. No uniform algorithm or bound in
+alphabet/template size is claimed. The [complete enabling client](../../ComplexityTests/PlanarSelfDualEnabling.lean)
+uses `{NAE3, CROSS}` to supply an original-language body, an accepted table, a satisfying
+unequal free row and rejection of the equal false row. Empty and true/false-nullary languages
+show why unsatisfiability alone does not imply the failed-constant premise.
+
+For semantic preservation alone, import
+`Complexity.Logics.Propositional.CSP.PrimitivePositive.Polymorphism`.
+`HasPolymorphism.eval` preserves satisfying assignments of any actual wellformed CSP body;
+`PPGadget.isPolymorphism` passes the same common operation through existential auxiliaries.
+The operation index `J` is arbitrary, including a nullary operation. These are forward
+semantic facts, with no ordered or planar PP-closure assertion. The
+[semantic-only client](../../ComplexityTests/CSPGadgetPolymorphism.lean) checks repeated
+scopes, nullary operations and a false nullary body, and asserts that its imports do not
+include `Graph.RotationSystem`. The [guide](../../guide/ComplexityGuide/NPCompleteness.lean)
+provides complete ordinary-import examples for both APIs.
+
+Run `scripts/build.sh ComplexityTests.PlanarSelfDualEnabling ComplexityTests.CSPGadgetPolymorphism --wfail --iofail`.
+General attachments, meet/NAND, normalization/Figure-1 and expanded original-language
+endpoints, native whole-instance target acceptance, geometry/source comparison and recognition
+remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
 ## Finite crossover gadget semantics
 
 Import `Complexity.Logics.Propositional.CSP.Planar.Crossover` for Dvořák–Kupec, ICALP 2015,

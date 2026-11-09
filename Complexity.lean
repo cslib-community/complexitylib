@@ -4829,6 +4829,7 @@ public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Probe
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Projection
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Relabel
 public import Complexity.Logics.Propositional.CSP.Planar.Embedding.Restriction
+public import Complexity.Logics.Propositional.CSP.Planar.Embedding.SelfDual
 public import Complexity.Logics.Propositional.CSP.Planar.NonSelfDual
 public import Complexity.Logics.Propositional.CSP.Planar.Normalization
 public import Complexity.Logics.Propositional.CSP.Planar.OneInThree
@@ -4837,6 +4838,7 @@ public import Complexity.Logics.Propositional.CSP.Planar.RelationMinor
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Operations
+public import Complexity.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 public import Complexity.Logics.Propositional.CSP.Table
 public import Complexity.Logics.Propositional.CSP.Table.ContractionRows
 public import Complexity.Logics.Propositional.CSP.Table.CyclicDifference

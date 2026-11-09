@@ -49,6 +49,8 @@ import Complexity.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary
 import Complexity.Logics.Propositional.CSP.Planar.Embedding.Projection
 import Complexity.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic
 import Complexity.Logics.Propositional.CSP.Planar.Embedding.Equality
+import Complexity.Logics.Propositional.CSP.Planar.Embedding.SelfDual
+import Complexity.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 import Complexity.Computability.PolyTime.CSP.Table
 import Complexity.Computability.PolyTime.CSP.CyclicDifference.Size
 import Complexity.Computability.PolyTime.CSP.Edge.Augmenting
@@ -1656,6 +1658,83 @@ substitution is supplied. Remaining pin/disequality
 recipes, expanded language endpoints, native target acceptance, geometric/
 source comparison, recognition and full #3091 remain open.
 
+
+# Original-Language Ordered Disequality
+
+Import `Complexity.Logics.Propositional.CSP.Planar.Embedding.SelfDual` for a
+generic language result, beyond the preceding concrete NAE example. Common NOT
+and failure of the unary false-constant operation supply both an actual
+original-language disequality gadget and its ordered numerical boundary:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool}
+    (hnot : HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0)))
+    (hfalse : ¬HasPolymorphism arity sem
+      (fun _ : Fin 1 → Bool => false)) :
+    ∃ g : PPGadget arity sem RelationMinor.disequality,
+      Nonempty (GadgetWitness g) :=
+  exists_disequality_of_common_not hnot hfalse
+```
+
+There is no finite-alphabet, pin, template or target-certificate premise.
+The minimum ranges over actual gadgets with actual checked boundaries;
+projection and adjacent equality supply each descent step. Unary arity is
+excluded by common complement, leaving disequality. This is static classical
+existence, with no uniform preprocessing or input-varying compiler bound.
+
+The witness yields an actual accepted table and the intended free-row behavior:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool}
+    (hnot : HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0)))
+    (hfalse : ¬HasPolymorphism arity sem
+      (fun _ : Fin 1 → Bool => false)) :
+    ∃ (g : PPGadget arity sem RelationMinor.disequality)
+        (c : Graph.RotationCertificate),
+      verify g.body (List.ofFn Sum.inl) c = true ∧
+      (∃ b, g.body.eval sem (Sum.elim ![true, false] b) = true) ∧
+      ¬(∃ b, g.body.eval sem (Sum.elim ![false, false] b) = true) := by
+  obtain ⟨g, ⟨w⟩⟩ := exists_disequality_of_common_not hnot hfalse
+  refine ⟨g, w.certificate, w.accepted, ?_, ?_⟩
+  · exact (g.correct ![true, false]).mp (by decide)
+  · intro hb
+    exact (by decide : ![false, false] ∉ RelationMinor.disequality)
+      ((g.correct ![false, false]).mpr hb)
+```
+
+`ComplexityTests/PlanarSelfDualEnabling.lean` supplies the hypotheses for
+`{NAE3, CROSS}`. Empty and true/false-nullary languages also test the limits:
+unsatisfiability alone does not imply failure of the false constant.
+
+The separate import
+`Complexity.Logics.Propositional.CSP.PrimitivePositive.Polymorphism` supplies
+forward semantic preservation, with an arbitrary operation index `J`:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel J : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin n → Bool)} (g : PPGadget arity sem R)
+    {f : (J → Bool) → Bool} (h : HasPolymorphism arity sem f) :
+    Cslib.Logic.IsPolymorphism f R := g.isPolymorphism h
+```
+
+`HasPolymorphism.eval` applies to a wellformed original CSP body and its
+satisfying assignments; the gadget theorem handles existential auxiliaries.
+`J` may be empty. Neither semantic fact asserts arbitrary planar PP closure.
+`ComplexityTests/CSPGadgetPolymorphism.lean` imports no graph rotation model
+and checks repeated scopes, nullary operations and false nullary constraints.
+
+The descent follows DK Lemma 3, printed pp. 437–438; actual-body ordered
+reconstruction is original. General attachments and expanded-language recipes,
+native target acceptance, geometry/source comparison, recognition and full
+#3091 remain open.
 
 # Finite Crossover Gadget Semantics
 

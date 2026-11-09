@@ -481,6 +481,10 @@ index links to canonical definitions rather than keeping a second set.
   Concrete NAE disequality and OneHot pins are checked; general derived pin/disequality
   attachment, remaining expanded-language recipes and whole-instance
   native target acceptance remain open; macro tables do not complete language substitution.
+  In the common-NOT branch, failure of the false constant now supplies an actual original-
+  language disequality gadget and checked ordered boundary, without finite-alphabet or
+  enabling-template assumptions. The minimum is over realized gadgets and uses proved
+  projection/adjacent equality; this static existence result carries no uniform native bound.
   The actual ordered incidence-to-polygon bridge now preserves every face and component
   and proves the numerical Euler equivalence under positive actual scopes. Its abstract
   rotation maps still need native and geometric compilation.
