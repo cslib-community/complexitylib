@@ -10,16 +10,17 @@ Use editor or MCP diagnostics and goal inspection. A partial diagnostic response
 |---|---|---|
 | Unknown declaration or tactic | Import, namespace, revision | Compare the full checked client's imports and openings |
 | `fun_prop` or `polytime` cannot close a composition | Each routine's certificate and encodings | Supply the missing certificate or expose a local wrapper's registered head |
-| `polytime` cannot certify a length guard such as `if w.length = n then … else …` | Whether the comparison's natural-number encoding is ambiguous | Import [`PolyTime/Nat/Eq.lean`](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Eq.lean), whose `unary_eq'` fixes both operands to unary |
+| `polytime` cannot certify a length guard such as `if w.length = n then … else …` | Whether the comparison's natural-number encoding is ambiguous | Import [`PolyTime/Nat/Eq.lean`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Eq.lean), whose `unary_eq'` fixes both operands to unary |
 | A loop leaves obligations | Iteration count, invariant, encoded state growth | Prove the growth/count premise and use the appropriate iteration rule |
 | A projection fails despite a supplied certificate | Its input/output representations | Match the encodings or supply the conversion certificate |
 | `ppt` fails after a bind | Sampled-value and continuation encodings | Find a common encoding and the continuation's joint certificate |
+| `ppt` fails on an oracle goal | Whether the program is unfolded, and each query keeps a bounded `List.take` prefix | Pass the program's definition as a hint (`ppt [handler]`); for handler substitution or adaptive loops, apply the explicit rule and its invariant |
 | A query bound does not imply runtime | Which operations the cost counts | Supply native realization and time/answer-length obligations |
 | Logspace composition needs a large temporary string | Whether the rule stores or recomputes it | Use the appropriate replay rule and stated output-bound hypotheses |
 | A RAM theorem does not apply to a Turing-time goal | Word width, basis and simulation | Apply a bridge and account for its overhead |
 | An endpoint needs a powerful added assumption | Whether it supplies the desired result | Locate the missing construction and reassess the claim |
 
-The [automation reference](../design-and-assurance/automation.md) documents the tactics. The [plain `polytime` implementation](../../Complexity/Tactic/PolyTime.lean) may report a failed compositional attempt. This is a search hint, not a theorem of inefficiency or noncomputability.
+The [automation reference](../design-and-assurance/automation.md) documents the tactics. The [plain `polytime` implementation](../../CslibFrontier/Tactic/PolyTime.lean) may report a failed compositional attempt. This is a search hint, not a theorem of inefficiency or noncomputability.
 
 ## Separate algorithmic growth from search cost
 
