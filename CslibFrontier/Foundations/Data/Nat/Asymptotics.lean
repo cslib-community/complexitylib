@@ -15,15 +15,17 @@ import Mathlib.Tactic.Linarith
 /-!
 # Further asymptotic bounds on natural numbers
 
-For any natural base `b > 1`, `Nat.log b` tends to infinity at infinity (`Nat.tendsto_log_atTop`),
-every affine function of a shifted logarithm `a + c * log b (n + d)` is eventually at most `n`
-(`Nat.eventually_add_mul_log_add_le`), and every fixed multiple of `(n + 1) ^ k` is eventually at
-most `b ^ n` (`Nat.eventually_mul_add_one_pow_le_pow`) and at most `b ^ (n / m)` for `m > 0`
+For any natural base `b > 1`, `Nat.log b` and `Nat.clog b` tend to infinity at infinity
+(`Nat.tendsto_log_atTop`, `Nat.tendsto_clog_atTop`), every affine function of a shifted logarithm
+`a + c * log b (n + d)` is eventually at most `n` (`Nat.eventually_add_mul_log_add_le`), and every
+fixed multiple of `(n + 1) ^ k` is eventually at most `b ^ n`
+(`Nat.eventually_mul_add_one_pow_le_pow`) and at most `b ^ (n / m)` for `m > 0`
 (`Nat.eventually_mul_add_one_pow_le_pow_div`).
 
 ## Main results
 
 * `Nat.tendsto_log_atTop`: `Tendsto (Nat.log b) atTop atTop` for `1 < b`.
+* `Nat.tendsto_clog_atTop`: `Tendsto (Nat.clog b) atTop atTop` for `1 < b`.
 * `Nat.eventually_le_log`: `∀ᶠ n in atTop, k ≤ Nat.log b n` for `1 < b`.
 * `Nat.eventually_add_mul_log_add_le`: `∀ᶠ n in atTop, a + c * Nat.log b (n + d) ≤ n` for `1 < b`.
 * `Nat.eventually_add_mul_log_le`: `∀ᶠ n in atTop, a + c * Nat.log b n ≤ n` for `1 < b`.
@@ -45,6 +47,10 @@ namespace Nat
 /-- The base-`b` logarithm tends to infinity for `1 < b`. -/
 theorem tendsto_log_atTop {b : ℕ} (hb : 1 < b) : Tendsto (log b) atTop atTop :=
   tendsto_atTop_atTop.2 fun k => ⟨b ^ k, fun _ hN => le_log_of_pow_le hb hN⟩
+
+/-- The base-`b` upper logarithm tends to infinity for `1 < b`. -/
+theorem tendsto_clog_atTop {b : ℕ} (hb : 1 < b) : Tendsto (clog b) atTop atTop :=
+  tendsto_atTop_mono (log_le_clog b) (tendsto_log_atTop hb)
 
 /-- Every constant is eventually at most `log b n` for `1 < b`. -/
 theorem eventually_le_log (k : ℕ) {b : ℕ} (hb : 1 < b) :
