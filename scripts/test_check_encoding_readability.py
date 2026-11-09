@@ -15,7 +15,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import check_encoding_readability as c  # noqa: E402
 
-HEADER = "module\n-- upstream: candidate\n\npublic import Complexity.Init\n\npublic section\n\n"
+HEADER = "module\n-- upstream: candidate\n\npublic import CslibFrontier.Init\n\npublic section\n\n"
 TERM = "encPair encNat (encList encBool)"
 
 
@@ -187,7 +187,7 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(violations(both), {outer: ["a", "b", "c"], TERM: ["x", "y", "z"]})
 
     def test_combinators_are_defined(self) -> None:
-        root = pathlib.Path(c.ROOT, "Complexity/Computability/Machines/Turing/MultiTape/Encodings")
+        root = pathlib.Path(c.ROOT, "CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings")
         source = "\n".join(p.read_text() for p in root.rglob("*.lean"))
         for name, arity in c.COMBINATORS.items():
             with self.subTest(name=name):
@@ -203,11 +203,11 @@ class RatchetTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = pathlib.Path(tmp.name)
         self.baseline = self.root / "baseline.json"
-        self.module = self.root / "Complexity/Area/A.lean"
+        self.module = self.root / "CslibFrontier/Area/A.lean"
         self.module.parent.mkdir(parents=True)
         self.write("abc")
         # Not checked: an `Internal` module, the tests and the abstracts.
-        for rel in ("Complexity/Area/Internal/B.lean", "ComplexityTests/C.lean",
+        for rel in ("CslibFrontier/Area/Internal/B.lean", "CslibFrontierTests/C.lean",
                     "abstracts/D.lean"):
             path = self.root / rel
             path.parent.mkdir(parents=True)
@@ -228,21 +228,21 @@ class RatchetTests(unittest.TestCase):
         return code, out.getvalue(), err.getvalue()
 
     def test_at_the_baseline_passes(self) -> None:
-        code, out, _ = self.run_main({"Complexity/Area/A.lean": {TERM: 3}})
+        code, out, _ = self.run_main({"CslibFrontier/Area/A.lean": {TERM: 3}})
         self.assertEqual(code, 0)
         self.assertIn("1 repeated compound encoding(s) in 1 module(s); every module matches", out)
 
     def test_a_new_violation_fails_with_its_declarations(self) -> None:
         code, _, err = self.run_main({})
         self.assertEqual(code, 1)
-        self.assertIn(f"Complexity/Area/A.lean: `{TERM}` in 3 public signatures:", err)
-        self.assertIn("Complexity/Area/A.lean:8: a", err)
+        self.assertIn(f"CslibFrontier/Area/A.lean: `{TERM}` in 3 public signatures:", err)
+        self.assertIn("CslibFrontier/Area/A.lean:8: a", err)
         self.assertIn("documented reducible `abbrev`", err)
         self.assertEqual(self.run_main(None)[0], 1)  # a missing baseline allows nothing
 
     def test_growth_fails(self) -> None:
         self.write("abcd")
-        code, _, err = self.run_main({"Complexity/Area/A.lean": {TERM: 3}})
+        code, _, err = self.run_main({"CslibFrontier/Area/A.lean": {TERM: 3}})
         self.assertEqual(code, 1)
         self.assertIn("in 4 public signatures, baseline 3", err)
 
@@ -250,14 +250,14 @@ class RatchetTests(unittest.TestCase):
         for names, count in (("abc", 3), ("ab", 0)):
             with self.subTest(names=names):
                 self.write(names)
-                code, _, err = self.run_main({"Complexity/Area/A.lean": {TERM: 4}})
+                code, _, err = self.run_main({"CslibFrontier/Area/A.lean": {TERM: 4}})
                 self.assertEqual(code, 1)
                 self.assertIn("the baseline is stale", err)
                 self.assertIn(f"`{TERM}` in {count} public signature(s), baseline 4", err)
 
     def test_update_lowers_the_baseline(self) -> None:
         self.write("ab")
-        code, out, _ = self.run_main({"Complexity/Area/A.lean": {TERM: 3}}, "--update-baseline")
+        code, out, _ = self.run_main({"CslibFrontier/Area/A.lean": {TERM: 3}}, "--update-baseline")
         self.assertEqual(code, 0)
         self.assertIn("0 repeated compound encoding(s)", out)
         self.assertEqual(json.loads(self.baseline.read_text()), {})
@@ -271,10 +271,10 @@ class RatchetTests(unittest.TestCase):
         code, _, _ = self.run_main(None, "--update-baseline", "--allow-increase")
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(self.baseline.read_text()),
-                         {"Complexity/Area/A.lean": {TERM: 3}})
+                         {"CslibFrontier/Area/A.lean": {TERM: 3}})
 
     def test_malformed_baseline_is_refused(self) -> None:
-        for bad in ([], {"Complexity/Area/A.lean": 3}, {"Complexity/Area/A.lean": {TERM: 2}}):
+        for bad in ([], {"CslibFrontier/Area/A.lean": 3}, {"CslibFrontier/Area/A.lean": {TERM: 2}}):
             with self.subTest(bad=bad), self.assertRaises(SystemExit):
                 self.run_main(bad)
 
@@ -283,15 +283,15 @@ class RatchetTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("1 repeated compound encoding(s) in 1 module(s), spelled out in 3", out)
         self.assertIn("Area\t1\t1", out)
-        self.assertIn("1\t3\tComplexity/Area/A.lean", out)
+        self.assertIn("1\t3\tCslibFrontier/Area/A.lean", out)
 
     def test_list_ignores_the_baseline_and_always_succeeds(self) -> None:
-        for baseline in ({"Complexity/Area/A.lean": {TERM: 3}}, {}, None):
+        for baseline in ({"CslibFrontier/Area/A.lean": {TERM: 3}}, {}, None):
             with self.subTest(baseline=baseline):
                 code, out, err = self.run_main(baseline, "--list")
                 self.assertEqual((code, err), (0, ""))
-                self.assertIn(f"Complexity/Area/A.lean: `{TERM}` in 3 public signatures:", out)
-                self.assertIn("Complexity/Area/A.lean:8: a", out)
+                self.assertIn(f"CslibFrontier/Area/A.lean: `{TERM}` in 3 public signatures:", out)
+                self.assertIn("CslibFrontier/Area/A.lean:8: a", out)
                 self.assertNotIn("baseline 3", out)
                 self.assertIn("1 repeated compound encoding(s) in 1 of 1 checked module(s), and "
                               "0 local notation(s)", out)
@@ -299,15 +299,15 @@ class RatchetTests(unittest.TestCase):
         self.assertEqual(self.run_main({}, "--all")[0], 1)  # the same tree fails enforcement
 
     def test_list_restricts_to_a_path_prefix(self) -> None:
-        other = self.root / "Complexity/Areas/B.lean"
+        other = self.root / "CslibFrontier/Areas/B.lean"
         other.parent.mkdir(parents=True)
         other.write_text(HEADER + "".join(theorem(n) for n in "xyz"))
         for prefix, shown, status in (
-                ("Complexity/Area", "A.lean", "1 repeated compound encoding(s) in 1 of 1 checked "
-                                              "module(s) under Complexity/Area,"),
-                ("./Complexity/Areas/", "B.lean", "in 1 of 1 checked module(s) under"),
-                ("Complexity/Area/A.lean", "A.lean", "in 1 of 1 checked module(s) under"),
-                ("Complexity/Are", None, "0 repeated compound encoding(s) in 0 of 0 checked"),
+                ("CslibFrontier/Area", "A.lean", "1 repeated compound encoding(s) in 1 of 1 checked "
+                                              "module(s) under CslibFrontier/Area,"),
+                ("./CslibFrontier/Areas/", "B.lean", "in 1 of 1 checked module(s) under"),
+                ("CslibFrontier/Area/A.lean", "A.lean", "in 1 of 1 checked module(s) under"),
+                ("CslibFrontier/Are", None, "0 repeated compound encoding(s) in 0 of 0 checked"),
                 ("", "A.lean", "2 repeated compound encoding(s) in 2 of 2 checked module(s), and")):
             with self.subTest(prefix=prefix):
                 code, out, _ = self.run_main(None, "--list", prefix)
@@ -327,8 +327,8 @@ class RatchetTests(unittest.TestCase):
             "theorem a : True := trivial\n")
         code, out, _ = self.run_main(None, "--list")
         self.assertEqual(code, 0)
-        self.assertIn(f'Complexity/Area/A.lean:9: local notation "encX" => {TERM}\n', out)
-        self.assertIn('Complexity/Area/A.lean:17: local notation "encV" e => '
+        self.assertIn(f'CslibFrontier/Area/A.lean:9: local notation "encX" => {TERM}\n', out)
+        self.assertIn('CslibFrontier/Area/A.lean:17: local notation "encV" e => '
                       "encPair e (encOption encBool)\n", out)
         for name in ("encY", "encZ", "encW"):
             self.assertNotIn(name, out)
@@ -356,10 +356,10 @@ class ScopeTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = pathlib.Path(tmp.name)
         self.baseline = self.root / "baseline.json"
-        self.write("Complexity/Area/A.lean", "abc")
+        self.write("CslibFrontier/Area/A.lean", "abc")
         # `main` holds one more use in B than the baseline records: drift from a merge.
-        self.write("Complexity/Other/B.lean", "abcd")
-        self.entries = {"Complexity/Area/A.lean": {TERM: 3}, "Complexity/Other/B.lean": {TERM: 3}}
+        self.write("CslibFrontier/Other/B.lean", "abcd")
+        self.entries = {"CslibFrontier/Area/A.lean": {TERM: 3}, "CslibFrontier/Other/B.lean": {TERM: 3}}
         self.baseline.write_text(json.dumps(self.entries))
         for args in (("init", "-q"), ("config", "user.name", "Fixture"),
                      ("config", "user.email", "fixture@example.invalid"), ("add", "."),
@@ -378,55 +378,55 @@ class ScopeTests(unittest.TestCase):
         return code, out.getvalue(), err.getvalue()
 
     def test_a_new_violation_in_a_changed_module_fails(self) -> None:
-        module = self.root / "Complexity/Area/A.lean"
+        module = self.root / "CslibFrontier/Area/A.lean"
         module.write_text(module.read_text() + "".join(theorem(n, self.OTHER) for n in "xyz"))
         code, _, err = self.run_main()
         self.assertEqual(code, 1)
-        self.assertIn(f"Complexity/Area/A.lean: `{self.OTHER}` in 3 public signatures:", err)
+        self.assertIn(f"CslibFrontier/Area/A.lean: `{self.OTHER}` in 3 public signatures:", err)
         self.assertNotIn("B.lean", err)
 
     def test_an_unchanged_module_above_the_baseline_is_only_reported(self) -> None:
-        self.write("Complexity/Area/C.lean", "a")  # a change that adds no violation
+        self.write("CslibFrontier/Area/C.lean", "a")  # a change that adds no violation
         code, out, err = self.run_main()
         self.assertEqual((code, err), (0, ""))
         self.assertIn("Not enforced: 1 difference(s) from the baseline", out)
         self.assertEqual(self.run_main("--all")[0], 1)
 
     def test_a_stale_entry_in_a_changed_module_fails(self) -> None:
-        self.write("Complexity/Area/A.lean", "ab")
+        self.write("CslibFrontier/Area/A.lean", "ab")
         code, _, err = self.run_main()
         self.assertEqual(code, 1)
         self.assertIn("the baseline is stale", err)
-        self.assertIn(f"Complexity/Area/A.lean: `{TERM}` in 0 public signature(s), baseline 3",
+        self.assertIn(f"CslibFrontier/Area/A.lean: `{TERM}` in 0 public signature(s), baseline 3",
                       err)
         # Deleting a module touches it too.
-        (self.root / "Complexity/Area/A.lean").unlink()
+        (self.root / "CslibFrontier/Area/A.lean").unlink()
         self.assertEqual(self.run_main()[0], 1)
 
     def test_a_stale_entry_in_an_unchanged_module_is_only_reported(self) -> None:
-        self.entries["Complexity/Other/B.lean"] = {TERM: 5}
+        self.entries["CslibFrontier/Other/B.lean"] = {TERM: 5}
         self.baseline.write_text(json.dumps(self.entries))
-        self.write("Complexity/Area/C.lean", "a")
+        self.write("CslibFrontier/Area/C.lean", "a")
         code, out, _ = self.run_main()
         self.assertEqual(code, 0)
         self.assertIn("Not enforced: 1 difference(s)", out)
 
     def test_report_mode_always_succeeds(self) -> None:
-        self.write("Complexity/Area/A.lean", "ab")
-        self.write("Complexity/Area/C.lean", "xyz", self.OTHER)
+        self.write("CslibFrontier/Area/A.lean", "ab")
+        self.write("CslibFrontier/Area/C.lean", "xyz", self.OTHER)
         code, out, err = self.run_main("--report")
         self.assertEqual((code, err), (0, ""))
-        self.assertIn(f"Complexity/Area/C.lean: `{self.OTHER}` in 3 public signatures:", out)
+        self.assertIn(f"CslibFrontier/Area/C.lean: `{self.OTHER}` in 3 public signatures:", out)
         self.assertIn("Stale baseline entries:", out)
         self.assertIn("report only, nothing is enforced", out)
 
     def test_update_rewrites_only_the_changed_modules(self) -> None:
-        self.write("Complexity/Area/A.lean", "ab")
+        self.write("CslibFrontier/Area/A.lean", "ab")
         code, out, _ = self.run_main("--update-baseline")
         self.assertEqual(code, 0)
         self.assertIn("for 1 changed module(s)", out)
         self.assertEqual(json.loads(self.baseline.read_text()),
-                         {"Complexity/Other/B.lean": {TERM: 3}})
+                         {"CslibFrontier/Other/B.lean": {TERM: 3}})
         self.assertEqual(self.run_main()[0], 0)
 
 if __name__ == "__main__":
