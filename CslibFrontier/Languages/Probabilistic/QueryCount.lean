@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Languages.Probabilistic.Transcript
-import Mathlib.Tactic.Positivity
 
 /-!
 # Query budgets
@@ -325,39 +324,3 @@ theorem QueriesSatisfy.forall_mem_transcript {p : Query → Prop}
 end Transcript
 
 end Cslib.OracleComp
-
-namespace Cslib.Probability.PMF
-
-/-- If each outcome in the support of `p : _root_.PMF α` satisfies `pred x m = true` for at most `Q`
-indices `m : M`, then the sum over `m : M` of `Pr_{x ← p}[pred x m = true]` is at most `Q`. -/
-theorem sum_toReal_indicator_le {α M : Type*} [Fintype M] (p : _root_.PMF α)
-    (pred : α → M → Bool) (Q : ℕ)
-    (hcard : ∀ x ∈ p.support, (Finset.univ.filter fun m => pred x m = true).card ≤ Q) :
-    (∑ m : M, ((p.map fun x => pred x m) true).toReal) ≤ (Q : ℝ) := by
-  have hterm (m : M) :
-      ((p.map fun x => pred x m) true).toReal =
-        ∑' x : α, (p x).toReal * if pred x m = true then 1 else 0 := by
-    simp only [_root_.PMF.map, Function.comp_def, bind_apply_toReal_tsum]
-    refine tsum_congr fun x => ?_
-    cases pred x m <;> simp
-  simp_rw [hterm]
-  have hsumm (m : M) :
-      Summable (fun x : α => (p x).toReal * if pred x m = true then (1 : ℝ) else 0) := by
-    refine Summable.of_nonneg_of_le (fun x => ?_) (fun x => ?_) (summable_toReal p)
-    · positivity
-    · by_cases hx : pred x m = true <;> simp [hx, ENNReal.toReal_nonneg]
-  rw [← Summable.tsum_finsetSum (fun m _ => hsumm m)]
-  calc ∑' x : α, ∑ m : M, ((p x).toReal * if pred x m = true then (1 : ℝ) else 0)
-      ≤ ∑' x : α, (p x).toReal * (Q : ℝ) := by
-        refine Summable.tsum_le_tsum (fun x => ?_)
-          (summable_sum fun m _ => hsumm m) ((summable_toReal p).mul_right (Q : ℝ))
-        rw [← Finset.mul_sum]
-        by_cases hx : x ∈ p.support
-        · refine mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
-          rw [Finset.sum_boole]
-          exact_mod_cast hcard x hx
-        · rw [(_root_.PMF.apply_eq_zero_iff _ _).mpr hx, ENNReal.toReal_zero, zero_mul, zero_mul]
-    _ = (Q : ℝ) := by
-        rw [tsum_mul_right, tsum_toReal, one_mul]
-
-end Cslib.Probability.PMF
