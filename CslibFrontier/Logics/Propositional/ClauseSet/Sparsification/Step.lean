@@ -324,7 +324,7 @@ private theorem disjoint_flower_child {θ : ℕ → ℕ} {ψ : ClauseSet V} {c :
 
 omit [DecidableEq V] in
 /-- The potential is monotone under inclusion. -/
-theorem potential_mono {α β : ClauseSet V} (h : α ⊆ β) : potential α ≤ potential β :=
+private theorem potential_mono {α β : ClauseSet V} (h : α ⊆ β) : potential α ≤ potential β :=
   sum_le_sum_of_subset h
 
 /-- The potential is subadditive under union. -/

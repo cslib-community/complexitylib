@@ -62,10 +62,10 @@ theorem computableInPolyTime_countingThreshold_le (M : ℕ) :
 variable {V : Type} [DecidableEq V] (encV : V ↪ List Bool)
 
 /-- The framed encoding of clauses. -/
-local notation "encC" => encList (encPair encV encBool)
+local notation "encC" => encClause encV
 
 /-- The framed encoding of formulas. -/
-local notation "encF" => encList (encList (encPair encV encBool))
+local notation "encF" => encCNFOver encV
 
 /-- Tautology testing on a clause is polynomial-time. -/
 theorem computableInPolyTime_isTautology :
@@ -89,7 +89,7 @@ theorem computableInPolyTime_countingNormalize :
 private theorem computableInPolyTime_countingChild :
     ComputableInPolyTime
       (fun x : CNF V × ((ℕ × Clause V) × Bool) => countingChild x.1 x.2.1.1 x.2.1.2 x.2.2)
-      (encPair encF (encPair (encPair encUnary encC) encBool)) encF := by
+      (encPair encF (encPair (encCandidate encV) encBool)) encF := by
   have := computableInPolyTime_reduce encV
   have := computableInPolyTime_dedupClauses encV
   have := computableInPolyTime_flower encV
@@ -101,7 +101,7 @@ the parameter `p`. -/
 theorem computableInPolyTime_countingNextWith {P : Type} {encP : P ↪ List Bool}
     {θ : P → ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
-      (encPair encP (encPair encUnary encUnary)) encBool) (k : ℕ) :
+      (encUnaryComparison encP) encBool) (k : ℕ) :
     ComputableInPolyTime (fun x : P × (CNF V × Bool) => countingNext (θ x.1) k x.2.1 x.2.2)
       (encPair encP (encPair encF encBool)) encF :=
   computableInPolyTime_childAtChoiceWith encV hθ k (f := countingChild)

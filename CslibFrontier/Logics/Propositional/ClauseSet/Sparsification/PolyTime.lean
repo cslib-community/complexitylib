@@ -254,7 +254,7 @@ theorem computableInPolyTime_childAtChoiceWith {P : Type} {encP : P ↪ List Boo
 private theorem computableInPolyTime_child :
     ComputableInPolyTime
       (fun x : CNF V × ((ℕ × Clause V) × Bool) => child x.1 x.2.1.1 x.2.1.2 x.2.2)
-      (encPair encF (encPair (encPair encUnary encC) encBool)) encF := by
+      (encPair encF (encPair (encCandidate encV) encBool)) encF := by
   have := computableInPolyTime_reduce encV
   have := computableInPolyTime_flower encV
   unfold child intro petals
