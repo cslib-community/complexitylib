@@ -282,7 +282,6 @@ theorem realizes_readPackedGen :
         change Function.extend (tmp ∘ perm) y_core.regs x₄.regs i = x.regs i
         rw [Function.extend_apply' (f := tmp ∘ perm) _ _ _ fun ⟨j, hj⟩ => htmp (perm j) hj, hx₄]
         wram_simp
-    · exact hfit.of_le (by omega)
 
 /-- Uniform parameter-free `Realizes .exact` certificate for `writePackedGenProg`. -/
 theorem realizes_writePackedGen :
@@ -335,7 +334,6 @@ theorem realizes_writePackedGen :
         change Function.extend tmp y_core.regs x₅.regs i = x.regs i
         rw [Function.extend_apply' (f := tmp) _ _ _ fun ⟨j, hj⟩ => htmp j hj, hx₅]
         wram_simp
-    · exact hfit.of_le (by omega)
 
 /-! ## Section 2: Dictionary array `Memory.Prog` primitives (`Quot`, `Val`, `LM`, `GM`) -/
 
