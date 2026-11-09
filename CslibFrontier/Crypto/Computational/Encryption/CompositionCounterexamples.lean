@@ -28,8 +28,8 @@ composition separations and counterexamples of
 
 1. **Fresh-message encryption unforgeability (`SymmetricCipher.encForgeOracle`,
    `SymmetricCipher.encForgeGame`, `SymmetricCipher.EncForge`, `CiphertextIntegrity.encForge`,
-   `encForge_encryptThenMAC`)** ([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 176;
-   Exercise 5.5, printed p. 191): in `encForgeGame`, an adaptive `CIAdversary` queries an
+   `encForge_encryptThenMAC`)** ([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 151;
+   Exercise 5.5, printed p. 165): in `encForgeGame`, an adaptive `CIAdversary` queries an
    encryption oracle on `n`-bit plaintexts (logging the queried plaintexts `queriedMsgs`) and wins
    by outputting a candidate ciphertext `ct` that decrypts to `some m` for a fresh plaintext
    `!queriedMsgs.contains m`. We prove that ciphertext integrity (`ciGame`,
@@ -41,7 +41,7 @@ composition separations and counterexamples of
 2. **Separation of `INDCPA ∧ EncForge` from `INDCCA` and `CiphertextIntegrity`
    (`SymmetricCipher.tailFallback`, `INDCPA.tailFallback`, `EncForge.tailFallback`,
    `not_ciphertextIntegrity_tailFallback`, `not_indcca_tailFallback`)**
-   ([KatzLindell2020], Exercise 5.10, printed p. 192): for any `E : SymmetricCipher`,
+   ([KatzLindell2020], Exercise 5.10, printed p. 165): for any `E : SymmetricCipher`,
    `E.tailFallback` keeps `keyGen` and `encrypt` unchanged and modifies `decrypt n k ct` to fall
    back to `E.decrypt n k ct.tail` whenever `E.decrypt n k ct = none` and `!ct.isEmpty`. This
    preserves `INDCPA`, `OneTimeINDCPA`, and `EncForge`, while unconditionally breaking
@@ -50,7 +50,7 @@ composition separations and counterexamples of
 3. **Encrypt-then-MAC under a non-strong MAC (`MACScheme.redundantTag`, `EUFCMA.redundantTag`,
    `not_sufCma_redundantTag`, `not_indcca_encryptThenMAC_redundantTag`,
    `encryptThenMAC_redundantTag_counterexample`)** ([KatzLindell2020], Exercise 5.4, printed
-   p. 191): for any `M : MACScheme`, `M.redundantTag` keeps `keyGen`, `msgLen`, and `sign`
+   p. 164): for any `M : MACScheme`, `M.redundantTag` keeps `keyGen`, `msgLen`, and `sign`
    unchanged while accepting either `M.verify sk msg tag` or `!tag.isEmpty && M.verify sk msg
    tag.tail`. This preserves `EUFCMA` and `OneTimeEUFCMA` while breaking `OneTimeSUFCMA` and
    `SUFCMA`; when combined with any cipher `E` via `encryptThenMAC E M.redundantTag hctLen`, the
@@ -93,7 +93,7 @@ composition separations and counterexamples of
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020],
-  Section 5.2 (Definition 5.2, p. 176) and Exercises 5.4, 5.5, and 5.10 (pp. 191–192).
+  Section 5.2 (Definition 5.2, p. 151) and Exercises 5.4, 5.5, and 5.10 (pp. 164–165).
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Sections 9.1 and 9.4.1 (pp. 358–368).
 -/
@@ -168,7 +168,7 @@ namespace SymmetricCipher
 /-! ### Fresh-Message Encryption Unforgeability (`encForgeGame`, `EncForge`, KL Definition 5.2) -/
 
 /-- Stateful encryption oracle for the fresh-message encryption unforgeability game
-([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 176): if `request.2.length == n`,
+([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 151): if `request.2.length == n`,
 encrypt `request.2` under `k`, prepend `request.2` to `queriedMsgs`, and return the ciphertext;
 otherwise return `[]` without modifying `queriedMsgs`. -/
 noncomputable def encForgeOracle (E : SymmetricCipher) (n : ℕ) (k : List Bool)
@@ -194,7 +194,7 @@ noncomputable def ciPairOracle (E : SymmetricCipher) (n : ℕ) (k : List Bool)
       return ([], queriedPairs)
 
 /-- The fresh-message encryption unforgeability experiment `Enc-Forge`
-([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 176): sample `k ← E.keyGen n`, run
+([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 151): sample `k ← E.keyGen n`, run
 `adversary n []` against `E.encForgeOracle n k`, and accept when `E.decrypt n k out.1` succeeds
 with a plaintext `m` that was never queried (`!out.2.contains m`). -/
 noncomputable def encForgeGame (E : SymmetricCipher) (adversary : CIAdversary) (n : ℕ) :
@@ -318,7 +318,7 @@ theorem isPPT_encForgeGame (E : SymmetricCipher) {adversary : CIAdversary}
   ((E.isPPTOn_encForgeGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- Fresh-message encryption unforgeability (`EncForge`, or KL Definition 5.2)
-([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 176): every uniform strict
+([KatzLindell2020], Section 5.2, Definition 5.2, printed p. 151): every uniform strict
 `IsOraclePPT encBits` adversary has negligible probability of outputting a ciphertext that decrypts
 to an unqueried plaintext. -/
 def EncForge (E : SymmetricCipher) : Prop :=
@@ -608,7 +608,7 @@ private theorem mem_support_etmForgeJointOracle (E : SymmetricCipher) (M : MACSc
     exact hs pair hpair
 
 /-- **Quantitative `EncForge` to `EUFCMA` bound for Encrypt-then-MAC**
-([KatzLindell2020], Exercise 5.5, printed p. 191): when `tagBound n` bounds all MAC tag lengths on
+([KatzLindell2020], Exercise 5.5, printed p. 165): when `tagBound n` bounds all MAC tag lengths on
 `M.msgLen n`-bit ciphertexts under supported keys at security parameter `n`, the `encForgeGame`
 winning probability of `adversary` against `encryptThenMAC E M hctLen` is at most the `eufCmaGame`
 winning probability of `etmToMACForger E M tagBound adversary` against `M`. -/
@@ -744,7 +744,7 @@ private theorem exists_mac_tag_length_bound' (M : MACScheme) :
   exact htagLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
 
 /-- **Encrypt-then-MAC `EncForge` security under `EUFCMA`**
-([KatzLindell2020], Exercise 5.5, printed p. 191): if `M` satisfies ordinary fresh-message
+([KatzLindell2020], Exercise 5.5, printed p. 165): if `M` satisfies ordinary fresh-message
 existential unforgeability (`M.EUFCMA`), then `encryptThenMAC E M hctLen` satisfies fresh-message
 encryption unforgeability (`EncForge`), without requiring `M.SUFCMA` or `E.INDCPA`. -/
 theorem encForge_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
@@ -772,7 +772,7 @@ whenever `E.EncForge` holds, by querying decryption on `false :: ct`). -/
 
 namespace SymmetricCipher
 
-/-- Modified symmetric cipher `E.tailFallback` ([KatzLindell2020], Exercise 5.10, printed p. 192):
+/-- Modified symmetric cipher `E.tailFallback` ([KatzLindell2020], Exercise 5.10, printed p. 165):
 `keyGen` and `encrypt` are identical to `E`, while `decrypt n k ct` returns `E.decrypt n k ct`
 whenever that succeeds and otherwise falls back to `E.decrypt n k ct.tail` on non-empty `ct`. -/
 noncomputable def tailFallback (E : SymmetricCipher) : SymmetricCipher where
@@ -826,7 +826,7 @@ theorem cpaOneTimeGame_tailFallback (E : SymmetricCipher) (adversary : OracleDis
     E.tailFallback.cpaOneTimeGame adversary bit n = E.cpaOneTimeGame adversary bit n :=
   rfl
 
-/-- `tailFallback` preserves `INDCPA` ([KatzLindell2020], Exercise 5.10, printed p. 192). -/
+/-- `tailFallback` preserves `INDCPA` ([KatzLindell2020], Exercise 5.10, printed p. 165). -/
 theorem INDCPA.tailFallback {E : SymmetricCipher} (h : E.INDCPA) :
     E.tailFallback.INDCPA :=
   h
@@ -854,7 +854,7 @@ theorem isQueryBounded_tailCIAdversary (adversary : CIAdversary) (n : ℕ) (aux 
   simpa only [tailCIAdversary, OracleComp.isCostBounded_map_iff] using hq
 
 /-- **Quantitative `EncForge` bound for `E.tailFallback`** ([KatzLindell2020], Exercise 5.10,
-printed p. 192): any fresh-message forgery against `E.tailFallback` either already succeeds
+printed p. 165): any fresh-message forgery against `E.tailFallback` either already succeeds
 directly against `E` on `ct` or succeeds against `E` on `ct.tail` via `tailCIAdversary`. -/
 theorem succProbability_encForgeGame_tailFallback_le (E : SymmetricCipher)
     (adversary : CIAdversary) (n : ℕ) :
@@ -900,7 +900,7 @@ theorem succProbability_encForgeGame_tailFallback_le (E : SymmetricCipher)
   · simp at hwin
   · exact Or.inr hwin
 
-/-- `tailFallback` preserves `EncForge` ([KatzLindell2020], Exercise 5.10, printed p. 192). -/
+/-- `tailFallback` preserves `EncForge` ([KatzLindell2020], Exercise 5.10, printed p. 165). -/
 theorem EncForge.tailFallback {E : SymmetricCipher} (h : E.EncForge) :
     E.tailFallback.EncForge := by
   apply EncForge.of_negligible
@@ -1018,7 +1018,7 @@ theorem eval_ciGame_tailFallback_prependFalseBitCIAdversary (E : SymmetricCipher
   · exact PMF.bind_const _ _
 
 /-- `E.tailFallback` never satisfies `OneTimeCiphertextIntegrity` ([KatzLindell2020],
-Exercise 5.10, printed p. 192). -/
+Exercise 5.10, printed p. 165). -/
 theorem not_oneTimeCiphertextIntegrity_tailFallback (E : SymmetricCipher) :
     ¬ E.tailFallback.OneTimeCiphertextIntegrity := by
   intro hci
@@ -1036,7 +1036,7 @@ theorem not_oneTimeCiphertextIntegrity_tailFallback (E : SymmetricCipher) :
   exact not_negligible_const one_ne_zero hneg
 
 /-- `E.tailFallback` never satisfies `CiphertextIntegrity` ([KatzLindell2020], Exercise 5.10,
-printed p. 192). -/
+printed p. 165). -/
 theorem not_ciphertextIntegrity_tailFallback (E : SymmetricCipher) :
     ¬ E.tailFallback.CiphertextIntegrity :=
   fun h => not_oneTimeCiphertextIntegrity_tailFallback E h.oneTimeCiphertextIntegrity
@@ -1052,7 +1052,7 @@ theorem not_authenticatedEncryption_tailFallback (E : SymmetricCipher) :
   fun h => not_ciphertextIntegrity_tailFallback E h.2
 
 /-- Two-query CCA adversary against `E.tailFallback` ([KatzLindell2020], Exercise 5.10,
-printed p. 192): queries left-or-right encryption on `(0^n, 1^n)` to obtain `ct`, queries
+printed p. 165): queries left-or-right encryption on `(0^n, 1^n)` to obtain `ct`, queries
 decryption on `false :: ct`, and outputs whether the decrypted message equals `some 1^n`. -/
 def tailFallbackCCAAdversary (ctBound : ℕ → ℕ) : CCAAdversary :=
   fun n _ => do
@@ -1260,7 +1260,7 @@ private theorem succProbability_ccaOneTimeGame_tailFallback_false_le (E : Symmet
     simp [hmsgNe]
 
 /-- **If `E.EncForge` holds, then `E.tailFallback` fails `OneTimeINDCCA`**
-([KatzLindell2020], Exercise 5.10, printed p. 192). -/
+([KatzLindell2020], Exercise 5.10, printed p. 165). -/
 theorem not_oneTimeINDCCA_tailFallback {E : SymmetricCipher} (hforge : E.EncForge) :
     ¬ E.tailFallback.OneTimeINDCCA := by
   intro hcca
@@ -1310,13 +1310,13 @@ theorem not_oneTimeINDCCA_tailFallback {E : SymmetricCipher} (hforge : E.EncForg
   exact not_negligible_const one_ne_zero hconst
 
 /-- **If `E.EncForge` holds, then `E.tailFallback` fails `INDCCA`**
-([KatzLindell2020], Exercise 5.10, printed p. 192). -/
+([KatzLindell2020], Exercise 5.10, printed p. 165). -/
 theorem not_indcca_tailFallback {E : SymmetricCipher} (hforge : E.EncForge) :
     ¬ E.tailFallback.INDCCA :=
   fun hcca => not_oneTimeINDCCA_tailFallback hforge hcca.oneTimeINDCCA
 
 /-- **Katz–Lindell Exercise 5.10 counterexample**
-([KatzLindell2020], Exercise 5.10, printed p. 192): from any `INDCPA` and `EncForge` symmetric
+([KatzLindell2020], Exercise 5.10, printed p. 165): from any `INDCPA` and `EncForge` symmetric
 cipher `E`, `E.tailFallback` simultaneously satisfies `INDCPA` and `EncForge` while failing
 `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`. -/
 theorem tailFallback_counterexample {E : SymmetricCipher} (hcpa : E.INDCPA)
@@ -1344,11 +1344,11 @@ Given any `M : MACScheme`, `M.redundantTag` keeps `msgLen`, `keyGen`, and `sign`
 * when composed with any `E : SymmetricCipher` via `encryptThenMAC E M.redundantTag hctLen`, the
   resulting cipher satisfies `INDCPA` (if `E.INDCPA`) and `EncForge` (if `M.EUFCMA`), yet fails
   `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`
-  ([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+  ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 
 namespace MACScheme
 
-/-- **Redundant-tag MAC transformation** ([KatzLindell2020], Exercise 5.4, printed p. 191):
+/-- **Redundant-tag MAC transformation** ([KatzLindell2020], Exercise 5.4, printed p. 164):
 `M.redundantTag` keeps `msgLen`, `keyGen`, and `sign` unchanged, while `verify` accepts `tag` when
 either `M.verify sk msg tag` holds or `tag` is non-empty and `M.verify sk msg tag.tail` holds. -/
 noncomputable def redundantTag (M : MACScheme) : MACScheme where
@@ -1380,7 +1380,7 @@ theorem isQueryBounded_tailTagForger (adversary : Forger) (n : ℕ) (aux : List 
   simpa only [tailTagForger, OracleComp.isCostBounded_map_iff] using hq
 
 /-- **Quantitative `EUFCMA` bound for `M.redundantTag`** ([KatzLindell2020], Exercise 5.4,
-printed p. 191): any fresh-message forgery against `M.redundantTag` either succeeds directly
+printed p. 164): any fresh-message forgery against `M.redundantTag` either succeeds directly
 against `M` or succeeds after stripping the leading bit of the tag via `tailTagForger`. -/
 theorem succProbability_eufCmaGame_redundantTag_le (M : MACScheme)
     (adversary : Forger) (n : ℕ) :
@@ -1471,7 +1471,7 @@ theorem succProbability_eufOneTimeGame_redundantTag_le (M : MACScheme)
   · exact Or.inl ⟨⟨hlen, hfresh⟩, hver⟩
   · exact Or.inr ⟨⟨hlen, hfresh⟩, hverTail⟩
 
-/-- `redundantTag` preserves `EUFCMA` ([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+/-- `redundantTag` preserves `EUFCMA` ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem EUFCMA.redundantTag {M : MACScheme} (h : M.EUFCMA) : M.redundantTag.EUFCMA := by
   apply EUFCMA.of_negligible
   intro adversary hadversary
@@ -1599,7 +1599,7 @@ theorem eval_sufCmaGame_redundantTag_redundantTagForger (M : MACScheme)
   · exact PMF.bind_const _ _
 
 /-- `M.redundantTag` never satisfies `OneTimeSUFCMA` ([KatzLindell2020], Exercise 5.4,
-printed p. 191). -/
+printed p. 164). -/
 theorem not_oneTimeSUFCMA_redundantTag (M : MACScheme) :
     ¬ M.redundantTag.OneTimeSUFCMA := by
   intro hsuf
@@ -1615,7 +1615,7 @@ theorem not_oneTimeSUFCMA_redundantTag (M : MACScheme) :
   rw [heq] at hneg
   exact not_negligible_const one_ne_zero hneg
 
-/-- `M.redundantTag` never satisfies `SUFCMA` ([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+/-- `M.redundantTag` never satisfies `SUFCMA` ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_sufCma_redundantTag (M : MACScheme) :
     ¬ M.redundantTag.SUFCMA :=
   fun h => M.not_oneTimeSUFCMA_redundantTag h.oneTimeSUFCMA
@@ -1623,7 +1623,7 @@ theorem not_sufCma_redundantTag (M : MACScheme) :
 end MACScheme
 
 /-- If `M.EUFCMA` holds, then `encryptThenMAC E M.redundantTag hctLen` satisfies `EncForge`
-([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem encForge_encryptThenMAC_redundantTag (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
       ∀ msg, msg.length = n →
@@ -1633,7 +1633,7 @@ theorem encForge_encryptThenMAC_redundantTag (E : SymmetricCipher) (M : MACSchem
   encForge_encryptThenMAC E M.redundantTag hctLen heuf.redundantTag
 
 /-- One-query ciphertext-integrity adversary against `encryptThenMAC E M.redundantTag hctLen`
-([KatzLindell2020], Exercise 5.4, printed p. 191): queries encryption on `0^n` (truncating the
+([KatzLindell2020], Exercise 5.4, printed p. 164): queries encryption on `0^n` (truncating the
 reply to `ctBound n`) to obtain `ct = encPair encBits encBits (c, tag)`, and outputs
 `encPair encBits encBits (unframe ct, false :: dropFrame ct)`. -/
 def etmRedundantCIAdversary (ctBound : ℕ → ℕ) : CIAdversary :=
@@ -1813,7 +1813,7 @@ theorem eval_ciGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
   · exact PMF.bind_const _ _
 
 /-- `encryptThenMAC E M.redundantTag hctLen` never satisfies `OneTimeCiphertextIntegrity`
-([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_oneTimeCiphertextIntegrity_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
@@ -1836,7 +1836,7 @@ theorem not_oneTimeCiphertextIntegrity_encryptThenMAC_redundantTag
   exact not_negligible_const one_ne_zero hneg
 
 /-- `encryptThenMAC E M.redundantTag hctLen` never satisfies `CiphertextIntegrity`
-([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_ciphertextIntegrity_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
@@ -1866,7 +1866,7 @@ theorem not_authenticatedEncryption_encryptThenMAC_redundantTag
   fun h => not_ciphertextIntegrity_encryptThenMAC_redundantTag E M hctLen h.2
 
 /-- Two-query CCA adversary against `encryptThenMAC E M.redundantTag hctLen`
-([KatzLindell2020], Exercise 5.4, printed p. 191): queries left-or-right encryption on
+([KatzLindell2020], Exercise 5.4, printed p. 164): queries left-or-right encryption on
 `(0^n, 1^n)` to obtain `ct`, queries decryption on
 `encPair encBits encBits (unframe ct, false :: dropFrame ct)`, and outputs whether the decrypted
 message equals `some 1^n`. -/
@@ -1994,7 +1994,7 @@ theorem eval_ccaOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCCAAdversary
   · exact PMF.bind_const _ _
 
 /-- `encryptThenMAC E M.redundantTag hctLen` never satisfies `OneTimeINDCCA`
-([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_oneTimeINDCCA_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
@@ -2038,7 +2038,7 @@ theorem not_oneTimeINDCCA_encryptThenMAC_redundantTag
   exact not_negligible_const one_ne_zero hconst
 
 /-- `encryptThenMAC E M.redundantTag hctLen` never satisfies `INDCCA`
-([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_indcca_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
@@ -2048,7 +2048,7 @@ theorem not_indcca_encryptThenMAC_redundantTag
   fun hcca =>
     not_oneTimeINDCCA_encryptThenMAC_redundantTag E M hctLen hcca.oneTimeINDCCA
 
-/-- **Katz–Lindell Exercise 5.4 counterexample** ([KatzLindell2020], Exercise 5.4, printed p. 191):
+/-- **Katz–Lindell Exercise 5.4 counterexample** ([KatzLindell2020], Exercise 5.4, printed p. 164):
 for any `INDCPA` symmetric cipher `E` and any `EUFCMA` message authentication code `M`,
 `M.redundantTag` is `EUFCMA`-secure yet not `SUFCMA`-secure, and
 `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` while failing
@@ -2091,7 +2091,7 @@ theorem PseudorandomFunction.tailFallback_prfEncryptThenMAC_counterexample
     hprf.authenticatedEncryption_prfEncryptThenMAC.2.encForge
 
 /-- **Concrete PRF-based Encrypt-then-MAC cipher with a non-strong redundant-tag MAC**
-([KatzLindell2020], Exercise 5.4, printed p. 191). -/
+([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 noncomputable def prfEncryptThenMACRedundantTag (family : List Bool → List Bool → List Bool)
     (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
       (encPair encBits encBits) encBits)
