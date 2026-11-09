@@ -142,10 +142,7 @@ theorem occurrencePath_last_unit {φ : CNF ℕ} {o : Occurrence ℕ}
   rw [List.consecutivePairs]
   let r := occurrencePath φ o
   have hrlen : 2 ≤ r.length := hlen
-  have hk : r.length - 2 < (r.zip r.tail).length := by
-    simp only [List.length_zip, List.length_tail]
-    dsimp only [r]
-    omega
+  have hk : r.length - 2 < (r.zip r.tail).length := by grind
   have heq : (r.zip r.tail)[r.length - 2] =
       (r.getD (r.length - 2) (0, 0), r.getLastD (0, 0)) := by
     rw [List.getElem_zip]

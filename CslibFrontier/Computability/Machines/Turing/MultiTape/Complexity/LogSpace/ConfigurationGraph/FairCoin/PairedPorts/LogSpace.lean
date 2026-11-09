@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.Nat.Size
 
@@ -785,12 +786,6 @@ private theorem budget_listGetDOptionBool {α : Type} {enc : α ↪ List Bool} {
   | idx + 1, l, hl =>
     (budget_listGetDOptionBool idx (budget_tail hl)).of_enc_eq fun x => by cases l x <;> rfl
 
-private theorem ofFn_getD_eq_of_length {α : Type*} (d : α) {M : ℕ} {l : List α}
-    (hl : l.length = M) :
-    (List.ofFn fun i : Fin M => l.getD i.val d) = l := by
-  refine List.ext_getElem (by simp [hl]) fun j hj₁ hj₂ => ?_
-  simp [List.getD, List.getElem?_eq_getElem hj₂]
-
 private theorem ge_bound_or_port_ge_of_portGuard_false {k' D d P : ℕ} {w : List Bool} {a p : ℕ}
     (h : portGuard k' D d P (w, a, p) = false) :
     clockedVertexBound (k := k') D d w.length ≤ a ∨ P ≤ p := by
@@ -928,7 +923,7 @@ theorem computableInLogSpace_clockedOutPort (machine : MultiTapePTM k Bool State
                   (evalPredRecipe rec (radix D w.length) v)]?)
               (predRecipes machine)).length = inPortBound machine := List.length_map _
         dsimp only [Option.getD]
-        rw [ofFn_getD_eq_of_length none hlen_map]
+        rw [List.ofFn_getD_eq_of_length none hlen_map]
     · rfl
   have hfalse : ComputableInLogSpace
       ((fun _ : Triple => (none : Option (ℕ × ℕ))) ∘ Subtype.val)
@@ -1010,7 +1005,7 @@ theorem computableInLogSpace_clockedInPort (machine : MultiTapePTM k Bool State)
                 (evalPredRecipe rec (radix D w.length)
                   (b % vertexBound (k := k) (radix D w.length)))]?)
             (predRecipes machine)).length = P := List.length_map _
-      rw [ofFn_getD_eq_of_length none hlen_map]
+      rw [List.ofFn_getD_eq_of_length none hlen_map]
       cases hget : (coinInSourcesWithSymbols machine (radix D w.length) w.length
           (b % vertexBound (k := k) (radix D w.length))
           ((predRecipes machine).map fun rec =>

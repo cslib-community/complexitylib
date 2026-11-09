@@ -10,8 +10,8 @@ REF itself.
 
 1. Module-doc names. In a changed module under `CslibFrontier/`, each backquoted name that heads a
    bullet of a "Main …" section of the module docstring (the names before the bullet's first
-   colon) must name a declaration: one that some library, test or abstract module defines or
-   refers to, matched exactly or as a suffix on a component boundary. Names of tactics, attributes
+   colon) must name a declaration: one that some library or test module defines or refers to,
+   matched exactly or as a suffix on a component boundary. Names of tactics, attributes
    and other syntax that the library declares (`syntax`, `macro`, `elab`,
    `declare_aesop_rule_sets`, `register_simp_attr`) also count, as do the upstream names in
    `UPSTREAM_SYNTAX`. Backquoted text that is not an identifier, such as notation or a pattern
@@ -22,8 +22,7 @@ REF itself.
 2. Restatement-only tests. A new file under `CslibFrontierTests/` fails when it has examples and
    every one of them is `example … := name` (or `:= by exact name`) for a name other than `rfl`,
    `trivial` and the like (`EVALUATION`): such a line only restates a signature, which is not a
-   test (CONTRIBUTING, review criterion 8). A file that imports or names a curated abstract
-   (`CslibFrontierAbstracts`) is exempt, since restatements pin those.
+   test (CONTRIBUTING, review criterion 8).
 """
 
 from __future__ import annotations
@@ -64,7 +63,6 @@ EXAMPLE = re.compile(r"(?:@\[[^\]\n]*\]\s*)*(?:(?:private|noncomputable)\s+)*exa
 RESTATEMENT = re.compile(rf"(?:by\s+exact\s+)?@?({NAME.pattern})")
 # Bodies that check the statement by evaluation, or prove it outright: concrete tests.
 EVALUATION = {"rfl", "Eq.refl", "Iff.rfl", "HEq.rfl", "le_rfl", "trivial", "True.intro"}
-ABSTRACTS = re.compile(r"\bCslibFrontierAbstracts\b")
 
 
 # --- Changed files ------------------------------------------------------------------------------
@@ -225,8 +223,6 @@ def example_bodies(text: str) -> list[str | None]:
 
 def restatement_only(text: str) -> bool:
     """Whether a test file has examples and each only restates a declaration's signature."""
-    if ABSTRACTS.search(masks(text)[0]):
-        return False
     matches = [body and RESTATEMENT.fullmatch(body) for body in example_bodies(text)]
     return bool(matches) and all(m and m[1] not in EVALUATION for m in matches)
 

@@ -85,23 +85,15 @@ theorem combine_inSpace (e : Q ≃ Fin s) :
       (budget_prod hb (budget_comp_linear
         (of_inO (ComputableInO.pi_apply encBits d))
         (budget_comp_linear (of_inO (ComputableInO.pi_apply (encPi encBits) h)) hproviderWords)))
-  have hget : ComputableInSpace (fun o : Option (RawResult k Q) => o.getD empty)
-      (encOption (encRawResult (k := k) (Q := Q))) (encRawResult (k := k) (Q := Q))
-      (fun o => (encOption (encRawResult (k := k) (Q := Q)) o).length) :=
-    of_inO (ComputableInDegree.getD (enc₁ := encRawResult) empty).inO_one
-  have hisSome : ComputableInSpace (fun o : Option (RawResult k Q) => o.isSome)
-      (encOption (encRawResult (k := k) (Q := Q))) encBool
-      (fun o => (encOption (encRawResult (k := k) (Q := Q)) o).length) :=
-    of_inO (ComputableInDegree.isSome (encRawResult (k := k) (Q := Q))).inO_one
-  have hpreviousRaw := budget_comp_linear hget hprevious
+  have hpreviousRaw := budget_optionGetD empty hprevious
   have hproviderRaw := pi_linear (Index := Fin k) fun h =>
-    pi_linear (Index := Fin 3) fun d => budget_comp_linear hget (hprovider h d)
+    pi_linear (Index := Fin 3) fun d => budget_optionGetD empty (hprovider h d)
   have hflags := pi_linear (Index := Fin k) fun h =>
-    pi_linear (Index := Fin 3) fun d => budget_comp_linear hisSome (hprovider h d)
+    pi_linear (Index := Fin 3) fun d => budget_optionIsSome (hprovider h d)
   have hall := budget_finite (encC := encBool)
     (fun flags : Fin k → Fin 3 → Bool => decide (∀ h d, flags h d = true)) hflags
   have hguard := budget_finite (encC := encBool) (fun p : Bool × Bool => p.1 && p.2)
-    (budget_prod (budget_comp_linear hisSome hprevious) hall)
+    (budget_prod (budget_optionIsSome hprevious) hall)
   have hargs := budget_prod hb (budget_prod hports (budget_prod hpreviousRaw hproviderRaw))
   have hcombined := budget_comp_linear (Providers.combine_inSpace (k := k) (Q := Q)) hargs
   have hsome := budget_comp_linear

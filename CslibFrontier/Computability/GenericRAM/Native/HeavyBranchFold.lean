@@ -1252,8 +1252,7 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
       simpa [Nat.size_eq_bits_len] using Nat.size_le_size hsum_le
     rw [BooleanFold.length_clock] at h; omega
   have hlen_acc : (encPair encBranchInput encNat st.2.2).length ≤ 3 * L + 1 := by
-    rw [hst_pair, length_encPair]
-    change 2 * L + 1 + (encNat st.2.2.2).length ≤ 3 * L + 1; omega
+    grind [length_encPair]
   have hst1 : st.1 = j := IndexFold.run_index _ _ _
   have hst21 : st.2.1 = inp.2.1.length := BooleanFold.prefix_width _ _ _ _
   have hlen_inner : (encPair encUnary (encPair encBranchInput encNat) st.2).length ≤ 4 * L + 1 := by
@@ -1320,17 +1319,14 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
     PrepareStepInput.accPair, PrepareStepInput.header,
     BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
     at hbcT hbcS houtL hlen_add haddT haddS hsolT hsolS hvT hvS hbodyT hbodyS
+  rw [hvT, hbodyT, hvS, hbodyS]
   refine ⟨hlen_inner, ?_, ?_⟩
-  · rw [hvT, hbodyT]
+  all_goals
     dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
       PrepareStepInput.inp, PrepareStepInput.vals,
       PrepareStepInput.accPair, PrepareStepInput.header,
-      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
-  · rw [hvS, hbodyS]
-    dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
-      PrepareStepInput.inp, PrepareStepInput.vals,
-      PrepareStepInput.accPair, PrepareStepInput.header,
-      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
+      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
+    omega
 
 /-- **Space-efficient streaming `ComputableInO` bound for `streamBranches`** (§5.5 of
 [OpenAI2026ETH]): for fixed `solver` bounded by `2 ^ n'` with time `≤ R_solver` and space

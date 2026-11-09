@@ -216,23 +216,12 @@ many vertices [Libkin2004, Chapter 12]. -/
 theorem not_exists_sentence_even_card :
     ¬∃ φ : Language.graph.Sentence, ∀ᶠ n in Filter.atTop,
       ∀ G : SimpleGraph (Fin n), Satisfies G φ ↔ Even n := by
-  have hval : ∀ n, randomGraphProb n (fun _ => Even n) = if Even n then 1 else 0 := fun n => by
-    by_cases hn : Even n
-    · simp only [hn, ↓reduceIte, randomGraphProb_true]
-    · simp only [hn, ↓reduceIte, randomGraphProb_false]
-  have hev : Filter.Tendsto (fun m : ℕ => 2 * m) Filter.atTop Filter.atTop :=
-    Filter.tendsto_id.const_mul_atTop' two_pos
-  have hodd : Filter.Tendsto (fun m : ℕ => 2 * m + 1) Filter.atTop Filter.atTop :=
-    Filter.tendsto_atTop_mono (fun m => Nat.le_succ (2 * m)) hev
-  refine not_exists_sentence_of_not_tendsto (fun n _ => Even n) (fun h => ?_) (fun h => ?_)
-  · -- Along even `n` the probability is `1`.
-    have := h.comp hev
-    simp only [Function.comp_def, hval, even_two_mul, ↓reduceIte] at this
-    exact one_ne_zero (tendsto_const_nhds_iff.1 this)
-  · -- Along odd `n` the probability is `0`.
-    have := h.comp hodd
-    simp only [Function.comp_def, hval, Nat.not_even_two_mul_add_one, ↓reduceIte] at this
-    exact zero_ne_one (tendsto_const_nhds_iff.1 this)
+  have hprob : (fun n => randomGraphProb n fun _ => Even n) =
+      fun n => structProb (randomGraphStructure n) fun _ => Even n :=
+    funext fun n => randomGraphProb_structure_eq n fun _ => Even n
+  refine not_exists_sentence_of_not_tendsto (fun n _ => Even n) ?_ ?_
+  · simpa only [hprob] using not_tendsto_structProb_even randomGraphStructure 0
+  · simpa only [hprob] using not_tendsto_structProb_even randomGraphStructure 1
 
 /-- The class of finite structures in the language of graphs with an even number of elements is
 not first-order definable (`Cslib.Logic.FO.Definable`). -/

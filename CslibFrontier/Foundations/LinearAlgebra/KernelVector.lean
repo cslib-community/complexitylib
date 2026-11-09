@@ -145,8 +145,8 @@ theorem firstNonzero_smul (c : F) (u : Fin n → F) : firstNonzero (c • u) = c
 
 /-- A nonzero vector `u` is `firstNonzero u` times its normalization `(firstNonzero u)⁻¹ • u`. -/
 theorem firstNonzero_smul_inv_smul {u : Fin n → F} (hu : u ≠ 0) :
-    firstNonzero u • (firstNonzero u)⁻¹ • u = u := by
-  rw [smul_smul, mul_inv_cancel₀ (firstNonzero_eq_zero_iff.not.2 hu), one_smul]
+    firstNonzero u • (firstNonzero u)⁻¹ • u = u :=
+  smul_inv_smul₀ (firstNonzero_eq_zero_iff.not.2 hu) u
 
 /-! ### Elimination -/
 

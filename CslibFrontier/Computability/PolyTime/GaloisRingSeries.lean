@@ -299,17 +299,6 @@ theorem computableInPolyTime_zero {fl : α → List ℕ}
   computableInPolyTime_tabulate (g := fun _ _ => 0) (lengthPolyTime hfl)
     (ComputableInPolyTime.const 0)
 
-/-- The length `e (2 p + 1)` of a reduced coefficient list is polynomially bounded. -/
-theorem polyBounded_reducedLength {p : α → ℕ} {fl : α → List ℕ}
-    (hp : ComputableInPolyTime p encIn encUnary)
-    (hfl : ComputableInPolyTime fl encIn (encList encNat)) :
-    PolyBounded (fun x => (encIn x).length) (fun x => (fl x).length * (2 * p x + 1)) := by
-  have hpl : PolyBounded (fun x => (encIn x).length) p := by
-    simpa using (ComputableInPolyTime.polyBounded_length hp)
-  have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
-    (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
-  exact hfll.mul (((PolyBounded.const 2).mul hpl).add (PolyBounded.const 1))
-
 /-- **Division of the coordinates by `2 ^ Δ` is polynomial-time**, with `Δ` in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_shiftDown {Δ : α → ℕ} {c : α → List ℕ}

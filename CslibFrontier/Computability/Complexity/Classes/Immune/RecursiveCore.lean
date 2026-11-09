@@ -155,13 +155,9 @@ bound `c (l + 1) ^ d`. -/
 theorem exists_requirement_eq {B : Set (List Bool)} (hB : B ∈ P encBits) (N : ℕ) :
     ∃ e, N ≤ e ∧ requirement e = B := by
   obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P.mp hB
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x.length)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x.length)).output = [f x] :=
-    (htm x).runFrom_of_le le_rfl
   obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp ht
-  obtain ⟨e, he, hdesc⟩ := exists_index_ge (desc eS eBit tm) (N + c + d)
+  obtain ⟨e, he, hrun⟩ := exists_index_runIndexed_eq tm (t := fun x => t x.length)
+    (fun x => (htm x).runFrom_of_le le_rfl) (N + c + d)
   refine ⟨e, by omega, Set.ext fun w => ?_⟩
   have hc : c ≤ 2 ^ e :=
     (Nat.lt_two_pow_self (n := c)).le.trans (Nat.pow_le_pow_right (by omega) (by omega))
@@ -170,9 +166,8 @@ theorem exists_requirement_eq {B : Set (List Bool)} (hB : B ∈ P encBits) (N : 
     calc t w.length ≤ c * (w.length + 1) ^ d := hcd _
       _ ≤ 2 ^ e * (w.length + 1) ^ e := Nat.mul_le_mul hc hd
       _ = clock e w.length := by rw [clock, ← mul_pow]; ring_nf
-  simp only [requirement, Set.mem_ofPred_eq, runIndexed, hdesc]
-  rw [universal_desc_of_halted eS tm (t := fun x => t x.length) hrun hle, Prod.mk.injEq,
-    List.singleton_inj, and_iff_left rfl, (hf w)]
+  simp only [requirement, Set.mem_ofPred_eq]
+  rw [hrun w _ hle, Prod.mk.injEq, List.singleton_inj, and_iff_left rfl, (hf w)]
   exact ⟨fun h => eBit.injective h, fun h => h ▸ rfl⟩
 
 /-! ### The stages -/

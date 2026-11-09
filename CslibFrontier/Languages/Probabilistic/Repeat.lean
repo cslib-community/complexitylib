@@ -231,8 +231,7 @@ theorem eval_countTrue (count : ℕ) (program : ProbComp Bool) :
       (Probability.PMF.pi (fun _ : Fin count => eval program)).map
         (fun bits => ∑ i, (bits i).toNat) := by
   rw [OracleComp.countTrue, eval_map, eval_replicate, PMF.map_comp]
-  congr 1
-  funext bits
+  congr 1 with bits : 1
   exact (BitString.count_true_ofFn bits).trans (BitString.weight_eq_sum_toNat bits)
 
 /-- Every supported result is bounded by the number of trials, including zero trials. -/

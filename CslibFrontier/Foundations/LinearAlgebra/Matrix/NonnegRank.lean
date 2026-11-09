@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 public import Mathlib.Data.ENat.Lattice
 public import Mathlib.LinearAlgebra.Matrix.Rank
+import CslibFrontier.Foundations.Data.ENat.IInf
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 
 /-!
@@ -131,12 +132,8 @@ theorem le_nonnegRank_iff {c : ℕ∞} :
 inner dimension `r`. -/
 theorem nonnegRank_le_iff {r : ℕ} : M.nonnegRank ≤ r ↔ M.HasNonnegFactorization (Fin r) := by
   refine ⟨fun h => ?_, fun h => by simpa using h.nonnegRank_le⟩
-  have : Nonempty {r : ℕ // M.HasNonnegFactorization (Fin r)} := by
-    rw [← ENat.iInf_natCast_ne_top]
-    exact ne_top_of_le_ne_top (ENat.natCast_ne_top r) h
-  obtain ⟨⟨s, hs⟩, hmin⟩ := ENat.exists_eq_iInf
-    (fun r : {r : ℕ // M.HasNonnegFactorization (Fin r)} => (r.1 : ℕ∞))
-  exact hs.of_embedding (Fin.castLEEmb (by exact_mod_cast (hmin.trans_le h : (s : ℕ∞) ≤ r)))
+  obtain ⟨⟨s, hs⟩, hsr⟩ := ENat.iInf_natCast_le_natCast_iff.mp h
+  exact hs.of_embedding (Fin.castLEEmb hsr)
 
 /-- The zero matrix has nonnegative rank zero. -/
 @[simp] theorem nonnegRank_zero : (0 : Matrix m n R).nonnegRank = 0 :=

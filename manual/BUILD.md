@@ -33,8 +33,8 @@ Outputs share the ignored `manual/_build/` directory and have distinct names:
 
 | Book | TeX/PDF filename stem | Source manifest |
 |---|---|---|
-| Operator’s Manual | `complexitylib-operators-manual` | `manual-source-manifest.json` |
-| Agent Operator’s Manual | `complexitylib-agent-operators-manual` | `agent-manual-source-manifest.json` |
+| Operator’s Manual | `cslib-frontier-operators-manual` | `manual-source-manifest.json` |
+| Agent Operator’s Manual | `cslib-frontier-agent-operators-manual` | `agent-manual-source-manifest.json` |
 
 Neither book needs research exports or historical plots. The short book contains only
 [AGENT_OPERATORS.md](AGENT_OPERATORS.md) and its policy/source links; it carries no academic
@@ -68,7 +68,7 @@ To generate TeX with its diagram assets, or select another output directory:
 
 ```bash
 python3 scripts/build_operator_manual.py --tex-only
-python3 scripts/build_operator_manual.py --output-dir /tmp/complexitylib-manual-book
+python3 scripts/build_operator_manual.py --output-dir /tmp/cslib-frontier-manual-book
 ```
 
 The second path is an example destination that you choose. No files in that directory are

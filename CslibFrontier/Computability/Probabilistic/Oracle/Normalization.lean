@@ -29,7 +29,8 @@ identical requests, and preserves the complete joint law of the output and exter
 ## Main results
 
 * `Cslib.Probability.IsTidyOraclePPTOn.finiteStep`: one truncated interpreter step is clean.
-* `Cslib.Probability.IsTidyOraclePPTOn.runOracle`: every clocked oracle machine run is clean.
+* `Cslib.Probability.IsTidyOraclePPTOn.runOracle_of_clock`: every oracle machine run under a
+  polynomial-time computable clock is clean.
 * `Cslib.Probability.IsOraclePPTOn.isTidyOraclePPTOn`,
   `Cslib.Probability.isOraclePPTOn_iff_isTidyOraclePPTOn`: every strict oracle PPT certificate
   has a clean realization with the same joint output and external-state law.
@@ -123,20 +124,18 @@ theorem IsTidyOraclePPTOn.finiteStep [Fintype Operation] [Finite Control]
           (f := fun pair answer => pair.1.2.receive channel next answer) (by fun_prop)
         simpa only [Functor.map_map, bind_pure_comp] using hreply
 
-/-- Every clocked run of a finite-control oracle machine is a clean phase. The interpreter loop
-retains finite storage, runs exactly as many steps as the clock, and copies each reply only up to
-the clock, which bounds every reply position the original run can read. -/
-theorem IsTidyOraclePPTOn.runOracle [Finite Operation] [Finite Control]
-    (machine : _root_.Turing.MultiTapePTM k Bool Control Operation) (c d : ℕ) :
+/-- Every run of a finite-control oracle machine under a polynomial-time computable clock is a
+clean phase. The interpreter loop retains finite storage, runs exactly as many steps as the clock,
+and copies each reply only up to the clock, which bounds every reply position the original run can
+read. -/
+theorem IsTidyOraclePPTOn.runOracle_of_clock [Finite Operation] [Finite Control]
+    (machine : _root_.Turing.MultiTapePTM k Bool Control Operation)
+    {clock : List Bool → ℕ} (hclock : ComputableInPolyTime clock encBits encUnary) :
     IsTidyOraclePPTOn encBits encBits
-      (fun word : List Bool => machine.runOracle (c * (word.length + 1) ^ d) word) := by
+      (fun word : List Bool => machine.runOracle (clock word) word) := by
   let _ := Fintype.ofFinite Operation
   obtain ⟨cf, hconfigurationSize⟩ :=
     length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Operation)
-  let clock (word : List Bool) : ℕ := c * (word.length + 1) ^ d
-  have hclock : ComputableInPolyTime clock encBits encUnary := by
-    dsimp only [clock]
-    fun_prop
   have hclockPoly : PolyBounded (fun word => (encBits word).length) clock := by
     simpa only [encUnary_apply, List.length_replicate] using hclock.polyBounded_length
   have hstart : ComputableInPolyTime
@@ -191,7 +190,8 @@ theorem IsOraclePPTOn.isTidyOraclePPTOn {α β : Type} {input : α ↪ List Bool
     (h : IsOraclePPTOn input output program) : IsTidyOraclePPTOn input output program := by
   obtain ⟨_, k, Control, _, machine, c, d, h⟩ := h
   exact IsTidyOraclePPTOn.iff_encoded.mpr
-    (((IsTidyOraclePPTOn.runOracle machine c d).preprocess
+    (((IsTidyOraclePPTOn.runOracle_of_clock machine
+      (clock := fun word => c * (word.length + 1) ^ d) (by fun_prop)).preprocess
       (ComputableInPolyTime.of_eq (encOut := encBits) (f := input) fun _ => rfl)).congr
         fun a State oracle s =>
         (h a State oracle s).symm)

@@ -291,8 +291,7 @@ private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
         = (Probability.PMF.uniformOfFintype (Fin (1 + 1))).bind (fun k =>
             ((Probability.PMF.uniformOfFintype (Fin n → Bool)).map
               fun τ => Function.update τ ⟨j, hjn⟩ (decide (k.val = 1))).map G) := by
-          congr 1
-          funext k
+          congr 1 with k : 1
           simp only [Function.comp_apply, hYa, hcomp, PMF.map_comp]
       _ = ((Probability.PMF.uniformOfFintype Bool).bind fun b =>
             (Probability.PMF.uniformOfFintype (Fin n → Bool)).map

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Control.Monad.Memoize
 public import CslibFrontier.Computability.Probabilistic.PPT
+public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -135,9 +136,7 @@ theorem memoize_cache_size_le {α Key Value : Type} [BEq Key]
     (hcache : ∀ entry ∈ cache,
       (keyEncoding entry.1).length ≤ maxKey ∧ (valueEncoding entry.2).length ≤ maxValue)
     (result : α)
-    (h : (result, cache') ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-        (memoize distribution)) program).run cache).support) :
+    (h : (result, cache') ∈ (ProbOracleComp.runWith (memoize distribution) program cache).support) :
     (encList (encPair keyEncoding valueEncoding) cache').length ≤
       (cache.length + calls) * (4 * maxKey + 2 * maxValue + 3) := by
   obtain ⟨hcount, hentries⟩ := RandomOracle.memoize_cache_bounds_prob distribution program

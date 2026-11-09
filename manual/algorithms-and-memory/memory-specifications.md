@@ -2,7 +2,7 @@
 
 ## Relational operations and adaptive clients
 
-[StateTransitionSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition.lean#L95) gives a state type, operation type, dependent result type, valid-operation predicate and relational step. A specification need not be deterministic or total; those are separate properties. A priority-queue insertion may choose any fresh handle and an extract-min may choose any tied minimum [complexitylib][complexitylib].
+[StateTransitionSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition.lean#L95) gives a state type, operation type, dependent result type, valid-operation predicate and relational step. A specification need not be deterministic or total; those are separate properties. A priority-queue insertion may choose any fresh handle and an extract-min may choose any tied minimum [cslib-frontier][complexitylib].
 
 `Client` is a typed free program whose next operation can depend on the previous result. `DemonicValid` requires every continuation to remain valid for every allowed result. `ClientRun` records an actual permitted path and transcript. Totality turns demonic validity into existence of a run. `ofFn` specializes a deterministic transition function; `toLTS` and `toFLTS` connect with upstream transition-system interfaces.
 
@@ -57,6 +57,8 @@ sizes `n₁`, `n₂`, its scratch size is `l + max n₁ n₂`; the factor remain
 component factor. The original safe-domain and valid-history obligations still apply at the
 actual intermediate state. `Witness.bind_execWithin` can tighten the two component execution
 budgets on that same code and add them, retaining the full memory, output and register frame.
+A new sequential constructor over the same `bindSharedLeft`/`bindSharedRight` layout gets both
+stages' register premises from `bindShared_layout`, as `RealizesRand.Witness.bind` does.
 
 The complete checked [dependent-read client](../../CslibFrontierTests/WordRAMRealizationBindScratch.lean)
 reads a pointer and then its target using one supplied emitter. Its generic Backend has five

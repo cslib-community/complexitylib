@@ -300,6 +300,72 @@ theorem exists_card_filter_adj_le_width [DecidableRel G.Adj] {S : Finset V}
 
 end RootedTreeDecomposition
 
+/-- **Numbering a finite tree by depth.** The nodes of a finite tree `T` can be numbered
+`0, …, n` so that `T` becomes a parent-array tree: root `T` at the node numbered `0` and number the
+nodes by depth, breaking ties arbitrarily; parents then precede their children. -/
+private theorem IsTree.exists_equiv_parentTree [Finite ι] {T : SimpleGraph ι} (hT : T.IsTree) :
+    ∃ (n : ℕ) (e : Fin (n + 1) ≃ ι) (parent : Fin (n + 1) → Fin (n + 1)),
+      parent 0 = 0 ∧ (∀ i, i ≠ 0 → parent i < i) ∧
+        ∀ i j, (parentTree parent).Adj i j ↔ T.Adj (e i) (e j) := by
+  classical
+  have := Fintype.ofFinite ι
+  have hne : Nonempty ι := hT.connected.nonempty
+  obtain ⟨r⟩ := id hne
+  -- Order the nodes by depth, breaking ties by an arbitrary enumeration.
+  let par := hT.parent r
+  let depth : ι → ℕ := fun t => (hT.pathTo r t).length
+  let key : ι → ℕ ×ₗ Fin (Fintype.card ι) := fun t => toLex (depth t, Fintype.equivFin ι t)
+  have hkey : Function.Injective key := fun a b h => by
+    have := congrArg (fun x => (ofLex x).2) h
+    exact (Fintype.equivFin ι).injective this
+  let _ : LinearOrder ι := LinearOrder.lift' key hkey
+  have hlt_iff : ∀ a b : ι, a < b ↔ key a < key b := fun _ _ => Iff.rfl
+  have hpar : ∀ t, t ≠ r → par t < t := by
+    intro t ht
+    rw [hlt_iff, Prod.Lex.toLex_lt_toLex]
+    left
+    have := hT.length_pathTo_parent r ht
+    simp only [depth, par]
+    omega
+  have hr_le : ∀ t, r ≤ t := by
+    intro t
+    by_cases ht : t = r
+    · rw [ht]
+    · refine le_of_lt ?_
+      rw [hlt_iff, Prod.Lex.toLex_lt_toLex]
+      left
+      have h1 := hT.length_pathTo_parent r ht
+      have h2 : depth r = 0 := by simp only [depth, hT.pathTo_self, Walk.length_nil]
+      simp only [depth] at h2 ⊢
+      omega
+  -- Number the nodes in this order; the root gets `0`.
+  have hcard : Fintype.card ι = Fintype.card ι - 1 + 1 := by
+    have := Fintype.card_pos (α := ι)
+    omega
+  set n := Fintype.card ι - 1
+  let e : Fin (n + 1) ≃o ι := monoEquivOfFin ι hcard
+  have he0 : e 0 = r := by
+    have h1 : e.symm r ≤ 0 := by
+      rw [← e.le_iff_le, e.apply_symm_apply]
+      exact hr_le _
+    have h2 : e.symm r = 0 := le_antisymm h1 (Fin.zero_le _)
+    rw [← h2, e.apply_symm_apply]
+  have he_iff : ∀ i, i = 0 ↔ e i = r := fun i =>
+    ⟨fun h => h ▸ he0, fun h => e.injective (h.trans he0.symm)⟩
+  let parent : Fin (n + 1) → Fin (n + 1) := fun i => e.symm (par (e i))
+  have parent_lt : ∀ i, i ≠ 0 → parent i < i := by
+    intro i hi
+    have := hpar (e i) (fun h => hi ((he_iff i).2 h))
+    rw [← e.lt_iff_lt, e.apply_symm_apply]
+    exact this
+  have hadj : ∀ i j, (parentTree parent).Adj i j ↔ T.Adj (e i) (e j) := by
+    intro i j
+    rw [parentTree_adj parent_lt, hT.adj_iff_parent r, Ne, Ne, Ne, Ne, he_iff i, he_iff j]
+    simp only [parent, par, OrderIso.symm_apply_eq]
+  refine ⟨n, e.toEquiv, parent, ?_, parent_lt, hadj⟩
+  simp only [parent, he0, par, hT.parent_self]
+  rw [← he0, e.symm_apply_apply]
+
 /-! ### Rooting a tree decomposition -/
 
 namespace TreeDecomposition
@@ -311,65 +377,10 @@ theorem exists_rooted [Finite ι] (D : G.TreeDecomposition ι) :
     ∃ n, ∃ R : G.RootedTreeDecomposition n, ∃ e : Fin (n + 1) ≃ ι,
       (∀ i, R.bag i = D.bag (e i)) ∧ ∀ i j, R.tree.Adj i j ↔ D.tree.Adj (e i) (e j) := by
   classical
-  have := Fintype.ofFinite ι
-  -- Root the index tree at some `r` and number the nodes by depth, breaking ties arbitrarily:
-  -- parents then precede their children.
-  have hne : Nonempty ι := D.isTree.connected.nonempty
-  obtain ⟨r⟩ := id hne
-  let par := D.isTree.parent r
-  let depth : ι → ℕ := fun t => (D.isTree.pathTo r t).length
-  let key : ι → ℕ ×ₗ Fin (Fintype.card ι) := fun t => toLex (depth t, Fintype.equivFin ι t)
-  have hkey : Function.Injective key := fun a b h => by
-    have := congrArg (fun x => (ofLex x).2) h
-    exact (Fintype.equivFin ι).injective this
-  let _ : LinearOrder ι := LinearOrder.lift' key hkey
-  have hlt_iff : ∀ a b : ι, a < b ↔ key a < key b := fun _ _ => Iff.rfl
-  have hpar : ∀ t, t ≠ r → par t < t := by
-    intro t ht
-    rw [hlt_iff, Prod.Lex.toLex_lt_toLex]
-    left
-    have := D.isTree.length_pathTo_parent r ht
-    simp only [depth, par]
-    omega
-  have hcard : Fintype.card ι = Fintype.card ι - 1 + 1 := by
-    have := Fintype.card_pos (α := ι)
-    omega
-  set n := Fintype.card ι - 1
-  let e : Fin (n + 1) ≃o ι := monoEquivOfFin ι hcard
-  have hr_le : ∀ t, r ≤ t := by
-    intro t
-    by_cases ht : t = r
-    · rw [ht]
-    · refine le_of_lt ?_
-      rw [hlt_iff, Prod.Lex.toLex_lt_toLex]
-      left
-      have h1 := D.isTree.length_pathTo_parent r ht
-      have h2 : depth r = 0 := by simp only [depth, D.isTree.pathTo_self, Walk.length_nil]
-      simp only [depth] at h2 ⊢
-      omega
-  have he0 : e 0 = r := by
-    have h1 : e.symm r ≤ 0 := by
-      rw [← e.le_iff_le, e.apply_symm_apply]
-      exact hr_le _
-    have h2 : e.symm r = 0 := le_antisymm h1 (Fin.zero_le _)
-    rw [← h2, e.apply_symm_apply]
-  have he_iff : ∀ i, i = 0 ↔ e i = r := fun i =>
-    ⟨fun h => h ▸ he0, fun h => e.injective (h.trans he0.symm)⟩
-  let parent : Fin (n + 1) → Fin (n + 1) := fun i => e.symm (par (e i))
-  have parent_zero : parent 0 = 0 := by
-    simp only [parent, he0, par, D.isTree.parent_self]
-    rw [← he0, e.symm_apply_apply]
-  have parent_lt : ∀ i, i ≠ 0 → parent i < i := by
-    intro i hi
-    have := hpar (e i) (fun h => hi ((he_iff i).2 h))
-    rw [← e.lt_iff_lt, e.apply_symm_apply]
-    exact this
-  have hadj : ∀ i j, (parentTree parent).Adj i j ↔ D.tree.Adj (e i) (e j) := by
-    intro i j
-    rw [parentTree_adj parent_lt, D.isTree.adj_iff_parent r, Ne, Ne, Ne, Ne, he_iff i, he_iff j]
-    simp only [parent, par, OrderIso.symm_apply_eq]
+  -- Renumber the index tree as a parent-array tree and carry the bags along.
+  obtain ⟨n, e, parent, parent_zero, parent_lt, hadj⟩ := D.isTree.exists_equiv_parentTree
   refine ⟨n, RootedTreeDecomposition.ofPreconnected parent parent_zero parent_lt
-    (fun i => D.bag (e i)) (fun v => ?_) (fun u v huv => ?_) (fun v => ?_), e.toEquiv,
+    (fun i => D.bag (e i)) (fun v => ?_) (fun u v huv => ?_) (fun v => ?_), e,
     fun i => by unfold RootedTreeDecomposition.ofPreconnected; rfl, fun i j => ?_⟩
   · obtain ⟨t, ht⟩ := D.exists_mem_bag v
     exact ⟨e.symm t, by simpa using ht⟩
@@ -384,7 +395,7 @@ theorem exists_rooted [Finite ι] (D : G.TreeDecomposition ι) :
           exact t.2⟩
         map_rel' := fun {a b} h => by
           change (parentTree parent).Adj (e.symm a) (e.symm b)
-          rw [hadj, OrderIso.apply_symm_apply, OrderIso.apply_symm_apply]
+          rw [hadj, e.apply_symm_apply, e.apply_symm_apply]
           exact h }
     refine (D.preconnected_bag v).map f ?_
     rintro ⟨i, hi⟩

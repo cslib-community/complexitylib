@@ -196,9 +196,7 @@ theorem towerFamily_blocks {k r : ℕ} {I K : Type} (T : Tournament k)
   | succ n ih =>
     intro b q
     have he : (h + 1) + n = h + (n + 1) := by omega
-    have hz : ∀ q, base ((h + 1) + n) q (fun _ => false) = false := by
-      rw [he]
-      exact hzero
+    have hz : ∀ q, base ((h + 1) + n) q (fun _ => false) = false := by grind
     have hb : ∀ b q,
         base ((h + 1) + n) q (BitString.flipOn (blocks b) (fun _ => false)) = true := by
       rw [he]
