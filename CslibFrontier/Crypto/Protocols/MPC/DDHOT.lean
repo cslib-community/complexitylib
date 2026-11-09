@@ -12,26 +12,27 @@ public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
 
 /-!
-# Three-Message DDH Dual-Mode 1-out-of-2 Oblivious Transfer
+# Three-Message DDH 1-out-of-2 Oblivious Transfer
 
 This module formalizes the three-message 1-out-of-2 oblivious transfer protocol from the Decision
 Diffie-Hellman (DDH) assumption over a finite additive group `G` of exponent dividing `q` generated
-by `g` ([NaorPinkas2001]; [PeikertVaikuntanathanWaters2008], Section 5.1; [BonehShoup2023],
-Section 23.2.5), expressed as a two-party protocol `ddhOTProtocol` in
-`Cslib.Crypto.Protocols.MPC` computing `otFunctionality G` (compatible with `batchOTSpec 1 G` from
+by `g` ([NaorPinkas2001]; [BonehShoup2023], Section 23.5.7, Figure 23.17 and Theorem 23.7),
+expressed as a two-party protocol `ddhOTProtocol` in `Cslib.Crypto.Protocols.MPC` computing
+`otFunctionality G` (compatible with `batchOTSpec 1 G` from
 `CslibFrontier/Crypto/Protocols/MPC/BatchOT.lean`):
 
 1. **Round 1 (`.message 0 1 G`):** The sender (party `0`) samples `a : ZMod q` and sends
    `u = a.val • g` to the receiver (party `1`).
 2. **Round 2 (`.message 1 0 (G × G)`):** The receiver samples `b : ZMod q`, sets `v = b.val • g`,
    and sends `(w₀, w₁) = if σ then (u - v, v) else (v, u - v)` so that the chosen branch key
-   `w_σ = v` has known discrete logarithm `b`, the unchosen branch key `w_{1-σ} = u - v` is
-   "messy", and `w₀ + w₁ = u`.
+   `w_σ = v` has known discrete logarithm `b`, the unchosen branch key `w_{1-σ} = u - v` has
+   unknown discrete logarithm, and `w₀ + w₁ = u`.
 3. **Round 3 (`.message 0 1 ((G × G) × (G × G))`):** The sender checks `w₀ + w₁ = u`. If the check
-   holds, it encrypts each branch `i ∈ {0, 1}` with fresh dual-mode randomization coins
-   `(rᵢ, sᵢ) : ZMod q × ZMod q` via `ddhOTEncryptBranch g u wᵢ mᵢ rᵢ sᵢ a`
-   (and sends zeros otherwise). The receiver decrypts its chosen ciphertext `(e_σ, c_σ)` as
-   `c_σ - b.val • e_σ`.
+   holds, it encrypts each branch `i ∈ {0, 1}` with fresh randomization coins
+   `(rᵢ, sᵢ) : ZMod q × ZMod q` via `ddhOTEncryptBranch g u wᵢ mᵢ rᵢ sᵢ a` (since the sender holds
+   `a` with `u = a.val • g`, this equals ElGamal encryption under `wᵢ` with exponent `rᵢ + a * sᵢ`;
+   if the check fails, the sender sends zeros). The receiver decrypts its chosen ciphertext
+   `(e_σ, c_σ)` as `c_σ - b.val • e_σ`.
 
 ## Main definitions
 
@@ -55,19 +56,20 @@ Section 23.2.5), expressed as a two-party protocol `ddhOTProtocol` in
 * `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_ddhOT_receiver_eq`: **computational receiver
   privacy** — a corrupted receiver's distinguishing advantage equals
   `DDH.advantage g q (ddhOTReduction g q x D)`.
-* `Cslib.Crypto.Protocols.MPC.ddhOTAttackBothMessages_eq`,
+* `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_unchecked_of_add`,
+  `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_zero_of_add_ne`,
+  `Cslib.Crypto.Protocols.MPC.ddhOTAttackBothMessages_eq`,
   `Cslib.Crypto.Protocols.MPC.ddhOTUnchecked_malicious_receiver_advantage`: **malicious-receiver
   attack on the unchecked variant** — omitting the check `w₀ + w₁ = u` allows a malicious receiver
   sending `(b₀.val • g, b₁.val • g)` to recover both `(m₀, m₁)` in a single run, separating the
-  real execution from any single-query ideal simulator with advantage `1 - (Fintype.card G : ℝ)⁻¹`.
+  real execution from any simulator that receives only `m_σ` for the fixed query bit `σ` with
+  advantage `1 - (Fintype.card G : ℝ)⁻¹`.
 
 ## References
 
 * [M. Naor and B. Pinkas, *Efficient Oblivious Transfer Protocols*][NaorPinkas2001]
-* [C. Peikert, V. Vaikuntanathan, and B. Waters, *A Framework for Efficient and Composable
-  Oblivious Transfer*][PeikertVaikuntanathanWaters2008], Section 5.1.
 * [D. Boneh and V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Section 23.2.5.
+  Section 23.5.7 (Figure 23.17, Theorem 23.7, and Remark 23.6).
 -/
 
 public section
@@ -83,7 +85,7 @@ variable {G : Type} [AddCommGroup G]
 
 /-- If `q • x = 0` for all `x : G`, natural scalar multiplication by `(a + b).val` for
 `a, b : ZMod q` distributes over addition. -/
-theorem zmod_val_nsmul_add {q : ℕ} [NeZero q] (hq : ∀ x : G, q • x = 0)
+private theorem zmod_val_nsmul_add {q : ℕ} [NeZero q] (hq : ∀ x : G, q • x = 0)
     (a b : ZMod q) (x : G) : (a + b).val • x = a.val • x + b.val • x := by
   rw [ZMod.val_add]
   have hdiv := Nat.mod_add_div (a.val + b.val) q
@@ -94,7 +96,7 @@ theorem zmod_val_nsmul_add {q : ℕ} [NeZero q] (hq : ∀ x : G, q • x = 0)
 
 /-- If `q • x = 0` for all `x : G`, natural scalar multiplication by `(a * b).val` for
 `a, b : ZMod q` associates with repeated scalar multiplication. -/
-theorem zmod_val_nsmul_mul {q : ℕ} (hq : ∀ x : G, q • x = 0)
+private theorem zmod_val_nsmul_mul {q : ℕ} (hq : ∀ x : G, q • x = 0)
     (a b : ZMod q) (x : G) : (a * b).val • x = a.val • (b.val • x) := by
   rw [ZMod.val_mul]
   have hdiv := Nat.mod_add_div (a.val * b.val) q
@@ -105,7 +107,7 @@ theorem zmod_val_nsmul_mul {q : ℕ} (hq : ∀ x : G, q • x = 0)
 
 /-- If `q • x = 0` for all `x : G`, natural scalar multiplication by `(a - b).val` for
 `a, b : ZMod q` equals `a.val • x - b.val • x`. -/
-theorem zmod_val_nsmul_sub {q : ℕ} [NeZero q] (hq : ∀ x : G, q • x = 0)
+private theorem zmod_val_nsmul_sub {q : ℕ} [NeZero q] (hq : ∀ x : G, q • x = 0)
     (a b : ZMod q) (x : G) : (a - b).val • x = a.val • x - b.val • x := by
   apply eq_sub_of_add_eq
   rw [← zmod_val_nsmul_add hq (a - b) b x, sub_add_cancel]
@@ -218,7 +220,8 @@ theorem ddhOTReceiverMsg_add {q : ℕ} (g : G) (σ : Bool) (b : ZMod q) (u : G) 
   cases σ <;> simp [ddhOTReceiverMsg]
 
 /-- Encrypt a single branch message `m : G` under `(g, u, w)` using coins `(r, s)` and sender
-exponent `a`. -/
+exponent `a`. When `u = a.val • g` and `q • y = 0` on `G`, this equals ElGamal encryption
+`((r + a * s).val • g, (r + a * s).val • w + m)` under key `w`. -/
 @[expose] def ddhOTEncryptBranch {q : ℕ} (g u w m : G) (r s a : ZMod q) : G × G :=
   (r.val • g + s.val • u, r.val • w + s.val • (a.val • w) + m)
 
@@ -240,7 +243,7 @@ theorem ddhOTReceiverOutput_encryptBranch {q : ℕ} (g m : G) (a b r s : ZMod q)
   rw [h1, add_sub_cancel_left]
 
 /-- Algebraic identity for the chosen branch ciphertext in `ddhOTProtocol`. -/
-theorem chosen_branch_eq {q : ℕ} (g m : G) (a b r s : ZMod q) :
+private theorem chosen_branch_eq {q : ℕ} (g m : G) (a b r s : ZMod q) :
     ddhOTEncryptBranch g (a.val • g) (b.val • g) m r s a =
       let e := r.val • g + s.val • (a.val • g)
       (e, b.val • e + m) := by
@@ -255,8 +258,8 @@ theorem chosen_branch_eq {q : ℕ} (g m : G) (a b r s : ZMod q) :
         show a.val * (s.val * b.val) = b.val * (a.val * s.val) by ring]
   rw [h1]
 
-/-- Algebraic identity for the unchosen ("messy") branch ciphertext in `ddhOTProtocol`. -/
-theorem unchosen_branch_eq {q : ℕ} [NeZero q] (hq : ∀ y : G, q • y = 0)
+/-- Algebraic identity for the unchosen branch ciphertext in `ddhOTProtocol`. -/
+private theorem unchosen_branch_eq {q : ℕ} [NeZero q] (hq : ∀ y : G, q • y = 0)
     (g m : G) (a b r s : ZMod q) :
     ddhOTEncryptBranch g (a.val • g) (a.val • g - b.val • g) m r s a =
       let u' := (r + a * s).val • g
@@ -311,7 +314,7 @@ abbrev DDHOTFinal (G : Type) (q : ℕ) (i : Fin 2) : Type :=
     i st
 
 /-- **Unchecked three-message DDH OT protocol** omitting the sender's `w₀ + w₁ = u` check
-([BonehShoup2023], Section 23.2.5). -/
+([BonehShoup2023], Section 23.5.7.3, Remark 23.6). -/
 @[expose] noncomputable def ddhOTUncheckedProtocol (g : G) (q : ℕ) [NeZero q] :
     Protocol 2 noOracleSpec (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) where
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
@@ -357,8 +360,24 @@ encrypting `(m.1, m.2)`. -/
   else
     ((0, 0), (0, 0))
 
+/-- When the receiver's Round 2 message satisfies `w.1 + w.2 = c.1.val • g`, the checked sender
+reply `ddhOTSenderReply` coincides with `ddhOTSenderReplyUnchecked`. -/
+theorem ddhOTSenderReply_eq_unchecked_of_add {q : ℕ} (g : G) (m : G × G)
+    (c : DDHOTSenderCoins q) (w : G × G) (hw : w.1 + w.2 = c.1.val • g) :
+    ddhOTSenderReply g m c w = ddhOTSenderReplyUnchecked g m c w := by
+  rcases c with ⟨a, r₀, s₀, r₁, s₁⟩
+  simp only [ddhOTSenderReply, ddhOTSenderReplyUnchecked, hw, ↓reduceIte]
+
+/-- When the receiver's Round 2 message violates `w.1 + w.2 = c.1.val • g`, the checked sender
+reply `ddhOTSenderReply` aborts to `((0, 0), (0, 0))`. -/
+theorem ddhOTSenderReply_eq_zero_of_add_ne {q : ℕ} (g : G) (m : G × G)
+    (c : DDHOTSenderCoins q) (w : G × G) (hw : w.1 + w.2 ≠ c.1.val • g) :
+    ddhOTSenderReply g m c w = ((0, 0), (0, 0)) := by
+  rcases c with ⟨a, r₀, s₀, r₁, s₁⟩
+  simp only [ddhOTSenderReply, hw, ↓reduceIte]
+
 /-- **Three-message DDH 1-out-of-2 Oblivious Transfer protocol** ([NaorPinkas2001];
-[PeikertVaikuntanathanWaters2008], Section 5.1; [BonehShoup2023], Section 23.2.5). -/
+[BonehShoup2023], Section 23.5.7, Figure 23.17 and Theorem 23.7). -/
 @[expose] noncomputable def ddhOTProtocol (g : G) (q : ℕ) [NeZero q] :
     Protocol 2 noOracleSpec (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) where
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
@@ -851,9 +870,10 @@ theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q] [None
 
 /-! ### Simultaneous-recovery attack on the unchecked variant -/
 
-/-- Real game for the malicious receiver on `ddhOTUncheckedProtocol`: for uniformly sampled
-sender input `(m₀, m₁) ← G × G` and query bit `σ : Bool`, tests whether the malicious receiver
-recovers the unchosen message `if σ then m₀ else m₁`. -/
+/-- Real game for a malicious receiver against the unchecked sender reply
+`ddhOTSenderReplyUnchecked`: for uniformly sampled sender input `(m₀, m₁) ← G × G` and query bit
+`σ : Bool`, tests whether the malicious receiver recovers the unchosen message
+`if σ then m₀ else m₁`. -/
 @[expose] noncomputable def ddhOTUncheckedRealGame (g : G) (q : ℕ) [NeZero q] [Nonempty G]
     (b₀ b₁ : ZMod q) (σ : Bool) : ProbComp Bool := do
   let m₀ ← ProbComp.uniform G
@@ -864,8 +884,8 @@ recovers the unchosen message `if σ then m₀ else m₁`. -/
   return decide ((if σ then recovered.1 else recovered.2) = (if σ then m₀ else m₁))
 
 omit [AddCommGroup G] in
-/-- Ideal game for any single-query receiver simulator `S : Bool → G → ProbComp (G × G)`: for
-uniformly sampled `m₀, m₁ ← G` and simulator query bit `σ : Bool`, `S σ m_σ` receives only
+/-- Ideal game for any simulator `S : Bool → G → ProbComp (G × G)` that receives only `m_σ` for
+the fixed query bit `σ : Bool`: for uniformly sampled `m₀, m₁ ← G`, `S σ m_σ` receives only
 `m_σ = if σ then m₁ else m₀` and tries to guess the unchosen message `if σ then m₀ else m₁`. -/
 @[expose] noncomputable def ddhOTUncheckedIdealGame [Nonempty G]
     (S : Bool → G → ProbComp (G × G)) (σ : Bool) : ProbComp Bool := do
@@ -886,8 +906,8 @@ theorem succProbability_ddhOTUncheckedRealGame (g : G) (q : ℕ) [NeZero q] [Non
     PMF.pure_apply, ↓reduceIte, ENNReal.toReal_one]
 
 omit [AddCommGroup G] in
-/-- In `ddhOTUncheckedIdealGame`, any single-query simulator `S` guesses the unchosen message
-with probability `(Fintype.card G : ℝ)⁻¹`. -/
+/-- In `ddhOTUncheckedIdealGame`, any simulator `S` that receives only `m_σ` for the fixed query
+bit `σ` guesses the unchosen message with probability `(Fintype.card G : ℝ)⁻¹`. -/
 theorem succProbability_ddhOTUncheckedIdealGame [Nonempty G]
     (S : Bool → G → ProbComp (G × G)) (σ : Bool) :
     (Game.succProbability (ProbComp.eval (ddhOTUncheckedIdealGame S σ)) : ℝ) =
@@ -935,9 +955,9 @@ theorem succProbability_ddhOTUncheckedIdealGame [Nonempty G]
       simp only [PMF.bind_apply, hinner, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   rw [h_ennreal, ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
-/-- **Malicious-receiver separation on the unchecked DDH OT protocol**: the distinguishing
-advantage between `ddhOTUncheckedRealGame` and `ddhOTUncheckedIdealGame` for any single-query
-simulator `S` is `1 - (Fintype.card G : ℝ)⁻¹`. -/
+/-- **Malicious-receiver separation on the unchecked DDH OT sender reply**: the distinguishing
+advantage between `ddhOTUncheckedRealGame` and `ddhOTUncheckedIdealGame` for any simulator `S`
+that receives only `m_σ` for the fixed query bit `σ` is `1 - (Fintype.card G : ℝ)⁻¹`. -/
 theorem ddhOTUnchecked_malicious_receiver_advantage (g : G) (q : ℕ) [NeZero q] [Nonempty G]
     (b₀ b₁ : ZMod q) (S : Bool → G → ProbComp (G × G)) (σ : Bool) :
     (Game.advantage (ProbComp.eval (ddhOTUncheckedRealGame g q b₀ b₁ σ))
