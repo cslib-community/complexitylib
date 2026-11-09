@@ -173,11 +173,8 @@ theorem publicKeyChainHybrid_advantage_linkAdversary (depth capacity : ℕ → �
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) (depth n) >>= test n))
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>= test n)) =
       (dyadicSize (depth n) : ℝ≥0) * dyadicSize (capacity n) *
-        Game.advantage
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (E.linkAdversary depth capacity test) false n))
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (E.linkAdversary depth capacity test) true n)) := by
+        Encryption.advantage (Encryption.game E.keyGen E.encrypt
+          (E.linkAdversary depth capacity test)) n := by
   apply NNReal.eq
   rw [NNReal.coe_mul, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_natCast,
     Game.coe_advantage, Game.coe_advantage,
