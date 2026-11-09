@@ -189,9 +189,9 @@ Do not prove a lemma that the library, CSLib, Mathlib or core already has, even 
 re-deriving it inline inside another proof: use it, or make a private original public. After a
 build, `python3 scripts/parallel_defs.py --theorems` lists the theorems a change adds or modifies
 whose statement already exists; CI posts the same notice. It cannot see a fact re-derived inside a
-proof, so search for an existing lemma first. When several proofs need the same substantial
-argument, derive it once; the [library quality standard](CONTRIBUTING.md#library-quality-standard)
-says when a shared lemma pays.
+proof, so search for an existing lemma first. When a proof you add or change needs a substantial
+argument that another proof makes, derive it once; the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says when a shared lemma pays.
 
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
