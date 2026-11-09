@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Check current manual links, book chapter lists and Lean excerpt identity (stdlib only).
 
-This does not fetch URLs, elaborate Lean, audit mathematical meaning, or assert that
-historical evidence describes the current checkout. Run from any working directory.
+Relative `File.lean#L<n>` links must also start on a declaration, attribute, docstring or (for
+ranges) section header. This does not fetch URLs, elaborate Lean, audit mathematical meaning,
+check that a source line link names the declaration it starts on, or assert that historical
+evidence describes the current checkout. Run from any working directory.
 """
 from __future__ import annotations
 
@@ -31,10 +33,11 @@ DECLARATION_START = re.compile(
     r"|local)\s+)*(?:theorem|lemma|def|abbrev|structure|class|instance|inductive|opaque|example)\b)")
 SECTION_START = re.compile(r"(?:/-!|(?:(?:public|noncomputable)\s+)*(?:section|namespace)\b)")
 STALE_SOURCE_ANCHOR = "source line anchor does not start a declaration"
-# Known stale anchors, as (Lean file, start line), that this check tolerates until they can be
-# repointed without conflicting with queued pull requests. Repoint the manual link and delete
-# the entry (#3991); an entry that no longer matches is listed in the result, not reported as
-# an error, so a pull request that repoints a link does not have to edit this list.
+# Anchors, as (Lean file, start line), that are stale or that queued pull requests will make
+# stale; the check tolerates them until they can be repointed without conflicting with or
+# ejecting those pull requests. Repoint the manual link and delete the entry (#3991). An entry
+# that no longer matches is listed in the result, not reported as an error, so a pull request
+# that repoints a link does not have to edit this list.
 STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
     # Stale on main. #3728 edits the manual paragraph that links it.
     ("CslibFrontier/Crypto/Computational/TreeSignature/Security.lean", 4779),
@@ -44,6 +47,13 @@ STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
     # Stale on main. #3875 moves this file's declarations.
     *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Interactive.lean", line)
       for line in (197, 213, 226, 285, 342, 352, 395, 444, 600)),
+    # Correct on main, but queued #3875 and #3977 move these declarations without repointing.
+    *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Computational.lean", line)
+      for line in (107, 217, 228, 243)),
+    ("CslibFrontier/Crypto/Protocols/VOLE/Basic.lean", 175),
+    ("CslibFrontier/Foundations/NumberTheory/Primality/EulerLiars.lean", 152),
+    ("CslibFrontier/Foundations/NumberTheory/Primality/RabinMonier.lean", 343),
+    ("CslibFrontier/Foundations/NumberTheory/Primality/StrongLiars.lean", 222),
 }
 
 
