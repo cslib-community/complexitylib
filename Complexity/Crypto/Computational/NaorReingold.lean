@@ -13,6 +13,7 @@ public import Complexity.Foundations.Data.BitString.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Probability.PMF.Uniform
+import Complexity.Probability.Product
 import Complexity.Tactic.PolyTime
 
 /-!
@@ -107,7 +108,7 @@ Following Boneh–Shoup Exercises 10.4, 10.8, 10.11, and 4.18, we formalize:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  Version 0.6][BonehShoup2023], Section 4.10 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, 10.11, pp. 424–426).
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
   Functions*][NaorReingold2004], Section 4.1 (Construction 4.1 & Theorem 4.1).
@@ -183,7 +184,7 @@ def naorReingoldPRG (d : F.Desc) (α : ZMod (F.order d)) (u : F.Carrier d) :
     F.Carrier d × F.Carrier d :=
   (u, α • u)
 
-/-- One step of the augmented tree construction ([BonehShoup2023], Section 4.11, Exercise 4.18,
+/-- One step of the augmented tree construction ([BonehShoup2023], Section 4.10, Exercise 4.18,
 p. 172, and Section 10.11, Exercise 10.4(a), p. 424): select the `false` (`u`) or `true` (`α • u`)
 child of `naorReingoldPRG d α u`. -/
 def naorReingoldStep (d : F.Desc) (u : F.Carrier d) (p : ZMod (F.order d) × Bool) :
@@ -538,46 +539,6 @@ private theorem prefixTableEquiv_apply {α : Type*} (k : ℕ) (T : BitString k �
     prefixTableEquiv α k T p = if p (Fin.last k) then (T (Fin.init p)).2 else (T (Fin.init p)).1 :=
   rfl
 
-private def shiftAtEquiv {n : ℕ} {α : Type*} [AddGroup α] (i : Fin n) (δ : α) :
-    (Fin n → α) ≃ (Fin n → α) where
-  toFun f := Function.update f i (f i + δ)
-  invFun f := Function.update f i (f i - δ)
-  left_inv f := by
-    funext j
-    by_cases hj : j = i
-    · subst hj; simp
-    · simp [hj]
-  right_inv f := by
-    funext j
-    by_cases hj : j = i
-    · subst hj; simp
-    · simp [hj]
-
-private theorem uniformOfFintype_bind_update {n : ℕ} {α β : Type*}
-    [AddGroup α] [Fintype α] [Nonempty α] (i : Fin n) (g : (Fin n → α) → PMF β) :
-    ((PMF.uniformOfFintype α).bind fun a =>
-      (PMF.uniformOfFintype (Fin n → α)).bind fun f =>
-        g (Function.update f i a)) =
-    (PMF.uniformOfFintype (Fin n → α)).bind g := by
-  rw [PMF.bind_comm]
-  have h1 (f : Fin n → α) :
-      ((PMF.uniformOfFintype α).bind fun a => g (Function.update f i a)) =
-      ((PMF.uniformOfFintype α).bind fun δ => g (shiftAtEquiv i δ f)) :=
-    by
-      change (PMF.uniformOfFintype α).bind (fun a => g (Function.update f i a)) =
-        (PMF.uniformOfFintype α).bind
-          ((fun a => g (Function.update f i a)) ∘ Equiv.addLeft (f i))
-      rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
-  simp_rw [h1]
-  rw [PMF.bind_comm]
-  have h2 (δ : α) :
-      ((PMF.uniformOfFintype (Fin n → α)).bind fun f => g (shiftAtEquiv i δ f)) =
-      (PMF.uniformOfFintype (Fin n → α)).bind g :=
-    by
-      change (PMF.uniformOfFintype (Fin n → α)).bind (g ∘ shiftAtEquiv i δ) = _
-      rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
-  simp_rw [h2, PMF.bind_const]
-
 /-- Evaluating the level-`k` child table `T : BitString k → F.Carrier d × F.Carrier d` followed by
 the depth-`(k + 1)` suffix exponent product. -/
 def naorReingoldTableEval (d : F.Desc) {n : ℕ} (k : ℕ) (hk : k < n)
@@ -634,8 +595,8 @@ theorem multiDDHRealTupleLaw_naorReingoldLevelTest (d : F.Desc) {n : ℕ} (k : �
       exact congrArg (· • F.generator d) (by ring)
     · simp [hxk, smul_smul, mul_comm]
   simp_rw [hfn]
-  exact uniformOfFintype_bind_update ⟨k, hk⟩
-    (fun α => F.naorReingoldEvalWithFn d n adv (F.naorReingoldHybridEval d k B α))
+  symm
+  exact PMF.bind_uniformOfFintype_update (⟨k, hk⟩ : Fin n) _
 
 /-- Under `multiDDHIdealTupleLaw`, `naorReingoldLevelTest` reproduces `naorReingoldHybridGame` at
 depth `k + 1`. -/

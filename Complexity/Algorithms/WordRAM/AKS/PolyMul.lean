@@ -11,6 +11,8 @@ public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 import Mathlib.Tactic.Linarith
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Multiplication modulo `X^r - 1` and `n` on the word RAM
 
@@ -156,43 +158,42 @@ private structure Hyp (w a b t r n : ℕ) (m : ℕ → ℕ) : Prop where
   hfn : Fits w (n * n + n)
 
 private theorem clear_step {w a b t r n : ℕ} {m : ℕ → ℕ} (H : Hyp w a b t r n m) (y : Data 14)
-    (hy : Regs a b t r n y ∧ y.regs i ≤ r ∧ y.mem = view m t (y.regs i) (fun _ => 0))
-    (hc : (Cond.lt i rr).Holds y) :
+    (hy : Regs a b t r n y ∧ y.mem = view m t (y.regs i) (fun _ => 0))
+    (hc : y.regs i < r) :
     ∃ z, ExecWithin w clearBody y z 3 ∧
-      (Regs a b t r n z ∧ z.regs i ≤ r ∧ z.mem = view m t (z.regs i) (fun _ => 0)) ∧
-      r - z.regs i < r - y.regs i := by
-  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hyi, hym⟩ := hy
+      (Regs a b t r n z ∧ z.mem = view m t (y.regs i + 1) (fun _ => 0)) ∧
+      z.regs i = y.regs i + 1 := by
+  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hym⟩ := hy
   obtain ⟨I, hI⟩ : ∃ I, y.regs i = I := ⟨_, rfl⟩
-  have hlt : I < r := by simpa only [Cond.holds_lt, hyr, hI] using hc
+  have hlt : I < r := by simpa only [hI] using hc
   have hfaddr : Fits w (t + I) := H.hft.of_le (by omega)
   have hfinc : Fits w (I + 1) := H.hf2.of_le (by omega)
   let z := ((y.set addr (t + I)).write (t + I) 0).set i (I + 1)
   have hrun : ExecWithin (B := .standard) w clearBody y z 3 := by
     ram_eval [clearBody, z, hyt, hI, hyo, hyz, hfaddr, hfinc]
-  refine ⟨z, hrun, ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩, ?_⟩ <;>
+  refine ⟨z, hrun, ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩, ?_⟩ <;>
     simp +decide only [z, Data.set_regs, Data.write_regs, Data.set_mem, Data.write_mem,
       Function.update_apply, ↓reduceIte, hya, hyb, hyt, hyr, hyn, hyo, hyz, hI]
-  · omega
-  · rw [hym, hI]
-    funext a'
-    simp only [Function.update_apply, view]
-    split_ifs <;> first | rfl | omega
-  · omega
+  rw [hym, hI]
+  funext a'
+  simp only [Function.update_apply, view]
+  split_ifs <;> first | rfl | omega
 
 private theorem inner_step {w a b t r n I : ℕ} {m : ℕ → ℕ} (H : Hyp w a b t r n m) (hIr : I < r)
     (y : Data 14)
-    (hy : Regs a b t r n y ∧ y.regs i = I ∧ y.regs u = m (a + I) ∧ y.regs j ≤ r ∧
+    (hy : Regs a b t r n y ∧ y.regs i = I ∧ y.regs u = m (a + I) ∧
       y.mem = view m t r
         (fun k' => partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r I (y.regs j) k' % n))
-    (hc : (Cond.lt j rr).Holds y) :
+    (hc : y.regs j < r) :
     ∃ z, ExecWithin w innerBody y z 11 ∧
-      (Regs a b t r n z ∧ z.regs i = I ∧ z.regs u = m (a + I) ∧ z.regs j ≤ r ∧
+      (Regs a b t r n z ∧ z.regs i = I ∧ z.regs u = m (a + I) ∧
         z.mem = view m t r
-          (fun k' => partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r I (z.regs j) k' % n)) ∧
-      r - z.regs j < r - y.regs j := by
-  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hyi, hyu, hyj, hym⟩ := hy
+          (fun k' =>
+            partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r I (y.regs j + 1) k' % n)) ∧
+      z.regs j = y.regs j + 1 := by
+  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hyi, hyu, hym⟩ := hy
   obtain ⟨J, hJ⟩ : ∃ J, y.regs j = J := ⟨_, rfl⟩
-  have hlt : J < r := by simpa only [Cond.holds_lt, hyr, hJ] using hc
+  have hlt : J < r := by simpa only [hJ] using hc
   rw [hJ] at hym
   have hr0 : 0 < r := by omega
   obtain ⟨k₀, hk₀⟩ : ∃ k₀, (I + J) % r = k₀ := ⟨_, rfl⟩
@@ -236,7 +237,7 @@ private theorem inner_step {w a b t r n I : ℕ} {m : ℕ → ℕ} (H : Hyp w a 
       z.regs j' = y.regs j' := by
     simp [z, hj'.1, hj'.2.1, hj'.2.2.1, hj'.2.2.2.1, hj'.2.2.2.2, y₁]
   have hzj : z.regs j = J + 1 := by simp [z]
-  refine ⟨z, (hrun₁.seq hrun₂).mono (by omega), ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩, ?_⟩
+  refine ⟨z, (hrun₁.seq hrun₂).mono (by omega), ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_⟩, ?_⟩
   · rw [hz pa (by decide), hya]
   · rw [hz pb (by decide), hyb]
   · rw [hz pt (by decide), hyt]
@@ -246,9 +247,8 @@ private theorem inner_step {w a b t r n I : ℕ} {m : ℕ → ℕ} (H : Hyp w a 
   · rw [hz zero (by decide), hyz]
   · rw [hz i (by decide), hyi]
   · rw [hz u (by decide), hyu, hp]
-  · rw [hzj]; omega
   · change Function.update y.mem (t + k₀) ((S % n + p * q) % n) = _
-    rw [hzj, hym, view_update hk₀r]
+    rw [hJ, hym, view_update hk₀r]
     congr 1
     funext k'
     rw [partSum_succ, Function.update_apply, hp, hq]
@@ -256,19 +256,20 @@ private theorem inner_step {w a b t r n I : ℕ} {m : ℕ → ℕ} (H : Hyp w a 
     · subst h; simp [hk₀, hS, Nat.mod_add_mod]
     · have h' : ¬(I + J) % r = k' := fun h' => h (hk₀ ▸ h'.symm)
       simp only [h, h', ↓reduceIte, Nat.add_zero]
-  · rw [hzj, hJ]; omega
+  · simp only [hzj, hJ]
 
 private theorem outer_step {w a b t r n : ℕ} {m : ℕ → ℕ} (H : Hyp w a b t r n m) (y : Data 14)
-    (hy : Regs a b t r n y ∧ y.regs i ≤ r ∧ y.mem = view m t r
+    (hy : Regs a b t r n y ∧ y.mem = view m t r
       (fun k' => partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r (y.regs i) 0 k' % n))
-    (hc : (Cond.lt i rr).Holds y) :
+    (hc : y.regs i < r) :
     ∃ z, ExecWithin w outerBody y z (13 * r + 6) ∧
-      (Regs a b t r n z ∧ z.regs i ≤ r ∧ z.mem = view m t r
-        (fun k' => partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r (z.regs i) 0 k' % n)) ∧
-      r - z.regs i < r - y.regs i := by
-  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hyi, hym⟩ := hy
+      (Regs a b t r n z ∧ z.mem = view m t r
+        (fun k' =>
+          partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r (y.regs i + 1) 0 k' % n)) ∧
+      z.regs i = y.regs i + 1 := by
+  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hym⟩ := hy
   obtain ⟨I, hI⟩ : ∃ I, y.regs i = I := ⟨_, rfl⟩
-  have hlt : I < r := by simpa only [Cond.holds_lt, hyr, hI] using hc
+  have hlt : I < r := by simpa only [hI] using hc
   rw [hI] at hym
   have hfaddr : Fits w (a + I) := H.hfa.of_le (by omega)
   have hPI : y.mem (a + I) = m (a + I) := by
@@ -276,17 +277,17 @@ private theorem outer_step {w a b t r n : ℕ} {m : ℕ → ℕ} (H : Hyp w a b 
   let y₁ := ((y.set addr (a + I)).set u (m (a + I))).set j 0
   have hrun₁ : ExecWithin (B := .standard) w (ram[ addr ← pa + i; u ← *addr; j ← #0 ]) y y₁ 3 := by
     ram_eval [y₁, hya, hI, hfaddr, hPI]
-  have hy₁ : Regs a b t r n y₁ ∧ y₁.regs i = I ∧ y₁.regs u = m (a + I) ∧ y₁.regs j ≤ r ∧
-      y₁.mem = view m t r
-        (fun k' => partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r I (y₁.regs j) k' %
-          n) := by
-    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?mem⟩
+  let P (k : ℕ) (z : Data 14) : Prop :=
+    Regs a b t r n z ∧ z.regs i = I ∧ z.regs u = m (a + I) ∧
+      z.mem = view m t r
+        (fun k' => partSum (fun i' => m (a + i')) (fun j' => m (b + j')) r I k k' % n)
+  have hy₁ : P (y₁.regs j) y₁ := by
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_, ?mem⟩
     case mem => simpa [y₁] using hym
     all_goals simp +decide [y₁, hya, hyb, hyt, hyr, hyn, hyo, hyz, hI]
-  obtain ⟨y₂, hrun₂, hy₂, hc₂⟩ := ExecWithin.loop_invariant _ (fun y => r - y.regs j)
-    (inner_step H hlt) hy₁
-  obtain ⟨⟨hya₂, hyb₂, hyt₂, hyr₂, hyn₂, hyo₂, hyz₂⟩, hyi₂, -, hyj₂, hym₂⟩ := hy₂
-  have hJr : y₂.regs j = r := by simp only [Cond.holds_lt, hyr₂] at hc₂; omega
+  obtain ⟨y₂, hrun₂, ⟨⟨hya₂, hyb₂, hyt₂, hyr₂, hyn₂, hyo₂, hyz₂⟩, hyi₂, _, hym₂⟩, _⟩ :=
+    ExecWithin.loop_count P (fun _ ⟨⟨_, _, _, hlim, _, _, _⟩, _⟩ => hlim) (inner_step H hlt)
+      (by simp [y₁]) hy₁
   have hf₉ : Fits w (I + 1) := H.hf2.of_le (by omega)
   have hrun₃ : ExecWithin (B := .standard) w (ram[ i ← i + one ]) y₂ (y₂.set i (I + 1)) 1 := by
     ram_eval [hyi₂, hyo₂, hf₉]
@@ -294,16 +295,15 @@ private theorem outer_step {w a b t r n : ℕ} {m : ℕ → ℕ} (H : Hyp w a b 
   · refine (hrun₁.seq (hrun₂.seq hrun₃)).mono ?_
     have : y₁.regs j = 0 := by simp [y₁]
     rw [this]; omega
-  · refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?le, ?mem⟩
-    case le => simp only [Data.set_regs, Function.update_self]; omega
+  · refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?mem⟩
     case mem =>
-      simp only [Data.set_mem, Data.set_regs, Function.update_self]
-      rw [hym₂, hJr]
+      simp only [Data.set_mem]
+      rw [hI, hym₂]
       congr 1
       funext k'
       rw [partSum_row]
     all_goals simp +decide [hya₂, hyb₂, hyt₂, hyr₂, hyn₂, hyo₂, hyz₂]
-  · simp; omega
+  · simp only [Data.set_regs, Function.update_self, hI]
 
 /-- **Multiplication modulo `X^r - 1` and `n`.** If the product block `[t, t + r)` is disjoint
 from both factor blocks, the factors' coefficients are below `n ≥ 1`, and the word size holds the
@@ -325,30 +325,30 @@ theorem exec {w : ℕ} (x : Data 14) {a b t r n : ℕ} (ha : x.regs pa = a) (hb 
   let x₀ := ((x.set one 1).set zero 0).set i 0
   have hrun₀ : ExecWithin (B := .standard) w (ram[ one ← #1; zero ← #0; i ← #0 ]) x x₀ 3 := by
     ram_eval [x₀, h1]
-  have hx₀ : Regs a b t r n x₀ ∧ x₀.regs i ≤ r ∧
-      x₀.mem = view x.mem t (x₀.regs i) (fun _ => 0) := by
-    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?mem⟩
+  let Clear (k : ℕ) (z : Data 14) := Regs a b t r n z ∧
+    z.mem = view x.mem t k (fun _ => 0)
+  have hx₀ : Clear (x₀.regs i) x₀ := by
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?mem⟩
     case mem => funext a'; simp [x₀, view]
     all_goals simp +decide [x₀, ha, hb, ht, hr, hn]
-  obtain ⟨y₁, hrun₁, hy₁, hc₁⟩ := ExecWithin.loop_invariant _ (fun y => r - y.regs i)
-    (clear_step H) hx₀
-  obtain ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hyi, hym⟩ := hy₁
-  have hir : y₁.regs i = r := by simp only [Cond.holds_lt, hyr] at hc₁; omega
+  obtain ⟨y₁, hrun₁, ⟨⟨hya, hyb, hyt, hyr, hyn, hyo, hyz⟩, hym⟩, _⟩ :=
+    ExecWithin.loop_count Clear (fun _ ⟨⟨_, _, _, hlim, _, _, _⟩, _⟩ => hlim) (clear_step H)
+      (by simp [x₀]) hx₀
   have hrun₂ : ExecWithin (B := .standard) w (ram[ i ← #0 ]) y₁ (y₁.set i 0) 1 :=
     ExecWithin.const (fits_zero w)
-  have hy₂ : Regs a b t r n (y₁.set i 0) ∧ (y₁.set i 0).regs i ≤ r ∧ (y₁.set i 0).mem =
-      view x.mem t r (fun k' => partSum (fun i' => x.mem (a + i')) (fun j' => x.mem (b + j')) r
-        ((y₁.set i 0).regs i) 0 k' % n) := by
-    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?mem⟩
+  let Product (k : ℕ) (z : Data 14) := Regs a b t r n z ∧ z.mem =
+    view x.mem t r (fun k' =>
+      partSum (fun i' => x.mem (a + i')) (fun j' => x.mem (b + j')) r k 0 k' % n)
+  have hy₂ : Product ((y₁.set i 0).regs i) (y₁.set i 0) := by
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?mem⟩
     case mem =>
       simp only [Data.set_mem, Data.set_regs, Function.update_self]
-      rw [hym, hir]
+      rw [hym]
       congr 1
     all_goals simp +decide [hya, hyb, hyt, hyr, hyn, hyo, hyz]
-  obtain ⟨y₃, hrun₃, hy₃, hc₃⟩ := ExecWithin.loop_invariant _ (fun y => r - y.regs i)
-    (outer_step H) hy₂
-  obtain ⟨⟨hya₃, hyb₃, hyt₃, hyr₃, hyn₃, -, -⟩, hyi₃, hym₃⟩ := hy₃
-  have hir₃ : y₃.regs i = r := by simp only [Cond.holds_lt, hyr₃] at hc₃; omega
+  obtain ⟨y₃, hrun₃, ⟨⟨hya₃, hyb₃, hyt₃, hyr₃, hyn₃, _, _⟩, hym₃⟩, _⟩ :=
+    ExecWithin.loop_count Product (fun _ ⟨⟨_, _, _, hlim, _, _, _⟩, _⟩ => hlim) (outer_step H)
+      (by simp) hy₂
   refine ⟨y₃, ?_, ?_, ?_, hya₃, hyb₃, hyt₃, hyr₃, hyn₃⟩
   · refine (hrun₀.seq (hrun₁.seq (hrun₂.seq hrun₃))).mono ?_
     have h0 : x₀.regs i = 0 := by simp [x₀]
@@ -356,7 +356,7 @@ theorem exec {w : ℕ} (x : Data 14) {a b t r n : ℕ} (ha : x.regs pa = a) (hb 
     rw [h0, h0', Nat.sub_zero]
     nlinarith
   · intro k' hk'
-    rw [hym₃, hir₃, view_add hk']
+    rw [hym₃, view_add hk']
     simp only [Cslib.AKS.mulCoeff, partSum, rowSum, sum_range_zero, add_zero]
   · intro a' ha'
     rw [hym₃, view_of_not_mem ha']

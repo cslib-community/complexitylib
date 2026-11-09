@@ -14,7 +14,6 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import Complexity.Tactic.OptionMatch
 
 /-!
 # The s-m-n theorem in polynomial time
@@ -140,19 +139,6 @@ theorem computableInPolyTime_desc_mk {tapes q₀ : γ → ℕ} {table : γ → L
   (of_eq (f := fun t : ℕ × ℕ × List (Key × Act) => (⟨t.1, t.2.1, t.2.2⟩ : Desc))
     (encIn := encPair encUnary (encPair encUnary (encList (encPair eKey eAct))))
     (encOut := eDesc) fun _ => rfl).comp (htapes.prod (hq₀.prod htable))
-
-/-! ### Helpers -/
-
-/-- Mapping a computed option. -/
-@[fun_prop]
-theorem computableInPolyTime_option_map {α β : Type} {encA : α ↪ List Bool}
-    {encB : β ↪ List Bool} {value : γ → Option α} {f : γ → α → β}
-    (hvalue : ComputableInPolyTime value encIn (encOption encA))
-    (hf : ComputableInPolyTime (fun p : γ × α => f p.1 p.2) (encPair encIn encA) encB) :
-    ComputableInPolyTime (fun x => (value x).map (f x)) encIn (encOption encB) := by
-  unfold Option.map
-  option_match_to_elim
-  fun_prop
 
 namespace Hardwire
 

@@ -258,12 +258,29 @@ theorem Circuit.matrix_flatMap_mapWires (C : Circuit m) (L : List (Fin m ↪ Fin
 /-- The gate code `g` with every qubit number increased by `o`. -/
 def GateCode.shift (o : ℕ) (g : GateCode) : GateCode := (g.1, g.2.1 + o, g.2.2.map (· + o))
 
+@[simp] theorem GateCode.shift_zero (g : GateCode) : g.shift 0 = g := by
+  simp [GateCode.shift]
+
 /-- The block of qubits `o, …, o + m - 1` of an `N`-qubit register. -/
 def blockEmb (o : ℕ) (h : o + m ≤ N) : Fin m ↪ Fin N :=
   ⟨fun i => ⟨i + o, by omega⟩, fun i j hij => Fin.ext (by simpa using congrArg Fin.val hij)⟩
 
 @[simp] theorem blockEmb_apply_val (o : ℕ) (h : o + m ≤ N) (i : Fin m) :
     (blockEmb o h i : ℕ) = i + o := rfl
+
+/-- The bits of `glue (blockEmb o h) r X`: those of `r` on the block `o, …, o + m - 1` and those
+of `X` elsewhere. -/
+theorem glue_blockEmb_apply {o : ℕ} (h : o + m ≤ N) (r : Fin m → Bool) (X : Fin N → Bool)
+    (i : Fin N) :
+    glue (blockEmb o h) r X i =
+      if h' : o ≤ i ∧ (i : ℕ) < o + m then r ⟨i - o, by omega⟩ else X i := by
+  split_ifs with h'
+  · have : i = blockEmb o h ⟨i - o, by omega⟩ := Fin.ext (Nat.sub_add_cancel h'.1).symm
+    conv_lhs => rw [this]
+    rw [glue_apply_emb]
+  · refine glue_of_not _ _ _ fun j hj => h' ?_
+    rw [← hj, blockEmb_apply_val]
+    omega
 
 /-- **A shifted well-formed gate code denotes the gate on the shifted block.** -/
 theorem GateCode.toPlacedGate?_shift {o : ℕ} (h : o + m ≤ N) {g : GateCode}

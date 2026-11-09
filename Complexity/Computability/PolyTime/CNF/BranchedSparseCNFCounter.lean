@@ -53,6 +53,7 @@ is False*][OpenAI2026ETH], parameterized solely over `branchEval : BranchEvalInp
 * `branchedPolyCounter`, `branchedSparseCNFDeclaredCounter`, `branchedSparseCNFLeafCounter`
 * `branchedPolyCertificate`, `branchedSparseCNFDeclaredCertificate`,
   `branchedSparseCNFLeafCertificate`, `BranchPolylogTimeBound`
+* `encLeafInput`: the encoding of leaf-counter inputs `((c, N), ψ)`, with `N` in unary
 
 ## Main results
 
@@ -80,9 +81,7 @@ open Cslib.GenericRAM Cslib.GenericRAM.ExhaustiveCountFallback
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.ClauseSet.Sparsification
 open Turing.MultiTapeTM
 
-local notation "encSys" => encList (encList (encList encNat))
-local notation "encLeafCtx" => encPair encUnit encUnary
-local notation "encLeafIn" => encPair encLeafCtx encCNF
+private abbrev encLeafCtx := encPair encUnit encUnary
 
 @[expose] public section
 
@@ -176,22 +175,19 @@ private theorem computableInPolyTime_leafDensityRatio_binary (k : ℕ) :
     ((binary_lt' id' (const 1)).ite (const 1) id').of_enc_eq fun x =>
       congrArg encNat (by
         split_ifs with hx <;> simp only [decide_eq_true_eq] at hx <;> omega)
-  have hM : ComputableInPolyTime (leafThresholdBase k) encNat encNat :=
-    (computableInPolyTime_countingThresholdBase (max 2 k)).comp
-      (hmax1.comp ParameterCheck.computableInPolyTime_numGroups)
+  have hM := (computableInPolyTime_countingThresholdBase (max 2 k)).comp'
+    (hmax1.comp' ParameterCheck.computableInPolyTime_numGroups)
   have hgeom (n : ℕ) :
       ComputableInPolyTime (fun M : ℕ => ∑ j ∈ Finset.range n, M ^ j) encNat encNat := by
     induction n with
     | zero => simpa only [Finset.range_zero, Finset.sum_empty] using (const (encIn := encNat) 0)
     | succ n ih =>
-      exact (binary_add.comp ((binary_mul' id' ih).prod (const 1))).of_enc_eq fun M =>
+      exact (binary_add.comp' ((binary_mul' id' ih).prod (const 1))).of_enc_eq fun M =>
         congrArg encNat (by
-          dsimp only [Function.comp_apply]
           rw [Finset.sum_range_succ', pow_zero, Finset.mul_sum]; simp only [pow_succ'])
-  have hocc : ComputableInPolyTime (leafOccBound k) encNat encNat :=
-    (binary_mul' (const 2) ((hgeom (max 2 k)).comp hM)).of_enc_eq fun N =>
-      congrArg encNat (leafOccBound_eq_sum k N).symm
-  exact binary_add.comp (hocc.prod (const 1))
+  exact (binary_add.comp'
+    ((binary_mul' (const 2) ((hgeom (max 2 k)).comp' hM)).prod (const 1))).of_enc_eq
+    fun N => congrArg encNat (congrArg (· + 1) (leafOccBound_eq_sum k N).symm)
 
 private theorem exists_leafDensityRatio_le_poly (k : ℕ) :
     ∃ C_u d_u : ℕ, ∀ N : ℕ, leafDensityRatio k N ≤ C_u * (N + 1) ^ d_u := by
@@ -220,14 +216,9 @@ theorem computableInPolyTime_leafDensityRatio (k : ℕ) :
       (encPair encUnit encUnary) encUnary := by
   open ComputableInPolyTime in
   obtain ⟨C_u, d_u, hCu⟩ := exists_leafDensityRatio_le_poly k
-  have hN_u : ComputableInPolyTime (fun p : Unit × ℕ => p.2) encLeafCtx encUnary :=
-    snd encUnit encUnary
-  have hcap_u : ComputableInPolyTime (fun p : Unit × ℕ => C_u * (p.2 + 1) ^ d_u)
-      encLeafCtx encUnary :=
-    unary_mul' (const C_u) ((unary_pow d_u).comp (unary_add' hN_u (const 1)))
-  have hval_b : ComputableInPolyTime (fun p : Unit × ℕ => leafDensityRatio k p.2)
-      encLeafCtx encNat :=
-    (computableInPolyTime_leafDensityRatio_binary k).comp (unary_to_binary.comp hN_u)
+  have hN_u := snd encUnit encUnary
+  have hcap_u := unary_mul' (const C_u) ((unary_pow d_u).comp' (unary_add' hN_u (const 1)))
+  have hval_b := (computableInPolyTime_leafDensityRatio_binary k).comp' (unary_to_binary.comp' hN_u)
   exact (binary_min_unary' hcap_u hval_b).of_enc_eq fun p =>
     congrArg encUnary (Nat.min_eq_right (hCu p.2)).symm
 
@@ -330,14 +321,18 @@ theorem branchedSparseCNFLeafCounter_exhaustive_eq_modelCount
 
 /-! ### 4. Uniform Native Certificates & Global `PolyBounded` Workspace -/
 
+/-- Inputs `((c, N), ψ)` of the leaf counters: a unit context `c` and the declared variable count
+`N` in unary, then the formula `ψ` encoded by `encCNF`. The pair `(c, N)` is framed, and inside it
+the empty encoding of `c` is framed before the unary `N`. -/
+abbrev encLeafInput : (Unit × ℕ) × CNF ℕ ↪ List Bool :=
+  encPair (encPair encUnit encUnary) encCNF
+
 private theorem computableInPolyTime_mkPaperInputConst (k : ℕ) :
     ComputableInPolyTime (fun y : ℕ × List (List (List ℕ)) => mkPaperSparseInput y.1 k y.2)
-      (encPair encUnary encSys) encSparseSystemInput := by
-  have hk : ComputableInPolyTime (fun _ : ℕ × List (List (List ℕ)) => k)
-      (encPair encUnary encSys) encUnary := ComputableInPolyTime.const k
-  exact computableInPolyTime_mkPaperSparseInput.comp
-    (((ComputableInPolyTime.fst encUnary encSys).prod hk).prod
-      (ComputableInPolyTime.snd encUnary encSys))
+      (encPair encUnary encSparseSystem) encSparseSystemInput :=
+  (computableInPolyTime_mkPaperSparseInput.comp'
+    (((ComputableInPolyTime.fst encUnary encSparseSystem).prod (ComputableInPolyTime.const k)).prod
+      (ComputableInPolyTime.snd encUnary encSparseSystem))).of_enc_eq fun _ => rfl
 
 /-- **Native resource certificate for `branchedPolyCounter` (§5.5).** -/
 noncomputable def branchedPolyCertificate (k N₀_top N₀_branch : ℕ)
@@ -346,7 +341,7 @@ noncomputable def branchedPolyCertificate (k N₀_top N₀_branch : ℕ)
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n') :
     NativeCertificate (branchedPolyCounter k N₀_top N₀_branch branchEval)
-      (encPair encUnary encSys) encNat :=
+      (encPair encUnary encSparseSystem) encNat :=
   ((sparsePolyCounterCertificate N₀_top N₀_branch cBranch hbound).comp
     (NativeCertificate.ofPolyTime (computableInPolyTime_mkPaperInputConst k))).congr fun _ => rfl
 
@@ -357,42 +352,33 @@ theorem polyBounded_branchedPolyCertificate_space (k N₀_top N₀_branch : ℕ)
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n')
     (hs_br : PolyBounded (fun x => (encBranchEvalInput x).length) cBranch.space) :
-    PolyBounded (fun y => (encPair encUnary encSys y).length)
+    PolyBounded (fun y => (encPair encUnary encSparseSystem y).length)
       (branchedPolyCertificate k N₀_top N₀_branch cBranch hbound).space := by
-  unfold branchedPolyCertificate
+  obtain ⟨cOut, hcOut⟩ :
+      ∃ c, c = sparsePolyCounterCertificate N₀_top N₀_branch cBranch hbound := ⟨_, rfl⟩
   have hmk := computableInPolyTime_mkPaperInputConst k
+  unfold branchedPolyCertificate; rw [← hcOut]
   exact (NativeCertificate.ofPolyTime_isPolynomial hmk).2.add
-    ((polyBounded_sparsePolyCounterCertificate_space N₀_top N₀_branch cBranch hbound hs_br).comp
-      hmk.polyBounded_length)
+    ((hcOut ▸ polyBounded_sparsePolyCounterCertificate_space
+      N₀_top N₀_branch cBranch hbound hs_br).comp hmk.polyBounded_length)
 
 private def denseFallbackGuard (k : ℕ) (x : (Unit × ℕ) × CNF ℕ) : Bool :=
   validDeclaredInput k x.1.2 x.2 && decide (leafDensityRatio k x.1.2 * x.1.2 < x.2.length)
 
 private theorem computableInPolyTime_denseFallbackGuard (k : ℕ) :
-    ComputableInPolyTime (denseFallbackGuard k) encLeafIn encBool := by
-  have hN_u : ComputableInPolyTime (fun x : (Unit × ℕ) × CNF ℕ => x.1.2) encLeafIn encUnary :=
-    (ComputableInPolyTime.snd encUnit encUnary).comp (ComputableInPolyTime.fst encLeafCtx encCNF)
-  have hB_u : ComputableInPolyTime (fun x : (Unit × ℕ) × CNF ℕ => leafDensityRatio k x.1.2)
-      encLeafIn encUnary :=
-    (computableInPolyTime_leafDensityRatio k).comp (ComputableInPolyTime.fst encLeafCtx encCNF)
-  have hm_u : ComputableInPolyTime (fun x : (Unit × ℕ) × CNF ℕ => x.2.length)
-      encLeafIn encUnary :=
-    SAT.computableInPolyTime_length (ComputableInPolyTime.snd encLeafCtx encCNF)
-  have h1 :=
-    computableInPolyTime_validDeclaredInput k (ComputableInPolyTime.snd encUnit encUnary)
-  have h2 : ComputableInPolyTime
-      (fun x : (Unit × ℕ) × CNF ℕ => decide (leafDensityRatio k x.1.2 * x.1.2 < x.2.length))
-      encLeafIn encBool :=
-    ComputableInPolyTime.binary_lt'
-      (ComputableInPolyTime.binary_mul'
-        (ComputableInPolyTime.unary_to_binary.comp hB_u)
-        (ComputableInPolyTime.unary_to_binary.comp hN_u))
-      (ComputableInPolyTime.unary_to_binary.comp hm_u)
-  exact ComputableInPolyTime.bool_and' h1 h2
+    ComputableInPolyTime (denseFallbackGuard k) encLeafInput encBool := by
+  open ComputableInPolyTime in
+  have h1 := fst encLeafCtx encCNF
+  have hN_u := (snd encUnit encUnary).comp' h1
+  have hB_u := (computableInPolyTime_leafDensityRatio k).comp' h1
+  have hm_u := SAT.computableInPolyTime_length (snd encLeafCtx encCNF)
+  exact (bool_and' (computableInPolyTime_validDeclaredInput k (snd encUnit encUnary))
+    (binary_lt' (binary_mul' (unary_to_binary.comp' hB_u) (unary_to_binary.comp' hN_u))
+      (unary_to_binary.comp' hm_u))).of_enc_eq fun _ => rfl
 
 private theorem computableInPolyTime_leafExhProj :
     ComputableInPolyTime (fun x : (Unit × ℕ) × CNF ℕ => (x.1.2, x.2))
-      encLeafIn (encPair encUnary encCNF) :=
+      encLeafInput (encPair encUnary encCNF) :=
   ((ComputableInPolyTime.snd encUnit encUnary).comp
     (ComputableInPolyTime.fst encLeafCtx encCNF)).prod (ComputableInPolyTime.snd encLeafCtx encCNF)
 
@@ -403,7 +389,7 @@ noncomputable def branchedSparseCNFDeclaredCertificate (k N₀_leaf N₀_top N�
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n') :
     NativeCertificate (branchedSparseCNFDeclaredCounter k N₀_leaf N₀_top N₀_branch branchEval)
-      (encPair (encPair encUnit encUnary) encCNF) encNat :=
+      encLeafInput encNat :=
   guardedTargetOfPolyTime (computableInPolyTime_denseFallbackGuard k)
     (countCNFExhaustiveCertificate.comp
       (NativeCertificate.ofPolyTime computableInPolyTime_leafExhProj))
@@ -424,7 +410,7 @@ noncomputable def branchedSparseCNFLeafCertificate (k N₀_leaf N₀_top N₀_br
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n') :
     NativeCertificate (branchedSparseCNFLeafCounter k N₀_leaf N₀_top N₀_branch branchEval)
-      (encPair (encPair encUnit encUnary) encCNF) encNat :=
+      encLeafInput encNat :=
   (normalizeDeclaredLeafCertificate (ComputableInPolyTime.snd encUnit encUnary)
     (branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound)).congr
     fun _ => rfl
@@ -436,8 +422,7 @@ theorem polyBounded_branchedSparseCNFDeclaredCertificate_space (k N₀_leaf N₀
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n')
     (hs_br : PolyBounded (fun x => (encBranchEvalInput x).length) cBranch.space) :
-    PolyBounded (fun x : (Unit × ℕ) × CNF ℕ =>
-        (encPair (encPair encUnit encUnary) encCNF x).length)
+    PolyBounded (fun x : (Unit × ℕ) × CNF ℕ => (encLeafInput x).length)
       (branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound).space := by
   unfold branchedSparseCNFDeclaredCertificate
   have hpr := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_leafExhProj
@@ -457,8 +442,7 @@ theorem polyBounded_branchedSparseCNFLeafCertificate_space (k N₀_leaf N₀_top
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n')
     (hs_br : PolyBounded (fun x => (encBranchEvalInput x).length) cBranch.space) :
-    PolyBounded (fun x : (Unit × ℕ) × CNF ℕ =>
-        (encPair (encPair encUnit encUnary) encCNF x).length)
+    PolyBounded (fun x : (Unit × ℕ) × CNF ℕ => (encLeafInput x).length)
       (branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound).space :=
   polyBounded_normalizeDeclaredLeafCertificate_space
     (ComputableInPolyTime.snd encUnit encUnary) _
@@ -483,7 +467,9 @@ def BranchPolylogTimeBound (N₀_branch : ℕ) {branchEval : BranchEvalInput →
       branchMaxFactorIncidence n' sys' ≤ C_inc * Nat.clog 2 n' ^ β →
       branchMaxFactorWidth n' sys' ≤ C_inc * Nat.clog 2 n' ^ β →
       (cBranch.time (prepareBranchEvalInput (n', sys')) : ℝ) ≤
-        (C_br : ℝ) * ((encPair encUnary encSys (n', sys')).length + 1 : ℝ) ^ d_br *
+        (C_br : ℝ) *
+          ((encPair encUnary encSparseSystem (n', sys')).length + 1 : ℝ) ^
+            d_br *
           (2 : ℝ) ^ ((A_br : ℝ) * interpolationScale n')
 
 private theorem interpolationScale_le_two_mul_of_le_two_mul {n' N : ℕ}
@@ -504,9 +490,11 @@ private theorem interpolationScale_le_two_mul_of_le_two_mul {n' N : ℕ}
     pow_le_pow_left₀ (Real.log_pos h1_lt).le (Real.log_le_log hX'_pos hX'_le_X) 2
   have hX_le_4 : Real.log ((N : ℝ) + 16) ≤ (2 : ℝ) ^ 2 * Real.log ((n' : ℝ) + 16) := by
     have hN_sq : (N : ℝ) + 16 ≤ ((n' : ℝ) + 16) ^ 2 := by
-      have : (N : ℝ) ≤ 2 * (n' : ℝ) := by exact_mod_cast hN_le
-      have hn' : (0 : ℝ) ≤ n' := by positivity
-      nlinarith only [this, hn', sq_nonneg (n' : ℝ)]
+      have hnat : N + 16 ≤ (n' + 16) ^ 2 := by
+        calc N + 16 ≤ 2 * n' + 16 := Nat.add_le_add_right hN_le 16
+          _ ≤ n' * n' + 32 * n' + 256 := by omega
+          _ = (n' + 16) ^ 2 := by ring
+      exact_mod_cast hnat
     have hlog := Real.log_le_log (by positivity) hN_sq
     rw [Real.log_pow, Nat.cast_ofNat] at hlog; linarith
   have hsqrt_le : Real.sqrt (Real.log ((N : ℝ) + 16)) ≤
@@ -517,10 +505,13 @@ private theorem interpolationScale_le_two_mul_of_le_two_mul {n' N : ℕ}
   have hsX : 0 < Real.sqrt (Real.log ((N : ℝ) + 16)) := Real.sqrt_pos.mpr hX_pos
   unfold interpolationScale
   rw [mul_div_assoc', div_le_div_iff₀ hsX' hsX]
-  have hmul := mul_le_mul
-    (mul_le_mul (Nat.cast_le.mpr hn'_le) hL_sq (by positivity) (Nat.cast_nonneg N))
-    hsqrt_le hsX.le (by positivity)
-  linarith
+  calc (n' : ℝ) * Real.log (Real.log ((n' : ℝ) + 16)) ^ 2 * Real.sqrt (Real.log ((N : ℝ) + 16))
+      ≤ (N : ℝ) * Real.log (Real.log ((N : ℝ) + 16)) ^ 2 *
+          (2 * Real.sqrt (Real.log ((n' : ℝ) + 16))) :=
+        mul_le_mul (mul_le_mul (Nat.cast_le.mpr hn'_le) hL_sq (by positivity) (Nat.cast_nonneg N))
+          hsqrt_le hsX.le (by positivity)
+    _ = 2 * ((N : ℝ) * Real.log (Real.log ((N : ℝ) + 16)) ^ 2) *
+          Real.sqrt (Real.log ((n' : ℝ) + 16)) := by ring
 
 private theorem scopeWidthOn_le_mul (N k maxTerms : ℕ) (eq : List (List ℕ))
     (hlen : eq.length ≤ maxTerms) (hdeg : ∀ m ∈ eq, m.length ≤ k) :
@@ -572,7 +563,9 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
     refine ⟨Nat.mul_pos (by dsimp only [C_inc]; omega) hpow1, fun w hw => ?_⟩
     obtain ⟨eq, heq, rfl⟩ := List.mem_map.mp hw
     have h1 := (hsc_all eq heq).trans (hT_le.trans (Nat.mul_le_mul_left _ hpow_step))
-    dsimp only [C_inc]; nlinarith only [h1, hpow1]
+    exact h1.trans (Nat.mul_le_mul_right _
+      (by dsimp only [C_inc]
+          rw [show 6 * k * 2 ^ k * K_W = 6 * (k * 2 ^ k * K_W) by ring]; omega))
   have hsum_le : (sys.map (scopeWidthOn N)).sum ≤ (6 * T) * N := by
     calc (sys.map (scopeWidthOn N)).sum
         ≤ (sys.map fun _ => T).sum := List.sum_le_sum fun eq heq => hsc_all eq heq
@@ -582,7 +575,9 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
   have hdiv_M : (M + N - 1) / N ≤ 6 * T + 2 :=
     Nat.div_le_of_le_mul ((Nat.sub_le (M + N) 1).trans
       (by change (sys.map (scopeWidthOn N)).sum + N + N ≤ N * (6 * T + 2)
-          nlinarith only [hsum_le]))
+          calc (sys.map (scopeWidthOn N)).sum + N + N
+              ≤ (6 * T) * N + N + N := Nat.add_le_add_right (Nat.add_le_add_right hsum_le N) N
+            _ = N * (6 * T + 2) := by ring))
   have hcut_le : ParameterCheck.heavyIncidenceCutoff M N ≤ (6 * T + 2) * lam := by
     unfold ParameterCheck.heavyIncidenceCutoff; simp only [hcz, ↓reduceIte]
     have hsq : (Nat.clog 2 N - 1).sqrt + 1 ≤ lam := by
@@ -593,12 +588,18 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
     have hp3 : 1 ≤ lam ^ (2 * β_B + 3) := Nat.one_le_pow _ lam hlam1
     have h6T : (6 * T + 2) * lam ≤ (6 * k * 2 ^ k * K_W + 2) * lam ^ (2 * β_B + 4) :=
       (Nat.mul_le_mul_right lam
-        (show 6 * T + 2 ≤ (6 * (k * 2 ^ k * K_W) + 2) * lam ^ (2 * β_B + 3) by
-          nlinarith only [hT_le, hp3])).trans_eq
+        (calc 6 * T + 2 ≤
+            6 * ((k * 2 ^ k * K_W) * lam ^ (2 * β_B + 3)) + 2 * lam ^ (2 * β_B + 3) :=
+              Nat.add_le_add (Nat.mul_le_mul_left 6 hT_le) (by omega)
+          _ = (6 * (k * 2 ^ k * K_W) + 2) * lam ^ (2 * β_B + 3) := by ring)).trans_eq
         (by rw [pow_succ]; ring)
     have h1 : max 1 (ParameterCheck.heavyIncidenceCutoff M N) + 1 ≤ (6 * T + 2) * lam + 1 :=
-      Nat.add_le_add_right (max_le (show 1 ≤ (6 * T + 2) * lam by nlinarith only [hlam1]) hcut_le) 1
-    dsimp only [C_inc]; nlinarith only [h1, h6T, hpow1]
+      Nat.add_le_add_right
+        (max_le (Nat.le_trans hlam1 (Nat.le_mul_of_pos_left _ (by omega))) hcut_le) 1
+    calc max 1 (ParameterCheck.heavyIncidenceCutoff M N) + 1
+        ≤ (6 * k * 2 ^ k * K_W + 2) * lam ^ (2 * β_B + 4) + 10 * lam ^ (2 * β_B + 4) :=
+          h1.trans (Nat.add_le_add h6T (by omega))
+      _ = C_inc * lam ^ (2 * β_B + 4) := by dsimp only [C_inc]; ring
   exact ⟨hb0_le, hw_le⟩
 
 private theorem nat_poly_le_subexp {t C L d d_max : ℕ} {A X : ℝ}
@@ -643,7 +644,7 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
         IsCompiledSparseSystem k N (6 * N)
           (initialRowWeightBound (leafDensityRatio k N) m * 2 ^ k) sys →
         ((branchedPolyCertificate k N₀_top N₀_branch cBranch hbound).time (N, sys) : ℝ) ≤
-          (C_sys : ℝ) * ((encPair encUnary encSys (N, sys)).length + 1 : ℝ) ^ d_sys *
+          (C_sys : ℝ) * ((encPair encUnary encSparseSystem (N, sys)).length + 1 : ℝ) ^ d_sys *
             (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale N) := by
   obtain ⟨C_B, hCB⟩ := exists_leafDensityRatio_le_mul_clog_pow k
   set β_B := 2 * (max 2 k - 1)
@@ -692,19 +693,21 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
     rw [hs_eq]; by_contra hgt
     have h1 : ((lam - 1).sqrt + 2) * ((lam - 1).sqrt + 2) ≤ lam := Nat.le_sqrt.mp (by omega)
     have h2 := Nat.lt_succ_sqrt (lam - 1); simp only [Nat.succ_eq_add_one] at h2
-    have hlam_eq : lam = (lam - 1) + 1 := by omega
-    nlinarith only [h1, h2, hlam_eq]
+    have h3 : ((lam - 1).sqrt + 1) * ((lam - 1).sqrt + 1) <
+        ((lam - 1).sqrt + 2) * ((lam - 1).sqrt + 2) :=
+      Nat.mul_lt_mul_of_lt_of_lt (by omega) (by omega)
+    omega
   have hS_le_sqrt : (HeavyBranchFold.heavyVarList N inp.2.1.2.2 sys).length ≤ N / lam.sqrt :=
     (checkTopFeasible_eq_true_iff.mp htop).2.2.2.2.2.trans
       (Nat.div_le_div_left hsqrt_le_s (Nat.sqrt_pos.mpr (by omega)))
-  set Ly := (encPair encUnary encSys (N, sys)).length
+  set Ly := (encPair encUnary encSparseSystem (N, sys)).length
   have hinp_len : (encSparseSystemInput inp).length + 1 ≤ (C_ml + 1) * (Ly + 1) ^ d_ml := by
-    have h := hMkLen (N, sys); have hp := Nat.one_le_pow d_ml (Ly + 1) (Nat.succ_pos Ly)
-    dsimp only [inp]; nlinarith only [h, hp]
+    rw [Nat.add_one_mul]
+    exact Nat.add_le_add (hMkLen (N, sys)) (Nat.one_le_pow d_ml (Ly + 1) (Nat.succ_pos Ly))
   have hbr_in_len : (HeavyBranchFold.encBranchInput (toBranchInput inp)).length + 1 ≤
       (C_bl + 1) * (Ly + 1) ^ d_bl := by
-    have h := hBrLen (N, sys); have hp := Nat.one_le_pow d_bl (Ly + 1) (Nat.succ_pos Ly)
-    dsimp only [inp]; nlinarith only [h, hp]
+    rw [Nat.add_one_mul]
+    exact Nat.add_le_add (hBrLen (N, sys)) (Nat.one_le_pow d_bl (Ly + 1) (Nat.succ_pos Ly))
   have hrho_nn : 0 ≤ interpolationScale N := interpolationScale_nonneg N
   set R_branch : ℕ := ⌈((C_p2 : ℕ) : ℝ) * (Ly + 1 : ℝ) ^ (d_bl * d_br_all) *
     (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N)⌉₊
@@ -751,11 +754,11 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
     have hp_br := comp_poly_pow_le hlen_red (le_max_left d_br d_g)
     have hexp_tr : (2 : ℝ) ^ ((A_br : ℝ) * interpolationScale n') ≤
         (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N) :=
-      Real.rpow_le_rpow_of_exponent_le one_le_two (by
-        have hsc := interpolationScale_le_two_mul_of_le_two_mul hn'_le_N hN_2n'
-        have hA : (0 : ℝ) ≤ A_br := Nat.cast_nonneg A_br
-        nlinarith only [hsc, hA])
-    have ht2_nat : C_g * ((encPair encUnary encSys (n', sys')).length + 1) ^ d_g ≤
+      Real.rpow_le_rpow_of_exponent_le one_le_two
+        ((mul_le_mul_of_nonneg_left
+          (interpolationScale_le_two_mul_of_le_two_mul hn'_le_N hN_2n')
+          (Nat.cast_nonneg A_br)).trans_eq (by ring))
+    have ht2_nat : C_g * ((encPair encUnary encSparseSystem (n', sys')).length + 1) ^ d_g ≤
         (C_g * (C_bl + 1) ^ d_br_all) * (Ly + 1) ^ (d_bl * d_br_all) :=
       (Nat.mul_le_mul_left C_g ((Nat.pow_le_pow_right (Nat.succ_pos _)
         (le_max_right d_br d_g)).trans
@@ -772,7 +775,7 @@ private theorem polySys_time_bound_of_branchPolylog (k N₀_top N₀_branch : �
           (2 : ℝ) ^ ((2 * (A_br : ℝ)) * interpolationScale N) := by
       have hgt_cast : ((guardedBranchCertificate N₀_branch cBranch).time (n', sys') : ℝ) ≤
           (cBranch.time (prepareBranchEvalInput (n', sys')) : ℝ) +
-            ((C_g * ((encPair encUnary encSys (n', sys')).length + 1) ^ d_g : ℕ) : ℝ) := by
+            ((C_g * ((encPair encUnary encSparseSystem (n', sys')).length + 1) ^ d_g : ℕ) : ℝ) := by
         exact_mod_cast hgt
       exact hgt_cast.trans ((add_le_add ht1 ht2).trans_eq (by dsimp only [C_p2]; push_cast; ring))
     exact Nat.cast_le.mp (htot_br.trans (Nat.le_ceil _))
@@ -840,20 +843,15 @@ private theorem exists_branchedSparseCNFLeafCertificate_time_le
     ∃ C_nm d_nm : ℕ, ∀ x : (Unit × ℕ) × CNF ℕ,
       (branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound).time x ≤
         (branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound).time x +
-          C_nm * ((encLeafIn x).length + 1) ^ d_nm := by
+          C_nm * ((encLeafInput x).length + 1) ^ d_nm := by
   obtain ⟨pNorm, hpNorm, _, hNormT⟩ := exists_normalizeDeclaredLeafCertificate_bounds
     (ComputableInPolyTime.snd encUnit encUnary)
     (branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound)
     (polyBounded_branchedSparseCNFDeclaredCertificate_space k N₀_leaf N₀_top N₀_branch
       cBranch hbound hs_br)
-  obtain ⟨C_nm, d_nm, hNm⟩ :=
-    (PolyBounded.of_polynomiallyBounded (fun n : ℕ => n) hpNorm).exists_le
-  refine ⟨C_nm, d_nm, fun x => ?_⟩
-  have h1 : (branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound).time x ≤
-      (branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch cBranch hbound).time x +
-        pNorm (encLeafIn x).length := by
-    unfold branchedSparseCNFLeafCertificate; exact hNormT x
-  exact h1.trans (Nat.add_le_add_left (hNm (encLeafIn x).length) _)
+  obtain ⟨C_nm, d_nm, hNm⟩ := (PolyBounded.of_polynomiallyBounded (·) hpNorm).exists_le
+  exact ⟨C_nm, d_nm, fun x =>
+    (hNormT x).trans (Nat.add_le_add_left (hNm (encLeafInput x).length) _)⟩
 
 private theorem fast_path_arith_bound
     {C_B β_B C_qi d_qi C_i d_i N_init PowE C_pol d_pol C_R0 d_R0 A_sys d_t C_dg C_ex0 C_decl : ℕ}
@@ -892,9 +890,9 @@ private theorem fast_path_arith_bound
       (mul_le_mul_of_nonneg_right (by exact_mod_cast (Nat.succ_pos A_sys : 1 ≤ A_t)) hrho_nn)
   have hlam1 : 1 ≤ lam := (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by omega : 2 ^ 0 < N)
   have hinit_exp : q_val ≤ C_i * lam ^ d_i := by
-    have hm2_le : m + 2 ≤ (B + 1) * N := by nlinarith only [hmB, hN2]
+    have hm2_le : m + 2 ≤ (B + 1) * N := by rw [Nat.add_one_mul]; exact Nat.add_le_add hmB hN2
     have hB1_le : B + 1 ≤ (C_B + 1) * lam ^ β_B := by
-      have hp := Nat.one_le_pow β_B lam hlam1; nlinarith only [hB, hp]
+      rw [Nat.add_one_mul]; exact Nat.add_le_add hB (Nat.one_le_pow β_B lam hlam1)
     have hW2 := CNF.initialRowWeightBound_le_mul_pow_clog hN2 hm2_le hB1_le
     have hlog_m2 : Nat.log 2 (m + 2) + 1 ≤
         CNF.initialRowWeightCoeff (C_B + 1) β_B * lam ^ (2 * β_B + 3) := by
@@ -999,11 +997,11 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
           ψ.length ≤ leafOccBound k N * N + 1 →
             ((branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch
                 cBranch hbound).time x : ℝ) ≤
-              (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+              (C_t : ℝ) * ((encLeafInput x).length + 1 : ℝ) ^ d_t *
                 (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) ∧
             ((branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch
                 cBranch hbound).time x : ℝ) ≤
-              (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+              (C_t : ℝ) * ((encLeafInput x).length + 1 : ℝ) ^ d_t *
                 (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) := by
   obtain ⟨N_sys, C_sys, d_sys, A_sys, hNsys16, hSysT⟩ :=
     polySys_time_bound_of_branchPolylog k N₀_top N₀_branch cBranch hbound hbr_time
@@ -1016,7 +1014,7 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
   have hBOf := computableInPolyTime_leafDensityRatio k
   obtain ⟨cPoly, hcPoly⟩ :
       ∃ c, c = branchedPolyCertificate k N₀_top N₀_branch cBranch hbound := ⟨_, rfl⟩
-  have hcPoly_sp : PolyBounded (fun y => (encPair encUnary encSys y).length) cPoly.space :=
+  have hcPoly_sp : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space :=
     hcPoly ▸ polyBounded_branchedPolyCertificate_space k N₀_top N₀_branch cBranch hbound hs_br
   obtain ⟨poly, qInit, polySys, hpoly, hqInit, hpolySys, _, hInnerDeclT⟩ :=
     exists_sparseCNFDeclaredCertificate_bounds k (max 1 N₀_leaf) hNOf hBOf cPoly hcPoly_sp
@@ -1056,19 +1054,20 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
   obtain ⟨PowE, hPowE⟩ : ∃ n, n = 2 ^ (C_i * Nat.clog 2 N_init ^ d_i) := ⟨_, rfl⟩
   obtain ⟨C_R0, hC_R0⟩ : ∃ n, n = C_sys * (C_ps + 1) ^ d_sys := ⟨_, rfl⟩
   set d_R0 := d_ps * d_sys
-  let R (x : (Unit × ℕ) × CNF ℕ) : ℕ := ⌈((C_R0 : ℕ) : ℝ) * ((encLeafIn x).length + 1 : ℝ) ^ d_R0 *
-    (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale x.1.2)⌉₊
+  let R (x : (Unit × ℕ) × CNF ℕ) : ℕ :=
+    ⌈((C_R0 : ℕ) : ℝ) * ((encLeafInput x).length + 1 : ℝ) ^ d_R0 *
+      (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale x.1.2)⌉₊
   have hValidR : ValidPolyTimeBound encLeafCtx Prod.snd
       (fun p : Unit × ℕ => leafDensityRatio k p.2) k (max 1 N₀_leaf) cPoly polySys R := by
     intro x hfast sys hsys hlen
     obtain ⟨_, _, _, hge, hmB⟩ := entersSparseFastPath_eq_true_iff.mp hfast
     have ht := hSysT
       (le_trans (le_max_left _ _) (hN₀.trans ((le_max_right 1 N₀_leaf).trans hge))) hmB hsys
-    rw [← hcPoly] at ht; set L := (encLeafIn x).length
-    have hps_bound : (encPair encUnary encSys (x.1.2, sys)).length + 1 ≤
+    rw [← hcPoly] at ht; set L := (encLeafInput x).length
+    have hps_bound : (encPair encUnary encSparseSystem (x.1.2, sys)).length + 1 ≤
         (C_ps + 1) * (L + 1) ^ d_ps := by
-      have hp1 := Nat.one_le_pow d_ps (L + 1) (Nat.succ_pos L)
-      have h1 := hlen.trans (hPs L); nlinarith only [hp1, h1]
+      rw [Nat.add_one_mul]
+      exact Nat.add_le_add (hlen.trans (hPs L)) (Nat.one_le_pow d_ps (L + 1) (Nat.succ_pos L))
     have ht' : (cPoly.time (x.1.2, sys) : ℝ) ≤
         (C_R0 : ℝ) * (L + 1 : ℝ) ^ d_R0 * (2 : ℝ) ^ ((A_sys : ℝ) * interpolationScale x.1.2) :=
       (ht.trans (mul_le_mul_of_nonneg_right
@@ -1080,7 +1079,7 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
   obtain ⟨C_decl, hC_decl⟩ :
       ∃ n, n = C_dg + C_ex0 + 2 * (C_pol + PowE + 3 * (C_pol + C_R0 + 1) + 1) := ⟨_, rfl⟩
   set C_t := C_decl + C_nm; refine ⟨C_t, d_t, A_t, Nat.succ_pos _, fun x hlen_x => ?_⟩
-  set L := (encLeafIn x).length
+  set L := (encLeafInput x).length
   have hrho_nn : 0 ≤ interpolationScale x.1.2 := interpolationScale_nonneg x.1.2
   have hd_dg : d_dg ≤ d_t := (le_max_left _ _).trans (le_max_left _ _)
   have hd_ex0 : d_ex0 ≤ d_t := (le_max_right _ _).trans (le_max_left _ _)
@@ -1097,8 +1096,10 @@ theorem exists_threshold_branchedSparseCNF_time_bound (k N₀_top N₀_branch : 
       cases hfast : entersSparseFastPath k (max 1 N₀_leaf) x.1.2 (leafDensityRatio k x.1.2) x.2
       · simp only [hfast, Bool.false_eq_true, ↓reduceIte] at hinner_t
         have hpol_nat : 2 * (poly L + 1) ≤ (2 * (C_pol + 1)) * (L + 1) ^ d_pol := by
-          have hp1 := Nat.one_le_pow d_pol (L + 1) (Nat.succ_pos L)
-          have h1 := hPol L; nlinarith only [hp1, h1]
+          have h1 : poly L + 1 ≤ (C_pol + 1) * (L + 1) ^ d_pol := by
+            rw [Nat.add_one_mul]
+            exact Nat.add_le_add (hPol L) (Nat.one_le_pow d_pol (L + 1) (Nat.succ_pos L))
+          exact (Nat.mul_le_mul_left 2 h1).trans_eq (Nat.mul_assoc 2 _ _).symm
         have hpol_r := nat_poly_le_subexp (hinner_t.trans hpol_nat) hd_pol
           (Nat.cast_nonneg A_t) hrho_nn
         have hle_C : (C_dg : ℝ) + ((2 * (C_pol + 1) : ℕ) : ℝ) ≤ (C_decl : ℝ) := by
@@ -1169,11 +1170,11 @@ theorem exists_branchedSparseCNF_time_bound (k N₀_branch : ℕ)
         ψ.length ≤ leafOccBound k N * N + 1 →
           ((branchedSparseCNFDeclaredCertificate k N₀_leaf N₀_top N₀_branch
               cBranch hbound).time x : ℝ) ≤
-            (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+            (C_t : ℝ) * ((encLeafInput x).length + 1 : ℝ) ^ d_t *
               (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) ∧
           ((branchedSparseCNFLeafCertificate k N₀_leaf N₀_top N₀_branch
               cBranch hbound).time x : ℝ) ≤
-            (C_t : ℝ) * ((encPair (encPair encUnit encUnary) encCNF x).length + 1 : ℝ) ^ d_t *
+            (C_t : ℝ) * ((encLeafInput x).length + 1 : ℝ) ^ d_t *
               (2 : ℝ) ^ ((A_t : ℝ) * interpolationScale N) := by
   obtain ⟨N_min, _, hBound⟩ :=
     exists_threshold_branchedSparseCNF_time_bound k 0 N₀_branch cBranch hbound hs_br hbr_time

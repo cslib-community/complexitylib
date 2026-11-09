@@ -17,6 +17,7 @@ import Complexity.Foundations.Data.Nat.Doubling
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Tactic.EncLen
 
 /-!
 # Quantitative computability rules
@@ -135,15 +136,13 @@ theorem foldl' {γ α β : Type} {encIn : γ ↪ List Bool}
         2 * B x + 1 + (encL (list x)).length := fun x i hi => by
     have h₁ := hstates x i hi.le
     have h₂ := hS.length_elem_le (list x) _ (List.getElem_mem hi)
-    simp only [length_encPair]
-    omega
+    enc_len
   have hrest : ∀ x, ∀ i ≤ (list x).length,
       (encPair encL encB ((list x).drop i, ((list x).take i).foldl step (init x))).length ≤
         2 * (encL (list x)).length + 1 + B x := fun x i hi => by
     have h₁ := hstates x i hi
     have h₂ := hS.length_drop_le (list x) i
-    simp only [length_encPair]
-    omega
+    enc_len
   have haD : a ≤ D := Nat.le_mul_of_pos_left _ (lt_of_lt_of_le Nat.one_pos (le_max_left _ _))
   obtain ⟨c, k, Q, hfin, tm, htm⟩ := Internal.FoldCompiler.foldl (encA := encA) (encL := encL)
     (encBA := encPair encB encA) (encS := encPair encL encB)
@@ -287,37 +286,37 @@ private def intPredT : Transducer Bool (Fin 3) where
   length_final_le q := by split_ifs <;> simp
 
 /-- Adding one on unary-magnitude signed integers. -/
-theorem int_succ : ComputableInDegree (· + 1) encInt encInt 1 1 := by
+theorem int_succ : ComputableInDegree (· + 1) encIntUnary encIntUnary 1 1 := by
   refine of_transducer intSuccT fun z => ?_
   have hc := Transducer.run_eq_self intSuccT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with n | _ | n
   · rw [show intSuccT.q₀ = 0 from rfl]
-    simp only [encInt_ofNat, Transducer.run_cons]
+    simp only [encIntUnary_ofNat, Transducer.run_cons]
     change false :: true :: List.replicate n true =
       [false, true] ++ intSuccT.run 2 (List.replicate n true)
     simp [hc]
   · rfl
-  · change encInt (Int.negSucc n) =
+  · change encIntUnary (Int.negSucc n) =
       intSuccT.run 0 (true :: true :: List.replicate n true)
-    simp only [encInt_negSucc, Transducer.run_cons]
+    simp only [encIntUnary_negSucc, Transducer.run_cons]
     change true :: List.replicate n true =
       [] ++ ([true] ++ intSuccT.run 2 (List.replicate n true))
     simp [hc]
 
 /-- Subtracting one on unary-magnitude signed integers. -/
-theorem int_pred : ComputableInDegree (· - 1) encInt encInt 1 1 := by
+theorem int_pred : ComputableInDegree (· - 1) encIntUnary encIntUnary 1 1 := by
   refine of_transducer intPredT fun z => ?_
   have hc := Transducer.run_eq_self intPredT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with (_ | n) | n
   · rfl
   · rw [show Int.ofNat (n + 1) - 1 = Int.ofNat n by simp, show intPredT.q₀ = 0 from rfl]
-    simp only [encInt_ofNat, List.replicate_succ, Transducer.run_cons]
+    simp only [encIntUnary_ofNat, List.replicate_succ, Transducer.run_cons]
     change false :: List.replicate n true =
       [] ++ ([false] ++ intPredT.run 2 (List.replicate n true))
     simp [hc]
-  · change encInt (Int.negSucc (n + 1)) =
+  · change encIntUnary (Int.negSucc (n + 1)) =
       intPredT.run 0 (true :: List.replicate n true)
-    simp only [encInt_negSucc, List.replicate_succ, Transducer.run_cons]
+    simp only [encIntUnary_negSucc, List.replicate_succ, Transducer.run_cons]
     change true :: true :: List.replicate n true =
       [true, true] ++ intPredT.run 2 (List.replicate n true)
     simp [hc]
@@ -701,8 +700,7 @@ theorem unary_two_pow : ComputableInO (fun n : ℕ => 2 ^ n) encUnary encUnary
     simp only [encUnary_apply, encBits_apply, List.length_replicate]
     nlinarith
   · have h₁ : n + 1 ≤ 2 ^ n := Nat.lt_two_pow_self
-    simp only [encUnary_apply, encBits_apply, List.length_replicate]
-    omega
+    enc_len
   · rw [foldl_double, one_mul]
 
 end ComputableInO

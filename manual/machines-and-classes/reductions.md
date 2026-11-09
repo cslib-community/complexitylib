@@ -18,7 +18,17 @@ Several stronger predicates retain the same membership equivalence while adding 
 | [`PolyTimeInvertibleLengthIncreasingOneOneReducible`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L311) | Both a total polynomial-time left inverse and strict encoded-length increase. |
 | [`PolyTimeIsomorphic`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L116) | An equivalence of the entire ambient instance types, with both directions polynomial time and membership preserved. |
 
-A left inverse is defined even outside the image of the forward map; its behavior there need not recover a meaningful source instance. An isomorphism requires surjectivity as well as injectivity. The isomorphism API proves preservation of [P](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L169) and [NP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L174) and basic composition laws. It does not turn mutual one-one reducibility into an isomorphism theorem.
+A left inverse is defined even outside the image of the forward map; its behavior there need not recover a meaningful source instance. An isomorphism requires surjectivity as well as injectivity. The isomorphism API proves preservation of [P](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L169) and [NP](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Isomorphism.lean#L174) and basic composition laws. It does not by itself turn mutual one-one reducibility into an isomorphism theorem.
+
+### Berman–Hartmanis isomorphism theory
+
+The source version is the 1975 Cornell technical report of Berman and Hartmanis [bermanhartmanis75][bermanhartmanis75]. Locators below refer to that report; the numbering of the 1977 journal version has not been checked. The report works with languages of strings and with polynomial-time partial inverses defined on the range of a reduction. The library works with typed instances under injective encodings, total polynomial-time left inverses, and forward-image tests such as `f (f' y) = y` that decide the range. The padding results also need a total decoder, described below.
+
+[`polyTime_schroeder_bernstein`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/SchroederBernstein.lean) is the polynomial-time Cantor–Schröder–Bernstein theorem of Berman and Hartmanis (§III, Theorem 1). Suppose maps `f : α → β` and `g : β → α` are polynomial time, strictly increase encoded length, and have polynomial-time left inverses. Then some `e : α ≃ β` has `e` and `e.symm` polynomial time and `e a = f a ∨ g (e a) = a` for every `a`. The proof decides the side on which the backward chain of preimages from `a` stops, by a fuelled walk through the iteration combinator. Length increase bounds the walk by the encoded length of `a`. Only left inverses are assumed, and the instance types are arbitrary types with injective encodings. Its corollary [`PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeIsomorphic`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/SchroederBernstein.lean) turns mutual `≤₁,ᵢₗ` reducibility into `≅ᵖ`.
+
+[`Paddable`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/Paddable.lean) asks for polynomial-time maps `pad : α → List Bool → α` and `unpad : α → List Bool` with `unpad (pad a y) = y` and `pad a y ∈ A ↔ a ∈ A`. This is the typed form of the report's two-argument padding and read-back condition (Lemmas 3 and 5). The padding lemma upgrades a many-one reduction into a paddable language to `≤₁,ᵢₗ`: it pads the reduct with the framed source encoding and enough filler to exceed every polynomial bound on the read-back. Inverting it decodes a word back to a typed source instance, so the lemma and its corollaries assume a total polynomial-time `Decoder` for each source encoding. This hypothesis is the typed-model counterpart of working over strings. The module proves that interreducible paddable languages, and in particular paddable `NP`-complete languages, are `≅ᵖ`. It also proves that paddability is invariant under `≅ᵖ`, and that an `NP`-complete language is `≅ᵖ` to a paddable `NP`-complete one exactly when it is paddable. A nonempty paddable language is infinite. Reading words through a total decoder preserves paddability and `NP`-completeness, and gives a `≅ᵖ` between a paddable typed language and its word language.
+
+[`SAT.pad`](../../Complexity/Computability/Complexity/Problems/SAT/Paddable.lean) prepends the tautological clause `[(N, true), (N, false), (N, true)]`, where `N` has binary digits `y ++ [true]`. This gadget differs from the CNF construction for the report's Theorem 7, which pads with clauses over fresh variables: here one clause over a single variable records the padding in the variable's binary digits, and `N` need not be fresh because the clause is always true. The clause has width three and contains both literals of `N`, so `SAT`, `UNSAT`, `ThreeSAT`, `ExactThreeSAT` and `NAEThreeSAT` are paddable, and `SAT` is `≅ᵖ` to each of the three `NP`-complete variants under `encCNF`. The construction does not apply to languages that require distinct variables in a clause, such as `EUThreeSAT`, or exactly one true literal per clause. [`BermanHartmanisConjecture`](../../Complexity/Computability/Complexity/Reduction/Isomorphism/Conjecture.lean) states the conjecture of the report's §I as a hypothesis for languages of bit strings, following the source's string formulation; like the source's, it implies `P ≠ NP`. The module proves that the conjecture is equivalent to paddability of every `NP`-complete word language, and that it implies `SAT ∉ P` and `P ≠ NP` for formulas and for bit strings. Berman's theorem that `EXP`-complete sets are complete under one-one length-increasing reductions, and the Agrawal–Allender–Rudich `AC⁰` isomorphism theorem, are not formalized. The [BermanHartmanis tests](../../ComplexityTests/BermanHartmanis.lean) check an isomorphism between even- and odd-length words obtained from the theorem, a paddable and a nonpaddable language, concrete runs of the SAT padding, and client uses of the SAT-variant isomorphisms.
 
 ## Nonadaptive query batches
 
@@ -151,20 +161,173 @@ and NAND-state consumers, changing runtime families, empty and length-one words,
 lengths, oversized suffixes and invalid cuts. `family_terminates` certifies the read loop for
 unbounded lengths, rather than only those finite executions.
 
-This consumer is restricted to two passes and one Boolean of saved state. General native
-logspace predicate substitution, generating the supplied header from a query generator and
-regenerating an answer word remain open.
+For an arbitrary outer machine, import
+[`VirtualWord.Simulation`](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Simulation.lean).
+`Simulation.machine M` first loads the same supplied header, then redirects every query of `M`
+to the original tail and resumes its entire saved state. The virtual end produces `none`, even
+when the physical tail continues; a present false symbol stays `some false`. `resume` applies
+from any saved state, preserving the header and cursor. `run_loaded`, `first_halt` and `output`
+give exact state, halt and output correspondence, including step emissions and final output.
+The physical query still occurs for suffix and out-of-range addresses; the adapter ignores its
+result when appropriate. Invalid cuts retain a total declared-offset implementation, but the
+word-equivalence theorems require `cut ≤ original.length`.
+
+To obtain a native certificate, supply `Simulation.computableInSpace` with the outer machine's
+five native component certificates, its own first-halt clock/output proof and a bound $B(p)$ on
+the encoding of every saved outer state through that clock. The result uses one native program,
+with constants shared across runtime inputs and workspace
+$O(B(p)+|\mathrm{encData}(p)|+\log_2|\mathrm{encInput}(p)|+1)$.
+The header remains an explicit runtime input, and its full encoding is charged.
+[The complete checked copier client](../../ComplexityTests/VirtualWordSimulation.lean) carries
+an unbounded binary cursor and EOF flag, streams each virtual symbol, and appends its final
+binary address. `native_copier` instantiates the compiler for every valid runtime header and
+unbounded original length, with a logarithmic saved-counter budget. The finite checks cover
+suffix substitution, virtual EOF before physical EOF, present false bits, empty words,
+resumption from a noninitial cursor and an already halted state.
+
+For an existing native machine, import
+[`VirtualWord.Native`](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Native.lean).
+`Native.machine` reuses the universal simulator's finite work-tape zippers, finite control and
+binary shifted input-head position, without keeping output history in its saved state.
+`configuration_native`, `output_native` and `halted_native` preserve the original machine's
+configuration, streaming output and halt flag at every clock. Initialization starts at native
+position one; position zero is the left blank and the right blank is at input length plus one.
+The adapter ignores any fetched bit at position zero, allows a right move from that boundary,
+and blocks outward right moves at EOF. Present false symbols remain distinct from EOF.
+
+`Native.computableInSpace_of_computes` takes a fixed native binary machine, an injective numbering
+of its finite states, and its ordinary computation and workspace certificates on the specified
+virtual words. It derives all five component certificates and selects a first-halt clock
+internally. Its saved configuration budget is $O(s+\log_2(m)+1)$ for native workspace $s$ and
+virtual input length $m$, by `length_native_run_le_of_space` and `budget_le`. The input-head term
+follows from the native model's clamped boundary convention; no extra runtime bound is needed.
+The original word, virtual word and emitted output history are absent from that saved encoding.
+The description is fixed, so compiler constants may depend on the machine but not the runtime
+header or input.
+
+`Native.of_logSpace` directly accepts an ordinary `ComputableInLogSpace f encBits encOut`
+certificate for a word function. It constructs a native certificate for applying `f` to the
+virtual word on `Simulation.encInput`, in workspace
+$O(\log_2(m)+|\mathrm{encData}(p)|+\log_2|\mathrm{encInput}(p)|+1)$.
+This is a bound in the charged header and both input lengths; a specialization measuring space
+only against the original word still needs appropriate header/virtual-length bounds.
+[The complete native client](../../ComplexityTests/VirtualWordNative.lean) uses the existing
+framing transducer's machine, including pending output and final EOF flushing, and also applies
+the ordinary logspace bridge. It checks nonempty/empty output, present false, both boundary
+movement conventions and already halted configurations.
+
+Import
+[`VirtualWord.Generate`](../../Complexity/Computability/Machines/ReadMachine/VirtualWord/Generate.lean)
+to generate the runtime frame. `Generate.prepare_logSpace` takes ordinary native logspace
+programs for the tail and binary cut/suffix/address data and emits `frame (encData d) ++ tail`.
+`Generate.consume` composes that generator with `Native.of_logSpace` through the existing
+`comp_space` theorem. Each requested frame symbol is recomputed; neither the generated frame
+nor the virtual word is allocated in workspace. Its premises bound the whole encoded header
+by $H(\log_2 n+1)$ and the virtual length by $V(n+1)^D$, where $n$ is the caller's **actual encoded
+input length**. Polynomial frame length follows from the generator's logspace certificate.
+The resulting workspace is $O(\log_2 n+1)$, including both binary position counters.
+
+For a live local-query generator, import
+[`RuntimeGenerate`](../../Complexity/Computability/Complexity/Reduction/LocalSelfReducibility/RuntimeGenerate.lean).
+`localQueryData_logSpace` uses `bitsDrop'` to discard the generated query prefix and
+`unaryToBinary` to emit binary cut metadata. Supply an ordinary query program, a cut program
+with streamed unary output, and a binary address program. The unary cut is an intermediate
+output consumed by recomputation; it does not inflate the caller's encoding or workspace.
+`consume_localQuery` proves header and virtual-length bounds from `LocalSelfReductionQuery`,
+the equation identifying that cut, and original-word length at most caller encoding length.
+It still requires the cut program: a general ceiling-logarithmic cut implementation is not
+provided here. Empty words cannot satisfy strict local-query descent; zero-query base cases
+remain with the self-reduction interface.
+
+[The complete generated-frame client](../../ComplexityTests/VirtualWordGenerate.lean) computes
+a varying cut/address from the first live bit and a varying negated suffix, then consumes the
+virtual word with the existing framing transducer. It checks empty and both first-bit cases,
+exact header decoding and the unchanged tail. It also runs a nonconstant live query generator
+through counter-program prefix dropping into a generated frame. From the repository root,
+elaborate this test with the documented build procedure before reusing its imports and programs.
+
+Unbounded virtual answer-word regeneration remains open. A Boolean family certificate is not
+yet a polynomial-count answer-stream generator; the existing `mapToBits_range_of_le` API only
+handles a fixed constant bound. Oracle answers also require a native oracle computation contract,
+rather than an assumed ordinary logspace characteristic function for the target language.
 
 **The transfer lemma remains open**: native virtual-input/answer regeneration for the unbounded
 evaluator and the adaptive-to-tt conversion still need proofs. No desired autoreduction is
 assumed as a substitute. Complete NL/P instances, Theorem 3.5, and Sections 4–5 remain under
 [issue #2468](https://github.com/cslib-community/complexitylib/issues/2468).
 
+## Selectivity
+
+A P-selector for `A : Set α` is a function `f : α → α → α` that is polynomial-time on pairs encoded
+with `encPair enc enc`, returns one of its two arguments, and returns a member of `A` whenever
+either argument is one. Import
+[`Classes.Selective`](../../Complexity/Computability/Complexity/Classes/Selective.lean) for
+`IsSelector` and `PSel enc`. `mem_PSel_iff_bool` converts to a Boolean selector
+`g : α × α → Bool` that names the argument to pick; prove closure results in that form. `PSel`
+contains `P` (`P_subset_PSel`) and is closed under complement (`compl_mem_PSel`). It is closed
+downward under polynomial-time many-one reductions (`PolyTimeReducible.mem_PSel`). Every lower
+set of a linear order compared in polynomial time is P-selective (`mem_PSel_of_isLowerSet`).
+
+[`Selective.Selman`](../../Complexity/Computability/Complexity/Classes/Selective/Selman.lean)
+proves Selman's theorem: `NPHard.P_eq_NP_of_mem_PSel` turns an `NP`-hard P-selective set into
+`P enc = NP enc` for every encoding. `NPComplete.mem_PSel_iff` gives the converse for complete
+sets. The proof reduces `SAT` to the given set. It then decides `SAT` with the generalized
+self-reduction lemma `SAT.verifier_search_of_step`, which needs only that each answer keeps the
+formula satisfiable, not that the answers are correct; the verifier checks the result.
+[`Selective.Ko`](../../Complexity/Computability/Complexity/Classes/Selective/Ko.lean) proves
+`PSel_subset_PPolyOn`. The advice at length `n` is a list of at most `n + 1` members of length `n`,
+using at most `(n + 1)(2n + 1)` bits (`exists_advice_polyTime_of_mem_PSel`), in the
+`PPoly.of_advice` convention. Its combinatorial core is the finite tournament lemma
+`Finset.exists_dominating_subset_of_card_lt_two_pow` in
+[`Foundations/Data/Finset/Tournament`](../../Complexity/Foundations/Data/Finset/Tournament.lean).
+
+[`Selective.LeftCut`](../../Complexity/Computability/Complexity/Classes/Selective/LeftCut.lean)
+gives the standard nonvacuity family. `leftCut r` holds the bit strings that are lexicographically
+at most the prefix of `r : ℕ → Bool` of the same length. It is P-selective for every `r`
+(`leftCut_mem_PSel`), and the comparison uses `ComputableInPolyTime.bits_lex_le` on `encBits`.
+`leftCut_injective` and `not_countable_PSel` show that there are uncountably many P-selective
+sets. The [checked client](../../ComplexityTests/Selective.lean) covers concrete members and
+non-members of a left cut, a non-selector, right cuts, Ko's theorem applied to left cuts, and
+`P ≠ NP` ruling out a selector for `SAT`.
+
+Undecidability of some left cut is not formalized, because no count of machines is proved. Also
+open: self-reducible P-selective sets lie in `P`, and P-selective sets are not truth-table-hard for
+`NP` unless `P = NP`.
+
+## Sparse and tally oracles
+
+Meyer's theorem `P/poly = P^SPARSE` is in two modules. The oracle is a word language
+`S : Set (List Bool)`, sparse for `encBits` (`SPARSE encBits`) or tally (`TALLY`, all letters
+`true`). The decided problem `A : Set α` is in `PPolyOn enc` for an arbitrary instance encoding
+`enc`.
+[`Sparse.Turing`](../../Complexity/Computability/Complexity/Classes/Sparse/Turing.lean) proves
+`PWithOracle_subset_PPolyOn`: the advice lists the short members of `S`.
+[`Sparse.Meyer`](../../Complexity/Computability/Complexity/Classes/Sparse/Meyer.lean) proves the
+converse with a tally oracle. For `exists_polyTimeTruthTableReducible_adviceTally`,
+`PPoly.exists_evalAdvice` provides advice `α` of polynomial length. Its oracle `adviceTally α` contains the unary word of
+`Nat.pair n i` exactly when bit `i` of `α n` is `true` (`encUnary_pair_mem_adviceTally`). The
+reduction is nonadaptive. On an input of length `n` it asks all `|α n|` bit queries and then
+evaluates the listed circuits. `PolyTimeTruthTableReducible.polyTimeTuringReducible` turns it into
+`PWithOracle` membership.
+
+Use `mem_PPolyOn_iff_exists_mem_SPARSE_mem_PWithOracle` or
+`mem_PPolyOn_iff_exists_mem_TALLY_mem_PWithOracle` to move between circuits and oracles. For example,
+`P^S ⊆ P^T` for some tally `T` when `S` is sparse. The class equalities are
+`PPolyOn_eq_iUnion_PWithOracle_SPARSE` and `PPolyOn_eq_iUnion_PWithOracle_TALLY`, and
+`mem_PPolyOn_iff_exists_mem_TALLY_polyTimeTruthTableReducible` gives `P/poly = R_tt(TALLY)`. The
+oracle languages exist but need not be decidable, as for `P/poly` itself. The
+[checked client](../../ComplexityTests/SparseMeyer.lean) shows members and non-members of a
+concrete `adviceTally` and applies the theorem to every length-defined language, including
+undecidable ones. Kadin's `P^{NP[O(log n)]}` consequences and Hemachandra's `P^NP_tt`
+characterization remain open (see `ROADMAP.md`).
+
 ## Parameter-sensitive transfer rules
 
 [FPT reductions and kernels](parameterized-complexity.md) separately bound the target parameter by a function of the source parameter. Fine-grained transfer uses more quantitative contracts without defining a new reduction datatype. [`DecidableInExpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L117) takes a native polynomial-time membership-preserving map with `μB(f(a)) ≤ c μA(a)+c`. A target time rate `2^(δ μB)` yields source rate `2^(cδ μA)`, up to encoded-length polynomial factors, for `δ ≥ 0`. [`DecidableInSubexpTime.of_reduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L181) transfers the predicate that permits a decider for each positive rate.
 
 [`DecidableInSubexpTime.of_expReduction`](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/FineGrained/Reduction.lean#L252) permits the map itself to cost `2^(C m(a)) (L+1)^D`, under `ComputableInO` with that time and output-charged space bound. If the output parameter is at most `c m(a) floor(log₂(m(a))) + c`, target subexponential time implies source subexponential time in `m floor(log₂ m)`. The smaller exponential preprocessing cost is absorbed at each positive target rate. Neither rule introduces an oracle reduction or an unrestricted subexponential-reduction-family notion. ETH-based lower-bound transport in this module remains an implication from its displayed ETH premise; the snapshot's independent [native counting endpoints](native-counting.md) must be considered when interpreting that premise.
+
+Polynomial-rate transfer from orthogonal vectors is a direct composition rather than a reduction datatype. `Complexity.Computability.Complexity.FineGrained.Diameter` formalizes the orthogonal vectors form of Roditty and Vassilevska Williams's diameter two-versus-three construction (Section 4, Theorem 9, stated there from CNF-SAT for graphs with `m` edges). Partial assignments become vectors and clauses become coordinates; the clique on clause vertices and hubs is replaced by hub–coordinate edges, and two padding vertices are added. The graph `OV.toDiameter` has diameter three on instances with an orthogonal pair and two otherwise (`OV.ediam_toDiameter`). Its vertex and edge lists are written by two one-pass streams with binary counters, paired under `ComputableInO` within time `L (log L) ^ D` in the encoded instance length (`OV.exists_computableInO_toDiameter`). `DecidableInTimeO.decidableInTimeO_OV_of_diameter` then turns any procedure separating the two diameters within time `L ^ (2 - ε)` on encoded graphs into an `OV` decider within time `N ^ (2 - min ε 1 / 2) (d + 1) ^ 2`. This transfer is unconditional. The lower bounds are implications from `OVH`. `not_decidableInTimeO_diameter_of_OVH` states them in the encoded length `L`. `not_decidableInTimeO_diameter_size_of_OVH` uses `(n + m) ^ (2 - ε) + L`; the `L` term is needed, because a bound in the number of listed vertices and edges alone cannot read unbounded labels and would hold vacuously. The reduced graphs have `Θ(N d)` edges with unrestricted dimension, so the sparse-graph statement needs the low-dimension form of `OVH` and is not covered. The library neither proves nor refutes `OVH`; it refutes `SETH`, so hardness from `SETH` through `OVH_of_SETH` is vacuous.
 
 ## Source examples and evidence
 
@@ -173,3 +336,4 @@ The inspected [ReductionVariants tests](https://github.com/cslib-community/compl
 [Autoreducibility](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/Autoreducibility.lean#L1) gives a concrete mitotic co-singleton and proves its many-one autoreducibility obstruction; [TuringAutoreducible](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/TuringAutoreducible.lean#L1) instantiates zero-query and parity-preserving examples. These are static inspections of existing test sources. The [model map](../model-map.md) indexes the semantic/resource variants and their explanations, with no fresh Lean compilation claim. The generic reduction kernel and the local bounded-reduction modules carry candidate upstream markers.
 
 [complexitylib]: ../sources.md#complexitylib
+[bermanhartmanis75]: ../sources.md#bermanhartmanis75

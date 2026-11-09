@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Producer
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RecordData
 import Mathlib.Data.List.Nodup
 
 /-!

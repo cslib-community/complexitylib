@@ -11,47 +11,43 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.Decision.Intermediates
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Slow
 
 /-!
-# Native ordinary 3SUM host with a concrete finite Exact Triangle callee
+# Native ordinary 3SUM with an in-place Chan–He visitor
 
-`Decision.runs_input` starts with actual signed-encoded `State.init` input, executes complete
-Chan–He preprocessing, reads its raw output table/count/common length, and invokes a caller-safe
-native Convolution host for every actual payload. It returns the existing integer 3SUM verdict:
-three distinct input positions summing to zero, with equal values permitted.
+`Decision.runs_input` starts from signed-encoded `State.init` input, computes the frontend and
+consumes each actual packed Chan–He node through the certified Convolution host before pushing its
+children. It follows the exact finite preorder, including multiplicity, and does not stop after a
+positive call. The raw Boolean decides whether three distinct original input positions sum to
+zero; equal values at different positions are permitted.
 
-For each fixed magnitude exponent and concrete certified finite Exact Triangle block, there is
-one finite standard-basis program with a fixed register count independent of input length and
-physical width. The actual callee code must meet `Host.Callee`'s explicit matrix/width/frame/time
-contract on arbitrary old scratch memory. `Host.Slow.callee` proves that this contract is inhabited
-by a finite exhaustive native program, without a solver oracle.
+For each fixed magnitude exponent and concrete certified Exact Triangle block, one finite
+standard-basis program has a register count independent of length and physical width.
+`Host.Callee` supplies actual code with an explicit matrix, width, frame and time contract.
+`Host.Slow.callee` gives a finite exhaustive instance of that protocol.
 
-The positive threshold `Decision.width` is logarithmic in the original input length; it derives
-all intermediate and address fits. Every prefix at every wider admitted width has polynomial
-word magnitudes and memory support. `Decision.cost` charges preprocessing, every catalogue and
-loop operation, every matrix builder and every callee instruction at the actual packed size.
+Each call receives the current node's actual packed pointer and allocation endpoint. Its return
+frame preserves the lower prefix, including pending heavy arrays, while higher scratch may be
+dirty. The ordinary path neither publishes nor reads a packed-pointer table. One native copy then
+releases the packed, residue and histogram tail for later construction. Persistent heavy-buffer
+capacities and count cells remain allocated, and their frontier advances monotonically with the
+old table gap reserved. No improved total-space or callee high-water bound is asserted. The
+standalone catalogue-producing preprocessing API remains available independently.
 
-This module re-exports the callee-parametric host rather than a particular fast solver.
-The explicit `ThreeSum.Decision.One9992` module instantiates the canonical actual ET callee and
-proves the native ordinary 1.9992 endpoint, including charged execution and every-wide prefix
-bounds. Import it when that concrete result is needed. Maintainer integration is tracked
-separately; no curated headline selection changes here.
+`Decision.width` and `Decision.cost` retain their existing values. Initialized execution and every
+reachable prefix at every admitted wider width retain the polynomial word and zero-support bounds.
+The concrete 848-register endpoint in `ThreeSum.Decision.One9992` supplies ordinary native time
+O(n^1.9992); import that module for the final theorem. Curated selection is separate.
 
 ## Main definitions
 
-This import-only module re-exports these definitions:
-
-* `Decision.flatProgram`: one actual finite ordinary 3SUM host per exponent and callee.
-* `Host.Callee`: explicit actual finite-code protocol and certification requirements.
-* `Host.Slow.callee`: fully proved finite exhaustive native Exact Triangle instance.
-* `Decision.cost`, `Decision.width`: compositional charged time and global physical width.
+* `Decision.program`, `Decision.flatProgram`: the canonical fixed visitor and raw Boolean halt.
+* `Host.Callee`, `Host.Slow.callee`: the actual solver protocol and exhaustive instance.
+* `Decision.cost`, `Decision.width`: shared charged time and physical-width envelopes.
 
 ## Main results
 
-It also re-exports these results:
+* `Decision.exec_input`, `Decision.runs_input`: initialized execution and exact verdict.
+* `Decision.prefix_polynomial`: word magnitudes and memory support at every admitted prefix.
 
-* `Decision.exec_input`, `Decision.runs_input`: exact initialized native verdict and real run.
-* `Decision.prefix_polynomial`: every-wide-prefix bounds.
-
-The finite mathematical reduction and underlying Convolution builder retain their existing
-Anthropic source credit. The caller-owned layout, ordinary native composition and exhaustive
-callee are original.
+The finite reduction and Convolution builder retain their Anthropic source credit. The native
+visitor, caller-owned layout, ordinary composition and exhaustive callee are original.
 -/

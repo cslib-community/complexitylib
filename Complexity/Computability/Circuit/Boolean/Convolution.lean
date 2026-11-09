@@ -169,8 +169,7 @@ theorem complexity_orConvolution_le (f g : BooleanFunction n) :
         1 := by
       rw [add_mul]
       omega
-    _ ≤ _ := Nat.add_le_add_right (Nat.add_le_add_left
-      (Nat.mul_le_mul_right _ hcard') n) 1
+    _ ≤ _ := by gcongr
 
 /-- There is an actual fan-in-two circuit computing existential convolution within the
 binomial-sum bound. All gates, including constants and input negations, are counted. -/

@@ -11,6 +11,7 @@ public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Foundations.Data.Nat.ResidueSum
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
+import Complexity.Tactic.EncLen
 
 /-!
 # Streamed sums modulo a computed modulus
@@ -175,8 +176,7 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
     rw [run_modSumStep hj]
     have hacc := length_encNat_mono (foldl_add_mod_lt (f := fun i => r (c, i)) (hpos c) j).le
     have hj' := length_encNat_mono hj
-    simp only [length_encPair, S, L, lm, lk] at hacc hj' ⊢
-    omega
+    enc_len [S, L, lm, lk] at hacc hj' ⊢
   have hround_time (c : C) (j : ℕ) (hj : j ≤ count c) :
       cstep.time (IndexFold.run (modSumStep r modulus count) j (c, 0)) ≤ U c + R c := by
     have hs := hstate c j hj
@@ -193,8 +193,7 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
           (acc, r (c, j), modulus c)).length ≤ S' c := by
         have := length_encNat_mono hacc_lt.le
         have := length_encNat_mono hrj.le
-        simp only [length_encPair, S', lm] at *
-        omega
+        enc_len [S', lm] at *
       have h2 := (bC (j, (c, acc))).1.trans (mC hs)
       have h3 := (bA (j, (c, acc))).1.trans (mA hs)
       have h4 := (bW (j, (c, acc))).1.trans (mW hs)
@@ -222,8 +221,7 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
           (acc, r (c, j), modulus c)).length ≤ S' c := by
         have := length_encNat_mono hacc_lt.le
         have := length_encNat_mono hrj.le
-        simp only [length_encPair, S', lm] at *
-        omega
+        enc_len [S', lm] at *
       have h2 := (bC (j, (c, acc))).2.trans (mC hs)
       have h3 := (bA (j, (c, acc))).2.trans (mA hs)
       have h4 := (bW (j, (c, acc))).2.trans (mW hs)
@@ -240,8 +238,7 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
         B c := by
     rw [run_modSumStep hj]
     have := length_encNat_mono (foldl_add_mod_lt (f := fun i => r (c, i)) (hpos c) j).le
-    simp only [length_encPair, B, L, lm] at this ⊢
-    omega
+    enc_len [B, L, lm] at this ⊢
   have hrun := IndexFold.computableInO (NativeCertificate.ofPolyTime hcount)
     (NativeCertificate.ofPolyTime hinit) cstep (fun c => U c + R c) (fun c => U c + Q c) B
     hround_time hround_space hacc_len

@@ -6,7 +6,7 @@ an `.ilean` file beside each `.olean`. It records every identifier that occurs i
 source, including in proofs, with the declarations the module defines. `scripts/LeanOutputs.lean`
 reads the `.olean` parts for each constant's kind, export status, statement and declaration range.
 This module loads both and refuses stale outputs. `scripts/check_tidy_surface.py`,
-`scripts/check_tidy_usage.py`, `scripts/tidy_sweep.py`, `scripts/check_changed_files.py` and
+`scripts/check_tidy_usage.py`, `scripts/check_changed_files.py` and
 `scripts/audit_queries.py` build on it.
 """
 
@@ -133,16 +133,7 @@ def check_outputs(build_dir: Path, skip: bool, current=lake_outputs_current,
 
 # --- Loading ------------------------------------------------------------------------------------
 
-ROOT_IMPORT = re.compile(r"^(?:public\s+)?(?:meta\s+)?import\s+(\S+)", re.M)
-
-
-def listed_modules(text: str) -> list[str]:
-    """The modules a root source file imports."""
-    return ROOT_IMPORT.findall(text)
-
-
-def load_ileans(build_dir: Path, missing: list[str] | None = None,
-                glob=glob_modules) -> dict[str, dict]:
+def load_ileans(build_dir: Path, glob=glob_modules) -> dict[str, dict]:
     """The `.ilean` data of the modules the three libraries' roots import, by module name.
 
     A long-lived build directory keeps the outputs of modules that were since deleted or moved,
@@ -150,23 +141,7 @@ def load_ileans(build_dir: Path, missing: list[str] | None = None,
     from the roots rather than by listing files. A glob-built library (`GLOB_ROOTS`) has no root
     file, so its source files are the starting points instead. Every starting point and every
     module they import must have one; a missing file means the build is incomplete. The aggregator
-    roots themselves are left out.
-
-    Given a list `missing`, the build may be partial instead (for a tree that does not build
-    completely): the modules are those the roots' source files import, and the ones without an
-    `.ilean` file are appended to `missing`."""
-    if missing is not None:
-        ileans = {}
-        for root in ROOTS:
-            modules = (glob(root) if root in GLOB_ROOTS
-                       else listed_modules(source_path(root).read_text()))
-            for module in modules:
-                path = build_dir / (module.replace(".", "/") + ".ilean")
-                if path.is_file():
-                    ileans[module] = json.loads(path.read_text())
-                else:
-                    missing.append(module)
-        return ileans
+    roots themselves are left out."""
     ileans, todo = {}, [(module, None) for module in root_modules(glob)]
     while todo:
         module, importer = todo.pop()
@@ -185,13 +160,9 @@ def load_ileans(build_dir: Path, missing: list[str] | None = None,
     return ileans
 
 
-def load_constants(build_dir: Path, modules: list[str], pairs: str | None = None
-                   ) -> tuple[dict[str, dict], list[dict]]:
-    """Constants of `modules`, and the groups of constants with alpha-equivalent statements;
-    `pairs` (`tidy=plain,…`) adds the fields that `scripts/tidy_sweep.py` reads (see
-    `scripts/LeanOutputs.lean`)."""
-    out = run(["lake", "env", "lean", "--run", "scripts/LeanOutputs.lean", str(build_dir)]
-              + ([pairs] if pairs else []),
+def load_constants(build_dir: Path, modules: list[str]) -> tuple[dict[str, dict], list[dict]]:
+    """Constants of `modules`, and groups of constants with alpha-equivalent statements."""
+    out = run(["lake", "env", "lean", "--run", "scripts/LeanOutputs.lean", str(build_dir)],
               input="\n".join(modules) + "\n", capture_output=True).stdout
     constants, duplicates = {}, []
     for line in out.splitlines():
@@ -229,12 +200,11 @@ class Source:
 class Library:
     """Build outputs and sources of the three libraries, loaded lazily where possible."""
 
-    def __init__(self, build_dir: Path, pairs: str | None = None,
-                 missing: list[str] | None = None):
+    def __init__(self, build_dir: Path):
         self.build_dir = build_dir
-        self.ileans = load_ileans(build_dir, missing)
+        self.ileans = load_ileans(build_dir)
         self.modules = sorted(m for m in self.ileans if m.startswith("Complexity."))
-        self.constants, self.duplicate_rows = load_constants(build_dir, self.modules, pairs)
+        self.constants, self.duplicate_rows = load_constants(build_dir, self.modules)
         self.sources: dict[str, Source] = {}
 
     def source(self, module: str) -> Source:

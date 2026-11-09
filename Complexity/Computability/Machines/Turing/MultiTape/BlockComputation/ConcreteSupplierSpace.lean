@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputation.InitialVectorCorrect
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
+import Complexity.Tactic.EncLen
 
 /-!
 # Explicit uniform storage for concrete evaluator suppliers
@@ -73,9 +74,7 @@ theorem calleeSpace_le_replaySpace {k s : ℕ} {Q : Type}
     (bound := Nat.card SignType) (fun _ => (length_encFinite_lt _).le)
   change (encNat (ScheduleRead.read k 0 2 (σ, i))).length ≤ (encNat q).length at hp
   change (encNat (ScheduleRead.read k 0 0 (σ, i))).length ≤ (encNat q).length at hn
-  simp only [Interpolation.calleeSpace, ScheduleRead.origin, Gate.encContext,
-    length_encPair, replaySpace]
-  omega
+  enc_len [Interpolation.calleeSpace, ScheduleRead.origin, Gate.encContext, replaySpace]
 
 private theorem interpolation_params_encoding_le
     (N b σ q m alphabet limit p d r i chunk : ℕ) (point : List ℕ)
@@ -157,8 +156,7 @@ theorem node_reply_encoding_le {k s p r m : ℕ} {Q : Type}
   have hone : (encNat 1).length = 1 := rfl
   simp only [NodeReply.reply, hcapacity, ↓reduceIte]
   split
-  · simp only [RawController.encReply, length_encPair]
-    omega
+  · enc_len [RawController.encReply]
   · simp only [RawController.encReply, length_encPair]
     have hempty : (encList encNat []).length = 0 := rfl
     rw [hempty]

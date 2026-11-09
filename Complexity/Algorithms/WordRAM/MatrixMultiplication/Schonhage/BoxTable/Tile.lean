@@ -12,6 +12,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTa
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable.Geometry
 import Mathlib.Algebra.BigOperators.Fin
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native compact box-value table
 
@@ -268,23 +270,19 @@ theorem exec_tileLoop {w L H D R V AA BB A B : ℕ} {μ : ℕ → ℕ} (x : Data
         y.mem q = x.mem q) := by
   let S := (H + 1) * 10 ^ L
   let K := Nat.count (Eligible L H) S
-  let I (y : Data registers) : Prop :=
+  let P (j : ℕ) (y : Data registers) : Prop :=
     CatalogueParameters L H D R y ∧ y.regs Reg.values = V ∧
       y.regs Reg.arrayA = AA ∧ y.regs Reg.arrayB = BB ∧ y.regs Reg.count = K ∧
-      y.regs Reg.current ≤ K ∧
-      (∀ s < S, Eligible L H s → Nat.count (Eligible L H) s < y.regs Reg.current →
+      (∀ s < S, Eligible L H s → Nat.count (Eligible L H) s < j →
         y.mem (V + Nat.count (Eligible L H) s) = Signed.encode (slotValue a b s)) ∧
-      (∀ q, ¬(V ≤ q ∧ q < V + y.regs Reg.current) → y.mem q = x.mem q)
-  have hi : I x := by
-    refine ⟨hx, hV, hAA, hBB, hcount, by simp [hcurrent], ?_, fun _ _ => rfl⟩
+      (∀ q, ¬(V ≤ q ∧ q < V + j) → y.mem q = x.mem q)
+  have hi : P (x.regs Reg.current) x := by
+    refine ⟨hx, hV, hAA, hBB, hcount, ?_, fun _ _ => rfl⟩
     simp only [hcurrent, not_lt_zero, IsEmpty.forall_iff, implies_true]
-  have hbody (y : Data registers) (hy : I y)
-      (hg : (Cond.lt Reg.current Reg.count).Holds y) :
-      ∃ z, ExecWithin (w + 2) tileStep y z 326 ∧ I z ∧
-        K - z.regs Reg.current < K - y.regs Reg.current := by
-    obtain ⟨yp, yV, yA, yB, yK, yj, yvalues, yframe⟩ := hy
-    have hjlt : y.regs Reg.current < K := by
-      simpa only [Cond.holds_lt, yK] using hg
+  have hbody (y : Data registers) (hy : P (y.regs Reg.current) y) (hjlt : y.regs Reg.current < K) :
+      ∃ z, ExecWithin (w + 2) tileStep y z 326 ∧ P (y.regs Reg.current + 1) z ∧
+        z.regs Reg.current = y.regs Reg.current + 1 := by
+    obtain ⟨yp, yV, yA, yB, yK, yvalues, yframe⟩ := hy
     obtain ⟨s, hs, hvs, hsj⟩ := exists_count_rank (Eligible L H) hjlt
     have hlow (q : ℕ) (hq : q < V) : y.mem q = x.mem q := yframe q (by omega)
     have hsK : Nat.count (Eligible L H) s < K := Nat.count_strict_mono hvs hs
@@ -322,7 +320,7 @@ theorem exec_tileLoop {w L H D R V AA BB A B : ℕ} {μ : ℕ → ℕ} (x : Data
       · exact (zregs _ (by decide)).trans yp.nil
     refine ⟨z, hz, ⟨zp, (zregs _ (by decide)).trans yV,
       (zregs _ (by decide)).trans yA, (zregs _ (by decide)).trans yB,
-      (zregs _ (by decide)).trans yK, by omega, ?_, ?_⟩, by omega⟩
+      (zregs _ (by decide)).trans yK, ?_, ?_⟩, by omega⟩
     · intro i hi hvi hji
       rw [hzm]
       by_cases hij : Nat.count (Eligible L H) i = Nat.count (Eligible L H) s
@@ -334,17 +332,13 @@ theorem exec_tileLoop {w L H D R V AA BB A B : ℕ} {μ : ℕ → ℕ} (x : Data
     · intro q hq
       rw [hzm, Function.update_of_ne (by omega)]
       exact yframe q (by omega)
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => K - y.regs Reg.current) hbody hi
-  obtain ⟨yp, yV, yA, yB, yK, yj, yvalues, yframe⟩ := hIy
-  have hdone : y.regs Reg.current = K := by
-    simp only [Cond.holds_lt, yK, not_lt] at hstop
-    omega
+  obtain ⟨y, hy, ⟨_, _, _, _, _, yvalues, yframe⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ ⟨_, _, _, _, hcount, _⟩ => hcount) hbody (by simp [hcurrent]) hi
   refine ⟨y, ?_, ?_, ?_⟩
   · simpa only [hcurrent, Nat.sub_zero, K, S, Nat.reduceAdd, Nat.mul_comm] using hy
   · intro s hs hv
-    exact yvalues s hs hv ((Nat.count_strict_mono hv hs).trans_eq hdone.symm)
-  · simpa only [hdone, K, S] using yframe
+    exact yvalues s hs hv (Nat.count_strict_mono hv hs)
+  · simpa only [K, S] using yframe
 
 /-- Complete one-tile execution, including actual constant/counter setup, with no dirty-memory
 restriction. The catalogue and both input arrays lie below the value-table base. -/

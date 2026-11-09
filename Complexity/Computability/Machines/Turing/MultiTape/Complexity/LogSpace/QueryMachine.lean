@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Multi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.SpaceNormalForm
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # Machines with random access to their input, in logarithmic space
@@ -45,6 +46,7 @@ directly from the multi-pass fold.
 ## Main definitions
 
 * `Turing.QueryMachine`: a machine with random access to its input.
+* `Turing.QueryMachine.encStateRead`: the encoding of a state with the bit it reads.
 * `Turing.QueryMachine.run`, `Turing.QueryMachine.output`: its run and its output.
 
 ## Main results
@@ -83,6 +85,13 @@ structure QueryMachine (σ : Type*) where
   finish : σ → List Bool
 
 namespace QueryMachine
+
+open MultiTapeTM in
+/-- The encoding of the arguments of `next` and `emit`: a state paired with the bit read, which is
+`none` past the end of the input. The state is framed and the optional bit takes at most two
+bits, so the encoded length is `2 * (encS s).length + 1` plus at most `2`. -/
+abbrev encStateRead {τ : Type} (encS : τ ↪ List Bool) : τ × Option Bool ↪ List Bool :=
+  encPair encS (encOption encBool)
 
 variable {σ : Type*} (M : QueryMachine σ) (w : List Bool)
 
@@ -201,8 +210,7 @@ theorem streamState_passNext (s : σ) {j : ℕ} (hj : j ≤ w.length) :
           simp only [List.length_take]
           omega
         have h₂ : (List.take j w ++ [w[j]]).length ≤ M.query s := by
-          simp only [List.length_append, List.length_take, List.length_singleton]
-          omega
+          enc_len [List.length_take, List.length_singleton]
         rw [List.getElem?_eq_none h₁, List.getElem?_eq_none h₂]
       · have h₁ : M.query s < (List.take j w).length := by
           simp only [List.length_take]
@@ -293,11 +301,11 @@ theorem fst_inSpace : ComputableInSpace (fun q : PassState σ' => q.1) (encPass 
 
 theorem stateRead_inSpace :
     ComputableInSpace (fun q : PassState σ' => (q.1, q.2.2)) (encPass encS')
-      (encPair encS' (encOption encBool)) fun q => (encPass encS' q).length :=
+      (encStateRead encS') fun q => (encPass encS' q).length :=
   budget_prod (fst_inSpace encS') (budget_comp_lin (snd _ _) (.refl _) (snd _ _))
 
 theorem length_stateRead_le :
-    (fun q : PassState σ' => (encPair encS' (encOption encBool) (q.1, q.2.2)).length) ≼
+    (fun q : PassState σ' => (encStateRead encS' (q.1, q.2.2)).length) ≼
       fun q => (encPass encS' q).length :=
   .of_le fun q => by simp only [length_encPair]; omega
 
@@ -308,8 +316,8 @@ theorem length_fst_le :
 end EndOfPass
 
 theorem passEmit_inSpace
-    (hemit : ComputableInSpace M'.emit (encPair encS' (encOption encBool)) encBits
-      fun p => (encPair encS' (encOption encBool) p).length)
+    (hemit : ComputableInSpace M'.emit (encStateRead encS') encBits
+      fun p => (encStateRead encS' p).length)
     (hhalted : ComputableInSpace M'.halted encS' encBool fun s => (encS' s).length) :
     ComputableInSpace (passEmit M') (encPass encS') encBits
       fun q => (encPass encS' q).length :=
@@ -318,8 +326,8 @@ theorem passEmit_inSpace
     (budget_comp hemit (stateRead_inSpace encS') (length_stateRead_le encS'))
 
 theorem passEnd_inSpace
-    (hnext : ComputableInSpace M'.next (encPair encS' (encOption encBool)) encS'
-      fun p => (encPair encS' (encOption encBool) p).length)
+    (hnext : ComputableInSpace M'.next (encStateRead encS') encS'
+      fun p => (encStateRead encS' p).length)
     (hhalted : ComputableInSpace M'.halted encS' encBool fun s => (encS' s).length) :
     ComputableInSpace (passEnd M') (encPass encS') (encPass encS')
       fun q => (encPass encS' q).length :=
@@ -352,8 +360,7 @@ theorem length_encPass_le {τ : Type} (encS : τ ↪ List Bool) (q : PassState �
     (encPass encS q).length ≤ 2 * (encS q.1).length + 2 * (encNat q.2.1).length + 4 := by
   obtain ⟨s, j, fd⟩ := q
   have : (encOption encBool fd).length ≤ 2 := by cases fd <;> simp
-  simp only [length_encPair]
-  omega
+  enc_len
 
 end Simulation
 
@@ -368,10 +375,10 @@ is not charged, so `S` may be much smaller than the length of the input. -/
 theorem computableInSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β ↪ List Bool}
     {σ : Type} {encS : σ ↪ List Bool} (M : QueryMachine σ)
     (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
-    (hnext : ComputableInSpace M.next (encPair encS (encOption encBool)) encS
-      fun p => (encPair encS (encOption encBool) p).length)
-    (hemit : ComputableInSpace M.emit (encPair encS (encOption encBool)) encBits
-      fun p => (encPair encS (encOption encBool) p).length)
+    (hnext : ComputableInSpace M.next (encStateRead encS) encS
+      fun p => (encStateRead encS p).length)
+    (hemit : ComputableInSpace M.emit (encStateRead encS) encBits
+      fun p => (encStateRead encS p).length)
     (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
     (hfinish : ComputableInSpace M.finish encS encBits fun s => (encS s).length)
     {f : α → β} (time : α → ℕ)
@@ -549,10 +556,10 @@ state, then `f` is computable in logarithmic space. -/
 theorem computableInLogSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β ↪ List Bool}
     {σ : Type} {encS : σ ↪ List Bool} (M : QueryMachine σ)
     (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
-    (hnext : ComputableInSpace M.next (encPair encS (encOption encBool)) encS
-      fun p => (encPair encS (encOption encBool) p).length)
-    (hemit : ComputableInSpace M.emit (encPair encS (encOption encBool)) encBits
-      fun p => (encPair encS (encOption encBool) p).length)
+    (hnext : ComputableInSpace M.next (encStateRead encS) encS
+      fun p => (encStateRead encS p).length)
+    (hemit : ComputableInSpace M.emit (encStateRead encS) encBits
+      fun p => (encStateRead encS p).length)
     (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
     (hfinish : ComputableInSpace M.finish encS encBits fun s => (encS s).length)
     {f : α → β} (time : α → ℕ)

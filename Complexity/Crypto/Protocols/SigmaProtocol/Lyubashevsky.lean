@@ -174,7 +174,7 @@ private theorem abs_lyubashevskyChallenge_le (c : BitString k) (j : Fin k) :
   split_ifs <;> simp
 
 /-- `S ĉ` has sup norm at most `k η` when the entries of `S` are at most `η`. -/
-private theorem mulVec_lyubashevskyChallenge_mem_intBox {η : ℕ} {S : Matrix (Fin m) (Fin k) ℤ}
+theorem mulVec_lyubashevskyChallenge_mem_intBox {η : ℕ} {S : Matrix (Fin m) (Fin k) ℤ}
     (hS : ∀ i j, |S i j| ≤ η) (c : BitString k) :
     S *ᵥ lyubashevskyChallenge c ∈ intBox (Fin m) (k * η) := by
   rw [mem_intBox]

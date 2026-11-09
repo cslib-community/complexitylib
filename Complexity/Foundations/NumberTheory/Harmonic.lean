@@ -35,6 +35,11 @@ average recursive subproblem cost arising in randomized quicksort and random bin
 ## Main results
 
 * `harmonic_nonneg`, `harmonic_mono`: nonnegativity and monotonicity of `harmonic`.
+* `one_le_harmonic`: `1 ≤ harmonic n` for `n ≠ 0`.
+* `cast_harmonic`: the cast of `harmonic n` to a division ring of characteristic zero is
+  `∑ i ∈ Finset.range n, ((i : K) + 1)⁻¹`.
+* `sub_div_le_harmonic_sub`: `(a - b) / a ≤ harmonic a - harmonic b` for `b ≤ a`, the per-element
+  charging inequality of the greedy set-cover analysis.
 * `two_mul_sum_add_one_mul_harmonic`:
   `2 * ∑ r ∈ Finset.range m, (r + 1) * harmonic r = m * (m + 1) * harmonic m - m * (m + 3) / 2`.
 * `harmonic_le_log_add_one`: `harmonic n ≤ Nat.log 2 n + 1` in `ℚ`.
@@ -59,6 +64,40 @@ theorem harmonic_nonneg (n : ℕ) : 0 ≤ harmonic n :=
 theorem harmonic_mono : Monotone harmonic :=
   fun _ _ hab => Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono hab) fun _ _ _ => by
     positivity
+
+/-- `1 ≤ harmonic n` for `n ≠ 0`: the first term of the sum is `1`. -/
+theorem one_le_harmonic {n : ℕ} (hn : n ≠ 0) : 1 ≤ harmonic n := by
+  have h := harmonic_mono (Nat.one_le_iff_ne_zero.2 hn)
+  rwa [harmonic_succ, harmonic_zero, zero_add, Nat.cast_one, inv_one] at h
+
+/-- The cast of `harmonic n` to a division ring of characteristic zero is the sum
+`∑ i ∈ Finset.range n, ((i : K) + 1)⁻¹`. -/
+theorem cast_harmonic {K : Type*} [DivisionRing K] [CharZero K] (n : ℕ) :
+    (harmonic n : K) = ∑ i ∈ Finset.range n, ((i : K) + 1)⁻¹ := by
+  induction n with
+  | zero => rw [harmonic_zero, Rat.cast_zero, Finset.sum_range_zero]
+  | succ n ih =>
+    rw [harmonic_succ, Rat.cast_add, ih, Finset.sum_range_succ, Rat.cast_inv, Rat.cast_natCast,
+      Nat.cast_succ]
+
+/-- Each of the `a - b` terms of `harmonic a - harmonic b = ∑_{b ≤ i < a} 1 / (i + 1)` is at least
+`1 / a`, so `(a - b) / a ≤ harmonic a - harmonic b` for `b ≤ a`. -/
+theorem sub_div_le_harmonic_sub {a b : ℕ} (hba : b ≤ a) :
+    ((a : ℚ) - b) / a ≤ harmonic a - harmonic b := by
+  rcases Nat.eq_zero_or_pos a with rfl | ha
+  · rw [Nat.le_zero.1 hba]
+    simp
+  have hsplit : harmonic a - harmonic b = ∑ i ∈ Finset.Ico b a, ((i : ℚ) + 1)⁻¹ := by
+    unfold harmonic
+    rw [← Finset.sum_range_add_sum_Ico _ hba]
+    push_cast
+    ring
+  rw [hsplit]
+  calc ((a : ℚ) - b) / a = ∑ _i ∈ Finset.Ico b a, (a : ℚ)⁻¹ := by
+        rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, Nat.cast_sub hba, div_eq_mul_inv]
+    _ ≤ ∑ i ∈ Finset.Ico b a, ((i : ℚ) + 1)⁻¹ := by
+        refine Finset.sum_le_sum fun i hi => inv_anti₀ (by positivity) ?_
+        exact_mod_cast (Finset.mem_Ico.1 hi).2
 
 /-- Weighted summation identity
 `2 ∑_{r < m} (r + 1) H_r = m (m + 1) H_m - m (m + 3) / 2` in `ℚ`. -/

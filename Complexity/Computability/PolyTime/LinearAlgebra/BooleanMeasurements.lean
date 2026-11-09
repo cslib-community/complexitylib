@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Op
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
+import Complexity.Tactic.EncLen
 
 /-!
 # Integer measurements of Boolean words
@@ -131,7 +132,7 @@ theorem evalBoolRow_polyTime :
 /-- Evaluate a runtime matrix on a runtime Boolean word with polynomial native costs. -/
 theorem evalBoolMatrix_polyTime :
     ComputableInPolyTime (fun p : List (List ℤ) × List Bool => evalBoolMatrix p.1 p.2)
-      (encPair (encList (encList encIntBin)) encBits) (encList encIntBin) := by
+      (encPair encIntTable encBits) (encList encIntBin) := by
   let ei := encPair (encList (encList encIntBin)) encBits
   have hM := ComputableInPolyTime.fst (encList (encList encIntBin)) encBits
   have hy := ComputableInPolyTime.snd (encList (encList encIntBin)) encBits
@@ -170,8 +171,7 @@ theorem length_search_le (matOf : C → List (List ℤ)) (targetOf : C → List 
   | none => simp
   | some y =>
     have hy := (search_some matOf targetOf p h).1
-    simp only [encOption_some, List.length_cons, encBits_apply, hy]
-    omega
+    enc_len [hy]
 
 /-- Failure is equivalent to the unrestricted fiber being empty. This uses the total padding
 convention even for ragged matrices, rather than silently assuming rectangular input. -/
@@ -186,7 +186,7 @@ theorem search_eq_none_iff (matOf : C → List (List ℤ)) (targetOf : C → Lis
 word encodings, using the supplied polynomial matrix/target projections. -/
 theorem test_polyTime {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     ComputableInPolyTime (test matOf targetOf) (encPair encC encBits) encBool := by
   have hc := ComputableInPolyTime.fst encC encBits
@@ -227,24 +227,19 @@ private theorem optionBits_polyTime :
       (encOption (encList encBool)) (encOption encBits) := by
   have hi : ComputableInPolyTime (id : Option (List Bool) → Option (List Bool))
       (encOption (encList encBool)) (encOption (encList encBool)) := .id'
-  have hs : ComputableInPolyTime
-      (fun p : Option (List Bool) × List Bool => some p.2)
-      (encPair (encOption (encList encBool)) (encList encBool)) (encOption encBits) :=
-    (ComputableInPolyTime.optionSome encBits).comp
-      (ComputableInPolyTime.listToBits.comp
-        (ComputableInPolyTime.snd (encOption (encList encBool)) (encList encBool)))
-  have hn : ComputableInPolyTime (fun _ : Option (List Bool) => (none : Option (List Bool)))
-      (encOption (encList encBool)) (encOption encBits) := ComputableInPolyTime.const none
-  have h := hi.optionElimWithInput (body := fun _ y => some y) hn hs
+  have h := hi.optionMapWithInput
+    (f := fun _ y => y)
+    (ComputableInPolyTime.listToBits.comp
+      (ComputableInPolyTime.snd (encOption (encList encBool)) (encList encBool)))
   convert h using 1
-  funext y
-  cases y <;> rfl
+  funext value
+  cases value <;> rfl
 
 /-- The fixed native representative search has traversal-proportional time and polynomial
 charged workspace in the full runtime context/width encoding, including both codec boundaries. -/
 theorem exists_computableInO_search {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     ∃ overhead workspace : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧
@@ -262,8 +257,7 @@ theorem exists_computableInO_search {encC : C ↪ List Bool}
     have h := GenericRAM.BooleanSearch.length_prefix_result_le
       (test matOf targetOf) p (2 ^ p.2)
     change (encOption (encList encBool) (search matOf targetOf p)).length ≤ 3 * p.2 + 1 at h
-    simp only [pow_one, length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [pow_one]
   refine ⟨fun p => P p + codec.time (search matOf targetOf p),
     fun p => Q p + codec.space (search matOf targetOf p),
     hP.add (hc.1.comp hlen), hQ.add (hc.2.comp hlen), ?_⟩
@@ -280,7 +274,7 @@ independent resource bounds above once, before any runtime context/width input. 
 boundaries are included. -/
 noncomputable def searchCertificate {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     NativeCertificate (search matOf targetOf) (encPair encC encUnary) (encOption encBits) :=
   let h := exists_computableInO_search hM ht
@@ -291,7 +285,7 @@ noncomputable def searchCertificate {encC : C ↪ List Bool}
 /-- The exported certificate's actual charged workspace is polynomial in the full input. -/
 theorem polyBounded_searchCertificate_space {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     PolyBounded (fun p => (encPair encC encUnary p).length) (searchCertificate hM ht).space :=
   (exists_computableInO_search hM ht).choose_spec.choose_spec.2.1
@@ -300,7 +294,7 @@ theorem polyBounded_searchCertificate_space {encC : C ↪ List Bool}
 count. Its encoded output is charged to its separate polynomial workspace bound. -/
 theorem exists_polyBounded_searchCertificate_time {encC : C ↪ List Bool}
     {matOf : C → List (List ℤ)} {targetOf : C → List ℤ}
-    (hM : ComputableInPolyTime matOf encC (encList (encList encIntBin)))
+    (hM : ComputableInPolyTime matOf encC encIntTable)
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     ∃ overhead : C × ℕ → ℕ,
       PolyBounded (fun p => (encPair encC encUnary p).length) overhead ∧

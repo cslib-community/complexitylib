@@ -12,6 +12,7 @@ public import Complexity.Probability.PMF
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Complexity.Foundations.Data.BitString.Isolation
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.UniformOrder
 import Mathlib.Analysis.MeanInequalities
 
 /-!
@@ -121,15 +122,16 @@ noncomputable def runWith (O : (Fin n → Option Bool) → Fin n → Option Bool
     (π : Equiv.Perm (Fin n)) : ℕ → PMF (Fin n → Option Bool)
   | 0 => PMF.pure fun _ => none
   | i + 1 =>
-    if h : i < n then
-      (runWith O π i).bind fun τ =>
-        (stepWith O τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b)
+    if h : i < n then do
+      let τ ← runWith O π i
+      (stepWith O τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b)
     else runWith O π i
 
 /-- **One round with the oracle `O`**: process all variables in a uniformly random order. -/
 noncomputable def roundWith (O : (Fin n → Option Bool) → Fin n → Option Bool) :
-    PMF (Fin n → Option Bool) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun π => runWith O π n
+    PMF (Fin n → Option Bool) := do
+  let π ← Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin n))
+  runWith O π n
 
 /-- One step of PPZ on `x`: the forced value if there is one, and a uniform bit otherwise. -/
 noncomputable def step (φ : CNF (Fin n)) (τ : Fin n → Option Bool) (x : Fin n) : PMF Bool :=
@@ -166,7 +168,7 @@ theorem runWith_succ (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (π : Equiv.Perm (Fin n)) {i : ℕ} (h : i < n) :
     runWith O π (i + 1) = (runWith O π i).bind fun τ =>
       (stepWith O τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b) := by
-  simp only [runWith, h, ↓reduceDIte]
+  simp only [runWith, h, ↓reduceDIte, Probability.PMF.monad_bind_eq_bind]
 
 /-- A run stops after all `n` variables are processed. -/
 theorem runWith_succ_of_le (O : (Fin n → Option Bool) → Fin n → Option Bool)
@@ -487,7 +489,8 @@ theorem roundWith_apply_eq {O : (Fin n → Option Bool) → Fin n → Option Boo
     ((roundWith O) fun x => some (σ x)).toReal =
       ∑ π : Equiv.Perm (Fin n),
         ((n.factorial : ℝ))⁻¹ * (1 / 2 : ℝ) ^ unforcedCountWith O σ π n := by
-  rw [roundWith, PMF.bind_apply, tsum_fintype, ENNReal.toReal_sum (fun π _ => ENNReal.mul_ne_top
+  rw [roundWith, Probability.PMF.monad_bind_eq_bind, PMF.bind_apply, tsum_fintype,
+    ENNReal.toReal_sum (fun π _ => ENNReal.mul_ne_top
     (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _))]
   refine sum_congr rfl fun π _ => ?_
   rw [← restrict_prefixSet_self σ π, runWith_apply_restrict hO π le_rfl, ENNReal.toReal_mul,
@@ -661,89 +664,14 @@ theorem forced_ne_none_of_isLast {φ : CNF (Fin n)} {σ : Fin n → Bool} {x : F
 
 /-! ### Random orders -/
 
-/-- Swapping two variables of `S` exchanges which of them comes last. -/
-private theorem isLast_trans_swap {π : Equiv.Perm (Fin n)} {S : Finset (Fin n)} {x y : Fin n}
-    (hx : x ∈ S) (hy : y ∈ S) : IsLast (π.trans (Equiv.swap x y)) S y ↔ IsLast π S x := by
-  unfold IsLast
-  simp only [Equiv.symm_trans_apply, Equiv.symm_swap, Equiv.swap_apply_right]
-  constructor
-  · intro h v hv hvx
-    have := h (Equiv.swap x y v) ?_ ?_
-    · rwa [Equiv.swap_apply_self] at this
-    · by_cases hvy : v = y
-      · subst hvy
-        simpa using hx
-      · rw [Equiv.swap_apply_of_ne_of_ne hvx hvy]
-        exact hv
-    · intro e
-      apply hvx
-      have := congrArg (Equiv.swap x y) e
-      simpa using this
-  · intro h v hv hvy
-    apply h (Equiv.swap x y v)
-    · by_cases hvx : v = x
-      · subst hvx
-        simpa using hy
-      · rw [Equiv.swap_apply_of_ne_of_ne hvx hvy]
-        exact hv
-    · intro e
-      apply hvy
-      have := congrArg (Equiv.swap x y) e
-      simpa using this
-
 /-- **Each variable of `S` comes last in a `1 / |S|` fraction of the orders.** -/
 theorem card_isLast_mul {S : Finset (Fin n)} {x : Fin n} (hx : x ∈ S) :
     (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S x).card * S.card = n.factorial := by
-  classical
-  have hinv : ∀ (π : Equiv.Perm (Fin n)) (y : Fin n),
-      (π.trans (Equiv.swap x y)).trans (Equiv.swap x y) = π := by
-    intro π y
-    ext i
-    simp
-  have hequal : ∀ y ∈ S, (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S y).card =
-      (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S x).card := by
-    intro y hy
-    refine card_bij' (fun π _ => π.trans (Equiv.swap x y)) (fun π _ => π.trans (Equiv.swap x y))
-      (fun π hπ => ?_) (fun π hπ => ?_) (fun π _ => hinv π y) (fun π _ => hinv π y)
-    · simp only [mem_filter, mem_univ, true_and] at hπ ⊢
-      have := isLast_trans_swap (π := π.trans (Equiv.swap x y)) hx hy
-      rw [hinv] at this
-      exact this.mp hπ
-    · simp only [mem_filter, mem_univ, true_and] at hπ ⊢
-      exact (isLast_trans_swap hx hy).mpr hπ
-  -- Every order has exactly one last variable of `S`.
-  have hone : ∀ π : Equiv.Perm (Fin n), (S.filter fun y => IsLast π S y).card = 1 := by
-    intro π
-    obtain ⟨y, hyS, hymax⟩ := S.exists_max_image (fun v => π.symm v) ⟨x, hx⟩
-    rw [card_eq_one]
-    refine ⟨y, ?_⟩
-    ext v
-    simp only [mem_filter, mem_singleton]
-    constructor
-    · rintro ⟨hvS, hvlast⟩
-      by_contra hvy
-      have h1 := hvlast y hyS (Ne.symm hvy)
-      have h2 := hymax v hvS
-      exact absurd h1 (not_lt.mpr h2)
-    · rintro rfl
-      refine ⟨hyS, fun v hv hvy => lt_of_le_of_ne (hymax v hv) ?_⟩
-      intro e
-      exact hvy (π.symm.injective e)
-  have hsum : ∑ y ∈ S, (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S y).card =
-      n.factorial := by
-    have hcard : (univ : Finset (Equiv.Perm (Fin n))).card = n.factorial := by
-      rw [card_univ, Fintype.card_perm, Fintype.card_fin]
-    calc
-      ∑ y ∈ S, (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S y).card =
-          ∑ π : Equiv.Perm (Fin n), (S.filter fun y => IsLast π S y).card := by
-        simp only [card_filter]
-        rw [sum_comm]
-      _ = n.factorial := by
-        simp only [hone, sum_const, smul_eq_mul, mul_one]
-        exact hcard
-  rw [sum_congr rfl hequal, sum_const, smul_eq_mul] at hsum
-  rw [mul_comm]
-  exact hsum
+  have heq : (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S x) =
+      (univ.filter fun π : Equiv.Perm (Fin n) => ∀ w ∈ S, w ≠ x → π.symm w < π.symm x) :=
+    Finset.filter_congr (fun _ _ => Iff.rfl)
+  rw [heq]
+  simpa [Fintype.card_fin] using Cslib.Probability.card_filter_perm_symm_greatest_mul_card hx
 
 /-! ### The success probability -/
 
