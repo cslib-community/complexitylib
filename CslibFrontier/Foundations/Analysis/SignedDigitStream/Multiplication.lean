@@ -550,6 +550,20 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
   have habs_sum : |∑ p ∈ Sq \ retainedUnion t K, term p| ≤ ∑ p ∈ Sq \ retainedUnion t K, w p :=
     (abs_sum_le_sum_abs _ _).trans (sum_le_sum fun p _ => hterm_bound p)
   have hpart := sum_filter_add_sum_filter_not (Sq \ retainedUnion t K) (fun p => p.1 ≤ p.2) w
+  -- each row `r` of omitted pairs contributes at most `36 / 2 ^ bandMargin (bandIdx r)`
+  have hrow (r : ℕ) :
+      ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j), w (r, j) ≤
+        36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
+    dsimp [w]
+    rw [← mul_sum]
+    calc (2 : ℝ) ^ t * 36 *
+          ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j),
+            (1 / (2 : ℝ) ^ (r + j))
+        ≤ (2 : ℝ) ^ t * 36 * (1 / (2 : ℝ) ^ (t + bandMargin (bandIdx r))) :=
+          mul_le_mul_of_nonneg_left (sum_ray_tail_le N r _) (by positivity)
+      _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
+          rw [pow_add]
+          field_simp
   have hO1 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2), w p ≤
       ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
     have hsub1 : (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2) ⊆
@@ -570,18 +584,8 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
           rw [sum_filter, sum_product]
           refine sum_congr rfl fun r _ => ?_
           rw [sum_filter]
-      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-          refine sum_le_sum fun r _ => ?_
-          dsimp [w]
-          rw [← mul_sum]
-          calc (2 : ℝ) ^ t * 36 *
-                ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j),
-                  (1 / (2 : ℝ) ^ (r + j))
-              ≤ (2 : ℝ) ^ t * 36 * (1 / (2 : ℝ) ^ (t + bandMargin (bandIdx r))) :=
-                mul_le_mul_of_nonneg_left (sum_ray_tail_le N r _) (by positivity)
-            _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-                rw [pow_add]
-                field_simp
+      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) :=
+          sum_le_sum fun r _ => hrow r
   have hO2 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2), w p ≤
       ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
     have hsub2 : (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2) ⊆
@@ -606,18 +610,8 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
           refine sum_congr rfl fun i _ => ?_
           dsimp [w]
           rw [add_comm i r]
-      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-          refine sum_le_sum fun r _ => ?_
-          dsimp [w]
-          rw [← mul_sum]
-          calc (2 : ℝ) ^ t * 36 *
-                ∑ i ∈ (range (N + 1)).filter (fun i => t + bandMargin (bandIdx r) < r + i),
-                  (1 / (2 : ℝ) ^ (r + i))
-              ≤ (2 : ℝ) ^ t * 36 * (1 / (2 : ℝ) ^ (t + bandMargin (bandIdx r))) :=
-                mul_le_mul_of_nonneg_left (sum_ray_tail_le N r _) (by positivity)
-            _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-                rw [pow_add]
-                field_simp
+      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) :=
+          sum_le_sum fun r _ => hrow r
   have hsum_r : ∑ r ∈ range (N + 1), 72 / (2 : ℝ) ^ bandMargin (bandIdx r) ≤ 9 / 64 := by
     set B := bandIdx N + 1
     have hcover : range (N + 1) ⊆ (range B).biUnion fun k => Ico (bandStart k) (bandEnd k) := by
