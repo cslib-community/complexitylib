@@ -25,6 +25,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptio
 import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import Complexity.Tactic.EncLen
 
 /-!
 # Coefficient extraction as a stack recursion
@@ -580,8 +581,7 @@ theorem length_encNode_le {x₀ : C} {rows₀ : List Rw} {γ₀ : List ℕ} {x :
       change 2 * a.bits.length + 1 ≤ 2 * b.bits.length + 1
       rw [Nat.size_eq_bits_len, Nat.size_eq_bits_len]
       exact Nat.add_le_add_right (Nat.mul_le_mul_left 2 (Nat.size_le_size hab)) 1) γ γ₀ hl hγ
-  simp only [length_encPair]
-  omega
+  enc_len
 
 /-- **The resources of coefficient extraction.** There is `K` such that on a node of length `n`
 with `m` modes and `L` rows, if the reduced values of its precision are at most `Rv` bits long,
@@ -621,8 +621,7 @@ theorem valueCertificate_le :
   have hLn : L ≤ n := by
     have := length_le_length_encList encRw rows₀
     rw [hn, hLen]
-    simp only [length_encPair]
-    omega
+    enc_len
   have hpowZ {a : ℕ} (ha : a ≤ D) : Z ^ a ≤ W := by
     rw [hW]; exact Nat.pow_le_pow_right (by omega) ha
   have hZW : Z ≤ W := by

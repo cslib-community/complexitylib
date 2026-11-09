@@ -237,7 +237,7 @@ private theorem isPPTOn_S :
 private theorem isFPAUS_S : IsFPAUS (encPair encUnary (encPair encUnary encBool)) W S :=
   ⟨isPPTOn_S, fun x q => by
     rw [eval_S]
-    exact (Interactive.CloseTo.refl _).mono (by positivity)⟩
+    exact (Probability.CloseTo.refl _).mono (by positivity)⟩
 
 /-! ### A checked instance of the theorem -/
 
@@ -309,20 +309,20 @@ private theorem goodEstimate_exact (p : ℕ) (x : ℕ × ℕ × Bool) :
 
 /-- The sampler built from the exact counter is almost uniform, for every instance and accuracy. -/
 example (x : ℕ × ℕ × Bool) (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler exactCounter x q)) (uniformWitness (W x))
+    Probability.CloseTo (ProbComp.eval (R.sampler exactCounter x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) :=
   R.closeTo_sampler (fun p t _ y => exactCounter_approx y p t) x q
 
 /-- The round trip: the FPRAS obtained from the exact sampler gives back a sampler with the output
 law of an almost uniform sampler. -/
 example (x : ℕ × ℕ × Bool) (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler (R.estimate S) x q)) (uniformWitness (W x))
+    Probability.CloseTo (ProbComp.eval (R.sampler (R.estimate S) x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) :=
   R.closeTo_sampler_of_isFPRAS (R.isFPRAS_of_isFPAUS isFPAUS_S) x q
 
 /-- On a dead instance the target law is the point mass at `none`. -/
 example (q : ℕ) :
-    Interactive.CloseTo (ProbComp.eval (R.sampler exactCounter (2, 3, false) q)) (PMF.pure none)
+    Probability.CloseTo (ProbComp.eval (R.sampler exactCounter (2, 3, false) q)) (PMF.pure none)
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)) := by
   have h := R.closeTo_sampler (fun p t _ y => exactCounter_approx y p t) (2, 3, false) q
   rwa [show W (2, 3, false) = ∅ by simp [W], uniformWitness_empty] at h
