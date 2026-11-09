@@ -39,8 +39,7 @@ class Plan:
     base: str
     targets: list[str]
     checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
-    lint_modules: list[str] = field(default_factory=list)  # whose declarations the local linters check
-    lint_targets: list[str] = field(default_factory=list)  # modules whose environments are linted
+    lint: dict[str, list[str]] = field(default_factory=dict)  # lint target -> modules it checks
 
 
 @dataclass
@@ -171,19 +170,20 @@ def executable_sources(root: Path) -> list[Executable]:
 
 
 def lint_scope(root: Path, aggregates: set[str], affected: set[str],
-               reverse: dict[str, set[str]]) -> tuple[list[str], list[str]]:
-    """The affected modules that `lake lint` checks, and the fewest modules to lint them through.
+               reverse: dict[str, set[str]]) -> dict[str, list[str]]:
+    """The fewest modules to lint the affected modules through, each with the modules it checks.
 
     `lake lint` runs the linters on the modules of the default-target libraries. A change can make
     an argument of an importing client unused, so every affected module of those libraries is
     listed, not only the changed ones. Linting a module covers the declarations of its package
     (first name component) throughout its import closure; a module with no affected importer in
-    its own package is therefore linted directly, and covers every listed module it imports.
+    its own package is therefore linted directly, and covers every listed module it imports. Each
+    listed module is assigned to one such target above it, so no declaration is linted twice.
     """
     config = tomllib.loads((root / "lakefile.toml").read_text())
     driver = config.get("lintDriver")
     if driver is None:
-        return [], []  # No lint gate is configured.
+        return {}  # No lint gate is configured.
     if driver != LINT_DRIVER:
         raise FullCheck(f"lint driver {driver!r} is outside quick-check scope")
     defaults = config.get("defaultTargets", [])
@@ -192,9 +192,19 @@ def lint_scope(root: Path, aggregates: set[str], affected: set[str],
     listed = {module for module in affected - aggregates
               if any(module.startswith(name + ".") for name in defaults)}
     package = lambda module: module.split(".")[0]
-    targets = {module for module in listed if not any(
-        consumer in listed and package(consumer) == package(module) for consumer in reverse[module])}
-    return sorted(listed), sorted(targets)
+    above = {module: {consumer for consumer in reverse[module]
+                      if consumer in listed and package(consumer) == package(module)}
+             for module in listed}
+    lint: dict[str, list[str]] = {module: [] for module in listed if not above[module]}
+    for module in sorted(listed):
+        # Every listed importer chain in the package ends at a target, which imports `module`.
+        reached, queue = {module}, deque([module])
+        while queue:
+            for consumer in above[queue.popleft()] - reached:
+                reached.add(consumer)
+                queue.append(consumer)
+        lint[min(reached & lint.keys())].append(module)
+    return dict(sorted(lint.items()))
 
 
 def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
@@ -266,9 +276,8 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
-    lint_modules, lint_targets = lint_scope(root, aggregates, affected, reverse)
     return Plan(base, sorted((affected - aggregates) | executable_targets), checks,
-                lint_modules, lint_targets)
+                lint_scope(root, aggregates, affected, reverse))
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -325,25 +334,25 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
 
 
 def run_lint(root: Path, plan: Plan) -> int:
-    """Lint the affected library modules, as `lake lint` would, after the build has made them."""
-    if not plan.lint_targets:
+    """Lint the affected library modules, as `lake lint` would, after the build has made them.
+
+    Each target gets its own runLinter process: one process importing several environments keeps
+    each one's oleans in memory, growing by gigabytes per target. Every target runs, so one pass
+    reports all failures; each module is checked through exactly one target.
+    """
+    if not plan.lint:
         return 0
-    print(f"Linting {len(plan.lint_modules)} affected library modules through "
-          f"{len(plan.lint_targets)} modules.", flush=True)
-    with tempfile.NamedTemporaryFile("w", prefix="cslib-frontier-lint-", suffix=".txt",
-                                     delete=False) as listing:
-        listing.write("".join(module + "\n" for module in plan.lint_modules))
-    try:
-        for offset in range(0, len(plan.lint_targets), 100):
-            batch = plan.lint_targets[offset:offset + 100]
+    print(f"Linting {sum(map(len, plan.lint.values()))} affected library modules through "
+          f"{len(plan.lint)} modules, one process each.", flush=True)
+    failed = 0
+    with tempfile.TemporaryDirectory(prefix="cslib-frontier-lint-") as directory:
+        for index, (target, modules) in enumerate(plan.lint.items()):
+            listing = Path(directory) / f"{index}.txt"
+            listing.write_text("".join(module + "\n" for module in modules))
             status = run_check(root, ["lake", "lint", "--", "--no-build",
-                                      f"--only-modules={listing.name}", *batch],
-                               "lint of affected library modules")
-            if status:
-                return status
-        return 0
-    finally:
-        Path(listing.name).unlink(missing_ok=True)
+                                      f"--only-modules={listing}", target], f"lint {target}")
+            failed = failed or status
+    return failed
 
 
 if __name__ == "__main__":
