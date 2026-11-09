@@ -252,6 +252,22 @@ raw calls without a post-response check (and can exceed a one-turn allowance);
 semantic post-response/control enforcement and source-admitted query selection
 are not yet realized. This is a concrete binary
 startup ABI, not a conventional external source/PTM encoding bridge.
+A separate runtime-control ABI now has uniform native semantic post-response
+processing: actual histories/private words and turn/planning/allotment counts are
+updated, rational retention/completion is recomputed, and a guard packet is written
+to tape zero with local scratch/input/flag cleanup. A constructed blank-tape
+input-loader/query/full-reader/postprocessor has a derived joint context/output/
+oracle-memory law; no context is compiled into its continuation. Nonempty cover,
+cancellation, unbounded correlated reports and exhausted-counter clients exercise
+that same code. This is one native phase. Requests are raw framed runtime states,
+not source-admitted concurrent batches; the planning opportunity count is not yet
+an actual source used-set and allotments are not observed real elapsed time.
+Reading the new guard, handing its payload to a source-valid next planner, clearing
+the outer reply buffer/marker and constructing repeated feedback remain open.
+The phase frontend always queries; initial/post-response guards are not part of it.
+Its separate State ABI still needs conversion from the guarded Startup entry and
+an invariant authenticating old stored history against actual oracle events.
+It supplies neither native upper quantitative guarantees nor an optimum comparison.
 An injective header format carries original encoded data, old raw histories,
 private storage and budget/availability/stop/output fields. Those header fields
 are transported, not semantically updated by the append transducer. The second

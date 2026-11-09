@@ -348,7 +348,9 @@ output and a completion flag computed from original coverage. -/
 @[expose] def decision (w : Work) : Bool × Word :=
   (complete (assemble w), output (assemble w))
 
-private theorem work_fields : ComputableInPolyTime
+/-- The stored original input, opportunity count and raw history can be read uniformly
+from the runtime work encoding, without recompiling them as fixed context. -/
+theorem work_fields : ComputableInPolyTime
     (fun w : Work => (w.system, w.opportunities, w.history)) encWork
     (encPair encInput (encPair encUnary (encList encBits))) := .of_eq fun _ => rfl
 private theorem system_computable : ComputableInPolyTime Work.system encWork encInput :=

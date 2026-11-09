@@ -1811,6 +1811,58 @@ post-response history/private-control/budget updates, deadline stopping, repeate
 buffer cleanup/restart and the native quantitative upper/optimum endpoint remain
 open.
 
+For uniform semantic postprocessing, import
+`Complexity.Probability.StochasticOracle.NativeRetention.RuntimeControl`.
+`RuntimeControl.State` stores the original rational input, total parser opportunity
+count, stored raw histories, private word and remaining turn/planning/allotment
+counts. `afterReply` appends the actual request/reply history, appends the framed
+reply to the private word, decrements the three allowances, and recomputes rational
+retention, completion and output from the full raw report. `process` produces the
+updated guard bit, framed output mask and encoded next state.
+
+`exists_native_processor` constructs one native local program before quantifying
+over states or replies. Its instructions splice the retained tape context with the
+actual complete reply, erase the old context, restore cursors, execute the uniform
+parser/processor and write the updated guard packet back to tape zero. Local
+scratch, temporary combined-input work tape and marker finish blank with heads
+restored. The immutable input is preserved. These
+are response-dependent terminating local computations, not a common clock for
+copying every possible response.
+
+`exists_native_phase` also constructs the input-loading/query/full-reader/local
+composition. It starts at `program.initialConfig (frame (encoding state))` with
+blank work tapes; no context is embedded in code or preinstalled on a work tape.
+Its named `NativeReplyContext.Observation` retains the actual context tape, ordinary
+output and complete shared oracle memory. Private context bytes are not emitted;
+the ordinary output is empty, and the eventual mask is stored in the new packet.
+The exact law preserves the sampled response, hidden-state transition, invoice and
+oracle duration jointly.
+
+The [runtime-control client](../../ComplexityTests/NativeRuntimeControl.lean)
+checks a nonempty two-row locally certified cover, ignored fabricated proposals,
+cancellation, correlated hidden state and unbounded invoice reports. It checks all
+three exhausted counters and observes the recomputed stop bit on the actual native
+tape. From the same matching warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeRuntimeControl
+```
+
+This API executes one post-response phase and always issues its one query. It
+does not execute an initial guard, even on already stopped input. The separate
+`State` ABI also needs a conversion from the guarded `Startup` entry before those
+programs can form one loop. Supplied old histories need an invariant tying them
+to the actual oracle ledger; initial clients use `initial` with empty history.
+Its request is framed runtime-state
+data, not a proved source-admitted batch packet. The opportunity count is a
+single-opportunity planning allowance, not a verified consumed-opportunity ledger
+for arbitrary concurrent batches. Allotments reserve latency units; the native
+interface does not expose the ledger's real elapsed time. The final guard packet
+must still be read, its payload handed to the next phase, and a source-valid next
+batch planned before a feedback loop is obtained. The outer reader's reply buffer
+and marker also remain to be cleared. In particular, recomputing a stop bit is not
+an executed guarded restart or native upper-policy/optimum theorem.
+
 Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
 raw-parser/rational-retention computability proof. One complete native program
