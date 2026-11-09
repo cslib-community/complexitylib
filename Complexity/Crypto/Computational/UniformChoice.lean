@@ -99,8 +99,7 @@ theorem eval_bind_test (bound : ℕ) (real ideal source : ProbComp (List Bool))
   simp only [test, ProbComp.eval_bind, eval_sampleDyadicIndex, PMF.monad_bind_eq_bind, PMF.bind_map,
     Function.comp_def]
   rw [PMF.bind_comm]
-  congr 1
-  funext index
+  congr 1 with index : 1
   simp only [calibratedTest, ProbComp.eval_bind, ProbComp.eval_map, map_bind]
   rw [PMF.bind_comm]
 

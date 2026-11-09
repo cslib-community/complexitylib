@@ -285,8 +285,7 @@ private theorem full_kernelVecUpTo (α : ι → F) (w : ι → (Fin N → F) →
           Set.Subset.rfl (by rintro _ ⟨m, rfl⟩; exact ⟨m, rfl⟩) ?_
         unfold kernelVecCost
         have : #(Sudan.monomialsUpTo d D j) ≤ #M := card_le_card (hsubM j)
-        have : (#(Sudan.monomialsUpTo d D j) + 1) ^ 2 ≤ (#M + 1) ^ 2 :=
-          Nat.pow_le_pow_left (by omega) 2
+        have : (#(Sudan.monomialsUpTo d D j) + 1) ^ 2 ≤ (#M + 1) ^ 2 := by gcongr
         nlinarith
     simpa [card_univ] using this
   exact h₁.trans h₂

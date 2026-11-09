@@ -179,14 +179,12 @@ theorem eval_game_modLeveledAdversary_eq_map_coins (E : Scheme)
       (chooseReplay (evaluateKey n keys).1 (rest.take choiceBudget))
       ((rest.drop choiceBudget).take (encCoins n))
       ((rest.drop choiceBudget).drop (encCoins n))))]
-  congr 1
-  funext keys
+  congr 1 with keys : 1
   rw [BitString.uniformList_bind_split choiceBudget (encCoins n + guessBudget)
     (fun chosen rest => PMF.pure (finish (evaluateKey n keys)
       (chooseReplay (evaluateKey n keys).1 chosen) (rest.take (encCoins n))
       (rest.drop (encCoins n))))]
-  congr 1
-  funext chosen
+  congr 1 with chosen : 1
   rw [BitString.uniformList_bind_split (encCoins n) guessBudget
     (fun encSeed guessSeed => PMF.pure (finish (evaluateKey n keys)
       (chooseReplay (evaluateKey n keys).1 chosen) encSeed guessSeed))]
