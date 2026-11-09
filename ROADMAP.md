@@ -317,9 +317,14 @@ balance and count-selected retention. `JoinedDissection` assembles that retentio
 with `JoinedProbe`'s actual opposite-quarter group consumption, bounded batches,
 fixed all-class release/iteration, source preparation and original witness
 readback; witness/miss and returned computed-balance correctness are proved.
-The larger class is no longer materialized or scanned as a whole half space:
-nested folds evaluate generated matching pairs and feed each directly to the
-matcher. Empty dictionaries skip opposite generation by proved matcher
+Actual counts now also select a single whole-class match when the larger
+class fits retained size plus the four quarter populations. That direct branch
+avoids per-pair dictionary/buffer state copies. The allowance is at most `11*2^k`
+on the source cut; every direct list prefix has a derived quarter-plus-balance
+wire bound and total direct matched record volume is at most the two half
+populations. These are list/record bounds, not internal TM resource inequalities.
+Otherwise nested folds feed generated pairs directly to bounded batches without
+materializing the larger class or scanning the whole opposite half space. Empty dictionaries skip opposite generation by proved matcher
 soundness. The total matching-pair iteration domain across classes is bounded by
 the two half populations, without a class-mean hypothesis. This is a traversal
 bound, not bit time. Count-table and simultaneous retained/live-buffer prefix
@@ -333,10 +338,14 @@ search uses the same fixed loop on uniformly generated binary class-index data;
 its derived wire is `2^p(2p+1)`, within quarter scale at the capped source depth.
 It sums executed class rounds rather than multiplying maximum class time.
 Class dictionaries are released; only a found pair survives into the next round.
-Sharp resources still require persistent retained/buffer tapes and tight
-preprocessing/readback/profile normalization. Captured dictionaries and growing
-buffers are still copied per matching pair; count-table reversal/reduction and
-preprocessing control retain their actual profiles. Neither a traversal sum nor
+The actual balance certificate now streams count minima into one scalar maximum,
+with derived prefix width, bypassing table construction/reversal/reduction.
+Preparation, half-array construction and the installed readback machine have proved polynomial bounds
+in the physical original input, using derived search-result payload size.
+Sharp resources still require persistent retained/buffer tapes for fallback
+classes and tight callback/matcher/quarter-count/global profile normalization.
+Captured dictionaries and growing buffers remain copied per matching pair in
+that fallback; direct classes avoid those feeds. Neither a traversal sum nor
 the now-composed actual bit clock establishes the target source asymptotics.
 No sharp global bit inequalities follow from the encoding or record-volume
 bounds. Older solver sources are preserved; the new direct route bypasses their

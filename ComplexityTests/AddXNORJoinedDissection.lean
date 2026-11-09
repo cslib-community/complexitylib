@@ -90,3 +90,37 @@ example (input : ClassBalance.Input) := JoinedDissection.allSearch_eq_fold input
 -- The actually generated class-index data is quarter scale at the source frontend's depth.
 example (input : ClassBalance.Input) :=
   SortedQuarterMachine.indices_wire (ClassBalance.depth input)
+
+-- Actual counts select one dictionary read/match for a fitting colliding class.
+example : JoinedDissection.materialize (Source.prepare joinedFixture) 0 = true := by
+  decide +kernel
+example : (JoinedDissection.directPrefix (Source.prepare joinedFixture) 0 100).length = 8 := by
+  decide +kernel
+example : JoinedDissection.directRecordWork (Source.prepare joinedFixture) 0 = 14 := by
+  decide +kernel
+example : JoinedDissection.materialize (Source.prepare joinedFixture) 1 = false := by
+  decide +kernel
+
+/-- Fourth-quarter residue makes the opposite population exceed the computed allowance. -/
+def joinedFallback : Source.Input := ((0, 0), List.replicate 16 0)
+
+example : JoinedDissection.materialize (Source.prepare joinedFallback) 0 = false := by
+  decide +kernel
+example : (JoinedDissection.run joinedFallback).1 = 64 := by decide +kernel
+example : (JoinedDissection.run joinedFallback).2.isSome = true := by decide +kernel
+example : JoinedDissection.directRecordWork (Source.prepare joinedFallback) 0 = 0 := by
+  decide +kernel
+
+example (input : ClassBalance.Input) (g n : ℕ) (hg : g < 2 ^ ClassBalance.depth input) :=
+  JoinedDissection.direct_prefix_records input g n hg
+example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m)
+    (g : BitVec p) (n : ℕ) := JoinedDissection.direct_prefix_wire hp as bs cs ds s g n
+example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m) :=
+  JoinedDissection.sum_directRecordWork hp as bs cs ds s
+example {m : ℕ} (p : ℕ) (s : BitVec m) (tail : List (BitVec m)) :=
+  JoinedDissection.quarterBudget_source p s tail
+example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m) :=
+  JoinedDissection.allSearch_wire hp as bs cs ds s
+example := JoinedDissection.halvesCertificate.computes
+example := JoinedDissection.readbackCertificate.computes
+example := JoinedDissection.preparation_readback_bounds

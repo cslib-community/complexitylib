@@ -1564,33 +1564,46 @@ state collisions. `count_eq_counter` proves exact equality with the original-hal
 counter counts, and `balance_eq_counter` proves equality of the computed maximum
 smaller population. Counts or dictionary correctness are not supplied as advice.
 
-`JoinedDissection.run` assembles those producers with the existing actual
-bounded-batch consumer of generated opposite quarter matches. It receives the original source input,
-computes both count tables and their balance, generates only the selected smaller
-class, then `JoinedProbe.run` generates the opposite projected-quarter groups.
-An empty retained dictionary skips opposite generation entirely, as a proved
-consequence of matcher soundness. Otherwise nested occurrence folds evaluate
-each matching pair at original width and feed it directly to a bounded batch; no larger full-state class list or half-space
-counter is an executed intermediate. The final partial batch is matched, the
-class is released before the next outer
-counter round, and decodes the original-order output. `original_correct` proves
-exhaustive original-input misses and sound witnesses for arbitrary requested
-depths, including the frontend's physical-width/quarter-depth caps. `original_balance`
-identifies its returned balance with the existing computed source counter balance.
-Orientation recomputes the same generated counts per class; it does not use an
-assumed table lookup or cached class-size oracle. The reachable-state DP's
-$O^*(2^p)$ count preprocessing is not supplied by this quarter-join prepass.
+`JoinedDissection.run` receives the original input and computes the balance with
+actual counts in both directions. `ClassBalance.balanceCertificate` now streams
+class indices and reduces each count minimum into one scalar maximum. It builds
+no count table, reverses no table and runs no whole-table minimum/maximum callback.
+`balance_eq_prefix` identifies this loop with the existing semantic balance;
+`balancePrefix_le` and `balancePrefix_wire` derive its accumulator bound and
+half-word-count bit width at every prefix. Count callbacks and index generation
+remain charged. The separate table API is preserved, but is not executed by this
+solver's balance prepass. The source reachable-state DP's $O^*(2^p)$ count prepass
+remains unimplemented.
 
-`source_count_prefix_wire` bounds every count-table prefix by $2^p(12k+15)$ bits.
-`ClassBalance.retained_prefix_wire` bounds every generated retained prefix by
-$\mu(4m+2q+3)$ bits, and `simultaneous_wire` bounds the retained dictionary plus
-live opposite buffer by $2\mu(4m+2q+3)$ at every generated-record prefix, including
-prefix lengths beyond completion by saturation. The obsolete packed-counter-limit
-hypothesis was removed from the theorem and its client.
-Here $\mu$ is the actual computed balance, not a class expectation. The uniform
-`sourceCertificate` separately charges internal callback tapes, preparation,
-control, input copying, output and readback. The four-record-volume amortization
-of batch rereads is not substituted for bit time.
+For each class, actual counts select the smaller retained side. `materialize`
+also computes whether the nonempty retained class plus the four quarter
+populations can hold the opposite class. If so, `directSearch` generates that
+class and invokes the radix matcher once: no dictionary or growing buffer is
+passed through a per-pair feed. Otherwise `JoinedProbe.run` uses the approved
+bounded batches and final partial flush. Empty retained dictionaries still skip
+opposite generation by matcher soundness. Class release, original-order decoding,
+`original_correct` witness/miss semantics and `original_balance` are preserved.
+Orientation/branch selection use generated counts, not cached-size advice.
+
+`quarterBudget_source` bounds the four-population allowance by $11\cdot2^k$ for
+the actual source quarter cut, including all fourth-quarter residue cases.
+`direct_prefix_wire` bounds the retained dictionary plus every direct output
+prefix by $(2\mu+Q)(4m+2q+3)$ bits, where $Q$ is this computed quarter allowance.
+`sum_directRecordWork` bounds all directly matched dictionary/opposite input
+record volumes by the two half populations. These logical wire/record-volume
+bounds do not bound internal matcher/producer workspace or establish bit time.
+The fallback's `simultaneous_wire` still bounds dictionary plus live buffer by
+$2\mu(4m+2q+3)$ for every generated-record prefix. The separate table API retains
+`source_count_prefix_wire`; its table is not an accumulator of this solver.
+Here $\mu$ is the computed maximum, not an expectation.
+
+`allSearch_wire` derives packed output bit width from actual witness provenance.
+`preparation_readback_bounds` proves a common monotone polynomial in the physical
+original-input wire bounds the sum of time and the sum of every-prefix charged space of actual input
+preparation, half-array construction and the installed final decoder, evaluated on the real search result.
+No witness-size or decoder-execution conclusion is a premise. This covers these
+boundary phases only; it excludes balance/count callbacks and search. The uniform
+`sourceCertificate` includes all remaining internal tapes and composed costs.
 
 The actual count consumer has $O(I+(n+1)P(B))$ bit time and
 $O(I+P(B))$ charged peak space, where $I$ is the sorted record wire,
@@ -1632,8 +1645,9 @@ prefix-state and token maxima; the returned state is charged separately, without
 adding the entire loop clock to workspace. These prefix measures are derived,
 not supplied invariants. Scalar index/full-state callbacks receive isolated
 records/original input; side filters use the proved physical-width streaming
-filter. Retained dictionaries and growing buffers still occur in captured state
-and are copied per matching pair, so these sums do not yield the sharp time bound.
+filter. In the fallback, retained dictionaries and growing buffers still occur
+in captured state and are copied per matching pair. The direct branch avoids
+those feeds for fitting classes; this does not bound every fallback class.
 
 The all-class search uses the same fixed streaming kernel over an actually
 generated class-index list. The approved uniform index generator supplies its
@@ -1646,9 +1660,10 @@ released before the next and only a found pair surviving. Index generation,
 framing, setup and readback remain charged.
 
 This composes an actual global bit-clock/prefix-space profile, but does not prove
-the requested sharp source inequalities. Persistent retained/buffer tape reuse,
-count-table reversal/reduction, recomputed count preprocessing and readback still
-need sharper costs/normalization in the original source parameters. Logical
+the requested sharp source inequalities. Persistent retained/buffer tape reuse in the fallback, internal matcher/full-state
+callback profiles, repeated count/quarter generation and their global resource
+normalization still need work. The installed scalar prepass removes table
+reversal/reduction, and the preparation/readback boundary polynomial is proved. Logical
 occupancy or matching-pair totals do not remove those machine costs. The old
 complete solvers and their association-list/cubic-compaction costs are unchanged;
 the new direct multitape route bypasses that interpreter but retains the costs

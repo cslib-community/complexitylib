@@ -23,28 +23,35 @@ import all Complexity.Computability.GenericRAM.Native.Combinators
 # Original-input dissection with generated class retention
 
 Actual forward/backward quarter-query counts determine the retained side.
-Its generated full-state class feeds a nested opposite-quarter join consumer and
-bounded-batch matcher, then the fixed outer class counter releases it. The source
+Its generated full-state class feeds either one whole-class match (when computed
+counts give a quarter-plus-retained record allowance) or the bounded opposite-quarter
+consumer. The fixed outer class counter then releases it. The source
 frontend computes the cut, capped projection depth, first-operand seed and zero
 target. Count-only balance preprocessing and original witness readback are
 included in the uniform bit execution.
 
 This assembles the class producer with an executable search endpoint for
 [WangLvShenZhang2027], Lemma 8/Theorem 7, pp. 21–22. No opposite half-space scan
-or complete opposite-class list is executed. Quarter-list replay, captured-state
-copying and preprocessing/control retain their charged overhead. Logical retained/
-batch occupancy does not imply sharp
-internal TM workspace. Sharp global bit resources remain open.
+is executed. The direct branch avoids per-pair dictionary/buffer state; the
+streaming fallback retains its actual copy costs. Balance reduction uses one
+scalar. Preparation/readback have derived polynomial physical-input resource
+bounds. Logical list occupancy does not imply sharp internal TM workspace.
+Sharp global bit resources remain open.
 
 ## Main definitions
 
-* `search`, `allSearch`: generated retention, opposite-quarter consumption and class release.
+* `materialize`, `directSearch`, `search`: count-selected direct or streamed class matching.
+* `allSearch`: uniform all-class search and release.
 * `run`: original-input preprocessing, computed balance, search and witness readback.
 
 ## Main results
 
 * `original_correct`, `original_balance`: original witness/miss and exact computed balance.
-* `source_count_prefix_wire`, `simultaneous_wire`: physical logical-prefix storage bounds.
+* `direct_prefix_wire`, `simultaneous_wire`: direct/streamed physical logical-prefix storage.
+* `quarterBudget_source`: derived quarter allowance, including every residue.
+* `sum_directRecordWork`: single-match record volume, distinct from bit time.
+* `allSearch_wire`, `preparation_readback_bounds`: actual result size and boundary resource costs.
+* `halvesCertificate`, `readbackCertificate`: installed boundary machines.
 * `sum_pairVisits`: total generated pair visits are bounded by the two half populations.
 * `allSearch_eq_fold`: the fixed counter agrees with actual class-index streaming.
 * `sourceCertificate`: actual uniform bit execution, with captured-state copying costs retained.
@@ -74,9 +81,101 @@ def probeContext (input : ClassBalance.Input) (g : ℕ) : JoinedProbe.Context :=
   let (((_, right), _), capacity) := task
   ((input, !right), (BatchedAccess.parameters task, capacity))
 
-/-- Generated quarter matches feed bounded batches without an opposite half-space scan. -/
+/-- A physical quarter-scale record allowance, derived from the original arrays. -/
+def quarterBudget (input : ClassBalance.Input) : ℕ :=
+  let (_, ((first, second), (third, fourth))) := input
+  2 ^ first.length + 2 ^ second.length + 2 ^ third.length + 2 ^ fourth.length
+
+/-- The concrete source cut contributes at most eleven quarter populations, including
+all fourth-quarter residue cases. The capped projection depth is not a memory advice input. -/
+theorem quarterBudget_source {m : ℕ} (p : ℕ) (s : BitVec m) (tail : List (BitVec m)) :
+    quarterBudget (Source.prepare (Source.ofWords p s tail)) ≤ 11 * 2 ^ (tail.length / 4) := by
+  rw [Source.prepare_ofWords]
+  have lengths := Source.quarters_lengths tail
+  dsimp only at lengths
+  simp only [quarterBudget, ProgramGeneration.originalSource, BitInput.words, List.length_map,
+    lengths.1, lengths.2.1, lengths.2.2.1, lengths.2.2.2]
+  have residue : tail.length - 3 * (tail.length / 4) ≤ tail.length / 4 + 3 := by omega
+  have power := Nat.pow_le_pow_right (by decide : 1 ≤ 2) residue
+  rw [pow_add] at power
+  norm_num at power
+  omega
+
+/-- Actual counts permit a single match when the opposite class fits quarter-plus-retained space.
+An empty retained class uses the existing proved generation skip. -/
+def materialize (input : ClassBalance.Input) (g : ℕ) : Bool :=
+  let right := ClassBalance.retainRight input g
+  decide (0 < ClassBalance.count input right g ∧
+    ClassBalance.count input (!right) g ≤ ClassBalance.count input right g + quarterBudget input)
+
+/-- Full opposite-class generation followed by one radix match; no per-pair dictionary/buffer
+state is threaded through this branch. The count test bounds its materialized list. -/
+def directSearch (input : ClassBalance.Input) (g : ℕ) : Option (ℕ × ℕ) :=
+  let task := probeTask input g
+  BatchedAccess.matchBatch (BatchedAccess.parameters task)
+    (ClassBalance.records input (!(ClassBalance.retainRight input g)) g)
+
+/-- Use one match when computed populations permit it, otherwise the bounded streaming route. -/
 def search (input : ClassBalance.Input) (g : ℕ) : Option (ℕ × ℕ) :=
-  JoinedProbe.run (probeContext input g) g
+  if materialize input g then directSearch input g else JoinedProbe.run (probeContext input g) g
+
+/-- Logical output prefix of the directly materialized opposite class, empty in the
+streaming branch. The actual producer's internal temporaries are charged separately. -/
+def directPrefix (input : ClassBalance.Input) (g n : ℕ) : List (ℕ × ℕ) :=
+  if materialize input g then
+    (ClassBalance.records input (!(ClassBalance.retainRight input g)) g).take n else []
+
+/-- Matching input record volume of the single-match branch; zero when it is not selected. -/
+def directRecordWork (input : ClassBalance.Input) (g : ℕ) : ℕ :=
+  if materialize input g then (ClassBalance.retain input g).length +
+    ClassBalance.count input (!(ClassBalance.retainRight input g)) g else 0
+
+/-- Every direct-generation prefix fits the computed retained balance plus the actual
+quarter allowance. No desired class-memory bound is supplied as a premise. -/
+theorem direct_prefix_records (input : ClassBalance.Input) (g n : ℕ)
+    (hg : g < 2 ^ ClassBalance.depth input) :
+    (ClassBalance.retain input g).length + (directPrefix input g n).length ≤
+      2 * ClassBalance.balance input + quarterBudget input := by
+  have hk := ClassBalance.class_le_balance input g hg
+  by_cases h : materialize input g = true
+  · have test := of_decide_eq_true h
+    change 0 < ClassBalance.count input (ClassBalance.retainRight input g) g ∧
+      ClassBalance.count input (!(ClassBalance.retainRight input g)) g ≤
+        ClassBalance.count input (ClassBalance.retainRight input g) g + quarterBudget input at test
+    have hl : ((ClassBalance.records input (!(ClassBalance.retainRight input g)) g).take n).length ≤
+        ClassBalance.count input (!(ClassBalance.retainRight input g)) g := by
+      rw [List.length_take, ClassBalance.records_length]
+      exact Nat.min_le_right _ _
+    simp only [directPrefix, h, ite_true]
+    rw [ClassBalance.retain, ClassBalance.records_length] at hk ⊢
+    omega
+  · simp only [directPrefix, h, Bool.false_eq_true, ite_false, List.length_nil, Nat.add_zero]
+    omega
+
+private theorem search_none_records (input : ClassBalance.Input) (g : ℕ)
+    (fits : let (((width, _), _), _) := input
+      ∀ r ∈ ClassBalance.retain input g ++
+        ClassBalance.records input (!(ClassBalance.retainRight input g)) g, r.1 < 2 ^ width) :
+    search input g = none ↔ ¬ BatchedAccess.Meets (ClassBalance.retain input g)
+      (ClassBalance.records input (!(ClassBalance.retainRight input g)) g) := by
+  let parameter := BatchedAccess.parameters (probeTask input g)
+  let rows := ClassBalance.records input (!(ClassBalance.retainRight input g)) g
+  have hd := BatchedAccess.match_none parameter rows fits
+  have hs := JoinedProbe.run_none (probeContext input g) g fits
+  rw [search]
+  split
+  · exact hd
+  · exact hs
+
+private theorem search_sound_records (input : ClassBalance.Input) (g : ℕ) (out : ℕ × ℕ)
+    (hit : search input g = some out) :
+    ∃ a ∈ ClassBalance.retain input g,
+      ∃ b ∈ ClassBalance.records input (!(ClassBalance.retainRight input g)) g,
+        a.1 = b.1 ∧ out = if ClassBalance.retainRight input g then (b.2, a.2) else (a.2, b.2) := by
+  rw [search] at hit
+  split at hit
+  · exact BatchedAccess.match_sound (BatchedAccess.parameters (probeTask input g)) _ out hit
+  · exact JoinedProbe.run_sound (probeContext input g) g out hit
 
 private theorem halves_original {m p : ℕ} (as bs cs ds : List (BitVec m)) (s : BitVec m) :
     halves (ProgramGeneration.originalSource p as bs cs ds s 0) =
@@ -132,11 +231,8 @@ theorem search_none {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
     let input := ProgramGeneration.originalSource p as bs cs ds s 0
     search input g.toNat = none ↔ ClassStreaming.search (classInput input g.toNat) = none := by
   dsimp only
-  rw [search]
-  have hm := JoinedProbe.run_none
-    (probeContext (ProgramGeneration.originalSource p as bs cs ds s 0) g.toNat) g.toNat
+  have hm := search_none_records (ProgramGeneration.originalSource p as bs cs ds s 0) g.toNat
     (probe_fits hp as bs cs ds s g)
-  dsimp only [probeContext, probeTask, BatchedAccess.parameters] at hm ⊢
   rw [hm, ClassStreaming.search_none]
   have hkept (r : ℕ × ℕ) := kept_mem hp as bs cs ds s g r
   have hproduced (right : Bool) (r : ℕ × ℕ) := produced_mem hp as bs cs ds s g right r
@@ -159,9 +255,8 @@ theorem search_sound {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
     ∃ a ∈ ClassStreaming.records input false (ClassStreaming.limit input false),
       ∃ b ∈ ClassStreaming.records input true (ClassStreaming.limit input true),
         a.1 = b.1 ∧ out = (a.2, b.2) := by
-  have h := JoinedProbe.run_sound
-    (probeContext (ProgramGeneration.originalSource p as bs cs ds s 0) g.toNat) g.toNat out hit
-  dsimp only [probeContext, probeTask, BatchedAccess.parameters] at h
+  have h := search_sound_records (ProgramGeneration.originalSource p as bs cs ds s 0) g.toNat
+    out hit
   obtain ⟨a, ha, b, hb, hk, ho⟩ := h
   have hkept := kept_mem hp as bs cs ds s g a
   have hproduced := produced_mem hp as bs cs ds s g
@@ -196,6 +291,22 @@ private theorem counter_sum (source : SortedMeet.Input) (p : ℕ) (right : Bool)
   have h := Multiset.sum_count_eq_card (s := Finset.univ) (m := keys) (fun _ _ => Finset.mem_univ _)
   simpa only [keys, Multiset.coe_card, List.length_map, List.length_range] using h
 
+private theorem sum_counts {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) (right : Bool) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    (∑ g : BitVec p, ClassBalance.count input right g.toNat) =
+      2 ^ (if right then cs.length + ds.length else as.length + bs.length) := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  have h := counter_sum ((m, s.toNat),
+    ((as ++ bs).map BitVec.toNat, (cs ++ ds).map BitVec.toNat)) p right
+  have hc (g : BitVec p) := ClassBalance.count_eq_counter hp as bs cs ds s right g
+  dsimp only at hc
+  dsimp only [input]
+  simp_rw [hc]
+  rw [h]
+  cases right <;>
+    simp [ClassStreaming.limit, ClassStreaming.sideInput, SortedMeet.inverseInput, Nat.add_comm]
+
 /-- Across all classes, the generated opposite traversal has at most the two actual half-space
 populations in total. This removes the repeated half scans; copying/bit costs remain separate. -/
 theorem sum_pairVisits {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m) :
@@ -203,18 +314,7 @@ theorem sum_pairVisits {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)
     (∑ g : BitVec p, pairVisits input g.toNat) ≤
       2 ^ (as.length + bs.length) + 2 ^ (cs.length + ds.length) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
-  have counts (right : Bool) :
-      (∑ g : BitVec p, ClassBalance.count input right g.toNat) =
-        2 ^ (if right then cs.length+ds.length else as.length+bs.length) := by
-    have h := counter_sum ((m, s.toNat),
-      ((as ++ bs).map BitVec.toNat, (cs ++ ds).map BitVec.toNat)) p right
-    have hc (g : BitVec p) := ClassBalance.count_eq_counter hp as bs cs ds s right g
-    dsimp only at hc
-    dsimp only [input]
-    simp_rw [hc]
-    rw [h]
-    cases right <;>
-      simp [ClassStreaming.limit, ClassStreaming.sideInput, SortedMeet.inverseInput, Nat.add_comm]
+  have counts := sum_counts hp as bs cs ds s
   have bound (g : BitVec p) : pairVisits input g.toNat ≤
       ClassBalance.count input false g.toNat + ClassBalance.count input true g.toNat := by
     have hv := JoinedProbe.visits_le_count (probeContext input g.toNat) g.toNat
@@ -223,6 +323,28 @@ theorem sum_pairVisits {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)
       simp only [h, Bool.not_true, Bool.not_false] at hv <;> omega
   have h := Finset.sum_le_sum (fun g (_ : g ∈ Finset.univ) => bound g)
   rw [Finset.sum_add_distrib, counts false, counts true] at h
+  exact h
+
+/-- All directly matched record volumes together are bounded by the actual two half
+populations. This charges dictionary reads once per selected class, not once per pair;
+it is record volume, not a bit-time or internal-space theorem. -/
+theorem sum_directRecordWork {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    (∑ g : BitVec p, directRecordWork input g.toNat) ≤
+      2 ^ (as.length + bs.length) + 2 ^ (cs.length + ds.length) := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  have bound (g : BitVec p) : directRecordWork input g.toNat ≤
+      ClassBalance.count input false g.toNat + ClassBalance.count input true g.toNat := by
+    dsimp only [directRecordWork]
+    split
+    · rw [ClassBalance.retain, ClassBalance.records_length]
+      cases ClassBalance.retainRight input g.toNat <;>
+        simp [Bool.not_true, Bool.not_false, Nat.add_comm]
+    · exact Nat.zero_le _
+  have h := Finset.sum_le_sum (fun g (_ : g ∈ Finset.univ) => bound g)
+  rw [Finset.sum_add_distrib, sum_counts hp as bs cs ds s false,
+    sum_counts hp as bs cs ds s true] at h
   exact h
 
 /-- Each class releases its retained dictionary and live batch; only a found pair survives. -/
@@ -281,6 +403,35 @@ private theorem all_sound (input : ClassBalance.Input) (out : ℕ × ℕ)
         exact ⟨g, by omega, hs⟩
       · exact ⟨n, by omega, fresh⟩
   exact h _ hit
+
+/-- Returned packed payloads have original half-word width. This derives physical readback
+input size from actual search provenance, including the empty/miss result. -/
+theorem allSearch_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    let q := as.length + bs.length + cs.length + ds.length
+    (encOption (encPair encNat encNat) (allSearch input)).length ≤ 3 * q + 2 := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  let q := as.length + bs.length + cs.length + ds.length
+  change (encOption (encPair encNat encNat) (allSearch input)).length ≤ 3 * q + 2
+  cases h : allSearch input with
+  | none => simp
+  | some out =>
+    obtain ⟨g, hg, hit⟩ := all_sound input out h
+    obtain ⟨a, ha, b, hb, _, ho⟩ := search_sound_records input g out hit
+    have hg' : g < 2 ^ p := hg
+    have size (right : Bool) (r : ℕ × ℕ) (hr : r ∈ ClassBalance.records input right g) :
+        (encNat r.2).length ≤ q := by
+      have fits := (ClassBalance.records_fit hp as bs cs ds s 0 right (BitVec.ofNat p g) r)
+      simp only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hg'] at fits
+      have hw := (Nat.size_le.mpr (fits hr).2)
+      have hl : (if right then cs.length + ds.length else as.length + bs.length) ≤ q := by
+        split <;> dsimp only [q] <;> omega
+      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using hw.trans hl
+    have ha' : a ∈ ClassBalance.records input (ClassBalance.retainRight input g) g := ha
+    have sa := size _ a ha'
+    have sb := size _ b hb
+    simp only [encOption_some, List.length_cons, ho]
+    split <;> simp only [length_encPair] <;> omega
 
 /-- Read back original-order prefix and reversed-suffix payloads. -/
 def solve (input : ClassBalance.Input) : Option (List Bool) :=
@@ -395,7 +546,7 @@ theorem source_count_prefix_wire {m : ℕ} (p : ℕ) (s : BitVec m)
     omega
   exact h.trans (Nat.mul_le_mul hn coeff)
 
-/-- Actual live batch after a prefix of generated opposite-class matches. -/
+/-- Actual streaming-fallback batch after a prefix of generated opposite-class matches. -/
 def buffer (input : ClassBalance.Input) (g n : ℕ) : List (ℕ × ℕ) :=
   JoinedProbe.buffer (probeContext input g) g n
 
@@ -414,8 +565,8 @@ theorem buffer_bound (input : ClassBalance.Input) (g n : ℕ)
   have hl := ClassBalance.class_le_balance input g hg
   omega
 
-/-- Retained dictionary and live opposite buffer coexist within twice the actual computed
-balance in record count, at every logical probing prefix. Other tapes remain separately charged. -/
+/-- In the streaming branch, dictionary and live buffer coexist within twice the computed
+balance in record count at every logical probing prefix. Other tapes remain separately charged. -/
 theorem simultaneous_records (input : ClassBalance.Input) (g n : ℕ)
     (hg : g < 2 ^ ClassBalance.depth input) :
     (ClassBalance.retain input g).length + (buffer input g n).length ≤
@@ -425,7 +576,7 @@ theorem simultaneous_records (input : ClassBalance.Input) (g n : ℕ)
   omega
 
 /-- Every simultaneously retained/live buffered record has its derived full-state/payload
-width. This bounds physical dictionary/buffer encodings at every executed logical prefix;
+width. This bounds physical dictionary/buffer encodings at every streaming-branch logical prefix;
 internal bit-machine callback tapes remain separately charged by the actual certificate. -/
 theorem simultaneous_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
     (s : BitVec m) (g : BitVec p) (n : ℕ) :
@@ -465,6 +616,34 @@ theorem simultaneous_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec
   have hbuffer' : (encList (encPair encNat encNat) (buffer input g.toNat n)).length ≤
       ClassBalance.balance input * (4 * m + 2 * q + 3) := hbuffer.trans_eq (by ring)
   exact (Nat.add_le_add hkept hbuffer').trans_eq (by ring)
+
+/-- Actual direct-branch dictionary/opposite prefix encodings fit quarter-plus-balance
+record space at every logical output prefix. Matcher/producer internal tapes remain separate. -/
+theorem direct_prefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) (g : BitVec p) (n : ℕ) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    let q := as.length + bs.length + cs.length + ds.length
+    (encList (encPair encNat encNat) (ClassBalance.retain input g.toNat)).length +
+      (encList (encPair encNat encNat) (directPrefix input g.toNat n)).length ≤
+        (2 * ClassBalance.balance input + quarterBudget input) * (4 * m + 2 * q + 3) := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  let right := ClassBalance.retainRight input g.toNat
+  let q := as.length + bs.length + cs.length + ds.length
+  have kept := ClassBalance.records_prefix_wire hp as bs cs ds s right g
+    (ClassBalance.retain input g.toNat).length
+  dsimp only [right] at kept
+  rw [← ClassBalance.retain] at kept
+  rw [List.take_length] at kept
+  have opposite : (encList (encPair encNat encNat) (directPrefix input g.toNat n)).length ≤
+      (directPrefix input g.toNat n).length * (4 * m + 2 * q + 3) := by
+    by_cases h : materialize input g.toNat = true
+    · simpa only [directPrefix, h, ite_true] using
+        ClassBalance.records_prefix_wire hp as bs cs ds s (!right) g n
+    · simp [directPrefix, h]
+  have records := direct_prefix_records input g.toNat n g.isLt
+  have joined := Nat.add_le_add kept opposite
+  rw [← Nat.add_mul] at joined
+  exact joined.trans (Nat.mul_le_mul_right _ records)
 
 /-- The generated retained population also pays the batch reread volume, including the final
 partial batch. This is a record-volume charge, not a bit-time or auxiliary-space theorem. -/
@@ -510,8 +689,8 @@ private theorem classInput_polyTime : ComputableInPolyTime
 
 /-- Actual smaller-class generation and nested generated-match probing. All quarter/list
 replay, captured-state copying and batch matching costs remain in the bit profile. -/
-noncomputable def searchCertificate : NativeCertificate
-    (fun q : ClassBalance.Input × ℕ => search q.1 q.2)
+private noncomputable def streamSearchCertificate : NativeCertificate
+    (fun q : ClassBalance.Input × ℕ => JoinedProbe.run (probeContext q.1 q.2) q.2)
     (encPair ClassBalance.encoding encNat) (encOption (encPair encNat encNat)) := by
   let original : NativeCertificate (id : ClassBalance.Input × ℕ → _)
       classEncoding classEncoding := .linear (.of_eq (fun _ => rfl))
@@ -534,6 +713,82 @@ noncomputable def searchCertificate : NativeCertificate
   let prepared := context.comp packed
   exact NativeCertificate.congr (JoinedProbe.runCertificate.comp
     (prepared.prod original.snd)) (fun _ => rfl)
+
+private theorem quarterBudget_polyTime : ComputableInPolyTime quarterBudget
+    ClassBalance.encoding encNat := by
+  have a : ComputableInPolyTime (fun x : ClassBalance.Input => x.2.1.1.length)
+      ClassBalance.encoding encUnary := by dsimp only [ClassBalance.encoding,
+        ProgramGeneration.sourceEncoding]; fun_prop
+  have b : ComputableInPolyTime (fun x : ClassBalance.Input => x.2.1.2.length)
+      ClassBalance.encoding encUnary := by dsimp only [ClassBalance.encoding,
+        ProgramGeneration.sourceEncoding]; fun_prop
+  have c : ComputableInPolyTime (fun x : ClassBalance.Input => x.2.2.1.length)
+      ClassBalance.encoding encUnary := by dsimp only [ClassBalance.encoding,
+        ProgramGeneration.sourceEncoding]; fun_prop
+  have d : ComputableInPolyTime (fun x : ClassBalance.Input => x.2.2.2.length)
+      ClassBalance.encoding encUnary := by dsimp only [ClassBalance.encoding,
+        ProgramGeneration.sourceEncoding]; fun_prop
+  have aa := ComputableInPolyTime.binary_pow' (ComputableInPolyTime.const 2) a
+  have bb := ComputableInPolyTime.binary_pow' (ComputableInPolyTime.const 2) b
+  have cc := ComputableInPolyTime.binary_pow' (ComputableInPolyTime.const 2) c
+  have dd := ComputableInPolyTime.binary_pow' (ComputableInPolyTime.const 2) d
+  have add : ComputableInPolyTime (fun q : ℕ × ℕ => q.1 + q.2) recEncoding encNat := by
+    fun_prop
+  exact (add.comp ((add.comp ((add.comp (aa.prod bb)).prod cc)).prod dd)).of_enc_eq
+    (fun _ => rfl)
+
+private noncomputable def materializeCertificate : NativeCertificate
+    (fun q : ClassBalance.Input × ℕ => materialize q.1 q.2) classEncoding encBool := by
+  let original : NativeCertificate (id : ClassBalance.Input × ℕ → _) classEncoding classEncoding :=
+    .linear (.of_eq (fun _ => rfl))
+  let right := ClassBalance.orientationCertificate
+  let selected := (original.fst.prod right).prod original.snd
+  let small := ClassBalance.countCertificate.comp selected
+  have neg : ComputableInPolyTime Bool.not encBool encBool := by fun_prop
+  let opposite := (original.fst.prod ((NativeCertificate.ofPolyTime neg).comp right)).prod
+    original.snd
+  let large := ClassBalance.countCertificate.comp opposite
+  let budget := (NativeCertificate.ofPolyTime quarterBudget_polyTime).comp original.fst
+  have test : ComputableInPolyTime
+      (fun q : (ℕ × ℕ) × ℕ => decide (0 < q.1.1 ∧ q.1.2 ≤ q.1.1 + q.2))
+      (encPair recEncoding encNat) encBool := by
+    have positive : ComputableInPolyTime (fun q : (ℕ × ℕ) × ℕ => decide (0 < q.1.1))
+        (encPair recEncoding encNat) encBool := by
+      apply ComputableInPolyTime.of_tidy
+      apply ComputableTidilyInPolyTime.binary_lt' <;> fun_prop
+    have bounded : ComputableInPolyTime
+        (fun q : (ℕ × ℕ) × ℕ => decide (q.1.2 ≤ q.1.1 + q.2))
+        (encPair recEncoding encNat) encBool := by
+      apply ComputableInPolyTime.of_tidy
+      apply ComputableTidilyInPolyTime.binary_le' <;> fun_prop
+    exact ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.bool_and).comp
+      (positive.prod bounded)).of_enc_eq (fun q => by simp)
+  exact NativeCertificate.congr ((NativeCertificate.ofPolyTime test).comp
+    ((small.prod large).prod budget)) (fun _ => rfl)
+
+private noncomputable def directSearchCertificate : NativeCertificate
+    (fun q : ClassBalance.Input × ℕ => directSearch q.1 q.2) classEncoding
+    (encOption recEncoding) := by
+  let original : NativeCertificate (id : ClassBalance.Input × ℕ → _) classEncoding classEncoding :=
+    .linear (.of_eq (fun _ => rfl))
+  let right := ClassBalance.orientationCertificate
+  let kept := ClassBalance.retainCertificate
+  let parameter := original.fst.fst.fst.fst.prod (right.prod kept)
+  have neg : ComputableInPolyTime Bool.not encBool encBool := by fun_prop
+  let opposite := (original.fst.prod ((NativeCertificate.ofPolyTime neg).comp right)).prod
+    original.snd
+  let generated := ClassBalance.recordsCertificate.comp opposite
+  exact NativeCertificate.congr (BatchedAccess.matchCertificate.comp
+    (parameter.prod generated)) (fun _ => rfl)
+
+/-- One count-selected uniform machine uses a single match for a class that fits the
+quarter-plus-retained allowance, and the approved bounded streaming machine otherwise.
+All count, materialization, matching, copy and callback temporaries remain charged. -/
+noncomputable def searchCertificate : NativeCertificate
+    (fun q : ClassBalance.Input × ℕ => search q.1 q.2)
+    (encPair ClassBalance.encoding encNat) (encOption (encPair encNat encNat)) :=
+  NativeCertificate.congr (NativeCertificate.branch materializeCertificate
+    directSearchCertificate streamSearchCertificate) (fun _ => rfl)
 
 private noncomputable def allStepCertificate : NativeCertificate
     (fun q : ClassBalance.Input × (ℕ × Option (ℕ × ℕ)) => allStep q.1 q.2)
@@ -579,13 +834,89 @@ noncomputable def allCertificate : NativeCertificate allSearch ClassBalance.enco
     simp only [Function.comp_def, id_eq, SortedQuarterMachine.indices_eq_range]
     exact (allSearch_eq_fold source).symm)
 
+/-- Actual construction of the original halves for decoding; all array copying is charged. -/
+noncomputable def halvesCertificate : NativeCertificate halves ClassBalance.encoding
+    SortedMeet.encoding := .ofPolyTime halves_polyTime
+
+/-- The actual packed-witness decoder used by the assembled source solver. -/
+noncomputable def readbackCertificate : NativeCertificate
+    (fun q : SortedMeet.Input × Option (ℕ × ℕ) => q.2.map (SortedMeet.decodeWitness q.1))
+    (encPair SortedMeet.encoding (encOption (encPair encNat encNat))) (encOption encBits) :=
+  .ofPolyTime SortedMeet.readback_polyTime
+
+/-- Preparation, half-array construction and final decoding cost only a polynomial
+in the physical original input
+encoding. The decoder is evaluated on the actual searched witness; no witness-size premise
+is supplied. These bounds do not include the search or balance prepass. -/
+theorem preparation_readback_bounds : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
+    ∀ (m p : ℕ) (s : BitVec m) (tail : List (BitVec m)),
+      let original := Source.ofWords p s tail
+      let prepared := Source.prepare original
+      let result := allSearch prepared
+      let input := (halves prepared, result)
+      let size := (Source.encoding original).length
+      Source.prepareCertificate.time original + halvesCertificate.time prepared +
+        readbackCertificate.time input ≤ P size ∧
+      Source.prepareCertificate.space original + halvesCertificate.space prepared +
+        readbackCertificate.space input ≤ P size := by
+  have halfPoly : halvesCertificate.IsPolynomial :=
+    NativeCertificate.ofPolyTime_isPolynomial halves_polyTime
+  have prepPoly : Source.prepareCertificate.IsPolynomial :=
+    NativeCertificate.ofPolyTime_isPolynomial Source.prepare_polyTime
+  have combined := halvesCertificate.comp_isPolynomial Source.prepareCertificate halfPoly prepPoly
+  obtain ⟨A, hA, monoA, boundA⟩ := exists_mono_poly (combined.1.add combined.2)
+  obtain ⟨B, hB, monoB, boundB⟩ := exists_mono_poly
+    (halves_polyTime.comp Source.prepare_polyTime).polyBounded_length
+  obtain ⟨D, hD, monoD, boundD⟩ := exists_mono_poly_cert SortedMeet.readback_polyTime
+  let P := fun n => A n + D (2 * B n + 3 * n + 3)
+  refine ⟨P, by dsimp only [P]; fun_prop, ?_, ?_⟩
+  · intro x y hxy
+    exact Nat.add_le_add (monoA hxy) (monoD (by have := monoB hxy; omega))
+  · intro m p s tail
+    let original := Source.ofWords p s tail
+    let prepared := Source.prepare original
+    let size := (Source.encoding original).length
+    have hp : min p (min m (tail.length / 4)) ≤ m :=
+      (Nat.min_le_right _ _).trans (Nat.min_le_left _ _)
+    have hw := allSearch_wire hp (Source.quarters tail).1.1 (Source.quarters tail).1.2
+      (Source.quarters tail).2.1 (Source.quarters tail).2.2 s
+    have cut := congrArg List.length (Source.quarters_append tail)
+    simp only [List.length_append] at cut
+    rw [← Source.prepare_ofWords] at hw
+    have tailSize : tail.length ≤ size := by
+      have hl := length_le_length_encList (enc := encNat) ((s :: tail).map BitVec.toNat)
+      simp only [List.length_map, List.length_cons] at hl
+      dsimp only [size, original, Source.ofWords, Source.encoding]
+      simp only [length_encPair]
+      omega
+    have witnessSize : (encOption (encPair encNat encNat) (allSearch prepared)).length ≤
+        3 * size + 2 := by dsimp only [prepared, original]; omega
+    have halfSize : (SortedMeet.encoding (halves prepared)).length ≤ B size := boundB original
+    have inputSize : (encPair SortedMeet.encoding (encOption (encPair encNat encNat))
+        (halves prepared, allSearch prepared)).length ≤ 2 * B size + 3 * size + 3 := by
+      simp only [length_encPair]
+      omega
+    have decoded := boundD (halves prepared, allSearch prepared)
+    have da := (decoded.1.trans (monoD inputSize))
+    have db := (decoded.2.trans (monoD inputSize))
+    have before := boundA original
+    change (Source.prepareCertificate.time original + halvesCertificate.time prepared) +
+      (Source.prepareCertificate.space original + halvesCertificate.space prepared) ≤
+        A size at before
+    have aa : Source.prepareCertificate.time original + halvesCertificate.time prepared ≤
+        A size :=
+      (Nat.le_add_right _ _).trans before
+    have ab : Source.prepareCertificate.space original + halvesCertificate.space prepared ≤
+        A size :=
+      (Nat.le_add_left _ _).trans before
+    exact ⟨Nat.add_le_add aa da, Nat.add_le_add ab db⟩
+
 private noncomputable def solveCertificate : NativeCertificate solve ClassBalance.encoding
     (encOption encBits) := by
   let original : NativeCertificate (id : ClassBalance.Input → _)
       ClassBalance.encoding ClassBalance.encoding := .linear (.of_eq (fun _ => rfl))
-  let half := (NativeCertificate.ofPolyTime halves_polyTime)
-  let readback := NativeCertificate.ofPolyTime SortedMeet.readback_polyTime
-  exact NativeCertificate.congr (readback.comp (half.prod allCertificate)) (fun _ => rfl)
+  exact NativeCertificate.congr (readbackCertificate.comp
+    (halvesCertificate.prod allCertificate)) (fun _ => rfl)
 
 /-- One uniform original-input bit execution computes both counts/balance, generated smaller
 classes, generated opposite streams, outer control and decoded output. Charged profiles include
@@ -593,6 +924,6 @@ captured-state copying, preprocessing and control. Sharp global resources remain
 noncomputable def sourceCertificate : NativeCertificate run Source.encoding
     (encPair encNat (encOption encBits)) :=
   NativeCertificate.congr ((ClassBalance.balanceCertificate.prod solveCertificate).comp
-    (NativeCertificate.ofPolyTime Source.prepare_polyTime)) (fun _ => rfl)
+    Source.prepareCertificate) (fun _ => rfl)
 
 end Cslib.Cryptanalysis.AddXNOR.JoinedDissection

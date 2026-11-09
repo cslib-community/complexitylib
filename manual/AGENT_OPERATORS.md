@@ -203,14 +203,24 @@ runs, current group, callback tapes and materialized class output; the selected
 join volume is derived from quarter sizes and computed balance. These phase
 bounds do not establish the whole solver bound. `JoinedProbe` now consumes actual
 opposite quarter groups with nested occurrence folds and immediate full-state
-batch feeds, avoiding a materialized larger class or per-class half-space scan.
+batch feeds, avoiding per-class half-space scans. The solver now selects a direct
+whole-class match when computed counts bound its larger list by retained size
+plus a quarter allowance; it does not materialize an arbitrary larger class.
 Empty retained dictionaries skip opposite generation by matcher soundness. Its
 certificate uses the encoded streaming kernel with actual finite-prefix maxima,
 not supplied completion/resource assumptions. `sum_pairVisits` bounds total
 matching-pair visits by the two half populations; it is not a bit-time theorem.
 Use the new complete online consumer client alongside the original-input client.
 
-Keep its resource limits visible: count-table and retained/live-buffer prefix
+The actual solver balance prepass now streams one scalar maximum of computed
+count minima; no count table/reversal/reduction is executed. Its derived prefix
+bit width and equality with the table-defined balance are checked. The direct
+branch removes per-pair dictionary/buffer copies for fitting classes and has a
+quarter-plus-balance logical prefix wire bound. The source allowance is at most
+`11*2^k`. Preparation, half-array construction and final decoding have proved polynomial physical-input
+resource bounds on the actual searched output. These are boundary phases only.
+
+Keep its resource limits visible: separate count-table and retained/live-buffer prefix
 encodings have derived bounds, but actual machine profiles also charge
 repeated quarter/count generation and captured dictionary/buffer copies. Each
 consumer list is read once; time sums actual rounds, while space takes actual
@@ -218,8 +228,8 @@ callback/prefix-state/token maxima and separately charges returned state. The
 all-class search uses that same fixed kernel with actually generated index data,
 whose `2^p(2p+1)` wire is quarter scale at the capped source depth. Class work is
 summed and only a found pair survives a released class. The remaining bound
-normalization must still charge persistent-state copying, table preprocessing
-and readback. Orientation recomputes counts; no cached-size oracle is input.
+normalization must still charge fallback persistent-state copying, count/quarter
+callbacks and matcher temporaries. Orientation recomputes counts; no cached-size oracle is input.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
 sharp source TM bounds. Persistent tape reuse and sharp global inequalities
 remain required. The old solvers and

@@ -104,3 +104,16 @@ example := ClassBalance.retained_join_volume (Source.prepare backwardSmallerFixt
   (by decide +kernel)
 example := ClassBalance.retained_join_volume (Source.prepare backwardEmptyFixture) 1
   (by decide +kernel)
+
+-- The installed balance prepass streams both counts into one scalar, without a table.
+example : (List.range 5).map
+    (ClassBalance.balancePrefix (Source.prepare backwardSmallerFixture)) = [0, 6, 6, 6, 6] := by
+  decide +kernel
+example (input : ClassBalance.Input) := ClassBalance.balance_eq_prefix input
+example (input : ClassBalance.Input) (n : ℕ) (hn : n ≤ 2 ^ ClassBalance.depth input) :=
+  ClassBalance.balancePrefix_le input n hn
+example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m)
+    (n : ℕ) (hn : n ≤ 2 ^ p) := ClassBalance.balancePrefix_wire hp as bs cs ds s n hn
+example {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m)) (s : BitVec m)
+    (right : Bool) (g : BitVec p) (j : ℕ) :=
+  ClassBalance.records_prefix_wire hp as bs cs ds s right g j

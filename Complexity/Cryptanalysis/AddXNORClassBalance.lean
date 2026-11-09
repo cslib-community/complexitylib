@@ -9,6 +9,7 @@ module
 
 public import Complexity.Cryptanalysis.AddXNORClassJoin
 public import Complexity.Cryptanalysis.AddXNORClassStreaming
+public import Complexity.Computability.GenericRAM.Native.StreamingFold
 import all Complexity.Cryptanalysis.AddXNORClassJoin
 import all Complexity.Cryptanalysis.AddXNORClassStreaming
 import all Complexity.Cryptanalysis.AddXNORSortedMeet
@@ -28,7 +29,8 @@ projected class keys. Full-state records are reflected back before matching;
 payloads encode the entire half word, retaining leading zero operators.
 
 The computed populations determine orientation and the retained list. A count-only
-outer counter computes their maximum smaller population before retention. Actual
+streaming loop reduces their minimum into one scalar maximum before retention,
+without constructing/reversing the semantic table. Actual
 bit-machine certificates charge generation, grouping, consumer temporaries and
 outer-state copying. Retained encoding bounds do not assert sharp auxiliary TM
 workspace. The retained join now has output-sensitive bit bounds; opposite-side
@@ -39,13 +41,14 @@ for [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
 
 * `count`, `records`: generated counts and full-state classes in both directions.
 * `retainRight`, `retain`: computed orientation and one selected retained class.
-* `balance`: maximum of the computed smaller populations.
+* `balance`, `balancePrefix`: computed maximum and the actual scalar prepass prefixes.
 
 ## Main results
 
 * `original_records`: exhaustive original half-word semantics in both directions.
 * `count_eq_counter`, `balance_eq_counter`: exact agreement with original-half counters.
-* `retained_prefix_wire`, `table_prefix_wire`: derived physical prefix encoding bounds.
+* `records_prefix_wire`, `retained_prefix_wire`, `table_prefix_wire`: physical prefix wires.
+* `balance_eq_prefix`, `balancePrefix_le`, `balancePrefix_wire`: scalar prepass correctness/width.
 * `retained_join_volume`: streamed selected-class join cost uses the computed balance.
 * `retainCertificate`, `balanceCertificate`: actual generated retention and count-only prepass.
 -/
@@ -148,6 +151,18 @@ theorem table_eq (input : Input) : table input =
 
 /-- Compute the maximum smaller population from the actual count-only prepass. -/
 def balance (input : Input) : ℕ := listMax (fun counts => min counts.1 counts.2) (table input)
+
+/-- The scalar maximum after the first `n` computed classes; no table is in this state. -/
+def balancePrefix (input : Input) (n : ℕ) : ℕ :=
+  (List.range n).foldl (fun current g => max current
+    (min (count input false g) (count input true g))) 0
+
+/-- The streamed scalar prepass computes exactly the existing table-defined balance. -/
+theorem balance_eq_prefix (input : Input) :
+    balance input = balancePrefix input (2 ^ depth input) := by
+  rw [balance, table_eq]
+  simp only [listMax, List.map_map, Function.comp_def, balancePrefix,
+    ← List.foldl_map, List.foldl_eq_foldr]
 
 /-- Every computed retained size is bounded by the computed global maximum. -/
 theorem class_le_balance (input : Input) (g : ℕ) (hg : g < 2 ^ depth input) :
@@ -760,32 +775,6 @@ noncomputable def tableCertificate : NativeCertificate table encoding
     (ComputableTidilyInPolyTime.listReverse recEncoding))
   exact NativeCertificate.congr (reverse.comp loop) (fun _ => rfl)
 
-private theorem maximum_polyTime : ComputableInPolyTime
-    (fun values : List ℕ => listMax id values) (encList encNat) encNat := by
-  have max_c : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => max q.1 q.2)
-      recEncoding encNat := by
-    have choose : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => decide (q.1 ≤ q.2))
-        recEncoding encBool := by
-      apply ComputableTidilyInPolyTime.binary_le' <;> fun_prop
-    exact (choose.cond (.snd _ _) (.fst _ _)).of_enc_eq (fun q => by
-      by_cases h : q.1 ≤ q.2 <;> simp [h, Nat.max_def])
-  have step : ComputableTidilyInPolyTime
-      (fun q : (List ℕ × ℕ) × ℕ => max q.1.2 q.2)
-      (encPair (encPair (encList encNat) encNat) encNat) encNat :=
-    max_c.comp (((ComputableTidilyInPolyTime.snd _ _).comp
-      (ComputableTidilyInPolyTime.fst _ _)).prod (ComputableTidilyInPolyTime.snd _ _))
-  have h := ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
-    (encA := encNat) (encL := encList encNat) (encB := encNat)
-    (par := fun l : List ℕ => l) (list := fun l => l)
-    (step := fun _ n a => max n a) .id' .id' (.const 0) step
-    (growth := fun l => (encList encNat l).length) .self (fun l n a ha => by
-      have hw := length_le_encList_of_mem encNat ha
-      rcases le_total n a with h | h
-      · rw [max_eq_right h]; omega
-      · rw [max_eq_left h]; omega)
-  simpa only [List.foldl_eq_foldr, listMax, List.map_id_fun, id_eq] using
-    ComputableInPolyTime.of_tidy h
-
 private theorem minimum_polyTime : ComputableInPolyTime
     (fun q : ℕ × ℕ => min q.1 q.2) recEncoding encNat := by
   have choose : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => decide (q.1 ≤ q.2))
@@ -794,14 +783,101 @@ private theorem minimum_polyTime : ComputableInPolyTime
   exact .of_tidy ((choose.cond (.fst _ _) (.snd _ _)).of_enc_eq (fun q => by
     by_cases h : q.1 ≤ q.2 <;> simp [h, Nat.min_def]))
 
-/-- The maximum smaller population is computed before retention by an actual count-only
-prepass. The certificate charges both-direction joins, table/control copying and reduction. -/
+private theorem maximum_polyTime : ComputableInPolyTime
+    (fun q : ℕ × ℕ => max q.1 q.2) recEncoding encNat := by
+  have choose : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => decide (q.1 ≤ q.2))
+      recEncoding encBool := by
+    apply ComputableTidilyInPolyTime.binary_le' <;> fun_prop
+  exact .of_tidy ((choose.cond (.snd _ _) (.fst _ _)).of_enc_eq (fun q => by
+    by_cases h : q.1 ≤ q.2 <;> simp [h, Nat.max_def]))
+
+/-- Count both directions and reduce their minimum directly into one scalar maximum.
+The actual encoded streaming loop sums class costs and takes callback/prefix maxima;
+no table construction, reversal or whole-table polynomial callback is executed. -/
 noncomputable def balanceCertificate : NativeCertificate balance encoding encNat := by
-  let minima := NativeCertificate.ofPolyTime (ComputableInPolyTime.of_tidy
-    (ComputableTidilyInPolyTime.map minimum_polyTime.tidy))
-  let maximum := NativeCertificate.ofPolyTime maximum_polyTime
-  exact NativeCertificate.congr (maximum.comp (minima.comp tableCertificate)) (fun input => by
-    simp only [balance, listMax, List.map_map, Function.comp_def, id_eq])
+  let e := encPair (encPair encoding encNat) encNat
+  let original : NativeCertificate (id : (Input × ℕ) × ℕ → _) e e :=
+    .linear (.of_eq (fun _ => rfl))
+  let selected := original.fst.fst.prod original.snd
+  let both := ((countOn false).comp selected).prod ((countOn true).comp selected)
+  let smaller := (NativeCertificate.ofPolyTime minimum_polyTime).comp both
+  let round := (NativeCertificate.ofPolyTime maximum_polyTime).comp (original.fst.snd.prod smaller)
+  let loop := NativeCertificate.foldlStream encoding encNat encNat
+    (fun input current g => max current (min (count input false g) (count input true g))) round
+  let generation := (Classical.choose_spec SortedQuarterMachine.indices_computable).2.2
+  let generated : NativeCertificate SortedQuarterMachine.indices encUnary (encList encNat) :=
+    ⟨_, _, generation⟩
+  let indices := generated.comp (NativeCertificate.ofPolyTime depth_polyTime)
+  let input : NativeCertificate (id : Input → _) encoding encoding :=
+    .linear (.of_eq (fun _ => rfl))
+  let initial : NativeCertificate (fun _ : Input => (0 : ℕ)) encoding encNat := .const 0
+  exact NativeCertificate.congr (loop.comp (input.prod (initial.prod indices))) (fun input => by
+    simp only [Function.comp_def, id_eq, SortedQuarterMachine.indices_eq_range]
+    exact (balance_eq_prefix input).symm)
+
+/-- Every scalar prepass prefix is bounded by the actual computed balance. This is derived
+from the visited classes, rather than supplied as a loop resource invariant. -/
+theorem balancePrefix_le (input : Input) (n : ℕ) (hn : n ≤ 2 ^ depth input) :
+    balancePrefix input n ≤ balance input := by
+  induction n with
+  | zero => exact Nat.zero_le _
+  | succ n ih =>
+    have old := ih (by omega)
+    have current := class_le_balance input n (by omega)
+    rw [retained_length] at current
+    simp only [balancePrefix, List.range_succ, List.foldl_append, List.foldl_cons,
+      List.foldl_nil] at *
+    exact max_le old current
+
+/-- The actual scalar accumulator has only half-word-count bit width at every prepass prefix.
+This does not bound count callback workspace, which remains in `balanceCertificate`. -/
+theorem balancePrefix_wire {m p : ℕ} (hp : p ≤ m) (as bs cs ds : List (BitVec m))
+    (s : BitVec m) (n : ℕ) (hn : n ≤ 2 ^ p) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    (encNat (balancePrefix input n)).length ≤ as.length + bs.length + 1 := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  let a := as.length + bs.length
+  have upper : balancePrefix input n ≤ 2 ^ a := by
+    induction n with
+    | zero => exact Nat.zero_le _
+    | succ n ih =>
+      have old := ih (by omega)
+      have hg : n < 2 ^ p := by omega
+      have hc := count_le_half hp as bs cs ds s false (BitVec.ofNat p n)
+      simp only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hg, Bool.false_eq_true, ite_false] at hc
+      simp only [balancePrefix, List.range_succ, List.foldl_append, List.foldl_cons,
+        List.foldl_nil] at *
+      exact max_le old ((Nat.min_le_left _ _).trans hc)
+  have hpow : 2 ^ a < 2 ^ (a+1) := by
+    rw [pow_succ]; have h := Nat.two_pow_pos a; omega
+  simpa only [encNat_apply, ← Nat.size_eq_bits_len] using
+    Nat.size_le.mpr (upper.trans_lt hpow)
+
+/-- Physical full-state/payload wire of either generated class prefix, in terms of its
+actual record count. Internal producer workspace is separate. -/
+theorem records_prefix_wire {m p : ℕ} (hp : p ≤ m)
+    (as bs cs ds : List (BitVec m)) (s : BitVec m) (right : Bool) (g : BitVec p) (j : ℕ) :
+    let input := ProgramGeneration.originalSource p as bs cs ds s 0
+    let q := as.length + bs.length + cs.length + ds.length
+    (encList (encPair encNat encNat) ((records input right g.toNat).take j)).length ≤
+      ((records input right g.toNat).take j).length * (4 * m + 2 * q + 3) := by
+  let input := ProgramGeneration.originalSource p as bs cs ds s 0
+  let q := as.length + bs.length + cs.length + ds.length
+  have hrecord (r : ℕ × ℕ) (hr : r ∈ (records input right g.toNat).take j) :
+      (recEncoding r).length ≤ 2 * m + 1 + q := by
+    have hh := List.mem_of_mem_take hr
+    obtain ⟨hk, hv⟩ := records_fit hp as bs cs ds s 0 _ g r hh
+    have hkey : (encNat r.1).length ≤ m := by
+      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.size_le.mpr hk
+    have hval : (encNat r.2).length ≤ q := by
+      have hl : (if right then cs.length + ds.length
+        else as.length + bs.length) ≤ q := by split <;> dsimp only [q] <;> omega
+      have hsize := (Nat.size_le.mpr hv).trans hl
+      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using hsize
+    simp only [recEncoding, length_encPair]
+    omega
+  have hw := length_encList_le recEncoding ((records input right g.toNat).take j) hrecord
+  exact hw.trans_eq (by ring)
 
 /-- Full-state and packed-payload encoding of every retained prefix is bounded using the
 actual computed balance. Internal producer/probe workspace is charged separately by certificates. -/
@@ -812,25 +888,9 @@ theorem retained_prefix_wire {m p : ℕ} (hp : p ≤ m)
     (encList (encPair encNat encNat) ((retain input g.toNat).take j)).length ≤
       balance input * (4 * m + 2 * q + 3) := by
   let input := ProgramGeneration.originalSource p as bs cs ds s 0
-  let q := as.length + bs.length + cs.length + ds.length
-  have hrecord (r : ℕ × ℕ) (hr : r ∈ (retain input g.toNat).take j) :
-      (recEncoding r).length ≤ 2 * m + 1 + q := by
-    have hh := List.mem_of_mem_take hr
-    change r ∈ records input (retainRight input g.toNat) g.toNat at hh
-    obtain ⟨hk, hv⟩ := records_fit hp as bs cs ds s 0 _ g r hh
-    have hkey : (encNat r.1).length ≤ m := by
-      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.size_le.mpr hk
-    have hval : (encNat r.2).length ≤ q := by
-      have hl : (if retainRight input g.toNat then cs.length + ds.length
-        else as.length + bs.length) ≤ q := by split <;> dsimp only [q] <;> omega
-      have hsize := (Nat.size_le.mpr hv).trans hl
-      simpa only [encNat_apply, ← Nat.size_eq_bits_len] using hsize
-    simp only [recEncoding, length_encPair]
-    omega
-  have hw := length_encList_le recEncoding ((retain input g.toNat).take j) hrecord
+  have hw := records_prefix_wire hp as bs cs ds s (retainRight input g.toNat) g j
   have hg : g.toNat < 2 ^ depth input := g.isLt
   have hlen := retained_prefix input g.toNat j hg
-  have hm := Nat.mul_le_mul_right (2 * (2 * m + 1 + q) + 1) hlen
-  exact hw.trans (hm.trans_eq (by ring))
+  exact hw.trans (Nat.mul_le_mul_right _ hlen)
 
 end Cslib.Cryptanalysis.AddXNOR.ClassBalance
