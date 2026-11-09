@@ -13,6 +13,7 @@ public import Complexity.Computability.GenericRAM.Native.Combinators
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
+import Complexity.Tactic.EncLen
 
 /-!
 # The native certificate of the entries of the incidence network
@@ -141,11 +142,9 @@ theorem length_encRowState_le (P ℓ : ℕ) (tests : List (List (List ℕ))) (se
           (2 * (encRowCtx (P, ℓ, tests, sel)).length + 1) := by
   have h1 := GaloisRingArith.length_encList_le hlen hlt
   have hP : P ≤ (encRowCtx (P, ℓ, tests, sel)).length := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len
   have hℓ : ℓ ≤ (encRowCtx (P, ℓ, tests, sel)).length := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len
   have h0 : (encRowState ((P, ℓ, tests, sel), acc)).length =
       2 * (encRowCtx (P, ℓ, tests, sel)).length + 1 + (encList encNat acc).length :=
     length_encPair _
