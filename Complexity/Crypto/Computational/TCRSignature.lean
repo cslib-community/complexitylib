@@ -36,9 +36,8 @@ import Complexity.Tactic.PPT
 When hashing messages before signing under a target collision-resistant hash family (UOWHF), placing
 a single hash key in the public verification key fails: an adversary seeing `k` in `pk` before
 choosing its signing query and forgery could search for full collisions rather than target
-collisions ([BonehShoup2023], Section 13.2.1, pp. 521–522). Instead, construction `(13.2)` of
-[BonehShoup2023], Section 13.2.1 samples a **fresh hash key `k` inside every signature** and signs
-the pair `(k, H(k, m))`:
+collisions. Instead, construction `(13.2)` of [BonehShoup2023], Section 13.2.1 (p. 533) samples a
+**fresh hash key `k` inside every signature** and signs the pair `(k, H(k, m))`:
 
 * **Source mapping**: [BonehShoup2023], Section 13.2.1 states construction `(13.2)` and Theorem 13.2
   for extending the message space of an unrestricted many-time EUF-CMA base signature scheme. Here
@@ -123,7 +122,7 @@ the pair `(k, H(k, m))`:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Version 0.6][BonehShoup2023],
-  Section 13.2.1 (construction `(13.2)` and Theorem 13.2, pp. 521–524) and Section 14.6.
+  Section 13.2.1 (construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534) and Section 14.6.
 * [M. Naor, M. Yung, *Universal One-Way Hash Functions and their Cryptographic
   Applications*][NaorYung1989], Sections 2–4.
 * [J. Rompel, *One-Way Functions are Necessary and Sufficient for Secure Signatures*][Rompel1990].
@@ -1506,11 +1505,11 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
     match (simRun machine (wordOf keys.1) [] coins).2 with
     | none => PMF.pure []
     | some m₀ => ProbComp.eval (S.sign keys.2 (otsMsg H n hashKey (H.eval n hashKey m₀)))
-  let μ : PMF ((List Bool × List Bool) × List Bool × List Bool × List Bool) :=
-    (ProbComp.eval (S.keyGen (otsParam H n))).bind fun keys =>
-      (BitString.uniformList (fuelOf keys.1)).bind fun coins =>
-        (BitString.uniformList (H.keyLen n)).bind fun hashKey =>
-          (otsDist keys coins hashKey).map fun ots => (keys, coins, hashKey, ots)
+  let μ : PMF ((List Bool × List Bool) × List Bool × List Bool × List Bool) := do
+    let keys ← ProbComp.eval (S.keyGen (otsParam H n))
+    let coins ← BitString.uniformList (fuelOf keys.1)
+    let hashKey ← BitString.uniformList (H.keyLen n)
+    (otsDist keys coins hashKey).map fun ots => (keys, coins, hashKey, ots)
   let finalOut (keys : List Bool × List Bool) (coins hashKey ots : List Bool) :
       ℕ × List Bool × List Bool :=
     match (simRun machine (wordOf keys.1) [] coins).2 with
@@ -1562,7 +1561,7 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
       exact (id_map _).symm
     simp only [IndexedSignatureScheme.indexedEufCmaGame, scheme_keyGen, scheme_verify, keyGen,
       ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, PMF.bind_bind,
-      PMF.pure_bind, μ, PMF.map_bind]
+      PMF.pure_bind, μ, PMF.monad_bind_eq_bind, PMF.map_bind]
     congr 1
     funext keys
     rw [hdecodeAdv (pkOf keys.1), OracleComp.interpret_map, StateT.run_map,
@@ -1588,7 +1587,8 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
       ProbComp.eval (S.eufOneTimeGame (oneTimeForger H sigBound machine c d) (otsParam H n)) =
         μ.map winOts := by
     simp only [SignatureScheme.eufOneTimeGame, oneTimeForger, otsParamInv_otsParam, ↓reduceIte,
-      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ, PMF.map_bind]
+      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ,
+      PMF.monad_bind_eq_bind, PMF.map_bind]
     refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
     simp only [OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
       BitString.eval_sampleList, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map,
@@ -1622,7 +1622,7 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
           (tcrAdversary S H machine c d) n) = μ.map winTcr := by
     simp only [targetCollisionGame, tcrAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
       BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, stateDecoder.decode_enc,
-      μ, PMF.map_bind]
+      μ, PMF.monad_bind_eq_bind, PMF.map_bind]
     congr 1
     funext keys
     congr 1
@@ -1640,7 +1640,8 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
   have hpointwise : ∀ sample ∈ μ.support,
       winIdx sample = true → winOts sample = true ∨ winTcr sample = true := by
     rintro ⟨keys, coins, hashKey, ots⟩ hsupp hwin
-    simp only [μ, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hsupp
+    simp only [μ, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+      PMF.mem_support_map_iff] at hsupp
     obtain ⟨keys', _, coins', _, hashKey', hhk, ⟨ots', _, heqSample⟩⟩ := hsupp
     rcases Prod.mk.inj heqSample.symm with ⟨rfl, heq1⟩
     rcases Prod.mk.inj heq1 with ⟨rfl, heq2⟩

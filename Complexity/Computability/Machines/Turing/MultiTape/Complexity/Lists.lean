@@ -10,6 +10,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.EncLen
 
 /-!
 # List operations with bounds of given degrees
@@ -134,8 +135,7 @@ public theorem findWith {t : π × α → Bool} {par : γ → π} {list : γ →
     · have hmem := List.mem_of_find?_eq_some h
       have := length_le_encList_of_mem enc hmem
       have := length_encList_take_le enc (list x) i
-      simp only [encOption_some, List.length_cons]
-      omega
+      enc_len
 
 /-- One step of keeping the elements that pass the test `t`. -/
 @[expose] public def filterStep (t : π × α → Bool) (p : π) (acc : List α) (a : α) : List α :=
@@ -264,21 +264,21 @@ public theorem unary_min :
   simp only [Function.comp_apply]
   omega
 
-lemma int_head : ComputableTidilyInDegree (fun z : ℤ => ((encInt z).take 1).headD false)
-    encInt encBool 1 1 :=
+lemma int_head : ComputableTidilyInDegree (fun z : ℤ => ((encIntUnary z).take 1).headD false)
+    encIntUnary encBool 1 1 :=
   ((headD (enc₁ := encBool) false).comp
-    (of_linear (.of_take_one (f := fun z : ℤ => (encInt z).take 1) (encOut := encBits)
+    (of_linear (.of_take_one (f := fun z : ℤ => (encIntUnary z).take 1) (encOut := encBits)
       fun _ => rfl))).mono
 
-lemma int_tailEmpty : ComputableTidilyInDegree (fun z : ℤ => (encInt z).tail.isEmpty)
-    encInt encBool 1 1 :=
+lemma int_tailEmpty : ComputableTidilyInDegree (fun z : ℤ => (encIntUnary z).tail.isEmpty)
+    encIntUnary encBool 1 1 :=
   ((isEmpty (enc₁ := encBool)).comp
-    (of_linear (.of_tail (f := fun z : ℤ => (encInt z).tail) (encOut := encBits)
+    (of_linear (.of_tail (f := fun z : ℤ => (encIntUnary z).tail) (encOut := encBits)
       fun _ => rfl))).mono
 
 /-- Whether an integer is positive. -/
 public theorem int_pos :
-    ComputableTidilyInDegree (fun z : ℤ => decide (0 < z)) encInt encBool 1 0 := by
+    ComputableTidilyInDegree (fun z : ℤ => decide (0 < z)) encIntUnary encBool 1 0 := by
   convert ((of_finite (encIn := encPair encBool encBool) (encMid := encBool)
     (fun t : Bool × Bool => !t.1 && !t.2)).comp (int_head.prod int_tailEmpty)).mono
       (d' := 1) (e' := 0) using 1
@@ -287,7 +287,7 @@ public theorem int_pos :
 
 /-- Whether an integer is negative. -/
 public theorem int_neg :
-    ComputableTidilyInDegree (fun z : ℤ => decide (z < 0)) encInt encBool 1 1 := by
+    ComputableTidilyInDegree (fun z : ℤ => decide (z < 0)) encIntUnary encBool 1 1 := by
   convert int_head using 1
   funext z
   rcases z with n | n <;> simp
@@ -322,9 +322,7 @@ public theorem replicate (enc : α ↪ List Bool) :
       rw [h]
       refine (length_encList_le enc _ (b := (enc p.2).length) fun b hb => by
         rw [List.eq_of_mem_replicate hb]).trans (Nat.mul_le_mul ?_ ?_)
-      · simp only [List.length_replicate, List.length_take, encPair_apply, encUnary_apply,
-          List.length_append, length_frame, List.nil_append]
-        omega
+      · enc_len [List.length_take, encPair_apply, List.nil_append]
       · simp only [length_encPair]
         omega)
   convert hfold.mono (d' := 3) (e' := 2) using 1

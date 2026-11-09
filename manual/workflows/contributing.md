@@ -6,6 +6,8 @@ A useful contribution gives the next client a clearer theorem, construction or p
 
 Specify the model, encodings, resource convention, uniformity and quantifier order. For a published result, identify the source version and locator and map those choices to the source. For a conditional or restricted milestone, state its restriction and preserve the broader objective. Assuming the difficult endpoint is not constructing it.
 
+Write encodings so that readers can see them without parsing the same nested term repeatedly: name a compound encoding that recurs in a module's statements with a documented reducible `abbrev`, keep unary versus binary and representation choices visible in names and docstrings, and declare field-tuple structure encodings with [`enc_structure`](choosing-models.md#write-the-contract-before-the-proof). The [encoding rules](../../AGENTS.md#encodings-in-statements) state when a name is required.
+
 Search CSLib, Mathlib, local modules and the in-flight work recorded in `UPSTREAM.md`. Reuse definitions that express the same mathematics. Similar names with different encodings, costs or adversary power prompt a search for a bridge, not an automatic identification of models. The [model-selection chapter](choosing-models.md) gives the questions to settle.
 
 ## Place the API and preserve its clients

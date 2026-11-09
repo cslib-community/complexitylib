@@ -71,7 +71,7 @@ encoding. Well-formed endpoints and the full table bound supply the loop's size 
 @[fun_prop]
 theorem isPolyTime_amplifyIter_clog {Input : Type} {input : Input ↪ List Bool}
     {graph : Input → Graph Constraint} {labelEncoding : D ↪ List Bool}
-    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding encConstraintTable))
     (hwellFormed : ∀ x, (graph x).WellFormed)
     (family : (n : ℕ) → RotationMap (Fin n) D) (rotate : ℕ × (ℕ × D) → ℕ × D)
     (hrotate : ∀ n (v : Fin n) d, rotate (n, v.val, d) =
@@ -84,7 +84,7 @@ theorem isPolyTime_amplifyIter_clog {Input : Type} {input : Input ↪ List Bool}
     ComputableInPolyTime
       (fun x => amplifyIter fallback rotate T q walks number coins queries
         (Nat.clog 2 (graph x).edges.length) (graph x))
-      input (encoding (encPi (encPi encBool))) := by
+      input (encoding encConstraintTable) := by
   let factor := (2 + 2 * walks.length) * width + 2 * walks.length * coins.length * queries.length
   let descriptorBound := Fintype.card SelectedAlphabet * (6 * Fintype.card SelectedAlphabet + 1)
   have hgrowth (g : Graph Constraint) :

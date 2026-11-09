@@ -21,7 +21,8 @@ and follows the branch for its value; the leaf it reaches is the output (`Decisi
 depth is the longest structural root-to-leaf path, an upper bound on the number of queries on
 any input. Repeated variables can make a longest path unreachable. The variables queried on the
 way to the leaf of an input `x` determine the output: every input that agrees with `x` on them
-reaches the same leaf (`DecisionTree.eval_eq_of_forall_mem_queries`).
+reaches the same leaf (`DecisionTree.eval_eq_of_forall_mem_queries`) along the same path, so with
+the same queries (`DecisionTree.queries_eq_of_forall_mem_queries`).
 
 Querying every variable in turn computes any function, so over finitely many variables every
 function has a decision tree of depth at most the number of variables (`exists_computes`). The
@@ -33,11 +34,14 @@ it [Jukna, Chapter 14][Jukna2012].
 * `Cslib.DecisionTree`: decision trees.
 * `Cslib.DecisionTree.eval`, `Cslib.DecisionTree.depth`, `Cslib.DecisionTree.queries`.
 * `Cslib.DecisionTree.mapQueries`: relabel queries without changing the tree shape.
+* `Cslib.DecisionTree.map`: relabel the leaves of a decision tree.
 * `Cslib.DecisionTree.complexity`: the decision tree complexity of a function.
 
 ## Main results
 
 * `Cslib.DecisionTree.eval_eq_of_forall_mem_queries`: the queried variables certify the output.
+* `Cslib.DecisionTree.queries_eq_of_forall_mem_queries`: the queried variables determine the
+  queries.
 * `Cslib.DecisionTree.complexity_le_card`: decision tree complexity is at most the number of
   variables.
 
@@ -113,6 +117,23 @@ theorem depth_mapQueries {κ : Type*} (f : ι → κ) (t : DecisionTree ι β) :
   | leaf => rfl
   | node i left right ihl ihr => simp [mapQueries, ihl, ihr]
 
+/-- Relabel the leaves of a decision tree. -/
+def map {γ : Type*} (f : β → γ) : DecisionTree ι β → DecisionTree ι γ
+  | leaf b => leaf (f b)
+  | node i t₀ t₁ => node i (t₀.map f) (t₁.map f)
+
+@[simp] theorem eval_map {γ : Type*} (f : β → γ) (t : DecisionTree ι β) (x : ι → Bool) :
+    (t.map f).eval x = f (t.eval x) := by
+  induction t with
+  | leaf b => rfl
+  | node i t₀ t₁ ih₀ ih₁ => cases h : x i <;> simp [map, h, ih₀, ih₁]
+
+@[simp] theorem depth_map {γ : Type*} (f : β → γ) (t : DecisionTree ι β) :
+    (t.map f).depth = t.depth := by
+  induction t with
+  | leaf b => rfl
+  | node i t₀ t₁ ih₀ ih₁ => simp [map, ih₀, ih₁]
+
 section Queries
 
 variable [DecidableEq ι]
@@ -155,6 +176,23 @@ theorem eval_eq_of_forall_mem_queries (t : DecisionTree ι β) {x y : ι → Boo
       exact ih₀ h
     · rw [hx] at h
       exact ih₁ h
+
+/-- Inputs that agree on the variables queried for `x` make the same queries. -/
+theorem queries_eq_of_forall_mem_queries (t : DecisionTree ι β) {x y : ι → Bool}
+    (h : ∀ i ∈ t.queries x, y i = x i) : t.queries y = t.queries x := by
+  induction t with
+  | leaf => rfl
+  | node i t₀ t₁ ih₀ ih₁ =>
+    simp only [queries, Finset.mem_insert, forall_eq_or_imp] at h
+    obtain ⟨hi, h⟩ := h
+    simp only [queries_node, hi]
+    cases hx : x i
+    · rw [hx] at h
+      simp only [Bool.cond_false]
+      rw [ih₀ h]
+    · rw [hx] at h
+      simp only [Bool.cond_true]
+      rw [ih₁ h]
 
 end Queries
 

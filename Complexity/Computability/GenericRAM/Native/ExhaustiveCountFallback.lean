@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.BitString.ZModTwo
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
@@ -112,8 +113,6 @@ Proposition 6.4, pp. 43–44) of [OpenAI, *The Exponential Time Hypothesis is Fa
 namespace Cslib.GenericRAM.ExhaustiveCountFallback
 
 open Cslib.BitString Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
-
-local notation "encSys" => encList (encList (encList encNat))
 
 /-! ### Streaming Boolean-Cube Predicate Counter Infrastructure -/
 
@@ -212,9 +211,7 @@ private theorem length_prefix_accumulator_le (pred : P → List Bool → Bool) (
     (encPair (encPair encUnary encP) encNat
       (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2).length ≤
       3 * (encPair encUnary encP x).length + 2 := by
-  have hx_le : x.1 ≤ (encPair encUnary encP x).length := by
-    simp only [length_encPair, encUnary_apply, List.length_replicate]
-    omega
+  have hx_le : x.1 ≤ (encPair encUnary encP x).length := by enc_len
   have hz_le : (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2.2 ≤ 2 ^ x.1 :=
     (prefix_count_le_index pred x j).trans hj
   have hlen_z :
@@ -224,8 +221,7 @@ private theorem length_prefix_accumulator_le (pred : P → List Bool → Bool) (
       simpa [Nat.size_eq_bits_len] using Nat.size_le_size hz_le
     rw [BooleanFold.length_clock] at hm
     exact hm
-  rw [length_encPair, prefix_payload_eq]
-  omega
+  enc_len [prefix_payload_eq]
 
 private theorem countPredicateCertificate_bounds {pred : P → List Bool → Bool}
     (hpred : ComputableInPolyTime (fun q : P × List Bool => pred q.1 q.2) (encPair encP encBits)
@@ -397,11 +393,11 @@ theorem countSystemExhaustive_eq_zero_of_nil_mem {n : ℕ} {sys : List (List (Li
 
 open ComputableInPolyTime in
 /-- Evaluating a sparse `𝔽₂` polynomial system `sys` on `(word.getD v false)` is polynomial-time in
-the pair encoding `(encList (encList (encList encNat)), encBits)`. -/
+the pair encoding `encPair encSparseSystem encBits`. -/
 theorem computableInPolyTime_evalSystem_word :
     ComputableInPolyTime
       (fun p : List (List (List ℕ)) × List Bool => evalSystem p.1 (fun v => p.2.getD v false))
-      (encPair encSys encBits) encBool := by
+      (encPair encSparseSystem encBits) encBool := by
   have hmon : ComputableInPolyTime
       (fun q : List ℕ × List Bool => q.1.all (fun v => q.2.getD v false))
       (encPair (encList encNat) encBits) encBool :=
@@ -424,19 +420,21 @@ theorem computableInPolyTime_evalSystem_word :
     exact (of_finite (fun r : Bool × Bool => xor r.1 r.2)).comp
       (hacc.prod (hmon.comp (hm.prod hword)))
   unfold evalSystem
-  exact allWithInput (fst encSys encBits)
+  exact allWithInput (fst encSparseSystem encBits)
     (bool_not.comp (heq.comp
-      ((snd (encPair encSys encBits) (encList (encList encNat))).prod
-        ((snd encSys encBits).comp (fst (encPair encSys encBits) (encList (encList encNat)))))))
+      ((snd (encPair encSparseSystem encBits) (encList (encList encNat))).prod
+        ((snd encSparseSystem encBits).comp
+          (fst (encPair encSparseSystem encBits) (encList (encList encNat)))))))
 
-/-- Native resource certificate for `countSystemExhaustive` over `(encUnary, encSys) → encNat`. -/
+/-- Native resource certificate for `countSystemExhaustive` over
+`(encUnary, encSparseSystem) → encNat`. -/
 noncomputable def countSystemExhaustiveCertificate :
-    NativeCertificate countSystemExhaustive (encPair encUnary encSys) encNat :=
+    NativeCertificate countSystemExhaustive (encPair encUnary encSparseSystem) encNat :=
   countPredicateCertificate computableInPolyTime_evalSystem_word
 
 /-- `countSystemExhaustiveCertificate` uses polynomial workspace in the encoded input length. -/
 theorem polyBounded_countSystemExhaustive_space :
-    PolyBounded (fun x : ℕ × List (List (List ℕ)) => (encPair encUnary encSys x).length)
+    PolyBounded (fun x : ℕ × List (List (List ℕ)) => (encPair encUnary encSparseSystem x).length)
       countSystemExhaustiveCertificate.space :=
   (countPredicateCertificate_bounds computableInPolyTime_evalSystem_word).1
 
@@ -444,8 +442,8 @@ theorem polyBounded_countSystemExhaustive_space :
 polynomially bounded `P_ex, Q_ex`. -/
 theorem exists_countSystemExhaustive_time_le :
     ∃ P_ex Q_ex : ℕ × List (List (List ℕ)) → ℕ,
-      PolyBounded (fun x => (encPair encUnary encSys x).length) P_ex ∧
-      PolyBounded (fun x => (encPair encUnary encSys x).length) Q_ex ∧
+      PolyBounded (fun x => (encPair encUnary encSparseSystem x).length) P_ex ∧
+      PolyBounded (fun x => (encPair encUnary encSparseSystem x).length) Q_ex ∧
       ∀ x, countSystemExhaustiveCertificate.time x ≤ (2 ^ x.1 + 1) * P_ex x + Q_ex x :=
   (countPredicateCertificate_bounds computableInPolyTime_evalSystem_word).2
 
@@ -453,18 +451,18 @@ theorem exists_countSystemExhaustive_time_le :
 workspace. -/
 theorem computableInO_countSystemExhaustive :
     ∃ d : ℕ, ∃ S : ℕ × List (List (List ℕ)) → ℕ,
-      PolyBounded (fun x => (encPair encUnary encSys x).length) S ∧
-      ComputableInO countSystemExhaustive (encPair encUnary encSys) encNat
-        (fun x => 2 ^ x.1 * ((encPair encUnary encSys x).length + 1) ^ d) S := by
+      PolyBounded (fun x => (encPair encUnary encSparseSystem x).length) S ∧
+      ComputableInO countSystemExhaustive (encPair encUnary encSparseSystem) encNat
+        (fun x => 2 ^ x.1 * ((encPair encUnary encSparseSystem x).length + 1) ^ d) S := by
   obtain ⟨P_ex, Q_ex, hP, hQ, hT⟩ := exists_countSystemExhaustive_time_le
   obtain ⟨c, d, hcd⟩ := exists_le_mul_two_pow_of_polyBounded hP hQ hT
   refine ⟨d, countSystemExhaustiveCertificate.space, polyBounded_countSystemExhaustive_space,
     countSystemExhaustiveCertificate.computes.mono (c + 1)
       (fun x => by
         calc countSystemExhaustiveCertificate.time x
-            ≤ c * (2 ^ x.1 * ((encPair encUnary encSys x).length + 1) ^ d) := by
+            ≤ c * (2 ^ x.1 * ((encPair encUnary encSparseSystem x).length + 1) ^ d) := by
               rw [← Nat.mul_assoc]; exact hcd x
-          _ ≤ (c + 1) * (2 ^ x.1 * ((encPair encUnary encSys x).length + 1) ^ d + 1) :=
+          _ ≤ (c + 1) * (2 ^ x.1 * ((encPair encUnary encSparseSystem x).length + 1) ^ d + 1) :=
               Nat.mul_le_mul (Nat.le_succ c) (Nat.le_succ _))
       (fun x => (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (Nat.succ_pos c)))⟩
 

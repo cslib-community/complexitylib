@@ -13,7 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decod
 public import Complexity.Languages.Probabilistic.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Bind
+import Complexity.Tactic.EncLen
 
 /-!
 # Stateless tree signatures from an indexed signature scheme
@@ -113,6 +114,17 @@ def signAt (k path sk : List Bool) (u : ℕ) (msg : List Bool) : List Bool :=
 /-- The state of the certification chain: the current node, its key pair and the certificates
 issued so far, each a child public key with its signature. -/
 abbrev CertState := List Bool × (List Bool × List Bool) × List (List Bool × List Bool)
+
+namespace CertState
+
+/-- The current tree node. -/
+abbrev node : CertState → List Bool | (node, _, _) => node
+/-- The current node's verification and signing keys. -/
+abbrev keyPair : CertState → List Bool × List Bool | (_, key, _) => key
+/-- The certified child keys and their signatures. -/
+abbrev certificates : CertState → List (List Bool × List Bool) | (_, _, certs) => certs
+
+end CertState
 
 /-- One step of the chain: derive the child at `a`, sign its public key at index `a`, and move
 to it. -/
@@ -328,12 +340,18 @@ theorem computableInPolyTime_certifyStep :
 private abbrev encChainInput : (ℕ × List Bool) × List Bool ↪ List Bool :=
   encPair (encPair encUnary encBits) encBits
 
+private abbrev ChainInput := (ℕ × List Bool) × List Bool
+
+private abbrev ChainInput.parameter : ChainInput → ℕ | ((n, _), _) => n
+private abbrev ChainInput.secret : ChainInput → List Bool | ((_, k), _) => k
+private abbrev ChainInput.bits : ChainInput → List Bool | (_, bits) => bits
+
 omit hcoins in
-private theorem length_le_encChainInput (x : (ℕ × List Bool) × List Bool) :
-    x.1.1 ≤ (encChainInput x).length ∧ x.1.2.length ≤ (encChainInput x).length ∧
-      x.2.length ≤ (encChainInput x).length := by
-  simp only [encChainInput, length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-  omega
+private theorem length_le_encChainInput (x : ChainInput) :
+    x.parameter ≤ (encChainInput x).length ∧ x.secret.length ≤ (encChainInput x).length ∧
+      x.bits.length ≤ (encChainInput x).length := by
+  rcases x with ⟨⟨n, k⟩, bits⟩
+  enc_len [ChainInput.parameter, ChainInput.secret, ChainInput.bits, encChainInput]
 
 include hcoins in
 /-- The chain is computable in polynomial time: every node key and signature on the path is
@@ -346,52 +364,56 @@ theorem computableInPolyTime_certify :
     (computableInPolyTime_nodeKey (T := T) hcoins).polyBounded_length.exists_le
   obtain ⟨cs, ds, hsignLen⟩ :=
     (computableInPolyTime_signAt (T := T) hcoins).polyBounded_length.exists_le
-  let Bk (x : (ℕ × List Bool) × List Bool) : ℕ := ck * ((encChainInput x).length + 1) ^ dk
-  let Bs (x : (ℕ × List Bool) × List Bool) : ℕ :=
+  let Bk (x : ChainInput) : ℕ := ck * ((encChainInput x).length + 1) ^ dk
+  let Bs (x : ChainInput) : ℕ :=
     cs * (8 * (encChainInput x).length + 3 * Bk x + 11) ^ ds
   have hBk : PolyBounded (fun x => (encChainInput x).length) Bk :=
     PolyBounded.of_forall_le ck dk fun _ => le_rfl
   have hBs : PolyBounded (fun x => (encChainInput x).length) Bs := by
     dsimp only [Bs]
     growth_poly
-  have hkeyLe (x : (ℕ × List Bool) × List Bool) {path : List Bool}
-      (hpath : path.length ≤ x.2.length) :
-      (nodeKey S T coins x.1.1 x.1.2 path).1.length ≤ Bk x ∧
-        (nodeKey S T coins x.1.1 x.1.2 path).2.length ≤ Bk x := by
+  have hkeyLe (x : ChainInput) {path : List Bool}
+      (hpath : path.length ≤ x.bits.length) :
+      (nodeKey S T coins x.parameter x.secret path).1.length ≤ Bk x ∧
+        (nodeKey S T coins x.parameter x.secret path).2.length ≤ Bk x := by
+    dsimp only [ChainInput.bits] at hpath
     have hle : (encChainInput (x.1, path)).length ≤ (encChainInput x).length := by
-      simp only [encChainInput, length_encPair, encBits_apply]; omega
+      enc_len [encChainInput]
     have h := (hnodeLen (x.1, path)).trans
       (Nat.mul_le_mul_left ck (Nat.pow_le_pow_left (Nat.add_le_add_right hle 1) dk))
     exact ⟨(length_le_encPair_left encBits encBits _).trans h,
       (length_le_encPair_right encBits encBits _).trans h⟩
-  have hsigLe (x : (ℕ × List Bool) × List Bool) {path sk msg : List Bool} {u : ℕ}
-      (hpath : path.length ≤ x.2.length) (hsk : sk.length ≤ Bk x) (hu : u ≤ 1)
+  have hsigLe (x : ChainInput) {path sk msg : List Bool} {u : ℕ}
+      (hpath : path.length ≤ x.bits.length) (hsk : sk.length ≤ Bk x) (hu : u ≤ 1)
       (hmsg : msg.length ≤ Bk x) :
-      (signAt S T coins x.1.2 path sk u msg).length ≤ Bs x := by
-    have h := hsignLen ((x.1.2, path, sk), u, msg)
+      (signAt S T coins x.secret path sk u msg).length ≤ Bs x := by
+    have h := hsignLen ((x.secret, path, sk), u, msg)
     simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at h
     have hx := length_le_encChainInput x
     exact h.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by omega) ds))
-  refine ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.foldlWith_spec
+  refine (ComputableInPolyTime.foldlWith_spec
     (encP := encPair encUnary encBits) (encA := encBool) (encL := encBits)
-    (par := fun x : (ℕ × List Bool) × List Bool => x.1) (list := fun x => x.2)
-    (init := fun x => (([], nodeKey S T coins x.1.1 x.1.2 [], []) : CertState))
+    (par := fun x : ChainInput => x.1) (list := ChainInput.bits)
+    (init := fun x => (([], nodeKey S T coins x.parameter x.secret [], []) : CertState))
     (step := fun par state a => certifyStep S T coins par.1 par.2 state a)
-    (ComputableTidilyInPolyTime.fst _ _) (ComputableTidilyInPolyTime.snd _ _)
+    (ComputableInPolyTime.fst _ _) (ComputableInPolyTime.snd _ _)
     (((ComputableInPolyTime.const []).prod
       ((((ComputableInPolyTime.fst _ _).prod (.const [])).trans
-        (computableInPolyTime_nodeKey (T := T) hcoins)).prod (.const []))).tidy)
-    (computableInPolyTime_certifyStep (T := T) hcoins).tidy
-    (fun x consumed state => state.1 = consumed ∧
-      state.2.1 = nodeKey S T coins x.1.1 x.1.2 consumed ∧
-      state.2.2.length = consumed.length ∧
-      ∀ e ∈ state.2.2, e.1.length ≤ Bk x ∧ e.2.length ≤ Bs x)
+        (computableInPolyTime_nodeKey (T := T) hcoins)).prod (.const []))))
+    (computableInPolyTime_certifyStep (T := T) hcoins)
+    (fun x consumed state => CertState.node state = consumed ∧
+      CertState.keyPair state = nodeKey S T coins x.parameter x.secret consumed ∧
+      (CertState.certificates state).length = consumed.length ∧
+      ∀ e ∈ CertState.certificates state, e.1.length ≤ Bk x ∧ e.2.length ≤ Bs x)
     (fun x => ⟨rfl, rfl, rfl, by simp⟩) ?_
-    (size := fun x => 2 * x.2.length + 6 * Bk x + 5 + x.2.length * (4 * Bk x + 2 * Bs x + 3))
+    (size := fun x => 2 * x.bits.length + 6 * Bk x + 5 +
+      x.bits.length * (4 * Bk x + 2 * Bs x + 3))
     ?_ ?_).1
   · rintro x consumed ⟨path, key, certs⟩ a hprefix ⟨hpath, hkey, hlen, hcerts⟩
-    have hconsumed : consumed.length + 1 ≤ x.2.length := by simpa using hprefix.length_le
-    simp only at hpath hkey hlen; subst hpath hkey
+    dsimp only [CertState.node, CertState.keyPair, CertState.certificates]
+      at hpath hkey hlen hcerts
+    have hconsumed : consumed.length + 1 ≤ x.bits.length := by simpa using hprefix.length_le
+    subst hpath hkey
     refine ⟨rfl, rfl, by simp [certifyStep, hlen], fun e he => ?_⟩
     simp only [certifyStep, List.mem_append, List.mem_singleton] at he
     rcases he with he | rfl
@@ -399,12 +421,14 @@ theorem computableInPolyTime_certify :
     · exact ⟨(hkeyLe x (by simp; omega)).1,
         hsigLe x (by omega) (hkeyLe x (by omega)).2 (by cases a <;> simp)
           (hkeyLe x (by simp; omega)).1⟩
-  · have hx2 : PolyBounded (fun x => (encChainInput x).length) fun x => x.2.length :=
+  · have hx2 : PolyBounded (fun x => (encChainInput x).length)
+        (fun x : ChainInput => x.bits.length) :=
       PolyBounded.self.mono fun x => (length_le_encChainInput x).2.2
     growth_poly
   · rintro x consumed ⟨path, key, certs⟩ hprefix ⟨hpath, hkey, hlen, hcerts⟩
-    simp only at hpath hkey hlen
-    have hconsumed : consumed.length ≤ x.2.length := hprefix.length_le
+    dsimp only [CertState.node, CertState.keyPair, CertState.certificates]
+      at hpath hkey hlen hcerts
+    have hconsumed : consumed.length ≤ x.bits.length := hprefix.length_le
     have hk := hkeyLe x hconsumed
     have hlist : (encList (encPair encBits encBits) certs).length ≤
         certs.length * (2 * (2 * Bk x + 1 + Bs x) + 1) :=
@@ -501,7 +525,7 @@ private theorem computableInPolyTime_chainCheck :
     (hs1.fst'.bool_and'
       ((hs1.snd'.prod ((hs2.fst'.trans (.of_finite Bool.toNat)).prod hs2.snd')).trans
         S.verify_polyTime)).prod hs2.snd'.fst'
-  refine ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
+  refine ComputableInPolyTime.foldlWith_of_bounded_growth
     (encP := encBool) (encA := encPair encBool (encPair encBits encBits))
     (encL := encList (encPair encBool (encPair encBits encBits)))
     (par := fun _ => false)
@@ -509,13 +533,13 @@ private theorem computableInPolyTime_chainCheck :
       (q.2.1.take (q.2.1.length - 1)).zip q.2.2)
     (init := fun q => (true, q.1))
     (step := fun _ state e => verifyStep S state e)
-    (.const false) hzip.tidy (((ComputableInPolyTime.const true).prod (.fst _ _)).tidy) hstep'.tidy
+    (.const false) hzip ((ComputableInPolyTime.const true).prod (.fst _ _)) hstep'
     (growth := fun q => (encIn q).length + 3)
-    (PolyBounded.self.add (.const 3)) ?_)
+    (PolyBounded.self.add (.const 3)) ?_
   intro q state e he
   have hmem := length_le_encList_of_mem (encPair encBits encBits) (List.of_mem_zip he).2
   have hle : (encList (encPair encBits encBits) q.2.2).length ≤ (encIn q).length := by
-    simp only [encIn, length_encPair]; omega
+    enc_len [encIn]
   simp only [verifyStep, length_encPair, encBits_apply, encBool_apply, List.length_singleton]
     at hmem ⊢
   omega

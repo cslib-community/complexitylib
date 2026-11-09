@@ -61,11 +61,11 @@ Distinguish these dispositions in the issue:
 
 - **Completed:** the agreed acceptance criteria are satisfied.
 - **Milestone completed:** a bounded deliverable is finished; link the remaining objective.
-- **Deferred / not planned:** work is intentionally stopped; preserve its results and explain
-  what remains unproved.
+- **Not planned (dropped):** work is intentionally stopped; preserve its results, explain what
+  remains unproved, and remove the direction from `ROADMAP.md`, which has no deferred tier.
 
 Close a milestone issue as completed when its own criteria are met. Keep the broader objective
-open, or, when authorized to defer it, close it as not planned and link the completed milestone.
+open, or, when authorized to drop it, close it as not planned and link the completed milestone.
 PR descriptions must distinguish mathematical progress from infrastructure, refactoring, and
 documentation progress.
 
@@ -129,15 +129,16 @@ tooling.
   reason that no edit is needed. Make this part of reviewing and integrating each change.
   Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
-- Merge only with maintainer authority, required validation and independent review of the current
-  revision. Shepherding approved PRs through the merge queue and keeping the queue moving is a
-  coordinator responsibility: do not treat a PR as done when it is merely queued. Monitor queued
-  batches until they land on `main`, rebase or re-queue PRs ejected by conflicts or transient
-  failures, sequence broad tree-wide refactors so they do not stall smaller PRs behind cold cache
-  rebuilds, and diagnose and fix merge-queue or CI bottlenecks when the queue jams. The queue
-  squash-merges: a stacked PR that edits lines a lower PR introduces conflicts with that PR's
-  squashed commit and is ejected, so queue it once the lower PRs land and it has merged `main`.
-  Close completed issues and link any remaining work once the change lands.
+- Merge only with required validation and independent review of the current revision. Reviewers
+  queue the heads they approve ([Approve and queue](#approve-and-queue)); coordinators queue any
+  approved head still waiting and keep the queue moving: do not treat a PR as done when it is
+  merely queued. Monitor queued batches until they land on `main`, merge `main` into or re-queue
+  PRs ejected by conflicts or transient failures, sequence broad tree-wide refactors so they do
+  not stall smaller PRs behind cold cache rebuilds, and diagnose and fix merge-queue or CI
+  bottlenecks when the queue jams. The queue squash-merges: a stacked PR that edits lines a lower
+  PR introduces conflicts with that PR's squashed commit and is ejected, so queue it once the
+  lower PRs land (GitHub then retargets it to `main`) and it has merged `main`. Close completed
+  issues and link any remaining work once the change lands.
 - For your own implementation, follow the worker rules and obtain non-author review under
   [Review cycle](#review-cycle). Changing roles does not make self-review independent.
 
@@ -264,8 +265,10 @@ transitive importing clients, then checks import aggregates. The comparison uses
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
 validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. Quick success alone does not satisfy
-the full validation requirement above; documentation-only checks need not invoke quick mode.
+ambiguous change/import analysis fall back to all six gates. The one exception is
+`scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
+encoding-readability lint instead. Quick success alone does not satisfy the full validation
+requirement above; documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
 `ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -391,6 +394,7 @@ not need a particular agent installation.
 Read the actual definitions and statements. For substantive mathematics, explain briefly what is
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
+Check new and changed statements against [Encodings in statements](#encodings-in-statements).
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
@@ -419,8 +423,9 @@ independent.
 
 Existing independent approval can carry across a mechanical delta when the coordinator verifies
 that it preserves meaning, exported availability, attributes, imports and automation behavior,
-and checks affected clients. Record that limited carry-forward decision. A clean rebase or typo
-fix may qualify; a proof repair, privatization, changed test coverage or conflict resolution is
+and checks affected clients. Record that limited carry-forward decision. A typo fix may qualify,
+and [Restacks](#restacks) gives a mechanical check for merging `main` or rebasing; a proof repair,
+privatization, changed test coverage or a conflict resolution that changes the PR's own lines is
 not automatically mechanical. Changed reasoning, API, source claims, security claims or abstracts,
 and uncertain cases, need fresh non-author review of the affected delta.
 
@@ -440,6 +445,51 @@ CSLib examples: [focused fixes and replies](https://github.com/leanprover/cslib/
 [an architectural suggestion kept separate from approval](https://github.com/leanprover/cslib/pull/1120),
 and [API review with explicit nonblocking nits](https://github.com/leanprover/cslib/pull/923#pullrequestreview-5560941186).
 
+### Approve and queue
+
+Approving a PR's exact current head and queueing it are one step. A non-authoring reviewer with
+write access who approves runs `python3 scripts/queue_pr.py <PR> <approved head>`, which queues
+exactly that head once the required check has passed there; `--wait 30` waits up to 30 minutes
+for a check that is still running. Write access is sufficient authority to queue a head approved
+under this cycle. Approve without queueing, and say why in the approval, when:
+
+- human review has been requested in the PR, its comments or a linked issue; queueing is then left
+  to that human or to whomever they name;
+- the approval names a hold, such as an unlanded lower PR, a migration or an upstream dependency;
+  queue once the hold clears.
+
+The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
+conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with
+write access may run the same command for the approved head; coordinators sweep for approved heads
+still waiting. Authors do not queue their own PRs.
+
+### Restacks
+
+Merge `main` into a PR only when it conflicts with `main`, needs a change on `main` to pass CI, or a
+lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
+does not require branches to be up to date, so refreshing an approved PR only replaces the approved
+head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
+[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
+`merge=union` result, which keeps deleted imports and can misorder added ones.
+
+A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
+passes and CI passes at the new head. The script replays the approved change onto the `main` that
+the new head is based on, which is what the merge queue would have built from the approved head,
+and passes only when the new head's tree is exactly that replay. The one exception is the
+`mk_all` import aggregates, which must instead be exactly what `lake exe mk_all` writes for the new
+head's tree. A conflict in the replay elsewhere, and any other difference, fails it. The replay
+merges `references.bib` entry by entry, as `scripts/resolve_bib_conflict.py` does, so a
+bibliography merge written by that script, with nothing else changed, passes. After
+`git fetch origin`, run the script from a checkout of current `origin/main`, not of the PR's
+branch, which could change it.
+An approval given while a PR is based on another branch also names that branch's head, and the
+check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
+review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+the author, may post the script's result line, which names both heads and the exact command. The
+non-author who queues the new head runs that command again rather than relying on the posted line.
+When the script reports differences, review the paths and diffs it prints as a delta, under the
+carry-forward rule above.
+
 ## New statements and definitions
 
 When a declaration claims to formalize a cited result, give its precise source version and locator
@@ -458,6 +508,52 @@ express the intended mathematics; explain a non-obvious decision to introduce a 
 Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
+
+### Encodings in statements
+
+An encoding is part of what a statement claims, so statements show every encoding; but a reader
+should not have to parse the same nested encoding again and again. New declarations, and
+declarations whose statements change, follow these rules. Existing code is brought into line by
+a tracked sweep ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)), and the
+encoding-readability lint checks rule 1 against a per-module baseline that may only fall.
+
+1. **Name repeated compound encodings.** A *compound encoding* is a term of type
+   `α ↪ List Bool` in which one of the generic combinators `encPair`, `encList`, `encOption`,
+   `encSum`, `encFramed`, `encPi` or `encDPi` is applied to another application of one of them,
+   such as `encPair encS (encOption encBool)`. When the same compound encoding, up to the names of
+   local variables, occurs in the types of three or more public declarations of a module, give it
+   a named `abbrev` and write the name in those statements. Occurrences inside larger terms count,
+   including bounds that restate an input encoding, such as
+   `fun p => (encPair encS (encOption encBool) p).length`. The varying encodings become the
+   `abbrev`'s parameters. Define it in that module, or in the lowest module its users share, and
+   once a name exists, use it instead of restating its body.
+2. **Document the layout.** The `abbrev`'s docstring says what is encoded and how: the order of
+   the parts, which parts are framed, and any tag bits. For example, `QueryMachine.encStateRead`
+   is "a state paired with the bit read; the state is framed".
+3. **Keep it reducible.** Use `abbrev`, not `def`. The statement is definitionally identical to
+   the spelled-out one: `enc_len`, `fun_prop`, instance search and `simp` with the combinators'
+   lemmas such as `length_encPair` see through the name, and so does `rw`, except where the name
+   heads the rewritten term. Syntactic tools may not: `omega` takes `(encX e p).length` and its
+   spelled-out form as different atoms, so the facts it combines must use one form, which can
+   need small proof edits. Do not abbreviate an encoding with a `local notation`: the lint reads
+   it as an atom, so it hides a compound encoding, and the documentation shows its expansion.
+   When you touch a module that abbreviates a compound encoding with one, replace it with a
+   documented `abbrev`.
+4. **Name domain encodings.** Encode a mathematical object (a formula, graph, circuit or problem
+   instance) by a named, documented definition, not by a compound spelled out inside a larger
+   encoding, even where it occurs only once.
+5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
+   tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
+   generates the embedding, its `_apply` equation and its `fun_prop` certificates, rather than
+   writing a `.trans` embedding and proving the certificates by hand. The
+   [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
+   shows the declaration and what it generates.
+6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs
+   and matrices, and framing that changes a length bound stay visible: the name or the first line
+   of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
+7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
+   the `enc%` proposal (#1830) is parked. Curated abstracts stay fully spelled out: they write each
+   encoding in place or define it in the abstract itself.
 
 ## Curated formal abstracts
 

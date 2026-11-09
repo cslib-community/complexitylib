@@ -322,20 +322,12 @@ private theorem packetCtx_polyTime (hfl : ComputableInPolyTime fl encIn (encList
       (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _)) (hi.comp hx)
   have hs₁ := (ComputableInPolyTime.fst _ _).comp hsym
   have hs₂ := (ComputableInPolyTime.snd _ _).comp hsym
-  have htuple : ComputableInPolyTime (fun p : δ × ℕ =>
-      PacketCtx.equivProd (packetCtx (fl p.1) (a p.1) (i p.1) (pt p.1) (t p.1) (ζ p.1) (g p.1) p.2))
-      e₁ PacketCtx.encProd :=
-    ((hpt.comp hx).prod (hfl.comp hx)).prod (((ha.comp hx).prod (hL.comp hx)).prod
-      (((hi.comp hx).prod (hT.comp hx)).prod ((ht.comp hx).prod ((hpt.comp hx).prod
-        (((ComputableInPolyTime.decide_eq' hs₁ (hg.comp hx)).prod
-          ((ComputableInPolyTime.decide_eq' hs₂ (hg.comp hx)).prod
-            (ComputableInPolyTime.decide_not (ComputableInPolyTime.decide_eq' hs₁ hs₂)))).prod
-          ((ComputableInPolyTime.const []).prod (hζ.comp hx)))))))
-  have hsymm : ComputableInPolyTime PacketCtx.equivProd.symm PacketCtx.encProd PacketCtx.enc :=
-    ComputableInPolyTime.of_eq fun y => by
-      rw [PacketCtx.enc, encOfEquiv_apply, Equiv.apply_symm_apply]
-  exact (hsymm.comp htuple).of_enc_eq fun p => by
-    rw [Function.comp_apply, Equiv.symm_apply_apply]
+  exact PacketCtx.mk_polyTime (hpt.comp hx) (hfl.comp hx) (ha.comp hx) (hL.comp hx)
+    (hi.comp hx) (hT.comp hx) (ht.comp hx) (hpt.comp hx)
+    (ComputableInPolyTime.decide_eq' hs₁ (hg.comp hx))
+    (ComputableInPolyTime.decide_eq' hs₂ (hg.comp hx))
+    (ComputableInPolyTime.decide_not (ComputableInPolyTime.decide_eq' hs₁ hs₂))
+    (ComputableInPolyTime.const []) (hζ.comp hx)
 
 /-- **The packet vertices**: one per packet, with its ports, their tags, its context and its slice
 of the exponents. -/

@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Lookup
 public import Mathlib.Data.Fintype.Option
 import Mathlib.Basic.Finite.Prod
 import Mathlib.Basic.Finite.Sum
@@ -247,31 +248,6 @@ private lemma Seg.mono (h : τ.Seg S c c' t) (ht : t ≤ t') : τ.Seg S c c' t' 
 
 /-! ### The framed input -/
 
-private lemma getElem?_frame_append (u v : List Bool) {i : ℕ} (hi : i < u.length) :
-    (frame u ++ v)[2 * i]? = some true ∧ (frame u ++ v)[2 * i + 1]? = some u[i] := by
-  induction u generalizing i with
-  | nil => simp at hi
-  | cons b u ih =>
-    rcases i with _ | i
-    · simp [frame_cons]
-    · obtain ⟨h₁, h₂⟩ := ih (i := i) (by simpa using hi)
-      have e₁ : 2 * (i + 1) = 2 * i + 1 + 1 := by omega
-      simp only [frame_cons, List.cons_append, e₁, List.getElem?_cons_succ,
-        List.getElem_cons_succ]
-      exact ⟨h₁, h₂⟩
-
-private lemma getElem?_frame_append_length (u v : List Bool) (j : ℕ) :
-    (frame u ++ v)[2 * u.length]? = some false ∧
-      (frame u ++ v)[2 * u.length + 1 + j]? = v[j]? := by
-  have hfl : frame u ++ v = u.flatMap (fun b => [true, b]) ++ false :: v := by simp [frame]
-  have hlen : (u.flatMap (fun b => [true, b])).length = 2 * u.length := by
-    have := length_frame u
-    simp only [frame, List.length_append, List.length_singleton] at this
-    omega
-  rw [hfl, List.getElem?_append_right (by omega), List.getElem?_append_right (by omega), hlen,
-    Nat.sub_self, (by omega : 2 * u.length + 1 + j - 2 * u.length = j + 1)]
-  exact ⟨rfl, rfl⟩
-
 /-! ### The phases of the machine -/
 
 variable {u v : List Bool}
@@ -383,7 +359,7 @@ private lemma step_endFrame :
   rw [step_cfgAt]
   have hp : min (2 * u.length + 1) ((frame u ++ v).length + 1) = 2 * u.length + 1 := by omega
   have hx : inputAt (frame u ++ v) (2 * u.length + 1) = some false := by
-    simpa [inputAt] using (getElem?_frame_append_length u v 0).1
+    simpa [inputAt] using getElem?_frame_append_length u v
   simp only [hp, hx, tr, moveInputPosNat_one (by omega : 2 * u.length + 1 ≤ (frame u ++ v).length),
     SignType.coe_neg_one, List.append_nil, Option.toList_none]
   exact cfgAt_congr (by omega) (by omega)
@@ -499,7 +475,7 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
       rw [← getElem?_min_length]
       simpa [inputAt,
         (by omega : 2 * u.length + 2 + min r v.length - 1 = 2 * u.length + 1 + min r v.length)]
-        using (getElem?_frame_append_length u v (min r v.length)).2
+        using getElem?_frame_append_boundary u v (min r v.length)
     have hy : tapeOfList u ((min r u.length : ℕ) : ℤ) = (u.drop r).head? := by
       rw [tapeOfList_ofNat, getElem?_min_length]
     set x := (v.drop r).head? with hxdef

@@ -28,10 +28,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Op
 
 The sparsification lemma of Impagliazzo, Paturi and Zane [ImpagliazzoPaturiZane2001] on the native
 machines: a depth-first search of the sparsification tree, with a decider applied at its leaves,
-runs within time `2 ^ (ε n)` times the sum of a polynomial and the time of the decider on formulas
-with at most `c n + 1` clauses, on formulas with `n` variables. Hence a decider for `k`-SAT within
-time `2 ^ (δ m)` times a polynomial, on formulas with `m` clauses, gives one within time
-`2 ^ ((ε + c δ) n)` times a polynomial, on formulas with `n` variables
+runs within time `2 ^ (ε * n)` times the sum of a polynomial and the time of the decider on formulas
+with at most `c * n + 1` clauses, on formulas with `n` variables. Hence a decider for `k`-SAT within
+time `2 ^ (δ * m)` times a polynomial, on formulas with `m` clauses, gives one within time
+`2 ^ ((ε + c * δ) * n)` times a polynomial, on formulas with `n` variables
 (`Cslib.Complexity.exists_decidableInExpTime_numVars_of_length`), and the exponential time
 hypothesis says that 3SAT is not decidable in subexponential time in the number of clauses
 (`Cslib.Complexity.ETH_iff_not_decidableInSubexpTime_length`).
@@ -43,11 +43,11 @@ the decider, and at any other formula it pushes the two children of the list-lev
 (`Cslib.Logic.PL.CNF.Sparsification.next`), which is polynomial-time. This is the depth-first
 search of the branching tree of the list-level rule
 (`Cslib.BinaryBranching.exists_iterate_searchStep`), so it visits
-every leaf within twice the number of leaves of steps, which is at most `2 ^ (ε n)` up to a
+every leaf within twice the number of leaves of steps, which is at most `2 ^ (ε * n)` up to a
 constant for the thresholds given by
 `Cslib.Logic.PL.ClauseSet.Sparsification.exists_sum_choose_le`. Meanwhile the stack holds at most
 `O(n)` formulas of the tree, each with `O(n + m)` clauses, and the leaves, being sparse, have at
-most `c n + 1` clauses (`Cslib.Logic.PL.ClauseSet.Sparsification.card_le_of_sparse`). The search
+most `c * n + 1` clauses (`Cslib.Logic.PL.ClauseSet.Sparsification.card_le_of_sparse`). The search
 runs a fixed number `2 ^ (n / M + 2)` of rounds, the last ones on the empty stack, for `ε = 1 / M`.
 
 ## Main definitions
@@ -230,7 +230,7 @@ private theorem length_walk_le (hw : (rule hK hα).tree.IsNodeWord (rootState hk
   rw [Normalized.card_toClauseSet (rootState hkK φ).2]
   exact length_root_le k φ
 
-/-- **The leaves are small.** The sparse states of the tree have at most `c n + 1` clauses, for
+/-- **The leaves are small.** The sparse states of the tree have at most `c * n + 1` clauses, for
 `c = occBound K α`. -/
 private theorem length_walk_le_of_isSparse (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w)
     (hs : isSparse (threshold K α) K ((rule hK hα).tree.walk (rootState hkK φ) w).1 = true) :
@@ -548,9 +548,9 @@ private theorem exists_computableInO_search {k M : ℕ} (hkK : k ≤ K) (hM : Le
     hstep hround hround hstate).snd'⟩
 
 include hK hα in
-/-- **The time of the search.** With a decider within time `2 ^ (δ m)` times a polynomial, on
+/-- **The time of the search.** With a decider within time `2 ^ (δ * m)` times a polynomial, on
 formulas with `m` clauses, the formulas accepted by the search are decidable within time
-`2 ^ ((1 / M + c δ) n)` times a polynomial, on formulas with `n` variables, for
+`2 ^ ((1 / M + c * δ) * n)` times a polynomial, on formulas with `n` variables, for
 `c = occBound K α`. -/
 theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
     {g : CNF ℕ → Bool} {t : CNF ℕ → ℕ} (hg : ComputableInO g encCNF encBool t t)
@@ -723,8 +723,8 @@ end Sparsify
 
 /-- **Sparsification on the native machines** [ImpagliazzoPaturiZane2001]. For every width `k` and
 every `ε > 0` there is a constant `c` such that, for every `δ ≥ 0`, a decider for `k`-SAT within
-time `2 ^ (δ m)` times a polynomial in the length of the encoded formula, on formulas with `m`
-clauses, gives a decider for `k`-SAT within time `2 ^ ((ε + c δ) n)` times a polynomial, on
+time `2 ^ (δ * m)` times a polynomial in the length of the encoded formula, on formulas with `m`
+clauses, gives a decider for `k`-SAT within time `2 ^ ((ε + c * δ) * n)` times a polynomial, on
 formulas with `n` variables. -/
 theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 0 < ε) :
     ∃ c : ℕ, ∀ δ : ℝ, 0 ≤ δ → DecidableInExpTime (KSAT k) encCNF List.length δ →
@@ -776,8 +776,8 @@ theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 
     (by linarith)
 
 /-- **Subexponential time in the clauses gives subexponential time in the variables**
-[ImpagliazzoPaturiZane2001]: if `k`-SAT is decidable within time `2 ^ (δ m)` times a polynomial
-for every `δ > 0`, on formulas with `m` clauses, it is decidable within time `2 ^ (δ n)` times a
+[ImpagliazzoPaturiZane2001]: if `k`-SAT is decidable within time `2 ^ (δ * m)` times a polynomial
+for every `δ > 0`, on formulas with `m` clauses, it is decidable within time `2 ^ (δ * n)` times a
 polynomial for every `δ > 0`, on formulas with `n` variables. -/
 theorem DecidableInSubexpTime.numVars_of_length {k : ℕ}
     (h : DecidableInSubexpTime (KSAT k) encCNF List.length) :

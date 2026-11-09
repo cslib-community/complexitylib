@@ -14,6 +14,8 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.PPZ.Round
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 
 /-!
 # The PPZ algorithm on the randomized word RAM
@@ -122,8 +124,9 @@ finds a satisfying assignment of `φ`: `true` if some round found one. -/
 noncomputable def repeatRoundWith (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (φ : CNF (Fin n)) : ℕ → PMF Bool
   | 0 => PMF.pure false
-  | R + 1 => (roundWith O).bind fun τ =>
-    if succeeds φ τ then PMF.pure true else repeatRoundWith O φ R
+  | R + 1 => do
+    let τ ← roundWith O
+    if succeeds φ τ then pure true else repeatRoundWith O φ R
 
 /-- The output of up to `R` independent rounds of PPZ, stopping at the first success: `true` if
 some round found a satisfying assignment. -/
@@ -150,7 +153,8 @@ theorem repeatRoundWith_false_toReal (O : (Fin n → Option Bool) → Fin n → 
         exact Finset.sum_congr rfl fun τ _ => by by_cases hτ : succeeds φ τ = true <;> simp [hτ]
       rw [hcongr, roundSuccessProbWith]
       linarith
-    rw [repeatRoundWith, h, pow_succ]
+    rw [repeatRoundWith, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
+      h, pow_succ]
     calc ∑ τ, ((roundWith O) τ).toReal *
           ((if succeeds φ τ = true then PMF.pure true else repeatRoundWith O φ R) false).toReal
         = ∑ τ, ((roundWith O) τ).toReal * (if succeeds φ τ = true then 0 else 1) *
@@ -172,8 +176,7 @@ theorem repeatRound_false_toReal (φ : CNF (Fin n)) (R : ℕ) :
 /-- The success probability of a round is at most `1`. -/
 theorem roundSuccessProbWith_le_one (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (φ : CNF (Fin n)) : roundSuccessProbWith O φ ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one
-    (by rw [ENNReal.ofReal_one]; exact Probability.PMF.toOuterMeasure_le_one _ _)
+  Probability.PMF.toOuterMeasure_toReal_le_one _ _
 
 /-- A round's success test on a total assignment is satisfaction. -/
 theorem succeeds_some (φ : CNF (Fin n)) (σ : Fin n → Bool) :
@@ -208,7 +211,7 @@ theorem repeatRoundWith_false_le_exp {O : (Fin n → Option Bool) → Fin n → 
     {φ : CNF (Fin n)} {q c : ℝ} {R : ℕ} (hq : q ≤ roundSuccessProbWith O φ) (hR : c ≤ R * q) :
     (repeatRoundWith O φ R false).toReal ≤ Real.exp (-c) := by
   rw [repeatRoundWith_false_toReal]
-  exact Schoening.one_sub_pow_le_exp (roundSuccessProbWith_le_one O φ)
+  exact Real.one_sub_pow_le_exp (roundSuccessProbWith_le_one O φ)
     (hR.trans (mul_le_mul_of_nonneg_left hq (Nat.cast_nonneg R)))
 
 /-- **The PPZ bound for one round** [Paturi, Pudlák, Zane][PPZ1997]: on a satisfiable formula with
@@ -886,7 +889,7 @@ theorem ampProgram_failure_le_exp {k c : ℕ} (hk : 1 ≤ k) {φ : CNF (Fin n)} 
   rw [ampProgram_failure_eq k c hk φ hw]
   have hp := roundSuccessProb_ge hk hφ hlen
   have hp1 : roundSuccessProb φ ≤ 1 := roundSuccessProbWith_le_one _ _
-  refine Schoening.one_sub_pow_le_exp hp1 ?_
+  refine Real.one_sub_pow_le_exp hp1 ?_
   have he := le_ppzExp hk n
   have h2 : (1 : ℝ) ≤ (2 : ℝ) ^ ppzExp k n * (2 : ℝ) ^ (-((1 - 1 / (k : ℝ)) * n)) := by
     rw [← Real.rpow_natCast, ← Real.rpow_add two_pos]

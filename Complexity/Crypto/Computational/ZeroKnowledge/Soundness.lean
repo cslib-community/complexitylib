@@ -94,9 +94,8 @@ structure ZKProof (enc : α ↪ List Bool) (A : Set α) (soundness : ℕ → ENN
   PPT in `(1^n, a, w, z)`. -/
   isPPT_interact :
     ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
-      IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-        (fun ⟨n, a, z⟩ => Vstar n a z) →
-      IsPPTOn (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
+      IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z) →
+      IsPPTOn (encInstanceWitnessAuxInput enc) encBits
         (fun ⟨n, a, w, z⟩ =>
           interact n a w (Vstar n a z))
   /-- Perfect completeness: for every valid witness `w` of `a`, the honest prover convinces the

@@ -13,7 +13,9 @@ import Complexity.Probability.StatisticalDistance
 Independent private samples embed exactly, and a common value known to both parties is embedded
 by Lemma 5.2. A perfectly correlated pair embeds with error `0`, whereas a target requiring one
 party to reproduce the other party's uniform input without communication is not locally embeddable
-below error `1 / 2`.
+below error `1 / 2`. A law whose masses factor embeds exactly; two exact embeddings compose, and the
+parties can forget the intermediate outputs; and shared randomness may come from a type in a
+higher universe.
 -/
 
 namespace ComplexityTests.Embeddability
@@ -83,5 +85,46 @@ example {ε : ℝ} (hε : ε < 1 / 2) : ¬ IsEmbeddable aliceInput bobGuessesAli
   have hpure : dist (PMF.pure ((), true)) (PMF.pure ((), false)) = 1 := by
     simp [Cslib.Probability.PMF.dist_eq, Fintype.sum_prod_type]
   linarith
+
+/-- Two equal fair bits `(b, b)`. -/
+noncomputable def sameBits : PMF (Bool × Bool) :=
+  (Cslib.Probability.PMF.uniformOfFintype Bool).map fun b => (b, b)
+
+-- A law with masses `P (x, y) · [s = x] · [t = y]` factors, so each party copies its input exactly.
+example : IsEmbeddable sameBits (sameBits.map fun xy => (xy, xy)) 0 := by
+  have h := isEmbeddable_map_fst_of_apply_eq_mul (sameBits.map fun xy => (xy, xy))
+    (fun x y => sameBits (x, y)) (fun x s => if s = x then 1 else 0)
+    (fun y t => if t = y then 1 else 0) (by simp) (by simp) fun x y s t => by
+      rw [PMF.map_apply, tsum_eq_single (x, y)]
+      · by_cases hs : s = x <;> by_cases ht : t = y <;> simp [hs, ht]
+      · exact fun b hb => ite_eq_right fun hxy => hb (Prod.ext_iff.mp hxy).1.symm
+  have hfst : (sameBits.map fun xy => (xy, xy)).map Prod.fst = sameBits :=
+    (PMF.map_comp _ _ _).trans (PMF.map_id _)
+  rwa [hfst] at h
+
+-- Composition: each party copies its bit, then negates the copy. Forgetting the copies, the
+-- equal bits embed exactly in `((b, b), (!b, !b))`.
+example : IsEmbeddable sameBits (sameBits.map fun (x, y) => ((x, y), (!x, !y))) 0 := by
+  have h₁ := isEmbeddable_bind_prod sameBits PMF.pure PMF.pure
+  have h₂ := isEmbeddable_bind_prod
+    ((sameBits.bind fun xy => (PMF.pure xy.1).bind fun s => (PMF.pure xy.2).map fun t =>
+      (xy, (s, t))).map fun ((x, y), (s, t)) => ((x, s), (y, t)))
+    (fun xs => PMF.pure (!xs.2)) (fun yt => PMF.pure (!yt.2))
+  have h := (h₁.trans h₂).map (fun _ su => su.2) (fun _ tv => tv.2)
+  rw [zero_add] at h
+  convert h using 1
+  simp only [sameBits, PMF.map_bind, PMF.bind_map, PMF.pure_bind, PMF.map_comp, PMF.bind_bind,
+    PMF.pure_map, Function.comp_def]
+  rfl
+
+-- A shared fair bit drawn from a type in `Type 2` gives both parties the same bit.
+example : IsEmbeddable (PMF.pure ((), ()))
+    ((Cslib.Probability.PMF.uniformOfFintype Bool).map fun b => (((), ()), (b, b))) 0 :=
+  IsEmbeddable.of_dist_le (Cslib.Probability.PMF.uniformOfFintype (ULift.{2} Bool))
+    (fun _ r => r.down) (fun _ r => r.down) (le_of_eq (by
+      rw [dist_eq_zero, PMF.pure_bind,
+        ← Cslib.Probability.PMF.uniformOfFintype_map_equiv (Equiv.ulift.{2} (α := Bool)),
+        PMF.map_comp]
+      rfl))
 
 end ComplexityTests.Embeddability
