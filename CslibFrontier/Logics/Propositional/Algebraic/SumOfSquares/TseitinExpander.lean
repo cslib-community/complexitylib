@@ -82,7 +82,8 @@ every `n ≥ 2` there is an unsatisfiable parity system with `n` equations, each
 variables, on at most `120 n` variables, such that over every strictly ordered commutative ring,
 every sum-of-squares refutation of degree at most `d` of its `±1` encoding has `n ≤ 18000 d`. It
 is the Tseitin parity system, with a single charged vertex, of a `120`-regular expander on `n`
-vertices (`Cslib.RotationMap.expander`), whose existence is proved non-constructively.
+vertices (`Cslib.RotationMap.expander`, through `Cslib.Multigraph.exists_expander`), whose existence
+is proved non-constructively.
 
 The `Ω(n)` degree bound for Tseitin systems on expanders is Grigoriev's [Grigoriev][Grigoriev2001].
 The constants `120` and `18000` are not from that source: they come from this library's expanders,

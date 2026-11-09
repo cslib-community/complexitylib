@@ -110,9 +110,9 @@ namespace Tseitin
 multigraph on `n` vertices with at most `120 n` edges, each vertex on at most `120` edges other
 than self-loops, and expansion `e(G) ≥ n / 18000`, whose Tseitin formula with a single charged
 vertex has at most `2 ^ 120 · n` clauses, each with at most `120` literals and so of width at most
-`120`, and is unsatisfiable. It is the
-multigraph of the `120`-regular expander `Cslib.RotationMap.expander (Fin n)`, with edge expansion
-at least `1 / 6000`, whose existence is proved non-constructively. This is the common setup of
+`120`, and is unsatisfiable. The multigraph comes from `Cslib.Multigraph.exists_expander`: it is
+that of the `120`-regular expander `Cslib.RotationMap.expander (Fin n)`, with edge expansion at
+least `1 / 6000`, whose existence is proved non-constructively. This is the common setup of
 `Cslib.Logic.PL.CNF.exists_forall_refutableInSize_exp_le` and of the clause-space family in
 `CslibFrontier.Logics.Propositional.Resolution.TseitinSpace`. -/
 theorem exists_expander_tseitinFormula (n : ℕ) (hn : 2 ≤ n) :
