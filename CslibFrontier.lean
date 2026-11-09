@@ -5130,6 +5130,7 @@ public import CslibFrontier.Logics.BooleanClone.Classification
 public import CslibFrontier.Logics.BooleanClone.Formula
 public import CslibFrontier.Logics.BooleanClone.Generated
 public import CslibFrontier.Logics.BooleanClone.Post
+public import CslibFrontier.Logics.FirstOrder.Atom
 public import CslibFrontier.Logics.FirstOrder.Basic
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
@@ -5572,6 +5573,7 @@ public import CslibFrontier.Probability.MarkovChain.Metropolis
 public import CslibFrontier.Probability.MarkovChain.Mixing
 public import CslibFrontier.Probability.MarkovChain.PathCoupling
 public import CslibFrontier.Probability.MedianOfMeans
+public import CslibFrontier.Probability.MedianTrick
 public import CslibFrontier.Probability.MinEntropy
 public import CslibFrontier.Probability.MinEntropy.Flat
 public import CslibFrontier.Probability.MinEntropy.LeftoverHash
@@ -5662,6 +5664,7 @@ public import CslibFrontier.Tactic.FOOperator
 public import CslibFrontier.Tactic.FOOperator.Init
 public import CslibFrontier.Tactic.FirstOrder
 public import CslibFrontier.Tactic.FirstOrder.Init
+public import CslibFrontier.Tactic.Fits
 public import CslibFrontier.Tactic.LogSpace
 public import CslibFrontier.Tactic.LogSpace.Init
 public import CslibFrontier.Tactic.OptionMatch

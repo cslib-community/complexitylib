@@ -73,6 +73,7 @@ The separation with genuine canonical `0`, `1`, and `max` constants, stated dire
 namespace Cslib.Circuits.Boolean.ModelChecking
 
 open FirstOrder FirstOrder.Language Finset
+open Cslib.Logic.FO (Atom atomsOf)
 
 variable {L : Language} [L.IsRelational] {n : ℕ}
 

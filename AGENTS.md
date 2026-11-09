@@ -469,8 +469,9 @@ Merge `main` into a PR only when it conflicts with `main`, needs a change on `ma
 lower stacked PR has landed. The merge queue tests every PR on top of the current `main`, and `main`
 does not require branches to be up to date, so refreshing an approved PR only replaces the approved
 head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
-[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
-`merge=union` result, which keeps deleted imports and can misorder added ones.
+[`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them and then check them
+with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
+never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current

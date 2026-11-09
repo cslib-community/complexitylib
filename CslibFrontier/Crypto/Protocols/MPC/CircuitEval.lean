@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Circuit.Program
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import Cslib.Computability.Circuit.Boolean.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Multi-Party Boolean Circuit Evaluation in the Shared-Multiplication Hybrid Model
@@ -616,8 +617,7 @@ private theorem eval_progDist_restrict_of_ne_univ {m inputCount g : ℕ} [NeZero
             ((ProbComp.eval (lineDist m x_flat p line)).map I.restrict).map fun rI_line (i : I) =>
               Schedule.Received.append (rI_p i) (rI_line i) := by
       intro x_flat
-      simp only [progDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        PMF.map_bind, PMF.bind_map, PMF.map_comp]
+      simp only [pmf_norm, progDist, bind_pure_comp]
       rfl
     rw [hfactor x₁, hfactor x₂, ih, eval_lineDist_restrict_of_ne_univ hI x₁ x₂ p line]
 
@@ -834,8 +834,7 @@ private theorem evalWith_outCoordsSteps {m k : ℕ} [NeZero m]
     have hcoord := evalWith_singleCoordSteps coord y st (hst coord.1 coord.2)
     constructor
     · rw [outCoordsSteps, Steps.evalWith_append, hcoord, PMF.bind_map]
-      simp only [outCoordsDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        Function.comp_def]
+      simp only [pmf_norm, outCoordsDist, bind_pure_comp]
       refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun ans hans => ?_
       have hnext := (ih (fun i => (singleCoordSteps m k coord).outputAt i (st i)
         (deliverCoord coord.1 ans i)) (fun r j => by simp [hst r j])).1
@@ -1043,8 +1042,7 @@ private theorem eval_outCoordsDist_restrict {m k : ℕ} [NeZero m]
             ((ProbComp.eval (outCoordsDist m k y' L)).map I.restrict).map
               fun rI_tail (i : I) => Schedule.Received.append (rI_head i) (rI_tail i) := by
       intro y'
-      simp only [outCoordsDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        PMF.map_bind, PMF.bind_map, PMF.map_comp]
+      simp only [pmf_norm, outCoordsDist, bind_pure_comp]
       rfl
     rw [hfactor (extendByZero I (I.restrict y)), hfactor y,
       map_deliverCoord_restrict I y coord, ih]
@@ -1116,9 +1114,7 @@ private theorem evalWith_gmwCircuitProtocol {m n k : ℕ} [NeZero m]
       (ProbComp.eval (gmwCircuitRealViews m n k C x (circuitFunctionality m n k C x))).map
         (fun v => (v, circuitFunctionality m n k C x)) := by
   rw [Protocol.evalWith_eq]
-  simp only [gmwCircuitProtocol, gmwCircuitRealViews,
-    ProbComp.eval_bind, ProbComp.eval_map, PMF.map_bind, PMF.map_comp, bind_pure_comp,
-    Function.comp_def]
+  simp only [pmf_norm, gmwCircuitProtocol, gmwCircuitRealViews, bind_pure_comp]
   refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun c _ => ?_
   rw [Steps.evalWith_append, evalWith_inputShareSteps, PMF.pure_bind]
   have hprog := evalWith_progSteps (BitString.blocksEquiv.symm x) C.program
@@ -1157,8 +1153,7 @@ private theorem eval_gmwCircuitRealViews_restrict {m n k : ℕ} [NeZero m]
                     (Schedule.Received.append (rI_prog i) (rI_out i))⟩ :
                   GMWCircuitView m n k C i.1) := by
     intro x' y' hx'
-    simp only [gmwCircuitRealViews, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-      PMF.map_bind, PMF.bind_map, PMF.map_comp, Function.comp_def, I.restrict_def]
+    simp only [pmf_norm, gmwCircuitRealViews, bind_pure_comp, I.restrict_def]
     refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun c _ => ?_
     refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun r_prog _ => ?_
     congr 1

@@ -80,10 +80,7 @@ theorem E_ssubset_EXP : E encBits ⊂ EXP encBits := by
   · -- the running time of the clocked diagonal is within `2 ^ n ^ 3` from `n = 5` on
     filter_upwards [PolynomiallyBounded.eventually_lt_two_pow (f := fun n => (n + 1) ^ 5)
       (by fun_prop), eventually_ge_atTop 5] with n hn h5
-    have h₁ : 2 ^ (n + 1) ^ 2 + 1 ≤ 2 ^ ((n + 1) ^ 2 + 1) := by
-      rw [pow_succ 2 ((n + 1) ^ 2)]
-      have := Nat.one_le_two_pow (n := (n + 1) ^ 2)
-      omega
+    have h₁ : 2 ^ (n + 1) ^ 2 + 1 ≤ 2 ^ ((n + 1) ^ 2 + 1) := by grind
     have hexp : n + 3 * ((n + 1) ^ 2 + 1) ≤ n ^ 3 := by nlinarith
     calc (n + 1) ^ 5 * (2 ^ (n + 1) ^ 2 + 1) ^ 3
         ≤ 2 ^ n * (2 ^ ((n + 1) ^ 2 + 1)) ^ 3 :=
