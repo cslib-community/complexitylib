@@ -947,19 +947,9 @@ theorem readCertificate_isPolynomial (enc : M.Encoding)
       SparseMemory.readSpace enc.address enc.value,
       SparseMemory.read_inO enc.address enc.value⟩ :
         NativeCertificate _ _ _).IsPolynomial := by
-    refine ⟨.of_forall_le 32 3 fun q => ?_, .of_forall_le 32 1 fun q => ?_⟩
-    · have hq : (SparseMemory.queryEncoding enc.address enc.value q.1).length ≤
-          (SparseMemory.readEncoding enc.address enc.value q).length := by
-        enc_len [SparseMemory.readEncoding]
-      have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
-      have ht := SparseMemory.scanTime_le_cube enc.address enc.value q.1
-      have he : (SparseMemory.readEncoding enc.address enc.value q).length ≤
-          ((SparseMemory.readEncoding enc.address enc.value q).length + 1) ^ 3 := by
-        ring_nf; omega
-      unfold SparseMemory.readTime
-      nlinarith
-    · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value q.1
-      enc_len [SparseMemory.readSpace, SparseMemory.readEncoding, pow_one] at hs ⊢
+    refine ⟨.of_forall_le 32 3 (SparseMemory.readTime_le_cube enc.address enc.value),
+      .of_forall_le 32 1 fun q => ?_⟩
+    simpa only [pow_one] using SparseMemory.readSpace_le_linear enc.address enc.value q
   exact comp_isPolynomial _
     (prod (prod address (snd (snd (snd (fields enc c))))) (fst (snd (snd (fields enc c)))))
     hread (prod_isPolynomial _ _ (prod_isPolynomial _ _ ha hc) hc)
@@ -974,21 +964,9 @@ theorem writeCertificate_isPolynomial (enc : M.Encoding)
       SparseMemory.writeSpace enc.address enc.value,
       SparseMemory.insert_inO enc.address enc.value⟩ :
         NativeCertificate _ _ _).IsPolynomial := by
-    refine ⟨.of_forall_le 33 3 fun q => ?_, .of_forall_le 33 1 fun q => ?_⟩
-    · have hq : (SparseMemory.queryEncoding enc.address enc.value (q.1.1, q.2)).length ≤
-          (SparseMemory.writeEncoding enc.address enc.value q).length := by
-        enc_len [SparseMemory.queryEncoding, SparseMemory.writeEncoding]
-      have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
-      have ht := SparseMemory.scanTime_le_cube enc.address enc.value (q.1.1, q.2)
-      have he : (SparseMemory.writeEncoding enc.address enc.value q).length ≤
-          ((SparseMemory.writeEncoding enc.address enc.value q).length + 1) ^ 3 := by
-        ring_nf; omega
-      unfold SparseMemory.writeTime
-      nlinarith
-    · have hs := SparseMemory.scanSpace_le_linear enc.address enc.value (q.1.1, q.2)
-      simp only [SparseMemory.writeSpace, SparseMemory.queryEncoding,
-        SparseMemory.writeEncoding, length_encPair, pow_one] at hs ⊢
-      omega
+    refine ⟨.of_forall_le 33 3 (SparseMemory.writeTime_le_cube enc.address enc.value),
+      .of_forall_le 33 1 fun q => ?_⟩
+    simpa only [pow_one] using SparseMemory.writeSpace_le_linear enc.address enc.value q
   have hmem := comp_isPolynomial _
     (prod (prod address value) (snd (snd (snd (fields enc c)))))
     hwrite (prod_isPolynomial _ _ (prod_isPolynomial _ _ ha hv) hc)

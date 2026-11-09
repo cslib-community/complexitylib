@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Fusion.Basic
 public import CslibFrontier.Computability.Circuit.Monotone.Set
 public import Mathlib.Order.Hom.Bounded
+import CslibFrontier.Foundations.Data.ENat.IInf
 
 /-!
 # Semifilter covers of monotone set constructions
@@ -231,16 +232,8 @@ theorem le_pairCoverComplexity_iff {admissible : Semifilter ↥(targetᶜ) → P
 /-- Every finite bound on the cover infimum is attained by a cover within that bound. -/
 theorem pairCoverComplexity_le_iff {admissible : Semifilter ↥(targetᶜ) → Prop} {t : ℕ} :
     pairCoverComplexity target input admissible ≤ t ↔
-      ∃ c : PairCover target input admissible, c.pairs.length ≤ t := by
-  constructor
-  · intro h
-    have hne := ne_top_of_le_ne_top (ENat.natCast_ne_top t) h
-    have : Nonempty (PairCover target input admissible) := ENat.iInf_natCast_ne_top.mp hne
-    obtain ⟨c, hc⟩ := ENat.exists_eq_iInf
-      (fun c : PairCover target input admissible => (c.pairs.length : ℕ∞))
-    exact ⟨c, by exact_mod_cast hc.trans_le h⟩
-  · rintro ⟨c, hc⟩
-    exact (pairCoverComplexity_le c).trans (by exact_mod_cast hc)
+      ∃ c : PairCover target input admissible, c.pairs.length ≤ t :=
+  ENat.iInf_natCast_le_natCast_iff
 
 /-- Any lower bound on pair-cover length transfers to the AND count of a constructing circuit. -/
 theorem pairCover_lowerBound {admissible : Semifilter ↥(targetᶜ) → Prop} {k : ℕ}

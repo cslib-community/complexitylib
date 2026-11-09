@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCo
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
 
 /-!
 # Compositional combinators for native resource certificates
@@ -147,44 +148,8 @@ def option {value : α → Option β} {fallback : α → γ} {body : α × β �
       (value a).elim (no.time a) (fun b => yes.time (a, b)),
     fun a => 2 * c.space a + (ei a).length +
       (value a).elim (no.space a) (fun b => yes.space (a, b)),
-    by
-      rcases isEmpty_or_nonempty β with h | h
-      · have hv : ∀ a, value a = none := by
-          intro a
-          cases value a with
-          | none => rfl
-          | some b => exact isEmptyElim b
-        simpa only [hv, Option.elim_none] using no.computes.mono_le
-          (T' := fun a => 2 * c.time a + (ei a).length + no.time a)
-          (S' := fun a => 2 * c.space a + (ei a).length + no.space a)
-          (fun _ => by omega) (fun _ => by omega)
-      · obtain ⟨b⟩ := h
-        have hget := (ComputableInDegree.getD (enc₁ := em) (enc := encOption em) b).inO_one
-          |>.comp_linear c.computes
-        have htag := (ComputableInDegree.isSome em).inO_one.comp_linear c.computes
-        have hid : ComputableInO (fun a : α => a) ei ei
-            (fun a => (ei a).length) (fun a => (ei a).length) := .of_eq fun _ => rfl
-        have h := htag.ite (yes.computes.comp (hid.prod hget)) no.computes
-        have h' := h.mono_le
-          (T' := fun a => 2 * c.time a + (ei a).length +
-            (value a).elim (no.time a) (fun b => yes.time (a, b)))
-          (S' := fun a => 2 * c.space a + (ei a).length +
-            (value a).elim (no.space a) (fun b => yes.space (a, b)))
-          (fun a => by
-            cases hv : value a <;>
-              simp only [Function.comp_def, hv, Option.isSome_none, Option.isSome_some,
-                Option.getD_some, Option.elim_none, Option.elim_some, Bool.false_eq_true,
-                ite_false, ite_true] <;> omega)
-          (fun a => by
-            cases hv : value a <;>
-              simp only [Function.comp_def, hv, Option.isSome_none, Option.isSome_some,
-                Option.getD_some, Option.elim_none, Option.elim_some, Bool.false_eq_true,
-                ite_false, ite_true] <;> omega)
-        convert h' using 1
-        funext a
-        change (value a).elim (fallback a) (fun b => body (a, b)) =
-          if (value a).isSome then body (a, (value a).getD b) else fallback a
-        cases value a <;> rfl⟩
+    ComputableInO.optionElimWithInput (body := fun a b => body (a, b)) c.computes no.computes
+      yes.computes⟩
 
 @[simp] theorem option_time {value : α → Option β} {fallback : α → γ} {body : α × β → γ}
     (c : NativeCertificate value ei (encOption em))
