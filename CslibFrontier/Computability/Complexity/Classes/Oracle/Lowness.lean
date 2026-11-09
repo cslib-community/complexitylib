@@ -277,15 +277,10 @@ theorem forall_NPWithOracle_eq_NP_iff :
 
 /-- **The union of `NP^A` over `A ∈ NP ∩ coNP` is `NP`.** -/
 theorem iUnion_NPWithOracle_NP_inter_coNP (enc : α ↪ List Bool) :
-    (⋃ A ∈ NP encBits ∩ coNP encBits, NPWithOracle A enc) = NP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (NPWithOracle_eq_NP_of_mem_NP_of_mem_coNP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    refine Set.mem_iUnion₂.mpr ⟨∅, ⟨P_subset_NP hempty, P_subset_coNP hempty⟩, ?_⟩
-    exact NP_subset_NPWithOracle ∅ enc hL
+    (⋃ A ∈ NP encBits ∩ coNP encBits, NPWithOracle A enc) = NP enc :=
+  (Set.iUnion₂_congr fun _ hA => NPWithOracle_eq_NP_of_mem_NP_of_mem_coNP hA.1 hA.2 enc).trans
+    (Set.biUnion_const (s := NP encBits ∩ coNP encBits)
+      ⟨∅, P_subset_NP empty_mem_P, P_subset_coNP empty_mem_P⟩ _)
 
 /-- **`P = NP` if and only if every `NP` oracle is low for `P`.** -/
 theorem P_eq_NP_iff_forall_PWithOracle_eq_P :

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LogClock
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.WindowedComplexity
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
@@ -172,12 +173,7 @@ theorem exists_computableInO_timeDiagonal_polylog : ∃ k, ∀ {J : ℕ → ℕ}
         K * (x.length + (Nat.log 2 (x.length + 1) + 1) ^ (ed * 6) *
           ((J x.length + 1) * (Nat.log 2 (J x.length + 1) + 1)) + 1) := by
     have hL : 2 ^ (unframe x).length ≤ x.length := of_decide_eq_true hs
-    have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
-      (length_encList_le encUnary _ (b := 1) fun s hs => by
-        obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
-        cases b
-        · exact Nat.zero_le _
-        · exact le_rfl).trans (by rw [List.length_map]; omega)
+    have hN := length_encList_map_eBit_le x
     have hJ := Universal.length_encNat_le (J x.length)
     refine hK hL ((hcA _).trans (Nat.mul_le_mul_left _ (hL.trans (Nat.le_succ _)))) (hce _)
       (listMax_le fun a ha => ?_) ?_

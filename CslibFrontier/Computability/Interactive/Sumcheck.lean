@@ -186,8 +186,7 @@ private theorem eval_roundPoly_eq {i : ℕ} (r : Fin i → F) (z : F) :
   refine Finset.sum_congr rfl fun b _ => ?_
   rw [← Polynomial.coe_aeval_eq_eval, MvPolynomial.comp_aeval_apply,
     MvPolynomial.aeval_eq_eval]
-  congr 2
-  funext j
+  congr 2 with j : 1
   simp only [point, snoc_mk]
   split_ifs <;> first | omega | simp
 

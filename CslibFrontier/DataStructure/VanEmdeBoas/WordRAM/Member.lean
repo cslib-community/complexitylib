@@ -179,9 +179,7 @@ theorem member_eq_false_of_max_lt {d m M query : ℕ} {tree : Tree d}
     tree.member query = false := by
   have hnot : ¬tree.Contains query := by
     intro hc
-    have he := ht.extrema
-    simp only [Tree.Extrema, hb] at he
-    have := (he.2.2.2.2 query hc).2
+    have := ((ht.extrema_of_bounds hb).2.2.2.2 query hc).2
     omega
   cases he : tree.member query
   · rfl

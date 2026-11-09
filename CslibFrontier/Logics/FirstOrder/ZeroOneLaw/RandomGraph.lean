@@ -13,6 +13,7 @@ public import Mathlib.Combinatorics.SimpleGraph.Finite
 public import Mathlib.Combinatorics.SimpleGraph.Operations
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -98,8 +99,7 @@ theorem randomGraphProb_le_one (n : ℕ) (P : SimpleGraph (Fin n) → Prop) :
 
 theorem randomGraphProb_mono {n : ℕ} {P Q : SimpleGraph (Fin n) → Prop} (h : ∀ G, P G → Q G) :
     randomGraphProb n P ≤ randomGraphProb n Q :=
-  ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono fun G hG => h G hG)
+  PMF.toOuterMeasure_toReal_mono _ fun G hG => h G hG
 
 @[simp]
 theorem randomGraphProb_false (n : ℕ) : randomGraphProb n (fun _ => False) = 0 := by

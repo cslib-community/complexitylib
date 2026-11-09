@@ -16,6 +16,7 @@ public import Mathlib.Data.Fintype.Prod
 public import Mathlib.Data.List.MinMax
 public import Mathlib.Dynamics.PeriodicPts.Defs
 import CslibFrontier.Foundations.Combinatorics.FunctionalGraph
+import CslibFrontier.Foundations.Data.List.ArgMin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
@@ -213,7 +214,7 @@ theorem cheapestParent_root : cheapestParent a c r r = r := by simp [cheapestPar
 theorem cheapestParent_spec {v : V} (hv : v ≠ r) (hne : candidates a v ≠ []) :
     a v (cheapestParent a c r v) = true ∧ cheapestParent a c r v ≠ v ∧
       ∀ w, a v w = true → w ≠ v → c v (cheapestParent a c r v) ≤ c v w := by
-  obtain ⟨m, hm⟩ := Option.ne_none_iff_exists'.mp (mt (List.argmin_eq_none (f := c v)).mp hne)
+  obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := c v) hne
   have hsel : cheapestParent a c r v = m := by simp [cheapestParent, hv, hm]
   rw [hsel]
   have hmem := (mem_candidates a).mp (List.argmin_mem hm)
@@ -399,8 +400,8 @@ private theorem bestExit_spec {w : V} (h : ∃ x ∈ C, a x w = true) :
   obtain ⟨y, hy, hyw⟩ := h
   have hmem : y ∈ (FinEnum.toList V).filter (fun x => decide (x ∈ C) && a x w) := by
     simp [FinEnum.mem_toList, hy, hyw]
-  obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.mp
-    (mt (List.argmin_eq_none (f := fun x => exitCost c f C x w)).mp (List.ne_nil_of_mem hmem))
+  obtain ⟨x, hx⟩ :=
+    List.exists_argmin_eq_some (f := fun x => exitCost c f C x w) (List.ne_nil_of_mem hmem)
   have hxm := List.argmin_mem hx
   simp only [List.mem_filter, FinEnum.mem_toList, true_and, Bool.and_eq_true,
     decide_eq_true_eq] at hxm
@@ -414,8 +415,7 @@ private theorem bestEntry_spec {u : V} (h : ∃ y ∈ C, a u y = true) :
   obtain ⟨y, hy, hyw⟩ := h
   have hmem : y ∈ (FinEnum.toList V).filter (fun z => decide (z ∈ C) && a u z) := by
     simp [FinEnum.mem_toList, hy, hyw]
-  obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.mp
-    (mt (List.argmin_eq_none (f := c u)).mp (List.ne_nil_of_mem hmem))
+  obtain ⟨x, hx⟩ := List.exists_argmin_eq_some (f := c u) (List.ne_nil_of_mem hmem)
   have hxm := List.argmin_mem hx
   simp only [List.mem_filter, FinEnum.mem_toList, true_and, Bool.and_eq_true,
     decide_eq_true_eq] at hxm

@@ -1258,8 +1258,7 @@ theorem hermiteRecoverZero_extractCoordNodeJets_eq {J ℓ : ℕ} {Ω H_zero : �
     Cslib.Circuits.Rational.hermiteRecoverZero nodes J Ω (extractCoordNodeJets J u nodeJets) =
       H_zero := by
   have hshape := isTableShape_extractCoordNodeJets J u nodeJets
-  exact Cslib.Circuits.Rational.hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0
-    (hshape.1.trans hlen) hshape.2
+  exact Cslib.Circuits.Rational.hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hshape.2
     (rowEntry_extractCoordNodeJets_eq_taylor Ω nodes nodeJets hlen P hclear u)
 
 /-- Full multi-coordinate modular count recovery `S_ℓ(H(0)) ≡ count (mod 2 ^ ℓ)` from `Ω`-scaled
