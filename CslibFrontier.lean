@@ -358,7 +358,6 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.NumericB
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
-public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.FixedPrime.Window
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.InstancePair
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.Instances
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.MatrixSpec
