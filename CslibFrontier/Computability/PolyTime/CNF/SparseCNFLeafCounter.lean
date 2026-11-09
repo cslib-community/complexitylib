@@ -905,6 +905,17 @@ theorem polyBounded_sparseCNFDeclaredCertificate_space (k N₀ : ℕ)
     (polyBounded_fastPathCertificate_space k hNOf hBOf cPoly hSpace)
     (isPolynomial_nonFastFallbackCertificate k N₀ hNOf).2
 
+private theorem mem_greedyParityRowsAt_or {countSys : List (List Bool) → ℕ}
+    {m P : ℕ} {initRows : List (List Bool)} {i : ℕ} {r : List Bool}
+    (hr : r ∈ greedyParityRowsAt countSys m P initRows i) :
+    r ∈ initRows ∨ (r.length = m ∧ r.count true ≤ P) := by
+  induction i with
+  | zero => exact Or.inl hr
+  | succ i ih =>
+    rw [greedyParityRowsAt_succ, List.mem_append, List.mem_singleton] at hr
+    exact hr.elim ih fun h => h ▸ Or.inr ⟨length_selectBestTestRow _ _ _ _,
+      count_true_selectBestTestRow_le _ _ _ _⟩
+
 private theorem exists_compiledRowCertificate_bounds (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary)
     (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
@@ -1051,7 +1062,7 @@ theorem exists_sparseCNFDeclaredCertificate_bounds (k N₀ : ℕ)
         rw [List.length_append, List.length_singleton, length_greedyParityRowsAt]
         exact (Nat.add_le_add (Nat.add_le_add hinit_len hi') (le_refl 1)).trans (by omega)) ?_
       intro r hr; rcases List.mem_append.mp hr with hprev | hcand
-      · exact (mem_greedyParityRowsAt _ hprev).elim (fun h0 => hinit_rows r h0) fun ⟨hrl, hrw⟩ =>
+      · exact (mem_greedyParityRowsAt_or hprev).elim (fun h0 => hinit_rows r h0) fun ⟨hrl, hrw⟩ =>
           ⟨hrl, hrw.trans hP_le⟩
       · rw [List.mem_singleton.mp hcand]
         exact ⟨length_materializeTestRow _ _,
@@ -1062,7 +1073,7 @@ theorem exists_sparseCNFDeclaredCertificate_bounds (k N₀ : ℕ)
         (by
           dsimp only [finalRows]; rw [length_greedyParityRows]
           exact (Nat.add_le_add_right hinit_len _).trans (by omega))
-        fun r hr => (mem_greedyParityRowsAt _ hr).elim (fun h0 => hinit_rows r h0)
+        fun r hr => (mem_greedyParityRowsAt_or hr).elim (fun h0 => hinit_rows r h0)
           fun ⟨hrl, hrw⟩ => ⟨hrl, hrw.trans hP_le⟩
     let K := (3 * NOf x.1 + 1) *
       (candidateTupleCount x.2.length (greedyRowListLength (BOf x.1) x.2.length) + 1)

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.QueryComplexity.SensitivitySeparation.Internal.RecursiveFlips
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Superquadratic sensitivity separation: recursive sets
@@ -31,6 +32,8 @@ labeled edge.
   the child `(j, c)`.
 * `childJointChanges_card`: `childJointChanges F q q' x j c` has as many elements as the joint
   sensitivity of `F q` and `F q'` at the child `(j, c)`.
+* `card_biUnion_le_mul`: a union of `A.card` sets of size at most `n` has at most `A.card * n`
+  elements.
 * `rowClause_joint_flip_change`: a flip changing a row clause at two indices changes its target
   condition or both gate conditions on one labeled edge.
 
@@ -106,6 +109,14 @@ def childJointChanges {k r h : ℕ} {I : Type} [Fintype I]
     (childJointChanges F q q' x j c).card =
       jointSensitivityAt (F q) (F q') (recursiveChild x j c) := by
   simp [childJointChanges, jointSensitivityAt]
+
+/-- If `(B j).card ≤ n` for every `j ∈ A`, then `(A.biUnion B).card ≤ A.card * n`. -/
+theorem card_biUnion_le_mul {J I : Type} [DecidableEq I] (A : Finset J) (B : J → Finset I) (n : ℕ)
+    (hn : ∀ j ∈ A, (B j).card ≤ n) : (A.biUnion B).card ≤ A.card * n := by
+  calc
+    (A.biUnion B).card ≤ ∑ j ∈ A, (B j).card := Finset.card_biUnion_le
+    _ ≤ ∑ _j ∈ A, n := Finset.sum_le_sum hn
+    _ = A.card * n := by simp
 
 open scoped Classical in
 /-- If flipping `((j, c), a)` changes the clause of row `i` both at index `q` and at index `q'`,
