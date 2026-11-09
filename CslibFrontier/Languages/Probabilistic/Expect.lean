@@ -75,8 +75,7 @@ theorem expect_add (m : ProbComp α) (f g : α → ℝ≥0∞) :
 theorem expect_mul_left (m : ProbComp α) (c : ℝ≥0∞) (f : α → ℝ≥0∞) :
     expect m (fun a => c * f a) = c * expect m f := by
   rw [expect, expect, ← ENNReal.tsum_mul_left]
-  congr 1
-  funext a
+  congr 1 with a : 1
   exact mul_left_comm ((eval m) a) c (f a)
 
 theorem expect_mul_right (m : ProbComp α) (f : α → ℝ≥0∞) (c : ℝ≥0∞) :
@@ -87,8 +86,7 @@ theorem expect_bind (m : ProbComp α) (k : α → ProbComp β) (f : β → ℝ�
     expect (m >>= k) f = expect m (fun a => expect (k a) f) := by
   simp only [expect, eval_bind, PMF.bind_apply, ← ENNReal.tsum_mul_right]
   rw [tsum_comm]
-  congr 1
-  funext a
+  congr 1 with a : 1
   simp only [mul_assoc, ENNReal.tsum_mul_left]
 
 theorem expect_map (g : α → β) (m : ProbComp α) (f : β → ℝ≥0∞) :

@@ -16,7 +16,7 @@ public import Mathlib.Order.Prod.Lex.Basic
 import CslibFrontier.Foundations.Combinatorics.SmallSubsets
 import CslibFrontier.Foundations.Data.Finset.LowestInsert
 import CslibFrontier.Foundations.Data.Nat.Choose.Sum
-import CslibFrontier.Probability.MedianOfMeans
+import CslibFrontier.Probability.MedianTrick
 import CslibFrontier.Probability.PairwiseIndependentHash.Retention
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
@@ -491,11 +491,8 @@ end Error
 /-- The error of the randomized sketch is the fraction of bad seeds. -/
 theorem errorProb_kmv [Fintype ι] [Nonempty ι] (R : List α → ℝ → Prop) (s : List α)
     [DecidablePred fun ω : Fin c → ι => ¬R s ((kmvSketch h t c ω).run s)] :
-    (kmv h t c).errorProb R s = dens {ω : Fin c → ι | ¬R s ((kmvSketch h t c ω).run s)} := by
-  unfold Randomized.errorProb kmv
-  rw [PMF.toOuterMeasure_map_apply, nnratCast_dens]
-  exact Probability.PMF.toOuterMeasure_uniformOfFintype_toReal
-    {ω : Fin c → ι | ¬R s ((kmvSketch h t c ω).run s)}
+    (kmv h t c).errorProb R s = dens {ω : Fin c → ι | ¬R s ((kmvSketch h t c ω).run s)} :=
+  Randomized.errorProb_map_uniformOfFintype _ R s
 
 /-! ### Amplification -/
 

@@ -170,10 +170,7 @@ theorem synthesis_threshold {a : ℕ} (s : Set (BooleanFunction a)) (μ : BitStr
       fun x => BitVec.ofNat (n + 2) (μ x) := by
     funext x
     have hs := searchBelow_result n (μ x) (hμ x).le
-    have h1 : (1 : BitVec (n + 2)).toNat = 1 := by
-      change (BitVec.ofNat (n + 2) 1).toNat = 1
-      rw [BitVec.toNat_ofNat]
-      exact Nat.mod_eq_of_lt (Nat.one_lt_two_pow (by omega))
+    have h1 : (1 : BitVec (n + 2)).toNat = 1 := by grind
     have h0 : (0 : BitVec (n + 2)).toNat = 0 := rfl
     by_cases hz : μ x = 0
     · rw [ite_eq_left (by rw [h0, hz]; rfl), hz]

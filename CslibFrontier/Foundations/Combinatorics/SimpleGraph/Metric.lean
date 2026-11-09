@@ -171,8 +171,7 @@ theorem card_edist_le_le (hD : ∀ v, G.degree v ≤ D) (u : V) (r : ℕ) :
       · exact Or.inl ⟨mem_univ v, by exact_mod_cast (by omega : n ≤ r)⟩
       · exact Or.inr ⟨mem_univ v, by rw [show n = r + 1 by omega]; push_cast; rfl⟩
     have hs := card_edist_eq_add_one_le hD u r
-    have hp : D * (D - 1) ^ r ≤ D * (D + 1) ^ r :=
-      Nat.mul_le_mul_left D (Nat.pow_le_pow_left (by omega) r)
+    have hp : D * (D - 1) ^ r ≤ D * (D + 1) ^ r := by gcongr <;> omega
     calc _ ≤ #(({v | G.edist u v ≤ r} : Finset V) ∪ ({v | G.edist u v = r + 1} : Finset V)) :=
           card_le_card hsub
       _ ≤ #({v | G.edist u v ≤ r} : Finset V) + #({v | G.edist u v = r + 1} : Finset V) :=
