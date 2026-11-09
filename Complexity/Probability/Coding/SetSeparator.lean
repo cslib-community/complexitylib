@@ -468,8 +468,7 @@ private theorem expected_length_encOf_le {S : ℕ} {A B : Finset (Fin S)} (hdisj
     calc (S + 1 : ℝ) * (1 - p) ^ T
         ≤ (S + 1 : ℝ) * ((2 : ℝ) ^ (L - k))⁻¹ :=
           mul_le_mul_of_nonneg_left hinv (by positivity)
-      _ ≤ (2 : ℝ) ^ (L - k) * ((2 : ℝ) ^ (L - k))⁻¹ :=
-          mul_le_mul_of_nonneg_right hpow_S (by positivity)
+      _ ≤ (2 : ℝ) ^ (L - k) * ((2 : ℝ) ^ (L - k))⁻¹ := by gcongr
       _ = 1 := mul_inv_cancel₀ (by positivity)
   linarith
 

@@ -95,14 +95,12 @@ theorem run_interpret_routeWordProgram (digestEncoding : Digest ↪ List Bool)
         program).run s := by
   unfold routeWordProgram
   rw [interpret_interpret]
-  congr 2
-  funext q
+  congr 2 with q : 1
   cases q with
   | inl n => simp [sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin]
   | inr request =>
     simp only [sumHandler, liftOracleForger, interpret_interpret]
-    congr 1
-    funext q
+    congr 1 with q : 1
     simp [ProbOracleComp.query, sumHandler]
 
 /-- Native replay and typed routing commute as programs, before choosing any oracle world. -/

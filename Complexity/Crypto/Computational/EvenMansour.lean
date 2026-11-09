@@ -1246,16 +1246,13 @@ theorem eval_evenMansourWordRealGame (adversary : EvenMansourDistinguisher) (n :
   simp only [evenMansourWordRealGame, evenMansourProbRealGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
     ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind]
-  congr 1
-  funext π
+  congr 1 with π : 1
   rw [← PMF.uniformOfFintype_map_equiv (twoKeyEquiv n), PMF.bind_map, BitString.uniformList,
     PMF.bind_map]
-  congr 1
-  funext z
+  congr 1 with z : 1
   simp only [Function.comp_apply, twoKeyEquiv, Equiv.coe_fn_mk,
     evalProbTwoPerms_evenMansourWordAdapter]
-  congr 2
-  funext request
+  congr 2 with request : 1
   rw [evenMansourKeyedWordOracle_eq_twoPermWordOracle π List.length_ofFn request]
 
 /-- Evaluating `singleKeyEvenMansourWordRealGame` produces the exact same distribution as running
@@ -1266,14 +1263,11 @@ theorem eval_singleKeyEvenMansourWordRealGame (adversary : EvenMansourDistinguis
   simp only [singleKeyEvenMansourWordRealGame, singleKeyEvenMansourProbRealGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
     ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind]
-  congr 1
-  funext π
+  congr 1 with π : 1
   rw [BitString.uniformList, PMF.bind_map]
-  congr 1
-  funext k
+  congr 1 with k : 1
   simp only [Function.comp_apply, evalProbTwoPerms_evenMansourWordAdapter]
-  congr 2
-  funext request
+  congr 2 with request : 1
   rw [singleKeyEvenMansourKeyedWordOracle_eq_twoPermWordOracle π List.length_ofFn request,
     BitString.ofList_ofFn]
 

@@ -147,12 +147,9 @@ theorem IsReduced.norm_sq_le {δ : ℝ} {b : Fin (n + 1) → E} (hb : IsReduced 
   have hα1 : 1 ≤ 4 / (4 * δ - 1) := by
     rw [le_div_iff₀ (by linarith)]; linarith
   have hin : (i : ℕ) ≤ n := Nat.lt_succ_iff.1 i.isLt
-  have hsq : ‖gramSchmidt ℝ b i‖ ^ 2 ≤ ‖x‖ ^ 2 :=
-    pow_le_pow_left₀ (norm_nonneg _) hi 2
+  have hsq : ‖gramSchmidt ℝ b i‖ ^ 2 ≤ ‖x‖ ^ 2 := by gcongr
   calc ‖b 0‖ ^ 2 ≤ (4 / (4 * δ - 1)) ^ (i : ℕ) * ‖gramSchmidt ℝ b i‖ ^ 2 := hchain
-    _ ≤ (4 / (4 * δ - 1)) ^ n * ‖x‖ ^ 2 :=
-      mul_le_mul (pow_le_pow_right₀ hα1 hin) hsq (sq_nonneg _)
-        (pow_nonneg (by linarith) n)
+    _ ≤ (4 / (4 * δ - 1)) ^ n * ‖x‖ ^ 2 := by gcongr
 
 /-- Proposition (1.11) of [LenstraLenstraLovasz1982], `δ = 3/4`: the first vector of a reduced
 family `b : Fin (n + 1) → E` satisfies `‖b₀‖ ≤ (√2)ⁿ ‖x‖` for every nonzero `x` in the integer

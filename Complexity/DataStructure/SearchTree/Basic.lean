@@ -186,11 +186,7 @@ theorem card_elements {t : BinaryTree α} (ht : Ordered t) :
       apply Finset.disjoint_left.mpr
       intro x hxl hxr
       exact lt_asymm (hla x hxl) (har x hxr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro h
-      rcases Finset.mem_union.mp h with h | h
-      · exact lt_irrefl a (hla a h)
-      · exact lt_irrefl a (har a h)
+    have ha : a ∉ elements l ∪ elements r := by grind
     simp only [elements, Finset.card_insert_of_notMem ha,
       Finset.card_union_of_disjoint hdis, il hl, ir hr, BinaryTree.numNodes]
 

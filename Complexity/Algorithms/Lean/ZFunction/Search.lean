@@ -78,9 +78,7 @@ theorem mem_zMatches_iff (p t : List α) (i : ℕ) :
   have hz := ret_zAlgorithmM (p.toArray ++ t.toArray)
   rw [Array.toList_append, List.toList_toArray, List.toList_toArray] at hz
   have hsize : (zAlgorithmM (p.toArray ++ t.toArray)).ret.size = p.length + t.length := by
-    have := congrArg List.length hz
-    rw [Array.length_toList, length_zFunction, List.length_append] at this
-    exact this
+    grind [Array.length_toList, length_zFunction, List.length_append]
   simp only [zMatches, zMatchesM, TimeM.ret_bind, TimeM.ret_pure, List.mem_filter,
     List.mem_range, decide_eq_true_eq, List.size_toArray]
   by_cases hi : i < t.length

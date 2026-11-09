@@ -71,8 +71,7 @@ theorem guessInverter_equiv [Fintype Digest] [Nonempty Digest]
     guessInverter f (fun s digest => predictor s (e digest)) seed precision image =
       guessInverter f predictor seed precision image := by
   unfold guessInverter
-  congr 1
-  funext s
+  congr 1 with s : 1
   rw [← uniformOfFintype_map_equiv e, PMF.bind_map]
   rfl
 
