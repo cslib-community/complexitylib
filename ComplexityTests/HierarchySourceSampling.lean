@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of separate-source correction sampling)
 
-import Complexity.Foundations.Probability.HierarchySourceSampling
+import Complexity.Computability.LogSpaceDerandomization.HierarchySourceSampling
 import all ComplexityTests.HierarchyCorrectionMean
 
 /-! Unequal nonconstant sampling/stage/usage slices, a free spectator,

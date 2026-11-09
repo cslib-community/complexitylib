@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -55,7 +56,7 @@ private theorem implicationCycle_eq_zip (vs : List V) :
 @[fun_prop]
 theorem computableInPolyTime_implicationCycle :
     ComputableInPolyTime (implicationCycle (V := V)) (encList enc)
-      (encList (encList (encPair enc encBool))) := by
+      (encCNFOver enc) := by
   rw [show (implicationCycle (V := V)) =
     (fun vs => (vs.zip (vs.tail ++ vs.take 1)).map
       (fun p => [(p.1, false), (p.2, true)])) from funext implicationCycle_eq_zip]
@@ -65,8 +66,7 @@ theorem computableInPolyTime_implicationCycle :
 @[fun_prop]
 theorem computableInPolyTime_occurrenceClauses :
     ComputableInPolyTime (occurrenceClauses (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair (encPair enc (encPair encUnary encUnary)) encBool))) := by
+      (encCNFOver enc) (encCNFOver (encPair enc (encPair encUnary encUnary))) := by
   unfold occurrenceClauses
   fun_prop
 
@@ -74,8 +74,7 @@ theorem computableInPolyTime_occurrenceClauses :
 @[fun_prop]
 theorem computableInPolyTime_toThreeOccurrence [DecidableEq V] :
     ComputableInPolyTime (toThreeOccurrence (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair (encPair enc (encPair encUnary encUnary)) encBool))) := by
+      (encCNFOver enc) (encCNFOver (encPair enc (encPair encUnary encUnary))) := by
   unfold toThreeOccurrence occurrenceCopies
   fun_prop
 

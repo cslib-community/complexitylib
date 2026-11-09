@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListM
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Foundations.Data.List.Lookup
+import Complexity.Foundations.Data.List.SortedCount
 import Mathlib.Data.List.GetD
 
 /-!
@@ -86,30 +87,11 @@ variable {n : ℕ} (p : Fin n → Prop) [DecidablePred p]
 /-- The position of `v` among the elements with the property `p`: the number of earlier ones. -/
 @[expose] def rank (v : Fin n) : ℕ := ((List.finRange n).take v).countP fun u => p u
 
-/-- In a filtered list, an entry with the property sits at the number of earlier entries with
-it. -/
-private theorem getElem_filter_countP_take {α : Type*} (q : α → Bool) (l : List α) (i : ℕ)
-    (hi : i < l.length) (hq : q l[i] = true) :
-    ∃ h, (l.filter q)[(l.take i).countP q]'h = l[i] := by
-  induction l generalizing i with
-  | nil => simp at hi
-  | cons x l ih =>
-    rcases i with _ | i
-    · simp only [List.getElem_cons_zero] at hq
-      simp [hq]
-    · simp only [List.getElem_cons_succ] at hq ⊢
-      obtain ⟨h, hget⟩ := ih i (by simpa using hi) hq
-      by_cases hx : q x = true
-      · simp only [List.take_succ_cons, List.countP_cons, hx, ↓reduceIte, List.filter_cons]
-        exact ⟨by simpa using h, by simpa using hget⟩
-      · simp only [List.take_succ_cons, List.countP_cons, hx, Bool.false_eq_true, ↓reduceIte,
-          Nat.add_zero, List.filter_cons]
-        exact ⟨h, hget⟩
-
 private theorem rank_spec (v : Fin n) (hv : p v) :
     ∃ h : rank p v < (members p).length, (members p)[rank p v] = v := by
-  obtain ⟨h, hget⟩ := getElem_filter_countP_take (fun u => decide (p u)) (List.finRange n) v
-    (by simp) (by simpa using hv)
+  obtain ⟨h, hget⟩ := List.getElem?_eq_some_iff.mp
+    (List.getElem?_filter_countP_take (fun u => decide (p u)) (l := List.finRange n) (r := v)
+      (by simp) (by simpa using hv))
   exact ⟨h, by simpa [members, rank] using hget⟩
 
 /-- The position of an element with the property is below the number of such elements. -/

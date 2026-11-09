@@ -374,8 +374,7 @@ theorem sum_dist_filter_sideJoint_le (μ : PMF T) (K : ∀ i, T → PMF (β i))
   have hcs := sq_sum_le_card_mul_sum_sq (s := univ) (f := D)
   rw [card_univ] at hcs
   calc _ ≤ _ := hcs
-    _ ≤ Fintype.card ι * (Real.log (Fintype.card V / Pw) / 2) :=
-      mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg _)
+    _ ≤ Fintype.card ι * (Real.log (Fintype.card V / Pw) / 2) := by gcongr
     _ = _ := by ring
 
 end Corollary

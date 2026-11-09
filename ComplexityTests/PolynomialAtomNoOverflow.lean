@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Probability.PolynomialAtomRows.NoOverflow
+import Complexity.Computability.LogSpaceDerandomization.PolynomialAtomRows.NoOverflow
 import Complexity.Foundations.Data.Finset.KthLargest.Truncation
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
