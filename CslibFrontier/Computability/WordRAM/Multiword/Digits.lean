@@ -19,6 +19,10 @@ workspace layout. They apply to any register count, including an empty register 
 
 * `Cslib.WordRAM.Multiword.value`: reconstruct a natural number from little-endian digits.
 * `Cslib.WordRAM.Multiword.Bounded`: every listed register holds a digit below the radix.
+
+## Main results
+
+* `Cslib.WordRAM.Multiword.value_congr`: the value depends only on the listed registers.
 -/
 
 @[expose] public section
@@ -30,6 +34,11 @@ variable {r : ℕ}
 /-- The value of a little-endian register list. -/
 def value (β : ℕ) (x : Data r) (ds : List (Fin r)) : ℕ :=
   Nat.ofDigits β (ds.map x.regs)
+
+/-- The value of a digit list depends only on the registers it lists. -/
+theorem value_congr {β : ℕ} {x y : Data r} {ds : List (Fin r)}
+    (h : ∀ i ∈ ds, x.regs i = y.regs i) : value β x ds = value β y ds :=
+  congrArg (Nat.ofDigits β) (List.map_congr_left h)
 
 /-- Every register in a digit list contains a radix digit. -/
 def Bounded (β : ℕ) (x : Data r) (ds : List (Fin r)) : Prop :=

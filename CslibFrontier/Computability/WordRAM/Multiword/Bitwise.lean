@@ -154,14 +154,10 @@ theorem exec {w : ℕ} (hw : 2 ≤ w) {f : BinOp} (hf : Supported f)
         have hyd : y.regs d = f.eval (x.regs a) (x.regs b) := by
           rw [hyp d (List.nodup_cons.mp hnd).1]
           simp [z]
-        have hva : value (radix w) z as = value (radix w) x as := by
-          unfold value
-          congr 1
-          exact List.map_congr_left fun i hi => hza i (by simp [hi])
-        have hvb : value (radix w) z bs = value (radix w) x bs := by
-          unfold value
-          congr 1
-          exact List.map_congr_left fun i hi => hza i (by simp [hi])
+        have hva : value (radix w) z as = value (radix w) x as :=
+          value_congr fun i hi => hza i (by simp [hi])
+        have hvb : value (radix w) z bs = value (radix w) x bs :=
+          value_congr fun i hi => hza i (by simp [hi])
         have hp : ∀ i ∉ d :: ds, y.regs i = x.regs i := by
           intro i hi
           rw [hyp i (fun hm => hi (by simp [hm]))]
