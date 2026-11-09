@@ -5,7 +5,7 @@ Usage: python3 scripts/audit_queries.py references [--unused] PREFIX...
        python3 scripts/audit_queries.py duplicates [PREFIX...]
        (either with [--build-dir DIR] [--no-build-check])
 
-PREFIX is a repository-relative source path prefix, such as `Complexity/Computability/Circuit/`.
+PREFIX is a repository-relative source path prefix, such as `CslibFrontier/Computability/Circuit/`.
 
 * `references` lists each public declaration written under the prefixes with the other modules
   that refer to it: library modules, tests and abstracts. `--unused` keeps only those no other
@@ -293,7 +293,7 @@ def find_duplicates(lib: lo.Library, decls: dict[str, dict]) -> list[dict]:
 
 def location(decl: dict) -> str:
     line = decl["range"][0] if decl["range"] else 0
-    return f"Complexity/{decl['path']}:{line}"
+    return f"CslibFrontier/{decl['path']}:{line}"
 
 
 def under(path: str, prefixes: list[str]) -> bool:
@@ -304,7 +304,7 @@ def reference_lines(decls: dict[str, dict], prefixes: list[str], unused: bool) -
     """One line per public declaration under the prefixes: where it is referenced."""
     out = []
     selected = [d for d in decls.values() if d["role"] == "decl"
-                and under(f"Complexity/{d['path']}", prefixes)
+                and under(f"CslibFrontier/{d['path']}", prefixes)
                 and not (unused and d["category"] in ("outside", "tests_only"))]
     for decl in sorted(selected, key=lambda d: (d["path"], d["range"] or [0])):
         users = [f"{label} {', '.join(sorted(decl[key]))}" for label, key in
@@ -323,7 +323,7 @@ def duplicate_lines(groups: list[dict], decls: dict[str, dict], prefixes: list[s
     what = {"thm": "alpha-equivalent statements", "def": "alpha-equivalent types and bodies"}
     for group in groups:
         members = [decls[name] for _, name in group["members"]]
-        if not any(under(f"Complexity/{d['path']}", prefixes) for d in members):
+        if not any(under(f"CslibFrontier/{d['path']}", prefixes) for d in members):
             continue
         out.append(f"{what.get(group['kind'], group['kind'])}:")
         out += [f"  {location(d)}: {d['name']}" for d in members]
