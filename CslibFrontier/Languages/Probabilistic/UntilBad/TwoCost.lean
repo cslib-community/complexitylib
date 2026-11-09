@@ -65,6 +65,22 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
   | liftBind q cont k₁ _ ih =>
     classical
     obtain ⟨hle₂, hcont₂⟩ := IsCostBounded.liftBind_iff.mp hk₂
+    -- One budget step: the growth bound for `q` and the remaining `(k₁, k₂ - cost₂ q)` calls add
+    -- up to the budget for `(k₁ + cost₁ q, k₂)` calls. Shared by both channels below.
+    have hbudget (b : σ → ℝ≥0∞) (δ δ' : ℝ≥0∞) (y : spec q × σ)
+        (hb : b y.2 ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ') :
+        b y.2 + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' ≤
+          b s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ + (k₂ : ℝ≥0∞) * δ' :=
+      calc b y.2 + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ'
+          ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ' +
+              (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' :=
+            add_le_add (add_le_add hb le_rfl) le_rfl
+        _ = b s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ +
+              (((k₂ - cost₂ q) + cost₂ q : ℕ) : ℝ≥0∞) * δ' := by
+            simp only [Nat.cast_add]
+            ring
+        _ = b s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ + (k₂ : ℝ≥0∞) * δ' := by
+            rw [Nat.sub_add_cancel hle₂]
     simp only [run_interpret_bind, run_interpret_query,
       Probability.PMF.monad_bind_eq_bind, PMF.toOuterMeasure_bind_apply]
     set B₁ : ℝ≥0∞ := budget₁ s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₁₁ + (k₂ : ℝ≥0∞) * δ₁₂
@@ -85,26 +101,8 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
           simp only [K, B₁, B₂]
           refine add_le_add (mul_le_mul_of_nonneg_left ?_ zero_le)
             (mul_le_mul_of_nonneg_left ?_ zero_le)
-          · calc budget₁ y.2 + (k₁ : ℝ≥0∞) * δ₁₁ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ₁₂
-                ≤ budget₁ s + (cost₁ q : ℝ≥0∞) * δ₁₁ + (cost₂ q : ℝ≥0∞) * δ₁₂ +
-                    (k₁ : ℝ≥0∞) * δ₁₁ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ₁₂ :=
-                  add_le_add (add_le_add (hgrow₁ q s hs y hmem hy) le_rfl) le_rfl
-              _ = budget₁ s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₁₁ +
-                    (((k₂ - cost₂ q) + cost₂ q : ℕ) : ℝ≥0∞) * δ₁₂ := by
-                  simp only [Nat.cast_add]
-                  ring
-              _ = budget₁ s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₁₁ + (k₂ : ℝ≥0∞) * δ₁₂ := by
-                  rw [Nat.sub_add_cancel hle₂]
-          · calc budget₂ y.2 + (k₁ : ℝ≥0∞) * δ₂₁ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ₂₂
-                ≤ budget₂ s + (cost₁ q : ℝ≥0∞) * δ₂₁ + (cost₂ q : ℝ≥0∞) * δ₂₂ +
-                    (k₁ : ℝ≥0∞) * δ₂₁ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ₂₂ :=
-                  add_le_add (add_le_add (hgrow₂ q s hs y hmem hy) le_rfl) le_rfl
-              _ = budget₂ s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₂₁ +
-                    (((k₂ - cost₂ q) + cost₂ q : ℕ) : ℝ≥0∞) * δ₂₂ := by
-                  simp only [Nat.cast_add]
-                  ring
-              _ = budget₂ s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ₂₁ + (k₂ : ℝ≥0∞) * δ₂₂ := by
-                  rw [Nat.sub_add_cancel hle₂]
+          · exact hbudget budget₁ δ₁₁ δ₁₂ y (hgrow₁ q s hs y hmem hy)
+          · exact hbudget budget₂ δ₂₁ δ₂₂ y (hgrow₂ q s hs y hmem hy)
       · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
     calc ∑' y, (handler q s) y *
           ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
