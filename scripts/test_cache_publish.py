@@ -191,7 +191,7 @@ class SourceStateTests(unittest.TestCase):
         root.mkdir()
         (root / "lean-toolchain").write_text("leanprover/lean4:v4.36.0-rc2\n")
         (root / ".gitignore").write_text(".lake/\n")
-        (root / "ComplexityTests").mkdir()
+        (root / "CslibFrontierTests").mkdir()
         env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
         for command in (["git", "init", "-q"], ["git", "add", "lean-toolchain", ".gitignore"],
@@ -208,8 +208,8 @@ class SourceStateTests(unittest.TestCase):
             build_output.write_text("ordinary ignored output\n")
             with patch.object(publish, "ROOT", root):
                 publish.require_clean_revision()
-            (root / ".git/info/exclude").write_text("ComplexityTests/private-input\n")
-            (root / "ComplexityTests" / "private-input").write_text("untracked build input\n")
+            (root / ".git/info/exclude").write_text("CslibFrontierTests/private-input\n")
+            (root / "CslibFrontierTests" / "private-input").write_text("untracked build input\n")
             with patch.object(publish, "ROOT", root), patch.object(publish, "run") as run:
                 with self.assertRaisesRegex(ValueError, "ignored entries in compiled source trees"):
                     publish.stage(Path(temporary) / "publication")
@@ -226,7 +226,7 @@ class SourceStateTests(unittest.TestCase):
                     archives = Path(args[-1])
                     archives.mkdir()
                     (archives / "0123456789abcdef.ltar").write_bytes(b"archive")
-                    (root / "ComplexityTests" / "Added.lean").write_text("def added := true\n")
+                    (root / "CslibFrontierTests" / "Added.lean").write_text("def added := true\n")
 
             with patch.object(publish, "ROOT", root), patch.object(publish, "run", fake_run):
                 with self.assertRaisesRegex(ValueError, "modified or untracked"):
@@ -271,12 +271,12 @@ enableArtifactCache = true
 restoreAllArtifacts = true
 platformIndependent = true
 [[lean_lib]]
-name = "Complexity"
+name = "CslibFrontier"
 [[lean_lib]]
-name = "ComplexityTests"
+name = "CslibFrontierTests"
 ''')
-            (root / "Complexity.lean").write_text("def answer : Nat := 42\n")
-            (root / "ComplexityTests.lean").write_text("import Complexity\nexample : answer = 42 := rfl\n")
+            (root / "CslibFrontier.lean").write_text("def answer : Nat := 42\n")
+            (root / "CslibFrontierTests.lean").write_text("import CslibFrontier\nexample : answer = 42 := rfl\n")
             env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
             env.update(LAKE_CACHE_DIR=str(Path(temporary) / "private-cache"),
                        GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
