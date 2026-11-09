@@ -1899,14 +1899,8 @@ theorem succProbability_fiatShamirNIZKRealExtGameOn_le [DecidableEq Y] [Decidabl
         (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞) := by
     simp only [fiatShamirNIZKRealExtGameOn, fiatShamirNIZKSimExtGameOn, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure]
-    rw [PMF.bind_apply, PMF.bind_apply]
-    calc ∑' s, A.coins s * _ ≤
-          ∑' s, A.coins s * (_ + (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞)) :=
-          tsum_le_tsum fun s => mul_le_mul_of_nonneg_left
-            (extHandlers_bind_apply_le hvalid hHVZK hUnpred (hA s) post true) zero_le
-      _ = _ := by
-          rw [tsum_congr fun s => mul_add _ _ _, tsum_add, ENNReal.tsum_mul_right,
-            PMF.tsum_coe, one_mul]
+    exact Probability.PMF.bind_apply_le_add_const_on_support _ _ fun s _ =>
+      extHandlers_bind_apply_le hvalid hHVZK hUnpred (hA s) post true
   have hsim := succProbability_fiatShamirNIZKSimExtGameOn_le hsound src valid admissible hA
   have htop : ((Qp * (Qp + Qro) : ℕ) : ℝ≥0∞) * (δ : ℝ≥0∞) ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.coe_ne_top

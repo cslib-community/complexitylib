@@ -422,24 +422,7 @@ theorem pedersenHidingGame_apply_true_le (setup : ℕ → PMF F.Desc)
           (m : ℝ≥0∞)⁻¹ := add_le_add le_rfl hord
   simp only [CommitmentScheme.hidingGame, pedersenKeyDist,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [PMF.bind_apply, PMF.bind_apply]
-  calc ∑' d, setup n d *
-          ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-            F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₁ n) true
-      ≤ ∑' d, setup n d *
-          (((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-            F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n) true +
-            (m : ℝ≥0∞)⁻¹) := by
-        refine tsum_le_tsum fun d => ?_
-        by_cases hd : d ∈ (setup n).support
-        · exact mul_le_mul_of_nonneg_left (hd_bound d hd) zero_le
-        · have hd0 : setup n d = 0 := by rwa [PMF.mem_support_iff, not_not] at hd
-          simp [hd0]
-    _ = (∑' d, setup n d *
-          ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-            F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n) true) +
-        (m : ℝ≥0∞)⁻¹ := by
-        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, (setup n).tsum_coe, one_mul]
+  exact Probability.PMF.bind_apply_le_add_const_on_support _ true hd_bound
 
 /-- **Unconditional hiding bound for Pedersen commitments**: when every supported group at
 parameter `n` has order at least `m > 0`, any (even computationally unbounded)
