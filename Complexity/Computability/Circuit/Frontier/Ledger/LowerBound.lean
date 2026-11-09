@@ -76,10 +76,7 @@ most `r` except for special gates of any fan-in with a ledger in a finite commut
 with `log |M| ≤ β(n)`, has `s` ordinary inner gates, the inner gates that are not special, with
 `(r - 1) s > (1 + 1/A - ε) n`. -/
 theorem eventually_lt_mul_card_of_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
-    (hlayout : LayoutBound (r + 1) A) (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hlayout : LayoutBound (r + 1) A) (hSK : DenseRectangleFree S K)
     {β : ℕ → ℝ} (hβ : β =o[atTop] fun n => (n : ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1) (special : Fin c.size → Prop) [DecidablePred special] (M : Type w)
@@ -96,9 +93,10 @@ theorem eventually_lt_mul_card_of_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA 
   -- The ledger costs three products in `M`, at most `3 β(n) / log 2` symbols.
   have hβ' : (fun n => 3 * (β n / Real.log 2)) =o[atTop] fun n => (n : ℝ) :=
     (hβ.const_mul_left (3 / Real.log 2)).congr_left fun n => by ring
-  obtain ⟨η, hη, H⟩ := eventually_lt_of_frontier hA (r + 2) hK hdense hβ' hε
+  obtain ⟨η, hη, H⟩ := eventually_lt_of_frontier hA (r + 2) hSK.isLittleO_log
+    hSK.isLittleO_deficit hβ' hε
   obtain ⟨C, hC⟩ := hlayout.exists_layout_componentwise hη
-  filter_upwards [H C, hfree, eventually_card_mul_sq_le_ncard hfree hK hdense,
+  filter_upwards [H C, hSK.eventually_rectangleFree, eventually_card_mul_sq_le_ncard hSK,
     eventually_ge_atTop 1] with n hn hfreen hbign hn1
   intro σ I Acc c special _ M _ _ hfan L hM hS
   -- The set decided by the circuit is the set accepted by its program at its output.
@@ -209,10 +207,7 @@ theorem eventually_lt_mul_card_of_ledger {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA 
 `k log |T| ≤ β(n)`, has `s` ordinary inner gates with `(r - 1) s > (1 + 1/A - ε) n`. For instance,
 the special gates may compute unbounded AND, OR, parity, or counts modulo a fixed `m`. -/
 theorem eventually_lt_mul_card_of_aggregates {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
-    (hlayout : LayoutBound (r + 1) A) (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hlayout : LayoutBound (r + 1) A) (hSK : DenseRectangleFree S K)
     {β : ℕ → ℝ} (hβ : β =o[atTop] fun n => (n : ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1) (special : Fin c.size → Prop) [DecidablePred special] (T : Type w)
@@ -223,8 +218,7 @@ theorem eventually_lt_mul_card_of_aggregates {r : ℕ} (hr : 2 ≤ r) {A : ℝ} 
         c.Decides I Acc (S n) →
           (1 + 1 / A - ε) * n <
             (r - 1) * (c.program.innerGates.filter fun g => ¬special g).card := by
-  filter_upwards [eventually_lt_mul_card_of_ledger.{u, v, w} hr hA hlayout hfree hK hdense hβ hε]
-    with n hn
+  filter_upwards [eventually_lt_mul_card_of_ledger.{u, v, w} hr hA hlayout hSK hβ hε] with n hn
   intro σ I Acc c special _ T _ _ hfan hagg hk hS
   refine hn σ I Acc c special _ hfan (Ledger.ofAggregates hagg) ?_ hS
   rw [Nat.card_fun, Nat.cast_pow, Real.log_pow]

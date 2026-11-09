@@ -149,8 +149,7 @@ theorem eval_schnorrSigKeyGen (n : ℕ) (d : F.Desc) :
   simp only [ProbComp.eval_pure, F.smul_encode, encScalar, Function.Embedding.coeFn_mk,
     encNat_apply]
   rw [← PMF.bind_pure_comp]
-  congr 1
-  funext s
+  congr 1 with s : 1
   simp only [Function.comp_apply, ZMod.val_natCast]
 
 /-- `schnorrSigKeyGen n d` is within statistical distance `1 / 2 ^ n` of the ideal encoded Schnorr

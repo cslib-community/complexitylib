@@ -96,7 +96,7 @@ theorem isPolyTime_preprocess (fallback truth : C) (rotate : ℕ × (ℕ × D) �
     (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
     ComputableInPolyTime (preprocess fallback truth rotate labels)
-      (encoding enc) (encoding (encOption (encPair encBool enc))) := by
+      (encoding enc) (encoding (encDegreeReduceConstraint enc)) := by
   have hdegree := isPolyTime_degreeReduce (enc := enc) fallback labels rotate hrotate
   unfold preprocess
   fun_prop
