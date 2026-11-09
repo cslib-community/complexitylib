@@ -315,21 +315,23 @@ theorem mul_sqrt_card_mul_card_le_mul_signRank (f : X → Y → Bool) (M : Matri
   have := le_of_mul_le_mul_left h3 hP0
   linarith
 
+/-- **Cauchy–Schwarz for a bilinear form**: `|∑ₓᵧ pₓ Mₓᵧ qᵧ| ≤ ‖p‖₂ ‖M q‖₂`. -/
+private theorem abs_sum_mul_le_sqrt_mul_sqrt (M : Matrix X Y ℝ) (p : X → ℝ) (q : Y → ℝ) :
+    |∑ x, ∑ y, p x * M x y * q y| ≤ √(∑ x, p x ^ 2) * √(∑ x, (M *ᵥ q) x ^ 2) := by
+  have h1 : ∑ x, ∑ y, p x * M x y * q y = p ⬝ᵥ (M *ᵥ q) := by
+    simp only [dotProduct, mulVec, mul_sum, mul_assoc]
+  rw [h1, ← Real.sqrt_mul (sum_nonneg fun x _ => sq_nonneg _)]
+  exact Real.abs_le_sqrt (sum_mul_sq_le_sq_mul_sq _ _ _)
+
 open scoped Matrix.Norms.L2Operator in
 /-- The bilinear form of a matrix is bounded by its spectral norm:
 `|∑ₓᵧ pₓ Mₓᵧ qᵧ| ≤ ‖M‖ ‖p‖₂ ‖q‖₂`. -/
 private theorem abs_sum_mul_le_l2_opNorm [DecidableEq Y] (M : Matrix X Y ℝ) (p : X → ℝ)
     (q : Y → ℝ) :
     |∑ x, ∑ y, p x * M x y * q y| ≤ ‖M‖ * √(∑ x, p x ^ 2) * √(∑ y, q y ^ 2) := by
-  have h1 : ∑ x, ∑ y, p x * M x y * q y = p ⬝ᵥ (M *ᵥ q) := by
-    simp only [dotProduct, mulVec, mul_sum, mul_assoc]
-  rw [h1]
-  have hcs : |p ⬝ᵥ (M *ᵥ q)| ≤ √(∑ x, p x ^ 2) * √(∑ x, (M *ᵥ q) x ^ 2) := by
-    rw [← Real.sqrt_mul (sum_nonneg fun x _ => sq_nonneg _)]
-    exact Real.abs_le_sqrt (sum_mul_sq_le_sq_mul_sq _ _ _)
   have hop := Matrix.l2_opNorm_mulVec M (WithLp.toLp 2 q)
   simp only [EuclideanSpace.norm_eq, Real.norm_eq_abs, sq_abs] at hop
-  calc _ ≤ _ := hcs
+  calc _ ≤ _ := abs_sum_mul_le_sqrt_mul_sqrt M p q
     _ ≤ √(∑ x, p x ^ 2) * (‖M‖ * √(∑ y, q y ^ 2)) :=
         mul_le_mul_of_nonneg_left (by simpa using hop) (Real.sqrt_nonneg _)
     _ = _ := by ring
@@ -375,12 +377,7 @@ theorem card_le_signRank_sq_of_isHadamard [DecidableEq X] {f : X → X → Bool}
   have h := mul_sqrt_card_mul_card_le_mul_signRank f H (μ := 1) (lam := √(Fintype.card X))
     (fun x y => by simp only [H, signMatrix_apply]; split_ifs <;> norm_num)
     fun p q => by
-      have h1 : ∑ x, ∑ y, p x * H x y * q y = p ⬝ᵥ (H *ᵥ q) := by
-        simp only [dotProduct, mulVec, mul_sum, mul_assoc]
-      rw [h1]
-      have hcs : |p ⬝ᵥ (H *ᵥ q)| ≤ √(∑ x, p x ^ 2) * √(∑ x, (H *ᵥ q) x ^ 2) := by
-        rw [← Real.sqrt_mul (sum_nonneg fun x _ => sq_nonneg _)]
-        exact Real.abs_le_sqrt (sum_mul_sq_le_sq_mul_sq _ _ _)
+      have hcs := abs_sum_mul_le_sqrt_mul_sqrt H p q
       rw [sum_mulVec_sq_of_isHadamard hf, Real.sqrt_mul hN] at hcs
       linarith
   rw [one_mul, Real.sqrt_mul hN, Real.mul_self_sqrt hN] at h

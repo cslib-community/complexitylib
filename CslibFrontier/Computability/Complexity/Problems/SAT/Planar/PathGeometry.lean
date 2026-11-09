@@ -45,9 +45,7 @@ private theorem consecutivePair_index {r : Route} {a b : Point}
     (h : (a, b) ∈ r.consecutivePairs) :
     ∃ (k : ℕ) (hk : k + 1 < r.length), r[k] = a ∧ r[k + 1] = b := by
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp h
-  have hk' : k + 1 < r.length := by
-    simpa only [List.consecutivePairs, List.length_zip, List.length_tail,
-      min_eq_right (Nat.sub_le _ _), Nat.lt_sub_iff_add_lt] using hk
+  have hk' : k + 1 < r.length := by grind
   simp only [List.consecutivePairs, List.getElem_zip, List.getElem_tail] at heq
   exact ⟨k, hk', congrArg Prod.fst heq, congrArg Prod.snd heq⟩
 
@@ -348,9 +346,7 @@ theorem clause_cell_not_mem_path_dropLast {φ : CNF ℕ} {o : Occurrence ℕ}
   have hlen := occurrencePath_length_ge_two ho
   have hend := (occurrencePath_endpoints ho).2
   rw [List.getLast?_eq_getElem?, List.getElem?_eq_getElem (by omega)] at hend
-  have hk' : k < (occurrencePath φ o).length := by
-    simp only [List.length_dropLast] at hk
-    omega
+  have hk' : k < (occurrencePath φ o).length := by grind
   have heq : (occurrencePath φ o)[k] =
       (occurrencePath φ o)[(occurrencePath φ o).length - 1] := by
     rw [Option.some.inj hend]

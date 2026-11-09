@@ -235,12 +235,7 @@ private theorem exists_mem_stage (hkey : ∀ ψ, ψ ∈ SAT ↔ key ψ ∈ K)
           rw [hkey, ← of_decide_eq_true hlab, ← hkey]
           exact disj_mem_SAT_iff.2 (.inr hbsat)
         exact (disj_mem_SAT_iff.1 hdisj).resolve_left hanot
-    have hcases : units a ++ φ ∈ SAT ∨ ∃ b' ∈ kept, units b' ++ φ ∈ SAT := by
-      by_cases hasat : units a ++ φ ∈ SAT
-      · exact .inl hasat
-      · rcases List.mem_cons.1 hx with rfl | hx
-        · exact absurd hxsat hasat
-        · exact .inr (hrep x hx hxsat hasat)
+    have hcases : units a ++ φ ∈ SAT ∨ ∃ b' ∈ kept, units b' ++ φ ∈ SAT := by grind
     split
     · rename_i hlen
       by_cases hasat : units a ++ φ ∈ SAT

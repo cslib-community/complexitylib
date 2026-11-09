@@ -66,10 +66,7 @@ theorem recursive_sensitivity_one_at {k r h : ℕ} {I : Type} [Fintype I]
         recursiveFamily T label F q x) ⊆ U ∪ V := by
     rintro ⟨⟨j, c⟩, a⟩ hp
     have hchange := (Finset.mem_filter.mp hp).2
-    have hf : recursiveFamily T label F q (BitString.flipOn {((j, c), a)} x) = false := by
-      cases hy : recursiveFamily T label F q (BitString.flipOn {((j, c), a)} x)
-      · rfl
-      · exact False.elim (hchange (hy.trans hx.symm))
+    have hf : recursiveFamily T label F q (BitString.flipOn {((j, c), a)} x) = false := by grind
     have hif := (recursiveFamily_eq_false_iff T label F q _).mp hf i
     have hic : rowClause T label F q (BitString.flipOn {((j, c), a)} x) i ≠
         rowClause T label F q x i := by
@@ -141,14 +138,8 @@ theorem recursive_joint_one_at {k r h : ℕ} {I : Type} [Fintype I]
         recursiveFamily T label F q' x) ⊆ U ∪ V := by
     rintro ⟨⟨j, c⟩, a⟩ hp
     have hchange := (Finset.mem_filter.mp hp).2
-    have hf : recursiveFamily T label F q (BitString.flipOn {((j, c), a)} x) = false := by
-      cases hy : recursiveFamily T label F q (BitString.flipOn {((j, c), a)} x)
-      · rfl
-      · exact False.elim (hchange.1 (hy.trans hx.symm))
-    have hf' : recursiveFamily T label F q' (BitString.flipOn {((j, c), a)} x) = false := by
-      cases hy : recursiveFamily T label F q' (BitString.flipOn {((j, c), a)} x)
-      · rfl
-      · exact False.elim (hchange.2 (hy.trans hx'.symm))
+    have hf : recursiveFamily T label F q (BitString.flipOn {((j, c), a)} x) = false := by grind
+    have hf' : recursiveFamily T label F q' (BitString.flipOn {((j, c), a)} x) = false := by grind
     have hif := (recursiveFamily_eq_false_iff T label F q _).mp hf i
     have hif' := (recursiveFamily_eq_false_iff T label F q' _).mp hf' i
     have hic : rowClause T label F q (BitString.flipOn {((j, c), a)} x) i ≠

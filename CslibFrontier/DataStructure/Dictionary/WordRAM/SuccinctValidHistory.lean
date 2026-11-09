@@ -310,22 +310,7 @@ theorem validProg_removeLastTailItem {U V w n_max h_space : ℕ} {d : ℕ × ℕ
   have hr_del_cap : r_del < tailCapPerBucket n_max := lt_of_lt_of_le hr_del_lt (htail.r_le d.2 hb)
   have ht_del_lt : t_del < gm 1 := htail.ptr_lt d.2 hb r_del hr_del_lt
   have ht_last_lt : t_last < gm 1 := by omega
-  have hvalid_last := htail.owner_valid t_last ht_last_lt
-  dsimp only at hvalid_last
-  change d_last / tailCapPerBucket n_max < numBuckets n_max ∧
-    d_last % tailCapPerBucket n_max < gm (gmRIdx (d_last / tailCapPerBucket n_max)) ∧
-    gm (gmTailPtrFlatIdx n_max d_last) = t_last at hvalid_last
-  rcases hvalid_last with ⟨hb_last, hr_last, _⟩
-  have hr_last_cap : d_last % tailCapPerBucket n_max < tailCapPerBucket n_max :=
-    lt_of_lt_of_le hr_last (htail.r_le _ hb_last)
-  have hd_last_lt : d_last < maxTailItems n_max := by
-    have hdiv_mod := Nat.div_add_mod d_last (tailCapPerBucket n_max)
-    rw [Nat.mul_comm] at hdiv_mod
-    unfold maxTailItems
-    have h1 : (d_last / tailCapPerBucket n_max + 1) * tailCapPerBucket n_max ≤
-        numBuckets n_max * tailCapPerBucket n_max :=
-      Nat.mul_le_mul_right _ hb_last
-    nlinarith
+  have hd_last_lt : d_last < maxTailItems n_max := htail.owner_lt_maxTailItems ht_last_lt
   have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
   have hptr_del_lt : gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + r_del) <
       globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_del_cap

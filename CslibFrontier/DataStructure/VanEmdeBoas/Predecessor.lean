@@ -79,17 +79,6 @@ when no cluster entry precedes `x > m`, the excluded node minimum `m` is returne
 @[simp] theorem predecessor_empty (d x : ℕ) : (empty d).predecessor x = none := by
   cases d <;> rfl
 
-private theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
-    i * u + a < j * u + b := by
-  have h := Nat.mul_le_mul_right u (show i + 1 ≤ j by omega)
-  nlinarith
-
-private theorem bounds_isSome_of_contains {d : ℕ} {t : Tree d} {x : ℕ}
-    (hx : t.Contains x) : t.bounds.isSome = true := by
-  cases hb : t.bounds with
-  | none => exact False.elim (not_contains_of_bounds_none hb x hx)
-  | some _ => rfl
-
 private theorem minimum_any_iff {d x : ℕ} {t : Tree d} :
     t.minimum.any (· < x) = true ↔ ∃ m M, t.bounds = some (m, M) ∧ m < x := by
   cases hb : t.bounds with
