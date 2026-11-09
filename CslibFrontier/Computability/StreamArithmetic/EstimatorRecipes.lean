@@ -1000,9 +1000,7 @@ private theorem sum_fin_two_pow_prefix {m : ℕ} (f : ℕ → ℝ) :
       simp [hnot]
   rw [htail, add_zero]
   refine sum_congr rfl fun r hr => ?_
-  have hr_le : r ≤ m := by
-    rw [mem_range] at hr
-    omega
+  have hr_le : r ≤ m := by grind
   simp [hr_le]
 
 /-- `FixedRecipe` computing `1 / (1 + max 0 (2 ^ m * R.targetVal val sEnv))` via the smooth dyadic
@@ -1267,9 +1265,7 @@ noncomputable def rationalRamp4NormFixed {Op : Type u} {Struct : Type v}
       have hramp_eq : Cslib.rationalRamp4Unit ((2 : ℝ) ^ m * q) / (2 : ℝ) ^ m =
           Max.max 0 q + P / (2 : ℝ) ^ m := by
         have hdec := rationalRamp4Unit_eq_poly_add_inv ((2 : ℝ) ^ m * q)
-        have hdec' : Cslib.rationalRamp4Unit ((2 : ℝ) ^ m * q) = u + P := by
-          dsimp only [u, P, s]
-          linarith
+        have hdec' : Cslib.rationalRamp4Unit ((2 : ℝ) ^ m * q) = u + P := by grind
         rw [hdec', add_div, hmax_mul, mul_div_cancel_left₀ _ (by positivity)]
       have havg_eq :
           (((1 / 4 : ℚ) : ℝ) * Max.max 0 q + P / (4 * (2 : ℝ) ^ m)) / 2 =

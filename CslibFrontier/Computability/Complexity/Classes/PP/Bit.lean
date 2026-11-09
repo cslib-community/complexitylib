@@ -42,16 +42,12 @@ open Turing.MultiTapeTM
 private theorem majority_iff_shifted_testBit {c p : ℕ} (hc : c ≤ 2 ^ p) :
     2 ^ p < 2 * c ↔ (2 * c + (2 ^ p - 1)).testBit (p + 1) = true := by
   have hpos := Nat.one_le_two_pow (n := p)
-  have hupper : 2 * c + (2 ^ p - 1) < 2 ^ (p + 1 + 1) := by
-    simp only [pow_succ]
-    lia
+  have hupper : 2 * c + (2 ^ p - 1) < 2 ^ (p + 1 + 1) := by grind
   by_cases h : 2 ^ p < 2 * c
   · exact ⟨fun _ => Nat.testBit_of_two_pow_le_and_two_pow_add_one_gt (by
       simp only [pow_succ]
       lia) hupper, fun _ => h⟩
-  · have hlow : 2 * c + (2 ^ p - 1) < 2 ^ (p + 1) := by
-      simp only [pow_succ]
-      lia
+  · have hlow : 2 * c + (2 ^ p - 1) < 2 ^ (p + 1) := by grind
     simp only [h, Nat.testBit_lt_two_pow hlow, Bool.false_eq_true]
 
 /-- Every PP problem is decided by one bit of a `#P` function at a polynomial position.

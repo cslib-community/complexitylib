@@ -486,8 +486,7 @@ theorem ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching 
   | coe c =>
     obtain ⟨p, hp, hpc⟩ := Protocol.ecomplexity_le_iff.mp hc.le
     have hcard : Fintype.card (Vertex m (n - 2 * m)) = n := by
-      simp only [Fintype.card_sum, Fintype.card_fin]
-      omega
+      grind [Fintype.card_sum, Fintype.card_fin]
     refine (PublicCoin.ecomplexity_le_depth (solves_reduction hp
       (h := Fintype.equivFinOfCardEq hcard) (i₀ := ⟨0, hm⟩) hk)).trans
       (depth_reduction_le.trans ?_)

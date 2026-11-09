@@ -36,7 +36,7 @@ rg -n 'yourCandidateName' CslibFrontier .lake/packages/cslib/Cslib .lake/package
 
 A hit gives a source location to inspect, not an interchangeable theorem. Read its full
 statement and imports. If there are no hits, check spelling and namespace, related notions,
-the [model routes](workflows/finding-results.md) and [upstream coordination](../UPSTREAM.md)
+the [model routes](workflows/finding-results.md) and [upstream coordination](../CONTRIBUTING.md#upstreaming)
 before declaring the API absent.
 
 ## Vocabulary

@@ -232,8 +232,7 @@ theorem complete_update [DecidableEq Query] (distribution : (q : Query) → PMF 
       PMF.pi (Function.update (fun q => (cache q).elim (distribution q) PMF.pure)
         q (PMF.pure value)) := by
   unfold complete
-  congr 1
-  funext query
+  congr 1 with query : 1
   by_cases h : query = q
   · subst query
     simp

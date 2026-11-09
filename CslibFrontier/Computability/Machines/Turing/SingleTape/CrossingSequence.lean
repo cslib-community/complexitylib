@@ -518,9 +518,7 @@ private lemma Splice.next_cross_right {k : ℤ} {L R C : tm.AbsCfg} (h : Splice 
   · rw [AbsCfg.next_cells_of_ne _ hpc, h.cells]
     by_cases hpl : IsLeftOf k p
     · rw [ite_eq_left hpl, ite_eq_left hpl, AbsCfg.next_cells_of_ne _ (hp ▸ hpc)]
-    · have hne : p ≠ (R.run j).pos := by
-        rintro rfl
-        exact hpl hR'
+    · have hne : p ≠ (R.run j).pos := by grind
       rw [ite_eq_right hpl, ite_eq_right hpl, AbsCfg.next_cells_of_ne _ hne,
         hRcells p ⟨fun h' => (hpl h').elim, fun h' => (h' (h.right_side.mpr hC)).elim⟩]
 
@@ -550,9 +548,7 @@ private lemma Splice.next_cross_left {k : ℤ} {L R C : tm.AbsCfg} (h : Splice k
     rw [ite_eq_right hC, hc', hp]
   · rw [AbsCfg.next_cells_of_ne _ hpc, h.cells]
     by_cases hpl : IsLeftOf k p
-    · have hne : p ≠ (L.run j).pos := by
-        rintro rfl
-        exact hL' hpl
+    · have hne : p ≠ (L.run j).pos := by grind
       rw [ite_eq_left hpl, ite_eq_left hpl, AbsCfg.next_cells_of_ne _ hne,
         hLcells p ⟨fun _ => hL, fun _ => hpl⟩]
     · rw [ite_eq_right hpl, ite_eq_right hpl, AbsCfg.next_cells_of_ne _ (hp ▸ hpc)]

@@ -321,14 +321,7 @@ theorem Program.ComputesListInTime.turingComputableInPolyTime_of_width
   have hstepsT : Turing.MultiTapeTM.ComputableInPolyTime steps encIn encNat :=
     Turing.MultiTapeTM.ComputableInPolyTime.unary_to_binary.comp hstepsU
   -- Initialization: the memory `0 ↦ n, i + 1 ↦ xᵢ`, zero registers and default.
-  have hmem : Turing.MultiTapeTM.ComputableInPolyTime
-      (fun a => initMemory (encode (width a) a)) encIn (SparseMemory.encoding encNat encNat) :=
-    initMemory_polyTime.comp hencode
-  let cInit := FiniteState.initConstCertificate (r := r) B.encoding
-    (NativeCertificate.const (ei := encIn) 0) (NativeCertificate.const 0) (ofPolyTime hmem)
-  have hInit : cInit.IsPolynomial :=
-    FiniteState.initConstCertificate_isPolynomial _ _ _ _ (const_isPolynomial 0)
-      (const_isPolynomial 0) (ofPolyTime_isPolynomial hmem)
+  obtain ⟨cInit, hInit⟩ := exists_initState_certificate (B := B) (r := r) hencode
   -- The clocked run of the parked program, and its final state.
   let q := p.parkHalts.toGeneric
   let cRun := runCertificateOf B.encoding (B.nativePrimitivesOfPolyTime hop) q
@@ -359,29 +352,8 @@ theorem Program.ComputesListInTime.turingComputableInPolyTime_of_width
       congrArg (fun g => g.data.mem) hden
     rw [parkedOutput_eq hpc, hregs, hmem]
   -- Every simulated outcome is bounded by a polynomial in the input length.
-  let bound : α → ℕ := fun a => stateBound r (labelBound q) (width a)
-    ((encode (width a) a).length + 1 + steps a)
-  have hbound : PolyBounded (fun a => (encIn a).length) bound := by
-    have hw := hwidth.polyBounded
-    have hE : PolyBounded (fun a => (encIn a).length)
-        (fun a => (encode (width a) a).length + 1 + steps a) :=
-      ((hencode.polyBounded_length.mono fun a =>
-        length_le_length_encList encNat (encode (width a) a)).add (.const 1)).add
-          hstepsU.polyBounded
-    dsimp only [bound, stateBound]
-    growth_poly
-  have hOutLen (a : α) (j : ℕ) (hj : j ≤ steps a) :
-      (FiniteState.resultEncoding B.encoding (FiniteState.run (width a) q j
-        (initState B r (encode (width a) a)))).length ≤ bound a := by
-    have hrun := (wordBounded_initState (B := B) (r := r) (hfits a)).length_resultEncoding_run_le
-      (p := q) (by simp) j
-    rw [length_entries_initState] at hrun
-    refine hrun.trans ?_
-    simp only [bound, stateBound]
-    have := Nat.mul_le_mul_right (6 * width a + 3)
-      (show (encode (width a) a).length + 1 + j ≤ (encode (width a) a).length + 1 + steps a by
-        omega)
-    omega
+  obtain ⟨bound, hbound, hOutLen⟩ := exists_polyBounded_resultEncoding_run_le q hwidth hencode
+    hfits hstepsU.polyBounded
   have hRun : cRun.IsPolynomial :=
     runCertificateOf_isPolynomial _ _ _ _ _ _ (B.nativePrimitivesOfPolyTime_isPolynomial hop)
       (ofPolyTime_isPolynomial hstepsT) (ofPolyTime_isPolynomial hwidth) hInit

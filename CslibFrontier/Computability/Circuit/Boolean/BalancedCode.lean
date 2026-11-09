@@ -490,9 +490,7 @@ private theorem intervalTables_entry_bound (n : ℕ) (op unit : Code) (leaves : 
     · rw [he]
       simpa only [referenceCode, List.balancedFold_nil] using
         ⟨hunit.1.trans hBM, wireBitsLe_mono hunit.2 hBW⟩
-    · have hlength : ((leaves.drop start).take len).length ≤ leaves.length := by
-        simp only [List.length_take, List.length_drop]
-        omega
+    · have hlength : ((leaves.drop start).take len).length ≤ leaves.length := by grind
       have hb := referenceCode_bounds n op unit _ leaves.length B hop.1 hop.2 hlength
         (fun c hc => hleaves c (List.mem_of_mem_drop (List.mem_of_mem_take hc))) he
       exact ⟨hb.1.trans (Nat.mul_le_mul_right B (by omega)),
