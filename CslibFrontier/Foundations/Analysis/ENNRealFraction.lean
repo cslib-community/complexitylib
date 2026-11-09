@@ -33,18 +33,7 @@ theorem two_div_three_le_natCast_div_two_pow_iff {c n : ℕ} :
     (2 / 3 : ℝ≥0∞) ≤ c / 2 ^ n ↔ 2 * 2 ^ n ≤ 3 * c := by
   rw [ENNReal.le_div_iff_mul_le (Or.inl (pow_ne_zero _ two_ne_zero))
     (Or.inl (ENNReal.pow_ne_top ENNReal.ofNat_ne_top)), div_eq_mul_inv, mul_right_comm,
-    ← div_eq_mul_inv, ENNReal.div_le_iff (by norm_num) (by norm_num)]
-  constructor
-  · intro h
-    have : ((2 * 2 ^ n : ℕ) : ℝ≥0∞) ≤ ((3 * c : ℕ) : ℝ≥0∞) := by
-      push_cast
-      rw [mul_comm (3 : ℝ≥0∞)]
-      exact h
-    exact_mod_cast this
-  · intro h
-    have : ((2 * 2 ^ n : ℕ) : ℝ≥0∞) ≤ ((3 * c : ℕ) : ℝ≥0∞) := by exact_mod_cast h
-    push_cast at this
-    rw [mul_comm (c : ℝ≥0∞)]
-    exact this
+    ← div_eq_mul_inv, ENNReal.div_le_iff (by norm_num) (by norm_num), mul_comm (c : ℝ≥0∞)]
+  exact_mod_cast Iff.rfl
 
 end ENNReal

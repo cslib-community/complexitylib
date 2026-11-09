@@ -270,9 +270,7 @@ private def reverseEvals (v : Control k State) (store : ∀ s : Stack k, List (A
       rw [stepAux_reverse, hr]
     have hrec := reverseEvals { v with symbol := some b } store' ha'
     have hrev : store' .reversed = bs := by simp [store']
-    have hout : store' .output = b :: store .output := by
-      dsimp only [store']
-      exact Function.update_self _ _ _
+    have hout : store' .output = b :: store .output := by grind
     rw [hrev, hout] at hrec
     rw [List.reverse_cons]
     have hw : List.append (α := Bool) (bs.reverse ++ [b]) (store .output) =
@@ -360,9 +358,7 @@ private theorem totalStackLength_reverse (v : Control k State)
   rw [stepAux_reverse]
   cases hr : store .reversed with
   | nil =>
-    have hs : Function.update store .reversed [] = store := by
-      rw [← hr]
-      exact Function.update_eq_self _ _
+    have hs : Function.update store .reversed [] = store := by grind
     simp only [hs, totalStackLength]
   | cons b bs =>
     let store' := Function.update (Function.update store .reversed bs) .output (b :: store .output)

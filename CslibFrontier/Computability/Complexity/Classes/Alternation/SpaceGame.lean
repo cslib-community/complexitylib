@@ -242,9 +242,7 @@ theorem EXP_subset_APSPACE : EXP enc ⊆ APSPACE enc := by
     simp only [h2, Bs]
     nlinarith
   have hN : ComputableInSpace N enc encNat Bs :=
-    budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-      (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
-      (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
+    outWire_inSpace (k := k) (State := State) hT hin hn
   have hM : ComputableInSpace M enc encNat Bs :=
     budget_natAdd hn (budget_natAdd (budget_const 2 hin)
       (budget_natMul (budget_natAdd hT (budget_const 1 hin))

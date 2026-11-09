@@ -1,6 +1,6 @@
 # Algebraic and quantum models
 
-Algebraic and quantum developments reuse the generic circuit architecture while changing both semantics and what resources are free. Formal polynomial equality, exact rational matrix evaluation and unitary-state evolution are distinct notions of correctness. Their bridges to encoded native computations are explicit developments rather than consequences of using Lean's executable definitions. [complexitylib][complexitylib]
+Algebraic and quantum developments reuse the generic circuit architecture while changing both semantics and what resources are free. Formal polynomial equality, exact rational matrix evaluation and unitary-state evolution are distinct notions of correctness. Their bridges to encoded native computations are explicit developments rather than consequences of using Lean's executable definitions. [cslib-frontier][complexitylib]
 
 ## Arithmetic, affine and full bases
 
@@ -10,7 +10,7 @@ Algebraic and quantum developments reuse the generic circuit architecture while 
 
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
-The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean) states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
+The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
 
 ## Valiant classes and term models
 
@@ -51,14 +51,11 @@ lake build CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.N
 
 **Not certified here.** The paper's Theorem 1.1 is an integer algorithm with bit cost `O(n^(9/4+γ) M(B + log n))` on `B`-bit entries ([§4.3](https://arxiv.org/pdf/2610.28627v2#page=20)); the formalization proves the field-circuit statement only and says nothing about integer arithmetic, division by the cleared denominators or bit complexity. The paper's "computable" side `v` and count `r` are obtained here as existentials (`Tensor.exists_rank_mm_lt_rpow`), with no extraction procedure and no explicit constants; the parameters are galactic. Degenerations compose at the order `(h + 1) (k + 1) - 1` rather than the paper's additive bookkeeping, the gap parameter is `⌊w₀ / c ^ d⌋ ^ 4` rather than `⌊w / u⌋ ^ 2`, and the lengths of the rounds are bounded explicitly rather than by a limit argument; none of this changes the exponent. Positive characteristic, the rectangular and dual exponents and any lower bound beyond `2 ≤ omega K` are open; see [ROADMAP.md](../../ROADMAP.md).
 
-The selected [matrix multiplication abstract](../../abstracts/CslibFrontierAbstracts/MatrixMultiplicationAbstract.lean)
-restates the exact circuit bound and infimum with visible quantifiers. Its
-[regression client](../../CslibFrontierTests/Abstracts/MatrixMultiplicationTests.lean) checks the
-characteristic-zero rational instance and rejects an incorrect projection circuit. Build it with:
-
-```bash
-lake build --wfail --iofail CslibFrontierAbstracts.MatrixMultiplicationAbstract CslibFrontierTests.Abstracts.MatrixMultiplicationTests
-```
+Until the formal abstracts were retired on 2026-11-08, the
+[matrix multiplication abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/CslibFrontierAbstracts/MatrixMultiplicationAbstract.lean)
+restated the exact circuit bound and infimum with visible quantifiers. The current statements are
+those of [NineQuarters.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/MatrixMultiplication/NineQuarters.lean),
+built by the command above.
 
 ## Karatsuba polynomial multiplication
 

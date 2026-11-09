@@ -1366,6 +1366,18 @@ theorem two_pow_provableB_le (n_max : ℕ) : 2 ^ provableB n_max ≤ 4 * max n_m
     _ = 4 * 2 ^ Nat.log 2 (max n_max 4) := by ring
     _ ≤ 4 * max n_max 4 := Nat.mul_le_mul_left 4 (Nat.pow_log_le_self 2 (by omega))
 
+/-- The `2 ^ provableB n_max` cells of one character table fit in the whole Double Tabulation
+footprint `space (provableC c_exp) (provableD c_exp) (provableB n_max)`. -/
+theorem two_pow_provableB_le_space (c_exp n_max : ℕ) :
+    2 ^ provableB n_max ≤ space (provableC c_exp) (provableD c_exp) (provableB n_max) := by
+  have hc : 1 ≤ provableC c_exp := one_le_provableC c_exp
+  have hd : 1 ≤ provableD c_exp := by dsimp only [provableD]; omega
+  have hle : 1 * 2 ^ provableB n_max ≤
+      ((provableC c_exp + 1) * provableD c_exp) * 2 ^ provableB n_max :=
+    Nat.mul_le_mul_right _ (by nlinarith)
+  dsimp only [space]
+  omega
+
 /-- Whenever `U ≤ max n_max 4 ^ c_exp`, `U ≤ 2 ^ (provableC c_exp * provableB n_max)`. -/
 theorem le_two_pow_provableC_mul_provableB {c_exp n_max U : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) :
@@ -1591,14 +1603,7 @@ with `c = provableC c_exp`, `d = provableD c_exp`, `b = provableB n_max` for
     have hsp : Fits w (base + space (provableC c_exp) (provableD c_exp) (provableB n_max)) := by
       simpa only [provableSpace, h, ↓reduceIte] using hfit_space
     have hpow_b : Fits w (2 ^ provableB n_max) :=
-      hsp.of_le (by
-        have hc : 1 ≤ provableC c_exp := one_le_provableC c_exp
-        have hd : 1 ≤ provableD c_exp := by dsimp only [provableD]; omega
-        have hle : 1 * 2 ^ provableB n_max ≤
-            ((provableC c_exp + 1) * provableD c_exp) * 2 ^ provableB n_max :=
-          Nat.mul_le_mul_right _ (by nlinarith)
-        dsimp only [space]
-        omega)
+      hsp.of_le ((two_pow_provableB_le_space c_exp n_max).trans (Nat.le_add_left _ _))
     have hpow_M : Fits w (2 ^ M) := by
       have hM_le : M ≤ trinomialDeg U M := le_trinomialDeg U M
       have hdeg_pos : 0 < trinomialDeg U M := by

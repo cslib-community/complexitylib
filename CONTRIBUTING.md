@@ -13,14 +13,24 @@ For setup, start with [Build a checkout](README.md#build-a-checkout). The
 
 ## Proposing and contributing work
 
-Use this repository's Issues or pull requests to agree on a substantial development
-before implementing it.
-State the mathematical endpoint, cite its source, identify existing APIs and missing dependencies,
-and propose a first independently useful milestone. [ROADMAP.md](ROADMAP.md) lists open directions;
-an item there is not an assignment or a claim that its prerequisites are complete.
+Agree on a substantial development before implementing it. An issue in this repository, written
+with the [development template](.github/ISSUE_TEMPLATE/development.md), is one good way to
+propose a new direction; a pull request can also start the discussion. There is no separate
+roadmap repository. State the endpoint, cite its source, identify existing APIs and missing
+dependencies, and propose a first independently useful milestone. If you write an issue on
+someone else's behalf, for example from their short description, name them in its "Originated
+by" field. [ROADMAP.md](ROADMAP.md) lists the accepted directions; an item there is not an
+assignment or a claim that its prerequisites are complete.
 Small fixes and API improvements can go directly to a pull request. Use the existing issue or
 PR to record ownership and handoffs; do not create duplicate task records. Prioritize fixes and
 landing open PRs when review or integration is the bottleneck.
+
+A new file's `Copyright` and `Authors:` lines name the originator(s) of the issue or proposal it
+implements and the person whose agents did the implementation (the human, not a fleet or bot
+account); the [file rules](AGENTS.md#file-rules) give the details. The originator is the person
+named in the issue's "Originated by" field when present, and otherwise the issue's author. The
+rule applies going forward: existing headers stay unless someone asks for a correction, and ports
+keep their original authors.
 
 Keep a pull request small enough to review as one mathematical or engineering change. Batch
 related mechanical fixes when they share a contract and validation; split at independently useful
@@ -71,7 +81,7 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    list the actual public API; each area has a chapter in the guide.
 8. **Tests.** Checked, nonvacuous examples exercise concrete inputs, runs, counterexamples or
    meaningful client behavior such as inference, imports and automation. Merely restating a
-   signature adds no behavioral coverage (curated abstracts separately pin public claims).
+   signature adds no behavioral coverage.
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
@@ -117,7 +127,7 @@ state paired with the bit read, with the state framed. Because the name is reduc
 statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
 see through it; syntactic tools such as `omega` do not. New and changed statements follow the
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
-checks the repetition rule. Abstracts stay fully spelled out.
+checks the repetition rule.
 
 To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
@@ -165,7 +175,8 @@ also loads private information, so such edits do reach its clients.
   Write `attribute [local fun_prop] helper` instead. Private `simp` lemmas, Aesop rules and
   instances stay local.
 - Ordinary imports cannot name private declarations. When privatizing, update the tests and
-  abstracts that name them in the same PR, or give a companion module `import all`.
+  results inventory entries that name them in the same PR, or give a companion module
+  `import all`.
 - For an audit, `python3 scripts/audit_queries.py references PREFIX` lists where each declaration
   under a source path is referenced, and `duplicates` lists declarations with alpha-equivalent
   statements in different modules. Uses through `rfl`, `decide`, simp sets or instances leave no
@@ -266,7 +277,7 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only, grouped by area.
+ROADMAP lists accepted directions only, grouped by area.
 Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
 linked inline as `[#N](https://github.com/cslib-community/cslib-frontier/issues/N)`.
 Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
@@ -274,8 +285,8 @@ direction, and a direction leaves ROADMAP only when it is completed or deliberat
 `scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600
 characters of Markdown (a link counts as its text): definitions appended to the end of the file and
 growing progress notes conflicted between PRs in the merge queue.
-UPSTREAM records coordination and exceptional integration decisions, while source markers record
-module status.
+[Upstreaming](#upstreaming) lists live coordination threads, while source markers record module
+status and module docstrings record provenance.
 Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
@@ -353,29 +364,6 @@ the existing code review; an additional reviewer is needed
 only for an uncovered question. Compilation, excerpt checks and a completed PR field do not by
 themselves establish that the manual is usable or correct.
 
-## Maintaining the headline abstracts
-
-The small selection in [abstracts/catalogue.json](abstracts/catalogue.json) is the public headline
-catalogue. Every selected result has a checked Lean abstract and bridge, with explicit definitions,
-models, encodings, hypotheses, bounds and limitations. The library contains many other results;
-selection is an editorial decision, not an automatic consequence of adding a theorem. A headline
-must establish a substantial full endpoint with conventional semantics and nonvacuous premises.
-Keep incomplete endpoints in `ROADMAP.md` and credit mathematical and formalization sources.
-List every selected entry in the top-level README's selected results and in the table of
-[abstracts/README.md](abstracts/README.md); `scripts/check_hygiene.py` checks both lists against
-the catalogue.
-
-Follow [the abstract requirements](AGENTS.md#curated-formal-abstracts) for impact assessment,
-source layout, independent review and `#check_abstract` audits. These apply to affected claims
-and artifacts; unrelated edits need no no-impact boilerplate or repeated PDF inspection.
-
-When selection or abstract sources change, run `python3 -B scripts/build_abstracts.py --check`.
-When abstracts or rendering change, inspect affected rendered pages and declaration links before
-integration and link the artifact/run and source revision. The **Formal abstract PDFs** workflow
-generates review artifacts; **API documentation** publishes main builds under
-`https://www.cslib.io/cslib-frontier/abstracts/`. See [the build guide](abstracts/README.md) for local
-generation. Generated TeX and PDFs stay untracked.
-
 ## Upstreaming
 
 ```bash
@@ -391,4 +379,79 @@ and head SHA in the module's `-- upstream:` marker.
 
 Coordinate cross-cutting abstractions with CSLib before proposing them upstream. Follow
 [AGENTS.md](AGENTS.md#staying-current-with-upstream) for pin updates, synchronization checks,
-and removal of superseded local copies.
+and replacing superseded local files with deprecated shims.
+
+Upstream status is recorded in source. Each module's `-- upstream:` marker gives its status, PR
+number, copied revision and, when it is not the mirrored CSLib path, its destination; markers can
+also introduce copied blocks. `-- vendored:` comments record local adaptations of copies, and
+module docstrings and [NOTICE](NOTICE) record provenance and credit. `lakefile.toml`,
+`lake-manifest.json` and `lean-toolchain` pin versions. `python3 scripts/upstream_sync.py --offline`
+lists copies; without `--offline` it compares recorded revisions and the base pin with upstream
+(head revisions only, not source equality).
+
+### Coordination threads
+
+These are pointers to upstream discussions that affect local work, not a record of live PR status;
+check the thread before starting or submitting overlapping work. Add a line when a thread starts to
+affect local work and remove it when it no longer does; keep details in the linked thread or the
+module docstring. A destination named in a `candidate` marker is a proposal for upstream review,
+not a decision.
+
+* **Machine calculus (Christian Reitwiessner).** The calculus copies
+  [`crei/tidy-universal`](https://github.com/crei/cslib/tree/crei/tidy-universal),
+  [#1111](https://github.com/leanprover/cslib/pull/1111) and
+  [#1138](https://github.com/leanprover/cslib/pull/1138); the branch's `IterateWhile` supersedes
+  [#1112](https://github.com/leanprover/cslib/pull/1112). Shared encodings are coordinated in
+  [#611](https://github.com/leanprover/cslib/issues/611) and
+  [#590](https://github.com/leanprover/cslib/issues/590) (`TapeEncodable`). Markers at
+  `@9cce4cc7` name an unpublished later revision of the branch, so `upstream_sync.py` reports them
+  as moved until it is published.
+* **Complexity classes.** [#767](https://github.com/leanprover/cslib/pull/767) proposes
+  language-indexed `DTIME`/`DSPACE`. Check it before adding space-to-time inclusions or overlapping
+  classes; once it lands, derive the local encoded-instance `DSPACE`, `L`, `DTIME` and `EXP` from
+  it (see `Classes/Space`).
+* **Probability and security games.** Local copies of
+  [#1129](https://github.com/leanprover/cslib/pull/1129),
+  [#1062](https://github.com/leanprover/cslib/pull/1062),
+  [#1069](https://github.com/leanprover/cslib/pull/1069),
+  [#1070](https://github.com/leanprover/cslib/pull/1070) and
+  [#1072](https://github.com/leanprover/cslib/pull/1072). Coordinate `PFunctor.FreeM` with
+  [#1086](https://github.com/leanprover/cslib/pull/1086)–[#1089](https://github.com/leanprover/cslib/pull/1089),
+  the arbitrary-type metric with [#1065](https://github.com/leanprover/cslib/pull/1065), and
+  `Crypto/Primitives/PRG/Game` with [#1071](https://github.com/leanprover/cslib/pull/1071).
+* **Decision trees.** Align `Computability/DecisionTree` with
+  [#925](https://github.com/leanprover/cslib/pull/925), and coordinate its certificate follow-up
+  `D ≤ C₀ C₁`.
+* **Word RAM and algorithm models.** `Computability/WordRAM` adapts Erik Demaine's
+  [lean-trominoes](https://github.com/edemaine/lean-trominoes); coordinate submission and
+  attribution with him. Before submitting WordRAM, GenericRAM or `DataStructure/StateTransition`,
+  coordinate with Shreyas Srinivas's [#685](https://github.com/leanprover/cslib/pull/685) and his
+  Algolean register models, and with the merged [#401](https://github.com/leanprover/cslib/pull/401).
+* **PAC learning.** `PACLearning/Realizable` is an unchanged copy of
+  [#858](https://github.com/leanprover/cslib/pull/858).
+  [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
+  `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
+  `AgnosticFiniteClass` and `GrowthFunction`. Before submission, reconcile names with
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
+  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
+* **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
+  [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
+  [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and
+  [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
+  candidate; the module docstring records the differences. Renaming to match the unmerged PRs is
+  not required.
+* **Oracle codes.** Upstream `Foundations/Computability/RecursiveInCode` by reconciling with
+  [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (oracle codes, a
+  relativized `evaln` and the jump), not by competing with it; the module docstring records the
+  design differences. The prefix-based `evaln`, the use principle and `KleenePost` are what that PR
+  lacks.
+* **Withdrawn submissions.** The redos of
+  [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
+  (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests
+  for abstract word encodings and textbook sources. The review of
+  [#874](https://github.com/leanprover/cslib/pull/874) (series #869, #871–#875) asked for
+  composition above the configuration level; `TransformsTapes`-style specifications are the local
+  answer.
+
+Earlier coordination notes, placement suggestions and the pre-release deprecation list are in
+[`UPSTREAM.md` at its retirement](https://github.com/cslib-community/cslib-frontier/blob/0bbbdafaf2d44d77661d080b1edec5daac176cab/UPSTREAM.md).

@@ -69,19 +69,8 @@ theorem incidence_simple {e : ℕ × SplitVariable × Route} (he : e ∈ inciden
 
 /-- Every incidence route is simple in the shared continuous polygonal-route semantics. -/
 theorem incidence_isSimple {e : ℕ × SplitVariable × Route} (he : e ∈ incidenceRoutes) :
-    IsSimple e.2.2 := by
-  refine ⟨incidence_points_nodup e he, ?_⟩
-  intro a ha b hb hne p hp hq
-  obtain ⟨q, hq, hpq⟩ := incidence_simple he ha hb hne hp hq
-  unfold consecutiveContact at hq
-  split_ifs at hq with h h'
-  · have hqa : q = a.2 := List.mem_singleton.mp hq
-    subst q
-    exact ⟨Or.inr hpq, Or.inl (hpq.trans (congrArg realPoint h))⟩
-  · have hqa : q = a.1 := List.mem_singleton.mp hq
-    subst q
-    exact ⟨Or.inl hpq, Or.inr (hpq.trans (congrArg realPoint h'.symm))⟩
-  · exact False.elim (List.not_mem_nil hq)
+    IsSimple e.2.2 :=
+  isSimple_of_segmentContactCheck (incidence_points_nodup e he) (incidence_simple_check e he)
 
 /-- Every continuous intersection of distinct incidence routes is a shared graph endpoint. -/
 theorem routes_contact {e f : ℕ × SplitVariable × Route}
@@ -167,12 +156,8 @@ theorem access_disjoint {i j : Fin 4} (h : i ≠ j) :
 theorem access_contact {i : Fin 4} {e : ℕ × SplitVariable × Route}
     (he : e ∈ incidenceRoutes) {p : ℝ × ℝ}
     (hp : p ∈ support (accessRoute i)) (hq : p ∈ support e.2.2) :
-    e.2.1 = splitTerminal i ∧ p = realPoint (variablePosition (splitTerminal i)) := by
-  obtain ⟨q, hq, hpq⟩ := routeContactCheck_sound (access_contact_check i e he) hp hq
-  split_ifs at hq with h
-  · have hq' : q = variablePosition (splitTerminal i) := List.mem_singleton.mp hq
-    exact ⟨h, hq' ▸ hpq⟩
-  · exact False.elim (List.not_mem_nil hq)
+    e.2.1 = splitTerminal i ∧ p = realPoint (variablePosition (splitTerminal i)) :=
+  routeContactCheck_ite_sound (access_contact_check i e he) hp hq
 
 /-- Every point of an access route lies in the outer box. Its only boundary point is the
 prescribed geometric access port; all other access points are strictly inside. -/

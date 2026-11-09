@@ -31,23 +31,6 @@ open Cslib.GenericRAM Turing.MultiTapeTM
 
 variable {T : Type} {encT : T ↪ List Bool} {entry : T → List Bool → List ℕ}
 
-/-- The encoded argument of an entry on a vertex is at most three times the encoded network
-length plus a constant. -/
-theorem DescribedNetwork.length_entryInput_le (G : DescribedNetwork T)
-    {v : List ℕ × T} (hv : v ∈ G.vertices) {bs : List Bool} (hbs : bs.length = v.1.length) :
-    (encPair encT encBits (v.2, bs)).length + 1 ≤
-      3 * ((DescribedNetwork.encDescribed encT G).length + 1) := by
-  have h1 := length_le_encList_of_mem (encPair (encList encNat) encT) hv
-  have h2 : (encList (encPair (encList encNat) encT) G.vertices).length ≤
-      (DescribedNetwork.encDescribed encT G).length := by
-    change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-      (G.numEdges, G.vertices)).length
-    rw [length_encPair]
-    dsimp only
-    omega
-  have h3 := length_le_length_encList encNat v.1
-  enc_len at h1 ⊢
-
 /-- Direct truncated contraction with a polynomial entry procedure has only the `2 ^ m`
 enumeration factor. The result includes its encoded output in the space bound. -/
 theorem truncDirectCertificate_le_of_isPolynomial

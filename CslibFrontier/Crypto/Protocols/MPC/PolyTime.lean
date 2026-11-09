@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Fold
 import CslibFrontier.Computability.Probabilistic.Finite
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -871,16 +872,6 @@ private theorem isPPTOn_pi_sampleList {α : Type} {input : α ↪ List Bool}
     rw [OracleComp.pi_succ]
     simp [ProbComp.eval_bind, ProbComp.eval_map]
 
-/-- Private sampling in `ProbOracleComp` binds directly on `ProbComp.eval` without touching the
-external oracle state `s`. -/
-private theorem runWith_sample_bind {ι : Type} {spec : ι → Type} {α β State : Type}
-    (oracle : (i : ι) → StateT State PMF (spec i))
-    (d : ProbComp α) (k : α → ProbOracleComp spec β) (s : State) :
-    ProbOracleComp.runWith oracle (ProbOracleComp.sample d >>= k) s =
-      (ProbComp.eval d).bind (fun a => ProbOracleComp.runWith oracle (k a) s) := by
-  simp [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
-    PMF.bind_map, Function.comp_def]
-
 /-- Private coin draws `ProbOracleComp.sample d` commute with arbitrary stateful oracle
 computations `m` under `ProbOracleComp.runWith`. -/
 private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ State : Type}
@@ -891,12 +882,12 @@ private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ S
       (ProbOracleComp.sample d >>= fun a => m >>= fun b => k a b) s =
     ProbOracleComp.runWith oracle
       (m >>= fun b => ProbOracleComp.sample d >>= fun a => k a b) s := by
-  rw [runWith_sample_bind]
+  rw [ProbOracleComp.runWith_sample_bind]
   conv_lhs => arg 2; ext a; rw [ProbOracleComp.runWith_bind]
   rw [PMF.bind_comm, ProbOracleComp.runWith_bind]
   congr 1
   funext b
-  rw [← runWith_sample_bind]
+  rw [← ProbOracleComp.runWith_sample_bind]
 
 /-! ### Section 4B: Word-Level Real and Simulated Runners and Their PPT Certificates -/
 
@@ -2428,7 +2419,7 @@ private theorem runWith_sample_congr_eq {ι : Type} {spec : ι → Type} {α γ 
     (k : α → ProbOracleComp spec γ) (s : State) :
     ProbOracleComp.runWith oracle (ProbOracleComp.sample d₁ >>= k) s =
       ProbOracleComp.runWith oracle (ProbOracleComp.sample d₂ >>= k) s := by
-  rw [runWith_sample_bind, runWith_sample_bind, heval]
+  rw [ProbOracleComp.runWith_sample_bind, ProbOracleComp.runWith_sample_bind, heval]
 
 private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState : Type}
     {State Out : Fin m → Type} {sc₂ : Schedule m (sharedMulSpec 2)}
@@ -2495,9 +2486,8 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
             (Composition.pushTuple parties (twoPartyMulCoins c₀) i, c_tail i)) <$>
             OracleComp.pi
               (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol) rest)) := by
-      simp only [Composition.sampleSubCoins, eval_pi_pair, Composition.eval_pi_sampleSlotCoins,
-        eval_pi_twoPartyMulCoins, ProbComp.eval_bind, ProbComp.eval_map,
-        ProbComp.eval_uniform, PMF.bind_map, PMF.map_comp, Function.comp_def]
+      simp only [pmf_norm, Composition.sampleSubCoins, eval_pi_pair,
+        Composition.eval_pi_sampleSlotCoins, eval_pi_twoPartyMulCoins, ProbComp.eval_uniform]
     rw [runWith_sample_congr_eq oracle _ _ hpi, ProbOracleComp.sample_bind, bind_assoc]
     simp only [ProbOracleComp.sample_map, bind_map_left, runOTSteps]
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]
@@ -3869,12 +3859,10 @@ private theorem eval_simSharedMulSteps_progSteps {m n g : ℕ} [NeZero m] (I : F
       map_projStep2Acc_simGateStep]
     have hih := congrArg
       (PMF.bind · (fun accI => ProbComp.eval (simGateStepProj m I line.code accI))) ih.symm
-    simp only [ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def] at hih ⊢
+    simp only [pmf_norm] at hih ⊢
     rw [hih]
-    simp only [GMWCircuit.progDist, GMWCircuit.progSteps, GMWCircuit.progSchedule,
-      I.restrict_def, simSharedMulSteps_append, Steps.outputAt_append,
-      ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, bind_pure_comp,
-      PMF.bind_bind, PMF.bind_map, PMF.pure_bind, Function.comp_def]
+    simp only [pmf_norm, GMWCircuit.progDist, GMWCircuit.progSteps, GMWCircuit.progSchedule,
+      I.restrict_def, simSharedMulSteps_append, Steps.outputAt_append, bind_pure_comp]
     refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun r_p hr_p => ?_
     have hw := hsum_p r_p hr_p
     rw [PMF.bind_comm]
@@ -4862,11 +4850,9 @@ private theorem eval_simSharedMulSteps_outCoordsSteps {m k : ℕ} [NeZero m]
          mul.2 i.1 ++ (q_tail i).2.1,
          (if i.1 = coord.1 then List.ofFn ans else []) ++ (q_tail i).2.2))
       (ih (fun i => y_acc i + if i = coord.1 then Pi.single coord.2 (∑ s : Fin m, ans s) else 0))
-    simp only [bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_map,
-      PMF.map_bind, PMF.map_comp, Function.comp_def] at hih ⊢
+    simp only [pmf_norm, bind_pure_comp] at hih ⊢
     rw [hih, foldlM_simOutStep_eq_map I _ (finishOutStep m coord.1 (ans, mul))]
-    simp only [ProbComp.eval_map, PMF.map_comp, Function.comp_def,
-      appendStep3Acc, finishOutStep, itemsOfCoords]
+    simp only [pmf_norm, appendStep3Acc, finishOutStep, itemsOfCoords]
 
 private theorem eval_simSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
     (I : Finset (Fin m)) (D : Circuit Boolean.signature (m * n) (m * k))
@@ -4908,9 +4894,7 @@ private theorem eval_simSharedMulSteps_outputSteps {m n k : ℕ} [NeZero m]
   have hout := congrArg
     (PMF.map fun q (i : I) => (c₂ i.1 ++ (q i).1, a₂ i.1 ++ (q i).2.1, (q i).2.2))
     (eval_simSharedMulSteps_outCoordsSteps I a_table 0 yI (GMWCircuit.outCoords m k))
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.map_bind, PMF.map_comp, PMF.pure_map,
-    Function.comp_def, I.restrict_def, appendStep3Acc, List.nil_append] at hout ⊢
+  simp only [pmf_norm, I.restrict_def, appendStep3Acc, List.nil_append] at hout ⊢
   exact hout
 
 /-! #### Sub-part 4C.5: End-to-End Runner & Simulator Equivalence -/
@@ -5188,10 +5172,7 @@ private theorem eval_pi_gmwSampleCoins {m coins n k : ℕ} [NeZero m]
             c_ot i))) := by
   dsimp only [gmwOT14RandomizedProtocol, Protocol.randomizedWrapper, Protocol.mapInput,
     gmwOT14Protocol, Protocol.compose, gmwCircuitProtocol]
-  simp only [eval_pi_pair, eval_pi_sampleSubCoins_multiPartyMul,
-    ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.pure_map, PMF.pure_bind, PMF.bind_bind, PMF.map_bind, PMF.map_comp,
-    Function.comp_def]
+  simp only [pmf_norm, eval_pi_pair, eval_pi_sampleSubCoins_multiPartyMul]
   rfl
 
 private theorem runWith_realRunWord_eq_runEncoded {α : Type} (m : ℕ) [NeZero m]
@@ -5388,11 +5369,9 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
           (packSimOutputFromCoalition I x_bits r_bits c1_bits in_shares <$>
             simOutStepProj m k I D.code.2 y_bits accI))
     (eval_simSharedMulSteps_progSteps I (Cslib.BitString.blocksEquiv.symm xr) D.program st hst_sum)
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.bind_map, PMF.pure_bind, PMF.map_comp, Function.comp_def, hst_in,
-    simOutStepProj_projStep2Acc, packSimOutputFromCoalition_eq_packSimOutput] at hprog
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-    PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, hst_in, simOutStepProj_projStep2Acc,
+    packSimOutputFromCoalition_eq_packSimOutput] at hprog
+  simp only [pmf_norm, bind_pure_comp]
   refine Eq.trans ?_ hprog
   refine congrArg (PMF.bind _) (funext fun r_prog => ?_)
   rw [PMF.bind_comm]
@@ -5403,8 +5382,7 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
       (fun s => (GMWCircuit.progSteps m D.program).outputAt s (st s) (r_prog s)) yI
       (fun i : I => encOTSubCoins _ i.1 (sub₁ i).1)
       (fun i : I => encOTOracleAnswers _ i.1 (sub₁ i).2))
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-    PMF.map_bind, PMF.map_comp, Function.comp_def, y, y_bits, I.restrict_def] at hout ⊢
+  simp only [pmf_norm, bind_pure_comp, y, y_bits, I.restrict_def] at hout ⊢
   refine Eq.trans ?_ hout
   refine congrArg (PMF.bind _) (funext fun r_out => ?_)
   refine congrArg (PMF.map · _) (funext fun sub₂ => ?_)
@@ -5429,18 +5407,15 @@ private theorem eval_simRunWord_eq_gmwOT14RandomizedSim {α : Type} (m : ℕ) [N
         gmwOT14RandomizedSim m (coins inp.1) (n inp.1) (k inp.1) (C inp.1) I inp.2.1 inp.2.2) := by
   rcases inp with ⟨a, xI, yI⟩
   rw [simRunWord, gmwOT14RandomizedSim, randomizedWrapperSim]
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-    eval_sampleTwoPiBits_sim m (coins a) (n a + coins a) I,
-    PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, bind_pure_comp, eval_sampleTwoPiBits_sim m (coins a) (n a + coins a) I]
   refine congrArg (PMF.bind _) (funext fun rI => ?_)
   have hsim (c₁ : Fin m → Fin (n a + coins a) → Fin (m - 1) → Bool) :=
     (eval_simSharedMulSteps_gmwCircuitSim (C a) I xI yI rI c₁).symm
   simp only [ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp] at hsim
   simp_rw [hsim]
-  simp only [mapInputSim, gmwOT14Sim, composeSim, gmwCircuitSim, GMWCircuit.gmwCircuitRealViews,
-    expandSimSteps_twoPartyMulSim, simSharedMulSteps, ProbComp.eval_bind, ProbComp.eval_map,
-    bind_assoc, map_bind, bind_map_left, bind_pure_comp, map_pure, Functor.map_map,
-    PMF.map_bind, PMF.map_comp, Function.comp_def, I.restrict_def]
+  simp only [pmf_norm, mapInputSim, gmwOT14Sim, composeSim, gmwCircuitSim,
+    GMWCircuit.gmwCircuitRealViews, expandSimSteps_twoPartyMulSim, simSharedMulSteps, bind_assoc,
+    map_bind, bind_map_left, bind_pure_comp, map_pure, Functor.map_map, I.restrict_def]
   rfl
 
 end PolyTimeRunner

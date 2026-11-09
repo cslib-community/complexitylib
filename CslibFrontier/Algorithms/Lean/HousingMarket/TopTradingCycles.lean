@@ -279,6 +279,14 @@ variable {I}
 
 /-! ### The strict core -/
 
+/-- An allocation that maps a finite set `C` into itself maps it onto itself, so it sends no agent
+outside `C` into `C`. -/
+private theorem mem_of_apply_mem {C : Finset (Fin n)} (ν : Allocation n)
+    (hC : ∀ b ∈ C, ν b ∈ C) {a : Fin n} (ha : ν a ∈ C) : a ∈ C := by
+  obtain ⟨b, hb, hba⟩ := ((Set.Finite.injOn_iff_bijOn_of_mapsTo (Finset.finite_toSet C) hC).1
+    ν.injective.injOn).surjOn (Finset.mem_coe.2 ha)
+  exact ν.injective hba ▸ hb
+
 /-- In a submarket `R` run for enough rounds, if a reallocation `ν` within `S ⊆ R` gives every
 member of `S` a house it weakly prefers to its TTC house, then `ν` agrees with TTC on `S`. -/
 private theorem eq_ttcRounds_of_le {k : ℕ} {R : Finset (Fin n)} (hk : R.card ≤ k)
@@ -305,20 +313,16 @@ private theorem eq_ttcRounds_of_le {k : ℕ} {R : Finset (Fin n)} (hk : R.card �
     · rw [hC i hi hiC, ttcRounds_succ_of_mem hiC]
     rw [ttcRounds_succ_of_notMem hiC]
     -- so `ν` maps `S ∩ C` onto itself, and hence `S \ C` into itself
-    have hmaps : Set.MapsTo ν (S ∩ C : Finset (Fin n)) (S ∩ C : Finset (Fin n)) := by
+    have hmaps : ∀ a ∈ S ∩ C, ν a ∈ S ∩ C := by
       intro a ha
       obtain ⟨haS, haC⟩ := Finset.mem_inter.1 ha
-      rw [Finset.mem_coe, Finset.mem_inter, hC a haS haC]
+      rw [Finset.mem_inter, hC a haS haC]
       exact ⟨hC a haS haC ▸ hS a haS, topChoice_mem_cycleAgents haC⟩
-    have hsurj := ((Set.Finite.injOn_iff_bijOn_of_mapsTo (Finset.finite_toSet _) hmaps).1
-      ν.injective.injOn).surjOn
     have hS' : ∀ a ∈ S \ C, ν a ∈ S \ C := by
       intro a ha
       obtain ⟨haS, haC⟩ := Finset.mem_sdiff.1 ha
       refine Finset.mem_sdiff.2 ⟨hS a haS, fun hνC => haC ?_⟩
-      obtain ⟨b, hb, hba⟩ := hsurj (Finset.mem_coe.2 (Finset.mem_inter.2 ⟨hS a haS, hνC⟩))
-      rw [ν.injective hba] at hb
-      exact (Finset.mem_inter.1 hb).2
+      exact (Finset.mem_inter.1 (mem_of_apply_mem ν hmaps (Finset.mem_inter.2 ⟨hS a haS, hνC⟩))).2
     refine ih hk' (S \ C) (Finset.sdiff_subset_sdiff hSR le_rfl) hS' (fun a ha => ?_) i
       (Finset.mem_sdiff.2 ⟨hi, hiC⟩)
     have h1 := hle a (Finset.sdiff_subset ha)
@@ -392,15 +396,10 @@ private theorem eq_ttcRounds_of_inStrictCore {μ : Allocation n} (hμ : I.InStri
     · rw [hμC i hiC, ttcRounds_succ_of_mem hiC]
     rw [ttcRounds_succ_of_notMem hiC]
     -- `μ` maps `C` onto itself, hence `R \ C` into itself
-    have hmaps : Set.MapsTo μ (C : Set (Fin n)) C := fun b hb =>
-      hμC b hb ▸ topChoice_mem_cycleAgents hb
-    have hsurj := ((Set.Finite.injOn_iff_bijOn_of_mapsTo (Finset.finite_toSet _) hmaps).1
-      μ.injective.injOn).surjOn
+    have hmaps : ∀ b ∈ C, μ b ∈ C := fun b hb => hμC b hb ▸ topChoice_mem_cycleAgents hb
     refine ih hk' (fun a ha => ?_) i (Finset.mem_sdiff.2 ⟨hi, hiC⟩)
     obtain ⟨haR, haC⟩ := Finset.mem_sdiff.1 ha
-    refine Finset.mem_sdiff.2 ⟨hR a haR, fun hμa => haC ?_⟩
-    obtain ⟨b, hb, hba⟩ := hsurj hμa
-    exact μ.injective hba ▸ hb
+    exact Finset.mem_sdiff.2 ⟨hR a haR, fun hμa => haC (mem_of_apply_mem μ hmaps hμa)⟩
 
 /-- The TTC allocation is the only allocation in the strict core ([RothPostlewaite1977];
 [SchummerVohra2007], Theorem 10.6). -/

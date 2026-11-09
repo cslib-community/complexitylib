@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.Int.Order
+import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.List.OfFn
 import Mathlib.Algebra.Polynomial.Eval.Coeff
@@ -102,15 +103,6 @@ theorem polyNorm1_le_length_mul {p : List ℤ} {B : ℕ} (h : ∀ z ∈ p, z.nat
   simpa only [polyNorm1, List.length_map, smul_eq_mul] using
     List.sum_le_length_nsmul (p.map Int.natAbs) B hmem
 
-private lemma sum_map_range_eq_finset {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :
-    ((List.range n).map f).sum = ∑ i ∈ Finset.range n, f i :=
-  (List.sum_map_range n f).trans (Fin.sum_univ_eq_sum_range f n)
-
-private lemma eq_map_range_getD {l : List ℤ} {n : ℕ} (h : l.length = n) :
-    l = (List.range n).map fun i => l.getD i 0 :=
-  List.ext_getElem (by simp only [h, List.length_map, List.length_range]) fun i hi _ => by
-    rw [List.getElem_map, List.getElem_range, List.getD_eq_getElem _ 0 hi]
-
 /-- Bounding `z.natAbs ≤ 2 ^ e` bounds `(encIntBin z).length ≤ e + 2`. -/
 theorem length_encIntBin_le_of_natAbs_le {z : ℤ} {e : ℕ} (hz : z.natAbs ≤ 2 ^ e) :
     (encIntBin z).length ≤ e + 2 := by
@@ -155,7 +147,8 @@ private lemma coeff_ofCoeffList_mul_eq {R : Type*} [Semiring R] (p q : List R) (
     (ofCoeffList p * ofCoeffList q).coeff k =
       ((List.range (k + 1)).map fun i => p.getD i 0 * q.getD (k - i) 0).sum := by
   rw [Polynomial.coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ
-    (fun i j => (ofCoeffList p).coeff i * (ofCoeffList q).coeff j), ← sum_map_range_eq_finset]
+    (fun i j => (ofCoeffList p).coeff i * (ofCoeffList q).coeff j),
+    ← List.sum_map_range_eq_sum_range]
   exact congrArg List.sum (List.map_congr_left fun i _ => by simp only [coeff_ofCoeffList])
 
 /-- Entrywise `getD` specification of `polyAdd`. -/
@@ -212,7 +205,7 @@ theorem ofCoeffList_polyMul (p q : List ℤ) :
 /-- Submultiplicativity of `polyNorm1` under truncated $z$-jet multiplication `mulZJet`. -/
 theorem polyNorm1_mulZJet_le (J : ℕ) (u v : List ℤ) :
     polyNorm1 (mulZJet J u v) ≤ polyNorm1 (u.take J) * polyNorm1 (v.take J) := by
-  rw [polyNorm1, mulZJet, List.map_map, Function.comp_def, sum_map_range_eq_finset]
+  rw [polyNorm1, mulZJet, List.map_map, Function.comp_def, List.sum_map_range_eq_sum_range]
   have hterms :
       ∑ j ∈ Finset.range J, (cauchyCoeff u v j).natAbs =
         ∑ j ∈ Finset.range J,
@@ -348,7 +341,7 @@ private lemma prefixSumPoly_iterate_eq (ℓ m : ℕ) :
     intro j hj _; simp only [List.length_map, List.length_range] at hj
     simp only [List.getElem_map, List.getElem_range]
     rw [← List.map_take, List.take_range, Nat.min_eq_left (by omega : j + 1 ≤ ℓ),
-      sum_map_range_eq_finset]
+      List.sum_map_range_eq_sum_range]
     have h1 : ∑ i ∈ Finset.range (j + 1), (m + i).choose i =
         ∑ i ∈ Finset.range (j + 1), (i + m).choose m :=
       Finset.sum_congr rfl fun i _ => by rw [← Nat.choose_symm_add, add_comm]
@@ -483,7 +476,7 @@ theorem ofCoeffList_parityPolyCoeffs_eq_sum (ℓ : ℕ) :
 theorem evalParityAmplifier_eq_eval_parityAmplifier (ℓ : ℕ) (y : ℤ) :
     evalParityAmplifier ℓ y = (parityAmplifier ℓ).eval y := by
   rw [← ofCoeffList_parityPolyCoeffs_eq_parityAmplifier, ofCoeffList_parityPolyCoeffs_eq_sum,
-    eval_finsetSum, evalParityAmplifier, sum_map_range_eq_finset]
+    eval_finsetSum, evalParityAmplifier, List.sum_map_range_eq_sum_range]
   exact Finset.sum_congr rfl fun s _ => by
     simp only [eval_mul, eval_add, eval_C, eval_X, eval_pow, eval_sub]; ring
 
@@ -718,8 +711,8 @@ private lemma row_sum_evalParityFactorJet {J ℓ j : ℕ} (hj : j < J) (Δ : ℤ
   have hrow_len : ((evalParityFactorJet J ℓ Δ yJet).getD j []).length = ℓ := by
     rw [List.getD_eq_getElem _ [] hjlen]
     exact hshape.2 _ (List.getElem_mem hjlen)
-  conv_lhs => rw [eq_map_range_getD hrow_len]
-  exact sum_map_range_eq_finset ℓ _
+  conv_lhs => rw [← List.map_getD_range ((evalParityFactorJet J ℓ Δ yJet).getD j []) 0, hrow_len]
+  exact List.sum_map_range_eq_sum_range ℓ _
 
 /-- **Polynomial-in-$z$ specification of `evalParityFactorJet`** modulo $z^J$. -/
 theorem evalParityFactorJet_entry_eq_coeff {J ℓ j s : ℕ} (hj : j < J) (hs : s < ℓ)
@@ -864,7 +857,7 @@ theorem evalParityFactorJet_row_zero_sum {J ℓ : ℕ} (hJ : 1 ≤ J) (Δ y : �
     ((evalParityFactorJet J ℓ Δ yJet).getD 0 []).sum =
       Δ ^ (2 * ℓ - 1) * evalParityAmplifier ℓ y := by
   rw [row_sum_evalParityFactorJet (by omega : 0 < J) Δ yJet, evalParityAmplifier,
-    sum_map_range_eq_finset, Finset.mul_sum]
+    List.sum_map_range_eq_sum_range, Finset.mul_sum]
   exact Finset.sum_congr rfl fun s hs =>
     evalParityFactorJet_row_zero_entry hJ (Finset.mem_range.mp hs) Δ y hy0
 
@@ -959,8 +952,8 @@ theorem jetL1Norm_evalParityFactorJet_le (J ℓ : ℕ) (Δ : ℤ) (yJet : List �
       rw [ParityFactorEval.cols, List.getD_map_range _ [] hslt]
     have hlen : col.length = J := by simp only [col, ParityFactorEval.colJet, length_mulZJet]
     unfold polyNorm1 rowEntry
-    conv_rhs => rw [eq_map_range_getD hlen]
-    simp only [hcol_eq, List.map_map, Function.comp_def, sum_map_range_eq_finset]
+    conv_rhs => rw [← List.map_getD_range col 0, hlen]
+    simp only [hcol_eq, List.map_map, Function.comp_def, List.sum_map_range_eq_sum_range]
   rw [hswap]
   refine (Finset.sum_le_sum fun s hs =>
     polyNorm1_parityFactorColJet_le (Finset.mem_range.mp hs) Δ yJet).trans_eq ?_
@@ -1029,12 +1022,6 @@ private theorem length_listIntBin {l : α → List ℤ}
     (hl : ComputableInPolyTime l encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => (l x).length) encIn encUnary :=
   (length_list encIntBin).comp hl
-
-theorem intBin_pow_polytime {base : α → ℤ} {exp : α → ℕ}
-    (hb : ComputableInPolyTime base encIn encIntBin)
-    (he : ComputableInPolyTime exp encIn encUnary) :
-    ComputableInPolyTime (fun x => base x ^ exp x) encIn encIntBin :=
-  .of_tidy (ComputableTidilyInPolyTime.intBin_pow' hb.tidy he.tidy)
 
 /-- `polyNorm1 l` is bounded exponentially in `(encList encIntBin l).length`. -/
 theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
@@ -1283,7 +1270,7 @@ private theorem parityFactorColJet_polytime {J ℓ s : α → ℕ} {Δ : α → 
     listGetDWithInput hcoeffs hs (0, 0)
   have hexp : ComputableInPolyTime (fun x => 2 * (ℓ x - 1 - s x)) encIn encUnary :=
     unary_mul' (const 2) (unary_sub.comp' ((unary_sub.comp' (hℓ.prod (const 1))).prod hs))
-  have hscale := singleton_intBin_polytime (intBin_pow_polytime hΔ hexp)
+  have hscale := singleton_intBin_polytime (intBin_pow' hΔ hexp)
   have hlin := computableInPolyTime_polyAdd
     (singleton_intBin_polytime (intBin_mul' hΔ hab.fst'))
     (computableInPolyTime_polyMul (singleton_intBin_polytime hab.snd')

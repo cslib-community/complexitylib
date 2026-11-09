@@ -435,17 +435,25 @@ theorem Iso.neighborFinset_apply (e : G ≃g H) (v : V) :
   simp only [mem_neighborFinset, mem_map_equiv, Iso.map_adj_iff]
   rw [show e.toEquiv.symm (e w) = w from e.toEquiv.symm_apply_apply w]
 
-/-- An isomorphism of colored graphs preserves the colors of every round. -/
-theorem Iso.refinementColoring_apply (e : G ≃g H) {χ₀ : V → α} {ψ₀ : W → α}
-    (h₀ : ∀ v, ψ₀ (e v) = χ₀ v) (n : ℕ) (v : V) :
-    H.refinementColoring ψ₀ n (e v) = G.refinementColoring χ₀ n v := by
+/-- An embedding that maps the neighbors of every `v` onto the neighbors of its image transports
+every round of color refinement. -/
+theorem refinementColoring_apply_of_neighborFinset_map (f : V ↪ W)
+    (hf : ∀ v, H.neighborFinset (f v) = (G.neighborFinset v).map f) {χ₀ : V → α} {ψ₀ : W → α}
+    (h₀ : ∀ v, ψ₀ (f v) = χ₀ v) (n : ℕ) (v : V) :
+    H.refinementColoring ψ₀ n (f v) = G.refinementColoring χ₀ n v := by
   induction n generalizing v with
   | zero => exact h₀ v
   | succ n ih =>
     rw [refinementColoring_succ, refinementColoring_succ, refineColoring, refineColoring,
-      ih, e.neighborFinset_apply, Finset.map_val, Multiset.map_map]
+      ih, hf, Finset.map_val, Multiset.map_map]
     congr 2
     exact funext ih
+
+/-- An isomorphism of colored graphs preserves the colors of every round. -/
+theorem Iso.refinementColoring_apply (e : G ≃g H) {χ₀ : V → α} {ψ₀ : W → α}
+    (h₀ : ∀ v, ψ₀ (e v) = χ₀ v) (n : ℕ) (v : V) :
+    H.refinementColoring ψ₀ n (e v) = G.refinementColoring χ₀ n v :=
+  refinementColoring_apply_of_neighborFinset_map e.toEquiv.toEmbedding e.neighborFinset_apply h₀ n v
 
 variable [Fintype V] [Fintype W]
 
@@ -494,26 +502,14 @@ theorem neighborFinset_sum_inr (w : W) :
 omit [H.LocallyFinite] in
 /-- On the left summand, color refinement of a disjoint union is color refinement of `G`. -/
 theorem refinementColoring_sum_inl (χ₀ : V ⊕ W → α) (n : ℕ) (v : V) :
-    (G ⊕g H).refinementColoring χ₀ n (.inl v) = G.refinementColoring (χ₀ ∘ .inl) n v := by
-  induction n generalizing v with
-  | zero => rfl
-  | succ n ih =>
-    rw [refinementColoring_succ, refinementColoring_succ, refineColoring, refineColoring, ih,
-      neighborFinset_sum_inl, Finset.map_val, Multiset.map_map]
-    congr 2
-    exact funext ih
+    (G ⊕g H).refinementColoring χ₀ n (.inl v) = G.refinementColoring (χ₀ ∘ .inl) n v :=
+  refinementColoring_apply_of_neighborFinset_map .inl neighborFinset_sum_inl (fun _ => rfl) n v
 
 omit [G.LocallyFinite] in
 /-- On the right summand, color refinement of a disjoint union is color refinement of `H`. -/
 theorem refinementColoring_sum_inr (χ₀ : V ⊕ W → α) (n : ℕ) (w : W) :
-    (G ⊕g H).refinementColoring χ₀ n (.inr w) = H.refinementColoring (χ₀ ∘ .inr) n w := by
-  induction n generalizing w with
-  | zero => rfl
-  | succ n ih =>
-    rw [refinementColoring_succ, refinementColoring_succ, refineColoring, refineColoring, ih,
-      neighborFinset_sum_inr, Finset.map_val, Multiset.map_map]
-    congr 2
-    exact funext ih
+    (G ⊕g H).refinementColoring χ₀ n (.inr w) = H.refinementColoring (χ₀ ∘ .inr) n w :=
+  refinementColoring_apply_of_neighborFinset_map .inr neighborFinset_sum_inr (fun _ => rfl) n w
 
 /-- The histogram of a disjoint union is the sum of the histograms. -/
 theorem colorHistogram_sum [Fintype V] [Fintype W] (χ₀ : V ⊕ W → α) (n : ℕ) :

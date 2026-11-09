@@ -144,22 +144,14 @@ theorem count_vars_denseRelabel_le (φ : CNF V) {B : ℕ}
 /-- Reading original variable values at their `distinctVars` indices recovers the evaluation of
 `φ`. -/
 theorem eval_denseRelabel (φ : CNF V) (σ : V → Bool) :
-    φ.denseRelabel.eval (fun i => φ.distinctVars[i]?.elim false σ) = φ.eval σ := by
-  rw [denseRelabel, CNF.eval_relabel]
-  apply CNF.eval_congr
-  intro v hv
-  have hv' : v ∈ φ.distinctVars := mem_distinctVars.mpr hv
-  simp [List.getElem?_idxOf hv']
+    φ.denseRelabel.eval (fun i => φ.distinctVars[i]?.elim false σ) = φ.eval σ :=
+  eval_relabel_idxOf φ (fun _ hv => mem_distinctVars.mpr hv) σ
 
 /-- Dense relabeling preserves satisfiability. -/
 @[simp]
 theorem satisfiable_denseRelabel (φ : CNF V) :
-    φ.denseRelabel.Satisfiable ↔ φ.Satisfiable := by
-  constructor
-  · rintro ⟨σ, hσ⟩
-    exact ⟨σ ∘ φ.distinctVars.idxOf, by simpa only [denseRelabel, CNF.eval_relabel] using hσ⟩
-  · rintro ⟨σ, hσ⟩
-    exact ⟨fun i => φ.distinctVars[i]?.elim false σ, (eval_denseRelabel φ σ).trans hσ⟩
+    φ.denseRelabel.Satisfiable ↔ φ.Satisfiable :=
+  satisfiable_relabel_idxOf φ fun _ hv => mem_distinctVars.mpr hv
 
 /-- Dense relabeling preserves the occurring-variable model count. -/
 @[simp]

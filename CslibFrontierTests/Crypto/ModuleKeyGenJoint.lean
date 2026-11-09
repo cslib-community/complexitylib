@@ -133,8 +133,7 @@ private theorem source_joint_eq (μ : PMF (ZMod 3)) :
       return output z a e) := by
   simp only [singleton_rows_eval, matrix_singleton, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_map, Function.comp_def, cast_singleton, output]
-  congr 1
-  funext z
+  congr 1 with z : 1
   change ((μ.map (fun a => (!![![a]] : Matrix3))).bind
     (fun A : Matrix3 => (eval (sampleCenteredBinomial 1)).bind fun e =>
       PMF.pure (ModuleSIS.encodeVec (![![z]]), ModuleLWE.encodeSample
@@ -192,8 +191,7 @@ example : (do
 private theorem modNat_one_cast (width : ℕ) :
     (eval (sampleModNat width 1)).map (Nat.cast : ℕ → ZMod 1) = PMF.pure 0 := by
   convert PMF.map_const (eval (sampleModNat width 1)) (0 : ZMod 1) using 1
-  congr 1
-  funext z
+  congr 1 with z : 1
   apply ZMod.val_injective 1
   have hz := ZMod.val_lt (z : ZMod 1)
   change (z : ZMod 1).val = 0
