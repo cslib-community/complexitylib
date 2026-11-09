@@ -21,6 +21,17 @@ open scoped BigOperators
 
 namespace Finset
 
+/-- Splitting a product at `t` turns the event `p (σ s) ∧ v (σ t)` into a product of an event
+on the other coordinates and an event on `t`. -/
+private theorem expect_filter_eq_expect_product {R A : Type*} [Fintype R] [DecidableEq R]
+    [Fintype A] {s t : R} (hst : s ≠ t) (p v : A → Prop) [DecidablePred p] [DecidablePred v]
+    (F : (R → A) → ℝ) (f : (({j : R // j ≠ t} → A) × A) → ℝ)
+    (hF : ∀ σ, F σ = f ((Equiv.piSplitAt t (fun _ : R => A)).trans (Equiv.prodComm _ _) σ)) :
+    (𝔼 σ ∈ ({σ : R → A | p (σ s) ∧ v (σ t)} : Finset _), F σ) =
+      𝔼 z ∈ ({rest | p (rest ⟨s, hst⟩)} : Finset ({j : R // j ≠ t} → A)) ×ˢ
+        ({a | v a} : Finset A), f z :=
+  expect_equiv _ (fun σ => by simp) fun σ _ => hF σ
+
 /-- Factor a terminal-only value from a function of all other coordinates, conditioning
 on an old source event and a terminal event. This never introduces a second full seed. -/
 theorem expect_pi_split_mul_filter {R A : Type*} [Fintype R] [DecidableEq R]
@@ -31,28 +42,12 @@ theorem expect_pi_split_mul_filter {R A : Type*} [Fintype R] [DecidableEq R]
       L (fun j => σ j) * G (σ t)) =
     (𝔼 σ ∈ ({σ : R → A | p (σ s)} : Finset _), L (fun j => σ j)) *
       (𝔼 a ∈ ({a | q a} : Finset A), G a) := by
-  classical
-  let e := (Equiv.piSplitAt t (fun _ : R => A)).trans (Equiv.prodComm _ _)
-  have hpair : (𝔼 σ ∈ ({σ : R → A | p (σ s) ∧ q (σ t)} : Finset _),
-      L (fun j => σ j) * G (σ t)) =
-      𝔼 z ∈ ({rest | p (rest ⟨s, hst⟩)} : Finset ({j : R // j ≠ t} → A)) ×ˢ
-        ({a | q a} : Finset A), L z.1 * G z.2 := by
-    apply expect_equiv e
-    · intro σ
-      simp [e]
-    · intro σ _
-      rfl
-  have hsource : (𝔼 σ ∈ ({σ : R → A | p (σ s)} : Finset _), L (fun j => σ j)) =
-      𝔼 rest ∈ ({rest | p (rest ⟨s, hst⟩)} : Finset ({j : R // j ≠ t} → A)), L rest := by
-    calc
-      _ = 𝔼 z ∈ ({rest | p (rest ⟨s, hst⟩)} : Finset ({j : R // j ≠ t} → A)) ×ˢ
-          (univ : Finset A), L z.1 := by
-        apply expect_equiv e
-        · intro σ
-          simp [e]
-        · intro σ _
-          rfl
-      _ = _ := by rw [expect_product]; simp
+  have hpair := expect_filter_eq_expect_product hst p q (fun σ => L (fun j => σ j) * G (σ t))
+    (fun z => L z.1 * G z.2) fun _ => rfl
+  have hsource := expect_filter_eq_expect_product hst p (fun _ => True)
+    (fun σ => L (fun j => σ j)) (fun z => L z.1) fun _ => rfl
+  simp only [and_true, filter_true_of_mem, mem_univ, forall_const, expect_product,
+    Fintype.expect_const] at hsource
   rw [hpair, hsource, expect_product]
   simp_rw [← mul_expect]
   rw [← expect_mul]
@@ -68,15 +63,9 @@ theorem expect_pi_supported_terminal {R A : Type*} [Fintype R] [DecidableEq R]
     𝔼 σ ∈ ({σ : R → A | p (σ s)} : Finset _), F σ := by
   classical
   let e := (Equiv.piSplitAt t (fun _ : R => A)).trans (Equiv.prodComm _ _)
-  have split (v : A → Prop) [DecidablePred v] :
-      (𝔼 σ ∈ ({σ : R → A | p (σ s) ∧ v (σ t)} : Finset _), F σ) =
-      𝔼 z ∈ ({rest | p (rest ⟨s, hst⟩)} : Finset ({j : R // j ≠ t} → A)) ×ˢ
-        ({a | v a} : Finset A), F (e.symm z) := by
-    apply expect_equiv e
-    · intro σ
-      simp [e]
-    · intro σ _
-      exact congrArg F (e.symm_apply_apply σ).symm
+  have split (v : A → Prop) [DecidablePred v] :=
+    expect_filter_eq_expect_product hst p v F (fun z => F (e.symm z))
+      fun σ => (congrArg F (e.symm_apply_apply σ)).symm
   rw [← mul_expect, split q, expect_product]
   have hs := split (fun _ => True)
   simp only [and_true, filter_true_of_mem, mem_univ, forall_const] at hs
