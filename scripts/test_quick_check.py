@@ -202,6 +202,72 @@ class QuickCheckTests(unittest.TestCase):
                     self.assertEqual(quick.main([], self.root), lint_status)
                 self.assertEqual(calls, expected)
 
+    def use_lint_driver(self, extra=""):
+        """Configure runLinter for the default `Demo` and `Other` libraries; tests stay unlinted."""
+        self.write("lakefile.toml", 'name = "quickfixture"\nlintDriver = "batteries/runLinter"\n'
+                   'defaultTargets = ["Demo", "Other"]\n' + extra + '[[lean_lib]]\nname = "Demo"\n'
+                   '[[lean_lib]]\nname = "DemoTests"\n[[lean_lib]]\nname = "Other"\n')
+        self.write("Other.lean", "import Other.Use\n")
+        self.write("Other/Use.lean", "import Demo.Middle\ndef use := middle\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    def test_lint_lists_affected_library_modules_and_lints_each_package_through_its_clients(self):
+        self.use_lint_driver()
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        plan = self.plan()
+        # `Demo.Middle` covers `Demo.Base`; `Other.Use` imports it but lints only package `Other`.
+        self.assertEqual(plan.lint_modules, ["Demo.Base", "Demo.Middle", "Other.Use"])
+        self.assertEqual(plan.lint_targets, ["Demo.Middle", "Other.Use"])
+        self.assertIn("DemoTests.Client", plan.targets)
+
+    def test_lint_scope_without_driver_or_library_changes(self):
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        self.assertEqual((self.plan().lint_modules, self.plan().lint_targets), ([], []))
+        self.use_lint_driver()
+        self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 1\n")
+        self.assertEqual((self.plan().lint_modules, self.plan().lint_targets), ([], []))
+
+    def test_other_lint_driver_or_changed_linter_falls_back(self):
+        self.write("lakefile.toml", 'lintDriver = "other/driver"\n'
+                   + (self.root / "lakefile.toml").read_text())
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        with self.assertRaisesRegex(quick.FullCheck, "lint driver"):
+            self.plan()
+        self.use_lint_driver()
+        self.write("Demo/Base.lean", "@[env_linter] def value : Nat := 2\n")
+        with self.assertRaisesRegex(quick.FullCheck, "linter"):
+            self.plan()
+
+    def test_lint_runs_after_the_build_and_stops_on_failure(self):
+        plan = quick.Plan("base", ["Demo.Base", "Demo.Middle"], [], ["Demo.Base", "Demo.Middle"],
+                          [f"Demo.M{i:03}" for i in range(101)])
+        for lint_status in (0, 5):
+            with self.subTest(lint_status=lint_status):
+                calls, listings = [], []
+
+                def run(root, command, label):
+                    calls.append(command)
+                    if command[:2] == ["lake", "lint"]:
+                        listing = Path(command[4].removeprefix("--only-modules="))
+                        listings.append(listing)
+                        self.assertEqual(listing.read_text(), "Demo.Base\nDemo.Middle\n")
+                        return lint_status
+                    return 0
+
+                with patch.object(quick, "make_plan", return_value=plan), \
+                     patch.object(quick, "run_check", side_effect=run):
+                    self.assertEqual(quick.main([], self.root), lint_status)
+                lint = ["lake", "lint", "--", "--no-build", f"--only-modules={listings[0]}"]
+                expected = [["lake", "build", "--wfail", "--iofail", "Demo.Base", "Demo.Middle"],
+                            lint + plan.lint_targets[:100]]
+                if not lint_status:
+                    expected += [lint + plan.lint_targets[100:], ["lake", "exe", "mk_all", "--check"]]
+                self.assertEqual(calls, expected)
+                self.assertFalse(listings[0].exists())
+
     def test_deleted_or_renamed_module_falls_back(self):
         (self.root / "Demo/Base.lean").rename(self.root / "Demo/Renamed.lean")
         with self.assertRaises(quick.FullCheck):
@@ -429,6 +495,16 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertIn("CslibFrontierResults", aggregates)
         self.assertIn("CslibFrontierTests", roots)
         self.assertIn("CslibFrontierTests.Axioms", modules)
+
+    def test_repository_lint_driver_is_in_quick_scope(self):
+        # Another lint driver or invalid default targets would send every quick check to all six
+        # gates; the default libraries' modules are linted and the tests are not, as in CI.
+        listed, targets = quick.lint_scope(
+            REPO, {"CslibFrontier", "CslibFrontierResults"},
+            {"CslibFrontier.A", "CslibFrontierResults.B", "CslibFrontierTests.C"},
+            quick.defaultdict(set))
+        self.assertEqual(listed, ["CslibFrontier.A", "CslibFrontierResults.B"])
+        self.assertEqual(targets, listed)
 
 
 class NativeLeanTests(unittest.TestCase):

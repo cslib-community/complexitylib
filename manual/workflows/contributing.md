@@ -28,7 +28,7 @@ After adding a library file, run `lake exe mk_all` to regenerate the aggregate. 
 scripts/check.sh --quick
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. Unsupported or ambiguous changes fall back to the full gate. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It then runs the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. Unsupported or ambiguous changes fall back to the full gate. Quick success is development feedback, not full integration validation.
 
 Lean, dependency or build changes need all six gates on the final revision:
 

@@ -30,11 +30,17 @@ DATA_CHECKS = {
 }
 
 
+# `lake lint` runs this driver; quick mode passes it flags that only Batteries' runLinter accepts.
+LINT_DRIVER = "batteries/runLinter"
+
+
 @dataclass
 class Plan:
     base: str
     targets: list[str]
     checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
+    lint_modules: list[str] = field(default_factory=list)  # whose declarations the local linters check
+    lint_targets: list[str] = field(default_factory=list)  # modules whose environments are linted
 
 
 @dataclass
@@ -164,6 +170,33 @@ def executable_sources(root: Path) -> list[Executable]:
     return sources
 
 
+def lint_scope(root: Path, aggregates: set[str], affected: set[str],
+               reverse: dict[str, set[str]]) -> tuple[list[str], list[str]]:
+    """The affected modules that `lake lint` checks, and the fewest modules to lint them through.
+
+    `lake lint` runs the linters on the modules of the default-target libraries. A change can make
+    an argument of an importing client unused, so every affected module of those libraries is
+    listed, not only the changed ones. Linting a module covers the declarations of its package
+    (first name component) throughout its import closure; a module with no affected importer in
+    its own package is therefore linted directly, and covers every listed module it imports.
+    """
+    config = tomllib.loads((root / "lakefile.toml").read_text())
+    driver = config.get("lintDriver")
+    if driver is None:
+        return [], []  # No lint gate is configured.
+    if driver != LINT_DRIVER:
+        raise FullCheck(f"lint driver {driver!r} is outside quick-check scope")
+    defaults = config.get("defaultTargets", [])
+    if not isinstance(defaults, list) or any(not isinstance(name, str) for name in defaults):
+        raise FullCheck("invalid default targets")
+    listed = {module for module in affected - aggregates
+              if any(module.startswith(name + ".") for name in defaults)}
+    package = lambda module: module.split(".")[0]
+    targets = {module for module in listed if not any(
+        consumer in listed and package(consumer) == package(module) for consumer in reverse[module])}
+    return sorted(listed), sorted(targets)
+
+
 def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     if git(root, "ls-files", "--unmerged", "-z"):
         raise FullCheck("unresolved merge entries")
@@ -195,6 +228,9 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     for _, path in changes:
         if path not in by_path:
             raise FullCheck(f"changed Lean source outside known libraries: {path}")
+        # runLinter's `--only-modules` is unsound when a linter itself changes.
+        if "env_linter" in (root / path).read_text(errors="replace"):
+            raise FullCheck(f"changed source mentions a linter: {path}")
         changed.add(by_path[path])
     if changed & aggregates:
         raise FullCheck("a library import aggregate changed")
@@ -230,7 +266,9 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
-    return Plan(base, sorted((affected - aggregates) | executable_targets), checks)
+    lint_modules, lint_targets = lint_scope(root, aggregates, affected, reverse)
+    return Plan(base, sorted((affected - aggregates) | executable_targets), checks,
+                lint_modules, lint_targets)
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -263,7 +301,8 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         return subprocess.run([str(root / "scripts/check.sh")], cwd=root).returncode
     print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected build targets.",
           flush=True)
-    print("This is not full validation: global test, lint, style and init-import gates are skipped.", flush=True)
+    print("This is not full validation: lint covers only the affected library modules, and the "
+          "test, style and init-import gates are skipped.", flush=True)
     for label, command in plan.checks:
         status = run_check(root, command, label)
         if status:
@@ -279,7 +318,32 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         status = run_check(root, ["lake", "build", "--wfail", "--iofail", *batch], "affected modules and clients")
         if status:
             return status
+    status = run_lint(root, plan)
+    if status:
+        return status
     return run_check(root, ["lake", "exe", "mk_all", "--check"], "mk_all --check")
+
+
+def run_lint(root: Path, plan: Plan) -> int:
+    """Lint the affected library modules, as `lake lint` would, after the build has made them."""
+    if not plan.lint_targets:
+        return 0
+    print(f"Linting {len(plan.lint_modules)} affected library modules through "
+          f"{len(plan.lint_targets)} modules.", flush=True)
+    with tempfile.NamedTemporaryFile("w", prefix="cslib-frontier-lint-", suffix=".txt",
+                                     delete=False) as listing:
+        listing.write("".join(module + "\n" for module in plan.lint_modules))
+    try:
+        for offset in range(0, len(plan.lint_targets), 100):
+            batch = plan.lint_targets[offset:offset + 100]
+            status = run_check(root, ["lake", "lint", "--", "--no-build",
+                                      f"--only-modules={listing.name}", *batch],
+                               "lint of affected library modules")
+            if status:
+                return status
+        return 0
+    finally:
+        Path(listing.name).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
