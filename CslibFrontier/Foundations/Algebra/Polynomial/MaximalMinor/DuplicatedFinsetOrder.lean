@@ -5,7 +5,7 @@ Authors: Yuqing Kong, Christian Reitwiessner
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, generic maximal minors)
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.LaplaceStraightening
@@ -23,7 +23,7 @@ Ported by Christian Reitwiessner from Yuqing Kong's Apache-2.0 formalization,
 `4e27ef9d167be69902385307d40123ec665dc532` of
 https://github.com/yuqkong-1844/finite-sample-information-monotones .
 The mathematical source is [Kong2027]. This general algebra is intended for
-Mathlib; its placement exception is recorded in `UPSTREAM.md`.
+Mathlib; its destination is recorded in the upstream marker above.
 -/
 
 public section

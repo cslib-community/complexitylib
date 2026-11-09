@@ -115,7 +115,7 @@ theorem contextual_auditor (μ : Measure (BanditPotential X A)) [IsProbabilityMe
       (fun _ => marginalAction μ (banditBehavior π)) ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw ((finiteActionLaw μ (banditBehavior π)).map (banditObservation π)) m k).real
-      {z | δ ≤ |medianOfMeans (banditScore (marginalAction μ (banditBehavior π))) m k z -
+      {z | δ ≤ |blockMedianOfMeans (banditScore (marginalAction μ (banditBehavior π))) m k z -
         ((∫ x, banditLoss x ∂finiteActionLaw μ (banditBehavior π)) -
           ∫ x, banditLoss x ∂finiteActionLaw μ
             (fun _ => marginalAction μ (banditBehavior π)))|} ≤ η := by
@@ -123,7 +123,7 @@ theorem contextual_auditor (μ : Measure (BanditPotential X A)) [IsProbabilityMe
     hπ.comp ((measurable_fst.comp measurable_fst).prodMk measurable_snd)
   let := finiteActionLaw_isProbabilityMeasure μ hb (fun ω => hπpos ω.1)
     (fun ω => hπsum ω.1)
-  rw [medianOfMeans_observation_failure _ (measurable_banditObservation hπ)
+  rw [blockMedianOfMeans_observation_failure _ (measurable_banditObservation hπ)
     (measurable_banditScore _) m k, banditScore_observation]
   exact marginalAction_auditor μ hb (fun ω => hπpos ω.1) (fun ω => hπsum ω.1)
     hoverlap hW measurable_banditLoss (fun ⟨(_, losses), a⟩ => (losses a).property)
@@ -142,7 +142,7 @@ theorem contextual_auditor_finite_divergence
       (fun _ => marginalAction μ (banditBehavior π))).toReal ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw ((finiteActionLaw μ (banditBehavior π)).map (banditObservation π)) m k).real
-      {z | δ ≤ |medianOfMeans (banditScore (marginalAction μ (banditBehavior π))) m k z -
+      {z | δ ≤ |blockMedianOfMeans (banditScore (marginalAction μ (banditBehavior π))) m k z -
         ((∫ x, banditLoss x ∂finiteActionLaw μ (banditBehavior π)) -
           ∫ x, banditLoss x ∂finiteActionLaw μ
             (fun _ => marginalAction μ (banditBehavior π)))|} ≤ η := by
@@ -177,7 +177,7 @@ theorem contextual_auditor_ceiling
     let m := ⌈4 * v / δ ^ 2⌉₊
     let k := ⌈8 * Real.log (1 / η)⌉₊
     (blockSampleLaw ((finiteActionLaw μ (banditBehavior π)).map (banditObservation π)) m k).real
-      {z | δ ≤ |medianOfMeans (banditScore (marginalAction μ (banditBehavior π))) m k z -
+      {z | δ ≤ |blockMedianOfMeans (banditScore (marginalAction μ (banditBehavior π))) m k z -
         ((∫ x, banditLoss x ∂finiteActionLaw μ (banditBehavior π)) -
           ∫ x, banditLoss x ∂finiteActionLaw μ
             (fun _ => marginalAction μ (banditBehavior π)))|} ≤ η := by

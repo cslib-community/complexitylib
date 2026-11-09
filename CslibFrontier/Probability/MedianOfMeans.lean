@@ -27,24 +27,37 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 
 /-!
-# Median of independent block means
+# Median-of-means estimators
 
-The lower median is expressed by finite maxima and minima. This makes the
-estimator Borel measurable, including ties and an even number of blocks.
-The statistical experiment consists of an actual rectangular independent
+`medianOfMeans` is the existing finite-uniform statistic: it takes `2 r` blocks,
+averages each block and reports their median. Its concentration statement uses
+finite densities and the `(8 / 9) ^ r` median trick for the streaming applications
+[AlonMatiasSzegedy1999, Theorem 2.2; Chakrabarti2025, Section 2.4].
+
+`blockMedianOfMeans` is the separate measure-valued statistic used by adaptive
+auditing. It takes explicit block sizes `m`, `k` and uses the total lower median,
+expressed by finite maxima and minima. It is Borel measurable, including ties and
+even block counts. Its sample experiment is the actual rectangular independent
 product of the sample law; no concentration conclusion is a model field.
-The separate finite-uniform statistic `uniformMedianOfMeans` uses `2 r` blocks
-and finite densities for the streaming applications in the final section.
 
 ## Main definitions
 
-* `lowerMedian`: a total lower-median statistic, with value zero on empty input.
-* `blockMean`: the arithmetic mean of one block of samples.
+* `medianOfMeans`: the finite-uniform median of `2 r` block averages.
+* `lowerMedian`, `blockMean`: total lower median and arithmetic block mean.
+* `blockSampleLaw`, `blockMedianOfMeans`: product sample law and measure-valued estimator.
 
 ## Main results
 
-* `medianOfMeans_confidence`: confidence from actual independent blocks, with constants 4 and 8.
-* `medianOfMeans_zero_length`: the explicit zero-sample output.
+* `expect_expect_sub_sq`: variance of a finite-uniform average.
+* `dens_abs_medianOfMeans_sub_gt_le`: finite-density concentration.
+* `blockMedianOfMeans_confidence`: confidence with constants 4 and 8.
+* `blockMedianOfMeans_zero_length`: explicit zero-sample output.
+
+## References
+
+* [N. Alon, Y. Matias, M. Szegedy, *The space complexity of approximating the frequency
+  moments*, Theorem 2.2][AlonMatiasSzegedy1999]
+* [A. Chakrabarti, *Data Stream Algorithms*, Section 2.4][Chakrabarti2025]
 -/
 
 public section
@@ -273,18 +286,18 @@ outer coordinate is an independent block of `m` independent samples. -/
   Measure.pi (fun _ : Fin k => Measure.pi (fun _ : Fin m => μ))
 
 /-- The deterministic median-of-means estimator, applied to the recorded scores. -/
-@[expose] def medianOfMeans {Ω : Type*} (Y : Ω → ℝ) (m k : ℕ)
+@[expose] def blockMedianOfMeans {Ω : Type*} (Y : Ω → ℝ) (m k : ℕ)
     (z : Fin k → Fin m → Ω) : ℝ := lowerMedian (fun i => blockMean Y m (z i))
 
 /-- Median-of-means concentration with the exact constants `4` and `8`.
 Only the ordinary second moment of the one-sample score is required. -/
-theorem medianOfMeans_failure_le {Ω : Type*} [MeasurableSpace Ω]
+theorem blockMedianOfMeans_failure_le {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ] {Y : Ω → ℝ}
     (hYm : Measurable Y) (hY : MemLp Y 2 μ) {v δ : ℝ}
     (hv : variance Y μ ≤ v) (hδ : 0 < δ) {m k : ℕ}
     (hm : 0 < m) (hk : 0 < k) (hsize : 4 * v ≤ m * δ ^ 2) :
     (blockSampleLaw μ m k).real
-      {z | δ ≤ |medianOfMeans Y m k z - ∫ x, Y x ∂μ|} ≤
+      {z | δ ≤ |blockMedianOfMeans Y m k z - ∫ x, Y x ∂μ|} ≤
         Real.exp (-(k : ℝ) / 8) := by
   have hBm : Measurable (blockMean Y m) := by unfold blockMean; fun_prop
   have hB : MemLp (blockMean Y m) 2 (Measure.pi (fun _ : Fin m => μ)) := by
@@ -308,15 +321,15 @@ theorem medianOfMeans_failure_le {Ω : Type*} [MeasurableSpace Ω]
   exact hcR.trans hb
 
 /-- A logarithmic number of blocks gives the prescribed failure probability. -/
-theorem medianOfMeans_confidence {Ω : Type*} [MeasurableSpace Ω]
+theorem blockMedianOfMeans_confidence {Ω : Type*} [MeasurableSpace Ω]
     (μ : Measure Ω) [IsProbabilityMeasure μ] {Y : Ω → ℝ}
     (hYm : Measurable Y) (hY : MemLp Y 2 μ) {v δ η : ℝ}
     (hv : variance Y μ ≤ v) (hδ : 0 < δ) (hη : 0 < η) {m k : ℕ}
     (hm : 0 < m) (hk : 0 < k) (hsize : 4 * v ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw μ m k).real
-      {z | δ ≤ |medianOfMeans Y m k z - ∫ x, Y x ∂μ|} ≤ η := by
-  refine (medianOfMeans_failure_le μ hYm hY hv hδ hm hk hsize).trans ?_
+      {z | δ ≤ |blockMedianOfMeans Y m k z - ∫ x, Y x ∂μ|} ≤ η := by
+  refine (blockMedianOfMeans_failure_le μ hYm hY hv hδ hm hk hsize).trans ?_
   calc Real.exp (-(k : ℝ) / 8) ≤ Real.exp (Real.log η) := by
          apply Real.exp_le_exp.mpr
          rw [one_div, Real.log_inv] at hblocks
@@ -324,9 +337,9 @@ theorem medianOfMeans_confidence {Ω : Type*} [MeasurableSpace Ω]
        _ = η := Real.exp_log hη
 
 /-- Median of means is a measurable function of its observed samples. -/
-@[fun_prop] theorem measurable_medianOfMeans {Ω : Type*} [MeasurableSpace Ω]
-    {Y : Ω → ℝ} (hY : Measurable Y) (m k : ℕ) : Measurable (medianOfMeans Y m k) := by
-  unfold medianOfMeans
+@[fun_prop] theorem measurable_blockMedianOfMeans {Ω : Type*} [MeasurableSpace Ω]
+    {Y : Ω → ℝ} (hY : Measurable Y) (m k : ℕ) : Measurable (blockMedianOfMeans Y m k) := by
+  unfold blockMedianOfMeans
   apply (measurable_lowerMedian k).comp
   apply Measurable.of_eval
   intro i
@@ -348,62 +361,28 @@ theorem blockSampleLaw_map {Ω Z : Type*} [MeasurableSpace Ω] [MeasurableSpace 
 
 /-- Any failure bound for a score that factors through the observed record is
 also a bound in the actual i.i.d. observation experiment. -/
-theorem medianOfMeans_observation_failure {Ω Z : Type*}
+theorem blockMedianOfMeans_observation_failure {Ω Z : Type*}
     [MeasurableSpace Ω] [MeasurableSpace Z] (μ : Measure Ω) [IsProbabilityMeasure μ]
     {f : Ω → Z} (hf : Measurable f) {g : Z → ℝ} (hg : Measurable g)
     (m k : ℕ) (θ δ : ℝ) :
-    (blockSampleLaw (μ.map f) m k).real {z | δ ≤ |medianOfMeans g m k z - θ|} =
-      (blockSampleLaw μ m k).real {z | δ ≤ |medianOfMeans (g ∘ f) m k z - θ|} := by
+    (blockSampleLaw (μ.map f) m k).real {z | δ ≤ |blockMedianOfMeans g m k z - θ|} =
+      (blockSampleLaw μ m k).real {z | δ ≤ |blockMedianOfMeans (g ∘ f) m k z - θ|} := by
   rw [← blockSampleLaw_map μ hf m k, measureReal_def, Measure.map_apply]
   · rfl
   · fun_prop
   · exact measurableSet_le measurable_const
       (by simpa only [Real.norm_eq_abs] using
-        ((measurable_medianOfMeans hg m k).sub_const θ).norm)
+        ((measurable_blockMedianOfMeans hg m k).sub_const θ).norm)
 
 /-- The zero-sample branch is explicitly totalized to zero. Together with a
 zero-divergence target theorem this gives exact, sample-free accuracy. -/
-theorem medianOfMeans_zero_length {Ω : Type*} (Y : Ω → ℝ) (k : ℕ)
-    (z : Fin k → Fin 0 → Ω) : medianOfMeans Y 0 k z = 0 := by
-  simp only [medianOfMeans, blockMean, Nat.cast_zero, div_zero, lowerMedian_zero]
+theorem blockMedianOfMeans_zero_length {Ω : Type*} (Y : Ω → ℝ) (k : ℕ)
+    (z : Fin k → Fin 0 → Ω) : blockMedianOfMeans Y 0 k z = 0 := by
+  simp only [blockMedianOfMeans, blockMean, Nat.cast_zero, div_zero, lowerMedian_zero]
 
 end Cslib.Probability
 
-/-!
-# The median-of-means estimator
 
-Given an estimator `g : Ω → ℝ` of its mean `𝔼 g`, with sample `x` drawn uniformly from a finite
-type `Ω`, the **median-of-means** estimator `Cslib.Probability.uniformMedianOfMeans g ω` draws `2 r`
-groups of `k` independent samples `ω i l`, averages each group, and reports the median of the
-`2 r` averages. An average of `k` samples has `k` times smaller variance
-(`Cslib.Probability.expect_expect_sub_sq`), so by Chebyshev's inequality at most a third of the
-groups miss `𝔼 g` by more than `t` once the variance of `g` is at most `k t² / 3`; the median
-misses only when at least half of the groups do, which happens for at most an `(8 / 9) ^ r`
-fraction of the samples (`Cslib.Probability.dens_abs_medianOfMeans_sub_gt_le`). This is the
-amplification step of the frequency moment estimators of Alon, Matias and Szegedy
-[AlonMatiasSzegedy1999, Theorem 2.2]. Probabilities over the samples are densities `Finset.dens`.
-
-The last step is the **median trick** [Chakrabarti2025, Section 2.4]
-(`Cslib.Probability.dens_abs_median_sub_gt_le`, in `CslibFrontier.Probability.MedianTrick`), which
-holds for any estimate that misses by more than `t` with probability at most `1 / 3`, whatever its
-distribution; the Count-Sketch uses it for estimates that are not averages.
-
-## Main definitions
-
-* `Cslib.Probability.uniformMedianOfMeans`: the median of `2 r` averages of `k` samples.
-
-## Main results
-
-* `Cslib.Probability.expect_expect_sub_sq`: the variance of an average of `k` independent samples.
-* `Cslib.Probability.dens_abs_medianOfMeans_sub_gt_le`: the median of means misses the mean by
-  more than `t` with probability at most `(8 / 9) ^ r`.
-
-## References
-
-* [N. Alon, Y. Matias, M. Szegedy, *The space complexity of approximating the frequency
-  moments*, Theorem 2.2][AlonMatiasSzegedy1999]
-* [A. Chakrabarti, *Data Stream Algorithms*, Section 2.4][Chakrabarti2025]
--/
 
 public section
 
@@ -416,7 +395,7 @@ variable {Ω : Type*} [Fintype Ω]
 
 /-- The **median-of-means** estimate from `2 r` groups of `k` samples of `g`: the median of the
 `2 r` group averages. -/
-@[expose] noncomputable def uniformMedianOfMeans {r k : ℕ} (g : Ω → ℝ)
+@[expose] noncomputable def medianOfMeans {r k : ℕ} (g : Ω → ℝ)
     (ω : Fin (2 * r) → Fin k → Ω) : ℝ :=
   median fun i => 𝔼 l, g (ω i l)
 
@@ -441,7 +420,7 @@ theorem expect_expect_sub_sq [Nonempty Ω] {k : ℕ} [NeZero k] (g : Ω → ℝ)
 the mean of `g` for at most an `(8 / 9) ^ r` fraction of the samples. -/
 theorem dens_abs_medianOfMeans_sub_gt_le [Nonempty Ω] {r k : ℕ} [NeZero k] (g : Ω → ℝ) {t : ℝ}
     (ht : 0 < t) (hvar : 3 * 𝔼 x, (g x - 𝔼 y, g y) ^ 2 ≤ k * t ^ 2) :
-    (dens {ω : Fin (2 * r) → Fin k → Ω | t < |uniformMedianOfMeans g ω - 𝔼 x, g x|} : ℝ) ≤
+    (dens {ω : Fin (2 * r) → Fin k → Ω | t < |medianOfMeans g ω - 𝔼 x, g x|} : ℝ) ≤
       (8 / 9) ^ r := by
   classical
   set μ := 𝔼 x, g x

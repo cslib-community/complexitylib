@@ -443,7 +443,7 @@ theorem episodic_auditor [MeasurableSpace S] [MeasurableSingletonClass S]
     (hsize : 4 * (H ^ 2 * M.trajectoryChiSquared π (M.openLoop π) H) ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw (M.episodeLaw π H).toMeasure m k).real
-      {z | δ ≤ |medianOfMeans (importanceScore (M.episodeLoss H)
+      {z | δ ≤ |blockMedianOfMeans (importanceScore (M.episodeLoss H)
         (episodeWeight π (M.openLoop π) H)) m k z -
           (M.totalCost π H - M.totalCost (M.openLoop π) H)|} ≤ η := by
   have hW : MemLp (episodeWeight π (M.openLoop π) H) 2
@@ -502,7 +502,7 @@ theorem episodic_auditor_ceiling [MeasurableSpace S] [MeasurableSingletonClass S
     let m := ⌈4 * v / δ ^ 2⌉₊
     let k := ⌈8 * Real.log (1 / η)⌉₊
     (blockSampleLaw (M.episodeLaw π H).toMeasure m k).real
-      {z | δ ≤ |medianOfMeans (importanceScore (M.episodeLoss H)
+      {z | δ ≤ |blockMedianOfMeans (importanceScore (M.episodeLoss H)
         (episodeWeight π (M.openLoop π) H)) m k z -
           (M.totalCost π H - M.totalCost (M.openLoop π) H)|} ≤ η := by
   dsimp only
@@ -665,12 +665,12 @@ theorem episodic_observed_auditor [MeasurableSpace S] [MeasurableSingletonClass 
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw ((M.episodeLaw π H).toMeasure.map
       (M.episodeObservation π (M.openLoop π) H)) m k).real
-      {z | δ ≤ |medianOfMeans (episodeObservedScore H) m k z -
+      {z | δ ≤ |blockMedianOfMeans (episodeObservedScore H) m k z -
         (M.totalCost π H - M.totalCost (M.openLoop π) H)|} ≤ η := by
   have hg : Measurable (episodeObservedScore H : (Fin H → EpisodeRecord S A) → ℝ) := by
     unfold episodeObservedScore recordCost recordRatio
     fun_prop
-  rw [medianOfMeans_observation_failure _ (measurable_of_countable _) hg m k,
+  rw [blockMedianOfMeans_observation_failure _ (measurable_of_countable _) hg m k,
     M.episodeObservedScore_comp]
   exact M.episodic_auditor π hoverlap hcost hδ hη hm hk hsize hblocks
 

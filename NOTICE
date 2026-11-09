@@ -40,3 +40,18 @@ above; no source machine or instruction-cost contract supplies its native execut
 The native shared-band preparation selectively adapts the band-array and all-band
 organization from that same pinned source. Anthropic, PBC credit is retained in
 BandProgram.lean; its native mask scans, dense inverse table and execution proofs are new.
+
+The modules credited to Yuqing Kong in
+CslibFrontier/Foundations/Algebra/Polynomial/MaximalMinor/ and
+CslibFrontier/Probability/FiniteSampleInformation/ are ported from
+https://github.com/yuqkong-1844/finite-sample-information-monotones,
+revision 4e27ef9d167be69902385307d40123ec665dc532.
+Original formalization and mathematical credit: Yuqing Kong.
+Lean port and local adaptations: Christian Reitwiessner.
+The individual module docstrings identify their source files and scope.
+
+Finite-Sample Information Monotones: a Lean 4 formalization accompanying
+"Limits of Finite-Sample Dependence Measures under Data Processing Inequality"
+Copyright (c) 2026 Yuqing Kong
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).

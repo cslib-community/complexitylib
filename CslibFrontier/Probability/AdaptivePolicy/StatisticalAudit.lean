@@ -156,7 +156,7 @@ theorem finiteAction_auditor (μ : Measure Ω) [IsProbabilityMeasure μ]
     (hsize : 4 * averageChiSquared μ b q ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw (finiteActionLaw μ b) m k).real
-      {z | δ ≤ |medianOfMeans (importanceScore L (actionRatio b q)) m k z -
+      {z | δ ≤ |blockMedianOfMeans (importanceScore L (actionRatio b q)) m k z -
         ((∫ x, L x ∂finiteActionLaw μ b) - ∫ x, L x ∂finiteActionLaw μ q)|} ≤ η := by
   let := finiteActionLaw_isProbabilityMeasure μ hb hbpos hbsum
   let := finiteActionLaw_isProbabilityMeasure μ hq hqpos hqsum
@@ -208,7 +208,7 @@ theorem marginalAction_auditor (μ : Measure Ω) [IsProbabilityMeasure μ]
     (hsize : 4 * averageChiSquared μ b (fun _ => marginalAction μ b) ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw (finiteActionLaw μ b) m k).real
-      {z | δ ≤ |medianOfMeans
+      {z | δ ≤ |blockMedianOfMeans
         (importanceScore L (actionRatio b (fun _ => marginalAction μ b))) m k z -
         ((∫ x, L x ∂finiteActionLaw μ b) -
           ∫ x, L x ∂finiteActionLaw μ (fun _ => marginalAction μ b))|} ≤ η := by

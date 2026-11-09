@@ -134,6 +134,6 @@ example : (joinSketch (fun (_ : Unit) (_ : Fin 2) => ()) (fun _ => (1 : ℤ)) 1 
     rfl
   rw [run_joinSketch, hl, hr]
   have : Nonempty (Fin (2 * 1)) := ⟨⟨0, by norm_num⟩⟩
-  simp [uniformMedianOfMeans, median_const]
+  simp [medianOfMeans, median_const]
 
 end CslibFrontierTests.StreamingJoinSize

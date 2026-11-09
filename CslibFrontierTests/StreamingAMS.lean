@@ -149,6 +149,6 @@ example : (amsSketch (fun (_ : Unit) (_ : Fin 2) => (0 : Fin (2 ^ 1))) sgnBit 1 
     rw [← Finset.sum_mul, this]
     norm_num [sgnBit]
   have : Nonempty (Fin (2 * 1)) := ⟨⟨0, by norm_num⟩⟩
-  simp only [uniformMedianOfMeans, hc, Fintype.expect_const, median_const]
+  simp only [medianOfMeans, hc, Fintype.expect_const, median_const]
 
 end CslibFrontierTests.StreamingAMS

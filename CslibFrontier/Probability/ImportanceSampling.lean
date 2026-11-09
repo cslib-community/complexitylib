@@ -119,10 +119,10 @@ theorem importanceScore_confidence (P Q : Measure Ω) [IsProbabilityMeasure P]
     (hsize : 4 * (B ^ 2 * densityChiSquared P W) ≤ m * δ ^ 2)
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw P m k).real
-      {z | δ ≤ |medianOfMeans (importanceScore L W) m k z -
+      {z | δ ≤ |blockMedianOfMeans (importanceScore L W) m k z -
         ((∫ x, L x ∂P) - ∫ x, L x ∂Q)|} ≤ η := by
   rw [← importanceScore_integral P Q hL hWm hW hWpos hchange hbound]
-  exact medianOfMeans_confidence P (by unfold importanceScore; fun_prop)
+  exact blockMedianOfMeans_confidence P (by unfold importanceScore; fun_prop)
     (importanceScore_memLp P hL hW hbound)
     (importanceScore_variance_le P hL hW hB hbound) hδ hη hm hk hsize hblocks
 

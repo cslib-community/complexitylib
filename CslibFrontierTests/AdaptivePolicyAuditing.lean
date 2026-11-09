@@ -23,8 +23,8 @@ example : |lowerMedian ![0, 0, 100] - (0 : ℝ)| < 1 := by
 
 /-- Even block counts and empty blocks have explicit behavior. -/
 example : lowerMedian (fun _ : Fin 4 => (7 : ℝ)) = 7 ∧
-    medianOfMeans (fun x : ℝ => x) 0 4 (fun _ => Fin.elim0) = 0 :=
-  ⟨lowerMedian_const (by norm_num) 7, medianOfMeans_zero_length _ _ _⟩
+    blockMedianOfMeans (fun x : ℝ => x) 0 4 (fun _ => Fin.elim0) = 0 :=
+  ⟨lowerMedian_const (by norm_num) 7, blockMedianOfMeans_zero_length _ _ _⟩
 
 open AuditLowerBound in
 /-- The boundary parameters yield the exact source gap, discrepancy and rare-event mass. -/
@@ -53,7 +53,7 @@ example :
     let q := fun _ _ : Bool => (1/2 : ℝ)
     let L : Bool × Bool → ℝ := fun (x, a) => if x && a then (1 : ℝ) else 0
     (blockSampleLaw (finiteActionLaw μ b) 22 56).real
-      {z | (1/4 : ℝ) ≤ |medianOfMeans (importanceScore L (actionRatio b q)) 22 56 z + 1/8|}
+      {z | (1/4 : ℝ) ≤ |blockMedianOfMeans (importanceScore L (actionRatio b q)) 22 56 z + 1/8|}
         ≤ 1/8 := by
   dsimp only
   let μ := (PMF.uniformOfFintype Bool).toMeasure
@@ -156,7 +156,7 @@ example {δ η : ℝ} (hδ : 0 < δ) (hη : 0 < η) {m k : ℕ}
     (hblocks : 8 * Real.log (1 / η) ≤ k) :
     (blockSampleLaw ((testMDP.episodeLaw fairPolicy 2).toMeasure.map
       (testMDP.episodeObservation fairPolicy (testMDP.openLoop fairPolicy) 2)) m k).real
-      {z | δ ≤ |medianOfMeans (FiniteMDP.episodeObservedScore 2) m k z -
+      {z | δ ≤ |blockMedianOfMeans (FiniteMDP.episodeObservedScore 2) m k z -
           (testMDP.totalCost fairPolicy 2 -
             testMDP.totalCost (testMDP.openLoop fairPolicy) 2)|} ≤ η := by
   apply testMDP.episodic_observed_auditor fairPolicy

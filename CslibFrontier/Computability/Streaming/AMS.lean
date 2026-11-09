@@ -32,7 +32,7 @@ The `k`-th **frequency moment** of a stream is `F_k = ∑ₐ (count a s) ^ k`
 `𝔼 Z² = F₂` and `𝔼 (Z² - F₂)² ≤ 2 F₂²` (`Cslib.Probability.IsKWiseIndependentHash`, tug-of-war
 moments). The **AMS sketch** (`Cslib.Streaming.amsSketch`) keeps `2 r` groups of `k` counters with
 independent seeds and answers the median over the groups of the average of `Z²` in the group, the
-median of means `Cslib.Probability.uniformMedianOfMeans` of `Z²`.
+median of means `Cslib.Probability.medianOfMeans` of `Z²`.
 
 With `6 ≤ k η²` the answer is within `η F₂` of `F₂` except for an `(8 / 9) ^ r` fraction of the
 seeds (`Cslib.Streaming.dens_amsSketch_error_le`); so the randomized sketch with uniform seeds
@@ -141,13 +141,13 @@ theorem state_amsSketch (ω : Fin (2 * r) → Fin k → ι) (s : List α) :
 `(∑ₐ count a s · sgn (h θ a)) ^ 2`. -/
 theorem run_amsSketch [DecidableEq α] (ω : Fin (2 * r) → Fin k → ι) (s : List α) :
     (amsSketch h sgn r k ω).run s =
-      uniformMedianOfMeans (fun θ => (∑ a ∈ s.toFinset, (s.count a : ℝ) * sgn (h θ a)) ^ 2) ω := by
+      medianOfMeans (fun θ => (∑ a ∈ s.toFinset, (s.count a : ℝ) * sgn (h θ a)) ^ 2) ω := by
   have hsum (θ : ι) : (((s.map fun a => sgn (h θ a)).sum : ℤ) : ℝ) =
       ∑ a ∈ s.toFinset, (s.count a : ℝ) * sgn (h θ a) := by
     rw [Finset.sum_list_map_count, Int.cast_sum]
     simp only [nsmul_eq_mul, Int.cast_mul, Int.cast_natCast]
   rw [Algorithm.run, state_amsSketch]
-  simp only [amsSketch, uniformMedianOfMeans, hsum]
+  simp only [amsSketch, medianOfMeans, hsum]
 
 /-- **The AMS sketch estimates `F₂`** [AlonMatiasSzegedy1999, Theorem 2.2]: with a four-wise
 independent family of signs of mean zero, and `6 ≤ k η²`, the AMS sketch with `2 r` groups of `k`
@@ -174,13 +174,12 @@ theorem dens_amsSketch_error_le [Fintype ι] [DecidableEq α] [Fintype Y] [Decid
   simp only [run_amsSketch, hF]
   rcases eq_or_ne s [] with rfl | hs
   · have hempty : ({ω : Fin (2 * r) → Fin k → ι | η * ∑ a ∈ ([] : List α).toFinset,
-        (([] : List α).count a : ℝ) ^ 2 <
-          |uniformMedianOfMeans (fun θ => (∑ a ∈ ([] : List α).toFinset,
+        (([] : List α).count a : ℝ) ^ 2 < |medianOfMeans (fun θ => (∑ a ∈ ([] : List α).toFinset,
           (([] : List α).count a : ℝ) * sgn (h θ a)) ^ 2) ω - ∑ a ∈ ([] : List α).toFinset,
             (([] : List α).count a : ℝ) ^ 2|} : Finset _) = ∅ := by
       have : Nonempty (Fin (2 * r)) := ⟨⟨0, by omega⟩⟩
       refine filter_false_of_mem fun ω _ => ?_
-      simp only [List.toFinset_nil, sum_empty, mul_zero, sub_zero, not_lt, uniformMedianOfMeans,
+      simp only [List.toFinset_nil, sum_empty, mul_zero, sub_zero, not_lt, medianOfMeans,
         ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, expect_const_zero, median_const,
         abs_zero, le_refl]
     rw [hempty, dens_empty, NNRat.cast_zero]
