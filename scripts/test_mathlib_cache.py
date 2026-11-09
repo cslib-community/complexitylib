@@ -255,7 +255,7 @@ class WorkflowWiringTests(unittest.TestCase):
         docs = (REPO / ".github/workflows/docs.yml").read_text()
         self.assertLess(docs.index("run: scripts/cache/get-missing.sh"),
                         docs.index("      - name: Generate API documentation"))
-        self.assertIn("DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs", docs)
+        self.assertIn("DISABLE_EQUATIONS=1 lake -d docbuild build CslibFrontier:docs", docs)
 
 
 if __name__ == "__main__":

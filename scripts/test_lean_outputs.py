@@ -15,8 +15,8 @@ import lean_outputs as lo  # noqa: E402
 
 class ModuleTests(unittest.TestCase):
     def test_module_roles(self) -> None:
-        self.assertEqual(lo.module_role("Complexity.Foundations.Data.List.Basic"), "lib")
-        self.assertEqual(lo.module_role("ComplexityTests.Smoke"), "test")
+        self.assertEqual(lo.module_role("CslibFrontier.Foundations.Data.List.Basic"), "lib")
+        self.assertEqual(lo.module_role("CslibFrontierTests.Smoke"), "test")
 
 
 class OutputCheckTests(unittest.TestCase):
@@ -26,9 +26,9 @@ class OutputCheckTests(unittest.TestCase):
         self.reference = pathlib.Path(tmp.name) / "current"
         self.copy = pathlib.Path(tmp.name) / "copy"
         for directory in (self.reference, self.copy):
-            self.write(directory, "Complexity/A.ilean", "{}")
-            self.write(directory, "Complexity/A.olean", "a")
-            self.write(directory, "Complexity/A.c", "ignored")
+            self.write(directory, "CslibFrontier/A.ilean", "{}")
+            self.write(directory, "CslibFrontier/A.olean", "a")
+            self.write(directory, "CslibFrontier/A.c", "ignored")
 
     @staticmethod
     def write(directory: pathlib.Path, rel: str, text: str) -> None:
@@ -40,19 +40,19 @@ class OutputCheckTests(unittest.TestCase):
         return lo.check_outputs(build_dir, skip, current=lambda: current, reference=self.reference)
 
     def test_identical_custom_directory_is_checked(self) -> None:
-        self.write(self.copy, "Complexity/A.c", "other files do not matter")
+        self.write(self.copy, "CslibFrontier/A.c", "other files do not matter")
         self.assertIn("identical", self.check(self.copy))
         self.assertIn("lake build --no-build", self.check(self.reference))
 
     def test_stale_custom_directory_is_refused(self) -> None:
         # The current outputs gained a declaration that the copied directory lacks.
-        self.write(self.reference, "Complexity/A.olean", "a with a new declaration")
-        self.write(self.reference, "Complexity/B.ilean", "{}")
+        self.write(self.reference, "CslibFrontier/A.olean", "a with a new declaration")
+        self.write(self.reference, "CslibFrontier/B.ilean", "{}")
         with self.assertRaises(SystemExit) as error:
             self.check(self.copy)
         self.assertIn("2 file(s)", str(error.exception.code))
         self.assertEqual(lo.output_differences(self.copy, self.reference),
-                         ["Complexity/A.olean", "Complexity/B.ilean"])
+                         ["CslibFrontier/A.olean", "CslibFrontier/B.ilean"])
 
     def test_stale_default_outputs_are_refused(self) -> None:
         with self.assertRaises(SystemExit):
@@ -77,14 +77,14 @@ class OutputCheckTests(unittest.TestCase):
 
     def test_stale_root_output_is_refused(self) -> None:
         for directory in (self.reference, self.copy):
-            self.write(directory, "Complexity.ilean", "root")
-        self.write(self.copy, "Complexity.ilean", "stale root")
-        self.assertEqual(lo.output_differences(self.copy, self.reference), ["Complexity.ilean"])
+            self.write(directory, "CslibFrontier.ilean", "root")
+        self.write(self.copy, "CslibFrontier.ilean", "stale root")
+        self.assertEqual(lo.output_differences(self.copy, self.reference), ["CslibFrontier.ilean"])
         with self.assertRaises(SystemExit):
             self.check(self.copy)
 
     def test_unchecked_reports_say_so(self) -> None:
-        self.write(self.reference, "Complexity/A.olean", "changed")
+        self.write(self.reference, "CslibFrontier/A.olean", "changed")
         self.assertIn("not checked", self.check(self.copy, skip=True))
 
     def write_ileans(self, modules: dict[str, list[str]]) -> None:
@@ -94,34 +94,34 @@ class OutputCheckTests(unittest.TestCase):
                 {"module": module, "directImports": [[i, False, False, False] for i in imports]}))
 
     def test_outputs_of_deleted_modules_are_ignored(self) -> None:
-        self.write_ileans({"Complexity": ["Complexity.A"],
-                           "Complexity.A": ["Mathlib.Init"], "Complexity.Deleted": []})
+        self.write_ileans({"CslibFrontier": ["CslibFrontier.A"],
+                           "CslibFrontier.A": ["Mathlib.Init"], "CslibFrontier.Deleted": []})
         self.assertEqual(list(lo.load_ileans(self.reference, glob=lambda root: [])),
-                         ["Complexity.A"])
+                         ["CslibFrontier.A"])
 
     def test_glob_library_modules_are_read_from_sources(self) -> None:
-        self.write_ileans({"Complexity": [],
-                           "ComplexityTests.T": ["Complexity.B"], "Complexity.B": [],
-                           "ComplexityTests.Stale": []})
-        glob = lambda root: ["ComplexityTests.T"] if root == "ComplexityTests" else []
+        self.write_ileans({"CslibFrontier": [],
+                           "CslibFrontierTests.T": ["CslibFrontier.B"], "CslibFrontier.B": [],
+                           "CslibFrontierTests.Stale": []})
+        glob = lambda root: ["CslibFrontierTests.T"] if root == "CslibFrontierTests" else []
         self.assertEqual(sorted(lo.load_ileans(self.reference, glob=glob)),
-                         ["Complexity.B", "ComplexityTests.T"])
+                         ["CslibFrontier.B", "CslibFrontierTests.T"])
         self.assertEqual(lo.root_modules(glob),
-                         ["Complexity", "ComplexityTests.T"])
+                         ["CslibFrontier", "CslibFrontierTests.T"])
 
     def test_missing_reachable_output_is_refused(self) -> None:
-        self.write_ileans({"Complexity": ["Complexity.Live"],
-                           "Complexity.Live": ["Complexity.Missing"]})
+        self.write_ileans({"CslibFrontier": ["CslibFrontier.Live"],
+                           "CslibFrontier.Live": ["CslibFrontier.Missing"]})
         with self.assertRaises(SystemExit) as error:
             lo.load_ileans(self.reference, glob=lambda root: [])
-        self.assertIn("Missing.ilean is missing (imported by Complexity.Live)",
+        self.assertIn("Missing.ilean is missing (imported by CslibFrontier.Live)",
                       str(error.exception.code))
 
     def test_missing_root_output_is_refused(self) -> None:
-        self.write_ileans({"Complexity.A": []})
+        self.write_ileans({"CslibFrontier.A": []})
         with self.assertRaises(SystemExit) as error:
             lo.load_ileans(self.reference, glob=lambda root: [])
-        self.assertIn("Complexity.ilean is missing (a root)", str(error.exception.code))
+        self.assertIn("CslibFrontier.ilean is missing (a root)", str(error.exception.code))
 
 
 if __name__ == "__main__":

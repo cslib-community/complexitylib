@@ -15,8 +15,8 @@ import check_docs
 class CheckOutputTests(unittest.TestCase):
     # Both names survived in a reused doc-gen4 cache after their sources were removed.
     obsolete_modules = (
-        "Complexity.Computability.Circuit.Basic",
-        "Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WriteWord",
+        "CslibFrontier.Computability.Circuit.Basic",
+        "CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WriteWord",
     )
 
     def setUp(self):
@@ -28,24 +28,24 @@ class CheckOutputTests(unittest.TestCase):
         root_patch = patch.object(check_docs, "ROOT", self.root)
         root_patch.start()
         self.addCleanup(root_patch.stop)
-        for module in ("Complexity", "Complexity.Current"):
+        for module in ("CslibFrontier", "CslibFrontier.Current"):
             self.write(self.root / (module.replace(".", "/") + ".lean"))
             self.write(self.page(module))
             self.write(self.module_data(module), "{}")
         with closing(sqlite3.connect(self.database)) as db, db:
             db.execute("CREATE TABLE modules (name TEXT PRIMARY KEY, source_url TEXT)")
             db.executemany("INSERT INTO modules (name) VALUES (?)",
-                           [("Complexity",), ("Complexity.Current",)])
+                           [("CslibFrontier",), ("CslibFrontier.Current",)])
         for name in ("index.html", "search.html", "search.js", "declaration-data.js",
                      "references.html", "references.bib", "find/index.html"):
             self.write(self.docs / name)
-        self.index = {"modules": {"Complexity": {}, "Complexity.Current": {}},
+        self.index = {"modules": {"CslibFrontier": {}, "CslibFrontier.Current": {}},
                       "declarations": {}}
         for name in ("Cslib.Complexity.CookLevin.SAT_npComplete",
                      "Cslib.Complexity.NP_eq_PCP_log",
                      "Cslib.Crypto.OneWay.exists_pseudorandomFunction"):
-            self.index["declarations"][name] = {"docLink": "./Complexity/Current.html#" + name}
-        self.write(self.page("Complexity.Current"), "\n".join(
+            self.index["declarations"][name] = {"docLink": "./CslibFrontier/Current.html#" + name}
+        self.write(self.page("CslibFrontier.Current"), "\n".join(
             f'<div id="{name}"></div>' for name in self.index["declarations"]))
         self.published_index = None
         pub_patch = patch.object(
@@ -92,7 +92,7 @@ class CheckOutputTests(unittest.TestCase):
         self.assertEqual(str(error.exception), message)
 
     def test_current_modules_and_other_roots_pass(self):
-        for name in ("Cslib.Extra", "Mathlib.Extra", "ComplexityTests", "ComplexityExtra.Old"):
+        for name in ("Cslib.Extra", "Mathlib.Extra", "CslibFrontierTests", "ComplexityExtra.Old"):
             self.index["modules"][name] = {}
             self.write(self.page(name))
             self.write(self.module_data(name), "{}")
@@ -109,7 +109,7 @@ class CheckOutputTests(unittest.TestCase):
             self.assertEqual(self.module_data(name).read_text(), "{}")
 
     def test_missing_intermediate_data(self):
-        for name in ("Complexity", "Complexity.Current"):
+        for name in ("CslibFrontier", "CslibFrontier.Current"):
             with self.subTest(module=name):
                 self.module_data(name).unlink()
                 self.assert_failure("Missing modules in per-module declaration data: " + name)
@@ -125,7 +125,7 @@ class CheckOutputTests(unittest.TestCase):
         self.assertEqual(self.database.read_bytes(), before)
 
     def test_missing_database_modules(self):
-        for name in ("Complexity", "Complexity.Current"):
+        for name in ("CslibFrontier", "CslibFrontier.Current"):
             with self.subTest(module=name):
                 with closing(sqlite3.connect(self.database)) as db, db:
                     db.execute("DELETE FROM modules WHERE name = ?", (name,))
@@ -163,15 +163,15 @@ class CheckOutputTests(unittest.TestCase):
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("PRAGMA wal_autocheckpoint=0")
             self.check()
-            db.execute("INSERT INTO modules (name) VALUES ('Complexity.Removed')")
+            db.execute("INSERT INTO modules (name) VALUES ('CslibFrontier.Removed')")
             db.commit()
             before = self.artifact_bytes()
-            self.assert_failure("Obsolete modules in documentation database: Complexity.Removed")
+            self.assert_failure("Obsolete modules in documentation database: CslibFrontier.Removed")
             self.assertEqual(self.artifact_bytes(), before)
-            db.execute("DELETE FROM modules WHERE name IN ('Complexity.Removed', 'Complexity')")
+            db.execute("DELETE FROM modules WHERE name IN ('CslibFrontier.Removed', 'CslibFrontier')")
             db.commit()
             before = self.artifact_bytes()
-            self.assert_failure("Missing modules in documentation database: Complexity")
+            self.assert_failure("Missing modules in documentation database: CslibFrontier")
             self.assertEqual(self.artifact_bytes(), before)
 
     def test_config_only_does_not_inspect_output(self):
@@ -204,48 +204,48 @@ class CheckOutputTests(unittest.TestCase):
         self.assert_failure("Obsolete module pages: " + name)
 
     def test_missing_current_module(self):
-        del self.index["modules"]["Complexity.Current"]
-        self.assert_failure("Missing module in search index: Complexity.Current")
+        del self.index["modules"]["CslibFrontier.Current"]
+        self.assert_failure("Missing module in search index: CslibFrontier.Current")
 
     def test_missing_current_page(self):
-        self.page("Complexity.Current").unlink()
-        self.assert_failure("Missing module page: Complexity.Current")
+        self.page("CslibFrontier.Current").unlink()
+        self.assert_failure("Missing module page: CslibFrontier.Current")
 
     def test_missing_root_module(self):
-        del self.index["modules"]["Complexity"]
-        self.assert_failure("Missing module in search index: Complexity")
+        del self.index["modules"]["CslibFrontier"]
+        self.assert_failure("Missing module in search index: CslibFrontier")
 
     def test_missing_root_page(self):
-        self.page("Complexity").unlink()
-        self.assert_failure("Missing module page: Complexity")
+        self.page("CslibFrontier").unlink()
+        self.assert_failure("Missing module page: CslibFrontier")
 
     def test_missing_theorem_anchor(self):
-        self.write(self.page("Complexity.Current"))
+        self.write(self.page("CslibFrontier.Current"))
         self.assert_failure("Missing theorem anchor: Cslib.Complexity.CookLevin.SAT_npComplete")
 
     def test_broken_internal_link_in_complexity_page_fails(self):
-        self.write(self.page("Complexity"), '<a href="./Missing/Page.html">bad</a>')
-        self.assert_failure("Broken internal link in Complexity.html: Missing/Page.html")
+        self.write(self.page("CslibFrontier"), '<a href="./Missing/Page.html">bad</a>')
+        self.assert_failure("Broken internal link in CslibFrontier.html: Missing/Page.html")
 
     def test_broken_internal_link_in_navbar_fails(self):
         self.write(self.docs / "navbar.html", '<div class="nav_link"><a href="./Lean/Gone.html">Gone</a></div>')
         self.assert_failure("Broken internal link in navbar.html: Lean/Gone.html")
 
     def test_broken_internal_link_in_retained_dependency_page_fails(self):
-        self.index["modules"]["Std.Linked"] = {"importedBy": ["Complexity.Current"], "url": "./Std/Linked.html"}
+        self.index["modules"]["Std.Linked"] = {"importedBy": ["CslibFrontier.Current"], "url": "./Std/Linked.html"}
         self.write(self.page("Std.Linked"), '<a href="./LinkedElsewhere.html">bad</a>')
         self.assert_failure("Broken internal link in Std/Linked.html: Std/LinkedElsewhere.html")
 
     def test_outside_root_link_fails_even_when_sibling_file_exists(self):
         self.write(self.docs.parent / "outside.html", "<div>sibling outside docs root</div>")
-        self.write(self.page("Complexity"), '<a href="../outside.html">escape</a>')
-        self.assert_failure("Broken internal link in Complexity.html: ../outside.html")
-        self.write(self.page("Complexity"), '<a href="/outside.html">root-escape</a>')
-        self.assert_failure("Broken internal link in Complexity.html: /outside.html")
+        self.write(self.page("CslibFrontier"), '<a href="../outside.html">escape</a>')
+        self.assert_failure("Broken internal link in CslibFrontier.html: ../outside.html")
+        self.write(self.page("CslibFrontier"), '<a href="/outside.html">root-escape</a>')
+        self.assert_failure("Broken internal link in CslibFrontier.html: /outside.html")
 
     def test_protocol_relative_external_link_passes(self):
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             '<a href="//example.org/documentation.html">protocol-relative</a>',
         )
         self.check()
@@ -253,21 +253,21 @@ class CheckOutputTests(unittest.TestCase):
     def test_html_escaped_numeric_entity_in_href_path_resolves(self):
         self.write(self.docs / "A'B.html", "<div>target</div>")
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             '<a href="./A&#39;B.html#frag">entity-link</a>',
         )
         self.check()
 
     def test_trim_externalizes_dependencies_and_filters_index(self):
-        self.index["modules"]["Init.Prelude"] = {"importedBy": ["Complexity.Current"], "url": "./Init/Prelude.html"}
+        self.index["modules"]["Init.Prelude"] = {"importedBy": ["CslibFrontier.Current"], "url": "./Init/Prelude.html"}
         self.index["modules"]["Lean"] = {"importedBy": [], "url": "./Lean.html"}
         self.index["modules"]["Std.Linked"] = {"importedBy": [], "url": "./Std/Linked.html"}
         self.index["modules"]["Std.LinkedElsewhere"] = {"importedBy": [], "url": "./Std/LinkedElsewhere.html"}
         self.index["modules"]["Std.FromCslib"] = {"importedBy": [], "url": "./Std/FromCslib.html"}
-        self.index["modules"]["Mathlib.Data.List"] = {"importedBy": ["Complexity.Current"], "url": "./Mathlib/Data/List.html"}
+        self.index["modules"]["Mathlib.Data.List"] = {"importedBy": ["CslibFrontier.Current"], "url": "./Mathlib/Data/List.html"}
         self.index["modules"]["Lake.Unused"] = {"importedBy": [], "url": "./Lake/Unused.html"}
         self.index["modules"]["Lean.Unused"] = {"importedBy": ["Lake.Unused", "Lean"], "url": "./Lean/Unused.html"}
-        self.index["modules"]["Cslib.Base"] = {"importedBy": ["Complexity.Current"], "url": "./Cslib/Base.html"}
+        self.index["modules"]["Cslib.Base"] = {"importedBy": ["CslibFrontier.Current"], "url": "./Cslib/Base.html"}
         self.index["declarations"]["Nat"] = {"docLink": "./Init/Prelude.html#Nat", "kind": "inductive"}
         self.index["declarations"]["List.map"] = {"docLink": "./Mathlib/Data/List.html#List.map", "kind": "def"}
         self.index["declarations"]["Cslib.Base.foo"] = {"docLink": "./Cslib/Base.html#Cslib.Base.foo", "kind": "def"}
@@ -306,7 +306,7 @@ class CheckOutputTests(unittest.TestCase):
             '<code><a href=".././Cslib/Unimported.html">Cslib/Unimported.lean</a></code>',
         )
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             '<a href="./Std/Linked.html#Std.Linked">linked core</a> '
             '<a href="./Mathlib/Data/List.html#List.map">mathlib decl</a> '
             '<a href="./Init/Prelude.html#Eq.rec">kernel recursor</a>',
@@ -314,8 +314,8 @@ class CheckOutputTests(unittest.TestCase):
         self.write(
             self.docs / "navbar.html",
             '<div class="nav_link"><a href="./">index</a></div>'
-            '<details class="nav_sect" data-path="./Complexity.html"><summary>Complexity (<a href="./Complexity.html">file</a>)</summary>'
-            '<div class="nav_link"><a href="./Complexity/Current.html">Current</a></div></details>'
+            '<details class="nav_sect" data-path="./CslibFrontier.html"><summary>CslibFrontier (<a href="./CslibFrontier.html">file</a>)</summary>'
+            '<div class="nav_link"><a href="./CslibFrontier/Current.html">Current</a></div></details>'
             '<details class="nav_sect" data-path="./Init.html"><summary>Init</summary>'
             '<div class="nav_link"><a href="./Init/Prelude.html">Prelude</a></div></details>'
             '<details class="nav_sect" data-path="./Lake.html"><summary>Lake (<a href="./Lake/Unused.html">file</a>)</summary>'
@@ -330,7 +330,7 @@ class CheckOutputTests(unittest.TestCase):
         for ext_mod in ("Init.Prelude", "Lean", "Std.Linked", "Std.LinkedElsewhere",
                         "Std.FromCslib", "Mathlib.Data.List", "Lake.Unused", "Lean.Unused"):
             self.assertFalse(self.page(ext_mod).exists(), ext_mod)
-        self.assertTrue(self.page("Complexity").is_file())
+        self.assertTrue(self.page("CslibFrontier").is_file())
         self.assertTrue(self.page("Cslib.Base").is_file())
         self.assertEqual(
             self.page("Cslib.Base").read_text(),
@@ -338,13 +338,13 @@ class CheckOutputTests(unittest.TestCase):
             '<code>Cslib/Unimported.lean</code>',
         )
         self.assertEqual(
-            self.page("Complexity").read_text(),
+            self.page("CslibFrontier").read_text(),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Std/Linked.html#Std.Linked">linked core</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Data/List.html#List.map">mathlib decl</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Init/Prelude.html#Eq.rec">kernel recursor</a>',
         )
         trimmed = json.loads((self.docs / "declarations/declaration-data.bmp").read_text())
-        self.assertEqual(set(trimmed["modules"]), {"Complexity", "Complexity.Current", "Cslib.Base"})
+        self.assertEqual(set(trimmed["modules"]), {"CslibFrontier", "CslibFrontier.Current", "Cslib.Base"})
         self.assertNotIn("Nat", trimmed["declarations"])
         self.assertNotIn("List.map", trimmed["declarations"])
         self.assertIn("Cslib.Base.foo", trimmed["declarations"])
@@ -353,7 +353,7 @@ class CheckOutputTests(unittest.TestCase):
         navbar = (self.docs / "navbar.html").read_text()
         self.assertNotIn("Init/Prelude.html", navbar)
         self.assertNotIn("Lake/Unused.html", navbar)
-        self.assertIn("Complexity/Current.html", navbar)
+        self.assertIn("CslibFrontier/Current.html", navbar)
 
         # Repeated trimming on an already-trimmed tree is idempotent.
         check_docs.trim_output()
@@ -362,33 +362,33 @@ class CheckOutputTests(unittest.TestCase):
 
     def test_trim_rejects_broken_dependency_page_or_anchor(self):
         self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
-        self.write(self.page("Complexity"), '<a href="./Init/Missing.html">unindexed page</a>')
+        self.write(self.page("CslibFrontier"), '<a href="./Init/Missing.html">unindexed page</a>')
         with self.assertRaises(ValueError) as error:
             check_docs.trim_output()
         self.assertEqual(
             str(error.exception),
-            "Broken dependency link in Complexity.html: Init/Missing.html",
+            "Broken dependency link in CslibFrontier.html: Init/Missing.html",
         )
 
         self.index["modules"]["Mathlib.Data.List"] = {
-            "importedBy": ["Complexity.Current"], "url": "./Mathlib/Data/List.html",
+            "importedBy": ["CslibFrontier.Current"], "url": "./Mathlib/Data/List.html",
         }
         self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
-        self.write(self.page("Complexity"), '<a href="./Mathlib/Data/List.html#List.map">missing page</a>')
+        self.write(self.page("CslibFrontier"), '<a href="./Mathlib/Data/List.html#List.map">missing page</a>')
         with self.assertRaises(ValueError) as error:
             check_docs.trim_output()
         self.assertEqual(
             str(error.exception),
-            "Broken dependency link in Complexity.html: Mathlib/Data/List.html",
+            "Broken dependency link in CslibFrontier.html: Mathlib/Data/List.html",
         )
 
         self.write(self.page("Mathlib.Data.List"), '<div id="List.filter"></div>')
-        self.write(self.page("Complexity"), '<a href="./Mathlib/Data/List.html#List.renamed">missing anchor</a>')
+        self.write(self.page("CslibFrontier"), '<a href="./Mathlib/Data/List.html#List.renamed">missing anchor</a>')
         with self.assertRaises(ValueError) as error:
             check_docs.trim_output()
         self.assertEqual(
             str(error.exception),
-            "Broken dependency anchor in Complexity.html: Mathlib/Data/List.html#List.renamed",
+            "Broken dependency anchor in CslibFrontier.html: Mathlib/Data/List.html#List.renamed",
         )
 
     def test_check_output_rejects_broken_external_dependency_link_or_anchor(self):
@@ -398,25 +398,25 @@ class CheckOutputTests(unittest.TestCase):
             "anchors": {"Mathlib/Data/List.html": ["List.map"]},
         }))
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Gone.html">gone</a>',
         )
-        self.assert_failure("Broken external dependency link in Complexity.html: Mathlib/Gone.html")
+        self.assert_failure("Broken external dependency link in CslibFrontier.html: Mathlib/Gone.html")
 
         self.write(
-            self.page("Complexity"),
-            f'<a href="{check_docs.MATHLIB_DOCS_URL}Complexity/Current.html">local as mathlib</a>',
+            self.page("CslibFrontier"),
+            f'<a href="{check_docs.MATHLIB_DOCS_URL}CslibFrontier/Current.html">local as mathlib</a>',
         )
         self.assert_failure(
-            "Broken external dependency link in Complexity.html: Complexity/Current.html"
+            "Broken external dependency link in CslibFrontier.html: CslibFrontier/Current.html"
         )
 
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Data/List.html#List.renamed">renamed</a>',
         )
         self.assert_failure(
-            "Broken external dependency anchor in Complexity.html: Mathlib/Data/List.html#List.renamed"
+            "Broken external dependency anchor in CslibFrontier.html: Mathlib/Data/List.html#List.renamed"
         )
 
     def test_legacy_local_only_external_targets_manifest_is_upgraded_or_rejected(self):
@@ -444,7 +444,7 @@ class CheckOutputTests(unittest.TestCase):
             },
         }
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/LinearAlgebra/Matrix/Defs.html#Matrix.ofArray">ofArray</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Tactic/TautoSet.html#Mathlib.Tactic.TautoSet.specialize_all">specialize_all</a>',
         )
@@ -455,7 +455,7 @@ class CheckOutputTests(unittest.TestCase):
             check_docs, "fetch_published_external_index", wraps=self.default_published_index
         ) as fetch_mock:
             self.assert_failure(
-                "Broken external dependency anchor in Complexity.html: "
+                "Broken external dependency anchor in CslibFrontier.html: "
                 "Mathlib/LinearAlgebra/Matrix/Defs.html#Matrix.ofArray"
             )
             self.assertEqual(fetch_mock.call_count, 1)
@@ -473,7 +473,7 @@ class CheckOutputTests(unittest.TestCase):
         upgraded = json.loads(legacy_manifest.read_text())
         self.assertEqual(upgraded.get("source"), "published")
         self.assertEqual(
-            self.page("Complexity").read_text(),
+            self.page("CslibFrontier").read_text(),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/LinearAlgebra/Matrix/Array.html#Matrix.ofArray">ofArray</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Tactic/TautoSet.html">specialize_all</a>',
         )
@@ -490,7 +490,7 @@ class CheckOutputTests(unittest.TestCase):
         prefixes = ("./", check_docs.API_DOCS_URL, check_docs.MATHLIB_DOCS_URL)
         links = [f'<a href="{prefix}Init/Core.html#{name}.rec">{name}.rec</a>'
                  for prefix in prefixes for name in ("Sum", "Prod")]
-        self.write(self.page("Complexity"), "\n".join(links))
+        self.write(self.page("CslibFrontier"), "\n".join(links))
         self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
 
         check_docs.trim_output()
@@ -500,9 +500,9 @@ class CheckOutputTests(unittest.TestCase):
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Init/Core.html#{name}">{name}.rec</a>'
             for _ in prefixes for name in ("Sum", "Prod")
         )
-        self.assertEqual(self.page("Complexity").read_text(), expected)
+        self.assertEqual(self.page("CslibFrontier").read_text(), expected)
         check_docs.trim_output()
-        self.assertEqual(self.page("Complexity").read_text(), expected)
+        self.assertEqual(self.page("CslibFrontier").read_text(), expected)
 
     def test_trim_recursor_fallback_rejects_unproved_targets(self):
         for module in ("Init.Core", "Init.Other"):
@@ -518,7 +518,7 @@ class CheckOutputTests(unittest.TestCase):
         for target in ("Init/Core.html#Missing.rec", "Init/Core.html#ordinary.rec",
                        "Init/Core.html#Sum.missing", "Init/Other.html#Sum.rec"):
             with self.subTest(target=target):
-                self.write(self.page("Complexity"), f'<a href="./{target}">bad</a>')
+                self.write(self.page("CslibFrontier"), f'<a href="./{target}">bad</a>')
                 with self.assertRaisesRegex(ValueError, "Broken dependency anchor"):
                     check_docs.trim_output()
 
@@ -528,19 +528,19 @@ class CheckOutputTests(unittest.TestCase):
             "docLink": "./Init/Core.html#Sum", "kind": "inductive",
         }
         self.write(self.page("Init.Core"), '<div id="Sum"></div><div id="Sum.rec"></div>')
-        self.write(self.page("Complexity"), '<a href="./Init/Core.html#Sum.rec">rec</a>')
+        self.write(self.page("CslibFrontier"), '<a href="./Init/Core.html#Sum.rec">rec</a>')
         self.write(self.docs / "declarations/declaration-data.bmp", json.dumps(self.index))
         check_docs.trim_output()
-        self.assertEqual(self.page("Complexity").read_text(),
+        self.assertEqual(self.page("CslibFrontier").read_text(),
                          f'<a href="{check_docs.MATHLIB_DOCS_URL}Init/Core.html#Sum.rec">rec</a>')
 
     def test_trim_remaps_moved_and_falls_back_for_omitted_published_declarations(self):
         self.index["modules"]["Mathlib.LinearAlgebra.Matrix.Defs"] = {
-            "importedBy": ["Complexity.Current"],
+            "importedBy": ["CslibFrontier.Current"],
             "url": "./Mathlib/LinearAlgebra/Matrix/Defs.html",
         }
         self.index["modules"]["Mathlib.Tactic.TautoSet"] = {
-            "importedBy": ["Complexity.Current"],
+            "importedBy": ["CslibFrontier.Current"],
             "url": "./Mathlib/Tactic/TautoSet.html",
         }
         self.index["declarations"]["Matrix.ofArray"] = {
@@ -572,7 +572,7 @@ class CheckOutputTests(unittest.TestCase):
             },
         }
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             '<a href="./Mathlib/LinearAlgebra/Matrix/Defs.html#Matrix.ofArray">ofArray</a> '
             '<a href="./Mathlib/Tactic/TautoSet.html#Mathlib.Tactic.TautoSet.specialize_all">specialize_all</a>',
         )
@@ -583,7 +583,7 @@ class CheckOutputTests(unittest.TestCase):
             check_docs.check_output()
 
         self.assertEqual(
-            self.page("Complexity").read_text(),
+            self.page("CslibFrontier").read_text(),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/LinearAlgebra/Matrix/Array.html#Matrix.ofArray">ofArray</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Tactic/TautoSet.html">specialize_all</a>',
         )
@@ -614,33 +614,33 @@ class CheckOutputTests(unittest.TestCase):
             },
         }
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/LinearAlgebra/Matrix/Defs.html#Matrix.ofArray">stale moved</a>',
         )
         self.assert_failure(
-            "Broken external dependency anchor in Complexity.html: "
+            "Broken external dependency anchor in CslibFrontier.html: "
             "Mathlib/LinearAlgebra/Matrix/Defs.html#Matrix.ofArray"
         )
 
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Tactic/TautoSet.html#Mathlib.Tactic.TautoSet.specialize_all">omitted</a>',
         )
         self.assert_failure(
-            "Broken external dependency anchor in Complexity.html: "
+            "Broken external dependency anchor in CslibFrontier.html: "
             "Mathlib/Tactic/TautoSet.html#Mathlib.Tactic.TautoSet.specialize_all"
         )
 
     def test_url_query_preservation_and_api_docs_dependency_normalization(self):
         self.index["modules"]["Mathlib.Data.List"] = {
-            "importedBy": ["Complexity.Current"], "url": "./Mathlib/Data/List.html",
+            "importedBy": ["CslibFrontier.Current"], "url": "./Mathlib/Data/List.html",
         }
         self.index["declarations"]["List.map"] = {
             "docLink": "./Mathlib/Data/List.html#List.map", "kind": "def",
         }
         self.write(self.page("Mathlib.Data.List"), '<div id="List.map"></div>')
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             '<a href="./Mathlib/Data/List.html?foo=1#List.map">rel query</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Data/List.html?bar=2#List.map">abs mathlib query</a> '
             f'<a href="{check_docs.API_DOCS_URL}Mathlib/Data/List.html?baz=3#List.map">api docs dep</a>',
@@ -652,21 +652,21 @@ class CheckOutputTests(unittest.TestCase):
             check_docs.check_output()
 
         self.assertEqual(
-            self.page("Complexity").read_text(),
+            self.page("CslibFrontier").read_text(),
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Data/List.html?foo=1#List.map">rel query</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Data/List.html?bar=2#List.map">abs mathlib query</a> '
             f'<a href="{check_docs.MATHLIB_DOCS_URL}Mathlib/Data/List.html?baz=3#List.map">api docs dep</a>',
         )
 
         self.write(
-            self.page("Complexity"),
+            self.page("CslibFrontier"),
             f'<a href="{check_docs.API_DOCS_URL}Mathlib/Data/List.html">unrewritten api docs dep</a>',
         )
-        self.assert_failure("Broken internal link in Complexity.html: Mathlib/Data/List.html")
+        self.assert_failure("Broken internal link in CslibFrontier.html: Mathlib/Data/List.html")
 
 
 class CheckGuideLinksTests(unittest.TestCase):
-    page = "Complexity/Reduction.html"
+    page = "CslibFrontier/Reduction.html"
 
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -677,7 +677,7 @@ class CheckGuideLinksTests(unittest.TestCase):
         self.addCleanup(root_patch.stop)
         self.docs = self.root / "docbuild/.lake/build/doc"
         self.guide = self.root / "guide/.lake/build/site/html-multi"
-        (self.docs / "Complexity").mkdir(parents=True)
+        (self.docs / "CslibFrontier").mkdir(parents=True)
         (self.docs / "index.html").write_text("")
         (self.docs / self.page).write_text(
             '<div class="decl" id="Cslib.Complexity.NPComplete"></div>'
@@ -705,8 +705,8 @@ class CheckGuideLinksTests(unittest.TestCase):
                    f"{self.page}#Cslib.«term_&lt;=p_»")
 
     def test_missing_page(self):
-        self.assert_failure("Guide links to a missing documentation page: Complexity/Gone.html",
-                            "Complexity/Gone.html#Cslib.Complexity.NPComplete")
+        self.assert_failure("Guide links to a missing documentation page: CslibFrontier/Gone.html",
+                            "CslibFrontier/Gone.html#Cslib.Complexity.NPComplete")
 
     def test_missing_anchor(self):
         self.assert_failure(

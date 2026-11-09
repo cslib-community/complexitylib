@@ -425,10 +425,10 @@ class RepositoryLayoutTests(unittest.TestCase):
         # An unsupported library layout in the real lakefile sends every quick check to all six
         # gates; #1729's `defaultFacets = []` once did so unnoticed.
         modules, aggregates, roots = quick.source_modules(REPO)
-        self.assertIn("Complexity", aggregates)
-        self.assertIn("ComplexityResults", aggregates)
-        self.assertIn("ComplexityTests", roots)
-        self.assertIn("ComplexityTests.Axioms", modules)
+        self.assertIn("CslibFrontier", aggregates)
+        self.assertIn("CslibFrontierResults", aggregates)
+        self.assertIn("CslibFrontierTests", roots)
+        self.assertIn("CslibFrontierTests.Axioms", modules)
 
 
 class NativeLeanTests(unittest.TestCase):

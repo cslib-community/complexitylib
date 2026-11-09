@@ -90,7 +90,7 @@ and toolchain available, and use an absolute scratch directory outside the sourc
 
 ```bash
 publication_dir=$(mktemp -d)
-lake build Complexity ComplexityTests -o "$publication_dir/mapping.jsonl"
+lake build CslibFrontier CslibFrontierTests -o "$publication_dir/mapping.jsonl"
 lake cache stage "$publication_dir/mapping.jsonl" "$publication_dir/archives"
 cache_revision=$(git rev-parse HEAD)
 cache_toolchain=$(tr -d '[:space:]' < lean-toolchain | sed 's#/#--#; s#:#---#')

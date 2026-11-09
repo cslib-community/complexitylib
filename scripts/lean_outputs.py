@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read the build outputs of the library and its tests, and the sources they come from.
 
-`lake build Complexity ComplexityTests` (`lake build` and `lake test`) writes an `.ilean` file
+`lake build CslibFrontier CslibFrontierTests` (`lake build` and `lake test`) writes an `.ilean` file
 beside each `.olean`. It records every identifier that occurs in the module's source, including
 in proofs, with the declarations the module defines. `scripts/LeanOutputs.lean`
 reads the `.olean` parts for each constant's kind, export status, statement and declaration range.
@@ -23,10 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from proof_lengths import masks  # noqa: E402
 
-ROOTS = ("Complexity", "ComplexityTests")
+ROOTS = ("CslibFrontier", "CslibFrontierTests")
 # Libraries that Lake builds from a glob (`lakefile.toml`) have no root aggregator file: their
 # modules are exactly the source files under their directory.
-GLOB_ROOTS = ("ComplexityTests",)
+GLOB_ROOTS = ("CslibFrontierTests",)
 DEFAULT_BUILD_DIR = ROOT / ".lake/build/lib/lean"
 # The build outputs read here.
 OUTPUT_SUFFIXES = (".ilean", ".olean", ".olean.server", ".olean.private")
@@ -61,7 +61,7 @@ def root_modules(glob=glob_modules) -> list[str]:
 
 def module_role(module: str) -> str:
     """`lib` or `test` for a module of one of the two libraries."""
-    if module.startswith("ComplexityTests."):
+    if module.startswith("CslibFrontierTests."):
         return "test"
     return "lib"
 
@@ -92,7 +92,7 @@ def output_differences(build_dir: Path, reference: Path) -> list[str]:
     """Report inputs that are missing, extra or different in `build_dir` compared to
     `reference`, as paths relative to them."""
     def inputs(directory: Path) -> set[Path]:
-        # The roots' own outputs (`Complexity.ilean`, …) sit beside their directories, and the
+        # The roots' own outputs (`CslibFrontier.ilean`, …) sit beside their directories, and the
         # module inventory comes from their imports.
         files = [p for root in ROOTS
                  for p in [*(directory / root).rglob("*"), *directory.glob(f"{root}.*")]]
@@ -200,7 +200,7 @@ class Library:
     def __init__(self, build_dir: Path):
         self.build_dir = build_dir
         self.ileans = load_ileans(build_dir)
-        self.modules = sorted(m for m in self.ileans if m.startswith("Complexity."))
+        self.modules = sorted(m for m in self.ileans if m.startswith("CslibFrontier."))
         self.constants, self.duplicate_rows = load_constants(build_dir, self.modules)
         self.sources: dict[str, Source] = {}
 
@@ -224,7 +224,7 @@ def collect_declarations(lib: Library) -> tuple[dict[str, dict], dict[str, str]]
     decls: dict[str, dict] = {}
     owners: dict[str, str] = {}
     for module in lib.modules:
-        rel = module.removeprefix("Complexity.").replace(".", "/") + ".lean"
+        rel = module.removeprefix("CslibFrontier.").replace(".", "/") + ".lean"
         for name, defined_in, info in lib.references(module):
             if defined_in != module or not info["definition"]:
                 continue

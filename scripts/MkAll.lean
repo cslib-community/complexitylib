@@ -23,7 +23,7 @@ imports `Lib.*`, without a `src` prefix.
 The shared `Mathlib.Util.GetAllModules` utility supplies discovery and deterministic sorting.
 -/
 
-namespace ComplexityScripts.MkAll
+namespace CslibFrontierScripts.MkAll
 
 open Lean System.FilePath
 
@@ -136,7 +136,7 @@ def mkAll : Cmd := `[Cli|
     module;       "Force module style with public imports; otherwise infer the existing style."
 ]
 
-end ComplexityScripts.MkAll
+end CslibFrontierScripts.MkAll
 
 /-- The entrypoint to the source-directory-aware `lake exe mk_all` command. -/
-def main (args : List String) : IO UInt32 := ComplexityScripts.MkAll.mkAll.validate args
+def main (args : List String) : IO UInt32 := CslibFrontierScripts.MkAll.mkAll.validate args

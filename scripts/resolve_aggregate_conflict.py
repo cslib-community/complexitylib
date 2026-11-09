@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Git merge driver for the `mk_all` import aggregates: merge their import lines as sets.
 
-`lake exe mk_all` writes each aggregate (`Complexity.lean`, `ComplexityResults.lean`) as a fixed
+`lake exe mk_all` writes each aggregate (`CslibFrontier.lean`, `CslibFrontierResults.lean`) as a fixed
 header followed by one import line per module, sorted by module name. Two branches
 that add modules between the same neighbours conflict as text, and `merge=union` keeps imports
 that one side deleted and can misorder the added ones. This driver merges the import lines three

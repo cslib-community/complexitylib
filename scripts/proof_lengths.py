@@ -251,7 +251,7 @@ def scan(text: str, path: str) -> list[dict]:
     boundaries = command_starts(syntax) + [len(syntax)]
     upstream = re.search(r"^-- upstream: (\S+)", text, re.M)
     status = upstream[1] if upstream else "unmarked"
-    relative = path.removeprefix("Complexity/")
+    relative = path.removeprefix("CslibFrontier/")
     group = next((name for name, prefix in GROUPS if relative.startswith(prefix)), "Other library modules")
     rows = []
     for match in DECL.finditer(syntax):
@@ -335,7 +335,7 @@ theorem prefixed : True := by
 universe u
 end Sample
 """
-    rows = scan(sample, "Complexity/Sample.lean")
+    rows = scan(sample, "CslibFrontier/Sample.lean")
     assert [(r["name"], r["body_lines"]) for r in rows] == [
         ("short", 1), ("term", 1), ("quoted", 1), ("separate_attribute", 1), ("equations", 2),
         ("type_let", 1), ("after_annotated", 1), ("after_multi_line", 1), ("do_let", 1),
@@ -358,7 +358,7 @@ def main() -> None:
         cwd=ROOT, text=True,
     ).strip()
     if args.ref:
-        archive = subprocess.check_output(["git", "archive", commit, "Complexity"], cwd=ROOT)
+        archive = subprocess.check_output(["git", "archive", commit, "CslibFrontier"], cwd=ROOT)
         with tarfile.open(fileobj=io.BytesIO(archive)) as source:
             files = [
                 (member.name, source.extractfile(member).read().decode())
@@ -368,7 +368,7 @@ def main() -> None:
     else:
         files = [
             (str(path.relative_to(ROOT)), path.read_text())
-            for path in sorted((ROOT / "Complexity").rglob("*.lean"))
+            for path in sorted((ROOT / "CslibFrontier").rglob("*.lean"))
         ]
     rows = []
     for path, text in files:

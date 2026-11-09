@@ -3,7 +3,7 @@
 cslib-frontier is the frontier formalization library for **cslib** (`leanprover/cslib`): a Lean 4
 library covering computer science generally, including algorithms and data structures,
 complexity, cryptography, logic and models of computation. Library modules must be upstreamable
-unchanged apart from rewriting `Complexity.` → `Cslib.`. General mathematics destined for Mathlib
+unchanged apart from rewriting `CslibFrontier.` → `Cslib.`. General mathematics destined for Mathlib
 and local project scaffolding are documented exceptions; see `UPSTREAM.md` and the source markers.
 
 Read the pinned cslib `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md` in
@@ -271,12 +271,12 @@ ambiguous change/import analysis fall back to all six gates. The one exception i
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
 
-`lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
-`ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
+`lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
+`CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
 
 ## File rules
 
-1. **Path and namespace mirror cslib.** `Complexity/Foundations/Data/Encoding.lean` is destined
+1. **Path and namespace mirror cslib.** `CslibFrontier/Foundations/Data/Encoding.lean` is destined
    for `Cslib/Foundations/Data/Encoding.lean`; multi-tape machine files use the upstream root
    namespace `Turing`, everything else `Cslib.*` as upstream does.
 2. **File template:** use the Apache header below, `module`, an `-- upstream:` marker,
@@ -295,7 +295,7 @@ requirement above; documentation-only checks need not invoke quick mode.
    module
    -- upstream: candidate
 
-   public import Complexity.Init
+   public import CslibFrontier.Init
 
    /-!
    # <Module topic>
@@ -321,7 +321,7 @@ requirement above; documentation-only checks need not invoke quick mode.
    `Copyright (c) 2026 Bolton Bailey, Samuel Schlesinger` and `Authors: Bolton Bailey, Samuel
    Schlesinger`; ports of Christian Reitwiessner's work carry his name likewise. Check the v1
    file's `Authors:` line before porting.
-4. **Every module publicly imports `Cslib.Init`** (through `Complexity.Init`); the test driver
+4. **Every module publicly imports `Cslib.Init`** (through `CslibFrontier.Init`); the test driver
    runs `checkInitImports`.
 5. **Reuse upstream first.** Before defining anything, search cslib (`.lake/packages/cslib/Cslib`,
    or the local `../cslib/Cslib` checkout) and the
@@ -383,7 +383,7 @@ purpose, not its letter.
   (library, tests, results inventory and guide) and remove the superseded interface in the same change.
   Remove obsolete aliases as part of the relevant migration, not unrelated cleanup. Revisit
   compatibility guarantees before supporting external consumers.
-- `ComplexityTests/Axioms.lean` audits all declarations stored in imported `Complexity` modules
+- `CslibFrontierTests/Axioms.lean` audits all declarations stored in imported `CslibFrontier` modules
   for dependencies beyond `propext`, `Classical.choice` and `Quot.sound`. Because that audit
   already covers the standard set, add a named `#print axioms` guard only when a result is meant
   to depend on fewer axioms than these three, for example a choice-free result; place it in the
@@ -478,6 +478,12 @@ does not require branches to be up to date, so refreshing an approved PR only re
 head. After the merge, regenerate the import aggregates with `lake exe mk_all`, or let the opt-in
 [`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them; never trust a
 `merge=union` result, which keeps deleted imports and can misorder added ones.
+
+A branch that forked before the module root was renamed from Complexity to CslibFrontier is
+restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
+`main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
+converts the branch's own module names and paths; `--verify-carry` compares the result with
+the approved head. See the script's documentation.
 
 A restack keeps its approval when `python3 scripts/check_restack.py <approved head> <new head>`
 passes and CI passes at the new head. The script replays the approved change onto the `main` that

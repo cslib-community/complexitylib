@@ -31,16 +31,16 @@ provides checked Lean tutorials. For a particular task, start below.
 | Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md) |
 | Use cslib-frontier in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
-| Certify functional programs and loops | [PolyTime examples](ComplexityTests/PolyTimeTactic.lean) |
-| State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
-| Construct circuits for polynomial-time function families | [Uniform circuit examples](ComplexityTests/UniformCircuits.lean) |
-| Define queries using least fixed points or tuple closure | [FO(LFP), FO(TC), and synthesis examples](ComplexityTests/FOOperators.lean) |
-| Move between ordered FO(LFP) queries and native polynomial time | [Immerman–Vardi characterization](Complexity/Computability/Complexity/ImmermanVardi.lean) |
-| State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](ComplexityTests/TimeClasses.lean) |
-| Write probabilistic programs or oracle reductions | [PPT examples](ComplexityTests/PPTTactic.lean), [oracle examples](ComplexityTests/OraclePPT.lean) |
-| Estimate frequencies in a stream | [Count-Min examples](ComplexityTests/CountMin.lean), then [fixed-query accuracy](Complexity/DataStructure/CountMin/Probability.lean) |
+| Certify functional programs and loops | [PolyTime examples](CslibFrontierTests/PolyTimeTactic.lean) |
+| State P/NP membership or prove a problem NP-complete | [Checked plain examples](CslibFrontierTests/NPCompleteness.lean), then [Clique](CslibFrontier/Computability/Complexity/Problems/Clique.lean) |
+| Construct circuits for polynomial-time function families | [Uniform circuit examples](CslibFrontierTests/UniformCircuits.lean) |
+| Define queries using least fixed points or tuple closure | [FO(LFP), FO(TC), and synthesis examples](CslibFrontierTests/FOOperators.lean) |
+| Move between ordered FO(LFP) queries and native polynomial time | [Immerman–Vardi characterization](CslibFrontier/Computability/Complexity/ImmermanVardi.lean) |
+| State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](CslibFrontierTests/TimeClasses.lean) |
+| Write probabilistic programs or oracle reductions | [PPT examples](CslibFrontierTests/PPTTactic.lean), [oracle examples](CslibFrontierTests/OraclePPT.lean) |
+| Estimate frequencies in a stream | [Count-Min examples](CslibFrontierTests/CountMin.lean), then [fixed-query accuracy](CslibFrontier/DataStructure/CountMin/Probability.lean) |
 | Find a named result, such as Cook–Levin or the PCP theorem | [Results inventory](results/README.md), then the declarations it links in the [API documentation](https://www.cslib.io/cslib-frontier/) |
-| Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [Complexity.lean](Complexity.lean) lists every module, and each documents its definitions, results, and references |
+| Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [CslibFrontier.lean](CslibFrontier.lean) lists every module, and each documents its definitions, results, and references |
 | Propose a substantial new direction | [Open an issue](https://github.com/cslib-community/cslib-frontier/issues/new/choose), as [Contributing](CONTRIBUTING.md#proposing-and-contributing-work) describes; [ROADMAP.md](ROADMAP.md) lists the accepted directions |
 | Contribute a result or improve an API | [Contributing](CONTRIBUTING.md) |
 
@@ -51,8 +51,8 @@ machine calculus.
 For an NP-completeness proof, fix the instance encoding, give a verifier with a polynomial
 certificate-length bound, and reduce a known NP-hard problem to yours. Prove the verifier and
 reduction map polynomial-time with `fun_prop` or `polytime`, then prove their membership
-equivalences. The [Clique example](Complexity/Computability/Complexity/Problems/Clique.lean)
-uses graph complementation; the [reduction index](Complexity/Computability/Complexity/Reduction.lean)
+equivalences. The [Clique example](CslibFrontier/Computability/Complexity/Problems/Clique.lean)
+uses graph complementation; the [reduction index](CslibFrontier/Computability/Complexity/Reduction.lean)
 points to the other proved problems and their reduction maps. The checked examples state these
 claims with plain `ComputableInPolyTime`.
 
@@ -63,10 +63,10 @@ audits remain incomplete.
 
 ## Build and use
 
-The package is named `complexitylib`; imports begin with `Complexity.`. Most declaration
+The package is named `cslib-frontier`; imports begin with `CslibFrontier.`. Most declaration
 namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`. In an announced
 cutover ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)), the module root
-will be renamed from `Complexity.` to `CslibFrontier.` and the package to `cslib-frontier`;
+will be renamed from `CslibFrontier.` to `CslibFrontier.` and the package to `cslib-frontier`;
 declaration names do not change.
 
 ### Build a checkout
@@ -90,7 +90,7 @@ Repeated bootstrap calls for the same checkout state reuse a ten-minute attempt 
 Use `scripts/cache/ensure.sh --refresh` to retry immediately. See
 [scripts/cache/README.md](scripts/cache/README.md) for how the caches work and what they trust.
 
-Import the specific modules you need. `import Complexity` imports the whole library. To contribute,
+Import the specific modules you need. `import CslibFrontier` imports the whole library. To contribute,
 follow [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [validation sequence](AGENTS.md#validation-sequence).
 
@@ -106,7 +106,7 @@ chosen full SHA:
 
 ```toml
 [[require]]
-name = "complexitylib"
+name = "cslib-frontier"
 git = "https://github.com/cslib-community/cslib-frontier"
 rev = "<commit SHA>"
 ```
@@ -117,16 +117,16 @@ the chosen revision.
 
 Then run the commands below from your project directory. When changing existing direct
 dependency pins, include those package names in the update command: for example,
-`lake update complexitylib cslib mathlib` when changing both. Updating only `complexitylib`
+`lake update cslib-frontier cslib mathlib` when changing both. Updating only `cslib-frontier`
 leaves the other direct dependencies locked.
 
 ```bash
-lake update complexitylib
+lake update cslib-frontier
 lake build
 ```
 
 Commit the resulting `lake-manifest.json` along with the Lake configuration and `lean-toolchain`.
-Use the `Complexity.` imports shown in the [checked examples](#start-here).
+Use the `CslibFrontier.` imports shown in the [checked examples](#start-here).
 
 ### Build the documentation
 
@@ -139,7 +139,7 @@ To build searchable API documentation from the module docstrings:
 
 ```bash
 python3 scripts/check_docs.py --config-only
-lake -d docbuild build Complexity:docs
+lake -d docbuild build CslibFrontier:docs
 python3 scripts/check_docs.py
 python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
 ```
@@ -154,7 +154,7 @@ generated documentation after any documentation build has stopped:
 
 ```bash
 lake -d docbuild clean docbuild
-lake -d docbuild build Complexity:docs
+lake -d docbuild build CslibFrontier:docs
 python3 scripts/check_docs.py
 ```
 
@@ -165,7 +165,7 @@ modules is regenerated, which can take substantial time even with warm library b
 
 #### Checked guide
 
-The [guide](guide/ComplexityGuide.lean) introduces the library area by area, with Lean examples
+The [guide](guide/CslibFrontierGuide.lean) introduces the library area by area, with Lean examples
 that are checked against the library whenever the guide is built. It is written with
 [Verso](https://github.com/leanprover/verso) in a separate `guide` project. To build and preview it:
 
@@ -192,7 +192,7 @@ CSLib Community. Downstream projects using that package name should change it to
 Lean imports remain unchanged.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
-upstream with the import prefix changed from `Complexity.` to `Cslib.`. Acceptance requires
+upstream with the import prefix changed from `CslibFrontier.` to `Cslib.`. Acceptance requires
 CSLib review. [ROADMAP.md](ROADMAP.md) lists the accepted directions;
 [UPSTREAM.md](UPSTREAM.md) records upstream coordination and exceptional integration decisions.
 

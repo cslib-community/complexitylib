@@ -129,7 +129,7 @@ see through it; syntactic tools such as `omega` do not. New and changed statemen
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
 checks the repetition rule.
 
-To sweep an area, `python3 scripts/check_encoding_readability.py --list Complexity/Logics` lists
+To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
 notations that abbreviate a compound encoding. A sweep must leave every statement unchanged:
 compare each changed public declaration's type with its type on `main`, either after
@@ -149,7 +149,7 @@ genuinely semantic objects: ideal distributions, the laws of games and the distr
 in a statistical argument. A program can be run against different oracles, budgeted, realized by a
 machine and substituted into a reduction. A `PMF`-valued algorithm can do none of these, and
 needs a separate hypothesis that some program realizes it. Exact theorems stay exact, as
-statements about `evalWith`; see `Complexity/Languages/Probabilistic/Semantics.lean`.
+statements about `evalWith`; see `CslibFrontier/Languages/Probabilistic/Semantics.lean`.
 
 ### Public surface under the module system
 
@@ -166,7 +166,7 @@ also loads private information, so such edits do reach its clients.
   of public definitions that a user of those definitions would expect: characterizations (`_iff`),
   bounds, monotonicity and closure properties, simp and extensionality equations, invariance
   lemmas, and named results from the literature. Move general mathematics (lists, finsets,
-  probability, bit strings) to `Complexity/Foundations` instead of making it private. Reference
+  probability, bit strings) to `CslibFrontier/Foundations` instead of making it private. Reference
   counts are evidence about current use, not the criterion; privatize by intent.
 - **Reuse before re-proving.** If a fact you need already exists as a private declaration, make it
   public, moving it to its natural home if needed, instead of proving it again. Reviewers treat a
@@ -210,7 +210,7 @@ elaboration with `scripts/cache/ensure.sh`; retry for missing outputs or changed
 not merely a new commit with warm artifacts. See the
 [cache guide](scripts/cache/README.md#automatic-restoration) for actual retries and opt-out.
 
-The test suite audits the axiom dependencies of every declaration stored in imported `Complexity`
+The test suite audits the axiom dependencies of every declaration stored in imported `CslibFrontier`
 modules. Named `#print axioms` checks are added only for results meant to depend on fewer axioms
 than the standard `propext`, `Classical.choice` and `Quot.sound`, such as choice-free results. The
 audit trusts the compiled Lean artifacts and permits `Classical.choice`; it does not certify
@@ -305,7 +305,7 @@ The [README](README.md#build-and-use) explains how to generate API documentation
 [doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide with
 [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
-library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update complexitylib`
+library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update cslib-frontier`
 and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in
 `docbuild/lakefile.toml` and the Verso tag in `guide/lakefile.toml`, both named after the Lean
 version, and run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
@@ -339,7 +339,7 @@ participant procedures in the Operator's Manual and historical evidence in its s
 Place a new section where its topic belongs in a chapter rather than at the end: sections that
 concurrent PRs append at the same place conflict in the merge queue.
 
-Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
+Keep executable Lean examples in `CslibFrontierTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second
 independently maintained copy. Check new or changed examples with Lean; source comparison alone
 does not establish that an example elaborates. The live checker and its controls are required
@@ -367,7 +367,7 @@ themselves establish that the manual is usable or correct.
 ## Upstreaming
 
 ```bash
-python3 scripts/upstream.py Complexity.Computability.DecisionTree.Basic --cslib ../cslib --dry-run
+python3 scripts/upstream.py CslibFrontier.Computability.DecisionTree.Basic --cslib ../cslib --dry-run
 ```
 
 This previews copying a module to its mirrored CSLib path, rewriting imports, and removing the

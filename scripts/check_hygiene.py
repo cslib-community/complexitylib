@@ -2,16 +2,16 @@
 """Static proof-hygiene and module-template checks for Complexitylib Lean files.
 
 Checks enforced by default (see AGENTS.md):
-1. Every module under Complexity/ has a valid standalone `-- upstream:` line comment.
-2. No `sorry`, custom `axiom`, or `native_decide` in Complexity/ or ComplexityTests/.
+1. Every module under CslibFrontier/ has a valid standalone `-- upstream:` line comment.
+2. No `sorry`, custom `axiom`, or `native_decide` in CslibFrontier/ or CslibFrontierTests/.
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
    on the same line, within the preceding 3 lines, or (for `set_option ... in`) on the next
    line, where Mathlib's `linter.style.maxHeartbeats` expects it.
-4. Docstrings in `Complexity/` contain only root-qualified or external Markdown links
+4. Docstrings in `CslibFrontier/` contain only root-qualified or external Markdown links
    (`[text](target)`, where external means `http://` or `https://` and anchors start with `#`,
    matching `doc-gen4`'s `extendLink`) and root-qualified slash-containing `.lean` code tokens
-   (`Complexity/.../*.lean`, `Cslib/...`, `Mathlib/...`) in inline code spans and fenced Lean code
-   blocks. `Complexity/...` targets are checked for file existence on disk; dependency roots
+   (`CslibFrontier/.../*.lean`, `Cslib/...`, `Mathlib/...`) in inline code spans and fenced Lean code
+   blocks. `CslibFrontier/...` targets are checked for file existence on disk; dependency roots
    (`Cslib/`, `Mathlib/`, `Batteries/`) are checked on disk when `.lake/packages` is present locally
    and by root prefix in CI (where `check_hygiene.py` runs before `.lake` is restored) or for
    toolchain roots (`Std/`, `Init/`, `Lean/`). Reference-link definitions (`[label]: target`, with
@@ -46,7 +46,7 @@ Checks enforced by default (see AGENTS.md):
 
 Opt-in heuristic checks:
 9. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
-   under Complexity/.
+   under CslibFrontier/.
 10. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
@@ -177,12 +177,12 @@ def extract_docstrings(text: str) -> list[tuple[int, str]]:
 def validate_doc_module_path(part: str, root: pathlib.Path) -> str | None:
     """Validate a slash-containing `.lean` code token that `doc-gen4` auto-links from doc root."""
     if any(ch in part for ch in "{}\\") or part.startswith("/") or "//" in part:
-        return "use a clean repository-root `Complexity/.../*.lean` path or a full URL link"
+        return "use a clean repository-root `CslibFrontier/.../*.lean` path or a full URL link"
     segments = part.split("/")
     if any(seg in ("", ".", "..") for seg in segments):
         return "path must not contain `.` or `..` segments"
     top = segments[0]
-    if top == "Complexity":
+    if top == "CslibFrontier":
         if not (root / part).is_file():
             return f"local module `{part}` does not exist"
         return None
@@ -194,12 +194,12 @@ def validate_doc_module_path(part: str, root: pathlib.Path) -> str | None:
         return None
     return (
         "slash-qualified `.lean` code token is auto-linked by doc-gen4; "
-        "prefix with `Complexity/` or link to a full URL"
+        "prefix with `CslibFrontier/` or link to a full URL"
     )
 
 
 def validate_doc_markdown_target(target: str, root: pathlib.Path) -> str | None:
-    """Validate an inline or reference Markdown link target in a `Complexity/` docstring."""
+    """Validate an inline or reference Markdown link target in a `CslibFrontier/` docstring."""
     if target.startswith(("https://", "http://", "#")):
         return None
     path_part, _, _ = target.partition("#")
@@ -214,7 +214,7 @@ def validate_doc_markdown_target(target: str, root: pathlib.Path) -> str | None:
         if not any(seg in ("", ".", "..") for seg in segments):
             lean_rel = path_part[:-5] + ".lean"
             top = segments[0]
-            if top == "Complexity":
+            if top == "CslibFrontier":
                 if (root / lean_rel).is_file():
                     return None
                 return f"target module `{lean_rel}` does not exist"
@@ -229,13 +229,13 @@ def validate_doc_markdown_target(target: str, root: pathlib.Path) -> str | None:
                         return f"target dependency module `{lean_rel}` does not exist"
                 return None
     return (
-        "use a root-qualified `Complexity/.../*.html` path, `#anchor`, or `https://` URL "
+        "use a root-qualified `CslibFrontier/.../*.html` path, `#anchor`, or `https://` URL "
         "(or escape `\\[...\\]` if not a link)"
     )
 
 
 def check_docstring_links(raw: str, rel: pathlib.Path, root: pathlib.Path) -> list[str]:
-    """Check Markdown links and auto-linked `.lean` code tokens in `Complexity/` docstrings."""
+    """Check Markdown links and auto-linked `.lean` code tokens in `CslibFrontier/` docstrings."""
     errors: list[str] = []
     for doc_start, doc in extract_docstrings(raw):
         chars = list(doc)
@@ -494,7 +494,7 @@ def check_file(
     code_lines = code.split("\n")
     errors: list[str] = []
 
-    in_complexity = rel.parts and rel.parts[0] == "Complexity"
+    in_complexity = rel.parts and rel.parts[0] == "CslibFrontier"
     markers = upstream_markers(raw) if in_complexity else []
     if in_complexity and not any(UPSTREAM_STATUS_RE.fullmatch(status) for status in markers):
         errors.append(f"{rel}: missing or invalid `-- upstream:` marker")
@@ -625,7 +625,7 @@ def roadmap_definitions(text: str) -> list[tuple[int, str]]:
 def check_roadmap(text: str, rel: str = "ROADMAP.md") -> list[str]:
     """Inline links only, and short top-level entries without nested bullets."""
     errors: list[str] = []
-    issues = "https://github.com/cslib-community/complexitylib/issues/"
+    issues = "https://github.com/cslib-community/cslib-frontier/issues/"
     definitions = roadmap_definitions(text)
     defined_lines = {number for number, _ in definitions}
     for number, label in definitions:
@@ -709,7 +709,7 @@ def main() -> int:
     if args.paths:
         targets = [pathlib.Path(p).resolve() for p in args.paths]
     else:
-        targets = [ROOT / "Complexity", ROOT / "ComplexityTests"]
+        targets = [ROOT / "CslibFrontier", ROOT / "CslibFrontierTests"]
 
     bibliography = (ROOT / "references.bib").read_text(encoding="utf-8")
     heartbeat_caps = load_heartbeat_allowlist()
