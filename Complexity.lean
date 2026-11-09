@@ -74,6 +74,8 @@ public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.Karger.Contraction
 public import Complexity.Algorithms.Lean.Karger.FastCut
+public import Complexity.Algorithms.Lean.Karger.Memory
+public import Complexity.Algorithms.Lean.Karger.Memory.Contract
 public import Complexity.Algorithms.Lean.Karger.Memory.Layout
 public import Complexity.Algorithms.Lean.Karger.MinCutCount
 public import Complexity.Algorithms.Lean.Knapsack.FPTAS
@@ -3121,6 +3123,7 @@ public import Complexity.Computability.Machines.Turing.SingleTape.NLogNGap
 public import Complexity.Computability.Machines.Turing.SingleTape.Palindrome
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
+public import Complexity.Computability.Machines.Turing.SingleTape.TM0Restrict
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
 public import Complexity.Computability.Machines.Turing.TM2.Degree
 public import Complexity.Computability.Machines.Turing.TM2.Encoding
@@ -3183,6 +3186,7 @@ public import Complexity.Computability.PCP.Encoded.Constraints
 public import Complexity.Computability.PCP.Encoded.Count
 public import Complexity.Computability.PCP.Encoded.DegreeReduction
 public import Complexity.Computability.PCP.Encoded.Deloop
+public import Complexity.Computability.PCP.Encoded.Encoding
 public import Complexity.Computability.PCP.Encoded.GapTheorem
 public import Complexity.Computability.PCP.Encoded.GenericComposition
 public import Complexity.Computability.PCP.Encoded.GenericComposition.Enumeration
@@ -5115,6 +5119,11 @@ public import Complexity.Languages.Probabilistic.UniformNat.Support
 public import Complexity.Languages.Probabilistic.UntilBad
 public import Complexity.Languages.Probabilistic.UntilBad.TwoCost
 public import Complexity.Languages.Probabilistic.Vector
+public import Complexity.Logics.BooleanClone.Basic
+public import Complexity.Logics.BooleanClone.Classification
+public import Complexity.Logics.BooleanClone.Formula
+public import Complexity.Logics.BooleanClone.Generated
+public import Complexity.Logics.BooleanClone.Post
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import Complexity.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
