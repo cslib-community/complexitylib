@@ -483,10 +483,8 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
                   obtain ⟨cm, cM⟩ := cbounds
                   have hans_eq : j * universeSize d + cm = ans := by
                     simpa [Tree.minimum, hck] using hans'
-                  have hcm_lt : cm < universeSize d := by
-                    have hce := (ht.2.2.1 k).extrema
-                    simp only [Tree.Extrema, hck] at hce
-                    omega
+                  have hce := (ht.2.2.1 k).extrema_of_bounds hck
+                  have hcm_lt : cm < universeSize d := hce.1.trans_lt hce.2.1
                   have hcm_mem : s.mem (base + 5 + (j + 1) * span d + 1) = cm := by
                     have hh := (hr.2.2 k).header
                     simp only [Header, hck] at hh
@@ -749,9 +747,7 @@ private theorem successor_none_spec {d w stackBase₀ sp₀ base query : ℕ} {t
           obtain ⟨ans, _, hans⟩ := Tree.successor_isSome_of_lt_max ht rfl hlt
           simp [hans] at hnone
         have hnot_m : ¬query < m := by
-          have hext := ht.extrema
-          simp only [Tree.Extrema, Tree.bounds] at hext
-          have := hext.1
+          have := (ht.extrema_of_bounds rfl).1
           omega
         simp +decide [s₁, successorDescentNext, hpres, hm, hM, hnot_m, hnot_M, hs.sp_eq]
   refine ⟨s₁, ?_, hconst.2.2.2.2.2.2, hprops.2.1, hprops.2.2.1, hprops.2.2.2.1, hprops.2.2.2.2⟩
