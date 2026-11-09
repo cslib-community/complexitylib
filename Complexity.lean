@@ -3924,6 +3924,7 @@ public import Complexity.Crypto.Primitives.BlockCipher.CBCMAC
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
 public import Complexity.Crypto.Primitives.Garbling.Basic
 public import Complexity.Crypto.Primitives.Garbling.Privacy
+public import Complexity.Crypto.Primitives.Garbling.SizeLowerBound
 public import Complexity.Crypto.Primitives.PRF.Finite
 public import Complexity.Crypto.Primitives.PRG.Circuit
 public import Complexity.Crypto.Primitives.PRG.Game
@@ -5510,7 +5511,9 @@ public import Complexity.Probability.DDGTree.KnuthYao
 public import Complexity.Probability.Divergence
 public import Complexity.Probability.Entropy
 public import Complexity.Probability.Entropy.BitString
+public import Complexity.Probability.Entropy.Continuity
 public import Complexity.Probability.Entropy.Fano
+public import Complexity.Probability.Entropy.Guessing
 public import Complexity.Probability.Entropy.Pi
 public import Complexity.Probability.EntropyConcentration
 public import Complexity.Probability.EntropyExtraction
