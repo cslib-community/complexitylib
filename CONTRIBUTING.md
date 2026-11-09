@@ -65,11 +65,17 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
 
 1. **Reuse.** Use existing abstractions, in CSLib, Mathlib or this library, instead of parallel
    representations; formalize shared concepts once, at the level where they are general.
+   Special cases follow the same rule: call a one- or two-line Mathlib, CSLib or library
+   specialization directly at its use site, or prove deliberate, documented domain API directly
+   from the general statement rather than re-proving it.
 2. **Surface.** Public declarations are the intended API; helpers are `private`, and `@[expose]`
    marks only definitions whose bodies downstream proofs must unfold.
 3. **Statements.** User-facing statements use mathematical notions and plain computability. Proof
    devices such as tidy machines stay inside proofs and the combinator layer that needs them.
-   Names follow Mathlib's conventions.
+   Names follow Mathlib's conventions. Keep every hypothesis and typeclass instance argument of a
+   public theorem necessary: check before requesting review that none follows from other binders,
+   an existing instance (such as `Finite` from `Fintype`), or boundary cases like `0` or empty
+   inputs (when removing one, run quick mode or `lake lint` to catch unused client arguments).
 4. **Automation as API.** Curate `simp`, `grind` and `fun_prop` sets so routine facts follow
    without unfolding; a fact that repeatedly needs plumbing signals a missing lemma or interface.
    Specifications are interfaces too: when callers re-derive the same frame or invariant after
