@@ -41,6 +41,13 @@ namespace Cslib.Communication.Protocol
 
 variable {X Y ι : Type*}
 
+/-- A list of at most `⌈m / 2⌉` entries, for `m ≥ 2`, has `⌈log₂⌉` of its length at most
+`⌈log₂ m⌉ - 1`. -/
+private theorem clog_add_one_le_of_le_half {m k : ℕ} (hm : 2 ≤ m) (hk : k ≤ (m + 1) / 2) :
+    Nat.clog 2 k + 1 ≤ Nat.clog 2 m := by
+  rw [Nat.clog_of_two_le one_lt_two hm]
+  exact Nat.add_le_add_right (Nat.clog_mono_right 2 (by omega)) 1
+
 /-- **Binary search for a coordinate where a sum drops.** Suppose that for every list of at most
 `L` indices, Alice holding `x` and Bob holding `y` can decide with `c` bits whether
 `∑ g y < ∑ f x` over the list. Then for every list `l` of at most `L` indices they can find, with
@@ -59,35 +66,22 @@ theorem exists_search_lt (f : X → ι → ℤ) (g : Y → ι → ℤ) (L c : �
       exact ⟨.output none, by simp, fun x y h => by simp at h⟩
     · obtain ⟨i, rfl⟩ := List.length_eq_one_iff.1 h
       exact ⟨.output (some i), by simp, fun x y h => ⟨i, rfl, by simpa using h⟩⟩
-    · have hlt₁ : (l.take (m / 2)).length < m := by
-        rw [List.length_take]; omega
-      have hlt₂ : (l.drop (m / 2)).length < m := by
-        rw [List.length_drop]; omega
-      have hL₁ : (l.take (m / 2)).length ≤ L := by rw [List.length_take]; omega
-      have hL₂ : (l.drop (m / 2)).length ≤ L := by rw [List.length_drop]; omega
-      obtain ⟨p₁, hp₁d, hp₁⟩ := ih _ hlt₁ (l.take (m / 2)) hL₁ rfl
-      obtain ⟨p₂, hp₂d, hp₂⟩ := ih _ hlt₂ (l.drop (m / 2)) hL₂ rfl
-      obtain ⟨q, hqd, hq⟩ := hcmp (l.take (m / 2)) hL₁
+    · -- Compare the sums over the first half, then search in the half where Bob's sum is
+      -- smaller; both halves have `⌈log₂⌉` of their length at most `⌈log₂ m⌉ - 1`.
+      have hlen₁ : (l.take (m / 2)).length = m / 2 := by rw [List.length_take]; omega
+      have hlen₂ : (l.drop (m / 2)).length = m - m / 2 := by rw [List.length_drop]; omega
+      obtain ⟨p₁, hp₁d, hp₁⟩ := ih _ (by omega) (l.take (m / 2)) (by omega) rfl
+      obtain ⟨p₂, hp₂d, hp₂⟩ := ih _ (by omega) (l.drop (m / 2)) (by omega) rfl
+      obtain ⟨q, hqd, hq⟩ := hcmp (l.take (m / 2)) (by omega)
+      have hc₁ := clog_add_one_le_of_le_half hm2 (k := (l.take (m / 2)).length) (by omega)
+      have hc₂ := clog_add_one_le_of_le_half hm2 (k := (l.drop (m / 2)).length) (by omega)
       refine ⟨q.bind fun b => bif b then p₁ else p₂, ?_, fun x y hxy => ?_⟩
-      · have hc : Nat.clog 2 m = Nat.clog 2 ((m + 2 - 1) / 2) + 1 :=
-          Nat.clog_of_two_le one_lt_two hm2
-        have hc₁ : Nat.clog 2 (l.take (m / 2)).length ≤ Nat.clog 2 m - 1 := by
-          rw [hc, Nat.add_sub_cancel]
-          refine Nat.clog_mono_right 2 ?_
-          rw [List.length_take]; omega
-        have hc₂ : Nat.clog 2 (l.drop (m / 2)).length ≤ Nat.clog 2 m - 1 := by
-          rw [hc, Nat.add_sub_cancel]
-          refine Nat.clog_mono_right 2 ?_
-          rw [List.length_drop]; omega
-        have hpos : 1 ≤ Nat.clog 2 m := by omega
-        refine (depth_bind_le (d := (Nat.clog 2 m - 1) * c) fun b => ?_).trans ?_
-        · cases b
-          · exact hp₂d.trans (Nat.mul_le_mul_right c hc₂)
-          · exact hp₁d.trans (Nat.mul_le_mul_right c hc₁)
-        · calc q.depth + (Nat.clog 2 m - 1) * c ≤ c + (Nat.clog 2 m - 1) * c := by omega
-            _ = Nat.clog 2 m * c := by
-              conv_rhs => rw [← Nat.sub_add_cancel hpos]
-              ring
+      · obtain ⟨e, he⟩ : ∃ e, Nat.clog 2 m = e + 1 := ⟨_, Nat.clog_of_two_le one_lt_two hm2⟩
+        rw [he, add_one_mul]
+        refine (depth_bind_le (d := e * c) fun b => ?_).trans (by omega)
+        cases b
+        · exact hp₂d.trans (Nat.mul_le_mul_right c (by omega))
+        · exact hp₁d.trans (Nat.mul_le_mul_right c (by omega))
       · have hsplit (h : ι → ℤ) : (l.map h).sum =
             ((l.take (m / 2)).map h).sum + ((l.drop (m / 2)).map h).sum := by
           rw [← List.sum_append, ← List.map_append, List.take_append_drop]
