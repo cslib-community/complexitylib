@@ -29,6 +29,8 @@ trees (`CslibFrontier.Algorithms.Lean.GomoryHu.Basic`).
   edge are complementary.
 * `SimpleGraph.mem_edgeSide_of_mem_darts`: along a path in a forest, the start and the end of the
   path lie on opposite sides of each edge of the path.
+* `SimpleGraph.Reachable.mem_iff_of_forall_adj`: if no edge other than `uv` crosses a set, then
+  no path avoiding `uv` crosses it.
 * `SimpleGraph.edgeSide_eq_of_forall_adj`: a set containing `u`, missing `v` and crossed by no
   other tree edge is the side of `uv` containing `u`.
 -/
@@ -133,28 +135,33 @@ theorem mem_edgeSide_of_mem_darts (hT : T.IsAcyclic) {s t : V} {p : T.Walk s t}
   obtain ⟨h1, h2⟩ := key s t p hp d hd
   exact ⟨mem_edgeSide.mpr h1, fun h => hbr ((mem_edgeSide.mp h).trans h2.symm)⟩
 
+omit [Fintype V] in
+/-- If no edge of `T` other than `uv` crosses `S`, then deleting `uv` leaves no path across `S`. -/
+theorem Reachable.mem_iff_of_forall_adj {u v x y : V} {S : Finset V}
+    (h : (T.deleteEdges {s(u, v)}).Reachable x y)
+    (hS : ∀ ⦃a b : V⦄, T.Adj a b → s(a, b) ≠ s(u, v) → (a ∈ S ↔ b ∈ S)) :
+    x ∈ S ↔ y ∈ S := by
+  rw [reachable_iff_reflTransGen] at h
+  induction h with
+  | refl => exact Iff.rfl
+  | tail _ hbc ih =>
+    rw [deleteEdges_adj, Set.mem_singleton_iff] at hbc
+    exact ih.trans (hS hbc.1 hbc.2)
+
 /-- A criterion for the side of a tree edge: if `S` contains `u`, misses `v`, and no other edge of
 the tree `T` crosses `S`, then `S` is the side of `uv` containing `u`. -/
 theorem edgeSide_eq_of_forall_adj (hT : T.IsTree) {u v : V} (huv : T.Adj u v) {S : Finset V}
     (hu : u ∈ S) (hv : v ∉ S)
     (hS : ∀ ⦃x y : V⦄, T.Adj x y → s(x, y) ≠ s(u, v) → (x ∈ S ↔ y ∈ S)) :
     edgeSide T u v = S := by
-  have inv : ∀ a b, (T.deleteEdges {s(u, v)}).Reachable a b → (a ∈ S ↔ b ∈ S) := by
-    intro a b h
-    rw [reachable_iff_reflTransGen] at h
-    induction h with
-    | refl => exact Iff.rfl
-    | tail _ hbc ih =>
-      rw [deleteEdges_adj, Set.mem_singleton_iff] at hbc
-      exact ih.trans (hS hbc.1 hbc.2)
   ext x
   constructor
   · intro hx
-    exact (inv u x (mem_edgeSide.mp hx)).mp hu
+    exact ((mem_edgeSide.mp hx).mem_iff_of_forall_adj hS).mp hu
   · intro hx
     by_contra hx'
     have h := (mem_edgeSide_swap hT huv x).mpr hx'
     rw [mem_edgeSide, Sym2.eq_swap] at h
-    exact hv ((inv v x h).mpr hx)
+    exact hv ((h.mem_iff_of_forall_adj hS).mpr hx)
 
 end SimpleGraph

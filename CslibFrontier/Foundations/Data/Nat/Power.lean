@@ -15,17 +15,21 @@ import Mathlib.Tactic.Ring
 /-!
 # Inequalities on powers of natural numbers
 
-Elementary inequalities on powers and products of natural numbers, in particular powers of two
-with scaled exponents: products and sums of quantities bounded by `2 ^ (a * k)` and `2 ^ (b * k)`,
-and bounds by exponentials.
+Elementary inequalities on powers and products of natural numbers: powers of polynomial bounds
+`M * Y ^ q`, powers of two with scaled exponents (products and sums of quantities bounded by
+`2 ^ (a * k)` and `2 ^ (b * k)`), and bounds by exponentials.
 
 ## Main results
 
 * `Nat.mul_le_two_pow_add_mul`: `x ≤ 2 ^ (a * k) → y ≤ 2 ^ (b * k) → x * y ≤ 2 ^ ((a + b) * k)`.
 * `Nat.add_le_two_pow_add_add_one_mul`:
   `1 ≤ k → x ≤ 2 ^ (a * k) → y ≤ 2 ^ (b * k) → x + y ≤ 2 ^ ((a + b + 1) * k)`.
+* `Nat.pow_le_pow_mul_pow_of_le_mul_pow`: `a ≤ M * Y ^ q → a ^ k ≤ M ^ k * Y ^ (q * k)`.
+* `Nat.add_one_pow_le_of_le_mul_pow`:
+  `0 < Y → L ≤ p * Y ^ q → (L + 1) ^ k ≤ (p + 1) ^ k * Y ^ (q * k)`.
 * `Nat.le_two_pow_mul`: `1 ≤ k → c ≤ 2 ^ (c * k)`.
 * `Nat.mul_add_one_pow_le`: `(R + 1) * d ≤ M → R * (M + 1) ^ d ≤ (R + 1) * M ^ d`.
+* `Nat.two_mul_lt_two_pow`: `3 ≤ w → 2 * w < 2 ^ w`.
 * `Nat.sq_le_two_pow`: `4 ≤ s → s ^ 2 ≤ 2 ^ s`.
 * `Nat.pow_le_two_pow`: `1 ≤ D → 4 * D ^ 2 ≤ b → b ^ D ≤ 2 ^ b`.
 * `Nat.succ_pow_sub_pow_le`: `(c + 1) ^ (j + 1) - c ^ (j + 1) ≤ (j + 1) * (c + 1) ^ j`.
@@ -58,6 +62,20 @@ theorem add_le_two_pow_add_add_one_mul {k a b x y : ℕ} (hk : 1 ≤ k) (hx : x 
     x + y ≤ 2 ^ ((a + b) * k) * 2 := by omega
     _ = 2 ^ ((a + b) * k + 1) := (pow_succ ..).symm
     _ ≤ _ := Nat.pow_le_pow_right (by omega) (by nlinarith)
+
+/-- Powers of a polynomial bound: `a ≤ M Y ^ q` gives `a ^ k ≤ M ^ k Y ^ (q k)`. -/
+theorem pow_le_pow_mul_pow_of_le_mul_pow {a M Y q : ℕ} (h : a ≤ M * Y ^ q) (k : ℕ) :
+    a ^ k ≤ M ^ k * Y ^ (q * k) := by
+  rw [pow_mul, ← mul_pow]
+  exact Nat.pow_le_pow_left h k
+
+/-- Powers of `L + 1` under a polynomial bound `L ≤ p Y ^ q` with `0 < Y`:
+`(L + 1) ^ k ≤ (p + 1) ^ k Y ^ (q k)`. -/
+theorem add_one_pow_le_of_le_mul_pow {L p q Y : ℕ} (hY : 0 < Y) (h : L ≤ p * Y ^ q) (k : ℕ) :
+    (L + 1) ^ k ≤ (p + 1) ^ k * Y ^ (q * k) := by
+  refine pow_le_pow_mul_pow_of_le_mul_pow ?_ k
+  have h1 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY
+  nlinarith
 
 /-- A constant `c` is below `2 ^ (c * k)` for `k ≥ 1`. -/
 theorem le_two_pow_mul (c k : ℕ) (hk : 1 ≤ k) : c ≤ 2 ^ (c * k) :=
@@ -101,6 +119,12 @@ theorem mul_add_one_pow_le {R M d : ℕ} (h : (R + 1) * d ≤ M) :
         rw [show d + r - d = r by omega]
         nlinarith
     _ = (R + 1) * M ^ d * (M - d) := by ring
+
+/-- For `w ≥ 3`, `2 * w < 2 ^ w`. -/
+theorem two_mul_lt_two_pow {w : ℕ} (hw : 3 ≤ w) : 2 * w < 2 ^ w := by
+  induction w, hw using Nat.le_induction with
+  | base => decide
+  | succ k _ ih => rw [pow_succ]; omega
 
 /-- For `s ≥ 4`, `s ^ 2 ≤ 2 ^ s`. -/
 theorem sq_le_two_pow : ∀ {s : ℕ}, 4 ≤ s → s ^ 2 ≤ 2 ^ s

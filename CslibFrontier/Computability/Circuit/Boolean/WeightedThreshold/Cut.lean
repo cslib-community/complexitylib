@@ -14,8 +14,8 @@ import CslibFrontier.Foundations.Data.Finset.Quantile
 # Median-cut and coordinate-split restrictions for weighted threshold programs
 
 This module proves the coordinate-split and median-cut rectangle-extraction lemmas for weighted
-threshold programs. Given a coordinate split `U : Finset (Fin n)` and subsets `A ⊆ U` and `B ⊆ Uᶜ`
-of inputs fixed to `false`, we restrict the remaining coordinates `P ⊆ (U → Bool)` and
+threshold programs. Given a coordinate split `U : Finset (Fin n)` and sets `A` and `B` of inputs
+fixed to `false` on `U` and `Uᶜ`, we restrict the remaining coordinates `P ⊆ (U → Bool)` and
 `Q ⊆ (↥Uᶜ → Bool)` gate by gate in topological order so that every gate of the program becomes
 constant on the induced combinatorial rectangle:
 
@@ -143,22 +143,6 @@ private theorem weightedSum_eq_zero_of_zero (w : Fin n → ℝ) (x : Fin n → B
   · simp [hw]
   · simp [h i hw]
 
-private theorem eval_gate_eq_of_lt (prog : Program signature n g)
-    (x : Fin n → Bool) (v : Fin g → Bool) (j : Fin g)
-    (hv : ∀ k : Fin g, k < j → prog.eval interpretation x k = v k) :
-    prog.eval interpretation x j =
-      decide ((prog.lines j).op.threshold ≤
-        weightedSum (inputWeight prog j) x +
-          ∑ k : Fin g, if k < j then gateWeight prog j k * (v k).toNat else 0) := by
-  rw [eval_gate_eq]
-  congr 2
-  rw [weightedSum]
-  congr 1
-  refine sum_congr rfl fun k _ => ?_
-  by_cases hk : k < j
-  · simp [hk, hv k hk]
-  · simp [hk, gateWeight_eq_zero_of_le prog j k (le_of_not_gt hk)]
-
 /-! ### Medians and halving -/
 
 /-- Every finite set `P` equipped with a real-valued function `f` has a threshold `μ` such that
@@ -204,7 +188,7 @@ theorem le_card_of_pow_le {m card t k K : ℕ} (hpow : 2 ^ m ≤ card * 2 ^ t)
 
 /-! ### Initial subcubes with fixed coordinates -/
 
-private theorem exists_initial (S A : Finset (Fin n)) (hA : A ⊆ S) :
+private theorem exists_initial (S A : Finset (Fin n)) :
     ∃ P : Finset (S → Bool),
       2 ^ (S.card - A.card) ≤ P.card ∧
       ∀ p ∈ P, ∀ i : S, (i : Fin n) ∈ A → p i = false := by
@@ -219,7 +203,8 @@ private theorem exists_initial (S A : Finset (Fin n)) (hA : A ⊆ S) :
     rwa [dite_eq_left i.2, dite_eq_left i.2] at this
   refine ⟨univ.image ext, ?_, ?_⟩
   · rw [card_image_of_injective _ hinj, card_univ, Fintype.card_fun,
-      Fintype.card_bool, Fintype.card_coe, card_sdiff_of_subset hA]
+      Fintype.card_bool, Fintype.card_coe]
+    exact Nat.pow_le_pow_right (by omega) (le_card_sdiff A S)
   · intro p hp i hi
     obtain ⟨f, -, rfl⟩ := mem_image.mp hp
     simp [ext, hi]
@@ -293,11 +278,10 @@ private def CutInv (prog : Program signature n g) (U A B : Finset (Fin n)) (m : 
     2 ^ (U.card - A.card) ≤ P.card * 2 ^ touchBelow prog U A m ∧
     2 ^ (Uᶜ.card - B.card) ≤ Q.card * 2 ^ touchBelow prog Uᶜ B m
 
-private theorem cutInv_zero (prog : Program signature n g) {U A B : Finset (Fin n)}
-    (hA : A ⊆ U) (hB : B ⊆ Uᶜ) :
+private theorem cutInv_zero (prog : Program signature n g) (U A B : Finset (Fin n)) :
     CutInv prog U A B 0 := by
-  obtain ⟨P, hPcard, hPzero⟩ := exists_initial U A hA
-  obtain ⟨Q, hQcard, hQzero⟩ := exists_initial Uᶜ B hB
+  obtain ⟨P, hPcard, hPzero⟩ := exists_initial U A
+  obtain ⟨Q, hQcard, hQzero⟩ := exists_initial Uᶜ B
   refine ⟨P, Q, fun _ => false, hPzero, hQzero,
     fun _ _ _ _ k hk => absurd hk (Nat.not_lt_zero _),
     by simpa [touchBelow_zero] using hPcard,
@@ -310,7 +294,7 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
   obtain ⟨P, Q, v, hPzero, hQzero, hv, hP, hQ⟩ := h
   set j₀ : Fin g := ⟨m, hm⟩
   set c : ℝ :=
-    (∑ k : Fin g, if k < j₀ then gateWeight prog j₀ k * (v k).toNat else 0) -
+    (∑ k : Fin g, gateWeight prog j₀ k * (v k).toNat) -
       (prog.lines j₀).op.threshold
   set α : (U → Bool) → ℝ :=
     fun p => weightedSum (inputWeight prog j₀) (glue U p fun _ => false)
@@ -319,9 +303,10 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
   have hgate : ∀ p ∈ P, ∀ q ∈ Q,
       prog.eval interpretation (glue U p q) j₀ = decide (0 ≤ α p + β q + c) := by
     intro p hp q hq
-    rw [eval_gate_eq_of_lt prog (glue U p q) v j₀
-      (fun k hk => hv p hp q hq k (Fin.lt_def.mp hk)),
-      weightedSum_glue]
+    rw [eval_gate_eq_of_forall_lt prog (glue U p q) j₀
+      fun k hk => hv p hp q hq k (Fin.lt_def.mp hk)]
+    change decide (_ ≤ weightedSum (inputWeight prog j₀) (glue U p q) + _) = _
+    rw [weightedSum_glue]
     apply decide_eq_decide.mpr
     dsimp only [α, β, c]
     constructor <;> intro <;> linarith
@@ -412,30 +397,29 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
       by rwa [htU], by rwa [htV]⟩
     rw [hgate p hp q hq, hαzero hU p hp, hβzero hV q hq, zero_add, zero_add]
 
-private theorem cutInv_all (prog : Program signature n g) {U A B : Finset (Fin n)}
-    (hA : A ⊆ U) (hB : B ⊆ Uᶜ) :
+private theorem cutInv_all (prog : Program signature n g) (U A B : Finset (Fin n)) :
     ∀ m ≤ g, CutInv prog U A B m := by
   intro m hm
   induction m with
-  | zero => exact cutInv_zero prog hA hB
+  | zero => exact cutInv_zero prog U A B
   | succ m ih => exact cutInv_succ prog U A B (by omega) (ih (by omega))
 
 /-! ### Rectangle extraction and cut bounds -/
 
 /-- **Unified median-cut and coordinate-fixing rectangle extraction.** For any split `U` and
-sets `A ⊆ U` and `B ⊆ Uᶜ` of coordinates fixed to `false` on `U` and `Uᶜ`, there is a
+sets `A` and `B` of coordinates fixed to `false` on `U` and `Uᶜ` respectively, there is a
 combinatorial rectangle `P × Q` on which the entire gate-evaluation vector `p.eval interpretation`
 is constant, with `P` losing at most `|A|` coordinates initially and one factor of `2` per gate
 whose support on `U` is not contained in `A` (and symmetrically for `Q`). -/
 theorem exists_rectangle_of_cut_with_fixed (p : Program signature n g)
-    (U A B : Finset (Fin n)) (hA : A ⊆ U) (hB : B ⊆ Uᶜ) :
+    (U A B : Finset (Fin n)) :
     ∃ (P : Finset (U → Bool)) (Q : Finset (↥Uᶜ → Bool)) (v : Fin g → Bool),
       (∀ x ∈ P, ∀ y ∈ Q, p.eval interpretation (glue U x y) = v) ∧
       2 ^ (U.card - A.card) ≤
         P.card * 2 ^ (univ.filter fun j => ¬ inputSupport p j ∩ U ⊆ A).card ∧
       2 ^ (Uᶜ.card - B.card) ≤
         Q.card * 2 ^ (univ.filter fun j => ¬ inputSupport p j ∩ Uᶜ ⊆ B).card := by
-  obtain ⟨P, Q, v, _, _, hv, hP, hQ⟩ := cutInv_all p hA hB g le_rfl
+  obtain ⟨P, Q, v, _, _, hv, hP, hQ⟩ := cutInv_all p U A B g le_rfl
   rw [touchBelow_top] at hP hQ
   refine ⟨P, Q, v, fun x hx y hy => funext fun k => hv x hx y hy k k.isLt, hP, hQ⟩
 
@@ -450,20 +434,20 @@ theorem exists_rectangle_of_cut (p : Program signature n g)
       2 ^ U.card ≤ P.card * 2 ^ (univ.filter fun j => (inputSupport p j ∩ U).Nonempty).card ∧
       2 ^ Uᶜ.card ≤ Q.card * 2 ^ (univ.filter fun j => (inputSupport p j ∩ Uᶜ).Nonempty).card := by
   obtain ⟨P, Q, v, hv, hP, hQ⟩ :=
-    exists_rectangle_of_cut_with_fixed p U ∅ ∅ (empty_subset U) (empty_subset Uᶜ)
+    exists_rectangle_of_cut_with_fixed p U ∅ ∅
   refine ⟨P, Q, readout v, fun x hx y hy => ?_, ?_, ?_⟩
   · rw [← hreadout, hv x hx y hy]
   · simpa [subset_empty, nonempty_iff_ne_empty] using hP
   · simpa [subset_empty, nonempty_iff_ne_empty] using hQ
 
 /-- **Coordinate-split rectangle extraction.** When every gate's input support is contained in
-`U` or in `Uᶜ`, fixing `A ⊆ U` and `B ⊆ Uᶜ` to `false` yields a monochromatic rectangle `P × Q`
-that loses at most one factor of `2` per gate on `U` with support not contained in `A` (and
-symmetrically for `Uᶜ` and `B`). -/
+`U` or in `Uᶜ`, fixing the coordinates in `A` and `B` to `false` yields a monochromatic rectangle
+`P × Q` that loses at most one factor of `2` per gate on `U` with support not contained in `A`
+(and symmetrically for `Uᶜ` and `B`). -/
 theorem exists_rectangle_of_split (p : Program signature n g)
     (readout : (Fin g → Bool) → Bool) {f : Cslib.BooleanFunction n}
     (hreadout : ∀ x, readout (p.eval interpretation x) = f x)
-    (U A B : Finset (Fin n)) (hA : A ⊆ U) (hB : B ⊆ Uᶜ)
+    (U A B : Finset (Fin n))
     (hsplit : ∀ j, inputSupport p j ⊆ U ∨ inputSupport p j ⊆ Uᶜ) :
     ∃ (P : Finset (U → Bool)) (Q : Finset (↥Uᶜ → Bool)) (b : Bool),
       (∀ x ∈ P, ∀ y ∈ Q, f (glue U x y) = b) ∧
@@ -474,7 +458,7 @@ theorem exists_rectangle_of_split (p : Program signature n g)
         Q.card * 2 ^ (univ.filter fun j =>
           inputSupport p j ⊆ Uᶜ ∧ ¬ inputSupport p j ⊆ B).card := by
   classical
-  obtain ⟨P, Q, v, hv, hP, hQ⟩ := exists_rectangle_of_cut_with_fixed p U A B hA hB
+  obtain ⟨P, Q, v, hv, hP, hQ⟩ := exists_rectangle_of_cut_with_fixed p U A B
   have hfilterU : (univ.filter fun j => ¬ inputSupport p j ∩ U ⊆ A) =
       univ.filter fun j => inputSupport p j ⊆ U ∧ ¬ inputSupport p j ⊆ A := by
     ext j

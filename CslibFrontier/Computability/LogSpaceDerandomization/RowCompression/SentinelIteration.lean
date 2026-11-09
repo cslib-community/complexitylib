@@ -37,8 +37,6 @@ separate. No implementation for finding or storing the analytical sentinels is a
 
 ## Main results
 
-* `Cslib.RowCompression.firstRank_update_le_of_le`: explicit input rank and threshold ceilings
-  bound the updated padded rank, without reference-row shape hypotheses.
 * `Cslib.RowCompression.iterate_sentinelState_of_sum_abs_lt`: actual multi-step removal with
   raw-prefix preservation at marked endpoints and exact rank equality after positive prefixes.
 
@@ -72,28 +70,6 @@ section Update
 
 variable {s marked : Finset ι} {n K : ℕ} {ρ z R L : ℝ} {w : ι → Fin 2 → ℝ}
 
-/-- The updated padded first rank remains below a common input rank and threshold ceiling.
-No lower bound on raw first entries or upper bound on second entries is needed. -/
-theorem firstRank_update_le_of_le (hK : 0 < K) (hR : 0 ≤ R)
-    (hq : firstRank s K z w ≤ R) (hu : threshold s n ρ z w ≤ R) :
-    firstRank s K (newDefault s n K ρ z w) (update s n K ρ z w) ≤ R := by
-  have hb : newDefault s n K ρ z w ≤ R :=
-    max_le hu ((min_le_left _ _).trans hq)
-  refine max_le hb ?_
-  by_contra h
-  have hcard := (lt_kthLargest_iff hK hR).mp (lt_of_not_ge h)
-  have hsub : ({y ∈ s | R < update s n K ρ z w y 0} : Finset ι) ⊆
-      {y ∈ s | R < w y 0} := by
-    intro y hy
-    obtain ⟨hys, hy⟩ := mem_filter.mp hy
-    refine mem_filter.mpr ⟨hys, ?_⟩
-    by_contra hfirst
-    have hout := (update_mem_Icc (s := s) (n := n) (K := K) (ρ := ρ) (z := z) (w := w) y 0).2
-    change update s n K ρ z w y 0 ≤ max (w y 0) (newDefault s n K ρ z w) at hout
-    exact (not_lt_of_ge (hout.trans (max_le (not_lt.mp hfirst) hb))) hy
-  have hlt := (lt_kthLargest_iff hK hR).mpr (hcard.trans (card_le_card hsub))
-  exact (not_lt_of_ge (kthLargest_le_firstRank.trans hq)) hlt
-
 private theorem sentinelFirst_update_all (hmarked : marked ⊆ s)
     (hK : 0 < K) (hKn : K ≤ n) (hR : 0 ≤ R) (hL : 3 * R < L)
     (hw : ∀ y ∈ s, y ∈ marked → 3 * R < w y 0)
@@ -105,9 +81,7 @@ private theorem sentinelFirst_update_all (hmarked : marked ⊆ s)
   by_cases hm : y ∈ marked
   · exact sentinelFirst_update hK hKn hR hL hw hq hu (hmarked hm)
   · have hL' : R < L := by linarith
-    have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by
-      intro y hy hm
-      linarith [hw y hy hm]
+    have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
     rw [sentinelFirst_of_not_mem hm]
     unfold update
     rw [threshold_eq_sentinelFirst (hK.trans_le hKn) hR hL' hw' hu,

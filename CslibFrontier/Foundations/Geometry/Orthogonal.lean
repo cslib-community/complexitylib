@@ -186,38 +186,22 @@ theorem support_bounds_of_points {r : Route} {x₀ x₁ y₀ y₁ : ℤ}
 /-- Horizontal real segment membership is a one-dimensional interval test. -/
 theorem mem_horizontal {a b y : ℝ} {p : ℝ × ℝ} :
     p ∈ _root_.segment ℝ (a, y) (b, y) ↔ p.2 = y ∧ p.1 ∈ Set.uIcc a b := by
+  rw [← Prod.image_mk_segment_left, segment_eq_uIcc]
   constructor
-  · rintro ⟨s, t, hs, ht, hst, rfl⟩
-    constructor
-    · change s * y + t * y = y
-      rw [← add_mul, hst, one_mul]
-    · rw [← segment_eq_uIcc]
-      exact ⟨s, t, hs, ht, hst, rfl⟩
+  · rintro ⟨x, hx, rfl⟩
+    exact ⟨rfl, hx⟩
   · rintro ⟨hy, hx⟩
-    rw [← segment_eq_uIcc] at hx
-    obtain ⟨s, t, hs, ht, hst, hx⟩ := hx
-    refine ⟨s, t, hs, ht, hst, Prod.ext hx ?_⟩
-    change s * y + t * y = p.2
-    rw [hy]
-    rw [← add_mul, hst, one_mul]
+    exact ⟨p.1, hx, Prod.ext rfl hy.symm⟩
 
 /-- Vertical real segment membership is a one-dimensional interval test. -/
 theorem mem_vertical {x a b : ℝ} {p : ℝ × ℝ} :
     p ∈ _root_.segment ℝ (x, a) (x, b) ↔ p.1 = x ∧ p.2 ∈ Set.uIcc a b := by
+  rw [← Prod.image_mk_segment_right, segment_eq_uIcc]
   constructor
-  · rintro ⟨s, t, hs, ht, hst, rfl⟩
-    constructor
-    · change s * x + t * x = x
-      rw [← add_mul, hst, one_mul]
-    · rw [← segment_eq_uIcc]
-      exact ⟨s, t, hs, ht, hst, rfl⟩
+  · rintro ⟨y, hy, rfl⟩
+    exact ⟨rfl, hy⟩
   · rintro ⟨hx, hy⟩
-    rw [← segment_eq_uIcc] at hy
-    obtain ⟨s, t, hs, ht, hst, hy⟩ := hy
-    refine ⟨s, t, hs, ht, hst, Prod.ext ?_ hy⟩
-    change s * x + t * x = p.1
-    rw [hx]
-    rw [← add_mul, hst, one_mul]
+    exact ⟨p.2, hy, Prod.ext hx.symm rfl⟩
 
 /-- Integer points on an axis-aligned segment can be checked using integer inequalities. -/
 theorem realPoint_mem_segment_iff {a b p : Point} (h : a.1 = b.1 ∨ a.2 = b.2) :

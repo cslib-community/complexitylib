@@ -80,24 +80,6 @@ open Finset Function
 
 variable {n : ℕ}
 
-/-- Every true input of parity is isolated. -/
-private theorem card_isolatedInputs_parity (hn : 1 ≤ n) :
-    #(BitString.isolatedInputs (parity n) true) =
-      2 ^ (n - 1) := by
-  rw [← card_filter_parity_eq_true hn]
-  congr 1
-  ext x
-  simp +contextual [parity_update_not]
-
-/-- Every false input of parity is isolated. -/
-private theorem card_isolatedInputs_not_parity (hn : 1 ≤ n) :
-    #(BitString.isolatedInputs (fun x => !parity n x) true) =
-      2 ^ (n - 1) := by
-  rw [← card_filter_parity_eq_false hn]
-  congr 1
-  ext x
-  simp +contextual [parity_update_not]
-
 /-- Dividing `2 ^ (n - 1) a ≤ 2 ^ n b` by `2 ^ n`. -/
 private theorem div_two_le_of_two_pow_sub_one_mul_le (hn : 1 ≤ n) {a b : ℝ}
     (h : 2 ^ (n - 1) * a ≤ 2 ^ n * b) : a / 2 ≤ b := by
@@ -152,7 +134,8 @@ theorem CNF.two_rpow_le_length_of_any_eval_eq_parity (hn : 1 ≤ n) {k : ℕ} (h
     (hFs : ∀ x, (Fs.any fun φ => φ.eval x) = parity n x) :
     (2 : ℝ) ^ ((n : ℝ) / k - 1) ≤ Fs.length := by
   have h := CNF.card_isolatedInputs_mul_two_rpow_le_of_any hk1 hk hFs
-  rw [card_isolatedInputs_parity hn, Nat.cast_pow, Nat.cast_ofNat, mul_comm (Fs.length : ℝ)] at h
+  rw [BitString.card_isolatedInputs_parity hn, Nat.cast_pow, Nat.cast_ofNat,
+    mul_comm (Fs.length : ℝ)] at h
   rw [Real.rpow_sub_one two_ne_zero]
   exact div_two_le_of_two_pow_sub_one_mul_le hn h
 
@@ -429,7 +412,7 @@ theorem CNF.two_pow_mul_min_le_of_any_eval_eq_parity (hn : 1 ≤ n) {μ : ℝ} (
     (2 : ℝ) ^ (n - 1) * min (2 ^ μ) (μ * 2 ^ (n / μ)) ≤
       2 ^ n * (Fs.length + #(Fs.flatten.map List.toFinset).toFinset) := by
   have h := CNF.card_isolatedInputs_mul_min_le hμ hμn hFs
-  rwa [card_isolatedInputs_parity hn, Nat.cast_pow, Nat.cast_ofNat] at h
+  rwa [BitString.card_isolatedInputs_parity hn, Nat.cast_pow, Nat.cast_ofNat] at h
 
 /-- **ORs of formulas in conjunctive normal form for parity need `2 ^ (√n - 1)` gates**, taking
 `μ = √n` in `CNF.two_pow_mul_min_le_of_any_eval_eq_parity`: an OR of `m` formulas with `K` distinct
@@ -515,7 +498,7 @@ theorem CNF.rpow_mul_two_rpow_sqrt_sub_one_le_of_any_eval_eq_parity (hn : 4 ≤ 
     (n : ℝ) ^ (1 / 4 : ℝ) * 2 ^ (√(n : ℝ) - 1) ≤
       Fs.length + #(Fs.flatten.map List.toFinset).toFinset := by
   have h := CNF.card_isolatedInputs_mul_rpow_mul_two_rpow_sqrt_le hn hFs
-  rw [card_isolatedInputs_parity (by omega), Nat.cast_pow, Nat.cast_ofNat] at h
+  rw [BitString.card_isolatedInputs_parity (by omega), Nat.cast_pow, Nat.cast_ofNat] at h
   rw [Real.rpow_sub_one two_ne_zero, ← mul_div_assoc]
   exact div_two_le_of_two_pow_sub_one_mul_le (by omega) h
 
@@ -533,7 +516,8 @@ theorem DNF.rpow_mul_two_rpow_sqrt_sub_one_le_of_all_eval_eq_parity (hn : 4 ≤ 
     rw [← hGs x, List.any_map, Bool.eq_iff_iff]
     simp [List.any_eq_true]
   have h := CNF.card_isolatedInputs_mul_rpow_mul_two_rpow_sqrt_le hn hFs
-  rw [card_isolatedInputs_not_parity (by omega), Nat.cast_pow, Nat.cast_ofNat] at h
+  rw [BitString.isolatedInputs_not, BitString.card_isolatedInputs_parity (by omega), Nat.cast_pow,
+    Nat.cast_ofNat] at h
   -- negating the terms does not merge them
   have hK : #((Gs.map DNF.negate).flatten.map List.toFinset).toFinset ≤
       #(Gs.flatten.map List.toFinset).toFinset := by

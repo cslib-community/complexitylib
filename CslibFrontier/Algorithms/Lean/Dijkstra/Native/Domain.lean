@@ -146,8 +146,7 @@ theorem loop_eq_step {n K V : ℕ} (a : ℕ) (ha : a ≠ 0) :
   rw [loop]
   unfold abstractLoopStep
   simp only [bind_assoc]
-  congr 1
-  funext e
+  congr 1 with e : 1
   cases e with
   | none => rfl
   | some e =>
@@ -165,8 +164,7 @@ theorem loopStep_eq_link {n K V w : ℕ}
     PFunctor.FreeM.liftM_lift (P := (spec n K V).signature) M (.inl .extractMin)
   rw [hq]
   unfold loopStep
-  congr 1
-  funext e
+  congr 1 with e : 1
   change Option (Fin n × ℕ) at e
   cases e with
   | none => rfl

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 import Mathlib.Data.List.GetD
 
 /-!
@@ -88,25 +89,6 @@ theorem run_one (d : Data) (x : List Bool) : (machine d).run x 1 = (d, true) := 
 
 open ComputableInSpace
 
-private theorem bitsGetD : ComputableInSpace
-    (fun p : List Bool × ℕ => p.1.getD p.2 false) (encPair encBits encNat) encBool
-    (fun p => (encPair encBits encNat p).length) := by
-  have htail : ComputableInSpace List.tail encBits encBits (fun w => w.length) :=
-    of_inO (.of_linear (ListEncoding.tail encBool))
-  have h := iterate (snd encBits encNat) (fst encBits encNat) htail
-    (Q := fun p => p.1.length) (B := fun p => p.1.length)
-    (fun p i _ => by simp [List.tail_iterate]) (fun p i _ => by simp [List.tail_iterate])
-  have hd : ComputableInSpace (fun p : List Bool × ℕ => p.1.drop p.2)
-      (encPair encBits encNat) encBits (fun p => (encPair encBits encNat p).length) := by
-    refine h.weaken (.of_le_linear 8 8 fun p => ?_) |>.of_enc_eq ?_
-    · simp only [length_encPair, encBits_apply]; omega
-    · intro p; rw [List.tail_iterate]
-  have hh : ComputableInSpace (fun w : List Bool => w.headD false) encBits encBool
-      (fun w => w.length) := of_inO (.of_linear (ListEncoding.headD false))
-  refine (budget_comp_linear hh hd).of_enc_eq ?_
-  intro p
-  rw [List.getD_eq_getElem?_getD, List.headD_eq_head?_getD, List.head?_drop]
-
 /-- The selector is natively computable in charged space linear in the stored data and bit. -/
 theorem answer_inSpace : ComputableInSpace (fun p : Data × Bool => answer p.1 p.2)
     (encPair encData encBool) encBool (fun p => (encPair encData encBool p).length) := by
@@ -117,7 +99,7 @@ theorem answer_inSpace : ComputableInSpace (fun p : Data × Bool => answer p.1 p
   have hlt := budget_comp_lin natLt (linear_succ) (budget_prod hi hc)
   have hsub := budget_natSub hi hc
   refine (budget_ite hlt (snd _ _)
-    (budget_comp_linear bitsGetD (budget_prod hs hsub))).of_enc_eq ?_
+    (budget_comp_linear (bitsGetD false) (budget_prod hs hsub))).of_enc_eq ?_
   intro p
   simp [answer]
 

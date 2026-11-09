@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.CellProbe.Randomized
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.SupportTsum
 
 /-!
 # Randomized Cell-Probe State-Transition Implementations
@@ -422,42 +423,12 @@ noncomputable abbrev ofFn {f : (s : D.State) → (o : D.Op) → D.State × D.Res
       rw [PMF.mem_support_map_iff] at hq_step
       obtain ⟨_, _, rfl⟩ := hq_step
       rfl
-    · have hPot_inner : ∀ t : CoupledState Seed D.State cells w,
-          (∑' q', μ_step t q' * (potential q'.seed q'.mem : ℝ≥0∞)) =
-            ∑' q, μ_det (proj t) q * (potential q.1 q.2 : ℝ≥0∞) := by
-        intro t
-        dsimp only [μ_step]
-        rw [PMF.tsum_map_mul]
-      simp_rw [hPot_inner]
-      have hLHS :
-          (∑' t, ν t * ((P.step o).expectedProbes t.mem +
-              ∑' q, μ_det (proj t) q * (potential q.1 q.2 : ℝ≥0∞))) =
-            ∑' p, ν_det p * ((P.step o).expectedProbes p.2 +
-              ∑' q, μ_det p q * (potential q.1 q.2 : ℝ≥0∞)) :=
-        (PMF.tsum_map_mul ν proj fun p =>
-          (P.step o).expectedProbes p.2 +
-            ∑' q, μ_det p q * (potential q.1 q.2 : ℝ≥0∞)).symm
-      have hRHS_pot :
-          (∑' p, ν_det p * (potential p.1 p.2 : ℝ≥0∞)) =
-            ∑' t, ν t * (potential t.seed t.mem : ℝ≥0∞) :=
-        PMF.tsum_map_mul ν proj fun p => (potential p.1 p.2 : ℝ≥0∞)
-      have hRHS_charge :
-          (charge s o : ℝ≥0∞) + (∑' t, ν t * (potential t.seed t.mem : ℝ≥0∞)) =
-            ∑' t, ν t * ((charge t.state o : ℝ≥0∞) + (potential t.seed t.mem : ℝ≥0∞)) := by
-        have hch : (charge s o : ℝ≥0∞) = ∑' t, ν t * (charge t.state o : ℝ≥0∞) := by
-          calc
-            (charge s o : ℝ≥0∞)
-              = ∑' t, ν t * (charge s o : ℝ≥0∞) := by
-                  rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-            _ = ∑' t, ν t * (charge t.state o : ℝ≥0∞) := by
-                  refine tsum_congr fun t => ?_
-                  by_cases ht : t ∈ ν.support
-                  · rw [hs t ht]
-                  · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
-        rw [hch, ← tsum_add]
-        simp_rw [mul_add]
-      rw [hLHS, ← hRHS_charge, ← hRHS_pot]
-      exact hamort_det
+    · -- Pull the deterministic amortization back along `proj`. On the support the abstract
+      -- state is pinned to `s`, so the per-state charge is the constant `charge s o`.
+      simp only [ν_det, proj, PMF.tsum_map_mul] at hamort_det
+      simp only [μ_step, proj, PMF.tsum_map_mul]
+      exact hamort_det.trans_eq
+        (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun t ht => by rw [hs t ht]).symm
 
 @[simp]
 theorem ofFn_seed {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
@@ -763,22 +734,19 @@ via `Cslib.CellProbe.Randomized.Scheme.padCells`, preserving `initPotential` and
             ∑' t, ν t * (((P.step o).expectedProbes t.mem) +
               ∑' q, μ_step t q * (C.potential q.seed q.mem : ℝ≥0∞)) := by
         rw [PMF.tsum_map_mul]
-        refine tsum_congr fun t' => ?_
-        by_cases ht' : t' ∈ ν'.support
-        · refine congrArg (ν' t' * ·) ?_
-          have hpr : ((P.padCells h).step o).expectedProbes t'.mem =
-              (P.step o).expectedProbes (unpad t'.mem) := by
-            conv_lhs =>
-              rw [Cslib.CellProbe.Randomized.Scheme.padCells_step, hmem_eq t' ht',
-                RandProbeTree.expectedProbes_padCells]
-          have hpot :
-              (∑' q', μ_step' t' q' * (C.potential q'.seed (unpad q'.mem) : ℝ≥0∞)) =
-                ∑' q, μ_step (unpadState t') q * (C.potential q.seed q.mem : ℝ≥0∞) := by
-            dsimp only [μ_step', padOutcome]
-            rw [PMF.tsum_map_mul]
-            simp only [hunpad]
-          rw [hpr, hpot]
-        · rw [(PMF.apply_eq_zero_iff _ _).mpr ht', zero_mul, zero_mul]
+        refine Cslib.Probability.PMF.tsum_mul_congr_support ν' fun t' ht' => ?_
+        have hpr : ((P.padCells h).step o).expectedProbes t'.mem =
+            (P.step o).expectedProbes (unpad t'.mem) := by
+          conv_lhs =>
+            rw [Cslib.CellProbe.Randomized.Scheme.padCells_step, hmem_eq t' ht',
+              RandProbeTree.expectedProbes_padCells]
+        have hpot :
+            (∑' q', μ_step' t' q' * (C.potential q'.seed (unpad q'.mem) : ℝ≥0∞)) =
+              ∑' q, μ_step (unpadState t') q * (C.potential q.seed q.mem : ℝ≥0∞) := by
+          dsimp only [μ_step', padOutcome]
+          rw [PMF.tsum_map_mul]
+          simp only [hunpad]
+        rw [hpr, hpot]
       have hRHS :
           (∑' t, ν t * ((C.charge t.state o : ℝ≥0∞) + (C.potential t.seed t.mem : ℝ≥0∞))) =
             ∑' t', ν' t' * ((C.charge t'.state o : ℝ≥0∞) +
@@ -1315,12 +1283,10 @@ theorem seq_expected_amortized_ofFn (C : StateTransitionImpl D P s₀)
         calc
           (∑' u, ν_final u * (D.totalCostTranscript C.charge s₀ u.trace : ℝ≥0∞))
             = ∑' u, ν_final u * (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
-                refine tsum_congr fun u => ?_
-                by_cases hu : u ∈ ν_final.support
-                · obtain ⟨hops, htr, _⟩ := hsupp u hu
-                  obtain ⟨_, _, htr_eq⟩ := (D.validTranscript_iff_run s₀ u.trace u.state).mp htr
-                  rw [htr_eq, hops, D.totalCostTranscript_canonicalTranscript]
-                · rw [(PMF.apply_eq_zero_iff _ _).mpr hu, zero_mul, zero_mul]
+                refine Cslib.Probability.PMF.tsum_mul_congr_support ν_final fun u hu => ?_
+                obtain ⟨hops, htr, _⟩ := hsupp u hu
+                obtain ⟨_, _, htr_eq⟩ := (D.validTranscript_iff_run s₀ u.trace u.state).mp htr
+                rw [htr_eq, hops, D.totalCostTranscript_canonicalTranscript]
           _ = (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
                 rw [ENNReal.tsum_mul_right, ν_final.tsum_coe, one_mul]
 

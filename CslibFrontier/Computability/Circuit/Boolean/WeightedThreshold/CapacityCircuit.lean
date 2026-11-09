@@ -77,6 +77,20 @@ open Finset
 
 variable {n g : ℕ}
 
+/-- Revealing one more gate of a masked valuation: the values of `v` before `gate + 1`, with
+later gates reading `false`, are those before `gate` updated at `gate` to `v gate`. -/
+theorem ite_val_lt_succ_eq_update (v : Fin g → Bool) (gate : Fin g) :
+    (fun j : Fin g => if j.val < gate.val + 1 then v j else false) =
+      Function.update (fun j => if j.val < gate.val then v j else false) gate (v gate) := by
+  funext j
+  by_cases hj : j = gate
+  · subst j
+    simp
+  · rw [Function.update_of_ne hj]
+    have hv : j.val ≠ gate.val := fun h => hj (Fin.ext h)
+    have heq : (j.val < gate.val + 1) ↔ j.val < gate.val := by omega
+    simp only [heq]
+
 private theorem masked_eval_succ (p : Program signature n g) (gate : Fin g) (x : Fin n → Bool) :
     (fun j : Fin g => if j.val < gate.val + 1 then p.eval interpretation x j else false) =
       Function.update (fun j => if j.val < gate.val then p.eval interpretation x j else false)
@@ -84,24 +98,9 @@ private theorem masked_eval_succ (p : Program signature n g) (gate : Fin g) (x :
           (∑ i, inputWeight p gate i * (x i).toNat) +
           ∑ j, gateWeight p gate j *
             (if j.val < gate.val then p.eval interpretation x j else false).toNat)) := by
-  have heval := eval_gate_eq p x gate
-  have hsum : (∑ j, gateWeight p gate j * (p.eval interpretation x j).toNat) =
-      ∑ j, gateWeight p gate j *
-        (if j.val < gate.val then p.eval interpretation x j else false).toNat := by
-    apply sum_congr rfl
-    intro j _
-    by_cases hj : j < gate
-    · simp [hj]
-    · simp [hj, gateWeight_eq_zero_of_le p gate j (le_of_not_gt hj)]
-  rw [hsum] at heval
-  funext j
-  by_cases hj : j = gate
-  · subst j
-    simpa using heval
-  · rw [Function.update_of_ne hj]
-    have hv : j.val ≠ gate.val := fun h => hj (Fin.ext h)
-    have heq : (j.val < gate.val + 1) ↔ j.val < gate.val := by omega
-    simp only [heq]
+  rw [ite_val_lt_succ_eq_update, eval_gate_eq_of_forall_lt p x gate
+    (v := fun j => if j.val < gate.val then p.eval interpretation x j else false)
+    fun j hj => by simp [hj]]
 
 private theorem masked_eval_step (p : Program signature n g) (gate : Fin g) :
     (BlockKind.oneDim (if gate ∈ inputGates p then 1 else 0)).Step

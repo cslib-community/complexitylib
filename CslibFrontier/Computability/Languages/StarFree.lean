@@ -267,24 +267,10 @@ theorem isRegular {L : _root_.Language α} (h : IsStarFree L) : L.IsRegular :=
 /-- Over a finite alphabet, the words of length one form a star-free language, the finite union
 of the letters. -/
 theorem setOf_length_eq_one [Finite α] : IsStarFree {w : List α | w.length = 1} := by
-  have := Fintype.ofFinite α
-  classical
-  have key : ∀ s : Finset α, IsStarFree {w : List α | ∃ a ∈ s, w = [a]} := by
-    intro s
-    induction s using Finset.induction_on with
-    | empty =>
-      refine cast (congrArg IsStarFree ?_) zero
-      ext w
-      exact iff_of_false (Language.notMem_zero w) fun ⟨b, hb, _⟩ => Finset.notMem_empty b hb
-    | insert a s _ ih =>
-      refine cast (congrArg IsStarFree ?_) ((char a).add ih)
-      ext w
-      refine (Language.mem_add _ _ w).trans ?_
-      change w = [a] ∨ (∃ b ∈ s, w = [b]) ↔ ∃ b ∈ insert a s, w = [b]
-      simp [or_and_right, exists_or]
-  refine cast (congrArg IsStarFree ?_) (key Finset.univ)
+  refine cast (congrArg IsStarFree ?_) (iSup fun a : α => char a)
   ext w
-  simp [List.length_eq_one_iff]
+  change w ∈ ⨆ a : α, ({[a]} : _root_.Language α) ↔ w.length = 1
+  simp [Language.mem_iSup, List.length_eq_one_iff]
 
 /-- Over a finite alphabet, `{ε}` is star-free: it is the complement of `⊤ · Σ`. -/
 theorem one [Finite α] : IsStarFree (1 : _root_.Language α) := by
@@ -326,23 +312,11 @@ theorem singleton [Finite α] (w : List α) : IsStarFree ({w} : _root_.Language 
 languages. -/
 theorem of_finite [Finite α] {L : _root_.Language α} (hL : Set.Finite (L : Set (List α))) :
     IsStarFree L := by
-  classical
-  have key : ∀ s : Finset (List α), IsStarFree {w : List α | w ∈ s} := by
-    intro s
-    induction s using Finset.induction_on with
-    | empty =>
-      refine cast (congrArg IsStarFree ?_) zero
-      ext w
-      exact iff_of_false (Language.notMem_zero w) (Finset.notMem_empty w)
-    | insert a s _ ih =>
-      refine cast (congrArg IsStarFree ?_) ((singleton a).add ih)
-      ext w
-      refine (Language.mem_add _ _ w).trans ?_
-      change w = a ∨ w ∈ s ↔ w ∈ insert a s
-      rw [Finset.mem_insert]
-  refine cast (congrArg IsStarFree ?_) (key hL.toFinset)
+  have : Finite {w // w ∈ L} := hL.to_subtype
+  refine cast (congrArg IsStarFree ?_) (iSup fun v : {w // w ∈ L} => singleton v.1)
   ext w
-  exact hL.mem_toFinset
+  change w ∈ ⨆ v : {w // w ∈ L}, ({v.1} : _root_.Language α) ↔ w ∈ L
+  simp [Language.mem_iSup]
 
 end IsStarFree
 

@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
@@ -130,8 +131,7 @@ theorem eval_treeGame (coins : List Bool → List Bool → ℕ → List Bool) (a
     ProbComp.eval (treeGame S T depth keyLen coins adversary n) =
       (BitString.uniformList (keyLen n)).bind fun k =>
         ProbComp.eval (treeGameWith S T depth coins k adversary n) := by
-  simp only [treeGame, treeGameWith, keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, treeGame, treeGameWith, keyGen, BitString.eval_sampleList]
 
 /-- The scheme's EUF-CMA game is `treeGame`. -/
 theorem eufCmaGame_scheme {coins : List Bool → List Bool → ℕ → List Bool}
@@ -345,8 +345,8 @@ include hc in
 theorem evalDet_simulateTreeGame (adversary : Forger) (n : ℕ) (k : List Bool) :
     evalDet c (simulateTreeGame S T depth adversary n) =
       ProbComp.eval (treeGameWith S T depth (coinsOf c) k adversary n) := by
-  simp only [simulateTreeGame, treeGameWith, evalDet_bind, evalDet_pure, evalDet_nodeKeyO hc n k,
-    PMF.pure_bind, ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret]
+  simp only [pmf_norm, simulateTreeGame, treeGameWith, evalDet_bind, evalDet_pure,
+    evalDet_nodeKeyO hc n k, ProbOracleComp.eval_run_interpret]
   refine congrArg (fun p => PMF.bind p _) ?_
   rw [evalDet, OracleComp.map_run_interpret (OracleComp.isMonadHom_evalWith
     (OracleComp.sumHandler ProbComp.unifOracle (fun r : Unit × List Bool => PMF.pure (c r.2))))]

@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.Combinatorics.Hoeffding
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Sqrt
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Algebra.Order.Field.GeomSum
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 
 /-!
 # Depth-two threshold gate and wire lower bounds for Andreev's function
@@ -107,10 +108,6 @@ theorem andreev_embedUpdate_andreevLiveVar (b m : ℕ) (σ : Fin b → Fin m)
 /-- The `2 ^ b` truth-table coordinates in `Fin (2 ^ b + b * m)`. -/
 def andreevTableCoords (b m : ℕ) : Finset (Fin (2 ^ b + b * m)) :=
   univ.image (andreevTableIndex b m)
-
-/-- `andreevTableIndex b m` is injective. -/
-theorem andreevTableIndex_injective (b m : ℕ) : Function.Injective (andreevTableIndex b m) :=
-  Fin.castAdd_injective (2 ^ b) (b * m)
 
 /-- `andreevTableCoords b m` has cardinality `2 ^ b`. -/
 @[simp] theorem card_andreevTableCoords (b m : ℕ) : #(andreevTableCoords b m) = 2 ^ b := by
@@ -367,10 +364,6 @@ theorem sq_le_of_corr_le {b n : ℕ} {α β ε T B : ℝ} (hB0 : 0 ≤ B)
 
 /-! ### Explicit deviation scales -/
 
-private theorem two_pow_le_exp (k : ℕ) : (2 : ℝ) ^ k ≤ Real.exp k :=
-  (pow_le_pow_left₀ (by norm_num) (by linarith [Real.add_one_le_exp 1]) k).trans_eq
-    (by rw [← Real.exp_nat_mul, mul_one])
-
 /-- Canonical slope `α = √(2 ^ b * (b + 2 + log M))` of the deviation `t_q = α * √q + β`. -/
 noncomputable def andreevWeightScale (b M : ℕ) : ℝ :=
   Real.sqrt ((2 : ℝ) ^ b * ((b : ℝ) + 2 + Real.log M))
@@ -474,7 +467,7 @@ theorem andreevWeightTail_scale_le (b : ℕ) {M : ℕ} (hM : 1 ≤ M) :
     rw [pow_mul]; exact pow_le_pow_left₀ (by positivity) (by rw [pow_succ, ← hx]; linarith) _
   have hexpK : (2 : ℝ) ^ ((b + 1) * (b + 1) + 1 + (b + 6)) ≤ Real.exp (2 * ((b : ℝ) + 2) ^ 2) :=
     (pow_le_pow_right₀ (by norm_num) (by nlinarith)).trans
-      ((two_pow_le_exp (2 * (b + 2) ^ 2)).trans_eq (by push_cast; ring_nf))
+      ((Real.two_pow_le_exp (2 * (b + 2) ^ 2)).trans_eq (by push_cast; ring_nf))
   have hKpos : 0 < K := Real.exp_pos _
   have hK_eq : K * Real.exp (2 * ((b : ℝ) + 2) ^ 2) = 1 := by
     rw [hK, ← Real.exp_add]; simp
@@ -696,7 +689,7 @@ private theorem resource_bound_of_log_bound (b r : ℕ) {L D : ℝ} (hD : 0 ≤ 
   · have hlog : Real.log ((r : ℝ) + 1) ≤ 3 * (b : ℝ) := by
       have hr' : (r : ℝ) + 1 ≤ (2 : ℝ) ^ (3 * b) := by exact_mod_cast (show r + 1 ≤ 2 ^ (3 * b)
         by omega)
-      have he := two_pow_le_exp (3 * b)
+      have he := Real.two_pow_le_exp (3 * b)
       have hle := Real.log_le_log (by positivity : (0 : ℝ) < (r : ℝ) + 1) (hr'.trans he)
       simpa only [Real.log_exp, Nat.cast_mul, Nat.cast_ofNat] using hle
     refine hsmall.trans ?_

@@ -149,8 +149,7 @@ theorem rowNormPow_rectangle_max_le (hNu : 0 ≤ N * u) (D : Ω → V → V → 
       simp only [sum_const, nsmul_eq_mul]
       calc
         _ = ((#S : ℝ) * #T) * |E| ^ 4 := by ring
-        _ ≤ (Fintype.card V : ℝ) ^ 2 * (∑ z ∈ S, ∑ w ∈ T, |D σ z w| ^ 4) :=
-          mul_le_mul hcard he (pow_nonneg (abs_nonneg _) _) (sq_nonneg _)
+        _ ≤ (Fintype.card V : ℝ) ^ 2 * (∑ z ∈ S, ∑ w ∈ T, |D σ z w| ^ 4) := by gcongr
     _ = _ := by simp only [← mul_expect]; ring
 
 /-- Zero extension from usage to a larger rank domain preserves the exact integrated

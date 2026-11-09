@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 import CslibFrontier.Computability.Complexity.Classes.Time.BoundedExists
 import CslibFrontier.Computability.Complexity.Classes.Time.Verifier
@@ -279,7 +280,7 @@ private theorem exists_computableInO_accepts (d : ℕ) : ∃ D, ComputableInO
   have hword : ComputableInO (fun q : List Bool × List Bool × List Bool => frame q.2.1 ++ q.2.2)
       enc encBits (fun q => (enc q).length) (fun q => (enc q).length) :=
     (ComputableInO.snd encBits (encPair encBits encBits)).of_enc_eq fun _ => rfl
-  have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one.computableInO.comp hword
+  have hsym := Universal.computableInO_map_eBit.comp hword
   have hy := (ComputableInO.snd encBits (encPair encBits encBits)).fst'
   have hclock := (timeConstructible_succ_pow (k := d + 3) (by omega)).computableInO.comp hy
   have hU := computableInO_universal.comp (hdesc.prod (hsym.prod hclock))
@@ -292,11 +293,7 @@ private theorem exists_computableInO_accepts (d : ℕ) : ∃ D, ComputableInO
   have hbounds (q : List Bool × List Bool × List Bool) := by
     have hD := hcD q
     have hE := hcO q
-    have hNl : (encList encUnary ((frame q.2.1 ++ q.2.2).map eBit)).length ≤
-        3 * (frame q.2.1 ++ q.2.2).length :=
-      (length_encList_le encUnary _ (b := 1) fun s hs => by
-        obtain ⟨(_ | _), -, rfl⟩ := List.mem_map.mp hs <;> decide).trans (by
-        rw [List.length_map]; omega)
+    have hNl := length_encList_map_eBit_le (frame q.2.1 ++ q.2.2)
     have hc : q.1.length + 1 ≤ (q.1.length + 1) ^ (dd + 1) :=
       Nat.le_self_pow (Nat.succ_ne_zero _) _
     have hA : (q.1.length + 1) ^ dd ≤ (q.1.length + 1) ^ (dd + 1) :=

@@ -11,6 +11,7 @@ public import CslibFrontier.DataStructure.Dictionary.UniformProbing
 public import CslibFrontier.Foundations.Data.Nat.OddMulMod
 public import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation
 import CslibFrontier.Foundations.Data.Nat.Power
+import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation.Parameters
 import CslibFrontier.Probability.KWiseIndependent.Restriction
 import CslibFrontier.Probability.PMF.UniformBound
 import Mathlib.Data.Finset.Max
@@ -2411,6 +2412,17 @@ theorem sum_probeCount_oddStride_of_whp_kWiseIndependent
         probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
           (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
         (2 + b₁ top₁ + b₂ top₂) * B_card := by
+    -- Deterministic fallback for a bad top seed: every probe count is at most `n_max + 1`.
+    have hdet :
+        (∑ bot : Θ_bot₁ × Θ_bot₂,
+          probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
+            (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
+          (n_max + 1) * B_card := by
+      calc
+        _ ≤ ∑ _bot : Θ_bot₁ × Θ_bot₂, (n_max + 1) :=
+            Finset.sum_le_sum fun bot _ =>
+              probeCount_le_add_one (hrep ((top₁, bot.1), (top₂, bot.2))).toTableRep hdom u
+        _ = (n_max + 1) * B_card := by simp [B_card, Nat.mul_comm]
     by_cases h1 : Good₁ top₁
     · by_cases h2 : Good₂ top₂
       · have hgood := sum_probeCount_oddStride_le_of_kWiseIndependent
@@ -2418,29 +2430,9 @@ theorem sum_probeCount_oddStride_of_whp_kWiseIndependent
           (T := fun bot : Θ_bot₁ × Θ_bot₂ => T ((top₁, bot.1), (top₂, bot.2)))
           (fun bot => hrep ((top₁, bot.1), (top₂, bot.2))) hdom u
         simpa [b₁, b₂, h1, h2, B_card] using hgood
-      · have hdet :
-            (∑ bot : Θ_bot₁ × Θ_bot₂,
-              probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
-                (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
-              (n_max + 1) * B_card := by
-          calc
-            _ ≤ ∑ _bot : Θ_bot₁ × Θ_bot₂, (n_max + 1) :=
-                Finset.sum_le_sum fun bot _ =>
-                  probeCount_le_add_one (hrep ((top₁, bot.1), (top₂, bot.2))).toTableRep hdom u
-            _ = (n_max + 1) * B_card := by simp [B_card, Nat.mul_comm]
-        refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
+      · refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
         simp [b₁, b₂, h1, h2]
-    · have hdet :
-          (∑ bot : Θ_bot₁ × Θ_bot₂,
-            probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
-              (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
-            (n_max + 1) * B_card := by
-        calc
-          _ ≤ ∑ _bot : Θ_bot₁ × Θ_bot₂, (n_max + 1) :=
-              Finset.sum_le_sum fun bot _ =>
-                probeCount_le_add_one (hrep ((top₁, bot.1), (top₂, bot.2))).toTableRep hdom u
-          _ = (n_max + 1) * B_card := by simp [B_card, Nat.mul_comm]
-      refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
+    · refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
       simp only [b₁, b₂, h1, not_false_eq_true, ↓reduceIte, mul_one]
       omega
   have hrearrange :
@@ -2567,33 +2559,9 @@ theorem sum_probeCount_oddStride_doubleTab_of_codeBound_le
       3 * Fintype.card (DoubleTabOddStrideSeed c b M) := by
   let k := 2 * maxProbeCutoff n_max + 1
   let Good (T₁ : DoubleTabTopSeed c (8 * c) b) : Prop := IsKUnique k (simpleTabTuple T₁)
-  let BadTop := Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b => ¬ Good T₁
-  let B := n_max + 1
-  let Code := doubleTabCodeBound c (8 * c) 4 k
-  let N_top := Fintype.card (DoubleTabTopSeed c (8 * c) b)
-  have hB_ge : 1 ≤ B := by omega
-  have hbound_code : 2 * Code ≤ 2 ^ (3 * b) := by
-    calc 2 * Code = 2 * 1 * Code := by ring
-      _ ≤ 2 * B * Code := Nat.mul_le_mul_right Code (Nat.mul_le_mul_left 2 hB_ge)
-      _ ≤ 2 ^ (3 * b) := hbound
-  have hbad_le : 2 ^ (6 * b) * BadTop.card ≤ 2 * Code ^ 2 * N_top :=
-    card_not_isKUnique_eight_mul_le (b := b) hc hbound_code
-  have hwhp : 2 * BadTop.card * (n_max + 1) ≤ N_top := by
-    have hmul : 2 ^ (6 * b) * (2 * BadTop.card * B) ≤ 2 ^ (6 * b) * N_top := by
-      calc 2 ^ (6 * b) * (2 * BadTop.card * B)
-          = (2 * B) * (2 ^ (6 * b) * BadTop.card) := by ring
-        _ ≤ (2 * B) * (2 * Code ^ 2 * N_top) := Nat.mul_le_mul_left _ hbad_le
-        _ = (2 * B * (2 * Code ^ 2)) * N_top := by ring
-        _ ≤ (2 * B * Code) ^ 2 * N_top := by
-          refine Nat.mul_le_mul_right N_top ?_
-          have hB_sq : B ≤ B * B := Nat.le_mul_of_pos_left B hB_ge
-          nlinarith
-        _ ≤ (2 ^ (3 * b)) ^ 2 * N_top := by gcongr
-        _ = 2 ^ (6 * b) * N_top := by
-          rw [← Nat.pow_mul]
-          congr 2
-          ring
-    exact Nat.le_of_mul_le_mul_left hmul (Nat.two_pow_pos (6 * b))
+  have hwhp : 2 * (Finset.univ.filter fun T₁ : DoubleTabTopSeed c (8 * c) b => ¬ Good T₁).card *
+      (n_max + 1) ≤ Fintype.card (DoubleTabTopSeed c (8 * c) b) :=
+    two_mul_card_not_isKUnique_mul_le hc (by omega) hbound
   exact sum_probeCount_oddStride_of_whp_kWiseIndependent Good Good
     (fun _ hT₁ => isKWiseIndependentHash_doubleTabHash_of_isKUnique hU hT₁)
     (fun _ hT₂ => isKWiseIndependentHash_doubleTabHash_of_isKUnique hU hT₂)
@@ -2650,72 +2618,21 @@ theorem sum_probeCount_oddStride_doubleTab_le
   let b := (1 + Nat.clog 2 (max n_max 4)) / 2
   have hc1 : 1 ≤ c := by omega
   have hM : 1 ≤ M := by grind
-  have hclog_le : Nat.clog 2 (max n_max 4) ≤ 2 * b := by omega
-  have hmax_le_2b : max n_max 4 ≤ 2 ^ (2 * b) :=
-    (Nat.le_pow_clog (by decide) (max n_max 4)).trans
-      (Nat.pow_le_pow_right (by decide) hclog_le)
-  have hU_cb : U ≤ 2 ^ (c * b) := by
-    calc U ≤ max n_max 4 ^ c_exp := hU
-      _ ≤ max n_max 4 ^ max c_exp 1 :=
-        Nat.pow_le_pow_right (by omega) (le_max_left c_exp 1)
-      _ ≤ (2 ^ (2 * b)) ^ max c_exp 1 := by gcongr
-      _ = 2 ^ (c * b) := by
-        rw [← Nat.pow_mul]
-        congr 1
-        dsimp only [c]
-        ring
-  have hb_ge : doubleTabMinB c_exp ≤ b := by
-    have hpow_le : 2 ^ (2 * doubleTabMinB c_exp) ≤ 2 ^ Nat.clog 2 (max n_max 4) := by
-      rw [← doubleTabThreshold_eq]
-      exact (hge.trans (le_max_left n_max 4)).trans (Nat.le_pow_clog (by decide) (max n_max 4))
-    have hclog_ge : 2 * doubleTabMinB c_exp ≤ Nat.clog 2 (max n_max 4) :=
-      (Nat.pow_le_pow_iff_right (by decide)).mp hpow_le
-    omega
+  obtain ⟨hU_cb, hb_ge, hmax_le_2b⟩ : U ≤ 2 ^ (c * b) ∧ doubleTabMinB c_exp ≤ b ∧
+      max n_max 4 ≤ 2 ^ (2 * b) := doubleTab_canonical_params hge hU
   have hb_min_def : doubleTabMinB c_exp = 4 * (24 * c + 8) ^ 2 := doubleTabMinB_eq c_exp
-  have hb_8c : 8 * c ≤ b := by nlinarith
   have hb_64 : 64 ≤ b := by nlinarith
   have hcut_le : maxProbeCutoff n_max ≤ 2 * b + 4 := by grind [maxProbeCutoff]
   have h2cut_sq : 2 * maxProbeCutoff n_max + 1 ≤ b ^ 2 := by nlinarith
-  have hck_cube : c * (2 * maxProbeCutoff n_max + 1) ≤ b ^ 3 := by
-    calc c * (2 * maxProbeCutoff n_max + 1)
-        ≤ b * (b ^ 2) := Nat.mul_le_mul (by omega) h2cut_sq
-      _ = b ^ 3 := by ring
-  have hcode_pow : doubleTabCodeBound c (8 * c) 4 (2 * maxProbeCutoff n_max + 1) ≤
-      b ^ (24 * c + 5) := by
-    unfold doubleTabCodeBound
-    calc c * ((c * (2 * maxProbeCutoff n_max + 1)) ^ (2 * c) * (8 * c)) ^ 4
-        ≤ b * (((b ^ 3) ^ (2 * c) * b) ^ 4) :=
-          Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left
-            (Nat.mul_le_mul (Nat.pow_le_pow_left hck_cube (2 * c)) hb_8c) 4)
-      _ = b ^ (24 * c + 5) := by
-        rw [← Nat.pow_mul, ← pow_succ, ← Nat.pow_mul, ← pow_succ']
-        congr 1
-        ring
   have h2n_le : 2 * (n_max + 1) ≤ 2 ^ (2 * b) * b ^ 2 := by
-    have hn_le : n_max + 1 ≤ 2 * max n_max 4 := by omega
     have h4_le : 4 ≤ b ^ 2 := by nlinarith
     calc 2 * (n_max + 1)
         ≤ 4 * max n_max 4 := by omega
       _ = max n_max 4 * 4 := by ring
       _ ≤ 2 ^ (2 * b) * b ^ 2 := Nat.mul_le_mul hmax_le_2b h4_le
   have hprod_le : 2 * (n_max + 1) *
-      doubleTabCodeBound c (8 * c) 4 (2 * maxProbeCutoff n_max + 1) ≤ 2 ^ (3 * b) := by
-    calc 2 * (n_max + 1) *
-          doubleTabCodeBound c (8 * c) 4 (2 * maxProbeCutoff n_max + 1)
-        ≤ (2 ^ (2 * b) * b ^ 2) * b ^ (24 * c + 5) :=
-          Nat.mul_le_mul h2n_le hcode_pow
-      _ = 2 ^ (2 * b) * b ^ (24 * c + 7) := by
-          rw [Nat.mul_assoc, ← Nat.pow_add]
-          congr 2
-          ring
-      _ ≤ 2 ^ (2 * b) * b ^ (24 * c + 8) :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by omega) (by omega))
-      _ ≤ 2 ^ (2 * b) * 2 ^ b :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_two_pow (by omega) (hb_min_def ▸ hb_ge))
-      _ = 2 ^ (3 * b) := by
-          rw [← Nat.pow_add]
-          congr 1
-          ring
+      doubleTabCodeBound c (8 * c) 4 (2 * maxProbeCutoff n_max + 1) ≤ 2 ^ (3 * b) :=
+    mul_doubleTabCodeBound_le hb_ge h2cut_sq h2n_le
   have hw4 : 2 * (2 * maxProbeCutoff n_max) ^ 4 ≤ 2 ^ M := by
     have h2cut_le : 2 * maxProbeCutoff n_max ≤ b ^ 2 := by omega
     have hclog_le_M : Nat.clog 2 (max n_max 4) ≤ M :=

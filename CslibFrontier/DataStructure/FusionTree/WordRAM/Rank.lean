@@ -34,6 +34,7 @@ a most-significant-bit primitive. Node constants must be precomputed and loaded 
 ## Main results
 
 * `guardFlags_eq`: exact packed Boolean comparison digits.
+* `countGuards_fits`: every intermediate word of the guard count fits a half-filled word.
 * `upperRankExpr_eq_card`: the resulting inclusive rank.
 * `RankProgram.exec`: eight actual checked instructions return the inclusive rank.
 
@@ -106,6 +107,34 @@ theorem countGuards_eq {b n q : ℕ} (s : ℕ → ℕ) (hn : 0 < n)
     countGuards b n s q = ∑ i ∈ Finset.range n, (decide (q ≤ s i)).toNat := by
   rw [countGuards, guardFlags_eq s hs hq, queryMultiplier, pow_mul]
   exact countPackedFlags _ hn hb
+
+open Cslib.WordRAM in
+/-- Every intermediate word of the eight-instruction guard count fits when the packed node
+occupies at most half the word: the replicated query, the packed difference, its guards, the
+extracted flags, the count product, its middle digit, and the count. -/
+theorem countGuards_fits {w b n q : ℕ} (s : ℕ → ℕ) (hs : ∀ i < n, s i < 2 ^ b)
+    (hq : q < 2 ^ b) (hw : 2 * ((b + 1) * n) ≤ w) :
+    Fits w (q * queryMultiplier b n) ∧ Fits w (packedDifference b n s q) ∧
+      Fits w (packedDifference b n s q &&& guardMask b n) ∧ Fits w (guardFlags b n s q) ∧
+      Fits w (guardFlags b n s q * queryMultiplier b n) ∧
+      Fits w ((guardFlags b n s q * queryMultiplier b n) / 2 ^ ((b + 1) * (n - 1))) ∧
+      Fits w (countGuards b n s q) := by
+  have hpacked : (b + 1) * n ≤ w := by omega
+  have hdiff : Fits w (packedDifference b n s q) :=
+    (packedDifference_lt s hs).trans_le (Nat.pow_le_pow_right (by decide) hpacked)
+  have hflag_le : guardFlags b n s q ≤ packedDifference b n s q := by
+    rw [guardFlags, Nat.shiftRight_eq_div_pow]
+    exact (Nat.div_le_self _ _).trans Nat.and_le_left
+  have hcount : Fits w (guardFlags b n s q * queryMultiplier b n) := by
+    have h := Nat.mul_lt_mul_of_lt_of_lt (hflag_le.trans_lt (packedDifference_lt s hs))
+      (queryMultiplier_lt b n)
+    rw [← pow_add] at h
+    exact h.trans_le (Nat.pow_le_pow_right (by decide) (by omega))
+  have hdiv : Fits w ((guardFlags b n s q * queryMultiplier b n) /
+      2 ^ ((b + 1) * (n - 1))) := hcount.of_le (Nat.div_le_self _ _)
+  exact ⟨(query_mul_multiplier_lt hq).trans_le (Nat.pow_le_pow_right (by decide) hpacked),
+    hdiff, hdiff.of_le Nat.and_le_left, hdiff.of_le hflag_le, hcount, hdiv,
+    hdiv.of_le (Nat.mod_le _ _)⟩
 
 /-- An inclusive sketch rank, obtained by complementing both sides of each comparison. -/
 def upperRankExpr (b n : ℕ) (s : ℕ → ℕ) (q : ℕ) : ℕ :=
@@ -192,32 +221,12 @@ theorem exec {w b n q : ℕ} (s : ℕ → ℕ) (x : Data 10) (hn : 0 < n)
   have hp := Nat.two_pow_pos b
   have hcq : cq < 2 ^ b := by dsimp only [cq]; omega
   have hcs (i : ℕ) (_ : i < n) : cs i < 2 ^ b := by dsimp only [cs]; omega
-  have hpacked : (b + 1) * n ≤ w := by omega
   have hbitwidth : b ≤ w := by
-    have hm := Nat.mul_le_mul_left (b + 1) (show 1 ≤ n by omega)
-    simp only [mul_one] at hm
+    have := Nat.le_mul_of_pos_right (b + 1) hn
     omega
   have hqfit : Fits w cq := hcq.trans_le (Nat.pow_le_pow_right (by decide) hbitwidth)
-  have hrep : Fits w (cq * queryMultiplier b n) :=
-    (query_mul_multiplier_lt hcq).trans_le (Nat.pow_le_pow_right (by decide) hpacked)
-  have hdiff : Fits w (packedDifference b n cs cq) :=
-    (packedDifference_lt cs hcs).trans_le (Nat.pow_le_pow_right (by decide) hpacked)
-  have hmask : Fits w (packedDifference b n cs cq &&& guardMask b n) :=
-    hdiff.of_le Nat.and_le_left
-  have hflag_le : guardFlags b n cs cq ≤ packedDifference b n cs cq := by
-    rw [guardFlags, Nat.shiftRight_eq_div_pow]
-    exact (Nat.div_le_self _ _).trans Nat.and_le_left
-  have hflag : Fits w (guardFlags b n cs cq) := hdiff.of_le hflag_le
-  have hcount : Fits w (guardFlags b n cs cq * queryMultiplier b n) := by
-    have h₁ := hflag_le.trans_lt (packedDifference_lt cs hcs)
-    have h₂ := queryMultiplier_lt b n
-    have h₃ := Nat.mul_lt_mul_of_lt_of_lt h₁ h₂
-    rw [← pow_add] at h₃
-    exact h₃.trans_le (Nat.pow_le_pow_right (by decide) (by omega))
-  have hdiv : Fits w ((guardFlags b n cs cq * queryMultiplier b n) /
-      2 ^ ((b + 1) * (n - 1))) := hcount.of_le (Nat.div_le_self _ _)
-  have hmod : Fits w (upperRankExpr b n s q) := hdiv.of_le (Nat.mod_le _ _)
-  simp only [cq, cs, upperRankExpr, countGuards, guardFlags,
+  obtain ⟨hrep, hdiff, hmask, hflag, hcount, hdiv, hmod⟩ := countGuards_fits cs hcs hcq hw
+  simp only [cq, cs, countGuards, guardFlags,
     packedDifference] at hqfit hrep hdiff hmask hflag hcount hdiv hmod
   refine ⟨?_, ?_, rfl⟩
   · ram_eval [code, result, hxq, hxn, hxc, hxg, hxb, hxm, hxr, hxmax,

@@ -229,82 +229,73 @@ theorem evaln_of_model {I : ℕ → List M → Prop} (val : M → ℕ)
   intro K
   induction K using Nat.strong_induction_on with
   | _ K ihK =>
+  -- Every fact `I (encode c + 4) [k, n, x]` has `val n < val k`: fuel `0` admits no fact, and
+  -- with fuel `K + 1` the input bound `val n ≤ K` of the `evaln_succ_*_iff` lemmas holds.
+  rcases K with _ | K
+  · intro c hc k n x hk hI
+    have := (hlt n k).1 (hax c hc k n x hI).1
+    omega
+  have hnK : ∀ c, encode c ≤ C → ∀ k n x, val k = K + 1 → I (encode c + 4) [k, n, x] →
+      val n ≤ K := fun c hc k n x hk hI =>
+    Nat.lt_add_one_iff.1 (hk ▸ (hlt n k).1 (hax c hc k n x hI).1)
   intro c
   induction c with
   | zero =>
     intro hc k n x hk hI
-    obtain ⟨hnk, hcase⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
-    rw [evaln_succ_zero_iff (by omega)]
-    exact (hz x).1 hcase
+    rw [evaln_succ_zero_iff (hnK _ hc k n x hk hI)]
+    exact (hz x).1 (hax _ hc k n x hI).2
   | succ =>
     intro hc k n x hk hI
-    obtain ⟨hnk, hcase⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
-    rw [evaln_succ_succ_iff (by omega)]
-    exact (hs n x).1 hcase
+    rw [evaln_succ_succ_iff (hnK _ hc k n x hk hI)]
+    exact (hs n x).1 (hax _ hc k n x hI).2
   | left =>
     intro hc k n x hk hI
-    obtain ⟨hnk, b, hb⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
-    rw [evaln_succ_left_iff (by omega), ← (hp _ _ _).1 hb, Nat.unpair_pair]
+    obtain ⟨b, hb⟩ := (hax _ hc k n x hI).2
+    rw [evaln_succ_left_iff (hnK _ hc k n x hk hI), ← (hp _ _ _).1 hb, Nat.unpair_pair]
   | right =>
     intro hc k n x hk hI
-    obtain ⟨hnk, a, ha⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
-    rw [evaln_succ_right_iff (by omega), ← (hp _ _ _).1 ha, Nat.unpair_pair]
+    obtain ⟨a, ha⟩ := (hax _ hc k n x hI).2
+    rw [evaln_succ_right_iff (hnK _ hc k n x hk hI), ← (hp _ _ _).1 ha, Nat.unpair_pair]
   | pair cf cg ihf ihg =>
     intro hc k n x hk hI
-    obtain ⟨hnk, a, b, ha, hb, hab⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
+    obtain ⟨a, b, ha, hb, hab⟩ := (hax _ hc k n x hI).2
     have h1 := Code.encode_lt_pair cf cg
-    rw [evaln_succ_pair_iff (by omega)]
+    rw [evaln_succ_pair_iff (hnK _ hc k n x hk hI)]
     exact ⟨_, _, ihf (by omega) k n a hk ha, ihg (by omega) k n b hk hb, (hp _ _ _).1 hab⟩
   | comp cf cg ihf ihg =>
     intro hc k n x hk hI
-    obtain ⟨hnk, y, hy, hx⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
+    obtain ⟨y, hy, hx⟩ := (hax _ hc k n x hI).2
     have h1 := Code.encode_lt_comp cf cg
-    rw [evaln_succ_comp_iff (by omega)]
+    rw [evaln_succ_comp_iff (hnK _ hc k n x hk hI)]
     exact ⟨_, ihg (by omega) k n y hk hy, ihf (by omega) k y x hk hx⟩
   | prec cf cg ihf ihg =>
     intro hc k n x hk hI
-    obtain ⟨hnk, a, y, hay, hcase⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
+    obtain ⟨a, y, hay, hcase⟩ := (hax _ hc k n x hI).2
     have h1 := Code.encode_lt_prec cf cg
     have hun : (val n).unpair = (val a, val y) := by rw [← (hp _ _ _).1 hay, Nat.unpair_pair]
-    rw [evaln_succ_prec_iff (by omega), hun]
+    rw [evaln_succ_prec_iff (hnK _ hc k n x hk hI), hun]
     rcases hcase with ⟨hy0, hx⟩ | ⟨y', k', t, i, s, u, hyy, hkk, ht, hi, hs', hu, hx⟩
     · exact Or.inl ⟨(hz y).1 hy0, ihf (by omega) k a x hk hx⟩
     · rw [hs, hk] at hkk
       rw [hs] at hyy
       refine Or.inr ⟨val y', hyy, val i, ?_, ?_⟩
-      · have := ihK K' (by omega) (Code.prec cf cg) hc k' t i (by omega) hi
+      · have := ihK K (by omega) (Code.prec cf cg) hc k' t i (by omega) hi
         rwa [← (hp _ _ _).1 ht] at this
       · have := ihg (by omega) k u x hk hx
         rwa [← (hp _ _ _).1 hu, ← (hp _ _ _).1 hs'] at this
   | rfind' cf ihf =>
     intro hc k n x hk hI
-    obtain ⟨hnk, a, j, w, haj, hw, hcase⟩ := hax _ hc k n x hI
-    rw [hlt, hk] at hnk
-    obtain ⟨K', rfl⟩ : ∃ K', K = K' + 1 := ⟨K - 1, by omega⟩
+    obtain ⟨a, j, w, haj, hw, hcase⟩ := (hax _ hc k n x hI).2
     have h1 := Code.encode_lt_rfind' cf
     have hun : (val n).unpair = (val a, val j) := by rw [← (hp _ _ _).1 haj, Nat.unpair_pair]
-    rw [evaln_succ_rfind_iff (by omega), hun]
+    rw [evaln_succ_rfind_iff (hnK _ hc k n x hk hI), hun]
     refine ⟨val w, ihf (by omega) k n w hk hw, ?_⟩
     rcases hcase with ⟨hw0, rfl⟩ | ⟨hw0, k', j', t, hkk, hjj, ht, hx⟩
     · exact Or.inl ⟨(hz w).1 hw0, rfl⟩
     · rw [hs, hk] at hkk
       rw [hs] at hjj
       refine Or.inr ⟨fun h => hw0 ((hz w).2 h), ?_⟩
-      have := ihK K' (by omega) (Code.rfind' cf) hc k' t x (by omega) hx
+      have := ihK K (by omega) (Code.rfind' cf) hc k' t x (by omega) hx
       rwa [← (hp _ _ _).1 ht, hjj] at this
 
 /-! ### Completeness: the true graphs satisfy the axioms on a large initial segment -/

@@ -587,8 +587,7 @@ private theorem exists_restrict_countP_satPairs {P : Finset (Fin m)} {H : Finset
   have hcnt : F.countP (fun c => (i₀, j₀) ∈ satPairs P H c) =
       ls.countP (fun c => d ≤ #(satPairs P H c) ∧ (i₀, j₀) ∈ satPairs P H c) := by
     rw [List.countP_filter]
-    congr 1
-    funext c
+    congr 1 with c : 1
     simp [Bool.and_comm]
   rw [hcnt] at hmany
   set f := ls.countP (fun c => d ≤ #(satPairs P H c))

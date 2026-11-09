@@ -164,6 +164,25 @@ theorem gateWeight_eq_zero_of_le (p : Program signature n g) (gate prior : Fin g
   intro a ha
   exact (not_lt_of_ge h (p.lt_of_lines_wires_eq_gate gate a prior (mem_filter.mp ha).2)).elim
 
+/-- A gate's weighted sum over gate values reads only the gates before it: if its coefficients
+vanish from `gate` on, two valuations agreeing before `gate` give the same sum. Instantiate `w`
+with `gateWeight p gate` and `gateWeight_eq_zero_of_le p gate`. -/
+theorem sum_mul_toNat_congr_of_lt {w : Fin g → ℝ} {gate : Fin g}
+    (hw : ∀ j, gate ≤ j → w j = 0) {u v : Fin g → Bool} (h : ∀ j < gate, u j = v j) :
+    ∑ j, w j * (u j).toNat = ∑ j, w j * (v j).toNat := by
+  refine sum_congr rfl fun j _ => ?_
+  by_cases hj : j < gate
+  · rw [h j hj]
+  · rw [hw j (le_of_not_gt hj), zero_mul, zero_mul]
+
+/-- The dense gate equation, evaluated on any valuation `v` of the gates that agrees with the
+program before `gate`. -/
+theorem eval_gate_eq_of_forall_lt (p : Program signature n g) (x : Fin n → Bool) (gate : Fin g)
+    {v : Fin g → Bool} (hv : ∀ j < gate, p.eval interpretation x j = v j) :
+    p.eval interpretation x gate = decide ((p.lines gate).op.threshold ≤
+      (∑ i, inputWeight p gate i * (x i).toNat) + ∑ j, gateWeight p gate j * (v j).toNat) := by
+  rw [eval_gate_eq, sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p gate) hv]
+
 /-- The gates with a nonzero aggregated direct-input coefficient. Gates that depend on inputs
 only through earlier gates are not counted. -/
 noncomputable def inputGates (p : Program signature n g) : Finset (Fin g) :=
@@ -202,16 +221,9 @@ theorem eval_eq_of_forall_mem_inputGates_lt (p : Program signature n g)
     intro hbound
     by_cases hgate : gate ∈ inputGates p
     · exact h gate hgate hbound
-    · rw [eval_gate_eq p x gate, eval_gate_eq p y gate]
-      simp only [inputWeight_eq_zero_of_not_mem p hgate, zero_mul,
-        sum_const_zero, zero_add]
-      congr 2
-      apply sum_congr rfl
-      intro prior _
-      by_cases hprior : prior < gate
-      · rw [ih prior hprior (lt_trans hprior hbound)]
-      · rw [gateWeight_eq_zero_of_le p gate prior (le_of_not_gt hprior)]
-        simp
+    · rw [eval_gate_eq p x gate, eval_gate_eq_of_forall_lt p y gate
+        fun prior hprior => (ih prior hprior (lt_trans hprior hbound)).symm]
+      simp only [inputWeight_eq_zero_of_not_mem p hgate, zero_mul, sum_const_zero, zero_add]
 
 /-- Agreement on all input-reading gates forces agreement on every gate. -/
 theorem eval_eq_of_forall_mem_inputGates (p : Program signature n g) {x y : Fin n → Bool}

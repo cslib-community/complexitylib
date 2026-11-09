@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PolyTime
 
@@ -114,10 +115,9 @@ theorem eval_chooseLinkAt_eq_map_coins (E : Scheme)
     PMF.pure (finish ((BitString.listRows beforeCount keyCoins front).map (evaluateKey n))
       (evaluateKey n (rest.take keyCoins))
       ((BitString.listRows afterCount keyCoins (rest.drop keyCoins)).map (evaluateKey n))))]
-  simp only [chooseLinkAt, ProbComp.eval_bind,
+  simp only [pmf_norm, chooseLinkAt,
     ProbComp.eval_replicate_of_uniformList beforeCount keyCoins _ _ hkey,
-    ProbComp.eval_replicate_of_uniformList afterCount keyCoins _ _ hkey,
-    hkey, PMF.bind_map, Function.comp_def]
+    ProbComp.eval_replicate_of_uniformList afterCount keyCoins _ _ hkey, hkey]
   congr 1 with front : 1
   rw [BitString.uniformList_bind_split _ _ (fun middle back =>
     PMF.pure (finish ((BitString.listRows beforeCount keyCoins front).map (evaluateKey n))
@@ -156,9 +156,8 @@ theorem eval_modLinkAdversary_choose_eq_map_coins (E : Scheme)
       ((tape.drop (coins n)).take (coins n)) ((tape.drop (coins n)).drop (coins n))))
   rw [BitString.uniformList_bind_split _ _ (fun first rest =>
     PMF.pure (finish first (rest.take (coins n)) (rest.drop (coins n))))]
-  simp only [modLinkAdversary, ProbComp.eval_bind, sampleModIndex, ProbComp.sampleModNat,
-    ProbComp.sampleBinaryNat, ProbComp.eval_map, BitString.eval_sampleList,
-    PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, modLinkAdversary, sampleModIndex, ProbComp.sampleModNat,
+    ProbComp.sampleBinaryNat, BitString.eval_sampleList]
   congr 1 with first : 1
   rw [BitString.uniformList_bind_split _ _ (fun second rest => PMF.pure (finish first second rest))]
   congr 1 with second : 1

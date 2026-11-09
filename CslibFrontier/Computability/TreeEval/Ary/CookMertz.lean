@@ -259,8 +259,7 @@ private theorem foldl_gateRoundWith_eq
   | nil => simp
   | cons u us ih =>
     rw [List.foldl_cons, gateRoundWith_eq E hp, ih, Function.update_idem, Function.update_self]
-    congr 1
-    funext i
+    congr 1 with i : 1
     have hreg (j : Fin d) : Function.update S t (fun i =>
         S t i - c * E f (fun j k => (u : K) * S (reg t j) k + v j k) i)
           (reg t j) = S (reg t j) := Function.update_of_ne (reg_ne t j) _ _
@@ -284,8 +283,7 @@ theorem procWith_eq [DecidableEq K]
   | leaf v => rfl
   | node f ch ih =>
     rw [procWith, foldl_gateRoundWith_eq E (v := fun j => e (ch j).eval) fun j => ih j]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [← List.sum_toFinset _ hnd, show us.toFinset = Finset.univ by ext; simp [hmem]]
     rw [hE]
     simp [Tree.eval]

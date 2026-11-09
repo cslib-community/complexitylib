@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.MachineLearning.Rademacher.Classification
 import CslibFrontier.MachineLearning.Rademacher.Generalization
 import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
+import CslibFrontier.Probability.PMF.ToReal
 
 /-! Checks for Rademacher complexity: a single function has complexity `0`; the two constants
 `±1` on a one-point sample have complexity exactly `1`, against Massart's bound `√(2 log 2)`; the
@@ -111,8 +112,7 @@ example (D : PMF Bool) :
     refine sqrt_le_of_le_sq (by norm_num) ?_
     push_cast
     nlinarith
-  refine le_trans (ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Cslib.Probability.PMF.pi fun _ : Fin 100 => D).toOuterMeasure.mono ?_))
+  refine le_trans (Cslib.Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (rademacher_generalization_bound_of_finset D (by norm_num) (fun f hf => mem_Icc_of_mem_two hf)
       (by norm_num : (0 : ℝ) < 1 / 20))
   rintro S ⟨f, hf, hlt⟩
@@ -142,8 +142,7 @@ example (D : PMF Bool) :
     refine sqrt_le_of_le_sq (by norm_num) ?_
     push_cast
     nlinarith
-  refine le_trans (ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Cslib.Probability.PMF.pi fun _ : Fin 10000 => D).toOuterMeasure.mono ?_))
+  refine le_trans (Cslib.Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (empiricalRademacherComplexity_generalization_bound D (by norm_num) zero_lt_one
       (F := (two : Set (Bool → ℝ))) (fun f hf => mem_Icc_of_mem_two hf)
       (by norm_num : (0 : ℝ) < 1 / 20))
@@ -257,8 +256,7 @@ example (D : PMF (Bool × Bool)) :
     refine sqrt_le_of_le_sq (by norm_num) ?_
     push_cast
     nlinarith
-  refine le_trans (ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Cslib.Probability.PMF.pi fun _ : Fin 65536 => D).toOuterMeasure.mono ?_))
+  refine le_trans (Cslib.Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (vc_classification_bound D (C := Set.univ) (d := 2) (fun W _ => by simpa using W.card_le_univ)
       (by norm_num) (by norm_num) (by norm_num : (0 : ℝ) < 1 / 20))
   rintro S ⟨h, hlt⟩
@@ -281,8 +279,7 @@ example (D : PMF (Bool × Bool)) {A : Learner Bool Bool 65536} (hA : IsERM A Set
     refine sqrt_le_of_le_sq (by norm_num) ?_
     push_cast
     nlinarith
-  refine le_trans (ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Cslib.Probability.PMF.pi fun _ : Fin 65536 => D).toOuterMeasure.mono ?_))
+  refine le_trans (Cslib.Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (hA.vc_agnostic_bound D (d := 2) (fun W _ => by simpa using W.card_le_univ) (by norm_num)
       (by norm_num) (by norm_num : (0 : ℝ) < 1 / 20))
   rintro S ⟨c, hlt⟩

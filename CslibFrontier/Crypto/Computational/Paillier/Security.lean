@@ -15,10 +15,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.UniformNat
-import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
+import CslibFrontier.Crypto.Computational.UnitSampling
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
@@ -178,7 +179,7 @@ private theorem powMod_mul_val_pow_eq_ciphertext (N : ℕ) [NeZero N] (m : ℕ)
   · unfold ciphertext
     exact Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)
   · rw [natCast_ciphertext (NeZero.ne N), ZMod.unitsMap_val, ZMod.cast_eq_val, ZMod.val_natCast,
-      ← natCast_pow_self_mod, ZMod.natCast_zmod_val]
+      ← ZMod.natCast_pow_self_mod, ZMod.natCast_zmod_val]
     simp only [powMod_of_ne_zero hN2, ZMod.natCast_mod, Nat.cast_mul, Nat.cast_pow, Nat.cast_add,
       Nat.cast_one, ZMod.natCast_zmod_val, Units.val_pow_eq_pow_val]
 
@@ -196,97 +197,6 @@ private theorem uniformOfFintype_map_unitsMap (N : ℕ) [NeZero N] :
       (MonoidHom.toAdditive (ZMod.unitsMap (dvd_pow_self N two_ne_zero)))
       (ZMod.unitsMap_surjective _), PMF.map_comp]
   rfl
-
-/-- A uniform draw from `Fin M` is a uniform draw from `ZMod M`. -/
-private theorem uniformOfFintype_fin_bind (M : ℕ) [NeZero M] (k : ℕ → Game) :
-    ((PMF.uniformOfFintype (Fin M)).bind fun i => k i.val) =
-      (PMF.uniformOfFintype (ZMod M)).bind fun r => k r.val := by
-  rcases Nat.exists_eq_succ_of_ne_zero (NeZero.ne M) with ⟨m, rfl⟩
-  rfl
-
-/-- Restricting a uniform residue modulo `N` to the units changes the advantage of any
-continuation by at most the fraction `(N - φ(N)) / N` of non-units. -/
-private theorem advantage_bind_units_le (N : ℕ) [NeZero N] (k : ZMod N → Game) :
-    Game.advantage ((PMF.uniformOfFintype (ZMod N)).bind k)
-      ((PMF.uniformOfFintype (ZMod N)ˣ).bind fun u => k u) ≤
-      ((N - N.totient : ℕ) : ℝ≥0) / N := by
-  classical
-  let E : Set (ZMod N) := {x | x.val.Coprime N}
-  let S : Finset (ZMod N) := Finset.univ.filter (· ∈ E)
-  let e : (ZMod N)ˣ ≃ S := ZMod.unitsEquivCoprime.trans
-    (Equiv.subtypeEquivRight fun x => by simp [S, E])
-  have hS : S.Nonempty := ⟨_, (e 1).2⟩
-  have : Nonempty S := ⟨e 1⟩
-  have hev : ∃ a ∈ E, a ∈ (PMF.uniformOfFintype (ZMod N)).support :=
-    ⟨((1 : (ZMod N)ˣ) : ZMod N), ZMod.val_coe_unit_coprime 1,
-      Probability.PMF.mem_support_uniformOfFintype _⟩
-  have hmap : (PMF.uniformOfFintype (ZMod N)ˣ).map (fun u : (ZMod N)ˣ => (u : ZMod N)) =
-      PMF.uniformOfFinset S hS := by
-    have hcomp : (fun u : (ZMod N)ˣ => (u : ZMod N)) = Subtype.val ∘ e := rfl
-    rw [hcomp, ← PMF.map_comp, Probability.PMF.uniformOfFintype_map_equiv e,
-      Probability.PMF.uniformOfFintype_finset_map_val]
-  have hfilter : (PMF.uniformOfFintype (ZMod N)).filter E hev = PMF.uniformOfFinset S hS := by
-    refine Probability.PMF.pmf_eq_uniformOfFinset_of_ite_const hS
-      (c := (Fintype.card (ZMod N) : ℝ≥0∞)⁻¹ *
-        (∑' a, E.indicator (PMF.uniformOfFintype (ZMod N)) a)⁻¹) fun θ => ?_
-    by_cases hθ : θ ∈ E
-    · simp only [PMF.filter_apply, Set.indicator_of_mem hθ, PMF.uniformOfFintype_apply, S,
-        Finset.mem_filter, Finset.mem_univ, true_and, hθ, ↓reduceIte]
-    · simp only [PMF.filter_apply, Set.indicator_apply, hθ, ↓reduceIte, zero_mul, S,
-        Finset.mem_filter, Finset.mem_univ, true_and]
-  have hcardS : (Finset.univ.filter (· ∈ E)).card = N.totient := by
-    rw [← ZMod.card_units_eq_totient N]
-    exact ((Fintype.card_congr e).trans (Fintype.card_coe S)).symm
-  have hcount : (Finset.univ.filter (· ∈ Eᶜ)).card = N - N.totient := by
-    have h := Finset.card_filter_add_card_filter_not
-      (s := (Finset.univ : Finset (ZMod N))) (fun x => x ∈ E)
-    rw [Finset.card_univ, ZMod.card] at h
-    have h2 : Finset.univ.filter (· ∈ Eᶜ) = Finset.univ.filter (fun x => ¬ x ∈ E) := by
-      ext x
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Set.mem_compl_iff]
-    rw [h2]
-    omega
-  have hbind : (PMF.uniformOfFintype (ZMod N)ˣ).bind (fun u => k u) =
-      ((PMF.uniformOfFintype (ZMod N)ˣ).map (fun u : (ZMod N)ˣ => (u : ZMod N))).bind k := by
-    rw [PMF.bind_map]
-    rfl
-  rw [← NNReal.coe_le_coe, Game.advantage_eq_nndist, coe_nndist, hbind, hmap, ← hfilter]
-  refine (PMF.dist_bind_le _ _ k).trans (le_of_eq ?_)
-  rw [Probability.PMF.dist_filter, Probability.PMF.toOuterMeasure_uniformOfFintype_toReal, hcount,
-    ZMod.card, NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_natCast]
-
-/-- For a modulus with `n`-bit primes, the non-units are at most a `4 / 2 ^ n` fraction. -/
-private theorem card_nonunits_div_le (d : Desc) (n : ℕ) (hp : n ≤ d.p.size)
-    (hq : n ≤ d.q.size) :
-    ((d.modulus - d.modulus.totient : ℕ) : ℝ≥0) / d.modulus ≤ 4 / 2 ^ n := by
-  have hpow (x : ℕ) (hx : 0 < x) : 2 ^ x.size ≤ 2 * x := by
-    have hs : 0 < x.size := Nat.size_pos.mpr hx
-    have h := Nat.lt_size.mp (Nat.sub_lt hs one_pos)
-    calc 2 ^ x.size = 2 * 2 ^ (x.size - 1) := by
-          rw [← pow_succ', Nat.sub_add_cancel hs]
-      _ ≤ 2 * x := Nat.mul_le_mul_left 2 h
-  have hp3 : 2 < d.p := d.2.two_lt_fst
-  have hq3 : 2 < d.q := d.2.two_lt_snd
-  have hpn : 2 ^ n ≤ 2 * d.p := (Nat.pow_le_pow_right two_pos hp).trans (hpow _ (by omega))
-  have hqn : 2 ^ n ≤ 2 * d.q := (Nat.pow_le_pow_right two_pos hq).trans (hpow _ (by omega))
-  have hkey : ∀ P Q : ℕ, 2 < P → 2 < Q → 2 ^ n ≤ 2 * P → 2 ^ n ≤ 2 * Q →
-      (P * Q - (P - 1) * (Q - 1)) * 2 ^ n ≤ 4 * (P * Q) := by
-    intro P Q hP hQ hPn hQn
-    obtain ⟨P', rfl⟩ : ∃ P', P = P' + 1 := ⟨P - 1, by omega⟩
-    obtain ⟨Q', rfl⟩ : ∃ Q', Q = Q' + 1 := ⟨Q - 1, by omega⟩
-    simp only [Nat.add_sub_cancel]
-    have hsub : (P' + 1) * (Q' + 1) - P' * Q' = P' + Q' + 1 := by
-      rw [show (P' + 1) * (Q' + 1) = P' * Q' + (P' + Q' + 1) by ring, Nat.add_sub_cancel_left]
-    rw [hsub]
-    nlinarith [Nat.mul_le_mul_left (P' + 1) hQn, Nat.mul_le_mul_left (Q' + 1) hPn]
-  have hnat : (d.modulus - d.modulus.totient) * 2 ^ n ≤ 4 * d.modulus := by
-    rw [← d.totient_eq]
-    exact hkey d.p d.q hp3 hq3 hpn hqn
-  have hN : (0 : ℝ≥0) < d.modulus := by
-    have := d.one_lt_modulus
-    exact_mod_cast (by omega : 0 < d.modulus)
-  rw [div_le_div_iff₀ hN (by positivity)]
-  exact_mod_cast hnat
 
 /-! ### The hops -/
 
@@ -319,20 +229,8 @@ private theorem advantage_encrypt_dcrReal_le (d : Desc) (n : ℕ)
     simp only [Function.comp_apply, K]
     rw [powMod_mul_val_pow_eq_ciphertext]
   rw [hreal]
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod d.modulus)).bind fun x => K x.val) _).trans ?_
-  have h1 := Homomorphic.Scheme.advantage_bind_sampleModNat_fin_le
-    (n + (encNat d.modulus).length) d.modulus K
-  rw [uniformOfFintype_fin_bind] at h1
-  have h2 := advantage_bind_units_le d.modulus (fun x => K x.val)
-  have hw : (d.modulus : ℝ≥0) / 2 ^ (n + (encNat d.modulus).length) ≤ 1 / 2 ^ n := by
-    rw [encNat_apply, Nat.size_eq_bits_len, div_le_div_iff₀ (by positivity) (by positivity),
-      one_mul, pow_add, mul_comm ((2 : ℝ≥0) ^ n)]
-    gcongr
-    exact_mod_cast (Nat.lt_size_self d.modulus).le
-  have hφ := card_nonunits_div_le d n hsize.1 hsize.2
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 4 / 2 ^ n := add_le_add (h1.trans hw) (h2.trans hφ)
-    _ = 5 / 2 ^ n := by ring
+  exact Game.advantage_sampleModNat_units_le d.2.prime_fst d.2.prime_snd d.2.fst_ne_snd
+    hsize.1 hsize.2 K
 
 /-- Ingredient of the proof of [KatzLindell2020], Theorem 15.13 (the case `y = r ^ N`): the
 IND-CPA experiment for challenge bit `b` is within `5 / 2 ^ n` of the DCR real game of

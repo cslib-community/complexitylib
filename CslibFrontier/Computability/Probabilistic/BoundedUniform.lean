@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -29,7 +30,7 @@ Failure remains in the certified program's output.
 
 * `Cslib.Probability.isPPTOn_sampleUniformInterval`: unary-bound interval sampling.
 * `Cslib.Probability.isPPTOn_sampleUniformInterval_binary`: binary bounds with an efficient unary
-  sampling width and attempt budget, including exponentially large interval bounds.
+  attempt budget, including exponentially large interval bounds.
 * `Cslib.Probability.isPPTOn_sampleIntegerBox`: unary-radius runtime-dimensional boxes.
 * `Cslib.Probability.length_enc_sampleIntegerBox`: a bound for the complete framed output.
 -/
@@ -56,18 +57,18 @@ theorem isPPTOn_sampleUniformInterval {α : Type} {input : α ↪ List Bool}
         (((ComputableInPolyTime.fst e1 encUnary).trans (.fst input (encList encUnary))).trans
           hbound)))
 
-/-- Binary bounds need only a unary sampling width and attempt count. The width is the existing
-sampler's computed `log₂ bound + 1`, not a unary copy of `bound`; exponential cryptographic
-bounds are therefore permitted when these binary/unary parameter functions are efficient. -/
+/-- Binary bounds need only a unary attempt count. The sampler draws `log₂ bound + 1` bits, a
+width computed in polynomial time from the binary bound, not a unary copy of `bound`; exponential
+cryptographic bounds are therefore permitted when the bound and attempt count are efficient. -/
 @[program_certificate]
 theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bool}
-    {bound width attempts : α → ℕ}
+    {bound attempts : α → ℕ}
     (hbound : ComputableInPolyTime bound input encNat)
-    (hwidth : ComputableInPolyTime width input encUnary)
-    (hattempts : ComputableInPolyTime attempts input encUnary)
-    (hwidth_eq : ∀ a, width a = Nat.log 2 (bound a) + 1) :
+    (hattempts : ComputableInPolyTime attempts input encUnary) :
     IsPPTOn input (encOption encNat)
       (fun a => sampleUniformInterval (bound a) (attempts a)) := by
+  have hwidth : ComputableInPolyTime (fun a => Nat.log 2 (bound a) + 1) input encUnary :=
+    (hbound.trans ComputableInPolyTime.binary_log_two).unary_add' (.const 1)
   have hleft := (ComputableInPolyTime.fst input encNat).trans hbound
   have hright := ComputableInPolyTime.snd input encNat
   have hmin : ComputableInPolyTime (fun p : α × ℕ => min (bound p.1) p.2)
@@ -76,7 +77,7 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
       simp only [min_def, decide_eq_true_eq]
   have hs : IsPPTOn input encNat (fun a => sampleBoundedIndex (bound a)) :=
     ((isPPTOn_sampleBinaryNat.preprocess hwidth).map_with hmin).congr fun a => by
-      rw [sampleBoundedIndex_eq_binary, ← hwidth_eq a]
+      rw [sampleBoundedIndex_eq_binary]
   let e1 := encPair input (encList encNat)
   exact (hs.replicate hattempts).map_with
     (ComputableInPolyTime.findWithInput (.snd input (encList encNat))

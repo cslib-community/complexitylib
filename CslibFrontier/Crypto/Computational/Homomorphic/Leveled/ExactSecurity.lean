@@ -360,6 +360,37 @@ theorem advantage_bind_sampleModNat_fin_le (width M : ℕ) [NeZero M] (k : ℕ �
     (by simpa only [NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_ofNat] using
       ProbComp.dist_map_natCast_eval_sampleModNat_le width M)
 
+/-- Replacing exact uniform draws on `Fin M` and then `Fin N` by two `sampleModNat width` draws
+changes `Game.advantage` of any Boolean continuation by at most `(M + N) / 2 ^ width`. -/
+private theorem advantage_bind_sampleModNat_fin_fin_le (width M N : ℕ) [NeZero M] [NeZero N]
+    (k : ℕ → ℕ → Game) :
+    Game.advantage
+      ((ProbComp.eval (sampleModNat width M)).bind fun i =>
+        (ProbComp.eval (sampleModNat width N)).bind fun j => k i j)
+      ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+        (PMF.uniformOfFintype (Fin N)).bind fun j => k i.val j.val) ≤
+      ((M + N : ℕ) : ℝ≥0) / 2 ^ width := by
+  have hstep1 :
+      Game.advantage
+        ((ProbComp.eval (sampleModNat width M)).bind fun i =>
+          (ProbComp.eval (sampleModNat width N)).bind fun j => k i j)
+        ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+          (ProbComp.eval (sampleModNat width N)).bind fun j => k i.val j) ≤
+        (M : ℝ≥0) / 2 ^ width :=
+    advantage_bind_sampleModNat_fin_le width M _
+  have hstep2 :
+      Game.advantage
+        ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+          (ProbComp.eval (sampleModNat width N)).bind fun j => k i.val j)
+        ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+          (PMF.uniformOfFintype (Fin N)).bind fun j => k i.val j.val) ≤
+        (N : ℝ≥0) / 2 ^ width :=
+    Game.advantage_bind_le_nnreal _ _ _ fun i =>
+      advantage_bind_sampleModNat_fin_le width N fun j => k i.val j
+  refine (Game.advantage_triangle _ _ _).trans ((add_le_add hstep1 hstep2).trans_eq ?_)
+  push_cast
+  ring
+
 /-- Sample a modular residue via `ProbComp.sampleModNat width bound`, capped at `bound` so its
 unary encoding is polynomially bounded even when `bound = 0`. When `0 < bound`, every residue modulo
 `bound` is strictly below `bound`, so `sampleModIndex width bound = sampleModNat width bound`. -/
@@ -498,43 +529,8 @@ theorem advantage_exactLinkAdversary_modLinkAdversary_le
       congr 1; funext j
       simp only [i.isLt, j.isLt, ↓reduceIte]
     rw [hexact, hmod, Game.advantage_comm]
-    have hstep1 :
-        Game.advantage
-          ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-            (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i j)
-          ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-            (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i.val j) ≤
-          (depth n : ℝ≥0) / 2 ^ (coins n) :=
-      advantage_bind_sampleModNat_fin_le (coins n) (depth n) _
-    have hstep2 :
-        Game.advantage
-          ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-            (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i.val j)
-          ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-            (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i.val j.val) ≤
-          (capacity n : ℝ≥0) / 2 ^ (coins n) :=
-      Game.advantage_bind_le_nnreal _ _ _ fun i =>
-        advantage_bind_sampleModNat_fin_le (coins n) (capacity n)
-          (fun j => E.linkRunAt depth capacity test bit n i.val j)
-    have htri := Game.advantage_triangle
-      ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-        (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-          E.linkRunAt depth capacity test bit n i j)
-      ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-        (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-          E.linkRunAt depth capacity test bit n i.val j)
-      ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-        (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-          E.linkRunAt depth capacity test bit n i.val j.val)
-    have hsum :
-        (depth n : ℝ≥0) / 2 ^ (coins n) + (capacity n : ℝ≥0) / 2 ^ (coins n) =
-          ((depth n + capacity n : ℕ) : ℝ≥0) / 2 ^ (coins n) := by
-      push_cast; ring
-    exact htri.trans ((add_le_add hstep1 hstep2).trans_eq hsum)
+    exact advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
+      (E.linkRunAt depth capacity test bit n)
   · have hrun_reject (i : ℕ) (hi : i ≤ depth n) (j : ℕ) (hj : j ≤ capacity n) :
         E.linkRunAt depth capacity test bit n i j = PMF.pure false := by
       dsimp only [linkRunAt]
@@ -1075,21 +1071,8 @@ theorem isPPT_modLeveledAdversary {E : Scheme}
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     (modLeveledAdversary E coins depth capacity adversary).IsPPT := by
-  have htag (first second : Bool) :
-      ComputableInPolyTime (tagLeveledChoice first second)
-        (encPair (encPair encBool encBool) encBits)
-        (encPair (encPair encBool encBool) encBits) := by
-    unfold tagLeveledChoice
-    exact (ComputableInPolyTime.fst _ _).prod
-      (ComputableInPolyTime.bitsCons (by fun_prop)
-        (ComputableInPolyTime.bitsCons (by fun_prop)
-          (ComputableInPolyTime.snd _ _)))
-  have hswap :
-      ComputableInPolyTime swapLeveledChoice
-        (encPair (encPair encBool encBool) encBits)
-        (encPair (encPair encBool encBool) encBits) := by
-    unfold swapLeveledChoice
-    fun_prop
+  have htag := computableInPolyTime_tagLeveledChoice
+  have hswap := computableInPolyTime_swapLeveledChoice
   have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
   have hlinkFalse := Scheme.isPPT_modLinkAdversary hkeyGen hencrypt
     (isPPTOn_publicKeyGame hencrypt hadversary false) hcoins hdepth hcapacity
@@ -1240,43 +1223,8 @@ theorem advantage_exactLeveledAdversary_modLeveledAdversary_le (E : Scheme)
           exact E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity
             (publicKeyGame E adversary true) (!bit) n
         · simp only [h0, h1, ↓reduceIte]
-          have hz1 :
-              Game.advantage
-                ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-                  (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i j)
-                ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-                  (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i.val j) ≤
-                (depth n : ℝ≥0) / 2 ^ (coins n) :=
-            Scheme.advantage_bind_sampleModNat_fin_le (coins n) (depth n) _
-          have hz2 :
-              Game.advantage
-                ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-                  (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i.val j)
-                ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-                  (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i.val j.val) ≤
-                (capacity n : ℝ≥0) / 2 ^ (coins n) :=
-            Game.advantage_bind_le_nnreal _ _ _ fun i =>
-              Scheme.advantage_bind_sampleModNat_fin_le (coins n) (capacity n)
-                (fun j => leveledZeroAt E depth adversary bit n i.val j)
-          have htriZero := Game.advantage_triangle
-            ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-              (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                leveledZeroAt E depth adversary bit n i j)
-            ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-              (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                leveledZeroAt E depth adversary bit n i.val j)
-            ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-              (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-                leveledZeroAt E depth adversary bit n i.val j.val)
-          have hsumZero :
-              (depth n : ℝ≥0) / 2 ^ (coins n) + (capacity n : ℝ≥0) / 2 ^ (coins n) =
-                ((depth n + capacity n : ℕ) : ℝ≥0) / 2 ^ (coins n) := by
-            push_cast; ring
-          exact htriZero.trans ((add_le_add hz1 hz2).trans_eq hsumZero)
+          exact Scheme.advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
+            (leveledZeroAt E depth adversary bit n)
     have hstep2 :
         Game.advantage
           ((PMF.uniformOfFintype (Fin 3)).bind fun hop =>
@@ -1591,6 +1539,16 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
   let advGuessBudget (n : ℕ) :=
     c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
   have hdepth : ComputableInPolyTime (fun n => 2 * budget n) encUnary encUnary := by fun_prop
+  have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
+  have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
+  have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
+  have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
+  have hpub : PolynomiallyBounded pubLen := by
+    dsimp only [pubLen, publicKeyLengthBound]
+    fun_prop
+  have hch : PolynomiallyBounded advChooseBudget := by
+    dsimp only [advChooseBudget]
+    fun_prop
   refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalKey, evalEncrypt, evalChoose,
     evalGuess, hevalKey, hevalEncrypt, hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity,
@@ -1658,28 +1616,8 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
       omega
     exact Nat.mul_le_mul_left c_gu (Nat.pow_le_pow_left hin d_gu)
-  · have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
-    have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
-    have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
-    have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
-    have hpub : PolynomiallyBounded pubLen := by
-      dsimp only [pubLen, publicKeyLengthBound]
-      fun_prop
-    have hch : PolynomiallyBounded advChooseBudget := by
-      dsimp only [advChooseBudget]
-      fun_prop
-    exact polynomiallyBounded_leveledChooseCoinBudget hd hc hpk hct hch
-  · have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
-    have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
-    have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
-    have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
-    have hpub : PolynomiallyBounded pubLen := by
-      dsimp only [pubLen, publicKeyLengthBound]
-      fun_prop
-    have hch : PolynomiallyBounded advChooseBudget := by
-      dsimp only [advChooseBudget]
-      fun_prop
-    have hgu : PolynomiallyBounded advGuessBudget := by
+  · exact polynomiallyBounded_leveledChooseCoinBudget hd hc hpk hct hch
+  · have hgu : PolynomiallyBounded advGuessBudget := by
       dsimp only [advGuessBudget]
       fun_prop
     exact polynomiallyBounded_leveledGuessCoinBudget hd hc hct hch hgu

@@ -55,8 +55,7 @@ theorem run_sample (w : ℕ) (s : Memory.State) :
     (index (s.mem 0 - 1) >>= fun c => OracleComp.liftRight (Memory.read (c + 1))) s = _
   rw [RandomizedSpec.run_bind, RandomizedSpec.run_map, RandomizedSpec.withCoins_run_sample,
     ProbComp.eval_unifFin, PMF.map_comp, PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp only [Function.comp_apply]
   rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
   rfl
@@ -122,8 +121,7 @@ theorem realizesRand_sample {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ
   refine ((hlast.toRand.bind hinner (fun _ _ => 3) (fun _ _ => 1)).congr fun d => ?_).consequence
     ?_
   · unfold sample
-    congr 1
-    funext a
+    congr 1 with a : 1
     rw [appendWords_last]
   · intro w d s _ hs h0
     refine ⟨⟨h0, fun n s' hmem => ?_⟩, le_rfl, le_rfl⟩
@@ -235,8 +233,7 @@ theorem run_storeSample (w : ℕ) (s : Memory.State) :
         (s.mem (c.val + 1),
           (⟨Function.update s.mem 0 (s.mem (c.val + 1)), s.frontier⟩ : Memory.State)) := by
   rw [storeSample, RandomizedSpec.run_bind, run_sample, PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp only [Function.comp_apply]
   rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
   rfl

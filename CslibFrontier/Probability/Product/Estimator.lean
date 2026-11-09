@@ -415,7 +415,7 @@ theorem le_toOuterMeasure_productEstimate (μ : κ → PMF S) (A : κ → Set S)
   have hcompl := toOuterMeasure_toReal_add_compl P E
   have hmono : (P.toOuterMeasure Eᶜ).toReal ≤
       (P.toOuterMeasure {x | ε / 2 * m ≤ |productEstimate A x - m|}).toReal :=
-    ENNReal.toReal_mono (toOuterMeasure_ne_top _ _) (MeasureTheory.measure_mono hsub)
+    toOuterMeasure_toReal_mono _ hsub
   linarith
 
 end Concentration

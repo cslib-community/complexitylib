@@ -54,7 +54,7 @@ theorem eval_exec_askParty (b : Bool) {AdvQ AdvR : Type}
     ProbOracleComp.sample_pure, corruptRouter, Finset.notMem_empty, ↓dreduceIte, bind_pure_comp,
     map_pure, Fin.isValue, StateT.lift, Machine.runFrom_map, Machine.runFrom_query, Prod.map_apply,
     id_eq, Machine.closeProgram_pure, ProbComp.eval_map]
-  calc _ = PMF.map (Function.const _ b) _ := by congr 1; funext a; cases b <;> rfl
+  calc _ = PMF.map (Function.const _ b) _ := by congr 1 with a : 1; cases b <;> rfl
     _ = PMF.pure b := PMF.map_const _ _
 
 /-- Every simulator of the dummy adversary loses with certainty. -/

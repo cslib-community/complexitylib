@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Crypto.Protocols.MPC.Broadcast
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import Mathlib.Data.ZMod.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -457,10 +458,10 @@ theorem perfectSemiHonestPrivateProper_beaverMul (p m : ℕ) [NeZero p] :
             let op : ZMod p × ZMod p := ∑ j : Fin m, msgs j
             (fun i : I => beaverViewOf i.1 (xy i.1) (t i.1) msgs,
              fun i : Fin m => beaverMulShare i op (t i)) := by
-    simp only [Protocol.realJoint, evalWith_beaverMulProtocol, beaverTripleFunctionality,
-      bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_uniform,
+    simp only [pmf_norm, Protocol.realJoint, evalWith_beaverMulProtocol, beaverTripleFunctionality,
+      bind_pure_comp, ProbComp.eval_uniform,
       ProbComp.eval_sampleAdditiveShares_eq_map_completeSharesErase j₀,
-      PMF.map_comp, PMF.uniformOfFintype_bind_map]
+      PMF.uniformOfFintype_bind_map]
     refine congrArg (PMF.map · _) (funext fun ⟨a, b, cE⟩ => rfl)
   -- Express `idealJoint` as a single map over `uniformOfFintype` of `(zE, aI, bI, msgsC)`.
   have hideal :
@@ -481,10 +482,9 @@ theorem perfectSemiHonestPrivateProper_beaverMul (p m : ℕ) [NeZero p] :
                   c := z i.1 - baseTerm i.1 op (aI i) (bI i) }
                 msgs,
              z) := by
-    simp only [idealJoint, sharedMulFunctionality, beaverMulSim, bind_pure_comp,
-      ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_uniform,
-      ProbComp.eval_sampleAdditiveShares_eq_map_completeSharesErase j₀,
-      PMF.bind_map, PMF.map_comp, Function.comp_def, PMF.uniformOfFintype_bind_map]
+    simp only [pmf_norm, idealJoint, sharedMulFunctionality, beaverMulSim, bind_pure_comp,
+      ProbComp.eval_uniform, ProbComp.eval_sampleAdditiveShares_eq_map_completeSharesErase j₀,
+      PMF.uniformOfFintype_bind_map]
     refine congrArg (PMF.map · _) (funext fun ⟨zE, aI, bI, msgsC⟩ => rfl)
   rw [hideal, hreal, ← PMF.uniformOfFintype_map_equiv equiv, PMF.map_comp]
   refine congrArg (PMF.map · _) (funext fun ⟨a, b, cE⟩ => ?_)
@@ -655,8 +655,8 @@ theorem le_advantage_tamperedOpeningBitGame {p : ℕ} [NeZero p] (hp : 2 ≤ p)
       Game.advantage (tamperedOpeningRealBitGame p) (tamperedOpeningIdealBitGame p blindGuess) := by
   have : Fact (1 < p) := ⟨hp⟩
   have hreal : tamperedOpeningRealBitGame p = PMF.pure true := by
-    simp only [tamperedOpeningRealBitGame, bind_pure_comp, ProbComp.eval_bind,
-      ProbComp.eval_map, eval_tamperedOpeningReal, PMF.pure_map, decide_true]
+    simp only [pmf_norm, tamperedOpeningRealBitGame, bind_pure_comp, eval_tamperedOpeningReal,
+      decide_true]
     exact PMF.bind_const _ (PMF.pure true)
   have hideal_le : (tamperedOpeningIdealBitGame p blindGuess) true ≤ (2 : ℝ≥0∞)⁻¹ := by
     simp only [tamperedOpeningIdealBitGame, bind_pure_comp, ProbComp.eval_bind,

@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.Rational.Deformation
 public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 
 /-!
 # Cyclotomic fields and a common evaluation grid
@@ -151,28 +152,6 @@ noncomputable section
 
 variable {K : Type*} [Field K] {k : ℕ}
 
-/-- The fixed grid, independent of the coefficients, finds a nonzero value. -/
-theorem exists_eval_ne_zero (p : MvPolynomial (Fin k) K) (hp : p ≠ 0)
-    (S : Finset K) (hS : p.totalDegree < S.card) :
-    ∃ x : Fin k → K, (∀ i, x i ∈ S) ∧ eval x p ≠ 0 := by
-  classical
-  by_contra! hz
-  have hh := schwartz_zippel_totalDegree hp S
-  have he : (Fintype.piFinset (fun _ : Fin k => S)).filter (fun x => eval x p = 0) =
-      Fintype.piFinset (fun _ : Fin k => S) := by
-    apply Finset.filter_eq_self.mpr
-    intro x hx
-    exact hz x (Fintype.mem_piFinset.mp hx)
-  rw [he] at hh
-  have hpos : 0 < S.card := lt_of_le_of_lt (Nat.zero_le _) hS
-  have hpos' : (0 : ℚ≥0) < S.card := by exact_mod_cast hpos
-  have hpow : (S.card : ℚ≥0) ^ k ≠ 0 := pow_ne_zero _ (ne_of_gt hpos')
-  have hcard : (Fintype.piFinset (fun _ : Fin k => S)).card = S.card ^ k := by simp
-  rw [hcard, Nat.cast_pow, div_self hpow] at hh
-  have hlt : (p.totalDegree : ℚ≥0) / S.card < 1 :=
-    (div_lt_one hpos').mpr (by exact_mod_cast hS)
-  exact (not_lt_of_ge hh) hlt
-
 /-- The common grid specializes a list of determinant conditions
 simultaneously, rather than one formula gate at a time. -/
 theorem simultaneous (P : List (MvPolynomial (Fin k) K))
@@ -183,7 +162,7 @@ theorem simultaneous (P : List (MvPolynomial (Fin k) K))
   have hdeg : P.prod.totalDegree ≤ P.length * d := by
     refine (totalDegree_list_prod P).trans ?_
     simpa using List.sum_le_length_nsmul (P.map totalDegree) d (by simpa using hd)
-  obtain ⟨x, hx, hxp⟩ := exists_eval_ne_zero P.prod hprod S (hdeg.trans_lt hS)
+  obtain ⟨x, hx, hxp⟩ := exists_eval_ne_zero_of_totalDegree_lt_card hprod (hdeg.trans_lt hS)
   refine ⟨x, hx, ?_⟩
   intro p hp hz
   apply hxp

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Basic
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Linear
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -204,8 +205,7 @@ theorem mem_support_voleIdealDist_iff [Fintype R] [Nonempty R] (c : VOLECorrelat
 /-- Under `voleIdealDist R n`, the receiver's global key `delta` is uniformly distributed in `R`. -/
 theorem voleIdealDist_map_delta [Fintype R] [Nonempty R] (n : ℕ) :
     (voleIdealDist R n).map VOLECorrelation.delta = PMF.uniformOfFintype R := by
-  simp only [voleIdealDist, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind,
-    PMF.pure_map, voleSample_delta, PMF.bind_const, PMF.bind_pure]
+  simp only [pmf_norm, voleIdealDist, voleSample_delta, PMF.bind_const]
 
 end IdealFunctionality
 
@@ -531,8 +531,7 @@ theorem voleSample_w_eq_linear_respond (x v : Fin n → ZMod q) (c : C) :
 theorem voleInTheHeadSigma_eq_linear :
     voleInTheHeadSigma ψ target ι = SigmaProtocol.linear ψ target ι := by
   simp only [voleInTheHeadSigma, SigmaProtocol.linear]
-  congr
-  funext x y v c
+  congr with x y v c : 4
   exact voleSample_w_eq_linear_respond ι x v c
 
 @[simp]

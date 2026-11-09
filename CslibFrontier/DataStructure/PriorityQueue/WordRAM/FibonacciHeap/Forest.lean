@@ -292,6 +292,39 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
     subst hci_cw
     have hi_mem : cs[i] ∈ cs := List.getElem_mem hi
     have hnd_ci : (cs[i]).nodes.Nodup := forestNodes_nodup_tree hnd_cs hi_mem
+    have hin_node : ∀ {c : FHTree n}, c ∈ cs → ∀ {x : Fin n}, x ∈ c.nodes →
+        x ∈ (FHTree.node u cs).nodes := fun hc _ hx =>
+      List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨_, hc, hx⟩)
+    -- Only `cur` can carry the transient `pending` rank slack.
+    have hpend_ne : ∀ x, x ≠ cur → (if some x = pending then 1 else 0) = 0 := by
+      intro x hx
+      rcases hpend with rfl | rfl
+      · simp only [reduceCtorEq, ↓reduceIte]
+      · simp only [Option.some.injEq, hx, ↓reduceIte]
+    -- A sibling child containing neither `cur` nor `p` is untouched by the cut, so it stays
+    -- valid, for any `pending'` since it carries no rank slack. Both cases below use this.
+    have hsibling : ∀ {c : FHTree n}, c ∈ cs → cur ∉ c.nodes → p ∉ c.nodes →
+        ∀ pending', ValidSubtree st' pending' c := by
+      intro c hc hcur_not hp_not pending'
+      have hsub_none : ValidSubtree st none c := by
+        rcases hpend with rfl | rfl
+        · exact hsub c hc
+        · exact (hsub c hc).clear_pending fun hm =>
+            hcur_not (c.nodes_eq ▸ List.mem_cons_of_mem _ hm)
+      refine (hsub_none.frame (pending' := none) (fun x hx => ?_)
+        (fun x hx => ?_)).weaken_pending pending'
+      · have hx_in := hin_node hc hx
+        have hx_ne_cur : x ≠ cur := fun e => hcur_not (e ▸ hx)
+        have hx_ne_p : x ≠ p := fun e => hp_not (e ▸ hx)
+        exact ⟨(hin_eq x hx_in).1, hmark'.2 x hx_in hx_ne_cur, hdeg'.2 x hx_in hx_ne_p,
+          hchild_other x hx_in hx_ne_p, (hin_eq x hx_in).2⟩
+      · have hx_c : x ∈ c.nodes := c.nodes_eq ▸ List.mem_cons_of_mem c.root hx
+        have hx_in := hin_node hc hx_c
+        have hx_ne_cur : x ≠ cur := fun e => hcur_not (e ▸ hx_c)
+        obtain ⟨q, hq_c, hpq⟩ := hsub_none.par_of_mem_children x hx
+        have hq_ne_p : q ≠ p := fun e => hp_not (e ▸ hq_c)
+        have hlr := hlr_other x hx_in (by have := Fin.val_ne_of_ne hq_ne_p; omega) (by omega)
+        exact ⟨hpar'.2 x hx_in hx_ne_cur, hlr.1, hlr.2, Iff.rfl⟩
     by_cases hroot_eq : (cs[i]).root = cur
     · have hup : u = p := Fin.ext (by
         have hp_i := hpar cs[i] hi_mem
@@ -324,8 +357,7 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
         · intro x hx
           have hx_ci : x ∈ (cs[i]).nodes :=
             (cs[i]).nodes_eq ▸ List.mem_cons_of_mem (cs[i]).root hx
-          have hx_in : x ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[i], hi_mem, hx_ci⟩)
+          have hx_in := hin_node hi_mem hx_ci
           have hx_ne_cur : x ≠ cur := fun e => hcur_not_desc (e ▸ hx)
           have hx_ne_u : x ≠ u := fun e => hu_not_ci (e ▸ hx_ci)
           exact ⟨(hin_eq x hx_in).1, hmark'.2 x hx_in hx_ne_cur, hdeg'.2 x hx_in hx_ne_u,
@@ -333,8 +365,7 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
         · intro x hx
           have hx_ci : x ∈ (cs[i]).nodes :=
             (cs[i]).nodes_eq ▸ List.mem_cons_of_mem (cs[i]).root hx
-          have hx_in : x ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[i], hi_mem, hx_ci⟩)
+          have hx_in := hin_node hi_mem hx_ci
           have hx_ne_cur : x ≠ cur := fun e => hcur_not_desc (e ▸ hx)
           obtain ⟨q, hq_ci, hpq⟩ := hsub_ci_none.par_of_mem_children x hx
           have hq_ne_u : q ≠ u := fun e => hu_not_ci (e ▸ hq_ci)
@@ -374,98 +405,53 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
         have hr_ne_cur : (cs[j]).root ≠ cur := fun e =>
           forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm
             (hroot_eq ▸ (cs[i]).root_mem_nodes) (e ▸ (cs[j]).root_mem_nodes)
-        have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes :=
-          List.mem_cons_of_mem u
-            (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
+        have hr_in := hin_node (List.getElem_mem hj) (cs[j]).root_mem_nodes
         exact (hpar'.2 (cs[j]).root hr_in hr_ne_cur).trans (hpar cs[j] (List.getElem_mem hj))
       · intro T_c hTc
         obtain ⟨j, hj, _, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hTc
-        have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes :=
-          List.mem_cons_of_mem u
-            (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
+        have hr_in := hin_node (List.getElem_mem hj) (cs[j]).root_mem_nodes
         rw [(hin_eq u hu_in).2, (hin_eq (cs[j]).root hr_in).2]
         exact hprio cs[j] (List.getElem_mem hj)
       · intro j hj
+        -- Each surviving child `cs[k]`, `k ≠ i`, keeps its old rank bound.
+        have hrank_k : ∀ k (hk : k < cs.length), k ≠ i →
+            k ≤ st'.deg (cs[k]).root + st'.mark (cs[k]).root := by
+          intro k hk hki
+          have hr_ne_cur : (cs[k]).root ≠ cur := fun e =>
+            forestNodes_nodup_idx_disjoint hnd_cs hi hk (Ne.symm hki)
+              (hroot_eq ▸ (cs[i]).root_mem_nodes) (e ▸ (cs[k]).root_mem_nodes)
+          have hr_desc : (cs[k]).root ∈ forestNodes cs :=
+            mem_forestNodes_iff.mpr ⟨cs[k], List.getElem_mem hk, (cs[k]).root_mem_nodes⟩
+          have hr_ne_u : (cs[k]).root ≠ u := fun e => hnd_u (e ▸ hr_desc)
+          have hr_in : (cs[k]).root ∈ (FHTree.node u cs).nodes := List.mem_cons_of_mem u hr_desc
+          have hr_old := hrank k hk
+          rw [hpend_ne _ hr_ne_cur] at hr_old
+          rw [hdeg'.2 (cs[k]).root hr_in hr_ne_u, hmark'.2 (cs[k]).root hr_in hr_ne_cur]
+          omega
         rw [List.getElem_eraseIdx]
         by_cases hji : j < i
         · simp only [hji, ↓reduceDIte]
-          have hj_lt : j < cs.length := Nat.lt_trans hji hi
-          have hji_ne : i ≠ j := Nat.ne_of_gt hji
-          have hr_ne_cur : (cs[j]).root ≠ cur := fun e =>
-            forestNodes_nodup_idx_disjoint hnd_cs hi hj_lt hji_ne
-              (hroot_eq ▸ (cs[i]).root_mem_nodes) (e ▸ (cs[j]).root_mem_nodes)
-          have hr_desc : (cs[j]).root ∈ forestNodes cs :=
-            mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj_lt, (cs[j]).root_mem_nodes⟩
-          have hr_ne_u : (cs[j]).root ≠ u := fun e => hnd_u (e ▸ hr_desc)
-          have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes := List.mem_cons_of_mem u hr_desc
-          have hr_old := hrank j hj_lt
-          have hpend_0 : (if some (cs[j]).root = pending then 1 else 0) = 0 := by
-            rcases hpend with rfl | rfl
-            · simp only [reduceCtorEq, ↓reduceIte]
-            · simp only [Option.some.injEq, hr_ne_cur, ↓reduceIte]
-          rw [hpend_0] at hr_old
-          rw [hdeg'.2 (cs[j]).root hr_in hr_ne_u, hmark'.2 (cs[j]).root hr_in hr_ne_cur]
+          have := hrank_k j (Nat.lt_trans hji hi) (Nat.ne_of_lt hji)
           omega
         · simp only [hji, ↓reduceDIte]
-          have hj1_lt : j + 1 < cs.length := by omega
-          have hji_ne : i ≠ j + 1 := by omega
-          have hr_ne_cur : (cs[j + 1]).root ≠ cur := fun e =>
-            forestNodes_nodup_idx_disjoint hnd_cs hi hj1_lt hji_ne
-              (hroot_eq ▸ (cs[i]).root_mem_nodes) (e ▸ (cs[j + 1]).root_mem_nodes)
-          have hr_desc : (cs[j + 1]).root ∈ forestNodes cs :=
-            mem_forestNodes_iff.mpr
-              ⟨cs[j + 1], List.getElem_mem hj1_lt, (cs[j + 1]).root_mem_nodes⟩
-          have hr_ne_u : (cs[j + 1]).root ≠ u := fun e => hnd_u (e ▸ hr_desc)
-          have hr_in : (cs[j + 1]).root ∈ (FHTree.node u cs).nodes := List.mem_cons_of_mem u hr_desc
-          have hr_old := hrank (j + 1) hj1_lt
-          have hpend_0 : (if some (cs[j + 1]).root = pending then 1 else 0) = 0 := by
-            rcases hpend with rfl | rfl
-            · simp only [reduceCtorEq, ↓reduceIte]
-            · simp only [Option.some.injEq, hr_ne_cur, ↓reduceIte]
-          rw [hpend_0] at hr_old
-          rw [hdeg'.2 (cs[j + 1]).root hr_in hr_ne_u, hmark'.2 (cs[j + 1]).root hr_in hr_ne_cur]
+          have := hrank_k (j + 1) (by omega) (by omega)
           omega
       · intro T_c hTc
         obtain ⟨j, hj, hji, rfl⟩ := List.mem_eraseIdx_iff_getElem.mp hTc
-        have hcur_not_cj : cur ∉ (cs[j]).nodes := fun hm =>
-          forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hx_in_cw hm
-        have hu_not_cj : u ∉ (cs[j]).nodes := fun hm =>
-          hnd_u (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, hm⟩)
-        have hsub_j_none : ValidSubtree st none cs[j] := by
-          rcases hpend with rfl | rfl
-          · exact hsub cs[j] (List.getElem_mem hj)
-          · exact (hsub cs[j] (List.getElem_mem hj)).clear_pending fun hm =>
-              hcur_not_cj ((cs[j]).nodes_eq ▸ List.mem_cons_of_mem _ hm)
-        refine (hsub_j_none.frame (pending' := none) (fun x hx => ?_)
-          (fun x hx => ?_)).weaken_pending (some u)
-        · have hx_in : x ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, hx⟩)
-          have hx_ne_cur : x ≠ cur := fun e => hcur_not_cj (e ▸ hx)
-          have hx_ne_u : x ≠ u := fun e => hu_not_cj (e ▸ hx)
-          exact ⟨(hin_eq x hx_in).1, hmark'.2 x hx_in hx_ne_cur, hdeg'.2 x hx_in hx_ne_u,
-            hchild_other x hx_in hx_ne_u, (hin_eq x hx_in).2⟩
-        · have hx_cj : x ∈ (cs[j]).nodes :=
-            (cs[j]).nodes_eq ▸ List.mem_cons_of_mem (cs[j]).root hx
-          have hx_in : x ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, hx_cj⟩)
-          have hx_ne_cur : x ≠ cur := fun e => hcur_not_cj (e ▸ hx_cj)
-          obtain ⟨q, hq_cj, hpq⟩ := hsub_j_none.par_of_mem_children x hx
-          have hq_ne_u : q ≠ u := fun e => hu_not_cj (e ▸ hq_cj)
-          have hlr := hlr_other x hx_in (by omega) (by omega)
-          exact ⟨hpar'.2 x hx_in hx_ne_cur, hlr.1, hlr.2, Iff.rfl⟩
+        exact hsibling (List.getElem_mem hj)
+          (fun hm => forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hx_in_cw hm)
+          (fun hm => hnd_u (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, hm⟩)) _
     · have hcur_desc_ci : cur ∈ forestNodes (cs[i]).children := by
         rw [(cs[i]).nodes_eq] at hx_in_cw
         exact (List.mem_cons.mp hx_in_cw).resolve_left (Ne.symm hroot_eq)
-      have sub_in : ∀ x ∈ (cs[i]).nodes, x ∈ (FHTree.node u cs).nodes := fun x hx =>
-        List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[i], hi_mem, hx⟩)
       obtain ⟨T_cut, c', hcut_r, hc'_r, hp_in_c', hperm_ci, hvalid_cut, hvalid_c'⟩ :=
         ih cs[i] hi_mem hnd_ci hcur_desc_ci
-          (fun x hx => hin_eq x (sub_in x hx))
-          ⟨hmark'.1, fun x hx => hmark'.2 x (sub_in x hx)⟩
-          ⟨hdeg'.1, fun x hx => hdeg'.2 x (sub_in x hx)⟩
-          ⟨hpar'.1, fun x hx => hpar'.2 x (sub_in x hx)⟩
-          (fun x hx => hchild_other x (sub_in x hx))
-          (fun x hx => hlr_other x (sub_in x hx))
+          (fun x hx => hin_eq x (hin_node hi_mem hx))
+          ⟨hmark'.1, fun x hx => hmark'.2 x (hin_node hi_mem hx)⟩
+          ⟨hdeg'.1, fun x hx => hdeg'.2 x (hin_node hi_mem hx)⟩
+          ⟨hpar'.1, fun x hx => hpar'.2 x (hin_node hi_mem hx)⟩
+          (fun x hx => hchild_other x (hin_node hi_mem hx))
+          (fun x hx => hlr_other x (hin_node hi_mem hx))
       have hp_in_ci : p ∈ (cs[i]).nodes :=
         hperm_ci.subset (List.mem_append_right _ hp_in_c')
       have hu_ne_p : u ≠ p := fun e =>
@@ -493,32 +479,27 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
             hcirc.frame fun x hx => ?_, ?_⟩
           · obtain ⟨c, hc, rfl⟩ := List.mem_map.mp (hperm.subset hx)
             have hc_par : st.par c.root = u.val + 1 := hpar c hc
-            have hc_in : c.root ∈ (FHTree.node u cs).nodes :=
-              List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨c, hc, c.root_mem_nodes⟩)
+            have hc_in := hin_node hc c.root_mem_nodes
             exact hlr_other c.root hc_in (by have := Fin.val_ne_of_ne hu_ne_p; omega) (by omega)
           · rw [map_root_set_eq cs i hi c' hc'_r]
             exact hperm
       · intro T_c hTc
         rcases mem_set_exists_idx cs i c' T_c hTc with rfl | ⟨j, hj, hji, rfl⟩
         · rw [hc'_r]
-          have hr_in : (cs[i]).root ∈ (FHTree.node u cs).nodes := sub_in _ (cs[i]).root_mem_nodes
+          have hr_in := hin_node hi_mem (cs[i]).root_mem_nodes
           exact (hpar'.2 (cs[i]).root hr_in hroot_eq).trans (hpar cs[i] hi_mem)
         · have hr_ne_cur : (cs[j]).root ≠ cur := fun e =>
             forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hx_in_cw
               (e ▸ (cs[j]).root_mem_nodes)
-          have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u
-              (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
+          have hr_in := hin_node (List.getElem_mem hj) (cs[j]).root_mem_nodes
           exact (hpar'.2 (cs[j]).root hr_in hr_ne_cur).trans (hpar cs[j] (List.getElem_mem hj))
       · intro T_c hTc
         rcases mem_set_exists_idx cs i c' T_c hTc with rfl | ⟨j, hj, _, rfl⟩
         · rw [hc'_r]
-          have hr_in : (cs[i]).root ∈ (FHTree.node u cs).nodes := sub_in _ (cs[i]).root_mem_nodes
+          have hr_in := hin_node hi_mem (cs[i]).root_mem_nodes
           rw [(hin_eq u hu_in).2, (hin_eq (cs[i]).root hr_in).2]
           exact hprio cs[i] hi_mem
-        · have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u
-              (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
+        · have hr_in := hin_node (List.getElem_mem hj) (cs[j]).root_mem_nodes
           rw [(hin_eq u hu_in).2, (hin_eq (cs[j]).root hr_in).2]
           exact hprio cs[j] (List.getElem_mem hj)
       · intro j hj_set
@@ -526,13 +507,9 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
         by_cases hji : j = i
         · subst hji
           rw [List.getElem_set_self, hc'_r]
-          have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes := sub_in _ (cs[j]).root_mem_nodes
+          have hr_in := hin_node hi_mem (cs[j]).root_mem_nodes
           have hr_old := hrank j hj
-          have hpend_0 : (if some (cs[j]).root = pending then 1 else 0) = 0 := by
-            rcases hpend with rfl | rfl
-            · simp only [reduceCtorEq, ↓reduceIte]
-            · simp only [Option.some.injEq, hroot_eq, ↓reduceIte]
-          rw [hpend_0] at hr_old
+          rw [hpend_ne _ hroot_eq] at hr_old
           rw [hmark'.2 (cs[j]).root hr_in hroot_eq]
           by_cases hwp : (cs[j]).root = p
           · rw [hwp] at hr_old ⊢
@@ -546,46 +523,17 @@ theorem ValidSubtree.exists_cut {n : ℕ} {st st' : RawState n} {pending : Optio
             forestNodes_nodup_idx_disjoint hnd_cs hj hi hji (e ▸ (cs[j]).root_mem_nodes) hx_in_cw
           have hr_ne_p : (cs[j]).root ≠ p := fun e =>
             forestNodes_nodup_idx_disjoint hnd_cs hj hi hji (e ▸ (cs[j]).root_mem_nodes) hp_in_ci
-          have hr_in : (cs[j]).root ∈ (FHTree.node u cs).nodes :=
-            List.mem_cons_of_mem u
-              (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, (cs[j]).root_mem_nodes⟩)
+          have hr_in := hin_node (List.getElem_mem hj) (cs[j]).root_mem_nodes
           have hr_old := hrank j hj
-          have hpend_0 : (if some (cs[j]).root = pending then 1 else 0) = 0 := by
-            rcases hpend with rfl | rfl
-            · simp only [reduceCtorEq, ↓reduceIte]
-            · simp only [Option.some.injEq, hr_ne_cur, ↓reduceIte]
-          rw [hpend_0] at hr_old
+          rw [hpend_ne _ hr_ne_cur] at hr_old
           rw [hdeg'.2 (cs[j]).root hr_in hr_ne_p, hmark'.2 (cs[j]).root hr_in hr_ne_cur]
           omega
       · intro T_c hTc
         rcases mem_set_exists_idx cs i c' T_c hTc with rfl | ⟨j, hj, hji, rfl⟩
         · exact hvalid_c'
-        · have hcur_not_cj : cur ∉ (cs[j]).nodes := fun hm =>
-            forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hx_in_cw hm
-          have hp_not_cj : p ∉ (cs[j]).nodes := fun hm =>
-            forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hp_in_ci hm
-          have hsub_j_none : ValidSubtree st none cs[j] := by
-            rcases hpend with rfl | rfl
-            · exact hsub cs[j] (List.getElem_mem hj)
-            · exact (hsub cs[j] (List.getElem_mem hj)).clear_pending fun hm =>
-                hcur_not_cj ((cs[j]).nodes_eq ▸ List.mem_cons_of_mem _ hm)
-          refine (hsub_j_none.frame (pending' := none) (fun x hx => ?_)
-            (fun x hx => ?_)).weaken_pending (some p)
-          · have hx_in : x ∈ (FHTree.node u cs).nodes :=
-              List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, hx⟩)
-            have hx_ne_cur : x ≠ cur := fun e => hcur_not_cj (e ▸ hx)
-            have hx_ne_p : x ≠ p := fun e => hp_not_cj (e ▸ hx)
-            exact ⟨(hin_eq x hx_in).1, hmark'.2 x hx_in hx_ne_cur, hdeg'.2 x hx_in hx_ne_p,
-              hchild_other x hx_in hx_ne_p, (hin_eq x hx_in).2⟩
-          · have hx_cj : x ∈ (cs[j]).nodes :=
-              (cs[j]).nodes_eq ▸ List.mem_cons_of_mem (cs[j]).root hx
-            have hx_in : x ∈ (FHTree.node u cs).nodes :=
-              List.mem_cons_of_mem u (mem_forestNodes_iff.mpr ⟨cs[j], List.getElem_mem hj, hx_cj⟩)
-            have hx_ne_cur : x ≠ cur := fun e => hcur_not_cj (e ▸ hx_cj)
-            obtain ⟨q, hq_cj, hpq⟩ := hsub_j_none.par_of_mem_children x hx
-            have hq_ne_p : q ≠ p := fun e => hp_not_cj (e ▸ hq_cj)
-            have hlr := hlr_other x hx_in (by have := Fin.val_ne_of_ne hq_ne_p; omega) (by omega)
-            exact ⟨hpar'.2 x hx_in hx_ne_cur, hlr.1, hlr.2, Iff.rfl⟩
+        · exact hsibling (List.getElem_mem hj)
+            (fun hm => forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hx_in_cw hm)
+            (fun hm => forestNodes_nodup_idx_disjoint hnd_cs hi hj hji.symm hp_in_ci hm) _
 
 /-- Marking an unmarked `pending = some z` node (`st.mark z = 0`, `st'.mark z = 1`) absorbs the
 transient rank slack and restores `ValidSubtree st' none T`. -/

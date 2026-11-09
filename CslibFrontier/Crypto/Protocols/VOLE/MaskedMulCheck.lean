@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.VOLE.World
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 public import CslibFrontier.Computability.Interactive.Security
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF.Bind
 
@@ -121,8 +122,7 @@ private def maskedSetupEquiv (left right output : ι → Fin n) (w : Fin n → F
       Fin.init, Pi.sub_apply]
     simp only [add_sub_cancel_left]
     rw [Fin.snoc_init_self]
-    congr 1
-    funext j
+    congr 1 with j : 1
     ring
   right_inv qda := by
     rcases qda with ⟨q, d, a⟩
@@ -231,19 +231,16 @@ theorem maskedMulCheck_complete (left right output : ι → Fin n) :
           (r, (maskedMulCheckReply left right output w c.u c.v r, ()))),
             some (), ((), ()))) := by
     simp only [World.eval, Reduction.run, Verifier.execute, maskedMulCheck_output]
-    simp only [maskedMulCheck, liftProver, runStrategy, maskedMulCheckSpec, SigmaProtocol.sigmaSpec,
-      ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
-      OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld,
-      ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-      PMF.map_bind, PMF.pure_map, pure_bind, VOLECorrelation.senderView]
+    simp only [pmf_norm, maskedMulCheck, liftProver, runStrategy, maskedMulCheckSpec,
+      SigmaProtocol.sigmaSpec, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
+      OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld, ProbOracleComp.runWith_bind,
+      ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, pure_bind,
+      VOLECorrelation.senderView]
     apply PMF.bind_congr_on_support
     intro c hc
     rw [← ProbOracleComp.sample]
-    simp only [ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map,
-      Function.comp_def, PMF.pure_bind]
-    congr 1
-    funext r
+    simp only [pmf_norm, ProbOracleComp.runWith_sample, ProbComp.eval_uniform]
+    congr 1 with r : 1
     simp only [VOLECorrelation.receiverView,
       maskedMulCheckReply_correct left right output w c
         (valid_of_mem_support_voleIdealDist hc) r h, ite_true]
@@ -261,16 +258,13 @@ theorem maskedMulCheckView_eq (left right output : ι → Fin n) (w : Fin n → 
       let r ← PMF.uniformOfFintype (ι → F)
       return (c.receiverView, (voleCommitWitness w (Fin.init c.u),
         (r, (maskedMulCheckReply left right output w c.u c.v r, ()))))) := by
-  simp only [maskedMulCheckView, maskedMulCheck, maskedMulCheckSpec, SigmaProtocol.sigmaSpec,
-    World.eval, Reduction.run, Verifier.execute, Verifier.output, liftProver, runStrategy,
-    Transcript.challenges, OracleInterface.full, voleWorld,
+  simp only [pmf_norm, maskedMulCheckView, maskedMulCheck, maskedMulCheckSpec,
+    SigmaProtocol.sigmaSpec, World.eval, Reduction.run, Verifier.execute, Verifier.output,
+    liftProver, runStrategy, Transcript.challenges, OracleInterface.full, voleWorld,
     ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, OracleComp.interpret_bind,
-    OracleComp.interpret_pure, VOLECorrelation.senderView, PMF.map_bind,
-    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-    ProbOracleComp.runWith_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, PMF.pure_map, pure_bind]
-  congr 1
-  funext c
+    OracleComp.interpret_pure, VOLECorrelation.senderView, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, pure_bind]
+  congr 1 with c : 1
   rw [← ProbOracleComp.sample]
   simp [ProbOracleComp.runWith_sample, PMF.bind_map, PMF.bind_const, ProbComp.eval_uniform,
     Function.comp_def]
@@ -313,9 +307,7 @@ private theorem maskedView_fixed (left right output : ι → Fin n) (w : Fin n �
   have he := congrArg (fun p => p.map finish)
     (PMF.uniformOfFintype_map_equiv (maskedSetupEquiv left right output w delta r))
   simp only [PMF.map_comp, Function.comp_def, hfinish] at he
-  simpa only [← PMF.uniformOfFintype_prod, PMF.map_bind, PMF.map_comp,
-    PMF.map, PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    Function.comp_def, finish] using he
+  simpa only [pmf_norm, ← PMF.uniformOfFintype_prod, PMF.map, finish] using he
 
 /-- Perfect simulation of the full honest receiver view in the cached ideal VOLE world.
 Every selected multiplication constraint must hold. Public parameters are the wire count, gate
@@ -328,16 +320,13 @@ theorem maskedMulCheckView_eq_simulate (left right output : ι → Fin n) (w : F
     maskedMulCheckView left right output w =
       ProbComp.eval (maskedMulCheckSimulate left right output) := by
   rw [maskedMulCheckView_eq]
-  simp only [voleIdealDist, maskedMulCheckSimulate, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
+  simp only [pmf_norm, voleIdealDist, maskedMulCheckSimulate, ProbComp.eval_uniform]
   conv_lhs =>
     arg 2
     ext u
     rw [PMF.bind_comm]
   rw [PMF.bind_comm]
-  congr 1
-  funext delta
+  congr 1 with delta : 1
   conv_lhs =>
     arg 2
     ext u
@@ -348,8 +337,7 @@ theorem maskedMulCheckView_eq_simulate (left right output : ι → Fin n) (w : F
     ext q
     rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext r
+  congr 1 with r : 1
   exact maskedView_fixed left right output w delta r h
 
 /-- No event on the complete receiver view distinguishes the honest execution from simulation. -/

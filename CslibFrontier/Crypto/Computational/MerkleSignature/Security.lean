@@ -333,8 +333,7 @@ private theorem eval_eufOneTimeGame_oneTimeForgerAt
   have hpk : publicKey H k (front ++ (x.1, []) :: back) = publicKey H k (front ++ x :: back) := by
     simp [publicKey]
   rw [hpk, PMF.bind_map, realRun, ← PMF.bind_pure_comp]
-  congr 1
-  funext r
+  congr 1 with r : 1
   simp only [Function.comp_apply, otsWin, List.getD_append_cons_length]
 
 /-- The real experiment: the hash key, the one-time keys and the forger's run. -/
@@ -474,8 +473,7 @@ theorem eval_leafIndex (n : ℕ) :
       (PMF.uniformOfFintype (Fin (2 ^ depth n))).map Fin.val := by
   simp only [leafIndex, ProbComp.eval_map, BitString.eval_sampleList,
     BitString.uniformList_boundedBinaryValue]
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact Nat.min_eq_right i.isLt.le
 
 variable {S H depth} in
