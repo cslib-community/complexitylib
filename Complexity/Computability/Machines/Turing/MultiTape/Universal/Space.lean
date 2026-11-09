@@ -228,7 +228,7 @@ lemma natAbs_headAt_lt (j i : ℕ) : (headAt d x j i).natAbs < (visited d x j i)
 lemma length_eTape_le_space {D : ℕ} {t : Tape} {V : Finset ℤ} (hc : t.Covered V)
     (hh : t.head.natAbs < V.card) (hv : ∀ o ∈ t.left ++ t.right, o.getD 0 ≤ D) :
     (eTape t).length ≤ 3 * (2 * D + 5) * V.card := by
-  have h₁ := length_encInt_le t.head
+  have h₁ := length_encIntUnary_le t.head
   have h₂ := length_cells_le fun o ho => hv o (List.mem_append_left t.right ho)
   have h₃ := length_cells_le fun o ho => hv o (List.mem_append_right t.left ho)
   have h₄ := hc.length_le

@@ -17,8 +17,9 @@ public import Complexity.Computability.WordRAM.Copy
 Source offsets remain in registers 0–159; base/modulus/compiler scratch remain in 160–162.
 Three external physical pointers occupy 163–165, outside the normalized source bank. A disjoint
 seven-register native copy bank gathers the scalar header, both raw matrices and every interleaved
-query occurrence directly into the runtime-computed protected snapshot. The continuation omits
-the old source `saveInput`; the public contiguous-input callable remains unchanged.
+query occurrence directly into the runtime-computed protected snapshot. The continuation starts at
+`BoxProduct.programFromSnapshot` after the gather; `CallableBoxProduct.program` provides the
+contiguous-input entry.
 -/
 
 public section

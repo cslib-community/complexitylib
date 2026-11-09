@@ -17,19 +17,18 @@ import Mathlib.MeasureTheory.VectorMeasure.Variation.Basic
 
 The existing full-L1 distance controls changes in both the component measures and their
 nonnegative weights. The component measures are finite; neither probability normalization
-nor equality of total masses is assumed.
+nor equality of total masses is assumed. These standard variation inequalities are derived
+from Mathlib's existing signed-measure variation API, without defining any new distance or
+mixture construction.
 
 ## Main results
 
+* `MeasureTheory.etvDist_add_le`, `MeasureTheory.tvDist_add_le`: binary subadditivity under
+  measure addition.
 * `MeasureTheory.tvDist_finsetSum_le`: subadditivity for finite sums of measures.
 * `MeasureTheory.tvDist_nnreal_smul`: exact common-weight scaling.
 * `MeasureTheory.tvDist_nnreal_smul_same`: exact change of weight of one finite measure.
 * `MeasureTheory.tvDist_finsetSum_smul_le`: simultaneous component and weight changes.
-
-## References
-
-These standard variation inequalities are derived from Mathlib's existing signed-measure
-variation API. They define no new distance or mixture construction.
 -/
 
 public section
@@ -42,7 +41,8 @@ open scoped ENNReal NNReal
 
 variable {X ι : Type*} [MeasurableSpace X]
 
-private theorem etvDist_add_le (μ₁ μ₂ ν₁ ν₂ : Measure X)
+/-- Extended total variation of finite measures is subadditive under measure addition. -/
+theorem etvDist_add_le (μ₁ μ₂ ν₁ ν₂ : Measure X)
     [IsFiniteMeasure μ₁] [IsFiniteMeasure μ₂] [IsFiniteMeasure ν₁] [IsFiniteMeasure ν₂] :
     etvDist (μ₁ + μ₂) (ν₁ + ν₂) ≤ etvDist μ₁ ν₁ + etvDist μ₂ ν₂ := by
   simp only [etvDist_eq_etvDist_toSignedMeasure, VectorMeasure.etvDist,
@@ -53,6 +53,13 @@ private theorem etvDist_add_le (μ₁ μ₂ ν₁ ν₂ : Measure X)
           (μ₂.toSignedMeasure - ν₂.toSignedMeasure) := by abel
   rw [he]
   exact VectorMeasure.variation_add_le Set.univ
+
+/-- Full-L1 total variation of finite measures is subadditive under measure addition. -/
+theorem tvDist_add_le (μ₁ μ₂ ν₁ ν₂ : Measure X)
+    [IsFiniteMeasure μ₁] [IsFiniteMeasure μ₂] [IsFiniteMeasure ν₁] [IsFiniteMeasure ν₂] :
+    tvDist (μ₁ + μ₂) (ν₁ + ν₂) ≤ tvDist μ₁ ν₁ + tvDist μ₂ ν₂ := by
+  simpa only [tvDist, ENNReal.toReal_add (etvDist_ne_top μ₁ ν₁) (etvDist_ne_top μ₂ ν₂)] using
+    ENNReal.toReal_mono (by simp) (etvDist_add_le μ₁ μ₂ ν₁ ν₂)
 
 /-- A finite sum of finite measure differences has at most the sum of their full-L1 distances. -/
 theorem tvDist_finsetSum_le (s : Finset ι) (μ ν : ι → Measure X)

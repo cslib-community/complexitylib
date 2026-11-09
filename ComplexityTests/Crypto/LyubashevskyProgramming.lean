@@ -32,48 +32,48 @@ private theorem oracle_run (q : Query) (cache : Cache) :
 /-- Neither handler performs any query when the actual signer is given zero attempts. -/
 example (cache : Cache) :
     ((iid (protocol.commit 0 key) 0).bind fun coins =>
-      (interpret (oracle Digest) (fiatShamirAbortSign protocol keyGen (0, key) () 0 coins)).run
+      (interpret (oracle Digest) (fiatShamirAbortSign protocol (0, key) () 0 coins)).run
         cache) =
     ((iid (protocol.commit 0 key) 0).bind fun coins =>
-      (interpret program (fiatShamirAbortSign protocol keyGen (0, key) () 0 coins)).run cache) := by
+      (interpret program (fiatShamirAbortSign protocol (0, key) () 0 coins)).run cache) := by
   simp [iid, fiatShamirAbortSign]
 
 /-- At an empty cache, one actual sampled signing attempt has exactly the same full law. -/
 example :
     ((iid (protocol.commit 0 key) 1).bind fun coins =>
       (interpret (oracle Digest)
-        (fiatShamirAbortSign protocol keyGen (0, key) () 1 coins)).run []) =
+        (fiatShamirAbortSign protocol (0, key) () 1 coins)).run []) =
     ((iid (protocol.commit 0 key) 1).bind fun coins =>
-      (interpret program (fiatShamirAbortSign protocol keyGen (0, key) () 1 coins)).run []) := by
-  simp [fiatShamirAbortSign, fiatShamir, oracle_run, memoize, program_run, PMF.map,
+      (interpret program (fiatShamirAbortSign protocol (0, key) () 1 coins)).run []) := by
+  simp [fiatShamirAbortSign, oracle_run, memoize, program_run, PMF.map,
     Function.comp_def]
 
 /-- Programming retains the commitment even when this supported attempt aborts. -/
 example :
     (interpret program
-      (fiatShamirAbortSign protocol keyGen (0, key) () 1 (fun _ => badCoins))).run [] =
+      (fiatShamirAbortSign protocol (0, key) () 1 (fun _ => badCoins))).run [] =
     (PMF.uniformOfFintype Digest).map fun c => (none, [(((), 1), c)]) := by
-  simp [fiatShamirAbortSign, fiatShamir, program_run, PMF.map, respond_bad, badCoins,
+  simp [fiatShamirAbortSign, program_run, PMF.map, respond_bad, badCoins,
     Function.comp_def]
 
 /-- A repeated point is still read after first success: memoization retains one digest. -/
 theorem read_repeated_success :
     (interpret (oracle Digest)
-      (fiatShamirAbortSign protocol keyGen (0, key) () 2 (fun _ => (0, (0 : Fin 2 → ℤ))))).run [] =
+      (fiatShamirAbortSign protocol (0, key) () 2 (fun _ => (0, (0 : Fin 2 → ℤ))))).run [] =
     (PMF.uniformOfFintype Digest).map fun c => (some (0, 0), [(((), 0), c)]) := by
-  simp [fiatShamirAbortSign, fiatShamir, oracle_run, memoize, PMF.map, respond_good,
+  simp [fiatShamirAbortSign, oracle_run, memoize, PMF.map, respond_good,
     Fin.tail, Function.comp_def]
 
 /-- Programming samples again and retains both entries after the first success. The newer
 entry can disagree with the earlier digest, which is exactly the collision being charged. -/
 theorem program_repeated_success :
     (interpret program
-      (fiatShamirAbortSign protocol keyGen (0, key) () 2
+      (fiatShamirAbortSign protocol (0, key) () 2
         (fun _ => (0, (0 : Fin 2 → ℤ))))).run [] = do
       let c₀ ← PMF.uniformOfFintype Digest
       let c₁ ← PMF.uniformOfFintype Digest
       return (some (0, 0), [(((), 0), c₁), (((), 0), c₀)]) := by
-  simp [fiatShamirAbortSign, fiatShamir, program_run, PMF.map, respond_good,
+  simp [fiatShamirAbortSign, program_run, PMF.map, respond_good,
     Fin.tail, Function.comp_def]
 
 /-- The collision path is supported by the real mask sampler, not an impossible coin tape. -/
@@ -86,7 +86,7 @@ example : (fun _ : Fin 2 => (0, (0 : Fin 2 → ℤ))) ∈ (iid (protocol.commit 
 
 /-- Distinct programmed digests after success occur with positive probability. -/
 example : 0 < ((interpret program
-    (fiatShamirAbortSign protocol keyGen (0, key) () 2 (fun _ => (0, (0 : Fin 2 → ℤ))))).run [])
+    (fiatShamirAbortSign protocol (0, key) () 2 (fun _ => (0, (0 : Fin 2 → ℤ))))).run [])
       (some (0, 0), [(((), 0), fun _ => true), (((), 0), fun _ => false)]) := by
   rw [program_repeated_success]
   apply (PMF.apply_pos_iff _ _).mpr
@@ -108,8 +108,8 @@ noncomputable def signingRun (answer : Query → StateT Cache PMF Digest) := do
   return (A, out)
 
 /-- The actual averaged two-attempt laws have a nontrivial bound, including full caches. -/
-example : Interactive.CloseTo (signingRun (oracle Digest)) (signingRun program) (1 / 10) := by
-  have h := (closeTo_lyubashevskySign_program 1 8 1 17 1 3 1 2 0 (by decide)
+example : CloseTo (signingRun (oracle Digest)) (signingRun program) (1 / 10) := by
+  have h := (closeTo_lyubashevskySign_program 1 8 1 17 3 1 2 0 (by decide)
     (fun _ => PMF.pure ()) (fun _ => 0) (fun _ _ => 0) (fun _ => ()) (fun _ => [])
     (by intro A h hh; simp)).map (fun out => (out.1, out.2.2))
   have he : (∑ j ∈ Finset.range 2, ((0 + j : ℕ) / (17 : ℝ≥0∞) ^ 1 +

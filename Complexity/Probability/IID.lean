@@ -21,7 +21,9 @@ A tuple has the product of the masses of its coordinates (`iid_apply`), as for t
 `Cslib.Probability.PMF.pi`, but unlike `pi` it needs no finiteness of the sample space, so it
 applies to distributions on infinite types such as the public-coin protocols of communication
 complexity. Applying a function to each sample gives independent samples of the image
-(`iid_map`), and on finite types the draws form the product distribution (`iid_eq_pi`).
+(`iid_map`), and on finite types the draws form the product distribution (`iid_eq_pi`), so
+independent draws of `μ.bind K` are independent draws of `μ` passed through `K` coordinatewise
+(`iid_bind`).
 
 The *majority tail bound* (`iid_card_ge_le`): among `2 r` independent bits, each `true` with
 probability `q ≤ ε ≤ 1 / 2`, at least `r` are `true` with probability at most
@@ -41,6 +43,7 @@ bounds.
   support.
 * `Cslib.Probability.PMF.iid_map`, `Cslib.Probability.PMF.iid_eq_pi`,
   `Cslib.Probability.PMF.iid_uniformOfFintype`: images, finite products, and uniform tuples.
+* `Cslib.Probability.PMF.iid_bind`: independent draws through a randomized map.
 * `Cslib.Probability.PMF.iid_card_ge_le`: the majority tail bound.
 
 ## References
@@ -110,6 +113,12 @@ theorem iid_map (μ : PMF α) (g : α → β) (k : ℕ) :
 theorem iid_eq_pi [Finite α] (μ : PMF α) (k : ℕ) : iid μ k = pi (fun _ : Fin k => μ) := by
   ext v
   rw [iid_apply, pi_apply]
+
+/-- On finite types, independent draws of `μ.bind K` are independent draws of `μ` with `K` applied
+independently to each coordinate. -/
+theorem iid_bind [Finite α] [Finite β] (μ : PMF α) (K : α → PMF β) (k : ℕ) :
+    iid (μ.bind K) k = (iid μ k).bind fun x => pi fun i => K (x i) := by
+  rw [iid_eq_pi, iid_eq_pi, pi_bind]
 
 /-- Independent uniform draws on a nonempty finite type form the uniform distribution on tuples. -/
 theorem iid_uniformOfFintype [Fintype α] [Nonempty α] (k : ℕ) :

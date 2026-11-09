@@ -69,7 +69,14 @@ example : (joinMatrix ℚ (Fin 0)).rank = 1 := by
 
 -- There are at least $2^2 = 4$ partitions of four points (in fact $15$).
 example : 4 ≤ Nat.card (Setoid (Fin 4)) := by
-  simpa using pow_le_card_setoid (N := 4) (j := 2) (by norm_num)
+  simpa using pow_le_card_setoid 4 2
+
+-- The bound needs no `j ≤ N` premise when `j > N` (`j ^ 0 = 1`).
+example : 1 ≤ Nat.card (Setoid (Fin 2)) := by
+  simpa using pow_le_card_setoid 2 5
+
+-- Entries of the zeta matrix reduce by `simp` without unfolding the definition.
+example : zetaMatrix ℚ (Fin 2) ⊥ ⊤ = 1 := by simp
 
 open Classical in
 -- So joining partitions of four points needs two bits.
@@ -77,7 +84,7 @@ example : (2 : ℕ∞) ≤ Protocol.ecomplexity
     (fun P Q : Setoid (Fin 4) => fun b => decide (P ⊔ Q = ⊤) = b) Set.univ Set.univ := by
   refine le_trans ?_ (clog_card_le_ecomplexity_join (α := Fin 4))
   have : 4 ≤ Nat.card (Setoid (Fin 4)) := by
-    simpa using pow_le_card_setoid (N := 4) (j := 2) (by norm_num)
+    simpa using pow_le_card_setoid 4 2
   have h := Nat.clog_mono_right 2 this
   rw [show 4 = 2 ^ 2 from rfl, Nat.clog_pow 2 2 (by norm_num)] at h
   exact_mod_cast h

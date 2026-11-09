@@ -23,6 +23,8 @@ unmodified execution. It includes overwriting an existing entry with a different
 ## Main results
 
 * `closeTo_run_interpret_memoize_cons`: visible-output closeness after prepending one entry.
+* `entry_mem_iff_lookup_isSome`: transcript query membership agrees with key lookup on the pair
+  projection.
 
 This is an original application of the existing identical-until-bad and random-oracle laws.
 -/
@@ -80,8 +82,7 @@ private theorem replaceAnswer_map (distribution : Query → PMF Value)
     | some v => simp
     | none =>
       simp only [PMF.map_comp, Function.comp_def]
-      congr 1
-      funext v
+      congr 1 with v : 1
       congr 1
       exact Function.update_comm hq _ _ _
 

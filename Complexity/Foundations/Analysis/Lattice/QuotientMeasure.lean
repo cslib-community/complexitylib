@@ -10,24 +10,27 @@ module
 public import Complexity.Init
 public import Mathlib.Algebra.Module.ZLattice.Covolume
 public import Mathlib.MeasureTheory.Measure.Haar.Quotient
+import Complexity.Foundations.MeasureTheory.Group.FundamentalDomain
 
 /-!
 # Normalization of lattice quotient measures
 
 The reference measure is the canonical quotient pushforward of Haar measure restricted to
-an actual fundamental domain, divided by the positive covolume. No new measure is defined.
-The opposite subgroup action agrees with Mathlib's canonical quotient conventions.
+an actual fundamental domain, divided by the positive covolume. No new measure is defined;
+these are consequences of Mathlib's fundamental-domain and quotient Haar measure APIs.
+Fundamental domains are taken for the opposite subgroup action, following Mathlib's canonical
+quotient conventions; `MeasureTheory.isAddFundamentalDomain_op_iff` converts them to fundamental
+domains for the lattice itself, as the covolume API expects.
 
 ## Main results
 
+* `ZLattice.measure_eq_ofReal_covolume_of_op`: a fundamental domain for the opposite subgroup
+  action has ambient measure `ENNReal.ofReal (covolume L μ)`.
 * `ZLattice.isProbabilityMeasure_normalized_quotient`: the normalized measure is a probability.
-* `ZLattice.normalized_quotient_eq`: the measure does not depend on the fundamental domain.
+* `ZLattice.normalized_quotient_eq`: the measure does not depend on the fundamental domain
+  (covolume-scaled restatement of `MeasureTheory.IsAddFundamentalDomain.addQuotientMeasure_eq`).
 * `ZLattice.isAddLeftInvariant_normalized_quotient`: the normalized measure is
   translation invariant.
-
-## References
-
-These are consequences of Mathlib's fundamental-domain and quotient Haar measure APIs.
 -/
 
 public section
@@ -46,21 +49,11 @@ variable (μ : Measure E) [μ.IsAddHaarMeasure]
 
 local instance : Countable L.toAddSubgroup := inferInstanceAs (Countable L)
 
-omit [NormedSpace ℝ E] [FiniteDimensional ℝ E] [BorelSpace E]
-    [DiscreteTopology L] [IsZLattice ℝ L] [μ.IsAddHaarMeasure] in
-private theorem fundamentalDomain_of_op {F : Set E}
-    (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ) : IsAddFundamentalDomain L F μ := by
-  let e : L.toAddSubgroup.op ≃ L := (AddSubgroup.equivOp L.toAddSubgroup).symm
-  have h := hF.preimage_of_equiv (QuasiMeasurePreserving.id μ) e.bijective (fun g x ↦ ?_)
-  · convert! h using 1
-  · change ((e g : L) : E) + x = x + AddOpposite.unop (g : Eᵃᵒᵖ)
-    exact add_comm _ _
-
 /-- A fundamental domain has finite ambient measure equal to the positive real covolume. -/
-theorem measure_fundamentalDomain_op {F : Set E}
+theorem measure_eq_ofReal_covolume_of_op {F : Set E}
     (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ) :
     μ F = ENNReal.ofReal (covolume L μ) := by
-  have h := fundamentalDomain_of_op L μ hF
+  have h : IsAddFundamentalDomain L F μ := isAddFundamentalDomain_op_iff.mp hF
   have : VAddInvariantMeasure L E μ :=
     inferInstanceAs (VAddInvariantMeasure L.toAddSubgroup E μ)
   have hfin : μ F ≠ ∞ := by
@@ -77,10 +70,12 @@ theorem isProbabilityMeasure_normalized_quotient {F : Set E}
   constructor
   rw [Measure.smul_apply, Measure.map_apply (by fun_prop) MeasurableSet.univ]
   simp only [Set.preimage_univ, Measure.restrict_apply_univ, smul_eq_mul]
-  rw [measure_fundamentalDomain_op L μ hF,
+  rw [measure_eq_ofReal_covolume_of_op L μ hF,
     ENNReal.inv_mul_cancel (ENNReal.ofReal_pos.mpr (covolume_pos L μ)).ne' ENNReal.ofReal_ne_top]
 
-/-- The normalized quotient measure is independent of the chosen fundamental domain. -/
+/-- The normalized quotient measure is independent of the chosen fundamental domain. This is a
+covolume-scaled restatement of `MeasureTheory.IsAddFundamentalDomain.addQuotientMeasure_eq` using
+the countability of `L.toAddSubgroup`. -/
 theorem normalized_quotient_eq {F G : Set E}
     (hF : IsAddFundamentalDomain L.toAddSubgroup.op F μ)
     (hG : IsAddFundamentalDomain L.toAddSubgroup.op G μ) :

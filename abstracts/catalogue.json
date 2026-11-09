@@ -59,6 +59,17 @@
       "namespace": "ComplexityTests.Abstracts.SavitchAbstract"
     },
     {
+      "id": "alternation",
+      "title": "Chandra–Kozen–Stockmeyer: AP equals PSPACE and APSPACE equals EXP",
+      "module": "ComplexityAbstracts.AlternationAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.AlternationAbstract.ap_eq_pspace",
+        "ComplexityAbstracts.AlternationAbstract.apspace_eq_exp"
+      ],
+      "summary": "Alternation trades one exponential between time and space: alternating polynomial time is deterministic polynomial space, and alternating polynomial space is deterministic exponential time.",
+      "scope": "One finite-state alternating multi-tape machine per problem, with two transition functions as in Arora–Barak and least-fixed-point acceptance; every branch halting; polynomial time or polynomial space; arbitrary injective encodings. AL = P is not included: the library proves only AL ⊆ P."
+    },
+    {
       "id": "reingold",
       "title": "Reingold: undirected reachability is in L",
       "module": "ComplexityAbstracts.USTCONAbstract",
@@ -184,7 +195,7 @@
     },
     {
       "id": "andreev-threshold",
-      "title": "Depth-two threshold circuits for Andreev's function: quadratic upper bound and tight average-case bounds",
+      "title": "Depth-two threshold circuits for Andreev's function: quadratic upper bound and average-case bounds tight up to polylogarithmic factors",
       "module": "ComplexityAbstracts.AndreevThresholdAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_upper_bound",
@@ -193,14 +204,18 @@
         "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.gate_lower_bound_of_le_eps",
         "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound",
-        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps"
+        "ComplexityAbstracts.AndreevThresholdAbstract.wire_lower_bound_of_le_eps",
+        "ComplexityAbstracts.AndreevThresholdAbstract.approx_majority_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.approx_majority_wire_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.majority_vote_gate_lower_bound",
+        "ComplexityAbstracts.AndreevThresholdAbstract.majority_vote_wire_lower_bound"
       ],
       "supporting_theorems": [
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_gate_lower_bound",
         "ComplexityAbstracts.AndreevThresholdAbstract.exact_wire_lower_bound"
       ],
-      "summary": "For Andreev's function on n = 2^b + b m bits, alternating-linear polarization gives an exact depth-two weighted threshold circuit of 4·4^b + b m 2^b + 1 gates ((5/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2.",
-      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; nonuniform."
+      "summary": "For Andreev's function on n = 2^b + b m bits, an alternating-linear shift identity gives an exact depth-two weighted threshold circuit of 2·4^b + b m 2^b + 1 gates ((3/4)n^2 + 1 at 2^b = b m, improving Kane–Williams O(n^3 / log n)) and windowed average-case upper bounds for 1 - δ agreement (O(n^(3/2) sqrt(log(n / δ))) gates, O(n^(5/2) sqrt(log(n / δ))) wires) and 1/2 + ε agreement (O(ε^2 n^(3/2) sqrt(log n)) gates, O(ε^2 n^(5/2) sqrt(log n)) wires); fixed-weight threshold-shift counting and Cauchy–Schwarz improve the Kane–Williams average-case lower bounds to Omega(ε² n^(3/2) / log² n) gates and Omega(ε² n^(5/2) / log^(5/2) n) active wires in the balanced regime for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2. Averaging extends these bounds to ε-approximate majorities of depth-two circuits, so a majority vote of t such circuits with at most s gates each needs top fan-in t = Omega(n^(3/4) / (log n · sqrt(s))) whenever 3(b + 2) / sqrt(2^b) ≤ 1/(2t) (Kane–Williams: Omega~(n^(1/2) / s^(1/3))).",
+      "scope": "Arbitrary real-weight threshold gates (THR ∘ THR), size counting all threshold gates, active wireCount summing nonzero-weight wires across gates, explicit non-asymptotic finite bounds, simultaneous fixed-weight Hoeffding–Chow union-bound tail, and explicit linear-in-b counting losses with m ≤ 2^b for 3(b + 2) / sqrt(2^b) ≤ ε ≤ 1/2; majority votes are stated through the number of correct depth-two members on each input, not as a depth-three circuit, and the top gate is not counted; nonuniform."
     },
     {
       "id": "constant-depth-arithmetic",
@@ -258,7 +273,7 @@
         "ComplexityAbstracts.CommunicationAbstract.equality"
       ],
       "summary": "Disjointness and parity of intersection require linear communication even with shared randomness and bounded error.",
-      "scope": "Binary protocol trees, worst-case cost and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
+      "scope": "Binary protocol trees with depth bounded on the support, including unreachable branches, and error at most one third on every input pair; explicit finite bounds and the final-answer convention."
     },
     {
       "id": "sipser-lautemann",
@@ -300,6 +315,7 @@
       "module": "ComplexityAbstracts.SubexponentialSATAbstract",
       "headline_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.exact_count",
+        "ComplexityAbstracts.SubexponentialSATAbstract.decidableInExpTime_KSAT",
         "ComplexityAbstracts.SubexponentialSATAbstract.not_eth",
         "ComplexityAbstracts.SubexponentialSATAbstract.not_seth",
         "ComplexityAbstracts.SubexponentialSATAbstract.satExponent_eq_zero"
@@ -307,7 +323,7 @@
       "supporting_theorems": [
         "ComplexityAbstracts.SubexponentialSATAbstract.length_encCNF"
       ],
-      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
+      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Each fixed-width k-SAT problem is therefore decidable in time 2^(δn)·poly(L) for every δ > 0, every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
       "scope": "Explicit CNF semantics, model counts over the occurring variables, and binary formula/output encodings; the interpolation-scale exponent n (log log (n + 16))² / sqrt(log(n + 16)) from §§3–6 and Proposition 6.4, where n is the number of variables, with polynomial time overhead and polynomial workspace in the encoded formula length. Includes all fixed widths and sizes; the count is exact on every formula of the given width. This does not establish the sharper Theorem 1.1 / Appendix D bound.",
       "foundations": [
         "ComplexityAbstracts.Encoding"
@@ -327,7 +343,7 @@
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP",
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP_encBinary"
       ],
-      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size. Note (October 2026): the native formalization of OpenAI's manuscript now proves ETH false; see the catalogue entry ‘OpenAI: the Exponential Time Hypothesis is false’. This conditional theorem is retained and remains valid, but its premise is false.",
+      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions cannot be done in time N^o(log log N), where N is the truth-table size. Note (October 2026): the native formalization of OpenAI's manuscript now proves ETH false; see the catalogue entry ‘OpenAI: the Exponential Time Hypothesis is false’. This conditional theorem is retained and remains valid, but its premise is false.",
       "scope": "Explicit 3SAT and PartialMCSP encodings (both unary and binary size thresholds), De Morgan all-gates and binary-gate cost measures, and deterministic multi-tape subexponential-time lower bounds 2^o(m log m) = N^o(log log N).",
       "foundations": [
         "ComplexityAbstracts.Encoding",
@@ -352,6 +368,17 @@
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation"
       ]
+    },
+    {
+      "id": "matrix-multiplication",
+      "title": "Matrix multiplication: the exponent is at most 9/4",
+      "module": "ComplexityAbstracts.MatrixMultiplicationAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.MatrixMultiplicationAbstract.circuits_nine_quarters",
+        "ComplexityAbstracts.MatrixMultiplicationAbstract.exponent_le_nine_quarters"
+      ],
+      "summary": "Exact matrix multiplication over every characteristic-zero field has nonuniform arithmetic circuits of size O(n^(9/4 + γ)) for every γ > 0.",
+      "scope": "Binary addition and multiplication and field constants, every gate charged one; inputs and outputs free. Existential circuits, without uniform generation, computable parameter extraction, explicit constants or integer bit complexity."
     }
   ]
 }

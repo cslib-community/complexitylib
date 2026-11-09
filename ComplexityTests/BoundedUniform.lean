@@ -59,7 +59,7 @@ example (radius : ℕ) :
     norm_num [intervalFailure, dyadicSize, show Nat.log 2 3 = 1 by decide]
 
 -- Radius, dimension and attempts are all runtime parameters, not fixed Lean constants.
-example : IsPPTOn (encPair encUnary (encPair encUnary encUnary)) (encOption (encList encInt))
+example : IsPPTOn (encPair encUnary (encPair encUnary encUnary)) (encOption (encList encIntUnary))
     (fun p : ℕ × ℕ × ℕ => sampleIntegerBox p.1 p.2.1 p.2.2) := by
   apply isPPTOn_sampleIntegerBox <;> polytime
 
@@ -76,7 +76,7 @@ example : IsPPTOn (encPair encUnary encUnary) (encOption encNat)
 -- Every supported outcome of `sampleIntegerBox 1 2 1` has encoded length at most `2 * 5 + 1 = 11`.
 example {out : Option (List ℤ)}
     (h : out ∈ (ProbComp.eval (sampleIntegerBox 1 2 1)).support) :
-    (encOption (encList encInt) out).length ≤ 11 := by
+    (encOption (encList encIntUnary) out).length ≤ 11 := by
   have := length_enc_sampleIntegerBox h
   omega
 

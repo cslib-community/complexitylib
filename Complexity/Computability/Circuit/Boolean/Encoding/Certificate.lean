@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.EvaluationTime
 public import Complexity.Computability.Circuit.Encoding.Check
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+import Complexity.Computability.Circuit.Encoding.Layer
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -38,7 +39,9 @@ arity of its operation. Reading is polynomial-time
 (`Cslib.Circuits.Boolean.computableInPolyTime_readCertificate`), and the certificate of a
 circuit, followed by any bits, reads as its code (`readCertificate_certificate_append`). A string
 that is not the certificate of a circuit may read as gates that read wires not yet computed; the
-polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_eq_true_iff`).
+checker `Cslib.Circuits.codeCheck` from `Complexity.Computability.Circuit.Encoding.Check` tells the
+codes of circuits apart (`Cslib.Circuits.codeCheck_eq_true_iff`), and this module registers its
+De Morgan polynomial-time certificate (`Cslib.Circuits.Boolean.computableInPolyTime_codeCheck`).
 
 ## Main definitions
 
@@ -47,7 +50,6 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 * `Cslib.Circuits.Boolean.certLength`: the length of certificates.
 * `Cslib.Circuits.Boolean.certificate`: the certificate of a circuit code.
 * `Cslib.Circuits.Boolean.readCertificate`: the gates and the output wire read from a certificate.
-* `Cslib.Circuits.codeCheck`: the test for codes of circuits.
 
 ## Main results
 
@@ -55,7 +57,6 @@ polynomial-time test `codeCheck` tells the codes of circuits apart (`codeCheck_e
 * `Cslib.Circuits.Boolean.length_certificate`: certificates have length `certLength n s`.
 * `Cslib.Circuits.Boolean.readCertificate_certificate_append`: a certificate reads as the code of
   its circuit.
-* `Cslib.Circuits.codeCheck_eq_true_iff`: `codeCheck` tests `Program.IsCodeFrom`.
 * `Cslib.Circuits.Boolean.computableInPolyTime_readCertificate`,
   `Cslib.Circuits.Boolean.computableInPolyTime_codeCheck`: reading certificates and checking
   codes are polynomial-time.
@@ -233,18 +234,14 @@ theorem readCertificate_certificate_code_append {n s : ℕ} (c : Circuit signatu
     (hs : c.size ≤ s) (extra : List Bool) :
     readCertificate n s (certificate n s c.code.1 (c.outputs 0).toNat ++ extra) =
       (c.code.1, (c.outputs 0).toNat) := by
-  have hcode : Program.IsCodeFrom signature n 0 c.code.1 := by
-    rw [← Program.isSome_ofCode_iff, Circuit.code, Program.ofCode_code]
-    rfl
-  exact readCertificate_certificate_append hcode (by rw [Circuit.length_code_fst]; exact hs)
+  exact readCertificate_certificate_append c.isCodeFrom_code
+    (by rw [Circuit.length_code_fst]; exact hs)
     (by have := (c.outputs 0).toNat_lt; omega) extra
 
 /-- The certificate of a circuit with at most `s` gates has length `certLength n s`. -/
 theorem length_certificate_code {n s : ℕ} (c : Circuit signature n 1) (hs : c.size ≤ s) :
     (certificate n s c.code.1 (c.outputs 0).toNat).length = certLength n s := by
-  have hcode : Program.IsCodeFrom signature n 0 c.code.1 := by
-    rw [← Program.isSome_ofCode_iff, Circuit.code, Program.ofCode_code]
-    rfl
+  have hcode := c.isCodeFrom_code
   refine length_certificate (by rw [Circuit.length_code_fst]; exact hs)
     (by have := (c.outputs 0).toNat_lt; omega) ?_
   intro g hg i hi

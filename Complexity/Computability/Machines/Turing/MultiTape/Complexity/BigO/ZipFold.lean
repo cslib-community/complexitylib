@@ -12,13 +12,16 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSp
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
+import Mathlib.Data.List.ReduceOption
 import Mathlib.Tactic.Linarith
+import Complexity.Tactic.EncLen
 
 /-!
 # Walking along two lists
 
 `Turing.MultiTapeTM.zipFold f p l r` walks along `l`, consuming `r` in step, and collects
-`f p a b?` for each element `a` of `l` and the matching element `b?` of `r`, if any. The function
+`f p a b?` for each element `a` of `l` and the matching element `b?` of `r`, if any — that is,
+`(l.zipWithLeft (f p) r).reduceOption` (`Turing.MultiTapeTM.zipFold_eq_zipWithLeft`). The function
 decides what happens at a missing partner and may drop an element, so that both zipping and
 padding are instances.
 
@@ -33,6 +36,8 @@ folds over `l`, keeping the rest of `r` and the results.
 
 ## Main results
 
+* `Turing.MultiTapeTM.zipFold_eq_zipWithLeft`: `zipFold` is `List.zipWithLeft` followed by
+  `List.reduceOption`.
 * `Turing.MultiTapeTM.zipFold_some`: a walk that keeps every element is a `List.mapIdx` reading the
   second list at each index.
 * `Turing.MultiTapeTM.ComputableInO.zipFold`: the cost of walking along two lists.
@@ -64,12 +69,31 @@ private theorem foldl_zipFoldStep (f : π → α → Option β → Option γ) (p
   | cons a l ih =>
     simp [zipFoldStep, ih, zipFold, List.drop_tail]
 
+/-- `Turing.MultiTapeTM.zipFold` is `List.zipWithLeft` followed by `List.reduceOption`. -/
+theorem zipFold_eq_zipWithLeft (f : π → α → Option β → Option γ) (p : π) (l : List α)
+    (r : List β) : zipFold f p l r = (l.zipWithLeft (f p) r).reduceOption := by
+  induction l generalizing r with
+  | nil => rfl
+  | cons a l ih =>
+    rcases r with _ | ⟨b, r⟩
+    · rw [zipFold, List.head?_nil, List.tail_nil, ih []]
+      rcases l with _ | ⟨a', l⟩ <;> cases h : f p a none <;> simp [List.zipWithLeft, h]
+    · rw [zipFold, List.head?_cons, List.tail_cons, ih r]
+      cases h : f p a (some b) <;> simp [List.zipWithLeft, h]
+
 /-- A walk that keeps every element is a `List.mapIdx` that reads the second list at each index. -/
 theorem zipFold_some (g : π → α → Option β → γ) (p : π) (l : List α) (r : List β) :
     zipFold (fun p a b => some (g p a b)) p l r = l.mapIdx fun i a => g p a r[i]? := by
+  have hnil : ∀ xs : List α,
+      xs.zipWithLeft (fun a b => some (g p a b)) [] = xs.map fun a => some (g p a none) :=
+    fun xs => by cases xs <;> rfl
+  rw [zipFold_eq_zipWithLeft]
   induction l generalizing r with
   | nil => rfl
-  | cons a l ih => cases r <;> simp [zipFold, ih, List.mapIdx_cons]
+  | cons a l ih =>
+    rcases r with _ | ⟨b, r⟩
+    · simpa [List.zipWithLeft, hnil, List.mapIdx_cons] using congrArg (g p a none :: ·) (ih [])
+    · simpa [List.zipWithLeft, List.mapIdx_cons] using congrArg (g p a (some b) :: ·) (ih r)
 
 namespace ComputableInO
 
@@ -86,9 +110,8 @@ private lemma length_zipFoldArg_le (p : π) (a : α) (r : List β) (acc : List �
     (encPair encP (encPair encA (encOption encB)) (p, a, r.head?)).length + 1 ≤
       8 * ((encPair (encPair encP (encPair (encList encB) (encList encC))) encA
         ((p, r, acc), a)).length + 1) := by
-  have hhead := length_head?_le (encB := encB) r
-  simp only [length_encPair] at *
-  omega
+  have hhead := length_encOption_head?_le (encB := encB) r
+  enc_len at *
 
 /-- A round of `Turing.MultiTapeTM.zipFold`, in space linear in the rest of the second list, the
 results so far and the element, up to the constants of `f`, and in the time of `f` beyond that. -/
@@ -108,7 +131,7 @@ private lemma zipFoldStep_inO [Inhabited β] [Inhabited γ] {T : π × α × Opt
   have ha := snd (encPair encP (encPair (encList encB) (encList encC))) encA
   have hrest := hq.snd'.fst'
   have hacc := hq.snd'.snd'
-  have ho := hf.comp' (hq.fst'.prod (ha.prod ((head?_inO (encB := encB)).comp' hrest)))
+  have ho := hf.comp' (hq.fst'.prod (ha.prod ((head? (encB := encB)).comp' hrest)))
   have hsnoc := (ComputableInDegree.snoc encC).inO_one.comp' (hacc.prod (optionGetD default ho))
   have h := ((ComputableInDegree.listTail encB).inO_one.comp' hrest).prod
     ((optionIsSome ho).ite hsnoc hacc)
@@ -125,11 +148,11 @@ private lemma zipFoldStep_inO [Inhabited β] [Inhabited γ] {T : π × α × Opt
     have hsize : 2 * (encP p).length + 2 * (encList encB r).length + (encList encC acc).length +
         (encA a).length ≤ 2 * X := by
       rw [← hX]; simp only [length_encPair]; omega
-    have hhead := length_head?_le (encB := encB) r
+    have hhead := length_encOption_head?_le (encB := encB) r
     have hout := hc (p, a, r.head?)
     have hout' := Nat.le_trans hout (Nat.mul_le_mul_left c htriple)
     dsimp only at hout hout'
-    have hget := length_getD_le (encC := encC) (f p a r.head?)
+    have hget := length_enc_getD_le (encC := encC) (f p a r.head?)
     have hscale : (2 * (encB default).length + 8) * ((encList encB r).length + 1) ≤ d * (X + 1) :=
       Nat.mul_le_mul (by omega) (by omega)
     have hZ₁ : X + 1 ≤ (d + 1) * (c + 1) * (X + 1) := by nlinarith [Nat.zero_le (d * c)]
@@ -153,8 +176,7 @@ private lemma length_foldl_zipFoldStep_le (q : π × List α × List β) (i B : 
   have h₂ := SizedListEncoding.length_drop_le (encA := encB) (encL := encList encB) r
     (l.take i).length
   rw [foldl_zipFoldStep, List.nil_append]
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 /-- The input of round `i` is bounded by the input and the results so far. -/
 private lemma length_zipFoldRound_le (q : π × List α × List β) (i B : ℕ) (hi : i < q.2.1.length)
@@ -165,8 +187,7 @@ private lemma length_zipFoldRound_le (q : π × List α × List β) (i B : ℕ) 
   have h₁ := length_foldl_zipFoldStep_le (encP := encP) (encA := encA) (encB := encB) q i B hout
   have h₂ := length_le_encList_of_mem encA (List.getElem_mem hi)
   obtain ⟨p, l, r⟩ := q
-  simp only [length_encPair] at *
-  omega
+  enc_len at *
 
 /-- **Walking along two lists.** For a linear `f`, whose results collected along the way are
 linear in the input, walking along two lists takes time the length of the first list times the
@@ -223,7 +244,7 @@ theorem zipFold [Inhabited β] [Inhabited γ]
   all_goals
     have hparts : (encP q.1).length + (encList encA q.2.1).length ≤
         (encPair encP (encPair (encList encA) (encList encB)) q).length := by
-      simp only [length_encPair]; omega
+      enc_len
     generalize (encPair encP (encPair (encList encA) (encList encB)) q).length = X at *
     have hsplit : C * (X + 1) =
         (K + 8) * ((8 + 2 * k) * (X + 1)) + (2 * (X + 1) + k * (X + 1)) + 2 * (X + 1) := by
@@ -275,7 +296,7 @@ theorem zipFold [Inhabited β] [Inhabited γ]
   refine ⟨K * 8 + 16, ((snd' hfold).mono_le fun q => ?_).of_enc_eq fun q => ?_⟩
   · have hparts : (encP q.1).length + (encList encA q.2.1).length ≤
         (encPair encP (encPair (encList encA) (encList encB)) q).length := by
-      simp only [length_encPair]; omega
+      enc_len
     generalize (encPair encP (encPair (encList encA) (encList encB)) q).length = X at *
     generalize B q = Y at *
     nlinarith

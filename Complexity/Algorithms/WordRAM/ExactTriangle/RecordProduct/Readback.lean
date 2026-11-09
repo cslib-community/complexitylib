@@ -12,8 +12,9 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RecordDa
 /-!
 # Pure source-span readback for either record product
 
-Record ordinals, query spans and raw matrix values are shared by both product backends.
-This module does not import a per-record product execution or initialized caller.
+`producer_readback` derives the six-word record descriptor, raw left and right zero/one matrix
+spans, ordered query-coordinate words, heap bounds and occurrence sparsity from a genuine
+`Instances.Output`, without importing or executing either per-record product backend.
 -/
 
 public section

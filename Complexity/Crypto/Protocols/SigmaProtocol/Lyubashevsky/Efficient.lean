@@ -42,7 +42,7 @@ machine-backed efficiency certificates for `SigmaProtocol.lyubashevsky`:
      `boxShift B u = (u : ℤ) - B`.
    - Every sample stays inside `[-B, B]` (`abs_sampleIntBoxCoins_le`,
      `abs_le_of_mem_support_sampleIntBox`, `mem_intBox_of_mem_support_sampleIntBoxVec`).
-   - Statistical distance (`Interactive.CloseTo`) from the exact uniform distribution
+   - Statistical distance (`Cslib.Probability.CloseTo`) from the exact uniform distribution
      `uniformBox1D B` on `[-B, B]` is at most `(2 * B + 1) / 2 ^ width`
      (`closeTo_uniformBox1D_sampleIntBox`), and for `m` independent coordinates at most
      `m * ((2 * B + 1) / 2 ^ width)` (`closeTo_uniform_intBox_sampleIntBoxVec`,
@@ -76,6 +76,8 @@ machine-backed efficiency certificates for `SigmaProtocol.lyubashevsky`:
 * `Cslib.Crypto.Protocols.SigmaProtocol.NonAbortSimulatorRealizedBy`,
   `Cslib.Crypto.Protocols.SigmaProtocol.EfficientNonAbortSpecialHVZK`: strict-PPT simulator
   certificates for Sigma protocols with aborts.
+* `Cslib.Crypto.Protocols.SigmaProtocol.encCommitResponseOrAbort`: the encoding of the optional
+  commitment-response pair output by a program that may abort.
 * `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyFamily`,
   `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyEncoding`,
   `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyVerifyWord`,
@@ -538,6 +540,13 @@ def EfficientVerifier (P : ∀ i, SigmaProtocol (X i) (Y i) (T i) (C i) (Z i))
       (encPair enc.index (encPair encBits (encPair encBits (encPair encBits encBits)))) encBool ∧
     VerifierRealizedBy P enc f
 
+/-- Output of a word program that may abort, such as a non-abort simulator or a signing attempt:
+`some (t, z)`, a commitment and a response as bit words, or `none` on an abort. `encOption`
+encodes `none` as the empty word and `some` by a `true` tag bit before the pair, whose commitment
+is framed. -/
+abbrev encCommitResponseOrAbort : Option (List Bool × List Bool) ↪ List Bool :=
+  encOption (encPair encBits encBits)
+
 /-- The program `program` realizes the non-abort simulator family `simulate` on encodings up to
 statistical distance `δ`: on the index, the encoded statement and the encoded challenge, its output
 in `Option (List Bool × List Bool)` is within `δ i` of the encoded commitment/response pair (or
@@ -564,8 +573,7 @@ structure EfficientNonAbortSpecialHVZK
   nonAbortSpecialHVZK : ∀ i, (P i).NonAbortSpecialHVZK (R i) (simulate i)
   /-- One uniform strict PPT program realizes the simulator family up to `δ`. -/
   realized : ∃ program,
-    IsPPTOn (encPair enc.index (encPair encBits encBits))
-      (encOption (encPair encBits encBits)) program ∧
+    IsPPTOn (encSimulatorInput enc.index) encCommitResponseOrAbort program ∧
     NonAbortSimulatorRealizedBy enc simulate program δ
 
 /-- A program realizing a non-abort simulator is `δ i`-close to the honest prover's encoded
@@ -766,15 +774,9 @@ theorem efficientSpecialSoundness_lyubashevsky :
 
 /-! ### Part 1b: Uniform polynomial-time verifier (`EfficientVerifier`) -/
 
-/-- Total polynomial-time decoder for signed binary integers. -/
-def intDecoder : Decoder encIntBin where
-  decode := decodeIntBin
-  decode_enc := decodeIntBin_encIntBin
-  computable := computableInPolyTime_decodeIntBin.exists_degree
-
 /-- Total polynomial-time decoder for framed lists of signed binary integers. -/
 def intListDecoder : Decoder (encList encIntBin) :=
-  Decoder.list intDecoder
+  Decoder.list Decoder.intBin
 
 /-- Total polynomial-time decoder for framed matrices of signed binary integers. -/
 def intMatrixDecoder : Decoder (encList (encList encIntBin)) :=
@@ -1070,8 +1072,8 @@ def lyubashevskySimulatePostprocess
 @[local fun_prop]
 private theorem computableTidilyInPolyTime_lyubashevskySimulatePostprocess :
     ComputableTidilyInPolyTime lyubashevskySimulatePostprocess
-      (encPair (encPair encLyubashevskyParams (encPair encBits encBits)) (encList encIntBin))
-      (encOption (encPair encBits encBits)) := by
+      (encPair (encSimulatorInput encLyubashevskyParams) (encList encIntBin))
+      encCommitResponseOrAbort := by
   let encIn := encPair (encPair encLyubashevskyParams (encPair encBits encBits)) (encList encIntBin)
   have hcond : ComputableTidilyInPolyTime
       (fun inp : (LyubashevskyParams × List Bool × List Bool) × List ℤ =>
@@ -1128,8 +1130,8 @@ private theorem computableTidilyInPolyTime_lyubashevskySimulatePostprocess :
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySimulatePostprocess :
     ComputableInPolyTime lyubashevskySimulatePostprocess
-      (encPair (encPair encLyubashevskyParams (encPair encBits encBits)) (encList encIntBin))
-      (encOption (encPair encBits encBits)) :=
+      (encPair (encSimulatorInput encLyubashevskyParams) (encList encIntBin))
+      encCommitResponseOrAbort :=
   .of_tidy computableTidilyInPolyTime_lyubashevskySimulatePostprocess
 
 /-- Coin-realized deterministic simulator for Lyubashevsky's identification protocol: map
@@ -1146,8 +1148,8 @@ def lyubashevskySimulateCoins
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySimulateCoins :
     ComputableInPolyTime lyubashevskySimulateCoins
-      (encPair (encPair encLyubashevskyParams (encPair encBits encBits)) encBits)
-      (encOption (encPair encBits encBits)) := by
+      (encPair (encSimulatorInput encLyubashevskyParams) encBits)
+      encCommitResponseOrAbort := by
   have := computableInPolyTime_sampleIntBoxListCoins.tidy
   apply ComputableInPolyTime.of_tidy
   unfold lyubashevskySimulateCoins LyubashevskyParams.γ LyubashevskyParams.m
@@ -1164,8 +1166,8 @@ noncomputable def lyubashevskySimulateWord
 
 /-- `lyubashevskySimulateWord` is uniformly strict PPT. -/
 theorem isPPTOn_lyubashevskySimulateWord :
-    IsPPTOn (encPair encLyubashevskyParams (encPair encBits encBits))
-      (encOption (encPair encBits encBits)) lyubashevskySimulateWord := by
+    IsPPTOn (encSimulatorInput encLyubashevskyParams)
+      encCommitResponseOrAbort lyubashevskySimulateWord := by
   let encIn := encPair encLyubashevskyParams (encPair encBits encBits)
   have hγ : ComputableInPolyTime
       (fun inp : LyubashevskyParams × List Bool × List Bool => inp.1.γ) encIn encNat := by

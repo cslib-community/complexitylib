@@ -91,7 +91,7 @@ private theorem mapFilterConst_plain {ι : Type*} {α β : Type} {encIn : α ↪
 @[local fun_prop]
 private theorem int_abs_le_nat'_plain {α : Type} {input : α ↪ List Bool}
     {position : α → ℤ} {bound : α → ℕ}
-    (hposition : ComputableInPolyTime position input encInt)
+    (hposition : ComputableInPolyTime position input encIntUnary)
     (hbound : ComputableInPolyTime bound input encUnary) :
     ComputableInPolyTime (fun a => decide (|position a| ≤ (bound a : ℤ))) input encBool := by
   simp only [← Int.natCast_natAbs, Int.ofNat_le]
@@ -191,14 +191,14 @@ private theorem stepTerms_out (o : OutView) :
       enc (encList (encList (encPair encFeature encBool))) := const _
 
 private theorem stepTerms_cell (i : Fin k) (s : Option Bool) {z : α → ℤ}
-    (hz : ComputableInPolyTime z enc encInt) :
+    (hz : ComputableInPolyTime z enc encIntUnary) :
     ComputableInPolyTime (fun a => Feature.stepTerms tm (n a) (T a) (.cell i (z a) s))
       enc (encList (encList (encPair encFeature encBool))) := by
   fun_prop [Feature.stepTerms]
 
 private theorem stepTerms_head (i : Fin k) {z : α → ℤ}
     (hT : ComputableInPolyTime T enc encUnary)
-    (hz : ComputableInPolyTime z enc encInt) :
+    (hz : ComputableInPolyTime z enc encIntUnary) :
     ComputableInPolyTime (fun a => Feature.stepTerms tm (n a) (T a) (.head i (z a)))
       enc (encList (encList (encPair encFeature encBool))) := by
   unfold Feature.stepTerms
@@ -268,12 +268,12 @@ theorem computableInPolyTime_stepClauses [DecidableEq State]
       (stepTerms_inPos tm (by fun_prop) (by fun_prop))
   · apply flatMapConst_plain
     intro i _
-    apply flatMapWithInput (encA := encInt) (by fun_prop)
+    apply flatMapWithInput (encA := encIntUnary) (by fun_prop)
     exact stepImpClauses (by fun_prop) (by fun_prop)
       (stepTerms_head tm i (by fun_prop) (by fun_prop))
   · apply flatMapConst_plain
     intro i _
-    apply flatMapWithInput (encA := encInt) (by fun_prop)
+    apply flatMapWithInput (encA := encIntUnary) (by fun_prop)
     apply flatMapConst_plain
     intro s _
     exact stepImpClauses (by fun_prop) (by fun_prop) (stepTerms_cell tm i s (by fun_prop))

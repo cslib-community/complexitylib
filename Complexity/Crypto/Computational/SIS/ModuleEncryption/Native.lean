@@ -57,20 +57,6 @@ private def keyGenInputEncoding : KeyGenInput ↪ List Bool :=
   encPair (encPair (encPair encUnary encUnary) encNat)
     (encPair encBits (encPair encBits encBits))
 
-private def decodeSignedList (w : List Bool) : List ℤ :=
-  (frames w).map decodeIntBin
-
-private theorem decodeSignedList_encode (l : List ℤ) :
-    decodeSignedList (encList encIntBin l) = l := by
-  simp only [decodeSignedList, frames_encList, List.map_map, Function.comp_def,
-    decodeIntBin_encIntBin]
-  exact List.map_id l
-
-private theorem decodeSignedList_polyTime :
-    ComputableInPolyTime decodeSignedList encBits (encList encIntBin) :=
-  (ComputableInPolyTime.map computableInPolyTime_decodeIntBin).comp
-    computableInDegree_frames.computableInPolyTime
-
 private def keyGenCoefficients (d q : ℕ) (rows : List (List ℕ)) (s e : List ℤ) : List ℕ :=
   (List.range d).map fun i =>
     ((ListMatrix.dotProduct d ((rows.getD i []).map (fun x : ℕ => (x : ℤ))) s +
@@ -95,17 +81,19 @@ private def keyGenWords (a : KeyGenInput) : List Bool :=
   encPair encBits (encList encNat) (a.2.1,
     keyGenCoefficients (a.1.1.1 * a.1.1.2) a.1.2
       ((Decoder.list (Decoder.list Decoder.nat)).decode a.2.1)
-      (decodeSignedList a.2.2.1) (decodeSignedList a.2.2.2))
+      ((Decoder.list Decoder.intBin).decode a.2.2.1)
+      ((Decoder.list Decoder.intBin).decode a.2.2.2))
 
 private theorem keyGenWords_polyTime :
     ComputableInPolyTime keyGenWords keyGenInputEncoding encBits := by
   have hrows := (Decoder.list (Decoder.list Decoder.nat)).computableInPolyTime
-  have hdecode := decodeSignedList_polyTime
+  have hdecode := (Decoder.list Decoder.intBin).computableInPolyTime
   have hcoeff := keyGenCoefficients_polyTime
   have hinput : ComputableInPolyTime
       (fun a : KeyGenInput => (((a.1.1.1 * a.1.1.2), a.1.2),
         ((Decoder.list (Decoder.list Decoder.nat)).decode a.2.1,
-          decodeSignedList a.2.2.1, decodeSignedList a.2.2.2)))
+          (Decoder.list Decoder.intBin).decode a.2.2.1,
+          (Decoder.list Decoder.intBin).decode a.2.2.2)))
       keyGenInputEncoding
       (encPair (encPair encUnary encNat)
         (encPair (encList (encList encNat))
@@ -127,8 +115,7 @@ private theorem keyGenCoefficients_ofFn {d q : ℕ} (hq : 0 < q)
     List.ofFn (fun i => ((A *ᵥ (Int.cast ∘ s)) i + (e i : ZMod q)).val) := by
   let : NeZero q := ⟨hq.ne'⟩
   rw [keyGenCoefficients, List.map_range_eq_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp only [List.getD_ofFn, List.map_ofFn, Function.comp_def]
   have h := ListMatrix.intCast_dotProduct_matrix_ofFn A s i
   simp only [List.getD_ofFn, ZMod.cast_eq_val, Function.comp_def] at h
@@ -145,8 +132,7 @@ private theorem keyGenWords_encode {k n q : ℕ} (hq : 0 < q)
       ModuleLWE.encodeSample
         (moduleLWEKeyGen A (fun j i => (s j i : ZMod q)) (fun j i => (e j i : ZMod q))) := by
   simp only [keyGenWords, ModuleSIS.encodeMatrix, ModuleSIS.encodeVec,
-    GeneralSIS.encodeMatrix, GeneralSIS.encodeVec, Decoder.decode_enc,
-    decodeSignedList_encode]
+    GeneralSIS.encodeMatrix, GeneralSIS.encodeVec, Decoder.decode_enc]
   rw [keyGenCoefficients_ofFn hq]
   simp only [ModuleLWE.encodeSample, moduleLWEKeyGen_eq_sample,
     ModuleLWE.flattenPolyVec_sample, ← intCast_comp_flattenPolyVec]
@@ -491,17 +477,17 @@ private theorem decryptBits_polyTime :
 private def decryptWords (a : DecryptInput) : List Bool :=
   decryptBits a.1.1.1 a.1.1.2 a.1.2
     ((Decoder.list (Decoder.list Decoder.nat)).decode a.2.2)
-    (decodeSignedList a.2.1)
+    ((Decoder.list Decoder.intBin).decode a.2.1)
 
 private theorem decryptWords_polyTime :
     ComputableInPolyTime decryptWords decryptInputEncoding encBits := by
   unfold decryptWords
   have hct := (Decoder.list (Decoder.list Decoder.nat)).computableInPolyTime
-  have hs := decodeSignedList_polyTime
+  have hs := (Decoder.list Decoder.intBin).computableInPolyTime
   have hinput : ComputableInPolyTime
       (fun a : DecryptInput =>
         (a.1, ((Decoder.list (Decoder.list Decoder.nat)).decode a.2.2,
-          decodeSignedList a.2.1)))
+          (Decoder.list Decoder.intBin).decode a.2.1)))
       decryptInputEncoding
       (encPair (encPair (encPair encUnary encUnary) encNat)
         (encPair (encList (encList encNat)) (encList encIntBin))) := by
@@ -535,8 +521,7 @@ private theorem decryptSecretCoeffs_ofFn {k n q : ℕ} (hq : 0 < q)
       List.ofFn fun l : Fin n => (s j l : ZMod q).val := by
   unfold decryptSecretCoeffs
   rw [List.map_range_eq_ofFn]
-  congr 1
-  funext l
+  congr 1 with l : 1
   have hidx : (finProdFinEquiv (j, l)).val = j.val * n + l.val := by
     simp [finProdFinEquiv, mul_comm, add_comm]
   have hlen : j.val * n + l.val < k * n := by
@@ -561,8 +546,7 @@ private theorem decryptProducts_ofFn {k n q : ℕ} (hq : 0 < q)
         (negacyclicMul (ct.1 j) (fun l => (s j l : ZMod q)) l).val := by
   unfold decryptProducts
   rw [List.map_range_eq_ofFn]
-  congr 1
-  funext j
+  congr 1 with j : 1
   have hu : (List.ofFn fun i : Fin (k + 1) => List.ofFn fun j : Fin n =>
       (extendCiphertext ct i j).val).getD (j.val + 1) [] =
       List.ofFn fun l : Fin n => (ct.1 j l).val := by
@@ -601,8 +585,7 @@ private theorem decryptBits_ofFn {k n q : ℕ} (hq : 0 < q)
   let : NeZero q := ⟨hq.ne'⟩
   rw [decryptBits_def]
   rw [List.map_range_eq_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   have hv : (List.ofFn fun i : Fin (k + 1) => List.ofFn fun j : Fin n =>
       (extendCiphertext ct i j).val).getD 0 [] =
       List.ofFn fun l : Fin n => (ct.2 l).val := by
@@ -632,7 +615,7 @@ private theorem decryptWords_encode {k n q : ℕ} (hq : 0 < q)
       GeneralSIS.encodeMatrix (extendCiphertext ct))) =
       List.ofFn (moduleLWEDecrypt (fun j i => (s j i : ZMod q)) ct) := by
   simp only [decryptWords, ModuleSIS.encodeVec, GeneralSIS.encodeMatrix,
-    GeneralSIS.encodeVec, Decoder.decode_enc, decodeSignedList_encode]
+    GeneralSIS.encodeVec, Decoder.decode_enc]
   exact decryptBits_ofFn hq s ct
 
 /-- A single total native function realizes existing deterministic Module-LWE decryption
@@ -656,13 +639,13 @@ theorem exists_computableInPolyTime_moduleLWEDecrypt :
 /-- At modulus zero, the total runtime function remains defined, producing `false` for every
 output bit without asserting quotient-ring semantics. -/
 example : decryptWords (((1, 2), 0), ([], [])) = [false, false] := by
-  simp only [decryptWords, decodeSignedList, frames_nil, List.map_nil, Decoder.list]
+  simp only [decryptWords, Decoder.list, frames_nil, List.map_nil]
   decide
 
 /-- Empty ciphertext and secret words are total: missing rows and coefficients pad with default
 values, yielding a total boolean list of length `n`. -/
 example : decryptWords (((2, 3), 29), ([], [])) = [false, false, false] := by
-  simp only [decryptWords, decodeSignedList, frames_nil, List.map_nil, Decoder.list]
+  simp only [decryptWords, Decoder.list, frames_nil, List.map_nil]
   decide
 
 /-- Excess rows and secret entries are ignored while charging complete input length: a secret
@@ -673,7 +656,7 @@ example :
       (encList encIntBin [1, -1, 5, 10],
         encList (encList encNat) [[7, 8], [3, 4], [99, 100]])) =
       [false, false] := by
-  simp only [decryptWords, decodeSignedList_encode, Decoder.decode_enc]
+  simp only [decryptWords, Decoder.decode_enc]
   decide
 
 /-- Incomplete framing and malformed words do not crash: raw bitstreams with irregular frame
@@ -686,8 +669,8 @@ example :
   have hf : frames [true] = [[]] := by
     rw [frames_of_ne_nil (by decide)]
     simp [unframe, dropFrame]
-  have hs : decodeSignedList [true] = [0] := by
-    simp [decodeSignedList, hf, decodeIntBin, Decoder.nat, ofBits]
+  have hs : (Decoder.list Decoder.intBin).decode [true] = [0] := by
+    simp [Decoder.list, Decoder.intBin, hf, decodeIntBin, Decoder.nat, ofBits]
   have hct : (Decoder.list (Decoder.list Decoder.nat)).decode [true] = [[]] := by
     simp [Decoder.list, hf]
   simp only [decryptWords, hs, hct]

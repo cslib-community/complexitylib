@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.MaxCSP
+public import Complexity.Computability.PCP.Encoded.ParallelEdges
 import Complexity.Computability.PCP.Encoded.Count
 import Complexity.Foundations.Data.List.Filter
 import Complexity.Foundations.Data.BitString.Enumeration
@@ -21,12 +22,15 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fi
 Each edge occurrence becomes a left vertex carrying a pair of symbols, and two total projection
 edges check the two endpoint labels. Invalid pair labels retract to a satisfying pair, using a
 fixed exhaustive list. A relation with no satisfying pair instead produces a fixed contradictory
-projection instance. Loops and parallel edges retain their occurrence identities.
+projection instance. Loops and parallel edges retain their occurrence identities. The output has
+no parallel edges (`Cslib.PCP.Encoded.Graph.NoParallelEdges`) whenever the input is loopless
+(`noParallelEdges_reduce`), which parallel repetition requires.
 
 The construction and factor-two gap bound are original library adaptations to the existing
 executable graph and total-projection APIs. The source hardness theorem is the already-proved
 `Cslib.Complexity.GapTwoCSP_npHard`. This is a constant-gap prerequisite for small-soundness Label
-Cover; parallel repetition is not established here.
+Cover, which applies parallel repetition after loop removal in
+`Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness`.
 
 ## Main definitions
 
@@ -38,6 +42,8 @@ Cover; parallel repetition is not established here.
 
 * `Cslib.PCP.Encoded.LabelCoverIncidence.satisfiable_reduce`: perfect completeness.
 * `Cslib.PCP.Encoded.LabelCoverIncidence.half_unsatVal_le_reduce`: the factor-two gap bound.
+* `Cslib.PCP.Encoded.LabelCoverIncidence.noParallelEdges_reduce`: loopless inputs give outputs
+  without parallel edges.
 * `Cslib.PCP.Encoded.LabelCoverIncidence.isPolyTime_reduce`: native polynomial-time compilation
   under the existing framed graph/table encodings, for a fixed finite alphabet.
 * `Cslib.Complexity.GapLabelCover_npHard`: constant-gap hardness with `128²` left labels and
@@ -96,9 +102,30 @@ theorem length_edges_incidence (pairs : List (α × α)) (fallback : α × α)
   simp [incidence, List.length_flatMap, block, List.map_const', List.sum_replicate,
     Nat.mul_comm]
 
-/-- Two constant projections to distinct symbols cannot both be satisfied. -/
+/-- Two constant projections to distinct symbols cannot both be satisfied: two left vertices
+`0` and `1` project to the symbols `a` and `b` at the same right vertex `0`. The two edges have
+different left ends, so the instance has no parallel edges. -/
 def contradiction (a b : α) : Graph (α × α → α) :=
-  ⟨1, [⟨0, 0, fun _ => a⟩, ⟨0, 0, fun _ => b⟩]⟩
+  ⟨2, [⟨0, 0, fun _ => a⟩, ⟨1, 0, fun _ => b⟩]⟩
+
+/-- The contradictory instance has no parallel edges. -/
+theorem noParallelEdges_contradiction (a b : α) : (contradiction a b).NoParallelEdges := by
+  simp [contradiction, Graph.NoParallelEdges]
+
+/-- Within an occurrence block the two edges have different right ends when the source edge is not
+a loop, and blocks of different occurrences have different left ends. -/
+theorem noParallelEdges_incidence (pairs : List (α × α)) (fallback : α × α)
+    {g : Graph (α → α → Bool)} (hg : g.IsLoopless) :
+    (incidence pairs fallback g).NoParallelEdges := by
+  unfold Graph.NoParallelEdges incidence
+  simp only [List.map_flatMap]
+  refine List.nodup_flatMap.mpr ⟨fun p hp => ?_, ?_⟩
+  · have h := hg p.1 (List.fst_mem_of_mem_zipIdx hp)
+    simp [block, h]
+  · refine List.Pairwise.of_map Prod.snd (fun p q hne => ?_) (by
+      rw [List.zipIdx_map_snd]
+      exact List.nodup_range' (s := 0) (n := g.edges.length))
+    simp [Function.onFun, block, Ne.symm hne]
 
 /-- Send an empty relation to the contradictory instance; otherwise take incidence projections. -/
 def reduce (pairs : List (α × α)) (a b : α) (g : Graph (α → α → Bool)) :
@@ -106,6 +133,15 @@ def reduce (pairs : List (α × α)) (a b : α) (g : Graph (α → α → Bool))
   if g.edges.any (fun d => !(pairs.any fun p => d.constraint p.1 p.2)) then
     contradiction a b
   else incidence pairs (a, a) g
+
+/-- **The reduction of a loopless binary constraint graph is a Label Cover instance without
+parallel edges.** -/
+theorem noParallelEdges_reduce (pairs : List (α × α)) (a b : α) {g : Graph (α → α → Bool)}
+    (hg : g.IsLoopless) : (reduce pairs a b g).NoParallelEdges := by
+  unfold reduce
+  split
+  · exact noParallelEdges_contradiction a b
+  · exact noParallelEdges_incidence pairs (a, a) hg
 
 variable [DecidableEq α]
 
@@ -253,7 +289,7 @@ private theorem isPolyTime_block (pairs : List (α × α)) (fallback : α × α)
     (encA : α ↪ List Bool) :
     ComputableInPolyTime
       (fun p : Edge (α → α → Bool) × ℕ => block pairs fallback p.1 p.2)
-      (encPair (Edge.encoding (encPi (encPi encBool))) encUnary)
+      (encPair (Edge.encoding encConstraintTable) encUnary)
       (encList (Edge.encoding (encPi encA))) := by
   have hproj₁ : ComputableInPolyTime
       (fun R : α → α → Bool => fun p : α × α => (repair pairs fallback R p).1)
@@ -293,7 +329,7 @@ omit [DecidableEq α] in
 private theorem isPolyTime_incidence (pairs : List (α × α)) (fallback : α × α)
     (encA : α ↪ List Bool) :
     ComputableInPolyTime (incidence pairs fallback)
-      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi encA)) := by
+      (Graph.encoding encConstraintTable) (Graph.encoding (encPi encA)) := by
   have hb := isPolyTime_block pairs fallback encA
   have hget : ComputableInPolyTime
       (fun p : Graph (α → α → Bool) × ℕ =>
@@ -337,7 +373,7 @@ charged under the existing graph encodings. -/
 @[fun_prop]
 theorem isPolyTime_reduce (pairs : List (α × α)) (a b : α) (encA : α ↪ List Bool) :
     ComputableInPolyTime (reduce pairs a b)
-      (Graph.encoding (encPi (encPi encBool))) (Graph.encoding (encPi encA)) := by
+      (Graph.encoding encConstraintTable) (Graph.encoding (encPi encA)) := by
   have htest : ComputableInPolyTime
       (fun R : α → α → Bool => !(pairs.any fun p => R p.1 p.2))
       (encPi (encPi encBool)) encBool := .of_finite _
@@ -358,7 +394,7 @@ completeness and losing a factor of at most two in unsatisfied fraction. -/
 theorem polyTimeReducible_GapTwoCSP_GapLabelCover {α : Type} [Fintype α] [DecidableEq α]
     (pairs : List (α × α)) (hpairs : ∀ p, p ∈ pairs) (a b : α) (hab : a ≠ b)
     (encA : α ↪ List Bool) (s : ℝ) :
-    PromiseProblem.PolyTimeReducible (Graph.encoding (encPi (encPi encBool)))
+    PromiseProblem.PolyTimeReducible (Graph.encoding encConstraintTable)
       (Graph.encoding (encPi encA)) (GapTwoCSP α s)
       (GapLabelCover (α × α) α 1 ((1 + s) / 2)) := by
   let : Nonempty α := ⟨a⟩
@@ -392,7 +428,8 @@ private theorem mem_dinurPairs (p : (Bool × (Fin 6 → Bool)) × (Bool × (Fin 
     ⟨p.2, mem_dinurAlphabet _, rfl⟩⟩
 
 /-- Label Cover with left alphabet of `128²` symbols and right alphabet of `128` symbols is
-NP-hard at the constant soundness `1 - 2⁻⁶²`. Arbitrarily small soundness still needs repetition. -/
+NP-hard at the constant soundness `1 - 2⁻⁶²`. Arbitrarily small soundness, with growing alphabets,
+is `Cslib.Complexity.exists_GapLabelCover_npHard`. -/
 theorem GapLabelCover_npHard :
     PromiseProblem.NPHard
       (Graph.encoding (encPi (encPair encBool (encPi encBool))))

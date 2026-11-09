@@ -39,7 +39,7 @@ import Complexity.Tactic.PPT
 This module completes the efficient lazy-sampling Decisional Diffie–Hellman (`DDH`) reduction and
 the universal-hash bit-string pseudorandom-function bridge for the Naor–Reingold PRF over a
 `PrimeOrderGroupFamily` ([BonehShoup2023], Section 10.11, Exercises 10.4, 10.8, 10.11, pp. 424–426,
-and Section 4.11, Exercise 4.18, p. 172; [NaorReingold2004], Section 4.1, Construction 4.1,
+and Section 4.10, Exercise 4.18, p. 172; [NaorReingold2004], Section 4.1, Construction 4.1,
 Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 1. **Inverse-order bound from `DDH`:** `DDH.negligible_expected_inv_order`, imported from
@@ -99,7 +99,7 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  Version 0.6][BonehShoup2023], Section 4.10 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, and 10.11, pp. 424–426).
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
   Functions*][NaorReingold2004], Section 4.1 (Construction 4.1, Theorem 4.1, Lemma 4.2,
@@ -344,10 +344,8 @@ private theorem multiDDHRealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGr
       exact congrArg (· • F.generator d) (by ring)
     · simp [hxk, smul_smul, mul_comm]
   simp_rw [hfn]
-  simpa only [PMF.bind_bind, PMF.bind_map, Function.comp_def] using
-    congrArg (fun p : PMF (Fin m → ZMod (F.order d)) => p.bind
-      (fun α => naorReingoldWordRun F d prog (F.naorReingoldHybridEval d k B α)))
-      (PMF.uniformOfFintype_update (γ := ZMod (F.order d)) ⟨k, hk⟩)
+  symm
+  exact PMF.bind_uniformOfFintype_update (⟨k, hk⟩ : Fin m) _
 
 private theorem multiDDHIdealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
     (d : F.Desc) {m : ℕ} (k : ℕ) (hk : k < m) (prog : WordOracleComp Unit Bool) :

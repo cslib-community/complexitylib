@@ -1,3 +1,5 @@
+import ComplexityAbstracts.AlternationAbstract
+import ComplexityAbstracts.AlternationBridge
 import ComplexityAbstracts.AndreevThresholdAbstract
 import ComplexityAbstracts.AndreevThresholdBridge
 import ComplexityAbstracts.ApproximateMembershipAbstract
@@ -44,6 +46,8 @@ import ComplexityAbstracts.KargerMinCutAbstract
 import ComplexityAbstracts.KargerMinCutBridge
 import ComplexityAbstracts.MagnificationAbstract
 import ComplexityAbstracts.MagnificationBridge
+import ComplexityAbstracts.MatrixMultiplicationAbstract
+import ComplexityAbstracts.MatrixMultiplicationBridge
 import ComplexityAbstracts.PCPAbstract
 import ComplexityAbstracts.PCPBridge
 import ComplexityAbstracts.PartialMCSPAbstract
@@ -67,6 +71,8 @@ import ComplexityAbstracts.SubexponentialSATAbstract
 import ComplexityAbstracts.SubexponentialSATBridge
 import ComplexityAbstracts.SubsetSumAbstract
 import ComplexityAbstracts.SubsetSumBridge
+import ComplexityAbstracts.SuccinctDictionaryAbstract
+import ComplexityAbstracts.SuccinctDictionaryBridge
 import ComplexityAbstracts.TQBFAbstract
 import ComplexityAbstracts.TQBFBridge
 import ComplexityAbstracts.TodaAbstract
