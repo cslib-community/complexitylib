@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual second deterministic envelopes)
-import Complexity.Foundations.Probability.NormalizedAtomRows.SecondEnvelope
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.SecondEnvelope
 
 /-! Width, coupled spectator errors, and exact zero/empty edges for B1. -/
 set_option linter.privateModule false

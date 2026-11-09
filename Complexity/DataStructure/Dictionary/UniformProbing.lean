@@ -403,15 +403,7 @@ theorem occPermSet_zero {m : ℕ} (O : Finset (Fin m)) :
 private theorem allOccupied_mul_swap_iff {m : ℕ} {O : Finset (Fin m)} {k : ℕ} (hk : k < m)
     {j : Fin m} (hj : k ≤ j.val) (σ : Equiv.Perm (Fin m)) :
     allOccupied O k (σ * Equiv.swap ⟨k, hk⟩ j) ↔ allOccupied O k σ := by
-  have hfix : ∀ i : Fin m, i.val < k → (Equiv.swap ⟨k, hk⟩ j) i = i := by
-    intro i hi
-    apply Equiv.swap_apply_of_ne_of_ne
-    · intro h
-      have : i.val = k := congrArg Fin.val h
-      omega
-    · intro h
-      have : i.val = j.val := congrArg Fin.val h
-      omega
+  have hfix : ∀ i : Fin m, i.val < k → (Equiv.swap ⟨k, hk⟩ j) i = i := by grind
   refine ⟨fun h i hi => ?_, fun h i hi => ?_⟩
   · have := h i hi
     rwa [Equiv.Perm.mul_apply, hfix i hi] at this
@@ -863,10 +855,7 @@ theorem TableRep.otherOccupiedSlots_eq_occupiedSlots_of_eq_none {U m : ℕ}
   simp only [occupiedSlots, Finset.mem_filter, Finset.mem_univ, true_and] at hj
   obtain ⟨⟨u', v'⟩, hTj⟩ := Option.isSome_iff_exists.mp hj
   have hsu' := (hrep.slot_spec j u' v' hTj).1
-  have hne : u' ≠ u := by
-    rintro rfl
-    rw [hu] at hsu'
-    cases hsu'
+  have hne : u' ≠ u := by grind
   exact mem_otherOccupiedSlots_iff.mpr ⟨u', v', hTj, hne⟩
 
 /-- When `TableRep π s T` and `(Dictionary.dom s).card < m`, the stopping index for any key `u`
@@ -1184,10 +1173,7 @@ theorem probeCount_runTableFrom_of_isSome {U V n_max m : ℕ} (hm : 0 < m) (hcap
     | insert u v =>
       have hO : (otherOccupiedSlots T u).card < m :=
         hrep.card_otherOccupiedSlots_lt_of_valid hm hcap hs hvh.1
-      have hw' : ((Function.update s u (some v)) w).isSome := by
-        by_cases hwu : w = u
-        · subst hwu; simp
-        · simpa [Function.update_of_ne hwu] using hw
+      have hw' : ((Function.update s u (some v)) w).isSome := by grind
       rw [runTableFrom, tableStep, ih (hrep.tableInsert hm u v hO) hs' hw' hvh.2]
       exact hrep.probeCount_tableInsert_of_isSome hm u v hO hw
 
@@ -1252,9 +1238,7 @@ theorem runTableFrom_update_eq {U m : ℕ} (hm : 0 < m) (π : Fin U → Equiv.Pe
     dsimp only [runTableFrom, tableStep]
     exact runTableFrom_update_eq hm π u σ T fun v hv => hno v (List.mem_cons_of_mem _ hv)
   | .insert w v :: _, hno => by
-    have hwu : w ≠ u := by
-      rintro rfl
-      exact hno v List.mem_cons_self
+    have hwu : w ≠ u := by grind
     have hins : tableInsert hm (Function.update π u σ) T w v = tableInsert hm π T w v := by
       simp [tableInsert, Function.update_of_ne hwu]
     dsimp only [runTableFrom, tableStep]

@@ -24,7 +24,8 @@ This module gathers algebraic and combinatorial properties of symmetric differen
   (`Fintype.prod_symmDiff`, `Fintype.sum_symmDiff`).
 * Symmetric difference of a finset with a singleton: `s ∆ {t}` removes `t` if present and inserts
   it otherwise (`Finset.symmDiff_singleton_eq`), bounding the cardinality by `s.card + 1`
-  (`Finset.card_symmDiff_singleton_le`).
+  (`Finset.card_symmDiff_singleton_le`). In general `#(s ∆ t) ≤ #s + #t`
+  (`Finset.card_symmDiff_le`).
 * Summing over `s ∆ {t}` adds `val t` when elements have order at most 2, in particular in the
   Boolean ring `Bool` (`Finset.sum_symmDiff_singleton`).
 
@@ -34,7 +35,8 @@ This module gathers algebraic and combinatorial properties of symmetric differen
   difference.
 * `Finset.symmDiff_singleton_eq`: symmetric difference with a singleton as conditional erase/insert.
 * `Finset.mem_symmDiff_singleton`: membership in `s ∆ {t}`.
-* `Finset.card_symmDiff_singleton_le`: cardinality bound for `s ∆ {t}`.
+* `Finset.card_symmDiff_le`, `Finset.card_symmDiff_singleton_le`: cardinality bounds for `s ∆ t`
+  and `s ∆ {t}`.
 * `Finset.sum_symmDiff_singleton`: summing over `s ∆ {t}` adds `val t` in `Bool`.
 -/
 
@@ -77,6 +79,10 @@ theorem mem_symmDiff_singleton {s : Finset α} {t z : α} : z ∈ s ∆ {t} ↔ 
   · subst hz
     split_ifs with ht <;> simp [ht]
   · split_ifs with ht <;> simp [hz]
+
+/-- The cardinality of `s ∆ t` is at most `s.card + t.card`. -/
+theorem card_symmDiff_le (s t : Finset α) : (s ∆ t).card ≤ s.card + t.card :=
+  (card_le_card symmDiff_subset_union).trans (card_union_le _ _)
 
 /-- The cardinality of `s ∆ {t}` is at most `s.card + 1`. -/
 theorem card_symmDiff_singleton_le (s : Finset α) (t : α) :

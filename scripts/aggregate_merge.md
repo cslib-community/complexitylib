@@ -31,10 +31,12 @@ reviewed payload modes/blobs must remain exact. Reversing that feature and resto
 aggregate must recover the exact prefix tree. Additional unreviewed source payloads are rejected.
 
 Finally, Git's ordinary merge with the prefix's tracked attributes must yield the identical
-canonical tree. For example, an adjacent insertion may produce sorted imports with `merge=union`,
-while reversing the insertion order may produce unsorted imports. Adjacent independent deletions
-can also reconstruct correctly while union retains deleted imports. Both latter cases report a
-limitation: the source owner must refresh the source branch through the usual reviewed process.
+canonical tree. The temporary repository configures no merge driver, so the tracked
+`merge=leanagg` falls back to a text merge, as on GitHub. Under an older prefix's `merge=union`,
+an adjacent insertion may produce sorted imports, while reversing the insertion order may produce
+unsorted imports, and adjacent independent deletions can reconstruct correctly while union retains
+deleted imports. A conflict or a noncanonical result reports a limitation: the source owner must
+refresh the source branch through the usual reviewed process.
 The tool never proposes an alternative queue API or enables a merge driver.
 
 Git operations use a temporary bare repository/index/object directory populated by an ordinary
