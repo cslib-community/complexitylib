@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.LogSpaceDerandomization.ConditionalProductMean
+import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
@@ -272,12 +273,12 @@ theorem rowNormPow_product_sub_le {s Kf Kr Kc : ℕ} {N u f CF CB : ℝ}
     refine rowNormPow_sub_le_rootDistPow hs (by positivity) ?_ ?_
     · intro σ x y hx _
       exact ⟨sum_nonneg fun z _ => mul_nonneg (hF σ x z) (hB σ z y),
-        sum_mul_le_of_card_support_le _ hCF hCB (hFbound σ x) (fun z => hB σ z y)
-          (fun z => hBbound σ z y) (hleft σ x hx)⟩
+        sum_mul_le_of_card_support_le _ hCF hCB (fun z _ => hFbound σ x z)
+          (fun z _ => hB σ z y) (fun z _ => hBbound σ z y) (hleft σ x hx)⟩
     · intro σ x y hx _
       exact ⟨sum_nonneg fun z _ => mul_nonneg (hF' σ x z) (hB' σ z y),
-        sum_mul_le_of_card_support_le _ hCF hCB (hF'bound σ x) (fun z => hB' σ z y)
-          (fun z => hB'bound σ z y) (hleft' σ x hx)⟩
+        sum_mul_le_of_card_support_le _ hCF hCB (fun z _ => hF'bound σ x z)
+          (fun z _ => hB' σ z y) (fun z _ => hB'bound σ z y) (hleft' σ x hx)⟩
   calc
     _ ≤ _ := hproduct
     _ ≤ ((s : ℝ) * ((Kf : ℝ) * CF * CB) ^ (((s : ℝ) - 1) / s)) ^ s *

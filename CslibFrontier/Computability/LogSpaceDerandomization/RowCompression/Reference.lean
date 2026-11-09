@@ -65,7 +65,7 @@ default this is the rank obtained by adjoining arbitrarily many copies of `(z,0)
 @[expose] noncomputable def firstRank (s : Finset ι) (K : ℕ) (z : ℝ)
     (w : ι → Fin 2 → ℝ) : ℝ := max z (kthLargest K s fun y => w y 0)
 
-variable {s : Finset ι} {n K : ℕ} {ρ z η : ℝ} {w : ι → Fin 2 → ℝ}
+variable {s : Finset ι} {n K : ℕ} {ρ z η R : ℝ} {w : ι → Fin 2 → ℝ}
 
 theorem firstRank_nonneg : 0 ≤ firstRank s K z w :=
   kthLargest_nonneg.trans (le_max_right _ _)
@@ -119,7 +119,7 @@ theorem reference_update_bounds (hη : 0 ≤ η) {y : ι}
 
 /-- The updated padded first rank remains below a common input rank and threshold ceiling.
 No lower bound on raw first entries or upper bound on second entries is needed. -/
-theorem firstRank_update_le_of_le {R : ℝ} (hK : 0 < K) (hR : 0 ≤ R)
+theorem firstRank_update_le_of_le (hK : 0 < K) (hR : 0 ≤ R)
     (hq : firstRank s K z w ≤ R) (hu : threshold s n ρ z w ≤ R) :
     firstRank s K (newDefault s n K ρ z w) (update s n K ρ z w) ≤ R := by
   have hb : newDefault s n K ρ z w ≤ R :=
