@@ -18,7 +18,7 @@ import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[1]
-LOCAL_DOC_ROOTS = ("Complexity", "Cslib")
+LOCAL_DOC_ROOTS = ("CslibFrontier", "Cslib")
 NON_EXTERNAL_ROOTS = frozenset({
     *LOCAL_DOC_ROOTS,
     "abstracts",
@@ -37,13 +37,13 @@ SHELL_DOC_PAGES = frozenset({
     "tactics.html",
 })
 LOCAL_DECLARATION_PREFIXES = (
-    "./Complexity/",
-    "./Complexity.html",
+    "./CslibFrontier/",
+    "./CslibFrontier.html",
     "./Cslib/",
     "./Cslib.html",
 )
 # Where the guide and trimmed API docs link declarations.
-API_DOCS_URL = "https://www.cslib.io/complexitylib/"
+API_DOCS_URL = "https://www.cslib.io/cslib-frontier/"
 MATHLIB_DOCS_URL = "https://leanprover-community.github.io/mathlib4_docs/"
 PUBLISHED_INDEX_URL = f"{MATHLIB_DOCS_URL}declarations/declaration-data.bmp"
 EXTERNAL_TARGETS_FILE = "external-doc-targets.json"
@@ -120,7 +120,7 @@ def check_config():
 
 
 def local_modules(names):
-    return {name for name in names if name == "Complexity" or name.startswith("Complexity.")}
+    return {name for name in names if name == "CslibFrontier" or name.startswith("CslibFrontier.")}
 
 
 def resolve_relative_href(rel_page, href):
@@ -484,8 +484,8 @@ def sanitize_dependency_code_links(docs, modules=(), pruned_pages=()):
             continue
         rel_page = page.relative_to(docs).as_posix()
         if (
-            rel_page in ("Complexity.html", "navbar.html")
-            or rel_page.startswith("Complexity/")
+            rel_page in ("CslibFrontier.html", "navbar.html")
+            or rel_page.startswith("CslibFrontier/")
             or rel_page in pruned_pages
         ):
             continue
@@ -666,7 +666,7 @@ def check_output():
         require((docs / name).is_file(), f"Missing documentation output: {name}")
     # doc-gen4 uses a .bmp extension for its JSON search index.
     index = json.loads((docs / "declarations/declaration-data.bmp").read_text())
-    sources = [ROOT / "Complexity.lean", *sorted((ROOT / "Complexity").rglob("*.lean"))]
+    sources = [ROOT / "CslibFrontier.lean", *sorted((ROOT / "CslibFrontier").rglob("*.lean"))]
     expected_modules = {
         ".".join(source.relative_to(ROOT).with_suffix("").parts) for source in sources
     }
@@ -676,7 +676,7 @@ def check_output():
             f"Obsolete modules in search index: {', '.join(stale_modules)}")
     local_pages = {
         ".".join(page.relative_to(docs).with_suffix("").parts)
-        for page in (docs / "Complexity").rglob("*.html") if page.is_file()
+        for page in (docs / "CslibFrontier").rglob("*.html") if page.is_file()
     }
     stale_pages = sorted(local_pages - expected_modules)
     require(not stale_pages, f"Obsolete module pages: {', '.join(stale_pages)}")
