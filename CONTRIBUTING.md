@@ -209,8 +209,8 @@ For concurrent local validation, choose a thread budget for the shared host, for
 `LEAN_NUM_THREADS=2 scripts/check.sh`. Lean's
 [thread-pool setting](https://lean-lang.org/doc/reference/latest/IO/Tasks-and-Threads/)
 defaults to the number of logical processors and is not a hard process or memory cap; check the
-observed concurrency and memory use. Concurrent builds can also exhaust the host's file-handle
-table, which thread settings do not limit; see
+observed concurrency and memory use. Together, concurrent builds can also exhaust the host's
+file-handle table, so bound the number of builds as well as their threads; see
 [the troubleshooting chapter](manual/workflows/troubleshooting.md#diagnose-too-many-open-files-in-system).
 Keep mutable build outputs separate between worktrees
 (for example with `scripts/worktree.sh create <branch> [dir_name]`, which seeds `.lake/build` from

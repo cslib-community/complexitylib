@@ -112,7 +112,7 @@ coordinator acting for them, who records the push. Existing approval carries for
 [Restacks](../AGENTS.md#restacks) describes.
 
 When several coordinators share one host, give them a single limit on concurrent Lean builds,
-not only a thread count. Their builds usually exhaust the kernel's file handles before its
+not only a thread count. Their builds can exhaust the kernel's file handles before its
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 

@@ -9,7 +9,7 @@ This manual assumes basic Lean familiarity. Its workflows use the current checko
 3. [Prove deterministic resource bounds](deterministic-workflows.md): plain polynomial-time proofs, composition, loops and an NP-completeness client.
 4. [Work with randomized and oracle programs](probabilistic-workflows.md): free syntax, semantics, native efficiency and oracle costs.
 5. [Find and apply a result](finding-results.md): source search, checked abstracts, hypotheses and model-specific theorem routes.
-6. [Diagnose proof and build failures](troubleshooting.md): failed automation, missing imports, stale outputs and semantic mismatches.
+6. [Diagnose proof and build failures](troubleshooting.md): failed automation, missing imports, stale outputs, exhausted file handles and semantic mismatches.
 7. [Contribute and review](contributing.md): placement, source credit, validation, review and upstream coordination.
 8. [Coordinate implementation and review](agent-operations.md): participant ownership, isolated work, evidence and review handoffs.
 

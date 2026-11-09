@@ -44,13 +44,13 @@ If a small change causes a large rebuild, inspect its imports and exported inter
 
 ## Diagnose "Too many open files in system"
 
-On a shared host, concurrent builds can exhaust the kernel's file-handle table before they exhaust processors or memory. Lean maps every imported `.olean` file into memory, and each mapping holds a file handle until the process exits. A module that imports much of Mathlib holds tens of thousands of handles. On a Linux host with the common limit of 1,048,576, a few dozen such `lean` processes across all checkouts exhaust it. The symptoms are `Too many open files in system` (`ENFILE`) from Lake, Lean or Git, and crashes in unrelated tools on the same host. On Linux, compare the allocated handles with the limit:
+On a shared host, concurrent builds can exhaust the kernel's file-handle table before they exhaust processors or memory. Each `lean` process maps the `.olean` files of every module it imports (several files per module), and each mapping holds a file handle until the process exits. A module that imports much of Mathlib holds tens of thousands. These handles appear in `/proc/<pid>/maps`, not among the process's file descriptors, so `ulimit -n` and `/proc/<pid>/fd` do not show them. They count toward the system-wide limit `fs.file-max`, often about one million on Linux. A few dozen deep `lean` processes across all checkouts can reach it. The symptoms are `Too many open files in system` (`ENFILE`) from Lake, Lean or Git, and crashes in unrelated tools on the same host. On Linux, compare the allocated handles with the limit:
 
 ```bash
 cut -f1,3 /proc/sys/fs/file-nr
 ```
 
-`LEAN_NUM_THREADS` and CPU quotas reduce processor use, but they do not reduce the handles each process holds. Bound the number of concurrent builds instead: build the changed modules and their clients rather than the whole library, and use hosted CI for the full validation run. Rerun the failed command once the count has dropped. Lake reuses the modules that completed.
+One Lake build runs roughly as many `lean` processes at once as its thread pool allows, which `LEAN_NUM_THREADS` sets. Bound both that setting and the number of builds running at the same time on the host; CPU quotas do not reduce the handles. Build the changed modules and their clients rather than the whole library, and use hosted CI for the full validation run. Rerun the failed command once the count has dropped. Lake reuses the modules that completed.
 
 ## Distinguish the checks that passed
 

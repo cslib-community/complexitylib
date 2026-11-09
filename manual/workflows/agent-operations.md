@@ -31,7 +31,7 @@ The helper creates the worktree under `.worktrees/` and prepares caches. It reso
 
 Package sources may be hard-linked by default, while mutable build outputs are copied independently. Do not edit shared package sources. Use `--copy-cslib` or `--copy-packages` when dependencies must change. `--source-only` avoids initial `.lake` seeding when existing pins or artifacts are unsuitable. The [cache/isolation guide](../../scripts/cache/README.md#automatic-restoration) explains these modes.
 
-Coordinate a thread budget on shared machines. `LEAN_NUM_THREADS=2 scripts/check.sh` is an example setting, not a hard process or memory limit. On a busy host, the kernel's file-handle table is usually exhausted first, so also bound the number of concurrent Lean builds; see [Diagnose "Too many open files in system"](troubleshooting.md#diagnose-too-many-open-files-in-system). Stop only tasks you started, by recorded PID or task ID. Preserve completed artifacts when rescheduling. Ordinary worktrees share a Git object database; history-repair experiments require an independent repository.
+Coordinate a thread budget on shared machines. `LEAN_NUM_THREADS=2 scripts/check.sh` is an example setting, not a hard process or memory limit. On a busy host, the kernel's file-handle table can be exhausted first, so also bound the number of concurrent Lean builds; see [Diagnose "Too many open files in system"](troubleshooting.md#diagnose-too-many-open-files-in-system). Stop only tasks you started, by recorded PID or task ID. Preserve completed artifacts when rescheduling. Ordinary worktrees share a Git object database; history-repair experiments require an independent repository.
 
 ## Separate implementation and review
 
