@@ -32,7 +32,11 @@ For `ℓ ≥ 1`, the complement of the Beigel–Tarui modulus-amplifying polynom
 [Arora and Barak, Section 17.4][AroraBarak09],
 $$p_\ell(Y) = (1 - Y)^\ell \sum_{j=0}^{\ell-1} \binom{\ell - 1 + j}{j} Y^j \in \mathbb{Z}[Y],$$
 satisfies $p_\ell(Y) \equiv 1 \pmod{Y^\ell}$ and $p_\ell(Y) \equiv 0 \pmod{(1 - Y)^\ell}$, so
-for every integer $y \in \mathbb{Z}$, $p_\ell(y) \equiv \mathbf{1}_{\{2 \mid y\}} \pmod{2^\ell}$
+for every integer modulus $m$ and $y \in \mathbb{Z}$, $m \mid y$ implies
+$p_\ell(y) \equiv 1 \pmod{m^\ell}$ (`Polynomial.parityAmplifier_eval_modEq_one_of_dvd`) and
+$m \mid y - 1$ implies $p_\ell(y) \equiv 0 \pmod{m^\ell}$
+(`Polynomial.parityAmplifier_eval_modEq_zero_of_dvd_sub_one`). The case $m = 2$ gives
+$p_\ell(y) \equiv \mathbf{1}_{\{2 \mid y\}} \pmod{2^\ell}$
 (`Polynomial.parityAmplifier_eval_modEq_two_pow`).
 
 Following Lemma 5.1 and Lemma B.1 of
@@ -66,6 +70,9 @@ $d_* (\#I + 2(\ell - 1))$ when each input polynomial has total degree at most $d
 
 * `Polynomial.parityAmplifier_add_X_pow_mul_eq_one`: Bezout identity
   `p_ℓ(X) + X ^ ℓ * ∑ m < ℓ, choose (m + ℓ - 1) (ℓ - 1) * (1 - X) ^ m = 1` for `ℓ ≥ 1`.
+* `Polynomial.parityAmplifier_eval_modEq_one_of_dvd`,
+  `Polynomial.parityAmplifier_eval_modEq_zero_of_dvd_sub_one`: amplification from modulus `m` to
+  `m ^ ℓ`.
 * `Polynomial.parityAmplifier_eval_modEq_two_pow`:
   `p_ℓ(y) ≡ (if Even y then 1 else 0) [ZMOD 2 ^ ℓ]`.
 * `Polynomial.parityAmplifier_eq_sum_baseDigit`: `p_ℓ = ∑ j < ℓ, e_j * (X ^ 2 - X) ^ j`.
@@ -225,31 +232,47 @@ theorem X_pow_dvd_one_sub_parityAmplifier {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
   refine ⟨∑ i ∈ range ℓ, (Nat.choose (i + (ℓ - 1)) (ℓ - 1) : ℤ[X]) * (1 - X) ^ i, ?_⟩
   exact (eq_sub_of_add_eq' (parityAmplifier_add_X_pow_mul_eq_one hℓ)).symm
 
-/-- At any even integer `y`, `parityAmplifier ℓ` (`ℓ ≥ 1`) evaluates to `1` modulo `2 ^ ℓ`. -/
-theorem parityAmplifier_eval_modEq_one_of_even {ℓ : ℕ} (hℓ : 1 ≤ ℓ) {y : ℤ} (hy : Even y) :
-    (parityAmplifier ℓ).eval y ≡ 1 [ZMOD (2 : ℤ) ^ ℓ] := by
+/-- For `ℓ ≥ 1` and `m ∣ y`, `p_ℓ(y) ≡ 1 (mod m ^ ℓ)`: `y ^ ℓ` divides `1 - p_ℓ(y)`. -/
+private theorem parityAmplifier_eval_modEq_one_of_dvd_of_pos {ℓ : ℕ} (hℓ : 1 ≤ ℓ) {m y : ℤ}
+    (hy : m ∣ y) : (parityAmplifier ℓ).eval y ≡ 1 [ZMOD m ^ ℓ] := by
   rw [Int.modEq_iff_dvd]
   obtain ⟨q, hq⟩ := X_pow_dvd_one_sub_parityAmplifier hℓ
   have heval : 1 - (parityAmplifier ℓ).eval y = y ^ ℓ * q.eval y := by
     have := congr_arg (eval y) hq
     simpa only [eval_sub, eval_one, eval_mul, eval_pow, eval_X] using this
   rw [heval]
-  obtain ⟨k, rfl⟩ := hy
-  have h2 : (2 : ℤ) ∣ k + k := ⟨k, by ring⟩
-  exact dvd_mul_of_dvd_left (pow_dvd_pow_of_dvd h2 ℓ) _
+  exact dvd_mul_of_dvd_left (pow_dvd_pow_of_dvd hy ℓ) _
 
-/-- At any odd integer `y`, `parityAmplifier ℓ` evaluates to `0` modulo `2 ^ ℓ`. -/
-theorem parityAmplifier_eval_modEq_zero_of_odd (ℓ : ℕ) {y : ℤ} (hy : Odd y) :
-    (parityAmplifier ℓ).eval y ≡ 0 [ZMOD (2 : ℤ) ^ ℓ] := by
+/-- If `m ∣ y`, then `p_ℓ(y) ≡ 1 (mod m ^ ℓ)`. -/
+theorem parityAmplifier_eval_modEq_one_of_dvd (ℓ : ℕ) {m y : ℤ} (hy : m ∣ y) :
+    (parityAmplifier ℓ).eval y ≡ 1 [ZMOD m ^ ℓ] := by
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
+  · simp only [pow_zero, Int.modEq_one]
+  exact parityAmplifier_eval_modEq_one_of_dvd_of_pos hℓ hy
+
+/-- If `m ∣ y - 1`, then `p_ℓ(y) ≡ 0 (mod m ^ ℓ)`. -/
+theorem parityAmplifier_eval_modEq_zero_of_dvd_sub_one (ℓ : ℕ) {m y : ℤ} (hy : m ∣ y - 1) :
+    (parityAmplifier ℓ).eval y ≡ 0 [ZMOD m ^ ℓ] := by
   rw [Int.modEq_iff_dvd, zero_sub, dvd_neg]
   obtain ⟨q, hq⟩ := one_sub_X_pow_dvd_parityAmplifier ℓ
   have heval : (parityAmplifier ℓ).eval y = (1 - y) ^ ℓ * q.eval y := by
     have := congr_arg (eval y) hq
     simpa only [eval_mul, eval_pow, eval_sub, eval_one, eval_X] using this
   rw [heval]
-  obtain ⟨k, rfl⟩ := hy
-  have h2 : (2 : ℤ) ∣ 1 - (2 * k + 1) := ⟨-k, by ring⟩
-  exact dvd_mul_of_dvd_left (pow_dvd_pow_of_dvd h2 ℓ) _
+  have h1 : m ∣ 1 - y := by
+    rw [← neg_sub]
+    exact dvd_neg.2 hy
+  exact dvd_mul_of_dvd_left (pow_dvd_pow_of_dvd h1 ℓ) _
+
+/-- At any even integer `y`, `parityAmplifier ℓ` (`ℓ ≥ 1`) evaluates to `1` modulo `2 ^ ℓ`. -/
+theorem parityAmplifier_eval_modEq_one_of_even {ℓ : ℕ} (hℓ : 1 ≤ ℓ) {y : ℤ} (hy : Even y) :
+    (parityAmplifier ℓ).eval y ≡ 1 [ZMOD (2 : ℤ) ^ ℓ] :=
+  parityAmplifier_eval_modEq_one_of_dvd_of_pos hℓ (even_iff_two_dvd.1 hy)
+
+/-- At any odd integer `y`, `parityAmplifier ℓ` evaluates to `0` modulo `2 ^ ℓ`. -/
+theorem parityAmplifier_eval_modEq_zero_of_odd (ℓ : ℕ) {y : ℤ} (hy : Odd y) :
+    (parityAmplifier ℓ).eval y ≡ 0 [ZMOD (2 : ℤ) ^ ℓ] :=
+  parityAmplifier_eval_modEq_zero_of_dvd_sub_one ℓ (even_iff_two_dvd.1 (hy.sub_odd odd_one))
 
 /-- **Lemma 5.1 (parity congruence)**: for `ℓ ≥ 1` and `y ∈ ℤ`,
 `p_ℓ(y) ≡ (if Even y then 1 else 0) (mod 2 ^ ℓ)`. -/
