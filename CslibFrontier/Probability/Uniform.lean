@@ -34,6 +34,8 @@ branch at `5ff69ca`.
 * `Cslib.Probability.PMF.uniformOfFintype_map_of_shift`,
   `Cslib.Probability.PMF.uniformOfFintype_map_addHom`: uniformity from translations, in particular
   for surjective additive homomorphisms.
+* `Cslib.Probability.PMF.uniformOfFintype_map_comp`: a uniform function read through an injection
+  is uniform.
 * `Cslib.Probability.PMF.uniformOfFintype_map_sum`,
   `Cslib.Probability.PMF.uniformOfFintype_map_sum_pair`: subset sums are uniform and pairwise
   independent.
@@ -97,6 +99,16 @@ theorem uniformOfFintype_map_of_shift {ι G : Type*}
   apply (ENNReal.toReal_eq_toReal_iff' (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
   rw [toReal_uniformOfFintype_map_apply, dens_filter_eq_of_shift hf]
   simp
+
+/-- A uniform function read through an injection is uniform. -/
+theorem uniformOfFintype_map_comp {S Q R : Type*} [Fintype S] [DecidableEq S] [Fintype Q]
+    [DecidableEq Q] [Fintype R] [Nonempty R] [AddCommGroup R] {g : S → Q}
+    (hg : Function.Injective g) :
+    (PMF.uniformOfFintype (Q → R)).map (fun f => f ∘ g) = PMF.uniformOfFintype (S → R) := by
+  classical
+  refine uniformOfFintype_map_of_shift fun c => ⟨Equiv.addRight
+    (Function.extend g c 0), fun f => funext fun s => ?_⟩
+  simp [hg.extend_apply]
 
 /-- A finite sum is uniform if any one summand is fresh uniform, regardless of the others. -/
 theorem uniformOfFintype_map_sum_update {ι G : Type*}
