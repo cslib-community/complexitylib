@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.LinearAlgebra.AffineSpace.AffineMap
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.FieldSimp
@@ -336,10 +337,8 @@ theorem isMultilinear_eval_multilinearExtension [Fintype ι] (g : (ι → Bool) 
   intro x i
   have key (a : ι → Bool) (t : F) :
       (∏ j, if a j then update x i t j else 1 - update x i t j) =
-        (if a i then t else 1 - t) * ∏ j ∈ univ \ {i}, if a j then x j else 1 - x j := by
-    rw [← prod_update_of_mem (mem_univ i)]
-    exact prod_congr rfl fun j _ =>
-      apply_update (fun j (s : F) => if a j then s else 1 - s) x i t j
+        (if a i then t else 1 - t) * ∏ j ∈ univ.erase i, if a j then x j else 1 - x j :=
+    prod_apply_update_of_mem (mem_univ i) (fun j (s : F) => if a j then s else 1 - s) x t
   unfold lineRestrict
   simp only [eval_multilinearExtension_eq_sum, eval_indicatorPoly_apply, key]
   refine isAffineFun_sum _ fun a _ => (IsAffineFun.mul_const ?_ _).const_mul (g a)
@@ -367,9 +366,8 @@ theorem isMultilinear_eval_of_mem_restrictDegree [Finite ι] {P : MvPolynomial �
   simp only [eval_eq']
   refine isAffineFun_sum _ fun s hs => IsAffineFun.const_mul ?_ _
   have key (t : F) : (∏ j, update x i t j ^ s j) =
-      t ^ s i * ∏ j ∈ univ \ {i}, x j ^ s j := by
-    rw [← prod_update_of_mem (mem_univ i)]
-    exact prod_congr rfl fun j _ => apply_update (fun j (y : F) => y ^ s j) x i t j
+      t ^ s i * ∏ j ∈ univ.erase i, x j ^ s j :=
+    prod_apply_update_of_mem (mem_univ i) (fun j (y : F) => y ^ s j) x t
   simp only [key]
   refine IsAffineFun.mul_const ?_ _
   rcases Nat.le_one_iff_eq_zero_or_eq_one.mp ((mem_restrictDegree ι P 1).mp hP s hs i) with h | h
