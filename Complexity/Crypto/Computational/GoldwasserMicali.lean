@@ -943,18 +943,7 @@ private theorem advantage_publicKeyWordGame_le (maxLen : ℕ → ℕ) (real idea
     simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
       PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
     norm_num [PMF.toReal_false_eq_one_sub]; ring
-  apply NNReal.coe_le_coe.mp
-  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage, hprob]
-  have h := abs_sub_le
-    ((Game.succProbability (publicKeyWordGame maxLen real adversary false n) : ℝ) -
-      Game.succProbability (publicKeyWordGame maxLen real adversary true n))
-    ((Game.succProbability (publicKeyWordGame maxLen ideal adversary false n) : ℝ) -
-      Game.succProbability (publicKeyWordGame maxLen ideal adversary true n)) 0
-  have hscale (a b c d : ℝ) :
-      2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    rw [show (1 + a - b) / 2 - (1 + c - d) / 2 = ((a - b) - (c - d)) / 2 by ring, abs_div,
-      abs_two]; ring
-  simpa only [hscale, sub_zero] using h
+  exact Encryption.advantage_le_of_hiddenBit (hprob real) (hprob ideal)
 
 /-- **Quantitative multi-bit Goldwasser–Micali IND-CPA bound**: via lossy quadratic-residue public
 keys, bitwise encryption of equal-length words of length at most `maxLen n` reduces to
@@ -989,14 +978,10 @@ theorem advantage_publicKeyWordGame_le_qr (maxLen : ℕ → ℕ) {setup : ℕ �
     refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun y => ?_))
     have hy_sq : IsSquare y.1 := (Finset.mem_filter.mp y.2).2
     refine congrArg (PMF.bind _) (funext fun choice => ?_)
-    by_cases hv : validBoundedWords maxLen n
-        (encPair encNat encNat (d.p * d.q, y.1.val.val))
-        (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) = true
-    · have hlen : (ChoiceOut.msg₀ choice).length = (ChoiceOut.msg₁ choice).length := by
-        simp only [validBoundedWords, Bool.and_eq_true, beq_iff_eq] at hv; exact hv.1
-      simp only [hv, ↓reduceIte, Bool.false_eq_true]
-      rw [idealEncryptBits_eq_of_isSquare_of_length_eq (d.p * d.q) hy_sq hlen]
-    · simp only [hv, Bool.false_eq_true, ↓reduceIte]
+    refine ite_congr rfl (fun hv => ?_) fun _ => rfl
+    simp only [validBoundedWords, Bool.and_eq_true, beq_iff_eq] at hv
+    simp only [↓reduceIte, Bool.false_eq_true,
+      idealEncryptBits_eq_of_isSquare_of_length_eq (d.p * d.q) hy_sq hv.1]
   have hhop (bit : Bool) :
       Game.advantage
         (publicKeyWordGame maxLen (qrPublicKeyLaw setup n) adversary bit n)
@@ -1007,21 +992,17 @@ theorem advantage_publicKeyWordGame_le_qr (maxLen : ℕ → ℕ) {setup : ℕ �
     refine Game.advantage_bind_le_of_support _ _ _ fun d hd =>
       Game.advantage_bind_le_nnreal _ _ _ fun y =>
         Game.advantage_bind_le_nnreal _ _ _ fun choice => ?_
-    by_cases hv : validBoundedWords maxLen n
-        (encPair encNat encNat (d.p * d.q, y.1.val.val))
-        (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) = true
+    split <;> rename_i hv
     · have hle : (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice).length ≤
           maxLen n := by
         simp only [validBoundedWords, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at hv
         cases bit <;> simp only [↓reduceIte, Bool.false_eq_true] <;> omega
-      simp only [hv, ↓reduceIte]
       exact (advantage_encryptBits_idealEncryptBits_le d n (hsize d hd) y.1 _ _).trans
         (by gcongr)
-    · simp only [hv, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
+    · simp only [Game.advantage_self, zero_le]
   have h4 := Game.advantage_four_hop_le (hhop false) (hhop true)
   rw [hideal_eq, Game.advantage_self, add_zero] at h4
-  refine hrep.trans (add_le_add le_rfl (h4.trans (le_of_eq ?_)))
-  ring
+  exact hrep.trans (add_le_add le_rfl (h4.trans_eq (by ring)))
 
 /-- **Multi-bit Goldwasser–Micali IND-CPA security** (`Encryption.INDCPAOn`) under
 `QuadraticResiduosityHard` for any unary polynomial-time length schedule `maxLen`, with the same
