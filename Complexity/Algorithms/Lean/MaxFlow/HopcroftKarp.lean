@@ -1434,7 +1434,9 @@ end DfsDriver
 
 section ApplyEdges
 
-private theorem vget_foldl_apply (mate : Vector (Option (Fin m)) r) (es : List (Fin m × Fin r))
+/-- Rematching along an edge list with distinct right ends: `v` is matched to `u` afterwards iff
+`(u, v)` is in the list, or `v` is not rematched and was matched to `u` before. -/
+theorem vget_foldl_apply (mate : Vector (Option (Fin m)) r) (es : List (Fin m × Fin r))
     (hnd : (es.map Prod.snd).Nodup) (u : Fin m) (v : Fin r) :
     vget (es.foldl (fun mt e => vset mt e.2 (some e.1)) mate) v = some u ↔
       (u, v) ∈ es ∨ (v ∉ es.map Prod.snd ∧ vget mate v = some u) := by
@@ -1460,7 +1462,8 @@ private theorem vget_foldl_apply (mate : Vector (Option (Fin m)) r) (es : List (
     · rw [vget_vset_ne mate _ (Ne.symm hvb)]
       simp only [List.mem_cons, Prod.mk.injEq, hvb, and_false, false_or, List.map_cons]
 
-private theorem mateMatching_applyEdges (mate : Vector (Option (Fin m)) r)
+/-- Rematching a mate table along a compatible edge list realizes `augment`. -/
+theorem mateMatching_applyEdges (mate : Vector (Option (Fin m)) r)
     (es : List (Fin m × Fin r))
     (hnd : (es.map Prod.snd).Nodup)
     (hcompat : ∀ u v, (u, v) ∈ mateMatching mate →
@@ -1692,9 +1695,8 @@ private theorem hkLoopM_spec (hadj : BipAdjValid G adj) {C : ℕ}
   induction fuel with
   | zero =>
     intro n mate hM hfuel
-    have h1 := card_matchedLeft hM
-    have h2 := Finset.card_le_univ (matchedLeft (mateMatching mate))
-    simp only [Fintype.card_fin] at h2
+    have h := hM.card_le_card_left
+    simp only [Fintype.card_fin] at h
     omega
   | succ fuel ih =>
     intro n mate hM hfuel
@@ -1746,7 +1748,8 @@ end Loop
 
 section Extract
 
-private theorem mem_foldl_hkMatchingStep (mate : Vector (Option (Fin m)) r) (l : List (Fin r))
+/-- Membership in the matching extracted from a mate table. -/
+theorem mem_foldl_hkMatchingStep (mate : Vector (Option (Fin m)) r) (l : List (Fin r))
     (a : Finset (Fin m × Fin r)) (u : Fin m) (v : Fin r) :
     (u, v) ∈ l.foldl (hkMatchingStep mate) a ↔ (u, v) ∈ a ∨ (v ∈ l ∧ vget mate v = some u) := by
   induction l generalizing a with
@@ -1957,21 +1960,14 @@ theorem hopcroftKarpM_time_le (hadj : BipAdjValid G adj) :
       2 * Nat.sqrt ν + 1 by omega)
   omega
 
-private theorem card_le_min_of_isMatching {M : Finset (Fin m × Fin r)} (hM : IsMatching G M) :
-    M.card ≤ min m r := by
-  have h1 := card_matchedLeft hM
-  have h2 := card_matchedRight hM
-  have h3 := Finset.card_le_univ (matchedLeft M)
-  have h4 := Finset.card_le_univ (matchedRight M)
-  simp only [Fintype.card_fin] at h3 h4
-  omega
-
 /-- `O((m + r + |adj|) √(min m r))` form of `hopcroftKarpM_time_le`. -/
 theorem hopcroftKarpM_time_le_sqrt_min (hadj : BipAdjValid G adj) :
     (hopcroftKarpM G adj).time ≤
       (2 * Nat.sqrt (min m r) + 1) * (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj) + m + 3 * r := by
   have h := hopcroftKarpM_time_le hadj
-  have hs := Nat.sqrt_le_sqrt (card_le_min_of_isMatching (hopcroftKarpM_correct hadj).1.1)
+  have hM := (hopcroftKarpM_correct hadj).1.1
+  have hs := Nat.sqrt_le_sqrt (le_min (hM.card_le_card_left.trans_eq (Fintype.card_fin m))
+    (hM.card_le_card_right.trans_eq (Fintype.card_fin r)))
   have := Nat.mul_le_mul_right (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj)
     (show 2 * Nat.sqrt (hopcroftKarpM G adj).ret.matching.card + 1 ≤
       2 * Nat.sqrt (min m r) + 1 by omega)

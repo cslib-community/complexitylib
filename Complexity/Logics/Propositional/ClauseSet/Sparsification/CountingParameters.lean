@@ -271,8 +271,7 @@ theorem isBigO_countingThresholdBase {k : ℕ} (hk : 2 ≤ k) :
     abs_of_nonneg (mul_nonneg (Nat.cast_nonneg B) hlog0)]
   calc (countingThresholdBase k B : ℝ)
       ≤ A * B * ((Nat.clog 2 B : ℝ) + 1) := by exact_mod_cast hA B hB
-    _ ≤ A * B * (2 * Real.logb 2 (2 * (B : ℝ))) :=
-      mul_le_mul_of_nonneg_left hclog' (by positivity)
+    _ ≤ A * B * (2 * Real.logb 2 (2 * (B : ℝ))) := by gcongr
     _ = (2 * A / Real.log 2) * ((B : ℝ) * Real.log (2 * B)) := by rw [Real.logb]; ring
 
 /-- The selected exponent is at most `D + 2 * ⌈log₂ B⌉`, for a width-dependent constant `D`.

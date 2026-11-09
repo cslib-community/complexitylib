@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Languages.Probabilistic.Basic
+public import Complexity.Languages.Probabilistic.Semantics
 public import Complexity.Probability.BitString.List
 public import Complexity.Probability.Product
 public import Complexity.Probability.IID
@@ -25,10 +26,13 @@ is certified separately in `Computability.Probabilistic.Repeat`.
 
 * `Cslib.OracleComp.replicate`: collect a bounded number of runs.
 * `Cslib.OracleComp.countTrue`, `.testProbabilityLT`: count successes and test rational thresholds.
+* `Cslib.OracleComp.repeatAll`: run repeated Boolean trials, accepting when all accept.
 
 ## Main results
 
 * `Cslib.OracleComp.replicate_add`, `.replicate_snoc`: split an execution into segments.
+* `Cslib.OracleComp.evalWith_repeatAll_true`, `.evalWith_repeatAll_true_toReal`: independent
+  repetition multiplies acceptance probabilities under any stateless handler.
 * `Cslib.ProbComp.eval_replicate`: finite outputs have the independent product law.
 * `Cslib.ProbComp.eval_replicate_iid`: the independent law on arbitrary output types.
 * `Cslib.ProbComp.eval_replicate_map`: transport a sampling law through repeated draws.
@@ -108,6 +112,46 @@ def testProbabilityLT (count numerator denominator : ℕ)
     (program : OracleComp spec Bool) : OracleComp spec Bool :=
   (fun successes => decide (successes * denominator < count * numerator)) <$>
     countTrue count program
+
+/-- Run `count` copies of a Boolean program in sequence, returning `false` as soon as one run
+returns `false` and `true` when all runs return `true`. -/
+def repeatAll (program : OracleComp spec Bool) : ℕ → OracleComp spec Bool
+  | 0 => pure true
+  | k + 1 => do
+    if ← program then repeatAll program k else pure false
+
+/-- Zero repetitions of a Boolean program accept unconditionally. -/
+@[simp] theorem repeatAll_zero (program : OracleComp spec Bool) :
+    repeatAll program 0 = pure true := rfl
+
+/-- `count + 1` repetitions run the program once, continuing if it accepts and rejecting
+otherwise. -/
+@[simp] theorem repeatAll_succ (program : OracleComp spec Bool) (count : ℕ) :
+    repeatAll program (count + 1) = (do
+      if ← program then repeatAll program count else pure false) := rfl
+
+/-- The probability that `count` independent sequential runs all return `true` under a stateless
+handler `h` is the `count`-th power of the single-run probability. -/
+theorem evalWith_repeatAll_true (h : (q : Query) → PMF (spec q))
+    (program : OracleComp spec Bool) (count : ℕ) :
+    evalWith h (repeatAll program count) true = evalWith h program true ^ count := by
+  induction count with
+  | zero =>
+    simp only [repeatAll_zero, evalWith_pure, PMF.pure_apply, ite_true, pow_zero]
+  | succ count ih =>
+    rw [pow_succ', ← ih]
+    simp only [repeatAll_succ, evalWith_bind]
+    rw [PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
+    simp only [ite_true, Bool.false_eq_true, ite_false, evalWith_pure, PMF.pure_apply,
+      Bool.true_eq_false, mul_zero, add_zero]
+
+/-- The real probability that `count` independent sequential runs all return `true` under a
+stateless handler `h` is the `count`-th power of the single-run real probability. -/
+theorem evalWith_repeatAll_true_toReal (h : (q : Query) → PMF (spec q))
+    (program : OracleComp spec Bool) (count : ℕ) :
+    (evalWith h (repeatAll program count) true).toReal =
+      (evalWith h program true).toReal ^ count := by
+  rw [evalWith_repeatAll_true, ENNReal.toReal_pow]
 
 end OracleComp
 
@@ -249,6 +293,18 @@ theorem toOuterMeasure_replicate_forall {β : Type} (program : ProbComp β)
         simp [hb]
       rw [hpre, Set.indicator_of_notMem (by exact hb)]
       simp
+
+/-- The probability that `count` independent sequential runs of a closed probabilistic program
+all accept is the `count`-th power of the single-run acceptance probability. -/
+theorem eval_repeatAll_true (program : ProbComp Bool) (count : ℕ) :
+    eval (OracleComp.repeatAll program count) true = eval program true ^ count :=
+  OracleComp.evalWith_repeatAll_true _ program count
+
+/-- The real probability that `count` independent sequential runs of a closed probabilistic program
+all accept is the `count`-th power of the single-run real acceptance probability. -/
+theorem eval_repeatAll_true_toReal (program : ProbComp Bool) (count : ℕ) :
+    (eval (OracleComp.repeatAll program count) true).toReal = (eval program true).toReal ^ count :=
+  OracleComp.evalWith_repeatAll_true_toReal _ program count
 
 end ProbComp
 

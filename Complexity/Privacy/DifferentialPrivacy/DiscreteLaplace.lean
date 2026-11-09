@@ -357,6 +357,36 @@ theorem discreteLaplace_toOuterMeasure_le_natAbs (t : ℝ) (ht : 0 < t) {m : ℕ
   rw [show -(m : ℝ) / t = m * (-1 / t) by ring, Real.exp_nat_mul]
   exact twoSidedGeometric_toOuterMeasure_le_natAbs _ _ hm
 
+/-- The discrete Laplace distribution with scale `t` exceeds `a ≥ 0` in absolute value with
+probability at most `2 exp (-a / t)`. -/
+theorem discreteLaplace_toOuterMeasure_lt_abs_le (t : ℝ) (ht : 0 < t) {a : ℝ} (ha : 0 ≤ a) :
+    (discreteLaplace t ht).toOuterMeasure {z | a < |(z : ℝ)|} ≤
+      ENNReal.ofReal (2 * Real.exp (-a / t)) := by
+  have hset : {z : ℤ | a < |(z : ℝ)|} = {z | ⌊a⌋₊ + 1 ≤ z.natAbs} := by
+    ext z
+    simp only [Set.mem_ofPred_eq]
+    rw [← Int.cast_abs, ← Nat.cast_natAbs, ← Nat.floor_lt ha,
+      Nat.lt_iff_add_one_le]
+  rw [hset, discreteLaplace_toOuterMeasure_le_natAbs t ht (Nat.succ_ne_zero _)]
+  refine ENNReal.ofReal_le_ofReal ?_
+  have hm : a ≤ ((⌊a⌋₊ + 1 : ℕ) : ℝ) := by
+    push_cast
+    exact (Nat.lt_floor_add_one a).le
+  calc 2 * Real.exp (-((⌊a⌋₊ + 1 : ℕ) : ℝ) / t) / (1 + Real.exp (-1 / t))
+      ≤ 2 * Real.exp (-((⌊a⌋₊ + 1 : ℕ) : ℝ) / t) :=
+        div_le_self (by positivity) (by linarith [Real.exp_pos (-1 / t)])
+    _ ≤ 2 * Real.exp (-a / t) := by
+        gcongr
+
+/-- Shifting the discrete Laplace distribution with scale `t` by at most `Δ` changes each mass by
+a factor of at most `exp (Δ / t)`. -/
+theorem discreteLaplace_apply_le (t : ℝ) (ht : 0 < t) {Δ : ℝ} (z d : ℤ) (hd : |(d : ℝ)| ≤ Δ) :
+    discreteLaplace t ht z ≤ ENNReal.ofReal (Real.exp (Δ / t)) * discreteLaplace t ht (z + d) := by
+  have := twoSidedGeometric_apply_le (Real.exp_pos (-1 / t))
+    (Real.exp_lt_one_iff.mpr (div_neg_of_neg_of_pos (by norm_num) ht)) z d hd
+  rw [Real.log_inv, Real.log_exp, show Δ * -(-1 / t) = Δ / t by ring] at this
+  exact this
+
 end DiscreteLaplace
 
 end Cslib.Privacy

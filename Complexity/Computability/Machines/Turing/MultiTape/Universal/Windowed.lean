@@ -196,14 +196,9 @@ private lemma cellAt_move (t : Tape) (m : SignType) (i : ℤ) :
       congr 1
       omega
 
-private lemma head_move (t : Tape) (m : SignType) : (t.move m).head = t.head + m := by
-  rcases m with _ | _ | _ <;>
-    simp [Tape.move, SignType.zero_eq_zero, SignType.neg_eq_neg_one, SignType.pos_eq_one,
-      sub_eq_add_neg]
-
 private lemma head_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
     (t.apply a).head = t.head + a.2 := by
-  obtain ⟨_ | o, m⟩ := a <;> simp [Tape.apply, head_move, Tape.write]
+  obtain ⟨_ | o, m⟩ := a <;> simp [Tape.apply, Tape.head_move, Tape.write]
 
 private lemma cellAt_apply (t : Tape) (a : Option (Option ℕ) × SignType) (h z : ℤ) :
     cellAt (t.apply a) (z - (h + a.2)) =
@@ -300,12 +295,6 @@ private def act (d : Desc) : Option ℕ → Option ℕ → List (Option ℕ) →
 
 private lemma applyTapes_nil' (ts : List Tape) : applyTapes ts [] = ts := by
   cases ts <;> rfl
-
-private lemma length_applyTapes (ts : List Tape) (as : List (Option (Option ℕ) × SignType)) :
-    (applyTapes ts as).length = ts.length := by
-  induction ts generalizing as with
-  | nil => rfl
-  | cons t ts ih => cases as <;> simp [applyTapes, ih]
 
 private lemma getElem?_applyTapes (ts : List Tape) (as : List (Option (Option ℕ) × SignType))
     (k : ℕ) : (applyTapes ts as)[k]? = ts[k]?.map (·.apply (as.getD k (none, .zero))) := by
@@ -531,7 +520,9 @@ private lemma sim_zero (d : Desc) (w : Win) : sim d 0 w = (w, []) := by
 private lemma sim_one (d : Desc) (w : Win) : sim d 1 w = ((wstep d w).1, (wstep d w).2.toList) := by
   rw [sim]
 
-private lemma sim_add_two (d : Desc) (n : ℕ) (w : Win) :
+/-- The windowed simulation of `n + 2` steps: the first half on cut windows, pasted back, then the
+second half. -/
+theorem sim_add_two (d : Desc) (n : ℕ) (w : Win) :
     sim d (n + 2) w =
       (restore ((n + 2) / 2) (restore (firstHalf (n + 2)) w
           (sim d (firstHalf (n + 2)) (extract (firstHalf (n + 2)) w)).1)
@@ -587,7 +578,7 @@ private lemma length_workTapes_run (d : Desc) (x : List ℕ) (n : ℕ) (c : SCfg
   | succ n ih =>
     rw [run_add]
     change (step d x (run d x n c).1).1.workTapes.length = _
-    rw [step_eq_stepWith, stepWith_eq, length_applyTapes, ih]
+    rw [step_eq_stepWith, stepWith_eq, length_applyTapes_eq, ih]
 
 /-- A configuration as abstract tapes: the coded input, then the work tapes. -/
 private def view (x : List ℕ) (c : SCfg) : List ATape :=
@@ -660,7 +651,7 @@ private theorem sim_spec (d : Desc) (x : List ℕ) (n : ℕ) : ∀ (c : SCfg) (w
         ((step d x ⟨st, p, ts⟩).1, (step d x ⟨st, p, ts⟩).2.toList) := by
       simp [run, stepOut]
     rw [sim_one, hw, hrun, hstep]
-    refine ⟨rfl, rfl, by simp [length_applyTapes], fun k W F W' F' hW hF hW' hF' => ?_⟩
+    refine ⟨rfl, rfl, by simp [length_applyTapes_eq], fun k W F W' F' hW hF hW' hF' => ?_⟩
     rcases k with _ | k
     · simp only [List.getElem?_cons_zero, view, Option.some.injEq] at hW hF hW' hF'
       subst hW hF hW' hF'
@@ -785,7 +776,7 @@ theorem length_sim (d : Desc) (n : ℕ) (w : Win) : (sim d n w).1.2.length = w.2
     rw [sim_one]
     obtain ⟨q, _ | ⟨i, ws⟩⟩ := w
     · rfl
-    · simp [wstep_eq, length_applyTapes]
+    · simp [wstep_eq, length_applyTapes_eq]
   | step n ih =>
     have hle : ∀ r w, (extract r w).2.length = w.2.length := by simp [extract]
     rw [sim_add_two, length_restore, ih _ (by omega), hle, length_restore, ih _ (by

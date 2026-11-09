@@ -79,8 +79,7 @@ theorem WellFormed.length_encList_le {inputCount width : ℕ} {layers : List (Li
         width * (6 * (Nat.log2 width + 1) + 21) := by
       calc
         _ ≤ layer.length * (2 * (10 + 3 * (Nat.log2 width + 1)) + 1) := hhead
-        _ ≤ width * (2 * (10 + 3 * (Nat.log2 width + 1)) + 1) :=
-          Nat.mul_le_mul_right _ hwidth
+        _ ≤ width * (2 * (10 + 3 * (Nat.log2 width + 1)) + 1) := by gcongr
         _ = _ := by ring
     simp only [encList_cons, List.length_append, length_frame, List.length_cons]
     nlinarith
