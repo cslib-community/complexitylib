@@ -2922,6 +2922,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Redu
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMN
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.HaltsAt
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.InputAt
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryCounter
@@ -3604,6 +3605,7 @@ public import CslibFrontier.Computability.WordRAM.Signed.Input
 public import CslibFrontier.Computability.WordRAM.Signed.Operations
 public import CslibFrontier.Computability.WordRAM.Signed.State
 public import CslibFrontier.Computability.WordRAM.Structured
+public import CslibFrontier.Computability.WordRAM.Structured.FastEval
 public import CslibFrontier.Computability.WordRAM.Subroutine
 public import CslibFrontier.Computability.WordRAM.SymbolicExec
 public import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
@@ -5252,6 +5254,7 @@ public import CslibFrontier.Logics.Propositional.CNF.Compact
 public import CslibFrontier.Logics.Propositional.CNF.Compact.ModelCount
 public import CslibFrontier.Logics.Propositional.CNF.Compact.Relabel
 public import CslibFrontier.Logics.Propositional.CNF.Encoding
+public import CslibFrontier.Logics.Propositional.CNF.Eval
 public import CslibFrontier.Logics.Propositional.CNF.ExactDistinct
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.BlockBounds
