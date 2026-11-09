@@ -48,7 +48,6 @@ copied each round; this bound does not implement the buffered Hennie–Stearns s
 ## Main definitions
 
 * `Turing.MultiTapeTM.Universal.eDesc`, `.eCfg`: the encodings of descriptions and configurations,
-  with `enc_structure`, which also supplies their `fun_prop` rules.
   declared with `enc_structure`, which also supplies their `fun_prop` rules.
 * `Turing.MultiTapeTM.Universal.Ctx`, `.WCtx`: the contexts of a step, with and without the input,
   and their named parts (`Ctx.desc`, `Ctx.input`, `Ctx.cfg`, `WCtx.desc`, `WCtx.cfg`, `WCtx.sym`).
