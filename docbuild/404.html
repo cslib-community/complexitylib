@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found</title>
+<script>
+// GitHub Pages serves this page for every missing path of the site. API documentation pages
+// moved when the module root was renamed from `Complexity` to `CslibFrontier`, so an old module
+// page, such as /cslib-frontier/Complexity/Init.html#anchor, is sent to its new address with the
+// same query and fragment. scripts/rename_module_root.py leaves this file unchanged.
+(function () {
+  var base = "/cslib-frontier/";
+  var path = window.location.pathname;
+  if (path.indexOf(base) !== 0) return;
+  var rest = path.slice(base.length);
+  var target = null;
+  if (rest === "Complexity.html") {
+    target = "CslibFrontier.html";
+  } else if (rest.indexOf("Complexity/") === 0) {
+    target = "CslibFrontier/" + rest.slice("Complexity/".length);
+  }
+  if (target !== null) {
+    window.location.replace(base + target + window.location.search + window.location.hash);
+  }
+})();
+</script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40em; margin: 4em auto; padding: 0 1em;
+         line-height: 1.5; color: #222; background: #fff; }
+  @media (prefers-color-scheme: dark) { body { color: #ddd; background: #111; } a { color: #8ab4f8; } }
+</style>
+</head>
+<body>
+<h1>Page not found</h1>
+<p>There is no page at this address. Start from the
+<a href="/cslib-frontier/">API documentation home</a> or its
+<a href="/cslib-frontier/search.html">search</a>.</p>
+</body>
+</html>
