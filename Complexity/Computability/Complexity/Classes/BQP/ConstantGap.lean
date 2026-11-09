@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 import Complexity.Foundations.BooleanAnalysis.Bernoulli
 import Complexity.Foundations.Combinatorics.BinomialTail
 
@@ -167,12 +168,8 @@ theorem mem_BQP_of_gap {A : Set α} {s c : ℝ} (hsc : s < c) (F : UniformCircui
   have hKδ : 1 ≤ K * δ ^ 2 := by
     have := Nat.le_ceil (1 / δ ^ 2)
     rwa [div_le_iff₀ (by positivity)] at this
-  -- `exp (-2) ≤ 1 / 3`, since `3 ≤ 1 + 2 ≤ exp 2`
-  have hexp2 : Real.exp (-2) ≤ 1 / 3 := by
-    rw [Real.exp_neg, inv_le_comm₀ (Real.exp_pos 2) (by norm_num)]
-    linarith [Real.add_one_le_exp 2]
   have hexp : Real.exp (-2 * K * δ ^ 2) ≤ 1 / 3 :=
-    (Real.exp_le_exp.mpr (by nlinarith)).trans hexp2
+    (Real.exp_le_exp.mpr (by nlinarith)).trans Real.exp_neg_two_le_one_third
   have hK : ComputableInPolyTime (fun _ : ℕ => K) encUnary encUnary := ComputableInPolyTime.const _
   have hT : ComputableInPolyTime (fun _ : ℕ => T) encUnary encUnary := ComputableInPolyTime.const _
   refine ⟨F.threshold (fun _ => K) (fun _ => T) hK hT, fun a => ⟨fun ha => ?_, fun ha => ?_⟩⟩
