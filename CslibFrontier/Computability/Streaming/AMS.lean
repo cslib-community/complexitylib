@@ -9,11 +9,11 @@ module
 
 public import CslibFrontier.Computability.Streaming.Basic
 public import CslibFrontier.Computability.Streaming.Frequency
-public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
-public import CslibFrontier.Foundations.Data.Fintype.Grid
 public import CslibFrontier.Probability.KWiseIndependent
 public import CslibFrontier.Probability.MedianOfMeans
+import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Fintype.Grid
 import CslibFrontier.Probability.KWiseIndependent.TugOfWar
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform

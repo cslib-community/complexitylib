@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Streaming.AMS
-public import CslibFrontier.Foundations.Data.Fintype.Grid
 import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Fintype.Grid
 import CslibFrontier.Probability.KWiseIndependent.TugOfWar
 import CslibFrontier.Probability.KWiseIndependent.TugOfWarProduct
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset

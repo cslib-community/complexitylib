@@ -9,11 +9,11 @@ module
 
 public import CslibFrontier.Computability.Streaming.Basic
 public import CslibFrontier.Computability.Streaming.Frequency
-public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 public import CslibFrontier.Foundations.Data.Finset.Median
-public import CslibFrontier.Foundations.Data.Fintype.Grid
 public import CslibFrontier.Probability.KWiseIndependent
 public import CslibFrontier.Probability.UniversalHash
+import CslibFrontier.Foundations.Algebra.FiniteMagnitude
+import CslibFrontier.Foundations.Data.Fintype.Grid
 import CslibFrontier.Probability.KWiseIndependent.CountSketch
 import CslibFrontier.Probability.MedianOfMeans
 import CslibFrontier.Probability.PMF.Event

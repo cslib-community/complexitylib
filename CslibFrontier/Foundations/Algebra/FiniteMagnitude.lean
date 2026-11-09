@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Anthropic, PBC, Erik Demaine. All rights reserved.
+Copyright (c) 2026 Anthropic, PBC, Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Anthropic, PBC, Erik Demaine
+Authors: Anthropic, PBC, Erik Demaine, Samuel Schlesinger
 -/
 
 module
@@ -25,6 +25,9 @@ import Mathlib.Tactic.Linarith
 Adapted selectively from
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
+
+`List.abs_sum_map_le` is moved from Samuel Schlesinger's AMS sketch
+(`CslibFrontier.Computability.Streaming.AMS`).
 -/
 
 @[expose] public section
