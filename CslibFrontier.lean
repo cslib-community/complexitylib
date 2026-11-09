@@ -3967,6 +3967,7 @@ public import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 public import CslibFrontier.Crypto.Protocols.Commitment.World
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Crypto.Protocols.MAC.CarterWegman
+public import CslibFrontier.Crypto.Protocols.MAC.VariableLength
 public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.Basic
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
@@ -4645,6 +4646,7 @@ public import CslibFrontier.Foundations.Data.BitString.Isolation
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Foundations.Data.BitString.List.BinaryOrder
+public import CslibFrontier.Foundations.Data.BitString.List.LowBits
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Foundations.Data.BitString.List.Positions
 public import CslibFrontier.Foundations.Data.BitString.List.PrefixFree
