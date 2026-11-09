@@ -25,8 +25,10 @@ Concrete instances of the ingredients of `Complexity.Computability.Circuit.Boole
 * the seeded OR test over `𝔽₂` with a seed that is bad for its argument set;
 * the restriction `SymAnd.restrict`, which drops the AND gates reading a fixed slot;
 * non-vacuity of `Circuit.exists_symAnd_eval_eq`: a one-gate `MOD_3` circuit and a one-gate
-  `MOD_6` circuit (a composite modulus) are `SYM ∘ AND` circuits within the stated bounds that
-  take both values, and the language corollaries apply to `MOD_6` and to `ACC0`.
+  `MOD_6` circuit (a composite modulus) are `SYM ∘ AND` circuits within the stated fan-in bounds
+  that take both values;
+* the explicit circuit `Circuit.toSymAnd` of the one-gate `MOD_6` circuit, evaluated on inputs;
+* the language corollaries for `MOD_6`, for `ACC0`, and for `AC0Mod 0` (where `MOD_0` is `OR`).
 -/
 
 @[expose] public section
@@ -111,18 +113,40 @@ theorem mod3_nonvacuous : ∃ C' : SymAnd (Fin 2),
   rw [hd, hs] at hf
   refine ⟨C', hC', hf, ?_, ?_⟩ <;> rw [hC'] <;> decide
 
-/-- **Non-vacuity, composite modulus.** One `MOD_6` gate is a `SYM ∘ AND` circuit that takes both
-values; the composite modulus is handled through its prime-power digits. -/
+/-- **Non-vacuity, composite modulus.** One `MOD_6` gate is a `SYM ∘ AND` circuit within the stated
+fan-in bound that takes both values; the composite modulus is handled through its prime-power
+digits. -/
 theorem mod6_nonvacuous : ∃ C' : SymAnd (Fin 2),
     C'.eval = (fun x => modGate 6 2 x) ∧
+      C'.fanIn ≤ (2 * (3 * ((6 + 1) ^ 2 + Nat.log 2 (2 + 1) + 2))) ^ 5 ^ (1 * (6 + 2)) ∧
       C'.eval ![true, true] = true ∧ C'.eval ![false, false] = false := by
-  obtain ⟨C', hC', -, -⟩ := modTwo.exists_symAnd_eval_eq (m := 6) (by decide)
-  exact ⟨C', hC', by rw [hC']; decide, by rw [hC']; decide⟩
+  obtain ⟨C', hC', hf, -⟩ := modTwo.exists_symAnd_eval_eq (m := 6) (by decide)
+  have hd : modTwo.depth = 1 := Circuit.depth_oneGate _ _
+  have hs : modTwo.size = 1 := Circuit.size_oneGate _ _
+  rw [hd, hs] at hf
+  exact ⟨C', hC', hf, by rw [hC']; decide, by rw [hC']; decide⟩
+
+/-! ### The explicit circuit -/
+
+/-- The explicit circuit of one `MOD_6` gate reads `true` on `(true, false)`. -/
+example : (modTwo.toSymAnd 6).eval ![true, false] = true := by
+  rw [Circuit.eval_toSymAnd _ (by decide)]
+  decide
+
+/-- The explicit circuit of one `MOD_6` gate reads `false` on `(false, false)`. -/
+example : (modTwo.toSymAnd 6).eval ![false, false] = false := by
+  rw [Circuit.eval_toSymAnd _ (by decide)]
+  decide
 
 /-- The `MOD_6` language has quasi-polynomial `SYM ∘ AND` circuits. -/
 example : ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = (Language.ofSlices (modGate 6)).slice n ∧
     C'.fanIn ≤ (c * (Nat.log 2 n + 1)) ^ c ∧ C'.size ≤ 2 ^ (c * (Nat.log 2 n + 1)) ^ c :=
-  exists_symAnd_of_mem_AC0Mod (by decide) (modGate_mem_AC0Mod 6)
+  exists_symAnd_of_mem_AC0Mod (modGate_mem_AC0Mod 6)
+
+/-- The language corollary needs no positivity: `AC0Mod 0`, where `MOD_0` is `OR`, is covered. -/
+example : ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = (Language.ofSlices (modGate 0)).slice n ∧
+    C'.fanIn ≤ (c * (Nat.log 2 n + 1)) ^ c ∧ C'.size ≤ 2 ^ (c * (Nat.log 2 n + 1)) ^ c :=
+  exists_symAnd_of_mem_AC0Mod (modGate_mem_AC0Mod 0)
 
 /-- Every `ACC0` language, here `MOD_6`, has quasi-polynomial `SYM ∘ AND` circuits. -/
 example : ∃ c, ∀ n, ∃ C' : SymAnd (Fin n), C'.eval = (Language.ofSlices (modGate 6)).slice n ∧

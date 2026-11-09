@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (sampler prefix regressions)
 
-public import Complexity.Foundations.Probability.SamplerPrefix
+public import Complexity.Computability.LogSpaceDerandomization.SamplerPrefix
 import Mathlib.Tactic.FinCases
 
 /-!

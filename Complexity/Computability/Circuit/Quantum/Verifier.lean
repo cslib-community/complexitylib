@@ -245,17 +245,23 @@ theorem acceptProb_eq_zero_of_forall_ket (x : List Bool) (h : ∀ z, V.acceptPro
     (ψ : Qubits (V.witnessLength x.length)) : V.acceptProb x ψ = 0 := by
   have hz (z) (y) (hy : y ∈ accepting (V.width x.length)) :
       (Circuit.eval (Circuit.ofCodes (V.width x.length) (V.gates x.length))
-        (embedState (V.witnessQubits x.length) (inputState _ x) (ket z))).ofLp y = 0 := by
-    have h' := h z
-    rw [acceptProb, measureProb] at h'
-    have := (sum_eq_zero_iff_of_nonneg fun y _ => by positivity).mp h' y hy
-    simpa using this
+        (embedState (V.witnessQubits x.length) (inputState _ x) (ket z))).ofLp y = 0 :=
+    ofLp_eq_zero_of_measureProb_eq_zero (h z) hy
   rw [acceptProb, measureProb]
   refine sum_eq_zero fun y hy => ?_
   rw [← sum_smul_ket ψ, map_sum, map_sum, WithLp.ofLp_sum, Finset.sum_apply]
   simp only [map_smul, WithLp.ofLp_smul, Pi.smul_apply, hz _ y hy, smul_zero, sum_const_zero,
     norm_zero]
   norm_num
+
+/-- A verifier reading no witness qubits on inputs of length `|x|` accepts the (unique) basis
+witness as its circuit family accepts `x`. -/
+theorem acceptProb_ket_of_witnessLength_eq_zero (x : List Bool) (h : V.witnessLength x.length = 0)
+    (z : Fin (V.witnessLength x.length) → Bool) :
+    V.acceptProb x (ket z) = V.toUniformCircuitFamily.acceptProb x := by
+  rw [acceptProb_ket, List.eq_nil_of_length_eq_zero (by simp [h] : (List.ofFn z).length = 0),
+    List.append_nil]
+  rfl
 
 /-- A uniform family of circuits as a verifier reading no witness. -/
 def ofCircuitFamily (F : UniformCircuitFamily) : UniformVerifierFamily where
@@ -275,9 +281,8 @@ theorem acceptProb_ofCircuitFamily (F : UniformCircuitFamily) (x : List Bool)
     ext z
     rw [Subsingleton.elim z default]
     simp
-  have h0 : List.ofFn (default : Fin ((ofCircuitFamily F).witnessLength x.length) → Bool) = [] :=
-    List.eq_nil_of_length_eq_zero (by rw [List.length_ofFn]; rfl)
-  rw [hψ, acceptProb_smul, acceptProb_ket, norm_smul, norm_ket, mul_one, h0, List.append_nil]
+  rw [hψ, acceptProb_smul, acceptProb_ket_of_witnessLength_eq_zero _ _ rfl, norm_smul, norm_ket,
+    mul_one]
   rfl
 
 end UniformVerifierFamily

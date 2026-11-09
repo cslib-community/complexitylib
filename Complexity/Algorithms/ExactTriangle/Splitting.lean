@@ -276,8 +276,7 @@ private theorem sq_lt_mul_queryCap_add (hD : 16 ≤ D) (hDn : D ≤ n)
           linarith [mul_le_mul_of_nonneg_right hr4 (sq_nonneg r),
             mul_le_mul_of_nonneg_right hr4 (show 0 ≤ r by linarith)]
       _ ≤ x * 1 := by rw [mul_one]; exact hx3
-      _ ≤ x * (δ * (2 * r + 1)) :=
-          mul_le_mul_of_nonneg_left hgap (le_trans (by positivity) hx3)
+      _ ≤ x * (δ * (2 * r + 1)) := by gcongr
       _ = x * δ * (2 * r + 1) := by ring
   have hfloor : x < (queryCap n D : ℝ) + 1 := by
     rw [queryCap_eq_floor]
