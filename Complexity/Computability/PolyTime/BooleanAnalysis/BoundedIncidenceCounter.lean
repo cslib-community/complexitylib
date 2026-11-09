@@ -249,8 +249,7 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
               ((by norm_num : (2 : ℝ) * (2 - 1) ≤ 2).trans h2le_cdeg)
           calc Real.log 2 * (2 * (n' : ℝ) / r)
               = (2 * Real.log 2) * ((n' : ℝ) * (1 / (r : ℝ))) := by ring
-            _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) * (1 / (r : ℝ))) :=
-                mul_le_mul_of_nonneg_right h2le (by positivity)
+            _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) * (1 / (r : ℝ))) := by gcongr
             _ = ((c_deg : ℝ) + 4) * (n' : ℝ) * (1 / (r : ℝ)) := by ring
   have hE_exp : (E_nat : ℝ) ≤
       Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) * ReplacementParams.rowCost β' n') := by

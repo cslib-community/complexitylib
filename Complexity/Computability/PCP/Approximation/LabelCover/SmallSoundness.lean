@@ -155,7 +155,7 @@ symbols, with perfect completeness and soundness
 theorem polyTimeReducible_GapTwoCSP_GapLabelCover_pow {α : Type} [Fintype α] [DecidableEq α]
     (a b : α) (hab : a ≠ b) (encA : α ↪ List Bool) {ε : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
     {k : ℕ} (hk : 0 < k) :
-    PromiseProblem.PolyTimeReducible (Graph.encoding (encPi (encPi encBool)))
+    PromiseProblem.PolyTimeReducible (Graph.encoding encConstraintTable)
       (Graph.encoding (encPi (encPi encA))) (GapTwoCSP α (1 - ε))
       (GapLabelCover (Fin k → α × α) (Fin k → α) 1
         ((1 - (ε / 2) ^ 3 / 6000) ^

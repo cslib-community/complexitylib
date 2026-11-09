@@ -245,17 +245,13 @@ every circuit of fan-in at most `r` with any number `k` of witness inputs decidi
 nondeterministically, over any basis and interpretation on `U`, has `s` inner gates with
 `(r - 1) s > (1 + 1/A - ε) n`. -/
 theorem eventually_lt_mul_innerSize_of_nondeterministicDecides {r : ℕ} (hr : 2 ≤ r) {A : ℝ}
-    (hA : 0 < A) (hlayout : LayoutBound (r + 1) A)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hA : 0 < A) (hlayout : LayoutBound (r + 1) A) (hSK : DenseRectangleFree S K)
     {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (k : ℕ) (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ (n + k) 1), c.FanInAtMost r → c.NondeterministicDecides I Acc (S n) →
         (1 + 1 / A - ε) * n < (r - 1) * c.innerSize := by
-  filter_upwards [eventually_lt_of_graph hr hA hlayout hfree hK hdense hε, hfree,
-    eventually_card_mul_sq_le_ncard hfree hK hdense] with n hn hf hb
+  filter_upwards [eventually_lt_of_graph hr hA hlayout hSK hε, hSK.eventually_rectangleFree,
+    eventually_card_mul_sq_le_ncard hSK] with n hn hf hb
   intro k σ I Acc c hfan hS
   obtain ⟨V, E, _, _, G, hc, hl, hd, hV, hrank, hw⟩ :=
     exists_graph_of_nondeterministicDecides hr hfan hS hf hb
@@ -268,16 +264,12 @@ every circuit of fan-in at most two with any number of witness inputs deciding `
 nondeterministically, over any basis and interpretation on `U`, has more than `(1 + 1/A - ε) n`
 inner gates. -/
 theorem eventually_lt_innerSize_of_nondeterministicDecides {A : ℝ} (hA : 0 < A)
-    (hlayout : LayoutBound 3 A) (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hlayout : LayoutBound 3 A) (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (k : ℕ) (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ (n + k) 1), c.FanInAtMost 2 → c.NondeterministicDecides I Acc (S n) →
         (1 + 1 / A - ε) * n < c.innerSize := by
-  filter_upwards [eventually_lt_mul_innerSize_of_nondeterministicDecides le_rfl hA hlayout hfree hK
-    hdense hε] with n hn
+  filter_upwards [eventually_lt_mul_innerSize_of_nondeterministicDecides le_rfl hA hlayout hSK
+    hε] with n hn
   intro k σ I Acc c hfan hS
   simpa only [Nat.cast_ofNat, show (2 : ℝ) - 1 = 1 by norm_num, one_mul] using
     hn k σ I Acc c hfan hS
@@ -289,17 +281,13 @@ with `log K_n = o(n)` and `n log |U| - log |S_n| = o(n)`. Then for every `ε > 0
 nondeterministically, over any basis and interpretation on `U`, has `s` inner gates with
 `(r - 1) s > (2 - ε) n`. -/
 theorem eventually_two_sub_mul_lt_mul_innerSize_of_nondeterministicDecides {r : ℕ} (hr : 2 ≤ r)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (k : ℕ) (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ (n + k) 1), c.FanInAtMost r → c.NondeterministicDecides I Acc (S n) →
         (2 - ε) * n < (r - 1) * c.innerSize := by
   simpa only [div_one, one_add_one_eq_two] using
     eventually_lt_mul_innerSize_of_nondeterministicDecides hr one_pos (layoutBound_one (r + 1))
-      hfree hK hdense hε
+      hSK hε
 
 /-- **The unconditional frontier lower bound for nondeterministic circuits of fan-in two.** Under
 the hypotheses of `eventually_two_sub_mul_lt_mul_innerSize_of_nondeterministicDecides`, for every
@@ -307,17 +295,12 @@ the hypotheses of `eventually_two_sub_mul_lt_mul_innerSize_of_nondeterministicDe
 deciding `S_n` nondeterministically, over any basis and interpretation on `U`, has more than
 `(2 - ε) n` inner gates. -/
 theorem eventually_two_sub_mul_lt_innerSize_of_nondeterministicDecides
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (k : ℕ) (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ (n + k) 1), c.FanInAtMost 2 → c.NondeterministicDecides I Acc (S n) →
         (2 - ε) * n < c.innerSize := by
   simpa only [div_one, one_add_one_eq_two] using
-    eventually_lt_innerSize_of_nondeterministicDecides one_pos (layoutBound_one 3) hfree hK hdense
-      hε
+    eventually_lt_innerSize_of_nondeterministicDecides one_pos (layoutBound_one 3) hSK hε
 
 /-- **The Gaussian frontier lower bound for nondeterministic circuits of fan-in two.** Under the
 hypotheses of `eventually_two_sub_mul_lt_innerSize_of_nondeterministicDecides`, for every `ε > 0`
@@ -325,16 +308,12 @@ and all large `n`, every circuit of fan-in at most two with any number of witnes
 `S_n` nondeterministically, over any basis and interpretation on `U`, has more than `(L - ε) n`
 inner gates, where `L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`. -/
 theorem eventually_gaussian_sub_mul_lt_innerSize_of_nondeterministicDecides
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (k : ℕ) (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ (n + k) 1), c.FanInAtMost 2 → c.NondeterministicDecides I Acc (S n) →
         (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n < c.innerSize := by
   have h := eventually_lt_innerSize_of_nondeterministicDecides
-    (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian hfree hK hdense hε
+    (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian hSK hε
   rwa [Gaussian.one_add_inv_two_mul_gaussianCoefficient] at h
 
 end Cslib.Circuits.Frontier

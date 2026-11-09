@@ -370,8 +370,7 @@ theorem winnow_invariant {α θ : ℝ} (hα : 1 ≤ α) (tie : Bool) (R : Finset
         have hR := mul_prod_le_prod_winnowPromote hα hw (monotoneDisjunction_eq_true.mp hy)
         refine ⟨u + 1, v, by simp [hc, hm]; ring, ?_, ?_⟩
         · push_cast
-          have : (α - 1) * winnowScore w x ≤ (α - 1) * θ :=
-            mul_le_mul_of_nonneg_left hs (by linarith)
+          have : (α - 1) * winnowScore w x ≤ (α - 1) * θ := by gcongr
           linarith
         · rw [pow_succ, mul_assoc]
           have hu : 0 ≤ α ^ u := pow_nonneg (zero_le_one.trans hα) u

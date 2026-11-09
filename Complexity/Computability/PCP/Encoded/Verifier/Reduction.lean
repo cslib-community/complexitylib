@@ -103,8 +103,7 @@ theorem mem_PCP_of_gapReduction {graph : Input → Graph C} (width : ℕ)
     have hb : (graph x).edges.length ≤ c * ((input x).length + 1) ^ d := by
       simpa using hbound x
     calc
-      _ ≤ repeats * Nat.clog 2 (c * ((input x).length + 1) ^ d) :=
-        Nat.mul_le_mul_left _ (Nat.clog_mono_right 2 hb)
+      _ ≤ repeats * Nat.clog 2 (c * ((input x).length + 1) ^ d) := by gcongr
       _ ≤ repeats * (constant * (Nat.log 2 (input x).length + 1)) :=
         Nat.mul_le_mul_left _ (hconstant _)
       _ = _ := (Nat.mul_assoc _ _ _).symm
