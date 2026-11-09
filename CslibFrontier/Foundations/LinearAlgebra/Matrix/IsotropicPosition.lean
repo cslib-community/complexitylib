@@ -235,6 +235,15 @@ private theorem exists_le_log_det_sub {X : Type*} [Fintype X] [Nonempty X] {d : 
     field_simp
   linarith
 
+/-- Changing the single coordinate `t x` to `b` changes `∑ z, g z (t z)` by
+`g x b - g x (t x)`. -/
+private theorem sum_apply_update_eq_add_sub {X β M : Type*} [Fintype X] [DecidableEq X]
+    [AddCommGroup M] (g : X → β → M) (t : X → β) (x : X) (b : β) :
+    ∑ z, g z (Function.update t x b z) = ∑ z, g z (t z) + (g x b - g x (t x)) := by
+  rw [← add_sum_erase _ _ (mem_univ x), ← add_sum_erase _ _ (mem_univ x), Function.update_self,
+    sum_congr rfl fun z hz => by rw [Function.update_of_ne (ne_of_mem_erase hz)]]
+  abel
+
 /-- **Lowering one weight.** Replacing `tₓ` by `tₓ - δ` in `A(t) = ∑ₓ exp(tₓ) uₓ uₓᵀ` multiplies
 `det A(t)` by `1 + (exp(-δ) - 1) qₓ`, where `qₓ = exp(tₓ) uₓᵀ A(t)⁻¹ uₓ` is the leverage of `x`
 (the matrix determinant lemma). -/
@@ -247,10 +256,8 @@ private theorem det_sum_exp_update_sub {X : Type*} [Fintype X] [DecidableEq X] {
   have hupd : ∑ z, Real.exp (Function.update t x (t x - δ) z) • vecMulVec (U z) (U z) =
       ∑ z, Real.exp (t z) • vecMulVec (U z) (U z) +
         (Real.exp (t x - δ) - Real.exp (t x)) • vecMulVec (U x) (U x) := by
-    rw [← add_sum_erase _ _ (mem_univ x), ← add_sum_erase _ _ (mem_univ x),
-      Function.update_self, sub_smul]
-    rw [sum_congr rfl fun z hz => by rw [Function.update_of_ne (ne_of_mem_erase hz)]]
-    abel
+    simpa only [sub_smul] using
+      sum_apply_update_eq_add_sub (fun z s => Real.exp s • vecMulVec (U z) (U z)) t x (t x - δ)
   rw [hupd, det_add_smul_vecMulVec ht.det_pos.ne'.isUnit, sub_eq_add_neg (t x), Real.exp_add]
   ring
 
@@ -335,12 +342,8 @@ theorem exists_isotropic_weights {X : Type*} [Fintype X] {d : ℕ} (U : Matrix X
     have h1 := (hApd t').det_pos
     rw [hdet'] at h1
     exact pos_of_mul_pos_right h1 (hApd t).det_pos.le
-  have hsum' : ∑ z, t' z = ∑ z, t z - δ := by
-    simp only [t']
-    rw [← add_sum_erase _ _ (mem_univ x), ← add_sum_erase _ _ (mem_univ x),
-      Function.update_self]
-    rw [sum_congr rfl fun z hz => by rw [Function.update_of_ne (ne_of_mem_erase hz)]]
-    ring
+  have hsum' : ∑ z, t' z = ∑ z, t z - δ :=
+    (sum_apply_update_eq_add_sub (fun _ s => s) t x (t x - δ)).trans (by ring)
   have hφ' : φ t' = φ t + Real.log (1 + (Real.exp (-δ) - 1) * q) + r * δ := by
     simp only [hφ]
     rw [hdet', Real.log_mul (hApd t).det_pos.ne' hy.ne', hsum']

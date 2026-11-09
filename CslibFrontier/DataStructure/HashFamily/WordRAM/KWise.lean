@@ -12,6 +12,7 @@ public import CslibFrontier.DataStructure.HashFamily.WordRAM.Tabulation
 public import CslibFrontier.Foundations.FieldTheory.Finite.Trinomial
 public import CslibFrontier.Probability.KWiseIndependent.Trinomial
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Tactic.Fits
 
 /-!
 # Self-contained Word-RAM `k`-wise independent hashing
@@ -326,19 +327,17 @@ theorem trinomialStepLoop_exec {w : ℕ} (B : ℕ) {acc : ℕ} {x : Data 4}
           acc * 3 ^ trinomialStepAux B := by
         rw [hstep, Nat.pow_succ']
         ring
-      have hfit_div2 : Fits w ((B + 2) / 3 + 2) := hfit_B2.of_le (by omega)
-      have hfit_div : Fits w ((B + 2) / 3) := hfit_div2.of_le (by omega)
       have hfit_acc3 : Fits w (acc * 3) := by
         have hpos : 1 ≤ 3 ^ trinomialStepAux ((B + 2) / 3) := Nat.one_le_pow _ 3 (by decide)
         have hle : acc * 3 ≤ (acc * 3) * 3 ^ trinomialStepAux ((B + 2) / 3) :=
           Nat.le_mul_of_pos_right _ hpos
-        exact hfit_res.of_le (hmul_eq ▸ hle)
+        fits
       set d1 := x.set 0 (B + 2)
       have s1 : Exec w (.op (.exactBin .add 0 0 2) : Code .exact 4) x d1 1 :=
         exec_exactBin (by simp [hrem, htwo]) hfit_B2
       set d2 := d1.set 0 ((B + 2) / 3)
       have s2 : Exec w (.op (.exactBin .div 0 0 3) : Code .exact 4) d1 d2 1 :=
-        exec_exactBin (by simp +decide [d1, hthree]) hfit_div
+        exec_exactBin (by simp +decide [d1, hthree]) (by fits)
       set d3 := d2.set 1 (acc * 3)
       have s3 : Exec w (.op (.exactBin .mul 1 1 3) : Code .exact 4) d2 d3 1 :=
         exec_exactBin (by simp +decide [d2, d1, hacc, hthree]) hfit_acc3
@@ -347,7 +346,7 @@ theorem trinomialStepLoop_exec {w : ℕ} (B : ℕ) {acc : ℕ} {x : Data 4}
         (by simp +decide [d3])
         (by simp +decide [d3, d2, d1, htwo])
         (by simp +decide [d3, d2, d1, hthree])
-        hfit_div2
+        (by fits)
         (by rwa [hmul_eq])
       have hd : trinomialStepLoopData ((B + 2) / 3) (acc * 3) d3 =
           trinomialStepLoopData B acc x := by
@@ -448,15 +447,9 @@ theorem clmulTabLoop_exec {w tabBase b : ℕ}
     set v := idx &&& (2 ^ b - 1)
     set prevIdx := (u <<< b) + (v >>> 1)
     have hpow_le : 2 ^ b ≤ 2 ^ (2 * b) := Nat.pow_le_pow_right (by decide) (by omega)
-    have hfit_idx : Fits w idx := hfit_end.of_le (by omega)
-    have hfit_addr : Fits w (tabBase + idx) := hfit_end.of_le (by omega)
-    have hfit_0 : Fits w 0 := hfit_end.of_le (Nat.zero_le _)
-    have hfit_u : Fits w u := hfit_end.of_le (by omega)
-    have hfit_v : Fits w v := hfit_end.of_le (by omega)
-    have hfit_vshr : Fits w (v >>> 1) := hfit_v.of_le (Nat.shiftRight_le v 1)
-    have hfit_ushl : Fits w (u <<< b) := hfit_idx.of_le (by omega)
-    have hfit_prev : Fits w prevIdx := hfit_idx.of_le hprev_le
-    have hfit_prevAddr : Fits w (tabBase + prevIdx) := hfit_addr.of_le (by omega)
+    have hfit_idx : Fits w idx := by fits
+    have hfit_addr : Fits w (tabBase + idx) := by fits
+    have hfit_v : Fits w v := by fits
     have hprev_val_lt : clmul u (v >>> 1) < 2 ^ (2 * b - 1) := by
       by_cases hb0 : b = 0
       · subst hb0
@@ -477,20 +470,16 @@ theorem clmulTabLoop_exec {w tabBase b : ℕ}
         have hpow_split : 2 ^ (2 * b) = 2 ^ (2 * b - 1) * 2 := by
           conv_lhs => rw [← Nat.sub_add_cancel (show 1 ≤ 2 * b by omega), pow_succ]
         omega
-    have hfit_sh : Fits w (clmul u (v >>> 1) <<< 1) := hfit_end.of_le (by omega)
     have hfit_vbit : Fits w (v &&& 1) := hfit_v.of_le Nat.and_le_left
     have hbit_le : (v &&& 1) * u ≤ u := by
       calc (v &&& 1) * u ≤ 1 * u := Nat.mul_le_mul_right u Nat.and_le_right
         _ = u := Nat.one_mul u
-    have hfit_term : Fits w ((v &&& 1) * u) := hfit_u.of_le hbit_le
     have hval_lt : clmul u v < 2 ^ (2 * b) := clmul_lt_two_pow_two_mul hu_lt hv_lt
-    have hfit_val : Fits w (clmul u v) := hfit_end.of_le (by omega)
-    have hfit_idx1 : Fits w (idx + 1) := hfit_end.of_le (by omega)
     set s1 := x.set 6 (tabBase + idx)
     have e1 : Exec w (.op (.exactBin .add 6 0 1) : Code .exact 18) x s1 1 :=
       exec_exactBin (by simp [h0, h1]) hfit_addr
     set s2 := s1.set 9 0
-    have e2 : Exec w (.op (.const 9 0) : Code .exact 18) s1 s2 1 := Exec.const hfit_0
+    have e2 : Exec w (.op (.const 9 0) : Code .exact 18) s1 s2 1 := Exec.const (by fits)
     set s3 := s2.write (tabBase + idx) 0
     have e3 : Exec w (.op (.store 6 9) : Code .exact 18) s2 s3 1 := by
       simpa +decide [s3, s2, s1] using
@@ -506,40 +495,40 @@ theorem clmulTabLoop_exec {w tabBase b : ℕ}
         rw [Function.update_of_ne hne, hinv prevIdx hplt, hprev_u, hprev_v]
     set s4 := s3.set 7 u
     have e4 : Exec w (.op (.exactBin .shiftRight 7 1 3) : Code .exact 18) s3 s4 1 :=
-      exec_exactBin (by simp +decide [s3, s2, s1, h1, h3, u]) hfit_u
+      exec_exactBin (by simp +decide [s3, s2, s1, h1, h3, u]) (by fits)
     set s5 := s4.set 8 v
     have e5 : Exec w (.op (.exactBin .and 8 1 4) : Code .exact 18) s4 s5 1 :=
       exec_exactBin (by simp +decide [s4, s3, s2, s1, h1, h4, v]) hfit_v
     set s6 := s5.set 9 (v >>> 1)
     have e6 : Exec w (.op (.exactBin .shiftRight 9 8 5) : Code .exact 18) s5 s6 1 :=
-      exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h5]) hfit_vshr
+      exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h5]) (by fits)
     set s7 := s6.set 6 (u <<< b)
     have e7 : Exec w (.op (.exactBin .shiftLeft 6 7 3) : Code .exact 18) s6 s7 1 :=
-      exec_exactBin (by simp +decide [s6, s5, s4, s3, s2, s1, h3]) hfit_ushl
+      exec_exactBin (by simp +decide [s6, s5, s4, s3, s2, s1, h3]) (by fits)
     set s8 := s7.set 9 prevIdx
     have e8 : Exec w (.op (.exactBin .add 9 6 9) : Code .exact 18) s7 s8 1 :=
-      exec_exactBin (by simp +decide [s7, s6, prevIdx]) hfit_prev
+      exec_exactBin (by simp +decide [s7, s6, prevIdx]) (by fits)
     set s9 := s8.set 9 (tabBase + prevIdx)
     have e9 : Exec w (.op (.exactBin .add 9 0 9) : Code .exact 18) s8 s9 1 :=
-      exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h0]) hfit_prevAddr
+      exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h0]) (by fits)
     set s10 := s9.set 9 (clmul u (v >>> 1))
     have e10 : Exec w (.op (.load 9 9) : Code .exact 18) s9 s10 1 := by
       simpa +decide [s10, s9, s8, s7, s6, s5, s4, hprev_mem] using
         (Exec.load (B := .exact) (w := w) (d := 9) (a := 9) (x := s9))
     set s11 := s10.set 9 (clmul u (v >>> 1) <<< 1)
     have e11 : Exec w (.op (.exactBin .shiftLeft 9 9 5) : Code .exact 18) s10 s11 1 :=
-      exec_exactBin (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5]) hfit_sh
+      exec_exactBin (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5]) (by fits)
     set s12 := s11.set 8 (v &&& 1)
     have e12 : Exec w (.op (.exactBin .and 8 8 5) : Code .exact 18) s11 s12 1 :=
       exec_exactBin (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5]) hfit_vbit
     set s13 := s12.set 8 ((v &&& 1) * u)
     have e13 : Exec w (.op (.exactBin .mul 8 8 7) : Code .exact 18) s12 s13 1 :=
-      exec_exactBin (by simp +decide [s12, s11, s10, s9, s8, s7, s6, s5, s4]) hfit_term
+      exec_exactBin (by simp +decide [s12, s11, s10, s9, s8, s7, s6, s5, s4]) (by fits)
     have hxor_eq : s13.regs 8 ^^^ s13.regs 9 = clmul u v := by
       simpa +decide [s13, s12, s11] using clmul_eq_bit_mul_xor u v
     set s14 := s13.set 9 (clmul u v)
     have e14 : Exec w (.op (.exactBin .xor 9 8 9) : Code .exact 18) s13 s14 1 :=
-      exec_exactBin (by simp [hxor_eq]) hfit_val
+      exec_exactBin (by simp [hxor_eq]) (by fits)
     set s15 := s14.set 6 (tabBase + idx)
     have e15 : Exec w (.op (.exactBin .add 6 0 1) : Code .exact 18) s14 s15 1 :=
       exec_exactBin
@@ -554,7 +543,7 @@ theorem clmulTabLoop_exec {w tabBase b : ℕ}
       exec_exactBin
         (by simp +decide [s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1,
           h1, h5])
-        hfit_idx1
+        (by fits)
     have hbody :=
       e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq
         (e11.seq (e12.seq (e13.seq (e14.seq (e15.seq (e16.seq e17)))))))))))))))
@@ -632,21 +621,16 @@ theorem chunkBitsCode_exec {w base n_max U M : ℕ} {x : Data 18}
       y.regs 5 = chunkBits n_max ∧
       y.regs 6 = 1 ∧
       y.mem = x.mem := by
-  have hfit_2 : Fits w 2 := hfit_3.of_le (by decide)
-  have hfit_1 : Fits w 1 := hfit_3.of_le (by decide)
-  have hfit_0 : Fits w 0 := hfit_3.of_le (by decide)
   have hlog_le : Nat.log 2 (max n_max 2) ≤ max n_max 2 := Nat.log_le_self 2 _
-  have hfit_log : Fits w (0 + Nat.log 2 (max n_max 2)) := hfit_n.of_le (by omega)
-  have hfit_div : Fits w (Nat.log 2 (max n_max 2) / 3) := hfit_n.of_le (by omega)
   set s1 := x.set 4 2
-  have e1 : Exec w (.op (.const 4 2) : Code .exact 18) x s1 1 := Exec.const hfit_2
+  have e1 : Exec w (.op (.const 4 2) : Code .exact 18) x s1 1 := Exec.const (by fits)
   set s2 := s1.set 4 (max n_max 2)
   have e2 : Exec w (maxCode 4 1 4) s1 s2 3 := by
     simpa +decide [s2, s1, h1] using maxCode_exec (w := w) 4 1 4 s1
   set s3 := s2.set 5 0
-  have e3 : Exec w (.op (.const 5 0) : Code .exact 18) s2 s3 1 := Exec.const hfit_0
+  have e3 : Exec w (.op (.const 5 0) : Code .exact 18) s2 s3 1 := Exec.const (by fits)
   set s4 := s3.set 6 1
-  have e4 : Exec w (.op (.const 6 1) : Code .exact 18) s3 s4 1 := Exec.const hfit_1
+  have e4 : Exec w (.op (.const 6 1) : Code .exact 18) s3 s4 1 := Exec.const (by fits)
   set f : Fin 3 → Fin 18 := ![4, 5, 6]
   have hmap_inj : Function.Injective f := by decide
   have hloop_inner := log2Loop_exec (w := w) (max n_max 2) (acc := 0)
@@ -654,7 +638,7 @@ theorem chunkBitsCode_exec {w base n_max U M : ℕ} {x : Data 18}
     (by simp +decide [s4, s3, s2, f, Data.comap])
     (by simp +decide [s4, s3, f, Data.comap])
     (by simp +decide [s4, f, Data.comap])
-    hfit_n hfit_log
+    hfit_n (by fits)
   have e5 := hloop_inner.rename hmap_inj
   set s5 := (log2LoopData (max n_max 2) 0 (s4.comap f)).extend f s4
   have hs5_5 : s5.regs 5 = Nat.log 2 (max n_max 2) := by
@@ -675,7 +659,7 @@ theorem chunkBitsCode_exec {w base n_max U M : ℕ} {x : Data 18}
   have e6 : Exec w (.op (.const 4 3) : Code .exact 18) s5 s6 1 := Exec.const hfit_3
   set s7 := s6.set 5 (Nat.log 2 (max n_max 2) / 3)
   have e7 : Exec w (.op (.exactBin .div 5 5 4) : Code .exact 18) s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, hs5_5]) hfit_div
+    exec_exactBin (by simp +decide [s6, hs5_5]) (by fits)
   set s8 := s7.set 5 (chunkBits n_max)
   have e8 : Exec w (maxCode 5 6 5) s7 s8 3 := by
     simpa +decide [s8, s7, s6, hs5_6, chunkBits] using maxCode_exec (w := w) 5 6 5 s7
@@ -746,28 +730,21 @@ theorem trinomialParamsCode_exec {w base U M b : ℕ} {x : Data 18}
     have : 1 ≤ 3 ^ trinomialStep U M := Nat.one_le_pow _ 3 (by decide)
     omega
   have hpow_q : trinomialDeg U M + 2 ≤ 2 ^ trinomialDeg U M := add_two_le_two_pow hq_ge_2
-  have hfit_q2 : Fits w (trinomialDeg U M + 2) := hfit_q.of_le hpow_q
-  have hfit_B2 : Fits w (B + 2) := hfit_q2.of_le (by omega)
+  have hfit_q2 : Fits w (trinomialDeg U M + 2) := by fits
   have hclog_le_B : Nat.clog 2 (max U 2) ≤ B := le_max_left _ _
-  have hfit_clog : Fits w (0 + Nat.clog 2 (max U 2)) := hfit_B2.of_le (by omega)
   have hr_le_q : 3 ^ trinomialStepAux B ≤ trinomialDeg U M := by
     change 3 ^ trinomialStep U M ≤ 2 * 3 ^ trinomialStep U M
     omega
   have hfit_r : Fits w (1 * 3 ^ trinomialStepAux B) := by
     rw [Nat.one_mul]
-    exact hfit_q2.of_le (by omega)
-  have hfit_q_val : Fits w (trinomialDeg U M) := hfit_q2.of_le (by omega)
-  have hfit_3 : Fits w 3 := hfit_q2.of_le (by omega)
-  have hfit_2 : Fits w 2 := hfit_q2.of_le (by omega)
-  have hfit_1 : Fits w 1 := hfit_q2.of_le (by omega)
-  have hfit_0 : Fits w 0 := hfit_q2.of_le (by omega)
+    fits
   set s1 := x.set 4 2
-  have e1 : Exec w (.op (.const 4 2) : Code .exact 18) x s1 1 := Exec.const hfit_2
+  have e1 : Exec w (.op (.const 4 2) : Code .exact 18) x s1 1 := Exec.const (by fits)
   set s2 := s1.set 7 (max U 2)
   have e2 : Exec w (maxCode 7 2 4) s1 s2 3 := by
     simpa +decide [s2, s1, h2] using maxCode_exec (w := w) 7 2 4 s1
   set s3 := s2.set 8 0
-  have e3 : Exec w (.op (.const 8 0) : Code .exact 18) s2 s3 1 := Exec.const hfit_0
+  have e3 : Exec w (.op (.const 8 0) : Code .exact 18) s2 s3 1 := Exec.const (by fits)
   set f1 : Fin 3 → Fin 18 := ![7, 8, 6]
   have hmap1 : Function.Injective f1 := by decide
   have hclog_inner := clog2Loop_exec (w := w) (max U 2) (acc := 0)
@@ -775,7 +752,7 @@ theorem trinomialParamsCode_exec {w base U M b : ℕ} {x : Data 18}
     (by simp +decide [s3, s2, f1, Data.comap])
     (by simp +decide [s3, f1, Data.comap])
     (by simp +decide [s3, s2, s1, h6, f1, Data.comap])
-    hfit_U hfit_clog
+    hfit_U (by fits)
   have e4 := hclog_inner.rename hmap1
   set s4 := (clog2LoopData (max U 2) 0 (s3.comap f1)).extend f1 s3
   have hs4_8 : s4.regs 8 = Nat.clog 2 (max U 2) := by
@@ -801,9 +778,9 @@ theorem trinomialParamsCode_exec {w base U M b : ℕ} {x : Data 18}
   have e6 : Exec w (maxCode 7 8 7) s5 s6 3 := by
     simpa +decide [s6, s5, hs4_8, B, trinomialTargetBits] using maxCode_exec (w := w) 7 8 7 s5
   set s7 := s6.set 1 1
-  have e7 : Exec w (.op (.const 1 1) : Code .exact 18) s6 s7 1 := Exec.const hfit_1
+  have e7 : Exec w (.op (.const 1 1) : Code .exact 18) s6 s7 1 := Exec.const (by fits)
   set s8 := s7.set 8 3
-  have e8 : Exec w (.op (.const 8 3) : Code .exact 18) s7 s8 1 := Exec.const hfit_3
+  have e8 : Exec w (.op (.const 8 3) : Code .exact 18) s7 s8 1 := Exec.const (by fits)
   set f2 : Fin 4 → Fin 18 := ![7, 1, 4, 8]
   have hmap2 : Function.Injective f2 := by decide
   have hstep_inner := trinomialStepLoop_exec (w := w) B (acc := 1)
@@ -812,7 +789,7 @@ theorem trinomialParamsCode_exec {w base U M b : ℕ} {x : Data 18}
     (by simp +decide [s8, s7, f2, Data.comap])
     (by simp +decide [s8, s7, s6, s5, hs4_4, f2, Data.comap])
     (by simp +decide [s8, f2, Data.comap])
-    hfit_B2 hfit_r
+    (by fits) hfit_r
   have e9 := hstep_inner.rename hmap2
   set s9 := (trinomialStepLoopData B 1 (s8.comap f2)).extend f2 s8
   have hs9_1 : s9.regs 1 = 3 ^ trinomialStep U M := by
@@ -833,7 +810,7 @@ theorem trinomialParamsCode_exec {w base U M b : ℕ} {x : Data 18}
     simp +decide [s9, Data.extend, f2, s8, s7, s6, s5, hs4_6]
   set s10 := s9.set 2 (trinomialDeg U M)
   have e10 : Exec w (.op (.exactBin .mul 2 4 1) : Code .exact 18) s9 s10 1 :=
-    exec_exactBin (by simp +decide [hs9_4, hs9_1, trinomialDeg]) hfit_q_val
+    exec_exactBin (by simp +decide [hs9_4, hs9_1, trinomialDeg]) (by fits)
   have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq e10))))))))
   refine ⟨s10, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [trinomialParamsCode, trinomialStep, B, f1, f2,
@@ -925,35 +902,26 @@ theorem storeHeaderPart1_exec {w base r q M b : ℕ} {x : Data 18}
   have hpos_r : 1 ≤ 2 ^ r := Nat.one_le_two_pow
   have hpos_q : 1 ≤ 2 ^ q := Nat.one_le_two_pow
   have hpos_M : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-  have hfit_pow_r : Fits w (2 ^ r) := hfit_q.of_le hpow_r
-  have hfit_mask_r : Fits w (2 ^ r - 1) := hfit_pow_r.of_le (by omega)
-  have hfit_mask_q : Fits w (2 ^ q - 1) := hfit_q.of_le (by omega)
-  have hfit_pow_M : Fits w (2 ^ M) := hfit_q.of_le hpow_M
-  have hfit_mask_M : Fits w (2 ^ M - 1) := hfit_pow_M.of_le (by omega)
-  have hfit_b1 : Fits w (base + 1) := hfit_end.of_le (by omega)
-  have hfit_b2 : Fits w (base + 2) := hfit_end.of_le (by omega)
-  have hfit_b3 : Fits w (base + 3) := hfit_end.of_le (by omega)
-  have hfit_b4 : Fits w (base + 4) := hfit_end.of_le (by omega)
-  have hfit_b5 : Fits w (base + 5) := hfit_end.of_le (by omega)
+  have hfit_b3 : Fits w (base + 3) := by fits
   set s1 := x.write base r
   have e1 : Exec w (.op (.store 0 1) : Code .exact 18) x s1 1 := by
     simpa +decide [s1, h0, h1] using (Exec.store (B := .exact) (w := w) (a := 0) (s := 1) (x := x))
   set s2 := s1.set 7 (base + 1)
   have e2 : Exec w (.op (.exactBin .add 7 0 6) : Code .exact 18) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0, h6]) hfit_b1
+    exec_exactBin (by simp +decide [s1, h0, h6]) (by fits)
   set s3 := s2.write (base + 1) q
   have e3 : Exec w (.op (.store 7 2) : Code .exact 18) s2 s3 1 := by
     simpa +decide [s3, s2, s1, h2] using
       (Exec.store (B := .exact) (w := w) (a := 7) (s := 2) (x := s2))
   set s4 := s3.set 8 (2 ^ r)
   have e4 : Exec w (.op (.exactBin .shiftLeft 8 6 1) : Code .exact 18) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h6, h1, Nat.shiftLeft_eq]) hfit_pow_r
+    exec_exactBin (by simp +decide [s3, s2, s1, h6, h1, Nat.shiftLeft_eq]) (by fits)
   set s5 := s4.set 8 (2 ^ r - 1)
   have e5 : Exec w (.op (.exactBin .sub 8 8 6) : Code .exact 18) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1, h6, hpos_r]) hfit_mask_r
+    exec_exactBin (by simp +decide [s4, s3, s2, s1, h6, hpos_r]) (by fits)
   set s6 := s5.set 7 (base + 2)
   have e6 : Exec w (.op (.exactBin .add 7 7 6) : Code .exact 18) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h6, Nat.add_assoc]) hfit_b2
+    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h6, Nat.add_assoc]) (by fits)
   set s7 := s6.write (base + 2) (2 ^ r - 1)
   have e7 : Exec w (.op (.store 7 8) : Code .exact 18) s6 s7 1 := by
     simpa +decide [s7, s6, s5] using
@@ -963,7 +931,7 @@ theorem storeHeaderPart1_exec {w base r q M b : ℕ} {x : Data 18}
     exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1, h6, h2, Nat.shiftLeft_eq]) hfit_q
   set s9 := s8.set 8 (2 ^ q - 1)
   have e9 : Exec w (.op (.exactBin .sub 8 8 6) : Code .exact 18) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h6, hpos_q]) hfit_mask_q
+    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h6, hpos_q]) (by fits)
   set s10 := s9.set 7 (base + 3)
   have e10 : Exec w (.op (.exactBin .add 7 7 6) : Code .exact 18) s9 s10 1 :=
     exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h6, Nat.add_assoc]) hfit_b3
@@ -975,16 +943,16 @@ theorem storeHeaderPart1_exec {w base r q M b : ℕ} {x : Data 18}
   have e12 : Exec w (.op (.exactBin .shiftLeft 8 6 3) : Code .exact 18) s11 s12 1 :=
     exec_exactBin
       (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h6, h3, Nat.shiftLeft_eq])
-      hfit_pow_M
+      (by fits)
   set s13 := s12.set 8 (2 ^ M - 1)
   have e13 : Exec w (.op (.exactBin .sub 8 8 6) : Code .exact 18) s12 s13 1 :=
     exec_exactBin (by simp +decide [s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h6, hpos_M])
-      hfit_mask_M
+      (by fits)
   set s14 := s13.set 7 (base + 4)
   have e14 : Exec w (.op (.exactBin .add 7 7 6) : Code .exact 18) s13 s14 1 :=
     exec_exactBin
       (by simp +decide [s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h6, Nat.add_assoc])
-      hfit_b4
+      (by fits)
   set s15 := s14.write (base + 4) (2 ^ M - 1)
   have e15 : Exec w (.op (.store 7 8) : Code .exact 18) s14 s15 1 := by
     simpa +decide [s15, s14, s13] using
@@ -994,7 +962,7 @@ theorem storeHeaderPart1_exec {w base r q M b : ℕ} {x : Data 18}
     exec_exactBin
       (by simp +decide [s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h6,
         Nat.add_assoc])
-      hfit_b5
+      (by fits)
   set s17 := s16.write (base + 5) b
   have e17 : Exec w (.op (.store 7 5) : Code .exact 18) s16 s17 1 := by
     simpa +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5]
@@ -1043,28 +1011,24 @@ theorem storeHeaderPart2_exec {w base q b k : ℕ} {x : Data 18}
   have hpos_b : 1 ≤ 2 ^ b := Nat.one_le_two_pow
   have h2b_lt : 2 * b < 2 ^ (2 * b) := Nat.lt_two_pow_self
   have hfit_pow2b : Fits w (2 ^ (2 * b)) := hfit_space.of_le (by simp [spaceFromB]; omega)
-  have hfit_powb : Fits w (2 ^ b) := hfit_pow2b.of_le hpow_le
-  have hfit_maskb : Fits w (2 ^ b - 1) := hfit_powb.of_le (by omega)
   have hfit_b6 : Fits w (base + 6) := hfit_space.of_le (by simp [spaceFromB]; omega)
   have hfit_b7 : Fits w (base + 7) := hfit_space.of_le (by simp [spaceFromB]; omega)
-  have hfit_qm1 : Fits w (q - 1) := hfit_q.of_le (by omega)
+  have hfit_qm1 : Fits w (q - 1) := by fits
   have hfit_div : Fits w ((q - 1) / b) := hfit_qm1.of_le (Nat.div_le_self _ _)
   have hdiv1_le : (q - 1) / b + 1 ≤ q := by
     have := Nat.div_le_self (q - 1) b
     omega
   have hfit_L : Fits w (limbCountFromB b q) := by
     rw [← div_pred_add_one_eq_limbCountFromB hb hq]
-    exact hfit_q.of_le hdiv1_le
-  have hfit_2b : Fits w (2 * b) := hfit_pow2b.of_le (le_of_lt h2b_lt)
-  have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
+    fits
   have hfit_8k : Fits w (8 + k) := hfit_space.of_le (by simp [spaceFromB]; omega)
   have hfit_tabBase : Fits w (base + 8 + k) := hfit_space.of_le (by simp [spaceFromB]; omega)
   set s1 := x.set 8 (2 ^ b)
   have e1 : Exec w (.op (.exactBin .shiftLeft 8 6 5) : Code .exact 18) x s1 1 :=
-    exec_exactBin (by simp +decide [h6, h5, Nat.shiftLeft_eq]) hfit_powb
+    exec_exactBin (by simp +decide [h6, h5, Nat.shiftLeft_eq]) (by fits)
   set s2 := s1.set 8 (2 ^ b - 1)
   have e2 : Exec w (.op (.exactBin .sub 8 8 6) : Code .exact 18) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h6, hpos_b]) hfit_maskb
+    exec_exactBin (by simp +decide [s1, h6, hpos_b]) (by fits)
   set s3 := s2.set 7 (base + 6)
   have e3 : Exec w (.op (.exactBin .add 7 7 6) : Code .exact 18) s2 s3 1 :=
     exec_exactBin (by simp +decide [s2, s1, h7, h6, Nat.add_assoc]) hfit_b6
@@ -1092,7 +1056,7 @@ theorem storeHeaderPart2_exec {w base q b k : ℕ} {x : Data 18}
       (Exec.store (B := .exact) (w := w) (a := 7) (s := 9) (x := s8))
   set s10 := s9.set 2 (2 * b)
   have e10 : Exec w (.op (.exactBin .mul 2 4 5) : Code .exact 18) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h4, h5]) hfit_2b
+    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h4, h5]) (by fits)
   set s11 := s10.set 2 (2 ^ (2 * b))
   have e11 : Exec w (.op (.exactBin .shiftLeft 2 6 2) : Code .exact 18) s10 s11 1 :=
     exec_exactBin
@@ -1111,7 +1075,7 @@ theorem storeHeaderPart2_exec {w base q b k : ℕ} {x : Data 18}
     simpa +decide [s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h6] using
       (Exec.copy (B := .exact) (w := w) (d := 5) (s := 6) (x := s13))
   set s15 := s14.set 1 0
-  have e15 : Exec w (.op (.const 1 0) : Code .exact 18) s14 s15 1 := Exec.const hfit_0
+  have e15 : Exec w (.op (.const 1 0) : Code .exact 18) s14 s15 1 := Exec.const (by fits)
   set s16 := s15.set 9 (8 + k)
   have e16 : Exec w (.op (.const 9 (8 + k)) : Code .exact 18) s15 s16 1 := Exec.const hfit_8k
   set s17 := s16.set 0 (base + 8 + k)
@@ -1187,30 +1151,26 @@ theorem initTableCode_execWithin {w base n_max U M k : ℕ} {x : Data 18}
   have hM_le : M ≤ q := le_trinomialDeg U M
   have hsp : space n_max k = 8 + k + 2 ^ (2 * b) := rfl
   have hpow_pos : 0 < 2 ^ (2 * b) := by positivity
-  have hfit_3 : Fits w 3 := hfit_space.of_le (by omega)
-  have hfit_end8 : Fits w (base + 8) := hfit_space.of_le (by omega)
   have hfit_qval : Fits w q := hfit_q.of_le (le_of_lt Nat.lt_two_pow_self)
-  have hfit_tabEnd : Fits w (base + 8 + k + 2 ^ (2 * b)) := hfit_space.of_le (by omega)
-  have hfit_8k : Fits w (8 + k) := hfit_space.of_le (by omega)
-  have hfit_base : Fits w base := hfit_space.of_le (by omega)
+  have hfit_tabEnd : Fits w (base + 8 + k + 2 ^ (2 * b)) := by fits
   obtain ⟨d1, e1, hd1_0, hd1_2, hd1_3, hd1_5, hd1_6, hd1_mem⟩ :=
-    chunkBitsCode_exec h0 h1 h2 h3 hfit_n hfit_3
+    chunkBitsCode_exec h0 h1 h2 h3 hfit_n (by fits)
   obtain ⟨d2, e2, hd2_0, hd2_1, hd2_2, hd2_3, hd2_4, hd2_5, hd2_6, hd2_mem⟩ :=
     trinomialParamsCode_exec hd1_0 hd1_2 hd1_3 hd1_5 hd1_6 hfit_U hfit_q
   obtain ⟨d3, e3, hd3_0, hd3_2, hd3_4, hd3_5, hd3_6, hd3_7,
       hm0, hm1, hm2, hm3, hm4, hm5, hd3_out⟩ :=
     storeHeaderPart1_exec hd2_0 hd2_1 hd2_2 hd2_3 hd2_4 hd2_5 hd2_6 hr_le hM_le
-      hfit_end8 hfit_q
+      (by fits) hfit_q
   obtain ⟨d4, e4, hd4_0, hd4_1, hd4_2, hd4_3, hd4_4, hd4_5, hm6, hm7, hd4_out⟩ :=
     storeHeaderPart2_exec hb_pos hq_pos hd3_0 hd3_2 hd3_4 hd3_5 hd3_6 hd3_7 hfit_space hfit_qval
   obtain ⟨d5, e5, hd5_0, htab, hd5_out⟩ :=
     clmulTabLoop_exec hfit_tabEnd (2 ^ (2 * b)) 0 d4 (by omega)
       hd4_0 hd4_1 hd4_2 hd4_3 hd4_4 hd4_5 (by intro i hi; omega)
   set d6 := d5.set 9 (8 + k)
-  have er1 : Exec w (.op (.const 9 (8 + k)) : Code .exact 18) d5 d6 1 := Exec.const hfit_8k
+  have er1 : Exec w (.op (.const 9 (8 + k)) : Code .exact 18) d5 d6 1 := Exec.const (by fits)
   set d7 := d6.set 0 base
   have er2 : Exec w (.op (.exactBin .sub 0 0 9) : Code .exact 18) d6 d7 1 :=
-    exec_exactBin (by simp +decide [d6, hd5_0]; omega) hfit_base
+    exec_exactBin (by simp +decide [d6, hd5_0]; omega) (by fits)
   have e6 := er1.seq er2
   have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq e6))))
   have hmem_hdr : ∀ j < 8, d7.mem (base + j) = d4.mem (base + j) := by
@@ -1285,34 +1245,28 @@ theorem resampleSetupCode_exec {w base b U M k : ℕ} {x : Data 18}
     (htab : TableRep base b U M k x.mem) (h0 : x.regs 0 = base)
     (hfit_end : Fits w (base + 8 + k)) :
     Exec w (resampleSetupCode k) x (resampleSetupData base U M k x) 8 := by
-  have hfit_3 : Fits w 3 := hfit_end.of_le (by omega)
-  have hfit_b3 : Fits w (base + 3) := hfit_end.of_le (by omega)
-  have hfit_8 : Fits w 8 := hfit_end.of_le (by omega)
-  have hfit_b8 : Fits w (base + 8) := hfit_end.of_le (by omega)
-  have hfit_k : Fits w k := hfit_end.of_le (by omega)
-  have hfit_1 : Fits w 1 := hfit_end.of_le (by omega)
   have hm3 : x.mem (base + 3) = 2 ^ trinomialDeg U M - 1 := htab.2.2.2.1
   set s1 := x.set 1 3
-  have e1 : Exec w (.op (.const 1 3) : Code .exact 18) x s1 1 := Exec.const hfit_3
+  have e1 : Exec w (.op (.const 1 3) : Code .exact 18) x s1 1 := Exec.const (by fits)
   set s2 := s1.set 1 (base + 3)
   have e2 : Exec w (.op (.exactBin .add 1 0 1) : Code .exact 18) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0]) hfit_b3
+    exec_exactBin (by simp +decide [s1, h0]) (by fits)
   set s3 := s2.set 1 (2 ^ trinomialDeg U M - 1)
   have e3 : Exec w (.op (.load 1 1) : Code .exact 18) s2 s3 1 := by
     simpa +decide [s3, s2, s1, hm3] using
       (Exec.load (B := .exact) (w := w) (d := 1) (a := 1) (x := s2))
   set s4 := s3.set 2 8
-  have e4 : Exec w (.op (.const 2 8) : Code .exact 18) s3 s4 1 := Exec.const hfit_8
+  have e4 : Exec w (.op (.const 2 8) : Code .exact 18) s3 s4 1 := Exec.const (by fits)
   set s5 := s4.set 2 (base + 8)
   have e5 : Exec w (.op (.exactBin .add 2 0 2) : Code .exact 18) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1, h0]) hfit_b8
+    exec_exactBin (by simp +decide [s4, s3, s2, s1, h0]) (by fits)
   set s6 := s5.set 3 k
-  have e6 : Exec w (.op (.const 3 k) : Code .exact 18) s5 s6 1 := Exec.const hfit_k
+  have e6 : Exec w (.op (.const 3 k) : Code .exact 18) s5 s6 1 := Exec.const (by fits)
   set s7 := s6.set 3 (base + 8 + k)
   have e7 : Exec w (.op (.exactBin .add 3 2 3) : Code .exact 18) s6 s7 1 :=
     exec_exactBin (by simp +decide [s6, s5, Nat.add_assoc]) hfit_end
   set s8 := s7.set 4 1
-  have e8 : Exec w (.op (.const 4 1) : Code .exact 18) s7 s8 1 := Exec.const hfit_1
+  have e8 : Exec w (.op (.const 4 1) : Code .exact 18) s7 s8 1 := Exec.const (by fits)
   have hall := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))
   have hd : s8 = resampleSetupData base U M k x := by
     ext i : 2
@@ -1328,14 +1282,13 @@ theorem resampleCode_execRand {w base b U M k : ℕ} {x : Data 18}
     ExecRand w (resampleCode k) x (resampleComp base U M k x) := by
   have hsetup := resampleSetupCode_exec htab h0 hfit_end
   set d0 := resampleSetupData base U M k x
-  have hfit_mask : Fits w (2 ^ trinomialDeg U M - 1) := hfit_q.of_le (Nat.sub_le _ 1)
   have hloop0 := randFillLoop_execRand (w := w) (bits := trinomialDeg U M) (arrBase := base + 8)
     k (x := d0.comap resampleMap)
     (by simp +decide [d0, resampleSetupData, resampleMap, Data.comap, regPtr])
     (by simp +decide [d0, resampleSetupData, resampleMap, Data.comap, regEnd])
     (by simp +decide [d0, resampleSetupData, resampleMap, Data.comap, regMask])
     (by simp +decide [d0, resampleSetupData, resampleMap, Data.comap, regOne])
-    hfit_end hfit_mask
+    hfit_end (by fits)
   have hloop := hloop0.rename injective_resampleMap
   have hseq := hsetup.seqRand hloop
   simpa only [resampleCode, resampleComp, d0, Functor.map_map] using hseq
@@ -1427,8 +1380,7 @@ theorem initCode_execRandWithin {w base n_max U M k : ℕ} {x : Data 18}
     initTableCode_execWithin h0 h1 h2 h3 hfit_space hfit_n hfit_U hfit_q
   have hsp : space n_max k = 8 + k + 2 ^ (2 * chunkBits n_max) := rfl
   have hpow_pos : 0 < 2 ^ (2 * chunkBits n_max) := by positivity
-  have hfit_end : Fits w (base + 8 + k) := hfit_space.of_le (by omega)
-  obtain ⟨m2, he2, hqb, hsupp⟩ := resampleCode_execRandWithin htab hdTab_0 hfit_end hfit_q
+  obtain ⟨m2, he2, hqb, hsupp⟩ := resampleCode_execRandWithin htab hdTab_0 (by fits) hfit_q
   refine ⟨(fun z : Data 18 × ℕ => (z.1, s1 + z.2)) <$> m2, he1.seqRand he2,
     (OracleComp.isCostBounded_map_iff _ _ _).mpr hqb, ?_⟩
   intro z hz
@@ -1974,9 +1926,6 @@ theorem reduceStepCode_exec {w base b U M k c : ℕ} {s : Data 18}
   have hm1 : s.mem (base + 1) = q := htab.2.1
   have hm2 : s.mem (base + 2) = 2 ^ r - 1 := htab.2.2.1
   have hm3 : s.mem (base + 3) = 2 ^ q - 1 := htab.2.2.2.1
-  have hfit_b1 : Fits w (base + 1) := hfit_end8.of_le (by omega)
-  have hfit_b2 : Fits w (base + 2) := hfit_end8.of_le (by omega)
-  have hfit_b3 : Fits w (base + 3) := hfit_end8.of_le (by omega)
   have h3r_lt : q + r < 2 ^ (2 * q) := by
     have : 1 ≤ r := Nat.one_le_pow t 3 (by decide)
     have h2q : q + r ≤ 2 * q := by omega
@@ -2029,21 +1978,21 @@ theorem reduceStepCode_exec {w base b U M k c : ℕ} {s : Data 18}
     simpa +decide [s1, h0, hm0] using (Exec.load (B := .exact) (w := w) (d := 10) (a := 0) (x := s))
   set s2 := s1.set 15 (base + 1)
   have e2 : Exec w (.op (.exactBin .add 15 0 8) : Code .exact 18) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0, h8]) hfit_b1
+    exec_exactBin (by simp +decide [s1, h0, h8]) (by fits)
   set s3 := s2.set 11 q
   have e3 : Exec w (.op (.load 11 15) : Code .exact 18) s2 s3 1 := by
     simpa +decide [s3, s2, s1, hm1] using
       (Exec.load (B := .exact) (w := w) (d := 11) (a := 15) (x := s2))
   set s4 := s3.set 15 (base + 2)
   have e4 : Exec w (.op (.exactBin .add 15 15 8) : Code .exact 18) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h8, Nat.add_assoc]) hfit_b2
+    exec_exactBin (by simp +decide [s3, s2, s1, h8, Nat.add_assoc]) (by fits)
   set s5 := s4.set 12 (2 ^ r - 1)
   have e5 : Exec w (.op (.load 12 15) : Code .exact 18) s4 s5 1 := by
     simpa +decide [s5, s4, s3, s2, s1, hm2] using
       (Exec.load (B := .exact) (w := w) (d := 12) (a := 15) (x := s4))
   set s6 := s5.set 15 (base + 3)
   have e6 : Exec w (.op (.exactBin .add 15 15 8) : Code .exact 18) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h8, Nat.add_assoc]) hfit_b3
+    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h8, Nat.add_assoc]) (by fits)
   set s7 := s6.set 13 (2 ^ q - 1)
   have e7 : Exec w (.op (.load 13 15) : Code .exact 18) s6 s7 1 := by
     simpa +decide [s7, s6, s5, s4, s3, s2, s1, hm3] using
@@ -2165,11 +2114,8 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
     have hpow_pos : 0 < 2 ^ (2 * b) := by positivity
     have hfit_tabEnd : Fits w (base + 8 + k + 2 ^ (2 * b)) :=
       hfit_space.of_le (by dsimp only [spaceFromB]; omega)
-    have hfit_end8 : Fits w (base + 8) :=
-      hfit_space.of_le (by dsimp only [spaceFromB]; omega)
-    have hfit_end_k : Fits w (base + 8 + k) :=
-      hfit_space.of_le (by dsimp only [spaceFromB]; omega)
-    have hfit_m : Fits w m := hfit_end_k.of_le (by omega)
+    have hfit_end8 : Fits w (base + 8) := by fits
+    have hfit_end_k : Fits w (base + 8 + k) := by fits
     have hq_le_Lb : q ≤ L * b := le_limbCountFromB_mul hb q
     have hpow_q_Lb : 2 ^ q ≤ 2 ^ (L * b) := Nat.pow_le_pow_right (by decide) hq_le_Lb
     have hu_bound : u.val < 2 ^ q :=
@@ -2204,7 +2150,7 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
       omega
     set s1 := s.set 3 m
     have e1 : Exec w (.op (.exactBin .sub 3 3 8) : Code .exact 18) s s1 1 :=
-      exec_exactBin (by simp +decide [h3, h8]) hfit_m
+      exec_exactBin (by simp +decide [h3, h8]) (by fits)
     set s2 := s1.set 11 acc_val
     have e2 : Exec w (.op (.copy 11 2) : Code .exact 18) s1 s2 1 := by
       simpa +decide [s2, s1, h2, acc_val] using
@@ -2259,8 +2205,6 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
     have hs7_3 : s7.regs 3 = m := by
       rw [hs7_low_eq 3 ⟨by decide, by decide⟩]
       simp +decide [s5, s4, s3, s2, s1]
-    have hfit_8 : Fits w 8 := hfit_end8.of_le (by omega)
-    have hfit_b8m : Fits w (base + 8 + m) := hfit_end_k.of_le (by omega)
     have hm_lt : m < k := by omega
     have hmem_seed : s7.mem (base + 8 + m) = (c ⟨m, hm_lt⟩).val := by
       rw [hs7_mem, hs6_mem]
@@ -2286,13 +2230,13 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
         (lt_of_lt_of_le hacc_next_lt_q
           (Nat.pow_le_pow_right (by decide) (by omega)))
     set s8 := s7.set 15 8
-    have e8 : Exec w (.op (.const 15 8) : Code .exact 18) s7 s8 1 := Exec.const hfit_8
+    have e8 : Exec w (.op (.const 15 8) : Code .exact 18) s7 s8 1 := Exec.const (by fits)
     set s9 := s8.set 15 (base + 8)
     have e9 : Exec w (.op (.exactBin .add 15 0 15) : Code .exact 18) s8 s9 1 :=
       exec_exactBin (by simp +decide [s8, hs7_0]) hfit_end8
     set s10 := s9.set 15 (base + 8 + m)
     have e10 : Exec w (.op (.exactBin .add 15 15 3) : Code .exact 18) s9 s10 1 :=
-      exec_exactBin (by simp +decide [s9, s8, hs7_3]) hfit_b8m
+      exec_exactBin (by simp +decide [s9, s8, hs7_3]) (by fits)
     set s11 := s10.set 15 (c ⟨m, hm_lt⟩).val
     have e11 : Exec w (.op (.load 15 15) : Code .exact 18) s10 s11 1 := by
       simpa +decide [s11, s10, s9, s8, hmem_seed] using
@@ -2404,51 +2348,43 @@ theorem evalSetupCode_exec {w base b U M k : ℕ} {x : Data 18}
       y.regs 8 = 1 ∧
       y.regs 9 = 0 ∧
       y.mem = x.mem := by
-  have hfit_1 : Fits w 1 := hfit_end.of_le (by omega)
-  have hfit_0 : Fits w 0 := hfit_end.of_le (by omega)
-  have hfit_k : Fits w k := hfit_end.of_le (by omega)
-  have hfit_5 : Fits w 5 := hfit_end.of_le (by omega)
-  have hfit_b5 : Fits w (base + 5) := hfit_end.of_le (by omega)
-  have hfit_b6 : Fits w (base + 6) := hfit_end.of_le (by omega)
-  have hfit_b7 : Fits w (base + 7) := hfit_end.of_le (by omega)
-  have hfit_8k : Fits w (8 + k) := hfit_end.of_le (by omega)
   have hm5 : x.mem (base + 5) = b := htab.2.2.2.2.2.1
   have hm6 : x.mem (base + 6) = 2 ^ b - 1 := htab.2.2.2.2.2.2.1
   have hm7 : x.mem (base + 7) = limbCountFromB b (trinomialDeg U M) := htab.2.2.2.2.2.2.2.1
   set s1 := x.set 8 1
-  have e1 : Exec w (.op (.const 8 1) : Code .exact 18) x s1 1 := Exec.const hfit_1
+  have e1 : Exec w (.op (.const 8 1) : Code .exact 18) x s1 1 := Exec.const (by fits)
   set s2 := s1.set 9 0
-  have e2 : Exec w (.op (.const 9 0) : Code .exact 18) s1 s2 1 := Exec.const hfit_0
+  have e2 : Exec w (.op (.const 9 0) : Code .exact 18) s1 s2 1 := Exec.const (by fits)
   set s3 := s2.set 2 0
   have e3 : Exec w (.op (.copy 2 9) : Code .exact 18) s2 s3 1 := by
     simpa +decide [s3, s2] using (Exec.copy (B := .exact) (w := w) (d := 2) (s := 9) (x := s2))
   set s4 := s3.set 3 k
-  have e4 : Exec w (.op (.const 3 k) : Code .exact 18) s3 s4 1 := Exec.const hfit_k
+  have e4 : Exec w (.op (.const 3 k) : Code .exact 18) s3 s4 1 := Exec.const (by fits)
   set s5 := s4.set 15 5
-  have e5 : Exec w (.op (.const 15 5) : Code .exact 18) s4 s5 1 := Exec.const hfit_5
+  have e5 : Exec w (.op (.const 15 5) : Code .exact 18) s4 s5 1 := Exec.const (by fits)
   set s6 := s5.set 15 (base + 5)
   have e6 : Exec w (.op (.exactBin .add 15 0 15) : Code .exact 18) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h0]) hfit_b5
+    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h0]) (by fits)
   set s7 := s6.set 4 b
   have e7 : Exec w (.op (.load 4 15) : Code .exact 18) s6 s7 1 := by
     simpa +decide [s7, s6, s5, s4, s3, s2, s1, hm5] using
       (Exec.load (B := .exact) (w := w) (d := 4) (a := 15) (x := s6))
   set s8 := s7.set 15 (base + 6)
   have e8 : Exec w (.op (.exactBin .add 15 15 8) : Code .exact 18) s7 s8 1 :=
-    exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1, Nat.add_assoc]) hfit_b6
+    exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1, Nat.add_assoc]) (by fits)
   set s9 := s8.set 5 (2 ^ b - 1)
   have e9 : Exec w (.op (.load 5 15) : Code .exact 18) s8 s9 1 := by
     simpa +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, hm6] using
       (Exec.load (B := .exact) (w := w) (d := 5) (a := 15) (x := s8))
   set s10 := s9.set 15 (base + 7)
   have e10 : Exec w (.op (.exactBin .add 15 15 8) : Code .exact 18) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, Nat.add_assoc]) hfit_b7
+    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, Nat.add_assoc]) (by fits)
   set s11 := s10.set 6 (limbCountFromB b (trinomialDeg U M))
   have e11 : Exec w (.op (.load 6 15) : Code .exact 18) s10 s11 1 := by
     simpa +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, hm7] using
       (Exec.load (B := .exact) (w := w) (d := 6) (a := 15) (x := s10))
   set s12 := s11.set 7 (8 + k)
-  have e12 : Exec w (.op (.const 7 (8 + k)) : Code .exact 18) s11 s12 1 := Exec.const hfit_8k
+  have e12 : Exec w (.op (.const 7 (8 + k)) : Code .exact 18) s11 s12 1 := Exec.const (by fits)
   set s13 := s12.set 7 (base + 8 + k)
   have e13 : Exec w (.op (.exactBin .add 7 0 7) : Code .exact 18) s12 s13 1 :=
     exec_exactBin
@@ -2516,8 +2452,6 @@ theorem evalCode_execWithin_fromB {w base b U M k : ℕ}
   have hd2_eval : d2.regs 2 = (trinomialPolyEval t k U c u).val := by
     rw [hd2_2, hpoly_eq]
     rfl
-  have hfit_4 : Fits w 4 := hfit_end.of_le (by omega)
-  have hfit_b4 : Fits w (base + 4) := hfit_end.of_le (by omega)
   have hm4 : d2.mem (base + 4) = 2 ^ M - 1 := by
     rw [hd2_mem, hd1_mem]
     exact hrep.1.2.2.2.2.1
@@ -2529,10 +2463,10 @@ theorem evalCode_execWithin_fromB {w base b U M k : ℕ}
   have hfit_out : Fits w ((trinomialPolyEval t k U c u).val &&& (2 ^ M - 1)) :=
     fits_of_lt_two_pow_two_mul hw heval_lt
   set s1 := d2.set 15 4
-  have em1 : Exec w (.op (.const 15 4) : Code .exact 18) d2 s1 1 := Exec.const hfit_4
+  have em1 : Exec w (.op (.const 15 4) : Code .exact 18) d2 s1 1 := Exec.const (by fits)
   set s2 := s1.set 15 (base + 4)
   have em2 : Exec w (.op (.exactBin .add 15 0 15) : Code .exact 18) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, hd2_0]) hfit_b4
+    exec_exactBin (by simp +decide [s1, hd2_0]) (by fits)
   set s3 := s2.set 15 (2 ^ M - 1)
   have em3 : Exec w (.op (.load 15 15) : Code .exact 18) s2 s3 1 := by
     simpa +decide [s3, s2, s1, hm4] using
