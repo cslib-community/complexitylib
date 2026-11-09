@@ -688,15 +688,18 @@ def insert {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     ⟨⟨b.size.val + 1, Nat.succ_lt_succ hlt⟩,
       Minimap.insertNew hlt h b.encoded u v hv hu⟩
 
+/-- An empty minimap has no active key. -/
+private theorem notMem_activeSet_of_size_zero {U' n' X : ℕ} (e : Encoded U' n' X 0) (u : Fin U') :
+    u ∉ activeSet e := by
+  rw [card_eq_zero.mp (card_activeSet e)]
+  exact notMem_empty u
+
 /-- Delete `u` from `b` (no-op if `u ∉ activeSet b.encoded`). -/
 def delete {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     (b : BoundedEncoded U' n' X) (u : Fin U') : BoundedEncoded U' n' X :=
   if hu : u ∈ activeSet b.encoded then
     match b with
-    | ⟨⟨0, _⟩, e⟩ => False.elim (by
-        have hc := card_activeSet e
-        rw [card_eq_zero.mp hc] at hu
-        exact notMem_empty u hu)
+    | ⟨⟨0, _⟩, e⟩ => absurd hu (notMem_activeSet_of_size_zero e u)
     | ⟨⟨m + 1, hm⟩, e⟩ =>
       ⟨⟨m, Nat.lt_of_succ_lt hm⟩, Minimap.deleteMem (Nat.le_of_lt_succ hm) h e u hu⟩
   else
@@ -720,12 +723,6 @@ private theorem insert_of_notMem {U' n' X : ℕ} (h : DynamicMatching.Scheme U' 
         Minimap.insertNew (hcap.resolve_right hu) h b.encoded u v hv hu⟩ := by
   unfold insert
   simp only [hu, ↓reduceDIte]
-
-/-- An empty minimap has no active key. -/
-private theorem notMem_activeSet_of_size_zero {U' n' X : ℕ} (e : Encoded U' n' X 0) (u : Fin U') :
-    u ∉ activeSet e := by
-  rw [card_eq_zero.mp (card_activeSet e)]
-  exact notMem_empty u
 
 /-- `delete` of an active key shrinks the size by one. -/
 private theorem delete_of_mem {U' n' X m : ℕ} (h : DynamicMatching.Scheme U' n')

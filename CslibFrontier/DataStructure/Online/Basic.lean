@@ -61,6 +61,8 @@ randomized strategies are not modelled.
 
 ## Main results
 
+* `Problem.ValidSchedule.induction`: induction along a valid schedule, requests and post-step
+  states in lockstep.
 * `DetStrategy.validSchedule_states`, `DetStrategy.cost_eq_costFrom`: online strategies produce
   valid schedules evaluated in the common cost model.
 * `DetStrategy.amortized_bound`, `DetStrategy.competitive_of_amortized`,
@@ -133,8 +135,14 @@ theorem validSchedule_cons (s s' : P.State) (r : P.Req) (rs : List P.Req) (ss : 
   Iff.rfl
 
 variable {P} in
-/-- Induction along a valid schedule, consuming requests and post-step states in lockstep. -/
-private theorem ValidSchedule.induction {motive : (s : P.State) → (reqs : List P.Req) →
+/-- Induction along a valid schedule, consuming requests and post-step states in lockstep.
+
+Use it as `induction hv using Problem.ValidSchedule.induction` for a goal about
+`hv : P.ValidSchedule s reqs states`: the two length-mismatch cases are impossible and do not
+appear, and the `cons` case receives the step `P.ValidStep s r s'` and the induction hypothesis for
+the rest of the schedule from `s'`. For a concrete problem whose `State` or `Req` unfolds to
+another type, name it: `induction hv using Problem.ValidSchedule.induction (P := problem α)`. -/
+theorem ValidSchedule.induction {motive : (s : P.State) → (reqs : List P.Req) →
       (states : List P.State) → P.ValidSchedule s reqs states → Prop}
     (nil : ∀ s, motive s [] [] trivial)
     (cons : ∀ s r rs s' ss (hstep : P.ValidStep s r s') (hrest : P.ValidSchedule s' rs ss),
@@ -513,19 +521,13 @@ theorem exists_executes_scheduleClient (m : A.Mem) {s_off : P.State}
     ∃ traces,
       Executes A.Exec (P.scheduleClient reqs offStates) m () (A.runMem m reqs) traces ∧
         total id traces = A.costFrom m reqs := by
-  induction reqs generalizing m s_off offStates with
-  | nil =>
-    cases offStates with
-    | nil => exact ⟨[], .pure () m, rfl⟩
-    | cons _ _ => cases hv
-  | cons r rs ih =>
-    cases offStates with
-    | nil => cases hv
-    | cons s' ss =>
-      obtain ⟨traces, hexec, htot⟩ := ih (A.step m r) hv.2
-      refine ⟨P.stepCost (A.project m) r (A.project (A.step m r)) :: traces,
-        .call (a := ()) ⟨rfl, rfl⟩ hexec, ?_⟩
-      simp only [total_cons, id_eq, htot, costFrom_cons]
+  induction hv using Problem.ValidSchedule.induction generalizing m with
+  | nil => exact ⟨[], .pure () m, rfl⟩
+  | cons _ r _ _ _ _ _ ih =>
+    obtain ⟨traces, hexec, htot⟩ := ih (A.step m r)
+    refine ⟨P.stepCost (A.project m) r (A.project (A.step m r)) :: traces,
+      .call (a := ()) ⟨rfl, rfl⟩ hexec, ?_⟩
+    simp only [total_cons, id_eq, htot, costFrom_cons]
 
 /-- Telescoping competitive potential bound derived directly from
 `Cslib.DataStructure.Amortized.client`:
