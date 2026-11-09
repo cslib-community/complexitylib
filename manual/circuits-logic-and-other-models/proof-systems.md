@@ -423,12 +423,11 @@ dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-fro
 
 ## Polygonal geometry prerequisites
 
-Loop-only numerical-genus-zero rotations now have actual polygonal embeddings with their
-exact clockwise order, as documented below. The general numerical-genus / polygonal-realization
-equivalence still needs general forward restoration of nonloop contractions by directed
-contiguous vertex splits. The finite polygonal-to-numerical converse is proved below from
-actual embeddings and literal clockwise realization. Topological taming, indexed FZ versus DK set conventions
-and source comparison, frozen-switch completeness, Hanani–Tutte recognition and the full
+For every supplied rotation with declared incident endpoints, componentwise numerical genus
+zero is equivalent to an actual polygonal embedding with its exact literal clockwise order.
+The forward construction and finite polygonal-to-numerical converse are documented below.
+Topological taming, indexed FZ versus DK set conventions and source comparison,
+frozen-switch completeness, Hanani–Tutte recognition and the full
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) endpoint remain open.
 
 **Start:** complete [checkout setup](../workflows/getting-started.md#prerequisites-and-the-checkouts-version)
@@ -517,8 +516,51 @@ The [bouquet tests](../../CslibFrontierTests/PolygonalBouquet.lean) supply a non
 at every degree, nested/disjoint loops, negative interlacing and reversed-order cases;
 [their audit](../../CslibFrontierTests/PolygonalBouquetAudit.lean) checks stored declarations.
 Run `scripts/build.sh CslibFrontierTests.PolygonalBouquet CslibFrontierTests.PolygonalBouquetAudit --wfail --iofail`.
-This proves the loop-only forward direction. Together with the converse below it gives the
-loop-only equivalence. General nonloop restoration and the full planar objective remain open.
+This loop-only construction is the base of the general forward theorem below.
+
+### General clockwise realization and automatic restoration
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Forward`.
+For any `r : RotationSystem G`, apply `r.exists_polygonalDrawing hG hr` to obtain
+`∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r`. The only hypotheses declare
+every actual incident endpoint (`hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1`) and require
+the existing componentwise `r.NumericalGenusZero` (`hr`). There is no degree, connectedness,
+loop-only, bridge, cofaciality, rational-coordinate or geometric-provider premise.
+The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean) applies it to nonloop
+stars at every degree, using `starGraph_endpoints_declared` and `numericalGenusZero_starRotation`
+from `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Star`.
+
+The proof moves an actual indexed nonloop occurrence last, contracts it, recurses on the
+strictly smaller edge list, restores it and transports back to the exact original ordering.
+The generic rank API now lives in
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntervalOrder`;
+ordinary `Realization.BouquetOrder` imports retain that public API without aliases.
+
+For a supplied `D : PolygonalDrawing (contractLastEdgeGraph G u v)` with `hD : D.IsEmbedding`
+and `hR : D.Realizes (r.contractLastEdge huv)`, the ordinary `Realization.Restoration` topic
+provides `hR.exists_restoration r huv hG hD`. Here `r` is the source rotation on
+`lastEdgeGraph G u v`, `huv : u ≠ v`, and `hG` declares its incident endpoints. The result
+chooses `ρ > 0` and `a b : ℂ` internally and proves both embedding and exact realization of
+`D.restoration huv ρ a b`. It accepts any such actual contracted drawing.
+
+`PolygonalDrawing.Restriction` chooses an isolated cut ball and cuts the two ends independently;
+`CslibFrontier.Foundations.Geometry.Polygonal.Join` supplies exact one-segment route joins.
+Two contiguous retained dart blocks determine separating fans and the connector's precise
+clockwise insertion gaps, including one or both empty blocks. The restored routes retain
+their exterior segments, independently reattach both ends of target loops, and check all
+real contacts, simplicity and unchanged vertices. No source-model or runtime theorem follows.
+
+From the repository root, run
+`scripts/build.sh CslibFrontierTests.PolygonalForward CslibFrontierTests.PolygonalContractionSplit CslibFrontierTests.PolygonalForwardAudit CslibFrontierTests.PolygonalRestorationAudit --wfail --iofail`.
+The [forward client](../../CslibFrontierTests/PolygonalForward.lean) covers arbitrary degree,
+bridges, both one-empty orientations, two empty blocks, parallel edges, loops at both endpoints,
+an untouched loop component, sparse duplicate declarations, isolates and empty graphs.
+The [restoration client](../../CslibFrontierTests/PolygonalContractionSplit.lean) reopens the
+two independent ends of a target loop in an actual contracted drawing.
+[Join](../../CslibFrontierTests/PolygonalJoin.lean),
+[restriction](../../CslibFrontierTests/PolygonalRestriction.lean) and
+[split-fan](../../CslibFrontierTests/PolygonalSplitFans.lean) clients expose the local APIs.
+All should elaborate; use the artifact troubleshooting linked above for missing imports.
 
 ## Polygonal embeddings imply numerical genus zero
 
@@ -531,7 +573,7 @@ is supplied. Coordinates are arbitrary complex numbers; all real parameters on e
 segment are retained. Loops keep two ends, parallel occurrences keep their positions, and
 arbitrary degree, disconnected graphs, sparse/duplicate declarations, points and empty graphs
 are included. The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean) gives
-complete ordinary-import clients and combines it with the loop-only forward theorem.
+complete ordinary-import clients of both general directions.
 
 The constructive intermediate API is `hD.exists_faceColors hR hG x hx`, from
 `PolygonalDrawing.FaceColors`. For every actual `x : Fin G.2.length → Bool` satisfying
@@ -546,9 +588,8 @@ indexed dual/lifting cycle-space criterion then proves numerical genus zero.
 Generic ray, determinant, segment and fan-order facts live under
 `CslibFrontier.Foundations.Geometry.Polygonal`; their proofs have no graph dependency.
 The graph-specific construction data stay private. The existing lifting-based criterion is a
-proof tool: callers of the final theorem do not supply its face-color premise. The two needed
-`LocalSplitFan`/`LocalSplitOrder` modules are copied unchanged from the restoration checkpoint;
-the remaining cut/join scaffolding belongs to the still-open forward lane.
+proof tool: callers of the final theorem do not supply its face-color premise. The
+`LocalSplitFan`/`LocalSplitOrder` modules are shared with the forward restoration proof.
 
 Run `scripts/build.sh CslibFrontierTests.PolygonalConverse CslibFrontierTests.PolygonalConverseAudit --wfail --iofail`.
 The [concrete converse client](../../CslibFrontierTests/PolygonalConverse.lean) applies the endpoint
@@ -558,10 +599,20 @@ faces. The torus test rules out realizing that interlaced rotation; it makes no 
 claim about the underlying graph. The [audit](../../CslibFrontierTests/PolygonalConverseAudit.lean)
 covers stored declarations in the new endpoint modules, with its exclusions explicit.
 
-This is an original finite PL proof. General forward restoration, arbitrary topological-arc
-taming and source-model comparison, frozen-switch completeness, HT/recognition, native
-coordinate/runtime bounds and full [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091)
-remain separate obligations.
+### Finite PL equivalence
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Equivalence`.
+`r.numericalGenusZero_iff_exists_polygonalDrawing hG` combines the two endpoints:
+`r.NumericalGenusZero ↔ ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r`.
+Use `.mp hr` to construct a drawing or `.mpr ⟨D, hD, hR⟩` to recover numerical genus zero.
+The [ordinary client](../../CslibFrontierTests/PolygonalEquivalence.lean) checks both directions
+on nonloop stars at arbitrary degree and the equivalence for repeated isolated declarations.
+Run `scripts/build.sh CslibFrontierTests.PolygonalEquivalence --wfail --iofail`.
+
+These are original finite PL proofs. Arbitrary topological-arc taming, indexed FZ versus
+DK set source-model comparison, frozen-switch completeness, Hanani–Tutte, bare recognition,
+coordinate-bit/runtime/P bounds and the CSP dichotomy under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) remain separate obligations.
 
 ## Ordered incidence-to-polygon rotations
 

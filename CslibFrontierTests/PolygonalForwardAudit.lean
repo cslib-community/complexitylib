@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine, OpenAI
 -/
 
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Forward
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Equivalence
 import Lean.Util.CollectAxioms
 import Batteries.Tactic.Lint
 
@@ -12,8 +12,7 @@ import Batteries.Tactic.Lint
 Scoped standard-three-axiom and environment-linter audit of all stored declarations in the
 automatic circle split, source block and restoration route modules, including private and
 generated declarations.
-This does not replace independent mathematical review or claim the full
-geometric/numerical equivalence.
+The audit includes the finite PL equivalence and does not replace independent mathematical review.
 -/
 
 open Lean Elab Command Batteries.Tactic.Lint in
@@ -31,12 +30,16 @@ run_cmd do
      `CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.RestorationSimplicity,
      `CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.SplitLayout,
      `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntervalOrder,
-     `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.EdgeTransport,
+     (`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization ++
+       `EdgeTransport),
      `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Forward,
+     `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Equivalence,
      `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Restoration,
      `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.SplitBlocks,
-     `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.SplitIntervals,
-     `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.SplitUnchanged,
+     (`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization ++
+       `SplitIntervals),
+     (`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization ++
+       `SplitUnchanged),
      `CslibFrontier.Foundations.Geometry.Polygonal.AttachmentParameters,
      `CslibFrontier.Foundations.Geometry.Polygonal.CircleChord,
      `CslibFrontier.Foundations.Geometry.Polygonal.CircleConnector,
