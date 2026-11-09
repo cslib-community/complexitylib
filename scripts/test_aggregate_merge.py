@@ -24,10 +24,10 @@ class AggregateMergeTests(unittest.TestCase):
         self.env.update(GIT_AUTHOR_NAME="Fixture", GIT_AUTHOR_EMAIL="fixture@example.invalid",
                         GIT_COMMITTER_NAME="Fixture", GIT_COMMITTER_EMAIL="fixture@example.invalid")
         self.git("init", "--quiet", "--initial-branch=main")
-        self.write("lakefile.toml", 'name = "fixture"\n[[lean_lib]]\nname = "Complexity"\n')
-        self.write(".gitattributes", "Complexity.lean merge=union\n")
+        self.write("lakefile.toml", 'name = "fixture"\n[[lean_lib]]\nname = "CslibFrontier"\n')
+        self.write(".gitattributes", "CslibFrontier.lean merge=union\n")
         for name in ("Init", "Zed"):
-            self.write(f"Complexity/{name}.lean", f"-- fixture {name}\n")
+            self.write(f"CslibFrontier/{name}.lean", f"-- fixture {name}\n")
         self.aggregate()
         self.base = self.commit("base")
 
@@ -43,8 +43,8 @@ class AggregateMergeTests(unittest.TestCase):
 
     def aggregate(self):
         modules = sorted(".".join(p.relative_to(self.repo).with_suffix("").parts)
-                         for p in (self.repo / "Complexity").rglob("*.lean"))
-        self.write("Complexity.lean", verifier.MODULE_HEADER.decode() +
+                         for p in (self.repo / "CslibFrontier").rglob("*.lean"))
+        self.write("CslibFrontier.lean", verifier.MODULE_HEADER.decode() +
                    "".join(f"public import {name}\n" for name in modules))
 
     def commit(self, message):
@@ -53,14 +53,14 @@ class AggregateMergeTests(unittest.TestCase):
         return self.git("rev-parse", "HEAD")
 
     def additions(self, prefix_name="Able", source_name="Beta"):
-        self.write(f"Complexity/{prefix_name}.lean", "-- accepted prefix payload\n")
+        self.write(f"CslibFrontier/{prefix_name}.lean", "-- accepted prefix payload\n")
         self.write("prefix-doc.md", "accepted prefix documentation\n")
         self.aggregate()
         prefix = self.commit("prefix")
         self.git("switch", "--quiet", "--detach", self.base)
-        self.write(f"Complexity/{source_name}.lean", "-- reviewed feature payload\n")
+        self.write(f"CslibFrontier/{source_name}.lean", "-- reviewed feature payload\n")
         self.write("review-doc.md", "reviewed feature documentation\n")
-        self.write("ComplexityTests/Feature.lean", "-- reviewed fixture\n")
+        self.write("CslibFrontierTests/Feature.lean", "-- reviewed fixture\n")
         self.aggregate()
         return prefix, self.commit("reviewed feature")
 
@@ -83,11 +83,11 @@ class AggregateMergeTests(unittest.TestCase):
         status, report = self.report(prefix, source)
         self.assertEqual(status, 0, report)
         self.assertEqual(report["status"], "verified")
-        self.assertEqual(report["conflicts"], ["Complexity.lean"])
+        self.assertEqual(report["conflicts"], ["CslibFrontier.lean"])
         self.assertEqual(report["candidate_tree"], report["default_merge_tree"])
         self.assertEqual(report["recovered_prefix_tree"], self.git("rev-parse", prefix + "^{tree}"))
         self.assertEqual(report["reviewed_paths"],
-                         ["Complexity/Beta.lean", "ComplexityTests/Feature.lean", "review-doc.md"])
+                         ["CslibFrontier/Beta.lean", "CslibFrontierTests/Feature.lean", "review-doc.md"])
         self.assertEqual(report["canonical_import_count"], 4)
         self.assertTrue(report["isolation"]["no_shared_object_inodes"])
         self.assertEqual(before, self.snapshot(), "verifier mutated inspected repository")
@@ -107,25 +107,25 @@ class AggregateMergeTests(unittest.TestCase):
             self.assertTrue(all((p.stat().st_dev, p.stat().st_ino) not in source_inodes
                                 for p in temporary_objects))
             # Read a real reviewed payload through the independent fetched objects.
-            self.assertIn("Complexity/Beta.lean", scratch.entries(source))
+            self.assertIn("CslibFrontier/Beta.lean", scratch.entries(source))
 
     def test_adjacent_deletions_reconstruct_but_default_union_is_a_limitation(self):
         for name in ("Able", "Beta"):
-            self.write(f"Complexity/{name}.lean", "-- removal fixture\n")
+            self.write(f"CslibFrontier/{name}.lean", "-- removal fixture\n")
         self.aggregate()
         base = self.commit("deletion base")
-        (self.repo / "Complexity/Able.lean").unlink()
+        (self.repo / "CslibFrontier/Able.lean").unlink()
         self.aggregate()
         prefix = self.commit("remove Able")
         self.git("switch", "--quiet", "--detach", base)
-        (self.repo / "Complexity/Beta.lean").unlink()
+        (self.repo / "CslibFrontier/Beta.lean").unlink()
         self.aggregate()
         source = self.commit("remove Beta")
         status, report = self.report(prefix, source, base=base)
         self.assertEqual(status, 1)
         self.assertEqual(report["status"], "limitation", report)
         self.assertEqual(report["canonical_import_count"], 2)
-        self.assertEqual(report["reviewed_entries"], {"Complexity/Beta.lean": None})
+        self.assertEqual(report["reviewed_entries"], {"CslibFrontier/Beta.lean": None})
         self.assertEqual(report["recovered_prefix_tree"], self.git("rev-parse", prefix + "^{tree}"))
         self.assertNotEqual(report["candidate_tree"], report["default_merge_tree"])
 
@@ -137,22 +137,22 @@ class AggregateMergeTests(unittest.TestCase):
         self.assertIn("cannot represent", report["reason"])
 
     def test_reviewed_feature_after_ordinary_main_merge(self):
-        self.write("Complexity/Mid.lean", "-- already landed dependency\n")
+        self.write("CslibFrontier/Mid.lean", "-- already landed dependency\n")
         self.aggregate()
         old_main = self.commit("older main")
-        self.write("Complexity/Able.lean", "-- accepted prefix addition\n")
+        self.write("CslibFrontier/Able.lean", "-- accepted prefix addition\n")
         self.aggregate()
         prefix = self.commit("prefix")
         self.git("switch", "--quiet", "--detach", self.base)
-        self.write("Complexity/Beta.lean", "-- reviewed feature\n")
+        self.write("CslibFrontier/Beta.lean", "-- reviewed feature\n")
         self.aggregate()
         reviewed = self.commit("reviewed feature")
         self.git("merge", "--quiet", "--no-edit", old_main)
         source = self.git("rev-parse", "HEAD")
         status, report = self.report(prefix, source, reviewed=reviewed)
         self.assertEqual(status, 0, report)
-        self.assertEqual(report["reviewed_paths"], ["Complexity/Beta.lean"])
-        self.assertIn("Complexity/Mid.lean", report["candidate_entries"])
+        self.assertEqual(report["reviewed_paths"], ["CslibFrontier/Beta.lean"])
+        self.assertIn("CslibFrontier/Mid.lean", report["candidate_entries"])
 
     def test_without_tracked_union_default_conflict_is_a_limitation(self):
         self.write(".gitattributes", "# no aggregate merge driver\n")
@@ -160,10 +160,21 @@ class AggregateMergeTests(unittest.TestCase):
         prefix, source = self.additions()
         _, report = self.report(prefix, source)
         self.assertEqual(report["status"], "limitation", report)
-        self.assertEqual(report["default_conflicts"], ["Complexity.lean"])
+        self.assertEqual(report["default_conflicts"], ["CslibFrontier.lean"])
+
+    def test_tracked_leanagg_default_merge_is_the_neutral_one(self):
+        # No driver is configured in the temporary repository, so `main`'s tracked attribute
+        # gives the neutral text merge, and the case that union verifies is only a limitation.
+        self.write(".gitattributes", "CslibFrontier.lean merge=leanagg\n")
+        self.base = self.commit("leanagg base")
+        prefix, source = self.additions()
+        _, report = self.report(prefix, source)
+        self.assertEqual(report["status"], "limitation", report)
+        self.assertEqual(report["default_conflicts"], ["CslibFrontier.lean"])
+        self.assertEqual(report["default_merge_tree"], report["neutral_tree"])
 
     def test_another_conflicted_file_is_rejected_even_with_union_for_it(self):
-        self.write(".gitattributes", "Complexity.lean merge=union\n*.md merge=union\n")
+        self.write(".gitattributes", "CslibFrontier.lean merge=union\n*.md merge=union\n")
         self.write("shared.md", "base\n")
         self.base = self.commit("shared base")
         prefix, source = self.additions()
@@ -174,27 +185,27 @@ class AggregateMergeTests(unittest.TestCase):
         prefix = self.commit("prefix conflict")
         _, report = self.report(prefix, source)
         self.assertEqual(report["status"], "rejected")
-        self.assertEqual(report["conflicts"], ["Complexity.lean", "shared.md"])
+        self.assertEqual(report["conflicts"], ["CslibFrontier.lean", "shared.md"])
 
     def test_changed_preamble_and_hidden_commands_and_invalid_inventories(self):
         prefix, source = self.additions()
-        valid = (self.repo / "Complexity.lean").read_text()
+        valid = (self.repo / "CslibFrontier.lean").read_text()
         mutations = {
             "preamble": valid.replace("module  -- shake: keep-all", "module -- shake: keep-all"),
             "declaration": valid + "def hidden := 1\n",
             "option": valid + "set_option maxHeartbeats 0\n",
-            "comment spoof": valid + "-- public import Complexity.Hidden\n",
-            "malformed": valid.replace("public import Complexity.Beta", "public import Complexity..Beta"),
-            "duplicate": valid + "public import Complexity.Beta\n",
-            "missing": valid.replace("public import Complexity.Beta\n", ""),
-            "nonexistent": valid + "public import Complexity.Absent\n",
-            "unsorted": valid.replace("public import Complexity.Beta\n", "") +
-                        "public import Complexity.Beta\n",
+            "comment spoof": valid + "-- public import CslibFrontier.Hidden\n",
+            "malformed": valid.replace("public import CslibFrontier.Beta", "public import CslibFrontier..Beta"),
+            "duplicate": valid + "public import CslibFrontier.Beta\n",
+            "missing": valid.replace("public import CslibFrontier.Beta\n", ""),
+            "nonexistent": valid + "public import CslibFrontier.Absent\n",
+            "unsorted": valid.replace("public import CslibFrontier.Beta\n", "") +
+                        "public import CslibFrontier.Beta\n",
         }
         for label, text in mutations.items():
             with self.subTest(label=label):
                 self.git("switch", "--quiet", "--detach", source)
-                self.write("Complexity.lean", text)
+                self.write("CslibFrontier.lean", text)
                 bad = self.commit(label)
                 status, report = self.report(prefix, bad)
                 self.assertEqual(status, 1)
@@ -214,7 +225,7 @@ class AggregateMergeTests(unittest.TestCase):
         for mode_only in (False, True):
             with self.subTest(mode_only=mode_only):
                 self.git("switch", "--quiet", "--detach", reviewed)
-                path = self.repo / "Complexity/Beta.lean"
+                path = self.repo / "CslibFrontier/Beta.lean"
                 if mode_only:
                     path.chmod(0o755)
                 else:
@@ -240,20 +251,20 @@ class AggregateMergeTests(unittest.TestCase):
     def test_changed_library_layout_and_symlink_modules_are_rejected(self):
         prefix, source = self.additions()
         self.write("lakefile.toml", 'name = "fixture"\n[[lean_lib]]\n'
-                   'name = "Complexity"\nsrcDir = "elsewhere"\n')
+                   'name = "CslibFrontier"\nsrcDir = "elsewhere"\n')
         bad = self.commit("changed source directory")
         _, report = self.report(prefix, bad)
         self.assertIn("library layout", report["reason"])
         self.git("switch", "--quiet", "--detach", source)
-        (self.repo / "Complexity/Beta.lean").unlink()
-        (self.repo / "Complexity/Beta.lean").symlink_to("Init.lean")
+        (self.repo / "CslibFrontier/Beta.lean").unlink()
+        (self.repo / "CslibFrontier/Beta.lean").symlink_to("Init.lean")
         bad = self.commit("symlink module")
         _, report = self.report(prefix, bad)
         self.assertIn("nonregular Lean module", report["reason"])
 
     def test_local_info_attributes_and_merge_drivers_do_not_change_result(self):
         prefix, source = self.additions("Beta", "Able")
-        self.write(".git/info/attributes", "Complexity.lean merge=ours\n")
+        self.write(".git/info/attributes", "CslibFrontier.lean merge=ours\n")
         self.git("config", "merge.ours.driver", "touch SHOULD_NOT_RUN")
         before = self.snapshot()
         _, report = self.report(prefix, source)
@@ -277,7 +288,7 @@ class AggregateMergeTests(unittest.TestCase):
     def test_noncanonical_accepted_prefix_is_rejected(self):
         prefix, source = self.additions()
         self.git("switch", "--quiet", "--detach", prefix)
-        with (self.repo / "Complexity.lean").open("a") as output:
+        with (self.repo / "CslibFrontier.lean").open("a") as output:
             output.write("def hidden := 1\n")
         prefix = self.commit("noncanonical accepted prefix")
         _, report = self.report(prefix, source)
