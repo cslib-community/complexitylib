@@ -87,9 +87,7 @@ theorem Saturated.three_le_ncard_incidenceSet_quotient (hc : c.Saturated)
   have hs := c.quotient_maxDegreeLE (c.quotient.src e')
   have ht := c.quotient_maxDegreeLE (c.quotient.tgt e')
   have hi : c.quotient.src e' = B ∨ c.quotient.tgt e' = B := by
-    rw [mem_edgeCut_block] at he
-    simp only [quotient_src, quotient_tgt]
-    tauto
+    grind [mem_edgeCut_block, quotient_src, quotient_tgt]
   rcases hi with h | h <;> rw [h] at hsum <;> omega
 
 /-- A saturated compression of a connected multigraph into at least two blocks has at least as
@@ -117,9 +115,7 @@ theorem Saturated.mul_card_external_le (hc : c.Saturated) (hG : G.toSimpleGraph.
   rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card] at hdens
   have hcard := c.card_add_card_external_le
   have hconn := G.card_le_card_add_one_of_connected hG
-  have hβ : Nat.card E + 1 ≤ G.cycleRank + Nat.card V := by
-    rw [cycleRank]
-    omega
+  have hβ : Nat.card E + 1 ≤ G.cycleRank + Nat.card V := by grind [cycleRank]
   -- Some block of the core has between three and `d` edges, so `d = k + 3`.
   obtain ⟨k, rfl⟩ : ∃ k, d = k + 3 := by
     obtain ⟨B⟩ := (Nat.card_pos_iff.mp (by omega : 0 < Nat.card c.blocks)).1

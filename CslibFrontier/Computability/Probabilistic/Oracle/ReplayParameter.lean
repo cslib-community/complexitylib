@@ -56,15 +56,12 @@ theorem IsOraclePPT.exists_savedCoins_of_keyGen {Operation Key β : Type}
           c * (2 * n + 2 + keyC * (n + 1) ^ keyD) ^ d) ∧
       ∀ n pk, pk.length ≤ keyC * (n + 1) ^ keyD →
         ∀ (Store : Type) (oracle : Operation × List Bool → StateT Store PMF (List Bool)) s,
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-            (output <$> program n pk)).run s =
+        ProbOracleComp.runWith oracle (output <$> program n pk) s =
           (BitString.uniformList (c * (2 * n + 2 + keyC * (n + 1) ^ keyD) ^ d)).bind
-            (fun coins => (OracleComp.interpret
-              (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+            (fun coins => ProbOracleComp.runWith oracle
                 (machine.runCoins (fun op word => ProbOracleComp.query (op, word))
                   (coins.take (c * ((encPair encUnary encBits (n, pk)).length + 1) ^ d))
-                  (encPair encUnary encBits (n, pk)))).run s) := by
+                  (encPair encUnary encBits (n, pk))) s) := by
   obtain ⟨keyC, keyD, hkeys⟩ := hgen.length_le
   obtain ⟨k, Control, hfinite, machine, c, d, hefficient, hrun⟩ := h.on.exists_savedCoins
   have hbound (n : ℕ) (pk : List Bool) (hpk : pk.length ≤ keyC * (n + 1) ^ keyD) :

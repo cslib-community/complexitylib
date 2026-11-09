@@ -330,10 +330,7 @@ theorem ncard_transition_le_readIn [Finite U] [Finite M] {t : ℕ}
     fun x _ y _ h₀ hg => by
       rw [domRestrict_eq_domRestrict_iff] at hg
       simp only [Prod.mk.injEq] at h₀
-      have hm : L.total (p.trace I x) = L.total (p.trace I y) := by
-        have := h₀.1
-        simp only [extra, ht.le, ↓reduceIte, Prod.mk.injEq] at this
-        exact this.1
+      have hm : L.total (p.trace I x) = L.total (p.trace I y) := by grind [extra, Prod.mk.injEq]
       -- The values on the edges at `W` depend only on the guess and the inputs read in `W`.
       have hval : EqOn (fun e => p.trace I x e.signal.1) (fun e => p.trace I y e.signal.1)
           ((liveNetwork p special U).touching W) := fun e he => by

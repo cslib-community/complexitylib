@@ -100,10 +100,7 @@ theorem mem_NC_one_iff_formulaDepth_le :
     refine ⟨c + 1, fun n => 2 ^ ((c + 1) * (Nat.log 2 n + 1)),
       polynomiallyBounded_two_pow_mul_log _, fun n => ?_⟩
     obtain ⟨F, hF, hd⟩ := exists_computes_depth_le_formulaDepth_add_one (L.slice n)
-    have hd' : F.depth ≤ (c + 1) * (Nat.log 2 n + 1) := by
-      have := hc n
-      rw [add_mul, one_mul]
-      omega
+    have hd' : F.depth ≤ (c + 1) * (Nat.log 2 n + 1) := by grind
     refine ⟨F.toCircuit, hF.toCircuit, F.depth_toCircuit_le.trans hd', ?_⟩
     rw [F.size_toCircuit]
     exact (F.size_lt_pow_depth Boolean.arity_le_two le_rfl).le.trans

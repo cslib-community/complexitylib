@@ -244,18 +244,14 @@ theorem isPPTOn_kemToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
       ((hH.comp' (h1.fst'.prod h3.snd')).prod h3.fst')).encoding_comp)
   exact hD.on.preprocess hprep
 
-/-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is. -/
+/-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is: it is
+`kemToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
 theorem isPPTOn_kemToKDFDistinguisher {distinguisher : Distinguisher}
     (hD : IsPPT encBool distinguisher) :
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => F.kemToKDFDistinguisher distinguisher input.1 input.2) := by
-  let E1 := encPair F.encDesc (encPair encBits (encPair encBits encBits))
-  let h1 := ComputableInPolyTime.snd encUnary E1
-  let h2 := h1.snd'
-  let h3 := h2.snd'
-  have hprep := (ComputableInPolyTime.fst encUnary E1).prod
-    (((h1.fst'.prod h2.fst').encoding_comp.prod (h3.snd'.prod h3.fst')).encoding_comp)
-  exact hD.on.preprocess hprep
+      encBool (fun input => F.kemToKDFDistinguisher distinguisher input.1 input.2) :=
+  F.isPPTOn_kemToDDHDistinguisher (H := fun p => p.2) (ComputableInPolyTime.snd F.encDesc encBits)
+    hD
 
 private theorem advantage_eval_kemRealGame_ddhRealGame_le
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)

@@ -929,7 +929,7 @@ private theorem eval_frontierLevel_eq_withExpLaw (F : PrimeOrderGroupFamily) (n 
         prog).run []) =
       frontierLevelWithExpLaw F d m k prog u v w
         (F.sampleModZModLaw (n + (F.encDesc d).length) d) := by
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbOracleComp.eval_run_interpret,
+  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith,
     eval_replicate_sampleNaorReingoldExp_eq_iid F n (m - (k + 1)) d, frontierLevelWithExpLaw,
     PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
   congr 1; funext suffix
@@ -992,10 +992,8 @@ private theorem dist_frontierLevelWithExpLaw_le (F : PrimeOrderGroupFamily) (d :
       let αs := List.ofFn fun j => (st.1 j).val
       let values := List.ofFn fun i =>
         F.ddhFixedUWordRerandomize d u v w (st.2 i 0).val (st.2 i 1).val
-      (((OracleComp.interpret
-        (OracleComp.sumHandler (fun t => StateT.lift (ProbComp.unifOracle t))
-          (OracleComp.withSampleList ([], []) (frontierStep F d m k αs)))
-        prog).run ([], values)).map fun res => res.1)
+      ((ProbOracleComp.runWith (OracleComp.withSampleList ([], []) (frontierStep F d m k αs)) prog
+          ([], values)).map fun res => res.1)
   have hlaw (μ : PMF (ZMod (F.order d))) :
       frontierLevelWithExpLaw F d m k prog u v w μ =
         ((PMF.iid μ r).bind fun s => (PMF.iid (PMF.iid μ 2) Q).map (s, ·)).bind detKernel := by

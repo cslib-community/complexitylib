@@ -165,9 +165,7 @@ theorem pipelineOverhead_le {t p w ℓ b s copies : ℕ} (hs : s + 1 = 2 ^ b) (h
       _ ≤ 2 ^ (lam + 1 + ℓ * b) * 2 ^ b := Nat.mul_le_mul_right _ hTC
       _ = 2 ^ (lam + 1 + ℓ * b + b) := (pow_add _ _ _).symm
   -- Record counts.
-  have n1 : t + 2 ^ p ≤ N := by
-    have : t ≤ t * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
-    omega
+  have n1 : t + 2 ^ p ≤ N := by grind
   have n2 : copies * 2 ^ (ℓ * b) + t * s + 1 ≤ N := by
     rw [hslots]
     dsimp only [N]

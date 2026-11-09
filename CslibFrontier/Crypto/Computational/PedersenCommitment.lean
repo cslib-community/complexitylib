@@ -20,6 +20,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Pedersen commitments over a prime-order group family
@@ -304,8 +305,7 @@ theorem pedersenVerify_of_mem_support_pedersenCommitPairLaw (d : F.Desc) (h : F.
   simp only [pedersenCommitPairLaw, PMF.support_map, Set.mem_image] at hco
   rcases hco with ⟨r, -, rfl⟩
   have hr : (ofBits r.val.bits : ZMod (F.order d)) = r := by
-    unfold ofBits
-    rw [Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
+    rw [ofBits_bits, ZMod.natCast_zmod_val]
   simp only [pedersenVerify, Bool.and_eq_true, decide_eq_true_eq, hm.1, hm.2, hr, true_and]
 
 /-- A Pedersen commitment key over `F`: a group description `d : F.Desc` together with a public
@@ -585,12 +585,7 @@ theorem succProbability_pedersenBindingGame_le_discreteLogGame (setup : ℕ → 
     true fun out _ => ?_
   by_cases hcoll : F.pedersenScheme.isBindingCollision ⟨d, α • F.generator d⟩ out = true
   · have hextract := F.pedersenExtractNat_eq_of_isBindingCollision d α hcoll
-    have hbits : ((ofBits (pedersenExtractNat (F.order d)
-        (ofBits out.2.1.1) (ofBits out.2.1.2)
-        (ofBits out.2.2.1) (ofBits out.2.2.2)).bits : ℕ) : ZMod (F.order d)) = α := by
-      unfold ofBits
-      rwa [Nat.foldr_bit_bits]
-    simp [hcoll, hbits]
+    simp [hcoll, hextract]
   · simp [Bool.eq_false_iff.mpr hcoll]
 
 /-- **Polynomial-time discrete-logarithm extraction**: from a group description `d` and two

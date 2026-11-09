@@ -84,9 +84,7 @@ theorem modPowTwo_lt (x : ℤ) (ℓ : ℕ) : x.modPowTwo ℓ < (2 : ℤ) ^ ℓ :
 theorem natAbs_modPowTwo_lt (x : ℤ) (ℓ : ℕ) : (x.modPowTwo ℓ).natAbs < 2 ^ ℓ := by
   have h₀ := modPowTwo_nonneg x ℓ
   have h₁ := modPowTwo_lt x ℓ
-  have hcast : ((x.modPowTwo ℓ).natAbs : ℤ) < ((2 ^ ℓ : ℕ) : ℤ) := by
-    rw [Int.natCast_natAbs, abs_of_nonneg h₀, Nat.cast_pow, Nat.cast_ofNat]
-    exact h₁
+  have hcast : ((x.modPowTwo ℓ).natAbs : ℤ) < ((2 ^ ℓ : ℕ) : ℤ) := by grind
   exact Int.ofNat_lt.mp hcast
 
 /-- If `z ∈ [0, 2 ^ ℓ)` and `2 ^ ℓ` divides `x - z`, then `x.modPowTwo ℓ = z`. -/

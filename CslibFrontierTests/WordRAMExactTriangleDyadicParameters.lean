@@ -8,6 +8,8 @@ Authors: Erik Demaine
 
 import CslibFrontier.Algorithms.WordRAM.ExactTriangle.DyadicParameters
 import CslibFrontier.Algorithms.ExactTriangle.ParameterChoice.CostGeometry
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import CslibFrontier.Computability.WordRAM.Structured.FastEval
 
 /-!
 # Actual parameter boundary and caller regressions
