@@ -18,6 +18,8 @@ This file proves the semantic realization lemmas on `Fin B` for the first-order 
 
 ## Main definitions
 
+* `Cslib.Logic.FO.TableauRels.EncodesInput`: the input relations of `r` on `Fin B` describe an
+  input `u` followed by a certificate `w`.
 * `Cslib.Logic.FO.TableauRels.AgreesAt`: agreement at time `t : Fin B` between the relation symbols
   of `r : TableauRels L' m State` and a configuration `cfg : Cfg m Bool State input`.
 
@@ -48,6 +50,26 @@ namespace Cslib.Logic.FO
 open FirstOrder FirstOrder.Language FirstOrder.Language.Structure
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Feature
 open Cslib.Complexity
+
+/-- The input relations of `r` on `Fin B` describe the tape contents `u ++ w`, an input `u`
+followed by a certificate `w`, with room for both and an end marker below `B`: `uLen` holds
+exactly at `u.length`, `endPos` exactly at `u.length + w.length`, `uBit` at the positions
+`p < u.length` where `u` has a `true`, and `certBit` at the positions `j` with
+`u.length < j ≤ u.length + w.length` where `w` has a `true` at `j - 1 - u.length`. -/
+structure TableauRels.EncodesInput {L' : Language.{0, 0}} {m : ℕ} {State : Type}
+    (r : TableauRels L' m State) (B : ℕ) [L'.Structure (Fin B)] (u w : List Bool) : Prop where
+  /-- Both words and the end marker fit below `B`. -/
+  length_lt : u.length + w.length + 1 < B
+  /-- `uLen` marks the length of the input. -/
+  uLen_iff : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length
+  /-- `uBit` marks the `true` bits of the input. -/
+  uBit_iff : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true)
+  /-- `endPos` marks the end of the certificate. -/
+  endPos_iff : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length
+  /-- `certBit` marks the `true` bits of the certificate, which starts after position
+  `u.length`. -/
+  certBit_iff : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
+    (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true)
 
 section Semantics
 
@@ -101,15 +123,10 @@ theorem realize_endPosSentence_of_canonical {u : List Bool} {e : ℕ}
 include hlt in
 /-- Semantic characterization of `inputAtFormula`. -/
 theorem realize_inputAtFormula {u w : List Bool}
-    (heB : u.length + w.length + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (s : Option Bool) {V : Type*} (vJ : V) (env : V → Fin B) :
+    (hI : r.EncodesInput B u w) (s : Option Bool) {V : Type*} (vJ : V) (env : V → Fin B) :
     (inputAtFormula r s vJ).Realize env ↔
       inputAt (u ++ w) (env vJ : ℕ) = s := by
+  have heB := hI.length_lt
   rcases s with _ | b
   · -- `s = none`
     simp only [inputAtFormula, Formula.realize_sup, realize_isZero hlt, Formula.realize_iExs,
@@ -118,7 +135,7 @@ theorem realize_inputAtFormula {u w : List Bool}
     constructor
     · rintro (hj0 | ⟨yE, hE, hltE⟩)
       · simp [inputAt, hj0]
-      · have hE' := (hend (yE 0)).1 hE
+      · have hE' := (hI.endPos_iff (yE 0)).1 hE
         simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false]
         exact List.getElem?_eq_none (by simp; omega)
     · intro hnone
@@ -126,21 +143,21 @@ theorem realize_inputAtFormula {u w : List Bool}
       · exact Or.inl hj0
       · right
         simp only [inputAt, hj0, ite_false, List.getElem?_eq_none_iff, List.length_append] at hnone
-        refine ⟨![(⟨u.length + w.length, by omega⟩ : Fin B)], (hend _).2 rfl, ?_⟩
+        refine ⟨![(⟨u.length + w.length, by omega⟩ : Fin B)], (hI.endPos_iff _).2 rfl, ?_⟩
         dsimp
         omega
   · -- `s = some b`
     have huBit_iff : ∀ (p : Fin B) (hp : (p : ℕ) < u.length),
         (if b then RelMap r.uBit ![p] else ¬RelMap r.uBit ![p]) ↔ u[(p : ℕ)]? = some b := by
       intro p hp
-      rw [huBit p hp, List.getElem?_eq_getElem hp]
+      rw [hI.uBit_iff p hp, List.getElem?_eq_getElem hp]
       cases b <;> cases u[(p : ℕ)] <;> simp
     have hcert_iff : ∀ (j : Fin B) (hgt : u.length < (j : ℕ)) (hle : (j : ℕ) ≤ u.length + w.length),
         (if b then RelMap r.certBit ![j] else ¬RelMap r.certBit ![j]) ↔
           w[(j : ℕ) - 1 - u.length]? = some b := by
       intro j hgt hle
       have hidx : (j : ℕ) - 1 - u.length < w.length := by omega
-      rw [hcert j hgt hle, List.getElem?_eq_getElem hidx]
+      rw [hI.certBit_iff j hgt hle, List.getElem?_eq_getElem hidx]
       cases b <;> cases w[(j : ℕ) - 1 - u.length] <;> simp
     have hform : (inputAtFormula r (some b) vJ).Realize env ↔
         (∃ y : Fin 2 → Fin B,
@@ -158,14 +175,14 @@ theorem realize_inputAtFormula {u w : List Bool}
     rw [hform]
     constructor
     · rintro (⟨y, ⟨⟨hp, hU⟩, hltU⟩, hBit⟩ | ⟨y, ⟨⟨⟨hU, hE⟩, hgtU⟩, hleE⟩, hCert⟩)
-      · have hU' := (huLen (y 1)).1 hU
+      · have hU' := (hI.uLen_iff (y 1)).1 hU
         have hp_lt : (y 0 : ℕ) < u.length := by omega
         have hj_sub : (env vJ : ℕ) - 1 = (y 0 : ℕ) := by omega
         simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false, hj_sub,
           List.getElem?_append_left hp_lt]
         exact (huBit_iff (y 0) hp_lt).1 hBit
-      · have hU' := (huLen (y 0)).1 hU
-        have hE' := (hend (y 1)).1 hE
+      · have hU' := (hI.uLen_iff (y 0)).1 hU
+        have hE' := (hI.endPos_iff (y 1)).1 hE
         have hge : u.length ≤ (env vJ : ℕ) - 1 := by omega
         simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false,
           List.getElem?_append_right hge]
@@ -179,7 +196,7 @@ theorem realize_inputAtFormula {u w : List Bool}
         rw [List.getElem?_append_left hp_lt] at hsome
         let p : Fin B := ⟨(env vJ : ℕ) - 1, by omega⟩
         let uFin : Fin B := ⟨u.length, by omega⟩
-        refine ⟨![p, uFin], ⟨⟨by dsimp [p]; omega, (huLen uFin).2 rfl⟩, hp_lt⟩, ?_⟩
+        refine ⟨![p, uFin], ⟨⟨by dsimp [p]; omega, (hI.uLen_iff uFin).2 rfl⟩, hp_lt⟩, ?_⟩
         rw [Matrix.cons_val_zero, huBit_iff p hp_lt]
         exact hsome
       · right
@@ -191,7 +208,7 @@ theorem realize_inputAtFormula {u w : List Bool}
           cases hsome
         let uFin : Fin B := ⟨u.length, by omega⟩
         let eFin : Fin B := ⟨u.length + w.length, by omega⟩
-        refine ⟨![uFin, eFin], ⟨⟨⟨(huLen uFin).2 rfl, (hend eFin).2 rfl⟩,
+        refine ⟨![uFin, eFin], ⟨⟨⟨(hI.uLen_iff uFin).2 rfl, (hI.endPos_iff eFin).2 rfl⟩,
           by dsimp [uFin]; omega⟩, by dsimp [eFin]; omega⟩, ?_⟩
         rw [hcert_iff (env vJ) (by omega) (by omega)]
         exact hsome
@@ -215,18 +232,12 @@ structure TableauRels.AgreesAt (r : TableauRels L' m State)
 include hlt in
 /-- Semantic characterization of `inReadFormula` under `AgreesAt`. -/
 private theorem realize_inReadFormula {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)}
-    {t : Fin B}
-    (heB : u.length + w.length + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hA : r.AgreesAt cfg t)
+    {t : Fin B} (hI : r.EncodesInput B u w) (hA : r.AgreesAt cfg t)
     (s : Option Bool) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (inReadFormula r s vT).Realize env ↔ (Feature.inRead s).Holds cfg := by
+  have heB := hI.length_lt
   simp only [inReadFormula, Formula.realize_iExs, Formula.realize_inf, realize_rel₂,
-    realize_inputAtFormula hlt heB huLen huBit hend hcert, Sum.elim_inl, Sum.elim_inr, ht,
+    realize_inputAtFormula hlt hI, Sum.elim_inl, Sum.elim_inr, ht,
     hA.inPos, holds_inPos, holds_inRead, Cfg.inputSymbol_eq_inputAt]
   constructor
   · rintro ⟨y, hpos, hs⟩
@@ -262,17 +273,11 @@ private theorem realize_readFormula {input : List Bool} {cfg : Cfg m Bool State 
 include hlt in
 /-- Semantic characterization of `sitFormula` under `AgreesAt`. -/
 theorem realize_sitFormula {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hA : r.AgreesAt cfg t)
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (y : Situation m State) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (sitFormula r y vT).Realize env ↔ (Feature.sit y).Holds cfg := by
   simp only [sitFormula, Formula.realize_inf, Formula.realize_iInf, realize_rel₁, ht,
-    hA.state, realize_inReadFormula hlt heB huLen huBit hend hcert hA _ vT env ht,
+    hA.state, realize_inReadFormula hlt hI  hA _ vT env ht,
     realize_readFormula hb hA _ _ vT env ht, holds_sit_iff, and_assoc]
 
 include hlt in
@@ -379,18 +384,12 @@ include hlt in
 /-- Semantic characterization of `stateStepRHS` under `AgreesAt`. -/
 theorem realize_stateStepRHS [DecidableEq State]
     {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hA : r.AgreesAt cfg t)
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (q' : Option State) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (stateStepRHS r tm q' vT).Realize env ↔ (Feature.state q').Holds (tm.step cfg) := by
   simp only [stateStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
     realize_rel₁, ht, hA.state,
-    realize_sitFormula hlt heB hb huLen huBit hend hcert hA _ vT env ht]
+    realize_sitFormula hlt hI hb hA _ vT env ht]
   rw [holds_step_state_iff tm q']
   refine or_congr ⟨fun ⟨h, hq⟩ => ⟨h, by split_ifs at hq with h' <;> simp_all⟩,
     fun ⟨h, hq⟩ => ⟨h, by simp [hq]⟩⟩ ?_
@@ -401,19 +400,13 @@ theorem realize_stateStepRHS [DecidableEq State]
 include hlt in
 /-- Semantic characterization of `outStepRHS` under `AgreesAt`. -/
 theorem realize_outStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hA : r.AgreesAt cfg t)
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (o : OutView) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (outStepRHS r tm o vT).Realize env ↔ (Feature.out o).Holds (tm.step cfg) := by
   classical
   simp only [outStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
     realize_rel₁, ht, hA.state, hA.out,
-    realize_sitFormula hlt heB hb huLen huBit hend hcert hA _ vT env ht]
+    realize_sitFormula hlt hI hb hA _ vT env ht]
   rw [holds_step_out_iff tm o]
   refine or_congr Iff.rfl ?_
   simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_univ, true_and]
@@ -424,20 +417,14 @@ theorem realize_outStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {
 include hlt in
 /-- Semantic characterization of `inPosStepRHS` under `AgreesAt`. -/
 theorem realize_inPosStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hA : r.AgreesAt cfg t)
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     {V : Type*} (vT vJ : V) (env : V → Fin B) (ht : env vT = t) :
     (inPosStepRHS r tm vT vJ).Realize env ↔ (Feature.inPos (env vJ : ℕ)).Holds (tm.step cfg) := by
   classical
   simp only [inPosStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
     realize_rel₁, realize_rel₂, ht, hA.state, hA.inPos,
-    realize_sitFormula hlt heB hb huLen huBit hend hcert hA _ vT env ht,
-    realize_inPosPrevFormula hlt heB hend hA _ vT vJ env ht]
+    realize_sitFormula hlt hI hb hA _ vT env ht,
+    realize_inPosPrevFormula hlt hI.length_lt hI.endPos_iff hA _ vT vJ env ht]
   rcases hq : cfg.state with _ | q
   · simp [hq, not_holds_sit hq]
   · simp [holds_state, hq, holds_sit_iff_eq hq, holds_inPos, step_eq_apply tm hq,
@@ -447,12 +434,7 @@ include hlt in
 /-- Semantic characterization of `headStepRHS` for either orientation `sign ∈ {.pos, .neg}`
 under `AgreesAt`. -/
 private theorem realize_headStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| + 1 < B)
     (hA : r.AgreesAt cfg t)
     (headSame headOpp : L'.Relations 2) (sign : SignType) (hsign : sign = .pos ∨ sign = .neg)
     (i : Fin m)
@@ -468,7 +450,7 @@ private theorem realize_headStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u
     rcases hsign with rfl | rfl <;> rintro (_ | _ | _) <;> rfl
   simp only [headStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
     realize_rel₁, realize_rel₂, ht, hA.state, hSame,
-    realize_sitFormula hlt heB hb' huLen huBit hend hcert hA _ vT env ht,
+    realize_sitFormula hlt hI hb' hA _ vT env ht,
     realize_headPrevFormula hlt (hb i) hsign' hSame hOpp _ vT vA env ht,
     hmul_coe]
   rcases hq : cfg.state with _ | q
@@ -479,17 +461,12 @@ private theorem realize_headStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u
 include hlt in
 /-- Semantic characterization of `headStepRHS` (positive orientation) under `AgreesAt`. -/
 theorem realize_headPosStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| + 1 < B)
     (hA : r.AgreesAt cfg t)
     (i : Fin m) {V : Type*} (vT vA : V) (env : V → Fin B) (ht : env vT = t) :
     (headStepRHS r tm (r.headPos i) (r.headNeg i) .pos i vT vA).Realize env ↔
       (Feature.head i (env vA : ℤ)).Holds (tm.step cfg) := by
-  simpa using realize_headStepRHS hlt heB hb huLen huBit hend hcert hA
+  simpa using realize_headStepRHS hlt hI hb hA
     (r.headPos i) (r.headNeg i) .pos (Or.inl rfl) i
     (fun a' => by simpa using hA.headPos i a')
     (fun a' => by simpa using hA.headNeg i a') vT vA env ht
@@ -497,17 +474,12 @@ theorem realize_headPosStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w
 include hlt in
 /-- Semantic characterization of `headStepRHS` (negative orientation) under `AgreesAt`. -/
 theorem realize_headNegStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| + 1 < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| + 1 < B)
     (hA : r.AgreesAt cfg t)
     (i : Fin m) {V : Type*} (vT vA : V) (env : V → Fin B) (ht : env vT = t) :
     (headStepRHS r tm (r.headNeg i) (r.headPos i) .neg i vT vA).Realize env ↔
       (Feature.head i (-(env vA : ℤ))).Holds (tm.step cfg) := by
-  simpa using realize_headStepRHS hlt heB hb huLen huBit hend hcert hA
+  simpa using realize_headStepRHS hlt hI hb hA
     (r.headNeg i) (r.headPos i) .neg (Or.inr rfl) i
     (fun a' => by simpa using hA.headNeg i a')
     (fun a' => by simpa using hA.headPos i a') vT vA env ht
@@ -515,13 +487,7 @@ theorem realize_headNegStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w
 include hlt in
 /-- Semantic characterization of `cellStepRHS` under `AgreesAt`. -/
 theorem realize_cellStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {t : Fin B}
-    (heB : u.length + w.length + 1 < B) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B)
-    (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
-    (huBit : ∀ p : Fin B, (p : ℕ) < u.length → (RelMap r.uBit ![p] ↔ u[(p : ℕ)]? = some true))
-    (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = u.length + w.length)
-    (hcert : ∀ j : Fin B, u.length < (j : ℕ) → (j : ℕ) ≤ u.length + w.length →
-      (RelMap r.certBit ![j] ↔ w[(j : ℕ) - 1 - u.length]? = some true))
-    (hA : r.AgreesAt cfg t)
+    (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (i : Fin m) (s : Option Bool) (z : ℤ)
     (headSame : L'.Relations 2) (cellSame : Option Bool → L'.Relations 2)
     {V : Type*} (vT vA : V) (env : V → Fin B) (ht : env vT = t)
@@ -532,7 +498,7 @@ theorem realize_cellStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} 
   classical
   simp only [cellStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_not,
     Formula.realize_iSup, realize_rel₁, realize_rel₂, ht, hA.state, hhead, hcell,
-    realize_sitFormula hlt heB hb huLen huBit hend hcert hA _ vT env ht]
+    realize_sitFormula hlt hI hb hA _ vT env ht]
   rw [holds_step_cell_iff tm z s]
   refine or_congr Iff.rfl ?_
   simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_univ, true_and]

@@ -215,8 +215,7 @@ theorem fuel_le {C D s P : ℕ} {G : ℕ × ExplicitTensorNetwork ℕ} (hA : Exp
     rw [Nat.le_sqrt, Nat.one_mul]; exact Nat.le_log_of_pow_le one_lt_two (by simpa using hs)
   have hq' : Nat.sqrt (Nat.log 2 s) ≤ Nat.sqrt (Nat.log 2 x) :=
     Nat.sqrt_le_sqrt (Nat.log_mono_right hsx)
-  calc fuelConst * x / Nat.sqrt (Nat.log 2 x) ≤ fuelConst * x / Nat.sqrt (Nat.log 2 s) :=
-        Nat.div_le_div_left hq' hq
+  calc fuelConst * x / Nat.sqrt (Nat.log 2 x) ≤ fuelConst * x / Nat.sqrt (Nat.log 2 s) := by gcongr
     _ ≤ fuelConst * (C + D) * s / Nat.sqrt (Nat.log 2 s) := by
         refine Nat.div_le_div_right ?_
         rw [Nat.mul_assoc]
@@ -284,8 +283,7 @@ theorem exists_clockedRun_le (K₁ Ka c d r₁ e₁ r₂ e₂ kf : ℕ) :
   have hc : c * B ^ d ≤ c * B ^ E := Nat.mul_le_mul_left _ (hBE (by omega))
   have hr : r₁ * B ^ e₁ + r₂ * B ^ e₂ ≤ (r₁ + r₂) * B ^ E := by
     rw [Nat.add_mul]
-    exact Nat.add_le_add (Nat.mul_le_mul_left _ (hBE (by omega)))
-      (Nat.mul_le_mul_left _ (hBE (by omega)))
+    gcongr <;> omega
   have hB : B ≤ B ^ E := by simpa using hBE (k := 1) (by omega)
   have hZ : K₁ * ((H + 1) * (F + 1)) ^ K₁ ≤ Z₀ * B ^ E := by
     have h1 : H + F + 1 ≤ (Ka + 1) * B ^ Ka := by have := hB1 Ka; rw [add_one_mul]; omega

@@ -168,9 +168,7 @@ theorem exists_optimal_schedule (B : Nat) (reqs : List Unit) :
   by_cases hn : reqs.length ≤ B
   · refine ⟨_, validSchedule_replicate (b := false) (fun h => h) reqs, ?_⟩
     rw [scheduleCost_replicate_false, Nat.min_eq_left hn]
-  · have hne : reqs ≠ [] := by
-      rintro rfl
-      exact hn (Nat.zero_le B)
+  · have hne : reqs ≠ [] := by grind
     refine ⟨_, validSchedule_replicate (b := true) (fun _ => rfl) reqs, ?_⟩
     rw [scheduleCost_replicate_true B hne, Nat.min_eq_right (by omega)]
 
@@ -438,10 +436,7 @@ theorem exists_ratio_violation_of_lt {B : Nat} (A : DetStrategy (problem B)) {p 
     (hpq : p * B < (2 * B - 1) * q) :
     ∃ reqs states, (problem B).ValidSchedule false reqs states ∧
       p * (problem B).scheduleCost false reqs states < q * A.cost false reqs := by
-  have hB : 1 ≤ B := by
-    rcases Nat.eq_zero_or_pos B with rfl | h
-    · simp only [Nat.mul_zero, Nat.zero_sub, Nat.zero_mul, Nat.lt_irrefl] at hpq
-    · exact h
+  have hB : 1 ≤ B := by grind
   obtain ⟨reqs, states, hv, hpos, hle⟩ := exists_witness hB A
   refine ⟨reqs, states, hv, ?_⟩
   set opt := (problem B).scheduleCost false reqs states
