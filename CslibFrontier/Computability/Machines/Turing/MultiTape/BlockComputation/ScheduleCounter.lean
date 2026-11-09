@@ -77,9 +77,9 @@ theorem remaining_inSpace (k : ℕ) :
   have hstates (a : ℕ × ℕ) (j : ℕ) (hj : j ≤ a.2) :
       (ScheduleRead.encState ((ScheduleRead.step k 0 0)^[j] (a.1, 0))).length ≤
         (ScheduleRead.encState a).length := by
-    have hs := ComputableTidilyInO.length_encNat_mono
+    have hs := length_encNat_mono
       (ScheduleRead.iterate_fst_le k 0 0 a.1 j)
-    have hn := ComputableTidilyInO.length_encNat_mono
+    have hn := length_encNat_mono
       ((ScheduleRead.iterate_snd_le k 0 0 a.1 j).trans hj)
     simp only [ScheduleRead.encState, length_encPair]
     omega
