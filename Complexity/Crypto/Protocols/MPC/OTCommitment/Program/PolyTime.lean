@@ -12,6 +12,7 @@ public import Complexity.Computability.Probabilistic.Fold
 public import Complexity.Computability.Probabilistic.PPT.Capture
 public import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Tactic.PPT
+import Complexity.Tactic.EncLen
 
 /-!
 # Uniform runtime of the receiver simulator
@@ -108,10 +109,7 @@ theorem receiverViewProgram_isPPT (stateEncoding : State ↪ List Bool)
     have hfinal := hreceiveGrowth middle answer final hfinal
     have hindex := length_encFinEnum_lt j
     simp only [Nat.card_fin] at hindex
-    simp only [accEncoding, receiptEncoding, length_encPair, encUnary_apply,
-      List.length_replicate, encList_cons, List.length_append, length_frame,
-      encBool_apply, List.length_singleton]
-    omega
+    enc_len [accEncoding, receiptEncoding, encList_cons, List.length_singleton]
   have hloop : IsPPTOn (encPair encUnary stateEncoding) accEncoding
       (fun p : ℕ × State => (List.replicate p.1 ()).foldlM
         (receiverLoopStep choose receive) (p.1, p.2, [])) :=

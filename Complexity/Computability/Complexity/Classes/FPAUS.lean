@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Interactive.Security
+public import Complexity.Probability.StatisticalDistance.CloseTo
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
@@ -37,9 +37,9 @@ left unconstrained. The requirements stay separate:
 * **runtime**: `S` is a strict probabilistic polynomial-time program (`Cslib.Probability.IsPPTOn`)
   on the encoded input `(x, q)`, with the result encoded by `encOption encBits`;
 * **output-distribution error**: for every event `E`, the probability of `E` under `S x q` exceeds
-  its probability under the target law by at most `(1 / 2) ^ q` (`Cslib.Interactive.CloseTo`,
+  its probability under the target law by at most `(1 / 2) ^ q` (`Cslib.Probability.CloseTo`,
   which quantifies over all events and is therefore symmetric). This is the total-variation
-  distance `max_E |μ E - ν E|`; `Cslib.Interactive.CloseTo.abs_toReal_sub_le` gives the real,
+  distance `max_E |μ E - ν E|`; `Cslib.Probability.CloseTo.abs_toReal_sub_le` gives the real,
   two-sided form.
 
 ## Main definitions
@@ -52,9 +52,6 @@ left unconstrained. The requirements stay separate:
 
 * `Cslib.Complexity.uniformWitness_toOuterMeasure_some`: the probability of an event of witnesses
   is its relative cardinality.
-* `Cslib.Interactive.CloseTo.abs_toReal_sub_le`: closeness bounds real probability differences.
-* `Cslib.Interactive.CloseTo.of_le_apply`: a law dominating `(1 - ε) ν` pointwise is
-  `ε`-close to `ν`.
 * `Cslib.Complexity.closeTo_uniformWitness_of_le`: pointwise lower bounds `(1 - ε) / |W|` on the
   witnesses give closeness to `uniformWitness W`.
 
@@ -85,12 +82,12 @@ noncomputable def uniformWitness (W : Finset (List Bool)) : PMF (Option (List Bo
 by `enc`. The sampler `S x q` receives the instance `x` and the accuracy `q` (so the tolerance is
 `ε = 2 ^ (-q)`), with `q` in unary. It is a strict probabilistic polynomial-time program on the
 encoded pair `(x, q)`, outputs an optional bit string, and its output law is within
-total-variation distance `(1 / 2) ^ q` of `uniformWitness (W x)` (`Cslib.Interactive.CloseTo`). -/
+total-variation distance `(1 / 2) ^ q` of `uniformWitness (W x)` (`Cslib.Probability.CloseTo`). -/
 @[expose]
 def IsFPAUS (enc : α ↪ List Bool) (W : α → Finset (List Bool))
     (S : α → ℕ → ProbComp (Option (List Bool))) : Prop :=
   IsPPTOn (encPair enc encUnary) (encOption encBits) (Function.uncurry S) ∧
-    ∀ x q, Interactive.CloseTo (ProbComp.eval (S x q)) (uniformWitness (W x))
+    ∀ x q, Probability.CloseTo (ProbComp.eval (S x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q))
 
 /-- The witness families with a fully polynomial almost uniform sampler, on instances encoded by
@@ -124,50 +121,6 @@ theorem uniformWitness_toOuterMeasure_some {W : Finset (List Bool)} (h : W.Nonem
   rw [hsum, Finset.sum_const, nsmul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_inv]
   simp [div_eq_mul_inv]
 
-end Cslib.Complexity
-
-namespace Cslib.Interactive
-
-/-- Closeness within a real tolerance `ε ≥ 0` bounds the real difference of the probabilities of
-every event by `ε`. -/
-theorem CloseTo.abs_toReal_sub_le {β : Type} {μ ν : PMF β} {ε : ℝ} (hε : 0 ≤ ε)
-    (h : CloseTo μ ν (ENNReal.ofReal ε)) (E : Set β) :
-    |(μ.toOuterMeasure E).toReal - (ν.toOuterMeasure E).toReal| ≤ ε := by
-  have hμ := Cslib.Probability.PMF.toOuterMeasure_ne_top μ E
-  have hν := Cslib.Probability.PMF.toOuterMeasure_ne_top ν E
-  have h₁ := ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨hν, ENNReal.ofReal_ne_top⟩) (h E)
-  have h₂ := ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨hμ, ENNReal.ofReal_ne_top⟩) (h.symm E)
-  rw [ENNReal.toReal_add hν ENNReal.ofReal_ne_top, ENNReal.toReal_ofReal hε] at h₁
-  rw [ENNReal.toReal_add hμ ENNReal.ofReal_ne_top, ENNReal.toReal_ofReal hε] at h₂
-  rw [abs_le]
-  constructor <;> linarith
-
-/-- A law dominating `(1 - ε) ν` pointwise is within statistical distance `ε` of `ν`. -/
-theorem CloseTo.of_le_apply {β : Type} {μ ν : PMF β} {ε : ℝ} (hε : 0 ≤ ε)
-    (h : ∀ b, ENNReal.ofReal (1 - ε) * ν b ≤ μ b) :
-    CloseTo μ ν (ENNReal.ofReal ε) := by
-  refine CloseTo.symm fun E => ?_
-  have hle : ENNReal.ofReal (1 - ε) * ν.toOuterMeasure E ≤ μ.toOuterMeasure E := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_left]
-    refine tsum_le_tsum fun b => ?_
-    by_cases hb : b ∈ E
-    · simp only [Set.indicator_of_mem hb]
-      exact h b
-    · simp only [Set.indicator_of_notMem hb, mul_zero, le_refl]
-  have hν := Cslib.Probability.PMF.toOuterMeasure_le_one ν E
-  rcases le_or_gt 1 ε with hε1 | hε1
-  · exact hν.trans ((ENNReal.one_le_ofReal.2 hε1).trans le_add_self)
-  calc ν.toOuterMeasure E
-      = ENNReal.ofReal (1 - ε) * ν.toOuterMeasure E + ENNReal.ofReal ε * ν.toOuterMeasure E := by
-        rw [← add_mul, ← ENNReal.ofReal_add (by linarith) hε, sub_add_cancel, ENNReal.ofReal_one,
-          one_mul]
-    _ ≤ μ.toOuterMeasure E + ENNReal.ofReal ε :=
-        add_le_add hle (mul_le_of_le_one_right zero_le hν)
-
-end Cslib.Interactive
-
-namespace Cslib.Complexity
-
 open Cslib.Probability
 
 /-- **Closeness to the uniform witness law from pointwise lower bounds.** A law on optional
@@ -177,7 +130,7 @@ theorem closeTo_uniformWitness_of_le {μ : PMF (Option (List Bool))} {W : Finset
     {ε : ℝ} (hε : 0 ≤ ε)
     (hle : ∀ v ∈ W, ENNReal.ofReal ((1 - ε) / W.card) ≤ μ (some v))
     (hempty : W = ∅ → ∀ v, μ (some v) = 0) :
-    Interactive.CloseTo μ (uniformWitness W) (ENNReal.ofReal ε) := by
+    CloseTo μ (uniformWitness W) (ENNReal.ofReal ε) := by
   rcases W.eq_empty_or_nonempty with hW | hW
   · have hμ : μ = PMF.pure none := by
       have hnone : μ none = 1 := by
@@ -191,8 +144,8 @@ theorem closeTo_uniformWitness_of_le {μ : PMF (Option (List Bool))} {W : Finset
       | none => simp [hnone]
       | some v => simp [hempty hW v]
     rw [hμ, hW, uniformWitness_empty]
-    exact (Interactive.CloseTo.refl _).mono zero_le
-  · refine Interactive.CloseTo.of_le_apply hε fun o => ?_
+    exact (CloseTo.refl _).mono zero_le
+  · refine CloseTo.of_le_apply hε fun o => ?_
     rw [uniformWitness_of_nonempty hW]
     cases o with
     | none =>

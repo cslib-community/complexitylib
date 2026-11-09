@@ -614,10 +614,8 @@ theorem admissibleExponent_of_rank {v r : ℕ} (hv : 2 ≤ v) (hr : Rank r (mm v
         rw [show ((v : ℝ) * (v : ℝ) ^ j) ^ 2 = ((v : ℝ) ^ 2) ^ (j + 1) by ring]
         exact pow_le_pow_left₀ (by positivity) hv2R _
       have h2 : (1 : ℝ) ≤ R ^ (j + 1) := one_le_pow₀ hR1
-      have h3 : (r : ℝ) * s ≤ r * (Cc * R ^ j) :=
-        mul_le_mul_of_nonneg_left hsR (Nat.cast_nonneg r)
-      have h4 : 9 * (r : ℝ) * ((v : ℝ) * (v : ℝ) ^ j) ^ 2 ≤ 9 * r * R ^ (j + 1) :=
-        mul_le_mul_of_nonneg_left h1 (by positivity)
+      have h3 : (r : ℝ) * s ≤ r * (Cc * R ^ j) := by gcongr
+      have h4 : 9 * (r : ℝ) * ((v : ℝ) * (v : ℝ) ^ j) ^ 2 ≤ 9 * r * R ^ (j + 1) := by gcongr
       have h5 : (r : ℝ) * (Cc * R ^ j) + (9 * r + 1) * R ^ (j + 1) ≤ Cc * R ^ (j + 1) := by
         have := mul_le_mul_of_nonneg_left hCcR (pow_nonneg hR0.le j)
         rw [pow_succ]

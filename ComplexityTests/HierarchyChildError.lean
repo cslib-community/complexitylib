@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual estimated-child mean errors)
-import Complexity.Foundations.Probability.NormalizedAtomRows.FirstMeanError
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.FirstMeanError
 import all ComplexityTests.HierarchySignedMean
 
 /-! Reuse the actual nonconstant four-role/spectator/suffix fixture without weakening its
