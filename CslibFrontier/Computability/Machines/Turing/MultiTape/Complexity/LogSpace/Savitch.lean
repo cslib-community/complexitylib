@@ -257,7 +257,8 @@ enc_structure encEdgeParams : EdgeParams where
   radix : encNat, inputLength : encNat, symbol : (encOption encBool)
 enc_structure encRoundSetup : RoundSetup where params : encEdgeParams, width : encUnary
 enc_structure encSimulationRound : SimulationRound where setup : encRoundSetup, recursion : encState
-enc_structure encRuntime : Runtime where counter : encNat, started : encBool, round : encSimulationRound
+enc_structure encRuntime : Runtime where
+  counter : encNat, started : encBool, round : encSimulationRound
 
 /-- Enter the named runtime representation at the generic Savitch round boundary. -/
 def SimulationRound.ofRound (q : ((ℕ × ℕ × Option Bool) × ℕ) × Savitch.State) :
@@ -339,7 +340,8 @@ theorem output_eq (t : ℕ) : (machine ntm D).output w t = finish ((machine ntm 
   split <;> rfl
 
 /-- While counting, the machine holds the number of input bits read. -/
-theorem run_of_le {t : ℕ} (ht : t ≤ w.length) : (machine ntm D).run w t = ⟨t, false, .ofRound idle⟩ := by
+theorem run_of_le {t : ℕ} (ht : t ≤ w.length) :
+    (machine ntm D).run w t = ⟨t, false, .ofRound idle⟩ := by
   induction t with
   | zero => rfl
   | succ t ih =>
@@ -352,7 +354,8 @@ theorem run_of_le {t : ℕ} (ht : t ≤ w.length) : (machine ntm D).run w t = �
 
 /-- At the end of the input, the machine starts the recursion. -/
 theorem run_length_succ :
-    (machine ntm D).run w (w.length + 1) = ⟨w.length, true, .ofRound (initRound ntm D w.length)⟩ := by
+    (machine ntm D).run w (w.length + 1) =
+      ⟨w.length, true, .ofRound (initRound ntm D w.length)⟩ := by
   rw [QueryMachine.run_succ, run_of_le w le_rfl]
   have hread : (machine ntm D).read w ⟨w.length, false, .ofRound idle⟩ = none := by
     simp [QueryMachine.read, machine, query]
@@ -362,7 +365,8 @@ theorem run_length_succ :
 /-- **The machine runs the recursion** on the graph on words of the input, with the input bit of
 each edge test read at the source of its call. -/
 theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length + 1 + j) =
-    ⟨w.length, true, .ofRound (((radix D w.length, w.length, symbol), vertexWidth k (radix D w.length)),
+    ⟨w.length, true, .ofRound
+      (((radix D w.length, w.length, symbol), vertexWidth k (radix D w.length)),
       (Savitch.step (inputEdge ntm (radix D w.length) w) (vertexWidth k (radix D w.length)))^[j]
         (initRound ntm D w.length).2)⟩ := by
   induction j with
@@ -378,8 +382,8 @@ theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length +
       have hst : ∃ b, st = ⟨[], .ret b⟩ := by
         obtain ⟨stack, (⟨i, u, v⟩ | b)⟩ := st
         · simp [halted, SimulationRound.ofRound, Reg.toPair] at hh
-        · simp only [halted, SimulationRound.ofRound, Bool.true_and, Bool.and_eq_true, List.isEmpty_iff,
-            Bool.not_eq_eq_eq_not, Bool.not_true] at hh
+        · simp only [halted, SimulationRound.ofRound, Bool.true_and, Bool.and_eq_true,
+            List.isEmpty_iff, Bool.not_eq_eq_eq_not, Bool.not_true] at hh
           exact ⟨b, by rw [hh.1]⟩
       obtain ⟨b, hb⟩ := hst
       have hfix : Savitch.step (inputEdge ntm (radix D w.length) w)

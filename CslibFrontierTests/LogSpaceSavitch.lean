@@ -54,7 +54,8 @@ example (D : ℕ) : (machine acceptMachine D).run [true, false, true] 2 = ⟨2, 
   run_of_le _ (by decide)
 
 example (D : ℕ) :
-    (machine acceptMachine D).run [true, false] 3 = ⟨2, true, .ofRound (initRound acceptMachine D 2)⟩ :=
+    (machine acceptMachine D).run [true, false] 3 =
+      ⟨2, true, .ofRound (initRound acceptMachine D 2)⟩ :=
   run_length_succ [true, false]
 
 /-- The recursion on the graph on words decides acceptance, here of every input. -/
