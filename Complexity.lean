@@ -3922,6 +3922,7 @@ public import Complexity.Crypto.Negligible.Basic
 public import Complexity.Crypto.Negligible.Dyadic
 public import Complexity.Crypto.Primitives.BlockCipher.CBCMAC
 public import Complexity.Crypto.Primitives.BlockCipher.Modes
+public import Complexity.Crypto.Primitives.CorrelationRobust
 public import Complexity.Crypto.Primitives.Garbling.Basic
 public import Complexity.Crypto.Primitives.Garbling.Privacy
 public import Complexity.Crypto.Primitives.PRF.Finite
@@ -3951,6 +3952,7 @@ public import Complexity.Crypto.Protocols.MPC.Beaver
 public import Complexity.Crypto.Protocols.MPC.Broadcast
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
+public import Complexity.Crypto.Protocols.MPC.IKNP
 public import Complexity.Crypto.Protocols.MPC.OTCommitment
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.CompleteSender
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.CompleteSender.PolyTime

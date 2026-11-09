@@ -695,6 +695,16 @@ Scope limits:
 
 Checked instances are in [ComplexityTests/Crypto/Yao.lean](../../ComplexityTests/Crypto/Yao.lean): a one-gate AND circuit decoded by computation, with correctness, garbler privacy and the evaluator bound with `tw = id`. That file also checks the advantage on the perfectly private XOR protocol, and shows that every simulator for a leaky protocol has a coalition, input and distinguisher with positive advantage.
 
+### IKNP oblivious-transfer extension
+
+[Protocols/MPC/IKNP.lean](../../Complexity/Crypto/Protocols/MPC/IKNP.lean) runs the oblivious-transfer extension of Ishai, Kilian, Nissim and Petrank [iknp03][iknp03]: `m` transfers of values in a finite additive group `L` from one call to `batchOTSpec κ (BitString m)`, with the roles reversed (`iknpRoleReversal` sends slot `0`, the base sender, to party `1`, the extension's receiver). Party `0`, the sender, holds pairs `X : Fin m → Bool → L`; party `1`, the receiver, holds choice bits `r : Fin m → Bool`. The receiver offers the columns `(tⁱ, tⁱ + r)` of a uniform matrix `T` (`iknpColumns`), the sender chooses with a uniform `s` and sends `X j b + H j (qⱼ + b s)` (`iknpMasked`), and the receiver subtracts `H j tⱼ`. The functionality is `batchOTFunctionality m L` from [Protocols/MPC/BatchOT.lean](../../Complexity/Crypto/Protocols/MPC/BatchOT.lean), so the protocol realizes the same batched transfer it consumes, for `m` values instead of `κ`. The hash family `H : Fin m → BitString κ → L` is assumed correlation robust in the sense of [Primitives/CorrelationRobust.lean](../../Complexity/Crypto/Primitives/CorrelationRobust.lean): `CorrelationRobust.advantage H A` compares `(t, fun j => H j (t j + s))` with `(t, u)` for uniform `s`, `t` and `u`.
+
+- `iknp_output_of_mem_support`: exact correctness in every run, for every `H`; the key identity is `iknp_mask_input`.
+- `idealJoint_iknp_sender`: perfect privacy against the sender, whose columns `tⁱ + sᵢ r` are uniform for every `s` and `r`; `semiHonestAdvantage_iknp_sender` restates it as zero advantage.
+- `semiHonestAdvantage_iknp_receiver`: the advantage of every distinguisher `D` against `iknpReceiverSim` *equals* `CorrelationRobust.advantage H (iknpReduction H x D)`, since the unchosen entries are masked by `H j (tⱼ + s)` with `s` hidden.
+
+The scope limits of Yao's protocol apply: the base transfers are the ideal oracle, the statements are single-instance, efficiency is not tracked, and only semi-honest corruption is covered. Checked instances are in [ComplexityTests/Crypto/IKNP.lean](../../ComplexityTests/Crypto/IKNP.lean), including a constant hash family with positive correlation-robustness advantage.
+
 ## Upstream perfect secrecy and sharing
 
 Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/PerfectSecrecy/Defs.lean#L76): observing any positive-probability ciphertext leaves every message prior unchanged. Its equivalent ciphertext-distribution formulation and one-time-pad instance are finite semantic security, with no PPT restriction. The upstream commitment interface separately defines perfect/statistical hiding and perfect binding [cslib][cslib].
@@ -765,6 +775,7 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [dworkroth14]: ../sources.md#dworkroth14
 [goldreich04]: ../sources.md#goldreich04
 [grs12]: ../sources.md#grs12
+[iknp03]: ../sources.md#iknp03
 [kov17]: ../sources.md#kov17
 [lp09]: ../sources.md#lp09
 [yao86]: ../sources.md#yao86
