@@ -173,9 +173,7 @@ theorem conditionalTableMean_change_terminal {πa πb : ℝ} (hπb : 0 < πb)
     have hpos : (0 : ℝ) < dens {τ | Yb τ y} := by rw [hYbπ]; exact hπb
     rw [hz] at hpos
     norm_num at hpos
-  have hTS : ({τ | Yb τ y} : Finset Υ) ⊆ ({τ | Ya τ y} : Finset Υ) := by
-    intro τ hτ
-    simpa using hsub τ y (by simpa using hτ)
+  have hTS : ({τ | Yb τ y} : Finset Υ) ⊆ ({τ | Ya τ y} : Finset Υ) := by grind
   rw [conditionalTableMean_two_product, conditionalTableMean_two_product,
     expect_product, expect_product]
   refine expect_congr rfl fun γ _ => ?_
@@ -376,9 +374,7 @@ theorem rowNormPow_fineProductMean_le {Γ Υ : Type*} [Fintype Γ] [Fintype Υ]
       ∑ z ∈ ({z | Z σ z} : Finset V), F' σ x z * B' σ z y
   have ha : 0 < a := hb.trans_le hba
   have hNu : 0 ≤ N * u := mul_nonneg hN.le hu.le
-  have hEsupport : ∀ σ x y, ¬ Yb σ.2 y → E σ x y = 0 := by
-    intro σ x y hy
-    simp [E, hBsupport σ _ y hy, hB'support σ _ y hy]
+  have hEsupport : ∀ σ x y, ¬ Yb σ.2 y → E σ x y = 0 := by grind
   have hscale : ((b / a) * (f / πf)) ^ s * (πa / πb) ≤
       (f / πf) ^ s * (Ca / cb) * (b / a) ^ (s - 1) := by
     rw [mul_pow]

@@ -1030,12 +1030,6 @@ private theorem length_listIntBin {l : α → List ℤ}
     ComputableInPolyTime (fun x => (l x).length) encIn encUnary :=
   (length_list encIntBin).comp hl
 
-theorem intBin_pow_polytime {base : α → ℤ} {exp : α → ℕ}
-    (hb : ComputableInPolyTime base encIn encIntBin)
-    (he : ComputableInPolyTime exp encIn encUnary) :
-    ComputableInPolyTime (fun x => base x ^ exp x) encIn encIntBin :=
-  .of_tidy (ComputableTidilyInPolyTime.intBin_pow' hb.tidy he.tidy)
-
 /-- `polyNorm1 l` is bounded exponentially in `(encList encIntBin l).length`. -/
 theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     polyNorm1 l ≤ 2 ^ (2 * (encList encIntBin l).length) := by
@@ -1283,7 +1277,7 @@ private theorem parityFactorColJet_polytime {J ℓ s : α → ℕ} {Δ : α → 
     listGetDWithInput hcoeffs hs (0, 0)
   have hexp : ComputableInPolyTime (fun x => 2 * (ℓ x - 1 - s x)) encIn encUnary :=
     unary_mul' (const 2) (unary_sub.comp' ((unary_sub.comp' (hℓ.prod (const 1))).prod hs))
-  have hscale := singleton_intBin_polytime (intBin_pow_polytime hΔ hexp)
+  have hscale := singleton_intBin_polytime (intBin_pow' hΔ hexp)
   have hlin := computableInPolyTime_polyAdd
     (singleton_intBin_polytime (intBin_mul' hΔ hab.fst'))
     (computableInPolyTime_polyMul (singleton_intBin_polytime hab.snd')
