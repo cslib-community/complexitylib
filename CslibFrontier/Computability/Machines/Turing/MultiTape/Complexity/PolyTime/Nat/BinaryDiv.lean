@@ -58,31 +58,8 @@ namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 /-- Compute both quotient and remainder of binary naturals by shift-and-subtract long division. -/
 theorem binary_divMod : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.1 / p.2, p.1 % p.2))
-    (encPair encNat encNat) (encPair encNat encNat) := by
-  have hlist : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1.bits.reverse)
-      (encPair encNat encNat) encBits := by
-    fun_prop
-  have hstep : ComputableTidilyInPolyTime
-      (fun q : (ℕ × (ℕ × ℕ)) × Bool => BinaryDiv.divModStep q.1.1 q.1.2 q.2)
-      (encPair (encPair encNat (encPair encNat encNat)) encBool)
-      (encPair encNat encNat) := by
-    unfold BinaryDiv.divModStep
-    fun_prop
-  have hfold := foldlWith (encP := encNat) (encA := encBool) (encL := encBits)
-    (encB := encPair encNat encNat) (par := Prod.snd) (list := fun p : ℕ × ℕ => p.1.bits.reverse)
-    (init := fun _ => (0, 0)) (step := BinaryDiv.divModStep)
-    (snd encNat encNat) hlist (const (0, 0)) hstep
-    (B := fun p => 3 * (encPair encNat encNat p).length + 1)
-    (((PolyBounded.const 3).mul .self).add (.const 1))
-    (fun p i _ => by
-      have hlen := BinaryDiv.length_encPair_foldl_divModStep_le p.2 (p.1.bits.reverse.take i)
-      have htake : (p.1.bits.reverse.take i).length ≤ (encPair encNat encNat p).length := by
-        calc (p.1.bits.reverse.take i).length
-            ≤ p.1.bits.reverse.length := List.length_take_le' _ _
-          _ = (encNat p.1).length := by simp
-          _ ≤ (encPair encNat encNat p).length := length_le_encPair_left encNat encNat p
-      lia)
-  simpa only [BinaryDiv.divMod_eq] using hfold
+    (encPair encNat encNat) (encPair encNat encNat) :=
+  ComputableInPolyTime.binary_divMod.tidy
 
 /-- Division of binary naturals. -/
 @[fun_prop, program_certificate]
