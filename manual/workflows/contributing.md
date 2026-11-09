@@ -49,7 +49,9 @@ Before handoff, identify the reader tasks affected in both manuals. Update the r
 workflows, model descriptions, assumptions, commands and examples in the same PR. If the
 manual remains accurate, record a specific reason for it in the PR’s manual-impact assessment.
 A proof-only edit preserving statements, imports and automation may need no prose change;
-a changed encoding or resource bound normally does.
+a changed encoding or resource bound normally does. An edit that changes the number of lines
+in a file still moves the declarations below it, so repoint any manual links such as
+`File.lean#L120` to them; the checker below reports a link that no longer starts a declaration.
 
 Run `python3 scripts/check_operator_manual.py` from the repository root, and check changed
 complete Lean clients as above. The coordinator must review both assessments and ensure independent review of affected

@@ -107,7 +107,7 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
   The homomorphic property of Definition 15.14 needs an exact or statistical-closeness formulation, since its exact distributional condition fails for the implemented sampler.
 - **Garbled circuits and Yao's protocol** ([#3236](https://github.com/cslib-community/cslib-frontier/issues/3236)): Prove exact correctness and concrete simulation privacy of point-and-permute garbling for arbitrary-basis circuits, with privacy bounded by the sum of `n + size` PRF advantages.
   Prove semi-honest security of Yao's two-party protocol, with oblivious transfer realized by a protocol through an advantage-preserving composition theorem instead of an ideal batched OT oracle, and an asymptotic PPT statement from a word-level pseudorandom function.
-  Extensions are output to both parties, free-XOR and half-gates.
+  Extensions are output to both parties, and polynomial-time free-XOR and half-gates privacy.
 - **General**: Reusable adaptive reductions, public-key encryption, universal-instance zero knowledge, hard-core predicates and hardness amplification, and connections to learning and average-case hardness.
 
 ### Zero-knowledge proof systems toward libzk ([#643](https://github.com/cslib-community/cslib-frontier/issues/643))
