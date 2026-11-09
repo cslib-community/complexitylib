@@ -83,6 +83,9 @@ so far, and the scan reads the whole level, so that every level is one fixed com
   at most its largest satisfiable node, which has a child that is the largest satisfiable node of
   the next level; expanding keeps levels in decreasing order. The bounded truth-table procedure
   reuses them.
+* `Cslib.Complexity.Conjunctive.acceptsWith_iff_of_isLargest_mem_prune`: a search whose pruning
+  rule keeps the largest satisfiable node of every level decides satisfiability; the conjunctive
+  and the bounded truth-table procedures both use it.
 * `Cslib.Complexity.Conjunctive.accepts_iff`: the procedure decides satisfiability when the
   queries come from a conjunctive reduction of `SAT` and few queries of bounded length are in the
   target.
@@ -388,6 +391,38 @@ theorem pairwise_expand {pre : List ℕ} {nodes : List (List (Literal ℕ))} (v 
     rcases hx with rfl | rfl <;> rcases hy with rfl | rfl <;>
       simpa using List.append_lt_append_of_lt_of_length_eq hlt hlen _ _
 
+/-- **Correctness of a search that keeps the largest satisfiable node.** Let the rule `prune` keep
+only nodes of the level it prunes, and, on a level in decreasing order whose nodes follow a prefix
+of the occurrences of `φ`, keep the largest satisfiable node of the level. Then the search accepts
+exactly the satisfiable `φ`. The conjunctive and the bounded truth-table procedures are both of this
+form. -/
+theorem acceptsWith_iff_of_isLargest_mem_prune
+    {prune : List (List (Literal ℕ)) → List (List (Literal ℕ))}
+    (hsub : ∀ l, (prune l).Sublist l)
+    (hkeep : ∀ {pre : List ℕ}, pre.IsPrefix φ.vars → ∀ {l : List (List (Literal ℕ))},
+      (∀ a ∈ l, a.map Prod.fst = pre) → (l.Pairwise fun a b => b.map Prod.snd < a.map Prod.snd) →
+        ∀ {c : List (Literal ℕ)}, c ∈ l → IsLargest φ c → c ∈ prune l) :
+    Fortune.acceptsWith prune φ = true ↔ φ ∈ SAT := by
+  obtain ⟨hfst, -, hlarge⟩ := Fortune.searchWith_induction (prune := prune) (φ := φ)
+    (fun pre nodes => (∀ a ∈ nodes, a.map Prod.fst = pre) ∧
+      (nodes.Pairwise fun a b => b.map Prod.snd < a.map Prod.snd) ∧
+      (φ ∈ SAT → ∃ a ∈ nodes, IsLargest φ a))
+    ⟨by simp, by simp, fun h => ⟨[], by simp, by simpa [units] using h, fun b hb _ => by
+      simp only [List.map_nil, List.map_eq_nil_iff] at hb
+      simp [hb]⟩⟩
+    fun pre v nodes hpre ⟨hfst, hsort, hlarge⟩ => by
+      have hexp : ∀ b ∈ Fortune.expand v nodes, b.map Prod.fst = pre ++ [v] :=
+        fun b hb => Fortune.map_fst_of_mem_expand hfst hb
+      have hsort' := pairwise_expand v hfst hsort
+      refine ⟨fun b hb => hexp b ((hsub _).subset hb), hsort'.sublist (hsub _), fun hφ => ?_⟩
+      obtain ⟨a, ha, halarge⟩ := hlarge hφ
+      obtain ⟨x, hx⟩ := exists_isLargest_child halarge v
+      refine ⟨_, hkeep hpre hexp hsort' ?_ hx, hx⟩
+      simp only [Fortune.expand, List.mem_flatMap]
+      exact ⟨a, ha, by cases x <;> simp⟩
+  exact Fortune.acceptsWith_iff_of_searchWith hfst fun h =>
+    (hlarge h).imp fun _ ⟨ha, hlarge⟩ => ⟨ha, hlarge.1⟩
+
 variable {key : CNF ℕ → List (List Bool)} {K : Set (List Bool)} {s M : ℕ}
 
 /-- **Pruning keeps the largest satisfiable node.** In a level in decreasing order, the nodes up to
@@ -439,28 +474,8 @@ theorem accepts_iff (hkey : ∀ ψ, ψ ∈ SAT ↔ ∀ w ∈ key ψ, w ∈ K)
     (hM : ∀ a : List (Literal ℕ), (∀ l ∈ a, l.1 ∈ φ.vars) → a.length ≤ φ.vars.length →
       ∀ w ∈ key (atLeast a ++ φ), w.length ≤ M)
     (hc : ∀ T : Finset (List Bool), (∀ w ∈ T, w ∈ K ∧ w.length ≤ M) → T.card ≤ s) :
-    accepts key s φ = true ↔ φ ∈ SAT := by
-  obtain ⟨hfst, -, hlarge⟩ := Fortune.searchWith_induction
-    (prune := prune (fun a => key (atLeast a ++ φ)) s) (φ := φ)
-    (fun pre nodes => (∀ a ∈ nodes, a.map Prod.fst = pre) ∧
-      (nodes.Pairwise fun a b => b.map Prod.snd < a.map Prod.snd) ∧
-      (φ ∈ SAT → ∃ a ∈ nodes, IsLargest φ a))
-    ⟨by simp, by simp, fun h => ⟨[], by simp, by simpa [units] using h, fun b hb _ => by
-      simp only [List.map_nil, List.map_eq_nil_iff] at hb
-      simp [hb]⟩⟩
-    fun pre v nodes hpre ⟨hfst, hsort, hlarge⟩ => by
-      have hexp : ∀ b ∈ Fortune.expand v nodes, b.map Prod.fst = pre ++ [v] :=
-        fun b hb => Fortune.map_fst_of_mem_expand hfst hb
-      have hsort' := pairwise_expand v hfst hsort
-      refine ⟨fun b hb => hexp b ((prune_sublist _).subset hb),
-        hsort'.sublist (prune_sublist _), fun hφ => ?_⟩
-      obtain ⟨a, ha, halarge⟩ := hlarge hφ
-      obtain ⟨x, hx⟩ := exists_isLargest_child halarge v
-      refine ⟨_, mem_prune_of_isLargest hkey hM hc hpre hexp hsort' ?_ hx, hx⟩
-      simp only [Fortune.expand, List.mem_flatMap]
-      exact ⟨a, ha, by cases x <;> simp⟩
-  exact Fortune.acceptsWith_iff_of_searchWith hfst fun h =>
-    (hlarge h).imp fun _ ⟨ha, hlarge⟩ => ⟨ha, hlarge.1⟩
+    accepts key s φ = true ↔ φ ∈ SAT :=
+  acceptsWith_iff_of_isLargest_mem_prune prune_sublist (mem_prune_of_isLargest hkey hM hc)
 
 end Correctness
 
