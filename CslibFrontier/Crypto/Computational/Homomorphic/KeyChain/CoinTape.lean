@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.BitEncryption.CoinT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -169,8 +170,7 @@ theorem eval_spliceEncryptedKeyLink_eq_map_coins (E : Scheme)
   rw [BitString.uniformList_bind_split _ _ (fun first rest => PMF.pure
     (front first ++ middle (rest.take ((capacity - 1) * encCoins)) ::
       back (rest.drop ((capacity - 1) * encCoins))))]
-  simp only [spliceEncryptedKeyLink, ProbComp.eval_bind, ProbComp.eval_pure,
-    hfront, hmiddle, hback, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, spliceEncryptedKeyLink, hfront, hmiddle, hback]
   congr 1 with first : 1
   rw [BitString.uniformList_bind_split _ _ (fun second third =>
     PMF.pure (front first ++ middle second :: back third))]

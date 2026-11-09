@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Masking
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.RepeatedExtraction
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 
 /-!
@@ -54,7 +55,7 @@ theorem maskedSample_map_fst {α β : Type} (source : ProbComp α)
     (observe : α → β) (truth : α → Bool) (mask : α → ProbComp Bool) :
     (ProbComp.eval (maskedSample source observe truth mask)).map Prod.fst =
       (ProbComp.eval source).map observe := by
-  simp only [eval_maskedSample, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, eval_maskedSample]
   change (ProbComp.eval source).bind (fun value =>
     (ProbComp.eval (maskBit (mask value) (truth value))).map
       (Function.const Bool (observe value))) = _
@@ -245,9 +246,8 @@ theorem maskedSample_extract_dist_bind_le {α β Seed Output : Type} [Finite α]
       (by simpa only [ProbComp.eval_map, id_eq] using congrArg ProbComp.eval hmasked),
     ← extractLabelsIdeal_map_observation observe source count seed
       (ProbComp.eval_map observe source)]
-  simpa only [extractLabelsIdeal, ProbComp.eval_replicate, ProbComp.eval_map,
-    maskedSample_map_fst, PMF.map_id, PMF.bind_map, PMF.bind_bind, PMF.map_bind, PMF.map_comp,
-    Function.comp_def, List.map_ofFn, List.map_id] using hfull
+  simpa only [pmf_norm, extractLabelsIdeal, ProbComp.eval_replicate, maskedSample_map_fst,
+    PMF.map_id, List.map_ofFn, List.map_id] using hfull
 
 /-- Independent vote-masked labels provide at least their soft density per sample for
 extraction. The bound is uniform over all vote lists and thresholds of that density; the test
