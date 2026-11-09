@@ -4082,6 +4082,8 @@ public import CslibFrontier.DataStructure.ApproximateMembership.Spec
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
+public import CslibFrontier.DataStructure.BTree.Basic
+public import CslibFrontier.DataStructure.BTree.Height
 public import CslibFrontier.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import CslibFrontier.DataStructure.CellProbe.Randomized.StateTransition
 public import CslibFrontier.DataStructure.CellProbe.StateTransition
