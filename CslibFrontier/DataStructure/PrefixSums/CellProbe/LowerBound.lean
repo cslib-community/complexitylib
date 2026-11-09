@@ -608,9 +608,7 @@ private theorem hammingDist_mul_le (hD : AnswersQueries D) (hβ : 0 < β) (hL : 
           have h1 : p.1 = p'.1 := Fin.ext <| by
             have := congrArg (· / β ^ (j : ℕ)) h
             simpa only [f, hdiv] using this
-          have h2 : (p.2 : ℕ) = p'.2 := by
-            simp only [f, h1] at h
-            omega
+          have h2 : (p.2 : ℕ) = p'.2 := by grind
           exact Prod.ext h1 (Fin.ext h2)
     _ ≤ _ := card_union_le _ _
 

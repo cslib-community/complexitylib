@@ -16,7 +16,7 @@ Do not replace them with the historical survey's pins.
 
 ```bash
 git clone https://github.com/cslib-community/cslib-frontier.git
-cd complexitylib
+cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
@@ -38,7 +38,7 @@ run the helper before using MCP in a cold checkout.
 
 ## Read the directory names correctly
 
-The package is `complexitylib`; imports start with `CslibFrontier.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.
+The package is `cslib-frontier`; imports start with `CslibFrontier.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.
 
 | Place | Use it for |
 |---|---|
@@ -49,7 +49,7 @@ The package is `complexitylib`; imports start with `CslibFrontier.`. Most declar
 | `abstracts/catalogue.json` | Headline selection, not the whole API |
 | `results/` | Result and reference inventory beyond the selected abstracts |
 | `ROADMAP.md` | Outstanding directions and incomplete endpoints |
-| `UPSTREAM.md` and source markers | CSLib coordination and local-copy status |
+| `-- upstream:` markers and `CONTRIBUTING.md` (Upstreaming) | Local-copy status and live CSLib/Mathlib coordination |
 
 Import a topic module or tactic module first. `import CslibFrontier` imports the entire library and is usually unnecessary for a small client. The [architecture reference](../design-and-assurance/architecture.md) explains the layers.
 

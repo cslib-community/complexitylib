@@ -76,9 +76,7 @@ theorem setOf_mem_EXP_of_computableInPolyTime_pad {β : Type} {encB : β ↪ Lis
     set P := cL * (n + 1) ^ dL
     have hLb : L b ≤ P := hLle b
     have hMn : M n = (d + 2) * (n + P + 2) := rfl
-    have hQ : n + P + 2 ≤ M n := by
-      rw [hMn]
-      exact Nat.le_mul_of_pos_left _ (by omega)
+    have hQ : n + P + 2 ≤ M n := by grind
     have hlen : (encPair encB encUnary (b, 2 ^ L b)).length = 2 * n + 1 + 2 ^ L b := by
       simp only [length_encPair, encUnary_apply, List.length_replicate, n]
     have hn : n < 2 ^ n := Nat.lt_two_pow_self
@@ -87,9 +85,7 @@ theorem setOf_mem_EXP_of_computableInPolyTime_pad {β : Type} {encB : β ↪ Lis
     have hM2 : 4 ^ L b ≤ 2 ^ M n := by
       rw [show (4 : ℕ) = 2 ^ 2 by norm_num, ← pow_mul]
       refine Nat.pow_le_pow_right (by norm_num) ?_
-      have : 2 * (n + P + 2) ≤ M n := by
-        rw [hMn]
-        exact Nat.mul_le_mul_right _ (by omega)
+      have : 2 * (n + P + 2) ≤ M n := by grind
       omega
     have hM3 : (2 * n + 1 + 2 ^ L b + 1) ^ d ≤ 2 ^ M n := by
       have hbase : 2 * n + 1 + 2 ^ L b + 1 ≤ 2 ^ (n + P + 2) := by

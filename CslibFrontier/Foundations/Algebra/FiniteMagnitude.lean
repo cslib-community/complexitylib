@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Anthropic, PBC, Erik Demaine. All rights reserved.
+Copyright (c) 2026 Anthropic, PBC, Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Anthropic, PBC, Erik Demaine
+Authors: Anthropic, PBC, Erik Demaine, Samuel Schlesinger
 -/
 
 module
@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+import Mathlib.Tactic.Linarith
 
 /-!
 # Magnitudes of finite sums and products
@@ -17,12 +18,16 @@ public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 
 * `Finset.abs_sum_mul_le`: bounded signed linear combinations.
 * `Finset.abs_prod_le_one`: products of coefficients bounded by one.
+* `List.abs_sum_map_le`: a sum of at most unit integers is bounded by the list length.
 
 ## References
 
 Adapted selectively from
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
+
+`List.abs_sum_map_le` is moved from Samuel Schlesinger's AMS sketch
+(`CslibFrontier.Computability.Streaming.AMS`).
 -/
 
 @[expose] public section
@@ -51,3 +56,16 @@ theorem abs_prod_le_one [CommRing R] [LinearOrder R] [IsStrictOrderedRing R] (s 
 
 
 end Finset
+
+namespace List
+
+/-- A sum of at most unit integers is bounded by the number of terms. -/
+theorem abs_sum_map_le {α : Type*} {f : α → ℤ} (hf : ∀ a, |f a| ≤ 1) (s : List α) :
+    |(s.map f).sum| ≤ s.length := by
+  induction s with
+  | nil => simp
+  | cons a s ih =>
+    rw [List.map_cons, List.sum_cons, List.length_cons, Nat.cast_succ]
+    exact (abs_add_le _ _).trans (by linarith [hf a])
+
+end List

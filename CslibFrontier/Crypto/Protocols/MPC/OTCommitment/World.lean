@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.Commitment.World
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Extraction
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Equivocation
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # OT commitment simulations through a phased world
@@ -77,10 +78,8 @@ theorem senderIdeal_run {State Output : Type} (A : Sender State) (k : ℕ)
   classical
   change ((senderIdeal A k initial finish).run .idle).map Prod.fst = _
   simp only [senderIdeal, StateT.run_bind]
-  simp only [simulatedOpening, StateT.lift, StateT.run, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.pure_map, Phased.handler, OracleComp.sumHandler,
-    Phased.advance, Phased.observe]
+  simp only [pmf_norm, simulatedOpening, StateT.lift, StateT.run, Phased.handler,
+    OracleComp.sumHandler, Phased.advance, Phased.observe]
   apply congrArg (initial.bind)
   funext st
   apply congrArg ((senderTables A k st).bind)
@@ -188,9 +187,7 @@ theorem receiverIdeal_eq_real {State Later Output : Type} (A : Receiver State) (
   rw [show receiverReal A b k st plan finish = _ from h]
   change ((receiverIdeal A b k st plan finish).run .idle).map Prod.fst = _
   simp only [receiverIdeal, receiverPrefix, StateT.run_bind, StateT.run_pure]
-  simp only [StateT.lift, StateT.run, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, PMF.map_bind, Phased.handler, OracleComp.sumHandler,
+  simp only [pmf_norm, StateT.lift, StateT.run, Phased.handler, OracleComp.sumHandler,
     Phased.advance, Phased.observe]
   apply congrArg ((receiverRun A false k st).bind)
   apply funext

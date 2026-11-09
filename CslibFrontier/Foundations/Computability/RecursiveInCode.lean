@@ -56,7 +56,8 @@ The open Mathlib PR
 related back to `RecursiveIn`. Its oracles are total functions and its `evaln` reads the whole
 oracle. This file instead builds on merged Mathlib's `Nat.RecursiveIn` with partial oracles, and
 its `evaln` runs against a finite prefix `List ℕ`, which gives `evaln_take` and `exists_use`
-directly. Upstreaming must be reconciled with that PR (see `UPSTREAM.md`).
+directly. Upstreaming must be reconciled with that PR, which `CONTRIBUTING.md` lists among the
+upstream coordination threads.
 
 ## References
 

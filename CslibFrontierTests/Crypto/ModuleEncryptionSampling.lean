@@ -80,8 +80,7 @@ example : (PMF.uniformOfFintype (ZMod 16)).map (fun z => (![![z]] : Fin 1 → Fi
   let e := (Equiv.funUnique (Fin 1) (Fin 1 → ZMod 16)).trans
     (Equiv.funUnique (Fin 1) (ZMod 16))
   convert PMF.uniformOfFintype_map_equiv e.symm using 1
-  congr 1
-  funext z
+  congr 1 with z : 1
   ext j i
   fin_cases j; fin_cases i
   rfl
@@ -116,8 +115,7 @@ private theorem uniform_outcome (a s : ZMod 16) :
     _ = ((PMF.uniformOfFintype (ZMod 16)).map (Equiv.addRight (9 - s))).map
         (fun x => decide (4 < x.valMinAbs.natAbs)) := by
       rw [PMF.map_comp]
-      congr 1
-      funext r
+      congr 1 with r : 1
       rw [outcome_eq]
       congr 4
       change 9 + r - s = r + (9 - s)

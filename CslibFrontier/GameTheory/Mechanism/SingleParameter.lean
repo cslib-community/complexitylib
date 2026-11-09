@@ -51,6 +51,8 @@ between the two models is proved yet.
   curve `X` and a payment curve `P` on a set of types `s`.
 * `SingleParameter.IsWelfareMaximizing`: on every nonnegative bid profile the rule picks a feasible
   allocation maximizing the reported welfare `∑ bᵢ xᵢ`.
+* `SingleParameter.IsVirtualWelfareMaximizing`: the same for the virtual welfare `∑ φᵢ(bᵢ) xᵢ`
+  (Lecture 5, §3.1); welfare maximization is the case `φᵢ = id`.
 
 ## Main results
 
@@ -59,6 +61,8 @@ between the two models is proved yet.
 * `SingleParameter.Mechanism.IsDSIC.isTruthfulOn`, `SingleParameter.Mechanism.IsDSIC.isMonotone`:
   along one bidder's own bid a DSIC mechanism is incentive compatible on `[0, ∞)`, so DSIC
   allocation rules are monotone; `IsImplementable.isMonotone` restates it.
+* `SingleParameter.IsVirtualWelfareMaximizing.isMonotone`: when every `φᵢ` is strictly increasing,
+  every virtual-welfare-maximizing allocation rule, with any tie-breaking, is monotone.
 * `SingleParameter.IsWelfareMaximizing.isMonotone`: every welfare-maximizing allocation rule, with
   any tie-breaking, is monotone.
 * `SingleParameter.exists_isWelfareMaximizing`: a welfare-maximizing rule exists for every finite
@@ -204,46 +208,50 @@ arbitrarily. -/
 @[expose] def IsWelfareMaximizing (X : Set (ι → ℝ)) (x : (ι → ℝ) → ι → ℝ) : Prop :=
   ∀ b, 0 ≤ b → x b ∈ X ∧ ∀ y ∈ X, ∑ i, b i * y i ≤ ∑ i, b i * x b i
 
-/-- Changing bidder `i`'s bid to `z` changes the welfare of a fixed allocation `y` by
-`(z − bᵢ) yᵢ`. -/
-private theorem sum_update_mul [DecidableEq ι] (b y : ι → ℝ) (i : ι) (z : ℝ) :
-    ∑ j, Function.update b i z j * y j = ∑ j, b j * y j + (z - b i) * y i := by
-  have h : (fun j => Function.update b i z j * y j) =
-      Function.update (fun j => b j * y j) i (z * y i) := by
-    funext j
-    rcases eq_or_ne j i with rfl | hj
-    · rw [Function.update_self, Function.update_self]
-    · rw [Function.update_of_ne hj, Function.update_of_ne hj]
-  rw [h, Finset.sum_update_of_mem (Finset.mem_univ i), ← Finset.add_sum_erase _ _
-    (Finset.mem_univ i), Finset.sdiff_singleton_eq_erase]
-  ring
+/-- `x` maximizes **virtual welfare** `∑ᵢ φᵢ(bᵢ) yᵢ` over the feasible allocations `X` at every
+nonnegative bid profile ([Roughgarden2013CS364A], Lecture 5, §3.1). Ties may be broken
+arbitrarily. Welfare maximization (`IsWelfareMaximizing`) is the case `φᵢ = id`. -/
+@[expose] def IsVirtualWelfareMaximizing (φ : ι → ℝ → ℝ) (X : Set (ι → ℝ))
+    (x : (ι → ℝ) → ι → ℝ) : Prop :=
+  ∀ b, 0 ≤ b → x b ∈ X ∧ ∀ y ∈ X, ∑ i, φ i (b i) * y i ≤ ∑ i, φ i (b i) * x b i
 
-/-- Every welfare-maximizing allocation rule is monotone, whatever its tie-breaking: optimality
-of `x(z, b₋ᵢ)` and of `x(z', b₋ᵢ)` against each other gives
-`(z' − z)(xᵢ(z', b₋ᵢ) − xᵢ(z, b₋ᵢ)) ≥ 0`. With Myerson's Lemma this makes welfare maximization
-implementable in every single-parameter environment ([Roughgarden2013CS364A], Lecture 4, §1.2–1.3,
-for knapsack auctions). -/
-theorem IsWelfareMaximizing.isMonotone [DecidableEq ι] {X : Set (ι → ℝ)}
-    {x : (ι → ℝ) → ι → ℝ} (hx : IsWelfareMaximizing X x) : IsMonotone x := by
+/-- Changing bidder `i`'s bid to `z` only changes the `i`-th term of the virtual welfare of a fixed
+allocation `y`. -/
+private theorem sum_update_weight [DecidableEq ι] (φ : ι → ℝ → ℝ) (b y : ι → ℝ) (i : ι) (z : ℝ) :
+    ∑ j, φ j (Function.update b i z j) * y j =
+      φ i z * y i + ∑ j ∈ Finset.univ.erase i, φ j (b j) * y j := by
+  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i), Function.update_self]
+  congr 1
+  refine Finset.sum_congr rfl fun j hj => ?_
+  rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
+
+/-- **Virtual-welfare maximization is monotone** when every `φᵢ` is strictly increasing on
+`[0, ∞)`, whatever the tie-breaking ([Roughgarden2013CS364A], Lecture 5, §3.1). Comparing the
+optimality of `x(z, b₋ᵢ)` and of `x(z', b₋ᵢ)` against each other gives
+`(φᵢ(z') − φᵢ(z))(xᵢ(z', b₋ᵢ) − xᵢ(z, b₋ᵢ)) ≥ 0`. -/
+theorem IsVirtualWelfareMaximizing.isMonotone [DecidableEq ι] {φ : ι → ℝ → ℝ}
+    {X : Set (ι → ℝ)} {x : (ι → ℝ) → ι → ℝ} (hx : IsVirtualWelfareMaximizing φ X x)
+    (hφ : ∀ i, StrictMonoOn (φ i) (Set.Ici 0)) : IsMonotone x := by
   intro i b hb z hz z' hz' hzz'
   change x (Function.update b i z) i ≤ x (Function.update b i z') i
-  set B := Function.update b i z
-  set B' := Function.update b i z'
-  obtain ⟨hmem, hmax⟩ := hx B (update_nonneg hb i hz)
-  obtain ⟨hmem', hmax'⟩ := hx B' (update_nonneg hb i hz')
-  have h1 := hmax _ hmem'
-  have h2 := hmax' _ hmem
-  have e1 := sum_update_mul B (x B') i z'
-  have e2 := sum_update_mul B (x B) i z'
-  have hB' : Function.update B i z' = B' := by
-    simp only [B, B', Function.update_idem]
-  have hBi : B i = z := Function.update_self i z b
-  rw [hB', hBi] at e1 e2
   rcases hzz'.lt_or_eq with hlt | rfl
-  · by_contra hcon
-    have := not_le.1 hcon
+  · have h1 := (hx _ (update_nonneg hb i hz)).2 _ (hx _ (update_nonneg hb i hz')).1
+    have h2 := (hx _ (update_nonneg hb i hz')).2 _ (hx _ (update_nonneg hb i hz)).1
+    simp only [sum_update_weight φ b _ i] at h1 h2
+    have hφlt := hφ i hz hz' hlt
+    by_contra hcon
+    have := lt_of_not_ge hcon
     nlinarith
   · exact le_rfl
+
+/-- Every welfare-maximizing allocation rule is monotone, whatever its tie-breaking: this is
+`IsVirtualWelfareMaximizing.isMonotone` with `φᵢ = id`, i.e. optimality of `x(z, b₋ᵢ)` and of
+`x(z', b₋ᵢ)` against each other gives `(z' − z)(xᵢ(z', b₋ᵢ) − xᵢ(z, b₋ᵢ)) ≥ 0`. With Myerson's
+Lemma this makes welfare maximization implementable in every single-parameter environment
+([Roughgarden2013CS364A], Lecture 4, §1.2–1.3, for knapsack auctions). -/
+theorem IsWelfareMaximizing.isMonotone [DecidableEq ι] {X : Set (ι → ℝ)}
+    {x : (ι → ℝ) → ι → ℝ} (hx : IsWelfareMaximizing X x) : IsMonotone x :=
+  IsVirtualWelfareMaximizing.isMonotone (φ := fun _ => id) hx fun _ => strictMono_id.strictMonoOn _
 
 /-- A welfare-maximizing allocation rule exists for every finite nonempty feasible set. -/
 theorem exists_isWelfareMaximizing {X : Set (ι → ℝ)} (hX : X.Finite) (hne : X.Nonempty) :

@@ -84,8 +84,7 @@ theorem eventually_mul_add_one_pow_le_pow_div (c k m : ℕ) {b : ℕ} (hb : 1 < 
     have := Nat.lt_mul_div_succ n hm
     have : 1 ≤ n / m := (Nat.le_div_iff_mul_le hm).mpr (by omega)
     nlinarith
-  calc c * (n + 1) ^ k ≤ c * (2 * m * (n / m)) ^ k :=
-        Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hk k)
+  calc c * (n + 1) ^ k ≤ c * (2 * m * (n / m)) ^ k := by gcongr
     _ = c * (2 * m) ^ k * (n / m) ^ k := by rw [mul_pow, mul_assoc]
     _ ≤ b ^ (n / m) := hn
 
