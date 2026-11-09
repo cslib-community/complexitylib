@@ -5,20 +5,28 @@ Authors: Erik Demaine, OpenAI
 -/
 
 import CslibFrontier.Foundations.Geometry.Polygonal.Join
+import CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitFan
+import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.SplitOrder
 import Lean.Util.CollectAxioms
 import Batteries.Tactic.Lint
 
 /-!
 Scoped standard-three-axiom and environment-linter audit of all stored declarations in the
-route join module, including private and generated declarations. This does not
-replace independent mathematical review or claim the full geometric/numerical equivalence.
+route join, restriction and local fan modules, including private and generated declarations.
+This does not replace independent mathematical review or claim the full
+geometric/numerical equivalence.
 -/
 
 open Lean Elab Command Batteries.Tactic.Lint in
 run_cmd do
   let env := (← getEnv).setExporting false
   let targets : List Name :=
-    [`CslibFrontier.Foundations.Geometry.Polygonal.Join]
+    [`CslibFrontier.Foundations.Geometry.Polygonal.Join,
+     `CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitFan,
+     `CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitOrder,
+     `CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitRestriction,
+     `CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Restriction,
+     `CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.SplitOrder]
   let allowed : List Name := [``propext, ``Classical.choice, ``Quot.sound]
   let mut modules := 0
   let mut decls : Array Name := #[]
