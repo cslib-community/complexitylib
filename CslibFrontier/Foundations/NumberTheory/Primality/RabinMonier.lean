@@ -221,10 +221,7 @@ private theorem card_ker_mul_pow_dvd_totient {n m p e : ℕ} [NeZero n] (hp : p.
     have hpm : p ∣ n - 1 := by
       rw [← hx, ← Subgroup.orderOf_coe]
       exact (orderOf_dvd_of_pow_eq_one hx2).trans hm
-    have : p ∣ 1 := by
-      have := Nat.dvd_sub hpn hpm
-      rwa [show n - (n - 1) = 1 by omega] at this
-    exact hp.one_lt.ne' (Nat.dvd_one.1 this)
+    exact hp.not_dvd_one (Nat.sub_sub_self h1.le ▸ Nat.dvd_sub hpn hpm)
   refine hcop.mul_dvd_of_dvd_of_dvd ?_ ?_
   · rw [← ZMod.card_units_eq_totient, ← Nat.card_eq_fintype_card]
     exact Subgroup.card_subgroup_dvd_card T
