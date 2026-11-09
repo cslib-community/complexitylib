@@ -3951,6 +3951,7 @@ public import Complexity.Crypto.Protocols.MPC.Beaver
 public import Complexity.Crypto.Protocols.MPC.Broadcast
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
+public import Complexity.Crypto.Protocols.MPC.DDHOT
 public import Complexity.Crypto.Protocols.MPC.OTCommitment
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.CompleteSender
 public import Complexity.Crypto.Protocols.MPC.OTCommitment.CompleteSender.PolyTime
