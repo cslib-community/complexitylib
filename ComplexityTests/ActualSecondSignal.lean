@@ -7,8 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual preparatory second signals)
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.MeanBias
-import Complexity.Foundations.Probability.NormalizedAtomRows.ActualMoment
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.MeanBias
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.ActualMoment
 
 /-! Finite raw-sample clients, completed-raw preparation wiring, and two-signal edges. -/
 set_option linter.privateModule false

@@ -825,15 +825,13 @@ theorem uniformKeyEncryptionLaw_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
       (ModuleLWE.sampleLaw (k + 1) k n q noise).map (maskExtendedSampleEquiv m) := by
   unfold uniformKeyEncryptionLaw ModuleLWE.sampleLaw
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
-  congr 1
-  funext r
+  congr 1 with r : 1
   have hpk :
       PMF.uniformOfFintype (Matrix (Fin (k + 1)) (Fin k) (Fin n → ZMod q)) =
         (PMF.uniformOfFintype (ModuleLWEPublicKey k n q)).map (extendPublicKeyEquiv k n q) :=
     (PMF.uniformOfFintype_map_equiv (extendPublicKeyEquiv k n q)).symm
   rw [hpk, PMF.bind_map, PMF.pi_fin_succ k noise]
-  congr 1
-  funext pk
+  congr 1 with pk : 1
   simp only [Function.comp_def, extendPublicKeyEquiv, Equiv.coe_fn_mk, PMF.bind_bind,
     PMF.bind_map, extendCiphertext_moduleLWEEncrypt]
   rfl

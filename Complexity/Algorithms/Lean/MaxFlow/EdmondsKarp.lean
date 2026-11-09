@@ -423,13 +423,7 @@ theorem resDist_le_augmentByBottleneck [DecidableEq V] (f : N.Flow) {p : List V}
               else f.resCap u w :=
             f.resCap_augment haug.nodup haug.head? haug.getLast? (f.bottleneck p)
               (fun _ he => f.bottleneck_le_resCap he) u w
-          have hwu : (w, u) ∈ pathArcs p := by
-            by_contra hnot
-            by_cases huv : (u, w) ∈ pathArcs p
-            · simp only [huv, ↓reduceIte, hzero, Nat.zero_sub] at hres'
-              omega
-            · simp only [huv, hnot, ↓reduceIte, hzero] at hres'
-              omega
+          have hwu : (w, u) ∈ pathArcs p := by grind
           have harc := (f.resDist_arc_of_isShortestAugmentingPath hp hwu).1
           omega
     exact hind (f'.resDist v) hlt v rfl
@@ -1068,11 +1062,7 @@ theorem tblValid_insert {n : ℕ} {N : Network (Fin n)} {f : N.Flow}
     have hhead := hu_walk.head?
     rw [hnil] at hhead
     simp at hhead
-  have hv_notin : v ∉ rp_u.reverse := by
-    intro hmem
-    have hs := hu_mem v hmem
-    rw [hnone_eq] at hs
-    simp at hs
+  have hv_notin : v ∉ rp_u.reverse := by grind
   have hv_walk : IsRevWalkTo f v (v :: rp_u) := by
     refine ⟨?_, ?_, ?_, ?_⟩
     · rw [List.reverse_cons]
@@ -1468,9 +1458,7 @@ private theorem layerInv_step {n : ℕ} {N : Network (Fin n)} {f : N.Flow}
         have hrp' := hst.mono_base v rp hrp
         simp [hrp']
       · have heq_succ : f.resDist v = d + 1 := by omega
-        have hlt_card : d + 1 < Fintype.card (Fin n) := by
-          rw [Fintype.card_fin]
-          omega
+        have hlt_card : d + 1 < Fintype.card (Fin n) := by grind [Fintype.card_fin]
         obtain ⟨u, hu_dist, hpos⟩ := f.exists_pred_of_resDist_eq_succ hlt_card heq_succ
         have hu_lt : f.resDist u < n := by omega
         have hu_front : u ∈ baseSt.frontier := (hinv.mem_frontier u).mpr ⟨hu_lt, hu_dist⟩

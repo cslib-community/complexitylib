@@ -10,6 +10,7 @@ module
 public import Complexity.MachineLearning.PACLearning.EpsilonNet
 public import Complexity.MachineLearning.PACLearning.RealizableSample
 import Complexity.MachineLearning.PACLearning.ERM
+import Complexity.MachineLearning.PACLearning.VCDimension
 
 /-! # The VC upper bound for realizable PAC learning on countable domains
 
@@ -43,6 +44,7 @@ upstream in CSLib.
 
 ## Main results
 
+- `mem_lossClass`: membership in the loss class.
 - `growthFunction_lossClass_le`: the loss class has at most the growth function of `C`.
 - `IsConsistent.ae_not_isEpsNet_of_lt_error`: a consistent learner with error above `ε` on a
   realizable sample witnesses that the sample is not an ε-net for the loss class.
@@ -78,6 +80,10 @@ variable {α : Type*}
 examples `(x, y)` that `h` misclassifies. -/
 def lossClass (C : ConceptClass α Bool) : ConceptClass (α × Bool) Bool :=
   (fun h p => decide (h p.1 ≠ p.2)) '' C
+
+theorem mem_lossClass {C : ConceptClass α Bool} {f : α × Bool → Bool} :
+    f ∈ lossClass C ↔ ∃ h ∈ C, (fun p : α × Bool => decide (h p.1 ≠ p.2)) = f := by
+  rw [lossClass, Set.mem_image]
 
 /-- Passing to the loss class does not increase the growth function: the misclassification
 pattern on labeled points is determined by the labeling of their domain points. -/
@@ -181,7 +187,7 @@ theorem sampleComplexity_realizableDistributions_le_of_hasFiniteVCDim {C : Conce
     sampleComplexity IsPACLearnerFor C ε δ (realizableDistributions C) ≤
       ⌈vcSampleSize (vcDim C) ε.val δ.val⌉₊ :=
   Nat.sInf_le (isPACLearnerFor_realizableDistributions_of_vcSampleSize_le
-    (fun W hW => le_csSup hC ⟨W, rfl, hW⟩) (Nat.le_ceil _))
+    (fun _ hW => hW.card_le_vcDim hC) (Nat.le_ceil _))
 
 /-- **Finite VC dimension implies realizable PAC learnability** on a countable domain
 [BlumerEhrenfeuchtHausslerWarmuth1989, Theorem 2.1]. -/
