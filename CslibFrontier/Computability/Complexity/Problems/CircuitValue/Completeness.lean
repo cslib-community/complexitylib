@@ -52,6 +52,8 @@ copies the input.
   computable in logarithmic space.
 * `Cslib.Complexity.CircuitValue.computableInPolyTime_tableauCode`: the whole code is
   constructed in polynomial time from the unary input length.
+* `Cslib.Complexity.CircuitValue.eval_tableau_of_computesFun`: the tableau circuit of a machine
+  computing `f` within the time bound evaluates to `f a` on the encoding of `a`.
 * `Cslib.Complexity.CircuitValue.exists_uniformCircuits`: polynomial-time Boolean functions
   admit polynomial-time circuit constructors, correct on the encoding's image.
 * `Cslib.Complexity.CircuitValue.logSpaceHard`: the circuit value problem is `P`-hard under
@@ -267,6 +269,25 @@ theorem computableInPolyTime_tableauCode :
   simp [tableauCode, tableauInstance, encCircuitValue_apply, encPair_apply,
     unframe_frame_append, dropFrame_frame_append, Tableau.code_circuit, List.length_replicate]
 
+/-- **Correctness of the tableau.** If `tm` decides `f` within time `t ≤ C (n + 1) ^ d` on inputs
+of length `n`, the tableau circuit for `timeBound C d |enc a|` steps evaluates to `f a` on the
+encoding of `a`. -/
+theorem eval_tableau_of_computesFun {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
+    {t s : ℕ → ℕ} (htm : tm.ComputesFunInTimeAndSpace enc encBool f (fun a => t (enc a).length)
+      (fun a => s (enc a).length)) (ht : ∀ n, t n ≤ C * (n + 1) ^ d) (a : α) :
+    (Tableau.circuit tm (enc a).length (timeBound C d (enc a).length)).eval interpretation
+      (fun i => (enc a)[i]) 0 = f a := by
+  rw [Tableau.eval_circuit tm (by simp only [timeBound]; omega)]
+  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
+  rw [hw]
+  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
+    have h := ht (enc a).length
+    dsimp only [timeBound]
+    omega
+  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
+  rw [hout, encBool_apply]
+  cases f a <;> simp [OutView.ofList]
+
 /-- Every polynomial-time Boolean function has circuits whose codes are constructed in
 polynomial time from the unary encoded input length. Correctness is required on the encoding's
 image; no decoder or efficient membership test for that image is assumed. -/
@@ -279,18 +300,9 @@ theorem exists_uniformCircuits {α : Type} {enc : α ↪ List Bool} {f : α → 
   have := Fintype.ofFinite Control
   classical
   obtain ⟨C, d, hbound⟩ := polynomiallyBounded_iff_le.mp ht
-  refine ⟨fun n => Tableau.circuit machine n (timeBound C d n),
-    computableInPolyTime_tableauCode machine C d, fun a => ?_⟩
-  rw [Tableau.eval_circuit machine (by simp only [timeBound]; omega)]
-  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
-  rw [hw]
-  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
-    have h := hbound (enc a).length
-    dsimp only [timeBound]
-    omega
-  obtain ⟨-, hout⟩ := (hmachine a).runFrom_of_le hle
-  rw [hout, encBool_apply]
-  cases f a <;> simp [OutView.ofList]
+  exact ⟨fun n => Tableau.circuit machine n (timeBound C d n),
+    computableInPolyTime_tableauCode machine C d,
+    eval_tableau_of_computesFun machine C d hmachine hbound⟩
 
 end Construction
 
@@ -311,15 +323,7 @@ theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set
     fun a => ?_⟩
   rw [hAf a, mem_CircuitValue]
   simp only [tableauInstance]
-  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
-  rw [Tableau.eval_circuit tm (by simp only [timeBound]; omega), hw]
-  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
-    have := htle (enc a).length
-    simp only [timeBound]
-    omega
-  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
-  rw [hout, encBool_apply]
-  cases f a <;> simp [OutView.ofList]
+  rw [eval_tableau_of_computesFun tm C d htm htle]
 
 /-- **The circuit value problem is `P`-hard under logarithmic-space reductions** [Ladner1975]. -/
 theorem logSpaceHard : LogSpaceHard @P encCircuitValue CircuitValue :=
