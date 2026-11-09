@@ -480,7 +480,7 @@ theorem exists_symmetric_query_forall_exists_half_lt {k : ℕ} (hk : 2 ≤ k)
     refine hS.trans ((M x).toOuterMeasure.mono fun a ha j => ?_)
     simp only [S, Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists, not_le] at ha
     exact (ha j).trans_le hc
-  have hlog := sub_one_mul_log_two_le_of_two_pow_mul_inv_two_le (hF M ε 2⁻¹ hM hacc)
+  have hlog := sub_one_mul_log_two_le_of_two_pow_mul_inv_two_le_ofReal_exp (hF M ε 2⁻¹ hM hacc)
   -- `(L - 1) ln 2 ≤ t L ε ≤ L / 6` contradicts `ln 2 ≥ 1 / 2` and `L ≥ 2`
   have hln2 : (1 : ℝ) / 2 ≤ Real.log 2 := by
     have := Real.one_sub_inv_le_log_of_pos (x := 2) two_pos
