@@ -33,7 +33,7 @@ the restated input encoding in `fun p => (encPair encS (encOption encBool) p).le
 
 Only public declarations count: in a `module`, those inside a `public section` or marked `public`,
 and not `private` or `local`. Declarations in a namespace with an `Internal` component, and modules
-with an `Internal` path component, are not counted. Every module under `Complexity/` is checked; the
+with an `Internal` path component, are not counted. Every module under `CslibFrontier/` is checked; the
 abstracts and the tests are not.
 
 A declaration counts towards a term when it spells the term out other than inside an occurrence
@@ -59,11 +59,11 @@ in some module; the next change that touches that module names the encoding or, 
 `--update-baseline` rewrites the entries of the touched modules (with `--all`, of every module)
 with the current violations; it refuses to add or raise an entry unless `--allow-increase` is
 given, for instance when a module moves or a rename changes the spelling of recorded terms.
-`--summary` prints the totals, the counts per top-level directory of `Complexity/`, the modules
+`--summary` prints the totals, the counts per top-level directory of `CslibFrontier/`, the modules
 with the most violations and the terms repeated in several modules.
 
 `--list [PREFIX]` is for the sweep. It ignores the baseline and prints every violation, with its
-declarations, in the modules whose path is PREFIX or lies under it (such as `Complexity/Logics`),
+declarations, in the modules whose path is PREFIX or lies under it (such as `CslibFrontier/Logics`),
 or in every module. It also prints the `local notation`s whose right-hand side contains a compound
 encoding: the check reads a notation as an atom, so these hide compound encodings, and rule 3
 asks for a documented `abbrev` instead. It always succeeds, and combines with neither the other
@@ -89,7 +89,7 @@ from proof_lengths import command_starts, masks, signature_end  # noqa: E402
 
 BASELINE = ROOT / "scripts/encoding_readability_baseline.json"
 UPDATE = "python3 scripts/check_encoding_readability.py --update-baseline"
-# The generic encoding combinators (`Complexity/Computability/Machines/Turing/MultiTape/
+# The generic encoding combinators (`CslibFrontier/Computability/Machines/Turing/MultiTape/
 # Encodings/`) and their explicit arities.
 COMBINATORS = {"encPair": 2, "encList": 1, "encOption": 1, "encSum": 2, "encFramed": 1,
                "encPi": 1, "encDPi": 1}
@@ -616,7 +616,7 @@ def module_violations(declarations: list[Declaration]) -> list[Violation]:
 def checked_files(root: Path, prefix: str = "") -> list[Path]:
     """The checked modules, or those whose path relative to `root` is `prefix` or lies under it."""
     parts = Path(prefix).parts
-    return sorted(path for path in (root / "Complexity").rglob("*.lean")
+    return sorted(path for path in (root / "CslibFrontier").rglob("*.lean")
                   if "Internal" not in path.relative_to(root).with_suffix("").parts
                   and path.relative_to(root).parts[:len(parts)] == parts)
 
@@ -731,7 +731,7 @@ def listing(found: dict[str, list[Violation]], notations: dict[str, list[Notatio
 
 
 def area(path: str) -> str:
-    """The top-level directory of `Complexity/` that holds `path`."""
+    """The top-level directory of `CslibFrontier/` that holds `path`."""
     parts = Path(path).parts
     return parts[1] if len(parts) > 2 else Path(parts[-1]).stem
 
@@ -761,7 +761,7 @@ def summary(current: dict[str, dict[str, int]], top: int) -> str:
 
 
 def touched_modules(root: Path, ref: str) -> set[str]:
-    """The modules under `Complexity/` that the change adds, modifies or deletes, against the
+    """The modules under `CslibFrontier/` that the change adds, modifies or deletes, against the
     merge base of `ref` and `HEAD` (see `check_changed_files.changed_files`) and the working
     tree."""
     added, modified = ccf.changed_files(root, ref)
@@ -770,7 +770,7 @@ def touched_modules(root: Path, ref: str) -> set[str]:
     if deleted.returncode:
         sys.exit(f"git diff failed: {deleted.stderr.strip()}")
     return {path for path in [*added, *modified, *deleted.stdout.split("\0")]
-            if path.startswith("Complexity/") and path.endswith(".lean")}
+            if path.startswith("CslibFrontier/") and path.endswith(".lean")}
 
 
 def under_report(under: list[Change]) -> str:
@@ -792,7 +792,7 @@ def main(argv: list[str] | None = None) -> int:
                        help="ignore the baseline and list every repeated compound encoding with "
                             "its declarations, and the local notations that abbreviate a compound "
                             "encoding, in the modules under the path PREFIX (such as "
-                            "Complexity/Logics) or in every module; always succeeds")
+                            "CslibFrontier/Logics) or in every module; always succeeds")
     parser.add_argument("--update-baseline", action="store_true",
                         help="rewrite the baseline entries of the enforced modules")
     parser.add_argument("--allow-increase", action="store_true",
