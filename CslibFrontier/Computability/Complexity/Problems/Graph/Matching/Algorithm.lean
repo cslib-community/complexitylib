@@ -33,15 +33,18 @@ namespace Cslib.Complexity.Graph
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
-/-- Framed lists of original binary edge pairs, the public matching output encoding. -/
+/-- Matching output in list order: each edge pair is framed, and inside each pair the first
+binary endpoint is framed before the second binary endpoint. -/
 abbrev encMatching := encList (encPair encNat encNat)
 
-/-- A complete framed graph followed by its framed occurrence-bit buffer. -/
+/-- A framed complete graph followed by buffer-order framed one-bit Boolean encodings. -/
 abbrev encMatchingBuffer := encPair encGraph (encList encBool)
 
 /-- Read whether every actual occurrence of a named edge is true. -/
 @[expose] def selectedBit (F : CSP CSP.Table ℕ) (bits : List Bool) (x : ℕ) : Bool :=
-  F.occurrences.all fun o => decide (o.2.2 ≠ x) || CSP.EdgeAugmenting.readRecord F bits o
+  F.occurrences.all fun (constraint, argument, variableName) =>
+    decide (variableName ≠ x) ||
+      CSP.EdgeAugmenting.readRecord F bits (constraint, argument, variableName)
 
 /-- Original edge positions mutually selected by the optimizer's occurrence buffer. -/
 @[expose] def matchingPositions (G : Graph) (bits : List Bool) : List ℕ :=
