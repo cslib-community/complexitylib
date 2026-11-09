@@ -39,10 +39,12 @@ import Complexity.Computability.Complexity.Problems.HornSAT
 import Complexity.Computability.Complexity.Problems.XORSAT
 import Complexity.Computability.PolyTime.CSP.Gadget
 import Complexity.Logics.Polymorphism.BooleanClone
+import Complexity.Logics.BooleanClone.Post
 import Complexity.Logics.Propositional.CNF.Majority
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
@@ -73,6 +75,7 @@ import Complexity.Computability.Complexity.Problems.Clique
 import Complexity.Computability.Complexity.Problems.CSP.Incidence
 import Complexity.Computability.Complexity.Problems.CSP.RotationSystem
 import Complexity.Computability.PolyTime.CSP.Table
+import Complexity.Logics.Propositional.CSP.Edge.Augmenting
 import Complexity.Logics.Propositional.CSP.Table.DeltaMatroid
 import Complexity.Foundations.Data.BitString.CyclicDifference
 import Complexity.Foundations.Data.BitString.DeltaMatroid.Operations
@@ -439,12 +442,19 @@ instantiates its local clauses in native polynomial time and uses the existing
 native 2SAT theorem; no solver hypothesis is needed.
 
 The positive-arity Boolean clone classification is proved in
-{module}`Complexity.Logics.Polymorphism.BooleanClone`:
+{module}`Complexity.Logics.BooleanClone.Classification`:
 {name}`Cslib.Logic.BooleanClone.classification` covers every positive arity.
 For a language lacking the six common operations,
 {name}`Cslib.Logic.PL.CSP.projection_or_negation_of_not_hasSchaeferPolymorphism`
 identifies every polymorphism as a projection or negated projection. This supplies
 the algebraic ingredient used by the native hardness application below.
+
+Post's functional-completeness criterion shares this same classification:
+{name}`Cslib.Logic.BooleanClone.functionallyComplete_iff` characterizes generating
+families by witnesses outside the five closed classes. Its completeness notion
+quantifies over positive input arities, with unary constant functions. In particular,
+NAND is complete in that sense; the stronger circuit notion also requires zero-input
+functions. No circuit-size bound is asserted by this criterion.
 
 For reductions between fixed Boolean languages,
 {name}`Cslib.Logic.PL.CSP.exists_ppGadget_of_polymorphisms` constructs equality-free
@@ -768,3 +778,42 @@ example {table : Table} {reference : List Bool} {positions : List ℕ}
 The new connector's exactly-one relation is even for every nonempty scope,
 with odd common parity. Empty scopes are excluded. These local mathematical
 closures do not prove whole-blossom lifting, the edge solver, or its native cost.
+
+
+# Prefix-Valid Edge-CSP Augmentation
+
+{name}`Cslib.Logic.PL.CSP.defects` counts distinct inconsistent variables.
+{name}`Cslib.Logic.PL.CSP.Walk.IsFWalk` requires distinct endpoints, consistent
+internal variables, and validity after every variable-ended prefix. An
+augmenting walk removes exactly two defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    {f : OccurrenceLabeling F Bool} {w : Walk F}
+    (hw : w.IsAugmenting sem f) :
+    (defects (w.flip f)).card + 2 = (defects f).card :=
+  hw.card_defects_flip_add_two h
+```
+
+For even delta-matroid constraints,
+{name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
+two-phase routine. Its correctness requires an improving valid comparison
+labeling as input; it does not search for that labeling. The combined exchange
+count is bounded by half the initial occurrence Hamming distance. No native
+machine-runtime bound is claimed yet.
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (h : EdgeInstance F) {sem : Rel → List Bool → Bool}
+    (hM : EdgeInstance.EvenConstraints sem F)
+    {f : OccurrenceLabeling F Bool} :
+    IsOptimalLabeling sem f ↔ ValidLabeling sem f ∧
+      ¬ ∃ w : Walk F, w.IsAugmenting sem f :=
+  h.isOptimalLabeling_iff_no_augmentingWalk hM
+```
+
+The test module also rejects final-only validity. A complete solver still needs
+DAG/forest/blossom search and the native runtime certificate.

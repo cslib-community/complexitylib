@@ -95,6 +95,26 @@ Support-based CNF model counting counts assignments to variables that occur. Dec
 
 [QBF](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
 
+## Boolean functional completeness
+
+Import `Complexity.Logics.BooleanClone.Post` for Post's five-class criterion. A family
+`G n` of Boolean operations is `BooleanClone.FunctionallyComplete G` exactly when it has
+an operation outside each of the 0-preserving, 1-preserving, monotone, self-dual and affine
+classes (`BooleanClone.functionallyComplete_iff`). The witnesses may have different arities;
+the family may be infinite. Affinity uses the existing `BitString.IsAffine` convention.
+
+`BooleanClone.generated` records finite superpositions and projections. Its foundation and
+four-generator classification are shared with Schaefer's proof below. Import
+`Complexity.Logics.BooleanClone.Formula` for `generated_iff_exists_formula` and
+`exists_circuit_of_postCriterion`: the generated operations have actual formula and circuit
+realizations. See the [checked NAND and incomplete-basis examples](../../ComplexityTests/PostCompleteness.lean).
+
+This API quantifies over **positive input arities**. Constants are unary constant functions.
+NAND alone is complete in this sense, but cannot synthesize a zero-input constant gate.
+Circuit `Interpretation.IsComplete` also quantifies over zero inputs, so the Post theorem
+supplies positive-arity circuits without claiming that stronger instance. No gate-count bound
+or full classification of Post's lattice is asserted.
+
 ## Boolean Schaefer dichotomy
 
 Import `Complexity.Computability.Complexity.Problems.CSP.Schaefer` for the full Boolean
@@ -271,6 +291,40 @@ incompatible shared coordinates, empty external coordinates, arbitrary scope len
 outside ports, empty selections, nullary tables, and malformed guards. Native operation and size
 certificates remain those of `PolyTime.CSP.Table`. Whole-instance blossom contraction/lifting,
 solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
+
+## Prefix-valid walks and augmentation
+
+Import `Complexity.Logics.Propositional.CSP.Edge.Augmenting` for Boolean occurrence-label
+optimization. `CSP.defects` counts distinct occurring variables carrying unequal endpoint labels;
+`CSP.IsOptimalLabeling` requires validity and minimum defect count among all valid labels.
+Valid labels with zero defects are equivalent to a model of the original CSP, using `false`
+on nonoccurring variables. `EdgeInstance` supplies the exact-two/distinct-constraint condition.
+`EdgeInstance.EvenConstraints` states that each relation on its actual ordered scope positions
+is an even delta-matroid; local common parity may be odd and may differ between constraints.
+
+A `CSP.Walk` stores a starting variable and a list of incidence pairs. Its `IsWalk` predicate
+requires linked constraint steps and no reused incidence, while allowing repeated constraint
+positions and closed trails. `IsFWalk` requires distinct endpoints, consistent internal variables,
+and validity after every variable-ended prefix. Final validity alone is insufficient. An
+augmenting walk has two defective endpoints. Its flip is valid, and
+`Walk.IsAugmenting.card_defects_flip_add_two` proves that it removes exactly two defects. Prefix validity and the
+partner-transition lemmas connect these paths to the original indexed occurrence model.
+
+`EdgeInstance.augmentingWalk` implements the two phases of Lemma 31 in
+Kazda–Kolmogorov–Rolínek, arXiv:1602.03124v6, printed p. 0:15. Given valid `f,g` with fewer
+defects in `g`, it repairs comparison-only defects and follows remaining disagreements using
+deterministic positional scans. Its specification returns an augmenting walk starting away
+from an arbitrary specified variable; that variable may still be the endpoint. The combined
+number of local exchanges is at most half the initial occurrence Hamming distance. This is an
+exchange-count bound, not a native-machine runtime bound. `isOptimalLabeling_iff_no_augmentingWalk`
+then characterizes optimality without assuming a solver.
+
+[Augmenting-walk tests](../../ComplexityTests/EdgeCSPWalk.lean) include doubled equality
+constraints, actual returned paths, odd unsatisfiable units, repeated constraint positions,
+empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
+prefix is invalid. The routine takes an improving comparison labeling as input: finding that
+labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
+Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/complexitylib/issues/3091).
 
 ## Three resolution representations
 

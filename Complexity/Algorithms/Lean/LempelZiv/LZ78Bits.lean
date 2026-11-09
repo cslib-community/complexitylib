@@ -168,10 +168,7 @@ private theorem bitsToPairs_pairsToBits (e : α ≃ Fin k) (hk : 2 ≤ k) (ps : 
     set rest := pairsToBits e (i + 1) ps
     have hbits : pairsToBits e i ((j, a) :: ps) = lowBits w j ++ lowBits b (e a) ++ rest := rfl
     have hne : lowBits w j ++ lowBits b (e a) ++ rest ≠ [] := by
-      intro h
-      have := congrArg List.length h
-      simp only [List.length_append, length_lowBits, List.length_nil] at this
-      omega
+      grind [List.length_append, length_lowBits, List.length_nil]
     have hlen : w + b ≤ (lowBits w j ++ lowBits b (e a) ++ rest).length := by
       simp only [List.length_append, length_lowBits]; omega
     have hdrop1 : (lowBits w j ++ lowBits b (e a) ++ rest).drop w = lowBits b (e a) ++ rest := by

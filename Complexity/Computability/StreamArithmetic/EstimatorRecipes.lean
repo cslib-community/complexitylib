@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.StreamArithmetic.Primitives
-public import Complexity.Foundations.Analysis.RowCompression
+public import Complexity.Computability.LogSpaceDerandomization.RowCompression
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity

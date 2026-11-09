@@ -139,7 +139,7 @@ theorem preimage_startsWith (b : Bool) :
 of the fraction of witnesses beginning with `b`. -/
 theorem abs_eval_startsWith_sub_le {μ : ProbComp (Option (List Bool))} {V : Finset (List Bool)}
     {ε : ℝ} (hε : 0 ≤ ε)
-    (hμ : Interactive.CloseTo (ProbComp.eval μ) (uniformWitness V) (ENNReal.ofReal ε))
+    (hμ : Probability.CloseTo (ProbComp.eval μ) (uniformWitness V) (ENNReal.ofReal ε))
     (hV : V.Nonempty) (b : Bool) :
     |(ProbComp.eval (startsWith b <$> μ) true).toReal -
       ((V.filter (fun w => w.head? = some b)).card : ℝ) / V.card| ≤ ε := by
@@ -269,7 +269,7 @@ private theorem good_update {x : α} {p i : ℕ} {s : State α} (hs : R.Good x p
 the sampler is `1 / M`-close to uniform at the current instance. -/
 private theorem good_next {x : α} {p t i : ℕ} {s : State α} (hi : i < R.len x)
     (hs : R.Good x p i s) {μ : ProbComp (Option (List Bool))}
-    (hμ : Interactive.CloseTo (ProbComp.eval μ) (uniformWitness (W s.1))
+    (hμ : Probability.CloseTo (ProbComp.eval μ) (uniformWitness (W s.1))
       (ENNReal.ofReal (1 / (tolerance (R.len x) p : ℝ))))
     {c₀ c₁ : ℕ}
     (h₀ : |(c₀ : ℝ) / (sampleCount (R.len x) p t : ℕ) -
@@ -313,7 +313,7 @@ theorem mem_support_step {S : α → ℕ → ProbComp (Option (List Bool))} {ℓ
 a `1 / M`-close sampler at the current instance. -/
 private theorem step_failure {S : α → ℕ → ProbComp (Option (List Bool))} {x : α} {p t i : ℕ}
     (hi : i < R.len x) {s : State α} (hs : R.Good x p i s)
-    (hS : Interactive.CloseTo (ProbComp.eval (S s.1 (tolerance (R.len x) p)))
+    (hS : Probability.CloseTo (ProbComp.eval (S s.1 (tolerance (R.len x) p)))
       (uniformWitness (W s.1)) (ENNReal.ofReal (1 / (tolerance (R.len x) p : ℝ)))) :
     ((ProbComp.eval (R.step S (R.len x) p t s)).toOuterMeasure
       {s' | ¬ R.Good x p (i + 1) s'}).toReal ≤ 2 * (1 / 2 : ℝ) ^ (t + R.len x + 1) := by
@@ -444,7 +444,7 @@ theorem estimate_eq_zero (S : α → ℕ → ProbComp (Option (List Bool))) {x :
 distance `2 ^ (-q)` of uniform on `W x` for every `x` and `q`, then for `p > 0` the estimate is
 within relative error `1 / p` of `|W x|` with probability at least `1 - 2 ^ (-t)`. -/
 theorem approxWithin_estimate {S : α → ℕ → ProbComp (Option (List Bool))}
-    (hS : ∀ x q, Interactive.CloseTo (ProbComp.eval (S x q)) (uniformWitness (W x))
+    (hS : ∀ x q, Probability.CloseTo (ProbComp.eval (S x q)) (uniformWitness (W x))
       (ENNReal.ofReal ((1 / 2 : ℝ) ^ q)))
     (x : α) {p : ℕ} (hp : 0 < p) (t : ℕ) :
     1 - (1 / 2 : ℝ) ^ t ≤ ((ProbComp.eval (R.estimate S x p t)).toOuterMeasure
@@ -461,7 +461,7 @@ theorem approxWithin_estimate {S : α → ℕ → ProbComp (Option (List Bool))}
   set ℓ := R.len x
   set M := tolerance ℓ p
   have hMpos : 0 < M := by unfold M tolerance; positivity
-  have hS' : ∀ y, Interactive.CloseTo (ProbComp.eval (S y M)) (uniformWitness (W y))
+  have hS' : ∀ y, Probability.CloseTo (ProbComp.eval (S y M)) (uniformWitness (W y))
       (ENNReal.ofReal (1 / (M : ℝ))) :=
     fun y => (hS y M).mono (ENNReal.ofReal_le_ofReal (half_pow_le_inv M hMpos))
   have hfail := ProbComp.iterate_failure_toReal_le_mul ℓ (R.step S ℓ p t) (x, 1, 1)

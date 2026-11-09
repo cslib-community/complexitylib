@@ -88,15 +88,15 @@ def haltM : TM0.Machine Bool Unit := fun _ _ => none
 def loopM : TM0.Machine Bool Unit := fun _ x => some ((), .write x)
 
 theorem solvable_mInstance_haltM (l : List Bool) : (OfTM0.mInstance haltM l).Solvable := by
-  refine (OfTM0.eval_dom_iff_solvable haltM l).mp ((OfTM0.eval_dom_iff haltM l).mpr ?_)
+  refine (OfTM0.eval_dom_iff_solvable haltM l).mp ((TM0.eval_dom_iff haltM l).mpr ?_)
   exact ⟨_, Relation.ReflTransGen.refl, rfl⟩
 
 theorem not_solvable_mInstance_loopM (l : List Bool) : ¬(OfTM0.mInstance loopM l).Solvable := by
   intro h
   obtain ⟨cfg, -, hc⟩ :=
-    (OfTM0.eval_dom_iff loopM l).mp ((OfTM0.eval_dom_iff_solvable loopM l).mpr h)
-  obtain ⟨q, x, L, R, rfl⟩ := OfTM0.exists_cfgOf cfg
-  rw [OfTM0.step_of_eq_write (q' := ()) (b := x) rfl L R] at hc
+    (TM0.eval_dom_iff loopM l).mp ((OfTM0.eval_dom_iff_solvable loopM l).mpr h)
+  obtain ⟨q, x, L, R, rfl⟩ := TM0.exists_cfgOf cfg
+  rw [TM0.step_of_eq_write (q' := ()) (b := x) rfl L R] at hc
   cases hc
 
 end Cslib.Tests.PostCorrespondence
