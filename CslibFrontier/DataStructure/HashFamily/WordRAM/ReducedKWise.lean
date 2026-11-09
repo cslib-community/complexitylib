@@ -1152,8 +1152,7 @@ theorem map_extractSeed_eval_resampleComp (base w₀ b b' k : ℕ) (x : Data 240
       obtain ⟨_, _, _, _, _, _, _, hframe2⟩ := Tabulation.mem_support_randFillComp hz2
       have htop_eq : extractTop base w₀ z2.1.mem = extractTop base w₀ z1.1.mem := by
         dsimp only [extractTop]
-        congr 1
-        funext idx
+        congr 1 with idx : 1
         dsimp only [Tabulation.extractSlice]
         rw [hframe2 (base + idx.val) (Or.inl (by have := idx.isLt; omega))]
         rfl
@@ -1174,8 +1173,7 @@ theorem map_extractSeed_eval_resampleComp (base w₀ b b' k : ℕ) (x : Data 240
         (fun z1 =>
           (PMF.uniformOfFintype (ReducedBotSeed w₀ b b' k)).map
             (fun β => (extractTop base w₀ z1.1.mem, β))) := by
-    congr 1
-    funext z1
+    congr 1 with z1 : 1
     exact hinner z1
   rw [hbind]
   have hmap_bind :

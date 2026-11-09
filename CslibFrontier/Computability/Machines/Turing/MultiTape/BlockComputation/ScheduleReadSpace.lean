@@ -54,8 +54,8 @@ theorem read_inSpace (k c δ : ℕ) :
     (budget_const (encB := encNat) 0 (.refl _))
   have hstates (a : ℕ × ℕ) (j : ℕ) (hj : j ≤ a.2) :
       (encState ((step k c δ)^[j] (a.1, 0))).length ≤ (encState a).length := by
-    have hs := ComputableTidilyInO.length_encNat_mono (iterate_fst_le k c δ a.1 j)
-    have hn := ComputableTidilyInO.length_encNat_mono
+    have hs := length_encNat_mono (iterate_fst_le k c δ a.1 j)
+    have hn := length_encNat_mono
       ((iterate_snd_le k c δ a.1 j).trans hj)
     simp only [encState, length_encPair]
     omega

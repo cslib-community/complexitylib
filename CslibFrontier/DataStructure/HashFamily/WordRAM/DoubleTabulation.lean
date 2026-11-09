@@ -1410,11 +1410,7 @@ theorem le_two_pow_provableC_mul_provableB {c_exp n_max U : ℕ}
   evalCode := KWise.evalCode k
   evalSteps := KWise.evalSteps n_max U M k
   initTable_exec {x} _ hbase hpar _ := by
-    have hq_pos : 0 < trinomialDeg U M := by
-      dsimp only [trinomialDeg]
-      positivity
-    have hfit_q : Fits w (2 ^ trinomialDeg U M) :=
-      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_q := KWise.fits_two_pow_trinomialDeg hw
     obtain ⟨y, hex, htab, hy0, hmod⟩ :=
       KWise.initTableCode_execWithin hbase (hpar 0) (hpar 1) (hpar 2)
         hfit_space hfit_n hfit_U hfit_q
@@ -1423,11 +1419,7 @@ theorem le_two_pow_provableC_mul_provableB {c_exp n_max U : ℕ}
     rw [Block.mem_footprint, Block.Owns, not_and_or, not_le, not_lt] at ha
     exact hmod a ha
   resample_exec {x} _ hbase htab := by
-    have hq_pos : 0 < trinomialDeg U M := by
-      dsimp only [trinomialDeg]
-      positivity
-    have hfit_q : Fits w (2 ^ trinomialDeg U M) :=
-      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_q := KWise.fits_two_pow_trinomialDeg hw
     have hpow : 0 < 2 ^ (2 * KWise.chunkBits n_max) := by positivity
     have hfit_end : Fits w (base + 8 + k) :=
       hfit_space.of_le (by
@@ -1584,11 +1576,9 @@ with `c = provableC c_exp`, `d = provableD c_exp`, `b = provableB n_max` for
       simpa only [provableSpace, h, ↓reduceIte] using hfit_space
     have hpow_b : Fits w (2 ^ provableB n_max) :=
       hsp.of_le ((two_pow_provableB_le_space c_exp n_max).trans (Nat.le_add_left _ _))
-    have hpow_M : Fits w (2 ^ M) := by
-      have hM_le : M ≤ trinomialDeg U M := le_trinomialDeg U M
-      have hdeg_pos : 0 < trinomialDeg U M := by
-        dsimp only [trinomialDeg]; positivity
-      exact Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hpow_M : Fits w (2 ^ M) :=
+      (KWise.fits_two_pow_trinomialDeg hw).of_le
+        (Nat.pow_le_pow_right (by decide) (le_trinomialDeg U M))
     have hkeys : ∀ u : Fin U, Fits w u.val :=
       fun u => hfit_U.of_le (by have := u.isLt; omega)
     impl18 ![n_max, U, M] hsp hpow_b hpow_M hkeys

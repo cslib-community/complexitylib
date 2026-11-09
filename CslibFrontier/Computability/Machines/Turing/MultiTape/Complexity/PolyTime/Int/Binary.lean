@@ -405,6 +405,11 @@ theorem intBin_signMagnitude :
       (encPair encBool encNat) encIntBin :=
   .of_tidy ComputableTidilyInPolyTime.intBin_signMagnitude
 
+/-- The sum of a list of binary integers. -/
+@[fun_prop]
+theorem intBin_sum : ComputableInPolyTime List.sum (encList encIntBin) encIntBin :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_sum
+
 /-- The product of a list of binary integers. -/
 @[fun_prop]
 theorem intBin_prod : ComputableInPolyTime List.prod (encList encIntBin) encIntBin :=

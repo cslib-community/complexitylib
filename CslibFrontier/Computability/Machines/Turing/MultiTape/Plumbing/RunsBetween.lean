@@ -350,6 +350,17 @@ private lemma step_check (d : Cfg k Symbol Unit input) :
   refine Cfg.ext ?_ ?_ ?_ ?_ ?_ <;>
     simp [whileCond, Action.apply, Cfg.withState]
 
+/-- The step that reads the condition keeps the work-tape heads in place, so it visits at most
+`k` cells. -/
+private lemma space_one_check (d : Cfg k Symbol Unit input) :
+    (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm) (d.withState (some .check))
+      1).space ≤ k := by
+  refine space_le_of_workTapePos_const _ 1 fun m hm => ?_
+  rcases (by omega : m = 0 ∨ m = 1) with rfl | rfl
+  · rfl
+  · rw [runFrom_one, step_check]
+    rfl
+
 /-- One round: from `check` with the condition holding, the loop runs `tm` and is back in
 `check`. -/
 private lemma exists_round {d d' : Cfg k Symbol Unit input} {t s : ℕ}
@@ -370,20 +381,13 @@ private lemma exists_round {d d' : Cfg k Symbol Unit input} {t s : ℕ}
     rw [runFrom_add, runFrom_one, hstart, runFrom_runCfg hhalt le_rfl, ← hhalt.runFrom_eq hu, h.1]
     rfl
   refine ⟨u, hu, by rw [Nat.add_comm]; exact hrun, ?_⟩
-  have h1 : (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm) (d.withState (some .check))
-      1).space ≤ k := by
-    refine space_le_of_workTapePos_const _ 1 fun m hm => ?_
-    rcases (by omega : m = 0 ∨ m = 1) with rfl | rfl
-    · rfl
-    · rw [runFrom_one, step_check]
-      rfl
   have h2 : (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm)
       ((whileCond c tm).runFrom (d.withState (some .check)) 1) u).space ≤ s := by
     rw [runFrom_one, hstart, space_eq_of_workTapePos (tm' := tm) _ (d.withState (some tm.q₀)) u
       fun m hm => by rw [runFrom_runCfg hhalt hm]; rfl]
     exact (space_mono tm _ hu).trans h.2
   have := (space_add_le (tm := whileCond c tm) (d.withState (some .check)) 1 u).trans
-    (Nat.add_le_add h1 h2)
+    (Nat.add_le_add (space_one_check d) h2)
   omega
 
 end RunsBetweenWhileCond
@@ -425,13 +429,8 @@ theorem runsBetween_whileCond {c : Option Symbol → (Fin k → Option Symbol) �
   have hhalt : ((whileCond c tm).runFrom start (τ + 1)).state = none := by rw [hfinal]; rfl
   refine ⟨by rw [runFrom_eq_of_halt _ _ (by lia) hhalt, hfinal], ?_⟩
   rw [space_eq_of_halt _ (by lia) hhalt]
-  have h1 : (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm)
-      ((whileCond c tm).runFrom start τ) 1).space ≤ k := by
-    refine space_le_of_workTapePos_const _ 1 fun m hm => ?_
-    rcases (by omega : m = 0 ∨ m = 1) with rfl | rfl
-    · rfl
-    · rw [hrun, runFrom_one, step_check]
-      rfl
+  have h1 := space_one_check (c := c) (tm := tm) (cfg n)
+  rw [← hrun] at h1
   have := (space_add_le (tm := whileCond c tm) start τ 1).trans (Nat.add_le_add hsp h1)
   omega
 

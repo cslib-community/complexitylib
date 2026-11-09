@@ -19,13 +19,17 @@ within some number `T` of instructions such that `Q y T`. It is the weakest-prec
 `Cslib.WordRAM.ExecWithin`: its rules run backwards through a program, one instruction at a time,
 and hand the rest of the program the data in closed form. A goal `∃ y, ExecWithin w c x y T ∧ P y`
 is the special case `WP w c x fun y t => t ≤ T ∧ P y` (`Cslib.WordRAM.WP.exists_execWithin`).
+`Cslib.WordRAM.WP.Exact` is the same form of `Cslib.WordRAM.Exec`, for specifications that state
+the exact instruction count: `∃ y, Exec w c x y T ∧ P y` is `WP.Exact w c x fun y t => t = T ∧ P y`,
+and its rules have the same names and premises.
 
 The tactic `wram_exec` applies these rules along the syntax of the program. It is meant for the
 straight-line glue of correctness proofs, between loops and calls of subprograms with their own
 specifications: it executes data instructions and conditionals, and stops at a loop, at a random
 sample and at a program given by name, leaving the goal `WP w c y Q` with the data `y` reached.
 `Cslib.WordRAM.WP.of_execWithin` then continues from a specification of `c`, and `wram_exec`
-resumes on the remaining program.
+resumes on the remaining program; on a `WP.Exact` goal, `Cslib.WordRAM.WP.Exact.of_exec` continues
+from an exact specification.
 
 The registers and memory cells an instruction reads are simplified as it executes, with the simp
 set `wram_simps`. Reads after `Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce by
@@ -60,6 +64,7 @@ a program.
 ## Main definitions
 
 * `Cslib.WordRAM.WP`: the weakest-precondition form of `ExecWithin`.
+* `Cslib.WordRAM.WP.Exact`: the weakest-precondition form of `Exec`, with exact counts.
 * `wram_exec`: symbolic execution of the straight-line parts of structured code.
 * `wram_simp`: reads of registers and memory after writes, with the simp set of `wram_exec`.
 * `wram_bounded`: word-sizedness of data built by writes.
@@ -77,6 +82,9 @@ a program.
   before the rest of a program.
 * `Cslib.WordRAM.WP.bounded`: the data reached from word-sized data is word-sized.
 * `Cslib.WordRAM.WP.name`: a name for the data reached, at a stop.
+* `Cslib.WordRAM.WP.Exact.exists_exec`, `Cslib.WordRAM.WP.Exact.exec`: back to `Exec`; the rules
+  `Cslib.WordRAM.WP.Exact.seq`, `Cslib.WordRAM.WP.Exact.const`, … are those of `WP`, and
+  `Cslib.WordRAM.WP.Exact.toWP` weakens an exact count to a bound.
 -/
 
 @[expose] public section
@@ -276,6 +284,153 @@ theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r}
 end Ops
 
 end WP
+
+/-! ## Exact instruction counts -/
+
+/-- `WP.Exact w c x Q`: at word size `w`, the structured program `c` leads from data `x` to some
+data `y` in exactly some number `T` of instructions such that `Q y T`. It is the
+weakest-precondition form of `Cslib.WordRAM.Exec`, with the same rules as `Cslib.WordRAM.WP`; a
+goal `∃ y, Exec w c x y T ∧ P y` is the special case `WP.Exact w c x fun y t => t = T ∧ P y`. -/
+def WP.Exact (w : ℕ) (c : Code B r) (x : Data r) (Q : Data r → ℕ → Prop) : Prop :=
+  ∃ y T, Exec w c x y T ∧ Q y T
+
+namespace WP.Exact
+
+variable {w : ℕ} {c c₁ c₂ pos neg : Code B r} {cond : Cond r} {x y : Data r} {T : ℕ}
+  {Q Q' : Data r → ℕ → Prop}
+
+/-- Continue from an execution of `c` in exactly `T` instructions. -/
+theorem of_exec (h : Exec w c x y T) (hQ : Q y T) : WP.Exact w c x Q := ⟨y, T, h, hQ⟩
+
+/-- Weaken the postcondition. -/
+theorem mono (h : WP.Exact w c x Q) (hQ : ∀ y T, Q y T → Q' y T) : WP.Exact w c x Q' :=
+  let ⟨y, T, he, hy⟩ := h
+  ⟨y, T, he, hQ y T hy⟩
+
+/-- An exact count is in particular a bound. -/
+theorem toWP (h : WP.Exact w c x Q) : WP w c x Q :=
+  let ⟨y, T, he, hy⟩ := h
+  ⟨y, T, ⟨T, le_rfl, he⟩, hy⟩
+
+/-- Name the data reached: continue from a variable `y` with the equation `y = x`. -/
+theorem name (h : ∀ y, y = x → WP.Exact w c y Q) : WP.Exact w c x Q := h x rfl
+
+/-- Executions from word-sized data reach word-sized data, so the postcondition may assume it. -/
+theorem bounded (hx : x.Bounded w) (h : WP.Exact w c x fun y T => y.Bounded w → Q y T) :
+    WP.Exact w c x Q :=
+  let ⟨y, T, he, hy⟩ := h
+  ⟨y, T, he, hy (he.bounded hx)⟩
+
+/-- A run in exactly `T` instructions reaching data with property `P`. -/
+theorem exists_exec {P : Data r → Prop} (h : WP.Exact w c x fun y t => t = T ∧ P y) :
+    ∃ y, Exec w c x y T ∧ P y :=
+  let ⟨y, _, he, ht, hy⟩ := h
+  ⟨y, ht ▸ he, hy⟩
+
+/-- A run in exactly `T` instructions reaching the given data `y`. -/
+theorem exec (h : WP.Exact w c x fun y' t => t = T ∧ y' = y) : Exec w c x y T :=
+  let ⟨_, _, he, ht, hy⟩ := h
+  hy ▸ ht ▸ he
+
+/-- Run `c₁`, then `c₂` from the data it reaches, adding the instruction counts, the count of `c₁`
+last, as in `WP.seq`. -/
+theorem seq (h : WP.Exact w c₁ x fun y T₁ => WP.Exact w c₂ y fun z T₂ => Q z (T₂ + T₁)) :
+    WP.Exact w (.seq c₁ c₂) x Q :=
+  let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
+  ⟨_, T₁ + T₂, he₁.seq he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
+
+/-- Run `c` to data satisfying an intermediate assertion `R`, and continue from any such data. -/
+theorem cut (R : Data r → ℕ → Prop) (h : WP.Exact w c x R) (hR : ∀ y T, R y T → Q y T) :
+    WP.Exact w c x Q :=
+  h.mono hR
+
+/-- A conditional, by cases on its condition. -/
+theorem branch (hpos : cond.Holds x → WP.Exact w pos x fun y T => Q y (T + 1))
+    (hneg : ¬cond.Holds x → WP.Exact w neg x fun y T => Q y (T + 2)) :
+    WP.Exact w (.branch cond pos neg) x Q := by
+  by_cases hc : cond.Holds x
+  · obtain ⟨y, T, he, hy⟩ := hpos hc
+    exact ⟨y, T + 1, .branch_pos hc he, hy⟩
+  · obtain ⟨y, T, he, hy⟩ := hneg hc
+    exact ⟨y, T + 2, .branch_neg hc he, hy⟩
+
+/-- A conditional on `x.regs i < x.regs j`, with the compared values in closed form. -/
+theorem branch_lt {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j = b)
+    (hpos : a < b → WP.Exact w pos x fun y T => Q y (T + 1))
+    (hneg : ¬a < b → WP.Exact w neg x fun y T => Q y (T + 2)) :
+    WP.Exact w (.branch (.lt i j) pos neg) x Q :=
+  branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
+
+/-- A conditional on `x.regs i = x.regs j`, with the compared values in closed form. -/
+theorem branch_eq {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j = b)
+    (hpos : a = b → WP.Exact w pos x fun y T => Q y (T + 1))
+    (hneg : ¬a = b → WP.Exact w neg x fun y T => Q y (T + 2)) :
+    WP.Exact w (.branch (.eq i j) pos neg) x Q :=
+  branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
+
+section Ops
+
+variable {d s a i j : Fin r} {u v b' : ℕ}
+
+/-- Setting register `d` to a fitting constant `v`. -/
+theorem const (hfit : Fits w v) (h : Q (x.set d v) 1) :
+    WP.Exact (B := B) w (.op (.const d v)) x Q :=
+  of_exec (Exec.const hfit) h
+
+/-- Copying register `s`, which holds `v`, into register `d`. -/
+theorem copy (hs : x.regs s = v) (h : Q (x.set d v) 1) :
+    WP.Exact (B := B) w (.op (.copy d s)) x Q :=
+  of_exec Exec.copy (hs ▸ h)
+
+/-- Loading the memory cell at address `u`, held by register `a`, into register `d`. -/
+theorem load (ha : x.regs a = u) (hv : x.mem u = v) (h : Q (x.set d v) 1) :
+    WP.Exact (B := B) w (.op (.load d a)) x Q :=
+  of_exec Exec.load (ha ▸ hv ▸ h)
+
+/-- Storing register `s`, which holds `v`, at address `u`, held by register `a`. -/
+theorem store (ha : x.regs a = u) (hs : x.regs s = v) (h : Q (x.write u v) 1) :
+    WP.Exact (B := B) w (.op (.store a s)) x Q :=
+  of_exec Exec.store (ha ▸ hs ▸ h)
+
+/-- A standard binary operation on registers holding `u` and `b'`, with fitting value `v`. -/
+theorem bin {f : BinOp} (hi : x.regs i = u) (hj : x.regs j = b') (hv : f.eval u b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.bin f d i j)) x Q :=
+  of_exec (Exec.bin (hi ▸ hj ▸ hv ▸ hfit)) (hi ▸ hj ▸ hv ▸ h)
+
+/-- Reading the word size into register `d`. -/
+theorem width (h : Q (x.set d w) 1) : WP.Exact w (.op (.width d)) x Q :=
+  of_exec Exec.width h
+
+/-- An exact binary operation on registers holding `u` and `b'`, defined with fitting value `v`. -/
+theorem exactBin {f : BinOp} (hi : x.regs i = u) (hj : x.regs j = b')
+    (hv : f.evalExact u b' = some v) (hfit : Fits w v) (h : Q (x.set d v) 1) :
+    WP.Exact w (.op (.exactBin f d i j)) x Q :=
+  of_exec (Exec.op (by
+    rw [Op.eval_exactBin, hi, hj, hv, Option.bind_some]
+    exact Data.put_of_fits hfit)) h
+
+/-- An exact subtraction `u - b'`, defined since `b' ≤ u`. -/
+theorem exactSub (hi : x.regs i = u) (hj : x.regs j = b') (hle : b' ≤ u) (hv : u - b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.exactBin .sub d i j)) x Q :=
+  exactBin hi hj (by simp only [BinOp.evalExact, hle, ↓reduceIte, hv]) hfit h
+
+/-- An exact division `u / b'`, defined since `b' ≠ 0`. -/
+theorem exactDiv (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : u / b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.exactBin .div d i j)) x Q :=
+  exactBin hi hj (by simp only [BinOp.evalExact, hb, ↓reduceIte, hv]) hfit h
+
+/-- An exact remainder `u % b'`, defined since `b' ≠ 0`. -/
+theorem exactMod (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : u % b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.exactBin .mod d i j)) x Q :=
+  exactBin hi hj (by simp only [BinOp.evalExact, hb, ↓reduceIte, hv]) hfit h
+
+/-- Reading the word size into register `d`, over the exact basis. -/
+theorem exactWidth (h : Q (x.set d w) 1) : WP.Exact w (.op (.exactWidth d)) x Q :=
+  of_exec (Exec.op (Op.eval_exactWidth w d x)) h
+
+end Ops
+
+end WP.Exact
 
 /-! ## The tactic
 
@@ -632,27 +787,34 @@ meta def opRule? (o : Expr) : Option Name :=
     | _ => some ``WP.exactBin
   | _ => none
 
+/-- The rule of `WP.Exact` with the same name as the rule `rule` of `WP`. -/
+private meta def exactRule (rule : Name) : Name :=
+  .str ``WP.Exact rule.getString!
+
 mutual
 
-/-- Execute the program of the goal `g : WP w c x Q` instruction by instruction, and return the
-goals where execution stops: `Q y T` at the end of the program, and `WP w c' y Q'` at a loop, a
-random sample or a program given by name. -/
+/-- Execute the program of the goal `g : WP w c x Q`, or `g : WP.Exact w c x Q`, instruction by
+instruction, and return the goals where execution stops: `Q y T` at the end of the program, and
+`WP w c' y Q'` (respectively `WP.Exact w c' y Q'`) at a loop, a random sample or a program given by
+name. -/
 meta partial def walk (cfg : Config) (g : MVarId) : TacticM (Array MVarId) := g.withContext do
   let tgt := headBetaAll (← instantiateMVars (← g.getType))
   let g ← g.replaceTargetDefEq tgt
   let tgt := tgt.consumeMData
-  unless tgt.isAppOfArity ``WP 6 do return #[g]
+  let exact := tgt.isAppOfArity ``WP.Exact 6
+  unless exact || tgt.isAppOfArity ``WP 6 do return #[g]
+  let rule (r : Name) := if exact then exactRule r else r
   let code ← whnfR (tgt.getArg! 3)
   match code.getAppFn.constName? with
-  | some ``Code.seq => step cfg g ``WP.seq
+  | some ``Code.seq => step cfg g (rule ``WP.seq)
   | some ``Code.op =>
     match opRule? (code.getArg! 2) with
-    | some rule => step cfg g rule
+    | some r => step cfg g (rule r)
     | none => return #[g]
   | some ``Code.branch =>
     match (code.getArg! 2).getAppFn.constName? with
-    | some ``Cond.lt => branch cfg g ``WP.branch_lt
-    | some ``Cond.eq => branch cfg g ``WP.branch_eq
+    | some ``Cond.lt => branch cfg g (rule ``WP.branch_lt)
+    | some ``Cond.eq => branch cfg g (rule ``WP.branch_eq)
     | _ => return #[g]
   | _ => return #[g]
 
@@ -720,33 +882,39 @@ meta partial def branch (cfg : Config) (g : MVarId) (rule : Name) : TacticM (Arr
 end
 
 /-- Turn a goal `∃ y, ExecWithin w c x y T ∧ P y`, `ExecWithin w c x y T` or
-`∃ y T, ExecWithin w c x y T ∧ Q y T` into a `WP` goal. Returns the new goal, and whether its
-postcondition states the data reached, `t ≤ T ∧ y' = y`. -/
-meta def toWP (g : MVarId) : MetaM (MVarId × Bool) := g.withContext do
+`∃ y T, ExecWithin w c x y T ∧ Q y T` into a `WP` goal, and the same goals with `Exec` into a
+`WP.Exact` goal. Returns the new goal, whether its postcondition states the data reached,
+`t ≤ T ∧ y' = y` (respectively `t = T ∧ y' = y`), and whether it counts instructions exactly. -/
+meta def toWP (g : MVarId) : MetaM (MVarId × Bool × Bool) := g.withContext do
   let tgt := (headBetaAll (← instantiateMVars (← g.getType))).consumeMData
-  if tgt.isAppOfArity ``WP 6 then return (g, false)
+  if tgt.isAppOfArity ``WP 6 then return (g, false, false)
+  if tgt.isAppOfArity ``WP.Exact 6 then return (g, false, true)
   let s ← saveState
-  for (rule, eq) in [(``WP.exists_execWithin, false), (``WP.execWithin, true)] do
+  for (rule, eq, exact) in [(``WP.exists_execWithin, false, false), (``WP.execWithin, true, false),
+      (``WP.Exact.exists_exec, false, true), (``WP.Exact.exec, true, true)] do
     try
       let [g'] ← g.apply (← mkConstWithFreshMVarLevels rule) | failure
-      return (g', eq)
+      return (g', eq, exact)
     catch _ => s.restore
-  let wp ← mkConstWithFreshMVarLevels ``WP
-  let (args, _, _) ← forallMetaTelescope (← inferType wp)
-  let e := mkAppN wp args
-  if ← isDefEq e tgt then return (← g.replaceTargetDefEq (← instantiateMVars e), false)
-  s.restore
+  for (pred, exact) in [(``WP, false), (``WP.Exact, true)] do
+    let wp ← mkConstWithFreshMVarLevels pred
+    let (args, _, _) ← forallMetaTelescope (← inferType wp)
+    let e := mkAppN wp args
+    if ← isDefEq e tgt then return (← g.replaceTargetDefEq (← instantiateMVars e), false, exact)
+    s.restore
   throwError "wram_exec: expected a goal `WP w c x Q`, `∃ y, ExecWithin w c x y T ∧ P y`, \
-    `ExecWithin w c x y T` or `∃ y T, ExecWithin w c x y T ∧ Q y T`, got{indentExpr tgt}"
+    `ExecWithin w c x y T` or `∃ y T, ExecWithin w c x y T ∧ Q y T`, or one of these with `Exec` \
+    and `WP.Exact`, got{indentExpr tgt}"
 
-/-- At the end of a program, prove a leading instruction bound `t ≤ T` of the postcondition by
-`omega`, and leave the rest, unless `eq` and it is an equation between data closed by reducible
-`rfl`. -/
-meta def closeBound (cfg : Config) (eq : Bool) (g : MVarId) : TacticM (Option MVarId) :=
+/-- At the end of a program, prove a leading instruction bound `t ≤ T` of the postcondition, or an
+instruction count `t = T` if `exact`, by `omega`, and leave the rest, unless `eq` and it is an
+equation between data closed by reducible `rfl`. -/
+meta def closeBound (cfg : Config) (eq exact : Bool) (g : MVarId) : TacticM (Option MVarId) :=
     g.withContext do
   let tgt := (← instantiateMVars (← g.getType)).consumeMData
   let some (A, B) := tgt.and? | return some g
-  unless A.isAppOfArity ``LE.le 4 do return some g
+  let count := exact && A.isAppOfArity ``Eq 3 && (A.getArg! 0).isConstOf ``Nat
+  unless A.isAppOfArity ``LE.le 4 || count do return some g
   let some prf := (← tryProve cfg (closesWith (← `(tactic| omega))) A).1 | return some g
   let g' ← mkFreshExprSyntheticOpaqueMVar B (← g.getTag)
   g.assign (← mkAppM ``And.intro #[prf, g'])
@@ -844,6 +1012,11 @@ it can. It stops at a loop, a random sample or a program given by name, leaving 
 continue with `refine WP.of_execWithin h ?_` from a specification `h` of `c'`, then `wram_exec`
 again. Unfold programs given by name to execute them instead.
 
+On the exact-count goals `∃ y, Exec w c x y T ∧ P y`, `Exec w c x y T` and
+`Cslib.WordRAM.WP.Exact w c x Q` it works the same way with the rules of `WP.Exact`: the count
+`t = T` is closed by `omega` when it can, and `refine WP.Exact.of_exec h ?_` continues from an
+exact specification `h` at a stop.
+
 * `wram_exec [h₁, h₂]` adds simp lemmas for the values read, typically the contents of the
   registers of `x`, such as `x.regs zeroP = 0`, and the memory cells it reads.
 * `wram_exec (disch := tac)` sets the discharger, by default `fits` on a word-size bound and
@@ -913,14 +1086,14 @@ elab_rules : tactic
       let sideGoals ← IO.mkRef #[]
       let steps ← IO.mkRef 0
       let cfg : WP.Exec.Config := { ctx, simprocs, simpDischarge, disch, sideGoals, steps, split }
-      let (g, eq) ← WP.Exec.toWP (← getMainGoal)
+      let (g, eq, exact) ← WP.Exec.toWP (← getMainGoal)
       let mains ← WP.Exec.walk cfg g
       if (← cfg.steps.get) == 0 then
         let tgt ← instantiateMVars (← g.getType)
         throwError "wram_exec: nothing to execute in{indentExpr tgt}\nThe program starts with a \
           loop, a random sample or a program given by name. Apply its specification with \
           `WP.of_execWithin`, or unfold it."
-      let mains ← mains.filterMapM (WP.Exec.closeBound cfg eq)
+      let mains ← mains.filterMapM (WP.Exec.closeBound cfg eq exact)
       replaceMainGoal (mains ++ (← cfg.sideGoals.get)).toList
 
 end Cslib.WordRAM

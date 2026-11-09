@@ -564,8 +564,7 @@ theorem run_interpret_micaliMemoize [DecidableEq α] (V : PCPVerifier α) (σ m 
           (.inl msg) h]
       change (((BitString.uniformList σ).map (fun v => (v, (msg, v) :: tr_MT))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, micaliOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with
@@ -587,8 +586,7 @@ theorem run_interpret_micaliMemoize [DecidableEq α] (V : PCPVerifier α) (σ m 
       change (((ProbComp.eval (kilianChallenges V m x)).map
         (fun v => (v, ((x, rt), v) :: tr_FS))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, micaliOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with

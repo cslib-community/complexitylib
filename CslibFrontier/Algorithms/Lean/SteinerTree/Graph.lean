@@ -275,8 +275,7 @@ completion. -/
 theorem kmbEdges_eq {P : ∀ u v : V, G.Walk u v} (hP : IsShortestWalkOracle w G P) (R : List V) :
     kmbEdges w P R = expandEdges P (steinerMST (metricCompletion w G) R) := by
   unfold kmbEdges
-  congr 2
-  funext u v
+  congr 2 with u v : 2
   exact hP.walkWeight_eq u v
 
 /-- The heuristic returns a Steiner subgraph. -/

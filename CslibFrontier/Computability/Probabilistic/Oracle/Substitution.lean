@@ -74,7 +74,7 @@ be computable. One invariant must hold for every possible handler result under e
 oracle. External replies to the handler need no length bound. -/
 theorem IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded
     {Operation External α β Caller State : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
     {program : α → WordOracleComp Operation β}
@@ -147,7 +147,7 @@ bounds each reply and the added encoded state; one invariant must hold for every
 result under every external oracle. External replies to the handler need no length bound. -/
 theorem IsOraclePPTOn.run_interpret_preprocess_open
     {Operation External α β Caller State : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
     {program : α → WordOracleComp Operation β}
@@ -181,7 +181,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
 preparation, initial state and resource allowance. -/
 theorem IsOraclePPTOn.run_interpret_preprocess_open'
     {Operation External α β Caller State : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
     {program : α → WordOracleComp Operation β}
@@ -215,7 +215,7 @@ back to the original program. This specializes stateful substitution to `Unit`; 
 oracle may still be stateful and return arbitrarily long answers. -/
 theorem IsOraclePPTOn.interpret_preprocess_open'
     {Operation External α β Caller : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool}
     {program : α → WordOracleComp Operation β}

@@ -180,7 +180,7 @@ private theorem sum_link_games (E : Scheme) (depth capacity : ℕ → ℕ)
       simp only [dite_eq_left_of_eq_true (eq_true hpos), bind_assoc, ProbComp.eval_bind,
         ProbComp.eval_uniform]
       rw [PMF.bind_comm]
-      congr 1; funext i
+      congr 1 with i : 1
       rw [PMF.bind_comm]
       rfl
     rw [hlaw, Game.succProbability_uniform]

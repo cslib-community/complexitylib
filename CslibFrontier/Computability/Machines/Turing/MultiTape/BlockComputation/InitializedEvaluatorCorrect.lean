@@ -110,7 +110,7 @@ theorem length_runFrom_entry_le [Finite Q]
   · have hbound : (Initializer.encState ((Initializer.machine k).runFrom w
         (Initializer.prepare k s args) t)).length ≤
         Initializer.space k ((Initializer.prepare k s args).1) :=
-      Initializer.length_runFrom_prepare_le k s args w t hinit
+      Initializer.length_runFrom_prepare_le k s args w t
     rw [runFrom_initializer_prefix M e args w t hinit]
     change (Initializer.encState ((Initializer.machine k).runFrom w
       (Initializer.prepare k s args) t)).length + 1 ≤ _

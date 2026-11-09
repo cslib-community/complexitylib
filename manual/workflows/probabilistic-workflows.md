@@ -98,7 +98,7 @@ outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its pr
 `n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
 has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
 `expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
-`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+`tendsto_run_none_of_generates` shows that every generator of a `PMF` distribution halts almost
 surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
 (`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
 `ProbComp`; its `eval` is `T.run n`.
@@ -375,7 +375,11 @@ degree of a determinant of polynomials. Use them for other symbolic-determinant 
 module has two consequences. `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card` finds a
 nonvanishing point of `S ^ σ` when the total degree is below `|S|`; the `exists_det_…_ne_zero`
 theorems use it. `MvPolynomial.card_filter_eval_eq_zero_mul_card_le` is the counting form over a
-finite domain, `#zeros * q ≤ d * q ^ n`.
+finite domain, `#zeros * q ≤ d * q ^ n`. For one variable under a uniform `PMF`,
+[PMF/PolynomialAgreement.lean](../../CslibFrontier/Probability/PMF/PolynomialAgreement.lean) has
+`Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_eval_eq`: two distinct polynomials of
+degree at most `d` agree at a uniform point with probability at most `d / |R|`. The round
+soundness proofs of the sum-check and GKR protocols use it.
 
 The [checked clients](../../CslibFrontierTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is

@@ -291,8 +291,8 @@ theorem eufCMA_toSignatureScheme_leakNonNScheme {S : SignatureScheme} (hS : S.EU
       WordSignatureScheme.toSignatureScheme_signingOracle,
       WordSignatureScheme.toSignatureScheme_verify, leakNonNScheme, wrapped, ProbComp.eval_bind,
       ProbComp.eval_map, ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
-    congr 1; funext keys
-    congr 1; funext out
+    congr 1 with keys : 1
+    congr 1 with out : 1
     simp only [TCRSignature.keyDecoder.decode_enc]
     cases out.1.1.length == n <;> simp
   simpa only [heq] using hS.negligible wrapped hwrapped

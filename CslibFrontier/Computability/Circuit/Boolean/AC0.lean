@@ -111,8 +111,7 @@ theorem eval_binCircuit (op : Op) (h : op.arity = 2) (C D : Circuit σ n 1) (x :
       interpretation op fun a => ![C.eval I x 0, D.eval I x 0] (Fin.cast h a) := by
   rw [binCircuit, Circuit.eval_comp, Circuit.eval_mapOp (I := interpretation),
     Circuit.eval_oneGate, Circuit.eval_append]
-  congr 1
-  funext a
+  congr 1 with a : 1
   refine Fin.cases ?_ (fun b => ?_) (Fin.cast h a)
   · exact Fin.append_left _ _ 0
   · rw [Subsingleton.elim b 0]
