@@ -1,6 +1,6 @@
 # Diagnose proof and build failures
 
-First identify the failed layer: elaboration, a mathematical obligation, certificate search, or the build environment. A tactic timeout does not identify which definition is wrong; a missing compiled import does not refute a theorem. Reduce the failure to the smallest relevant client before changing the interface. [complexitylib][complexitylib]
+First identify the failed layer: elaboration, a mathematical obligation, certificate search, or the build environment. A tactic timeout does not identify which definition is wrong; a missing compiled import does not refute a theorem. Reduce the failure to the smallest relevant client before changing the interface. [cslib-frontier][complexitylib]
 
 ## Read the remaining goal
 

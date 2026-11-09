@@ -43,7 +43,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: python3 -B scripts/cache/get_mathlib.py --lean-action
-      - name: Restore missing Complexitylib build outputs
+      - name: Restore missing cslib-frontier build outputs
         continue-on-error: true
         timeout-minutes: 10
         run: scripts/cache/get-missing.sh

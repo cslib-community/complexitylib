@@ -1,6 +1,6 @@
 # Algorithms, memory, and data structures
 
-This part of Complexitylib contains several machine models and a separate family of specification and resource interfaces. Unbounded natural RAM, generic partial-operation RAM, exact algebraic RAM, bounded Word-RAM and randomized Word-RAM do not have interchangeable costs. State-transition clients, memory oracles, online strategies and streaming sketches add useful models of interaction but are not automatically machine implementations [complexitylib][complexitylib].
+This part of cslib-frontier contains several machine models and a separate family of specification and resource interfaces. Unbounded natural RAM, generic partial-operation RAM, exact algebraic RAM, bounded Word-RAM and randomized Word-RAM do not have interchangeable costs. State-transition clients, memory oracles, online strategies and streaming sketches add useful models of interaction but are not automatically machine implementations [cslib-frontier][complexitylib].
 
 The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions and representative theorem statements were inspected read-only. No Lean build was performed by this author. The [model map](../model-map.md) links the explanatory pages, which record inspected sources, principal declarations, assumptions, bridges and ownership.
 

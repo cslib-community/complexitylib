@@ -1,6 +1,6 @@
 # Build caches
 
-Complexitylib's build has two caches. Both are optional: `lake build` without them compiles
+cslib-frontier's build has two caches. Both are optional: `lake build` without them compiles
 everything it needs.
 
 **Local artifact cache.** `lakefile.toml` enables Lake's content-addressed artifact cache, so a
@@ -19,7 +19,7 @@ scripts/build.sh --wfail --iofail   # restore caches, then build changed or miss
 A complete set of library and test outputs is about 200 MB compressed (November 2026). Outputs
 are platform independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
 `COMPLEXITYLIB_CACHE_URL` overrides the location; set it to an empty string to skip the
-Complexitylib download. To test MIT first with GCS fallback, use:
+cslib-frontier download. To test MIT first with GCS fallback, use:
 
 ```bash
 COMPLEXITYLIB_CACHE_URLS='https://complexitycache.csail.mit.edu https://storage.googleapis.com/complexitylib-lake-cache' \
@@ -64,7 +64,7 @@ handling that lean-action had (API docs still run lean-action, with its own Math
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
-Complexitylib restore before generation. The Guide workflow restores Lean CI's `.lake` entry from
+cslib-frontier restore before generation. The Guide workflow restores Lean CI's `.lake` entry from
 the Actions cache and then uses the same missing-only restore. Cache failures remain optional;
 installation and validation failures remain strict.
 
@@ -150,7 +150,7 @@ scripts/cache/ensure.sh
 This guidance applies to every agent client. Retry for missing outputs or new toolchain/dependency
 inputs; a new commit or branch switch alone does not require a manual bootstrap when outputs are
 warm. MCP's `lean_build(fetch_cache=true)` only fetches Mathlib's cache, so it does not replace
-Complexitylib cache restoration.
+cslib-frontier cache restoration.
 
 The bootstrap records a completed **attempt**, not a successful cache hit, in
 `.lake/cache-bootstrap/attempt.json`. For ten minutes it skips another attempt with the same

@@ -344,7 +344,7 @@ class LocalManualGateTests(unittest.TestCase):
     write = QuickCheckTests.write
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-gates-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-gates-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         for source in ("scripts/check.sh", "scripts/check_operator_manual.py", "manual/data/visuals.py"):
@@ -394,7 +394,7 @@ class LocalManualGateTests(unittest.TestCase):
                     ["lake", "test", "--wfail", "--iofail"], ["lake", "lint"],
                     ["lake", "exe", "lint-style"], ["lake", "exe", "checkInitImports"]]
                 self.assertEqual(commands[1:], expected)
-                self.assertFalse(list(self.root.glob("complexitylib-check.*")))
+                self.assertFalse(list(self.root.glob("cslib-frontier-check.*")))
                 self.log.unlink()
         bad = self.run_gate("--not-an-option")
         self.assertEqual(bad.returncode, 2)

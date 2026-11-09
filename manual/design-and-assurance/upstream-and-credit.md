@@ -1,12 +1,12 @@
 # Upstream reuse and source credit
 
-Complexitylib's rule is that reusable modules should be upstreamable to CSLib with only `CslibFrontier.` import-path rewriting, with documented exceptions for general mathematics intended for Mathlib and local scaffolding. Namespaces already follow the intended upstream home: `Turing` for the multi-tape machine development and generally `Cslib` elsewhere. This rule constrains API placement and reuse; it does not assert that upstream maintainers have accepted every candidate. [complexitylib][complexitylib]
+cslib-frontier's rule is that reusable modules should be upstreamable to CSLib with only `CslibFrontier.` import-path rewriting, with documented exceptions for general mathematics intended for Mathlib and local scaffolding. Namespaces already follow the intended upstream home: `Turing` for the multi-tape machine development and generally `Cslib` elsewhere. This rule constrains API placement and reuse; it does not assert that upstream maintainers have accepted every candidate. [cslib-frontier][complexitylib]
 
 ## Ownership is recorded in the source
 
 Each module has an upstream marker. At the snapshot, the first marker in each of the 3,896 library files classifies 3,813 as candidates, 60 as vendored, 19 as submitted, three as copied subsets and one as local-only. The three subset strings describe portions of `crei/tidy-universal`; the census preserves them literally rather than forcing them into a newer policy vocabulary. These are source declarations of status at the fixed revision, not live GitHub verification of every upstream PR. [Module census script](../data/census.py)
 
-[`UPSTREAM.md`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/UPSTREAM.md) records the base pin, pending upstream work, local adaptations and relocation decisions. A local copy of unmerged upstream work is permitted only for what the pinned dependency lacks, with original authors and declaration names retained. When the pin incorporates it, the copy should be deleted together with the pin update. Such copies are distinct from original Complexitylib definitions.
+[`UPSTREAM.md`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/UPSTREAM.md) records the base pin, pending upstream work, local adaptations and relocation decisions. A local copy of unmerged upstream work is permitted only for what the pinned dependency lacks, with original authors and declaration names retained. When the pin incorporates it, the copy should be deleted together with the pin update. Such copies are distinct from original cslib-frontier definitions.
 
 ## Contributions and source credit
 

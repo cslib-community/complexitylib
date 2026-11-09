@@ -44,6 +44,6 @@ Before the first supported release the project deliberately avoids accumulating 
 
 Several decisions evolved during rapid development: strengthening nondeterministic space termination, moving from tidy public contracts to plain ones, separating quantifier-free interpretations from first-order projections, revising word-RAM fault/basis conventions, and replacing a prose theorem list with checked abstracts (themselves retired on 2026-11-08 in favor of the results inventory). The pinned source links identify the surveyed snapshot. A history of why these choices changed must use dated issues or transcripts; current documentation alone cannot establish the original motivation. The [case studies](../development-history/case-studies.md) provide that evidence where available.
 
-This architectural account is a synthesis of the inspected interfaces and policies. It is not a claim that every module already follows the preferred design without exceptions. [complexitylib][complexitylib]
+This architectural account is a synthesis of the inspected interfaces and policies. It is not a claim that every module already follows the preferred design without exceptions. [cslib-frontier][complexitylib]
 
 [complexitylib]: ../sources.md#complexitylib

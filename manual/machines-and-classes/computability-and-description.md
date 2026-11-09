@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Other machine bridges](intermediate-and-legacy.md)
 
-This part of the library separates eventual computation from several inequivalent clock conventions. It contains native universal machine descriptions and undecidability theorems, bridges to Mathlib partial recursion, an abstract description-method interface for Kolmogorov complexity, Blum's machine-independent complexity measures over Mathlib's partial-recursive codes, and Radó's busy beaver functions for those codes. These models share binary descriptions but should not be assigned the same notion of elapsed time. [complexitylib][complexitylib]
+This part of the library separates eventual computation from several inequivalent clock conventions. It contains native universal machine descriptions and undecidability theorems, bridges to Mathlib partial recursion, an abstract description-method interface for Kolmogorov complexity, Blum's machine-independent complexity measures over Mathlib's partial-recursive codes, and Radó's busy beaver functions for those codes. These models share binary descriptions but should not be assigned the same notion of elapsed time. [cslib-frontier][complexitylib]
 
 ## Native descriptions, universality, and total computability
 

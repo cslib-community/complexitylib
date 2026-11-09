@@ -1,6 +1,6 @@
 # Finite-model logic and native complexity
 
-The descriptive-complexity development uses Mathlib first-order syntax and semantics, then adds finite encodings, interpretations and scoped relation operators. The main bridges concern **data complexity**: a sentence is fixed while its finite input structure varies. The number of variables and nesting depth of that sentence may affect the polynomial or logspace constants. [complexitylib][complexitylib]
+The descriptive-complexity development uses Mathlib first-order syntax and semantics, then adds finite encodings, interpretations and scoped relation operators. The main bridges concern **data complexity**: a sentence is fixed while its finite input structure varies. The number of variables and nesting depth of that sentence may affect the polynomial or logspace constants. [cslib-frontier][complexitylib]
 
 ## Structures, encodings and formulas
 

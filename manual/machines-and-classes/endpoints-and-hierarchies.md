@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Native contracts](native-and-resources.md) · [Verifier models](verifiers-counting-interaction.md)
 
-The table selects substantial results demonstrating how the models connect. It is not a count of every theorem. Each result below is a declaration at the fixed snapshot; statement inspection is distinct from rechecking its entire proof or compiling it in this research pass. [complexitylib][complexitylib]
+The table selects substantial results demonstrating how the models connect. It is not a count of every theorem. Each result below is a declaration at the fixed snapshot; statement inspection is distinct from rechecking its entire proof or compiling it in this research pass. [cslib-frontier][complexitylib]
 
 
 The [native exact-counting chapter](native-counting.md) separately treats the fixed-width CNF counter and its SAT/ETH/SETH consequences, including the primary-manuscript mapping and the scope of this review.
@@ -39,7 +39,7 @@ Shamir's paper establishes the IP/PSPACE characterization; the library reaches i
 
 Toda's original paper establishes PH containment in randomized parity and polynomial-time reducibility to PP. The library's headline takes the standard counting-oracle form and implements one selected output bit of a #P function. These are related formulations; the exact formal oracle interface and off-encoding quantifiers are part of the library statement. The publisher's original abstract was checked; no claim is made that every intermediate formal lemma was matched to a numbered original lemma. [toda1991][toda1991]
 
-Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. Complexitylib combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
+Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. cslib-frontier combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
 
 ## Deterministic time in square-root space
 

@@ -1,6 +1,6 @@
 # Proof automation and client interfaces
 
-The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [complexitylib][complexitylib]
+The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [cslib-frontier][complexitylib]
 
 ## Assemble joint time and space bounds
 

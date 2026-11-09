@@ -1,6 +1,6 @@
 # Roadmap
 
-The directions Complexitylib aims to cover, grouped by area.
+The directions cslib-frontier aims to cover, grouped by area.
 This file lists directions only: status, progress and completion notes live on the linked issues and pull requests, module docstrings describe what is proved, and the [results inventory](results/README.md) collects completed named results.
 A PR edits this file only when it opens or closes a direction.
 Each entry states its direction's scope in at most a few sentences, one sentence per line.
@@ -770,8 +770,8 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 ### OpenAI math results ([#1002](https://github.com/cslib-community/cslib-frontier/issues/1002))
 
 Review Lance Fortnow's [expository rewrites](https://github.com/fortnow/AI-Papers) of the OpenAI math papers and his [TCS catalogue](https://lance.fortnow.com/openai-math-tcs.htm) of the openai/math release, and extract the in-scope results, both headline theorems and minor lemmas useful in their own right.
-Prove each against Complexitylib's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
-The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
+Prove each against cslib-frontier's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
+The openai/math formalizations are Apache 2.0, as is cslib-frontier, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
 
 - **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter running in time `2^{O_k(n log log n / √log n)}` at arbitrary density, by recursive tensor contraction.
   The intended route combines the fixed-density bound `2^{O_{k,D}(n / √log n)}` (Theorem D.1 with `ℓ = 1`) with the Lemma D.2 construction, applied natively to the model-counter interface.

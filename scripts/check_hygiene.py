@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static proof-hygiene and module-template checks for Complexitylib Lean files.
+"""Static proof-hygiene and module-template checks for cslib-frontier Lean files.
 
 Checks enforced by default (see AGENTS.md):
 1. Every module under CslibFrontier/ has a valid standalone `-- upstream:` line comment.

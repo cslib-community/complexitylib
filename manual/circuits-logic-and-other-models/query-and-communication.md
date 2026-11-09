@@ -1,6 +1,6 @@
 # Query and communication complexity
 
-Information-access models isolate the amount of input that an algorithm must inspect or exchange. They deliberately make local computation free. Complexitylib represents the procedures themselves, states correctness predicates, then minimizes a specific cost. The distinction between structural worst-case cost, input-specific cost and expected cost is explicit. [complexitylib][complexitylib]
+Information-access models isolate the amount of input that an algorithm must inspect or exchange. They deliberately make local computation free. cslib-frontier represents the procedures themselves, states correctness predicates, then minimizes a specific cost. The distinction between structural worst-case cost, input-specific cost and expected cost is explicit. [cslib-frontier][complexitylib]
 
 ## Deterministic and randomized queries
 

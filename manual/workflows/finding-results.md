@@ -1,6 +1,6 @@
 # Find and apply a result
 
-Search for the contract you need, then inspect the theorem that provides it. The [model map](../model-map.md) routes unfamiliar terminology to source files; the reference chapters explain the representations. Once the goal is fixed, a nearby checked client is usually a better implementation starting point than the library's umbrella import. [complexitylib][complexitylib]
+Search for the contract you need, then inspect the theorem that provides it. The [model map](../model-map.md) routes unfamiliar terminology to source files; the reference chapters explain the representations. Once the goal is fixed, a nearby checked client is usually a better implementation starting point than the library's umbrella import. [cslib-frontier][complexitylib]
 
 ## Follow a name to its usable statement
 

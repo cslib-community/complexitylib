@@ -1,6 +1,6 @@
 # From the dossier to a paper
 
-The strongest organizing claim is that Complexitylib makes complexity-theoretic models usable through explicit semantic and resource interfaces, and that its development provides a substantial observational case of human-directed automated formalization. The paper should support these two claims separately: source and theorem statements for the first, provenance and development records for the second.
+The strongest organizing claim is that cslib-frontier makes complexity-theoretic models usable through explicit semantic and resource interfaces, and that its development provides a substantial observational case of human-directed automated formalization. The paper should support these two claims separately: source and theorem statements for the first, provenance and development records for the second.
 
 ## Proposed reader path
 

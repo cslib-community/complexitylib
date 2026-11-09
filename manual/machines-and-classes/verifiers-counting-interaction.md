@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Endpoint map](endpoints-and-hierarchies.md)
 
-Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [complexitylib][complexitylib]
+Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [cslib-frontier][complexitylib]
 
 ## Certificates, random seeds, and quantifier alternation
 

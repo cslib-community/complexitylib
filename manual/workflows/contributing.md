@@ -1,6 +1,6 @@
 # Contribute and review
 
-A useful contribution gives the next client a clearer theorem, construction or proof interface. Start with the intended mathematical endpoint and a representative use. For a substantial task, agree scope through an existing issue or a new issue after checking for duplicates. `ROADMAP.md` lists directions; it does not assign ownership or guarantee complete prerequisites. The authoritative [contribution process](../../CONTRIBUTING.md) governs the current checkout. [complexitylib][complexitylib]
+A useful contribution gives the next client a clearer theorem, construction or proof interface. Start with the intended mathematical endpoint and a representative use. For a substantial task, agree scope through an existing issue or a new issue after checking for duplicates. `ROADMAP.md` lists directions; it does not assign ownership or guarantee complete prerequisites. The authoritative [contribution process](../../CONTRIBUTING.md) governs the current checkout. [cslib-frontier][complexitylib]
 
 ## Design the statement before its proof
 

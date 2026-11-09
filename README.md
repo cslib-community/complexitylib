@@ -188,8 +188,9 @@ The renamed historical [pre-CSLib
 implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available with
 archival pending; it has a different API, and some developments remain to be ported. The
 temporary repository and package name `complexitylib2` was retired when this repository moved to
-CSLib Community. Downstream projects using that package name should change it to `complexitylib`;
-Lean imports remain unchanged.
+CSLib Community. With the rename, the Lake package became `cslib-frontier` and the module root
+`CslibFrontier`; downstream projects should require `cslib-frontier` and import
+`CslibFrontier.*` modules. Declaration names did not change.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `CslibFrontier.` to `Cslib.`. Acceptance requires

@@ -1,6 +1,6 @@
 # Metacomplexity and general lower-bound methods
 
-Metacomplexity treats a function's representation or truth table as input and asks about the cost of computing that function. Complexitylib separates total tables, partial tables, sample constraints and promise gaps. Its general lower-bound interfaces then connect concrete circuits to covers, approximation schemes and cryptographic distinguishers. [complexitylib][complexitylib]
+Metacomplexity treats a function's representation or truth table as input and asks about the cost of computing that function. cslib-frontier separates total tables, partial tables, sample constraints and promise gaps. Its general lower-bound interfaces then connect concrete circuits to covers, approximation schemes and cryptographic distinguishers. [cslib-frontier][complexitylib]
 
 ## MCSP variants and encodings
 

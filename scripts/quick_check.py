@@ -234,7 +234,7 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
-    with tempfile.NamedTemporaryFile(prefix="complexitylib-quick-", suffix=".log", delete=False) as log:
+    with tempfile.NamedTemporaryFile(prefix="cslib-frontier-quick-", suffix=".log", delete=False) as log:
         path = Path(log.name)
         try:
             result = subprocess.run(command, cwd=root, stdout=log, stderr=subprocess.STDOUT)

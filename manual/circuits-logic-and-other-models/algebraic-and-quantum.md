@@ -1,6 +1,6 @@
 # Algebraic and quantum models
 
-Algebraic and quantum developments reuse the generic circuit architecture while changing both semantics and what resources are free. Formal polynomial equality, exact rational matrix evaluation and unitary-state evolution are distinct notions of correctness. Their bridges to encoded native computations are explicit developments rather than consequences of using Lean's executable definitions. [complexitylib][complexitylib]
+Algebraic and quantum developments reuse the generic circuit architecture while changing both semantics and what resources are free. Formal polynomial equality, exact rational matrix evaluation and unitary-state evolution are distinct notions of correctness. Their bridges to encoded native computations are explicit developments rather than consequences of using Lean's executable definitions. [cslib-frontier][complexitylib]
 
 ## Arithmetic, affine and full bases
 

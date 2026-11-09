@@ -1,6 +1,6 @@
 # Representative algorithm endpoints and their models
 
-These results are clients of the RAM and specification models, not additional execution models. Several sections describe a result through its curated formal abstract, which restated the actual model, encoding, quantifiers and bounds with a checked bridge to the library. The abstracts were retired on 2026-11-08: their links are pinned to revisions that contain them, and the current statement is the library theorem that the bridge applied. This survey inspected the abstracts' source statements; it did not rerun their audits or render their PDFs [complexitylib][complexitylib].
+These results are clients of the RAM and specification models, not additional execution models. Several sections describe a result through its curated formal abstract, which restated the actual model, encoding, quantifiers and bounds with a checked bridge to the library. The abstracts were retired on 2026-11-08: their links are pinned to revisions that contain them, and the current statement is the library theorem that the bridge applied. This survey inspected the abstracts' source statements; it did not rerun their audits or render their PDFs [cslib-frontier][complexitylib].
 
 ## Sorting and selection
 

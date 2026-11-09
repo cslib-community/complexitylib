@@ -73,7 +73,7 @@ go build -o /tmp/cache-origin .
 ```
 
 The tests use temporary directories and local HTTP servers. No real server, cloud account,
-repository credential, or Complexitylib build is needed. Linux-only source is intentional.
+repository credential, or cslib-frontier build is needed. Linux-only source is intentional.
 The Lean CI workflow also runs these checks and a real loopback nginx HTTPS test. To run that
 test by hand, install nginx, OpenSSL and curl locally, then from the repository root run:
 
@@ -85,7 +85,7 @@ CACHE_ORIGIN_NGINX_TEST=1 CACHE_ORIGIN_BIN=/tmp/cache-origin \
 
 It uses a temporary self-signed certificate and upload password and starts only loopback listeners.
 
-To prepare real bytes, start from a reviewed, clean Complexitylib checkout with its dependencies
+To prepare real bytes, start from a reviewed, clean cslib-frontier checkout with its dependencies
 and toolchain available, and use an absolute scratch directory outside the source checkout:
 
 ```bash

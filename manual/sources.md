@@ -307,7 +307,7 @@ Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein. *In
 <a id="complexitylib"></a>
 ## complexitylib
 
-Complexitylib contributors. *Complexitylib*, source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
+cslib-frontier contributors. *cslib-frontier* (named Complexitylib at this snapshot), source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [Pinned repository](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8). Individual declarations are linked in the text. The repository bibliography records mathematical sources; attribution here reports those source annotations unless independent verification is explicitly stated.
 
 <a id="cook74"></a>
 ## cook74

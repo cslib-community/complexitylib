@@ -1,6 +1,6 @@
 # Native exact counting and the SAT endpoints
 
-The snapshot contains an unconditional native-machine theorem for exact fixed-width CNF counting, followed by the declarations `not_ETH`, `not_SETH`, and `satExponent_eq_zero`. These endpoints exercise the library's encodings, compositional cost calculus, algebraic algorithms, and statement-presentation machinery together. This chapter describes the actual contracts and their source correspondence. It is not an independent audit of every mathematical argument in their implementation. [complexitylib][complexitylib]
+The snapshot contains an unconditional native-machine theorem for exact fixed-width CNF counting, followed by the declarations `not_ETH`, `not_SETH`, and `satExponent_eq_zero`. These endpoints exercise the library's encodings, compositional cost calculus, algebraic algorithms, and statement-presentation machinery together. This chapter describes the actual contracts and their source correspondence. It is not an independent audit of every mathematical argument in their implementation. [cslib-frontier][complexitylib]
 
 Several links below point to the snapshot's curated formal abstract and bridge for this endpoint. The abstracts were retired on 2026-11-08; the current statements are those of [CountingNativeEndpoint.lean](../../CslibFrontier/Computability/Complexity/FineGrained/CountingNativeEndpoint.lean) and [CountingNativeModelCount.lean](../../CslibFrontier/Computability/Complexity/FineGrained/CountingNativeModelCount.lean), which the bridge applied.
 

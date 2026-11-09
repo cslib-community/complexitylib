@@ -1,6 +1,6 @@
 # Homomorphic encryption: models, parameters, and endpoints
 
-The library's FHE statements combine three obligations: distributional encryption security, circuit-level correctness with explicit noise control, and native efficiency of encoded operations. GSW arithmetic alone is not the endpoint: the current snapshot contains the decision-LWE-to-leveled and LWE-plus-circular-security-to-full theorems in [CslibFrontier/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean) [complexitylib][complexitylib].
+The library's FHE statements combine three obligations: distributional encryption security, circuit-level correctness with explicit noise control, and native efficiency of encoded operations. GSW arithmetic alone is not the endpoint: the current snapshot contains the decision-LWE-to-leveled and LWE-plus-circular-security-to-full theorems in [CslibFrontier/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Homomorphic/GSW/FullyHomomorphic.lean) [cslib-frontier][complexitylib].
 
 ## Base scheme and concrete assumptions
 
