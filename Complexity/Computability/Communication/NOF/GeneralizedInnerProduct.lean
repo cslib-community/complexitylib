@@ -195,8 +195,7 @@ private theorem two_mul_le_of_pow_le {k n c : ℕ} (hk : k ≠ 0) {A m : ℝ} (h
   -- `2 ^ (c 2 ^ k) ≤ exp (c 2 ^ k)` and `(A ^ (2 ^ k))⁻¹ ≤ exp (m 2 ^ k)`.
   have htwo : (2 : ℝ) ^ (c * 2 ^ k) ≤ Real.exp (c * 2 ^ k) := by
     have h2 : (2 : ℝ) ≤ Real.exp 1 := by linarith [Real.add_one_le_exp 1]
-    calc (2 : ℝ) ^ (c * 2 ^ k) ≤ Real.exp 1 ^ (c * 2 ^ k) :=
-          pow_le_pow_left₀ zero_le_two h2 _
+    calc (2 : ℝ) ^ (c * 2 ^ k) ≤ Real.exp 1 ^ (c * 2 ^ k) := by gcongr
       _ = Real.exp (c * 2 ^ k) := by
           rw [← Real.exp_nat_mul]
           push_cast

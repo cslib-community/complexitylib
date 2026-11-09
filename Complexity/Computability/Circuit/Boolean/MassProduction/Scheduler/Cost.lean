@@ -71,9 +71,7 @@ private theorem stage1_le (hrk : r * k ≤ 4 * n * W) (hsS : s ≤ S) (hLW : L �
 
 private theorem stage2_le {X Y : ℕ} (hX : X ≤ 6 * n * S * W) (hY : Y ≤ 7 * W) (hLW : L + 2 ≤ W) :
     48 * X * Y ^ 2 * (L + 1 + 1) ≤ 14112 * n * S * W ^ 4 :=
-  calc 48 * X * Y ^ 2 * (L + 1 + 1) ≤ 48 * (6 * n * S * W) * (7 * W) ^ 2 * W :=
-        Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left _ hX) (Nat.pow_le_pow_left hY 2))
-          (by lia)
+  calc 48 * X * Y ^ 2 * (L + 1 + 1) ≤ 48 * (6 * n * S * W) * (7 * W) ^ 2 * W := by gcongr
     _ = 14112 * n * S * W ^ 4 := by ring
 
 private theorem stage4_le (hrk : r * k ≤ 4 * n * W) (hS : S = s + 1) (hW : 1 ≤ W) :
@@ -175,8 +173,7 @@ private theorem stage3_le {D L b s p r : ℕ} (hk : arity p ≤ 2 ^ D)
           Nat.mul_le_mul hsts' (by lia)
       _ = 12 * W ^ 3 * arity d := by ring
   have e2 : (arity d - 1) * (6 * (L + 1) + 1) ≤ 6 * W ^ 3 * arity d :=
-    calc (arity d - 1) * (6 * (L + 1) + 1) ≤ arity d * (6 * W ^ 3) :=
-          Nat.mul_le_mul (Nat.sub_le _ _) (by lia)
+    calc (arity d - 1) * (6 * (L + 1) + 1) ≤ arity d * (6 * W ^ 3) := by gcongr <;> omega
       _ = 6 * W ^ 3 * arity d := by ring
   have e3 : 4 * arity d ≤ 4 * W ^ 3 * arity d := by
     have : 1 ≤ W ^ 3 := Nat.one_le_pow _ _ (by lia)

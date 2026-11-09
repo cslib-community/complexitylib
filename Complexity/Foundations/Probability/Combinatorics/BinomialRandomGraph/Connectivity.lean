@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.MeasureTheory.Constructions.SimpleGraph
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 import Complexity.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
 import Mathlib.Algebra.Order.Field.GeomSum
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -168,10 +169,8 @@ theorem binomialRandom_real_not_connected_le_sum [Fintype V] [Nonempty V] (p : I
 
 /-- `(1 - p) ^ m ≤ exp (-(p m))`. -/
 private theorem one_sub_pow_le_exp (p : I) (m : ℕ) :
-    (1 - p : ℝ) ^ m ≤ Real.exp (-(p * m)) := by
-  have hp0 : (0 : ℝ) ≤ 1 - p := by linarith [unitInterval.le_one p]
-  calc (1 - p : ℝ) ^ m ≤ Real.exp (-p) ^ m := pow_le_pow_left₀ hp0 (Real.one_sub_le_exp_neg _) _
-    _ = Real.exp (-(p * m)) := by rw [← Real.exp_nat_mul]; congr 1; ring
+    (1 - p : ℝ) ^ m ≤ Real.exp (-(p * m)) :=
+  Real.one_sub_pow_le_exp (unitInterval.le_one p) (by rw [mul_comm])
 
 /-- The `k`-th term of the union bound is at most `(n e exp (-(p (n - k))) / k) ^ k`. -/
 private theorem choose_mul_pow_le {n k : ℕ} (hkn : k ≤ n) (p : I) :

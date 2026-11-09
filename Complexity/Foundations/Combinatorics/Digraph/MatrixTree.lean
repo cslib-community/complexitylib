@@ -50,14 +50,18 @@ functions that reach `r` correspond to the in-arborescences rooted at `r`, by `T
 
 * `Digraph.det_laplacian_submatrix_eq_finsum_isInArborescence`: **the directed matrix-tree
   theorem**, weighted form.
+* `Digraph.det_laplacian_submatrix_eq_finsum_reachable`: the same, as a sum over parent
+  functions.
 * `Digraph.det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence`: the directed
   matrix-tree theorem, counting form.
 
 ## References
 
 * [W. T. Tutte, *The dissection of equilateral triangles into equilateral triangles*][Tutte1948]
-  (the directed matrix-tree theorem is attributed to this paper by secondary sources; theorem
-  locator unverified)
+  (Theorem 3.6, according to [Stanley2013], Chapter 10 notes; the primary source was not
+  inspected)
+* [R. P. Stanley, *Topics in Algebraic Combinatorics*][Stanley2013], Theorem 10.4 (the directed
+  matrix-tree theorem for digraphs with parallel arcs and loops)
 -/
 
 public section
@@ -311,6 +315,26 @@ theorem det_laplacian_submatrix_eq_finsum_isInArborescence (A : Matrix V V R) (r
   change _ = ∏ᶠ (p : V × V) (_ : p ∈ {p : V × V | (toDigraph f.1).Adj p.1 p.2}), A p.1 p.2
   rw [setOf_adj_toDigraph, finprod_mem_range (fun a b h => Subtype.ext (congrArg Prod.fst h)),
     finprod_eq_prod_of_fintype]
+
+/-- **The directed matrix-tree theorem**, parent-function form. The determinant of the reduced
+Laplacian is the sum, over the *parent functions* `f` assigning to each vertex `v ≠ r` a vertex
+`f v` such that following `f` leads from every vertex to `r`, of `∏ v, A v (f v)`. -/
+theorem det_laplacian_submatrix_eq_finsum_reachable (A : Matrix V V R) (r : V) :
+    (A.laplacian.submatrix (Subtype.val : {v // v ≠ r} → V) Subtype.val).det =
+      ∑ᶠ (f : {v // v ≠ r} → V)
+        (_ : ∀ v, Relation.ReflTransGen (fun v w => ∃ h : v ≠ r, f ⟨v, h⟩ = w) v r),
+        ∏ i : {v // v ≠ r}, A i (f i) := by
+  classical
+  rw [det_laplacian_submatrix_eq_sum, finsum_eq_sum_of_fintype]
+  refine Finset.sum_congr rfl fun f _ => ?_
+  rw [finsum_eq_if]
+  have hiff : (∀ v, Relation.ReflTransGen (toDigraph f).Adj v r) ↔ Acyclic f :=
+    ⟨fun h v => exists_iterate_of_reflTransGen f (h v),
+      fun h v => (isInArborescence_toDigraph h).reachable v⟩
+  change _ = if ∀ v, Relation.ReflTransGen (toDigraph f).Adj v r then _ else _
+  split_ifs with hf
+  · rw [det_parentMatrix_of_acyclic (hiff.mp hf), mul_one]
+  · rw [det_parentMatrix_of_not_acyclic (mt hiff.mpr hf), mul_zero]
 
 omit [Fintype V] [DecidableEq V] in
 open Classical in

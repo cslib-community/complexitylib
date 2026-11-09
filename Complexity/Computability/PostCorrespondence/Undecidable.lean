@@ -121,13 +121,9 @@ theorem supports₀ : TM0.Supports M₀ (S₀ : Set (TM1to0.Λ' M₁)) := TM1to0
 
 noncomputable instance : Inhabited (S₀ : Set (TM1to0.Λ' M₁)) := ⟨⟨default, supports₀.1⟩⟩
 
-theorem closed₀ {q a q' s} (h : (q', s) ∈ M₀ q a) (hq : q ∈ (S₀ : Set (TM1to0.Λ' M₁))) :
-    q' ∈ (S₀ : Set (TM1to0.Λ' M₁)) :=
-  supports₀.2 h hq
-
 /-- The restriction of `M₀` to its finitely many reachable states. -/
 noncomputable def M₀' : TM0.Machine (TM2to1.Γ' K' fun _ => Γ') (S₀ : Set (TM1to0.Λ' M₁)) :=
-  OfTM0.restrict M₀ closed₀
+  TM0.restrict M₀ supports₀
 
 private theorem tm2_init_eq (v : List ℕ) :
     (TM2.init K'.main (trList v) : TM2.Cfg (fun _ : K' => Γ') UΛ (Option Γ')) = init univ v := by
@@ -146,7 +142,7 @@ private theorem dom_M₂ (n : ℕ) :
 
 theorem dom_M₀' (n : ℕ) :
     (TM0.eval M₀' (TM2to1.trInit K'.main (trList [n]))).Dom ↔ (univ.eval [n]).Dom := by
-  rw [M₀', OfTM0.eval_restrict_dom M₀ closed₀ rfl, M₀, TM1to0.tr_eval, M₁,
+  rw [M₀', TM0.eval_restrict_dom M₀ supports₀, M₀, TM1to0.tr_eval, M₁,
     TM2to1.tr_eval_dom, dom_M₂]
 
 /-! ### Computability of the reduction -/

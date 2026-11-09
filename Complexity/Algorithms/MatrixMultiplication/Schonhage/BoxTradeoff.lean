@@ -162,9 +162,7 @@ theorem total_boxes_le_unpadded {L m t N : ℕ} (hL : 10 * m ≤ L) (ht : t ≤ 
   calc ((tiles L m N).card : ℝ) * ((boxes L m t).card : ℝ)
       ≤ 4 * ((m : ℝ) + 1) * (rho L m ^ t / (1 - rho L m)) *
           (padN L m N : ℝ) ^ 2 := total_boxes_le hL ht
-    _ ≤ 4 * ((m : ℝ) + 1) * (rho L m ^ t / (1 - rho L m)) * (2 * (N : ℝ)) ^ 2 :=
-      mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (Nat.cast_nonneg _) hpad 2)
-        (by positivity)
+    _ ≤ 4 * ((m : ℝ) + 1) * (rho L m ^ t / (1 - rho L m)) * (2 * (N : ℝ)) ^ 2 := by gcongr
     _ = _ := by ring
 
 /-- Weighted binomial-prefix estimate from Section 4.4. With `x=8`, this gives
@@ -232,8 +230,7 @@ theorem sum_beta_twentyone (m t : ℕ) :
   calc ∑ d ∈ Icc t m, (beta (21 * m) m d : ℝ)
       ≤ (M (21 * m) m : ℝ) *
           (rho (21 * m) m ^ t / (1 - rho (21 * m) m)) := sum_beta_le t (by omega)
-    _ ≤ (M (21 * m) m : ℝ) * ((9 / 20 : ℝ) ^ t * 2) :=
-      mul_le_mul_of_nonneg_left hdecay (Nat.cast_nonneg _)
+    _ ≤ (M (21 * m) m : ℝ) * ((9 / 20 : ℝ) ^ t * 2) := by gcongr
     _ = _ := by ring
 
 end Cslib.Algorithms.MatrixMultiplication.Schonhage.BoxTradeoff

@@ -284,10 +284,9 @@ theorem toOuterMeasure_query_eq_none_le [DecidableEq Y] {far : X → X → Prop}
       ν.toOuterMeasure {i | g i x₀ = g i q}ᶜ ^ L + L * (P.length * ENNReal.ofReal P₂) / T :=
     (MeasureTheory.measure_mono hsub).trans
       ((MeasureTheory.measure_union_le A B).trans (by rw [hA]; exact add_le_add le_rfl hB))
-  refine (ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨ENNReal.pow_ne_top
-    (PMF.toOuterMeasure_ne_top _ _), hBfin⟩) hle).trans ?_
-  rw [ENNReal.toReal_add (ENNReal.pow_ne_top (PMF.toOuterMeasure_ne_top _ _)) hBfin,
-    ENNReal.toReal_pow, hcompl, ENNReal.toReal_div, ENNReal.toReal_mul, ENNReal.toReal_mul,
+  refine (ENNReal.toReal_le_add hle (ENNReal.pow_ne_top (PMF.toOuterMeasure_ne_top _ _))
+    hBfin).trans ?_
+  rw [ENNReal.toReal_pow, hcompl, ENNReal.toReal_div, ENNReal.toReal_mul, ENNReal.toReal_mul,
     ENNReal.toReal_natCast, ENNReal.toReal_natCast, ENNReal.toReal_natCast,
     ENNReal.toReal_ofReal hP₂, ← mul_assoc]
   have h1 : 0 ≤ 1 - collisionProb ν g x₀ q := sub_nonneg.2 (collisionProb_le_one _ _ _ _)
