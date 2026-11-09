@@ -605,6 +605,7 @@ private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u
           u (s.2.1.headD []) +
             ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ d
         else 0) := by
+  -- Elaborate the instance first: unifying it directly against `step M K g` times out.
   have h := exists_computableInO_searchStep
     (by unfold encState; fun_prop :
       ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState encBool)
