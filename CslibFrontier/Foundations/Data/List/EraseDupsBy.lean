@@ -100,7 +100,7 @@ variable [DecidableEq α]
 
 /-- Erasing duplicates by equality leaves no duplicates. -/
 theorem nodup_eraseDupsBy_eq (l : List α) : (l.eraseDupsBy fun a b => decide (a = b)).Nodup :=
-  (pairwise_eraseDupsBy l).imp fun h => by simpa [eq_comm] using h
+  by simpa using nodup_map_eraseDupsBy id l
 
 /-- Erasing duplicates by equality keeps every entry. -/
 theorem mem_eraseDupsBy_eq {l : List α} {a : α} :

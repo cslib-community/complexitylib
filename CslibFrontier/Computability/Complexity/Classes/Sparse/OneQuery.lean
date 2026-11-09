@@ -297,9 +297,7 @@ end Correctness
 /-! ### Polynomial time -/
 
 open ComputableInPolyTime
-
-/-- The encoding of the list of nodes at a level of the tree. -/
-local notation "encNodes" => encList (encList (encPair encNat encBool))
+open Fortune (encNodes)
 
 /-- A stage in terms of list operations. -/
 private theorem stage_eq (label : List (Literal ℕ) → List (Literal ℕ) → List Bool × Bool)

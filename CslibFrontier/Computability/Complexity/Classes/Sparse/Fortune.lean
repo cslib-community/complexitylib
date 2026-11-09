@@ -59,6 +59,7 @@ at most `c + 1` nodes of polynomial size, so the search runs in polynomial time
   and conjunctive extensions.
 * `Cslib.Complexity.Fortune.search`, `Cslib.Complexity.Fortune.accepts`: the pruned search and
   the decision procedure for `SAT`.
+* `Cslib.Complexity.Fortune.encNodes`: the encoding of a level of the tree.
 
 ## Main results
 
@@ -352,8 +353,12 @@ end Search
 
 open ComputableInPolyTime
 
-/-- The encoding of the list of nodes at a level of the tree. -/
-local notation "encNodes" => encList (encList (encPair encNat encBool))
+/-- The encoding of a level of the self-reduction tree, a list of nodes. Each node is a list of
+literals, and a literal `(v, b)` is encoded as the pair of `v` in binary (`encNat`) and the bit
+`b`. Shared by the polynomial-time searches of Fortune's and Mahaney's theorems and their
+extensions. -/
+abbrev encNodes : List (List (Literal ℕ)) ↪ List Bool :=
+  encList (encList (encPair encNat encBool))
 
 /-- One level of the search is polynomial-time, uniformly in the formula, the bound, the nodes
 and the occurrence. -/
