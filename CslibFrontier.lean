@@ -4736,6 +4736,7 @@ public import CslibFrontier.Foundations.Data.Int.LogBounds
 public import CslibFrontier.Foundations.Data.Int.Order
 public import CslibFrontier.Foundations.Data.Int.Residue
 public import CslibFrontier.Foundations.Data.List.Append
+public import CslibFrontier.Foundations.Data.List.ArgMin
 public import CslibFrontier.Foundations.Data.List.BalancedFold
 public import CslibFrontier.Foundations.Data.List.Basic
 public import CslibFrontier.Foundations.Data.List.Blocks
