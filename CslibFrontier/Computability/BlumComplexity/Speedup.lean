@@ -350,6 +350,12 @@ private theorem canc_eligB_eq {e u d x B} (h : CostOK Φ e u x B) :
     canc (eligB Φ r e B) (ovB d) u x = canc (elig Φ r e) (ovB d) u x :=
   canc_congr (fun _ _ hu hiy hy => eligB_eq h hu hiy hy) x le_rfl
 
+/-- Once some cost cap works, the search for the least one halts. -/
+private theorem dom_rfind_costOK {e u x B} (hB : CostOK Φ e u x B) :
+    (Nat.rfind fun B => Part.some (costOK Φ e u x B)).Dom :=
+  Nat.rfind_dom.2 ⟨B, Part.mem_some_iff.2 (costOK_eq_true.2 hB).symm,
+    fun _ => Part.dom_iff_mem.2 ⟨_, Part.mem_some _⟩⟩
+
 /-- The run of a version once a cost cap `B` has been found. -/
 private theorem run_eq {e u d x B} (hB : B ∈ Nat.rfind fun B => Part.some (costOK Φ e u x B)) :
     run Φ r e u d x = Part.map (fun w => (ovOf d x).getD
@@ -381,10 +387,7 @@ private theorem exists_costOK {e u x}
 /-- Under a cost cap, the run halts. -/
 private theorem dom_run_of_costOK {e u d x B} (hB : CostOK Φ e u x B) :
     (run Φ r e u d x).Dom := by
-  have hrf : (Nat.rfind fun B => Part.some (costOK Φ e u x B)).Dom :=
-    Nat.rfind_dom.2 ⟨B, Part.mem_some_iff.2 (costOK_eq_true.2 hB).symm,
-      fun _ => Part.dom_iff_mem.2 ⟨_, Part.mem_some _⟩⟩
-  rw [run_eq (Part.get_mem hrf)]
+  rw [run_eq (Part.get_mem (dom_rfind_costOK hB))]
   change (Code.eval _ _).Dom
   cases hc : canc (elig Φ r e) (ovB d) u x with
   | none => exact trivial
@@ -414,10 +417,7 @@ private theorem mem_run {e : Code} (he : e.eval = master Φ r e) {u d x w : ℕ}
     (ovOf d x).getD (((canc (elig Φ r e) (ovB d) u x).map fun _ => 1 - w).getD 0) ∈
       run Φ r e u d x := by
   obtain ⟨B, hB⟩ := costOK_of_fixed he _ u x le_rfl
-  have hrf : (Nat.rfind fun B => Part.some (costOK Φ e u x B)).Dom :=
-    Nat.rfind_dom.2 ⟨B, Part.mem_some_iff.2 (costOK_eq_true.2 hB).symm,
-      fun _ => Part.dom_iff_mem.2 ⟨_, Part.mem_some _⟩⟩
-  rw [run_eq (Part.get_mem hrf)]
+  rw [run_eq (Part.get_mem (dom_rfind_costOK hB))]
   exact Part.mem_map _ hw
 
 /-- A cancelled program halts at the stage where it is cancelled. -/
