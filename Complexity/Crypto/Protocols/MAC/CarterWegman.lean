@@ -31,6 +31,7 @@ import Complexity.Computability.Probabilistic.Oracle.Tidy
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Uniform
 
@@ -711,8 +712,7 @@ theorem run_interpret_counterRealHandler {α : Type} [Fintype Y] [Nonempty Y] (h
     PMF.monad_pure_eq_pure, StateT.pure]
   rw [PMF.map_bind]
   symm
-  simpa only [PMF.bind_pure, PMF.pure_map, Function.comp_def, transcriptToPads, List.map_append,
-    List.map_cons, List.map_nil] using
+  simpa only [pmf_norm, transcriptToPads, List.map_append, List.map_cons, List.map_nil] using
     bind_uniform_sign hash k m fun t r =>
       PMF.pure (t, transcriptToPads hash k s ++ [(m, r)])
 
@@ -1070,8 +1070,7 @@ theorem eval_prfRealGame_prfPadDistinguisher (family : List Bool → List Bool �
     (test : (k : ℕ) → BitString k → ProbComp Bool) (n : ℕ) :
     ProbComp.eval (prfRealGame family (prfPadDistinguisher test) n) =
       (prfPadDist family n).bind (fun r => ProbComp.eval (test n r)) := by
-  simp only [prfRealGame, prfPadDistinguisher, prfPadDist, ProbComp.eval_bind,
-    BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, prfRealGame, prfPadDistinguisher, prfPadDist, BitString.eval_sampleList]
   congr 1
   funext key
   simp [prfOracle, show ProbComp.unifFin = OracleComp.query from rfl]
@@ -1484,10 +1483,8 @@ theorem uniform_bind_run_interpret_counterSeqHandler
     simp [PMF.monad_pure_eq_pure]
   | liftBind m cont Q hcont ih =>
     rw [← PMF.uniformOfFintype_update (γ := Y) (nonce pads.length), PMF.bind_bind]
-    simp only [PMF.bind_map, Function.comp_def, OracleComp.interpret_bind,
-      OracleComp.interpret_query, StateT.run_bind, PMF.monad_bind_eq_bind,
-      run_counterSeqHandler, run_counterRealHandler, PMF.bind_bind, PMF.pure_bind,
-      Function.update_self]
+    simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind,
+      run_counterSeqHandler, run_counterRealHandler, Function.update_self]
     congr 1
     funext r
     have hcongr (table : ι → Y) :
@@ -1722,10 +1719,10 @@ theorem eval_prfRealGame_prfMultiPadDistinguisher {n : ℕ} (seed : PMF K)
     ProbComp.eval (prfRealGame family (prfMultiPadDistinguisher Q nonce test) n) =
       prfCounterSlotGame seed family n (nonce n) hash forger := by
   rw [prfCounterSlotGame, maskedCounterSlotGame_eq_bind_counterPadSeqDistinguisher]
-  simp only [prfRealGame, prfMultiPadDistinguisher, prfPadSeqDist,
+  simp only [pmf_norm, prfRealGame, prfMultiPadDistinguisher, prfPadSeqDist,
     OracleComp.interpret_bind, interpret_iterate_prfPadCollectStep, List.nil_append,
     List.length_nil, Nat.zero_add, pure_bind, ProbOracleComp.interpret_sample,
-    ProbComp.eval_bind, BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
+    BitString.eval_sampleList]
   simp only [show ProbComp.unifFin = OracleComp.query from rfl, OracleComp.interpret_query_eq_self]
   congr 1; funext key
   rw [← htest]
@@ -2246,9 +2243,8 @@ theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [De
     simp [PMF.monad_pure_eq_pure]
   | query_bind q cont ih =>
     by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
-    · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        nonceFnHandler, nonceSimHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.bind_bind, PMF.pure_bind]
+    · simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      nonceFnHandler, nonceSimHandler]
       by_cases hx : q.2 ∈ tr.map (fun e => e.1.2)
       · have hnot (t : Y) : ¬ ((tr ++ [(q, t)]).map (fun e => e.1.2)).Nodup :=
           not_nodup_map_append_of_mem q.1 t hx
@@ -2349,16 +2345,14 @@ theorem probOracleComp_uniform_bind_run_interpret_nonceFnHandler {α β : Type}
     by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
     · cases q with
       | inl m =>
-        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
-          PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+        simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          OracleComp.sumHandler, StateT.lift]
         rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (ProbComp.unifOracle m)]
         congr 1; funext i
         exact ih i tr
       | inr q =>
-        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          OracleComp.sumHandler, nonceFnHandler, nonceSimHandler, PMF.monad_bind_eq_bind,
-          PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+        simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          OracleComp.sumHandler, nonceFnHandler, nonceSimHandler]
         by_cases hx : q.2 ∈ tr.map (fun e => e.1.2)
         · have hnot (t : Y) : ¬ ((tr ++ [(q, t)]).map (fun e => e.1.2)).Nodup :=
             not_nodup_map_append_of_mem q.1 t hx
@@ -3291,8 +3285,7 @@ private theorem eval_cwNonceLogHandler_randomFunctionOracle_le
         simp [StateT.lift, ProbOracleComp.sample, ProbComp.unifFin]
       rw [OracleComp.sumHandler, OracleComp.sumHandler, hsample,
         OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
-      simp only [OracleComp.sumHandler, StateT.lift, OracleComp.run_interpret_pure,
-        PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      simp only [pmf_norm, OracleComp.sumHandler, StateT.lift, OracleComp.run_interpret_pure]
       refine bind_apply_mono_on_support (ProbComp.unifOracle m) true fun i _ => ?_
       exact ih i init tr hsub
     | inr request =>
@@ -3316,10 +3309,8 @@ private theorem eval_cwNonceLogHandler_randomFunctionOracle_le
           OracleComp.run_interpret_query _
             (Sum.inr (BitString.ofList (msgLen n) msg, BitString.ofList n nonce)) tr
         rw [hq_rhs]
-        simp only [Functor.map_map, OracleComp.interpret_map, ProbOracleComp.interpret_query,
-          ProbComp.eval_map, ProbComp.eval_pure, nonceFnHandler,
-          PMF.monad_bind_eq_bind, PMF.monad_map_eq_map,
-          PMF.pure_map, PMF.pure_bind]
+        simp only [pmf_norm, Functor.map_map, OracleComp.interpret_map,
+          ProbOracleComp.interpret_query, nonceFnHandler]
         simp only [Bool.and_eq_true, beq_iff_eq] at hcond
         rcases hcond with ⟨hmsg, hnonce⟩
         let t := sign
@@ -3343,9 +3334,8 @@ private theorem eval_cwNonceLogHandler_randomFunctionOracle_le
           (tr ++ [((BitString.ofList (msgLen n) msg, BitString.ofList n nonce), t)]) hsub'
       · have hcond' : (msg.length == msgLen n && nonce.length == n) = false :=
           Bool.eq_false_iff.mpr hcond
-        simp only [hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
-          ProbComp.eval_pure, StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-          PMF.pure_bind]
+        simp only [pmf_norm, hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
+          StateT.run_pure]
         have hsub' : tr.map ofBitTriple <+ (((msg, nonce), []) :: init).reverse := by
           rw [List.reverse_cons]
           exact hsub.trans (List.sublist_append_left _ _)
@@ -3383,10 +3373,9 @@ theorem eval_prfIdealGame_prfNonceToPrfDistinguisher_le
                 PMF.pure
                   (checkNonceSUF hashBit k table res.2
                     (toBitTriple (msgLen n) n res.1.1))) true := by
-    simp only [prfIdealGame, prfNonceToPrfDistinguisher, Functor.map_map, OracleComp.interpret_bind,
-      OracleComp.interpret_map, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
-      interpret_unifFin, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-      ProbComp.eval_uniform, PMF.pure_map]
+    simp only [pmf_norm, prfIdealGame, prfNonceToPrfDistinguisher, Functor.map_map,
+      OracleComp.interpret_bind, OracleComp.interpret_map, ProbOracleComp.interpret_sample,
+      ProbOracleComp.interpret_query, interpret_unifFin, ProbComp.eval_uniform]
     rw [PMF.bind_comm (PMF.uniformOfFintype (BitString n → BitString n)) (ProbComp.eval (seed n))]
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
@@ -3604,9 +3593,8 @@ theorem uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
     simp [PMF.monad_pure_eq_pure]
   | query_bind m cont ih =>
     by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
-    · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        randomNonceFnHandler, randomNonceSimHandler, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+    · simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      randomNonceFnHandler, randomNonceSimHandler]
       rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (PMF.uniformOfFintype N)]
       congr 1; funext x
       by_cases hx : x ∈ tr.map (fun e => e.1.2)
@@ -3667,9 +3655,8 @@ theorem randomNonceSimHandler_not_nodup_le {α : Type} [Fintype N] [Nonempty N] 
       simp [hnodup, PMF.monad_pure_eq_pure]
   | liftBind m cont Q hcont ih =>
     by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
-    · simp only [hnodup, ↓reduceIte, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        randomNonceSimHandler, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+    · simp only [pmf_norm, hnodup, ↓reduceIte, OracleComp.run_interpret_bind,
+      OracleComp.run_interpret_query, randomNonceSimHandler]
       let B : ℝ≥0∞ := ((∑ i ∈ Finset.range Q, (tr.length + 1 + i) : ℕ) : ℝ≥0∞) / Fintype.card N
       have hxt (x : N) (t : Y) :
           (((OracleComp.interpret randomNonceSimHandler (cont (x, t))).run
@@ -4251,17 +4238,15 @@ theorem probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler {α β : 
   | query_bind q cont ih =>
     cases q with
     | inl num =>
-      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        OracleComp.sumHandler, StateT.lift]
       rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (ProbComp.unifOracle num)]
       congr 1; funext i
       exact ih i tr
     | inr m =>
       by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
-      · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          OracleComp.sumHandler, randomNonceFnHandler, randomNonceSimHandler,
-          PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      · simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        OracleComp.sumHandler, randomNonceFnHandler, randomNonceSimHandler]
         rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (PMF.uniformOfFintype N)]
         congr 1; funext x
         by_cases hx : x ∈ tr.map (fun e => e.1.2)
@@ -4338,9 +4323,8 @@ theorem probOracleComp_randomNonceSimHandler_not_nodup_le {α : Type}
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
           randomNonceSimHandler) (OracleComp.query (Sum.inl num) >>= cont)).run tr).bind
         fun res => PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤ _
-      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.bind_bind, PMF.pure_bind]
+      simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        OracleComp.sumHandler, StateT.lift]
       rw [PMF.bind_apply]
       exact tsum_mul_le_of_forall_le (ProbComp.unifOracle num) fun i => ih i tr
     | inr m =>
@@ -4350,9 +4334,8 @@ theorem probOracleComp_randomNonceSimHandler_not_nodup_le {α : Type}
           randomNonceSimHandler) (OracleComp.query (Sum.inr m) >>= cont)).run tr).bind
         fun res => PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤ _
       by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
-      · simp only [hnodup, ↓reduceIte, OracleComp.run_interpret_bind,
-          OracleComp.run_interpret_query, OracleComp.sumHandler, randomNonceSimHandler,
-          PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      · simp only [pmf_norm, hnodup, ↓reduceIte, OracleComp.run_interpret_bind,
+        OracleComp.run_interpret_query, OracleComp.sumHandler, randomNonceSimHandler]
         let B : ℝ≥0∞ :=
           ((∑ i ∈ Finset.range Q, (tr.length + 1 + i) : ℕ) : ℝ≥0∞) / Fintype.card N
         have hxt (x : N) (t : Y) :
@@ -4867,10 +4850,8 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
     ProbComp.eval (M.sufCmaGame adversary n)
   dsimp only [prfRealGame, prfRandomNonceToPrfDistinguisher, MACScheme.sufCmaGame, M,
     carterWegmanRandomMAC]
-  simp only [Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
-    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
-    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
-    PMF.pure_map]
+  simp only [pmf_norm, Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
+    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin]
   rw [PMF.bind_comm (ProbComp.eval (BitString.sampleList n)) (ProbComp.eval (seed n))]
   refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
   refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
@@ -5064,8 +5045,7 @@ private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
         simp [StateT.lift, ProbOracleComp.sample, ProbComp.unifFin]
       rw [OracleComp.sumHandler, OracleComp.sumHandler, hsample,
         OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
-      simp only [OracleComp.sumHandler, StateT.lift, OracleComp.run_interpret_pure,
-        PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      simp only [pmf_norm, OracleComp.sumHandler, StateT.lift, OracleComp.run_interpret_pure]
       refine bind_apply_mono_on_support (ProbComp.unifOracle num) true fun i _ => ?_
       exact ih i init tr hsub
     | inr req =>
@@ -5088,11 +5068,9 @@ private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
               k table (BitString.ofList (msgLen n) msg) tr :=
           OracleComp.run_interpret_query _ (Sum.inr (BitString.ofList (msgLen n) msg)) tr
         rw [hq_rhs]
-        simp only [Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
+        simp only [pmf_norm, Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
           ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
-          ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, BitString.eval_sampleList,
-          randomNonceFnHandler, PMF.monad_bind_eq_bind, PMF.monad_map_eq_map,
-          PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
+          BitString.eval_sampleList, randomNonceFnHandler]
         rw [BitString.uniformList, PMF.bind_map]
         refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n)) true fun x _ => ?_
         simp only [Function.comp_def]
@@ -5119,9 +5097,8 @@ private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
         exact ih fullTag ((msg, fullTag) :: init)
           (tr ++ [((BitString.ofList (msgLen n) msg, x), t)]) hsub'
       · have hcond' : (msg.length == msgLen n) = false := Bool.eq_false_iff.mpr hcond
-        simp only [hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
-          ProbComp.eval_pure, StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-          PMF.pure_bind]
+        simp only [pmf_norm, hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
+          StateT.run_pure]
         have hsub' : tr.map ofRandomBitTriple <+ ((msg, []) :: init).reverse := by
           rw [List.reverse_cons]
           exact hsub.trans (List.sublist_append_left _ _)
@@ -5163,10 +5140,9 @@ theorem eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le
                 PMF.pure
                   (checkRandomNonceSUF hashBit k table res.2
                     (toRandomBitTriple msgLen n res.1.1))) true := by
-    simp only [prfIdealGame, prfRandomNonceToPrfDistinguisher, Functor.map_map,
+    simp only [pmf_norm, prfIdealGame, prfRandomNonceToPrfDistinguisher, Functor.map_map,
       OracleComp.interpret_bind, OracleComp.interpret_map, ProbOracleComp.interpret_sample,
-      ProbOracleComp.interpret_query, interpret_unifFin, ProbComp.eval_bind, ProbComp.eval_map,
-      ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_map]
+      ProbOracleComp.interpret_query, interpret_unifFin, ProbComp.eval_uniform]
     rw [PMF.bind_comm (PMF.uniformOfFintype (BitString n → BitString n)) (ProbComp.eval (seed n))]
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true

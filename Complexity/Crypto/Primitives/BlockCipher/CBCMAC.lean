@@ -737,8 +737,8 @@ private theorem tsum_pmf_abs_sub_le {α : Type*} (D : PMF α) (a b : α → ENNR
             exact ENNReal.ofReal_le_ofReal (h T hD)
         _ = ∑' T, D T * b T + ENNReal.ofReal δ := by
             rw [tsum_add, ENNReal.tsum_mul_right, D.tsum_coe, one_mul]
-    have := ENNReal.toReal_mono (ENNReal.add_ne_top.2 ⟨one b hb, ENNReal.ofReal_ne_top⟩) hle
-    rwa [ENNReal.toReal_add (one b hb) ENNReal.ofReal_ne_top, ENNReal.toReal_ofReal hδ] at this
+    have := ENNReal.toReal_le_add hle (one b hb) ENNReal.ofReal_ne_top
+    rwa [ENNReal.toReal_ofReal hδ] at this
   have s1 := side a b ha hb (fun T hT => by have := h T hT; rw [abs_le] at this; linarith)
   have s2 := side b a hb ha (fun T hT => by have := h T hT; rw [abs_le] at this; linarith)
   rw [abs_le]; constructor <;> linarith

@@ -494,8 +494,7 @@ theorem sub_submodularGreedyStep_le
         f OPT - f S ≤ ∑ _x ∈ OPT \ S, (f (submodularGreedyStep f u S) - f S) := h1.trans h2
         _ = ((OPT \ S).card : β) * (f (submodularGreedyStep f u S) - f S) := by
           rw [Finset.sum_const, nsmul_eq_mul]
-        _ ≤ (k : β) * (f (submodularGreedyStep f u S) - f S) :=
-          mul_le_mul_of_nonneg_right hcard_le hstep_nonneg
+        _ ≤ (k : β) * (f (submodularGreedyStep f u S) - f S) := by gcongr
     have hmul_target : (k : β) * (f OPT - f (submodularGreedyStep f u S)) ≤
         (k : β) * ((1 - 1 / (k : β)) * (f OPT - f S)) := by
       have hid : (k : β) * (1 - 1 / (k : β)) = (k : β) - 1 := by
@@ -796,9 +795,7 @@ private theorem filter_tightCandidates_leftPrefix {k t : ℕ} (ht : t < k) :
     rcases List.mem_map.mp hx with ⟨i, hi_take, rfl⟩
     have hi_lt : i.val < t := by
       rcases List.mem_iff_getElem.mp hi_take with ⟨idx, hidx, hget⟩
-      have hidx_lt : idx < t := by
-        rw [List.length_take] at hidx
-        exact lt_of_lt_of_le hidx (Nat.min_le_left t _)
+      have hidx_lt : idx < t := by grind
       have hval : ((List.finRange k).take t)[idx].val = idx := by simp
       rw [← hget, hval]
       exact hidx_lt
@@ -863,8 +860,7 @@ theorem isSubmodular_tightComponent {k : ℕ} (hk : 0 < k) (j : Fin k) :
     · exact absurd (hAB hA) hB
     · have hpow : (1 - 1 / (k : β)) ^ leftCount k B ≤ (1 - 1 / (k : β)) ^ leftCount k A :=
         pow_le_pow_of_le_one hq_nonneg hq_le_one (leftCount_mono k hAB)
-      exact mul_le_mul_of_nonneg_right
-        (mul_le_mul_of_nonneg_left hpow hdiv_nonneg) hdiv_nonneg
+      gcongr
   | inr j' =>
     by_cases hjj : j' = j
     · subst hjj
@@ -983,9 +979,7 @@ private theorem submodularGreedy_tightObjective_steps {k : ℕ} (hk : 0 < k) :
         tightObjective (β := β) k (insert c (leftPrefix k t)) ≤
           tightObjective (β := β) k (insert (Sum.inl ⟨t, ht_lt⟩) (leftPrefix k t)) := by
       intro c hc
-      have hc_filt : c ∈ (tightCandidates k).filter (· ∉ leftPrefix k t) := by
-        rw [hfilt]
-        exact List.mem_cons_of_mem _ hc
+      have hc_filt : c ∈ (tightCandidates k).filter (· ∉ leftPrefix k t) := by grind
       have hc_notMem : c ∉ leftPrefix k t := of_decide_eq_true (List.mem_filter.mp hc_filt).2
       rw [tightObjective_insert_leftPrefix_eq hk ht_lt hc_notMem,
         tightObjective_insert_leftPrefix_eq hk ht_lt ht_notMem]
