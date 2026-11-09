@@ -27,6 +27,7 @@ common macrocell coordinates. No clauses, formula, or drawing are assembled here
 
 * `Cslib.Complexity.SAT.PlanarCompile.mem_crossingSites`.
 * `Cslib.Complexity.SAT.PlanarCompile.crossingSites_nodup`.
+* `Cslib.Complexity.SAT.PlanarCompile.side_cardinal`.
 
 ## References
 
@@ -76,6 +77,13 @@ theorem crossingSites_nodup (φ : CNF ℕ) : (crossingSites φ).Nodup := nodup_s
 Only unit neighbors are used by the correctness theorem. -/
 def side (p q : Point) : Fin 4 :=
   if q.1 < p.1 then 0 else if p.1 < q.1 then 1 else if q.2 < p.2 then 2 else 3
+
+/-- The side lookup recovers each of the four cardinal unit neighbors. -/
+theorem side_cardinal (p : Point) :
+    side p (p - (1, 0)) = 0 ∧ side p (p + (1, 0)) = 1 ∧
+      side p (p - (0, 1)) = 2 ∧ side p (p + (0, 1)) = 3 := by
+  rcases p with ⟨x, y⟩
+  simp [side]
 
 /-- The center of a square of side 240 indexed by an integer grid point. -/
 def center (p : Point) : Point := cellOrigin 120 p + (120, 120)

@@ -105,11 +105,7 @@ def tseitinClause (op : Op) (w a b : V) (j : Fin 3) : Clause V :=
 /-- **The clauses of a gate hold** exactly when its output carries its value. -/
 theorem forall_eval_tseitinClause_iff (op : Op) (w a b : V) (σ : V → Bool) :
     (∀ j, (tseitinClause op w a b j).eval σ = true) ↔ σ w = op.value (σ a) (σ b) := by
-  have h₃ : (∀ j, (tseitinClause op w a b j).eval σ = true) ↔
-      (tseitinClause op w a b 0).eval σ = true ∧ (tseitinClause op w a b 1).eval σ = true ∧
-        (tseitinClause op w a b 2).eval σ = true :=
-    ⟨fun h => ⟨h 0, h 1, h 2⟩, fun ⟨h₀, h₁, h₂⟩ j => by fin_cases j <;> assumption⟩
-  rw [h₃]
+  rw [Fin.forall_fin_succ, Fin.forall_fin_two, Fin.succ_zero_eq_one, Fin.succ_one_eq_two]
   rcases op with v | _ | _ | _ <;>
     simp only [tseitinClause, Fin.isValue, Fin.val_zero, Fin.val_one, Fin.val_two,
       Clause.eval_cons, Clause.eval_nil, Literal.eval_mk, Op.value] <;>

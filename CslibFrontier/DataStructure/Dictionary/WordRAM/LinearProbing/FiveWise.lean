@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.KWiseIndependent
 public import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Constant-independence cluster bounds for linear probing
@@ -161,18 +162,8 @@ theorem n_max_lt_tableSize (n_max : ℕ) : n_max < tableSize n_max := by
 /-- `tableSize n_max` is strictly less than $16 \max(n_{\max}, 1)$. -/
 theorem tableSize_lt_sixteen_mul (n_max : ℕ) : tableSize n_max < 16 * max n_max 1 := by
   dsimp only [tableSize, tableLog]
-  have hpos : 1 < max (8 * n_max) 8 := by
-    have : 8 ≤ max (8 * n_max) 8 := le_max_right _ _
-    omega
-  have hlt : 2 ^ (Nat.clog 2 (max (8 * n_max) 8) - 1) < max (8 * n_max) 8 :=
-    Nat.pow_pred_clog_lt_self (by decide) hpos
-  have hclog_pos : 1 ≤ Nat.clog 2 (max (8 * n_max) 8) := by
-    have := three_le_tableLog n_max
-    dsimp only [tableLog] at this
-    omega
-  have hpow : 2 ^ Nat.clog 2 (max (8 * n_max) 8) =
-      2 * 2 ^ (Nat.clog 2 (max (8 * n_max) 8) - 1) := by
-    conv_lhs => rw [← Nat.sub_add_cancel hclog_pos, Nat.pow_succ']
+  have hlt : 2 ^ Nat.clog 2 (max (8 * n_max) 8) < 2 * max (8 * n_max) 8 :=
+    Nat.pow_clog_lt_mul Nat.one_lt_two (by omega)
   have hmax : max (8 * n_max) 8 = 8 * max n_max 1 := by omega
   omega
 

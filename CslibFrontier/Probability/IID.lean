@@ -96,17 +96,14 @@ theorem iid_map (μ : PMF α) (g : α → β) (k : ℕ) :
   induction k with
   | zero =>
     rw [iid, iid, PMF.pure_map]
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact i.elim0
   | succ k ih =>
     rw [iid, iid]
     simp only [monad_bind_eq_bind, PMF.map_bind, PMF.bind_map, ih]
-    congr 1
-    funext a
+    congr 1 with a : 1
     rw [Function.comp_apply, PMF.map_comp, PMF.map_comp]
-    congr 1
-    funext v i
+    congr 1 with v i : 2
     induction i using Fin.cases <;> rfl
 
 /-- On a finite type, independent draws form the product distribution `pi`. -/

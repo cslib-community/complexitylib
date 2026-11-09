@@ -34,19 +34,6 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
   let payload := BoxProduct.input true (21 * m) t X Y qs
   [inputBase caller] ++ caller ++ payload.length :: payload
 
-private theorem block_word (caller payload : List ℕ) (a : ℕ) :
-    (Data.init ([inputBase caller] ++ caller ++ payload.length :: payload) : Data 163).mem
-        (inputBase caller + a) = (Data.init payload : Data 160).mem a := by
-  change (Data.init _ : Data 163).mem (caller.length + 2 + a) = _
-  rw [show caller.length + 2 + a = (caller.length + 1 + a) + 1 by omega, Data.init_mem_succ]
-  rw [List.getD_append_right _ _ _ _ (by simp)]
-  simp only [List.length_append, List.length_singleton]
-  have hoff : caller.length + 1 + a - (1 + caller.length) = a := by omega
-  rw [hoff]
-  cases a with
-  | zero => simp [Data.init]
-  | succ a => simp [Data.init_mem_succ, List.getD_eq_getElem?_getD]
-
 /-- Every local original input word has its actual initialized meaning at the runtime base. -/
 theorem input_word {m N : ℕ} (t : ℕ) (caller : List ℕ)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
@@ -69,20 +56,6 @@ theorem input_fits {W m N : ℕ} (t : ℕ) (caller : List ℕ)
   have htwo : sourceWidth N qs.length - 2 + 2 = sourceWidth N qs.length := by omega
   have hi := BoxProduct.input_fits hw (show m ≤ 21 * m by omega)
     true X Y qs hXabs hYabs hmag (by simpa only [htwo] using hbudget)
-  have hi' : InputFits (sourceWidth N qs.length) (BoxProduct.input true (21 * m) t X Y qs) := by
-    simpa only [htwo] using hi
-  have hlen : (BoxProduct.input true (21 * m) t X Y qs).length < windowSize N qs.length := hi'.1
-  refine ⟨?_, ?_⟩
-  · apply hfit.of_le
-    simp only [input, List.length_append, List.length_cons, List.length_nil, inputBase]
-    unfold inputBase at hfit
-    omega
-  · intro v hv
-    simp only [input, List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at hv
-    rcases hv with ((rfl | hv) | rfl | hv)
-    · exact hfit.of_le (by omega)
-    · exact hcaller _ hv
-    · exact (hi'.1.mono (setup_fits hfit).1)
-    · exact (hi'.2 v hv).mono (setup_fits hfit).1
+  exact inputFits_wrap caller _ hcaller hfit (by simpa only [htwo] using hi)
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.CallableBoxProduct

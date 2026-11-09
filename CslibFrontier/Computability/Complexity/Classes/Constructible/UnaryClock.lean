@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Constructible
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import CslibFrontier.Foundations.Data.Nat.Doubling
+import Mathlib.Algebra.Order.Ring.GeomSum
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.TransformsTapes
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 
@@ -45,14 +46,6 @@ budget of `MultiTape.Plumbing.PrepareClock`.
 public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInO
-
-/-- The geometric sum of powers of two below `2 ^ n`. -/
-private theorem sum_range_two_pow_lt (n : ℕ) : ∑ i ∈ Finset.range n, 2 ^ i < 2 ^ n := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Finset.sum_range_succ, pow_succ]
-    omega
 
 /-- **`c * 2 ^ l.length` in unary in linear time.** A streaming fold doubles a unary counter once
 per bit of `l`. Round `i` costs `O(c * 2 ^ i)`, so the rounds cost `O(c * 2 ^ l.length)` in total,
@@ -89,7 +82,8 @@ private theorem mul_two_pow_length (c : ℕ) :
   refine of_bounds (hK.of_enc_eq (g := fun l : List Bool => c * 2 ^ l.length)
     fun l => by rw [List.foldl_add_self_eq_mul_two_pow])
     (K * (5 * c₀ + 5) + K * (3 * c₀ + 3) + 1) (fun l => ?_) (fun l => ?_) fun l => ?_
-  · have hsum := sum_range_two_pow_lt l.length
+  · have hsum : ∑ i ∈ Finset.range l.length, 2 ^ i < 2 ^ l.length :=
+      Nat.geomSum_lt le_rfl fun _ => Finset.mem_range.1
     have hs : ∑ i ∈ Finset.range l.length, (5 * c₀ + 4) * (c * 2 ^ i + 1) ≤
         (5 * c₀ + 4) * (c * 2 ^ l.length + l.length) := by
       rw [← Finset.mul_sum, Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_const,

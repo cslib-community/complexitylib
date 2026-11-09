@@ -268,8 +268,7 @@ theorem closeTo_lyubashevskySignAttemptNative (hash : List Bool × List Bool →
         (lyubashevskyNativeHash hash p) S y msg).map (lyubashevskySignatureWords p) =
       (PMF.uniformOfFinset (intBox (Fin p.m) p.γ) (intBox_nonempty p.γ)).map post := by
     simp only [lyubashevskySignAttempt, fsAbortSignAttempt, lyubashevsky, PMF.map_comp]
-    congr 1
-    funext r
+    congr 1 with r : 1
     exact (lyubashevskySignPostprocess_ofFn hash p S y msg r).symm
   have hreal :
       ProbComp.eval (lyubashevskySignAttemptNative hash (lyubashevskySignInput p S y.1 msg)) =

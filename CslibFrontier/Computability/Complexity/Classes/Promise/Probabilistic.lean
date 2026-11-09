@@ -20,7 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
-import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -154,9 +154,7 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
   constructor
   · rintro ⟨p, V, hV, hQ⟩
     refine ⟨fun a => (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length),
-      IsPPTOn.of_seeded ((ComputableInPolyTime.unary_eval p).comp
-        (ComputableInPolyTime.encoding_length enc)) hV,
-      fun a ha => ?_, fun a ha => ?_⟩
+      isPPTOn_sampleVerify p hV, fun a ha => ?_, fun a ha => ?_⟩
     · rw [probability_sampleList_verifier, le_div_iff₀ (by positivity)]
       have h : (2 : ℝ) * 2 ^ p.eval (enc a).length ≤
           3 * (acceptCount V a (p.eval (enc a).length) : ℝ) := by
@@ -213,9 +211,7 @@ theorem mem_PromiseRP_iff_exists_isPPTOn : Q ∈ PromiseRP enc ↔
   constructor
   · rintro ⟨p, V, hV, hQ⟩
     refine ⟨fun a => (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length),
-      IsPPTOn.of_seeded ((ComputableInPolyTime.unary_eval p).comp
-        (ComputableInPolyTime.encoding_length enc)) hV,
-      fun a ha => ?_, fun a ha hmem => ?_⟩
+      isPPTOn_sampleVerify p hV, fun a ha => ?_, fun a ha hmem => ?_⟩
     · rw [probability_sampleList_verifier, le_div_iff₀ (by positivity)]
       have h : (2 : ℝ) ^ p.eval (enc a).length ≤
           2 * (acceptCount V a (p.eval (enc a).length) : ℝ) := by

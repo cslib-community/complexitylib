@@ -162,28 +162,31 @@ theorem stage_pair {lhs rhs : (Fin k → ℕ) → ℕ} {Q : (Fin (k + 2) → ℕ
   exact (huf i (fun j => hne (stageRest j))).trans
     ((hzf i (fun j => hne (stageRight j))).trans (hyf i (fun j => hne (stageLeft j))))
 
-/-- Select between two computations by equality of two computed words. Both guard operands are
-staged once before the branch, and only the selected branch is executed. -/
-theorem ite_eq_staged {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
+/-- Select between two computations by a relation `R` between two computed words, which the
+branch condition `cond` decides on the two staged operands. Both guard operands are staged once
+before the branch, and only the selected branch is executed. -/
+private theorem ite_staged {R : ℕ → ℕ → Prop} [DecidableRel R] (cond : Cond (k + 2))
+    (hcond : ∀ v' : Fin (k + 2) → ℕ,
+      cond.Holds ⟨v', fun _ => 0⟩ ↔ R (v' (Fin.natAdd k 0)) (v' (Fin.natAdd k 1)))
+    {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
     (hl : GlueComputes B P lhs bound tl) (hr : GlueComputes B P rhs bound tr)
-    (hf : GlueComputes B (fun v => P v ∧ lhs v = rhs v) f bound tf)
-    (hg : GlueComputes B (fun v => P v ∧ ¬lhs v = rhs v) g bound tg) :
-    GlueComputes B P (fun v => if lhs v = rhs v then f v else g v)
+    (hf : GlueComputes B (fun v => P v ∧ R (lhs v) (rhs v)) f bound tf)
+    (hg : GlueComputes B (fun v => P v ∧ ¬R (lhs v) (rhs v)) g bound tg) :
+    GlueComputes B P (fun v => if R (lhs v) (rhs v) then f v else g v)
       bound (tl + tr + (max tf tg + 3)) := by
   let Q : (Fin (k + 2) → ℕ) → Prop := fun v' =>
     P (v' ∘ Fin.castAdd 2) ∧
       v' (Fin.natAdd k 0) = lhs (v' ∘ Fin.castAdd 2) ∧
       v' (Fin.natAdd k 1) = rhs (v' ∘ Fin.castAdd 2)
-  let cond : Cond (k + 2) := .eq (Fin.natAdd k 0) (Fin.natAdd k 1)
   have hf' : GlueComputes B (fun v' => Q v' ∧ cond.Holds ⟨v', fun _ => 0⟩)
       (fun v' => f (v' ∘ Fin.castAdd 2)) (fun v' => bound (v' ∘ Fin.castAdd 2)) tf :=
     hf.reindex (Fin.castAdd 2)
-      (fun v' ⟨⟨hp, hl', hr'⟩, hc⟩ => ⟨hp, by simpa only [cond, Cond.Holds, hl', hr'] using hc⟩)
+      (fun v' ⟨⟨hp, hl', hr'⟩, hc⟩ => ⟨hp, by rwa [hcond, hl', hr'] at hc⟩)
       (fun _ _ => le_rfl)
   have hg' : GlueComputes B (fun v' => Q v' ∧ ¬cond.Holds ⟨v', fun _ => 0⟩)
       (fun v' => g (v' ∘ Fin.castAdd 2)) (fun v' => bound (v' ∘ Fin.castAdd 2)) tg :=
     hg.reindex (Fin.castAdd 2)
-      (fun v' ⟨⟨hp, hl', hr'⟩, hc⟩ => ⟨hp, by simpa only [cond, Cond.Holds, hl', hr'] using hc⟩)
+      (fun v' ⟨⟨hp, hl', hr'⟩, hc⟩ => ⟨hp, by rwa [hcond, hl', hr'] at hc⟩)
       (fun _ _ => le_rfl)
   have hsel := select cond hf' hg'
   have hst := stage_pair hl hr hsel (fun v hp => by
@@ -193,7 +196,17 @@ theorem ite_eq_staged {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ
   convert hst using 2 with v
   have hcast : Fin.addCases v ![lhs v, rhs v] ∘ Fin.castAdd 2 = v :=
     funext fun i => by simp
-  simp [cond, Cond.Holds, hcast]
+  simp [hcond, hcast]
+
+/-- Select between two computations by equality of two computed words. Both guard operands are
+staged once before the branch, and only the selected branch is executed. -/
+theorem ite_eq_staged {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ}
+    (hl : GlueComputes B P lhs bound tl) (hr : GlueComputes B P rhs bound tr)
+    (hf : GlueComputes B (fun v => P v ∧ lhs v = rhs v) f bound tf)
+    (hg : GlueComputes B (fun v => P v ∧ ¬lhs v = rhs v) g bound tg) :
+    GlueComputes B P (fun v => if lhs v = rhs v then f v else g v)
+      bound (tl + tr + (max tf tg + 3)) :=
+  ite_staged (.eq (Fin.natAdd k 0) (Fin.natAdd k 1)) (fun _ => Iff.rfl) hl hr hf hg
 
 /-- Select between two computations by unsigned comparison of two computed words. Both guard
 operands are staged once before the branch, and only the selected branch is executed. -/
@@ -202,31 +215,8 @@ theorem ite_lt_staged {lhs rhs f g : (Fin k → ℕ) → ℕ} {tl tr tf tg : ℕ
     (hf : GlueComputes B (fun v => P v ∧ lhs v < rhs v) f bound tf)
     (hg : GlueComputes B (fun v => P v ∧ ¬lhs v < rhs v) g bound tg) :
     GlueComputes B P (fun v => if lhs v < rhs v then f v else g v)
-      bound (tl + tr + (max tf tg + 3)) := by
-  let Q : (Fin (k + 2) → ℕ) → Prop := fun v' =>
-    P (v' ∘ Fin.castAdd 2) ∧
-      v' (Fin.natAdd k 0) = lhs (v' ∘ Fin.castAdd 2) ∧
-      v' (Fin.natAdd k 1) = rhs (v' ∘ Fin.castAdd 2)
-  let cond : Cond (k + 2) := .lt (Fin.natAdd k 0) (Fin.natAdd k 1)
-  have hf' : GlueComputes B (fun v' => Q v' ∧ cond.Holds ⟨v', fun _ => 0⟩)
-      (fun v' => f (v' ∘ Fin.castAdd 2)) (fun v' => bound (v' ∘ Fin.castAdd 2)) tf :=
-    hf.reindex (Fin.castAdd 2)
-      (fun v' ⟨⟨hp, hl', hr'⟩, hc⟩ => ⟨hp, by simpa only [cond, Cond.Holds, hl', hr'] using hc⟩)
-      (fun _ _ => le_rfl)
-  have hg' : GlueComputes B (fun v' => Q v' ∧ ¬cond.Holds ⟨v', fun _ => 0⟩)
-      (fun v' => g (v' ∘ Fin.castAdd 2)) (fun v' => bound (v' ∘ Fin.castAdd 2)) tg :=
-    hg.reindex (Fin.castAdd 2)
-      (fun v' ⟨⟨hp, hl', hr'⟩, hc⟩ => ⟨hp, by simpa only [cond, Cond.Holds, hl', hr'] using hc⟩)
-      (fun _ _ => le_rfl)
-  have hsel := select cond hf' hg'
-  have hst := stage_pair hl hr hsel (fun v hp => by
-    have hcast : Fin.addCases v ![lhs v, rhs v] ∘ Fin.castAdd 2 = v :=
-      funext fun i => by simp
-    refine ⟨hcast.symm ▸ hp, ?_, ?_⟩ <;> simp [hcast])
-  convert hst using 2 with v
-  have hcast : Fin.addCases v ![lhs v, rhs v] ∘ Fin.castAdd 2 = v :=
-    funext fun i => by simp
-  simp [cond, Cond.Holds, hcast]
+      bound (tl + tr + (max tf tg + 3)) :=
+  ite_staged (.lt (Fin.natAdd k 0) (Fin.natAdd k 1)) (fun _ => Iff.rfl) hl hr hf hg
 
 end GlueComputes
 

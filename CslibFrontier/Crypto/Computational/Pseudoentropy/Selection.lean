@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Pseudoentropy.Basic
 public import CslibFrontier.Languages.Probabilistic.Selection
 import CslibFrontier.Computability.Probabilistic.Selection
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -99,8 +100,7 @@ theorem eval_predictionGame_selectPredictor (sample : ℕ → ProbComp (List Boo
       ProbComp.eval (OracleComp.selectBest (count n) (trials n)
         (fun i => predictionGame sample (fun n => predict n i) n) >>=
           fun i => predictionGame sample (fun n => predict n i) n) := by
-  simp only [predictionGame, selectPredictor, bind_pure_comp, ProbComp.eval_bind,
-    ProbComp.eval_map, PMF.map_bind]
+  simp only [pmf_norm, predictionGame, selectPredictor, bind_pure_comp]
   rw [PMF.bind_comm (ProbComp.eval (sample n))]
 
 /-- The selected predictor's error is bounded by every candidate's error plus estimation and

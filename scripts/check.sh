@@ -13,7 +13,7 @@ if (($#)); then
     exit 2
   fi
 fi
-log_dir=$(mktemp -d "${TMPDIR:-/tmp}/complexitylib-check.XXXXXX") || exit 1
+log_dir=$(mktemp -d "${TMPDIR:-/tmp}/cslib-frontier-check.XXXXXX") || exit 1
 status=0
 gate=0
 run() {

@@ -244,8 +244,7 @@ theorem winProbOn_nonneg (C : Finset (Fin n)) : 0 ≤ G.winProbOn ha hb C := ENN
 
 /-- Winning more coordinates is less likely. -/
 theorem winProbOn_anti : Antitone (G.winProbOn ha hb) := fun _ _ hCD =>
-  ENNReal.toReal_mono (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono (G.winsOn_anti ha hb hCD))
+  Cslib.Probability.PMF.toOuterMeasure_toReal_mono _ (G.winsOn_anti ha hb hCD)
 
 end Coordinates
 

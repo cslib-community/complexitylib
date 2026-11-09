@@ -24,6 +24,8 @@ lower bound on circuit size.
 
 * `Cslib.Circuits.Program.card_biUnion_wireSupport_le_cost`: supporting inputs are bounded by the
   frontier size plus the program cost under any weight bounding arities by `1 + w op`.
+* `Cslib.Circuits.Circuit.card_inputSupport_le_cost`: the same bound for the inputs supporting a
+  circuit with `m` outputs, with `m` in place of the frontier size.
 * `Cslib.Circuits.Circuit.card_inputSupport_le_size`: a circuit of fan-in `r` with `m` outputs has
   at most `m + (r - 1) size` supporting inputs.
 * `Cslib.Circuits.Circuit.essential_le_size`: the same bound for essential inputs of the computed
@@ -66,21 +68,6 @@ theorem Wire.castSucc_injective :
     Function.Injective (Wire.castSucc : Wire n g → Wire n (g + 1)) := by
   intro a b h
   cases a <;> cases b <;> simp_all [Wire.castSucc]
-
-private def Circuit.frontier (c : Circuit σ n m) :
-    Finset (Wire n c.size) :=
-  Finset.univ.image c.outputs
-
-@[simp] private theorem Circuit.mem_frontier
-    {c : Circuit σ n m}
-    {wire : Wire n c.size} :
-    wire ∈ c.frontier ↔
-      ∃ output, c.outputs output = wire := by
-  simp [Cslib.Circuits.Circuit.frontier]
-
-private def Circuit.reachableInputs (c : Circuit σ n m) :
-    Finset (Fin n) :=
-  c.program.reachableInputs c.frontier
 
 /-- Every input supporting a wire in the frontier is reachable from the frontier. -/
 private theorem Program.support_subset_reachableInputs
@@ -125,16 +112,6 @@ private theorem Program.support_subset_reachableInputs
         refine Finset.mem_biUnion.mpr ⟨wire, ?_, hi⟩
         by_cases lastSelected : Wire.gate (Fin.last g) ∈ frontier <;>
           simp [opened, lastSelected, prior, wireSelected]
-
-private theorem Circuit.inputSupport_subset_reachableInputs
-    (c : Circuit σ n m) :
-    c.inputSupport ⊆ c.reachableInputs := by
-  intro input present
-  apply c.program.support_subset_reachableInputs c.frontier
-  simp only [Circuit.mem_inputSupport, Finset.mem_biUnion,
-    Cslib.Circuits.Circuit.mem_frontier] at present ⊢
-  obtain ⟨output, supported⟩ := present
-  exact ⟨c.outputs output, ⟨output, rfl⟩, supported⟩
 
 /-- Opening the last gate `g` along `line` increases the frontier size by at most `w line.op`
 whenever `σ.Arity line.op ≤ 1 + w line.op`. -/
@@ -217,6 +194,22 @@ theorem Program.card_biUnion_wireSupport_le_cost
   (Finset.card_le_card (program.support_subset_reachableInputs frontier)).trans
     (program.card_reachableInputs_le_cost w hw frontier)
 
+/-- The inputs supporting a circuit with `m` outputs are bounded by `m` plus the program cost, for
+any weight function that bounds gate arities by `1 + w op`. -/
+theorem Circuit.card_inputSupport_le_cost (c : Circuit σ n m) (w : σ.Op → ℕ)
+    (hw : ∀ op, σ.Arity op ≤ 1 + w op) : c.inputSupport.card ≤ m + c.program.cost w := by
+  have hsub : c.inputSupport ⊆ (Finset.univ.image c.outputs).biUnion c.program.wireSupport := by
+    intro i hi
+    obtain ⟨o, ho⟩ := Circuit.mem_inputSupport.mp hi
+    exact Finset.mem_biUnion.mpr ⟨c.outputs o, Finset.mem_image_of_mem _ (Finset.mem_univ o), ho⟩
+  calc c.inputSupport.card
+      ≤ ((Finset.univ.image c.outputs).biUnion c.program.wireSupport).card :=
+        Finset.card_le_card hsub
+    _ ≤ (Finset.univ.image c.outputs).card + c.program.cost w :=
+        c.program.card_biUnion_wireSupport_le_cost w hw _
+    _ ≤ m + c.program.cost w :=
+        Nat.add_le_add_right (Finset.card_image_le.trans_eq (Finset.card_fin m)) _
+
 private theorem Program.cost_le_of_fanInAtMost (p : Program σ n g) {r : ℕ} (h : p.FanInAtMost r) :
     p.cost (fun op => max (r - 1) (σ.Arity op - 1)) ≤ (r - 1) * g := by
   induction p with
@@ -228,32 +221,6 @@ private theorem Program.cost_le_of_fanInAtMost (p : Program σ n g) {r : ℕ} (h
     rw [hw]
     exact Nat.add_le_add (ih hp) le_rfl
 
-private theorem Program.card_reachableInputs_le
-    (program : Program σ n g)
-    (r : Nat) :
-    ∀ (_bounded : program.FanInAtMost r) (frontier : Finset (Wire n g)),
-      (program.reachableInputs frontier).card ≤
-        frontier.card + (r - 1) * g := by
-  intro bounded frontier
-  have hw : ∀ op, σ.Arity op ≤ 1 + max (r - 1) (σ.Arity op - 1) := fun op => by omega
-  exact (program.card_reachableInputs_le_cost _ hw frontier).trans
-    (Nat.add_le_add_left (program.cost_le_of_fanInAtMost bounded) _)
-
-private theorem Circuit.card_reachableInputs_le_size
-    (c : Circuit σ n m)
-    (r : Nat)
-    (bounded : c.FanInAtMost r) :
-    c.reachableInputs.card ≤ m + (r - 1) * c.size := by
-  have frontierBound : c.frontier.card ≤ m := by
-    simpa [Cslib.Circuits.Circuit.frontier] using
-      (Finset.card_image_le :
-        (Finset.univ.image c.outputs).card ≤
-          (Finset.univ : Finset (Fin m)).card)
-  have programBound := c.program.card_reachableInputs_le r bounded c.frontier
-  calc
-    c.reachableInputs.card ≤ c.frontier.card + (r - 1) * c.size := programBound
-    _ ≤ m + (r - 1) * c.size := Nat.add_le_add_right frontierBound _
-
 /-- A fan-in-`r` circuit has at most `m + (r - 1) * c.size`
 supporting inputs. -/
 theorem Circuit.card_inputSupport_le_size
@@ -261,8 +228,8 @@ theorem Circuit.card_inputSupport_le_size
     {r : Nat}
     (bounded : c.FanInAtMost r) :
     c.inputSupport.card ≤ m + (r - 1) * c.size := by
-  exact (Finset.card_le_card c.inputSupport_subset_reachableInputs).trans
-    (c.card_reachableInputs_le_size r bounded)
+  exact (c.card_inputSupport_le_cost _ fun op => by omega).trans
+    (Nat.add_le_add_left (c.program.cost_le_of_fanInAtMost bounded) _)
 
 
 /-- If a circuit has fan-in at most `r`, computes `target`, and every input in

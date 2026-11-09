@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.List.Append
 import CslibFrontier.Tactic.EncLen
 
@@ -541,14 +542,6 @@ namespace Cslib.Complexity
 
 open Cslib.Probability Interaction _root_.Turing _root_.Turing.MultiTapeTM
 
-private theorem natCast_div_le_natCast_div_iff {a b c d : ℕ} (hb : b ≠ 0) (hd : d ≠ 0) :
-    (a : ENNReal) / b ≤ c / d ↔ a * d ≤ b * c := by
-  rw [ENNReal.div_le_iff_le_mul (Or.inl (by exact_mod_cast hb)) (Or.inl (ENNReal.natCast_ne_top _)),
-    ← ENNReal.mul_div_right_comm, ENNReal.le_div_iff_mul_le (Or.inl (by exact_mod_cast hd))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-  rw [mul_comm (c : ENNReal)]
-  exact_mod_cast Iff.rfl
-
 variable {α : Type} {enc : α ↪ List Bool} {k : ℕ} {Control : Type}
 
 /-- **The value decides an interactive proof.** If the verifier `V` is realized, against every
@@ -559,12 +552,8 @@ number of coin values: completeness `2 / 3` and the optimal prover give more tha
 theorem mem_iff_two_pow_lt_value {V : α → WordOracleComp Unit Bool} {A : Set α}
     {M : MultiTapePTM k Bool Control Unit} {fuel : α → ℕ}
     (hV : ∀ a (S : Type) (oracle : Unit × List Bool → StateT S PMF (List Bool)) s,
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (encBool <$> V a)).run s =
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (M.runOracle (fuel a) (enc a))).run s)
+      ProbOracleComp.runWith oracle (encBool <$> V a) s =
+      ProbOracleComp.runWith oracle (M.runOracle (fuel a) (enc a)) s)
     (hA : IsInteractiveProof V A (2 / 3) (1 / 3)) (a : α) :
     a ∈ A ↔ 2 ^ fuel a < 2 * value (coinFamily M (fuel a) (enc a)) (fuel a) (fuel a) [] := by
   set t := fuel a
@@ -586,14 +575,14 @@ theorem mem_iff_two_pow_lt_value {V : α → WordOracleComp Unit Bool} {A : Set 
     obtain ⟨P, hP⟩ := hA.complete a ha
     have h := hP.trans (hupper P)
     rw [show (2 / 3 : ENNReal) = ((2 : ℕ) : ENNReal) / ((3 : ℕ) : ENNReal) by norm_num,
-      natCast_div_le_natCast_div_iff (by norm_num) hpos] at h
+      ENNReal.natCast_div_le_natCast_div_iff (by norm_num) hpos] at h
     have := Nat.one_le_two_pow (n := t)
     lia
   · intro hlt
     by_contra ha
     have h := hopt ▸ hA.sound a ha (optimalProver _ t t)
     rw [show (1 / 3 : ENNReal) = ((1 : ℕ) : ENNReal) / ((3 : ℕ) : ENNReal) by norm_num,
-      natCast_div_le_natCast_div_iff hpos (by norm_num)] at h
+      ENNReal.natCast_div_le_natCast_div_iff hpos (by norm_num)] at h
     lia
 
 /-- **`IP ⊆ PSPACE`** [Arora and Barak, Chapter 8][AroraBarak09] [Sipser, Section

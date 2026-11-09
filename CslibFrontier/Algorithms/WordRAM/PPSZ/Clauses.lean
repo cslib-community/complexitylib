@@ -46,7 +46,7 @@ namespace Cslib.Algorithms.WordRAM.PPSZ
 open Cslib.WordRAM.Block Cslib.Logic.PL Cslib.Complexity.PPSZ
 open Cslib.Algorithms.WordRAM.Schoening (litCode encodeClause encodeClauses encodeClauses_cons
   encodeClauses_nil length_encodeClause litCode_shiftRight litCode_and_one)
-open Cslib.Algorithms.WordRAM.PPZ (optCode PartialAt)
+open Cslib.Algorithms.WordRAM.PPZ (optCode PartialAt optCode_eq_one_sub_iff)
 
 variable {n : ℕ}
 
@@ -227,13 +227,6 @@ theorem litCode_injective : Function.Injective (litCode (n := n)) := by
   have h2 := congrArg (· &&& 1) h
   simp only [litCode_shiftRight, litCode_and_one] at h1 h2
   exact Prod.ext (Fin.ext h1) (by cases hl : l.2 <;> cases hl' : l'.2 <;> simp_all)
-
-/-- The word of a stored value is `1 - s` exactly when the value is `!s`. -/
-theorem optCode_eq_one_sub_iff (o : Option Bool) (s : Bool) :
-    optCode o = 1 - s.toNat ↔ o = some (!s) := by
-  rcases o with _ | a
-  · cases s <;> simp [optCode]
-  · cases a <;> cases s <;> simp [optCode]
 
 /-- **Compatibility through codes** is compatibility of the literals, with `x` set to `!b`. -/
 theorem compatCodes_map_litCode {mem : ℕ → ℕ} {Tb : ℕ} {τ : Fin n → Option Bool}

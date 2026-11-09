@@ -186,8 +186,7 @@ theorem CNF.computableInPolyTime_eval_bitsAssignment [DecidableEq V] (enc : V �
   have e : (fun p : (CNF V × List V) × ℕ => p.1.1.eval (bitsAssignment p.1.2 p.2)) =
       fun p => p.1.1.eval fun v => p.2.bits.getD (p.1.2.idxOf v) false := by
     funext p
-    congr 1
-    funext v
+    congr 1 with v : 1
     exact bitsAssignment_eq_getD ..
   rw [e]
   fun_prop [CNF.eval, Clause.eval, Literal.eval]

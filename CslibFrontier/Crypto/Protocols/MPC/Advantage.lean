@@ -40,8 +40,9 @@ coalition-indexed tuples.
 
 * `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_eq_zero_iff`: zero advantage against every
   distinguisher is equality of the ideal and real joint distributions.
-* `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.semiHonestAdvantage_eq_zero`: perfect
-  privacy gives zero advantage.
+* `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.semiHonestAdvantage_eq_zero`,
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivateLe.semiHonestAdvantage_eq_zero`: perfect
+  privacy (full or `t`-threshold) gives zero advantage.
 * `Cslib.Crypto.Protocols.MPC.restrict_singleton`: restricting a tuple of views to `{i}`.
 
 ## References
@@ -106,6 +107,17 @@ theorem PerfectSemiHonestPrivate.semiHonestAdvantage_eq_zero
     (D : ((i : I) → PartyView In Coins sc i) × ((i : Fin m) → Out i) → ProbComp Bool) :
     semiHonestAdvantage proto W f I (S I) x D = 0 :=
   (semiHonestAdvantage_eq_zero_iff proto W f I (S I) x).mpr (h I x) D
+
+/-- Threshold perfect semi-honest privacy gives zero distinguishing advantage against every
+distinguisher for every coalition `I` with `I.card ≤ t`. -/
+theorem PerfectSemiHonestPrivateLe.semiHonestAdvantage_eq_zero
+    {t : ℕ} {proto : Protocol m spec sc In Coins Out} {W : MultiOracleWorld spec}
+    {f : Functionality m In Out} {S : (I : Finset (Fin m)) → CoalitionSimulator sc In Coins Out I}
+    (h : PerfectSemiHonestPrivateLe t proto W f S) {I : Finset (Fin m)} (hI : I.card ≤ t)
+    (x : (i : Fin m) → In i)
+    (D : ((i : I) → PartyView In Coins sc i) × ((i : Fin m) → Out i) → ProbComp Bool) :
+    semiHonestAdvantage proto W f I (S I) x D = 0 :=
+  (semiHonestAdvantage_eq_zero_iff proto W f I (S I) x).mpr (h I hI x) D
 
 /-! ### Singleton coalitions -/
 

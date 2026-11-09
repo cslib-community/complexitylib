@@ -64,13 +64,6 @@ section Runs
 
 variable {d : Desc} {x : List ℕ}
 
-/-- A halted configuration is fixed by `stepOut`. -/
-theorem stepOut_of_state_eq_none {c : SCfg} (h : c.state = none) (out : List ℕ) :
-    stepOut d x (c, out) = (c, out) := by
-  obtain ⟨_ | _, _, _⟩ := c
-  · simp [stepOut, step]
-  · simp at h
-
 /-- Once halted, a run stays where it is. -/
 theorem iterate_stepOut_of_state_eq_none {s : SCfg × List ℕ} {t t' : ℕ}
     (h : ((stepOut d x)^[t] s).1.state = none) (ht : t ≤ t') :

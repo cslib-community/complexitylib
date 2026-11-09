@@ -395,8 +395,7 @@ theorem integral_sum_payment_uniformBid_eq_vickrey :
       (fun _ => uniformBid (Fintype.card ι)) i (uniformBid (Fintype.card ι) 0) = 0 := fun i => by
     rw [interimPayment_eq, uniformBid, mul_zero, zero_mul]
   rw [Finset.sum_congr rfl fun i _ => h0 i, Finset.sum_const_zero, zero_add]
-  congr 1
-  funext v
+  congr 1 with v : 1
   refine Finset.sum_congr rfl fun i _ => ?_
   congr 1
   change Vickrey.allocation _ i = Vickrey.allocation v i

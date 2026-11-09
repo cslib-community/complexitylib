@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # The strong exponential time hypothesis implies the orthogonal vectors hypothesis
@@ -433,21 +434,16 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
     simp only [B, Bb, length_encPair, Nat.zero_add, encNat_two_pow, List.length_append,
       List.length_replicate, List.length_singleton] at h₁ h₂ h₃ h₅ ⊢
     nlinarith
-  have hBbP : PolyBounded (fun φ => (encCNF φ).length) Bb :=
-    .of_forall_le (2 * cv + 8) (dv + 1) fun φ => le_rfl
+  have hBbP : PolyBounded (fun φ => (encCNF φ).length) Bb := by growth_poly
   have hL (j : ℕ) : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length)
       fun φ => ((encCNF φ).length + 1) ^ j := .of_forall_le 1 j fun φ => by simp
   have hL₁ : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) fun φ => (encCNF φ).length + 1 :=
     .of_forall_le 1 1 fun φ => by simp
   have hP : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length)
-      fun φ => 2 * ((Bb φ + 1) ^ D + 3 * ((encCNF φ).length + 1)) :=
-    (PolyBounded.const 2).mul
-      ((((PolyBounded.of_polynomiallyBounded id (bound := fun x => (x + 1) ^ D)
-        (by fun_prop)).comp hBbP).mono fun φ => le_rfl).add ((PolyBounded.const 3).mul hL₁))
+      fun φ => 2 * ((Bb φ + 1) ^ D + 3 * ((encCNF φ).length + 1)) := by growth_poly
   have hQ : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length)
       fun φ => 2 * (((encCNF φ).length + 1) ^ d₀ + ((encCNF φ).length + 1) ^ d₁ +
-        ((encCNF φ).length + 1) + ((encCNF φ).length + 1) ^ 3) :=
-    (PolyBounded.const 2).mul ((((hL d₀).add (hL d₁)).add hL₁).add (hL 3))
+        ((encCNF φ).length + 1) + ((encCNF φ).length + 1) ^ 3) := by growth_poly
   obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (μ := fun φ => (half φ).length)
     (T := fun φ => ((encCNF φ).length + 1) ^ d₀ + (((encCNF φ).length + 1) ^ d₁ +
         (encCNF φ).length + ((half φ).length + 1) * (2 * 2 ^ (half φ).length +
