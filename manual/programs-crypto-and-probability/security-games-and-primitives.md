@@ -544,6 +544,23 @@ nonconstant counter schedule, are in
 and direct checks of the sampling lemmas are in
 [`CslibFrontierTests/BitStringCollision.lean`](../../CslibFrontierTests/BitStringCollision.lean).
 
+For hash functions built from a fixed permutation or block cipher, import
+[`Hash/Sponge.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Sponge.lean) and
+[`Hash/BlockCipherCompression.lean`](../../CslibFrontier/Crypto/Primitives/Hash/BlockCipherCompression.lean)
+(Katz–Lindell 3rd ed., §7.3.1 and §7.3.3). The sponge module writes the state as a pair
+`(rate, capacity)` with an arbitrary output map and defines `absorb`, `squeeze`, `pad`, `toBlocks`
+and `hash` (Construction 7.6). `badEvent_of_hash_eq` is the deterministic core of Claim 7.8 for
+forward permutation queries: a collision between distinct messages triggers `ImageCollision` for
+the output map (E1), `ZeroCapacity` (E2) or `ImageCollision` for `Prod.snd` (E3) among the
+evaluated inputs. `hash_eq_of_capacity_eq` extends any capacity collision to a hash collision, and
+`hash_prodCongr_collision` answers Exercise 7.26. Inverse queries, Claim 7.9 and the bound of
+Theorem 7.7 are not formalized. The block-cipher module defines Davies–Meyer (`daviesMeyer`) and
+the compression functions of Exercise 7.23(a) and (c) (`cipherOutput`, `keyMasked`), with
+inverse-query collisions (`cipherOutput_collision`, `keyMasked_collision`) and the fixed-point
+collision of Exercise 7.24 (`daviesMeyer_collision_of_fixedPoints`); the ideal-cipher bound of
+Theorem 7.5 is not formalized. Concrete checks are in
+[`CslibFrontierTests/Crypto/Sponge.lean`](../../CslibFrontierTests/Crypto/Sponge.lean).
+
 ## Authentication, signatures, and state
 
 [SignatureScheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Signature.lean#L87) bundles efficient key generation, signing, verification and correctness. The base message space is exactly `n` bits. Its oracle forger chooses signing requests adaptively; ordinary EUF-CMA rejects any message previously signed. [exists_oneWay_iff_exists_oneTimeSignature](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWayToSignature.lean#L882) is the OWF/one-time-signature equivalence via Lamport's construction. Stateless many-time `EUFCMA` `SignatureScheme`s on `n`-bit messages are constructed from any `OneWayPermutation` in [`TCRSignature.lean`](../../CslibFrontier/Crypto/Computational/TCRSignature.lean) (`OneWayPermutation.exists_eufCMA`) and from any general `OneWay` function in [`Rompel.lean`](../../CslibFrontier/Crypto/Computational/Rompel.lean) (`OneWay.exists_eufCMA`, `exists_oneWay_iff_exists_signature`, `exists_oneTimeSignature_iff_exists_signature` [rompel90][rompel90]). For unrestricted bit-string messages (`msg : List Bool`), [`WordSignatureScheme`](../../CslibFrontier/Crypto/Computational/WordSignature.lean) removes the `n`-bit message-length filter from signing, verification and `eufCmaGame` (`WordSignatureScheme.EUFCMA`, strictly stronger than `toSignatureScheme.EUFCMA`), [`TCRSignature.wordScheme`](../../CslibFrontier/Crypto/Computational/TCRSignature/ManyTime.lean) lifts any `SignatureScheme.EUFCMA` scheme via per-signature fresh-key target collision-resistant hash-and-sign (`SignatureScheme.EUFCMA.eufCMA_wordScheme`, `OneWayPermutation.exists_wordEUFCMA`; Boneh–Shoup §13.2.1, construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534 [bs23][bs23]), and [`Rompel.lean`](../../CslibFrontier/Crypto/Computational/Rompel.lean) closes the unrestricted-message equivalence from any uniform `OneWay` function (`OneWay.exists_wordEUFCMA`, `exists_oneWay_iff_exists_wordSignature`, `exists_oneTimeSignature_iff_exists_wordSignature` [rompel90][rompel90]).
