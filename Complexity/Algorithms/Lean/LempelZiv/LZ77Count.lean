@@ -57,9 +57,7 @@ theorem isHistory_of_isTreeStructured {W : ℕ} :
     rw [LZ78.isTreeStructured_cons] at ht
     obtain ⟨⟨q, hq, a, rfl⟩, ht⟩ := ht
     rw [isHistory_cons]
-    have hhW : h.length ≤ W := by
-      simp only [List.length_append] at hW
-      omega
+    have hhW : h.length ≤ W := by grind
     refine ⟨by simp, ?_, isHistory_of_isTreeStructured (dict ++ [q ++ [a]]) (h ++ (q ++ [a])) ws
       ht (fun p hp => ?_) (by rwa [List.append_assoc, ← List.flatten_cons])⟩
     · rw [List.dropLast_concat]

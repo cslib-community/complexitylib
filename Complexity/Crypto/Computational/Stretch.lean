@@ -100,8 +100,7 @@ theorem real_hop (generator : List Bool → List Bool) (n total i : ℕ) (hi : i
     uniformList_add, PMF.map_bind, PMF.map_comp, Function.comp_def]
   apply PMF.bind_congr_on_support
   intro seed hseed
-  congr 1
-  funext suffix
+  congr 1 with suffix : 1
   simp only [iterate, hcount, Function.iterate_succ_apply,
     step_append generator seed suffix (length_of_mem_support_uniformList hseed)]
 
@@ -265,8 +264,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     change (generatorEnsemble generator n).bind _ = _
     simp_rw [eval_reduction]
     rw [PMF.bind_comm]
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact eval_real_hop generator count adversary n i.val
   have hideal : ProbComp.eval (prgIdealGame (fun n => n + 1)
       (reduction generator count adversary) n) =
@@ -277,8 +275,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     change (uniformList (n + 1)).bind _ = _
     simp_rw [eval_reduction]
     rw [PMF.bind_comm]
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact eval_ideal_hop generator count adversary n i.val
   have havg := Game.advantage_hybrid_average
     (fun i => (hybrid generator n (count n) i).bind
