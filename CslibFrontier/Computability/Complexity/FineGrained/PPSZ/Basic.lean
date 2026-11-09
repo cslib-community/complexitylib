@@ -159,9 +159,9 @@ that agrees with `σ`. [Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005] d
 up front and characterise the bit strings for which the run outputs `σ`; here the bits are drawn
 during the run, and the probability is computed directly (`PPZ.runWith_apply_restrict`). -/
 theorem run_apply_restrict {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (hσ : φ.eval σ = true)
-    (π : Equiv.Perm (Fin n)) {i : ℕ} (hi : i ≤ n) :
+    (π : Equiv.Perm (Fin n)) {i : ℕ} :
     run φ w π i (restrict σ (prefixSet π i)) = (2⁻¹ : ENNReal) ^ unforcedCount φ w σ π i :=
-  PPZ.runWith_apply_restrict (fun _ hτ _ _ h => implied_eq hσ hτ h) π hi
+  PPZ.runWith_apply_restrict (fun _ hτ _ _ h => implied_eq hσ hτ h) π
 
 /-! ### Forced variables and the success probability -/
 
@@ -279,9 +279,8 @@ theorem ppz_round_apply_le {φ : CNF (Fin n)} {w : ℕ} (hw : 1 ≤ w) {σ : Fin
   simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_apply]
   refine tsum_le_tsum fun π => mul_le_mul_right ?_ _
   rw [← PPZ.restrict_prefixSet_self σ π]
-  rw [PPZ.runWith_apply_restrict (O := PPZ.forced φ) (fun _ hτ _ _ h => PPZ.forced_eq hσ hτ h) π
-    le_rfl, PPZ.runWith_apply_restrict (O := implied φ w) (fun _ hτ _ _ h => implied_eq hσ hτ h) π
-    le_rfl]
+  rw [PPZ.runWith_apply_restrict (O := PPZ.forced φ) (fun _ hτ _ _ h => PPZ.forced_eq hσ hτ h) π,
+    PPZ.runWith_apply_restrict (O := implied φ w) (fun _ hτ _ _ h => implied_eq hσ hτ h) π]
   exact pow_le_pow_right_of_le_one' (ENNReal.inv_le_one.mpr one_le_two)
     (unforcedCount_le_ppz hw σ π n)
 
