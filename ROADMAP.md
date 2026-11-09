@@ -242,9 +242,15 @@ The concrete initializer computes empty-history completion, ignores fabricated
 initial proposals, and records zero turn/opportunity allowances in the stop bit.
 One machine works for all encoded startup data and a fixed correlated geometric
 source, including a nonempty feasible-dual cover instance, unbounded first replies,
-zero allowances and empty ground. The carrier still issues its two raw calls even
-with a true computed stop bit; semantic post-response/control enforcement and
-source-admitted query selection are not yet realized. This is a concrete binary
+zero allowances and empty ground. A native initial guard now reads a computed
+dispatch bit, emits the framed initial output and halts without an oracle call on
+initial completion or zero allowances. Its exact stopped law composes with the
+blank-tape initializer and preserves prior oracle memory/resources; a correlated
+unbounded-reply client checks the live branch of the same machine. The older
+unconditional carrier remains available. The guarded live branch still makes two
+raw calls without a post-response check (and can exceed a one-turn allowance);
+semantic post-response/control enforcement and source-admitted query selection
+are not yet realized. This is a concrete binary
 startup ABI, not a conventional external source/PTM encoding bridge.
 An injective header format carries original encoded data, old raw histories,
 private storage and budget/availability/stop/output fields. Those header fields
@@ -254,7 +260,7 @@ source with unbounded reply lengths and empty/zero-cost edges. This concrete raw
 append scheduler is not a source concurrent-batch selector. The outer reply buffer
 and marker remain retained, and full buffer reuse/repeated restart are unproved.
 Native semantic context/private-state updates, dynamically generated next batches, buffer/workspace
-cleanup and reuse, initial-completion stopping, and the repeated adaptive
+cleanup and reuse, post-response stopping, and the repeated adaptive
 query/stop/output loop still need concrete composition. The raw-program/native-local joint-law composition is not a theorem
 that one native online machine implements that composition.
 The strict oracle-PPT compiler's input-only clock and bounded-prefix query do not

@@ -1781,13 +1781,35 @@ and empty ground. From the same matching warm checkout, run:
 scripts/build.sh ComplexityTests.NativeContextLoader
 ```
 
-This closes the preinstalled-context requirement for this binary startup ABI. It
-still does not load a conventional external PTM/source encoding, generate an
-admitted batch from the original instance, or update/enforce control fields after
-responses. The checked zero-allowance client deliberately exposes that the raw
-carrier still makes two calls with a true stored stop bit. Semantic availability,
-private-control and budget updates, initial-completion stopping, repeated buffer
-reuse/restart and the native quantitative upper/optimum endpoint remain open.
+For initial stopping, use `exists_guarded_original_input`. It constructs one finite
+native machine from the same original input, writes a dispatch bit and framed
+output before the retained header, then reads that bit with native instructions.
+A true computed bit emits the stored mask and halts without calling the oracle;
+prior oracle memory and its resource ledger are unchanged. A false bit enters the
+actual two-query carrier on unchanged context tapes, preserving its unbounded
+execution and correlated joint resource law. `NativeStopGuard.terminal_stop` and
+`terminal_go` provide the reusable transition-level branch laws without assuming
+consumer termination or success.
+
+The [native guard client](../../ComplexityTests/NativeStopGuard.lean) checks this
+same blank-tape machine on zero turns, zero opportunities, and empty ground with
+a nonempty candidate list (returning the all-false mask). Its live branch uses a
+single correlated source with arbitrarily long positive-probability replies.
+From the same matching warm checkout, run:
+
+```bash
+scripts/build.sh ComplexityTests.NativeStopGuard
+```
+
+This closes initial stop enforcement for this binary startup ABI. The older
+`exists_original_input_runtime` remains the unconditional transport API. Neither
+API loads a conventional external source/PTM encoding or generates an admitted
+batch from the original instance. After an initially live dispatch, the guarded
+machine still makes two raw calls without checking completion or allowances
+between them; even a one-turn allowance can therefore be exceeded. Semantic
+post-response history/private-control/budget updates, deadline stopping, repeated
+buffer cleanup/restart and the native quantitative upper/optimum endpoint remain
+open.
 
 Import `Complexity.Probability.StochasticOracle.NativeRetention.ResponseExecution`
 for `exists_query_retention`. Its continuation code is derived from the existing
@@ -1810,9 +1832,10 @@ contexts. It still issues its one query on an already complete instance. The
 previous uniform processor still starts from `encWork` on its input tape; this new
 program does not construct a dynamic `encWork` history there. A complete selector
 must retain runtime context/private state, compute subsequent requests, clear and
-reuse its buffers/workspace, and implement initial-completion/budget/deadline
-stopping and repeated native restart. Those are not realized by these theorems. Consequently they do
-not yet supply the native upper success, tail-sum cost or common-oracle optimum
+reuse its buffers/workspace, and implement post-response budget/deadline stopping
+and repeated native restart. The initial guard above does not supply these loop
+steps. Consequently these theorems do not yet supply the native upper success,
+tail-sum cost or common-oracle optimum
 comparison. An optional terminal value `none` records divergence; it is not a
 halted failure and must not be assigned a zero accrued prefix bill. The existing
 native whole-epoch trace retains such prefix resources, while cofinal path-cost

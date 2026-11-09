@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.StochasticOracle.NativeRetention.Packets
-public import Complexity.Computability.Probabilistic.NativeContextLoader
+public import Complexity.Computability.Probabilistic.NativeStopGuard
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Mathlib.Tactic
@@ -19,7 +19,9 @@ import Mathlib.Tactic
 The actual encoded input contains rational incidence data and startup allowances,
 not a precomputed context or native execution witness. Native code constructs the
 header, ignores caller-supplied proposals when computing initial completion, and
-loads the reserved tape before the existing two-query runtime transport program.
+loads the reserved tape before native dispatch. The guarded entry emits the computed
+initial output without any query when the initial stop flag is true; otherwise it
+enters the existing two-query runtime transport program.
 Its supported scheduler still submits raw original/context words: source batch
 admission, semantic post-response control updates and repeated selection/stopping
 remain open. This is initialization for [Wang2027], model pp. 4--6/Theorem 5 p. 12,
@@ -29,10 +31,12 @@ not the complete source upper policy or a conventional external PTM encoding.
 
 * `Startup`, `encoding`: original instance and runtime startup metadata.
 * `initialDecision`, `header`, `context`: computed empty-history initial control data.
+* `guardedContext`: the initial dispatch flag, framed output and retained header.
 
 ## Main results
 
-* `exists_original_input_runtime`: a constructed blank-tape native machine for all inputs.
+* `exists_original_input_runtime`: the original unconditional raw two-query carrier.
+* `exists_guarded_original_input`: blank-tape initialization with actual initial stopping.
 -/
 
 public section
@@ -114,7 +118,7 @@ private theorem decision_computable :
 
 private def encHeader : Header ↪ List Bool := ⟨Header.encode, Header.encode_injective⟩
 
-private theorem computable_context : ComputableInPolyTime context encoding encBits := by
+private theorem header_computable : ComputableInPolyTime header encoding encHeader := by
   have he : ComputableInPolyTime (fun x : NativeRetention.Input => encInput x)
       encInput encBits := .of_eq fun _ => rfl
   have ho := he.comp system_computable
@@ -144,9 +148,34 @@ private theorem computable_context : ComputableInPolyTime context encoding encBi
   have htuple := ho.prod (hreq.prod (hreq.prod (private_computable.prod
     (turns_computable.prod (hmask.prod (hstop.prod hout))))))
   have hh0 := hp.comp htuple
-  have hh : ComputableInPolyTime header encoding encHeader := hh0
+  exact hh0
+
+private theorem computable_context : ComputableInPolyTime context encoding encBits := by
   have hb : ComputableInPolyTime Header.encode encHeader encBits := .of_eq fun _ => rfl
-  exact ComputableInPolyTime.frame.comp (hb.comp hh)
+  exact ComputableInPolyTime.frame.comp (hb.comp header_computable)
+
+/-- Actual native guard packet, computed from the same initial control data.
+The payload retains the original header used by the raw runtime carrier. -/
+@[expose] def guardedContext (data : Startup) : List Bool :=
+  NativeStopGuard.packet (header data).stopped (header data).output (context data)
+
+private theorem header_fields : ComputableInPolyTime
+    (fun h : Header => (h.originalInstance, h.requests, h.replies, h.privateSelector,
+      h.remainingTurns, h.opportunities, h.stopped, h.output)) encHeader
+    (encPair encBits (encPair (encList encBits) (encPair (encList encBits)
+      (encPair encBits (encPair encUnary (encPair encBits (encPair encBool encBits))))))) :=
+  .of_eq fun _ => by simp [encHeader, Header.encode, List.append_assoc]
+
+private theorem guarded_context_computable :
+    ComputableInPolyTime guardedContext encoding encBits := by
+  have hf := header_fields.comp header_computable
+  have hs := hf.snd'.snd'.snd'.snd'.snd'.snd'.fst'
+  have ho := hf.snd'.snd'.snd'.snd'.snd'.snd'.snd'
+  have hp := ho.prod computable_context
+  have he : ComputableInPolyTime (fun p : List Bool × List Bool => encPair encBits encBits p)
+      (encPair encBits encBits) encBits := .of_eq fun _ => rfl
+  have ht := he.comp hp
+  exact ComputableInPolyTime.bitsCons hs ht
 
 /-- A constructed native machine starts on the original encoded instance/startup
 input with every work tape blank, loads its computed header, and then executes the
@@ -168,5 +197,51 @@ theorem exists_original_input_runtime :
               recorded.record ((), context data ++ frame first.word) second last⟩ :
                 Observation P) :=
   NativeContextLoader.exists_loaded_runtime encoding context computable_context
+
+/-- A blank-tape native program enforces the computed initial stop bit before any
+oracle call. Completion, zero turn allowance and zero opportunity allowance now
+halt with the computed output. The live branch is still the concrete two-query
+raw carrier; no post-response stopping or source-batch admission is asserted. -/
+theorem exists_guarded_original_input :
+    ∃ (scratch : ℕ) (S : Type) (_ : Finite S)
+      (code : MultiTapePTM (4 + scratch) Bool S Unit),
+      ∀ (P : Type) (env : Environment Unit P) (data : Startup) (memory : Memory Unit P),
+      (NativeUnboundedExecution.terminal code env
+        ⟨code.initialConfig (encoding data), memory⟩).map
+          (Option.map NativeContextLoader.observe) =
+        if (header data).stopped then
+          PMF.pure (some (⟨(header data).output,
+            tapeOfList (NativeStopGuard.packet true (header data).output (context data)),
+            (1 + 2 * (header data).output.length + 1 : ℕ), fun _ => none, memory⟩ :
+              Observation P))
+        else
+          (env ((), encoding data) memory).bind fun (first, next) =>
+            let recorded := memory.record ((), encoding data) first next
+            let selected := NativeStopGuard.packet false (header data).output (context data) ++
+              frame first.word
+            (env ((), selected) recorded).map fun (second, last) =>
+              some (⟨selected ++ second.word, tapeOfList selected, 0, fun _ => none,
+                recorded.record ((), selected) second last⟩ : Observation P) := by
+  obtain ⟨scratch, R, hR, loader, hl⟩ :=
+    NativeContextLoader.exists_load_then encoding guardedContext guarded_context_computable
+  let consumer := NativeStopGuard.machine NativeRuntimeContext.restoringProgram
+  let code := (MultiTapePTM.ofDeterministic loader).seq
+    (consumer.extendTapes (Fin.castAddEmb scratch))
+  refine ⟨scratch, _, inferInstance, code, ?_⟩
+  intro P env data memory
+  rw [hl, PMF.map_comp]
+  trans (NativeUnboundedExecution.terminal consumer env
+    (NativeContextLoader.loadedStart consumer (encoding data) (guardedContext data) memory)).map
+      (Option.map NativeRuntimeContext.observe)
+  · apply congrArg (fun f =>
+      (NativeUnboundedExecution.terminal consumer env
+        (NativeContextLoader.loadedStart consumer (encoding data)
+          (guardedContext data) memory)).map f)
+    funext value
+    cases value with
+    | none => rfl
+    | some world => exact congrArg some (NativeContextLoader.observe_extend world)
+  · exact NativeStopGuard.runtime_observation env (encoding data) (header data).output
+      (context data) (header data).stopped memory
 
 end Cslib.Probability.StochasticOracle.NativeRetention.InitialContext

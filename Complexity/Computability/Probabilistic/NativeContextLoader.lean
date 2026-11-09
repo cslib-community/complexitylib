@@ -212,7 +212,8 @@ loader scratch tapes. -/
   ⟨world.config.tapes.output, world.config.tapes.workTapes 0,
     world.config.tapes.workTapePos 0, world.config.tapes.workTapes 1, world.memory⟩
 
-private theorem observe_extend {scratch : ℕ} {R S P : Type} {input : List Bool}
+/-- Readback commutes with actual scratch embedding and native sequential control. -/
+theorem observe_extend {scratch : ℕ} {R S P : Type} {input : List Bool}
     (world : World 4 S Unit P input) :
     observe (NativeSequential.right (First := R) (extendWorld scratch world)) =
       NativeRuntimeContext.observe world := by
@@ -225,7 +226,8 @@ private theorem observe_extend {scratch : ℕ} {R S P : Type} {input : List Bool
     embed_workTapePos_embed, NativeRuntimeContext.observe]
   rfl
 
-private theorem loaded_runtime (input context : List Bool) {P : Type}
+/-- The concrete carrier's retained-context entry is exactly its canonical loaded storage. -/
+theorem loaded_runtime (input context : List Bool) {P : Type}
     (memory : Memory Unit P) :
     loadedStart NativeRuntimeContext.restoringProgram input context memory =
       NativeRuntimeContext.restoringEntry input context memory := by
