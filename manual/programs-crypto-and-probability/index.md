@@ -1848,13 +1848,36 @@ tape. From the same matching warm checkout, run:
 scripts/build.sh ComplexityTests.NativeRuntimeControl
 ```
 
-This API executes one post-response phase and always issues its one query. It
-does not execute an initial guard, even on already stopped input. The separate
-`State` ABI also needs a conversion from the guarded `Startup` entry before those
-programs can form one loop. Supplied old histories need an invariant tying them
-to the actual oracle ledger; initial clients use `initial` with empty history.
-Its request is framed runtime-state
-data, not a proved source-admitted batch packet. The opportunity count is a
+This older API executes one post-response phase and always issues its one query,
+even on already stopped input. To execute the initial guard and convert original
+input to the runtime ABI, import
+`Complexity.Probability.StochasticOracle.NativeRetention.GuardedStartup`.
+`GuardedStartup.Input` contains the original `Startup` and a reservation allowance,
+with no supplied history or prepared State. `exists_guarded_phase` constructs one
+program before quantifying over those inputs, the oracle and its hidden memory.
+Starting with blank work tapes, it computes the guard packet. Initial completion
+or zero turn/planning/reservation counts take the actual stopping branch, emitting
+the computed output while preserving the entire prior oracle ledger. The live
+branch clears the packet, computes the fresh State from the original input, and
+uses native marker/virtual-input execution to run the full query/updater. The
+returned observation contains the actual updated packet, ordinary output and
+hidden oracle memory jointly. It does not dispatch on the new stop bit.
+
+`RuntimeControl.HistoryMatches` relates stored raw requests/replies/private bytes
+to actual native events. `initial_history_matches` and
+`afterReply_history_matches` establish initialization and preservation for the
+actual framed-State request. The [guarded startup client](../../ComplexityTests/NativeGuardedStartup.lean)
+checks the compiled code on initial completion, each exhausted allowance,
+nonempty cover and a single hidden-state source with arbitrarily long correlated
+reports, including the observed history invariant. From the same warm checkout:
+
+```bash
+scripts/build.sh ComplexityTests.NativeGuardedStartup
+```
+
+This closes initial guarded ABI conversion, not post-response dispatch or repeated
+feedback. Its request remains framed runtime-state data, not a proved
+source-admitted batch packet. The opportunity count is a
 single-opportunity planning allowance, not a verified consumed-opportunity ledger
 for arbitrary concurrent batches. Allotments reserve latency units; the native
 interface does not expose the ledger's real elapsed time. The final guard packet

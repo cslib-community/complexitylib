@@ -344,12 +344,33 @@ structure Observation (P : Type) where
     (context : Fin k) (world : World k S Unit P input) : Observation P :=
   ⟨world.config.tapes.workTapes context, world.config.tapes.output, world.memory⟩
 
-private def plainWorld {k : ℕ} {S P : Type} (input : List Bool)
+/-- Actual readback ignores only control relabeling, not storage or oracle memory. -/
+theorem observe_mapControl {k : ℕ} {S T P : Type} {input : List Bool}
+    (i : Fin k) (f : S → T) (world : World k S Unit P input) :
+    observe i (NativeSequential.mapControl f world) = observe i world := rfl
+
+/-- Readback at an embedded context tape preserves its exact contents and ledger. -/
+theorem observe_embedStorage {k width : ℕ} {S P : Type} {input : List Bool}
+    (i : Fin k) (e : Fin k ↪ Fin width) (world : World k S Unit P input) :
+    observe (e i) (NativeSequential.embedStorage e world) = observe i world := by
+  simp [observe, NativeSequential.embedStorage, Config.embed, MultiTapeTM.embed]
+
+/-- Virtual-input redirection leaves ordinary context/output/ledger observations unchanged. -/
+theorem observe_inputWorld {k : ℕ} {S P : Type} {word : List Bool}
+    (i : Fin k) (world : World k S Unit P word) (input : List Bool)
+    (position : Fin (input.length + 2)) :
+    observe (i.castAdd 2) (NativeResponseExecution.inputWorld world input position) =
+      observe i world := by
+  simp [observe, NativeResponseExecution.inputWorld, InputFromTape.config, inCfg]
+
+/-- Canonical ordinary word storage with explicit native channels and oracle memory. -/
+@[expose] def wordWorld {k : ℕ} {S P : Type} (input : List Bool)
     (state : Option S) (words : Fin k → List Bool) (channels : Unit → Channel Bool)
     (memory : Memory Unit P) : World k S Unit P input :=
   ⟨⟨wordsCfg input state words [], channels⟩, memory⟩
 
-private theorem terminal_transform {k : ℕ} {S P : Type}
+/-- A proved deterministic tape transformation has its actual native terminal law. -/
+theorem terminal_transform {k : ℕ} {S P : Type}
     (code : MultiTapeTM k Bool S) (env : Environment Unit P)
     (input : List Bool) (words result : Fin k → List Bool)
     (channels : Unit → Channel Bool) (memory : Memory Unit P) (time space : ℕ)
@@ -357,19 +378,19 @@ private theorem terminal_transform {k : ℕ} {S P : Type}
       (fun inp ws => inp = input ∧ ws = words)
       (fun _ _ ws' emitted => ws' = result ∧ emitted = []) time space) :
     NativeUnboundedExecution.terminal (MultiTapePTM.ofDeterministic code) env
-      (plainWorld input (some code.q₀) words channels memory) =
-      PMF.pure (some (plainWorld input (S := S) none result channels memory)) := by
+      (wordWorld input (some code.q₀) words channels memory) =
+      PMF.pure (some (wordWorld input (S := S) none result channels memory)) := by
   obtain ⟨ws, emitted, hr, ⟨hw, hem⟩, _⟩ :=
     transformsTapes_iff_runFrom.mp h input words [] ⟨rfl, rfl⟩
   subst ws
   subst emitted
   apply NativeResponseExecution.terminal_of_clock _ env _
-    (plainWorld input (S := S) none result channels memory) time ?_ rfl
+    (wordWorld input (S := S) none result channels memory) time ?_ rfl
   unfold execute
   change ((OracleComp.interpret
     (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) (handler env))
     ((MultiTapePTM.ofDeterministic code).runOracleConfigFrom time
-      (plainWorld input (some code.q₀) words channels memory).config)).run memory).map _ = _
+      (wordWorld input (some code.q₀) words channels memory).config)).run memory).map _ = _
   rw [MultiTapePTM.run_interpret_runOracleConfigFrom_ofDeterministic, PMF.pure_map]
   change PMF.pure (⟨⟨code.runFrom (wordsCfg input (some code.q₀) words []) time,
     channels⟩, memory⟩ : World k S Unit P input) = _
@@ -410,20 +431,20 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
     (fun _ => ⟨[], [], 0⟩) memory _ _ hload'
   have hi : (⟨program.initialConfig input, memory⟩ : World _ _ Unit P input) =
       NativeSequential.left reader
-        (plainWorld input (some loader.q₀) (fun _ => []) (fun _ => ⟨[], [], 0⟩) memory) := by
+        (wordWorld input (some loader.q₀) (fun _ => []) (fun _ => ⟨[], [], 0⟩) memory) := by
     apply congrArg (fun cfg => (⟨cfg, memory⟩ : World _ _ Unit P input))
     apply Config.ext
     · apply Cfg.ext
       · rfl
       · rfl
-      · funext i; simp [MultiTapeMachine.initialConfig, Cfg.init, plainWorld,
+      · funext i; simp [MultiTapeMachine.initialConfig, Cfg.init, wordWorld,
                   Sequential.left, Cfg.mapState, wordsCfg]
       · rfl
       · rfl
     · rfl
   rw [hi, NativeSequential.terminal_seq, ht, PMF.pure_bind, PMF.map_comp]
   have he : NativeSequential.resume reader
-      (plainWorld input (S := (Unit ⊕ RewindState) ⊕ RewindWorkState)
+      (wordWorld input (S := (Unit ⊕ RewindState) ⊕ RewindWorkState)
         none words (fun _ => ⟨[], [], 0⟩) memory) =
       NativeResponseExecution.startFrom localProgram input memory
         (NativeResponseExecution.Workspace.words
@@ -433,7 +454,7 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
     · apply Cfg.ext
       · rfl
       · rfl
-      · simp only [Sequential.start, plainWorld,
+      · simp only [Sequential.start, wordWorld,
           NativeResponseExecution.Workspace.words, wordsCfg, Cfg.withState]
         funext i
         cases i using Fin.addCases with
@@ -456,7 +477,7 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
             omega
           simp only [words, Function.update_of_ne hn]
           fin_cases j <;> simp
-      · simp only [Sequential.start, plainWorld,
+      · simp only [Sequential.start, wordWorld,
           NativeResponseExecution.Workspace.words, wordsCfg, Cfg.withState]
         funext i
         cases i using Fin.addCases with
@@ -477,7 +498,7 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
     (memory.record ((), input) reply next) time space hs
   have hc : NativeResponseExecution.localStartFrom localProgram input memory reply next
       (NativeResponseExecution.Workspace.words (Function.update (fun _ => []) 0 input)) =
-      plainWorld reply.word (some localCode.q₀) (Function.update (fun _ => []) 0 input)
+      wordWorld reply.word (some localCode.q₀) (Function.update (fun _ => []) 0 input)
         ((NativeQueryAll.finish (k := 3 + k) () input memory reply next).config.channels)
         (memory.record ((), input) reply next) := by
     apply congrArg (fun cfg => (⟨cfg, memory.record ((), input) reply next⟩ :
@@ -489,7 +510,7 @@ theorem exists_query_processor {A : Type} (encoding : A ↪ List Bool)
   rw [hc, hp, PMF.pure_map, PMF.pure_map]
   simp [NativeSequential.right, Sequential.right, Cfg.mapState,
     NativeResponseExecution.resultWorld,
-    InputFromTape.config, inCfg, plainWorld, wordsCfg, Fin.append, Fin.addCases,
+    InputFromTape.config, inCfg, wordWorld, wordsCfg, Fin.append, Fin.addCases,
     Fin.castLT, input, observe]
 
 

@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Probabilistic.NativeContextLoader
-import Complexity.Computability.Machines.Turing.MultiTape.Machine.Simulation
 import Complexity.Probability.PMF.Bind
 import Mathlib.Tactic
 
@@ -83,34 +82,8 @@ private theorem terminal_run {S P : Type} {input : List Bool}
       (NativeSequential.right (First := Fin 3) world) =
       (NativeUnboundedExecution.terminal consumer env world).map
         (Option.map (NativeSequential.right (First := Fin 3))) := by
-  symm
-  apply StoppedProcess.terminal_map (NativeOpenExecution.step consumer env)
-    NativeUnboundedExecution.halted (NativeUnboundedExecution.step_halted _ _)
-    (NativeOpenExecution.step (machine consumer) env) NativeUnboundedExecution.halted
-    (NativeUnboundedExecution.step_halted _ _) (NativeSequential.right (First := Fin 3)) _ _ world
-  · intro next
-    rw [← execute_one, ← execute_one]
-    have hr := MultiTapeMachine.runConfigFrom_mapState
-      (Choose := ReaderT Bool Id)
-      (spec := probOracleSpec (fun _ : Unit × List Bool => List Bool))
-      consumer (machine consumer)
-      (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
-      (fun _ _ => by simp only [Functor.map_map]; rfl)
-      (fun op word => ProbOracleComp.query (op, word)) Sum.inr
-      (fun _ _ _ _ => rfl) 1 next.config
-    change (machine consumer).runConfigFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
-      (fun op word => ProbOracleComp.query
-        (spec := fun _ : Unit × List Bool => List Bool) (op, word))
-      1 (Sequential.right next.config) =
-      Sequential.right <$> consumer.runConfigFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
-        (fun op word => ProbOracleComp.query
-          (spec := fun _ : Unit × List Bool => List Bool) (op, word)) 1 next.config at hr
-    simp only [execute, NativeSequential.right, hr,
-      OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp]
-    rfl
-  · intro next
-    simp [NativeSequential.right, Sequential.right, NativeUnboundedExecution.halted,
-      Cfg.mapState]
+  exact NativeSequential.terminal_mapControl consumer (machine consumer) Sum.inr
+    (fun _ _ _ _ _ => rfl) env world
 
 private def point {S P : Type} (_consumer : MultiTapePTM 4 Bool S Unit)
     (input word : List Bool) (memory : Memory Unit P) (state : Option (Fin 3 ⊕ S))

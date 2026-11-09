@@ -36,11 +36,13 @@ The source conventions are [Wang2027], model pp. 4--6, Theorem 5 p. 12/App. A.5 
 
 * `State`, `initial`, `afterReply`: actual runtime data and the concrete control update.
 * `stopped`, `result`, `packet`: recomputed control and retained-output framing.
+* `HistoryMatches`: raw histories/private bytes agree with actual native events.
 
 ## Main results
 
 * `exists_native_processor`: uniform runtime-context update with local cleanup.
 * `exists_native_phase`: actual blank-tape query/read/update law.
+* `afterReply_history_matches`: the actual transport request preserves raw history.
 -/
 
 public section
@@ -107,6 +109,30 @@ and the complete updated runtime state. -/
 /-- The same algorithm handles every runtime context and arbitrary complete reply. -/
 @[expose] def process (input : State × List Bool) : List Bool :=
   packet (afterReply input.1 input.2)
+
+/-- Authenticate both stored public histories and the append controller's private
+word against actual native events. This does not certify source batch admission. -/
+@[expose] def HistoryMatches (seed : List Bool) (state : State)
+    (events : List (Event Unit)) : Prop :=
+  state.work.history = events.map (fun e => e.reply.word) ∧
+    state.requests = events.map (fun e => e.request) ∧
+      state.privateWord = seed ++ events.reverse.flatMap (fun e => frame e.reply.word)
+
+/-- Original-input initialization creates no fabricated event history. -/
+theorem initial_history_matches (data : InitialContext.Startup) (allotments : ℕ) :
+    HistoryMatches data.privateSelector (initial data allotments) [] := by
+  simp [HistoryMatches, initial]
+
+/-- The concrete updater preserves authenticated history after the request it
+actually uses in this transport ABI. The new reply is not a supplied decoded family. -/
+theorem afterReply_history_matches {P : Type} (seed : List Bool) (state : State)
+    (memory : Memory Unit P) (reply : Reply) (next : P)
+    (h : HistoryMatches seed state memory.events) :
+    HistoryMatches seed (afterReply state reply.word)
+      (memory.record ((), frame (encoding state)) reply next).events := by
+  obtain ⟨hh, hreq, hp⟩ := h
+  simp [HistoryMatches, afterReply, Memory.record, hh, hreq, hp,
+    List.reverse_cons, List.flatMap_append, List.append_assoc]
 
 private theorem fields : ComputableInPolyTime
     (fun s : State => (s.work, s.requests, s.privateWord, s.turns, s.opportunities, s.allotments))
@@ -180,7 +206,8 @@ private theorem computable_afterReply : ComputableInPolyTime
   have hout := hpack.comp (hnewwork.prod (hrequests.prod (hprivate.prod (ht.prod (ho.prod ha)))))
   exact hout
 
-private theorem computable_packet : ComputableInPolyTime packet encoding encBits := by
+/-- The actual recomputed guard packet is uniformly computable from runtime data. -/
+theorem computable_packet : ComputableInPolyTime packet encoding encBits := by
   have hd := Packets.computable_decision.comp fields.fst'
   have ht := ComputableInPolyTime.unary_le' fields.snd'.snd'.snd'.fst'
     (ComputableInPolyTime.const 0)

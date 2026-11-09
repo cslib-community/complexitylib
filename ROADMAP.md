@@ -264,9 +264,17 @@ not source-admitted concurrent batches; the planning opportunity count is not ye
 an actual source used-set and allotments are not observed real elapsed time.
 Reading the new guard, handing its payload to a source-valid next planner, clearing
 the outer reply buffer/marker and constructing repeated feedback remain open.
-The phase frontend always queries; initial/post-response guards are not part of it.
-Its separate State ABI still needs conversion from the guarded Startup entry and
-an invariant authenticating old stored history against actual oracle events.
+The older phase frontend still always queries. `GuardedStartup.exists_guarded_phase`
+now constructs one blank-tape program from original Startup data plus a reservation
+allowance: it computes and executes the initial guard, clears its packet, converts
+the original input to a fresh runtime State, and runs the actual query/updater only
+on the live branch. Stopped inputs emit the computed initial output without changing
+the oracle ledger. Native marker/virtual-input execution supplies the conversion,
+not a host-supplied continuation or prepared State. `RuntimeControl.HistoryMatches`
+authenticates raw stored requests/replies/private bytes against actual events, with
+initialization and actual-response preservation laws. A correlated unbounded-report
+client checks the same code. Post-response dispatch/final output, actual batch
+admission and repeated feedback remain open; no native upper theorem follows yet.
 It supplies neither native upper quantitative guarantees nor an optimum comparison.
 An injective header format carries original encoded data, old raw histories,
 private storage and budget/availability/stop/output fields. Those header fields

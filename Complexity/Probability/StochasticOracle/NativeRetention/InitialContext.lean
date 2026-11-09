@@ -89,7 +89,8 @@ is not claimed to obey that bit. -/
 /-- The context word is computed by the initializer, not encoded in its input. -/
 @[expose] def context (data : Startup) : List Bool := (header data).initialWord
 
-private theorem fields : ComputableInPolyTime
+/-- Read the original input and startup allowances through the canonical encoding. -/
+theorem fields : ComputableInPolyTime
     (fun data : Startup => (data.system, data.turns, data.opportunities, data.privateSelector))
     encoding (encPair encInput (encPair encUnary (encPair encUnary encBits))) :=
   .of_eq fun _ => rfl

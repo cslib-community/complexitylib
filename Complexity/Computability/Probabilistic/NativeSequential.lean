@@ -9,8 +9,10 @@ module
 
 public import Complexity.Computability.Probabilistic.NativeUnboundedExecution
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Sequential
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExtendTapes
 public import Complexity.Probability.PMF.StoppedProcess.Map
 public import Complexity.Probability.PMF.StoppedProcess.Boundary
+import Complexity.Computability.Machines.Turing.MultiTape.Machine.Simulation
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 import Complexity.Probability.PMF.Bind
 import Mathlib.Tactic
@@ -26,6 +28,8 @@ time or diverge. No terminating clock or representation contract is supplied.
 ## Main results
 
 * `terminal_seq`: exact whole-state unbounded native sequential composition.
+* `terminal_mapControl`: structural transition-table control relabeling.
+* `terminal_embedStorage`: actual tape embedding preserves the unbounded law.
 -/
 
 public section
@@ -35,6 +39,74 @@ open Turing Turing.MultiTapeMachine NativeOpenExecution
 open scoped ENNReal
 variable {k : ℕ} {Control First Second Operation Private : Type} [DecidableEq Operation]
   {input : List Bool}
+
+/-- Relabel native control while preserving tapes, channels and shared oracle memory. -/
+@[expose] def mapControl (f : First → Second) (world : World k First Operation Private input) :
+    World k Second Operation Private input := ⟨world.config.mapState f, world.memory⟩
+
+/-- A structural transition-table simulation preserves the entire unbounded native
+law, including divergence. Branch compilers discharge the transition identity directly. -/
+theorem terminal_mapControl (source : MultiTapePTM k Bool First Operation)
+    (target : MultiTapePTM k Bool Second Operation) (f : First → Second)
+    (htr : ∀ state inp work answer bit,
+      target.tr (f state) inp work answer bit =
+        Action.mapState f (source.tr state inp work answer bit))
+    (env : Environment Operation Private) (world : World k First Operation Private input) :
+    NativeUnboundedExecution.terminal target env (mapControl f world) =
+      (NativeUnboundedExecution.terminal source env world).map (Option.map (mapControl f)) := by
+  symm
+  apply StoppedProcess.terminal_map (NativeOpenExecution.step source env)
+    NativeUnboundedExecution.halted (NativeUnboundedExecution.step_halted _ _)
+    (NativeOpenExecution.step target env) NativeUnboundedExecution.halted
+    (NativeUnboundedExecution.step_halted _ _) (mapControl f) _ _ world
+  · intro next
+    rw [← execute_one, ← execute_one]
+    have hr := MultiTapeMachine.runConfigFrom_mapState
+      (Choose := ReaderT Bool Id)
+      (spec := probOracleSpec (fun _ : Operation × List Bool => List Bool))
+      source target
+      (fun choices => choices <$> ProbOracleComp.sample (ProbComp.uniform Bool))
+      (fun _ _ => by simp only [Functor.map_map]; rfl)
+      (fun op word => ProbOracleComp.query (op, word)) f
+      (fun state inp work answer => funext fun bit => htr state inp work answer bit)
+      1 next.config
+    change target.runConfigFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
+      (fun op word => ProbOracleComp.query
+        (spec := fun _ : Operation × List Bool => List Bool) (op, word))
+      1 (next.config.mapState f) =
+      (fun cfg => cfg.mapState f) <$> source.runConfigFrom
+        (ProbOracleComp.sample (ProbComp.uniform Bool))
+        (fun op word => ProbOracleComp.query
+          (spec := fun _ : Operation × List Bool => List Bool) (op, word)) 1 next.config at hr
+    simp only [execute, mapControl, hr, OracleComp.interpret_map,
+      StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp]
+    rfl
+  · intro next
+    simp [mapControl, Config.mapState, NativeUnboundedExecution.halted, Cfg.mapState]
+
+/-- Embed ordinary native storage into selected work tapes, leaving extras blank. -/
+@[expose] def embedStorage {width : ℕ} (e : Fin k ↪ Fin width)
+    (world : World k First Operation Private input) : World width First Operation Private input :=
+  ⟨world.config.embed e (fun _ _ => none) (fun _ => 0), world.memory⟩
+
+/-- Tape embedding preserves the unbounded native joint law, including divergence. -/
+theorem terminal_embedStorage {width : ℕ} (e : Fin k ↪ Fin width)
+    (source : MultiTapePTM k Bool First Operation) (env : Environment Operation Private)
+    (world : World k First Operation Private input) :
+    NativeUnboundedExecution.terminal (source.extendTapes e) env (embedStorage e world) =
+      (NativeUnboundedExecution.terminal source env world).map (Option.map (embedStorage e)) := by
+  symm
+  apply StoppedProcess.terminal_map (NativeOpenExecution.step source env)
+    NativeUnboundedExecution.halted (NativeUnboundedExecution.step_halted _ _)
+    (NativeOpenExecution.step (source.extendTapes e) env) NativeUnboundedExecution.halted
+    (NativeUnboundedExecution.step_halted _ _) (embedStorage e) _ _ world
+  · intro next
+    rw [← execute_one, ← execute_one]
+    simp only [execute, embedStorage, MultiTapePTM.runConfigFrom_embed,
+      OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp]
+    rfl
+  · intro next
+    rfl
 
 /-- Embed a first-phase world into the actual native sequential machine. -/
 @[expose] def left (second : MultiTapePTM k Bool Second Operation)
