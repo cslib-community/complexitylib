@@ -39,11 +39,15 @@ of native weighted-threshold circuits.
 ## Main results
 
 * `Cslib.DecisionTree.eval_eq_of_path_eq`: a common path gives a common output.
+* `Cslib.DecisionTree.card_image_eval_le_leafCount`: a tree takes at most `leafCount` values.
+* `Cslib.DecisionTree.card_le_two_pow_depth_of_injOn`: a tree of depth `d` that recovers a function
+  injective on `S` has `|S| ≤ 2 ^ d`.
 * `Cslib.DecisionTree.leafCount_eq_nodeCount_add_one`: a binary tree has one more leaf than
   internal nodes.
 * `Cslib.DecisionTree.leafCount_le_two_pow_depth`: a tree of depth `d` has at most `2 ^ d` leaves.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_rank`: a tree of depth `d` and rank `r` has at most
   `∑ j ≤ r, d.choose j` leaves.
+* `Cslib.DecisionTree.two_pow_rank_le_leafCount`: a tree of rank `r` has at least `2 ^ r` leaves.
 * `Cslib.DecisionTree.IsDecisionList.rank_le_one`: every decision list has rank at most `1`.
 * `Cslib.DecisionTree.leafCount_le_sum_choose_energy`: a tree of depth `d` and energy `e` has at
   most `∑ j ≤ e, d.choose j` leaves.
@@ -100,6 +104,39 @@ theorem eval_eq_of_path_eq (t : DecisionTree ι β) {x y : ι → Bool}
       simpa only [h.1, hy, Bool.cond_false] using h.2
     · apply ihr
       simpa only [h.1, hy, Bool.cond_true] using h.2
+
+/-- A decision tree takes at most `leafCount` distinct values on any finite set of inputs. -/
+theorem card_image_eval_le_leafCount [DecidableEq β] (t : DecisionTree ι β)
+    (S : Finset (ι → Bool)) : (S.image t.eval).card ≤ t.leafCount := by
+  classical
+  induction t generalizing S with
+  | leaf b =>
+    refine (Finset.card_le_card fun y hy => ?_).trans (Finset.card_singleton b).le
+    obtain ⟨x, -, rfl⟩ := Finset.mem_image.mp hy
+    exact Finset.mem_singleton_self _
+  | node i left right ihl ihr =>
+    have hsub : S.image (node i left right).eval ⊆
+        (S.filter fun x => x i = false).image left.eval ∪
+          (S.filter fun x => x i = true).image right.eval := by
+      intro y hy
+      obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
+      cases hxi : x i
+      · exact Finset.mem_union_left _
+          (Finset.mem_image.mpr ⟨x, Finset.mem_filter.mpr ⟨hx, hxi⟩, by simp [hxi]⟩)
+      · exact Finset.mem_union_right _
+          (Finset.mem_image.mpr ⟨x, Finset.mem_filter.mpr ⟨hx, hxi⟩, by simp [hxi]⟩)
+    exact (Finset.card_le_card hsub).trans ((Finset.card_union_le _ _).trans
+      (Nat.add_le_add (ihl _) (ihr _)))
+
+/-- **Counting lower bound for recovery**: if a decision tree agrees on a finite set `S` of inputs
+with a function `F` that is injective on `S`, then `S` has at most `2 ^ depth` elements. -/
+theorem card_le_two_pow_depth_of_injOn (t : DecisionTree ι β)
+    {F : (ι → Bool) → β} {S : Finset (ι → Bool)} (hF : Set.InjOn F S)
+    (ht : ∀ x ∈ S, t.eval x = F x) : S.card ≤ 2 ^ t.depth := by
+  classical
+  have hinj : Set.InjOn t.eval S := fun x hx y hy hxy => hF hx hy (by rwa [← ht x hx, ← ht y hy])
+  rw [← Finset.card_image_of_injOn hinj]
+  exact (card_image_eval_le_leafCount t S).trans (leafCount_le_two_pow_depth t)
 
 /-- Relabelling queries preserves the structural leaf count, including unreachable leaves. -/
 @[simp]
@@ -164,10 +201,30 @@ def rank : DecisionTree ι β → ℕ
 theorem rank_leaf (b : β) : (leaf b : DecisionTree ι β).rank = 0 :=
   rfl
 
-private theorem rank_node (i : ι) (left right : DecisionTree ι β) :
+/-- The rank of a node: the larger rank of its subtrees, plus one if they are equal. -/
+theorem rank_node (i : ι) (left right : DecisionTree ι β) :
     (node i left right).rank =
       if left.rank = right.rank then left.rank + 1 else max left.rank right.rank :=
   rfl
+
+/-- The left subtree has rank at most that of the node. -/
+theorem rank_left_le_rank_node (i : ι) (left right : DecisionTree ι β) :
+    left.rank ≤ (node i left right).rank := by
+  rw [rank_node]
+  split_ifs <;> omega
+
+/-- The right subtree has rank at most that of the node. -/
+theorem rank_right_le_rank_node (i : ι) (left right : DecisionTree ι β) :
+    right.rank ≤ (node i left right).rank := by
+  rw [rank_node]
+  split_ifs <;> omega
+
+/-- The rank of a node is monotone in the ranks of its subtrees. -/
+theorem rank_node_le_rank_node {i j : ι} {left right left' right' : DecisionTree ι β}
+    (hl : left.rank ≤ left'.rank) (hr : right.rank ≤ right'.rank) :
+    (node i left right).rank ≤ (node j left' right').rank := by
+  rw [rank_node, rank_node]
+  split_ifs <;> omega
 
 /-- Relabelling queries preserves the rank. -/
 @[simp]
@@ -184,6 +241,23 @@ theorem rank_le_depth (t : DecisionTree ι β) : t.rank ≤ t.depth := by
   | node _ left right ihl ihr =>
     simp only [rank, depth_node]
     split_ifs <;> omega
+
+/-- A decision tree of rank `r` has at least `2 ^ r` structural leaves: it embeds a complete binary
+tree of height `r`. -/
+theorem two_pow_rank_le_leafCount (t : DecisionTree ι β) : 2 ^ t.rank ≤ t.leafCount := by
+  induction t with
+  | leaf => simp [leafCount]
+  | node _ left right ihl ihr =>
+    rw [rank_node, leafCount]
+    split_ifs with h
+    · rw [pow_succ, mul_two]
+      rw [← h] at ihr
+      omega
+    · rcases le_total left.rank right.rank with h' | h'
+      · rw [max_eq_right h']
+        omega
+      · rw [max_eq_left h']
+        omega
 
 /-- A decision tree of rank at most `r` and depth at most `d` has at most
 `∑ j ∈ Finset.range (r + 1), d.choose j` structural leaves. -/

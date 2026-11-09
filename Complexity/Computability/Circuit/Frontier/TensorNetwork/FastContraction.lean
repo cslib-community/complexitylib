@@ -333,8 +333,7 @@ theorem pow_slots_le_edges_of_active (h : active x = true) : 64 ^ slots x ≤ x.
     calc 64 ^ slots x = 2 ^ (6 * slots x) := by rw [pow_mul]; norm_num
       _ ≤ 2 ^ (6 * (L / 32768)) := Nat.pow_le_pow_right (by norm_num) (by omega)
   have hprod : 64 ^ slots x * Nat.sqrt L ≤ x.scale := by
-    calc 64 ^ slots x * Nat.sqrt L ≤ 2 ^ (6 * (L / 32768)) * 2 ^ ((L + 1) / 2) :=
-          Nat.mul_le_mul h64 hsq
+    calc 64 ^ slots x * Nat.sqrt L ≤ 2 ^ (6 * (L / 32768)) * 2 ^ ((L + 1) / 2) := by gcongr
       _ = 2 ^ (6 * (L / 32768) + (L + 1) / 2) := (pow_add _ _ _).symm
       _ ≤ 2 ^ L := Nat.pow_le_pow_right (by norm_num) (by omega)
       _ ≤ x.scale := hsL

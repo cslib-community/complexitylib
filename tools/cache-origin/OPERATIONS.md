@@ -219,6 +219,9 @@ service drop-in also bounds its memory and task count; the Go services retain th
 
 ## Usage statistics
 
+The [dashboard](DASHBOARD.md) presents these aggregates as a static public status page.
+Its guide covers installation, metric definitions, validation and rollback.
+
 The second nginx access sink writes one JSON record per completed HTTPS request into the
 **separate** `cache-origin-usage` journal namespace. It includes timestamp, method, object path,
 HTTP status, response-body bytes and request duration. It records successful downloads, HEADs,
