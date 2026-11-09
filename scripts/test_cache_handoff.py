@@ -16,7 +16,7 @@ from unittest.mock import patch
 import cache_handoff as handoff
 
 
-REPOSITORY = "cslib-community/complexitylib"
+REPOSITORY = "cslib-community/cslib-frontier"
 
 
 class API:

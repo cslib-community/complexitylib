@@ -24,13 +24,16 @@ from urllib.request import Request, urlopen
 import cache_handoff as handoff
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = "cslib-community/complexitylib"
+REPOSITORY = "cslib-community/cslib-frontier"
+# The remote cache's storage key predates the repository rename and is kept, so that existing
+# outputs stay addressable (see `scripts/cache/publish.py`).
+CACHE_SCOPE = "cslib-community/complexitylib"
 HARD_EXPIRY = "2026-11-15T00:00:00Z"
 MAX_SAMPLES = 16
 MAX_BYTES = 32 * 1024 ** 3
 MAX_SECONDS = 7200
 CHECKS = [
-    ["lake", "build", "--wfail", "--iofail", "@complexitylib", "@/mk_all",
+    ["lake", "build", "--wfail", "--iofail", "@cslib-frontier", "@/mk_all",
      "@/checkInitImports", "@mathlib/lint-style"],
     ["lake", "test", "--wfail", "--iofail"],
     ["lake", "lint"],
@@ -122,7 +125,7 @@ def published(root, env):
     url = env.get("COMPLEXITYLIB_CACHE_URL", "https://storage.googleapis.com/complexitylib-lake-cache")
     require(url.startswith("https://"), "Unknown cache endpoint")
     toolchain = (root / "lean-toolchain").read_text().strip().replace("/", "--").replace(":", "---")
-    request = Request(f"{url}/r0/{REPOSITORY}/tc/{toolchain}/{env['GITHUB_SHA']}.jsonl", method="HEAD")
+    request = Request(f"{url}/r0/{CACHE_SCOPE}/tc/{toolchain}/{env['GITHUB_SHA']}.jsonl", method="HEAD")
     try:
         with urlopen(request, timeout=15) as response:
             require(response.status == 404, "Target already published: contaminated baseline")
