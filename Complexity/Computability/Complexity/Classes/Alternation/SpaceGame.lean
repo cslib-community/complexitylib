@@ -154,8 +154,7 @@ theorem mem_APSPACE_of_wins_polySpace {π : Type} {encPos : π ↪ List Bool} {A
     have hUw : (U (u :: b :: r)).length ≤ ℓ a := hlen a _ (WordGame.Reach.move b hreach)
     rw [← hFp] at hUw ⊢
     rw [← hp] at hw ⊢
-    have hpow : cU * ((encPos p).length + 1) ^ dU ≤ cU * (ℓ a + 1) ^ dU :=
-      Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
+    have hpow : cU * ((encPos p).length + 1) ^ dU ≤ cU * (ℓ a + 1) ^ dU := by gcongr
     have h := (htp p).mono (t' := tR a) (s' := sR a) (htR a p hw) (by simp only [sR]; omega)
     obtain ⟨ws, em, hrun, ⟨rfl, rfl⟩, hsp⟩ := transformsTapes_iff_runFrom.mp h (enc a) _ [] rfl
     exact ⟨hrun, hsp⟩

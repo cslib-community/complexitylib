@@ -201,9 +201,7 @@ theorem endpoints_minPerfectMatching_perm (δ : α → α → ℕ) {k : ℕ} {O 
     cases O with
     | nil => rfl
     | cons a L =>
-      have hL : L ≠ [] := by
-        rintro rfl
-        simp at heven
+      have hL : L ≠ [] := by grind
       obtain ⟨M₀, hM₀mem, hM₀⟩ :
           ∃ M₀ ∈ L.map fun b => (a, b) :: minPerfectMatching δ k (L.erase b),
             minPerfectMatching δ (k + 1) (a :: L) = M₀ :=

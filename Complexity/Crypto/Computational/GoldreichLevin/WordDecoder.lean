@@ -101,8 +101,7 @@ theorem listStrictMajority_nonzeroSelectors (count : ℕ) (vote : List Bool → 
     simp only [nonzeroSelectors, enumList, indices, List.filter_map, List.map_map,
       Function.comp_def, selectorEquiv, Equiv.coe_fn_mk, Finset.mem_filter,
       Finset.mem_univ, true_and, Bool.decide_coe]
-    congr 2
-    funext guess
+    congr 2 with guess : 1
     apply Bool.eq_iff_iff.mpr
     simp [Finset.Nonempty]
   rw [heq, List.map_map, listStrictMajority_map _ hnodup, hset]
@@ -172,12 +171,10 @@ theorem wordCandidate_eq_ofFn {n k : ℕ} (predictor : List Bool → Bool)
         (nonzeroSelectors k) (List.ofFn guess) =
       List.ofFn (candidate (fun query => predictor (List.ofFn query)) masks guess) := by
   simp only [wordCandidate, listSingles_eq_ofFn, List.map_ofFn, Function.comp_def]
-  congr 1
-  funext i
+  congr 1 with i : 1
   rw [listStrictMajority_nonzeroSelectors]
   unfold candidate
-  congr 1
-  funext subset
+  congr 1 with subset : 1
   simp only [listXorSelected_eq_ofFn_sum_subset, ← ofFn_add, ← dotProduct_eq_foldl, vote,
     Bool.one_eq_true]
   congr 1
@@ -296,8 +293,7 @@ theorem uniform_wordDecode (f : List Bool → List Bool) (predictor : List Bool 
         (maskCount dimension (precision degree dimension)) image).map List.ofFn := by
   rw [invertFixed, ← uniformList_blocks]
   simp only [PMF.map_comp, Function.comp_def]
-  congr 1
-  funext masks
+  congr 1 with masks : 1
   exact wordDecode_eq_ofFn f predictor degree dimension image masks
 
 /-- A sufficiently correlated word predictor yields a valid preimage with probability at least

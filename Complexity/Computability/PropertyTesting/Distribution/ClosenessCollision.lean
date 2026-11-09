@@ -376,11 +376,9 @@ private theorem close_arith {K S ε δ D : ℝ} (hK : 0 < K) (hS : 0 ≤ S) (hδ
   have hδ2 : δ ^ 2 ≤ δ := by nlinarith
   have hQ : 0 ≤ (K + 1) ^ 2 * K ^ 2 * ε ^ 4 := by positivity
   have h1 : K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by
-    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * ε ^ 2 * δ) ^ 2 / 1296) :=
-          mul_le_mul hA hS2 (sq_nonneg S) (by positivity)
+    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * ε ^ 2 * δ) ^ 2 / 1296) := by gcongr
       _ = 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ ^ 2 := by ring
-      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ :=
-          mul_le_mul_of_nonneg_left hδ2 (by positivity)
+      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by gcongr
   have h2 : 2 * K ^ 2 * (K + 1 + 1) * S * D ≤ 1 / 72 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by
     have hSD : S * D ≤ K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4) :=
       mul_le_mul (by linarith) hD hD0 (by positivity)
@@ -388,10 +386,8 @@ private theorem close_arith {K S ε δ D : ℝ} (hK : 0 < K) (hS : 0 ≤ S) (hδ
       _ ≤ 2 * K * (K + 1) ^ 2 * (K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4)) := by
           have h2K : 0 ≤ 2 * K := by positivity
           have hKK : 0 ≤ K * (K + 1 + 1) := by positivity
-          calc 2 * K * (K * (K + 1 + 1)) * (S * D) ≤ 2 * K * (K + 1) ^ 2 * (S * D) :=
-                mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hB h2K) (by positivity)
-            _ ≤ 2 * K * (K + 1) ^ 2 * (K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4)) :=
-                mul_le_mul_of_nonneg_left hSD (by positivity)
+          calc 2 * K * (K * (K + 1 + 1)) * (S * D) ≤ 2 * K * (K + 1) ^ 2 * (S * D) := by gcongr
+            _ ≤ 2 * K * (K + 1) ^ 2 * (K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4)) := by gcongr
       _ = 1 / 72 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by ring
   have hgoal :
       δ * ((K + 1) * K / 2 * ε ^ 2 / 4) ^ 2 = 1 / 64 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by
@@ -413,19 +409,15 @@ private theorem far_arith {K S ε δ D : ℝ} (hK : 0 < K) (hS : 0 ≤ S) (hδ0 
   have hB : K * (K + 1 + 1) ≤ (K + 1) ^ 2 := by nlinarith
   have hδ2 : δ ^ 2 ≤ δ := by nlinarith
   have h1 : K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by
-    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * D * δ) ^ 2 / 1296) :=
-          mul_le_mul hA hS2 (sq_nonneg S) (by positivity)
+    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * D * δ) ^ 2 / 1296) := by gcongr
       _ = 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ ^ 2 := by ring
-      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ :=
-          mul_le_mul_of_nonneg_left hδ2 (by positivity)
+      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by gcongr
   have h2 : 2 * K ^ 2 * (K + 1 + 1) * S * D ≤ 1 / 18 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by
     have hSD : S * D ≤ K * D * δ / 36 * D := mul_le_mul_of_nonneg_right (by linarith) hD0
     have h2K : 0 ≤ 2 * K := by positivity
     calc 2 * K ^ 2 * (K + 1 + 1) * S * D = 2 * K * (K * (K + 1 + 1)) * (S * D) := by ring
-      _ ≤ 2 * K * (K + 1) ^ 2 * (S * D) :=
-          mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hB h2K) (by positivity)
-      _ ≤ 2 * K * (K + 1) ^ 2 * (K * D * δ / 36 * D) :=
-          mul_le_mul_of_nonneg_left hSD (by positivity)
+      _ ≤ 2 * K * (K + 1) ^ 2 * (S * D) := by gcongr
+      _ ≤ 2 * K * (K + 1) ^ 2 * (K * D * δ / 36 * D) := by gcongr
       _ = 1 / 18 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by ring
   have hgoal : δ * ((K + 1) * K / 2 * D / 2) ^ 2 = 1 / 16 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by
     ring
