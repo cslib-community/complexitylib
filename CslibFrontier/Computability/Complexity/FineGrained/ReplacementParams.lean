@@ -255,6 +255,16 @@ theorem rowBound_eq_mul_ceil (β n : ℕ) :
     rw [Real.sqrt_le_iff]
     exact ⟨by positivity, by exact_mod_cast hm_le⟩
 
+/-- Once `1 ≤ λ`, the interval length is at most `2 (β + 3) √λ`: `⌈√λ⌉₊ ≤ √λ + 1 ≤ 2 √λ`. -/
+private theorem rowBound_le_two_mul_sqrt {β n : ℕ} (hlam : 1 ≤ Nat.clog 2 n) :
+    (rowBound β n : ℝ) ≤ 2 * ((β : ℝ) + 3) * Real.sqrt (Nat.clog 2 n) := by
+  have hceil : (⌈Real.sqrt (Nat.clog 2 n)⌉₊ : ℝ) < Real.sqrt (Nat.clog 2 n) + 1 :=
+    Nat.ceil_lt_add_one (Real.sqrt_nonneg _)
+  have h1 : (1 : ℝ) ≤ Real.sqrt (Nat.clog 2 n) :=
+    Real.one_le_sqrt.mpr (by exact_mod_cast hlam)
+  rw [rowBound_eq_mul_ceil, Nat.cast_mul, Nat.cast_add, Nat.cast_ofNat]
+  nlinarith [Nat.cast_nonneg (α := ℝ) β]
+
 /-- Unconditional integer auxiliary dimension bound `D ≤ 2 ^ (λ / 128)` of Lemma 4.8. -/
 theorem auxDim_le_two_pow (n : ℕ) : auxDim n ≤ 2 ^ (Nat.clog 2 n / 128) := by
   unfold auxDim numGroups numNodes
@@ -569,19 +579,8 @@ theorem rowCost_le {β n : ℕ} (hr : 2 ≤ numGroups n) (hR : 32 ≤ rowBound �
   -- Bound `(R / Q) log(2 Q / R) ≤ 1024 (β + 3) ν² / √λ`.
   have hRQ_term : (R : ℝ) / Q * Real.log (2 * (Q : ℝ) / R) ≤
       1024 * ((β : ℝ) + 3) * (nu : ℝ) ^ 2 / Real.sqrt lam := by
-    have hR_upper : (R : ℝ) ≤ 2 * ((β : ℝ) + 3) * Real.sqrt lam := by
-      have hlam_ne : lam ≠ 0 := by omega
-      have hR_def : R = (β + 3) * ((lam - 1).sqrt + 1) := by
-        simp only [R, rowBound, lam, hlam_ne, ↓reduceIte]
-      have hs_le : ((lam - 1).sqrt : ℝ) ≤ Real.sqrt lam := by
-        rw [Real.le_sqrt (Nat.cast_nonneg _) (Nat.cast_nonneg _)]
-        exact_mod_cast (Nat.sqrt_le' (lam - 1)).trans (Nat.sub_le lam 1)
-      have h1_le : (1 : ℝ) ≤ Real.sqrt lam := by
-        rw [Real.le_sqrt zero_le_one (Nat.cast_nonneg _)]
-        have : (1 : ℝ) ≤ lam := by exact_mod_cast (by omega : 1 ≤ lam)
-        linarith
-      rw [hR_def, Nat.cast_mul, Nat.cast_add, Nat.cast_add, Nat.cast_ofNat, Nat.cast_one]
-      nlinarith
+    have hR_upper : (R : ℝ) ≤ 2 * ((β : ℝ) + 3) * Real.sqrt lam :=
+      rowBound_le_two_mul_sqrt (by omega)
     have hQ_lower : (lam : ℝ) ≤ 256 * (nu : ℝ) * Q := by
       have hlt : lam < (Q + 1) * (128 * nu) := by
         have hdiv : 128 * nu * Q + lam % (128 * nu) = lam := Nat.div_add_mod lam (128 * nu)
@@ -731,6 +730,10 @@ private theorem eventually_thresholds {β : ℕ} (hβ : 1 ≤ β) :
   set lam := Nat.clog 2 n
   set nu := Nat.clog 2 lam
   have hsqrt_pos : 0 < Real.sqrt lam := Real.sqrt_pos.mpr (by positivity)
+  -- `λ ≥ 256 > 2 ^ 0`, so `1 ≤ ν`; both group and node counts divide by a power of `ν`.
+  have hnu1 : 1 ≤ nu := by
+    rw [← Nat.lt_iff_add_one_le, Nat.lt_clog_iff_pow_lt one_lt_two]
+    omega
   have hr : 2 ≤ numGroups n := by
     rw [div_lt_iff₀ hsqrt_pos] at h2
     have h4nu : 4 * (nu : ℝ) ^ 2 < Real.sqrt lam := by linarith
@@ -741,11 +744,7 @@ private theorem eventually_thresholds {β : ℕ} (hβ : 1 ≤ β) :
         nlinarith [sq_nonneg (nu : ℝ)]
       rw [Real.sq_sqrt (Nat.cast_nonneg lam)] at hr_le
       exact_mod_cast hr_le
-    have hnu_pos : 0 < nu ^ 2 := by
-      have : 1 ≤ nu := by
-        rw [← Nat.lt_iff_add_one_le, Nat.lt_clog_iff_pow_lt one_lt_two]
-        omega
-      positivity
+    have hnu_pos : 0 < nu ^ 2 := by positivity
     unfold numGroups
     exact (by omega : 2 ≤ 3).trans ((Nat.le_div_iff_mul_le hnu_pos).mpr (Nat.le_sqrt'.mpr h3nu_sq))
   have hR : 32 ≤ rowBound β n := by
@@ -765,26 +764,11 @@ private theorem eventually_thresholds {β : ℕ} (hβ : 1 ≤ β) :
     rw [hrhs, lt_div_iff₀ (by positivity)] at hmul
     linarith
   have hRQ : 6 * rowBound β n ≤ numNodes n := by
-    have hnu_pos : 0 < 128 * nu := by
-      have : 1 ≤ nu := by
-        rw [← Nat.lt_iff_add_one_le, Nat.lt_clog_iff_pow_lt one_lt_two]
-        omega
-      positivity
+    have hnu_pos : 0 < 128 * nu := by positivity
     unfold numNodes
     rw [Nat.le_div_iff_mul_le hnu_pos]
-    have hR_le : (rowBound β n : ℝ) ≤ 2 * ((β : ℝ) + 3) * Real.sqrt lam := by
-      unfold rowBound
-      have hlam_ne : lam ≠ 0 := by omega
-      simp only [lam, hlam_ne, ↓reduceIte, Nat.cast_mul, Nat.cast_add, Nat.cast_ofNat,
-        Nat.cast_one]
-      have hs : ((lam - 1).sqrt : ℝ) ≤ Real.sqrt lam := by
-        rw [Real.le_sqrt (Nat.cast_nonneg _) (Nat.cast_nonneg _)]
-        exact_mod_cast (Nat.sqrt_le' (lam - 1)).trans (Nat.sub_le lam 1)
-      have h1_sqrt : (1 : ℝ) ≤ Real.sqrt lam := by
-        rw [Real.le_sqrt zero_le_one (Nat.cast_nonneg _)]
-        have : (1 : ℝ) ≤ lam := by exact_mod_cast (by omega : 1 ≤ lam)
-        linarith
-      nlinarith
+    have hR_le : (rowBound β n : ℝ) ≤ 2 * ((β : ℝ) + 3) * Real.sqrt lam :=
+      rowBound_le_two_mul_sqrt (by omega)
     have hprod_r : ((6 * rowBound β n * (128 * nu) : ℕ) : ℝ) ≤ lam := by
       push_cast
       calc 6 * (rowBound β n : ℝ) * (128 * (nu : ℝ))
