@@ -107,11 +107,8 @@ theorem positiveAuxiliaryPositions_keys_nodup (φ : CNF ℕ) (d : Graph.Orthogon
   apply List.nodup_flatMap.mpr
   constructor
   · intro ⟨c, i⟩ hc
-    obtain ⟨hi, he⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hc)
-    change i < φ.length at hi
-    change φ[i] = c at he
-    change ((positiveAuxiliaryBlock φ d i c).map Prod.fst).Nodup
-    rw [← he]
+    obtain ⟨hi, he⟩ := List.mem_zipIdx' hc
+    rw [he]
     exact positiveAuxiliaryBlock_keys_nodup φ d hi
   · apply List.pairwise_iff_getElem.mpr
     intro i j hi hj hij
@@ -218,16 +215,11 @@ theorem positiveAuxiliaryPositions_origin (φ : CNF ℕ) (d : Graph.OrthogonalDr
           ((profileVariables (clauseProfile c)).idxOf w) := by
   obtain ⟨⟨c, i⟩, hci, hp⟩ := List.mem_flatMap.mp hp
   obtain ⟨⟨w, j⟩, hwj, he⟩ := List.mem_filterMap.mp hp
-  have hj := List.mem_zipIdx_iff_getElem?.mp hwj
-  obtain ⟨hjlt, hget⟩ := List.getElem?_eq_some_iff.mp hj
+  obtain ⟨hjlt, hget⟩ := List.mem_zipIdx' hwj
   have hwm : w ∈ profileVariables (clauseProfile c) := List.fst_mem_of_mem_zipIdx hwj
   have hidx : (profileVariables (clauseProfile c)).idxOf w = j := by
-    have hn := CNF.nodup_distinctVars (profileFormula (clauseProfile c))
-    have h := hn.idxOf_getElem j hjlt
-    change (profileVariables (clauseProfile c))[j] = w at hget
-    change (profileVariables (clauseProfile c)).idxOf
-      ((profileVariables (clauseProfile c))[j]) = j at h
-    rwa [hget] at h
+    rw [hget]
+    exact (CNF.nodup_distinctVars (profileFormula (clauseProfile c))).idxOf_getElem j hjlt
   rcases w with (n | ⟨a, b⟩) | ⟨⟨a, b⟩, s⟩
   · simp at he
   · simp only [Option.some.injEq, Prod.mk.injEq] at he
