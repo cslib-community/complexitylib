@@ -1148,11 +1148,14 @@ theorem loopIterPMF_indicator_mono (cond : Cond r) (μ_body : Data r → PMF (Da
 def LoopStateInv (cond : Cond r) (I Q : Data r → Prop) (x : Data r) : Prop :=
   (cond.Holds x ∧ I x) ∨ (¬cond.Holds x ∧ Q x)
 
-theorem loopIterPMF_support_inv {cond : Cond r} {I Q : Data r → Prop}
+/-- A property `S` that every active body step preserves holds on the whole support of every
+loop iterate started from a state satisfying `S` and the loop state invariant. -/
+private theorem loopIterPMF_support_of_preserves {cond : Cond r} {I Q S : Data r → Prop}
     {μ_body : Data r → PMF (Data r)}
     (hinv : ∀ x, I x → cond.Holds x → ∀ y ∈ (μ_body x).support, LoopStateInv cond I Q y)
-    (K : ℕ) {x : Data r} (hx : LoopStateInv cond I Q x) :
-    ∀ y ∈ (loopIterPMF cond μ_body K x).support, LoopStateInv cond I Q y := by
+    (hS : ∀ x, I x → cond.Holds x → S x → ∀ y ∈ (μ_body x).support, S y)
+    (K : ℕ) {x : Data r} (hx : LoopStateInv cond I Q x) (hSx : S x) :
+    ∀ y ∈ (loopIterPMF cond μ_body K x).support, S y := by
   induction K generalizing x with
   | zero =>
     intro y hy
@@ -1164,10 +1167,17 @@ theorem loopIterPMF_support_inv {cond : Cond r} {I Q : Data r → Prop}
     obtain ⟨z, hz, hyz⟩ := hy
     rcases hx with ⟨hcx, hIx⟩ | ⟨hcx, hQx⟩
     · rw [loopStepPMF_of_holds hcx] at hz
-      exact ih (hinv x hIx hcx z hz) y hyz
+      exact ih (hinv x hIx hcx z hz) (hS x hIx hcx hSx z hz) y hyz
     · rw [loopStepPMF_of_not_holds hcx, PMF.support_pure, Set.mem_singleton_iff] at hz
       subst hz
-      exact ih (Or.inr ⟨hcx, hQx⟩) y hyz
+      exact ih (Or.inr ⟨hcx, hQx⟩) hSx y hyz
+
+theorem loopIterPMF_support_inv {cond : Cond r} {I Q : Data r → Prop}
+    {μ_body : Data r → PMF (Data r)}
+    (hinv : ∀ x, I x → cond.Holds x → ∀ y ∈ (μ_body x).support, LoopStateInv cond I Q y)
+    (K : ℕ) {x : Data r} (hx : LoopStateInv cond I Q x) :
+    ∀ y ∈ (loopIterPMF cond μ_body K x).support, LoopStateInv cond I Q y :=
+  loopIterPMF_support_of_preserves hinv (fun x hIx hcx _ => hinv x hIx hcx) K hx hx
 
 private theorem pmf_toOuterMeasure_compl_add (μ : PMF (Data r)) (cond : Cond r) :
     μ.toOuterMeasure {y | ¬cond.Holds y} + μ.toOuterMeasure {y | cond.Holds y} = 1 := by
@@ -1540,25 +1550,7 @@ theorem bounded (h : ExecCodeDist w c x μ T) (hx : x.Bounded w) :
       hp_pos hp_top _ _ hinv hp_exit hx_inv ih_body =>
     intro y hy
     obtain ⟨_, K, hK⟩ := mem_support_loopExitPMF hp_pos hp_top hinv hp_exit hx_inv hy
-    have hK_bdd : ∀ K : ℕ, ∀ x₀ : Data r, LoopStateInv cond I Q x₀ → x₀.Bounded w →
-        ∀ z ∈ (loopIterPMF cond μ_body K x₀).support, z.Bounded w := by
-      intro K
-      induction K with
-      | zero =>
-        intro x₀ _ hx₀ z hz
-        rw [loopIterPMF_zero, PMF.support_pure, Set.mem_singleton_iff] at hz
-        rwa [hz]
-      | succ K ihK =>
-        intro x₀ hx₀_inv hx₀ z hz
-        rw [loopIterPMF_succ, PMF.mem_support_bind_iff] at hz
-        obtain ⟨u, hu, hzu⟩ := hz
-        rcases hx₀_inv with ⟨hcx₀, hIx₀⟩ | ⟨hcx₀, hQx₀⟩
-        · rw [loopStepPMF_of_holds hcx₀] at hu
-          exact ihK u (hinv x₀ hIx₀ hcx₀ u hu) (ih_body x₀ hIx₀ hcx₀ hx₀ u hu) z hzu
-        · rw [loopStepPMF_of_not_holds hcx₀, PMF.support_pure, Set.mem_singleton_iff] at hu
-          rw [hu] at hzu
-          exact ihK x₀ (Or.inr ⟨hcx₀, hQx₀⟩) hx₀ z hzu
-    exact hK_bdd K x hx_inv hx y hK
+    exact loopIterPMF_support_of_preserves (S := (·.Bounded w)) hinv ih_body K hx_inv hx y hK
 
 /-- Any register `i` not written by `c` (`c.Preserves i`) is preserved across the support of `μ`. -/
 theorem regs_eq {i : Fin r} (h : ExecCodeDist w c x μ T) (hi : c.Preserves i) :
@@ -1582,25 +1574,8 @@ theorem regs_eq {i : Fin r} (h : ExecCodeDist w c x μ T) (hi : c.Preserves i) :
       hp_pos hp_top _ _ hinv hp_exit hx_inv ih_body =>
     intro y hy
     obtain ⟨_, K, hK⟩ := mem_support_loopExitPMF hp_pos hp_top hinv hp_exit hx_inv hy
-    have hK_eq : ∀ K : ℕ, ∀ x₀ : Data r, LoopStateInv cond I Q x₀ →
-        ∀ z ∈ (loopIterPMF cond μ_body K x₀).support, z.regs i = x₀.regs i := by
-      intro K
-      induction K with
-      | zero =>
-        intro x₀ _ z hz
-        rw [loopIterPMF_zero, PMF.support_pure, Set.mem_singleton_iff] at hz
-        rw [hz]
-      | succ K ihK =>
-        intro x₀ hx₀_inv z hz
-        rw [loopIterPMF_succ, PMF.mem_support_bind_iff] at hz
-        obtain ⟨u, hu, hzu⟩ := hz
-        rcases hx₀_inv with ⟨hcx₀, hIx₀⟩ | ⟨hcx₀, hQx₀⟩
-        · rw [loopStepPMF_of_holds hcx₀] at hu
-          exact (ihK u (hinv x₀ hIx₀ hcx₀ u hu) z hzu).trans (ih_body x₀ hIx₀ hcx₀ hi u hu)
-        · rw [loopStepPMF_of_not_holds hcx₀, PMF.support_pure, Set.mem_singleton_iff] at hu
-          rw [hu] at hzu
-          exact ihK x₀ (Or.inr ⟨hcx₀, hQx₀⟩) z hzu
-    exact hK_eq K x hx_inv y hK
+    exact loopIterPMF_support_of_preserves (S := fun z => z.regs i = x.regs i) hinv
+      (fun z hIz hcz hz u hu => (ih_body z hIz hcz hi u hu).trans hz) K hx_inv rfl y hK
 
 /-- Distributional executions transfer along any defined-evaluation basis simulation
 `ψ : B.Simulates B'`. -/

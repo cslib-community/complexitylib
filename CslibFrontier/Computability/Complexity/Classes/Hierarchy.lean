@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Re
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
@@ -273,12 +274,7 @@ theorem computableInO_diagonal :
   have hbounds (x : List Bool) := by
     have hL : (encNat (2 ^ x.length)).length = x.length + 1 := by
       rw [encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
-    have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
-      (length_encList_le encUnary _ (b := 1) fun s hs => by
-        obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
-        cases b
-        · exact Nat.zero_le _
-        · exact le_rfl).trans (by rw [List.length_map]; omega)
+    have hN := length_encList_map_eBit_le x
     have hE := hcO x
     simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply] at hE
     exact bounds_aux

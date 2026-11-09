@@ -709,30 +709,21 @@ noncomputable def preWhitenKeyRecoveryIdealGame (x : G) : Game := do
     preWhitenKeyRecoveryRealGame x = PMF.pure true := by
   simp [preWhitenKeyRecoveryRealGame, PMF.bind_const]
 
+omit [AddGroup G] in
+/-- A uniform draw from `G` hits a fixed `a` with probability `|G|⁻¹`. -/
+private theorem uniformOfFintype_bind_decide_eq_apply_true (a : G) :
+    ((PMF.uniformOfFintype G).bind fun k => PMF.pure (decide (a = k))) true =
+      (Fintype.card G : ℝ≥0∞)⁻¹ := by
+  rw [PMF.bind_apply, tsum_eq_single a fun k hk => by simp [Ne.symm hk]]
+  simp [PMF.uniformOfFintype_apply]
+
 /-- In the ideal game, `preWhitenKeyRecoveryAttack x` outputs the uniform target `k₀` with
 probability `|G|⁻¹`. -/
 theorem preWhitenKeyRecoveryIdealGame_true_toReal (x : G) :
     (preWhitenKeyRecoveryIdealGame x true).toReal = (Fintype.card G : ℝ)⁻¹ := by
   simp only [preWhitenKeyRecoveryIdealGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  have hconst (E π : Equiv.Perm G) :
-      ((PMF.uniformOfFintype G).bind fun k₀ =>
-        PMF.pure (decide (evalTwoPerms E π (preWhitenKeyRecoveryAttack x) = k₀))) true =
-      (Fintype.card G : ℝ≥0∞)⁻¹ := by
-    classical
-    have hmap : ((PMF.uniformOfFintype G).bind fun k₀ =>
-        PMF.pure (decide (evalTwoPerms E π (preWhitenKeyRecoveryAttack x) = k₀))) =
-      (PMF.uniformOfFintype G).map (fun k₀ =>
-        decide (evalTwoPerms E π (preWhitenKeyRecoveryAttack x) = k₀)) :=
-      (PMF.bind_pure_comp _ _).symm
-    rw [hmap, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
-      PMF.toOuterMeasure_uniformOfFintype]
-    have hfilter : Finset.univ.filter (fun k₀ : G =>
-        k₀ ∈ (fun k₀ => decide (evalTwoPerms E π (preWhitenKeyRecoveryAttack x) = k₀)) ⁻¹'
-          ({true} : Set Bool)) = {evalTwoPerms E π (preWhitenKeyRecoveryAttack x)} := by
-      ext k₀
-      simp [eq_comm]
-    rw [hfilter, Finset.card_singleton, Nat.cast_one, one_mul]
-  rw [PMF.bind_apply_of_forall _ fun E => PMF.bind_apply_of_forall _ fun π => hconst E π,
+  rw [PMF.bind_apply_of_forall _ fun E => PMF.bind_apply_of_forall _ fun π =>
+      uniformOfFintype_bind_decide_eq_apply_true _,
     ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 /-- **2-query break of pre-whitening-only Even–Mansour** ([BonehShoup2023], Section 4.7):
@@ -776,25 +767,8 @@ probability `|G|⁻¹`. -/
 theorem postWhitenKeyRecoveryIdealGame_true_toReal (x : G) :
     (postWhitenKeyRecoveryIdealGame x true).toReal = (Fintype.card G : ℝ)⁻¹ := by
   simp only [postWhitenKeyRecoveryIdealGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  have hconst (E π : Equiv.Perm G) :
-      ((PMF.uniformOfFintype G).bind fun k₁ =>
-        PMF.pure (decide (evalTwoPerms E π (postWhitenKeyRecoveryAttack x) = k₁))) true =
-      (Fintype.card G : ℝ≥0∞)⁻¹ := by
-    classical
-    have hmap : ((PMF.uniformOfFintype G).bind fun k₁ =>
-        PMF.pure (decide (evalTwoPerms E π (postWhitenKeyRecoveryAttack x) = k₁))) =
-      (PMF.uniformOfFintype G).map (fun k₁ =>
-        decide (evalTwoPerms E π (postWhitenKeyRecoveryAttack x) = k₁)) :=
-      (PMF.bind_pure_comp _ _).symm
-    rw [hmap, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
-      PMF.toOuterMeasure_uniformOfFintype]
-    have hfilter : Finset.univ.filter (fun k₁ : G =>
-        k₁ ∈ (fun k₁ => decide (evalTwoPerms E π (postWhitenKeyRecoveryAttack x) = k₁)) ⁻¹'
-          ({true} : Set Bool)) = {evalTwoPerms E π (postWhitenKeyRecoveryAttack x)} := by
-      ext k₁
-      simp [eq_comm]
-    rw [hfilter, Finset.card_singleton, Nat.cast_one, one_mul]
-  rw [PMF.bind_apply_of_forall _ fun E => PMF.bind_apply_of_forall _ fun π => hconst E π,
+  rw [PMF.bind_apply_of_forall _ fun E => PMF.bind_apply_of_forall _ fun π =>
+      uniformOfFintype_bind_decide_eq_apply_true _,
     ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 /-- **2-query break of post-whitening-only Even–Mansour** ([BonehShoup2023], Section 4.7):
@@ -1510,72 +1484,47 @@ private theorem CacheRel.cons_perm {k : G × G} {c_e c_π c : Cache G}
   tauto
 
 omit [AddGroup G] in
-private theorem mem_of_mem_answer_support {q : PermQuery G} {cache cache' : Cache G} {a : G}
-    (hmem : (a, cache') ∈ (RandomPermutation.answer q cache).support) :
-    ∀ e ∈ cache, e ∈ cache' := by
+/-- One lazy permutation answer leaves the cache unchanged or prepends one entry. -/
+private theorem eq_or_exists_cons_of_mem_answer_support {q : PermQuery G} {cache cache' : Cache G}
+    {a : G} (hmem : (a, cache') ∈ (RandomPermutation.answer q cache).support) :
+    cache' = cache ∨ ∃ e, cache' = e :: cache := by
   cases q with
   | forward x =>
     dsimp [RandomPermutation.answer] at hmem
     cases hx : cache.lookup x with
     | some y =>
       rw [hx, PMF.mem_support_pure_iff] at hmem
-      obtain ⟨_, rfl⟩ := Prod.mk.inj hmem
-      exact fun _ h => h
+      exact .inl (Prod.mk.inj hmem).2
     | none =>
       rw [hx] at hmem
       split_ifs at hmem with hne <;>
-        · rw [PMF.mem_support_map_iff] at hmem
-          obtain ⟨_, _, heq⟩ := hmem
-          obtain ⟨_, rfl⟩ := Prod.mk.inj heq
-          exact fun _ h => List.mem_cons_of_mem _ h
+        · obtain ⟨_, _, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmem
+          exact .inr ⟨_, (Prod.mk.inj heq).2.symm⟩
   | inverse y =>
     dsimp [RandomPermutation.answer] at hmem
     cases hy : RandomPermutation.invLookup cache y with
     | some x =>
       rw [hy, PMF.mem_support_pure_iff] at hmem
-      obtain ⟨_, rfl⟩ := Prod.mk.inj hmem
-      exact fun _ h => h
+      exact .inl (Prod.mk.inj hmem).2
     | none =>
       rw [hy] at hmem
       split_ifs at hmem with hne <;>
-        · rw [PMF.mem_support_map_iff] at hmem
-          obtain ⟨_, _, heq⟩ := hmem
-          obtain ⟨_, rfl⟩ := Prod.mk.inj heq
-          exact fun _ h => List.mem_cons_of_mem _ h
+        · obtain ⟨_, _, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmem
+          exact .inr ⟨_, (Prod.mk.inj heq).2.symm⟩
+
+omit [AddGroup G] in
+private theorem mem_of_mem_answer_support {q : PermQuery G} {cache cache' : Cache G} {a : G}
+    (hmem : (a, cache') ∈ (RandomPermutation.answer q cache).support) :
+    ∀ e ∈ cache, e ∈ cache' := by
+  rcases eq_or_exists_cons_of_mem_answer_support hmem with rfl | ⟨_, rfl⟩
+  · exact fun _ h => h
+  · exact fun _ h => List.mem_cons_of_mem _ h
 
 omit [AddGroup G] in
 private theorem length_le_of_mem_answer_support {q : PermQuery G} {cache cache' : Cache G} {a : G}
     (hmem : (a, cache') ∈ (RandomPermutation.answer q cache).support) :
     cache'.length ≤ cache.length + 1 := by
-  cases q with
-  | forward x =>
-    dsimp [RandomPermutation.answer] at hmem
-    cases hx : cache.lookup x with
-    | some y =>
-      rw [hx, PMF.mem_support_pure_iff] at hmem
-      obtain ⟨_, rfl⟩ := Prod.mk.inj hmem
-      exact Nat.le_succ _
-    | none =>
-      rw [hx] at hmem
-      split_ifs at hmem with hne <;>
-        · rw [PMF.mem_support_map_iff] at hmem
-          obtain ⟨_, _, heq⟩ := hmem
-          obtain ⟨_, rfl⟩ := Prod.mk.inj heq
-          exact le_rfl
-  | inverse y =>
-    dsimp [RandomPermutation.answer] at hmem
-    cases hy : RandomPermutation.invLookup cache y with
-    | some x =>
-      rw [hy, PMF.mem_support_pure_iff] at hmem
-      obtain ⟨_, rfl⟩ := Prod.mk.inj hmem
-      exact Nat.le_succ _
-    | none =>
-      rw [hy] at hmem
-      split_ifs at hmem with hne <;>
-        · rw [PMF.mem_support_map_iff] at hmem
-          obtain ⟨_, _, heq⟩ := hmem
-          obtain ⟨_, rfl⟩ := Prod.mk.inj heq
-          exact le_rfl
+  rcases eq_or_exists_cons_of_mem_answer_support hmem with rfl | ⟨_, rfl⟩ <;> simp
 
 omit [Fintype G] [Nonempty G] in
 private theorem isBadEvenMansourKey_mono {c_e c_e' c_π c_π' : Cache G} {k : G × G}

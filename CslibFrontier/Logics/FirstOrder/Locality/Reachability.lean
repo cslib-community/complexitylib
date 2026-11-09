@@ -299,14 +299,13 @@ theorem not_exists_formula_transGen :
     ¬ ∃ φ : Language.graph.Formula (Fin 2), ∀ (M : Type u) [Finite M]
       [Language.graph.Structure M] (a b : M),
       φ.Realize ![a, b] ↔ Relation.TransGen (fun x y : M => RelMap adj ![x, y]) a b := by
+  -- `φ(x, y) ∨ x = y` would then define the reflexive–transitive closure.
   rintro ⟨φ, hφ⟩
-  set N := 2 * 3 ^ (quantifierRank φ + 1) + 1
-  let := @Equiv.inducedStructure Language.graph (Fin N) (ULift.{u} (Fin N))
-    (relStructure (· ⋖ ·)) Equiv.ulift.symm
-  have := card_le_of_realize_iff_transGen (N := N) (φ := φ) fun a b => by
-    rw [← realize_ulift, hφ]
-    exact ⟨fun h => h.lift ULift.down fun _ _ h => h, fun h => h.lift ULift.up fun _ _ h => h⟩
-  omega
+  refine not_exists_formula_reflTransGen.{u} ⟨φ ⊔ (Term.var 0).equal (Term.var 1), ?_⟩
+  intro M _ _ a b
+  rw [Relation.reflTransGen_iff_eq_or_transGen, Formula.realize_sup, hφ, Formula.realize_equal]
+  simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one]
+  exact or_comm.trans (or_congr_left eq_comm)
 
 /-! ### Undirected reachability -/
 

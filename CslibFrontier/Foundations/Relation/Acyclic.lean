@@ -139,12 +139,8 @@ theorem Acyclic.exists_rank (hr : Acyclic r) (V : Finset α) (hV : ∀ a b, r a 
 
 /-- A numbering that strictly increases along every step of `r` excludes closed walks. -/
 theorem not_transGen_of_rank {f : α → ℕ} (hf : ∀ a b, r a b → f a < f b) (a : α) :
-    ¬TransGen r a a := by
-  suffices ∀ b, TransGen r a b → f a < f b from fun h => (this a h).false
-  intro b h
-  induction h with
-  | single h => exact hf _ _ h
-  | tail _ h ih => exact ih.trans (hf _ _ h)
+    ¬TransGen r a a := fun h =>
+  lt_irrefl (f a) (transGen_minimal (r' := fun x y => f x < f y) hf a a h)
 
 /-- A relation with a numbering that strictly increases along every step is acyclic. -/
 theorem acyclic_of_rank {f : α → ℕ} (hf : ∀ a b, r a b → f a < f b) : Acyclic r :=

@@ -2358,6 +2358,7 @@ public import CslibFrontier.Computability.GenericRAM.Simulation.Turing
 public import CslibFrontier.Computability.GenericRAM.SparseMemory.Basic
 public import CslibFrontier.Computability.GenericRAM.SparseMemory.Turing
 public import CslibFrontier.Computability.Geometry.Orthogonal.Encoding
+public import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 public import CslibFrontier.Computability.Geometry.Orthogonal.Subdivision
 public import CslibFrontier.Computability.Interactive.AuxZK
 public import CslibFrontier.Computability.Interactive.Basic
@@ -2517,6 +2518,7 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.BoundedCap
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.ClippedError
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.FalseOverflow
+public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.FalseOverflowNorm
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.Floors
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.FourthMoment
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.GateClosure
@@ -4753,6 +4755,7 @@ public import CslibFrontier.Foundations.Data.Int.LogBounds
 public import CslibFrontier.Foundations.Data.Int.Order
 public import CslibFrontier.Foundations.Data.Int.Residue
 public import CslibFrontier.Foundations.Data.List.Append
+public import CslibFrontier.Foundations.Data.List.ArgMin
 public import CslibFrontier.Foundations.Data.List.BalancedFold
 public import CslibFrontier.Foundations.Data.List.Basic
 public import CslibFrontier.Foundations.Data.List.Blocks

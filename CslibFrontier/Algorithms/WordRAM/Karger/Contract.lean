@@ -316,26 +316,24 @@ private theorem modifies_step_update {F : Finset ℕ} {m₁ m₂ : ℕ → ℕ} 
 
 /-! ### Prefix-sum step identities for `degBefore` and `weightBefore` -/
 
+/-- A prefix sum over `Fin k` splits off its last term. -/
+private theorem sum_val_lt_succ {k j : ℕ} (hj : j < k) (f : Fin k → ℕ) :
+    ∑ b ∈ Finset.univ.filter (fun b : Fin k => b.val < j + 1), f b =
+      ∑ b ∈ Finset.univ.filter (fun b : Fin k => b.val < j), f b + f ⟨j, hj⟩ := by
+  have hsplit : (Finset.univ.filter fun b : Fin k => b.val < j + 1) =
+      insert ⟨j, hj⟩ (Finset.univ.filter fun b : Fin k => b.val < j) := by
+    ext b
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert, Fin.ext_iff]
+    omega
+  rw [hsplit, Finset.sum_insert (by simp), add_comm]
+
 private theorem degBefore_zero {k : ℕ} (hk : 0 < k) (W : Fin k → Fin k → ℕ) :
     degBefore W ⟨0, hk⟩ = 0 := by
-  unfold degBefore
-  have hempty : (Finset.univ.filter fun a : Fin k => a < ⟨0, hk⟩) = ∅ := by
-    ext a
-    simp [Fin.lt_def]
-  rw [hempty, Finset.sum_empty]
+  simp [degBefore, Fin.lt_def]
 
 private theorem degBefore_succ {k i : ℕ} (hi : i + 1 < k) (W : Fin k → Fin k → ℕ) :
-    degBefore W ⟨i + 1, hi⟩ = degBefore W ⟨i, by omega⟩ + rowDeg W ⟨i, by omega⟩ := by
-  unfold degBefore
-  let u : Fin k := ⟨i, by omega⟩
-  have hsplit : (Finset.univ.filter fun a : Fin k => a < ⟨i + 1, hi⟩) =
-      insert u (Finset.univ.filter fun a : Fin k => a < u) := by
-    ext a
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
-      Fin.lt_def, Fin.ext_iff, u]
-    omega
-  have hnotmem : u ∉ Finset.univ.filter fun a : Fin k => a < u := by simp [u]
-  rw [hsplit, Finset.sum_insert hnotmem, add_comm]
+    degBefore W ⟨i + 1, hi⟩ = degBefore W ⟨i, by omega⟩ + rowDeg W ⟨i, by omega⟩ :=
+  sum_val_lt_succ (by omega) (rowDeg W)
 
 private theorem degBefore_full {k : ℕ} (W : Fin k → Fin k → ℕ) :
     (∑ a ∈ Finset.univ.filter (fun a : Fin k => a.val < k), rowDeg W a) =
@@ -347,25 +345,12 @@ private theorem degBefore_full {k : ℕ} (W : Fin k → Fin k → ℕ) :
 
 private theorem weightBefore_zero {k : ℕ} (hk : 0 < k) (W : Fin k → Fin k → ℕ) (u : Fin k) :
     weightBefore W u ⟨0, hk⟩ = 0 := by
-  unfold weightBefore
-  have hempty : (Finset.univ.filter fun b : Fin k => b < ⟨0, hk⟩) = ∅ := by
-    ext b
-    simp [Fin.lt_def]
-  rw [hempty, Finset.sum_empty]
+  simp [weightBefore, Fin.lt_def]
 
 private theorem weightBefore_succ {k j : ℕ} (hj : j + 1 < k) (W : Fin k → Fin k → ℕ)
     (u : Fin k) :
-    weightBefore W u ⟨j + 1, hj⟩ = weightBefore W u ⟨j, by omega⟩ + W u ⟨j, by omega⟩ := by
-  unfold weightBefore
-  let v : Fin k := ⟨j, by omega⟩
-  have hsplit : (Finset.univ.filter fun b : Fin k => b < ⟨j + 1, hj⟩) =
-      insert v (Finset.univ.filter fun b : Fin k => b < v) := by
-    ext b
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
-      Fin.lt_def, Fin.ext_iff, v]
-    omega
-  have hnotmem : v ∉ Finset.univ.filter fun b : Fin k => b < v := by simp [v]
-  rw [hsplit, Finset.sum_insert hnotmem, add_comm]
+    weightBefore W u ⟨j + 1, hj⟩ = weightBefore W u ⟨j, by omega⟩ + W u ⟨j, by omega⟩ :=
+  sum_val_lt_succ (by omega) (W u)
 
 /-! ### Part 1: Deterministic `O(k ^ 2)` row-degree and total-weight initializer -/
 
@@ -409,22 +394,12 @@ private def partialRowSum {k : ℕ} (W : Fin k → Fin k → ℕ) (u : Fin k) (j
 
 private theorem partialRowSum_zero {k : ℕ} (W : Fin k → Fin k → ℕ) (u : Fin k) :
     partialRowSum W u 0 = 0 := by
-  unfold partialRowSum
-  have hempty : (Finset.univ.filter fun b : Fin k => b.val < 0) = ∅ := by ext b; simp
-  rw [hempty, Finset.sum_empty]
+  simp [partialRowSum]
 
 private theorem partialRowSum_succ {k : ℕ} (W : Fin k → Fin k → ℕ) (u : Fin k)
     {j : ℕ} (hj : j < k) :
-    partialRowSum W u (j + 1) = partialRowSum W u j + W u ⟨j, hj⟩ := by
-  unfold partialRowSum
-  let v : Fin k := ⟨j, hj⟩
-  have hsplit : (Finset.univ.filter fun b : Fin k => b.val < j + 1) =
-      insert v (Finset.univ.filter fun b : Fin k => b.val < j) := by
-    ext b
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert, Fin.ext_iff, v]
-    omega
-  have hnotmem : v ∉ Finset.univ.filter fun b : Fin k => b.val < j := by simp [v]
-  rw [hsplit, Finset.sum_insert hnotmem, add_comm]
+    partialRowSum W u (j + 1) = partialRowSum W u j + W u ⟨j, hj⟩ :=
+  sum_val_lt_succ hj (W u)
 
 private theorem partialRowSum_full {k : ℕ} (W : Fin k → Fin k → ℕ) (u : Fin k) :
     partialRowSum W u k = rowDeg W u := by
@@ -442,21 +417,11 @@ private def partialDegSum {k : ℕ} (W : Fin k → Fin k → ℕ) (i : ℕ) : �
 
 private theorem partialDegSum_zero {k : ℕ} (W : Fin k → Fin k → ℕ) :
     partialDegSum W 0 = 0 := by
-  unfold partialDegSum
-  have hempty : (Finset.univ.filter fun a : Fin k => a.val < 0) = ∅ := by ext a; simp
-  rw [hempty, Finset.sum_empty]
+  simp [partialDegSum]
 
 private theorem partialDegSum_succ {k : ℕ} (W : Fin k → Fin k → ℕ) {i : ℕ} (hi : i < k) :
-    partialDegSum W (i + 1) = partialDegSum W i + rowDeg W ⟨i, hi⟩ := by
-  unfold partialDegSum
-  let u : Fin k := ⟨i, hi⟩
-  have hsplit : (Finset.univ.filter fun a : Fin k => a.val < i + 1) =
-      insert u (Finset.univ.filter fun a : Fin k => a.val < i) := by
-    ext a
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert, Fin.ext_iff, u]
-    omega
-  have hnotmem : u ∉ Finset.univ.filter fun a : Fin k => a.val < i := by simp [u]
-  rw [hsplit, Finset.sum_insert hnotmem, add_comm]
+    partialDegSum W (i + 1) = partialDegSum W i + rowDeg W ⟨i, hi⟩ :=
+  sum_val_lt_succ hi (rowDeg W)
 
 private theorem partialDegSum_full {k : ℕ} (W : Fin k → Fin k → ℕ) :
     partialDegSum W k = totalDoubledWeight W :=
