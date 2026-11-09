@@ -724,6 +724,11 @@ status tags and clocks, including malformed inputs. Work loops traverse actual l
 binary variable name nor a declared arity funds enumeration. Old row counts do not increase;
 the quadratic central exactly-one data and all stack frames are included in the polynomial bound.
 
+For lifting certificates, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.LiftingPolyTime`.
+`NativeLifting.encLiftResult` names their optional occurrence-buffer encoding: `none` is empty;
+`some bits` starts with `true`, then concatenates the framed one-bit Boolean encodings in
+buffer order. The abbreviation unfolds to `encOption (encList encBool)` without changing bytes.
+
 This completes the explicit-table edge algorithm of KKR v6, Theorem 21 (printed p. 8), Algorithm 1
 (p. 10), Theorem 24 and §5.3 (pp. 11–13), using the proved search, contraction and lifting layers.
 The one-improvement recursion organization and full framed-bit bookkeeping are original.

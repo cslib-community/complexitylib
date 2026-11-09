@@ -30,6 +30,10 @@ namespace Cslib.Complexity.CSP.EdgeSolver.NativeLifting
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Turing.MultiTapeTM
 open EdgeAugmenting (Record encRecord WalkCode encWalkCode)
 
+/-- Optional lifted occurrence buffer: `none` is empty; `some bits` starts with `true`,
+then concatenates the framed one-bit Boolean encodings in buffer order. -/
+abbrev encLiftResult : Option (List Bool) ↪ List Bool := encOption (encList encBool)
+
 attribute [local fun_prop] NativeWalk.computableInPolyTime_portWith
   NativeWalk.computableInPolyTime_start NativeWalk.computableInPolyTime_steps
   NativeWalk.computableInPolyTime_mk NativeWalk.computableInPolyTime_takeWith
@@ -257,7 +261,7 @@ attribute [local fun_prop] poly_attachmentWith
 The certificate covers all raw buffers and codes, without semantic or width assumptions. -/
 theorem computableInPolyTime_liftPrefix : ComputableInPolyTime
     (fun p : EdgeForest.Input × WalkCode × WalkCode => liftPrefix p.1 p.2.1 p.2.2)
-    encPrefixArgs (encOption (encList encBool)) := by
+    encPrefixArgs encLiftResult := by
   unfold liftPrefix
   have hb := EdgeForest.encInput_body_deg.computableInPolyTime
   have hl := EdgeForest.encInput_labels_deg.computableInPolyTime
@@ -284,7 +288,7 @@ private theorem poly_liftPrefixWith {α : Type} {e : α ↪ List Bool}
     (hw : ComputableInPolyTime w e encWalkCode)
     (hr : ComputableInPolyTime r e encWalkCode) :
     ComputableInPolyTime (fun a => liftPrefix (input a) (w a) (r a)) e
-      (encOption (encList encBool)) := by
+      encLiftResult := by
   simpa only [Function.comp_def] using computableInPolyTime_liftPrefix.comp (hi.prod (hw.prod hr))
 
 attribute [local fun_prop] poly_restoreWalkWith NativeWalk.computableInPolyTime_internalWith
@@ -295,7 +299,7 @@ attribute [local fun_prop] poly_restoreWalkWith NativeWalk.computableInPolyTime_
 on every raw code and buffer. Original binary names and positions retain their bit lengths. -/
 theorem computableInPolyTime_liftWalk : ComputableInPolyTime
     (fun p : EdgeForest.Input × WalkCode × WalkCode => liftWalk p.1 p.2.1 p.2.2)
-    encPrefixArgs (encOption (encList encBool)) := by
+    encPrefixArgs encLiftResult := by
   unfold liftWalk
   have hb := EdgeForest.encInput_body_deg.computableInPolyTime
   have hl := EdgeForest.encInput_labels_deg.computableInPolyTime
@@ -316,7 +320,7 @@ abbrev encComparisonArgs := encPair EdgeForest.encInput
 certificate on all raw data, including malformed widths and huge binary names. -/
 theorem computableInPolyTime_liftComparison : ComputableInPolyTime
     (fun p : EdgeForest.Input × WalkCode × List Bool => liftComparison p.1 p.2.1 p.2.2)
-    encComparisonArgs (encOption (encList encBool)) := by
+    encComparisonArgs encLiftResult := by
   unfold liftComparison
   have hb := EdgeForest.encInput_body_deg.computableInPolyTime
   have hm := EdgeAugmenting.encInput_mk_deg.computableInPolyTime
