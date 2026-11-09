@@ -794,8 +794,7 @@ theorem computableInO_parseRun {β : Type} {enc : β ↪ List Bool} {f : ℕ →
     calc (2 * (43 + 3 * Nat.size x.length) + 3) ^ d ≤ (89 * (Nat.size x.length + 1)) ^ d :=
           Nat.pow_le_pow_left (by omega) d
       _ = 89 ^ d * (Nat.size x.length + 1) ^ d := Nat.mul_pow _ _ _
-      _ ≤ 89 ^ d * (Nat.size x.length + 1) ^ (dN + dE + 1) :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos _) hd)
+      _ ≤ 89 ^ d * (Nat.size x.length + 1) ^ (dN + dE + 1) := by gcongr
   have hround (x : List Bool) (j : ℕ) (hj : j < x.length) (c₁ c₂ : ℕ)
       (u₁ u₂ : ParseState × Bool → ℕ)
       (h₁ : ∀ a, u₁ a ≤ c₁ * ((encPair encParseState encBool a).length + 1) ^ dN)

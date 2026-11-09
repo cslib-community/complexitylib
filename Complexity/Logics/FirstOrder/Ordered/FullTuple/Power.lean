@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Fagin.Power
 public import Complexity.Logics.FirstOrder.Ordered.FullTuple
 public import Complexity.Logics.FirstOrder.Ordered.StrictOrder
+import Complexity.Foundations.ModelTheory.Basic
 
 /-!
 # Canonical ordered power structures
@@ -73,14 +74,10 @@ power structure of the native input encoding. -/
 theorem inputStructure_orderedPowerInterpretation (hk : 1 ≤ k) (M : FO.Ordered.Structure L) :
     (v.orderedPowerInterpretation k har).inputStructure (n := M.size) =
       v.powerStructure (FO.Ordered.encode v M) (M.size ^ k) := by
-  apply FirstOrder.Language.Structure.ext
-  · funext r f
-    exact isEmptyElim f
-  · funext r R x
-    apply propext
-    change ((v.orderedPowerInterpretation k har).rel R).Realize
-      (fun p => lexEquiv.symm (x p.1) p.2) ↔ _
-    have h := v.realize_orderedPower_rel k har hk M R (fun i => lexEquiv.symm (x i))
-    simpa only [Equiv.apply_symm_apply] using h
+  refine FirstOrder.Language.Structure.ext_of_isRelational fun R x => ?_
+  change ((v.orderedPowerInterpretation k har).rel R).Realize
+    (fun p => lexEquiv.symm (x p.1) p.2) ↔ _
+  have h := v.realize_orderedPower_rel k har hk M R (fun i => lexEquiv.symm (x i))
+  simpa only [Equiv.apply_symm_apply] using h
 
 end Cslib.Logic.Vocabulary
