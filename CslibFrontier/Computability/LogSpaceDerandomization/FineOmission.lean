@@ -114,16 +114,9 @@ theorem sum_omitted_fine_cost_le (M c : ℕ) (hc : 0 < c) (S : Finset ℤ)
     (hfine : ∀ h ∈ S, h < 0) (homit : ∀ h ∈ S, M ≤ scaleCutoff c h) :
     ∑ h ∈ S, binNormCost 4 (h : ℝ) ≤
       (2 : ℝ) ^ (1 / 2 - (M : ℝ) / (2 * c)) *
-        (2 / (1 - (2 : ℝ) ^ (-(1 : ℝ) / 8)) - 1) := by
-  calc
-    _ ≤ ∑ h ∈ S, (2 : ℝ) ^ (1 / 2 - (M : ℝ) / (2 * c)) * scaleMajorant h :=
-      sum_le_sum fun h hh => omitted_fine_cost_le M c hc h (hfine h hh) (homit h hh)
-    _ = (2 : ℝ) ^ (1 / 2 - (M : ℝ) / (2 * c)) * ∑ h ∈ S, scaleMajorant h :=
-      (mul_sum _ _ _).symm
-    _ ≤ (2 : ℝ) ^ (1 / 2 - (M : ℝ) / (2 * c)) * ∑' h, scaleMajorant h :=
-      mul_le_mul_of_nonneg_left
-        (summable_scaleMajorant.sum_le_tsum S (fun h _ => scaleMajorant_nonneg h)) (by positivity)
-    _ = _ := by rw [tsum_scaleMajorant]
+        (2 / (1 - (2 : ℝ) ^ (-(1 : ℝ) / 8)) - 1) :=
+  (sum_le_mul_tsum_scaleMajorant S (by positivity) fun h hh =>
+    omitted_fine_cost_le M c hc h (hfine h hh) (homit h hh)).trans_eq (by rw [tsum_scaleMajorant])
 
 /-- Activity makes the entire omission tail smaller than parent accuracy with an additional
 rank reserve `2^(-A)`. Thus its coefficient can be made small by increasing `A`, as in the

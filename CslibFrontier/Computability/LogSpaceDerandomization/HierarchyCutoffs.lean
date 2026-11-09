@@ -111,6 +111,16 @@ theorem aux_zero_on_detector {v r : ℝ} (hv : v ≤ P.δ₁) :
     polynomialAuxCutoff4 P.θ v r = 0 :=
   polynomialAuxCutoff4_eq_zero_of_entry_le P.θ_pos (by linarith [P.δ₁_lt, P.θ_pos])
 
+private theorem τ₁_le_one : P.τ₁ ≤ 1 := by
+  rw [P.τ₁_eq]
+  norm_num
+
+/-- The incoming column cap `⌈4 (1 + 32 R)⌉₊` of both samplers is positive. -/
+private theorem incomingCap_pos : 0 < ⌈4 * (1 + 32 * P.R)⌉₊ := by
+  have h := P.R_rank
+  norm_num at h
+  exact Nat.ceil_pos.mpr (by linarith [(Nat.cast_nonneg P.J : (0 : ℝ) ≤ P.J)])
+
 section Clients
 universe u
 variable {V ι κ : Type u} [Fintype V] [Fintype ι] [Fintype κ]
@@ -159,7 +169,7 @@ theorem normalized_col_support (Yt : κ → V → Prop) [∀ t v, Decidable (Yt 
   · intro v r hv hr
     exact P.aux_full_on_Q_rho (fun h => hv
       (P.toHierarchyParams.atomCutoff_eq_zero_of_Q_eq_zero h)) hr
-  · exact (show P.τ₁ ≤ 1 by rw [P.τ₁_eq]; norm_num)
+  · exact P.τ₁_le_one
   · intro r hr
     exact P.incomingCutoff_zero hr
 
@@ -275,16 +285,12 @@ theorem correction_col_support
   dsimp only
   apply HierarchyParams.CorrectionSampling.card_filter_normalizedRecipe_col_ne_zero_lt
     _ input prep maximum σ y
-  · simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_Kc]
-    have hR : 0 ≤ P.R := by
-      have h := P.R_rank
-      norm_num at h
-      linarith [(Nat.cast_nonneg P.J : (0 : ℝ) ≤ P.J)]
-    exact Nat.ceil_pos.mpr (by linarith)
+  · simpa only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_Kc] using
+      P.incomingCap_pos
   · simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_I,
       HierarchyParams.CorrectionSampling.ofChannels_ρ]
     exact fun _ _ hv hr => P.aux_full_on_Q_rho hv hr
-  · exact (show P.τ₁ ≤ 1 by rw [P.τ₁_eq]; norm_num)
+  · exact P.τ₁_le_one
   · simp only [correctionSampling, HierarchyParams.CorrectionSampling.ofChannels_τ]
     exact fun _ hr => P.incomingCutoff_zero hr
 
@@ -298,16 +304,12 @@ theorem pilot_col_support
   dsimp only
   apply HierarchyParams.PilotSampling.card_filter_normalizedRecipe_col_ne_zero_lt
     _ input prep maximum σ y
-  · simp only [pilotSampling, HierarchyParams.PilotSampling.ofChannels_Kc]
-    have hR : 0 ≤ P.R := by
-      have h := P.R_rank
-      norm_num at h
-      linarith [(Nat.cast_nonneg P.J : (0 : ℝ) ≤ P.J)]
-    exact Nat.ceil_pos.mpr (by linarith)
+  · simpa only [pilotSampling, HierarchyParams.PilotSampling.ofChannels_Kc] using
+      P.incomingCap_pos
   · simp only [pilotSampling, HierarchyParams.PilotSampling.ofChannels_I,
       HierarchyParams.PilotSampling.ofChannels_ρ]
     exact fun _ _ hv hr => P.aux_full_on_Q_rho hv hr
-  · exact (show P.τ₁ ≤ 1 by rw [P.τ₁_eq]; norm_num)
+  · exact P.τ₁_le_one
   · simp only [pilotSampling, HierarchyParams.PilotSampling.ofChannels_τ]
     exact fun _ hr => P.incomingCutoff_zero hr
 

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.Preloss
+public import Mathlib.Order.Interval.Finset.Nat
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -38,6 +39,8 @@ after overflow, and the integrated compression theorem remain separate obligatio
 ## Main results
 
 * `Cslib.RowCompression.IsFirstOverflow.unique`: first-overflow events are disjoint.
+* `Cslib.RowCompression.le_of_noOverflow_of_firstOverflow`: an error bounded in the no-overflow
+  case and at every first overflow is bounded by the combined budget.
 * `Cslib.RowCompression.half_floor_le_clippedError`: a large light entry forces raw-prefix error.
 * `Cslib.RowCompression.one_le_sum_clippedError_pow_of_overflow`: the explicit moment charge.
 * `Cslib.RowCompression.one_le_sum_clippedError_pow_of_firstOverflow_dyadic`: the charge for the
@@ -194,5 +197,67 @@ theorem one_le_sum_clippedError_pow_of_firstOverflow_dyadic {s : Finset ι}
   rw [uncompressedRow_succ]
   simp only [inputRow, Pi.add_apply, add_sub_add_right_eq_sub]
   exact (abs_iterate_sub_uncompressed_le_of_no_overflow j hover.1 y ν).trans hsum
+
+open Classical in
+/-- **Combining the overflow cases.** Suppose an error `E` is at most `An` times the prefix budget
+plus `Cf εfinal` when no group overflows its floor, and at most `At` times the prefix budget
+before `j` plus `Ct` times the tail budget from `j` when `j < m` is the first overflow. If no
+first overflow is light, `E` is bounded by the combined budget with coefficients `max An At` and
+`max Cf Ct`: the prefix budget, the final error when nothing overflows, and the tail budgets of
+heavy first overflows. -/
+theorem le_of_noOverflow_of_firstOverflow (s : Finset ι) (n K : ℕ → ℕ) (ρ : ℕ → ℝ)
+    (Δ : ℕ → ι → Fin 2 → ℝ) (a : State ι) (m : ℕ) (heavy : ℕ → Prop) (ε : ℕ → ℝ)
+    {εfinal E An At Cf Ct : ℝ} (hρ : ∀ i, 0 ≤ ρ i) (hε : ∀ i < m, 0 ≤ ε i)
+    (hεfinal : 0 ≤ εfinal) (hAt : 0 ≤ At) (hCf : 0 ≤ Cf) (hCt : 0 ≤ Ct)
+    (hfalse : ¬ ∃ j < m, IsFirstOverflow s n K ρ Δ a j ∧ ¬heavy j)
+    (hno : (∀ i < m, stepThreshold s n K ρ Δ a i ≤ ρ i) →
+      E ≤ An * ∑ i ∈ range m, ρ i * ε i + Cf * εfinal)
+    (hover : ∀ j < m, IsFirstOverflow s n K ρ Δ a j →
+      E ≤ At * ∑ i ∈ range j, ρ i * ε i + Ct * ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i) :
+    E ≤ max An At * (∑ i ∈ range m, ρ i * ε i) +
+      max Cf Ct * (if ∀ i < m, stepThreshold s n K ρ Δ a i ≤ ρ i then εfinal else 0) +
+      max Cf Ct * (∑ j ∈ range m, if IsFirstOverflow s n K ρ Δ a j ∧ heavy j then
+        ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0) := by
+  have hpre0 : 0 ≤ ∑ i ∈ range m, ρ i * ε i :=
+    sum_nonneg fun i hi => mul_nonneg (hρ i) (hε i (mem_range.mp hi))
+  have hterm : ∀ j ∈ range m, 0 ≤ if IsFirstOverflow s n K ρ Δ a j ∧ heavy j then
+      ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0 := fun j _ => by
+    split_ifs
+    · exact sum_nonneg fun i hi => mul_nonneg (by positivity) (hε i (mem_Ico.mp hi).2)
+    · exact le_rfl
+  have htail0 := sum_nonneg hterm
+  by_cases hnone : ∀ i < m, stepThreshold s n K ρ Δ a i ≤ ρ i
+  · rw [ite_eq_left hnone]
+    have hbound := hno hnone
+    have hp := mul_le_mul_of_nonneg_right (le_max_left An At) hpre0
+    have hf := mul_le_mul_of_nonneg_right (le_max_left Cf Ct) hεfinal
+    have htail := mul_nonneg (hCf.trans (le_max_left Cf Ct)) htail0
+    linarith
+  · have hex : ∃ j, j < m ∧ ρ j < stepThreshold s n K ρ Δ a j := by
+      push Not at hnone
+      exact hnone
+    let j := Nat.find hex
+    have hj := Nat.find_spec hex
+    have hjm : j < m := hj.1
+    have hjover : IsFirstOverflow s n K ρ Δ a j :=
+      ⟨fun i hi => le_of_not_gt fun h => Nat.find_min hex hi ⟨by omega, h⟩, hj.2⟩
+    have hheavy : heavy j := by
+      by_contra h
+      exact hfalse ⟨j, hjm, hjover, h⟩
+    have hbound := hover j hjm hjover
+    have hprefix : (∑ i ∈ range j, ρ i * ε i) ≤ ∑ i ∈ range m, ρ i * ε i :=
+      sum_le_sum_of_subset_of_nonneg (range_mono hjm.le) fun i hi _ =>
+        mul_nonneg (hρ i) (hε i (mem_range.mp hi))
+    have hselected : (∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i) ≤
+        ∑ j ∈ range m, if IsFirstOverflow s n K ρ Δ a j ∧ heavy j then
+          ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i else 0 := by
+      simpa only [hjover, hheavy, and_self, ↓reduceIte] using
+        single_le_sum hterm (mem_range.mpr hjm)
+    rw [ite_eq_right hnone, mul_zero, add_zero]
+    have hp := (mul_le_mul_of_nonneg_left hprefix hAt).trans
+      (mul_le_mul_of_nonneg_right (le_max_right An At) hpre0)
+    have htail := (mul_le_mul_of_nonneg_left hselected hCt).trans
+      (mul_le_mul_of_nonneg_right (le_max_right Cf Ct) htail0)
+    linarith
 
 end Cslib.RowCompression
