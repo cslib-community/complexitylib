@@ -9,14 +9,14 @@ Usage: python3 scripts/parallel_defs.py [--base REF | --decl NAME... | --all]
 AGENTS.md asks for reuse of existing definitions rather than parallel notions: the same concept
 defined again for another carrier type, or a copied verifier or game. This tool points authors and
 reviewers at candidates. It examines the public `def`s, `abbrev`s, `structure`s, `class`es and
-`inductive`s that a change adds or modifies: those of the `Complexity/` files changed since the
+`inductive`s that a change adds or modifies: those of the `CslibFrontier/` files changed since the
 merge base of REF (default `origin/main`) whose code, from the declared name to its end, contains
 an added or modified line or the place of a deleted one (an edit to a docstring alone does not
 count). With `--decl`, it examines the named declarations instead, for audits and calibration;
 with `--all`, every declaration of the library.
 
 `scripts/ParallelDefs.lean` compares each examined declaration with every definition and
-inductive type of the built `Complexity` library (instances excluded, private declarations
+inductive type of the built `CslibFrontier` library (instances excluded, private declarations
 included). It erases variables, universe levels and the types of `fun` and `let` binders, then
 finds the largest subterm that both bodies share and that at most `--max-shared` declarations of
 the library contain (default 4, so that common plumbing is ignored); an inductive type's body is
@@ -39,7 +39,7 @@ A candidate is not a finding. If a pair states the same notion, reuse or general
 definition; otherwise the PR description says why it differs. The tool is advisory: it always
 exits 0, and it skips itself, with a note, when the build outputs are missing or stale. With
 `--github` it also writes the candidates to the job summary (`$GITHUB_STEP_SUMMARY`) and as notice
-annotations on the examined declarations. It needs `lake build` (the `Complexity` library); CI
+annotations on the examined declarations. It needs `lake build` (the `CslibFrontier` library); CI
 runs it after the build with `--no-build-check`.
 
 Duplicate statements (`--theorems`)
@@ -179,14 +179,14 @@ def added_ranges(diff: str) -> list[tuple[int, int]]:
 
 
 def changed_ranges(root: Path, ref: str) -> dict[str, list[tuple[int, int]] | None]:
-    """For each `Complexity/` source file a change adds (`None`: all of it) or modifies, the
+    """For each `CslibFrontier/` source file a change adds (`None`: all of it) or modifies, the
     lines it adds or modifies, compared to the merge base of `ref` as in
     `scripts/check_changed_files.py`."""
     added, modified = ccf.changed_files(root, ref)
     base = ccf.comparison_base(root, ref)
     out: dict[str, list[tuple[int, int]] | None] = {}
     for rel in added + modified:
-        if not (rel.startswith("Complexity/") and rel.endswith(".lean")):
+        if not (rel.startswith("CslibFrontier/") and rel.endswith(".lean")):
             continue
         if rel in added:
             out[rel] = None
@@ -201,7 +201,7 @@ def changed_ranges(root: Path, ref: str) -> dict[str, list[tuple[int, int]] | No
 
 def library_modules(root: Path) -> list[str]:
     return sorted(module_of(str(path.relative_to(root)))
-                  for path in (root / "Complexity").rglob("*.lean"))
+                  for path in (root / "CslibFrontier").rglob("*.lean"))
 
 
 def requests(modules: list[str], changed: dict[str, list[tuple[int, int]] | None],
@@ -341,7 +341,7 @@ def annotations(found: list[Finding] | list[Group], limit: int) -> list[str]:
 # --- Driver -------------------------------------------------------------------------------------
 
 def outputs_current() -> bool:
-    return subprocess.run(["lake", "build", "--no-build", "Complexity"], cwd=ROOT,
+    return subprocess.run(["lake", "build", "--no-build", "CslibFrontier"], cwd=ROOT,
                           capture_output=True).returncode == 0
 
 
@@ -363,7 +363,7 @@ def run(args: argparse.Namespace, root: Path, build_dir: Path) -> int:
         changed = {} if args.decl else changed_ranges(root, args.base)
     if not changed and not args.decl:
         what = "theorems" if args.theorems else "definitions"
-        print(f"{title}: no `Complexity/` {what} added or modified.")
+        print(f"{title}: no `CslibFrontier/` {what} added or modified.")
         return 0
     if not build_dir.is_dir():
         return skip(f"no build outputs in {build_dir}; run `lake build` first", args.github,

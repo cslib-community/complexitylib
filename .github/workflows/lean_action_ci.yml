@@ -197,7 +197,7 @@ jobs:
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py restore
       - name: "lake build"
-        run: lake build --wfail --iofail @complexitylib @/mk_all @/checkInitImports @mathlib/lint-style
+        run: lake build --wfail --iofail @cslib-frontier @/mk_all @/checkInitImports @mathlib/lint-style
       - name: "lake test"
         id: test
         run: lake test --wfail --iofail
