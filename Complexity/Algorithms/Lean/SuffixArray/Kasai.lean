@@ -325,11 +325,7 @@ private theorem kasaiLoopM_spec {w : Array α} {sa rk : Array ℕ}
   have hlen : sa.size = w.size := by
     have := hsa.length_eq; simp only [Array.length_toList] at this; exact this
   have hinj : ∀ (r r' : ℕ) (hr : r < sa.size) (hr' : r' < sa.size), sa[r] = sa[r'] → r = r' := by
-    intro r r' hr hr' heq
-    have := (hsa.getElem_eq_getElem_iff (r := r) (r' := r') (by simpa using hr)
-      (by simpa using hr')).mp
-    simp only [Array.getElem_toList] at this
-    exact this heq
+    grind
   have hsalt : ∀ (r : ℕ) (hr : r < sa.size), sa[r] < w.size := by
     intro r hr
     have := hsa.getElem_lt (r := r) (by simpa using hr)

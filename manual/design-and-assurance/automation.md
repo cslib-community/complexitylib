@@ -171,7 +171,8 @@ are atoms for `omega`: give a bound on one as a term, as in
 `fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`
 only when `omega` can see it, as for `w + 1`; otherwise weaken it first with `Fits.mono`.
 
-If neither the goal nor a hypothesis mentions `Fits`, the diagnostic recommends plain `omega`.
+If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic recommends plain
+`omega`.
 If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
 missing bound, for instance on a product or on a value read from memory.
 

@@ -65,4 +65,38 @@ example :
   ProbOracleComp.run_interpret_map_response_state (fun _ => Prod.fst) source target Prod.fst
     step randomized (false, true)
 
+-- The same transport, stated with `ProbOracleComp.runWith`.
+example :
+    (ProbOracleComp.runWith source (OracleComp.interpret
+      (OracleComp.sumHandler (fun n => ProbOracleComp.sample (ProbComp.unifFin n))
+        (fun q => Prod.fst <$> ProbOracleComp.query q)) randomized) (false, true)).map
+        (fun (result, state) => (result, state.1)) =
+      ProbOracleComp.runWith target randomized false :=
+  ProbOracleComp.runWith_map_response_state (fun _ => Prod.fst) source target Prod.fst
+    step randomized (false, true)
+
+/-- `source` answering with the first bit of its reply. -/
+private noncomputable def sourceFirst (q : Bool) : StateT (Bool × Bool) PMF Bool :=
+  fun state => (source q state).map (fun (reply, next) => (reply.1, next))
+
+-- Forgetting the second bit of `sourceFirst`'s state turns it into `target`, in a randomized
+-- client.
+example : (ProbOracleComp.runWith sourceFirst randomized (false, true)).map
+        (fun (result, state) => (result, state.1)) =
+      ProbOracleComp.runWith target randomized false :=
+  ProbOracleComp.runWith_map_state sourceFirst target Prod.fst
+    (fun q state => by simp [sourceFirst, source, target]) randomized (false, true)
+
+-- Every call flips both state bits, so the two bits stay different through the whole run.
+example {result : Bool × Bool × Bool} {final : Bool × Bool}
+    (h : (result, final) ∈ (ProbOracleComp.runWith sourceFirst randomized (false, true)).support) :
+    final.1 ≠ final.2 :=
+  ProbOracleComp.runWith_invariant sourceFirst (fun state => state.1 ≠ state.2)
+    (fun _ state hstate _ next hnext => by
+      simp only [sourceFirst, source, PMF.pure_map, PMF.mem_support_pure_iff,
+        Prod.mk.injEq] at hnext
+      obtain ⟨-, rfl⟩ := hnext
+      simpa using hstate)
+    randomized (false, true) (by decide) result final h
+
 end ComplexityTests.OracleRepresentation

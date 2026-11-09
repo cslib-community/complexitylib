@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.CellProbe.Chronogram
 public import Mathlib.Data.ZMod.Defs
 import Complexity.Foundations.Data.Code.HammingBound
+import Complexity.Foundations.Data.Nat.Choose.Sum
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -286,21 +287,7 @@ private theorem two_mul_sum_choose_mul_le {K N : ℕ} (hK : 4 ≤ K) (hN : N ^ 4
   set e := K / 16 with he
   set V := ∑ i ∈ range (e + 1), K.choose i
   have hV : V * 16 ^ K ≤ 17 ^ K * 16 ^ e := by
-    have hsub : range (e + 1) ⊆ range (K + 1) := range_subset_range.mpr (by omega)
-    calc V * 16 ^ K = ∑ i ∈ range (e + 1), K.choose i * 16 ^ K := sum_mul _ _ _
-      _ ≤ ∑ i ∈ range (e + 1), K.choose i * 16 ^ (K - i) * 16 ^ e := by
-          refine sum_le_sum fun i hi => ?_
-          rw [mul_assoc]
-          refine Nat.mul_le_mul_left _ ?_
-          rw [← pow_add]
-          exact Nat.pow_le_pow_right (by norm_num) (by have := mem_range.mp hi; omega)
-      _ ≤ ∑ i ∈ range (K + 1), K.choose i * 16 ^ (K - i) * 16 ^ e :=
-          sum_le_sum_of_subset hsub
-      _ = 17 ^ K * 16 ^ e := by
-          rw [← sum_mul]
-          congr 1
-          rw [show (17 : ℕ) = 1 + 16 by norm_num, add_pow]
-          exact sum_congr rfl fun i _ => by rw [one_pow, one_mul, Nat.cast_id, mul_comm]
+    simpa [mul_comm] using sum_range_choose_mul_pow_le 16 K e
   have he4 : (16 ^ e) ^ 4 ≤ 2 ^ K := by
     rw [← pow_mul, show (16 : ℕ) = 2 ^ 4 by norm_num, ← pow_mul]
     exact Nat.pow_le_pow_right (by norm_num) (by omega)
