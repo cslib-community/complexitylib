@@ -189,8 +189,9 @@ Do not prove a lemma that the library, CSLib, Mathlib or core already has, even 
 re-deriving it inline inside another proof: use it, or make a private original public. After a
 build, `python3 scripts/parallel_defs.py --theorems` lists the theorems a change adds or modifies
 whose statement already exists; CI posts the same notice. It cannot see a fact re-derived inside a
-proof, so search for an existing lemma first. An argument that several proofs need is derived once
-([library quality standard](CONTRIBUTING.md#library-quality-standard)).
+proof, so search for an existing lemma first. When several proofs need the same substantial
+argument, derive it once; the [library quality standard](CONTRIBUTING.md#library-quality-standard)
+says when a shared lemma pays.
 
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
@@ -399,7 +400,8 @@ proved, its limiting hypotheses/model/resource conventions, and a checked instan
 For a refactor, check declaration preservation, imports and a client using the intended API.
 Check new and changed statements against [Encodings in statements](#encodings-in-statements).
 Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
-a new copy of an argument the library already makes is a finding.
+a new copy of an argument the library already makes is a finding when the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 

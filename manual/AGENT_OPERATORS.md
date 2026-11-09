@@ -79,8 +79,8 @@ Assign review to an agent that did not design or implement the change. For examp
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
 > encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
-> their files, and report any argument the change repeats that another proof or an existing
-> lemma already makes. Review the impact on both manuals and any affected formal abstract.
+> their files, and report any substantial argument the change repeats that another proof or an
+> existing lemma already makes. Review the impact on both manuals and any affected formal abstract.
 > Report concrete findings and a verdict, stating what you checked and what remains uncertain.
 
 Lean validation establishes the checked statements under their definitions and dependencies.
