@@ -1694,6 +1694,59 @@ theorem advantage_naorReingoldWordGame_le (setup : ℕ → PMF F.Desc) (inLen : 
           (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal) :=
   advantage_naorReingoldDescGame_le F setup inLen (fun n d => adversary n (F.encDesc d)) n Q hQ hε
 
+/-- Drawing the `m + 1` Naor–Reingold exponents from the modular-sampling law instead of exactly
+uniformly changes the distribution of any continuation `detRun` by at most `(m + 1) / 2 ^ n`. -/
+private theorem advantage_sampleModZModLaw_bind_le (n : ℕ) (d : F.Desc) {m : ℕ}
+    (detRun : ZMod (F.order d) × (Fin m → ZMod (F.order d)) → PMF Bool) :
+    Game.advantage
+      (((F.sampleModZModLaw (n + (F.encDesc d).length) d).bind fun α₀ =>
+        (PMF.iid (F.sampleModZModLaw (n + (F.encDesc d).length) d) m).map (α₀, ·)).bind detRun)
+      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
+        (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α => detRun (α₀, α)) ≤
+      ((m + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n := by
+  have hword :
+      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
+        (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
+          detRun (α₀, α)) =
+      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
+        (PMF.iid (PMF.uniformOfFintype (ZMod (F.order d))) m).map (α₀, ·)).bind detRun := by
+    rw [iid_uniformOfFintype]
+    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  rw [hword, Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
+  let μ := F.sampleModZModLaw (n + (F.encDesc d).length) d
+  let ν := PMF.uniformOfFintype (ZMod (F.order d))
+  have hswap (a : PMF (ZMod (F.order d))) (b : PMF (Fin m → ZMod (F.order d))) :
+      (a.bind fun x => b.map (x, ·)) = (b.bind fun y => a.map (·, y)) := by
+    simp only [PMF.map, Function.comp_def]
+    exact PMF.bind_comm a b fun x y => PMF.pure (x, y)
+  have hd_step : dist μ ν ≤ 1 / 2 ^ n := by
+    rw [dist_comm]
+    refine (F.dist_sampleModZModLaw_le (n + (F.encDesc d).length) d).trans ?_
+    have hpow : (2 : ℝ) ^ n ≤ (2 : ℝ) ^ (n + (F.encDesc d).length) :=
+      pow_le_pow_right₀ (by norm_num) (Nat.le_add_right n _)
+    exact one_div_le_one_div_of_le (by positivity) hpow
+  have hj1 :
+      dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
+        (ν.bind fun x => (PMF.iid μ m).map (x, ·)) ≤ dist μ ν :=
+    dist_bind_le _ _ _
+  have hj2 :
+      dist (ν.bind fun x => (PMF.iid μ m).map (x, ·))
+        (ν.bind fun x => (PMF.iid ν m).map (x, ·)) ≤ m * dist μ ν := by
+    rw [hswap ν (PMF.iid μ m), hswap ν (PMF.iid ν m)]
+    exact (dist_bind_le _ _ _).trans (PMF.dist_iid_le μ ν m)
+  calc dist ((μ.bind fun x => (PMF.iid μ m).map (x, ·)).bind detRun)
+        ((ν.bind fun x => (PMF.iid ν m).map (x, ·)).bind detRun)
+      ≤ dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
+          (ν.bind fun x => (PMF.iid ν m).map (x, ·)) := dist_bind_le _ _ _
+    _ ≤ dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
+          (ν.bind fun x => (PMF.iid μ m).map (x, ·)) +
+        dist (ν.bind fun x => (PMF.iid μ m).map (x, ·))
+          (ν.bind fun x => (PMF.iid ν m).map (x, ·)) := dist_triangle _ _ _
+    _ ≤ dist μ ν + m * dist μ ν := add_le_add hj1 hj2
+    _ = (m + 1 : ℝ) * dist μ ν := by ring
+    _ ≤ (m + 1 : ℝ) * (1 / 2 ^ n) := mul_le_mul_of_nonneg_left hd_step (by positivity)
+    _ = ((((m + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n : ℝ≥0) : ℝ) := by push_cast; ring
+
 /-- **Modular-sampling distance between `naorReingoldProbRealGame` and `naorReingoldWordRealGame`**:
 replacing `(inLen n + 1)` calls to `sampleNaorReingoldExp` by exact uniform `ZMod (F.order d)`
 exponents changes the output distribution by at most `(inLen n + 1) / 2 ^ n`. -/
@@ -1743,52 +1796,12 @@ theorem advantage_naorReingoldProbRealGame_wordRealGame_le (setup : ℕ → PMF 
         simp only [ZMod.natCast_zmod_val, hxs] at heval
         exact congrArg PMF.pure heval
       · simp [hq, naorReingoldWordOracle]
-  have hword :
-      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
-        (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
-          detRun (α₀, α)) =
-      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
-        (PMF.iid (PMF.uniformOfFintype (ZMod (F.order d))) m).map (α₀, ·)).bind detRun := by
-    rw [iid_uniformOfFintype]
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
   change Game.advantage _
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
       (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
         detRun (α₀, α)) ≤ _
-  rw [hprob, hword, Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
-  let μ := F.sampleModZModLaw (n + (F.encDesc d).length) d
-  let ν := PMF.uniformOfFintype (ZMod (F.order d))
-  have hswap (a : PMF (ZMod (F.order d))) (b : PMF (Fin m → ZMod (F.order d))) :
-      (a.bind fun x => b.map (x, ·)) = (b.bind fun y => a.map (·, y)) := by
-    simp only [PMF.map, Function.comp_def]
-    exact PMF.bind_comm a b fun x y => PMF.pure (x, y)
-  have hd_step : dist μ ν ≤ 1 / 2 ^ n := by
-    rw [dist_comm]
-    refine (F.dist_sampleModZModLaw_le (n + (F.encDesc d).length) d).trans ?_
-    have hpow : (2 : ℝ) ^ n ≤ (2 : ℝ) ^ (n + (F.encDesc d).length) :=
-      pow_le_pow_right₀ (by norm_num) (Nat.le_add_right n _)
-    exact one_div_le_one_div_of_le (by positivity) hpow
-  have hj1 :
-      dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
-        (ν.bind fun x => (PMF.iid μ m).map (x, ·)) ≤ dist μ ν :=
-    dist_bind_le _ _ _
-  have hj2 :
-      dist (ν.bind fun x => (PMF.iid μ m).map (x, ·))
-        (ν.bind fun x => (PMF.iid ν m).map (x, ·)) ≤ m * dist μ ν := by
-    rw [hswap ν (PMF.iid μ m), hswap ν (PMF.iid ν m)]
-    exact (dist_bind_le _ _ _).trans (PMF.dist_iid_le μ ν m)
-  calc dist ((μ.bind fun x => (PMF.iid μ m).map (x, ·)).bind detRun)
-        ((ν.bind fun x => (PMF.iid ν m).map (x, ·)).bind detRun)
-      ≤ dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
-          (ν.bind fun x => (PMF.iid ν m).map (x, ·)) := dist_bind_le _ _ _
-    _ ≤ dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
-          (ν.bind fun x => (PMF.iid μ m).map (x, ·)) +
-        dist (ν.bind fun x => (PMF.iid μ m).map (x, ·))
-          (ν.bind fun x => (PMF.iid ν m).map (x, ·)) := dist_triangle _ _ _
-    _ ≤ dist μ ν + m * dist μ ν := add_le_add hj1 hj2
-    _ = (m + 1 : ℝ) * dist μ ν := by ring
-    _ ≤ (m + 1 : ℝ) * (1 / 2 ^ n) := mul_le_mul_of_nonneg_left hd_step (by positivity)
-    _ = ((((m + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n : ℝ≥0) : ℝ) := by push_cast; ring
+  rw [hprob]
+  exact F.advantage_sampleModZModLaw_bind_le n d detRun
 
 private theorem exists_pow_le_const_mul_two_pow (e : ℕ) :
     ∃ C : ℕ, 0 < C ∧ ∀ L : ℕ, (L + 1) ^ e ≤ C * 2 ^ L := by
@@ -2791,52 +2804,12 @@ theorem DDH.negligible_naorReingoldHashedProbGame {F : PrimeOrderGroupFamily}
           simp only [ZMod.natCast_zmod_val, hxs] at heval
           rw [heval]
         · simp [hq]
-    have hw_eq :
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
-          (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
-            detRun (α₀, α)) =
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
-          (PMF.iid (PMF.uniformOfFintype (ZMod (F.order d))) m).map (α₀, ·)).bind detRun := by
-      rw [iid_uniformOfFintype]
-      simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
     change Game.advantage _
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α₀ =>
         (PMF.uniformOfFintype (Fin m → ZMod (F.order d))).bind fun α =>
           detRun (α₀, α)) ≤ _
-    rw [hp_eq, hw_eq, Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
-    let μ := F.sampleModZModLaw (n + (F.encDesc d).length) d
-    let ν := PMF.uniformOfFintype (ZMod (F.order d))
-    have hswap (a : PMF (ZMod (F.order d))) (b : PMF (Fin m → ZMod (F.order d))) :
-        (a.bind fun x => b.map (x, ·)) = (b.bind fun y => a.map (·, y)) := by
-      simp only [PMF.map, Function.comp_def]
-      exact PMF.bind_comm a b fun x y => PMF.pure (x, y)
-    have hd_step : dist μ ν ≤ 1 / 2 ^ n := by
-      rw [dist_comm]
-      refine (F.dist_sampleModZModLaw_le (n + (F.encDesc d).length) d).trans ?_
-      have hpow : (2 : ℝ) ^ n ≤ (2 : ℝ) ^ (n + (F.encDesc d).length) :=
-        pow_le_pow_right₀ (by norm_num) (Nat.le_add_right n _)
-      exact one_div_le_one_div_of_le (by positivity) hpow
-    have hj1 :
-        dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
-          (ν.bind fun x => (PMF.iid μ m).map (x, ·)) ≤ dist μ ν :=
-      dist_bind_le _ _ _
-    have hj2 :
-        dist (ν.bind fun x => (PMF.iid μ m).map (x, ·))
-          (ν.bind fun x => (PMF.iid ν m).map (x, ·)) ≤ m * dist μ ν := by
-      rw [hswap ν (PMF.iid μ m), hswap ν (PMF.iid ν m)]
-      exact (dist_bind_le _ _ _).trans (PMF.dist_iid_le μ ν m)
-    calc dist ((μ.bind fun x => (PMF.iid μ m).map (x, ·)).bind detRun)
-          ((ν.bind fun x => (PMF.iid ν m).map (x, ·)).bind detRun)
-        ≤ dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
-            (ν.bind fun x => (PMF.iid ν m).map (x, ·)) := dist_bind_le _ _ _
-      _ ≤ dist (μ.bind fun x => (PMF.iid μ m).map (x, ·))
-            (ν.bind fun x => (PMF.iid μ m).map (x, ·)) +
-          dist (ν.bind fun x => (PMF.iid μ m).map (x, ·))
-            (ν.bind fun x => (PMF.iid ν m).map (x, ·)) := dist_triangle _ _ _
-      _ ≤ dist μ ν + m * dist μ ν := add_le_add hj1 hj2
-      _ = (m + 1 : ℝ) * dist μ ν := by ring
-      _ ≤ (m + 1 : ℝ) * (1 / 2 ^ n) := mul_le_mul_of_nonneg_left hd_step (by positivity)
-      _ = ((((m + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n : ℝ≥0) : ℝ) := by push_cast; ring
+    rw [hp_eq]
+    exact F.advantage_sampleModZModLaw_bind_le n d detRun
   refine negligible_of_le
     (hprob_neg.add
       (hDDH.negligible_naorReingoldHashedGame hinLen houtLen hbound_poly hdesc_poly hdesc hbound
