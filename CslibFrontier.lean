@@ -4813,6 +4813,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
+public import CslibFrontier.Foundations.Data.Nat.ClogPow
 public import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Foundations.Data.Nat.Doubling
 public import CslibFrontier.Foundations.Data.Nat.Factorial
