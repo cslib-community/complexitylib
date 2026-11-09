@@ -243,7 +243,8 @@ This proves the actual rank-derived query existence/correctness portion of
 STOC submission 1575, Theorems 1.2/5.2 and Corollary 5.3, and the Exact Cover
 transposition of Corollary 5.4. The binary rank/dispatch and sharp signed-clause counter are
 completed in the later executable sections (`ExactOneCountingResources`); they support Theorems
-1.2/5.1–5.2 and Corollary 5.3 on the recorded distinct-variable signed-clause encoding. Corollary 5.4 is composed by the actual indexed-list frontend and native counter below.
+1.2/5.1–5.2 and Corollary 5.3 on the recorded distinct-variable signed-clause encoding.
+Corollary 5.4 is composed by the actual indexed-list frontend and native counter below.
 No curated headline abstract is added by this endpoint.
 
 ### Executable indexed Exact Cover
@@ -1194,10 +1195,74 @@ A generic CNF/DNF client also retains a declared unused variable. Tiny trace enu
 oracle; production uses the proved sharp counter and never enumerates a vertex-set or gate cube.
 
 This completes Upper Domination's Corollary 7.4 optimum/witness clause for the recorded encoding.
-The other four non-MIM/Upper graph predicates still need their recovery specializations. General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
+The four other recovery specializations are supplied below, including runtime signed bounds
+for independent domination. Its minimum-cardinality optimum/witness composition remains open.
+General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
 are supplied below. Proposition 7.6's width-three path-marker refinement, alternative
 encodings/admission and the independent paperwide audit remain open. The initial pair counter is still not an exact unmarked-set counter. ALL-main
 is not completed by this witness endpoint.
+
+### Checked original graph solutions
+
+Import `CslibFrontier.Computability.Complexity.FineGrained.GraphWitness` and
+`CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationWitness`.
+These specialize Corollary 7.4 / Appendix D.5 (PDF pp.26,37) to original solutions for
+independent domination, directed kernels, perfect matching cuts and dominating induced matchings.
+The source explicitly includes witness recovery and, where applicable, an optimum threshold.
+Independent domination's **minimum** optimum composition remains open; bounded feasibility
+recovery below does not alone complete that optimization clause. The already supplied MIM and
+Upper Domination optimizers are unchanged.
+
+`TwoBoundary.BinaryFrontend.Witness.solve` runs the proved native unit-clause self-reduction,
+then checks its actual full word against every original side clause and DNF predicate.
+`finish` writes `some bits` only when that check passes; an infeasible input returns `none`.
+`encOutput` is the existing option encoding of a raw Boolean word, including its option tag.
+The actual constructor, recovery, retained original formula, final check, prefix copy and
+output tag are all charged by `exists_source_solver_sharp_certificate`. Concrete graph endpoints
+instantiate the actual graph writer, its binary polynomial certificate, finite erasure, widths
+and linear wire/predicate bounds. They assume neither a solution nor an unproved oracle/runtime.
+
+Each graph namespace's `Witness.exists_solver_realEta_certificate` returns an actual encoded
+solver with global polynomial workspace and $L^{O(1)}2^{O(\eta(v))}$ native time for $v\ge16$.
+The checked formula solver has an all-size rounded clock; fixed-affine dimension rescaling
+includes small and empty declarations and preserves the single loglog exponent. On canonical
+explicit matrices with unary vertex declarations, success is exactly conventional feasibility,
+and every returned word has length **exactly** the original vertex count. No gate bits are returned.
+Malformed-byte admission, succinct declarations and a transition-level bit simulation are separate
+inventory items; the native charged-word model remains the previously recorded one.
+
+`GraphWitness.selected` decodes selections. Kernel witnesses retain arc orientation and satisfy
+`Digraph.IsKernel`; the source uses loopless digraphs, while the theorem also permits loops.
+Perfect matching cuts return actual side labels satisfying `SimpleGraph.IsPerfectMatchingCut`,
+including both classes being nonempty. `PerfectMatchingCut.Witness.construct` actually rejects
+the empty graph. For dominating induced matchings, `GraphWitness.decodeMatching` takes the
+induced subgraph on the returned endpoint set, and the theorem proves that this actual subgraph
+satisfies `IsDominatingInducedMatching`. Empty and edgeless graphs return the empty matching;
+unused isolated vertices are retained in the original word, with false endpoint bits.
+
+`IndependentDominationInterval.Signed.Witness.construct` uses the actual signed normalizer and
+cardinality gate writer. `model_sound` proves pointwise soundness of those gates, the original
+edge clauses and overlapping coverage predicates. The signed solver returns an independent
+set dominating the original graph and satisfying **both runtime integer bounds** on its size.
+Negative upper bounds and contradictory intervals fail; huge binary cutoffs are capped by the
+existing normalizer. The dimension bound includes the actual $a\le952(v+1)$ generated gates,
+not a supplied auxiliary budget. This proves size-threshold recovery for arbitrary signed inputs,
+including the empty graph, rather than only existence without a decoder.
+
+From the repository root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.GraphWitness --wfail --iofail
+```
+
+The [computed client](../../CslibFrontierTests/PaperEndpoints/GraphWitness.lean) executes the actual
+unit writing, assignment check and original-prefix output on empty graphs, isolated vertices,
+paths, directed arcs and cycles, perfect matching cuts and infeasible instances. It checks both
+size-one and size-two independent dominating sets of a three-vertex path, contradictory and
+512-bit signed bounds, and declared unused positions. Tiny test oracles enumerate original
+selections and compute unique gate traces; production uses the proved native counter and never
+enumerates an assignment or gate cube. Fully quantified clients also pin conventional solution
+properties and the native time/workspace endpoints.
 
 ### Count original minimal dominating sets with unique marks
 
@@ -1237,7 +1302,8 @@ selection/mark enumeration is test-only; production uses the certified sharp cou
 
 This closes the augmented width-four exact-set clause. The source's shared path-marker
 width-three construction on at most $6v+a-1$ variables is still open; ordinary clause splitting
-would add too many variables. The four other recovery specializations and the remaining explicit inventory stay open.
+would add too many variables. Independent-domination optimum recovery and the remaining
+explicit inventory stay open.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 

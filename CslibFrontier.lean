@@ -2077,8 +2077,10 @@ public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearc
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.GraphProblems
+public import CslibFrontier.Computability.Complexity.FineGrained.GraphWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDomination
 public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationInterval
+public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.InducedMatching
 public import CslibFrontier.Computability.Complexity.FineGrained.InducedMatchingDistribution
 public import CslibFrontier.Computability.Complexity.FineGrained.InducedMatchingInterval
@@ -2120,6 +2122,8 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SparseParitySch
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundaryFrontend
+public import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundarySolver
+public import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundarySourceSolver
 public import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundaryWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDomination
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationOptimum

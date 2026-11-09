@@ -33,6 +33,7 @@ not a parser for malformed bit strings.
 * `backend_polytime`, `compile_polytime`: actual transpose and complete dispatcher resources.
 * `backend_eq`: exact finite equation correspondence, retaining candidate indices.
 * `compile_count`, `compile_withinBudget`: original counts and actual query bounds.
+* `query_count_le`, `query_bounds`: the emitted query count and explicit source budgets.
 -/
 
 public section

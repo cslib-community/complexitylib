@@ -343,5 +343,3 @@ This is a machine-time proof, not an inference from the independent linear gate/
   exact FunctionalCNF.write_polytime.comp hf
 
 end Cslib.Circuits.Boolean.WeightedSum.BinaryFrontend
-
-

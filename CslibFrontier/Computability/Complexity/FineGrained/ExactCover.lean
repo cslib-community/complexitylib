@@ -24,7 +24,8 @@ workspace includes actual input/transposed/query/result encodings. The source is
 
 * `exists_count_sharp_certificate`: actual original covers, native sharp time and global space.
 * `exists_count_realEta_certificate`: unshifted real source exponent with binary count bounds.
-* `exists_decision_sharp_certificate`: actual positivity decision with the same resources.
+* `exists_decision_sharp_certificate`, `exists_decision_realEta_certificate`: actual positivity
+  decision with the same rounded and real source bounds.
 -/
 
 public section
