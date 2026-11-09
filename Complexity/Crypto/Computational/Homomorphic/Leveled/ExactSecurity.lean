@@ -323,11 +323,8 @@ theorem publicKeyChainHybrid_advantage_exactLinkAdversary (depth capacity : ℕ 
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) (depth n) >>= test n))
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>= test n)) =
       (depth n : ℝ≥0) * capacity n *
-        Game.advantage
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (E.exactLinkAdversary depth capacity test) false n))
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (E.exactLinkAdversary depth capacity test) true n)) := by
+        Encryption.advantage (Encryption.game E.keyGen E.encrypt
+          (E.exactLinkAdversary depth capacity test)) n := by
   apply NNReal.eq
   rw [NNReal.coe_mul, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_natCast,
     Game.coe_advantage, Game.coe_advantage,
@@ -600,11 +597,8 @@ theorem publicKeyChainHybrid_advantage_le_modLinkAdversary
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) (depth n) >>= test n))
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>= test n)) ≤
     (depth n : ℝ≥0) * capacity n *
-      (Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (E.modLinkAdversary coins depth capacity test) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (E.modLinkAdversary coins depth capacity test) true n)) +
+      (Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (E.modLinkAdversary coins depth capacity test)) n +
         2 * ((depth n + capacity n : ℕ) : ℝ≥0) / 2 ^ (coins n)) := by
   rw [E.publicKeyChainHybrid_advantage_exactLinkAdversary depth capacity test n width
     hwidth hcapacity]
@@ -681,34 +675,21 @@ theorem advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary {E : Scheme
     (budget capacity : ℕ → ℕ) (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n ≤
     (2 * budget n : ℝ≥0) * capacity n *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (E.exactLinkAdversary (fun n => 2 * budget n) capacity
-            (publicKeyGame E adversary false)) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (E.exactLinkAdversary (fun n => 2 * budget n) capacity
-            (publicKeyGame E adversary false)) true n)) +
-    Game.advantage
-      (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-        (zeroLinkAdversary E (fun n => 2 * budget n) adversary) false n))
-      (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-        (zeroLinkAdversary E (fun n => 2 * budget n) adversary) true n)) +
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (E.exactLinkAdversary (fun n => 2 * budget n) capacity
+          (publicKeyGame E adversary false))) n +
+    Encryption.advantage (Encryption.game E.keyGen E.encrypt
+      (zeroLinkAdversary E (fun n => 2 * budget n) adversary)) n +
     (2 * budget n : ℝ≥0) * capacity n *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (E.exactLinkAdversary (fun n => 2 * budget n) capacity
-            (publicKeyGame E adversary true)) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (E.exactLinkAdversary (fun n => 2 * budget n) capacity
-            (publicKeyGame E adversary true)) true n)) := by
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (E.exactLinkAdversary (fun n => 2 * budget n) capacity
+          (publicKeyGame E adversary true))) n := by
   dsimp only [scheme]
-  rw [eval_game_keyGen E budget adversary false n, eval_game_keyGen E budget adversary true n]
+  rw [Encryption.advantage, eval_game_keyGen E budget adversary false n,
+    eval_game_keyGen E budget adversary true n]
   have h1 := E.publicKeyChainHybrid_advantage_exactLinkAdversary (fun n => 2 * budget n) capacity
     (publicKeyGame E adversary false) n width hwidth hcapacity
   have h2 := E.publicKeyChainHybrid_advantage_exactLinkAdversary (fun n => 2 * budget n) capacity
@@ -1031,17 +1012,11 @@ theorem advantage_scheme_eq_exactLeveledAdversary {E : Scheme}
     (hbudget_pos : 0 < budget n) (hcapacity_pos : 0 < capacity n)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) =
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n =
     3 * (2 * budget n : ℝ≥0) * capacity n *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (exactLeveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (exactLeveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) := by
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (exactLeveledAdversary E (fun n => 2 * budget n) capacity adversary)) n := by
   dsimp only [scheme]
   apply NNReal.eq
   rw [NNReal.coe_mul, NNReal.coe_mul, NNReal.coe_mul, NNReal.coe_mul,
@@ -1343,17 +1318,11 @@ theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
     (hbudget_pos : 0 < budget n) (hcapacity_pos : 0 < capacity n)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n ≤
     3 * (2 * budget n : ℝ≥0) * capacity n *
-      (Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (modLeveledAdversary E coins (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (modLeveledAdversary E coins (fun n => 2 * budget n) capacity adversary) true n)) +
+      (Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (modLeveledAdversary E coins (fun n => 2 * budget n) capacity adversary)) n +
         2 * ((3 + 2 * budget n + capacity n : ℕ) : ℝ≥0) / 2 ^ (coins n)) := by
   rw [advantage_scheme_eq_exactLeveledAdversary D budget capacity adversary n width
     hbudget_pos hcapacity_pos hwidth hcapacity]
@@ -1376,19 +1345,11 @@ theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n)
     (htail : 3 + 2 * budget n + capacity n ≤ 2 ^ n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary false n))
-      (ProbComp.eval (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
-        adversary true n)) ≤
+    Encryption.advantage (Encryption.game (scheme D budget).keyGen (scheme D budget).encrypt
+      adversary) n ≤
     3 * (2 * budget n : ℝ≥0) * capacity n *
-      (Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (modLeveledAdversary E (fun n => 2 * n) (fun n => 2 * budget n) capacity
-            adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (modLeveledAdversary E (fun n => 2 * n) (fun n => 2 * budget n) capacity
-            adversary) true n)) +
+      (Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (modLeveledAdversary E (fun n => 2 * n) (fun n => 2 * budget n) capacity adversary)) n +
         2 / 2 ^ n) := by
   refine (advantage_scheme_le_modLeveledAdversary D (fun n => 2 * n) budget capacity adversary
     n width hbudget_pos hcapacity_pos hwidth hcapacity).trans ?_
