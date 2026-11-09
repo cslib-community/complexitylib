@@ -118,10 +118,7 @@ theorem crossing_axis_value {φ : CNF ℕ}
   rw [getElem_wire _ _ _ hk', heq] at hc
   cases axis with
   | false =>
-    have hl : side p (p - (1, 0)) = 0 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 0
-    have hr : side p (p + (1, 0)) = 1 := by
-      simpa [PairedPorts.neighbor] using side_neighbor p 1
+    obtain ⟨hl, hr, -, -⟩ := PlanarCompile.side_cardinal p
     rcases hnb with ⟨hprev, _⟩ | ⟨hprev, _⟩
     all_goals
       simp only [Bool.false_eq_true, ↓reduceIte] at hprev ⊢
@@ -129,10 +126,7 @@ theorem crossing_axis_value {φ : CNF ℕ}
       rw [crossing_port_value h hp] at hc
       simpa using hc
   | true =>
-    have hb : side p (p - (0, 1)) = 2 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 2
-    have ht : side p (p + (0, 1)) = 3 := by
-      simpa [PairedPorts.neighbor] using side_neighbor p 3
+    obtain ⟨-, -, hb, ht⟩ := PlanarCompile.side_cardinal p
     rcases hnb with ⟨hprev, _⟩ | ⟨hprev, _⟩
     all_goals
       simp only [↓reduceIte] at hprev ⊢

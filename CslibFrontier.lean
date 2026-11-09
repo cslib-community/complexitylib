@@ -2716,6 +2716,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.D
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Option
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Primitives
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Doubled
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Fold
@@ -3189,15 +3190,12 @@ public import CslibFrontier.Computability.PCP.DegreeReduction
 public import CslibFrontier.Computability.PCP.Encoded.AddTrivial
 public import CslibFrontier.Computability.PCP.Encoded.Amplification
 public import CslibFrontier.Computability.PCP.Encoded.Amplification.Arithmetic
-public import CslibFrontier.Computability.PCP.Encoded.Amplification.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Amplification.Iteration
 public import CslibFrontier.Computability.PCP.Encoded.AssignmentTester
 public import CslibFrontier.Computability.PCP.Encoded.AssignmentTester.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Basic
 public import CslibFrontier.Computability.PCP.Encoded.Cloud
 public import CslibFrontier.Computability.PCP.Encoded.CloudRotation
-public import CslibFrontier.Computability.PCP.Encoded.Composition
-public import CslibFrontier.Computability.PCP.Encoded.Composition.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Constraints
 public import CslibFrontier.Computability.PCP.Encoded.Count
 public import CslibFrontier.Computability.PCP.Encoded.DegreeReduction
@@ -3213,7 +3211,6 @@ public import CslibFrontier.Computability.PCP.Encoded.Preprocess
 public import CslibFrontier.Computability.PCP.Encoded.Preprocess.Programs
 public import CslibFrontier.Computability.PCP.Encoded.SelectedAssignmentTester
 public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition
-public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.Size
 public import CslibFrontier.Computability.PCP.Encoded.ThreeSAT
 public import CslibFrontier.Computability.PCP.Encoded.Verifier
@@ -3339,6 +3336,7 @@ public import CslibFrontier.Computability.Probabilistic.Repeat
 public import CslibFrontier.Computability.Probabilistic.Retry
 public import CslibFrontier.Computability.Probabilistic.Sampling
 public import CslibFrontier.Computability.Probabilistic.Sampling.F4
+public import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 public import CslibFrontier.Computability.Probabilistic.Selection
 public import CslibFrontier.Computability.Probabilistic.Traverse
 public import CslibFrontier.Computability.Probabilistic.UniformNat
@@ -4083,6 +4081,8 @@ public import CslibFrontier.DataStructure.ApproximateMembership.Spec
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
+public import CslibFrontier.DataStructure.BTree.Basic
+public import CslibFrontier.DataStructure.BTree.Height
 public import CslibFrontier.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import CslibFrontier.DataStructure.CellProbe.Randomized.StateTransition
 public import CslibFrontier.DataStructure.CellProbe.StateTransition
@@ -5653,6 +5653,7 @@ public import CslibFrontier.Probability.OptimalStopping.Secretary
 public import CslibFrontier.Probability.Option
 public import CslibFrontier.Probability.PMF
 public import CslibFrontier.Probability.PMF.Bind
+public import CslibFrontier.Probability.PMF.BindFailure
 public import CslibFrontier.Probability.PMF.Chebyshev
 public import CslibFrontier.Probability.PMF.Event
 public import CslibFrontier.Probability.PMF.Expect
@@ -5726,6 +5727,7 @@ public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
 public import CslibFrontier.Probability.UniversalHash
+public import CslibFrontier.Tactic.Degree
 public import CslibFrontier.Tactic.EncLen
 public import CslibFrontier.Tactic.FOOperator
 public import CslibFrontier.Tactic.FOOperator.Init

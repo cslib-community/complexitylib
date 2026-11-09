@@ -1265,8 +1265,7 @@ theorem perfectSemiHonestPrivateProper_gmwOT14Randomized (m coins n k : ℕ) [Ne
                 ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := n)).symm x) r)) i)) := by
     funext xr
     dsimp [Functionality.ofDeterministic, detOfRandomized]
-    congr 1
-    funext i
+    congr 1 with i : 1
     dsimp [circuitFunctionality]
     rw [Circuit.eval_comp, eval_xorPreludeCircuit]
   rw [← hfunc]
