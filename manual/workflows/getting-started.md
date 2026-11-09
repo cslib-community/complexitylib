@@ -1,6 +1,6 @@
 # Get oriented and build
 
-Start with the kind of claim you want Lean to check. A running Lean function, an equality of probability distributions, and a polynomial-time certificate answer different questions. Complexitylib connects these layers through explicit theorems. Open a client that proves the kind of statement you need, then follow its imports and encodings. [complexitylib][complexitylib]
+Start with the kind of claim you want Lean to check. A running Lean function, an equality of probability distributions, and a polynomial-time certificate answer different questions. cslib-frontier connects these layers through explicit theorems. Open a client that proves the kind of statement you need, then follow its imports and encodings. [cslib-frontier][complexitylib]
 
 ## Prerequisites and the checkout's version
 
@@ -15,8 +15,8 @@ Do not replace them with the historical survey's pins.
 **Start:** a shell with Git and `elan` available, outside an existing checkout. Run:
 
 ```bash
-git clone https://github.com/cslib-community/complexitylib.git
-cd complexitylib
+git clone https://github.com/cslib-community/cslib-frontier.git
+cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
@@ -38,20 +38,18 @@ run the helper before using MCP in a cold checkout.
 
 ## Read the directory names correctly
 
-The package is `complexitylib`; imports start with `Complexity.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.
+The package is `cslib-frontier`; imports start with `CslibFrontier.`. Most declarations live in `Cslib` namespaces; the Turing-machine API uses `Turing`. A module path and its declarations' namespace therefore need not have the same first component.
 
 | Place | Use it for |
 |---|---|
-| `Complexity/` | Definitions, semantics, resource predicates and theorems |
-| `ComplexityTests/` | Small clients, edge cases, failure guards and regressions |
+| `CslibFrontier/` | Definitions, semantics, resource predicates and theorems |
+| `CslibFrontierTests/` | Small clients, edge cases, failure guards and regressions |
 | `guide/` | Explanatory chapters with Lean examples |
-| `abstracts/ComplexityAbstracts/` | Selected readable statements and their bridges |
-| `abstracts/catalogue.json` | Headline selection, not the whole API |
-| `results/` | Result and reference inventory beyond the selected abstracts |
+| `results/` and `CslibFrontierResults/` | Checked inventory of named results and their sources, linked to the API documentation |
 | `ROADMAP.md` | Outstanding directions and incomplete endpoints |
-| `UPSTREAM.md` and source markers | CSLib coordination and local-copy status |
+| `-- upstream:` markers and `CONTRIBUTING.md` (Upstreaming) | Local-copy status and live CSLib/Mathlib coordination |
 
-Import a topic module or tactic module first. `import Complexity` imports the entire library and is usually unnecessary for a small client. The [architecture reference](../design-and-assurance/architecture.md) explains the layers.
+Import a topic module or tactic module first. `import CslibFrontier` imports the entire library and is usually unnecessary for a small client. The [architecture reference](../design-and-assurance/architecture.md) explains the layers.
 
 ## A first worked example
 
@@ -61,7 +59,7 @@ and no other task owns the fresh branch and directory names below. From the prim
 ```bash
 scripts/worktree.sh create docs/manual-first-client manual-first-client HEAD
 cd .worktrees/manual-first-client
-scripts/build.sh ComplexityTests.NPCompleteness ComplexityTests.PolyTimePlainDriver --wfail --iofail
+scripts/build.sh CslibFrontierTests.NPCompleteness CslibFrontierTests.PolyTimePlainDriver --wfail --iofail
 ```
 
 The helper prepares an isolated working directory and mutable build outputs. `HEAD` is
@@ -70,9 +68,9 @@ different base. Pick different branch and directory names if these are already i
 For a source-only checkout or dependency changes, read the helper's
 [isolation modes](../../scripts/cache/README.md#automatic-restoration).
 
-**Read the complete client:** open [`ComplexityTests/NPCompleteness.lean`](../../ComplexityTests/NPCompleteness.lean).
-It imports `Complexity.Computability.Complexity.Problems.Clique` and
-`Complexity.Tactic.PolyTime`, enters `ComplexityTests.NPCompleteness`, and opens
+**Read the complete client:** open [`CslibFrontierTests/NPCompleteness.lean`](../../CslibFrontierTests/NPCompleteness.lean).
+It imports `CslibFrontier.Computability.Complexity.Problems.Clique` and
+`CslibFrontier.Tactic.PolyTime`, enters `CslibFrontierTests.NPCompleteness`, and opens
 `Cslib.Complexity Turing.MultiTapeTM`. Keep that context. Follow `startsTrue_mem_P`:
 its three fields give a Boolean decider, its polynomial-time certificate and its
 membership equivalence. Then follow `complementInstance_polyTime`,
@@ -93,7 +91,7 @@ The editorial check described here does not itself claim a fresh Lean build.
 ordinary `fun_prop` does not, then restore the successful proof in your disposable worktree.
 
 Open the complete client
-[`ComplexityTests/PolyTimePlainDriver.lean`](../../ComplexityTests/PolyTimePlainDriver.lean).
+[`CslibFrontierTests/PolyTimePlainDriver.lean`](../../CslibFrontierTests/PolyTimePlainDriver.lean).
 Its imports and `open Turing.MultiTapeTM` are at the top; the following contextual excerpt
 is inside `namespace PlainDriverTests`, after the opaque routine and its named certificate:
 
@@ -110,7 +108,7 @@ example (B : Cslib.WordRAM.Basis) (c : ℕ) :
 Save and run:
 
 ```bash
-scripts/build.sh ComplexityTests.PolyTimePlainDriver --wfail --iofail
+scripts/build.sh CslibFrontierTests.PolyTimePlainDriver --wfail --iofail
 ```
 
 The check is expected to fail at that example. Read the diagnostic in the editor or command
@@ -152,29 +150,29 @@ The branch is retained. If Git refuses because files are modified, inspect and p
 them before retrying; do not force removal. This command is not a cleanup procedure for
 another contributor's worktree.
 
-The [Verso guide](../../guide/ComplexityGuide.lean) provides further checked tutorials:
-[first steps](../../guide/ComplexityGuide/FirstSteps.lean),
-[NP-completeness](../../guide/ComplexityGuide/NPCompleteness.lean),
-[streaming](../../guide/ComplexityGuide/Streaming.lean), and
-[first-order operators](../../guide/ComplexityGuide/FirstOrderOperators.lean).
+The [Verso guide](../../guide/CslibFrontierGuide.lean) provides further checked tutorials:
+[first steps](../../guide/CslibFrontierGuide/FirstSteps.lean),
+[NP-completeness](../../guide/CslibFrontierGuide/NPCompleteness.lean),
+[streaming](../../guide/CslibFrontierGuide/Streaming.lean), and
+[first-order operators](../../guide/CslibFrontierGuide/FirstOrderOperators.lean).
 Use those source files for their example bodies. The workflow chapters' quoted Lean
 blocks remain contextual excerpts: open each linked full client for its complete imports
 and assumptions. Their identity is checked against current source by the manual checker;
 that check is not standalone elaboration. [Historical hosted validation](../development-history/timings.md)
 has its own dated scope and cannot validate later changes.
 
-## Use Complexitylib from your own project
+## Use cslib-frontier from your own project
 
-Match your project's `lean-toolchain` to the chosen Complexitylib revision. Choose a full commit SHA deliberately; `git rev-parse HEAD` in that checkout prints it.
+Match your project's `lean-toolchain` to the chosen cslib-frontier revision. Choose a full commit SHA deliberately; `git rev-parse HEAD` in that checkout prints it.
 In a TOML Lake project, add this template, replacing the placeholder with that SHA:
 
 ```toml
 [[require]]
-name = "complexitylib"
-git = "https://github.com/cslib-community/complexitylib"
+name = "cslib-frontier"
+git = "https://github.com/cslib-community/cslib-frontier"
 rev = "<the-full-commit-SHA-you-selected>"
 ```
 
-Run `lake update complexitylib` and `lake build` from your project. If you directly require CSLib or Mathlib too, align them with the chosen manifest and include their package names in the update command when changing their pins. Commit the resulting manifest, Lake configuration and toolchain together. Updating only Complexitylib leaves other direct dependencies locked. See the [external-project instructions](../../README.md#use-from-another-lean-project).
+Run `lake update cslib-frontier` and `lake build` from your project. If you directly require CSLib or Mathlib too, align them with the chosen manifest and include their package names in the update command when changing their pins. Commit the resulting manifest, Lake configuration and toolchain together. Updating only cslib-frontier leaves other direct dependencies locked. See the [external-project instructions](../../README.md#use-from-another-lean-project).
 
 [complexitylib]: ../sources.md#complexitylib

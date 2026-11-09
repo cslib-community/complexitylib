@@ -1,0 +1,425 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.GenericRAM.SparseMemory.Basic
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
+import CslibFrontier.Tactic.EncLen
+
+/-!
+# Native Turing-machine certificates for sparse memory
+
+The association list is encoded as a list of encoded address/value pairs. Equality, first-match
+search and filtering are implemented by the existing native multitape-machine calculus. No
+memory operation is an oracle. Bounds depend on encoded address lengths, rather than allocating
+space up to the numeric address. The cost functions are asymptotic bound expressions for
+`ComputableInO`, not exact native step counts: one finite machine and a constant factor
+work for all inputs, for each fixed choice of address and value encodings.
+
+## Main definitions
+
+* `SparseMemory.encoding`: the binary encoding of a finite sparse store.
+* `SparseMemory.scanTime`, `SparseMemory.scanSpace`: parameterized scan bounds.
+
+## Main results
+
+* `SparseMemory.read_inO`, `insert_inO`: native TM read/write implementations with
+  parameterized time and space, including argument extraction and a uniform read default.
+* `SparseMemory.length_encoding_le`: stored-cell and word-length bound on the encoding.
+* `SparseMemory.readTime_le_cube`, `readSpace_le_linear`, `writeTime_le_cube`,
+  `writeSpace_le_linear`: the read and write charges are cubic in time and linear in workspace in
+  the full encoded input length.
+* `SparseMemory.read_inO_cube`, `insert_inO_cube`: the certificates with those bounds; these
+  conservative bounds are not optimality claims.
+* `SparseMemory.read_polytime`, `insert_polytime`: registered polynomial-time corollaries.
+
+## References
+
+Uses Mathlib's association lists and Christian Reitwiessner's encoded native multitape-machine
+calculus (`ComputableInO.eq`, `findWith`, and `filterWith`).
+-/
+
+@[expose] public section
+
+namespace Cslib.GenericRAM.SparseMemory
+
+open Turing.MultiTapeTM
+open ComputableInO
+
+variable {Address Value : Type}
+variable (encA : Address ↪ List Bool) (encV : Value ↪ List Bool)
+
+/-- Encode the distinct bindings using the existing framed pair and list encodings. -/
+def encoding : SparseMemory Address Value ↪ List Bool :=
+  ⟨fun s => encList (encPair encA encV) (entries s),
+    fun _ _ h => entries_injective ((encList (encPair encA encV)).injective h)⟩
+
+@[simp] theorem encoding_apply (s : SparseMemory Address Value) :
+    encoding encA encV s = encList (encPair encA encV) (entries s) := rfl
+
+/-- Encode a queried address and the store. -/
+def queryEncoding : (Address × SparseMemory Address Value) ↪ List Bool :=
+  encPair encA (encoding encA encV)
+
+/-- The cost expression of the certified address comparison, including argument extraction. -/
+def compareTime (q : Address × (Address × Value)) : ℕ :=
+  2 * (encPair encA (encPair encA encV) q).length +
+    ((encA q.1).length + 1) * ((encA q.1).length + (encA q.2.1).length + 1)
+
+/-- Workspace for the certified address comparison, including argument extraction. -/
+def compareSpace (q : Address × (Address × Value)) : ℕ :=
+  2 * (encPair encA (encPair encA encV) q).length +
+    (encPair encA encA (q.1, q.2.1)).length
+
+/-- First-match search time: encoded input overhead plus one bounded scan round per binding. -/
+def scanTime (q : Address × SparseMemory Address Value) : ℕ :=
+  3 * (queryEncoding encA encV q).length + ((entries q.2).length + 1) *
+    ((encA q.1).length + (encoding encA encV q.2).length +
+      listMax (fun e => compareTime encA encV (q.1, e)) (entries q.2))
+
+/-- First-match search workspace: input, store and the largest comparison workspace. -/
+def scanSpace (q : Address × SparseMemory Address Value) : ℕ :=
+  3 * (queryEncoding encA encV q).length + (encA q.1).length +
+    (encoding encA encV q.2).length +
+      listMax (fun e => compareSpace encA encV (q.1, e)) (entries q.2)
+
+/-- Maximum encoded address length among stored cells, zero for the empty store. -/
+def maxKeyLength (s : SparseMemory Address Value) : ℕ :=
+  listMax (fun e => (encA e.1).length) (entries s)
+
+/-- Maximum encoded value length among stored cells, zero for the empty store. -/
+def maxValueLength (s : SparseMemory Address Value) : ℕ :=
+  listMax (fun e => (encV e.2).length) (entries s)
+
+/-- Every stored cell's encoded address and value are within the store's maxima. -/
+private theorem length_le_max_of_mem {s : SparseMemory Address Value} {e : Address × Value}
+    (he : e ∈ entries s) :
+    (encA e.1).length ≤ maxKeyLength encA s ∧ (encV e.2).length ≤ maxValueLength encV s :=
+  ⟨le_listMax (f := fun e : Address × Value => (encA e.1).length) he,
+    le_listMax (f := fun e : Address × Value => (encV e.2).length) he⟩
+
+/-- The encoded store depends on the number and encoded sizes of stored cells. -/
+theorem length_encoding_le (s : SparseMemory Address Value) :
+    (encoding encA encV s).length ≤ (entries s).length *
+      (4 * maxKeyLength encA s + 2 * maxValueLength encV s + 3) := by
+  have h := length_encList_le (encPair encA encV) (entries s)
+    (b := 2 * maxKeyLength encA s + 1 + maxValueLength encV s) (fun e he => by
+      obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
+      simp only [length_encPair]
+      omega)
+  simp only [encoding_apply]
+  convert h using 1
+  congr 1
+  omega
+
+/-- A bound using entry count, encoded input length, and maximum key/value lengths. -/
+theorem scanTime_le (q : Address × SparseMemory Address Value) :
+    scanTime encA encV q ≤
+      3 * (queryEncoding encA encV q).length + ((entries q.2).length + 1) *
+        ((encA q.1).length + (encoding encA encV q.2).length +
+          2 * (2 * (encA q.1).length + 2 * maxKeyLength encA q.2 +
+            maxValueLength encV q.2 + 2) +
+          ((encA q.1).length + 1) * ((encA q.1).length + maxKeyLength encA q.2 + 1)) := by
+  have hm : listMax (fun e => compareTime encA encV (q.1, e)) (entries q.2) ≤
+      2 * (2 * (encA q.1).length + 2 * maxKeyLength encA q.2 +
+        maxValueLength encV q.2 + 2) +
+      ((encA q.1).length + 1) * ((encA q.1).length + maxKeyLength encA q.2 + 1) := by
+    apply listMax_le
+    intro e he
+    obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
+    simp only [compareTime, length_encPair]
+    nlinarith
+  have := Nat.mul_le_mul_left ((entries q.2).length + 1) hm
+  unfold scanTime
+  nlinarith
+
+/-- Scan workspace is linear in the retained encoding and the largest encoded words. -/
+theorem scanSpace_le (q : Address × SparseMemory Address Value) :
+    scanSpace encA encV q ≤
+      3 * (queryEncoding encA encV q).length + (encA q.1).length +
+        (encoding encA encV q.2).length +
+          2 * (2 * (encA q.1).length + 2 * maxKeyLength encA q.2 +
+            maxValueLength encV q.2 + 2) +
+          (2 * (encA q.1).length + maxKeyLength encA q.2 + 1) := by
+  have hm : listMax (fun e => compareSpace encA encV (q.1, e)) (entries q.2) ≤
+      2 * (2 * (encA q.1).length + 2 * maxKeyLength encA q.2 +
+        maxValueLength encV q.2 + 2) +
+      (2 * (encA q.1).length + maxKeyLength encA q.2 + 1) := by
+    apply listMax_le
+    intro e he
+    obtain ⟨hk, hv⟩ := length_le_max_of_mem encA encV he
+    enc_len [compareSpace]
+  unfold scanSpace
+  omega
+
+/-- Every stored address is bounded by the total encoded store. -/
+theorem maxKeyLength_le_encoding (s : SparseMemory Address Value) :
+    maxKeyLength encA s ≤ (encoding encA encV s).length := by
+  apply listMax_le
+  intro e he
+  have h := length_le_encList_of_mem (encPair encA encV) he
+  simp only [length_encPair] at h
+  simpa only [encoding_apply] using (show (encA e.1).length ≤ _ by omega)
+
+/-- Every stored value is bounded by the total encoded store. -/
+theorem maxValueLength_le_encoding (s : SparseMemory Address Value) :
+    maxValueLength encV s ≤ (encoding encA encV s).length := by
+  apply listMax_le
+  intro e he
+  have h := length_le_encList_of_mem (encPair encA encV) he
+  simp only [length_encPair] at h
+  simpa only [encoding_apply] using (show (encV e.2).length ≤ _ by omega)
+
+/-- In particular, the scan's parameterized time bound is cubic in its encoded input length. -/
+theorem scanTime_le_cube (q : Address × SparseMemory Address Value) :
+    scanTime encA encV q ≤ 30 * ((queryEncoding encA encV q).length + 1) ^ 3 := by
+  let E := (queryEncoding encA encV q).length
+  have hE : E = 2 * (encA q.1).length + 1 + (encoding encA encV q.2).length :=
+    length_encPair q
+  have ha : (encA q.1).length ≤ E := by omega
+  have hm : (encoding encA encV q.2).length ≤ E := by omega
+  have hk := (maxKeyLength_le_encoding encA encV q.2).trans hm
+  have hv := (maxValueLength_le_encoding encA encV q.2).trans hm
+  have hn : (entries q.2).length ≤ E :=
+    (length_le_length_encList (encPair encA encV) (entries q.2)).trans hm
+  calc
+    scanTime encA encV q ≤ _ := scanTime_le encA encV q
+    _ ≤ 3 * E + (E + 1) *
+        (E + E + 2 * (2 * E + 2 * E + E + 2) + (E + 1) * (E + E + 1)) := by
+      gcongr
+    _ ≤ 30 * (E + 1) ^ 3 := by ring_nf; omega
+
+/-- The scan's workspace bound is linear in its encoded input length. -/
+theorem scanSpace_le_linear (q : Address × SparseMemory Address Value) :
+    scanSpace encA encV q ≤ 30 * ((queryEncoding encA encV q).length + 1) := by
+  have hE : (queryEncoding encA encV q).length =
+      2 * (encA q.1).length + 1 + (encoding encA encV q.2).length := length_encPair q
+  have hk := maxKeyLength_le_encoding encA encV q.2
+  have hv := maxValueLength_le_encoding encA encV q.2
+  have h := scanSpace_le encA encV q
+  omega
+
+variable [DecidableEq Address]
+
+private theorem compare_inO :
+    ComputableInO (fun q : Address × (Address × Value) => decide (q.1 = q.2.1))
+      (encPair encA (encPair encA encV)) encBool (compareTime encA encV)
+      (compareSpace encA encV) := by
+  have h := (ComputableInO.eq encA).comp
+    ((fst encA (encPair encA encV)).prod (snd encA (encPair encA encV)).fst')
+  convert h using 1 <;> funext q <;> simp [compareTime, compareSpace, two_mul]
+
+/-- A native multitape machine searches the finite store, with parameterized time and space. -/
+theorem find_inO :
+    ComputableInO
+      (fun q : Address × SparseMemory Address Value =>
+        (entries q.2).find? (fun e => decide (q.1 = e.1)))
+      (queryEncoding encA encV) (encOption (encPair encA encV))
+      (scanTime encA encV) (scanSpace encA encV) := by
+  have hpar := fst encA (encoding encA encV)
+  have hlist : ComputableInO (fun q : Address × SparseMemory Address Value => entries q.2)
+      (queryEncoding encA encV) (encList (encPair encA encV))
+      (fun q => (queryEncoding encA encV q).length)
+      (fun q => (queryEncoding encA encV q).length) :=
+    (snd encA (encoding encA encV)).of_enc_eq fun _ => rfl
+  have h := findWith (compare_inO encA encV) hpar hlist
+  convert h using 1 <;> first | rfl |
+    (funext q; simp only [scanTime, scanSpace, queryEncoding, encoding_apply]; omega)
+
+/-- Filtering implements erasure using the same parameterized scan bounds. -/
+theorem erase_entries_inO :
+    ComputableInO
+      (fun q : Address × SparseMemory Address Value =>
+        (entries q.2).filter (fun e => decide (q.1 ≠ e.1)))
+      (queryEncoding encA encV) (encList (encPair encA encV))
+      (scanTime encA encV) (scanSpace encA encV) := by
+  have hnot := (ComputableInDegree.of_finite (encIn := encBool)
+    (encMid := encBool) Bool.not).inO_one
+  have hcmp := hnot.comp_linear (compare_inO encA encV)
+  have hlist : ComputableInO (fun q : Address × SparseMemory Address Value => entries q.2)
+      (queryEncoding encA encV) (encList (encPair encA encV))
+      (fun q => (queryEncoding encA encV q).length)
+      (fun q => (queryEncoding encA encV q).length) :=
+    (snd encA (encoding encA encV)).of_enc_eq fun _ => rfl
+  have h := filterWith hcmp (fst encA (encoding encA encV)) hlist
+  convert h using 1 <;> first | rfl |
+    (funext q; simp only [scanTime, scanSpace, queryEncoding, encoding_apply]; omega)
+
+/-- Binary input convention for a write: a new binding followed by the finite store. -/
+def writeEncoding : ((Address × Value) × SparseMemory Address Value) ↪ List Bool :=
+  encPair (encPair encA encV) (encoding encA encV)
+
+/-- Charged write time, including preparing the scan and the new binding. -/
+def writeTime (q : (Address × Value) × SparseMemory Address Value) : ℕ :=
+  3 * (writeEncoding encA encV q).length + scanTime encA encV (q.1.1, q.2)
+
+/-- Charged write workspace. -/
+def writeSpace (q : (Address × Value) × SparseMemory Address Value) : ℕ :=
+  3 * (writeEncoding encA encV q).length + scanSpace encA encV (q.1.1, q.2)
+
+/-- Native TM implementation of insertion/replacement, including all argument preparation. -/
+theorem insert_inO :
+    ComputableInO
+      (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
+      (writeEncoding encA encV) (encoding encA encV)
+      (writeTime encA encV) (writeSpace encA encV) := by
+  have hb := fst (encPair encA encV) (encoding encA encV)
+  have hs := snd (encPair encA encV) (encoding encA encV)
+  have hf := (erase_entries_inO encA encV).comp (hb.fst'.prod hs)
+  have hc := (ComputableInDegree.cons (encPair encA encV)).inO_one.comp_linear
+    (hb.prod hf)
+  have hout := hc.of_enc_eq (g := fun q => q.2.insert q.1.1 q.1.2)
+    (encC := encoding encA encV) (fun q => by
+      simp only [encoding_apply, entries_insert, Function.comp_def])
+  convert hout using 1 <;> first | rfl |
+    (funext q; simp only [writeTime, writeSpace, writeEncoding]; omega)
+
+omit [DecidableEq Address] in
+private theorem readResult_inO :
+    ComputableInO
+      (fun q : Option (Address × Value) × Value => (q.1.map Prod.snd).getD q.2)
+      (encPair (encOption (encPair encA encV)) encV) encV
+      (fun q => (encPair (encOption (encPair encA encV)) encV q).length)
+      (fun q => (encPair (encOption (encPair encA encV)) encV q).length) := by
+  have heq : (fun q : Option (Address × Value) × Value => (q.1.map Prod.snd).getD q.2) =
+      fun q => q.1.elim q.2 Prod.snd := by
+    funext ⟨o, d⟩
+    cases o <;> rfl
+  rw [heq]
+  refine .mono (by fun_prop) 8 (fun q => ?_) fun q => ?_
+  all_goals
+    rcases q with ⟨_ | e, d⟩ <;>
+      simp only [Option.elim_none, Option.elim_some, length_encPair, encOption_some,
+        List.length_cons] <;> omega
+
+/-- A read input supplies both the queried store and its default value. -/
+def readEncoding : ((Address × SparseMemory Address Value) × Value) ↪ List Bool :=
+  encPair (queryEncoding encA encV) encV
+
+/-- Read time, including extraction of the query and the input-supplied default. -/
+def readTime (q : (Address × SparseMemory Address Value) × Value) : ℕ :=
+  2 * (readEncoding encA encV q).length + scanTime encA encV q.1
+
+/-- Read workspace, including the input-supplied default. -/
+def readSpace (q : (Address × SparseMemory Address Value) × Value) : ℕ :=
+  2 * (readEncoding encA encV q).length + scanSpace encA encV q.1
+
+/-- Native TM implementation of total memory reads, uniform also in the default value. -/
+theorem read_inO :
+    ComputableInO
+      (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
+      (readEncoding encA encV) encV (readTime encA encV) (readSpace encA encV) := by
+  have hf := (find_inO encA encV).comp (fst (queryEncoding encA encV) encV)
+  have hd := snd (queryEncoding encA encV) encV
+  have h := (readResult_inO encA encV).comp_linear (hf.prod hd)
+  convert h using 1 <;> first | rfl |
+    (funext q; exact read_eq_find q.2 q.1.1 q.1.2) |
+    (funext q; simp only [readTime, readSpace, readEncoding]; omega)
+
+omit [DecidableEq Address] in
+/-- The charged write time is cubic in the encoded write input. -/
+theorem writeTime_le_cube (q : (Address × Value) × SparseMemory Address Value) :
+    writeTime encA encV q ≤ 33 * ((writeEncoding encA encV q).length + 1) ^ 3 := by
+  have hq : (queryEncoding encA encV (q.1.1, q.2)).length ≤
+      (writeEncoding encA encV q).length := by enc_len [queryEncoding, writeEncoding]
+  have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
+  have ht := scanTime_le_cube encA encV (q.1.1, q.2)
+  have he : (writeEncoding encA encV q).length ≤
+      ((writeEncoding encA encV q).length + 1) ^ 3 := by ring_nf; omega
+  unfold writeTime
+  nlinarith
+
+omit [DecidableEq Address] in
+/-- The charged write workspace is linear in the encoded write input. -/
+theorem writeSpace_le_linear (q : (Address × Value) × SparseMemory Address Value) :
+    writeSpace encA encV q ≤ 33 * ((writeEncoding encA encV q).length + 1) := by
+  have hs := scanSpace_le_linear encA encV (q.1.1, q.2)
+  enc_len [writeSpace, queryEncoding, writeEncoding] at hs ⊢
+
+omit [DecidableEq Address] in
+/-- The charged read time is cubic in the encoded read input. -/
+theorem readTime_le_cube (q : (Address × SparseMemory Address Value) × Value) :
+    readTime encA encV q ≤ 32 * ((readEncoding encA encV q).length + 1) ^ 3 := by
+  have hq : (queryEncoding encA encV q.1).length ≤ (readEncoding encA encV q).length := by
+    enc_len [readEncoding]
+  have hp := Nat.pow_le_pow_left (Nat.add_le_add_right hq 1) 3
+  have ht := scanTime_le_cube encA encV q.1
+  have he : (readEncoding encA encV q).length ≤
+      ((readEncoding encA encV q).length + 1) ^ 3 := by ring_nf; omega
+  unfold readTime
+  nlinarith
+
+omit [DecidableEq Address] in
+/-- The charged read workspace is linear in the encoded read input. -/
+theorem readSpace_le_linear (q : (Address × SparseMemory Address Value) × Value) :
+    readSpace encA encV q ≤ 32 * ((readEncoding encA encV q).length + 1) := by
+  have hs := scanSpace_le_linear encA encV q.1
+  enc_len [readSpace, readEncoding] at hs ⊢
+
+/-- A cubic-time, linear-space specialization of the parameterized write certificate. -/
+theorem insert_inO_cube :
+    ComputableInO
+      (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
+      (writeEncoding encA encV) (encoding encA encV)
+      (fun q => ((writeEncoding encA encV q).length + 1) ^ 3)
+      (fun q => (writeEncoding encA encV q).length) :=
+  (insert_inO encA encV).mono 33 (fun q => by have := writeTime_le_cube encA encV q; omega)
+    fun q => writeSpace_le_linear encA encV q
+
+/-- A cubic-time, linear-space specialization of the parameterized read certificate. -/
+theorem read_inO_cube :
+    ComputableInO
+      (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
+      (readEncoding encA encV) encV
+      (fun q => ((readEncoding encA encV q).length + 1) ^ 3)
+      (fun q => (readEncoding encA encV q).length) :=
+  (read_inO encA encV).mono 32 (fun q => by have := readTime_le_cube encA encV q; omega)
+    fun q => readSpace_le_linear encA encV q
+
+/-- Polynomial-time writes are a corollary of the native parameterized certificate. -/
+@[fun_prop]
+theorem insert_polytime :
+    ComputableInPolyTime
+      (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
+      (writeEncoding encA encV) (encoding encA encV) :=
+  (insert_inO_cube encA encV).computableInPolyTime
+    (.of_forall_le 1 3 (by simp)) .self
+
+/-- Polynomial-time reads are uniform in the queried address, store, and default value. -/
+@[fun_prop]
+theorem read_polytime :
+    ComputableInPolyTime
+      (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
+      (readEncoding encA encV) encV :=
+  (read_inO_cube encA encV).computableInPolyTime
+    (.of_forall_le 1 3 (by simp)) .self
+
+/-- Writing preserves maximum key length up to the newly supplied address. -/
+theorem maxKeyLength_insert_le (a : Address) (v : Value) (s : SparseMemory Address Value) :
+    maxKeyLength encA (s.insert a v) ≤ max (encA a).length (maxKeyLength encA s) := by
+  apply listMax_le
+  intro e he
+  rcases mem_entries_insert.mp he with rfl | ⟨he, _⟩
+  · exact le_max_left _ _
+  · exact (le_listMax (f := fun e : Address × Value => (encA e.1).length) he).trans
+      (le_max_right _ _)
+
+/-- Writing preserves maximum value length up to the newly supplied value. -/
+theorem maxValueLength_insert_le (a : Address) (v : Value) (s : SparseMemory Address Value) :
+    maxValueLength encV (s.insert a v) ≤ max (encV v).length (maxValueLength encV s) := by
+  apply listMax_le
+  intro e he
+  rcases mem_entries_insert.mp he with rfl | ⟨he, _⟩
+  · exact le_max_left _ _
+  · exact (le_listMax (f := fun e : Address × Value => (encV e.2).length) he).trans
+      (le_max_right _ _)
+
+end Cslib.GenericRAM.SparseMemory

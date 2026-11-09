@@ -1,7 +1,7 @@
 # HTTP cache origin
 
-Optional MIT cache origin for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
-and [#2506](https://github.com/cslib-community/complexitylib/pull/2506). The
+Optional MIT cache origin for [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503)
+and [#2506](https://github.com/cslib-community/cslib-frontier/pull/2506). The
 [migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
 GCS remains an active CI publisher and the default reader. MIT CI publication is enabled;
 reader cutover remains a separate decision. The source and examples do not provision infrastructure
@@ -73,7 +73,7 @@ go build -o /tmp/cache-origin .
 ```
 
 The tests use temporary directories and local HTTP servers. No real server, cloud account,
-repository credential, or Complexitylib build is needed. Linux-only source is intentional.
+repository credential, or cslib-frontier build is needed. Linux-only source is intentional.
 The Lean CI workflow also runs these checks and a real loopback nginx HTTPS test. To run that
 test by hand, install nginx, OpenSSL and curl locally, then from the repository root run:
 
@@ -85,12 +85,12 @@ CACHE_ORIGIN_NGINX_TEST=1 CACHE_ORIGIN_BIN=/tmp/cache-origin \
 
 It uses a temporary self-signed certificate and upload password and starts only loopback listeners.
 
-To prepare real bytes, start from a reviewed, clean Complexitylib checkout with its dependencies
+To prepare real bytes, start from a reviewed, clean cslib-frontier checkout with its dependencies
 and toolchain available, and use an absolute scratch directory outside the source checkout:
 
 ```bash
 publication_dir=$(mktemp -d)
-lake build Complexity ComplexityTests -o "$publication_dir/mapping.jsonl"
+lake build CslibFrontier CslibFrontierTests -o "$publication_dir/mapping.jsonl"
 lake cache stage "$publication_dir/mapping.jsonl" "$publication_dir/archives"
 cache_revision=$(git rev-parse HEAD)
 cache_toolchain=$(tr -d '[:space:]' < lean-toolchain | sed 's#/#--#; s#:#---#')
@@ -220,5 +220,5 @@ Review references: [Go filesystem confinement](https://pkg.go.dev/os#Root),
 
 Manual impact: the Operator's Manual reaches the updated canonical cache guide, security recovery
 procedure and operator examples; local restoration now supports bounded ordered mirrors. The Agent Operator's Manual needs no edit:
-roles, authorization and handoffs are unchanged. No Lean/API/abstract/roadmap/upstream impact.
+roles, authorization and handoffs are unchanged. No Lean/API/roadmap/upstream impact.
 AI assistance: OpenAI Codex wrote the origin and its tests. Agent review is not human approval.

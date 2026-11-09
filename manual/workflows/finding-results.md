@@ -1,16 +1,16 @@
 # Find and apply a result
 
-Search for the contract you need, then inspect the theorem that provides it. The [model map](../model-map.md) routes unfamiliar terminology to source files; the reference chapters explain the representations. Once the goal is fixed, a nearby checked client is usually a better implementation starting point than the library's umbrella import. [complexitylib][complexitylib]
+Search for the contract you need, then inspect the theorem that provides it. The [model map](../model-map.md) routes unfamiliar terminology to source files; the reference chapters explain the representations. Once the goal is fixed, a nearby checked client is usually a better implementation starting point than the library's umbrella import. [cslib-frontier][complexitylib]
 
 ## Follow a name to its usable statement
 
 Run searches from the repository root. For circuit construction, this finds both the API and its clients:
 
 ```sh
-rg -n 'Synthesis.Builder|exists_circuit_outputs' Complexity ComplexityTests
+rg -n 'Synthesis.Builder|exists_circuit_outputs' CslibFrontier CslibFrontierTests
 ```
 
-Read the defining module's imports and namespace before importing it. A file under `Complexity/` commonly extends `Cslib.*`; machine declarations use `Turing.*`. For inherited declarations, search the pinned CSLib source after the [dependency preflight](getting-started.md). Do not assume an identically named declaration in a different checkout has the same type.
+Read the defining module's imports and namespace before importing it. A file under `CslibFrontier/` commonly extends `Cslib.*`; machine declarations use `Turing.*`. For inherited declarations, search the pinned CSLib source after the [dependency preflight](getting-started.md). Do not assume an identically named declaration in a different checkout has the same type.
 
 Before applying a result, identify its input/output types and encoding, quantified witnesses, size parameter, charged resource, uniformity and side conditions. In particular, check whether a machine is chosen once before all inputs, whether the bound is eventually or pointwise, and whether the theorem requires a valid representation. If these disagree with the [contract you chose](choosing-models.md), find a transport theorem or prove the missing conversion. Changing notation does not establish a model bridge.
 
@@ -22,7 +22,7 @@ Before applying a result, identify its input/output types and encoding, quantifi
 
 **Goal:** a three-input, two-output Boolean circuit computing `(!x₀ ∧ x₁, !x₀ ∨ x₂)` with at most three gates.
 
-Open [ComplexityTests/SynthesisBuilder.lean](../../ComplexityTests/SynthesisBuilder.lean). Its imports are `Complexity.Computability.Circuit.Boolean.Word`, `Complexity.Tactic.Synthesis` and `Mathlib.Tactic.FinCases`. The contextual excerpt below requires that file's `open Cslib Cslib.Circuits Cslib.Circuits.Boolean` and checked surrounding context:
+Open [CslibFrontierTests/SynthesisBuilder.lean](../../CslibFrontierTests/SynthesisBuilder.lean). Its imports are `CslibFrontier.Computability.Circuit.Boolean.Word`, `CslibFrontier.Tactic.Synthesis` and `Mathlib.Tactic.FinCases`. The contextual excerpt below requires that file's `open Cslib Cslib.Circuits Cslib.Circuits.Boolean` and checked surrounding context:
 
 <!-- excerpt: synthesis-shared-circuit -->
 ```lean
@@ -58,7 +58,7 @@ The [circuit reference](../circuits-logic-and-other-models/circuits-and-formulas
 ## Compare compressed row outputs
 
 For deterministic two-signal compression comparisons, import
-[RowCompression/SaturatedRoot](../../Complexity/Computability/LogSpaceDerandomization/RowCompression/SaturatedRoot.lean)
+[RowCompression/SaturatedRoot](../../CslibFrontier/Computability/LogSpaceDerandomization/RowCompression/SaturatedRoot.lean)
 and open `Cslib.RowCompression`. `exists_iterate_root_bound` compares the actual schedule with
 a zero-increment reference sharing its initial loss. Supply first-signal saturation, rank-gate
 closure, a uniform output-root range and global root regularity in both signals and the padded
@@ -68,23 +68,23 @@ the schedule and true first-entry magnitudes. The rank uses the full retained se
 default, so agreement on a smaller usage set does not suffice.
 
 For the scalar upper-cap step, use
-[RowCompression/BoundedCap](../../Complexity/Computability/LogSpaceDerandomization/RowCompression/BoundedCap.lean)'s
+[RowCompression/BoundedCap](../../CslibFrontier/Computability/LogSpaceDerandomization/RowCompression/BoundedCap.lean)'s
 `abs_min_add_sub_min_add_le`: relative error at most `1/2` gives capped absolute error
 `(4 * θ + 5) * ε` when the common loss has magnitude at most `θ`. This bounds a scalar comparison;
 it does not truncate stored states. For the concrete polynomial family, keep importing
-[PolynomialAtomRows/Relative](../../Complexity/Computability/LogSpaceDerandomization/PolynomialAtomRows/Relative.lean)
-or [ClippedError](../../Complexity/Computability/LogSpaceDerandomization/PolynomialAtomRows/ClippedError.lean);
+[PolynomialAtomRows/Relative](../../CslibFrontier/Computability/LogSpaceDerandomization/PolynomialAtomRows/Relative.lean)
+or [ClippedError](../../CslibFrontier/Computability/LogSpaceDerandomization/PolynomialAtomRows/ClippedError.lean);
 their public theorem contracts are unchanged and discharge the scalar assumptions themselves.
 
 Open the complete
-[two-signal regression client](../../ComplexityTests/RowCompressionSaturatedRoot.lean) for the
+[two-signal regression client](../../CslibFrontierTests/RowCompressionSaturatedRoot.lean) for the
 imports, concrete output, proved scalar contracts and a positive-output fixture. It also checks
 that the second coordinate affects the output, arbitrarily large off-usage truth changes the
 actual rank gate, and unbounded common loss invalidates the scalar estimate. From a configured
 checkout, run:
 
 ```sh
-scripts/build.sh --wfail --iofail ComplexityTests.RowCompressionSaturatedRoot ComplexityTests.PolynomialAtomRelative ComplexityTests.PolynomialAtomCompression
+scripts/build.sh --wfail --iofail CslibFrontierTests.RowCompressionSaturatedRoot CslibFrontierTests.PolynomialAtomRelative CslibFrontierTests.PolynomialAtomCompression
 ```
 
 A successful build checks these comparisons and the existing polynomial clients. If the bound
@@ -93,37 +93,37 @@ rank domain or adding a cap. These deterministic lemmas do not supply integrated
 moments, recursive estimator budgets or a native class endpoint.
 
 For the actual hierarchy decoder, import
-[NormalizedAtomRows/BoundedLoss](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/BoundedLoss.lean)
+[NormalizedAtomRows/BoundedLoss](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/BoundedLoss.lean)
 and open `Matrix.FourthRootHierarchyParams.NormalizedRow`. `output HP ζ d v r` uses the
 actual bounded atom cutoff, core rank gate and `clip (v / ζ)`.
 `boundedLoss_root_bound` derives normalized fourth-root error from raw clipped error,
 nonnegative truth on the full rank set and common first loss bounded by `atomCap`.
 There is no upper bound on true first entries. Its exact saturation identities concern
 only output arguments. For a single full H4 environment,
-[NormalizedAtomRows/Request](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/Request.lean)'s
+[NormalizedAtomRows/Request](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/Request.lean)'s
 `normalizedRequest_eq_output` identifies the existing request, preserving the narrower
-usage mask and full terminal rank. The [actual-output regressions](../../ComplexityTests/NormalizedAtomRows.lean)
+usage mask and full terminal rank. The [actual-output regressions](../../CslibFrontierTests/NormalizedAtomRows.lean)
 check off-usage rank closure, unbounded-loss failure and positive output after an increment
 from zero. These deterministic prerequisites feed the conditional moment route below;
 recursive/native RL remains open.
 
 For sharp no-overflow and first-overflow comparisons, import
-[NormalizedAtomRows/Sharp](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/Sharp.lean).
+[NormalizedAtomRows/Sharp](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/Sharp.lean).
 `fixed_shape` supplies positive shape and denominator scales. Choose those first, then
 use `sharp_noOverflow` or `sharp_firstOverflow`: final/tail coefficients precede the later
 positive dyadic floor, while the weighted preloss coefficient may depend on it.
 `sharp_compression` keeps the complementary false-first-overflow exclusion explicit.
-[RequestSharp](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/RequestSharp.lean)
+[RequestSharp](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/RequestSharp.lean)
 applies both comparisons to the existing single-environment request; its first-overflow
 client derives the preparation mean range from bounded preparation values, even on empty
-slices. The [positive-floor exact-increment client](../../ComplexityTests/NormalizedAtomSharp.lean)
+slices. The [positive-floor exact-increment client](../../CslibFrontierTests/NormalizedAtomSharp.lean)
 starts from zero, allows arbitrary nonnegative first magnitude and obtains zero root error
-from exact raw prefixes. Run `scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomSharp`
+from exact raw prefixes. Run `scripts/build.sh --wfail --iofail CslibFrontierTests.NormalizedAtomSharp`
 from a configured checkout. Nonzero raw-prefix moments, false-overflow payments and recursive
 reserve choices still need their own proofs; these comparisons do not establish them.
 
 For actual heavy-first-overflow input tails, import
-[NormalizedAtomRows/ClippedTail](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ClippedTail.lean)
+[NormalizedAtomRows/ClippedTail](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ClippedTail.lean)
 and open `Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments`.
 `integrated_actual_clipped_tail_capacity` uses the actual first-overflow masks at any
 capacity sequence dominating `2^(64*dyadicSlack)`. Supply nonnegative genuine row mass,
@@ -135,14 +135,14 @@ the deterministic mean term. Correlated noise receives its full moment budget, w
 independence assumption for the adaptively maximizing endpoint. The resulting tail coefficient
 has the explicit mean factor `(2 + 256*M/η)/63` and noise factor `7/9`.
 
-The [tail regressions](../../ComplexityTests/NormalizedAtomTails.lean) check a nonconstant,
+The [tail regressions](../../CslibFrontierTests/NormalizedAtomTails.lean) check a nonconstant,
 correlated endpoint moment and a nonzero telescoping prefix. From a configured checkout run
-`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomTails`.
+`scripts/build.sh --wfail --iofail CslibFrontierTests.NormalizedAtomTails`.
 These are conditional compression input estimates; deriving their lower-child envelopes
 and noise budgets, recursive reserves and native RL remains separate work.
 
 For the actual normalized-output fourth moment, import
-[NormalizedAtomRows/ActualMoment](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ActualMoment.lean)
+[NormalizedAtomRows/ActualMoment](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ActualMoment.lean)
 and keep the same `NormalizedMoments` namespace open.
 For the first-signal endpoint row-noise premise, the
 [FirstSignal route](probabilistic-workflows.md) derives the bound from genuine
@@ -158,7 +158,7 @@ environment, using the actual rho gate and joint source × usage mean. It retain
 rate divisor and ζ scaling; deriving numerical errors from recursive relative estimates
 remains open.
 For an integrated second deterministic envelope, use
-[SecondEnvelope](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/SecondEnvelope.lean).
+[SecondEnvelope](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/SecondEnvelope.lean).
 `secondMeanEnvelope_moment` keeps the width P and inverse rank-rate fourth power;
 `actualEstimatedResidual_second_envelope_moment` pays it from the finite range/support bound on the shared
 `estimatedResidualInput` and finite positive-bin/once-negative child-error costs.
@@ -172,7 +172,7 @@ and an explicit retained width P. Both signal clients use `spectralWalkLength`; 
 positive-tolerance guarantee leaves numerical mean envelopes, recursive budgets/reserves,
 parameter/workspace growth and native RL=L open.
 For the finite conditional output from actual lower-child cost moments, use
-[ReserveOutput](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean).
+[ReserveOutput](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean).
 It constructs the common B by a finite scaled maximum, chooses both actual walk lengths,
 and discharges the compatible-capacity output theorem at the genuine canonical residual.
 The explicit allocation depends on the positive prefix horizon; recursive reserve induction,
@@ -199,25 +199,25 @@ The capacities n must satisfy both `K ≤ n i` and `2^(64*dyadicSlack m i) ≤ n
 `actual_normalized_fourth_moment_compatible` applies it to the actual output itself. Increasing
 capacity changes the algorithm: event rarity and false-overflow charges are proved at n,
 with no assumed output or event monotonicity. The
-[capacity regression](../../ComplexityTests/NormalizedAtomCapacity.lean) constructs an inhabited
+[capacity regression](../../CslibFrontierTests/NormalizedAtomCapacity.lean) constructs an inhabited
 hierarchy with K beyond 2^64, checks both capacity bounds at every horizon and proves positive
 uncentered output after a nonzero first increment from zero row/default. Run
-`scripts/build.sh --wfail --iofail ComplexityTests.NormalizedAtomCapacity`.
+`scripts/build.sh --wfail --iofail CslibFrontierTests.NormalizedAtomCapacity`.
 These fixtures do not instantiate all stochastic premises. Lower-child contracts, the full
 recursive hierarchy estimator and native resources/RL remain open; this conditional result
-is not a headline abstract or a class equality.
+is not a class equality.
 
-## Read abstracts, bridges and comparison contracts
+## Read the library statement of a named result
 
-For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/ComplexityAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../Complexity/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
+For a named result such as Fagin's theorem, search the [results inventory](../../results/README.md) and the API documentation, then read the library statement in [Fagin/Converse.lean](../../CslibFrontier/Computability/Complexity/Fagin/Converse.lean). Its input convention, with finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection, is documented in [Encoding.lean](../../CslibFrontier/Logics/FirstOrder/Encoding.lean). The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
 
-The abstract is a readable presentation and its bridge proves the connection. The underlying library declaration is normally the reusable API. `#check_abstract` audits dependencies; it does not decide whether the semantics match your application. Likewise, `comparator/` contains selected independently stated contracts and solutions applying library theorems. Its coverage is explicit and limited, so absence from comparator is not a failed theorem check. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
+The library declaration is the reusable API, and its statement is the authoritative contract. An inventory entry records sources and scope; the registry checks the theorem's identity, not whether its semantics match your application. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
 
 [complexitylib]: ../sources.md#complexitylib
 
 For actual output from per-request rooted moments, use
-[RootReserveOutput](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/RootReserveOutput.lean)
-and its [child reserve payment](../../Complexity/Computability/LogSpaceDerandomization/NormalizedAtomRows/ChildRootReserve.lean).
+[RootReserveOutput](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/RootReserveOutput.lean)
+and its [child reserve payment](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ChildRootReserve.lean).
 The full-environment finite allocation is explicit and conservative; it supplies no recursive
 accuracy or parameter/workspace closure. The source-reset guard and exact coefficients are
 explained in the [probabilistic workflow](probabilistic-workflows.md).
@@ -229,30 +229,30 @@ child accuracies. Uniformity of that coefficient does not remove any displayed f
 allocation or walk-length losses and supplies no recursive accuracy theorem.
 
 For changes to the completed pilot maximum with raw and preparation children fixed,
-[HierarchyCorrectionStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionStability.lean)
+[HierarchyCorrectionStability](../../CslibFrontier/Computability/LogSpaceDerandomization/HierarchyCorrectionStability.lean)
 gives a pointwise fourth-root bound and an integrated actual-request contract. Its
-[regressions](../../ComplexityTests/HierarchyCorrectionStability.lean) check a nonzero request,
+[regressions](../../CslibFrontierTests/HierarchyCorrectionStability.lean) check a nonzero request,
 pilot plateaus, a dyadic change of maximum estimate and an empty vertex domain. These are
 local sensitivity tests, not a two-level recursive approximate estimator.
 
 For changing completed RAW and PREP children as well, use
-[HierarchyCorrectionRawStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyCorrectionRawStability.lean).
+[HierarchyCorrectionRawStability](../../CslibFrontier/Computability/LogSpaceDerandomization/HierarchyCorrectionRawStability.lean).
 Its pointwise theorem displays entry, row, column and full source×terminal maxima at the
 actual inverse terminal rate, and the original joint source/usage prep mean error.
 The integrated theorem pays RAW absolute row errors with explicit width squared and
 inverse-rate fourth power, PREP errors on source/usage rows, and maximum errors on the
 original source/full-terminal pairs. Constants are selected at fixed HP before requests
-or child tables. The [nonzero fixtures](../../ComplexityTests/HierarchyCorrectionRawStability.lean)
+or child tables. The [nonzero fixtures](../../CslibFrontierTests/HierarchyCorrectionRawStability.lean)
 perturb RAW and PREP separately and jointly, and distinguish row from incoming ranks.
 This supplies a local correction accuracy contract; it does not construct recursive children.
 
 For the pilot's actual score, detector and running maximum local moments, use
-[PilotRowStability](../../Complexity/Computability/LogSpaceDerandomization/PilotRowStability.lean).
+[PilotRowStability](../../CslibFrontier/Computability/LogSpaceDerandomization/PilotRowStability.lean).
 It keeps the raw K-rank, pays detector source maxima on the actual finite slices after
 conditional Jensen, and pays both maximum children. The score row payment displays
 one width and inverse rate to the fourth power; detector payments retain their literal
-conditional means and sums. [HierarchyPilotStability](../../Complexity/Computability/LogSpaceDerandomization/HierarchyPilotStability.lean)
+conditional means and sums. [HierarchyPilotStability](../../CslibFrontier/Computability/LogSpaceDerandomization/HierarchyPilotStability.lean)
 feeds the previous/current maximum children into the actual correction contract.
-The [nonzero client](../../ComplexityTests/PilotRowStability.lean) changes a raw rank and
+The [nonzero client](../../CslibFrontierTests/PilotRowStability.lean) changes a raw rank and
 all three recipe outputs. Allocated recursive calls and full environment/rate/bin
 transport of these payments remain separate from this local layer.

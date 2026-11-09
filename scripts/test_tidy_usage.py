@@ -102,7 +102,7 @@ macro "unknown" : term => `(True)
             self.assertEqual(e.exception.code, 2)
 
     def test_boundary_rejects_absolute_and_parent_paths(self):
-        for prefix in ("/tmp/", "../Complexity/", "Complexity"):
+        for prefix in ("/tmp/", "../CslibFrontier/", "CslibFrontier"):
             with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as e:
                 command.main(["--internal-prefix", prefix])
             self.assertEqual(e.exception.code, 2)
