@@ -138,7 +138,10 @@ normal forms internally and invokes a certified compiler and solver. There is no
 template hypothesis. Bounds apply to each fixed language; no uniform bound on preprocessing a
 supplied language or truth table is asserted. Local positions use unary lookup indices; original
 variable names remain binary throughout. The shared arity-check certificate is
-`Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`.
+`Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`;
+`CSPSAT.polyTimeReducible_of_guard` in `Problems.CSP.Basic` turns any polynomial-time compiler
+that is faithful on well-formed instances, together with a fixed reject instance outside the
+target, into the guarded reduction used by each endpoint.
 
 [The full checked client](../../CslibFrontierTests/Schaefer.lean) exercises every tractable arm,
 a concrete NAE hard language, arbitrary fixed arities, sparse labels and an empty alphabet.
