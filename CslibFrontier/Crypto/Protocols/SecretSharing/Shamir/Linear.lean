@@ -70,6 +70,7 @@ identities at zero, and unauthorized-coalition marginal uniformity ([Shamir1979]
   `Cslib.Crypto.Protocols.SecretSharing.Shamir.Polynomial.reconstruct_add`,
   `Cslib.Crypto.Protocols.SecretSharing.Shamir.Polynomial.reconstruct_smul`,
   `Cslib.Crypto.Protocols.SecretSharing.Shamir.Polynomial.reconstruct_sum`,
+  `Cslib.Crypto.Protocols.SecretSharing.Shamir.Polynomial.reconstruct_share_eq_secret`,
   `Cslib.Crypto.Protocols.SecretSharing.Shamir.reconstruct_add`,
   `Cslib.Crypto.Protocols.SecretSharing.Shamir.reconstruct_smul`,
   `Cslib.Crypto.Protocols.SecretSharing.Shamir.reconstruct_sum`: linearity of Shamir sharing and
@@ -193,6 +194,18 @@ theorem reconstruct_sum {ι κ : Type*} [Fintype ι] (S : Finset κ) (x : ι →
   | insert _ _ hnotMem ih =>
     rw [Finset.sum_insert hnotMem, reconstruct_add, ih, Finset.sum_insert hnotMem]
 
+/-- Reconstructing a Shamir sharing across all parties via `Polynomial.reconstruct params.point`
+recovers `secretValue`. -/
+@[simp] theorem reconstruct_share_eq_secret {Party : Type*} [Fintype Party]
+    (params : Params F Party) (coeffs : Randomness params) (secretValue : F) :
+    reconstruct params.point (fun i => share params coeffs secretValue i) =
+      secretValue := by
+  refine reconstruct_sharingPolynomial_eq_secret params.point_injective ?_
+  refine lt_of_lt_of_le
+    (degree_sharingPolynomial_tailPolynomial_lt_succ
+      secretValue params.threshold coeffs) ?_
+  exact_mod_cast Nat.succ_le_of_lt params.threshold_lt_card
+
 end Polynomial
 
 open Cslib.Probability
@@ -268,18 +281,6 @@ theorem reconstruct_sum {κ : Type*} (S : Finset κ) (params : Params F Party)
     (s : Finset Party) (σ : κ → s → F) :
     reconstruct params s (∑ k ∈ S, σ k) = ∑ k ∈ S, reconstruct params s (σ k) :=
   Polynomial.reconstruct_sum S (fun i : s => params.point i) σ
-
-/-- Reconstructing a Shamir sharing across all parties via `Polynomial.reconstruct params.point`
-recovers `secretValue`. -/
-@[simp] theorem polynomialReconstruct_share_eq_secret (params : Params F Party)
-    (coeffs : Randomness params) (secretValue : F) :
-    Polynomial.reconstruct params.point (fun i => share params coeffs secretValue i) =
-      secretValue := by
-  refine Polynomial.reconstruct_sharingPolynomial_eq_secret params.point_injective ?_
-  refine lt_of_lt_of_le
-    (Polynomial.degree_sharingPolynomial_tailPolynomial_lt_succ
-      secretValue params.threshold coeffs) ?_
-  exact_mod_cast Nat.succ_le_of_lt params.threshold_lt_card
 
 /-- Reconstructing a Shamir sharing over any authorized coalition `s`
 (`params.threshold + 1 ≤ s.card`) recovers `secretValue` directly, without requiring a

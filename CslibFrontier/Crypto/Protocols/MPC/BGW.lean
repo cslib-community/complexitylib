@@ -23,8 +23,9 @@ unauthorized-coalition marginal uniformity in
 `CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear`:
 
 1. **BGW Multiplication Step and Degree-Reduction Algebra ($2t < |\text{Party}|$):**
-   - In Asharov–Lindell ([AsharovLindell2017]), Section 4.3 (Protocol 4.5, Protocols 4.6–4.7,
-     Claims 4.8–4.9, and Proposition 4.10) presents the classical two-step
+   - In Asharov–Lindell ([AsharovLindell2017]; numbering as in the full version, ePrint
+     2011/136), Section 4.3 (Protocol 4.5, Proposition 4.6, Protocol 4.7, Claims 4.8–4.9, and
+     Proposition 4.10) presents the classical two-step
      *randomize-then-reduce* multiplication gate, where parties first add a degree-$2t$ zero-share
      (`bgwMulStep params r₁ a r₂ b r_z`, reconstructing to $a \cdot b$ via
      `reconstruct_bgwMulStep_eq_mul`) and then apply a linear degree-reduction step, whereas
@@ -51,8 +52,8 @@ unauthorized-coalition marginal uniformity in
      `reconstruct_output_bgwDegreeReductionProtocol_eq_mul`).
    - For every coalition $I$ with $|I| \le t$, the marginal distribution of $I$'s views equals
      `bgwDegreeReductionViewSim` (`map_restrict_evalWith_bgwDegreeReductionProtocol`,
-     following [AsharovLindell2017], Section 3.2, Claim 3.4), depending only on $I$'s own input
-     share pairs and independent of honest parties' inputs.
+     following [AsharovLindell2017], Section 3.2, Claims 3.2 and 3.4), depending only on $I$'s own
+     input share pairs and independent of honest parties' inputs.
 3. **2-Round Synchronous BGW Sum Protocol (`bgwSumProtocol`):**
    - Formalizes the 2-round $m$-party BGW input-sharing, local addition, and output-reconstruction
      protocol over `noOracleSpec` ([AsharovLindell2017], Section 4.2, Protocol 4.1 and Claim 4.3,
@@ -355,7 +356,7 @@ private theorem eval_pi_uniform_randomness {m : ℕ} (params : Params F (Fin m))
    via `pairwiseSteps`.
 3. Each party `i` outputs the Lagrange-recombined share
    `Polynomial.reconstruct params.point inbox_i`. -/
-noncomputable def bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m)) :
+@[expose] noncomputable def bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m)) :
     Protocol m noOracleSpec (broadcastSchedule m noOracleSpec F)
       (fun _ => F × F) (fun _ => Randomness params) (fun _ => F) where
   sampleCoins _ := ProbComp.uniform (Randomness params)
@@ -430,9 +431,10 @@ theorem reconstruct_output_bgwDegreeReductionProtocol_eq_mul {m : ℕ} (params :
     (bgwReducedRandomness params (fun j => (res.1 j).coins)) (a * b) hs
 
 /-- Coalition view simulator for `bgwDegreeReductionProtocol params` ([AsharovLindell2017],
-Section 3.2, Claim 3.4): given only the coalition's input share pairs `uvI : (i : I) → F × F`,
-samples uniform coins `rI` for `i ∈ I` and independent uniform sub-share vectors
-`hCompl : Iᶜ → I → F` from honest senders `s ∉ I`, and assembles each corrupted party's inbox. -/
+Section 3.2, Claims 3.2 and 3.4): given only the coalition's input share pairs
+`uvI : (i : I) → F × F`, samples uniform coins `rI` for `i ∈ I` and independent uniform sub-share
+vectors `hCompl : Iᶜ → I → F` from honest senders `s ∉ I`, and assembles each corrupted party's
+inbox. -/
 noncomputable def bgwDegreeReductionViewSim {m : ℕ} (params : Params F (Fin m))
     (I : Finset (Fin m)) (uvI : (i : I) → F × F) :
     ProbComp ((i : I) → PartyView (fun _ => F × F) (fun _ => Randomness params)
@@ -447,11 +449,12 @@ noncomputable def bgwDegreeReductionViewSim {m : ℕ} (params : Params F (Fin m)
       else
         hCompl ⟨s, Finset.mem_compl.mpr hs⟩ i
 
-/-- **$t$-Privacy of BGW Degree-Reduction Views** ([AsharovLindell2017], Section 3.2, Claim 3.4):
-for every coalition `I` with `I.card ≤ params.threshold` and every input tuple `uv : Fin m → F × F`,
-the marginal distribution of `I`'s views in `bgwDegreeReductionProtocol params` equals
-`ProbComp.eval (bgwDegreeReductionViewSim params I (I.restrict uv))`, which depends only on
-`I.restrict uv` and is independent of all honest parties' input share pairs. -/
+/-- **$t$-Privacy of BGW Degree-Reduction Views** ([AsharovLindell2017], Section 3.2, Claims 3.2
+and 3.4): for every coalition `I` with `I.card ≤ params.threshold` and every input tuple
+`uv : Fin m → F × F`, the marginal distribution of `I`'s views in
+`bgwDegreeReductionProtocol params` equals `ProbComp.eval (bgwDegreeReductionViewSim params I
+(I.restrict uv))`, which depends only on `I.restrict uv` and is independent of all honest parties'
+input share pairs. -/
 theorem map_restrict_evalWith_bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m))
     (I : Finset (Fin m)) (hI : I.card ≤ params.threshold) (uv : Fin m → F × F) :
     ((bgwDegreeReductionProtocol params).evalWith noOracleWorld uv).map (fun r => I.restrict r.1) =
@@ -494,7 +497,7 @@ followed by one all-to-all broadcast of summed shares. -/
   broadcastSchedule m noOracleSpec F ++ broadcastSchedule m noOracleSpec F
 
 /-- Deterministic $m$-party functionality returning the sum `∑ j : Fin m, x j` to every party. -/
-def bgwSumFunctionality (m : ℕ) : Functionality m (fun _ => F) (fun _ => F) :=
+@[expose] def bgwSumFunctionality (m : ℕ) : Functionality m (fun _ => F) (fun _ => F) :=
   Functionality.ofDeterministic (fun x _ => ∑ j : Fin m, x j)
 
 /-- 2-round synchronous $m$-party BGW sum protocol over `noOracleSpec`
@@ -504,7 +507,7 @@ def bgwSumFunctionality (m : ℕ) : Functionality m (fun _ => F) (fun _ => F) :=
 2. Each party `k : Fin m` sums its received shares `Y_k = ∑ s : Fin m, inbox_k s` and broadcasts
    `Y_k` via `broadcastSteps`.
 3. Each party reconstructs `Polynomial.reconstruct params.point Y`. -/
-noncomputable def bgwSumProtocol {m : ℕ} (params : Params F (Fin m)) :
+@[expose] noncomputable def bgwSumProtocol {m : ℕ} (params : Params F (Fin m)) :
     Protocol m noOracleSpec (bgwSumSchedule m F)
       (fun _ => F) (fun _ => Randomness params) (fun _ => F) where
   sampleCoins _ := ProbComp.uniform (Randomness params)
@@ -571,7 +574,7 @@ theorem output_bgwSumProtocol {m : ℕ} (params : Params F (Fin m)) (x : Fin m �
     ext k
     exact (share_sum Finset.univ params r x k).symm
   rw [hY]
-  exact polynomialReconstruct_share_eq_secret params (∑ s : Fin m, r s) (∑ s : Fin m, x s)
+  exact Polynomial.reconstruct_share_eq_secret params (∑ s : Fin m, r s) (∑ s : Fin m, x s)
 
 /-- Coalition simulator for `bgwSumProtocol params` against any static coalition `I` with
 `I.card ≤ params.threshold`:
