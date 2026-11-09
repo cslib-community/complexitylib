@@ -26,7 +26,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Inaccessible entropy and shrinking collision grids | [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Fixed-width native polynomial evaluation, accessible preimage subsets with eventual `1 / denom n` entropy gap, polynomial-size grids of `1`-bit shrinking candidates with an existential random-collision-resistant sequence (`exists_good_candidate`), and uniform `gridCount n`-way cascade concatenation |
 | Discrete logarithm and DDH | [CslibFrontier/Crypto/Computational/DiscreteLog.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiscreteLog.lean), [CslibFrontier/Crypto/Computational/DiffieHellman.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiffieHellman.lean) | Encoded prime-order group families, exact ideal group laws; public operations and samplers require separate certificates |
 | Decisional composite residuosity and Paillier encryption | [CslibFrontier/Crypto/Computational/CompositeResiduosity.lean](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean), [CslibFrontier/Crypto/Computational/Paillier.lean](../../CslibFrontier/Crypto/Computational/Paillier.lean), [CslibFrontier/Crypto/Computational/Paillier/Security.lean](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis |
-| Quadratic residuosity, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
+| Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [CslibFrontier/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Module.lean](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), [CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) | Explicit dimensions, modulus and noise/norm parameters (`2^w` binary matrix words in `Basic.lean`, arbitrary `[NeZero (q security)]` moduli, Ajtai collision extraction, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `ModuleSIS`, `RingSIS`, and `DecisionModuleLWE` in `SIS/Module.lean`, and dual-Regev `ModuleLWE` public-key encryption in `SIS/ModuleEncryption.lean`); classical uniform-PPT hardness hypotheses |
 
 For a one-bit expanding PRG, [Stretch/Prefix.lean](../../CslibFrontier/Crypto/Computational/Stretch/Prefix.lean)
@@ -377,7 +377,9 @@ and the extra hypothesis `hsize`: every description in the support of `gen n` ha
 and is uniform strict PPT (`isPPTOn_dcrDistinguisher`). The book samples the encryption randomness
 uniformly from the units modulo `N`; here `encrypt` uses the dyadic sampler with `unitOrOne`, which is
 within `N / 2 ^ (n + |N|) + (N - φ(N)) / N` of uniform on the units. Under `hsize` this costs at most
-`5 / 2 ^ n` per real hop, so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
+`5 / 2 ^ n` per real hop (`Game.advantage_sampleModNat_units_le` in
+[`UnitSampling.lean`](../../CslibFrontier/Crypto/Computational/UnitSampling.lean), also used for
+Goldwasser–Micali below), so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
 advantages; without a growth condition on the primes the non-unit loss need not be negligible. The
 distributional-homomorphism gap above is unaffected.
 [`CslibFrontierTests/Crypto/Paillier.lean`](../../CslibFrontierTests/Crypto/Paillier.lean) checks the
@@ -386,6 +388,35 @@ decryption to `12` and `7` modulo `143`, validity of `(11, 13)`, uniform strict 
 generator `constGen`, and end-to-end correctness and homomorphic addition on its supported key pair;
 for IND-CPA it evaluates `validMessages` on admissible and inadmissible pairs and applies
 `isPPTOn_dcrDistinguisher` and `DCR.indcpaOn_paillier` to a concrete strict-PPT adversary.
+
+For Goldwasser–Micali public-key encryption under `QuadraticResiduosityHard`, import
+[`GoldwasserMicali.lean`](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean)
+([katzlindell20][katzlindell20], §15.4.4, Definition 15.14, Construction 15.28, Theorem 15.29, and
+Exercises 15.11–15.12; checked instances are in
+[`CslibFrontierTests/Crypto/GoldwasserMicali.lean`](../../CslibFrontierTests/Crypto/GoldwasserMicali.lean)).
+`KeyDesc` bundles distinct odd primes `(p, q)` (`2 < p, q`) with a residue `z < p * q`
+representing an element of `positiveNonresidues p q` (`KeyDesc.ofBlum` specializes to Blum primes `p % 4 = 3`, `q % 4 = 3` with `z = N - 1`, Exercise
+15.12), and `keyGen gen` wraps an abstract generator `gen : ℕ → ProbComp KeyDesc` (prime and
+nonresidue sampling are not constructed) emitting `pk = encPair encNat encNat (N, z)` and
+`sk = encPair encNat encNat (p, q)` (`isPPTOn_keyGen`). `encrypt` draws randomness via
+`ProbComp.sampleModNat (n + |N|) N` with `unitOrOne N` to output `encNat ((z^m * r^2) mod N)`
+(`isPPTOn_encrypt`), `decrypt` tests quadratic residuosity modulo `p` and `q` via Euler's criterion
+`powMod p c ((p - 1) / 2)` (`computableInPolyTime_decrypt`, `decrypt_encrypt`), and
+`mulCiphertexts` multiplies ciphertexts modulo `N` (`computableInPolyTime_mulCiphertexts`,
+`decrypt_mulCiphertexts`). As with Paillier, distributional XOR homomorphism and re-randomization
+(Definition 15.14, Exercise 15.11) hold on the ideal unit-sampling law `idealEncrypt`
+(`idealEncrypt_mulCiphertexts_eq`, `rerandomize_idealEncrypt_eq`), whereas the dyadic `sampleModNat`
+with `unitOrOne` approximates uniform `(ZMod N)ˣ` within `5 / 2 ^ n` under `hsize : n ≤ d.p.size ∧
+n ≤ d.q.size` (`advantage_encrypt_idealEncrypt_le`). Under `QuadraticResiduosityHard setup`,
+`hsize`, and public-key indistinguishability from `publicKeyLaw setup`, `indcpa_goldwasserMicali`
+proves single-bit `Encryption.INDCPA` (`advantage_publicKeyGame_le_qr`, factor-`2` QR loss plus
+`10 / 2 ^ n` via `qrDistinguisher`) and `indcpaOn_goldwasserMicali_bits` proves bounded-word
+`Encryption.INDCPAOn (validBoundedWords maxLen) encBits` for `encryptWord` under any unary
+polynomial-time `maxLen` (`advantage_publicKeyWordGame_le_qr`, factor-`2` QR loss independent of
+`maxLen n` plus `(10 * maxLen n) / 2 ^ n` via lossy quadratic-residue public keys and
+`qrWordDistinguisher`). Conversely, `jacobiAttackAdversary` (`jacobiAttackAdversary_isPPT`) achieves
+exact chosen-message advantage `1` whenever `z ∈ jacobiNegSet p q`
+(`advantage_jacobiAttackAdversary_eq_one`), witnessing the necessity of `J_N(z) = +1`.
 
 ## Encryption and chosen-message attacks
 
