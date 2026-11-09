@@ -78,15 +78,18 @@ Assign review to an agent that did not design or implement the change. For examp
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds. Review the impact on both manuals and any affected
-> formal abstract. Report concrete findings and a verdict, stating what you checked and what
-> remains uncertain.
+> encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
+> their files, and report any argument the change repeats that another proof or an existing
+> lemma already makes. Review the impact on both manuals and any affected formal abstract.
+> Report concrete findings and a verdict, stating what you checked and what remains uncertain.
 
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether
 someone can use the interface. Ask for a satisfying instance or meaningful edge case when a
-contract may be vacuous. An approval must cover the final revision; substantive fixes require
-review of the affected reasoning. Unchanged evidence can be reused after checking its identity.
+contract may be vacuous. A diff shows a new copy of an argument but not the proof it repeats,
+so ask for that comparison explicitly. An approval must cover the final revision; substantive
+fixes require review of the affected reasoning. Unchanged evidence can be reused after checking
+its identity.
 
 ## Direct a coordinator
 
