@@ -23,7 +23,7 @@ public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.CountPlace
 These composition proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.CountPlace
 

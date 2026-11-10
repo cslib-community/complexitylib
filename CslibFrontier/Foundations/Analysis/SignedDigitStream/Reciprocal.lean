@@ -201,8 +201,7 @@ private theorem recipProdStream_certificate {x : ℕ → ℤ} (hx : IsSignedStre
 theorem recipProdStream_isSignedStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
     IsSignedStream (recipProdStream x t) :=
-  diffDigit_isSignedStream (recipProdStream_certificate hx hx_mem t).1
-    (recipProdStream_certificate hx hx_mem t).2
+  (recipProdStream_certificate hx hx_mem t).elim diffDigit_isSignedStream
 
 theorem streamVal_recipProdStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
@@ -235,8 +234,7 @@ private theorem recipHalfStream_certificate {x : ℕ → ℤ} (hx : IsSignedStre
 theorem recipHalfStream_isSignedStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
     IsSignedStream (recipHalfStream x t) :=
-  diffDigit_isSignedStream (recipHalfStream_certificate hx hx_mem t).1
-    (recipHalfStream_certificate hx hx_mem t).2
+  (recipHalfStream_certificate hx hx_mem t).elim diffDigit_isSignedStream
 
 theorem streamVal_recipHalfStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :

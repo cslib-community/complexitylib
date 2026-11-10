@@ -31,7 +31,7 @@ Adapted from #869 by worker-claude-tidyspike-c4b0c164.
 * `ComputableInO.ite`: pay for the test and the branch actually taken.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

@@ -35,7 +35,7 @@ so its coefficient on `S` is given by the coefficients of `f₀` and `f₁` on `
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DecisionTree
 

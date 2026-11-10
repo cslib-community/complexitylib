@@ -460,8 +460,8 @@ potential of the pairs of labels, `partialIncidencePotential`. (In the conventio
   completeLabels (partialLabels rowOf colOf a r).2 fun _ _ => 0
 
 /-- **The collision potential of the chosen labels.** If every vertex has degree at most `Δ`, the
-potential `Φ = ∑_γ (X_γ - M / D)²` of the pairs of labels is at most `2 M Δ`, its average for
-independent uniform labels. -/
+potential `Φ = ∑_γ (X_γ - M / D)²` of the pairs of labels is at most `2 M Δ`, a bound on its
+average for independent uniform labels. -/
 theorem potential_labels_le {Δ : ℕ} (hrow : ∀ v, #{e | rowOf e = v} ≤ Δ)
     (hcol : ∀ w, #{e | colOf e = w} ≤ Δ) :
     potential (pairLabel rowOf colOf (rowLabels rowOf colOf a r) (colLabels rowOf colOf a r)) ≤
@@ -513,7 +513,7 @@ theorem occupancy_labels_mul_le {Δ : ℕ} (hrow : ∀ v, #{e | rowOf e = v} ≤
     rw [Fintype.card_prod, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin, ← pow_add,
       two_mul]
   rw [← hcard]
-  refine occupancy_mul_card_le_of_variance_bound _ Fintype.card_pos Δ ?_ (hcard ▸ hM) γ
+  refine occupancy_mul_card_le_of_variance_bound _ Δ ?_ (hcard ▸ hM) γ
   exact potential_labels_le rowOf colOf a r hrow hcol
 
 end Labels

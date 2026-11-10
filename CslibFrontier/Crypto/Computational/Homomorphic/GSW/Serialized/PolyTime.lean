@@ -36,7 +36,7 @@ framing. They do not use a fixed-dimensional finite-type encoding to obtain effi
   Conceptually-Simpler, Asymptotically-Faster, Attribute-Based*, Section 3.1][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW
 

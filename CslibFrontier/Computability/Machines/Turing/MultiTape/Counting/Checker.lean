@@ -31,6 +31,8 @@ in the encoded input/certificate pair, not uniformly in a supplied machine descr
 ## Main definitions
 
 * `Turing.MultiTapeCTM.Checker.indexStep`: a finite-storage occurrence or canonical padding step.
+* `Turing.MultiTapeCTM.Checker.encRuntime`: the encoding of the remaining certificate bits and
+  the replay state.
 * `Turing.MultiTapeCTM.Checker.output`: finite replay followed by a genuine halting check.
 * `Turing.MultiTapeCTM.Checker.checkBinary`: the binary verifier for either terminal verdict.
 
@@ -190,6 +192,11 @@ theorem indexStep_spaceBound (machine : MultiTapeCTM k Bool State)
 /-- The checker stores unconsumed bits and either a live finite replay or a permanent failure. -/
 abbrev Runtime (k : ℕ) (State : Type) := List Bool × Option (Storage k State)
 
+/-- The checker runtime encoded as its framed unconsumed certificate bits followed by the replay
+option: the empty word for a permanent failure, `true` then `encFiniteConfig` for live storage. -/
+noncomputable abbrev encRuntime [Finite State] : Runtime k State ↪ List Bool :=
+  encPair encBits (encOption encFiniteConfig)
+
 /-- Consume one fixed-width block and replay its occurrence index. The saturation cap is fixed;
 for a full block it equals ordinary binary decoding. -/
 def binaryStep (machine : MultiTapeCTM k Bool State) (width : ℕ)
@@ -203,8 +210,7 @@ def binaryStep (machine : MultiTapeCTM k Bool State) (width : ℕ)
 theorem computableInPolyTime_binaryStep [Finite State]
     (machine : MultiTapeCTM k Bool State) (width : ℕ) :
     ComputableInPolyTime (binaryStep machine width)
-      (encPair encBits (encOption encFiniteConfig))
-      (encPair encBits (encOption encFiniteConfig)) := by
+      encRuntime encRuntime := by
   unfold binaryStep
   simp only [bind]
   option_match_to_elim
@@ -224,14 +230,13 @@ output and remaining certificate; there is no assumed simulation or counting cer
 @[fun_prop]
 theorem computableInPolyTime_runBinary [Finite State]
     (machine : MultiTapeCTM k Bool State) (width : ℕ) :
-    ComputableInPolyTime (runBinary machine width) (encPair encBits encBits)
-      (encPair encBits (encOption encFiniteConfig)) := by
+    ComputableInPolyTime (runBinary machine width) (encPair encBits encBits) encRuntime := by
   refine .of_tidy ?_
   obtain ⟨c, hstorage⟩ := length_encFiniteConfig_le (k := k) (State := State) (Oracle := Empty)
   have hcount : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => p.2.length / width)
       (encPair encBits encBits) encUnary := by fun_prop
   have hinit : ComputableTidilyInPolyTime (initial machine) (encPair encBits encBits)
-      (encPair encBits (encOption encFiniteConfig)) := by unfold initial; fun_prop
+      encRuntime := by unfold initial; fun_prop
   apply (ComputableTidilyInPolyTime.iterate_spec hcount hinit
     (computableInPolyTime_binaryStep machine width).tidy
     (fun p i r => r.1.length ≤ p.2.length ∧
@@ -329,7 +334,7 @@ theorem finishRuntime_runBinary (machine : MultiTapeCTM k Bool State)
 @[fun_prop]
 theorem computableInPolyTime_finishRuntime [Finite State] :
     ComputableInPolyTime (finishRuntime (k := k) (State := State))
-      (encPair encBits (encOption encFiniteConfig)) (encOption encBits) := by
+      encRuntime (encOption encBits) := by
   unfold finishRuntime
   simp only [bind]
   option_match_to_elim

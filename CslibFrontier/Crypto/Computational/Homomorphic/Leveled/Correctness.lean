@@ -128,7 +128,7 @@ theorem encryptedWires_evaluateCircuit_drop (hE : E.Correct)
   rw [heval, hlength, ← Nat.mul_add] at h
   have hselected := h.select (outputs := (Layered.compile inputCount c.code).2) (by
     simpa only [Layered.length_eval, List.length_ofFn] using Layered.outputs_valid_compile c)
-  simpa only [Layered.select_eval_compile] using hselected
+  simpa only [Layered.readPositions_eval_compile] using hselected
 
 /-- Padding reaches the budget's final key and preserves the original ordered output vector. -/
 theorem encryptedWires_evaluateCircuit (hE : E.Correct)

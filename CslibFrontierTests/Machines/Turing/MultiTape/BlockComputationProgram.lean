@@ -20,7 +20,7 @@ a view. With one pebble per vertex the root can always be
 evaluated.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.BlockComputationProgram
 

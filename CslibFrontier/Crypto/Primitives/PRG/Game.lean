@@ -28,7 +28,7 @@ notions without changing the generator or introducing another definition of PRG 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023], Section 3.1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PRG
 

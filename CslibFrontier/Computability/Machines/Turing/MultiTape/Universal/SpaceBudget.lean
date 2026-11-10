@@ -112,7 +112,7 @@ lemma stepOut_iterate_succ (j : ℕ) :
     (stepOut d x)^[j + 1] (init d, []) =
       (run d x (j + 1), ((stepOut d x)^[j] (init d, [])).2 ++
         (step d x (run d x j)).2.toList) := by
-  rw [Function.iterate_succ_apply', run_succ']
+  rw [Function.iterate_succ_apply', run_succ]
   rfl
 
 /-- **The run within the budget** is the run of the simulation up to some step, with the first two
@@ -127,8 +127,8 @@ public theorem budgetStep_iterate (i : ℕ) : ∃ j ≤ i,
     rw [Function.iterate_succ_apply', heq, budgetStep]
     dsimp only
     split_ifs with h
-    · refine ⟨j + 1, by omega, ?_, Or.inr (by rwa [run_succ'])⟩
-      rw [stepOut_iterate_succ, take_two_append_take_two, run_succ']
+    · refine ⟨j + 1, by omega, ?_, Or.inr (by rwa [run_succ])⟩
+      rw [stepOut_iterate_succ, take_two_append_take_two, run_succ]
     · exact ⟨j, by omega, rfl, hb⟩
 
 /-- The run within the budget keeps at most two symbols of the output. -/
@@ -157,8 +157,8 @@ private theorem budgetStep_iterate_of_le {t : ℕ}
     dsimp only
     split_ifs with h
     · simp only [simulate]
-      rw [stepOut_iterate_succ, ← run_succ', take_two_append_take_two]
-    · exact absurd (by rw [← run_succ']; exact hb t (by omega)) h
+      rw [stepOut_iterate_succ, ← run_succ, take_two_append_take_two]
+    · exact absurd (by rw [← run_succ]; exact hb t (by omega)) h
 
 /-- **Within the budget, the universal function**: if every configuration of the simulation within
 `t` steps is encoded within `b` bits, `budgetedUniversal` returns the first two symbols of the

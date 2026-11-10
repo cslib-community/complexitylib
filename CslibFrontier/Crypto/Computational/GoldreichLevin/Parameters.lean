@@ -25,8 +25,10 @@ polynomially bounded. These are explicit size bounds, not machine-runtime certif
 The prediction advantage is at most `1 / p + 8 * inversion_success`. Consequently, if the
 inverter at each fixed precision degree has negligible success, prediction bias is negligible.
 Each degree defines one inverter for all lengths. No length-dependent choice of adversary or
-sign of the bias is used. One-wayness can discharge these success hypotheses once the
-word-based game correspondence and uniform PPT certificates for the inverters are proved.
+sign of the bias is used. For a one-way function, `negligible_parityPrediction` in
+`CslibFrontier.Crypto.Computational.GoldreichLevin.WordReduction` discharges these success
+hypotheses, using the word-based game correspondences and the uniform PPT certificate
+`isPPT_wordInverter` for the inverters.
 Adapted from the cslib `crypto` branch at `5ff69ca`.
 
 ## Main definitions

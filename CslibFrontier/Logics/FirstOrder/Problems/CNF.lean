@@ -11,6 +11,7 @@ public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Tagged
 public import CslibFrontier.Logics.SecondOrder.Existential
 public import Mathlib.Data.Set.Card
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -468,9 +469,7 @@ def nonemptyClausesSentence : cnf.Sentence :=
 /-- The sentence `nonemptyClausesSentence` holds exactly when no clause is empty. -/
 theorem realize_nonemptyClausesSentence :
     M ⊨ nonemptyClausesSentence ↔ ∀ c : M, (literals c).Nonempty := by
-  simp only [nonemptyClausesSentence, Sentence.Realize, Formula.Realize,
-    BoundedFormula.realize_all, BoundedFormula.realize_ex, BoundedFormula.realize_sup,
-    BoundedFormula.realize_rel₂]
+  fo_simp [nonemptyClausesSentence, Sentence.Realize, Formula.Realize]
   refine forall_congr' fun c => ⟨fun ⟨x, hx⟩ => ?_, fun ⟨⟨b, x⟩, hx⟩ => ⟨x, ?_⟩⟩
   · rcases hx with hx | hx
     · exact ⟨(true, x), by simpa [mem_literals, Fin.snoc] using hx⟩

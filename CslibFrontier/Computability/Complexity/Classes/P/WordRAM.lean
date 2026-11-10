@@ -44,7 +44,7 @@ is given as its bits, `(encIn a).map Bool.toNat`, and its size is `|encIn a|`. S
   `Cslib.WordRAM.mem_P_iff_uniformPolynomialTime_standard` instantiate it.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM
 
