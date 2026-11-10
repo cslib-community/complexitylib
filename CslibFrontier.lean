@@ -1936,6 +1936,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.GeneralizedGe
 public import CslibFrontier.Computability.Complexity.Classes.Space.GeneralizedGeography.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.Space.Image
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
+public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 public import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 public import CslibFrontier.Computability.Complexity.Classes.Space.TM2
 public import CslibFrontier.Computability.Complexity.Classes.Space.TQBF
