@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Logics.FirstOrder.Ordered.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # Canonical ordered first-order model checking in logarithmic space
@@ -254,9 +255,7 @@ theorem queryLanguage_mem_L (φ : (language L).Sentence) :
     have hreachGuard : (modelChecker v φ).Reaches (encStructure a)
         ((modelChecker v φ).Running (((encStructure a).length + 1) ^ v.maxArity))
         (E, regs₁) (if a.1 < 2 then F else E + 1, regs₁) := by
-      refine Reaches.lt hguard hB₁ ?_
-      simp only [eval_reg, eval_const, h0₁ hwf]
-      exact Reaches.refl _
+      cp_step [h0₁ hwf]
     by_cases hn : 2 ≤ a.1
     · let _ : Fact (2 ≤ a.1) := ⟨hn⟩
       rw [ite_eq_right (Nat.not_lt.mpr hn)] at hreachGuard

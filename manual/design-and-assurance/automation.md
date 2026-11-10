@@ -221,6 +221,30 @@ If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic r
 If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
 missing bound, for instance on a product or on a value read from memory.
 
+## Step through counter programs
+
+A reachability proof for a counter program (`Turing.CounterProgram.Reaches`) goes through its
+instructions one at a time. Import
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` and
+take each step with `cp_step` instead of `refine Reaches.assign h hB ?_` followed by
+`simp only [eval_add, eval_reg, …]`. The tactic reads the instruction at the current label from a
+hypothesis `P.instr l = i`, or by evaluation when the program is concrete. It applies the rule of
+that instruction: assignment, comparison or read, plus the oblivious and shifted rules when
+`CounterProgram.AllBranches` or `CounterProgram.Block` is imported. It proves the register bound
+from a hypothesis and simplifies the next configuration with the simp set `cp_simps`. Pass the
+values of the registers read, the input bit read and the outcome of a comparison as simp lemmas,
+as in `cp_step [h0, hw]`. The goal closes when the configuration reached is the target or a
+hypothesis. The [checked clients](../../CslibFrontierTests/CounterProgramStep.lean) cover running,
+oblivious and shifted steps, a concrete program and the diagnostics. The shape check of the
+[logspace model checker](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder.lean)
+is a library client.
+
+A label that is still a conditional stops the tactic with a diagnostic: split on the condition and
+pass the case, as in `by_cases h : 0 < n` followed by `cp_step [h]`. A side condition the tactic
+cannot prove, typically a register bound that is not a hypothesis, is named in the error; state it
+with `have` first. A step whose continuation is composed with `Reaches.trans` keeps an explicit
+`refine Reaches.assign h hB (hreach.trans ?_)`, with `cp_step` for the instructions after it.
+
 ## Proof style as interface maintenance
 
 The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/AGENTS.md#proof-hygiene)
