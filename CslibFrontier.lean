@@ -3951,8 +3951,10 @@ public import CslibFrontier.Crypto.Negligible.Dyadic
 public import CslibFrontier.Crypto.Primitives.BlockCipher.CBCMAC
 public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.CorrelationRobust
+public import CslibFrontier.Crypto.Primitives.Garbling.Adaptive
 public import CslibFrontier.Crypto.Primitives.Garbling.BMR16
 public import CslibFrontier.Crypto.Primitives.Garbling.Basic
+public import CslibFrontier.Crypto.Primitives.Garbling.CircuitInverters
 public import CslibFrontier.Crypto.Primitives.Garbling.CorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Foundations
 public import CslibFrontier.Crypto.Primitives.Garbling.FreeXOR
