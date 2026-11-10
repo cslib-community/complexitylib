@@ -46,8 +46,9 @@ until no new view appears, under any space bound, is
 * `Turing.MultiTapeNTM.reflTransGen_viewSucc_iff`: the successor lists give the reachable views.
 * `Turing.MultiTapeNTM.mem_search_iff`: enough rounds find exactly the reachable views.
 * `Turing.MultiTapeNTM.computableInPolyTime_viewSucc`,
-  `Turing.MultiTapeNTM.computableInPolyTime_acceptingView`: the successors and the accepting test
-  in polynomial time.
+  `Turing.MultiTapeNTM.computableInPolyTime_acceptingView`,
+  `Turing.MultiTapeNTM.computableInPolyTime_initView`: the successors, the accepting test and the
+  initial view in polynomial time.
 * `Turing.MultiTapeTM.ComputableInPolyTime.expand`: a round in polynomial time.
 * `Turing.MultiTapeNTM.length_encList_search_le`: under any space bound, the views found by any
   number of rounds are few and short.
