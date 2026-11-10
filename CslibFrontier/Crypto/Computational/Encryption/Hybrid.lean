@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # KEM–DEM hybrid public-key encryption
@@ -866,8 +867,7 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
     hybridToKEMDistinguisher, game, gameOn, ↓reduceIte, hybridEncrypt,
     encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1 with keys : 1
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the ideal KEM experiment, `hybridToKEMDistinguisher` reproduces the intermediate game
 `hybridIdealGame`. -/
@@ -883,11 +883,7 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
   simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
     hybridToKEMDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind]
-  congr 1 with keys : 1
-  conv_lhs =>
-    rhs; ext encapsulated
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the one-time symmetric DEM experiment, `hybridToDEMAdversary` reproduces the intermediate
 game `hybridIdealGame`. -/
@@ -903,11 +899,7 @@ game `hybridIdealGame`. -/
     ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁, encPair_apply,
     encBits_apply, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     unframe_frame_append, dropFrame_frame_append]
-  rw [PMF.bind_comm]
-  congr 1 with keys : 1
-  rw [PMF.bind_comm]
-  congr 1 with choice : 1
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the real KEM experiment, `hybridToKEMHiddenBitDistinguisher` averages the two hybrid
 chosen-message games, complementing the second. -/
@@ -927,13 +919,7 @@ theorem eval_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
     hybridEncrypt, encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append,
     ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
     PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with keys : 1
-  rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with choice : 1
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- In the ideal KEM experiment, `hybridToKEMHiddenBitDistinguisher` averages the two intermediate
 games `hybridIdealGame`, complementing the second. -/
@@ -953,18 +939,7 @@ theorem eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} (keyLen
     hybridToKEMHiddenBitDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with keys : 1
-  conv_lhs =>
-    rhs; ext encapsulated
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with choice : 1
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with encapsulated : 1
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- Success probability of `hybridToKEMHiddenBitDistinguisher` in `kemRealGame` is one half plus
 half the signed hybrid chosen-message gap. -/
@@ -1316,8 +1291,7 @@ theorem eval_demKeyGame_otpKeyWordEncrypt_false_eq_true (keyLen : ℕ → ℕ) (
     simpa only [PMF.bind_map, Function.comp_def, PMF.monad_bind_eq_bind] using h
   simp only [demKeyGame, demKeyGameOn, ↓reduceIte, otpKeyWordEncrypt, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind, Bool.false_eq_true]
-  rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
+  pmf_hoist (adversary.choose n []).eval
   congr 1 with choice : 1
   exact (hpad choice.1.1 choice.2).trans (hpad choice.1.2 choice.2).symm
 

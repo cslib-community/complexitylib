@@ -4,10 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 import VersoManual
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
 import CslibFrontier.Logics.FirstOrder.Operator.Relabel
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Definability
+import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.TransitiveClosure
 import CslibFrontier.Tactic.FOOperator
 
 open Verso.Genre Manual
@@ -128,8 +130,17 @@ Parameters stay fixed along the path. Width-zero closure is meaningful on an emp
 because there is still one empty tuple.
 
 {name}`Cslib.Logic.FO.TC.pair` concatenates the endpoints; `TC.left` and `TC.right` recover them.
-The semantic API proves reflexivity, inclusion of body edges, and composition of paths. It does
-not yet certify an FO(TC) model-checking machine or a capture theorem for NL.
+The semantic API proves reflexivity, inclusion of body edges, and composition of paths.
+{name}`Cslib.Logic.FO.Ordered.TCDefinable.encodedLanguage_mem_NL` gives the easy half of
+Immerman's capture theorem: on canonically ordered structures, every query defined by one FO(TC)
+sentence lies in native `NL`. The converse, NL ⊆ FO(TC), is not yet proved.
+
+{name}`Cslib.Logic.FO.Ordered.FullTupleInterpretation.onTCSentence` transports FO(TC) sentences
+along a full-tuple interpretation, as `onLFPSentence` does for FO(LFP). A closure over pairs of
+width-`w` target tuples becomes one over pairs of width-`w * k` source tuples. Each closure keeps
+its polarity, so positive sentences stay positive, and truth on `Fin (n ^ k)` equals truth of the
+pullback on `Fin n`. A machine configuration can thus be coded by a fixed number of elements of a
+polynomially larger universe and its reachability still be expressed over the input universe.
 
 # Constructing Formulas from Predicates
 %%%

@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Ba
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Tactic.Degree
+import CslibFrontier.Tactic.EncLen
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
 import CslibFrontier.Tactic.OptionMatch
@@ -422,13 +423,11 @@ lemma find_inO {k : γ → Key} {t : γ → List (Key × Act)} (hk : ComputableI
         omega
     omega
 
-/-- Close an inequality between lengths: expand every encoded length into the lengths of its
-fields, then count. Products are atoms, bounded by facts in the context. -/
-local macro "enc_len" : tactic => `(tactic| (
-  simp only [WCtx.desc, WCtx.cfg, WCtx.sym, Ctx.desc, Ctx.input, Ctx.cfg, Nat.mul_one,
-    Option.elim_none, Option.elim_some, eDesc_apply, eCfg_apply, eAct_apply, eKey_apply,
-    length_encPair, encUnary_apply, List.length_replicate] at *
-  omega))
+/-- Close an inequality between context lengths with `enc_len`, expanding the context projections
+and the local encodings everywhere. Products are atoms, bounded by facts in the context. -/
+local macro "ctx_len" : tactic => `(tactic|
+  enc_len [WCtx.desc, WCtx.cfg, WCtx.sym, Ctx.desc, Ctx.input, Ctx.cfg, Nat.mul_one,
+    Option.elim_none, Option.elim_some, eDesc_apply, eCfg_apply, eAct_apply, eKey_apply] at *)
 
 /-- One step of the simulation without the input, within the time `wTime` and linear space. The
 machine is assembled from the definition of `stepWith`, and its bounds are checked once. -/
@@ -441,19 +440,19 @@ public theorem stepWith_inO :
   all_goals
     have hW := le_wTime c
     have hreads := length_encList_map_read_le c.cfg.workTapes
-    have hcfg : (eCfg c.cfg).length ≤ (eWCtx c).length := by enc_len
-    have hdesc : (eDesc c.desc).length ≤ (eWCtx c).length := by enc_len
-    have htapes : (encList eTape c.cfg.workTapes).length ≤ (eWCtx c).length := by enc_len
+    have hcfg : (eCfg c.cfg).length ≤ (eWCtx c).length := by ctx_len
+    have hdesc : (eDesc c.desc).length ≤ (eWCtx c).length := by ctx_len
+    have htapes : (encList eTape c.cfg.workTapes).length ≤ (eWCtx c).length := by ctx_len
     have htable : (encList (encPair eKey eAct) c.desc.table).length ≤ (eDesc c.desc).length := by
-      enc_len
+      ctx_len
     have hsq : ((encNat c.cfg.inputPos).length + 1) ^ 2 ≤ wTime c := Nat.le_add_left _ _
     rcases hq : c.cfg.state with _ | q
     · simp only [Option.elim_none]
       omega
     have hq' : q ≤ (eSym c.cfg.state).length := by simp [hq]
     have hkey : (eKey ⟨q, c.sym, c.cfg.workTapes.map Tape.read⟩).length + 1 ≤
-        16 * ((eWCtx c).length + 1) := by enc_len
-    have hctx : (encPair eWCtx encUnary (c, q)).length ≤ 4 * ((eWCtx c).length + 1) := by enc_len
+        16 * ((eWCtx c).length + 1) := by ctx_len
+    have hctx : (encPair eWCtx encUnary (c, q)).length ≤ 4 * ((eWCtx c).length + 1) := by ctx_len
     have hrun := mul_le_wTime c (A := c.cfg.workTapes.length) (k := 1)
       (B := (encList eTape c.cfg.workTapes).length) (C := 1) (by omega) (by omega) (by omega)
     have hscan := mul_le_wTime c (A := c.desc.table.length)
@@ -470,11 +469,11 @@ public theorem stepWith_inO :
     have hact : (eAct e.2).length ≤ (eDesc c.desc).length :=
       (length_le_encPair_right eKey eAct e).trans (by omega)
     have hctx' : (encPair (encPair eWCtx encUnary) (encPair eKey eAct) ((c, q), e)).length ≤
-        16 * ((eWCtx c).length + 1) := by enc_len
+        16 * ((eWCtx c).length + 1) := by ctx_len
     have hmove : (encPair encNat (encPair eSym encSign)
-        (c.cfg.inputPos, c.sym, e.2.inputTape)).length ≤ 8 * ((eWCtx c).length + 1) := by enc_len
+        (c.cfg.inputPos, c.sym, e.2.inputTape)).length ≤ 8 * ((eWCtx c).length + 1) := by ctx_len
     have hargs : (encPair (encList eTape) (encList eTA)
-        (c.cfg.workTapes, e.2.workTapes)).length + 1 ≤ 8 * ((eWCtx c).length + 1) := by enc_len
+        (c.cfg.workTapes, e.2.workTapes)).length + 1 ≤ 8 * ((eWCtx c).length + 1) := by ctx_len
     have happly := mul_le_wTime c (A := c.cfg.workTapes.length) (k := 1) (C := 8) (by omega)
       (by omega) hargs
     rw [Nat.mul_one] at happly
@@ -508,11 +507,11 @@ public theorem step_inO :
     have hsym : (eSym (inputSymbol c.input c.cfg.inputPos)).length ≤
         (encList encUnary c.input).length + 1 := length_inputSymbol_le c.input c.cfg.inputPos
     have hW := le_stepTime_ctx c
-    have hcfg : (eCfg c.cfg).length ≤ (eCtx c).length := by enc_len
+    have hcfg : (eCfg c.cfg).length ≤ (eCtx c).length := by ctx_len
     have hinput : (encPair (encList encUnary) encNat (c.input, c.cfg.inputPos)).length ≤
-        (eCtx c).length := by enc_len
+        (eCtx c).length := by ctx_len
     have hctx : (eWCtx ((c.desc, c.cfg), inputSymbol c.input c.cfg.inputPos)).length + 1 ≤
-        3 * ((eCtx c).length + 1) := by enc_len
+        3 * ((eCtx c).length + 1) := by ctx_len
   · have hprod := Nat.mul_le_mul_left
       ((c.cfg.workTapes.length + c.desc.table.length + 1) * ((eDesc c.desc).length + 1)) hctx
     have hcounter : ((encNat c.cfg.inputPos).length + 1) ^ 2 ≤
