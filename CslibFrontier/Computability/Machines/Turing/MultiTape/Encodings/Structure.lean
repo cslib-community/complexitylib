@@ -32,8 +32,8 @@ The rules are `scoped` `fun_prop` rules, so that a program using the structure i
 
 The fields `f₁, …, fₙ` must be the fields of `S` (as `getStructureFields` lists them, so a parent
 structure is the single field `toParent`), each once and in declaration order, since that order
-fixes the encoded words. The command checks this before declaring anything, and names the first
-unknown, repeated, misplaced or missing field.
+fixes the encoded words. `S` must be a structure, not a class. The command checks this before
+declaring anything, and names the first unknown, repeated or misplaced field, or all missing ones.
 -/
 
 public meta section
@@ -44,7 +44,8 @@ open Lean Elab Command
 
 /-- `enc_structure eS : S where f₁ : e₁, f₂ : e₂` declares the encoding `eS` of the structure `S`
 as the tuple of its fields encoded by `e₁`, `e₂`, with its rules. List every field of `S` once, in
-declaration order; the command reports an unknown, repeated, misplaced or missing field. -/
+declaration order; the command reports an unknown, repeated or misplaced field, or all missing
+ones. -/
 syntax (name := encStructure) (docComment)? "enc_structure " ident " : " ident " where "
   (ident " : " term:max),+ : command
 
@@ -75,14 +76,18 @@ private def parentField? (env : Environment) (s n : Name) : Option Name :=
     | some parent => (getStructureFieldsFlattened env parent).contains n
     | none => false
 
-/-- The structure that `S` names, after checking that `fs` lists every field of it once, in
-declaration order; report the first unknown, repeated, misplaced or missing field otherwise. -/
+/-- The structure that `S` names, after checking that it is not a class and that `fs` lists every
+field of it once, in declaration order. Otherwise report the first unknown, repeated or misplaced
+field, or all missing ones. -/
 private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
   let s ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo S
   let env ← getEnv
-  unless isStructure env s do
-    throwErrorAt S "enc_structure: `{MessageData.ofConstName s}` is not a structure"
   let sName := MessageData.ofConstName s
+  unless isStructure env s do
+    throwErrorAt S "enc_structure: `{sName}` is not a structure"
+  if isClass env s then
+    throwErrorAt S "enc_structure: `{sName}` is a class; only structures, whose fields are \
+      explicit, can be encoded"
   let expected := getStructureFields env s
   let order := m!"the fields of `{sName}` in declaration order are \
     {MessageData.joinSep (expected.toList.map fun n => m!"`{n}`") ", "}"
@@ -95,7 +100,7 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
           `{p}` instead; {order}"
       throwErrorAt f "enc_structure: `{n}` is not a field of `{sName}`; {order}"
     if seen.contains n then
-      throwErrorAt f "enc_structure: field `{n}` is listed twice"
+      throwErrorAt f "enc_structure: field `{n}` is listed twice; {order}"
     if let some prev := seen.back? then
       if i < expected.idxOf prev then
         throwErrorAt f "enc_structure: field `{n}` must come before `{prev}`; {order}"
@@ -140,7 +145,7 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
     ComputableInDegree (fun $a : $S => $fieldsOf) $eS $fields 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
   for f in fs, e in es, i in Array.range n do
-    let proj := mkIdent (S.getId ++ f.getId)
+    let proj := mkCIdent (s ++ f.getId)
     let deg := app name s!"_{f.getId}_deg"
     let body ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDeg i n
     elabCommand (← `(@[scoped fun_prop] public theorem $deg:ident :
