@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (regression tests)
 
-public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedQueries
+public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationShared
 meta import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedQueries
 meta import CslibFrontier.Computability.PolyTime.CNF.UpperDominationUnique
 meta import CslibFrontier.Computability.PolyTime.CNF.UpperDomination
@@ -159,5 +159,56 @@ example (x : UpperDomination.Input)
     oldDeclaration x + IndependentDomination.order (UpperDomination.graph x) =
       6 * IndependentDomination.order (UpperDomination.graph x) + UpperDomination.auxiliary x - 1 :=
   declaration x hn
+
+open Classical in
+/- The new original-count theorem proves a real impossible-threshold answer without enumerating
+any size-test gate assignment or relying on a test-only model-count oracle. -/
+example (G : SimpleGraph (Fin 1)) [DecidableRel G.Adj] :
+    TwoBoundary.BinaryFrontend.value (compile (UpperDomination.ofGraph G 2)) = 0 := by
+  rw [compile_count]
+  apply Fintype.card_eq_zero_iff.mpr
+  refine ⟨fun S => ?_⟩
+  have hb : Nat.card S.val ≤ Nat.card (Fin 1) :=
+    Nat.card_le_card_of_injective Subtype.val Subtype.val_injective
+  simp only [Nat.card_fin] at hb
+  have ht := S.property.2
+  omega
+
+open Classical in
+/- The empty graph has exactly its empty minimal dominating set, with threshold zero. -/
+example (G : SimpleGraph (Fin 0)) [DecidableRel G.Adj] :
+    TwoBoundary.BinaryFrontend.value (compile (UpperDomination.ofGraph G 0)) = 1 := by
+  rw [compile_count]
+  apply Fintype.card_eq_one_iff.mpr
+  have hdom : Minimal G.IsDominatingSet (∅ : Set (Fin 0)) := by
+    refine ⟨?_, ?_⟩
+    · intro v
+      exact Fin.elim0 v
+    · intro T _ _ v
+      exact Fin.elim0 v
+  refine ⟨⟨∅, hdom, by simp⟩, ?_⟩
+  intro S
+  apply Subtype.ext
+  ext v
+  exact Fin.elim0 v
+
+open Classical in
+/- Signed negative thresholds are admitted and retain the original graph-set count. -/
+example (G : SimpleGraph (Fin 2)) [DecidableRel G.Adj] :
+    TwoBoundary.BinaryFrontend.value (compile (UpperDomination.ofGraph G (-7))) =
+      TwoBoundary.BinaryFrontend.value (compile (UpperDomination.ofGraph G 0)) := by
+  rw [compile_count, compile_count]
+  exact Fintype.card_congr (Equiv.subtypeEquivRight fun S => by
+    have h : (0 : ℤ) ≤ Nat.card S := Int.natCast_nonneg _
+    have hneg : (-7 : ℤ) ≤ Nat.card S := by omega
+    simp only [h, hneg, and_true])
+
+/- The extension preserves all old bits even when they are unused in the graph predicates. -/
+example (β : Bool) (σ : Fin (oldDeclaration graphInput) → Bool) :
+    project graphInput (extend graphInput β σ) = σ := project_extend graphInput β σ
+
+example (G : SimpleGraph (Fin 2)) [DecidableRel G.Adj] (k : ℤ) (β : Bool) :
+    (query (UpperDomination.ofGraph G k) β).length ≤ 48032 := by
+  simpa using query_cubic_budget G k (by decide) β
 
 end SharedMarkerTests

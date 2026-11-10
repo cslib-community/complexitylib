@@ -1349,11 +1349,31 @@ $6v+a-1$ declaration for positive graphs, with the actual computed size-test gat
 **every** new marker, not only below their own marker. The ignored final right index remains
 unrestricted.
 
-Finite-model projection/parity-extension count transport, complete literal-index validation,
-the cubic-clause budget and the refined counting-machine resource composition remain open.
-These construction certificates do not assert the new query counts equal the old query counts.
-The refined-construction ROADMAP entry is retained; the reviewed width-four exact-set counter
-is unchanged.
+Import `CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedTransport` for the general
+count transport. `query_forced_markers` identifies the actual refined formula with the old query
+and the forced marker parities. `project` forgets exactly the new markers; `extend` computes them
+from the old ports. `modelEquiv` proves these are inverse maps between each boundary's finite
+model sets, retaining every old declared bit, including unused ones. Its forward/inverse-map
+lemmas expose those maps explicitly. `query_count_eq` preserves each boundary count separately;
+`compile_count` transports their difference to the original minimal dominating-set count, with
+no marking multiplicity. It includes the empty graph and every signed input threshold.
+A single boundary's models are not asserted to be in bijection with original dominating sets:
+the already-proved two-boundary difference identity is essential.
+
+`CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedBounds` supplies complete
+literal-index validation (`query_indices`), at most four extra clauses per vertex relative to
+the old query (`query_length_le`), and the closed $6004v^3$ clause bound (`query_cubic_budget`).
+`compile_budget` packages the computed declaration, clause, width and index bounds for either
+actually emitted query on a positive graph. Empty graphs retain their separate direct branch.
+
+Import `CslibFrontier.Computability.Complexity.FineGrained.UpperDominationShared` for
+`exists_count_polySpace`. It instantiates the genuine width-three native counter, executes the
+actual one/two-query tag, and charges construction, sequential counting, both binary answers and
+subtraction through the machine calculus. The resulting counter has polynomial workspace on
+**all raw inputs**, and counts original sets on canonical finite simple graphs. Its closed sharp
+time $L^{O(1)}2^{O(\eta(v))}$ is still unproved here; the backend counter's bound alone does not
+establish that composition. The Proposition 7.6 ROADMAP scope stays open until this remaining
+resource clause is proved. The reviewed width-four exact-set counter is unchanged.
 
 From the checkout root run:
 
@@ -1370,8 +1390,9 @@ The same client now checks the complete original-input writer on $K_2$ and the s
 and empty cases. For both $K_2$ boundaries it checks all 512 old selection/mark/path patterns
 against the four possible assignments of the two fresh markers. Side gate clauses are omitted
 on both sides of this test, so false gate words cannot make it vacuous. Computed checks also
-cover the full query's width, literal indices and declaration. This finite regression does not
-replace the still-missing general count bijection.
+cover the full query's width, literal indices and declaration. The general count bijection is
+now proved independently of this finite regression. Formal clients also derive the impossible size-two answer on a one-vertex graph, the empty-graph count
+and equality for negative versus zero thresholds from the new original-count theorem.
 The enumeration is test-only; production writes explicit lists and enumerates no assignment cube.
 
 ### Minimum independent-domination resources

@@ -2150,6 +2150,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundarySour
 public import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundaryWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDomination
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationOptimum
+public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationShared
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationUnique
 public import CslibFrontier.Computability.Complexity.FineGrained.UpperDominationWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.VCOneCountingResources
@@ -3392,8 +3393,10 @@ public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import CslibFrontier.Computability.PolyTime.CNF.SparsePolyCompile
 public import CslibFrontier.Computability.PolyTime.CNF.TwoBoundaryFrontend
 public import CslibFrontier.Computability.PolyTime.CNF.UpperDomination
+public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedBounds
 public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedMarkers
 public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedQueries
+public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedTransport
 public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationUnique
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneClosure
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneDispatch

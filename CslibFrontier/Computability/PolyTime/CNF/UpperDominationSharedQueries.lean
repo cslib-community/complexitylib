@@ -34,8 +34,9 @@ original endpoint-substituted clauses, with the full augmented path length throu
 * `declaration`, `query_width`: source variable budget and global width-three bound.
 * `context_ports`, `context_terms`: global port/term separation from every new marker.
 
-Finite-model count transport and the closed source-wide query budgets are separate obligations;
-this module does not replace the reviewed width-four counting algorithm by an assumed counter.
+The companion `UpperDominationSharedTransport` and `UpperDominationSharedBounds` modules prove
+finite-model count transport and the closed source-wide query budgets. The native shared-marker
+counter has polynomial workspace; its closed sharp-time composition remains separate.
 -/
 
 public section

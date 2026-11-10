@@ -17,7 +17,8 @@ import CslibFrontier.Logics.Propositional.DNF.ModelCount
 The local writer of [ChenJiangZhu2027], Appendix D.3 (PDF p.35), uses one marker for an entire
 pair-or-mark predicate. Added predicates are suffix path edges, so the left port is a variable;
 only the final right port can be the fixed boundary. Every term shares the same marker index.
-The full graph query assembly/count transport and source budget remain separate obligations.
+The companion shared-query, transport and bounds modules assemble the graph queries and prove
+their count correspondence and global budgets; sharp native time composition remains separate.
 
 ## Main results
 
