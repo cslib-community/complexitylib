@@ -13,6 +13,7 @@ public import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.UniformOrder
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.Data.Nat.Choose.Bounds
 
 /-!
@@ -276,8 +277,7 @@ theorem invariant_of_mem_support_run {k : ℕ} {s : State V}
     (hs : s ∈ (ProbComp.eval (run G k)).support) : Invariant G s :=
   ProbComp.iterate_invariant k (phase G) init (fun _ s => Invariant G s) (invariant_init G)
     (fun _ _ s hs next hnext => by
-      rw [eval_phase, PMF.support_map] at hnext
-      obtain ⟨σ, -, rfl⟩ := hnext
+      supp_cases hnext [eval_phase] with ⟨σ, rfl⟩
       exact hs.step G σ) s hs
 
 /-- Each phase with a live vertex removes at least one live vertex: the live vertex of least rank
@@ -295,15 +295,13 @@ independent set. -/
 theorem maximal_of_mem_support_lubyMIS {k : ℕ} (hk : Fintype.card V ≤ k) {S : Finset V}
     (hS : S ∈ (ProbComp.eval (lubyMIS G k)).support) :
     Maximal G.IsIndepSet (S : Set V) := by
-  rw [lubyMIS, ProbComp.eval_map, PMF.support_map] at hS
-  obtain ⟨s, hs, rfl⟩ := hS
+  supp_cases hS [lubyMIS] with ⟨s, hs, rfl⟩
   refine (invariant_of_mem_support_run G hs).maximal_iff.2 ?_
   -- Until the live set empties, each phase removes a live vertex.
   have hcard := ProbComp.iterate_invariant k (phase G) init
     (fun i s => s.live = ∅ ∨ s.live.card + i ≤ Fintype.card V) (Or.inr (by simp [init]))
     (fun i _ s hs next hnext => by
-      rw [eval_phase, PMF.support_map] at hnext
-      obtain ⟨σ, -, rfl⟩ := hnext
+      supp_cases hnext [eval_phase] with ⟨σ, rfl⟩
       rcases s.live.eq_empty_or_nonempty with he | hne
       · exact Or.inl (subset_empty.1 (he ▸ step_live_subset G s σ))
       · rcases hs with he | hs
@@ -317,8 +315,7 @@ theorem maximal_of_mem_support_lubyMIS {k : ℕ} (hk : Fintype.card V ≤ k) {S 
 /-- **Independence.** After any number of phases, every possible output is an independent set. -/
 theorem isIndepSet_of_mem_support_lubyMIS {k : ℕ} {S : Finset V}
     (hS : S ∈ (ProbComp.eval (lubyMIS G k)).support) : G.IsIndepSet (S : Set V) := by
-  rw [lubyMIS, ProbComp.eval_map, PMF.support_map] at hS
-  obtain ⟨s, hs, rfl⟩ := hS
+  supp_cases hS [lubyMIS] with ⟨s, hs, rfl⟩
   exact (invariant_of_mem_support_run G hs).isIndepSet
 
 /-! ### Random rankings -/
