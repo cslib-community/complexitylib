@@ -16,9 +16,10 @@ import Mathlib.Data.Fintype.Powerset
 /-!
 # Black pebble configurations as words
 
-A configuration of the black pebble game on `Fin N` is a word of `N` bits, bit `i` recording
-whether vertex `i` carries a pebble (`Cslib.Pebbling.configWord`). A legal move with at most `s`
-pebbles flips one bit (`Cslib.Pebbling.wordStep`): it clears a bit, or sets the bit of a vertex
+A configuration of the black pebble game on `Fin N` is a word of `N` bits, its indicator word
+`Cslib.BitString.indicatorList`, bit `i` recording whether vertex `i` carries a pebble. A legal move
+with at most `s` pebbles flips one bit (`Cslib.Pebbling.wordStep`): it clears a bit, or sets the
+bit of a vertex
 that is ready, meaning that all its predecessors carry pebbles. Readiness is a parameter, a
 Boolean test on words, so that a machine can evaluate it directly from its own description of the
 graph.
@@ -31,12 +32,11 @@ of a whole pebbling strategy.
 
 ## Main definitions
 
-* `Cslib.Pebbling.configWord`: the bit word of a configuration.
 * `Cslib.Pebbling.wordStep`: one legal move with at most `s` pebbles, on words.
 
 ## Main results
 
-* `Cslib.Pebbling.wordStep_configWord_iff`: on configuration words, a step is a legal move that
+* `Cslib.Pebbling.wordStep_indicatorList_iff`: on configuration words, a step is a legal move that
   changes the configuration.
 * `Cslib.Pebbling.reach_wordStep_iff_canReach`: the recursion at depth `N` decides reachability in
   the game.
@@ -52,68 +52,12 @@ public section
 
 namespace Cslib.Pebbling
 
-open Cslib.BitString (supportOfList supportOfList_ofFn_decide ofFn_decide_mem_supportOfList
-  card_supportOfList_of_length)
+open Cslib.BitString (supportOfList indicatorList length_indicatorList supportOfList_indicatorList
+  indicatorList_supportOfList indicatorList_inj count_true_indicatorList getD_indicatorList
+  indicatorList_insert indicatorList_erase indicatorList_empty)
 open Cslib.Reachability (reach reach_iff)
 
 variable {N : ℕ}
-
-/-! ### Configurations as words -/
-
-/-- The word of a configuration: bit `i` records whether vertex `i` carries a pebble. -/
-def configWord (C : Finset (Fin N)) : List Bool :=
-  List.ofFn fun i => decide (i ∈ C)
-
-@[simp] theorem length_configWord (C : Finset (Fin N)) : (configWord C).length = N := by
-  rw [configWord, List.length_ofFn]
-
-@[simp] theorem supportOfList_configWord (C : Finset (Fin N)) :
-    supportOfList N (configWord C) = C := by
-  rw [configWord, supportOfList_ofFn_decide]
-
-/-- Every word of length `N` is the word of its support. -/
-theorem configWord_supportOfList {w : List Bool} (hw : w.length = N) :
-    configWord (supportOfList N w) = w := by
-  rw [configWord, ofFn_decide_mem_supportOfList hw]
-
-theorem configWord_injective : Function.Injective (configWord (N := N)) := fun C D h => by
-  rw [← supportOfList_configWord C, h, supportOfList_configWord]
-
-@[simp] theorem configWord_inj {C D : Finset (Fin N)} : configWord C = configWord D ↔ C = D :=
-  configWord_injective.eq_iff
-
-theorem count_true_configWord (C : Finset (Fin N)) : (configWord C).count true = C.card := by
-  rw [← card_supportOfList_of_length (length_configWord C), supportOfList_configWord]
-
-theorem getD_configWord (C : Finset (Fin N)) (i : Fin N) :
-    (configWord C).getD i false = decide (i ∈ C) := by
-  simp [configWord]
-
-/-- Placing a pebble sets its bit. -/
-theorem configWord_insert (C : Finset (Fin N)) (i : Fin N) :
-    configWord (insert i C) = (configWord C).set i true := by
-  refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
-  simp only [configWord, List.getElem_ofFn, List.getElem_set, Finset.mem_insert]
-  by_cases h : (i : ℕ) = j
-  · simp [h, Fin.ext_iff]
-  · simp [h, Fin.ext_iff, Ne.symm h]
-
-/-- Removing a pebble clears its bit. -/
-theorem configWord_erase (C : Finset (Fin N)) (i : Fin N) :
-    configWord (C.erase i) = (configWord C).set i false := by
-  refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
-  simp only [configWord, List.getElem_ofFn, List.getElem_set, Finset.mem_erase]
-  by_cases h : (i : ℕ) = j
-  · simp [h, Fin.ext_iff]
-  · simp [h, Fin.ext_iff, Ne.symm h]
-
-@[simp] theorem configWord_empty : configWord (∅ : Finset (Fin N)) = List.replicate N false := by
-  simp [configWord, List.ofFn_const]
-
-/-- The word of a single pebble on `v`: the zero word with bit `v` set. -/
-theorem configWord_singleton (v : Fin N) :
-    configWord {v} = (List.replicate N false).set v true := by
-  rw [← configWord_empty, ← configWord_insert, insert_empty_eq]
 
 /-! ### Moves on words -/
 
@@ -128,22 +72,24 @@ variable {G : Digraph (Fin N)} {ready : List Bool → ℕ → Bool} {s : ℕ}
 
 /-- **On configuration words, a step is a legal move that changes the configuration**, when
 `ready` tests on configuration words that all predecessors carry pebbles. -/
-theorem wordStep_configWord_iff
-    (hready : ∀ C (i : Fin N), ready (configWord C) i = true ↔ ∀ u, G.Adj u i → u ∈ C)
+theorem wordStep_indicatorList_iff
+    (hready : ∀ C (i : Fin N), ready (indicatorList C) i = true ↔ ∀ u, G.Adj u i → u ∈ C)
     {C D : Finset (Fin N)} :
-    wordStep ready s (configWord C) (configWord D) = true ↔
+    wordStep ready s (indicatorList C) (indicatorList D) = true ↔
       C ≠ D ∧ (blackPebbleGame G s).UnlabelledTr C D := by
-  simp only [wordStep, List.any_eq_true, List.mem_range, length_configWord, Bool.and_eq_true,
-    Bool.or_eq_true, decide_eq_true_eq, count_true_configWord]
+  simp only [wordStep, List.any_eq_true, List.mem_range, length_indicatorList, Bool.and_eq_true,
+    Bool.or_eq_true, decide_eq_true_eq, count_true_indicatorList]
   constructor
   · rintro ⟨i, hi, ⟨hlegal, hD⟩, hcard⟩
-    have hget := getD_configWord C ⟨i, hi⟩
+    have hget := getD_indicatorList C ⟨i, hi⟩
     rw [hget] at hlegal hD
     by_cases hC : (⟨i, hi⟩ : Fin N) ∈ C
-    · rw [decide_eq_true hC, Bool.not_true, ← configWord_erase C ⟨i, hi⟩, configWord_inj] at hD
+    · rw [decide_eq_true hC, Bool.not_true, ← indicatorList_erase C ⟨i, hi⟩,
+        indicatorList_inj] at hD
       subst hD
       exact ⟨(Finset.erase_ne_self.2 hC).symm, _, .remove, hcard⟩
-    · rw [decide_eq_false hC, Bool.not_false, ← configWord_insert C ⟨i, hi⟩, configWord_inj] at hD
+    · rw [decide_eq_false hC, Bool.not_false, ← indicatorList_insert C ⟨i, hi⟩,
+        indicatorList_inj] at hD
       subst hD
       have hready' := hlegal.resolve_left (by simp [hC])
       exact ⟨(Finset.insert_ne_self.2 hC).symm, _, .place ((hready C _).1 hready'), hcard⟩
@@ -153,15 +99,15 @@ theorem wordStep_configWord_iff
       have hvC : v ∉ C := fun h => hne (Finset.insert_eq_of_mem h).symm
       refine ⟨v, v.isLt, ⟨?_, ?_⟩, hcard⟩
       · exact Or.inr ((hready C v).2 hv)
-      · rw [getD_configWord, decide_eq_false hvC, Bool.not_false, configWord_insert]
+      · rw [getD_indicatorList, decide_eq_false hvC, Bool.not_false, indicatorList_insert]
     | @remove v =>
       have hvC : v ∈ C := by
         by_contra h
         exact hne (Finset.erase_eq_of_notMem h).symm
       refine ⟨v, v.isLt, ⟨?_, ?_⟩, hcard⟩
-      · rw [getD_configWord, decide_eq_true hvC]
+      · rw [getD_indicatorList, decide_eq_true hvC]
         exact Or.inl rfl
-      · rw [getD_configWord, decide_eq_true hvC, Bool.not_true, configWord_erase]
+      · rw [getD_indicatorList, decide_eq_true hvC, Bool.not_true, indicatorList_erase]
 
 /-- Steps that stay put can be dropped from a walk. -/
 private theorem reflTransGen_ne {α : Type*} {r : α → α → Prop} {a b : α}
@@ -177,36 +123,36 @@ private theorem reflTransGen_ne {α : Type*} {r : α → α → Prop} {a b : α}
 the midpoint recursion at depth `N` holds exactly when the game with `s` pebbles can move from one
 configuration to the other. -/
 theorem reach_wordStep_iff_canReach
-    (hready : ∀ C (i : Fin N), ready (configWord C) i = true ↔ ∀ u, G.Adj u i → u ∈ C)
+    (hready : ∀ C (i : Fin N), ready (indicatorList C) i = true ↔ ∀ u, G.Adj u i → u ∈ C)
     {C D : Finset (Fin N)} :
-    reach (wordStep ready s) N N (configWord C) (configWord D) = true ↔
+    reach (wordStep ready s) N N (indicatorList C) (indicatorList D) = true ↔
       (blackPebbleGame G s).CanReach C D := by
-  rw [reach_iff (length_configWord C) (length_configWord D),
+  rw [reach_iff (length_indicatorList C) (length_indicatorList D),
     ← LTS.reflTransGen_unlabelledTr_iff]
   constructor
   · intro h
     have h' := Relation.ReflTransGen.lift (supportOfList N)
       (p := (blackPebbleGame G s).UnlabelledTr) (fun a b ⟨ha, hb, hab⟩ => by
-        rw [← configWord_supportOfList ha, ← configWord_supportOfList hb] at hab
-        exact ((wordStep_configWord_iff hready).1 hab).2) _ _ h.reflTransGen
-    simpa only [Function.onFun, supportOfList_configWord] using h'
+        rw [← indicatorList_supportOfList ha, ← indicatorList_supportOfList hb] at hab
+        exact ((wordStep_indicatorList_iff hready).1 hab).2) _ _ h.reflTransGen
+    simpa only [Function.onFun, supportOfList_indicatorList] using h'
   · intro h
     have hcard : Nat.card (Finset (Fin N)) ≤ 2 ^ N + 1 := by
       rw [Nat.card_eq_fintype_card, Fintype.card_finset, Fintype.card_fin]
       exact Nat.le_succ _
     exact ((Relation.reflTransGen_iff_relatesWithinSteps hcard).1 (reflTransGen_ne h)).map
-      configWord fun a b hab =>
-        ⟨length_configWord a, length_configWord b, (wordStep_configWord_iff hready).2 hab⟩
+      indicatorList fun a b hab =>
+        ⟨length_indicatorList a, length_indicatorList b, (wordStep_indicatorList_iff hready).2 hab⟩
 
 /-- **Savitch's recursion decides black pebblability.** From the zero word, the midpoint recursion
 at depth `N` reaches the word of the single pebble `v` exactly when `v` is pebblable with `s`
 pebbles. -/
 theorem reach_wordStep_iff_blackPebblable
-    (hready : ∀ C (i : Fin N), ready (configWord C) i = true ↔ ∀ u, G.Adj u i → u ∈ C)
+    (hready : ∀ C (i : Fin N), ready (indicatorList C) i = true ↔ ∀ u, G.Adj u i → u ∈ C)
     {v : Fin N} :
-    reach (wordStep ready s) N N (List.replicate N false) (configWord {v}) = true ↔
+    reach (wordStep ready s) N N (List.replicate N false) (indicatorList {v}) = true ↔
       BlackPebblable G s v := by
-  rw [← configWord_empty, reach_wordStep_iff_canReach hready,
+  rw [← indicatorList_empty, reach_wordStep_iff_canReach hready,
     blackPebblable_iff_exists_mTr_singleton]
   rfl
 

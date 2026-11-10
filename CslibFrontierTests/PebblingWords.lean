@@ -23,7 +23,7 @@ the game.
 
 namespace CslibFrontierTests.PebblingWords
 
-open Cslib.Pebbling Cslib.Reachability
+open Cslib.BitString Cslib.Pebbling Cslib.Reachability
 
 /-- The path `0 → 1`. -/
 def path : Digraph (Fin 2) where
@@ -33,20 +33,20 @@ def path : Digraph (Fin 2) where
 def ready (w : List Bool) (i : ℕ) : Bool := i != 1 || w.getD 0 false
 
 theorem ready_iff (C : Finset (Fin 2)) (i : Fin 2) :
-    ready (configWord C) i = true ↔ ∀ u, path.Adj u i → u ∈ C := by
-  have h0 := getD_configWord C 0
+    ready (indicatorList C) i = true ↔ ∀ u, path.Adj u i → u ∈ C := by
+  have h0 := getD_indicatorList C 0
   simp only [Fin.val_zero] at h0
   simp only [ready, h0]
   fin_cases i <;> simp [path]
 
 -- Two pebbles suffice for vertex `1`.
 example : BlackPebblable path 2 1 :=
-  (reach_wordStep_iff_blackPebblable ready_iff).1 (by rw [configWord_singleton]; decide)
+  (reach_wordStep_iff_blackPebblable ready_iff).1 (by rw [indicatorList_singleton]; decide)
 
 -- One pebble does not.
 example : ¬ BlackPebblable path 1 1 := fun h => by
   have := (reach_wordStep_iff_blackPebblable ready_iff).2 h
-  rw [configWord_singleton] at this
+  rw [indicatorList_singleton] at this
   revert this
   decide
 
