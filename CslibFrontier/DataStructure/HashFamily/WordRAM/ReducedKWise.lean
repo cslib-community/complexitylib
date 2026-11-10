@@ -1713,11 +1713,11 @@ private theorem innerClmulStep_exec {base w w₀ b b' k r_val acc_val i m : ℕ}
   have hu_lt : u < 2 ^ c := getLimb_lt c acc_val i
   have hv_lt : v < 2 ^ c := getLimb_lt c r_val m
   obtain ⟨hidx_lt, hidx_u, hidx_v⟩ := pair_index_props hu_lt hv_lt
-  set idx := (u <<< c) + v
+  set idx := (u <<< c) + v with hidx_def
   have hshl_lt : u <<< c < 2 ^ (2 * c) := lt_of_le_of_lt (Nat.le_add_right _ _) hidx_lt
-  set wIdx := idx >>> p
-  set subIdx := idx &&& (2 ^ p - 1)
-  set sh := subIdx * (2 * c)
+  set wIdx := idx >>> p with hwIdx_def
+  set subIdx := idx &&& (2 ^ p - 1) with hsubIdx_def
+  set sh := subIdx * (2 * c) with hsh_def
   have hwIdx_lt : wIdx < reducedTableWords t w := shiftRight_lt_reducedTableWords hidx_lt
   have hsub_lt : subIdx < 2 ^ p := and_two_pow_sub_one_lt idx p
   have hsh_lt : sh < w := by
@@ -1727,7 +1727,7 @@ private theorem innerClmulStep_exec {base w w₀ b b' k r_val acc_val i m : ℕ}
   have hfit_sh : Fits w sh := lt_trans hsh_lt Nat.lt_two_pow_self
   have hfit_sub : Fits w subIdx :=
     hfit_sh.of_le (Nat.le_mul_of_pos_right _ (by omega : 0 < 2 * c))
-  set word := x.mem (tBase + wIdx)
+  set word := x.mem (tBase + wIdx) with hword_def
   have hword_lt : word < 2 ^ (2 ^ p * (2 * c)) := htab.1 wIdx hwIdx_lt
   have hfit_word_shr : Fits w (word >>> sh) :=
     lt_of_le_of_lt (Nat.shiftRight_le _ _) (lt_of_lt_of_le hword_lt hpow_pack_le)
@@ -1736,8 +1736,8 @@ private theorem innerClmulStep_exec {base w w₀ b b' k r_val acc_val i m : ℕ}
     dsimp only [getLimb, wIdx, subIdx, sh, word, tBase] at this ⊢
     rw [this, hidx_u, hidx_v]
   have hcl_lt : clmul u v < 2 ^ (2 * c) := clmul_lt_two_pow_two_mul hu_lt hv_lt
-  set lo := clmul u v &&& (2 ^ c - 1)
-  set hi_part := clmul u v >>> c
+  set lo := clmul u v &&& (2 ^ c - 1) with hlo_def
+  set hi_part := clmul u v >>> c with hhi_def
   have hlo_lt : lo < 2 ^ c := and_two_pow_sub_one_lt _ c
   have hhi_lt : hi_part < 2 ^ c := by
     have := shiftRight_lt_pow_sub (by omega : c ≤ 2 * c) hcl_lt
@@ -1746,91 +1746,25 @@ private theorem innerClmulStep_exec {base w w₀ b b' k r_val acc_val i m : ℕ}
     lt_of_le_of_lt (Nat.pow_le_pow_right two_pos (by omega : c ≤ 2 * c)) hpow_2c_lt
   have him1_lt : i + m + 1 < 2 * L := by omega
   have him_lt : i + m < 2 * L := by omega
-  set old0 := x.regs (prodReg (i + m))
-  set old1 := x.regs (prodReg (i + m + 1))
+  set old0 := x.regs (prodReg (i + m)) with hold0_def
+  set old1 := x.regs (prodReg (i + m + 1)) with hold1_def
   have hold0_lt : old0 < 2 ^ c := hprod_lt (i + m) him_lt
   have hold1_lt : old1 < 2 ^ c := hprod_lt (i + m + 1) him1_lt
   have hnew0_lt : old0 ^^^ lo < 2 ^ c := Nat.xor_lt_two_pow hold0_lt hlo_lt
   have hnew1_lt : old1 ^^^ hi_part < 2 ^ c := Nat.xor_lt_two_pow hold1_lt hhi_lt
-  set s1 := x.set 10 (u <<< c)
-  have e1 : Exec w (.op (.exactBin .shiftLeft 10 (accReg i) 5) : Code .exact 240) x s1 1 :=
-    exec_exactBin (by simp +decide [hu_reg, h5]) (by fits)
-  set s2 := s1.set 10 idx
-  have e2 : Exec w (.op (.exactBin .add 10 10 (xReg m)) : Code .exact 240) s1 s2 1 :=
-    exec_exactBin
-      (by
-        dsimp only [s1, Data.set, BinOp.evalExact]
-        rw [Function.update_self, Function.update_of_ne (xReg_ne_low m (r := 10) (by decide)),
-          hv_reg])
-      (by fits)
-  set s3 := s2.set 11 wIdx
-  have e3 : Exec w (.op (.exactBin .shiftRight 11 10 7) : Code .exact 240) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h7, wIdx]) (by fits)
-  set s4 := s3.set 11 (tBase + wIdx)
-  have e4 : Exec w (.op (.exactBin .add 11 4 11) : Code .exact 240) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h4, tBase]) (by fits)
-  set s5 := s4.set 12 word
-  have e5 : Exec w (.op (.load 12 11) : Code .exact 240) s4 s5 1 := by
-    simpa +decide [s5, s4, s3, s2, s1, word] using
-      (Exec.load (B := .exact) (w := w) (d := 12) (a := 11) (x := s4))
-  set s6 := s5.set 11 subIdx
-  have e6 : Exec w (.op (.exactBin .and 11 10 8) : Code .exact 240) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h8, subIdx]) hfit_sub
-  set s7 := s6.set 11 sh
-  have e7 : Exec w (.op (.exactBin .mul 11 11 9) : Code .exact 240) s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, s5, s4, s3, s2, s1, h9, sh]) hfit_sh
-  set s8 := s7.set 12 (word >>> sh)
-  have e8 : Exec w (.op (.exactBin .shiftRight 12 12 11) : Code .exact 240) s7 s8 1 :=
-    exec_exactBin (by simp +decide [s7, s6, s5]) hfit_word_shr
-  set s9 := s8.set 12 (clmul u v)
-  have e9 : Exec w (.op (.exactBin .and 12 12 18) : Code .exact 240) s8 s9 1 :=
-    exec_exactBin
-      (by
-        dsimp only [BinOp.evalExact]
-        have h12 : s8.regs 12 = word >>> sh := rfl
-        have h18' : s8.regs 18 = 2 ^ (2 * c) - 1 := by
-          simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h18]
-        rw [h12, h18', hlimb_eq])
-      (by fits)
-  set s10 := s9.set 13 lo
-  have e10 : Exec w (.op (.exactBin .and 13 12 6) : Code .exact 240) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h6, lo])
-      (lt_trans hlo_lt hpow_c_lt)
-  set s11 := s10.set 14 hi_part
-  have e11 : Exec w (.op (.exactBin .shiftRight 14 12 5) : Code .exact 240) s10 s11 1 :=
-    exec_exactBin (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5, hi_part])
-      (lt_trans hhi_lt hpow_c_lt)
+  set s11 := ((((((((((x.set 10 (u <<< c)).set 10 idx).set 11 wIdx).set 11 (tBase + wIdx)).set 12
+    word).set 11 subIdx).set 11 sh).set 12 (word >>> sh)).set 12 (clmul u v)).set 13 lo).set 14
+    hi_part
   have hs11_prod : ∀ d, s11.regs (prodReg d) = x.regs (prodReg d) := by
     intro d
-    dsimp only [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, Data.set]
+    dsimp only [s11, Data.set]
     repeat rw [Function.update_of_ne (prodReg_ne_low d (by decide))]
-  set s12 := s11.set (prodReg (i + m)) (old0 ^^^ lo)
-  have e12 : Exec w (.op (.exactBin .xor (prodReg (i + m)) (prodReg (i + m)) 13) : Code .exact 240)
-      s11 s12 1 :=
-    exec_exactBin
-      (by
-        dsimp only [BinOp.evalExact]
-        rw [hs11_prod (i + m)]
-        have h13 : s11.regs 13 = lo := by simp +decide [s11, s10]
-        rw [h13])
-      (lt_trans hnew0_lt hpow_c_lt)
-  set s13 := s12.set (prodReg (i + m + 1)) (old1 ^^^ hi_part)
-  have hne_pair : prodReg (i + m + 1) ≠ prodReg (i + m) :=
-    prodReg_ne_of_ne (by omega) (by omega) (by omega)
-  have e13 : Exec w
-      (.op (.exactBin .xor (prodReg (i + m + 1)) (prodReg (i + m + 1)) 14) : Code .exact 240)
-      s12 s13 1 :=
-    exec_exactBin
-      (by
-        dsimp only [s12, Data.set, BinOp.evalExact]
-        rw [Function.update_of_ne hne_pair, hs11_prod (i + m + 1),
-          Function.update_of_ne (prodReg_ne_low (i + m) (r := 14) (by decide)).symm]
-        have h14 : s11.regs 14 = hi_part := by simp +decide [s11]
-        rw [h14])
-      (lt_trans hnew1_lt hpow_c_lt)
-  have hexec :=
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq
-      (e11.seq (e12.seq e13)))))))))))
+  set s13 := (s11.set (prodReg (i + m)) (old0 ^^^ lo)).set (prodReg (i + m + 1)) (old1 ^^^ hi_part)
+  have hexec : Exec w (innerClmulStep i m) x s13 13 := by
+    unfold innerClmulStep
+    wram_exec [hu_reg, hv_reg, h4, show tabBase base w₀ b b' k = tBase from rfl, h5, h6, h7, h8, h9,
+      h18, ← hidx_def, ← hwIdx_def, ← hsubIdx_def,
+      ← hsh_def, ← hword_def, hlimb_eq, ← hlo_def, ← hhi_def, ← hold0_def, ← hold1_def]
   have hs11_inv : ClmulInv base w w₀ b b' k r_val acc_val s11 := by
     have i1 := hinv.set_scratch (r := 10) (by decide) (by decide) (u <<< c)
     have i2 := i1.set_scratch (r := 10) (by decide) (by decide) idx
@@ -1850,7 +1784,7 @@ private theorem innerClmulStep_exec {base w w₀ b b' k r_val acc_val i m : ℕ}
       Function.update (Function.update f (i + m) (f (i + m) ^^^ lo))
         (i + m + 1) (f (i + m + 1) ^^^ hi_part) d := by
     intro d hd
-    dsimp only [s13, s12, Data.set, f]
+    dsimp only [s13, Data.set, f]
     rcases eq_or_ne d (i + m + 1) with rfl | hne1
     · rw [Function.update_self, Function.update_self]
     · rw [Function.update_of_ne (prodReg_ne_of_ne (by omega) (by omega) hne1),
