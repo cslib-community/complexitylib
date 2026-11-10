@@ -179,10 +179,9 @@ theorem eval_map {α : Type w} {β : Type w'} (f : α → β) (p : QueryProg Op 
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) :
     (p.map f).eval env sEnv = f (p.eval env sEnv) := by
   induction p with
-  | ret a => rfl
+  | ret _ => rfl
   | scratchStep _ _ ih => exact ih
-  | queryDigit _ _ _ _ ih => exact ih _
-  | queryStruct _ _ _ ih => exact ih _
+  | queryDigit _ _ _ _ ih | queryStruct _ _ _ ih => exact ih _
 
 @[simp]
 theorem activeQueries_map {α : Type w} {β : Type w'} (f : α → β) (p : QueryProg Op Struct α)
@@ -191,8 +190,7 @@ theorem activeQueries_map {α : Type w} {β : Type w'} (f : α → β) (p : Quer
   induction p with
   | ret _ => rfl
   | scratchStep _ _ ih => exact ih
-  | queryDigit _ _ _ _ ih => exact congrArg (_ :: ·) (ih _)
-  | queryStruct _ _ _ ih => exact congrArg (_ :: ·) (ih _)
+  | queryDigit _ _ _ _ ih | queryStruct _ _ _ ih => exact congrArg (_ :: ·) (ih _)
 
 @[simp]
 theorem maxIntrinsicBits_map {α : Type w} {β : Type w'} (f : α → β) (p : QueryProg Op Struct α)
@@ -201,8 +199,7 @@ theorem maxIntrinsicBits_map {α : Type w} {β : Type w'} (f : α → β) (p : Q
   induction p with
   | ret _ => rfl
   | scratchStep _ _ ih => exact congrArg (max _) ih
-  | queryDigit _ _ _ _ ih => exact congrArg (max _) (ih _)
-  | queryStruct _ _ _ ih => exact congrArg (max _) (ih _)
+  | queryDigit _ _ _ _ ih | queryStruct _ _ _ ih => exact congrArg (max _) (ih _)
 
 @[simp]
 theorem eval_bindOverhead {α : Type w} {β : Type w'} (ov : ℕ) (p : QueryProg Op Struct α)
@@ -211,8 +208,7 @@ theorem eval_bindOverhead {α : Type w} {β : Type w'} (ov : ℕ) (p : QueryProg
   induction p with
   | ret _ => rfl
   | scratchStep _ _ ih => exact ih
-  | queryDigit _ _ _ _ ih => exact ih _
-  | queryStruct _ _ _ ih => exact ih _
+  | queryDigit _ _ _ _ ih | queryStruct _ _ _ ih => exact ih _
 
 /-- **Lifetime release theorem**: `p.bindOverhead ov k` adds `ov` bits only to queries inside `p`;
 queries executed later inside `k (p.eval env sEnv)` inherit zero leftover bits from `p`. -/
@@ -224,10 +220,7 @@ theorem activeQueries_bindOverhead {α : Type w} {β : Type w'} (ov : ℕ) (p : 
   induction p with
   | ret _ => rfl
   | scratchStep _ _ ih => exact ih
-  | queryDigit _ _ _ _ ih =>
-    simp only [bindOverhead, activeQueries, eval, List.map_cons, List.cons_append]
-    exact congrArg (_ :: ·) (ih _)
-  | queryStruct _ _ _ ih =>
+  | queryDigit _ _ _ _ ih | queryStruct _ _ _ ih =>
     simp only [bindOverhead, activeQueries, eval, List.map_cons, List.cons_append]
     exact congrArg (_ :: ·) (ih _)
 
@@ -237,24 +230,18 @@ theorem maxIntrinsicBits_bindOverhead_le {α : Type w} {β : Type w'} (ov : ℕ)
     (p.bindOverhead ov k).maxIntrinsicBits env sEnv ≤
       max (ov + p.maxIntrinsicBits env sEnv) ((k (p.eval env sEnv)).maxIntrinsicBits env sEnv) := by
   induction p with
-  | ret a =>
-    simp only [bindOverhead, eval]
-    exact le_max_right _ _
-  | scratchStep s next ih =>
+  | ret _ => exact le_max_right _ _
+  | scratchStep _ _ ih =>
     simp only [bindOverhead, maxIntrinsicBits, eval]
-    refine max_le ?_ (ih.trans ?_)
-    · exact (Nat.add_le_add_left (le_max_left _ _) ov).trans (le_max_left _ _)
-    · exact max_le_max (Nat.add_le_add_left (le_max_right _ _) ov) le_rfl
-  | queryDigit op j w next ih =>
+    omega
+  | queryDigit op u _ _ ih =>
+    have := ih (env op u)
     simp only [bindOverhead, maxIntrinsicBits, eval]
-    refine max_le ?_ ((ih (env op j)).trans ?_)
-    · exact (Nat.add_le_add_left (le_max_left _ _) ov).trans (le_max_left _ _)
-    · exact max_le_max (Nat.add_le_add_left (le_max_right _ _) ov) le_rfl
-  | queryStruct sOp w next ih =>
+    omega
+  | queryStruct sOp _ _ ih =>
+    have := ih (sEnv sOp)
     simp only [bindOverhead, maxIntrinsicBits, eval]
-    refine max_le ?_ ((ih (sEnv sOp)).trans ?_)
-    · exact (Nat.add_le_add_left (le_max_left _ _) ov).trans (le_max_left _ _)
-    · exact max_le_max (Nat.add_le_add_left (le_max_right _ _) ov) le_rfl
+    omega
 
 theorem retained_le_maxIntrinsicBits {α : Type w} (prog : QueryProg Op Struct α)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) {ev : QueryEvent Op Struct}
@@ -262,18 +249,13 @@ theorem retained_le_maxIntrinsicBits {α : Type w} (prog : QueryProg Op Struct �
     ev.retained ≤ prog.maxIntrinsicBits env sEnv := by
   induction prog with
   | ret _ => nomatch hev
-  | scratchStep _ _ ih =>
-    exact (ih hev).trans (le_max_right _ _)
-  | queryDigit op j w next ih =>
-    simp only [activeQueries, List.mem_cons] at hev
-    rcases hev with rfl | hev
-    · exact le_max_left _ _
-    · exact (ih (env op j) hev).trans (le_max_right _ _)
-  | queryStruct sOp w next ih =>
-    simp only [activeQueries, List.mem_cons] at hev
-    rcases hev with rfl | hev
-    · exact le_max_left _ _
-    · exact (ih (sEnv sOp) hev).trans (le_max_right _ _)
+  | scratchStep _ _ ih => exact (ih hev).trans (le_max_right _ _)
+  | queryDigit op u _ _ ih =>
+    rcases List.mem_cons.mp hev with rfl | hev
+    exacts [le_max_left _ _, (ih (env op u) hev).trans (le_max_right _ _)]
+  | queryStruct sOp _ _ ih =>
+    rcases List.mem_cons.mp hev with rfl | hev
+    exacts [le_max_left _ _, (ih (sEnv sOp) hev).trans (le_max_right _ _)]
 
 /-- Substitute child query programs `child op u` (plus `digitReturnBits` return overhead) for every
 operand digit query `(op, u)` in `prog`. Structural queries on `Struct` pass through unchanged. -/
@@ -299,12 +281,8 @@ theorem eval_substDigits {Op₂ : Type u'} {α : Type w} (retBits : ℕ)
   induction prog with
   | ret _ => rfl
   | scratchStep _ _ ih => exact ih
-  | queryDigit op u w next ih =>
-    simp only [substDigits, eval_bindOverhead, eval]
-    exact ih _
-  | queryStruct sOp w next ih =>
-    simp only [substDigits, eval]
-    exact ih _
+  | queryDigit _ _ _ _ ih => simp only [substDigits, eval_bindOverhead, eval]; exact ih _
+  | queryStruct _ _ _ ih => exact ih _
 
 /-- Characterization of every oracle query emitted by `prog.substDigits retBits child`: it is
 either a pass-through structural query of `prog`, or a query emitted by `child op u` for some
@@ -324,28 +302,21 @@ theorem mem_activeQueries_substDigits {Op₂ : Type u'} {α : Type w} (retBits :
   induction prog with
   | ret _ => nomatch hev
   | scratchStep _ _ ih => exact ih hev
-  | queryDigit op u w next ih =>
+  | queryDigit op u w _ ih =>
     simp only [substDigits, activeQueries_bindOverhead, List.mem_append, List.mem_map] at hev
     rcases hev with ⟨evC, hevC, rfl⟩ | hevNext
-    · right
-      exact ⟨op, u, w, evC, List.mem_cons_self, hevC, rfl⟩
-    · rcases ih ((child op u).eval env₂ sEnv) hevNext with
-        ⟨sOp, ws, hs, rfl⟩ | ⟨op', u', w', evC, hd, hevC, rfl⟩
-      · left
-        exact ⟨sOp, ws, List.mem_cons_of_mem _ hs, rfl⟩
-      · right
-        exact ⟨op', u', w', evC, List.mem_cons_of_mem _ hd, hevC, rfl⟩
-  | queryStruct sOp w next ih =>
-    simp only [substDigits, activeQueries, List.mem_cons] at hev
-    rcases hev with rfl | hevNext
-    · left
-      exact ⟨sOp, w, List.mem_cons_self, rfl⟩
-    · rcases ih (sEnv sOp) hevNext with
-        ⟨sOp', ws, hs, rfl⟩ | ⟨op', u', w', evC, hd, hevC, rfl⟩
-      · left
-        exact ⟨sOp', ws, List.mem_cons_of_mem _ hs, rfl⟩
-      · right
-        exact ⟨op', u', w', evC, List.mem_cons_of_mem _ hd, hevC, rfl⟩
+    · exact Or.inr ⟨op, u, w, evC, List.mem_cons_self, hevC, rfl⟩
+    · exact (ih ((child op u).eval env₂ sEnv) hevNext).imp
+        (fun ⟨sOp, ws, hs, h⟩ => ⟨sOp, ws, List.mem_cons_of_mem _ hs, h⟩)
+        (fun ⟨op', u', w', evC, hd, hevC, h⟩ =>
+          ⟨op', u', w', evC, List.mem_cons_of_mem _ hd, hevC, h⟩)
+  | queryStruct sOp w _ ih =>
+    rcases List.mem_cons.mp hev with rfl | hevNext
+    · exact Or.inl ⟨sOp, w, List.mem_cons_self, rfl⟩
+    · exact (ih (sEnv sOp) hevNext).imp
+        (fun ⟨sOp', ws, hs, h⟩ => ⟨sOp', ws, List.mem_cons_of_mem _ hs, h⟩)
+        (fun ⟨op', u', w', evC, hd, hevC, h⟩ =>
+          ⟨op', u', w', evC, List.mem_cons_of_mem _ hd, hevC, h⟩)
 
 /-- Bound on peak intrinsic local + scratch bits of `prog.substDigits retBits child`. -/
 theorem maxIntrinsicBits_substDigits_le {Op₂ : Type u'} {α : Type w} (retBits : ℕ)
@@ -359,24 +330,18 @@ theorem maxIntrinsicBits_substDigits_le {Op₂ : Type u'} {α : Type w} (retBits
     (prog.substDigits retBits child).maxIntrinsicBits env₂ sEnv ≤ M := by
   induction prog with
   | ret _ => exact Nat.zero_le M
-  | scratchStep s next ih =>
-    simp only [maxIntrinsicBits] at hParent
-    simp only [substDigits, maxIntrinsicBits]
+  | scratchStep _ _ ih =>
     exact max_le ((le_max_left _ _).trans hParent)
       (ih ((le_max_right _ _).trans hParent) hChild)
-  | queryDigit op u w next ih =>
-    simp only [maxIntrinsicBits] at hParent
-    simp only [substDigits]
-    refine (maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · exact hChild op u w List.mem_cons_self
-    · refine ih _ ((le_max_right _ _).trans hParent) fun op' u' w' hmem => ?_
-      exact hChild op' u' w' (List.mem_cons_of_mem _ hmem)
-  | queryStruct sOp w next ih =>
-    simp only [maxIntrinsicBits] at hParent
-    simp only [substDigits, maxIntrinsicBits]
-    refine max_le ((le_max_left _ _).trans hParent) ?_
-    refine ih _ ((le_max_right _ _).trans hParent) fun op' u' w' hmem => ?_
-    exact hChild op' u' w' (List.mem_cons_of_mem _ hmem)
+  | queryDigit op u w _ ih =>
+    exact (maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le
+      (hChild op u w List.mem_cons_self)
+      (ih _ ((le_max_right _ _).trans hParent) fun _ _ _ h =>
+        hChild _ _ _ (List.mem_cons_of_mem _ h)))
+  | queryStruct _ _ _ ih =>
+    exact max_le ((le_max_left _ _).trans hParent)
+      (ih _ ((le_max_right _ _).trans hParent) fun _ _ _ h =>
+        hChild _ _ _ (List.mem_cons_of_mem _ h))
 
 end QueryProg
 
@@ -463,14 +428,12 @@ theorem toQueryProg_eval (regenScratch : ℕ) (tree : CondBoolTree Op Struct)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) :
     (tree.toQueryProg regenScratch).eval env sEnv = tree.eval env sEnv := by
   induction tree with
-  | const b => rfl
-  | notGate c ih => simp [toQueryProg, eval, QueryProg.eval, ih]
-  | andGate l r ihl ihr | orGate l r ihl ihr => simp [toQueryProg, eval, QueryProg.eval, ihl, ihr]
-  | condGate s t f ihs iht ihf =>
+  | const _ | digitBit _ _ _ | structLeaf _ => rfl
+  | notGate _ ih => simp [toQueryProg, eval, QueryProg.eval, ih]
+  | andGate _ _ ihl ihr | orGate _ _ ihl ihr => simp [toQueryProg, eval, QueryProg.eval, ihl, ihr]
+  | condGate s _ _ ihs iht ihf =>
     simp only [toQueryProg, eval, QueryProg.eval, QueryProg.eval_bindOverhead, ihs]
     cases s.eval env sEnv <;> simp [QueryProg.eval_bindOverhead, QueryProg.eval, iht, ihf]
-  | digitBit op j pred => rfl
-  | structLeaf sOp => rfl
 
 /-- **Lemma 10.2 (suspended local record bound)** [OpenAI2026LogSpace, Lemma 10.2]: every leaf
 query executed during `tree.toQueryProg regenScratch` retains at most `2 * tree.depth` annotated
@@ -482,53 +445,33 @@ theorem toQueryProg_retainedBits_le (regenScratch : ℕ) (tree : CondBoolTree Op
     ev.retained ≤ 2 * tree.depth := by
   induction tree generalizing ev with
   | const _ => nomatch hev
-  | notGate c ih =>
+  | notGate _ ih =>
     simp only [toQueryProg, QueryProg.activeQueries, QueryProg.activeQueries_bindOverhead,
       List.append_nil, List.mem_map] at hev
     obtain ⟨ev₀, hev₀, rfl⟩ := hev
+    have := ih hev₀
     rw [QueryEvent.retained_addBits, depth]
-    have h := ih hev₀
     omega
-  | andGate l r ihl ihr | orGate l r ihl ihr =>
+  | andGate _ _ ihl ihr | orGate _ _ ihl ihr =>
     simp only [toQueryProg, QueryProg.activeQueries, QueryProg.activeQueries_bindOverhead,
       List.append_nil, List.mem_append, List.mem_map] at hev
-    rw [depth]
-    rcases hev with ⟨ev₀, hev₀, rfl⟩ | ⟨ev₀, hev₀, rfl⟩
-    · rw [QueryEvent.retained_addBits]
-      have h := ihl hev₀
-      have hle : l.depth ≤ max l.depth r.depth := le_max_left _ _
-      omega
-    · rw [QueryEvent.retained_addBits]
-      have h := ihr hev₀
-      have hle : r.depth ≤ max l.depth r.depth := le_max_right _ _
-      omega
-  | condGate s t f ihs iht ihf =>
+    rcases hev with ⟨ev₀, hev₀, rfl⟩ | ⟨ev₀, hev₀, rfl⟩ <;>
+      [have := ihl hev₀; have := ihr hev₀] <;>
+      · rw [QueryEvent.retained_addBits, depth]; omega
+  | condGate s _ _ ihs iht ihf =>
     simp only [toQueryProg, QueryProg.activeQueries, QueryProg.activeQueries_bindOverhead,
       toQueryProg_eval, List.mem_append, List.mem_map] at hev
-    rw [depth]
     rcases hev with ⟨ev₀, hev₀, rfl⟩ | hevBranch
-    · rw [QueryEvent.retained_addBits]
-      have h := ihs hev₀
-      have hle : s.depth ≤ max s.depth (max t.depth f.depth) := le_max_left _ _
+    · have := ihs hev₀
+      rw [QueryEvent.retained_addBits, depth]
       omega
-    · cases hs : s.eval env sEnv
-      · simp only [hs, Bool.false_eq_true, ↓reduceIte, QueryProg.activeQueries_bindOverhead,
-          QueryProg.activeQueries, List.append_nil, List.mem_map] at hevBranch
-        obtain ⟨ev₀, hev₀, rfl⟩ := hevBranch
-        rw [QueryEvent.retained_addBits]
-        have h := ihf hev₀
-        have hle : f.depth ≤ max s.depth (max t.depth f.depth) :=
-          (le_max_right _ _).trans (le_max_right _ _)
-        omega
-      · simp only [hs, ↓reduceIte, QueryProg.activeQueries_bindOverhead,
-          QueryProg.activeQueries, List.append_nil, List.mem_map] at hevBranch
-        obtain ⟨ev₀, hev₀, rfl⟩ := hevBranch
-        rw [QueryEvent.retained_addBits]
-        have h := iht hev₀
-        have hle : t.depth ≤ max s.depth (max t.depth f.depth) :=
-          (le_max_left _ _).trans (le_max_right _ _)
-        omega
-  | digitBit op j pred | structLeaf sOp =>
+    · cases hs : s.eval env sEnv <;>
+        simp only [hs, Bool.false_eq_true, ↓reduceIte, QueryProg.activeQueries_bindOverhead,
+          QueryProg.activeQueries, List.append_nil, List.mem_map] at hevBranch <;>
+        obtain ⟨ev₀, hev₀, rfl⟩ := hevBranch <;>
+        [have := ihf hev₀; have := iht hev₀] <;>
+        · rw [QueryEvent.retained_addBits, depth]; omega
+  | digitBit _ _ _ | structLeaf _ =>
     simp only [toQueryProg, QueryProg.activeQueries, List.mem_singleton] at hev
     subst hev
     simp [QueryEvent.retained, depth]
@@ -540,40 +483,29 @@ theorem toQueryProg_intrinsic_le (regenScratch : ℕ) (tree : CondBoolTree Op St
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) :
     (tree.toQueryProg regenScratch).maxIntrinsicBits env sEnv ≤ regenScratch + 2 * tree.depth := by
   induction tree with
-  | const _ => simp [toQueryProg, QueryProg.maxIntrinsicBits, depth]
-  | notGate c ih =>
-    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
-    refine max_le (Nat.le_add_right _ _) ?_
-    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · omega
-    · simp [QueryProg.maxIntrinsicBits]
-  | andGate l r ihl ihr | orGate l r ihl ihr =>
-    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
-    have hl : l.depth ≤ max l.depth r.depth := le_max_left _ _
-    have hr : r.depth ≤ max l.depth r.depth := le_max_right _ _
-    refine max_le (Nat.le_add_right _ _) ?_
-    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · omega
-    · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-      · omega
-      · simp [QueryProg.maxIntrinsicBits]
-  | condGate s t f ihs iht ihf =>
-    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
-    have hs_le : s.depth ≤ max s.depth (max t.depth f.depth) := le_max_left _ _
-    have ht_le : t.depth ≤ max s.depth (max t.depth f.depth) :=
-      (le_max_left _ _).trans (le_max_right _ _)
-    have hf_le : f.depth ≤ max s.depth (max t.depth f.depth) :=
-      (le_max_right _ _).trans (le_max_right _ _)
-    refine max_le (Nat.le_add_right _ _) ?_
-    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · omega
-    · rw [toQueryProg_eval]
-      -- Either selected branch is a `bindOverhead` around a child bounded by its hypothesis.
-      cases s.eval env sEnv <;>
-        exact (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans
-          (max_le (by omega) (by simp [QueryProg.maxIntrinsicBits]))
-  | digitBit _ _ _ | structLeaf _ =>
+  | const _ | digitBit _ _ _ | structLeaf _ =>
     simp [toQueryProg, QueryProg.maxIntrinsicBits, depth]
+  | notGate _ ih =>
+    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
+    refine max_le (Nat.le_add_right _ _)
+      ((QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans ?_)
+    simp only [QueryProg.maxIntrinsicBits]
+    omega
+  | andGate _ _ ihl ihr | orGate _ _ ihl ihr =>
+    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
+    refine max_le (Nat.le_add_right _ _)
+      ((QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le (by omega) ?_))
+    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans ?_
+    simp only [QueryProg.maxIntrinsicBits]
+    omega
+  | condGate s _ _ ihs iht ihf =>
+    simp only [toQueryProg, QueryProg.maxIntrinsicBits, depth]
+    refine max_le (Nat.le_add_right _ _)
+      ((QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le (by omega) ?_))
+    rw [toQueryProg_eval]
+    cases s.eval env sEnv <;>
+      refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans ?_ <;>
+      · simp only [QueryProg.maxIntrinsicBits]; omega
 
 end CondBoolTree
 

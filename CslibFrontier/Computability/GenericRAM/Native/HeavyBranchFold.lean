@@ -1066,7 +1066,7 @@ private theorem branchCountCertificate_bounds {solver : ℕ → List (List (List
 theorem computableInPolyTime_prepareStep :
     ComputableInPolyTime (fun p : PrepareStepInput =>
       prepareBranch p.inp.numVars p.inp.vars p.vals p.inp.system)
-      (encPair (encPair encUnary encBits) (encPair encBranchInput encNat)) encBranchOutcome := by
+      (BooleanFold.encCallbackInput (encPair encBranchInput encNat)) encBranchOutcome := by
   unfold encBranchInput; fun_prop
 private theorem computableInPolyTime_dim :
     ComputableInPolyTime (fun inp : BranchInput => inp.2.1.length) encBranchInput encUnary := by
@@ -1087,7 +1087,7 @@ noncomputable def branchBodyCertificate {solver : ℕ → List (List (List ℕ))
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
       (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (branchBody solver)
-      (encPair (encPair encUnary encBits) (encPair encBranchInput encNat))
+      (BooleanFold.encCallbackInput (encPair encBranchInput encNat))
       (encPair encBranchInput encNat) :=
   let cpay := NativeCertificate.payload (encPair encUnary encBits) (encPair encBranchInput encNat)
   (cpay.fst).prod
@@ -1097,7 +1097,7 @@ noncomputable def certificate {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
       (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (streamBranches solver)
-      encBranchInput (encPair encNat (encPair encUnary (encPair encBranchInput encNat))) :=
+      encBranchInput (BooleanFold.encStreamState (encPair encBranchInput encNat)) :=
   BooleanFold.certificate dimCert initAccCert (branchBodyCertificate csolver)
 /-- Full streaming native certificate for `countByBranching solver` (for a fixed `solver`). -/
 noncomputable def countCertificate {solver : ℕ → List (List (List ℕ)) → ℕ}
@@ -1344,7 +1344,7 @@ theorem streamBranches_computableInO {solver : ℕ → List (List (List ℕ)) �
         .reduced n' sys' →
       csolver.space (n', sys') ≤ Q_solver inp) :
     ComputableInO (streamBranches solver)
-      encBranchInput (encPair encNat (encPair encUnary (encPair encBranchInput encNat)))
+      encBranchInput (BooleanFold.encStreamState (encPair encBranchInput encNat))
       (fun inp =>
         stepOverhead (encBranchInput inp).length +
           (2 ^ inp.vars.length + 1) * (stepOverhead (encBranchInput inp).length + R_solver inp))
