@@ -60,6 +60,8 @@ goal outside these rules fails at once and names the term it could not bound.
   bounded function of one natural number.
 * `growth_poly`, `growth_poly [h₁, h₂]`: prove polynomial growth from these rules and the local
   context, with extra facts `h₁` and `h₂`.
+* `Cslib.Tactic.GrowthPoly.certificateLemmas`: the certificate lemmas the tactic uses, with the
+  modules that prove them.
 
 The closure layer adapts Samuel Schlesinger's existing polynomial-bound API. The input-size
 logarithm and square-root rules and the first `growth_poly` tactic are by Erik Demaine.
@@ -125,7 +127,7 @@ namespace Cslib.Tactic.GrowthPoly
 open Lean Meta Elab Tactic
 
 /-- A lemma from a certificate to a `PolyBounded` fact or to another certificate. -/
-private structure CertificateLemma where
+structure CertificateLemma where
   /-- The lemma, applied to the local hypotheses whose head it matches when it is in scope. -/
   name : Name
   /-- The head constant of the certificate it takes, its last explicit hypothesis. -/
@@ -136,8 +138,10 @@ private structure CertificateLemma where
   module : Name
 
 /-- The certificate lemmas, applied when they are in scope. This module does not import them,
-which would make it depend on the machine layers. -/
-private def certificateLemmas : List CertificateLemma :=
+which would make it depend on the machine layers. A lemma that requires an output encoding comes
+before the general lemma with the same head, and its module imports that lemma's module.
+The drift check in the `PolynomialGrowth` test checks that each lemma is proved in its `module`. -/
+def certificateLemmas : List CertificateLemma :=
   [{ name := `Turing.MultiTapeTM.ComputableInPolyTime.polyBounded
      head := `Turing.MultiTapeTM.ComputableInPolyTime
      outEnc := `Turing.MultiTapeTM.encUnary
@@ -248,9 +252,11 @@ private def collectFacts (hints : Array Expr) : MetaM Facts := do
       if head == some lemHead then
         if let some pf' ← applyCertificate? lem pf then
           work := work.push (pf', depth - 1)
-    for l in absent do
-      let encOk := l.outEnc.all fun enc => ty.getAppArgs.back?.any (·.isConstOf enc)
-      if head == some l.head && encOk then
+    -- Name one missing module per certificate: the first matching lemma's, which is the specific
+    -- one when there is one, and whose module imports the general lemma's.
+    if let some l := absent.find? fun l => head == some l.head &&
+        l.outEnc.all fun enc => ty.getAppArgs.back?.any (·.isConstOf enc) then
+      unless facts.unused.any fun (pf', l') => pf' == pf && l'.name == l.name do
         facts := { facts with unused := facts.unused.push (pf, l) }
   return facts
 

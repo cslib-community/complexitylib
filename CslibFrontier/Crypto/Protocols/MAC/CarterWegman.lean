@@ -3318,7 +3318,7 @@ theorem eval_prfIdealGame_prfNonceToPrfDistinguisher_le
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
       fun table _ => ?_
-    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
     exact eval_cwNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
       (adversary n []) [] [] (List.Sublist.refl [])
   refine hle.trans ?_
@@ -4510,8 +4510,8 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
   refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
   rw [BitString.eval_sampleList] at hprfKey
   have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
-  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.eval_run_interpret]
+  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   have hstep :
       (fun request state =>
         ProbComp.eval
@@ -4798,7 +4798,7 @@ theorem eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
       fun table _ => ?_
-    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
     exact eval_cwRandomNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
       (adversary n []) [] [] (List.Sublist.refl [])
   refine hle.trans ?_
