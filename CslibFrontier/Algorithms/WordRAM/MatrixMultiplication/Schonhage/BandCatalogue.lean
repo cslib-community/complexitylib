@@ -18,10 +18,12 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Ba
 
 ## Main results
 
-* `BandPreparation.tile_input_values`: both pointed arrays contain the corresponding
-  unchanged public band encodings, in `Encoding.leafIndex` order.
-* `BandPreparation.table_word_layout`: the computed forward table encodes the actual
-  deterministic `Layout` table, rather than caller-supplied indexing data.
+* `BandPreparation.tile_input_values`: for any memory whose catalogue cells hold the public
+  band encodings, as in the conclusion of `BandPreparation.runs`, both pointed arrays of a tile
+  in `tiles` hold the corresponding band encodings, in `Encoding.leafIndex` order.
+* `BandPreparation.table_word_layout`: for any memory whose forward-table cells hold the
+  selected masks, as in the conclusion of `BandPreparation.runs`, those words are the mask
+  codes of the deterministic `MaskTable.layout` table.
 -/
 
 @[expose] public section
@@ -56,7 +58,8 @@ theorem tile_input_values {L m N : ℕ} (hm : m ≤ L)
   simpa only [tileInputBases, catalogueAddress, Nat.add_zero] using
     And.intro (hleft T.1 ht.1 τ) (hright T.2 ht.2 τ)
 
-/-- The retained native forward words encode exactly the computed mathematical layout. -/
+/-- Forward-table words that hold the selected masks, as `runs` returns them, are exactly the
+mask codes of the deterministic `MaskTable.layout` table. -/
 theorem table_word_layout {L m N : ℕ} (hm : m ≤ L) (y : Data 96)
     (hforward : ∀ gh : Fin (K0 L m) × Fin (K0 L m),
       y.mem (tableBase L m N + (MaskTable.pairRank gh).val) =

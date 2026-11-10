@@ -50,10 +50,15 @@ edge rotations, with unit-weight `split`/`join` bounds proved in `AccessLemma.le
 
 ## Cost model and limitations
 
-Native traces record exact binary-tree edge rotations per operation (`0` on empty trees or root
-hits). On non-empty trees, downward path visits satisfy `visits = rotations + 1`. Ancestor-stack
-allocation, node allocation, key-comparison implementation, and pure client continuations are not
-charged as RAM or Turing-machine instructions.
+Native traces record exact binary-tree edge rotations per operation (`0` on empty trees). A single
+`splay` or `splayMin` descent of a non-empty tree visits `rotations + 1` nodes
+(`rotations_splay_add_one_eq_searchVisits`, `rotations_splayMin_add_one_eq_minimumVisits`).
+`delete` and `successor` may make a second descent (`splayMax` inside `join`, and `splayMin` on the
+right subtree); they then record the sum of both descents' rotations, plus one further rotation in
+`successor`, so neither identity alone relates the recorded count to the nodes visited; no such
+identity is proved for `splayMax`. Ancestor-stack allocation, node allocation, key-comparison
+implementation, and pure client continuations are not charged as RAM or Turing-machine
+instructions.
 
 ## Main definitions
 

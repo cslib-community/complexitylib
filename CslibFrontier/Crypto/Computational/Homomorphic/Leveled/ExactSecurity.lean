@@ -20,7 +20,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PPT
 
 /-!
-# Exact Gentry Theorem 4 hybrid loss, modular index sampling, and runtime overhead bounds
+# Exact hybrid loss for Gentry Theorem 4, modular index sampling, and overhead bounds
 
 `CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Security` proves IND-CPA security of the
 depth-budgeted leveled scheme `scheme D budget` via `leveledAdversary`, which samples link and
@@ -30,7 +30,8 @@ secret-bit coordinates from power-of-two ranges `dyadicSize (2 * budget n)` and
 `16 * (2 * budget n + 1) * (capacity n + 1)`.
 
 This module formalizes the two remaining quantitative refinements noted in Issue #1104 (Item 3)
-for [Gentry2009, Section 2, Theorem 4, p. 171]:
+for [Gentry2009, Section 2, Theorem 4, p. 171], up to a constant factor in the loss and without
+the theorem's running-time clause:
 
 1. **Exact `(2 * budget n) * (capacity n)` hybrid loss and `sampleModNat` bridge**:
    * `Scheme.exactKeyChainHybridGame` and `Scheme.exactLinkAdversary` sample the reverse link index
@@ -46,9 +47,12 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
      `Leveled.advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary`.
    * `Scheme.modLinkAdversary` and `Leveled.modLeveledAdversary` replace exact finite-range index
      sampling by strict-PPT modular sampling via `ProbComp.sampleModNat`, certified uniform strict
-     PPT (`Scheme.isPPT_modLinkAdversary`, `Leveled.isPPT_modLeveledAdversary`) with an explicit
-     `O(1 / 2 ^ n)` statistical tail (`Leveled.advantage_scheme_le_modLeveledAdversary`,
-     `Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`).
+     PPT (`Scheme.isPPT_modLinkAdversary`, `Leveled.isPPT_modLeveledAdversary`); no such
+     certificate is proved for the two exact adversaries. The resulting bound multiplies the exact
+     loss factor by the sum of the base advantage and a statistical tail
+     (`Leveled.advantage_scheme_le_modLeveledAdversary`). With `2 * n` coins per sample that tail
+     is at most `2 / 2 ^ n` when `3 + 2 * budget n + capacity n ≤ 2 ^ n`
+     (`Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`).
 
 2. **Explicit polynomial artifact-length, saved-state, and coin-budget overhead bounds**:
    * `Leveled.publicKeyLengthBound` and
@@ -57,10 +61,12 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
      secret width `width`, and base key/ciphertext lengths.
    * `Scheme.linkStateLengthBound` and `Scheme.length_activeLinkState_le` bound the bit length of
      every active reduction state saved by `Scheme.chooseLinkAt`.
-   * `Leveled.exists_leveledAdversary_overhead` packages the quantitative polynomial input-length,
-     coin-budget, and strict-PPT clock witnesses for `leveledAdversary` in terms of the base
-     scheme's `keyGen`/`encrypt` bounds, `budget n`, `capacity n`, and `adversary`'s own runtime
-     polynomials evaluated at the serialized public-key length.
+   * `Leveled.exists_leveledAdversary_overhead` packages polynomial length bounds and seeded
+     replay laws for the base scheme's `keyGen`/`encrypt` and for `adversary`'s two stages at the
+     leveled public-key and ciphertext sizes, polynomial boundedness of the coin-count formulas
+     `Leveled.leveledChooseCoinBudget` and `Leveled.leveledGuessCoinBudget`, and strict-PPT
+     certificates for `leveledAdversary` and `modLeveledAdversary`. It contains no replay law for
+     `leveledAdversary` itself and no running-time comparison with `adversary`.
 
 ## Main definitions
 
@@ -78,8 +84,8 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
 * `Cslib.Crypto.Homomorphic.Leveled.publicKeyLengthBound`: explicit upper bound on serialized
   leveled public-key length.
 * `Cslib.Crypto.Homomorphic.Leveled.leveledChooseCoinBudget`,
-  `Cslib.Crypto.Homomorphic.Leveled.leveledGuessCoinBudget`: explicit coin-tape budgets for the two
-  stages of `leveledAdversary`.
+  `Cslib.Crypto.Homomorphic.Leveled.leveledGuessCoinBudget`: coin-count formulas for the two
+  stages of `leveledAdversary`, proved polynomially bounded here.
 
 ## Main results
 
@@ -88,15 +94,18 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
 * `Cslib.Crypto.Homomorphic.Scheme.isPPT_modLinkAdversary`,
   `Cslib.Crypto.Homomorphic.Scheme.publicKeyChainHybrid_advantage_le_modLinkAdversary`: strict-PPT
   modular key-chain reduction and concrete advantage bound.
-* `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_eq_exactLeveledAdversary`: exact Gentry
-  Theorem 4 reduction identity with loss `3 * (2 * budget n : ℝ≥0) * capacity n`.
+* `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_eq_exactLeveledAdversary`: exact
+  concrete-security identity with loss `3 * (2 * budget n : ℝ≥0) * capacity n` and no dyadic
+  rounding (Gentry's Theorem 4 up to a constant factor).
 * `Cslib.Crypto.Homomorphic.Leveled.isPPT_modLeveledAdversary`,
   `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_le_modLeveledAdversary`,
   `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`: strict-PPT
-  modular leveled reduction and `O(1 / 2 ^ n)` statistical-tail bound.
+  modular leveled reduction, whose bound multiplies the loss factor by the sum of the base
+  advantage and a statistical tail (`2 / 2 ^ n` in the `2 * n`-coin specialization).
 * `Cslib.Crypto.Homomorphic.Leveled.length_encPublicKey_support_publicKeyChainHybrid_le`,
   `Cslib.Crypto.Homomorphic.Leveled.exists_leveledAdversary_overhead`: explicit polynomial
-  artifact-length, coin-tape, and runtime overhead bounds for `leveledAdversary`.
+  artifact-length bounds, component replay laws, polynomially bounded coin-count formulas and
+  strict-PPT certificates for `leveledAdversary` and `modLeveledAdversary`.
 
 ## References
 
@@ -250,7 +259,9 @@ theorem publicKeyChainHybrid_exact_gap (n depth width capacity : ℕ)
 
 /-- Two-stage base IND-CPA reduction that samples the reverse link coordinate uniformly from
 `Fin (depth n)` and the bit coordinate uniformly from `Fin (capacity n)` when both bounds are
-positive, avoiding the factor-of-four dyadic rounding loss of `Scheme.linkAdversary`. -/
+positive, avoiding the factor-of-four dyadic rounding loss of `Scheme.linkAdversary`. No
+strict-PPT certificate is proved for it; `modLinkAdversary` is the certified counterpart, and
+`advantage_exactLinkAdversary_modLinkAdversary_le` compares the two. -/
 noncomputable def exactLinkAdversary (depth capacity : ℕ → ℕ)
     (test : ℕ → (List (List Bool) × List (List (List Bool))) → ProbComp Bool) :
     Encryption.Adversary where
@@ -580,8 +591,8 @@ theorem advantage_le_of_triangle_both_div {g₀ g₁ m₀ m₁ : Game} {a b : �
   exact hstep2.trans_eq (by ring)
 
 /-- Concrete key-chain hybrid advantage bound via the strict-PPT `modLinkAdversary` reduction:
-the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times `modLinkAdversary`'s
-base advantage plus the modular-sampling statistical tail
+the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times the sum of
+`modLinkAdversary`'s base advantage and the modular-sampling statistical tail
 `2 * (depth n + capacity n) / 2 ^ (coins n)`. -/
 theorem publicKeyChainHybrid_advantage_le_modLinkAdversary
     (coins depth capacity : ℕ → ℕ)
@@ -659,7 +670,7 @@ namespace Cslib.Crypto.Homomorphic.Leveled
 open ProbComp Probability Turing.MultiTapeTM
 open scoped NNReal Cslib.Probability.PMF
 
-/-! ### Exact Gentry Theorem 4 leveled reduction and three-hop decomposition -/
+/-! ### Exact uniform-index leveled reduction and three-hop decomposition -/
 
 /-- Unattenuated three-hop concrete-security bound for the leveled scheme `scheme D budget`:
 its IND-CPA advantage is bounded by the sum of the two `exactLinkAdversary` advantages (each
@@ -718,7 +729,9 @@ theorem advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary {E : Scheme
 /-- Unified two-stage base IND-CPA reduction for the leveled construction that samples the hop
 selector uniformly from `Fin 3`, the reverse link coordinate uniformly from `Fin (depth n)`, and
 the secret-bit coordinate uniformly from `Fin (capacity n)` when `0 < depth n ∧ 0 < capacity n`,
-eliminating the `dyadicSize` rounding factor of `leveledAdversary`. -/
+eliminating the `dyadicSize` rounding factor of `leveledAdversary`. No strict-PPT certificate is
+proved for it; `modLeveledAdversary` is the certified counterpart, and
+`advantage_exactLeveledAdversary_modLeveledAdversary_le` compares the two. -/
 noncomputable def exactLeveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
     (adversary : Encryption.Adversary) : Encryption.Adversary where
   choose n challengePk :=
@@ -965,8 +978,10 @@ theorem succProbability_exactLeveledAdversary (E : Scheme) (depth capacity : ℕ
     linear_combination (capacity n : ℝ) * hlink + hbit
   linarith
 
-/-- Signed chosen-message gap of the leveled scheme in terms of `exactLeveledAdversary`, with
-exact factor `3 * (2 * budget n : ℝ) * capacity n` ([Gentry2009], Section 2, Theorem 4, p. 171). -/
+/-- Signed chosen-message gap of the leveled scheme in terms of `exactLeveledAdversary` when
+`0 < budget n` and `0 < capacity n`, with exact factor `3 * (2 * budget n : ℝ) * capacity n`
+([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). -/
 theorem gap_exactLeveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
     (adversary : Encryption.Adversary) (n width : ℕ)
     (hbudget_pos : 0 < budget n) (hcapacity_pos : 0 < capacity n)
@@ -998,9 +1013,11 @@ theorem gap_exactLeveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
   linarith
 
 /-- Exact unsigned concrete-security identity for the depth-budgeted scheme `scheme D budget` via
-`exactLeveledAdversary` ([Gentry2009], Section 2, Theorem 4, p. 171): the advantage equals
-`3 * (2 * budget n : ℝ≥0) * capacity n` times the base advantage of `exactLeveledAdversary`,
-eliminating the `dyadicSize` rounding factor of `advantage_scheme_eq_leveledAdversary`. -/
+`exactLeveledAdversary` ([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in
+the loss; the running-time clause is not formalized): when `0 < budget n` and `0 < capacity n`,
+the advantage equals `3 * (2 * budget n : ℝ≥0) * capacity n` times the base advantage of
+`exactLeveledAdversary`, eliminating the `dyadicSize` rounding factor of
+`advantage_scheme_eq_leveledAdversary`. -/
 theorem advantage_scheme_eq_exactLeveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1023,7 +1040,7 @@ theorem advantage_scheme_eq_exactLeveledAdversary {E : Scheme}
     abs_mul, abs_mul, abs_mul, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < 3),
     abs_of_pos (by positivity : (0 : ℝ) < 2), Nat.abs_cast, Nat.abs_cast]
 
-/-! ### Strict-PPT `sampleModNat` leveled reduction and `O(1 / 2 ^ n)` statistical-tail bound -/
+/-! ### Strict-PPT `sampleModNat` leveled reduction and statistical-tail bound -/
 
 /-- Strict-PPT unified two-stage base IND-CPA reduction for the leveled construction that samples
 the three-way hop selector via `Scheme.sampleModIndex (coins n) 3`, delegating hops `0` and `1` to
@@ -1256,9 +1273,10 @@ theorem advantage_exactLeveledAdversary_modLeveledAdversary_le (E : Scheme)
     exact zero_le
 
 /-- Concrete Gentry Theorem 4 advantage bound for `scheme D budget` via the strict-PPT modular
-reduction `modLeveledAdversary`: the scheme advantage is bounded by the exact factor
-`3 * (2 * budget n : ℝ≥0) * capacity n` times `modLeveledAdversary`'s base advantage plus the
-`sampleModNat` statistical tail `2 * (3 + 2 * budget n + capacity n) / 2 ^ (coins n)`. -/
+reduction `modLeveledAdversary`: when `0 < budget n` and `0 < capacity n`, the scheme advantage is
+bounded by the exact factor `3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of
+`modLeveledAdversary`'s base advantage and the `sampleModNat` statistical tail
+`2 * (3 + 2 * budget n + capacity n) / 2 ^ (coins n)`. -/
 theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1284,7 +1302,8 @@ theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
 
 /-- `2 * n`-coin specialization of `advantage_scheme_le_modLeveledAdversary`: when
 `3 + 2 * budget n + capacity n ≤ 2 ^ n`, sampling each coordinate with `2 * n` coins via
-`sampleModNat` bounds the statistical tail by `2 / 2 ^ n`. -/
+`sampleModNat` bounds the statistical tail by `2 / 2 ^ n`, so the scheme advantage is at most
+`3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of the base advantage and `2 / 2 ^ n`. -/
 theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1317,7 +1336,7 @@ theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
           rw [mul_div_mul_right _ _ hpos.ne']
   gcongr
 
-/-! ### Explicit polynomial artifact-length, coin-tape, and runtime overhead bounds -/
+/-! ### Explicit polynomial artifact-length bounds, coin-count formulas, and efficiency witnesses -/
 
 /-- Every public artifact in the support of `E.publicKeyChainHybrid n depth cut` has serialized
 bit length at most `publicKeyLengthBound depth width pkBound ctBound` whenever supported base keys
@@ -1375,9 +1394,11 @@ theorem length_publicKey_support_keyGen_le {E : Scheme}
   exact length_encPublicKey_support_publicKeyChainHybrid_le n (2 * budget) (2 * budget)
     width pkBound ctBound hkey henc hart
 
-/-- Explicit coin-tape budget for the message-selection stage of `leveledAdversary` in terms of
+/-- Coin-count formula for the message-selection stage of `leveledAdversary` in terms of
 `depth`, `capacity`, and the per-call coin budgets of `E.keyGen`, `E.encrypt`, and
-`adversary.choose`:
+`adversary.choose`. It is proved polynomially bounded
+(`polynomiallyBounded_leveledChooseCoinBudget`); no replay law for that stage on this many coins
+is proved. It counts:
 * `2` selector bits plus `(Nat.log 2 depth + 1) + (Nat.log 2 capacity + 1)` dyadic index/coin bits,
 * `depth` calls to `E.keyGen`,
 * at most `depth * capacity` calls to `E.encrypt` (in the `zeroLinkAdversary` branch), and

@@ -30,8 +30,8 @@ probability over the masks and over a uniformly random guess.
 * `Cslib.Crypto.GoldreichLevin.agreement_eq_card_div`: agreement as a count.
 * `Cslib.Crypto.GoldreichLevin.card_le_two_mul_card_filter_mem_candidates`: the counting form of
   the decoding guarantee.
-* `Cslib.Crypto.GoldreichLevin.exists_card_candidate_eq`: fixed masks and guess recover a
-  `1 / 2 ^ (k + 1)` fraction of the good targets.
+* `Cslib.Crypto.GoldreichLevin.exists_card_candidate_eq`: fixed masks and guess recover the
+  target at `#good / 2 ^ (k + 1)` or more indices, counted over all indices and not only `good`.
 
 ## References
 

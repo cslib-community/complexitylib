@@ -68,8 +68,9 @@ queries and decryption queries in arbitrary order:
 
 * `Cslib.Crypto.Encryption.CCAQuery`, `Cslib.Crypto.Encryption.CCAResponse`,
   `Cslib.Crypto.Encryption.encCCAQuery`, `Cslib.Crypto.Encryption.encodeCCAResponseWord`:
-  sum-like query and response types and injective bit-string encodings for the combined
-  encryption-and-decryption CCA oracle.
+  sum-like query and response types for the combined encryption-and-decryption CCA oracle, the
+  injective bit-string encoding of queries, and the bit-word encoding of response payloads, which
+  drops the `Sum` tag and is not injective.
 * `Cslib.OracleComp.limitQueries`: stateful query-budget wrapper enforcing a hard upper bound `Q`
   on external oracle queries.
 * `Cslib.Crypto.Encryption.interleavedCcaOracle`,
@@ -87,8 +88,11 @@ queries and decryption queries in arbitrary order:
   experiment and `Game`.
 * `Cslib.Crypto.Encryption.INDCCA2InterleavedOn`, `Cslib.Crypto.Encryption.INDCCA2InterleavedOf`,
   `Cslib.Crypto.Encryption.INDCCA2Interleaved`, `Cslib.Crypto.Encryption.WordINDCCA2Interleaved`,
-  `Cslib.Crypto.Encryption.IsInterleavedCCA2Secure`, `Cslib.Crypto.Encryption.IsMultiCCA2Secure`,
-  `Cslib.Crypto.Encryption.IsCCA2Secure`: interleaved multi-challenge CCA security predicates.
+  `Cslib.Crypto.Encryption.IsInterleavedCCA2Secure`: interleaved multi-challenge CCA security
+  predicates.
+* `Cslib.Crypto.Encryption.IsMultiCCA2Secure`, `Cslib.Crypto.Encryption.IsCCA2Secure`: aliases for
+  `INDCCA2MultiOn` (phased batch-challenge multi-challenge CCA security) and `INDCCA2On`
+  (single-challenge 1CCA security).
 * `Cslib.Crypto.Encryption.CCA2AdversaryOf.toInterleaved`,
   `Cslib.Crypto.Encryption.interleavedHybridGameOn`,
   `Cslib.Crypto.Encryption.interleavedToSingleAt`,
@@ -104,8 +108,10 @@ queries and decryption queries in arbitrary order:
   `Cslib.Crypto.Encryption.IsInterleavedCCA2Secure.toIsCCA2Secure`,
   `Cslib.Crypto.Encryption.INDCCA2InterleavedOn.indcca2MultiOn`,
   `Cslib.Crypto.Encryption.IsInterleavedCCA2Secure.toIsMultiCCA2Secure`:
-  interleaved multi-challenge CCA security implies both single-challenge 1CCA security and phased
-  batch-challenge multi-challenge CCA security.
+  interleaved multi-challenge CCA security implies single-challenge 1CCA security, by embedding
+  1CCA adversaries as 1-round interleaved adversaries, and, whenever `valid`, `keyGen`, `encrypt`,
+  and `decrypt` are polynomial-time / strict PPT, phased batch-challenge multi-challenge CCA
+  security, through 1CCA security and the hybrid reduction `INDCCA2On.indcca2MultiOn`.
 * `Cslib.Crypto.Encryption.interleavedHybridGameOn_step_gap`,
   `Cslib.Crypto.Encryption.interleavedCca2GameOn_gap`,
   `Cslib.Crypto.Encryption.advantage_interleavedCca2GameOn`,
@@ -660,7 +666,9 @@ noncomputable abbrev interleavedCca2Game {Msg Out : Type}
 /-- Fully adaptive interleaved-query multi-challenge CCA security
 ([BonehShoup2023], Section 12.1, Attack Game 12.1 and Definition 12.1, printed pp. 467–468;
 [KatzLindell2020], Section 12.2) with respect to challenge-pair admissibility predicate `valid`,
-message encoding `encMsg`, and decryption output encoding `encOut`. -/
+message encoding `encMsg`, and decryption output encoding `encOut`: every round-structured
+`InterleavedCCA2AdversaryOf Msg` satisfying `InterleavedCCA2AdversaryOf.IsPPT encMsg` has
+negligible advantage between the two experiments of `interleavedCca2GameOn`. -/
 @[expose] def INDCCA2InterleavedOn {Msg Out : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encMsg : Msg ↪ List Bool) (encOut : Out ↪ List Bool)
     (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -720,8 +728,7 @@ abbrev IsCCA2Secure {Msg Out : Type} (valid : ℕ → List Bool → Msg → Msg 
     (decrypt : ℕ → List Bool → List Bool → Option Out) : Prop :=
   INDCCA2On valid encMsg encOut keyGen encrypt decrypt
 
-/-! ### Relationship 1: Embedding single-challenge 1CCA and phased Multi-CCA2 into
-Interleaved CCA2 -/
+/-! ### Relationship 1: Interleaved CCA2 implies single-challenge 1CCA and phased Multi-CCA2 -/
 
 /-- Embed a single-challenge `CCA2AdversaryOf Msg` as a 1-round `InterleavedCCA2AdversaryOf Msg`
 ([BonehShoup2023], Section 12.1, Definition 12.2, printed p. 468):
@@ -866,7 +873,9 @@ theorem IsInterleavedCCA2Secure.toIsCCA2Secure {Msg Out : Type}
 
 /-- **Interleaved multi-challenge CCA security implies phased batch-challenge multi-challenge CCA
 security** ([BonehShoup2023], Section 12.1, Attack Game 12.1 and Theorem 12.1, printed pp.
-467–468). -/
+467–468) whenever `valid`, `keyGen`, `encrypt`, and `decrypt` are polynomial-time / strict PPT:
+the proof passes through single-challenge 1CCA security (`INDCCA2InterleavedOn.indcca2On`) and
+the hybrid reduction `INDCCA2On.indcca2MultiOn`. -/
 theorem INDCCA2InterleavedOn.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encMsg : Msg ↪ List Bool} {encOut : Out ↪ List Bool}
@@ -887,7 +896,8 @@ theorem INDCCA2InterleavedOn.indcca2MultiOn {Msg Out : Type} [Inhabited Msg]
   h.indcca2On.indcca2MultiOn hvalid hkeyGen hencrypt hdecrypt
 
 /-- Alias for `INDCCA2InterleavedOn.indcca2MultiOn` (`IsInterleavedCCA2Secure` implies
-`IsMultiCCA2Secure`). -/
+`IsMultiCCA2Secure` whenever `valid`, `keyGen`, `encrypt`, and `decrypt` are polynomial-time /
+strict PPT). -/
 theorem IsInterleavedCCA2Secure.toIsMultiCCA2Secure {Msg Out : Type} [Inhabited Msg]
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     {encMsg : Msg ↪ List Bool} {encOut : Out ↪ List Bool}

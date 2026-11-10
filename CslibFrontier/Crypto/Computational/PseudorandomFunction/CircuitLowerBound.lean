@@ -1368,8 +1368,9 @@ theorem PseudorandomFunction.negligible_complexity_lt_two_mul_sub_two
   exact ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) hle
 
 /-- For every `PseudorandomFunction family` and all sufficiently large `n`, there exists an `n`-bit
-key `key : BitString n` whose induced Boolean function (and hence whose `n`-output function) has
-`B₂`-circuit complexity at least `2 * n - 2`. -/
+key `key : BitString n` such that the first output bit of the keyed function on `n`-bit inputs,
+`KabanetsCai.restriction (family (List.ofFn key)) n n`, has `B₂`-circuit complexity at least
+`2 * n - 2` as a single-output function. -/
 theorem PseudorandomFunction.eventually_exists_key_two_mul_sub_two_le_complexity
     {family : List Bool → List Bool → List Bool} (hF : PseudorandomFunction family) :
     ∀ᶠ n in Filter.atTop,

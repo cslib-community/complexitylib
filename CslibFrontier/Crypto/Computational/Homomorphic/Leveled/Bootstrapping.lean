@@ -36,9 +36,11 @@ base scheme, or fixed-key evaluation without a predetermined budget.
 * `Cslib.Crypto.Homomorphic.Leveled.exists_scheme_of_polynomiallyBounded`: every polynomially
   bounded depth family is covered by an actual efficient and secure scheme, without requiring
   the requested family to be computable.
-* `Cslib.Crypto.Homomorphic.Leveled.schemeFamily_spec`: the depth-indexed family
-  `fun d => scheme D (fun _ => d)` satisfies Gentry's Definition 3 with one uniform polynomial
-  clock in `(n, d)` jointly across all depths.
+* `Cslib.Crypto.Homomorphic.Leveled.schemeFamily_spec`: the algorithms of the depth-indexed family
+  `fun d => scheme D (fun _ => d)` run within polynomial clocks in `(n, d)` jointly across all
+  depths, and the two width functions are polynomially bounded. This is a resource statement from
+  efficiency hypotheses alone: it concludes neither `Scheme.Correct` nor `Scheme.FixedWidth`,
+  which `Leveled.correct` and `Leveled.fixedWidth` supply.
 
 ## References
 

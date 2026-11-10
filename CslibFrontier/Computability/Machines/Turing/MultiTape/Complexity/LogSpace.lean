@@ -65,7 +65,8 @@ depend on that machine.
 * `Turing.MultiTapeTM.ComputableInLogSpace.id`, `Turing.MultiTapeTM.ComputableInLogSpace.const`,
   `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`,
   `Turing.MultiTapeTM.ComputableInLogSpace.congr`,
-  `Turing.MultiTapeTM.ComputableInLogSpace.of_eq`: logspace functions in zero space and congruence.
+  `Turing.MultiTapeTM.ComputableInLogSpace.of_eq`: the identity, constants and functions on
+  finite types are computable in logarithmic space, and congruence.
 * `Turing.MultiTapeTM.ComputableInLogSpace.computableInPolyTime`,
   `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
@@ -74,7 +75,8 @@ depend on that machine.
 * `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
   transducers are computable in logarithmic space.
 * `Turing.MultiTapeTM.polyBounded_log`: logarithmic bounds are polynomially bounded.
-* `Turing.MultiTapeTM.computableInLogSpace_frame`: framing an encoded input uses zero work space.
+* `Turing.MultiTapeTM.computableInLogSpace_frame`: framing an encoded input is computable in
+  logarithmic space.
 
 ## References
 
@@ -234,7 +236,8 @@ theorem ComputableInLogSpace.computableInPolyTime {f : α → β}
   let ⟨_, _, ⟨t, ht, htb⟩, ⟨s, hs, hsb⟩, h⟩ := h.computableTidilyInPolyTime
   ⟨t, s, ht, hs, (h.mono htb hsb).computableInTimeAndSpace⟩
 
-/-- The identity is computable in logarithmic space, indeed in zero space. -/
+/-- The identity is computable in logarithmic space. Its machine uses zero space:
+`Turing.MultiTapeTM.computableInTimeAndSpace_id` states that bound. -/
 theorem ComputableInLogSpace.id : ComputableInLogSpace (fun a : α => a) encIn encIn :=
   ⟨_, 0, computableInTimeAndSpace_id.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
 
@@ -256,17 +259,19 @@ theorem ComputableInLogSpace.congr_fun {f g : α → β}
   hf.congr fun a => congrArg encMid (h a)
 
 /-- A function whose encoded values equal its encoded arguments is computable in logarithmic
-space, indeed in zero space. -/
+space, by the machine of the identity. -/
 theorem ComputableInLogSpace.of_eq {f : α → β} (h : ∀ a, encMid (f a) = encIn a) :
     ComputableInLogSpace f encIn encMid :=
   ComputableInLogSpace.id.congr h
 
-/-- Constant functions are computable in logarithmic space, indeed in zero space. -/
+/-- Constant functions are computable in logarithmic space. Their machine uses zero space:
+`Turing.MultiTapeTM.computableInTimeAndSpace_of_const` states that bound. -/
 theorem ComputableInLogSpace.const (b : β) : ComputableInLogSpace (fun _ : α => b) encIn encMid :=
   let ⟨_, h⟩ := computableInTimeAndSpace_of_const (encIn := encIn) (encOut := encMid) b
   ⟨_, 0, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
 
-/-- Functions on a finite type are computable in logarithmic space, indeed in zero space. -/
+/-- Functions on a finite type are computable in logarithmic space. Their machine uses zero
+space: `Turing.MultiTapeTM.computableInTimeAndSpace_of_finite` states that bound. -/
 theorem ComputableInLogSpace.of_finite [Finite α] (f : α → β) :
     ComputableInLogSpace f encIn encMid :=
   let ⟨_, h⟩ := computableInTimeAndSpace_of_finite (encIn := encIn) (encOut := encMid) f
@@ -296,7 +301,8 @@ theorem Transducer.computableInLogSpace {Q : Type} [Finite Q] (τ : Transducer B
   ⟨_, 0, (τ.computableTidilyInTimeAndSpace hf).computableInTimeAndSpace.mono (fun _ => le_rfl)
     fun _ => Nat.zero_le _⟩
 
-/-- **Framing an encoded instance** takes no work space. -/
+/-- **Framing an encoded instance** is computable in logarithmic space, by a finite-state
+transducer (`Turing.MultiTapeTM.Transducer.computableInLogSpace`). -/
 theorem computableInLogSpace_frame {α : Type} (enc : α ↪ List Bool) :
     ComputableInLogSpace (fun a => enc a) enc (encFramed encBits) :=
   Encodings.frameT.computableInLogSpace fun a => by

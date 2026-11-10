@@ -487,9 +487,9 @@ theorem survives_contractTimes {n t : ℕ} (ht : 2 ≤ t) {W₀ : Fin n → Fin 
 
 /-! ## Every outcome is a contraction -/
 
-/-- Every outcome of `s` contractions of a contraction of `W₀` from `t + s ≥ 2` supervertices,
-with the fibres of its map as blocks, is a contraction of `W₀` to `t` supervertices with the fibres
-of its map as blocks. -/
+/-- Every outcome of `s` contractions of a contraction of `W₀` from `t + s` supervertices,
+with the fibres of its map as blocks, is a contraction of `W₀` to `t ≥ 1` supervertices with the
+fibres of its map as blocks. -/
 theorem exists_of_mem_support_tracked_contractTimes {n t : ℕ} (ht : 1 ≤ t)
     {W₀ : Fin n → Fin n → ℕ} (s : ℕ) {W : Fin (t + s) → Fin (t + s) → ℕ}
     {part : Fin n → Fin (t + s)} (hC : IsContractionOf W₀ part W) {x : Unit × TrackedGraph n}
@@ -522,9 +522,9 @@ theorem exists_of_mem_support_tracked_contractTimes {n t : ℕ} (ht : 1 ≤ t)
       erw [contractBlocks_pullbackCut part huv] at hx
       exact ih (isContractionOf_contract hC huv) hx
 
-/-- Every outcome of `s` contractions of a contraction of `W₀` from `t + s ≥ 2` supervertices is a
-contraction of `W₀` to `t` supervertices. This is `exists_of_mem_support_tracked_contractTimes`
-with the blocks forgotten. -/
+/-- Every outcome of `s` contractions of a contraction of `W₀` from `t + s` supervertices is a
+contraction of `W₀` to `t ≥ 1` supervertices. This is
+`exists_of_mem_support_tracked_contractTimes` with the blocks forgotten. -/
 theorem isContractionOf_of_mem_support_contractTimes {n t : ℕ} (ht : 1 ≤ t)
     {W₀ : Fin n → Fin n → ℕ} (s : ℕ) {W : Fin (t + s) → Fin (t + s) → ℕ}
     {part : Fin n → Fin (t + s)} (hC : IsContractionOf W₀ part W) {x : Unit × Graph}
@@ -836,7 +836,8 @@ theorem isCostBounded_contractTimes {cost : ℕ ⊕ Op → ℕ} {a b : ℕ}
 
 /-! ## Admissibility -/
 
-/-- Every call of `s` contractions of a multigraph on `t + s ≥ 2` supervertices is admissible. -/
+/-- Every call of `s` contractions of a multigraph from `t + s` down to `t ≥ 1` supervertices is
+admissible. -/
 theorem demonicValid_contractTimes {t : ℕ} (ht : 1 ≤ t) (s : ℕ)
     {W : Fin (t + s) → Fin (t + s) → ℕ} (hW : IsMultigraph W) :
     spec.toRandomized.withCoins.toSpec.DemonicValid ⟨t + s, W⟩ (contractTimes s) := by

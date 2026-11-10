@@ -21,7 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Foundations.Data.List.OfFn
 
 /-!
-# Error reduction for MA and AM, `MA ⊆ AM`, `MA ⊆ SBP` and `MAM = AM`
+# Error reduction for MA and AM, `MA ⊆ AM`, `MA ⊆ SBP` and existential quantification in `AM`
 
 The error `1 / 3` in the definitions of `MA` and `AM` (`Cslib.Complexity.MA`,
 `Cslib.Complexity.AM`) can be made exponentially small by majority votes over independent runs,
@@ -50,8 +50,10 @@ so `MA ⊆ SBP` [Böhler, Glaßer and Meister][BoehlerGlasserMeister2006].
 The swap behind `MA ⊆ AM` also works for an Arthur–Merlin verifier on pairs `(a, w)`: reduce its
 error below `2 ^ (-|w| - 2)` and let Merlin send `w` with his reply. By the union bound over the
 words `w`, Arthur's coins rarely admit an accepted answer for any `w` when no `w` works, so `AM`
-is closed under polynomially bounded existential quantification (`MAM = AM`,
-`Cslib.Complexity.mem_AM_of_exists`) [Babai][Babai1985].
+is closed under polynomially bounded existential quantification over a problem on pairs that is
+itself in `AM` (`Cslib.Complexity.mem_AM_of_exists`) [Babai][Babai1985]. The equality of the
+three-message class Merlin–Arthur–Merlin with `AM` is
+`Cslib.Complexity.AMGameClass_merlin_arthur_merlin`.
 
 ## Main definitions
 
@@ -71,7 +73,7 @@ is closed under polynomially bounded existential quantification (`MAM = AM`,
   `Cslib.Complexity.BPP_subset_AM`.
 * `Cslib.Complexity.MA_subset_SBP`.
 * `Cslib.Complexity.mem_AM_of_exists`: `AM` is closed under polynomially bounded existential
-  quantification (`MAM = AM`).
+  quantification over a problem on pairs in `AM`.
 
 ## References
 

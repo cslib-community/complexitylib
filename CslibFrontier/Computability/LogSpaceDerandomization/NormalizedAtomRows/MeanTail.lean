@@ -35,7 +35,8 @@ open Classical in
   frameRetains P 4 Lt (σ t) (CopyPadding.identifier D suffix y)
 
 open Classical in
-/-- Sum of the raw-prefix row maxima, allowing a different maximizing endpoint at each prefix. -/
+/-- Weighted sum of the raw-prefix row maxima over prefixes i with j ≤ i < m, with weight
+28^(m-i), allowing a different maximizing endpoint at each prefix. -/
 @[expose] noncomputable def meanRowTail (t : Fin J) (Lt : ℕ) (D : ZMod P) (suffix : List (ZMod P))
     (m j : ℕ) (μ : ℕ → Matrix (ZMod P) (ZMod P) ℝ)
     (σ : Environment P J) (x : ZMod P) : ℝ :=
@@ -43,7 +44,8 @@ open Classical in
     kthLargest 1 {y | retainedMask t Lt D suffix σ y} (fun y => |μ i x y|)
 
 open Classical in
-/-- A common deterministic endpoint envelope controls the sum of adaptively chosen row maxima. -/
+/-- A common deterministic endpoint envelope controls the weighted sum of adaptively chosen
+row maxima. -/
 lemma meanRowTail_le (t : Fin J) (Lt : ℕ) (D : ZMod P) (suffix : List (ZMod P))
     (m j : ℕ) (hj : j < m) (μ : ℕ → Matrix (ZMod P) (ZMod P) ℝ)
     (B : Matrix (ZMod P) (ZMod P) ℝ) (hB : ∀ x y, 0 ≤ B x y)

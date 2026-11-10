@@ -38,6 +38,12 @@ Exercise 11.9, pp. 460–461) using `ProbComp.sampleModNat`, and connects the PM
 in `CslibFrontier/Crypto/Computational/ElGamal.lean` directly to `Encryption.KEMINDCPA`,
 `Encryption.INDCPAOf`, `Encryption.INDCPAOn`, and `Encryption.INDCPA`.
 
+Every scheme in this module is parameterized by a group description family `d : ℕ → F.Desc`: the
+group at parameter `n` is the fixed description `d n` and is not sampled, and the `DDH` and
+`SecureKDF` hypotheses of the security theorems are for the point-mass setup
+`fun n => PMF.pure (d n)`. The polynomial-time and strict-PPT lemmas for these algorithms, and the
+three hybrid theorems, additionally require `d` to be computable in polynomial time.
+
 * **Paraphrase of [BonehShoup2023], Section 11.5 (p. 445) and Remark 11.1 (p. 446):** key
   generation samples $\alpha \leftarrow \mathbb{Z}_q$ and outputs $(pk = \alpha \cdot g, sk =
   \alpha)$; in the $\mathcal{E}'_{\mathrm{EG}}$ variant of Remark 11.1, encapsulation/encryption
@@ -78,8 +84,11 @@ in `CslibFrontier/Crypto/Computational/ElGamal.lean` directly to `Encryption.KEM
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.indcpaOn_hybrid_hashedElGamal`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.wordINDCPA_hybrid_hashedElGamal`: Theorem 11.5 via
   `Encryption.INDCPAOf`, `Encryption.INDCPAOn`, and `Encryption.WordINDCPA` for any one-time
-  semantically secure symmetric cipher (`Encryption.DEMOneTimeINDCPAOf` /
-  `Encryption.DEMOneTimeINDCPAOn` / `Encryption.DEMOneTimeWordINDCPA`).
+  semantically secure symmetric cipher at the KDF key length `keyLen`
+  (`Encryption.DEMOneTimeKeyINDCPAOf` / `Encryption.DEMOneTimeKeyINDCPAOn` /
+  `Encryption.DEMOneTimeKeyWordINDCPA`) and any polynomial-time computable group description
+  family `d : ℕ → F.Desc`, under `DDH` and `SecureKDF` for the point-mass setup
+  `fun n => PMF.pure (d n)`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDH.indcpaOn_elGamalEncryptProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.indcpa_elGamalBitEncryptProb`: multiplicative and bit
   ElGamal satisfy `Encryption.INDCPAOn` and `Encryption.INDCPA` under `DDH`.
@@ -394,7 +403,10 @@ theorem DDH.kemINDCPA_hashedElGamalEncapsProb {F : PrimeOrderGroupFamily} {keyLe
 /-- **Theorem 11.5 via `Encryption.INDCPAOf`** ([BonehShoup2023], Section 11.5.2, Theorem 11.5,
 pp. 449–451): combining `DDH.kemINDCPA_hashedElGamalEncapsProb` with `KEMINDCPA.hybrid_indcpa`,
 Hashed ElGamal coupled with any uniform strict-PPT one-time semantically secure symmetric cipher
-`encryptSym` (`DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym`) satisfies `Encryption.INDCPAOf`. -/
+`encryptSym` (`DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym`) satisfies `Encryption.INDCPAOf`.
+The group at parameter `n` is the fixed description `d n` of a polynomial-time computable family
+`d : ℕ → F.Desc`; it is not sampled, and `F.DDH` and `F.SecureKDF` are assumed for the point-mass
+setup `fun n => PMF.pure (d n)`. -/
 theorem DDH.indcpaOf_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
     {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
@@ -416,7 +428,10 @@ pp. 449–451): combining `DDH.kemINDCPA_hashedElGamalEncapsProb` with `KEMINDCP
 for any polynomial-time admissibility predicate `valid` that ignores the public key (such as
 the equal-length predicate `fun _ _ m₀ m₁ => m₀.length == m₁.length`), Hashed ElGamal coupled with
 any one-time semantically secure symmetric cipher `encryptSym`
-(`DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym`) satisfies `Encryption.INDCPAOn`. -/
+(`DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym`) satisfies `Encryption.INDCPAOn`.
+The group at parameter `n` is the fixed description `d n` of a polynomial-time computable family
+`d : ℕ → F.Desc`; it is not sampled, and `F.DDH` and `F.SecureKDF` are assumed for the point-mass
+setup `fun n => PMF.pure (d n)`. -/
 theorem DDH.indcpaOn_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
@@ -443,7 +458,9 @@ pp. 449–451): combining `DDH.indcpaOn_hybrid_hashedElGamal` with Attack Game 1
 rule (`fun _ _ m₀ m₁ => m₀.length == m₁.length`), Hashed ElGamal coupled with any equal-length
 one-time semantically secure word cipher `encryptSym`
 (`DEMOneTimeKeyWordINDCPA keyLen encryptSym`) satisfies
-`Encryption.WordINDCPA`. -/
+`Encryption.WordINDCPA`. The group at parameter `n` is the fixed description `d n` of a
+polynomial-time computable family `d : ℕ → F.Desc`; it is not sampled, and `F.DDH` and
+`F.SecureKDF` are assumed for the point-mass setup `fun n => PMF.pure (d n)`. -/
 theorem DDH.wordINDCPA_hybrid_hashedElGamal {F : PrimeOrderGroupFamily} {keyLen : ℕ → ℕ}
     {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
     {encryptSym : ℕ → List Bool → List Bool → ProbComp (List Bool)}
@@ -604,7 +621,7 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
     _ = 2 / 2 ^ n := by ring
 
 /-- **Multiplicative ElGamal satisfies `Encryption.INDCPAOn` under DDH** ([BonehShoup2023],
-Exercise 11.5(a), p. 459): for any polynomial-time group description family `d : ℕ → F.Desc`,
+Exercise 11.5(a), p. 459): for any group description family `d : ℕ → F.Desc`,
 polynomial-time message encoder `encodeMsg`, and polynomial-time admissibility predicate `valid`
 admitting only group elements (`AdmitsGroupElements encodeMsg valid`),
 `(elGamalKeyGenProb d, elGamalEncryptProb encodeMsg d)` satisfies `Encryption.INDCPAOn valid encMsg`

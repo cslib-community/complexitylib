@@ -325,8 +325,10 @@ theorem fastCutHighProbLaw_failure_le {n : ℕ} (hn : 2 ≤ n)
     (fun _ hv => minCut_le_of_mem_support_fastCutLaw hn (isContractionOf_id hW) hv)
     hmiss (fastCutTrials n)).trans (fastCutHighProb_failure_le n)
 
-/-- Updating a previously valid least answer cannot increase a trial's failure probability.
-The first trial ignores the initial least-answer word. This is a law of the specification. -/
+/-- Replacing a trial's answer `v` by `min v b`, for a previous least answer `b ≥ minCut W`, gives
+an answer that misses the minimum cut with probability at most `1 - 1 / (log₂ n + 15)`, the
+single-trial bound from `fastCutLaw_root_hit_prob_ge`. The first trial (`i = 0`) ignores `b`.
+This is a law of the specification. -/
 theorem fastCutLaw_update_failure_le {n : ℕ} (hn : 2 ≤ n)
     {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W) (hmin : 0 < minCut W)
     (i b : ℕ) (hb : 0 < i → minCut W ≤ b) :

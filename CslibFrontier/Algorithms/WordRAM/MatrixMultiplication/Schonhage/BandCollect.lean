@@ -15,7 +15,8 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Ba
 
 ## Main results
 
-* `BandPreparation.catalogue_block_le`: each band has one disjoint catalogue block.
+* `BandPreparation.catalogue_block_le`: each band's block of `10^L` catalogue words ends at or
+  before `memoryEnd`.
 * `BandPreparation.exec_collectBand`: the real native encoder-output copy, including
   every address calculation and the unchanged copy kernel's instruction count.
 -/

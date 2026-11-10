@@ -35,7 +35,8 @@ No instruction is stepped by hand.
 * `run_eq_link`: `run` is the client linked to the stack's methods.
 * `program_spec`: the answer, the admissible memory history and the memory cost.
 * `realizes_program`: the native certificate.
-* `positive_polytime`: one flat program computes `positive` in constant, hence polynomial, time.
+* `positive_polytime`: one flat program computes `positive` in time polynomial in the value of
+  its input.
 
 ## References
 
@@ -136,7 +137,7 @@ private theorem length_clientHistory_client (w n : ℕ) :
 
 /-- **Correctness through the refinement.** From a memory whose frontier leaves room, `program`
 returns `positive n`, its memory history is admissible, and it costs at most fifteen memory
-units: two for the allocation and three for each of at most four stack calls. -/
+units: three for the allocation and three for each of at most four stack calls. -/
 public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.frontier + 2))
     (hn : Fits w n) :
     (Memory.spec w).clientResult s (program n) = positive n ∧
@@ -172,8 +173,9 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
         s.frontier + 1 + 1⟩ (run L n))) ≤ 15
     omega
 
-/-- The client, compiled to one flat word-RAM program, computes `positive` in constant time at
-every width of at least three bits per input bit. -/
+/-- The client, compiled to one flat word-RAM program, computes `positive n` in a number of
+instructions polynomially bounded in the value of `n`, at every fitting width of at least some
+fixed positive multiple of `⌊log₂ n⌋ + 1` bits. -/
 @[fun_prop, program_certificate]
 public theorem positive_polytime :
     UniformComputableInPolyTime .standard positive (fun _ n => [n]) id :=

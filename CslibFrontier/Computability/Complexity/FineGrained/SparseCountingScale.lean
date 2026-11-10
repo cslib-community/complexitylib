@@ -32,6 +32,11 @@ leaf-occurrence bound `B = O_k((s_n log s_n)^{k - 1}) ≤ λ_n^k` discharging Le
 and the uniform runtime-composition theorems of Section 6.3 equation `(6.4)` (on the sparse
 domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`) and Proposition 6.4 (across all `n, m : ℕ`).
 
+The runtime-composition theorems are real-arithmetic statements about an arbitrary function
+`time : ℕ → ℕ → ℝ`: the hypothesis `htime` bounds `time n m` by the composed fallback,
+construction, call-count and per-call cost terms, and the conclusion absorbs these into a single
+bound. These theorems mention no machine, algorithm or CNF formula.
+
 ## Main definitions
 
 * `Cslib.Complexity.SubexponentialSAT.SparseCountingScale.leafOccurrenceBound`:
@@ -54,9 +59,11 @@ domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`) and Proposition 6.4 (across all `n
 * `eventually_leafOccurrenceBound_le`, `eventually_leafOccurrenceBound_feasible`:
   `leafOccurrenceBound C_k k (numGroups n) ≤ ⌈log₂ n⌉ ^ k` eventually for `1 ≤ k`, directly
   discharging `ReplacementParams.Feasible` at `β = k`.
-* `sparse_formula_time_bound`, `prop64_time_bound`: Section 6.3 equation `(6.4)` across the
-  sparse domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n` and the full Proposition 6.4 runtime composition
-  across all `n, m : ℕ`.
+* `sparse_formula_time_bound`, `prop64_time_bound`: for any `time : ℕ → ℕ → ℝ` satisfying the
+  composed cost bounds `htime` of Section 6.3 equation `(6.4)` on the sparse domain
+  `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`, respectively of the Proposition 6.4 runtime composition for all
+  `n, m : ℕ`, a bound `C * (n + m + 1) ^ d * 2 ^ (A * interpolationScale n)` with `0 < A` on
+  `time n m` over the same domain.
 
 ## References
 
@@ -827,9 +834,12 @@ private theorem rpow_two_le_add_one {x A : ℝ} (n : ℕ) (hA : 0 ≤ A)
 /-- **Section 6.3 equation `(6.4)` (counting one sparse formula)**: on the promised sparse domain
 `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`, combining the finite `n < N₀` fallback with Lemma 6.1 initial-test
 construction `2 ^ (C_init * ⌈log₂ n⌉ ^ d_init)` and at most `3 n (2 m + 2) ^ P + 1` candidate
-calls each taking `(n + m + 1) ^ d_call * 2 ^ (A_sys * interpolationScale n)` bit operations yields
-a uniform bound `C_sparse * (n + m + 1) ^ d_sparse * 2 ^ (A_sparse * interpolationScale n)` across
-all `n, m : ℕ` with `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`. -/
+calls each bounded by `(n + m + 1) ^ d_call * 2 ^ (A_sys * interpolationScale n)` yields
+a uniform bound `C_sparse * (n + m + 1) ^ d_sparse * 2 ^ (A_sparse * interpolationScale n)` on
+`time n m` across all `n, m : ℕ` with `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`, with `0 < A_sparse`. Here
+`time : ℕ → ℕ → ℝ` is an arbitrary function and these component bounds are the hypothesis `htime`
+on it, with `P ≤ C_P * B ^ e_B * ⌈log₂ (2 m + 4)⌉ ^ e_μ` for some `B ≤ C_B * ⌈log₂ n⌉ ^ β` with
+`m ≤ B * n`. -/
 theorem sparse_formula_time_bound
     (N₀ C_exhaust d_exhaust C_init d_init d_call C_B β C_P e_B e_μ : ℕ) (A_sys : ℝ)
     (time : ℕ → ℕ → ℝ)
@@ -929,9 +939,12 @@ theorem sparse_formula_time_bound
 
 /-- **General Proposition 6.4 runtime-composition theorem** (including polynomial-exponent `P_leaf`
 as in Lemma 6.1's `P = 20000 B² μ²` and optional per-leaf initial-matrix construction cost):
-for all `n, m : ℕ`, total bit operations across the exhaustive-search fallback and the
-sparsification-tree traversal are bounded by
-`C_total * (n + m + 1) ^ d_total * 2 ^ (A_total * interpolationScale n)`. -/
+if an arbitrary function `time : ℕ → ℕ → ℝ` satisfies, for all `n, m : ℕ`, either the
+exhaustive-search fallback bound (with `n < N₀` or `numGroups n < 2`) or the sparsification-tree
+traversal bound (with `2 ≤ numGroups n`) of the hypothesis `htime`, then there are
+`C_total, d_total : ℕ` and `A_total > 0` with
+`time n m ≤ C_total * (n + m + 1) ^ d_total * 2 ^ (A_total * interpolationScale n)` for all
+`n, m : ℕ`. -/
 theorem prop64_time_bound_general
     (N₀ C_exhaust d_exhaust C_tree d_tree C_node d_node C_init_coeff C_init d_init d_leaf
       C_B β C_P e_B e_μ : ℕ)
@@ -1128,8 +1141,12 @@ theorem prop64_time_bound_general
 3. per-node processing overhead `(n + m + 1) ^ d_node`, and
 4. finite small-`n` / `numGroups n < 2` exhaustive-search fallback
    `C_exhaust * (n + m + 1) ^ d_exhaust * 2 ^ n`,
-there exist `C_total, d_total : ℕ` and `A_total > 0` bounding total bit operations uniformly by
-`C_total * (n + m + 1) ^ d_total * 2 ^ (A_total * interpolationScale n)` for all `n, m : ℕ`. -/
+there exist `C_total, d_total : ℕ` and `A_total > 0` with
+`time n m ≤ C_total * (n + m + 1) ^ d_total * 2 ^ (A_total * interpolationScale n)` for all
+`n, m : ℕ`. Here `time : ℕ → ℕ → ℝ` is an arbitrary function and items 1–4 are the hypothesis
+`htime` on it: for each `n, m`, either `time n m` is at most bound 4 with `n < N₀` or
+`numGroups n < 2`, or `2 ≤ numGroups n` and, for some `m_leaf`, `B_n`, `P_leaf` as in item 2,
+`time n m` is at most bound 1 times the sum of bounds 3 and 2. -/
 theorem prop64_time_bound
     (N₀ C_exhaust d_exhaust C_tree d_tree d_node d_leaf C_B β C_P : ℕ) (A_sys : ℝ)
     (time : ℕ → ℕ → ℝ)

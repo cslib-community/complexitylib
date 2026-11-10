@@ -27,8 +27,8 @@ a conjunction of two approximators has at most `sunflowerBound p w ^ 2` pairs of
   `Cslib.Circuits.Monotone.Positive.errorCap`,
   `Cslib.Circuits.Monotone.Positive.errorCost`,
   `Cslib.Circuits.Monotone.Positive.exceptions`: the `k`-sets containing a set, the positive
-  conjunction-step exceptions, the per-gate error cap, the cumulative error cost, and the positive
-  exceptions at a gate.
+  conjunction-step exceptions, the per-conjunction error cap, the per-operation error cost, and
+  the positive exceptions at a gate.
 * `Cslib.Circuits.Monotone.Positive.scheme`: the approximation scheme on complete graphs.
 
 ## Main results

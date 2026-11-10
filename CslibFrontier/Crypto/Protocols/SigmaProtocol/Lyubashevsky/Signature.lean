@@ -31,10 +31,13 @@ Short Integer Solution (`SIS`) problem and to Fiat–Shamir-with-aborts signatur
    (`isSISSolution_extractSISFromRelaxedWitness`, `lyubashevskyForkToSIS`). For a single secret
    column `s` and integer challenge difference `Δc`, `isSISSolution_sub_smul_secret` gives the
    corresponding `2 γ + |Δc| η` reduction directly.
-2. **Identification security under SIS.** Combining `lyubashevskyKeyGen` with the generic
-   rewinding reduction of `Identification.lean` bounds direct impersonation attacks against
-   `lyubashevsky` by `1 / 2 ^ k + √ε'`, where `ε'` is the probability that rewinding finds a short
-   integer solution for `[A | T]` (`lyubashevsky_succProbability_directAttack_le`).
+2. **Identification security from the relaxed `[A | T]` relation.** For any key generator, the
+   generic rewinding reduction of `Identification.lean` bounds direct impersonation attacks
+   against `lyubashevsky` by `1 / 2 ^ k + √ε'`, where `ε'` is the probability that rewinding finds
+   a short integer solution for `[A | T]` (`lyubashevsky_succProbability_directAttack_le`). The
+   bound is not specific to `lyubashevskyKeyGen` and is not composed in this module with the
+   reduction of item 1 from `[A | T]` to `A`, so it does not bound impersonation by the success
+   probability of a SIS solver for `A`.
 3. **Fiat–Shamir with aborts (`FiatShamirWithAborts`).** The generic API is publicly reexported
    from `Abort.FiatShamir`. For any aborting Sigma protocol
    `P : SigmaProtocol X Y T C (Option Z)` and random-oracle hash function `h : M × T → C`, a

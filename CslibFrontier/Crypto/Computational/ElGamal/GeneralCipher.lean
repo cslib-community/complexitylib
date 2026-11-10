@@ -98,8 +98,10 @@ $\mathcal{E}_s$.
   `PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeINDCPAOn`,
   `PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF`):
   Theorem 11.5 IND-CPA security in `hashedElGamalCipherCPAGameOn` from `DDH`, `SecureKDF`, and
-  `DEMOneTimeKeyINDCPAOn` (or `DEMOneTimeINDCPAOn`), plus unconditional KDF instantiation via
-  `linearHashKDF` at arbitrary and normalized key lengths.
+  `DEMOneTimeKeyINDCPAOn` (or `DEMOneTimeINDCPAOn`), plus the `linearHashKDF` instantiation at
+  arbitrary and normalized key lengths, which replaces the `SecureKDF` hypothesis by a lower bound
+  `qMin n` on the group order of every description in the support of the setup sampler, with
+  `2 ^ outLen n / qMin n` (or `2 ^ n / qMin n`) negligible.
 
 ## References
 
@@ -1461,13 +1463,17 @@ theorem isPPTOn_seededSetupProb {setupProb : ℕ → ProbComp F.Desc}
   exact hsetup.bind_with (hsample.bind_with hret.isPPTOn)
 
 /-- **General-cipher Hashed ElGamal IND-CPA security with `linearHashKDF` at arbitrary key length
-`outLen : ℕ → ℕ` from `DDH` and `Encryption.DEMOneTimeKeyINDCPAOn` alone** ([BonehShoup2023],
+`outLen : ℕ → ℕ` from `DDH` and `Encryption.DEMOneTimeKeyINDCPAOn`, with no `SecureKDF`
+hypothesis** ([BonehShoup2023],
 Section 8.10.4, Theorem 8.11, p. 334, and Section 11.5.2, Theorem 11.5, pp. 449–451): combining
 `DDH.withSeed`, `secureKDF_linearHashKDF`, `isPPTOn_seededSetupProb`, and
 `DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeKeyINDCPAOn` yields IND-CPA security of
 general-cipher Hashed ElGamal instantiated with `linearHashKDF` at any polynomial-time key length
-`outLen` under `F.DDH` and `Encryption.DEMOneTimeKeyINDCPAOn` alone, with no separate KDF
-assumption. -/
+`outLen` under `F.DDH` and `Encryption.DEMOneTimeKeyINDCPAOn`, with no `SecureKDF` hypothesis.
+In its place the theorem requires that every description `d` in the support of the strict PPT
+setup sampler `setupProb n` has `keyLen d = outLen n`, encoded group elements of length at most
+`bound d`, and `qMin n ≤ F.order d`, where `0 < qMin n` and `2 ^ outLen n / qMin n` is
+negligible. -/
 theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn
     {F : PrimeOrderGroupFamily} {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid validSym : ℕ → List Bool → Msg → Msg → Bool}
@@ -1525,11 +1531,15 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeK
       (F.computableInPolyTime_linearHashKDF hkey_poly hbound_poly) hencryptSym hA
 
 /-- **General-cipher Hashed ElGamal IND-CPA security with `linearHashKDF` from `DDH` and
-`Encryption.DEMOneTimeINDCPAOn` alone** ([BonehShoup2023], Section 8.10.4, Theorem 8.11, p. 334, and
+`Encryption.DEMOneTimeINDCPAOn`, with no `SecureKDF` hypothesis** ([BonehShoup2023],
+Section 8.10.4, Theorem 8.11, p. 334, and
 Section 11.5.2, Theorem 11.5, pp. 449–451): combining `DDH.withSeed`, `secureKDF_linearHashKDF`,
 `isPPTOn_seededSetupProb`, and `DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeINDCPAOn`
 yields IND-CPA security of general-cipher Hashed ElGamal instantiated with `linearHashKDF` under
-`F.DDH` and `Encryption.DEMOneTimeINDCPAOn` alone, with no separate KDF assumption. -/
+`F.DDH` and `Encryption.DEMOneTimeINDCPAOn`, with no `SecureKDF` hypothesis. In its place the
+theorem requires that every description `d` in the support of the strict PPT setup sampler
+`setupProb n` has `keyLen d = n`, encoded group elements of length at most `bound d`, and
+`qMin n ≤ F.order d`, where `0 < qMin n` and `2 ^ n / qMin n` is negligible. -/
 theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF {F : PrimeOrderGroupFamily}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid validSym : ℕ → List Bool → Msg → Msg → Bool}

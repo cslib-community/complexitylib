@@ -257,8 +257,9 @@ structure ObliviousSequenceImpl {B : Basis} {r_ds k_init : ℕ}
   /-- Distributional invariant on the initial coupled state distribution produced by `P.initSetup`.
   -/
   initInv : PMF (LatentState Latent r_ds) → Prop
-  /-- Predicate identifying operations admissible from a latent state (`fun _ _ => True` when
-  operation encoding is unconditionally word-bounded). -/
+  /-- Predicate on a latent state and an operation under which `arguments_fit` bounds the encoded
+  arguments (`fun _ _ => True` when operation encoding is unconditionally word-bounded). No field
+  relates it to `S.ValidOpSeq`, and `steps_exec` does not use it. -/
   validOp : Latent → S.Op → Prop := fun _ _ => True
   /-- Standalone register encoding for argument delivery. -/
   encode : S.Op → Fin r_ds → ℕ
@@ -266,7 +267,8 @@ structure ObliviousSequenceImpl {B : Basis} {r_ds k_init : ℕ}
   decode : (o : S.Op) → (Fin r_ds → ℕ) → Option (S.Result o)
   /-- Initial distributions satisfying `initInv` are supported on word-bounded states. -/
   bounded : ∀ {ν : PMF (LatentState Latent r_ds)}, initInv ν → ∀ t ∈ ν.support, t.data.Bounded w
-  /-- Standalone encoded arguments fit in `w`-bit words on admissible calls. -/
+  /-- Standalone encoded arguments fit in `w`-bit words on operations satisfying `validOp` at some
+  latent state. -/
   arguments_fit : ∀ {z : Latent} (o : S.Op),
     validOp z o → ∀ i, P.input i = true → Fits w (encode o i)
   /-- Distinctness of registers used by `zeroFillCode` relative to `baseReg` and `frontierReg`. -/

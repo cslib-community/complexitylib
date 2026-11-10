@@ -28,7 +28,13 @@ from an admissible class `ValidPoly` and opens evaluations `eval p z = y` with s
 evaluation completeness (`PolyCommitScheme.EvalComplete`), commitment binding
 (`PolyCommitScheme.CommitmentBinding`, `PolyCommitScheme.CommitmentBindingExtract`), and evaluation
 binding at each query point (`PolyCommitScheme.EvaluationBinding`,
-`PolyCommitScheme.EvaluationBindingExtract`).
+`PolyCommitScheme.EvaluationBindingExtract`). `PolyCommitScheme.CommitmentBinding` and
+`PolyCommitScheme.EvaluationBinding` are perfect binding: the first holds for all valid
+polynomials and all randomness, the second for every commitment and every pair of accepting
+openings, with no adversary, probability or setup. The two `Extract` predicates say that a named
+function `extract` maps every binding break to a witness satisfying a caller-supplied predicate
+`Collision`. That function is arbitrary, with no efficiency requirement, so they do not constrain
+the scheme alone, and this module defines no binding notion against bounded adversaries.
 
 When a prover claims `k` evaluations `eval (p i) z = y i` at a point `z`, random-linear-combination
 batching (`Cslib.Crypto.Protocols.batchEvalReduction`) samples a uniform challenge vector
@@ -48,9 +54,17 @@ proximity and row-wise consistency, the verifier sends a random challenge `r : F
 prover replies with the row combination `v = ligeroRowComb r U = r ᵥ* U : Fin l → F`, and the
 verifier checks `(v ᵥ* G) j = (r ᵥ* M) j` at queried columns `j` (`ligeroColumnCheck`,
 `ligeroEvalCheck`). Associativity of vector-matrix multiplication (`Matrix.vecMul_vecMul`) gives
-perfect completeness (`ligeroRowComb_mul`), while any row `i₀` where `M i₀ j ≠ ((U i₀) ᵥ* G) j` is
-caught at column `j` with probability `1 - 1 / |F|` (`toOuterMeasure_ligeroRowComb_eq`,
-`LigeroMatrixIOP.columnReduction_sound`).
+perfect completeness (`ligeroRowComb_mul`). If some row `i₀` has `M i₀ j ≠ ((U i₀) ᵥ* G) j`, the
+honest row combination `r ᵥ* U` passes the check at column `j` with probability exactly `1 / |F|`
+(`toOuterMeasure_ligeroRowComb_eq`), and against every prover the verifier accepts a response
+equal to `r ᵥ* U` with probability at most `1 / |F|` (`LigeroMatrixIOP.columnReduction_sound`).
+
+This module formalizes one column check as an interactive reduction
+(`LigeroMatrixIOP.columnReduction`): the column `j` is the input statement, `M` is a parameter of
+the verifier rather than an oracle, the response `v` is read in full, and consistency is measured
+against the fixed matrix `U` of the bundle. `LigeroMatrixIOP.columnReduction_sound` does not bound
+the probability that the verifier accepts a response other than `r ᵥ* U`, and no statement here
+says that the rows of `M` are codewords of `G` or close to codewords.
 
 ## Main definitions
 
@@ -154,7 +168,10 @@ point `z`, the honest opening proof `(openEval p r z).2` is accepted for the tru
 
 /-- Witness-extracting commitment binding: from any two distinct valid polynomials with the same
 commitment, `extract` recovers a witness satisfying `Collision` (such as a hash collision or
-discrete-logarithm relation). -/
+discrete-logarithm relation). Here `extract` is an arbitrary function with no efficiency
+requirement, and a constant `extract` at a witness satisfying `Collision` satisfies the predicate
+for every scheme, so this is a statement about the named `extract` rather than a binding property
+of the scheme alone. -/
 @[expose] def CommitmentBindingExtract {Witness : Type*} (Collision : Witness → Prop)
     (extract : Poly → Randomness → Poly → Randomness → Witness) : Prop :=
   ∀ p₁ r₁ p₂ r₂, S.ValidPoly p₁ → S.ValidPoly p₂ →
@@ -168,7 +185,9 @@ discrete-logarithm relation). -/
 
 /-- Witness-extracting evaluation binding: from any two accepting openings `(y₁, π₁)` and `(y₂, π₂)`
 of the same commitment `c` at point `z` with `y₁ ≠ y₂`, `extract` recovers a witness satisfying
-`Collision`. -/
+`Collision`. As for `CommitmentBindingExtract`, `extract` is an arbitrary function with no
+efficiency requirement, and a constant `extract` at a witness satisfying `Collision` satisfies the
+predicate for every scheme. -/
 @[expose] def EvaluationBindingExtract {Witness : Type*} (Collision : Witness → Prop)
     (extract : Commit → Point → F → Proof → F → Proof → Witness) : Prop :=
   ∀ c z y₁ π₁ y₂ π₂, y₁ ≠ y₂ →

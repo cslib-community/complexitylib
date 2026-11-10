@@ -1675,8 +1675,8 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
 /-- **Quantitative single-distinguisher DDH security bound for the Naor–Reingold group-PRF**
 ([BonehShoup2023], Exercises 10.4 & 10.11; [NaorReingold2004], Theorem 4.1): if `adversary` makes at
 most `Q d` queries on `d ∈ (setup n).support` with modular-sampling slack bounded by `ε`, then its
-PRF distinguishing advantage is at most `dyadicSize (inLen n)` times the single-challenge DDH
-advantage of `naorReingoldToDDHDistinguisher` plus `2 * ε` plus the setup-averaged inverse group
+PRF distinguishing advantage is at most `dyadicSize (inLen n)` times the sum of the single-challenge
+DDH advantage of `naorReingoldToDDHDistinguisher`, `2 * ε`, and the setup-averaged inverse group
 order. -/
 theorem advantage_naorReingoldWordGame_le (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ) (Q : F.Desc → ℕ) {ε : ℝ≥0}
@@ -2664,8 +2664,9 @@ private theorem exists_queryBound_hashedAdvGroup {F : PrimeOrderGroupFamily}
 /-- **Asymptotic DDH security of the universal-hash Naor–Reingold bit-string PRF** (paraphrase of
 [NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2): under
 `F.DDH setup`, when group descriptions on `(setup n).support` have polynomially bounded bit-length,
-`bound` bounds encoded group elements, and `2 ^ (outLen n) / qMin n` is negligible, no `IsOraclePPT`
-adversary can distinguish `naorReingoldHashedRealGame` from `naorReingoldHashedIdealGame`. -/
+`bound` bounds encoded group elements, `qMin n` is a positive lower bound on the group orders on
+`(setup n).support`, and `2 ^ (outLen n) / qMin n` is negligible, no `IsOraclePPT` adversary can
+distinguish `naorReingoldHashedRealGame` from `naorReingoldHashedIdealGame`. -/
 theorem DDH.negligible_naorReingoldHashedGame {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {inLen outLen : ℕ → ℕ} {bound : F.Desc → ℕ}
     {descBound qMin : ℕ → ℕ}
@@ -2818,11 +2819,13 @@ theorem DDH.negligible_naorReingoldHashedProbGame {F : PrimeOrderGroupFamily}
     (F.naorReingoldHashedRealGame setup inLen outLen bound adversary n) _).trans
     (add_le_add (hprob_le n) le_rfl)
 
-/-- **Constant-output-length hashed Naor–Reingold security under `F.DDH setup` alone**
-(original, combining `DDH.negligible_expected_inv_order` with Theorem 4.3, Remark 4.2, and Lemma 4.2
-of [NaorReingold2004]): for any constant output length `c : ℕ` (including `c = 1`), `F.DDH setup`
-automatically supplies the inverse-order decay needed by the Leftover Hash Lemma, requiring no
-external `qMin` hypothesis. -/
+/-- **Constant-output-length hashed Naor–Reingold security under `F.DDH setup` with no `qMin`
+hypothesis** (original, combining `DDH.negligible_expected_inv_order` with Theorem 4.3, Remark 4.2,
+and Lemma 4.2 of [NaorReingold2004]): for any constant output length `c : ℕ` (including `c = 1`),
+`F.DDH setup` supplies the inverse-order decay needed by the Leftover Hash Lemma. The hypotheses
+besides `F.DDH setup` are that `inLen` and `bound` are computable in polynomial time with unary
+output, that group descriptions on `(setup n).support` have polynomially bounded bit-length, and
+that `bound` bounds encoded group elements on `(setup n).support`. -/
 theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {inLen : ℕ → ℕ} {bound : F.Desc → ℕ} {descBound : ℕ → ℕ}
     (c : ℕ) (hDDH : F.DDH setup)

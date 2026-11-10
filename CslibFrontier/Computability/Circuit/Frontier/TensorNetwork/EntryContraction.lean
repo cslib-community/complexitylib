@@ -51,8 +51,10 @@ encoded length bounds it.
 **The interface** (`EntryContractionAlgorithm`). One native certificate maps an input
 `(P, fl, r, G)`, with the precision `P` in unary and the coefficients `fl` of a modulus, to a
 coefficient list whose value in `A_P` at the modulus `FastContraction.modulus m`, for `m` the
-number of edges, is the contraction of the entries' values, on every input. On admissible inputs
-at that modulus and precision `P ≤ D s (⌊log₂ s⌋ + 1)`, for each fixed `D`, it runs in time
+number of edges, is the contraction of the entries' values, on every input. The admissibility
+predicate is a parameter of the interface, which is that of Theorem D.1 at `EntryAdmissible ce`.
+On the inputs that predicate selects at a size `s ≥ 2`, at that modulus and precision
+`1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, for each fixed `D`, it runs in time
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space `K (n + 1) ^ K`. The original linear-precision
 bound is a corollary (`EntryContractionAlgorithm.bound`). The input format is
 that of the truncation-order reduction's contractions of specialized networks.
@@ -75,7 +77,8 @@ summation with it is the contraction of the explicit network
 * `Cslib.Circuits.Frontier.ceilNineTenths`: `⌈s ^ (9/10)⌉`.
 * `Cslib.Circuits.Frontier.EntryContraction.encInput`: the encoding of an input.
 * `Cslib.Circuits.Frontier.EntryAdmissible`: Theorem D.1's hypotheses.
-* `Cslib.Circuits.Frontier.EntryContractionAlgorithm`: the interface.
+* `Cslib.Circuits.Frontier.EntryContractionAlgorithm`: the interface, for a given admissibility
+  predicate.
 * `Cslib.Circuits.Frontier.EntryContraction.directCore`: direct summation with an entry procedure.
 
 ## Main results
@@ -231,10 +234,13 @@ logarithmic root precision, with entries in `A_P`. A native certificate maps `(P
 coefficient list `core (P, fl, r, G)`. At
 the modulus `fl = FastContraction.modulus m`, for `m` the number of edges of `G`, its value in
 `A_P` is the contraction of the values of the entries, on every input. For all constants `C` and
-`D` there is `K` such that on every network admissible at a size `s ≥ 2` with constant `C`, and
+`D` there is `K` such that on every `(r, G)` with `Admissible C s (r, G)` at a size `s ≥ 2`, and
 every precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, at that modulus the certificate takes time at most
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at most `K (n + 1) ^ K`, for `n` the encoded length
-of the input. -/
+of the input. The predicate `Admissible` is a parameter: the structure asserts these bounds only on
+the inputs it selects, and is the interface of Theorem D.1 when `Admissible` is
+`EntryAdmissible ce` for a native certificate `ce` of the entry procedure
+(`Cslib.Complexity.CountingSimulation.entryContractionAlgorithm`). -/
 structure EntryContractionAlgorithm (Admissible : ℕ → ℕ → ℕ × DescribedNetwork T → Prop) where
   /-- The output on an input `(P, fl, r, G)`. -/
   core : ℕ × List ℕ × ℕ × DescribedNetwork T → List ℕ

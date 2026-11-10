@@ -1260,9 +1260,12 @@ theorem hermiteRecoverZero_extractCoordNodeJets_eq {J ℓ : ℕ} {Ω H_zero : �
   exact Cslib.Circuits.Rational.hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hshape.2
     (rowEntry_extractCoordNodeJets_eq_taylor Ω nodes nodeJets hlen P hclear u)
 
-/-- Full multi-coordinate modular count recovery `S_ℓ(H(0)) ≡ count (mod 2 ^ ℓ)` from `Ω`-scaled
-per-node outer Taylor jets ([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH],
-eq. (5.5) and Appendix B.3, p. 50). -/
+/-- Full multi-coordinate modular count recovery from `Ω`-scaled per-node outer Taylor jets
+([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], eq. (5.5) and Appendix B.3,
+p. 50): `recoverOuterJetSumModPowTwo` returns `count`, assuming `0 ≤ count < 2 ^ ℓ` and the
+congruence `∑ u, H_zero u ≡ count (mod 2 ^ ℓ)`. Here `H_zero u = (P.coeff u).eval 0`, `nodeJets`
+are the `Ω`-scaled Taylor jets of `P` at the distinct `nodes`, `Ω ≠ 0`, and
+`(P.coeff u).natDegree < nodes.length * J`. -/
 theorem recoverOuterJetSumModPowTwo_eq {J ℓ : ℕ} {Ω count : ℤ} {nodes : List ℤ}
     (hnodup : nodes.Nodup) (hΩ : Ω ≠ 0) (nodeJets : List JetRows)
     (hlen : nodeJets.length = nodes.length) (P : Polynomial (Polynomial ℚ)) (H_zero : Fin ℓ → ℤ)
@@ -1281,7 +1284,9 @@ theorem recoverOuterJetSumModPowTwo_eq {J ℓ : ℕ} {Ω count : ℤ} {nodes : L
   rw [recoverOuterJetSumModPowTwo, hsum]; exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 
 /-- Outer-round accumulation plus Cramer count recovery from supplied cleared group payloads across
-`Q` distinct `nodes`. -/
+`Q` distinct `nodes`: the recovered value is `count`, assuming `0 ≤ count < 2 ^ ℓ`, the congruence
+`∑ u, H_zero u ≡ count (mod 2 ^ ℓ)`, and the degree bound and values `H_zero u` at `0` of the
+coefficients of the accumulated polynomial `∑ idx < T_rounds, w idx • ∏ g, P_rat idx g`. -/
 theorem recoverOuterJetSumModPowTwo_streamOuterJetAccum_eq {α : Type} {J ℓ r m T_rounds : ℕ}
     {Γ count : ℤ} {nodes : List ℤ} (hnodup : nodes.Nodup) (hΓ : Γ ≠ 0)
     (evalRound : α × ℕ → ℤ × List JetRows) (nodeCtx : Fin nodes.length → α)

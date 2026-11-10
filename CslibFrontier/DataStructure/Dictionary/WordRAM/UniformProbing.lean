@@ -55,7 +55,9 @@ We maintain `DoubleHashing.OrderedTableRep (probePerm θ)` on the concrete Word-
 bound the expected probe count by `probeBound c_exp n_max` across **all** capacities `n_max : ℕ`:
 at most `3` probes once `doubleTabThreshold c_exp ≤ n_max`
 (`DoubleHashing.expect_probeCount_oddStride_doubleTab_le`) and at most `doubleTabThreshold c_exp`
-below it (`DoubleHashing.expect_probeCount_oddStride_unconditional_le`). This yields an
+below it (`DoubleHashing.expect_probeCount_oddStride_unconditional_le`), where every seed
+probes at most `n_max + 1` slots. Here
+`doubleTabThreshold c_exp = 2 ^ (8 * (8 + 48 * max c_exp 1) ^ 2)`. This yields an
 assumption-free expected operation charge `charge c_exp n_max`, which is at most the
 `O_{c_exp}(1)` bound `expectedOpCharge c_exp` independent of `n_max` and `U`, and equals the
 threshold-free `hashEvalSteps c_exp + 47` above the threshold, together with

@@ -40,8 +40,9 @@ amount per instruction and every request is no longer than the clock
 Iterating the instruction with a binary counter
 (`Turing.MultiTapeTM.ComputableInO.iterate`) therefore simulates a run of polynomial clock
 within polynomial space whenever `g` is computable within polynomial space
-(`Turing.MultiTapePTM.exists_computableInO_run`). The time is not bounded by a polynomial:
-it charges, for every instruction, the largest time of `g` on a word no longer than the clock
+(`Turing.MultiTapePTM.exists_computableInO_run`). That statement bounds only the space: its time
+bound is existentially quantified and unconstrained. The proof charges, for every instruction,
+the largest time of `g` on a word no longer than the clock
 (`Turing.MultiTapeTM.wordMax`). When `g` is polynomial-time, both the instruction and the clocked
 run are polynomial-time (`Turing.MultiTapePTM.computableInPolyTime_answerStep`,
 `Turing.MultiTapePTM.computableInPolyTime_run`).
@@ -432,9 +433,9 @@ private theorem exists_computableTidilyInO_run [Finite Operation] {α : Type}
 
 omit [Fintype Operation] in
 /-- A clocked coin-false run against a plain oracle decider is computable within polynomial
-space. Both oracle and run certificates charge encoded output in workspace. The independent
-time and workspace bounds are exactly those of the tidy simulation; only the realizing-machine
-presentation changes. No polynomial time bound on the oracle is assumed. -/
+space. Both oracle and run certificates charge encoded output in workspace. Only the space bound
+`S` is shown polynomial in the length of the encoded input; the time bound `T` is existentially
+quantified and unconstrained. No polynomial time bound on the oracle is assumed. -/
 theorem exists_computableInO_run [Finite Operation] {α : Type} {input : α ↪ List Bool}
     {g : List Bool → Bool} {Tg Sg : List Bool → ℕ}
     (hg : ComputableInO g encBits encBool Tg Sg) (hSg : PolyBounded List.length Sg)

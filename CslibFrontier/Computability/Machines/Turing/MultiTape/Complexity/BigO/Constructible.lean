@@ -23,7 +23,7 @@ import CslibFrontier.Tactic.EncLen
 Routines that compute resource bounds from an input, with computability up to constants
 (`Turing.MultiTapeTM.ComputableInO`): the length of a bit word in binary, by a binary
 counter; the comparison of two unary numbers, by counting down; and the conversion of a number from
-binary to unary, by counting up. They are the building blocks of constructible resource bounds and
+binary to unary, by counting down. They are the building blocks of constructible resource bounds and
 of the diagonal machines of the hierarchy theorems. The number of binary digits of `m` is
 logarithmic in `m`, so every power of it is `O(m + 1)`; this absorbs the binary counters into
 bounds linear in the counted value.
@@ -37,8 +37,8 @@ bounds linear in the counted value.
   quadratic time and linear space.
 * `Turing.MultiTapeTM.ComputableInO.unaryLe`: the comparison of unary numbers, within
   quadratic time and linear space.
-* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within quadratic time
-  and linear space.
+* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within time quadratic and
+  space linear in the number converted, not in the length of its binary encoding.
 -/
 
 @[expose] public section

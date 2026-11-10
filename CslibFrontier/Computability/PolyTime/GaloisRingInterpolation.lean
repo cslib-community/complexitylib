@@ -35,9 +35,12 @@ constant first, each a coefficient list of `A_p` (`GaloisRingArith.pval`).
   `y_i (∏_{j ≠ i} (v_i - v_j))⁻¹ ∏_{j ≠ i} (z - v_j)`, with the inverses of
   `GaloisRingArith.inv`. When those inverses are correct, for instance at nodes with unit
   differences in a Galois ring, the result takes the value `y_i` at `v_i`
-  (`GaloisRingArith.eval_pval_interp`). It has at most `n + 1` coefficients and degree below `n`
-  (`GaloisRingArith.pval_interp`); at nodes with unit differences, a polynomial of degree below
-  `n` is determined by its values there.
+  (`GaloisRingArith.eval_pval_interp`). Its polynomial is that Lagrange formula with the computed
+  inverses (`GaloisRingArith.pval_interp`), a sum of `n` scaled products of `n - 1` linear
+  factors, so it has degree below `n`; each basis numerator, and so the result, has at most
+  `n + 1` coefficients (`GaloisRingArith.length_basisNum_le`). At nodes with unit differences, a
+  polynomial of degree below `n` is determined by its values there
+  (`Lagrange.eq_ringInterpolate`).
 
 Every operation is polynomial-time, with the precision in unary
 (`GaloisRingArith.computableInPolyTime_interp` and the rules before it).

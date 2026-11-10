@@ -72,8 +72,8 @@ its gate transcript (`StrictMarginProgram.eval`):
   `.existsUnique_isSinkOnFace`, `.isSink_iff_eq_eval`: unique sink on every cube face and on the
   whole cube (Theorem 11.1).
 * `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram.sweep_eq_faceEval`,
-  `.energy_sweep_le`: topological coordinate sweep reaches the unique sink in `g` steps with
-  nonincreasing energy when started on the face.
+  `.energy_sweep_le`: topological coordinate sweep reaches the unique sink in `g` steps, and
+  when started on the face its energy after any number of steps is at most the starting energy.
 * `Cslib.Circuits.Boolean.WeightedThreshold.StrictMarginProgram.priority_le_pow`: exponential upper
   bound `λ_i ≤ (W + 1) ^ (g - 1 - i)` under weight bound `|b_{j, i}| ≤ W`.
 
@@ -807,8 +807,8 @@ theorem sweep_mem_fixed {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin
       · rw [Function.update_of_ne hik, ih]
     · exact ih
 
-/-- Starting from any assignment `z` on the face `(fixed, val)`, the topological coordinate sweep
-monotonically decreases (or preserves) `P.energy x` at every step. -/
+/-- Starting from any assignment `z` on the face `(fixed, val)`, the energy `P.energy x` after any
+number `k` of steps of the topological coordinate sweep is at most the energy of `z`. -/
 theorem energy_sweep_le {fixed : Finset (Fin g)} {val : Fin g → Bool} {x : Fin n → Bool}
     {z : Fin g → Bool} (hfix : ∀ i ∈ fixed, z i = val i) (k : ℕ) :
     P.energy x (P.sweep fixed val x z k) ≤ P.energy x z := by

@@ -904,10 +904,12 @@ private theorem uowhfCandidateInput_take_eq (h : ℕ → List Bool → List Bool
   · obtain rfl : i = n := le_antisymm hi (Nat.not_lt.mp hlt)
     rw [listRows_take_mul_eq]
 
-/-- **Deterministic node-collision extraction for `uowhfTreeHash`**: whenever two distinct messages
-`m₀ ≠ m₁` of length `< 2 ^ n` (with `m₀.length ≤ B`, `1 ≤ B`, `1 ≤ n`, and `n ≤ blockLen n`) produce
-the same digest under `uowhfTreeHash`, there exist a subkey index `i ≤ n` and a pair index `j < B`
-whose `2 * blockLen n`-bit candidate inputs collide under `BitString.listRow (keyLen n) i K`. -/
+/-- **Deterministic node-collision extraction for `uowhfTreeHash`**: assume that `h n` maps every
+`keyLen n`-bit key and `2 * blockLen n`-bit input to a `blockLen n`-bit output. Whenever two
+distinct messages `m₀ ≠ m₁` of length `< 2 ^ n` (with `m₀.length ≤ B`, `1 ≤ B`, `1 ≤ n`, and
+`n ≤ blockLen n`) produce the same digest under `uowhfTreeHash`, there exist a subkey index
+`i ≤ n` and a pair index `j < B` whose `2 * blockLen n`-bit candidate inputs collide under
+`BitString.listRow (keyLen n) i K`. -/
 theorem exists_uowhfCandidateInput_collision
     {h : ℕ → List Bool → List Bool → List Bool} {keyLen blockLen : ℕ → ℕ}
     {n B : ℕ} {K m₀ m₁ : List Bool}
@@ -1170,10 +1172,12 @@ private theorem pmf_map_true_le_sum {α : Type*} (μ : PMF α) (D : ℕ)
   simp only [hj_lt, ↓reduceDIte, hF, le_rfl]
 
 /-- **Concrete security bound for `uowhfTreeHash`**: at any security parameter `n ≥ 1` with
-`n ≤ blockLen n`, `1 ≤ maxBlocks n`, and every supported message pair `(m₀, m₁)` of `adversary`
-satisfying `m₀.length ≤ maxBlocks n`, `m₀.length < 2 ^ n`, and `m₁.length < 2 ^ n`, the
-target-collision success probability of `adversary` against `uowhfTreeHash` is at most
-`dyadicSize ((n + 1) * maxBlocks n)` times that of `uowhfTreeAdversary` against `h`. -/
+`n ≤ blockLen n`, `1 ≤ maxBlocks n`, `h n` mapping every `keyLen n`-bit key and
+`2 * blockLen n`-bit input to a `blockLen n`-bit output, and every supported message pair
+`(m₀, m₁)` of `adversary` satisfying `m₀.length ≤ maxBlocks n`, `m₀.length < 2 ^ n`, and
+`m₁.length < 2 ^ n`, the target-collision success probability of `adversary` against
+`uowhfTreeHash` is at most `dyadicSize ((n + 1) * maxBlocks n)` times that of
+`uowhfTreeAdversary` against `h`. -/
 theorem succProbability_targetCollisionGame_uowhfTreeHash_le
     {h : ℕ → List Bool → List Bool → List Bool}
     {keyLen blockLen maxBlocks : ℕ → ℕ}

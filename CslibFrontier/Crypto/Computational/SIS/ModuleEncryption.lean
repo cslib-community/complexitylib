@@ -18,9 +18,10 @@ import Mathlib.Tactic.Ring
 /-!
 # Ring-LWE and Module-LWE Public-Key Encryption
 
-This module formalizes the dual-Regev public-key encryption scheme over the negacyclic polynomial
+This module formalizes a Module-LWE public-key encryption scheme over the negacyclic polynomial
 ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [LyubashevskyPeikertRegev2010],
-[DucasEtAl2018]):
+[DucasEtAl2018]), in which the public key is a Module-LWE sample and the ciphertext is a second
+Module-LWE sample masked by the encoded message:
 
 1. **Commutative ring structure of negacyclic multiplication (`negacyclicMul_comm`,
    `rotMatrix_negacyclicMul`, `negacyclicMul_assoc`, `innerPoly`)**:
@@ -50,7 +51,8 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
    with `4 * (k * n * B_e * B_r + k * n * B_e * B_s + B_e) + 2 < q` (in particular when
    `B_s ≤ B_r` and `4 * (2 * k * n * B_e * B_r + B_e) + 2 < q`), decryption recovers `m`
    deterministically (`moduleLWEDecrypt_moduleLWEEncrypt_eq`).
-4. **Pseudorandom public-key and ciphertext reductions to `DecisionModuleLWE`**:
+4. **Public-key pseudorandomness from `DecisionModuleLWE` and Module-LWE advantage bounds for
+   ciphertexts**:
    - Replacing the honest public key `(A, A · s + e)` with a uniform pair `(A, b)` is directly an
      instance of `DecisionModuleLWE k k n q noise` (`moduleLWEPublicKeyLaw_eq_sampleLaw`,
      `publicKey_indistinguishable_of_decisionModuleLWE`).
@@ -62,6 +64,17 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
      `(pk, ct)` distribution independent of `m` (`uniformSample_mask_eq_uniform`), bounding
      single-encryption distinguishing advantage by two `ModuleLWE` advantages
      (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`).
+   - The two ciphertext bounds are inequalities between `Game.advantage` values at one fixed
+     `(k, n, q)`, for an arbitrary function `D` into `Game` with no efficiency condition. Only
+     `publicKey_indistinguishable_of_decisionModuleLWE` has a `DecisionModuleLWE` hypothesis; this
+     module does not derive `ComputationallyIndistinguishable` encryption views from it.
+
+The statements of item 4 draw the secret `s` and the ephemeral secret `r` uniformly from `R_q^k`,
+whereas the correctness theorems of item 3 assume centered bounds `B_s` and `B_r` on them. When
+`0 < k * n`, bounds that hold for every `s` and `r` satisfy `q / 2 ≤ B_s` and `q / 2 ≤ B_r`, and
+the hypothesis on `q` then forces `B_e = 0`, that is, `e`, `e₁` and `e₂` are zero. Hence, for
+`0 < k * n` and nonzero noise, no choice of bounds makes the correctness theorems apply to every
+`s` and `r` drawn in item 4.
 
 ## Main definitions
 
@@ -101,8 +114,9 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
   `Cslib.Crypto.uniformKeyEncryptionLaw_eq_sampleLaw_map`,
   `Cslib.Crypto.uniformSample_mask_eq_uniform`,
   `Cslib.Crypto.advantage_realEncryptionView_uniform_le`,
-  `Cslib.Crypto.advantage_realEncryptionView_msg_le`: public-key and ciphertext security
-  reductions to `DecisionModuleLWE`.
+  `Cslib.Crypto.advantage_realEncryptionView_msg_le`: public-key pseudorandomness under
+  `DecisionModuleLWE`, and distribution identities and `ModuleLWE` advantage bounds for `(pk, ct)`
+  views against an arbitrary function into `Game`.
 
 ## References
 
@@ -697,11 +711,11 @@ theorem moduleLWEDecrypt_moduleLWEEncrypt_eq {k n q B_s B_r B_e : ℕ}
       _ = 2 * k * n * B_e * B_r := by ring
   exact moduleLWEDecrypt_moduleLWEEncrypt_eq_of_bounds (by omega) A hs hr he he₁ he₂ m
 
-/-! ### Part 4: Pseudorandom Public-Key and Ciphertext Reductions to `DecisionModuleLWE` -/
+/-! ### Part 4: Public-Key Pseudorandomness and Module-LWE Advantage Bounds for Ciphertexts -/
 
 /-- Draw a secret from `secretLaw`, a uniform matrix, and independent polynomial errors, then
 output the existing key generator's public key. The default secret law is uniform, exactly as
-required by the `ModuleLWE.sampleLaw` identity and security reductions below. -/
+required by the `ModuleLWE.sampleLaw` identity and advantage bounds below. -/
 noncomputable def moduleLWEPublicKeyLaw (k n q : ℕ) [NeZero q]
     (noise : PMF (Fin n → ZMod q))
     (secretLaw : PMF (Fin k → Fin n → ZMod q) := PMF.uniformOfFintype _) :
@@ -874,7 +888,7 @@ theorem uniformSample_mask_eq_uniform (k n q : ℕ) [NeZero q] (m : Fin n → Bo
 
 /-- Complete encryption view `(pk, ct)` under an arbitrary public-key distribution `pkLaw`,
 drawing `r` from `ephemeralLaw`, `e₂ ← noise`, and `e₁ ← PMF.pi (fun _ => noise)`.
-The default ephemeral law is uniform, as used by the security reductions below. -/
+The default ephemeral law is uniform, as used by the advantage bounds below. -/
 noncomputable def encryptionViewOfKeyLaw {k n q : ℕ} [NeZero q]
     (pkLaw : PMF (ModuleLWEPublicKey k n q))
     (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool)
@@ -887,8 +901,11 @@ noncomputable def encryptionViewOfKeyLaw {k n q : ℕ} [NeZero q]
   return (pk, moduleLWEEncrypt pk r e₁ e₂ m)
 
 /-- Real encryption view `(pk, ct)` with explicit long-term and ephemeral secret laws.
-Both default to uniform. The existing `DecisionModuleLWE` reductions concern those defaults;
-this parameterization does not extend their security claims to other secret distributions. -/
+Both default to uniform. The `ModuleLWE.sampleLaw` identities and advantage bounds of Part 4
+concern those defaults; this parameterization does not extend them to other secret distributions.
+The correctness theorem `moduleLWEDecrypt_moduleLWEEncrypt_eq_of_bounds` assumes centered bounds
+on both secrets; together with its hypothesis on `q`, these hold for every value of uniform
+secrets only when `k * n * B_e = 0`. -/
 noncomputable def realEncryptionView (k n q : ℕ) [NeZero q]
     (noise : PMF (Fin n → ZMod q)) (m : Fin n → Bool)
     (secretLaw : PMF (Fin k → Fin n → ZMod q) := PMF.uniformOfFintype _)

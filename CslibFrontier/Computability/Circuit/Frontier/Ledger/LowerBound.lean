@@ -41,7 +41,7 @@ with every live wire as an output), one connected component after another
 layout with the ledger in the messages (`Cslib.Circuits.Frontier.Ledger.sweep`). At each step the
 transitions are bounded both by the width of the step and by the number of inputs read in the
 component being processed. The frontier counting lemma then finds a component `W` that reads
-almost all `n` inputs and whose frontier is wide, up to `2 log |M|` and the usual error terms
+almost all `n` inputs and whose frontier is wide, up to `3 log |M|` and the usual error terms
 (`Cslib.Circuits.Frontier.Ledger.exists_ncard_le`). The cycle rank of `W` is at most
 `(r - 1) s + 1` minus the number of inputs it reads
 (`Cslib.Circuits.Frontier.Compiler.cycleRankOn_add_ncard_readIn_le`), so `W` alone has the

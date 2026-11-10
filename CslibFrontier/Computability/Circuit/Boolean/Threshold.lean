@@ -16,9 +16,11 @@ public import CslibFrontier.Foundations.Data.BitString.Threshold
 The threshold gate `Th^m_j` of `m` arguments says that at least `j` of them are true
 (`Cslib.threshold m j`). The threshold gates of every arity and every cutoff, together with
 negation, form the basis of threshold circuits [Hajnal et al., Section 2][HMPST1993]. Here the
-gates are unweighted; a gate with weights `±1` is a threshold gate reading some of its arguments
-negated. As for AC⁰ circuits over the unbounded fan-in basis, negations are free in the depth that
-counts threshold gates (`Threshold.thresholdCost`).
+gates are unweighted: each of the `m` arguments counts once. A circuit may wire one value to
+several arguments of a gate, which counts it that many times, so positive integer weights cost no
+gates; a gate with weights `±1` is a threshold gate reading some of its arguments negated. As for
+AC⁰ circuits over the unbounded fan-in basis, negations are free in the depth that counts
+threshold gates (`Threshold.thresholdCost`).
 
 Cutoff `0` is the constant `true`, a cutoff above the arity the constant `false`
 (`Cslib.threshold_zero_right`, `Cslib.threshold_eq_false_of_lt`), cutoff `1` the disjunction and

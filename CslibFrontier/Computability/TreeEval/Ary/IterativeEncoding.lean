@@ -275,7 +275,8 @@ theorem length_encCfg_packed_le_of_rounds_le (hd : 0 < d) (hb : 0 < b)
   have hmul := Nat.mul_le_mul_left H hfactor
   omega
 
-/-- The sharp representation bound holds at every clock when the rounds fit the field. -/
+/-- The representation bound with the round count eliminated holds at every clock when the
+rounds fit the field. -/
 theorem length_encCfg_packed_runFrom_le_of_rounds_le [Fact (Packed.fieldModulus d b).Prime]
     (hd : 0 < d) (hb : 0 < b) (T : Tree d b H)
     (e : (Fin b → Bool) → Fin (Packed.chunkCount d b) → ZMod (Packed.fieldModulus d b))

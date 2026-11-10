@@ -113,8 +113,8 @@ Section 5.4.1, Example 5.2 and Theorem 5.2, printed pp. 183–187) are formalize
 * `Cslib.Crypto.SymmetricCipher`: uniform symmetric cipher on `n`-bit messages.
 * `Cslib.Crypto.SymmetricCipher.cpaGame`, `INDCPA`, `cpaOneTimeGame`, `OneTimeINDCPA`,
   `detCPAAdversary`: adaptive and one-time symmetric CPA games, security predicates, and 2-query
-  determinism distinguisher ([BonehShoup2023], Attack Game 5.2 / Definition 5.2 / Example 5.1 /
-  Definition 9.4).
+  distinguisher comparing the `n`-bit prefixes of its two replies ([BonehShoup2023],
+  Attack Game 5.2 / Definition 5.2 / Example 5.1 / Definition 9.4).
 * `Cslib.Crypto.SymmetricCipher.ciGame`, `CiphertextIntegrity`, `AuthenticatedEncryption`,
   `ciOneTimeGame`, `OneTimeCiphertextIntegrity`, `OneTimeAuthenticatedEncryption`:
   multi-query and one-time ciphertext-integrity games, CI predicates, and AE predicates
@@ -818,9 +818,11 @@ theorem encrypt_eq_of_ciphertext_length_eq (E : SymmetricCipher) {n : ℕ} {ke :
     rw [← hvEq, hcv]
   rw [huniq c₁ hc₁, huniq c₂ hc₂]
 
-/-- Two-query CPA distinguisher against any deterministic symmetric cipher
-([BonehShoup2023], Example 5.1, printed p. 182): queries `(0^n, 1^n)` followed by `(0^n, 0^n)` and
-outputs `true` iff the two returned ciphertexts are equal (`c₁ == c₂`). -/
+/-- Two-query CPA distinguisher ([BonehShoup2023], Example 5.1, printed p. 182): queries
+`(0^n, 1^n)` followed by `(0^n, 0^n)`, truncates each reply to its first `n` bits, and outputs
+`true` iff the two truncated replies are equal (`c₁ == c₂`). Truncation is the identity when every
+supported ciphertext of an `n`-bit message has length `n`, the hypothesis under which
+`advantage_cpaGame_detCPAAdversary` gives advantage `1` for `n ≥ 1`. -/
 def detCPAAdversary : OracleDistinguisher :=
   fun n _ => do
     let m0 := List.replicate n false
@@ -873,8 +875,9 @@ theorem eval_cpaGame_detCPAAdversary_false (E : SymmetricCipher) (n : ℕ)
   · exact PMF.bind_const _ _
 
 /-- In Experiment `true` for `n ≥ 1`, `detCPAAdversary` receives an encryption of `1^n` followed by
-an encryption of `0^n`; by decryption completeness the two ciphertexts are distinct, so
-`detCPAAdversary` outputs `false` with probability `1`. -/
+an encryption of `0^n`; when all supported ciphertexts of `n`-bit plaintexts have length `n`, the
+two ciphertexts are distinct by decryption completeness, so `detCPAAdversary` outputs `false` with
+probability `1`. -/
 theorem eval_cpaGame_detCPAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 1 ≤ n)
     (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ msg : List Bool, msg.length = n →
@@ -2218,19 +2221,9 @@ theorem eval_cpaGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : ℕ → 
   rw [← hsim]
   simp only [PMF.bind_map, Function.comp_def]
 
-/-- Stateful handler for `ccaToCIAtIndexAdversary` and `ccaToCIAdversary`
-([BonehShoup2023], Section 9.2.3, adversary $B_{\mathrm{ci}}$ in Theorem 9.1):
-maintains `(rem, (hasCaptured, capturedCt)) : ℕ × (Bool × List Bool)`.
-* Once `hasCaptured = true`, all subsequent queries return `[]` without calling the external CI
-  encryption oracle.
-* While `hasCaptured = false`:
-  - if `rem == 0`, a decryption query `(true, ct)` captures `(0, (true, ct))` and an encryption
-    query `(false, _)` captures `(0, (true, []))`, both returning `[]` without calling the external
-    CI oracle;
-  - if `rem != 0`, a decryption query `(true, _)` returns `([], (rem - 1, (false, [])))`, and an
-    encryption query `(false, req)` with `(unframe req).length == n && (dropFrame req).length == n`
-    queries the external CI encryption oracle on `if bit then dropFrame req else unframe req`
-    (truncating the reply to `ctBound`) and transitions to `(rem - 1, (false, []))`. -/
+/-- State `(rem, (hasCaptured, capturedCt)) : ℕ × (Bool × List Bool)` of `ccaToCIHandler`: the
+remaining query countdown, the flag recording whether a candidate ciphertext has been captured,
+and the captured candidate ciphertext. -/
 abbrev CCAToCIState : Type := ℕ × (Bool × List Bool)
 
 /-- Flag and captured-ciphertext pair `(hasCaptured, capturedCt)` of a `CCAToCIState`. -/
@@ -2254,7 +2247,22 @@ abbrev CCAToCIRunOut (α : Type) : Type := α × CCAToCIState
 abbrev CCAToCIRunOut.capturedCt {α : Type} (out : CCAToCIRunOut α) : List Bool :=
   CCAToCIState.capturedCt out.2
 
-/-- Execute one CCA-to-CI query against the external CI encryption oracle. -/
+/-- Stateful handler for `ccaToCIAtIndexAdversary` and `ccaToCIAdversary`
+([BonehShoup2023], Section 9.2.3, adversary $B_{\mathrm{ci}}$ in Theorem 9.1): execute one
+CCA-to-CI query against the external CI encryption oracle, maintaining
+`(rem, (hasCaptured, capturedCt)) : ℕ × (Bool × List Bool)`.
+* Once `hasCaptured = true`, all subsequent queries return `[]` without calling the external CI
+  encryption oracle.
+* While `hasCaptured = false`:
+  - if `rem == 0`, a decryption query `(true, ct)` captures `(0, (true, ct))` and an encryption
+    query `(false, _)` captures `(0, (true, []))`, both returning `[]` without calling the external
+    CI oracle;
+  - if `rem != 0`, a decryption query `(true, _)` returns `([], (rem - 1, (false, [])))`, an
+    encryption query `(false, req)` with `(unframe req).length == n && (dropFrame req).length == n`
+    queries the external CI encryption oracle on `if bit then dropFrame req else unframe req`
+    (truncating the reply to its first `ctBound` bits) and transitions to
+    `(rem - 1, (false, []))`, and any other encryption query returns
+    `([], (rem - 1, (false, [])))` without calling the external CI oracle. -/
 noncomputable def ccaToCIHandler (n ctBound : ℕ) (bit : Bool) (request : Bool × List Bool) :
     StateT (ℕ × (Bool × List Bool)) (WordOracleComp Unit) (List Bool) :=
   fun state =>

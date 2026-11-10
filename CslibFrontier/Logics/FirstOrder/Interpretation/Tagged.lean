@@ -40,9 +40,10 @@ most one element has no such pair; on it, the compiled interpretation is a given
 `S` of dimension one (`Cslib.Logic.FO.TaggedInterpretation.subsingletonEquiv`).
 
 So a tagged interpretation gives an order-free reduction to every class that is closed under
-isomorphism and under taking a positive number of disjoint copies, such as satisfiability of
-formulas in conjunctive normal form or colorability of graphs
-(`Cslib.Logic.FO.Reduces.of_tagged`).
+isomorphism and invariant under copies (`Cslib.Logic.FO.CopyInvariant`): a finite structure
+belongs to the class exactly when the disjoint union of a positive finite number of copies of it
+does. Examples are satisfiability of formulas in conjunctive normal form and colorability of
+graphs (`Cslib.Logic.FO.Reduces.of_tagged`).
 
 Binary relations of tagged interpretations are conveniently defined by templates
 (`Cslib.Logic.FO.TaggedInterpretation.Template`): a template from tag `t` relates an element of tag
@@ -58,7 +59,7 @@ from it, or are arbitrary.
   `Cslib.Logic.FO.TaggedInterpretation.reindexEquiv`: renaming the tags and the induced
   isomorphism.
 * `Cslib.Logic.FO.Copies`, `Cslib.Logic.FO.Copies.equivProd`, `Cslib.Logic.FO.CopyInvariant`:
-  disjoint copies of a structure, their product equivalence, and the classes closed under them.
+  disjoint copies of a structure, their product equivalence, and the classes invariant under them.
 * `Cslib.Logic.FO.TaggedInterpretation.Coord`, `Cslib.Logic.FO.TaggedInterpretation.Coord.tag`,
   `Cslib.Logic.FO.TaggedInterpretation.Coord.data`,
   `Cslib.Logic.FO.TaggedInterpretation.domainAt`, `Cslib.Logic.FO.TaggedInterpretation.relAt`,
@@ -81,7 +82,7 @@ from it, or are arbitrary.
 * `Cslib.Logic.FO.TaggedInterpretation.subsingletonEquiv`: on a structure with at most one
   element, it is the given interpretation of dimension one.
 * `Cslib.Logic.FO.Reduces.of_tagged`: tagged interpretations give order-free reductions to
-  classes closed under isomorphism and copies.
+  classes closed under isomorphism and invariant under copies.
 * `Cslib.Logic.FO.TaggedInterpretation.Template.realize_formula`: the semantics of templates.
 
 ## References
@@ -554,9 +555,9 @@ theorem TaggedInterpretation.nontrivial_toInterpretation_model
 /-! ### Reductions by tagged interpretations -/
 
 /-- **Tagged interpretations give order-free reductions** to classes closed under isomorphism and
-under copies: if the structure interpreted by `I` decides membership on the finite structures
-with two distinct elements, and the interpretation `S` of dimension one decides it on those with
-at most one element, then the compiled interpretation is a order-free reduction. -/
+invariant under copies: if the structure interpreted by `I` decides membership on the finite
+structures with two distinct elements, and the interpretation `S` of dimension one decides it on
+those with at most one element, then the compiled interpretation is an order-free reduction. -/
 theorem Reduces.of_tagged {L : Language.{u, v}} {L' : Language.{u', v'}} [L'.IsRelational]
     {K : Set (Bundled.{w} L.Structure)} {K' : Set (Bundled.{w} L'.Structure)} (hK' : IsoClosed K')
     (hcopy : CopyInvariant K') {T : Type} [Finite T] {ι : T → Type} [∀ t, Finite (ι t)]

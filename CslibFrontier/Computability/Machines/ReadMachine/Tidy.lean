@@ -18,9 +18,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.St
 # Resource certificates for read-machine simulations
 
 If the halting test, the address and the step of a read machine have plain charged resource
-certificates, then the step of `Turing.ReadMachine.toStepMachine` has a resource certificate on
-its states, which add the position of the head: the work space grows by the length of the position
-in binary, and the time by a factor of the position, to compare it with the address.
+certificates with time bound `T` and space bound `S` on its states, then
+`Turing.ReadMachine.toStepMachine` has a resource certificate on its states, which add the
+position of the head. Its space bound `Turing.ReadMachine.stateS` adds to `S` twice the length of
+the encoded pair of state and position, plus `4`; its time bound `Turing.ReadMachine.stateT` is
+the position plus one, times the square of the sum of `T` and that space bound.
 
 ## Main results
 

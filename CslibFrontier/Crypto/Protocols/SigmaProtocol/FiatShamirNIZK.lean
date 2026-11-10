@@ -1853,7 +1853,7 @@ theorem succProbability_fiatShamirNIZKSimExtGameOn_le [DecidableEq Y] [Decidable
         linarith
 
 /-- **Simulation-extractability against simulated proofs** over finite statement and transcript
-types. -/
+types, for `fiatShamirNIZKSimExtGame` with its fresh-`(y*, t*)` winning condition. -/
 theorem succProbability_fiatShamirNIZKSimExtGame_le [DecidableEq Y] [DecidableEq T]
     [Fintype Y] [Finite T] [Finite Z] [Fintype C] [Nonempty C] [DecidableEq C] {W : Type}
     {P : SigmaProtocol X Y T C Z} {R : W → Y → Prop} [∀ w y, Decidable (R w y)]
@@ -1917,7 +1917,9 @@ theorem succProbability_fiatShamirNIZKRealExtGameOn_le [DecidableEq Y] [Decidabl
 
 /-- **Derived adaptive multi-theorem simulation-extractability** of Fiat–Shamir NIZK proofs in the
 random-oracle model (combining the Attack Game 20.3 / Theorem 20.3 zero-knowledge hop with
-[BellareNeven2006], Lemma 1). -/
+[BellareNeven2006], Lemma 1). The bound is for `fiatShamirNIZKRealExtGame`, whose adversary wins
+only when the statement-commitment pair `(y*, t*)` of its output was not returned by a valid prove
+query; an output that changes only the response `z*` of a returned proof does not win. -/
 theorem succProbability_fiatShamirNIZKRealExtGame_le [DecidableEq Y] [DecidableEq T]
     [Fintype Y] [Finite T] [Finite Z] [Fintype C] [Nonempty C] [DecidableEq C] {W : Type}
     {P : SigmaProtocol X Y T C Z} {R_honest : X → Y → Prop} {R : W → Y → Prop}

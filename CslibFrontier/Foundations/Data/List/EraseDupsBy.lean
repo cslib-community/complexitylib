@@ -13,8 +13,8 @@ public import Mathlib.Data.List.Basic
 /-!
 # Erasing duplicates by a comparison
 
-`List.eraseDupsBy r l` keeps the first entry of `l` in each run of entries related by `r`, in
-order. This file supplies the lemmas that core Lean lacks: the result is a sublist of `l`
+`List.eraseDupsBy r l` keeps, in order, each entry of `l` that `r` relates to no entry kept
+before it. This file supplies the lemmas that core Lean lacks: the result is a sublist of `l`
 (`List.eraseDupsBy_sublist`), no kept entry is related to an earlier one
 (`List.pairwise_eraseDupsBy`), and every entry of `l` is related to some kept entry or is one
 (`List.exists_mem_eraseDupsBy`). The function is also a left fold that appends an entry

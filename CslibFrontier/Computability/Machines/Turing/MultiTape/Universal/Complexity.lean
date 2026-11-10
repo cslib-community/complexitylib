@@ -28,9 +28,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lis
 /-!
 # The cost of a step of the simulation
 
-States, symbols and moves are encoded in unary (`Turing.MultiTapeTM.encUnary`), head positions on
-the work tapes as unary integers (`Turing.MultiTapeTM.encIntUnary`), the position of the input head
-in binary (`Turing.MultiTapeTM.encNat`), and a structure as the framed tuple of its fields.
+States and symbols are encoded in unary (`Turing.MultiTapeTM.encUnary`), moves as signs
+(`Turing.MultiTapeTM.encSign`), head positions on the work tapes as unary integers
+(`Turing.MultiTapeTM.encIntUnary`), the position of the input head in binary
+(`Turing.MultiTapeTM.encNat`), and a structure as the framed tuple of its fields.
 
 Reading, writing and moving on a zipper are computable in linear time and space
 (`Turing.MultiTapeTM.ComputableInDegree` with degrees one). A step of

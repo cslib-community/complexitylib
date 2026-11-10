@@ -211,7 +211,7 @@ theorem PlanarPositiveOneInExactThreeSATThree_npHard :
     computableInPolyTime_toPlanarPositiveOneInExactThreeSATThree,
     fun φ => (mem_PlanarPositiveOneInExactThreeSATThree_toPlanar_iff φ).symm⟩
 
-/-- The same compiler proves the positive width-three planar variant NP-hard. -/
+/-- Correctness of the same compiler for the positive width-three planar variant. -/
 theorem mem_PlanarPositiveOneInThreeSATThree_toPlanar_iff (φ : CNF ℕ) :
     toPlanarPositiveOneInExactThreeSATThree φ ∈ PlanarPositiveOneInThreeSATThree ↔
       φ ∈ ThreeSAT := by

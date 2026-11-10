@@ -20,7 +20,8 @@ encoded children in order. No capacity-sized arrays are allocated. The header in
 tag 0, child count 1, minimum 2, compression
 mask C 3, multiplier digits 4--6, D 7, copies 8, packed complements 9, packed normal 10,
 guards 11, bits 12, middle 13, radix 14, maximum 15, width-dependent global offset 16,
-and reserved 17. `Parameters` supplies indices 3--17; it asserts no node-search oracle.
+and reserved 17, where `NodeParameters.words` stores the selected-bit count. `Parameters`
+supplies indices 3--17; it asserts no node-search oracle.
 
 This is a static representation, with explicit arena/address and stored-word fit contracts.
 It asserts neither preprocessing time nor a query running time.
@@ -61,7 +62,8 @@ open Cslib.WordRAM
 open Cslib.DataStructure.FusionTree
 
 /-- The fifteen preprocessing words in header slots 3 through 17, for each internal node.
-The final two slots accommodate a width-dependent global offset and one reserved word. -/
+The final two slots accommodate a width-dependent global offset and one reserved word, in
+which `NodeParameters.words` stores the selected-bit count. -/
 abbrev Parameters := Tree → Fin 15 → ℕ
 
 /-- Fixed record header length, independent of branching capacity. -/
@@ -105,7 +107,7 @@ def radix : ℕ := 14
 def maximum : ℕ := 15
 /-- Width-dependent global offset. -/
 def globalOffset : ℕ := 16
-/-- Reserved preprocessing word. -/
+/-- Reserved preprocessing word; `NodeParameters.words` stores the selected-bit count here. -/
 def reserved : ℕ := 17
 
 end HeaderOffset

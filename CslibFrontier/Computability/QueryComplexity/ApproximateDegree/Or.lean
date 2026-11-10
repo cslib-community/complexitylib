@@ -87,7 +87,7 @@ theorem card_le_six_mul_approxDegree_threshold_one_right_sq :
   blockSensitivity_threshold_one_right.symm.trans_le
     (blockSensitivity_le_six_mul_approxDegree_sq _)
 
-/-- **The approximate degree of disjunction is at most `√(2n)`**: `adeg(OR_n) ≤ d` whenever
+/-- **The approximate degree of disjunction is `O(√n)`**: `adeg(OR_n) ≤ d` whenever
 `2n ≤ d² + 1`, by a rescaled Chebyshev polynomial of degree `d` evaluated at the weight. -/
 theorem approxDegree_threshold_one_right_le {d : ℕ} (hd : 2 * n ≤ d ^ 2 + 1) :
     approxDegree (1 / 3) (threshold n 1) ≤ d := by

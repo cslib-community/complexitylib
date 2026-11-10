@@ -20,9 +20,11 @@ value `v` (`decode`). A lookup reads the key's cell and an insertion writes it, 
 each (`amortized`). The table has a cell for every key, so the capacity `n_max` never binds.
 Values below `V` are stored, so `V` must fit a word.
 
-The table is framed by its field (`framed`), so it shares memory with other structures. Allocated
-in memory that is zero above the frontier, it starts empty at the cost of one memory unit
-(`inv_alloc`).
+The table is framed by its field (`framed`), so it shares memory with other structures. In memory
+that is zero above the frontier, the `U` cells at the frontier are an empty table once the frontier
+is advanced past them (`inv_alloc`). This is the state after the operation
+`Memory.Op.allocDirty U`, which `Memory.charge` prices at one memory unit
+(`Memory.charge_allocDirty`).
 
 ## Main definitions
 

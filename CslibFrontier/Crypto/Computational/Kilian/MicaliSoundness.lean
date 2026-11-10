@@ -109,8 +109,10 @@ NP witnesses to compact PCP tables are not established here.
   Micali's explicit ROM soundness theorem for adaptive two-channel cheating provers.
 * `Cslib.Crypto.micaliProofBits_micaliProvePure_le`,
   `Cslib.Crypto.micaliProofBits_micaliProvePure_le_log`: succinctness of honest Micali proofs.
-* `Cslib.Crypto.exists_micaliCSProof_of_mem_NP`: every language in `NP` has a Micali CS proof
-  system in the random oracle model.
+* `Cslib.Crypto.exists_micaliCSProof_of_mem_NP`: for every language in `NP`, Micali's ROM protocol
+  over a suitable PCP verifier is perfectly complete on accepted compact tables, satisfies the ROM
+  soundness bound and has honest proofs of `O((σ + m + 1)² · (log₂ |enc x| + 1))` payload bits. No
+  running time is stated for `micaliVerify` or for the honest prover.
 
 ## References
 
@@ -998,7 +1000,10 @@ for any PCP verifier `V` whose soundness error on statements outside `L` is at m
 repetition, and any cheating prover `P` making at most `t_FS` Fiat–Shamir queries such that the
 combined execution `micaliSoundnessProg V L P` makes at most `Q_MT` Merkle hash queries, the
 probability that `P` outputs `(x, proof)` with `x ∉ L` accepted by `micaliVerify` is at most
-`(t_FS + 1) * (1 / 2) ^ m + Q_MT * ((3 * Q_MT + (t_FS + 1)) * (1 / 2 ^ σ))`. -/
+`(t_FS + 1) * (1 / 2) ^ m + Q_MT * ((3 * Q_MT + (t_FS + 1)) * (1 / 2 ^ σ))`.
+Both budgets are `IsCostBounded`: they hold on every path of the program, for every reply in the
+oracle's reply type (`List Bool` for Merkle queries, `List (List Bool)` for Fiat–Shamir queries),
+not only for the `σ`-bit digests and the `m` challenge strings that the experiment returns. -/
 theorem micaliSoundness_bound [DecidableEq α] (V : PCPVerifier α) (L : Set α) (σ m : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
       2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x)
@@ -1028,7 +1033,9 @@ prover `P` makes at most `t_MT` Merkle hash queries and at most `t_FS` Fiat–Sh
 `micaliVerify V x proof` makes at most `q_V` Merkle hash queries for outputs in `P.support`,
 then `micaliSoundnessGame`
 accepts a false statement with probability at most
-`(t_FS + 1) * (1 / 2) ^ m + (t_MT + q_V) * ((3 * (t_MT + q_V) + (t_FS + 1)) * (1 / 2 ^ σ))`. -/
+`(t_FS + 1) * (1 / 2) ^ m + (t_MT + q_V) * ((3 * (t_MT + q_V) + (t_FS + 1)) * (1 / 2 ^ σ))`.
+The three budgets are `IsCostBounded`, so they hold for every oracle reply, and `P.support` is the
+set of outputs of `P` under any replies. -/
 theorem micaliSoundness_bound_of_prover_verifier [DecidableEq α] (V : PCPVerifier α) (L : Set α)
     (σ m : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
@@ -1137,7 +1144,8 @@ theorem micaliProofBits_micaliProvePure_le_log {enc : α ↪ List Bool} {c : ℕ
   have e₃ := Nat.mul_le_mul_left (q * L) h₄
   nlinarith
 
-/-- **Micali's CS Proofs for `NP` in the Random Oracle Model**
+/-- **Completeness, soundness and proof size of Micali's CS-proof construction for `NP` in the
+Random Oracle Model**
 ([Micali2000]; compare [ChiesaYogev2024], Construction 21.1.1 and Theorem 21.2.1): every language
 `L ∈ NP` has a polynomial-time
 PCP verifier `V` with `O(log n)` random bits and a constant number of queries whose accepted
@@ -1146,8 +1154,13 @@ protocol over `V`:
 * accepts the honest prover with probability `1` on every accepted compact table
   (`micaliHonestGame_eq_pure_true`),
 * satisfies the unconditional ROM soundness bound `micaliSoundness_bound` against any cheating
-  prover `P` with Fiat–Shamir budget `t_FS` and total Merkle budget `Q_MT`, and
-* produces honest proofs of `O((σ + m + 1)² · (log₂ |enc x| + 1))` payload bits. -/
+  prover `P` with Fiat–Shamir budget `t_FS` and total Merkle budget `Q_MT`, both `IsCostBounded`
+  and so holding for every oracle reply, and
+* produces honest proofs of `O((σ + m + 1)² · (log₂ |enc x| + 1))` payload bits.
+
+The only running-time clause is `V.PolyTime enc`, about the PCP verifier: neither `micaliVerify`
+nor the honest prover is shown to be efficient, and the honest prover takes a compact table, not
+an `NP` witness. -/
 theorem exists_micaliCSProof_of_mem_NP [DecidableEq α] {enc : α ↪ List Bool} {L : Set α}
     (hL : L ∈ NP enc) :
     ∃ (V : PCPVerifier α) (c d : ℕ), V.PolyTime enc ∧

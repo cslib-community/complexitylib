@@ -61,11 +61,11 @@ addressed here.
 * `Cslib.PCP.Hastad.exists_labelling_of_spectralWeight`: spectral decoding of Label Cover tables.
 * `Cslib.PCP.Hastad.graphLinearCorr_sq_le`: multi-edge Cauchy–Schwarz + Parseval soundness
   bound.
-* `Cslib.PCP.Hastad.gapLabelCover_dichotomy_lt_one`: for every `ε` and `δ` there is a
-  threshold `0 < η < 1`,
-  independent of the label sets, such that on `GapLabelCover` yes-instances some folded tables pass
-  the 3-bit test with probability `1 - δ`, and on no-instances every folded table passes with
-  probability at most `1 / 2 + 4 * ε`.
+* `Cslib.PCP.Hastad.gapLabelCover_dichotomy_lt_one`: for every `ε > 0` and `0 < δ < 1 / 2` there
+  is a threshold `0 < η < 1`, independent of the label sets, such that for instances with at least
+  one edge, on `GapLabelCover` yes-instances some folded right tables `B` and left tables `A` pass
+  the 3-bit test with probability `1 - δ`, and on no-instances all folded right tables `B` and all
+  left tables `A` pass with probability at most `1 / 2 + 4 * ε`.
 
 ## References
 
@@ -195,8 +195,8 @@ private theorem graphLinearProb_eq_add_graphLinearCorr {g : Graph (β → γ)}
 
 omit [Nonempty β] [Nonempty γ] in
 /-- **Multi-edge completeness of Håstad's tests**: if `(ℓ, r)` satisfies every edge of a non-empty
-Label Cover instance `g`, then the Long Code tables `B w = longCode (r w)` and
-`A u = longCode (ℓ u)` are folded and achieve linear acceptance `1 - δ`. -/
+Label Cover instance `g`, then the right Long Code tables `B w = longCode (r w)` are folded and,
+with the left tables `A u = longCode (ℓ u)`, achieve linear acceptance `1 - δ`. -/
 theorem graphLinearProb_longCode_of_satisfies {g : Graph (β → γ)} (hg : g.edges ≠ []) (δ : ℝ)
     {ℓ : ℕ → β} {r : ℕ → γ} (hℓr : ∀ d ∈ g.edges, d.constraint (ℓ d.src) = r d.dst) :
     (∀ w, IsOdd (longCode (r w))) ∧
@@ -297,8 +297,8 @@ end LabelCoverSoundness
 for every `ε > 0` and `0 < δ < 1 / 2`, there exists a Label Cover soundness parameter `0 < η < 1`,
 independent of the label sets `β` and `γ`, such that for every Label Cover instance
 `g : Graph (β → γ)` with `g.edges ≠ []`:
-1. (**Completeness**) If `g ∈ (GapLabelCover β γ 1 η).yes`, there exist folded tables `B` and `A`
-   achieving `graphLinearProb g δ B A = 1 - δ`.
+1. (**Completeness**) If `g ∈ (GapLabelCover β γ 1 η).yes`, there exist folded right tables `B`
+   and left tables `A` achieving `graphLinearProb g δ B A = 1 - δ`.
 2. (**Soundness**) If `g ∈ (GapLabelCover β γ 1 η).no`, then for all folded right tables `B` and
    all left tables `A`, `graphLinearProb g δ B A ≤ 1 / 2 + 4 * ε`.
 

@@ -65,8 +65,10 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   (proven to satisfy `IsCuckooHashFamily` in
   `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`).
 * `HashPairRep`, `initTableHashPairCode`, `resampleHashPairCode`, `evalHash1Code`, `evalHash2Code`:
-  two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in `O_{c_exp}(1)`
-  instructions and `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`.
+  two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in
+  `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`, and in `O_{c_exp}(1)` instructions
+  per evaluation whenever `U ≤ max n_max 4 ^ c_exp` and
+  `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`.
 
 ## Main results
 
@@ -82,8 +84,12 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   providing monotonicity in `(C_walk, C_reh)`.
 * `initTableHashPairCode_execWithin`, `resampleHashPairCode_execRand`, `evalHash1Code_execWithin`,
   `evalHash2Code_execWithin`, `hashPairSpace_le`, `evalHashSteps_le`: Word-RAM correctness,
-  `O_{c_exp}(n_max + 1)` space bound, and `O_{c_exp}(1)` evaluation step bound across all
-  `n_max : ℕ`.
+  `O_{c_exp}(n_max + 1)` space bound across all `n_max : ℕ`, and evaluation step bound
+  `evalHashBound c_exp` across all `n_max : ℕ` whenever `U ≤ max n_max 4 ^ c_exp` and
+  `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`. For `n_max < doubleTabThreshold c_exp` the
+  step count is `KWise.evalSteps n_max U M (cuckooK n_max) + 4`, with
+  `cuckooK n_max = 12 * Nat.clog 2 (max n_max 2) + 26`, and `evalHashBound c_exp` covers it through
+  `cuckooK n_max ≤ cuckooKBound c_exp`.
 
 ## References
 
@@ -2227,8 +2233,13 @@ def evalSingleSteps (c_exp n_max U M : ℕ) : ℕ :=
 def evalHashSteps (c_exp n_max U M : ℕ) : ℕ :=
   evalSingleSteps c_exp n_max U M + 4
 
-/-- Uniform `O_{c_exp}(1)` instruction bound on `evalHashSteps c_exp n_max U M` across all
-`n_max : ℕ`. -/
+/-- Instruction bound on `evalHashSteps c_exp n_max U M` depending only on `c_exp`. It holds for
+all `n_max : ℕ` whenever `U ≤ max n_max 4 ^ c_exp` and
+`M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5` (`evalHashSteps_le`). For
+`n_max < doubleTabThreshold c_exp` the step count is
+`KWise.evalSteps n_max U M (cuckooK n_max) + 4`, where
+`cuckooK n_max = 12 * Nat.clog 2 (max n_max 2) + 26`; the bound covers this regime through
+`cuckooK n_max ≤ cuckooKBound c_exp` (`cuckooK_le_cuckooKBound_of_lt`). -/
 @[expose]
 def evalHashBound (c_exp : ℕ) : ℕ :=
   DoubleTabulation.provableEvalBound c_exp (cuckooKBound c_exp) + 4

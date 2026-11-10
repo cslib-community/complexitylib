@@ -132,7 +132,7 @@ noncomputable def grover (N : ℕ) : ℕ → State N Unit →ₗᵢ[ℂ] State N
 /-- The Grover angle `θ = arcsin(1 / √N)`. -/
 noncomputable def groverAngle (N : ℕ) : ℝ := Real.arcsin (Real.sqrt N)⁻¹
 
-/-- The sine and cosine of the Grover angle: `sin θ = 1 / √N` and `cos θ / √(N - 1) = 1 / √N`. -/
+/-- The sine of the Grover angle: `sin θ = 1 / √N` for `N ≥ 2`. -/
 private theorem sin_groverAngle (hN : 2 ≤ N) : Real.sin (groverAngle N) = (Real.sqrt N)⁻¹ := by
   have hpos : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by positivity)
   have hle : (Real.sqrt N)⁻¹ ≤ 1 := by

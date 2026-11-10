@@ -14,9 +14,12 @@ import CslibFrontier.Languages.Probabilistic.Norm
 # Exact finite randomness for GSW
 
 One flat uniform tape realizes the complete joint law of key generation and encryption.
-Its length is `n*w + m*n*w + 2*m*η + (n+1)*w*m`: the secret, public matrix, signed errors,
-and binary encryption matrix consume disjoint blocks. No noise tails or rejection sampling
-are involved. The law includes the secret key, so it preserves more than ciphertext marginals.
+Its length is `n*w + m*n*w + 2*m*η + (n+1)*w*m`, the sum of the tape lengths for the secret,
+public matrix, signed errors, and binary encryption matrix. Each theorem states only that the law
+is the image of the uniform tape under some function; the proofs read the components from
+disjoint blocks, but the statements do not record which positions each component reads. No noise
+tails or rejection sampling are involved. The law includes the secret key, so it preserves more
+than ciphertext marginals.
 
 These are distribution identities. Native efficiency of the serialized random-input samplers
 is proved separately; matrix computation and cryptographic security remain separate obligations.
@@ -47,7 +50,8 @@ theorem exists_uniform_seed_sampleResidue (w : ℕ) :
   refine ⟨fun bits => (BitString.binaryValue bits : ZMod (2 ^ w)), ?_⟩
   simp only [pmf_norm, sampleResidue, sampleBinaryNat, BitString.eval_sampleList]
 
-/-- Independent residues use disjoint width-sized blocks. -/
+/-- The law of `count` independent residues is the image of `count * w` uniform bits under some
+function. -/
 theorem exists_uniform_seed_sampleVector (count w : ℕ) :
     ∃ evaluate : List Bool → Fin count → ZMod (2 ^ w),
       ProbComp.eval (sampleVector count w) =
@@ -55,7 +59,8 @@ theorem exists_uniform_seed_sampleVector (count w : ℕ) :
   obtain ⟨evaluate, hlaw⟩ := exists_uniform_seed_sampleResidue w
   exact ⟨_, ProbComp.eval_replicateFin_of_uniformList count w _ evaluate hlaw⟩
 
-/-- Independent rows use disjoint row-sized blocks. -/
+/-- The law of `rows` independent rows is the image of `rows * (cols * w)` uniform bits under some
+function. -/
 theorem exists_uniform_seed_sampleMatrix (rows cols w : ℕ) :
     ∃ evaluate : List Bool → Matrix (Fin rows) (Fin cols) (ZMod (2 ^ w)),
       ProbComp.eval (sampleMatrix rows cols w) =
@@ -81,7 +86,8 @@ theorem exists_uniform_seed_sampleCoins (n m w : ℕ) :
     simpa only [pmf_norm, sampleCoins, PMF.map] using
       congrArg (PMF.map Function.uncurry) hrows⟩
 
-/-- All key-generation inputs are independent functions of disjoint parts of one finite tape. -/
+/-- The joint law of all key-generation inputs is the image of one uniform tape of length
+`n * w + m * (n * w) + m * (2 * η)` under some function. -/
 theorem exists_uniform_seed_sampleKeyInputs (n m w η : ℕ) :
     ∃ evaluate : List Bool → KeyInputs n m w,
       ProbComp.eval (sampleKeyInputs n m w η) =

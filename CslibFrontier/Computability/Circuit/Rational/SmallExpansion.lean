@@ -111,8 +111,9 @@ def reverseCoordinates (M : ℕ) : (Fin M → K) ≃ₗ[K] (Fin M → K) :=
 def reverseTaylorCoordinates (M : ℕ) (a : K) : (Fin M → K) ≃ₗ[K] (Fin M → K) :=
   (taylorCoordinates M a).trans (reverseCoordinates M)
 
-/-- The reverse-Taylor test on bounded-degree polynomials multiplies each
-Taylor coefficient by t^a and places it in output degree M-1-a. -/
+/-- The reverse-Taylor test at the point `a` on bounded-degree polynomials multiplies the `j`-th
+Taylor coefficient at `a` by `X ^ j` and places it in Taylor degree `M - 1 - j` at `a` of the
+output. -/
 def testMap (M : ℕ) (a : K) : (Fin M → F K) →ₗ[F K] (Fin M → F K) :=
   conjugatedWeight (taylorCoordinates M a) (reverseTaylorCoordinates M a) Fin.val
 

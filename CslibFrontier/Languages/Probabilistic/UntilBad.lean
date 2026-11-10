@@ -27,10 +27,12 @@ the same probability (`IdenticalUntilBad.bad_eq`), so the two acceptance probabi
 at most that probability (`IdenticalUntilBad.abs_sub_le`), and the bad event may be bounded in
 whichever run is easier.
 
-The probability of reaching a bad state is bounded by summing over the calls: if each call `q`
+The probability of ending in a bad state is bounded by summing over the calls: if each call `q`
 from a good state turns bad with probability at most `cost q · budget s`, and each call raises the
-budget by at most `δ`, then a program making at most `n` calls, whose calls cost at most `k`,
-reaches a bad state with probability at most `k · (budget s + n · δ)` (`toOuterMeasure_bad_le`).
+budget by at most `δ`, then a program making at most `n` calls, whose calls cost at most `k` in
+total, started in a good state `s`, ends in a bad state with probability at most
+`k · (budget s + n · δ)` (`toOuterMeasure_bad_le`). When bad states are absorbing, as for
+`IdenticalUntilBad`, every run from a bad state ends in a bad state (`bad_of_mem_support_run`).
 This is the union bound for a growing collision set, such as a random oracle that is programmed,
 at some calls only, at points that may already be defined.
 
@@ -45,7 +47,7 @@ at some calls only, at points that may already be defined.
 * `Cslib.OracleComp.IdenticalUntilBad.bad_eq`, `Cslib.OracleComp.IdenticalUntilBad.abs_sub_le`:
   the bad event has the same probability under both handlers, and the two-sided difference
   lemma.
-* `Cslib.OracleComp.toOuterMeasure_bad_le`: the accumulated probability of a bad state.
+* `Cslib.OracleComp.toOuterMeasure_bad_le`: the accumulated probability of a bad final state.
 
 ## References
 
@@ -201,10 +203,10 @@ theorem abs_sub_le (h : IdenticalUntilBad first second bad) (program : OracleCom
 
 end IdenticalUntilBad
 
-/-- **The accumulated probability of a bad state.** Let each call `q` from a good state turn bad
-with probability at most `cost q · budget s`, and raise the budget by at most `δ`. Then a program
-making at most `n` calls, whose calls cost at most `k`, reaches a bad state from a good state with
-probability at most `k · (budget s + n · δ)`. -/
+/-- **The accumulated probability of a bad final state.** Let each call `q` from a good state
+turn bad with probability at most `cost q · budget s`, and raise the budget by at most `δ`. Then
+a program making at most `n` calls, whose calls cost at most `k` in total, started in a good
+state `s`, ends in a bad state with probability at most `k · (budget s + n · δ)`. -/
 theorem toOuterMeasure_bad_le {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}
     (cost : ι → ℕ) (budget : σ → ℝ≥0∞) (δ : ℝ≥0∞)
     (hstep : ∀ q s, ¬bad s → (handler q s).toOuterMeasure {x | bad x.2} ≤ cost q * budget s)

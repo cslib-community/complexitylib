@@ -141,7 +141,7 @@ theorem position_injective (N : ℕ) {i j : Φ.Var} {idx idx' : ℕ} (h : idx < 
   exact ⟨ℓ.block.injective (Fin.ext h₁), h₂⟩
 
 /-- The number of tuples of the arity of a relation variable is at most the block size, for inputs
-of cardinality at most `N`. -/
+of cardinality at most a positive `N`. -/
 private theorem pow_arity_le {n N : ℕ} (hn : n ≤ N) (hN : 0 < N) (i : Φ.Var) :
     n ^ Φ.arity i ≤ N ^ ℓ.degree :=
   (Nat.pow_le_pow_left hn _).trans (Nat.pow_le_pow_right hN (ℓ.arity_le i))
@@ -182,8 +182,8 @@ private theorem certRel_certificate {n N : ℕ} (hn : n ≤ N) (hN : 0 < N)
   · exact fun hx => ⟨i, x, rfl, hx⟩
 
 /-- Every family of witness relations has a certificate of the prescribed polynomial length,
-provided the input-length parameter bounds the universe size. This is independent of the base
-language, so it also applies when the base has canonical numeric constants. -/
+provided the input-length parameter is positive and bounds the universe size. This is independent
+of the base language, so it also applies when the base has canonical numeric constants. -/
 theorem exists_certificate {n N : ℕ} (hn : n ≤ N) (hN : 0 < N)
     (R : ∀ i, Set (Fin (Φ.arity i) → Fin n)) :
     ∃ w : List Bool, w.length = ℓ.polynomial.eval N ∧ ℓ.certRel n N w = R :=
@@ -326,7 +326,7 @@ theorem eval_matrix_eq_true_iff :
   rwa [List.ofFn_zero] at this
 
 /-- **A decoded structure satisfies the sentence exactly when some certificate is accepted**, for
-certificate lengths computed from any `N` at least the cardinality. -/
+certificate lengths computed from any positive `N` at least the cardinality. -/
 theorem realize_iff_exists_certificate (hn : a.1 ≤ N) (hN : 0 < N) :
     (letI := v.decode a; Φ.Realize (Fin a.1)) ↔
       ∃ w : List Bool, w.length = ℓ.blocks * N ^ ℓ.degree ∧ ℓ.eval v a N w Φ.matrix [] = true := by

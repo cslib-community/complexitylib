@@ -20,7 +20,7 @@ according to `coinLaw prog : PMF (Coins prog)`. Fixing `ω : Coins prog` yields 
 oracle program `fixCoins prog ω : OracleComp spec α` with no private sampling calls:
 
 * `fixCoins` preserves every external query-cost budget `OracleComp.IsCostBounded` (and in
-  particular `IsQueryBounded` and `QueriesSatisfy`);
+  particular `IsQueryBounded`);
 * against any deterministic external oracle `table : (q : Query) → spec q`, sampling
   `ω ← coinLaw prog` and interpreting `fixCoins prog ω` reproduces the exact output distribution of
   `prog` (`bind_interpret_fixCoins`);

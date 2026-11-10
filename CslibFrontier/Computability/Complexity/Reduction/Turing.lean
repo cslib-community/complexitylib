@@ -117,7 +117,14 @@ in polynomial time relative to an oracle for the encoded language of `B`
 Query and resource conventions: an algorithm is represented by a single deterministic, adaptive
 `WordQueryComp` program certified by `IsOraclePPTOn`. The clock is polynomial in `|encA a|`,
 with each query symbol costing one step, bounding both query length and the number of queries
-via `IsOraclePPTOn.query_bounds`. Oracle evaluation itself takes one step. -/
+via `IsOraclePPTOn.query_bounds`. Oracle evaluation itself takes one step.
+
+Oracle convention: the oracle is the word language `encB '' B`, which rejects every word outside
+`Set.range encB`, whereas a hypothesis such as `B ∈ P encB` constrains a decider only on
+codewords. For example, the word language `Set.range encB` under `encBits` reduces to `Set.univ`
+under `encB`, and `Set.univ ∈ P encB` for every `encB`. `PolyTimeTuringReducible.mem_P` takes
+the oracle problem, and `PolyTimeTuringReducible.trans` the middle problem, to be a word language
+under `encBits`; for a typed `B` they apply to the word language `encB '' B`. -/
 def PolyTimeTuringReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α)
     (B : Set β) : Prop :=
   A ∈ PWithOracle (encB '' B) encA
@@ -503,13 +510,16 @@ theorem PolyTimeTuringReducible.mem_P {B : Set (List Bool)}
   rwa [← PWithOracle_eq_P hB encA]
 
 /-- `B` is hard for the class `C` under polynomial-time Turing reductions: every problem in `C`
-Turing-reduces to `B`. -/
+Turing-reduces to `B`, with `encB '' B` as the oracle word language
+(see `PolyTimeTuringReducible`). -/
 def PolyTimeTuringHard (C : ∀ {α : Type}, (α ↪ List Bool) → Set (Set α))
     (encB : β ↪ List Bool) (B : Set β) : Prop :=
   HardUnder (fun enc => PolyTimeTuringReducible enc encB) @C B
 
 /-- `B` is complete for the class `C` under polynomial-time Turing reductions: it belongs to `C`
-and is Turing-hard for `C`. -/
+and is Turing-hard for `C`. Membership is `B ∈ C encB`, while hardness is relative to the oracle
+word language `encB '' B`, which also rejects every word outside `Set.range encB`
+(see `PolyTimeTuringReducible`). -/
 def PolyTimeTuringComplete (C : ∀ {α : Type}, (α ↪ List Bool) → Set (Set α))
     (encB : β ↪ List Bool) (B : Set β) : Prop :=
   CompleteUnder (fun enc => PolyTimeTuringReducible enc encB) @C encB B

@@ -13,16 +13,14 @@ public import CslibFrontier.Algorithms.WordRAM.ThreeSum.Host.Width
 /-!
 # Logarithmic physical width for the complete ordinary host
 
-The coefficient depends only on the fixed magnitude exponent and the concrete finite callee.
+The coefficient `widthCoefficient` of the threshold `width`, both defined beside `Admissible`,
+depends only on the fixed magnitude exponent and the concrete finite callee.
 It covers the native computation of the preprocessing word envelope, the live-frontier matrix arena,
 and the callee's actual logarithmic-width obligation. No width depends on input values.
 
-## Main definitions
-
-* `widthCoefficient`, `width`: positive uniform physical-width threshold.
-
 ## Main results
 
+* `width_pos`: the uniform physical-width threshold `width` is positive.
 * `preprocessing_width_le`: reuse the complete preprocessing threshold.
 * `margin_fits`: polynomial envelope with three extra signed representation bits.
 * `callee_width`: the actual free pointer, filler and side satisfy the concrete callee contract.

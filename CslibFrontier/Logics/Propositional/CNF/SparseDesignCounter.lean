@@ -68,6 +68,13 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
    `CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`), with
    `max D₀ P` simplified unconditionally to `D₀ = initialRowWeightBound B φ.length`
    (`Cslib.BitString.max_initialRowWeightBound_greedyRowListLength`).
+   These identities concern only the value at `T = 0`. They rest on
+   `commonZeroCount_eq_sum_branch_emod_ediv_cleared`, whose only hypothesis on the replacement
+   family `θ` is that, on the variables of the branch monomials, its polynomials evaluate at
+   `T = 0` to `d_den * bitVal ℤ (x v)`; the family `designReplacementScaledIntMap` of any design
+   satisfies it with `d_den = commonDenom Q R` (`eval_zero_designReplacementScaledIntMap`). The
+   set `S`, the scope families `scope b`, the designs `D b`, and the factor embeddings `emb b`
+   are arbitrary; no hypothesis relates the scopes to the branch equations.
 
 ## Main definitions
 
@@ -97,7 +104,7 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
   `Cslib.Logic.PL.CNF.numPassing_eq_sum_branch_emod_ediv_design`,
   `Cslib.Logic.PL.CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy`,
   `Cslib.Logic.PL.CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`:
-  end-to-end `ReplacementDesign` recovery of `commonZeroCount`, `numPassing`, and
+  branch-summed `ReplacementDesign` recovery at `T = 0` of `commonZeroCount`, `numPassing`, and
   `φ.modelCountOn Finset.univ`.
 
 ## References
@@ -402,7 +409,7 @@ theorem CNF.coeffNorm1_univariateClearedParityCoord_branchParityRowSystem_le
 
 end BranchDesignBounds
 
-/-! ### 3. End-to-end `ReplacementDesign` recovery of `commonZeroCount`, `numPassing`, and `#F` -/
+/-! ### 3. `ReplacementDesign` recovery at `T = 0` of `commonZeroCount`, `numPassing`, and `#F` -/
 
 section DesignRecovery
 
@@ -430,10 +437,16 @@ theorem CNF.emod_ediv_eval_zero_branchParityRowSystem_design_eq_commonZeroCount
     (fun j _ _M hM => CNF.card_mem_branchParityRowSystem_le hk rows S e b j hM)
 
 /-- **§5.4–5.5 & §6 (branch-summed `ReplacementDesign` recovery of `commonZeroCount` on
-`φ.parityRowSystem rows`)**: when every clause of `φ` has width at most `k`, summing the per-branch
-`ReplacementDesign` modular residues of `univariateClearedParityTruncatedSum` at shared precision
-`branchPrecision (Fintype.card V)` across all `b ∈ branchAssignments S` recovers
-`commonZeroCount univ (φ.parityRowSystem rows)`. -/
+`φ.parityRowSystem rows`)**: when every clause of `φ` has width at most `k`, for any
+`S : Finset V`, free-variable relabeling `e : ↥(univ \ S) ≃ Fin n'`, per-branch scope family
+`scope b`, replacement design `D b` on `scope b`, and factor embedding `emb b`, summing the
+residues modulo `2 ^ branchPrecision (Fintype.card V)` of `univariateClearedParityTruncatedSum`
+evaluated at `T = 0` and divided by `clearedProductDenom` across all `b ∈ branchAssignments S`
+recovers `commonZeroCount univ (φ.parityRowSystem rows)`. This is
+`commonZeroCount_eq_sum_branch_emod_ediv_cleared` at the replacement family
+`designReplacementScaledIntMap (D b) (emb b)`, whose value at `T = 0` is given by
+`eval_zero_designReplacementScaledIntMap` for every design; no hypothesis relates the scopes to
+the branch equations. -/
 theorem CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design
     {F : (V → Bool) → Type*} [∀ b, Fintype (F b)] {φ : CNF V} {k : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (rows : List (Fin φ.length → Bool))

@@ -81,8 +81,10 @@ the variable and degree bounds remain unary, and the remaining parameters remain
 * `countSystemExhaustive_eq_rootCount`, `guardedBranchSolver_eq_rootCount`,
   `countSparsePolySystem_eq_rootCount`, `countSparsePolySystem_eq_commonZeroCount`,
   `checkTopFeasible_mkPaperSparseInput_of_le`, `reduced_branch_invariants`,
-  `clog_pow_le_clog_pow_two_mul`, `countContextParity_eq_numPassing`: unconditional exactness,
-  `commonZeroCount` / `numPassing` bridges, and heavy-branching invariants.
+  `clog_pow_le_clog_pow_two_mul`, `countContextParity_eq_numPassing`: unconditional exactness of
+  the exhaustive fallback; exactness of `guardedBranchSolver` and `countSparsePolySystem` on every
+  input when `branchEval` is exact on feasible branches; `commonZeroCount` / `numPassing` bridges
+  under that hypothesis and their stated input conditions; and heavy-branching invariants.
 * `polyBounded_guardedBranchCertificate_space`, `exists_guardedBranchCertificate_time_le`,
   `polyBounded_sparsePolyCounterCertificate_space`,
   `sparsePolyCounterCertificate_time_le_of_feasible`, `exists_real_exp_bound_countSparsePolySystem`,
@@ -313,7 +315,8 @@ def mkPaperSparseInput (n k_deg : ℕ) (eqs : List (List (List ℕ))) : SparseSy
   (n, (k_deg, max 1 (ParameterCheck.heavyIncidenceCutoff 1 n),
     max 1 (ParameterCheck.heavyIncidenceCutoff (branchAugmentedIncidence n eqs) n)), eqs)
 
-/-- Top-level §5.5 feasibility guard: `N₀_top ≤ n`, `1 ≤ s_div`, canonical `< n`, `|S| ≤ n/s`. -/
+/-- Top-level §5.5 feasibility guard: `N₀_top ≤ n`, `1 ≤ s_div`, canonical `< n`,
+`sysMaxDegree eqs ≤ k_deg`, `|S| ≤ n/s`. -/
 def checkTopFeasible (N₀_top : ℕ) (inp : SparseSystemInput) : Bool :=
   let (n, (k_deg, s_div, b₀), eqs) := inp
   decide (N₀_top ≤ n) && decide (1 ≤ s_div) && checkVarsLt n eqs && checkCanonicalSystem eqs &&
@@ -850,7 +853,8 @@ theorem checkTopFeasible_eq_true_iff {inp : SparseSystemInput} :
   simp only [Bool.and_eq_true, decide_eq_true_eq, checkVarsLt_eq_true_iff,
     checkCanonicalSystem_eq_true_iff, sysMaxDegree_le_iff]; tauto
 
-/-- **Pointwise unconditional exactness (§5.5)**: `countSparsePolySystem = rootCount` always. -/
+/-- **Pointwise exactness (§5.5)**: when `branchEval` is exact on feasible branches,
+`countSparsePolySystem = rootCount` on every input `inp`. -/
 theorem countSparsePolySystem_eq_rootCount
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) = HeavyBranchFold.rootCount n' eqs')
@@ -864,7 +868,8 @@ theorem countSparsePolySystem_eq_rootCount
       (fun _ hs => HeavyBranchFold.lt_of_mem_heavyVarList hs) hvars
       (fun _ _ n' sys' _ => guardedBranchSolver_eq_rootCount hbranch n' sys')
 
-/-- **Semantic bridge to `Cslib.BitString.commonZeroCount` (§5.5, Theorem 2.2)** on `Fin n`. -/
+/-- **Semantic bridge to `Cslib.BitString.commonZeroCount` (§5.5, Theorem 2.2)** on `Fin n`, for
+canonical `< n` systems, when `branchEval` is exact on feasible branches. -/
 theorem countSparsePolySystem_eq_commonZeroCount
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) = HeavyBranchFold.rootCount n' eqs')
@@ -896,7 +901,8 @@ theorem length_heavyVarList_le_div_of_incidence {n b₀ s_div : ℕ} {eqs : List
     _ ≤ (eqs.map (scopeWidthOn n)).sum * s_div := Nat.mul_le_mul_right s_div hqb
     _ ≤ n * b₀ := hM.trans_eq (Nat.mul_comm b₀ n)
 
-/-- `checkTopFeasible N₀_top (mkPaperSparseInput n k_deg eqs)` holds for canonical `< n` systems. -/
+/-- `checkTopFeasible N₀_top (mkPaperSparseInput n k_deg eqs)` holds when `max N₀_top 2 ≤ n` and
+`eqs` is a canonical `< n` system whose monomials have length at most `k_deg`. -/
 theorem checkTopFeasible_mkPaperSparseInput_of_le {N₀_top n k_deg : ℕ}
     {eqs : List (List (List ℕ))} (hn : max N₀_top 2 ≤ n)
     (hcan : ∀ eq ∈ eqs, IsCanonicalEquation eq) (hvars : ∀ eq ∈ eqs, ∀ m ∈ eq, ∀ v ∈ m, v < n)
@@ -1291,7 +1297,9 @@ theorem polyBounded_contextParityCertificate_space (N₀_top N₀_branch k_deg :
     ((polyBounded_sparsePolyCounterCertificate_space N₀_top N₀_branch cBranch hbound hs_br).comp
       hcomp.polyBounded_length)
 
-/-- **Exact agreement with `numPassing` (§6.3, Lemma 6.2)** on `Fin (nOf ctx)`. -/
+/-- **Exact agreement with `numPassing` (§6.3, Lemma 6.2)** on `Fin (nOf ctx)`: when `branchEval`
+is exact on feasible branches, `φOf ctx` is `φFin` with its variables cast to `ℕ`, and the clauses
+of `φFin` have length at most `k_deg`. -/
 theorem countContextParity_eq_numPassing {N₀_top N₀_branch k_deg : ℕ}
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) = HeavyBranchFold.rootCount n' eqs')
