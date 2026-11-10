@@ -2088,6 +2088,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.CountingSparsif
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 public import CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionCountingResources
 public import CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionDistribution
+public import CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionOptimum
 public import CslibFrontier.Computability.Complexity.FineGrained.DensityBranchCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
 public import CslibFrontier.Computability.Complexity.FineGrained.DigraphKernel
@@ -2138,6 +2139,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SearchStep
 public import CslibFrontier.Computability.Complexity.FineGrained.SharpCountingSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoCountingResources
 public import CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoDistribution
+public import CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoOptimum
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
@@ -2919,6 +2921,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Lex
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List.ArgOpt
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.ListsUpTo
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -4847,6 +4850,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Ramsey.FranklW
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Ramsey.Nagy
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Separator
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ShannonCapacity
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SigmaRhoPartition
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.StrongProduct
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic

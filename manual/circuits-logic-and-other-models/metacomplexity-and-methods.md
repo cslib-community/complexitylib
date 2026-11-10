@@ -1318,7 +1318,8 @@ This closes the augmented width-four exact-set clause. The source's shared path-
 width-three construction on at most $6v+a-1$ variables is supplied in the next section, including
 count transport and sharp resources; it avoids the extra variables of ordinary clause splitting.
 The compact regular construction and independent-domination optimum recovery are completed below.
-Degree-rule optimization and encoding/model transfers remain in the paperwide inventory.
+Degree-rule optimization is supplied below; encoding/model transfers remain in the paperwide
+inventory.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 
@@ -1392,8 +1393,8 @@ covered by the rounded clock, without a supplied dimension or runtime premise.
 $L^{O(1)}2^{O(\eta(v))}$ for $v\ge16$, with global polynomial workspace. No additional loglog
 factor is hidden. Together with the exact count and query budgets above, this closes the
 shared-marker refinement of Proposition 7.6 in the recorded native/encoding model. The combined
-ROADMAP entry has been removed after the C.2 completion below; degree-rule optimization and
-broader encoding/model transfers remain separate.
+ROADMAP entry has been removed after the C.2 completion below. Degree-rule optimization is
+supplied later in this chapter; broader encoding/model transfers remain separate.
 The reviewed width-four exact-set counter is unchanged.
 
 From the checkout root run:
@@ -1494,8 +1495,8 @@ traces, rather than enumerating auxiliaries. It checks exact/upper/lower interva
 512-bit signed bounds, degree-three cliques, declared isolates, direct empty dispatch and sizes
 three/six/four on two disjoint triangles. It also checks the actual gate-dependent query metadata,
 a formal zero count for a contradictory compiled plan, and the native count/decision interfaces.
-The C.2 ROADMAP entry is removed; Theorem 7.3 optimization, encoding/model transfers and the
-independent paperwide audit remain open.
+The C.2 ROADMAP entry is removed. Theorem 7.3 optimization is supplied below; encoding/model
+transfers and the independent paperwide audit remain open.
 
 ### Minimum independent-domination resources
 
@@ -1528,7 +1529,7 @@ minimum word. The all-size rounded certificate covers small and empty graphs. No
 size alone is used as a runtime proof, no desired runtime is a premise, and the single-loglog
 exponent is unchanged. This closes the remaining Corollary 7.4 clause for the recorded explicit
 matrix/unary-declaration native model, so only that ROADMAP entry is removed. The refined graph
-constructions and broader encoding/model transfers remain open.
+constructions are completed above; broader encoding/model transfers remain open.
 `exists_attained_optimal_search` proves unconditional finite-graph success, including the empty
 graph: a finite maximal independent set dominates, so the actual search always returns a word.
 No threshold-output or runtime premise is substituted for those obligations.
@@ -1635,7 +1636,7 @@ durable theorem-by-theorem source inventory and completion criteria.
 
 Import `CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionDistribution`. The
 counting and size-vector clauses of Theorem 7.3 / Appendix C.2 (PDF pp.25,32) are supplied in the
-recorded explicit graph/native model. Native minimum/maximum extraction remains open. The label
+recorded explicit graph/native model; native minimum/maximum extraction follows below. The label
 count $q$, finite/cofinite matrix and common positive cutoff are fixed; the original graph and
 **every** class's inclusive interval vary at runtime. No maximum-degree or connectivity promise is
 imposed. `Bounded.BinaryFrontend.ofGraph` (in `DegreePartition`) encodes an explicit simple graph
@@ -1691,6 +1692,68 @@ checks distinct/asymmetric labels, empty classes, single-label boundaries, empty
 with two universal labels there are four labelings; the vector $(1,1)$ has coefficient two. Tiny
 original-label enumeration computes deterministic traces only in this client; production uses the
 proved native counter. The complete native endpoint types are checked by the same client.
+
+### Attained general degree-rule and labeled-partition extrema
+
+Import `CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionOptimum` and open
+`Cslib.Logic.PL.DegreePartition.Optimum`. This supplies the optimization clause following
+Theorem 7.3 (PDF p.25). The label count, finite/cofinite matrix and chosen objective label are
+fixed; the explicit original graph and **all** binary natural class bounds vary. There is no
+maximum-degree, nonempty-class or connectivity promise beyond the actual rules and bounds.
+
+`select` filters the complete computed distribution by positive counts and every input interval,
+then runs Mathlib's actual first-tie `List.argmin` and `List.argmax` scans. Each returned option
+contains the complete original-label size vector and its exact original-partition multiplicity.
+`select_optimal` proves `Optimal`: both absence tags are equivalent to infeasibility; every
+returned vector is attained by a feasible original partition; and its objective is bounded
+against **every** feasible original partition. Feasible optimum zero is distinguished from
+infeasibility. No monotonicity under inclusion is assumed, and labels are never quotiented.
+
+`select_polytime` charges support filtering, bound comparisons, both scans, retained vectors and
+all option/value writes. Its reusable `ComputableInPolyTime.argmin` / `.argmax` rules certify
+Mathlib's actual folds: every intermediate accumulator is absent or an original list member,
+so its encoded length is bounded by the input list plus its tag. No numeric candidate budget is
+advice. The production algorithm obtains the complete distribution from the approved native
+bounded-width counter; it never enumerates label assignments or auxiliary cubes.
+
+`exists_optimal_sharp_certificate`, `exists_optimal_realEta_certificate` and
+`exists_optimal_finiteCofinite_certificate` compose the computed distribution, retained binary
+bounds, filtering, comparisons and output. The $(v+1)^q$ coefficient calls and explicit binary
+size-vector/count output are polynomial for **fixed** $q$, not for a growing input dimension.
+The complete machine has $L^{O_{q,M}(1)}2^{O_{q,M}(\eta(v))}$ time and global polynomial workspace,
+with the real clock for $v\ge16$ and rounded bounds for smaller and empty inputs. The
+postprocessor's time is bounded through its actual machine certificate and the producer's
+proved workspace/output bound; output size alone is not treated as runtime.
+
+Import `CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoOptimum` for the original-set
+specialization. `prepare` actually constructs the selected/complementary two-class instance,
+putting the input interval on class zero and the computed interval $[0,v]$ on its complement.
+`SimpleGraph.sigmaRhoMatrix` imposes the fixed $\sigma$/$\rho$ rules only on degrees into the
+selected class. The ordinary-set correspondence and `transport_optimal` prove attained global
+extrema over original selected vertex sets. `values` actually writes two optional binary scalar
+cardinalities. Its sharp/real native certificate theorems charge preparation and reconstruction,
+for every fixed finite/cofinite rule pair and every input binary natural interval. On an empty
+graph the feasible optimum is zero exactly when the interval admits zero, regardless of the rules.
+
+From the checkout root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.DegreeRuleOptimum --wfail --iofail
+```
+
+The computed client runs the actual grid, interval requests, filtering and scans, using only a
+tiny original-label test oracle for coefficients. It checks three distinct labels, class-bound
+interaction, retained multiplicities, impossible matrices, contradictory and 512-bit bounds,
+empty classes/graphs, asymmetric opposite-neighbor rules, and sigma-rho extrema on a path.
+A formal client proves both empty-graph optimum values and instantiates the complete native
+finite/cofinite endpoint. Enumeration occurs only in the test oracle.
+
+The general degree-rule optimization ROADMAP entry is removed. The precise remaining mandatory
+inventory is encoding/model transfers: arbitrary-rational row selection, the recorded raw
+admission and signed/succinct input cases, and transition-level realization of the backend.
+The explicit canonical matrix/unary declaration and native charged-word model remain visible;
+this endpoint supplies none of those transfers. Optional Proposition A.3 stays last. ALL-main
+and the independent paperwide audit remain open.
 
 ### General polynomial-weight comparisons
 

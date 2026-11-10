@@ -780,7 +780,6 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 The submission program owns the full source-to-Lean acceptance inventory.
 The directions below preserve the original source quantifiers and resource obligations.
 
-- **General degree-rule optimization (1575, Theorem 7.3):** Native minimum/maximum extraction from general finite/cofinite degree rules and labeled partitions, charging the actual traversal, reconstruction and output.
 - **Encoding and model transfers (1575):** Arbitrary-rational row-selection frontend, signed graph bounds, alternative raw admission and succinct declarations where claimed, and transition-level realizations for the recorded backend; preserve each source's exact representation and native resource convention.
 - **One-query bounded-demand alternative (1575, Proposition A.3):** The optional additional parsimonious construction and its complete resource composition, after the advertised main clauses.
 
