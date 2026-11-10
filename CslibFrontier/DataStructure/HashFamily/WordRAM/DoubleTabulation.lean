@@ -11,6 +11,7 @@ public import CslibFrontier.DataStructure.HashFamily.WordRAM.Basic
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.KWise
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.Tabulation
 public import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import CslibFrontier.Tactic.Fits
 
 /-!
@@ -388,43 +389,16 @@ private theorem resampleSetup1Code_exec {w base c d b : ℕ} {x : Data 12}
     (hfit_mask_b : Fits w (2 ^ b - 1))
     (hfit_1 : Fits w 1) :
     Exec w (resampleSetup1Code c d b) x (resampleSetup1Data base c d b x) 5 := by
-  set s1 := x.set 3 base
-  have e1 : Exec w (.op (.copy 3 0) : Code .exact 12) x s1 1 := by
-    simpa [s1, hbase] using (Exec.copy (B := .exact) (w := w) (d := 3) (s := 0) (x := x))
-  set s2 := s1.set 4 (c * d * 2 ^ b)
-  have e2 : Exec w (.op (.const 4 (c * d * 2 ^ b)) : Code .exact 12) s1 s2 1 :=
-    Exec.const (by fits)
-  set s3 := s2.set 4 (base + c * d * 2 ^ b)
-  have e3 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 12) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, hbase]) hfit_top
-  set s4 := s3.set 5 (2 ^ b - 1)
-  have e4 : Exec w (.op (.const 5 (2 ^ b - 1)) : Code .exact 12) s3 s4 1 :=
-    Exec.const hfit_mask_b
-  set s5 := s4.set 6 1
-  have e5 : Exec w (.op (.const 6 1) : Code .exact 12) s4 s5 1 :=
-    Exec.const hfit_1
-  simpa only [resampleSetup1Code, resampleSetup1Data, s5, s4, s3, s2, s1] using
-    e1.seq (e2.seq (e3.seq (e4.seq e5)))
+  unfold resampleSetup1Code resampleSetup1Data
+  wram_exec [hbase]
 
 private theorem resampleSetup2Code_exec {w base c d b M : ℕ} {x : Data 12}
     (h4 : x.regs 4 = base + c * d * 2 ^ b)
     (hfit_end : Fits w (base + c * d * 2 ^ b + d * 2 ^ b))
     (hfit_mask_M : Fits w (2 ^ M - 1)) :
     Exec w (resampleSetup2Code d b M) x (resampleSetup2Data base c d b M x) 4 := by
-  set s1 := x.set 3 (base + c * d * 2 ^ b)
-  have e1 : Exec w (.op (.copy 3 4) : Code .exact 12) x s1 1 := by
-    simpa [s1, h4] using (Exec.copy (B := .exact) (w := w) (d := 3) (s := 4) (x := x))
-  set s2 := s1.set 5 (d * 2 ^ b)
-  have e2 : Exec w (.op (.const 5 (d * 2 ^ b)) : Code .exact 12) s1 s2 1 :=
-    Exec.const (by fits)
-  set s3 := s2.set 4 (base + c * d * 2 ^ b + d * 2 ^ b)
-  have e3 : Exec w (.op (.exactBin .add 4 4 5) : Code .exact 12) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h4]) hfit_end
-  set s4 := s3.set 5 (2 ^ M - 1)
-  have e4 : Exec w (.op (.const 5 (2 ^ M - 1)) : Code .exact 12) s3 s4 1 :=
-    Exec.const hfit_mask_M
-  simpa only [resampleSetup2Code, resampleSetup2Data, s4, s3, s2, s1] using
-    e1.seq (e2.seq (e3.seq e4))
+  unfold resampleSetup2Code resampleSetup2Data
+  wram_exec [h4]
 
 /-- **Exact `ExecRand` execution of `resampleCode c d b M`**. -/
 theorem resampleCode_execRand {w base c d b M : ℕ} {x : Data 12}
@@ -793,32 +767,8 @@ private theorem evalSetupCode_exec {w base c d b : ℕ} {x : Data 12}
   have hsp := topWords_add_botWords c d b
   have hfit_end : Fits w (base + c * d * 2 ^ b + d * 2 ^ b) :=
     hfit_space.of_le (by dsimp only [topWords, botWords] at hsp; omega)
-  have hfit_0 : Fits w 0 := by fits
-  set s1 := x.set 2 0
-  have e1 : Exec w (.op (.const 2 0) : Code .exact 12) x s1 1 := Exec.const hfit_0
-  set s2 := s1.set 3 base
-  have e2 : Exec w (.op (.copy 3 0) : Code .exact 12) s1 s2 1 := by
-    simpa [s2, s1, hbase] using (Exec.copy (B := .exact) (w := w) (d := 3) (s := 0) (x := s1))
-  set s3 := s2.set 4 (c * d * 2 ^ b)
-  have e3 : Exec w (.op (.const 4 (c * d * 2 ^ b)) : Code .exact 12) s2 s3 1 :=
-    Exec.const (by fits)
-  set s4 := s3.set 4 (base + c * d * 2 ^ b)
-  have e4 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 12) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, hbase]) (by fits)
-  set s5 := s4.set 5 (d * 2 ^ b)
-  have e5 : Exec w (.op (.const 5 (d * 2 ^ b)) : Code .exact 12) s4 s5 1 :=
-    Exec.const (by fits)
-  set s6 := s5.set 5 (base + c * d * 2 ^ b + d * 2 ^ b)
-  have e6 : Exec w (.op (.exactBin .add 5 4 5) : Code .exact 12) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4]) hfit_end
-  set s7 := s6.set 10 (2 ^ b)
-  have e7 : Exec w (.op (.const 10 (2 ^ b)) : Code .exact 12) s6 s7 1 :=
-    Exec.const hfit_pow_b
-  set s8 := s7.set 11 0
-  have e8 : Exec w (.op (.const 11 0) : Code .exact 12) s7 s8 1 :=
-    Exec.const hfit_0
-  simpa only [evalSetupCode, evalSetupData, s8, s7, s6, s5, s4, s3, s2, s1] using
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))
+  unfold evalSetupCode evalSetupData
+  wram_exec [hbase]
 
 private theorem innerLoop_exec {w base c d b U r2 r4 r5 : ℕ} {x_init : Data 12}
     {T₁ : DoubleTabTopSeed c d b}
@@ -879,17 +829,13 @@ private theorem innerLoop_exec {w base c d b U r2 r4 r5 : ℕ} {x_init : Data 12
     have hmem_at : x.mem (topAddr base c b ⟨i, hi_lt⟩ j ch) = (T₁ ⟨i, hi_lt⟩ j ch).val := by
       rw [hmem]
       exact htop ⟨i, hi_lt⟩ j ch
-    have hxor_eq := val_innerPrefixXor_succ T₁ u j hi_succ
-    have hfit_xor : Fits w ((innerPrefixXor T₁ u j i (by omega)).val ^^^
-        (T₁ ⟨i, hi_lt⟩ j ch).val) := by
-      rw [← hxor_eq]
-      fits
+    have hxor_eq : (innerPrefixXor T₁ u j i (by omega)).val ^^^ (T₁ ⟨i, hi_lt⟩ j ch).val =
+        (innerPrefixXor T₁ u j (i + 1) hi_succ).val := (val_innerPrefixXor_succ T₁ u j hi_succ).symm
     have hshift_eq : (u.val >>> (i * b)) >>> b = u.val >>> ((i + 1) * b) := by
       rw [← Nat.shiftRight_add]
       congr 1
       ring
-    have hfit_shift : Fits w ((u.val >>> (i * b)) >>> b) :=
-      hfit_u.of_le ((Nat.shiftRight_le _ _).trans (Nat.shiftRight_le _ _))
+    have hfit_shift : Fits w (u.val >>> ((i + 1) * b)) := hfit_u.of_le (Nat.shiftRight_le _ _)
     have hptr_next_le : base + (j.val * c + i) * 2 ^ b + 2 ^ b ≤ base + space c d b := by
       have h1 : j.val * c + i + 1 ≤ d * c := by
         calc j.val * c + i + 1 ≤ j.val * c + c := Nat.add_le_add_left hi_succ _
@@ -903,7 +849,7 @@ private theorem innerLoop_exec {w base c d b U r2 r4 r5 : ℕ} {x_init : Data 12
         _ ≤ base + (d * c) * 2 ^ b := Nat.add_le_add_left (Nat.mul_le_mul_right _ h1) base
         _ ≤ base + (c + 1) * d * 2 ^ b :=
           Nat.add_le_add_left (Nat.mul_le_mul_right _ hdc_le) base
-    have hfit_rem : Fits w (rem + 1 - 1) :=
+    have hfit_rem : Fits w rem :=
       hfit_space.of_le (by
         have hd_pos : 1 ≤ d := by have := j.isLt; omega
         have hb_pos : 1 ≤ 2 ^ b := Nat.one_le_two_pow
@@ -913,66 +859,22 @@ private theorem innerLoop_exec {w base c d b U r2 r4 r5 : ℕ} {x_init : Data 12
             _ ≤ (c + 1) * d * 2 ^ b := Nat.le_mul_of_pos_right _ hb_pos
         dsimp only [space]
         omega)
-    set s1 := x.set 9 (2 ^ b - 1)
-    have e1 : Exec w (.op (.const 9 (2 ^ b - 1)) : Code .exact 12) x s1 1 :=
-      Exec.const (by fits)
-    set s2 := s1.set 9 ch.val
-    have e2 : Exec w (.op (.exactBin .and 9 7 9) : Code .exact 12) s1 s2 1 :=
-      exec_exactBin (by simp +decide [s1, h7, hch_eq]) (by rwa [← hch_eq])
-    set s3 := s2.set 9 (topAddr base c b ⟨i, hi_lt⟩ j ch)
-    have e3 : Exec w (.op (.exactBin .add 9 3 9) : Code .exact 12) s2 s3 1 :=
-      exec_exactBin (by simp +decide [s2, s1, h3, topAddr]) (by fits)
-    set s4 := s3.set 9 (T₁ ⟨i, hi_lt⟩ j ch).val
-    have e4 : Exec w (.op (.load 9 9) : Code .exact 12) s3 s4 1 := by
-      simpa +decide [s4, s3, s2, s1, hmem_at] using
-        (Exec.load (B := .exact) (w := w) (d := 9) (a := 9) (x := s3))
-    set s5 := s4.set 8 (innerPrefixXor T₁ u j (i + 1) hi_succ).val
-    have e5 : Exec w (.op (.exactBin .xor 8 8 9) : Code .exact 12) s4 s5 1 :=
-      exec_exactBin (by simp +decide [s4, s3, s2, s1, h8, hxor_eq, ch])
-        (by rwa [hxor_eq])
-    set s6 := s5.set 9 b
-    have e6 : Exec w (.op (.const 9 b) : Code .exact 12) s5 s6 1 :=
-      Exec.const hfit_b
-    set s7 := s6.set 7 (u.val >>> ((i + 1) * b))
-    have e7 : Exec w (.op (.exactBin .shiftRight 7 7 9) : Code .exact 12) s6 s7 1 :=
-      exec_exactBin (by simp +decide [s6, s5, s4, s3, s2, s1, h7, hshift_eq])
-        (by rwa [← hshift_eq])
-    set s8 := s7.set 3 (base + (j.val * c + (i + 1)) * 2 ^ b)
-    have e8 : Exec w (.op (.exactBin .add 3 3 10) : Code .exact 12) s7 s8 1 :=
-      exec_exactBin
-        (by
-          rw [show base + (j.val * c + (i + 1)) * 2 ^ b =
-            base + (j.val * c + i) * 2 ^ b + 2 ^ b by ring]
-          simp +decide [s7, s6, s5, s4, s3, s2, s1, h3, h10])
-        (by
-          rw [show base + (j.val * c + (i + 1)) * 2 ^ b =
-            base + (j.val * c + i) * 2 ^ b + 2 ^ b by ring]
-          fits)
-    set s9 := s8.set 9 1
-    have e9 : Exec w (.op (.const 9 1) : Code .exact 12) s8 s9 1 :=
-      Exec.const (by fits)
-    set s10 := s9.set 6 rem
-    have e10 : Exec w (.op (.exactBin .sub 6 6 9) : Code .exact 12) s9 s10 1 :=
-      exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h6]) hfit_rem
-    have hbody := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq e10))))))))
-    obtain ⟨y, hrec, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy8, hy10, hy11⟩ :=
-      ih (i + 1) s10 (by omega)
-        hmem
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h0])
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h1])
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h2])
-        (by simp +decide [s10, s9, s8])
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h4])
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5])
-        (by simp +decide [s10])
-        (by simp +decide [s10, s9, s8, s7])
-        (by simp +decide [s10, s9, s8, s7, s6, s5])
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h10])
-        (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h11])
-    refine ⟨y, ?_, hymem, hy0, hy1, hy2, hy3, hy4, hy5, hy8, hy10, hy11⟩
-    simpa only [innerLoop, innerBody,
-      show 1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + 1)))))))) + (12 * rem + 2) + 2 =
-        12 * (rem + 1) + 2 by omega] using Exec.loop_iter hc hbody hrec
+    have hbody : WP.Exact w (innerBody b) x fun z n => n = 10 ∧
+        ∃ y : Data 12, Exec w (innerLoop b) z y (12 * rem + 2) ∧ y.mem = x_init.mem ∧
+          y.regs 0 = base ∧ y.regs 1 = u.val ∧ y.regs 2 = r2 ∧
+          y.regs 3 = base + (j.val + 1) * c * 2 ^ b ∧ y.regs 4 = r4 ∧ y.regs 5 = r5 ∧
+          y.regs 8 = (simpleTabTuple T₁ (charDigits c b u) j).val ∧ y.regs 10 = 2 ^ b ∧
+          y.regs 11 = 0 := by
+      unfold innerBody
+      wram_exec [h3, h6, h7, h8, h10, hch_eq, hmem_at, hxor_eq, hshift_eq,
+        show base + (j.val * c + i) * 2 ^ b + ch.val = topAddr base c b ⟨i, hi_lt⟩ j ch from rfl]
+      exact ih (i + 1) _ (by omega) (by exact hmem) (by wram_simp [h0]) (by wram_simp [h1])
+        (by wram_simp [h2]) (by wram_simp; ring) (by wram_simp [h4]) (by wram_simp [h5])
+        (by wram_simp) (by wram_simp) (by wram_simp) (by wram_simp [h10]) (by wram_simp [h11])
+    obtain ⟨z, n, hb, rfl, y, hrec, hy⟩ := hbody
+    refine ⟨y, ?_, hy⟩
+    simpa only [innerLoop, show 10 + (12 * rem + 2) + 2 = 12 * (rem + 1) + 2 by omega] using
+      Exec.loop_iter hc hb hrec
 
 private theorem outerLoop_exec {w base c d b U M : ℕ} {x_init : Data 12}
     {T₁ : DoubleTabTopSeed c d b} {T₂ : DoubleTabBotSeed d b M}
@@ -1025,84 +927,44 @@ private theorem outerLoop_exec {w base c d b U M : ℕ} {x_init : Data 12}
             _ ≤ (c + 1) * d * 2 ^ b := Nat.le_mul_of_pos_right _ hb_pos
         dsimp only [space]
         omega)
-    set s1 := x.set 7 u.val
-    have e1 : Exec w (.op (.copy 7 1) : Code .exact 12) x s1 1 := by
-      simpa [s1, h1] using (Exec.copy (B := .exact) (w := w) (d := 7) (s := 1) (x := x))
-    set s2 := s1.set 8 0
-    have e2 : Exec w (.op (.const 8 0) : Code .exact 12) s1 s2 1 := Exec.const (by fits)
-    set s3 := s2.set 6 c
-    have e3 : Exec w (.op (.const 6 c) : Code .exact 12) s2 s3 1 := Exec.const hfit_c
-    obtain ⟨s4, e4, hs4_mem, hs4_0, hs4_1, hs4_2, hs4_3, hs4_4, hs4_5, hs4_8, hs4_10, hs4_11⟩ :=
-      innerLoop_exec
-        (r2 := (outerPrefixXor T₁ T₂ u j (by omega)).val)
-        (r4 := base + c * d * 2 ^ b + j * 2 ^ b)
-        (r5 := base + c * d * 2 ^ b + d * 2 ^ b)
-        htop u ⟨j, hj_lt⟩ hfit_space hfit_pow_b hfit_u c 0 s3 (by omega)
-        hmem
-        (by simp +decide [s3, s2, s1, h0])
-        (by simp +decide [s3, s2, s1, h1])
-        (by simp +decide [s3, s2, s1, h2])
-        (by simp +decide [s3, s2, s1, h3])
-        (by simp +decide [s3, s2, s1, h4])
-        (by simp +decide [s3, s2, s1, h5])
-        (by simp +decide [s3])
-        (by simp +decide [s3, s2, s1])
-        (by simp +decide [s3, s2, val_innerPrefixXor_zero])
-        (by simp +decide [s3, s2, s1, h10])
-        (by simp +decide [s3, s2, s1, h11])
-    let yj := simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩
-    have hbot_lt : botAddr base c d b ⟨j, hj_lt⟩ yj < base + space c d b :=
-      botAddr_lt_base_add_space base c d b ⟨j, hj_lt⟩ yj
-    have hmem_bot : s4.mem (botAddr base c d b ⟨j, hj_lt⟩ yj) = (T₂ ⟨j, hj_lt⟩ yj).val := by
-      rw [hs4_mem]
-      exact hbot ⟨j, hj_lt⟩ yj
-    have hxor_outer := val_outerPrefixXor_succ T₁ T₂ u hj_succ
-    have hfit_xor_outer : Fits w ((outerPrefixXor T₁ T₂ u j (by omega)).val ^^^
-        (T₂ ⟨j, hj_lt⟩ yj).val) := by
-      rw [← hxor_outer]
-      fits
-    have hbot_next_le : base + c * d * 2 ^ b + (j + 1) * 2 ^ b ≤ base + space c d b := by
+    obtain ⟨yj, hyj⟩ : ∃ v, simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩ = v := ⟨_, rfl⟩
+    have hmem_bot : x_init.mem (botAddr base c d b ⟨j, hj_lt⟩ yj) = (T₂ ⟨j, hj_lt⟩ yj).val :=
+      hbot ⟨j, hj_lt⟩ yj
+    have hbot_lt := botAddr_lt_base_add_space base c d b ⟨j, hj_lt⟩ yj
+    have hxor_outer : (outerPrefixXor T₁ T₂ u j (by omega)).val ^^^ (T₂ ⟨j, hj_lt⟩ yj).val =
+        (outerPrefixXor T₁ T₂ u (j + 1) hj_succ).val := by
+      rw [← hyj]
+      exact (val_outerPrefixXor_succ T₁ T₂ u hj_succ).symm
+    have hbot_next_le : base + c * d * 2 ^ b + j * 2 ^ b + 2 ^ b ≤ base + space c d b := by
       dsimp only [space]
-      calc base + c * d * 2 ^ b + (j + 1) * 2 ^ b
-          ≤ base + c * d * 2 ^ b + d * 2 ^ b :=
+      calc base + c * d * 2 ^ b + j * 2 ^ b + 2 ^ b
+          = base + c * d * 2 ^ b + (j + 1) * 2 ^ b := by ring
+        _ ≤ base + c * d * 2 ^ b + d * 2 ^ b :=
             Nat.add_le_add_left (Nat.mul_le_mul_right _ hj_succ) _
         _ = base + (c + 1) * d * 2 ^ b := by ring
-    set s5 := s4.set 9 (botAddr base c d b ⟨j, hj_lt⟩ yj)
-    have e5 : Exec w (.op (.exactBin .add 9 4 8) : Code .exact 12) s4 s5 1 :=
-      exec_exactBin (by simp +decide [hs4_4, hs4_8, botAddr, yj]) (by fits)
-    set s6 := s5.set 9 (T₂ ⟨j, hj_lt⟩ yj).val
-    have e6 : Exec w (.op (.load 9 9) : Code .exact 12) s5 s6 1 := by
-      simpa +decide [s6, s5, hmem_bot] using
-        (Exec.load (B := .exact) (w := w) (d := 9) (a := 9) (x := s5))
-    set s7 := s6.set 2 (outerPrefixXor T₁ T₂ u (j + 1) hj_succ).val
-    have e7 : Exec w (.op (.exactBin .xor 2 2 9) : Code .exact 12) s6 s7 1 :=
-      exec_exactBin (by simp +decide [s6, s5, hs4_2, hxor_outer, yj])
-        (by rwa [hxor_outer])
-    set s8 := s7.set 4 (base + c * d * 2 ^ b + (j + 1) * 2 ^ b)
-    have e8 : Exec w (.op (.exactBin .add 4 4 10) : Code .exact 12) s7 s8 1 :=
-      exec_exactBin
-        (by
-          rw [show base + c * d * 2 ^ b + (j + 1) * 2 ^ b =
-            base + c * d * 2 ^ b + j * 2 ^ b + 2 ^ b by ring]
-          simp +decide [s7, s6, s5, hs4_4, hs4_10])
-        (by fits)
-    have hbody := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))
-    obtain ⟨y, hrec, hymem, hy0, hy1, hy2⟩ :=
-      ih (j + 1) s8 (by omega)
-        hs4_mem
-        (by simp +decide [s8, s7, s6, s5, hs4_0])
-        (by simp +decide [s8, s7, s6, s5, hs4_1])
-        (by simp +decide [s8, s7])
-        (by simp +decide [s8, s7, s6, s5, hs4_3])
-        (by simp +decide [s8])
-        (by simp +decide [s8, s7, s6, s5, hs4_5])
-        (by simp +decide [s8, s7, s6, s5, hs4_10])
-        (by simp +decide [s8, s7, s6, s5, hs4_11])
-    refine ⟨y, ?_, hymem, hy0, hy1, hy2⟩
-    have hsteps_eq :
-        1 + (1 + (1 + ((12 * c + 2) + (1 + (1 + (1 + 1)))))) +
-          ((12 * c + 11) * remD + 2) + 2 = (12 * c + 11) * (remD + 1) + 2 := by ring
-    simpa only [outerLoop, outerBody, hsteps_eq] using Exec.loop_iter hc hbody hrec
+    have hbody : WP.Exact w (outerBody c b) x fun z n => n = 12 * c + 9 ∧
+        ∃ y : Data 12, Exec w (outerLoop c b) z y ((12 * c + 11) * remD + 2) ∧
+          y.mem = x_init.mem ∧ y.regs 0 = base ∧ y.regs 1 = u.val ∧
+          y.regs 2 = (doubleTabHash c d b U M T₁ T₂ u).val := by
+      unfold outerBody
+      wram_exec [h1]
+      wram_call (innerLoop_exec (r2 := (outerPrefixXor T₁ T₂ u j (by omega)).val)
+        (r4 := base + c * d * 2 ^ b + j * 2 ^ b) (r5 := base + c * d * 2 ^ b + d * 2 ^ b)
+        htop u ⟨j, hj_lt⟩ hfit_space hfit_pow_b hfit_u c 0 _ (by omega) (by exact hmem)
+        (by wram_simp [h0]) (by wram_simp [h1]) (by wram_simp [h2]) (by wram_simp [h3])
+        (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp)
+        (by wram_simp [Nat.zero_mul, Nat.shiftRight_zero])
+        (by wram_simp [val_innerPrefixXor_zero]) (by wram_simp [h10]) (by wram_simp [h11]))
+        with s4 ⟨hs4_mem, hs4_0, hs4_1, hs4_2, hs4_3, hs4_4, hs4_5, hs4_8, hs4_10, hs4_11⟩
+      wram_exec [hs4_2, hs4_4, hs4_8, hs4_10, hs4_mem, hyj, hmem_bot, hxor_outer,
+        show base + c * d * 2 ^ b + j * 2 ^ b + yj.val = botAddr base c d b ⟨j, hj_lt⟩ yj from rfl]
+      exact ih (j + 1) _ (by omega) (by exact hs4_mem) (by wram_simp [hs4_0])
+        (by wram_simp [hs4_1]) (by wram_simp) (by wram_simp [hs4_3]) (by wram_simp [hs4_4]; ring)
+        (by wram_simp [hs4_5]) (by wram_simp [hs4_10]) (by wram_simp [hs4_11])
+    obtain ⟨z, n, hb, rfl, y, hrec, hy⟩ := hbody
+    refine ⟨y, ?_, hy⟩
+    simpa only [outerLoop, show 12 * c + 9 + ((12 * c + 11) * remD + 2) + 2 =
+      (12 * c + 11) * (remD + 1) + 2 by ring] using Exec.loop_iter hc hb hrec
 
 /-- **Exact deterministic `Exec` correctness and complexity of `evalCode c d b`**:
 from `SeedRep base c d b M (T₁, T₂) x.mem`, `x.regs 0 = base`, and `x.regs 1 = u.val`,
