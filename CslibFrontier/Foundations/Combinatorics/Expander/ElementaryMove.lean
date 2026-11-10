@@ -327,6 +327,30 @@ private theorem expect_nz_nz_sq_le {k l : Fin H} (hkl : k ≠ l) (g : (Fin H →
           2 * (nz (F l) * (g F - fib g l (F l)) ^ 2) := by
         nlinarith [mul_le_mul_of_nonneg_right hkk hA, mul_le_mul_of_nonneg_right hll hB]
 
+/-- Averaging the gluing term over `d`: the second moment of `X` about the weighted mean of `Y` on
+the nonzero values is at most twice the gluing term of `X` and `Y`. -/
+private theorem half_expect_nz_sq_sub_le (X Y : ZMod P → ℝ) :
+    (1 / 2) * 𝔼 c, nz c * (X c - (𝔼 d, nz d * Y d) / 𝔼 d : ZMod P, nz d) ^ 2 ≤
+      𝔼 c, 𝔼 d, nz c * nz d * (X c - Y d) ^ 2 := by
+  have hW := half_le_expect_nz (P := P)
+  have hW0 : 𝔼 d : ZMod P, nz d ≠ 0 := by linarith
+  set ybar := (𝔼 d, nz d * Y d) / 𝔼 d : ZMod P, nz d
+  -- For each `c`, average over `d`.
+  have hc (c : ZMod P) : (1 / 2) * (X c - ybar) ^ 2 ≤ 𝔼 d, nz d * (Y d - X c) ^ 2 := by
+    have := (expect_mul_sq_sub_ge nz Y (X c) nz_nonneg hW0).1
+    have h0 := sq_nonneg (X c - ybar)
+    calc (1 / 2) * (X c - ybar) ^ 2 ≤ (𝔼 d, nz d) * (ybar - X c) ^ 2 := by
+          rw [show (ybar - X c) ^ 2 = (X c - ybar) ^ 2 by ring]
+          exact mul_le_mul_of_nonneg_right hW h0
+      _ ≤ _ := this
+  rw [mul_expect]
+  refine expect_le_expect fun c _ ↦ ?_
+  calc 1 / 2 * (nz c * (X c - ybar) ^ 2) = nz c * ((1 / 2) * (X c - ybar) ^ 2) := by ring
+    _ ≤ nz c * 𝔼 d, nz d * (Y d - X c) ^ 2 := mul_le_mul_of_nonneg_left (hc c) (nz_nonneg c)
+    _ = _ := by
+        rw [mul_expect]
+        exact expect_congr rfl fun d _ ↦ by ring
+
 /-- The second moments of the fiber averages about the weighted mean `ȳ` of `fib g l`, on the
 nonzero values, are controlled by the gluing term. -/
 private theorem expect_nz_sq_sub_le {k l : Fin H} (g : (Fin H → ZMod P) → ℝ) :
@@ -334,54 +358,19 @@ private theorem expect_nz_sq_sub_le {k l : Fin H} (g : (Fin H → ZMod P) → �
         𝔼 c, 𝔼 d, nz c * nz d * (fib g k c - fib g l d) ^ 2 ∧
       (1 / 2) * 𝔼 d, nz d * (fib g l d - (𝔼 d, nz d * fib g l d) / 𝔼 d : ZMod P, nz d) ^ 2 ≤
         𝔼 c, 𝔼 d, nz c * nz d * (fib g k c - fib g l d) ^ 2 := by
-  have hW := half_le_expect_nz (P := P)
-  have hW0 : 𝔼 d : ZMod P, nz d ≠ 0 := by linarith
+  refine ⟨half_expect_nz_sq_sub_le _ _, ?_⟩
+  -- Average over `c` instead; then `ȳ` beats the weighted mean `x̄` of `fib g k`.
+  have hW0 : 𝔼 d : ZMod P, nz d ≠ 0 := by linarith [half_le_expect_nz (P := P)]
   set ybar := (𝔼 d, nz d * fib g l d) / 𝔼 d : ZMod P, nz d
   set xbar := (𝔼 c, nz c * fib g k c) / 𝔼 c : ZMod P, nz c
-  constructor
-  · -- For each `c`, average over `d`.
-    have hc (c : ZMod P) :
-        (1 / 2) * (fib g k c - ybar) ^ 2 ≤ 𝔼 d, nz d * (fib g l d - fib g k c) ^ 2 := by
-      have := (expect_mul_sq_sub_ge nz (fib g l) (fib g k c) nz_nonneg hW0).1
-      have h0 := sq_nonneg (fib g k c - ybar)
-      calc (1 / 2) * (fib g k c - ybar) ^ 2 ≤ (𝔼 d, nz d) * (ybar - fib g k c) ^ 2 := by
-            rw [show (ybar - fib g k c) ^ 2 = (fib g k c - ybar) ^ 2 by ring]
-            exact mul_le_mul_of_nonneg_right hW h0
-        _ ≤ _ := this
-    rw [mul_expect]
-    refine expect_le_expect fun c _ ↦ ?_
-    calc 1 / 2 * (nz c * (fib g k c - ybar) ^ 2) = nz c * ((1 / 2) * (fib g k c - ybar) ^ 2) := by
-          ring
-      _ ≤ nz c * 𝔼 d, nz d * (fib g l d - fib g k c) ^ 2 :=
-          mul_le_mul_of_nonneg_left (hc c) (nz_nonneg c)
-      _ = _ := by
-          rw [mul_expect]
-          exact expect_congr rfl fun d _ ↦ by ring
-  · -- For each `d`, average over `c`; then `ybar` beats `xbar`.
-    have hd (d : ZMod P) :
-        (1 / 2) * (fib g l d - xbar) ^ 2 ≤ 𝔼 c, nz c * (fib g k c - fib g l d) ^ 2 := by
-      have := (expect_mul_sq_sub_ge nz (fib g k) (fib g l d) nz_nonneg hW0).1
-      have h0 := sq_nonneg (fib g l d - xbar)
-      calc (1 / 2) * (fib g l d - xbar) ^ 2 ≤ (𝔼 c, nz c) * (xbar - fib g l d) ^ 2 := by
-            rw [show (xbar - fib g l d) ^ 2 = (fib g l d - xbar) ^ 2 by ring]
-            exact mul_le_mul_of_nonneg_right hW h0
-        _ ≤ _ := this
-    have hmin := (expect_mul_sq_sub_ge nz (fib g l) xbar nz_nonneg hW0).2
-    calc (1 / 2) * 𝔼 d, nz d * (fib g l d - ybar) ^ 2
-        ≤ (1 / 2) * 𝔼 d, nz d * (fib g l d - xbar) ^ 2 :=
-          mul_le_mul_of_nonneg_left hmin (by norm_num)
-      _ ≤ 𝔼 d, 𝔼 c, nz c * nz d * (fib g k c - fib g l d) ^ 2 := by
-          rw [mul_expect]
-          refine expect_le_expect fun d _ ↦ ?_
-          calc 1 / 2 * (nz d * (fib g l d - xbar) ^ 2)
-              = nz d * ((1 / 2) * (fib g l d - xbar) ^ 2) := by
-                ring
-            _ ≤ nz d * 𝔼 c, nz c * (fib g k c - fib g l d) ^ 2 :=
-                mul_le_mul_of_nonneg_left (hd d) (nz_nonneg d)
-            _ = _ := by
-                rw [mul_expect]
-                exact expect_congr rfl fun c _ ↦ by ring
-      _ = _ := expect_comm _ _ _
+  have hmin := (expect_mul_sq_sub_ge nz (fib g l) xbar nz_nonneg hW0).2
+  calc (1 / 2) * 𝔼 d, nz d * (fib g l d - ybar) ^ 2
+      ≤ (1 / 2) * 𝔼 d, nz d * (fib g l d - xbar) ^ 2 :=
+        mul_le_mul_of_nonneg_left hmin (by norm_num)
+    _ ≤ 𝔼 d, 𝔼 c, nz d * nz c * (fib g l d - fib g k c) ^ 2 := half_expect_nz_sq_sub_le _ _
+    _ = _ := by
+        rw [expect_comm]
+        exact expect_congr rfl fun c _ ↦ expect_congr rfl fun d _ ↦ by ring
 
 /-- **The Poincaré inequality for the elementary moves on the nonzero vectors** of `(ZMod P) ^ H`,
 for a prime `P` and `H ≥ 3`, uniformly in `P`: every real function `g` has, about some constant, a

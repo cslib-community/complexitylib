@@ -465,21 +465,13 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
       change (Memory.spec 0).clientState s (insertBodyProg U V w₀ n_max h_space d) = _
       unfold insertBodyProg
       simp only [pure_bind, d]
-      rw [StateTransitionSpec.clientState_bind, hsb.1]
-      change (Memory.spec 0).clientState s
-        (if res.1.1 = 1 then writeValProg U V w₀ n_max h_space ((base, res.2), v_new)
-         else insertNewProg U V w₀ n_max h_space d) = _
-      rw [ite_eq_left hf1]
+      rw [StateTransitionSpec.clientState_bind, hsb.1, ite_eq_left hf1]
     have hcost : memoryCost (insertBodyProg U V w₀ n_max h_space d) s ≤
         16 + 8 * (L b m).length +
           6 * (bCount n_max (gmAt base U V w₀ n_max h_space s.mem) b - effBucketCap n_max) := by
       unfold insertBodyProg
-      simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind, d]
-      rw [memoryCost_bind, hsb.1]
-      change memoryCost (searchBucketProg U V w₀ n_max h_space (((base, b), q_target), m)) s +
-        memoryCost (if res.1.1 = 1 then writeValProg U V w₀ n_max h_space ((base, res.2), v_new)
-          else insertNewProg U V w₀ n_max h_space d) s ≤ _
-      rw [ite_eq_left hf1, memoryCost_writeValProg]
+      simp only [pure_bind, d]
+      rw [memoryCost_bind_of_clientState_eq hsb.1, ite_eq_left hf1, memoryCost_writeValProg]
       have := hsb.2.1
       omega
     have eff := writeValProg_effect (U := U) (base := base) (h_space := h_space)
@@ -561,17 +553,8 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
       change (Memory.spec 0).clientState s (insertBodyProg U V w₀ n_max h_space d) = _
       unfold insertBodyProg insertNewProg
       simp only [pure_bind, d]
-      rw [StateTransitionSpec.clientState_bind, hsb.1]
-      change (Memory.spec 0).clientState s
-        (if res.1.1 = 1 then writeValProg U V w₀ n_max h_space ((base, res.2), v_new)
-         else do
-           let tot ← readTotalSlotsProg U V w₀ n_max h_space base
-           if tot < n_max then do
-             let j_new ← readBucketCountProg U V w₀ n_max h_space (base, b)
-             pushBackSlotProg U V w₀ n_max h_space (((base, b), q_target), v_new)
-             prependIfIndexedProg U V w₀ n_max h_space (((base, b), m), j_new)
-           else pure ()) = _
-      rw [ite_eq_right hne1, StateTransitionSpec.clientState_bind,
+      rw [StateTransitionSpec.clientState_bind, hsb.1, ite_eq_right hne1,
+        StateTransitionSpec.clientState_bind,
         clientState_readTotalSlotsProg, clientResult_readTotalSlotsProg,
         ite_eq_left htot, StateTransitionSpec.clientState_bind,
         clientState_readBucketCountProg, clientResult_readBucketCountProg (base, b) s hb,
@@ -600,12 +583,8 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
         memoryCost (pushBackSlotProg U V w₀ n_max h_space (((base, b), q_target), v_new)) s := by
       unfold insertBodyProg insertNewProg
       simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind, d]
-      rw [memoryCost_bind, hsb.1]
-      change memoryCost (searchBucketProg U V w₀ n_max h_space (((base, b), q_target), m)) s +
-        memoryCost (if res.1.1 = 1 then writeValProg U V w₀ n_max h_space ((base, res.2), v_new)
-          else _) s ≤ _
-      rw [ite_eq_right hne1, memoryCost_bind, clientState_readTotalSlotsProg,
-        clientResult_readTotalSlotsProg, ite_eq_left htot,
+      rw [memoryCost_bind, hsb.1, ite_eq_right hne1, memoryCost_bind,
+        clientState_readTotalSlotsProg, clientResult_readTotalSlotsProg, ite_eq_left htot,
         memoryCost_bind, clientState_readBucketCountProg,
         clientResult_readBucketCountProg (base, b) s hb,
         memoryCost_bind]

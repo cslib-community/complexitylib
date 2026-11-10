@@ -13,6 +13,7 @@ public import Mathlib.Data.Fin.Tuple.Take
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.Product
 
 /-!
 # The next-bit test
@@ -148,24 +149,6 @@ theorem toReal_bind_guessOfDistinguisher (μ : PMF S) (target : S → Bool)
   linarith
 
 end Guess
-
-section Uniform
-
-variable {ι β : Type*} [Fintype ι] [DecidableEq ι] [Fintype β] [Nonempty β]
-
-/-- Overwriting one coordinate of a uniform function by an independent uniform value leaves it
-uniform: `(r, z) ↦ (Function.update z i r, z i)` is an equivalence. -/
-private theorem uniformOfFintype_bind_bind_update {γ : Type*} (i : ι) (f : (ι → β) → PMF γ) :
-    ((uniformOfFintype β).bind fun r =>
-      (uniformOfFintype (ι → β)).bind fun z => f (Function.update z i r)) =
-      (uniformOfFintype (ι → β)).bind f :=
-  uniformOfFintype_bind_bind_fst_equiv
-    { toFun := fun p => (Function.update p.2 i p.1, p.2 i)
-      invFun := fun q => (q.1 i, Function.update q.1 i q.2)
-      left_inv := fun p => by simp
-      right_inv := fun q => by simp } f
-
-end Uniform
 
 section Hybrid
 
@@ -350,8 +333,8 @@ theorem Generator.toReal_predictionExperiment_nextBitPredictor
       G.outputDist.bind fun y => (uniformOfFintype (Fin m → Bool)).bind fun z =>
         adversary fun j => if (j : ℕ) < i then y j else z j := by
     congr 1 with y : 1
-    exact uniformOfFintype_bind_bind_update i fun w =>
-      adversary fun j => if (j : ℕ) < i then y j else w j
+    exact (bind_uniformOfFintype_update i fun w =>
+      adversary fun j => if (j : ℕ) < i then y j else w j).symm
   rw [hlast]
   ring
 
@@ -436,7 +419,7 @@ built from a predictor accepts with probability `1 / 2`. -/
 theorem Generator.idealExperiment_predictionTest_apply_true (i : Fin m)
     (predictor : Adversary (Fin i → Bool)) :
     idealExperiment (predictionTest i predictor) true = 2⁻¹ := by
-  rw [idealExperiment, ← uniformOfFintype_bind_bind_update i, PMF.bind_comm]
+  rw [idealExperiment, bind_uniformOfFintype_update i, PMF.bind_comm]
   refine bind_apply_of_forall _ fun z => ?_
   have hq := (predictor (Fin.take i i.isLt.le z)).tsum_coe
   rw [tsum_bool] at hq
