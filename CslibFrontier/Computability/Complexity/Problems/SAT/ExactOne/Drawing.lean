@@ -25,6 +25,7 @@ source placeholders are removed, and their incidences join the trimmed source ro
 
 * `positiveDrawing`: finite drawing data for the actual positive exact-one output formula.
 * `positivePlacedClauses`: clause records in the actual compiler's list order.
+* `PositivePlacedClause`: a placed clause record, read through `clause`, `point` and `routes`.
 
 ## Main results
 

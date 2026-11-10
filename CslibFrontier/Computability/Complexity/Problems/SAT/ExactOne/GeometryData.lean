@@ -18,6 +18,8 @@ The unsigned incidence signatures deliberately leave clause semantics to the log
 
 ## Main definitions
 
+* `LocalIncidence`: an incidence record, read through `clauseIndex`, `variableIndex` and
+  `route`.
 * `LocalGeometry`: finite vertex, incidence, and access data for a local replacement.
 * `disjunctionGeometry`: the four-clause parsimonious disjunction replacement.
 * `falseGeometry`: the three-clause positive gadget with a forced-false exterior terminal.
