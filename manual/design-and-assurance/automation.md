@@ -10,7 +10,10 @@ module column omits the common prefix `CslibFrontier.`; import that module, and 
 tactic also open the namespace named in its row. Each reference is the most complete account of
 the tactic, in this chapter or another, or its checked clients when no chapter covers it; the
 clients show the imports and local context. Search tactics such as `polytime` and `fits` either
-close the goal or fail with a diagnostic. Execution and reduction tactics such as `wram_exec`,
+close the goal or fail with a diagnostic; when `degree`, `logspace`, `space` or one of the
+first-order searches fails, the error ends with a note saying what to supply, as described in
+[Read the remaining goal](../workflows/troubleshooting.md#read-the-remaining-goal). Execution
+and reduction tactics such as `wram_exec`,
 `fo_reduction` and `realize` leave the obligations they cannot prove as goals; their references
 say which.
 
@@ -22,7 +25,7 @@ say which.
 | `ppt`, `ppt [f, g]` | `Tactic.PPT` | `IsPPTOn`, `IsPPT`, `IsOraclePPTOn`, `IsOraclePPT` | [Named certificates](#named-certificates-and-polynomial-time), [other resource predicates](#other-resource-predicates) |
 | `@[program_certificate h*]` (attribute) | `Tactic.PolyTime.Init` | registers a certificate for `polytime`, `logspace`, `ppt` and `stateful` | [Named certificates](#named-certificates-and-polynomial-time) |
 | `logspace` | `Tactic.LogSpace` | `ComputableInLogSpace f encIn encOut` | [Other resource predicates](#other-resource-predicates), [checked clients](../../CslibFrontierTests/LogSpaceTactic.lean) |
-| `space`, `space [f]` | `Tactic.Space` | `ComputableInSpace f encIn encOut S`, with an explicit budget `S` | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
+| `space`, `space [f]` | `Tactic.Space` | `ComputableInSpace f encIn encOut S`, with an explicit budget `S`, including finite values, decidable conditions and Boolean connectives | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
 | `degree` | `Tactic.Degree` | `ComputableInDegree f encIn encOut d e` | [Preserve explicit polynomial degrees](#preserve-explicit-polynomial-degrees) |
 | `fun_prop` (Mathlib) | `Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists` | `ComputableInO f encIn encOut T S` | [Assemble joint time and space bounds](#assemble-joint-time-and-space-bounds) |
 | `option_match_to_elim` | `Tactic.OptionMatch` | any goal with an option match, before resource automation | [Rewrite option matches](#rewrite-option-matches-before-resource-automation) |
@@ -58,12 +61,15 @@ say which.
 | Tactic | Module | Goal | Reference |
 |---|---|---|---|
 | `synthesis_available` | `Tactic.Synthesis` | membership of a wire among those already available | [Circuit construction](#circuit-construction), [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) |
+| `synthesis_union` | `Tactic.Synthesis` | `X ⊆ A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ` or `f ∈ A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ`, syntactically or by a local hypothesis | [Circuit construction](#circuit-construction) |
 | `synthesis_step b using r` | `Tactic.Synthesis` | appends the rule `r` to the builder `b` | [Circuit construction](#circuit-construction) |
 | `fo_qf`, `fo_iso_closed` | `Tactic.FirstOrder` | quantifier-freeness; closure of a class under isomorphism (`IsoClosed`) | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FirstOrderAutomation.lean) |
 | `fo_simp [h] at l` | `Tactic.FirstOrder` | unfolds the realization of formulas and interpreted structures | [Logical descriptions](#logical-descriptions) |
 | `fo_reduction I [h]` | `Tactic.FirstOrder` | `FO.QFReduces K K'`, `FO.Reduces K K'` through the interpretation `I` | [Logical descriptions](#logical-descriptions) |
 | `fo_definable`, `fo_wf [φ]` | `Tactic.FOOperator` | `Operator.Definable …`; formation conditions of explicit formulas | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FOOperators.lean) |
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
+| `pmf_swap`, `pmf_swap with x y` | `Tactic.PMFSwap` | an equation of distributions that draw the same independent samples in different orders | [Reorder independent samples](#reorder-independent-samples) |
+| `pmf_hoist q`, `pmf_hoist q at h` | `Tactic.PMFSwap` | moves the samples of `q` toward the front of their `PMF.bind` chains | [Reorder independent samples](#reorder-independent-samples) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
 simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, and `fo_realize`, used by `fo_simp`,
@@ -273,7 +279,7 @@ code and charging contract; the complete clients above supply imports and local 
 
 [`synthesis_step`](../../CslibFrontier/Tactic/Synthesis.lean) applies an explicitly supplied synthesis rule and locates its required wires among available values. `Synthesis.Builder` retains earlier wires and accumulates certified cost. Membership search itself adds no gates. Reusing a computed value preserves sharing; invoking a new construction charges its bound. A final budget check verifies the chosen construction fits the target, but does not search globally for an optimal circuit.
 
-`synthesis_available` is that membership search on its own: it proves that a function is among the available wires, through the unions, ranges and indexed unions a builder's wire set is made of, and fails rather than adding a gate when it is not. The [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) uses it for every gate input and for the selected outputs.
+`synthesis_available` is that membership search on its own: it proves that a function is among the available wires, through the unions, ranges and indexed unions a builder's wire set is made of, and fails rather than adding a gate when it is not. The [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) uses it for every gate input and for the selected outputs. It first tries `synthesis_union`, which matches the wires against the members of a union `A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ`, the shape a chain of `Synthesis.extend` steps produces, syntactically or through a local hypothesis and without unfolding any definition. Only when that fails does it compare wire functions at default transparency, which can unfold word operations on wire families of equal width. A proof over a long chain can call `synthesis_union` directly, as [Karatsuba](../../CslibFrontier/Computability/Circuit/Boolean/Karatsuba.lean) does.
 
 This contract answers a recurrent concern in the transcript: removing proof bookkeeping must not silently introduce gates. The [circuit case study](../development-history/case-studies.md) connects that concern to PR #520 and to the subsequent decision not to pursue general budget-guided synthesis in that session. The present tactic source is the authority for its current capabilities.
 
