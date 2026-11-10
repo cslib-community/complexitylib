@@ -81,7 +81,7 @@ theorem encryptedWires_evaluateCircuit (hE : E.Correct)
     (by simpa only [List.length_ofFn] using Layered.wellFormed_compile c) row hrow
   have hselected := h.select (outputs := (Layered.compile inputCount c.code).2) (by
     simpa only [Layered.length_eval, List.length_ofFn] using Layered.outputs_valid_compile c)
-  simpa only [Layered.select_eval_compile, Layered.length_compile] using hselected
+  simpa only [Layered.readPositions_eval_compile, Layered.length_compile] using hselected
 
 /-- Every supported evaluation of an ordinary circuit decrypts to its ordered output vector.
 The generated chain uses two key transitions per original depth, and no transition for output
