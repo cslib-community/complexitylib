@@ -5075,6 +5075,8 @@ public import CslibFrontier.Foundations.Order.UpperLower
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity
+public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
+public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Extension
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices
 public import CslibFrontier.Foundations.Probability.CoordinateExpectation
 public import CslibFrontier.Foundations.Probability.CoordinateFactorization
@@ -5323,6 +5325,7 @@ public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Evaln
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 public import CslibFrontier.Logics.FirstOrder.Tuple
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
+public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
