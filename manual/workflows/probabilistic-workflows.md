@@ -1113,6 +1113,24 @@ example (test : List Bool × Bool × ℕ → Bool)
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
 
+`ppt` pays a search cost at every call, even on small goals. When a file certifies many inverters or reductions, or `ppt` fails on an adversary call whose inputs need preparation, compose the rules directly. Start with `IsPPTOn.isPPT`, then bind each sampled word with `(ComputableInPolyTime.sampleList h).bind_with`. Call the adversary through `IsPPT.preprocess`, which takes separate tidy certificates for the parameter and auxiliary input; `ComputableInPolyTime.tidy` converts plain ones. Close the deterministic leaves with `fun_prop`. The more general `IsPPTOn.preprocess` takes one certificate for the pair. Given `.prod` of two projections, it cannot infer the preparation function, so `fun_prop` meets goals with unassigned metavariables. The [InaccessibleEntropy client](../../CslibFrontierTests/Crypto/InaccessibleEntropy.lean) checks this pattern on a small inverter:
+
+<!-- excerpt: ppt-explicit-adversary-call -->
+```lean
+example {A : ℕ → List Bool → ProbComp (List Bool)} (hA : IsPPT encBits A) :
+    IsPPT encBits (fun n y => do
+      let pad ← Cslib.BitString.sampleList n
+      let raw ← A n (y ++ pad)
+      return raw.take n) := by
+  apply IsPPTOn.isPPT
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
+```
+
+The inverters in the [InaccessibleEntropy development](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/OneWay.lean) are certified this way. In November 2026 a `ppt` call there cost about 11,000–14,000 heartbeats even on small goals, against a few hundred for the explicit proof. Without the right definition hints, a call could exhaust Aesop's rule limit.
+
 ## Bound a centered-binomial sampler tail
 
 [CenteredBinomial/Concentration.lean](../../CslibFrontier/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
