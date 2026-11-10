@@ -11,12 +11,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.B
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Transducer
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Mathlib.Data.Nat.Size
-import CslibFrontier.Foundations.Data.Nat.Bits.Halving
-import CslibFrontier.Foundations.Data.Nat.RecursionTree
 
 /-!
 # Short descriptions
@@ -78,57 +75,42 @@ private lemma run_posT (q : Bool) (k : ℕ) :
     rw [List.replicate_succ, Transducer.run_cons, ih]
     simp [posT]
 
-/-- Comparing `2 ^ L` with `n`, both in unary, in linear time: `n` is halved `L` times, which costs
-`n + n / 2 + ⋯`, and the result is tested for positivity. -/
-private theorem computableTidilyInO_two_pow_le :
-    ComputableTidilyInO (fun p : ℕ × ℕ => decide (2 ^ p.2 ≤ p.1)) (encPair encUnary encUnary)
-      encBool (fun p => (encPair encUnary encUnary p).length)
-      fun p => (encPair encUnary encUnary p).length := by
-  have hF : ComputableTidilyInTimeAndSpace (fun k : ℕ => [decide (0 < k)]) encUnary encBits
+/-- Comparing `2 ^ L` with `n`, both in unary, in linear time: `n` is halved `L` times by
+`Turing.MultiTapeTM.ComputableInO.unary_halvings`, which costs `n + n / 2 + ⋯`, and the result is
+tested for positivity. -/
+private theorem computableInO_two_pow_le :
+    ComputableInO (fun p : ℕ × ℕ => decide (2 ^ p.2 ≤ p.1)) (encPair encUnary encUnary)
+      encBool (fun p => p.1 + p.2) fun p => p.1 + p.2 := by
+  have hlen (n : ℕ) : (encUnary n).length = n := by simp [encUnary_apply]
+  have hT : ComputableTidilyInTimeAndSpace (fun k : ℕ => [decide (0 < k)]) encUnary encBits
       (fun k => 4 * (encUnary k).length + 8) fun _ => 0 :=
     posT.computableTidilyInTimeAndSpace fun k => by
       rw [encUnary_apply, run_posT]
       rfl
-  obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.iterate_unary_stream_sum
-    ComputableTidilyInTimeAndSpace.unary_div_two ComputableTidilyInTimeAndSpace.unary_nil hF
-    (R := fun x i => 17 * (x.1 / 2 ^ i) + 17) (Q := fun _ => 0) (B := fun x => x.1)
-    (fun x i _ => by
-      simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two]
-      have : x.1 / 2 ^ (i + 1) ≤ x.1 / 2 ^ i :=
-        Nat.div_le_div_left (Nat.pow_le_pow_right (by norm_num) (Nat.le_succ i)) (by positivity)
-      omega)
-    (fun _ _ _ => le_rfl)
-    (fun x i _ => by
-      simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two]
-      exact Nat.div_le_self _ _)
-  refine ComputableTidilyInO.of_bounds (h.of_enc_eq fun p => ?_) (100 * c + 100)
-    (fun p => ?_) (fun p => ?_) fun p => ?_
-  · simp only [encBool_apply, encBits_apply, Nat.iterate_div_two, List.map_const',
-      List.flatten_replicate_nil, List.nil_append, List.cons.injEq, and_true]
-    exact decide_eq_decide.mpr (Nat.div_pos_iff.trans (and_iff_right (by positivity))).symm
-  · have hs := Nat.sum_div_two_pow_le p.1 p.2
-    have hq : p.1 / 2 ^ p.2 ≤ p.1 := Nat.div_le_self _ _
-    simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two, length_encPair,
-      Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_const, Finset.card_range,
-      smul_eq_mul]
-    nlinarith
-  · simp only [length_encPair, encUnary_apply, List.length_replicate]
-    nlinarith
-  · simp only [encBool_apply, List.length_singleton]
-    nlinarith
+  have hpos : ComputableInO (fun k : ℕ => [decide (0 < k)]) encUnary encBits (fun v => v)
+      fun v => v :=
+    .of_bounds hT.computableInTimeAndSpace 12 (fun n => by rw [hlen]; omega)
+      (fun _ => Nat.zero_le _) fun _ => by simp only [encBits_apply, List.length_singleton]; omega
+  have hnil : ComputableInO (fun _ : ℕ => ([] : List Bool)) encUnary encBits (fun v => v)
+      fun v => v :=
+    (ComputableInO.constZero _).mono 1 (fun n => by rw [hlen]; omega) fun _ => Nat.zero_le _
+  refine (ComputableInO.unary_halvings hnil hpos).of_enc_eq fun p => ?_
+  simp only [encBool_apply, encBits_apply, List.map_const', List.flatten_replicate_nil,
+    List.nil_append, List.cons.injEq, and_true]
+  exact decide_eq_decide.mpr (Nat.div_pos_iff.trans (and_iff_right (by positivity))).symm
 
 /-- **Shortness is decided within linear time and space.** The length of the word and of the
 framed description are written in unary, and the first is halved once per bit of the second. -/
 theorem computableInO_shortDesc :
     ComputableInO shortDesc encBits encBool (fun x => x.length) fun x => x.length := by
-  have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
-    ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-  have hl := ComputableInO.lengthUnary.tidy
-  have h := computableTidilyInO_two_pow_le.comp (hl.prod (hl.comp hu))
-  refine (h.mono 8 (fun x => ?_) fun x => ?_).computableInO
+  have hu : ComputableInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
+    (ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)).computableInO
+  have hl := ComputableInO.lengthUnary
+  have h := computableInO_two_pow_le.comp (hl.prod (hl.comp hu))
+  refine h.mono 8 (fun x => ?_) fun x => ?_
   all_goals
     have h₁ := length_unframe_le x
-    simp only [Function.comp_apply, length_encPair, encUnary_apply, List.length_replicate] at h₁ ⊢
+    simp only [Function.comp_apply] at h₁ ⊢
     omega
 
 end Cslib.Complexity.Diagonal

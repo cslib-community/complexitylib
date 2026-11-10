@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Bits.lean`)
+-- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Bits.lean`, for `bits_of_pos` and
+-- `iterate_div_two`; `halfBit` and `flatten_map_range_halfBit` serve the halving machines, cslib)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Bits

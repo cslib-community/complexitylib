@@ -45,10 +45,8 @@ linear in the counted value.
 * `Turing.MultiTapeTM.two_pow_length_encNat_le`: the binary digits of `m` are logarithmic.
 * `Turing.MultiTapeTM.exists_pow_length_encNat_le`: every power of the number of binary digits of
   `m` is `O(m + 1)`.
-* `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.unary_div_two`: halving a unary number, in
-  linear time and zero work space.
-* `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.unary_nil`: reading a unary number and emitting
-  nothing, in linear time and zero work space.
+* `Turing.MultiTapeTM.ComputableInO.unary_halvings`: halving a unary number once per round and
+  emitting a function of each value, within time and space linear in the number and the rounds.
 * `Turing.MultiTapeTM.ComputableInO.unaryToNat`: from unary to binary, within linear time and space.
 * `Turing.MultiTapeTM.ComputableInO.lengthNat`: the length of a bit word in binary, within linear
   time and space.
@@ -126,32 +124,13 @@ private lemma run_halfBitT (p : Bool) (k : ℕ) :
     rcases Nat.mod_two_eq_zero_or_one k with h | h <;> cases p <;>
       simp [Nat.succ_mod_two_eq_one_iff, h]
 
-/-- The transducer emitting nothing. -/
-private def silentT : Transducer Bool Unit where
-  q₀ := ()
-  step _ _ := ((), [])
-  final _ := []
-  length_step_le _ _ := by simp
-  length_final_le _ := by simp
-
-private lemma run_silentT (w : List Bool) : silentT.run () w = [] := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => exact ih
-
 /-- Halving a unary number, by a finite-state transducer, in linear time and zero work space. -/
-theorem ComputableTidilyInTimeAndSpace.unary_div_two :
+private theorem computableTidilyInTimeAndSpace_div_two :
     ComputableTidilyInTimeAndSpace (· / 2) encUnary encUnary
       (fun k => 4 * (encUnary k).length + 8) fun _ => 0 :=
   halveT.computableTidilyInTimeAndSpace fun k => by
     rw [encUnary_apply, encUnary_apply, run_halveT]
     rfl
-
-/-- Reading a unary number and emitting nothing, in linear time and zero work space. -/
-theorem ComputableTidilyInTimeAndSpace.unary_nil :
-    ComputableTidilyInTimeAndSpace (fun _ : ℕ => ([] : List Bool)) encUnary encBits
-      (fun k => 4 * (encUnary k).length + 8) fun _ => 0 :=
-  silentT.computableTidilyInTimeAndSpace fun _ => (run_silentT _).symm
 
 /-- Emitting `Nat.halfBit` of a unary number, in linear time and zero work space. -/
 private theorem computableTidilyInTimeAndSpace_halfBit :
@@ -167,63 +146,82 @@ private theorem computableTidilyInTimeAndSpace_halfBit :
       rcases Nat.mod_two_eq_zero_or_one k with h | h <;>
         simp [Nat.halfBit, Nat.succ_mod_two_eq_one_iff, h]
 
-/-- Repeated halving with emission: from `(n, m)` in unary, `m` rounds halve `n` and emit
-`Nat.halfBit` of each value, in time `O(n + m)` and zero work space beyond the counter. -/
-private theorem computableTidilyInO_halfBits :
-    ComputableTidilyInO
-      (fun x : ℕ × ℕ => ((List.range x.2).map fun i => Nat.halfBit ((· / 2)^[i] x.1)).flatten ++
-        ([] : List Bool))
+namespace ComputableInO
+
+/-- **Repeated halving with emission.** From `(n, m)` in unary, round `i < m` emits
+`emit (n / 2 ^ i)` and the last value `n / 2 ^ m` is finished by `finish`, within time and space
+`O(n + m)` when `emit` and `finish` are linear in the value: the rounds cost
+`n + n / 2 + ⋯ ≤ 2 n` (`Nat.sum_div_two_pow_le`). -/
+theorem unary_halvings {emit finish : ℕ → List Bool}
+    (hemit : ComputableInO emit encUnary encBits (fun v => v) fun v => v)
+    (hfinish : ComputableInO finish encUnary encBits (fun v => v) fun v => v) :
+    ComputableInO
+      (fun x : ℕ × ℕ => ((List.range x.2).map fun i => emit (x.1 / 2 ^ i)).flatten ++
+        finish (x.1 / 2 ^ x.2))
       (encPair encUnary encUnary) encBits (fun x => x.1 + x.2) fun x => x.1 + x.2 := by
+  obtain ⟨cE, hE, -⟩ := hemit.tidy
+  obtain ⟨cF, hF, -⟩ := hfinish.tidy
   obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.iterate_unary_stream_sum
-    ComputableTidilyInTimeAndSpace.unary_div_two computableTidilyInTimeAndSpace_halfBit
-    ComputableTidilyInTimeAndSpace.unary_nil
-    (R := fun x i => 17 * (x.1 / 2 ^ i) + 17) (Q := fun _ => 0) (B := fun x => x.1)
+    computableTidilyInTimeAndSpace_div_two hE hF
+    (R := fun x i => (cE + 9) * (x.1 / 2 ^ i + 1)) (Q := fun x => cE * (x.1 + 1))
+    (B := fun x => x.1)
     (fun x i _ => by
       simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two]
       have : x.1 / 2 ^ (i + 1) ≤ x.1 / 2 ^ i :=
         Nat.div_le_div_left (Nat.pow_le_pow_right (by norm_num) (Nat.le_succ i)) (by positivity)
+      generalize x.1 / 2 ^ (i + 1) = w' at this ⊢
+      generalize x.1 / 2 ^ i = w at this ⊢
+      rw [Nat.add_mul]
       omega)
-    (fun _ _ _ => le_rfl)
+    (fun x i _ => by
+      simp only [Nat.iterate_div_two, zero_add]
+      exact Nat.mul_le_mul_left _ (Nat.succ_le_succ (Nat.div_le_self _ _)))
     (fun x i _ => by
       simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two]
       exact Nat.div_le_self _ _)
-  have ht (x : ℕ × ℕ) :
-      4 * (encUnary ((· / 2)^[x.2] x.1)).length + 8 +
-        (∑ i ∈ Finset.range x.2, (17 * (x.1 / 2 ^ i) + 17)) + x.1 + 1 ≤
-        50 * (x.1 + x.2 + 1) := by
+  simp only [Nat.iterate_div_two] at h
+  have hM (x : ℕ × ℕ) : c * (cF * (x.1 / 2 ^ x.2 + 1) +
+      (∑ i ∈ Finset.range x.2, (cE + 9) * (x.1 / 2 ^ i + 1)) + x.1 + 1) ≤
+      c * (cF + 2 * cE + 20) * (x.1 + x.2 + 1) := by
     have hs := Nat.sum_div_two_pow_le x.1 x.2
     have hq : x.1 / 2 ^ x.2 ≤ x.1 := Nat.div_le_self _ _
-    simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two, Finset.sum_add_distrib,
-      ← Finset.mul_sum, Finset.sum_const, Finset.card_range, smul_eq_mul]
-    omega
-  refine ComputableTidilyInO.of_bounds h (50 * c + 50) (fun x => ?_) (fun x => ?_) fun x => ?_
-  · calc c * (4 * (encUnary ((· / 2)^[x.2] x.1)).length + 8 +
-          (∑ i ∈ Finset.range x.2, (17 * (x.1 / 2 ^ i) + 17)) + x.1 + 1)
-        ≤ c * (50 * (x.1 + x.2 + 1)) := Nat.mul_le_mul_left c (ht x)
-      _ ≤ (50 * c + 50) * (x.1 + x.2 + 1) := by nlinarith
-  · nlinarith
-  · calc _ ≤ c * (4 * (encUnary ((· / 2)^[x.2] x.1)).length + 8 +
-          (∑ i ∈ Finset.range x.2, (17 * (x.1 / 2 ^ i) + 17)) + x.1 + 1) := h.length_le x
-      _ ≤ c * (50 * (x.1 + x.2 + 1)) := Nat.mul_le_mul_left c (ht x)
-      _ ≤ (50 * c + 50) * (x.1 + x.2 + 1) := by nlinarith
-
-namespace ComputableInO
+    rw [Nat.mul_assoc]
+    refine Nat.mul_le_mul_left c ?_
+    simp only [← Finset.mul_sum, Finset.sum_add_distrib, Finset.sum_const, Finset.card_range,
+      smul_eq_mul, mul_one]
+    nlinarith [Nat.mul_le_mul_left cF hq, Nat.mul_le_mul_left (cE + 9) hs]
+  refine of_bounds h.computableInTimeAndSpace (c * (cF + 2 * cE + 20)) (fun x => hM x)
+    (fun x => ?_) fun x => (h.length_le x).trans (hM x)
+  rw [Nat.mul_assoc]
+  refine Nat.mul_le_mul_left c ?_
+  have e : (cF + 2 * cE + 20) * (x.1 + x.2 + 1) =
+      cF * (x.1 + x.2 + 1) + 2 * (cE * (x.1 + x.2 + 1)) + 20 * (x.1 + x.2 + 1) := by ring
+  have h₁ : cF * (x.1 / 2 ^ x.2 + 1) ≤ cF * (x.1 + x.2 + 1) :=
+    Nat.mul_le_mul_left _ (by have := Nat.div_le_self x.1 (2 ^ x.2); omega)
+  have h₂ : cE * (x.1 + 1) ≤ cE * (x.1 + x.2 + 1) := Nat.mul_le_mul_left _ (by omega)
+  omega
 
 /-- **From unary to binary**, by repeated halving, within linear time and space. Round `i` halves
 the counter `n / 2 ^ i` and emits its parity while it is positive (`Nat.flatten_map_range_halfBit`),
 so the rounds cost `O(n)` in total. -/
 theorem unaryToNat : ComputableInO (fun n : ℕ => n) encUnary encNat (fun n => n) fun n => n := by
-  have hd : ComputableTidilyInO (fun n : ℕ => (n, n)) encUnary (encPair encUnary encUnary)
-      (fun n => n + n) fun n => n + n := by
-    have hid : ComputableTidilyInO (fun n : ℕ => n) encUnary encUnary (fun n => n) fun n => n :=
-      (ComputableTidilyInO.of_linear (.of_eq fun _ => rfl)).mono 1
-        (fun n => by simp only [encUnary_apply, List.length_replicate]; omega)
-        fun n => by simp only [encUnary_apply, List.length_replicate]; omega
-    exact hid.prod hid
-  refine ((computableTidilyInO_halfBits.comp hd).of_enc_eq (g := fun n : ℕ => n)
-    (encOut := encNat) fun n => ?_).mono 4 (fun n => ?_) (fun n => ?_) |>.computableInO
-  · simp only [encNat_apply, encBits_apply, Function.comp_apply, List.append_nil]
-    exact (Nat.flatten_map_range_halfBit le_rfl).symm
+  have hlen (n : ℕ) : (encUnary n).length = n := by simp [encUnary_apply]
+  have hbit : ComputableInO Nat.halfBit encUnary encBits (fun v => v) fun v => v :=
+    of_bounds computableTidilyInTimeAndSpace_halfBit.computableInTimeAndSpace 12
+      (fun n => by rw [hlen]; omega) (fun _ => Nat.zero_le _) fun n => by
+        unfold Nat.halfBit
+        split_ifs <;> simp only [encBits_apply, List.length_nil, List.length_singleton] <;> omega
+  have hnil : ComputableInO (fun _ : ℕ => ([] : List Bool)) encUnary encBits (fun v => v)
+      fun v => v :=
+    (constZero _).mono 1 (fun n => by rw [hlen]; omega) fun _ => Nat.zero_le _
+  have hid : ComputableInO (fun n : ℕ => n) encUnary encUnary (fun n => n) fun n => n :=
+    (of_eq fun _ => rfl).mono 1 (fun n => by rw [hlen]; omega) fun n => by rw [hlen]; omega
+  refine (((unary_halvings hbit hnil).comp (hid.prod hid)).of_enc_eq (g := fun n : ℕ => n)
+    (encC := encNat) fun n => ?_).mono 4 (fun n => ?_) (fun n => ?_)
+  · have := Nat.flatten_map_range_halfBit (le_refl n)
+    simp only [Nat.iterate_div_two] at this
+    simp only [encNat_apply, encBits_apply, Function.comp_apply, List.append_nil]
+    exact this.symm
   all_goals dsimp only; omega
 
 /-- The length of a bit word in binary, within linear time and space: the word is measured in
