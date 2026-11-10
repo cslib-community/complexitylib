@@ -37,7 +37,8 @@ indexed differently. Every atomic index is a `k`-variable atomic formula
 The hypothesis `[Finite (Σ l, L.Relations l)]` is used only by the Hintikka direction; the
 structures are arbitrary, except that the infinite game needs finite structures. As explained at
 `PebbleWins`, positions are total assignments, so for `k > 0` these statements say nothing about
-empty structures.
+empty structures. `DuplicatorWins.pebbleWins`, which passes from the Ehrenfeucht–Fraïssé game to
+the pebble game, is a direct game argument and holds in every language.
 
 ## Main definitions
 
@@ -57,7 +58,8 @@ empty structures.
   `Cslib.Logic.FO.pebbleWinsForever_iff_forall_realize_iff`: **the pebble-game characterization of
   `FO^k`**, for finite games and, on finite structures, for the infinite game.
 * `Cslib.Logic.FO.DuplicatorWins.pebbleWins`: a winning position of the Ehrenfeucht–Fraïssé game
-  wins the pebble game with the same number of rounds.
+  wins the pebble game with the same number of rounds, in every language
+  (`DuplicatorWins.pebbleWins_comp` reads the position through a reindexing of the pebbles).
 
 ## References
 
@@ -333,15 +335,52 @@ theorem pebbleWinsForever_iff_forall_realize_iff [Finite (Σ l, L.Relations l)] 
   exact ⟨fun h _ hS => (h _).realize_iff le_rfl hS,
     fun h _ => pebbleWins_of_forall_realize_iff fun φ _ hS => h φ hS⟩
 
+/-! ### From the Ehrenfeucht–Fraïssé game to the pebble game -/
+
+/-- A partial isomorphism between `m`-tuples, read through a reindexing `σ : Fin k → Fin m` of the
+pebbles, is a partial isomorphism on every set of placed pebbles. -/
+theorem PartialIso.partialIsoOn_comp {m : ℕ} {a : Fin m → M} {b : Fin m → N}
+    (h : PartialIso L a b) (σ : Fin k → Fin m) (S : Set (Fin k)) :
+    PartialIsoOn L S (a ∘ σ) (b ∘ σ) :=
+  ⟨fun i _ j _ => h.eq_iff (σ i) (σ j), fun R f _ => h.relMap_iff R (σ ∘ f)⟩
+
+/-- Moving pebble `i` to the new element `c` of an Ehrenfeucht–Fraïssé position read through `σ`
+is the extended position read through `σ` with `i` sent to the new index. -/
+private theorem snoc_comp_update {m : ℕ} (σ : Fin k → Fin m) (i : Fin k) {α : Type*}
+    (x : Fin m → α) (c : α) :
+    (Fin.snoc x c : Fin (m + 1) → α) ∘ Function.update (Fin.castSucc ∘ σ) i (Fin.last m) =
+      Function.update (x ∘ σ) i c := by
+  funext j
+  by_cases hj : j = i
+  · subst hj
+    simp only [Function.comp_apply, Function.update_self, Fin.snoc_last]
+  · simp only [Function.comp_apply, Function.update_of_ne hj, Fin.snoc_castSucc]
+
+/-- A winning position `(a, b)` of the `n`-round Ehrenfeucht–Fraïssé game, read through any
+reindexing `σ : Fin k → Fin m`, wins the `n`-round `k`-pebble game from `(S, a ∘ σ, b ∘ σ)`. When
+pebble `i` moves, `σ` is extended by sending `i` to the element added in the Ehrenfeucht–Fraïssé
+game. -/
+theorem DuplicatorWins.pebbleWins_comp :
+    ∀ {n m : ℕ} {a : Fin m → M} {b : Fin m → N}, DuplicatorWins L n a b →
+      ∀ (σ : Fin k → Fin m) (S : Set (Fin k)), PebbleWins L n S (a ∘ σ) (b ∘ σ)
+  | 0, _, _, _, h, σ, S => pebbleWins_zero.2 (h.partialIso.partialIsoOn_comp σ S)
+  | n + 1, m, a, b, h, σ, S => by
+    refine pebbleWins_succ.2 ⟨h.partialIso.partialIsoOn_comp σ S, fun i c => ?_, fun i d => ?_⟩
+    · obtain ⟨d, hd⟩ := h.forth c
+      refine ⟨d, ?_⟩
+      have := DuplicatorWins.pebbleWins_comp hd
+        (Function.update (Fin.castSucc ∘ σ) i (Fin.last m)) (insert i S)
+      rwa [snoc_comp_update, snoc_comp_update] at this
+    · obtain ⟨c, hc⟩ := h.back d
+      refine ⟨c, ?_⟩
+      have := DuplicatorWins.pebbleWins_comp hc
+        (Function.update (Fin.castSucc ∘ σ) i (Fin.last m)) (insert i S)
+      rwa [snoc_comp_update, snoc_comp_update] at this
+
 /-- A winning position of the `n`-round Ehrenfeucht–Fraïssé game from `(a, b)` wins the `n`-round
-`k`-pebble game from `(S, a, b)` for every set `S` of placed pebbles: `k`-variable formulas are
-first-order formulas (`FiniteVariable.Formula.toFormula`). The proof goes through the logic, so it
-assumes a relational language with finitely many relation symbols. -/
-theorem DuplicatorWins.pebbleWins [L.IsRelational] [Finite (Σ l, L.Relations l)] {n : ℕ}
-    {a : Fin k → M} {b : Fin k → N} (h : DuplicatorWins L n a b) (S : Set (Fin k)) :
-    PebbleWins L n S a b := by
-  refine pebbleWins_of_forall_realize_iff fun φ hr _ => ?_
-  rw [← FiniteVariable.Formula.realize_toFormula, ← FiniteVariable.Formula.realize_toFormula]
-  exact h.formula_realize_iff (by rwa [FiniteVariable.Formula.quantifierRank_toFormula])
+`k`-pebble game from `(S, a, b)` for every set `S` of placed pebbles, in every language. -/
+theorem DuplicatorWins.pebbleWins {n : ℕ} {a : Fin k → M} {b : Fin k → N}
+    (h : DuplicatorWins L n a b) (S : Set (Fin k)) : PebbleWins L n S a b :=
+  h.pebbleWins_comp id S
 
 end Cslib.Logic.FO
