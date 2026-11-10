@@ -49,6 +49,8 @@ until no new view appears, under any space bound, is
   `Turing.MultiTapeNTM.computableInPolyTime_acceptingView`: the successors and the accepting test
   in polynomial time.
 * `Turing.MultiTapeTM.ComputableInPolyTime.expand`: a round in polynomial time.
+* `Turing.MultiTapeNTM.length_encList_search_le`: under any space bound, the views found by any
+  number of rounds are few and short.
 * `Turing.MultiTapeNTM.exists_computableInPolyTime_search`: under a logarithmic space bound,
   enough rounds of breadth-first search find their views in polynomial time.
 
@@ -225,6 +227,30 @@ private theorem rounds_le (k : ℕ) (State : Type) (c n : ℕ) :
         (n + 1) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) :=
   (two_pow_coreLengthBound_log_le k State c n).trans_eq (by rw [mul_pow, ← mul_assoc])
 
+/-- The initial view of an encoded instance is polynomial-time. -/
+theorem computableInPolyTime_initView {α : Type} (enc : α ↪ List Bool) :
+    ComputableInPolyTime (fun a => ntm.initView (enc a)) enc encFiniteCfg :=
+  ComputableInPolyTime.finiteCfg_init
+    (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
+      fun _ => rfl) ntm.q₀
+
+open scoped Classical in
+/-- **Breadth-first search finds few short views**: under a space bound `s`, any number of rounds
+of the search from the initial view finds at most `2 ^ (2 * coreLengthBound + 1)` views, each
+encoded within `2 * viewLengthBound + 1` bits. -/
+theorem length_encList_search_le {input : List Bool} {s : ℕ} (hs : ntm.RunsInSpace input s)
+    (rounds : ℕ) :
+    (encList encFiniteCfg (Cslib.Reachability.search ntm.viewSucc rounds
+      (ntm.initView input))).length ≤
+        2 ^ (2 * coreLengthBound k State input.length s + 1) *
+          (2 * viewLengthBound k State input.length s + 1) := by
+  have hreach (finite) (hf : finite ∈ Cslib.Reachability.search ntm.viewSucc rounds
+      (ntm.initView input)) : Relation.ReflTransGen ntm.ViewStep (ntm.initView input) finite :=
+    reflTransGen_viewSucc_iff.mp (Cslib.Reachability.reflTransGen_of_mem_search hf)
+  exact (length_encList_le encFiniteCfg _ fun finite hf =>
+    length_encFiniteCfg_le hs (hreach finite hf)).trans <| Nat.mul_le_mul_right _
+      (length_le_of_nodup_reachable hs (Cslib.Reachability.nodup_search rounds _) hreach)
+
 open scoped Classical in
 /-- **Breadth-first search within logarithmic space is polynomial-time.** If every computation
 prefix of `ntm` on every encoded instance `enc a` stays within space `c * (Nat.log2 n + 1)`, then
@@ -248,10 +274,7 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
           (ComputableInPolyTime.const 1)))))
   have hinit : ComputableInPolyTime (fun a => [ntm.initView (enc a)]) enc
       (encList encFiniteCfg) :=
-    ComputableInPolyTime.cons' (ComputableInPolyTime.finiteCfg_init
-      (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
-        fun _ => rfl) ntm.q₀)
-      (ComputableInPolyTime.const [])
+    ComputableInPolyTime.cons' (computableInPolyTime_initView enc) (ComputableInPolyTime.const [])
   -- the found views are polynomially many, each of linear length
   set bound : α → ℕ := fun a => rounds a *
     (2 * viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1)) + 1)
@@ -267,15 +290,8 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
   have hstates : ∀ a, ∀ i ≤ rounds a, (encList encFiniteCfg
       ((Cslib.Reachability.expand ntm.viewSucc)^[i] [ntm.initView (enc a)])).length ≤ bound a := by
     intro a i _
-    have hreach (finite) (hf : finite ∈ Cslib.Reachability.search ntm.viewSucc i
-        (ntm.initView (enc a))) :
-        Relation.ReflTransGen ntm.ViewStep (ntm.initView (enc a)) finite :=
-      reflTransGen_viewSucc_iff.mp (Cslib.Reachability.reflTransGen_of_mem_search hf)
-    have hlen := (length_le_of_nodup_reachable (hs a) (Cslib.Reachability.nodup_search i _)
-      hreach).trans (rounds_le k State c _)
-    refine (length_encList_le encFiniteCfg _ fun finite hf =>
-      length_encFiniteCfg_le (hs a) (hreach finite hf)).trans ?_
-    exact Nat.mul_le_mul_right _ hlen
+    exact (length_encList_search_le (hs a) i).trans
+      (Nat.mul_le_mul_right _ (rounds_le k State c _))
   exact ComputableInPolyTime.iterate hcount hinit
     (ComputableInPolyTime.expand computableInPolyTime_viewSucc) hbound hstates
 

@@ -30,7 +30,7 @@ The space bound need not be computable. The search stops by itself when the view
 successors, so no bound on the number of rounds is computed in advance, and the space bound enters
 only the analysis. This is the configuration-graph search behind `NSPACE(s) ⊆ DTIME(2 ^ O(s))` and,
 with the marking of `Turing.MultiTapeATM.markAccepts`, behind `ASPACE(s) ⊆ DTIME(2 ^ O(s))`
-[Sipser, Theorem 8.5, Section 10.3][Sipser2013]
+[Sipser, Sections 8.4 and 10.3][Sipser2013]
 [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981].
 
 ## Main definitions
@@ -47,8 +47,7 @@ with the marking of `Turing.MultiTapeATM.markAccepts`, behind `ASPACE(s) ⊆ DTI
 
 ## References
 
-* [M. Sipser, *Introduction to the Theory of Computation*, Theorem 8.5 and
-  Section 10.3][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, Sections 8.4 and 10.3][Sipser2013]
 * [A. K. Chandra, D. C. Kozen, L. J. Stockmeyer, *Alternation*,
   Section 3][ChandraKozenStockmeyer1981]
 -/
@@ -241,10 +240,7 @@ theorem exists_computableInTimeAndSpace_reachableViews {α γ : Type} {enc : α 
   set B := 8 + 2 * Nat.card (Option State) + 200 * k
   set B' := 10 + 2 * Nat.card (Option State) + 200 * k
   have hinit : ComputableInPolyTime (fun a => [ntm.initView (enc a)]) enc (encList encFiniteCfg) :=
-    ComputableInPolyTime.cons' (ComputableInPolyTime.finiteCfg_init
-      (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
-        fun _ => rfl) ntm.q₀)
-      (ComputableInPolyTime.const [])
+    ComputableInPolyTime.cons' (computableInPolyTime_initView enc) (ComputableInPolyTime.const [])
   -- the rounds of the search, and a bound on the found views
   have hl : ∀ a, ∀ n ≤ Cslib.Reachability.closingRound ntm.viewSucc (ntm.initView (enc a)),
       (encList encFiniteCfg ((closeStep (ntm := ntm))^[n] [ntm.initView (enc a)])).length ≤
@@ -252,14 +248,7 @@ theorem exists_computableInTimeAndSpace_reachableViews {α γ : Type} {enc : α 
           (2 * viewLengthBound k State (enc a).length (s a) + 1) := by
     intro a n hn
     rw [closeStep_iterate hn]
-    have hreach (finite) (hf : finite ∈ Cslib.Reachability.search ntm.viewSucc n
-        (ntm.initView (enc a))) :
-        Relation.ReflTransGen ntm.ViewStep (ntm.initView (enc a)) finite :=
-      reflTransGen_viewSucc_iff.mp (Cslib.Reachability.reflTransGen_of_mem_search hf)
-    refine (length_encList_le encFiniteCfg _ fun finite hf =>
-      length_encFiniteCfg_le (hs a) (hreach finite hf)).trans ?_
-    exact Nat.mul_le_mul_right _
-      (length_le_of_nodup_reachable (hs a) (Cslib.Reachability.nodup_search n _) hreach)
+    exact length_encList_search_le (hs a) n
   have hne : ∀ a, ∀ n < Cslib.Reachability.closingRound ntm.viewSucc (ntm.initView (enc a)),
       encList encFiniteCfg ((closeStep (ntm := ntm))^[n + 1] [ntm.initView (enc a)]) ≠ [] := by
     intro a n hn hnil
