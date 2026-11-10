@@ -1028,7 +1028,6 @@ substituted and maps pushed into the continuations: the shape that `PMF.bind_con
 `PMF.bind_apply` and the support lemmas expect. The set is curated, so later steps may rely on its
 normal form; it does not unfold support membership or probability masses. The checked examples in
 [PMFNorm.lean](../../CslibFrontierTests/PMFNorm.lean) show the normal form of each kind of term.
-To invert a membership in the support, use `supp_cases` (next section).
 
 ## Invert a support membership
 
