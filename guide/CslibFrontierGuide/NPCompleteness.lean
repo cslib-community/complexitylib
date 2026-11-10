@@ -45,6 +45,7 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
 import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
@@ -80,6 +81,7 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
 import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
@@ -856,8 +858,7 @@ For even delta-matroid constraints,
 {name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
 two-phase routine. Its correctness requires an improving valid comparison
 labeling as input; it does not search for that labeling. The combined exchange
-count is bounded by half the initial occurrence Hamming distance. No native
-machine-runtime bound is claimed yet.
+count is bounded by half the initial occurrence Hamming distance.
 
 ```lean
 open Cslib.Logic.PL Cslib.Logic.PL.CSP in
@@ -871,7 +872,25 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 ```
 
 The test module also rejects final-only validity. A complete solver still needs
-DAG/forest/blossom search and the native runtime certificate.
+DAG/forest/blossom search and certification of the complete solver.
+
+
+For explicit tables, {name}`Cslib.Complexity.CSP.EdgeAugmenting.run` takes the CSP,
+two finite occurrence buffers and the excluded start. Its ordinary native certificate
+covers the full framed input, including malformed buffers and sparse binary names:
+
+```lean
+open Cslib.Complexity.CSP.EdgeAugmenting Turing.MultiTapeTM in
+example : ComputableInPolyTime (fun input => (run input).isSome)
+    encInput encBool := by fun_prop
+```
+
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_eq` identifies its output with the
+mathematical routine when buffer widths match.
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_spec` supplies an actual augmenting
+walk and the combined exchange bound given a valid improving comparison.
+A `none` output does not establish unsatisfiability. Finding the comparison remains open.
+The complete behavioral clients are in `CslibFrontierTests/EdgeCSPAugmentingNative.lean`.
 
 
 # Timestamped DAG Search Prerequisites
