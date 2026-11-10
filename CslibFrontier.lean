@@ -3326,6 +3326,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.ReplayParameter
 public import CslibFrontier.Computability.Probabilistic.Oracle.SingleOracle
 public import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 public import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
+public import CslibFrontier.Computability.Probabilistic.Oracle.Time
 public import CslibFrontier.Computability.Probabilistic.OracleSimulation
 public import CslibFrontier.Computability.Probabilistic.PPT
 public import CslibFrontier.Computability.Probabilistic.PPT.AuxClock
@@ -3345,6 +3346,7 @@ public import CslibFrontier.Computability.Probabilistic.Sampling
 public import CslibFrontier.Computability.Probabilistic.Sampling.F4
 public import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 public import CslibFrontier.Computability.Probabilistic.Selection
+public import CslibFrontier.Computability.Probabilistic.Time
 public import CslibFrontier.Computability.Probabilistic.Traverse
 public import CslibFrontier.Computability.Probabilistic.UniformNat
 public import CslibFrontier.Computability.PropertyTesting.DenseGraph.Basic
@@ -3946,6 +3948,7 @@ public import CslibFrontier.Crypto.Game.CloseTo.RandomOracle
 public import CslibFrontier.Crypto.Game.CloseTo.Statistical
 public import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
+public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.FourHop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Statistical
