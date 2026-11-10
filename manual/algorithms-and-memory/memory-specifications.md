@@ -8,6 +8,15 @@
 
 A client charge sums explicitly chosen operation weights. Pure Lean work in the continuation is uncharged. An abstract client bound therefore measures interaction with the supplied backend, not total machine time. Refinement packages an invariant, abstract-state map and lower-level method programs; composition transports correctness and cost bounds. [CslibFrontier/DataStructure/StateTransition/Amortized.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition/Amortized.lean) adds potential-based telescoping.
 
+For a deterministic specification, `clientResult`, `clientState` and `clientHistory` give the
+answer, final state and operation history of a client run. To split them at the binds of a `do`
+block, use `simp only [client_simps]` instead of rewriting with `clientState_bind` and its
+relatives by hand. The simp set also splits `totalCost` and `ValidHistory` of the history at the
+state where the first client stops, and, with `WordRAM.Realization` imported, `memoryCost`. It
+does not unfold individual operations: add their step lemmas yourself. See the
+[client-splitting regressions](../../CslibFrontierTests/StateTransitionClientSimps.lean), which
+cover a generic specification and `Memory.spec w`.
+
 For deterministic methods, import `CslibFrontier.DataStructure.StateTransition.LinkCongr` to
 use `StateTransitionSpec.runClient_link_congr` when replacing methods under an adaptive client.
 Its premise equates each complete method run at every starting state and operation: answer,
