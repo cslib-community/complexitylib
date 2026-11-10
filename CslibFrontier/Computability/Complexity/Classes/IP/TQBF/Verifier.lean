@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import Mathlib.NumberTheory.Bertrand
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # The machine verifier for quantified Boolean formulas
@@ -458,8 +459,7 @@ theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {n
   have hbin (o : ArithQBF.Connective) (hnext : next ∈ OracleComp.support
       (ask (I, st) >>= fun word => pure (binNext o (I, st) word))) :
       (encVState next).length ≤ (encVState st).length + (8 * claimBound I + 8) := by
-    obtain ⟨word, -, hword⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-    rw [OracleComp.eq_of_mem_supportWith_pure hword]
+    supp_cases hnext with ⟨word, -, rfl⟩
     unfold binNext
     split_ifs
     · refine length_encVState_push_le st [_, _] true (by simp) ?_
@@ -469,16 +469,12 @@ theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {n
   have hop (o : ArithQBF.Operator) (hnext : next ∈ OracleComp.support
       (ask (I, st) >>= opCont o (I, st))) :
       (encVState next).length ≤ (encVState st).length + (8 * claimBound I + 8) := by
-    obtain ⟨word, -, hword⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-    unfold opCont at hword
-    split_ifs at hword
-    · obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hword
-      refine length_encVState_push_le st [_] true (by simp) ?_
+    supp_cases hnext [opCont] with ⟨word, -, ⟨-, z, hz, rfl⟩ | ⟨-, rfl⟩⟩
+    · refine length_encVState_push_le st [_] true (by simp) ?_
       simp only [List.mem_singleton, forall_eq]
       exact length_encClaim_map_le I _ (fun x => by split_ifs <;> exact Nat.mod_lt _ hq) _
         (hornerMod_lt _ _)
-    · rw [OracleComp.eq_of_mem_supportWith_pure hword]
-      exact hrej
+    · exact hrej
   unfold step at h
   split_ifs at h with hactive
   · generalize hk : (st.1.headD (.top, 0)).1 = k at h
