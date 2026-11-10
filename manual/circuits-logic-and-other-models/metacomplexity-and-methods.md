@@ -1332,10 +1332,28 @@ the marker: freshness is required there only when the right port is actually rea
 
 `block_width` proves width three for terms of width at most two, and `block_length` gives at
 most four clauses plus the term count. `block_polytime` certifies actual binary clause/literal
-writing, rather than inferring runtime from those size bounds. These are **local** bounds;
-full graph query assembly, finite-model count transport, global literal/declaration validation,
-and the source $6v+a-1$ variable and cubic-clause budgets remain open. The refined-construction
-ROADMAP entry is retained, and the reviewed width-four exact-set counter is unchanged.
+writing, rather than inferring runtime from those size bounds. These are local block bounds. The global writer is now available in
+`CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedQueries`, in the same namespace.
+Its `context` computes the suffix ports and the marker offset from the original graph and signed
+bound. `prefixClauses` retains the first $2v$ predicates on the original writer with the **full**
+$3v-1$ path length. `query` appends all $v$ shared-marker blocks to those prefix clauses and the
+original side formula. `compile` retains the existing empty-graph branch and otherwise emits
+both computed boundary queries. No precomputed gates, marker values or query advice are inputs.
+
+`query_polytime` and `compile_polytime` certify actual binary construction time and workspace,
+including normalization, gate generation, list traversal and output writing. `query_eval` gives
+the simultaneous prefix/block semantics. `declaration` and `compile_queries` prove the source's
+$6v+a-1$ declaration for positive graphs, with the actual computed size-test gate count $a$.
+`query_width` proves width three for the whole query, including the side and prefix clauses.
+`context_ports` and `context_terms` show all used suffix ports and term variables lie below
+**every** new marker, not only below their own marker. The ignored final right index remains
+unrestricted.
+
+Finite-model projection/parity-extension count transport, complete literal-index validation,
+the cubic-clause budget and the refined counting-machine resource composition remain open.
+These construction certificates do not assert the new query counts equal the old query counts.
+The refined-construction ROADMAP entry is retained; the reviewed width-four exact-set counter
+is unchanged.
 
 From the checkout root run:
 
@@ -1348,6 +1366,12 @@ uses the actual augmented predicate of $K_2$, with its gate-dependent source por
 It checks all 32 relevant old assignments and both values of the single marker against the
 intended zero-or-one extension count. Other cases cover fixed boundaries, repeated pair terms,
 empty terms/predicates and a deliberate freshness violation yielding two extensions.
+The same client now checks the complete original-input writer on $K_2$ and the single-vertex
+and empty cases. For both $K_2$ boundaries it checks all 512 old selection/mark/path patterns
+against the four possible assignments of the two fresh markers. Side gate clauses are omitted
+on both sides of this test, so false gate words cannot make it vacuous. Computed checks also
+cover the full query's width, literal indices and declaration. This finite regression does not
+replace the still-missing general count bijection.
 The enumeration is test-only; production writes explicit lists and enumerates no assignment cube.
 
 ### Minimum independent-domination resources

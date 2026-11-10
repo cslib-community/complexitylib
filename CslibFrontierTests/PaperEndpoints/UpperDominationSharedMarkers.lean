@@ -7,8 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (regression tests)
 
-public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedMarkers
-meta import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedMarkers
+public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedQueries
+meta import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedQueries
 meta import CslibFrontier.Computability.PolyTime.CNF.UpperDominationUnique
 meta import CslibFrontier.Computability.PolyTime.CNF.UpperDomination
 
@@ -16,7 +16,8 @@ meta import CslibFrontier.Computability.PolyTime.CNF.UpperDomination
 # Actual shared-marker clause writing and local parsimonious extension
 
 Tiny tests vary the old port/selection bits and the single new marker. They do not enumerate
-whole graph queries or auxiliary gate cubes, and do not stand in for a global count proof.
+auxiliary gate cubes. Global graph-writer tests vary all relevant old K2 bits and the two fresh
+markers; they do not stand in for a general finite-model count proof.
 -/
 
 public section
@@ -98,5 +99,65 @@ example (σ : ℕ → Bool) :
       (DNF.eval σ [[(3, true)], [(4, true), (5, false)]] = true →
         (σ 0 ^^ σ 1) = false) := by
   apply extension_unique <;> simp; grind
+
+/-- Original graph input; the suffix writer receives no precomputed clauses or gate counts. -/
+@[expose] def graphInput : UpperDomination.Input := ((2, [[false, true], [true, false]]), 0)
+
+/- The whole writer obeys both source variable and width bounds, not only the local block. -/
+/-- info: (true, true, true) -/
+#guard_msgs in
+#eval let x := graphInput
+  let n := IndependentDomination.order (UpperDomination.graph x)
+  let N := oldDeclaration x + n
+  (N == 6 * n + UpperDomination.auxiliary x - 1,
+    (query x false).all fun c => c.length ≤ 3,
+    (query x true).all fun c => c.all fun l => l.1 < N)
+
+/-- The nine relevant old bits for K2: selections, marks, then five path variables. -/
+@[expose] def graphBits (a N seed i : ℕ) : Bool :=
+  if i < 2 then Nat.testBit seed i else
+  if a + 2 ≤ i && i < a + 4 then Nat.testBit seed (i - (a + 2) + 2) else
+  if a + 4 ≤ i && i < N then Nat.testBit seed (i - (a + 4) + 4)
+  else false
+
+/- Check global extension counts for both boundaries and every old selection/mark/path pattern.
+Gate side clauses are omitted on both sides, so their falsity cannot make this test vacuous.
+Only the two newly introduced marker bits are enumerated on the refined side. -/
+/-- info: true -/
+#guard_msgs in
+#eval let x := graphInput
+  let N := oldDeclaration x
+  let a := UpperDomination.auxiliary x
+  let sideLength := (TwoBoundary.BinaryFrontend.side (UpperDomination.build x)).length
+  [false, true].all fun β =>
+    let old : CNF ℕ :=
+      (TwoBoundary.BinaryFrontend.query (UpperDomination.Unique.build x) β).drop sideLength
+    let fresh : CNF ℕ := (query x β).drop sideLength
+    (List.range 512).all fun seed =>
+      let σ := graphBits a N seed
+      let count := (List.range 4).countP fun mask => fresh.eval fun i =>
+        if N ≤ i && i < N + 2 then
+          Nat.testBit mask (i - N) else σ i
+      count == if old.eval σ then 1 else 0
+
+/- The single-vertex suffix substitutes the final boundary; the empty graph dispatch remains old. -/
+/-- info: (true, true, true) -/
+#guard_msgs in
+#eval let one : UpperDomination.Input := ((1, [[false]]), 0)
+  let zero : UpperDomination.Input := ((0, []), 0)
+  ((context one true 0).last,
+    (query one true).all fun c => c.length ≤ 3,
+    match compile zero, TwoBoundary.BinaryFrontend.compile (UpperDomination.Unique.build zero) with
+    | .inl a, .inl b => a == b
+    | _, _ => false)
+
+example : ComputableInPolyTime compile UpperDomination.encInput
+    TwoBoundary.BinaryFrontend.encOutput := compile_polytime
+
+example (x : UpperDomination.Input)
+    (hn : 1 ≤ IndependentDomination.order (UpperDomination.graph x)) :
+    oldDeclaration x + IndependentDomination.order (UpperDomination.graph x) =
+      6 * IndependentDomination.order (UpperDomination.graph x) + UpperDomination.auxiliary x - 1 :=
+  declaration x hn
 
 end SharedMarkerTests
