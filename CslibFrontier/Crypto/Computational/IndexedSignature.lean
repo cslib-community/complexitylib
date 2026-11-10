@@ -192,7 +192,7 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
       · apply ComputableInPolyTime.isPPTOn
         polytime
     · ppt
-  apply hadversary.run_interpret_preprocess
+  apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
     (initial := fun _ => ([] : List (ℕ × List Bool)))
     (resources := fun caller query =>

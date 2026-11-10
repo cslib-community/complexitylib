@@ -529,13 +529,13 @@ theorem isPPTOn_run_signingPairOracle (M : MACScheme) {adversary : Forger}
     unfold signingPairOracle
     exact (M.isPPTOn_sign_comp (by fun_prop) (by fun_prop)).bind_with
       (ComputableInPolyTime.isPPTOn (by fun_prop))
-  apply hadversary.run_interpret_preprocess
+  apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List (List Bool × List Bool)))
     (resources := fun caller query =>
       2 * (c * (2 * caller.2.length + query.length + 2) ^ d) + 4 * query.length + 6)
-    (ComputableInPolyTime.tidy (by fun_prop)) hhandler (ComputableTidilyInPolyTime.const [])
-    (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.tidy (by fun_prop))
+    (by fun_prop) hhandler (ComputableInPolyTime.const [])
+    (fun _ _ => True) (fun _ => trivial) (by fun_prop)
   intro caller request queriedPairs _ result hresult
   simp only [signingPairOracle, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult
@@ -844,13 +844,13 @@ theorem isPPTOn_run_oneTimeSigningPairOracle (M : MACScheme) {adversary : Forger
       ((M.isPPTOn_sign_comp (by fun_prop) (by fun_prop)).bind_with
         (ComputableInPolyTime.isPPTOn (by fun_prop)))
       (ComputableInPolyTime.isPPTOn (by fun_prop))
-  apply hadversary.run_interpret_preprocess
+  apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List (List Bool × List Bool)))
     (resources := fun caller query =>
       2 * (c * (2 * caller.2.length + query.length + 2) ^ d) + 4 * query.length + 6)
-    (ComputableInPolyTime.tidy (by fun_prop)) hhandler (ComputableTidilyInPolyTime.const [])
-    (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.tidy (by fun_prop))
+    (by fun_prop) hhandler (ComputableInPolyTime.const [])
+    (fun _ _ => True) (fun _ => trivial) (by fun_prop)
   intro caller request queriedPairs _ result hresult
   unfold oneTimeSigningPairOracle at hresult
   split_ifs at hresult with hempty
@@ -1952,13 +1952,13 @@ theorem isPPTOn_run_signingPairOracle (M : NonceMACScheme) {adversary : NonceMAC
     unfold signingPairOracle
     exact (M.isPPTOn_sign_comp (by fun_prop) (by fun_prop) (by fun_prop)).bind_with
       (ComputableInPolyTime.isPPTOn (by fun_prop))
-  apply hadversary.run_interpret_preprocess
+  apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List ((List Bool × List Bool) × List Bool)))
     (resources := fun caller query =>
       2 * (c * (2 * caller.2.length + query.length + 3) ^ d) + 4 * query.length + 8)
-    (ComputableInPolyTime.tidy (by fun_prop)) hhandler (ComputableTidilyInPolyTime.const [])
-    (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.tidy (by fun_prop))
+    (by fun_prop) hhandler (ComputableInPolyTime.const [])
+    (fun _ _ => True) (fun _ => trivial) (by fun_prop)
   intro caller request queriedTriples _ result hresult
   simp only [signingPairOracle, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult

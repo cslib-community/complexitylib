@@ -57,7 +57,7 @@
  "CslibFrontier/Computability/Probabilistic/OracleSimulation.lean": 1,
  "CslibFrontier/Computability/Probabilistic/PPT.lean": 1,
  "CslibFrontier/Computability/Probabilistic/PPT/Capture.lean": 4,
- "CslibFrontier/Computability/Probabilistic/Parameter.lean": 2,
+ "CslibFrontier/Computability/Probabilistic/Parameter.lean": 1,
  "CslibFrontier/Computability/Probabilistic/Presample.lean": 2,
  "CslibFrontier/Tactic/PolyTime.lean": 3
 }
