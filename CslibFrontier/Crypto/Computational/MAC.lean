@@ -21,9 +21,9 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -1729,11 +1729,7 @@ theorem PseudorandomFunction.eufCma_prfMAC
   intro adversary hadversary
   have hdist := hprf.secure (macToPrfDistinguisher adversary)
     (isOraclePPT_macToPrfDistinguisher hadversary)
-  have hgeom : Negligible (fun n => (1 : ℝ≥0) / 2 ^ n) := by
-    simpa only [one_div, inv_pow] using
-      negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)
-  exact negligible_of_le (hdist.add hgeom)
-    (succProbability_eufCmaGame_prfMAC_le hprf.polyTime hprf.length_eq adversary)
+  negligible using succProbability_eufCmaGame_prfMAC_le hprf.polyTime hprf.length_eq adversary
 
 /-- **PRF-to-SUF-CMA security theorem** [Boneh and Shoup, Theorem 6.2][BonehShoup2023]:
 every uniform `PseudorandomFunction` yields a strongly unforgeable (`SUFCMA`) `MACScheme`. -/

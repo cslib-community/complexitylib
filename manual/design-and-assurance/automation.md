@@ -221,6 +221,46 @@ If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic r
 If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
 missing bound, for instance on a product or on a value read from memory.
 
+## Close negligibility bounds
+
+Asymptotic security theorems finish by showing that a concrete advantage or failure bound is
+`Cslib.Crypto.Negligible`. Import `CslibFrontier.Tactic.Negligible` and close such a goal with
+`negligible`, `negligible using hle` or `negligible eventually hle` instead of restating a real
+upper bound as an `ℝ≥0` mirror expression and threading `negligible_of_le`, `NNReal.coe_*` and
+`Pi.add_apply` by hand. The [checked clients](../../CslibFrontierTests/NegligibleTactic.lean) cover
+dyadic reciprocals, polynomial and birthday numerators, parameter shifts and scalings, square roots,
+geometric terms, range sums, local `let` definitions, unary `ComputableInPolyTime` certificates,
+`ℝ≥0` and `ℝ` upper bounds, and failure diagnostics. To check them, run
+`lake build CslibFrontierTests.NegligibleTactic --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md).
+
+Plain `negligible` normalizes pointwise `Pi` operations, unit fractions `1 / x` and natural-number
+casts, derives `PolynomiallyBounded` facts from local `ℕ → ℕ` `let` bindings and unary
+`ComputableInPolyTime f encUnary encUnary` hypotheses in context, and runs `fun_prop` with
+`norm_num`, `positivity` and `omega` on side conditions. Through the closure rules in
+`CslibFrontier.Crypto.Negligible.Dyadic`, it handles `((2 : ℝ≥0) ^ n)⁻¹`, `(1 : ℝ≥0) / 2 ^ n`,
+polynomial and birthday ratios such as `(Q n : ℝ≥0) ^ 2 / (2 * 2 ^ n)` and
+`((Q n).choose 2 : ℝ≥0) / 2 ^ n`, constant scaling and division, `NNReal.sqrt`, geometric powers
+`ratio ^ n` with `ratio < 1`, parameter schedules (`ε (n + c)`, `ε (c + n)`, `ε (c * n)` and
+`ε (n / c)` for `0 < c`), and uniform `Finset.range (Q n)` sums.
+
+When the quantitative step gives an inequality rather than a syntactic expression in the goal, pass
+it directly with `negligible using hle` for a pointwise bound `∀ n, …` or
+`negligible eventually hle` for an asymptotic bound `∀ᶠ n in Filter.atTop, …`. Both forms accept
+bounds in `ℝ≥0` (`f n ≤ B n`) and in `ℝ` (`(f n : ℝ) ≤ B n`, including `.toReal` bounds on
+`Game.succProbability`). On a real bound, the tactic applies `negligible_of_coe_le` or
+`negligible_of_eventually_coe_le` and pushes `Real.toNNReal` structurally across sums, products,
+quotients, reciprocals, natural powers, `Real.sqrt`, `Finset.sum` and casts before invoking
+`fun_prop`.
+
+If the target is not `Cslib.Crypto.Negligible f`, the diagnostic reports the unexpected goal. If
+`using` or `eventually` cannot match `hle` as an `ℝ≥0` or `ℝ` upper bound on `f`, it reports the
+expected inequality shape. If `fun_prop` cannot discharge the resulting `ℝ≥0` bound, the diagnostic
+displays the normalized residual `Negligible` goal; supply the missing `Negligible` or
+`PolynomiallyBounded` fact in context, or bound an indexed sum first with
+`Negligible.sum_range_of_le`. The tactic discharges asymptotic decay from a proved quantitative
+bound; it does not perform game hops or probability rewrites itself.
+
 ## Proof style as interface maintenance
 
 The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/AGENTS.md#proof-hygiene)
