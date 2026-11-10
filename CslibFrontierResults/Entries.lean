@@ -75,6 +75,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -786,6 +787,27 @@ register_result "williams-square-root-space" where
     DTIME(t) is contained in DSPACE(Nat.sqrt(t * (Nat.log2(t) + 1))). Finite binary \
     multitape machines, read-only input and visited-work-cell space; classes absorb \
     affine constants. No time-constructibility or monotonicity hypothesis."
+
+register_result "blum-mansour-swap-regret" where
+  title := "Blum–Mansour reduction from swap regret to external regret"
+  topic := "online learning"
+  sources := [
+    { paper := BlumMansour2007, theorem := "Theorem 5 and Corollary 7", locator := "p. 1313" },
+    { paper := Roughgarden2013CS364A, theorem := "Theorem 2.1",
+      locator := "Lecture 18, Section 2, pp. 3–5" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.OnlineLearning.Experts.swap_regret_le_sum_regret,
+    Cslib.MachineLearning.OnlineLearning.Experts.blumMansour_swap_regret_le,
+    Cslib.MachineLearning.OnlineLearning.Experts.blumMansour_swap_regret_le_sqrt
+  ]
+  scope := "Experts setting with a finite set of n actions and arbitrary real loss sequences. \
+    The reduction assumes the learner plays a stationary vector of the copies' distributions \
+    and that copy j has regret at most R j on the losses scaled by the learner's probability of \
+    j; it then bounds the swap regret against every swapping function by the sum of the R j. \
+    With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
+    2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
+    chosen classically; no running time is charged."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
