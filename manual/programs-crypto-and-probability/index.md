@@ -828,7 +828,9 @@ outside the constructive retention algorithm.
 Theorem 5 remains incomplete at unrestricted source scope: these are finite-alphabet
 behavioral kernels, without a realization/representation theorem for every encoded
 selection-only PTM or general measurable alphabets. Native encoded machine resources
-also remain open. Theorem 4's native runtime and hardness claims remain open;
+also remain open. The Poisson-binomial domination needed for Lemma 2 and for the
+measurable or unbounded-horizon Theorem 5 is tracked in
+[#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native runtime and hardness claims remain open;
 its asymptotic factors are now proved.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
