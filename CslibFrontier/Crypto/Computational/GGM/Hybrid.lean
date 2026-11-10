@@ -92,15 +92,15 @@ theorem hybridGame_zero (generator : List Bool → List Bool) (adversary : Oracl
     by_cases hquery : query.length = n <;> cases hcache : cache.lookup [] <;>
       simp [frontierOracle, memoize, root, hquery, hcache, BitString.eval_sampleList,
         prfOracle, PMF.map, Function.comp_def]
-  have h := ProbOracleComp.run_interpret_simulation
+  have h := ProbOracleComp.runWith_simulation
     (fun request cache => ProbComp.eval (frontierOracle generator n 0 request.2 cache))
     (fun request seed => (PMF.pure (prfOracle (eval generator) n seed request.2)).map (·, seed))
     root (fun request => hstep request.2) (adversary n []) []
-  simp only [ProbOracleComp.run_interpret_readOnly] at h
+  simp only [funext (ProbOracleComp.runWith_readOnly _ _)] at h
   have houtput := congrArg (PMF.map Prod.fst) h
-  simpa [hybridGame, prfRealGame, ProbOracleComp.eval_run_interpret,
+  simpa [hybridGame, prfRealGame, ProbOracleComp.eval_run_interpret_eq_runWith,
     ProbOracleComp.eval_interpret, BitString.eval_sampleList, root, PMF.map,
-    Function.comp_def] using houtput
+    Function.comp_def, OracleComp.evalWith] using houtput
 
 /-- The final level caches full query answers directly. There is no suffix left to evaluate. -/
 theorem frontierOracle_self (generator : List Bool → List Bool) (n : ℕ) :

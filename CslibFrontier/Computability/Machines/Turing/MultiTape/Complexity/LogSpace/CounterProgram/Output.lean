@@ -18,10 +18,11 @@ on the input `w`, passing only through configurations satisfying `Q`, and emits 
 Reachability without emissions (`Turing.CounterProgram.Reaches`) through assignments, comparisons
 and reads emits nothing (`Turing.CounterProgram.Reaches.reachesOut`). A counting loop
 (`Turing.CounterProgram.forCode`) emits, in order, what its body emits for each value of the
-counter (`Turing.CounterProgram.reachesOut_forCode`). A program that reaches a halt, emitting the
-encoding of the value of a function, computes the function in logarithmic space if its registers
-stay polynomially bounded (`Turing.CounterProgram.computableInLogSpace_of_reachesOut`): this is the
-form of a logarithmic-space transducer.
+counter (`Turing.CounterProgram.reachesOut_forCode`); a loop counting a run of `true` bits of the
+input emits nothing (`Turing.CounterProgram.reachesOut_count`). A program that reaches a halt,
+emitting the encoding of the value of a function, computes the function in logarithmic space if its
+registers stay polynomially bounded (`Turing.CounterProgram.computableInLogSpace_of_reachesOut`):
+this is the form of a logarithmic-space transducer.
 
 ## Main definitions
 
@@ -36,6 +37,7 @@ form of a logarithmic-space transducer.
 * `Turing.CounterProgram.reachesOut_blocksCode`: sequence block outputs and preserve an invariant.
 * `Turing.CounterProgram.reachesOut_forCode`: a counting loop emits what its body emits for each
   value of the counter.
+* `Turing.CounterProgram.reachesOut_count`: a loop counting a run of `true` bits of the input.
 * `Turing.CounterProgram.computableInLogSpace_of_reachesOut`: counter programs with output and
   polynomially bounded registers compute functions in logarithmic space.
 
@@ -258,6 +260,37 @@ theorem reachesOut_forCode {b u body exit N : ℕ} {bound : Expr}
   refine ⟨regs', ReachesOut.assign h₀ hB ?_, hinv⟩
   rw [List.range_eq_range']
   simpa using hreach
+
+/-- **A read-and-count loop.** Label `c` reads the input at `e`; on `true`, label `c + 1`
+increments register `u` and returns to `c`, and on anything else the loop exits to `exit`. The
+registers `ρ j` are those after `j` increments. If the read is `true` exactly below `n` on the
+registers `ρ j`, then from any `ρ j` with `j ≤ n` the loop exits with the registers `ρ n`, emitting
+nothing. -/
+theorem reachesOut_count {c u exit n : ℕ} {e : Expr} (ρ : ℕ → List ℕ)
+    (hc : P.instr c = read e (c + 1) exit exit)
+    (hc' : P.instr (c + 1) = assign u (add (reg u) (const 1)) c)
+    (hρ : ∀ j < n, (ρ j).set u ((add (reg u) (const 1)).eval (ρ j)) = ρ (j + 1))
+    (hB : ∀ j ≤ n, ∀ r ∈ ρ j, r ≤ B) (htrue : ∀ j < n, w[e.eval (ρ j)]? = some true)
+    (hend : w[e.eval (ρ n)]? ≠ some true) :
+    ∀ j ≤ n, P.ReachesOut w (P.Active B) (c, ρ j) (exit, ρ n) [] := by
+  intro j hj
+  induction h : n - j generalizing j with
+  | zero =>
+    obtain rfl : j = n := by omega
+    refine ReachesOut.read hc (hB j hj) ?_
+    have hexit : readLabel (c + 1) exit exit w[e.eval (ρ j)]? = exit := by
+      match hw : w[e.eval (ρ j)]? with
+      | none => rfl
+      | some false => rfl
+      | some true => exact absurd hw hend
+    rw [hexit]
+    exact ReachesOut.refl _
+  | succ _ ih =>
+    refine ReachesOut.read hc (hB j hj) ?_
+    rw [htrue j (by omega)]
+    refine ReachesOut.assign hc' (hB j hj) ?_
+    rw [hρ j (by omega)]
+    exact ih (j + 1) (by omega) (by omega)
 
 /-! ### Logarithmic space -/
 

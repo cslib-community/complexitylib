@@ -2757,6 +2757,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Injective
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.InputTable
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Radix
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.RadixRounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.ReadSymbol
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Routines
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Tape
@@ -5446,9 +5447,17 @@ public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
 public import CslibFrontier.Logics.Propositional.CSP.Permanent
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Constants
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Construction
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Construction.Gadget
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
+public import CslibFrontier.Logics.Propositional.CSP.Planar.NonSelfDual
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
+public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree
+public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+public import CslibFrontier.Logics.Propositional.CSP.Planar.RelationMinor
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
