@@ -153,12 +153,7 @@ theorem exists_runFrom_candidates [Finite Q]
             rw [QueryMachine.runFrom_add, hT, hv]
             exact hUspace u (by omega)
       | some answer =>
-        have hresult : some answer = result := by
-          rcases hsafe σ hlt with hnone | hresult
-          · rw [hv] at hnone
-            cases hnone
-          · rw [hv] at hresult
-            exact hresult
+        have hresult : some answer = result := by grind
         refine ⟨T, σ, ?_, ?_, hTspace⟩
         · rw [hv] at hT
           rw [← hresult]

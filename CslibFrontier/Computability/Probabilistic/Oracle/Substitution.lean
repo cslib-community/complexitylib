@@ -29,12 +29,18 @@ not suffice: repeatedly doubling the handler's state is efficient per call but n
 Closed substitution (`Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess`) is the special
 case of a sampled closed handler without external channels.
 
+## Main definitions
+
+* `Cslib.Probability.encHandlerCall`: the encoded input of a stateful handler.
+
 ## Main results
 
 * `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open`: open substitution with
   captured caller data, a local state invariant and an efficiently computed resource allowance.
 * `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open'`: the same with plain
   `ComputableInPolyTime` side conditions.
+* `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded`: the same with
+  an allowance that is only polynomially bounded, not computed.
 * `Cslib.Probability.IsOraclePPTOn.interpret_preprocess_open'`: stateless substitution with
   a polynomial-time reply allowance, retaining the arbitrary external oracle's state.
 * `Cslib.Probability.IsOraclePPTOn.interpret_bitQueries`: replace each deterministic word query
@@ -52,14 +58,23 @@ namespace Cslib.Probability
 
 open Turing.MultiTapeTM
 
+/-- The input of a stateful oracle handler: the caller's input, then the request (an operation
+and its word), then the handler's state. Each pair frames its first part, so this is
+`encPair input (encPair (encPair operationEncoding encBits) stateEncoding)`. -/
+abbrev encHandlerCall {Caller Operation State : Type} (input : Caller ↪ List Bool)
+    (operationEncoding : Operation ↪ List Bool) (stateEncoding : State ↪ List Bool) :
+    Caller × (Operation × List Bool) × State ↪ List Bool :=
+  encPair input (encPair (encPair operationEncoding encBits) stateEncoding)
+
 /-- Substitute a stateful handler with its own external calls into an oracle program. The
 substituted program is strict oracle PPT and preserves the joint law of the result, the
-handler's final state and every external oracle's state. The efficiently computed allowance
-bounds each reply and the added encoded state; one invariant must hold for every possible handler
-result under every external oracle. External replies to the handler need no length bound. -/
-theorem IsOraclePPTOn.run_interpret_preprocess_open
+handler's final state and every external oracle's state. The allowance bounds each reply and the
+added encoded state, and is polynomially bounded in the encoded caller and request; it need not
+be computable. One invariant must hold for every possible handler result under every external
+oracle. External replies to the handler need no length bound. -/
+theorem IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded
     {Operation External α β Caller State : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
     {program : α → WordOracleComp Operation β}
@@ -67,15 +82,14 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
       WordOracleComp External (List Bool × State)}
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
-    (hprepare : ComputableTidilyInPolyTime prepare input source)
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hprepare : ComputableInPolyTime prepare input source)
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
-    (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
-      (encPair input encBits) encUnary)
+    (hresources : PolyBounded (fun pair => (encPair input encBits pair).length)
+      (fun pair => resources pair.1 pair.2))
     (hpreserve : ∀ a request state, invariant a state →
       ∀ result ∈ OracleComp.support (handler a request state),
         invariant a result.2 ∧ result.1.length ≤ resources a request.2 ∧
@@ -85,27 +99,27 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
         (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (program (prepare a))).run (initial a)) := by
-  obtain ⟨resourceCoeff, resourceDegree, hbound⟩ := hresources.polyBounded_length.exists_le
+  obtain ⟨resourceCoeff, resourceDegree, hbound⟩ := hresources.exists_le
   let allowance := fun size => resourceCoeff * (2 * size + 2) ^ resourceDegree
   have hallowance : PolynomiallyBounded allowance := by unfold allowance; fun_prop
   have hbound' (a : Caller) (query : List Bool) :
       resources a query ≤ allowance ((input a).length + query.length) := by
     have h := hbound (a, query)
-    simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at h
+    simp only [length_encPair, encBits_apply] at h
     exact h.trans (Nat.mul_le_mul_left resourceCoeff
       (Nat.pow_le_pow_left (by lia) resourceDegree))
   obtain ⟨hfiniteOp, k, Control, hfinite, machine, c, d, hrealize⟩ := hprogram
   let _ := hfiniteOp
   let _ := hfinite
   have hword : ComputableTidilyInPolyTime (fun a => source (prepare a)) input encBits :=
-    hprepare.of_enc_eq (fun _ => rfl)
+    hprepare.tidy.of_enc_eq (fun _ => rfl)
   have hcount : ComputableTidilyInPolyTime
       (fun a => c * ((source (prepare a)).length + 1) ^ d) input encUnary := by
     have hclock : ComputableTidilyInPolyTime (fun n => c * (n + 1) ^ d) encUnary encUnary := by
       fun_prop
     exact hclock.comp (ComputableTidilyInPolyTime.length_bits.comp hword)
   have hrun := OpenOracleSimulation.isOraclePPTOn_run machine
-    hword.computableInPolyTime hcount.computableInPolyTime hhandler hinitial.computableInPolyTime
+    hword.computableInPolyTime hcount.computableInPolyTime hhandler hinitial
     invariant hinit hallowance (fun a request state hstate result hresult => by
       obtain ⟨hstate', hreply, hgrowth⟩ := hpreserve a request state hstate result hresult
       exact ⟨hstate', hreply.trans (hbound' a request.2),
@@ -122,15 +136,52 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
           (output <$> program (prepare a))).run (initial a) := by
     rw [OracleComp.interpret_map, StateT.run_map, Functor.map_map]
     rfl
-  rw [hout, OracleComp.interpret_map, StateT.run_map, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.run_interpret_run_interpret, ProbOracleComp.run_interpret_run_interpret,
-    hrealize]
+  rw [hout, ProbOracleComp.runWith_map, ProbOracleComp.runWith_map,
+    ProbOracleComp.runWith_run_interpret, ProbOracleComp.runWith_run_interpret, hrealize]
+
+
+/-- Substitute a stateful handler with its own external calls into an oracle program. The
+substituted program is strict oracle PPT and preserves the joint law of the result, the
+handler's final state and every external oracle's state. The efficiently computed allowance
+bounds each reply and the added encoded state; one invariant must hold for every possible handler
+result under every external oracle. External replies to the handler need no length bound. -/
+theorem IsOraclePPTOn.run_interpret_preprocess_open
+    {Operation External α β Caller State : Type} [DecidableEq Operation]
+    [DecidableEq External]
+    {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
+    {program : α → WordOracleComp Operation β}
+    {handler : Caller → Operation × List Bool → State →
+      WordOracleComp External (List Bool × State)}
+    {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
+    (hprogram : IsOraclePPTOn source output program)
+    (hprepare : ComputableTidilyInPolyTime prepare input source)
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
+      (encPair encBits stateEncoding)
+      (fun ⟨caller, request, state⟩ => handler caller request state))
+    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
+    (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
+    (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
+      (encPair input encBits) encUnary)
+    (hpreserve : ∀ a request state, invariant a state →
+      ∀ result ∈ OracleComp.support (handler a request state),
+        invariant a result.2 ∧ result.1.length ≤ resources a request.2 ∧
+        (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
+    IsOraclePPTOn input (encPair output stateEncoding) (fun a =>
+      (OracleComp.interpret
+        (OracleComp.sumHandler
+          (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
+          (program (prepare a))).run (initial a)) :=
+  hprogram.run_interpret_preprocess_open_of_polyBounded hprepare.computableInPolyTime hhandler
+    hinitial.computableInPolyTime invariant hinit
+    (by simpa only [encUnary_apply, List.length_replicate] using hresources.polyBounded_length)
+    hpreserve
 
 /-- `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open` with plain polynomial-time
 preparation, initial state and resource allowance. -/
 theorem IsOraclePPTOn.run_interpret_preprocess_open'
     {Operation External α β Caller State : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
     {program : α → WordOracleComp Operation β}
@@ -139,8 +190,7 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open'
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
     (hprepare : ComputableInPolyTime prepare input source)
-    (hhandler : IsOraclePPTOn
-      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+    (hhandler : IsOraclePPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
@@ -156,15 +206,16 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open'
         (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
           (program (prepare a))).run (initial a)) :=
-  hprogram.run_interpret_preprocess_open hprepare.tidy hhandler hinitial.tidy invariant hinit
-    hresources.tidy hpreserve
+  hprogram.run_interpret_preprocess_open_of_polyBounded hprepare hhandler hinitial invariant hinit
+    (by simpa only [encUnary_apply, List.length_replicate] using hresources.polyBounded_length)
+    hpreserve
 
 /-- Stateless open substitution with an explicit polynomial-time bound on the replies given
 back to the original program. This specializes stateful substitution to `Unit`; the external
 oracle may still be stateful and return arbitrarily long answers. -/
 theorem IsOraclePPTOn.interpret_preprocess_open'
     {Operation External α β Caller : Type} [DecidableEq Operation]
-    [DecidableEq External] [Finite External]
+    [DecidableEq External]
     {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool}
     {program : α → WordOracleComp Operation β}

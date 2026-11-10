@@ -134,12 +134,10 @@ theorem isPiThree_iff_isSigmaThree_map_negate {k : ℕ} {f : BitString N → Boo
 private theorem DNF.negate_negate (G : CNF (Fin N)) : DNF.negate (CNF.negate G) = G := by
   simp only [DNF.negate, CNF.negate, List.map_map]
   conv_rhs => rw [← List.map_id G]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp only [Function.comp_apply, Term.negate, Clause.negate, List.map_map, id]
   conv_rhs => rw [← List.map_id c]
-  congr 1
-  funext l
+  congr 1 with l : 1
   simp
 
 /-- `Π₃^k(f) = Σ₃^k(¬f)`. -/

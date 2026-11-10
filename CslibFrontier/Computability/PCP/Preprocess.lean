@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.PCP.DegreeReduction
-public import CslibFrontier.Foundations.Combinatorics.Expander.Existence
+public import CslibFrontier.Foundations.Combinatorics.Expander.Family
+public import CslibFrontier.Foundations.Combinatorics.Expander.Loops
 
 /-!
 # Preprocessing
@@ -32,10 +33,10 @@ the number of edges of `G`; its spectral expansion is at most `1 - (1 - μ) |D| 
 times `UNSAT(G)` and `UNSAT(G)` (`le_unsatVal_preprocess`, `unsatVal_preprocess_le`), whatever the
 alphabet.
 
-With the non-explicit family `Cslib.RotationMap.expanderFamily` of `120`-regular expanders of
-spectral expansion at most `1 - 1 / 360000`, the preprocessed graph is `242`-regular, its spectral
-expansion is at most `1 - 1 / 726000` (`spectralExpansion_preprocess_expanderFamily_le`) and its
-value at least `UNSAT(G) / 1452000` (`le_unsatVal_preprocess_expanderFamily`).
+Nothing here depends on a particular family of expanders. The constants for the non-explicit family
+`Cslib.RotationMap.expanderFamily` are in `CslibFrontier.Computability.PCP.Amplification`, its only
+client, so that the explicit construction behind the PCP theorem does not import the probabilistic
+existence proof of that family.
 
 Executable clients may supply their own cloud numberings through `PreprocessExpanders` and
 `preprocessWith`. The family-based operation is a wrapper of this interface; its correctness does
@@ -62,9 +63,6 @@ not require the executable numberings to equal a choice made on arbitrary finite
 * `Cslib.PCP.ConstraintGraph.le_unsatVal_preprocess`,
   `Cslib.PCP.ConstraintGraph.unsatVal_preprocess_le`: its value is within a constant factor of
   that of `G`.
-* `Cslib.PCP.ConstraintGraph.spectralExpansion_preprocess_expanderFamily_le`,
-  `Cslib.PCP.ConstraintGraph.le_unsatVal_preprocess_expanderFamily`: the constants for the
-  non-explicit family of expanders.
 * `Cslib.PCP.ConstraintGraph.unsatVal_preprocessWith`,
   `Cslib.PCP.ConstraintGraph.unsatVal_preprocessWith_le`: for any specified rotations, the value
   is exactly half that of the degree-reduced graph, and at most that of `G`.
@@ -282,25 +280,6 @@ theorem unsatVal_preprocess_le :
   G.unsatVal_preprocessWith_le (.ofFamily G X)
 
 end Value
-
-/-! ### The non-explicit family of expanders -/
-
-/-- **The preprocessed constraint graph is an expander**: with the non-explicit family
-`expanderFamily` of `120`-regular expanders, its spectral expansion is at most `1 - 1 / 726000`. -/
-theorem spectralExpansion_preprocess_expanderFamily_le :
-    (G.preprocess expanderFamily).graph.spectralExpansion ≤ 1 - 1 / 726000 := by
-  refine (G.spectralExpansion_preprocess_le expanderFamily).trans_eq ?_
-  rw [Fintype.card_fin]
-  norm_num
-
-/-- **Soundness of preprocessing** [Dinur, Section 3.1][Dinur2005]: with the non-explicit family
-`expanderFamily` of `120`-regular expanders, preprocessing divides the value by at most `1452000`,
-whatever the alphabet. -/
-theorem le_unsatVal_preprocess_expanderFamily [Nonempty α] :
-    G.unsatVal / 1452000 ≤ (G.preprocess expanderFamily).toConstraintGraph.unsatVal := by
-  refine le_of_eq_of_le ?_ (G.le_unsatVal_preprocess expanderFamily)
-  rw [Fintype.card_fin, min_eq_right (by norm_num)]
-  ring
 
 end ConstraintGraph
 

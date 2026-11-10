@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.Quicksort
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import Mathlib.Data.List.Sort
 
 /-!
@@ -534,121 +535,14 @@ private theorem narrowRange_spec {w vbase n k vlo vlt vgt vhi vpiv : ℕ}
       (y.regs hi - y.regs lo = vlt - vlo ∨
        y.regs hi - y.regs lo = 1 ∨
        y.regs hi - y.regs lo = vhi - vgt) := by
-  by_cases hc1 : vbase + k < vlt
-  · have hc1_holds : (Cond.lt target lt).Holds x := by
-      simp only [Cond.holds_lt, htarget, hlt_r]; exact hc1
-    set y := x.set hi vlt
-    have e_hi : Exec (B := .standard) w (.op (.copy hi lt)) x y 1 := by
-      simpa only [y, hlt_r] using Exec.copy (w := w) (d := hi) (s := lt) (x := x)
-    have e_nr : Exec w narrowRange x y 2 := e_hi.branch_pos hc1_holds
-    have hcut_vlt : IsCut vbase n vlt x.mem :=
-      cut_of_between_lt_gt ⟨hlg.1, le_rfl, Nat.le_of_lt hlg.2.1, hlg.2.2⟩
-        hcut_lo hcut_hi hlt_z heq_z hgt_z
-    refine ⟨y, 2, e_nr, by omega, ?_, Or.inl (by simp only [y, Data.set_regs,
-      Function.update_self, Function.update_of_ne (by decide : lo ≠ hi), hlo])⟩
-    exact ⟨by simp only [y, Data.set_regs, Function.update_of_ne (by decide : one ≠ hi), hone],
-      by simp only [y, Data.set_regs, Function.update_of_ne (by decide : target ≠ hi), htarget],
-      by simp only [y, Data.set_regs, Function.update_of_ne (by decide : lo1 ≠ hi),
-        Function.update_of_ne (by decide : lo ≠ hi), hlo1, hlo],
-      hfit,
-      by simp only [y, Data.set_regs, Function.update_of_ne (by decide : lo ≠ hi), hlo]; omega,
-      by simp only [y, Data.set_regs, Function.update_of_ne (by decide : lo ≠ hi), hlo]; omega,
-      by simp only [y, Data.set_regs, Function.update_self]; exact hc1,
-      by simp only [y, Data.set_regs, Function.update_self]; omega,
-      hperm, hmod,
-      by simpa only [y, Data.set_mem, Data.set_regs,
-        Function.update_of_ne (by decide : lo ≠ hi), hlo] using hcut_lo,
-      by simpa only [y, Data.set_mem, Data.set_regs, Function.update_self] using hcut_vlt⟩
-  · have hc1_neg : ¬(Cond.lt target lt).Holds x := by
-      simp only [Cond.holds_lt, htarget, hlt_r]; exact hc1
-    by_cases hc2 : vbase + k < vgt
-    · have hc2_holds : (Cond.lt target gt).Holds x := by
-        simp only [Cond.holds_lt, htarget, hgt_r]; exact hc2
-      set s₁ := x.set lo (vbase + k)
-      set s₂ := s₁.set lo1 (vbase + k + 1)
-      set y := s₂.set hi (vbase + k + 1)
-      have e₁ : Exec (B := .standard) w (.op (.copy lo target)) x s₁ 1 := by
-        simpa only [s₁, htarget] using Exec.copy (w := w) (d := lo) (s := target) (x := x)
-      have e₂ : Exec w (.op (.bin .add lo1 target one)) s₁ s₂ 1 := by
-        have ht₁ : s₁.regs target = vbase + k := by
-          simp only [s₁, Data.set_regs, Function.update_of_ne (by decide : target ≠ lo), htarget]
-        have ho₁ : s₁.regs one = 1 := by
-          simp only [s₁, Data.set_regs, Function.update_of_ne (by decide : one ≠ lo), hone]
-        simpa only [s₂, ht₁, ho₁, BinOp.eval] using Exec.bin (w := w) (f := .add) (d := lo1)
-          (i := target) (j := one) (x := s₁)
-          (hfit.of_le (by simp only [ht₁, ho₁, BinOp.eval]; omega))
-      have e₃ : Exec (B := .standard) w (.op (.copy hi lo1)) s₂ y 1 := by
-        have hl₂ : s₂.regs lo1 = vbase + k + 1 := by simp only [s₂, Data.set_regs,
-          Function.update_self]
-        simpa only [y, hl₂] using Exec.copy (w := w) (d := hi) (s := lo1) (x := s₂)
-      have e_nr : Exec w narrowRange x y 6 :=
-        ((e₁.seq (e₂.seq e₃)).branch_pos hc2_holds).branch_neg hc1_neg
-      have hcut_t : IsCut vbase n (vbase + k) x.mem :=
-        cut_of_between_lt_gt ⟨hlg.1, by omega, by omega, hlg.2.2⟩
-          hcut_lo hcut_hi hlt_z heq_z hgt_z
-      have hcut_t1 : IsCut vbase n (vbase + k + 1) x.mem :=
-        cut_of_between_lt_gt ⟨hlg.1, by omega, by omega, hlg.2.2⟩
-          hcut_lo hcut_hi hlt_z heq_z hgt_z
-      have hy_lo : y.regs lo = vbase + k := by
-        simp only [y, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : lo ≠ hi),
-          Function.update_of_ne (by decide : lo ≠ lo1), Function.update_self]
-      have hy_hi : y.regs hi = vbase + k + 1 := by
-        simp only [y, Data.set_regs, Function.update_self]
-      refine ⟨y, 6, e_nr, le_rfl, ?_, Or.inr (Or.inl (by rw [hy_hi, hy_lo]; omega))⟩
-      exact ⟨by simp only [y, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : one ≠ hi),
-          Function.update_of_ne (by decide : one ≠ lo1),
-          Function.update_of_ne (by decide : one ≠ lo), hone],
-        by simp only [y, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : target ≠ hi),
-          Function.update_of_ne (by decide : target ≠ lo1),
-          Function.update_of_ne (by decide : target ≠ lo), htarget],
-        by simp only [y, s₂, Data.set_regs, Function.update_of_ne (by decide : lo1 ≠ hi),
-          Function.update_self, hy_lo],
-        hfit,
-        by rw [hy_lo]; omega,
-        by rw [hy_lo],
-        by rw [hy_hi]; omega,
-        by rw [hy_hi]; omega,
-        hperm, hmod,
-        by rw [hy_lo]; exact hcut_t,
-        by rw [hy_hi]; exact hcut_t1⟩
-    · have hc2_neg : ¬(Cond.lt target gt).Holds x := by
-        simp only [Cond.holds_lt, htarget, hgt_r]; exact hc2
-      set s₁ := x.set lo vgt
-      set y := s₁.set lo1 (vgt + 1)
-      have e₁ : Exec (B := .standard) w (.op (.copy lo gt)) x s₁ 1 := by
-        simpa only [s₁, hgt_r] using Exec.copy (w := w) (d := lo) (s := gt) (x := x)
-      have e₂ : Exec w (.op (.bin .add lo1 lo one)) s₁ y 1 := by
-        have hl₁ : s₁.regs lo = vgt := by simp only [s₁, Data.set_regs, Function.update_self]
-        have ho₁ : s₁.regs one = 1 := by
-          simp only [s₁, Data.set_regs, Function.update_of_ne (by decide : one ≠ lo), hone]
-        simpa only [y, hl₁, ho₁, BinOp.eval] using Exec.bin (w := w) (f := .add) (d := lo1)
-          (i := lo) (j := one) (x := s₁)
-          (hfit.of_le (by simp only [hl₁, ho₁, BinOp.eval]; omega))
-      have e_nr : Exec w narrowRange x y 6 :=
-        ((e₁.seq e₂).branch_neg hc2_neg).branch_neg hc1_neg
-      have hcut_vgt : IsCut vbase n vgt x.mem :=
-        cut_of_between_lt_gt ⟨hlg.1, Nat.le_of_lt hlg.2.1, le_rfl, hlg.2.2⟩
-          hcut_lo hcut_hi hlt_z heq_z hgt_z
-      have hy_lo : y.regs lo = vgt := by
-        simp only [y, s₁, Data.set_regs, Function.update_of_ne (by decide : lo ≠ lo1),
-          Function.update_self]
-      have hy_hi : y.regs hi = vhi := by
-        simp only [y, s₁, Data.set_regs, Function.update_of_ne (by decide : hi ≠ lo1),
-          Function.update_of_ne (by decide : hi ≠ lo), hhi]
-      refine ⟨y, 6, e_nr, le_rfl, ?_, Or.inr (Or.inr (by rw [hy_hi, hy_lo]))⟩
-      exact ⟨by simp only [y, s₁, Data.set_regs, Function.update_of_ne (by decide : one ≠ lo1),
-          Function.update_of_ne (by decide : one ≠ lo), hone],
-        by simp only [y, s₁, Data.set_regs, Function.update_of_ne (by decide : target ≠ lo1),
-          Function.update_of_ne (by decide : target ≠ lo), htarget],
-        by simp only [y, Data.set_regs, Function.update_self, hy_lo],
-        hfit,
-        by rw [hy_lo]; omega,
-        by rw [hy_lo]; omega,
-        by rw [hy_hi]; exact ht_hi,
-        by rw [hy_hi]; exact hhi_end,
-        hperm, hmod,
-        by rw [hy_lo]; exact hcut_vgt,
-        by rw [hy_hi]; exact hcut_hi⟩
+  have hcut (t : ℕ) (h₁ : vlt ≤ t) (h₂ : t ≤ vgt) : IsCut vbase n t x.mem :=
+    cut_of_between_lt_gt ⟨hlg.1, h₁, h₂, hlg.2.2⟩ hcut_lo hcut_hi hlt_z heq_z hgt_z
+  unfold narrowRange
+  wram_exec [hone, htarget, hlo, hlo1, hhi, hlt_r, hgt_r]
+  all_goals
+    refine ⟨⟨?_, ?_, ?_, hfit, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+    all_goals wram_simp [hone, htarget, hlo, hlo1, hhi, true_or, or_true]
+  all_goals first | assumption | omega | (refine hcut _ ?_ ?_ <;> omega)
 
 /-- Deterministic specification of `partitionAndNarrow` for a sampled pivot offset
 `off : Fin (x.regs hi - x.regs lo)` when `2 ≤ x.regs hi - x.regs lo`
@@ -665,93 +559,31 @@ private theorem partitionAndNarrow_spec {w vbase n k : ℕ} {s₀ : List ℕ} {m
        y.regs hi - y.regs lo = 1 ∨
        y.regs hi - y.regs lo = u.countP (pivVal < ·)) ∧
       y.regs hi - y.regs lo < x.regs hi - x.regs lo := by
-  let vlo := x.regs lo
-  let vhi := x.regs hi
-  have hoff_lt : off.val < vhi - vlo := off.isLt
+  obtain ⟨vlo, hlo⟩ : ∃ v, x.regs lo = v := ⟨_, rfl⟩
+  obtain ⟨vhi, hhi⟩ : ∃ v, x.regs hi = v := ⟨_, rfl⟩
+  have hoff_lt : off.val < vhi - vlo := hlo ▸ hhi ▸ off.isLt
   have hfit_end := hI.fits_end
-  have hhi_end := hI.hi_le_end
-  have hbase_lo := hI.base_le_lo
-  -- 1. Execute `Quicksort.partInit` (`5` steps)
-  let vpiv := x.mem (vlo + off.val)
-  let i₁ := x.set tmp (vlo + off.val)
-  let i₂ := i₁.set piv vpiv
-  let i₃ := i₂.set lt vlo
-  let i₄ := i₃.set cur vlo
-  let p₀ := i₄.set gt vhi
-  have ei₁ : Exec w (.op (.bin .add tmp lo tmp)) x i₁ 1 := by
-    simpa only [i₁, vlo, htmp, BinOp.eval] using Exec.bin (w := w) (f := .add) (d := tmp)
-      (i := lo) (j := tmp) (x := x)
-      (hfit_end.of_le (by simp only [htmp, BinOp.eval]; omega))
-  have ei₂ : Exec (B := .standard) w (.op (.load piv tmp)) i₁ i₂ 1 := by
-    have ht₁ : i₁.regs tmp = vlo + off.val := by simp only [i₁, Data.set_regs, Function.update_self]
-    simpa only [i₂, vpiv, ht₁, i₁, Data.set_mem] using
-      Exec.load (w := w) (d := piv) (a := tmp) (x := i₁)
-  have ei₃ : Exec (B := .standard) w (.op (.copy lt lo)) i₂ i₃ 1 := by
-    have hl₂ : i₂.regs lo = vlo := by
-      simp only [i₂, i₁, Data.set_regs, Function.update_of_ne (by decide : lo ≠ piv),
-        Function.update_of_ne (by decide : lo ≠ tmp)]
-      rfl
-    simpa only [i₃, hl₂] using Exec.copy (w := w) (d := lt) (s := lo) (x := i₂)
-  have ei₄ : Exec (B := .standard) w (.op (.copy cur lo)) i₃ i₄ 1 := by
-    have hl₃ : i₃.regs lo = vlo := by
-      simp only [i₃, i₂, i₁, Data.set_regs, Function.update_of_ne (by decide : lo ≠ lt),
-        Function.update_of_ne (by decide : lo ≠ piv),
-        Function.update_of_ne (by decide : lo ≠ tmp)]
-      rfl
-    simpa only [i₄, hl₃] using Exec.copy (w := w) (d := cur) (s := lo) (x := i₃)
-  have ei₅ : Exec (B := .standard) w (.op (.copy gt hi)) i₄ p₀ 1 := by
-    have hh₄ : i₄.regs hi = vhi := by
-      simp only [i₄, i₃, i₂, i₁, Data.set_regs, Function.update_of_ne (by decide : hi ≠ cur),
-        Function.update_of_ne (by decide : hi ≠ lt),
-        Function.update_of_ne (by decide : hi ≠ piv),
-        Function.update_of_ne (by decide : hi ≠ tmp)]
-      rfl
-    simpa only [p₀, hh₄] using Exec.copy (w := w) (d := gt) (s := hi) (x := i₄)
-  have e_init : Exec w Quicksort.partInit x p₀ 5 :=
-    ei₁.seq (ei₂.seq (ei₃.seq (ei₄.seq ei₅)))
-  -- 2. Establish `Quicksort.PartInv` at `p₀` and run `Quicksort.partLoop_spec`
-  have hp₀_inv : Quicksort.PartInv w vlo vhi vpiv p₀.mem p₀ :=
-    ⟨(e_init.regs_eq (by decide)).trans hI.one_eq,
-     e_init.regs_eq (by decide),
-     e_init.regs_eq (by decide),
-     by simp only [p₀, i₄, i₃, i₂, Data.set_regs, Function.update_of_ne (by decide : piv ≠ gt),
-       Function.update_of_ne (by decide : piv ≠ cur),
-       Function.update_of_ne (by decide : piv ≠ lt), Function.update_self],
-     hfit_end.of_le hhi_end,
-     by simp only [p₀, i₄, i₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ gt),
-       Function.update_of_ne (by decide : lt ≠ cur), Function.update_self, le_rfl],
-     by simp only [p₀, i₄, i₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ gt),
-       Function.update_of_ne (by decide : lt ≠ cur),
-       Function.update_of_ne (by decide : cur ≠ gt), Function.update_self, le_rfl],
-     by simp only [p₀, i₄, Data.set_regs, Function.update_of_ne (by decide : cur ≠ gt),
-       Function.update_self]; omega,
-     by simp only [p₀, Data.set_regs, Function.update_self, le_rfl],
-     List.Perm.refl _,
-     Modifies.refl _ _,
-     fun a ha1 ha2 => by
-       simp only [p₀, i₄, i₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ gt),
-         Function.update_of_ne (by decide : lt ≠ cur), Function.update_self] at ha2
-       omega,
-     fun a ha1 ha2 => by
-       simp only [p₀, i₄, i₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ gt),
-         Function.update_of_ne (by decide : lt ≠ cur),
-         Function.update_of_ne (by decide : cur ≠ gt), Function.update_self] at ha1 ha2
-       omega,
-     fun a ha1 ha2 => by
-       simp only [p₀, Data.set_regs, Function.update_self] at ha1
-       omega⟩
+  have hhi_end : vhi ≤ vbase + n := hhi ▸ hI.hi_le_end
+  have hbase_lo : vbase ≤ vlo := hlo ▸ hI.base_le_lo
+  -- 1. Run `Quicksort.partInit` (`5` steps) and establish `Quicksort.PartInv` for the loop
+  unfold partitionAndNarrow Quicksort.partInit
+  wram_exec [hlo, hhi, htmp]
+  refine WP.Exact.name fun p₀ hp₀ => ?_
+  have hp₀_inv : Quicksort.PartInv w vlo vhi (x.mem (vlo + off.val)) p₀.mem p₀ := by
+    subst hp₀
+    refine ⟨?_, ?_, ?_, ?_, hfit_end.of_le hhi_end, ?_, ?_, ?_, ?_, .refl _, .refl _ _, ?_, ?_, ?_⟩
+    all_goals wram_simp [hI.one_eq]
+    all_goals omega
   obtain ⟨y_p, ⟨t_loop, ht_loop, e_loop⟩, hIp, hcg_eq⟩ := Quicksort.partLoop_spec hp₀_inv
-    (by simp only [p₀, i₄, i₃, Data.set_regs, Function.update_of_ne (by decide : lt ≠ gt),
-      Function.update_of_ne (by decide : lt ≠ cur), Function.update_self])
-    (by simp only [p₀, i₄, Data.set_regs, Function.update_of_ne (by decide : cur ≠ gt),
-      Function.update_self])
-    (by simp only [p₀, Data.set_regs, Function.update_self])
-  have hp₀_mem : p₀.mem = x.mem := rfl
-  rw [hp₀_mem] at hIp
+    (by wram_simp [hp₀]) (by wram_simp [hp₀]) (by wram_simp [hp₀])
+  rw [show p₀.mem = x.mem by subst hp₀; rfl] at hIp
+  refine WP.Exact.of_exec e_loop ?_
   have htarget_yp : y_p.regs target = vbase + k :=
-    (e_loop.regs_eq (by decide)).trans ((e_init.regs_eq (by decide)).trans hI.target_eq)
+    (e_loop.regs_eq (by decide)).trans (by wram_simp [hp₀, hI.target_eq])
   have hlo1_yp : y_p.regs lo1 = vlo + 1 :=
-    (e_loop.regs_eq (by decide)).trans ((e_init.regs_eq (by decide)).trans hI.lo1_eq)
+    (e_loop.regs_eq (by decide)).trans (by wram_simp [hp₀, hI.lo1_eq, hlo])
+  -- 2. The partition at the loop exit
+  let vpiv := x.mem (vlo + off.val)
   let vlt := y_p.regs lt
   let vgt := y_p.regs gt
   have heq_zone_gt : ∀ a, vlt ≤ a → a < vgt → y_p.mem a = vpiv := by
@@ -771,26 +603,28 @@ private theorem partitionAndNarrow_spec {w vbase n k : ℕ} {s₀ : List ℕ} {m
     have ha_sub : a ∉ Finset.Ico vlo vhi := by rw [Finset.mem_Ico]; omega
     exact (hIp.modifies a ha_sub).trans (hI.modifies a (by rw [Finset.mem_Ico]; exact ha))
   have hcut_lo_yp : IsCut vbase n vlo y_p.mem :=
-    cut_preserved_lo hhi_end hIp.perm hIp.modifies hI.cut_lo
+    cut_preserved_lo hhi_end hIp.perm hIp.modifies (hlo ▸ hI.cut_lo)
   have hcut_hi_yp : IsCut vbase n vhi y_p.mem :=
-    cut_preserved_hi hbase_lo hIp.perm hIp.modifies hI.cut_hi
-  -- 3. Execute `narrowRange` (`≤ 6` steps)
-  obtain ⟨y, t_nr, e_nr, ht_nr, hIy, hcases⟩ := narrowRange_spec
+    cut_preserved_hi hbase_lo hIp.perm hIp.modifies (hhi ▸ hI.cut_hi)
+  -- 3. Run `narrowRange` (`≤ 6` steps)
+  refine WP.Exact.mono (narrowRange_spec
     hIp.one_eq htarget_yp hIp.lo_eq hlo1_yp hIp.hi_eq rfl rfl
-    hfit_end hbase_lo hI.lo_le_target hI.target_lt_hi hhi_end
+    hfit_end hbase_lo (hlo ▸ hI.lo_le_target) (hhi ▸ hI.target_lt_hi) hhi_end
     ⟨hbounds_p.1, hlt_gt, hbounds_p.2.2⟩
-    hperm_yp hmod_yp hcut_lo_yp hcut_hi_yp hIp.lt_zone heq_zone_gt hIp.gt_zone
-  have e_all : Exec w partitionAndNarrow x y (5 + (t_loop + t_nr)) :=
-    e_init.seq (e_loop.seq e_nr)
-  have hu_get : (memSlice vlo vhi x.mem)[off.val]'(by rw [length_memSlice]; exact off.isLt) =
-      vpiv := getElem_memSlice off.isLt
-  refine ⟨y, 5 + (t_loop + t_nr), e_all, by dsimp only [vhi, vlo] at ht_loop; omega, hIy, ?_, ?_⟩
-  · rw [hu_get, ← hcnt_lt, ← hcnt_gt]
+    hperm_yp hmod_yp hcut_lo_yp hcut_hi_yp hIp.lt_zone heq_zone_gt hIp.gt_zone) ?_
+  rintro y t_nr ⟨ht_nr, hIy, hcases⟩
+  have hu_get : (memSlice (x.regs lo) (x.regs hi) x.mem)[off.val]'(by
+      rw [length_memSlice]; exact off.isLt) = x.mem (x.regs lo + off.val) :=
+    getElem_memSlice off.isLt
+  refine ⟨by omega, hIy, ?_, ?_⟩
+  · rw [hu_get]
+    simp only [hlo, hhi]
+    rw [← hcnt_lt, ← hcnt_gt]
     exact hcases
   · have hlo_lt : vlo ≤ vlt := hbounds_p.1
     have hgt_hi : vgt ≤ vhi := hbounds_p.2.2
-    dsimp only [vlo, vhi, vlt, vgt, lt, gt, Quicksort.Reg.lt, Quicksort.Reg.gt]
-      at hlo_lt hgt_hi hlt_gt hcases hm2 ⊢
+    dsimp only [vlt, vgt, lt, gt, Quicksort.Reg.lt, Quicksort.Reg.gt]
+      at hlo_lt hgt_hi hlt_gt hcases ⊢
     rcases hcases with h1 | h2 | h3 <;> omega
 
 /-- Randomized specification of `selectStep` when `lo1 < hi` holds (`2 ≤ hi - lo`). -/
@@ -1070,76 +904,12 @@ private theorem selectSetup_spec {w : ℕ} {x : Data 16}
       x_init.regs hi = x.regs base + x.regs len ∧
       SelectInv w (x.regs base) (x.regs len) (x.regs rk)
         (memSlice (x.regs base) (x.regs base + x.regs len) x.mem) x.mem x_init := by
-  let vbase := x.regs base
-  let n := x.regs len
-  let k := x.regs rk
-  have hfit1 : Fits w 1 := hfit.of_le (by omega)
-  let s₁ := x.set one 1
-  let s₂ := s₁.set target (vbase + k)
-  let s₃ := s₂.set lo vbase
-  let s₄ := s₃.set lo1 (vbase + 1)
-  let x_init := s₄.set hi (vbase + n)
-  have e₁ : Exec (B := .standard) w (.op (.const one 1)) x s₁ 1 := Exec.const hfit1
-  have e₂ : Exec w (.op (.bin .add target base rk)) s₁ s₂ 1 := by
-    have hb₁ : s₁.regs base = vbase := by
-      simp only [s₁, Data.set_regs, Function.update_of_ne (by decide : base ≠ one)]; rfl
-    have hk₁ : s₁.regs rk = k := by
-      simp only [s₁, Data.set_regs, Function.update_of_ne (by decide : rk ≠ one)]; rfl
-    simpa only [s₂, hb₁, hk₁, BinOp.eval] using Exec.bin (w := w) (f := .add) (d := target)
-      (i := base) (j := rk) (x := s₁)
-      (hfit.of_le (by simp only [hb₁, hk₁, BinOp.eval]; omega))
-  have e₃ : Exec (B := .standard) w (.op (.copy lo base)) s₂ s₃ 1 := by
-    have hb₂ : s₂.regs base = vbase := by
-      simp only [s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : base ≠ target),
-        Function.update_of_ne (by decide : base ≠ one)]; rfl
-    simpa only [s₃, hb₂] using Exec.copy (w := w) (d := lo) (s := base) (x := s₂)
-  have e₄ : Exec w (.op (.bin .add lo1 lo one)) s₃ s₄ 1 := by
-    have hl₃ : s₃.regs lo = vbase := by simp only [s₃, Data.set_regs, Function.update_self]
-    have ho₃ : s₃.regs one = 1 := by
-      simp only [s₃, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : one ≠ lo),
-        Function.update_of_ne (by decide : one ≠ target), Function.update_self]
-    simpa only [s₄, hl₃, ho₃, BinOp.eval] using Exec.bin (w := w) (f := .add) (d := lo1)
-      (i := lo) (j := one) (x := s₃)
-      (hfit.of_le (by simp only [hl₃, ho₃, BinOp.eval]; omega))
-  have e₅ : Exec w (.op (.bin .add hi base len)) s₄ x_init 1 := by
-    have hb₄ : s₄.regs base = vbase := by
-      simp only [s₄, s₃, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : base ≠ lo1),
-        Function.update_of_ne (by decide : base ≠ lo),
-        Function.update_of_ne (by decide : base ≠ target),
-        Function.update_of_ne (by decide : base ≠ one)]; rfl
-    have hn₄ : s₄.regs len = n := by
-      simp only [s₄, s₃, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : len ≠ lo1),
-        Function.update_of_ne (by decide : len ≠ lo),
-        Function.update_of_ne (by decide : len ≠ target),
-        Function.update_of_ne (by decide : len ≠ one)]; rfl
-    simpa only [x_init, hb₄, hn₄, BinOp.eval] using Exec.bin (w := w) (f := .add) (d := hi)
-      (i := base) (j := len) (x := s₄)
-      (by simpa only [hb₄, hn₄, BinOp.eval] using hfit)
-  have hx_lo : x_init.regs lo = vbase := by
-    simp only [x_init, s₄, s₃, Data.set_regs, Function.update_of_ne (by decide : lo ≠ hi),
-      Function.update_of_ne (by decide : lo ≠ lo1), Function.update_self]
-  have hx_hi : x_init.regs hi = vbase + n := by
-    simp only [x_init, Data.set_regs, Function.update_self]
-  refine ⟨x_init, e₁.seq (e₂.seq (e₃.seq (e₄.seq e₅))), rfl, hx_lo, hx_hi, ?_⟩
-  exact ⟨by simp only [x_init, s₄, s₃, s₂, s₁, Data.set_regs,
-      Function.update_of_ne (by decide : one ≠ hi), Function.update_of_ne (by decide : one ≠ lo1),
-      Function.update_of_ne (by decide : one ≠ lo),
-      Function.update_of_ne (by decide : one ≠ target), Function.update_self],
-    by simp only [x_init, s₄, s₃, s₂, Data.set_regs,
-      Function.update_of_ne (by decide : target ≠ hi),
-      Function.update_of_ne (by decide : target ≠ lo1),
-      Function.update_of_ne (by decide : target ≠ lo), Function.update_self]; rfl,
-    by simp only [x_init, s₄, Data.set_regs, Function.update_of_ne (by decide : lo1 ≠ hi),
-      Function.update_self, hx_lo],
-    hfit,
-    by rw [hx_lo],
-    by rw [hx_lo]; omega,
-    by rw [hx_hi]; omega,
-    by rw [hx_hi],
-    List.Perm.refl _,
-    Modifies.refl _ _,
-    fun a _ ha1 ha2 _ _ => by rw [hx_lo] at ha2; omega,
-    fun _ b _ _ hb1 hb2 => by rw [hx_hi] at hb1; omega⟩
+  unfold selectSetup
+  wram_exec
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, hfit, ?_, ?_, ?_, ?_, .refl _, .refl _ _, fun a b => ?_,
+    fun a b => ?_⟩
+  all_goals wram_simp
+  all_goals omega
 
 /-- Extracting order-statistic and partition-order properties from `SelectInv` at loop exit
 (`¬(lo1 < hi)`). -/
@@ -1279,40 +1049,12 @@ theorem loadHeader_spec {w k : ℕ} {input : List ℕ} (hfit : InputFits w (k ::
       x_hdr.regs one = 1 ∧
       x_hdr.regs rk = k ∧
       x_hdr.regs len = input.length := by
-  let x₀ : Data 16 := Data.init (k :: input)
   have hfit_len1 : Fits w (input.length + 1) := by
     simpa only [List.length_cons] using hfit.1
-  have hfit1 : Fits w 1 := hfit_len1.of_le (by omega)
-  have hfit_len : Fits w input.length := hfit_len1.of_le (by omega)
-  let s₁ := x₀.set len (input.length + 1)
-  let s₂ := s₁.set one 1
-  let s₃ := s₂.set rk k
-  let x_hdr := s₃.set len input.length
-  have e₁ : Exec (B := .standard) w (.op (.load len ans)) x₀ s₁ 1 := by
-    simpa only [s₁, x₀, Data.init_regs, Data.init_mem_zero, List.length_cons] using
-      Exec.load (w := w) (d := len) (a := ans) (x := x₀)
-  have e₂ : Exec (B := .standard) w (.op (.const one 1)) s₁ s₂ 1 := Exec.const hfit1
-  have e₃ : Exec (B := .standard) w (.op (.load rk one)) s₂ s₃ 1 := by
-    have ho₂ : s₂.regs one = 1 := by simp only [s₂, Data.set_regs, Function.update_self]
-    have hm₂ : s₂.mem 1 = k := by
-      simp only [s₂, s₁, Data.set_mem, x₀, Data.init_mem_succ, List.getD_cons_zero]
-    simpa only [s₃, ho₂, hm₂] using Exec.load (w := w) (d := rk) (a := one) (x := s₂)
-  have e₄ : Exec w (.op (.bin .sub len len one)) s₃ x_hdr 1 := by
-    have hl₃ : s₃.regs len = input.length + 1 := by
-      simp only [s₃, s₂, s₁, Data.set_regs, Function.update_of_ne (by decide : len ≠ rk),
-        Function.update_of_ne (by decide : len ≠ one), Function.update_self]
-    have ho₃ : s₃.regs one = 1 := by
-      simp only [s₃, s₂, Data.set_regs, Function.update_of_ne (by decide : one ≠ rk),
-        Function.update_self]
-    simpa only [x_hdr, hl₃, ho₃, BinOp.eval, Nat.add_sub_cancel] using
-      Exec.bin (w := w) (f := .sub) (d := len) (i := len) (j := one) (x := s₃)
-        (by simpa only [hl₃, ho₃, BinOp.eval, Nat.add_sub_cancel] using hfit_len)
-  refine ⟨x_hdr, e₁.seq (e₂.seq (e₃.seq e₄)), rfl, ?_, ?_, ?_⟩
-  · simp only [x_hdr, s₃, s₂, Data.set_regs, Function.update_of_ne (by decide : one ≠ len),
-      Function.update_of_ne (by decide : one ≠ rk), Function.update_self]
-  · simp only [x_hdr, s₃, Data.set_regs, Function.update_of_ne (by decide : rk ≠ len),
-      Function.update_self]
-  · simp only [x_hdr, Data.set_regs, Function.update_self]
+  unfold loadHeader
+  wram_exec [Data.init_regs, Data.init_mem_zero, Data.init_mem_succ, List.getD_cons_zero,
+    List.length_cons]
+  wram_simp
 
 /-- Structured `7`-step execution of `code` when `input.length ≤ k`. -/
 theorem code_out_of_range_spec {w k : ℕ} {input : List ℕ}
@@ -1321,14 +1063,11 @@ theorem code_out_of_range_spec {w k : ℕ} {input : List ℕ}
       Exec w code (Data.init (k :: input)) y 7 ∧
       y.regs ans = 0 ∧
       y.mem = (Data.init (r := 16) (k :: input)).mem := by
-  obtain ⟨x_hdr, e_hdr, hmem_hdr, _, hrk, hlen⟩ := loadHeader_spec hfit
-  have hc_neg : ¬(Cond.lt rk len).Holds x_hdr := by
-    simp only [Cond.holds_lt, hrk, hlen]
-    omega
-  have e_zero : Exec (B := .standard) w (.op (.const ans 0)) x_hdr (x_hdr.set ans 0) 1 :=
-    Exec.const (fits_zero w)
-  refine ⟨x_hdr.set ans 0, e_hdr.seq (e_zero.branch_neg hc_neg), ?_, hmem_hdr⟩
-  simp only [Data.set_regs, Function.update_self]
+  unfold code
+  wram_exec
+  wram_call (loadHeader_spec hfit) with x_hdr ⟨hmem, -, hrk, hlen⟩
+  wram_exec [hrk, hlen]
+  wram_simp [hmem]
 
 /-- **Total out-of-range behavior (`input.length ≤ k`).**
 Whenever `InputFits w (k :: input)` holds and `input.length ≤ k`, `program` executes

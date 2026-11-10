@@ -167,8 +167,7 @@ theorem Program.trace_congr
       program.trace interpretation left wire = program.trace interpretation right wire)
     (fun i agree => agree i (Finset.mem_singleton_self i)) (fun k ih agree => ?_) wire
   rw [program.trace_gate, program.trace_gate]
-  congr 1
-  funext a
+  congr 1 with a : 1
   apply ih a
   intro i hi
   apply agree i

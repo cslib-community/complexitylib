@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.QueryCount
 public import Mathlib.Probability.ProbabilityMassFunction.Monad
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 
@@ -219,39 +220,15 @@ theorem toOuterMeasure_bad_le {handler : (q : ι) → StateT σ PMF (spec q)} {b
       PMF.toOuterMeasure_pure_apply, ite_eq_right (show (a, s) ∉ {x : α × σ | bad x.2} from hs)]
     exact zero_le
   | liftBind q cont n _ ih =>
-    classical
     obtain ⟨hle, hcont⟩ := IsCostBounded.liftBind_iff.mp hk
-    simp only [run_interpret_bind, run_interpret_query,
-      Probability.PMF.monad_bind_eq_bind, PMF.toOuterMeasure_bind_apply]
+    simp only [run_interpret_bind, run_interpret_query, Probability.PMF.monad_bind_eq_bind]
     set K : ℝ≥0∞ := (k - cost q : ℕ) * (budget s + δ + n * δ)
-    have hterm (y : spec q × σ) : (handler q s) y *
-        ((interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤
-        (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) := by
-      by_cases hmem : y ∈ (handler q s).support
-      · refine mul_le_mul_of_nonneg_left ?_ zero_le
-        by_cases hy : bad y.2
-        · have : y ∈ {x : spec q × σ | bad x.2} := hy
-          rw [Set.indicator_of_mem this, Pi.one_apply]
-          exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-        · have : y ∉ {x : spec q × σ | bad x.2} := hy
-          rw [Set.indicator_of_notMem this, zero_add]
+    calc _ ≤ (handler q s).toOuterMeasure {x | bad x.2} + K := by
+          refine Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ K fun y hmem hy => ?_
           refine (ih y.1 (hcont y.1) hy).trans ?_
           simp only [K]
           gcongr
           exact hgrow q s hs y hmem hy
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
-    calc ∑' y, (handler q s) y * ((interpret handler (cont y.1)).run y.2).toOuterMeasure
-          {x | bad x.2}
-        ≤ ∑' y, (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) :=
-          tsum_le_tsum hterm
-      _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
-          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun y => ?_
-          by_cases hy : y ∈ {x : spec q × σ | bad x.2}
-          · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-          · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
       _ ≤ cost q * (budget s + (n + 1 : ℕ) * δ) +
             (k - cost q : ℕ) * (budget s + (n + 1 : ℕ) * δ) := by
           refine add_le_add ((hstep q s hs).trans ?_) (le_of_eq ?_)

@@ -84,6 +84,19 @@ def Clause.orSplit3 (fresh : ℕ → W) (j : ℕ) : Clause W → CNF W
   | [] => [[]]
   | carry :: rest => Clause.orChainAux fresh j carry rest
 
+/-- Once at most two literals follow `carry`, the chain is the clause `carry :: rest` itself: the
+fall-through case of `Clause.orChainAux.induct`. -/
+private theorem Clause.orChainAux_of_short (fresh : ℕ → W) (j : ℕ) (carry : Literal W)
+    (rest : Clause W)
+    (hrest : ∀ (b c d : Literal W) (rest' : Clause W), ¬rest = b :: c :: d :: rest') :
+    Clause.orChainAux fresh j carry rest = [carry :: rest] ∧ rest.length ≤ 2 := by
+  constructor
+  · rw [Clause.orChainAux]
+    exact hrest
+  · match rest, hrest with
+    | [], _ | [_], _ | [_, _], _ => simp
+    | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
+
 private theorem Literal.eval_neg (σ : W → Bool) (l : Literal W) :
     Literal.eval σ (l.1, !l.2) = !Literal.eval σ l := by
   obtain ⟨v, b⟩ := l
@@ -135,13 +148,8 @@ private theorem Clause.eval_orChainAux_iff (fresh : ℕ → W) (σ : W → Bool)
       rw [show j + 1 + i = j + (i + 1) by omega, hi (i + 1) (by omega), hj]
       simp only [List.take_succ_cons, Clause.eval_cons, Bool.or_assoc]
   | case2 j carry rest hrest =>
-    rw [Clause.orChainAux]
-    · have hlen : rest.length - 2 = 0 := by
-        match rest, hrest with
-        | [], _ | [_], _ | [_, _], _ => rfl
-        | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
-      simp [hlen]
-    · exact hrest
+    obtain ⟨heq, hlen⟩ := Clause.orChainAux_of_short fresh j carry rest hrest
+    simp [heq, Nat.sub_eq_zero_of_le hlen]
 
 /-- **The OR-gate chain of a clause**: an assignment satisfies `Clause.orSplit3 fresh j c` exactly
 when it satisfies `c` and gives the gate `fresh (j + i)` the value of the first `i + 2` literals of
@@ -169,14 +177,12 @@ private theorem Clause.length_le_three_of_mem_orChainAux (fresh : ℕ → W) (j 
     · simp
     · exact ih e he
   | case2 j carry rest hrest =>
+    obtain ⟨heq, hlen⟩ := Clause.orChainAux_of_short fresh j carry rest hrest
     intro e he
-    rw [Clause.orChainAux] at he
-    · simp only [List.mem_singleton] at he
-      subst he
-      match rest, hrest with
-      | [], _ | [_], _ | [_, _], _ => simp
-      | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
-    · exact hrest
+    rw [heq, List.mem_singleton] at he
+    subst he
+    simp only [List.length_cons]
+    omega
 
 /-- Every clause in `Clause.orSplit3 fresh j c` has at most three literals. -/
 theorem Clause.length_le_three_of_mem_orSplit3 (fresh : ℕ → W) (j : ℕ) (c : Clause W) :
@@ -221,12 +227,11 @@ private theorem Clause.mem_vars_orChainAux (fresh : ℕ → W) (j : ℕ) (carry 
           by rw [show j + (i + 1) = j + 1 + i by omega]⟩
   | case2 j carry rest hrest =>
     intro hx
-    rw [Clause.orChainAux] at hx
-    · obtain ⟨e, he, s, hs⟩ := CNF.mem_vars.1 hx
-      rw [List.mem_singleton] at he
-      subst he
-      exact .inl ⟨s, hs⟩
-    · exact hrest
+    rw [(Clause.orChainAux_of_short fresh j carry rest hrest).1] at hx
+    obtain ⟨e, he, s, hs⟩ := CNF.mem_vars.1 hx
+    rw [List.mem_singleton] at he
+    subst he
+    exact .inl ⟨s, hs⟩
 
 /-- The variables of the chain of a clause: those of the clause, and the gate variables
 `fresh (j + i)` for `i < c.length - 3`. -/
@@ -251,9 +256,8 @@ private theorem Clause.vars_subset_orChainAux (fresh : ℕ → W) (j : ℕ) (car
     · obtain ⟨e, he, s, hs⟩ := CNF.mem_vars.1 (ih (by simp only [List.mem_cons]; tauto))
       exact ⟨e, by simp only [Clause.orChainAux, List.mem_cons]; tauto, s, hs⟩
   | case2 j carry rest hrest =>
-    rw [Clause.orChainAux]
-    · exact CNF.mem_vars.2 ⟨_, List.mem_singleton_self _, b, h⟩
-    · exact hrest
+    rw [(Clause.orChainAux_of_short fresh j carry rest hrest).1]
+    exact CNF.mem_vars.2 ⟨_, List.mem_singleton_self _, b, h⟩
 
 /-- Every variable of a clause is a variable of its chain. -/
 theorem Clause.mem_vars_orSplit3_of_mem (fresh : ℕ → W) (j : ℕ) {c : Clause W} {x : W} {b : Bool}
@@ -270,11 +274,9 @@ private theorem Clause.length_orChainAux (fresh : ℕ → W) (j : ℕ) (carry : 
     simp only [Clause.orChainAux, List.length_cons, ih]
     omega
   | case2 j carry rest hrest =>
-    rw [Clause.orChainAux]
-    · match rest, hrest with
-      | [], _ | [_], _ | [_, _], _ => rfl
-      | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
-    · exact hrest
+    obtain ⟨heq, hlen⟩ := Clause.orChainAux_of_short fresh j carry rest hrest
+    rw [heq, List.length_singleton]
+    omega
 
 /-- The chain of a clause of width `w` has `3 (w - 3) + 1` clauses: three per gate and one more.
 -/
@@ -297,11 +299,10 @@ private theorem Clause.length_vars_orChainAux (fresh : ℕ → W) (j : ℕ) (car
       List.length_nil] at ih ⊢
     omega
   | case2 j carry rest hrest =>
-    rw [Clause.orChainAux]
-    · match rest, hrest with
-      | [], _ | [_], _ | [_, _], _ => rfl
-      | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
-    · exact hrest
+    obtain ⟨heq, hlen⟩ := Clause.orChainAux_of_short fresh j carry rest hrest
+    simp only [heq, CNF.length_vars, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil,
+      List.length_cons]
+    omega
 
 /-- The chain of a clause of width `w` has `w + 6 (w - 3)` literal occurrences: seven per gate,
 and the three of the last clause. -/

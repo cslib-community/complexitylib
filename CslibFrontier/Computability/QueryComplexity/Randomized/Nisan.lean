@@ -201,10 +201,7 @@ theorem blockSensitivity_le_three_mul_randomizedComplexity (f : BooleanFunction 
 theorem approxDegree_le_randomizedComplexity (ε : ℝ) (f : BooleanFunction n) :
     approxDegree ε f ≤ randomizedComplexity ε f := by
   rcases lt_or_ge ε 0 with hε | hε
-  · refine (Nat.sInf_eq_zero.2 (Or.inr (Set.eq_empty_of_forall_notMem fun D hD => ?_))).trans_le
-      (Nat.zero_le _)
-    obtain ⟨p, -, hp⟩ := hD
-    exact absurd ((abs_nonneg _).trans (hp fun _ => false)) (not_le.2 hε)
+  · exact (approxDegree_eq_zero_of_neg hε).trans_le (Nat.zero_le _)
   obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity hε f
   exact hd ▸ hμ.approxDegree_le_depth
 

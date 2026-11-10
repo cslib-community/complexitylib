@@ -40,8 +40,10 @@ and samples explicitly.
 
 * `Cslib.Circuits.Boolean.subexponentiallyBounded_computableFunctionsLogBound`: the circuit
   counting exponent remains subexponential for a subexponential size threshold.
-* `Cslib.Circuits.Boolean.subexponentiallyBounded_approxMCSPQueryEncLength`: the query length of
-  the magnification reduction remains subexponential.
+* `Cslib.Circuits.Boolean.subexponentiallyBounded_ofFunctionEncLength`,
+  `Cslib.Circuits.Boolean.subexponentiallyBounded_approxMCSPQueryEncLength`: the encoded length of
+  a `SuccinctMCSP` query, and in particular the query length of the magnification reduction,
+  remains subexponential.
 * `Cslib.Circuits.Boolean.eventually_exists_formula_separating_approxMCSP_of_mem_FormulaPolyOn`:
   polynomial-size formulas for `SuccinctMCSP` yield the eventual `2 ^ (n + n / d)` upper bound.
 * `Cslib.Circuits.Boolean.not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_subexp_hard`,
@@ -77,19 +79,25 @@ theorem subexponentiallyBounded_computableFunctionsLogBound {s : ℕ → ℕ}
         ((SubexponentiallyBounded.id.add hs).add (.const 1))).add (.const 3))
   exact hbound.mono_of_le fun n => computableFunctionsLogBound_le_poly n (s n)
 
-/-- The encoded query length in the approximate-MCSP formula reduction is subexponential
-when both the circuit-size threshold and the inverse-error parameter are subexponential. -/
-theorem subexponentiallyBounded_approxMCSPQueryEncLength {s k : ℕ → ℕ}
-    (hs : SubexponentiallyBounded s) (hk : SubexponentiallyBounded k) :
-    SubexponentiallyBounded (fun n => approxMCSPQueryEncLength n (s n) (k n)) := by
-  have hq : SubexponentiallyBounded
-      (fun n => k n * (computableFunctionsLogBound n (s n) + 2)) :=
-    hk.mul ((subexponentiallyBounded_computableFunctionsLogBound hs).add (.const 2))
+/-- The encoded length `SuccinctMCSP.ofFunctionEncLength n (q n) (s n)` of a `SuccinctMCSP`
+query is subexponential when both its number of samples `q` and its circuit-size threshold `s`
+are subexponential. -/
+theorem subexponentiallyBounded_ofFunctionEncLength {q s : ℕ → ℕ}
+    (hq : SubexponentiallyBounded q) (hs : SubexponentiallyBounded s) :
+    SubexponentiallyBounded (fun n => SuccinctMCSP.ofFunctionEncLength n (q n) (s n)) := by
   have h8n : SubexponentiallyBounded (fun n => 8 * n + 10) :=
     ((SubexponentiallyBounded.const 8).mul SubexponentiallyBounded.id).add (.const 10)
   have h4n : SubexponentiallyBounded (fun n => 4 * n + 3) :=
     ((SubexponentiallyBounded.const 4).mul SubexponentiallyBounded.id).add (.const 3)
   exact (h4n.add (hq.mul h8n)).add hs
+
+/-- The encoded query length in the approximate-MCSP formula reduction is subexponential
+when both the circuit-size threshold and the inverse-error parameter are subexponential. -/
+theorem subexponentiallyBounded_approxMCSPQueryEncLength {s k : ℕ → ℕ}
+    (hs : SubexponentiallyBounded s) (hk : SubexponentiallyBounded k) :
+    SubexponentiallyBounded (fun n => approxMCSPQueryEncLength n (s n) (k n)) :=
+  subexponentiallyBounded_ofFunctionEncLength
+    (hk.mul ((subexponentiallyBounded_computableFunctionsLogBound hs).add (.const 2))) hs
 
 /-- **Forward form of Oliveira–Santhanam Theorem 17(iii)**
 [OliveiraSanthanam2018, Section 3.1, Lemma 16 and Theorem 17(iii), pp. 14–15].

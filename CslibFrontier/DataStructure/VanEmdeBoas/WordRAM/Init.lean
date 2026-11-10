@@ -128,15 +128,11 @@ private theorem dfsBody_leaf_exec {w base d ptr : ℕ} {s : Data 32}
   have hm1 : (s.write ptr 0).mem (base + span d + 0 * 2 + 1) = 0 := by
     rw [Data.write_mem, Function.update_of_ne (by omega)]
     exact htbl1
-  have hf_tmp : Fits w (0 * 2) := ha.of_le (by omega)
-  have hf_a0 : Fits w (base + span d + 0 * 2) := ha.of_le (by omega)
-  have hf_a1 : Fits w (base + span d + 0 * 2 + 1) := ha.of_le (by omega)
-  have hf_c3 : Fits w (ptr + 3) := ha.of_le (by omega)
-  have hf_c4 : Fits w (ptr + 3 + 1) := ha.of_le (by omega)
+  -- `ram_eval` derives the table-address bounds from `ha` and the child-header bounds from
+  -- `hf_p5`, which needs `hptr_end`.
   have hf_p5 : Fits w (ptr + 5) := ha.of_le (by omega)
   ram_eval [dfsBody, dfsEnterBody, dfsExitBody, dfsLeafData,
-    h0, h1, h2, h3, h5, htbl, hp, hx, hkind, hm0, hm1,
-    hf_tmp, hf_a0, hf_a1, hf_c3, hf_c4, hf_p5]
+    h0, h1, h2, h3, h5, htbl, hp, hx, hkind, hm0, hm1]
 
 /-- State after `dfsBody` entering an internal node (`kind = 0`, `x = k + 1`). -/
 private def dfsEnterSuccData (s : Data 32) (base d ptr k : ℕ) : Data 32 :=
@@ -165,18 +161,14 @@ private theorem dfsBody_enter_succ_exec {w base d ptr k : ℕ} {s : Data 32}
   have hm1 : (s.write ptr 0).mem (base + span d + (k + 1) * 2 + 1) = span k := by
     rw [Data.write_mem, Function.update_of_ne (by omega), Nat.mul_comm (k + 1) 2]
     exact htbl1
-  have hf_tmp : Fits w ((k + 1) * 2) := ha.of_le (by omega)
-  have hf_a0 : Fits w (base + span d + (k + 1) * 2) := ha.of_le (by omega)
+  -- These bounds need `hk` or `hptr_end`; `ram_eval` derives the remaining ones (the table
+  -- offset and first table word from `hf_a1`, the child header from `hf_p5`, `k` from `hf_lw`).
   have hf_a1 : Fits w (base + span d + (k + 1) * 2 + 1) := ha.of_le (by omega)
-  have hf_c3 : Fits w (ptr + 3) := ha.of_le (by omega)
-  have hf_c4 : Fits w (ptr + 3 + 1) := ha.of_le (by omega)
   have hf_p5 : Fits w (ptr + 5) := ha.of_le (by omega)
   have hf_lw : Fits w (base + span d + 2 * (d + 1) + (k + 1)) := ha.of_le (by omega)
-  have hf_x : Fits w (k + 1 - 1) := ha.of_le (by omega)
   have hne : k + 1 ≠ 0 := by omega
   ram_eval [dfsBody, dfsEnterBody, dfsExitBody, dfsEnterSuccData,
-    h0, h1, h2, h3, h5, htbl, hlow, hp, hx, hkind, hm0, hm1, hne,
-    hf_tmp, hf_a0, hf_a1, hf_c3, hf_c4, hf_p5, hf_lw, hf_x]
+    h0, h1, h2, h3, h5, htbl, hlow, hp, hx, hkind, hm0, hm1, hne]
 
 /-- State after `dfsBody` advancing from one child to the next cluster (`kind = 1`, `x = k`,
 `mem (low + k + 1) = cnt + 1`). -/
@@ -193,14 +185,12 @@ private theorem dfsBody_next_cluster_exec {w base d ptr k cnt : ℕ} {s : Data 3
     (hcnt_fit : Fits w (cnt + 1 - 1)) :
     ExecWithin w dfsBody s (dfsNextClusterData s base d k cnt) 13 := by
   obtain ⟨⟨h0, h1, _, _, _, _, _, hdepth, _, _, _, hlow, _⟩, _, hx, hkind, _⟩ := hs
-  have hf_k1 : Fits w (k + 1) := ha.of_le (by omega)
+  -- `ram_eval` derives the `k`-valued bounds from `hf_lw`, which needs `hk`.
   have hf_lw : Fits w (base + span d + 2 * (d + 1) + (k + 1)) := ha.of_le (by omega)
-  have hf_k : Fits w (k + 1 - 1) := ha.of_le (by omega)
   have hnot_lt : ¬d < k + 1 := by omega
   have hne : cnt + 1 ≠ 0 := by omega
   ram_eval [dfsBody, dfsEnterBody, dfsExitBody, dfsNextClusterData,
-    h0, h1, hdepth, hlow, hx, hkind, hcnt, hnot_lt, hne,
-    hf_k1, hf_lw, hcnt_fit, hf_k]
+    h0, h1, hdepth, hlow, hx, hkind, hcnt, hnot_lt, hne]
 
 /-- State after `dfsBody` finishing all clusters of a depth-`k + 1` node (`kind = 1`, `x = k`,
 `mem (low + k + 1) = 0`). -/
@@ -214,11 +204,11 @@ private theorem dfsBody_exit_node_exec {w base d ptr k : ℕ} {s : Data 32}
     (ha : Fits w (base + span d + 4 * (d + 1))) :
     ExecWithin w dfsBody s (dfsExitNodeData s base d k) 9 := by
   obtain ⟨⟨h0, h1, _, _, _, _, _, hdepth, _, _, _, hlow, _⟩, _, hx, hkind, _⟩ := hs
-  have hf_k1 : Fits w (k + 1) := ha.of_le (by omega)
+  -- `ram_eval` derives the bound of `k + 1` from `hf_lw`, which needs `hk`.
   have hf_lw : Fits w (base + span d + 2 * (d + 1) + (k + 1)) := ha.of_le (by omega)
   have hnot_lt : ¬d < k + 1 := by omega
   ram_eval [dfsBody, dfsEnterBody, dfsExitBody, dfsExitNodeData,
-    h0, h1, hdepth, hlow, hx, hkind, hrem, hnot_lt, hf_k1, hf_lw]
+    h0, h1, hdepth, hlow, hx, hkind, hrem, hnot_lt]
 
 /-- State after `dfsBody` exiting the root (`kind = 1`, `x = d`). -/
 private def dfsFinishData (s : Data 32) (d : ℕ) : Data 32 :=
@@ -228,10 +218,9 @@ private theorem dfsBody_finish_exec {w base d ptr : ℕ} {s : Data 32}
     (hs : DfsState base d ptr d 1 s) (ha : Fits w (base + span d + 4 * (d + 1))) :
     ExecWithin w dfsBody s (dfsFinishData s d) 5 := by
   obtain ⟨⟨h0, h1, _, _, _, _, _, hdepth, _, _, _, _, _⟩, _, hx, hkind, _⟩ := hs
-  have hf_d1 : Fits w (d + 1) := ha.of_le (by omega)
   have hlt : d < d + 1 := by omega
   ram_eval [dfsBody, dfsEnterBody, dfsExitBody, dfsFinishData,
-    h0, h1, hdepth, hx, hkind, hlt, hf_d1]
+    h0, h1, hdepth, hx, hkind, hlt]
 
 private theorem dfsState_cond_holds {base d ptr k kindVal : ℕ} {s : Data 32}
     (hs : DfsState base d ptr k kindVal s) : (Cond.lt zero runFlag).Holds s := by

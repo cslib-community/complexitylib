@@ -41,6 +41,28 @@ open Cslib.BitString
 
 variable {ι M : Type*} [Fintype ι] [DecidableEq ι] [Fintype M]
 
+omit [Fintype ι] [DecidableEq ι] [Fintype M] in
+/-- If Alice's message is the constant `a` on `X' ⊆ X`, then the continuation after `a` solves the
+game on `X' × Y`. -/
+private theorem solves_next_of_alice {d : ℕ} {send : (ι → Bool) → M}
+    {next : M → KWRoundProtocol ι M d} {X X' Y : Finset (ι → Bool)}
+    (hsol : (RoundProtocol.alice send next).Solves DiffersAt X Y) (hsub : X' ⊆ X) {a : M}
+    (hsend : ∀ x ∈ X', send x = a) : (next a).Solves DiffersAt X' Y := by
+  intro x hx y hy
+  have he := hsol x (hsub hx) y hy
+  simpa only [run, hsend x hx] using he
+
+omit [Fintype ι] [DecidableEq ι] [Fintype M] in
+/-- If Bob's message is the constant `a` on `Y' ⊆ Y`, then the continuation after `a` solves the
+game on `X × Y'`. -/
+private theorem solves_next_of_bob {d : ℕ} {send : (ι → Bool) → M}
+    {next : M → KWRoundProtocol ι M d} {X Y Y' : Finset (ι → Bool)}
+    (hsol : (RoundProtocol.bob send next).Solves DiffersAt X Y) (hsub : Y' ⊆ Y) {a : M}
+    (hsend : ∀ y ∈ Y', send y = a) : (next a).Solves DiffersAt X Y' := by
+  intro x hx y hy
+  have he := hsol x hx y (hsub hy)
+  simpa only [run, hsend y hy] using he
+
 /-- **Korten's adversary**: a protocol with `d` messages of at most `m` bits does not separate a
 density rectangle of rate `p 0` and deficit `k 0` when the parameters grow fast enough,
 `1 ≤ k i`, `k (i + 1) ≥ max (194 k i) (2 k i + 2 + m)` and `p (i + 1) ≥ 32768 k i p i`, and the
@@ -64,24 +86,16 @@ theorem not_solves_density {d : ℕ} (P : KWRoundProtocol ι M d)
       have hs := hstep 0 (by omega)
       obtain ⟨a, X', hsub, hsend, hnew⟩ := h.select_left_message send hM
         hs.1 hs.2.1 hs.2.2.1 hs.2.2.2 (hcap 1 (by omega))
-      have hchild : (next a).Solves DiffersAt X' Y := by
-        intro x hx y hy
-        have he := hsol x (hsub hx) y hy
-        simpa only [run, hsend x hx] using he
       exact ih (next a) (fun i => k (i + 1)) (fun i => p (i + 1))
         (fun i hi => hstep (i + 1) (by omega))
-        (fun i hi => hcap (i + 1) (by omega)) hnew hchild
+        (fun i hi => hcap (i + 1) (by omega)) hnew (solves_next_of_alice hsol hsub hsend)
     | bob send next =>
       have hs := hstep 0 (by omega)
       obtain ⟨a, Y', hsub, hsend, hnew⟩ := h.swap.select_left_message send hM
         hs.1 hs.2.1 hs.2.2.1 hs.2.2.2 (hcap 1 (by omega))
-      have hchild : (next a).Solves DiffersAt X Y' := by
-        intro x hx y hy
-        have he := hsol x hx y (hsub hy)
-        simpa only [run, hsend y hy] using he
       exact ih (next a) (fun i => k (i + 1)) (fun i => p (i + 1))
         (fun i hi => hstep (i + 1) (by omega))
-        (fun i hi => hcap (i + 1) (by omega)) hnew.swap hchild
+        (fun i hi => hcap (i + 1) (by omega)) hnew.swap (solves_next_of_bob hsol hsub hsend)
 
 /-- Korten's adversary with explicit parameters: a protocol with `d` messages of at most `m` bits
 does not separate a density rectangle of rate `p` and deficit `k ≥ max 1 (m + 1)` when
@@ -156,11 +170,9 @@ theorem not_solves_bilateral_density {d : ℕ} (P : KWRoundProtocol ι M (d + 1)
       intro x hx
       exact (hleft x (Finset.mem_filter.mp hx).1).mono_right
         hp.le (by linarith) (by linarith)
-    apply (next a).not_solves_bounded_density hM (k := m + k)
-      (by linarith) (by linarith) hbudget hnew
-    intro x hx y hy
-    have he := hsol x (Finset.mem_filter.mp hx).1 y hy
-    simpa only [run, (Finset.mem_filter.mp hx).2] using he
+    exact (next a).not_solves_bounded_density hM (k := m + k) (by linarith) (by linarith) hbudget
+      hnew (solves_next_of_alice hsol (Finset.filter_subset _ X)
+        fun x hx => (Finset.mem_filter.mp hx).2)
   | bob send next =>
     obtain ⟨a, hne, hdef⟩ := exists_uniformDeficit_fiber_le Y hY send hM
     let Y' := Y.filter (fun y => send y = a)
@@ -169,10 +181,8 @@ theorem not_solves_bilateral_density {d : ℕ} (P : KWRoundProtocol ι M (d + 1)
       intro y hy
       exact (hright y (Finset.mem_filter.mp hy).1).mono_right
         hp.le (by linarith) (by linarith)
-    apply (next a).not_solves_bounded_density hM (k := m + k)
-      (by linarith) (by linarith) hbudget hnew
-    intro x hx y hy
-    have he := hsol x hx y (Finset.mem_filter.mp hy).1
-    simpa only [run, (Finset.mem_filter.mp hy).2] using he
+    exact (next a).not_solves_bounded_density hM (k := m + k) (by linarith) (by linarith) hbudget
+      hnew (solves_next_of_bob hsol (Finset.filter_subset _ Y)
+        fun y hy => (Finset.mem_filter.mp hy).2)
 
 end Cslib.Communication.RoundProtocol

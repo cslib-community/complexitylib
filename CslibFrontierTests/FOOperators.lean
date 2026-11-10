@@ -110,8 +110,7 @@ example (v : Bool → Bool) :
       ![v true] ∈ (LFP.stepHom body positive Operator.RelEnv.empty v).lfp := by
   simp only [fo_realize]
   apply iff_of_eq
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp only [Matrix.cons_val_fin_one, Term.realize_var]
 
 end Parameters

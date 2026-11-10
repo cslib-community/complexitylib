@@ -45,6 +45,9 @@ first is an instance of the additivity of second moments under pairwise independ
   at most `k` points.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign`: the tug-of-war estimator is
   unbiased.
+* `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum_offDiag_mul_sign_mul_sign`: the second
+  moment of a sum over ordered pairs of signs, the common step of the variance computations here
+  and in `CslibFrontier.Probability.KWiseIndependent.TugOfWarProduct`.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq`,
   `Cslib.Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq_le`,
   `Cslib.Probability.IsKWiseIndependentHash.expect_sum_mul_sign_pow_four`: its variance and fourth
@@ -140,6 +143,50 @@ theorem expect_sq_sum_mul_sign (hh : IsKWiseIndependentHash 2 h) (hε : ∀ y, �
   have : Nonempty Y := ⟨h (Classical.arbitrary ι) x⟩
   simp only [mul_pow, hε, mul_one, Fintype.expect_const]
 
+/-- **The second moment of a sum over ordered pairs of signs**: for a four-wise independent family
+of signs of mean zero and square one, `W = ∑_{x ≠ y ∈ S} f x g y ε (h i x) ε (h i y)` has
+`𝔼 W² = ∑_{x ≠ y ∈ S} f x g y (f x g y + f y g x)`, since the products of the signs at two pairs of
+distinct points average to zero unless the pairs agree up to order. Both the variance of the
+tug-of-war estimator and that of the join signature reduce to it. -/
+theorem expect_sq_sum_offDiag_mul_sign_mul_sign (hh : IsKWiseIndependentHash 4 h)
+    (hε : ∀ y, ε y ^ 2 = 1) (hε₀ : 𝔼 y, ε y = 0) (S : Finset X) (f g : X → ℝ) :
+    𝔼 i, (∑ p ∈ S.offDiag, f p.1 * g p.2 * (ε (h i p.1) * ε (h i p.2))) ^ 2 =
+      ∑ p ∈ S.offDiag, (f p.1 ^ 2 * g p.2 ^ 2 + f p.1 * g p.1 * (f p.2 * g p.2)) := by
+  classical
+  have hW2 (i : ι) : (∑ p ∈ S.offDiag, f p.1 * g p.2 * (ε (h i p.1) * ε (h i p.2))) ^ 2 =
+      ∑ p ∈ S.offDiag, ∑ q ∈ S.offDiag, f p.1 * g p.2 * (ε (h i p.1) * ε (h i p.2)) *
+        (f q.1 * g q.2 * (ε (h i q.1) * ε (h i q.2))) := by
+    rw [sq, Finset.sum_mul_sum]
+  simp only [hW2, expect_sum_comm]
+  refine sum_congr rfl fun p hp => ?_
+  obtain ⟨h1, h2, hne⟩ := mem_offDiag.1 hp
+  -- Only the pairs `q = p` and `q = p.swap` contribute.
+  have hterm : ∀ q ∈ S.offDiag,
+      𝔼 i, f p.1 * g p.2 * (ε (h i p.1) * ε (h i p.2)) *
+        (f q.1 * g q.2 * (ε (h i q.1) * ε (h i q.2))) =
+      f p.1 * g p.2 * (f q.1 * g q.2) *
+        (if (q.1 = p.1 ∧ q.2 = p.2) ∨ (q.1 = p.2 ∧ q.2 = p.1) then 1 else 0) := by
+    intro q hq
+    rw [← hh.expect_sign_mul_sign_mul_sign_mul_sign hε hε₀ hne (mem_offDiag.1 hq).2.2,
+      mul_expect]
+    exact expect_congr rfl fun i _ => by ring
+  have hfilt : S.offDiag.filter
+      (fun q : X × X => (q.1 = p.1 ∧ q.2 = p.2) ∨ (q.1 = p.2 ∧ q.2 = p.1)) = {p, p.swap} := by
+    ext ⟨q1, q2⟩
+    simp only [mem_filter, mem_offDiag, mem_insert, mem_singleton, Prod.ext_iff,
+      Prod.fst_swap, Prod.snd_swap]
+    constructor
+    · rintro ⟨-, h⟩
+      exact h
+    · rintro (⟨rfl, rfl⟩ | ⟨rfl, rfl⟩)
+      · exact ⟨⟨h1, h2, hne⟩, Or.inl ⟨rfl, rfl⟩⟩
+      · exact ⟨⟨h2, h1, hne.symm⟩, Or.inr ⟨rfl, rfl⟩⟩
+  have hswap : p ≠ p.swap := fun h => hne ((congrArg Prod.fst h).trans Prod.fst_swap)
+  rw [sum_congr rfl hterm]
+  simp only [mul_ite, mul_one, mul_zero]
+  rw [← sum_filter, hfilt, sum_pair hswap, Prod.fst_swap, Prod.snd_swap]
+  ring
+
 /-- **The variance of the tug-of-war estimator** [AlonMatiasSzegedy1999, Theorem 2.2]: for a
 four-wise independent family of signs, `Z = ∑ x ∈ S, f x ε (h i x)` has
 `𝔼 (Z² - ∑ f²)² = 2 ((∑ f²)² - ∑ f⁴)`. -/
@@ -153,42 +200,11 @@ theorem expect_sq_sum_mul_sign_sub_sq (hh : IsKWiseIndependentHash 4 h) (hε : �
     rw [sq_sum_eq_sum_sq_add_sum_offDiag]
     simp only [mul_pow, hε, mul_one, add_sub_cancel_left]
     exact sum_congr rfl fun p _ => by ring
-  have hW2 (i : ι) : (∑ p ∈ S.offDiag, f p.1 * f p.2 * (ε (h i p.1) * ε (h i p.2))) ^ 2 =
-      ∑ p ∈ S.offDiag, ∑ q ∈ S.offDiag, f p.1 * f p.2 * (ε (h i p.1) * ε (h i p.2)) *
-        (f q.1 * f q.2 * (ε (h i q.1) * ε (h i q.2))) := by
-    rw [sq, Finset.sum_mul_sum]
-  simp only [hW, hW2, expect_sum_comm]
-  have hterm : ∀ p ∈ S.offDiag, ∀ q ∈ S.offDiag,
-      𝔼 i, f p.1 * f p.2 * (ε (h i p.1) * ε (h i p.2)) *
-        (f q.1 * f q.2 * (ε (h i q.1) * ε (h i q.2))) =
-      f p.1 * f p.2 * (f q.1 * f q.2) *
-        (if (q.1 = p.1 ∧ q.2 = p.2) ∨ (q.1 = p.2 ∧ q.2 = p.1) then 1 else 0) := by
-    intro p hp q hq
-    rw [← hh.expect_sign_mul_sign_mul_sign_mul_sign hε hε₀ (mem_offDiag.1 hp).2.2
-      (mem_offDiag.1 hq).2.2, mul_expect]
-    exact expect_congr rfl fun i _ => by ring
-  have hinner : ∀ p ∈ S.offDiag, ∑ q ∈ S.offDiag, f p.1 * f p.2 * (f q.1 * f q.2) *
-      (if (q.1 = p.1 ∧ q.2 = p.2) ∨ (q.1 = p.2 ∧ q.2 = p.1) then 1 else 0) =
-      2 * (f p.1 ^ 2 * f p.2 ^ 2) := by
-    intro p hp
-    obtain ⟨h1, h2, hne⟩ := mem_offDiag.1 hp
-    have hfilt : S.offDiag.filter
-        (fun q : X × X => (q.1 = p.1 ∧ q.2 = p.2) ∨ (q.1 = p.2 ∧ q.2 = p.1)) = {p, p.swap} := by
-      ext ⟨q1, q2⟩
-      simp only [mem_filter, mem_offDiag, mem_insert, mem_singleton, Prod.ext_iff,
-        Prod.fst_swap, Prod.snd_swap]
-      constructor
-      · rintro ⟨-, h⟩
-        exact h
-      · rintro (⟨rfl, rfl⟩ | ⟨rfl, rfl⟩)
-        · exact ⟨⟨h1, h2, hne⟩, Or.inl ⟨rfl, rfl⟩⟩
-        · exact ⟨⟨h2, h1, hne.symm⟩, Or.inr ⟨rfl, rfl⟩⟩
-    have hswap : p ≠ p.swap := fun h => hne ((congrArg Prod.fst h).trans Prod.fst_swap)
-    simp only [mul_ite, mul_one, mul_zero]
-    rw [← sum_filter, hfilt, sum_pair hswap, Prod.fst_swap, Prod.snd_swap]
-    ring
-  rw [sum_congr rfl fun p hp => sum_congr rfl fun q hq => hterm p hp q hq,
-    sum_congr rfl hinner, ← mul_sum, sq_sum_eq_sum_sq_add_sum_offDiag S fun x => f x ^ 2]
+  simp only [hW]
+  rw [hh.expect_sq_sum_offDiag_mul_sign_mul_sign hε hε₀ S f f]
+  have hpair : ∀ p ∈ S.offDiag, f p.1 ^ 2 * f p.2 ^ 2 + f p.1 * f p.1 * (f p.2 * f p.2) =
+      2 * (f p.1 ^ 2 * f p.2 ^ 2) := fun p _ => by ring
+  rw [sum_congr rfl hpair, ← mul_sum, sq_sum_eq_sum_sq_add_sum_offDiag S fun x => f x ^ 2]
   have h4 : ∀ x ∈ S, (f x ^ 2) ^ 2 = f x ^ 4 := fun x _ => by ring
   rw [sum_congr rfl h4]
   ring

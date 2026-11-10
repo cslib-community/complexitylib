@@ -162,7 +162,7 @@ theorem bind_interpret_fixCoins [∀ q, Fintype (spec q)] (prog : ProbOracleComp
       rw [hbind (.inl k) cont, OracleComp.interpret_bind, OracleComp.interpret_query]
       simp only [OracleComp.sumHandler, PMF.bind_bind, PMF.bind_map, Function.comp_def,
         Probability.PMF.monad_bind_eq_bind]
-      congr 1; funext c
+      congr 1 with c : 1
       exact ih c
     | inr q =>
       dsimp only [Coins, coinLaw, fixCoins]

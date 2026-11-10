@@ -1,6 +1,6 @@
 # Learning and property testing
 
-The learning development makes a useful distinction between statistical/sample complexity, membership-query complexity and native running time. Its main local algorithms prove the first two. They should not be described as computational PAC learners merely because their sample or query bounds are polynomial or quasi-polynomial. [complexitylib][complexitylib]
+The learning development makes a useful distinction between statistical/sample complexity, membership-query complexity and native running time. Its main local algorithms prove the first two. They should not be described as computational PAC learners merely because their sample or query bounds are polynomial or quasi-polynomial. [cslib-frontier][complexitylib]
 
 ## Upstream PAC and local uniform learning
 

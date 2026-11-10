@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.SIS.ModuleEncryption
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
 public import CslibFrontier.Computability.Probabilistic.CenteredBinomial
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Secret laws and centered-binomial Module-LWE sampling
@@ -75,8 +76,7 @@ theorem realEncryptionView_retained_secret_marginal {k n q : ℕ} [NeZero q]
       pure (s, view)).map Prod.snd =
       realEncryptionView k n q noise m secretLaw ephemeralLaw := by
   rw [realEncryptionView_bind_secret]
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
-    PMF.bind_pure]
+  simp only [pmf_norm]
 
 /-- One native sampler handles every unary row count, degree and centered-binomial width.
 The output contains all signed integers in framed rows, with their binary magnitudes charged. -/

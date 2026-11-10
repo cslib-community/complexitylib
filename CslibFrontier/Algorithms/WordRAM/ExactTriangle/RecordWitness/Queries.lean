@@ -212,8 +212,7 @@ theorem exec_queries {w U n first length out queries Q : ℕ}
       Nat.count (fun i => x.mem (out + i) ≠ 0 ∧
         ∀ c : Fin length, AB (a i) (b i) + BC (b i) (first + c.val) +
           AC (a i) (first + c.val) ≠ 0) Q := by
-    congr 1
-    funext i
+    congr 1 with i : 1
     simp only [accept, hit, Bool.and_eq_true, decide_eq_true_eq,
       Bool.not_eq_true_eq_eq_false, decide_eq_false_iff_not, not_exists]
   refine ⟨y, Nat.count active Q, ?_, yFixed, ym, yindex, ?_, ?_, ?_, ?_, ?_⟩

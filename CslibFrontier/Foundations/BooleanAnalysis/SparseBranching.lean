@@ -395,6 +395,12 @@ theorem card_relabelRestrictedMonomials_le [Fintype ι] [DecidableEq ι] [Decida
     #(relabelRestrictedMonomials S e b 𝓜) ≤ #𝓜 :=
   card_image_le.trans (card_restrictMonomials_le S b 𝓜)
 
+/-- Every monomial of a restricted branch equation lies among the free variables `univ \ S`. -/
+private theorem subset_sdiff_of_mem_restrictMonomials [Fintype ι] [DecidableEq ι] {S : Finset ι}
+    {b : ι → Bool} {𝓜 : Finset (Finset ι)} {M : Finset ι} (hM : M ∈ restrictMonomials S b 𝓜) :
+    M ⊆ univ \ S :=
+  subset_sdiff.mpr ⟨subset_univ M, disjoint_of_mem_restrictMonomials hM⟩
+
 /-- On any monomial `M ⊆ univ \ S`, the subtype-image map `M ↦ (M.subtype (· ∈ univ \ S)).image e`
 is injective. -/
 private theorem subtype_image_injOn_restrictMonomials [Fintype ι] [DecidableEq ι] [DecidableEq ι']
@@ -402,31 +408,12 @@ private theorem subtype_image_injOn_restrictMonomials [Fintype ι] [DecidableEq 
     Set.InjOn (fun M : Finset ι => (M.subtype (· ∈ univ \ S)).image e)
       (restrictMonomials S b 𝓜) := by
   intro M₁ hM₁ M₂ hM₂ hEq
-  dsimp only at hEq
-  have hsub₁ : M₁ ⊆ univ \ S := fun v hv =>
-    mem_sdiff.mpr ⟨mem_univ v, disjoint_left.mp (disjoint_of_mem_restrictMonomials hM₁) hv⟩
-  have hsub₂ : M₂ ⊆ univ \ S := fun v hv =>
-    mem_sdiff.mpr ⟨mem_univ v, disjoint_left.mp (disjoint_of_mem_restrictMonomials hM₂) hv⟩
-  ext v
-  constructor
-  · intro hv₁
-    have hvU : v ∈ univ \ S := hsub₁ hv₁
-    have hin : e ⟨v, hvU⟩ ∈ (M₁.subtype (· ∈ univ \ S)).image e :=
-      mem_image.mpr ⟨⟨v, hvU⟩, mem_subtype.mpr hv₁, rfl⟩
-    rw [hEq, mem_image] at hin
-    rcases hin with ⟨u, hu, hue⟩
-    have huv := e.injective hue
-    subst huv
-    exact mem_subtype.mp hu
-  · intro hv₂
-    have hvU : v ∈ univ \ S := hsub₂ hv₂
-    have hin : e ⟨v, hvU⟩ ∈ (M₂.subtype (· ∈ univ \ S)).image e :=
-      mem_image.mpr ⟨⟨v, hvU⟩, mem_subtype.mpr hv₂, rfl⟩
-    rw [← hEq, mem_image] at hin
-    rcases hin with ⟨u, hu, hue⟩
-    have huv := e.injective hue
-    subst huv
-    exact mem_subtype.mp hu
+  -- `image e` is injective, and a monomial inside `univ \ S` is recovered from its subtype
+  have h := image_injective e.injective hEq
+  calc M₁ = (M₁.subtype (· ∈ univ \ S)).map (Function.Embedding.subtype _) :=
+        (subtype_map_of_mem fun _ hv => subset_sdiff_of_mem_restrictMonomials hM₁ hv).symm
+    _ = (M₂.subtype (· ∈ univ \ S)).map (Function.Embedding.subtype _) := by rw [h]
+    _ = M₂ := subtype_map_of_mem fun _ hv => subset_sdiff_of_mem_restrictMonomials hM₂ hv
 
 /-- Evaluating `relabelRestrictedMonomials S e b 𝓜` at `y : ι' → Bool` in any commutative ring `R`
 agrees with evaluating `restrictMonomials S b 𝓜` at `extendFreeAssignment S e y`. -/
@@ -438,8 +425,7 @@ theorem monomialSum_relabelRestrictedMonomials [Fintype ι] [DecidableEq ι] [De
   rw [monomialSum, monomialSum, relabelRestrictedMonomials,
     sum_image (subtype_image_injOn_restrictMonomials S e b 𝓜)]
   refine sum_congr rfl fun M hM => ?_
-  have hsub : M ⊆ univ \ S := fun v hv =>
-    mem_sdiff.mpr ⟨mem_univ v, disjoint_left.mp (disjoint_of_mem_restrictMonomials hM) hv⟩
+  have hsub := subset_sdiff_of_mem_restrictMonomials hM
   rw [monomial, monomial, prod_image (fun u _ v _ huv => e.injective huv)]
   refine prod_nbij Subtype.val (fun x hx => mem_coe.mpr (mem_subtype.mp hx))
     Subtype.val_injective.injOn
@@ -477,6 +463,22 @@ theorem commonZeroCount_eq_sum_relabelRestrictedMonomials [Fintype ι] [Decidabl
     rw [← monomialSum_relabelRestrictedMonomials]
     exact hy.2 i hi
 
+/-- A variable `w` of the relabeled restricted equation comes from the variable `e.symm w` of the
+restricted equation. -/
+private theorem symm_mem_equationScope_restrictMonomials [Fintype ι] [DecidableEq ι]
+    [DecidableEq ι'] {S : Finset ι} {e : ↥(univ \ S) ≃ ι'} {b : ι → Bool}
+    {𝓜 : Finset (Finset ι)} {w : ι'}
+    (hw : w ∈ equationScope (relabelRestrictedMonomials S e b 𝓜)) :
+    (e.symm w).1 ∈ equationScope (restrictMonomials S b 𝓜) := by
+  rw [equationScope, mem_biUnion] at hw ⊢
+  rcases hw with ⟨M', hM', hwM'⟩
+  rw [relabelRestrictedMonomials, mem_image] at hM'
+  rcases hM' with ⟨M, hM, rfl⟩
+  rw [id_eq, mem_image] at hwM'
+  rcases hwM' with ⟨v, hv, rfl⟩
+  rw [Equiv.symm_apply_apply]
+  exact ⟨M, hM, mem_subtype.mp hv⟩
+
 /-- The variable scope of `relabelRestrictedMonomials S e b 𝓜` is contained in the image under `e`
 of `(equationScope 𝓜 \ S).subtype (· ∈ univ \ S)`. -/
 theorem equationScope_relabelRestrictedMonomials_subset [Fintype ι] [DecidableEq ι]
@@ -485,17 +487,9 @@ theorem equationScope_relabelRestrictedMonomials_subset [Fintype ι] [DecidableE
     equationScope (relabelRestrictedMonomials S e b 𝓜) ⊆
       ((equationScope 𝓜 \ S).subtype (· ∈ univ \ S)).image e := by
   intro w hw
-  rw [equationScope, mem_biUnion] at hw
-  rcases hw with ⟨M', hM', hwM'⟩
-  rw [relabelRestrictedMonomials, mem_image] at hM'
-  rcases hM' with ⟨M, hM, rfl⟩
-  rw [id_eq, mem_image] at hwM'
-  rcases hwM' with ⟨v, hv, rfl⟩
-  rw [mem_subtype] at hv
-  have hvScope : v.1 ∈ equationScope 𝓜 \ S :=
-    equationScope_restrictMonomials_subset_sdiff S b 𝓜
-      (mem_biUnion.mpr ⟨M, hM, hv⟩)
-  exact mem_image.mpr ⟨v, mem_subtype.mpr hvScope, rfl⟩
+  refine mem_image.mpr ⟨e.symm w, mem_subtype.mpr ?_, e.apply_symm_apply w⟩
+  exact equationScope_restrictMonomials_subset_sdiff S b 𝓜
+    (symm_mem_equationScope_restrictMonomials hw)
 
 /-- **§5.5–5.6 (free-variable incidence bound on `ι'` after branching on `heavyVars`)**: for
 `S = heavyVars univ F (fun i => equationScope (P i)) b₀` and `I ⊆ F`, every variable `w : ι'` has
@@ -514,16 +508,7 @@ theorem varIncidence_relabelRestrictedMonomials_heavyVars_le [Fintype ι] [Decid
         {i ∈ F | (e.symm w).1 ∈ equationScope (restrictMonomials S b (P i))} := by
     intro i hi
     rw [mem_filter] at hi ⊢
-    refine ⟨hIF hi.1, ?_⟩
-    rcases hi with ⟨_, hw⟩
-    rw [equationScope, mem_biUnion] at hw ⊢
-    rcases hw with ⟨M', hM', hwM'⟩
-    rw [relabelRestrictedMonomials, mem_image] at hM'
-    rcases hM' with ⟨M, hM, rfl⟩
-    rw [id_eq, mem_image] at hwM'
-    rcases hwM' with ⟨v, hv, rfl⟩
-    rw [Equiv.symm_apply_apply]
-    exact ⟨M, hM, mem_subtype.mp hv⟩
+    exact ⟨hIF hi.1, symm_mem_equationScope_restrictMonomials hi.2⟩
   calc
     varIncidence I
         (fun i => equationScope (relabelRestrictedMonomials S e b (P i))) w

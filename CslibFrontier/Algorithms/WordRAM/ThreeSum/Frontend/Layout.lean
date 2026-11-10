@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.Frontend.Model
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Native frontend descriptor layout
@@ -97,8 +98,7 @@ def array (U Λ : ℕ) (rs : List (ℕ × ℕ)) (j : ℕ) : List ℕ :=
 theorem select_extra (U β β' v mode : ℕ) (rs : List (ℕ × ℕ)) (hm : 3 ≤ mode) :
     select U β β' v mode rs = select U 0 0 0 mode rs := by
   unfold select
-  congr 2
-  funext p
+  congr 2 with p : 1
   unfold keep flag
   split <;> first | rfl | omega
 
@@ -255,7 +255,6 @@ theorem roots_indexed (U : ℕ) (rs : List (ℕ × ℕ)) :
     (List.range (2 * Λ ^ 2 + 2)).map (root U Λ rs) = roots U rs := by
   dsimp only
   let Λ := Cslib.Algorithms.ThreeSum.labelBits (2 * U)
-  have hΛ : 0 < Λ := by dsimp [Λ, Cslib.Algorithms.ThreeSum.labelBits]; omega
   have hlen : 2 * Λ ^ 2 = Λ * (Λ * 2) := by ring
   change (List.range (2 * Λ ^ 2 + 2)).map (root U Λ rs) = _
   rw [List.range_add, List.map_append]
@@ -272,8 +271,7 @@ theorem roots_indexed (U : ℕ) (rs : List (ℕ × ℕ)) :
     intro β' hβ'
     have hb : β < Λ := List.mem_range.mp hβ
     have hb' : β' < Λ := List.mem_range.mp hβ'
-    have hdiv : (β * Λ + β') / Λ = β := by
-      rw [Nat.add_comm, Nat.add_mul_div_right _ _ hΛ, Nat.div_eq_of_lt hb', Nat.zero_add]
+    have hdiv : (β * Λ + β') / Λ = β := Nat.mul_add_div_of_lt β hb'
     have hmod : (β * Λ + β') % Λ = β' := Nat.mul_add_mod_of_lt hb'
     have hlt0 : β * (Λ * 2) + (β' * 2 + 0) < 2 * Λ ^ 2 := by nlinarith
     have hlt1 : β * (Λ * 2) + (β' * 2 + 1) < 2 * Λ ^ 2 := by nlinarith

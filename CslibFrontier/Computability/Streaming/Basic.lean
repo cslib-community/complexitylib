@@ -14,8 +14,8 @@ public import Mathlib.Basic.Real.Basic
 public import Mathlib.Data.Finset.Density
 public import Mathlib.Data.Fintype.Card
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Uniform
-import Mathlib.Data.Fintype.Pi
 import Mathlib.Logic.Embedding.Set
 
 /-!
@@ -267,8 +267,7 @@ theorem errorProb_map_reduce_le {α' β' : Type*} (μ : Randomized σ α β) (p 
     errorProb (μ.map fun A => A.reduce p g d) R' s ≤ μ.errorProb R (p ++ s.map g) := by
   unfold errorProb
   rw [PMF.toOuterMeasure_map_apply]
-  refine ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    (μ.toOuterMeasure.mono fun A hA => ?_)
+  refine Probability.PMF.toOuterMeasure_toReal_mono μ fun A hA => ?_
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, Algorithm.run_reduce] at hA ⊢
   exact fun h => hA (hR _ h)
 

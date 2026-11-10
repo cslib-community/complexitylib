@@ -43,9 +43,11 @@ import CslibFrontier.Logics.BooleanClone.Post
 import CslibFrontier.Logics.Propositional.CNF.Majority
 import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
+import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -74,9 +76,11 @@ import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.Clique
 import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
+import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -255,9 +259,7 @@ CookLevin.SAT_npComplete : NPComplete encCNF SAT
 
 Its hardness half ({name}`CookLevin.SAT_npHard`) encodes the computation of any polynomial-time
 verifier as a formula. Unsatisfiability, its complement, is coNP-complete
-({name}`CookLevin.UNSAT_coNPComplete`). The
-[Cook–Levin abstract](https://github.com/cslib-community/cslib-frontier/blob/main/abstracts/CslibFrontierAbstracts/CookLevinAbstract.lean)
-restates the theorem together with every definition it depends on.
+({name}`CookLevin.UNSAT_coNPComplete`).
 
 # The Catalogue
 %%%
@@ -751,6 +753,55 @@ rotation to follow the scope's cyclic order. This rotation structure imposes no
 genus-zero condition and supplies no planarity recognizer or solver.
 
 
+# Finite Ordered Rotation Certificates
+
+{name}`Cslib.Complexity.Graph.RotationCertificate` stores one binary successor
+index per indexed dart. Its checker validates a supplied permutation and vertex
+rotation, then checks {name}`Cslib.Complexity.Graph.RotationSystem.NumericalGenusZero`:
+`V + F = E + 2` in each edge component. Faces include fixed-point orbits.
+Isolated vertices use `V = 1, E = 0, F = 1` without inventing darts.
+
+The CSP checker also preserves the actual cyclic scope order. A ternary mirror
+can pass numerical genus zero while failing this order condition:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+example : verifyRotationCertificate
+    ([((), [0, 1, 2])] : CSP Unit ℕ) ⟨[0, 3, 2, 5, 4, 1]⟩ = true :=
+  by decide
+```
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+example : verifyRotationCertificate
+    ([((), [0, 1, 2])] : CSP Unit ℕ) ⟨[0, 5, 2, 1, 4, 3]⟩ = false :=
+  by decide
+```
+
+{name}`Cslib.Complexity.CSP.exists_bounded_rotationCertificate_iff` proves that
+ordered numerical genus-zero rotations exist exactly when a bounded certificate
+is accepted. The explicit graph bound is `10 * (N + 1)^2` bits for the complete
+`encGraph` bit length `N`; its composition with the incidence construction is
+polynomial in the original CSP bit length. The full supplied-certificate checker
+has native polynomial time, including on malformed tables:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP
+  Turing.MultiTapeTM in
+example : ComputableInPolyTime
+    (fun p : CSP Unit ℕ × Graph.RotationCertificate =>
+      verifyRotationCertificate p.1 p.2)
+    (encCSPRotationCertificate encUnit encNat) encBool :=
+  computableInPolyTime_verifyRotationCertificate encUnit encNat
+```
+
+Original variable labels remain binary. Iteration uses actual list lengths,
+never a maximum label or supplied successor index. Nullary port order is
+vacuous; semantic rejection and exact relation arity remain separate guards.
+These theorems do not yet construct a rotation from a bare instance or establish
+geometric/source correspondence, planar duality, an edge solver or the dichotomy.
+
+
 # Delta-Matroid Closure for Local Contraction
 
 {name}`Cslib.BitString.IsDeltaMatroid.comp` and
@@ -817,3 +868,33 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 
 The test module also rejects final-only validity. A complete solver still needs
 DAG/forest/blossom search and the native runtime certificate.
+
+
+# Finite Crossover Gadget Semantics
+
+{name}`Cslib.BitString.cross` equates opposite cyclic ports.
+{name}`Cslib.BitString.nearCross` additionally accepts `0001` and `1110`.
+{name}`Cslib.BitString.IsStandardizedInconsistent` has exactly eight shapes.
+The literal Dvořák–Kupec Figure 1(a) gadget targets CROSS or NEAR-CROSS according
+to which optional complementary pairs occur:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : figureOneARelation (standardizedRelation true false false) =
+    nearCross := figureOneARelation_standardized true false false
+```
+
+{name}`Cslib.Logic.PL.CSP.Crossover.figureOneAStandardized` exposes the selected
+target as an ordinary primitive-positive gadget. Figure 1(b) then defines CROSS
+from NEAR-CROSS using one existential auxiliary:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : ∃ b, figureOneB.body.eval nearSem
+    (Sum.elim ![false, true, false, true] b) = true :=
+  (figureOneB.correct _).mp (by decide)
+```
+
+Both bodies retain the source diagram's numbered port order and use guarded
+scope widths. These results concern finite semantics; planar substitution,
+Lemma 6 normalization, hardness and a new native runtime certificate remain open.

@@ -214,26 +214,28 @@ noncomputable def powerInterpretation :
     | 1, .inr (.inr idx) => v.powerTableBitFormula k har idx
     | 2, () => powerLtFormula k
 
+/-- `highZeroFormula k a` reads only row `0` of its valuation, and holds there iff that `k`-tuple
+has index `< n ^ a`. -/
 private theorem realize_highZeroFormula {M : Type} [L.Structure M] {n : ℕ} (e : M ≃ Fin n)
-    (a : ℕ) (ha : a ≤ k) (x : Fin k → M) :
+    (a : ℕ) (ha : a ≤ k) (val : Fin 1 × Fin k → M) :
     (letI := ESO.varLanguage.structure (arity := fun _ : Unit => 2) (ESO.orderRelOfEquiv e);
-      (highZeroFormula (L := L) k a).Realize (fun p : Fin 1 × Fin k => x p.2)) ↔
-      tupleIndex (e ∘ x) < n ^ a := by
+      (highZeroFormula (L := L) k a).Realize val) ↔
+      tupleIndex (e ∘ fun i => val (0, i)) < n ^ a := by
   let _ := ESO.varLanguage.structure (arity := fun _ : Unit => 2) (ESO.orderRelOfEquiv e)
   simp only [highZeroFormula, Formula.realize_iInf, realize_isMinVarFormula e, Subtype.forall]
-  exact (tupleIndex_lt_pow_iff ha (e ∘ x)).symm
+  exact (tupleIndex_lt_pow_iff ha _).symm
 
+/-- `powerLtFormula k` compares rows `0` and `1` of its valuation as `k`-tuples. -/
 private theorem realize_powerLtFormula {M : Type} [L.Structure M] {n : ℕ} (e : M ≃ Fin n)
-    (x y : Fin k → M) :
+    (val : Fin 2 × Fin k → M) :
     (letI := ESO.varLanguage.structure (arity := fun _ : Unit => 2) (ESO.orderRelOfEquiv e);
-      (powerLtFormula (L := L) k).Realize
-        (fun p : Fin 2 × Fin k => if p.1 = 0 then x p.2 else y p.2)) ↔
-      tupleIndex (e ∘ x) < tupleIndex (e ∘ y) := by
+      (powerLtFormula (L := L) k).Realize val) ↔
+      tupleIndex (e ∘ fun i => val (0, i)) < tupleIndex (e ∘ fun i => val (1, i)) := by
   let _ := ESO.varLanguage.structure (arity := fun _ : Unit => 2) (ESO.orderRelOfEquiv e)
   simp only [powerLtFormula, Formula.realize_iSup, Formula.realize_inf,
     Formula.realize_iInf, Formula.realize_equal, Term.realize_var, realize_ltVarFormula e,
-     ↓reduceIte, Fin.one_eq_zero_iff, Nat.reduceEqDiff, Subtype.forall]
-  rw [tupleIndex_lt_iff (e ∘ x) (e ∘ y)]
+    Subtype.forall]
+  rw [tupleIndex_lt_iff]
   simp only [Function.comp_apply, e.injective.eq_iff]
 
 include hk in
@@ -260,25 +262,19 @@ def powerEquiv (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n) :
       | 1, .inl () => by
         change (v.powerStructure (v.encode M e) (n ^ k)).RelMap v.powerIsElem _ ↔
           (highZeroFormula (L := L) k 1).Realize (fun p : Fin 1 × Fin k => (x p.1).1 p.2)
-        have hval : (fun p : Fin 1 × Fin k => (x p.1).1 p.2) = fun p => (x 0).1 p.2 := by
-          funext p; rw [Subsingleton.elim p.1 0]
-        rw [hval, realize_highZeroFormula k e 1 hk (x 0).1, relMap_powerIsElem]
+        rw [realize_highZeroFormula k e 1 hk, relMap_powerIsElem]
         simp [Vocabulary.encode, tupleIndex]
       | 1, .inr (.inl idx) => by
         change (v.powerStructure (v.encode M e) (n ^ k)).RelMap (v.powerInTable idx) _ ↔
           (highZeroFormula (L := L) k (v.arity idx)).Realize
             (fun p : Fin 1 × Fin k => (x p.1).1 p.2)
-        have hval : (fun p : Fin 1 × Fin k => (x p.1).1 p.2) = fun p => (x 0).1 p.2 := by
-          funext p; rw [Subsingleton.elim p.1 0]
-        rw [hval, realize_highZeroFormula k e (v.arity idx) (har idx) (x 0).1, relMap_powerInTable]
+        rw [realize_highZeroFormula k e (v.arity idx) (har idx), relMap_powerInTable]
         simp [Vocabulary.encode, tupleIndex]
       | 1, .inr (.inr idx) => by
         change (v.powerStructure (v.encode M e) (n ^ k)).RelMap (v.powerTableBit idx) _ ↔
           (v.powerTableBitFormula k har idx).Realize (fun p : Fin 1 × Fin k => (x p.1).1 p.2)
-        have hval : (fun p : Fin 1 × Fin k => (x p.1).1 p.2) = fun p => (x 0).1 p.2 := by
-          funext p; rw [Subsingleton.elim p.1 0]
-        rw [hval, powerTableBitFormula, Formula.realize_inf,
-          realize_highZeroFormula k e (v.arity idx) (har idx) (x 0).1, relMap_powerTableBit]
+        rw [powerTableBitFormula, Formula.realize_inf,
+          realize_highZeroFormula k e (v.arity idx) (har idx), relMap_powerTableBit]
         change (tupleIndex (e ∘ (x 0).1) < n ^ v.arity idx ∧
             (v.table (v.encode M e) (v.symbol idx)).getD (tupleIndex (e ∘ (x 0).1)) false = true) ↔
           tupleIndex (e ∘ (x 0).1) < n ^ v.arity idx ∧
@@ -293,11 +289,7 @@ def powerEquiv (M : Type) [L.Structure M] {n : ℕ} (e : M ≃ Fin n) :
       | 2, () => by
         change (v.powerStructure (v.encode M e) (n ^ k)).RelMap v.powerLt _ ↔
           (powerLtFormula (L := L) k).Realize (fun p : Fin 2 × Fin k => (x p.1).1 p.2)
-        have hval : (fun p : Fin 2 × Fin k => (x p.1).1 p.2) =
-            fun p : Fin 2 × Fin k => if p.1 = 0 then (x 0).1 p.2 else (x 1).1 p.2 := by
-          funext ⟨a, i⟩
-          fin_cases a <;> rfl
-        rw [hval, realize_powerLtFormula k e (x 0).1 (x 1).1, relMap_powerLt]
+        rw [realize_powerLtFormula k e, relMap_powerLt]
         rfl }
 
 include hk in

@@ -85,8 +85,7 @@ theorem uniformOfFintype_prod_map_fst :
   rw [← uniformOfFintype_prod, PMF.map_bind]
   simp only [PMF.map_comp, Function.comp_def]
   calc _ = (uniformOfFintype α).bind PMF.pure := by
-        congr 1
-        funext a
+        congr 1 with a : 1
         exact PMF.map_const _ _
     _ = _ := PMF.bind_pure _
 
