@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Cslib.Foundations.Data.PFunctor.Free
 public import Cslib.Foundations.Semantics.FLTS.Basic
 public import Cslib.Foundations.Semantics.LTS.Basic
+public import CslibFrontier.DataStructure.StateTransition.ClientSimps.Init
 
 /-!
 # State-transition specifications and adaptive clients
@@ -74,8 +75,16 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
   `StateTransitionSpec.validHistory_append`, `StateTransitionSpec.totalCost_append`,
   `StateTransitionSpec.run_runClient`, `StateTransitionSpec.runClient_bind`,
   `StateTransitionSpec.clientResult_bind`, `StateTransitionSpec.clientState_bind`,
-  `StateTransitionSpec.clientHistory_bind`, `eval_bind`, `eval_eq_liftM`: functional history and
-  client laws under `[StateTransitionSpec.HasStepFn]`.
+  `StateTransitionSpec.clientHistory_bind`, `StateTransitionSpec.clientResult_pure`,
+  `StateTransitionSpec.clientState_pure`, `StateTransitionSpec.clientHistory_pure`, `eval_bind`,
+  `eval_eq_liftM`: functional history and client laws under `[StateTransitionSpec.HasStepFn]`.
+* `StateTransitionSpec.fst_snd_runClient_bind`, `StateTransitionSpec.snd_snd_runClient_bind`,
+  `StateTransitionSpec.fst_snd_runClient_pure`, `StateTransitionSpec.snd_snd_runClient_pure`: the
+  state and history laws in the form that `simp` indexes. With `clientResult_bind`,
+  `clientResult_pure`, `run_runClient`, `totalCost_append`, `validHistory_append` and
+  `PFunctor.FreeM.bind_eq_bind` they form the simp set `client_simps`: `simp only [client_simps]`
+  splits the result, final state, history, cost and admissibility of a sequential client at its
+  binds.
 
 ## References
 
@@ -759,9 +768,10 @@ theorem run_append (s : D.State) (xs ys : List D.Op) :
   | nil => rfl
   | cons o os ih => simp [ih]
 
-/-- Charges compose at the intermediate abstract state. -/
-theorem totalCost_append (charge : D.State → D.Op → Nat) (s : D.State)
-    (xs ys : List D.Op) :
+/-- Charges compose at the intermediate abstract state. The element type `D.Op` is not indexed, so
+`simp` also uses this for a concrete specification such as `Memory.spec w`, whose `Op` reduces. -/
+@[client_simps] theorem totalCost_append (charge : D.State → D.Op → Nat) (s : D.State)
+    (xs ys : List (no_index D.Op)) :
     D.totalCost charge s (xs ++ ys) =
       D.totalCost charge s xs + D.totalCost charge (D.run s xs).1 ys := by
   induction xs generalizing s with
@@ -857,8 +867,8 @@ continues from the resulting state and answer. -/
       (v, s', o :: os) := rfl
 
 /-- The actual history chosen by an adaptive client has its computed final state. -/
-theorem run_runClient {α : Type y} (p : D.Client α) (s : D.State) :
-    (D.run s (D.clientHistory s p)).1 = D.clientState s p := by
+@[client_simps] theorem run_runClient {α : Type y} (p : D.Client α) (s : D.State) :
+    (D.run s (no_index (D.clientHistory s p))).1 = D.clientState s p := by
   induction p generalizing s with
   | pure a => rfl
   | liftBind o k ih => exact ih (D.stepFn s o).2 (D.stepFn s o).1
@@ -870,8 +880,9 @@ namespace StateTransitionSpec
 variable {D : StateTransitionSpec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
   [D.HasStepFn f] {α β : Type y}
 
-/-- Admissibility splits at the mathematical state reached by the first history. -/
-theorem validHistory_append (s : D.State) (xs ys : List D.Op) :
+/-- Admissibility splits at the mathematical state reached by the first history. The element type
+`D.Op` is not indexed, as in `totalCost_append`. -/
+@[client_simps] theorem validHistory_append (s : D.State) (xs ys : List (no_index D.Op)) :
     D.ValidHistory s (xs ++ ys) ↔
       D.ValidHistory s xs ∧ D.ValidHistory (D.run s xs).1 ys := by
   induction xs generalizing s with
@@ -891,6 +902,7 @@ theorem runClient_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) 
       (ih (D.stepFn s o).2 (D.stepFn s o).1)
 
 /-- A sequential client answers as its continuation, run from where the first client stopped. -/
+@[client_simps]
 theorem clientResult_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
     D.clientResult s (p >>= k) = D.clientResult (D.clientState s p) (k (D.clientResult s p)) := by
   change D.clientResult s (p.bind k) = _
@@ -909,6 +921,47 @@ theorem clientHistory_bind (p : D.Client α) (k : α → D.Client β) (s : D.Sta
       D.clientHistory s p ++ D.clientHistory (D.clientState s p) (k (D.clientResult s p)) := by
   change D.clientHistory s (p.bind k) = _
   rw [clientHistory, runClient_bind]
+
+/-- A client that only returns a value answers with it. -/
+@[client_simps] theorem clientResult_pure (s : D.State) (a : α) :
+    D.clientResult s (pure a : D.Client α) = a := rfl
+
+/-- A client that only returns a value leaves the state unchanged. -/
+theorem clientState_pure (s : D.State) (a : α) :
+    D.clientState s (pure a : D.Client α) = s := rfl
+
+/-- A client that only returns a value issues no operation. -/
+theorem clientHistory_pure (s : D.State) (a : α) :
+    D.clientHistory s (pure a : D.Client α) = [] := rfl
+
+/-! `clientState` and `clientHistory` unfold to a `match` on `D.runClient s p`. Under its
+metavariables `simp` cannot reduce that `match`, so it would index `clientState_bind` and
+`clientHistory_bind` under a key that no goal has; in a goal it sees `(D.runClient s p).2.1`. The
+following restatements have that form, and put the simp set `client_simps` in the normal form of
+`clientState` and `clientHistory`. -/
+
+/-- `clientState_bind`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem fst_snd_runClient_bind (p : D.Client α) (k : α → D.Client β)
+    (s : D.State) :
+    (D.runClient s (p >>= k)).2.1 = D.clientState (D.clientState s p) (k (D.clientResult s p)) :=
+  clientState_bind p k s
+
+/-- `clientHistory_bind`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem snd_snd_runClient_bind (p : D.Client α) (k : α → D.Client β)
+    (s : D.State) :
+    (D.runClient s (p >>= k)).2.2 =
+      D.clientHistory s p ++ D.clientHistory (D.clientState s p) (k (D.clientResult s p)) :=
+  clientHistory_bind p k s
+
+/-- `clientState_pure`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem fst_snd_runClient_pure (s : D.State) (a : α) :
+    (D.runClient s (pure a : D.Client α)).2.1 = s := rfl
+
+/-- `clientHistory_pure`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem snd_snd_runClient_pure (s : D.State) (a : α) :
+    (D.runClient s (pure a : D.Client α)).2.2 = [] := rfl
+
+attribute [client_simps] PFunctor.FreeM.bind_eq_bind
 
 /-- On a deterministic specification (`[D.HasStepFn f]`), demonic operation-sequence admissibility
 `ValidOpSeq` coincides with `D.ValidHistory`. -/

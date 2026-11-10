@@ -25,6 +25,14 @@ still reduce `Code.eval` in the kernel. When such a check is slow in its tactic 
 type checking (see `set_option profiler true`), `decide +kernel` skips the elaborator's evaluation.
 Keep the library modules that define programs free of this import, so that it stays a leaf.
 
+On arbitrary data, `ram_eval [myProgram]` from
+[`Notation`](../../CslibFrontier/Computability/WordRAM/Notation.lean) proves an `ExecWithin` or
+`Exec` goal by running `Code.eval` with `simp`; `ram_exact_eval` does the same for `Basis.exact`
+programs. A failure names its step: the goal form, a program `simp` cannot unfold, a `none` result
+(a fault, or a loop needing more iterations, as in `ram_eval 3 [myProgram]`), an undecided branch
+or an instruction bound that `omega` cannot prove; the last two are shown. The
+[diagnostic examples](../../CslibFrontierTests/WordRAMEvalDiagnostics.lean) check each message.
+
 ## Proving a constant-cost counting loop
 
 Import [`CountingLoop`](../../CslibFrontier/Computability/WordRAM/CountingLoop.lean) for a native
@@ -66,6 +74,18 @@ exact specification with `refine WP.Exact.of_exec h ?_`, or apply an exact contr
 The [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check exact
 counts through a conditional, a wrong count left as a goal and a call to an exact specification.
 
+`wram_exec` stops at a loop. For a loop proved by induction, take an iteration whose condition
+holds with `refine WP.Exact.exists_exec (WP.Exact.loop_iter hc ?_)` (`WP.loop_iter` for a bound),
+run the body with `wram_exec`, and apply the induction hypothesis to the loop left at the end with
+`wram_call`. Give `_` for the data reached, so that the hypothesis's register facts are proved by
+`wram_simp` once it is known. What remains is the instruction count and the postcondition. Pass
+`← h` for an abbreviation `set v := e with h` so that values are read back as `v`.
+`clmulTabLoop_exec` and `hornerLoop_exec` in
+[`KWise`](../../CslibFrontier/DataStructure/HashFamily/WordRAM/KWise.lean) follow this pattern,
+the second with calls to exact contracts inside the body; `moveLoop_exec` in the
+[symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) is the smallest
+case.
+
 For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
 Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
 outside the bank. Memory and register projections of bank views are normalized once. Preparation,
@@ -74,6 +94,8 @@ existing separate rules. Missing word fits, alias conditions or a mismatched rou
 proof. Open the complete ordinary-import
 [call examples](../../CslibFrontierTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
+When no rule applies, `wram_call` reports the goal, the contract forms accepted there and the
+mismatch; those examples check the messages.
 
 `wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
 also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way

@@ -321,23 +321,14 @@ theorem clockedCompactPairedPorts_outPort_val (machine : MultiTapePTM k Bool Sta
           w[queryIndex (k := k) B (a.val % N)]?)[p.val]? with
       | none => none
       | some v => some (v, (coinInSources machine B w v).idxOf (a.val % N)) at hbase
-    cases ho : (compactPairedPorts machine R B w).outPort a.modNat p with
-    | none =>
-      rw [ho, Option.map_none] at hbase
-      cases hg : (coinOutTargetsWithSymbol machine B n (a.val % N)
-          w[queryIndex (k := k) B (a.val % N)]?)[p.val]? with
-      | none => rfl
-      | some v => rw [hg] at hbase; cases hbase
-    | some vq =>
-      obtain ⟨v, q⟩ := vq
-      rw [ho, Option.map_some] at hbase
-      cases hg : (coinOutTargetsWithSymbol machine B n (a.val % N)
-          w[queryIndex (k := k) B (a.val % N)]?)[p.val]? with
-      | none => rw [hg] at hbase; cases hbase
-      | some vNat =>
-        rw [hg, Option.some.injEq, Prod.mk.injEq] at hbase
-        obtain ⟨hv_eq, hq_eq⟩ := hbase
-        simp [hv_eq, hq_eq, n, B, N]
+    -- split both options; `hbase` rules out the mismatched cases
+    rcases ho : (compactPairedPorts machine R B w).outPort a.modNat p with _ | ⟨v, q⟩ <;>
+      rcases hg : (coinOutTargetsWithSymbol machine B n (a.val % N)
+        w[queryIndex (k := k) B (a.val % N)]?)[p.val]? with _ | vNat <;>
+      simp only [ho, hg, Option.map_none, Option.map_some, reduceCtorEq, Option.some.injEq,
+        Prod.mk.injEq] at hbase
+    · rfl
+    · simp [hbase.1, hbase.2, n, B, N]
   · have hcond : ¬ (a.val < clockedVertexBound (k := k) D d n ∧ p.val < 2 ∧ a.val / N < T) :=
       fun h => hdiv h.2.2
     rw [ite_eq_right hdiv, ite_eq_right hcond, Option.map_none]
@@ -375,21 +366,13 @@ theorem clockedCompactPairedPorts_inPort_val (machine : MultiTapePTM k Bool Stat
       | some u =>
         some (u, (coinOutTargetsWithSymbol machine B n u
           w[queryIndex (k := k) B u]?).idxOf (b.val % N)) at hbase
-    cases hi : (compactPairedPorts machine R B w).inPort b.modNat q with
-    | none =>
-      rw [hi, Option.map_none] at hbase
-      cases hg : (coinInSources machine B w (b.val % N))[q.val]? with
-      | none => rfl
-      | some u => rw [hg] at hbase; cases hbase
-    | some up =>
-      obtain ⟨u, p⟩ := up
-      rw [hi, Option.map_some] at hbase
-      cases hg : (coinInSources machine B w (b.val % N))[q.val]? with
-      | none => rw [hg] at hbase; cases hbase
-      | some uNat =>
-        rw [hg, Option.some.injEq, Prod.mk.injEq] at hbase
-        obtain ⟨hu_eq, hp_eq⟩ := hbase
-        simp [hu_eq, hp_eq, n, B, N]
+    -- split both options; `hbase` rules out the mismatched cases
+    rcases hi : (compactPairedPorts machine R B w).inPort b.modNat q with _ | ⟨u, p⟩ <;>
+      rcases hg : (coinInSources machine B w (b.val % N))[q.val]? with _ | uNat <;>
+      simp only [hi, hg, Option.map_none, Option.map_some, reduceCtorEq, Option.some.injEq,
+        Prod.mk.injEq] at hbase
+    · rfl
+    · simp [hbase.1, hbase.2, n, B, N]
   · have hcond : ¬ (b.val < clockedVertexBound (k := k) D d n ∧ q.val < inPortBound machine ∧
         0 < b.val / N) := fun h => hdiv h.2.2
     rw [ite_eq_right hdiv, ite_eq_right hcond, Option.map_none]
@@ -788,23 +771,13 @@ theorem exists_pairedTimeLayerFamily_of_mem_BPL (h : A ∈ BPL enc) :
     ∃ F : PairedTimeLayerFamily enc,
       ∀ a, (a ∈ A → 2 / 3 ≤ F.potential a (F.start a)) ∧
         (a ∉ A → F.potential a (F.start a) ≤ 1 / 3) := by
-  classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
-  let : Fintype State := Fintype.ofFinite State
-  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).1, fun a => ?_⟩
-  obtain ⟨_, _, hmem, hnot⟩ := hM a
+  -- the family's start potential is the compact layer's `p x₀`, whose gap is already proved
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_compactTimeLayer_of_mem_BPL h
+  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).fst, fun a => ?_⟩
+  obtain ⟨_, -, -, -, -, -, -, -, -, -, hmem, hnot⟩ := hM a
+  rw [finTimeLayer_compactCoinMatrix_acceptance] at hmem hnot
   rw [PairedTimeLayerFamily.ofMachine_potential_start]
-  constructor
-  · intro ha
-    rw [le_div_iff₀ (by positivity)]
-    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
-    push_cast at hc
-    linarith
-  · intro ha
-    rw [div_le_iff₀ (by positivity)]
-    have hc := (Nat.cast_le (α := ℝ)).mpr (hnot ha)
-    push_cast at hc
-    linarith
+  exact ⟨hmem, hnot⟩
 
 /-- **Paired-port time-layered reduction for `RL` (Lemma 2.1 of [OpenAI2026LogSpace]).**
 Every language `A ∈ RL enc` reduces to estimating the start entry of `(1 - S_a)⁻¹ e_a` for a
@@ -813,19 +786,12 @@ theorem exists_pairedTimeLayerFamily_of_mem_RL (h : A ∈ RL enc) :
     ∃ F : PairedTimeLayerFamily enc,
       ∀ a, (a ∈ A → 1 / 2 ≤ F.potential a (F.start a)) ∧
         (a ∉ A → F.potential a (F.start a) = 0) := by
-  classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_RL h
-  let : Fintype State := Fintype.ofFinite State
-  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).1, fun a => ?_⟩
-  obtain ⟨_, _, hmem, hnot⟩ := hM a
+  -- the family's start potential is the compact layer's `p x₀`, whose gap is already proved
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_compactTimeLayer_of_mem_RL h
+  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).fst, fun a => ?_⟩
+  obtain ⟨_, -, -, -, -, -, -, -, -, -, hmem, hnot⟩ := hM a
+  rw [finTimeLayer_compactCoinMatrix_acceptance] at hmem hnot
   rw [PairedTimeLayerFamily.ofMachine_potential_start]
-  constructor
-  · intro ha
-    rw [le_div_iff₀ (by positivity)]
-    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
-    push_cast at hc
-    linarith
-  · intro ha
-    simp [hnot ha]
+  exact ⟨hmem, hnot⟩
 
 end Cslib.Complexity
