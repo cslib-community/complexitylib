@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 import CslibFrontier.Foundations.Data.Nat.Doubling
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Bitwise
@@ -31,7 +32,9 @@ no bound.
 The instances are unary multiplication, truncated subtraction, quotient, remainder, minimum and
 maximum, the comparisons `<`, `≤` and `=`, and the conversion from unary to binary, stated for
 functions computed in logarithmic space from a common input; all but the conversion are
-registered with `fun_prop`.
+registered with `fun_prop`. Counting the digits of the binary form gives the binary length
+`Nat.size` and `⌊log₂⌋` of a unary number, and the length of a bit word in unary is a
+finite-state transduction.
 
 ## Main definitions
 
@@ -46,6 +49,8 @@ registered with `fun_prop`.
 * `Turing.CounterProgram.Unary.computableInLogSpace_lt`: comparing two such functions.
 * `Turing.MultiTapeTM.ComputableInLogSpace.unaryMul`, `.unarySub`, `.unaryDiv`, `.unaryMod`,
   `.unaryMin`, `.unaryMax`, `.unaryLt`, `.unaryLe`, `.unaryEq`, `.unaryToBinary`: the instances.
+* `Turing.MultiTapeTM.ComputableInLogSpace.bitsLength`, `.unarySize`, `.unaryLog2`: lengths and
+  logarithms in unary.
 
 ## References
 
@@ -372,5 +377,26 @@ theorem unaryToBinary {f : γ → ℕ} (hf : ComputableInLogSpace f encIn encUna
     ComputableInLogSpace f encIn encNat :=
   (computableInLogSpace_binary (F := fun a _ => a) (reg 0) 1 (fun _ _ => rfl)
     fun a b => by simp only [pow_one]; omega).comp' (pair hf (ComputableInLogSpace.const 0))
+
+/-- **The length of a bit word, in unary**, by a finite-state transducer that replaces every bit by
+`true`. -/
+theorem bitsLength : ComputableInLogSpace List.length encBits encUnary :=
+  (bitsMap fun _ => true).congr fun x => by
+    simp only [encUnary_apply, encBits_apply, List.map_const']
+
+/-- **The binary length of a unary number**, in unary: convert it to binary and count the
+digits. -/
+@[fun_prop]
+theorem unarySize {f : γ → ℕ} (hf : ComputableInLogSpace f encIn encUnary) :
+    ComputableInLogSpace (fun a => (f a).size) encIn encUnary :=
+  (bitsLength.comp ((of_eq (encIn := encNat) (encMid := encBits) (f := Nat.bits)
+    fun _ => rfl).comp (unaryToBinary hf))).congr fun a => by
+      simp only [Function.comp_apply, encUnary_apply, Nat.size_eq_bits_len]
+
+/-- **`⌊log₂⌋` of a unary number**, in unary: one less than its binary length. -/
+@[fun_prop]
+theorem unaryLog2 {f : γ → ℕ} (hf : ComputableInLogSpace f encIn encUnary) :
+    ComputableInLogSpace (fun a => Nat.log2 (f a)) encIn encUnary :=
+  (unarySub (unarySize hf) (const 1)).congr_fun fun _ => Nat.log2_eq_size_sub_one _
 
 end Turing.MultiTapeTM.ComputableInLogSpace
