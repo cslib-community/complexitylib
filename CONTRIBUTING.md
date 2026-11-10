@@ -192,6 +192,12 @@ also loads private information, so such edits do reach its clients.
 - Ordinary imports cannot name private declarations. When privatizing, update the tests and
   results inventory entries that name them in the same PR, or give a companion module
   `import all`.
+- **Before reaching for `import all`.** Prefer a public lemma, such as an equation lemma for an
+  unexposed definition, or `@[expose]` on the one definition whose body importers unfold. An
+  exposed body is interface, so editing it rebuilds every importer; through `import all`, private
+  and body edits rebuild only that client. Each remaining `import all` states its reason in one
+  sentence, in the importer's module docstring or a comment beside the import, naming the private
+  lemmas or unexposed bodies it reads.
 - For an audit, `python3 scripts/audit_queries.py references PREFIX` lists where each declaration
   under a source path is referenced, and `duplicates` lists declarations with alpha-equivalent
   statements in different modules. Uses through `rfl`, `decide`, simp sets or instances leave no
