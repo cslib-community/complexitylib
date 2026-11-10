@@ -64,9 +64,8 @@ noncomputable def encFiniteCfg : FiniteCfg k Bool State ↪ List Bool where
       (encPair encUnary (encPair (encPi (encBiTape encBool)) encBits)))
       (cfg.input, cfg.state, cfg.inputPos.val, cfg.workTapes, cfg.output) := rfl
 
-/-- Store the pending request and the complete answer tape of every channel, in a fixed order.
-`encFiniteConfig` and its simp lemma `encFiniteConfig_apply` keep this encoding spelled out, as
-the length computations of their clients rewrite with that form. -/
+/-- The oracle channels of a configuration, as a table in `Fintype.equivFin` order of the oracles.
+Each entry is a pair: the framed pending request word, then the complete answer tape. -/
 noncomputable abbrev encChannels {Oracle : Type} [Fintype Oracle] :
     (Oracle → List Bool × BiTape Bool) ↪ List Bool :=
   encPi (encPair encBits (encBiTape encBool))

@@ -66,7 +66,7 @@ example : ComputableInPolyTime
 example : ComputableInPolyTime
     (fun pair : (Bool → List Bool) × Bool =>
       Function.update pair.1 pair.2 (pair.1 pair.2).reverse)
-    (encPair (encPi encBits) encBool) (encPi encBits) := by fun_prop
+    (encPair (encPi encBits) encBool) (encPi encBits) := by polytime
 
 -- Naming the shared tuple gives the same program certificate.
 example : ComputableInPolyTime

@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 
 /-!
 # Decoding finite configurations in polynomial time
@@ -333,12 +334,13 @@ theorem decodeTapes (k : ℕ) :
     ComputableInPolyTime (MultiTapeTM.decodeTapes k) encBits (encPi (encBiTape encBool)) :=
   pi fun _ => decodeBiTape.comp (unframe.comp (dropFrame_iterate _))
 
-/-- The smaller of two computed unary naturals, as `a - (a - b)`. -/
+/-- The smaller of two computed unary naturals, from the degree certificate
+`Turing.MultiTapeTM.ComputableInDegree.unary_min`. -/
 private theorem unary_min' {left right : List Bool → ℕ}
     (hleft : ComputableInPolyTime left encBits encUnary)
     (hright : ComputableInPolyTime right encBits encUnary) :
-    ComputableInPolyTime (fun word => min (left word) (right word)) encBits encUnary := by
-  simpa only [Nat.sub_sub_eq_min] using unary_sub' hleft (unary_sub' hleft hright)
+    ComputableInPolyTime (fun word => min (left word) (right word)) encBits encUnary :=
+  ComputableInDegree.unary_min.computableInPolyTime.comp (hleft.prod hright)
 
 variable {k : ℕ} {State : Type} [Finite State]
 
