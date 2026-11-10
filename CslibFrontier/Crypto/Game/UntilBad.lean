@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.UntilBad
+public import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 
@@ -40,7 +41,9 @@ resulting `μ.bind` acceptance-probability difference and `Game.advantage` by `Q
 
 ## Main results
 
-* `Cslib.OracleComp.IdenticalUntilBad.advantage_le`: the advantage of an identical-until-bad hop.
+* `Cslib.OracleComp.IdenticalUntilBad.advantage_le`,
+  `Cslib.ProbOracleComp.IdenticalUntilBad.advantage_le`: the advantage of an identical-until-bad
+  hop (for `OracleComp` and `ProbOracleComp.runWith`).
 * `Cslib.Crypto.Game.runStatelessOracle_pure`,
   `Cslib.Crypto.Game.runStatelessOracle_query_inl`,
   `Cslib.Crypto.Game.runStatelessOracle_query_inr`,
@@ -83,6 +86,25 @@ theorem advantage_le (h : IdenticalUntilBad first second bad) (program : OracleC
     h.abs_sub_le program s next true
 
 end Cslib.OracleComp.IdenticalUntilBad
+
+namespace Cslib.ProbOracleComp.IdenticalUntilBad
+
+open Crypto
+
+variable {Query State α : Type} {spec : Query → Type}
+  {first second : (q : Query) → StateT State PMF (spec q)} {bad : State → Prop}
+
+/-- **The difference lemma** ([BonehShoup2023], Theorem 4.7) for `ProbOracleComp.runWith`: games
+that run a randomized oracle program against external handlers agreeing until `bad`, followed by the
+same final step `next`, have distinguishing advantage at most the probability of reaching `bad`. -/
+theorem advantage_le (h : ProbOracleComp.IdenticalUntilBad first second bad)
+    (program : ProbOracleComp spec α) (s : State) (next : α × State → Game) :
+    (Game.advantage ((ProbOracleComp.runWith first program s).bind next)
+        ((ProbOracleComp.runWith second program s).bind next) : ℝ) ≤
+      ((ProbOracleComp.runWith first program s).toOuterMeasure {x | bad x.2}).toReal :=
+  OracleComp.IdenticalUntilBad.advantage_le h program s next
+
+end Cslib.ProbOracleComp.IdenticalUntilBad
 
 namespace Cslib.Crypto.Game
 
