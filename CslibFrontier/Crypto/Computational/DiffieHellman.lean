@@ -65,6 +65,9 @@ assumptions are hypotheses, not theorems.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhRealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhIdealGame`, `Cslib.Crypto.PrimeOrderGroupFamily.DDH`:
   the real and ideal Decisional Diffie–Hellman experiments and assumption.
+* `Cslib.Crypto.PrimeOrderGroupFamily.encDDHTuple`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.encDDHInput`: the encodings of a DDH tuple `(u, v, w)` and
+  of a DDH distinguisher's input `(1ⁿ, d, u, v, w)`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.cdhToDDHDistinguisher`: the reduction from CDH to DDH.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomize`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeLaw`,

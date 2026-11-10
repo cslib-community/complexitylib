@@ -328,17 +328,13 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
     (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
     (hADA : adAdversary.IsPPT encBits)
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn
-      (encPair encUnary (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool
+    IsPPTOn schnorrGroups.encDDHInput encBool
       (fun p =>
         schnorrGroups.cramerShoupADToDDHDistinguisher encBits H isElem adAdversary bit p.1 p.2) ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p =>
         schnorrGroups.cramerShoupADToCollisionFinder encBits H isElem adAdversary bit p.1 p.2) ∧
-    IsPPTOn
-      (encPair encUnary (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool
+    IsPPTOn schnorrGroups.encDDHInput encBool
       (fun p => schnorrGroups.cramerShoupToDDHDistinguisher H isElem adversary bit p.1 p.2) ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p => schnorrGroups.cramerShoupToCollisionFinder H isElem adversary bit p.1 p.2) ∧

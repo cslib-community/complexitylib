@@ -47,8 +47,7 @@ private def ddhZeroDistinguisher (F : PrimeOrderGroupFamily) (_n : ℕ)
   pure (decide (input.2.2.2 = F.smul (input.1, 0, F.encode input.1 (F.generator input.1))))
 
 private theorem isPPTOn_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => ddhZeroDistinguisher F input.1 input.2) := by
+    IsPPTOn F.encDDHInput encBool (fun input => ddhZeroDistinguisher F input.1 input.2) := by
   let EIn := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   have hd : ComputableInPolyTime
       (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool => input.2.1) EIn F.encDesc := by

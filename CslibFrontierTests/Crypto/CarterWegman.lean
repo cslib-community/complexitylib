@@ -436,7 +436,7 @@ def twoQueryNonceMACForger : NonceMACForger :=
 
 /-- `twoQueryNonceMACForger` is uniformly strict oracle-PPT. -/
 theorem isOraclePPT_twoQueryNonceMACForger :
-    IsOraclePPT (encPair (encPair encBits encBits) encBits) twoQueryNonceMACForger := by
+    IsOraclePPT encNonceTaggedMessage twoQueryNonceMACForger := by
   have hq0 : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool =>
         List.take p.1 <$>
