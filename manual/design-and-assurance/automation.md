@@ -147,6 +147,14 @@ fields such as `S.encrypt_ppt`, an admissibility hypothesis `hA` its stage certi
 that does not occur in the goal is an error. The checked
 [client](../../CslibFrontierTests/OraclePPTTactic.lean) shows each step.
 
+When either tactic fails without a timeout, its error can name one subterm that a compositional
+attempt could not certify. Both tactics decide once per file which imported rules plain search
+may use, so only the first call in a file pays for that; a heartbeat budget on one call covers it
+only if that proof is elaborated first. `[local irreducible]` on an imported definition that is
+not `Prop`-valued, such as an encoding, makes each call in its scope decide again: slower, with
+the same results. The [checked controls](../../CslibFrontierTests/PolyTimeRuleClassCache.lean)
+cover local registrations and both reducibility cases.
+
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
 ## Rewrite option matches before resource automation
@@ -309,6 +317,46 @@ inspect its bounds, supply missing arithmetic facts or name a local encoding lem
 lemma reports the underlying name-resolution error; check its spelling, namespace and import.
 The tactic neither invents a growth bound nor searches for an encoding definition to unfold.
 
+## Close negligibility bounds
+
+Asymptotic security theorems finish by showing that a concrete advantage or failure bound is
+`Cslib.Crypto.Negligible`. Import `CslibFrontier.Tactic.Negligible` and close such a goal with
+`negligible`, `negligible using hle` or `negligible eventually hle` instead of restating a real
+upper bound as an `ℝ≥0` mirror expression and threading `negligible_of_le`, `NNReal.coe_*` and
+`Pi.add_apply` by hand. The [checked clients](../../CslibFrontierTests/NegligibleTactic.lean) cover
+dyadic reciprocals, polynomial and birthday numerators, parameter shifts and scalings, square roots,
+geometric terms, range sums, local `let` definitions, unary `ComputableInPolyTime` certificates,
+`ℝ≥0` and `ℝ` upper bounds, and failure diagnostics. To check them, run
+`lake build CslibFrontierTests.NegligibleTactic --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md).
+
+Plain `negligible` normalizes pointwise `Pi` operations, unit fractions `1 / x` and natural-number
+casts, derives `PolynomiallyBounded` facts from local `ℕ → ℕ` `let` bindings and unary
+`ComputableInPolyTime f encUnary encUnary` hypotheses in context, and runs `fun_prop` with
+`norm_num`, `positivity` and `omega` on side conditions. Through the closure rules in
+`CslibFrontier.Crypto.Negligible.Dyadic`, it handles `((2 : ℝ≥0) ^ n)⁻¹`, `(1 : ℝ≥0) / 2 ^ n`,
+polynomial and birthday ratios such as `(Q n : ℝ≥0) ^ 2 / (2 * 2 ^ n)` and
+`((Q n).choose 2 : ℝ≥0) / 2 ^ n`, constant scaling and division, `NNReal.sqrt`, geometric powers
+`ratio ^ n` with `ratio < 1`, parameter schedules (`ε (n + c)`, `ε (c + n)`, `ε (c * n)` and
+`ε (n / c)` for `0 < c`), and uniform `Finset.range (Q n)` sums.
+
+When the quantitative step gives an inequality rather than a syntactic expression in the goal, pass
+it directly with `negligible using hle` for a pointwise bound `∀ n, …` or
+`negligible eventually hle` for an asymptotic bound `∀ᶠ n in Filter.atTop, …`. Both forms accept
+bounds in `ℝ≥0` (`f n ≤ B n`) and in `ℝ` (`(f n : ℝ) ≤ B n`, including `.toReal` bounds on
+`Game.succProbability`). On a real bound, the tactic applies `negligible_of_coe_le` or
+`negligible_of_eventually_coe_le` and pushes `Real.toNNReal` structurally across sums, products,
+quotients, reciprocals, natural powers, `Real.sqrt`, `Finset.sum` and casts before invoking
+`fun_prop`.
+
+If the target is not `Cslib.Crypto.Negligible f`, the diagnostic reports the unexpected goal. If
+`using` or `eventually` cannot match `hle` as an `ℝ≥0` or `ℝ` upper bound on `f`, it reports the
+expected inequality shape. If `fun_prop` cannot discharge the resulting `ℝ≥0` bound, the diagnostic
+displays the normalized residual `Negligible` goal; supply the missing `Negligible` or
+`PolynomiallyBounded` fact in context, or bound an indexed sum first with
+`Negligible.sum_range_of_le`. The tactic discharges asymptotic decay from a proved quantitative
+bound; it does not perform game hops or probability rewrites itself.
+
 ## Close word-size bounds
 
 Word-RAM instructions need a fitting condition `Fits w v`, which unfolds to `v < 2 ^ w`, for
@@ -360,6 +408,65 @@ toward the front of their chains anywhere in the goal, or in a hypothesis with `
 it with `congr 1 with x : 1`. A sample whose distribution mentions an earlier sample never moves
 past it; the diagnostic lists the samples of both sides and marks those dependencies. The
 [checked clients](../../CslibFrontierTests/PMFSwap.lean) cover each form and diagnostic.
+
+## Step game hops and align shared random draws
+
+Import `CslibFrontier.Tactic.GameHop` to step cryptographic hybrid arguments without repeating
+`Game.advantage_triangle`, `Game.advantage_comm`, `NNReal.coe_le_coe`, or nested
+`Game.advantage_bind_le_of_support` boilerplate. Both tactics keep intermediate games and variable
+couplings explicit in the proof script and perform no backtracking search. The complete
+[checked clients](../../CslibFrontierTests/GameHopTactic.lean) exercise every supported goal shape
+and pin the user-facing error for each rejected input they cover; run
+`lake build CslibFrontierTests.GameHopTactic --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md). Representative library proofs using them include the
+[Cramer–Shoup 1CCA hops](../../CslibFrontier/Crypto/Computational/CramerShoup.lean),
+[Cramer–Shoup adaptive rejection](../../CslibFrontier/Crypto/Computational/CramerShoup/Scheme.lean),
+and
+[Naor–Reingold security](../../CslibFrontier/Crypto/Computational/NaorReingold/Security.lean).
+
+Use `game_trans [g₁, g₂, ...]` (or `game_trans g₁, g₂, ...`) on goals of the form
+`Game.advantage G₀ Gₖ ≤ B` (`ℝ≥0`), `(Game.advantage G₀ Gₖ : ℝ) ≤ B` (`ℝ`),
+`Encryption.advantage exp n ≤ B`, `Game.succProbability G₀ ≤ Game.succProbability Gₖ + B` (in
+`ℝ≥0` or `ℝ`, in either addition order), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop subgoal
+per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
+`using [h₀, h₁, ...]` discharges hops directly (use `_` to leave a hop open for tactic proof),
+automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, lifting `ℝ≥0`
+advantage bounds into `ℝ`, turning game equalities `A = B` or `B = A` into zero error, and closing
+a fully instantiated sum bound when it holds by `rfl`, associativity/commutativity of `+` (with
+zeros), or `ring`. With no intermediate list, `game_trans` unfolds `Encryption.advantage` or
+reduces a `Game.succProbability` difference bound to `Game.advantage`, and `game_trans using [h]`
+closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
+`CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
+to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
+[Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).
+
+Use `peel_binds` (or `peel_binds x₁ x₂ ...`) on `Game.advantage`, `Encryption.advantage`,
+`CloseTo`, or `PMF` equality goals. It first normalizes outer `ProbComp.eval` monadic binds,
+`PMF` monad notation, and left-nested `PMF.bind_bind` at the root without unfolding named
+experiment definitions, then peels shared leading `PMF.bind` and `Game.runStatelessOracle` stages.
+Each peeled stage introduces the draw `xᵢ` and its support witness `xᵢ_mem : xᵢ ∈ μ.support`
+(`_` names the draw `x` and leaves the witness inaccessible). When the two leading distributions are not definitionally equal,
+`peel_binds` checks whether either side's second stage is independent of its first and matches the
+opposite leading stage, applying one `PMF.bind_comm`, `Game.bind_runStatelessOracle_comm`, or
+`Game.runStatelessOracle_comm` swap automatically before peeling. Omitting binder names peels all
+shared leading stages and retains the existing lambda binder names.
+
+Intermediate hybrid games and multi-step couplings across identical distributions (such as
+reordering uniform draws over `ZMod q`) remain explicit choices: `peel_binds` couples identical
+leading distributions in place rather than guessing from bound variable names, so unfold named game
+wrappers and perform any deeper `PMF.bind_comm` / `Game.advantage_bind_comm` reordering before
+peeling. For a `PMF.bind` chain, `pmf_hoist q` from
+[Reorder independent samples](#reorder-independent-samples) moves the samples of `q` to the front
+first. When a trailing sum bound needs cast rewriting or monotonicity (such as `push_cast; ring`
+or `gcongr`), `game_trans` leaves that single ground inequality open.
+
+If `peel_binds` reports that leading stages do not match and cannot be aligned by a single
+independent swap, check whether an inner draw mentions the outer binder or lies more than one stage
+deep, or apply a distribution-replacement lemma (such as modular-sampling or until-bad bounds)
+before peeling the remaining prefix. If `game_trans` reports a `using` count mismatch, check that
+`m` intermediate items are paired with `m + 1` hop proofs (using `_` for hops proved
+interactively); if it reports that a hop proof's type does not match the expected hop, verify the
+intermediate game list order and parameter arguments.
 
 ## Step through counter programs
 

@@ -24,7 +24,7 @@ The loop invariant uses Mathlib's existing `Finset.piecewise` for the updated me
 The source list and child values are preserved by the concrete block separations.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

@@ -40,7 +40,7 @@ open BitString
 variable {n w : ℕ}
 
 /-- Put an ordinary word into carry-save form, with a shared false gate for the second word. -/
-def pairWithZero (C : Circuit signature n w) : Circuit signature n (w + w) :=
+@[expose] def pairWithZero (C : Circuit signature n w) : Circuit signature n (w + w) :=
   C.append ((Circuit.wiring signature (fun _ : Fin w => (0 : Fin 1))).comp
     (Circuit.oneGate (.const false) Fin.elim0))
 
@@ -69,7 +69,8 @@ theorem depth_pairWithZero_le (C : Circuit signature n w) :
   exact (Circuit.depth_comp_le _ _).trans (by simp)
 
 /-- Finish a balanced carry-save sum as one unsigned modular word. -/
-def sumPairs (n w : ℕ) (cs : List (Circuit signature n (w + w))) : Circuit signature n w :=
+@[expose] def sumPairs (n w : ℕ) (cs : List (Circuit signature n (w + w))) :
+    Circuit signature n w :=
   (carryLookaheadAdd w).comp (reducePairs n w cs)
 
 /-- Finishing a carry-save word computes its value modulo `2 ^ w`. -/

@@ -32,7 +32,7 @@ No higher computability calculus is used in their proofs.
 Uses cslib's constant and copy machines and the independent degree bounds of this library.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInDegree
 

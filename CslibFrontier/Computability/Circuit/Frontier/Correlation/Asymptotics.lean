@@ -45,7 +45,7 @@ halfway between `1` and the coefficient `L` of the worst-case frontier lower bou
   `2^{-γ n}` for every `γ < (c* - c)/(2L)`, for a sublinear deficiency.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

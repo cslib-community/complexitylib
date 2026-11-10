@@ -331,15 +331,6 @@ theorem active_numbers (ha : active x = true) (hM : x.edges ≤ x.scale) :
           Nat.pow_le_pow_right (by norm_num) (by omega)
       _ ≤ 4 * x.scale := by rw [pow_succ]; omega
 
-/-- The exponent tuple of a child of an active call is a tuple of weight below its node's
-precision. -/
-theorem mem_budgetTuples_of_mem_children {c : ChildCursor.State} (hc : c ∈ children x) :
-    c.2.2.1 ∈ BudgetTuples.budgetTuples (weights x c.1) (nodePrec x c.1) := by
-  simp only [children, ChildCursor.cursorList, ChildCursor.nodeBlock, ChildCursor.pointBlock,
-    ChildCursor.groupBlock, List.mem_flatMap, List.mem_range, List.mem_map] at hc
-  obtain ⟨j, -, i, -, β, hβ, g, -, rfl⟩ := hc
-  exact hβ
-
 /-- **The frames of an active call** with at most `m` edges at scale `m` have encoded length at
 most `64 (B + 1) ^ 3` for `B = frameBound x`. -/
 theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.scale)
@@ -394,14 +385,15 @@ theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.sc
     omega
   refine length_encFrame_le (N := wide x) (fl := x.fl) (fun s hs => ?_) hpre.1 hstored ?_
     (Nat.le_add_left _ _)
-  · have hsm : s ∈ children x := List.mem_of_getElem? hs
-    obtain ⟨hj1, hi1, hg1⟩ := lt_of_mem_children hsm
-    have hβ := mem_budgetTuples_of_mem_children hsm
+  · obtain ⟨j, i, β, g⟩ := s
+    obtain ⟨hj1, hi1, hβ, hg1⟩ := mem_children.mp (List.mem_of_getElem? hs)
     have hlen := ((BudgetTuples.mem_budgetTuples (weights_pos _)).mp hβ).1
-    obtain ⟨hpj, hlj⟩ := hj s.1
+    obtain ⟨hpj, hlj⟩ := hj j
+    -- reduce the projections of `(j, i, β, g)` in the goal, which `omega` does not see through
+    dsimp only
     refine ⟨by omega, by omega, ?_, fun b hb => ?_, by omega⟩
     · rw [hlen, weights, NativeChild.modeWeights, List.length_map, List.length_range]
-      have h1 : (packing x).2.1 * (2 ^ (level x ((nodes x).getD s.1 0) + 1) * nodePrec x s.1) ≤
+      have h1 : (packing x).2.1 * (2 ^ (level x ((nodes x).getD j 0) + 1) * nodePrec x j) ≤
           m ^ 2 * (4 * m * (p + 40 * m ^ 2)) :=
         Nat.mul_le_mul hP (Nat.mul_le_mul hlj hpj)
       have h2 : m ^ 2 * (4 * m * (p + 40 * m ^ 2)) = 4 * (m ^ 3 * p) + 160 * m ^ 5 := by ring

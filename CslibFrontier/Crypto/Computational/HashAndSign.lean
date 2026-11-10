@@ -336,21 +336,21 @@ private theorem isOraclePPTOn_hashSigningHandler
   let ECaller := encPair (encPair encUnary encBits) encBits
   let EReq := encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)
   let EIn := encPair ECaller EReq
-  have hc := ComputableTidilyInPolyTime.fst ECaller EReq
-  have hr := ComputableTidilyInPolyTime.snd ECaller EReq
+  have hc := ComputableInPolyTime.fst ECaller EReq
+  have hr := ComputableInPolyTime.snd ECaller EReq
   have hn := hc.fst'.fst'
   have hs := hc.snd'
   have hmsg := hr.fst'.snd'
-  have hdigest := hH.tidy.comp (hs.prod hmsg)
-  have hbn := hboundPoly.tidy.comp hn
-  have hq := IsOraclePPTOn.query_take (input := EIn) () hdigest hbn
-  have hpost : ComputableTidilyInPolyTime
+  have hdigest := hH.comp' (hs.prod hmsg)
+  have hbn := hboundPoly.comp' hn
+  have hq := IsOraclePPTOn.query_take' (input := EIn) () hdigest hbn
+  have hpost : ComputableInPolyTime
       (fun r : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
         (r.2, ()))
       (encPair EIn encBits) (encPair encBits (encFinEnum Unit)) :=
-    (ComputableTidilyInPolyTime.snd EIn encBits).prod (ComputableTidilyInPolyTime.const ())
+    (ComputableInPolyTime.snd EIn encBits).prod (ComputableInPolyTime.const ())
   unfold hashSigningHandler
-  simpa [bind_pure_comp] using hq.map_with
+  simpa [bind_pure_comp] using hq.map_with'
     (f := fun (_ : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) sig => (sig, ()))
     hpost
 
@@ -605,16 +605,16 @@ theorem isOraclePPT_fixedCollisionForger {bound : ℕ → ℕ}
   change IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) (encPair encBits encBits)
     (fun p : ℕ × List Bool => fixedCollisionForger bound m₀ m₁ p.1 p.2)
   let EIn := encPair encUnary encBits
-  have hbn := hboundPoly.tidy.comp (ComputableTidilyInPolyTime.fst encUnary encBits)
-  have hmsg : ComputableTidilyInPolyTime (fun _ : ℕ × List Bool => m₀) EIn encBits :=
-    ComputableTidilyInPolyTime.const m₀
-  have hq := IsOraclePPTOn.query_take (input := EIn) () hmsg hbn
-  have hpost : ComputableTidilyInPolyTime
+  have hbn := hboundPoly.comp' (ComputableInPolyTime.fst encUnary encBits)
+  have hmsg : ComputableInPolyTime (fun _ : ℕ × List Bool => m₀) EIn encBits :=
+    ComputableInPolyTime.const m₀
+  have hq := IsOraclePPTOn.query_take' (input := EIn) () hmsg hbn
+  have hpost : ComputableInPolyTime
       (fun r : (ℕ × List Bool) × List Bool => (m₁, r.2))
       (encPair EIn encBits) (encPair encBits encBits) :=
-    (ComputableTidilyInPolyTime.const m₁).prod (ComputableTidilyInPolyTime.snd EIn encBits)
+    (ComputableInPolyTime.const m₁).prod (ComputableInPolyTime.snd EIn encBits)
   unfold fixedCollisionForger
-  simpa [bind_pure_comp] using hq.map_with (f := fun (_ : ℕ × List Bool) sig => (m₁, sig)) hpost
+  simpa [bind_pure_comp] using hq.map_with' (f := fun (_ : ℕ × List Bool) sig => (m₁, sig)) hpost
 
 /-- If `m₀ ≠ m₁` collide under every hash key (`∀ s, H s m₀ = H s m₁`) and `bound n` upper-bounds
 the length of valid `S`-signatures, `fixedCollisionForger bound m₀ m₁` wins

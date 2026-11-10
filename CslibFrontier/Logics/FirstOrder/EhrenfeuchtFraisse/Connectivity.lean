@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Data.Finset.Sort
 
 /-!
@@ -126,9 +127,9 @@ variable [Language.order.Structure M] [Language.order.OrderedStructure M]
 @[simp]
 theorem realize_stepTwoArcFormula (v : α → M) (x y : α) :
     (stepTwoArcFormula x y).Realize v ↔ StepTwoArc M (v x) (v y) := by
-  simp only [stepTwoArcFormula, Formula.realize_sup, Formula.realize_inf,
-    realize_twoAboveFormula, realize_isTopFormula, realize_isSecondFormula,
-    realize_isPenultimateFormula, realize_isBotFormula, stepTwoArc_iff, or_assoc]
+  fo_simp [stepTwoArcFormula, realize_twoAboveFormula, realize_isTopFormula,
+    realize_isSecondFormula, realize_isPenultimateFormula, realize_isBotFormula, stepTwoArc_iff,
+    or_assoc]
 
 end Realize
 
