@@ -533,17 +533,11 @@ theorem lookupCode_exec {w base M : ℕ} {Z : Fin (2 ^ M) → Fin (2 ^ M)} {x : 
     (lookupData x).regs regOut = (Z idx).val ∧
     (lookupData x).regs regBase = base ∧
     (lookupData x).mem = x.mem := by
-  set d1 := x.set regT1 (base + idx.val)
-  have s1 : Exec w (.op (.exactBin .add regT1 regBase regIdx) : Code .exact 6) x d1 1 :=
-    exec_exactBin (by simp [hbase, hidx]) (by fits)
-  have s2 : Exec w (.op (.load regOut regT1) : Code .exact 6) d1
-      (d1.set regOut (x.mem (base + idx.val))) 1 := by
-    simpa [d1] using (Exec.load (B := .exact) (w := w) (d := regOut) (a := regT1) (x := d1))
-  have hd : d1.set regOut (x.mem (base + idx.val)) = lookupData x := by
-    simp [d1, lookupData, hbase, hidx]
-  rw [hd] at s2
-  refine ⟨s1.seq s2, ?_, by simp [lookupData, hbase, regBase, regT1, regOut], rfl⟩
-  simp [lookupData, hbase, hidx, hrep idx]
+  refine ⟨?_, by simp [lookupData, hbase, hidx, hrep idx],
+    by simp [lookupData, hbase, regBase, regT1, regOut], rfl⟩
+  unfold lookupCode lookupData
+  wram_exec [hbase, hidx]
+  simp only [hbase, hidx]
 
 /-- Structured Word-RAM program that computes `regOut ← regOut ^^^ Z[regIdx]` in `3` deterministic
 instructions (computing `f(u) ^^^ Z[g(u)]` when `regOut` holds `f(u)` and `regIdx` holds
@@ -572,23 +566,12 @@ theorem xorLookupCode_exec {w base M : ℕ} {Z : Fin (2 ^ M) → Fin (2 ^ M)} {x
     (xorLookupData x).regs regBase = base ∧
     (xorLookupData x).mem = x.mem := by
   have hxor_lt : fx.val ^^^ (Z idx).val < 2 ^ M := Nat.xor_lt_two_pow fx.isLt (Z idx).isLt
-  set d1 := x.set regT1 (base + idx.val)
-  have s1 : Exec w (.op (.exactBin .add regT1 regBase regIdx) : Code .exact 6) x d1 1 :=
-    exec_exactBin (by simp [hbase, hidx]) (by fits)
-  set d2 := d1.set regT2 (Z idx).val
-  have s2 : Exec w (.op (.load regT2 regT1) : Code .exact 6) d1 d2 1 := by
-    simpa [d1, d2, hrep idx] using
-      (Exec.load (B := .exact) (w := w) (d := regT2) (a := regT1) (x := d1))
-  set d3 := d2.set regOut (fx.val ^^^ (Z idx).val)
-  have s3 : Exec w (.op (.exactBin .xor regOut regOut regT2) : Code .exact 6) d2 d3 1 :=
-    exec_exactBin (by simp [d2, d1, hfx, regOut, regT1, regT2]) (by fits)
-  have hd3 : d3 = xorLookupData x := by
-    simp [d3, d2, d1, xorLookupData, hbase, hidx, hfx, hrep idx]
-  rw [hd3] at s3
-  refine ⟨s1.seq (s2.seq s3), ?_, ?_,
+  refine ⟨?_, by simp [xorLookupData, hbase, hidx, hfx, hrep idx],
+    by simpa [xorLookupData, hbase, hidx, hfx, hrep idx] using hxor_lt,
     by simp [xorLookupData, hbase, regBase, regT1, regT2, regOut], rfl⟩
-  · simp [xorLookupData, hbase, hidx, hfx, hrep idx]
-  · simpa [xorLookupData, hbase, hidx, hfx, hrep idx] using hxor_lt
+  unfold xorLookupCode xorLookupData
+  wram_exec [hbase, hidx, hfx, hrep idx]
+  simp only [hbase, hidx, hfx, hrep idx]
 
 end RandomTable
 
@@ -1183,7 +1166,7 @@ theorem tabLoop_exec {w base b d M : ℕ} {T : Fin (d * 2 ^ b) → Fin (2 ^ M)} 
     have hc : (Cond.lt regPtr regEnd).Holds d0 := by
       simp only [Cond.Holds, hptr, hend]
       omega
-    set ch := u &&& (2 ^ b - 1)
+    set ch := u &&& (2 ^ b - 1) with hch
     have hch_lt : ch < 2 ^ b := by
       dsimp only [ch]
       rw [Nat.and_two_pow_sub_one_eq_mod]
@@ -1209,44 +1192,22 @@ theorem tabLoop_exec {w base b d M : ℕ} {T : Fin (d * 2 ^ b) → Fin (2 ^ M)} 
     have hfit_next : Fits w (base + 4 + j * 2 ^ b + 2 ^ b) := by
       have : (j + 1) * 2 ^ b ≤ d * 2 ^ b := Nat.mul_le_mul_right (2 ^ b) (by omega)
       exact hfit_space.of_le (by simp [spaceFromB]; omega)
-    set s1 := d0.set regTmp ch
-    have e1 : Exec w (.op (.exactBin .and regTmp regKey regMaskB) : Code .exact 9) d0 s1 1 :=
-      exec_exactBin (by simp [hkey, hmaskB, ch]) hfit_ch
-    set s2 := s1.set regTmp (base + 4 + j * 2 ^ b + ch)
-    have e2 : Exec w (.op (.exactBin .add regTmp regPtr regTmp) : Code .exact 9) s1 s2 1 :=
-      exec_exactBin (by simp +decide [s1, hptr]) hfit_addr
-    set s3 := s2.set regTmp entry
-    have e3 : Exec w (.op (.load regTmp regTmp) : Code .exact 9) s2 s3 1 := by
-      simpa +decide [s3, s2, s1, hentry_mem] using
-        (Exec.load (B := .exact) (w := w) (d := regTmp) (a := regTmp) (x := s2))
-    set s4 := s3.set regOut newAcc.val
-    have e4 : Exec w (.op (.exactBin .xor regOut regOut regTmp) : Code .exact 9) s3 s4 1 :=
-      exec_exactBin (by simp +decide [s3, s2, s1, hout, newAcc]) (by fits)
-    set s5 := s4.set regKey (u >>> b)
-    have e5 : Exec w (.op (.exactBin .shiftRight regKey regKey regB) : Code .exact 9) s4 s5 1 :=
-      exec_exactBin (by simp +decide [s4, s3, s2, s1, hkey, hb]) hfit_shr
-    set s6 := s5.set regPtr (base + 4 + j * 2 ^ b + 2 ^ b)
-    have e6 : Exec w (.op (.exactBin .add regPtr regPtr regPowB) : Code .exact 9) s5 s6 1 :=
-      exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, hptr, hpowB]) hfit_next
-    have hbody := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq e6))))
-    obtain ⟨y, hrec, hy_out, hy_base, hy_mem⟩ :=
-      ih (j + 1) (u >>> b) newAcc s6 (by omega) hmem
-        (by simp +decide [s6, s5, s4, s3, s2, s1, hbase])
-        (by simp +decide [s6, hnext_eq])
-        (by simp +decide [s6, s5, s4, s3, s2, s1, hend])
-        (by simp +decide [s6, s5, s4, s3, s2, s1, hb])
-        (by simp +decide [s6, s5, s4, s3, s2, s1, hpowB])
-        (by simp +decide [s6, s5, s4, s3, s2, s1, hmaskB])
-        (by simp +decide [s6, s5])
-        (by simp +decide [s6, s5, s4])
-        hfit_shr
-    have hiter := Exec.loop_iter hc hbody hrec
-    refine ⟨y, ?_, ?_, hy_base, hy_mem⟩
-    · simpa only [tabLoop, tabBody,
-        show 1 + (1 + (1 + (1 + (1 + 1)))) + (8 * rem + 2) + 2 = 8 * (rem + 1) + 2 by omega]
-        using hiter
-    · rw [hy_out]
-      simp only [simpleTabAux, ch, idx, hidx_lt, ↓reduceDIte, entry, newAcc]
+    have hbody : WP.Exact w tabBody d0 fun z n => n = 6 ∧ ∃ y, Exec w tabLoop z y (8 * rem + 2) ∧
+        y.regs regOut = (simpleTabAux b d M T (rem + 1) j u acc).val ∧ y.regs regBase = base ∧
+        y.mem = x.mem := by
+      unfold tabBody
+      wram_exec [hkey, hmaskB, hptr, hout, hb, hpowB, ← hch, hentry_mem,
+        show acc.val ^^^ entry = newAcc.val from rfl]
+      exact (ih (j + 1) (u >>> b) newAcc _ (by omega) (by exact hmem) (by wram_simp [hbase])
+        (by wram_simp [hnext_eq]) (by wram_simp [hend]) (by wram_simp [hb]) (by wram_simp [hpowB])
+        (by wram_simp [hmaskB]) (by wram_simp) (by wram_simp) hfit_shr).elim
+        fun y ⟨hrec, hy_out, hy_base, hy_mem⟩ => ⟨y, hrec, hy_out.trans
+          (by simp only [simpleTabAux, ch, idx, hidx_lt, ↓reduceDIte, entry, newAcc]), hy_base,
+          hy_mem⟩
+    obtain ⟨z, n, hbd, rfl, y, hrec, hy⟩ := hbody
+    refine ⟨y, ?_, hy⟩
+    simpa only [tabLoop, show 6 + (8 * rem + 2) + 2 = 8 * (rem + 1) + 2 by omega] using
+      Exec.loop_iter hc hbd hrec
 
 /-- 7-instruction finishing suffix of `evalCode d`: loads `2 ^ M - 1` from `base + 3` and maps
 `acc` in `regOut` to `(2 * acc + 1) &&& (2 ^ M - 1)`. -/
