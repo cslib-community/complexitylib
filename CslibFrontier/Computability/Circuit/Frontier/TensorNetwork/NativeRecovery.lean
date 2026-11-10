@@ -1175,8 +1175,7 @@ theorem computableInPolyTime_geom {N J : α → ℕ} {fl c : α → List ℕ}
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hc : ComputableInPolyTime c encIn (encList encNat)) :
-    ComputableInPolyTime (fun x => geom (N x) (fl x) (J x) (c x)) encIn
-      (encList (encList encNat)) := by
+    ComputableInPolyTime (fun x => geom (N x) (fl x) (J x) (c x)) encIn encPoly := by
   have h1 := ComputableInPolyTime.fst encIn encUnary
   have h2 := ComputableInPolyTime.snd encIn encUnary
   exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hJ)
@@ -1199,7 +1198,7 @@ theorem mulGeomPow_eq_or (N : ℕ) (fl : List ℕ) (J : ℕ) (c : List ℕ) (m :
 
 /-- The encoded length of a truncated product is bounded. -/
 private theorem length_encPoly_tmul_le (N : ℕ) (fl : List ℕ) (J : ℕ) (P R : List (List ℕ)) :
-    (encList (encList encNat) (tmul N fl J P R)).length ≤
+    (encPoly (tmul N fl J P R)).length ≤
       J * (2 * (fl.length * (2 * (N + 1) + 1)) + 1) :=
   length_encPoly_le (length_tmul J P R).le fun _ hc => small_of_mem_tmul hc
 
@@ -1213,9 +1212,9 @@ theorem computableInPolyTime_mulGeomPow {N J m : α → ℕ} {fl c : α → List
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hc : ComputableInPolyTime c encIn (encList encNat))
     (hm : ComputableInPolyTime m encIn encUnary)
-    (hR : ComputableInPolyTime R encIn (encList (encList encNat))) :
+    (hR : ComputableInPolyTime R encIn encPoly) :
     ComputableInPolyTime (fun x => mulGeomPow (N x) (fl x) (J x) (c x) (m x) (R x)) encIn
-      (encList (encList encNat)) := by
+      encPoly := by
   let encS := encList (encList encNat)
   have hq := ComputableInPolyTime.fst (encPair encIn encS) encUnary
   have hx := (ComputableInPolyTime.fst encIn encS).comp hq
@@ -1241,7 +1240,7 @@ theorem computableInPolyTime_recip {N a u h k J : α → ℕ} {fl : α → List 
     (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
     (hk : ComputableInPolyTime k encIn encUnary) (hJ : ComputableInPolyTime J encIn encUnary) :
     ComputableInPolyTime (fun x => recip (N x) (fl x) (a x) (u x) (h x) (k x) (J x)) encIn
-      (encList (encList encNat)) := by
+      encPoly := by
   let encS := encList (encList encNat)
   have hq := ComputableInPolyTime.fst (encPair encIn encS) encUnary
   have hx := (ComputableInPolyTime.fst encIn encS).comp hq
@@ -1327,9 +1326,9 @@ theorem computableInPolyTime_nodeTerm {N a u h Δ k : α → ℕ} {fl : α → L
     (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
     (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
     (hΔ : ComputableInPolyTime Δ encIn encUnary)
-    (hζ : ComputableInPolyTime ζ encIn (encList (encList encNat)))
+    (hζ : ComputableInPolyTime ζ encIn encElems)
     (hk : ComputableInPolyTime k encIn encUnary)
-    (hw : ComputableInPolyTime w encIn (encList (encList encNat))) :
+    (hw : ComputableInPolyTime w encIn encElems) :
     ComputableInPolyTime (fun x => nodeTerm (N x) (fl x) (a x) (u x) (h x) (Δ x) (ζ x) (k x) (w x))
       encIn (encList encNat) := by
   have hJ := computableInPolyTime_mult ha hL hu hh hk
@@ -1364,8 +1363,8 @@ theorem computableInPolyTime_recover {p Δ a u h : α → ℕ} {fl : α → List
     (ha : ComputableInPolyTime a encIn encUnary)
     (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
     (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
-    (hζ : ComputableInPolyTime ζ encIn (encList (encList encNat)))
-    (hW : ComputableInPolyTime W encIn (encList (encList (encList encNat)))) :
+    (hζ : ComputableInPolyTime ζ encIn encElems)
+    (hW : ComputableInPolyTime W encIn (encList encElems)) :
     ComputableInPolyTime (fun x => recover (p x) (Δ x) (fl x) (a x) (u x) (h x) (ζ x) (W x))
       encIn (encList encNat) := by
   have hN := ComputableInPolyTime.unary_add' hp hΔ
@@ -1402,11 +1401,10 @@ theorem computableInPolyTime_recover {p Δ a u h : α → ℕ} {fl : α → List
 @[fun_prop]
 theorem computableInPolyTime_storeValue {W : α → List (List (List ℕ))} {k : α → ℕ}
     {y : α → List ℕ}
-    (hW : ComputableInPolyTime W encIn (encList (encList (encList encNat))))
+    (hW : ComputableInPolyTime W encIn (encList encElems))
     (hk : ComputableInPolyTime k encIn encUnary)
     (hy : ComputableInPolyTime y encIn (encList encNat)) :
-    ComputableInPolyTime (fun x => storeValue (W x) (k x) (y x)) encIn
-      (encList (encList (encList encNat))) := by
+    ComputableInPolyTime (fun x => storeValue (W x) (k x) (y x)) encIn (encList encElems) := by
   have h1 := ComputableInPolyTime.fst encIn encUnary
   have h2 := ComputableInPolyTime.snd encIn encUnary
   have hrow := (ComputableInPolyTime.listGetD (encA := encList (encList encNat)) []).comp

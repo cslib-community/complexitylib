@@ -828,7 +828,7 @@ theorem combineGroupAdd_polyTime : ComputableInPolyTime
 noncomputable abbrev groupSumBodyCertificate {evalGroupProd : α × (ℕ × List Bool) → JetRows}
     (cprod : NativeCertificate evalGroupProd (encGroupProdInput encCtx) encIntTable) :
     NativeCertificate (groupSumBody evalGroupProd)
-      (encPair (encPair encUnary encBits) (encJetAccum encCtx)) (encJetAccum encCtx) :=
+      (BooleanFold.encCallbackInput (encJetAccum encCtx)) (encJetAccum encCtx) :=
   accumStepBodyCertificate (ρ := JetRows)
     (fun p acc y => addJet p.1 p.2 acc y) combineGroupAdd_polyTime cprod
 
