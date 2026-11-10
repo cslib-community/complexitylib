@@ -1413,7 +1413,7 @@ completion epoch. These results assume neither
 an expected stopping mean nor an integrable/bounded total bill. The productivity
 envelope includes no-call decisions: a native machine that halts or diverges before
 completion generally fails it. For the constructed block selector,
-`NativeRetention.BatchUpper.exists_native_upper_controller` derives this no-call
+`NativeRetention.BatchUpper.upper_controller` derives this no-call
 extension from actual stopping and needs source productivity only on issued batches.
 The final certified-output success-event transfer and common-oracle optimum
 comparison remain separate assembly obligations.
@@ -1958,12 +1958,12 @@ interface and positive block width; original instances, histories, private words
 and unbounded replies are runtime data. This is weaker than one size-uniform
 machine reading arbitrary interface sizes, and does not compile arbitrary schedulers.
 
-`BatchAdmission.exists_native_admitted_controller` derives acceptance for every
+`BatchAdmission.admitted_controller` derives acceptance for every
 live iteration from fitting original turn/block budgets, positive cutoff allotments
 and a deadline covering those allotments. No batch validity, used-set, execution-law
 or success witness is supplied. `Aligned` identifies actual accepted source history,
 consumed labels, authenticated reply history and the joint bill/duration/provenance
-ledger. `exists_selectionOnly_controller` additionally derives the existing native
+ledger. `selectionOnly_controller` additionally derives the existing native
 `SelectionOnly` predicate at every instruction prefix from the standard original
 WSC promises and computed output provenance. Each scalar opportunity allowance now
 counts one whole block; the source
@@ -1991,39 +1991,54 @@ raw report history, rather than only its provenance union.
 
 For numerical bounds for that same controller, import
 `CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper`.
-`exists_native_stopping_controller` constructs the program and proves, at every
+`BatchPlanner.controller n width` fixes one compiled implementation, including its
+finite control type, program, context tape and proved joint feedback law. The
+admission, stopping, numerical and output APIs all refer to its `.program`;
+separate existential witnesses are not used to assert their identity.
+`stopping_controller` proves, at every
 positive-probability selected epoch before its horizon, that issued batches have
 incomplete retained coverage and no-call decisions have complete retained coverage.
 This uses the actual joint terminal law and backward propagation of receipt-prefix
 safety through native epochs; it assumes no runtime-state representation contract.
 Initial reservations and opportunity allowances must cover the entire turn horizon.
 
-`exists_native_upper_controller` consequently needs productivity and conditional
+`upper_controller` consequently needs productivity and conditional
 mean invoice envelopes only on reached, issued batches. It derives binomial
 retained-completion probability, the complete actual accrued-bill survival sum,
 the bounds $c r_a/p$ and $cu$, and finite expected bill for finite $c$ and positive $p$.
 It assumes neither integrability nor a bounded total bill. The source sampler,
 private seed and native process are the same throughout. The candidate parser
 embeds the source finite masks into the original natural row indices without
-truncating the response alphabet or hidden metadata. The final certified-output
-success bound and common-oracle optimum comparison remain to be assembled.
+truncating the response alphabet or hidden metadata.
 
 `BatchReceipts.aligned_completed_result` gives the pathwise output/deadline
 implication: actual receipt completion decodes the runtime result to its original
 family, proves the full-cover dual-weight certificate, and bounds actual source
 elapsed time by the deadline. The correlated first-cover client checks this on
-its real supported source reply. Transporting this implication to the final native
-certified-success probability is provided by
-`BatchOutput.exists_native_output_controller`. It constructs the actual program,
-reads its halted output tape through `NativeOpenSelection.result`, and proves that
-terminal receipt-completion probability is at most native certified-success
-probability on the same terminal law and sampler. Divergent terminal mass counts
-as neither event. The source model (PDF p. 5) explicitly excludes local computation
-from deadline $D$; elapsed time here is the oracle ledger of sequential batch
-maxima, including cutoffs and cancellation. This is not a local instruction-time
-bound. The binomial completion bound still needs to be joined to this terminal
-event for one shared controller witness; separate existence statements do not
-establish that identity. The common-oracle optimum comparison remains open.
+its real supported source reply. `BatchOutput.output_controller` proves the tape
+implication for the named implementation; it is not an existence statement that
+a never-halting witness could satisfy. `terminal_completion` identifies epoch
+completion with terminal authenticated receipts, including the final silent epoch.
+`BatchOutput.upper_controller` joins the binomial certified-output success bound
+and all stopped-bill bounds for that one compiled program.
+
+Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum`
+for the common-oracle comparison. `costs` ranges over all finite-control native
+competitors admitted by `SelectionOnly`, with certified tape-output success at
+least $\eta$ on the same sampler, seed and original encoded input. `optimum` is
+the infimum of their actual extended expected bills; attainment and integrability
+are not assumed. `LowerEnvelopes` quantifies the reached selected-epoch coverage,
+progress and invoice conditions over every competitor. `lower` derives
+$\eta r_b\underline c/\overline p$; `upper` uses the actual named controller to
+bound the optimum by its survival sum, $\overline c r_a/\underline p$ and
+$\overline c u$. With matching envelopes, `competitive` bounds the named
+controller's bill by $\mathrm{OPT}/\eta$ for positive $\eta$.
+
+The source model (PDF p. 5) explicitly excludes local computation from deadline
+$D$. Elapsed time here counts oracle batch maxima, cutoffs and cancellation.
+Competitors share the configured finite opportunity/cutoff interface and original
+runtime input codec. The upper implementation is the fixed block scheduler;
+these are material restrictions, not unrestricted source Theorem 5 coverage.
 
 The [correlated numerical client](../../CslibFrontierTests/NativeRetentionUpperCorrelated.lean)
 applies the same constructed numerical controller to two simultaneous calls.
@@ -2032,7 +2047,10 @@ probability $1/2$, whereas the product of the marginals is $1/4$.
 Both calls return the covering singleton, so actual issued productivity is one and
 the conditional batch invoice is at most four. The client derives these envelopes
 from the supported joint sampler and concludes the first-batch retained-completion
-bound and expected complete bill at most four. No response independence is assumed.
+bound on certified halted tape output (success probability at least one), expected
+complete bill at most four, and native optimum between one and four. Its positive
+lower invoice envelope is proved for every admitted competitor. No response
+independence is assumed.
 
 The [admitted batch client](../../CslibFrontierTests/NativeRetentionBatchAdmission.lean)
 checks fresh concurrent pairs, shared unbounded hidden invoices, cancellation and
@@ -2046,8 +2064,8 @@ first batch with invoice one. It derives both issued-batch envelopes from the
 actual conditional law and instantiates the numerical theorem on the constructed
 program, without a supplied cost or success conclusion. The admitted-batch client
 has unbounded history-dependent invoices; the correlated numerical client instead
-derives a finite conditional invoice envelope and also instantiates the actual
-compiled-output event comparison. From the repository root:
+derives a finite conditional invoice envelope and instantiates the joint native
+success/bill/optimum results. From the repository root:
 
 ```bash
 scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
@@ -2057,9 +2075,8 @@ scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
 ```
 
 This establishes a concrete supported scheduler and source-admitted native loop.
-The terminal compiled-output certification implication is proved. Its joint
-assembly with the numerical success lower bound and common-oracle optimum
-comparison for one shared controller witness remains open. Theorem 6's
+The named controller has joint compiled-output success/bill bounds and a
+common-oracle optimum comparison in this implemented model. Theorem 6's
 WSC/subinstance/role/residual specialization, external encodings, general measurable interfaces, compiled physical clocks and divergent
 path cost/integrability limits remain distinct obligations.
 

@@ -65,7 +65,12 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
           ⟨ConcurrentBatch.initial (), []⟩⟩).map
         (fun state => Retained.complete (instanceOf data.startup.system valid) 1
           (BatchReceipts.proposal data.startup.system) state.records) true := by
-  obtain ⟨tapes, R, hR, program, hp⟩ := BatchUpper.exists_native_upper_controller (n := 1) 1
+  let impl := BatchPlanner.controller 1 1
+  let tapes := impl.tapes
+  let R := impl.Controls
+  have hR := impl.finite
+  let program := impl.program
+  have hp := BatchUpper.upper_controller (n := 1) 1
   refine ⟨tapes, R, hR, program, ?_⟩
   let world : World tapes R Unit (ServerState 1 Unit) (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial (), []⟩⟩

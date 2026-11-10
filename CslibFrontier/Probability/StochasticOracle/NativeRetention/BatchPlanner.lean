@@ -30,6 +30,7 @@ general measurable kernels and unrestricted source Theorems 5/6 remain open.
 
 * `slots`, `request`: preformed next-block requests containing the actual runtime context.
 * `consumed`: all source labels in earlier blocks.
+* `controller`: one fixed implementation with its proved joint feedback law.
 
 ## Main results
 
@@ -176,5 +177,41 @@ theorem exists_native_controller (n batchWidth : ℕ) :
             outcome.memory⟩ : NativeReplyContext.Observation P) :=
   Feedback.exists_native_controller_with_request (request n batchWidth)
     (computable_request n batchWidth)
+
+/-- One implementation packages the finite native code with its proved joint
+feedback law. The implementation is chosen once, independently of the oracle,
+input, source envelopes and later quantitative conclusions. -/
+structure Controller (n batchWidth : ℕ) where
+  /-- Number of native work tapes in the compiled implementation. -/
+  tapes : ℕ
+  /-- Native finite control states. -/
+  Controls : Type
+  /-- The control-state type is finite. -/
+  finite : Finite Controls
+  /-- The single compiled program used at every runtime input and source oracle. -/
+  program : MultiTapePTM tapes Bool Controls Unit
+  /-- Reserved tape holding the full runtime retention context. -/
+  context : Fin tapes
+  /-- Exact joint terminal law, including output, context and source memory. -/
+  law : ∀ (P : Type) (env : Environment Unit P) (data : GuardedStartup.Input)
+    (memory : Memory Unit P),
+    (NativeUnboundedExecution.terminal program env
+      ⟨program.initialConfig (GuardedStartup.encoding data), memory⟩).map
+      (Option.map (NativeReplyContext.observe context)) =
+    (Feedback.run env (GuardedStartup.state data).turns (GuardedStartup.state data)
+      (fun _ => ⟨[], [], 0⟩) memory (request n batchWidth)).map fun outcome =>
+        some (⟨tapeOfList (RuntimeControl.packet outcome.state),
+          RuntimeControl.result outcome.state,
+          outcome.memory⟩ : NativeReplyContext.Observation P)
+
+private theorem controller_nonempty (n width : ℕ) : Nonempty (Controller n width) := by
+  obtain ⟨tapes, R, hR, program, context, hlaw⟩ := exists_native_controller n width
+  exact ⟨⟨tapes, R, hR, program, context, hlaw⟩⟩
+
+/-- The fixed native implementation shared by admission, stopping, bill and
+output theorems. Its joint law is derived from the compiled request algorithm;
+no realization witness is supplied by the caller. -/
+def controller (n width : ℕ) : Controller n width :=
+  Classical.choice (controller_nonempty n width)
 
 end Cslib.Probability.StochasticOracle.NativeRetention.BatchPlanner

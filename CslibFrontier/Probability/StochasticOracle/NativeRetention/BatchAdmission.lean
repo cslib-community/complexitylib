@@ -27,8 +27,8 @@ scheduler compilation or the source productivity/expected-bill envelopes.
 
 * `admit_request`, `run_aligned`: derived admission/accounting for every supported round.
 * `result_provenance`: actual computed output families come from returned source calls.
-* `exists_native_admitted_controller`: the constructed native program has the source invariant.
-* `exists_selectionOnly_controller`: every-prefix native selection admission is derived.
+* `admitted_controller`: the constructed native program has the source invariant.
+* `selectionOnly_controller`: every-prefix native selection admission is derived.
 -/
 
 public section
@@ -284,9 +284,10 @@ source used-set, cancellation charges and concurrent physical duration are joint
 those of the actual final source memory. No admission or execution law is a premise.
 The supported scheduler has fixed positive block width/interface, fitting turn
 budget and configured cutoff allotments; this is not the unrestricted upper theorem. -/
-theorem exists_native_admitted_controller (width : ℕ) :
-    ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
-      (program : Turing.MultiTapePTM tapes Bool R Unit) (context : Fin tapes),
+theorem admitted_controller (width : ℕ) :
+    let impl := BatchPlanner.controller n width
+    let program := impl.program
+    let context := impl.context
       ∀ (Private : Type) (limits : Limits n) (sample : Sampler n Private)
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
@@ -303,8 +304,11 @@ theorem exists_native_admitted_controller (width : ℕ) :
             RuntimeControl.result state, memory⟩ ∧
           Aligned limits width data.startup.turns ell state memory ∧
           state.work.system = data.startup.system := by
-  obtain ⟨tapes, R, hR, program, context, hlaw⟩ := BatchPlanner.exists_native_controller n width
-  refine ⟨tapes, R, hR, program, context, ?_⟩
+  let impl := BatchPlanner.controller n width
+  let program := impl.program
+  let context := impl.context
+  have hlaw := impl.law
+  dsimp only
   intro Private limits sample data seed ell hn hw hc ht he hcut hd observation ho
   rw [hlaw] at ho
   simp only [PMF.mem_support_map_iff] at ho
@@ -318,9 +322,9 @@ theorem exists_native_admitted_controller (width : ℕ) :
 `SelectionOnly` API at every instruction prefix. All decoded final families have
 actual selected-response provenance. The premise is the ordinary original WSC
 promise, not a provenance, scheduler-execution or successful-output contract. -/
-theorem exists_selectionOnly_controller (width : ℕ) :
-    ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
-      (program : MultiTapePTM tapes Bool R Unit),
+theorem selectionOnly_controller (width : ℕ) :
+    let impl := BatchPlanner.controller n width
+    let program := impl.program
       ∀ (Private : Type) (limits : Limits n) (sample : Sampler n Private)
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
@@ -333,8 +337,11 @@ theorem exists_selectionOnly_controller (width : ℕ) :
           (decodeFamily data.startup.system.rows.length) (fun _ => true)
           ⟨program.initialConfig (GuardedStartup.encoding data),
             ⟨ConcurrentBatch.initial seed, []⟩⟩ := by
-  obtain ⟨tapes, R, hR, program, context, hp⟩ := exists_native_admitted_controller (n := n) width
-  refine ⟨tapes, R, hR, program, ?_⟩
+  let impl := BatchPlanner.controller n width
+  let program := impl.program
+  let context := impl.context
+  have hp := admitted_controller (n := n) width
+  dsimp only
   intro Private limits sample data seed ell hn hw hc ht he hcut hd hx fuel world hworld C hC _
   cases hcontrol : world.config.tapes.state with
   | some control => simp [NativeOpenSelection.result, hcontrol] at hC

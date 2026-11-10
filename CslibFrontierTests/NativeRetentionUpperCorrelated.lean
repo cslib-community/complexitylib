@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper
-import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutput
+import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum
 import Mathlib.Tactic
 
 /-!
@@ -99,19 +99,77 @@ private theorem valid : Valid data.startup.system := by
   · intro e; cases e <;> norm_num [data]
   · intro j; cases j <;> norm_num [data, elements, ground, List.range_succ]
 
+/-- One positive lower invoice envelope holds for every admitted competitor,
+not only the block controller; the source sampler and hidden seed are fixed. -/
+private theorem lower_envelopes : BatchOptimum.LowerEnvelopes lim sampler data () valid 1 1 1 := by
+  constructor
+  intro k R _ machine
+  dsimp only
+  intro _ t _ o ho
+  constructor
+  · intro next _
+    have hs : AdaptiveSelection.revealed (BatchOptimum.finiteInstance data.startup.system valid)
+        (Coverage.proposal data.startup.system.rows.length) next.records ⊆
+        (BatchOptimum.finiteInstance data.startup.system valid).ground := by
+      rw [Coverage.revealed_source]
+      exact PartialCover.Instance.covered_subset _ _
+    calc
+      _ ≤ (BatchOptimum.finiteInstance data.startup.system valid).ground.card :=
+        Finset.card_le_card (Finset.sdiff_subset.trans hs)
+      _ = 1 := by norm_num [BatchOptimum.finiteInstance, instanceOf, ground, data,
+        List.range_succ]
+  constructor
+  · intro _
+    unfold History.conditionalMean mean History.newest
+    rw [DiscreteComparison.indicator_mean]
+    exact PMF.coe_le_one _ _
+  · intro hi
+    unfold Quantitative.conditionalMean mean
+    calc
+      1 = ∑' next, conditional lim sampler machine (law lim sampler machine t
+          ⟨machine.initialConfig (GuardedStartup.encoding data),
+            ⟨ConcurrentBatch.initial (), []⟩⟩) o next * 1 := by simp [PMF.tsum_coe]
+      _ ≤ _ := by
+        apply tsum_le_tsum
+        intro next
+        by_cases hn : next ∈ (conditional lim sampler machine (law lim sampler machine t
+            ⟨machine.initialConfig (GuardedStartup.encoding data),
+              ⟨ConcurrentBatch.initial (), []⟩⟩) o).support
+        · obtain ⟨receipt, b, hr, hreport⟩ := response machine _ o ho hi next hn
+          apply mul_le_mul' le_rfl
+          simp only [Quantitative.newest, hr, List.headD_cons, charge, Option.elim_some]
+          obtain ⟨i, hi⟩ := receipt.batch.nonempty
+          have hval : 1 ≤ ((receipt.report i).getD (none, 0)).2 := by
+            rw [hreport]
+            have hactive : (receipt.batch.slots i).isSome := by simpa [active] using hi
+            cases he : receipt.batch.slots i with
+            | none => simp [he] at hactive
+            | some word => cases b <;> simp [he, invoice]
+          have hb : 1 ≤ receipt.tokens := by
+            unfold Exchange.tokens
+            exact hval.trans (Finset.single_le_sum (f := fun j =>
+              ((receipt.report j).getD (none, 0)).2) (fun _ _ => Nat.zero_le _) hi)
+          exact_mod_cast hb
+        · simp [(PMF.apply_eq_zero_iff _ _).mpr hn]
+
 example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     (program : MultiTapePTM tapes Bool R Unit),
     Quantitative.expected lim sampler program charge 2
       ⟨program.initialConfig (GuardedStartup.encoding data),
         ⟨ConcurrentBatch.initial (), []⟩⟩ ≤ 4 ∧
-    ENNReal.ofReal (∫ j, (if 1 ≤ j then (1 : ℝ) else 0)
-      ∂ProbabilityTheory.binomial 1 ⟨1, by norm_num⟩) ≤
-      (law lim sampler program 1
+    1 ≤
+      (NativeUnboundedExecution.terminal program (environment lim sampler)
         ⟨program.initialConfig (GuardedStartup.encoding data),
           ⟨ConcurrentBatch.initial (), []⟩⟩).map
-        (fun state => Retained.complete (instanceOf data.startup.system valid) 1
-          (BatchReceipts.proposal data.startup.system) state.records) true := by
-  obtain ⟨tapes, R, hR, program, hp⟩ := BatchUpper.exists_native_upper_controller (n := 2) 2
+        (BatchOutput.certified lim data.startup.system valid) true ∧
+    1 ≤ BatchOptimum.optimum lim sampler data () valid 1 ∧
+    BatchOptimum.optimum lim sampler data () valid 1 ≤ 4 := by
+  let impl := BatchPlanner.controller 2 2
+  let tapes := impl.tapes
+  let R := impl.Controls
+  have hR := impl.finite
+  let program := impl.program
+  have hp := BatchOutput.upper_controller (n := 2) 2
   refine ⟨tapes, R, hR, program, ?_⟩
   let world : World tapes R Unit (ServerState 2 Unit) (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial (), []⟩⟩
@@ -207,25 +265,27 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     ⟨1, by norm_num⟩ (by norm_num) 4
     (by simpa only [hrho] using Hprod) Hcost
   obtain ⟨hprogress, _, _, hbudget, _⟩ := h
-  refine ⟨?_, ?_⟩
+  have hbin : (1 : ℝ≥0∞) ≤ ENNReal.ofReal
+      (∫ j, (if 1 ≤ j then (1 : ℝ) else 0)
+        ∂ProbabilityTheory.binomial lim.turns ⟨1, by norm_num⟩) := by
+    norm_num [lim, ProbabilityTheory.integral_binomial,
+      show Finset.Iic (1 : ℕ) = {0, 1} from by decide]
+  have hopt := BatchOptimum.upper (n := 2) 2 Unit lim sampler data () 1 rfl
+    (by decide) (by decide) (by norm_num) (by intro _; norm_num [lim])
+    (by norm_num [data, lim]) rfl (by decide) valid 1 1
+    (by norm_num [I, instanceOf, ground, data, List.range_succ])
+    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) Hcost 1 hbin
+  obtain ⟨_, _, hoptbudget, _⟩ := hopt
+  have hlo := BatchOptimum.lower lim sampler data () valid 1 1 1 1 1
+    (by intro q hq; have hq0 : q = 0 := by omega
+        subst q; norm_num [instanceOf, ground, data, List.range_succ])
+    (by norm_num) (by norm_num) lower_envelopes
+  refine ⟨?_, ?_, ?_, ?_⟩
   · simpa [lim] using hbudget
-  · simpa only [hrho, lim] using hprogress
-
-/-- The terminal event comparison applies to actual halted tape readback under
-this same correlated invoice sampler and positive-dual original input. -/
-example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
-    (program : MultiTapePTM tapes Bool R Unit),
-    let μ := NativeUnboundedExecution.terminal program (environment lim sampler)
-      ⟨program.initialConfig (GuardedStartup.encoding data),
-        ⟨ConcurrentBatch.initial (), []⟩⟩
-    (μ.map (BatchOutput.retained data.startup.system valid)) true ≤
-      (μ.map (BatchOutput.certified lim data.startup.system valid)) true := by
-  obtain ⟨tapes, R, hR, program, hp⟩ :=
-    BatchOutput.exists_native_output_controller (n := 2) 2
-  refine ⟨tapes, R, hR, program, ?_⟩
-  exact hp Unit lim sampler data () 1 rfl (by decide) (by decide)
-    (by norm_num [data, lim]) (by norm_num) (by intro _; norm_num [lim])
-    (by norm_num [data, lim]) valid
+  · simpa [hrho, lim, ProbabilityTheory.integral_binomial,
+      show Finset.Iic (1 : ℕ) = {0, 1} from by decide] using hprogress
+  · simpa using hlo
+  · simpa [lim] using hoptbudget
 
 /-- Divergent terminal mass is never counted as receipt or tape success. -/
 example (tapes : ℕ) (R : Type) :

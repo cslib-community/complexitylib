@@ -35,7 +35,12 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
       Quantitative.expected limits sample program Trace.charge 1
         ⟨program.initialConfig (GuardedStartup.encoding data),
           ⟨ConcurrentBatch.initial seed, []⟩⟩ = 0 := by
-  obtain ⟨tapes, R, hR, program, hp⟩ := BatchUpper.exists_native_upper_controller (n := 0) 1
+  let impl := BatchPlanner.controller 0 1
+  let tapes := impl.tapes
+  let R := impl.Controls
+  have hR := impl.finite
+  let program := impl.program
+  have hp := BatchUpper.upper_controller (n := 0) 1
   refine ⟨tapes, R, hR, program, ?_⟩
   intro sample seed
   have h := hp ℕ limits sample data seed 1 rfl (by decide) (by decide)

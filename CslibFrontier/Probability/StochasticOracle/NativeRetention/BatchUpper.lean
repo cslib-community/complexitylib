@@ -24,8 +24,9 @@ This is a stopping bridge for the concrete finite labeled block scheduler.
 Reached-only productivity gives the binomial lower bound on actual retained
 completion and the survival-sum/`c*r/p`/`c*u` bounds on the complete actual accrued bill.
 A finite conditional invoice envelope implies finite total expectation as a
-conclusion. Complete certified-output success/deadline transfer and the
-common-oracle optimum comparison for that same code remain open.
+conclusion. `BatchOutput` joins these bounds to certified terminal tape success
+for the same named `BatchPlanner.controller`; `BatchOptimum` gives the common-oracle
+optimum comparison within the implemented native model.
 -/
 
 public section
@@ -42,9 +43,9 @@ conditions needed by the native survival-sum cost theorem. Both issued and
 no-call decisions are connected to actual retained completion. The only hypotheses
 are original source budgets/cutoffs and ordinary WSC validity. In particular its
 history/representation/stopping law is derived rather than supplied. -/
-theorem exists_native_stopping_controller (width : ℕ) :
-    ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
-      (program : MultiTapePTM tapes Bool R Unit),
+theorem stopping_controller (width : ℕ) :
+    let impl := BatchPlanner.controller n width
+    let program := impl.program
       ∀ (Private : Type) (limits : Limits n) (sample : Sampler n Private)
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
@@ -63,14 +64,19 @@ theorem exists_native_stopping_controller (width : ℕ) :
         (o.issued = false → Retained.complete (instanceOf data.startup.system hx)
           data.startup.system.rho (BatchReceipts.proposal data.startup.system)
             o.history = true) := by
-  obtain ⟨tapes, R, hR, program, context, hlaw⟩ := BatchPlanner.exists_native_controller n width
-  refine ⟨tapes, R, hR, program, ?_⟩
+  let impl := BatchPlanner.controller n width
+  let program := impl.program
+  let context := impl.context
+  have hlaw := impl.law
+  dsimp only
   intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
   have ht : data.startup.turns ≤ limits.turns := hbudget.le
-  let world : World tapes R Unit (ServerState n Private) (GuardedStartup.encoding data) :=
+  let world : World impl.tapes impl.Controls Unit (ServerState n Private)
+      (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
   have hi : Invariant limits world.memory := NativeBatch.initial_invariant limits seed
-  have Hfinal (state : Trace.State n tapes Private R (GuardedStartup.encoding data))
+  have Hfinal (state : Trace.State n impl.tapes Private impl.Controls
+      (GuardedStartup.encoding data))
       (hs : state ∈ (law limits sample program (limits.turns + 1) world).support) :
       Safe data.startup.system (state.records.filterMap id) ∧
         ((Packets.decision ⟨data.startup.system, n,
@@ -136,7 +142,7 @@ theorem exists_native_stopping_controller (width : ℕ) :
         rw [← hm, List.append_nil] at hevents
         exact ⟨hevents ▸ hsafe, hevents ▸ hend'⟩
   have Hprefix (turns : ℕ) (hb : turns ≤ limits.turns + 1)
-      (state : Trace.State n tapes Private R (GuardedStartup.encoding data))
+      (state : Trace.State n impl.tapes Private impl.Controls (GuardedStartup.encoding data))
       (hs : state ∈ (law limits sample program turns world).support) :
       Safe data.startup.system (state.records.filterMap id) := by
     apply History.law_prefix_property limits sample program
@@ -200,9 +206,9 @@ native selector. Productivity is required only on reached, issued batches; the
 extension after completion and issued-before-completion law are proved above.
 All charges are actual nonnegative accrued receipts. Finiteness is concluded
 from the finite conditional source envelope, not assumed for the total bill. -/
-theorem exists_native_upper_controller (width : ℕ) :
-    ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
-      (program : MultiTapePTM tapes Bool R Unit),
+theorem upper_controller (width : ℕ) :
+    let impl := BatchPlanner.controller n width
+    let program := impl.program
       ∀ (Private : Type) (limits : Limits n) (sample : Sampler n Private)
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
@@ -211,7 +217,8 @@ theorem exists_native_upper_controller (width : ℕ) :
         (_ : (data.startup.turns : ℝ≥0) * ell ≤ limits.deadline)
         (_ : data.startup.turns = limits.turns) (_ : data.startup.turns ≤ data.allotments)
         (hx : Valid data.startup.system),
-      let world : World tapes R Unit (ServerState n Private) (GuardedStartup.encoding data) :=
+      let world : World impl.tapes impl.Controls Unit (ServerState n Private)
+          (GuardedStartup.encoding data) :=
         ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
       let I := instanceOf data.startup.system hx
       let parse := BatchReceipts.proposal data.startup.system
@@ -239,13 +246,15 @@ theorem exists_native_upper_controller (width : ℕ) :
         Quantitative.expected limits sample program charge (limits.turns + 1) world ≤
           (c : ℝ≥0∞) * limits.turns ∧
         Quantitative.expected limits sample program charge (limits.turns + 1) world ≠ ∞ := by
-  obtain ⟨tapes, R, hR, program, hstop⟩ := exists_native_stopping_controller (n := n) width
-  refine ⟨tapes, R, hR, program, ?_⟩
+  let impl := BatchPlanner.controller n width
+  let program := impl.program
+  have hstop := stopping_controller (n := n) width
+  dsimp only
   intro Private limits sample data seed ell hn hw hc he hcut hd hbudget hallot hx
   have ht : data.startup.turns ≤ limits.turns := hbudget.le
-  dsimp only
   intro a r hr p hp c Hprod Hcost
-  let world : World tapes R Unit (ServerState n Private) (GuardedStartup.encoding data) :=
+  let world : World impl.tapes impl.Controls Unit (ServerState n Private)
+      (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
   let I := instanceOf data.startup.system hx
   let parse := BatchReceipts.proposal (n := n) data.startup.system

@@ -294,9 +294,9 @@ theorem native_selectionOnly : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
       NativeUnboundedExecution.SelectionOnly program (environment limits (sample false))
         (NativeBatch.candidateParser (n := 6) 2) (decodeFamily 2) (fun _ => true)
         ⟨program.initialConfig (GuardedStartup.encoding (data 3)), start seed⟩ := by
-  obtain ⟨tapes, R, hR, program, hp⟩ :=
-    BatchAdmission.exists_selectionOnly_controller (n := 6) 2
-  refine ⟨tapes, R, hR, program, ?_⟩
+  let impl := BatchPlanner.controller 6 2
+  have hp := BatchAdmission.selectionOnly_controller (n := 6) 2
+  refine ⟨impl.tapes, impl.Controls, impl.finite, impl.program, ?_⟩
   intro seed
   exact hp ℕ limits (sample false) (data 3) seed 1 rfl (by decide) (by decide)
     (by decide) (by norm_num) (by intro _; norm_num [limits]) (by norm_num [data, limits])
@@ -497,8 +497,12 @@ theorem native_epoch_stopping : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
       (o.issued = false → NativeBatch.Retained.complete
         (instanceOf (data 3).startup.system original_valid) 1
         (BatchReceipts.proposal (data 3).startup.system) o.history = true) := by
-  obtain ⟨tapes, R, hR, program, hp⟩ :=
-    BatchUpper.exists_native_stopping_controller (n := 6) 2
+  let impl := BatchPlanner.controller 6 2
+  let tapes := impl.tapes
+  let R := impl.Controls
+  have hR := impl.finite
+  let program := impl.program
+  have hp := BatchUpper.stopping_controller (n := 6) 2
   refine ⟨tapes, R, hR, program, ?_⟩
   intro seed t ht o ho
   have hrho : ((data 3).startup.system.rho : ℝ) = 1 := by norm_num [data]
