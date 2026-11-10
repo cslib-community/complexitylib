@@ -215,10 +215,7 @@ theorem exec_subtract {w : ℕ} (hw : 2 ≤ w) (a b d : Fin n)
     ((length_regs a).trans (length_regs d).symm) (nodup_regs d) (disjoint_regs hda) x
   have hzb (i : Fin (capacity n + 4)) (hi : i ∈ regs b) : z.regs i = x.regs i :=
     hzp i (fun hd => List.disjoint_left.mp (disjoint_regs hdb) hd hi)
-  have hzbval : Multiword.value (radix w) z (regs b) = v b := by
-    rw [← (hx b).2]
-    unfold value
-    exact congrArg (Nat.ofDigits (radix w)) (List.map_congr_left hzb)
+  have hzbval : Multiword.value (radix w) z (regs b) = v b := (value_congr hzb).trans (hx b).2
   have hzdval : Multiword.value (radix w) z (regs d) = v a :=
     (Transfer.value_copy hzm).trans (hx a).2
   obtain ⟨y, hey, hy, hyval, hyf⟩ := Difference.exec_eighteen_truncating hw (regs b) (regs d)

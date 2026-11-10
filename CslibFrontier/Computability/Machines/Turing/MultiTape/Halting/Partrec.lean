@@ -476,17 +476,12 @@ theorem primrec_simulate :
 
 /-! ## Partial recursive evaluation of `Desc` -/
 
-lemma stepOut_of_state_none (d : Desc) (x : List ℕ) (c : SCfg) (out : List ℕ)
-    (h : c.state = none) :
-    stepOut d x (c, out) = (c, out) := by
-  simp [stepOut, step, h]
-
 lemma stepOut_iterate_of_state_none (d : Desc) (x : List ℕ) (c : SCfg) (out : List ℕ)
     (h : c.state = none) (k : ℕ) :
     (stepOut d x)^[k] (c, out) = (c, out) := by
   induction k with
   | zero => rfl
-  | succ k ih => rw [Function.iterate_succ_apply', ih, stepOut_of_state_none d x c out h]
+  | succ k ih => rw [Function.iterate_succ_apply', ih, stepOut_of_state_eq_none h]
 
 theorem simulate_eq_of_halted {d : Desc} {x out : List ℕ} {t₁ t₂ : ℕ} (ht : t₁ ≤ t₂)
     (h : simulate d x t₁ = (out, true)) :

@@ -286,8 +286,7 @@ theorem dependsOn_comp_fill_free {β : Type*} (f : (ι → Bool) → β) (ρ : P
     DependsOn (f ∘ ρ.fill) ρ.free := by
   intro x y h
   simp only [comp_apply]
-  congr 1
-  funext i
+  congr 1 with i : 1
   by_cases hi : i ∈ ρ.free
   · rw [fill_of_eq_none (mem_free.1 hi), fill_of_eq_none (mem_free.1 hi), h i hi]
   · obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.1 fun h' => hi (mem_free.2 h')

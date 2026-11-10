@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Exact finite randomness for GSW
@@ -44,8 +45,7 @@ theorem exists_uniform_seed_sampleResidue (w : ℕ) :
     ∃ evaluate : List Bool → ZMod (2 ^ w),
       ProbComp.eval (sampleResidue w) = (BitString.uniformList w).map evaluate := by
   refine ⟨fun bits => (BitString.binaryValue bits : ZMod (2 ^ w)), ?_⟩
-  simp only [sampleResidue, sampleBinaryNat, ProbComp.eval_map, BitString.eval_sampleList,
-    PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, sampleResidue, sampleBinaryNat, BitString.eval_sampleList]
 
 /-- Independent residues use disjoint width-sized blocks. -/
 theorem exists_uniform_seed_sampleVector (count w : ℕ) :
@@ -78,8 +78,7 @@ theorem exists_uniform_seed_sampleCoins (n m w : ℕ) :
   have hblock := ProbComp.eval_replicateFin_of_uniformList w m _ _ hrow
   have hrows := ProbComp.eval_replicateFin_of_uniformList (n + 1) (w * m) _ _ hblock
   exact ⟨_, by
-    simpa only [sampleCoins, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_comp,
-      PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind] using
+    simpa only [pmf_norm, sampleCoins, PMF.map] using
       congrArg (PMF.map Function.uncurry) hrows⟩
 
 /-- All key-generation inputs are independent functions of disjoint parts of one finite tape. -/

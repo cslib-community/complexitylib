@@ -212,8 +212,7 @@ private theorem threshold_lt_complexity_slice {k n : ℕ} {T : List Bool} (hT : 
     threshold k n < complexity interpretation (single ((language k).slice n)) + 2 := by
   refine hT.1.2.trans_le (le_of_eq_of_le ?_
     (complexity_substitute_le (restriction (arity k n) n) ((language k).slice n)))
-  congr 2
-  funext y
+  congr 2 with y : 1
   rw [slice_language hT, take_ofFn_substitute_restriction hm]
   rfl
 

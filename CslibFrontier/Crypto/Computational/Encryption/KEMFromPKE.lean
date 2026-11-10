@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -159,8 +160,7 @@ private theorem eval_gameOn_kemToPKEAdversary (keyLen : ℕ → ℕ)
         let ct ← ProbComp.eval (encrypt n keys.1 (if bit then k₁ else k₀))
         ProbComp.eval (distinguisher n
           (encPair encBits (encPair encBits encBits) (keys.1, (k₀, ct))))) := by
-  simp only [gameOn, kemToPKEAdversary, kemToPKEChoose, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind,
+  simp only [pmf_norm, gameOn, kemToPKEAdversary, kemToPKEChoose, BitString.eval_sampleList,
     ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.msgs, encPair_apply, encBits_apply,
     unframe_frame_append, dropFrame_frame_append, apply_ite ProbComp.eval]
   congr 1; funext keys
@@ -192,9 +192,8 @@ theorem eval_gameOn_kemToPKEAdversary_true (keyLen : ℕ → ℕ)
       ProbComp.eval
         (kemIdealGame keyLen keyGen (encryptKeyEncaps keyLen encrypt) distinguisher n) := by
   rw [eval_gameOn_kemToPKEAdversary]
-  simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
-    encryptKeyEncaps, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind, ↓reduceIte]
+  simp only [pmf_norm, kemIdealGame, kemIdealGameWith, kemRealGameWith, encryptKeyEncaps,
+    BitString.eval_sampleList, ↓reduceIte]
   congr 1; funext keys
   rw [PMF.bind_comm]
   congr 1; funext k

@@ -58,9 +58,6 @@ theorem simulates_demonic (M : Module D E) (p : D.Client α) {s : D.State} {e : 
   | liftBind o k ih =>
     obtain ⟨hv_o, hv_k⟩ := (D.demonicValid_liftBind_iff s o k).mp hv
     have hm := M.valid o hr hv_o
-    have heq : link M.methods (.liftBind o k) =
-        (M.methods o).bind (fun a => link M.methods (k a)) := rfl
-    rw [heq]
     refine ⟨hm.bind fun a e₁ tr₁ hrun₁ => ?_, fun b e₂ tr_E hrun => ?_⟩
     · obtain ⟨s₁, hstep, hr₁⟩ := M.correct o hr hv_o hrun₁
       exact (ih a hr₁ (hv_k s₁ a hstep)).1

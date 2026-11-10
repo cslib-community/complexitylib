@@ -71,8 +71,7 @@ theorem Constraint.eval_instantiateCNF {arity : Rel → ℕ} {sem : Rel → List
   congr 1
   rw [← hc]
   convert List.ofFn_getElem_eq_map vs σ using 1
-  congr 1
-  funext i
+  congr 1 with i : 1
   rw [List.getD_eq_getElem vs fallback i.isLt]
 
 /-- Instantiate and concatenate a fixed CNF template for every constraint. -/

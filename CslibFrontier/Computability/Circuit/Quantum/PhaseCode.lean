@@ -110,8 +110,7 @@ noncomputable def ctrlPhase (k : ℕ) : Gate k :=
   ⟨diagonal fun x => if ∀ i, x i = true then Complex.I else 1, by
     rw [mem_unitaryGroup_iff, star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal,
       ← diagonal_one]
-    congr 1
-    funext x
+    congr 1 with x : 1
     by_cases h : ∀ i, x i = true <;> simp [h]⟩
 
 /-- The entries of the controlled phase gate (`inv = false`) and of its inverse (`inv = true`):
@@ -381,9 +380,7 @@ theorem length_toRealCodes_le (r : ℕ) (gs : List PhaseGateCode) :
   | nil => simp [toRealCodes]
   | cons c gs ih =>
     simp only [toRealCodes, List.flatMap_cons, List.length_append, List.length_cons] at ih ⊢
-    have : (realCodes r c).length ≤ 4 := by
-      unfold realCodes phaseCodes
-      cases c.1 <;> cases c.2.1 <;> simp
+    have : (realCodes r c).length ≤ 4 := by grind [realCodes, phaseCodes]
     omega
 
 /-- **Four Hadamard and classical gates simulate a controlled phase gate** through the real

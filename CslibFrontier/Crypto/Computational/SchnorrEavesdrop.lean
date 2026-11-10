@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
 
@@ -205,8 +206,7 @@ private theorem eval_schnorrRealTranscript (n : ℕ) (d : F.Desc) (α : ZMod (F.
       (r + ofBits c * α.val) % F.order d =
         ((r : ZMod (F.order d)) + (ofBits c : ZMod (F.order d)) * α).val := by
     rw [← ZMod.val_natCast (F.order d), Nat.cast_add, Nat.cast_mul, ZMod.natCast_zmod_val]
-  simp only [schnorrRealTranscript, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_map, Function.comp_def, F.smul_encode, hresp]
+  simp only [pmf_norm, schnorrRealTranscript, BitString.eval_sampleList, F.smul_encode, hresp]
   refine congrArg (PMF.bind _) (funext fun r => ?_)
   rw [← PMF.bind_pure_comp]
   rfl
@@ -387,8 +387,7 @@ theorem advantage_schnorrEavesdropGame_schnorrDirectGame_le
     (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ) (A : F.SchnorrEavesdropAdversary) (n : ℕ) :
     Game.advantage (F.schnorrEavesdropGame setup k Q A n)
       (F.schnorrDirectGame setup k (A.toDirect k Q) n) ≤ 2 * Q n / 2 ^ n := by
-  simp only [schnorrEavesdropGame, schnorrDirectGame, SchnorrEavesdropAdversary.toDirect,
-    ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
+  simp only [pmf_norm, schnorrEavesdropGame, schnorrDirectGame, SchnorrEavesdropAdversary.toDirect]
   refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
   refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
   exact Game.advantage_bind_le_of_closeTo

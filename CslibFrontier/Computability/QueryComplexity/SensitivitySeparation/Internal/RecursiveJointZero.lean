@@ -68,10 +68,7 @@ theorem recursive_joint_zero_at {k r h : ℕ} {I : Type} [Fintype I]
         recursiveFamily T A.label F q' x) ⊆ U ∪ V := by
     rintro ⟨⟨j, c⟩, a⟩ hp
     have hchange := (Finset.mem_filter.mp hp).2
-    have hon' : recursiveFamily T A.label F q' (BitString.flipOn {((j, c), a)} x) = true := by
-      cases hy : recursiveFamily T A.label F q' (BitString.flipOn {((j, c), a)} x)
-      · exact False.elim (hchange.2 (hy.trans hx'.symm))
-      · rfl
+    have hon' : recursiveFamily T A.label F q' (BitString.flipOn {((j, c), a)} x) = true := by grind
     obtain ⟨i, hi'⟩ := (recursiveFamily_eq_true_iff T A.label F q' _).mp hon'
     have hi := rowClause_nested T A.label F hF hqq.le _ i hi'
     have hioff := (recursiveFamily_eq_false_iff T A.label F q x).mp hx i
@@ -104,7 +101,7 @@ theorem recursive_joint_zero_at {k r h : ℕ} {I : Type} [Fintype I]
   have hV : V.card ≤ 3 * jointSensitivity F true := by
     calc
       V.card ≤ GC.card * jointSensitivity F true :=
-        card_biUnion_le_mul GC _ _ (fun i hi => by
+        Finset.card_biUnion_le_card_mul GC _ _ (fun i hi => by
           rw [childJointChanges_card]
           have hg := (gateWitness_spec T A.label F q x i hi).2
           exact jointSensitivityAt_le_jointSensitivity F true _ _ _

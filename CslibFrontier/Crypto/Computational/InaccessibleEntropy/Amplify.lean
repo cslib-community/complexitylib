@@ -421,8 +421,7 @@ private theorem amp_randomCollisionGame_succProbability_le
   let f₀ := wordToFinMap w₀ m₀ (F.evalWord n)
   let a₀ := accessibleSetExpectation (F.accSet n)
   let k₀ := PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString w₀)).map fun z => (f₀ z, z))
-  have ha₀_nonneg : 0 ≤ a₀ :=
-    accessibleSetExpectation_nonneg fun z => ⟨z, F.self_mem_accSet n z⟩
+  have ha₀_nonneg : 0 ≤ a₀ := accessibleSetExpectation_nonneg _
   have hgap₀ : a₀ ≤ k₀ - 1 / (D : ℝ) := hN₀ n hn
   have hk₀_le : k₀ ≤ (w₀ : ℝ) := conditionalEntropy_le_inLen f₀
   have hD_pos : (0 : ℝ) < D := by exact_mod_cast F.denom_pos n

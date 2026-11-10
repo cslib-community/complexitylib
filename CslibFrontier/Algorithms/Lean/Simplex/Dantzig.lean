@@ -127,34 +127,18 @@ theorem dantzigStep_eq_optimal_iff : D.dantzigStep = .optimal ↔ D.dantzigEnter
 omit [IsStrictOrderedRing K] in
 theorem dantzigStep_eq_unbounded_iff {s : ι} :
     D.dantzigStep = .unbounded s ↔ D.dantzigEntering = some s ∧ D.blandLeaving s = none := by
-  rcases h1 : D.dantzigEntering with _ | s'
-  · simp only [dantzigStep, h1, reduceCtorEq, false_and]
-  · rcases h2 : D.blandLeaving s' with _ | r'
-    · simp only [dantzigStep, h1, h2, Step.unbounded.injEq, Option.some.injEq]
-      constructor
-      · rintro rfl; exact ⟨rfl, h2⟩
-      · rintro ⟨rfl, -⟩; rfl
-    · simp only [dantzigStep, h1, h2, reduceCtorEq, Option.some.injEq, false_iff, not_and]
-      rintro rfl
-      rw [h2]
-      exact Option.some_ne_none r'
+  unfold dantzigStep
+  rcases D.dantzigEntering with _ | s'
+  · simp
+  · rcases h2 : D.blandLeaving s' with _ | r' <;> grind
 
 omit [IsStrictOrderedRing K] in
 theorem dantzigStep_eq_pivot_iff {r s : ι} :
     D.dantzigStep = .pivot r s ↔ D.dantzigEntering = some s ∧ D.blandLeaving s = some r := by
-  rcases h1 : D.dantzigEntering with _ | s'
-  · simp only [dantzigStep, h1, reduceCtorEq, false_and]
-  · rcases h2 : D.blandLeaving s' with _ | r'
-    · simp only [dantzigStep, h1, h2, reduceCtorEq, Option.some.injEq, false_iff, not_and]
-      rintro rfl
-      rw [h2]
-      exact (Option.some_ne_none r).symm
-    · simp only [dantzigStep, h1, h2, Step.pivot.injEq, Option.some.injEq]
-      constructor
-      · rintro ⟨rfl, rfl⟩; exact ⟨rfl, h2⟩
-      · rintro ⟨rfl, h⟩
-        rw [h2, Option.some.injEq] at h
-        exact ⟨h, rfl⟩
+  unfold dantzigStep
+  rcases D.dantzigEntering with _ | s'
+  · simp
+  · rcases h2 : D.blandLeaving s' with _ | r' <;> grind
 
 /-- A pivot of Dantzig's rule preserves feasibility, equivalence and does not decrease the
 objective. -/

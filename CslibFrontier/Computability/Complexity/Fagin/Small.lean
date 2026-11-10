@@ -151,50 +151,24 @@ namespace FO
 
 variable [L.IsRelational] (v : Vocabulary L)
 
-include v in
-/-- For any isomorphism-closed class `K` over a finite relational vocabulary, the restriction of
-`K` to empty structures (`Nat.card M = 0`) is first-order definable. -/
-private theorem Definable.inter_card_eq_zero {K : Set (Bundled.{0} L.Structure)}
-    (hK : IsoClosed K) :
-    Definable {M : Bundled.{0} L.Structure | M ∈ K ∧ Nat.card M = 0} := by
-  refine ⟨cardEqSentence L 0 ⊓ truthTableSentence v.nullarySymbolSentence
-    (fun s => v.decoded (v.encodeOfZero s) ∈ K), fun M _ => ?_⟩
-  rw [Sentence.realize_inf, realize_cardEqSentence, realize_truthTableSentence]
-  constructor
-  · rintro ⟨hM, h0⟩
-    refine ⟨h0, ?_⟩
-    have e : M ≃ Fin 0 := h0 ▸ Finite.equivFin M
-    have heqv := v.decodeEncodeEquiv M e
-    have hmem : v.decoded (v.encode M e) ∈ K := (hK heqv).1 hM
-    rwa [v.encode_eq_encodeOfZero e] at hmem
-  · rintro ⟨h0, hdec⟩
-    refine ⟨?_, h0⟩
-    have e : M ≃ Fin 0 := h0 ▸ Finite.equivFin M
-    have heqv := v.decodeEncodeEquiv M e
-    rw [← v.encode_eq_encodeOfZero e] at hdec
-    exact (hK heqv).2 hdec
-
-include v in
-/-- For any isomorphism-closed class `K` over a finite relational vocabulary, the restriction of
-`K` to singleton structures (`Nat.card M = 1`) is first-order definable. -/
-private theorem Definable.inter_card_eq_one {K : Set (Bundled.{0} L.Structure)} (hK : IsoClosed K) :
-    Definable {M : Bundled.{0} L.Structure | M ∈ K ∧ Nat.card M = 1} := by
-  refine ⟨cardEqSentence L 1 ⊓ truthTableSentence v.constTupleSentence
-    (fun s => v.decoded (v.encodeOfOne s) ∈ K), fun M _ => ?_⟩
-  rw [Sentence.realize_inf, realize_cardEqSentence, realize_truthTableSentence]
-  constructor
-  · rintro ⟨hM, h1⟩
-    refine ⟨h1, ?_⟩
-    have e : M ≃ Fin 1 := h1 ▸ Finite.equivFin M
-    have heqv := v.decodeEncodeEquiv M e
-    have hmem : v.decoded (v.encode M e) ∈ K := (hK heqv).1 hM
-    rwa [v.encode_eq_encodeOfOne e] at hmem
-  · rintro ⟨h1, hdec⟩
-    refine ⟨?_, h1⟩
-    have e : M ≃ Fin 1 := h1 ▸ Finite.equivFin M
-    have heqv := v.decodeEncodeEquiv M e
-    rw [← v.encode_eq_encodeOfOne e] at hdec
-    exact (hK heqv).2 hdec
+open scoped Classical in
+/-- If every structure of cardinality `n` encodes as `enc` applied to the truth values of the
+sentences `φ i`, then the restriction of an isomorphism-closed class `K` to cardinality `n` is
+first-order definable: the sentence checks the cardinality and looks up the truth table. -/
+private theorem Definable.inter_card_eq_of_encode {K : Set (Bundled.{0} L.Structure)}
+    (hK : IsoClosed K) (n : ℕ) {m : ℕ} (φ : Fin m → L.Sentence)
+    (enc : (Fin m → Bool) → EncodedStructure)
+    (henc : ∀ {N : Type} [L.Structure N] (e : N ≃ Fin n),
+      v.encode N e = enc fun i => decide (N ⊨ φ i)) :
+    Definable {M : Bundled.{0} L.Structure | M ∈ K ∧ Nat.card M = n} := by
+  refine ⟨cardEqSentence L n ⊓ truthTableSentence φ (fun s => v.decoded (enc s) ∈ K),
+    fun M _ => ?_⟩
+  rw [Sentence.realize_inf, realize_cardEqSentence, realize_truthTableSentence, Set.mem_ofPred_eq,
+    and_comm]
+  refine and_congr_right fun hn => ?_
+  have e : M ≃ Fin n := hn ▸ Finite.equivFin M
+  rw [← henc e]
+  exact hK (v.decodeEncodeEquiv M e)
 
 include v in
 /-- For any isomorphism-closed class `K` over a finite relational vocabulary, the restriction of
@@ -213,7 +187,11 @@ theorem Definable.inter_card_le_one {K : Set (Bundled.{0} L.Structure)} (hK : Is
       · exact Or.inr ⟨hM, h⟩
     · rintro (⟨hM, h0⟩ | ⟨hM, h1⟩) <;> exact ⟨hM, by omega⟩
   rw [heq]
-  exact (Definable.inter_card_eq_zero v hK).union (Definable.inter_card_eq_one v hK)
+  -- Cardinality `0` is read off the nullary tables, cardinality `1` off the constant tuples.
+  exact (Definable.inter_card_eq_of_encode v hK 0 v.nullarySymbolSentence v.encodeOfZero
+      v.encode_eq_encodeOfZero).union
+    (Definable.inter_card_eq_of_encode v hK 1 v.constTupleSentence v.encodeOfOne
+      v.encode_eq_encodeOfOne)
 
 end FO
 

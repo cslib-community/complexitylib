@@ -97,8 +97,7 @@ theorem exists_eval_tournamentCircuit (leaves : Fin (m + 1) → Circuit signatur
       (List.ofFn leaves).balancedFold keyedMinFn ((leaves 0).eval interpretation x)
         fun C => C.eval interpretation x := by
     rw [tournamentCircuit, Circuit.eval_balanced]
-    congr 1
-    funext u v
+    congr 1 with u v : 2
     exact eval_keyedMinCircuit u v
   refine ⟨i, heval.trans hwin, fun j => ?_⟩
   rw [← hwin]

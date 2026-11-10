@@ -19,6 +19,7 @@ The probe is deliberately not a general model counter: the two-unit control belo
 open Cslib Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
 open Cslib.Complexity Cslib.Logic.PL.ClauseSet.Sparsification
 open Cslib.Complexity.CountingSparsify
+open Cslib.Complexity.Sparsify (rounds)
 open Cslib.Logic.PL.CNF (normalizeDeclaredLeaf)
 
 @[expose] public section

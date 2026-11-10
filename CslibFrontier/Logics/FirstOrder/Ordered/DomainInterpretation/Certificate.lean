@@ -200,8 +200,7 @@ theorem realize_onFormula (hI : I.Admissible) (φ : (language L').Formula α)
   rw [C.constants.realize_onFormula (C.constants_valid hI), LHom.realize_onFormula]
   refine (StrongHomClass.realize_formula (C.modelEquiv hI) φ).symm.trans ?_
   apply iff_of_eq
-  congr 1
-  funext a
+  congr 1 with a : 1
   exact rank_unrank (v a)
 
 /-- Pull back an ordered target sentence along a certified interpretation. -/

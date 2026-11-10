@@ -57,8 +57,7 @@ theorem IsPPTOn.exists_extension {program : α → ProbComp β} (h : IsPPTOn inp
   simp only [encBits, Function.Embedding.coe_refl, PMF.map_id] at hencoded
   rw [ProbComp.eval_map, ← hencoded, ProbComp.eval_map, PMF.map_comp]
   conv_rhs => rw [← PMF.map_id (ProbComp.eval (program a))]
-  congr 1
-  funext b
+  congr 1 with b : 1
   exact hleft b
 
 end Cslib.Probability

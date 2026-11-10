@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # Game hops that are identical until bad
@@ -158,16 +159,8 @@ theorem runStatelessOracle_bind_le {T α : Type} (μ : PMF T)
           funext fun τ => runStatelessOracle_query_inl (o τ) m k (next τ)]
         exact PMF.bind_comm μ (PMF.uniformOfFintype (Fin (m + 1))) _
       rw [hinl o₁, hinl (fun _ => o₂)]
-      simp only [PMF.bind_apply]
-      have hsum (f g : Fin (m + 1) → ℝ≥0∞) (hle : ∀ x, f x ≤ g x + (Q : ℝ≥0∞) * δ) :
-          (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * f x) ≤
-            (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * g x) + (Q : ℝ≥0∞) * δ := by
-        calc ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * f x
-            ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * (g x + (Q : ℝ≥0∞) * δ) :=
-              tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
-          _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * g x) + (Q : ℝ≥0∞) * δ := by
-              simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-      exact ⟨hsum _ _ (fun x => (ih x).1), hsum _ _ (fun x => (ih x).2)⟩
+      exact ⟨PMF.bind_apply_le_add_const_on_support _ _ fun x _ => (ih x).1,
+        PMF.bind_apply_le_add_const_on_support _ _ fun x _ => (ih x).2⟩
     · simp only [Sum.elim_inr]
       have hinr₁ :
           (fun τ => runStatelessOracle (o₁ τ) (OracleComp.query (Sum.inr req) >>= k) (next τ)) =
