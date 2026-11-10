@@ -154,7 +154,7 @@ private noncomputable def repeatHead (n : ℕ) : WordOracleComp Unit (List Bool)
 
 -- The repeated client is strict oracle PPT.
 example : IsOraclePPTOn encUnary encBits repeatHead := by
-  refine IsOraclePPTOn.iterate_of_bounded_growth (count := fun n => n) (initial := fun _ => [])
+  refine IsOraclePPTOn.iterate_of_bounded_growth' (count := fun n => n) (initial := fun _ => [])
     (by fun_prop) (.const []) (by fun_prop) (growth := 1) ?_
   intro _ next hnext
   obtain ⟨reply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext

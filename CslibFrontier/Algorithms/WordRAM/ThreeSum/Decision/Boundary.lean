@@ -24,7 +24,7 @@ branch. This is a final-verdict optimization, not an assertion about the instanc
 These boundary and native execution proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 

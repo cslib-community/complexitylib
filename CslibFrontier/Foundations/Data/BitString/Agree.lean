@@ -24,7 +24,7 @@ The words `ι → Bool` agreeing with a word `x` outside a set `F` of positions 
   `2 ^ |F|`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

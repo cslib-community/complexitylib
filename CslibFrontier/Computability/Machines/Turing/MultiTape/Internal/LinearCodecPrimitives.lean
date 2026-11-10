@@ -17,7 +17,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Ca
 The witnesses normalize only realizing machines. No higher tidy computability rule is used.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInDegree
 
 variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}

@@ -31,7 +31,7 @@ unary index. The saturating step `min cap (2 * v + b)` is computed as `cap - (ca
   binary index, in any sized list encoding.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

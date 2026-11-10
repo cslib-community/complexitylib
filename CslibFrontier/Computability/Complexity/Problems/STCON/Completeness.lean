@@ -57,7 +57,7 @@ form in which the hardness of 2SAT is usually derived. Finally `STCON` is in `L`
 * [R. Szelepcsényi, *The Method of Forcing for Nondeterministic Automata*][Szelepcsenyi1987]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

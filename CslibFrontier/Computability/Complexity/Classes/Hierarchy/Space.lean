@@ -173,7 +173,8 @@ theorem computableInTimeAndSpace_spaceDiagonal {G : ℕ → ℕ} (hG : SpaceCons
       simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
   obtain ⟨cC, hCt, -⟩ := ((hclock.prod hGu).tidy).mono (S' := fun x : List Bool => G x.length)
     (T' := fun x => TG x + (G x.length + 1) ^ 2 + (TG x + (G x.length + 1) ^ 2)) 4
-    (fun _ => by omega) (fun x => by omega)
+    (fun x => by have := Nat.le_self_pow two_ne_zero (G x.length + 1); omega)
+    (fun x => by omega)
   -- the input of the budgeted universal machine, recomputed and never charged
   obtain ⟨kF, hF⟩ := hAB.append hCt (encOut := eInS) (g := universalInput G) fun x => by
     simp only [universalInput, eInS, encPair_apply, encBits_apply, List.append_assoc]; rfl

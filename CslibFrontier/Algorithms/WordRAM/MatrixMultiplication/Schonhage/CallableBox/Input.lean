@@ -12,11 +12,12 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Ca
 import Mathlib.Data.List.GetD
 
 /-!
-# Ordinary initialized input for a callable product
+# Ordinary initialized input for a callable box product
 
 The first input word is a runtime base pointer. An arbitrary caller prefix follows, then a
-local ordinary input-length word and the unchanged original product input. No computed tables,
-grouping, encodings, bounded scratch contents or execution certificates occur in this input.
+local ordinary input-length word and the unchanged original box-product input
+`BoxProduct.input`, whose last word is the threshold. No computed tables, grouping, encodings,
+bounded scratch contents or execution certificates occur in this input.
 -/
 
 public section
@@ -27,7 +28,8 @@ open Cslib.WordRAM
 open CallableProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Original scalar headers, raw matrices and request pairs above a protected caller prefix. -/
+/-- Original scalar headers, raw matrices, request pairs and the final threshold word `t`, above
+a protected caller prefix. -/
 @[expose] def input {m N : ℕ} (t : ℕ) (caller : List ℕ)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (qs : List (Fin N × Fin N)) : List ℕ :=

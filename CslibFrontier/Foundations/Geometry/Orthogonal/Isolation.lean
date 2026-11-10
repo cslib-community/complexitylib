@@ -14,14 +14,14 @@ import Mathlib.Tactic.Linarith
 /-!
 # Integer-grid isolation for local drawing replacements
 
-An orthogonal segment with integer endpoints that enters the open unit box about an integer
-point must contain that integer point. In a simple route, only the initial segment can contain
-its initial vertex. These facts supply uniform local isolation without searching for a
+An orthogonal segment with integer endpoints that enters the open box of radius `1` about an
+integer point must contain that integer point. In a simple route, only the initial segment can
+contain its initial vertex. These facts supply uniform local isolation without searching for a
 drawing-dependent real radius.
 
 ## Main definitions
 
-* `nearGridPoint`: the open unit square centered on an integer point.
+* `nearGridPoint`: the open box of radius `1` about an integer point, an open square of side `2`.
 
 ## Main results
 
@@ -38,7 +38,7 @@ These integer-grid separation observations and proofs are original.
 namespace Cslib.Orthogonal
 
 
-/-- The open unit square centered on an integer grid point. -/
+/-- The open box of radius `1` about an integer grid point: an open square of side `2`. -/
 def nearGridPoint (c : Point) (p : ℝ × ℝ) : Prop :=
   (c.1 : ℝ) - 1 < p.1 ∧ p.1 < (c.1 : ℝ) + 1 ∧
     (c.2 : ℝ) - 1 < p.2 ∧ p.2 < (c.2 : ℝ) + 1
@@ -56,13 +56,13 @@ private theorem int_between_of_near {a b c : ℤ} {x : ℝ}
     have h'' : (b : ℝ) ≤ (c : ℝ) - 1 := by exact_mod_cast h'
     linarith [hc.1]
 
-/-- Distinct grid points are not within the open unit box about one another. -/
+/-- Distinct grid points are not within the open box of radius `1` about one another. -/
 theorem eq_of_nearGridPoint {a c : Point} (h : nearGridPoint c (realPoint a)) : a = c := by
   have hx := int_between_of_near (a := a.1) (b := a.1) le_rfl le_rfl ⟨h.1, h.2.1⟩
   have hy := int_between_of_near (a := a.2) (b := a.2) le_rfl le_rfl ⟨h.2.2.1, h.2.2.2⟩
   exact Prod.ext (le_antisymm hx.1 hx.2) (le_antisymm hy.1 hy.2)
 
-/-- Entering the open unit box about a grid point forces an integer orthogonal segment
+/-- Entering the open box of radius `1` about a grid point forces an integer orthogonal segment
 to contain that grid point. The statement concerns all real points of the segment. -/
 theorem gridPoint_mem_segment_of_near {a b c : Point} (hab : a.1 = b.1 ∨ a.2 = b.2)
     {p : ℝ × ℝ} (hp : p ∈ segment a b) (hc : nearGridPoint c p) :
@@ -80,7 +80,8 @@ theorem gridPoint_mem_segment_of_near {a b c : Point} (hab : a.1 = b.1 ∨ a.2 =
   have hy' := int_between_of_near hy.1 hy.2 ⟨hc.2.2.1, hc.2.2.2⟩
   exact (realPoint_mem_segment_iff hab).2 ⟨hx'.1, hx'.2, hy'.1, hy'.2⟩
 
-/-- A nonincident integer vertex has a whole open unit box disjoint from a route. -/
+/-- A nonincident integer vertex has a whole open box of radius `1` disjoint from an orthogonal
+route. -/
 theorem gridPoint_mem_support_of_near {r : Route} (hr : IsOrthogonal r)
     {c : Point} {p : ℝ × ℝ} (hp : p ∈ support r) (hc : nearGridPoint c p) :
     realPoint c ∈ support r := by
@@ -107,7 +108,8 @@ theorem segment_eq_first_of_head_mem {a b : Point} {r : Route}
   · exact hnot (realPoint_injective hh ▸ hepoints.1)
   · exact hnot (realPoint_injective hh ▸ List.mem_of_mem_tail hepoints.2)
 
-/-- The open unit box about a route's initial vertex meets only its first segment. -/
+/-- The open box of radius `1` about the initial vertex of a simple orthogonal route meets only
+the route's first segment. -/
 theorem mem_first_segment_of_near_head {a b : Point} {r : Route}
     (ho : IsOrthogonal (a :: b :: r)) (hs : IsSimple (a :: b :: r))
     {p : ℝ × ℝ} (hp : p ∈ support (a :: b :: r)) (ha : nearGridPoint a p) :
@@ -119,7 +121,7 @@ theorem mem_first_segment_of_near_head {a b : Point} {r : Route}
     obtain rfl := segment_eq_first_of_head_mem hs he hea
     exact hp
 
-/-- The tail of a simple proper orthogonal route avoids the entire open unit box about
+/-- The tail of a simple proper orthogonal route avoids the entire open box of radius `1` about
 the route's initial grid vertex. -/
 theorem not_near_head_tail {a b : Point} {r : Route}
     (ho : IsOrthogonal (a :: b :: r)) (hs : IsSimple (a :: b :: r))

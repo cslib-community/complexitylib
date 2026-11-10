@@ -25,6 +25,7 @@ truncated or padded with false before hashing.
 
 ## Main definitions
 
+* `encWordExtractionOutput`: the encoding of an extraction output `(xs, seed, digest)`.
 * `extractWordLabels`, `extractWordLabelsIdeal`: actual and ideal matrix-extraction programs.
 
 ## Main results
@@ -55,6 +56,12 @@ namespace Cslib.Crypto.Pseudoentropy
 
 open Probability BitString Turing.MultiTapeTM
 
+/-- Output `(xs, seed, digest)` of word-label extraction: the list of retained observation words,
+then the hash seed and the digest as bit words. The list and the seed are framed; within the list,
+each observation is framed. -/
+abbrev encWordExtractionOutput : List (List Bool) × List Bool × List Bool ↪ List Bool :=
+  encPair (encList encBits) (encPair encBits encBits)
+
 /-- Extract labels using an explicitly sampled matrix, retaining observations and the full seed. -/
 noncomputable def extractWordLabels (count outputBits : ℕ) (samples : List (List Bool × Bool)) :
     ProbComp (List (List Bool) × List Bool × List Bool) :=
@@ -71,9 +78,8 @@ theorem isPPTOn_extractWordLabels {α : Type} {input : α ↪ List Bool} {count 
     {samples : α → List (List Bool × Bool)}
     (hcount : ComputableInPolyTime count input encUnary)
     (houtput : ComputableInPolyTime outputBits input encUnary)
-    (hsamples : ComputableInPolyTime samples input (encList (encPair encBits encBool))) :
-    IsPPTOn input
-      (encPair (encList encBits) (encPair encBits encBits))
+    (hsamples : ComputableInPolyTime samples input encLabeledSamples) :
+    IsPPTOn input encWordExtractionOutput
       (fun a => extractWordLabels (count a) (outputBits a) (samples a)) :=
   isPPTOn_extractMatrixLabels hcount houtput
     ((bits_encList_polyTime encBool).2.comp (.snd input (encList encBool))) hsamples
@@ -104,12 +110,11 @@ theorem. Sampling, padding, hashing, and encoding the public data are all charge
 The test and dimensions may depend on any encoded runtime parameter. -/
 theorem isPPTOn_extractedWordTest {α : Type} {input : α ↪ List Bool} {count outputBits : α → ℕ}
     (test : α → List (List Bool) × List Bool × List Bool → ProbComp Bool)
-    (htest : IsPPTOn (encPair input (encPair (encList encBits)
-      (encPair encBits encBits))) encBool (fun input => test input.1 input.2))
+    (htest : IsPPTOn (encPair input encWordExtractionOutput) encBool
+      (fun input => test input.1 input.2))
     (hcount : ComputableInPolyTime count input encUnary)
     (houtput : ComputableInPolyTime outputBits input encUnary) :
-    IsPPTOn (encPair input
-      (encList (encPair encBits encBool))) encBool
+    IsPPTOn (encPair input encLabeledSamples) encBool
       (fun input => do
         let result ← extractLabels
           (ProbComp.uniform (BitString (outputBits input.1 * count input.1)))
@@ -154,8 +159,7 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
           ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
     (test : ℕ × List Bool → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
-      (encPair (encList encBits) (encPair encBits encBits)))
-      encBool (fun ((a, i), result) => test a i result)) :
+      encWordExtractionOutput) encBool (fun ((a, i), result) => test a i result)) :
     let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do
@@ -216,8 +220,7 @@ theorem SamplablePair.HasGap.extract_indexed_word_labels {pair : SamplablePair} 
         ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
           ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
     (test : ℕ → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encPair (encList encBits) (encPair encBits encBits)))
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encWordExtractionOutput)
       encBool (fun ((n, i), result) => test n i result)) :
     let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
@@ -255,8 +258,8 @@ theorem SamplablePair.HasGapWithAdvice.extract_word_labels {pair : SamplablePair
         ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
           ((numerator n : ℝ) / dyadicSize (densityBound n)))
     (test : ℕ × List Bool → List (List Bool) × List Bool × List Bool → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encBits) (encPair (encList encBits)
-      (encPair encBits encBits))) encBool (fun input => test input.1 input.2)) :
+    (htest : IsPPTOn (encPair (encPair encUnary encBits) encWordExtractionOutput) encBool
+      (fun input => test input.1 input.2)) :
     let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do
@@ -293,8 +296,8 @@ theorem SamplablePair.HasGap.extract_word_labels {pair : SamplablePair} {gap : �
         ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
           ((numerator n : ℝ) / dyadicSize (densityBound n)))
     (test : ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool)
-    (htest : IsPPTOn (encPair encUnary (encPair (encList encBits)
-      (encPair encBits encBits))) encBool (fun input => test input.1 input.2)) :
+    (htest : IsPPTOn (encPair encUnary encWordExtractionOutput) encBool
+      (fun input => test input.1 input.2)) :
     let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do

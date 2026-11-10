@@ -11,6 +11,8 @@ public import CslibFrontier.DataStructure.DisjointSet.Spec
 public import CslibFrontier.DataStructure.StateTransition.Resource
 public import Batteries.Data.UnionFind
 public import Mathlib.Data.Nat.Log
+-- `import all` only to unfold `Batteries.UnionFind.find`, `Batteries.UnionFind.checkEquiv` and
+-- `Batteries.UnionFind.findAux`, whose bodies Batteries does not expose.
 import all Batteries.Data.UnionFind.Basic
 
 /-!

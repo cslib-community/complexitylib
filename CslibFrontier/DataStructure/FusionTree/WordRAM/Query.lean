@@ -23,8 +23,9 @@ For a sorted distinct list of `n` fitting full keys, initialization, traversal, 
 calls, pointer loads, loop overhead and halt together take at most
 `3100000 * (Nat.log w n + 1)` instructions for every `w ≥ 2`. The concrete representation
 uses at most `126n + 18` words, including empty roots. The arena's one-past-end frontier
-must fit a word separately from the keys and query. No RAM preprocessing-time bound is
-claimed; preprocessing is a classical static construction.
+must fit a word separately from the keys and query; every record has at least 18 words, so
+this requires `w ≥ 5`. No RAM preprocessing-time bound is claimed; preprocessing is a
+classical static construction.
 
 ## Main definitions
 

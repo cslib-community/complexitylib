@@ -39,7 +39,8 @@ The floors cost only constant factors: the natural scale is between the real sca
 ## Main results
 
 * `Nat.log_two_le_div_sqrt_log_two`: `⌊log₂ n⌋ ≤ n / √⌊log₂ n⌋`.
-* `Nat.sqrt_log_two_le_sqrt_clog_two_sub_one_add_one`: `⌊√⌊log₂ n⌋⌋ ≤ ⌈√⌈log₂ n⌉⌉`.
+* `Nat.sqrt_log_two_le_sqrt_clog_two_sub_one_add_one`: `⌊√⌊log₂ n⌋⌋ ≤ ⌊√(⌈log₂ n⌉ - 1)⌋ + 1`,
+  which is `⌈√⌈log₂ n⌉⌉` for `n ≥ 2`.
 * `Nat.ceilDiv_clog_two_le`: `⌈n / ⌈log₂ (n + 2)⌉⌉ ≤ n / √⌊log₂ n⌋ + 1`.
 * `Nat.mul_div_sqrt_log_two_le`: the scale of `c * n` is at most `c` times that of `n`, plus `c`.
 * `Nat.div_sqrt_log_two_le_of_le`: the scale is monotone up to constants.
@@ -60,8 +61,9 @@ theorem one_le_sqrt_log_two {n : ℕ} (hn : 2 ≤ n) : 1 ≤ sqrt (log 2 n) :=
 theorem sqrt_log_two_mono : Monotone fun n => sqrt (log 2 n) :=
   fun _ _ h => sqrt_le_sqrt (log_mono_right h)
 
-/-- `⌊√⌊log₂ n⌋⌋ ≤ ⌈√⌈log₂ n⌉⌉`, the latter written `⌊√(⌈log₂ n⌉ - 1)⌋ + 1`: the divisor of the
-scale is at most the ceiling convention for the square root of the ceiling logarithm. -/
+/-- `⌊√⌊log₂ n⌋⌋ ≤ ⌊√(⌈log₂ n⌉ - 1)⌋ + 1`, with truncated subtraction. The right-hand side is
+`⌈√⌈log₂ n⌉⌉` for `n ≥ 2` and is `1` for `n ≤ 1`, so from `n = 2` on the divisor of the scale is
+at most the ceiling convention for the square root of the ceiling logarithm. -/
 theorem sqrt_log_two_le_sqrt_clog_two_sub_one_add_one (n : ℕ) :
     sqrt (log 2 n) ≤ sqrt (clog 2 n - 1) + 1 := by
   refine (sqrt_le_sqrt (log_le_clog 2 n)).trans ?_

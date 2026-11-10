@@ -22,7 +22,7 @@ Execution of the child is composed separately by the depth induction. This lemma
 parent's subsequent native instructions; no child execution or cost certificate is input here.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

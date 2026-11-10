@@ -32,7 +32,7 @@ The construction follows `MultiTape.Probabilistic.OutputPrefix`, adapted there f
 preserves exact multiplicity in addition to the output behavior.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeCTM
 

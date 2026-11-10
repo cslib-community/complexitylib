@@ -39,7 +39,7 @@ Adapted from Languages/Probabilistic/Concentration.lean on the cslib `crypto` br
 bound from `Probability.Concentration`, following [Hoeffding][Hoeffding1963].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.ProbComp
 

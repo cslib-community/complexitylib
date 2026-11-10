@@ -35,8 +35,8 @@ consolidation table leave existing subtrees valid by direct structural induction
 
 * `ValidSubtree.fib_le_size`, `ValidSubtree.deg_bounds`: `fib (T.deg + 2) ≤ T.size`, yielding both
   `T.deg ≤ 2 * Nat.log 2 m + 1` and `T.deg + 1 ≤ m` whenever `T.size ≤ m`.
-* `ValidRoot.singleton`, `ValidRoot.link`: creation of singleton root trees and degree-preserving
-  root linking during consolidation.
+* `ValidRoot.singleton`, `ValidRoot.link`: creation of singleton root trees and linking of two
+  equal-degree roots during consolidation, which raises the surviving root's degree by one.
 
 ## References
 

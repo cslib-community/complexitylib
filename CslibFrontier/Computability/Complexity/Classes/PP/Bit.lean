@@ -33,7 +33,7 @@ This includes zero random bits and a tie is rejected.
   PP decisions and counting-function bits. The explicit shifted count is the construction here.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
