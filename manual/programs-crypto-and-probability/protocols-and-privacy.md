@@ -735,6 +735,12 @@ Checked instances are in [CslibFrontierTests/Crypto/Yao.lean](../../CslibFrontie
 
 The scope limits of Yao's protocol apply: the base transfers are the ideal oracle, the statements are single-instance, efficiency is not tracked, and only semi-honest corruption is covered. Checked instances are in [CslibFrontierTests/Crypto/IKNP.lean](../../CslibFrontierTests/Crypto/IKNP.lean), including a constant hash family with positive correlation-robustness advantage.
 
+### Arithmetic garbling foundations
+
+The modules under [Primitives/Garbling/Arithmetic](../../CslibFrontier/Crypto/Primitives/Garbling/Arithmetic/AffineLabel.lean) formalize the information-theoretic layer of arithmetic and mixed garbling following Applebaum–Ishai–Kushilevitz [aik11][aik11] and Li–Liu [ll24][ll24]. An arithmetic wire carrying `x : R` has the affine label `affineLabel k s x = k + x • s`; in [ll24][ll24] the slope is a global offset. With a shared slope, sums and public linear combinations of labels are labels (`affineLabel_add_affineLabel`, `sum_smul_affineLabel`), and a slope with a unit coordinate makes the label determine `x` (`affineLabel_injective`). The multiplication gadget `mulEncodeWith` is an explicit instance of the degree-two affinization notion of [aik11][aik11] (Definitions 4.2 and 4.5, Fact 5.1), simulated from the output label as in [ll24][ll24] Section 3.1; it splits the label of `x * y` into two values affine in `x` and two affine in `y`; `decode_mulEncodeWith` is its correctness and `eval_mulEncode` its perfect privacy against the simulator `mulSimulate`, which sees only the output label. [BitComposition.lean](../../CslibFrontier/Crypto/Primitives/Garbling/Arithmetic/BitComposition.lean) defines bit decomposition and composition over `ℤ/p^k` (`bitComp_bitDecomp`) and the linear bit-composition gadget of [ll24][ll24] Section 4.1 (Figure 5, Lemma 4), with additive pads over the ring in place of XOR pads: `linCompEval_linCompTable` is its correctness for arbitrary pads, and `eval_activeShares` shows that the unpadded active rows are a uniform additive sharing of the output label, reusing `ProbComp.sampleAdditiveShares`. Digits are the existing `Cslib.Radix.digit`; the lemmas added for it are in [Foundations/Data/Nat/Radix/Digit.lean](../../CslibFrontier/Foundations/Data/Nat/Radix/Digit.lean). [Foundations/Data/Nat/ConstantDivision.lean](../../CslibFrontier/Foundations/Data/Nat/ConstantDivision.lean) proves the multiply-and-shift identity `Nat.mul_div_pow_eq_div`, a radix-`p` variant of Granlund–Montgomery [gm94][gm94] Theorem 4.2 in the form of [ll24][ll24] Lemma 5, and [ConstantDivision.lean](../../CslibFrontier/Crypto/Primitives/Garbling/Arithmetic/ConstantDivision.lean) uses it for the exactness of division and remainder by a constant `N` in `ℤ/p^(2k+1)` on inputs below `p ^ k` (`constDiv_eq_div`, `constMod_eq_mod`), as in [ll24][ll24] Section 4.2. [CRT.lean](../../CslibFrontier/Crypto/Primitives/Garbling/Arithmetic/CRT.lean) shows that the CRT combination of the residues of `x` modulo pairwise coprime `m i` is `x` modulo `∏ i, m i` (`crtSum_modEq`), never exceeds `(∏ i, m i - 1) ^ 2` (`crtSum_le_sq`), and is reduced to `x mod ∏ i, m i` by `constMod` when `(∏ i, m i) ^ 2 ≤ p ^ k` (`constMod_crtSum`), following [ll24][ll24] Section 5 for arbitrary pairwise coprime moduli. The bound uses `Nat.sum_sub_one_le_prod_sub_one` from [Foundations/Data/Nat/BigOperators.lean](../../CslibFrontier/Foundations/Data/Nat/BigOperators.lean).
+
+These are building blocks, not a garbling scheme: the random-oracle pads that hide inactive rows, key extension, the Boolean–arithmetic conversion gadgets as garbled tables, and an end-to-end privacy theorem for mixed circuits are not formalized. Checked instances are in [CslibFrontierTests/Crypto/GarblingArithmetic.lean](../../CslibFrontierTests/Crypto/GarblingArithmetic.lean).
+
 ## Upstream perfect secrecy and sharing
 
 Pinned cslib supplies [PerfectlySecret](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Protocols/PerfectSecrecy/Defs.lean#L76): observing any positive-probability ciphertext leaves every message prior unchanged. Its equivalent ciphertext-distribution formulation and one-time-pad instance are finite semantic security, with no PPT restriction. The upstream commitment interface separately defines perfect/statistical hiding and perfect binding [cslib][cslib].
@@ -804,6 +810,7 @@ The [covering-code examples](../../CslibFrontierTests/Crypto/PIRCoveringCode.lea
 
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
+[aik11]: ../sources.md#aik11
 [bcs16]: ../sources.md#bcs16
 [bhr12]: ../sources.md#bhr12
 [bmr16]: ../sources.md#bmr16
@@ -816,12 +823,14 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [cslib]: ../sources.md#cslib
 [dworkroth14]: ../sources.md#dworkroth14
 [gkwy20]: ../sources.md#gkwy20
+[gm94]: ../sources.md#gm94
 [goldreich04]: ../sources.md#goldreich04
 [grs12]: ../sources.md#grs12
 [heath24]: ../sources.md#heath24
 [iknp03]: ../sources.md#iknp03
 [kov17]: ../sources.md#kov17
 [ks08]: ../sources.md#ks08
+[ll24]: ../sources.md#ll24
 [lp09]: ../sources.md#lp09
 [yao86]: ../sources.md#yao86
 [yekhanin12]: ../sources.md#yekhanin12
