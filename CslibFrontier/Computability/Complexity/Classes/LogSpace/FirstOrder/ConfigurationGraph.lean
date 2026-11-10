@@ -283,7 +283,7 @@ theorem realize_stepFormula {inputFormula : Option Bool → (language L).Formula
       RegisterStep ntm w (fun i => (X i).realize v |>.val) (fun i => (Y i).realize v |>.val) := by
   simp only [stepFormula, Formula.realize_sup, Formula.realize_inf, Formula.realize_iInf,
     Formula.realize_iSup, Formula.realize_equal, realize_natEq, realize_matchFormula hinput,
-    realize_nextFormula hlen hn, RegisterStep]
+    realize_nextFormula hlen hn, RegisterStep, RegisterStepWith]
   refine or_congr ⟨fun ⟨hc, hy⟩ => ⟨hc, funext fun i => congrArg Fin.val (hy i)⟩,
     fun ⟨hc, hy⟩ => ⟨hc, fun i => Fin.ext (congrFun hy i)⟩⟩ ⟨?_, ?_⟩
   · rintro ⟨j, ⟨hc, hs, hh⟩, hY⟩

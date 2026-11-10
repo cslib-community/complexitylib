@@ -27,6 +27,8 @@ input universe `Fin n`.
 ## Main results
 
 * `FullTupleInterpretation.positive_onTCSentence`: the pullback preserves closure polarity.
+* `FullTupleInterpretation.realize_onTCSentence_closureBy`: the pullback preserves truth under
+  every closure semantics `TC.Tuple.closureBy T` whose transform commutes with bijections.
 * `FullTupleInterpretation.realize_onTCSentence`: the pullback preserves truth.
 
 ## References
@@ -57,14 +59,16 @@ noncomputable def onTCSentence (φ : Operator.Formula (language L') TC.shape [] 
 
 variable {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
 
-/-- The sentence pullback preserves truth on the canonical lexicographically ranked universe. -/
-theorem realize_onTCSentence (hk : 0 < k)
+/-- The sentence pullback preserves truth on the canonical lexicographically ranked universe,
+under every closure semantics `TC.Tuple.closureBy T` whose transform commutes with bijections. -/
+theorem realize_onTCSentence_closureBy {T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop}
+    (hT : TC.Tuple.Transports T) (hk : 0 < k)
     (φ : Operator.Formula (language L') TC.shape [] Empty) :
-    (I.onTCSentence φ).Realize (M := Fin n) TC.interpretation Operator.RelEnv.empty
+    (I.onTCSentence φ).Realize (M := Fin n) (TC.Tuple.closureBy T) Operator.RelEnv.empty
         Empty.elim ↔
       letI := I.inputStructure (n := n)
       letI : Fact (2 ≤ n ^ k) := ⟨two_le_pow (n := n) hk⟩
-      φ.Realize (M := Fin (n ^ k)) TC.interpretation Operator.RelEnv.empty Empty.elim := by
+      φ.Realize (M := Fin (n ^ k)) (TC.Tuple.closureBy T) Operator.RelEnv.empty Empty.elim := by
   let := I.inputStructure (n := n)
   let : Fact (2 ≤ n ^ k) := ⟨two_le_pow (n := n) hk⟩
   have hf {α : Type} (ψ : (language L').Formula α) (v : α × Fin k → Fin n) :
@@ -72,11 +76,21 @@ theorem realize_onTCSentence (hk : 0 < k)
         ψ.Realize (M := Fin (n ^ k)) (fun a => lexEquiv (fun i => v (a, i))) :=
     I.realize_onFormula hk ψ (fun a i => v (a, i))
   rw [onTCSentence, Operator.Formula.realize_relabel]
-  have h := TC.Tuple.realize_onFormula I.onFormula lexEquiv hf φ
+  have h := TC.Tuple.realize_onFormula_closureBy I.onFormula lexEquiv hf hT φ
     Operator.RelEnv.empty Operator.RelEnv.empty (fun {_} r => nomatch r)
     (Empty.elim ∘ Prod.fst)
   convert h using 1
-  exact iff_of_eq (congrArg (φ.Realize TC.interpretation Operator.RelEnv.empty)
+  exact iff_of_eq (congrArg (φ.Realize (TC.Tuple.closureBy T) Operator.RelEnv.empty)
     (Subsingleton.elim _ _))
+
+/-- The sentence pullback preserves truth on the canonical lexicographically ranked universe. -/
+theorem realize_onTCSentence (hk : 0 < k)
+    (φ : Operator.Formula (language L') TC.shape [] Empty) :
+    (I.onTCSentence φ).Realize (M := Fin n) TC.interpretation Operator.RelEnv.empty
+        Empty.elim ↔
+      letI := I.inputStructure (n := n)
+      letI : Fact (2 ≤ n ^ k) := ⟨two_le_pow (n := n) hk⟩
+      φ.Realize (M := Fin (n ^ k)) TC.interpretation Operator.RelEnv.empty Empty.elim :=
+  I.realize_onTCSentence_closureBy TC.Tuple.transports_id hk φ
 
 end Cslib.Logic.FO.Ordered.FullTupleInterpretation
