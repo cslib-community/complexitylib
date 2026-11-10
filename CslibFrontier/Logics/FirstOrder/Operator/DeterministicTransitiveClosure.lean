@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Operator.Quantifiers
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure
+import Cslib.Foundations.Data.Fin.Tuple
 
 /-!
 # First-order logic with deterministic tuple transitive closure
@@ -33,7 +34,7 @@ original formula means with `DTC.interpretation`; this embeds FO(DTC) in FO(TC).
 
 * `deterministicReduct`: the edges of a relation whose source has exactly that one successor.
 * `interpretation`: deterministic closure on the operator syntax `TC.shape`.
-* `functionalize`: a formula expressing the deterministic reduct of a closure body.
+* `reductFormula`: a formula expressing the deterministic reduct of a closure body.
 * `toTC`: the translation from FO(DTC) to FO(TC).
 
 ## Main results
@@ -62,9 +63,8 @@ namespace Cslib.Logic.FO.DTC
   fun x y => r x y ∧ ∀ z, r x z → z = y
 
 /-- Every edge of the deterministic reduct is an edge of the relation. -/
-theorem deterministicReduct_le {β : Type*} {r : β → β → Prop} {x y : β}
-    (h : deterministicReduct r x y) : r x y :=
-  h.1
+theorem deterministicReduct_le {β : Type*} (r : β → β → Prop) : deterministicReduct r ≤ r :=
+  fun _ _ h => h.1
 
 /-- Each source has at most one successor in the deterministic reduct. -/
 theorem rightUnique_deterministicReduct {β : Type*} (r : β → β → Prop) :
@@ -126,13 +126,10 @@ theorem realize_tc_refl {k : ℕ} (body : Formula L TC.shape Γ (α ⊕ Fin (2 *
 
 /-! ### Translation into FO(TC) -/
 
-/-- Composing with a function commutes with concatenating tuples. -/
+/-- Composing with a function commutes with concatenating tuples (`Fin.comp_append`). -/
 private theorem comp_pair {A B : Type*} {k : ℕ} (g : A → B) (xs ys : Fin k → A) :
-    g ∘ TC.pair xs ys = TC.pair (g ∘ xs) (g ∘ ys) := by
-  funext i
-  simp only [Function.comp_apply, TC.pair]
-  refine Fin.addCases (fun j => ?_) (fun j => ?_) (Fin.cast (Nat.two_mul k) i) <;>
-    simp only [Fin.append_left, Fin.append_right, Function.comp_apply]
+    g ∘ TC.pair xs ys = TC.pair (g ∘ xs) (g ∘ ys) :=
+  funext fun i => congrFun (Fin.comp_append g xs ys) (Fin.cast (Nat.two_mul k) i)
 
 /-- The variables of a closure body extended by a candidate successor: the body's own
 variables are on the left, and the candidate successor tuple is on the right. -/
@@ -174,18 +171,18 @@ private theorem comp_toCandidate {k : ℕ} (v : α → M) (xs ys zs : Fin k → 
 
 /-- The deterministic reduct of a closure body `φ(x, y)`:
 `φ(x, y) ∧ ¬ ∃ z, φ(x, z) ∧ z ≠ y`. -/
-def functionalize {k : ℕ} (φ : Formula L TC.shape Γ (α ⊕ Fin (2 * k))) :
+def reductFormula {k : ℕ} (φ : Formula L TC.shape Γ (α ⊕ Fin (2 * k))) :
     Formula L TC.shape Γ (α ⊕ Fin (2 * k)) :=
   .conj φ (.neg (Formula.exs k (.conj (φ.relabel toCandidate) (.neg (.ofFO (candidateEq k))))))
 
-/-- `functionalize` defines the deterministic reduct of the body relation, under any
+/-- `reductFormula` defines the deterministic reduct of the body relation, under any
 interpretation of the operators inside the body. -/
-theorem realize_functionalize (I : Interpretation TC.shape M) {k : ℕ}
+theorem realize_reductFormula (I : Interpretation TC.shape M) {k : ℕ}
     (φ : Formula L TC.shape Γ (α ⊕ Fin (2 * k))) (ρ : RelEnv Γ M) (v : α → M)
     (xs ys : Fin k → M) :
-    (functionalize φ).Realize I ρ (Sum.elim v (TC.pair xs ys)) ↔
+    (reductFormula φ).Realize I ρ (Sum.elim v (TC.pair xs ys)) ↔
       deterministicReduct (fun us ws => φ.Realize I ρ (Sum.elim v (TC.pair us ws))) xs ys := by
-  simp only [functionalize, Operator.Formula.realize_conj, Operator.Formula.realize_neg,
+  simp only [reductFormula, Operator.Formula.realize_conj, Operator.Formula.realize_neg,
     Operator.Formula.realize_exs, Operator.Formula.realize_relabel, Operator.Formula.realize_ofFO,
     comp_toCandidate, realize_candidateEq, deterministicReduct, not_exists, not_and, not_not]
 
@@ -197,7 +194,7 @@ def toTC : {Γ : List ℕ} → {α : Type w} →
   | _, _, .neg φ => .neg (toTC φ)
   | _, _, .conj φ ψ => .conj (toTC φ) (toTC ψ)
   | _, _, .ex φ => .ex (toTC φ)
-  | _, _, .op k body args => .op k (fun i => functionalize (toTC (body i))) args
+  | _, _, .op k body args => .op k (fun i => reductFormula (toTC (body i))) args
 
 /-- Read as FO(TC), the translation means what the original formula means as FO(DTC). -/
 theorem realize_toTC (φ : Formula L TC.shape Γ α) (ρ : RelEnv Γ M) (v : α → M) :
@@ -212,7 +209,7 @@ theorem realize_toTC (φ : Formula L TC.shape Γ α) (ρ : RelEnv Γ M) (v : α 
     change Relation.ReflTransGen _ _ _ ↔ Relation.ReflTransGen _ _ _
     refine iff_of_eq (congrArg (fun R => Relation.ReflTransGen R _ _)
       (funext fun xs => funext fun ys => propext ?_))
-    exact (realize_functionalize TC.interpretation _ _ v xs ys).trans
+    exact (realize_reductFormula TC.interpretation _ _ v xs ys).trans
       (and_congr (ih _ _ _) (forall_congr' fun _ => imp_congr_left (ih _ _ _)))
 
 end Cslib.Logic.FO.DTC
