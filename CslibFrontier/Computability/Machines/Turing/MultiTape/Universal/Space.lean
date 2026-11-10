@@ -146,7 +146,9 @@ lemma step_tape (d : Desc) (x : List ℕ) (c : SCfg) (i : ℕ) :
     ∃ a, (step d x c).1.workTapes.getD i .blank = (c.workTapes.getD i .blank).apply a := by
   simp only [step]
   repeat' split
-  all_goals first | exact Act.apply_tape _ x c i | exact ⟨(none, 0), (apply_none _).symm⟩
+  all_goals first
+    | exact Act.apply_tape _ x c i
+    | exact ⟨(none, 0), (Tape.apply_none_zero _).symm⟩
 
 lemma head_apply (t : Tape) (a : TapeAct) :
     (t.apply a).head = t.head - 1 ∨ (t.apply a).head = t.head ∨ (t.apply a).head = t.head + 1 := by
