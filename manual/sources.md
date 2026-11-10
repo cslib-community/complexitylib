@@ -642,6 +642,11 @@ Jason D. Hartline. *Mechanism Design and Approximation*, book manuscript; chapte
 
 Juris Hartmanis. "Computational Complexity of One-Tape Turing Machine Computations." *Journal of the ACM* 15(2), 325–339, 1968. https://doi.org/10.1145/321450.321464 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it for the `n log n` lower bound on one-tape recognition of nonregular languages, as attributed in [Pighizzini 2009](#pighizzini2009), §1 and §4.
 
+<a id="heath24"></a>
+## heath24
+
+David Heath. "Efficient Arithmetic in Garbled Circuits." *Advances in Cryptology – EUROCRYPT 2024*, Lecture Notes in Computer Science 14655, 3–31, 2024. https://doi.org/10.1007/978-3-031-58740-5_1 . Full version: Cryptology ePrint Archive, Paper 2024/139, https://eprint.iacr.org/2024/139 . Locators follow the ePrint full version: §2.1 Definition 1 (circular correlation robustness), §3.2 Definitions 4 and 6 (switch systems and legality), §3.3 Construction 1 and Figure 2 (switch-system garbling and evaluation), §4 (pp. 13–14) and §4.1 `bin-to-hot` (p. 14, single-ciphertext binary-to-one-hot conversion, halving the material of Heath–Kolesnikov CCS 2021), and Appendix A, Theorem 4 and Figure 4 (obliviousness and its hybrids).
+
 <a id="heldkarp62"></a>
 ## heldkarp62
 
