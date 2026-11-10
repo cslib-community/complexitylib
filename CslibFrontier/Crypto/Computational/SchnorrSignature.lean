@@ -76,6 +76,8 @@ eavesdropping security are provided by `SchnorrIdentification` and `SchnorrEaves
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSigVerifyBits`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrRecoverCommitBits`: bit-encoded Schnorr signature
   key generation, commitment, response, signing, verification, and commitment recovery.
+* `Cslib.Crypto.PrimeOrderGroupFamily.encSchnorrBitsInput`: the input encoding `(d, a, b, c)` of
+  the bit-level response and commitment-recovery maps.
 * `Cslib.Crypto.PrimeOrderGroupFamily.challengeEmbedding`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrBitSigma`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMScheme`,
@@ -215,6 +217,11 @@ theorem isPPTOn_schnorrCommitBits :
     IsPPTOn (encPair F.encDesc encBits) encBits (fun input => pure (F.schnorrCommitBits input)) :=
   F.computableInPolyTime_schnorrCommitBits.isPPTOn
 
+/-- Input `(d, a, b, c)` of the bit-level Schnorr response and commitment-recovery maps: a group
+description `d`, then three bit words. The description and the first two words are framed. -/
+abbrev encSchnorrBitsInput : F.Desc × List Bool × List Bool × List Bool ↪ List Bool :=
+  encPair F.encDesc (encPair encBits (encPair encBits encBits))
+
 /-- Bit-level Schnorr response: given `(d, sk, r, roOut)` where `sk` is the encoded secret key, `r`
 is the encoded commitment randomness, and `roOut` is the random-oracle challenge bit string, compute
 `((ofBits r + ofBits roOut * ofBits sk) % F.order d).bits`. -/
@@ -235,8 +242,7 @@ def schnorrRespondBits (input : F.Desc × List Bool × List Bool × List Bool) :
 
 /-- **Bit-level Schnorr response is computable in polynomial time**. -/
 theorem computableInPolyTime_schnorrRespondBits :
-    ComputableInPolyTime F.schnorrRespondBits
-      (encPair F.encDesc (encPair encBits (encPair encBits encBits))) encBits := by
+    ComputableInPolyTime F.schnorrRespondBits F.encSchnorrBitsInput encBits := by
   let encIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
   have hd : ComputableInPolyTime
       (fun p : F.Desc × List Bool × List Bool × List Bool => p.1) encIn F.encDesc := by fun_prop
@@ -255,8 +261,7 @@ theorem computableInPolyTime_schnorrRespondBits :
 
 /-- `schnorrRespondBits` lifted to `ProbComp` is uniform strict PPT. -/
 theorem isPPTOn_schnorrRespondBits :
-    IsPPTOn (encPair F.encDesc (encPair encBits (encPair encBits encBits))) encBits
-      (fun input => pure (F.schnorrRespondBits input)) :=
+    IsPPTOn F.encSchnorrBitsInput encBits (fun input => pure (F.schnorrRespondBits input)) :=
   F.computableInPolyTime_schnorrRespondBits.isPPTOn
 
 /-- Deterministic bit-encoded Schnorr signing from explicit coins and a random-oracle challenge
@@ -317,8 +322,7 @@ def schnorrRecoverCommitBits (input : F.Desc × List Bool × List Bool × List B
 
 /-- **Bit-level Schnorr commitment recovery is computable in polynomial time**. -/
 theorem computableInPolyTime_schnorrRecoverCommitBits :
-    ComputableInPolyTime F.schnorrRecoverCommitBits
-      (encPair F.encDesc (encPair encBits (encPair encBits encBits))) encBits := by
+    ComputableInPolyTime F.schnorrRecoverCommitBits F.encSchnorrBitsInput encBits := by
   let encIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
   have hd : ComputableInPolyTime
       (fun p : F.Desc × List Bool × List Bool × List Bool => p.1) encIn F.encDesc := by fun_prop

@@ -82,8 +82,7 @@ theorem isPPTOn_finish {α : Type} {input : α ↪ List Bool} {bound observation
     {middle : α → List (List Bool) × List Bool × List Bool}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hobservation : ComputableInPolyTime observationBits input encUnary)
-    (hmiddle : ComputableInPolyTime middle input
-      (encPair (encList encBits) (encPair encBits encBits))) :
+    (hmiddle : ComputableInPolyTime middle input encWordExtractionOutput) :
     IsPPTOn input encBits (fun a => finish (bound a) (observationBits a) (middle a)) :=
   let hmid := (ComputableInPolyTime.fst input encBits).trans hmiddle.snd'
   (isPPTOn_extractWordObservations hbound hobservation hmiddle.fst').bind_with
