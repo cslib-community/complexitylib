@@ -7,11 +7,13 @@ Authors: Samuel Schlesinger
 module
 
 import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
+import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolynomialPadding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 
-/-! Concrete padding, decoding, acceptance/rejection by the padding guard, and the improved
-binary-to-unary resource bound. -/
+/-! Concrete padding, decoding, acceptance/rejection by the padding guard, the improved
+binary-to-unary resource bound, and instances of the translation lemma. -/
 
 public section
 
@@ -60,5 +62,20 @@ theorem binaryToUnary_bound_and_values :
     ComputableInO (fun n : ℕ => n) encNat encUnary (fun n => n) (fun n => n) ∧
     encUnary 0 = [] ∧ encUnary 4 = [true, true, true, true] :=
   ⟨ComputableInO.natToUnary, rfl, rfl⟩
+
+open Cslib.Complexity in
+/-- The translation lemma along the padding function `2 * n + 1`: a collapse from quadratic to
+linear time would transfer to the doubled lengths. -/
+example (h : DTIME encBits (fun n => (n + 1) ^ 2) ⊆ DTIME encBits (fun n => n + 1)) :
+    DTIME encBits ((fun n => (n + 1) ^ 2) ∘ fun n => 2 * n + 1) ⊆
+      DTIME encBits ((fun n => n + 1) ∘ fun n => 2 * n + 1) :=
+  DTIME_comp_subset_of_subset (fun _ _ hmn => Nat.pow_le_pow_left (by omega) 2)
+    (fun n => by nlinarith) (fun n => by omega) (by fun_prop) (fun n => by omega) h
+
+open Cslib.Complexity in
+/-- Polynomial padding now also transfers collapses to the linear degree. -/
+example (h : DTIME encBits (fun n => (n + 1) ^ 2) ⊆ DTIME encBits (fun n => (n + 1) ^ 1)) :
+    DTIME encBits (fun n => (n + 1) ^ (2 * 3)) ⊆ DTIME encBits (fun n => (n + 1) ^ (1 * 3)) :=
+  DTIME_pow_mul_subset_of_subset le_rfl (by omega) (by omega) h
 
 end CslibFrontierTests.PolynomialPadding
