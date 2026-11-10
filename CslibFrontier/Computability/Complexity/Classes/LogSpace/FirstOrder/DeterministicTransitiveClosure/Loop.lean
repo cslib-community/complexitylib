@@ -43,7 +43,7 @@ public section
 namespace Cslib.Logic.FO.Ordered.DTCModelChecker
 
 open Turing Turing.CounterProgram Turing.CounterProgram.Block Expr
-open TCModelChecker (Kept testExpr lt_eval_testExpr digitE eval_digitE)
+open TCModelChecker (Kept testExpr lt_eval_testExpr digitE reaches_digitsCode reaches_loadCode)
 
 /-- The deterministic closure loop around compiled body code `body`, placed at `b`, with
 registers from `base`: the current tuple at `base + i`, the candidate at `base + k + i`, the
@@ -228,16 +228,9 @@ private theorem loop_scan (hP : P.CodeAt b (dtcCode b base k src dst body T F))
     · refine ⟨regs, Or.inl ⟨hr₁.trans (reaches_lt_yes h14 hmain.1.2.2
         ((flag_lt_one hf).mpr rfl) (Reaches.refl _)), hmain.1,
         fun y hy => hnone y (hjN ▸ (finFunctionFinEquiv y).isLt) hy.1⟩⟩
-    · obtain ⟨regs₁, hr₂, hl₁, hout₁, hin₁, hB₁⟩ := reaches_assignsCode (w := w) h15
-        (r := base) (k := k) (regs := regs) (by omega)
-        (fun i hi regs' h => by
-          simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg]
-          rw [h _ (by omega), h 0 (by omega)]) hmain.1.2.2
-        (fun i hi => by
-          rw [show (digitE (base + 2 * k + 3) i).eval regs =
-              (digitE (base + 2 * k + 3) (⟨i, hi⟩ : Fin k)).eval regs from rfl,
-            eval_digitE ((hmain.1.2.1 0 hbase).trans h0) (finFunctionFinEquiv y) hs]
-          exact (Fin.isLt _).le.trans hnB)
+    · obtain ⟨regs₁, hr₂, hl₁, hout₁, hin₁, hB₁⟩ := reaches_digitsCode (w := w) h15
+        (by omega) hbase (by omega) ((hmain.1.2.1 0 hbase).trans h0) hnB hmain.1.2.2
+        (finFunctionFinEquiv y) hs
       have ht₁ : regs₁.getD (base + 2 * k + 1) 0 = m := by
         rw [hout₁ _ (by omega), hmain.2.2]
       refine ⟨regs₁.set (base + 2 * k + 1) (m + 1), Or.inr ⟨y, ⟨hy, fun y' hy' => huniq y'
@@ -249,9 +242,7 @@ private theorem loop_scan (hP : P.CodeAt b (dtcCode b base k src dst body T F))
       · refine ⟨⟨by rw [List.length_set, hl₁, hl], fun i hi => ?_,
           List.forall_mem_set_of_forall_mem hB₁ (by omega)⟩, fun i => ?_, ?_⟩
         · rw [List.getD_set_ne (by omega), hout₁ i (by omega), hmain.1.2.1 i hi]
-        · rw [List.getD_set_ne (by omega), hin₁ i i.isLt,
-            eval_digitE ((hmain.1.2.1 0 hbase).trans h0) (finFunctionFinEquiv y) hs,
-            Equiv.symm_apply_apply]
+        · rw [List.getD_set_ne (by omega), hin₁ i, Equiv.symm_apply_apply]
         · exact List.getD_set_self (by rw [hl₁, hl]; omega)
   | succ e ih =>
     intro j regs he hj hscan
@@ -264,18 +255,10 @@ private theorem loop_scan (hP : P.CodeAt b (dtcCode b base k src dst body T F))
     have hsym : finFunctionFinEquiv.symm ⟨j, hjN⟩ = ys :=
       finFunctionFinEquiv.symm_apply_eq.mpr (Fin.ext hys.symm)
     -- decode the candidate
-    obtain ⟨regs₁, hr₁, hl₁, hout₁, hin₁, hB₁⟩ := reaches_assignsCode (w := w) h8
-      (r := base + k) (k := k) (regs := regs) (by omega)
-      (fun i hi regs' h => by
-        simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg]
-        rw [h _ (by omega), h 0 (by omega)]) hmain.1.2.2
-      (fun i hi => by
-        rw [show (digitE (base + 2 * k) i).eval regs =
-            (digitE (base + 2 * k) (⟨i, hi⟩ : Fin k)).eval regs from rfl,
-          eval_digitE hr0 ⟨j, hjN⟩ hc]
-        exact (Fin.isLt _).le.trans hnB)
+    obtain ⟨regs₁, hr₁, hl₁, hout₁, hin₁, hB₁⟩ := reaches_digitsCode (w := w) h8
+      (by omega) (by omega) (by omega) hr0 hnB hmain.1.2.2 ⟨j, hjN⟩ hc
     have hY₁ : ∀ i : Fin k, regs₁.getD (base + k + i) 0 = ys i := fun i => by
-      rw [hin₁ i i.isLt, eval_digitE hr0 ⟨j, hjN⟩ hc, hsym]
+      rw [hin₁ i, hsym]
     have hmain₁ : MainInv n B base k regs₀ us m regs₁ :=
       hmain.of_agree hl₁ hB₁ fun i hi => hout₁ i (by omega)
     -- run the body
@@ -483,22 +466,12 @@ theorem reaches_dtcCode {P : CounterProgram} {w : List Bool} {n B b base k T F :
       P.Reaches w (P.Running B) (b, regs₀) (if res then T else F, regs') ∧
       Kept B base regs₀ regs' := by
   obtain ⟨h1, h2, -⟩ := dtcCode_parts hP
-  obtain ⟨regs₁, hr₁, hl₁, hout₁, hin₁, hB₁⟩ := reaches_assignsCode (w := w) h1
-    (by omega)
-    (fun i hi regs' h => by
-      simp only [hi, ↓reduceDIte]
-      rw [hsrc regs' (fun j hj => h j (by omega)), hsrc regs₀ (fun _ _ => rfl)]) hB
-    (fun i hi => by
-      simp only [hi, ↓reduceDIte]
-      rw [hsrc regs₀ (fun _ _ => rfl)]
-      exact (Fin.isLt _).le.trans hnB)
+  obtain ⟨regs₁, hr₁, hl₁, hout₁, hin₁, hB₁⟩ := reaches_loadCode (w := w) h1
+    (by omega) hnB hB hsrc
   have hinv : MainInv n B base k regs₀ s₀ 0 (regs₁.set (base + 2 * k + 1) 0) :=
     ⟨⟨by rw [List.length_set, hl₁], fun i hi => by rw [List.getD_set_ne (by omega),
         hout₁ i (by omega)], List.forall_mem_set_of_forall_mem hB₁ (Nat.zero_le _)⟩,
-      fun i => by
-        rw [List.getD_set_ne (by omega), hin₁ i i.isLt]
-        simp only [i.isLt, ↓reduceDIte]
-        exact hsrc regs₀ (fun _ _ => rfl) i,
+      fun i => by rw [List.getD_set_ne (by omega), hin₁ i],
       List.getD_set_self (by omega)⟩
   obtain ⟨res, regs', hres, hr', hk'⟩ :=
     loop_main hP hbase hlen h0 hNB hnB h1B hdst hbody _ 0 s₀ _ rfl (Nat.zero_le _) hinv

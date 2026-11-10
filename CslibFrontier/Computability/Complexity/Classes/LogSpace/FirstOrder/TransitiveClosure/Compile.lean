@@ -119,6 +119,54 @@ theorem eval_digitE {regs : List ℕ} {r k n : ℕ} (h0 : regs.getD 0 0 = n) (g 
   rw [finFunctionFinEquiv_symm_apply_val]
   simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg, hg, h0]
 
+/-- Decoding register `r`, holding `g < n ^ k`, into registers `d + i` writes the tuple
+`finFunctionFinEquiv.symm g`. -/
+theorem reaches_digitsCode {P : CounterProgram} {w : List Bool} {B b r d k n : ℕ}
+    (hP : P.CodeAt b (assignsCode b d k (digitE r))) (hrd : r < d ∨ d + k ≤ r) (hd : 0 < d)
+    {regs : List ℕ} (hlen : d + k ≤ regs.length) (h0 : regs.getD 0 0 = n)
+    (hnB : n ≤ B) (hB : ∀ x ∈ regs, x ≤ B) (g : Fin (n ^ k)) (hg : regs.getD r 0 = g) :
+    ∃ regs', P.Reaches w (P.Running B) (b, regs) (b + k, regs') ∧
+      regs'.length = regs.length ∧
+      (∀ j, (j < d ∨ d + k ≤ j) → regs'.getD j 0 = regs.getD j 0) ∧
+      (∀ i : Fin k, regs'.getD (d + i) 0 = finFunctionFinEquiv.symm g i) ∧
+      ∀ x ∈ regs', x ≤ B := by
+  have hdig : ∀ i : Fin k, (digitE r i).eval regs = finFunctionFinEquiv.symm g i :=
+    eval_digitE h0 g hg
+  obtain ⟨regs', hr, hlen', hout, hin, hB'⟩ := reaches_assignsCode (w := w) hP hlen
+    (fun i hi regs' h => by
+      simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg]
+      rw [h r (by omega), h 0 (by omega)]) hB
+    (fun i hi => by
+      rw [show (digitE r i).eval regs = (digitE r (⟨i, hi⟩ : Fin k)).eval regs from rfl, hdig]
+      exact (Fin.isLt _).le.trans hnB)
+  exact ⟨regs', hr, hlen', hout, fun i => (hin i i.isLt).trans (hdig i), hB'⟩
+
+/-- Loading the source tuple `s₀` of a closure, denoted by expressions `src` that read only
+registers below `base`, into registers `base + i`. -/
+theorem reaches_loadCode {P : CounterProgram} {w : List Bool} {B b base k n : ℕ}
+    {src : Fin k → Expr} (hP : P.CodeAt b
+      (assignsCode b base k (fun i => if h : i < k then src ⟨i, h⟩ else const 0)))
+    {regs₀ : List ℕ} (hlen : base + k ≤ regs₀.length) (hnB : n ≤ B) (hB : ∀ x ∈ regs₀, x ≤ B)
+    {s₀ : Fin k → Fin n}
+    (hsrc : ∀ regs, (∀ j < base, regs.getD j 0 = regs₀.getD j 0) →
+      ∀ i, (src i).eval regs = s₀ i) :
+    ∃ regs', P.Reaches w (P.Running B) (b, regs₀) (b + k, regs') ∧
+      regs'.length = regs₀.length ∧
+      (∀ j, (j < base ∨ base + k ≤ j) → regs'.getD j 0 = regs₀.getD j 0) ∧
+      (∀ i : Fin k, regs'.getD (base + i) 0 = s₀ i) ∧ ∀ x ∈ regs', x ≤ B := by
+  obtain ⟨regs', hr, hlen', hout, hin, hB'⟩ := reaches_assignsCode (w := w) hP hlen
+    (fun i hi regs' h => by
+      simp only [hi, ↓reduceDIte]
+      rw [hsrc regs' (fun j hj => h j (by omega)), hsrc regs₀ (fun _ _ => rfl)]) hB
+    (fun i hi => by
+      simp only [hi, ↓reduceDIte]
+      rw [hsrc regs₀ (fun _ _ => rfl)]
+      exact (Fin.isLt _).le.trans hnB)
+  refine ⟨regs', hr, hlen', hout, fun i => ?_, hB'⟩
+  rw [hin i i.isLt]
+  simp only [i.isLt, ↓reduceDIte]
+  exact hsrc regs₀ (fun _ _ => rfl) i
+
 /-- `|x - y|` for registers `x` and `y`: positive exactly when they differ. -/
 @[expose] def distE (x y : ℕ) : Expr := add (sub (reg x) (reg y)) (sub (reg y) (reg x))
 

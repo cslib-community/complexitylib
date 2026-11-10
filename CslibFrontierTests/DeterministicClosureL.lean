@@ -14,7 +14,8 @@ Deterministic reachability from `0` to `max` in a directed graph is defined by o
 sentence, so its encoded language is in native `L`. Concrete three-vertex graphs check that the
 query is not vacuous and that it differs from ordinary reachability: a deterministic path, a
 branching vertex, an unreachable target, cycles off and through the target, a negated closure,
-and a closure of width zero.
+a closure of width zero, and a closure nested in the body of another, parameterized by the
+outer bound variable.
 -/
 
 namespace CslibFrontierTests.DeterministicClosureL
@@ -42,8 +43,10 @@ def vocabulary : Vocabulary Language.graph where
       left_inv := fun _ => Subsingleton.elim _ _
       right_inv := fun ⟨_, .adj⟩ => rfl }
 
-/-- The edge body, with the two endpoints as the bound variables of the closure. -/
-def edgeBody : Operator.Formula (language Language.graph) TC.shape [] (Empty ⊕ Fin (2 * 1)) :=
+/-- The edge body, with the two endpoints as the bound variables of the closure, over any outer
+variables `α`. -/
+def edgeBody {α : Type} :
+    Operator.Formula (language Language.graph) TC.shape [] (α ⊕ Fin (2 * 1)) :=
   .ofFO (Relations.formula₂
     ((LHom.sumInl : Language.graph →ᴸ language Language.graph).onRelation adj)
     (Term.var (Sum.inr 0)) (Term.var (Sum.inr 1)))
@@ -64,32 +67,36 @@ def DReach : Ordered.Query Language.graph :=
     ((max Language.graph).realize (Empty.elim : Empty → Fin M.size))}
 
 theorem realize_edgeBody (M : Ordered.Structure Language.graph)
-    (I : Operator.Interpretation TC.shape (Fin M.size)) (us ws : Fin 1 → Fin M.size) :
-    edgeBody.Realize I Operator.RelEnv.empty (Sum.elim Empty.elim (TC.pair us ws)) ↔
+    (I : Operator.Interpretation TC.shape (Fin M.size)) {α : Type} {v : α → Fin M.size}
+    (us ws : Fin 1 → Fin M.size) :
+    edgeBody.Realize I Operator.RelEnv.empty (Sum.elim v (TC.pair us ws)) ↔
       Edge M (us 0) (ws 0) := by
   simp only [edgeBody, Operator.Formula.realize_ofFO, Formula.realize_rel₂,
     LHom.map_onRelation]
   rfl
+
+/-- Deterministic reachability between constant `1`-tuples is deterministic reachability
+between their entries. -/
+theorem reflTransGen_unary {β : Type*} (r : β → β → Prop) (x y : β) :
+    Relation.ReflTransGen (DTC.deterministicReduct fun us ws : Fin 1 → β => r (us 0) (ws 0))
+        (fun _ => x) (fun _ => y) ↔
+      Relation.ReflTransGen (DTC.deterministicReduct r) x y := by
+  constructor
+  · intro h
+    exact Relation.ReflTransGen.lift (fun us : Fin 1 → β => us 0)
+      (fun _ _ huw => ⟨huw.1, fun z hz => congrFun (huw.2 (fun _ => z) hz) 0⟩) _ _ h
+  · intro h
+    exact Relation.ReflTransGen.lift (fun x : β => fun _ : Fin 1 => x)
+      (fun _ _ hxy => ⟨hxy.1, fun zs hz => funext fun i => by
+        rw [Subsingleton.elim i 0]; exact hxy.2 _ hz⟩) _ _ h
 
 /-- The sentence `dreach`, read with deterministic closure, defines `DReach`. -/
 theorem realize_dreach (M : Ordered.Structure Language.graph) :
     M ∈ DReach ↔
       dreach.Realize (M := M) DTC.interpretation Operator.RelEnv.empty Empty.elim := by
   rw [dreach, DTC.realize_tc_pair]
-  simp only [DReach, Set.mem_ofPred_eq, Matrix.cons_val_fin_one]
-  constructor
-  · intro h
-    refine Relation.ReflTransGen.lift (fun x : Fin M.size => fun _ : Fin 1 => x) ?_ _ _ h
-    intro x y hxy
-    refine ⟨(realize_edgeBody M _ (fun _ => x) (fun _ => y)).mpr hxy.1,
-      fun zs hz => funext fun i => ?_⟩
-    rw [Subsingleton.elim i 0]
-    exact hxy.2 _ ((realize_edgeBody M _ (fun _ => x) zs).mp hz)
-  · intro h
-    refine Relation.ReflTransGen.lift (fun us : Fin 1 → Fin M.size => us 0) ?_ _ _ h
-    intro us ws huw
-    refine ⟨(realize_edgeBody M _ us ws).mp huw.1, fun z hz => ?_⟩
-    exact congrFun (huw.2 (fun _ => z) ((realize_edgeBody M _ us (fun _ => z)).mpr hz)) 0
+  simp only [realize_edgeBody, Matrix.cons_val_fin_one]
+  exact (reflTransGen_unary _ _ _).symm
 
 /-- **Deterministic reachability is in native `L`**, at the source-only encoding of graphs. -/
 theorem dreach_mem_L : DReach.encodedLanguage vocabulary ∈ Cslib.Complexity.L encStructure :=
@@ -198,6 +205,68 @@ example : NonDReach.encodedLanguage vocabulary ∈ Cslib.Complexity.L encStructu
 example : graph3 cycleRel ∈ NonDReach := cycle_not_mem
 
 example : graph3 pathRel ∉ NonDReach := fun h => h path_mem
+
+/-! ### A nested, parameterized closure -/
+
+/-- The outer edge `x → y` together with an inner closure, parameterized by the outer bound
+variable `y`: the walk from `y` along unique successors reaches `max`. -/
+def nestedBody :
+    Operator.Formula (language Language.graph) TC.shape [] (Empty ⊕ Fin (2 * 1)) :=
+  edgeBody.conj (TC.tc edgeBody (TC.pair ![Term.var (Sum.inr 1)] ![max Language.graph]))
+
+/-- Deterministic reachability from `0` to `max` along the edges whose head deterministically
+reaches `max`. -/
+def nested : Operator.Formula (language Language.graph) TC.shape [] Empty :=
+  TC.tc nestedBody (TC.pair ![zero Language.graph] ![max Language.graph])
+
+example : TC.width nested = 1 := rfl
+
+/-- The query defined by `nested`, stated semantically on vertices. -/
+def NestedReach : Ordered.Query Language.graph :=
+  {M | Relation.ReflTransGen
+    (DTC.deterministicReduct fun x y => Edge M x y ∧
+      Relation.ReflTransGen (DTC.deterministicReduct (Edge M)) y
+        ((max Language.graph).realize (Empty.elim : Empty → Fin M.size)))
+    ((zero Language.graph).realize (Empty.elim : Empty → Fin M.size))
+    ((max Language.graph).realize (Empty.elim : Empty → Fin M.size))}
+
+/-- The sentence `nested`, read with deterministic closure, defines `NestedReach`. -/
+theorem realize_nested (M : Ordered.Structure Language.graph) :
+    M ∈ NestedReach ↔
+      nested.Realize (M := M) DTC.interpretation Operator.RelEnv.empty Empty.elim := by
+  rw [nested, DTC.realize_tc_pair]
+  simp only [nestedBody, Operator.Formula.realize_conj, DTC.realize_tc_pair, realize_edgeBody,
+    Matrix.cons_val_fin_one, Term.realize_var, Sum.elim_inr]
+  exact (reflTransGen_unary _ _ _).symm.trans (by simp only [reflTransGen_unary]; rfl)
+
+/-- **The nested query is in native `L`**: the compiled inner loop runs inside the body of the
+outer loop. -/
+example : NestedReach.encodedLanguage vocabulary ∈ Cslib.Complexity.L encStructure :=
+  DTCDefinable.encodedLanguage_mem_L ⟨nested, realize_nested⟩ vocabulary
+
+theorem mem_nestedReach_graphOn {n : ℕ} {hn : 2 ≤ n} {E : Fin n → Fin n → Prop} :
+    graphOn n hn E ∈ NestedReach ↔
+      Relation.ReflTransGen (DTC.deterministicReduct fun x y =>
+          E x y ∧ Relation.ReflTransGen (DTC.deterministicReduct E) y ⟨n - 1, by omega⟩)
+        ⟨0, by omega⟩ ⟨n - 1, by omega⟩ :=
+  Iff.rfl
+
+/-- The inner closure prunes the dead end `1`, so the outer walk from the branching vertex `0`
+is deterministic, although the plain deterministic walk stops there (`branch_not_mem`). -/
+theorem branch_mem_nested : graph3 branchRel ∈ NestedReach := by
+  refine mem_nestedReach_graphOn.mpr (.single ⟨⟨by decide, .refl⟩, fun z ⟨hz, hr⟩ => ?_⟩)
+  rcases hr.cases_head with h | ⟨c, hc, -⟩
+  · exact h
+  · exact absurd hc.1.1 hz.2
+
+/-- No edge enters the target, so the nested query fails as well. -/
+theorem cycle_not_mem_nested : graph3 cycleRel ∉ NestedReach := by
+  rw [mem_nestedReach_graphOn]
+  intro h
+  have key : ∀ c : Fin 3, ¬ cycleRel c 2 := by decide
+  rcases h.cases_tail with h | ⟨c, -, hc⟩
+  · exact absurd h (by decide)
+  · exact key c hc.1.1
 
 /-! ### Width zero -/
 
