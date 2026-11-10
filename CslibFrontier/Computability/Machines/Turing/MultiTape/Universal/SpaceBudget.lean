@@ -308,7 +308,7 @@ lemma take_two_deg : ComputableTidilyInDegree (fun l : List ℕ => l.take 2) (en
   rcases l with _ | ⟨a, _ | ⟨c, l⟩⟩ <;> rfl
 
 /-- The first two symbols of a list followed by an optional symbol, in linear time and space. -/
-public lemma keepTwo_deg : ComputableTidilyInDegree
+lemma keepTwo_deg : ComputableTidilyInDegree
     (fun p : List ℕ × Option ℕ => (p.1 ++ p.2.toList).take 2)
     (encPair (encList encUnary) eSym) (encList encUnary) 1 1 := by
   have hsingle : ComputableTidilyInDegree (fun n : ℕ => [n]) encUnary (encList encUnary) 1 1 :=
@@ -324,6 +324,14 @@ public lemma keepTwo_deg : ComputableTidilyInDegree
     ((ComputableTidilyInDegree.fst (encList encUnary) eSym).prod
       (htoList.comp (ComputableTidilyInDegree.snd (encList encUnary) eSym)))
   exact (take_two_deg.comp happ).mono
+
+/-- The first two symbols of a list followed by an optional symbol, in time and space linear in the
+encoded input. -/
+public lemma keepTwo_inO : ComputableInO (fun p : List ℕ × Option ℕ => (p.1 ++ p.2.toList).take 2)
+    (encPair (encList encUnary) eSym) (encList encUnary)
+    (fun p => (encPair (encList encUnary) eSym p).length)
+    fun p => (encPair (encList encUnary) eSym p).length :=
+  .of_tidy keepTwo_deg.inO_one
 
 /-- The initial state, in the space of the description, the number of steps and the budget. -/
 private lemma foldInitS_inO : ComputableTidilyInO foldInitS eInS eSSt

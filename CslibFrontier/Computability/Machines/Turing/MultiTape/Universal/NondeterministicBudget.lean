@@ -353,7 +353,7 @@ private lemma keepTwo_budget {o : γ → List ℕ} {a : γ → Option ℕ}
   have hk : ComputableInSpace (fun q : List ℕ × Option ℕ => (q.1 ++ q.2.toList).take 2)
       (encPair (encList encUnary) eSym) (encList encUnary)
       fun q => (encPair (encList encUnary) eSym q).length :=
-    of_inO (.of_tidy keepTwo_deg.inO_one)
+    of_inO keepTwo_inO
   exact budget_comp_linear (f := fun x => (o x, a x)) hk (budget_prod ho ha)
 
 private lemma nuNext_budget {p : γ → NUState × Option Bool × Bool}
