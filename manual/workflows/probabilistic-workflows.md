@@ -1028,6 +1028,8 @@ substituted and maps pushed into the continuations: the shape that `PMF.bind_con
 `PMF.bind_apply` and the support lemmas expect. The set is curated, so later steps may rely on its
 normal form; it does not unfold support membership or probability masses. The checked examples in
 [PMFNorm.lean](../../CslibFrontierTests/PMFNorm.lean) show the normal form of each kind of term.
+To prove that two normal forms differ only in the order of independent samples, use `pmf_swap`
+([Reorder independent samples](../design-and-assurance/automation.md#reorder-independent-samples)).
 
 ## Certify a closed randomized routine
 

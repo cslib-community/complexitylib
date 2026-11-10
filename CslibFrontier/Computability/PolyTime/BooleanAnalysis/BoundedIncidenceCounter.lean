@@ -133,6 +133,15 @@ polylogarithmic `(b, w)` bounds, linear equation count `sys'.length ≤ C_inc * 
 `max 16384 (2 ^ C_inc)` by a fixed polynomial in
 `(encPair encUnary encSparseSystem (n', sys')).length`
 times `2 ^ (A_br * interpolationScale n')`. -/
+private theorem nat_pow_le_exp_of_le {b e : ℕ} {r u : ℝ}
+    (hb : 1 ≤ (b : ℝ)) (he : (e : ℝ) ≤ r) (hu : Real.log b * r ≤ u) :
+    ((b ^ e : ℕ) : ℝ) ≤ Real.exp u :=
+  calc ((b ^ e : ℕ) : ℝ)
+      = (b : ℝ) ^ (e : ℝ) := by rw [Nat.cast_pow, Real.rpow_natCast]
+    _ ≤ (b : ℝ) ^ r := Real.rpow_le_rpow_of_exponent_le hb he
+    _ = Real.exp (Real.log b * r) := Real.rpow_def_of_pos (zero_lt_one.trans_le hb) _
+    _ ≤ Real.exp u := Real.exp_le_exp.mpr hu
+
 private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p : ℕ}
     {T : ℕ × List (List (List ℕ)) → ℕ}
     (hT : ∀ n' sys', checkBranchFeasible N₀_branch (n', sys') = true → 16384 ≤ n' →
@@ -207,45 +216,30 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
   have hM_exp : (((2 * D + 1) ^ c_meas : ℕ) : ℝ) ≤
       Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) *
         (ReplacementParams.tau n' * Real.log (2 * (D : ℝ) + 1))) := by
-    have hbase1 : (1 : ℝ) ≤ 2 * (D : ℝ) + 1 := le_add_of_nonneg_left (by positivity)
-    have hlog_nn : 0 ≤ Real.log (2 * (D : ℝ) + 1) := Real.log_nonneg hbase1
+    have hlog_nn : 0 ≤ Real.log ((2 * D + 1 : ℕ) : ℝ) := Real.log_nonneg (by push_cast; linarith)
     have htau_nn : 0 ≤ ReplacementParams.tau n' := hF.tau_pos.le
-    calc (((2 * D + 1) ^ c_meas : ℕ) : ℝ)
-        = (2 * (D : ℝ) + 1) ^ (c_meas : ℝ) := by
-          rw [Nat.cast_pow, Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_one,
-            Real.rpow_natCast]
-      _ ≤ (2 * (D : ℝ) + 1) ^ (2 * ReplacementParams.tau n' * (n' : ℝ)) :=
-          Real.rpow_le_rpow_of_exponent_le hbase1 hc_meas
-      _ = Real.exp (Real.log (2 * (D : ℝ) + 1) * (2 * ReplacementParams.tau n' * (n' : ℝ))) :=
-          Real.rpow_def_of_pos (by positivity) _
-      _ ≤ Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) *
-            (ReplacementParams.tau n' * Real.log (2 * (D : ℝ) + 1))) := by
-          refine Real.exp_le_exp.mpr ?_
-          calc Real.log (2 * (D : ℝ) + 1) * (2 * ReplacementParams.tau n' * (n' : ℝ))
-              = 2 * ((n' : ℝ) * (ReplacementParams.tau n' * Real.log (2 * (D : ℝ) + 1))) := by ring
-            _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) *
-                  (ReplacementParams.tau n' * Real.log (2 * (D : ℝ) + 1))) :=
-                mul_le_mul_of_nonneg_right h2le_cdeg (by positivity)
-            _ = ((c_deg : ℝ) + 4) * (n' : ℝ) *
-                  (ReplacementParams.tau n' * Real.log (2 * (D : ℝ) + 1)) := by ring
+    refine nat_pow_le_exp_of_le (by push_cast; linarith) hc_meas ?_
+    calc Real.log ↑(2 * D + 1) * (2 * ReplacementParams.tau n' * ↑n')
+        = 2 * (↑n' * (ReplacementParams.tau n' * Real.log ↑(2 * D + 1))) := by ring
+      _ ≤ ((c_deg : ℝ) + 4) * (↑n' * (ReplacementParams.tau n' * Real.log ↑(2 * D + 1))) :=
+          mul_le_mul_of_nonneg_right h2le_cdeg
+            (mul_nonneg (Nat.cast_nonneg n') (mul_nonneg htau_nn hlog_nn))
+      _ = ((c_deg : ℝ) + 4) * (n' : ℝ) *
+            (ReplacementParams.tau n' * Real.log (2 * (D : ℝ) + 1)) := by push_cast; ring
   have hG_exp : ((2 ^ d_max : ℕ) : ℝ) ≤
       Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) * (1 / (r : ℝ))) := by
     have hr_pos : (0 : ℝ) < r := Nat.cast_pos.mpr (by omega)
     have hd_real : (d_max : ℝ) ≤ 2 * (n' : ℝ) / r :=
       ((Nat.cast_le.mpr hd_max).trans (Nat.cast_div_le (α := ℝ))).trans_eq (by push_cast; ring)
-    calc ((2 ^ d_max : ℕ) : ℝ)
-        = (2 : ℝ) ^ (d_max : ℝ) := by rw [Nat.cast_pow, Nat.cast_ofNat, Real.rpow_natCast]
-      _ ≤ (2 : ℝ) ^ (2 * (n' : ℝ) / r) := Real.rpow_le_rpow_of_exponent_le one_le_two hd_real
-      _ = Real.exp (Real.log 2 * (2 * (n' : ℝ) / r)) := Real.rpow_def_of_pos two_pos _
-      _ ≤ Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) * (1 / (r : ℝ))) := by
-          refine Real.exp_le_exp.mpr ?_
-          have h2le : 2 * Real.log 2 ≤ (c_deg : ℝ) + 4 :=
-            (mul_le_mul_of_nonneg_left (Real.log_le_sub_one_of_pos zero_lt_two) zero_le_two).trans
-              ((by norm_num : (2 : ℝ) * (2 - 1) ≤ 2).trans h2le_cdeg)
-          calc Real.log 2 * (2 * (n' : ℝ) / r)
-              = (2 * Real.log 2) * ((n' : ℝ) * (1 / (r : ℝ))) := by ring
-            _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) * (1 / (r : ℝ))) := by gcongr
-            _ = ((c_deg : ℝ) + 4) * (n' : ℝ) * (1 / (r : ℝ)) := by ring
+    refine nat_pow_le_exp_of_le (by norm_num) hd_real ?_
+    have h2le : 2 * Real.log 2 ≤ (c_deg : ℝ) + 4 :=
+      (mul_le_mul_of_nonneg_left (Real.log_le_sub_one_of_pos zero_lt_two) zero_le_two).trans
+        ((by norm_num : (2 : ℝ) * (2 - 1) ≤ 2).trans h2le_cdeg)
+    calc Real.log ↑2 * (2 * (n' : ℝ) / r)
+        = (2 * Real.log 2) * ((n' : ℝ) * (1 / (r : ℝ))) := by ring
+      _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) * (1 / (r : ℝ))) :=
+          mul_le_mul_of_nonneg_right h2le (by positivity)
+      _ = ((c_deg : ℝ) + 4) * (n' : ℝ) * (1 / (r : ℝ)) := by ring
   have hE_exp : (E_nat : ℝ) ≤
       Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) * ReplacementParams.rowCost β' n') := by
     have hcast : (E_nat : ℝ) =
@@ -287,6 +281,62 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
 
 section LoopCertificates
 
+private theorem poly_apply_le {α : Type} {f Lfn : α → ℕ} {c d L : ℕ}
+    (hf : ∀ a, f a ≤ c * (Lfn a + 1) ^ d) {a : α} (hla : Lfn a ≤ L) :
+    f a ≤ c * (L + 1) ^ d :=
+  (hf a).trans (Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hla 1) d))
+
+private theorem polyBounded_option_elim {α β : Type}
+    {eα : α ↪ List Bool} {eβ : β ↪ List Bool}
+    {f : α → Option β} {gNone : α → ℕ} {gSome : α × β → ℕ}
+    (hf_len : PolyBounded (fun a => (eα a).length) (fun a => (encOption eβ (f a)).length))
+    (hgNone : PolyBounded (fun a => (eα a).length) gNone)
+    (hgSome : PolyBounded (fun p => (encPair eα eβ p).length) gSome) :
+    PolyBounded (fun a => (eα a).length)
+      (fun a => (f a).elim (gNone a) (fun b => gSome (a, b))) := by
+  have hlenIY : PolyBounded (fun a => (eα a).length)
+      (fun a => 2 * (eα a).length + 2 * (encOption eβ (f a)).length + 1) :=
+    (((PolyBounded.const 2).mul .self).add ((PolyBounded.const 2).mul hf_len)).add (.const 1)
+  obtain ⟨c, d, hcd⟩ := hgSome.exists_le
+  refine (hgNone.add (NativeCertificate.polyBounded_pow_of_polyBounded hlenIY c d)).mono
+    fun a => ?_
+  cases h : f a with
+  | none => exact Nat.le_add_right _ _
+  | some b =>
+    have hiy : (encPair eα eβ (a, b)).length ≤
+        2 * (eα a).length + 2 * (encOption eβ (some b)).length + 1 := by enc_len
+    exact (poly_apply_le hcd hiy).trans (Nat.le_add_left _ (gNone a))
+
+private theorem computableInPolyTime_ctxAddJet
+    {α Ctx : Type} {eα : α ↪ List Bool} {eCtx : Ctx ↪ List Bool}
+    {J ℓ : Ctx → ℕ} (hJ : PolyT J eCtx encUnary) (hℓ : PolyT ℓ eCtx encUnary) :
+    PolyT (fun q : (α × (Ctx × JetRows)) × JetRows =>
+      (q.1.2.1, addJet (J q.1.2.1) (ℓ q.1.2.1) q.1.2.2 q.2))
+      (encPair (encPair eα (encPair eCtx encJet)) encJet) (encPair eCtx encJet) := by
+  have hq1 := fst (encPair eα (encPair eCtx encJet)) encJet
+  have hq2 := snd (encPair eα (encPair eCtx encJet)) encJet
+  have hctx := hq1.snd'.fst'
+  exact hctx.prod (computableInPolyTime_addJet (hJ.comp hctx) (hℓ.comp hctx) hq1.snd'.snd' hq2)
+
+private theorem jetFoldl_bound_mono {J ℓ N M bN : ℕ} (hN : N.size ≤ bN) :
+    J * (2 * (ℓ * (2 * (N.size + (2 ^ M).size) + 3)) + 1) ≤
+      J * (2 * (ℓ * (2 * (bN + (M + 1)) + 3)) + 1) := by
+  have hM : (2 ^ M).size ≤ M + 1 := by rw [Nat.size_pow]
+  exact Nat.mul_le_mul_left _ (Nat.add_le_add_right (Nat.mul_le_mul_left 2
+    (Nat.mul_le_mul_left _ (Nat.add_le_add_right (Nat.mul_le_mul_left 2
+      (Nat.add_le_add hN hM)) 3))) 1)
+
+private theorem mul_inner_add_absorb {A B p q ov r : ℕ}
+    (hA : 1 ≤ A) (hB : 1 ≤ B) (hr : p + q + ov ≤ r) :
+    A * (B * p + q) + ov ≤ A * B * r := by
+  have hAB : 1 ≤ A * B := Nat.mul_pos hA hB
+  calc A * (B * p + q) + ov
+      ≤ A * (B * (p + q)) + A * B * ov :=
+        Nat.add_le_add (Nat.mul_le_mul_left A (absorb_step_add B p q hB))
+          (Nat.le_mul_of_pos_left ov hAB)
+    _ = A * B * (p + q + ov) := by ring
+    _ ≤ A * B * r := Nat.mul_le_mul_left _ hr
+
 private def evalSignedMeasJet (dc : SubsetPairFold.DecodedPair × SubsetStepCtx) : JetRows :=
   let measCtx : MeasStepCtx :=
     (dc.2.1, dc.2.2.2.1, dc.2.2.2.2.1, dc.2.2.2.2.2.1, (dc.1.1, dc.1.2.1), dc.2.2.2.2.2.2)
@@ -320,11 +370,10 @@ private theorem exists_computableInO_signedMeasJet :
   have haddM : PolyT
       (fun q : (((ℕ × ℕ) × List ℤ) × (MeasStepCtx × JetRows)) × JetRows =>
         (q.1.2.1, addJet q.1.2.1.jetOrder q.1.2.1.precision q.1.2.2 q.2))
-      (encPair eMIn encJet) eAcc := by
-    have hq1 := fst eMIn encJet; have hq2 := snd eMIn encJet
-    have hctx := hq1.snd'.fst'; have hctx' := hctx; unfold encMeasStepCtx at hctx'
-    exact hctx.prod (computableInPolyTime_addJet hctx'.snd'.fst'.fst'
-      hctx'.snd'.fst'.snd'.fst' hq1.snd'.snd' hq2)
+      (encPair eMIn encJet) eAcc :=
+    computableInPolyTime_ctxAddJet (J := MeasStepCtx.jetOrder) (ℓ := MeasStepCtx.precision)
+      (by unfold encMeasStepCtx; exact (snd _ _).fst'.fst')
+      (by unfold encMeasStepCtx; exact (snd _ _).fst'.snd'.fst')
   let cProjWC := NativeCertificate.ofPolyTime hprojWC
   let cAddM := NativeCertificate.ofPolyTime haddM
   have hcProjWC : cProjWC.IsPolynomial := NativeCertificate.ofPolyTime_isPolynomial hprojWC
@@ -334,28 +383,19 @@ private theorem exists_computableInO_signedMeasJet :
     (NativeCertificate.linear (ei := eMIn) (ComputableInO.of_eq fun _ => rfl))
   let cValM := cPay.comp cProjWC; let cbM₀ := NativeCertificate.option cValM cNoM cAddM
   have hcValM_sp : HasPolySpace cValM := hasPolySpace_comp hP₁_pb hcProjWC.2
-  have hlenIY : PolyBounded (fun inp => (eMIn inp).length) (fun inp => 2 * (eMIn inp).length +
-      2 * (encOption encJet (evalMeasPayload (inp.1.2, inp.2.1))).length + 1) :=
-    (((PolyBounded.const 2).mul .self).add
-      ((PolyBounded.const 2).mul (polyBounded_length_of_hasPolySpace hcValM_sp))).add (.const 1)
-  have hiy (inp : ((ℕ × ℕ) × List ℤ) × (MeasStepCtx × JetRows)) (y : JetRows) :
-      (encPair eMIn encJet (inp, y)).length ≤
-        2 * (eMIn inp).length + 2 * (encOption encJet (some y)).length + 1 := by enc_len
-  have hcbM_sp : HasPolySpace cbM₀ := by
-    obtain ⟨ca, da, ha⟩ := hcAddM.2.exists_le
-    refine (((((PolyBounded.const 2).mul hcValM_sp).add .self).add
-      (PolyBounded.self.add (NativeCertificate.polyBounded_pow_of_polyBounded hlenIY ca da)))).mono
-      fun inp => ?_
-    simp only [cbM₀, cValM, NativeCertificate.option_space, Function.comp_apply]
-    cases h : evalMeasPayload (inp.1.2, inp.2.1) with
-    | none =>
-      dsimp only [cNoM]
-      simp only [Option.elim_none, NativeCertificate.snd_space, NativeCertificate.linear_space]
+  have hcNoM_sp : PolyBounded (fun inp => (eMIn inp).length) cNoM.space :=
+    ((PolyBounded.const 2).mul .self).mono fun inp => by
+      dsimp only [cNoM]; simp only [NativeCertificate.snd_space, NativeCertificate.linear_space]
       omega
-    | some y =>
-      have hb := (ha (inp, y)).trans
-        (Nat.mul_le_mul_left ca (Nat.pow_le_pow_left (Nat.add_le_add_right (hiy inp y) 1) da))
-      simp only [Option.elim_some]; omega
+  have hcNoM_t : PolyBounded (fun inp => (eMIn inp).length) cNoM.time :=
+    ((PolyBounded.const 2).mul .self).mono fun inp => by
+      dsimp only [cNoM]; simp only [NativeCertificate.snd_time, NativeCertificate.linear_time]
+      omega
+  have hcbM_sp : HasPolySpace cbM₀ :=
+    (((((PolyBounded.const 2).mul hcValM_sp).add .self).add
+      (polyBounded_option_elim (polyBounded_length_of_hasPolySpace hcValM_sp) hcNoM_sp
+        hcAddM.2))).mono fun inp => by
+      simp only [cbM₀, cValM, NativeCertificate.option_space, Function.comp_apply]; exact le_rfl
   let cbM : Cert measurementStepBody eMIn eAcc :=
     ⟨cbM₀.time, cbM₀.space,
       cbM₀.computes.of_enc_eq fun inp => congrArg eAcc (measurementStepBody_eq inp)⟩
@@ -367,19 +407,9 @@ private theorem exists_computableInO_signedMeasJet :
   have hovM_pb : PolyBounded (fun inp => (eMIn inp).length)
       (fun inp => 2 * cProjWC.time inp + (eMIn inp).length +
         (evalMeasPayload (inp.1.2, inp.2.1)).elim (cNoM.time inp)
-          (fun b => cAddM.time (inp, b))) := by
-    obtain ⟨ca, da, ha⟩ := hcAddM.1.exists_le
-    refine ((((PolyBounded.const 2).mul hcProjWC.1).add .self).add
-      (PolyBounded.self.add (NativeCertificate.polyBounded_pow_of_polyBounded hlenIY ca da))).mono
-      fun inp => ?_
-    cases h : evalMeasPayload (inp.1.2, inp.2.1) with
-    | none =>
-      dsimp only [cNoM]
-      simp only [Option.elim_none, NativeCertificate.snd_time, NativeCertificate.linear_time]; omega
-    | some y =>
-      have hb := (ha (inp, y)).trans
-        (Nat.mul_le_mul_left ca (Nat.pow_le_pow_left (Nat.add_le_add_right (hiy inp y) 1) da))
-      simp only [Option.elim_some]; omega
+          (fun b => cAddM.time (inp, b))) :=
+    (((PolyBounded.const 2).mul hcProjWC.1).add .self).add
+      (polyBounded_option_elim (polyBounded_length_of_hasPolySpace hcValM_sp) hcNoM_t hcAddM.1)
   let eSt := encPair encNat (encPair (encPair encUnary encNat) eAcc)
   have hovV_pb := (PolyBounded.self.add hcPrep.1).add
     (hovM_pb.comp (MeasurementFold.prepare_polyTime (encB := eAcc)).polyBounded_length)
@@ -476,8 +506,7 @@ private theorem exists_computableInO_signedMeasJet :
         have hwc_len : (eWC (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i,
             mkMCtx dc)).length ≤ L_wc dc := by enc_len [eWC, L_wc]
         have hopt_len : (encOption encJet (some y)).length ≤ L_opt dc := by
-          rw [← hy]; exact (ho1_le _).trans (Nat.mul_le_mul_left co1
-            (Nat.pow_le_pow_left (Nat.add_le_add_right hwc_len 1) do1))
+          rw [← hy]; exact poly_apply_le ho1_le hwc_len
         have hy_len : (encJet y).length ≤ L_opt dc := by
           simp only [encOption_some, List.length_cons] at hopt_len; omega
         exact (Nat.size_le.mp ((CommonCountingAccum.size_natAbs_rowEntry_le_length_encJetRows y j'
@@ -485,15 +514,12 @@ private theorem exists_computableInO_signedMeasJet :
     have hN_sz : (MeasurementFold.count dc.2.2.1).size ≤
         dc.2.2.1.1 * ((dc.2.2.1.2).size + 1) + 1 := by
       rw [← Nat.size_eq_bits_len, ← encNat_apply]; exact MeasurementFold.length_count_le _ _
-    have hM_sz : (2 ^ L_opt dc).size ≤ L_opt dc + 1 := by rw [Nat.size_pow]
     have hjet_le : (encJet ((List.range j).foldl
         (fun acc i => (evalMeasPayload
           (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, mkMCtx dc)).elim acc
           (fun y => addJet dc.2.jetOrder dc.2.precision acc y))
         (zeroJet dc.2.jetOrder dc.2.precision))).length ≤ B_jet dc :=
-      hf_le.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right (Nat.mul_le_mul_left 2
-        (Nat.mul_le_mul_left _ (Nat.add_le_add_right (Nat.mul_le_mul_left 2
-          (Nat.add_le_add hN_sz hM_sz)) 3))) 1))
+      hf_le.trans (jetFoldl_bound_mono hN_sz)
     dsimp only [eAcc]
     rw [length_encPair (enc₁ := encPair encUnary encNat), length_encPair (enc₁ := encMeasStepCtx)]
     refine le_trans (Nat.add_le_add_left (Nat.add_le_add_left hjet_le _) _) ?_
@@ -514,8 +540,7 @@ private theorem exists_computableInO_signedMeasJet :
         (2 * P_pay dc)) P_cb hPcb_pb fun dc j hj hst_len => by
       set st := IndexFold.run (MeasurementFold.visit measurementStepBody) j
         (dc.2.2.1, (mkMCtx dc, zeroJet dc.2.jetOrder dc.2.precision))
-      have hov := (hv_le st).trans
-        (Nat.mul_le_mul_left cv (Nat.pow_le_pow_left (Nat.add_le_add_right hst_len 1) dv))
+      have hov := poly_apply_le hv_le hst_len
       have hw_len := MeasurementFold.length_values_le dc.2.2.1.1 dc.2.2.1.2 j
       have hwc_eq : (Cslib.Radix.measurementValues st.2.1.1 st.2.1.2 st.1, st.2.2.1) =
           (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 j, mkMCtx dc) := by
@@ -526,9 +551,8 @@ private theorem exists_computableInO_signedMeasJet :
           (dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1) *
             (2 * P_pay dc) := by
         rw [hwc_eq]
-        exact (Nat.mul_le_mul_left 2 (Nat.mul_le_mul_left _ ((hp1_le _).trans
-          (Nat.mul_le_mul_left cp1 (Nat.pow_le_pow_left (Nat.add_le_add_right hwc_len 1)
-            dp1))))).trans_eq (by ring)
+        exact (Nat.mul_le_mul_left 2
+          (Nat.mul_le_mul_left _ (poly_apply_le hp1_le hwc_len))).trans_eq (by ring)
       dsimp only [cVisit, MeasurementFold.visitCertificate, cbM, cbM₀, cValM, eSt] at hov ⊢
       simp only [NativeCertificate.prod_time, NativeCertificate.comp_time,
         NativeCertificate.linear_time, NativeCertificate.option_time, Function.comp_apply] at hov ⊢
@@ -564,25 +588,17 @@ private theorem exists_computableInO_signedMeasJet :
     fun dc => Nat.le_add_left _ _⟩
   set M_cnt := (2 * dc.2.2.1.2 + 1) ^ dc.2.2.1.1 + 1
   set G_cnt := dc.2.numGroups * (2 ^ maxGroupDim dc.2.numVars dc.2.numGroups dc.2.varGroups + 1) + 1
-  have hMG : 1 ≤ M_cnt * G_cnt := Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)
   have hcnt_eq : MeasurementFold.count dc.2.2.1 + 1 = M_cnt := rfl
   let ovDC := (eDC dc).length + cSign.time (dc, measFn dc)
-  have hstep1 := Nat.mul_le_mul_left M_cnt
-    (absorb_step_add G_cnt (2 * P_pay dc) (P_loop dc) (Nat.succ_pos _))
-  have hov1 := Nat.le_mul_of_pos_left ovDC hMG
-  have hsum : M_cnt * (G_cnt * (2 * P_pay dc) + P_loop dc) + ovDC ≤
-      M_cnt * G_cnt * (2 * P_pay dc + P_loop dc + ovDC) :=
-    (Nat.add_le_add hstep1 hov1).trans_eq (by ring)
-  dsimp only [cFinal, cIdDC, cMeasJet, P_out]
+  have hstep := mul_inner_add_absorb (A := M_cnt) (B := G_cnt) (Nat.succ_pos _) (Nat.succ_pos _)
+    (by dsimp only [ovDC, P_out]; omega : 2 * P_pay dc + P_loop dc + ovDC ≤ P_out dc)
+  dsimp only [cFinal, cIdDC, cMeasJet]
   simp only [NativeCertificate.comp_time, NativeCertificate.prod_time, NativeCertificate.snd_time,
     NativeCertificate.linear_time, Function.comp_apply, hcnt_eq]
   change (eDC dc).length + M_cnt * (G_cnt * (2 * P_pay dc) + P_loop dc) +
-      cSign.time (dc, measFn dc) ≤
-    M_cnt * G_cnt * (2 * P_pay dc + P_loop dc + (eDC dc).length +
-      cSign.time (dc, measFn dc) + cFinal.space dc)
+      cSign.time (dc, measFn dc) ≤ M_cnt * G_cnt * P_out dc
   exact (by dsimp only [ovDC]; omega : _ ≤
-    M_cnt * (G_cnt * (2 * P_pay dc) + P_loop dc) + ovDC).trans
-    (hsum.trans (Nat.mul_le_mul_left (M_cnt * G_cnt) (by dsimp only [ovDC]; omega)))
+    M_cnt * (G_cnt * (2 * P_pay dc) + P_loop dc) + ovDC).trans hstep
 
 private theorem exists_computableInO_nodeJet :
     ∃ P : ℕ × SubsetStepCtx → ℕ,
@@ -608,11 +624,10 @@ private theorem exists_computableInO_nodeJet :
   have haddSub : PolyT
       (fun q : (SubsetPairFold.DecodedPair × (SubsetStepCtx × JetRows)) × JetRows =>
         (q.1.2.1, addJet q.1.2.1.jetOrder q.1.2.1.precision q.1.2.2 q.2))
-      (encPair eSubIn encJet) eSubAcc := by
-    have hq1 := fst eSubIn encJet; have hq2 := snd eSubIn encJet
-    have hctx := hq1.snd'.fst'; have hctx' := hctx; unfold encSubsetStepCtx at hctx'
-    exact hctx.prod (computableInPolyTime_addJet hctx'.snd'.snd'.fst'.fst'
-      hctx'.snd'.snd'.fst'.snd'.fst' hq1.snd'.snd' hq2)
+      (encPair eSubIn encJet) eSubAcc :=
+    computableInPolyTime_ctxAddJet (J := SubsetStepCtx.jetOrder) (ℓ := SubsetStepCtx.precision)
+      (by unfold encSubsetStepCtx; exact (snd _ _).snd'.fst'.fst')
+      (by unfold encSubsetStepCtx; exact (snd _ _).snd'.fst'.snd'.fst')
   let cProjDC := NativeCertificate.ofPolyTime hprojDC
   let cAddSub := NativeCertificate.ofPolyTime haddSub
   have hcProjDC : cProjDC.IsPolynomial := NativeCertificate.ofPolyTime_isPolynomial hprojDC
@@ -684,10 +699,7 @@ private theorem exists_computableInO_nodeJet :
         (SubsetPairFold.subsetPairCount qs.2.numVars qs.1).size ≤ 2 * qs.2.numVars + 1 := by
       rw [← Nat.size_eq_bits_len, ← encNat_apply]
       exact SubsetPairFold.length_encNat_subsetPairCount_le _ _
-    have hM_sz : (2 ^ M_entry qs).size ≤ M_entry qs + 1 := by rw [Nat.size_pow]
-    have hjet_le := hf_le.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right
-      (Nat.mul_le_mul_left 2 (Nat.mul_le_mul_left _ (Nat.add_le_add_right
-        (Nat.mul_le_mul_left 2 (Nat.add_le_add hN_sz hM_sz)) 3))) 1))
+    have hjet_le := hf_le.trans (jetFoldl_bound_mono hN_sz)
     simp only [Option.elim_some] at hjet_le
     dsimp only [eSubAcc, B_sub, B_jet] at hjet_le ⊢; enc_len
   let L_sub (qs : ℕ × SubsetStepCtx) := 2 * (6 * qs.2.numVars + 7) + 2 * B_sub qs + 1
@@ -708,42 +720,37 @@ private theorem exists_computableInO_nodeJet :
   let R_sub (qs : ℕ × SubsetStepCtx) := ((2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1) *
     (qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1) *
     P_sm qs + Ov_sub qs
+  have hinp_len : ∀ qs j, j ≤ SubsetPairFold.subsetPairCount qs.2.numVars qs.1 →
+      (eSubIn (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 j,
+        (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
+          (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2)).length ≤ L_sub qs :=
+    fun qs j hj => by
+      have hdp := hdp_len qs.2.numVars qs.1 j; have hb := hB qs j hj
+      dsimp only [eSubIn, L_sub]; rw [length_encPair]; dsimp only; omega
   have hsp_run := SubsetPairFold.computableInO cn cq ci cbSub R_sub Q_sub B_sub
     (fun qs j hj => by
       set inp := (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 j,
         (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
           (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2)
-      have hdp := hdp_len qs.2.numVars qs.1 j; have hb := hB qs j hj
-      have hinp_len : (eSubIn inp).length ≤ L_sub qs := by
-        dsimp only [eSubIn, inp, L_sub]; rw [length_encPair]; dsimp only; omega
-      have hov := (ho_le inp).trans
-        (Nat.mul_le_mul_left co (Nat.pow_le_pow_left (Nat.add_le_add_right hinp_len 1) do_))
+      have hov := poly_apply_le ho_le (hinp_len qs j hj)
       have hfst_eq : inp.2.1 = qs.2 := by
         dsimp only [inp]; rw [SubsetPairFold.runPrefix_acc]; simp only [subsetPairStepBody_eq]
         rw [List.foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
           addJet s.jetOrder s.precision acc
             (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 i, s)))]
       have hdc_len : (eDC (inp.1, inp.2.1)).length ≤ L_dc qs := by
+        have hdp := hdp_len qs.2.numVars qs.1 j
         rw [hfst_eq]; dsimp only [eDC, inp, L_dc]; rw [length_encPair]; dsimp only; omega
       have hsm_t : cSignM.time (inp.1, inp.2.1) ≤ ((2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1) *
           (qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1) *
             P_sm qs := by
         dsimp only [cSignM, eDC] at hdc_len ⊢; rw [hfst_eq] at hdc_len ⊢
-        exact Nat.mul_le_mul_left _ ((hp2_le _).trans
-          (Nat.mul_le_mul_left cp2 (Nat.pow_le_pow_left (Nat.add_le_add_right hdc_len 1) dp2)))
-      dsimp only [cbSub, cbSub₀, cIdSub, R_sub, Ov_sub, eSubIn, inp]
-        at hov hsm_t ⊢
+        exact Nat.mul_le_mul_left _ (poly_apply_le hp2_le hdc_len)
+      dsimp only [cbSub, cbSub₀, cIdSub, R_sub, Ov_sub, eSubIn, inp] at hov hsm_t ⊢
       simp only [NativeCertificate.comp_time, NativeCertificate.prod_time,
         NativeCertificate.linear_time, Function.comp_apply] at hov hsm_t ⊢
       omega)
-    (fun qs j hj => by
-      have hb := hB qs j hj; have hdp := hdp_len qs.2.numVars qs.1 j
-      have hinp_len : (eSubIn (SubsetPairFold.unrankSubsetPair qs.2.numVars qs.1 j,
-          (SubsetPairFold.runPrefix subsetPairStepBody qs.2.numVars qs.1 j
-            (qs.2, zeroJet qs.2.jetOrder qs.2.precision)).2.2)).length ≤ L_sub qs := by
-        dsimp only [eSubIn, L_sub]; rw [length_encPair]; dsimp only; omega
-      exact (hs_le _).trans
-        (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (Nat.add_le_add_right hinp_len 1) ds)))
+    (fun qs j hj => poly_apply_le hs_le (hinp_len qs j hj))
     hB
   have hS_pb :=
     SubsetPairFold.polyBounded_space_of_polyBounded cn cq ci hcn hcq hci hBsub_pb hQsub_pb
@@ -764,23 +771,13 @@ private theorem exists_computableInO_nodeJet :
   set M_cnt := (2 * qs.2.2.1.2 + 1) ^ qs.2.2.1.1 + 1
   set G_cnt := qs.2.numGroups * (2 ^ maxGroupDim qs.2.numVars qs.2.numGroups qs.2.varGroups + 1) + 1
   have hMG : 1 ≤ M_cnt * G_cnt := Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)
-  have hstep1 := Nat.mul_le_mul_left S_cnt
-    (absorb_step_add (M_cnt * G_cnt) (P_sm qs) (hd_ov qs + B_sub qs + Ov_sub qs) hMG)
-  have hov1 := Nat.le_mul_of_pos_left
-    ((eQS qs).length + cn.time qs + cq.time qs + ci.time qs + hd_ov qs)
-    (Nat.mul_pos (Nat.succ_pos _) hMG : 1 ≤ S_cnt * (M_cnt * G_cnt))
-  dsimp only [NativeCertificate.snd_time, cSubRun, R_sub, hd_ov, P_out] at hov1 hstep1 ⊢
-  have hsum := (Nat.add_le_add hov1 hstep1).trans_eq (by ring :
-    S_cnt * (M_cnt * G_cnt) * ((eQS qs).length + cn.time qs + cq.time qs + ci.time qs +
-      SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1)) +
-    S_cnt * ((M_cnt * G_cnt) * (P_sm qs + (SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1) +
-      B_sub qs + Ov_sub qs))) =
-    S_cnt * M_cnt * G_cnt *
-      (P_sm qs + Ov_sub qs + SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1) + B_sub qs +
-        ((eQS qs).length + cn.time qs + cq.time qs + ci.time qs +
-          SubsetPairFold.decodeOverhead (qs.2.numVars + qs.1))))
-  refine le_trans ?_ (hsum.trans (Nat.mul_le_mul_left _ (by omega)))
-  dsimp only [S_cnt, M_cnt, G_cnt]; exact le_of_eq (by ring)
+  have hstep := mul_inner_add_absorb (A := S_cnt) (B := M_cnt * G_cnt)
+    (p := P_sm qs) (q := hd_ov qs + B_sub qs + Ov_sub qs)
+    (ov := (eQS qs).length + cn.time qs + cq.time qs + ci.time qs + hd_ov qs)
+    (r := P_out qs) (Nat.succ_pos _) hMG (by dsimp only [P_out]; omega)
+  dsimp only [NativeCertificate.snd_time, cSubRun, R_sub, hd_ov] at hstep ⊢
+  refine (le_of_eq ?_).trans (hstep.trans_eq (by dsimp only [S_cnt, M_cnt, G_cnt]; ring))
+  dsimp only [S_cnt, M_cnt, G_cnt]; ring
 
 private def branchQ_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.numNodes
 private def branchR_u (inp : BranchEvalInput) : ℕ := min inp.numVars inp.rowBound
@@ -1071,9 +1068,7 @@ private theorem exists_boundedIncidenceBranch_cert :
           2 * (eCtx (idPair,
             buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2)).length +
             2 * branchQ_u idPair.1 + 1 := by enc_len
-      have hov :=
-        (hn1_le ((idPair, buildEqRowTables idPair.1.numVars idPair.1.equations idPair.2), t)).trans
-        (Nat.mul_le_mul_left cn1 (Nat.pow_le_pow_left (Nat.add_le_add_right hlen 1) dn1))
+      have hov := poly_apply_le hn1_le hlen
       have hpow_le := Nat.pow_le_pow_right Nat.zero_lt_two (maxGroupDim_le_maxAllGroupDim
         (n' := idPair.1.numVars) (r_u := branchr_u idPair.1) (varGroups := idPair.2.varGroups) ht')
       have hK_pos : 1 ≤ K_inner idPair :=
@@ -1108,10 +1103,9 @@ private theorem exists_boundedIncidenceBranch_cert :
   have hcCore_sp : HasPolySpace cCore := hasPolySpace_comp hcFin.2 hspIDN
   let cZeroID := NativeCertificate.const (ei := eID) (em := encNat) 0
   let cStg2 := NativeCertificate.branch cGuard2 cCore cZeroID
-  have hcStg2_sp : HasPolySpace cStg2 := by
-    refine (hcGuard2.2.add (hcCore_sp.add .self)).mono fun idPair => ?_
-    dsimp only [cStg2, cZeroID]
-    simp only [NativeCertificate.branch_space, NativeCertificate.const_space]; split_ifs <;> omega
+  have hcStg2_sp : HasPolySpace cStg2 :=
+    ExhaustiveCountFallback.polyBounded_branch_space _ _ _
+      hcGuard2.2 hcCore_sp (NativeCertificate.const_isPolynomial 0).2
   let fnOut (idPair : BranchEvalInput × ReplacementDesignData) :=
     (idPair, (List.range (branchQ_u idPair.1)).map fun t =>
       let qs := mkNodeSubIn
@@ -1128,27 +1122,23 @@ private theorem exists_boundedIncidenceBranch_cert :
       cStg2.time idPair ≤ (branchQ_u idPair.1 + 1) * K_inner idPair * P_stg2 idPair := by
     have hK_pos : 1 ≤ K_inner idPair :=
       Nat.mul_pos (Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _)) (Nat.succ_pos _)
-    have hQK_pos : 1 ≤ (branchQ_u idPair.1 + 1) * K_inner idPair :=
-      Nat.mul_pos (Nat.succ_pos _) hK_pos
     dsimp only [cStg2, cCore, cIdID, cMapNodes, cZeroID]
     simp only [NativeCertificate.branch_time, NativeCertificate.comp_time,
       NativeCertificate.prod_time, NativeCertificate.linear_time, NativeCertificate.const_time,
       Function.comp_apply]
     split_ifs
-    · have h1 := Nat.mul_le_mul_left (branchQ_u idPair.1 + 1)
-        (absorb_step_add (K_inner idPair) (Pn_iter idPair) (Pm_nodes idPair) hK_pos)
-      let ovS := cGuard2.time idPair + (eID idPair).length + cFin.time (fnOut idPair)
-      have hov2 := Nat.le_mul_of_pos_left ovS hQK_pos
-      have hsum : (branchQ_u idPair.1 + 1) * (K_inner idPair * Pn_iter idPair + Pm_nodes idPair) +
-          ovS ≤ (branchQ_u idPair.1 + 1) * K_inner idPair *
-            (Pn_iter idPair + Pm_nodes idPair + ovS) := (Nat.add_le_add h1 hov2).trans_eq (by ring)
+    · let ovS := cGuard2.time idPair + (eID idPair).length + cFin.time (fnOut idPair)
+      have hstep := mul_inner_add_absorb (A := branchQ_u idPair.1 + 1) (B := K_inner idPair)
+        (Nat.succ_pos (branchQ_u idPair.1)) hK_pos
+        (by dsimp only [P_stg2, ovS]; omega :
+          Pn_iter idPair + Pm_nodes idPair + ovS ≤ P_stg2 idPair)
       change cGuard2.time idPair + ((eID idPair).length +
         (branchQ_u idPair.1 + 1) * (K_inner idPair * Pn_iter idPair + Pm_nodes idPair) +
         cFin.time (fnOut idPair)) ≤ _
       exact (by dsimp only [ovS]; omega : _ ≤ (branchQ_u idPair.1 + 1) *
-        (K_inner idPair * Pn_iter idPair + Pm_nodes idPair) + ovS).trans
-        (hsum.trans (Nat.mul_le_mul_left _ (by dsimp only [P_stg2, ovS]; omega)))
-    · exact (Nat.le_mul_of_pos_left (cGuard2.time idPair + (eID idPair).length) hQK_pos).trans
+        (K_inner idPair * Pn_iter idPair + Pm_nodes idPair) + ovS).trans hstep
+    · exact (Nat.le_mul_of_pos_left (cGuard2.time idPair + (eID idPair).length)
+        (Nat.mul_pos (Nat.succ_pos _) hK_pos)).trans
         (Nat.mul_le_mul_left _ (by dsimp only [P_stg2]; omega))
   let cGuard1 := NativeCertificate.ofPolyTime computableInPolyTime_validBranchEvalParams
   have hcGuard1 : cGuard1.IsPolynomial :=
@@ -1168,10 +1158,9 @@ private theorem exists_boundedIncidenceBranch_cert :
     ⟨cFull₀.time, cFull₀.space, cFull₀.computes.of_enc_eq fun inp =>
       congrArg encNat (congrFun heval_eq inp).symm⟩
   have hsp12 : HasPolySpace (cStg2.comp cStg1) := hasPolySpace_comp hcStg2_sp hPstg1_pb
-  have hcFull_sp : PolyBounded (fun inp => (encBranchEvalInput inp).length) cFull.space := by
-    refine (hcGuard1.2.add (hsp12.add .self)).mono fun inp => ?_
-    dsimp only [cFull, cFull₀, cZeroInp]
-    simp only [NativeCertificate.branch_space, NativeCertificate.const_space]; split_ifs <;> omega
+  have hcFull_sp : PolyBounded (fun inp => (encBranchEvalInput inp).length) cFull.space :=
+    ExhaustiveCountFallback.polyBounded_branch_space _ _ _
+      hcGuard1.2 hsp12 (NativeCertificate.const_isPolynomial 0).2
   let P_all (inp : BranchEvalInput) : ℕ :=
     cGuard1.time inp + (encBranchEvalInput inp).length + P_stg1 inp + P_stg2 (mkDesignPair inp)
   have hPall_pb : PolyBounded (fun inp => (encBranchEvalInput inp).length) P_all :=
