@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.BitString.List
+public import CslibFrontier.Foundations.Data.BitString.List.Single
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import Mathlib.Data.Matrix.Mul
 import Mathlib.Algebra.BigOperators.Fin
@@ -24,7 +25,8 @@ Collection XOR has a declared width and treats missing bits as false.
 
 * `Cslib.BitString.listStrictMajority`: strict majority, returning false on a tie.
 * `Cslib.BitString.listNonpositiveMargin`: compare correct votes with all votes.
-* `Cslib.BitString.listSingle`, `Cslib.BitString.listSingles`: basis vectors in coordinate order.
+* `Cslib.BitString.listSingles`: the basis vectors `listSingle` (`BitString.List.Single`) in
+  coordinate order.
 * `Cslib.BitString.listXorSelected`: sum selected rows using an ordinary fold.
 * `Cslib.BitString.listXor`: sum every row at a declared width, padding missing bits with false.
 
@@ -101,10 +103,6 @@ theorem listStrictMajority_map {ι : Type} [DecidableEq ι]
     List.toFinset_card_of_nodup hnodup,
     List.toFinset_card_of_nodup (hnodup.filter vote)]
   simp [List.filter_map, Nat.div_lt_iff_lt_mul, Nat.mul_comm]
-
-/-- A coordinate mask, with all zeros when the index is outside the requested dimension. -/
-def listSingle (dimension index : ℕ) : List Bool :=
-  (List.range dimension).map (fun coordinate => decide (index = coordinate))
 
 /-- The coordinate-mask program agrees with the finite basis vector. -/
 theorem listSingle_eq_ofFn_single {n : ℕ} (index : Fin n) :
