@@ -771,23 +771,13 @@ theorem exists_pairedTimeLayerFamily_of_mem_BPL (h : A ∈ BPL enc) :
     ∃ F : PairedTimeLayerFamily enc,
       ∀ a, (a ∈ A → 2 / 3 ≤ F.potential a (F.start a)) ∧
         (a ∉ A → F.potential a (F.start a) ≤ 1 / 3) := by
-  classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
-  let : Fintype State := Fintype.ofFinite State
-  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).1, fun a => ?_⟩
-  obtain ⟨_, _, hmem, hnot⟩ := hM a
+  -- the family's start potential is the compact layer's `p x₀`, whose gap is already proved
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_compactTimeLayer_of_mem_BPL h
+  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).fst, fun a => ?_⟩
+  obtain ⟨_, -, -, -, -, -, -, -, -, -, hmem, hnot⟩ := hM a
+  rw [finTimeLayer_compactCoinMatrix_acceptance] at hmem hnot
   rw [PairedTimeLayerFamily.ofMachine_potential_start]
-  constructor
-  · intro ha
-    rw [le_div_iff₀ (by positivity)]
-    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
-    push_cast at hc
-    linarith
-  · intro ha
-    rw [div_le_iff₀ (by positivity)]
-    have hc := (Nat.cast_le (α := ℝ)).mpr (hnot ha)
-    push_cast at hc
-    linarith
+  exact ⟨hmem, hnot⟩
 
 /-- **Paired-port time-layered reduction for `RL` (Lemma 2.1 of [OpenAI2026LogSpace]).**
 Every language `A ∈ RL enc` reduces to estimating the start entry of `(1 - S_a)⁻¹ e_a` for a
@@ -796,19 +786,12 @@ theorem exists_pairedTimeLayerFamily_of_mem_RL (h : A ∈ RL enc) :
     ∃ F : PairedTimeLayerFamily enc,
       ∀ a, (a ∈ A → 1 / 2 ≤ F.potential a (F.start a)) ∧
         (a ∉ A → F.potential a (F.start a) = 0) := by
-  classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_RL h
-  let : Fintype State := Fintype.ofFinite State
-  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).1, fun a => ?_⟩
-  obtain ⟨_, _, hmem, hnot⟩ := hM a
+  -- the family's start potential is the compact layer's `p x₀`, whose gap is already proved
+  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_compactTimeLayer_of_mem_RL h
+  refine ⟨PairedTimeLayerFamily.ofMachine enc M c d fun a => (hM a).fst, fun a => ?_⟩
+  obtain ⟨_, -, -, -, -, -, -, -, -, -, hmem, hnot⟩ := hM a
+  rw [finTimeLayer_compactCoinMatrix_acceptance] at hmem hnot
   rw [PairedTimeLayerFamily.ofMachine_potential_start]
-  constructor
-  · intro ha
-    rw [le_div_iff₀ (by positivity)]
-    have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
-    push_cast at hc
-    linarith
-  · intro ha
-    simp [hnot ha]
+  exact ⟨hmem, hnot⟩
 
 end Cslib.Complexity
