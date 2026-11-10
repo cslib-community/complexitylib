@@ -207,7 +207,7 @@ private theorem positiveIncidenceRoute_segmentCount {φ : CNF ℕ} {d : Graph.Or
     change (positiveStem φ d i e ++ (positiveExterior φ d i j).tail).consecutivePairs.length =
       e.2.2.consecutivePairs.length + (positiveExterior φ d i j).consecutivePairs.length
     rw [consecutivePairs_join hlast hhead, List.length_append]
-    simp only [positiveStem, segmentCount_eq, translate, List.length_map]
+    simp only [positiveStem, consecutivePairs_length_translate]
   all_goals simp [translate]
 
 private theorem sourceEdgeIndex_occurrence (φ : CNF ℕ) {o : Occurrence ℕ}
