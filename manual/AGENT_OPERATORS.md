@@ -317,7 +317,7 @@ directions. Its original-width resource normalization is in
 application. `CounterProjection.runCertificate` now projects the full-width input
 inside the machine. `SourceCounterCounts.quarter_certificate` composes source
 preparation and both actual projected DPs, charging simultaneous count arrays
-and all temporaries before any full-state class enumeration. Reuse these routes
+and all temporaries in this separate count-producing component. Reuse these routes
 rather than a semantic table or a generic polynomial in its full wire.
 `CounterBalanceScan` tags numeric keys, radix-sorts, pairs and folds binary
 min/max; `SourceCounterBalance` composes it with the actual all-count producer.
@@ -326,9 +326,19 @@ computed balance through injective packed words and the inverse conjugacy.
 `DPDissection` now runs the quarter-time scalar prepass before the approved whole
 search/readback pipeline. Its whole-run bounds use the returned scalar;
 `source_parameter_bounds` puts the fixed polynomial in original word width and
-operand count. `original_classBalance_admitted` identifies the paper's requested
-balance when the depth fits the word width and quarter size. Keep these typed
-input/depth conventions visible; no expected class mean controls the maximum.
+operand count. `DPDissection.source_quarter_depth_bounds` (in
+`AddXNORSourceDepth`) removes the word-width premise throughout the source range
+`p ≤ tail.length/4`; `original_classBalance_quarter` identifies the requested
+balance even for `p > m`. `classBalance_min_width` proves that wider labels add
+only empty classes; it does not lift modular operations to a larger width.
+The per-class uniform expectation still needs `p ≤ m`. Keep that distinction
+visible; no expected class mean controls the maximum. The prepass-first order
+is a property of the certificate composition, not a separate allocation-order theorem.
+`SmallOperands.reachable_card_le` now proves Proposition 4's population bound,
+including wraparound and arbitrary seeds. Its exhaustive specification is not
+an efficient machine. The next small-operand obligation is a deduplicating DP
+with derived bit time linear in the bounded number of records per layer; do not
+substitute the old `2^m` array DP or a generic polynomial in the whole list.
 Theorem 7's source pipeline is assembled. The small-operand, multiplicity,
 sparsification and repaired ideal-model clauses remain open in #2527/ROADMAP.
 Do not promote an older pair/batch bound, unnormalized machine profile, native

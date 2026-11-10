@@ -3738,6 +3738,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORChain
 public import CslibFrontier.Cryptanalysis.AddXNORChainReverse
 public import CslibFrontier.Cryptanalysis.AddXNORClassBalance
 public import CslibFrontier.Cryptanalysis.AddXNORClassBatches
+public import CslibFrontier.Cryptanalysis.AddXNORClassDepth
 public import CslibFrontier.Cryptanalysis.AddXNORClassEnumeration
 public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
@@ -3824,12 +3825,14 @@ public import CslibFrontier.Cryptanalysis.AddXNORRestartResources
 public import CslibFrontier.Cryptanalysis.AddXNORRuns
 public import CslibFrontier.Cryptanalysis.AddXNORSearch
 public import CslibFrontier.Cryptanalysis.AddXNORSearchResources
+public import CslibFrontier.Cryptanalysis.AddXNORSmallOperands
 public import CslibFrontier.Cryptanalysis.AddXNORSortedMeet
 public import CslibFrontier.Cryptanalysis.AddXNORSortedQuarterMachine
 public import CslibFrontier.Cryptanalysis.AddXNORSortedRecords
 public import CslibFrontier.Cryptanalysis.AddXNORSource
 public import CslibFrontier.Cryptanalysis.AddXNORSourceCounterBalance
 public import CslibFrontier.Cryptanalysis.AddXNORSourceCounterCounts
+public import CslibFrontier.Cryptanalysis.AddXNORSourceDepth
 public import CslibFrontier.Cryptanalysis.AddXNORSourceQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORSourceResources
 public import CslibFrontier.Cryptanalysis.AddXNORSpectrum

@@ -1483,11 +1483,12 @@ The parameters satisfy Theorem 8's range. This trace already has a collision
 simulation as written, **not** Theorem 8's inequality; repairing the simulator
 and proving the adversary-quantified lower bound remain open.
 
-The full-paper objective remains open. Remaining endpoints are the sparsification
-resource refinement, exact reduction multiplicity, reachable-state/small-operand
-and meet-in-the-middle native bit-runtime/space certificates, streaming class
-enumeration and full dissection time/space certificates, and repaired ideal-model
-search/decision lower bounds. The positional-cut result is not a universal
+The full-paper objective remains open. Remaining endpoints are the small-operand
+bit-time algorithm, sparsification
+resource refinement, exact reduction multiplicity and repaired ideal-model
+search/decision lower bounds. The full source dissection pipeline, including
+the faster count prepass, is supplied by the later `DPDissection` route. The
+positional-cut result is not a universal
 algorithmic barrier, and experimental CDCL exponents remain finite observations.
 
 
@@ -1716,7 +1717,7 @@ termination or witness correctness is a premise.
 
 `Driver.prepare_exec` projects the raw halves and executes both native counter
 kernels. It saves their actual result pointers in a separate high register bank,
-then scans the actual arrays before any full class is stored. The backward array
+then scans the actual arrays as its scalar preparation phase. The backward array
 uses complemented low-bit indices. The returned balance equals `computedBalance`;
 `computedBalance_eq_classBalance` identifies it with the existing manuscript
 `classBalance`. At each key, `selectedClass` loads both actual counter cells and
@@ -2167,7 +2168,7 @@ remain unchanged. Sharp source time/space and the broader 733 results stay open.
 both full half-space arrays. A packed counter evaluates one original forward or
 inverse word at a time and tests its low bits. Count-only passes derive occurrence
 counts, including equal-state collisions; a count-only outer prepass computes
-the maximum of the smaller class sizes before any class is retained. Each class
+the maximum of the smaller class sizes in a separate preparation phase. Each class
 then computes its retaining orientation, collects only the smaller side, sorts
 that class by the existing radix machine, and streams/probes opposite-side words
 against it. The original input, class counter and optional hit are the only values
@@ -2721,7 +2722,7 @@ $q=N-1$. It runs both half-chain DPs and returns two dense numeric-key count
 arrays. `side_classes` proves that these are the original forward and backward
 low-bit class populations, including the residual fourth quarter.
 `quarter_certificate` bounds the actual combined time and peak workspace by
-$2^{\lfloor q/4\rfloor}P(I+1)$ before any full-state class list is generated.
+$2^{\lfloor q/4\rfloor}P(I+1)$ for this count-producing component.
 The bound includes both count arrays simultaneously, original-input/cut copies,
 projection, DP callback/sort/arithmetic buffers and output.
 
@@ -2736,7 +2737,8 @@ lookup or whole-remaining-list callback. Its time and every-prefix workspace are
 $2^d$ times a polynomial in key/counter bit widths, derived from original inputs.
 `SourceCounterBalance.source_certificate` includes the actual projection/count
 producer and proves $2^{\lfloor q/4\rfloor}P(I+1)$ time and peak space for the
-returned scalar, before any full-state class enumeration.
+returned scalar. The certificate composition places this scalar prepass first;
+no separate theorem about the order of allocations is asserted.
 
 [`AddXNORBalanceCompatibility.lean`](../../CslibFrontier/Cryptanalysis/AddXNORBalanceCompatibility.lean)
 proves that the search's generated populations equal those DP entries. The proof
@@ -2762,6 +2764,40 @@ algorithm on the well-formed typed-input model, with the documented computed
 cap $d$ (and $d=p$ on admitted depths). Counts, arithmetic, sorting, intermediate
 copies, callback/state/control tapes and output are charged at every prefix.
 No resource or execution conclusion is supplied as an endpoint premise.
+
+The source's full deterministic range no longer needs $p\le m$.
+[`AddXNORClassDepth.lean`](../../CslibFrontier/Cryptanalysis/AddXNORClassDepth.lean)
+proves `classBalance_min_width`: zero-extending labels past the physical width
+adds only empty classes, so $\mu_{\min(p,m)}=\mu_p$.
+[`AddXNORSourceDepth.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSourceDepth.lean)
+uses this to prove `original_classBalance_quarter` and
+`source_quarter_depth_bounds` for **every** $p\le\lfloor q/4\rfloor$, with no
+word-width premise. The actual capped machine and its certificate are unchanged;
+the depth header is bounded using the quarter size. Its deterministic source
+bounds are therefore $2^{\lfloor q/2\rfloor}P(m+q+1)$ time and
+$(2^{\lfloor q/4\rfloor}+\mu_p)P(m+q+1)$ simultaneous peak space throughout
+that range. This zero-extension argument applies to evaluated states, not to
+running lifted arithmetic: one-bit $1+1$ wraps to zero, while two-bit addition
+returns two. The source's **uniform per-class expectation** still needs
+$p\le m$; above that width some labels have zero mass, contradicting a positive
+$2^{-p}$ uniform mass. No uniform-expectation extension is claimed.
+
+[`AddXNORSmallOperands.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSmallOperands.lean)
+proves Proposition 4's distinct reachable-state bound. With $q'=i-1$ operations,
+all operands after the unrestricted seed below $2^s$, and arbitrary physical
+width, `reachable_card_le` gives $|R_i|\le2(2q'+1)2^s=2(2i-1)2^s$.
+`eval_mem_corridor` derives this from actual modular additions and XNORs:
+after removing complement parity, each step changes an integer representative
+by at most $2^s$. Wraparound only reduces the size of the resulting finite image.
+The proof includes zero width, zero operands and high seeds. This completes the
+population inequality, **not** Proposition 4's $O^*(2^s)$ bit-time algorithm.
+The executable `reachable` definition still enumerates operator strings; it is
+only a specification and checked finite client, not the efficient algorithm.
+The next obligation is a deduplicating reachable-state machine with derived
+linear-per-record bit costs, composed across operands. The older full-state
+array DP costs $2^m$ and cannot supply the small-operand bound when $s<m$.
+Build the integrated wider-label and small-operand clients with
+`lake build CslibFrontierTests.AddXNORSourceDepth --wfail --iofail`.
 
 The earlier sorted-list solver and its certificate remain available. The source
 Theorem 7 pipeline is now assembled; small-operand, multiplicity, sparsification

@@ -16,8 +16,9 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 ## STOC submission 733
 
 - **Remaining Add/XNOR source clauses** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
-  Small-operand bounds, reduction multiplicity, sparsification and repaired ideal-model claims.
-  Preserve the well-formed typed-input model, computed projection depth and explicit bit resources.
+  The small-operand bit-time algorithm, reduction multiplicity, sparsification and repaired
+  ideal-model claims.
+  Preserve typed inputs, explicit bit resources and the width condition on uniform class means.
 
 ## Programs
 
