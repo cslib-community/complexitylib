@@ -19,8 +19,11 @@ variables over a conjunction of universally closed clauses. Each clause has the 
 the body atoms apply relation variables to clause variables, and `head` is either one such
 atom (a definite clause) or `⊥` (a goal clause). The Horn restriction applies only to the
 quantified relation variables: base-vocabulary symbols occur in the guard with either sign.
-Grädel's fragment requires quantifier-free guards (`Sentence.IsQF`). A quantifier-free guard
-in disjunctive normal form splits a clause into finitely many clauses in his CNF presentation.
+Grädel's textbook definition allows arbitrary first-order guards. His original paper allows only
+input literals in clause bodies, and the two variants are equivalent on ordered structures with
+successor and endpoint constants [Gradel2007, Exercise 3.2.20]. `Sentence.IsQF` is the
+quantifier-free restriction: a quantifier-free guard in disjunctive normal form splits a clause
+into finitely many clauses whose guards are conjunctions of literals.
 
 The least relations closed under the definite clauses form a sentence's *least model*. A
 sentence holds exactly when its least model satisfies its goal clauses. Truth therefore comes
@@ -48,12 +51,15 @@ into ordinary existential second-order logic and preserves truth.
 
 ## References
 
+* [E. Grädel, *Finite Model Theory and Descriptive Complexity*][Gradel2007], §3.2.3:
+  Definition 3.2.12 (p. 145) for SO-HORN and its existential fragment Σ¹₁-HORN, and
+  Exercise 3.2.20 (p. 148) for the quantifier-free variant.
 * [E. Grädel, *Capturing complexity classes by fragments of second-order logic*][Gradel1992],
-  for the second-order Horn fragment and its successor-structure characterization of P.
-  Section and theorem locators are unverified.
+  the original source of the second-order Horn characterization of P. Section and theorem
+  locators are unverified.
 -/
 
-@[expose] public section
+public section
 
 universe u v w
 
@@ -73,6 +79,7 @@ structure Atom {V : Type} (arity : V → ℕ) (β : Type) where
 variable {V : Type} {arity : V → ℕ} {M : Type w}
 
 /-- An atom holds under relations `R` and a variable assignment `v`. -/
+@[expose]
 def Atom.Holds {β : Type} (a : Atom arity β) (R : ∀ i, Set (Fin (arity i) → M))
     (v : β → M) : Prop :=
   v ∘ a.args ∈ R a.rel
@@ -98,6 +105,7 @@ variable {L : Language.{u, v}} {L' : Language.{u, v}}
 
 /-- A clause holds under relations `R` when every assignment satisfying its guard and body
 satisfies its head; a goal clause forbids such assignments. -/
+@[expose]
 def Clause.Holds [L.Structure M] (C : Clause L arity) (R : ∀ i, Set (Fin (arity i) → M)) :
     Prop :=
   ∀ v : Fin C.width → M, C.guard.Realize v → (∀ a ∈ C.body, a.Holds R v) →
@@ -134,10 +142,12 @@ attribute [instance] Sentence.finite
 namespace Sentence
 
 /-- An SO∃-Horn sentence holds in `M` when some relations satisfy all of its clauses. -/
+@[expose]
 def Realize (Φ : Sentence L) (M : Type w) [L.Structure M] : Prop :=
   ∃ R : ∀ i, Set (Fin (Φ.arity i) → M), ∀ C ∈ Φ.clauses, C.Holds R
 
 /-- Grädel's restriction: every guard is quantifier-free. -/
+@[expose]
 def IsQF (Φ : Sentence L) : Prop :=
   ∀ C ∈ Φ.clauses, C.guard.IsQF
 
@@ -161,6 +171,7 @@ theorem realize_mapGuards [L.Structure M] [L'.Structure M]
 /-- The immediate-consequence operator of the definite clauses: one round of rule application.
 A tuple is produced for a relation variable when some definite clause has it as an instance of
 its head and its guard and body hold under `R`. -/
+@[expose]
 def consequence (Φ : Sentence L) (M : Type w) [L.Structure M] :
     (∀ i, Set (Fin (Φ.arity i) → M)) →o ∀ i, Set (Fin (Φ.arity i) → M) where
   toFun R i := {x | ∃ C ∈ Φ.clauses, ∃ a, C.head = some a ∧ ∃ v : Fin C.width → M,
@@ -172,16 +183,19 @@ def consequence (Φ : Sentence L) (M : Type w) [L.Structure M] :
 
 /-- The least relations closed under the definite clauses: the least fixed point of the
 immediate-consequence operator. -/
+@[expose]
 def leastModel (Φ : Sentence L) (M : Type w) [L.Structure M] : ∀ i, Set (Fin (Φ.arity i) → M) :=
   (Φ.consequence M).lfp
 
 variable [L.Structure M]
 
 /-- Relations closed under every definite clause. -/
+@[expose]
 def Closed (Φ : Sentence L) (R : ∀ i, Set (Fin (Φ.arity i) → M)) : Prop :=
   ∀ C ∈ Φ.clauses, C.head.isSome → C.Holds R
 
 /-- Relations satisfying every goal clause. -/
+@[expose]
 def Consistent (Φ : Sentence L) (R : ∀ i, Set (Fin (Φ.arity i) → M)) : Prop :=
   ∀ C ∈ Φ.clauses, C.head = none → C.Holds R
 

@@ -35,6 +35,9 @@ The converse, that every query in native `P` is `HornDefinable`, is open; `ROADM
 
 ## References
 
+* [E. Grädel, *Finite Model Theory and Descriptive Complexity*][Gradel2007], Theorems 3.2.17
+  (pp. 147–148) and 3.2.18 (p. 148), for the upper bound and the capture of polynomial time on
+  ordered structures.
 * [E. Grädel, *Capturing complexity classes by fragments of second-order logic*][Gradel1992],
   for the SO∃-Horn characterization of polynomial time on successor structures. Section and
   theorem locators are unverified.

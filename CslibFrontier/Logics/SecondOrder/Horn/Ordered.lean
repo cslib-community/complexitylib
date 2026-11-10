@@ -43,11 +43,18 @@ exist because canonical ordered structures have at least two elements.
   canonical structures with at least two elements.
 * `Cslib.Logic.FO.Ordered.LFPDefinable.of_horn`: a query defined by an SO∃-Horn sentence over the
   ordered vocabulary, with arbitrary first-order guards, is `LFPDefinable`.
+* `Cslib.Logic.FO.Ordered.HornDefinable.exists_sentence`: a `HornDefinable` query is defined by
+  an SO∃-Horn sentence over the ordered vocabulary without successor, with first-order guards.
 * `Cslib.Logic.FO.Ordered.HornDefinable.lfpDefinable`: `HornDefinable` queries are
   `LFPDefinable`.
 
 ## References
 
+* [E. Grädel, *Finite Model Theory and Descriptive Complexity*][Gradel2007], Theorem 3.2.18
+  (p. 148) for the capture of polynomial time on ordered structures, and Exercise 3.2.20
+  (p. 148): the variant whose clause bodies contain only input literals is equivalent to the
+  first-order variant on ordered structures with successor and endpoint constants, but not on
+  ordered structures without successor. The exercise does not consider `BIT`.
 * [E. Grädel, *Capturing complexity classes by fragments of second-order logic*][Gradel1992],
   for SO∃-Horn logic on successor structures. Section and theorem locators are unverified.
 * [N. Immerman, *Descriptive Complexity*][Immerman1999], Chapter 4, for FO(LFP).

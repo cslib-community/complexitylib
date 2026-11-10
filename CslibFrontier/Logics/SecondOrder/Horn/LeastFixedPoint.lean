@@ -40,9 +40,12 @@ subformulas.
 
 ## References
 
+* [E. Grädel, *Finite Model Theory and Descriptive Complexity*][Gradel2007], Theorem 3.2.17
+  (pp. 147–148), for the upper bound of the SO∃-Horn characterization of polynomial time. The
+  textbook proof grounds the sentence to a propositional Horn formula; this module instead goes
+  through FO(LFP), which reuses the library's native FO(LFP) model checker.
 * [E. Grädel, *Capturing complexity classes by fragments of second-order logic*][Gradel1992],
-  for the upper bound of the SO∃-Horn characterization of polynomial time. Section and theorem
-  locators are unverified.
+  the original source. Section and theorem locators are unverified.
 * [N. Immerman, *Descriptive Complexity*][Immerman1999], Chapter 4, for FO(LFP) and
   simultaneous inductions.
 -/
@@ -67,13 +70,13 @@ variable {M : Type w} {t a : ℕ}
 
 /-- The tagged tuple of width `t + a` that represents the tuple `x` of the relation variable
 `i`: the one-hot tag of `e i` followed by `x`, padded with `c₀`. -/
-def tagTuple (e : Φ.Var → Fin t) (c₀ c₁ : M) (i : Φ.Var) (x : Fin (Φ.arity i) → M) :
+private def tagTuple (e : Φ.Var → Fin t) (c₀ c₁ : M) (i : Φ.Var) (x : Fin (Φ.arity i) → M) :
     Fin (t + a) → M :=
   Fin.append (fun j => if j = e i then c₁ else c₀)
     fun p => if h : p.val < Φ.arity i then x ⟨p.val, h⟩ else c₀
 
 /-- Tagging is injective when the tags are injective, the arities fit and `c₀ ≠ c₁`. -/
-theorem tagTuple_injective {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ c₁ : M}
+private theorem tagTuple_injective {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ c₁ : M}
     (hc : c₀ ≠ c₁) (ha : ∀ i, Φ.arity i ≤ a) {i i' : Φ.Var} {x : Fin (Φ.arity i) → M}
     {x' : Fin (Φ.arity i') → M} (h : tagTuple (a := a) e c₀ c₁ i x = tagTuple e c₀ c₁ i' x') :
     (⟨i, x⟩ : Σ i, Fin (Φ.arity i) → M) = ⟨i', x'⟩ := by
@@ -88,17 +91,17 @@ theorem tagTuple_injective {e : Φ.Var → Fin t} (he : Function.Injective e) {c
   simpa only [tagTuple, Fin.append_right, Fin.val_mk, p.isLt, ↓reduceDIte, Fin.eta] using hp
 
 /-- Tagged tuples of a family of relations. -/
-def tagSet (e : Φ.Var → Fin t) (c₀ c₁ : M) (R : ∀ i, Set (Fin (Φ.arity i) → M)) :
+private def tagSet (e : Φ.Var → Fin t) (c₀ c₁ : M) (R : ∀ i, Set (Fin (Φ.arity i) → M)) :
     Set (Fin (t + a) → M) :=
   {y | ∃ i, ∃ x ∈ R i, tagTuple e c₀ c₁ i x = y}
 
 /-- The relations encoded by a set of tagged tuples. -/
-def untagSet (e : Φ.Var → Fin t) (c₀ c₁ : M) (S : Set (Fin (t + a) → M)) :
+private def untagSet (e : Φ.Var → Fin t) (c₀ c₁ : M) (S : Set (Fin (t + a) → M)) :
     ∀ i, Set (Fin (Φ.arity i) → M) :=
   fun i => {x | tagTuple e c₀ c₁ i x ∈ S}
 
 /-- A tagged tuple lies in a tagged family exactly when its tuple lies in the family. -/
-theorem mem_tagSet_iff {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ c₁ : M}
+private theorem mem_tagSet_iff {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ c₁ : M}
     (hc : c₀ ≠ c₁) (ha : ∀ i, Φ.arity i ≤ a) {R : ∀ i, Set (Fin (Φ.arity i) → M)} {i : Φ.Var}
     {x : Fin (Φ.arity i) → M} : tagTuple (a := a) e c₀ c₁ i x ∈ tagSet e c₀ c₁ R ↔ x ∈ R i := by
   constructor
@@ -108,13 +111,13 @@ theorem mem_tagSet_iff {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ 
   · exact fun hx => ⟨i, x, hx, rfl⟩
 
 /-- Decoding a tagged family recovers it. -/
-theorem untagSet_tagSet {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ c₁ : M}
+private theorem untagSet_tagSet {e : Φ.Var → Fin t} (he : Function.Injective e) {c₀ c₁ : M}
     (hc : c₀ ≠ c₁) (ha : ∀ i, Φ.arity i ≤ a) (R : ∀ i, Set (Fin (Φ.arity i) → M)) :
     untagSet e c₀ c₁ (tagSet (a := a) e c₀ c₁ R) = R :=
   funext fun _ => Set.ext fun _ => mem_tagSet_iff he hc ha
 
 /-- Tagging as an order homomorphism. -/
-def tagHom (e : Φ.Var → Fin t) (c₀ c₁ : M) :
+private def tagHom (e : Φ.Var → Fin t) (c₀ c₁ : M) :
     (∀ i, Set (Fin (Φ.arity i) → M)) →o Set (Fin (t + a) → M) where
   toFun := tagSet e c₀ c₁
   monotone' R S hRS := by
@@ -122,19 +125,19 @@ def tagHom (e : Φ.Var → Fin t) (c₀ c₁ : M) :
     exact ⟨i, x, hRS i hx, hy⟩
 
 /-- Decoding as an order homomorphism. -/
-def untagHom (e : Φ.Var → Fin t) (c₀ c₁ : M) :
+private def untagHom (e : Φ.Var → Fin t) (c₀ c₁ : M) :
     Set (Fin (t + a) → M) →o ∀ i, Set (Fin (Φ.arity i) → M) where
   toFun := untagSet e c₀ c₁
   monotone' _ _ hST _ _ hx := hST hx
 
 /-- The packed immediate-consequence operator on tagged tuples. -/
-def tagStep [L.Structure M] (e : Φ.Var → Fin t) (c₀ c₁ : M) :
+private def tagStep [L.Structure M] (e : Φ.Var → Fin t) (c₀ c₁ : M) :
     Set (Fin (t + a) → M) →o Set (Fin (t + a) → M) :=
   (tagHom e c₀ c₁).comp ((Φ.consequence M).comp (untagHom e c₀ c₁))
 
 /-- **Packing a simultaneous induction.** The least fixed point of the packed operator is the
 tagged least model. -/
-theorem lfp_tagStep [L.Structure M] {e : Φ.Var → Fin t} (he : Function.Injective e)
+private theorem lfp_tagStep [L.Structure M] {e : Φ.Var → Fin t} (he : Function.Injective e)
     {c₀ c₁ : M} (hc : c₀ ≠ c₁) (ha : ∀ i, Φ.arity i ≤ a) :
     (tagStep (a := a) e c₀ c₁).lfp = tagSet e c₀ c₁ (Φ.leastModel M) := by
   have hid : ((Φ.consequence M).comp (untagHom e c₀ c₁)).comp (tagHom (a := a) e c₀ c₁) =
@@ -146,7 +149,7 @@ theorem lfp_tagStep [L.Structure M] {e : Φ.Var → Fin t} (he : Function.Inject
 
 /-- One packed step: a tagged tuple is produced by a definite clause whose guard and body hold
 for the decoded relations. -/
-theorem mem_tagStep_iff [L.Structure M] (e : Φ.Var → Fin t) (c₀ c₁ : M)
+private theorem mem_tagStep_iff [L.Structure M] (e : Φ.Var → Fin t) (c₀ c₁ : M)
     (S : Set (Fin (t + a) → M)) (y : Fin (t + a) → M) :
     y ∈ tagStep e c₀ c₁ S ↔ ∃ C ∈ Φ.clauses, ∃ h, C.head = some h ∧ ∃ w : Fin C.width → M,
       C.guard.Realize w ∧ (∀ b ∈ C.body, tagTuple e c₀ c₁ b.rel (w ∘ b.args) ∈ S) ∧
@@ -198,26 +201,6 @@ private theorem definable_forall_mem {β : Type*} (l : List β) {P : β → ∀ 
   | cons b l ih =>
     exact ((hP b (by simp)).conj (ih fun c hc => hP c (by simp [hc]))).congr fun _ _ => by simp
 
-private theorem polarityDefinable_forall_mem {β : Type*} (l : List β)
-    {P : β → ∀ m, (α → M m) → Prop}
-    (hP : ∀ b ∈ l, Operator.PolarityDefinable (L := L) policy mark sign M I ρ (P b)) :
-    Operator.PolarityDefinable (L := L) policy mark sign M I ρ
-      (fun m v => ∀ b ∈ l, P b m v) := by
-  induction l with
-  | nil => exact Operator.PolarityDefinable.truth.congr fun _ _ => by simp
-  | cons b l ih =>
-    exact ((hP b (by simp)).conj (ih fun c hc => hP c (by simp [hc]))).congr fun _ _ => by simp
-
-private theorem polarityDefinable_exists_mem {β : Type*} (l : List β)
-    {P : β → ∀ m, (α → M m) → Prop}
-    (hP : ∀ b ∈ l, Operator.PolarityDefinable (L := L) policy mark sign M I ρ (P b)) :
-    Operator.PolarityDefinable (L := L) policy mark sign M I ρ
-      (fun m v => ∃ b ∈ l, P b m v) := by
-  induction l with
-  | nil => exact Operator.PolarityDefinable.falsity.congr fun _ _ => by simp
-  | cons b l ih =>
-    exact ((hP b (by simp)).disj (ih fun c hc => hP c (by simp [hc]))).congr fun _ _ => by simp
-
 private theorem realize_relabel_empty {β : Type*} {N : Type*} [L.Structure N]
     (c : L.Term Empty) (v : β → N) :
     (c.relabel Empty.elim).realize v = c.realize (Empty.elim : Empty → N) := by
@@ -227,13 +210,13 @@ private theorem realize_relabel_empty {β : Type*} {N : Type*} [L.Structure N]
 variable {t a : ℕ}
 
 /-- The term tuple that denotes a tagged tuple, with tag constants `c₀` and `c₁`. -/
-def tagTerms {β : Type*} (e : Φ.Var → Fin t) (c₀ c₁ : L.Term Empty) (i : Φ.Var)
+private def tagTerms {β : Type*} (e : Φ.Var → Fin t) (c₀ c₁ : L.Term Empty) (i : Φ.Var)
     (args : Fin (Φ.arity i) → β) : Fin (t + a) → L.Term β :=
   Fin.append (fun j => if j = e i then c₁.relabel Empty.elim else c₀.relabel Empty.elim)
     fun p => if h : p.val < Φ.arity i then .var (args ⟨p.val, h⟩) else c₀.relabel Empty.elim
 
 /-- The tagged term tuple denotes the tagged tuple. -/
-theorem realize_tagTerms {β : Type*} {N : Type*} [L.Structure N] (e : Φ.Var → Fin t)
+private theorem realize_tagTerms {β : Type*} {N : Type*} [L.Structure N] (e : Φ.Var → Fin t)
     (c₀ c₁ : L.Term Empty) (i : Φ.Var) (args : Fin (Φ.arity i) → β) (v : β → N) :
     (fun p => (tagTerms (a := a) e c₀ c₁ i args p).realize v) =
       tagTuple e (c₀.realize Empty.elim) (c₁.realize Empty.elim) i (v ∘ args) := by
@@ -249,14 +232,14 @@ theorem realize_tagTerms {β : Type*} {N : Type*} [L.Structure N] (e : Φ.Var �
 /-- The packed operator has a positive defining formula. It is a finite disjunction over the
 definite clauses; each disjunct existentially quantifies the clause variables, keeps the guard
 as a first-order subformula, and requires the tagged body tuples to lie in the bound relation. -/
-theorem tagStep_polarityDefinable (e : Φ.Var → Fin t) (c₀ c₁ : L.Term Empty)
+private theorem tagStep_polarityDefinable (e : Φ.Var → Fin t) (c₀ c₁ : L.Term Empty)
     (mark : Marking ((t + a) :: Γ)) :
     Operator.PolarityDefinable (L := L) policy mark true
       (fun j : (m : ι) × Set (Fin (t + a) → M m) => M j.1) (fun j => I j.1)
       (fun j => RelEnv.cons j.2 (ρ j.1))
       (fun j (v : α ⊕ Fin (t + a) → M j.1) => v ∘ Sum.inr ∈
         tagStep e (c₀.realize Empty.elim) (c₁.realize Empty.elim) j.2) := by
-  refine (polarityDefinable_exists_mem Φ.clauses
+  refine (Operator.PolarityDefinable.exists_mem Φ.clauses
     (P := fun C (j : (m : ι) × Set (Fin (t + a) → M m)) (v : α ⊕ Fin (t + a) → M j.1) =>
       ∃ h, C.head = some h ∧ ∃ w : Fin C.width → M j.1, C.guard.Realize w ∧
         (∀ b ∈ C.body, tagTuple e (c₀.realize Empty.elim) (c₁.realize Empty.elim) b.rel
@@ -281,7 +264,7 @@ theorem tagStep_polarityDefinable (e : Φ.Var → Fin t) (c₀ c₁ : L.Term Emp
       tagTuple e (c₀.realize Empty.elim) (c₁.realize Empty.elim) h.rel (w ∘ h.args) =
         v ∘ Sum.inr) ?_
     refine ((Operator.PolarityDefinable.ofFO (C.guard.relabel Sum.inr)).conj
-      ((polarityDefinable_forall_mem C.body fun b _ =>
+      ((Operator.PolarityDefinable.forall_mem C.body fun b _ =>
         Operator.PolarityDefinable.rel (Γ := (t + a) :: Γ) .here
           (tagTerms e c₀ c₁ b.rel (Sum.inr ∘ b.args))).conj
       (Operator.PolarityDefinable.iAll fun p => Operator.PolarityDefinable.equal
