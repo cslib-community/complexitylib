@@ -370,7 +370,6 @@ theorem iterate_sentinelState_of_clippedError_le {s : Finset ι} {n : ℕ → �
   have hL₀0 : 0 ≤ L₀ := hη.trans hL₀
   have hc1 : 1 ≤ c := by dsimp only [c, L]; linarith
   have hc0 : 0 ≤ c := (by norm_num : (0 : ℝ) ≤ 1).trans hc1
-  have hR : 0 ≤ R := by dsimp only [R]; positivity
   have hL : 3 * R < L := by dsimp only [R, L]; linarith
   have hmarked : marked ⊆ s := filter_subset _ _
   have hsmall' : c * prefixErrorBudget ε m ≤ 1 / 8 := hsmall
@@ -468,7 +467,7 @@ theorem iterate_sentinelState_of_clippedError_le {s : Finset ι} {n : ℕ → �
     dsimp only [L] at hd
     dsimp only [R]
     nlinarith
-  exact iterate_sentinelState_of_sum_abs_lt m hmarked hK hR hL hvar
+  exact iterate_sentinelState_of_sum_abs_lt m hmarked hK hL hvar
     (fun i hi => (hceil i hi).1) (fun i hi => (hceil i hi).2)
 
 end Cslib.RowCompression

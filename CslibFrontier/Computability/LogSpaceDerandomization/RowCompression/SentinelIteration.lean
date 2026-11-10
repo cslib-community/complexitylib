@@ -17,7 +17,7 @@ import Mathlib.Tactic.Linarith
 The modified calculation starts from `sentinelState marked L a` and uses increments
 `sentinelFirst marked 0 (Δ i)`. Thus only marked first-channel increments are removed; second
 increments are unchanged. If the actual modified input ranks and thresholds are bounded by
-`R ≥ 0`, and `3R` plus the total absolute first-channel variation is below every marked initial
+`R`, and `3R` plus the total absolute first-channel variation is below every marked initial
 first coordinate, the two actual calculations remain coupled at every prefix.
 
 Their defaults agree, the modified full row is the sentinel replacement of the original row,
@@ -130,7 +130,7 @@ in the compression identity region. Both original marked channels follow their r
 The result also identifies the actual padded ranks after every positive prefix and bounds them
 by `R`. No equality or regularity law for final row outputs is assumed. -/
 theorem iterate_sentinelState_of_sum_abs_lt (m : ℕ) (hmarked : marked ⊆ s)
-    (hK : 0 < K) (hR : 0 ≤ R) (hL : 3 * R < L)
+    (hK : 0 < K) (hL : 3 * R < L)
     (hvar : ∀ y ∈ marked, 3 * R + ∑ i ∈ range m, |Δ i y 0| < a.row y 0) :
     let Δ' := fun i => sentinelFirst marked 0 (Δ i)
     let b := sentinelState marked L a
@@ -167,6 +167,7 @@ theorem iterate_sentinelState_of_sum_abs_lt (m : ℕ) (hmarked : marked ⊆ s)
   | succ j ih =>
     intro hj
     have hjm : j < m := (Nat.lt_succ_self j).trans_le hj
+    have hR : 0 ≤ R := firstRank_nonneg.trans (hq j hjm)
     obtain ⟨heq, hraw, _⟩ := ih ((Nat.le_succ j).trans hj)
     have hinput : inputRow s n (fun _ => K) ρ Δ' b j =
         sentinelFirst marked L (inputRow s n (fun _ => K) ρ Δ a j) := by

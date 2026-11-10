@@ -684,17 +684,10 @@ private theorem eventually_thresholds {β : ℕ} :
   have h2pow_n : 2 ^ (lam - 1) ≤ n := (Nat.pow_pred_clog_lt_self one_lt_two (by omega)).le
   have h16 : (16 : ℝ) ≤ Real.sqrt lam :=
     (Real.le_sqrt (by norm_num) (Nat.cast_nonneg _)).mpr (by exact_mod_cast hlam)
-  have hβnu_le : β * nu ≤ lam / 4 := by
-    have h4 : ((β * nu : ℕ) : ℝ) * 4 ≤ lam := by
-      calc ((β * nu : ℕ) : ℝ) * 4 = 4 * (β : ℝ) * nu * 1 := by push_cast; ring
+  have hβnu_le : β * nu + nu ≤ lam / 4 := by
+    have h4 : ((β * nu + nu : ℕ) : ℝ) * 4 ≤ lam := by
+      calc ((β * nu + nu : ℕ) : ℝ) * 4 = 4 * ((β : ℝ) + 1) * nu * 1 := by push_cast; ring
         _ ≤ 2048 * ((β : ℝ) + 3) * (nu : ℝ) * Real.sqrt lam := by gcongr <;> linarith
-        _ ≤ lam := hnu_sqrt.le
-    exact (Nat.le_div_iff_mul_le (by norm_num)).mpr (by exact_mod_cast h4)
-  have hnu_le : nu ≤ lam / 4 := by
-    have h4 : (nu : ℝ) * 4 ≤ lam := by
-      calc (nu : ℝ) * 4 = 4 * 1 * nu * 1 := by ring
-        _ ≤ 2048 * ((β : ℝ) + 3) * (nu : ℝ) * Real.sqrt lam := by
-            gcongr <;> linarith [Nat.cast_nonneg (α := ℝ) β]
         _ ≤ lam := hnu_sqrt.le
     exact (Nat.le_div_iff_mul_le (by norm_num)).mpr (by exact_mod_cast h4)
   have hlam_pow : lam ≤ 2 ^ nu := Nat.le_pow_clog one_lt_two lam
