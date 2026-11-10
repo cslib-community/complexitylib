@@ -59,30 +59,6 @@
  "CslibFrontier/Computability/MCSP/SuccinctNP.lean": {
   "encPair encUnary (encList (encPair encBits encBool))": 3
  },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/ConfigurationGraph/FairCoin/PairedPorts/LogSpace.lean": {
-  "encPair encBits (encPair encNat encNat)": 3
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Fold.lean": {
-  "encPair (encPair ?1 ?2) ?3": 4
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/RotationMap/Family.lean": {
-  "encPair encUnary (encPair encUnary ?1)": 3
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Space/Reachability.lean": {
-  "encPair ?1 (encPair encBits encBits)": 3
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Counting/Checker.lean": {
-  "encPair encBits (encOption encFiniteConfig)": 3
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Halting/SMN.lean": {
-  "encList (encPair eKey eAct)": 5
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/Oracle.lean": {
-  "encPair (encPair encBits encBits) encUnary": 3
- },
- "CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/PolyTime.lean": {
-  "encPair eDesc (encPair (encList encUnary) encUnary)": 3
- },
  "CslibFrontier/Computability/Probabilistic/Memoize.lean": {
   "encList (encPair ?1 ?2)": 4
  },
