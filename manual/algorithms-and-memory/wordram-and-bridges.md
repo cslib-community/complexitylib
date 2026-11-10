@@ -90,7 +90,8 @@ discharger. `Data.set_set` drops an overwritten register. The
 including two banks separated by quantified hypotheses, a premise-bearing hypothesis left unused,
 and names left unread.
 
-`wram_exec` also runs `Op.alu` instructions through `WP.alu`, for a basis given by a definition,
+`wram_exec` also runs `Op.alu` instructions through `WP.alu` (`WP.Exact.alu` for exact counts),
+for a basis given by a definition,
 such as `Basis.additive` (including `Op.addAdditive`), or for `Basis.standard` written with the
 constructor. `Basis.reduceInterp` unfolds the operation on the argument registers' values, and
 execution continues only when the result is `some v`. The fitting condition `Fits w v` is
@@ -99,7 +100,8 @@ instruction. An operation that does not unfold to `some v` without comparing the
 `Basis.exact` subtraction, stops `wram_exec` with a `could not evaluate` error; write such
 instructions as `Op.exactBin`, which has its own rules. The
 [other-bases examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check additive and
-standard instructions and that failure.
+standard instructions and that failure, and the exact-count examples check both instructions under
+`Exec`.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
