@@ -1747,8 +1747,10 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
         (lt_of_lt_of_le hacc_next_lt_q
           (Nat.pow_le_pow_right (by decide) (by omega)))
     have hm_le : m ≤ k := Nat.le_of_succ_le hm
-    have hsum : acc_next * x_field ^ m + ∑ i : Fin m, c_field (Fin.castLE hm_le i) * x_field ^ (i : ℕ) =
-        acc * x_field ^ (m + 1) + ∑ i : Fin (m + 1), c_field (Fin.castLE hm i) * x_field ^ (i : ℕ) := by
+    have hsum :
+        acc_next * x_field ^ m + ∑ i : Fin m, c_field (Fin.castLE hm_le i) * x_field ^ (i : ℕ) =
+          acc * x_field ^ (m + 1) +
+            ∑ i : Fin (m + 1), c_field (Fin.castLE hm i) * x_field ^ (i : ℕ) := by
       rw [Fin.sum_univ_castSucc]
       simp only [acc_next, Fin.val_castSucc, Fin.val_last, pow_succ]
       have hcast : ∀ i : Fin m, Fin.castLE hm i.castSucc = Fin.castLE hm_le i :=
@@ -1776,7 +1778,8 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
         with s7 ⟨hs7_2, hs7_low, hs7_mem⟩
       wram_exec [hs7_low, hs6_low, hs7_mem, hs6_mem, h0, hmem_seed, hs7_2, t, hxor_val]
       exact (ih hm_le acc_next _ (by wram_simp [hs7_mem, hs6_mem]; exact ⟨htab, hseed⟩)
-        (by wram_simp [hs7_low, hs6_low, h0]) (by wram_simp [hs7_low, hs6_low, h1]) (by wram_simp [t])
+        (by wram_simp [hs7_low, hs6_low, h0]) (by wram_simp [hs7_low, hs6_low, h1])
+        (by wram_simp [t])
         (by wram_simp [hs7_low, hs6_low]) (by wram_simp [hs7_low, hs6_low, h4])
         (by wram_simp [hs7_low, hs6_low, h5]) (by wram_simp [hs7_low, hs6_low, h6])
         (by wram_simp [hs7_low, hs6_low, h7]) (by wram_simp [hs7_low, hs6_low, h8])

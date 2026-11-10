@@ -1242,7 +1242,8 @@ private theorem halfMulCombineCode_exec {w m α x' : ℕ} (hm : m < w)
   have hpow_mh : 2 ^ (m - h) ≤ 2 ^ m := Nat.pow_le_pow_right two_pos (Nat.sub_le m h)
   have hpow_m2h : 2 ^ (m - 2 * h) ≤ 2 ^ m := Nat.pow_le_pow_right two_pos (Nat.sub_le m (2 * h))
   unfold halfMulCombineCode
-  wram_exec [h5, h6, h8, h9, h10, h12, h13, h14, h15, ← hp₀, ← hq₁, ← hp₁, ← hu₁, ← hq₂, ← hp₂, ← hu₂, ← hα₁', ← hx₁', ← hq₃, ← hp₃, ← hu₃]
+  wram_exec [h5, h6, h8, h9, h10, h12, h13, h14, h15, ← hp₀, ← hq₁, ← hp₁, ← hu₁, ← hq₂, ← hp₂,
+    ← hu₂, ← hα₁', ← hx₁', ← hq₃, ← hp₃, ← hu₃]
   wram_simp [h5, u₃, u₂, u₁, p₃, q₃, α₁', x₁', p₂, q₂, p₁, q₁, p₀, α₀, α₁, x₀, x₁, h, halfMulMod]
 
 private theorem finishReduceCode_exec {w w₀ b α u : ℕ} (hw₀_pos : 0 < w₀) (hw₀ : w₀ ≤ w)
