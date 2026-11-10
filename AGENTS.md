@@ -171,9 +171,9 @@ Before Git recovery or nonstandard object manipulation, verify the actual Git co
 object alternates, and storage sharing. The experimental repository must not use the shared
 database through a gitfile, alternate object directory, or hard-linked object files. Never delete
 objects, refs, worktree registrations, or metadata belonging to another session. Worktrees also
-share one stash stack, so `git stash pop` can apply and drop another session's entry: never use
-`git stash` in a shared checkout or its worktrees. Keep work in progress as a commit on your own
-branch or as a patch file in your scratch directory
+share one stash stack, so `git stash pop` can apply and drop another session's entry: never push,
+pop, apply or drop stash entries in a shared checkout or its worktrees. Keep work in progress as a
+commit on your own branch or as a patch file in your scratch directory
 ([procedure and recovery](manual/workflows/agent-operations.md#isolate-work-and-build-outputs)).
 
 Keep mutable build outputs separate. Integration experiments must be contained so their failure

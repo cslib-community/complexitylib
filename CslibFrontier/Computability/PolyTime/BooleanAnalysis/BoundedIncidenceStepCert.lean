@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -452,42 +453,25 @@ theorem computableInPolyTime_evalGroupFactorJet :
       eIn encUnary := hc1.snd'.fst'
   have hℓ : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.1.2.2.1)
       eIn encUnary := hc1.snd'.snd'.fst'
-  have hk' : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.1.2.2.2)
-      eIn encUnary := hc1.snd'.snd'.snd'
-  have hnode : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.1.1)
-      eIn encIntBin := hc2.fst'.fst'
-  have hdDen : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.1.2)
-      eIn encIntBin := hc2.fst'.snd'
   have hVg : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.2.1.1)
       eIn (encList encNat) := hc2.snd'.fst'.fst'
-  have hCtg : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.2.1.2.1)
-      eIn (encList (encList encIntBin)) := hc2.snd'.fst'.snd'.fst'
-  have hyg : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.2.1.2.2)
-      eIn (encList encIntBin) := hc2.snd'.fst'.snd'.snd'
-  have hindE : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.2.2.1.1)
-      eIn encBits := hc2.snd'.snd'.fst'.fst'
-  have hindU : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.2.2.1.2.1)
-      eIn encBits := hc2.snd'.snd'.fst'.snd'.fst'
-  have hxStar : ComputableInPolyTime (fun p : GroupEvalCtx × (ℕ × List Bool) => p.1.2.2.2.1.2.2)
-      eIn encBits := hc2.snd'.snd'.fst'.snd'.snd'
-  have hgrpEqs := hc2.snd'.snd'.snd'
-  have hchk1 := computableInPolyTime_checkRestrictedGroup hn' hindE hVg hug
+  have hchk1 := computableInPolyTime_checkRestrictedGroup hn' hc2.snd'.snd'.fst'.fst' hVg hug
   have hchk2 := (BooleanMeasurements.test_polyTime
     (fst (encList (encList encIntBin)) (encList encIntBin))
     (snd (encList (encList encIntBin)) (encList encIntBin))).comp
-    ((hCtg.prod hyg).prod hug)
-  have hx := computableInPolyTime_applyGroupBits hn' hVg hug hxStar
+    ((hc2.snd'.fst'.snd'.fst'.prod hc2.snd'.fst'.snd'.snd').prod hug)
+  have hx := computableInPolyTime_applyGroupBits hn' hVg hug hc2.snd'.snd'.fst'.snd'.snd'
   have hp0 := fst eIn encGroupEqEntry
   have heq := snd eIn encGroupEqEntry
-  have hindU_m := (bits_encList_polyTime encBool).1.comp (hindU.comp hp0)
-  have hx_m := (bits_encList_polyTime encBool).1.comp (hx.comp hp0)
   have hvarJ := computableInPolyTime_evalAffineInputZJetTable (hJ.comp hp0)
-    (hnode.comp hp0) heq.snd' hindU_m hx_m
+    (hc2.fst'.fst'.comp hp0) heq.snd'
+    ((bits_encList_polyTime encBool).1.comp (hc2.snd'.snd'.fst'.snd'.fst'.comp hp0))
+    ((bits_encList_polyTime encBool).1.comp (hx.comp hp0))
   have hfac := computableInPolyTime_evalEquationParityFactorJet (hJ.comp hp0)
-    (hℓ.comp hp0) (hk'.comp hp0) (hdDen.comp hp0) hvarJ heq.fst'
-  have hprod := CommonCountingAccum.computableInPolyTime_prodJet hJ hℓ (bi_mapWithId hfac hgrpEqs)
-  have hzero := computableInPolyTime_zeroJet hJ hℓ
-  exact (bool_and' hchk1 hchk2).ite' hprod hzero
+    (hℓ.comp hp0) (hc1.snd'.snd'.snd'.comp hp0) (hc2.fst'.snd'.comp hp0) hvarJ heq.fst'
+  exact (bool_and' hchk1 hchk2).ite'
+    (CommonCountingAccum.computableInPolyTime_prodJet hJ hℓ (bi_mapWithId hfac hc2.snd'.snd'.snd'))
+    (computableInPolyTime_zeroJet hJ hℓ)
 
 end StageHelpers
 
@@ -586,112 +570,69 @@ private theorem exists_computableInO_mapRange {ι γ δ : Type} {encIn : ι ↪ 
     ∃ P : ι → ℕ, PolyBounded (fun x => (encIn x).length) P ∧
       ComputableInO (fun x => (List.range (m x)).map fun i => f (ctx x, i))
         encIn (encList encB) (fun x => (m x + 1) * (R x + P x)) P := by
-  let cf : NativeCertificate f (encPair encC encUnary) encB := ⟨Tf, Sf, hcf⟩
-  let encAcc := encPair (encPair encUnary encC) (encList encB)
-  let eSt := encPair encNat encAcc
-  have hm_b : ComputableInPolyTime m encIn encNat := unary_to_binary.comp hm
-  have hinit : ComputableInPolyTime (fun x : ι => ((m x, ctx x), ([] : List δ))) encIn encAcc :=
-    (hm.prod hctx).prod (const [])
-  have hcond : ComputableInPolyTime (fun p : ℕ × ((ℕ × γ) × List δ) => decide (p.1 < p.2.1.1))
-      eSt encBool := by fun_prop
-  have hprep : ComputableInPolyTime
-      (fun p : ℕ × ((ℕ × γ) × List δ) => (p.2.1.2, min p.2.1.1 p.1))
-      eSt (encPair encC encUnary) := by fun_prop
-  have hcomb : ComputableInPolyTime
-      (fun q : (ℕ × ((ℕ × γ) × List δ)) × δ => (q.1.2.1, q.1.2.2 ++ [q.2]))
-      (encPair eSt encB) encAcc := by fun_prop
-  let cCond := NativeCertificate.ofPolyTime hcond
-  let cPrep := NativeCertificate.ofPolyTime hprep
-  let cComb := NativeCertificate.ofPolyTime hcomb
-  let cId := NativeCertificate.linear (ei := eSt) (ComputableInO.of_eq fun _ => rfl)
-  let cYes := cComb.comp (cId.prod (cf.comp cPrep))
-  let cNo := NativeCertificate.snd cId
-  let cb₀ := NativeCertificate.branch cCond cYes cNo
-  have hcCond := NativeCertificate.ofPolyTime_isPolynomial hcond
-  have hcPrep := NativeCertificate.ofPolyTime_isPolynomial hprep
-  have hcComb := NativeCertificate.ofPolyTime_isPolynomial hcomb
-  have hcArg_sp : HasPolySpace (cId.prod (cf.comp cPrep)) :=
-    hasPolySpace_prod .self (hasPolySpace_comp hSf hcPrep.2)
-  have hcYes_sp : HasPolySpace cYes := hasPolySpace_comp hcComb.2 hcArg_sp
-  let S_cb : ℕ × ((ℕ × γ) × List δ) → ℕ := fun p => cCond.space p + cYes.space p + cNo.space p
-  have hScb_pb : PolyBounded (fun p => (eSt p).length) S_cb :=
-    (hcCond.2.add hcYes_sp).add .self
-  let cb : NativeCertificate (mapRangeStep f) eSt encAcc :=
-    ⟨cb₀.time, S_cb, cb₀.computes.mono_le (fun _ => le_rfl) fun p => by
-      dsimp only [cb₀, S_cb, NativeCertificate.branch_space]; split_ifs <;> omega⟩
-  have hover_pb : PolyBounded (fun p => (eSt p).length)
-      (fun p => cCond.time p + (eSt p).length + cPrep.time p +
-        cComb.time (p, f (p.2.1.2, min p.2.1.1 p.1)) + cNo.time p) :=
-    ((((hcCond.1.add .self).add hcPrep.1).add
-      (hcComb.1.comp (polyBounded_length_of_hasPolySpace hcArg_sp))).add .self)
-  obtain ⟨c_ov, d_ov, hov_le⟩ := hover_pb.exists_le
-  obtain ⟨ce, de, hf_len⟩ := (polyBounded_length_of_hasPolySpace (c := cf) hSf).exists_le
-  have hm_pb := hm.polyBounded
-  have hctx_pb := hctx.polyBounded_length
+  have hrange : ComputableInPolyTime (fun x => List.range (m x)) encIn (encList encUnary) :=
+    ComputableInPolyTime.range.comp hm
+  let cPar := NativeCertificate.ofPolyTime hctx
+  let cLst := NativeCertificate.ofPolyTime hrange
+  have hcPar := NativeCertificate.ofPolyTime_isPolynomial hctx
+  have hcLst := NativeCertificate.ofPolyTime_isPolynomial hrange
+  obtain ⟨cs, ds, hSf_le⟩ := hSf.exists_le
+  obtain ⟨ce, hce⟩ := hcf.length_le
   let L_el : ι → ℕ := fun x => 2 * (encC (ctx x)).length + 2 * m x + 1
   have hLel_pb : PolyBounded (fun x => (encIn x).length) L_el :=
-    (((PolyBounded.const 2).mul hctx_pb).add ((PolyBounded.const 2).mul hm_pb)).add (.const 1)
-  let E_el : ι → ℕ := fun x => ce * (L_el x + 1) ^ de
-  have hEel_pb := NativeCertificate.polyBounded_pow_of_polyBounded hLel_pb ce de
-  let B_acc : ι → ℕ := fun x =>
-    2 * (2 * m x + 2 * (encC (ctx x)).length + 1) + 1 + m x * (2 * E_el x + 1)
-  have hBacc_pb : PolyBounded (fun x => (encIn x).length) B_acc :=
-    (((PolyBounded.const 2).mul
-      ((((PolyBounded.const 2).mul hm_pb).add
-        ((PolyBounded.const 2).mul hctx_pb)).add (.const 1))).add (.const 1)).add
-      (hm_pb.mul (((PolyBounded.const 2).mul hEel_pb).add (.const 1)))
-  have hB : ∀ x j, j ≤ m x →
-      (encAcc (IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).2).length ≤ B_acc x := by
-    intro x j hj
-    rw [run_mapRangeStep f (ctx x) hj]
-    have hlst := length_encList_le encB ((List.range j).map fun i => f (ctx x, i)) (b := E_el x)
-      fun y hy => by
+    (((PolyBounded.const 2).mul hctx.polyBounded_length).add
+      ((PolyBounded.const 2).mul hm.polyBounded)).add (.const 1)
+  let E_sf : ι → ℕ := fun x => cs * (L_el x + 1) ^ ds
+  have hEsf_pb := NativeCertificate.polyBounded_pow_of_polyBounded hLel_pb cs ds
+  let B_out : ι → ℕ := fun x => m x * (2 * (ce * (E_sf x + 1)) + 1)
+  have hBout_pb : PolyBounded (fun x => (encIn x).length) B_out :=
+    hm.polyBounded.mul (((PolyBounded.const 2).mul
+      ((PolyBounded.const ce).mul (hEsf_pb.add (.const 1)))).add (.const 1))
+  have hSf_mem : ∀ x i, i ∈ List.range (m x) → Sf (ctx x, i) ≤ E_sf x := fun x i hi => by
+    have hi_lt := List.mem_range.mp hi
+    have hlen : (encPair encC encUnary (ctx x, i)).length ≤ L_el x := by
+      simp only [length_encPair, encUnary_apply, List.length_replicate, L_el]; omega
+    exact (hSf_le (ctx x, i)).trans
+      (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (Nat.add_le_add_right hlen 1) ds))
+  let P : ι → ℕ := fun x =>
+    (encIn x).length + cPar.time x + cLst.time x + cPar.space x + cLst.space x +
+      (encC (ctx x)).length + (encList encUnary (List.range (m x))).length + B_out x + E_sf x
+  have hP_pb : PolyBounded (fun x => (encIn x).length) P :=
+    ((((((((PolyBounded.self.add hcPar.1).add hcLst.1).add hcPar.2).add hcLst.2).add
+      hctx.polyBounded_length).add hrange.polyBounded_length).add hBout_pb).add hEsf_pb)
+  have hlst (x : ι) :
+      (encList encB ((List.range (m x)).map fun i => f (ctx x, i))).length ≤ B_out x := by
+    have h := length_encList_le encB ((List.range (m x)).map fun i => f (ctx x, i))
+      (b := ce * (E_sf x + 1)) fun y hy => by
         obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hy
-        have hi_lt := List.mem_range.mp hi
-        have hlen_in : (encPair encC encUnary (ctx x, i)).length ≤ L_el x := by
-          simp only [length_encPair, encUnary_apply, List.length_replicate, L_el]; omega
-        exact (hf_len (ctx x, i)).trans
-          (Nat.mul_le_mul_left ce (Nat.pow_le_pow_left (Nat.add_le_add_right hlen_in 1) de))
-    simp only [List.length_map, List.length_range] at hlst
-    have hlst' := hlst.trans (Nat.mul_le_mul_right (2 * E_el x + 1) hj)
-    simp only [encAcc, length_encPair, encUnary_apply, List.length_replicate, B_acc]; omega
-  have hcnt_pb := hm_b.polyBounded_length
-  let S_st : ι → ℕ := fun x => 2 * (encNat (m x)).length + 1 + B_acc x
-  have hSst_pb := (((PolyBounded.const 2).mul hcnt_pb).add (.const 1)).add hBacc_pb
-  let P_cb : ι → ℕ := fun x => c_ov * (S_st x + 1) ^ d_ov
-  have hPcb_pb := NativeCertificate.polyBounded_pow_of_polyBounded hSst_pb c_ov d_ov
-  obtain ⟨P, hP_pb, hcomp⟩ := computableInO_snd_indexFold
-    (.ofPolyTime hm_b) (.ofPolyTime hinit) cb
-    (NativeCertificate.ofPolyTime_isPolynomial hm_b)
-    (NativeCertificate.ofPolyTime_isPolynomial hinit) hScb_pb hBacc_pb hB R P_cb hPcb_pb
-    fun x j hj hst_len => by
-      have hov := (hov_le (IndexFold.run (mapRangeStep f) j ((m x, ctx x), []))).trans
-        (Nat.mul_le_mul_left c_ov (Nat.pow_le_pow_left (Nat.add_le_add_right hst_len 1) d_ov))
-      have hst_eq : IndexFold.run (mapRangeStep f) j ((m x, ctx x), []) =
-          (j, ((m x, ctx x), (List.range j).map fun i => f (ctx x, i))) :=
-        Prod.ext (IndexFold.run_index _ _ _) (run_mapRangeStep f (ctx x) hj)
-      dsimp only [cb, cb₀, cYes, cId] at hov ⊢
-      simp only [NativeCertificate.branch_time, NativeCertificate.comp_time,
-        NativeCertificate.prod_time, NativeCertificate.linear_time, Function.comp_apply] at hov ⊢
-      by_cases hlt : j < m x
-      · have hcond_t : decide ((IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).1 <
-            (IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).2.1.1) = true := by
-          rw [hst_eq]; exact decide_eq_true hlt
-        have hcf_t : cf.time ((IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).2.1.2,
-            min (IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).2.1.1
-              (IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).1) ≤ R x := by
-          rw [hst_eq]; dsimp only; rw [Nat.min_eq_right (Nat.le_of_lt hlt)]; exact hR x j hlt
-        simp only [hcond_t, ↓reduceIte]
-        change cCond.time _ + (_ + (cPrep.time _ + cf.time _) + cComb.time _) ≤ _
-        dsimp only [P_cb, S_st] at hov ⊢; omega
-      · have hcond_f : decide ((IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).1 <
-            (IndexFold.run (mapRangeStep f) j ((m x, ctx x), [])).2.1.1) = false := by
-          rw [hst_eq]; exact decide_eq_false hlt
-        simp only [hcond_f, Bool.false_eq_true, ↓reduceIte]
-        dsimp only [P_cb, S_st] at hov ⊢; omega
-  let cRes : NativeCertificate _ encIn encAcc := ⟨_, _, hcomp⟩
-  refine ⟨P, hP_pb, ((NativeCertificate.snd cRes).computes.of_enc_eq fun x => ?_)⟩
-  congr 1; exact (congrArg Prod.snd (run_mapRangeStep f (ctx x) (m := m x) le_rfl)).symm
+        exact (hce (ctx x, i)).trans
+          (Nat.mul_le_mul_left ce (Nat.add_le_add_right (hSf_mem x i hi) 1))
+    simp only [List.length_map, List.length_range] at h
+    exact h
+  refine ⟨P, hP_pb, (hcf.mapWith cPar.computes cLst.computes).mono_le (fun x => ?_) fun x => ?_⟩
+  · have hmaxT : listMax (fun i => Tf (ctx x, i)) (List.range (m x)) ≤ R x :=
+      listMax_le fun i hi => hR x i (List.mem_range.mp hi)
+    have hm_len : (List.range (m x)).length = m x := List.length_range
+    have hpre := Nat.le_mul_of_pos_left
+      ((encIn x).length + cPar.time x + cLst.time x) (Nat.succ_pos (m x))
+    have hlst_x := hlst x
+    rw [hm_len]
+    calc (encIn x).length + cPar.time x + cLst.time x + (m x + 1) *
+          ((encC (ctx x)).length + (encList encUnary (List.range (m x))).length +
+            (encList encB ((List.range (m x)).map fun a => f (ctx x, a))).length +
+            listMax (fun a => Tf (ctx x, a)) (List.range (m x)))
+        ≤ (m x + 1) * ((encIn x).length + cPar.time x + cLst.time x) +
+            (m x + 1) * ((encC (ctx x)).length + (encList encUnary (List.range (m x))).length +
+              B_out x + R x) := by
+          gcongr
+      _ = (m x + 1) * (R x + ((encIn x).length + cPar.time x + cLst.time x +
+            (encC (ctx x)).length + (encList encUnary (List.range (m x))).length + B_out x)) := by
+          ring
+      _ ≤ (m x + 1) * (R x + P x) := by gcongr; dsimp only [P]; omega
+  · have hmaxS : listMax (fun i => Sf (ctx x, i)) (List.range (m x)) ≤ E_sf x :=
+      listMax_le (hSf_mem x)
+    have hlst_x := hlst x
+    dsimp only [P]; omega
 
 private theorem absorb_step_add (K P₀ P₁ : ℕ) (hK : 1 ≤ K) :
     K * P₀ + P₁ ≤ K * (P₀ + P₁) := by
@@ -941,55 +882,56 @@ theorem exists_computableInO_measPayload :
   have hlenWR_pb := polyBounded_length_of_hasPolySpace hspWCR
   have hlenWX_pb := (polyBounded_length_of_hasPolySpace hspX.2).comp hlenWR_pb
   have hlenWXJ_pb := (polyBounded_length_of_hasPolySpace hspWXJ).comp hlenWX_pb
-  let wr_fn (wc : List ℤ × MeasStepCtx) : (List ℤ × MeasStepCtx) × List (Option (List Bool)) :=
-    (wc, (List.range wc.2.numGroups).map fun g =>
-      BooleanMeasurements.search Prod.fst Prod.snd
-        ((wc.2.2.2.2.1.2.getD g [], (wc.1.drop (g * wc.2.1.2.2)).take wc.2.1.2.2),
-          min (2 * wc.2.numVars) (wc.2.varGroups.getD g []).length))
-  let wx_fn (wc : List ℤ × MeasStepCtx) : (List ℤ × MeasStepCtx) × List Bool :=
-    let wr := wr_fn wc
-    (wr.1, buildBaseAssignment wr.1.2.numVars wr.1.2.numGroups wr.1.2.varGroups
-      (wr.2.map fun o => o.getD []))
-  let wj_fn (wc : List ℤ × MeasStepCtx) : ((List ℤ × MeasStepCtx) × List Bool) × List JetRows :=
-    let wx := wx_fn wc
-    (wx, (List.range wx.1.2.numGroups).map fun g =>
-      CommonCountingAccum.streamGroupJetSum evalGroupFactorJet wx.1.2.jetOrder wx.1.2.precision
-        (min (2 * wx.1.2.numVars) (wx.1.2.varGroups.getD g []).length)
-        ((wx.1.2.numVars, wx.1.2.jetOrder, wx.1.2.precision, wx.1.2.2.1.2.2),
-          (wx.1.2.2.2.1.1, wx.1.2.2.2.1.2),
-          (wx.1.2.varGroups.getD g [], wx.1.2.2.2.2.1.2.getD g [],
-            (wx.1.1.drop (g * wx.1.2.1.2.2)).take wx.1.2.1.2.2),
-          (wx.1.2.2.2.2.2.1.1, wx.1.2.2.2.2.2.1.2, wx.2), wx.1.2.2.2.2.2.2.getD g []))
+  obtain ⟨c2, d2, h2_le⟩ := (hT2_pb.add .self).exists_le
+  obtain ⟨cCNX, dCNX, hCNX_le⟩ := ((hspC.1.add hspN.1).add hspX.1).exists_le
+  obtain ⟨cP, dP, hP_le⟩ := hspP.1.exists_le
+  obtain ⟨cWR, dWR, hWR_le⟩ := hlenWR_pb.exists_le
+  obtain ⟨cWX, dWX, hWX_le⟩ := hlenWX_pb.exists_le
+  obtain ⟨cWXJ, dWXJ, hWXJ_le⟩ := hlenWXJ_pb.exists_le
+  let B_WR : List ℤ × MeasStepCtx → ℕ := fun wc => cWR * ((eWC wc).length + 1) ^ dWR
+  let B_WX : List ℤ × MeasStepCtx → ℕ := fun wc => cWX * ((eWC wc).length + 1) ^ dWX
+  let B_WXJ : List ℤ × MeasStepCtx → ℕ := fun wc => cWXJ * ((eWC wc).length + 1) ^ dWXJ
+  have hself : PolyBounded (fun wc => (eWC wc).length) (fun wc => (eWC wc).length) := .self
+  have hBWR_pb := NativeCertificate.polyBounded_pow_of_polyBounded hself cWR dWR
+  have hBWX_pb := NativeCertificate.polyBounded_pow_of_polyBounded hself cWX dWX
+  have hBWXJ_pb := NativeCertificate.polyBounded_pow_of_polyBounded hself cWXJ dWXJ
   let P_all : List ℤ × MeasStepCtx → ℕ := fun wc =>
-    T1 wc + T2 (wx_fn wc) + (eWC wc).length +
-      cCondWR.time (wr_fn wc) + cNoWR.time (wr_fn wc) + cXStar.time (wr_fn wc) +
-      (eWX (wx_fn wc)).length + cProdS.time (wj_fn wc) + cFull.space wc
+    T1 wc + c2 * (B_WX wc + 1) ^ d2 + (eWC wc).length + cCNX * (B_WR wc + 1) ^ dCNX +
+      cP * (B_WXJ wc + 1) ^ dP + cFull.space wc
   have hPall_pb : PolyBounded (fun wc => (eWC wc).length) P_all :=
-    (((((((((hT1_pb.add (hT2_pb.comp hlenWX_pb)).add .self).add
-      (hspC.1.comp hlenWR_pb)).add (hspN.1.comp hlenWR_pb)).add
-      (hspX.1.comp hlenWR_pb)).add hlenWX_pb).add (hspP.1.comp hlenWXJ_pb)).add hcFull_sp))
+    ((((hT1_pb.add (NativeCertificate.polyBounded_pow_of_polyBounded hBWX_pb c2 d2)).add .self).add
+      (NativeCertificate.polyBounded_pow_of_polyBounded hBWR_pb cCNX dCNX)).add
+      (NativeCertificate.polyBounded_pow_of_polyBounded hBWXJ_pb cP dP)).add hcFull_sp
   refine ⟨P_all, hPall_pb, (cFull.computes.of_enc_eq fun _ => rfl).mono_le (fun wc => ?_)
     fun wc => by dsimp only [P_all]; omega⟩
+  let certFn {α β : Type} {f : α → β} {e1 e2} (_ : NativeCertificate f e1 e2) : α → β := f
+  have hwr := hWR_le wc
+  have hwx := hWX_le wc
+  have hwxj := hWXJ_le wc
+  have hcnx := (hCNX_le (certFn (cIdWC.prod cPass1) wc)).trans
+    (Nat.mul_le_mul_left cCNX (Nat.pow_le_pow_left (Nat.add_le_add_right hwr 1) dCNX))
+  have h2 := (h2_le (certFn cXStar (certFn (cIdWC.prod cPass1) wc))).trans
+    (Nat.mul_le_mul_left c2 (Nat.pow_le_pow_left (Nat.add_le_add_right hwx 1) d2))
+  have hp := (hP_le (certFn (cIdWX.prod cGrpJets)
+      (certFn cXStar (certFn (cIdWC.prod cPass1) wc)))).trans
+    (Nat.mul_le_mul_left cP (Nat.pow_le_pow_left (Nat.add_le_add_right hwxj 1) dP))
+  dsimp only [cFull, cBrWR, cYesWR, cCondWR, cNoWR, cXStar, cProdS, cIdWC, cIdWX, cPass1, cGrpJets,
+    certFn, NativeCertificate.comp_time, NativeCertificate.prod_time, NativeCertificate.branch_time,
+    NativeCertificate.linear_time, Function.comp_apply, P_all, B_WR, B_WX, B_WXJ] at hcnx h2 hp ⊢
+  clear hwr hwx hwxj
   set K := wc.2.numGroups * (2 ^ maxGroupDim wc.2.numVars wc.2.numGroups wc.2.varGroups + 1) + 1
   have hK : 1 ≤ K := Nat.succ_pos _
-  dsimp only [cFull, cBrWR, cYesWR, cIdWC, cIdWX, cPass1, cGrpJets]
-  simp only [NativeCertificate.comp_time, NativeCertificate.prod_time,
-    NativeCertificate.branch_time, NativeCertificate.linear_time, Function.comp_apply]
+  have hKm (a b : ℕ) : K * (a + b) = K * a + K * b := Nat.mul_add K a b
   split_ifs
-  · change ((eWC wc).length + K * T1 wc) +
-        (cCondWR.time (wr_fn wc) + (cXStar.time (wr_fn wc) +
-          (((eWX (wx_fn wc)).length + K * T2 (wx_fn wc)) +
-            cProdS.time (wj_fn wc)))) ≤ K * P_all wc
-    dsimp only [P_all]
-    have h1 := Nat.le_mul_of_pos_left ((eWC wc).length + cCondWR.time (wr_fn wc) +
-      cXStar.time (wr_fn wc) + (eWX (wx_fn wc)).length + cProdS.time (wj_fn wc)) hK
-    simp only [Nat.mul_add] at h1 ⊢; omega
-  · change ((eWC wc).length + K * T1 wc) +
-        (cCondWR.time (wr_fn wc) + cNoWR.time (wr_fn wc)) ≤ K * P_all wc
-    dsimp only [P_all]
-    have h1 := Nat.le_mul_of_pos_left
-      ((eWC wc).length + cCondWR.time (wr_fn wc) + cNoWR.time (wr_fn wc)) hK
-    simp only [Nat.mul_add] at h1 ⊢; omega
+  · have hrest := Nat.le_mul_of_pos_left
+      ((eWC wc).length + cCNX * (B_WR wc + 1) ^ dCNX + cP * (B_WXJ wc + 1) ^ dP) hK
+    have hKT2 := (absorb_step_add K _ _ hK).trans (Nat.mul_le_mul_left K h2)
+    dsimp only [B_WR, B_WXJ] at hrest
+    simp only [hKm] at hrest ⊢; omega
+  · have hrest := Nat.le_mul_of_pos_left
+      ((eWC wc).length + cCNX * (B_WR wc + 1) ^ dCNX) hK
+    dsimp only [B_WR] at hrest
+    simp only [hKm] at hrest ⊢; omega
 
 end LoopCertificates
 

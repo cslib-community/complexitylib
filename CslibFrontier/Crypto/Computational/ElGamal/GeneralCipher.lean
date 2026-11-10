@@ -21,6 +21,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # General-Cipher Hashed ElGamal ([BonehShoup2023], Section 11.5, Theorem 11.5)
@@ -455,9 +456,7 @@ def hashedElGamalCipherToDDHDistinguisher {Msg : Type} (H : F.Desc × List Bool 
       F.hashedElGamalCipherCPAGame setup H encryptSym adversary bit n := by
   simp only [ddhRealGame, hashedElGamalCipherToDDHDistinguisher, hashedElGamalCipherCPAGame,
     hashedElGamalCipherCPAGameOn, ↓reduceIte, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  congr 1 with d : 1
-  congr 1 with α : 1
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the ideal DDH game, `hashedElGamalCipherToDDHDistinguisher` simulates
 `hashedElGamalCipherIdealDDHGame` exactly. -/
@@ -470,12 +469,7 @@ def hashedElGamalCipherToDDHDistinguisher {Msg : Type} (H : F.Desc × List Bool 
   simp only [ddhIdealGame, hashedElGamalCipherToDDHDistinguisher, hashedElGamalCipherIdealDDHGame,
     hashedElGamalCipherIdealDDHGameOn, ddhPk, ↓reduceIte, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
-  congr 1 with d : 1
-  congr 1 with α : 1
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `hashedElGamalCipherToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time
 and `encryptSym` and `adversary` are uniform strict PPT. -/
@@ -596,12 +590,7 @@ def hashedElGamalCipherToKDFDistinguisher {Msg : Type}
   simp only [kdfIdealGame, hashedElGamalCipherToKDFDistinguisher, hashedElGamalCipherUniformKeyGame,
     hashedElGamalCipherUniformKeyGameOn, ddhPk, ↓reduceIte, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
-  congr 1 with d : 1
-  congr 1 with α : 1
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `hashedElGamalCipherToKDFDistinguisher` is uniform strict PPT whenever `encryptSym` and
 `adversary` are: it is `hashedElGamalCipherToDDHDistinguisher` with the identity key derivation
@@ -731,14 +720,7 @@ private theorem ddhRealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg 
           (fun guess => guess ^^ bit) := by
   simp only [pmf_norm, ← ddhRealGame_hashedElGamalCipherToDDHDistinguisher, ddhRealGame,
     hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_uniform]
-  conv_lhs =>
-    enter [2, d, 2, α]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 private theorem ddhIdealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
@@ -751,17 +733,7 @@ private theorem ddhIdealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg
           (fun guess => guess ^^ bit) := by
   simp only [pmf_norm, ← ddhIdealGame_hashedElGamalCipherToDDHDistinguisher, ddhIdealGame,
     hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_uniform]
-  conv_lhs =>
-    enter [2, d, 2, α, 2, β]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d, 2, α]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 private theorem kdfRealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
@@ -785,17 +757,7 @@ private theorem kdfIdealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg
           (fun guess => guess ^^ bit) := by
   simp only [pmf_norm, ← kdfIdealGame_hashedElGamalCipherToKDFDistinguisher, kdfIdealGame,
     hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
-  conv_lhs =>
-    enter [2, d, 2, α, 2, β]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d, 2, α]
-    rw [PMF.bind_comm]
-  conv_lhs =>
-    enter [2, d]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- **Quantitative reduction of general-cipher Hashed ElGamal IND-CPA to DDH, `SecureKDF`, and
 Game 2 via single hidden-bit distinguishers** ([BonehShoup2023], Section 11.5.2, Theorem 11.5,
@@ -1040,10 +1002,7 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
           (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β => k d α β := by
     simp only [hashedElGamalCipherUniformKeyGameOn, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure, k]
-    congr 1 with d : 1
-    congr 1 with α : 1
-    conv_rhs => rw [PMF.bind_comm]
-    congr 1 with choice : 1
+    pmf_swap with d α choice
     split_ifs <;> simp only [PMF.bind_const]
   have hdem :
       ProbComp.eval
@@ -1057,14 +1016,7 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
       Encryption.AdversaryOf.restrict, Cslib.BitString.eval_sampleList, apply_ite ProbComp.eval,
       encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, List.headD_cons,
       List.tail_cons, encodeElGamalPublicKey_eq_encode, k]
-    rw [PMF.bind_comm]
-    congr 1 with d : 1
-    rw [PMF.bind_comm]
-    congr 1 with a : 1
-    rw [PMF.bind_comm]
-    congr 1 with b : 1
-    rw [PMF.bind_comm]
-    congr 1 with choice : 1
+    pmf_swap with d a b choice
     by_cases hv :
         valid n (encPair F.encDesc encBits (d, F.encode d ((a : ZMod (F.order d)) • F.generator d)))
           choice.1.1 choice.1.2 = true

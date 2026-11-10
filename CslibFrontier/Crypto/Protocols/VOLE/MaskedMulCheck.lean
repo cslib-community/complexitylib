@@ -14,6 +14,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Full honest receiver views of masked VOLE multiplication checks
@@ -321,23 +322,7 @@ theorem maskedMulCheckView_eq_simulate (left right output : ι → Fin n) (w : F
       ProbComp.eval (maskedMulCheckSimulate left right output) := by
   rw [maskedMulCheckView_eq]
   simp only [pmf_norm, voleIdealDist, maskedMulCheckSimulate, ProbComp.eval_uniform]
-  conv_lhs =>
-    arg 2
-    ext u
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  congr 1 with delta : 1
-  conv_lhs =>
-    arg 2
-    ext u
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  conv_rhs =>
-    arg 2
-    ext q
-    rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with r : 1
+  pmf_swap with r delta
   exact maskedView_fixed left right output w delta r h
 
 /-- No event on the complete receiver view distinguishes the honest execution from simulation. -/

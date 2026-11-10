@@ -127,23 +127,15 @@ example {α β γ : Type} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
       (fun a => (encMid (f a)).length * (encOut (g a)).length + u a) := by
   growth_poly
 
--- The modules that the failure messages and the documentation name for the certificate lemmas;
+-- Each certificate lemma of `growth_poly` is proved in the module its failure message names;
 -- `CslibFrontierTests/PolynomialGrowthImports.lean` checks the messages without them.
 open Lean in
 run_meta do
   let env ← getEnv
-  let machines := `CslibFrontier.Computability.Machines.Turing.MultiTape
-  for (lem, mod) in [
-      (``ComputableInPolyTime.polyBounded, machines ++ `Internal.PolyTimeLoops),
-      (``ComputableInPolyTime.polyBounded_length, machines ++ `Internal.PolyTimePrimitives),
-      (``ComputableInPolySpace.polyBounded_length, machines ++ `Complexity.PolySpace.Plain),
-      (``ComputableInLogSpace.polyBounded_length, machines ++ `Complexity.LogSpace),
-      (``DegreeBounded.polyBounded, machines ++ `ResourceBounds.Degree),
-      (``Cslib.GenericRAM.NativeCertificate.polyTime,
-        `CslibFrontier.Computability.GenericRAM.Native.Certificate)] do
-    let some i := env.getModuleIdxFor? lem | throwError "{lem} is not imported"
+  for l in Cslib.Tactic.GrowthPoly.certificateLemmas do
+    let some i := env.getModuleIdxFor? l.name | throwError "{l.name} is not imported"
     let home := env.header.moduleNames[i.toNat]!
-    unless home == mod do throwError "{lem} is proved in {home}, not {mod}"
+    unless home == l.module do throwError "{l.name} is proved in {home}, not {l.module}"
 
 example {F : ℕ → ℕ} (hF : Cslib.PolynomiallyBounded F) :
     Cslib.PolynomiallyBounded (fun n => 3 * F n ^ 2 + Nat.log 2 (n + 1)) := by
