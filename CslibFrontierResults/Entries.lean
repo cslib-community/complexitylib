@@ -205,7 +205,7 @@ register_result "nspace-dtime" where
   title := "Nondeterministic space s is within deterministic time 2^O(s)"
   topic := "space complexity"
   sources := [
-    { paper := AroraBarak09, theorem := unverified, locator := "Theorem 4.3" },
+    { paper := AroraBarak09, theorem := unverified, locator := "Section 4.1" },
     { paper := Sipser2013, theorem := unverified, locator := "Section 8.4" }
   ]
   theorems := [

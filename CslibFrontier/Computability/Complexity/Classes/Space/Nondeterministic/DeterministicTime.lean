@@ -18,14 +18,16 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 # Nondeterministic space within deterministic exponential time
 
 A nondeterministic machine within space `s` is simulated deterministically within time
-`2 ^ O(log₂ n + s)` [Arora and Barak, Theorem 4.3][AroraBarak09]
+`2 ^ O(log₂ n + s)` [Arora and Barak, Section 4.1][AroraBarak09]
 [Sipser, Section 8.4][Sipser2013]: list the views reachable from the initial view by breadth-first
 search until no new view appears (`Turing.MultiTapeNTM.reachableViews`), and test whether one of
 them is accepting. The simulation holds for recognizers (`Turing.MultiTapeNTM.RecognizesInSpace`),
 whose branches need not halt; the class `Cslib.Complexity.NSPACE` uses the deciding form, so the
 inclusion holds for it a fortiori. The space bound need not be constructible: the search stops by
 itself, and the bound enters only the analysis. Arora and Barak state the theorem for
-space-constructible bounds, as their machines mark off the space before they run.
+space-constructible bounds, the convention they adopt for space classes; Sipser counts the
+configurations of a machine within space `f(n)`. The sources are about deciders on strings; the
+statements here also cover nonhalting recognizers and arbitrary encoded instances.
 
 ## Main results
 
@@ -37,7 +39,7 @@ space-constructible bounds, as their machines mark off the space before they run
 
 ## References
 
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Theorem 4.3][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.1][AroraBarak09]
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.4][Sipser2013]
 -/
 
@@ -59,7 +61,7 @@ private theorem any_acceptingView_reachableViews_iff {input : List Bool} {s : �
     mem_reachableViews_iff hs]
 
 /-- **Space-bounded nondeterministic recognizers are within exponential time**
-[Arora and Barak, Theorem 4.3][AroraBarak09] [Sipser, Section 8.4][Sipser2013]: a problem
+[Arora and Barak, Section 4.1][AroraBarak09] [Sipser, Section 8.4][Sipser2013]: a problem
 recognized by a nondeterministic machine within space `s n`, whose branches need not halt, is
 decided deterministically within time `2 ^ (c * (log₂ n + s n + 1))` for a constant `c` of the
 machine. The space bound need not be constructible. -/
@@ -83,7 +85,7 @@ open _root_.Turing
 variable {α : Type} {enc : α ↪ List Bool}
 
 /-- **Nondeterministic space is within deterministic exponential time**
-[Arora and Barak, Theorem 4.3][AroraBarak09] [Sipser, Section 8.4][Sipser2013]:
+[Arora and Barak, Section 4.1][AroraBarak09] [Sipser, Section 8.4][Sipser2013]:
 `NSPACE s ⊆ DTIME (2 ^ O(log₂ n + s n))`. The space bound need not be constructible. -/
 theorem exists_mem_DTIME_of_mem_NSPACE {s : ℕ → ℕ} {A : Set α} (h : A ∈ NSPACE enc s) :
     ∃ c, A ∈ DTIME enc fun n => 2 ^ (c * (Nat.log2 n + s n + 1)) := by
@@ -92,7 +94,7 @@ theorem exists_mem_DTIME_of_mem_NSPACE {s : ℕ → ℕ} {A : Set α} (h : A ∈
   exact ⟨_, DTIME_two_pow_log2_add_mul_add_subset c c₁ c₂ s hc⟩
 
 /-- **Nondeterministic space is within deterministic exponential time** above logarithmic space
-[Arora and Barak, Theorem 4.3][AroraBarak09] [Sipser, Section 8.4][Sipser2013]:
+[Arora and Barak, Section 4.1][AroraBarak09] [Sipser, Section 8.4][Sipser2013]:
 `NSPACE s ⊆ DTIME (2 ^ O(s n))` when `log₂ n ≤ s n`. The space bound need not be
 constructible. -/
 theorem exists_mem_DTIME_of_mem_NSPACE_of_log2_le {s : ℕ → ℕ} {A : Set α}
