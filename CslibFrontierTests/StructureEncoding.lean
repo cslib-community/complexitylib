@@ -107,9 +107,9 @@ error: enc_structure: missing fields `x`, `z` of `Point`; the fields of `Point` 
 #guard_msgs in
 enc_structure eMissingTwo : Point where y : encBits
 
--- Inherited fields are not fields of the extending structure.
+-- A field inherited from a parent is listed through its parent field.
 /--
-error: enc_structure: `fst` is not a field of `Triple`; the fields of `Triple` in declaration order are `toPair`, `w`
+error: enc_structure: `fst` is inherited through the parent field `toPair`, so list `toPair` instead; the fields of `Triple` in declaration order are `toPair`, `w`
 -/
 #guard_msgs in
 enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary

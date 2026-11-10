@@ -68,6 +68,13 @@ private def component (ns : Name) (h : Term) (i n : Nat) : MacroM Term := do
   if i + 1 < n then r ← `($fst $r)
   return r
 
+/-- The parent field of the structure `s` through which `s` inherits the field `n`, if any. -/
+private def parentField? (env : Environment) (s n : Name) : Option Name :=
+  (getStructureFields env s).find? fun p =>
+    match isSubobjectField? env s p with
+    | some parent => (getStructureFieldsFlattened env parent).contains n
+    | none => false
+
 /-- Check that `fs` lists every field of the structure `S` once, in declaration order, and report
 the first unknown, repeated, misplaced or missing field otherwise. -/
 private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
@@ -82,7 +89,10 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
   let mut seen : Array Name := #[]
   for f in fs do
     let n := f.getId
-    let some i := expected.idxOf? n |
+    let some i := expected.idxOf? n | do
+      if let some p := parentField? env s n then
+        throwErrorAt f "enc_structure: `{n}` is inherited through the parent field `{p}`, so list \
+          `{p}` instead; {order}"
       throwErrorAt f "enc_structure: `{n}` is not a field of `{sName}`; {order}"
     if seen.contains n then
       throwErrorAt f "enc_structure: field `{n}` is listed twice"
