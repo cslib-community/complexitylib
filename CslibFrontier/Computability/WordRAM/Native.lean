@@ -89,8 +89,9 @@ def Basis.encoding (B : Basis) : B.genericModel.Encoding :=
   ⟨encNat, encNat, encUnary⟩
 
 /-- Input encoding of the word-RAM operation and test primitives: the runtime word width in unary
-(`encUnary`, framed) followed by the `k` operands in binary (`encPi encNat`, a framed list in the
-order of `Fin k`). It is `encPair B.encoding.config (encPi B.encoding.value)`, the input encoding of
+(`encUnary`, framed) followed by the `k` operands in binary (`encPi encNat`: a framed list in
+`encPi`'s fixed index order, given by `Fintype.equivFin (Fin k)`). It is
+`encPair B.encoding.config (encPi B.encoding.value)`, the input encoding of
 `GenericRAM.Model.NativePrimitives`, for every basis `B`. -/
 noncomputable abbrev encWidthOperands {k : ℕ} : ℕ × (Fin k → ℕ) ↪ List Bool :=
   encPair encUnary (encPi encNat)
