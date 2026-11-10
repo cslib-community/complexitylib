@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.DataStructure.StateTransition.CostHoare
+public import CslibFrontier.Tactic.FailureNote
 public import CslibFrontier.Tactic.Stateful.Init
 
 /-!
@@ -17,7 +18,7 @@ public import CslibFrontier.Tactic.Stateful.Init
 results and individual calls. Use `StateTransitionSpec.CostHoare.bind` with an intermediate contract
 and budgets to expose sequencing obligations, and `StateTransitionSpec.CostHoare.link` to select an
 implementation. Neither rule is applied blindly: its intermediate assertions or implementation are
-proof inputs.
+proof inputs. When the search fails, its error ends with a note pointing to these two rules.
 
 This tactic proves the stated semantic or operation-cost contract. It does not reinterpret that
 contract as total machine time; `polytime` certificates for controllers remain separate.
@@ -38,6 +39,16 @@ attribute [aesop safe apply (index := [unindexed]) (rule_sets := [Stateful])]
   Cslib.DataStructure.StateTransitionSpec.CostHoare.call
 
 /-- Prove a stateful semantic or operation-cost contract from compositional rules. -/
-macro "stateful" : tactic => `(tactic| solve | aesop (rule_sets := [Stateful]))
+syntax (name := statefulTac) "stateful" : tactic
+
+open Lean Elab Tactic in
+/-- Elaborate `stateful`: search the `Stateful` rule set, with a note on failure. -/
+@[tactic statefulTac] meta def evalStateful : Tactic := fun _ =>
+  Cslib.Tactic.withFailureNote m!"stateful proves pure results and single calls from local \
+      contracts and the `Stateful` rule set, and does not unfold a client definition. Unfold it \
+      first, split a sequence with `StateTransitionSpec.CostHoare.bind` (or `Hoare.bind`) and an \
+      intermediate contract, and select an implementation with \
+      `StateTransitionSpec.CostHoare.link` (or `Hoare.link`)." do
+    evalTactic (← `(tactic| aesop (config := { terminal := true }) (rule_sets := [Stateful])))
 
 end

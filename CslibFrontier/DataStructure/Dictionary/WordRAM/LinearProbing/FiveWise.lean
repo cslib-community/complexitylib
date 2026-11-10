@@ -555,16 +555,19 @@ private theorem sum_bucketCentered_eq {X Y : Type*} [Fintype Y] [DecidableEq Y]
       (#(S.filter fun x => g x ∈ W) : ℝ) - (#S : ℝ) * ((#W : ℝ) / (Fintype.card Y : ℝ)) := by
   simp only [bucketCentered, sum_sub_distrib, sum_boole, sum_const, nsmul_eq_mul]
 
-/-- **Scale-$j$ overload probability bound**: when `8 * n_max ≤ 2 ^ M`, `#S ≤ n_max`, `u ∉ S`,
-`hh : IsKWiseIndependentHash 5 h`, and `1 ≤ j`, the probability of `scaleOverload M h S u j` is at
-most `288 / (2 ^ j : ℝ) ^ 2`. -/
+/-- **Scale-$j$ overload probability bound**: when `8 * n_max ≤ 2 ^ M`, `#S ≤ n_max`, `u ∉ S` and
+`hh : IsKWiseIndependentHash 5 h`, the probability of `scaleOverload M h S u j` is at most
+`288 / (2 ^ j : ℝ) ^ 2`. At `j = 0` this is the trivial bound `288`. -/
 theorem expect_scaleOverload_le {ι X : Type*} [Fintype ι]
     {M n_max j : ℕ} {h : ι → X → Fin (2 ^ M)}
     (hh : IsKWiseIndependentHash 5 h) (S : Finset X) {u : X} (hu : u ∉ S)
-    (hS : #S ≤ n_max) (hM : 8 * n_max ≤ 2 ^ M) (hj : 1 ≤ j) :
+    (hS : #S ≤ n_max) (hM : 8 * n_max ≤ 2 ^ M) :
     (𝔼 i, if scaleOverload M h S u j i then (1 : ℝ) else 0) ≤
       288 / ((2 ^ j : ℝ) ^ 2) := by
   have := hh.nonempty
+  obtain rfl | hj := Nat.eq_zero_or_pos j
+  · refine (expect_le (a := 1) univ_nonempty fun i _ => ?_).trans (by norm_num)
+    split_ifs <;> norm_num
   set δ : ℝ := (2 ^ (j - 1) : ℝ) / 2
   have hpow_pos : (0 : ℝ) < 2 ^ (j - 1) := by positivity
   have hδ_pos : 0 < δ := by dsimp only [δ]; positivity
@@ -768,12 +771,11 @@ theorem expect_probe_le_of_cluster_witness {ι X : Type*} [Fintype ι]
           𝔼 i, (2 ^ j : ℝ) * (if scaleOverload M h S u j i then (1 : ℝ) else 0) :=
         expect_sum_comm _ _ _
     _ ≤ ∑ j ∈ Finset.Icc 1 M, (2 ^ j : ℝ) * (288 / (2 ^ j : ℝ) ^ 2) := by
-        refine sum_le_sum fun j hj => ?_
-        rw [Finset.mem_Icc] at hj
+        refine sum_le_sum fun j _ => ?_
         rw [Fintype.expect_eq_sum_div_card, ← mul_sum, mul_div_assoc,
           ← Fintype.expect_eq_sum_div_card]
         exact mul_le_mul_of_nonneg_left
-          (expect_scaleOverload_le hh S hu hS hM hj.1) (by positivity)
+          (expect_scaleOverload_le hh S hu hS hM) (by positivity)
     _ = 288 - 288 / (2 ^ M : ℝ) := sum_Icc_two_pow_mul_div_sq_eq M
     _ ≤ 288 := by
         have : (0 : ℝ) ≤ 288 / (2 ^ M : ℝ) := by positivity

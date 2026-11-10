@@ -98,7 +98,7 @@ namespace Cslib.Algorithms.WordRAM.Quickselect
 
 open Cslib.WordRAM
 open Cslib.Algorithms.WordRAM.Quicksort (memSlice length_memSlice getElem_memSlice
-  mem_memSlice_iff memSlice_congr memSlice_append partition_counts_and_lt sorted_countP_bounds)
+  mem_memSlice_iff memSlice_congr memSlice_append partition_counts_and_lt sum_countP_pivot_le)
 
 /-! ## Expected-selection linear potential recurrence -/
 
@@ -141,47 +141,6 @@ private theorem expSubCost_le (m : ℕ) : expSubCost m ≤ 80 * m := by
 private theorem expSubCost_mono {a b : ℕ} (hab : a ≤ b) : expSubCost a ≤ expSubCost b := by
   unfold expSubCost
   split_ifs <;> omega
-
-private theorem list_map_sum_nat_eq_sum_range (l : List ℕ) (g : ℕ → ℕ) :
-    (l.map g).sum = ∑ r ∈ Finset.range l.length, g (l.getD r 0) := by
-  induction l with
-  | nil => simp
-  | cons a tl ih =>
-    rw [List.length_cons, Finset.sum_range_succ', List.map_cons, List.sum_cons, ih]
-    simp only [List.getD_cons_zero, List.getD_cons_succ, add_comm]
-
-/-- Sum of `max (countP (· < piv)) (countP (piv < ·))` over all `m = u.length` uniform pivot
-positions is bounded by `∑_{r < m} max r (m - 1 - r)`, even with duplicate keys. -/
-private theorem sum_max_pivot_le (u : List ℕ) :
-    ∑ k : Fin u.length,
-      max (u.countP (· < u[k.val])) (u.countP (u[k.val] < ·)) ≤
-        ∑ r ∈ Finset.range u.length, max r (u.length - 1 - r) := by
-  have hperm : u.Perm u.mergeSort := (List.mergeSort_perm u _).symm
-  have hlen : u.mergeSort.length = u.length := hperm.length_eq.symm
-  let g : ℕ → ℕ := fun piv => max (u.countP (· < piv)) (u.countP (piv < ·))
-  have hsum_u : ∑ k : Fin u.length, g u[k.val] = (u.map g).sum := by
-    rw [Finset.sum_fin_eq_sum_range, list_map_sum_nat_eq_sum_range]
-    refine Finset.sum_congr rfl fun r hr => ?_
-    rw [Finset.mem_range] at hr
-    simp only [hr, ↓reduceDIte, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hr,
-      Option.getD_some]
-  rw [hsum_u, (hperm.map g).sum_eq, list_map_sum_nat_eq_sum_range, hlen]
-  refine Finset.sum_le_sum fun r hr => ?_
-  rw [Finset.mem_range] at hr
-  have hr_zs : r < u.mergeSort.length := by omega
-  have hgetD : u.mergeSort.getD r 0 = u.mergeSort[r] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hr_zs]
-    rfl
-  have hb := sorted_countP_bounds (List.pairwise_mergeSort' (· ≤ ·) u) hr_zs
-  have hc1 : u.countP (· < u.mergeSort[r]) = u.mergeSort.countP (· < u.mergeSort[r]) :=
-    hperm.countP_eq _
-  have hc2 : u.countP (u.mergeSort[r] < ·) = u.mergeSort.countP (u.mergeSort[r] < ·) :=
-    hperm.countP_eq _
-  dsimp only [g]
-  rw [hgetD, hc1, hc2]
-  have hb1 := hb.1
-  have hb2 : u.mergeSort.countP (u.mergeSort[r] < ·) ≤ u.length - 1 - r := hlen ▸ hb.2
-  omega
 
 /-! ## Order-statistic characterization and word-size bound -/
 
@@ -627,6 +586,13 @@ private theorem partitionAndNarrow_spec {w vbase n k : ℕ} {s₀ : List ℕ} {m
       at hlo_lt hgt_hi hlt_gt hcases ⊢
     rcases hcases with h1 | h2 | h3 <;> omega
 
+/-- The loop condition `lo1 < hi` of `selectStep` leaves a window of at least two elements. -/
+private theorem two_le_hi_sub_lo {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
+    (hI : SelectInv w vbase n k s₀ mem₀ x) (hc : (Cond.lt lo1 hi).Holds x) :
+    2 ≤ x.regs hi - x.regs lo := by
+  have hlt : x.regs lo1 < x.regs hi := by simpa only [Cond.holds_lt] using hc
+  rw [hI.lo1_eq] at hlt; omega
+
 /-- Randomized specification of `selectStep` when `lo1 < hi` holds (`2 ≤ hi - lo`). -/
 private theorem selectStep_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : ℕ → ℕ} {x : Data 16}
     (hI : SelectInv w vbase n k s₀ mem₀ x) (hc : (Cond.lt lo1 hi).Holds x) :
@@ -639,18 +605,12 @@ private theorem selectStep_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : 
         SelectInv w vbase n k s₀ mem₀ (y off) ∧
         (let u := memSlice (x.regs lo) (x.regs hi) x.mem
          let pivVal := u[off.val]'(by
-           rw [length_memSlice]
-           have hlt : x.regs lo1 < x.regs hi := by simpa only [Cond.holds_lt] using hc
-           rw [hI.lo1_eq] at hlt
-           have := off.isLt
-           omega)
+           rw [length_memSlice]; have := two_le_hi_sub_lo hI hc; have := off.isLt; omega)
          ((y off).regs hi - (y off).regs lo = u.countP (· < pivVal) ∨
           (y off).regs hi - (y off).regs lo = 1 ∨
           (y off).regs hi - (y off).regs lo = u.countP (pivVal < ·))) ∧
         (y off).regs hi - (y off).regs lo < x.regs hi - x.regs lo := by
-  have hm2 : 2 ≤ x.regs hi - x.regs lo := by
-    have hlt : x.regs lo1 < x.regs hi := by simpa only [Cond.holds_lt] using hc
-    rw [hI.lo1_eq] at hlt; omega
+  have hm2 := two_le_hi_sub_lo hI hc
   let vlo := x.regs lo
   let vhi := x.regs hi
   let s₁ := x.set tmp (vhi - vlo - 1)
@@ -756,9 +716,7 @@ private theorem selectStep_worstCase {w vbase n k : ℕ} {s₀ : List ℕ} {mem�
       (fun y => SelectInv w vbase n k s₀ mem₀ y ∧
         T_b + 2 + stepPotential y ≤ stepPotential x ∧
         R_b + callPotential y ≤ callPotential x) T_b R_b := by
-  have hm2 : 2 ≤ x.regs hi - x.regs lo := by
-    have hlt : x.regs lo1 < x.regs hi := by simpa only [Cond.holds_lt] using hc
-    rw [hI.lo1_eq] at hlt; omega
+  have hm2 := two_le_hi_sub_lo hI hc
   obtain ⟨y, t, hexec, hspec⟩ := selectStep_spec hI hc
   let m := x.regs hi - x.regs lo
   refine ⟨11 * m + 15, 1, ⟨_, hexec, ?_, ?_⟩⟩
@@ -799,9 +757,7 @@ private theorem selectStep_drift {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ :
       (∀ z ∈ mb.support,
         SelectInv w vbase n k s₀ mem₀ z.1 ∧ callPotential z.1 < callPotential x) ∧
       ProbComp.expect mb (fun z => (z.2 : ℝ≥0∞) + 2 + expPotential z.1) ≤ expPotential x := by
-  have hm2 : 2 ≤ x.regs hi - x.regs lo := by
-    have hlt : x.regs lo1 < x.regs hi := by simpa only [Cond.holds_lt] using hc
-    rw [hI.lo1_eq] at hlt; omega
+  have hm2 := two_le_hi_sub_lo hI hc
   obtain ⟨y, t, hexec, hspec⟩ := selectStep_spec hI hc
   let m := x.regs hi - x.regs lo
   have hm_eq : x.regs hi - x.regs lo - 1 + 1 = m := by omega
@@ -852,7 +808,7 @@ private theorem selectStep_drift {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ :
                 (u.countP (u[off.val]'(by rw [hlen_u]; have := off.isLt; omega) < ·)) ≤
           ∑ r ∈ Finset.range m, max r (m - 1 - r) := by
         rw [hfin_eq]
-        simpa only [hlen_u] using sum_max_pivot_le u
+        simpa only [hlen_u] using sum_countP_pivot_le max (fun ha hb => max_le_max ha hb) u
       have hfour := four_mul_sum_max_le m
       calc
         ∑ off : Fin (x.regs hi - x.regs lo - 1 + 1),

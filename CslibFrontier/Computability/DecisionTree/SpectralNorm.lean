@@ -47,7 +47,7 @@ The leaf count and the depth are structural, so unreachable leaves and paths onl
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DecisionTree
 

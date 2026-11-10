@@ -48,7 +48,7 @@ is the original statement of Chung, Graham, Frankl and Shearer about families of
   inequality, of which only the comparison of sizes `n - 1` and `n` is formalized).
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

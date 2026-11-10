@@ -35,7 +35,7 @@ gate, including constants; the factors are crude.
   [K. E. Batcher, *Sorting Networks and Their Applications*][Batcher1968].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.MassProduction.Scheduler
 

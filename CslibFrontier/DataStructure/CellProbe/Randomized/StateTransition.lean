@@ -1179,15 +1179,8 @@ theorem seq_expected_amortized (C : StateTransitionImpl D P s₀)
     simp only [Cslib.CellProbe.Randomized.Scheme.expectedSeqProbes_nil, zero_add, ν₀_tr,
       PMF.tsum_map_mul, StateTransitionSpec.totalCostTranscript_nil, Nat.cast_zero, mul_zero,
       tsum_zero, add_zero]
-    calc
-      (∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞))
-        ≤ ∑' p, ν₀ p * (C.initPotential : ℝ≥0∞) := by
-            refine tsum_le_tsum fun p => ?_
-            by_cases hp : p ∈ ν₀.support
-            · exact mul_le_mul_right (Nat.cast_le.mpr (hsupp₀ p hp).2) _
-            · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
-      _ = (C.initPotential : ℝ≥0∞) := by
-            rw [ENNReal.tsum_mul_right, ν₀.tsum_coe, one_mul]
+    exact Cslib.Probability.PMF.tsum_mul_le_of_support ν₀ fun p hp =>
+      Nat.cast_le.mpr (hsupp₀ p hp).2
   obtain ⟨ν_final, hmarg_f, hseed_f, hsingle_f, hsupp_f, hamort_f⟩ :=
     C.steps_trace_amortized [] ops ν₀_tr hmarg₀ hseed₀_tr hsingle₀ hsupp₀_tr hamort₀
   rw [List.nil_append] at hmarg_f hamort_f
@@ -1227,31 +1220,29 @@ private theorem totalCostTranscript_le_sum_map (C : StateTransitionImpl D P s₀
       StateTransitionSpec.Transcript.ops_cons, List.map_cons, List.sum_cons]
     exact Nat.add_le_add (hcharge _ st.op hv_o) ih
 
+/-- `P.expectedSeqProbes ops ≤ C.initPotential + c` whenever every valid relational transcript of
+`ops` from `s₀` has total charge at most `c`: drop the final potential from
+`seq_expected_amortized` and bound the expected transcript charge on the support. -/
+private theorem expectedSeqProbes_le_of_transcript (C : StateTransitionImpl D P s₀)
+    {ops : List D.Op} (hv : D.ValidOpSeq s₀ ops) {c : ℕ}
+    (hc : ∀ (tr : D.Transcript) (s : D.State), tr.ops = ops → D.ValidTranscript s₀ tr s →
+      D.totalCostTranscript C.charge s₀ tr ≤ c) :
+    P.expectedSeqProbes ops ≤ (C.initPotential : ℝ≥0∞) + (c : ℝ≥0∞) := by
+  obtain ⟨ν_final, _, _, _, hsupp, hamort⟩ := C.seq_expected_amortized ops hv
+  refine le_self_add.trans (hamort.trans (add_le_add le_rfl ?_))
+  refine Cslib.Probability.PMF.tsum_mul_le_of_support ν_final fun u hu => ?_
+  obtain ⟨hops, htr, _⟩ := hsupp u hu
+  exact Nat.cast_le.mpr (hc u.trace u.state hops htr)
+
 /-- When `C.charge s o ≤ opCharge o` on admissible inputs, `P.expectedSeqProbes ops` is bounded by
 `C.initPotential + (ops.map opCharge).sum` for every `ops` satisfying `D.ValidOpSeq s₀ ops`. -/
 theorem expectedSeqProbes_le_of_opCharge (C : StateTransitionImpl D P s₀)
     {opCharge : D.Op → ℕ}
     (hcharge : ∀ s o, D.valid s o → C.charge s o ≤ opCharge o)
     {ops : List D.Op} (hv : D.ValidOpSeq s₀ ops) :
-    P.expectedSeqProbes ops ≤ (C.initPotential : ℝ≥0∞) + (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) := by
-  obtain ⟨ν_final, _, _, _, hsupp, hamort⟩ := C.seq_expected_amortized ops hv
-  calc
-    P.expectedSeqProbes ops
-      ≤ P.expectedSeqProbes ops + ∑' u, ν_final u * (C.potential u.seed u.mem : ℝ≥0∞) :=
-        le_self_add
-    _ ≤ (C.initPotential : ℝ≥0∞) +
-          ∑' u, ν_final u * (D.totalCostTranscript C.charge s₀ u.trace : ℝ≥0∞) := hamort
-    _ ≤ (C.initPotential : ℝ≥0∞) +
-          ∑' u, ν_final u * (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) := by
-        refine add_le_add le_rfl (tsum_le_tsum fun u => ?_)
-        by_cases hu : u ∈ ν_final.support
-        · obtain ⟨hops, htr, _⟩ := hsupp u hu
-          have hle := C.totalCostTranscript_le_sum_map hcharge htr
-          rw [hops] at hle
-          exact mul_le_mul_right (Nat.cast_le.mpr hle) _
-        · rw [(PMF.apply_eq_zero_iff _ _).mpr hu, zero_mul, zero_mul]
-    _ = (C.initPotential : ℝ≥0∞) + (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) := by
-        rw [ENNReal.tsum_mul_right, ν_final.tsum_coe, one_mul]
+    P.expectedSeqProbes ops ≤ (C.initPotential : ℝ≥0∞) + (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) :=
+  C.expectedSeqProbes_le_of_transcript hv fun _ _ hops htr =>
+    hops ▸ C.totalCostTranscript_le_sum_map hcharge htr
 
 /-- **Sequence-level expected-amortized theorem on deterministic specifications
 (`D.HasStepFn f`).** Across any admissible history `D.ValidHistory s₀ ops`, `P.runSeq ops`
@@ -1266,29 +1257,12 @@ theorem seq_expected_amortized_ofFn (C : StateTransitionImpl D P s₀)
       P.expectedSeqProbes ops ≤
         (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
   have hv_rel : D.ValidOpSeq s₀ ops := (D.validOpSeq_iff_validHistory s₀ ops).mpr hv
-  obtain ⟨ν_final, hlbl, _, _, hsupp, hamort⟩ := C.seq_expected_amortized ops hv_rel
   have hcontract : (D.toObliviousSequenceSpec s₀).Contract ops ((P.runSeq ops).map Prod.fst) :=
     C.contract_runSeq hv_rel
-  have hout : ∀ out ∈ ((P.runSeq ops).map Prod.fst).support, out = (D.run s₀ ops).2 :=
-    (D.toObliviousSequenceSpec_contract_iff_of_hasStepFn s₀ hv _).mp hcontract
-  refine ⟨hcontract, hout, ?_⟩
-  calc
-    P.expectedSeqProbes ops
-      ≤ P.expectedSeqProbes ops + ∑' u, ν_final u * (C.potential u.seed u.mem : ℝ≥0∞) :=
-        le_self_add
-    _ ≤ (C.initPotential : ℝ≥0∞) +
-          ∑' u, ν_final u * (D.totalCostTranscript C.charge s₀ u.trace : ℝ≥0∞) := hamort
-    _ = (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
-        congr 1
-        calc
-          (∑' u, ν_final u * (D.totalCostTranscript C.charge s₀ u.trace : ℝ≥0∞))
-            = ∑' u, ν_final u * (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
-                refine Cslib.Probability.PMF.tsum_mul_congr_support ν_final fun u hu => ?_
-                obtain ⟨hops, htr, _⟩ := hsupp u hu
-                obtain ⟨_, _, htr_eq⟩ := (D.validTranscript_iff_run s₀ u.trace u.state).mp htr
-                rw [htr_eq, hops, D.totalCostTranscript_canonicalTranscript]
-          _ = (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
-                rw [ENNReal.tsum_mul_right, ν_final.tsum_coe, one_mul]
+  refine ⟨hcontract, (D.toObliviousSequenceSpec_contract_iff_of_hasStepFn s₀ hv _).mp hcontract,
+    C.expectedSeqProbes_le_of_transcript hv_rel fun tr _ hops htr => le_of_eq ?_⟩
+  obtain ⟨_, _, htr_eq⟩ := (D.validTranscript_iff_run s₀ tr _).mp htr
+  rw [htr_eq, hops, D.totalCostTranscript_canonicalTranscript]
 
 /-- Expected sequence probes of `P` across any admissible history `D.ValidHistory s₀ ops` on a
 deterministic specification (`[D.HasStepFn f]`) is at most

@@ -133,7 +133,9 @@ theorem consecutivePairs_length_collarRoute (reflected : Bool) (r : Route) :
   simp only [collarRoute_eq_map, List.consecutivePairs, List.length_zip, List.length_tail,
     List.length_map]
 
-/-- The fixed north/west/east ports of an unplaced inner template. -/
+/-- The fixed north, west and east ports of an unplaced inner template: the midpoints of its
+`y = 0`, `x = 0` and `x = 180000` edges. North is thus the `y = 0` side, which `collarOuterPort`
+calls bottom. -/
 def innerTemplatePort (i : Fin 3) : Point :=
   if i = 0 then (90000, 0) else if i = 1 then (0, 90000) else (180000, 90000)
 
@@ -363,9 +365,10 @@ def collaredPrefixGeometry (g : LocalGeometry) (s : PortAssignment) : LocalGeome
     else collarPoint (collarReflected s) pi.1
   clausePositions := g.clausePositions.map (collarPoint (collarReflected s))
   incidenceRoutes := g.incidenceRoutes.map fun e =>
-    (e.1, e.2.1,
-      if e.2.1 ∈ g.terminalVariables then collarPrefixRoute s (terminalIndex g e.2.1) e.2.2
-      else collarRoute (collarReflected s) e.2.2)
+    (e.clauseIndex, e.variableIndex,
+      if e.variableIndex ∈ g.terminalVariables then
+        collarPrefixRoute s (terminalIndex g e.variableIndex) e.route
+      else collarRoute (collarReflected s) e.route)
   terminalVariables := g.terminalVariables
   boundaryPorts := g.terminalVariables.zipIdx.map fun vi =>
     collarOuterPort (s.side ⟨vi.2 % 3, Nat.mod_lt _ (by decide)⟩)

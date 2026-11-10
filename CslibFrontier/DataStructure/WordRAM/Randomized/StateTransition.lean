@@ -526,6 +526,65 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
       exact hamort_det.trans_eq
         (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun t ht => by rw [hs t ht]).symm
 
+/-- Push a relational one-operation certificate over the lift `ν.map fun p => ⟨p.1, s, p.2⟩` of a
+`Seed × Data` distribution down to `Seed × Data` when `[D.HasStepFn stepFn]`. On the lift every
+abstract state is `s`, so each relational step `D.step s o q.state a` pins
+`(q.state, a) = D.stepFn s o` and the per-state charge is the constant `C.charge s o`. `Post` is the
+per-output postcondition of the relational certificate and `F` wraps both sides of its
+amortization bound. Shared by `step_exec_ofFn`, `code_rename_ofFn` and `call_rename_ofFn`. -/
+private theorem ofFn_of_lift (C : StateTransitionImpl P D w base params s₀)
+    {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
+    {r : ℕ} {s : D.State} {o : D.Op} {ν : PMF (C.Seed × Data r)} {c : Code B r}
+    {Φ : C.Seed × Data r → ℝ≥0∞} {F : ℝ≥0∞ → ℝ≥0∞}
+    (Post : C.Seed × Data r → C.Seed × Data r → D.Result o → D.State → Prop)
+    {μ_rel : CoupledState C.Seed D.State r → PMF (CoupledState C.Seed D.State r)}
+    {T_rel : CoupledState C.Seed D.State r → ℝ≥0∞}
+    (hstep : ∀ p ∈ ν.support,
+      ExecCodeDist w c p.2 ((μ_rel ⟨p.1, s, p.2⟩).map CoupledState.data) (T_rel ⟨p.1, s, p.2⟩) ∧
+      ∀ q ∈ (μ_rel ⟨p.1, s, p.2⟩).support,
+        ∃ a : D.Result o, D.step s o q.state a ∧ Post p (q.seed, q.data) a q.state)
+    (hseed : ∀ θ, (((ν.map fun p => (⟨p.1, s, p.2⟩ : CoupledState C.Seed D.State r)).bind
+      μ_rel).map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ)
+    (hamort : (∑' t, (ν.map fun p => (⟨p.1, s, p.2⟩ : CoupledState C.Seed D.State r)) t *
+        (T_rel t + ∑' q, μ_rel t q * Φ (q.seed, q.data))) ≤
+      F (∑' t, (ν.map fun p => (⟨p.1, s, p.2⟩ : CoupledState C.Seed D.State r)) t *
+        ((C.charge t.state o : ℝ≥0∞) + Φ (t.seed, t.data)))) :
+    ∃ (μ : C.Seed × Data r → PMF (C.Seed × Data r)) (T : C.Seed × Data r → ℝ≥0∞),
+      (∀ p ∈ ν.support,
+        ExecCodeDist w c p.2 ((μ p).map Prod.snd) (T p) ∧
+        ∀ q ∈ (μ p).support, Post p q (D.stepFn s o).2 (D.stepFn s o).1) ∧
+      (∀ θ', ((ν.bind μ).map Prod.fst) θ' ≤ C.seedSlack * C.seedLaw θ') ∧
+      (∑' p, ν p * (T p + ∑' q, μ p q * Φ q)) ≤ F ((C.charge s o : ℝ≥0∞) + ∑' p, ν p * Φ p) := by
+  let lift : C.Seed × Data r → CoupledState C.Seed D.State r := fun p => ⟨p.1, s, p.2⟩
+  let μ : C.Seed × Data r → PMF (C.Seed × Data r) :=
+    fun p => (μ_rel (lift p)).map fun q => (q.seed, q.data)
+  let T : C.Seed × Data r → ℝ≥0∞ := fun p => T_rel (lift p)
+  refine ⟨μ, T, fun p hp => ?_, fun θ' => ?_, ?_⟩
+  · obtain ⟨he, hq⟩ := hstep p hp
+    refine ⟨he.congr_dist ?_ le_rfl, fun q hq' => ?_⟩
+    · dsimp only [μ]
+      rw [PMF.map_comp]
+      rfl
+    dsimp only [μ] at hq'
+    rw [PMF.mem_support_map_iff] at hq'
+    obtain ⟨⟨θ, s', x⟩, hq_mem, rfl⟩ := hq'
+    obtain ⟨a, hstep_a, hpost⟩ := hq _ hq_mem
+    obtain ⟨rfl, rfl⟩ : s' = (D.stepFn s o).1 ∧ a = (D.stepFn s o).2 :=
+      Prod.ext_iff.mp ((D.step_iff_stepFn s o s' a).mp hstep_a)
+    exact hpost
+  · have hmap_eq : (ν.bind μ).map Prod.fst = ((ν.map lift).bind μ_rel).map CoupledState.seed := by
+      rw [PMF.map_bind, PMF.map_bind, PMF.bind_map]
+      refine congrArg (ν.bind ·) (funext fun p => ?_)
+      dsimp only [μ]
+      rw [PMF.map_comp]
+      rfl
+    rw [hmap_eq]
+    exact hseed θ'
+  · simp only [Cslib.Probability.PMF.tsum_map_mul] at hamort
+    simp only [μ, T, lift, Cslib.Probability.PMF.tsum_map_mul]
+    exact hamort.trans_eq
+      (congrArg F (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun _ _ => rfl))
+
 /-- Deterministic one-step execution of `P.code` when `[D.HasStepFn stepFn]`. -/
 theorem step_exec_ofFn (C : StateTransitionImpl P D w base params s₀)
     {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
@@ -564,41 +623,11 @@ theorem step_exec_ofFn (C : StateTransitionImpl P D w base params s₀)
     exact ⟨hv, (hsupp p hp).1, (hsupp p hp).2⟩
   obtain ⟨μ_rel, T_rel, hstep_rel, hseed_rel', _, hamort_rel⟩ :=
     C.step_exec o ν_rel hsingle hseed_rel hsupp_rel
-  let μ_step : C.Seed × Data r_ds → PMF (C.Seed × Data r_ds) :=
-    fun p => (μ_rel (lift p)).map fun q => (q.seed, q.data)
-  let T_step : C.Seed × Data r_ds → ℝ≥0∞ := fun p => T_rel (lift p)
-  refine ⟨μ_step, T_step, ?_, ?_, ?_⟩
-  · intro p hp
-    have ht_rel : lift p ∈ ν_rel.support := (PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩
-    obtain ⟨he_rel, hq_rel⟩ := hstep_rel (lift p) ht_rel
-    refine ⟨?_, ?_⟩
-    · refine he_rel.congr_dist ?_ le_rfl
-      dsimp only [μ_step]
-      rw [PMF.map_comp]
-      rfl
-    · intro q hq
-      dsimp only [μ_step] at hq
-      rw [PMF.mem_support_map_iff] at hq
-      obtain ⟨q_rel, hq_mem, rfl⟩ := hq
-      obtain ⟨a, hstep_a, hdec, hrep', hmod⟩ := hq_rel q_rel hq_mem
-      have hpair : (q_rel.state, a) = D.stepFn s o :=
-        (D.step_iff_stepFn s o q_rel.state a).mp hstep_a
-      have hs' : q_rel.state = (D.stepFn s o).1 := congrArg Prod.fst hpair
-      have ha' : a = (D.stepFn s o).2 := congrArg Prod.snd hpair
-      exact ⟨ha' ▸ hdec, hs' ▸ hrep', hmod⟩
-  · intro θ'
-    have hmap_eq : (ν.bind μ_step).map Prod.fst = (ν_rel.bind μ_rel).map CoupledState.seed := by
-      rw [PMF.map_bind, PMF.map_bind, PMF.bind_map]
-      refine congrArg (ν.bind ·) (funext fun p => ?_)
-      dsimp only [μ_step]
-      rw [PMF.map_comp]
-      rfl
-    rw [hmap_eq]
-    exact hseed_rel' θ'
-  · -- Push the relational amortization forward along `lift`; every lifted state is `s`.
-    simp only [ν_rel, lift, Cslib.Probability.PMF.tsum_map_mul] at hamort_rel
-    simp only [μ_step, T_step, lift, Cslib.Probability.PMF.tsum_map_mul]
-    exact hamort_rel.trans_eq (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun _ _ => rfl)
+  exact C.ofFn_of_lift (F := id) (Φ := fun q => (C.potential q.1 q.2 : ℝ≥0∞))
+    (fun p q a s' => C.decode o q.2.regs = some a ∧ C.rep q.1 s' q.2 ∧
+      Modifies (Block.mk base C.space).footprint p.2.mem q.2.mem)
+    (fun p hp => hstep_rel _ ((PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩))
+    hseed_rel' hamort_rel
 
 /-! ### Projection 1: Basis lifting (`mapSimulates`, `toStandard`) -/
 
@@ -1102,38 +1131,12 @@ theorem code_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
     exact ⟨hv, (hsupp p hp).1, (hsupp p hp).2⟩
   obtain ⟨μ_rel, T_rel, hcode_rel, hseed_rel', hamort_rel⟩ :=
     C.code_rename hf o ν_rel hseed_rel hsupp_rel hsingle
-  let μ_caller : C.Seed × Data r_caller → PMF (C.Seed × Data r_caller) :=
-    fun p => (μ_rel (lift p)).map fun q => (q.seed, q.data)
-  let T_caller : C.Seed × Data r_caller → ℝ≥0∞ := fun p => T_rel (lift p)
-  refine ⟨μ_caller, T_caller, ?_, ?_, ?_⟩
-  · intro p hp
-    have ht_rel : lift p ∈ ν_rel.support := (PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩
-    obtain ⟨he_rel, hq_rel⟩ := hcode_rel (lift p) ht_rel
-    refine ⟨he_rel.congr_dist ?_ le_rfl, ?_⟩
-    · dsimp only [μ_caller]
-      rw [PMF.map_comp]
-      rfl
-    · intro q hq
-      dsimp only [μ_caller] at hq
-      rw [PMF.mem_support_map_iff] at hq
-      obtain ⟨q_rel, hq_mem, rfl⟩ := hq
-      obtain ⟨a, hstep_a, hdec, hrep', hmod, hregs⟩ := hq_rel q_rel hq_mem
-      have hpair : (q_rel.state, a) = D.stepFn s o :=
-        (D.step_iff_stepFn s o q_rel.state a).mp hstep_a
-      exact ⟨congrArg Prod.snd hpair ▸ hdec, congrArg Prod.fst hpair ▸ hrep', hmod, hregs⟩
-  · intro θ'
-    have hmap_eq : (ν.bind μ_caller).map Prod.fst = (ν_rel.bind μ_rel).map CoupledState.seed := by
-      rw [PMF.map_bind, PMF.map_bind, PMF.bind_map]
-      refine congrArg (ν.bind ·) (funext fun p => ?_)
-      dsimp only [μ_caller]
-      rw [PMF.map_comp]
-      rfl
-    rw [hmap_eq]
-    exact hseed_rel' θ'
-  · -- Push the relational amortization forward along `lift`; every lifted state is `s`.
-    simp only [ν_rel, lift, Cslib.Probability.PMF.tsum_map_mul] at hamort_rel
-    simp only [μ_caller, T_caller, lift, Cslib.Probability.PMF.tsum_map_mul]
-    exact hamort_rel.trans_eq (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun _ _ => rfl)
+  exact C.ofFn_of_lift (F := id) (Φ := fun q => (C.potential q.1 (q.2.comap f) : ℝ≥0∞))
+    (fun p q a s' => C.decode o (q.2.comap f).regs = some a ∧ C.rep q.1 s' (q.2.comap f) ∧
+      Modifies (Block.mk base C.space).footprint p.2.mem q.2.mem ∧
+      ∀ j ∉ Set.range f, q.2.regs j = p.2.regs j)
+    (fun p hp => hcode_rel _ ((PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩))
+    hseed_rel' hamort_rel
 
 /-- Execute `.seq prep (P.code.rename f)` inline after a (deterministic or randomized) caller
 argument-preparation block `prep` that preserves persistent DS registers and memory in
@@ -1282,15 +1285,8 @@ theorem call_rename (C : StateTransitionImpl P D w base params s₀)
       rw [Cslib.Probability.PMF.tsum_bind_mul]
       refine tsum_congr fun t => ?_
       rw [Cslib.Probability.PMF.tsum_map_mul]
-    have hprep_le : (∑' t, ν t * T_prep t) ≤ B_prep := by
-      calc
-        (∑' t, ν t * T_prep t)
-          ≤ ∑' t, ν t * B_prep := by
-            refine tsum_le_tsum fun t => ?_
-            by_cases ht : t ∈ ν.support
-            · exact mul_le_mul_right (hprep t ht).2.1 _
-            · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
-        _ = B_prep := by rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
+    have hprep_le : (∑' t, ν t * T_prep t) ≤ B_prep :=
+      Cslib.Probability.PMF.tsum_mul_le_of_support ν fun t ht => (hprep t ht).2.1
     rw [hdecomp]
     calc
       (∑' t, ν t * T_prep t) +
@@ -1373,40 +1369,13 @@ theorem call_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
     exact hprep p hp
   obtain ⟨μ_rel, T_rel, hcall_rel, hseed_rel', hamort_rel⟩ :=
     C.call_rename hf o ν_rel hseed_rel hrep_rel hprep_rel hsingle
-  let μ_call : C.Seed × Data r_caller → PMF (C.Seed × Data r_caller) :=
-    fun p => (μ_rel (lift p)).map fun q => (q.seed, q.data)
-  let T_call : C.Seed × Data r_caller → ℝ≥0∞ := fun p => T_rel (lift p)
-  refine ⟨μ_call, T_call, ?_, ?_, ?_⟩
-  · intro p hp
-    have ht_rel : lift p ∈ ν_rel.support := (PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩
-    obtain ⟨he_rel, hq_rel⟩ := hcall_rel (lift p) ht_rel
-    refine ⟨he_rel.congr_dist ?_ le_rfl, ?_⟩
-    · dsimp only [μ_call]
-      rw [PMF.map_comp]
-      rfl
-    · intro q hq
-      dsimp only [μ_call] at hq
-      rw [PMF.mem_support_map_iff] at hq
-      obtain ⟨q_rel, hq_mem, rfl⟩ := hq
-      obtain ⟨a, hstep_a, hdec, hrep', x', hx', hmod, hregs⟩ := hq_rel q_rel hq_mem
-      have hpair : (q_rel.state, a) = D.stepFn s o :=
-        (D.step_iff_stepFn s o q_rel.state a).mp hstep_a
-      exact ⟨congrArg Prod.snd hpair ▸ hdec, congrArg Prod.fst hpair ▸ hrep', x', hx', hmod, hregs⟩
-  · intro θ'
-    have hmap_eq : (ν.bind μ_call).map Prod.fst = (ν_rel.bind μ_rel).map CoupledState.seed := by
-      rw [PMF.map_bind, PMF.map_bind, PMF.bind_map]
-      refine congrArg (ν.bind ·) (funext fun p => ?_)
-      dsimp only [μ_call]
-      rw [PMF.map_comp]
-      rfl
-    rw [hmap_eq]
-    exact hseed_rel' θ'
-  · -- Push the relational amortization forward along `lift`; every lifted state is `s`.
-    simp only [ν_rel, lift, Cslib.Probability.PMF.tsum_map_mul] at hamort_rel
-    simp only [μ_call, T_call, lift, Cslib.Probability.PMF.tsum_map_mul]
-    refine hamort_rel.trans_eq ?_
-    rw [Cslib.Probability.PMF.tsum_mul_add_of_support ν (c := (C.charge s o : ℝ≥0∞))
-      fun _ _ => rfl, add_assoc]
+  rw [add_assoc B_prep]
+  exact C.ofFn_of_lift (F := (B_prep + ·)) (Φ := fun q => (C.potential q.1 (q.2.comap f) : ℝ≥0∞))
+    (fun p q a s' => C.decode o (q.2.comap f).regs = some a ∧ C.rep q.1 s' (q.2.comap f) ∧
+      ∃ x' ∈ (μ_prep p).support, Modifies (Block.mk base C.space).footprint x'.mem q.2.mem ∧
+        ∀ j ∉ Set.range f, q.2.regs j = x'.regs j)
+    (fun p hp => hcall_rel _ ((PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩))
+    hseed_rel' hamort_rel
 
 /-! ### Projection 6: End-to-end expected-amortized sequence telescope (`steps_expected_amortized`,
 `seq_expected_amortized`, `steps_expected_amortized_ofFn`, `seq_expected_amortized_ofFn`) -/
@@ -1633,15 +1602,8 @@ theorem seq_expected_amortized (C : StateTransitionImpl P D w base params s₀)
   have hpot₀ :
       (∑' t, ν₀_rel t * (C.potential t.seed t.data : ℝ≥0∞)) ≤ (C.initPotential : ℝ≥0∞) := by
     rw [Cslib.Probability.PMF.tsum_map_mul]
-    calc
-      (∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞))
-        ≤ ∑' p, ν₀ p * (C.initPotential : ℝ≥0∞) := by
-          refine tsum_le_tsum fun p => ?_
-          by_cases hp : p ∈ ν₀.support
-          · exact mul_le_mul_right (Nat.cast_le.mpr (hsupp₀ p hp).2.2.1) _
-          · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
-      _ = (C.initPotential : ℝ≥0∞) := by
-          rw [ENNReal.tsum_mul_right, ν₀.tsum_coe, one_mul]
+    exact Cslib.Probability.PMF.tsum_mul_le_of_support ν₀ fun p hp =>
+      Nat.cast_le.mpr (hsupp₀ p hp).2.2.1
   refine ⟨ν₀, ν_final, T_ops, C_ops, he_init, hex_steps, hseed_final, hrep_final, ?_⟩
   calc
     C.initTime + T_ops + ∑' q, ν_final q * (C.potential q.seed q.data : ℝ≥0∞)
@@ -1827,31 +1789,15 @@ theorem seq_expected_amortized_ofFn (C : StateTransitionImpl P D w base params s
       (∀ p ∈ ν_final.support, C.rep p.1 (D.run s₀ ops).1 p.2) ∧
       C.initTime + T_ops + (∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) ≤
         C.initTime + (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
-  have hv_rel : D.ValidOpSeq s₀ ops := (D.validOpSeq_iff_validHistory s₀ ops).mpr hv
-  obtain ⟨ν₀, ν_final_rel, T_ops, C_ops, he_init, hex_rel, hseed_final, hrep_final, hamort⟩ :=
-    C.seq_expected_amortized ops hx hfr hpar hz hv_rel
-  have hs₀ : ∀ t ∈ (ν₀.map fun p => (⟨p.1, s₀, p.2⟩ : CoupledState C.Seed D.State r_ds)).support,
-      t.state = s₀ := by
-    intro t ht
-    rw [PMF.mem_support_map_iff] at ht
-    obtain ⟨_, _, rfl⟩ := ht
-    rfl
-  obtain ⟨hex_det, rfl, hs_final⟩ := hex_rel.toOfFn hs₀
-  let proj : CoupledState C.Seed D.State r_ds → C.Seed × Data r_ds := fun t => (t.seed, t.data)
-  have hproj_lift : (ν₀.map fun p => (⟨p.1, s₀, p.2⟩ : CoupledState C.Seed D.State r_ds)).map proj =
-      ν₀ := by
-    rw [PMF.map_comp]
-    exact PMF.map_id ν₀
-  refine ⟨ν₀, ν_final_rel.map proj, T_ops, he_init, hproj_lift ▸ hex_det, ?_, ?_, ?_⟩
-  · intro θ
-    rw [PMF.map_comp]
-    exact hseed_final θ
-  · intro p hp
-    rw [PMF.mem_support_map_iff] at hp
-    obtain ⟨q, hq, rfl⟩ := hp
-    exact hs_final q hq ▸ hrep_final q hq
-  · rw [Cslib.Probability.PMF.tsum_map_mul]
-    exact hamort
+  obtain ⟨ν₀, he_init, hseed₀, hsupp₀⟩ := C.initFresh_exec hx hfr hpar hz
+  obtain ⟨ν_final, T_ops, hex, hseed_final, hrep_final, hamort⟩ :=
+    C.steps_expected_amortized_ofFn ops ν₀ hv hseed₀ fun p hp => (hsupp₀ p hp).2.1
+  have hpot₀ : (∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞)) ≤ (C.initPotential : ℝ≥0∞) :=
+    Cslib.Probability.PMF.tsum_mul_le_of_support ν₀ fun p hp =>
+      Nat.cast_le.mpr (hsupp₀ p hp).2.2.1
+  refine ⟨ν₀, ν_final, T_ops, he_init, hex, hseed_final, hrep_final, ?_⟩
+  rw [add_assoc, add_assoc, add_comm (C.initPotential : ℝ≥0∞)]
+  exact add_le_add le_rfl (hamort.trans (add_le_add le_rfl hpot₀))
 
 end Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl
 

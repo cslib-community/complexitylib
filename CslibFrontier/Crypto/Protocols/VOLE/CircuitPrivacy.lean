@@ -42,7 +42,7 @@ open scoped Matrix
 variable {F : Type} [CommRing F] {p k m : ℕ}
 
 /-- Recover the honest first message using only the public statement, corrections and receiver
-share. Its linear openings are correct precisely when the committed assignment meets those rows. -/
+share. Its linear openings are correct whenever the committed assignment meets those rows. -/
 def circuitPublicFirst (C : Circuit (arithSignature F) (p + k) m)
     (statement : (Fin p → F) × (Fin m → F))
     (share : F × (Fin (((p + k) + C.size) + 1) → F))

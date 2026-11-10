@@ -41,7 +41,7 @@ The construction uses choice and is not claimed to be computable. Its counting s
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

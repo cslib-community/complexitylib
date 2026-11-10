@@ -120,15 +120,7 @@ to represent every $r \in \{0, \dots, n\}$ injectively (`n < 2 ^ rompelTruncWidt
 theorem computableInPolyTime_rompelTruncWidth :
     ComputableInPolyTime rompelTruncWidth encUnary encUnary := by
   unfold rompelTruncWidth
-  have hlog : ComputableInPolyTime (Nat.log 2) encUnary encUnary :=
-    ComputableInPolyTime.binary_log_two.comp ComputableInPolyTime.unary_to_binary
-  exact ComputableInPolyTime.unary_add' hlog (ComputableInPolyTime.const 1)
-
-private theorem computableInPolyTime_rompelSeedWidth {α : Type} {encode : α ↪ List Bool}
-    {n m : α → ℕ} (hn : ComputableInPolyTime n encode encUnary)
-    (hm : ComputableInPolyTime m encode encUnary) :
-    ComputableInPolyTime (fun a => rompelSeedWidth (n a) (m a)) encode encUnary :=
-  ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' hn hm) hn
+  fun_prop
 
 theorem lt_two_pow_rompelTruncWidth (n : ℕ) : n < 2 ^ rompelTruncWidth n := by
   simpa only [rompelTruncWidth] using Nat.lt_pow_succ_log_self (by decide : 1 < 2) n
@@ -414,25 +406,8 @@ theorem computableInPolyTime_rompelBaseEvalWord {g : List Bool → List Bool} {o
     (houtLen : ComputableInPolyTime outLen encUnary encUnary) :
     ComputableInPolyTime (fun p : ℕ × List Bool => rompelBaseEvalWord g outLen p.1 p.2)
       (encPair encUnary encBits) encBits := by
-  have hn := ComputableInPolyTime.fst encUnary encBits
-  have hz := ComputableInPolyTime.snd encUnary encBits
-  have hm := houtLen.comp hn
-  have hsLen := computableInPolyTime_rompelSeedWidth hn hm
-  have htLen := computableInPolyTime_rompelTruncWidth.comp hn
-  have hx := ComputableInPolyTime.bitsRowWithInput hn (ComputableInPolyTime.const 0)
-    (ComputableInPolyTime.bitsTakeWithInput hz hn)
-  have hrest := ComputableInPolyTime.bitsDropWithInput hz hn
-  have hseed := ComputableInPolyTime.bitsRowWithInput hsLen (ComputableInPolyTime.const 0)
-    (ComputableInPolyTime.bitsTakeWithInput hrest hsLen)
-  have hrBits := ComputableInPolyTime.bitsRowWithInput htLen (ComputableInPolyTime.const 0)
-    (ComputableInPolyTime.bitsDropWithInput hrest hsLen)
-  have hr := ComputableInPolyTime.bitsBoundedBinaryValueWithInput hn hrBits
-  have hgx := ComputableInPolyTime.bitsRowWithInput hm (ComputableInPolyTime.const 0) (hg.comp hx)
-  have hfull := computableInPolyTime_wordAffineHash hn hseed hgx
-  have hpad := ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsTakeWithInput hfull hr)
-    ((ComputableInPolyTime.bitsReplicate false).comp
-      (ComputableInPolyTime.unary_sub' hn hr))
-  exact ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsAppend hseed hrBits) hpad
+  simp only [rompelBaseEvalWord, rompelSeedWidth]
+  fun_prop
 
 /-! ### Accessible preimage sets $L_0$ and the OWF inverter reduction (Claim 4.6) -/
 
@@ -520,34 +495,12 @@ theorem isPPT_rompelBaseInverter {g : List Bool → List Bool} {outLen : ℕ →
     (hA : IsPPT encBits A) :
     IsPPT encBits (rompelBaseInverter g outLen A) := by
   apply IsPPTOn.isPPT
-  have hn0 := ComputableInPolyTime.fst encUnary encBits
-  refine hn0.sampleList.bind_with ?_
-  have hp1 := ComputableInPolyTime.fst (encPair encUnary encBits) encBits
-  refine (computableInPolyTime_rompelTruncWidth.comp (hn0.comp hp1)).sampleList.bind_with ?_
-  have hp2 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encBits) encBits
-  have hn2 := hn0.comp (hp1.comp hp2)
-  refine (computableInPolyTime_rompelSeedWidth hn2 (houtLen.comp hn2)).sampleList.bind_with ?_
-  have hp3 := ComputableInPolyTime.fst
-    (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits
-  have hrawSeed := ComputableInPolyTime.snd
-    (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits
-  have hrBits := (ComputableInPolyTime.snd
-    (encPair (encPair encUnary encBits) encBits) encBits).comp hp3
-  have hp2' := hp2.comp hp3
-  have hx := (ComputableInPolyTime.snd (encPair encUnary encBits) encBits).comp hp2'
-  have hp1' := hp1.comp hp2'
-  have hn := hn0.comp hp1'
-  have hy := (ComputableInPolyTime.snd encUnary encBits).comp hp1'
-  have hm := houtLen.comp hn
-  have hseed := computableInPolyTime_wordAdjustAffineSeed hn hm
-    (ComputableInPolyTime.bitsBoundedBinaryValueWithInput hn hrBits) hy (hg.comp hx) hrawSeed
-  have hinp := ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsAppend hx hseed) hrBits
-  refine (hA.on.preprocess (hn.prod hinp)).bind_with (ComputableInPolyTime.isPPTOn ?_)
-  have hp4 := ComputableInPolyTime.fst
-    (encPair (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits) encBits
-  have hraw := ComputableInPolyTime.snd
-    (encPair (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits) encBits
-  exact ComputableInPolyTime.bitsTakeWithInput hraw (hn.comp hp4)
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  refine (ComputableInPolyTime.sampleList (by unfold rompelSeedWidth; fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
 
 private def rompelTupleEquiv (n m : ℕ) :
     (BitString n × ((Fin n → BitString m) × BitString n) × BitString (rompelTruncWidth n)) ≃
@@ -1553,23 +1506,14 @@ theorem OneWay.exists_inaccessibleEntropyFamily {f : List Bool → List Bool} (h
   have hcoll_ev := (hg.output_collision_negligible).eventually_le_inv_polynomial
     (p := fun _ => 2) (by fun_prop) (fun _ => by omega)
   obtain ⟨N₀, hN₀⟩ := Filter.eventually_atTop.mp hcoll_ev
-  have hid := ComputableInPolyTime.id' (encIn := encUnary)
-  have hsLen := computableInPolyTime_rompelSeedWidth hid houtLen
-  have hinLen : ComputableInPolyTime (fun n => rompelBaseInLen n (outLen n)) encUnary encUnary :=
-    ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hid hsLen)
-      computableInPolyTime_rompelTruncWidth
-  have houtLen₀ :
-      ComputableInPolyTime (fun n => rompelBaseOutLen n (outLen n)) encUnary encUnary :=
-    ComputableInPolyTime.unary_add'
-      (ComputableInPolyTime.unary_add' hsLen computableInPolyTime_rompelTruncWidth) hid
   refine ⟨{
     inLen := fun n => rompelBaseInLen n (outLen n)
     outLen := fun n => rompelBaseOutLen n (outLen n)
     denom := fun n => 64 * (n + 1)
     evalWord := rompelBaseEvalWord g outLen
     accSet := rompelAccessibleSet g outLen
-    polyTime_inLen := hinLen
-    polyTime_outLen := houtLen₀
+    polyTime_inLen := by unfold rompelBaseInLen rompelSeedWidth; fun_prop
+    polyTime_outLen := by unfold rompelBaseOutLen rompelSeedWidth; fun_prop
     polyTime_denom := by fun_prop
     denom_pos := fun n => by omega
     polyTime_evalWord := computableInPolyTime_rompelBaseEvalWord hg.polyTime houtLen

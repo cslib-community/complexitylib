@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signatur
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Failure
 public import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 
 /-!
@@ -124,16 +125,7 @@ theorem lyubashevskySigningParams_failure_le (security : ℕ)
 theorem negligible_lyubashevskySigningParams_bound :
     Negligible (fun security => (1 / 2 : ℝ≥0) ^ (security + 1) +
       (security + 1) ^ 2 * (8 * (security + 1) ^ 2 + 1) / 2 ^ security) := by
-  have hg := (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).shift 1
-  have hpoly : PolynomiallyBounded
-      (fun security : ℕ => (security + 1) ^ 2 * (8 * (security + 1) ^ 2 + 1)) := by
-    fun_prop
-  have hs := (negligible_const_div_two_pow 1).polynomiallyBounded_mul hpoly
-  have hs' : Negligible (fun security =>
-      (security + 1 : ℝ≥0) ^ 2 * (8 * (security + 1) ^ 2 + 1) / 2 ^ security) := by
-    simpa only [Nat.cast_mul, Nat.cast_pow, Nat.cast_add, Nat.cast_ofNat, Nat.cast_one,
-      mul_one_div] using hs
-  exact hg.add hs'
+  negligible
 
 /-- For every bounded secret-matrix sequence and arbitrary public matrices/messages, the
 actual native bounded signer has negligible failure. This is uniform over deterministic hashes;

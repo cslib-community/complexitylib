@@ -31,6 +31,8 @@ generalizes the disjoint case to events that overlap at most `Q` times.
   real-valued probabilities of finitely many events.
 * `Cslib.Probability.PMF.sum_toReal_indicator_le`: if every outcome satisfies at most `Q` of
   finitely many predicates, their probabilities add up to at most `Q`.
+* `Cslib.Probability.PMF.toOuterMeasure_lookup_isSome_le`: the union bound for finding a random
+  key in an association list.
 -/
 
 @[expose] public section
@@ -103,5 +105,30 @@ theorem sum_toReal_indicator_le {M : Type*} [Fintype M] (p : PMF α)
         · rw [(_root_.PMF.apply_eq_zero_iff _ _).mpr hx, ENNReal.toReal_zero, zero_mul, zero_mul]
     _ = (Q : ℝ) := by
         rw [tsum_mul_right, tsum_toReal, one_mul]
+
+/-- **Union bound for association-list lookups**: if a key `f a` of an outcome `a ← p` equals
+any fixed key with probability at most `δ`, then it is found in an association list `cache`
+with probability at most `cache.length * δ`. -/
+theorem toOuterMeasure_lookup_isSome_le {κ V : Type*} [BEq κ] [LawfulBEq κ] (p : PMF α)
+    (f : α → κ) {δ : ℝ≥0∞} (hpoint : ∀ k, p.toOuterMeasure {a | f a = k} ≤ δ)
+    (cache : List (κ × V)) :
+    p.toOuterMeasure {a | (cache.lookup (f a)).isSome} ≤ cache.length * δ := by
+  induction cache with
+  | nil => simp
+  | cons e rest ih =>
+    calc p.toOuterMeasure {a | ((e :: rest).lookup (f a)).isSome}
+        ≤ p.toOuterMeasure ({a | f a = e.1} ∪ {a | (rest.lookup (f a)).isSome}) := by
+          refine p.toOuterMeasure.mono fun a ha => ?_
+          have ha : ((e :: rest).lookup (f a)).isSome = true := ha
+          rw [List.lookup_cons] at ha
+          by_cases h : f a = e.1
+          · exact Or.inl h
+          · rw [beq_false_of_ne h] at ha
+            exact Or.inr ha
+      _ ≤ δ + rest.length * δ :=
+          (MeasureTheory.measure_union_le _ _).trans (add_le_add (hpoint e.1) ih)
+      _ = (e :: rest).length * δ := by
+          rw [List.length_cons, Nat.cast_add, Nat.cast_one]
+          ring
 
 end Cslib.Probability.PMF

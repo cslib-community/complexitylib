@@ -34,7 +34,7 @@ type (`permutation_inverse_encoded`). Similarly, `x` is a periodic point exactly
   *Square-root circuit bounds for iterated functions*][Schlesinger2026IteratedFunctions].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Iteration
 
