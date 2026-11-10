@@ -154,7 +154,7 @@ public lemma applyTapes_nil_right (ts : List Tape) : applyTapes ts [] = ts := by
   cases ts <;> rfl
 
 /-- The action that neither writes nor moves leaves a work tape unchanged. -/
-public lemma apply_none (t : Tape) : t.apply (none, 0) = t := rfl
+public lemma Tape.apply_none_zero (t : Tape) : t.apply (none, 0) = t := rfl
 
 lemma zipFold_applyOne (ts : List Tape) (as : List TapeAct) :
     zipFold applyOne () ts as = applyTapes ts as := by
@@ -195,8 +195,11 @@ lemma length_eTape_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
       length_encPair, encList_cons, List.length_append, length_frame, encOption_some,
       List.length_cons, List.headD_cons, List.tail_cons] <;> omega
 
-/-- An integer's unary encoding is nonempty. -/
-public lemma one_le_length_encIntUnary (z : ℤ) : 1 ≤ (encIntUnary z).length := by
+/-- An integer's unary encoding is nonempty. Its natural home is the `Primitives` module, next to
+`length_encIntUnary`; it is stated here, in that namespace, because `Primitives` has about 2,400
+transitive importers against about 500 here. -/
+public lemma _root_.Turing.MultiTapeTM.one_le_length_encIntUnary (z : ℤ) :
+    1 ≤ (encIntUnary z).length := by
   rw [length_encIntUnary]; split_ifs <;> omega
 
 lemma four_le_length_eTape (t : Tape) : 4 ≤ (eTape t).length := by
@@ -220,7 +223,7 @@ lemma length_applyTapes (ts : List Tape) (as : List TapeAct) :
       omega
 
 /-- The symbol under the head is no longer than the work tape. -/
-public lemma length_read_le (t : Tape) : (eSym t.read).length ≤ (eTape t).length := by
+public lemma length_eSym_read_le (t : Tape) : (eSym t.read).length ≤ (eTape t).length := by
   have := length_eSym_headD_le t.right
   simp only [Tape.read, eTape_apply, length_encPair] at *
   omega
@@ -231,7 +234,7 @@ lemma length_encList_map_read_le (ts : List Tape) :
   induction ts with
   | nil => simp
   | cons t ts ih =>
-    have := length_read_le t
+    have := length_eSym_read_le t
     simp only [List.map_cons, encList_cons, List.length_append, length_frame] at *
     omega
 

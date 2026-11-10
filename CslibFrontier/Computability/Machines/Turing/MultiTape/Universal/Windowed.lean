@@ -297,7 +297,7 @@ private lemma getElem?_applyTapes (ts : List Tape) (as : List (Option (Option â„
   | nil => rfl
   | cons t ts ih =>
     cases as with
-    | nil => simp [applyTapes, apply_none]
+    | nil => simp [applyTapes, Tape.apply_none_zero]
     | cons a as => cases k <;> simp [applyTapes, ih]
 
 private lemma stepWith_eq (d : Desc) (c : SCfg) (a : Option â„•) :

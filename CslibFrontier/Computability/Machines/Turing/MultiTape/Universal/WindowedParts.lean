@@ -337,7 +337,7 @@ private lemma length_read_headD_le (l : List Tape) :
   cases l with
   | nil => exact le_of_eq rfl
   | cons t l =>
-    have := length_read_le t
+    have := length_eSym_read_le t
     simp only [List.headD_cons, encList_cons, List.length_append, length_frame]
     omega
 
