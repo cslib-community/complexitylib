@@ -1250,6 +1250,12 @@ existing normalizer. The dimension bound includes the actual $a\le952(v+1)$ gene
 not a supplied auxiliary budget. This proves size-threshold recovery for arbitrary signed inputs,
 including the empty graph, rather than only existence without a decoder.
 
+`IndependentDominationInterval.Signed.exists_decide_sharp_certificate` and
+`exists_decide_realEta_certificate` separately provide a Boolean yes/no machine by inspecting the
+actual solver option tag. They retain both varying signed size bounds and charge the tag read
+and answer-bit write, with global polynomial workspace and the same sharp source time. The
+GraphWitness client checks positive, contradictory, zero-size and negative-bound decisions.
+
 From the repository root run:
 
 ```bash
@@ -1307,6 +1313,44 @@ would add too many variables. The remaining refined-construction and encoding/mo
 inventory stays open; independent-domination optimum recovery is completed below.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
+
+### Shared parity-marker blocks
+
+Import `CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedMarkers` and open
+`Cslib.Logic.PL.UpperDomination.Unique.SharedMarkers`. This is a local construction stage of
+Appendix D.3 (PDF p.35), toward Proposition 7.6's width-three unique-mark refinement.
+`Context` contains binary port/marker indices, a final-edge flag, the boundary bit and actual
+predicate terms. Its `enc_structure` encoding frames the fields in declaration order and reuses
+the existing signed-formula encoding. It is a local edge descriptor, not a graph frontend.
+
+`block` writes four ternary parity clauses on an interior edge, or two binary clauses after
+substituting a final boundary constant. It writes one negated-term/false-marker clause per term.
+All terms share **one** marker. `block_eval` proves the exact port-parity and activated-term
+semantics. `extension_unique` proves zero or one marker extensions for every fixed old assignment
+under explicit fresh-index hypotheses. A final edge may have its ignored right index equal to
+the marker: freshness is required there only when the right port is actually read.
+
+`block_width` proves width three for terms of width at most two, and `block_length` gives at
+most four clauses plus the term count. `block_polytime` certifies actual binary clause/literal
+writing, rather than inferring runtime from those size bounds. These are **local** bounds;
+full graph query assembly, finite-model count transport, global literal/declaration validation,
+and the source $6v+a-1$ variable and cubic-clause budgets remain open. The refined-construction
+ROADMAP entry is retained, and the reviewed width-four exact-set counter is unchanged.
+
+From the checkout root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.UpperDominationSharedMarkers --wfail --iofail
+```
+
+The [computed client](../../CslibFrontierTests/PaperEndpoints/UpperDominationSharedMarkers.lean)
+uses the actual augmented predicate of $K_2$, with its gate-dependent source port allocation.
+It checks all 32 relevant old assignments and both values of the single marker against the
+intended zero-or-one extension count. Other cases cover fixed boundaries, repeated pair terms,
+empty terms/predicates and a deliberate freshness violation yielding two extensions.
+The enumeration is test-only; production writes explicit lists and enumerates no assignment cube.
+
+### Minimum independent-domination resources
 
 The independent-domination module now also provides `Signed.Witness.Minimum.run`, an actual
 ascending exact-size search. It calls the checked solver at sizes zero through the original

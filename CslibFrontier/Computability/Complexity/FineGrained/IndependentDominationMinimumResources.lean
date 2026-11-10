@@ -443,8 +443,9 @@ theorem exists_optimal_realEta_certificate :
 
 open Classical in
 /-- Instantiate the proved production size solver, its native machine and its correctness.
-The resulting finite machine returns the attained global minimum and original vertex word;
-the quantitative endpoints above additionally bound its exact iterator resources. -/
+The resulting finite machine returns the attained global minimum and original vertex word.
+This statement records execution and optimum correctness only. Use
+`exists_optimal_sharp_certificate` for a statement that also bounds its chosen certificate. -/
 theorem exists_native_optimal_search :
     ∃ optimize : IndependentDomination.Input → Option (ℕ × List Bool),
       ∃ _cs : NativeCertificate optimize IndependentDomination.encInput encOutput,

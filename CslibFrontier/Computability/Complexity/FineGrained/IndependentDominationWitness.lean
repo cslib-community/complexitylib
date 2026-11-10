@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.GraphWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationInterval
 import CslibFrontier.Logics.Propositional.DNF.Relabel
+import all CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 
 /-!
 # Size-bounded original independent-domination witnesses
@@ -29,6 +30,8 @@ and Appendix D.5 (PDF pp.26,36–37), including arbitrary runtime integer size b
   original minimum-word correctness; native composition and closed resource estimates are in
   `CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationMinimumResources`.
 * `Minimum.exists_attained_optimal_search`: every finite graph returns an actual optimum word.
+* `Signed.exists_decide_sharp_certificate`, `Signed.exists_decide_realEta_certificate`: actual
+  Boolean decisions from the size solver tag with the same source resources.
 -/
 
 public section
@@ -381,3 +384,75 @@ theorem exists_attained_optimal_search :
     (fun G _ lo hi => (h G lo hi).2.1)⟩
 
 end Cslib.Logic.PL.IndependentDominationInterval.Signed.Witness.Minimum
+
+namespace Cslib.Logic.PL.IndependentDominationInterval.Signed
+
+open Turing.MultiTapeTM Cslib.GenericRAM Cslib.Complexity
+
+/-- Read the actual size-bounded solver's success tag as a yes/no decision. -/
+@[expose] def decideWith (solver : Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (x : Input) : Bool := (solver x).isSome
+
+open Classical in
+/-- Actual signed size-bounded independent-domination decision, with the same sharp clock
+and global polynomial workspace, including inspection/writing of the answer bit. -/
+theorem exists_decide_sharp_certificate :
+    ∃ test : Input → Bool, ∃ cs : NativeCertificate test encInput encBool, ∃ C e A : ℕ,
+      (∀ x, cs.space x ≤ C * ((encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ),
+        (test (ofGraph G lo hi) = true ↔ ∃ σ, Witness.Feasible G lo hi σ) ∧
+        cs.time (ofGraph G lo hi) ≤ C * ((encInput (ofGraph G lo hi)).length + 1) ^ e *
+          2 ^ (A * Nat.logLogSqrtLogScale n) := by
+  obtain ⟨solver, cp, D, f, A, hs, h⟩ := Witness.exists_solver_sharp_certificate
+  have htag : ComputableInPolyTime
+      (fun p : TwoBoundary.BinaryFrontend.Witness.Output => p.isSome)
+      TwoBoundary.BinaryFrontend.Witness.encOutput encBool := by
+    unfold TwoBoundary.BinaryFrontend.Witness.encOutput; fun_prop
+  let post := NativeCertificate.ofPolyTime htag
+  let cs := post.comp cp
+  have hp := NativeCertificate.ofPolyTime_isPolynomial htag
+  have hcp := PolyBounded.of_forall_le D f hs
+  have hlen := SparseCNFLeafCounter.polyBounded_output_of_space cp hcp
+  have hspace := hcp.add (hp.2.comp hlen)
+  let W (x : Input) := D * ((encInput x).length + 1) ^ f + post.time (solver x) + cs.space x
+  have hW : PolyBounded (fun x => (encInput x).length) W :=
+    (((PolyBounded.const D).mul ((PolyBounded.self.add (.const 1)).pow f)).add
+      (hp.1.comp hlen)).add hspace
+  obtain ⟨C, e, hCe⟩ := hW.exists_le
+  refine ⟨decideWith solver, cs, C, e, A, fun x => (Nat.le_add_left _ _).trans (hCe x), ?_⟩
+  intro n G _ lo hi
+  refine ⟨(h G lo hi).1, ?_⟩
+  let x := ofGraph G lo hi
+  let E := 2 ^ (A * Nat.logLogSqrtLogScale n)
+  have hE : 0 < E := Nat.two_pow_pos _
+  have ht := (h G lo hi).2.2
+  have ho := Nat.le_mul_of_pos_right (post.time (solver x)) hE
+  have hb : cs.time x ≤ W x * E := by
+    change cp.time x + post.time (solver x) ≤ _
+    change cp.time x ≤ D * ((encInput x).length + 1) ^ f * E at ht
+    dsimp only [W]
+    nlinarith
+  exact hb.trans (Nat.mul_le_mul_right E (hCe x))
+
+open Classical in
+/-- Real source eta for the same actual Boolean decision, with arbitrary signed size bounds. -/
+theorem exists_decide_realEta_certificate :
+    ∃ test : Input → Bool, ∃ cs : NativeCertificate test encInput encBool, ∃ C e A : ℕ,
+      (∀ x, cs.space x ≤ C * ((encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ),
+        (test (ofGraph G lo hi) = true ↔ ∃ σ, Witness.Feasible G lo hi σ) ∧
+        (16 ≤ n → (cs.time (ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
+          ((encInput (ofGraph G lo hi)).length + 1 : ℕ) ^ e *
+            (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) := by
+  obtain ⟨test, cs, C, e, A, hs, h⟩ := exists_decide_sharp_certificate
+  refine ⟨test, cs, C, e, 6 * A, hs, ?_⟩
+  intro n G _ lo hi
+  refine ⟨(h G lo hi).1, ?_⟩
+  intro hn
+  have ht : (cs.time (ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
+      ((encInput (ofGraph G lo hi)).length + 1 : ℕ) ^ e *
+        (2 : ℝ) ^ (A * Nat.logLogSqrtLogScale n) := by exact_mod_cast (h G lo hi).2
+  exact ht.trans (mul_le_mul_of_nonneg_left
+    (Nat.two_pow_mul_logLogSqrtLogScale_le A hn) (by positivity))
+
+end Cslib.Logic.PL.IndependentDominationInterval.Signed

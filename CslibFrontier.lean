@@ -3392,6 +3392,7 @@ public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import CslibFrontier.Computability.PolyTime.CNF.SparsePolyCompile
 public import CslibFrontier.Computability.PolyTime.CNF.TwoBoundaryFrontend
 public import CslibFrontier.Computability.PolyTime.CNF.UpperDomination
+public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationSharedMarkers
 public import CslibFrontier.Computability.PolyTime.CNF.UpperDominationUnique
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneClosure
 public import CslibFrontier.Computability.PolyTime.CNF.VCOneDispatch

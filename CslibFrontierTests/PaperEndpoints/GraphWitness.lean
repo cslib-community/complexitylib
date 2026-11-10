@@ -240,4 +240,27 @@ example :
               (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) :=
   IndependentDominationInterval.Signed.Witness.Minimum.exists_optimal_realEta_certificate
 
+/- Explicit decision tags agree with the actual checked size-bounded recovery. -/
+/-- info: (true, false, false, true, false) -/
+#guard_msgs in
+#eval let test : IndependentDominationInterval.Signed.Input → Bool :=
+    IndependentDominationInterval.Signed.decideWith (fun (g, lo, hi) => bounded g lo hi);
+  (test (path, 1, 1), test (path, 0, 0), test (path, 2, 1),
+    test ((0, []), 0, 0), test ((0, []), 0, -1))
+
+open IndependentDominationInterval in
+open IndependentDominationInterval.Signed in
+open Classical in
+/-- Separate Boolean native decision with varying signed bounds and source resources. -/
+example :
+    ∃ test : Signed.Input → Bool, ∃ cs : NativeCertificate test Signed.encInput encBool,
+      ∃ C e A : ℕ,
+      (∀ x, cs.space x ≤ C * ((Signed.encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ),
+        (test (Signed.ofGraph G lo hi) = true ↔ ∃ σ, Witness.Feasible G lo hi σ) ∧
+        (16 ≤ n → (cs.time (Signed.ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
+          ((Signed.encInput (Signed.ofGraph G lo hi)).length + 1 : ℕ) ^ e *
+            (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) :=
+  Signed.exists_decide_realEta_certificate
+
 end GraphWitnessTests
