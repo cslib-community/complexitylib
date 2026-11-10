@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 public import CslibFrontierTests.UniversalNondeterministic
 
 /-! The nondeterministic diagonal within space. The machine `coin`, which emits either bit, accepts
-every input; read off its description, it accepts within any budget above the size of its
+every input; read off its description, it accepts within any budget at least the size of its
 configurations, so the diagonal within space `(n + 1) ^ 2` rejects its padded description. The
 diagonal within space `(n + 1) ^ 2` is not in nondeterministic linear space, and the diagonal within
 space `4 * log₂ n` is not in nondeterministic constant space. The nondeterministic space hierarchy
@@ -29,7 +29,7 @@ open CslibFrontierTests.UniversalNondeterministic
 
 /-! ### The bridge and the diagonal on a concrete machine -/
 
-/-- `coin` runs within no cells, so its description accepts within any budget above the size of
+/-- `coin` runs within no cells, so its description accepts within any budget at least the size of
 its configurations. -/
 example (input : List Bool) {b : ℕ}
     (hb : cfgSpaceBound (descLen (descN eUnit eBit coin)) input.length 0 0 ≤ b) :
@@ -59,7 +59,7 @@ example (pad : List Bool) (hpad : 2 ^ 2 ^ (eDesc (descN eUnit eBit coin)).length
   have hb : cfgSpaceBound (descLen (descN eUnit eBit coin)) x.length 0 0 ≤ (x.length + 1) ^ 2 := by
     simp only [cfgSpaceBound, descLen]
     nlinarith [Nat.mul_le_mul_right x.length h6]
-  rw [nspaceDiagonal, Set.mem_ofPred_eq, hdec, not_not]
+  rw [mem_nspaceDiagonal, hdec, not_not]
   exact (accepts_iff_bAccepts_descN eUnit coin (by simp) hb).mp (coin_accepts x)
 
 /-! ### The lower bound on concrete bounds -/

@@ -1737,6 +1737,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterm
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.SpaceDiagonalBounds
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc
