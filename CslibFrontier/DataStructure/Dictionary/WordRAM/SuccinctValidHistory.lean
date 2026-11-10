@@ -21,8 +21,11 @@ import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctDeleteOps
 This module proves `(Memory.spec w).ValidHistory` for all `Memory.Prog` operations of the
 fixed-capacity succinct dictionary (`queryBodyProg`, `insertBodyProg`, `deletePrepProg`, and
 `deleteFinishProg`), discharging the admissibility obligation required when extracting native
-Word-RAM `Code` via `Realizes.code_spec`. The proofs reuse private bound lemmas of the tail and
-slab operation modules and of `SuccinctDeleteOps`, which this module reads through `import all`.
+Word-RAM `Code` via `Realizes.code_spec`. The proofs unfold the unexposed programs of the tail and
+slab operation modules and reuse private bound lemmas of `SuccinctTailOps`, `SuccinctSlabPool`,
+`SuccinctSlabMove`, `SuccinctSlabDemote` and `SuccinctDeleteOps`; from `SuccinctSlabOps` they need
+only the bodies of `lastSlotOfProg`, `pushBackTailWriteProg`, `pushBackSlotProg` and
+`popBackSlotProg`. This module reads all of these through `import all`.
 
 ## Main definitions
 
