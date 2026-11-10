@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
 public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
+import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
@@ -301,59 +302,38 @@ theorem certificate_bounds {α : Type} {encIn : α ↪ List Bool}
       (encPair encNat (encPair encUnary encB)
         ((IndexFold.step (visit body))^[j] (0, (dimension a, initial a)))).length ≤ S a :=
     length_prefix_le body _ j _ _ hj (hstate a j hj)
-  have hmaxS (a : α) :
-      NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
-        (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) ≤ S a :=
-    NativeCertificate.maxStateLength_le _ _ _ _ (hstateS a)
-  have hmaxRT (a : α) :
-      NativeCertificate.maxRoundTime cstep (2 ^ dimension a) (0, (dimension a, initial a)) ≤
-        ct * (S a + 1) ^ dt :=
-    NativeCertificate.maxRoundTime_le cstep _ _ fun j hj => (hct _).trans
-      (Nat.mul_le_mul_left ct (Nat.pow_le_pow_left (by have := hstateS a j hj; omega) dt))
-  have hmaxRS (a : α) :
-      NativeCertificate.maxRoundSpace cstep (2 ^ dimension a) (0, (dimension a, initial a)) ≤
-        cs * (S a + 1) ^ ds :=
-    NativeCertificate.maxRoundSpace_le cstep _ _ fun j hj => (hcs _).trans
-      (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by have := hstateS a j hj; omega) ds))
-  have htime (a : α) : (certificate cn ci cb).time a =
-      (cn.time a + (encUnary (dimension a)).length) +
-        ((encIn a).length + (cn.time a + ci.time a)) +
-        (2 ^ dimension a + 1) *
-          (NativeCertificate.maxRoundTime cstep (2 ^ dimension a) (0, (dimension a, initial a)) +
-            NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
-              (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
-            ((encNat (2 ^ dimension a)).length + 1) ^ 2) := rfl
-  have hspace (a : α) : (certificate cn ci cb).space a =
-      (cn.space a + (encUnary (dimension a)).length) +
-        ((encIn a).length + (cn.space a + ci.space a)) +
-        NativeCertificate.maxRoundSpace cstep (2 ^ dimension a) (0, (dimension a, initial a)) +
-        NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
-          (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
-        (encNat (2 ^ dimension a)).length := rfl
+  have hround (a : α) (j : ℕ) (hj : j ≤ 2 ^ dimension a) :
+      cstep.time ((IndexFold.step (visit body))^[j] (0, (dimension a, initial a))) ≤
+          ct * (S a + 1) ^ dt ∧
+        cstep.space ((IndexFold.step (visit body))^[j] (0, (dimension a, initial a))) ≤
+          cs * (S a + 1) ^ ds :=
+    have := hstateS a j hj
+    ⟨(hct _).trans (Nat.mul_le_mul_left ct (Nat.pow_le_pow_left (by omega) dt)),
+      (hcs _).trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by omega) ds))⟩
   refine ⟨?_, fun a => 2 * cn.time a + dimension a + (encIn a).length + ci.time a +
       (ct * (S a + 1) ^ dt + S a + (dimension a + 1 + 1) ^ 2), ?_, fun a => ?_⟩
   · refine (((((((PolyBounded.const 2).mul hcn.2).add hdim).add .self).add hci.2).add
       (NativeCertificate.polyBounded_pow_of_polyBounded hS cs ds)).add
         (hS.add (hdim.add (.const 1)))).mono fun a => ?_
-    rw [hspace a]
-    simp only [encUnary_apply, List.length_replicate, length_clock]
-    have := hmaxRS a
-    have := hmaxS a
+    have h := NativeCertificate.iterate_space_le (clock.comp cn)
+      ((NativeCertificate.const (em := encNat) 0).prod (cn.prod ci)) cstep a
+      (fun j hj => (hround a j hj).2) (hstateS a)
+    simp only [Function.comp_apply, length_clock, NativeCertificate.comp_space,
+      NativeCertificate.prod_space, NativeCertificate.const_space] at h
+    refine h.trans ?_
+    simp only [clock, encUnary_apply, List.length_replicate]
     omega
   · exact ((((((PolyBounded.const 2).mul hcn.1).add hdim).add .self).add hci.1).add
       (((NativeCertificate.polyBounded_pow_of_polyBounded hS ct dt).add hS).add
         (((hdim.add (.const 1)).add (.const 1)).pow 2)))
-  · have hY : NativeCertificate.maxRoundTime cstep (2 ^ dimension a)
-            (0, (dimension a, initial a)) +
-          NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
-            (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
-          ((encNat (2 ^ dimension a)).length + 1) ^ 2 ≤
-        ct * (S a + 1) ^ dt + S a + (dimension a + 1 + 1) ^ 2 := by
-      rw [length_clock]
-      exact Nat.add_le_add (Nat.add_le_add (hmaxRT a) (hmaxS a)) le_rfl
-    refine le_trans (le_of_eq ?_) (add_mul_le_mul_add (N := 2 ^ dimension a)
-      (X := 2 * cn.time a + dimension a + (encIn a).length + ci.time a) hY)
-    rw [htime a, encUnary_apply, List.length_replicate]
+  · have h := NativeCertificate.iterate_time_le (clock.comp cn)
+      ((NativeCertificate.const (em := encNat) 0).prod (cn.prod ci)) cstep a
+      (fun j hj => (hround a j hj).1) (hstateS a)
+    simp only [Function.comp_apply, length_clock, NativeCertificate.comp_time,
+      NativeCertificate.prod_time, NativeCertificate.const_time] at h
+    refine h.trans (le_trans (le_of_eq ?_) (add_mul_le_mul_add (N := 2 ^ dimension a)
+      (X := 2 * cn.time a + dimension a + (encIn a).length + ci.time a) le_rfl))
+    simp only [clock, encUnary_apply, List.length_replicate]
     omega
 
 end Cslib.GenericRAM.BooleanFold

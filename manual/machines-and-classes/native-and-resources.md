@@ -170,6 +170,16 @@ this polynomial envelope. The
 combine polynomial preprocessing/postprocessing this way while retaining their separate
 exponential time and polynomial space conclusions.
 
+A native loop charges every round at the maximum over its trajectory. To bound
+`NativeCertificate.iterate` or `IndexFold.certificate`, import
+[`GenericRAM.Native.IterateBounds`](../../CslibFrontier/Computability/GenericRAM/Native/IterateBounds.lean)
+and bound the round cost and the encoded state only at the first `n + 1` iterates.
+`NativeCertificate.iterate_time_le` and `iterate_space_le` return explicit totals;
+`IndexFold.certificate_time_le` and `certificate_space_le` also charge the binary index, given a
+bound on the length of the count. The count multiplies the time but not the space. The
+[streaming Boolean traversal](../../CslibFrontier/Computability/GenericRAM/Native/BooleanFold.lean)
+uses them for its `2 ^ n` rounds.
+
 Pure lookup in `frame u ++ v` uses the small
 [`Encodings.Frame.Lookup`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)
 module. `getElem?_frame_append` identifies each marker and data bit;

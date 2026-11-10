@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
 public import CslibFrontier.Foundations.Data.Nat.Radix
+import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
@@ -1157,54 +1158,32 @@ private theorem mkSlotCert_bounds
   let runAt (j : ℕ) := IndexFold.run selectSlotStep j (streamSlotInit a)
   have hbFull (j : ℕ) (hj : j ≤ K) : (encPair encNat encSlotSelectAcc (runAt j)).length ≤ bFull L :=
     hbFull_run_streamSlotInit_le a hj
-  let rstep := IndexFold.roundCertificate cb; let initPair := (0, streamSlotInit a)
-  let M := NativeCertificate.maxStateLength (encPair encNat encSlotSelectAcc)
-    (IndexFold.step selectSlotStep) K initPair
-  let RT := NativeCertificate.maxRoundTime rstep K initPair
-  let RS := NativeCertificate.maxRoundSpace rstep K initPair
-  have hmaxS : M ≤ bFull L :=
-    NativeCertificate.maxStateLength_le (encPair encNat encSlotSelectAcc)
-      (IndexFold.step selectSlotStep) K initPair hbFull
   have hcn_a : cn.time a ≤ pCn L ∧ cn.space a ≤ pCn L := hCn a
   have hci_a : ci.time a ≤ pCi L ∧ ci.space a ≤ pCi L := hCi a
   have hexT : cEx.time (runAt K) ≤ pEx (bFull L) := (hEx _).1.trans (hmEx (hbFull K le_rfl))
   have hexS : cEx.space (runAt K) ≤ pEx (bFull L) := (hEx _).2.trans (hmEx (hbFull K le_rfl))
   constructor
-  · have hmaxRT : RT ≤ bFull L + (lIdx L + 1) ^ 2 + pCb (bFull L) := by
-      apply NativeCertificate.maxRoundTime_le rstep K initPair
-      intro j hj
-      have hj_len : (encNat (runAt j).1).length ≤ lIdx L := by
-        rw [IndexFold.run_index]; exact (length_encNat_mono hj).trans hlIdx
-      have hsq := Nat.pow_le_pow_left (Nat.add_le_add_right hj_len 1) 2
-      have hcbT : cb.time (runAt j) ≤ pCb (bFull L) := (hCb _).1.trans (hmCb (hbFull j hj))
-      have hst_len := hbFull j hj
-      change (encPair encNat encSlotSelectAcc (runAt j)).length +
-        ((encNat (runAt j).1).length + 1) ^ 2 + cb.time (runAt j) ≤ _; omega
-    have hsqK : ((encNat K).length + 1) ^ 2 ≤ (lIdx L + 1) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-    have hround : RT + M + ((encNat K).length + 1) ^ 2 ≤ roundOver L := by
+  · have hfold := IndexFold.certificate_time_le cn ci cb a
+      (fun j hj => (hCb _).1.trans (hmCb (hbFull j hj))) hbFull hlIdx
+    have hround : 2 * bFull L + 2 * (lIdx L + 1) ^ 2 + pCb (bFull L) ≤ roundOver L := by
       dsimp only [roundOver]; omega
     calc (mkSlotCert cn ci cb cEx).time a
-        = (cn.time a + (L + ci.time a) +
-            (K + 1) * (RT + M + ((encNat K).length + 1) ^ 2)) + cEx.time (runAt K) := rfl
+        ≤ (cn.time a + (L + ci.time a) +
+            (K + 1) * (2 * bFull L + 2 * (lIdx L + 1) ^ 2 + pCb (bFull L))) +
+            cEx.time (runAt K) := Nat.add_le_add_right hfold _
       _ ≤ initExt L + (K + 1) * roundOver L := by
             have := Nat.mul_le_mul_left (K + 1) hround; dsimp only [initExt]; omega
       _ ≤ (K + 1) * initExt L + (K + 1) * roundOver L :=
             Nat.add_le_add_right (Nat.le_mul_of_pos_left _ (Nat.succ_pos _)) _
       _ = (K + 1) * (initExt L + roundOver L) := by ring
       _ ≤ (K + 1) * poly L := Nat.mul_le_mul_left _ hpolyL
-  · have hmaxRS : RS ≤ bFull L + (lIdx L + 1) + pCb (bFull L) := by
-      apply NativeCertificate.maxRoundSpace_le rstep K initPair
-      intro j hj
-      have hj_len : (encNat (runAt j).1).length ≤ lIdx L := by
-        rw [IndexFold.run_index]; exact (length_encNat_mono hj).trans hlIdx
-      have hcbS : cb.space (runAt j) ≤ pCb (bFull L) := (hCb _).2.trans (hmCb (hbFull j hj))
-      have hst_len := hbFull j hj
-      change (encPair encNat encSlotSelectAcc (runAt j)).length +
-        ((encNat (runAt j).1).length + 1) + cb.space (runAt j) ≤ _; omega
+  · have hfold := IndexFold.certificate_space_le cn ci cb a
+      (fun j hj => (hCb _).2.trans (hmCb (hbFull j hj))) hbFull hlIdx
     have hlin_sq : lIdx L + 1 ≤ 2 * (lIdx L + 1) ^ 2 :=
       (Nat.le_mul_self _).trans (by rw [sq]; omega)
     calc (mkSlotCert cn ci cb cEx).space a
-        = (cn.space a + (L + ci.space a) + RS + M + (encNat K).length) + cEx.space (runAt K) := rfl
+        ≤ (cn.space a + (L + ci.space a) + (2 * bFull L + 2 * lIdx L + 1 + pCb (bFull L))) +
+            cEx.space (runAt K) := Nat.add_le_add_right hfold _
       _ ≤ initExt L + roundOver L := by dsimp only [initExt, roundOver]; omega
       _ ≤ poly L := hpolyL
 

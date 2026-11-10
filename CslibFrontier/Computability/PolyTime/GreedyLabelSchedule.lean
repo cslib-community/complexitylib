@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.PolyTime.GreedySlotScore
+import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -1133,37 +1134,19 @@ private theorem mkOuterAccCert_bounds
   let runAt (s : ℕ) := IndexFold.run greedySlotStepBody s (outerInit p)
   have hbOuter (s : ℕ) (hs : s ≤ K) : (encOuterSt (runAt s)).length ≤ bOuter L :=
     length_encOuterState_run_le p hs
-  let rstep := IndexFold.roundCertificate cStep; let initPair := (0, outerInit p)
-  let M := NativeCertificate.maxStateLength encOuterSt (IndexFold.step greedySlotStepBody) K
-    initPair
-  let RT := NativeCertificate.maxRoundTime rstep K initPair
-  let RS := NativeCertificate.maxRoundSpace rstep K initPair
-  have hmaxS : M ≤ bOuter L := NativeCertificate.maxStateLength_le _ _ _ _ hbOuter
   have hcnt_p : cCnt.time p + cCnt.space p ≤ pCnt L := hCnt p
   have hinit_p : cInit.time p + cInit.space p ≤ pInit L := hInit p
-  have hsqK : ((encNat K).length + 1) ^ 2 ≤ (L + 1) ^ 2 := Nat.pow_le_pow_left (by omega) 2
   refine ⟨?_, ?_⟩
-  · have hmaxRT : RT ≤ bOuter L + (L + 1) ^ 2 + (rq + 1) * pStep L := by
-      refine NativeCertificate.maxRoundTime_le _ _ _ fun s hs => ?_
-      have hs_len : (encNat (runAt s).1).length ≤ L := by
-        rw [IndexFold.run_index]; exact (length_encNat_mono hs).trans hlIdx
-      have hsq := Nat.pow_le_pow_left (Nat.add_le_add_right hs_len 1) 2
-      have hstL := hbOuter s hs
-      have hcbT : cStep.time (runAt s) ≤ (rq + 1) * pStep L := (hStep p s hs).1
-      change (encOuterSt (runAt s)).length + ((encNat (runAt s).1).length + 1) ^ 2 +
-        cStep.time (runAt s) ≤ _
-      omega
-    have hround : RT + M + ((encNat K).length + 1) ^ 2 ≤
-        (rq + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L) :=
-      calc RT + M + ((encNat K).length + 1) ^ 2
-          ≤ (2 * bOuter L + 2 * (L + 1) ^ 2) + (rq + 1) * pStep L := by omega
-        _ ≤ (rq + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2) + (rq + 1) * pStep L :=
-              Nat.add_le_add_right (Nat.le_mul_of_pos_left _ (Nat.succ_pos rq)) _
-        _ = (rq + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L) := by ring
+  · have hfold := IndexFold.certificate_time_le cCnt cInit cStep p
+      (fun s hs => (hStep p s hs).1) hbOuter hlIdx
+    have hround : 2 * bOuter L + 2 * (L + 1) ^ 2 + (rq + 1) * pStep L ≤
+        (rq + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L) := by
+      rw [Nat.mul_add (rq + 1) _ (pStep L)]
+      exact Nat.add_le_add_right (Nat.le_mul_of_pos_left _ (Nat.succ_pos rq)) _
     have hmul := Nat.mul_le_mul (Nat.add_le_add_right hKL 1) hround
     calc (mkOuterAccCert cCnt cInit cStep).time p
-        = cCnt.time p + (L + cInit.time p) +
-            (K + 1) * (RT + M + ((encNat K).length + 1) ^ 2) := rfl
+        ≤ cCnt.time p + (L + cInit.time p) +
+            (K + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + (rq + 1) * pStep L) := hfold
       _ ≤ (pCnt L + L + pInit L) +
             (L + 1) * ((rq + 1) * (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L)) := by omega
       _ ≤ (rq + 1) * (pCnt L + L + pInit L) +
@@ -1171,20 +1154,13 @@ private theorem mkOuterAccCert_bounds
             Nat.add_le_add_right (Nat.le_mul_of_pos_left _ (Nat.succ_pos rq)) _
       _ = (rq + 1) * rawPoly L := by dsimp only [rawPoly]; ring
       _ ≤ (rq + 1) * poly L := Nat.mul_le_mul_left _ hpolyL
-  · have hmaxRS : RS ≤ bOuter L + (L + 1) + pStep L := by
-      refine NativeCertificate.maxRoundSpace_le _ _ _ fun s hs => ?_
-      have hs_len : (encNat (runAt s).1).length ≤ L := by
-        rw [IndexFold.run_index]; exact (length_encNat_mono hs).trans hlIdx
-      have hstL := hbOuter s hs
-      have hcbS : cStep.space (runAt s) ≤ pStep L := (hStep p s hs).2
-      change (encOuterSt (runAt s)).length + ((encNat (runAt s).1).length + 1) +
-        cStep.space (runAt s) ≤ _
-      omega
+  · have hfold := IndexFold.certificate_space_le cCnt cInit cStep p
+      (fun s hs => (hStep p s hs).2) hbOuter hlIdx
     have hlin_sq : L + 1 ≤ (L + 1) ^ 2 := by rw [sq]; exact Nat.le_mul_self _
     have h1 := Nat.mul_le_mul_right (2 * bOuter L + 2 * (L + 1) ^ 2 + pStep L)
       (by omega : 1 ≤ L + 1)
     calc (mkOuterAccCert cCnt cInit cStep).space p
-        = cCnt.space p + (L + cInit.space p) + RS + M + (encNat K).length := rfl
+        ≤ cCnt.space p + (L + cInit.space p) + (2 * bOuter L + 2 * L + 1 + pStep L) := hfold
       _ ≤ rawPoly L := by dsimp only [rawPoly]; omega
       _ ≤ poly L := hpolyL
 

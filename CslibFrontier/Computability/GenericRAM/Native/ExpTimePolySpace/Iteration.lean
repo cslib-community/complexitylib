@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
+import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 
 /-!
 # Polynomially many exponential-time calls in polynomial space
@@ -59,29 +60,21 @@ theorem iterate_of_bounds (cn : NativeCertificate count enc encNat)
   have hspaceFactor : PolyBounded (fun a => (enc a).length) spaceFactor :=
     (((hcn.2.add hci.2).add hQ).add hB).add hclock
   have htime (a : α) : (NativeCertificate.iterate cn ci cs).time a ≤ timeFactor a * 2 ^ E a := by
-    have hmaxT := maxRoundTime_le cs (count a) (init a) (ht a)
-    have hmaxB := maxStateLength_le encState step (count a) (init a) (hb a)
-    have hbody : maxRoundTime cs (count a) (init a) +
-        maxStateLength encState step (count a) (init a) +
-        ((encNat (count a)).length + 1) ^ 2 ≤
-          (R a + B a + ((encNat (count a)).length + 1) ^ 2) * 2 ^ E a := by
+    have hbody : R a * 2 ^ E a + B a + ((encNat (count a)).length + 1) ^ 2 ≤
+        (R a + B a + ((encNat (count a)).length + 1) ^ 2) * 2 ^ E a := by
       calc _ ≤ R a * 2 ^ E a + B a * 2 ^ E a +
             ((encNat (count a)).length + 1) ^ 2 * 2 ^ E a :=
-            Nat.add_le_add (Nat.add_le_add hmaxT
-              (hmaxB.trans (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))))
+            Nat.add_le_add (Nat.add_le_add_left (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) _)
               (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))
         _ = _ := by ring
-    rw [iterate_time]
-    calc _ ≤ (cn.time a + ci.time a) * 2 ^ E a +
+    calc _ ≤ _ := iterate_time_le cn ci cs a (ht a) (hb a)
+      _ ≤ (cn.time a + ci.time a) * 2 ^ E a +
           (count a + 1) * ((R a + B a + ((encNat (count a)).length + 1) ^ 2) * 2 ^ E a) :=
           Nat.add_le_add (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))
             (Nat.mul_le_mul_left _ hbody)
       _ = _ := by dsimp only [timeFactor]; ring
-  have hspace (a : α) : (NativeCertificate.iterate cn ci cs).space a ≤ spaceFactor a := by
-    have hmaxS := maxRoundSpace_le cs (count a) (init a) (hs a)
-    have hmaxB := maxStateLength_le encState step (count a) (init a) (hb a)
-    simp only [iterate_space, spaceFactor]
-    omega
+  have hspace (a : α) : (NativeCertificate.iterate cn ci cs).space a ≤ spaceFactor a :=
+    iterate_space_le cn ci cs a (hs a) (hb a)
   obtain ⟨ct, dt, htFactor⟩ := htimeFactor.exists_le
   obtain ⟨cq, dq, hqFactor⟩ := hspaceFactor.exists_le
   refine ⟨ct + cq, dt + dq, fun a => ⟨?_, ?_⟩⟩

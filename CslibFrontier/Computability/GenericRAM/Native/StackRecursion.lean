@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.GenericRAM.Native.Combinators
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
+import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
@@ -725,26 +726,16 @@ theorem certificate_le (h : R.PolyTime encX encA encY)
     have hct := hcost leaf.time TL (fun x hx hl => ((hnode x hx).2 hl).1) j
     have hcs := hcost leaf.space SL (fun x hx hl => ((hnode x hx).2 hl).2) j
     constructor <;> omega
-  have hmaxT := NativeCertificate.maxRoundTime_le (stepCertificate h leaf) (fuel a)
-    ([], some (root a), none) (R := K₀ * (5 * z + 1) ^ K₀ + TL) fun j _ => (hround j).1
-  have hmaxS := NativeCertificate.maxRoundSpace_le (stepCertificate h leaf) (fuel a)
-    ([], some (root a), none) (Q := K₀ * (5 * z + 1) ^ K₀ + SL) fun j _ => (hround j).2
-  have hmaxL := NativeCertificate.maxStateLength_le
-    (encPair (encList (encPair encX encA)) (encPair (encOption encX) (encOption encY))) R.step
-    (fuel a) ([], some (root a), none) (B := 5 * z) fun j _ => hlen j
-  simp only [certificate, NativeCertificate.snd_time, NativeCertificate.snd_space,
-    NativeCertificate.iterate_time, NativeCertificate.iterate_space,
-    NativeCertificate.prod_time, NativeCertificate.prod_space, NativeCertificate.const_time,
-    NativeCertificate.const_space, NativeCertificate.some_time, NativeCertificate.some_space]
-  constructor
-  · have hstep : NativeCertificate.maxRoundTime (stepCertificate h leaf) (fuel a)
-        ([], some (root a), none) +
-        NativeCertificate.maxStateLength
-          (encPair (encList (encPair encX encA)) (encPair (encOption encX) (encOption encY)))
-          R.step (fuel a) ([], some (root a), none) + ((encNat (fuel a)).length + 1) ^ 2 ≤
-        (K₀ * 6 ^ K₀ + K₀ + 6) * z ^ (K₀ * 6 ^ K₀ + K₀ + 6) + TL +
-          ((encNat (fuel a)).length + 1) ^ 2 := by omega
-    have := Nat.mul_le_mul_left (fuel a + 1) hstep
+  simp only [certificate, NativeCertificate.snd_time, NativeCertificate.snd_space]
+  refine ⟨le_trans (NativeCertificate.iterate_time_le _ _ _ a (fun j _ => (hround j).1)
+      fun j _ => hlen j) ?_, le_trans (NativeCertificate.iterate_space_le _ _ _ a
+      (fun j _ => (hround j).2) fun j _ => hlen j) ?_⟩ <;>
+    simp only [NativeCertificate.prod_time, NativeCertificate.prod_space,
+      NativeCertificate.const_time, NativeCertificate.const_space, NativeCertificate.some_time,
+      NativeCertificate.some_space]
+  · have := Nat.mul_le_mul_left (fuel a + 1) (show K₀ * (5 * z + 1) ^ K₀ + TL + 5 * z +
+        ((encNat (fuel a)).length + 1) ^ 2 ≤ (K₀ * 6 ^ K₀ + K₀ + 6) * z ^ (K₀ * 6 ^ K₀ + K₀ + 6) +
+          TL + ((encNat (fuel a)).length + 1) ^ 2 by omega)
     omega
   · omega
 

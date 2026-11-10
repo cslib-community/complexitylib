@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.GenericRAM.Simulation.Run
 public import CslibFrontier.Computability.GenericRAM.Native.Degree
+import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 
 /-!
 # Explicit-degree overhead of the finite-state RAM simulation
@@ -342,16 +343,12 @@ theorem runTime_le (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program 
       (n + 1) * (C * (2 * (enc.config k).length + B + 2) ^ D +
         (2 * (enc.config k).length + B + 2) + ((encNat n).length + 1) ^ 2) := by
   have hloop := length_loopEncoding_iterate_round_le enc p hB
-  have hT := maxRoundTime_le (roundCertificate enc N p) n (k, Option.some (.inl s))
-    (R := C * (2 * (enc.config k).length + B + 2) ^ D) fun j hj =>
-      (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (hloop j hj) D))
-  have hL := maxStateLength_le (encPair enc.config (resultEncoding enc)) (round p) n
-    (k, Option.some (.inl s))
-    (B := 2 * (enc.config k).length + B + 2) fun j hj => (Nat.le_succ _).trans (hloop j hj)
-  have hsum := Nat.mul_le_mul_left (n + 1) (Nat.add_le_add_right (Nat.add_le_add hT hL)
-    (((encNat n).length + 1) ^ 2))
-  simp only [runTime, runCertificate, congr_time, snd_time, iterate_time, initLoopCertificate,
-    prod_time, fst_time, snd_time, some_time, inl_time, linear_time]
+  simp only [runTime, runCertificate, congr_time, snd_time]
+  refine le_trans (iterate_time_le _ _ _ (n, (k, s))
+    (R := C * (2 * (enc.config k).length + B + 2) ^ D) (B := 2 * (enc.config k).length + B + 2)
+    (fun j hj => (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (hloop j hj) D)))
+    fun j hj => (Nat.le_succ _).trans (hloop j hj)) ?_
+  simp only [initLoopCertificate, prod_time, fst_time, snd_time, some_time, inl_time, linear_time]
   omega
 
 /-- **Explicit clocked run space.** The space analogue of `runTime_le`. -/
@@ -363,14 +360,13 @@ theorem runSpace_le (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program
       C * (2 * (enc.config k).length + B + 2) ^ D + (2 * (enc.config k).length + B + 2) +
         (encNat n).length := by
   have hloop := length_loopEncoding_iterate_round_le enc p hB
-  have hS := maxRoundSpace_le (roundCertificate enc N p) n (k, Option.some (.inl s))
-    (Q := C * (2 * (enc.config k).length + B + 2) ^ D) fun j hj =>
-      (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (hloop j hj) D))
-  have hL := maxStateLength_le (encPair enc.config (resultEncoding enc)) (round p) n
-    (k, Option.some (.inl s))
-    (B := 2 * (enc.config k).length + B + 2) fun j hj => (Nat.le_succ _).trans (hloop j hj)
-  simp only [runSpace, runCertificate, congr_space, snd_space, iterate_space, initLoopCertificate,
-    prod_space, fst_space, snd_space, some_space, inl_space, linear_space]
+  simp only [runSpace, runCertificate, congr_space, snd_space]
+  refine le_trans (iterate_space_le _ _ _ (n, (k, s))
+    (Q := C * (2 * (enc.config k).length + B + 2) ^ D) (B := 2 * (enc.config k).length + B + 2)
+    (fun j hj => (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (hloop j hj) D)))
+    fun j hj => (Nat.le_succ _).trans (hloop j hj)) ?_
+  simp only [initLoopCertificate, prod_space, fst_space, snd_space, some_space, inl_space,
+    linear_space]
   omega
 
 /-- **Whole-run transport with an explicit degree.** Suppose every primitive certificate of the

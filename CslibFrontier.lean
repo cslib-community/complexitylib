@@ -2348,6 +2348,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
 public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace.Iteration
 public import CslibFrontier.Computability.GenericRAM.Native.HeavyBranchFold
 public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
+public import CslibFrontier.Computability.GenericRAM.Native.IterateBounds
 public import CslibFrontier.Computability.GenericRAM.Native.MeasurementFold
 public import CslibFrontier.Computability.GenericRAM.Native.Nat
 public import CslibFrontier.Computability.GenericRAM.Native.PolynomialOverhead
