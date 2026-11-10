@@ -2847,5 +2847,14 @@ bounds become the impossible natural interval $[1,0]$; negative lower bounds cla
 `normalize_ofFn` preserves original labels, `bounds_iff` proves simultaneous equivalence for
 all nonnegative class cardinalities, and `normalize_polytime` charges reads and output writes.
 The client `CslibFrontierTests.PaperEndpoints.SignedClassBounds` checks empty lists, contradictory
-intervals and 512-bit bounds. This is a frontend stage: complete signed graph counter/resource
-composition, alternative admission and model transfers remain in ROADMAP. No entry is removed.
+intervals and 512-bit bounds. The native counting composition is supplied by
+`CslibFrontier.Computability.Complexity.FineGrained.SignedDegreePartition`. Its signed graph and
+class bounds normalize together, preserving labels and original counts.
+`exists_count_sharp_certificate` composes the actual normalization and native counter with
+rounded sharp time on all graph sizes and global polynomial workspace;
+`exists_count_finiteCofinite_certificate` covers every fixed finite/cofinite matrix with the
+source real eta clock for at least 16 vertices. Both signed bounds vary in binary. Empty graphs,
+negative upper bounds and contradictions use the same proved original-count correspondence.
+The checked client is `CslibFrontierTests.PaperEndpoints.SignedDegreePartition`; its tiny
+original-label oracle tests the actual normalization/counter pipeline, including 512-bit bounds.
+Signed optimization and broader raw/succinct/model transfers remain open. No entry is removed.

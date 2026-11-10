@@ -2140,6 +2140,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SharpCountingSc
 public import CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoCountingResources
 public import CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoDistribution
 public import CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoOptimum
+public import CslibFrontier.Computability.Complexity.FineGrained.SignedDegreePartition
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
