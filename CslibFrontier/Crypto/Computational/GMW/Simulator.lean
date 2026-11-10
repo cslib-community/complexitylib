@@ -1006,69 +1006,6 @@ theorem isPPTOn_gmwViewReduction {α : Type} {enc : α ↪ List Bool}
     (ComputableInPolyTime.id' (encIn := encBits)) (ComputableInPolyTime.id' (encIn := encBits))
   exact (congrArg (IsPPTOn _ _) (by funext ((n, a, w, z), challenge); rfl)).mp h
 
-/-- Auxiliary-input consequence under an explicitly stronger PRG premise. The three families
-may be arbitrary, subject to their separate polynomial encoding-length bounds. `hPRG` supplies
-those families as ordinary advice to every full-input PPT challenge test, at seed size `n + 7`.
-It is not a consequence established here of uniform PRG security or uniform one-wayness.
-
-Both the verifier and final test have clocks polynomial in their complete encoded inputs.
-This does not cover unbounded auxiliary words with clocks bounded only in the security parameter
-and common-input length. Witness-level Levin reductions and sequential amplification are separate
-from this single-execution masked-3SAT view theorem. -/
-theorem gmwView_negligible_of_advice_prg {α : Type} {enc : α ↪ List Bool}
-    {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
-    {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
-    (hg : ComputableInPolyTime generator encBits encBits)
-    (hlen : ∀ s, (generator s).length = length s.length)
-    (hf : ComputableInPolyTime f enc encCNF)
-    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z), view) => adversary n a z view))
-    (hPRG : ∀ test : (ℕ × (α × (List Bool × List Bool))) × List Bool → ProbComp Bool,
-      IsPPTOn
-        (encPair (encInstanceWitnessAuxInput enc) encBits)
-        encBool test →
-      ∀ (a : ℕ → α) (w z : ℕ → List Bool),
-        PolynomiallyBounded (fun n => (enc (a n)).length) →
-        PolynomiallyBounded (fun n => (w n).length) →
-        PolynomiallyBounded (fun n => (z n).length) →
-        Negligible (fun n => Game.advantage
-          (ProbComp.eval ((generator <$> BitString.sampleList (n + 7)) >>=
-            fun challenge => test ((n, a n, w n, z n), challenge)))
-          (ProbComp.eval (BitString.sampleList (length (n + 7)) >>=
-            fun challenge => test ((n, a n, w n, z n), challenge)))))
-    {a : ℕ → α} {w z : ℕ → List Bool}
-    (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
-    (hw : PolynomiallyBounded (fun n => (w n).length))
-    (hz : PolynomiallyBounded (fun n => (z n).length))
-    (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
-    Negligible (fun n => Game.advantage
-      (distinguishingGame
-        (((gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).run
-          (Vstar n (a n) (z n))
-          (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).init).map Prod.fst)
-        (adversary n (a n) (z n)))
-      (distinguishingGame (ProbComp.eval (gmwSimulator generator length f Vstar n (a n) (z n)))
-        (adversary n (a n) (z n)))) := by
-  have hclock := isPPTOn_gmwViewReduction hg hlen hf hV hadv
-  have hneg := hPRG
-    (fun ((n, a, w, z), challenge) =>
-      gmwViewReduction generator length f Vstar adversary n a w z challenge)
-    hclock a w z ha hw hz
-  have hcount_poly :=
-    (((computableInPolyTime_totalLen hf).tidy.polyBounded).comp
-      ⟨_, ha, fun _ => le_rfl⟩).polynomiallyBounded
-  have hloss : PolynomiallyBounded
-      (fun n => dyadicSize (n + 1) * dyadicSize (totalLen (f (a n)))) :=
-    (dyadicSize_polynomiallyBounded.comp (PolynomiallyBounded.id.add (.const 1))).mul
-      (dyadicSize_polynomiallyBounded.comp hcount_poly)
-  have herr := (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).shift 1
-  apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
-  intro n
-  simpa only [ProbComp.eval_bind, Nat.cast_mul] using
-    gmwView_advantage_le generator length f Vstar adversary n (a n) (w n) (z n) (hw_sat n)
-
 /-- Explicit advice-PRG premise at GMW seed size `n + 7` for an instance encoding `enc`:
 `generator` has output length `length`, is computable in polynomial time, and its output at seed
 length `n + 7` is indistinguishable from uniform strings of length `length (n + 7)` against every
@@ -1196,6 +1133,53 @@ theorem AdvicePRG.gmwView_negligible {α : Type} {enc : α ↪ List Bool}
   simpa only [ProbComp.eval_bind, Nat.cast_mul] using
     gmwView_advantage_le generator length f Vstar
       (fun m a _ view => adversary m a (z' n) view) n (a n) (w n) (z n) (hw_sat n)
+
+/-- Auxiliary-input consequence under an explicitly stronger PRG premise. The three families
+may be arbitrary, subject to their separate polynomial encoding-length bounds. `hPRG` supplies
+those families as ordinary advice to every full-input PPT challenge test, at seed size `n + 7`.
+It is not a consequence established here of uniform PRG security or uniform one-wayness.
+
+Both the verifier and final test have clocks polynomial in their complete encoded inputs.
+This does not cover unbounded auxiliary words with clocks bounded only in the security parameter
+and common-input length. Witness-level Levin reductions and sequential amplification are separate
+from this single-execution masked-3SAT view theorem. -/
+theorem gmwView_negligible_of_advice_prg {α : Type} {enc : α ↪ List Bool}
+    {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
+    {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
+    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    (hg : ComputableInPolyTime generator encBits encBits)
+    (hlen : ∀ s, (generator s).length = length s.length)
+    (hf : ComputableInPolyTime f enc encCNF)
+    (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
+    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
+      (fun ((n, a, z), view) => adversary n a z view))
+    (hPRG : ∀ test : (ℕ × (α × (List Bool × List Bool))) × List Bool → ProbComp Bool,
+      IsPPTOn
+        (encPair (encInstanceWitnessAuxInput enc) encBits)
+        encBool test →
+      ∀ (a : ℕ → α) (w z : ℕ → List Bool),
+        PolynomiallyBounded (fun n => (enc (a n)).length) →
+        PolynomiallyBounded (fun n => (w n).length) →
+        PolynomiallyBounded (fun n => (z n).length) →
+        Negligible (fun n => Game.advantage
+          (ProbComp.eval ((generator <$> BitString.sampleList (n + 7)) >>=
+            fun challenge => test ((n, a n, w n, z n), challenge)))
+          (ProbComp.eval (BitString.sampleList (length (n + 7)) >>=
+            fun challenge => test ((n, a n, w n, z n), challenge)))))
+    {a : ℕ → α} {w z : ℕ → List Bool}
+    (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
+    (hw : PolynomiallyBounded (fun n => (w n).length))
+    (hz : PolynomiallyBounded (fun n => (z n).length))
+    (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
+    Negligible (fun n => Game.advantage
+      (distinguishingGame
+        (((gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).run
+          (Vstar n (a n) (z n))
+          (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).init).map Prod.fst)
+        (adversary n (a n) (z n)))
+      (distinguishingGame (ProbComp.eval (gmwSimulator generator length f Vstar n (a n) (z n)))
+        (adversary n (a n) (z n)))) :=
+  AdvicePRG.gmwView_negligible ⟨hg, hlen, hPRG⟩ hf hV hadv ha hw hz hz hw_sat
 
 /-- **Zero-knowledge simulation of the 3-copy GMW protocol.** For any uniform strict oracle PPT
 malicious verifier `Vstar` and any deterministic polynomial-time families of instances `a`, valid
