@@ -80,11 +80,7 @@ theorem run_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) (
   | node i ifFalse ifTrue ihF ihT =>
     change (if (m i).1 == 1 then ofDecisionTree ifTrue else ofDecisionTree ifFalse).run m =
       (cond (memToBool m i) (ifTrue.eval (memToBool m)) (ifFalse.eval (memToBool m)), m)
-    cases hbit : memToBool m i
-    · simp only [memToBool] at hbit
-      simp [hbit, ihF]
-    · simp only [memToBool] at hbit
-      simp [hbit, ihT]
+    cases hbit : memToBool m i <;> simp only [memToBool] at hbit <;> simp [hbit, ihF, ihT]
 
 @[simp]
 theorem probes_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) (m : Mem S 1) :
@@ -95,13 +91,9 @@ theorem probes_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α
     change 1 + (if (m i).1 == 1 then ofDecisionTree ifTrue
       else ofDecisionTree ifFalse).probes m =
       cond (memToBool m i) (ifTrue.cost (memToBool m)) (ifFalse.cost (memToBool m)) + 1
-    cases hbit : memToBool m i
-    · simp only [memToBool] at hbit
-      simp only [hbit, Bool.false_eq_true, ↓reduceIte, ihF, Bool.cond_false]
-      omega
-    · simp only [memToBool] at hbit
-      simp only [hbit, ↓reduceIte, ihT, Bool.cond_true]
-      omega
+    cases hbit : memToBool m i <;> simp only [memToBool] at hbit <;>
+      simp only [hbit, Bool.false_eq_true, ↓reduceIte, ihF, ihT, Bool.cond_false,
+        Bool.cond_true] <;> omega
 
 @[simp]
 theorem probedCells_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) (m : Mem S 1) :
@@ -112,11 +104,7 @@ theorem probedCells_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin 
     change insert i ((if (m i).1 == 1 then ofDecisionTree ifTrue
       else ofDecisionTree ifFalse).probedCells m) =
       insert i (cond (memToBool m i) (ifTrue.queries (memToBool m)) (ifFalse.queries (memToBool m)))
-    cases hbit : memToBool m i
-    · simp only [memToBool] at hbit
-      simp [hbit, ihF]
-    · simp only [memToBool] at hbit
-      simp [hbit, ihT]
+    cases hbit : memToBool m i <;> simp only [memToBool] at hbit <;> simp [hbit, ihF, ihT]
 
 @[simp]
 theorem depth_ofDecisionTree {S : ℕ} {α : Type} (t : DecisionTree (Fin S) α) :

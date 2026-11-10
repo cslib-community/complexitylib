@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
@@ -400,14 +401,11 @@ theorem specEntryCertificate_le :
       (qE.comp PolyBounded.self)).add
       (qH.comp (((PolyBounded.const 2).mul PolyBounded.self).add
         (PolyBounded.const 1)))
-  obtain ⟨a, d, hUad⟩ := hU.exists_le
-  refine ⟨a + d, fun entry ce t P ℓ fl ζ bs => ?_⟩
+  obtain ⟨K, hK⟩ := hU.exists_le_succ_pow
+  refine ⟨K, fun entry ce t P ℓ fl ζ bs => ?_⟩
   set n := (encPair (encSpecDesc encT) encBits ((t, P, ℓ, fl, ζ), bs)).length with hn
   set Z := n + (encList encNat (entry t bs)).length with hZ
-  have hUZ : U Z ≤ (a + d) * (Z + 1) ^ (a + d) := by
-    have h1 := hUad Z
-    simp only [id] at h1
-    exact h1.trans (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega)))
+  have hUZ : U Z ≤ K * (Z + 1) ^ K := hK _ le_rfl Z
   have hnZ : n ≤ Z := by omega
   have hH : (encPair encSpecData (encList encNat) ((P, ℓ, fl, ζ), entry t bs)).length ≤
       2 * Z + 1 := by
