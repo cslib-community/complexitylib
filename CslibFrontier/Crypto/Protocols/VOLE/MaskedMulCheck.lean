@@ -322,7 +322,7 @@ theorem maskedMulCheckView_eq_simulate (left right output : ι → Fin n) (w : F
       ProbComp.eval (maskedMulCheckSimulate left right output) := by
   rw [maskedMulCheckView_eq]
   simp only [pmf_norm, voleIdealDist, maskedMulCheckSimulate, ProbComp.eval_uniform]
-  pmf_swap with r delta
+  pmf_swap with delta r
   exact maskedView_fixed left right output w delta r h
 
 /-- No event on the complete receiver view distinguishes the honest execution from simulation. -/

@@ -349,14 +349,24 @@ steps, renewed after stripping each sample whose distribution occurs once on eac
 runs out, `pmf_swap` fails rather than guess an order: many samples of one distribution, such as
 six drawn in reverse order, exceed it. Then strip or reorder some samples first. If no order makes
 the sides agree, it strips the common samples, first those whose distribution occurs once on each
-side, and leaves the equation of the continuations. `pmf_swap with x y` skips the search, strips
-exactly two samples the same way and names them.
+side, and leaves the equation of the continuations, or closes it when `rfl` proves it.
+`pmf_swap with x y` skips the search, strips exactly two samples the same way and names them in
+the order they occur in the right side, whichever is stripped first; it leaves the remaining
+equation as it is.
+
+Samples may also move past a sampler `F` that takes a continuation, such as
+`Game.runStatelessOracle o prog`, when `pmf_swap [h]` is given a commutation lemma
+`h : μ.bind (fun b => F (k b)) = F (fun a => μ.bind fun b => k b a)` that holds for every
+distribution `μ`, as `Game.bind_runStatelessOracle_comm` does. A lemma of another form is
+rejected with the expected form, and two samplers do not move past each other.
 
 When both sides draw the same distributions and differ only in what they return, the goal does
 not determine which sample to strip. Choose it with `pmf_hoist q`, which moves the samples of `q`
 toward the front of their chains anywhere in the goal, or in a hypothesis with `at h`, then strip
-it with `congr 1 with x : 1`. A sample whose distribution mentions an earlier sample never moves
-past it; the diagnostic lists the samples of both sides and marks those dependencies. The
+it with `congr 1 with x : 1`. When a chain draws `q` twice, `pmf_hoist (occ := n) q` moves only
+its `n`th independent sample, counting along each chain and through the chains in order, the left
+side of an equation first. A sample whose distribution mentions an earlier sample never moves past
+it; the diagnostic lists the samples of both sides and marks those dependencies. The
 [checked clients](../../CslibFrontierTests/PMFSwap.lean) cover each form and diagnostic.
 
 ## Proof style as interface maintenance
