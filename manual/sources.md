@@ -1052,6 +1052,11 @@ Noam Nisan and Avi Wigderson. *Hardness vs Randomness*. Journal of Computer and 
 
 Jakob Nordström. *New Wine into Old Wineskins: A Survey of Some Pebbling Classics with Supplemental Results*, manuscript version of 25 March 2015. https://www.jakobnordstrom.se/docs/publications/PebblingSurveyTMP.pdf . Definition 1.1 (black pebble game), Proposition 2.5 (sliding), Theorem 4.1 (complete binary trees), Definition 4.5 and Theorem 4.8 (pyramids) were checked.
 
+<a id="np01"></a>
+## np01
+
+Moni Naor and Benny Pinkas. "Efficient Oblivious Transfer Protocols." *Proceedings of the Twelfth Annual ACM-SIAM Symposium on Discrete Algorithms (SODA 2001)*, 448–457, SIAM, 2001. Bibliographic metadata checked against `references.bib` (`NaorPinkas2001`); cited only as general background for DDH-based oblivious transfer without internal SODA 2001 locators (the SODA text was not inspected). The formalized protocol is a variant of [bs23](#bs23), Section 23.5.7, Figure 23.17 with the Remark 23.6 check, known sender exponent, and per-branch `(rᵢ, sᵢ)` randomization, proved directly.
+
 <a id="odifreddi99"></a>
 ## odifreddi99
 
