@@ -9,8 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionDistribution
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List.ArgOpt
--- Reuse the private polyBounded_output_of_space and polyBounded_comp_space resource lemmas.
-import all CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
+import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 
 /-!
 # Native extrema for labeled degree partitions

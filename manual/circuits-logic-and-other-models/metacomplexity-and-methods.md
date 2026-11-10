@@ -500,6 +500,58 @@ systems/RHS combinations against the existing rational elimination kernel.
 From the checkout root, run
 `LEAN_NUM_THREADS=2 scripts/build.sh CslibFrontierTests.PaperEndpoints.RectangularBinary`.
 
+### Arbitrary-rational original-row selection
+
+Import `CslibFrontier.Computability.PolyTime.Rational.RowSelection` and open
+`Cslib.LinearSystem.RationalFrontend`. This supplies Lemma 3.1 (PDF pp.10–11) on arbitrary
+rational coefficients and right-hand sides, using the existing binary integer backend rather
+than assuming a bit-growth bound for the older rational elimination kernel.
+
+`Input` contains a unary coefficient width and explicit augmented rows. Each cell is a pair of
+binary signed numerator and denominator. The RHS is at the declared column index; missing
+entries are the valid zero pair $(0,1)$ and excess columns are ignored. `admit` actually checks
+every used denominator. Unreduced fractions and negative denominators are allowed; zero
+denominators reject. `ofData` represents every finite rational matrix/RHS canonically, and
+`admit_ofData`, `rationalRow_ofData` and `satisfies_ofData` prove admission and exact original
+matrix semantics. No common denominator, rank, basis or rational solution is an input field.
+
+`denominator` computes one product across the actual augmented entries, and `clear` writes
+integer entries by exact signed binary division. `clear_entry` proves multiplication by the
+same computed nonzero rational scalar, including the RHS. The admitted input's bit lengths
+bound that product; `denominator_bits_le` uses the existing sum-of-factor-width bound.
+`select_polytime` charges entry traversals, products, divisions, all intermediate writes,
+Gram/Bird arithmetic, consistency checking, dispatch and tagged original-index output. The
+integer arithmetic certificates include their bit growth; this is not a unit-cost operation
+count or an inference from output size alone. `exists_certificate` gives one actual native
+machine with polynomial time and polynomial workspace on every raw typed frame, including
+rejection cases.
+
+The computed consistency test determines which original-row scan runs. On consistent inputs,
+`basis_rank_of_consistent` gives exactly the original rational coefficient rank. Otherwise the
+scan includes the augmented RHS column. `select_ofData` gives at most $r+1$ original row indices
+and both directions of solution equivalence for **every** rational system, including
+inconsistent ones. `boolean_count` preserves exact original Boolean counts and the full declared
+dimension, including unused coordinates. The algorithm does not enumerate assignments or minors.
+
+From the checkout root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.RationalRowSelection --wfail --iofail
+```
+
+The computed client checks fractional independent/redundant rows, equal-coefficient
+contradictions, unreduced negative denominators, 128-bit values, zero-width contradictions,
+empty/ragged rows, invalid denominator rejection and all 36 ordered two-row fractional systems
+from its small test alphabet. Tiny original Boolean enumeration is confined to tests. Formal
+clients preserve all $2^{40}$ words of an unused declaration without enumerating them, derive
+inconsistency of a returned subsystem, and derive the sharper consistent row bound from the
+canonical arbitrary-matrix endpoint.
+
+The source's Section 3 uses explicit instances and states $r=O(L)$ for the exact-one ground set.
+This frontend preserves the recorded unary declaration and typed binary word conventions; it
+adds no untrusted-byte parser, succinct-declaration guarantee or new backend transition-level
+realization. The broader encoding/model-transfer ROADMAP entry remains open, as does ALL-main.
+
 ### Counting plans using the binary selector
 
 Import `CslibFrontier.Logics.Propositional.CNF.ExactOneBinary` for
@@ -1749,8 +1801,9 @@ A formal client proves both empty-graph optimum values and instantiates the comp
 finite/cofinite endpoint. Enumeration occurs only in the test oracle.
 
 The general degree-rule optimization ROADMAP entry is removed. The precise remaining mandatory
-inventory is encoding/model transfers: arbitrary-rational row selection, the recorded raw
-admission and signed/succinct input cases, and transition-level realization of the backend.
+inventory is encoding/model transfers: the recorded raw admission and signed/succinct input
+cases, and transition-level realization of the backend. Arbitrary-rational row selection is
+supplied earlier in this chapter.
 The explicit canonical matrix/unary declaration and native charged-word model remain visible;
 this endpoint supplies none of those transfers. Optional Proposition A.3 stays last. ALL-main
 and the independent paperwide audit remain open.

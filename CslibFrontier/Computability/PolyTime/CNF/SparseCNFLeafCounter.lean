@@ -63,6 +63,8 @@ native multi-tape Turing machines, parameterized over a sparse `𝔽₂` polynom
   `polyBounded_sparseCNFLeafCertificate_space`, `exists_sparseCNFLeafCertificate_bounds`,
   `computableInO_sparseCNFLeafCounter`
 
+* `polyBounded_output_of_space`, `polyBounded_comp_space`: reusable native output/workspace bounds.
+
 ## References
 
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], §6.3, eq. (6.4), p. 43.
@@ -471,13 +473,17 @@ most `6 * NOf x.1` equations and polynomial encoded length produced on the Secti
         polySys (encPair encP encCNF x).length →
       cPoly.time (NOf x.1, sys) ≤ R x
 
-private theorem polyBounded_output_of_space {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
+/-- A native producer's polynomial workspace also bounds its complete encoded output,
+including the constants of its machine certificate. -/
+theorem polyBounded_output_of_space {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
     {f : α → β} (c : NativeCertificate f ei eo)
     (hs : PolyBounded (fun a => (ei a).length) c.space) :
     PolyBounded (fun a => (ei a).length) (fun a => (eo (f a)).length) :=
   let ⟨k, _, hl⟩ := c.computes; ((PolyBounded.const k).mul (hs.add (.const 1))).mono hl
 
-private theorem polyBounded_comp_space {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
+/-- Compose polynomial workspace bounds using the producer's certified output-length charge;
+no polynomial runtime hypothesis on the producer is needed. -/
+theorem polyBounded_comp_space {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
     {eo : γ ↪ List Bool} {f : α → β} {g : β → γ} (d : NativeCertificate g em eo)
     (c : NativeCertificate f ei em) (hd : PolyBounded (fun b => (em b).length) d.space)
     (hc : PolyBounded (fun a => (ei a).length) c.space) :

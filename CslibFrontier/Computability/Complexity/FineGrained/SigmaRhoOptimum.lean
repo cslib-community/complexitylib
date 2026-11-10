@@ -10,8 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionOptimum
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SigmaRhoPartition
 public import CslibFrontier.Computability.PolyTime.CNF.SigmaRhoInput
--- Reuse the private polyBounded_output_of_space and polyBounded_comp_space resource lemmas.
-import all CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
+import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 
 /-!
 # Native extrema for general finite/cofinite degree-rule sets

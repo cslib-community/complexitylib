@@ -3461,6 +3461,7 @@ public import CslibFrontier.Computability.PolyTime.LinearAlgebra.ReplacementDesi
 public import CslibFrontier.Computability.PolyTime.List.BoundedEnumeration
 public import CslibFrontier.Computability.PolyTime.PacketPacking
 public import CslibFrontier.Computability.PolyTime.ParityFactorEval
+public import CslibFrontier.Computability.PolyTime.Rational.RowSelection
 public import CslibFrontier.Computability.PolyTime.SparseMonomialJet
 public import CslibFrontier.Computability.PolyTime.ZMod.ModulusSwitch
 public import CslibFrontier.Computability.PostCorrespondence.Basic
