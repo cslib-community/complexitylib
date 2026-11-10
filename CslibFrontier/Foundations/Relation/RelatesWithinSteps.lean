@@ -53,7 +53,7 @@ algorithm relies on.
 * [C. H. Papadimitriou, *Computational Complexity*, Section 7.3][Papadimitriou94]
 -/
 
-@[expose] public section
+public section
 
 namespace Relation
 
