@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Privacy.DifferentialPrivacy.Composition
 public import CslibFrontier.Privacy.DifferentialPrivacy.DiscreteLaplace
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 
 /-!

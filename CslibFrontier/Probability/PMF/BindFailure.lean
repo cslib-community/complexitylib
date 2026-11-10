@@ -8,7 +8,7 @@ module
 -- upstream: candidate (addition to `Cslib/Probability/PMF.lean`)
 
 public import CslibFrontier.Probability.PMF
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Failure of a continuation after a bad first stage
