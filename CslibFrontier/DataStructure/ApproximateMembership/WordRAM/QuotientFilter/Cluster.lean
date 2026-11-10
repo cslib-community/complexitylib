@@ -3687,7 +3687,8 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
   unfold remEvalCode
   wram_exec [h0, show base + remSeedOff w w₀ n = remSeedAddr base w w₀ n from rfl]
   wram_call (ReducedKWise.reduceKeyCode_exec (b := w₀) hw₀_pos hw₀
-    (((x.set (qfReg 30) (remSeedOff w w₀ n)).set (qfReg 0) (remSeedAddr base w w₀ n)).comap kwiseMap)
+    (((x.set (qfReg 30) (remSeedOff w w₀ n)).set (qfReg 0) (remSeedAddr base w w₀ n)).comap
+      kwiseMap)
     (by simp only [Data.comap_mem, Data.comap_regs]; wram_simp [hseed]; exact γ.isLt)
     (by simp only [Data.comap_regs]; wram_simp [hk1, h1]; exact u.isLt.trans_le hU))
     renamed injective_kwiseMap with y₀ ⟨⟨hy₀_0, hy₀_3, hy₀_mem⟩, hframe⟩
