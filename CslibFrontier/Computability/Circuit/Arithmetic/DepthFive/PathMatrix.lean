@@ -111,6 +111,35 @@ theorem weight_uPart (hcard : (Finset.univ.filter fun t => p.isV t).card = p.k) 
     simp only [and_self]
     omega
 
+theorem coeff_eq_mul (M : Fin p.n × Fin p.n × Fin p.n →₀ ℕ) :
+    P.coeff p M = (∏ t with p.isV t, M (P.edge t)) * ∏ t with ¬ p.isV t, (M (P.edge t) + 1) := by
+  rw [coeff, ← Finset.prod_filter_mul_prod_filter_not Finset.univ (fun t => (p.isV t : Prop))]
+  congr 1 <;> refine Finset.prod_congr rfl fun t ht => ?_
+  · rw [ite_eq_left (Finset.mem_filter.1 ht).2]
+  · rw [ite_eq_right (Finset.mem_filter.1 ht).2]
+
+/-- If no differentiated edge of the path has exponent zero in `M`, the path can be
+differentiated out of `M`. -/
+theorem vPart_le {M : Fin p.n × Fin p.n × Fin p.n →₀ ℕ}
+    (h : ∏ t with p.isV t, M (P.edge t) ≠ 0) : P.vPart p ≤ M := fun x => by
+  rw [vPart, part_apply]
+  split_ifs with hx
+  · rw [← hx.2]
+    exact Nat.pos_of_ne_zero (Finset.prod_ne_zero_iff.1 h _ hx.1)
+  · exact Nat.zero_le _
+
+/-- The bidegree of the image of a monomial under the summand of a path. -/
+theorem weight_of_add_vPart_eq (hcard : (Finset.univ.filter fun t => p.isV t).card = p.k)
+    {N M : Fin p.n × Fin p.n × Fin p.n →₀ ℕ} {a b : ℕ} (h : N + P.vPart p = M + P.uPart p)
+    (hM : weight (bidegWeight p.layerVar) M = (a, b)) :
+    weight (bidegWeight p.layerVar) N = (a - p.k, b + p.m) := by
+  have h' := congrArg (weight (bidegWeight p.layerVar)) h
+  rw [map_add, map_add, P.weight_vPart hcard, P.weight_uPart hcard, hM] at h'
+  have h₁ := congrArg Prod.fst h'
+  have h₂ := congrArg Prod.snd h'
+  simp only [Prod.fst_add, Prod.snd_add, add_zero] at h₁ h₂
+  exact Prod.ext (by change _ = a - p.k; omega) h₂
+
 end Path
 
 /-- The entry of the operator of `IMM_{n,n}` in the normalized monomial bases, between the
@@ -177,22 +206,11 @@ private theorem sqrt_fact_mul (P : Path p.n) (N M : Fin p.n × Fin p.n × Fin p.
     √(fact N) * (monomial (M - P.vPart p + P.uPart p)
         ((∏ t with p.isV t, M (P.edge t) : ℕ) : ℝ)).coeff N * (√(fact M))⁻¹ =
       if N + P.vPart p = M + P.uPart p then √(P.coeff p M) else 0 := by
-  have hc : P.coeff p M = (∏ t with p.isV t, M (P.edge t)) *
-      ∏ t with ¬ p.isV t, (M (P.edge t) + 1) := by
-    rw [Path.coeff,
-      ← Finset.prod_filter_mul_prod_filter_not Finset.univ (fun t => (p.isV t : Prop))]
-    congr 1 <;> refine Finset.prod_congr rfl fun t ht => ?_
-    · rw [ite_eq_left (Finset.mem_filter.1 ht).2]
-    · rw [ite_eq_right (Finset.mem_filter.1 ht).2]
+  have hc := P.coeff_eq_mul M
   rw [coeff_monomial]
   by_cases h0 : ∏ t with p.isV t, M (P.edge t) = 0
   · simp [hc, h0]
-  have hle : P.vPart p ≤ M := fun x => by
-    rw [Path.vPart, Path.part_apply]
-    split_ifs with hx
-    · rw [← hx.2]
-      exact Nat.pos_of_ne_zero (Finset.prod_ne_zero_iff.1 h0 _ hx.1)
-    · exact Nat.zero_le _
+  have hle := P.vPart_le h0
   have hiff : M - P.vPart p + P.uPart p = N ↔ N + P.vPart p = M + P.uPart p := by
     rw [eq_comm, ← add_left_inj (P.vPart p), add_right_comm, tsub_add_cancel_of_le hle]
   simp only [hiff]
