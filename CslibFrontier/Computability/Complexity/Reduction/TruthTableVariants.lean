@@ -55,7 +55,12 @@ Restrictions of polynomial-time truth-table reductions
   `k * k'`-query reduction), `Cslib.Complexity.PolyTimeBTTReducible.trans`,
   `Cslib.Complexity.PolyTimeDTTReducible.trans`, `Cslib.Complexity.PolyTimeCTTReducible.trans`,
   `Cslib.Complexity.PolyTimePTTReducible.trans`.
-* Reflexivity and closure of `P` for each reducibility.
+* Reflexivity of bounded, disjunctive and conjunctive truth-table reducibility:
+  `Cslib.Complexity.PolyTimeBTTReducible.refl`, `Cslib.Complexity.PolyTimeDTTReducible.refl`,
+  `Cslib.Complexity.PolyTimeCTTReducible.refl`.
+* Closure of `P` under bounded, disjunctive, conjunctive and positive truth-table reductions:
+  `Cslib.Complexity.PolyTimeBTTReducible.mem_P`, `Cslib.Complexity.PolyTimeDTTReducible.mem_P`,
+  `Cslib.Complexity.PolyTimeCTTReducible.mem_P`, `Cslib.Complexity.PolyTimePTTReducible.mem_P`.
 
 ## References
 

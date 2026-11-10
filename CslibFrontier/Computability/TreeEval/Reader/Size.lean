@@ -17,7 +17,7 @@ On the encoding of an instance of value length `ℓ` and height `H`, the space b
 that `Cslib.TreeEval.Reader.machine` reaches is `O((ℓ + H + 1) · log (ℓ + 2))`: residues
 below the prime `p ≤ 4ℓ + 2` have `O(log (ℓ + 2))` bits. The registers and the sums hold `ℓ`
 of them, the stack holds at most `H` frames with a residue each, and the counters have
-`O(ℓ + log (H + 2))` bits.
+`O(ℓ + H + 1)` bits.
 
 ## Main definitions
 

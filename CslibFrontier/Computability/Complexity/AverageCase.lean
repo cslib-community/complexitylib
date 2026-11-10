@@ -50,7 +50,7 @@ theorem, lemma, and page locators follow the full version `arXiv:2009.11514v1` (
   `Cslib.Complexity.MildlyHardOnAverageToOneSidedApproxIO`:
   library infinitely-often (`∃ᶠ n in atTop`) deterministic companions.
 * `Cslib.Complexity.MildlyHardOnAverageENat`, `Cslib.Complexity.MildlyHardOnAverageIOENat`:
-  library `ℕ∞`-valued companions for `List Bool → ℕ∞`.
+  library `ℕ∞`-valued companions for `List Bool → ℕ∞`, against heuristics with outputs in `ℕ`.
 
 ## Main results
 
@@ -197,7 +197,9 @@ def MildlyHardOnAverageToOneSidedApproxIO (g : ℕ → ℕ) (f : List Bool → �
           1 - 1 / ((p.eval n : ℕ) : ℝ)
 
 /-- **Library companion (`MildlyHardOnAverageENat`):** `ℕ∞`-valued companion to
-`MildlyHardOnAverage` for functions `f : List Bool → ℕ∞` such as `Kolmogorov.timeBounded t`. -/
+`MildlyHardOnAverage` for functions `f : List Bool → ℕ∞` such as `Kolmogorov.timeBounded t`.
+Heuristics output natural numbers, so no output is correct on an input with `f x = ⊤`: the
+predicate holds for every `f` that is `⊤` on all inputs of every sufficiently large length. -/
 def MildlyHardOnAverageENat (f : List Bool → ℕ∞) : Prop :=
   ∃ p : Polynomial ℕ, (∀ n, 0 < p.eval n) ∧
     ∀ H : List Bool → ProbComp ℕ, IsPPTOn encBits encNat H →
@@ -209,7 +211,9 @@ def MildlyHardOnAverageENat (f : List Bool → ℕ∞) : Prop :=
           1 - 1 / ((p.eval n : ℕ) : ℝ)
 
 /-- **Library companion (`MildlyHardOnAverageIOENat`):** `ℕ∞`-valued companion to
-`MildlyHardOnAverageIO` for functions `f : List Bool → ℕ∞` such as `Kolmogorov.timeBounded t`. -/
+`MildlyHardOnAverageIO` for functions `f : List Bool → ℕ∞` such as `Kolmogorov.timeBounded t`.
+Heuristics output natural numbers, so no output is correct on an input with `f x = ⊤`: the
+predicate holds for every `f` that is `⊤` on all inputs of infinitely many lengths. -/
 def MildlyHardOnAverageIOENat (f : List Bool → ℕ∞) : Prop :=
   ∃ p : Polynomial ℕ, (∀ n, 0 < p.eval n) ∧
     ∀ H : List Bool → ℕ, ComputableInPolyTime H encBits encNat →

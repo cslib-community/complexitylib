@@ -20,8 +20,8 @@ depends on all `n` inputs must use at least `n - 1` binary (`AND`/`OR`) gates
 When `n ≥ 1` and this bound is tight (`c.program.cost binaryCost ≤ n - 1`, i.e.
 `c.program.cost binaryCost + 1 ≤ n`), no gate in the backward cone of the
 output can share wires or use a Boolean constant, so the circuit unfolds without duplication into a
-constant-free negation-normal-form formula (`LitFormula`) of leaf size `n` in which each of the `n`
-variables appears at a single leaf (`Circuit.exists_litFormula_of_cost_binaryCost_le`).
+constant-free negation-normal-form formula (`LitFormula`) of leaf size `n`
+(`Circuit.exists_litFormula_of_cost_binaryCost_le`).
 
 If moreover every coordinate `i : Fin n` is *positively essential*—meaning some pair of inputs
 differing only at `i` flips the output from `false` to `true` when coordinate `i` is flipped from

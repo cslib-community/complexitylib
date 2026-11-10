@@ -56,8 +56,8 @@ encoding of instances.
 * `Turing.MultiTapeATM.runsInTime_iff_stepCoins`: time bounds through lists of moves.
 * `Turing.MultiTapeATM.accepts_iff_acceptsWithin`: under a time bound `t`, acceptance is
   acceptance within `t` moves.
-* `Turing.MultiTapeATM.accepts_iff_toNTM_accepts`: without universal states, acceptance is
-  acceptance by the nondeterministic machine of the table.
+* `Turing.MultiTapeATM.accepts_iff_toNTM_accepts`: without universal states and under a time
+  bound, acceptance is acceptance by the nondeterministic machine of the table.
 
 ## References
 
