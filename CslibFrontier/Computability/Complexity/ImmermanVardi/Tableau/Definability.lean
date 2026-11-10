@@ -12,6 +12,7 @@ public import CslibFrontier.Logics.FirstOrder.Operator.LeastFixedPoint.Definabil
 public import CslibFrontier.Logics.FirstOrder.Operator.Definability.Finite
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitArithmetic
 import CslibFrontier.Tactic.FOOperator
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -59,7 +60,7 @@ private theorem numeral_definable {α : Type} (sign : Bool) (n : ℕ) (a : α) :
 private theorem successor_definable {α : Type} (sign : Bool) (a b : α) :
     BodyDefinable (L := L) size sign (fun _ v => (v a).val + 1 = (v b).val) :=
   (PolarityDefinable.ofFO (Ordered.addEq L (.var a) (Ordered.one L) (.var b))).congr
-    fun _ _ => by simp only [Ordered.realize_addEq, Term.realize_var, Ordered.realize_one_val]
+    fun _ _ => by fo_simp [Ordered.realize_one_val]
 
 private theorem recursive_atom_definable {α : Type} (a b c : α) :
     BodyDefinable (L := L) size true (fun j v => ![v a, v b, v c] ∈ j.2) := by
