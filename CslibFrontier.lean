@@ -4904,6 +4904,7 @@ public import CslibFrontier.Foundations.Data.Nat.Asymptotics
 public import CslibFrontier.Foundations.Data.Nat.BigOperators
 public import CslibFrontier.Foundations.Data.Nat.BinarySize
 public import CslibFrontier.Foundations.Data.Nat.Bits
+public import CslibFrontier.Foundations.Data.Nat.Bits.Halving
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.Carry
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.CommonPrefix
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.HighestDiff
