@@ -1517,23 +1517,6 @@ theorem advantage_cpaOneTimeGame_encryptThenMAC_eq (E : SymmetricCipher) (M : MA
 
 /-! #### Asymptotic Security of Encrypt-then-MAC (Boneh–Shoup Theorem 9.2) -/
 
-private theorem exists_mac_tag_length_bound (M : MACScheme) :
-    ∃ tagBound : ℕ → ℕ,
-      ComputableInPolyTime tagBound encUnary encUnary ∧
-      ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
-        ∀ c, c.length = M.msgLen n →
-        ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n := by
-  obtain ⟨ck, dk, hlenKey⟩ := M.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlenSign⟩ := M.sign_ppt.length_le
-  have hmsgLen := M.msgLen_polyTime.tidy
-  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds,
-    .of_tidy (by fun_prop), fun n km hkm c hc tag htag => ?_⟩
-  have hkmLen := hlenKey n km hkm
-  have htagLen := hlenSign (km, c) tag htag
-  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hkmLen
-  simp only [length_encPair, encBits_apply, hc] at htagLen
-  exact htagLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
-
 /-- **SUF-CMA security implies Ciphertext Integrity for Encrypt-then-MAC** ([BonehShoup2023],
 Section 9.4.1, Theorem 9.2, Part 1, printed pp. 367–368): if `M` is strongly unforgeable
 (`M.SUFCMA`), then `encryptThenMAC E M hctLen` satisfies `CiphertextIntegrity`. -/
@@ -1543,7 +1526,7 @@ theorem ciphertextIntegrity_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (hmac : M.SUFCMA) :
     (encryptThenMAC E M hctLen).CiphertextIntegrity := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.CiphertextIntegrity.of_negligible
   intro adversary hadversary
   have hmacNeg := hmac.negligible (etmToMACForger E M tagBound adversary)
@@ -1640,7 +1623,7 @@ theorem oneTimeCiphertextIntegrity_encryptThenMAC (E : SymmetricCipher) (M : MAC
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (hmac : M.OneTimeSUFCMA) :
     (encryptThenMAC E M hctLen).OneTimeCiphertextIntegrity := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.OneTimeCiphertextIntegrity.of_negligible
   intro adversary hadversary
   have hmacNeg := hmac.negligible (etmToOneTimeMACForger E M tagBound adversary)
