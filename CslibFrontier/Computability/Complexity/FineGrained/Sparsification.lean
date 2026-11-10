@@ -263,6 +263,27 @@ def LeafBound (K α M : ℕ) : Prop :=
   ∀ N : ℕ, ∑ j ∈ Finset.range ((K - 1) * N / α + 1),
     (N * (K * base K α ^ (2 * K))).choose j ≤ 2 ^ (N / M + 1)
 
+/-- Convert a real binomial-tail bound at rate `1 / M` to the integer round-count bound. -/
+theorem leafBound_of_real {K α M : ℕ} (hM : 0 < M)
+    (hcount : ∀ N : ℕ, (∑ j ∈ Finset.range ((K - 1) * N / α + 1),
+      (N * (K * ClauseSet.Sparsification.base K α ^ (2 * K))).choose j : ℝ) ≤
+        2 ^ ((1 / M : ℝ) * N)) : LeafBound K α M := by
+  have hMpos : (0 : ℝ) < M := by exact_mod_cast hM
+  intro N
+  have h₁ := hcount N
+  have h₂ : (1 / M : ℝ) * N ≤ ((N / M + 1 : ℕ) : ℝ) := by
+    have hlt : N < M * (N / M + 1) := by
+      have := Nat.mod_lt N hM
+      have := Nat.div_add_mod N M
+      nlinarith
+    have : (N : ℝ) < M * ((N / M + 1 : ℕ) : ℝ) := by exact_mod_cast hlt
+    rw [one_div_mul_eq_div, div_le_iff₀ hMpos]
+    linarith
+  have h₃ : (2 : ℝ) ^ ((1 / M : ℝ) * N) ≤ 2 ^ (N / M + 1) := by
+    rw [← Real.rpow_natCast]
+    exact Real.rpow_le_rpow_of_exponent_le (by norm_num) h₂
+  exact_mod_cast h₁.trans h₃
+
 open Classical in
 /-- **The run of the search.** After the rounds, the stack is empty and the accumulator records
 whether the decider accepts a leaf of the tree. Meanwhile the stack holds at most
@@ -716,20 +737,7 @@ theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 
     linarith
   obtain ⟨α, hα, hcount⟩ :=
     ClauseSet.Sparsification.exists_sum_choose_le hK (ε := 1 / M) (by positivity)
-  have hLB : Sparsify.LeafBound K α M := fun N => by
-    have h₁ := hcount N
-    have h₂ : (1 / M : ℝ) * N ≤ ((N / M + 1 : ℕ) : ℝ) := by
-      have hlt : N < M * (N / M + 1) := by
-        have := Nat.mod_lt N (show 0 < M by exact_mod_cast hMpos)
-        have := Nat.div_add_mod N M
-        nlinarith
-      have : (N : ℝ) < M * ((N / M + 1 : ℕ) : ℝ) := by exact_mod_cast hlt
-      rw [one_div_mul_eq_div, div_le_iff₀ hMpos]
-      linarith
-    have h₃ : (2 : ℝ) ^ ((1 / M : ℝ) * N) ≤ 2 ^ (N / M + 1) := by
-      rw [← Real.rpow_natCast]
-      exact Real.rpow_le_rpow_of_exponent_le (by norm_num) h₂
-    exact_mod_cast h₁.trans h₃
+  have hLB := Sparsify.leafBound_of_real (by exact_mod_cast hMpos) hcount
   refine ⟨Sparsify.occBound K α, fun δ hδ h => ?_⟩
   obtain ⟨e, h⟩ := h
   obtain ⟨g, t, c, hg, hgA, ht⟩ := h.exists_computableInO

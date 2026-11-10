@@ -1053,6 +1053,29 @@ distinct occurrence, independently of their binary labels. This proves the first
 conclusion of Theorem 2. Its sparsification/disjunction resource refinement is
 still unproved for this map.
 
+The materialized refinement is now in
+[`AddXNORSparsification`](../../CslibFrontier/Cryptanalysis/AddXNORSparsification.lean).
+Import that module and use `Sparsification.instances α M φ` to inspect the actual
+returned list; its native `certificate` composes normalization, branching,
+collection and every digit reduction. For each $\eta>0$ and positive round divisor
+$M$, `exists_parameters` selects input-independent thresholds and a constant $C$.
+The list has at most $2^{\eta v}$ entries, counting repeated leaves, and `correct`
+proves original-input disjunctive correctness. Every output is balanced and fits
+its word width (`instances_shape`), even when it is a no-instance. The width is
+at most $C(v+1)$ for all formulas and $Cv$ when $v\ge1$. The zero-variable
+qualification is explicit: this target language requires width at least two for
+a yes-instance, so a satisfiable zero-variable formula cannot be represented by
+a disjunction of width-zero instances.
+
+The collector's certificate charges its growing accumulator, the loop counter,
+state copies and output reduction. It does **not** yet establish the source's
+$O^*(2^{\eta v})$ generation time: a generic polynomial applied to the whole
+accumulator can increase the exponential rate. Theorem 2's resource clause
+therefore stays open. The
+[checked clients](../../CslibFrontierTests/AddXNORSparsification.lean) evaluate
+empty, contradictory and genuinely branching formulas, and instantiate the
+arbitrary real-rate family theorem without a supplied family or SAT oracle.
+
 The complete [hardness client](../../CslibFrontierTests/AddXNORHardness.lean)
 checks actual operands and both gadget choices, mixed-pattern rejection,
 zero/repeated entries, empty input, out-of-range rejection, width one,

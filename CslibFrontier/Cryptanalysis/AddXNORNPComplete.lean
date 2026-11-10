@@ -437,12 +437,14 @@ theorem toAddXNOR_width_le_input (x : List ℕ × ℕ) :
   rw [length_encPair]
   omega
 
-/-- Explicit quadratic encoded-output bound; the computation itself has the
-separate machine-level polynomial-time certificate `toAddXNOR_polyTime`. -/
-theorem toAddXNOR_encoding_length_le (x : List ℕ × ℕ) :
-    (encInstance (toAddXNOR x)).length ≤
-      2 * (5 * (subsetSumEncoding x).length + 3) ^ 2 +
-        3 * (5 * (subsetSumEncoding x).length + 3) + 1 := by
+/-- Every output of the total reduction is balanced and fitting, even on unsatisfiable inputs. -/
+theorem toAddXNOR_shape (x : List ℕ × ℕ) :
+    2 ≤ (toAddXNOR x).1 ∧ (toAddXNOR x).2.length = (toAddXNOR x).1 ∧
+      ∀ a ∈ (toAddXNOR x).2, a < 2 ^ (toAddXNOR x).1 := by
+  have hwidth : 2 ≤ (toAddXNOR x).1 := by
+    unfold toAddXNOR
+    dsimp only
+    split_ifs <;> omega
   have hvalid : (toAddXNOR x).2.length = (toAddXNOR x).1 ∧
       ∀ a ∈ (toAddXNOR x).2, a < 2 ^ (toAddXNOR x).1 := by
     unfold toAddXNOR
@@ -461,6 +463,15 @@ theorem toAddXNOR_encoding_length_le (x : List ℕ × ℕ) :
         · obtain ⟨w, _, rfl⟩ := List.mem_map.1 ha
           exact w.isLt
     · norm_num
+  exact ⟨hwidth, hvalid⟩
+
+/-- Explicit quadratic encoded-output bound; the computation itself has the
+separate machine-level polynomial-time certificate `toAddXNOR_polyTime`. -/
+theorem toAddXNOR_encoding_length_le (x : List ℕ × ℕ) :
+    (encInstance (toAddXNOR x)).length ≤
+      2 * (5 * (subsetSumEncoding x).length + 3) ^ 2 +
+        3 * (5 * (subsetSumEncoding x).length + 3) + 1 := by
+  have hvalid := (toAddXNOR_shape x).2
   have hlen := encoded_length_le hvalid.1 hvalid.2
   have hwidth := toAddXNOR_width_le_input x
   exact hlen.trans (by nlinarith)

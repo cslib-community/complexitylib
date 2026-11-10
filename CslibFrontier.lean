@@ -2089,6 +2089,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchSch
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseParitySchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationFamily
 public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationRounds
 public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
@@ -3847,6 +3848,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORSourceCounterCounts
 public import CslibFrontier.Cryptanalysis.AddXNORSourceDepth
 public import CslibFrontier.Cryptanalysis.AddXNORSourceQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORSourceResources
+public import CslibFrontier.Cryptanalysis.AddXNORSparsification
 public import CslibFrontier.Cryptanalysis.AddXNORSpectrum
 public import CslibFrontier.Cryptanalysis.AddXNORStripping
 public import CslibFrontier.Cryptanalysis.AddXNORSubsetSum
