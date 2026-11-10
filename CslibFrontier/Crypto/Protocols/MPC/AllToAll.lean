@@ -76,7 +76,7 @@ namespace Cslib.Crypto.Protocols.MPC
 
 /-- Extract party `i`'s inbox update from message round `p = (s, r)`: the single-slot vector
 `Pi.single s msg` at the receiver `r`, and `0` at every other party. -/
-@[expose] def extractMsg {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [Zero Msg]
+def extractMsg {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [Zero Msg]
     (p : Fin m × Fin m) (i : Fin m)
     (recv : (msgRound (spec := spec) Msg p).Received i) : Fin m → Msg :=
   if h : i = p.2 then Pi.single p.1 (recv h) else 0
