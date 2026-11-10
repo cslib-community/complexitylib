@@ -114,7 +114,8 @@ separately. Each call costs roughly 100 to 700 heartbeats of Aesop search and po
 where the explicit term is a single `PMF.apply_ne_top _ _` keep the term. To compare success
 probabilities, import [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
 `apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
-`Game.succProbability`. The [checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover
+`Game.succProbability`, and `Game.succProbability_le_add_of_advantage_le` turns a bound on
+`Game.advantage g₀ g₁` into `succProbability g₀ ≤ succProbability g₁ + B`. The [checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover
 each rule and the failure.
 
 ## Count the fair coins used by an exact sampler
