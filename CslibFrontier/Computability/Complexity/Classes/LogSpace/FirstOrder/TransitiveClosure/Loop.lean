@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Compile
 public import CslibFrontier.Foundations.Relation.RelatesWithinSteps
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # The bounded closure loop
@@ -153,9 +154,7 @@ private theorem loop_copy (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     rw [hout₅ _ (by omega), hk.2.1 _ (by omega), ht₃]
   refine ⟨regs₅.set (base + 2 * k + 1) (t + 1), hr₅.trans ?_, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩
   · rw [show b + 2 * k + 7 + body.length + k = b + 3 * k + 7 + body.length by omega]
-    refine Reaches.sassign hinc (Nat.zero_le B) hB₅ ?_
-    simp only [eval_add, eval_reg, eval_const, ht₅]
-    exact Reaches.refl _
+    cp_step [ht₅]
   · rw [List.length_set, hlen₅, hk.1, hk₀.1]
   · intro j hj
     rw [List.getD_set_ne (by omega), hout₅ j (by omega), hk.2.1 j (by omega), hk₀.2.1 j hj]
@@ -175,9 +174,8 @@ private theorem loop_test_eq (hP : P.CodeAt b (tcCode b base k src dst M body T 
       ∀ i, (dst i).eval regs = z₀ i) (heq : us = z₀) :
     P.Reaches w (P.Oblivious B) (b + k + 1, 0 :: regs) (T, 0 :: regs) := by
   obtain ⟨-, -, h3, -⟩ := tcCode_parts hP
-  refine Reaches.slt h3 (Nat.zero_le B) hinv.1.2.2 ?_
-  rw [ite_eq_right fun h => (lt_eval_testExpr hinv.2.2.1 (hdst regs hinv.1.2.1)).mp h heq]
-  exact Reaches.refl _
+  have := hinv.1.2.2
+  cp_step [↓mt (lt_eval_testExpr hinv.2.2.1 (hdst regs hinv.1.2.1)).mp (not_not.mpr heq)]
 
 private theorem loop_test_ne (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hinv : LoopInv n B base k regs₀ us t regs)
@@ -185,9 +183,8 @@ private theorem loop_test_ne (hP : P.CodeAt b (tcCode b base k src dst M body T 
       ∀ i, (dst i).eval regs = z₀ i) (hne : us ≠ z₀) :
     P.Reaches w (P.Oblivious B) (b + k + 1, 0 :: regs) (b + k + 2, 0 :: regs) := by
   obtain ⟨-, -, h3, -⟩ := tcCode_parts hP
-  refine Reaches.slt h3 (Nat.zero_le B) hinv.1.2.2 ?_
-  rw [ite_eq_left ((lt_eval_testExpr hinv.2.2.1 (hdst regs hinv.1.2.1)).mpr hne)]
-  exact Reaches.refl _
+  have := hinv.1.2.2
+  cp_step [↓(lt_eval_testExpr hinv.2.2.1 (hdst regs hinv.1.2.1)).mpr hne]
 
 private theorem loop_eval_pow (hbase : 0 < base) (h0 : regs₀.getD 0 0 = n)
     (hinv : LoopInv n B base k regs₀ us t regs) : (pow (reg 0) k).eval regs = n ^ k := by
@@ -198,18 +195,16 @@ private theorem loop_bound_lt (hP : P.CodeAt b (tcCode b base k src dst M body T
     (hinv : LoopInv n B base k regs₀ us t regs) (ht : t < M₀) :
     P.Reaches w (P.Oblivious B) (b + k + 2, 0 :: regs) (b + k + 3, 0 :: regs) := by
   obtain ⟨-, -, -, h4, -⟩ := tcCode_parts hP
-  refine Reaches.slt h4 (Nat.zero_le B) hinv.1.2.2 ?_
-  rw [ite_eq_left (by rw [hM regs hinv.1.2.1, eval_reg, hinv.2.2.2]; exact ht)]
-  exact Reaches.refl _
+  have := hinv.1.2.2
+  cp_step [hM regs hinv.1.2.1, hinv.2.2.2]
 
 private theorem loop_bound_ge (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hM : ∀ regs, (∀ j < base, regs.getD j 0 = regs₀.getD j 0) → M.eval regs = M₀)
     (hinv : LoopInv n B base k regs₀ us t regs) (ht : M₀ ≤ t) :
     P.Reaches w (P.Oblivious B) (b + k + 2, 0 :: regs) (R, 0 :: regs) := by
   obtain ⟨-, -, -, h4, -⟩ := tcCode_parts hP
-  refine Reaches.slt h4 (Nat.zero_le B) hinv.1.2.2 ?_
-  rw [ite_eq_right (by rw [hM regs hinv.1.2.1, eval_reg, hinv.2.2.2]; omega)]
-  exact Reaches.refl _
+  have := hinv.1.2.2
+  cp_step [hM regs hinv.1.2.1, hinv.2.2.2]
 
 private theorem loop_decode (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hbase : 0 < base)

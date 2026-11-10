@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # Compiling FO(TC) formulas to nondeterministic counter code
@@ -524,7 +525,7 @@ theorem correct_conj (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
     obtain ⟨sψ, cψ⟩ := ihψ hΓ false hWψ fv base val ρ (b + 2 + len φ false) T regs hPψ hbase
       hfv hdψ h0 hv hregs
     have hr : P.Reaches (encStructure a) (P.Oblivious B) (b, 0 :: regs) (b + 1, 0 :: regs) :=
-      Reaches.slt h₀ (Nat.zero_le B) hregs (by rw [ite_self]; exact Reaches.refl _)
+      by cp_step
     refine ⟨Sound.of_oblivious hE.one_le hr (Sound.choice hE.one_le h₁ hregs
       (sφ.mono fun _ h => ⟨h.1, fun hc => h.2 hc.1⟩)
       (sψ.mono fun _ h => ⟨h.1, fun hc => h.2 hc.2⟩)), fun hn => ?_⟩
@@ -628,16 +629,13 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
       | some y => simpa using hv₁ y
     have hstep : ∀ regs₁ : List ℕ, Kept B base regs regs₁ → ∀ m, regs₁.getD base 0 = m →
         P.Reaches (encStructure a) (P.Oblivious B) (b + 1, 0 :: regs₁)
-          (if m < a.1 then b + 2 else T, 0 :: regs₁) := fun regs₁ hk m hm =>
-      Reaches.slt h₁ (Nat.zero_le B) hk.2.2 (by
-        simp only [eval_reg, hm, (hk.facts hbase hfv (d := 0) (by omega) h0 hv).2.1]
-        exact Reaches.refl _)
+          (if m < a.1 then b + 2 else T, 0 :: regs₁) := fun regs₁ hk m hm => by
+      have := hk.2.2
+      cp_step [hm, (hk.facts hbase hfv (d := 0) (by omega) h0 hv).2.1]
     have hinc : ∀ regs₂ : List ℕ, (∀ r ∈ regs₂, r ≤ B) → ∀ m, regs₂.getD base 0 = m → m < B →
         P.Reaches (encStructure a) (P.Oblivious B) (b + 2 + len φ false, 0 :: regs₂)
-          (b + 1, 0 :: regs₂.set base (m + 1)) := fun regs₂ hB m hm hmB =>
-      Reaches.sassign h₂ (Nat.zero_le B) hB (by
-        simp only [eval_add, eval_reg, eval_const, hm]
-        exact Reaches.refl _)
+          (b + 1, 0 :: regs₂.set base (m + 1)) := fun regs₂ hB m hm hmB => by
+      cp_step [hm]
     have key : ∀ e m (regs₁ : List ℕ), a.1 - m = e → m ≤ a.1 → Kept B base regs regs₁ →
         regs₁.getD base 0 = m →
         (∀ x : Fin a.1, (x : ℕ) < m → ¬ φ.Realize TC.interpretation ρ (Option.elim · x val)) →

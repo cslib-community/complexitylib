@@ -275,7 +275,7 @@ private theorem reaches_markers {c i F : ℕ} (hP : P.CodeAt c (tableCode v c i 
     intro j regs he hjL hjt h0 h1 h2 hlen hB
     have hj : j = a.1 ^ arityAt v i := by omega
     refine ⟨regs, ?_, rfl, h0, h1, fun _ => h2.trans hj, hB⟩
-    cp_step [eval_lenExpr h0, h2, hj, show a.1 ^ arityAt v i ≤ a.2[i].length by omega]
+    cp_step [eval_lenExpr h0, h2, hj]
   | succ e ih =>
     intro j regs he hjL hjt h0 h1 h2 hlen hB
     have hjL' : j < a.1 ^ arityAt v i := by omega
@@ -291,8 +291,7 @@ private theorem reaches_markers {c i F : ℕ} (hP : P.CodeAt c (tableCode v c i 
       cp_step [h2]
     · refine ⟨regs, ?_, rfl, h0, h1, fun h => absurd h (by omega), hB⟩
       cp_step [eval_lenExpr h0, h2, hjL']
-      cp_step [h1, h2, hjt', getElem?_encStructure_tableStart_two_mul_length hi,
-        show ¬ (a.1 ^ arityAt v i ≤ a.2[i].length) by omega]
+      cp_step [h1, h2, hjt', getElem?_encStructure_tableStart_two_mul_length hi]
 
 /-- **Checking a table**: from the code of the table at position `i ≤ |tables|`, with the
 cardinality in register `0` and the position of the table in register `1`, the program moves

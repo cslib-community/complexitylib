@@ -372,18 +372,27 @@ hypothesis `P.instr l = i`, or by evaluation when the program is concrete. It ap
 that instruction: assignment, comparison or read, plus the oblivious and shifted rules when
 `CounterProgram.AllBranches` or `CounterProgram.Block` is imported. It proves the register bound
 from a hypothesis and simplifies the next configuration with the simp set `cp_simps`. Pass the
-values of the registers read, the input bit read and the outcome of a comparison as simp lemmas,
-as in `cp_step [h0, hw]`. The goal closes when the configuration reached is the target or a
-hypothesis. The [checked clients](../../CslibFrontierTests/CounterProgramStep.lean) cover running,
-oblivious and shifted steps, a concrete program and the diagnostics. The shape check of the
+values of the registers read and the input bit read as simp lemmas, as in `cp_step [h0, hw]`.
+The goal closes when the configuration reached is the target or a hypothesis. The
+[checked clients](../../CslibFrontierTests/CounterProgramStep.lean) cover running, oblivious and
+shifted steps, a concrete program, conditional labels and the diagnostics. The shape check of the
 [logspace model checker](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder.lean)
 is a library client.
 
-A label that is still a conditional, or a `match` on an input bit the lemmas do not give, stops the
-tactic with a diagnostic: split into cases and pass the outcome, as in `by_cases h : 0 < n` followed
-by `cp_step [h]`. A side condition the tactic
-cannot prove, typically a register bound that is not a hypothesis, is named in the error; state it
-with `have` first, as in `have hB := hk.2.2`. For a step followed by a reachability fact `hrest`
+A conditional label `if c then l₁ else l₂` is decided when `c` or its negation is a hypothesis
+or, for a comparison of numbers, follows from the hypotheses by `omega`: a hypothesis `hn : 2 ≤ n`
+decides `if n < 2 then F else E` without passing `Nat.not_lt.mpr hn`. This applies to the label
+before a step, and after a step when deciding a label closes the goal. A fact stated about
+expressions that `cp_simps` would evaluate first, such as
+`(const 0).eval regs < e.eval regs ↔ us ≠ zs`, applies only before that simplification: pass it
+as `cp_step [↓h]`. A label still undecided, or a `match` on an input bit the lemmas do not give,
+stops the tactic with a diagnostic. Split into cases first, as in
+`by_cases h : regs.getD 0 0 < 3`, after which `cp_step` decides the label in each case; for the
+bit read, pass `w[i]? = some b` as a simp lemma.
+
+A side condition the tactic cannot prove, typically a register bound that is not a hypothesis but
+part of an invariant, is named in the error; state it with `have` first, as in
+`have hB := hk.2.2`. For a step followed by a reachability fact `hrest`
 from a lemma, leave the step as a goal with `refine Reaches.trans ?_ hrest` and close it by
 `cp_step`; the oblivious steps of the
 [counting loop](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder/TransitiveClosure/Counting.lean)
