@@ -301,11 +301,13 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `wordram-randomized` | [Exact finite-uniform randomized Word-RAM](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
 | `wordram-expected` | [Expected Word-RAM execution and Las Vegas loops](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
 | `wordram-structured` | [Structured programs with exact native counts](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
+| `wordram-resizable` | [Word-granular Resizable Word RAM and adaptive-adversary execution](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
 | `state-transition` | [Relational adaptive data-structure clients](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `randomized-state-transition` | [Randomized state transitions and refinement](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `oblivious-sequence` | [Oblivious operation/transcript contracts](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `cell-probe-data-structure` | [Cell-probe state-transition and oblivious-sequence implementations](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `memory-oracle` | [Allocated word-memory oracle](algorithms-and-memory/memory-specifications.md) | memory |
+| `resizable-memory-oracle` | [Word-granular resizable memory specification](algorithms-and-memory/memory-specifications.md) | memory |
 | `native-callable` | [Dynamic programs, controllers and graded realization](algorithms-and-memory/memory-specifications.md) | memory |
 | `ram-footprints-traces` | [RAM footprints, traces and memory windows](algorithms-and-memory/memory-specifications.md) | memory |
 | `online-deterministic` | [Deterministic online competitive problems](algorithms-and-memory/online-and-streaming.md) | online |
