@@ -69,6 +69,10 @@ also used by the inductive-counting simulator. Keep it distinct from `natSize`, 
 binary output. Neither operation expands the original number to unary. The original input
 remains read-only; these API changes do not weaken the charged workspace or stack bound.
 
+The callback proofs use `space`: `query_inSpace` is `space [query]`, while `next_inSpace` supplies the existing round, initialization and representation-conversion certificates before `space [next]`. This proves linear workspace in the encoded state. It does not bound repeated state growth.
+
+The separate state proof exposes that accounting. `length_encRuntime` gives the exact framing cost; [length_encState_le_of_bounds](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Space/Reachability/Bounds.lean) turns the actual stack invariant and linear depth/width bounds into a quadratic bound. The common scale is `Nat.log2 n + 1`, including empty inputs. [NatLength](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/NatLength.lean) shares the logarithmic bound for binary values below a power of `n + 2`. `QueryMachine.computableInSpace` then combines the callback certificates, state bound, termination and output correctness into the native workspace theorem.
+
 ## Deterministic time in square-root space
 
 [`DTIME_subset_DSPACE_sqrt`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TimeSpace/Williams.lean#L111) proves, for every injective binary input encoding and every function `t` satisfying `n ≤ t(n)` pointwise,
