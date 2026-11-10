@@ -18,6 +18,7 @@ import CslibFrontier.Foundations.Data.Nat.CeilDiv
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.SqrtLog
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # High-incidence branching for Lemma D.2
@@ -457,9 +458,7 @@ theorem exists_count_certificate :
   have hstep : PolyBounded
       (fun p : ℕ × List (List (List ℕ)) => (encPair encUnary encSparseSystem p).length)
       (fun p => HeavyBranchFold.stepOverhead
-        (HeavyBranchFold.encBranchInput (branchInput p.1 p.2)).length) :=
-    (PolyBounded.of_polynomiallyBounded _ HeavyBranchFold.polynomiallyBounded_stepOverhead).comp
-      computableInPolyTime_branchInput.polyBounded_length
+        (HeavyBranchFold.encBranchInput (branchInput p.1 p.2)).length) := by growth_poly
   obtain ⟨C, d, hCd⟩ := ((hPrep.1.add hPrep.2).add (hstep.add hstep)).exists_le
   refine ⟨C + d, fun solver csolver hbound => ?_⟩
   have hc := HeavyBranchFold.countByBranching_computableInO csolver
