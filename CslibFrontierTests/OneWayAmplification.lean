@@ -17,7 +17,7 @@ type-checking tests for Yao's weak-to-strong one-way function hardness amplifica
 `exists_oneWay_iff_exists_weakOneWay`).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.OneWayAmplificationTests
 

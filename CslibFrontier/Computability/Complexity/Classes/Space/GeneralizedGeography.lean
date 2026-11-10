@@ -44,7 +44,7 @@ and arcs, with a binary start vertex.
 * [T. J. Schaefer, *On the complexity of some two-person perfect-information games*][Schaefer1978]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -39,7 +39,7 @@ Adapted from Computability/Probabilistic/Repeat.lean on the cslib `crypto` branc
 calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

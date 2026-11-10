@@ -40,7 +40,7 @@ loss is asserted.
   Diffie-Hellman*, Section 2.1][BonehHaleviHamburgOstrovsky2008]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.FixedKey
 

@@ -190,7 +190,7 @@ supplied tape whenever the component key evaluator is polynomial time. -/
     (htape : ComputableInPolyTime tape input encBits) :
     ComputableInPolyTime (fun a => chooseLinkAtCoins evaluateKey (n a) (keyCoins a)
       (beforeCount a) (afterCount a) (bitIndex a) (challengePk a) (tape a))
-      input (encPair (encPair encBool encBool) encBits) := by
+      input (Encryption.encChoiceOut encBool) := by
   have hstep : ComputableInPolyTime (fun (a, row) => evaluateKey (n a) row)
       (encPair input encBits) (encPair encBits encBits) :=
     hevaluate.comp ((hn.comp (ComputableInPolyTime.fst _ _)).prod
@@ -244,7 +244,7 @@ all supplied unary parameters and words, including for a zero depth or capacity.
     (htape : ComputableInPolyTime tape input encBits) :
     ComputableInPolyTime (fun a => chooseModLinkCoins evaluateKey (n a) (indexCoins a)
       (keyCoins a) (depth a) (capacity a) (challengePk a) (tape a))
-      input (encPair (encPair encBool encBool) encBits) := by
+      input (Encryption.encChoiceOut encBool) := by
   have hfirstBits := ComputableInPolyTime.bitsBinaryValue.comp
     (htape.bitsTakeWithInput hindexCoins)
   have hsecondBits := ComputableInPolyTime.bitsBinaryValue.comp
@@ -279,7 +279,7 @@ theorem exists_modLinkAdversary_choose_coin_evaluator {E : Scheme}
       ComputableInPolyTime (fun ((n, pk), tape) =>
         chooseModLinkCoins evaluateKey n (coins n) (c * (n + 1) ^ d) (depth n) (capacity n)
           pk tape)
-        (encPair (encPair encUnary encBits) encBits) (encPair (encPair encBool encBool) encBits) ∧
+        (encPair (encPair encUnary encBits) encBits) (Encryption.encChoiceOut encBool) ∧
       ∀ n pk,
         ProbComp.eval ((E.modLinkAdversary coins depth capacity test).choose n pk) =
           (BitString.uniformList (2 * coins n + depth n * (c * (n + 1) ^ d))).map

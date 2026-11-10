@@ -15,7 +15,7 @@ import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
-# Vector Oblivious Linear Evaluation (VOLE), IT-MACs, and VOLE-in-the-Head
+# Vector Oblivious Linear Evaluation (VOLE), IT-MACs, and a Linear Sigma Protocol
 
 Vector Oblivious Linear Evaluation (VOLE) ([BoyleCGIKS2019]; [BaumBMRS2023]) is a two-party
 correlation generator over a commutative ring `R`: for a vector length `n`, the sender receives
@@ -39,10 +39,10 @@ if a cheating prover opens `x' ≠ x`, at most one global key `Δ ∈ F` accepts
 degree-2 algebraic identity (`voleMulCheck_sub_eq`, `voleMulCheck`), which collapses to a relation
 linear in `Δ` whenever `x * y = z`.
 
-In the VOLE-in-the-head paradigm ([BaumBMRS2023]), the prover emulates the VOLE ideal functionality
-in the head and the verifier supplies the global key `Δ` as a public-coin challenge, yielding a
-three-move `SigmaProtocol` (`voleInTheHeadSigma`) with completeness, special soundness, and special
-honest-verifier zero knowledge.
+`voleInTheHeadSigma` is `SigmaProtocol.linear` on `Fin n → ZMod q` (`voleInTheHeadSigma_eq_linear`):
+the response to the challenge `c` is the tag vector of `voleSample x v (ι c)` for the witness `x`
+and a uniform mask `v`. It inherits completeness, special soundness (for prime `q`) and special
+HVZK from that protocol; this does not establish VOLE-in-the-head security ([BaumBMRS2023]).
 
 ## Main definitions
 
@@ -60,8 +60,8 @@ honest-verifier zero knowledge.
   Quicksilver / VOLE degree-2 multiplication check coefficients.
 * `Cslib.Crypto.Protocols.VOLE.voleInTheHeadSigma`,
   `Cslib.Crypto.Protocols.VOLE.voleInTheHeadExtract`,
-  `Cslib.Crypto.Protocols.VOLE.voleInTheHeadSimulate`: VOLE-in-the-head Sigma protocol for linear
-  relations over `ZMod q`.
+  `Cslib.Crypto.Protocols.VOLE.voleInTheHeadSimulate`: the linear Sigma protocol over `ZMod q` in
+  VOLE notation, with its extractor and simulator.
 
 ## Main results
 
@@ -482,18 +482,18 @@ theorem voleMulCheck_iff_of_ne_zero {F : Type u} [Field F]
 
 end MulCheck
 
-/-! ### VOLE-in-the-Head Sigma Protocol -/
+/-! ### Linear Sigma Protocol in VOLE Notation -/
 
 section VOLEInTheHead
 
 variable {q n : ℕ} [NeZero q] {Y N C : Type} [AddCommGroup N] [Module (ZMod q) N] [DecidableEq N]
 
-/-- **VOLE-in-the-head Sigma protocol** ([BaumBMRS2023]) for a linear relation
+/-- **Linear Sigma protocol in VOLE notation** (`SigmaProtocol.linear`) for a linear relation
 `ψ y x = target y` over `ZMod q` with witness `x : Fin n → ZMod q`:
 1. The prover samples a random VOLE mask vector `v ← PMF.uniformOfFintype (Fin n → ZMod q)` and
    commits to the aggregate MAC mask `t = ψ y v : N`.
 2. The verifier sends a challenge `c : C`, determining the VOLE global key `Δ = ι c : ZMod q`.
-3. The prover emulates the VOLE ideal functionality in the head via `voleSample x v (ι c)` and
+3. The prover forms the VOLE correlation `voleSample x v (ι c)` with sender vectors `(x, v)` and
    outputs the receiver's VOLE tag vector `w = (voleSample x v (ι c)).w`.
 4. The verifier checks that `ψ y w` equals the IT-MAC tag `t + ι c • target y`. -/
 noncomputable def voleInTheHeadSigma (ψ : Y → (Fin n → ZMod q) →ₗ[ZMod q] N) (target : Y → N)
@@ -519,7 +519,7 @@ noncomputable def voleInTheHeadSimulate (ψ : Y → (Fin n → ZMod q) →ₗ[ZM
 variable (ψ : Y → (Fin n → ZMod q) →ₗ[ZMod q] N) (target : Y → N) (ι : C ↪ ZMod q)
 
 omit [NeZero q] in
-/-- The VOLE-in-the-head response `(voleSample x v (ι c)).w` equals the linear Sigma response
+/-- The `voleInTheHeadSigma` response `(voleSample x v (ι c)).w` equals the linear Sigma response
 `v + ι c • x`. -/
 theorem voleSample_w_eq_linear_respond (x v : Fin n → ZMod q) (c : C) :
     (voleSample x v (ι c)).w = v + ι c • x := by
@@ -539,20 +539,22 @@ theorem voleInTheHeadSigma_accepts_iff {y : Y} {t : N} {c : C} {w : Fin n → ZM
     (voleInTheHeadSigma ψ target ι).Accepts y t c w ↔ ψ y w = t + ι c • target y := by
   simp only [voleInTheHeadSigma_eq_linear, SigmaProtocol.linear_accepts_iff]
 
-/-- Completeness of `voleInTheHeadSigma` ([BaumBMRS2023]). -/
+/-- Completeness of `voleInTheHeadSigma`, from `SigmaProtocol.linear_complete`. -/
 theorem voleInTheHeadSigma_complete :
     (voleInTheHeadSigma ψ target ι).Complete fun x y => ψ y x = target y := by
   rw [voleInTheHeadSigma_eq_linear]
   exact SigmaProtocol.linear_complete ψ target ι
 
-/-- Special soundness of `voleInTheHeadSigma` when `q` is prime ([BaumBMRS2023]). -/
+/-- Special soundness of `voleInTheHeadSigma` when `q` is prime, from
+`SigmaProtocol.linear_specialSoundness`. -/
 theorem voleInTheHeadSigma_specialSoundness [Fact q.Prime] :
     (voleInTheHeadSigma ψ target ι).SpecialSoundness (fun x y => ψ y x = target y)
       (voleInTheHeadExtract ι) := by
   rw [voleInTheHeadSigma_eq_linear]
   exact SigmaProtocol.linear_specialSoundness ψ target ι
 
-/-- Special honest-verifier zero knowledge of `voleInTheHeadSigma` ([BaumBMRS2023]). -/
+/-- Special honest-verifier zero knowledge of `voleInTheHeadSigma`, from
+`SigmaProtocol.linear_specialHVZK`. -/
 theorem voleInTheHeadSigma_specialHVZK :
     (voleInTheHeadSigma ψ target ι).SpecialHVZK (fun x y => ψ y x = target y)
       (voleInTheHeadSimulate ψ target ι) := by

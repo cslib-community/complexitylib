@@ -31,7 +31,7 @@ The semantic bridges are the existing `Program.evalCode_code` and `Circuit.eval_
 These runtime certificates are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic
 

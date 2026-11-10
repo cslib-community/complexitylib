@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.CookLevin.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+public import CslibFrontier.Logics.Propositional.CNF.Encoding
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -124,7 +125,7 @@ theorem computableInPolyTime_index :
 @[fun_prop]
 theorem computableInPolyTime_relabel :
     ComputableInPolyTime (Cslib.Logic.PL.CNF.relabel (Var.index (k := k) (State := State)))
-      (encList (encList (encPair encVar encBool))) encCNF :=
+      (Cslib.Logic.PL.encCNFOver encVar) encCNF :=
   (Cslib.Logic.PL.CNF.computableInPolyTime_relabel computableInPolyTime_index)
 
 end Cslib.Complexity.CookLevin

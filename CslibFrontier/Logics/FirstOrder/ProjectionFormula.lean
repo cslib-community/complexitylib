@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.QuantifierFree
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # First-order projection formulas
@@ -186,8 +187,7 @@ theorem realize_toFormula [N.Structure M] [L.Structure M] (p : ProjectionFormula
   induction p with
   | leaf l => simp [toFormula, select]
   | branch guard yes no ihy ihn =>
-    simp only [toFormula, Formula.realize_sup, Formula.realize_inf, Formula.realize_not,
-      LHom.realize_onFormula, ihy, ihn, select]
+    fo_simp [toFormula, ihy, ihn, select]
     split_ifs <;> tauto
 
 /-- A leaf is realized as its literal. -/
@@ -202,8 +202,7 @@ theorem realize_toFormula_branch [N.Structure M] [L.Structure M] (guard : N.Form
     (yes no : ProjectionFormula N L α) (x : α → M) :
     (branch guard yes no).toFormula.Realize x ↔
       guard.Realize x ∧ yes.toFormula.Realize x ∨ ¬ guard.Realize x ∧ no.toFormula.Realize x := by
-  simp only [toFormula, Formula.realize_sup, Formula.realize_inf, Formula.realize_not,
-    LHom.realize_onFormula]
+  fo_simp [toFormula]
 
 /-- A single literal works for every interpretation of the input relations. The existential
 choice precedes the input structure: the selected literal cannot depend on input bits. -/
@@ -276,8 +275,7 @@ theorem realize_subst {N' L' : Language} {M' : Type*}
   induction p with
   | leaf l => simpa [subst, toFormula] using hliteral l
   | branch g yes no ihy ihn =>
-    simp only [subst, toFormula, Formula.realize_sup, Formula.realize_inf,
-      Formula.realize_not, LHom.realize_onFormula, hguard, ihy, ihn]
+    fo_simp [subst, toFormula, hguard, ihy, ihn]
 
 /-- All numeric tests are quantifier-free. The vocabulary is still a parameter; this property
 alone does not select the classical numeric vocabulary or exclude BIT. -/
@@ -387,9 +385,7 @@ theorem realize_iff_exists_case [N.Structure M] [L.Structure M]
   induction p with
   | leaf l => simp [Case, toFormula, caseGuard, caseLiteral]
   | branch guard yes no ihy ihn =>
-    simp only [toFormula, Formula.realize_sup, Formula.realize_inf, Formula.realize_not,
-      LHom.realize_onFormula, ihy, ihn, Case, Sum.exists, caseGuard, caseLiteral,
-      Formula.realize_inf, Formula.realize_not]
+    fo_simp [toFormula, ihy, ihn, Case, Sum.exists, caseGuard, caseLiteral]
     aesop
 
 end ProjectionFormula

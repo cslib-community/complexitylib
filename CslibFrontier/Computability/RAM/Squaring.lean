@@ -190,10 +190,11 @@ theorem two_pow_lt_time_logCost_repeatedSquaring (k : ℕ) :
       exact ⟨4 * x 0 + 5, isHalted_run_repeatedSquaring _, output_run_repeatedSquaring _, le_rfl⟩)
     ![k]
 
-/-- **Unit cost is unsound.** The repeated-squaring program computes `k ↦ 2 ^ 2 ^ k` within unit
-time `4 k + 5` (`Cslib.RAM.computesInTime_unitCost_repeatedSquaring`), but the logarithmic time
-`T` of any program computing it is bounded by no polynomial in `4 k + 5`: for all `c` and `d`,
-some input `k` has `c (4 k + 5) ^ d < T k`. -/
+/-- **Repeated squaring separates unit and logarithmic time.** The repeated-squaring program
+computes `k ↦ 2 ^ 2 ^ k` within unit time `4 k + 5`
+(`Cslib.RAM.computesInTime_unitCost_repeatedSquaring`), but the logarithmic time `T` of any
+program computing it is bounded by no polynomial in `4 k + 5`: for all `c` and `d`, some input
+`k` has `c (4 k + 5) ^ d < T k`. -/
 theorem exists_mul_pow_lt_of_computesInTime_logCost {p : Program} {T : (Fin 1 → ℕ) → ℕ}
     (h : ComputesInTime logCost 1 p (fun x => 2 ^ 2 ^ x 0) T) (c d : ℕ) :
     ∃ x : Fin 1 → ℕ, c * (4 * x 0 + 5) ^ d < T x := by

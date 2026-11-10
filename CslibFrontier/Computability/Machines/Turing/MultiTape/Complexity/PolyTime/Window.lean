@@ -31,7 +31,7 @@ unary and the positions in signed unary, the same list is computable in polynomi
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing
 

@@ -44,14 +44,16 @@ and lifts it to `Cslib.WordRAM.Basis.standard`:
    - `impl` and `obliviousSequenceImpl` package `doubleTabHash` as a Word-RAM hash family realizing
      `DataStructure.HashFamily.whpKWiseSpec k U (2 ^ M) δ` with failure probability
      `δ = doubleTabFailureProb c d b k`, bounded for `d = 8 * c` by
-     `card_not_isKUnique_eight_mul_le`.
+     `card_not_isKUnique_eight_mul_le` when `1 ≤ c` and
+     `2 * doubleTabCodeBound c (8 * c) 4 k ≤ 2 ^ (3 * b)`.
    - `provableImpl` and `provableObliviousSequenceImpl` combine `KWise` (`trinomialPolyHash`
      with `δ = 0` for `n_max < doubleTabThreshold c_exp`) and `DoubleTabulation`
-     (`c = 2 * max c_exp 1`, `d = 8 * c`, `b = (1 + Nat.clog 2 (max n_max 4)) / 2` for
-     `doubleTabThreshold c_exp ≤ n_max`), achieving `O_{c_exp, k}(1)` worst-case evaluation time
-     (`provableEvalBound c_exp k`, independent of `n_max`, `U`, and `M`) and
-     `O_{c_exp, k}(n_max + 1)` words of space across every `n_max : ℕ` whenever
-     `U ≤ max n_max 4 ^ c_exp`.
+     (`c = 2 * max c_exp 1`, `d = 8 * c`, `b = (1 + Nat.clog 2 (max n_max 4)) / 2` and
+     `δ = doubleTabFailureProb c d b k`, bounded under the condition on `k` above, for
+     `doubleTabThreshold c_exp ≤ n_max`). They use `O_{c_exp, k}(n_max + 1)` words of space for
+     every `n_max : ℕ` and, whenever `U ≤ max n_max 4 ^ c_exp` and
+     `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`, evaluate within
+     `provableEvalBound c_exp k` instructions, independent of `n_max`, `U`, and `M`.
 
 ## Main definitions
 
@@ -85,11 +87,13 @@ and lifts it to `Cslib.WordRAM.Basis.standard`:
   `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.evalCode_execWithin`: deterministic
   `O(c * d)` evaluation of `doubleTabHash c d b U M T₁ T₂ u`.
 * `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.doubleTabFailureProb_eight_mul_le`:
-  explicit high-probability `k`-uniqueness failure bound for `d = 8 * c`.
+  explicit high-probability `k`-uniqueness failure bound for `d = 8 * c` when `1 ≤ c` and
+  `2 * doubleTabCodeBound c (8 * c) 4 k ≤ 2 ^ (3 * b)`.
 * `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableImpl_evalSteps_le`,
   `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableSpace_le`: uniform
   `O_{c_exp, k}(1)` evaluation time and `O_{c_exp, k}(n_max + 1)` space bounds across all
-  `n_max : ℕ`.
+  `n_max : ℕ`, the time bound assuming `U ≤ max n_max 4 ^ c_exp` and
+  `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`.
 * `Cslib.DataStructure.HashFamily.WordRAM.DoubleTabulation.provableImpl_evalSteps_of_le`:
   `k`-independent evaluation time `evalSteps (provableC c_exp) (provableD c_exp)` once
   `doubleTabThreshold c_exp ≤ n_max`.
@@ -1387,7 +1391,9 @@ shares the exact register signature of `kWiseImpl`. -/
 /-- Failure probability `δ` of `provableObliviousSequenceImpl c_exp k n_max U M`:
 `0` (`(((Finset.univ \ {()}).card : ℝ≥0∞) / Fintype.card Unit)`) when
 `n_max < doubleTabThreshold c_exp`, and
-`doubleTabFailureProb (provableC c_exp) (provableD c_exp) (provableB n_max) k` otherwise. -/
+`doubleTabFailureProb (provableC c_exp) (provableD c_exp) (provableB n_max) k` otherwise. The
+latter is bounded by `doubleTabFailureProb_eight_mul_le` when
+`2 * doubleTabCodeBound (provableC c_exp) (provableD c_exp) 4 k ≤ 2 ^ (3 * provableB n_max)`. -/
 @[expose] noncomputable def provableFailureProb (c_exp k n_max : ℕ) : ℝ≥0∞ :=
   if n_max < doubleTabThreshold c_exp then
     (((Finset.univ \ ({()} : Finset Unit)).card : ℝ≥0∞) /

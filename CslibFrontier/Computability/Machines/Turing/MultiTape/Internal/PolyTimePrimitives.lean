@@ -28,7 +28,7 @@ or bridge participates in their statements or derivations.
 * `ComputableInPolyTime.frame`, `.unframe`, `.dropFrame`: total word framing and parsers.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

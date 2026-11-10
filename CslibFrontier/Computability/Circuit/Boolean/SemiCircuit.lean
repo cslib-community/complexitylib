@@ -23,10 +23,12 @@ affine system of equations over `𝔽₂` followed by an acyclic circuit over th
 natural numbers. The affine system consists of equations `∑ terms = rhs` in the parameters and
 auxiliary variables, each with at most three terms; it is *fair* when every assignment to the
 parameters extends to exactly one assignment of the auxiliary variables satisfying all equations
-(`SemiCircuit.WellFormed.solvable`, `SemiCircuit.WellFormed.unique`), which is equivalent to the
+(`SemiCircuit.WellFormed.solvable`, `SemiCircuit.WellFormed.unique`). The number of equations
+need not equal the number of auxiliary variables; when it does, fairness is equivalent to the
 invertibility of the auxiliary matrix of the source. Each gate applies an arbitrary operation
-`Bool → Bool → Bool` to two arguments, each a constant or an internal value with a smaller name,
-so the order of names is a topological order. The output is a literal.
+`Bool → Bool → Bool` to two arguments, each a constant, a parameter, an auxiliary variable or a
+gate with a smaller name, so the order of names is a topological order of the gates. The output
+is a literal.
 
 Equations are named separately from internal values. A *child* of an internal value `t` is a gate
 reading `t` or an equation containing `t` (`SemiCircuit.children`); a gate reading `t` twice is a

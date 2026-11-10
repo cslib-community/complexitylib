@@ -54,7 +54,7 @@ variant is not formalized here.
   and 20
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

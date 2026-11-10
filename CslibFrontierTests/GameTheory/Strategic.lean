@@ -5,12 +5,13 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.GameTheory.Strategic.Mixed
+import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.GameTheory.Strategic.NoRegret
 import CslibFrontier.GameTheory.Strategic.Potential
 import CslibFrontier.GameTheory.Strategic.Smooth
 
 /-!
-# Strategic games, potentials and coarse correlated equilibria
+# Strategic games, mixed Nash equilibria, potentials and coarse correlated equilibria
 
 The Prisoner's Dilemma of [MondererShapley1996], Section 2, in cost form, has an exact potential
 and therefore a pure Nash equilibrium, mutual defection, at which the social cost exceeds that of
@@ -19,6 +20,12 @@ improvement property nor a generalized ordinal potential. A pure Nash equilibriu
 correlated equilibrium as a point mass. In matching pennies, uniform mixing is a coarse correlated
 equilibrium. A pure equilibrium played in every round has no regret, so Proposition 3.1 of
 [Roughgarden2013CS364A], Lecture 17, recovers it from its time average.
+
+Uniform mixing is the mixed Nash equilibrium of matching pennies, and its product distribution
+recovers the coarse correlated equilibrium above. Nash's theorem gives matching pennies a mixed
+Nash equilibrium, which cannot consist of point masses because there is no pure one. In the
+Prisoner's Dilemma, point masses at mutual defection form a mixed Nash equilibrium and point masses
+at mutual cooperation do not.
 -/
 
 namespace CslibFrontierTests.GameTheory.Strategic
@@ -142,5 +149,53 @@ example (T : ℕ) (hT : 0 < T) (i : Fin 2) (a : Bool) :
   simp only [Convexity.StdSimplex.weights_single, Finsupp.sum_single_index, zero_mul, one_mul,
     add_zero]
   exact Finset.sum_le_sum fun _ _ => pd_isPureNash_defect j b
+
+/-! ### Mixed Nash equilibria -/
+
+/-- The uniform mixed strategies of matching pennies. -/
+noncomputable def penniesHalf : Fin 2 → Bool → ℝ := fun _ _ => 1 / 2
+
+private theorem isMixedStrategy_penniesHalf (i : Fin 2) : IsMixedStrategy (penniesHalf i) :=
+  isMixedStrategy_iff.2 ⟨fun _ => by norm_num [penniesHalf], by
+    rw [Fintype.sum_bool]; norm_num [penniesHalf]⟩
+
+/-- Against uniform mixing, every pure strategy of matching pennies costs `1/2` in expectation. -/
+private theorem pennies_deviationCost_penniesHalf (i : Fin 2) (a : Bool) :
+    pennies.deviationCost penniesHalf i a = 1 / 2 := by
+  rw [CostGame.deviationCost_def, ← (piFinTwoEquiv fun _ => Bool).symm.sum_comp]
+  simp only [Fintype.sum_prod_type, Fintype.sum_bool, productWeight_def, Fin.prod_univ_two,
+    piFinTwoEquiv_symm_apply]
+  fin_cases i <;> cases a <;>
+    norm_num [pennies, penniesHalf, Function.update, Fin.cons_zero, Fin.cons_one]
+
+/-- Uniform mixing is a mixed Nash equilibrium of matching pennies. -/
+theorem pennies_isMixedNash_penniesHalf : pennies.IsMixedNash penniesHalf := by
+  refine ⟨isMixedStrategy_penniesHalf, fun i a => ?_⟩
+  rw [← pennies.sum_mul_deviationCost_eq_expectedCost _ (isMixedStrategy_penniesHalf i).sum_eq_one]
+  simp only [pennies_deviationCost_penniesHalf, Fintype.sum_bool, penniesHalf]
+  norm_num
+
+/-- Its product distribution is the coarse correlated equilibrium `penniesUniform`. -/
+example : pennies.IsCoarseCorrelatedEquilibrium penniesUniform :=
+  pennies_isMixedNash_penniesHalf.isCoarseCorrelatedEquilibrium
+
+/-- Mixed deviations from uniform mixing gain nothing either. -/
+example (i : Fin 2) (q : Bool → ℝ) (hq : IsMixedStrategy q) :
+    pennies.expectedCost penniesHalf i ≤ pennies.expectedCost (Function.update penniesHalf i q) i :=
+  pennies_isMixedNash_penniesHalf.expectedCost_le_update i hq
+
+/-- Nash's theorem gives matching pennies a mixed Nash equilibrium. None of its mixed Nash
+equilibria is made of point masses, since it has no pure Nash equilibrium. -/
+example : (∃ p, pennies.IsMixedNash p) ∧
+    ∀ s : Fin 2 → Bool, ¬ pennies.IsMixedNash fun i => Pi.single (s i) 1 :=
+  ⟨pennies.exists_isMixedNash, fun s h =>
+    pennies_not_isPureNash s ((pennies.isMixedNash_single_iff s).1 h)⟩
+
+/-- In the Prisoner's Dilemma, point masses at mutual defection form a mixed Nash equilibrium, and
+point masses at mutual cooperation do not. -/
+example : pd.IsMixedNash (fun _ => Pi.single true 1) ∧
+    ¬ pd.IsMixedNash (fun _ => Pi.single false 1) :=
+  ⟨pd_isPureNash_defect.isMixedNash, fun h =>
+    pd_not_isPureNash_cooperate ((pd.isMixedNash_single_iff fun _ => false).1 h)⟩
 
 end CslibFrontierTests.GameTheory.Strategic
