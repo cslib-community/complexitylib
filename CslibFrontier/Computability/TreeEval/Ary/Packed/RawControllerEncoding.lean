@@ -167,7 +167,9 @@ theorem fullSpaceBound_packed_le (hd : 0 < d) (hb : 0 < b) :
         2 * (H * (22 * chunkWidth d b + 33)) + 20 * chunkWidth d b + 30 := by
   have hp := fieldModulus_size_le hd hb
   obtain ⟨hdsize, hrsize, htarget⟩ := selected_parameter_sizes hd hb
-  have hscalar := chunkCount_mul_framed_fieldModulus_size_le hd hb 4
+  have hscalar : chunkCount d b * (4 * (fieldModulus d b).size + 1) ≤
+      17 * (b + chunkWidth d b) :=
+    chunkCount_mul_framed_fieldModulus_size_le hd hb 4
   have hbank := Nat.mul_le_mul_left (d + 1) hscalar
   have hframe : 2 * frameSpace (fieldModulus d b) d + 1 ≤ 22 * chunkWidth d b + 33 := by
     unfold frameSpace
