@@ -24,6 +24,7 @@ is infinity when infeasible; no optimum or lower bound is supplied by a caller.
 
 ## Main results
 
+* `startup_live`: the source assumptions imply live startup, without a liveness premise.
 * `native_bill_le_riskOptimum`: the same named native program's terminal bill is at
   most the source factor times the risk optimum, from individual accrued caps.
 -/
@@ -71,6 +72,32 @@ theorem computed_risk (x : Input) (hx : Valid x.system)
   rw [hn, GreedyNative.decoded_labels_eq]
   exact batch_chances _ hc _ e
 
+/-- Source eligibility coverage and a failure budget below one force a nonempty
+computed plan and a live native startup. No execution or desired-output premise
+is required. -/
+theorem startup_live (x : Input) (hx : Valid x.system)
+    (hcover : ∀ e : Fin x.planner.val.ground, ∃ row ∈ x.planner.val.rows,
+      row.mask[e.val]?.getD false = true)
+    (hδone : x.planner.val.parameters.budget < 1) :
+    RuntimeControl.stopped (initial x) = false := by
+  have hn : 0 < (GreedyNative.labels x.planner).length := by
+    by_contra! h
+    have he : GreedyNative.labels x.planner = [] := List.length_eq_zero_iff.mp (by omega)
+    have hr := computed_risk x hx hcover
+    simp only [he, List.map_nil, Instance.chances, List.filter_nil, List.length_nil,
+      pow_zero, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
+      mul_one] at hr
+    have hn : (1 : ℝ) ≤ x.planner.val.ground := by
+      exact_mod_cast x.planner.property.ground_pos
+    have hδ : (x.planner.val.parameters.budget : ℝ) < 1 := by exact_mod_cast hδone
+    linarith
+  have hg : x.system.dual.length ≠ 0 := by
+    rw [← x.ground_eq]
+    exact Nat.ne_of_gt x.planner.property.ground_pos
+  simpa [RuntimeControl.stopped, initial, Nat.ne_of_gt hn, Packets.decision,
+    Packets.assemble, complete, covered, ground, retain] using
+      (show ∃ i, i < x.system.dual.length from ⟨0, Nat.pos_of_ne_zero hg⟩)
+
 /-- Composed source competitive bill bound for the actual named native program.
 All premises describe original input or per-call charges on possible trajectories;
 no bound on total cost, integrability, optimum or desired output is assumed. -/
@@ -81,10 +108,9 @@ theorem native_bill_le_riskOptimum {P : Type} (x : Input) (hx : Valid x.system)
     (hδone : x.planner.val.parameters.budget < 1)
     (limits : Limits (GreedyNative.labels x.planner).length)
     (sample : Sampler (GreedyNative.labels x.planner).length P) (seed : P)
-    (hs : RuntimeControl.stopped (initial x) = false)
     (hd : 0 < limits.deadline) (ht : 0 < limits.turns)
     (hcap : ∀ pair ∈ (sample (ConcurrentBatch.initial seed)
-      (batch x (live_nonempty x hs))).support, ∀ i,
+      (batch x (live_nonempty x (startup_live x hx hcover hδone)))).support, ∀ i,
       ((pair.1 i).accrued (limits.cutoff i) : ℝ) ≤
         (GreedyNative.oracleAt x.planner.val ((GreedyNative.labels x.planner).get i)).cost)
     (outcome : Option (NativeReplyContext.Observation
@@ -98,6 +124,7 @@ theorem native_bill_le_riskOptimum {P : Type} (x : Input) (hx : Valid x.system)
         ENNReal.ofReal (Asymptotics.factor x.planner.val.parameters.q
           x.planner.val.parameters.budget x.planner.val.ground) * riskOptimum x ∧
       elapsed final.memory.events ≤ limits.deadline := by
+  have hs := startup_live x hx hcover hδone
   obtain ⟨final, he, hb, hdur, _, _⟩ :=
     native_resources x limits sample seed hs hd ht hcap outcome houtcome
   have hf := Asymptotics.factor_pos

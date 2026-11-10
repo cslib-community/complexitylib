@@ -290,8 +290,137 @@ example (outcome : Option (NativeReplyContext.Observation
     native_bill_le_riskOptimum input valid eligibility
     (by intro row hr; simp only [input, List.mem_cons, List.not_mem_nil, or_false] at hr
         subst row; norm_num)
-    (by norm_num [input]) limits sample 0 live (by norm_num [limits])
+    (by norm_num [input]) limits sample 0 (by norm_num [limits])
     (by norm_num [limits]) (by
       intro pair hp i
       obtain ⟨a, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hp
       exact invoice_cap a i) outcome h
+
+private def draw (a : Fin 4) : Draw input (Fin 4) := (fun i => path a i.val, a)
+private def joint := sample (ConcurrentBatch.initial 0) (batch input (live_nonempty input live))
+private def responses : ℕ → Draw input (Fin 4) → Finset (Fin 1) :=
+  NativeExecution.response input limits live
+private def kernel := Disintegration.kernel joint responses
+
+-- Normalize the runtime-dependent finite response dimension before reading its mask.
+set_option backward.isDefEq.respectTransparency false in
+private theorem response_at (k : Fin 2) (a : Fin 4) :
+    responses k.val (draw a) = if good a k.val then {0} else ∅ := by
+  have hn : (GreedyNative.labels input.planner).length = 2 := by rw [labels_two]; rfl
+  simp only [responses, NativeExecution.response, dite_eq_left (show k.val <
+    (GreedyNative.labels input.planner).length by omega)]
+  fin_cases k <;> fin_cases a
+  all_goals
+    ext i
+    change Fin 1 at i
+    fin_cases i
+    norm_num [NativeExecution.jointReceipt,
+      NativeExecution.family, draw, ConcurrentBatch.observe, batch, slots, path,
+      limits, CallTrace.report, CallTrace.response, hn, good, decodeFamily,
+      List.finRange_succ, List.finRange_zero, Finset.univ_unique, input]
+
+private theorem singleton_families (P : Finset (Fin 1)) :
+    P = ∅ ∨ P = {0} := by
+  by_cases h : 0 ∈ P
+  · right; ext i
+    have hi : i = 0 := Fin.ext (by omega)
+    subst i; simpa using h
+  · left; ext i
+    have hi : i = 0 := Fin.ext (by omega)
+    subst i; simpa using h
+
+private theorem posterior_mass (h : List (Finset (Fin 1)))
+    (hh : h = [] ∨ h = [∅]) : (kernel h).weight {0} = 1 / 2 := by
+  classical
+  have hf := PMF.posterior_map_factor joint (Disintegration.history responses h.length)
+    (responses h.length) h ({0} : Finset (Fin 1))
+  have hr := congrArg ENNReal.toReal hf
+  have h0 (a : Fin 4) := response_at 0 a
+  have h1 (a : Fin 4) := response_at 1 a
+  change ∀ a, responses 0 (fun i => path a i.val, a) = _ at h0
+  change ∀ a, responses 1 (fun i => path a i.val, a) = _ at h1
+  have hl : (joint.map (Disintegration.history responses h.length) h).toReal =
+      if h = [] then 1 else 1 / 2 := by
+    obtain rfl | rfl := hh <;>
+      norm_num [joint, sample, PMF.map_comp, Disintegration.history,
+        h0,
+        draw, PMF.map_apply, tsum_fintype, Fin.sum_univ_succ,
+        PMF.uniformOfFintype_apply, ENNReal.toReal_add, ENNReal.toReal_inv, good]
+  have hj : ((joint.map fun a =>
+      (Disintegration.history responses h.length a, responses h.length a)) (h, {0})).toReal =
+      if h = [] then 1 / 2 else 1 / 4 := by
+    obtain rfl | rfl := hh <;>
+      norm_num [joint, sample, PMF.map_comp, Disintegration.history,
+        h0,
+        h1,
+        draw, PMF.map_apply, tsum_fintype, Fin.sum_univ_succ,
+        PMF.uniformOfFintype_apply, ENNReal.toReal_add, ENNReal.toReal_inv, good]
+  rw [ENNReal.toReal_mul, hl, hj] at hr
+  change (((PMF.posterior joint (Disintegration.history responses h.length) h).map
+    (responses h.length)) {0}).toReal = _
+  obtain rfl | rfl := hh <;> norm_num at hr ⊢ <;> linarith
+
+
+-- Normalize the concrete source instance through its computed finite dimension.
+set_option backward.isDefEq.respectTransparency false in
+private theorem source_envelopes : (sourceInstance input valid).Admissible 1 (1 / 2)
+    kernel [] ∅ (eligible input) := by
+  classical
+  have he : eligible input = [{0}, {0}] := by
+    rw [eligible, labels_two]
+    norm_num [GreedyNative.oracleAt, input, Algorithms.Lean.Multicover.Native.interpret,
+      Finset.univ_unique]
+    rfl
+  rw [he]
+  have event (h : List (Finset (Fin 1))) (hh : h = [] ∨ h = [∅]) :
+      Instance.event (kernel h) (fun P => (sourceInstance input valid).Certified 1 ∅ P ∧
+        0 ∈ (sourceInstance input valid).covered P) = 1 / 2 := by
+    unfold Instance.event Cslib.Optimization.OneConstraint.Distribution.mean
+    calc
+      _ = ∑ P, (kernel h).weight P * (if P = {0} then 1 else 0) := by
+        apply Finset.sum_congr rfl
+        intro P _
+        obtain rfl | rfl := singleton_families P <;>
+          norm_num [sourceInstance, Instance.reindex, instanceOf, Instance.Certified,
+            Instance.covered, Instance.cost, elements, ground, input]
+      _ = (kernel h).weight {0} := by simp
+      _ = 1 / 2 := posterior_mass h hh
+  constructor
+  · intro e he _
+    have : e = 0 := by simpa using he
+    subst e
+    exact (event [] (Or.inl rfl)).ge
+  · intro P _
+    obtain rfl | rfl := singleton_families P
+    · constructor
+      · intro e he _
+        have : e = 0 := by simpa using he
+        subst e
+        have hz : (sourceInstance input valid).step 1 ∅ ∅ = ∅ := by
+          simp [Instance.step, Instance.Certified, Instance.covered]
+        erw [hz]
+        exact (event [∅] (Or.inr rfl)).ge
+      · intro _ _; trivial
+    · constructor
+      · intro e he hn
+        have : e = 0 := by simpa using he
+        subst e
+        norm_num [Instance.step, sourceInstance, Instance.reindex, instanceOf,
+          Instance.Certified, Instance.covered, Instance.cost, elements, ground, input] at hn
+      · intro _ _; trivial
+
+-- The posterior-envelope premise is proved for this actual correlated sampler.
+-- This applies the source success theorem to the compiled controller's tape event.
+example : (3 / 4 : ℝ) ≤
+    ((((NativeUnboundedExecution.terminal controller.program (environment limits sample)
+      ⟨controller.program.initialConfig (encoding input), memory⟩).map
+        (Option.map (NativeReplyContext.observe controller.context))).map
+          (NativeExecution.certified input valid 1)) true).toReal := by
+  have hq : 1 - (input.planner.val.parameters.q : ℝ) = 1 / 2 := by norm_num [input]
+  have hρ : (input.system.rho : ℝ) = 1 := by norm_num [input]
+  have h := native_success input valid eligibility (by norm_num [input]) limits sample 0
+    (by norm_num [limits]) (by norm_num [limits]) (by
+      rw [hq, hρ]
+      change (sourceInstance input valid).Admissible 1 (1 / 2) kernel [] ∅ (eligible input)
+      exact source_envelopes)
+  convert h using 1 <;> norm_num [input, limits, memory]

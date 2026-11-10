@@ -20,7 +20,7 @@ or optimum is supplied. [Wang2027], Section 5, PDF p. 9.
 ## Main results
 
 * `image_sets`: finite ground labels recover the original incidence rows.
-* `instance`: the native rational input has the corresponding finite WSC interpretation.
+* `instanceOf`: the native rational input has the corresponding finite WSC interpretation.
 -/
 
 public section

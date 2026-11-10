@@ -401,11 +401,16 @@ in [the bibliography](../../references.bib). The checked clients are in
   [disintegration client](../../CslibFrontierTests/StochasticOraclePartialCoverDisintegration.lean)
   derives positive conditional envelopes and the $3/4$ certified-risk bound from
   a shared four-valued hidden seed, including conditional success probability
-  $1/2$ for the second report after the first failure. Instantiating the native
-  theorem's posterior-envelope premise for the compiled client remains separate.
+  $1/2$ for the second report after the first failure. The native execution client
+  now derives these same posterior envelopes from its actual trajectory sampler
+  and applies `native_success` to the compiled controller's certified tape event.
+  `startup_live` derives startup liveness from source eligibility coverage and a
+  failure budget below one; neither `native_success` nor the combined OPT theorem
+  takes liveness as an execution premise.
   These results retain the implemented binary-rational format, discrete joint
-  sample, computational live-entry condition and oracle-only deadline. External
-  source query/WSC encoding adapters and source WSC/subinstance codecs remain open.
+  sample and oracle-only deadline. External source query/WSC encoding adapters,
+  native execution/risk transfer for arbitrary call-count vectors and source
+  WSC/subinstance codecs remain open.
   Set Cover approximation hardness is tracked in
   [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
   not supplied as a premise.
@@ -911,11 +916,14 @@ outside the constructive retention algorithm.
 
 Theorem 5 remains incomplete at unrestricted source scope: these are finite-alphabet
 behavioral kernels, without a realization/representation theorem for every encoded
-selection-only PTM or general measurable alphabets. Native encoded machine resources
-also remain open. The Poisson-binomial domination needed for Lemma 2 and for the
+selection-only PTM or general measurable alphabets. Implemented native controllers
+and their resource theorems are described below; unrestricted encoded-source
+resource transfer remains open. The Poisson-binomial domination needed for Lemma 2 and for the
 measurable or unbounded-horizon Theorem 5 is tracked in
 [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native offline greedy runtime is now proved for the finite binary-rational
-representation above; unrestricted source-interface/success transfer and hardness remain open;
+representation above. Its computed greedy controller has the native success/OPT
+transfer above; external encoding adapters, arbitrary-batch native transfer and
+hardness remain open;
 its asymptotic factors are now proved.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
@@ -979,7 +987,7 @@ This proves the arbitrary finite X3C construction and universal behavioral
 numerical endpoints, rather than only a singleton or supplied-certificate model.
 The unrestricted encoded-PTM representation and realization bridge is still unproved; neither
 unrestricted source Theorem 6 nor ALL-main is claimed complete. Theorem 5's
-representation/general-alphabet gaps and Theorem 4's resource/hardness gaps above
+representation/general-alphabet gaps and Theorem 4's encoding/arbitrary-batch/hardness gaps above
 remain material. No curated abstract changes: these modules are outside the
 selected headline dependencies. The Agent Operator's Manual requires no edit:
 ownership, review, validation and human direction are unchanged.
@@ -1053,7 +1061,8 @@ representation required by Theorem 5 and the full two-turn lower optimum in
 Theorem 6. Later sections derive native query epochs and the concrete block controller.
 General response alphabets and external PTM/query encodings, canonical-label
 recovery and arbitrary source-policy compilation remain open.
-The remaining Theorem 4 unrestricted source-interface/success and encoding/hardness gaps remain. ROADMAP preserves
+Theorem 4 now has the native greedy success/OPT transfer above; its external
+encoding adapters, arbitrary-batch native transfer and hardness remain open. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
 review and validation procedures are unchanged. No curated abstract depends on
@@ -1656,7 +1665,8 @@ established. The trace preserves divergent mass and its earlier receipts, but eq
 with a cofinal infinite-instruction path-cost law and real integrability are separate
 obligations. Divergence has no native terminal-world bill.
 
-Theorem 4's unrestricted source-interface/success and encoding/hardness gaps remain. Neither unrestricted
+Theorem 4's native greedy success/OPT transfer is proved above; its external
+encoding adapters, arbitrary-batch native transfer and hardness remain open. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes. The Agent Operator's Manual requires no edit because human direction,
 ownership, review and validation procedures are unchanged.

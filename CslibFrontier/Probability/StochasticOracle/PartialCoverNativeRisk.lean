@@ -27,7 +27,8 @@ are retained by the earlier native joint law.
 
 * `report_retained`: actual packet processing agrees with original-family retention.
 * `native_risk`: source conditional risk bounds for the same native tape output.
-* `native_success`: the computed plan meets its prescribed source success budget.
+* `native_success`: the computed plan meets its prescribed source success budget,
+  with startup liveness derived from source input assumptions.
 -/
 
 public section
@@ -231,19 +232,21 @@ oracle's joint sample; the algorithm does not know or receive those probabilitie
 theorem native_success {P : Type} (x : Input) (hx : Valid x.system)
     (hcover : ∀ e : Fin x.planner.val.ground, ∃ row ∈ x.planner.val.rows,
       row.mask[e.val]?.getD false = true)
+    (hδone : x.planner.val.parameters.budget < 1)
     (limits : Limits (GreedyNative.labels x.planner).length)
     (sample : Sampler (GreedyNative.labels x.planner).length P) (seed : P)
-    (hs : RuntimeControl.stopped (initial x) = false)
     (hd : 0 < limits.deadline) (ht : 0 < limits.turns)
     (had : (sourceInstance x hx).Admissible x.system.rho
       (1 - (x.planner.val.parameters.q : ℝ))
-      (Disintegration.kernel (sample (ConcurrentBatch.initial seed) (batch x (live_nonempty x hs)))
-        (response x limits hs)) [] ∅ (eligible x)) :
+      (Disintegration.kernel (sample (ConcurrentBatch.initial seed)
+        (batch x (live_nonempty x (startup_live x hx hcover hδone))))
+        (response x limits (startup_live x hx hcover hδone))) [] ∅ (eligible x)) :
     1 - (x.planner.val.parameters.budget : ℝ) ≤
       ((((NativeUnboundedExecution.terminal controller.program (environment limits sample)
         ⟨controller.program.initialConfig (encoding x), ⟨ConcurrentBatch.initial seed, []⟩⟩).map
           (Option.map (NativeReplyContext.observe controller.context))).map
             (certified x hx limits.deadline)) true).toReal := by
+  have hs := startup_live x hx hcover hδone
   have hq : (0 : ℝ) ≤ x.planner.val.parameters.q := by
     exact_mod_cast x.planner.property.parameters_valid.q_pos.le
   have hqone : (x.planner.val.parameters.q : ℝ) ≤ 1 := by
