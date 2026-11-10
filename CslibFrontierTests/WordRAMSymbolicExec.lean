@@ -6,19 +6,20 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.WordRAM.Allocation
 import CslibFrontier.Computability.WordRAM.ExactNotation
-import CslibFrontier.Computability.WordRAM.SymbolicExec
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 
 /-!
 # Symbolic execution of structured word-RAM code
 
 Regressions for `wram_exec` and `wram_simp`: a concrete program runs to its exact result and
-instruction count; registers and memory hold symbolic values, reads after writes to other
-addresses reduce, and a conditional the facts do not decide splits; instructions `Op.alu` of other
-bases, such as `Basis.additive`, run too; execution stops at a subprogram, continues from its
-specification and resumes; and goals of the wrong form, or programs with nothing to execute, fail
-with an explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read
-through writes on their own, also with register names that have free variables and banks separated
-by quantified hypotheses, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
+instruction count; registers and memory hold symbolic values, reads after writes to other addresses
+reduce, and a conditional the facts do not decide splits; instructions `Op.alu` of other bases, such
+as `Basis.additive`, run too; execution stops at a subprogram, continues from its specification and
+resumes; a loop proved by induction takes one iteration at a time with `WP.loop_iter` and
+`WP.Exact.loop_iter`; and goals of the wrong form, or programs with nothing to execute, fail with an
+explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read through
+writes on their own, also with register names that have free variables and banks separated by
+quantified hypotheses, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
 `wram_bounded` proves the fitting conditions it can.
 -/
 
@@ -338,12 +339,56 @@ example (x : Data 4) : ∃ y, Exec 8 callDouble x y 3 ∧ y.regs c = 6 := by
   wram_exec
   wram_simp
 
+/-- Instructions `Op.alu` with an exact count (`WP.Exact.alu`), over `Basis.additive`, where the
+operation is evaluated by `Basis.reduceInterp`, and over the standard basis. -/
+example (w u v : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (huv : Fits w (u + v))
+    (hu : Fits w u) :
+    ∃ y, Exec w addSub x y 2 ∧ y.regs a = u ∧ y.regs c = u + v := by
+  unfold addSub
+  wram_exec [ha, hb]
+  wram_simp
+
+example (w u v : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (h : Fits w (u * v)) :
+    ∃ y, Exec w (.op (.alu (B := .standard) (.bin .mul) c ![a, b])) x y 1 ∧ y.regs c = u * v := by
+  wram_exec [ha, hb]
+  wram_simp
+
 /-- An exact count is a bound: `WP.Exact.toWP` turns an exact goal into a bounded one. -/
 example (x : Data 4) : ∃ y, ExecWithin 8 straight x y 6 ∧ y.mem 5 = 7 :=
   WP.exists_execWithin <| WP.Exact.toWP <| by
     unfold straight
     wram_exec
     wram_simp
+
+/-! ## Loops -/
+
+/-- `while d < a do [ a ← a - b; c ← c + b ]`: with `b = 1` and `d = 0`, adds `a` to `c`. -/
+def moveLoop : Code .exact 4 :=
+  .loop (.lt d a) (.seq (.op (.exactBin .sub a a b)) (.op (.exactBin .add c c b)))
+
+/-- A loop by induction: `WP.Exact.loop_iter` takes one iteration, `wram_exec` runs the body, and
+the loop from the data it reaches is the induction hypothesis, applied with `wram_call`. -/
+theorem moveLoop_exec (w : ℕ) : ∀ n m : ℕ, ∀ x : Data 4, x.regs a = n → x.regs b = 1 →
+    x.regs c = m → x.regs d = 0 → Fits w (n + m) →
+    ∃ y, Exec w moveLoop x y (4 * n + 2) ∧ y.regs c = n + m
+  | 0, m, x, ha, _, hc, hd, _ =>
+    ⟨x, .loop_exit (by simp [Cond.holds_lt, ha, hd]), by rw [hc]; omega⟩
+  | n + 1, m, x, ha, hb, hc, hd, hfit => by
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter (by simp [Cond.holds_lt, ha, hd]) ?_)
+    wram_exec [ha, hb, hc]
+    wram_call (moveLoop_exec w n (m + 1) _ (by wram_simp) (by wram_simp [hb]) (by wram_simp)
+      (by wram_simp [hd]) (by fits)) with y hy
+    exact ⟨by omega, by omega⟩
+
+/-- The same rule for a bound, `WP.loop_iter`. -/
+example (w : ℕ) (x : Data 4) (ha : x.regs a = 1) (hb : x.regs b = 1) (hc : x.regs c = 0)
+    (hd : x.regs d = 0) (hfit : Fits w 1) :
+    ∃ y, ExecWithin w moveLoop x y 7 ∧ y.regs c = 1 := by
+  refine WP.exists_execWithin (WP.loop_iter (by simp [Cond.holds_lt, ha, hd]) ?_)
+  wram_exec [ha, hb, hc]
+  refine WP.of_execWithin
+    (ExecWithin.loop_exit (by simp only [Cond.holds_lt, not_lt]; wram_simp [hd])) ?_
+  wram_simp
 
 /-! ## Failures -/
 

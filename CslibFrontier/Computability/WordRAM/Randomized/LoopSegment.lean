@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.WordRAM.Randomized.Structured
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Compositional while-loop segments for structured randomized word-RAM programs
@@ -159,7 +160,7 @@ theorem stepDet {x y : Data r} {n₁ : ℕ} {m₂ : ProbComp (Data r × ℕ)}
     (hr : LoopSegment w cond body y m₂) :
     LoopSegment w cond body x ((fun z => (z.1, n₁ + 2 + z.2)) <$> m₂) := by
   have h := (detSingle hc hb).trans (m₂ := fun _ => m₂) fun z hz => by
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     exact hr
   simpa only [pure_bind, ← bind_pure_comp] using h
 
@@ -195,12 +196,10 @@ theorem regs_eq {x : Data r} {m : ProbComp (Data r × ℕ)} {i : Fin r}
     z.1.regs i = x.regs i := by
   induction h generalizing z with
   | nil _ =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     rfl
   | step _ hb _ ih =>
-    obtain ⟨a, ha, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨b, hb_mem, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hpure
+    supp_cases hz with ⟨a, ha, b, hb_mem, rfl⟩
     exact (ih a ha hb_mem).trans (hb.regs_eq hi ha)
 
 private theorem bounded_aux {x : Data r} {m : ProbComp (Data r × ℕ)}
@@ -209,13 +208,11 @@ private theorem bounded_aux {x : Data r} {m : ProbComp (Data r × ℕ)}
   induction h with
   | nil _ =>
     intro z hz
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     exact hx
   | step _ hb _ ih =>
     intro z hz
-    obtain ⟨a, ha, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨b, hb_mem, hpure⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hpure
+    supp_cases hz with ⟨a, ha, b, hb_mem, rfl⟩
     exact ih a ha (hb.bounded hx ha) b hb_mem
 
 /-- `LoopSegment` preserves `Data.Bounded w` on every supported path. -/

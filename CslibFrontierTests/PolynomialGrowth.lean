@@ -11,6 +11,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Poly
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.WordRAM.Time
 import CslibFrontier.Computability.GenericRAM.Native.Certificate
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 
 /-! Ordinary-import regression tests for polynomial resource-growth automation. -/
 
@@ -115,6 +117,25 @@ example {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f
     (c : Cslib.GenericRAM.NativeCertificate f encIn encOut) (hc : c.IsPolynomial) :
     PolyBounded (fun a => (encIn a).length) (fun a => c.time a * (encOut (f a)).length) := by
   growth_poly
+
+-- Polynomial-space and logspace certificates through their output lengths, and a degree bound.
+example {α β γ : Type} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
+    {encOut : γ ↪ List Bool} {f : α → β} {g : α → γ} {u : α → ℕ}
+    (hf : ComputableInPolySpace f encIn encMid) (hg : ComputableInLogSpace g encIn encOut)
+    (hu : DegreeBounded (fun a => (encIn a).length) u 3) :
+    PolyBounded (fun a => (encIn a).length)
+      (fun a => (encMid (f a)).length * (encOut (g a)).length + u a) := by
+  growth_poly
+
+-- Each certificate lemma of `growth_poly` is proved in the module its failure message names;
+-- `CslibFrontierTests/PolynomialGrowthImports.lean` checks the messages without them.
+open Lean in
+run_meta do
+  let env ← getEnv
+  for l in Cslib.Tactic.GrowthPoly.certificateLemmas do
+    let some i := env.getModuleIdxFor? l.name | throwError "{l.name} is not imported"
+    let home := env.header.moduleNames[i.toNat]!
+    unless home == l.module do throwError "{l.name} is proved in {home}, not {l.module}"
 
 example {F : ℕ → ℕ} (hF : Cslib.PolynomiallyBounded F) :
     Cslib.PolynomiallyBounded (fun n => 3 * F n ^ 2 + Nat.log 2 (n + 1)) := by

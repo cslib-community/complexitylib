@@ -62,7 +62,7 @@ discrete memoryless channels and channels with feedback are not formalized here.
 
 ## Main results
 
-* `Cslib.BitString.entropy_flipBit`, `Cslib.BitString.entropy_bscNoise`,
+* `Cslib.BitString.entropy_coin`, `Cslib.BitString.entropy_bscNoise`,
   `Cslib.BitString.entropy_bsc`: the noise of `BSC_p` on `n` bits has entropy `n h₂(p)`.
 * `Cslib.BitString.mutualInfo_bind_bsc_le`: `n` uses of `BSC_p` carry at most `n (1 - h₂(p))` bits.
 * `Cslib.BitString.mutualInfo_uniformOfFintype_bind_bsc`: equality for uniform inputs.
@@ -92,13 +92,14 @@ variable {ι : Type*} [Fintype ι] {M : Type*}
 /-! ### Entropy of the noise -/
 
 /-- A bit flipped with probability `p` carries `h₂(p)` bits of entropy. -/
-theorem entropy_flipBit (p : I) : entropy (flipBit p) = Real.binEntropy p / Real.log 2 := by
-  rw [entropy_bool, flipBit_apply_toReal, ite_eq_left rfl]
+theorem entropy_coin (p : I) :
+    entropy (Probability.PMF.coin p) = Real.binEntropy p / Real.log 2 := by
+  rw [entropy_bool, Probability.PMF.coin_apply_toReal, ite_eq_left rfl]
 
 /-- The noise of `BSC_p` on `n` bits has entropy `n h₂(p)`. -/
 theorem entropy_bscNoise (p : I) :
     entropy (bscNoise (ι := ι) p) = Fintype.card ι * (Real.binEntropy p / Real.log 2) := by
-  rw [bscNoise_eq_pi, entropy_pi, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, entropy_flipBit]
+  rw [bscNoise_eq_pi, entropy_pi, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, entropy_coin]
 
 /-- Whatever is sent, the output of `BSC_p` on `n` bits has entropy `n h₂(p)`. -/
 theorem entropy_bsc (p : I) (x : ι → Bool) :

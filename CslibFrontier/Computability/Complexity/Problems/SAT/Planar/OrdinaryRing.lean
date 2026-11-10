@@ -44,7 +44,7 @@ namespace Cslib.Complexity.SAT.OrdinaryRing
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
 
 /-- One variable for each side and lane of the common paired-port interface. -/
-abbrev Variable := Fin 4 × Fin 2
+abbrev Variable := PairedPorts.Port
 
 /-- Cyclic geometric order, traversing the inner square clockwise. -/
 def cyclicOrder : List Variable :=

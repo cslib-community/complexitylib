@@ -26,7 +26,7 @@ These are information-theoretic laws; they make no efficient-sampling claim.
   the same bound.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

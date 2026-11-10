@@ -27,7 +27,7 @@ Adapted from [Index.lean](https://github.com/anthropics/formal-math/blob/16a5ce4
 The existing Exact Triangle hashing client now uses these shared facts.
 -/
 
-@[expose] public section
+public section
 
 namespace Int
 

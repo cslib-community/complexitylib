@@ -60,6 +60,8 @@ hypotheses are those on the input matrix and the channel interface.
 * `Matrix.HierarchyParams.stage_rates`: one stage satisfies the per-stage rates.
 * `Matrix.HierarchyParams.next_isStrictUpperTriangular`, `Matrix.HierarchyParams.next_nonneg`,
   `Matrix.HierarchyParams.next_mulVec_one_le`: the next stage is again a valid input.
+* `Matrix.HierarchyParams.residual_nonneg`, `Matrix.HierarchyParams.residual_le_mul`,
+  `Matrix.HierarchyParams.residual_sum_le_one`: entry and row-mass bounds on the residual.
 
 ## References
 
@@ -319,6 +321,10 @@ theorem weight_eq : P.weight X Y f C = detectorWeight P.κ (P.pilot X Y f C) := 
 noncomputable def next : Matrix (Lex (V × Fin (P.m + 1))) (Lex (V × Fin (P.m + 1))) ℝ :=
   (copyStage (P.copyCutoff f) P.m (P.weight X Y f C) (P.residual X Y f C)).submatrix ofLex ofLex
 
+theorem next_eq : P.next X Y f C =
+    (copyStage (P.copyCutoff f) P.m (P.weight X Y f C) (P.residual X Y f C)).submatrix
+      ofLex ofLex := by rfl
+
 /-- **The projection** `P_r` from the copies to their parents, weighted by the copy weights. -/
 noncomputable def proj [DecidableEq V] : Matrix (Lex (V × Fin (P.m + 1))) V ℝ :=
   (copyWeight (P.weight X Y f C)).submatrix ofLex id
@@ -435,6 +441,22 @@ theorem residual_nonneg (hf : 0 < f) (hC0 : ∀ x y, 0 ≤ C x y) (x y : V) :
   unfold residual correction
   exact cutoffCorrection_residual_nonneg (φ := fun y t => P.cutoff f t * P.γ (P.pilot X Y f C y))
     hC0 (P.phi_nonneg hf) (P.phi_le hf) (P.phi_mono hf) (P.θf_nonneg hf) P.k x y
+
+variable (X Y) in
+/-- Public application bound for the actual residual, from the finite correction sequence. -/
+theorem residual_le_mul (hf : 0 < f) (hC : ∀ x y, 0 ≤ C x y)
+    (hCf : ∀ x y, C x y ≤ f) (hC1 : C *ᵥ 1 ≤ 1) (x y : V) :
+    P.residual X Y f C x y ≤ ((P.k : ℝ) + 1) * f := by
+  exact cutoffCorrection_residual_le_mul hC (P.phi_nonneg hf) (P.phi_le hf)
+    (P.θf_nonneg hf) hCf hf.le hC1 P.k x y
+
+variable (X Y) in
+/-- Actual residual row mass is at most one, directly from correction nonnegativity. -/
+theorem residual_sum_le_one (hf : 0 < f)
+    (hC1 : C *ᵥ 1 ≤ 1) (x : V) : ∑ y, P.residual X Y f C x y ≤ 1 := by
+  have hE := cutoffCorrectionIter_nonneg (C := C) (P.phi_nonneg (X := X) (Y := Y) (C := C) hf) P.k
+  have hm := (correction_mulVec_one_le hE hC1 x).trans (hC1 x)
+  simpa only [residual, correction, mulVec, dotProduct, Pi.one_apply, mul_one] using hm
 
 theorem weight_nonneg (j : Fin (P.m + 1)) (x : V) : 0 ≤ P.weight X Y f C j x := by
   unfold weight detectorWeight; split_ifs

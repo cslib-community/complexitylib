@@ -22,7 +22,7 @@ actual realizing machine; they do not normalize it or import a higher constructi
 predicate into uncharged machine bounds and the existing pointwise output-length relation.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInO
 
 open Cslib

@@ -47,7 +47,7 @@ Hence `(ℓ + 1) * explicitThreshold N ≤ 6 N` for all large `N`
 * [P. L. Chebyshev, *Mémoire sur les nombres premiers*][Chebyshev1852]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.AffineDisperser
 

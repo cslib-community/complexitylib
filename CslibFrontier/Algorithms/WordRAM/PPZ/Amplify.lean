@@ -16,6 +16,7 @@ public import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
+import CslibFrontier.Foundations.Data.Nat.CeilDiv
 
 /-!
 # The PPZ algorithm on the randomized word RAM
@@ -556,21 +557,35 @@ theorem ppzDigits_binary (k n c : ℕ) : ∀ d ∈ ppzDigits k n c, d ≤ 1 :=
 theorem length_ppzDigits_le (k n c : ℕ) : (ppzDigits k n c).length ≤ ppzCounterLen k n c :=
   length_countDigits_le _ _
 
+/-- **The number of rounds suffices**: with `2 ^ e · c` rounds and `x ≤ e`, the product
+`2 ^ e · c · 2 ^ (-x)` is at least `c`. With `q = 2 ^ (-x)` this is the hypothesis `c ≤ R · q`
+of `repeatRoundWith_false_le_exp`, for PPZ here and for PPSZ. -/
+theorem le_two_pow_mul_mul_rpow_neg {e c : ℕ} {x : ℝ} (hx : x ≤ e) :
+    (c : ℝ) ≤ ((2 ^ e * c : ℕ) : ℝ) * (2 : ℝ) ^ (-x) := by
+  have h : (1 : ℝ) ≤ (2 : ℝ) ^ e * (2 : ℝ) ^ (-x) := by
+    rw [← Real.rpow_natCast, ← Real.rpow_add two_pos]
+    exact Real.one_le_rpow one_le_two (by linarith)
+  calc (c : ℝ) ≤ c * ((2 : ℝ) ^ e * (2 : ℝ) ^ (-x)) := le_mul_of_one_le_right (Nat.cast_nonneg c) h
+    _ = ((2 ^ e * c : ℕ) : ℝ) * (2 : ℝ) ^ (-x) := by push_cast; ring
+
+/-- `(1 - 1 / k) · n` is the quotient of natural numbers `(k - 1) · n / k`. -/
+private theorem one_sub_one_div_mul_eq {k : ℕ} (hk : 1 ≤ k) (n : ℕ) :
+    (1 - 1 / (k : ℝ)) * n = (((k - 1) * n : ℕ) : ℝ) / k := by
+  have hk0 : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  push_cast [Nat.cast_sub hk]
+  field_simp
+
+/-- `ppzExp k n` is the ceiling division `(k - 1) · n ⌈/⌉ k` by definition, so it is the ceiling
+of `(1 - 1 / k) · n`. -/
+private theorem ppzExp_eq_ceil {k : ℕ} (hk : 1 ≤ k) (n : ℕ) :
+    ppzExp k n = ⌈(1 - 1 / (k : ℝ)) * n⌉₊ := by
+  rw [one_sub_one_div_mul_eq hk]
+  exact (Nat.ceil_div_eq_ceilDiv _ hk).symm
+
 /-- The exponent is at least `(1 - 1 / k) n`. -/
 theorem le_ppzExp {k : ℕ} (hk : 1 ≤ k) (n : ℕ) : (1 - 1 / (k : ℝ)) * n ≤ ppzExp k n := by
-  have hkn : (k - 1) * n ≤ k * ppzExp k n := by
-    have h := Nat.div_add_mod ((k - 1) * n + k - 1) k
-    have h' := Nat.mod_lt ((k - 1) * n + k - 1) (show 0 < k by omega)
-    simp only [ppzExp]
-    omega
-  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
-  have hr : ((k : ℝ) - 1) * n ≤ k * ppzExp k n := by
-    have := (Nat.cast_le (α := ℝ)).mpr hkn
-    push_cast [Nat.cast_sub hk] at this
-    exact this
-  rw [show (1 - 1 / (k : ℝ)) * n = ((k : ℝ) - 1) * n / k by field_simp]
-  rw [div_le_iff₀ hk0]
-  linarith
+  rw [ppzExp_eq_ceil hk]
+  exact Nat.le_ceil _
 
 /-- The exponent is at most `n`. -/
 theorem ppzExp_le (k n : ℕ) : ppzExp k n ≤ n := by
@@ -885,36 +900,15 @@ theorem ampProgram_failure_le_exp {k c : ℕ} (hk : 1 ≤ k) {φ : CNF (Fin n)} 
       ppzCounterLen k n c + 2)) :
     ((evalRand w ampProgram (ampTime k n c (k :: c :: encode φ).length)
       (.init (k :: c :: encode φ))).map Schoening.cfgSuccess false).toReal ≤ Real.exp (-c) := by
-  rw [ampProgram_failure_eq k c hk φ hw]
-  have hp := roundSuccessProb_ge hk hφ hlen
-  have hp1 : roundSuccessProb φ ≤ 1 := roundSuccessProbWith_le_one _ _
-  refine Real.one_sub_pow_le_exp hp1 ?_
-  have he := le_ppzExp hk n
-  have h2 : (1 : ℝ) ≤ (2 : ℝ) ^ ppzExp k n * (2 : ℝ) ^ (-((1 - 1 / (k : ℝ)) * n)) := by
-    rw [← Real.rpow_natCast, ← Real.rpow_add two_pos]
-    exact Real.one_le_rpow one_le_two (by linarith)
-  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  calc (c : ℝ) ≤ c * ((2 : ℝ) ^ ppzExp k n * (2 : ℝ) ^ (-((1 - 1 / (k : ℝ)) * n))) :=
-        le_mul_of_one_le_right hc0 h2
-    _ = ((2 : ℝ) ^ ppzExp k n * c) * (2 : ℝ) ^ (-((1 - 1 / (k : ℝ)) * n)) := by ring
-    _ ≤ ((2 : ℝ) ^ ppzExp k n * c) * roundSuccessProb φ := by gcongr
-    _ = (ppzRounds k n c : ℝ) * roundSuccessProb φ := by simp [ppzRounds]
+  rw [(ampProgram_spec k c hk φ hw).2.2.2]
+  exact repeatRoundWith_false_le_exp (roundSuccessProb_ge hk hφ hlen)
+    (le_two_pow_mul_mul_rpow_neg (le_ppzExp hk n))
 
 /-- The exponent is at most `(1 - 1 / k) n + 1`. -/
 theorem ppzExp_le_add_one {k : ℕ} (hk : 1 ≤ k) (n : ℕ) :
     (ppzExp k n : ℝ) ≤ (1 - 1 / (k : ℝ)) * n + 1 := by
-  have hkn : k * ppzExp k n ≤ (k - 1) * n + k := by
-    have := Nat.div_mul_le_self ((k - 1) * n + k - 1) k
-    simp only [ppzExp]
-    rw [Nat.mul_comm]
-    omega
-  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
-  have hr : (k : ℝ) * ppzExp k n ≤ ((k : ℝ) - 1) * n + k := by
-    have := (Nat.cast_le (α := ℝ)).mpr hkn
-    push_cast [Nat.cast_sub hk] at this
-    exact this
-  rw [show (1 - 1 / (k : ℝ)) * n + 1 = (((k : ℝ) - 1) * n + k) / k by field_simp, le_div_iff₀ hk0]
-  linarith
+  rw [ppzExp_eq_ceil hk]
+  exact (Nat.ceil_lt_add_one (by rw [one_sub_one_div_mul_eq hk]; positivity)).le
 
 /-- **The running time** of the PPZ algorithm is `O((n + L) ^ 2 2 ^ ((1 - 1 / k) n) (c + 1))`:
 explicitly, at most `200 (n + L + 1) ^ 2 2 ^ ((1 - 1 / k) n) (c + 1)` instructions. For `k = 3`

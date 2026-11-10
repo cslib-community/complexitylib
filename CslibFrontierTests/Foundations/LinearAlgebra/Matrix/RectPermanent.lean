@@ -20,7 +20,7 @@ Binet–Minc identity and its inclusion–exclusion extension used to compute th
 concrete `2 × 3` matrix, and the right-hand side of the Binet–Minc identity evaluated directly.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.LinearAlgebra.RectPermanentTests
 

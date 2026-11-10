@@ -412,6 +412,20 @@ private theorem two_mul_card_agree_eq {r : BitString k → BitString n} (σ : Fi
   rw [two_mul_card_eq_add_sum_signVal, sum_signVal_add_eq]
   simp
 
+/-- Markov's inequality for the survivor counts: if `U` has mean at most `B` over all block
+restrictions `(σ, w)`, then the restrictions with more than `Q` survivors number at most
+`|Fin k → Fin ℓ| * 2 ^ (n + k * ℓ) * (B / (Q + 1))`. -/
+private theorem sum_card_lt_survivors_le (U : (Fin k → Fin ℓ) → BitString (n + k * ℓ) → ℕ)
+    {B : ℝ} (hmean : (∑ σ : Fin k → Fin ℓ, ∑ w : BitString (n + k * ℓ), (U σ w : ℝ)) ≤
+      (Fintype.card (Fin k → Fin ℓ) : ℝ) * 2 ^ (n + k * ℓ) * B) (Q : ℕ) :
+    (∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ)) ≤
+      (Fintype.card (Fin k → Fin ℓ) : ℝ) * 2 ^ (n + k * ℓ) * (B / (Q + 1)) := by
+  rw [mul_div_assoc', le_div_iff₀ (by positivity), mul_comm, mul_sum]
+  refine (sum_le_sum fun σ _ => (mul_comm _ _).trans_le <|
+    card_filter_mul_le_sum univ _ (fun w => (U σ w : ℝ)) (fun _ _ => Nat.cast_nonneg _)
+      fun _ _ h => ?_).trans hmean
+  exact_mod_cast Nat.succ_le_of_lt h
+
 /-- **Average-case core** (original): let `f` collapse, under every block restriction `(σ, w)`, to
 a function in `IsDepthTwoOverWeights (W σ) (U σ w)` with `#(W σ) < M`, and let the mean of `U` be
 at most `B`. If the rows `r` are `δ`-biased and `δ < γ ^ 2`, then for every `Q`, `f` agrees with
@@ -495,20 +509,11 @@ theorem card_eval_eq_kaneWilliamsB_le_of_unforced_mean_le (hℓ : 0 < ℓ)
   set S : ℝ := (Fintype.card (Fin k → Fin ℓ) : ℝ) with hS
   have hS0 : 0 < S := by
     rw [hS, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin]; positivity
-  have hmarkov : ((Q : ℝ) + 1) * ∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ)
-      ≤ S * N * B := by
-    rw [mul_sum]
-    refine (sum_le_sum fun σ _ => (mul_comm _ _).trans_le <|
-      card_filter_mul_le_sum univ _ (fun w => (U σ w : ℝ)) (fun _ _ => Nat.cast_nonneg _)
-        fun _ _ h => ?_).trans hmean
-    exact_mod_cast Nat.succ_le_of_lt h
   have hsumσ := sum_le_sum fun σ (_ : σ ∈ (univ : Finset (Fin k → Fin ℓ))) => hσ σ
   rw [sum_const, card_univ, nsmul_eq_mul, sum_add_distrib, sum_add_distrib, sum_const, sum_const,
     card_univ, nsmul_eq_mul, nsmul_eq_mul, ← mul_sum, ← hS] at hsumσ
-  have hQ : (0 : ℝ) < Q + 1 := by positivity
   have hmarkov' : (∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ)) ≤
-      S * N * (B / (Q + 1)) := by
-    rw [mul_div_assoc', le_div_iff₀ hQ]; linarith
+      S * N * (B / (Q + 1)) := sum_card_lt_survivors_le U hmean Q
   have hkey : S * (2 ^ k * A) ≤ S * (2 ^ k * (N * ((1 + γ) / 2 + CT + B / (Q + 1)))) := by
     have := mul_le_mul_of_nonneg_left hmarkov' h2k.le
     nlinarith
@@ -571,20 +576,11 @@ theorem one_le_of_threshold_eq_kaneWilliamsB_of_unforced_mean_le {t : ℕ} (hℓ
       exact_mod_cast hcard
     have hbadw : (#{w : BitString (n + k * ℓ) | kaneWilliamsMessage n k ℓ w ∈ bad} : ℝ) ≤
         N * CT := card_filter_badMessages_le hδ hγ hγδ hr W hM Q
-    have hQ : (0 : ℝ) < Q + 1 := by positivity
-    have hmarkov : ((Q : ℝ) + 1) *
-        ∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ) ≤ S * N * B := by
-      rw [mul_sum]
-      refine (sum_le_sum fun σ _ => (mul_comm _ _).trans_le <|
-        card_filter_mul_le_sum univ _ (fun w => (U σ w : ℝ)) (fun _ _ => Nat.cast_nonneg _)
-          fun _ _ h => ?_).trans hmean
-      exact_mod_cast Nat.succ_le_of_lt h
     have hsumσ := sum_le_sum fun σ (_ : σ ∈ (univ : Finset (Fin k → Fin ℓ))) => hcover σ
     rw [sum_const, card_univ, nsmul_eq_mul, sum_add_distrib, sum_const, card_univ,
       nsmul_eq_mul, ← hS] at hsumσ
     have hmarkov' : (∑ σ : Fin k → Fin ℓ, (#{w : BitString (n + k * ℓ) | Q < U σ w} : ℝ)) ≤
-        S * N * (B / (Q + 1)) := by
-      rw [mul_div_assoc', le_div_iff₀ hQ]; linarith
+        S * N * (B / (Q + 1)) := sum_card_lt_survivors_le U hmean Q
     have hkey : S * N * 1 ≤ S * N * (CT + B / (Q + 1)) := by
       nlinarith [mul_le_mul_of_nonneg_left hbadw hS0.le]
     have := le_of_mul_le_mul_left hkey (mul_pos hS0 hN0)

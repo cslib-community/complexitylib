@@ -299,82 +299,31 @@ private theorem bounded6 {a₀ a₁ a₂ a₃ a₄ a₅ : ℕ} (h₀ : a₀ ≤ 
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   omega
 
-/-- Reading `I.n` from the unary header into register `0`. -/
-private theorem reachesOut_header_n (hB : I.n ≤ B) :
-    ∀ j ≤ I.n, writer.ReachesOut I.encode (writer.Active B) (0, [j, 0, 0, 0, 0, 0])
-      (2, [I.n, 0, 0, 0, 0, 0]) [] := by
-  intro j hj
-  induction h : I.n - j generalizing j with
-  | zero =>
-    obtain rfl : j = I.n := by omega
-    refine ReachesOut.read (show writer.instr 0 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_reg, List.getD_cons_zero, I.getElem?_encode_n le_rfl, lt_irrefl,
-      decide_false, readLabel]
-    exact ReachesOut.refl _
-  | succ _ ih =>
-    refine ReachesOut.read (show writer.instr 0 = _ from rfl)
-      (bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_reg, List.getD_cons_zero, I.getElem?_encode_n hj,
-      show j < I.n by omega, decide_true, readLabel]
-    refine ReachesOut.assign (show writer.instr 1 = _ from rfl)
-      (bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simpa using ih (j + 1) (by omega) (by omega)
-
-/-- Reading `I.s` from the unary header into register `1`. -/
-private theorem reachesOut_header_s (hB : I.n ≤ B) :
-    ∀ j ≤ (I.s : ℕ), writer.ReachesOut I.encode (writer.Active B)
-      (2, [I.n, j, 0, 0, 0, 0]) (4, [I.n, I.s, 0, 0, 0, 0]) [] := by
-  have hs := I.s.isLt
-  intro j hj
-  induction h : (I.s : ℕ) - j generalizing j with
-  | zero =>
-    obtain rfl : j = I.s := by omega
-    refine ReachesOut.read (show writer.instr 2 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-      I.getElem?_encode_s le_rfl, lt_irrefl, decide_false, readLabel]
-    exact ReachesOut.refl _
-  | succ _ ih =>
-    refine ReachesOut.read (show writer.instr 2 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-      I.getElem?_encode_s hj, show j < I.s by omega, decide_true, readLabel]
-    refine ReachesOut.assign (show writer.instr 3 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simpa using ih (j + 1) (by omega) (by omega)
-
-/-- Reading `I.t` from the unary header into register `2`. -/
-private theorem reachesOut_header_t (hB : I.n ≤ B) :
-    ∀ j ≤ (I.t : ℕ), writer.ReachesOut I.encode (writer.Active B)
-      (4, [I.n, I.s, j, 0, 0, 0]) (6, [I.n, I.s, I.t, 0, 0, 0]) [] := by
-  have hs := I.s.isLt
-  have ht := I.t.isLt
-  intro j hj
-  induction h : (I.t : ℕ) - j generalizing j with
-  | zero =>
-    obtain rfl : j = I.t := by omega
-    refine ReachesOut.read (show writer.instr 4 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-      I.getElem?_encode_t le_rfl, lt_irrefl, decide_false, readLabel]
-    exact ReachesOut.refl _
-  | succ _ ih =>
-    refine ReachesOut.read (show writer.instr 4 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_add, eval_reg, eval_const, List.getD_cons_zero, List.getD_cons_succ,
-      I.getElem?_encode_t hj, show j < I.t by omega, decide_true, readLabel]
-    refine ReachesOut.assign (show writer.instr 5 = _ from rfl)
-      (bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega)) ?_
-    simpa using ih (j + 1) (by omega) (by omega)
-
 /-- The header is read into registers `0`, `1` and `2`. -/
 private theorem reachesOut_header (hB : I.n ≤ B) :
     writer.ReachesOut I.encode (writer.Active B) (0, [0, 0, 0, 0, 0, 0])
-      (6, [I.n, I.s, I.t, 0, 0, 0]) [] :=
-  ((reachesOut_header_n I hB 0 (Nat.zero_le _)).trans
-    ((reachesOut_header_s I hB 0 (Nat.zero_le _)).trans
-      (reachesOut_header_t I hB 0 (Nat.zero_le _)))).of_eq rfl
+      (6, [I.n, I.s, I.t, 0, 0, 0]) [] := by
+  have hs := I.s.isLt
+  have ht := I.t.isLt
+  have hn := reachesOut_count (w := I.encode) (B := B) (n := I.n) (u := 0)
+    (fun j => [j, 0, 0, 0, 0, 0])
+    (show writer.instr 0 = _ from rfl) (show writer.instr 1 = _ from rfl) (fun _ _ => by simp)
+    (fun j hj => bounded6 (hj.trans hB) (by omega) (by omega) (by omega) (by omega) (by omega))
+    (fun j hj => by simp [I.getElem?_encode_n hj.le, hj])
+    (by simp [I.getElem?_encode_n le_rfl]) 0 (Nat.zero_le _)
+  have hs' := reachesOut_count (w := I.encode) (B := B) (n := I.s) (u := 1)
+    (fun j => [I.n, j, 0, 0, 0, 0])
+    (show writer.instr 2 = _ from rfl) (show writer.instr 3 = _ from rfl) (fun _ _ => by simp)
+    (fun j hj => bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega))
+    (fun j hj => by simp [I.getElem?_encode_s hj.le, hj])
+    (by simp [I.getElem?_encode_s le_rfl]) 0 (Nat.zero_le _)
+  have ht' := reachesOut_count (w := I.encode) (B := B) (n := I.t) (u := 2)
+    (fun j => [I.n, I.s, j, 0, 0, 0])
+    (show writer.instr 4 = _ from rfl) (show writer.instr 5 = _ from rfl) (fun _ _ => by simp)
+    (fun j hj => bounded6 hB (by omega) (by omega) (by omega) (by omega) (by omega))
+    (fun j hj => by simp [I.getElem?_encode_t hj.le, hj])
+    (by simp [I.getElem?_encode_t le_rfl]) 0 (Nat.zero_le _)
+  exact (hn.trans (hs'.trans ht')).of_eq rfl
 
 /-- Writing the clause for entry `(u, v)` of the adjacency matrix when `arc I u v` holds. -/
 private theorem reachesOut_entry (hB : I.n ≤ B) {u v : ℕ} (hu : u < I.n) (hv : v < I.n) :

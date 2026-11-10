@@ -31,10 +31,11 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Tactic.Negligible
 
 /-!
 # Carter–Wegman message authentication codes from Δ-universal hashing
@@ -1335,9 +1336,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfOneTimeGame
       Game.succProbability (prfOneTimeGame (seed n) family n (hash n) (forger n))) := by
   have hdist := hprf.secure (prfPadDistinguisher test)
     (isOraclePPT_prfPadDistinguisher htest_ppt)
-  refine negligible_of_le (hε.add hdist) fun n => ?_
-  rw [← NNReal.coe_le_coe, Game.coe_succProbability, Pi.add_apply, NNReal.coe_add]
-  simpa only [ENNReal.coe_toReal] using
+  negligible using fun n =>
     prfOneTimeGame_le (hh n) ENNReal.coe_ne_top family (forger n) test (htest_eval n)
 
 /-- **Asymptotic one-query fixed-nonce PRF-masked Carter–Wegman SUF-CMA security**
@@ -1632,7 +1631,7 @@ noncomputable def prfCounterSlotGame (seed : PMF K) (family : List Bool → List
 
 /-- The multi-query fresh-nonce PRF-masked Carter–Wegman issued-counter EUF-CMA experiment
 (after [BonehShoup2023], Section 7.5, Theorem 7.10), where the signer's counter schedule `nonce`
-fixes the nonces and `checkCounterGlobal` accepts only issued counter indices
+fixes the nonces and `checkCounterEUF` accepts only issued counter indices
 (`pads[idx]? = some r`), rejecting unissued `idx`. -/
 noncomputable def prfCounterGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
     (n : ℕ) (nonce : ℕ → List Bool) (hash : K → M → BitString n)
@@ -1641,7 +1640,7 @@ noncomputable def prfCounterGame (seed : PMF K) (family : List Bool → List Boo
 
 /-- The multi-query fresh-nonce PRF-masked Carter–Wegman issued-slot strong SUF-CMA experiment
 (after [BonehShoup2023], Section 7.5, Theorem 7.10), where the signer's counter schedule `nonce`
-fixes the nonces and `checkCounterStrong` accepts only issued counter indices
+fixes the nonces and `checkCounterSUF` accepts only issued counter indices
 (`pads[idx]? = some r`), rejecting unissued `idx`. -/
 noncomputable def prfCounterStrongGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
     (n : ℕ) (nonce : ℕ → List Bool) (hash : K → M → BitString n)
@@ -1936,12 +1935,10 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterSlotGame
         (prfCounterSlotGame (seed n) family n (nonce n) (hash n) (forger n))) := by
   have hdist := hprf.secure (prfMultiPadDistinguisher Q nonce test)
     (isOraclePPT_prfMultiPadDistinguisher hQ hnonce htest_ppt)
-  refine negligible_of_eventually_le (hε.add hdist) ?_
-  filter_upwards [hforger, hnonce_len, hnonce_inj] with n hforger_n hlen_n hinj_n
-  rw [← NNReal.coe_le_coe, Game.coe_succProbability, Pi.add_apply, NNReal.coe_add]
-  simpa only [ENNReal.coe_toReal] using
-    prfCounterSlotGame_le (hh n) ENNReal.coe_ne_top family Q nonce hforger_n
-      hlen_n hinj_n test (htest_eval n)
+  negligible eventually (by
+    filter_upwards [hforger, hnonce_len, hnonce_inj] with n hforger_n hlen_n hinj_n
+    exact prfCounterSlotGame_le (hh n) ENNReal.coe_ne_top family Q nonce hforger_n
+      hlen_n hinj_n test (htest_eval n))
 
 /-- **Asymptotic multi-query fresh-nonce PRF-masked Carter–Wegman issued-counter EUF-CMA security**
 (after [BonehShoup2023], Section 7.5, Theorem 7.10). -/
@@ -2007,13 +2004,6 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterStrongGame
 
 end PRFCounter
 
-private theorem probOracleComp_runWith_liftRight {Query α State : Type} {spec : Query → Type}
-    (oracle : (q : Query) → StateT State PMF (spec q))
-    (prog : OracleComp spec α) (s : State) :
-    ProbOracleComp.runWith oracle (OracleComp.liftRight prog) s =
-      (OracleComp.interpret oracle prog).run s :=
-  OracleComp.runWith_sumHandler_liftRight _ oracle prog s
-
 private theorem sumHandler_liftLeft_support_append {Query Elem : Type} {spec : Query → Type}
     (right : (q : Query) → StateT (List Elem) PMF (spec q))
     (hright : ∀ q tr₁ res, res ∈ (right q tr₁).support → ∃ s, res.2 = tr₁ ++ s) :
@@ -2043,16 +2033,6 @@ private theorem bind_bool_mono_of_imp {α β γ δ : Type}
   by_cases h : f a b d = true
   · rw [h, hfg a b d h]
   · simp [Bool.eq_false_iff.mpr h]
-
-private theorem negligible_inv_two_pow : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
-  simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
-
-private theorem negligible_sq_div_two_mul_two_pow {Q : ℕ → ℕ} (hQ : PolynomiallyBounded Q) :
-    Negligible (fun n => (Q n : ℝ≥0) ^ 2 / (2 * (2 : ℝ≥0) ^ n)) := by
-  refine negligible_of_le (negligible_inv_two_pow.polynomiallyBounded_mul (hQ.pow 2)) fun n => ?_
-  rw [div_eq_mul_inv, mul_inv, Nat.cast_pow]
-  exact mul_le_mul_of_nonneg_left
-    (mul_le_of_le_one_left zero_le (by norm_num : (2⁻¹ : ℝ≥0) ≤ 1)) zero_le
 
 /-! ### Full nonce-based Carter–Wegman MAC (Boneh–Shoup Attack Game 7.4 and Theorem 7.10) -/
 
@@ -2359,7 +2339,7 @@ theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [De
     (((OracleComp.interpret nonceSimHandler prog).run tr).bind fun res =>
       (PMF.uniformOfFintype (N → Y)).bind fun table =>
         post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
-  simpa only [probOracleComp_runWith_liftRight] using
+  simpa only [ProbOracleComp.runWith_liftRight, OracleComp.runWith] using
     probOracleComp_uniform_bind_run_interpret_nonceFnHandler hash k (OracleComp.liftRight prog)
       tr post c hpost
 
@@ -2725,13 +2705,10 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfNonceStrongGame
     Negligible (fun n =>
       Game.succProbability (prfNonceStrongGame (seed n) family n (hash n) (forger n))) := by
   have hdist := hprf.secure D hD
-  refine negligible_of_eventually_le ((hε.add negligible_inv_two_pow).add hdist) ?_
-  filter_upwards [hreal, hideal] with n hreal_n hideal_n
-  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
-  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_inv, NNReal.coe_pow, NNReal.coe_ofNat]
-  simpa only [ENNReal.coe_toReal] using
-    prfNonceStrongGame_le_of_distinguisher (hh n) ENNReal.coe_ne_top family (forger n) D
-      hreal_n hideal_n
+  negligible eventually (by
+    filter_upwards [hreal, hideal] with n hreal_n hideal_n
+    exact prfNonceStrongGame_le_of_distinguisher (hh n) ENNReal.coe_ne_top family (forger n) D
+      hreal_n hideal_n)
 
 /-- **Asymptotic nonce-based Carter–Wegman EUF-CMA (message-freshness) security** implied by
 `negligible_prfNonceStrongGame`; as there, `D`, `hreal`, and `hideal` assume the PRF reduction
@@ -3318,7 +3295,7 @@ theorem eval_prfIdealGame_prfNonceToPrfDistinguisher_le
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
       fun table _ => ?_
-    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
     exact eval_cwNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
       (adversary n []) [] [] (List.Sublist.refl [])
   refine hle.trans ?_
@@ -3411,10 +3388,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanNonceMAC
   refine NonceMACScheme.SUFCMA.of_negligible fun adversary hadversary => ?_
   have hdist := hprf.secure (prfNonceToPrfDistinguisher msgLen seed hash adversary)
     (isOraclePPT_prfNonceToPrfDistinguisher hmsgLen hseed hhash hadversary)
-  refine negligible_of_le ((hε.add negligible_inv_two_pow).add hdist) fun n => ?_
-  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
-  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_inv, NNReal.coe_pow, NNReal.coe_ofNat]
-  simpa only [ENNReal.coe_toReal] using
+  negligible using fun n =>
     sufCmaGame_carterWegmanNonceMAC_toReal_le hmsgLen hseed hhash hprf.polyTime
       (hh n) ENNReal.coe_ne_top adversary
 
@@ -3596,7 +3570,7 @@ theorem uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
     (((OracleComp.interpret randomNonceSimHandler prog).run tr).bind fun res =>
       (PMF.uniformOfFintype (N → Y)).bind fun table =>
         post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
-  simpa only [probOracleComp_runWith_liftRight] using
+  simpa only [ProbOracleComp.runWith_liftRight, OracleComp.runWith] using
     probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler hash k
       (OracleComp.liftRight prog) tr post c hpost
 
@@ -3738,7 +3712,8 @@ theorem randomNonceSimHandler_not_nodup_le {α : Type} [Fintype N] [Nonempty N] 
       else 1 := by
   have h := probOracleComp_randomNonceSimHandler_not_nodup_le hprog.probOracleComp tr
   rwa [show OracleComp.interpret (fun q => ProbOracleComp.query q) prog =
-    OracleComp.liftRight prog from rfl, probOracleComp_runWith_liftRight] at h
+    OracleComp.liftRight prog from rfl, ProbOracleComp.runWith_liftRight,
+    OracleComp.runWith] at h
 
 variable [DecidableEq M] [DecidableEq N] [DecidableEq Y]
 
@@ -3990,7 +3965,8 @@ theorem randomNonceStrongGame_le_sum_add_max {seed : PMF K} {hash : K → M → 
   have h := seed_uniform_probOracleComp_checkRandomNonceSUF_le_sum_add_max hh
     (hforger s).probOracleComp (fun x => x)
   simpa only [show OracleComp.interpret (fun q => ProbOracleComp.query q) (forger.forge s) =
-    OracleComp.liftRight (forger.forge s) from rfl, probOracleComp_runWith_liftRight] using h
+    OracleComp.liftRight (forger.forge s) from rfl, ProbOracleComp.runWith_liftRight,
+    OracleComp.runWith] using h
 
 /-- **Ideal randomized Carter–Wegman SUF-CMA security** ([BonehShoup2023], Section 7.4,
 Theorem 7.9, p. 270): under `IsDeltaUniversalHash seed hash ε`, any `Q`-query-bounded
@@ -4142,15 +4118,10 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceStrong
     Negligible (fun n =>
       Game.succProbability (prfRandomNonceStrongGame (seed n) family n (hash n) (forger n))) := by
   have hdist := hprf.secure D hD
-  refine negligible_of_eventually_le
-    ((((negligible_sq_div_two_mul_two_pow hQ).add negligible_inv_two_pow).add hε).add hdist) ?_
-  filter_upwards [hforger, hreal, hideal] with n hforger_n hreal_n hideal_n
-  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
-  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_natCast,
-    NNReal.coe_mul, NNReal.coe_ofNat, NNReal.coe_inv]
-  simpa only [ENNReal.coe_toReal] using
-    prfRandomNonceStrongGame_le_of_distinguisher (hh n) ENNReal.coe_ne_top family hforger_n D
-      hreal_n hideal_n
+  negligible eventually (by
+    filter_upwards [hforger, hreal, hideal] with n hforger_n hreal_n hideal_n
+    exact prfRandomNonceStrongGame_le_of_distinguisher (hh n) ENNReal.coe_ne_top family hforger_n D
+      hreal_n hideal_n)
 
 /-- **Asymptotic randomized Carter–Wegman EUF-CMA (message-freshness) security ([BonehShoup2023],
 Section 7.4, Theorem 7.9, p. 270)**, assuming the `IsOraclePPT encBool` PRF reduction wrapper `D`
@@ -4510,8 +4481,8 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
   refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
   rw [BitString.eval_sampleList] at hprfKey
   have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
-  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.eval_run_interpret]
+  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   have hstep :
       (fun request state =>
         ProbComp.eval
@@ -4798,7 +4769,7 @@ theorem eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
       fun table _ => ?_
-    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
     exact eval_cwRandomNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
       (adversary n []) [] [] (List.Sublist.refl [])
   refine hle.trans ?_
@@ -4887,25 +4858,11 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanRandomMAC
   refine MACScheme.SUFCMA.of_negligible fun adversary hadversary => ?_
   obtain ⟨c, d, hbound⟩ := hadversary.query_bounds
   let Q (n : ℕ) : ℕ := c * (n + 2) ^ d
-  have hQ : PolynomiallyBounded Q := by
-    refine polynomiallyBounded_iff_le.2 ⟨c * 2 ^ d, d, fun n => ?_⟩
-    have hle : n + 2 ≤ 2 * (n + 1) := by omega
-    calc c * (n + 2) ^ d
-        ≤ c * (2 * (n + 1)) ^ d := Nat.mul_le_mul_left c (Nat.pow_le_pow_left hle d)
-      _ = c * 2 ^ d * (n + 1) ^ d := by rw [Nat.mul_pow, Nat.mul_assoc]
   have hdist := hprf.secure (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary)
     (isOraclePPT_prfRandomNonceToPrfDistinguisher hmsgLen hseed hhash hadversary)
-  refine negligible_of_le
-    ((((negligible_sq_div_two_mul_two_pow hQ).add negligible_inv_two_pow).add hε).add hdist)
-    fun n => ?_
-  have hq_n : (adversary n []).IsQueryBounded (Q n) := by
-    simpa [Q] using (hbound n []).1
-  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
-  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_natCast,
-    NNReal.coe_mul, NNReal.coe_ofNat, NNReal.coe_inv]
-  simpa only [ENNReal.coe_toReal] using
+  negligible using fun n =>
     sufCmaGame_carterWegmanRandomMAC_toReal_le hmsgLen hseed hhash hprf.polyTime
-      (hh n) ENNReal.coe_ne_top hq_n
+      (hh n) ENNReal.coe_ne_top (by simpa [Q] using (hbound n []).1)
 
 /-- **Asymptotic `MACScheme.EUFCMA` security of `carterWegmanRandomMAC`**
 ([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/

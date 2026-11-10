@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Rank
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # The domain-counting interpretation transducer
@@ -1018,9 +1019,7 @@ private theorem reachesOut_program_admissible (a : EncodedStructure) (ha : v.Wel
     Nat.add_le_add_left ((Finset.le_sup (f := fun j => boundDepth (I.rel (v'.symbol j).2))
       (Finset.mem_univ j)).trans (le_max_right _ _)) _
   have hcheck : P.Reaches (encStructure a) (P.Running B) (guardLabel v, rs) (scanStart v, rs) := by
-    refine Reaches.lt hguard' hB ?_
-    simp only [eval_reg, eval_const, h0, Nat.not_lt.mpr hn, ↓reduceIte]
-    exact Reaches.refl _
+    cp_step [h0, Nat.not_lt.mpr hn]
   obtain ⟨rs₁, hscanRun, hlen₁, h0₁, h3₁, hB₁⟩ := reachesOut_scanCode (C.atomic_correct ha hn)
     hscan hnB hNB rs h0 (by rw [hlen]; exact hlenD) hB
   change P.ReachesOut _ _ _ (tablesStart v d I, rs₁) _ at hscanRun

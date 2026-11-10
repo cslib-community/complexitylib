@@ -33,7 +33,7 @@ as in the paper. The resulting density `k! / k^k` still gives the required expon
 * [V. Lecomte, P. Ramakrishnan, *Optimal Shallow Circuits for Majority*][LecomteRamakrishnan2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.ShallowSymmetric
 

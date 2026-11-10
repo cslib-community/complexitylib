@@ -858,8 +858,15 @@ def AppendTailItemGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.
     AppendTailItemGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
       AppendTailItemPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
-private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (h : AppendTailItemPre U V w₀ n_max h_space w d.1 d.2 s) :
+/-- Bounds for the reads and writes of `appendTailItemProg`, stated on the results of its reads;
+shared by `realizes_appendTailItemGen` and `validProg_appendTailItem`. -/
+private theorem appendTailItem_bounds {U V w₀ n_max h_space : ℕ} {d : ℕ × ℕ} {s : Memory.State}
+    (h : TailBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+        (fun b' => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b'))
+        (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
+      d.2 < numBuckets n_max ∧
+      gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) < tailCapPerBucket n_max ∧
+      0 < bucketBits n_max) :
     let r_b := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2 + 1))
     let t_new := (Memory.spec 0).clientResult
@@ -871,7 +878,7 @@ private theorem appendTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ 
     gmTailOwnerBase n_max + t_new < globalMetaLen n_max ∧
     r_b + 1 ≤ globalMetaLen n_max ∧
     t_new + 1 ≤ max n_max 1 := by
-  rcases h with ⟨_, htail, hb, hr_lt, hb_pos⟩
+  rcases h with ⟨htail, hb, hr_lt, hb_pos⟩
   have hr_idx : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
   have h1_idx : 1 < globalMetaLen n_max := by unfold globalMetaLen; omega
   have hrb_eq : (Memory.spec 0).clientResult s
@@ -923,23 +930,23 @@ theorem realizes_appendTailItemGen :
     (fun d => by simp [appendTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
   realizeDictWith [appendTailItemGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (appendTailItem_bounds h).1)
+      (le_of_lt (appendTailItem_bounds h.2).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (appendTailItem_bounds h).1
+  · exact (appendTailItem_bounds h.2).1
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (appendTailItem_bounds h).2.1
-  · have hbnd := (appendTailItem_bounds h).2.2.1
+  · exact (appendTailItem_bounds h.2).2.1
+  · have hbnd := (appendTailItem_bounds h.2).2.2.1
     exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU (by omega)
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (appendTailItem_bounds h).2.2.1)
-  · exact (appendTailItem_bounds h).2.2.1
+      (le_of_lt (appendTailItem_bounds h.2).2.2.1)
+  · exact (appendTailItem_bounds h.2).2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (appendTailItem_bounds h).2.2.2.1)
-  · exact (appendTailItem_bounds h).2.2.2.1
+      (le_of_lt (appendTailItem_bounds h.2).2.2.2.1)
+  · exact (appendTailItem_bounds h.2).2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (appendTailItem_bounds h).2.2.2.2.1
-  · exact fits_of_le_max_n_one h.1 hw hnU hU (appendTailItem_bounds h).2.2.2.2.2
+      (appendTailItem_bounds h.2).2.2.2.2.1
+  · exact fits_of_le_max_n_one h.1 hw hnU hU (appendTailItem_bounds h.2).2.2.2.2.2
 
 /-- Parameter-free `Memory.Prog` operation removing the last tail item of bucket `b = d.2.2` at
 `base = d.2.1`. -/
@@ -1151,9 +1158,16 @@ def RemoveLastTailItemGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Mem
     RemoveLastTailItemGenPre w (mkDictParams U V w₀ n_max h_space, d) s ↔
       RemoveLastTailItemPre U V w₀ n_max h_space w d.1 d.2 s := Iff.rfl
 
-private theorem removeLastTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ}
+/-- Bounds for the reads and writes of `removeLastTailItemProg`, stated on the results of its
+reads; shared by `realizes_removeLastTailItemGen` and `validProg_removeLastTailItem`. -/
+private theorem removeLastTailItem_bounds {U V w₀ n_max h_space : ℕ} {d : ℕ × ℕ}
     {s : Memory.State}
-    (h : RemoveLastTailItemPre U V w₀ n_max h_space w d.1 d.2 s) :
+    (h : TailBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+        (fun b' => gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx b'))
+        (gmAt d.1 U V w₀ n_max h_space s.mem 1) ∧
+      d.2 < numBuckets n_max ∧
+      1 ≤ gmAt d.1 U V w₀ n_max h_space s.mem (gmRIdx d.2) ∧
+      0 < bucketBits n_max) :
     let e_rb := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2 + 1))
     let s1 := (Memory.spec 0).clientState s
@@ -1182,7 +1196,7 @@ private theorem removeLastTailItem_bounds {U V w₀ n_max h_space w : ℕ} {d : 
     n_max - 1 - e_tdel < n_max ∧
     gmTailPtrBase n_max + e_dlast < globalMetaLen n_max ∧
     gmTailOwnerBase n_max + e_tdel < globalMetaLen n_max := by
-  rcases h with ⟨_, htail, hb, hr_pos, hb_pos⟩
+  rcases h with ⟨htail, hb, hr_pos, hb_pos⟩
   set gm := gmAt d.1 U V w₀ n_max h_space s.mem
   change 1 ≤ gm (gmRIdx d.2) at hr_pos
   have hnt_le : gm 1 ≤ n_max := htail.ntails_le.trans (maxTailItems_le n_max)
@@ -1266,29 +1280,29 @@ theorem realizes_removeLastTailItemGen :
     (fun d => by simp [removeLastTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
   realizeDictWith [removeLastTailItemGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (removeLastTailItem_bounds h).1)
+      (le_of_lt (removeLastTailItem_bounds h.2).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (removeLastTailItem_bounds h).1
-  · exact (removeLastTailItem_bounds h).2.1
+  · exact (removeLastTailItem_bounds h.2).1
+  · exact (removeLastTailItem_bounds h.2).2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (removeLastTailItem_bounds h).2.2.1)
-  · exact (removeLastTailItem_bounds h).2.2.1
+      (le_of_lt (removeLastTailItem_bounds h.2).2.2.1)
+  · exact (removeLastTailItem_bounds h.2).2.2.1
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (removeLastTailItem_bounds h).2.2.2.1
-  · exact (removeLastTailItem_bounds h).2.2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (removeLastTailItem_bounds h).2.2.2.2.2.1)
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.1
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.2.1
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.2.2.1
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.2.2.2.1
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.2.2.2.2.1
+      (le_of_lt (removeLastTailItem_bounds h.2).2.2.2.2.2.1)
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (removeLastTailItem_bounds h).2.2.2.2.2.2.2.2.2.2.1)
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.2.2.2.2.2.1
+      (le_of_lt (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.2.1)
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (removeLastTailItem_bounds h).2.2.2.2.2.2.2.2.2.2.2)
-  · exact (removeLastTailItem_bounds h).2.2.2.2.2.2.2.2.2.2.2
+      (le_of_lt (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.2.2)
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.2.2
 
 end Cslib.DataStructure.Dictionary.WordRAM.Succinct
