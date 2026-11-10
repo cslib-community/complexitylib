@@ -23,7 +23,7 @@ The measure is subadditive and does not grow under scaling, because the operator
 `g`. For a product `Q * P` with `P` of bidegree `(i, j)`, the operator factors through the
 polynomials of bidegree `(a - i, b + j)`, so its rank on bidegree `(a, b)` is at most the
 dimension of that slice. This is the factorization step of
-[OpenAI, Lemma 3.1][OpenAI2026DepthFive].
+[OpenAI, §3, product-rank lemma][OpenAI2026DepthFive].
 
 ## Main definitions
 
@@ -38,7 +38,7 @@ dimension of that slice. This is the factorization step of
 ## References
 
 * [OpenAI, *Homogeneous depth-five lower bounds for iterated matrix
-  multiplication*][OpenAI2026DepthFive], §2 and Lemma 3.1 (unrefereed preprint)
+  multiplication*][OpenAI2026DepthFive], §2 and §3 (unrefereed preprint)
 -/
 
 @[expose] public section

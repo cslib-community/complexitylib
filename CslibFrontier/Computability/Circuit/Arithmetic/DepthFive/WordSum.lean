@@ -14,7 +14,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
 
 The second trace moment of the `IMM_{n,n}` operator is bounded by a sum over words
 `τ : Fin n → Bool` that give every layer a type, `true` for type `𝒟` and `false` for type `𝒩`
-[OpenAI, (4.9)][OpenAI2026DepthFive]. The weight of a word is
+[OpenAI, §4][OpenAI2026DepthFive]. The weight of a word is
 
 `n ^ (-w τ) * α ^ (-d_V τ) * β ^ (d_U τ) * ∏ t ∈ N_V τ, (1 + α⁻¹ * n ^ (-h_t))`,
 
@@ -29,7 +29,7 @@ differentiated layers of type `𝒩`, and `h_t` counts the neighbours of layer `
 ## References
 
 * [OpenAI, *Homogeneous depth-five lower bounds for iterated matrix
-  multiplication*][OpenAI2026DepthFive], Lemma 5.1 (unrefereed preprint)
+  multiplication*][OpenAI2026DepthFive], §5, word-sum lemma (unrefereed preprint)
 -/
 
 @[expose] public section
@@ -54,7 +54,7 @@ def nbrN (t : Fin p.n) : ℕ :=
   (Finset.univ.filter fun i : Fin p.n =>
     ((i : ℕ) + 1 = t ∨ (t : ℕ) + 1 = i) ∧ τ i = false).card
 
-/-- The weight of a type word [OpenAI, (5.1)][OpenAI2026DepthFive]. -/
+/-- The weight of a type word [OpenAI, §5][OpenAI2026DepthFive]. -/
 noncomputable def wordWeight : ℝ :=
   ((p.n : ℝ)⁻¹) ^ p.switches τ * (p.α⁻¹) ^ p.dV τ * p.β ^ p.dU τ *
     ∏ t ∈ Finset.univ.filter fun t : Fin p.n => p.isV t ∧ τ t = false,

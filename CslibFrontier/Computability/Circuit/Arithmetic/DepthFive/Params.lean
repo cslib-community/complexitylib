@@ -15,15 +15,16 @@ public import Mathlib.Data.Nat.Choose.Basic
 # Parameters of the depth-five rank measure
 
 The lower bound for homogeneous depth-five circuits computing `IMM_{n,n}` uses a rank measure
-with several integer parameters [OpenAI, (2.2)][OpenAI2026DepthFive]: the degree `n`, an excess
+with several integer parameters [OpenAI, §2][OpenAI2026DepthFive]: the degree `n`, an excess
 `s` near `√n`, the numbers `k = (n - s) / 2` and `m = (n + s) / 2` of matrix layers that are
 differentiated and multiplied, and the degrees `a` and `b` of the slice on which the operator
 acts. `Cslib.Circuits.DepthFive.Params` records these integers, and the derived quantities are
 functions of it.
 
 The proofs use the parameters only through finitely many inequalities, which hold for the
-source's choice of `s`, `a` and `b` when `n` is large [OpenAI, Lemma 2.1][OpenAI2026DepthFive].
-`Params.Good` collects exactly these inequalities with explicit constants. The rank bounds are
+source's choice of `s`, `a` and `b` when `n` is large, by the parameter lemma of
+[OpenAI, §2][OpenAI2026DepthFive]. `Params.Good` collects these inequalities with explicit
+constants. The rank bounds are
 proved for every good parameter choice, and one module proves that the source's choice is
 eventually good. Each field of `Params.Good` names the result that uses it.
 
@@ -39,7 +40,7 @@ eventually good. Each field of `Params.Good` names the result that uses it.
 ## References
 
 * [OpenAI, *Homogeneous depth-five lower bounds for iterated matrix
-  multiplication*][OpenAI2026DepthFive], (2.2) and Lemma 2.1 (unrefereed preprint)
+  multiplication*][OpenAI2026DepthFive], §2 (unrefereed preprint)
 -/
 
 @[expose] public section
@@ -98,7 +99,7 @@ noncomputable def q : ℝ := p.α ^ ((1 + p.ρ) / 2)
 noncomputable def H (e : ℕ) : ℝ := ∑ i ∈ Finset.range (e + 1), p.q ^ |(i : ℝ) - p.lam * e|
 
 /-- The inequalities between the parameters that the rank bounds use. They hold for the source's
-parameters when `n` is large [OpenAI, Lemma 2.1][OpenAI2026DepthFive]. -/
+parameters when `n` is large, by the parameter lemma of [OpenAI, §2][OpenAI2026DepthFive]. -/
 structure Good : Prop where
   /-- Positivity of the derived quantities. -/
   n_pos : 0 < p.n

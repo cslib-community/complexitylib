@@ -15,7 +15,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
 The rank lower bound for `IMM_{n,n}` differentiates in `k` of the `n` matrix layers and
 multiplies in the other `m = k + s`. The layers are ordered by the word
 `V U^{ℓ₁} V U^{ℓ₂} ⋯ V U^{ℓ_k}` with `ℓᵢ = 1 + ⌊i s / k⌋ - ⌊(i - 1) s / k⌋`
-[OpenAI, (4.1)][OpenAI2026DepthFive]: the `i`-th differentiated layer, counting from zero, is
+[OpenAI, §4][OpenAI2026DepthFive]: the `i`-th differentiated layer, counting from zero, is
 layer `2 i + ⌊i s / k⌋`. No two differentiated layers are adjacent, the first layer is
 differentiated and the last is multiplied, and every interval of layers is balanced up to a
 bounded discrepancy.
@@ -28,7 +28,7 @@ bounded discrepancy.
 ## References
 
 * [OpenAI, *Homogeneous depth-five lower bounds for iterated matrix
-  multiplication*][OpenAI2026DepthFive], §4 and (5.6) (unrefereed preprint)
+  multiplication*][OpenAI2026DepthFive], §4 and §5 (unrefereed preprint)
 -/
 
 @[expose] public section
