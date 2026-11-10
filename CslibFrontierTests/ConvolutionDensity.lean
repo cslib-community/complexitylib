@@ -20,8 +20,7 @@ example (a : ℝ) :
       volume.withDensity (fun x ↦ gaussianPDF 0 1 (-a + x)) := by
   rw [gaussianReal_of_var_ne_zero _ (by norm_num),
     conv_withDensity_eq_withDensity_lintegral (measurable_gaussianPDF 0 1)]
-  congr 1
-  funext x
+  congr 1 with x : 1
   simp
 
 /-- With a continuous first input, the integral density gives the actual variance-two Gaussian. -/
@@ -60,6 +59,5 @@ example : a * b ≠ b * a := by decide
 example : Measure.dirac a ∗ₘ Measure.count.withDensity (fun x : P ↦ if x = b then 1 else 0) =
     Measure.count.withDensity (fun x : P ↦ if x = a * b then 1 else 0) := by
   rw [mconv_withDensity_eq_withDensity_lintegral (by measurability)]
-  congr 1
-  funext x
+  congr 1 with x : 1
   simp [inv_mul_eq_iff_eq_mul]

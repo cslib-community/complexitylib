@@ -1,6 +1,6 @@
-# Complexitylib Agent Operator's Manual
+# cslib-frontier Agent Operator's Manual
 
-This short manual is for people directing agents in Complexitylib. It explains whom to ask,
+This short manual is for people directing agents in cslib-frontier. It explains whom to ask,
 what to ask for, and how to judge the handoff. The substantial [Operator's Manual](README.md)
 explains how to work in the codebase: its tactics, models, proof patterns, examples and procedures.
 Both humans and agents use that reference. You do not need an agent to follow it.
@@ -78,15 +78,19 @@ Assign review to an agent that did not design or implement the change. For examp
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds. Review the impact on both manuals and any affected
-> formal abstract. Report concrete findings and a verdict, stating what you checked and what
-> remains uncertain.
+> encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
+> their files, and report any substantial argument the change repeats that another proof or an
+> existing lemma already makes. Review the impact on both manuals and any affected
+> results-inventory entry. Report concrete findings and a verdict, stating what you checked and
+> what remains uncertain.
 
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether
 someone can use the interface. Ask for a satisfying instance or meaningful edge case when a
-contract may be vacuous. An approval must cover the final revision; substantive fixes require
-review of the affected reasoning. Unchanged evidence can be reused after checking its identity.
+contract may be vacuous. A diff shows a new copy of an argument but not the proof it repeats,
+so ask for that comparison explicitly. An approval must cover the final revision; substantive
+fixes require review of the affected reasoning. Unchanged evidence can be reused after checking
+its identity.
 
 ## Direct a coordinator
 
@@ -110,6 +114,11 @@ pushes nothing. Pushing its commit to the PR branch is a deliberate step by the 
 coordinator acting for them, who records the push. Existing approval carries forward when
 `scripts/check_restack.py` passes and CI passes at the new head, as
 [Restacks](../AGENTS.md#restacks) describes.
+
+When several coordinators share one host, give them a single limit on concurrent Lean builds,
+not only a thread count. Their builds can exhaust the kernel's file handles before its
+processors, and then everyone's builds fail
+([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

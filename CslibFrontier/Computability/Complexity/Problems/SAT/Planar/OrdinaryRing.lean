@@ -232,12 +232,8 @@ theorem access_contact_check : ∀ s l, ∀ e ∈ incidenceRoutes,
 theorem access_contact {s : Fin 4} {l : Fin 2} {e : ℕ × Variable × Route}
     (he : e ∈ incidenceRoutes) {p : ℝ × ℝ}
     (hp : p ∈ support (PairedPorts.accessRoute s l)) (hq : p ∈ support e.2.2) :
-    e.2.1 = (s, l) ∧ p = realPoint (variablePosition (s, l)) := by
-  obtain ⟨q, hq, hpq⟩ := routeContactCheck_sound (access_contact_check s l e he) hp hq
-  split_ifs at hq with h
-  · have hq' : q = variablePosition (s, l) := List.mem_singleton.mp hq
-    exact ⟨h, hq' ▸ hpq⟩
-  · exact False.elim (List.not_mem_nil hq)
+    e.2.1 = (s, l) ∧ p = realPoint (variablePosition (s, l)) :=
+  routeContactCheck_ite_sound (access_contact_check s l e he) hp hq
 
 /-- Finite certificate excluding every other variable from an access. -/
 theorem access_variable_avoidance_check : ∀ s l, ∀ v : Variable, v ≠ (s, l) →

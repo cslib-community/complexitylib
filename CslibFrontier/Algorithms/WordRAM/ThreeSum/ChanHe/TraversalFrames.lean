@@ -163,8 +163,7 @@ theorem Entry.task_child (e : Entry) (j : Fin 3) (base : ℕ) (zs : List ℤ) :
     (e.child j base zs).task =
       ⟨e.fuel - 1, Function.update e.task.sets j zs.toFinset⟩ := by
   unfold Entry.child Entry.task
-  congr 1
-  funext k
+  congr 1 with k : 1
   by_cases he : k = j
   · subst k
     simp only [Function.update_self]

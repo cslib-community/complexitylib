@@ -339,6 +339,14 @@ theorem maxIntrinsicBits_pairAvgResProg_le {Struct : Type v} (s : ℕ)
           rw [Nat.mul_add]
           omega))
 
+/-- Discarding the low four bits of an 8-place Euclidean window residue gives the mod-16 residue of
+the floor quotient by `16`; every `windowPrefixModProg _ 8 _` residue program reads its answer this
+way. -/
+private theorem emod_two_pow_eight_div_sixteen (a : ℤ) :
+    a % (2 : ℤ) ^ (8 : ℕ) / 16 = a / 16 % 16 := by
+  have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
+  rw [h16, ediv_two_pow_emod_eq]
+
 /-- Mod-16 residue program for `max (streamVal x) (streamVal y)`
 [OpenAI2026LogSpace, Lemma 10.3]. -/
 @[expose] def maxResProg {Struct : Type v} (s : ℕ) : QueryProg (Fin 2) Struct ℤ :=
@@ -350,17 +358,9 @@ theorem eval_maxResProg {Struct : Type v} (s : ℕ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) :
     (maxResProg s).eval env sEnv = maxApprox (env 0) (env 1) s % 16 := by
   unfold maxResProg maxApprox
-  rw [QueryProg.eval_bindOverhead]
-  have hc := eval_cmpPrefixProg (0 : Fin 2) 1 (s + 4) env sEnv
-  rw [hc]
-  set c := cmpPrefix (env 0) (env 1) (s + 4)
-  have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
-  have h256 : (2 : ℤ) ^ (8 : ℕ) = (2 : ℤ) ^ (4 + 4 : ℕ) := rfl
-  by_cases h0 : 0 ≤ c
-  · simp only [h0, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg, h256]
-    rw [h16, ediv_two_pow_emod_eq]
-  · simp only [h0, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg, h256]
-    rw [h16, ediv_two_pow_emod_eq]
+  rw [QueryProg.eval_bindOverhead, eval_cmpPrefixProg]
+  split_ifs <;>
+    simp only [QueryProg.eval_map, eval_windowPrefixModProg, emod_two_pow_eight_div_sixteen]
 
 /-- **Lemma 10.3 (certified binary maximum primitive)** [OpenAI2026LogSpace, Lemma 10.3]. -/
 @[expose] noncomputable def maxPrim {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) :
@@ -415,17 +415,9 @@ theorem eval_minResProg {Struct : Type v} (s : ℕ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) :
     (minResProg s).eval env sEnv = minApprox (env 0) (env 1) s % 16 := by
   unfold minResProg minApprox
-  rw [QueryProg.eval_bindOverhead]
-  have hc := eval_cmpPrefixProg (0 : Fin 2) 1 (s + 4) env sEnv
-  rw [hc]
-  set c := cmpPrefix (env 0) (env 1) (s + 4)
-  have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
-  have h256 : (2 : ℤ) ^ (8 : ℕ) = (2 : ℤ) ^ (4 + 4 : ℕ) := rfl
-  by_cases h0 : c ≤ 0
-  · simp only [h0, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg, h256]
-    rw [h16, ediv_two_pow_emod_eq]
-  · simp only [h0, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg, h256]
-    rw [h16, ediv_two_pow_emod_eq]
+  rw [QueryProg.eval_bindOverhead, eval_cmpPrefixProg]
+  split_ifs <;>
+    simp only [QueryProg.eval_map, eval_windowPrefixModProg, emod_two_pow_eight_div_sixteen]
 
 /-- **Lemma 10.3 (certified binary minimum primitive)** [OpenAI2026LogSpace, Lemma 10.3]. -/
 @[expose] noncomputable def minPrim {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) :
@@ -680,10 +672,8 @@ theorem eval_shiftClipResProg {Struct : Type v} (v : ℤ) (s : ℕ)
   · simp only [hneg, ↓reduceIte]
     set K := ((s : ℤ) + v + 4).toNat
     set B : ℤ := (2 : ℤ) ^ (s + 4)
-    have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
-    have h256 : (2 : ℤ) ^ (8 : ℕ) = (2 : ℤ) ^ (4 + 4 : ℕ) := rfl
     by_cases hsmall : K + 4 ≤ s + 4
-    · simp only [hsmall, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg, h256]
+    · simp only [hsmall, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg]
       have habs := abs_intPrefix_le hx K
       have hpow : 16 * (2 : ℤ) ^ K ≤ B := by
         dsimp [B]
@@ -694,7 +684,7 @@ theorem eval_shiftClipResProg {Struct : Type v} (v : ℤ) (s : ℕ)
       obtain ⟨hlo_abs, hhi_abs⟩ := abs_le.mp habs
       have hmin : min B (intPrefix (env ()) K) = intPrefix (env ()) K := min_eq_right (by omega)
       have hmax : max (-B) (intPrefix (env ()) K) = intPrefix (env ()) K := max_eq_right (by omega)
-      rw [hmin, hmax, h16, ediv_two_pow_emod_eq]
+      rw [hmin, hmax, emod_two_pow_eight_div_sixteen]
     · simp only [hsmall, ↓reduceIte, QueryProg.eval_bindOverhead]
       have hmK : s + 4 ≤ K + 3 := by omega
       have hb_sign := clipBoundStream_isSignedStream (s + 4) K
@@ -719,12 +709,12 @@ theorem eval_shiftClipResProg {Struct : Type v} (v : ℤ) (s : ℕ)
             have h := (cmpPrefix_nonpos_iff hx hb_sign.neg K).mp hcLo
             rwa [intPrefix_neg_eq, hb_pref] at h
           rw [min_eq_right hltHi, max_eq_left hleLo]
-        · simp only [hcLo, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg, h256]
+        · simp only [hcLo, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg]
           have hgtLo : -B ≤ intPrefix (env ()) K := by
             have hnot := (cmpPrefix_nonpos_iff hx hb_sign.neg K).not.mp hcLo
             rw [intPrefix_neg_eq, hb_pref] at hnot
             omega
-          rw [min_eq_right hltHi, max_eq_right hgtLo, h16, ediv_two_pow_emod_eq]
+          rw [min_eq_right hltHi, max_eq_right hgtLo, emod_two_pow_eight_div_sixteen]
 
 private theorem shiftClipCutoff_le {d s κ : ℕ} {v : ℤ} (hd : 1 ≤ d)
     (hv : v ≤ ((κ * d : ℕ) : ℤ)) (hneg : ¬ ((s : ℤ) + v + 4 < 0)) :
@@ -864,22 +854,10 @@ private theorem sum_fin_two_pow_succ {r : ℕ} (g : Fin (2 ^ (r + 1)) → ℝ) :
     ∑ i : Fin (2 ^ (r + 1)), g i =
       (∑ idx : Fin (2 ^ r), g (splitFinPow 0 idx)) +
         (∑ idx : Fin (2 ^ r), g (splitFinPow 1 idx)) := by
-  let extG : ℕ → ℝ := fun k => if hk : k < 2 ^ (r + 1) then g ⟨k, hk⟩ else 0
-  have hlhs : ∑ i : Fin (2 ^ (r + 1)), g i = ∑ k ∈ range (2 ^ (r + 1)), extG k := by
-    rw [← Fin.sum_univ_eq_sum_range extG (2 ^ (r + 1))]
-    refine sum_congr rfl fun i _ => ?_
-    simp [extG, i.isLt]
-  have hp : 2 ^ (r + 1) = 2 ^ r + 2 ^ r := by ring
-  rw [hlhs, hp, sum_range_add]
-  congr 1
-  · rw [← Fin.sum_univ_eq_sum_range extG (2 ^ r)]
-    refine sum_congr rfl fun idx _ => ?_
-    have hlt : idx.val < 2 ^ (r + 1) := by have := idx.isLt; omega
-    simp [extG, hlt, splitFinPow]
-  · rw [← Fin.sum_univ_eq_sum_range (fun k => extG (2 ^ r + k)) (2 ^ r)]
-    refine sum_congr rfl fun idx _ => ?_
-    have hlt : 2 ^ r + idx.val < 2 ^ (r + 1) := by have := idx.isLt; omega
-    simp [extG, hlt, splitFinPow]
+  have hp : 2 ^ r + 2 ^ r = 2 ^ (r + 1) := by ring
+  rw [← Fin.sum_congr' g hp, Fin.sum_univ_add]
+  congr 1 <;> exact Finset.sum_congr rfl fun idx _ =>
+    congrArg g (Fin.ext (by simp [splitFinPow, Nat.add_comm]))
 
 /-- Direct balanced binary-tree average digit program over `2 ^ r` operand streams
 [OpenAI2026LogSpace, Lemma 10.7]. -/
@@ -2307,8 +2285,6 @@ theorem eval_zeroPaddedRankListResProg {Op : Type u} [DecidableEq Op] {Struct : 
   dsimp only
   rw [QueryProg.eval_bindOverhead]
   set best := (zeroPaddedRankFoldProg k items K idxBits items none).eval env sEnv
-  have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
-  have h256 : (2 : ℤ) ^ (8 : ℕ) = (2 : ℤ) ^ (4 + 4 : ℕ) := rfl
   cases hbest : best with
   | none =>
     simp only [QueryProg.eval]
@@ -2319,13 +2295,11 @@ theorem eval_zeroPaddedRankListResProg {Op : Type u} [DecidableEq Op] {Struct : 
     rw [hkth0]
     decide
   | some b =>
-    simp only [QueryProg.eval_map, eval_windowPrefixModProg, h256]
+    simp only [QueryProg.eval_map, eval_windowPrefixModProg]
     have hkth_b : kthLargest k items.toFinset h = intPrefix (env b) K := by
       rw [← hFold_eq_kth]
       simpa only [best, hbest, optIntPrefix] using hFoldVal.symm
-    change (intPrefix (env b) K % (2 : ℤ) ^ (4 + 4 : ℕ)) / 16 =
-      kthLargest k items.toFinset h / 16 % 16
-    rw [hkth_b, h16, ediv_two_pow_emod_eq]
+    rw [hkth_b, emod_two_pow_eight_div_sixteen]
 
 private theorem mem_activeQueries_countAtLeastProg {Op : Type u} {Struct : Type v}
     (i : Op) (K idxBits : ℕ) (ws : List Op) (cnt : ℕ)

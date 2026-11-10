@@ -152,8 +152,7 @@ for each oracle gate of `q` arguments. -/
 theorem size_inlineOracle (C : Circuit oracleSignature n m) (D : ∀ q, Circuit signature q 1) :
     (inlineOracle C D).size = C.program.cost (oracleSize D) := by
   rw [inlineOracle, Circuit.size_simulate]
-  congr 1
-  funext op
+  congr 1 with op : 1
   cases op <;> rfl
 
 /-- The inlined circuit is at most as deep as the oracle circuit when an oracle gate of `q`
@@ -161,8 +160,7 @@ arguments costs the depth of `D q`. -/
 theorem depth_inlineOracle_le (C : Circuit oracleSignature n m) (D : ∀ q, Circuit signature q 1) :
     (inlineOracle C D).depth ≤ C.depthWith (oracleDepth D) := by
   refine (C.depth_simulate_le (oracleImpl D)).trans_eq ?_
-  congr 1
-  funext op
+  congr 1 with op : 1
   cases op with
   | base op => exact Circuit.depth_oneGate (σ := signature) op id
   | query q => rfl

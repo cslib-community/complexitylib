@@ -320,15 +320,7 @@ theorem acceptProb_append_not (hm : 0 < m) (gs : List GateCode) (x : List Bool) 
     simp only [List.all_nil, Bool.xor_true]
     rfl
   -- the NOT gate reads the amplitude of the flipped outcome
-  have happly (y : Fin m → Bool) : (g.eval ψ).ofLp y = ψ.ofLp (flip y) := by
-    have hrow (z : Fin m → Bool) :
-        (g.matrix : Matrix _ _ ℂ) y z = if z = flip y then 1 else 0 := by
-      rw [← PlacedGate.eval_ket_apply, hket, ket_apply]
-      refine if_congr ⟨fun h => ?_, fun h => ?_⟩ rfl rfl
-      · rw [h, hflip]
-      · rw [h, hflip]
-    simp only [PlacedGate.eval, unitaryEquiv_apply, Matrix.mulVec, dotProduct, hrow, ite_mul,
-      one_mul, zero_mul, sum_ite_eq', mem_univ, ite_true]
+  have happly := g.eval_apply_of_involutive hflip hket ψ
   have hrun : Circuit.run (Circuit.ofCodes m (gs ++ [(false, 0, [])])) (inputState m x) =
       g.eval ψ := by
     simp only [Circuit.run, Circuit.ofCodes_append, Circuit.eval_append, ψ]

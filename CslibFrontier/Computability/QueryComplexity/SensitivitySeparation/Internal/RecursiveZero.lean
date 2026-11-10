@@ -68,10 +68,7 @@ theorem recursive_sensitivity_zero_at {k r h : ℕ} {I : Type} [Fintype I]
       U ∪ (V ∪ W) := by
     rintro ⟨⟨j, c⟩, a⟩ hp
     have hchange := (Finset.mem_filter.mp hp).2
-    have hon : recursiveFamily T A.label F q (BitString.flipOn {((j, c), a)} x) = true := by
-      cases hy : recursiveFamily T A.label F q (BitString.flipOn {((j, c), a)} x)
-      · exact False.elim (hchange (hy.trans hx.symm))
-      · rfl
+    have hon : recursiveFamily T A.label F q (BitString.flipOn {((j, c), a)} x) = true := by grind
     obtain ⟨i, hi⟩ := (recursiveFamily_eq_true_iff T A.label F q _).mp hon
     have hioff := (recursiveFamily_eq_false_iff T A.label F q x).mp hx i
     rcases rowClause_repair_cases T A.label F q x i j c a hioff hi with
@@ -113,7 +110,7 @@ theorem recursive_sensitivity_zero_at {k r h : ℕ} {I : Type} [Fintype I]
   have hV : V.card ≤ 3 * jointSensitivity F true := by
     calc
       V.card ≤ NC.card * jointSensitivity F true :=
-        card_biUnion_le_mul NC _ _ (fun i hi => by
+        Finset.card_biUnion_le_card_mul NC _ _ (fun i hi => by
           have hg := Finset.mem_sdiff.mp hi
           have hw := nonsink_gateWitness_mem T A.label F hF q x i hg.1 hg.2
           have hgate := (gateWitness_spec T A.label F q x i hg.1).2
@@ -129,7 +126,7 @@ theorem recursive_sensitivity_zero_at {k r h : ℕ} {I : Type} [Fintype I]
   have hW : W.card ≤ sideSensitivity F true := by
     calc
       W.card ≤ SC.card * sideSensitivity F true :=
-        card_biUnion_le_mul SC _ _ (fun i hi => by
+        Finset.card_biUnion_le_card_mul SC _ _ (fun i hi => by
           rw [childChanges_card]
           exact sensitivityAt_le_sideSensitivity F true _ _
             (gateWitness_spec T A.label F q x i (Finset.mem_filter.mp hi).1).2)

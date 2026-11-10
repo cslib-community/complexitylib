@@ -115,8 +115,7 @@ private theorem runFrom_leaf {p : ℕ} [Fact p.Prime] {st : List Frame} {v : Fin
     rw [h0, ReadMachine.runFrom_add, h', ReadMachine.runFrom_one]
     simp [ReadMachine.next, machine, step]
   · rw [hS']
-    congr 1
-    funext j
+    congr 1 with j : 1
     simp [embed]
 
 /-- One step of the pass over a table. -/
@@ -152,10 +151,7 @@ private theorem runFrom_scan_loop {p : ℕ} [Fact p.Prime] {fr : Frame} {st : Li
     · simp [List.getD_eq_getElem?_getD]
   | succ k ih =>
     obtain ⟨acc, h', hlen, hlt, hsum⟩ := ih (by omega)
-    have hℓ : 0 < ℓ := by
-      rcases Nat.eq_zero_or_pos ℓ with h0 | h0
-      · simp [tableLength, h0] at hk
-      · exact h0
+    have hℓ : 0 < ℓ := by grind [tableLength]
     have hbit : T.body.getD (pathOffset ℓ H (path st) + k) false = tableBit f k := by
       rw [List.getD_eq_getElem?_getD, Tree.getElem_body_gate T hf (by omega)]
       rfl
@@ -175,8 +171,7 @@ private theorem runFrom_scan_loop {p : ℕ} [Fact p.Prime] {fr : Frame} {st : Li
 /-- The bit of a table at position `k * ℓ + i`. -/
 theorem tableBit_mul_add (f : Gate ℓ) (k : ℕ) (i : Fin ℓ) :
     tableBit f (k * ℓ + i) = f (lowBits ℓ k) (highBits ℓ k) i := by
-  have hmod : (k * ℓ + i) % ℓ = i := by
-    rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt i.isLt]
+  have hmod : (k * ℓ + i) % ℓ = i := Nat.mul_add_mod_of_lt i.isLt
   simp only [tableBit, Nat.mul_add_div_fin, hmod, i.isLt, dite_true]
 
 /-- **The update of a round**: from phase `1`, the pass over the table of the gate subtracts `±`
@@ -205,8 +200,7 @@ private theorem runFrom_update {p : ℕ} [Fact p.Prime] {fr : Frame} {st : List 
     rw [h0, ReadMachine.runFrom_add, h', ReadMachine.runFrom_one]
     simp [ReadMachine.next, machine, step]
   · rw [toState_subtractSums _ _ _ _ (hR _).1, gateUpdate, cast_sgnVal]
-    congr 1
-    funext i
+    congr 1 with i : 1
     congr 2
     rw [hsum i, tableLength, Nat.sum_range_mul_ite_mod _ i.isLt, eval_gatePoly_eq_sum]
     refine Finset.sum_congr rfl fun k _ => ?_

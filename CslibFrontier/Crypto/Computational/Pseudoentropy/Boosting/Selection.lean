@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Boosting.Clipped
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Boosting.Loop
 public import CslibFrontier.Languages.Probabilistic.Selection
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Computability.Probabilistic.Selection
 import CslibFrontier.Tactic.PPT
@@ -210,8 +211,8 @@ theorem eval_clippedTrial_true (precision numerator : ℕ) (source : ProbComp α
   have hmap (p : PMF Bool) (truth : Bool) :
       (p.map (fun answer => answer == truth)) true = p truth := by
     simp [PMF.map_apply]
-  simp only [clippedTrial, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map,
-    Cslib.Probability.PMF.bind_apply_toReal, Function.comp_def, hmap, eval_clippedPredict_correct]
+  simp only [pmf_norm, clippedTrial, Cslib.Probability.PMF.bind_apply_toReal, hmap,
+    eval_clippedPredict_correct]
   simp only [clippedError, mul_sub, mul_one, Finset.sum_sub_distrib,
     Cslib.Probability.PMF.sum_toReal, sub_sub_cancel]
 

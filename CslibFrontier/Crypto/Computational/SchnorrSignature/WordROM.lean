@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Computational.SchnorrSignature
-import CslibFrontier.Foundations.Data.Nat.Bits
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Canonical word Schnorr in the random-oracle model
@@ -83,6 +83,15 @@ theorem schnorrWordSigma_accepts_encode_iff (u t : F.Carrier d) (z : List Bool)
   · intro h
     exact eq_sub_iff_add_eq.mpr h.symm
 
+/-- An accepting typed transcript stays accepting after encoding its commitment and response,
+since decoding the encoded response returns the scalar. -/
+private theorem schnorrWordSigma_accepts_encode_encScalar {u t : F.Carrier d} {c : BitString m}
+    {z : ZMod (F.order d)} (h : (F.schnorrBitSigma d hm).Accepts u t c z) :
+    (F.schnorrWordSigma d hm).Accepts u (F.encode d t) c (F.encScalar d z) := by
+  rw [F.schnorrWordSigma_accepts_encode_iff]
+  simpa only [schnorrBitSigma, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits,
+    ZMod.natCast_zmod_val] using h
+
 /-- Honest word transcripts are exactly the encodings of the existing typed transcripts. -/
 theorem schnorrWordSigma_transcript (x : ZMod (F.order d)) (u : F.Carrier d)
     (c : BitString m) :
@@ -98,11 +107,7 @@ theorem schnorrWordSigma_complete :
   intro x u hxu c tz htz
   rw [F.schnorrWordSigma_transcript] at htz
   obtain ⟨⟨t, z⟩, htz', rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp htz
-  simp only [Prod.map_apply] at *
-  rw [F.schnorrWordSigma_accepts_encode_iff]
-  simpa only [schnorrBitSigma, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits,
-    Nat.foldr_bit_bits, ZMod.natCast_zmod_val] using
-    (schnorr_complete x u hxu c (t, z) htz')
+  exact F.schnorrWordSigma_accepts_encode_encScalar d hm (schnorr_complete x u hxu c (t, z) htz')
 
 /-- The existing linear extractor applied to scalar interpretations of the two response words.
 It neither decodes the commitment nor assumes canonical responses. -/
@@ -134,10 +139,7 @@ theorem schnorrWordSigma_specialHVZK :
       (F.schnorrWordSimulate d hm) where
   accepts u c tz htz := by
     obtain ⟨⟨t, z⟩, htz', rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp htz
-    simp only [Prod.map_apply] at *
-    rw [F.schnorrWordSigma_accepts_encode_iff]
-    simpa only [schnorrBitSigma, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits,
-      Nat.foldr_bit_bits, ZMod.natCast_zmod_val] using
+    exact F.schnorrWordSigma_accepts_encode_encScalar d hm
       (schnorr_specialHVZK.accepts u c (t, z) htz')
   transcript_eq x u hxu c := by
     rw [schnorrWordSimulate, F.schnorrWordSigma_transcript,

@@ -189,38 +189,19 @@ theorem elements_erase {t : AVLTree α} (ht : Ordered t) (x : α) :
     obtain ⟨hol, hor, hl_a, ha_r⟩ := ht
     simp only [erase]
     split <;> rename_i hxa
-    · ext y
-      simp only [elements_balance, elements_node, ihl hol, Finset.mem_insert, Finset.mem_union,
-        Finset.mem_erase]
-      constructor
-      · rintro (rfl | ⟨hyx, hy⟩ | hy)
-        · exact ⟨ne_of_gt hxa, Or.inl rfl⟩
-        · exact ⟨hyx, Or.inr (Or.inl hy)⟩
-        · exact ⟨fun heq => lt_asymm hxa (heq ▸ ha_r y hy), Or.inr (Or.inr hy)⟩
-      · rintro ⟨hyx, rfl | hy | hy⟩
-        · exact Or.inl rfl
-        · exact Or.inr (Or.inl ⟨hyx, hy⟩)
-        · exact Or.inr (Or.inr hy)
+    · -- `x < a`: `x` lies in no part of the node except possibly `l`.
+      have hxr : x ∉ elements r := fun h => lt_asymm hxa (ha_r x h)
+      rw [elements_balance, ihl hol, elements_node, Finset.erase_insert_of_ne (ne_of_gt hxa),
+        Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxr]
     · split <;> rename_i hax
-      · ext y
-        simp only [elements_balance, elements_node, ihr hor, Finset.mem_insert, Finset.mem_union,
-          Finset.mem_erase]
-        constructor
-        · rintro (rfl | hy | ⟨hyx, hy⟩)
-          · exact ⟨ne_of_lt hax, Or.inl rfl⟩
-          · exact ⟨fun heq => lt_asymm hax (heq ▸ hl_a y hy), Or.inr (Or.inl hy)⟩
-          · exact ⟨hyx, Or.inr (Or.inr hy)⟩
-        · rintro ⟨hyx, rfl | hy | hy⟩
-          · exact Or.inl rfl
-          · exact Or.inr (Or.inl hy)
-          · exact Or.inr (Or.inr ⟨hyx, hy⟩)
+      · -- `a < x`: symmetrically, `x` can only lie in `r`.
+        have hxl : x ∉ elements l := fun h => lt_asymm hax (hl_a x h)
+        rw [elements_balance, ihr hor, elements_node, Finset.erase_insert_of_ne (ne_of_lt hax),
+          Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxl]
       · have heq : x = a := le_antisymm (le_of_not_gt hax) (le_of_not_gt hxa)
         subst heq
-        have hx_notMem : x ∉ elements l ∪ elements r := by
-          intro hm
-          rcases Finset.mem_union.mp hm with hm | hm
-          · exact lt_irrefl x (hl_a x hm)
-          · exact lt_irrefl x (ha_r x hm)
+        have hx_notMem : x ∉ elements l ∪ elements r :=
+          SearchTree.Ordered.notMem_elements_union ⟨hol, hor, hl_a, ha_r⟩
         rw [elements_glue, elements_node, Finset.erase_insert hx_notMem]
 
 private theorem valid_and_height_erase {t : AVLTree α} (ht : Valid t) (x : α) :

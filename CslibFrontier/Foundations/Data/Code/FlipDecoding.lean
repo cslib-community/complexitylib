@@ -175,8 +175,7 @@ omit [Fintype ι] in
 theorem _root_.Cslib.BitString.flipOn_singleton_eq_add_single (x : ι → Bool) (i : ι) :
     flipOn {i} x = x + Pi.single i true := by
   rw [flipOn_eq_add]
-  congr 1
-  funext l
+  congr 1 with l : 1
   by_cases h : l = i
   · subst h; simp
   · rw [Pi.single_eq_of_ne h]

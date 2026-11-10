@@ -232,8 +232,7 @@ theorem _root_.Cslib.IsMonadHom.map_submodularMatroidGreedyStepM
     φ (submodularMatroidGreedyStepM evalSet indepM u S) =
       submodularMatroidGreedyStepM (fun T => φ (evalSet T)) (fun T => φ (indepM T)) u S := by
   simp only [submodularMatroidGreedyStepM, hφ.map_bind, hφ.map_filterIndepM]
-  congr 1
-  funext cands
+  congr 1 with cands : 1
   cases cands with
   | nil => exact hφ.map_pure _
   | cons c₀ cs =>
@@ -249,8 +248,7 @@ theorem _root_.Cslib.IsMonadHom.map_submodularMatroidGreedyLoopM
   | zero => exact hφ.map_pure _
   | succ k ih =>
     simp only [submodularMatroidGreedyLoopM, hφ.map_bind, hφ.map_submodularMatroidGreedyStepM]
-    congr 1
-    funext o
+    congr 1 with o : 1
     cases o with
     | none => exact hφ.map_pure _
     | some S' => exact ih S'

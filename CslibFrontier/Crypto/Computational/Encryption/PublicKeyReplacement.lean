@@ -31,7 +31,8 @@ controls the change in their chosen-message gaps, with an exact factor of two.
 * `eval_game_eq_publicKeyGame`: the actual encryption game uses its public-key marginal.
 * `isPPT_keyDistinguisher`: native strict PPT composition of the actual reduction.
 * `probability_keyDistinguisher`: the exact affine identity for the signed chosen-message gap.
-* `advantage_publicKeyGame_le`: quantitative public-key replacement with loss two.
+* `advantage_publicKeyGame_le`: quantitative public-key replacement with loss two, an instance of
+  `Game.advantage_le_two_mul_uniform_bool_xor`.
 
 ## References
 
@@ -149,8 +150,7 @@ theorem distinguishingGame_keyDistinguisher (keys : PMF (List Bool))
   simp only [distinguishingGame, keyDistinguisher, publicKeyGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext pk
+  congr 1 with pk : 1
   rw [PMF.bind_comm]
   rfl
 
@@ -163,11 +163,7 @@ theorem probability_keyDistinguisher (keys : PMF (List Bool))
       (1 + (Game.succProbability (publicKeyGame keys encrypt adversary false security) : ℝ) -
         Game.succProbability (publicKeyGame keys encrypt adversary true security)) / 2 := by
   rw [distinguishingGame_keyDistinguisher]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    PMF.monad_bind_eq_bind, PMF.bind_apply_toReal, Fintype.sum_bool,
-    PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- Replacing the public-key law costs at most twice the advantage of one uniform hidden-bit
 distinguisher, plus the chosen-message advantage under the replacement law. -/
@@ -181,19 +177,9 @@ theorem advantage_publicKeyGame_le (real ideal : PMF (List Bool))
           (distinguishingGame ideal (keyDistinguisher encrypt adversary security)) +
             Game.advantage (publicKeyGame ideal encrypt adversary false security)
               (publicKeyGame ideal encrypt adversary true security) := by
-  apply NNReal.coe_le_coe.mp
-  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage,
-    probability_keyDistinguisher]
-  have h := abs_sub_le
-    ((Game.succProbability (publicKeyGame real encrypt adversary false security) : ℝ) -
-      Game.succProbability (publicKeyGame real encrypt adversary true security))
-    ((Game.succProbability (publicKeyGame ideal encrypt adversary false security) : ℝ) -
-      Game.succProbability (publicKeyGame ideal encrypt adversary true security)) 0
-  have hscale (a b c d : ℝ) :
-      2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    calc
-      _ = |2 * ((1 + a - b) / 2 - (1 + c - d) / 2)| := by rw [abs_mul]; norm_num
-      _ = _ := by congr 1; ring
-  simpa only [hscale, sub_zero] using h
+  rw [distinguishingGame_keyDistinguisher, distinguishingGame_keyDistinguisher]
+  exact Game.advantage_le_two_mul_uniform_bool_xor
+    (publicKeyGame real encrypt adversary · security)
+    (publicKeyGame ideal encrypt adversary · security)
 
 end Cslib.Crypto.Encryption

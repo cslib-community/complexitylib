@@ -62,7 +62,9 @@ namespace Tape
   if t.head ≤ z then t.right.getD (z - t.head).toNat none
   else t.left.getD (t.head - z - 1).toNat none
 
-lemma read_eq (t : Tape) : t.read = t.cellAt t.head := by
+-- vendored: `Tape.read_eq` is public for `Halting/Rice`.
+/-- The symbol under the head is the cell at the head position. -/
+public lemma read_eq (t : Tape) : t.read = t.cellAt t.head := by
   simp only [read, cellAt, le_refl, ↓reduceIte, sub_self, Int.toNat_zero]
   cases t.right <;> rfl
 

@@ -34,8 +34,7 @@ theorem toOuterMeasure_pi_exists_le {ι : Type*} [Fintype ι] {α : ι → Type*
     _ ≤ ∑ i, (pi p).toOuterMeasure ((fun x => x i) ⁻¹' bad i) :=
       MeasureTheory.measure_iUnion_fintype_le _ _
     _ = _ := by
-      congr 1
-      funext i
+      congr 1 with i : 1
       rw [← PMF.toOuterMeasure_map_apply, pi_map_eval]
 
 end Cslib.Probability.PMF

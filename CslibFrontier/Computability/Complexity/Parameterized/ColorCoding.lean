@@ -285,8 +285,6 @@ private theorem computableInPolyTime_entryCapped :
       encStepInput (encList encNat) := by
   have hG : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.1)
       (encPair encStepInput encNat) encGraph := by fun_prop
-  have hcs : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.2)
-      (encPair encStepInput encNat) (encList encNat) := by fun_prop
   have hv : ComputableInPolyTime (fun q : StepInput × ℕ => q.2)
       (encPair encStepInput encNat) encNat := by fun_prop
   have hmU : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.2)
@@ -295,18 +293,9 @@ private theorem computableInPolyTime_entryCapped :
       (encPair encStepInput encNat) encNat := unary_to_binary.comp hmU
   have hT : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.2)
       (encPair encStepInput encNat) (encList (encList encNat)) := by fun_prop
-  have hidx : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.1.1.idxOf q.2)
-      (encPair encStepInput encNat) encUnary := by
-    have hV : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.1.1)
-        (encPair encStepInput encNat) (encList encNat) := by
-      unfold encGraph at hG
-      exact (fst _ _).comp hG
-    exact idxOfWithInput hV hv
   have hcol : ComputableInPolyTime
       (fun q : StepInput × ℕ => colorOf q.1.1.1.1.1 q.1.1.1.1.2 q.2)
-      (encPair encStepInput encNat) encNat := by
-    unfold colorOf
-    exact (listGetD 0).comp (hcs.prod hidx)
+      (encPair encStepInput encNat) encNat := by fun_prop
   have hcap : ComputableInPolyTime
       (fun q : StepInput × ℕ => min q.1.2 (colorOf q.1.1.1.1.1 q.1.1.1.1.2 q.2))
       (encPair encStepInput encNat) encUnary := binary_min_unary' hmU hcol

@@ -69,18 +69,6 @@ variable {T : Type} {encT : T ↪ List Bool}
 
 /-! ### Sizes -/
 
-/-- A list of values, each at most `Yb` bits, is at most `(2 Yb + 1)` bits per value. -/
-private theorem length_encList_le_of_forall {vals : List (List ℕ)} {Yb : ℕ}
-    (h : ∀ v ∈ vals, (encList encNat v).length ≤ Yb) :
-    (encList (encList encNat) vals).length ≤ vals.length * (2 * Yb + 1) := by
-  rw [length_encList]
-  have h' := List.sum_le_length_nsmul (vals.map fun a => 2 * (encList encNat a).length + 1)
-    (2 * Yb + 1) fun x hx => by
-      obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
-      have := h v hv
-      omega
-  rwa [List.length_map, smul_eq_mul] at h'
-
 /-- The length of an input `(fl, P, ℓ, r, G)` of the reduction, by components. -/
 theorem length_encEngine (fl : List ℕ) (P ℓ r : ℕ) (G : DescribedNetwork T) :
     (encEngine encT (fl, P, ℓ, r, G)).length = 2 * (encList encNat fl).length + 1 +
@@ -155,8 +143,8 @@ theorem length_encCore_coreInput_le (y : List ℕ × ℕ × ℕ × ℕ × Descri
     Nat.mul_le_mul hkL (by omega)
   simp only [coreInput, encCore, length_encPair, encUnary_apply, List.length_replicate,
     length_encDescribed, DescribedNetwork.numEdges_specNet, DescribedNetwork.vertices_specNet]
-    at hspec ⊢
-  nlinarith
+    at hspec hmul ⊢
+  linarith [Nat.zero_le (L * L)]
 
 variable (core : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) → List ℕ)
 
@@ -171,8 +159,8 @@ theorem length_run_engineStep_le (y : List ℕ × ℕ × ℕ × ℕ × Described
     (encS (IndexFold.run (engineStep core) j (y, []))).length ≤
       2 * (encNat j).length + 2 * (encEngine encT y).length + 2 + j * (2 * Yb + 1) := by
   rw [run_engineStep]
-  have h := length_encList_le_of_forall (vals := (List.range j).map fun k => core (coreInput y k))
-    (Yb := Yb) fun v hv => by
+  have h := Turing.MultiTapeTM.length_encList_le (encList encNat)
+    ((List.range j).map fun k => core (coreInput y k)) (b := Yb) fun v hv => by
       obtain ⟨k, hk, rfl⟩ := List.mem_map.mp hv
       exact hY k (List.mem_range.mp hk)
   simp only [List.length_map, List.length_range] at h
@@ -257,7 +245,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
   have hNL : N ≤ L * L + 1 := pointCount_le fl P ℓ r G
   have hNX : N ≤ (X + 1) ^ 2 := by
     have : L * L ≤ X * X := Nat.mul_le_mul (by omega) (by omega)
-    nlinarith
+    linarith
   let S := 2 * N + 2 * L + 2 + N * (2 * Yb + 1)
   have hSSh : S ≤ Sh X := by
     have h1 : N * (2 * Yb + 1) ≤ (X + 1) ^ 2 * (2 * X + 2) := Nat.mul_le_mul hNX (by omega)
@@ -349,7 +337,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
   have hNlen : (encNat N).length ≤ N := length_encNat_le_self N
   have hsq : ((encNat N).length + 1) ^ 2 ≤ (N + 1) ^ 2 := Nat.pow_le_pow_left (by omega) 2
   have hNsq : (N + 1) ^ 2 ≤ ((X + 1) ^ 2 + 1) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-  have hN1 : N ≤ (N + 1) ^ 2 := by nlinarith
+  have hN1 : N ≤ (N + 1) ^ 2 := (Nat.le_add_right N 1).trans (Nat.le_self_pow (by norm_num) _)
   refine ⟨?_, ?_⟩
   · rw [engineCertificate, NativeCertificate.congr_time, NativeCertificate.comp_time,
       IndexFold.certificate, NativeCertificate.iterate_time]
@@ -638,13 +626,9 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
     have h1 := pointCount_le (encT := encT) fl P ℓ r G
     have h2 := Nat.mul_le_mul hLy hLy
     omega
-  -- The calls of the loop.
-  have hcall (k : ℕ) :
-      (directCoreCertificate entry ce).time (coreInput (fl, P, ℓ, r, G) k) ≤ Rf W * X * (E + 1) ∧
-        (directCoreCertificate entry ce).space (coreInput (fl, P, ℓ, r, G) k) ≤ Rf W ∧
-          (encList encNat (DescribedNetwork.sumValue SumOps.galois (specEntry entry)
-            ((coreInput (fl, P, ℓ, r, G) k).1, (coreInput (fl, P, ℓ, r, G) k).2.1)
-            (coreInput (fl, P, ℓ, r, G) k).2.2.2)).length ≤ cD * (Rf W + 1) := by
+  -- The calls of the loop, stated in the shape `engineCertificate_le` expects.
+  obtain ⟨hTe, hSe⟩ := hK₁ fl P ℓ r G (Rf W * X * (E + 1)) (Rf W) (cD * (Rf W + 1)) <| by
+    intro k _
     have hc := length_encCore_coreInput_le (encT := encT) (fl, P, ℓ, r, G) k
     have hci : coreInput (fl, P, ℓ, r, G) k =
         (P, fl, r, DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G) := rfl
@@ -661,7 +645,6 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
     have hout := hcD
       (P, fl, r, DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G)
     exact hout.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right hS' 1))
-  obtain ⟨hTe, hSe⟩ := hK₁ fl P ℓ r G _ _ _ fun k _ => hcall k
   have hEng : K₁ * ((encEngine encT (fl, P, ℓ, r, G)).length + cD * (Rf W + 1) + 1) ^ K₁ ≤
       Engf W := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
   have hMt := (bM (P, ℓ, r, G)).1.trans (mM (show n ≤ W by omega))

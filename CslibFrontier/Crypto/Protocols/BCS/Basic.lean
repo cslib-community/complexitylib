@@ -219,6 +219,34 @@ structure IOPRoundByRoundSoundness (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (
     doomed x (List.ofFn fun j : Fin r => (oracles j, chals j)) →
       iopVerify iop x chals oracles = false
 
+/-- A prefix predicate `doomed x` that holds on the empty prefix and survives every round
+satisfying `goodStep` holds on the complete transcript when every round satisfies `goodStep`. -/
+theorem doomed_ofFn_of_goodSteps {doomed : Stmt → List (OracleTable d Sym × Chal) → Prop}
+    {goodStep : Stmt → List (OracleTable d Sym × Chal) → OracleTable d Sym → Chal → Prop}
+    {x : Stmt} (hinit : doomed x [])
+    (hstep : ∀ pref π c, doomed x pref → goodStep x pref π c → doomed x (pref ++ [(π, c)]))
+    (oracles : Fin r → OracleTable d Sym) (chals : Fin r → Chal)
+    (hsteps : ∀ j : Fin r,
+      goodStep x ((List.ofFn fun i : Fin r => (oracles i, chals i)).take j.val)
+        (oracles j) (chals j)) :
+    doomed x (List.ofFn fun j : Fin r => (oracles j, chals j)) := by
+  set tr := List.ofFn fun j : Fin r => (oracles j, chals j)
+  have hlen : tr.length = r := List.length_ofFn
+  suffices ∀ m ≤ r, doomed x (tr.take m) by
+    simpa only [← hlen, List.take_length] using this r le_rfl
+  intro m hm
+  induction m with
+  | zero =>
+    simpa only [List.take_zero] using hinit
+  | succ m ih =>
+    have hmr : m < r := hm
+    have hmlen : m < tr.length := by simpa only [hlen] using hmr
+    rw [List.take_succ_eq_append_getElem hmlen]
+    have hget : tr[m] = (oracles ⟨m, hmr⟩, chals ⟨m, hmr⟩) := by
+      simp [tr]
+    rw [hget]
+    exact hstep (tr.take m) (oracles ⟨m, hmr⟩) (chals ⟨m, hmr⟩) (ih hmr.le) (hsteps ⟨m, hmr⟩)
+
 /-- If every round's challenge satisfies `goodStep` under `IOPRoundByRoundSoundness`, then the IOP
 verifier rejects `x ∉ lang`. -/
 theorem IOPRoundByRoundSoundness.iopVerify_eq_false
@@ -230,25 +258,9 @@ theorem IOPRoundByRoundSoundness.iopVerify_eq_false
     (hsteps : ∀ j : Fin r,
       goodStep x ((List.ofFn fun i : Fin r => (oracles i, chals i)).take j.val)
         (oracles j) (chals j)) :
-    iopVerify iop x chals oracles = false := by
-  apply hrbr.reject_of_doomed
-  set tr := List.ofFn fun j : Fin r => (oracles j, chals j)
-  have hlen : tr.length = r := List.length_ofFn
-  suffices ∀ m ≤ r, doomed x (tr.take m) by
-    simpa only [← hlen, List.take_length] using this r le_rfl
-  intro m hm
-  induction m with
-  | zero =>
-    simpa only [List.take_zero] using hrbr.init_doomed x hx
-  | succ m ih =>
-    have hmr : m < r := hm
-    have hmlen : m < tr.length := by simpa only [hlen] using hmr
-    rw [List.take_succ_eq_append_getElem hmlen]
-    have hget : tr[m] = (oracles ⟨m, hmr⟩, chals ⟨m, hmr⟩) := by
-      simp [tr]
-    rw [hget]
-    exact hrbr.step_doomed x (tr.take m) (oracles ⟨m, hmr⟩) (chals ⟨m, hmr⟩)
-      (ih hmr.le) (hsteps ⟨m, hmr⟩)
+    iopVerify iop x chals oracles = false :=
+  hrbr.reject_of_doomed x oracles chals
+    (doomed_ofFn_of_goodSteps (hrbr.init_doomed x hx) (hrbr.step_doomed x) oracles chals hsteps)
 
 /-- **Knowledge soundness at a challenge vector** `(x, chals, oracles)`: if the IOP verifier accepts
 `oracles` at challenge `chals`, the straight-line IOP knowledge extractor `iopExtract` recovers a
