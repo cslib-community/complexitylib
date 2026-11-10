@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.Alternation
 public import CslibFrontier.Computability.Complexity.Classes.Time
+import CslibFrontier.Computability.Complexity.Classes.Time.TwoPow
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
@@ -79,10 +80,7 @@ theorem exists_mem_DTIME_of_mem_ASPACE {s : ℕ → ℕ} {A : Set α} (h : A ∈
     ∃ c, A ∈ DTIME enc fun n => 2 ^ (c * (Nat.log2 n + s n + 1)) := by
   obtain ⟨k, State, _, atm, c₁, c₂, hA⟩ := h
   obtain ⟨c, hc⟩ := hA.recognizesInSpace.mem_DTIME (s := fun n => c₁ * s n + c₂)
-  refine ⟨c * (c₁ + c₂ + 1), DTIME_mono (fun n => Nat.pow_le_pow_right (by omega) ?_) hc⟩
-  rw [Nat.mul_assoc]
-  refine Nat.mul_le_mul_left c ?_
-  nlinarith
+  exact ⟨_, DTIME_two_pow_log2_add_mul_add_subset c c₁ c₂ s hc⟩
 
 /-- **Alternating space is within deterministic exponential time** above logarithmic space
 [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981]
@@ -91,10 +89,6 @@ theorem exists_mem_DTIME_of_mem_ASPACE_of_log2_le {s : ℕ → ℕ} {A : Set α}
     (hs : ∀ n, Nat.log2 n ≤ s n) (h : A ∈ ASPACE enc s) :
     ∃ c, A ∈ DTIME enc fun n => 2 ^ (c * s n) := by
   obtain ⟨c, hc⟩ := exists_mem_DTIME_of_mem_ASPACE h
-  refine ⟨2 * c, DTIME_mono_of_le_mul_add (C := 2 ^ c) (fun n => ?_) hc⟩
-  calc 2 ^ (c * (Nat.log2 n + s n + 1))
-      ≤ 2 ^ (2 * c * s n + c) := Nat.pow_le_pow_right (by omega) (by nlinarith [hs n])
-    _ = 2 ^ c * 2 ^ (2 * c * s n) := by rw [pow_add, Nat.mul_comm]
-    _ ≤ 2 ^ c * 2 ^ (2 * c * s n) + 2 ^ c := Nat.le_add_right _ _
+  exact ⟨_, DTIME_two_pow_log2_add_subset hs hc⟩
 
 end Cslib.Complexity
