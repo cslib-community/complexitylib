@@ -209,8 +209,6 @@ private lemma cellAt_apply (t : Tape) (a : Option (Option ℕ) × SignType) (h z
   · simp
   · simp [cellAt_write, sub_eq_zero]
 
-private lemma apply_none_zero (t : Tape) : t.apply (none, 0) = t := rfl
-
 private lemma length_left_apply (t : Tape) (a : Option (Option ℕ) × SignType)
     (h : 1 ≤ t.left.length) : ((t.apply a).left.length : ℤ) = t.left.length + a.2 := by
   obtain ⟨_ | o, _ | _ | _⟩ := a <;>
@@ -293,16 +291,13 @@ private def act (d : Desc) : Option ℕ → Option ℕ → List (Option ℕ) →
     | none => ⟨.zero, [], none, none⟩
     | some e => e.2
 
-private lemma applyTapes_nil' (ts : List Tape) : applyTapes ts [] = ts := by
-  cases ts <;> rfl
-
 private lemma getElem?_applyTapes (ts : List Tape) (as : List (Option (Option ℕ) × SignType))
     (k : ℕ) : (applyTapes ts as)[k]? = ts[k]?.map (·.apply (as.getD k (none, .zero))) := by
   induction ts generalizing as k with
   | nil => rfl
   | cons t ts ih =>
     cases as with
-    | nil => simp [applyTapes, apply_none_zero]
+    | nil => simp [applyTapes, apply_none]
     | cons a as => cases k <;> simp [applyTapes, ih]
 
 private lemma stepWith_eq (d : Desc) (c : SCfg) (a : Option ℕ) :
@@ -311,9 +306,9 @@ private lemma stepWith_eq (d : Desc) (c : SCfg) (a : Option ℕ) :
       applyTapes c.workTapes (act d c.state a (c.workTapes.map Tape.read)).workTapes⟩,
       (act d c.state a (c.workTapes.map Tape.read)).output) := by
   obtain ⟨_ | q, p, ts⟩ := c
-  · simp [stepWith, act, moveInput, applyTapes_nil']
+  · simp [stepWith, act, moveInput, applyTapes_nil_right]
   · simp only [stepWith, act]
-    split <;> (rename_i h; simp [h, moveInput, applyTapes_nil'])
+    split <;> (rename_i h; simp [h, moveInput, applyTapes_nil_right])
 
 private lemma wstep_eq (d : Desc) (q : Option ℕ) (i : Tape) (ts : List Tape) :
     wstep d (q, i :: ts) =

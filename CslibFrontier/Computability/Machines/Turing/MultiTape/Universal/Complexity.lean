@@ -149,8 +149,12 @@ lemma apply_deg : ComputableInDegree (fun p : Tape × TapeAct =>
 /-- Applying an action to a work tape, if there is one. -/
 def applyOne (_ : Unit) (t : Tape) (a : Option TapeAct) : Option Tape := some (a.elim t t.apply)
 
-lemma applyTapes_nil_right (ts : List Tape) : applyTapes ts [] = ts := by
+/-- Applying no actions leaves the work tapes unchanged. -/
+public lemma applyTapes_nil_right (ts : List Tape) : applyTapes ts [] = ts := by
   cases ts <;> rfl
+
+/-- The action that neither writes nor moves leaves a work tape unchanged. -/
+public lemma apply_none (t : Tape) : t.apply (none, 0) = t := rfl
 
 lemma zipFold_applyOne (ts : List Tape) (as : List TapeAct) :
     zipFold applyOne () ts as = applyTapes ts as := by
@@ -191,8 +195,12 @@ lemma length_eTape_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
       length_encPair, encList_cons, List.length_append, length_frame, encOption_some,
       List.length_cons, List.headD_cons, List.tail_cons] <;> omega
 
+/-- An integer's unary encoding is nonempty. -/
+public lemma one_le_length_encIntUnary (z : ℤ) : 1 ≤ (encIntUnary z).length := by
+  rw [length_encIntUnary]; split_ifs <;> omega
+
 lemma four_le_length_eTape (t : Tape) : 4 ≤ (eTape t).length := by
-  have : 1 ≤ (encIntUnary t.head).length := by rw [length_encIntUnary]; split_ifs <;> omega
+  have := one_le_length_encIntUnary t.head
   simp only [eTape_apply, length_encPair]
   omega
 
@@ -212,7 +220,7 @@ lemma length_applyTapes (ts : List Tape) (as : List TapeAct) :
       omega
 
 /-- The symbol under the head is no longer than the work tape. -/
-lemma length_read_le (t : Tape) : (eSym t.read).length ≤ (eTape t).length := by
+public lemma length_read_le (t : Tape) : (eSym t.read).length ≤ (eTape t).length := by
   have := length_eSym_headD_le t.right
   simp only [Tape.read, eTape_apply, length_encPair] at *
   omega

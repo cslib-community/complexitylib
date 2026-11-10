@@ -106,8 +106,6 @@ lemma Tape.Covered.length_le {t : Tape} {V : Finset ℤ} (h : t.Covered V) :
 
 /-! ### A step on a single work tape -/
 
-lemma apply_none (t : Tape) : t.apply (none, 0) = t := rfl
-
 lemma getD_applyTapes (ts : List Tape) (as : List TapeAct) {i : ℕ} (hi : i < ts.length) :
     (applyTapes ts as).getD i .blank = (ts.getD i .blank).apply (as.getD i (none, 0)) := by
   induction ts generalizing as i with
@@ -158,7 +156,8 @@ variable (d : Desc) (x : List ℕ)
 /-- The number of work-tape cells visited by the simulation up to step `j`. -/
 @[expose] public def simSpace (j : ℕ) : ℕ := ∑ i ∈ Finset.range d.tapes, (visited d x j i).card
 
-lemma run_succ (j : ℕ) : run d x (j + 1) = (step d x (run d x j)).1 := by
+/-- One more step of the simulation. -/
+public lemma run_succ (j : ℕ) : run d x (j + 1) = (step d x (run d x j)).1 := by
   simp only [run, Function.iterate_succ_apply', stepOut]
 
 lemma visited_mono {j j' : ℕ} (h : j ≤ j') (i : ℕ) : visited d x j i ⊆ visited d x j' i :=
