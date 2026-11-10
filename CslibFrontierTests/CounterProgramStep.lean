@@ -54,14 +54,16 @@ example {b : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 3) (b + 1) (b + 1))
   · cp_step [h]
   · cp_step [h]
 
--- A concrete program: the instructions are read off by evaluation, and the bounds on a list of
--- registers written out are proved entry by entry.
+-- A concrete program: the instructions are read off by evaluation, the bounds on a list of
+-- registers written out are proved entry by entry, and the registers and the arithmetic of the
+-- comparison are evaluated.
 example (hB : 3 ≤ B) :
-    (⟨[.assign 0 (const 1) 1, .lt (reg 0) (const 2) 2 3], 1⟩ : CounterProgram).Reaches w
-      (CounterProgram.Running ⟨[.assign 0 (const 1) 1, .lt (reg 0) (const 2) 2 3], 1⟩ B)
-      (0, [0]) (2, [1]) := by
-  cp_step [List.set_cons_zero]
-  cp_step [List.getD_cons_zero]
+    let P : CounterProgram :=
+      ⟨[.assign 0 (const 1) 1, .lt (add (reg 0) (const 1)) (const 3) 2 3], 1⟩
+    P.Reaches w (P.Running B) (0, [0]) (2, [1]) := by
+  intro P
+  cp_step
+  cp_step
 
 -- A shifted assignment, above the choice in register `0`.
 example {l next c : ℕ} (h : P.instr l = (Instr.assign 1 (reg 1) next).shift) (hc : c ≤ B)
@@ -74,6 +76,12 @@ example {l next : ℕ} (h : P.instr l = .assign 1 (reg 2) next)
     (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) :
     P.Reaches w (P.Oblivious B) (l, regs) (next, regs.set 1 (regs.getD 2 0)) := by
   cp_step
+
+-- An oblivious read, decided by the bit read.
+example {l t f e : ℕ} (h : P.instr l = .read (reg 1) t f e)
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (hw : w[regs.getD 1 0]? = some false) :
+    P.Reaches w (P.Oblivious B) (l, regs) (f, regs) := by
+  cp_step [hw]
 
 -- An oblivious comparison of registers above the choice.
 example {l yes no : ℕ} (h : P.instr l = .lt (reg 1) (add (reg 2) (const 1)) yes no)
@@ -104,10 +112,25 @@ example {b : ℕ} (h : P.instr b = .assign 0 (const 0) (b + 1)) (regs : List ℕ
 /--
 error: cp_step: the label
   if regs.getD 0 0 < 3 then b + 1 else b + 2
-is not decided. Split on its condition and pass the case to `cp_step` as a simp lemma.
+is not decided. Pass the outcome of its condition or the bit read (`w[i]? = some b`) to `cp_step` as a simp lemma, splitting into cases first.
 -/
 #guard_msgs in
 example {b : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 3) (b + 1) (b + 2))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) :
+    P.Reaches w (P.Running B) (b, regs) (b + 1, regs) := by
+  cp_step
+  cp_step
+
+/--
+error: cp_step: the label
+  match w[regs.getD 0 0]? with
+  | some true => b + 1
+  | some false => b + 2
+  | none => F
+is not decided. Pass the outcome of its condition or the bit read (`w[i]? = some b`) to `cp_step` as a simp lemma, splitting into cases first.
+-/
+#guard_msgs in
+example {b F : ℕ} (h₀ : P.instr b = .read (reg 0) (b + 1) (b + 2) F)
     (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) :
     P.Reaches w (P.Running B) (b, regs) (b + 1, regs) := by
   cp_step

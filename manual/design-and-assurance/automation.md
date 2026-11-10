@@ -39,7 +39,7 @@ say which.
 | `enc_len`, `enc_len [l] at h ⊢` | `Tactic.EncLen` | a linear bound on encoded lengths | [Close encoded-length arithmetic](#close-encoded-length-arithmetic) |
 | `fits`, `fits [h]` | `Tactic.Fits` | `Fits w v` or `v < 2 ^ w` | [Close word-size bounds](#close-word-size-bounds) |
 
-**Word-RAM programs**
+**Word-RAM and counter programs**
 
 | Tactic | Module | Goal | Reference |
 |---|---|---|---|
@@ -52,6 +52,7 @@ say which.
 | `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `cp_step`, `cp_step [h]` | `Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` | one step of `P.Reaches w Q (l, regs) s'` for a counter program | [Step through counter programs](#step-through-counter-programs) |
 
 **Circuits, logic and probability**
 
@@ -66,8 +67,9 @@ say which.
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
-simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, and `fo_realize`, used by `fo_simp`,
-and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`, `FirstOrder` and `FODefinable`.
+simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, `cp_simps`, used by `cp_step`, and
+`fo_realize`, used by `fo_simp`, and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`,
+`FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
 
@@ -377,8 +379,9 @@ oblivious and shifted steps, a concrete program and the diagnostics. The shape c
 [logspace model checker](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder.lean)
 is a library client.
 
-A label that is still a conditional stops the tactic with a diagnostic: split on the condition and
-pass the case, as in `by_cases h : 0 < n` followed by `cp_step [h]`. A side condition the tactic
+A label that is still a conditional, or a `match` on an input bit the lemmas do not give, stops the
+tactic with a diagnostic: split into cases and pass the outcome, as in `by_cases h : 0 < n` followed
+by `cp_step [h]`. A side condition the tactic
 cannot prove, typically a register bound that is not a hypothesis, is named in the error; state it
 with `have` first, as in `have hB := hk.2.2`. For a step followed by a reachability fact `hrest`
 from a lemma, leave the step as a goal with `refine Reaches.trans ?_ hrest` and close it by
