@@ -1370,10 +1370,22 @@ Import `CslibFrontier.Computability.Complexity.FineGrained.UpperDominationShared
 `exists_count_polySpace`. It instantiates the genuine width-three native counter, executes the
 actual one/two-query tag, and charges construction, sequential counting, both binary answers and
 subtraction through the machine calculus. The resulting counter has polynomial workspace on
-**all raw inputs**, and counts original sets on canonical finite simple graphs. Its closed sharp
-time $L^{O(1)}2^{O(\eta(v))}$ is still unproved here; the backend counter's bound alone does not
-establish that composition. The Proposition 7.6 ROADMAP scope stays open until this remaining
-resource clause is proved. The reviewed width-four exact-set counter is unchanged.
+**all raw inputs**, and counts original sets on canonical finite simple graphs.
+`exists_count_sharp_certificate` attaches the complete native clock to this execution, including
+writer, selectors, tag, both counter calls and binary reconstruction. Its statement pins the
+chosen width-three counter and the actual compiled execution, not merely an unspecified exact
+counter with the same asymptotic rate. The reusable
+`TwoBoundary.BinaryFrontend.exists_execute_overhead` charges query copies, retained binary
+answers and subtraction from the producer's space bound; this counter and the generic DNF
+counter both use that certificate. The actual gate bound and computed declarations give the
+fixed-linear rescaling from query variables to original vertices. Small and empty graphs are
+covered by the rounded clock, without a supplied dimension or runtime premise.
+`exists_count_realEta_certificate` gives the closed source time
+$L^{O(1)}2^{O(\eta(v))}$ for $v\ge16$, with global polynomial workspace. No additional loglog
+factor is hidden. Together with the exact count and query budgets above, this closes the
+shared-marker refinement of Proposition 7.6 in the recorded native/encoding model. The combined
+ROADMAP entry retains Proposition C.2; broader encoding/model transfers remain separate.
+The reviewed width-four exact-set counter is unchanged.
 
 From the checkout root run:
 
@@ -1391,9 +1403,43 @@ and empty cases. For both $K_2$ boundaries it checks all 512 old selection/mark/
 against the four possible assignments of the two fresh markers. Side gate clauses are omitted
 on both sides of this test, so false gate words cannot make it vacuous. Computed checks also
 cover the full query's width, literal indices and declaration. The general count bijection is
-now proved independently of this finite regression. Formal clients also derive the impossible size-two answer on a one-vertex graph, the empty-graph count
-and equality for negative versus zero thresholds from the new original-count theorem.
+proved independently of this finite regression. Formal clients also derive the impossible
+size-two answer on a one-vertex graph, the empty-graph count and equality for negative versus
+zero thresholds from the new original-count theorem.
 The enumeration is test-only; production writes explicit lists and enumerates no assignment cube.
+
+### Compact regular induced-subgraph core
+
+Import `CslibFrontier.Computability.PolyTime.CNF.RegularInducedCore` and open
+`Cslib.Logic.PL.RegularInducedCore`. This implements the **no-size-test core** of
+Proposition C.2 (PDF pp.32–33). For fixed $d$, `upper` writes one exclusion for each
+$(d+1)$-element neighbor sublist of a vertex. `conditions` permits an unselected vertex or
+requires a selected $d$-element neighbor sublist. `build` declares only the original vertices;
+no threshold array, mark bits or subset-witness variables are introduced. Enumeration uses the
+existing fixed-length sublist machine, not a full powerset. `build_polytime` charges the actual
+matrix traversal, enumeration and binary literal writes, for each fixed degree.
+
+`build_ofGraph` identifies the raw lists with their finite versions. `finite_semantics` proves
+exact regularity through the existing `IsSigmaRhoSet {d} Set.univ` predicate, and `plan_count`
+counts original selection words, with one word per original vertex set. For $d\ge1$,
+`query_budget` gives $N=2v-1$, width at most $d+2$, and at most
+$v^{d+2}+2(v+v^{d+1})$ clauses, with all literal indices checked. These are the compact **no-size**
+budgets ($a=0$), not a claim that the full size-constrained C.2 endpoint is complete.
+
+The actual signed size-test frontend, its functional gate/count transport and the complete
+native sharp-time/workspace composition remain open for C.2. The ROADMAP entry is retained.
+For $d=2$, the semantic predicate permits disjoint unions of cycles and imposes no connectivity
+condition. The empty selection is permitted, including on an empty graph.
+
+From the checkout root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.RegularInducedCore --wfail --iofail
+```
+
+The computed client checks degrees two and three on complete graphs, the empty graph, and a
+disjoint pair of triangles. It also checks actual emitted query declarations and widths.
+Selection-word enumeration occurs only in these tiny regression tests.
 
 ### Minimum independent-domination resources
 

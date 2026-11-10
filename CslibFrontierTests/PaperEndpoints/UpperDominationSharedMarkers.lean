@@ -211,4 +211,22 @@ example (G : SimpleGraph (Fin 2)) [DecidableRel G.Adj] (k : ℤ) (β : Bool) :
     (query (UpperDomination.ofGraph G k) β).length ≤ 48032 := by
   simpa using query_cubic_budget G k (by decide) β
 
+open Classical in
+/-- The complete width-three counter has the source clock and global workspace, including the
+signed bound and actual query construction rather than a supplied runtime conclusion. -/
+example : ∃ counter : ℕ × CNF ℕ → ℕ, ∃ count : UpperDomination.Input → ℕ,
+    ∃ cs : Cslib.GenericRAM.NativeCertificate count UpperDomination.encInput encNat,
+    ∃ C e A : ℕ,
+      (∀ x, count x = TwoBoundary.BinaryFrontend.execute counter (compile x)) ∧
+      (∀ q, counter q = if CNF.validDeclaredInput 3 q.1 q.2 then
+        q.2.modelCountOn (Finset.range q.1) else 0) ∧
+      (∀ x, cs.space x ≤ C * ((UpperDomination.encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (k : ℤ),
+        count (UpperDomination.ofGraph G k) =
+          Fintype.card {S : Set (Fin n) // Minimal G.IsDominatingSet S ∧ k ≤ (Nat.card S : ℤ)} ∧
+        (16 ≤ n → (cs.time (UpperDomination.ofGraph G k) : ℝ) ≤ (C : ℝ) *
+          ((UpperDomination.encInput (UpperDomination.ofGraph G k)).length + 1 : ℕ) ^ e *
+            (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) :=
+  exists_count_realEta_certificate
+
 end SharedMarkerTests

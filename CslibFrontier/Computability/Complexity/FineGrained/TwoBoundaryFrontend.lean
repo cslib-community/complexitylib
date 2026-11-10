@@ -42,7 +42,8 @@ open VCOne
 @[expose] def execute (counter : ℕ × CNF ℕ → ℕ) (o : Output) : ℕ :=
   if o.isLeft then counter (first o) else counter (first o) - counter (second o)
 
-private abbrev encCounter := encPair encUnary encCNF
+/-- A unary declaration followed by the binary signed CNF; the declaration is framed. -/
+abbrev encCounter := encPair encUnary encCNF
 
 private theorem selectors_polytime :
     ComputableInPolyTime first encOutput encCounter ∧
@@ -99,22 +100,16 @@ private theorem execute_correct {b d : ℕ} {counter : ℕ × CNF ℕ → ℕ}
     rw [WeightedRow.BinaryPlan.queryCount_eq_modelCountOn,
       WeightedRow.BinaryPlan.queryCount_eq_modelCountOn]
 
-/-- One actual original-input counter, global polynomial space, and sharp time for every fixed
-side/term width. The exponent parameter is `n + number of conditions`, not silently `n`. -/
-theorem exists_count_sharp_certificate (b d : ℕ) :
-    ∃ count : Input → ℕ, ∃ cs : NativeCertificate count encInput encNat, ∃ C e A : ℕ,
-      (∀ x, cs.space x ≤ C * ((encInput x).length + 1) ^ e) ∧
-      ∀ {n : ℕ} (B : CNF (Fin n)) (P : List (DNF (Fin n)))
-        (_hb : ∀ c ∈ B, c.length ≤ b) (_hp : ∀ p ∈ P, ∀ t ∈ p, t.length ≤ d),
-        count (ofFinite B P) =
-          Fintype.card {σ : Fin n → Bool // B.eval σ = true ∧ ∀ p ∈ P, DNF.eval σ p = true} ∧
-        cs.time (ofFinite B P) ≤ C * ((encInput (ofFinite B P)).length + 1) ^ e *
-          2 ^ (A * Nat.logLogSqrtLogScale (n + P.length)) := by
-  obtain ⟨β, N₀, Ncut, cp, D, hcp, hcorrect⟩ :=
-    exists_countGeneralParity_sharp_certificate (max b (d + 2)) (by omega)
-  let counter := countGeneralParity (max b (d + 2)) β N₀ Ncut
-  have hcpS : PolyBounded (fun x => (encCounter x).length) cp.space :=
-    PolyBounded.of_forall_le D D fun x => (hcp x).2
+/-- Assemble the actual one/two-query execution once. All dispatch, query-copy, answer-storage
+and binary-subtraction costs are bounded by a derived polynomial overhead. The counter's own
+time remains explicit; its space premise is instantiated from proved certificates by clients. -/
+theorem exists_execute_overhead {counter : ℕ × CNF ℕ → ℕ}
+    (cp : NativeCertificate counter encCounter encNat)
+    (hcpS : PolyBounded (fun q => (encCounter q).length) cp.space) :
+    ∃ ce : NativeCertificate (execute counter) encOutput encNat,
+      PolyBounded (fun p => (encOutput p).length) ce.space ∧
+      ∃ O : Output → ℕ, PolyBounded (fun p => (encOutput p).length) O ∧
+        ∀ p, ce.time p ≤ O p + cp.time (first p) + cp.time (second p) := by
   obtain ⟨hf, ht⟩ := selectors_polytime
   let sf := NativeCertificate.ofPolyTime hf
   let st := NativeCertificate.ofPolyTime ht
@@ -141,6 +136,36 @@ theorem exists_count_sharp_certificate (b d : ℕ) :
       change tag.space p + (if p.isLeft then cf.space p else reconstruct.space p) ≤
         tag.space p + cf.space p + reconstruct.space p
       split_ifs <;> omega
+  let O (p : Output) := tag.time p + sf.time p + st.time p +
+    sub.time (counter (first p), counter (second p))
+  have hpost := hsub.1.comp (SparseCNFLeafCounter.polyBounded_output_of_space both hsBoth)
+  have hO : PolyBounded (fun p => (encOutput p).length) O :=
+    ((htagP.1.add hsf.1).add hst.1).add hpost
+  refine ⟨ce, heS, O, hO, fun p => ?_⟩
+  change tag.time p + (if p.isLeft then sf.time p + cp.time (first p) else
+    (sf.time p + cp.time (first p)) + (st.time p + cp.time (second p)) +
+      sub.time (counter (first p), counter (second p))) ≤ _
+  dsimp only [O]
+  split_ifs <;> omega
+
+/-- One actual original-input counter, global polynomial space, and sharp time for every fixed
+side/term width. The exponent parameter is `n + number of conditions`, not silently `n`. -/
+theorem exists_count_sharp_certificate (b d : ℕ) :
+    ∃ count : Input → ℕ, ∃ cs : NativeCertificate count encInput encNat, ∃ C e A : ℕ,
+      (∀ x, cs.space x ≤ C * ((encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (B : CNF (Fin n)) (P : List (DNF (Fin n)))
+        (_hb : ∀ c ∈ B, c.length ≤ b) (_hp : ∀ p ∈ P, ∀ t ∈ p, t.length ≤ d),
+        count (ofFinite B P) =
+          Fintype.card {σ : Fin n → Bool // B.eval σ = true ∧ ∀ p ∈ P, DNF.eval σ p = true} ∧
+        cs.time (ofFinite B P) ≤ C * ((encInput (ofFinite B P)).length + 1) ^ e *
+          2 ^ (A * Nat.logLogSqrtLogScale (n + P.length)) := by
+  obtain ⟨β, N₀, Ncut, cp, D, hcp, hcorrect⟩ :=
+    exists_countGeneralParity_sharp_certificate (max b (d + 2)) (by omega)
+  let counter := countGeneralParity (max b (d + 2)) β N₀ Ncut
+  have hcpS : PolyBounded (fun x => (encCounter x).length) cp.space :=
+    PolyBounded.of_forall_le D D fun x => (hcp x).2
+  obtain ⟨ce, heS, O₀, hO₀, hceTime⟩ := exists_execute_overhead cp hcpS
+  obtain ⟨hf, ht⟩ := selectors_polytime
   let cc := NativeCertificate.ofPolyTime compile_polytime
   have hcc := NativeCertificate.ofPolyTime_isPolynomial compile_polytime
   let cs := ce.comp cc
@@ -148,16 +173,13 @@ theorem exists_count_sharp_certificate (b d : ℕ) :
   let out := compile
   let qf (x : Input) := first (out x)
   let qt (x : Input) := second (out x)
-  let O (x : Input) := cc.time x + tag.time (out x) + sf.time (out x) + st.time (out x) +
-    sub.time (counter (qf x), counter (qt x))
+  let O (x : Input) := cc.time x + O₀ (out x)
   let Bf (x : Input) := D * ((encCounter (qf x)).length + 1) ^ D
   let Bt (x : Input) := D * ((encCounter (qt x)).length + 1) ^ D
   let W (x : Input) := O x + Bf x + Bt x
   have hlen := compile_polytime.polyBounded_length
-  have hpost := hsub.1.comp (SparseCNFLeafCounter.polyBounded_output_of_space both hsBoth)
   have hO : PolyBounded (fun x : Input => (encInput x).length) O :=
-    (((hcc.1.add (htagP.1.comp hlen)).add (hsf.1.comp hlen)).add
-      (hst.1.comp hlen)).add (hpost.comp hlen)
+    hcc.1.add (hO₀.comp hlen)
   have hBf : PolyBounded (fun x : Input => (encInput x).length) Bf :=
     (PolyBounded.const D).mul (((hf.polyBounded_length.comp hlen).add (.const 1)).pow D)
   have hBt : PolyBounded (fun x : Input => (encInput x).length) Bt :=
@@ -198,21 +220,15 @@ theorem exists_count_sharp_certificate (b d : ℕ) :
   have htTime := (hcp (qt x)).1.trans (Nat.mul_le_mul_left (Bt x) (hpow true))
   have hOTime : O x ≤ O x * (K * E) := Nat.le_mul_of_pos_right _ (Nat.mul_pos hK hE)
   have hraw : cs.time x ≤ W x * (K * E) := by
-    change cc.time x + (tag.time (out x) + (if (out x).isLeft then
-      sf.time (out x) + cp.time (qf x) else
-      (sf.time (out x) + cp.time (qf x)) + (st.time (out x) + cp.time (qt x)) +
-        sub.time (counter (qf x), counter (qt x)))) ≤ _
-    by_cases hl : (out x).isLeft = true
-    · simp only [hl, ↓reduceIte]
-      calc _ ≤ O x + cp.time (qf x) + cp.time (qt x) := by dsimp only [O]; omega
-        _ ≤ O x * (K * E) + Bf x * (K * E) + Bt x * (K * E) :=
-          Nat.add_le_add (Nat.add_le_add hOTime hfTime) htTime
-        _ = _ := by dsimp only [W]; ring
-    · simp only [hl, Bool.false_eq_true, ↓reduceIte]
-      calc _ ≤ O x + cp.time (qf x) + cp.time (qt x) := by dsimp only [O]; omega
-        _ ≤ O x * (K * E) + Bf x * (K * E) + Bt x * (K * E) :=
-          Nat.add_le_add (Nat.add_le_add hOTime hfTime) htTime
-        _ = _ := by dsimp only [W]; ring
+    have hbase := hceTime (out x)
+    have hr : cs.time x ≤ O x + cp.time (qf x) + cp.time (qt x) := by
+      change cc.time x + ce.time (out x) ≤ _
+      dsimp only [O, qf, qt]
+      omega
+    calc _ ≤ O x + cp.time (qf x) + cp.time (qt x) := hr
+      _ ≤ O x * (K * E) + Bf x * (K * E) + Bt x * (K * E) :=
+        Nat.add_le_add (Nat.add_le_add hOTime hfTime) htTime
+      _ = _ := by dsimp only [W]; ring
   constructor
   · change execute counter (compile (ofFinite B P)) = _
     rw [execute_correct hcorrect B P hb hp, compile_count]

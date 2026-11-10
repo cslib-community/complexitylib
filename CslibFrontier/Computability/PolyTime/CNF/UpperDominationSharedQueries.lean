@@ -36,7 +36,7 @@ original endpoint-substituted clauses, with the full augmented path length throu
 
 The companion `UpperDominationSharedTransport` and `UpperDominationSharedBounds` modules prove
 finite-model count transport and the closed source-wide query budgets. The native shared-marker
-counter has polynomial workspace; its closed sharp-time composition remains separate.
+resource module supplies the complete sharp-time and polynomial-workspace composition.
 -/
 
 public section
