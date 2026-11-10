@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.PCP.Encoded.ThreeSAT
-public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition.Enumeration
+public import CslibFrontier.Computability.PCP.Encoded.SelectedComposition
 public import CslibFrontier.Computability.PCP.Encoded.Amplification.Arithmetic
 public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF
 import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.PolyTime

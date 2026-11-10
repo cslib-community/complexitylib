@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.TreeEval.Ary.Packed
 public import CslibFrontier.Foundations.Data.BitString.List
 import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import CslibFrontier.Foundations.Data.List.Lookup
 
 /-!
@@ -28,14 +29,6 @@ namespace Turing.MultiTapePTM.BlockComputation.QueryReplay.SupplierChunk
 
 open MultiTapeTM Cslib.BitString Cslib.TreeEval.Ary
 
-private theorem ofBits_replicate_false (n : ℕ) :
-    ofBits (List.replicate n false) = 0 := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    rw [List.replicate_succ, ofBits, List.foldr_cons, ← ofBits, ih]
-    rfl
-
 private theorem ofBits_ofFn_ofList (word : List Bool) (n : ℕ) (h : word.length ≤ n) :
     ofBits (List.ofFn (ofList n word)) = ofBits word := by
   induction word generalizing n with
@@ -52,11 +45,6 @@ private theorem ofBits_ofFn_ofList (word : List Bool) (n : ℕ) (h : word.length
       rw [List.ofFn_succ]
       change Nat.bit bit (ofBits (List.ofFn (ofList n word))) = Nat.bit bit (ofBits word)
       rw [ih n (by simpa using h)]
-
-private theorem ofBits_ofFn {n : ℕ} (bits : Cslib.BitString n) :
-    ofBits (List.ofFn bits) = (equivFin n bits).val := by
-  rw [← lsbValue_ofFn]
-  exact (lsbValue_eq_foldr_bit _).symm
 
 /-- Numeric reads of a complete or partial label chunk agree with the packed encoder.
 Missing high-order bits are zero, including when the chunk width itself is zero. -/

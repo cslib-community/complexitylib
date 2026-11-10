@@ -212,10 +212,7 @@ theorem SAT.atLeast_append_mem_SAT_iff_mem_LeftSAT {φ : CNF ℕ} {a : List (Lit
     (ha : a.map Prod.fst = φ.vars.take a.length) :
     atLeast a ++ φ ∈ SAT ↔
       (φ, a.map Prod.snd ++ List.replicate (φ.vars.length - a.length) false) ∈ LeftSAT := by
-  have hlen : a.length ≤ φ.vars.length := by
-    have := congrArg List.length ha
-    simp only [List.length_map, List.length_take] at this
-    omega
+  have hlen : a.length ≤ φ.vars.length := by grind [List.length_map, List.length_take]
   rw [atLeast_append_mem_SAT_iff, mem_LeftSAT]
   have hlen' : (a.map Prod.snd ++ List.replicate (φ.vars.length - a.length) false).length =
       φ.vars.length := by

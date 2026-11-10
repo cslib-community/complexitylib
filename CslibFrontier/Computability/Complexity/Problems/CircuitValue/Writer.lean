@@ -313,25 +313,6 @@ private theorem step_inSpace
         (budget_prod hs (hw []))))).of_enc_eq fun p => ?_
   simp only [step, decide_eq_true_eq]
 
-private theorem machine_resourceCertificate
-    (hN : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.numChunks p.1.2.1) encStepIn
-      encNat fun p => wBudget p.1)
-    (hC : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.chunk p.1.2.1 p.1.2.2)
-      encStepIn encBits fun p => wBudget p.1)
-    (hT : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
-      encBits fun p => wBudget p.1) :
-    ∃ T, S.machine.toStepMachine.ResourceCertificate (encPair encNat3 encNat)
-      (ReadMachine.stateT encNat3 T wBudget) (ReadMachine.stateS encNat3 wBudget) := by
-  obtain ⟨T₁, h₁⟩ := S.halt_inSpace.exists_inO
-  obtain ⟨T₂, h₂⟩ := writerAddr_inSpace.exists_inO
-  obtain ⟨T₃, h₃⟩ := (step_inSpace hN hC hT).exists_inO
-  let T : ℕ × ℕ × ℕ → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
-  exact ⟨T, ReadMachine.toStepMachine_resourceCertificate
-    (h₁.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
-    (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
-    (h₃.mono_le (fun p => by rcases p with ⟨s, _ | _⟩ <;> simp only [T] <;> omega)
-      fun _ => le_rfl)⟩
-
 variable (S) in
 private theorem stateS_le (w : List Bool) {q : (ℕ × ℕ × ℕ) × ℕ}
     (hq : WInv w.length (S.numChunks w.length) q.1) (hpos : q.2 ≤ (frame w).length + 1) :
@@ -360,7 +341,8 @@ theorem computableInLogSpace {β : Type} {encOut : β ↪ List Bool} {g : List B
       encBits fun p => wBudget p.1)
     (hpoly : PolynomiallyBounded S.numChunks) :
     ComputableInLogSpace g (encFramed encBits) encOut := by
-  obtain ⟨T, hT'⟩ := machine_resourceCertificate hN hC hT
+  obtain ⟨T, hT'⟩ := ReadMachine.exists_toStepMachine_resourceCertificate S.halt_inSpace
+    writerAddr_inSpace (step_inSpace hN hC hT)
   have hc (w : List Bool) : S.machine.toStepMachine.Computes (encFramed encBits w)
       (encOut (g w)) := by
     have hrun := S.run_machine w

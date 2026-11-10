@@ -105,9 +105,7 @@ theorem encodes_update {w : ℕ} {x y : Data (capacity n + 4)} {v : Fin n → �
     refine ⟨fun i hi => ?_, ?_⟩
     · rw [he i hi]
       exact (hx j).1 i hi
-    · rw [← (hx j).2]
-      unfold value
-      exact congrArg (Nat.ofDigits (radix w)) (List.map_congr_left he)
+    · exact (value_congr he).trans (hx j).2
 
 /-- Every six-word value fits in one bank entry, including odd physical widths. -/
 theorem six_word_capacity {w : ℕ} (hw : 2 ≤ w) : 2 ^ (6 * w) ≤ radix w ^ 18 := by

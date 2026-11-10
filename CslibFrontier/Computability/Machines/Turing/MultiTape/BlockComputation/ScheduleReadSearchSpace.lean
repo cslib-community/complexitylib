@@ -66,7 +66,7 @@ theorem search_inSpace (k c : ℕ) :
         8 * (encSearchArgs a).length + 8 := by
     have hcursor := searchIterate_cursor k c a j
     have hcontext := searchIterate_context k c a j
-    have hc := ComputableTidilyInO.length_encNat_mono hj
+    have hc := length_encNat_mono hj
     have hlatest :
         (encOption encNat (((searchStep k c)^[j] (a, 0, none)).2.2)).length ≤
           (encNat a.2.1).length + 1 := by
@@ -74,7 +74,7 @@ theorem search_inSpace (k c : ℕ) :
       | none => simp
       | some v =>
         have hv := searchIterate_latest_bound k c a j v hl
-        have hb := ComputableTidilyInO.length_encNat_mono (hv.le.trans hj)
+        have hb := length_encNat_mono (hv.le.trans hj)
         simpa only [encOption_some, List.length_cons] using Nat.add_le_add_right hb 1
     simp only [encSearchState, length_encPair, hcontext, hcursor]
     have harg : 2 * (encNat a.2.1).length ≤ (encSearchArgs a).length := by

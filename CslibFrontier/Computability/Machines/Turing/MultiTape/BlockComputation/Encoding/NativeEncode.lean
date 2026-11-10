@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.I
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.BitList
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Foundations.Data.BitString.List
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import CslibFrontier.Tactic.EncLen
@@ -307,8 +308,7 @@ theorem serialize_bits_inSpace (e : Q ≃ Fin s) :
 theorem word_encodeResidue {b : ℕ} [NeZero b] (n : ℕ) :
     word b (n % b) = List.ofFn (encodeResidue (n : ZMod b)) := by
   unfold word
-  congr 1
-  funext j
+  congr 1 with j
   simp only [encodeResidue, equivFin_symm_apply, ZMod.val_natCast]
 
 private theorem windowWord_encode {b : ℕ} (cells : List ℕ)
@@ -318,10 +318,8 @@ private theorem windowWord_encode {b : ℕ} (cells : List ℕ)
         encodeCell (cellOfCode (cells.getD (port.val * b + r.val) 0))) := by
   rw [ofFn_blocksEquiv_symm]
   simp only [ofFn_blocksEquiv_symm]
-  have hlist : List.ofFn (fun i : Fin (3 * b) => cells.getD i 0) = cells := by
-    apply List.ext_getElem (by simp [hlen])
-    intro i hi hi'
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi']
+  have hlist : List.ofFn (fun i : Fin (3 * b) => cells.getD i 0) = cells :=
+    List.ofFn_getD_eq_of_length 0 hlen
   have hflat : windowWord cells =
       (List.ofFn fun i : Fin (3 * b) => cellWord (cells.getD i 0)).flatten := by
     have hmap := List.map_ofFn (f := fun i : Fin (3 * b) => cells.getD i 0) (g := cellWord)

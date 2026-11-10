@@ -266,11 +266,7 @@ noncomputable abbrev kWiseImpl {w base n_max U M k : ℕ}
   evalCode := KWise.evalCode k
   evalSteps := KWise.evalSteps n_max U M k
   initTable_exec {x} _ hbase hpar _ := by
-    have hq_pos : 0 < trinomialDeg U M := by
-      dsimp only [trinomialDeg]
-      positivity
-    have hfit_q : Fits w (2 ^ trinomialDeg U M) :=
-      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_q := KWise.fits_two_pow_trinomialDeg hw
     have h1 : x.regs 1 = n_max := hpar 0
     have h2 : x.regs 2 = U := hpar 1
     have h3 : x.regs 3 = M := hpar 2
@@ -281,11 +277,7 @@ noncomputable abbrev kWiseImpl {w base n_max U M k : ℕ}
     rw [Block.mem_footprint, Block.Owns, not_and_or, not_le, not_lt] at ha
     exact hmod a ha
   resample_exec {x} _ hbase htab := by
-    have hq_pos : 0 < trinomialDeg U M := by
-      dsimp only [trinomialDeg]
-      positivity
-    have hfit_q : Fits w (2 ^ trinomialDeg U M) :=
-      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_q := KWise.fits_two_pow_trinomialDeg hw
     have hpow : 0 < 2 ^ (2 * KWise.chunkBits n_max) := by positivity
     have hfit_end : Fits w (base + 8 + k) :=
       hfit_space.of_le (by

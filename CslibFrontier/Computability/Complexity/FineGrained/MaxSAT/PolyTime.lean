@@ -57,7 +57,7 @@ private theorem literalCode_polyTime {α : Type} {enc : α ↪ List Bool}
   have hv := hl.fst'
   have hs := hl.snd'
   have hop : ComputableInPolyTime (fun b : Bool => Op.const (!b)) encBool encOp :=
-    .of_tidy (ComputableTidilyInPolyTime.of_finite _)
+    .of_finite _
   have htag := hop.comp hs
   unfold literalCode
   fun_prop

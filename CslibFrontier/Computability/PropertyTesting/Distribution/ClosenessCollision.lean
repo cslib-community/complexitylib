@@ -132,12 +132,8 @@ private theorem sum_sum_left (f : (Fin k → α) → ℝ) :
 omit [DecidableEq α] in
 private theorem sum_sum_right (g : (Fin k → α) → ℝ) :
     ∑ x, ∑ y, (iid p k x).toReal * (iid q k y).toReal * g y = ∑ y, (iid q k y).toReal * g y := by
-  rw [Finset.sum_comm]
-  refine sum_congr rfl fun y _ => ?_
-  calc ∑ x, (iid p k x).toReal * (iid q k y).toReal * g y
-      = (iid q k y).toReal * g y * ∑ x, (iid p k x).toReal := by
-        rw [mul_sum]; exact sum_congr rfl fun x _ => by ring
-    _ = (iid q k y).toReal * g y := by rw [sum_toReal, mul_one]
+  rw [Finset.sum_comm, ← sum_sum_left q p k g]
+  simp only [mul_comm (iid p k _).toReal]
 
 omit [DecidableEq α] in
 private theorem sum_sum_mul (f g : (Fin k → α) → ℝ) :
@@ -364,66 +360,42 @@ private theorem mass_le {k : ℕ} (p q : PMF α) (A : (Fin k → α) → (Fin k 
   rw [div_le_iff₀ (by positivity)]
   linarith
 
-/-- Completeness arithmetic, with `K = k - 1`, `S = √b` and `D = ‖p - q‖₂² ≤ ε² / 4`. -/
-private theorem close_arith {K S ε δ D : ℝ} (hK : 0 < K) (hS : 0 ≤ S) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1)
-    (hk : 36 * S ≤ K * ε ^ 2 * δ) (hD0 : 0 ≤ D) (hD : D ≤ ε ^ 2 / 4) :
-    K * (2 * (K + 1) - 1) * S ^ 2 + 2 * K ^ 2 * (K + 1 + 1) * S * D ≤
-      δ * ((K + 1) * K / 2 * ε ^ 2 / 4) ^ 2 := by
-  have hε : 0 ≤ ε ^ 2 := sq_nonneg ε
-  have hS2 : S ^ 2 ≤ (K * ε ^ 2 * δ) ^ 2 / 1296 := by nlinarith
+/-- Arithmetic shared by completeness and soundness. If `36 √b ≤ (k - 1) E δ`, the squared `ℓ₂`
+distance satisfies `D ≤ r E` and `2 / 1296 + r / 18 ≤ c² / 4`, then the variance bound of
+`sum_sum_iid_mul_closenessStatistic_sub_sq_le` is at most `δ` times the square of the gap
+`C(k, 2) c E` between the statistic's mean and the threshold. Completeness takes `E = ε²` and
+`r = c = 1 / 4`; soundness takes `E = D`, `r = 1` and `c = 1 / 2`. -/
+private theorem variance_le_mul_sq {k : ℕ} {b E δ D r c : ℝ} (hK : 0 < (k : ℝ) - 1)
+    (hb : 0 ≤ b) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1) (hk : 36 * Real.sqrt b ≤ (k - 1) * E * δ)
+    (hD0 : 0 ≤ D) (hD : D ≤ r * E) (hrc : 2 / 1296 + r / 18 ≤ c ^ 2 / 4) :
+    ((k : ℝ) - 1) * (2 * k - 1) * b + 2 * (k - 1) ^ 2 * (k + 1) * Real.sqrt b * D ≤
+      δ * (k.choose 2 * (c * E)) ^ 2 := by
+  -- Write `K = k - 1` and `S = √b`, so that `k = K + 1` and `b = S²`.
+  obtain ⟨S, hS, rfl⟩ : ∃ S, 0 ≤ S ∧ b = S ^ 2 := ⟨_, Real.sqrt_nonneg b, (Real.sq_sqrt hb).symm⟩
+  obtain ⟨K, hK, hkK⟩ : ∃ K : ℝ, 0 < K ∧ (k : ℝ) = K + 1 := ⟨k - 1, hK, by ring⟩
+  rw [Real.sqrt_sq hS, hkK, add_sub_cancel_right] at hk
+  rw [Real.sqrt_sq hS, Nat.cast_choose_two, hkK, add_sub_cancel_right]
+  have hS2 : S ^ 2 ≤ (K * E * δ) ^ 2 / 1296 := by nlinarith
   have hA : K * (2 * (K + 1) - 1) ≤ 2 * (K + 1) ^ 2 := by nlinarith
   have hB : K * (K + 1 + 1) ≤ (K + 1) ^ 2 := by nlinarith
   have hδ2 : δ ^ 2 ≤ δ := by nlinarith
-  have hQ : 0 ≤ (K + 1) ^ 2 * K ^ 2 * ε ^ 4 := by positivity
-  have h1 : K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by
-    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * ε ^ 2 * δ) ^ 2 / 1296) := by gcongr
-      _ = 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ ^ 2 := by ring
-      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by gcongr
-  have h2 : 2 * K ^ 2 * (K + 1 + 1) * S * D ≤ 1 / 72 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by
-    have hSD : S * D ≤ K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4) :=
-      mul_le_mul (by linarith) hD hD0 (by positivity)
-    calc 2 * K ^ 2 * (K + 1 + 1) * S * D = 2 * K * (K * (K + 1 + 1)) * (S * D) := by ring
-      _ ≤ 2 * K * (K + 1) ^ 2 * (K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4)) := by
-          have h2K : 0 ≤ 2 * K := by positivity
-          have hKK : 0 ≤ K * (K + 1 + 1) := by positivity
-          calc 2 * K * (K * (K + 1 + 1)) * (S * D) ≤ 2 * K * (K + 1) ^ 2 * (S * D) := by gcongr
-            _ ≤ 2 * K * (K + 1) ^ 2 * (K * ε ^ 2 * δ / 36 * (ε ^ 2 / 4)) := by gcongr
-      _ = 1 / 72 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by ring
-  have hgoal :
-      δ * ((K + 1) * K / 2 * ε ^ 2 / 4) ^ 2 = 1 / 64 * (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by
-    ring
-  rw [hgoal]
-  have hQδ : 0 ≤ (K + 1) ^ 2 * K ^ 2 * ε ^ 4 * δ := by positivity
-  nlinarith
-
-/-- Soundness arithmetic, with `K = k - 1`, `S = √b` and `D = ‖p - q‖₂² ≥ ε²`. -/
-private theorem far_arith {K S ε δ D : ℝ} (hK : 0 < K) (hS : 0 ≤ S) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1)
-    (hk : 36 * S ≤ K * ε ^ 2 * δ) (hD : ε ^ 2 ≤ D) :
-    K * (2 * (K + 1) - 1) * S ^ 2 + 2 * K ^ 2 * (K + 1 + 1) * S * D ≤
-      δ * ((K + 1) * K / 2 * D / 2) ^ 2 := by
-  have hε : 0 ≤ ε ^ 2 := sq_nonneg ε
-  have hD0 : 0 ≤ D := hε.trans hD
-  have hkD : 36 * S ≤ K * D * δ := hk.trans (by gcongr)
-  have hS2 : S ^ 2 ≤ (K * D * δ) ^ 2 / 1296 := by nlinarith
-  have hA : K * (2 * (K + 1) - 1) ≤ 2 * (K + 1) ^ 2 := by nlinarith
-  have hB : K * (K + 1 + 1) ≤ (K + 1) ^ 2 := by nlinarith
-  have hδ2 : δ ^ 2 ≤ δ := by nlinarith
-  have h1 : K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by
-    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * D * δ) ^ 2 / 1296) := by gcongr
-      _ = 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ ^ 2 := by ring
-      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by gcongr
-  have h2 : 2 * K ^ 2 * (K + 1 + 1) * S * D ≤ 1 / 18 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by
-    have hSD : S * D ≤ K * D * δ / 36 * D := mul_le_mul_of_nonneg_right (by linarith) hD0
+  have h1 : K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ := by
+    calc K * (2 * (K + 1) - 1) * S ^ 2 ≤ 2 * (K + 1) ^ 2 * ((K * E * δ) ^ 2 / 1296) := by gcongr
+      _ = 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ ^ 2 := by ring
+      _ ≤ 2 / 1296 * (K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ := by gcongr
+  have h2 : 2 * K ^ 2 * (K + 1 + 1) * S * D ≤ r / 18 * (K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ := by
+    have hSD : S * D ≤ K * E * δ / 36 * (r * E) :=
+      mul_le_mul (by linarith) hD hD0 (hS.trans (by linarith))
     have h2K : 0 ≤ 2 * K := by positivity
     calc 2 * K ^ 2 * (K + 1 + 1) * S * D = 2 * K * (K * (K + 1 + 1)) * (S * D) := by ring
       _ ≤ 2 * K * (K + 1) ^ 2 * (S * D) := by gcongr
-      _ ≤ 2 * K * (K + 1) ^ 2 * (K * D * δ / 36 * D) := by gcongr
-      _ = 1 / 18 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by ring
-  have hgoal : δ * ((K + 1) * K / 2 * D / 2) ^ 2 = 1 / 16 * (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by
-    ring
-  rw [hgoal]
-  have hQδ : 0 ≤ (K + 1) ^ 2 * K ^ 2 * D ^ 2 * δ := by positivity
-  nlinarith
+      _ ≤ 2 * K * (K + 1) ^ 2 * (K * E * δ / 36 * (r * E)) := by gcongr
+      _ = r / 18 * (K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ := by ring
+  have hQ : 0 ≤ (K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ := by positivity
+  calc K * (2 * (K + 1) - 1) * S ^ 2 + 2 * K ^ 2 * (K + 1 + 1) * S * D
+      ≤ (2 / 1296 + r / 18) * ((K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ) := by linarith
+    _ ≤ c ^ 2 / 4 * ((K + 1) ^ 2 * K ^ 2 * E ^ 2 * δ) := by gcongr
+    _ = δ * ((K + 1) * K / 2 * (c * E)) ^ 2 := by ring
 
 omit [Fintype α] [DecidableEq α] in
 /-- Shared setup: the sample-size hypothesis forces `k > 1` and `ε ≠ 0`. -/
@@ -459,7 +431,6 @@ theorem le_acceptProb₂_closenessTester {p q : PMF α} {k : ℕ} {ε δ b : ℝ
   rcases le_or_gt 1 δ with hδ1 | hδ1
   · have := acceptProb₂_nonneg (closenessTester k ε) p q
     linarith
-  have hS : 0 ≤ Real.sqrt b := Real.sqrt_nonneg b
   have hb : 0 ≤ b := ((collisionProbability_pos p).trans_le hp).le
   have hD0 : 0 ≤ ∑ a, ((p a).toReal - (q a).toReal) ^ 2 := sum_nonneg fun _ _ => sq_nonneg _
   have hN : (k.choose 2 : ℝ) = ((k - 1 : ℝ) + 1) * (k - 1) / 2 := by
@@ -478,16 +449,8 @@ theorem le_acceptProb₂_closenessTester {p q : PMF α} {k : ℕ} {ε δ b : ℝ
     have : (k.choose 2 : ℝ) * ∑ a, ((p a).toReal - (q a).toReal) ^ 2 ≤
         k.choose 2 * (ε ^ 2 / 4) := mul_le_mul_of_nonneg_left hpq (by rw [hN]; positivity)
     linarith
-  · have h := close_arith hK hS hδ hδ1.le hk hD0 hpq
-    rw [hN]
-    calc ((k : ℝ) - 1) * (2 * k - 1) * b + 2 * (k - 1) ^ 2 * (k + 1) * Real.sqrt b *
-          ∑ a, ((p a).toReal - (q a).toReal) ^ 2
-        = ((k : ℝ) - 1) * (2 * ((k - 1) + 1) - 1) * Real.sqrt b ^ 2 +
-            2 * (k - 1) ^ 2 * ((k - 1) + 1 + 1) * Real.sqrt b *
-              ∑ a, ((p a).toReal - (q a).toReal) ^ 2 := by
-          rw [Real.sq_sqrt hb]; ring
-      _ ≤ δ * (((k - 1 : ℝ) + 1) * (k - 1) / 2 * ε ^ 2 / 4) ^ 2 := h
-      _ = δ * (((k - 1 : ℝ) + 1) * (k - 1) / 2 * ε ^ 2 / 4) ^ 2 := rfl
+  · exact (variance_le_mul_sq (E := ε ^ 2) (r := 1 / 4) (c := 1 / 4) hK hb hδ hδ1.le hk hD0
+      (by linarith) (by norm_num)).trans_eq (by ring)
 
 /-- **Soundness of the `ℓ₂` closeness tester**: if `‖p‖₂², ‖q‖₂² ≤ b`, `ε² ≤ ‖p - q‖₂²` (that is,
 `‖p - q‖₂ ≥ ε` for `0 < ε`) and `36 √b ≤ (k - 1) ε² δ`, the tester accepts with probability at
@@ -501,7 +464,6 @@ theorem acceptProb₂_closenessTester_le {p q : PMF α} {k : ℕ} {ε δ b : ℝ
   rcases le_or_gt 1 δ with hδ1 | hδ1
   · have := acceptProb₂_le_one (closenessTester k ε) p q
     linarith
-  have hS : 0 ≤ Real.sqrt b := Real.sqrt_nonneg b
   have hb : 0 ≤ b := ((collisionProbability_pos p).trans_le hp).le
   set D := ∑ a, ((p a).toReal - (q a).toReal) ^ 2 with hD
   have hD0 : 0 < D := hε.trans_le hpq
@@ -518,13 +480,8 @@ theorem acceptProb₂_closenessTester_le {p q : PMF α} {k : ℕ} {ε δ b : ℝ
     have : (k.choose 2 : ℝ) * ε ^ 2 ≤ k.choose 2 * D :=
       mul_le_mul_of_nonneg_left hpq (by rw [hN]; positivity)
     linarith
-  · have h := far_arith hK hS hδ hδ1.le hk hpq
-    rw [hN]
-    calc ((k : ℝ) - 1) * (2 * k - 1) * b + 2 * (k - 1) ^ 2 * (k + 1) * Real.sqrt b * D
-        = ((k : ℝ) - 1) * (2 * ((k - 1) + 1) - 1) * Real.sqrt b ^ 2 +
-            2 * (k - 1) ^ 2 * ((k - 1) + 1 + 1) * Real.sqrt b * D := by
-          rw [Real.sq_sqrt hb]; ring
-      _ ≤ δ * (((k - 1 : ℝ) + 1) * (k - 1) / 2 * D / 2) ^ 2 := h
+  · exact (variance_le_mul_sq (E := D) (r := 1) (c := 1 / 2) hK hb hδ hδ1.le
+      (hk.trans (by gcongr)) hD0.le (one_mul D).ge (by norm_num)).trans_eq (by ring)
 
 /-- **A closeness tester in statistical distance**: on a domain of size `n`, the collision tester
 with `ℓ₂` proximity `2 ε / √n` is a closeness tester with proximity `ε` whenever

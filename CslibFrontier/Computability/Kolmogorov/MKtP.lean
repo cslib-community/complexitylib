@@ -125,18 +125,8 @@ open Cslib.Complexity DescriptionMethod
 program $p$ of length at most $k$ outputs $x$ within $2^{k - |p|}$ steps under `universalTM`. -/
 theorem levinKt_le_natCast_iff_exists_runFor_two_pow {x : List Bool} {k : ℕ} :
     levinKt x ≤ k ↔
-      ∃ p : List Bool, p.length ≤ k ∧ x ∈ (universalTM.run p).runFor (2 ^ (k - p.length)) := by
-  rw [levinKt_le_natCast_iff]
-  constructor
-  · rintro ⟨p, s, hp, hle⟩
-    have hplen : p.length ≤ k := by omega
-    have hclog : Nat.clog 2 s ≤ k - p.length := by omega
-    have hs : s ≤ 2 ^ (k - p.length) := (Nat.clog_le_iff_le_pow one_lt_two).mp hclog
-    exact ⟨p, hplen, universalTMRunFor_mono p hs hp⟩
-  · rintro ⟨p, hplen, hp⟩
-    refine ⟨p, 2 ^ (k - p.length), hp, ?_⟩
-    rw [Nat.clog_pow _ _ one_lt_two]
-    omega
+      ∃ p : List Bool, p.length ≤ k ∧ x ∈ (universalTM.run p).runFor (2 ^ (k - p.length)) :=
+  levinKt_le_natCast_iff.trans exists_runFor_length_add_clog_le_iff
 
 /-- `ℕ`-valued exponential-step characterization of `levinKtNat`. -/
 theorem levinKtNat_le_iff_exists_runFor_two_pow {x : List Bool} {k : ℕ} :
@@ -246,7 +236,7 @@ theorem two_pow_lt_ncard_setOf_exists_optimal_levinKt_le_two_pow {n m : ℕ} (hm
 /-- **The Minimum `Kt` Problem (`MKtP`)**
 ([Liu and Pass, Section 2.2][LiuPass2021Crypto];
 [Oliveira and Santhanam, Appendix A, Definition 44, p. 34][OliveiraSanthanam2018]): the set of pairs
-`(x, k) : List Bool × ℕ` such that `levinKt x ≤ k`. In Complexitylib's complexity-class statements
+`(x, k) : List Bool × ℕ` such that `levinKt x ≤ k`. In cslib-frontier's complexity-class statements
 below (`MKtP.mem_E`, `MKtP.mem_EXP`), `MKtP` is encoded by `encPair encBits encUnary` (with the
 threshold `k` in unary rather than the $\lceil \log_2 n \rceil$-bit binary representation of
 [Liu and Pass, Section 2.2][LiuPass2021Crypto]) so that $k + 1 \le |(x, 1^k)|$ holds for all

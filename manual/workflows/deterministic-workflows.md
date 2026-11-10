@@ -1,6 +1,6 @@
 # Prove deterministic resource bounds
 
-Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time claims. Its definition supplies a finite native machine with independently polynomially bounded time and workspace, measured against encoded input length. Each Lean block is a **contextual excerpt** from the current source, requiring its linked original file; these are not newly compiled standalone examples. The excerpts are by Samuel Schlesinger, under the source repository's Apache 2.0 license. [complexitylib][complexitylib]
+Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time claims. Its definition supplies a finite native machine with independently polynomially bounded time and workspace, measured against encoded input length. Each Lean block is a **contextual excerpt** from the current source, requiring its linked original file; these are not newly compiled standalone examples. The excerpts are by Samuel Schlesinger, under the source repository's Apache 2.0 license. [cslib-frontier][complexitylib]
 
 ## Compose a certified function
 
@@ -20,7 +20,7 @@ example (routine : ℕ × ℕ → ℕ)
       (encPair encNat encNat) encNat := by polytime
 ```
 
-Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search.
+Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search. For an explicit `ComputableInDegree … 1 1` contract, import `CslibFrontier.Tactic.Degree` and use `degree`; the [degree workflow](../design-and-assurance/automation.md#preserve-explicit-polynomial-degrees) gives the complete checked client and its limits.
 
 **Result:** argument swapping followed by `routine` is polynomial-time computable under the stated binary encodings. This does not establish any additional functional specification of `routine`.
 

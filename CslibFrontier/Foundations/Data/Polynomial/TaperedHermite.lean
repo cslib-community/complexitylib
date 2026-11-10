@@ -76,12 +76,8 @@ namespace Polynomial
 /-- The 2-adic valuation of `x` is `n` when `2 ^ n`, but not `2 ^ (n + 1)`, divides `x`. -/
 private theorem padicValInt_two_eq {x : ℤ} {n : ℕ} (h1 : (2 : ℤ) ^ n ∣ x)
     (h2 : ¬(2 : ℤ) ^ (n + 1) ∣ x) : padicValInt 2 x = n := by
-  have hx : x ≠ 0 := by rintro rfl; exact h2 (dvd_zero _)
-  have hle : n ≤ padicValInt 2 x :=
-    ((padicValInt_dvd_iff (p := 2) n x).mp (by exact_mod_cast h1)).resolve_left hx
-  have hlt : ¬n + 1 ≤ padicValInt 2 x := fun h =>
-    h2 (by exact_mod_cast (padicValInt_dvd_iff (p := 2) (n + 1) x).mpr (Or.inr h))
-  omega
+  rw [padicValInt.of_ne_one_ne_zero]
+  exact multiplicity_eq_of_dvd_of_not_dvd h1 h2
 
 private theorem two_pow_padicValInt_dvd (x : ℤ) : (2 : ℤ) ^ padicValInt 2 x ∣ x := by
   exact_mod_cast padicValInt_dvd (p := 2) x
@@ -98,12 +94,8 @@ private theorem le_padicValInt_two {x : ℤ} {n : ℕ} (hx : x ≠ 0) (h : (2 : 
 
 /-- A nonzero integer of absolute value less than `2 ^ n` has 2-adic valuation less than `n`. -/
 private theorem padicValInt_two_lt {x : ℤ} {n : ℕ} (hx : x ≠ 0) (h : x.natAbs < 2 ^ n) :
-    padicValInt 2 x < n := by
-  have h2 : 2 ^ padicValInt 2 x ∣ x.natAbs := by
-    have := Int.natAbs_dvd_natAbs.mpr (two_pow_padicValInt_dvd x)
-    rwa [Int.natAbs_pow] at this
-  exact (pow_lt_pow_iff_right₀ (by norm_num : 1 < 2)).mp
-    ((Nat.le_of_dvd (Int.natAbs_pos.mpr hx) h2).trans_lt h)
+    padicValInt 2 x < n :=
+  (padicValNat_le_nat_log _).trans_lt (Nat.log_lt_of_lt_pow (Int.natAbs_ne_zero.mpr hx) h)
 
 /-- Adding a multiple of `2 ^ n` to a nonzero integer of absolute value less than `2 ^ n` keeps
 its 2-adic valuation. -/

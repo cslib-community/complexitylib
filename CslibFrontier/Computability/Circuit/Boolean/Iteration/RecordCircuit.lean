@@ -176,8 +176,7 @@ theorem synthesis_detect (s : Set (BooleanFunction n)) (records : BitString n â†
           (fun j => pairEncode (adjacentPair (records x) j)) (pairEncode (pad, pad))
           (R - 1) bit := by
       unfold pairWires wires detect
-      congr 1
-      funext bit x
+      congr 1 with bit x : 2
       exact congrFun (chooseRecord_map pairEncode (fun j => flags j x)
         (adjacentPair (records x)) (pad, pad) (R - 1)) bit
     rw [he]

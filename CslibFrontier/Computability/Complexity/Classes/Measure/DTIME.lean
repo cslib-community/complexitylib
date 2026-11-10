@@ -255,17 +255,10 @@ theorem exists_predicts_iff {k : ℕ} {A : Set (List Bool)}
     ∃ i, ∀ j, i ≤ j → (predicts k i j = true ↔ stdWord j ∈ A) := by
   obtain ⟨c₁, c₂, s, hdec⟩ := hA
   obtain ⟨g, ⟨kt, State, hfinite, tm, htm⟩, hg⟩ := decidableInTimeAndSpace_iff.mp hdec
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) :
-      (tm.runFrom (tm.initCfg x) (c₁ * 2 ^ (k * x.length) + c₂)).Halted ∧
-        (tm.runFrom (tm.initCfg x) (c₁ * 2 ^ (k * x.length) + c₂)).output = [g x] :=
-    (htm x).runFrom_of_le le_rfl
-  obtain ⟨i, hi, hdesc⟩ := exists_index_ge (desc eS eBit tm) (c₁ + c₂)
+  obtain ⟨i, hi, hrun⟩ := exists_index_runIndexed_eq tm
+    (t := fun x => c₁ * 2 ^ (k * x.length) + c₂) (fun x => (htm x).runFrom_of_le le_rfl) (c₁ + c₂)
   refine ⟨i, fun j hij => ?_⟩
-  rw [predicts, decide_eq_true_iff, runIndexed, hdesc,
-    universal_desc_of_halted eS tm (t := fun x => c₁ * 2 ^ (k * x.length) + c₂) hrun
-      (time_le (by omega)), hg]
+  rw [predicts, decide_eq_true_iff, hrun _ _ (time_le (by omega)), hg]
   constructor
   · intro h
     exact eBit.injective (List.singleton_inj.mp (Prod.mk.inj h).1)

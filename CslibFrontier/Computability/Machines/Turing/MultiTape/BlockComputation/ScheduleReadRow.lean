@@ -58,7 +58,7 @@ theorem suffix_inSpace (k : ℕ) :
   have hstates (a : ℕ × ℕ) (j : ℕ) (_hj : j ≤ a.2) :
       (encNat ((fun n : ℕ => n / 3 ^ (k + 1))^[j] a.1)).length ≤
         (encState a).length := by
-    have hmono := ComputableTidilyInO.length_encNat_mono (suffix_le k a.1 j)
+    have hmono := length_encNat_mono (suffix_le k a.1 j)
     change (encNat (suffix k (a.1, j))).length ≤ _
     simp only [encState, length_encPair]
     omega

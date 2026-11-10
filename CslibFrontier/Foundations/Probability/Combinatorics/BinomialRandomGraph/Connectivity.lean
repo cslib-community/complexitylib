@@ -314,8 +314,7 @@ theorem binomialRandom_real_not_connected_le {n : ℕ} (hn : 0 < n) (p : I)
     have hhalf : r k ≤ 1 / 2 := by nlinarith
     obtain ⟨j, rfl⟩ : ∃ j, k = j + 2 := ⟨k - 2, by rw [mem_Icc] at hk; omega⟩
     calc r (j + 2) ^ (j + 2) = r (j + 2) ^ 2 * r (j + 2) ^ j := by ring
-      _ ≤ 16 * y * (1 / 2) ^ j :=
-          mul_le_mul h2 (pow_le_pow_left₀ hr0 hhalf j) (by positivity) (by positivity)
+      _ ≤ 16 * y * (1 / 2) ^ j := by gcongr
       _ = 64 * y * (1 / 2) ^ (j + 2) := by ring
   have hsum : ∑ k ∈ Icc 2 m, 64 * y * (1 / 2 : ℝ) ^ k ≤ 32 * y := by
     rw [← mul_sum, ← Finset.Ico_add_one_right_eq_Icc]

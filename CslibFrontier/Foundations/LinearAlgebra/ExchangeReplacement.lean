@@ -26,6 +26,7 @@ import Mathlib.Data.Fintype.Prod
 import Mathlib.Data.Nat.Factorial.BigOperators
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Mathlib.RingTheory.Polynomial.Pochhammer
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Positivity
@@ -320,18 +321,6 @@ def M0ScaledInt (Q r A₀ R : ℕ) : Matrix (AuxLabel Q r) (AuxLabel Q r) ℤ :=
   fullSwapMatrix Q r ℤ *
     ∑ j ∈ range R, (((R - 1).factorial / j.factorial : ℕ) : ℤ) • fallingTermMatrixInt Q r A₀ j
 
-private theorem prod_range_sub_eq_descFactorial (q j : ℕ) :
-    (∏ a ∈ range j, ((q : ℚ) - a)) = (q.descFactorial j : ℚ) := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    rw [prod_range_succ, ih, Nat.descFactorial_succ, Nat.cast_mul]
-    by_cases h : j ≤ q
-    · rw [Nat.cast_sub h, mul_comm]
-    · push Not at h
-      have hdesc : q.descFactorial j = 0 := Nat.descFactorial_eq_zero_iff_lt.2 h
-      simp [hdesc]
-
 theorem eval_fallingTermPoly_add (A₀ q j : ℕ) :
     (fallingTermPoly A₀ j).eval ((A₀ + q : ℕ) : ℚ) =
       (-1 : ℚ) ^ A₀ * (-2 : ℚ) ^ j * (j.factorial : ℚ) * (q.choose j : ℚ) := by
@@ -347,8 +336,9 @@ theorem eval_fallingTermPoly_add (A₀ q j : ℕ) :
       refine prod_congr rfl fun a _ => ?_
       simp only [eval_sub, eval_mul, eval_C, eval_X, Nat.cast_add]
       ring
-    rw [h1, prod_mul_distrib, prod_const, card_range, prod_range_sub_eq_descFactorial,
-      Nat.descFactorial_eq_factorial_mul_choose, Nat.cast_mul]
+    rw [h1, prod_mul_distrib, prod_const, card_range, ← descPochhammer_eval_eq_prod_range,
+      descPochhammer_eval_eq_descFactorial, Nat.descFactorial_eq_factorial_mul_choose,
+      Nat.cast_mul]
   rw [hprod, pow_add]
   have hneg2 : (-1 : ℚ) ^ j * (2 : ℚ) ^ j = (-2 : ℚ) ^ j := by
     rw [← mul_pow]

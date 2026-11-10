@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Foundations.Data.BitString.List
 import CslibFrontier.Foundations.Data.Nat.Asymptotics
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Private coins versus public coins: `IP[k] ⊆ AM[k + 2]`
@@ -140,10 +141,7 @@ private theorem one_lt_six_mul (c B : ℕ) (hc : 0 < c) : 1 < 6 * c * (B + 1) :=
 private theorem clog_bounds (X : ℕ) (hX : 1 < X) :
     X ≤ 2 ^ Nat.clog 2 X ∧ 2 ^ Nat.clog 2 X < 2 * X ∧ Nat.clog 2 X < 2 * X := by
   have h1 := Nat.le_pow_clog one_lt_two X
-  have h2 := Nat.pow_pred_clog_lt_self one_lt_two hX
-  have hpos := Nat.clog_pos one_lt_two hX
-  have h3 : 2 ^ Nat.clog 2 X = 2 * 2 ^ (Nat.clog 2 X).pred := by
-    rw [← pow_succ', Nat.pred_eq_sub_one, Nat.sub_add_cancel hpos]
+  have h2 := Nat.pow_clog_lt_mul one_lt_two (by omega : X ≠ 0)
   have h4 := Nat.lt_two_pow_self (n := Nat.clog 2 X)
   omega
 

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Serial
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.CompleteSender
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Complete senders in the common serial world
@@ -181,8 +182,8 @@ theorem eval_senderAdapter {Output : Type} (k : ℕ)
     (program : WordOracleComp SenderOperation Output) :
     (world k).eval (senderAdapter k program) = ProbComp.eval (completeSenderReal k program) := by
   rw [Interactive.World.eval, senderAdapter, ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_sample, BitString.eval_sampleList, BitString.uniformList,
-    PMF.bind_map, PMF.map_comp, Function.comp_def, PMF.map_bind]
+  simp only [pmf_norm, ProbOracleComp.runWith_sample, BitString.eval_sampleList,
+    BitString.uniformList]
   simp_rw [run_senderTail k (List.ofFn _) List.length_ofFn program]
   rw [eval_completeSenderReal]
   simp only [PMF.map, PMF.monad_bind_eq_bind,

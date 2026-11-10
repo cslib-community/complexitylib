@@ -126,8 +126,7 @@ private theorem extractBody_eq (d : Fin 2 → ℕ) : extractBody d =
   rw [link_extractRaw_eq, ← bind_pure_comp]
   simp only [extractBody, extractMin, DataStructure.link, PFunctor.FreeM.liftM_bind,
     Record.lift_ite, PFunctor.FreeM.liftM_pure, bind_assoc, pure_bind]
-  congr 1
-  funext m
+  congr 1 with m : 1
   by_cases hm : m = 0
   · simp only [hm, ite_true, pure_bind, Option.map_none]
   · have pure_if (u key : ℕ) :

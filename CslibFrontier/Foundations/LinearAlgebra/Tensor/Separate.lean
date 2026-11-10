@@ -95,8 +95,7 @@ private theorem IsSLDegen.expand [Fintype X'] [Fintype Y'] [Fintype Z'] [Decidab
   have h1 : (restrict (incl f) β γ (S.map C)).map φ =
       restrict (incl f) (β.map φ) (γ.map φ) (S.map C) := by
     rw [map_restrict, map_incl]
-    congr 1
-    funext x y z
+    congr 1 with x y z : 3
     simp only [Tensor.map_apply, hC]
   rw [← h1, hE, show w * h + w = w * (h + 1) by ring]
   funext x y z

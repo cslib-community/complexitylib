@@ -14,6 +14,7 @@ public import CslibFrontier.Algorithms.WordRAM.NatSqrt
 public import CslibFrontier.Computability.WordRAM.Compile
 public import CslibFrontier.Computability.WordRAM.Signed.Encoding
 import CslibFrontier.Computability.WordRAM.SymbolicExec.CanonicalCall
+import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -31,6 +32,7 @@ All loops and arithmetic are instructions; the program is fixed for each exponen
 ## Main results
 
 * `Parameters.runs_input`: native execution from signed-encoded input with derived fits.
+* `Parameters.two_pow_width_le`: words at the canonical width have polynomial magnitude.
 
 ## References
 
@@ -628,6 +630,16 @@ theorem not_readsWidth (κ : ℕ) : ¬(program κ).ReadsWidth := by
       exact not_or.mpr ⟨ih, by decide⟩
   simpa only [program, Code.ReadsWidth, not_or] using And.intro hs (And.intro hp hc)
 
+/-- A word at the canonical width has polynomial magnitude. -/
+theorem two_pow_width_le (κ n : ℕ) : 2 ^ width κ n ≤ (n + 2) ^ (40 * κ + 242) := by
+  have hpow := Nat.pow_clog_le_mul (by decide : 1 < 2) (by omega : n + 2 ≠ 0)
+  have hsq : 2 * (n + 2) ≤ (n + 2) ^ 2 := by nlinarith
+  calc
+    2 ^ width κ n = (2 ^ Nat.clog 2 (n + 2)) ^ (20 * κ + 121) := by
+      rw [width, ← pow_mul, Nat.mul_comm]
+    _ ≤ ((n + 2) ^ 2) ^ (20 * κ + 121) := Nat.pow_le_pow_left (hpow.trans hsq) _
+    _ = _ := by rw [← pow_mul]; congr 1; omega
+
 /-- Canonical-width executions use only polynomially bounded integers, including memory
 addresses, loop counters, and final unsuccessful tests. -/
 theorem intermediates_polynomial {κ : ℕ} (input : List ℤ)
@@ -637,24 +649,7 @@ theorem intermediates_polynomial {κ : ℕ} (input : List ℤ)
       (State.init (input.map Signed.encode)) s t) :
     (∀ i, s.data.regs i < (input.length + 2) ^ (40 * κ + 242)) ∧
       ∀ a, s.data.mem a < (input.length + 2) ^ (40 * κ + 242) := by
-  let n := input.length
-  let L := Nat.clog 2 (n + 2)
-  have hL : 0 < L := Nat.clog_pos (by decide) (by omega)
-  have hpred : 2 ^ (L - 1) < n + 2 :=
-    Nat.pow_pred_clog_lt_self (b := 2) (x := n + 2) (by decide) (by omega)
-  have he : 2 ^ L = 2 * 2 ^ (L - 1) := by
-    conv_lhs => rw [show L = (L - 1) + 1 by omega]
-    rw [pow_succ, Nat.mul_comm]
-  have hceil : 2 ^ L ≤ (n + 2) ^ 2 := by rw [he]; nlinarith
-  have hpoly : 2 ^ width κ n ≤ (n + 2) ^ (40 * κ + 242) := by
-    calc
-      _ = (2 ^ L) ^ (20 * κ + 121) := by
-        dsimp only [width, L]
-        rw [← pow_mul]
-        congr 1
-        ring
-      _ ≤ ((n + 2) ^ 2) ^ (20 * κ + 121) := Nat.pow_le_pow_left hceil _
-      _ = _ := by rw [← pow_mul]; congr 1; omega
+  have hpoly := two_pow_width_le κ input.length
   have hb := hr.bounded_init (inputFits input le_rfl hvalues)
   exact ⟨fun i => (hb.1 i).trans_le hpoly, fun a => (hb.2 a).trans_le hpoly⟩
 

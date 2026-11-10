@@ -123,6 +123,20 @@ theorem setWeight_add_eq_of_mem {val : W → G} {w w' : U → W} {i : U}
 
 variable [IsOrderedCancelAddMonoid G]
 
+/-- One half of `val_eq_of_ambiguous`: if labels differing only at `i` have sets of minimum weight
+`S ∋ i` for `w` and `T ∌ i` for `w'`, then `val (w i) ≤ val (w' i)`. -/
+private theorem val_le_of_mem_of_notMem {val : W → G} {w w' : U → W} {F : Finset (Finset U)}
+    {i : U} (hw : ∀ j, j ≠ i → w j = w' j) {S T : Finset U} (hS : S ∈ minWeightSets val w F)
+    (hiS : i ∈ S) (hT : T ∈ minWeightSets val w' F) (hiT : i ∉ T) :
+    val (w i) ≤ val (w' i) := by
+  rw [mem_minWeightSets] at hS hT
+  have hA : setWeight val w S ≤ setWeight val w' S :=
+    (hS.2 _ hT.1).trans ((setWeight_eq_of_notMem (val := val) hw hiT).trans_le (hT.2 _ hS.1))
+  have : setWeight val w S + val (w i) ≤ setWeight val w S + val (w' i) := by
+    rw [setWeight_add_eq_of_mem hw hiS]
+    exact add_le_add_left hA _
+  exact le_of_add_le_add_left this
+
 /-- **At most one label makes an element ambiguous**, once the other labels are fixed: both
 labels give the sets containing `i` the minimum weight of the sets without `i`. -/
 theorem val_eq_of_ambiguous {val : W → G} {w w' : U → W} {F : Finset (Finset U)} {i : U}
@@ -130,24 +144,8 @@ theorem val_eq_of_ambiguous {val : W → G} {w w' : U → W} {F : Finset (Finset
     val (w i) = val (w' i) := by
   obtain ⟨⟨S, hS, hiS⟩, T, hT, hiT⟩ := h
   obtain ⟨⟨S', hS', hiS'⟩, T', hT', hiT'⟩ := h'
-  rw [mem_minWeightSets] at hS hT hS' hT'
-  have eT := setWeight_eq_of_notMem (val := val) hw hiT
-  have eT' := setWeight_eq_of_notMem (val := val) hw hiT'
-  have eS := setWeight_add_eq_of_mem (val := val) hw hiS
-  have eS' := setWeight_add_eq_of_mem (val := val) hw hiS'
-  apply le_antisymm
-  · have hA : setWeight val w S ≤ setWeight val w' S :=
-      (hS.2 _ hT'.1).trans (eT'.trans_le (hT'.2 _ hS.1))
-    have : setWeight val w S + val (w i) ≤ setWeight val w S + val (w' i) := by
-      rw [eS]
-      exact add_le_add_left hA _
-    exact le_of_add_le_add_left this
-  · have hA : setWeight val w' S' ≤ setWeight val w S' :=
-      (hS'.2 _ hT.1).trans (eT.symm.trans_le (hT.2 _ hS'.1))
-    have : setWeight val w' S' + val (w' i) ≤ setWeight val w' S' + val (w i) := by
-      rw [← eS']
-      exact add_le_add_left hA _
-    exact le_of_add_le_add_left this
+  exact le_antisymm (val_le_of_mem_of_notMem hw hS hiS hT' hiT')
+    (val_le_of_mem_of_notMem (fun j hj => (hw j hj).symm) hS' hiS' hT hiT)
 
 variable [Fintype U] [DecidableEq U] [Fintype W] {val : W → G}
 
