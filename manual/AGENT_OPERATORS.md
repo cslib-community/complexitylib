@@ -350,17 +350,18 @@ the seed, from the original instance. Its original-input certificate includes
 that polynomial scan/setup, needs no magnitude advice, and derives
 `2^s * P(m+q+1)` time/space for any source magnitude bound satisfied by the operands.
 Its correctness theorem has no small-operand premise.
-`AddXNORSparsification` now returns an actual list of reduced sparse leaves.
-Its `exists_parameters` proves the exact $2^{\eta v}$ family bound, counting
-multiplicity, and linear target width, with one choice of constants for all
-inputs. Width is $C(v+1)$ generally and $Cv$ for $v\ge1$; do not silently erase
-the zero-variable edge case in this positive-width target language. Native
-`certificate` composes the collector and reduction without a SAT oracle, but
-its materialized-state polynomial costs have not been normalized to the source
-$O^*(2^{\eta v})$ generation time. Keep that obligation open; the list-size
-bound alone is not a runtime theorem.
-Theorem 7's pipeline and the small-operand algorithm are assembled. Multiplicity,
-sparsification and repaired ideal-model clauses remain open in #2527/ROADMAP.
+`AddXNORSparsification` returns an actual list of reduced sparse leaves with
+exact $2^{\eta v}$ population and disjunctive correctness. Width is $C(v+1)$
+generally and $Cv$ for $v\ge1$; keep the width-zero yes-input obstruction
+explicit. `AddXNORSparsificationResources.source_generation` now composes a
+localized branching machine and streaming digit map, proving native time and
+charged space $O(\lceil2^{\eta v}\rceil Q(L))$ in original encoded length $L$.
+Its fixed quadratic round factor permits choosing $M$ before the thresholds;
+no polynomial is applied to the exponential output accumulator. The older
+generic `certificate` has a different, unnormalized allowance and must not be
+used as the source-rate implementation.
+Theorem 7's pipeline, the small-operand algorithm and the source-rate sparse
+reduction are assembled. Repaired ideal-model clauses remain open in #2527/ROADMAP.
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.
 The older solvers and their charges remain intact. Binary min/max certificates

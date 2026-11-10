@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests)
 
-public import CslibFrontier.Cryptanalysis.AddXNORSparsification
+public import CslibFrontier.Cryptanalysis.AddXNORSparsificationResources
 
 /-! # Materialized sparse-reduction clients
 
@@ -49,5 +49,16 @@ example (α M : ℕ) : Turing.MultiTapeTM.IsComputable
     (Sparsification.instances α M) encCNF
       (Turing.MultiTapeTM.encList encInstance) :=
   (Sparsification.certificate α M).isComputable
+
+/-- The rate chooses a real native generator, not a supplied time contract or family oracle. -/
+theorem native_tenth_rate : ∃ α M : ℕ, 0 < M ∧
+    ∃ Q : ℕ → ℕ, Cslib.PolynomiallyBounded Q ∧
+      Turing.MultiTapeTM.ComputableInO (Sparsification.instances α M) encCNF
+        (Turing.MultiTapeTM.encList encInstance)
+        (fun φ => ⌈(2 : ℝ) ^ ((1 / 10 : ℝ) * φ.numVars)⌉₊ * Q (encCNF φ).length)
+        (fun φ => ⌈(2 : ℝ) ^ ((1 / 10 : ℝ) * φ.numVars)⌉₊ * Q (encCNF φ).length) := by
+  obtain ⟨α, M, C, hM, -, -, Q, hQ, -, machine, -⟩ :=
+    Sparsification.source_generation (η := 1 / 10) (by norm_num)
+  exact ⟨α, M, hM, Q, hQ, machine⟩
 
 end CslibFrontierTests.AddXNORSparsification

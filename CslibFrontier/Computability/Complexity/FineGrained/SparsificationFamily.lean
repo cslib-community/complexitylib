@@ -9,8 +9,10 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 public import CslibFrontier.Computability.GenericRAM.Native.Combinators
--- Reuse the normalized-tree correspondence and size lemmas without exporting its private model.
-import all CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Mathlib.Data.List.Fold
 
 /-!
@@ -21,9 +23,9 @@ Boolean sparsification search, but returns its leaves, in reverse visitation ord
 branch words are retained even when their formulas coincide: the length bound counts these
 multiplicities. No satisfiability oracle is executed by the collector.
 
-`certificate` charges actual trajectory maxima, including the growing output accumulator. Its
-bounds are not a proof of the sharp sparsification generation time: applying a polynomial step
-bound to that accumulator can increase the exponential rate.
+The generic `certificate` charges actual trajectory maxima, including the growing accumulator.
+The refined implementation in `SparsificationFamilyResources` separates polynomial stack work
+from linear output copying and proves a fixed quadratic round factor in the original input wire.
 
 ## Main definitions
 
@@ -46,13 +48,13 @@ open ClauseSet.Sparsification (threshold base one_le_threshold BranchingRule)
 open Cslib.GenericRAM
 
 /-- A pending stack paired with the collected leaves. -/
-abbrev State := List (CNF ℕ) × List (CNF ℕ)
+abbrev CollectorState := List (CNF ℕ) × List (CNF ℕ)
 
 /-- Two lists of framed CNFs; the stack (first list) is framed, the output list is unframed. -/
-abbrev encState : State ↪ List Bool := encPair (encList encCNF) (encList encCNF)
+abbrev encCollectorState : CollectorState ↪ List Bool := encPair (encList encCNF) (encList encCNF)
 
 /-- Pop and emit sparse heads, or replace an inner head by its two computed children. -/
-@[expose] def step (K α : ℕ) (s : State) : State :=
+@[expose] def step (K α : ℕ) (s : CollectorState) : CollectorState :=
   if s.1.isEmpty then s
   else if isSparse (threshold K α) K (s.1.headD []) then
     (s.1.tail, s.1.headD [] :: s.2)
@@ -63,33 +65,35 @@ abbrev encState : State ↪ List Bool := encPair (encList encCNF) (encList encCN
 @[expose] def collect (K α k M : ℕ) (φ : CNF ℕ) : List (CNF ℕ) :=
   ((step K α)^[rounds M φ] ([root k φ], [])).2
 
-private theorem any_step (K α : ℕ) (g : CNF ℕ → Bool) (s : State) :
+private theorem any_step (K α : ℕ) (g : CNF ℕ → Bool) (s : CollectorState) :
     (step K α s).map id (List.any · g) =
       Sparsify.step K α g (s.1, s.2.any g) := by
   rcases s with ⟨stk, acc⟩
   simp only [step, Sparsify.step]
   split_ifs <;> simp [Bool.or_comm]
 
+/-- Every prefix commutes with a Boolean test of the accumulated leaves. -/
+theorem iterate_any (K α : ℕ) (g : CNF ℕ → Bool) (n : ℕ) (s : CollectorState) :
+    ((step K α)^[n] s).map id (List.any · g) =
+      (Sparsify.step K α g)^[n] (s.1, s.2.any g) := by
+  induction n generalizing s with
+  | zero => rfl
+  | succ n ih =>
+    rw [Function.iterate_succ_apply, ih]
+    change (Sparsify.step K α g)^[n] ((step K α s).map id (List.any · g)) = _
+    rw [any_step, Function.iterate_succ_apply]
+
 /-- Testing any returned leaf agrees with the existing Boolean search, for every test. -/
 theorem collect_any (K α k M : ℕ) (g : CNF ℕ → Bool) (φ : CNF ℕ) :
-    (collect K α k M φ).any g = search K α k M g φ := by
-  have h (n : ℕ) (s : State) :
-      ((step K α)^[n] s).map id (List.any · g) =
-        (Sparsify.step K α g)^[n] (s.1, s.2.any g) := by
-    induction n generalizing s with
-    | zero => rfl
-    | succ n ih =>
-      rw [Function.iterate_succ_apply, ih]
-      change (Sparsify.step K α g)^[n] ((step K α s).map id (List.any · g)) = _
-      rw [any_step, Function.iterate_succ_apply]
-  exact congrArg Prod.snd (h (rounds M φ) ([root k φ], []))
+    (collect K α k M φ).any g = search K α k M g φ :=
+  congrArg Prod.snd (iterate_any K α g (rounds M φ) ([root k φ], []))
 
 variable {K α : ℕ} (hK : 1 ≤ K) (hα : 1 ≤ α)
 
 private theorem step_map (stk : List {ψ : CNF ℕ // Normalized K ψ}) (acc : List (CNF ℕ)) :
     step K α (stk.map Subtype.val, acc) =
       Prod.map (List.map Subtype.val) id
-        ((rule hK hα).tree.searchStep (fun acc t => t.1 :: acc) (stk, acc)) := by
+        ((Sparsify.rule hK hα).tree.searchStep (fun acc t => t.1 :: acc) (stk, acc)) := by
   cases stk with
   | nil => rfl
   | cons s rest =>
@@ -105,21 +109,22 @@ private theorem iterate_step_map (n : ℕ) (stk : List {ψ : CNF ℕ // Normaliz
     (acc : List (CNF ℕ)) :
     (step K α)^[n] (stk.map Subtype.val, acc) =
       Prod.map (List.map Subtype.val) id
-        (((rule hK hα).tree.searchStep (fun acc t => t.1 :: acc))^[n] (stk, acc)) := by
+        (((Sparsify.rule hK hα).tree.searchStep (fun acc t => t.1 :: acc))^[n] (stk, acc)) := by
   induction n generalizing stk acc with
   | zero => rfl
   | succ n ih =>
     rw [Function.iterate_succ_apply, Function.iterate_succ_apply, step_map hK hα]
-    obtain ⟨stk', acc'⟩ := (rule hK hα).tree.searchStep (fun acc t => t.1 :: acc) (stk, acc)
+    obtain ⟨stk', acc'⟩ :=
+      (Sparsify.rule hK hα).tree.searchStep (fun acc t => t.1 :: acc) (stk, acc)
     exact ih stk' acc'
 
 include hK hα in
 /-- The returned formulas are exactly the leaves, counted once for each distinct branch word. -/
 private theorem collect_spec {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M) (φ : CNF ℕ) :
     ∃ L : List (List Bool), L.Nodup ∧
-      (∀ w, w ∈ L ↔ (rule hK hα).tree.IsLeafWord (rootState hkK φ) w) ∧
+      (∀ w, w ∈ L ↔ (Sparsify.rule hK hα).tree.IsLeafWord (rootState hkK φ) w) ∧
       collect K α k M φ =
-        (L.map fun w => ((rule hK hα).tree.walk (rootState hkK φ) w).1).reverse := by
+        (L.map fun w => ((Sparsify.rule hK hα).tree.walk (rootState hkK φ) w).1).reverse := by
   classical
   set R := rule hK hα
   set s₀ := rootState hkK φ
@@ -181,13 +186,23 @@ theorem collect_properties {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
   refine ⟨fun c hc => length_le_of_mem_walk hK hα hkK hφ hw'.isNodeWord hc, ?_, ?_⟩
   · exact length_walk_le_of_isSparse hK hα hkK hw'.isNodeWord
       ((isSparse_eq_true_iff (one_le_threshold hK hα)
-        ((rule hK hα).tree.walk (rootState hkK φ) w).2).mpr hw'.isLeaf_walk)
+        ((Sparsify.rule hK hα).tree.walk (rootState hkK φ) w).2).mpr hw'.isLeaf_walk)
   · apply Finset.card_le_card
     intro v hv
     obtain ⟨c, hc, b, hb⟩ := CNF.mem_vars.mp (List.mem_toFinset.mp hv)
     obtain ⟨d, hd, hcd⟩ := exists_of_mem_walk hK hα hkK hw'.isNodeWord hc
     exact List.mem_toFinset.mpr (CNF.mem_vars.mpr
       ⟨d, hd, b, List.mem_toFinset.mp (hcd (List.mem_toFinset.mpr hb))⟩)
+
+include hK hα in
+/-- Every emitted record fits the original-input node wire bound. -/
+theorem mem_collect_wire_le {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
+    {φ ψ : CNF ℕ} (hψ : ψ ∈ collect K α k M φ) :
+    (encCNF ψ).length ≤ nodeBound K α φ := by
+  obtain ⟨L, -, hL, heq⟩ := collect_spec hK hα hkK hM φ
+  rw [heq, List.mem_reverse, List.mem_map] at hψ
+  obtain ⟨w, hw, rfl⟩ := hψ
+  exact length_encCNF_walk_le hK hα hkK ((hL w).mp hw).isNodeWord
 
 include hK hα in
 /-- A valid input is satisfiable exactly when one of its actually collected leaves is. -/
@@ -201,19 +216,21 @@ theorem satisfiable_iff {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M)
 
 /-- The collector transition is a native polynomial-time function of its entire encoded state.
 This charges copying the accumulated output, rather than treating it as a free callback frame. -/
-theorem step_polyTime (K α : ℕ) : ComputableInPolyTime (step K α) encState encState := by
+theorem step_polyTime (K α : ℕ) :
+    ComputableInPolyTime (step K α) encCollectorState encCollectorState := by
   have hs := computableInPolyTime_isSparse encNat
     (ClauseSet.Sparsification.computableInPolyTime_threshold_le K α) K
   have hn := computableInPolyTime_next encNat
     (ClauseSet.Sparsification.computableInPolyTime_threshold_le K α) K
-  unfold step encState encCNF
+  unfold step encCollectorState encCNF
   fun_prop
 
 /-- Native initialization, including the computed normalization of the original formula. -/
 theorem init_polyTime (k : ℕ) :
-    ComputableInPolyTime (fun φ : CNF ℕ => (([root k φ], []) : State)) encCNF encState := by
+    ComputableInPolyTime (fun φ : CNF ℕ => (([root k φ], []) : CollectorState))
+      encCNF encCollectorState := by
   have hn := computableInPolyTime_normalize encNat
-  unfold root encState encCNF
+  unfold root encCollectorState encCNF
   fun_prop
 
 /-- One finite native machine collects the family, with actual loop clocks, state copies and

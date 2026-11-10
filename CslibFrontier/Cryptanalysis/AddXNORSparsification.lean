@@ -20,8 +20,10 @@ subexponential-time disjunction of at most `2 ^ (η v)` balanced instances of wi
 family size and linear width are proved with constants independent of the input, and a native
 machine generates the family without a satisfiability oracle. Multiplicities are charged.
 
-This is not yet the source's time theorem: the certificate charges the materialized accumulator
-and its trajectory maxima, but its generation time has not been normalized to `O*(2^(η v))`.
+The generic certificate in this module charges a polynomial of the whole materialized state.
+The refined implementation in `AddXNORSparsificationResources` uses polynomial branching on
+only the stack and a streaming digit map; `Sparsification.source_generation` proves the source
+`O*(2^(η v))` generation time. The generic certificate remains available for arbitrary parameters.
 The chosen constant is `13 * (1 + Sparsify.occBound 3 α) + 16`.
 The width bound is `Cη * (v + 1)` for all inputs and `Cη * v` when `v ≥ 1`. This zero-variable
 qualification is necessary for this target encoding, whose yes-instances have width at least two.
@@ -90,8 +92,8 @@ theorem zero_width_disjunction_rejects (xs : List (ℕ × List ℕ))
 
 /-- A rate and a positive round divisor select fixed thresholds and one linear-width constant.
 The family-size inequality is exact (no hidden multiplicative constant); the same returned list
-has the original disjunctive semantics. The native certificate above is unconditional, but sharp
-normalization of its time is a separate, still-open obligation. -/
+has the original disjunctive semantics. The unconditional generic certificate is above; the
+source-rate implementation is `source_generation` in `AddXNORSparsificationResources`. -/
 theorem exists_parameters {η : ℝ} (hη : 0 < η) {M : ℕ} (hM : 0 < M) :
     ∃ α C : ℕ, 1 ≤ α ∧ Sparsify.LeafBound 3 α M ∧
       ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →

@@ -16,7 +16,7 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 ## STOC submission 733
 
 - **Remaining Add/XNOR source clauses** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
-  Reduction multiplicity, sparsification and repaired ideal-model claims.
+  Repaired ideal-chain planted search and decision claims.
   Preserve typed inputs, explicit bit resources and the width condition on uniform class means.
 
 ## Programs

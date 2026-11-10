@@ -1050,8 +1050,8 @@ and tautological clauses. `threeSATToAddXNOR_mem_iff` and
 `threeSATToAddXNOR_polyTime` prove actual correctness and polynomial time;
 `threeSATToAddXNOR_width_le` gives $n\le13(v+c)+3$, counting variables by
 distinct occurrence, independently of their binary labels. This proves the first
-conclusion of Theorem 2. Its sparsification/disjunction resource refinement is
-still unproved for this map.
+conclusion of Theorem 2. The later source-rate generator below supplies its
+sparsification/disjunction time refinement.
 
 The materialized refinement is now in
 [`AddXNORSparsification`](../../CslibFrontier/Cryptanalysis/AddXNORSparsification.lean).
@@ -1067,14 +1067,29 @@ qualification is explicit: this target language requires width at least two for
 a yes-instance, so a satisfiable zero-variable formula cannot be represented by
 a disjunction of width-zero instances.
 
-The collector's certificate charges its growing accumulator, the loop counter,
-state copies and output reduction. It does **not** yet establish the source's
-$O^*(2^{\eta v})$ generation time: a generic polynomial applied to the whole
-accumulator can increase the exponential rate. Theorem 2's resource clause
-therefore stays open. The
-[checked clients](../../CslibFrontierTests/AddXNORSparsification.lean) evaluate
-empty, contradictory and genuinely branching formulas, and instantiate the
-arbitrary real-rate family theorem without a supplied family or SAT oracle.
+The original generic certificate charges a polynomial of the whole accumulated
+state. For the source rate, import
+[`AddXNORSparsificationResources`](../../CslibFrontier/Cryptanalysis/AddXNORSparsificationResources.lean)
+and use `Sparsification.source_generation`. It proves, for every $\eta>0$, an
+actual native generator with time and charged space
+$O(\lceil2^{\eta v}\rceil Q(L))$, where $L$ is the original encoded formula
+length and $Q$ is polynomial and may depend on $\eta$. The family-size,
+correctness and width guarantees refer to the same returned list.
+
+The implementation charges polynomial branching work only on the pending
+stack, and copying the growing accumulator linearly. Every prefix stack, head
+record and accumulated wire is bounded from the actual traversal. A streaming
+digit map runs its polynomial callback on one leaf at a time. Together these
+machines cost $(\mathrm{rounds}+1)^2 Q(L)$, with a fixed round exponent.
+Choosing the round divisor $M$ so $2/M\le\eta$, before selecting thresholds,
+then gives the source rate; no threshold-dependent polynomial degree is used
+as an exponential-rate assumption. The positive-variable linear-width
+convention above remains explicit.
+
+The [checked clients](../../CslibFrontierTests/AddXNORSparsification.lean)
+evaluate empty, contradictory and genuinely branching formulas, and instantiate
+the source-rate native generator at $\eta=1/10$ without a supplied family,
+semantic answer or runtime contract.
 
 The complete [hardness client](../../CslibFrontierTests/AddXNORHardness.lean)
 checks actual operands and both gadget choices, mixed-pattern rejection,
@@ -1506,9 +1521,9 @@ The parameters satisfy Theorem 8's range. This trace already has a collision
 simulation as written, **not** Theorem 8's inequality; repairing the simulator
 and proving the adversary-quantified lower bound remain open.
 
-The full-paper objective remains open. Remaining endpoints are sparsification
-resource refinement, exact reduction multiplicity and repaired ideal-model
-search/decision lower bounds. The full source dissection pipeline, including
+The full-paper objective remains open: repaired ideal-model search/decision
+lower bounds are still missing. The source-rate sparse reduction above now
+charges family multiplicity and generation. The full source dissection pipeline, including
 the faster count prepass, is supplied by the later `DPDissection` route. The
 positional-cut result is not a universal
 algorithmic barrier, and experimental CDCL exponents remain finite observations.
@@ -2620,9 +2635,10 @@ as well as arithmetic hit/miss, backward retention and empty/zero-width cases.
 These are the whole solver's worst-case time/space bounds, not the complete
 source Theorem 7 by themselves: the faster DP prepass is absent from this older
 route. The complete `DPDissection` pipeline is proved below. The old
-association-list/cubic-filter interpreter is unchanged; the resource theorem uses the assembled sorted-list route. Other
-multiplicity, sparsification and ideal-model paper objectives also remain open;
-the small-operand algorithm is supplied by the later `SmallDP` route.
+association-list/cubic-filter interpreter is unchanged; the resource theorem
+uses the assembled sorted-list route. The repaired ideal-model paper objectives
+remain open. The source-rate sparse reduction is proved near the opening
+hardness section; the small-operand algorithm is supplied by the later `SmallDP` route.
 
 The reachable-state counter DP now has a concrete binary-addition stage in
 [`AddXNORCounterSerialization.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterSerialization.lean).
@@ -2862,8 +2878,8 @@ XNOR/empty/zero-width cases and thresholds beyond the physical width. Build with
 population/wider-label client remains `CslibFrontierTests.AddXNORSourceDepth`.
 
 The earlier sorted-list solver and its certificate remain available. The source
-Theorem 7 pipeline and small-operand algorithm are now assembled. Multiplicity,
-sparsification and repaired ideal-model clauses remain open, so this does not complete the
+Theorem 7 pipeline, small-operand algorithm and source-rate sparse reduction are
+now assembled. The repaired ideal-model clauses remain open, so this does not complete the
 paper or the ALL-main objective. Per-class expectations still do not bound the
 expected maximum balance or give a typical-space theorem. Build the integrated
 large-binary-counter, colliding/zero-count, empty/residual-quarter and complete
