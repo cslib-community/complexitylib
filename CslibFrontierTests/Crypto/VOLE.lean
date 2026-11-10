@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Crypto.Protocols.VOLE.Basic
 
 /-!
-# Tests for VOLE correlations, IT-MACs, and VOLE-in-the-head
+# Tests for VOLE correlations, IT-MACs, and a linear Sigma protocol
 
 Concrete examples over `ZMod 5` and `ZMod 7` exercising `VOLECorrelation`, `voleSample`,
 `voleIdealDist`, linear homomorphism (`add`, `smul`, `addConst`, `Valid.linearComb`), witness
@@ -125,7 +125,8 @@ example :
       voleMulCrossTerm x vx y vy vz * delta + voleMulConstTerm vx vy :=
   voleMulCheck rfl rfl rfl (by decide)
 
--- Concrete VOLE-in-the-head Sigma protocol instance over ZMod 5.
+-- Concrete instance of `voleInTheHeadSigma`, the linear Sigma protocol in VOLE notation, over
+-- ZMod 5.
 section SigmaTest
 
 noncomputable abbrev linearMap5 : Unit → (Fin 2 → ZMod 5) →ₗ[ZMod 5] ZMod 5 :=

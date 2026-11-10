@@ -39,8 +39,8 @@ open scoped ENNReal
 from a good state `¬bad s` turn bad with probability at most
 `cost₁ q * budget₁ s + cost₂ q * budget₂ s`, raising `budget₁` by at most
 `cost₁ q * δ₁₁ + cost₂ q * δ₁₂` and `budget₂` by at most `cost₁ q * δ₂₁ + cost₂ q * δ₂₂`. Then a
-program with `IsCostBounded cost₁ program k₁` and `IsCostBounded cost₂ program k₂` reaches a bad
-state from `s` with probability at most
+program with `IsCostBounded cost₁ program k₁` and `IsCostBounded cost₂ program k₂`, started in
+`s`, ends in a bad state with probability at most
 `k₁ * (budget₁ s + k₁ * δ₁₁ + k₂ * δ₁₂) + k₂ * (budget₂ s + k₁ * δ₂₁ + k₂ * δ₂₂)`. -/
 theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
     {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}
@@ -137,7 +137,7 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
 /-- **Two-channel accumulated bad-state probability**: let each call `q` from a good state `¬bad s`
 turn bad with probability at most `cost₁ q * budget s + cost₂ q * ε`, and raise `budget` by at most
 `cost₁ q * δ₁ + cost₂ q * δ₂`. Then a program with `IsCostBounded cost₁ program k₁` and
-`IsCostBounded cost₂ program k₂` reaches a bad state from `s` with probability at most
+`IsCostBounded cost₂ program k₂`, started in `s`, ends in a bad state with probability at most
 `k₁ * (budget s + k₁ * δ₁ + k₂ * δ₂) + k₂ * ε`. -/
 theorem toOuterMeasure_bad_le_two {ι σ β : Type} {spec : ι → Type}
     {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}

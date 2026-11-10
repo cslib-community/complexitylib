@@ -10,8 +10,8 @@ To certify a program that evaluates a formula, import
 `CslibFrontier.Logics.Propositional.CNF.PolyTime`. Its `fun_prop` rules
 `Literal.computableInPolyTime_eval`, `Clause.computableInPolyTime_eval` and
 `CNF.computableInPolyTime_eval` handle evaluation under an assignment `σ a`. They need a
-certificate for `fun p => σ p.1 p.2` on the pair of the input and a variable, so do not pass
-`CNF.eval`, `Clause.eval` or `Literal.eval` to `fun_prop`. If the assignment is a named
+certificate for `fun p => σ p.1 p.2` on the pair of the input and a variable. Clients no longer need
+to pass `CNF.eval`, `Clause.eval` or `Literal.eval` to `fun_prop`. If the assignment is a named
 definition whose certificate is stated for a differently nested input, unfold that definition
 instead, as in `fun_prop [assignment]`. The [checked examples](../../CslibFrontierTests/CNFPolyTime.lean)
 include an assignment without a certificate, which `fun_prop` rejects.
