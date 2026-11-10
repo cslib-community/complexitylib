@@ -176,7 +176,7 @@ theorem computableInPolyTime_countStep {pred : P → List Bool → Bool}
     (hpred : ComputableInPolyTime (fun q : P × List Bool => pred q.1 q.2) (encPair encP encBits)
       encBool) :
     ComputableInPolyTime (countStep pred)
-      (encPair (encPair encUnary encBits) (encPair (encPair encUnary encP) encNat))
+      (BooleanFold.encCallbackInput (encPair (encPair encUnary encP) encNat))
       (encPair (encPair encUnary encP) encNat) := by
   have hacc := snd (encPair encUnary encBits) (encPair (encPair encUnary encP) encNat)
   have hx := (fst (encPair encUnary encP) encNat).comp hacc

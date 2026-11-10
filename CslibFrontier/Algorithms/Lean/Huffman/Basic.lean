@@ -113,35 +113,26 @@ variable {α β : Type*}
 theorem one_le_length_leaves (T : CodeTree α) : 1 ≤ T.leaves.length := by
   induction T with
   | leaf _ => simp
-  | branch l r ihl ihr =>
-    simp only [leaves_branch, List.length_append]
-    omega
+  | branch l r ihl ihr => simp; omega
 
 theorem leaves_ne_nil (T : CodeTree α) : T.leaves ≠ [] := by
-  have h := T.one_le_length_leaves
-  intro hnil
-  rw [hnil] at h
-  simp at h
+  have := T.one_le_length_leaves
+  intro h; simp_all
 
 theorem two_le_length_leaves_of_branch (l r : CodeTree α) :
     2 ≤ (branch l r).leaves.length := by
-  have hl := l.one_le_length_leaves
-  have hr := r.one_le_length_leaves
-  simp only [leaves_branch, List.length_append]
-  omega
+  have := l.one_le_length_leaves
+  have := r.one_le_length_leaves
+  simp; omega
 
 theorem eq_leaf_of_leaves_perm_singleton {T : CodeTree α} {a : α}
     (h : T.leaves.Perm [a]) : T = leaf a := by
   cases T with
-  | leaf b =>
-    have hb : [b] = [a] := List.Perm.eq_singleton h
-    injection hb with hba
-    exact congrArg leaf hba
+  | leaf b => exact congrArg leaf (List.singleton_inj.mp h.eq_singleton)
   | branch l r =>
-    have hlen := h.length_eq
-    have h2 := two_le_length_leaves_of_branch l r
-    simp only [List.length_singleton] at hlen
-    omega
+    have := h.length_eq
+    have := two_le_length_leaves_of_branch l r
+    simp only [List.length_singleton] at *; omega
 
 @[simp] theorem leaves_map (f : α → β) (T : CodeTree α) :
     (T.map f).leaves = T.leaves.map f := by
@@ -170,19 +161,12 @@ theorem leaves_join (S : CodeTree (CodeTree α)) :
 theorem snd_le_maxDepth_of_mem_leafDepths {T : CodeTree α} {p : α × ℕ}
     (hp : p ∈ T.leafDepths) : p.2 ≤ T.maxDepth := by
   induction T generalizing p with
-  | leaf a =>
-    simp only [leafDepths, List.mem_singleton] at hp
-    rw [hp]
-    simp [maxDepth]
+  | leaf a => simp_all [leafDepths, maxDepth]
   | branch l r ihl ihr =>
     simp only [leafDepths, List.mem_append, List.mem_map] at hp
-    rcases hp with ⟨q, hq, rfl⟩ | ⟨q, hq, rfl⟩
-    · have := ihl hq
-      simp only [maxDepth]
-      omega
-    · have := ihr hq
-      simp only [maxDepth]
-      omega
+    rcases hp with ⟨q, hq, rfl⟩ | ⟨q, hq, rfl⟩ <;> simp only [maxDepth]
+    · exact Nat.succ_le_succ ((ihl hq).trans (le_max_left _ _))
+    · exact Nat.succ_le_succ ((ihr hq).trans (le_max_right _ _))
 
 end Structure
 
@@ -234,10 +218,9 @@ theorem weight_nonneg [AddCommMonoid β] [PartialOrder β] [IsOrderedAddMonoid �
     {w : α → β} {T : CodeTree α} (hw : ∀ a ∈ T.leaves, 0 ≤ w a) :
     0 ≤ T.weight w := by
   induction T with
-  | leaf a => exact hw a (by simp)
+  | leaf a => exact hw a List.mem_cons_self
   | branch l r ihl ihr =>
-    exact add_nonneg
-      (ihl fun a ha => hw a (List.mem_append_left _ ha))
+    exact add_nonneg (ihl fun a ha => hw a (List.mem_append_left _ ha))
       (ihr fun a ha => hw a (List.mem_append_right _ ha))
 
 /-- **External-Path-Length Identity** ([CLRS2009], Equation (16.4) and Exercise 16.3-4): the
@@ -247,23 +230,16 @@ theorem weightedPathLength_eq_sum_leafDepths [AddCommMonoid β] (w : α → β) 
   induction T with
   | leaf a => simp [leafDepths]
   | branch l r ihl ihr =>
-    have hshift : ∀ L : List (α × ℕ),
-        ((L.map fun p => (p.1, p.2 + 1)).map fun p => p.2 • w p.1).sum =
-          (L.map fun p => p.2 • w p.1).sum + (L.map fun p => w p.1).sum := by
-      intro L
-      induction L with
-      | nil => simp
-      | cons p L ih =>
-        simp only [List.map_cons, List.sum_cons, succ_nsmul, ih]
-        ac_rfl
-    have hl_wt : (l.leafDepths.map fun p => w p.1).sum = l.weight w := by
-      rw [weight_eq_sum_leaves, ← map_fst_leafDepths l, List.map_map]
-      rfl
-    have hr_wt : (r.leafDepths.map fun p => w p.1).sum = r.weight w := by
-      rw [weight_eq_sum_leaves, ← map_fst_leafDepths r, List.map_map]
-      rfl
+    have hshift (U : CodeTree α) :
+        ((U.leafDepths.map fun p => (p.1, p.2 + 1)).map fun p => p.2 • w p.1).sum =
+          (U.leafDepths.map fun p => p.2 • w p.1).sum + U.weight w := by
+      have hwt : (U.leafDepths.map fun p => w p.1).sum = U.weight w := by
+        rw [weight_eq_sum_leaves, ← map_fst_leafDepths U, List.map_map]; rfl
+      rw [← hwt, List.map_map]
+      simp only [Function.comp_def, succ_nsmul]
+      exact List.sum_map_add
     simp only [weightedPathLength_branch, leafDepths, List.map_append, List.sum_append,
-      hshift, hl_wt, hr_wt, ihl, ihr]
+      hshift, ihl, ihr]
     ac_rfl
 
 theorem weight_join [Add β] (w : α → β) (S : CodeTree (CodeTree α)) :
@@ -332,13 +308,11 @@ theorem pairwise_rel_of_ne {γ : Type*} {R : γ → γ → Prop}
   induction hpw with
   | nil => cases hx
   | @cons a as ha _ ih =>
-    rcases List.mem_cons.mp hx with rfl | hx_as
-    · rcases List.mem_cons.mp hy with rfl | hy_as
-      · exact absurd rfl hne
-      · exact ha y hy_as
-    · rcases List.mem_cons.mp hy with rfl | hy_as
-      · exact hsym (ha x hx_as)
-      · exact ih hx_as hy_as
+    rcases List.mem_cons.mp hx with rfl | hx' <;> rcases List.mem_cons.mp hy with rfl | hy'
+    · exact absurd rfl hne
+    · exact ha y hy'
+    · exact hsym (ha x hx')
+    · exact ih hx' hy'
 
 /-- Distinct leaf entries in `T.codewords` have prefix-incomparable codewords. -/
 theorem pairwise_incomparable_codewords (T : CodeTree α) :
@@ -346,26 +320,21 @@ theorem pairwise_incomparable_codewords (T : CodeTree α) :
   induction T with
   | leaf _ => simp [codewords]
   | branch l r ihl ihr =>
-    have hl_map : ((l.codewords.map fun p => (p.1, false :: p.2)).map Prod.snd) =
-        (l.codewords.map Prod.snd).map (false :: ·) := by
+    have hmap (b : Bool) (L : List (α × List Bool)) :
+        (L.map fun p => (p.1, b :: p.2)).map Prod.snd = (L.map Prod.snd).map (b :: ·) := by
       simp [List.map_map, Function.comp_def]
-    have hr_map : ((r.codewords.map fun p => (p.1, true :: p.2)).map Prod.snd) =
-        (r.codewords.map Prod.snd).map (true :: ·) := by
-      simp [List.map_map, Function.comp_def]
-    rw [codewords, List.map_append, hl_map, hr_map, List.pairwise_append]
-    refine ⟨?_, ?_, ?_⟩
-    · rw [List.pairwise_map]
-      exact List.Pairwise.imp
-        (fun {c₁ c₂} h => ⟨fun hp => h.1 ((List.cons_prefix_cons.mp hp).2),
-          fun hp => h.2 ((List.cons_prefix_cons.mp hp).2)⟩) ihl
-    · rw [List.pairwise_map]
-      exact List.Pairwise.imp
-        (fun {c₁ c₂} h => ⟨fun hp => h.1 ((List.cons_prefix_cons.mp hp).2),
-          fun hp => h.2 ((List.cons_prefix_cons.mp hp).2)⟩) ihr
-    · intro x hx y hy
-      rcases List.mem_map.mp hx with ⟨c₁, _, rfl⟩
-      rcases List.mem_map.mp hy with ⟨c₂, _, rfl⟩
-      simp
+    have hcons (b : Bool) {L : List (List Bool)}
+        (h : L.Pairwise (fun c₁ c₂ => ¬ c₁ <+: c₂ ∧ ¬ c₂ <+: c₁)) :
+        (L.map (b :: ·)).Pairwise (fun c₁ c₂ => ¬ c₁ <+: c₂ ∧ ¬ c₂ <+: c₁) :=
+      List.pairwise_map.mpr <| h.imp fun h' =>
+        ⟨fun hp => h'.1 (List.cons_prefix_cons.mp hp).2,
+         fun hp => h'.2 (List.cons_prefix_cons.mp hp).2⟩
+    rw [codewords, List.map_append, hmap, hmap, List.pairwise_append]
+    refine ⟨hcons false ihl, hcons true ihr, ?_⟩
+    rintro _ hx _ hy
+    rcases List.mem_map.mp hx with ⟨_, _, rfl⟩
+    rcases List.mem_map.mp hy with ⟨_, _, rfl⟩
+    simp
 
 theorem nodup_map_snd_codewords (T : CodeTree α) :
     (T.codewords.map Prod.snd).Nodup :=
@@ -376,15 +345,10 @@ theorem nodup_map_snd_codewords (T : CodeTree α) :
 /-- Every `CodeTree` codebook satisfies Mathlib's `InformationTheory.IsPrefixFree`. -/
 theorem isPrefixFree_codewordSet (T : CodeTree α) :
     InformationTheory.IsPrefixFree T.codewordSet := by
-  intro x hx y hy hpref
-  rcases hx with ⟨a, ha⟩
-  rcases hy with ⟨b, hb⟩
-  have hx_mem : x ∈ T.codewords.map Prod.snd := List.mem_map.mpr ⟨(a, x), ha, rfl⟩
-  have hy_mem : y ∈ T.codewords.map Prod.snd := List.mem_map.mpr ⟨(b, y), hb, rfl⟩
+  rintro x ⟨a, ha⟩ y ⟨b, hb⟩ hpref
   by_contra hne
-  have hrel := pairwise_rel_of_ne (fun h => ⟨h.2, h.1⟩) T.pairwise_incomparable_codewords
-    hx_mem hy_mem hne
-  exact hrel.1 hpref
+  exact (pairwise_rel_of_ne (fun h => ⟨h.2, h.1⟩) T.pairwise_incomparable_codewords
+    (List.mem_map.mpr ⟨_, ha, rfl⟩) (List.mem_map.mpr ⟨_, hb, rfl⟩) hne).1 hpref
 
 theorem nil_notMem_codewordSet_branch (l r : CodeTree α) :
     [] ∉ (branch l r).codewordSet := by
@@ -428,24 +392,16 @@ theorem decodeOne_branch_length_lt {l r : CodeTree α} {bits rem : List Bool} {a
       decodeOne T bs = some (x, rm) → rm.length ≤ bs.length := by
     intro T
     induction T with
-    | leaf b =>
-      intro bs rm x hd
-      simp only [decodeOne, Option.some.injEq, Prod.mk.injEq] at hd
-      rw [← hd.2]
+    | leaf b => simp [decodeOne]
     | branch l' r' ihl ihr =>
-      intro bs rm x hd
-      cases bs with
-      | nil => simp [decodeOne] at hd
-      | cons b bs =>
-        cases b
-        · exact Nat.le_succ_of_le (ihl bs rm x hd)
-        · exact Nat.le_succ_of_le (ihr bs rm x hd)
-  cases bits with
-  | nil => simp [decodeOne] at h
-  | cons b bs =>
-    cases b
-    · exact Nat.lt_succ_of_le (hle l bs rem a h)
-    · exact Nat.lt_succ_of_le (hle r bs rem a h)
+      rintro (_ | ⟨false | true, bs⟩) rm x hd <;> simp only [decodeOne] at hd
+      · cases hd
+      · exact Nat.le_succ_of_le (ihl bs rm x hd)
+      · exact Nat.le_succ_of_le (ihr bs rm x hd)
+  rcases bits with _ | ⟨false | true, bs⟩ <;> simp only [decodeOne] at h
+  · cases h
+  · exact Nat.lt_succ_of_le (hle l bs rem a h)
+  · exact Nat.lt_succ_of_le (hle r bs rem a h)
 
 /-- Decode a bit stream into a list of symbols using a non-leaf code tree `T`. -/
 @[expose] def decode : CodeTree α → List Bool → Option (List α)
@@ -462,99 +418,61 @@ termination_by _ bits => bits.length
 theorem encodeSym_eq_none_of_notMem [DecidableEq α] {T : CodeTree α} {a : α}
     (ha : a ∉ T.leaves) : T.encodeSym a = none := by
   induction T with
-  | leaf b =>
-    have hab : a ≠ b := fun h => ha (by simp [h])
-    simp [encodeSym, hab]
+  | leaf b => simp_all [encodeSym]
   | branch l r ihl ihr =>
-    have hal : a ∉ l.leaves := fun h => ha (List.mem_append_left _ h)
-    have har : a ∉ r.leaves := fun h => ha (List.mem_append_right _ h)
-    simp [encodeSym, ihl hal, ihr har]
+    simp only [leaves_branch, List.mem_append, not_or] at ha
+    simp [encodeSym, ihl ha.1, ihr ha.2]
 
 theorem mem_codewords_of_encodeSym [DecidableEq α] {T : CodeTree α} {a : α} {c : List Bool}
     (h : T.encodeSym a = some c) : (a, c) ∈ T.codewords := by
   induction T generalizing c with
   | leaf b =>
-    simp only [encodeSym] at h
-    split_ifs at h with hab
-    simp only [Option.some.injEq] at h
-    subst hab; subst h
-    simp [codewords]
+    simp only [encodeSym] at h; split_ifs at h with hab
+    simp only [Option.some.injEq] at h; subst hab h; simp [codewords]
   | branch l r ihl ihr =>
     simp only [encodeSym] at h
     cases hl : l.encodeSym a with
     | some cl =>
-      rw [hl] at h
-      simp only [Option.some.injEq] at h
-      subst h
-      exact List.mem_append_left _ (List.mem_map.mpr ⟨(a, cl), ihl hl, rfl⟩)
+      simp only [hl, Option.some.injEq] at h; subst h
+      exact List.mem_append_left _ (List.mem_map.mpr ⟨_, ihl hl, rfl⟩)
     | none =>
-      rw [hl, Option.map_eq_some_iff] at h
+      simp only [hl, Option.map_eq_some_iff] at h
       rcases h with ⟨cr, hr, rfl⟩
-      exact List.mem_append_right _ (List.mem_map.mpr ⟨(a, cr), ihr hr, rfl⟩)
+      exact List.mem_append_right _ (List.mem_map.mpr ⟨_, ihr hr, rfl⟩)
 
 theorem exists_encodeSym_of_mem_leaves [DecidableEq α] {T : CodeTree α} {a : α}
     (ha : a ∈ T.leaves) : ∃ c, T.encodeSym a = some c := by
   induction T with
-  | leaf b =>
-    simp only [leaves_leaf, List.mem_singleton] at ha
-    subst ha
-    exact ⟨[], by simp [encodeSym]⟩
+  | leaf b => simp_all [encodeSym]
   | branch l r ihl ihr =>
-    rcases List.mem_append.mp ha with hal | har
-    · rcases ihl hal with ⟨cl, hcl⟩
-      exact ⟨false :: cl, by simp [encodeSym, hcl]⟩
-    · by_cases hal : a ∈ l.leaves
-      · rcases ihl hal with ⟨cl, hcl⟩
-        exact ⟨false :: cl, by simp [encodeSym, hcl]⟩
-      · rcases ihr har with ⟨cr, hcr⟩
-        exact ⟨true :: cr, by simp [encodeSym, encodeSym_eq_none_of_notMem hal, hcr]⟩
-
-private theorem eq_of_mem_of_nodup_fst {γ : Type*} {L : List (α × γ)}
-    (hnodup : (L.map Prod.fst).Nodup) {a : α} {c₁ c₂ : γ}
-    (h₁ : (a, c₁) ∈ L) (h₂ : (a, c₂) ∈ L) : c₁ = c₂ := by
-  induction L with
-  | nil => cases h₁
-  | cons p ps ih =>
-    simp only [List.map_cons, List.nodup_cons] at hnodup
-    rcases List.mem_cons.mp h₁ with rfl | hps₁
-    · rcases List.mem_cons.mp h₂ with hEq | hps₂
-      · exact (Prod.mk.inj hEq).2.symm
-      · exact absurd (List.mem_map.mpr ⟨(a, c₂), hps₂, rfl⟩) hnodup.1
-    · rcases List.mem_cons.mp h₂ with rfl | hps₂
-      · exact absurd (List.mem_map.mpr ⟨(a, c₁), hps₁, rfl⟩) hnodup.1
-      · exact ih hnodup.2 hps₁ hps₂
+    by_cases hal : a ∈ l.leaves
+    · rcases ihl hal with ⟨cl, hcl⟩; exact ⟨false :: cl, by simp [encodeSym, hcl]⟩
+    · rcases ihr (by simp_all) with ⟨cr, hcr⟩
+      exact ⟨true :: cr, by simp [encodeSym, encodeSym_eq_none_of_notMem hal, hcr]⟩
 
 theorem encodeSym_eq_some_iff_mem_codewords [DecidableEq α] {T : CodeTree α}
     (hnodup : T.leaves.Nodup) {a : α} {c : List Bool} :
     T.encodeSym a = some c ↔ (a, c) ∈ T.codewords := by
-  constructor
-  · exact mem_codewords_of_encodeSym
-  · intro hmem
-    have ha : a ∈ T.leaves := by
-      rw [← map_fst_codewords]
-      exact List.mem_map.mpr ⟨(a, c), hmem, rfl⟩
-    rcases exists_encodeSym_of_mem_leaves ha with ⟨c', hc'⟩
-    have hnodup_cw : (T.codewords.map Prod.fst).Nodup := by rwa [map_fst_codewords]
-    have hEq := eq_of_mem_of_nodup_fst hnodup_cw (mem_codewords_of_encodeSym hc') hmem
-    rwa [← hEq]
+  refine ⟨mem_codewords_of_encodeSym, fun hmem => ?_⟩
+  have ha : a ∈ T.leaves := map_fst_codewords T ▸ List.mem_map.mpr ⟨_, hmem, rfl⟩
+  rcases exists_encodeSym_of_mem_leaves ha with ⟨c', hc'⟩
+  have hpw : T.codewords.Pairwise (fun p q => p.1 ≠ q.1) :=
+    List.pairwise_map.mp (map_fst_codewords T ▸ hnodup)
+  by_cases hEq : c' = c
+  · rwa [← hEq]
+  · exact False.elim (pairwise_rel_of_ne (fun h => h.symm) hpw
+      (mem_codewords_of_encodeSym hc') hmem (fun h => hEq (Prod.mk.inj h).2) rfl)
 
 theorem decodeOne_append_of_mem_codewords {T : CodeTree α} {a : α} {c : List Bool}
     (hmem : (a, c) ∈ T.codewords) (rest : List Bool) :
     decodeOne T (c ++ rest) = some (a, rest) := by
   induction T generalizing c with
-  | leaf b =>
-    simp only [codewords, List.mem_singleton, Prod.mk.injEq] at hmem
-    rcases hmem with ⟨rfl, rfl⟩
-    rfl
+  | leaf b => simp_all [codewords]; rfl
   | branch l r ihl ihr =>
-    simp only [codewords, List.mem_append, List.mem_map] at hmem
-    rcases hmem with ⟨⟨a', cl⟩, hl, hEq⟩ | ⟨⟨a', cr⟩, hr, hEq⟩
-    · simp only [Prod.mk.injEq] at hEq
-      rcases hEq with ⟨rfl, rfl⟩
-      exact ihl hl
-    · simp only [Prod.mk.injEq] at hEq
-      rcases hEq with ⟨rfl, rfl⟩
-      exact ihr hr
+    simp only [codewords, List.mem_append, List.mem_map, Prod.mk.injEq] at hmem
+    rcases hmem with ⟨⟨a', cl⟩, hl, rfl, rfl⟩ | ⟨⟨a', cr⟩, hr, rfl, rfl⟩
+    · exact ihl hl
+    · exact ihr hr
 
 theorem exists_encode_of_subset_leaves [DecidableEq α] {T : CodeTree α} {msg : List α}
     (hmsg : ∀ a ∈ msg, a ∈ T.leaves) :
@@ -572,31 +490,21 @@ theorem decode_encode [DecidableEq α] (l r : CodeTree α) {msg : List α} {bits
     (henc : (branch l r).encode msg = some bits) :
     (branch l r).decode bits = some msg := by
   induction msg generalizing bits with
-  | nil =>
-    simp only [encode, Option.some.injEq] at henc
-    subst henc
-    simp [decode]
+  | nil => simp_all [encode, decode]
   | cons a msg ih =>
-    simp only [encode, bind] at henc
-    rcases Option.bind_eq_some_iff.mp henc with ⟨c, hc, hrest_bind⟩
-    rcases Option.bind_eq_some_iff.mp hrest_bind with ⟨rest, hrest, hbits⟩
-    simp only [pure, Option.some.injEq] at hbits
-    subst hbits
+    simp only [encode, bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at henc
+    rcases henc with ⟨c, hc, rest, hrest, rfl⟩
     have hmem := mem_codewords_of_encodeSym hc
-    have hc_ne : c ≠ [] := fun hnil => nil_notMem_codewordSet_branch l r ⟨a, hnil ▸ hmem⟩
-    cases c with
-    | nil => exact absurd rfl hc_ne
-    | cons b bs =>
-      have hd1 : decodeOne (branch l r) (b :: (bs ++ rest)) = some (a, rest) := by
-        simpa [List.cons_append] using decodeOne_append_of_mem_codewords hmem rest
+    rcases c with _ | ⟨b, bs⟩
+    · exact absurd ⟨a, hmem⟩ (nil_notMem_codewordSet_branch l r)
+    · have hd1 : decodeOne (branch l r) (b :: (bs ++ rest)) = some (a, rest) :=
+        decodeOne_append_of_mem_codewords hmem rest
       rw [List.cons_append, decode]
       split
       · next hnone => rw [hd1] at hnone; cases hnone
       · next a' rem hsome =>
-        rw [hd1] at hsome
-        injection hsome with hpair
-        injection hpair with ha' hrem
-        subst ha'; subst hrem
+        simp only [hd1, Option.some.injEq, Prod.mk.injEq] at hsome
+        rcases hsome with ⟨rfl, rfl⟩
         simp [ih hrest]
 
 private theorem sum_codewords_count_cons [DecidableEq α] {L : List (α × List Bool)}
@@ -607,28 +515,19 @@ private theorem sum_codewords_count_cons [DecidableEq α] {L : List (α × List 
   induction L with
   | nil => cases hmem
   | cons p ps ih =>
-    rcases p with ⟨x, cx⟩
-    simp only [List.map_cons, List.nodup_cons] at hnodup
-    rcases List.mem_cons.mp hmem with hEq | hps
-    · injection hEq with hxa hcc
-      subst hxa; subst hcc
-      have hnot_ps : ∀ q ∈ ps, q.1 ≠ a := fun q hq hqa =>
-        hnodup.1 (hqa ▸ List.mem_map.mpr ⟨q, hq, rfl⟩)
-      have htail : (ps.map fun q => q.2.length • (a :: msg).count q.1) =
+    simp only [List.map_cons, List.sum_cons, List.nodup_cons] at hnodup ⊢
+    rcases List.mem_cons.mp hmem with rfl | hps
+    · have htail : (ps.map fun q => q.2.length • (a :: msg).count q.1) =
           ps.map fun q => q.2.length • msg.count q.1 :=
         List.map_congr_left fun q hq => by
-          rw [List.count_cons_of_ne (hnot_ps q hq).symm]
-      simp only [List.map_cons, List.sum_cons, List.count_cons_self]
-      rw [htail]
-      have hmul : c.length • (msg.count a + 1) = c.length • msg.count a + c.length :=
-        Nat.mul_succ c.length (msg.count a)
-      rw [hmul]
+          have hne : q.1 ≠ a := fun h => hnodup.1 (h ▸ List.mem_map.mpr ⟨q, hq, rfl⟩)
+          rw [List.count_cons_of_ne hne.symm]
+      simp only [List.count_cons_self, htail]
+      rw [show c.length • (msg.count a + 1) = c.length • msg.count a + c.length from
+        Nat.mul_succ c.length (msg.count a)]
       omega
-    · have hxa : x ≠ a := fun hEq =>
-        hnodup.1 (hEq ▸ List.mem_map.mpr ⟨(a, c), hps, rfl⟩)
-      simp only [List.map_cons, List.sum_cons, List.count_cons_of_ne hxa.symm,
-        ih hnodup.2 hps]
-      omega
+    · have hpa : a ≠ p.1 := fun h => hnodup.1 (h.symm ▸ List.mem_map.mpr ⟨_, hps, rfl⟩)
+      simp only [List.count_cons_of_ne hpa, ih hnodup.2 hps]; omega
 
 /-- When `T.leaves.Nodup`, the bit length of `T.encode msg` equals the weighted external path length
 of `T` under the empirical symbol frequency function `fun a => msg.count a`. -/
@@ -638,20 +537,15 @@ theorem length_encode_eq_weightedPathLength_count [DecidableEq α] {T : CodeTree
     bits.length = T.weightedPathLength (fun a => msg.count a) := by
   induction msg generalizing bits with
   | nil =>
-    simp only [encode, Option.some.injEq] at henc
-    subst henc
-    rw [weightedPathLength_eq_sum_codewords]
-    simp
+    simp only [encode, Option.some.injEq] at henc; subst henc
+    simp [weightedPathLength_eq_sum_codewords]
   | cons a msg ih =>
-    simp only [encode, bind] at henc
-    rcases Option.bind_eq_some_iff.mp henc with ⟨c, hc, hrest_bind⟩
-    rcases Option.bind_eq_some_iff.mp hrest_bind with ⟨rest, hrest, hbits⟩
-    simp only [pure, Option.some.injEq] at hbits
-    subst hbits
-    have hmem := mem_codewords_of_encodeSym hc
+    simp only [encode, bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at henc
+    rcases henc with ⟨c, hc, rest, hrest, rfl⟩
     have hnodup_cw : (T.codewords.map Prod.fst).Nodup := by rwa [map_fst_codewords]
     rw [List.length_append, ih hrest, weightedPathLength_eq_sum_codewords,
-      weightedPathLength_eq_sum_codewords, sum_codewords_count_cons hnodup_cw hmem msg]
+      weightedPathLength_eq_sum_codewords,
+      sum_codewords_count_cons hnodup_cw (mem_codewords_of_encodeSym hc) msg]
 
 end Coding
 

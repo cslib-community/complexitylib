@@ -91,9 +91,6 @@ instance : FinEnum ArithQBF.Kind :=
 abbrev encArithToken : ArithQBF.Kind × ℕ ↪ List Bool :=
   encPair (encFinEnum ArithQBF.Kind) encNat
 
-/-- Points as lists of pairs of a variable, in binary, and a value, in unary. -/
-abbrev encPt : List (ℕ × ℕ) ↪ List Bool := encList (encPair encNat encUnary)
-
 /-- The parameters of the machine: the variables `xs` linearized after every quantifier, the
 modulus less one, so that the modulus is positive, and the degree bound `D` of every round. -/
 abbrev Params := List ℕ × ℕ × ℕ
