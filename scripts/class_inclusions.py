@@ -123,16 +123,18 @@ THEOREM = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:public\s+|private\s+|protected\s+)
 RELATIONS = ("not_subset", "ssubset", "subset", "eq")
 
 
-def locate() -> dict[str, Path]:
-    """The first source file declaring each theorem name."""
-    found: dict[str, Path] = {}
+def locate() -> dict[str, tuple[Path, int]]:
+    """The first source location of every theorem name."""
+    found: dict[str, tuple[Path, int]] = {}
     for path in sorted(SOURCES.rglob("*.lean")):
-        for match in THEOREM.finditer(path.read_text(encoding="utf-8")):
-            found.setdefault(match[1], path)
+        text = path.read_text(encoding="utf-8")
+        for match in THEOREM.finditer(text):
+            line = text.count("\n", 0, match.start()) + 1
+            found.setdefault(match[1], (path, line))
     return found
 
 
-def library_facts(grid: dict[str, str], theorems: dict[str, Path]):
+def library_facts(grid: dict[str, str], theorems: dict[str, tuple[Path, int]]):
     """(A, relation, B, declaration) for every library theorem between classes of `grid`."""
     label = {token: name for name, token in grid.items()}
     pattern = re.compile(r"(.+?)_(%s)_(.+)$" % "|".join(RELATIONS))
@@ -181,7 +183,8 @@ def close(nodes, facts, complements: bool):
 
 
 def link(declaration, theorems):
-    return f"../../{theorems[declaration.split()[0]].relative_to(ROOT).as_posix()}"
+    path, line = theorems[declaration.split()[0]]
+    return f"../../{path.relative_to(ROOT).as_posix()}#L{line}"
 
 
 def grid_table(title, grid, theorems, problems):
@@ -308,7 +311,9 @@ def main() -> int:
     text = render()
     if args.check:
         if not PAGE.is_file() or PAGE.read_text(encoding="utf-8") != text:
-            print(f"{PAGE.relative_to(ROOT)} is out of date; run scripts/class_inclusions.py")
+            print(f"{PAGE.relative_to(ROOT)} is out of date: an inclusion theorem was added, "
+                  "renamed or moved. Run `python3 scripts/class_inclusions.py` and commit the "
+                  "regenerated page.")
             return 1
         return 0
     PAGE.write_text(text, encoding="utf-8")

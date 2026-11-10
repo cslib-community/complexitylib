@@ -90,6 +90,9 @@ jobs:
       # checks need only Python: no research exports, publishing tools or Lean installation.
       - name: Test Python tooling
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      # Before the link check, so a stale line anchor on the generated page names its generator.
+      - name: Class inclusion tables are current
+        run: python3 -B scripts/class_inclusions.py --check
       - name: Operator manual links and excerpts
         run: python3 -B scripts/check_operator_manual.py
       - name: "Source hygiene"
