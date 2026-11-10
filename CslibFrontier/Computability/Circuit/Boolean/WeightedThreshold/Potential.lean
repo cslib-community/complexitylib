@@ -185,13 +185,8 @@ theorem pos_score_iff_nonneg (x : Fin n → Bool) (z : Fin g → Bool) (i : Fin 
 /-- Gate `i`'s internal sum depends only on earlier coordinates `j < i`. -/
 theorem internalSum_congr_lt {z₁ z₂ : Fin g → Bool} {i : Fin g}
     (h : ∀ j : Fin g, j < i → z₁ j = z₂ j) :
-    P.internalSum i z₁ = P.internalSum i z₂ := by
-  apply sum_congr rfl
-  intro j _
-  by_cases hji : j < i
-  · rw [h j hji]
-  · rw [P.gateWeight_eq_zero_of_le i j (le_of_not_gt hji)]
-    ring
+    P.internalSum i z₁ = P.internalSum i z₂ :=
+  sum_mul_toNat_congr_of_lt (P.gateWeight_eq_zero_of_le i) h
 
 /-- Gate `i`'s score depends only on earlier coordinates `j < i`. -/
 theorem score_congr_lt (x : Fin n → Bool) {z₁ z₂ : Fin g → Bool} {i : Fin g}
