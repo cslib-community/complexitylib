@@ -26,6 +26,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Tree signatures: from pseudorandom to random coins
@@ -713,10 +714,7 @@ private theorem chainInvariant_step (a : (ℕ × List Bool) × (List Bool × Lis
     (next : CertState) (hnext : next ∈ OracleComp.support (certifyStepO S T a.1.1 a.1.2 state)) :
     chainInvariant ck dk cb db cs ds cB dB a (i + 1) next := by
   obtain ⟨hpath, hpk, hsk, hlen, hcerts⟩ := hinv
-  simp only [certifyStepO, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hnext
-  obtain ⟨child, hchild, σ, hσ, hnext⟩ := hnext
-  have hnext := OracleComp.eq_of_mem_supportWith_pure hnext
-  subst hnext
+  supp_cases hnext [certifyStepO] with ⟨child, hchild, σ, hσ, rfl⟩
   have hchild' := length_le_of_mem_support_nodeKeyO hkg hkb hchild
   have hK : keyBound ck dk cb db a.1.1 ≤ loopKeyBound ck dk cb db a := by
     simp only [loopKeyBound]; omega
@@ -877,9 +875,7 @@ private theorem isOraclePPTOn_signO_aux :
   · intro p sig hsig
     unfold signO at hsig
     split_ifs at hsig with hmsg
-    · simp only [OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hsig
-      obtain ⟨leaf, hleaf, ⟨node, ⟨pk, sk⟩, certs⟩, hc, σ, hσ, hsig⟩ := hsig
-      rw [OracleComp.eq_of_mem_supportWith_pure hsig]
+    · supp_cases hsig with ⟨leaf, hleaf, ⟨node, ⟨pk, sk⟩, certs⟩, hc, σ, hσ, rfl⟩
       change leaf ∈ (ProbOracleComp.sample (BitString.sampleList (depth p.1))).support at hleaf
       rw [ProbOracleComp.support_sample, BitString.eval_sampleList] at hleaf
       have hleafLen := BitString.length_of_mem_support_uniformList hleaf
@@ -935,9 +931,7 @@ private theorem isOraclePPTOn_simulateTreeGame_aux {adversary : Forger}
     ((hc.fst'.prod (hc.fst'.prod hc.snd'.fst').encoding_comp).of_enc_eq fun _ => rfl)
     hhandler (ComputableInPolyTime.const [])
     (fun _ _ => True) (fun _ => trivial) hresources fun c request queried _ result hresult => by
-      simp only [signHandler, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hresult
-      obtain ⟨sig, hsig, hresult⟩ := hresult
-      rw [OracleComp.eq_of_mem_supportWith_pure hresult]
+      supp_cases hresult [signHandler] with ⟨sig, hsig, rfl⟩
       have hsigLen := hsignBound (c.1, request.2) sig hsig
       dsimp only at hsigLen
       refine ⟨trivial, by change sig.length ≤ _; omega, ?_⟩
