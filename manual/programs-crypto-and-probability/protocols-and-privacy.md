@@ -772,6 +772,15 @@ The quantum one-time pad ([OneTimePad.lean](../../CslibFrontier/Crypto/Protocols
 
 Perfect secrecy, zero knowledge and semi-honest MPC privacy do not substitute for differential privacy's adjacent-dataset comparison, which the next section formalizes.
 
+## Secret sharing for general access structures and distribution designs
+
+- **Access structures and source-relative schemes:** [AccessStructure/Basic.lean](../../CslibFrontier/Crypto/Protocols/SecretSharing/AccessStructure/Basic.lean) defines monotone `AccessStructure Party` with combinators (`threshold`, `all`, `ofSets`, `pullback`, `inter`, `union`, `dual`), minimal authorized coalitions (`IsMinimalAuthorized`, `exists_minimalAuthorized_subset`), key-source classes (`SourceClass Key`, including `singleton`, `map`, and `flat`), and `AccessScheme Secret Key Party Share` with deterministic reconstruction for every key `k` on authorized coalitions and unauthorized view indistinguishability for every source `P ∈ sources` ([aggarwal26][aggarwal26], Definition 2.1). `ofCslibScheme` and `toCslibScheme` bridge between `AccessScheme` and upstream `Cslib.Crypto.Protocols.SecretSharing.Scheme`; scheme morphisms `comapKey`, `monoSources`, `restrictSecret`, `mapShare`, and `relabelParty` transport correctness and privacy.
+- **Privacy notions:** [AccessStructure/Privacy.lean](../../CslibFrontier/Crypto/Protocols/SecretSharing/AccessStructure/Privacy.lean) separates `PerfectlyCorrect`, `ViewIndist`, `δ`-statistical privacy (`StatisticallyPrivate`, equivalent to `ViewIndist` at `δ = 0` via `statisticallyPrivate_zero_iff`), `PosteriorPrivate` (`posteriorSecretDistOf`, equivalent to `ViewIndist` via `posteriorPrivate_iff_viewIndist`), and mutual-information characterizations (`mutualInfo_eq_zero_iff_viewIndist`, `AccessScheme.mutualInfo_view_eq_zero`, `AccessScheme.conditionalEntropy_secret_given_view_eq_zero`, and `AccessScheme.mutualInfo_authorized_eq_entropy`).
+- **ACOR22 distribution designs:** [AccessStructure/Designs.lean](../../CslibFrontier/Crypto/Protocols/SecretSharing/AccessStructure/Designs.lean) formalizes `DistributionDesign A A'` (`s` is `A`-authorized iff `s.biUnion assign` is `A'`-authorized), random-less composition preserving keys and `sources` (`AccessScheme.composeDesign`, `StatisticallyPrivate.composeDesign`), explicit `(t', n') → (2, 2)` reductions for `2 ≤ t' ≤ n'` (`ThresholdDesign.toTwoTwo`, `ThresholdDesignOn.toTwoTwo`, `AccessScheme.toTwoTwo`, `AccessScheme.toTwoTwoFin`, [acor22][acor22]; [aggarwal26][aggarwal26], Section 5), and impossibility results ruling out `(t, n, 2, 2)` designs for `2 ≤ t ≤ n` and `3 ≤ n` (`no_thresholdDesign_two_two`, `not_exists_design_2_3_2_2`, `not_exists_design_r_r_2_2`).
+- **Threshold, additive, and auxiliary-key instances:** [AccessStructure/Shamir.lean](../../CslibFrontier/Crypto/Protocols/SecretSharing/AccessStructure/Shamir.lean) wraps [Shamir/Linear.lean](../../CslibFrontier/Crypto/Protocols/SecretSharing/Shamir/Linear.lean) as `shamirAccessScheme` (over translation-invariant tail samplers `shamirSources`), `shamirUniformAccessScheme` (`shamirUniform_viewDist_eq`, `shamirUniform_mutualInfo_eq_zero`), auxiliary-key imperfect sources `shamirAuxAccessScheme`, and `shamirToTwoTwo` ([shamir1979][shamir1979], [katzlindell20][katzlindell20]). [AccessStructure/Additive.lean](../../CslibFrontier/Crypto/Protocols/SecretSharing/AccessStructure/Additive.lean) builds `(m + 1)`-out-of-`(m + 1)` additive secret sharing over an `AddCommGroup` (`additiveAccessScheme`, `additiveUniformAccessScheme`, `additiveUniform_viewDist_eq`, `additiveAuxAccessScheme`, `additiveToTwoTwo`).
+
+Model boundaries: `AccessScheme` expresses information-theoretic correctness (deterministic for all ambient keys `k : Key`) and security (exact `PMF` equality or `δ`-statistical distance on unauthorized views) rather than PPT execution or interactive MPC protocols; instantiation with extractor-based imperfect-randomness schemes from cslib-frontier PR #2525 awaits that PR landing on `main`. Checked instances in [CslibFrontierTests/SecretSharingAccessStructure.lean](../../CslibFrontierTests/SecretSharingAccessStructure.lean) exercise `ZMod 5` Shamir `(2, 3)` and `(3, 4)` schemes, mutual information and posterior privacy, auxiliary-key imperfect sources, `ZMod 4` additive `3`-out-of-`3` sharing, `(2, 2)` compositions, non-existence of `(2, 3, 2, 2)`, `(3, 3, 2, 2)`, `(4, 4, 2, 2)`, and `(3, 5, 2, 2)` designs, a finite `ZMod 3` `2`-out-of-`2` scheme whose unauthorized view distribution genuinely varies with the chosen source, `δ`-statistical privacy under design composition, and a leaky counterexample with `0 < mutualInfo`.
+
 ## Differential privacy
 
 [DifferentialPrivacy/Basic.lean](../../CslibFrontier/Privacy/DifferentialPrivacy/Basic.lean) defines `DifferentiallyPrivate Adj M ε δ` for a mechanism `M : D → PMF R`: for all `Adj`-adjacent datasets `x`, `y` and every set `S` of outputs, `Pr[M x ∈ S] ≤ exp ε · Pr[M y ∈ S] + δ`, with `ε : ℝ`, `δ : ℝ≥0∞` and events measured by `PMF.toOuterMeasure` [DworkRoth2014, Definition 2.4][dworkroth14]. The adjacency relation is an explicit parameter; [DifferentialPrivacy/Hamming.lean](../../CslibFrontier/Privacy/DifferentialPrivacy/Hamming.lean) supplies `HammingAdjacent` (datasets `ι → X` differing in at most one row), the neighbor relation of Ghosh–Roughgarden–Sundararajan [grs12][grs12]. Dwork–Roth's own adjacency is `ℓ₁` distance one between histograms, which is another instance of the parameter, not something these files define. The definition quantifies over ordered pairs, so a symmetric guarantee needs a symmetric relation.
@@ -831,6 +840,8 @@ The [covering-code examples](../../CslibFrontierTests/Crypto/PIRCoveringCode.lea
 
 Only selected protocol endpoints and key definitions were traced. The source files themselves give detailed source mappings; this pass did not independently reconcile every textbook constant, lattice-abort construction or signature reduction. Existing regression tests are not newly executed evidence. The precise coalition and advice restrictions above should be retained even when summarizing the results compactly.
 
+[acor22]: ../sources.md#acor22
+[aggarwal26]: ../sources.md#aggarwal26
 [aik11]: ../sources.md#aik11
 [bcs16]: ../sources.md#bcs16
 [bhr12]: ../sources.md#bhr12
@@ -852,11 +863,13 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [hkn24]: ../sources.md#hkn24
 [iknp03]: ../sources.md#iknp03
 [jrr25]: ../sources.md#jrr25
+[katzlindell20]: ../sources.md#katzlindell20
 [kov17]: ../sources.md#kov17
 [ks08]: ../sources.md#ks08
 [ll24]: ../sources.md#ll24
 [lp09]: ../sources.md#lp09
 [np01]: ../sources.md#np01
+[shamir1979]: ../sources.md#shamir1979
 [yao86]: ../sources.md#yao86
 [yekhanin12]: ../sources.md#yekhanin12
 [zre15]: ../sources.md#zre15

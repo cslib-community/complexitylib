@@ -4126,6 +4126,11 @@ public import CslibFrontier.Crypto.Protocols.PolynomialCommitment.Basic
 public import CslibFrontier.Crypto.Protocols.Quantum.OneTimePad
 public import CslibFrontier.Crypto.Protocols.SSP.Basic
 public import CslibFrontier.Crypto.Protocols.SSP.Hybrid
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Additive
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Basic
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Designs
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Shamir
 public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir

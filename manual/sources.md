@@ -19,6 +19,16 @@ Faisal N. Abu-Khzam, Michael R. Fellows, Michael A. Langston and W. Henry Suters
 
 Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenstrauss with Binary Coins.” *Journal of Computer and System Sciences* 66(4), 671–687, 2003. https://doi.org/10.1016/S0022-0000(03)00025-4 . Author-hosted copy of the typeset journal version: https://cgi.di.uoa.gr/~optas/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 1.1 on p. 673 (squared distances within `1 ± ε` with probability at least `1 - n^(-β)` for `k ≥ k₀ = (4 + 2β) log n / (ε²/2 - ε³/3)`, stated for all `ε, β > 0`; the `±1` distribution is (1)). Also checked: Lemma 4.1 on p. 679 (Gaussian entries), Lemma 5.1 on p. 679 (the per-vector tails), and Lemma 5.2 on p. 680, eqs. (6)–(7) (the bounds on `𝔼 exp (h Q²)` and `𝔼 Q⁴`).
 
+<a id="acor22"></a>
+## acor22
+
+Divesh Aggarwal, Eldon Chung, Maciej Obremski, João Ribeiro. "On Secret Sharing, Randomness, and Random-less Reductions for Secret Sharing." *Theory of Cryptography (TCC 2022), Part I*, LNCS 13747, 327–354, Springer, 2022. https://doi.org/10.1007/978-3-031-22318-1_12 ; ePrint https://eprint.iacr.org/2021/802 . Bibliographic metadata taken from `references.bib`. The formalized definitions and theorems (distribution designs, random-less `(t', n') → (2, 2)` composition, and non-existence of `(2, 3, 2, 2)` and `(r, r, 2, 2)` designs for `r ≥ 3`) were checked against their exposition in Section 5 ("Relation to the reductions of ACOR22") of [aggarwal26](#aggarwal26); the direct ePrint copy was not inspected because it was gated behind an automated challenge.
+
+<a id="aggarwal26"></a>
+## aggarwal26
+
+Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610.20173v2, 2026. https://arxiv.org/abs/2610.20173v2 . LaTeX source (`secret_sharing.tex`, version v2) checked on 2026-11-10 UTC: Definition 2.1 (perfect correctness and `δ`-statistical privacy relative to a source class `sources`) and Section 5 ("Relation to the reductions of ACOR22", covering distribution designs, the `(t', n') → (2, 2)` composition, and the non-existence proofs for `(2, 3, 2, 2)` and `(r, r, 2, 2)` designs with `r ≥ 3`).
+
 <a id="ahocorasick75"></a>
 ## ahocorasick75
 
@@ -1221,6 +1231,11 @@ Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinato
 ## schummervohra07
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
+
+<a id="shamir1979"></a>
+## shamir1979
+
+Adi Shamir. "How to Share a Secret." *Communications of the ACM* 22(11), 612–613, 1979. https://doi.org/10.1145/359168.359176 . Bibliographic metadata taken from `references.bib`; cited at paper level for Shamir threshold secret sharing over finite fields, wrapped from pinned cslib's `Shamir` module and [Shamir/Linear.lean](../CslibFrontier/Crypto/Protocols/SecretSharing/Shamir/Linear.lean).
 
 <a id="shamir1992"></a>
 ## shamir1992
