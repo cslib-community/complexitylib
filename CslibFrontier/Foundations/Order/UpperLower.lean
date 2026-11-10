@@ -21,6 +21,7 @@ codomain has `0 ≤ 1`, the indicator `A.indicator 1` is therefore antitone
 ## Main results
 
 * `IsLowerSet.antitone_indicator_one`: the indicator of a lower set with value `1` is antitone.
+* `IsUpperSet.monotone_indicator_one`: its order-dual form for upper sets.
 -/
 
 public section
@@ -38,3 +39,12 @@ theorem antitone_indicator_one {α β : Type*} [Preorder α] [Zero β] [One β] 
     exact Set.indicator_nonneg (fun _ _ => zero_le_one) r
 
 end IsLowerSet
+
+namespace IsUpperSet
+
+/-- The indicator of an upper set is monotone, by the lower-set result on the order dual. -/
+theorem monotone_indicator_one {α β : Type*} [Preorder α] [Zero β] [One β] [Preorder β]
+    [ZeroLEOneClass β] {A : Set α} (hA : IsUpperSet A) : Monotone (A.indicator (1 : α → β)) :=
+  (IsLowerSet.antitone_indicator_one (α := OrderDual α) hA).dual_left
+
+end IsUpperSet

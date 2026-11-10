@@ -2234,3 +2234,40 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 `scripts/build.sh CslibFrontierTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
+
+## Spread laws and Talagrand smallness
+
+Import `CslibFrontier.Probability.Spread.Exceptional` and
+`CslibFrontier.Probability.Spread.Selector`, then open `Cslib.Probability.Spread`.
+`IsSpreadLaw q ν` bounds the probability that a random set contains `I` by `q ^ I.card`;
+this is the small-parameter convention. `IsSmall p A` gives a finite principal-upper-set cover
+of cost at most `1/2`. `IsWeaklySmall p A` instead gives an actual probability witness whose
+`coverScore` is at least **two** on `A`. The factor is part of the definition, not a loss in a
+later theorem. `selectorProcess` takes a supremum of nonnegative coordinate sums; its extended
+nonnegative codomain also handles unbounded vector families and assigns zero to an empty family.
+`selectorMean_empty` proves that an empty vector family also has zero product expectation.
+
+The definitions follow Talagrand's
+[2010 author manuscript](https://michel.talagrand.net/preprints/small.pdf):
+Definition 5.5 (PDF p.5), Definitions 6.1 and 6.6 (pp.6–7), and Conjectures 7.3 (p.9), 7.8 and
+7.11 (p.10). `Conjecture73`, `Conjecture78` and `Conjecture711` are propositions with one
+universal constant chosen before the dimension, density, event and probability law. Naming a
+conjecture does not prove or assume it.
+
+Use `IsSmall.isWeaklySmall` to turn an integral cover into a fractional probability witness.
+`exists_spread_of_not_isWeaklySmall` constructs a `2*p`-spread law supported on a non-weakly-small
+family, and `not_isWeaklySmall_of_spread` proves the converse obstruction at parameter `p`.
+These are the two different parameter directions of Proposition 6.7.
+`conjecture78_iff_conjecture711` proves the equivalence by finite minimax and normalized moments;
+`conjecture73_of_conjecture78` proves the exceptional-family consequence, with the source's
+factor-two change in the universal constant. These are proved reductions, not resolutions of
+the conjectures.
+
+The checked [SpreadFamilies clients](../../CslibFrontierTests/SpreadFamilies.lean) use a
+one-coordinate cover, a concrete non-small whole cube, a non-spread point mass, a selector value,
+an empty-family expectation and a kernel majorant. Run
+`scripts/build.sh CslibFrontierTests.SpreadFamilies` from the repository root. The thinning theorem and monotone-coupling development on
+[PR #2525](https://github.com/cslib-community/cslib-frontier/pull/2525) are not yet on the base
+branch of this framework. Instantiating these reductions with that theorem remains the next
+milestone of [#4330](https://github.com/cslib-community/cslib-frontier/issues/4330); this framework
+alone does not establish submission 1278's claimed resolutions.
