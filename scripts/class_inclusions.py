@@ -254,9 +254,12 @@ def render() -> str:
         "`A ⊄ B` whenever `Z ⊆ A` and `B ⊆ Y`. For the uniform classes, complements are used "
         "too: `NP ⊆ coNP` holds exactly when `coNP ⊆ NP`.",
         "",
-        "The uniform inclusions hold for every injective encoding `enc` of the instances. The "
-        "strict inclusions behind the ✗ marks (`L ⊊ PSPACE`, `P ⊊ EXP`, `NP ⊊ NEXP`) are stated "
-        "for bit-string languages (`encBits`). The circuit classes are nonuniform, so they are "
+        "The uniform grid compares classes of bit-string languages, that is, the classes at the "
+        "encoding `encBits`. Most of the linked inclusion theorems are more general and hold for "
+        "every injective encoding `enc`. The strict inclusions behind the ✗ marks "
+        "(`L ⊊ PSPACE`, `P ⊊ EXP`, `NP ⊊ NEXP`) are stated only for `encBits`, and they can fail "
+        "for other encodings: with a single instance, every class is the same. The circuit "
+        "classes are nonuniform, so they are "
         "not compared with the uniform classes: nonuniform AC⁰ already contains undecidable "
         "unary languages.",
         "",
