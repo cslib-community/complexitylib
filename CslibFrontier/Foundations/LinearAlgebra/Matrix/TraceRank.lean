@@ -19,8 +19,8 @@ For a real matrix `A`, the Gram matrix `H = Aᵀ * A` is symmetric of the same r
 real eigenvalues. Its trace is the sum of the nonzero eigenvalues and the trace of `H * H` is the
 sum of their squares, so the Cauchy–Schwarz inequality gives
 `(tr H) ^ 2 ≤ rank A * tr (H * H)` (`Matrix.sq_trace_le_rank_mul_trace_sq`). This bounds the rank
-of `A` from below by the first two trace moments of `H`. It is the rank bound in the proof of
-[OpenAI, Proposition 4.1][OpenAI2026DepthFive], stated there with the conjugate transpose.
+of `A` from below by the first two trace moments of `H`. It is the last step of the rank lower
+bound for `IMM` in [OpenAI, §5][OpenAI2026DepthFive], stated there with the conjugate transpose.
 
 ## Main results
 

@@ -26,8 +26,8 @@ Dividing by the number of compositions gives the factorial moment of a uniform w
 `(∏ i, (d i)!) * ∏ j < H, (t - j) / (r + j)`. The corresponding moment of independent geometric
 variables of mean `t / r` is `∏ i, (d i)! * (t / r) ^ d i`. The first is at most the second, and
 at least `exp (-(H ^ 2 / t) - H ^ 2 / (2 * r))` times the second when `2 * H ≤ t`. These are the
-two comparisons of [OpenAI, Lemma 4.1][OpenAI2026DepthFive], stated for one product of falling
-factorials and without probability theory.
+two comparisons of the occupation-moment lemma of [OpenAI, §4][OpenAI2026DepthFive], stated for
+one product of falling factorials and without probability theory.
 
 ## Main results
 
@@ -39,7 +39,7 @@ factorials and without probability theory.
 ## References
 
 * [OpenAI, *Homogeneous depth-five lower bounds for iterated matrix
-  multiplication*][OpenAI2026DepthFive], Lemma 4.1 (unrefereed preprint)
+  multiplication*][OpenAI2026DepthFive], §4, occupation-moment lemma (unrefereed preprint)
 -/
 
 public section
