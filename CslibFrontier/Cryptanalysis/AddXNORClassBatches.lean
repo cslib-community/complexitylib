@@ -280,7 +280,8 @@ private noncomputable def countCertificate : NativeCertificate
 /-- Generate only this batch's quarter matches and reconstructed full states. The retained
 parameter is projected out before quarter/window/full-state callbacks are invoked. -/
 noncomputable def batchCertificate : NativeCertificate
-    (fun q : (JoinedProbe.Context × ℕ) × ℕ => batch q.1.1 q.1.2 q.2)
+    (fun q : (JoinedProbe.Context × ℕ) × ℕ =>
+      let ((context, label), index) := q; batch context label index)
     (encPair (encPair JoinedProbe.encoding encNat) encNat) (encList (encPair encNat encNat)) := by
   let e := encPair ei encNat
   let original : NativeCertificate (id : (JoinedProbe.Context × ℕ) × ℕ → _) e e :=
@@ -300,7 +301,8 @@ noncomputable def batchCertificate : NativeCertificate
 /-- Guard, build and match one generated label, with all retained-context copies and scalar
 count/division controls included in the installed resource profiles. -/
 noncomputable def matchLabelCertificate : NativeCertificate
-    (fun q : (JoinedProbe.Context × ℕ) × ℕ => matchLabel q.1.1 q.1.2 q.2)
+    (fun q : (JoinedProbe.Context × ℕ) × ℕ =>
+      let ((context, label), index) := q; matchLabel context label index)
     (encPair (encPair JoinedProbe.encoding encNat) encNat) encNatPairOption := by
   let e := encPair ei encNat
   let original : NativeCertificate (id : (JoinedProbe.Context × ℕ) × ℕ → _) e e :=

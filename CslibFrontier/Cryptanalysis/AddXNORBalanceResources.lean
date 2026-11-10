@@ -403,7 +403,8 @@ theorem source_balance_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ M
       (Source.quarters tail).1.1 (Source.quarters tail).1.2
       (Source.quarters tail).2.1 (Source.quarters tail).2.2 s 0 := Source.prepare_ofWords p s tail
   have total := congrArg List.length (Source.quarters_append tail)
-  simp only [List.length_append] at total
+  simp only [List.length_append, QuarterLists.first, QuarterLists.second,
+      QuarterLists.third, QuarterLists.fourth] at total
   have actual := bound hp (Source.quarters tail).1.1 (Source.quarters tail).1.2
     (Source.quarters tail).2.1 (Source.quarters tail).2.2 s
   have typed : ClassBalance.balanceCertificate.time prepared ≤

@@ -656,7 +656,8 @@ private theorem queryInput_polyTime : ComputableInPolyTime
 
 /-- Both class populations are computed by real projected-quarter joins. -/
 noncomputable def countCertificate : NativeCertificate
-    (fun q : (Input × Bool) × ℕ => count q.1.1 q.1.2 q.2)
+    (fun q : (Input × Bool) × ℕ =>
+      let ((input, backward), label) := q; count input backward label)
     (encPair (encPair encoding encBool) encNat) encNat :=
   NativeCertificate.congr (ClassJoin.countCertificate.comp
     (NativeCertificate.ofPolyTime queryInput_polyTime)) (fun _ => rfl)
@@ -713,7 +714,8 @@ private noncomputable def emitCertificate : NativeCertificate
 /-- Generation, actual inverse queries, group joining, full-width evaluation and packed
 readback form one uniform bit computation. All intermediate phase profiles are charged. -/
 noncomputable def recordsCertificate : NativeCertificate
-    (fun q : (Input × Bool) × ℕ => records q.1.1 q.1.2 q.2)
+    (fun q : (Input × Bool) × ℕ =>
+      let ((input, backward), label) := q; records input backward label)
     (encPair (encPair encoding encBool) encNat) encNatPairList := by
   let original : NativeCertificate (id : (Input × Bool) × ℕ → _) taskEncoding taskEncoding :=
     .linear (.of_eq (fun _ => rfl))

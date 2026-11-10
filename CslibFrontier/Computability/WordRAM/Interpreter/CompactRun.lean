@@ -95,14 +95,16 @@ noncomputable def compactClockedCertificate {r : ℕ} : NativeCertificate
 /-- Exact native-prefix refinement of the compacting machine, for every binary clock. -/
 theorem compact_run {r : ℕ} (x : RunInput r) :
     (compactRound^[x.1] (compactLoop (initial x))).2 =
-      compactResult (FiniteState.run x.2.1.1 x.2.1.2.toGeneric x.1 x.2.2) := by
+      compactResult (FiniteState.run (RunInput.wordWidth x) (RunInput.program x).toGeneric x.1
+        (RunInput.state x)) := by
   rw [iterate_compactRound, initial, iterate_round, ← FiniteState.run_eq_iterate_stepResult]
   rfl
 
 /-- One actual uniform machine returns the compacted native finite outcome. -/
 noncomputable def compactRunCertificate {r : ℕ} : NativeCertificate
     (fun x : RunInput r =>
-      compactResult (FiniteState.run x.2.1.1 x.2.1.2.toGeneric x.1 x.2.2))
+      compactResult (FiniteState.run (RunInput.wordWidth x) (RunInput.program x).toGeneric x.1
+        (RunInput.state x)))
     (runInputEncoding r) (FiniteState.resultEncoding Basis.standard.encoding) :=
   congr (snd compactClockedCertificate) compact_run
 

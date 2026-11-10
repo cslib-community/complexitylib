@@ -366,7 +366,8 @@ theorem source_capacity_bounds
   have lengths := Source.quarters_lengths tail
   have total : (Source.quarters tail).1.1.length+(Source.quarters tail).1.2.length+
       (Source.quarters tail).2.1.length+(Source.quarters tail).2.2.length = tail.length := by
-    dsimp only at lengths
+    dsimp only [QuarterLists.first, QuarterLists.second, QuarterLists.third,
+      QuarterLists.fourth] at lengths
     omega
   have typed := windows hm (Source.quarters tail).1.1 (Source.quarters tail).1.2
     (Source.quarters tail).2.1 (Source.quarters tail).2.2 s
@@ -383,7 +384,8 @@ theorem source_capacity_bounds
     dsimp only [quarter, half]
     rw [← pow_add]
     exact Nat.pow_le_pow_right (by decide) (by omega)
-  dsimp only at lengths
+  dsimp only [QuarterLists.first, QuarterLists.second, QuarterLists.third,
+      QuarterLists.fourth] at lengths
   have leftExp : (Source.quarters tail).1.1.length+(Source.quarters tail).1.2.length ≤
       tail.length/2 := by omega
   have rightExp : (Source.quarters tail).2.1.length+(Source.quarters tail).2.2.length ≤

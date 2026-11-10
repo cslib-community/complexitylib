@@ -44,9 +44,9 @@ open Turing.MultiTapeTM Cslib.GenericRAM ProgramGeneration
 /-- Compute the actual source cut/depth, then project original first-quarter operands and seed. -/
 def prepare (input : Source.Input) : SortedQuarterMachine.Input :=
   let source := Source.prepare input
-  let depth := source.1.1.2
-  let seed := source.1.2.1
-  let operands := source.2.1.1
+  let depth := (ProgramGeneration.Source.depth source)
+  let seed := (ProgramGeneration.Source.seed source)
+  let operands := (QuarterLists.first source.2)
   let modulus := 2 ^ depth
   ((depth, seed % modulus), operands.map (fun a => a % modulus))
 
@@ -93,17 +93,17 @@ theorem prepare_length (input : Source.Input) :
 /-- Preparation is exactly the binary encoding of the actual projected words and seed. -/
 theorem prepare_words (input : Source.Input) :
     let source := Source.prepare input
-    let p := source.1.1.2
-    prepare input = ((p, (BitVec.ofNat p source.1.2.1).toNat),
-      (source.2.1.1.map (BitVec.ofNat p)).map BitVec.toNat) := by
+    let p := (ProgramGeneration.Source.depth source)
+    prepare input = ((p, (BitVec.ofNat p (ProgramGeneration.Source.seed source)).toNat),
+      ((QuarterLists.first source.2).map (BitVec.ofNat p)).map BitVec.toNat) := by
   simp only [prepare, List.map_map, Function.comp_def, BitVec.toNat_ofNat]
 
 /-- Original-input completeness and sound quarter witnesses, with no supplied list semantics. -/
 theorem correct (input : Source.Input) :
     let source := Source.prepare input
-    let p := source.1.1.2
-    let as := source.2.1.1.map (BitVec.ofNat p)
-    let seed := BitVec.ofNat p source.1.2.1
+    let p := (ProgramGeneration.Source.depth source)
+    let as := (QuarterLists.first source.2).map (BitVec.ofNat p)
+    let seed := BitVec.ofNat p (ProgramGeneration.Source.seed source)
     (run input).Perm (SortedRecords.projectedQuarter p as seed) ∧
       (run input).Pairwise (fun a b => a.1 ≤ b.1) ∧
       ∀ r, r ∈ run input ↔ r.2 < 2 ^ as.length ∧
@@ -190,7 +190,7 @@ private theorem projectedQuarter_project {m p : ℕ} (hp : p ≤ m)
 full-width packed-witness semantics projected to the admitted depth. -/
 theorem original_correct {m p : ℕ} (hm : p ≤ m) (a : BitVec m)
     (tail : List (BitVec m)) (hk : p ≤ tail.length / 4) :
-    let as := (Source.quarters tail).1.1
+    let as := (QuarterLists.first (Source.quarters tail))
     let sorted := run (Source.ofWords p a tail)
     sorted.Perm (SortedRecords.projectedQuarter p as a) ∧
       sorted.Pairwise (fun r s => r.1 ≤ s.1) ∧
@@ -199,7 +199,8 @@ theorem original_correct {m p : ℕ} (hm : p ≤ m) (a : BitVec m)
   have hp : prepare (Source.ofWords p a tail) =
       ((p, (a.setWidth p).toNat),
         (((Source.quarters tail).1.1).map (BitVec.setWidth p)).map BitVec.toNat) := by
-    simp only [prepare, Source.prepare_ofWords_admitted hm a tail hk,
+    simp only [prepare, ProgramGeneration.Source.depth, ProgramGeneration.Source.seed,
+      QuarterLists.first, Source.prepare_ofWords_admitted hm a tail hk,
       ProgramGeneration.originalSource, BitInput.words, List.map_map,
       Function.comp_def, BitVec.toNat_setWidth]
   have generated := SortedQuarterMachine.generated_records

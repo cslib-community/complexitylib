@@ -94,7 +94,8 @@ noncomputable def parkingCertificate {r : ℕ} : NativeCertificate
 /-- Select among a fixed register set using a runtime program length and runtime label. -/
 def select {r : ℕ} (x : ℕ × Tuple r) : List (Fin r) → ℕ
   | [] => 0
-  | i :: rest => if x.2.1 = x.1 + i.val then x.2.2.1 i else select x rest
+  | i :: rest => if (Tuple.counter x.2) = x.1 + i.val then (Tuple.registers x.2) i else select x
+    rest
 
 /-- Runtime output-register selection has constants independent of program length. -/
 theorem select_polyTime {r : ℕ} (is : List (Fin r)) : PolyTime

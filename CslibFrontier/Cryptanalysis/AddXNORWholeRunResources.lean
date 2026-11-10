@@ -560,7 +560,8 @@ theorem sourceCertificate_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P �
       exact allBounds hp (Source.quarters tail).1.1 (Source.quarters tail).1.2
         (Source.quarters tail).2.1 (Source.quarters tail).2.2 s
     have cut := congrArg List.length (Source.quarters_append tail)
-    simp only [List.length_append] at cut
+    simp only [List.length_append, QuarterLists.first, QuarterLists.second,
+      QuarterLists.third, QuarterLists.fourth] at cut
     have size : (ClassBalance.encoding prepared).length+tail.length+depth+1 ≤ D width := by
       have h := layout m p s tail
       change (ClassBalance.encoding prepared).length+tail.length+ClassBalance.depth prepared+1 ≤

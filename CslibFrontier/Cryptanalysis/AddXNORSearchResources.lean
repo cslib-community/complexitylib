@@ -864,7 +864,8 @@ theorem sourceCertificate_restart_bounds : ∃ P : ℕ → ℕ, PolynomiallyBoun
         (Source.quarters tail).2.1 (Source.quarters tail).2.2 s 0 := Source.prepare_ofWords p s tail
     have depthEq : ClassBalance.depth prepared = d := by rw [preparedEq]; rfl
     have total := congrArg List.length (Source.quarters_append tail)
-    simp only [List.length_append] at total
+    simp only [List.length_append, QuarterLists.first, QuarterLists.second,
+      QuarterLists.third, QuarterLists.fourth] at total
     have total' : (Source.quarters tail).1.1.length+(Source.quarters tail).1.2.length+
         (Source.quarters tail).2.1.length+(Source.quarters tail).2.2.length = tail.length := by
       omega
@@ -900,7 +901,8 @@ theorem sourceCertificate_restart_bounds : ∃ P : ℕ → ℕ, PolynomiallyBoun
       rw [← pow_add]
       exact Nat.pow_le_pow_right (by decide) (by dsimp only [k]; omega)
     have lengths := Source.quarters_lengths tail
-    dsimp only at lengths
+    dsimp only [QuarterLists.first, QuarterLists.second, QuarterLists.third,
+      QuarterLists.fourth] at lengths
     have leftExp : (Source.quarters tail).1.1.length+(Source.quarters tail).1.2.length ≤
         tail.length/2 := by omega
     have rightExp : (Source.quarters tail).2.1.length+(Source.quarters tail).2.2.length ≤

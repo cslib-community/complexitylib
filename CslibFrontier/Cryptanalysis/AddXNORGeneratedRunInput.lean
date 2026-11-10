@@ -102,6 +102,15 @@ noncomputable def configurationCertificate : NativeCertificate configuration
 abbrev Packet := (Program .standard 40 × (ℕ × ℕ)) ×
   FiniteState Basis.standard.genericModel 40
 
+namespace Packet
+/-- Generated runtime program, before halt parking. -/
+abbrev program (x : Packet) : Program .standard 40 := x.1.1
+/-- Physical word/address capacity. -/
+abbrev wordWidth (x : Packet) : ℕ := x.1.2.1
+/-- Binary instruction clock. -/
+abbrev clock (x : Packet) : ℕ := x.1.2.2
+end Packet
+
 /-- Every program field, clock digit, unary width and initial cell is present in this encoding. -/
 noncomputable abbrev packetEncoding : Packet ↪ List Bool :=
   encPair (encPair (programEncoding 40) (encPair encUnary encNat))
@@ -149,9 +158,11 @@ theorem packet_original {m : ℕ} (p : ℕ) (as bs cs ds : List (BitVec m)) (s t
 This is the finite RAM evaluator, not a claimed runtime-program Turing-machine interpreter. -/
 def run (x : Packet) : List Bool :=
   let final := (Cslib.GenericRAM.FiniteState.continuing
-    (Cslib.GenericRAM.FiniteState.run x.1.2.1 x.1.1.parkHalts.toGeneric x.1.2.2 x.2)).getD
+    (Cslib.GenericRAM.FiniteState.run (GeneratedRunInput.Packet.wordWidth x)
+      (GeneratedRunInput.Packet.program x).parkHalts.toGeneric (GeneratedRunInput.Packet.clock x)
+      x.2)).getD
       (initState .standard 40 [])
-  BitExecution.decodeWords (parkedOutput x.1.1.length final)
+  BitExecution.decodeWords (parkedOutput (GeneratedRunInput.Packet.program x).length final)
 
 /-- Generated packet execution is the real simulator run already proved for original inputs. -/
 theorem run_original {m : ℕ} (p : ℕ) (as bs cs ds : List (BitVec m)) (s t : BitVec m) :

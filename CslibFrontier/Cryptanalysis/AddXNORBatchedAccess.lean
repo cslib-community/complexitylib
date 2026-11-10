@@ -405,7 +405,8 @@ private def feedEncoding := encPair (encPair parameterEncoding encNat)
 /-- Real batching uses linear framed insertion and structural projections. Only binary scalar
 arithmetic is sent through polynomial-time callbacks; no callback captures a complete batch. -/
 noncomputable def feedCertificate : NativeCertificate
-    (fun q : (Parameter × ℕ) × (State × (ℕ × ℕ)) => feed q.1.1 q.1.2 q.2.1 q.2.2)
+    (fun q : (Parameter × ℕ) × (State × (ℕ × ℕ)) =>
+      let ((parameter, label), (state, row)) := q; feed parameter label state row)
     (encPair (encPair parameterEncoding encNat)
       (encPair stateEncoding RadixPartition.recordEncoding))
     stateEncoding := by

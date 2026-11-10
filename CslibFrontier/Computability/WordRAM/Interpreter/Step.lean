@@ -61,11 +61,45 @@ abbrev Context (r : ℕ) := (ℕ × List ℕ) × Tuple r
 noncomputable abbrev contextEncoding (r : ℕ) : Context r ↪ List Bool :=
   encPair (encPair encUnary (encList encNat)) (tupleEncoding r)
 
+namespace Tuple
+/-- Current instruction label. -/
+abbrev counter {r : ℕ} (s : Tuple r) : ℕ := s.1
+/-- The fixed finite register bank. -/
+abbrev registers {r : ℕ} (s : Tuple r) : Fin r → ℕ := s.2.1
+/-- Default value and finite sparse bindings. -/
+abbrev memoryState {r : ℕ} (s : Tuple r) : ℕ × SparseMemory ℕ ℕ := s.2.2
+/-- Implicit value of absent memory addresses. -/
+abbrev memoryDefault {r : ℕ} (s : Tuple r) : ℕ := s.2.2.1
+/-- Explicit sparse bindings, including retained zeros. -/
+abbrev memory {r : ℕ} (s : Tuple r) : SparseMemory ℕ ℕ := s.2.2.2
+end Tuple
+
+namespace Context
+/-- Runtime physical word width. -/
+abbrev wordWidth {r : ℕ} (x : Context r) : ℕ := x.1.1
+/-- The current serialized instruction row. -/
+abbrev row {r : ℕ} (x : Context r) : List ℕ := x.1.2
+end Context
+
+namespace BinaryCall
+/-- Left binary ALU operand, after the width header. -/
+abbrev left (x : ℕ × (ℕ × ℕ)) : ℕ := x.2.1
+/-- Right binary ALU operand, after the width header. -/
+abbrev right (x : ℕ × (ℕ × ℕ)) : ℕ := x.2.2
+end BinaryCall
+
+namespace RegisterWrite
+/-- Runtime register index to update. -/
+abbrev index {r : ℕ} (x : Tuple r × (ℕ × ℕ)) : ℕ := x.2.1
+/-- Binary value to write. -/
+abbrev value {r : ℕ} (x : Tuple r × (ℕ × ℕ)) : ℕ := x.2.2
+end RegisterWrite
+
 /-- Read a runtime register index; out-of-range indices yield zero. -/
-def readReg {r : ℕ} (s : Tuple r) (i : ℕ) : ℕ := (List.ofFn s.2.1).getD i 0
+def readReg {r : ℕ} (s : Tuple r) (i : ℕ) : ℕ := (List.ofFn (Tuple.registers s)).getD i 0
 /-- Update a runtime register index, preserving every other field. -/
 def setReg {r : ℕ} (s : Tuple r) (i v : ℕ) : Tuple r :=
-  (s.1, (fun j => if j.val = i then v else s.2.1 j), s.2.2)
+  (s.1, (fun j => if j.val = i then v else (Tuple.registers s) j), (Tuple.memoryState s))
 /-- Continue at a runtime label without changing data. -/
 def next {r : ℕ} (pc : ℕ) (s : Tuple r) : Result r := some (.inl (pc, s.2))
 
@@ -80,7 +114,7 @@ theorem readReg_polyTime {r : ℕ} : PolyTime
 
 /-- Register updates materialize the fixed finite tuple and preserve the sparse memory. -/
 theorem setReg_polyTime {r : ℕ} : PolyTime
-    (fun q : Tuple r × (ℕ × ℕ) => setReg q.1 q.2.1 q.2.2)
+    (fun q : Tuple r × (ℕ × ℕ) => setReg q.1 (RegisterWrite.index q) (RegisterWrite.value q))
     (encPair (tupleEncoding r) (encPair encNat encNat)) (tupleEncoding r) := by
   have index (i : Fin r) : PolyTime (fun _ : Tuple r × (ℕ × ℕ) => i.val)
       (encPair (tupleEncoding r) (encPair encNat encNat)) encNat := .const i.val
@@ -146,7 +180,8 @@ private theorem binaryArgs_polyTime : PolyTime
 def binaryDispatch : List BinOp → ℕ → ℕ × (ℕ × ℕ) → Option ℕ
   | [], _, _ => none
   | f :: fs, tag, x => if tag = 0 then
-      Basis.standard.genericModel.checkedOp (.bin f) (x.1, ![x.2.1, x.2.2])
+      Basis.standard.genericModel.checkedOp (.bin f) (x.1, ![(BinaryCall.left x),
+        (BinaryCall.right x)])
     else binaryDispatch fs (tag - 1) x
 
 /-- All ten standard operation symbols, in the actual instruction wire order. -/
@@ -184,41 +219,45 @@ theorem binaryDispatch_polyTime (fs : List BinOp) : PolyTime
 
 /-- A handler reads its own literal/register/label fields from the runtime row. -/
 def constant {r : ℕ} (x : Context r) : Result r :=
-  let v := x.1.2.getD 2 0
-  if v < 2 ^ x.1.1 then next (x.2.1 + 1) (setReg x.2 (x.1.2.getD 1 0) v) else none
+  let v := (Context.row x).getD 2 0
+  if v < 2 ^ (Context.wordWidth x) then next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row
+    x).getD 1 0) v) else none
 /-- Runtime copy, with the standard basis's unmodified move convention. -/
 def copy {r : ℕ} (x : Context r) : Result r :=
-  next (x.2.1 + 1) (setReg x.2 (x.1.2.getD 1 0) (readReg x.2 (x.1.2.getD 2 0)))
+  next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 1 0) (readReg x.2 ((Context.row
+    x).getD 2 0)))
 /-- Runtime binary ALU selection, retaining operation faults and overflow. -/
 def binary {r : ℕ} (x : Context r) : Result r :=
-  (binaryDispatch binaryOps (x.1.2.getD 1 0)
-    (x.1.1, readReg x.2 (x.1.2.getD 3 0), readReg x.2 (x.1.2.getD 4 0))).elim none
-    (fun v => next (x.2.1 + 1) (setReg x.2 (x.1.2.getD 2 0) v))
+  (binaryDispatch binaryOps ((Context.row x).getD 1 0)
+    ((Context.wordWidth x), readReg x.2 ((Context.row x).getD 3 0), readReg x.2 ((Context.row
+      x).getD 4 0))).elim none
+    (fun v => next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 2 0) v))
 /-- Reading the actual runtime physical word width. -/
 def width {r : ℕ} (x : Context r) : Result r :=
-  next (x.2.1 + 1) (setReg x.2 (x.1.2.getD 1 0) x.1.1)
+  next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 1 0) (Context.wordWidth x))
 /-- A charged sparse lookup at the runtime source register's address. -/
 def load {r : ℕ} (x : Context r) : Result r :=
-  next (x.2.1 + 1) (setReg x.2 (x.1.2.getD 1 0)
-    (SparseMemory.read x.2.2.2.1 (readReg x.2 (x.1.2.getD 2 0)) x.2.2.2.2))
+  next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 1 0)
+    (SparseMemory.read (Tuple.memoryDefault x.2) (readReg x.2 ((Context.row x).getD 2 0))
+      (Tuple.memory x.2)))
 /-- A charged sparse update, including bindings whose new value is zero. -/
 def store {r : ℕ} (x : Context r) : Result r :=
-  let a := readReg x.2 (x.1.2.getD 1 0)
-  let v := readReg x.2 (x.1.2.getD 2 0)
-  some (.inl (x.2.1 + 1, x.2.2.1,
-    x.2.2.2.1, AList.insert (β := fun _ : ℕ => ℕ) a v x.2.2.2.2))
+  let a := readReg x.2 ((Context.row x).getD 1 0)
+  let v := readReg x.2 ((Context.row x).getD 2 0)
+  some (.inl ((Tuple.counter x.2) + 1, (Tuple.registers x.2),
+    (Tuple.memoryDefault x.2), AList.insert (β := fun _ : ℕ => ℕ) a v (Tuple.memory x.2)))
 /-- A runtime jump label. -/
-def jump {r : ℕ} (x : Context r) : Result r := next (x.1.2.getD 1 0) x.2
+def jump {r : ℕ} (x : Context r) : Result r := next ((Context.row x).getD 1 0) x.2
 /-- Runtime equality and branch labels. -/
 def branchEq {r : ℕ} (x : Context r) : Result r :=
-  next (if readReg x.2 (x.1.2.getD 1 0) = readReg x.2 (x.1.2.getD 2 0)
-    then x.1.2.getD 3 0 else x.2.1 + 1) x.2
+  next (if readReg x.2 ((Context.row x).getD 1 0) = readReg x.2 ((Context.row x).getD 2 0)
+    then (Context.row x).getD 3 0 else (Tuple.counter x.2) + 1) x.2
 /-- Runtime unsigned comparison and branch labels. -/
 def branchLt {r : ℕ} (x : Context r) : Result r :=
-  next (if readReg x.2 (x.1.2.getD 1 0) < readReg x.2 (x.1.2.getD 2 0)
-    then x.1.2.getD 3 0 else x.2.1 + 1) x.2
+  next (if readReg x.2 ((Context.row x).getD 1 0) < readReg x.2 ((Context.row x).getD 2 0)
+    then (Context.row x).getD 3 0 else (Tuple.counter x.2) + 1) x.2
 /-- Return the actual runtime output register; deterministic random instructions fault. -/
-def halt {r : ℕ} (x : Context r) : Result r := some (.inr (readReg x.2 (x.1.2.getD 1 0)))
+def halt {r : ℕ} (x : Context r) : Result r := some (.inr (readReg x.2 ((Context.row x).getD 1 0)))
 
 /-- The fixed instruction-set dispatcher, independent of program length and literals. -/
 def handlers (r : ℕ) : List (Context r → Result r) :=
@@ -328,7 +367,7 @@ theorem dispatch_polyTime {r : ℕ} (fs : List (Context r → Result r))
     fun_prop
 
 /-- Interpret the supplied instruction row, rather than selecting a fixed program. -/
-def evalRow {r : ℕ} (x : Context r) : Result r := dispatch (handlers r) (x.1.2.headD 0, x)
+def evalRow {r : ℕ} (x : Context r) : Result r := dispatch (handlers r) ((Context.row x).headD 0, x)
 
 /-- A single finite bit machine implements every encoded instruction row. -/
 theorem evalRow_polyTime {r : ℕ} : PolyTime (evalRow (r := r))
@@ -338,13 +377,21 @@ theorem evalRow_polyTime {r : ℕ} : PolyTime (evalRow (r := r))
 
 /-- Runtime physical width, complete program rows and finite state. -/
 abbrev Input (r : ℕ) := (ℕ × List (List ℕ)) × Tuple r
+
+namespace Input
+/-- Runtime physical word width. -/
+abbrev wordWidth {r : ℕ} (x : Input r) : ℕ := x.1.1
+/-- Complete serialized runtime program. -/
+abbrev rows {r : ℕ} (x : Input r) : List (List ℕ) := x.1.2
+end Input
 /-- The runtime program is present on the tape, not in the machine's control. -/
 noncomputable abbrev inputEncoding (r : ℕ) : Input r ↪ List Bool :=
   encPair (encPair encUnary (encList (encList encNat))) (tupleEncoding r)
 
 /-- Fetch the actual row at the binary program counter and execute it. -/
 def step {r : ℕ} (x : Input r) : Result r :=
-  if x.2.1 < x.1.2.length then evalRow ((x.1.1, x.1.2.getD x.2.1 []), x.2) else none
+  if (Tuple.counter x.2) < (Input.rows x).length then evalRow (((Input.wordWidth x), (Input.rows
+    x).getD (Tuple.counter x.2) []), x.2) else none
 
 /-- Program lookup uses capped binary indexing, so enormous labels do not require unary scans. -/
 theorem step_polyTime {r : ℕ} : PolyTime (step (r := r))

@@ -47,7 +47,8 @@ open NativeCertificate Native.Driver GeneratedRunInput ProgramGeneration
 /-- One runtime-program machine executes the actual compacting loop. -/
 noncomputable def finiteRunCertificate : NativeCertificate
     (fun x : Packet => Interpreter.compactResult
-      (FiniteState.run x.1.2.1 x.1.1.parkHalts.toGeneric x.1.2.2 x.2))
+      (FiniteState.run (GeneratedRunInput.Packet.wordWidth x) (GeneratedRunInput.Packet.program
+        x).parkHalts.toGeneric (GeneratedRunInput.Packet.clock x) x.2))
     packetEncoding (FiniteState.resultEncoding Basis.standard.encoding) :=
   Interpreter.compactRunCertificate.comp UniformExecution.executionInputCertificate
 
@@ -84,7 +85,8 @@ theorem parkedOutput_compact {r : ℕ} (L : ℕ)
 
 /-- Bit readback/decoding from the compacted run agrees with the approved packet semantics. -/
 theorem readback_eq (x : Packet) :
-    BitExecution.decodeWords (parkedOutput x.1.1.length (finalState x)) =
+    BitExecution.decodeWords (parkedOutput (GeneratedRunInput.Packet.program x).length (finalState
+      x)) =
       GeneratedRunInput.run x := by
   unfold finalState GeneratedRunInput.run
   dsimp only
@@ -209,7 +211,8 @@ theorem original_compact_loop_encoding {m p : ℕ} (hp : p ≤ m)
   have h := original_compact_encoding hp as bs cs ds s t j
   rw [Interpreter.iterate_compactRound, Interpreter.initial, Interpreter.iterate_round,
     ← FiniteState.run_eq_iterate_stepResult]
-  simp only [Interpreter.compactLoop, Interpreter.loopEncoding, length_encPair]
+  simp only [Interpreter.compactLoop, Interpreter.loopEncoding, length_encPair,
+    Interpreter.RunInput.state]
   omega
 
 /-- The maximum used by the compacting machine's actual resource certificate has the same

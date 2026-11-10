@@ -170,7 +170,7 @@ private noncomputable def consumeGroupCertificate : NativeCertificate
 matching temporaries in its time/prefix-space profile. No sharp bound is assumed. -/
 noncomputable def consumeCertificate : NativeCertificate
     (fun q : Context × (BatchedAccess.State × List (List SortedMatch.Record)) =>
-      consume q.1 q.2.1 q.2.2)
+      let (context, (state, groups)) := q; consume context state groups)
     (encPair encoding (encPair BatchedAccess.stateEncoding
       (encList (encList (encPair encNat encNat))))) BatchedAccess.stateEncoding :=
   NativeCertificate.foldlStream encoding BatchedAccess.stateEncoding (encList recEncoding)

@@ -368,7 +368,8 @@ theorem source_restart_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ M
         (Source.quarters tail).2.1 (Source.quarters tail).2.2 s 0 := Source.prepare_ofWords p s tail
     have depthEq : ClassBalance.depth input = d := by rw [preparedEq]; rfl
     have total := congrArg List.length (Source.quarters_append tail)
-    simp only [List.length_append] at total
+    simp only [List.length_append, QuarterLists.first, QuarterLists.second,
+      QuarterLists.third, QuarterLists.fourth] at total
     have total' : (Source.quarters tail).1.1.length+(Source.quarters tail).1.2.length+
         (Source.quarters tail).2.1.length+(Source.quarters tail).2.2.length = tail.length :=
           by omega

@@ -100,7 +100,8 @@ theorem quarterBudget_source {m : ℕ} (p : ℕ) (s : BitVec m) (tail : List (Bi
     quarterBudget (Source.prepare (Source.ofWords p s tail)) ≤ 11 * 2 ^ (tail.length / 4) := by
   rw [Source.prepare_ofWords]
   have lengths := Source.quarters_lengths tail
-  dsimp only at lengths
+  dsimp only [QuarterLists.first, QuarterLists.second, QuarterLists.third,
+      QuarterLists.fourth] at lengths
   simp only [quarterBudget, ProgramGeneration.originalSource, BitInput.words, List.length_map,
     lengths.1, lengths.2.1, lengths.2.2.1, lengths.2.2.2]
   have residue : tail.length - 3 * (tail.length / 4) ≤ tail.length / 4 + 3 := by omega
@@ -1000,7 +1001,8 @@ theorem preparation_readback_bounds : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBou
     have hw := allSearch_wire hp (Source.quarters tail).1.1 (Source.quarters tail).1.2
       (Source.quarters tail).2.1 (Source.quarters tail).2.2 s
     have cut := congrArg List.length (Source.quarters_append tail)
-    simp only [List.length_append] at cut
+    simp only [List.length_append, QuarterLists.first, QuarterLists.second,
+      QuarterLists.third, QuarterLists.fourth] at cut
     rw [← Source.prepare_ofWords] at hw
     have tailSize : tail.length ≤ size := by
       have hl := length_le_length_encList (enc := encNat) ((s :: tail).map BitVec.toNat)

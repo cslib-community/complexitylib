@@ -78,14 +78,27 @@ theorem readMetadata_polyTime : ComputableInPolyTime readMetadata metadataEncodi
 /-- Original source data includes unary width/class parameters, binary endpoints and operands. -/
 abbrev Source := ((ℕ × ℕ) × (ℕ × ℕ)) × BitInput.Words
 
+namespace Source
+/-- Original physical word width. -/
+abbrev wordWidth (x : Source) : ℕ := x.1.1.1
+/-- Requested projected class depth. -/
+abbrev depth (x : Source) : ℕ := x.1.1.2
+/-- Full-width initial state. -/
+abbrev seed (x : Source) : ℕ := x.1.2.1
+/-- Full-width target state. -/
+abbrev target (x : Source) : ℕ := x.1.2.2
+end Source
+
 /-- Explicit runtime source-input encoding, without executable or quarter-length advice. -/
 abbrev sourceEncoding : Source ↪ List Bool :=
   encPair (encPair (encPair encUnary encUnary) (encPair encNat encNat)) BitInput.encoding
 
 /-- Quarter lengths are computed from actual original operand arrays, retaining zeros/duplicates. -/
 def sourceMetadata (x : Source) : RawMetadata :=
-  rawMetadata x.1.1.1 x.1.1.2 x.2.1.1.length x.2.1.2.length
-    x.2.2.1.length x.2.2.2.length x.1.2.1 x.1.2.2
+  rawMetadata (ProgramGeneration.Source.wordWidth x) (ProgramGeneration.Source.depth x)
+    (QuarterLists.first x.2).length (QuarterLists.second x.2).length
+    (QuarterLists.third x.2).length (QuarterLists.fourth x.2).length
+      (ProgramGeneration.Source.seed x) (ProgramGeneration.Source.target x)
 
 /-- Actual input-length calculation and metadata materialization have polynomial bit cost. -/
 theorem sourceMetadata_polyTime : ComputableInPolyTime sourceMetadata sourceEncoding
@@ -234,7 +247,10 @@ theorem sourceMetadata_original {m : ℕ} (p : ℕ) (as bs cs ds : List (BitVec 
     (s t : BitVec m) :
     sourceMetadata (originalSource p as bs cs ds s t) =
       rawMetadata m p as.length bs.length cs.length ds.length s.toNat t.toNat := by
-  simp only [sourceMetadata, originalSource, BitInput.words, List.length_map]
+  simp only [sourceMetadata, ProgramGeneration.Source.wordWidth, ProgramGeneration.Source.depth,
+    ProgramGeneration.Source.seed, ProgramGeneration.Source.target, QuarterLists.first,
+    QuarterLists.second, QuarterLists.third, QuarterLists.fourth, originalSource,
+    BitInput.words, List.length_map]
 
 /-- The uniform original-input generator emits exactly the reviewed native executable. -/
 theorem sourceGenerate_original {m : ℕ} (p : ℕ) (as bs cs ds : List (BitVec m))

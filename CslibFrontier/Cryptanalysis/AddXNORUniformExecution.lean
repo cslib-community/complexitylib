@@ -45,7 +45,8 @@ open NativeCertificate GeneratedRunInput ProgramGeneration Native.Driver
 
 /-- Materialize runtime halt parking and arrange the runtime width/program/clock/state interface. -/
 def executionInput (x : Packet) : Interpreter.RunInput 40 :=
-  (x.1.2.2, (x.1.2.1, x.1.1.parkHalts), x.2)
+  ((GeneratedRunInput.Packet.clock x), ((GeneratedRunInput.Packet.wordWidth x),
+    (GeneratedRunInput.Packet.program x).parkHalts), x.2)
 
 /-- Packet rearrangement includes actual parking generation; no executable is a premise. -/
 noncomputable def executionInputCertificate : NativeCertificate executionInput packetEncoding
@@ -58,14 +59,17 @@ noncomputable def executionInputCertificate : NativeCertificate executionInput p
 
 /-- One program-input simulator, with constants independent of every runtime program field. -/
 noncomputable def finiteRunCertificate : NativeCertificate
-    (fun x : Packet => FiniteState.run x.1.2.1 x.1.1.parkHalts.toGeneric x.1.2.2 x.2)
+    (fun x : Packet => FiniteState.run (GeneratedRunInput.Packet.wordWidth x)
+      (GeneratedRunInput.Packet.program x).parkHalts.toGeneric (GeneratedRunInput.Packet.clock x)
+      x.2)
     packetEncoding (FiniteState.resultEncoding Basis.standard.encoding) :=
   Interpreter.runCertificate.comp executionInputCertificate
 
 /-- Actual output state, using the same fault/return fallback as the native endpoint. -/
 def finalState (x : Packet) : FiniteState Basis.standard.genericModel 40 :=
   (FiniteState.continuing
-    (FiniteState.run x.1.2.1 x.1.1.parkHalts.toGeneric x.1.2.2 x.2)).getD
+    (FiniteState.run (GeneratedRunInput.Packet.wordWidth x) (GeneratedRunInput.Packet.program
+      x).parkHalts.toGeneric (GeneratedRunInput.Packet.clock x) x.2)).getD
       (initState .standard 40 [])
 
 /-- Extract the real final finite state, without assuming successful execution. -/

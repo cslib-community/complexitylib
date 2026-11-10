@@ -50,17 +50,20 @@ def quarters {α : Type} (xs : List α) : (List α × List α) × (List α × Li
 
 /-- The actual quarter cut neither reorders nor loses operands. -/
 theorem quarters_append {α : Type} (xs : List α) :
-    ((quarters xs).1.1 ++ (quarters xs).1.2) ++
-      ((quarters xs).2.1 ++ (quarters xs).2.2) = xs :=
+    ((QuarterLists.first (quarters xs)) ++ (QuarterLists.second (quarters xs))) ++
+      ((QuarterLists.third (quarters xs)) ++ (QuarterLists.fourth (quarters xs))) = xs :=
   Dissection.four_quarters xs (xs.length / 4)
 
 /-- The three complete quarters have length `k`; the last includes all residue cases. -/
 theorem quarters_lengths {α : Type} (xs : List α) :
     let k := xs.length / 4
-    (quarters xs).1.1.length = k ∧ (quarters xs).1.2.length = k ∧
-      (quarters xs).2.1.length = k ∧ (quarters xs).2.2.length = xs.length - 3 * k := by
+    (QuarterLists.first (quarters xs)).length = k ∧
+      (QuarterLists.second (quarters xs)).length = k ∧
+      (QuarterLists.third (quarters xs)).length = k ∧
+      (QuarterLists.fourth (quarters xs)).length = xs.length - 3 * k := by
   have h := Nat.div_mul_le_self xs.length 4
-  simp only [quarters, List.length_take, List.length_drop]
+  simp only [quarters, QuarterLists.first, QuarterLists.second, QuarterLists.third,
+    QuarterLists.fourth, List.length_take, List.length_drop]
   omega
 
 /-- All quarter splitting, first-operand selection, class-depth capping and zero target are
@@ -112,15 +115,18 @@ def ofWords {m : ℕ} (p : ℕ) (a : BitVec m) (tail : List (BitVec m)) : Input 
 theorem prepare_ofWords {m : ℕ} (p : ℕ) (a : BitVec m) (tail : List (BitVec m)) :
     prepare (ofWords p a tail) =
       originalSource (min p (min m (tail.length / 4)))
-        (quarters tail).1.1 (quarters tail).1.2 (quarters tail).2.1 (quarters tail).2.2 a 0 := by
-  simp [prepare, ofWords, quarters, originalSource, BitInput.words,
+        (QuarterLists.first (quarters tail)) (QuarterLists.second (quarters tail))
+          (QuarterLists.third (quarters tail)) (QuarterLists.fourth (quarters tail)) a 0 := by
+  simp [prepare, ofWords, quarters, QuarterLists.first, QuarterLists.second, QuarterLists.third,
+    QuarterLists.fourth, originalSource, BitInput.words,
     List.map_take, List.map_drop]
 
 /-- On the source's admitted class depths, both explicit projection caps are inert. -/
 theorem prepare_ofWords_admitted {m p : ℕ} (hm : p ≤ m)
     (a : BitVec m) (tail : List (BitVec m)) (hk : p ≤ tail.length / 4) :
     prepare (ofWords p a tail) = originalSource p
-      (quarters tail).1.1 (quarters tail).1.2 (quarters tail).2.1 (quarters tail).2.2 a 0 := by
+      (QuarterLists.first (quarters tail)) (QuarterLists.second (quarters tail))
+        (QuarterLists.third (quarters tail)) (QuarterLists.fourth (quarters tail)) a 0 := by
   rw [prepare_ofWords, Nat.min_eq_left (le_min hm hk)]
 
 /-- One machine now receives the original single operand list and computes its own source ABI. -/
@@ -144,7 +150,8 @@ theorem original_correct {m : ℕ} (p : ℕ) (a : BitVec m) (tail : List (BitVec
   · intro ops hops
     have hs := sound ops hops
     have hlen := congrArg List.length (quarters_append tail)
-    simp only [List.length_append] at hlen
+    simp only [List.length_append, QuarterLists.first, QuarterLists.second,
+      QuarterLists.third, QuarterLists.fourth] at hlen
     exact ⟨by dsimp only [totalLength] at hs; omega,
       by simpa only [quarters_append] using hs.2⟩
 
@@ -174,11 +181,15 @@ theorem compact_trajectory_bound {m : ℕ} (p : ℕ) (a : BitVec m)
     let depth := min p (min m (tail.length / 4))
     let x := GeneratedRunInput.packet (prepare (ofWords p a tail))
     Interpreter.compactTrajectoryLength (UniformExecution.executionInput x) ≤
-      2 * (Interpreter.parametersEncoding 40 ((UniformExecution.executionInput x).2.1)).length +
-        1 + stateBound 40 (labelBound x.1.1.parkHalts.toGeneric) x.1.2.1
-          (CompactExecution.peak depth parts.1.1.length parts.1.2.length
-            parts.2.1.length parts.2.2.length
-            (computedBalance (p := depth) parts.1.1 parts.1.2 parts.2.1 parts.2.2 a 0)) := by
+      2 * (Interpreter.parametersEncoding 40 ((Interpreter.RunInput.parameters
+        (UniformExecution.executionInput x)))).length +
+        1 + stateBound 40 (labelBound (GeneratedRunInput.Packet.program x).parkHalts.toGeneric)
+          (GeneratedRunInput.Packet.wordWidth x)
+          (CompactExecution.peak depth (QuarterLists.first parts).length (QuarterLists.second
+            parts).length
+            (QuarterLists.third parts).length (QuarterLists.fourth parts).length
+            (computedBalance (p := depth) (QuarterLists.first parts) (QuarterLists.second parts)
+              (QuarterLists.third parts) (QuarterLists.fourth parts) a 0)) := by
   dsimp only
   rw [prepare_ofWords, GeneratedRunInput.packet_original]
   dsimp only [UniformExecution.executionInput]

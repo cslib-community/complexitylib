@@ -31,6 +31,17 @@ and program from an input header.
 
 public section
 
+namespace Cslib.Cryptanalysis.AddXNOR.QuarterLists
+/-- Consecutive first-quarter operands. -/
+abbrev first {α : Type} (xs : (List α × List α) × (List α × List α)) : List α := xs.1.1
+/-- Consecutive second-quarter operands. -/
+abbrev second {α : Type} (xs : (List α × List α) × (List α × List α)) : List α := xs.1.2
+/-- Consecutive third-quarter operands, before reversal. -/
+abbrev third {α : Type} (xs : (List α × List α) × (List α × List α)) : List α := xs.2.1
+/-- Consecutive fourth-quarter operands, including the remainder. -/
+abbrev fourth {α : Type} (xs : (List α × List α) × (List α × List α)) : List α := xs.2.2
+end Cslib.Cryptanalysis.AddXNOR.QuarterLists
+
 namespace Cslib.Cryptanalysis.AddXNOR.BitInput
 
 open Turing.MultiTapeTM Cslib.WordRAM Cslib.GenericRAM
@@ -50,7 +61,8 @@ def words {m : ℕ} (as bs cs ds : List (BitVec m)) : Words :=
 
 /-- The native calling convention reverses the entire second half of the chain. -/
 def prepare (xs : Words) : List ℕ :=
-  xs.1.1 ++ (xs.1.2 ++ (xs.2.2.reverse ++ xs.2.1.reverse))
+  (QuarterLists.first xs) ++ ((QuarterLists.second xs) ++ ((QuarterLists.fourth xs).reverse ++
+    (QuarterLists.third xs).reverse))
 
 /-- The computed operand list is exactly the reviewed native input, including inverse order. -/
 theorem prepare_words {m : ℕ} (as bs cs ds : List (BitVec m)) :
@@ -60,9 +72,12 @@ theorem prepare_words {m : ℕ} (as bs cs ds : List (BitVec m)) :
 /-- Input framing charges every original word and all four quarter boundaries. -/
 theorem encoding_length (xs : Words) :
     (encoding xs).length =
-      4 * (encList encNat xs.1.1).length + 2 * (encList encNat xs.1.2).length +
-        2 * (encList encNat xs.2.1).length + (encList encNat xs.2.2).length + 4 := by
-  simp only [encoding, length_encPair]
+      4 * (encList encNat (QuarterLists.first xs)).length + 2 * (encList encNat
+        (QuarterLists.second xs)).length +
+        2 * (encList encNat (QuarterLists.third xs)).length + (encList encNat (QuarterLists.fourth
+          xs)).length + 4 := by
+  simp only [encoding, length_encPair, QuarterLists.first, QuarterLists.second,
+    QuarterLists.third, QuarterLists.fourth]
   omega
 
 /-- Physical input size in the original operand count and full state width, including
@@ -87,8 +102,10 @@ theorem encoding_words_le {m : ℕ} (as bs cs ds : List (BitVec m)) :
 /-- Reversal and concatenation preserve the total framed operand length. -/
 theorem prepare_length (xs : Words) :
     (encList encNat (prepare xs)).length =
-      (encList encNat xs.1.1).length + (encList encNat xs.1.2).length +
-        (encList encNat xs.2.1).length + (encList encNat xs.2.2).length := by
+      (encList encNat (QuarterLists.first xs)).length + (encList encNat (QuarterLists.second
+        xs)).length +
+        (encList encNat (QuarterLists.third xs)).length + (encList encNat (QuarterLists.fourth
+          xs)).length := by
   simp [prepare, length_encList, List.map_reverse, List.sum_reverse]
   omega
 

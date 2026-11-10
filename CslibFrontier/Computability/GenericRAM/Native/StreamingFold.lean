@@ -42,9 +42,11 @@ abbrev encFoldStep {π σ α : Type} (ep : π ↪ List Bool) (es : σ ↪ List B
 bounding workspace by actual callback/state/token prefix maxima. -/
 noncomputable def foldlStream {π σ α : Type} (ep : π ↪ List Bool)
     (es : σ ↪ List Bool) (ea : α ↪ List Bool) (step : π → σ → α → σ)
-    (body : NativeCertificate (fun q : (π × σ) × α => step q.1.1 q.1.2 q.2)
+    (body : NativeCertificate (fun q : (π × σ) × α =>
+      let ((parameter, state), row) := q; step parameter state row)
       (encFoldStep ep es ea) es) :
-    NativeCertificate (fun q : π × (σ × List α) => q.2.2.foldl (step q.1) q.2.1)
+    NativeCertificate (fun q : π × (σ × List α) =>
+      let (parameter, (initial, rows)) := q; rows.foldl (step parameter) initial)
       (encPair ep (encPair es (encList ea))) es := by
   let estate := encPair ep es
   let enext := encPair estate (encFramed ea)

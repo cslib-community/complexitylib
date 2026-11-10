@@ -110,18 +110,27 @@ theorem emitWord_preserves (n b : ℕ) (src : Fin 40) (untag back : Bool)
 /-- Fixed metadata for a packed field: length, source register and presence tag. -/
 abbrev Field := ℕ × Fin 40 × Bool
 
+namespace Field
+/-- Protected source register holding this packed field. -/
+abbrev sourceRegister (f : Field) : Fin 40 := f.2.1
+/-- Whether the packed field is present. -/
+abbrev present (f : Field) : Bool := f.2.2
+end Field
+
 /-- Total number of emitted operators. -/
 def fieldSize (fs : List Field) : ℕ := (fs.map Prod.fst).sum
 
 /-- The concrete concatenation read from the original source registers. -/
 def fieldWords (back : Bool) (fs : List Field) (x : Data 40) : List ℕ :=
-  fs.flatMap fun f => OutputBits.words back f.1 (packedValue x f.2.1 f.2.2)
+  fs.flatMap fun f => OutputBits.words back f.1 (packedValue x (Field.sourceRegister f)
+    (Field.present f))
 
 /-- Serialize consecutive fields. The dissection client always has exactly four
 fields, so this construction does not unroll the variable operator counts. -/
 @[expose] def emitFields (back : Bool) (b : ℕ) : List Field → Code .standard 40
   | [] => ram[ valueReg ← valueReg ]
-  | f :: fs => .seq (emitWord f.1 b f.2.1 f.2.2 back) (emitFields back (b + f.1) fs)
+  | f :: fs => .seq (emitWord f.1 b (Field.sourceRegister f) (Field.present f) back) (emitFields
+    back (b + f.1) fs)
 
 /-- The represented field concatenation has the stated native array length. -/
 theorem fieldWords_length (back : Bool) (fs : List Field) (x : Data 40) :
@@ -131,7 +140,7 @@ theorem fieldWords_length (back : Bool) (fs : List Field) (x : Data 40) :
 /-- Consecutive actual stores serialize all protected packed registers. -/
 theorem emitFields_exec {W b : ℕ} (back : Bool) (fs : List Field) (x : Data 40)
     (hx : x.Bounded W) (hfit : Fits W (b + fieldSize fs + 3))
-    (hprotected : ∀ f ∈ fs, ∀ j, scratch j ≠ f.2.1) :
+    (hprotected : ∀ f ∈ fs, ∀ j, scratch j ≠ (Field.sourceRegister f)) :
     ∃ y, ExecWithin W (emitFields back b fs) x y (7 * fieldSize fs + 10 * fs.length + 1) ∧
       Block.HoldsList b (fieldWords back fs x) y.mem ∧
       (∀ a, a < b ∨ b + fieldSize fs ≤ a → y.mem a = x.mem a) := by

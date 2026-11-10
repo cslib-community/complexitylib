@@ -353,13 +353,15 @@ Its correctness theorem has no small-operand premise.
 `AddXNORSparsification` returns an actual list of reduced sparse leaves with
 exact $2^{\eta v}$ population and disjunctive correctness. Width is $C(v+1)$
 generally and $Cv$ for $v\ge1$; keep the width-zero yes-input obstruction
-explicit. `AddXNORSparsificationResources.source_generation` now composes a
-localized branching machine and streaming digit map, proving native time and
+explicit. In `AddXNORSparsificationResources`, `Sparsification.source_generation`
+composes a localized branching machine and streaming digit map, proving native time and
 charged space $O(\lceil2^{\eta v}\rceil Q(L))$ in original encoded length $L$.
 Its fixed quadratic round factor permits choosing $M$ before the thresholds;
 no polynomial is applied to the exponential output accumulator. The older
 generic `certificate` has a different, unnormalized allowance and must not be
-used as the source-rate implementation.
+used as the source-rate implementation. Public packet/source statements now use
+named program, width, clock and quarter accessors; callback contexts bind their
+components by name. The tuple layouts and resource conclusions are unchanged.
 Theorem 7's pipeline, the small-operand algorithm and the source-rate sparse
 reduction are assembled. Repaired ideal-model clauses remain open in #2527/ROADMAP.
 Do not promote an older pair/batch bound, unnormalized machine profile, native

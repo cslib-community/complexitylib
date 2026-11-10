@@ -44,18 +44,27 @@ abbrev NativeInput (r : ℕ) := Parameters r × FiniteState Basis.standard.gener
 noncomputable abbrev nativeInputEncoding (r : ℕ) : NativeInput r ↪ List Bool :=
   encPair (parametersEncoding r) (FiniteState.encoding Basis.standard.encoding)
 
+namespace NativeInput
+/-- Runtime physical word width. -/
+abbrev wordWidth {r : ℕ} (x : NativeInput r) : ℕ := x.1.1
+/-- Runtime standard-basis program. -/
+abbrev program {r : ℕ} (x : NativeInput r) : Program .standard r := x.1.2
+end NativeInput
+
 /-- The typed interface of the actual encoded-row instruction interpreter. -/
 noncomputable def stepCertificate {r : ℕ} : NativeCertificate
-    (fun x : NativeInput r => FiniteState.step x.1.1 x.1.2.toGeneric x.2)
+    (fun x : NativeInput r => FiniteState.step (NativeInput.wordWidth x) (NativeInput.program
+      x).toGeneric x.2)
     (nativeInputEncoding r) (FiniteState.resultEncoding Basis.standard.encoding) := by
   let prepare : NativeCertificate
-      (fun x : NativeInput r => ((x.1.1, ProgramLiterals.serialize x.1.2), toTuple x.2))
+      (fun x : NativeInput r => (((NativeInput.wordWidth x), ProgramLiterals.serialize
+        (NativeInput.program x)), toTuple x.2))
       (nativeInputEncoding r) (inputEncoding r) :=
     linear (ComputableInO.of_eq fun _ => rfl)
   let c := (NativeCertificate.ofPolyTime (step_polyTime (r := r))).comp prepare
   exact ⟨c.time, c.space, c.computes.of_enc_eq (fun x => by
     rw [Function.comp_apply, step_serialize]
-    cases FiniteState.step x.1.1 x.1.2.toGeneric x.2 with
+    cases FiniteState.step (NativeInput.wordWidth x) (NativeInput.program x).toGeneric x.2 with
     | none => rfl
     | some out => cases out <;> rfl)⟩
 
@@ -77,9 +86,16 @@ abbrev Loop (r : ℕ) := Parameters r × FiniteState.Result Basis.standard.gener
 noncomputable abbrev loopEncoding (r : ℕ) : Loop r ↪ List Bool :=
   encPair (parametersEncoding r) (FiniteState.resultEncoding Basis.standard.encoding)
 
+namespace Loop
+/-- Runtime physical word width retained by every loop state. -/
+abbrev wordWidth {r : ℕ} (x : Loop r) : ℕ := x.1.1
+/-- Runtime program retained by every loop state. -/
+abbrev program {r : ℕ} (x : Loop r) : Program .standard r := x.1.2
+end Loop
+
 /-- Advance one step, retaining program/width and absorbing fault/return. -/
 def round {r : ℕ} (x : Loop r) : Loop r :=
-  (x.1, FiniteState.stepResult x.1.1 x.1.2.toGeneric x.2)
+  (x.1, FiniteState.stepResult (Loop.wordWidth x) (Loop.program x).toGeneric x.2)
 
 /-- A single finite machine implements a round for every runtime program. -/
 noncomputable def roundCertificate {r : ℕ} :
@@ -124,8 +140,20 @@ abbrev RunInput (r : ℕ) := ℕ × NativeInput r
 noncomputable abbrev runInputEncoding (r : ℕ) : RunInput r ↪ List Bool :=
   encPair encNat (nativeInputEncoding r)
 
+namespace RunInput
+/-- Runtime width/program parameters, following the clock. -/
+abbrev parameters {r : ℕ} (x : RunInput r) : Parameters r := x.2.1
+/-- Runtime physical word width. -/
+abbrev wordWidth {r : ℕ} (x : RunInput r) : ℕ := x.2.1.1
+/-- Runtime program. -/
+abbrev program {r : ℕ} (x : RunInput r) : Program .standard r := x.2.1.2
+/-- Full initial native state. -/
+abbrev state {r : ℕ} (x : RunInput r) : FiniteState Basis.standard.genericModel r := x.2.2
+end RunInput
+
 /-- Initial interpreter loop value, retaining all runtime parameters. -/
-@[expose] def initial {r : ℕ} (x : RunInput r) : Loop r := (x.2.1, Option.some (.inl x.2.2))
+@[expose] def initial {r : ℕ} (x : RunInput r) : Loop r := ((RunInput.parameters x), Option.some
+  (.inl (RunInput.state x)))
 
 /-- One binary-clocked loop, retaining the complete program at every prefix. -/
 @[expose] noncomputable def clockedCertificate {r : ℕ} : NativeCertificate
@@ -198,7 +226,8 @@ theorem clocked_resources (r : ℕ) : ∃ C d : ℕ, ∀ x : RunInput r,
 
 /-- One machine executes every supplied program for the supplied binary clock. -/
 noncomputable def runCertificate {r : ℕ} : NativeCertificate
-    (fun x : RunInput r => FiniteState.run x.2.1.1 x.2.1.2.toGeneric x.1 x.2.2)
+    (fun x : RunInput r => FiniteState.run (RunInput.wordWidth x) (RunInput.program x).toGeneric
+      x.1 (RunInput.state x))
     (runInputEncoding r) (FiniteState.resultEncoding Basis.standard.encoding) :=
   congr (snd clockedCertificate) (fun x => by
     rw [initial, iterate_round, ← FiniteState.run_eq_iterate_stepResult])

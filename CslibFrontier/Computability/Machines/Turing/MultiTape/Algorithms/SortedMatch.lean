@@ -170,6 +170,13 @@ theorem scan_none_iff (rows : List Record) (sorted : rows.Pairwise (fun a b => a
 /-- Runtime width and the two actually materialized full-state batches. -/
 abbrev Input := ℕ × (List Record × List Record)
 
+namespace Input
+/-- Original forward records before tagging or sorting. -/
+abbrev left (x : Input) : List Record := x.2.1
+/-- Original backward records before tagging or sorting. -/
+abbrev right (x : Input) : List Record := x.2.2
+end Input
+
 /-- Unary key width and both binary record lists. -/
 def encoding : Input ↪ List Bool :=
   encPair encUnary (encPair (encList RadixPartition.recordEncoding)
@@ -214,7 +221,7 @@ private theorem sorted_perm (input : Input) :
 
 /-- A returned pair retains two actual witnesses for the same actual full state. -/
 theorem sound (input : Input) (out : ℕ × ℕ) (hit : run input = some out) :
-    ∃ a ∈ input.2.1, ∃ b ∈ input.2.2, a.1 = b.1 ∧ out = (a.2, b.2) := by
+    ∃ a ∈ (Input.left input), ∃ b ∈ (Input.right input), a.1 = b.1 ∧ out = (a.2, b.2) := by
   obtain ⟨a, ha, b, hb, hx, ho⟩ := scan_sound _ out hit
   have ha' := (mem_tagged input a).mp ((sorted_perm input).mem_iff.mp ha)
   have hb' := (mem_tagged input b).mp ((sorted_perm input).mem_iff.mp hb)
@@ -229,8 +236,8 @@ theorem sound (input : Input) (out : ℕ × ℕ) (hit : run input = some out) :
 
 /-- Fitting keys make the radix scan exhaustive, including empty lists and arbitrary collisions. -/
 theorem none_iff (input : Input)
-    (fits : ∀ r ∈ input.2.1 ++ input.2.2, r.1 < 2 ^ input.1) :
-    run input = none ↔ ¬ ∃ a ∈ input.2.1, ∃ b ∈ input.2.2, a.1 = b.1 := by
+    (fits : ∀ r ∈ (Input.left input) ++ (Input.right input), r.1 < 2 ^ input.1) :
+    run input = none ↔ ¬ ∃ a ∈ (Input.left input), ∃ b ∈ (Input.right input), a.1 = b.1 := by
   have hfit : ∀ r ∈ tagged input, r.1 < 2 ^ input.1 := by
     intro r hr
     rcases (mem_tagged input r).mp hr with ⟨a, ha, rfl⟩ | ⟨a, ha, rfl⟩

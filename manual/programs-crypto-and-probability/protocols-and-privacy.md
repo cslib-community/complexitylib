@@ -2048,6 +2048,13 @@ $14m+4p+4q(2m+1)+13$ bits. `original_packet_resources` bounds preparation time,
 workspace and emitted packet size by $C(14m+4p+4q(2m+1)+14)^d$, with uniform
 constants $C,d$; this does not bound the subsequent search.
 
+The packet layout now has named `Packet.program`, `Packet.wordWidth` and
+`Packet.clock` accessors. `QuarterLists.first` through `QuarterLists.fourth` name
+the consecutive source arrays before the inverse calling convention reverses
+the final half. Interpreter `RunInput.parameters` and `RunInput.state` name the
+runtime header and initial finite state. These are reducible accessors; the
+encodings and component order are unchanged.
+
 `packet_original` identifies every generated packet field with the proved native
 execution. `GeneratedRunInput.run` consumes that packet's actual program and state
 using the concrete clocked finite RAM evaluator, then reads and decodes its output.

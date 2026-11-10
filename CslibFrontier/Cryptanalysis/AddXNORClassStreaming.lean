@@ -639,7 +639,8 @@ private theorem probeStep_polyTime : ComputableInPolyTime
 
 /-- Opposite packed words are evaluated singly; the retained list is captured and charged. -/
 noncomputable def probeCertificate : NativeCertificate
-    (fun q : (Input × Bool) × List (ℕ × ℕ) => probe q.1.1 q.1.2 q.2)
+    (fun q : (Input × Bool) × List (ℕ × ℕ) =>
+      let ((input, backward), retained) := q; probe input backward retained)
     (encPair (encPair encoding encBool) encNatPairList)
     encNatPairOption := by
   have hn : ComputableInPolyTime
