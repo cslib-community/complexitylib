@@ -145,6 +145,14 @@ fields such as `S.encrypt_ppt`, an admissibility hypothesis `hA` its stage certi
 that does not occur in the goal is an error. The checked
 [client](../../CslibFrontierTests/OraclePPTTactic.lean) shows each step.
 
+When either tactic fails without a timeout, its error can name one subterm that a compositional
+attempt could not certify. Both tactics decide once per file which imported rules plain search
+may use, so only the first call in a file pays for that; a heartbeat budget on one call covers it
+only if that proof is elaborated first. `[local irreducible]` on an imported definition that is
+not `Prop`-valued, such as an encoding, makes each call in its scope decide again: slower, with
+the same results. The [checked controls](../../CslibFrontierTests/PolyTimeRuleClassCache.lean)
+cover local registrations and both reducibility cases.
+
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
 ## Rewrite option matches before resource automation
