@@ -42,6 +42,13 @@ example : ComputableInSpace (fun x => decide (a x < b x) && !decide (a x = 0) ||
 example : ComputableInSpace (fun x => if a x < b x then b x - a x else 0) enc encNat S := by
   space
 
+-- Negated conditions.
+example : ComputableInSpace (fun x => if a x ≠ b x then a x else b x) enc encNat S := by
+  space
+
+example : ComputableInSpace (fun x => if ¬a x < b x then a x else b x) enc encNat S := by
+  space
+
 include hr
 
 -- Equality on a finite type selects a branch.
@@ -50,16 +57,21 @@ example : ComputableInSpace
     enc encNat S := by
   space
 
+example : ComputableInSpace (fun x => if r x ≠ .left then a x else b x) enc encNat S := by
+  space
+
 -- The value of a finite function feeding an equality: its encoding is stated first.
 example : ComputableInSpace (fun x => if (r x).opp = .left then a x else b x) enc encNat S := by
   have := budget_finite (encC := encFinEnum Dir) Dir.opp hr
   space
 
 -- Without that statement, the intermediate encoding of `budget_finite` is undetermined.
-example : True := by
-  fail_if_success
-    have : ComputableInSpace (fun x => if (r x).opp = .left then a x else b x) enc encNat S := by
-      space
-  trivial
+/--
+Failed to infer `(?encB✝ : Dir ↪ List Bool)` when applying theorem
+`Turing.MultiTapeTM.ComputableInSpace.budget_finite`.
+-/
+#guard_msgs (substring := true) in
+example : ComputableInSpace (fun x => if (r x).opp = .left then a x else b x) enc encNat S := by
+  space
 
 end SpaceTacticFinite

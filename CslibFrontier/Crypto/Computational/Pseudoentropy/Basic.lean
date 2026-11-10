@@ -36,6 +36,7 @@ strict PPT sampler's fair-bit tape as a uniform seed, including unused randomnes
 * `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGap`: the conditional-entropy prediction threshold.
 * `Cslib.Crypto.Pseudoentropy.SamplablePair.HasGapWithAdvice`: the same threshold against
   predictors given one fixed advice family.
+* `Cslib.Crypto.Pseudoentropy.encLabeledSamples`: the encoding of a list of labeled samples.
 
 ## Main results
 
@@ -212,5 +213,11 @@ theorem HasGap.mono {pair : SamplablePair} {gap smaller : ℕ → ℝ} (h : pair
   fun adversary hPPT => (h adversary hPPT).mono fun n hn => hn.trans (sub_le_sub_left (hle n) _)
 
 end SamplablePair
+
+/-- A list of labeled samples `(x, b)`, such as repeated draws of `SamplablePair.sample`: each
+sample is an observation word `x` paired with its label bit `b`, with `x` framed. The samples are
+framed and concatenated in order. -/
+abbrev encLabeledSamples : List (List Bool × Bool) ↪ List Bool :=
+  encList (encPair encBits encBool)
 
 end Cslib.Crypto.Pseudoentropy

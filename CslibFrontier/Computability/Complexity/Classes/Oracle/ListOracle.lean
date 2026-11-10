@@ -43,7 +43,7 @@ Oracles that agree on the words no longer than the clock give the same transcrip
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 3.4.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -33,6 +33,8 @@ single bit, independently of hierarchy theorems and Ladner's language.
 ## Main definitions
 
 * `Turing.MultiTapeTM.Universal.encTrueDoubled`: a bit-list encoding doubling every `true`.
+* `Turing.MultiTapeTM.Universal.eInUnary`: the encoding of universal inputs with the number of
+  steps in unary.
 * `Turing.MultiTapeTM.Universal.trueDoubleT`, `Turing.MultiTapeTM.Universal.symbolsT`: transducers
   implementing the conversion from bit words to framed unary symbols.
 
@@ -146,17 +148,23 @@ theorem computableTidilyInPolyTime_eBit :
 
 /-! ### Simulation with a unary clock -/
 
+/-- The encoding of inputs of the universal function with the number of steps in unary: the
+framed description, then the framed list of unary input symbols, then the step count in unary.
+It differs from `eIn` only in its last component, which `eIn` writes in binary. -/
+abbrev eInUnary : Desc × List ℕ × ℕ ↪ List Bool :=
+  encPair eDesc (encPair (encList encUnary) encUnary)
+
 /-- The time and space of the universal function, polynomially in the length of its input with
 the number of steps in unary. -/
 theorem universal_bounds_unary (i : Desc × List ℕ × ℕ) :
     (i.2.2 + 1) * (stepBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
         runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
           ((encNat i.2.2).length + 1) ^ 2) + ((eIn i).length + 1) ^ 2 ≤
-      100025 * ((encPair eDesc (encPair (encList encUnary) encUnary) i).length + 1) ^ 6 ∧
+      100025 * ((eInUnary i).length + 1) ^ 6 ∧
     runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 + (eIn i).length ≤
-      205 * ((encPair eDesc (encPair (encList encUnary) encUnary) i).length + 1) ^ 3 := by
+      205 * ((eInUnary i).length + 1) ^ 3 := by
   obtain ⟨d, x, t⟩ := i
-  set n := (encPair eDesc (encPair (encList encUnary) encUnary) (d, x, t)).length with hn
+  set n := (eInUnary (d, x, t)).length with hn
   have hlen : n = 2 * descLen d + 1 + (2 * (encList encUnary x).length + 1 + t) := by
     simp [hn, descLen]
   have hL := length_encNat_le t
@@ -203,9 +211,9 @@ of steps counts towards the length of the input. -/
 @[fun_prop]
 theorem computableTidilyInPolyTime_universal :
     ComputableTidilyInPolyTime universal
-      (encPair eDesc (encPair (encList encUnary) encUnary)) eOut := by
+      eInUnary eOut := by
   have hconv : ComputableTidilyInPolyTime (fun i : Desc × List ℕ × ℕ => i)
-      (encPair eDesc (encPair (encList encUnary) encUnary)) eIn := by
+      eInUnary eIn := by
     have : (fun i : Desc × List ℕ × ℕ => i) = fun i => (i.1, i.2.1, i.2.2) := rfl
     rw [this]
     fun_prop
@@ -256,7 +264,7 @@ theorem computableInPolyTime_map_ne_zero :
 @[fun_prop]
 theorem computableInPolyTime_universal :
     ComputableInPolyTime universal
-      (encPair eDesc (encPair (encList encUnary) encUnary)) eOut :=
+      eInUnary eOut :=
   .of_tidy computableTidilyInPolyTime_universal
 
 end Turing.MultiTapeTM.Universal

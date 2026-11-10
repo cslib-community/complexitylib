@@ -25,7 +25,7 @@ transducer certificates `computableInTimeAndSpace_succ`, `computableInTimeAndSpa
 * `ComputableInO.natIsZero`: linear zero testing.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 
 namespace ComputableInO

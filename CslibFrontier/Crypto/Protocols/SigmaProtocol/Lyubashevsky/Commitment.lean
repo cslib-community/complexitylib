@@ -79,11 +79,8 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
   let test := fun aw : Matrix (Fin n) (Fin m) (ZMod q) × (Fin n → ZMod q) =>
     (H aw.1).map (fun h => (cache h).lookup (msg h, aw.2 - shift aw.1 h) |>.isSome)
   have hc : CloseTo real ideal
-      (ENNReal.ofReal (Real.sqrt ((q : ℝ) ^ n / ((2 * r + 1 : ℕ) : ℝ) ^ m) / 2)) := by
-    let ε : ℝ≥0 := ⟨Real.sqrt ((q : ℝ) ^ n / ((2 * r + 1 : ℕ) : ℝ) ^ m) / 2, by positivity⟩
-    change CloseTo real ideal (ENNReal.ofReal (ε : ℝ))
-    rw [ENNReal.ofReal_coe_nnreal]
-    exact closeTo_of_dist_le (ε := ε) (dist_intBox_mulVec_le n m q r hr)
+      (ENNReal.ofReal (Real.sqrt ((q : ℝ) ^ n / ((2 * r + 1 : ℕ) : ℝ) ^ m) / 2)) :=
+    closeTo_of_dist_le_ofReal (dist_intBox_mulVec_le n m q r hr)
   have hreal : real.bind test = (do
       let A ← PMF.uniformOfFintype (Matrix (Fin n) (Fin m) (ZMod q))
       let h ← H A

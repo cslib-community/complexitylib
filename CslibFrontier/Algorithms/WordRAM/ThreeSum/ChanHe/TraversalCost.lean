@@ -27,7 +27,7 @@ These native resource estimates are original. Substituting the actual parameter 
 composing all frontend roots remain obligations of initialized-input preprocessing.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

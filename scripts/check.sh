@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
-# Check the manuals and run the Lean validation sequence of AGENTS.md; report each gate.
-# Usage: scripts/check.sh [--quick [--base REF]] (from the repository root or any worktree)
+# Check the manuals, then run the required steps of CI's `ci-checks` job (scripts/full_check.py)
+# or, with --quick, the affected-client checks (scripts/quick_check.py); report each gate.
+# REF (default origin/main) is the comparison base for checks of changed files and modules.
+# Usage: scripts/check.sh [--quick] [--base REF] (from the repository root or any worktree)
 set -u
 cd "$(dirname "$0")/.." || exit 1
+usage() {
+  echo "Usage: scripts/check.sh [--quick] [--base REF]" >&2
+  exit 2
+}
 quick=0
-if (($#)); then
-  if [ "$1" = "--quick" ]; then
-    shift
-    quick=1
-  else
-    echo "Usage: scripts/check.sh [--quick [--base REF]]" >&2
-    exit 2
-  fi
-fi
+base=origin/main
+while (($#)); do
+  case $1 in
+    --quick) quick=1 ;;
+    --base) (($# > 1)) || usage; shift; base=$1 ;;
+    --base=*) base=${1#--base=} ;;
+    *) usage ;;
+  esac
+  shift
+done
 log_dir=$(mktemp -d "${TMPDIR:-/tmp}/cslib-frontier-check.XXXXXX") || exit 1
 status=0
 gate=0
@@ -45,21 +52,14 @@ if ((status)); then
   finish
   exit "$status"
 fi
-# A quick check may restart this script for all six gates. Restore only once in that process
+# A quick check may restart this script for the full check. Restore only once in that process
 # chain, even if planning takes longer than the bootstrap's ordinary retry window.
 if [ "${COMPLEXITYLIB_CACHE_CHECK_STARTED-}" != "1" ]; then
   scripts/cache/ensure.sh || { cache_status=$?; finish; exit "$cache_status"; }
   export COMPLEXITYLIB_CACHE_CHECK_STARTED=1
 fi
-if ((quick)); then
-  finish
-  exec python3 scripts/quick_check.py "$@"
-fi
-run "build --wfail --iofail" lake build --wfail --iofail
-run "mk_all --check" lake exe mk_all --check
-run "test --wfail --iofail" lake test --wfail --iofail
-run "lint" lake lint
-run "lint-style" lake exe lint-style
-run "checkInitImports" lake exe checkInitImports
 finish
-exit $status
+if ((quick)); then
+  exec python3 scripts/quick_check.py --base "$base"
+fi
+exec python3 -B scripts/full_check.py --base "$base"
