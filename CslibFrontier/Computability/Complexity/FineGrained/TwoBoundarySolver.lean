@@ -38,8 +38,6 @@ open Turing.MultiTapeTM Cslib.GenericRAM Cslib.Complexity
 
 /-- Original formula paired with the actual full returned word. -/
 abbrev Candidate := Input × List Bool
-/-- Frame the original binary formula encoding, followed by the raw Boolean word. -/
-abbrev encCandidate : Candidate ↪ List Bool := encPair encInput encBits
 /-- Formula and raw assignment word used by both CNF and DNF evaluation. -/
 abbrev Evaluation := CNF ℕ × List Bool
 /-- Frame the signed formula, then append its actual raw assignment word. -/
@@ -69,24 +67,24 @@ private theorem dnf_eval_polytime : ComputableInPolyTime
   apply ComputableInPolyTime.allWithInput (by fun_prop)
   fun_prop
 
-private theorem check_polytime : ComputableInPolyTime check encCandidate encBool := by
+private theorem check_polytime : ComputableInPolyTime check encState encBool := by
   have he := ExactOne.BinaryPlan.eval_polytime.comp
     (show ComputableInPolyTime (fun p : Candidate => (side p.1, p.2))
-      encCandidate encEvaluation from by
-        unfold side encCandidate encInput encEvaluation
+      encState encEvaluation from by
+        unfold side encState encInput encEvaluation
         fun_prop)
   have hp : ComputableInPolyTime
       (fun p : Candidate => (conditions p.1).all fun q =>
-        DNF.eval (fun i => p.2.getD i false) q) encCandidate encBool := by
-    apply ComputableInPolyTime.allWithInput (by unfold encCandidate conditions encInput; fun_prop)
+        DNF.eval (fun i => p.2.getD i false) q) encState encBool := by
+    apply ComputableInPolyTime.allWithInput (by unfold encState conditions encInput; fun_prop)
     exact dnf_eval_polytime.comp
       (show ComputableInPolyTime (fun p : Candidate × DNF ℕ => (p.2, p.1.2))
-        (encPair encCandidate VCOne.encSignedCNF) encEvaluation from by
-          unfold encCandidate encEvaluation
+        (encPair encState VCOne.encSignedCNF) encEvaluation from by
+          unfold encState encEvaluation
           fun_prop)
   exact he.bool_and' hp
 
-private theorem finish_polytime : ComputableInPolyTime finish encCandidate encOutput := by
+private theorem finish_polytime : ComputableInPolyTime finish encState encOutput := by
   unfold finish encOutput
   exact check_polytime.ite' ((ComputableInPolyTime.optionSome encBits).comp
     (ComputableInPolyTime.snd encInput encBits)) (.const none)
