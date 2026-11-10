@@ -11,14 +11,15 @@ Each cell says whether the row class is contained in the column class: what the 
 | ✓ | A library theorem states the inclusion; the mark links to it |
 | = | The library proves both inclusions |
 | ✓* | The inclusion follows by chaining library theorems |
-| ✗ | The library proves that the inclusion fails |
+| ✗ | A library theorem states that the inclusion fails; the mark links to it |
+| ✗* | The failure follows from a library theorem and inclusions, as below |
 | (✓) | Known to hold, not yet formalized here |
 | (✗) | Known to fail, not yet formalized here |
 | ? | An open question in the literature |
 
 Known non-inclusions all come from hierarchy theorems or lower bounds: `Z ⊄ Y` gives `A ⊄ B` whenever `Z ⊆ A` and `B ⊆ Y`. For the uniform classes, complements are used too: `NP ⊆ coNP` holds exactly when `coNP ⊆ NP`.
 
-The uniform grid compares classes of bit-string languages, that is, the classes at the encoding `encBits`. Most of the linked inclusion theorems are more general and hold for every injective encoding `enc`. The strict inclusions behind the ✗ marks (`L ⊊ PSPACE`, `P ⊊ EXP`, `NP ⊊ NEXP`) are stated only for `encBits`, and they can fail for other encodings: with a single instance, every class is the same. The circuit classes are nonuniform, so they are not compared with the uniform classes: nonuniform AC⁰ already contains undecidable unary languages.
+The uniform grid compares classes of bit-string languages, that is, the classes at the encoding `encBits`. Most of the linked inclusion theorems are more general and hold for every injective encoding `enc`. The strict inclusions behind the ✗ and ✗* marks (`L ⊊ PSPACE`, `P ⊊ EXP`, `NP ⊊ NEXP`) are stated only for `encBits`, and they can fail for other encodings: with a single instance, every class is the same. The circuit classes are nonuniform, so they are not compared with the uniform classes: nonuniform AC⁰ already contains undecidable unary languages.
 
 ## Uniform classes
 
@@ -40,10 +41,10 @@ The uniform grid compares classes of bit-string languages, that is, the classes 
 | **QMA** | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/Counting.lean#L317) | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **PP** | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/Oracle/CountingEquivalence.lean#L55) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Counting/Space.lean#L53) | ✓* | ✓* | ✓* |
 | **P^#P** | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/Counting/OracleSpace.lean#L72) | ✓* | ✓* | ✓* |
-| **PSPACE** | ✗ | (✗) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [=](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L61) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L125) | ✓* |
-| **IP** | ✗ | (✗) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | [=](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L61) | · | ✓* | ✓* |
-| **EXP** | ✗ | ✗ | ✗ | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L146) |
-| **NEXP** | ✗ | ✗ | ✗ | ✗ | ✗ | (✗) | ? | ✗ | (✗) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · |
+| **PSPACE** | [✗](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L329) | (✗) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [=](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L61) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L125) | ✓* |
+| **IP** | ✗* | (✗) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | [=](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L61) | · | ✓* | ✓* |
+| **EXP** | ✗* | ✗* | [✗](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L179) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L146) |
+| **NEXP** | ✗* | ✗* | ✗* | ✗* | ✗* | (✗) | ? | [✗](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Nondeterministic.lean#L140) | (✗) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | · |
 
 <details><summary>Theorems used</summary>
 
@@ -117,12 +118,12 @@ The uniform grid compares classes of bit-string languages, that is, the classes 
 | ⊆ | AC⁰ | ACC⁰ | TC⁰ | NC¹ | AC¹ | NC² | P/poly |
 |---|---|---|---|---|---|---|---|
 | **AC⁰** | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L292) | ✓* | ✓* | ✓* |
-| **ACC⁰** | ✗ | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L336) | (✓) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |
-| **TC⁰** | ✗ | ? | · | (✓) | (✓) | (✓) | (✓) |
+| **ACC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L336) | (✓) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |
+| **TC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | ? | · | (✓) | (✓) | (✓) | (✓) |
 | **NC¹** | (✗) | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L102) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L114) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
-| **AC¹** | ✗ | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L273) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L301) |
-| **NC²** | ✗ | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
-| **P/poly** | ✗ | ? | ? | ? | ? | ? | · |
+| **AC¹** | ✗* | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L273) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L301) |
+| **NC²** | ✗* | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
+| **P/poly** | ✗* | ? | ? | ? | ? | ? | · |
 
 <details><summary>Theorems used</summary>
 

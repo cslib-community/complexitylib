@@ -190,11 +190,16 @@ def link(declaration, theorems):
 def grid_table(title, grid, theorems, problems):
     nodes = list(grid)
     facts = library_facts(grid, theorems)
-    direct = {}
+    direct, direct_non = {}, {}
     for a, relation, b, declaration in facts:
+        if relation == "not_subset":
+            direct_non.setdefault((a, b), declaration)
+            continue
         direct.setdefault((a, b), declaration)
         if relation == "eq":
             direct.setdefault((b, a), declaration)
+        if relation == "ssubset":
+            direct_non.setdefault((b, a), declaration)
     proved, refuted = close(nodes, facts, complements=False)
     literature = [f for f in LITERATURE if f[0] in grid and f[2] in grid]
     known, false = close(nodes, literature, complements=grid is UNIFORM)
@@ -213,7 +218,8 @@ def grid_table(title, grid, theorems, problems):
                 mark = "=" if (b, a) in proved else "✓" if pair in direct else "✓*"
                 cell = f"[{mark}]({link(direct[pair], theorems)})" if pair in direct else mark
             elif pair in refuted:
-                cell = "✗"
+                cell = (f"[✗]({link(direct_non[pair], theorems)})" if pair in direct_non
+                        else "✗*")
             elif pair in known:
                 cell = "(✓)"
             elif pair in false:
@@ -266,7 +272,8 @@ def render() -> str:
         "| ✓ | A library theorem states the inclusion; the mark links to it |",
         "| = | The library proves both inclusions |",
         "| ✓* | The inclusion follows by chaining library theorems |",
-        "| ✗ | The library proves that the inclusion fails |",
+        "| ✗ | A library theorem states that the inclusion fails; the mark links to it |",
+        "| ✗* | The failure follows from a library theorem and inclusions, as below |",
         "| (✓) | Known to hold, not yet formalized here |",
         "| (✗) | Known to fail, not yet formalized here |",
         "| ? | An open question in the literature |",
@@ -277,7 +284,7 @@ def render() -> str:
         "",
         "The uniform grid compares classes of bit-string languages, that is, the classes at the "
         "encoding `encBits`. Most of the linked inclusion theorems are more general and hold for "
-        "every injective encoding `enc`. The strict inclusions behind the ✗ marks "
+        "every injective encoding `enc`. The strict inclusions behind the ✗ and ✗* marks "
         "(`L ⊊ PSPACE`, `P ⊊ EXP`, `NP ⊊ NEXP`) are stated only for `encBits`, and they can fail "
         "for other encodings: with a single instance, every class is the same. The circuit "
         "classes are nonuniform, so they are "
