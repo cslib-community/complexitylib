@@ -24,7 +24,7 @@ All table and cursor premises of the internal stages are established by actual p
 The caller supplies only the original scalar headers and the ordinary coordinate list.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

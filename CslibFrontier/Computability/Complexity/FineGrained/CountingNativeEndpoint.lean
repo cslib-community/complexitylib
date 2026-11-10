@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+import CslibFrontier.Computability.PolyTime.CNF.DeclaredInput
 import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingSparsification
@@ -70,7 +71,8 @@ of [OpenAI2026ETH]. It does not assert the sharper Appendix D runtime from Theor
 namespace Cslib.Complexity.CountingNativeEndpointPrep
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
-open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff)
+open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff
+  computableInPolyTime_validDeclaredInput)
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM
 open CountingSparsify SubexponentialSAT SubexponentialSAT.ReplacementParams
 open SubexponentialSAT.SparseCountingScale Filter
@@ -164,20 +166,6 @@ private theorem finite_clamped_sizes : {N : ℕ | divisor ((), N) ≠ numGroups 
     by_contra hn
     exact h (divisor_eq_numGroups (p := ((), N)) (Nat.le_of_not_gt hn))
 
-private theorem computableInPolyTime_valid (k : ℕ) :
-    ComputableInPolyTime (fun x : Input => validDeclaredInput k x.1 x.2) encInput encBool := by
-  have hN := ComputableInPolyTime.unary_to_binary.comp
-    (ComputableInPolyTime.fst encUnary encCNF)
-  have hlt : ComputableInPolyTime
-      (fun x : Input × ℕ => decide (x.2 < x.1.1)) (encPair encInput encNat) encBool :=
-    ComputableInPolyTime.binary_lt.comp
-      ((ComputableInPolyTime.snd _ _).prod (hN.comp (ComputableInPolyTime.fst _ _)))
-  have hs : ComputableInPolyTime
-      (fun x : Input => x.2.vars.all fun v => decide (v < x.1)) encInput encBool :=
-    ComputableInPolyTime.allWithInput (by fun_prop) hlt
-  unfold validDeclaredInput
-  fun_prop
-
 private theorem numVars_le_of_valid {k : ℕ} {x : Input}
     (hx : validDeclaredInput k x.1 x.2 = true) : x.2.numVars ≤ x.1 := by
   have hsub := (validDeclaredInput_eq_true_iff.mp hx).2
@@ -211,7 +199,8 @@ private theorem exists_computableInO_selectedSearch (k : ℕ)
       (fun x => (inputSize x + 1) ^ d +
         if validDeclaredInput k x.1 x.2 then S (prepare x) else inputSize x) := by
   obtain ⟨dp, _, hp⟩ := computableInPolyTime_prepare.exists_degree
-  obtain ⟨dv, _, hv⟩ := (computableInPolyTime_valid k).exists_degree
+  obtain ⟨dv, _, hv⟩ :=
+    (computableInPolyTime_validDeclaredInput k ComputableInPolyTime.id').exists_degree
   have hcore := hsearch.comp hp.inO
   have hguard := hv.inO.ite hcore
     (ComputableInO.const (encIn := encInput) 0)

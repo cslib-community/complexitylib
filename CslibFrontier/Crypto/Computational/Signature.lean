@@ -578,10 +578,9 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       (encPair encUnary encUnary) encUnary)
     {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT (encPair encBits encBits) (limitToOneQuery bound adversary) := by
-  have hbound := hbound.tidy
-  have hcaller := ComputableTidilyInPolyTime.fst (encPair encUnary encBits)
+  have hcaller := ComputableInPolyTime.fst (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) encBool)
-  have hstate := ComputableTidilyInPolyTime.snd (encPair encUnary encBits)
+  have hstate := ComputableInPolyTime.snd (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) encBool)
   have hreq := hstate.fst'.snd'
   have hrun : IsOraclePPTOn (encPair encUnary encBits)
@@ -592,23 +591,23 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
             (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
             (oneTimeFilterHandler bound caller))
           (adversary caller.1 caller.2)).run false) := by
-    apply hadversary.run_interpret_preprocess_open (operationEncoding := encFinEnum Unit)
+    apply hadversary.run_interpret_preprocess_open' (operationEncoding := encFinEnum Unit)
       (handler := oneTimeFilterHandler bound)
       (prepare := id)
       (initial := fun _ => false)
       (resources := fun caller query => bound caller.1 query.length + 1)
-      ComputableTidilyInPolyTime.id'
-      (IsOraclePPTOn.cond hstate.snd'
-        ((ComputableTidilyInPolyTime.const ([], true)).isOraclePPTOn (Operation := Unit))
-        ((IsOraclePPTOn.query_take () hreq
-          (hbound.comp (hcaller.fst'.prod (ComputableTidilyInPolyTime.length_bits.comp hreq)))).map
-          (ComputableTidilyInPolyTime.id'.prod (.const true))))
+      ComputableInPolyTime.id'
+      (IsOraclePPTOn.cond' hstate.snd'
+        ((ComputableInPolyTime.const ([], true)).isOraclePPTOn (Operation := Unit))
+        ((IsOraclePPTOn.query_take' () hreq
+          (hbound.comp' (hcaller.fst'.prod (ComputableInPolyTime.length_bits.comp' hreq)))).map'
+          (ComputableInPolyTime.id'.prod (.const true))))
       (.const false)
       (fun _ _ => True) (fun _ => trivial)
-      (ComputableTidilyInPolyTime.unary_add.comp
-        ((hbound.comp ((ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encBits).fst'.prod
-          (ComputableTidilyInPolyTime.length_bits.comp
-            (ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encBits)))).prod
+      (ComputableInPolyTime.unary_add.comp'
+        ((hbound.comp' ((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst'.prod
+          (ComputableInPolyTime.length_bits.comp'
+            (ComputableInPolyTime.snd (encPair encUnary encBits) encBits)))).prod
           (.const 1)))
     intro caller request state _ result hresult
     unfold oneTimeFilterHandler at hresult
@@ -620,7 +619,7 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       obtain ⟨rawSig, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hsig
       refine ⟨trivial, (List.length_take_le _ _).trans (by lia), ?_⟩
       simp [encBool_apply]
-  exact (hrun.map (ComputableTidilyInPolyTime.fst _ _)).isOraclePPT
+  exact (hrun.map' (ComputableInPolyTime.fst _ _)).isOraclePPT
 
 /-- Running an adaptive program filtered through `oneTimeFilterHandler` against
 `signingOracleOf sign` produces the same distribution as running it against

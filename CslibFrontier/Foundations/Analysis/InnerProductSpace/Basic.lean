@@ -24,7 +24,7 @@ Expanding `‖∑ i ∈ s, f i‖ ^ 2 = ⟪∑ i ∈ s, f i, ∑ j ∈ s, f j⟫
   ordered pairs of distinct indices.
 -/
 
-@[expose] public section
+public section
 
 open Finset
 open scoped RealInnerProductSpace

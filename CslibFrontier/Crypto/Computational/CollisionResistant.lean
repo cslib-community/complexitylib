@@ -18,6 +18,7 @@ import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Crypto.Game.Order
 
 /-!
 # Keyed collision-resistant hash families and compression functions
@@ -256,8 +257,7 @@ theorem succProbability_collisionGameFor_map_le
       (collisionGameFor (fun m => (setup₁ m).map (f m)) H₂ valid₂ adversary n) ≤
       Game.succProbability
         (collisionGameFor setup₁ H₁ valid₁ (fun m p₁ => adversary m (f m p₁)) n) := by
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+  apply Game.succProbability_mono
   simp only [collisionGameFor, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
   refine PMF.bind_apply_mono_on_support _ _ fun p₁ hp₁ =>
     PMF.map_true_mono _ fun pair _ hcol => ?_
@@ -459,8 +459,7 @@ theorem succProbability_collisionGame_le_of_extract
           (fun m k => do
             let pair ← adversary m k
             return extract m k pair.1 pair.2) n)) := by
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+  apply Game.succProbability_mono
   simp only [collisionGame, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   refine PMF.bind_apply_mono_on_support _ _ fun k hk => PMF.map_true_mono _ fun pair _ hcol => ?_
   rw [BitString.eval_sampleList] at hk

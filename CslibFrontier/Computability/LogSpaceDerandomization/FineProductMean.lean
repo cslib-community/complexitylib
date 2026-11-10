@@ -168,12 +168,8 @@ theorem conditionalTableMean_change_terminal {πa πb : ℝ} (hπb : 0 < πb)
         (fun σ x y => (πa / πb) * D σ x y) x y =
       conditionalTableMean (fun (σ : Γ × Υ) x => X σ.1 x)
         (fun (σ : Γ × Υ) y => Yb σ.2 y) D x y := by
-  have hT : ({τ | Yb τ y} : Finset Υ).Nonempty := by
-    apply dens_ne_zero.mp
-    intro hz
-    have hpos : (0 : ℝ) < dens {τ | Yb τ y} := by rw [hYbπ]; exact hπb
-    rw [hz] at hpos
-    norm_num at hpos
+  have hT : ({τ | Yb τ y} : Finset Υ).Nonempty :=
+    dens_pos.mp (by exact_mod_cast hπb.trans_eq (hYbπ y).symm)
   have hTS : ({τ | Yb τ y} : Finset Υ) ⊆ ({τ | Ya τ y} : Finset Υ) := by grind
   rw [conditionalTableMean_two_product, conditionalTableMean_two_product,
     expect_product, expect_product]

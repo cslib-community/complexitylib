@@ -484,7 +484,9 @@ private theorem exists_computableInO_verifier (k : ℕ) :
   have hsz : ComputableInO (fun z : List Bool => Nat.size z.length) encBits encUnary
       (fun z => (z.length + 1) ^ 2 + (encNat z.length).length)
       (fun z => z.length + 1 + (encNat z.length).length) :=
-    (ComputableInO.lengthUnary.comp (ComputableInO.lengthNat.of_enc_eq (encC := encBits)
+    (ComputableInO.lengthUnary.comp ((ComputableInO.lengthNat.mono 1
+      (T' := fun z : List Bool => (z.length + 1) ^ 2) (S' := fun z => z.length + 1)
+      (fun z => by nlinarith) fun z => by omega).of_enc_eq (encC := encBits)
       (g := fun z : List Bool => encNat z.length) fun _ => rfl)).of_enc_eq fun z => by
         simp [encNat_apply, Nat.size_eq_bits_len]
   have hL : ComputableInPolyTime (fun z : List Bool => (k + 2) * (z.length + 1)) encBits

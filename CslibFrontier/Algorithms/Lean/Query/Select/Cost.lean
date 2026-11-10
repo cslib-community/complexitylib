@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Algorithms.Lean.Query.Select.Correctness
 public import CslibFrontier.Algorithms.Lean.Query.Sort.Merge.CountBound
 public import Cslib.Algorithms.Lean.Query.Bounds
-import all CslibFrontier.Algorithms.Lean.Query.Select.Defs
 
 /-!
 # A linear comparison bound for deterministic selection

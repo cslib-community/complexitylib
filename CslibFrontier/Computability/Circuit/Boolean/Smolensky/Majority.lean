@@ -35,7 +35,7 @@ prime `p` (`parity_notMem_AC0Mod`), neither is majority, and since majority is i
   complexity*][Smolensky1987]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Smolensky
 

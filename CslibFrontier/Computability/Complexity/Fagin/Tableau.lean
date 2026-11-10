@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau.Defs
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau.Semantics
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Existential second-order tableau sentence on `Fin B`
@@ -176,9 +177,7 @@ private theorem agreesAt_step_of_realize_stepSentence {L' : Language.{0, 0}}
   have hb := abs_workTapePos_runFrom_add_one_lt tm B (u ++ w) n hn
   have hb' : ∀ i : Fin m, |(tm.runFrom (tm.initCfg (u ++ w)) n).workTapePos i| < B :=
     fun i => by have := hb i; omega
-  simp only [stepSentence, realize_closeAll, Formula.realize_imp, Formula.realize_inf,
-    Formula.realize_iInf, Formula.realize_iff, Formula.realize_iAlls, realize_succ hlt,
-    realize_rel₁, realize_rel₂, Sum.elim_inl, Sum.elim_inr] at hstepSent
+  fo_simp [stepSentence, realize_succ hlt] at hstepSent
   let y : Fin 2 → Fin B := ![⟨n, by omega⟩, ⟨n + 1, hn⟩]
   obtain ⟨⟨⟨hs_state, hs_out⟩, hs_inPos⟩, hs_work⟩ := hstepSent y rfl
   rw [runFrom_succ]
@@ -241,8 +240,7 @@ private theorem realize_acceptSentence_iff_of_agreesAt {L' : Language.{0, 0}}
     {w : List Bool} {cfg : Cfg m Bool State w}
     (hA : r.AgreesAt cfg (⟨B - 1, by omega⟩ : Fin B)) :
     (acceptSentence r).Realize (Fin B) ↔ cfg.state = none ∧ cfg.output = [true] := by
-  simp only [acceptSentence, realize_closeAll, Formula.realize_imp, Formula.realize_inf,
-    realize_isMax hlt, realize_rel₁]
+  fo_simp [acceptSentence, realize_isMax hlt]
   refine ⟨fun h => ?_, fun ⟨hhalt, hout⟩ y hy => ?_⟩
   · obtain ⟨hs, ho⟩ := h ![(⟨B - 1, by omega⟩ : Fin B)] rfl
     exact ⟨(hA.state none).1 hs, OutView.ofList_eq_one_iff.1 ((hA.out (.one true)).1 ho)⟩

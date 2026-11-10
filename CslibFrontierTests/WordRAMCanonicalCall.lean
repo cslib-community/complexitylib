@@ -13,6 +13,8 @@ import CslibFrontier.Computability.WordRAM.Subroutine
 
 A permuted finite bank writes memory before returning. The caller continues with that actual
 memory, using its preserved destination register. Unused caller words may be arbitrarily dirty.
+A failed call names the goal and the contracts accepted there, and the words `renamed` and
+`canonical` of the call forms remain identifiers.
 -/
 
 namespace CslibFrontierTests.WordRAMCanonicalCall
@@ -88,5 +90,35 @@ example : ∃ x : Data 4, ∃ y : Data 2,
     (y.extend bank x).regs 1 = x.regs 1 ∧ (y.extend bank x).mem 8 ≠ x.mem 8 := by
   refine ⟨⟨fun _ => 1000, fun _ => 17⟩, ⟨fun _ => 3, fun _ => 29⟩, ?_, by decide⟩
   wram_simp
+
+/-! ## Failure messages -/
+
+/--
+error: wram_call: the contract does not apply to the goal
+  WP 8 (Code.rename bank writeSeven) x fun x t => t ≤ 3
+For the goal `WP w (c.rename f) x Q`, the contract must have type
+`∃ y, ExecWithin w c (x.comap f) y T ∧ P y`, with `hf : f.Injective`.
+-/
+#guard_msgs (whitespace := lax, substring := true) in
+example (x : Data 4) (h : ∃ y, ExecWithin 8 writeSeven (Data.init []) y 3 ∧ True) :
+    WP 8 (writeSeven.rename bank) x (fun _ t => t ≤ 3) := by
+  wram_call h canonical (by decide : bank.Injective) with y _
+
+/--
+error: wram_call: the contract does not apply to the goal
+  WP.Exact 8 (Code.rename bank writeSeven) x fun x t => t = 3
+The canonical form has no rule for exact instruction counts; at a `WP.Exact` goal, use
+`wram_call h renamed hf with …`.
+The contract has type
+  ∃ y, Exec 8 writeSeven (Data.comap bank x) y 3 ∧ True
+-/
+#guard_msgs (whitespace := lax) in
+example (x : Data 4) (h : ∃ y, Exec 8 writeSeven (x.comap bank) y 3 ∧ True) :
+    WP.Exact 8 (writeSeven.rename bank) x (fun _ t => t = 3) := by
+  wram_call h canonical (by decide : bank.Injective) with y _
+
+/-- The words `renamed` and `canonical` of the call forms remain identifiers for importers. -/
+example (renamed canonical : ℕ) : renamed + canonical = canonical + renamed :=
+  Nat.add_comm renamed canonical
 
 end CslibFrontierTests.WordRAMCanonicalCall
