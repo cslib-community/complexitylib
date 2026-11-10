@@ -100,7 +100,7 @@ private theorem le_sum_prod_edge (P : Path p.n) (q : Fin p.n → Prop) [Decidabl
   have hcard : ((Finset.univ.filter fun x : Fin p.n × Fin p.n × Fin p.n => q x.1).filter
       fun c => (if c = P.edge c.1 then 1 else 0) ≠ 0).card = (Finset.univ.filter q).card := by
     rw [Finset.card_filter, Finset.card_eq_sum_ones,
-      ← sum_ite_section q P.edge (fun _ => rfl) fun _ => 1]
+      ← sum_ite_section q P.edge (fun _ => rfl) fun _ _ => 1]
     exact Finset.sum_congr rfl fun c _ => by split_ifs <;> first | rfl | omega
   have key := Finset.le_sum_finsuppAntidiag_prod_linear hS t
     (fun c => if c = P.edge c.1 then 1 else 0) (fun c => if c = P.edge c.1 then ε else 1)
@@ -108,12 +108,12 @@ private theorem le_sum_prod_edge (P : Path p.n) (q : Fin p.n → Prop) [Decidabl
   rw [hcard] at key
   refine le_trans (le_of_eq ?_) (key.trans (le_of_eq ?_))
   · congr 2
-    rw [← Finset.prod_const, ← prod_ite_section q P.edge (fun _ => rfl) fun _ =>
+    rw [← Finset.prod_const, ← prod_ite_section q P.edge (fun _ => rfl) fun _ _ =>
       (t : ℝ) / (Finset.univ.filter fun x : Fin p.n × Fin p.n × Fin p.n => q x.1).card + ε]
     exact Finset.prod_congr rfl fun c _ => by split_ifs <;> simp
   · congr 1
     refine Finset.sum_congr rfl fun x _ => ?_
-    rw [← prod_ite_section q P.edge (fun _ => rfl) fun c => x c + ε]
+    rw [← prod_ite_section q P.edge (fun _ => rfl) fun _ c => x c + ε]
     exact Finset.prod_congr rfl fun c _ => by split_ifs <;> simp
 
 omit [NeZero p.n] in

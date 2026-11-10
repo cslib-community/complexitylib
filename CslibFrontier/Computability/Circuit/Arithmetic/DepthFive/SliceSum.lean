@@ -109,11 +109,11 @@ product over all variables of these layers. -/
 `t` is a sum over all variables of these layers. -/]
 theorem prod_ite_section {R : Type*} [CommMonoid R] (q : Fin p.n → Prop) [DecidablePred q]
     (c : Fin p.n → Fin p.n × Fin p.n × Fin p.n) (hc : ∀ t, (c t).1 = t)
-    (f : Fin p.n × Fin p.n × Fin p.n → R) :
-    ∏ x with q x.1, (if x = c x.1 then f x else 1) = ∏ t with q t, f (c t) := by
+    (f : Fin p.n → Fin p.n × Fin p.n × Fin p.n → R) :
+    ∏ x with q x.1, (if x = c x.1 then f x.1 x else 1) = ∏ t with q t, f t (c t) := by
   rw [← Finset.prod_filter, Finset.filter_filter]
   refine (Finset.prod_bij (fun t _ => c t) (fun t ht => ?_) (fun t _ t' _ h => ?_)
-    (fun x hx => ?_) fun _ _ => rfl).symm
+    (fun x hx => ?_) fun t _ => by rw [hc]).symm
   · rw [Finset.mem_filter, hc]
     exact ⟨Finset.mem_univ _, (Finset.mem_filter.1 ht).2, rfl⟩
   · rw [← hc t, ← hc t', h]
