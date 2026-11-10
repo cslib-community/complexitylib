@@ -17,7 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
@@ -245,10 +245,8 @@ private noncomputable def doubleJointOracle (S : IndexedSignatureScheme) (b : Bo
     (challengeSk otherSk : List Bool) (bound : ℕ → ℕ → ℕ) (n : ℕ) (q : Unit × List Bool)
     (state : List (ℕ × List Bool) × List (ℕ × List Bool)) :
     PMF (List Bool × List (ℕ × List Bool) × List (ℕ × List Bool)) :=
-  ((OracleComp.interpret
-    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-      (fun q' s' => ProbComp.eval (S.indexedSigningOracle n challengeSk q' s')))
-    (S.doubleHandler b otherSk bound n q state.1)).run state.2).map
+  (ProbOracleComp.runWith (fun q' s' => ProbComp.eval (S.indexedSigningOracle n challengeSk q' s'))
+      (S.doubleHandler b otherSk bound n q state.1) state.2).map
       (fun r => (r.1.1, r.1.2, r.2))
 
 /-- Invariant relating the outer log `signed` and the inner `S`-oracle log `ext`: `0` has been used
@@ -271,13 +269,10 @@ private theorem doubleJointOracle_planted {S : IndexedSignatureScheme} {b : Bool
           requestDecoder.decode w :: signed, (0, (requestDecoder.decode w).2) :: ext) := by
   have hpos : 0 < S.capacity n := hcap
   have hnot0 : 0 ∉ ext.map Prod.fst := fun h0 => hfresh.2 (hslot ▸ hinv.1.mp h0)
-  unfold doubleJointOracle doubleHandler
-  simp only [hfresh.1, hfresh.2, not_false_eq_true, and_self, ↓reduceIte]
-  simp only [hslot, ↓reduceIte, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.interpret_query, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
-  simp only [StateT.run, indexedSigningOracle, requestDecoder.decode_enc, hpos, hnot0,
-    not_false_eq_true, and_self, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind,
-    PMF.pure_map]
+  simp only [doubleJointOracle, doubleHandler, hfresh.1, hfresh.2, not_false_eq_true, and_self,
+    ↓reduceIte]
+  simp only [hslot, ↓reduceIte, indexedSigningOracle, requestDecoder.decode_enc, hpos, hnot0,
+    not_false_eq_true, and_self, runWith_norm, pmf_norm]
 
 private theorem doubleJointOracle_unplanted {S : IndexedSignatureScheme} {b : Bool}
     {challengeSk otherSk : List Bool} {bound : ℕ → ℕ → ℕ} {n : ℕ}
@@ -287,10 +282,8 @@ private theorem doubleJointOracle_unplanted {S : IndexedSignatureScheme} {b : Bo
     doubleJointOracle S b challengeSk otherSk bound n ((), w) (signed, ext) =
       (ProbComp.eval (S.sign otherSk 0 (requestDecoder.decode w).2)).bind fun σ =>
         PMF.pure (σ, requestDecoder.decode w :: signed, ext) := by
-  unfold doubleJointOracle doubleHandler
-  simp only [hfresh.1, hfresh.2, not_false_eq_true, and_self, ↓reduceIte]
-  simp only [hslot, ↓reduceIte, OracleComp.interpret_map, StateT.run_map,
-    ProbOracleComp.run_interpret_sample, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
+  simp only [doubleJointOracle, doubleHandler, hfresh.1, hfresh.2, not_false_eq_true, and_self,
+    ↓reduceIte, hslot, runWith_norm, pmf_norm]
   rfl
 
 private theorem doubleJointOracle_refused {S : IndexedSignatureScheme} {b : Bool}
@@ -300,8 +293,7 @@ private theorem doubleJointOracle_refused {S : IndexedSignatureScheme} {b : Bool
       (requestDecoder.decode w).1 ∉ signed.map Prod.fst)) :
     doubleJointOracle S b challengeSk otherSk bound n ((), w) (signed, ext) =
       PMF.pure ([], signed, ext) := by
-  simp only [doubleJointOracle, doubleHandler, href, ↓reduceIte, OracleComp.interpret_pure,
-    StateT.run_pure, PMF.monad_pure_eq_pure, PMF.pure_map]
+  simp only [doubleJointOracle, doubleHandler, href, ↓reduceIte, runWith_norm, pmf_norm]
 
 private theorem doubleLogInv_preserve {S : IndexedSignatureScheme} {b : Bool}
     {challengeSk otherSk : List Bool} {bound : ℕ → ℕ → ℕ} {n : ℕ} (hcap : 1 ≤ S.capacity n)
@@ -349,34 +341,28 @@ private theorem map_run_doubleJointOracle {S : IndexedSignatureScheme}
     {α : Type} (program : WordOracleComp Unit α) :
     let bundledSk := if b then encPair encBits encBits (otherSk, challengeSk)
       else encPair encBits encBits (challengeSk, otherSk)
-    (((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (doubleJointOracle S b challengeSk otherSk bound n))
-        program).run ([], [])).map (fun r => (r.1, r.2.1)) =
+    ((ProbOracleComp.runWith (doubleJointOracle S b challengeSk otherSk bound n) program
+        ([], [])).map (fun r => (r.1, r.2.1)) =
       ProbComp.eval ((OracleComp.interpret
         (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
           ((S.double hcap).indexedSigningOracle n bundledSk))
         program).run [])) ∧
-    ∀ r ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (doubleJointOracle S b challengeSk otherSk bound n))
-        program).run ([], [])).support,
+    ∀ r ∈ (ProbOracleComp.runWith (doubleJointOracle S b challengeSk otherSk bound n) program
+        ([], [])).support,
       doubleLogInv b r.2 := by
   intro bundledSk
-  have hinvAll : ∀ r ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (doubleJointOracle S b challengeSk otherSk bound n))
-        program).run ([], [])).support,
+  have hinvAll : ∀ r ∈ (ProbOracleComp.runWith (doubleJointOracle S b challengeSk otherSk bound n)
+      program ([], [])).support,
       doubleLogInv b r.2 := by
     intro r hr
-    exact ProbOracleComp.run_interpret_invariant
+    exact ProbOracleComp.runWith_invariant
       (oracle := doubleJointOracle S b challengeSk otherSk bound n)
       (invariant := doubleLogInv b)
       (fun q st hst a next hmem => doubleLogInv_preserve (hcap n) q st hst a next hmem)
       program ([], []) ⟨by simp, by simp⟩ r.1 r.2 hr
   refine ⟨?_, hinvAll⟩
-  rw [ProbOracleComp.eval_run_interpret]
-  refine ProbOracleComp.run_interpret_map_state_of_invariant _ _
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+  refine ProbOracleComp.runWith_map_state_of_invariant _ _
     Prod.fst (doubleLogInv b)
     (fun q st hst a next hmem => doubleLogInv_preserve (hcap n) q st hst a next hmem)
     ?_ program ([], []) ⟨by simp, by simp⟩
@@ -396,8 +382,7 @@ private theorem map_run_doubleJointOracle {S : IndexedSignatureScheme}
           simp only [bundledSk, ↓reduceIte, double, doubleSign, doubleKeyDecoder.decode_enc, h1,
             Nat.one_ne_zero]
       simp only [indexedSigningOracle, capacity_double, hfresh.1, hfresh.2, not_false_eq_true,
-        and_self, ↓reduceIte, hdouble, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind,
-        PMF.pure_map]
+        and_self, ↓reduceIte, hdouble, pmf_norm]
       refine PMF.bind_congr_on_support _ _ _ fun σ hσ => ?_
       rw [List.take_of_length_le (hbound _ σ hσ)]
     · rw [doubleJointOracle_unplanted hfresh hslot]
@@ -417,27 +402,19 @@ private theorem map_run_doubleJointOracle {S : IndexedSignatureScheme}
             omega
           simp only [bundledSk, ↓reduceIte, double, doubleSign, doubleKeyDecoder.decode_enc, h0]
       simp only [indexedSigningOracle, capacity_double, hfresh.1, hfresh.2, not_false_eq_true,
-        and_self, ↓reduceIte, hdouble, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind,
-        PMF.pure_map]
+        and_self, ↓reduceIte, hdouble, pmf_norm]
   · rw [doubleJointOracle_refused hfresh]
-    simp only [indexedSigningOracle, capacity_double, hfresh, ↓reduceIte, ProbComp.eval_pure,
-      PMF.pure_map]
+    simp only [indexedSigningOracle, capacity_double, hfresh, ↓reduceIte, pmf_norm]
 
 private theorem eval_indexedEufCmaGame_doubleForgerAt (S : IndexedSignatureScheme)
     (bound : ℕ → ℕ → ℕ) (adversary : IndexedForger) (b : Bool) (n : ℕ) :
     ProbComp.eval (S.indexedEufCmaGame (S.doubleForgerAt bound adversary b) n) =
       (ProbComp.eval (S.keyGen n)).bind fun challenge =>
         (ProbComp.eval (S.keyGen n)).bind fun other =>
-          ((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (doubleJointOracle S b challenge.2 other.2 bound n))
-            (adversary n (doublePlantPk b challenge.1 other.1))).run ([], [])).map fun r =>
+          (ProbOracleComp.runWith (doubleJointOracle S b challenge.2 other.2 bound n)
+              (adversary n (doublePlantPk b challenge.1 other.1)) ([], [])).map fun r =>
               !r.2.2.contains (0, r.1.2.1) && S.verify challenge.1 0 r.1.2.1 r.1.2.2 := by
-  simp only [indexedEufCmaGame, doubleForgerAt, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, OracleComp.interpret_pure,
-    StateT.run_bind, StateT.run_pure, ProbOracleComp.run_interpret_sample,
-    ProbOracleComp.run_interpret_run_interpret, PMF.bind_map, PMF.bind_bind, PMF.pure_bind,
-    Function.comp_def]
+  simp only [indexedEufCmaGame, doubleForgerAt, runWith_norm, pmf_norm]
   rfl
 
 /-- **Plug-and-pray bound for `S.double hcap`** ([BonehShoup2023], Section 14.6.1, Exercise 13.2):
@@ -457,9 +434,7 @@ theorem succProbability_indexedEufCmaGame_double_le {S : IndexedSignatureScheme}
       ProbComp.eval (S.indexedEufCmaGame (S.doubleForger bound adversary) n) =
         (ProbComp.eval (ProbComp.uniform Bool)).bind fun b =>
           ProbComp.eval (S.indexedEufCmaGame (S.doubleForgerAt bound adversary b) n) := by
-    simp only [indexedEufCmaGame, doubleForger, ProbComp.eval_bind, ProbComp.eval_pure,
-      ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, StateT.run_bind,
-      ProbOracleComp.run_interpret_sample, PMF.bind_map, PMF.bind_bind, Function.comp_def]
+    simp only [indexedEufCmaGame, doubleForger, runWith_norm, pmf_norm]
     exact PMF.bind_comm _ _ _
   have htwo :
       (2 : ℝ≥0∞) * (ProbComp.eval (S.indexedEufCmaGame (S.doubleForger bound adversary) n)) true =
@@ -530,8 +505,7 @@ theorem succProbability_indexedEufCmaGame_double_le {S : IndexedSignatureScheme}
           (ProbComp.eval (S.keyGen n)).bind fun k₁ => slotEvent false k₀ k₁) true +
         ((ProbComp.eval (S.keyGen n)).bind fun k₀ =>
           (ProbComp.eval (S.keyGen n)).bind fun k₁ => slotEvent true k₀ k₁) true := by
-    simp only [indexedEufCmaGame, double, doubleKeyGen, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.bind_bind, PMF.pure_bind]
+    simp only [indexedEufCmaGame, double, doubleKeyGen, pmf_norm]
     rw [PMF.bind_apply, PMF.bind_apply, PMF.bind_apply, ← tsum_add]
     refine tsum_le_tsum fun k₀ => ?_
     rw [← mul_add, PMF.bind_apply, PMF.bind_apply, PMF.bind_apply, ← tsum_add]

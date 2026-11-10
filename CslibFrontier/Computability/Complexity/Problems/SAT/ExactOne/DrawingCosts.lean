@@ -42,7 +42,7 @@ namespace Cslib.Complexity.SAT.ExactOne
 open Cslib.Logic.PL Orthogonal
 
 private def sourceSlot (p : ClauseProfile) (e : LocalIncidence) : Option ℕ :=
-  match (profileVariables p).getD e.2.1 (.inl (.inl 0)) with
+  match (profileVariables p).getD e.variableIndex (.inl (.inl 0)) with
   | .inl (.inl j) => some j
   | _ => none
 
@@ -74,9 +74,9 @@ private theorem clause_routes_grouped (φ : CNF ℕ) (d : Graph.OrthogonalDrawin
   let g := profilePrefixGeometry (clauseProfile c)
   let s := clausePorts φ d i
   let f (e : LocalIncidence) : LocalIncidence :=
-    (e.1, e.2.1, if e.2.1 ∈ g.terminalVariables then
-      collarPrefixRoute s (terminalIndex g e.2.1) e.2.2
-      else collarRoute (collarReflected s) e.2.2)
+    (e.1, e.variableIndex, if e.variableIndex ∈ g.terminalVariables then
+      collarPrefixRoute s (terminalIndex g e.variableIndex) e.route
+      else collarRoute (collarReflected s) e.route)
   simpa only [clauseGeometry, collaredPrefixGeometry, List.map_flatMap, List.filter_map,
     Function.comp_def] using congrArg (List.map f) (prefix_routes_grouped (clauseProfile c))
 
@@ -104,14 +104,14 @@ private theorem positiveDrawing_weight (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
       (φ.zipIdx.map fun a => ((clauseGeometry φ d a.2 a.1).incidenceRoutes.map fun e =>
         weight (positiveIncidenceRoute φ d a.2 a.1 e)).sum).sum := by
   have hlocal (c : Clause ℕ) (i : ℕ) :
-      (((positiveClauseBlock φ d i c).flatMap fun a => a.2.2).map weight).sum =
+      (((positiveClauseBlock φ d i c).flatMap fun pc => pc.routes).map weight).sum =
         ((clauseGeometry φ d i c).incidenceRoutes.map fun e =>
           weight (positiveIncidenceRoute φ d i c e)).sum := by
     have he := congrArg (fun es => (es.map fun e =>
       weight (positiveIncidenceRoute φ d i c e)).sum) (clause_routes_grouped φ d i c)
-    simpa only [positiveClauseBlock, List.flatMap_map, List.map_flatMap, List.map_map,
-      Function.comp_def] using he
-  change (((positivePlacedClauses φ d).flatMap fun c => c.2.2).map weight).sum = _
+    simpa only [positiveClauseBlock, PositivePlacedClause.routes, List.flatMap_map,
+      List.map_flatMap, List.map_map, Function.comp_def] using he
+  change (((positivePlacedClauses φ d).flatMap fun pc => pc.routes).map weight).sum = _
   rw [positivePlacedClauses, List.flatMap_assoc, List.map_flatMap]
   rw [List.flatMap_def, List.sum_flatten, List.map_map]
   apply congrArg List.sum
@@ -128,9 +128,9 @@ The conservative collar allowance is charged once per local incidence. -/
 theorem clauseGeometry_local_costs {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) {i : ℕ}
     (hi : i < φ.length) (c : Clause ℕ) :
-    (((clauseGeometry φ d i c).incidenceRoutes.map fun e => e.2.2.consecutivePairs.length).sum ≤
+    (((clauseGeometry φ d i c).incidenceRoutes.map fun e => e.route.consecutivePairs.length).sum ≤
       575) ∧
-      (((clauseGeometry φ d i c).incidenceRoutes.map fun e => wireLength e.2.2).sum ≤
+      (((clauseGeometry φ d i c).incidenceRoutes.map fun e => wireLength e.route).sum ≤
         40252600) := by
   let p := clauseProfile c
   let g := profilePrefixGeometry p
@@ -139,37 +139,32 @@ theorem clauseGeometry_local_costs {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
   have hg := profilePrefixGeometry_check p
   have hmeta := profilePrefixGeometry_costs p
   have hseg (e : LocalIncidence) (he : e ∈ g.incidenceRoutes) :
-      (profileCollarRoute p s e).consecutivePairs.length ≤ e.2.2.consecutivePairs.length + 7 := by
+      (profileCollarRoute p s e).consecutivePairs.length ≤ e.route.consecutivePairs.length + 7 := by
     unfold profileCollarRoute
     split_ifs with ht
     · have hend := (LocalGeometry.prefix_incidence_endpoints hg he).2.2.2
-      rw [profile_prefix_terminal_endpoint p e.2.1 ht] at hend
+      rw [profile_prefix_terminal_endpoint p e.variableIndex ht] at hend
       rw [consecutivePairs_length_collarPrefixRoute hs hend]
       exact Nat.add_le_add_left ((collar_route_costs s hs _).1) _
     · rw [consecutivePairs_length_collarRoute]
       omega
   have hwire (e : LocalIncidence) (he : e ∈ g.incidenceRoutes) :
-      wireLength (profileCollarRoute p s e) ≤ wireLength e.2.2 + 600000 := by
+      wireLength (profileCollarRoute p s e) ≤ wireLength e.route + 600000 := by
     unfold profileCollarRoute
     split_ifs with ht
     · have hend := (LocalGeometry.prefix_incidence_endpoints hg he).2.2.2
-      rw [profile_prefix_terminal_endpoint p e.2.1 ht] at hend
+      rw [profile_prefix_terminal_endpoint p e.variableIndex ht] at hend
       rw [wireLength_collarPrefixRoute hs hend]
       exact Nat.add_le_add_left ((collar_route_costs s hs _).2) _
     · rw [wireLength_collarRoute]
       omega
-  have hsc : ((g.incidenceRoutes.map fun e => e.2.2.consecutivePairs.length).sum) ≤ 113 := by
+  have hsc : ((g.incidenceRoutes.map fun e => e.route.consecutivePairs.length).sum) ≤ 113 := by
     simpa only [segmentCount_eq] using hmeta.2.2.2.1
   have hlen : g.incidenceRoutes.length ≤ 66 := hmeta.2.2.1
-  have hwc : (g.incidenceRoutes.map fun e => wireLength e.2.2).sum ≤ 652600 := hmeta.2.2.2.2.1
+  have hwc : (g.incidenceRoutes.map fun e => wireLength e.route).sum ≤ 652600 := hmeta.2.2.2.2.1
   have hs' := List.sum_le_sum hseg
   have hw' := List.sum_le_sum hwire
-  have hconst (n : ℕ) : (g.incidenceRoutes.map fun _ => n).sum =
-      g.incidenceRoutes.length * n := by
-    rw [show g.incidenceRoutes.map (fun _ => n) =
-      List.replicate g.incidenceRoutes.length n from List.map_const, List.sum_replicate]
-    rfl
-  rw [List.sum_map_add, hconst] at hs' hw'
+  rw [List.sum_map_add, List.map_const', List.sum_replicate_nat] at hs' hw'
   constructor
   · simp only [clauseGeometry, collaredPrefixGeometry, List.map_map, Function.comp_def]
     change (g.incidenceRoutes.map fun e => (profileCollarRoute p s e).consecutivePairs.length).sum
@@ -183,16 +178,16 @@ private theorem positiveIncidenceRoute_wireLength {φ : CNF ℕ} {d : Graph.Orth
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) {i : ℕ}
     (hi : i < φ.length) {e : LocalIncidence}
     (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) :
-    wireLength (positiveIncidenceRoute φ d i φ[i] e) = wireLength e.2.2 +
+    wireLength (positiveIncidenceRoute φ d i φ[i] e) = wireLength e.route +
       (sourceSlot (clauseProfile φ[i]) e).elim 0
         (fun j => wireLength (positiveExterior φ d i j)) := by
   unfold positiveIncidenceRoute sourceSlot
-  generalize hget : (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) = v
+  generalize hget : (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) = v
   rcases v with (j | _) | _
   · obtain ⟨q, hlast, hhead⟩ := positiveIncidenceRoute_join_endpoints hd hi
       (profilePrefixGeometry_check _) he hget
     change wireLength (positiveStem φ d i e ++ (positiveExterior φ d i j).tail) =
-      wireLength e.2.2 + wireLength (positiveExterior φ d i j)
+      wireLength e.route + wireLength (positiveExterior φ d i j)
     rw [wireLength_join hlast hhead]
     simp only [positiveStem, wireLength_translate]
   all_goals simp [wireLength_translate]
@@ -202,17 +197,17 @@ private theorem positiveIncidenceRoute_segmentCount {φ : CNF ℕ} {d : Graph.Or
     (hi : i < φ.length) {e : LocalIncidence}
     (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) :
     (positiveIncidenceRoute φ d i φ[i] e).consecutivePairs.length =
-      e.2.2.consecutivePairs.length + (sourceSlot (clauseProfile φ[i]) e).elim 0
+      e.route.consecutivePairs.length + (sourceSlot (clauseProfile φ[i]) e).elim 0
         (fun j => (positiveExterior φ d i j).consecutivePairs.length) := by
   unfold positiveIncidenceRoute sourceSlot
-  generalize hget : (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) = v
+  generalize hget : (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) = v
   rcases v with (j | _) | _
   · obtain ⟨q, hlast, hhead⟩ := positiveIncidenceRoute_join_endpoints hd hi
       (profilePrefixGeometry_check _) he hget
     change (positiveStem φ d i e ++ (positiveExterior φ d i j).tail).consecutivePairs.length =
-      e.2.2.consecutivePairs.length + (positiveExterior φ d i j).consecutivePairs.length
+      e.route.consecutivePairs.length + (positiveExterior φ d i j).consecutivePairs.length
     rw [consecutivePairs_join hlast hhead, List.length_append]
-    simp only [positiveStem, segmentCount_eq, translate, List.length_map]
+    simp only [positiveStem, consecutivePairs_length_translate]
   all_goals simp [translate]
 
 private theorem sourceEdgeIndex_occurrence (φ : CNF ℕ) {o : Occurrence ℕ}
@@ -250,16 +245,12 @@ private theorem source_edge_weight_sum {φ : CNF ℕ} {d : Graph.OrthogonalDrawi
       exact List.map_congr_left fun o ho => by rw [sourceEdgeIndex_occurrence φ ho]
     _ = _ := congrArg List.sum hlist
 
-private theorem segmentCount_translate (v : Point) (r : Route) :
-    (translate v r).consecutivePairs.length = r.consecutivePairs.length := by
-  simp only [segmentCount_eq, translate, List.length_map]
-
 private theorem exterior_segment_sum {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) :
     (φ.zipIdx.map fun a => (a.1.zipIdx.map fun l =>
       (positiveExterior φ d a.2 l.2).consecutivePairs.length).sum).sum =
         Graph.drawingSegmentCount d := by
-  simp only [positiveExterior, segmentCount_translate, exteriorRoute_segmentCount]
+  simp only [positiveExterior, consecutivePairs_length_translate, exteriorRoute_segmentCount]
   exact source_edge_weight_sum hd (fun r : Route => r.consecutivePairs.length)
 
 private theorem exterior_wire_sum_le {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
@@ -272,13 +263,11 @@ private theorem exterior_wire_sum_le {φ : CNF ℕ} {d : Graph.OrthogonalDrawing
         1080000 * wireLength (d.2.getD (sourceEdgeIndex φ a.2 l.2) [])).sum).sum := by
       apply List.sum_le_sum
       intro ⟨c, i⟩ hci
-      obtain ⟨hi, hget⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hci)
-      change φ[i] = c at hget
-      rw [← hget]
+      obtain ⟨hi, hc⟩ := List.mem_zipIdx' hci
+      rw [hc]
       apply List.sum_le_sum
       intro ⟨l, j⟩ hlj
-      have hj : j < φ[i].length :=
-        (List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hlj)).choose
+      have hj : j < φ[i].length := (List.mem_zipIdx' hlj).1
       have he := exteriorRoute_wireLength hd (sourceEdgeIndex_lt φ hi hj)
         (by decide : positiveRadius < positiveScale)
       have hw : wireLength (positiveExterior φ d i j) + positiveRadius =
@@ -291,12 +280,6 @@ private theorem exterior_wire_sum_le {φ : CNF ℕ} {d : Graph.OrthogonalDrawing
         wireLength (d.2.getD (sourceEdgeIndex φ a.2 l.2) [])).sum).sum := by
       simp only [List.sum_map_mul_left]
     _ = _ := by rw [source_edge_weight_sum hd]; rfl
-
-private theorem sum_map_constant {A : Type*} (xs : List A) (n : ℕ) :
-    (xs.map fun _ => n).sum = xs.length * n := by
-  rw [show xs.map (fun _ => n) = List.replicate xs.length n from List.map_const,
-    List.sum_replicate]
-  rfl
 
 /-- The actual route list has at most 507 incidences per original clause. -/
 theorem positiveDrawing_routeCount (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
@@ -326,9 +309,8 @@ theorem positiveDrawing_segmentCount {φ : CNF ℕ} {d : Graph.OrthogonalDrawing
         (positiveExterior φ d a.2 l.2).consecutivePairs.length).sum).sum := by
       apply List.sum_le_sum
       intro ⟨c, i⟩ hci
-      obtain ⟨hi, hget⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hci)
-      change φ[i] = c at hget
-      rw [← hget]
+      obtain ⟨hi, hc⟩ := List.mem_zipIdx' hci
+      rw [hc]
       have heq := List.map_congr_left fun e
         (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) =>
           positiveIncidenceRoute_segmentCount hd hi he
@@ -337,7 +319,7 @@ theorem positiveDrawing_segmentCount {φ : CNF ℕ} {d : Graph.OrthogonalDrawing
       exact Nat.add_le_add_right (clauseGeometry_local_costs hd hi φ[i]).1 _
     _ = 575 * φ.length + (φ.zipIdx.map fun a => (a.1.zipIdx.map fun l =>
         (positiveExterior φ d a.2 l.2).consecutivePairs.length).sum).sum := by
-      rw [List.sum_map_add, sum_map_constant]
+      rw [List.sum_map_add, List.map_const', List.sum_replicate_nat]
       simp only [List.length_zipIdx, Nat.mul_comm]
     _ = _ := by rw [exterior_segment_sum hd]
 
@@ -354,9 +336,8 @@ theorem positiveDrawing_wireLength {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
         wireLength (positiveExterior φ d a.2 l.2)).sum).sum := by
       apply List.sum_le_sum
       intro ⟨c, i⟩ hci
-      obtain ⟨hi, hget⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hci)
-      change φ[i] = c at hget
-      rw [← hget]
+      obtain ⟨hi, hc⟩ := List.mem_zipIdx' hci
+      rw [hc]
       have heq := List.map_congr_left fun e
         (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) =>
           positiveIncidenceRoute_wireLength hd hi he
@@ -365,7 +346,7 @@ theorem positiveDrawing_wireLength {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
       exact Nat.add_le_add_right (clauseGeometry_local_costs hd hi φ[i]).2 _
     _ = 40252600 * φ.length + (φ.zipIdx.map fun a => (a.1.zipIdx.map fun l =>
         wireLength (positiveExterior φ d a.2 l.2)).sum).sum := by
-      rw [List.sum_map_add, sum_map_constant]
+      rw [List.sum_map_add, List.map_const', List.sum_replicate_nat]
       simp only [List.length_zipIdx, Nat.mul_comm]
     _ ≤ _ := Nat.add_le_add_left (exterior_wire_sum_le hd) _
 

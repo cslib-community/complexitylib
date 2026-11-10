@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Cslib.Foundations.Data.PFunctor.Free
 public import Cslib.Foundations.Semantics.FLTS.Basic
 public import Cslib.Foundations.Semantics.LTS.Basic
+public import CslibFrontier.DataStructure.StateTransition.ClientSimps.Init
 
 /-!
 # State-transition specifications and adaptive clients
@@ -25,8 +26,11 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
 * An adaptive client `p : D.Client α` is demonically admissible (`D.DemonicValid s p`) when each
   issued operation is admissible (`D.valid`) and the continuation remains admissible under *every*
   outcome `(s', a)` permitted by `D.step`.
-* Deterministic specifications are constructed via `StateTransitionSpec.ofFn` and characterized by
-  the `StateTransitionSpec.HasStepFn` typeclass, which equips them with functional execution
+* Specifications whose `step` is the graph of a function `f`, with exactly one outcome `f s o` for
+  every `(s, o)`, admissible or not, are constructed via `StateTransitionSpec.ofFn` and recognized
+  by the `StateTransitionSpec.HasStepFn` typeclass. It implies `StateTransitionSpec.Deterministic`
+  and `StateTransitionSpec.Total`, but not conversely: those two together still allow an
+  inadmissible input to have no outcome. It equips these specifications with functional execution
   helpers (`StateTransitionSpec.stepFn`, `StateTransitionSpec.toFLTS`, `StateTransitionSpec.run`,
   `StateTransitionSpec.ValidHistory`, `StateTransitionSpec.totalCost`,
   `StateTransitionSpec.runClient`, `eval`) and equivalence lemmas connecting the relational and
@@ -48,12 +52,12 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
   `StateTransitionSpec.ClientRun`, `StateTransitionSpec.DemonicValid`: adaptive clients, relational
   client runs, and demonic client admissibility.
 * `StateTransitionSpec.ofFn`, `StateTransitionSpec.HasStepFn`, `StateTransitionSpec.stepFn`:
-  constructor and typeclass for deterministic specifications.
+  constructor and typeclass for specifications given by a transition function.
 * `StateTransitionSpec.toFLTS`, `StateTransitionSpec.run`, `StateTransitionSpec.ValidHistory`,
   `StateTransitionSpec.totalCost`, `StateTransitionSpec.runClient`,
   `StateTransitionSpec.clientResult`, `StateTransitionSpec.clientState`,
-  `StateTransitionSpec.clientHistory`, `eval`: functional execution and history interpretation for
-  deterministic specifications.
+  `StateTransitionSpec.clientHistory`, `eval`: functional execution and history interpretation
+  under `[StateTransitionSpec.HasStepFn]`.
 * `product`: independent abstract components; concrete independence is an implementation obligation.
 
 ## Main results
@@ -74,8 +78,16 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
   `StateTransitionSpec.validHistory_append`, `StateTransitionSpec.totalCost_append`,
   `StateTransitionSpec.run_runClient`, `StateTransitionSpec.runClient_bind`,
   `StateTransitionSpec.clientResult_bind`, `StateTransitionSpec.clientState_bind`,
-  `StateTransitionSpec.clientHistory_bind`, `eval_bind`, `eval_eq_liftM`: functional history and
-  client laws under `[StateTransitionSpec.HasStepFn]`.
+  `StateTransitionSpec.clientHistory_bind`, `StateTransitionSpec.clientResult_pure`,
+  `StateTransitionSpec.clientState_pure`, `StateTransitionSpec.clientHistory_pure`, `eval_bind`,
+  `eval_eq_liftM`: functional history and client laws under `[StateTransitionSpec.HasStepFn]`.
+* `StateTransitionSpec.fst_snd_runClient_bind`, `StateTransitionSpec.snd_snd_runClient_bind`,
+  `StateTransitionSpec.fst_snd_runClient_pure`, `StateTransitionSpec.snd_snd_runClient_pure`: the
+  state and history laws in the form that `simp` indexes. With `clientResult_bind`,
+  `clientResult_pure`, `run_runClient`, `totalCost_append`, `validHistory_append` and
+  `PFunctor.FreeM.bind_eq_bind` they form the simp set `client_simps`: `simp only [client_simps]`
+  splits the result, final state, history, cost and admissibility of a sequential client at its
+  binds.
 
 ## References
 
@@ -298,7 +310,8 @@ theorem validOpSeq_cons (s : D.State) (o : D.Op) (ops : List D.Op) :
     D.ValidOpSeq s (o :: ops) ↔ D.valid s o ∧ ∀ s' a, D.step s o s' a → D.ValidOpSeq s' ops :=
   Iff.rfl
 
-/-- Total interfaces have no operation-sequence admissibility obligations. -/
+/-- On a specification where every operation is valid in every state, every operation sequence is
+demonically admissible. -/
 theorem validOpSeq_of_forall_valid (h : ∀ s o, D.valid s o) (s : D.State) (ops : List D.Op) :
     D.ValidOpSeq s ops := by
   induction ops generalizing s with
@@ -576,8 +589,8 @@ theorem DemonicValid.of_bind {D : StateTransitionSpec.{u, v, w}} {s : D.State} {
     obtain ⟨-, r, s₁, tr', hstep, hrest, -⟩ := (clientRun_liftBind_iff s o cont b s₂ tr).mp hrun
     exact (ih r (hk s₁ r hstep)).2 b s₂ tr' hrest
 
-/-! ## Deterministic specifications (`StateTransitionSpec.ofFn`, `StateTransitionSpec.HasStepFn`)
-and functional helpers -/
+/-! ## Specifications given by a transition function (`StateTransitionSpec.ofFn`,
+`StateTransitionSpec.HasStepFn`) and functional helpers -/
 
 /-- Construct a deterministic `StateTransitionSpec` from a pure transition function
 `stepFn : (s : State) → (o : Op) → State × Result o` and an optional admissibility predicate
@@ -624,7 +637,8 @@ theorem ofFn_valid {State : Type u} {Op : Type v} {Result : Op → Type w}
     (ofFn stepFn valid).valid s o ↔ valid s o := Iff.rfl
 
 /-- Typeclass witnessing that a specification `D : StateTransitionSpec` is governed by a pure
-transition function `f : (s : D.State) → (o : D.Op) → D.State × D.Result o`. -/
+transition function `f : (s : D.State) → (o : D.Op) → D.State × D.Result o`: the only outcome of
+`o` from `s` is `f s o`, whether or not `D.valid s o` holds. -/
 class HasStepFn (D : StateTransitionSpec.{u, v, w})
     (f : outParam ((s : D.State) → (o : D.Op) → D.State × D.Result o)) : Prop where
   /-- A transition `D.step s o s' a` holds if and only if `(s', a) = f s o`. -/
@@ -637,7 +651,7 @@ instance instHasStepFnOfFn {State : Type u} {Op : Type v} {Result : Op → Type 
   ⟨fun _ _ _ _ => Iff.rfl⟩
 
 /-- The functional transition `(s : D.State) → (o : D.Op) → D.State × D.Result o` of a
-deterministic specification `D` (`[D.HasStepFn f]`). -/
+specification `D` with `[D.HasStepFn f]`. -/
 @[simp, nolint unusedArguments]
 abbrev stepFn (D : StateTransitionSpec.{u, v, w})
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
@@ -733,7 +747,8 @@ from the next state. -/
     D.ValidHistory s (@List.cons (no_index D.Op) o os) ↔
       D.valid s o ∧ D.ValidHistory (D.stepFn s o).1 os := Iff.rfl
 
-/-- Total interfaces have no history admissibility obligations. -/
+/-- On a specification where every operation is valid in every state, every history is
+admissible. -/
 theorem validHistory_of_forall_valid (h : ∀ s o, D.valid s o)
     (s : D.State) (os : List D.Op) : D.ValidHistory s os := by
   induction os generalizing s with
@@ -759,9 +774,10 @@ theorem run_append (s : D.State) (xs ys : List D.Op) :
   | nil => rfl
   | cons o os ih => simp [ih]
 
-/-- Charges compose at the intermediate abstract state. -/
-theorem totalCost_append (charge : D.State → D.Op → Nat) (s : D.State)
-    (xs ys : List D.Op) :
+/-- Charges compose at the intermediate abstract state. The element type `D.Op` is not indexed, so
+`simp` also uses this for a concrete specification such as `Memory.spec w`, whose `Op` reduces. -/
+@[client_simps] theorem totalCost_append (charge : D.State → D.Op → Nat) (s : D.State)
+    (xs ys : List (no_index D.Op)) :
     D.totalCost charge s (xs ++ ys) =
       D.totalCost charge s xs + D.totalCost charge (D.run s xs).1 ys := by
   induction xs generalizing s with
@@ -857,8 +873,8 @@ continues from the resulting state and answer. -/
       (v, s', o :: os) := rfl
 
 /-- The actual history chosen by an adaptive client has its computed final state. -/
-theorem run_runClient {α : Type y} (p : D.Client α) (s : D.State) :
-    (D.run s (D.clientHistory s p)).1 = D.clientState s p := by
+@[client_simps] theorem run_runClient {α : Type y} (p : D.Client α) (s : D.State) :
+    (D.run s (no_index (D.clientHistory s p))).1 = D.clientState s p := by
   induction p generalizing s with
   | pure a => rfl
   | liftBind o k ih => exact ih (D.stepFn s o).2 (D.stepFn s o).1
@@ -870,8 +886,9 @@ namespace StateTransitionSpec
 variable {D : StateTransitionSpec.{u, v, w}} {f : (s : D.State) → (o : D.Op) → D.State × D.Result o}
   [D.HasStepFn f] {α β : Type y}
 
-/-- Admissibility splits at the mathematical state reached by the first history. -/
-theorem validHistory_append (s : D.State) (xs ys : List D.Op) :
+/-- Admissibility splits at the mathematical state reached by the first history. The element type
+`D.Op` is not indexed, as in `totalCost_append`. -/
+@[client_simps] theorem validHistory_append (s : D.State) (xs ys : List (no_index D.Op)) :
     D.ValidHistory s (xs ++ ys) ↔
       D.ValidHistory s xs ∧ D.ValidHistory (D.run s xs).1 ys := by
   induction xs generalizing s with
@@ -891,6 +908,7 @@ theorem runClient_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) 
       (ih (D.stepFn s o).2 (D.stepFn s o).1)
 
 /-- A sequential client answers as its continuation, run from where the first client stopped. -/
+@[client_simps]
 theorem clientResult_bind (p : D.Client α) (k : α → D.Client β) (s : D.State) :
     D.clientResult s (p >>= k) = D.clientResult (D.clientState s p) (k (D.clientResult s p)) := by
   change D.clientResult s (p.bind k) = _
@@ -910,7 +928,48 @@ theorem clientHistory_bind (p : D.Client α) (k : α → D.Client β) (s : D.Sta
   change D.clientHistory s (p.bind k) = _
   rw [clientHistory, runClient_bind]
 
-/-- On a deterministic specification (`[D.HasStepFn f]`), demonic operation-sequence admissibility
+/-- A client that only returns a value answers with it. -/
+@[client_simps] theorem clientResult_pure (s : D.State) (a : α) :
+    D.clientResult s (pure a : D.Client α) = a := rfl
+
+/-- A client that only returns a value leaves the state unchanged. -/
+theorem clientState_pure (s : D.State) (a : α) :
+    D.clientState s (pure a : D.Client α) = s := rfl
+
+/-- A client that only returns a value issues no operation. -/
+theorem clientHistory_pure (s : D.State) (a : α) :
+    D.clientHistory s (pure a : D.Client α) = [] := rfl
+
+/-! `clientState` and `clientHistory` unfold to a `match` on `D.runClient s p`. Under its
+metavariables `simp` cannot reduce that `match`, so it would index `clientState_bind` and
+`clientHistory_bind` under a key that no goal has; in a goal it sees `(D.runClient s p).2.1`. The
+following restatements have that form, and put the simp set `client_simps` in the normal form of
+`clientState` and `clientHistory`. -/
+
+/-- `clientState_bind`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem fst_snd_runClient_bind (p : D.Client α) (k : α → D.Client β)
+    (s : D.State) :
+    (D.runClient s (p >>= k)).2.1 = D.clientState (D.clientState s p) (k (D.clientResult s p)) :=
+  clientState_bind p k s
+
+/-- `clientHistory_bind`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem snd_snd_runClient_bind (p : D.Client α) (k : α → D.Client β)
+    (s : D.State) :
+    (D.runClient s (p >>= k)).2.2 =
+      D.clientHistory s p ++ D.clientHistory (D.clientState s p) (k (D.clientResult s p)) :=
+  clientHistory_bind p k s
+
+/-- `clientState_pure`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem fst_snd_runClient_pure (s : D.State) (a : α) :
+    (D.runClient s (pure a : D.Client α)).2.1 = s := rfl
+
+/-- `clientHistory_pure`, stated in the form that `simp` indexes. -/
+@[client_simps] theorem snd_snd_runClient_pure (s : D.State) (a : α) :
+    (D.runClient s (pure a : D.Client α)).2.2 = [] := rfl
+
+attribute [client_simps] PFunctor.FreeM.bind_eq_bind
+
+/-- Under `[D.HasStepFn f]`, demonic operation-sequence admissibility
 `ValidOpSeq` coincides with `D.ValidHistory`. -/
 @[simp]
 theorem validOpSeq_iff_validHistory (s : D.State) (ops : List D.Op) :
@@ -929,8 +988,8 @@ theorem validOpSeq_iff_validHistory (s : D.State) (ops : List D.Op) :
       subst hs'
       exact (ih (D.stepFn s o).1).mpr h
 
-/-- The unique canonical transcript determined by a deterministic specification `D` on an
-operation list `os` from state `s`. -/
+/-- The unique canonical transcript determined by a specification `D` with `[D.HasStepFn f]` on
+an operation list `os` from state `s`. -/
 def canonicalTranscript (D : StateTransitionSpec.{u, v, w})
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     (s : D.State) : List D.Op → D.Transcript
@@ -981,7 +1040,7 @@ theorem validTranscript_canonicalTranscript {s : D.State} {os : List D.Op}
   | cons o os ih =>
     exact .cons _ hv.1 (D.step_stepFn s o) (ih hv.2)
 
-/-- On a deterministic specification (`[D.HasStepFn f]`), `ValidTranscript s tr s'` collapses
+/-- Under `[D.HasStepFn f]`, `ValidTranscript s tr s'` collapses
 uniquely to `D.ValidHistory s tr.ops`, `s' = (D.run s tr.ops).1`, and
 `tr = D.canonicalTranscript s tr.ops`. -/
 theorem validTranscript_iff_run (s : D.State) (tr : D.Transcript) (s' : D.State) :
@@ -1009,7 +1068,7 @@ theorem validTranscript_iff_run (s : D.State) (tr : D.Transcript) (s' : D.State)
       cases hst
       exact ⟨hv_o, Prod.mk.eta, (ih (D.stepFn s o).1).mpr ⟨hv_rest, rfl, htr_tail⟩⟩
 
-/-- On a deterministic specification (`[D.HasStepFn f]`), demonic client admissibility
+/-- Under `[D.HasStepFn f]`, demonic client admissibility
 `DemonicValid s p` is equivalent to `D.ValidHistory s (D.clientHistory s p)`. -/
 theorem demonicValid_iff_validHistory_runClient (s : D.State) (p : D.Client α) :
     D.DemonicValid s p ↔ D.ValidHistory s (D.clientHistory s p) := by
@@ -1061,7 +1120,7 @@ private theorem clientRun_imp_ofFn {s : D.State} {p : D.Client α}
     obtain ⟨hv_rest, rfl, rfl, rfl⟩ := ih
     exact ⟨⟨hv, hv_rest⟩, rfl, rfl, rfl⟩
 
-/-- On a deterministic specification (`[D.HasStepFn f]`), `ClientRun` collapses uniquely to
+/-- Under `[D.HasStepFn f]`, `ClientRun` collapses uniquely to
 `D.clientResult`, `D.clientState`, `D.clientHistory`, and `D.ValidHistory`. -/
 theorem clientRun_iff_runClient (s : D.State) (p : D.Client α) (v : α) (s' : D.State)
     (tr : D.Transcript) :
@@ -1212,7 +1271,8 @@ instance instDeterministicProduct (D E : StateTransitionSpec.{u, v, w})
       obtain ⟨hs, ha⟩ := StateTransitionSpec.Deterministic.step_deterministic h₁ h₂
       exact ⟨Prod.ext (hd₁.trans hd₂.symm) hs, ha⟩
 
-/-- The canonical transition function of a product of two deterministic specifications. -/
+/-- The canonical transition function of a product of two specifications with transition
+functions `fD` and `fE`. -/
 abbrev productStepFn (D E : StateTransitionSpec.{u, v, w})
     (fD : (s : D.State) → (o : D.Op) → D.State × D.Result o)
     (fE : (s : E.State) → (o : E.Op) → E.State × E.Result o)
@@ -1221,7 +1281,7 @@ abbrev productStepFn (D E : StateTransitionSpec.{u, v, w})
   | .inl o => let r := fD s.1 o; ((r.1, s.2), r.2)
   | .inr o => let r := fE s.2 o; ((s.1, r.1), r.2)
 
-/-- A product of deterministic specifications is deterministic with the componentwise transition
+/-- A product of specifications with `HasStepFn` has `HasStepFn` with the componentwise transition
 function, at any nesting depth. -/
 instance instHasStepFnProduct (D E : StateTransitionSpec.{u, v, w})
     {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}

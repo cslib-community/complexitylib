@@ -46,7 +46,7 @@ probability at least `3/4 ≥ 2/3`, which gives `RL ⊆ BPL`.
   7.7][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapePTM
 

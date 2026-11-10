@@ -80,7 +80,7 @@ With `C(f) ≤ s(f) bs(f) ≤ bs(f)²` it gives `D(f) ≤ s(f) bs(f)² ≤ bs(f)
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -127,6 +127,17 @@ theorem IsMinimalSensitiveBlock.card_le_sensitivityFor {B : Block n}
   unfold IsSensitiveBlock at this
   cases h1 : f (flipBlock B x) <;> cases h2 : f x <;> simp_all
 
+/-- Adding a sensitive block disjoint from every member keeps a family sensitive. -/
+theorem IsSensitiveFamily.insert {F : Finset (Block n)} {B : Block n}
+    (hF : IsSensitiveFamily f x F) (hB : IsSensitiveBlock f x B)
+    (hdisj : ∀ C ∈ F, Disjoint B C) : IsSensitiveFamily f x (insert B F) := by
+  refine ⟨fun C hC => ?_, ?_⟩
+  · rcases mem_insert.1 hC with rfl | hC
+    · exact hB
+    · exact hF.1 C hC
+  · rw [coe_insert]
+    exact hF.2.insert fun C hC _ => hdisj C hC
+
 /-- The union of a largest family of pairwise disjoint minimal sensitive blocks is a
 certificate. -/
 private theorem isCertificate_biUnion_of_maximal {F : Finset (Block n)}
@@ -147,13 +158,7 @@ private theorem isCertificate_biUnion_of_maximal {F : Finset (Block n)}
     obtain ⟨i, hi⟩ := hC.1.nonempty
     exact disjoint_left.1 (hdisj C hCF) hi hi
   -- adding it gives a larger family
-  have hG : IsSensitiveFamily f x (insert C F) := by
-    refine ⟨fun B hB => ?_, ?_⟩
-    · rcases mem_insert.1 hB with rfl | hB
-      · exact hC.1
-      · exact hF.1 B hB
-    · rw [coe_insert]
-      exact hF.2.insert fun B hB _ => hdisj B hB
+  have hG : IsSensitiveFamily f x (insert C F) := hF.insert hC.1 hdisj
   have := hmax _ hG fun B hB => by
     rcases mem_insert.1 hB with rfl | hB
     · exact hC
@@ -248,15 +253,12 @@ theorem blockSensitivityAt_comp_piecewise_add_one_le {S B₀ : Finset (Fin n)}
     have hi₀ : i ∈ B₀ := by grind
     exact (mem_sdiff.1 hi).2 (hB₀S hi₀)
   have hG : IsSensitiveFamily f x' (insert B₀ (F.image (· \ S))) := by
-    refine ⟨fun B hB => ?_, ?_⟩
-    · rcases mem_insert.1 hB with rfl | hB
-      · exact hB₀
-      · obtain ⟨B', hB', rfl⟩ := mem_image.1 hB
-        exact hsens B' hB'
-    · rw [coe_insert, coe_image]
-      refine (hF.2.image_of_le fun B => show B \ S ≤ B from sdiff_subset).insert
-        fun B hB _ => ?_
-      obtain ⟨B', -, rfl⟩ := hB
+    refine IsSensitiveFamily.insert ⟨fun B hB => ?_, ?_⟩ hB₀ fun B hB => ?_
+    · obtain ⟨B', hB', rfl⟩ := mem_image.1 hB
+      exact hsens B' hB'
+    · rw [coe_image]
+      exact hF.2.image_of_le fun B => show B \ S ≤ B from sdiff_subset
+    · obtain ⟨B', -, rfl⟩ := mem_image.1 hB
       exact disjoint_left.2 fun i hi hi' => (mem_sdiff.1 hi').2 (hB₀S hi)
   have := card_le_blockSensitivityAt hG
   rwa [card_insert_of_notMem hB₀F, card_image_of_injOn hinj, ← hFcard] at this

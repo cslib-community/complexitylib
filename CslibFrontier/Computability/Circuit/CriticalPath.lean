@@ -493,8 +493,7 @@ theorem Circuit.rank_lt_criticalPathAux_getElem (C : Circuit σ n m) :
         | zero => omega
         | succ j' =>
           have hj' : j' < (C.criticalPathAux fuel (.gate s.1)).length := by
-            simp only [Circuit.criticalPathAux, h, List.length_cons] at hj
-            omega
+            grind [Circuit.criticalPathAux, List.length_cons]
           have hmem : (C.criticalPathAux fuel (.gate s.1))[j'] ∈
               (C.criticalPathAux (fuel + 1) v).tail := by
             simp only [Circuit.criticalPathAux, h, List.tail_cons]
@@ -507,11 +506,9 @@ theorem Circuit.rank_lt_criticalPathAux_getElem (C : Circuit σ n m) :
         | zero => omega
         | succ j' =>
           have hi' : i' < (C.criticalPathAux fuel (.gate s.1)).length := by
-            simp only [Circuit.criticalPathAux, h, List.length_cons] at hi
-            omega
+            grind [Circuit.criticalPathAux, List.length_cons]
           have hj' : j' < (C.criticalPathAux fuel (.gate s.1)).length := by
-            simp only [Circuit.criticalPathAux, h, List.length_cons] at hj
-            omega
+            grind [Circuit.criticalPathAux, List.length_cons]
           simpa only [Circuit.criticalPathAux, h, List.getElem_cons_succ] using
             C.rank_lt_criticalPathAux_getElem fuel (.gate s.1) hi' hj' (by omega)
 
@@ -541,8 +538,7 @@ theorem Circuit.criticalPathAux_step (C : Circuit σ n m) :
             C.head_criticalPathAux]
       | succ i' =>
         have hi' : i' + 1 < (C.criticalPathAux fuel (.gate s.1)).length := by
-          simp only [Circuit.criticalPathAux, h, List.length_cons] at hi
-          omega
+          grind [Circuit.criticalPathAux, List.length_cons]
         simpa only [Circuit.criticalPathAux, h, List.getElem_cons_succ] using
           C.criticalPathAux_step fuel (.gate s.1) hi'
 
@@ -628,12 +624,7 @@ theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
       by_contra hnot
       exact hiso ⟨i, hv, hnot⟩
     | gate k => exact hnoDead k hv
-  have hge1 : ∀ v : Wire n C.size, 1 ≤ C.outDeg v + bonus v := by
-    intro v
-    by_cases hv : C.outDeg v = 0
-    · have hout := hzero_out v hv
-      simp [bonus, hout]
-    · omega
+  have hge1 : ∀ v : Wire n C.size, 1 ≤ C.outDeg v + bonus v := by grind
   have hge2_end :
       ∀ x : Fin n, 2 ≤ C.outDeg (C.criticalEndpoint x) + bonus (C.criticalEndpoint x) := by
     intro x
@@ -650,9 +641,7 @@ theorem Circuit.two_mul_sub_two_mul_le_size (C : Circuit σ n m)
   let E : Finset (Wire n C.size) := Finset.univ.image C.criticalEndpoint
   have hcardE : E.card = n := by
     simp [E, Finset.card_image_of_injective _ hinj]
-  have hcardCompl : Eᶜ.card = C.size := by
-    rw [Finset.card_compl, Wire.card, hcardE]
-    omega
+  have hcardCompl : Eᶜ.card = C.size := by grind [Finset.card_compl, Wire.card]
   have hlowE : 2 * n ≤ ∑ v ∈ E, (C.outDeg v + bonus v) := by
     calc
       2 * n = ∑ _v ∈ E, 2 := by simp [hcardE, Nat.mul_comm]
@@ -698,9 +687,7 @@ theorem Circuit.outDeg_output_eq_zero_of_noDeadGates (C : Circuit σ n 1) (hnoDe
   let S : Finset (Fin C.size) :=
     Finset.univ.filter fun k => Relation.TransGen Reach (C.outputs 0) (.gate k)
   have hne : S.Nonempty := by
-    have hnotNil : C.slotReaders (C.outputs 0) ≠ [] := by
-      intro hnil
-      exact hpos (by simp [Circuit.outDeg, hnil])
+    have hnotNil : C.slotReaders (C.outputs 0) ≠ [] := by grind [Circuit.outDeg]
     obtain ⟨s, hs⟩ := List.exists_mem_of_ne_nil _ hnotNil
     exact ⟨s.1, Finset.mem_filter.mpr ⟨Finset.mem_univ _,
       Relation.TransGen.single ⟨s, C.mem_slotReaders.mp hs, rfl⟩⟩⟩
@@ -722,6 +709,100 @@ theorem Circuit.outDeg_output_eq_zero_of_noDeadGates (C : Circuit σ n 1) (hnoDe
   rw [hj] at hlt
   exact Nat.lt_irrefl _ hlt
 
+/-- An input wire lies on the critical path from input `y` only if it is `y` itself: every later
+wire of the path is a gate. -/
+theorem Circuit.input_mem_criticalPath_iff (C : Circuit σ n m) {x y : Fin n} :
+    Wire.input x ∈ C.criticalPath y ↔ x = y := by
+  constructor
+  · intro h
+    rw [← List.cons_head_tail (C.criticalPath_ne_nil y), C.head_criticalPath, List.mem_cons] at h
+    rcases h with h | h
+    · exact Wire.input.inj h
+    · obtain ⟨k, hk⟩ := C.gate_of_mem_tail_criticalPath y h
+      cases hk
+  · rintro rfl
+    exact List.mem_of_getElem (C.criticalPath_zero_getElem x)
+
+/-- Consecutive wires of a critical path: the wire at position `i` has a unique reader slot, whose
+gate is the wire at position `i + 1`. -/
+private theorem Circuit.criticalPath_step (C : Circuit σ n m) (x : Fin n) {i : ℕ}
+    (hi : i + 1 < (C.criticalPath x).length) :
+    ∃ s : C.Slot, C.slotReaders (C.criticalPath x)[i] = [s] ∧
+      (C.criticalPath x)[i + 1] = .gate s.1 :=
+  C.criticalPathAux_step C.size (.input x) hi
+
+/-- Every wire strictly before position `i` of a critical path has smaller rank than the wire at
+position `i`. -/
+private theorem Circuit.rank_lt_of_mem_take_criticalPath (C : Circuit σ n m) (x : Fin n) {i : ℕ}
+    (hi : i < (C.criticalPath x).length) {w : Wire n C.size}
+    (hw : w ∈ (C.criticalPath x).take i) : w.rank < (C.criticalPath x)[i].rank := by
+  obtain ⟨j, hj, rfl⟩ := List.mem_take_iff_getElem.mp hw
+  exact C.rank_lt_criticalPathAux_getElem C.size (.input x) _ hi (by omega)
+
+/-- The prefix of a critical path before position `i` is closed under reading: a slot reading one
+of its wires belongs to the gate at position `i` or to a gate of the prefix. -/
+private theorem Circuit.gate_mem_take_criticalPath (C : Circuit σ n m) (x : Fin n) {i : ℕ}
+    (hi : i < (C.criticalPath x).length) {s : C.Slot}
+    (hs : C.slotWire s ∈ (C.criticalPath x).take i) :
+    Wire.gate s.1 = (C.criticalPath x)[i] ∨ Wire.gate s.1 ∈ (C.criticalPath x).take i := by
+  obtain ⟨j, hj, hjs⟩ := List.mem_take_iff_getElem.mp hs
+  obtain ⟨r, hr, hrGate⟩ := C.criticalPath_step x (i := j) (by omega)
+  obtain rfl : s = r := by
+    simpa [hr] using C.mem_slotReaders.mpr hjs.symm
+  rw [← hrGate]
+  rcases Nat.lt_or_ge (j + 1) i with hlt | hge
+  · exact Or.inr (List.mem_take_iff_getElem.mpr ⟨j + 1, by omega, rfl⟩)
+  · obtain rfl : j + 1 = i := by omega
+    exact Or.inl rfl
+
+/-- Every wire strictly before position `i` of a critical path has out-degree `1`. -/
+private theorem Circuit.outDeg_eq_one_of_mem_take_criticalPath (C : Circuit σ n m) (x : Fin n)
+    {i : ℕ} (hi : i < (C.criticalPath x).length) {w : Wire n C.size}
+    (hw : w ∈ (C.criticalPath x).take i) : C.outDeg w = 1 := by
+  obtain ⟨j, hj, rfl⟩ := List.mem_take_iff_getElem.mp hw
+  obtain ⟨r, hr, -⟩ := C.criticalPath_step x (i := j) (by omega)
+  simp [Circuit.outDeg, hr]
+
+/-- If the critical paths of two distinct inputs `x` and `y` intersect, they first meet at a gate
+`G`: the paths reach `G` from positions `a` and `b`, whose wires read `G` through its slots `tx` and
+`ty`, and the prefixes of the two paths up to these positions are disjoint. -/
+private theorem Circuit.exists_first_meet_criticalPath (C : Circuit σ n m) {x y : Fin n}
+    (hxy : x ≠ y)
+    (hinter : ¬ Disjoint (C.criticalPath x).toFinset (C.criticalPath y).toFinset) :
+    ∃ (a b : ℕ) (ha : a + 1 < (C.criticalPath x).length) (hb : b + 1 < (C.criticalPath y).length)
+      (G : Fin C.size) (tx ty : Fin (σ.Arity (C.program.lines G).op)),
+      C.slotReaders (C.criticalPath x)[a] = [⟨G, tx⟩] ∧
+      C.slotReaders (C.criticalPath y)[b] = [⟨G, ty⟩] ∧
+      (C.criticalPath x)[a + 1] = .gate G ∧ (C.criticalPath y)[b + 1] = .gate G ∧
+      ((C.criticalPath x).take (a + 1)).Disjoint ((C.criticalPath y).take (b + 1)) := by
+  classical
+  obtain ⟨w, hwx, hwy⟩ := Finset.not_disjoint_iff.mp hinter
+  rw [List.mem_toFinset] at hwx hwy
+  -- `i` is the first position of the path from `x` lying on the path from `y`.
+  obtain ⟨i, hlt, hmem, hfirst⟩ : ∃ (i : ℕ) (hi : i < (C.criticalPath x).length),
+      (C.criticalPath x)[i] ∈ C.criticalPath y ∧
+        ∀ (k : ℕ) (hk : k < i), (C.criticalPath x)[k] ∉ C.criticalPath y := by
+    have hlt : (C.criticalPath x).findIdx (· ∈ C.criticalPath y) < (C.criticalPath x).length :=
+      List.findIdx_lt_length.mpr ⟨w, hwx, by simpa using hwy⟩
+    exact ⟨_, hlt, by simpa using List.findIdx_getElem (w := hlt),
+      fun k hk => by simpa using List.not_of_lt_findIdx hk⟩
+  obtain ⟨j, hj, hji⟩ := List.getElem_of_mem hmem
+  -- Neither meeting position is the start of its path, since the starts are distinct inputs.
+  obtain ⟨a, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (n := i) fun h => by
+    subst h
+    exact hxy ((C.input_mem_criticalPath_iff).mp (by simpa using hmem))
+  obtain ⟨b, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero (n := j) fun h => by
+    subst h
+    rw [C.criticalPath_zero_getElem] at hji
+    exact hxy ((C.input_mem_criticalPath_iff).mp (hji ▸ List.getElem_mem _)).symm
+  obtain ⟨⟨G, tx⟩, hxRead, hxGate⟩ := C.criticalPath_step x hlt
+  obtain ⟨⟨G', ty⟩, hyRead, hyGate⟩ := C.criticalPath_step y hj
+  obtain rfl : G = G' := Wire.gate.inj (hxGate.symm.trans (hji.symm.trans hyGate))
+  refine ⟨a, b, hlt, hj, G, tx, ty, hxRead, hyRead, hxGate, hyGate,
+    List.disjoint_left.mpr fun v hvx hvy => ?_⟩
+  obtain ⟨k, hk, rfl⟩ := List.mem_take_iff_getElem.mp hvx
+  exact hfirst k (by omega) (List.mem_of_mem_take hvy)
+
 /-- **Critical-path bottleneck lemma**: if two distinct input variables `x ≠ y` of a single-output
 fan-in-`2` circuit `C` with `NoDeadGates` have intersecting critical paths, then there exists a
 single binary operation `opG : U → U → U` (determined by the first shared gate `G` and independent
@@ -736,406 +817,140 @@ theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [Dec
     ∃ opG : U → U → U, ∀ ρ : Fin n → U, ∃ f₁ f₂ f₃ : U → U, ∀ bx by_ : U,
       C.eval I (Function.update (Function.update ρ x bx) y by_) 0 =
         f₁ (opG (f₂ bx) (f₃ by_)) := by
-  classical
+  obtain ⟨a, b, ha, hb, G, tx, ty, hxRead, hyRead, hxGate, hyGate, hdisj⟩ :=
+    C.exists_first_meet_criticalPath hxy hinter
+  /- The prefixes `Px` and `Py` of the two paths before `G` are disjoint, lie below `G`, and are
+  closed under reading except into `G`. -/
   set px := C.criticalPath x
   set py := C.criticalPath y
-  rw [Finset.not_disjoint_iff] at hinter
-  obtain ⟨wCommon, hwPx, hwPy⟩ := hinter
-  rw [List.mem_toFinset] at hwPx hwPy
-  obtain ⟨idxCommon, hidxLt, rfl⟩ := List.getElem_of_mem hwPx
-  let Ix : Finset (Fin px.length) := Finset.univ.filter fun i => px[i] ∈ py
-  have hIxNe : Ix.Nonempty := ⟨⟨idxCommon, hidxLt⟩, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hwPy⟩⟩
-  let i₀ : Fin px.length := Ix.min' hIxNe
-  have hi₀Mem : px[i₀] ∈ py := (Finset.mem_filter.mp (Finset.min'_mem Ix hIxNe)).2
-  have hi₀Min : ∀ (i : ℕ) (hi : i < px.length), i < i₀.val → px[i] ∉ py := by
-    intro i hi hlt hmem
-    have hle := Finset.min'_le Ix ⟨i, hi⟩ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hmem⟩)
-    exact Nat.not_lt.mpr hle hlt
-  have hinputNotPy : Wire.input x ∉ py := by
-    have hpyNe : py ≠ [] := C.criticalPath_ne_nil y
-    rw [← List.cons_head_tail hpyNe]
-    have hheadY : py.head hpyNe = .input y := C.head_criticalPath y
-    rw [hheadY]
-    simp only [List.mem_cons, Wire.input.injEq, hxy, false_or]
-    intro htail
-    obtain ⟨k, hk⟩ := C.gate_of_mem_tail_criticalPath y htail
-    cases hk
-  have hi₀Pos : 0 < i₀.val := by
-    by_contra h0
-    have hz : i₀.val = 0 := by omega
-    have hhead : px[i₀] = .input x := by simp [px, hz]
-    exact hinputNotPy (hhead ▸ hi₀Mem)
-  obtain ⟨j₀val, hj₀Lt, hj₀Eq⟩ := List.getElem_of_mem hi₀Mem
-  have hj₀Pos : 0 < j₀val := by
-    by_contra h0
-    have hz : j₀val = 0 := by omega
-    have hhead : py[j₀val] = .input y := by simp [py, hz]
-    have hmemTail : px[i₀] ∈ px.tail := by
-      have htailIdx : i₀.val - 1 < px.tail.length := by
-        simp only [List.length_tail]
-        omega
-      have hget : px.tail[i₀.val - 1] = px[i₀] := by
-        rw [List.getElem_tail]
-        congr 1
-        omega
-      rw [← hget]
-      exact List.getElem_mem htailIdx
-    obtain ⟨k, hk⟩ := C.gate_of_mem_tail_criticalPath x hmemTail
-    rw [← hj₀Eq, hhead] at hk
-    cases hk
-  set a := i₀.val - 1
-  set b := j₀val - 1
-  have ha1 : a + 1 = i₀.val := by omega
-  have hb1 : b + 1 = j₀val := by omega
-  have haLt : a + 1 < px.length := ha1 ▸ i₀.isLt
-  have hbLt : b + 1 < py.length := hb1 ▸ hj₀Lt
-  obtain ⟨sx, hsxRead, hsxGate⟩ := C.criticalPathAux_step C.size (.input x) haLt
-  obtain ⟨sy, hsyRead, hsyGate⟩ := C.criticalPathAux_step C.size (.input y) hbLt
-  change C.slotReaders (px[a]'(Nat.lt_of_succ_lt haLt)) = [sx] at hsxRead
-  change px[a + 1] = .gate sx.1 at hsxGate
-  change C.slotReaders (py[b]'(Nat.lt_of_succ_lt hbLt)) = [sy] at hsyRead
-  change py[b + 1] = .gate sy.1 at hsyGate
-  have hGateEq : (Wire.gate sx.1 : Wire n C.size) = .gate sy.1 := by
-    calc
-      (Wire.gate sx.1 : Wire n C.size) = px[a + 1] := hsxGate.symm
-      _ = px[i₀] := by simp [ha1]
-      _ = py[j₀val] := hj₀Eq.symm
-      _ = py[b + 1] := by simp [hb1]
-      _ = .gate sy.1 := hsyGate
-  have hGeq : sx.1 = sy.1 := Wire.gate.inj hGateEq
-  set G : Fin C.size := sx.1
-  let sySlot : Fin (σ.Arity (C.program.lines G).op) := hGeq ▸ sy.2
-  have hsxWire : C.slotWire ⟨G, sx.2⟩ = px[a]'(Nat.lt_of_succ_lt haLt) :=
-    C.mem_slotReaders.mp (by simp [G, hsxRead])
-  have hsyWire : C.slotWire ⟨G, sySlot⟩ = py[b]'(Nat.lt_of_succ_lt hbLt) := by
-    have h1 : C.slotWire sy = py[b]'(Nat.lt_of_succ_lt hbLt) :=
-      C.mem_slotReaders.mp (by simp [hsyRead])
-    have hsigma : (⟨G, sySlot⟩ : C.Slot) = sy := by
-      rcases sy with ⟨gy, ay⟩
-      dsimp only [G] at hGeq
-      subst hGeq
-      rfl
-    rwa [hsigma]
-  have hslotsNe : sx.2 ≠ sySlot := by
-    intro heq
-    have hpxaEq : px[a]'(Nat.lt_of_succ_lt haLt) = py[b]'(Nat.lt_of_succ_lt hbLt) := by
-      rw [← hsxWire, ← hsyWire, heq]
-    exact hi₀Min a (Nat.lt_of_succ_lt haLt) (by omega)
-      (hpxaEq ▸ List.getElem_mem (Nat.lt_of_succ_lt hbLt))
-  have harityG : σ.Arity (C.program.lines G).op ≤ 2 :=
-    Program.fanInAtMost_iff.mp hfan G
-  let opG : U → U → U := fun u v =>
-    I (C.program.lines G).op fun t => if t = sx.2 then u else v
-  have hopG : ∀ val : Fin (σ.Arity (C.program.lines G).op) → U,
-      I (C.program.lines G).op val = opG (val sx.2) (val sySlot) := by
-    intro val
-    dsimp only [opG]
+  set Px := px.take (a + 1)
+  set Py := py.take (b + 1)
+  have hrankX : ∀ w ∈ Px, w.rank < (Wire.gate G : Wire n C.size).rank := fun w hw =>
+    hxGate ▸ C.rank_lt_of_mem_take_criticalPath x ha hw
+  have hrankY : ∀ w ∈ Py, w.rank < (Wire.gate G : Wire n C.size).rank := fun w hw =>
+    hyGate ▸ C.rank_lt_of_mem_take_criticalPath y hb hw
+  have hclosedX : ∀ s : C.Slot, C.slotWire s ∈ Px → s.1 = G ∨ Wire.gate s.1 ∈ Px := fun s hs =>
+    (C.gate_mem_take_criticalPath x ha hs).imp_left fun h => Wire.gate.inj (h.trans hxGate)
+  have hclosedY : ∀ s : C.Slot, C.slotWire s ∈ Py → s.1 = G ∨ Wire.gate s.1 ∈ Py := fun s hs =>
+    (C.gate_mem_take_criticalPath y hb hs).imp_left fun h => Wire.gate.inj (h.trans hyGate)
+  /- `G` reads `px[a]` through slot `tx` and `py[b]` through slot `ty`; these are distinct, and
+  by fan-in `2` they are the only slots of `G`. -/
+  have hxWire : C.slotWire ⟨G, tx⟩ = px[a] :=
+    C.mem_slotReaders.mp (by rw [hxRead]; exact List.mem_singleton_self _)
+  have hyWire : C.slotWire ⟨G, ty⟩ = py[b] :=
+    C.mem_slotReaders.mp (by rw [hyRead]; exact List.mem_singleton_self _)
+  have hxMem : px[a] ∈ Px := List.mem_take_iff_getElem.mpr ⟨a, by omega, rfl⟩
+  have hyMem : py[b] ∈ Py := List.mem_take_iff_getElem.mpr ⟨b, by omega, rfl⟩
+  have htxy : tx ≠ ty := by
+    rintro rfl
+    exact List.disjoint_left.mp hdisj hxMem (hxWire.symm.trans hyWire ▸ hyMem)
+  have hslots : ∀ t, t = tx ∨ t = ty := by
+    have := Program.fanInAtMost_iff.mp hfan G
+    have := Fin.val_ne_of_ne htxy
+    omega
+  let opG : U → U → U := fun u v => I (C.program.lines G).op fun t => if t = tx then u else v
+  refine ⟨opG, fun ρ => ?_⟩
+  /- Write `T w (bx, by_)` for the value of wire `w` under `ρ` updated to `bx` at `x` and `by_` at
+  `y`. -/
+  let assign : U × U → Fin n → U := fun p => Function.update (Function.update ρ x p.1) y p.2
+  have hassignX : ∀ p, assign p x = p.1 := fun p => by simp [assign, Function.update_of_ne hxy]
+  have hassignY : ∀ p, assign p y = p.2 := fun p => by simp [assign]
+  have hassign : ∀ p z, z ≠ x → z ≠ y → assign p z = ρ z := fun p z hzx hzy => by
+    simp [assign, Function.update_of_ne hzx, Function.update_of_ne hzy]
+  let T : Wire n C.size → U × U → U := fun w p => C.program.trace I (assign p) w
+  /- A wire off both prefixes is constant below `G`, and otherwise depends on `(bx, by_)` only
+  through the value of `G`. -/
+  have hout : ∀ w, w ∉ Px → w ∉ Py → ∀ p q,
+      (w.rank < (Wire.gate G : Wire n C.size).rank ∨ T (.gate G) p = T (.gate G) q) →
+      T w p = T w q := by
+    intro w
+    induction w using C.program.wire_induction with
+    | input z =>
+      intro hzPx hzPy p q _
+      have hzx : z ≠ x := by
+        rintro rfl
+        exact hzPx (List.mem_take_iff_getElem.mpr ⟨0, by omega, C.criticalPath_zero_getElem z⟩)
+      have hzy : z ≠ y := by
+        rintro rfl
+        exact hzPy (List.mem_take_iff_getElem.mpr ⟨0, by omega, C.criticalPath_zero_getElem z⟩)
+      simp only [T, Program.trace_input, hassign p z hzx hzy, hassign q z hzx hzy]
+    | gate k ih =>
+      intro hkx hky p q hpq
+      by_cases hkG : k = G
+      · subst hkG
+        exact hpq.resolve_left (lt_irrefl _)
+      simp only [T, Program.trace_gate]
+      congr 1
+      funext t
+      have hlt : (C.slotWire ⟨k, t⟩).rank < (Wire.gate k : Wire n C.size).rank :=
+        C.rank_lt_of_slotWire_eq rfl
+      refine ih t (fun ht => ?_) (fun ht => ?_) p q (hpq.imp_left hlt.trans)
+      · exact (hclosedX ⟨k, t⟩ ht).elim hkG hkx
+      · exact (hclosedY ⟨k, t⟩ ht).elim hkG hky
+  /- A wire of `Px` depends only on `bx`, and a wire of `Py` only on `by_`. -/
+  have hX : ∀ w ∈ Px, ∀ p q : U × U, p.1 = q.1 → T w p = T w q := by
+    intro w
+    induction w using C.program.wire_induction with
+    | input z =>
+      intro hz p q hpq
+      obtain rfl : z = x := (C.input_mem_criticalPath_iff).mp (List.mem_of_mem_take hz)
+      simp only [T, Program.trace_input, hassignX, hpq]
+    | gate k ih =>
+      intro hk p q hpq
+      simp only [T, Program.trace_gate]
+      congr 1
+      funext t
+      by_cases ht : C.slotWire ⟨k, t⟩ ∈ Px
+      · exact ih t ht p q hpq
+      have hlt : (C.slotWire ⟨k, t⟩).rank < (Wire.gate G : Wire n C.size).rank :=
+        (C.rank_lt_of_slotWire_eq rfl).trans (hrankX _ hk)
+      refine hout _ ht (fun hy => ?_) p q (Or.inl hlt)
+      rcases hclosedY ⟨k, t⟩ hy with hkG | hky
+      · exact lt_irrefl _ (hkG ▸ hrankX _ hk)
+      · exact List.disjoint_left.mp hdisj hk hky
+  have hY : ∀ w ∈ Py, ∀ p q : U × U, p.2 = q.2 → T w p = T w q := by
+    intro w
+    induction w using C.program.wire_induction with
+    | input z =>
+      intro hz p q hpq
+      obtain rfl : z = y := (C.input_mem_criticalPath_iff).mp (List.mem_of_mem_take hz)
+      simp only [T, Program.trace_input, hassignY, hpq]
+    | gate k ih =>
+      intro hk p q hpq
+      simp only [T, Program.trace_gate]
+      congr 1
+      funext t
+      by_cases ht : C.slotWire ⟨k, t⟩ ∈ Py
+      · exact ih t ht p q hpq
+      have hlt : (C.slotWire ⟨k, t⟩).rank < (Wire.gate G : Wire n C.size).rank :=
+        (C.rank_lt_of_slotWire_eq rfl).trans (hrankY _ hk)
+      refine hout _ (fun hx => ?_) ht p q (Or.inl hlt)
+      rcases hclosedX ⟨k, t⟩ hx with hkG | hkx
+      · exact lt_irrefl _ (hkG ▸ hrankY _ hk)
+      · exact List.disjoint_right.mp hdisj hk hkx
+  /- Hence `G` computes `opG (f₂ bx) (f₃ by_)`, and the output factors through `G`, since it has
+  out-degree `0` and so lies on neither prefix. -/
+  have hG : ∀ p, T (.gate G) p = opG (T px[a] (p.1, p.1)) (T py[b] (p.2, p.2)) := by
+    intro p
+    simp only [T, Program.trace_gate, opG]
     congr 1
     funext t
     split_ifs with ht
-    · rw [ht]
-    · have htEq : t = sySlot := by
-        apply Fin.ext
-        have ht2 : t.val < 2 := t.isLt.trans_le harityG
-        have hsx2 : sx.2.val < 2 := sx.2.isLt.trans_le harityG
-        have hsy2 : sySlot.val < 2 := sySlot.isLt.trans_le harityG
-        have hne1 : sx.2.val ≠ sySlot.val := fun h => hslotsNe (Fin.ext h)
-        have hne2 : t.val ≠ sx.2.val := fun h => ht (Fin.ext h)
-        omega
-      rw [htEq]
-  let Px : Finset (Wire n C.size) :=
-    Finset.univ.filter fun w => ∃ (i : ℕ) (hi : i < px.length), i ≤ a ∧ px[i] = w
-  let Py : Finset (Wire n C.size) :=
-    Finset.univ.filter fun w => ∃ (j : ℕ) (hj : j < py.length), j ≤ b ∧ py[j] = w
-  have hDisjPxPy : Disjoint Px Py := by
-    rw [Finset.disjoint_left]
-    intro w hwPx' hwPy'
-    obtain ⟨i, hi, _, rfl⟩ := (Finset.mem_filter.mp hwPx').2
-    obtain ⟨j, hj, _, heq⟩ := (Finset.mem_filter.mp hwPy').2
-    exact hi₀Min i hi (by omega) (heq ▸ List.getElem_mem hj)
-  have hRankPx : ∀ w ∈ Px, w.rank < (Wire.gate G : Wire n C.size).rank := by
-    intro w hw
-    obtain ⟨i, hi, hia, rfl⟩ := (Finset.mem_filter.mp hw).2
-    have hlt := C.rank_lt_criticalPathAux_getElem C.size (.input x) hi haLt (by omega)
-    change px[i].rank < px[a + 1].rank at hlt
-    rwa [hsxGate] at hlt
-  have hRankPy : ∀ w ∈ Py, w.rank < (Wire.gate G : Wire n C.size).rank := by
-    intro w hw
-    obtain ⟨j, hj, hjb, rfl⟩ := (Finset.mem_filter.mp hw).2
-    have hlt := C.rank_lt_criticalPathAux_getElem C.size (.input y) hj hbLt (by omega)
-    change py[j].rank < py[b + 1].rank at hlt
-    rwa [hsyGate, ← hGeq] at hlt
-  have hStepPx : ∀ s : C.Slot, C.slotWire s ∈ Px → s.1 = G ∨ Wire.gate s.1 ∈ Px := by
-    intro s hs
-    obtain ⟨i, _, hia, hwi⟩ := (Finset.mem_filter.mp hs).2
-    have hi1 : i + 1 < px.length := by omega
-    obtain ⟨si, hsiRead, hsiGate⟩ := C.criticalPathAux_step C.size (.input x) hi1
-    change C.slotReaders px[i] = [si] at hsiRead
-    change px[i + 1] = .gate si.1 at hsiGate
-    have hsMem : s ∈ C.slotReaders px[i] := C.mem_slotReaders.mpr hwi.symm
-    rw [hsiRead, List.mem_singleton] at hsMem
-    subst hsMem
-    by_cases hiaEq : i = a
-    · subst hiaEq
-      exact Or.inl (Wire.gate.inj (hsiGate.symm.trans hsxGate))
-    · exact Or.inr (Finset.mem_filter.mpr ⟨Finset.mem_univ _, i + 1, hi1, by omega, hsiGate⟩)
-  have hStepPy : ∀ s : C.Slot, C.slotWire s ∈ Py → s.1 = G ∨ Wire.gate s.1 ∈ Py := by
-    intro s hs
-    obtain ⟨j, _, hjb, hwj⟩ := (Finset.mem_filter.mp hs).2
-    have hj1 : j + 1 < py.length := by omega
-    obtain ⟨sj, hsjRead, hsjGate⟩ := C.criticalPathAux_step C.size (.input y) hj1
-    change C.slotReaders py[j] = [sj] at hsjRead
-    change py[j + 1] = .gate sj.1 at hsjGate
-    have hsMem : s ∈ C.slotReaders py[j] := C.mem_slotReaders.mpr hwj.symm
-    rw [hsjRead, List.mem_singleton] at hsMem
-    subst hsMem
-    by_cases hjbEq : j = b
-    · subst hjbEq
-      have hgate : (Wire.gate s.1 : Wire n C.size) = .gate G := by
-        rw [← hsjGate, hsyGate, ← hGeq]
-      exact Or.inl (Wire.gate.inj hgate)
-    · exact Or.inr (Finset.mem_filter.mpr ⟨Finset.mem_univ _, j + 1, hj1, by omega, hsjGate⟩)
-  refine ⟨opG, fun ρ => ?_⟩
-  let assign : U → U → Fin n → U := fun bx by_ =>
-    Function.update (Function.update ρ x bx) y by_
-  have hassign_x : ∀ bx by_, assign bx by_ x = bx := fun bx by_ => by
-    simp [assign, Function.update_of_ne hxy]
-  have hassign_y : ∀ bx by_, assign bx by_ y = by_ := fun bx by_ => by
-    simp [assign]
-  have hassign_other : ∀ z, z ≠ x → z ≠ y → ∀ bx by_, assign bx by_ z = ρ z :=
-    fun z hzx hzy bx by_ => by simp [assign, Function.update_of_ne hzy, Function.update_of_ne hzx]
-  let Inv : Wire n C.size → Prop := fun w =>
-    if w ∈ Px then
-      ∃ fx : U → U, ∀ bx by_, C.program.trace I (assign bx by_) w = fx bx
-    else if w ∈ Py then
-      ∃ fy : U → U, ∀ bx by_, C.program.trace I (assign bx by_) w = fy by_
-    else if w.rank < (Wire.gate G : Wire n C.size).rank then
-      ∃ c : U, ∀ bx by_, C.program.trace I (assign bx by_) w = c
-    else
-      ∃ fw : U → U, ∀ bx by_,
-        C.program.trace I (assign bx by_) w = fw (C.program.trace I (assign bx by_) (.gate G))
-  have hInv : ∀ w : Wire n C.size, Inv w := by
-    refine C.program.wire_induction (P := Inv) (fun z => ?_) (fun k ih => ?_)
-    · by_cases hzx : z = x
-      · subst hzx
-        have hxPx : Wire.input z ∈ Px := Finset.mem_filter.mpr
-          ⟨Finset.mem_univ _, 0, by omega, Nat.zero_le a, C.criticalPath_zero_getElem z⟩
-        simp only [Inv, hxPx, ↓reduceIte]
-        exact ⟨_root_.id, fun bx by_ => hassign_x bx by_⟩
-      · by_cases hzy : z = y
-        · subst hzy
-          have hyPy : Wire.input z ∈ Py := Finset.mem_filter.mpr
-            ⟨Finset.mem_univ _, 0, by omega, Nat.zero_le b, C.criticalPath_zero_getElem z⟩
-          have hyNotPx : Wire.input z ∉ Px := Finset.disjoint_right.mp hDisjPxPy hyPy
-          simp only [Inv, hyNotPx, hyPy, ↓reduceIte]
-          exact ⟨_root_.id, fun bx by_ => hassign_y bx by_⟩
-        · have hzNotPx : Wire.input z ∉ Px := by
-            intro hzMem
-            obtain ⟨i, hi, _, heq⟩ := (Finset.mem_filter.mp hzMem).2
-            cases i with
-            | zero =>
-              have := C.criticalPath_zero_getElem x
-              rw [show px[0] = Wire.input x from this] at heq
-              exact hzx (Wire.input.inj heq).symm
-            | succ i' =>
-              have hmemTail : px[i' + 1] ∈ px.tail := by
-                have htailIdx : i' < px.tail.length := by simp only [List.length_tail]; omega
-                rw [← List.getElem_tail (i := i')]
-                exact List.getElem_mem htailIdx
-              obtain ⟨k, hk⟩ := C.gate_of_mem_tail_criticalPath x hmemTail
-              rw [heq] at hk
-              cases hk
-          have hzNotPy : Wire.input z ∉ Py := by
-            intro hzMem
-            obtain ⟨j, hj, _, heq⟩ := (Finset.mem_filter.mp hzMem).2
-            cases j with
-            | zero =>
-              have := C.criticalPath_zero_getElem y
-              rw [show py[0] = Wire.input y from this] at heq
-              exact hzy (Wire.input.inj heq).symm
-            | succ j' =>
-              have hmemTail : py[j' + 1] ∈ py.tail := by
-                have htailIdx : j' < py.tail.length := by simp only [List.length_tail]; omega
-                rw [← List.getElem_tail (i := j')]
-                exact List.getElem_mem htailIdx
-              obtain ⟨k, hk⟩ := C.gate_of_mem_tail_criticalPath y hmemTail
-              rw [heq] at hk
-              cases hk
-          have hzRank : (Wire.input z : Wire n C.size).rank <
-              (Wire.gate G : Wire n C.size).rank := by simp
-          simp only [Inv, hzNotPx, hzNotPy, hzRank, ↓reduceIte]
-          exact ⟨ρ z, fun bx by_ => hassign_other z hzx hzy bx by_⟩
-    · by_cases hkPx : Wire.gate k ∈ Px
-      · have hkRank := hRankPx _ hkPx
-        have hkNeG : k ≠ G := fun h => by subst h; exact Nat.lt_irrefl _ hkRank
-        have harg : ∀ t : Fin (σ.Arity (C.program.lines k).op),
-            ∃ gt : U → U, ∀ bx by_,
-              C.program.trace I (assign bx by_) ((C.program.lines k).wires t) = gt bx := by
-          intro t
-          let u := (C.program.lines k).wires t
-          have huRank : u.rank < (Wire.gate G : Wire n C.size).rank :=
-            (C.rank_lt_of_slotWire_eq (s := ⟨k, t⟩) rfl).trans hkRank
-          have huNotPy : u ∉ Py := by
-            intro huPy
-            rcases hStepPy ⟨k, t⟩ huPy with hG | hkPy
-            · exact hkNeG hG
-            · exact Finset.disjoint_left.mp hDisjPxPy hkPx hkPy
-          have iht := ih t
-          dsimp only [Inv] at iht
-          by_cases huPx : u ∈ Px
-          · simp only [u, huPx, ↓reduceIte] at iht
-            exact iht
-          · simp only [u, huPx, huNotPy, huRank, ↓reduceIte] at iht
-            obtain ⟨c, hc⟩ := iht
-            exact ⟨fun _ => c, hc⟩
-        choose g hg using harg
-        simp only [Inv, hkPx, ↓reduceIte]
-        refine ⟨fun bx => I (C.program.lines k).op fun t => g t bx, fun bx by_ => ?_⟩
-        rw [C.program.trace_gate]
-        congr 1
-        funext t
-        exact hg t bx by_
-      · by_cases hkPy : Wire.gate k ∈ Py
-        · have hkRank := hRankPy _ hkPy
-          have hkNeG : k ≠ G := fun h => by subst h; exact Nat.lt_irrefl _ hkRank
-          have harg : ∀ t : Fin (σ.Arity (C.program.lines k).op),
-              ∃ gt : U → U, ∀ bx by_,
-                C.program.trace I (assign bx by_) ((C.program.lines k).wires t) = gt by_ := by
-            intro t
-            let u := (C.program.lines k).wires t
-            have huRank : u.rank < (Wire.gate G : Wire n C.size).rank :=
-              (C.rank_lt_of_slotWire_eq (s := ⟨k, t⟩) rfl).trans hkRank
-            have huNotPx : u ∉ Px := by
-              intro huPx
-              rcases hStepPx ⟨k, t⟩ huPx with hG | hkPx'
-              · exact hkNeG hG
-              · exact hkPx hkPx'
-            have iht := ih t
-            dsimp only [Inv] at iht
-            by_cases huPy : u ∈ Py
-            · simp only [u, huNotPx, huPy, ↓reduceIte] at iht
-              exact iht
-            · simp only [u, huNotPx, huPy, huRank, ↓reduceIte] at iht
-              obtain ⟨c, hc⟩ := iht
-              exact ⟨fun _ => c, hc⟩
-          choose g hg using harg
-          simp only [Inv, hkPx, hkPy, ↓reduceIte]
-          refine ⟨fun by_ => I (C.program.lines k).op fun t => g t by_, fun bx by_ => ?_⟩
-          rw [C.program.trace_gate]
-          congr 1
-          funext t
-          exact hg t bx by_
-        · by_cases hkRank : (Wire.gate k : Wire n C.size).rank <
-              (Wire.gate G : Wire n C.size).rank
-          · have hkNeG : k ≠ G := fun h => by subst h; exact Nat.lt_irrefl _ hkRank
-            have harg : ∀ t : Fin (σ.Arity (C.program.lines k).op),
-                ∃ ct : U, ∀ bx by_,
-                  C.program.trace I (assign bx by_) ((C.program.lines k).wires t) = ct := by
-              intro t
-              let u := (C.program.lines k).wires t
-              have huRank : u.rank < (Wire.gate G : Wire n C.size).rank :=
-                (C.rank_lt_of_slotWire_eq (s := ⟨k, t⟩) rfl).trans hkRank
-              have huNotPx : u ∉ Px := by
-                intro huPx
-                rcases hStepPx ⟨k, t⟩ huPx with hG | hkPx'
-                · exact hkNeG hG
-                · exact hkPx hkPx'
-              have huNotPy : u ∉ Py := by
-                intro huPy
-                rcases hStepPy ⟨k, t⟩ huPy with hG | hkPy'
-                · exact hkNeG hG
-                · exact hkPy hkPy'
-              have iht := ih t
-              dsimp only [Inv] at iht
-              simpa only [u, huNotPx, huNotPy, huRank, ↓reduceIte] using iht
-            choose c hc using harg
-            simp only [Inv, hkPx, hkPy, hkRank, ↓reduceIte]
-            refine ⟨I (C.program.lines k).op c, fun bx by_ => ?_⟩
-            rw [C.program.trace_gate]
-            congr 1
-            funext t
-            exact hc t bx by_
-          · simp only [Inv, hkPx, hkPy, hkRank, ↓reduceIte]
-            by_cases hkEqG : k = G
-            · subst hkEqG
-              exact ⟨_root_.id, fun _ _ => rfl⟩
-            · have harg : ∀ t : Fin (σ.Arity (C.program.lines k).op),
-                  ∃ gt : U → U, ∀ bx by_,
-                    C.program.trace I (assign bx by_) ((C.program.lines k).wires t) =
-                      gt (C.program.trace I (assign bx by_) (.gate G)) := by
-                intro t
-                let u := (C.program.lines k).wires t
-                have huNotPx : u ∉ Px := by
-                  intro huPx
-                  rcases hStepPx ⟨k, t⟩ huPx with hG | hkPx'
-                  · exact hkEqG hG
-                  · exact hkPx hkPx'
-                have huNotPy : u ∉ Py := by
-                  intro huPy
-                  rcases hStepPy ⟨k, t⟩ huPy with hG | hkPy'
-                  · exact hkEqG hG
-                  · exact hkPy hkPy'
-                have iht := ih t
-                dsimp only [Inv] at iht
-                by_cases huRank : u.rank < (Wire.gate G : Wire n C.size).rank
-                · simp only [u, huNotPx, huNotPy, huRank, ↓reduceIte] at iht
-                  obtain ⟨c, hc⟩ := iht
-                  exact ⟨fun _ => c, hc⟩
-                · simpa only [u, huNotPx, huNotPy, huRank, ↓reduceIte] using iht
-              choose g hg using harg
-              refine ⟨fun v => I (C.program.lines k).op fun t => g t v, fun bx by_ => ?_⟩
-              rw [C.program.trace_gate]
-              congr 1
-              funext t
-              exact hg t bx by_
-  have hpxaMem : (px[a]'(Nat.lt_of_succ_lt haLt)) ∈ Px :=
-    Finset.mem_filter.mpr ⟨Finset.mem_univ _, a, Nat.lt_of_succ_lt haLt, le_rfl, rfl⟩
-  have hpybMem : (py[b]'(Nat.lt_of_succ_lt hbLt)) ∈ Py :=
-    Finset.mem_filter.mpr ⟨Finset.mem_univ _, b, Nat.lt_of_succ_lt hbLt, le_rfl, rfl⟩
-  have hpybNotPx : (py[b]'(Nat.lt_of_succ_lt hbLt)) ∉ Px :=
-    Finset.disjoint_right.mp hDisjPxPy hpybMem
-  have hInvX := hInv (px[a]'(Nat.lt_of_succ_lt haLt))
-  simp only [Inv, hpxaMem, ↓reduceIte] at hInvX
-  obtain ⟨f₂, hf₂⟩ := hInvX
-  have hInvY := hInv (py[b]'(Nat.lt_of_succ_lt hbLt))
-  simp only [Inv, hpybNotPx, hpybMem, ↓reduceIte] at hInvY
-  obtain ⟨f₃, hf₃⟩ := hInvY
-  have hGtrace : ∀ bx by_,
-      C.program.trace I (assign bx by_) (.gate G) = opG (f₂ bx) (f₃ by_) := by
-    intro bx by_
-    rw [C.program.trace_gate, hopG]
-    change opG (C.program.trace I (assign bx by_) (C.slotWire ⟨G, sx.2⟩))
-      (C.program.trace I (assign bx by_) (C.slotWire ⟨G, sySlot⟩)) = _
-    rw [hsxWire, hsyWire, hf₂ bx by_, hf₃ bx by_]
+    · subst ht
+      exact (congrArg (T · p) hxWire).trans (hX _ hxMem _ _ rfl)
+    · obtain rfl := (hslots t).resolve_left ht
+      exact (congrArg (T · p) hyWire).trans (hY _ hyMem _ _ rfl)
   have hout0 := C.outDeg_output_eq_zero_of_noDeadGates hnoDead
-  have houtNotPx : C.outputs 0 ∉ Px := by
-    intro hmem
-    obtain ⟨i, _, hia, heq⟩ := (Finset.mem_filter.mp hmem).2
-    have hi1 : i + 1 < px.length := by omega
-    obtain ⟨si, hsiRead, _⟩ := C.criticalPathAux_step C.size (.input x) hi1
-    change C.slotReaders px[i] = [si] at hsiRead
-    have hout1 : C.outDeg px[i] = 1 := by simp [Circuit.outDeg, hsiRead]
-    rw [heq] at hout1
-    omega
-  have houtNotPy : C.outputs 0 ∉ Py := by
-    intro hmem
-    obtain ⟨j, _, hjb, heq⟩ := (Finset.mem_filter.mp hmem).2
-    have hj1 : j + 1 < py.length := by omega
-    obtain ⟨sj, hsjRead, _⟩ := C.criticalPathAux_step C.size (.input y) hj1
-    change C.slotReaders py[j] = [sj] at hsjRead
-    have hout1 : C.outDeg py[j] = 1 := by simp [Circuit.outDeg, hsjRead]
-    rw [heq] at hout1
-    omega
-  have hInvOut := hInv (C.outputs 0)
-  dsimp only [Inv] at hInvOut
-  by_cases houtRank : (C.outputs 0).rank < (Wire.gate G : Wire n C.size).rank
-  · simp only [houtNotPx, houtNotPy, houtRank, ↓reduceIte] at hInvOut
-    obtain ⟨c, hc⟩ := hInvOut
-    exact ⟨fun _ => c, f₂, f₃, fun bx by_ => hc bx by_⟩
-  · simp only [houtNotPx, houtNotPy, houtRank, ↓reduceIte] at hInvOut
-    obtain ⟨f₁, hf₁⟩ := hInvOut
-    refine ⟨f₁, f₂, f₃, fun bx by_ => ?_⟩
-    change C.program.trace I (assign bx by_) (C.outputs 0) = _
-    rw [hf₁ bx by_, hGtrace bx by_]
+  have hfactor : (T (C.outputs 0)).FactorsThrough (T (.gate G)) := by
+    intro p q hpq
+    refine hout _ (fun h => ?_) (fun h => ?_) p q (Or.inr hpq)
+    · have := C.outDeg_eq_one_of_mem_take_criticalPath x ha h
+      omega
+    · have := C.outDeg_eq_one_of_mem_take_criticalPath y hb h
+      omega
+  refine ⟨Function.extend (T (.gate G)) (T (C.outputs 0)) _root_.id, fun bx => T px[a] (bx, bx),
+    fun by_ => T py[b] (by_, by_), fun bx by_ => ?_⟩
+  rw [← hG (bx, by_), hfactor.extend_apply]
+  rfl
 
 end Cslib.Circuits

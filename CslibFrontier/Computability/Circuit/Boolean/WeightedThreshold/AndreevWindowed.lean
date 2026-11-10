@@ -390,11 +390,6 @@ theorem abs_weight_andreevWindowedTopOp_le (b m r B : ℕ)
 
 /-! ### Hoeffding concentration bounds -/
 
-/-- `andreevTableIndex b m` is injective. -/
-theorem andreevTableIndex_injective (b m : ℕ) :
-    Function.Injective (andreevTableIndex b m) :=
-  Fin.castAdd_injective (2 ^ b) (b * m)
-
 /-- The `2 ^ b` truth-table coordinates of `BitString (2 ^ b + b * m)`. -/
 def andreevTableSupport (b m : ℕ) : Finset (Fin (2 ^ b + b * m)) :=
   univ.map ⟨andreevTableIndex b m, andreevTableIndex_injective b m⟩

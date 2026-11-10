@@ -14,6 +14,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ParityTests
 public import Mathlib.Data.Finset.SymmDiff
 public import Mathlib.Data.ZMod.Basic
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
+import CslibFrontier.Logics.Propositional.CNF.Eval
 
 /-!
 # Polynomial compilation of CNF parity tests over `𝔽₂`
@@ -233,18 +234,13 @@ theorem Clause.sum_falsifyMonomials (c : Clause V) (σ : V → Bool) :
     rw [hpos_sum, monomial_apply]
     have hfals : c.eval σ = false ↔
         (∀ v ∈ pos, σ v = false) ∧ (∀ v ∈ neg, σ v = true) := by
-      rw [← Bool.not_eq_true, Clause.eval_eq_true_iff]
+      rw [Clause.eval_eq_false_iff]
       constructor
       · intro h
-        refine ⟨fun v hv => ?_, fun v hv => ?_⟩
-        · exact Bool.eq_false_iff.mpr fun hσ => h ⟨(v, true), hmem_pos.mp hv, hσ⟩
-        · exact Bool.eq_true_of_not_eq_false fun hσ => h ⟨(v, false), hmem_neg.mp hv, hσ⟩
-      · rintro ⟨hp, hn⟩ ⟨⟨v, b⟩, hl, hσ⟩
-        cases b
-        · rw [hn v (hmem_neg.mpr hl)] at hσ
-          exact Bool.false_ne_true hσ.symm
-        · rw [hp v (hmem_pos.mpr hl)] at hσ
-          exact Bool.false_ne_true hσ
+        exact ⟨fun v hv => h _ (hmem_pos.mp hv), fun v hv => h _ (hmem_neg.mp hv)⟩
+      · rintro ⟨hp, hn⟩ ⟨v, _ | _⟩ hl
+        · exact hn v (hmem_neg.mpr hl)
+        · exact hp v (hmem_pos.mpr hl)
     split_ifs with hp hn
     · rw [hfals.mpr ⟨hp, hn⟩]
       decide
@@ -277,11 +273,7 @@ theorem Clause.sum_falsifyMonomials_eq_zero_iff (c : Clause V) (σ : V → Bool)
 theorem Clause.sum_falsifyMonomials_mem_lowDegree (c : Clause V) :
     (fun σ => ∑ M ∈ c.falsifyMonomials, monomial (ZMod 2) M σ) ∈
       lowDegree (ZMod 2) V c.length := by
-  have hfn : (fun σ => ∑ M ∈ c.falsifyMonomials, monomial (ZMod 2) M σ) =
-      ∑ M ∈ c.falsifyMonomials, monomial (ZMod 2) M := by
-    funext σ
-    simp only [Finset.sum_apply]
-  rw [hfn]
+  rw [← Finset.sum_fn]
   exact sum_mem_lowDegree _ fun M hM =>
     monomial_mem_lowDegree (Clause.card_le_length_of_mem_falsifyMonomials hM)
 
@@ -401,11 +393,7 @@ theorem CNF.sum_parityRowMonomials_mem_lowDegree {φ : CNF V} {k : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (r : Fin φ.length → Bool) :
     (fun σ => ∑ M ∈ φ.parityRowMonomials r, monomial (ZMod 2) M σ) ∈
       lowDegree (ZMod 2) V k := by
-  have hfn : (fun σ => ∑ M ∈ φ.parityRowMonomials r, monomial (ZMod 2) M σ) =
-      ∑ M ∈ φ.parityRowMonomials r, monomial (ZMod 2) M := by
-    funext σ
-    simp only [Finset.sum_apply]
-  rw [hfn]
+  rw [← Finset.sum_fn]
   exact sum_mem_lowDegree _ fun M hM =>
     monomial_mem_lowDegree (CNF.card_le_of_mem_parityRowMonomials hk hM)
 
@@ -627,8 +615,8 @@ theorem CNF.card_commonZeros_greedy (φ : CNF V) {P : ℕ}
 /-- **Quantitative bounds on compiled greedy systems** [OpenAI2026ETH, Lemma 6.2, p. 42]. If every
 clause of `φ` has length at most `k`, the initial matrix `A 0` has at most `3 n` rows each of
 weight at most `D₀`, and each round appends `testRow (γ i)` of list length `P`, then at any stage
-`i ≤ 3 n` the compiled system `(A i).map φ.parityRowMonomials` has at most `3 n + i` (`≤ 6 n`)
-equations, each of degree at most `k`, supported on `φ.vars.toFinset`, and containing at most
+`i ≤ 3 n` the compiled system `(A i).map φ.parityRowMonomials` has at most `6 n` equations, each
+of degree at most `k`, supported on `φ.vars.toFinset`, and containing at most
 `max D₀ P * 2 ^ k` monomials. -/
 theorem CNF.greedy_system_bounds (φ : CNF V) {k D₀ P : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (A : ℕ → List (Fin φ.length → Bool))

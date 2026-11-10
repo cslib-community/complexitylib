@@ -36,7 +36,7 @@ single child.
   [Schlesinger2026Sensitivity] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity.SensitivitySeparation
 
@@ -101,7 +101,7 @@ theorem recursive_joint_zero_at {k r h : ℕ} {I : Type} [Fintype I]
   have hV : V.card ≤ 3 * jointSensitivity F true := by
     calc
       V.card ≤ GC.card * jointSensitivity F true :=
-        card_biUnion_le_mul GC _ _ (fun i hi => by
+        Finset.card_biUnion_le_card_mul GC _ _ (fun i hi => by
           rw [childJointChanges_card]
           have hg := (gateWitness_spec T A.label F q x i hi).2
           exact jointSensitivityAt_le_jointSensitivity F true _ _ _

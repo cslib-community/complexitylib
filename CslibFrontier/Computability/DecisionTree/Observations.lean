@@ -23,7 +23,7 @@ leaf bound counts attained observation vectors rather than all possible Boolean 
   and at most one leaf per attained observation vector.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DecisionTree
 

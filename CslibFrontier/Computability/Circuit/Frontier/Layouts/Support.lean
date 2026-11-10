@@ -42,7 +42,7 @@ the ends of an edge sum to at most `d + 3`, and a vertex of degree `j + 3 ≤ d`
 * `Cslib.Circuits.Frontier.Multigraph.core_density`: the density of cores.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier.Multigraph
 

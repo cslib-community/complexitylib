@@ -5,10 +5,12 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Foundations.Analysis.Brouwer
+import CslibFrontier.Foundations.Analysis.Brouwer.Simplex
 
 /-! Brouwer's fixed-point theorem on the cube and the weak approximation for Lipschitz maps. The
 file applies them to concrete maps and gives a translation without fixed points, showing that the
-hypothesis that `f` maps the cube into itself is needed. -/
+hypothesis that `f` maps the cube into itself is needed. Brouwer's theorem for products of
+simplices, applied to the rotation of a triangle, finds its barycentre. -/
 
 namespace CslibFrontierTests.Brouwer
 
@@ -66,5 +68,29 @@ example : ∀ x, ¬Function.IsFixedPt shift x := fun x h => by
   have := congrFun h 0
   simp only [shift] at this
   linarith
+
+/-! ### Products of simplices -/
+
+/-- Rotating the vertices of the triangle `{p : Fin 3 → ℝ | p ≥ 0, ∑ p = 1}`, as a product of one
+simplex. -/
+private def rotate (p : Unit → Fin 3 → ℝ) : Unit → Fin 3 → ℝ := fun u k => p u (k + 1)
+
+-- The only fixed point of the rotation is the barycentre, so Brouwer's theorem finds it.
+example : ∃ p : Unit → Fin 3 → ℝ, p () = fun _ => 1 / 3 := by
+  obtain ⟨p, hp, hfix⟩ := exists_isFixedPt_pi_simplex (f := rotate)
+    (fun p hp u => ⟨fun k => (hp u).1 (k + 1),
+      (Equiv.sum_comp (Equiv.addRight (1 : Fin 3)) (p u)).trans (hp u).2⟩)
+    (continuous_pi fun u => continuous_pi fun k =>
+      (continuous_apply (k + 1)).comp (continuous_apply u)).continuousOn
+  have h : ∀ k, p () k = p () (k + 1) := fun k => (congrFun (congrFun hfix ()) k).symm
+  have hsum := (hp ()).2
+  rw [Fin.sum_univ_three] at hsum
+  have h0 := h 0
+  have h1 := h 1
+  have h2 := h 2
+  simp only [show (0 : Fin 3) + 1 = 1 from rfl, show (1 : Fin 3) + 1 = 2 from rfl,
+    show (2 : Fin 3) + 1 = 0 from rfl] at h0 h1 h2
+  refine ⟨p, funext fun k => ?_⟩
+  fin_cases k <;> simp only [Fin.zero_eta, Fin.mk_one, Fin.reduceFinMk] <;> linarith
 
 end CslibFrontierTests.Brouwer

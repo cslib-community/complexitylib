@@ -30,7 +30,7 @@ view fits the radix, so the graph is exact without any space bound on the source
 * `Turing.MultiTapeNTM.ConfigurationGraph.not_overflow_of_fits`: conversely.
 -/
 
-@[expose] public section
+public section
 
 open Cslib.Turing
 
@@ -70,9 +70,7 @@ theorem outputCode_append (w : List Bool) (b : Option Bool) :
         have := congrArg List.length heq
         have : w.length = 0 := by simpa using this
         exact h (List.length_eq_zero_iff.mp this)
-      have hc : outputCode w ≠ 0 := by
-        unfold outputCode
-        split_ifs <;> omega
+      have hc : outputCode w ≠ 0 := by grind [outputCode]
       rw [outputStep, ite_eq_right hc]
       simp [outputCode, h, hnot]
 

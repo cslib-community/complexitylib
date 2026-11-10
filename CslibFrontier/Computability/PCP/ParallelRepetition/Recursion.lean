@@ -50,7 +50,7 @@ embedding lemmas establish.
 * [T. Holenstein, *Parallel repetition: simplifications and the no-signaling case*][Holenstein2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PCP.ParallelRepetition
 

@@ -41,8 +41,9 @@ least `1 / 4` to the points of `Y` that are `(q, 194 k)`-limits of `X`, and thes
 
 ## Main results
 
-* `Cslib.BitString.IsDensityLimit.exists_mem_apply_eq`: a density limit of `Y` at a rate
-  below `3 / 4` agrees with a point of `Y` at every coordinate.
+* `Cslib.BitString.IsDensityLimit.exists_mem_apply_eq`: at each coordinate, a density limit of `Y`
+  at a nonnegative rate below `3 / 4` agrees with some point of `Y`, which may depend on the
+  coordinate.
 * `Cslib.BitString.exists_mirror_set`: the strong mirror-set lemma, with the constants
   `32768` and `194`.
 
@@ -73,7 +74,8 @@ noncomputable instance (Y : Finset (ι → Bool)) (p k : ℝ) :
     DecidablePred (IsDensityLimit Y p k) :=
   fun _ => Real.decidableLE _ _
 
-/-- A density limit at a rate below `3 / 4` agrees with a point of `Y` at every coordinate. -/
+/-- At each coordinate `i`, a density limit of `Y` at a nonnegative rate below `3 / 4` agrees with
+some point of `Y`, which may depend on `i`. -/
 theorem IsDensityLimit.exists_mem_apply_eq {Y : Finset (ι → Bool)} {p k : ℝ} {x : ι → Bool}
     (hlim : IsDensityLimit Y p k x) (hp : 0 ≤ p) (hp' : p < 3 / 4) (i : ι) :
     ∃ y ∈ Y, y i = x i := by
@@ -135,8 +137,7 @@ private theorem projectionAverage_uniformDensity_fiber (X : Finset (ι → Bool)
   rw [he, projectionAverage_const_mul,
     projectionAverage_comp_completePattern (fun y => if y ∈ X then 1 else 0),
     coordinateDensity_eq_projectionAverage]
-  congr 2
-  funext i
+  congr 2 with i : 1
   by_cases hs : s i = true <;> simp [hs]
 
 private theorem coordinateFiber_light_patterns (X : Finset (ι → Bool)) (hX : X.Nonempty)

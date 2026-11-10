@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.EUThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree
 public import CslibFrontier.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
+import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Reduction
 import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Syntax
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -87,13 +88,13 @@ theorem computableInPolyTime_complementClause :
       (fun p : (CNF ℕ × List Bool) × Clause ℕ =>
         p.2.eval (fun v => !SAT.assignment p.1.1 p.1.2 v))
       (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encBool := by
-  fun_prop [Clause.eval, Literal.eval, SAT.assignment]
+  fun_prop [SAT.assignment]
 
 /-- NAE evaluation of an arbitrary certificate takes native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  fun_prop [verifier, CNF.evalNAE, CNF.eval]
+  fun_prop [verifier, CNF.evalNAE]
 
 /-- Unrestricted NAE satisfiability belongs to NP. -/
 theorem mem_NP : NAESAT ∈ NP encCNF :=
@@ -103,31 +104,27 @@ end NAESAT
 
 /-- Width-three NAE satisfiability belongs to NP. -/
 theorem NAEThreeSAT.mem_NP : NAEThreeSAT ∈ NP encCNF := by
-  have h : NAEThreeSAT =
-      {φ | (φ.all fun c => decide (c.length ≤ 3)) = true ∧ φ ∈ NAESAT} := by
+  have h : NAEThreeSAT = {φ | (φ.all fun c => decide (c.length ≤ 3)) = true} ∩ NAESAT := by
     ext φ
     simp [NAEThreeSAT, NAESAT]
   rw [h]
-  exact ⟨Polynomial.X, fun x => (x.1.all fun c => decide (c.length ≤ 3)) && NAESAT.verifier x,
-    by fun_prop [encCNF], NAESAT.isVerifier.guard⟩
+  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop [encCNF], fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 /-- Exact-three distinct-variable NAE satisfiability belongs to NP. -/
 theorem NAEEUThreeSAT.mem_NP : NAEEUThreeSAT ∈ NP encCNF := by
-  have h : NAEEUThreeSAT = {φ | EUThreeSAT.syntaxCheck φ = true ∧ φ ∈ NAESAT} := by
+  have h : NAEEUThreeSAT = {φ | EUThreeSAT.syntaxCheck φ = true} ∩ NAESAT := by
     ext φ
     simp [NAEEUThreeSAT, NAESAT, EUThreeSAT.syntaxCheck_iff]
   rw [h]
-  exact ⟨Polynomial.X, fun x => EUThreeSAT.syntaxCheck x.1 && NAESAT.verifier x,
-    by fun_prop, NAESAT.isVerifier.guard⟩
+  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop, fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 /-- Width-three occurrence-three NAE satisfiability belongs to NP. -/
 theorem NAEThreeSATThree.mem_NP : NAEThreeSATThree ∈ NP encCNF := by
-  have h : NAEThreeSATThree = {φ | ThreeSATThree.syntaxCheck φ = true ∧ φ ∈ NAESAT} := by
+  have h : NAEThreeSATThree = {φ | ThreeSATThree.syntaxCheck φ = true} ∩ NAESAT := by
     ext φ
     simp [NAEThreeSATThree, NAESAT, ThreeSATThree.syntaxCheck_iff, and_assoc]
   rw [h]
-  exact ⟨Polynomial.X, fun x => ThreeSATThree.syntaxCheck x.1 && NAESAT.verifier x,
-    by fun_prop, NAESAT.isVerifier.guard⟩
+  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop, fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 namespace NAEEUThreeSAT
 
@@ -143,12 +140,11 @@ def clause (c : Clause ℕ) : CNF ℕ :=
 @[fun_prop]
 theorem computableInPolyTime_clause :
     ComputableInPolyTime clause (encList (encPair encNat encBool)) encCNF := by
-  have h0 := (EUThreeSAT.computableInPolyTime_literalAt 0).tidy
-  have h1 := (EUThreeSAT.computableInPolyTime_literalAt 1).tidy
-  have h2 := (EUThreeSAT.computableInPolyTime_literalAt 2).tidy
+  have h0 := EUThreeSAT.computableInPolyTime_literalAt 0
+  have h1 := EUThreeSAT.computableInPolyTime_literalAt 1
+  have h2 := EUThreeSAT.computableInPolyTime_literalAt 2
   have hl : ComputableInPolyTime liftLiteral (encPair encNat encBool)
       (encPair encNat encBool) := by fun_prop [liftLiteral]
-  have hl := hl.tidy
   fun_prop [clause, Clause.oneNAEEncoding, encCNF]
 
 /-- A true reference makes every triple's replacement express exactly-one semantics. -/
@@ -206,24 +202,9 @@ theorem computableInPolyTime_toNAEEUThreeSAT :
 
 /-- Total correctness of the exact-three distinct-variable NAE compiler. -/
 theorem mem_NAEEUThreeSAT_toNAEEUThreeSAT_iff (φ : CNF ℕ) :
-    toNAEEUThreeSAT φ ∈ NAEEUThreeSAT ↔ φ ∈ PositiveOneInExactThreeSAT := by
-  unfold toNAEEUThreeSAT
-  split_ifs with hg
-  · obtain ⟨hw, hp⟩ := (PositiveOneInExactThreeSAT.syntaxCheck_iff φ).mp hg
-    have he : CNF.IsExactThreeDistinct (φ.flatMap NAEEUThreeSAT.clause) := by
-      intro d hd
-      obtain ⟨c, hc, hd⟩ := List.mem_flatMap.mp hd
-      exact NAEEUThreeSAT.exact_clause c (hw c hc) d hd
-    change (_ ∧ _) ↔ _ ∧ _ ∧ _
-    simp only [he, hp, true_and]
-    have hs := NAEEUThreeSAT.naeSatisfiable_formula φ hw
-    exact ⟨fun h => ⟨hw, hs.mp h⟩, fun h => hs.mpr h.2⟩
-  · have hg' : ¬((∀ c ∈ φ, c.length = 3 ∧ (c.map Prod.fst).Nodup) ∧
-        OneSAT.positiveCheck φ = true) :=
-      fun h => hg ((PositiveOneInExactThreeSAT.syntaxCheck_iff φ).mpr h)
-    simp only [NAEEUThreeSAT, Set.mem_ofPred_eq, CNF.IsExactThreeDistinct,
-      Clause.IsExactThreeDistinct, PositiveOneInExactThreeSAT] at *
-    simp_all
+    toNAEEUThreeSAT φ ∈ NAEEUThreeSAT ↔ φ ∈ PositiveOneInExactThreeSAT :=
+  PositiveOneInExactThreeSAT.ite_flatMap_mem_iff NAEEUThreeSAT.exact_clause
+    (NAEEUThreeSAT.naeSatisfiable_formula φ)
 
 /-- Positive exact-three exact-one SAT reduces to exact-three distinct-variable NAE SAT. -/
 theorem polyTimeReducible_PositiveOneInExactThreeSAT_NAEEUThreeSAT :

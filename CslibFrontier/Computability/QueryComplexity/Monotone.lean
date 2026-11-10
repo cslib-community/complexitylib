@@ -41,7 +41,7 @@ for monotone `f`.
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

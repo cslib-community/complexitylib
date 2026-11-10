@@ -21,7 +21,8 @@ uniformly enumerated function: repeated reads of one index never resample its va
 
 The closed-form incidence and group scores equal the actual finite completion averages. Their
 normalized average is preserved when an unassigned whole label is fixed. Mathlib `List.argmin`
-then gives a deterministic nonincreasing step when its explicit candidate list is exhaustive.
+then gives a deterministic nonincreasing step when its explicit candidate list is exhaustive: the
+first minimizer is at most the average (`argmin_le_expect`).
 The scores enumerate incidence/variable pairs, not full completions.
 
 This supplies score evaluation and one greedy step, not traversal of every choice index, an
@@ -202,8 +203,7 @@ theorem partialIncidencePotential_eq_expect {E V F : Type*} [Fintype E]
     partialIncidencePotential edge varLabels factorLabels =
       𝔼 a : V → L, 𝔼 d : F → L, potential (fun e =>
         (completeLabels varLabels a (edge e).2, completeLabels factorLabels d (edge e).1)) := by
-  have hL : 0 < Fintype.card (L × L) := Fintype.card_pos
-  simp_rw [potential_eq_collisions_sub _ hL, Finset.expect_sub_distrib,
+  simp_rw [potential_eq_collisions_sub, Finset.expect_sub_distrib,
     Finset.expect_sum_comm, Fintype.expect_const]
   simp only [partialIncidencePotential]
   simp_rw [partialIncidenceCollision_eq_expect]
@@ -221,8 +221,7 @@ theorem partialGroupPotential_eq_expect {T V G : Type*} [Fintype T] [DecidableEq
     (assigned : V → Option (T → G)) :
     partialGroupPotential assigned =
       𝔼 filler : V → T → G, ∑ t, potential (fun v => completeLabels assigned filler v t) := by
-  have hG : 0 < Fintype.card G := Fintype.card_pos
-  simp_rw [sum_potential_eq_collisions_sub _ hG, Finset.expect_sub_distrib,
+  simp_rw [sum_potential_eq_collisions_sub, Finset.expect_sub_distrib,
     Finset.expect_sum_comm, Fintype.expect_const]
   simp only [partialGroupPotential]
   simp_rw [partialCoordinateCollision_eq_expect]
@@ -333,6 +332,20 @@ theorem expect_normalizedPartialScore_update_factor {E V F T G : Type*} [Fintype
   rw [Finset.expect_add_distrib, ← Finset.expect_div,
     expect_partialIncidencePotential_update_factor _ _ _ k hk, Fintype.expect_const]
 
+/-- The first minimizer of `score` in an exhaustive candidate list exists and is at most the
+average of `score`. -/
+theorem argmin_le_expect {α : Type*} [Fintype α] [Nonempty α] (score : α → ℚ)
+    (values : List α) (hcover : ∀ a, a ∈ values) :
+    ∃ chosen, values.argmin score = some chosen ∧ score chosen ≤ 𝔼 a, score a := by
+  cases harg : values.argmin score with
+  | none =>
+    have hnil : values = [] := List.argmin_eq_none.mp harg
+    obtain ⟨a⟩ := (inferInstance : Nonempty α)
+    simpa only [hnil, List.not_mem_nil] using hcover a
+  | some chosen =>
+    refine ⟨chosen, rfl, Finset.le_expect Finset.univ_nonempty fun a _ => ?_⟩
+    exact List.le_of_mem_argmin (hcover a) (by simp only [harg, Option.mem_some])
+
 /-- Deterministic candidate selection for one variable: enumerate the supplied whole labels
 and retain the first minimum. Empty candidate lists return `none`. -/
 @[expose] def bestVariableLabel {E V F T G : Type*} [Fintype E] [Fintype V]
@@ -354,23 +367,11 @@ theorem bestVariableLabel_spec {E V F T G : Type*} [Fintype E] [Fintype V]
     ∃ chosen, bestVariableLabel edge varLabels factorLabels C k values = some chosen ∧
       normalizedPartialScore edge (Function.update varLabels k (some chosen)) factorLabels C ≤
         normalizedPartialScore edge varLabels factorLabels C := by
-  let score := fun word =>
-    normalizedPartialScore edge (Function.update varLabels k (some word)) factorLabels C
-  change ∃ chosen, values.argmin score = some chosen ∧
-    score chosen ≤ normalizedPartialScore edge varLabels factorLabels C
-  cases harg : values.argmin score with
-  | none =>
-    have hnil : values = [] := List.argmin_eq_none.mp harg
-    obtain ⟨word⟩ := (inferInstance : Nonempty (T → G))
-    simpa only [hnil, List.not_mem_nil] using hcover word
-  | some chosen =>
-    refine ⟨chosen, rfl, ?_⟩
-    calc
-      score chosen ≤ 𝔼 word : T → G, score word := by
-        apply Finset.le_expect Finset.univ_nonempty
-        intro word _
-        exact List.le_of_mem_argmin (hcover word) (by simp only [harg, Option.mem_some])
-      _ = _ := expect_normalizedPartialScore_update_variable edge varLabels factorLabels C k hk
+  obtain ⟨chosen, harg, hle⟩ := argmin_le_expect (fun word =>
+      normalizedPartialScore edge (Function.update varLabels k (some word)) factorLabels C)
+    values hcover
+  exact ⟨chosen, harg,
+    hle.trans_eq (expect_normalizedPartialScore_update_variable edge varLabels factorLabels C k hk)⟩
 
 /-- Deterministic candidate selection for one factor, without changing variable groups. -/
 @[expose] def bestFactorLabel {E V F T G : Type*} [Fintype E] [Fintype V]
@@ -391,22 +392,10 @@ theorem bestFactorLabel_spec {E V F T G : Type*} [Fintype E] [Fintype V]
     ∃ chosen, bestFactorLabel edge varLabels factorLabels C k values = some chosen ∧
       normalizedPartialScore edge varLabels (Function.update factorLabels k (some chosen)) C ≤
         normalizedPartialScore edge varLabels factorLabels C := by
-  let score := fun word =>
-    normalizedPartialScore edge varLabels (Function.update factorLabels k (some word)) C
-  change ∃ chosen, values.argmin score = some chosen ∧
-    score chosen ≤ normalizedPartialScore edge varLabels factorLabels C
-  cases harg : values.argmin score with
-  | none =>
-    have hnil : values = [] := List.argmin_eq_none.mp harg
-    obtain ⟨word⟩ := (inferInstance : Nonempty (T → G))
-    simpa only [hnil, List.not_mem_nil] using hcover word
-  | some chosen =>
-    refine ⟨chosen, rfl, ?_⟩
-    calc
-      score chosen ≤ 𝔼 word : T → G, score word := by
-        apply Finset.le_expect Finset.univ_nonempty
-        intro word _
-        exact List.le_of_mem_argmin (hcover word) (by simp only [harg, Option.mem_some])
-      _ = _ := expect_normalizedPartialScore_update_factor edge varLabels factorLabels C k hk
+  obtain ⟨chosen, harg, hle⟩ := argmin_le_expect (fun word =>
+      normalizedPartialScore edge varLabels (Function.update factorLabels k (some word)) C)
+    values hcover
+  exact ⟨chosen, harg,
+    hle.trans_eq (expect_normalizedPartialScore_update_factor edge varLabels factorLabels C k hk)⟩
 
 end Cslib.BalancedSchedules

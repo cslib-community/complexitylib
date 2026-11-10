@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Boolean.Tableau.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
+import CslibFrontier.Tactic.Space
 
 /-!
 # The gates of the uniform tableau within linear work space
@@ -206,6 +207,14 @@ theorem blockSize_inSpace :
   budget_natAdd (colStart_inSpace (k := k) (State := State) hT hin)
     (budget_natMul (numCols_inSpace hT hin) (budget_const _ hin))
 
+omit [DecidableEq State] in
+/-- Computing the output wire `outWire k State (n x) (T x)` within space budget `Bs`. -/
+theorem outWire_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
+    ComputableInSpace (fun x => outWire k State (n x) (T x)) encIn encNat Bs :=
+  budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
+    (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
+    (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
+
 /-- Explicit finite enumeration of `ColSel`. -/
 instance : FinEnum ColSel :=
   FinEnum.ofList [.same, .prev, .next, .last] fun x => by cases x <;> decide
@@ -215,20 +224,17 @@ instance : FinEnum Guard :=
   FinEnum.ofList [.always, .pos, .ltLast, .inRange, .outRange, .isZero, .isEnd, .leEnd]
     fun x => by cases x <;> decide
 
+attribute [local fun_prop] globStart_inSpace gfStart_inSpace colStart_inSpace
+
 omit [DecidableEq State] in
 private theorem regionStart_inSpace {i : α → Fin 4}
     (hi : ComputableInSpace i encIn (encFinEnum (Fin 4)) Bs) :
     ComputableInSpace (fun x => regionStart k State (T x) (i x)) encIn encNat Bs := by
-  have h₀ := budget_finite (encC := encBool) (fun j : Fin 4 => decide (j = 0)) hi
-  have h₁ := budget_finite (encC := encBool) (fun j : Fin 4 => decide (j = 1)) hi
-  have h₂ := budget_finite (encC := encBool) (fun j : Fin 4 => decide (j = 2)) hi
-  refine (budget_ite h₀ (budget_const (encB := encNat) 0 hin)
-    (budget_ite h₁ (globStart_inSpace (k := k) hT hin)
-      (budget_ite h₂ (gfStart_inSpace (k := k) (State := State) hT hin)
-      (colStart_inSpace (k := k) (State := State) hT hin)))).of_enc_eq fun x => ?_
-  simp only [regionStart, decide_eq_true_eq]
+  space [regionStart]
 
 end Layout
+
+attribute [local fun_prop] regionStart_inSpace blockSize_inSpace
 
 section Resolve
 
@@ -244,48 +250,16 @@ omit [DecidableEq State] in
 private theorem resolve_inSpace {r : α → Ref k State}
     (hr : ComputableInSpace r encIn (encFinite (Ref k State)) Bs) :
     ComputableInSpace (fun x => (r x).resolve (n x) (T x) (t x) (c x)) encIn encNat Bs := by
-  have hk (i : Fin 4) :=
-    budget_finite (encC := encBool) (fun r : Ref k State => decide (r.kind = i)) hr
-  have hc0 := budget_natLt (budget_const (encB := encNat) 0 hin) hc
-  have hcn := budget_natLt hc (budget_natAdd hn (budget_const 1 hin))
-  have hcT := budget_natLt (budget_natAdd hc (budget_const 1 hin))
-    (budget_natAdd (budget_natMul (budget_const 2 hin) hT) (budget_const 1 hin))
-  have hcz := budget_natEq hc (budget_const (encB := encNat) 0 hin)
-  have hce := budget_natEq hc (budget_natAdd hn (budget_const 1 hin))
-  have hcn2 := budget_natLt hc (budget_natAdd hn (budget_const 2 hin))
-  -- the input bit
-  have hinpc := budget_finite (encC := encBool) (fun p : Bool × Bool => p.1 && p.2)
-    (budget_prod hc0 hcn)
-  have hinp := budget_ite hinpc (budget_natSub hc (budget_const 1 hin)) hn
-  -- the guard
-  have hg := budget_finite (encC := encBool) Guard.ofTests
-    (budget_prod (budget_finite (encC := encFinEnum Guard) Ref.guardOf hr)
-      (budget_prod hc0 (budget_prod hcT (budget_prod hcn (budget_prod hcz
-        (budget_prod hce hcn2))))))
-  -- the position
-  have hloc := budget_finite (encC := encFinite (Loc k State)) Ref.locOf hr
-  have hprev := budget_finite (encC := encBool) Ref.prevOf hr
-  have ht' := budget_ite hprev (budget_natSub ht (budget_const 1 hin)) ht
-  have hreg := regionStart_inSpace (k := k) (State := State) hT hin
-    (budget_finite (encC := encFinEnum (Fin 4)) Loc.region hloc)
+  have hk := budget_finite (encC := encFinEnum (Fin 4)) Ref.kind hr
+  have hg := budget_finite (encC := encFinEnum Guard) Ref.guardOf hr
+  have hl := budget_finite (encC := encFinite (Loc k State)) Ref.locOf hr
   have hcs := budget_finite (encC := encFinEnum ColSel) Ref.csOf hr
-  have hcs₀ := budget_finite (encC := encBool) (fun cs : ColSel => decide (cs = .same)) hcs
-  have hcs₁ := budget_finite (encC := encBool) (fun cs : ColSel => decide (cs = .prev)) hcs
-  have hcs₂ := budget_finite (encC := encBool) (fun cs : ColSel => decide (cs = .next)) hcs
-  have hcol := budget_ite hcs₀ hc (budget_ite hcs₁ (budget_natSub hc (budget_const 1 hin))
-    (budget_ite hcs₂ (budget_natAdd hc (budget_const 1 hin))
-      (budget_natMul (budget_const 2 hin) hT)))
-  have hmult := budget_finite (encC := encNat) Loc.mult hloc
-  have hlidx := budget_finite (encC := encNat) Loc.lidx hloc
-  have hwire := budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-    (budget_natMul ht' (blockSize_inSpace (k := k) (State := State) hT hin)))
-    (budget_natAdd (budget_natAdd hreg (budget_natMul hcol hmult)) hlidx)
-  refine (budget_ite (hk 0) hn (budget_ite (hk 1) (budget_natAdd hn (budget_const 1 hin))
-    (budget_ite (hk 2) hinp (budget_ite hg hwire hn)))).of_enc_eq fun x => ?_
-  rw [Ref.resolve_eq, ColSel.apply_eq]
-  simp only [decide_eq_true_eq]
+  simp only [Ref.resolve_eq, ColSel.apply_eq]
+  space
 
 end Resolve
+
+attribute [local fun_prop] resolve_inSpace
 
 /-- Whether an operation is a constant. -/
 private def opIsConst : Op → Bool
@@ -326,28 +300,14 @@ private theorem gateAt_inSpace (ht : ComputableInSpace t encIn encNat Bs)
     (hl : ComputableInSpace l encIn (encFinite (Loc k State)) Bs) :
     ComputableInSpace (fun x => gateAt tm (n x) (T x) (t x) (c x) (l x)) encIn encGate
       Bs := by
-  have ht0 := budget_natEq ht (budget_const (encB := encNat) 0 hin)
-  have hc1 := budget_natEq hc (budget_const (encB := encNat) 1 hin)
-  have hcT := budget_natEq hc hT
+  have hop := budget_finite (encC := encOp) (fun l => (table tm l).1) hl
   have hinit := budget_finite (encC := encOp)
     (fun p : Loc k State × Bool × Bool => Op.const (initBitOf tm p))
-    (budget_prod hl (budget_prod hc1 hcT))
-  have hop := budget_finite (encC := encOp) (fun l => (table tm l).1) hl
-  have hr₁ := resolve_inSpace hn hT ht hc hin
-    (budget_finite (encC := encFinite (Ref k State)) (fun l => (table tm l).2.1) hl)
-  have hr₂ := resolve_inSpace hn hT ht hc hin
-    (budget_finite (encC := encFinite (Ref k State)) (fun l => (table tm l).2.2) hl)
-  have hk₀ := budget_finite (encC := encBool) (fun l => opIsConst (table tm l).1) hl
-  have hk₁ := budget_finite (encC := encBool) (fun l => decide ((table tm l).1 = .not)) hl
-  have hnil := budget_const (encB := encList encNat) ([] : List ℕ) hin
-  have hargs := budget_ite hk₀ hnil (budget_ite hk₁ (budget_cons hr₁ hnil)
-    (budget_cons hr₁ (budget_cons hr₂ hnil)))
-  refine (budget_prod (budget_ite ht0 hinit hop) (budget_ite ht0 hnil hargs)).of_enc_eq
-    fun x => ?_
-  congr 1
-  by_cases h : t x = 0
-  · simp [gateAt, h, initBit_eq]
-  · simp [gateAt, h, argsOf_eq]
+    (budget_prod hl (budget_prod (budget_natEq hc (budget_const 1 hin)) (budget_natEq hc hT)))
+  have hr₁ := budget_finite (encC := encFinite (Ref k State)) (fun l => (table tm l).2.1) hl
+  have hr₂ := budget_finite (encC := encFinite (Ref k State)) (fun l => (table tm l).2.2) hl
+  simp only [gateAt, initBit_eq, argsOf_eq]
+  space
 
 /-- **The gate with a given number**, within a budget covering `n`, `T` and the number. -/
 theorem gateCode_inSpace {g : α → ℕ} (hg : ComputableInSpace g encIn encNat Bs) :

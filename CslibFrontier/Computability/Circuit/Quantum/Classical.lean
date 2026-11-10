@@ -27,11 +27,12 @@ Bits of a basis string are read by their number (`Cslib.Quantum.readBit`), as in
 ## Main definitions
 
 * `Cslib.Quantum.readBit`: bit `c` of a basis string, `false` past its end.
-* `Cslib.Quantum.GateCode.classicalStep`: the permutation of a classical gate code.
+* `Cslib.Quantum.GateCode.classicalStep`: the action of a classical gate code on basis strings, a
+  permutation when the target is not a control.
 * `Cslib.Quantum.GateCode.IsClassical`: a list of well-formed classical gate codes.
 * `Cslib.Quantum.GateCode.classicalRun`, `Cslib.Quantum.GateCode.classicalUnrun`: the composed
-  permutation of a list of classical codes and its inverse.
-* `Cslib.Quantum.GateCode.swapCodes`: three CNOT gates moving a qubit into qubit `0`.
+  action of a list of classical codes and, for a list of well-formed classical codes, its inverse.
+* `Cslib.Quantum.GateCode.swapCodes`: three CNOT gates moving qubit `a ≠ 0` into qubit `0`.
 
 ## Main results
 
@@ -67,8 +68,9 @@ theorem funext_readBit {x y : Fin m → Bool} (h : ∀ c, readBit x c = readBit 
 
 namespace GateCode
 
-/-- The permutation of basis strings of the classical gate code `(false, t, cs)`: bit `t` flips when
-every bit of `cs` is one. It is the identity when `t` is out of range. -/
+/-- The action on basis strings of the classical gate code `(false, t, cs)`: bit `t` flips when
+every bit of `cs` is one. It is the identity when `t` is out of range, and a permutation when `t`
+is not in `cs` (`classicalStep_classicalStep`). -/
 def classicalStep (g : GateCode) (x : Fin m → Bool) : Fin m → Bool :=
   if h : g.2.1 < m then Function.update x ⟨g.2.1, h⟩ (x ⟨g.2.1, h⟩ ^^ g.2.2.all (readBit x))
   else x
@@ -135,11 +137,12 @@ theorem target_notMem_of_wellFormed {g : GateCode} (h₁ : g.1 = false) (h₂ : 
   subst h₁
   exact (List.nodup_cons.mp h₂.2.1).1
 
-/-- The composed permutation of a list of classical codes, applied first to last. -/
+/-- The composed action of a list of classical codes, applied first to last. -/
 def classicalRun (gs : List GateCode) (x : Fin m → Bool) : Fin m → Bool :=
   gs.foldl (fun y g => classicalStep g y) x
 
-/-- The inverse of `classicalRun`: the permutations applied last to first. -/
+/-- The steps of `classicalRun` applied last to first: the inverse of `classicalRun` when
+`IsClassical m gs` (`classicalUnrun_classicalRun`, `classicalRun_classicalUnrun`). -/
 def classicalUnrun (gs : List GateCode) (y : Fin m → Bool) : Fin m → Bool :=
   gs.foldr (fun g y => classicalStep g y) y
 
@@ -268,21 +271,13 @@ theorem exists_toPlacedGate?_eval_apply {g : GateCode} (h₁ : g.1 = false) (h�
     ∃ pg, toPlacedGate? m g = some pg ∧
       ∀ (ψ : Qubits m) y, (pg.eval ψ).ofLp y = ψ.ofLp (classicalStep g y) := by
   obtain ⟨pg, hpg, hket⟩ := exists_toPlacedGate?_eval_ket h₁ h₂
-  refine ⟨pg, hpg, fun ψ y => ?_⟩
-  have hinv := classicalStep_classicalStep (m := m) (target_notMem_of_wellFormed h₁ h₂)
-  have hrow (z : Fin m → Bool) :
-      (pg.matrix : Matrix _ _ ℂ) y z = if z = classicalStep g y then 1 else 0 := by
-    rw [← PlacedGate.eval_ket_apply, hket, ket_apply]
-    refine if_congr ⟨fun h => ?_, fun h => ?_⟩ rfl rfl
-    · rw [h, hinv]
-    · rw [h, hinv]
-  simp only [PlacedGate.eval, unitaryEquiv_apply, Matrix.mulVec, dotProduct, hrow, ite_mul,
-    one_mul, zero_mul, sum_ite_eq', mem_univ, ite_true]
+  exact ⟨pg, hpg, pg.eval_apply_of_involutive
+    (classicalStep_classicalStep (target_notMem_of_wellFormed h₁ h₂)) hket⟩
 
 
 /-! ### Swapping a qubit into qubit `0` -/
 
-/-- Three CNOT gates swapping qubit `a` into qubit `0`. -/
+/-- For `a ≠ 0`, three CNOT gates swapping qubit `a` into qubit `0`. -/
 def swapCodes (a : ℕ) : List GateCode := [(false, 0, [a]), (false, a, [0]), (false, 0, [a])]
 
 theorem isClassical_swapCodes {N a : ℕ} (ha : 0 < a) (hN : a < N) :

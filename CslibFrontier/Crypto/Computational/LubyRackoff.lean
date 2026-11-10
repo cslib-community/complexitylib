@@ -13,9 +13,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
+import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
@@ -497,7 +499,7 @@ end Queries
 oracle PPT, when the handler is oracle PPT and its replies are bounded by an efficient allowance.
 -/
 private theorem isOraclePPT_interpret_handler {Operation External : Type} [DecidableEq Operation]
-    [FinEnum Operation] [DecidableEq External] [Finite External]
+    [FinEnum Operation] [DecidableEq External]
     {adversary : ℕ → List Bool → WordOracleComp Operation Bool}
     (hadversary : IsOraclePPT encBool adversary)
     {handler : ℕ → Operation × List Bool → WordOracleComp External (List Bool)}
@@ -722,7 +724,7 @@ private theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonem
       left_inv := fun _ => rfl, right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+  simp only [pmf_norm]; rfl
 
 /-- **Three random Feistel rounds against a random permutation**, for randomized word-oracle
 adversaries ([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round
@@ -768,36 +770,25 @@ against oracle-PPT distinguishers. -/
 theorem PseudorandomFunction.prp_lubyRackoffCipher {family : List Bool → List Bool → List Bool}
     (hfamily : PseudorandomFunction family) :
     (lubyRackoffCipher family hfamily.polyTime hfamily.length_eq).PRP := by
-  intro adversary hadversary
-  obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
-  let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
-  have hQ : PolynomiallyBounded fun n => 3 * (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => 3 * Q n ^ 2)
-      ((PolynomiallyBounded.const 3).mul
-        (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2))
-      fun n => ?_
-    change 3 * (Q n).choose 2 ≤ 3 * Q n ^ 2
-    rw [Nat.choose_two_right, sq]
-    exact Nat.mul_le_mul_left _
-      ((Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _)))
   have hgeometric : Negligible fun n => ((2 : ℝ≥0) ^ n)⁻¹ := by
     simpa only [inv_pow] using negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)
-  refine negligible_of_le ((hfamily.multiKey 3 (lubyRackoffAdversary adversary)
-    (isOraclePPT_lubyRackoffAdversary hadversary)).add
-      (hgeometric.polynomiallyBounded_mul hQ)) fun n => ?_
-  dsimp only [Pi.add_apply]
-  rw [eval_prpRealGame_lubyRackoffCipher hfamily]
-  refine (Game.advantage_triangle _
-    (ProbComp.eval (prfMultiIdealGame 3 (lubyRackoffAdversary adversary) n)) _).trans
-      (add_le_add le_rfl ?_)
-  rw [← NNReal.coe_le_coe]
-  have hrandom := advantage_lubyRackoffRandomRounds_prpIdealGame_le adversary n (Q n)
-    (by simpa only [List.length_nil, Nat.add_zero, Q] using (hbounds n []).1)
+  have hreal : Game.Indistinguishable
+      (fun adversary n => ProbComp.eval
+        ((lubyRackoffCipher family hfamily.polyTime hfamily.length_eq).prpRealGame adversary n))
+      (fun adversary n => ProbComp.eval (prfMultiIdealGame 3 (lubyRackoffAdversary adversary) n))
+      (IsOraclePPT encBool) := by
+    intro adversary hadversary
+    simpa only [eval_prpRealGame_lubyRackoffCipher hfamily] using
+      hfamily.multiKey 3 (lubyRackoffAdversary adversary)
+        (isOraclePPT_lubyRackoffAdversary hadversary)
+  refine hreal.trans (Game.Indistinguishable.of_birthday_queryBounded_real 3 hgeometric
+    fun n Q adversary hQ => ?_)
+  have hrandom := advantage_lubyRackoffRandomRounds_prpIdealGame_le adversary n Q hQ
   have hsmall : (((2 : ℝ) ^ n)⁻¹) ^ 2 ≤ ((2 : ℝ) ^ n)⁻¹ := by
     have h₀ : 0 ≤ ((2 : ℝ) ^ n)⁻¹ := by positivity
     have h₁ : ((2 : ℝ) ^ n)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
     nlinarith
-  have hchoose : (0 : ℝ) ≤ (Q n).choose 2 := Nat.cast_nonneg _
+  have hchoose : (0 : ℝ) ≤ Q.choose 2 := Nat.cast_nonneg _
   refine hrandom.trans ?_
   push_cast
   nlinarith
@@ -1119,7 +1110,7 @@ private theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonemp
       right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod, ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+  simp only [pmf_norm]; rfl
 
 /-- **Four random Feistel rounds against a random permutation, in both directions**
 ([LubyRackoff1988]), for randomized bidirectional word-oracle adversaries: with independent
@@ -1168,36 +1159,27 @@ permutation against oracle-PPT distinguishers. -/
 theorem PseudorandomFunction.strongPRP_lubyRackoff4Cipher
     {family : List Bool → List Bool → List Bool} (hfamily : PseudorandomFunction family) :
     (lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).StrongPRP := by
-  intro adversary hadversary
-  obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
-  let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
-  have hQ : PolynomiallyBounded fun n => 4 * (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => 4 * Q n ^ 2)
-      ((PolynomiallyBounded.const 4).mul
-        (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2))
-      fun n => ?_
-    change 4 * (Q n).choose 2 ≤ 4 * Q n ^ 2
-    rw [Nat.choose_two_right, sq]
-    exact Nat.mul_le_mul_left _
-      ((Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _)))
   have hgeometric : Negligible fun n => ((2 : ℝ≥0) ^ n)⁻¹ := by
     simpa only [inv_pow] using negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)
-  refine negligible_of_le ((hfamily.multiKey 4 (strongLubyRackoffAdversary adversary)
-    (isOraclePPT_strongLubyRackoffAdversary hadversary)).add
-      (hgeometric.polynomiallyBounded_mul hQ)) fun n => ?_
-  dsimp only [Pi.add_apply]
-  rw [eval_strongPRPRealGame_lubyRackoff4Cipher hfamily]
-  refine (Game.advantage_triangle _
-    (ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n)) _).trans
-      (add_le_add le_rfl ?_)
-  rw [← NNReal.coe_le_coe]
-  have hrandom := advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le adversary n (Q n)
-    (by simpa only [List.length_nil, Nat.add_zero, Q] using (hbounds n []).1)
+  have hreal : Game.Indistinguishable
+      (fun adversary n => ProbComp.eval
+        ((lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).strongPRPRealGame
+          adversary n))
+      (fun adversary n =>
+        ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n))
+      (IsOraclePPT encBool) := by
+    intro adversary hadversary
+    simpa only [eval_strongPRPRealGame_lubyRackoff4Cipher hfamily] using
+      hfamily.multiKey 4 (strongLubyRackoffAdversary adversary)
+        (isOraclePPT_strongLubyRackoffAdversary hadversary)
+  refine hreal.trans (Game.Indistinguishable.of_birthday_queryBounded_real 4 hgeometric
+    fun n Q adversary hQ => ?_)
+  have hrandom := advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le adversary n Q hQ
   have hsmall : (((2 : ℝ) ^ n)⁻¹) ^ 2 ≤ ((2 : ℝ) ^ n)⁻¹ := by
     have h₀ : 0 ≤ ((2 : ℝ) ^ n)⁻¹ := by positivity
     have h₁ : ((2 : ℝ) ^ n)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
     nlinarith
-  have hchoose : (0 : ℝ) ≤ (Q n).choose 2 := Nat.cast_nonneg _
+  have hchoose : (0 : ℝ) ≤ Q.choose 2 := Nat.cast_nonneg _
   refine hrandom.trans ?_
   push_cast
   nlinarith

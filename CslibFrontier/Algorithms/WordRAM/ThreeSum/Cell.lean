@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.Weight
+import CslibFrontier.Computability.GenericRAM.Signed.Fits
 
 /-!
 # One cell of the three Convolution-3SUM matrices
@@ -144,11 +145,6 @@ private theorem step_preserves : ∀ i : Fin 28,
     i.val = 10 ∨ i.val = 11 ∨ (14 ≤ i.val ∧ i.val ≤ 21) ∨ 26 ≤ i.val →
       step.Preserves i := by decide
 
-private theorem signed_nat_mono {w H k : ℕ} (hH : GenericRAM.Signed.Fits w (H : ℤ))
-    (hk : k ≤ H) : GenericRAM.Signed.Fits w (k : ℤ) :=
-  ⟨hH.1, le_trans (neg_nonpos.mpr (by positivity)) (Nat.cast_nonneg k),
-    by have := hH.2.2; omega⟩
-
 private theorem encode_nat (k : ℕ) : encode (k : ℤ) = k + k := by
   simp [encode, two_mul]
 
@@ -263,7 +259,7 @@ private theorem exec_BC {w N b d q r c t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (
     dsimp only [ix]
     split_ifs
     · exact ⟨hidx.1, by have := hidx.2.1; have := hidx.2.2; omega, by have := hidx.2.2; omega⟩
-    · exact signed_nat_mono hidx (by dsimp [a]; omega)
+    · exact hidx.of_natAbs_le (by rw [Int.natAbs_natCast]; dsimp [a]; omega)
   obtain ⟨y, hy, hym, -⟩ := exec_weight (d := d + q) false z
     (by dsimp [z, z₁, ix]; split_ifs <;> simp +decide [index, dest, encode, two_mul])
     (by dsimp [z, z₁, z₀]; split_ifs <;> simpa +decide [len, index, dest] using hlen)
@@ -324,7 +320,8 @@ private theorem exec_AC {w N b d q r c t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (
 
 /-- All index computations, three guarded loads, optional signed negation, stores and argument
 preparation take at most 128 native instructions. The final halt is excluded. Input cells precede
-all destinations; the three writes occur in AB, BC, AC order. -/
+the AB and BC destinations, and the AC destination may alias the input; the three writes occur
+in AB, BC, AC order. -/
 theorem exec_step {w N b ab bc ac q t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (x : Data 28)
     (hcell : x.regs cell = q) (ht : x.regs side = t) (hs : x.regs inst = s)
     (hab : x.regs matAB = ab) (hbc : x.regs matBC = bc) (hac : x.regs matAC = ac)
@@ -349,7 +346,7 @@ theorem exec_step {w N b ab bc ac q t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (x :
   have hrow : q / t < t := Nat.div_lt_of_lt_mul hq
   have hcol : q % t < t := Nat.mod_lt q htpos
   have hnat (k : ℕ) (hk : k ≤ 2 * (t * t) + s + 1) : GenericRAM.Signed.Fits w (k : ℤ) :=
-    signed_nat_mono hidx hk
+    hidx.of_natAbs_le (by rwa [Int.natAbs_natCast])
   have hfits (k : ℕ) (hk : k ≤ 2 * (t * t) + s + 1) : Fits (w + 2) k :=
     ((encode_fits (hnat k hk)).mono (by omega)).of_le (by rw [encode_nat]; omega)
   obtain ⟨p, hp, hpm, hpr, hpc, hpF, hpnF, hpreg⟩ := exec_prepare x hcell ht hf

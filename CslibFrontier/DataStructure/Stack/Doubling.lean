@@ -91,7 +91,8 @@ def footprint (s : State) : Finset ℕ := (Block.mk hdr 3).footprint ∪ (items 
 /-- The cells that growing to capacity `2 C` may still allocate. -/
 def room (C : ℕ) (s : State) : ℕ := 4 * C - 2 * capacity hdr s
 
-/-- Two credits per item beyond half the capacity, which pay for copying them. -/
+/-- Four credits per item beyond half the capacity: `2 n` on a full array of `n` items, which pays
+for copying them. -/
 def potential (s : State) : ℕ := 2 * (2 * count hdr s - capacity hdr s)
 
 /-- The implementation invariant. -/

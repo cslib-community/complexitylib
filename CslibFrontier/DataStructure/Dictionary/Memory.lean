@@ -20,9 +20,10 @@ value `v` (`decode`). A lookup reads the key's cell and an insertion writes it, 
 each (`amortized`). The table has a cell for every key, so the capacity `n_max` never binds.
 Values below `V` are stored, so `V` must fit a word.
 
-The table is framed by its field (`framed`), so it shares memory with other structures. Allocated
-in memory that is zero above the frontier, it starts empty at the cost of one memory unit
-(`inv_alloc`).
+The table is framed by its field (`framed`), so it shares memory with other structures. Allocating
+its `U` cells without clearing (`Memory.allocDirty U`) costs one memory unit
+(`Memory.charge_allocDirty`); in memory that is zero above the frontier, the cells are then an
+empty table (`inv_alloc`).
 
 ## Main definitions
 
@@ -58,6 +59,11 @@ def decode : ℕ → Option ℕ
 @[simp] theorem decode_zero : decode 0 = none := rfl
 
 @[simp] theorem decode_succ (v : ℕ) : decode (v + 1) = some v := rfl
+
+/-- A nonzero cell decodes to its predecessor. -/
+theorem decode_of_ne_zero {x : ℕ} (hx : x ≠ 0) : decode x = some (x - 1) := by
+  obtain ⟨v, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hx
+  rfl
 
 variable {U : ℕ} (T : Block)
 

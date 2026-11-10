@@ -17,7 +17,7 @@ import Mathlib.Tactic.Linarith
 The modified calculation starts from `sentinelState marked L a` and uses increments
 `sentinelFirst marked 0 (Δ i)`. Thus only marked first-channel increments are removed; second
 increments are unchanged. If the actual modified input ranks and thresholds are bounded by
-`R ≥ 0`, and `3R` plus the total absolute first-channel variation is below every marked initial
+`R`, and `3R` plus the total absolute first-channel variation is below every marked initial
 first coordinate, the two actual calculations remain coupled at every prefix.
 
 Their defaults agree, the modified full row is the sentinel replacement of the original row,
@@ -37,8 +37,6 @@ separate. No implementation for finding or storing the analytical sentinels is a
 
 ## Main results
 
-* `Cslib.RowCompression.firstRank_update_le_of_le`: explicit input rank and threshold ceilings
-  bound the updated padded rank, without reference-row shape hypotheses.
 * `Cslib.RowCompression.iterate_sentinelState_of_sum_abs_lt`: actual multi-step removal with
   raw-prefix preservation at marked endpoints and exact rank equality after positive prefixes.
 
@@ -72,30 +70,7 @@ section Update
 
 variable {s marked : Finset ι} {n K : ℕ} {ρ z R L : ℝ} {w : ι → Fin 2 → ℝ}
 
-/-- The updated padded first rank remains below a common input rank and threshold ceiling.
-No lower bound on raw first entries or upper bound on second entries is needed. -/
-theorem firstRank_update_le_of_le (hK : 0 < K) (hR : 0 ≤ R)
-    (hq : firstRank s K z w ≤ R) (hu : threshold s n ρ z w ≤ R) :
-    firstRank s K (newDefault s n K ρ z w) (update s n K ρ z w) ≤ R := by
-  have hb : newDefault s n K ρ z w ≤ R :=
-    max_le hu ((min_le_left _ _).trans hq)
-  refine max_le hb ?_
-  by_contra h
-  have hcard := (lt_kthLargest_iff hK hR).mp (lt_of_not_ge h)
-  have hsub : ({y ∈ s | R < update s n K ρ z w y 0} : Finset ι) ⊆
-      {y ∈ s | R < w y 0} := by
-    intro y hy
-    obtain ⟨hys, hy⟩ := mem_filter.mp hy
-    refine mem_filter.mpr ⟨hys, ?_⟩
-    by_contra hfirst
-    have hout := (update_mem_Icc (s := s) (n := n) (K := K) (ρ := ρ) (z := z) (w := w) y 0).2
-    change update s n K ρ z w y 0 ≤ max (w y 0) (newDefault s n K ρ z w) at hout
-    exact (not_lt_of_ge (hout.trans (max_le (not_lt.mp hfirst) hb))) hy
-  have hlt := (lt_kthLargest_iff hK hR).mpr (hcard.trans (card_le_card hsub))
-  exact (not_lt_of_ge (kthLargest_le_firstRank.trans hq)) hlt
-
-private theorem sentinelFirst_update_all (hmarked : marked ⊆ s)
-    (hK : 0 < K) (hKn : K ≤ n) (hR : 0 ≤ R) (hL : 3 * R < L)
+private theorem sentinelFirst_update_all (hmarked : marked ⊆ s) (hL : 3 * R < L)
     (hw : ∀ y ∈ s, y ∈ marked → 3 * R < w y 0)
     (hq : firstRank s K z (sentinelFirst marked L w) ≤ R)
     (hu : threshold s n ρ z (sentinelFirst marked L w) ≤ R) :
@@ -103,22 +78,23 @@ private theorem sentinelFirst_update_all (hmarked : marked ⊆ s)
       update s n K ρ z (sentinelFirst marked L w) := by
   funext y
   by_cases hm : y ∈ marked
-  · exact sentinelFirst_update hK hKn hR hL hw hq hu (hmarked hm)
-  · have hL' : R < L := by linarith
+  · exact sentinelFirst_update hL hw hq hu (hmarked hm)
+  · have hR : 0 ≤ R := threshold_nonneg.trans hu
+    have hL' : R < L := by linarith
     have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
     rw [sentinelFirst_of_not_mem hm]
     unfold update
-    rw [threshold_eq_sentinelFirst (hK.trans_le hKn) hR hL' hw' hu,
-      newDefault_eq_sentinelFirst (hK.trans_le hKn) hK hR hL' hw' hq hu,
+    rw [threshold_eq_sentinelFirst hL' hw' hu, newDefault_eq_sentinelFirst hL' hw' hq hu,
       sentinelFirst_of_not_mem hm]
 
 private theorem advance_sentinelState {a : State ι} {Δ : ι → Fin 2 → ℝ}
-    (hmarked : marked ⊆ s) (hK : 0 < K) (hKn : K ≤ n) (hR : 0 ≤ R) (hL : 3 * R < L)
+    (hmarked : marked ⊆ s) (hL : 3 * R < L)
     (hw : ∀ y ∈ s, y ∈ marked → 3 * R < (a.row + Δ) y 0)
     (hq : firstRank s K a.defaultValue (sentinelFirst marked L (a.row + Δ)) ≤ R)
     (hu : threshold s n ρ a.defaultValue (sentinelFirst marked L (a.row + Δ)) ≤ R) :
     advance s n K ρ (sentinelFirst marked 0 Δ) (sentinelState marked L a) =
       sentinelState marked L (advance s n K ρ Δ a) := by
+  have hR : 0 ≤ R := threshold_nonneg.trans hu
   have hL' : R < L := by linarith
   have hw' : ∀ y ∈ s, y ∈ marked → R < (a.row + Δ) y 0 := by
     intro y hy hm
@@ -126,8 +102,8 @@ private theorem advance_sentinelState {a : State ι} {Δ : ι → Fin 2 → ℝ}
   unfold advance sentinelState
   rw [← sentinelFirst_add]
   congr 1
-  · exact (newDefault_eq_sentinelFirst (hK.trans_le hKn) hK hR hL' hw' hq hu).symm
-  · exact (sentinelFirst_update_all hmarked hK hKn hR hL hw hq hu).symm
+  · exact (newDefault_eq_sentinelFirst hL' hw' hq hu).symm
+  · exact (sentinelFirst_update_all hmarked hL hw hq hu).symm
 
 end Update
 
@@ -154,7 +130,7 @@ in the compression identity region. Both original marked channels follow their r
 The result also identifies the actual padded ranks after every positive prefix and bounds them
 by `R`. No equality or regularity law for final row outputs is assumed. -/
 theorem iterate_sentinelState_of_sum_abs_lt (m : ℕ) (hmarked : marked ⊆ s)
-    (hK : 0 < K) (hKn : ∀ i < m, K ≤ n i) (hR : 0 ≤ R) (hL : 3 * R < L)
+    (hK : 0 < K) (hL : 3 * R < L)
     (hvar : ∀ y ∈ marked, 3 * R + ∑ i ∈ range m, |Δ i y 0| < a.row y 0) :
     let Δ' := fun i => sentinelFirst marked 0 (Δ i)
     let b := sentinelState marked L a
@@ -191,6 +167,7 @@ theorem iterate_sentinelState_of_sum_abs_lt (m : ℕ) (hmarked : marked ⊆ s)
   | succ j ih =>
     intro hj
     have hjm : j < m := (Nat.lt_succ_self j).trans_le hj
+    have hR : 0 ≤ R := firstRank_nonneg.trans (hq j hjm)
     obtain ⟨heq, hraw, _⟩ := ih ((Nat.le_succ j).trans hj)
     have hinput : inputRow s n (fun _ => K) ρ Δ' b j =
         sentinelFirst marked L (inputRow s n (fun _ => K) ρ Δ a j) := by
@@ -223,17 +200,17 @@ theorem iterate_sentinelState_of_sum_abs_lt (m : ℕ) (hmarked : marked ⊆ s)
       change advance s (n j) K (ρ j) (Δ' j) (B j) =
         sentinelState marked L (advance s (n j) K (ρ j) (Δ j) (A j))
       rw [heq]
-      exact advance_sentinelState hmarked hK (hKn j hjm) hR hL hhigh hq' hu'
+      exact advance_sentinelState hmarked hL hhigh hq' hu'
     have hrawNext (y : ι) (hy : y ∈ marked) :
         (A (j + 1)).row y = uncompressedRow Δ a.row (j + 1) y := by
-      exact (update_eq_self_of_mem_sentinelFirst (hK.trans_le (hKn j hjm)) hR hL
-        hhigh hu' (hmarked hy) hy).1.trans (hrawInput y hy)
+      exact (update_eq_self_of_mem_sentinelFirst hL hhigh hu' (hmarked hy) hy).1.trans
+        (hrawInput y hy)
     have hbound : firstRank s K (B (j + 1)).defaultValue (B (j + 1)).row ≤ R :=
       firstRank_update_le_of_le hK hR (hq j hjm) (hu j hjm)
     have hfinal : firstRank s K (A (j + 1)).defaultValue (A (j + 1)).row =
         firstRank s K (B (j + 1)).defaultValue (B (j + 1)).row := by
       rw [hnext] at hbound ⊢
-      apply firstRank_eq_sentinelFirst hK hR (by linarith) _ hbound
+      apply firstRank_eq_sentinelFirst (by linarith) _ hbound
       intro y _ hy
       rw [hrawNext y hy]
       have h := raw_first_gt_of_sum_abs_lt hj (hvar y hy)

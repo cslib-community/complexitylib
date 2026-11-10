@@ -33,7 +33,7 @@ Adapted from Computability/Probabilistic/QueryBounds.lean on the cslib `crypto` 
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the current word-oracle realization contract.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -53,9 +53,8 @@ theorem IsOraclePPTOn.query_bounds {Operation α β : Type} [DecidableEq Operati
   have hrun (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool))
       (s s' : State) (result : List Bool)
       (transcript : OracleComp.Transcript (fun _ : Operation × List Bool => List Bool))
-      (hmem : (result, s', transcript) ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-          (OracleComp.withTranscript oracle)) (output <$> program a)).run (s, [])).support) :
+      (hmem : (result, s', transcript) ∈ (ProbOracleComp.runWith (OracleComp.withTranscript oracle)
+        (output <$> program a) (s, [])).support) :
       transcript.length ≤ c * ((input a).length + 1) ^ d ∧
         ∀ entry ∈ transcript, entry.1.2.length ≤ c * ((input a).length + 1) ^ d := by
     rw [h a (State × OracleComp.Transcript (fun _ : Operation × List Bool => List Bool))

@@ -33,7 +33,7 @@ tables ([Arbitman, Naor and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
 [Bender, Conway, Farach-Colton, Kuszmaul and Tagliavini, *J. ACM* 2023, Section 7, arXiv
 pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023]) together with the universal
 bit-accounting inequality comparing quotient + value storage against the information-theoretic
-optimum `Dynamic.optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` across all `0 ≤ n ≤ U`.
+optimum `Dynamic.optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` for every `n`.
 
 Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 `b = bucketBits n = ⌊log₂ n⌋ - 3 * logLogFactor n`:
@@ -45,7 +45,7 @@ Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 3. From `(bucket, keyQuotient b u)`, `feistelReconstruct b h1 bucket (keyQuotient b u)` recovers
    `u` uniquely (`feistelReconstruct_feistelBucket`). Consequently, distinct keys sharing the same
    quotient always map to distinct Feistel buckets (`feistelBucket_ne_of_keyQuotient_eq_of_ne`).
-4. Across all `0 ≤ n ≤ U`, storing `n` quotients of `quotientBits U n` bits and `n` values of
+4. For every `n`, storing `n` quotients of `quotientBits U n` bits and `n` values of
    `valBits V = ⌈log₂ V⌉` bits uses at most
    `Dynamic.optBits U V n + 5 * n * Dynamic.logLogFactor n` bits (`quotient_val_bits_le_optBits`).
 
@@ -64,7 +64,7 @@ Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
   `feistelBucket_ne_of_keyQuotient_eq_of_ne`: exact invertibility of Feistel quotienting.
 * `pow_le_pow_mul_choose`: `U ^ n ≤ n ^ n * U.choose n` for all `n ≤ U`.
 * `quotient_bits_le_choose`, `quotient_val_bits_le_optBits`: universal succinct bit accounting
-  valid for all `0 ≤ n ≤ U`.
+  valid for all `n`.
 * `expect_card_feistelXor_eq_on`, `expect_feistelXor_mul_sub_one_le_on`,
   `expect_feistelXor_overflow_le_on`: pairwise and 3-wise independence bounds for Feistel bucket and
   micro-chain collisions and bucket overflow.
@@ -272,13 +272,23 @@ theorem pow_le_pow_mul_choose {U n : ℕ} (hnU : n ≤ U) :
     U ^ n ≤ n ^ n * U.choose n := by
   simpa [Nat.choose_self, Nat.mul_comm] using Nat.choose_mul_pow_le hnU n
 
-/-- Universal quotient bit bound: for every `n ≤ U`, storing `n` quotients of `quotientBits U n`
-bits uses at most `⌈log₂ C(U, n)⌉ + 5 * n * Dynamic.logLogFactor n` bits. -/
-theorem quotient_bits_le_choose {U n : ℕ} (hnU : n ≤ U) :
+/-- Universal quotient bit bound: for every `n`, storing `n` quotients of `quotientBits U n` bits
+uses at most `⌈log₂ C(U, n)⌉ + 5 * n * Dynamic.logLogFactor n` bits. When `U < n` the binomial
+vanishes and `quotientBits U n ≤ 3 * Dynamic.logLogFactor n + 1`. -/
+theorem quotient_bits_le_choose {U n : ℕ} :
     n * quotientBits U n ≤
       Nat.clog 2 (U.choose n) + 5 * n * Dynamic.logLogFactor n := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · simp
+  rcases lt_or_ge U n with hUn | hnU
+  · have hll : 1 ≤ Dynamic.logLogFactor n := Dynamic.one_le_logLogFactor n
+    have hkey : keyBits U ≤ Nat.log 2 n + 1 := Nat.clog_le_of_le_pow
+      (hUn.le.trans (Nat.lt_pow_succ_log_self (by decide) n).le)
+    have hq : quotientBits U n ≤ 3 * Dynamic.logLogFactor n + 1 := by
+      unfold quotientBits bucketBits
+      omega
+    rw [Nat.choose_eq_zero_of_lt hUn, Nat.clog_zero_right, Nat.zero_add]
+    nlinarith [Nat.mul_le_mul_left n hq]
   · have hU : 1 ≤ U := hn.trans_le hnU
     have hpow_key : 2 ^ keyBits U ≤ 2 * U := Nat.pow_clog_le_mul Nat.one_lt_two (by omega)
     have hpow_n : n ≤ 2 ^ (bucketBits n + 3 * Dynamic.logLogFactor n + 1) :=
@@ -314,13 +324,13 @@ theorem quotient_bits_le_choose {U n : ℕ} (hnU : n ≤ U) :
     rw [hsplit, Nat.mul_add] at hexp
     nlinarith
 
-/-- Universal quotient + value bit bound: for every `n ≤ U` and `V`, storing `n` quotients of
+/-- Universal quotient + value bit bound: for every `n` and `V`, storing `n` quotients of
 `quotientBits U n` bits and `n` values of `valBits V = ⌈log₂ V⌉` bits uses at most
 `Dynamic.optBits U V n + 5 * n * Dynamic.logLogFactor n` bits. -/
-theorem quotient_val_bits_le_optBits {U V n : ℕ} (hnU : n ≤ U) :
+theorem quotient_val_bits_le_optBits {U V n : ℕ} :
     n * (quotientBits U n + valBits V) ≤
       Dynamic.optBits U V n + 5 * n * Dynamic.logLogFactor n := by
-  have hq := quotient_bits_le_choose hnU
+  have hq := quotient_bits_le_choose (U := U) (n := n)
   unfold Dynamic.optBits valBits
   linarith
 
@@ -394,6 +404,25 @@ theorem feistelXor_eq_iff {U b m : ℕ} (hbm : b ≤ m) (qOf : Fin U → Q)
   · intro h
     rw [h, Nat.xor_assoc, Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
 
+omit [Fintype ι] in
+/-- When `qOf` is quotient-injective on `insert u (S.erase u)`, only keys with `qOf x ≠ qOf u` can
+collide with `u` under `feistelXor`, so the collision filter may first discard same-`qOf` keys. -/
+private theorem filter_feistelXor_eq_filter_qOf_ne [DecidableEq Q] {U b m : ℕ} (hbm : b ≤ m)
+    (qOf : Fin U → Q) (H : ι → Q → Fin (2 ^ m)) (i : ι) (S : Finset (Fin U)) (u : Fin U)
+    (hq : ∀ u₁ ∈ insert u (S.erase u), ∀ u₂ ∈ insert u (S.erase u),
+      qOf u₁ = qOf u₂ → keyQuotient b u₁.val = keyQuotient b u₂.val) :
+    {x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} =
+      {x ∈ {x ∈ S.erase u | qOf x ≠ qOf u} |
+        feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} := by
+  ext x
+  simp only [mem_filter, mem_erase]
+  refine ⟨fun ⟨⟨hne, hxS⟩, hcoll⟩ => ⟨⟨⟨hne, hxS⟩, ?_⟩, hcoll⟩,
+    fun ⟨⟨h1, _⟩, hcoll⟩ => ⟨h1, hcoll⟩⟩
+  intro hqq
+  have hx_mem : x ∈ insert u (S.erase u) := mem_insert_of_mem (mem_erase.mpr ⟨hne, hxS⟩)
+  have hu_mem : u ∈ insert u (S.erase u) := mem_insert_self u (S.erase u)
+  exact feistelXor_ne_of_qOf_eq_pt hbm qOf H i (hq x hx_mem u hu_mem hqq) hne hqq hcoll
+
 /-- For a pairwise independent hash family `H` and distinct quotients `q₁ ≠ q₂`, the probability
 that `H i q₁ = e (H i q₂)` is `1 / |Y|`. -/
 theorem expect_boole_apply_eq_equiv {Y 𝕜 : Type*} [Fintype Y] [DecidableEq Y]
@@ -435,22 +464,11 @@ theorem expect_card_feistelXor_eq_on [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*
     𝔼 i, (#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : 𝕜) =
       (#{x ∈ S.erase u | qOf x ≠ qOf u} : 𝕜) / (2 ^ m : 𝕜) := by
   let S' : Finset (Fin U) := {x ∈ S.erase u | qOf x ≠ qOf u}
-  have hfilter (i : ι) :
-      {x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} =
-        {x ∈ S' | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} := by
-    ext x
-    simp only [S', mem_filter, mem_erase]
-    refine ⟨fun ⟨⟨hne, hxS⟩, hcoll⟩ => ⟨⟨⟨hne, hxS⟩, ?_⟩, hcoll⟩,
-      fun ⟨⟨h1, _⟩, hcoll⟩ => ⟨h1, hcoll⟩⟩
-    intro hqq
-    have hx_mem : x ∈ insert u (S.erase u) := mem_insert_of_mem (mem_erase.mpr ⟨hne, hxS⟩)
-    have hu_mem : u ∈ insert u (S.erase u) := mem_insert_self u (S.erase u)
-    exact feistelXor_ne_of_qOf_eq_pt hbm qOf H i (hq x hx_mem u hu_mem hqq) hne hqq hcoll
   have hcard (i : ι) :
       (#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : 𝕜) =
         ∑ x ∈ S',
           if feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u then (1 : 𝕜) else 0 := by
-    rw [hfilter i, card_filter, Nat.cast_sum]
+    rw [filter_feistelXor_eq_filter_qOf_ne hbm qOf H i S u hq, card_filter, Nat.cast_sum]
     refine sum_congr rfl fun x _ => ?_
     split_ifs <;> simp
   simp only [hcard]
@@ -459,19 +477,9 @@ theorem expect_card_feistelXor_eq_on [DecidableEq Q] {U b m : ℕ} {𝕜 : Type*
       𝔼 i, (if feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u then (1 : 𝕜) else 0) =
         ((2 ^ m : ℕ) : 𝕜)⁻¹ := by
     intro x hx
-    have hqne : qOf x ≠ qOf u := (mem_filter.mp hx).2
-    let e : Fin (2 ^ m) ≃ Fin (2 ^ m) :=
-      Equiv.xor ⟨keyLow b u.val ^^^ keyLow b x.val,
-        Nat.xor_lt_two_pow
-          ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-          ((keyLow_lt b x.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
-    have hiff (i : ι) :
-        (feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u) ↔
-          H i (qOf x) = e (H i (qOf u)) :=
-      feistelXor_eq_iff hbm qOf H i x u
-    simp only [hiff]
-    have h1 := expect_boole_apply_eq_equiv (𝕜 := 𝕜) hh hqne e
-    simpa [Fintype.card_fin] using h1
+    simp only [feistelXor_eq_iff hbm qOf H _ x u]
+    exact (expect_boole_apply_eq_equiv (𝕜 := 𝕜) hh (mem_filter.mp hx).2 _).trans
+      (by rw [Fintype.card_fin])
   rw [sum_congr rfl hterm, sum_const, nsmul_eq_mul, div_eq_mul_inv, Nat.cast_pow, Nat.cast_ofNat]
 
 /-- Under a 3-wise independent hash family `H`, the values at three pairwise distinct inputs
@@ -551,17 +559,6 @@ theorem expect_feistelXor_mul_sub_one_le_on [DecidableEq Q] {U b m : ℕ}
           1)) ≤
       ((#{x ∈ S.erase u | qOf x ≠ qOf u} : ℚ) / (2 ^ m : ℚ)) ^ 2 := by
   let S' : Finset (Fin U) := {x ∈ S.erase u | qOf x ≠ qOf u}
-  have hfilter (i : ι) :
-      {x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} =
-        {x ∈ S' | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} := by
-    ext x
-    simp only [S', mem_filter, mem_erase]
-    refine ⟨fun ⟨⟨hne, hxS⟩, hcoll⟩ => ⟨⟨⟨hne, hxS⟩, ?_⟩, hcoll⟩,
-      fun ⟨⟨h1, _⟩, hcoll⟩ => ⟨h1, hcoll⟩⟩
-    intro hqq
-    have hx_mem : x ∈ insert u (S.erase u) := mem_insert_of_mem (mem_erase.mpr ⟨hne, hxS⟩)
-    have hu_mem : u ∈ insert u (S.erase u) := mem_insert_self u (S.erase u)
-    exact feistelXor_ne_of_qOf_eq_pt hbm qOf H i (hq x hx_mem u hu_mem hqq) hne hqq hcoll
   have hcell (i : ι) :
       ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) *
         ((#{x ∈ S.erase u | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u} : ℚ) -
@@ -570,7 +567,7 @@ theorem expect_feistelXor_mul_sub_one_le_on [DecidableEq Q] {U b m : ℕ}
           if feistelXor b m hbm qOf H i p.1 = feistelXor b m hbm qOf H i u ∧
               feistelXor b m hbm qOf H i p.2 = feistelXor b m hbm qOf H i u
           then (1 : ℚ) else 0 := by
-    rw [hfilter i]
+    rw [filter_feistelXor_eq_filter_qOf_ne hbm qOf H i S u hq]
     have hoff : {x ∈ S' | feistelXor b m hbm qOf H i x = feistelXor b m hbm qOf H i u}.offDiag =
         {p ∈ S'.offDiag |
           feistelXor b m hbm qOf H i p.1 = feistelXor b m hbm qOf H i u ∧
@@ -605,25 +602,9 @@ theorem expect_feistelXor_mul_sub_one_le_on [DecidableEq Q] {U b m : ℕ}
       have hexp0 : (𝔼 _i : ι, (0 : ℚ)) = 0 := by simp
       rw [hexp0]
       positivity
-    · let e₁ : Fin (2 ^ m) ≃ Fin (2 ^ m) :=
-        Equiv.xor ⟨keyLow b u.val ^^^ keyLow b p.1.val,
-          Nat.xor_lt_two_pow
-            ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-            ((keyLow_lt b p.1.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
-      let e₂ : Fin (2 ^ m) ≃ Fin (2 ^ m) :=
-        Equiv.xor ⟨keyLow b u.val ^^^ keyLow b p.2.val,
-          Nat.xor_lt_two_pow
-            ((keyLow_lt b u.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))
-            ((keyLow_lt b p.2.val).trans_le (Nat.pow_le_pow_right (by decide) hbm))⟩
-      have hiff (i : ι) :
-          (feistelXor b m hbm qOf H i p.1 = feistelXor b m hbm qOf H i u ∧
-              feistelXor b m hbm qOf H i p.2 = feistelXor b m hbm qOf H i u) ↔
-            (H i (qOf p.1) = e₁ (H i (qOf u)) ∧ H i (qOf p.2) = e₂ (H i (qOf u))) :=
-        and_congr (feistelXor_eq_iff hbm qOf H i p.1 u) (feistelXor_eq_iff hbm qOf H i p.2 u)
-      simp only [hiff]
-      have heq := expect_boole_apply_eq_equiv_two (𝕜 := ℚ) hh hq1 hq2 hqq e₁ e₂
-      rw [Fintype.card_fin] at heq
-      exact heq.le
+    · simp only [feistelXor_eq_iff hbm qOf H _ p.1 u, feistelXor_eq_iff hbm qOf H _ p.2 u]
+      exact (expect_boole_apply_eq_equiv_two (𝕜 := ℚ) hh hq1 hq2 hqq _ _).trans_le
+        (by rw [Fintype.card_fin])
   calc ∑ p ∈ S'.offDiag,
         𝔼 i, (if feistelXor b m hbm qOf H i p.1 = feistelXor b m hbm qOf H i u ∧
             feistelXor b m hbm qOf H i p.2 = feistelXor b m hbm qOf H i u then (1 : ℚ) else 0)

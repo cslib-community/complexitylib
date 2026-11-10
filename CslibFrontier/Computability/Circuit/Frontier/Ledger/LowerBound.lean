@@ -57,7 +57,7 @@ finishes the proof.
   aggregate gates, conditional on `LayoutBound`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

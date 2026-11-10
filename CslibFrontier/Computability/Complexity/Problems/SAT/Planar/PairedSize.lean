@@ -33,7 +33,7 @@ inputs, without a geometric validity assumption.
 The unchanged path estimates are reused from `Planar.Size`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 

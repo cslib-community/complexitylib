@@ -40,14 +40,6 @@ theorem magnitudeBound_pos (p A B k : ℕ) : 0 < magnitudeBound p A B k := by
   unfold magnitudeBound CyclicConvolution.magnitudeBound
   positivity
 
-private theorem scalar_bound_left (p A B : ℕ) : A ≤ CyclicConvolution.magnitudeBound p A B := by
-  unfold CyclicConvolution.magnitudeBound
-  omega
-
-private theorem scalar_bound_right (p A B : ℕ) : B ≤ CyclicConvolution.magnitudeBound p A B := by
-  unfold CyclicConvolution.magnitudeBound
-  omega
-
 /-- Original coefficient operands fit the node envelope at every depth. -/
 theorem inputs_le_magnitudeBound (p A B k : ℕ) :
     A ≤ magnitudeBound p A B k ∧ B ≤ magnitudeBound p A B k := by
@@ -56,8 +48,8 @@ theorem inputs_le_magnitudeBound (p A B k : ℕ) :
     omega
   have hm := Nat.mul_le_mul_left (2 * CyclicConvolution.magnitudeBound p A B) hp
   simp only [Nat.mul_one] at hm
-  exact ⟨(scalar_bound_left p A B).trans (by unfold magnitudeBound; omega),
-    (scalar_bound_right p A B).trans (by unfold magnitudeBound; omega)⟩
+  exact ⟨(CyclicConvolution.le_magnitudeBound_left p A B).trans (by unfold magnitudeBound; omega),
+    (CyclicConvolution.le_magnitudeBound_right p A B).trans (by unfold magnitudeBound; omega)⟩
 
 /-- Both native operand-form sums have enough signed range. -/
 theorem forms_le_magnitudeBound (p A B k : ℕ) :
@@ -67,8 +59,8 @@ theorem forms_le_magnitudeBound (p A B k : ℕ) :
     omega
   have hm := Nat.mul_le_mul_left (2 * CyclicConvolution.magnitudeBound p A B) hp
   simp only [Nat.mul_one] at hm
-  have ha := scalar_bound_left p A B
-  have hb := scalar_bound_right p A B
+  have ha := CyclicConvolution.le_magnitudeBound_left p A B
+  have hb := CyclicConvolution.le_magnitudeBound_right p A B
   constructor <;> unfold magnitudeBound <;> omega
 
 /-- At scalar leaves the original cyclic kernel admission follows from the node admission. -/

@@ -24,7 +24,7 @@ bridge out of `Allocation`. This avoids changing the allocation interface and re
 unrelated importers when the input representation API changes.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM
 

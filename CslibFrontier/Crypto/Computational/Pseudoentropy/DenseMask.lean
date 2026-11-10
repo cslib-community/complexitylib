@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Basic
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Masking
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Crypto.Computational.Pseudoentropy.Selection
 import CslibFrontier.Crypto.Computational.Pseudoentropy.SequenceLearner
@@ -60,7 +61,7 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (test : ℕ × List Bool → ℕ → List (List Bool × Bool) → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
-      (encList (encPair encBits encBool))) encBool
+      encLabeledSamples) encBool
         (fun ((a, i), samples) => test a i samples))
     {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
@@ -210,8 +211,7 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
         let value ← pair.latentSample n
         (fun answer => answer == value.2) <$>
           adversary (n, advice n) i (pair.encode n value.1)) := by
-    simp only [predictionGame, ProbComp.eval_bind, pair.eval_sample, PMF.bind_map,
-      pair.eval_latentSample, ProbComp.eval_map, ProbComp.eval_pure]
+    simp only [pmf_norm, predictionGame, pair.eval_sample, pair.eval_latentSample]
     rfl
   rw [hlaw] at hhard
   change (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤ _ at hhard
@@ -242,8 +242,7 @@ with small distinguishing gap whenever their density is valid. The common eventu
 allows arbitrary choices of index in the proof without supplying that choice to the program. -/
 theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (test : ℕ → ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encLabeledSamples) encBool
         (fun ((n, i), samples) => test n i samples))
     {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
@@ -281,8 +280,7 @@ bounded below by the configured dyadic rate. The statement exposes no boosting s
 theorem HasGapWithAdvice.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (test : ℕ × List Bool → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encBits)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encBits) encLabeledSamples) encBool
         (fun input => test input.1 input.2))
     {count numerator densityBound inverseGap : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)
@@ -320,8 +318,7 @@ gap. The mask may depend on the test and parameter; its positive probabilities a
 bounded below by the configured dyadic rate. The statement exposes no boosting state. -/
 theorem HasGap.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (test : ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair encUnary
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair encUnary encLabeledSamples) encBool
         (fun input => test input.1 input.2))
     {count numerator densityBound inverseGap : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)

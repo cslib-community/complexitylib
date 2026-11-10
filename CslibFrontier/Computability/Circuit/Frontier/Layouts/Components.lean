@@ -28,7 +28,7 @@ closed, so they do not change its edge cuts.
   `(A + η) β₁ + η |V| + C`, for the cycle rank `β₁` of that component.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

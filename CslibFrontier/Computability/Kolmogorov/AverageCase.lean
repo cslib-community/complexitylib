@@ -14,7 +14,8 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
-import Mathlib.Algebra.Polynomial.Eval.Defs
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Polynomial
+import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
 # Average-case hardness building blocks for time-bounded Kolmogorov complexity (`K^t`)
@@ -55,7 +56,7 @@ follow the full version `arXiv:2009.11514v1` (and ECCC TR20-052).
   full version `arXiv:2009.11514v1` (Section 5.2).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov
 
@@ -86,6 +87,37 @@ theorem mildlyHardOnAverageIOENat_timeBounded_iff {t : ℕ → ℕ} (ht : ∀ n,
 ([Liu and Pass, Proof of Theorem 5.2, Eq. (3), §5.2, pp. 11–12 of arXiv:2009.11514v1][LiuPass2020])
 -/
 
+/-- General polynomial-time $K^t$ upper bound for any encoded input type $\alpha$: if
+`G : α → List Bool` is computable in polynomial time with respect to `enc : α ↪ List Bool` and
+`encBits`, there exist a monotone polynomial `pG` (with `n + 1 ≤ pG.eval n`) and a constant `c`
+such that whenever `pG.eval (enc a).length ≤ t (G a).length`, we have
+`timeBounded t (G a) ≤ ((enc a).length + c : ℕ)`. -/
+theorem exists_timeBounded_of_computableInPolyTime {α : Type*} {enc : α ↪ List Bool}
+    {G : α → List Bool} (hG : ComputableInPolyTime G enc encBits) :
+    ∃ (pG : Polynomial ℕ) (c : ℕ),
+      (∀ n, n + 1 ≤ pG.eval n) ∧
+      Monotone pG.eval ∧
+      ∀ {t : ℕ → ℕ} (a : α), pG.eval (enc a).length ≤ t (G a).length →
+        timeBounded t (G a) ≤ ((enc a).length + c : ℕ) := by
+  obtain ⟨tG, sG, htG, _, k, State, hfin, tm, htm⟩ := hG
+  obtain ⟨pG, hpG⟩ := htG.exists_polynomial_le
+  obtain ⟨c_sim, hsim⟩ :=
+    DescriptionMethod.exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM tm
+  refine ⟨pG, c_sim, fun n => (hpG n).1, pG.monotone_eval, fun {t} a hstep' => ?_⟩
+  have hcomp := htm a
+  have hstep : tG (enc a).length ≤ t (G a).length := (hpG _).2.trans hstep'
+  have htm_le :
+      (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG (enc a).length) (G a) ≤
+        ((enc a).length : ℕ∞) :=
+    DescriptionMethod.etimeBoundedComplexity_ofMultiTapeTM_le hcomp.2.1 hcomp.1
+  calc
+    timeBounded t (G a) = timeBoundedAt (t (G a).length) (G a) := rfl
+    _ ≤ timeBoundedAt (tG (enc a).length) (G a) := timeBoundedAt_anti hstep
+    _ ≤ (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG (enc a).length) (G a) +
+        c_sim := hsim (tG (enc a).length) (G a)
+    _ ≤ ((enc a).length : ℕ∞) + c_sim := add_le_add_left htm_le _
+    _ = ((enc a).length + c_sim : ℕ) := by rw [Nat.cast_add]
+
 /-- **[Liu and Pass, Proof of Theorem 5.2, Equation (3), §5.2, pp. 11–12 of
 arXiv:2009.11514v1][LiuPass2020]:
 Outputs of a polynomial-time generator have $K^t(G(z)) \le |z| + O(1)$.**
@@ -101,49 +133,9 @@ theorem exists_timeBounded_generator_le {G : List Bool → List Bool}
       Monotone pG.eval ∧
       ∀ {t : ℕ → ℕ}, (∀ m, pG.eval m ≤ t m) → ∀ z : List Bool,
         timeBounded t (G z) ≤ (z.length + c : ℕ) := by
-  obtain ⟨tG, sG, htG, _, k, State, hfin, tm, htm⟩ := hG
-  obtain ⟨c_tm, d_tm, hle⟩ := polynomiallyBounded_iff_le.mp htG
-  obtain ⟨c_sim, hsim⟩ :=
-    DescriptionMethod.exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM tm
-  let pG : Polynomial ℕ := Polynomial.C (c_tm + 1) * (Polynomial.X + 1) ^ (d_tm + 1)
-  have hpG_eval (n : ℕ) : pG.eval n = (c_tm + 1) * (n + 1) ^ (d_tm + 1) := by
-    simp [pG]
-  have hpG_ge (n : ℕ) : n + 1 ≤ pG.eval n := by
-    rw [hpG_eval, pow_succ']
-    have hpow : 1 ≤ (n + 1) ^ d_tm := Nat.one_le_pow _ _ (by omega)
-    calc
-      n + 1 = 1 * ((n + 1) * 1) := by ring
-      _ ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-        Nat.mul_le_mul (by omega) (Nat.mul_le_mul_left _ hpow)
-  have hpG_mono : Monotone pG.eval := by
-    intro a b hab
-    dsimp only
-    rw [hpG_eval, hpG_eval]
-    exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
-  have htG_le (n : ℕ) : tG n ≤ pG.eval n := by
-    rw [hpG_eval, pow_succ']
-    have h1 := hle n
-    have hpow : 1 ≤ (n + 1) ^ d_tm := Nat.one_le_pow _ _ (by omega)
-    have h2 : c_tm * (n + 1) ^ d_tm ≤ (c_tm + 1) * (n + 1) ^ d_tm :=
-      Nat.mul_le_mul_right _ (by omega)
-    have h3 : (c_tm + 1) * (n + 1) ^ d_tm ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) := by
-      refine Nat.mul_le_mul_left _ ?_
-      exact Nat.le_mul_of_pos_left _ (by omega)
-    omega
-  refine ⟨pG, c_sim, hpG_ge, hpG_mono, fun {t} ht z => ?_⟩
-  have hcomp := htm z
-  have hstep : tG z.length ≤ t (G z).length :=
-    (htG_le z.length).trans ((hpG_mono (hstretch z)).trans (ht (G z).length))
-  have htm_le : (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG z.length) (G z) ≤
-      (z.length : ℕ∞) :=
-    DescriptionMethod.etimeBoundedComplexity_ofMultiTapeTM_le hcomp.2.1 hcomp.1
-  calc
-    timeBounded t (G z) = timeBoundedAt (t (G z).length) (G z) := rfl
-    _ ≤ timeBoundedAt (tG z.length) (G z) := timeBoundedAt_anti hstep
-    _ ≤ (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG z.length) (G z) + c_sim :=
-      hsim (tG z.length) (G z)
-    _ ≤ (z.length : ℕ∞) + c_sim := add_le_add_left htm_le _
-    _ = (z.length + c_sim : ℕ) := by rw [Nat.cast_add]
+  obtain ⟨pG, c, hpG_ge, hpG_mono, hbound⟩ := exists_timeBounded_of_computableInPolyTime hG
+  exact ⟨pG, c, hpG_ge, hpG_mono, fun {t} ht z =>
+    hbound z ((hpG_mono (hstretch z)).trans (ht (G z).length))⟩
 
 /-- Natural-number version of `exists_timeBounded_generator_le` for `timeBoundedNat`. -/
 theorem timeBoundedNat_generator_le {G : List Bool → List Bool} {pG : Polynomial ℕ} {c : ℕ}
@@ -155,60 +147,6 @@ theorem timeBoundedNat_generator_le {G : List Bool → List Bool} {pG : Polynomi
   have hne : timeBounded t (G z) ≠ ⊤ :=
     timeBounded_ne_top ((hpG (G z).length).trans (ht (G z).length))
   exact (timeBoundedNat_le_iff hne).mpr (hbound ht z)
-
-/-- General polynomial-time $K^t$ upper bound for any encoded input type $\alpha$: if
-`G : α → List Bool` is computable in polynomial time with respect to `enc : α ↪ List Bool` and
-`encBits`, there exist a monotone polynomial `pG` (with `n + 1 ≤ pG.eval n`) and a constant `c`
-such that whenever `pG.eval (enc a).length ≤ t (G a).length`, we have
-`timeBounded t (G a) ≤ ((enc a).length + c : ℕ)`. -/
-theorem exists_timeBounded_of_computableInPolyTime {α : Type*} {enc : α ↪ List Bool}
-    {G : α → List Bool} (hG : ComputableInPolyTime G enc encBits) :
-    ∃ (pG : Polynomial ℕ) (c : ℕ),
-      (∀ n, n + 1 ≤ pG.eval n) ∧
-      Monotone pG.eval ∧
-      ∀ {t : ℕ → ℕ} (a : α), pG.eval (enc a).length ≤ t (G a).length →
-        timeBounded t (G a) ≤ ((enc a).length + c : ℕ) := by
-  obtain ⟨tG, sG, htG, _, k, State, hfin, tm, htm⟩ := hG
-  obtain ⟨c_tm, d_tm, hle⟩ := polynomiallyBounded_iff_le.mp htG
-  obtain ⟨c_sim, hsim⟩ :=
-    DescriptionMethod.exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM tm
-  let pG : Polynomial ℕ := Polynomial.C (c_tm + 1) * (Polynomial.X + 1) ^ (d_tm + 1)
-  have hpG_eval (n : ℕ) : pG.eval n = (c_tm + 1) * (n + 1) ^ (d_tm + 1) := by
-    simp [pG]
-  have hpG_ge (n : ℕ) : n + 1 ≤ pG.eval n := by
-    rw [hpG_eval, pow_succ']
-    have hpow : 1 ≤ (n + 1) ^ d_tm := Nat.one_le_pow _ _ (by omega)
-    calc
-      n + 1 = 1 * ((n + 1) * 1) := by ring
-      _ ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-        Nat.mul_le_mul (by omega) (Nat.mul_le_mul_left _ hpow)
-  have hpG_mono : Monotone pG.eval := by
-    intro a b hab
-    dsimp only
-    rw [hpG_eval, hpG_eval]
-    exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
-  have htG_le (n : ℕ) : tG n ≤ pG.eval n := by
-    rw [hpG_eval, pow_succ']
-    have h1 := hle n
-    have h2 : c_tm * (n + 1) ^ d_tm ≤ (c_tm + 1) * (n + 1) ^ d_tm :=
-      Nat.mul_le_mul_right _ (by omega)
-    have h3 : (c_tm + 1) * (n + 1) ^ d_tm ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-      Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
-    omega
-  refine ⟨pG, c_sim, hpG_ge, hpG_mono, fun {t} a hstep' => ?_⟩
-  have hcomp := htm a
-  have hstep : tG (enc a).length ≤ t (G a).length := (htG_le _).trans hstep'
-  have htm_le :
-      (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG (enc a).length) (G a) ≤
-        ((enc a).length : ℕ∞) :=
-    DescriptionMethod.etimeBoundedComplexity_ofMultiTapeTM_le hcomp.2.1 hcomp.1
-  calc
-    timeBounded t (G a) = timeBoundedAt (t (G a).length) (G a) := rfl
-    _ ≤ timeBoundedAt (tG (enc a).length) (G a) := timeBoundedAt_anti hstep
-    _ ≤ (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG (enc a).length) (G a) +
-        c_sim := hsim (tG (enc a).length) (G a)
-    _ ≤ ((enc a).length : ℕ∞) + c_sim := add_le_add_left htm_le _
-    _ = ((enc a).length + c_sim : ℕ) := by rw [Nat.cast_add]
 
 /-- Fewer than `2 ^ r` bitstrings of length `n` have `timeBoundedNat t (List.ofFn x) < r`
 whenever `n + 1 ≤ t n`. -/

@@ -20,7 +20,7 @@ tests dyadic threshold bases `M` in increasing order. The exact test is `Γ ≤ 
 `Γ = 4 ∑ r < k - 1, 3 ^ r`. `countingThresholdBase` implements this first-success search.
 The parameters depend only on `k` and `B`, before any input formula or variable budget.
 
-An explicit successful candidate proves termination and the sharp bound
+An explicit successful candidate proves termination and the upper bound
 `M = O_k(B log(2B))`; that candidate does not replace the first-success output. Widths zero
 and one have empty coefficient sums and use the separate default `M = 2`. The same total
 default is used at `B = 0`, which is outside the positive-error-budget specification.
@@ -41,7 +41,7 @@ tree-word counting, or the complete counting sparsification theorem.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.countingThresholdBase_spec`: the exact integer test.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.countingThresholdBase_first`: dyadic minimality.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.exists_countingThresholdBase_le_mul_clog`:
-  the sharp size dependence on the inverse error budget.
+  an upper bound `A * B * (Nat.clog 2 B + 1)` for `B ≥ 1`, with `A` depending only on the width.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.isBigO_countingThresholdBase`:
   the real logarithmic bound.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.exists_clog_countingThresholdBase_le`:
@@ -234,8 +234,9 @@ private theorem thresholdBase_le_candidate {k B : ℕ} (hk : 2 ≤ k) (hB : 1 �
   simp only [countingThresholdBase, hk, hB, and_self, ↓reduceDIte]
   exact Nat.pow_le_pow_right (by decide) (Nat.find_min' _ (candidate_accepts hk))
 
-/-- The first-success base has the sharp `B log(2B)` dependence. The constant depends only on
-the fixed width; the proof supplies the explicit constant `2 ^ (offset k + 2)`. -/
+/-- The first-success base is at most a constant times `B * (Nat.clog 2 B + 1)` for `B ≥ 1`, an
+upper bound of order `B log(2B)`. The constant depends only on the fixed width `k ≥ 2`; the proof
+supplies the explicit constant `2 ^ (offset k + 2)`. -/
 theorem exists_countingThresholdBase_le_mul_clog {k : ℕ} (hk : 2 ≤ k) :
     ∃ A : ℕ, ∀ B : ℕ, 1 ≤ B →
       countingThresholdBase k B ≤ A * B * (Nat.clog 2 B + 1) := by

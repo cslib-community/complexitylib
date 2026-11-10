@@ -50,10 +50,11 @@ private theorem spans_le_budget (L m N Q : ℕ) :
   unfold QueriedProduct.wordBudget
   omega
 
-/-- Caller-safe actual native product execution. The only local memory premise is the original
-input block; all remaining target memory may be dirty. Every original occurrence is answered
-exactly, original input words are restored exactly, and the caller memory outside the window
-is preserved. The numerical width hypothesis is derived from original dimensions and base. -/
+/-- Caller-safe actual native product execution, for zero/one matrices with `D m ^ 18 ≤ N`, at
+depth `19 * m`. The only local memory premise is the original input block; all remaining target
+memory may be dirty. Every original occurrence is answered exactly, original input words are
+restored exactly, and the caller memory outside the window is preserved. The numerical width
+hypothesis is derived from original dimensions and base. -/
 theorem exec {W b m N : ℕ}
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (qs : List (Fin N × Fin N)) (x : Data 163) (hb : x.regs Reg.base = b)

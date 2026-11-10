@@ -38,7 +38,7 @@ it applies to recognizers, whose branches may run forever
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.2][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

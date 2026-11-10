@@ -171,6 +171,21 @@ theorem IsMultilinear.hammingDist_le_of_two_mul_le {f g : (Fin n → F) → F} (
           ∑ i, #(wrongPoints f i) := by gcongr
     _ = _ := by ring
 
+/-- **Self-improvement over the reals**: a multilinear `g` within a fraction `c ≤ 1 / 2` of `f`
+is within `(2 k + 1) ∑ᵢ |Wᵢ| + 2 k ^ 2 |F| ^ (k - 1)` of `f`. This is
+`IsMultilinear.hammingDist_le_of_two_mul_le` with hypothesis and conclusion cast to `ℝ`, as
+both soundness proofs below use it. -/
+private theorem IsMultilinear.hammingDist_le_of_le_mul {k : ℕ} {f g : (Fin k → F) → F}
+    (hg : IsMultilinear g) {c : ℝ} (hc : 2 * c ≤ 1)
+    (h : (hammingDist f g : ℝ) ≤ c * (Fintype.card F : ℝ) ^ k) :
+    (hammingDist f g : ℝ) ≤ (2 * (k : ℝ) + 1) * (∑ i, (#(wrongPoints f i) : ℝ)) +
+      2 * (k : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ (k - 1) := by
+  have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ k := by positivity
+  have h2 : ((2 * hammingDist f g : ℕ) : ℝ) ≤ ((Fintype.card F ^ k : ℕ) : ℝ) := by
+    push_cast
+    nlinarith
+  exact_mod_cast hg.hammingDist_le_of_two_mul_le (by exact_mod_cast h2)
+
 /-- The wrong points of the slices `x 0 = t` add up to at most those of `f`. -/
 private theorem sum_sum_card_wrongPoints_le (f : (Fin (n + 1) → F) → F) :
     ∑ t, ∑ j : Fin n, #(wrongPoints (fun y => f (Fin.cons t y)) j) ≤
@@ -267,19 +282,10 @@ private theorem exists_isMultilinear_hammingDist_le_mul {ε₀ γ : ℝ} (hε₀
             gcongr
             linarith
         _ = (ε₀ + 2 * γ) * (Fintype.card F : ℝ) ^ (k + 1) := by ring
-    have h2 : 2 * hammingDist f g ≤ Fintype.card F ^ (k + 1) := by
-      have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ (k + 1) := by positivity
-      have : ((2 * hammingDist f g : ℕ) : ℝ) ≤ ((Fintype.card F ^ (k + 1) : ℕ) : ℝ) := by
-        push_cast
-        nlinarith
-      exact_mod_cast this
     -- Self-improvement brings it within `γ`.
-    have hself := hg.hammingDist_le_of_two_mul_le h2
+    have hself := hg.hammingDist_le_of_le_mul (by linarith) hhalf
     rw [Nat.add_sub_cancel] at hself
-    have hself' : (hammingDist f g : ℝ) ≤ (2 * ((k + 1 : ℕ) : ℝ) + 1) *
-        (∑ i, (#(wrongPoints f i) : ℝ)) + 2 * ((k + 1 : ℕ) : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ k := by
-      exact_mod_cast hself
-    calc (hammingDist f g : ℝ) ≤ _ := hself'
+    calc (hammingDist f g : ℝ) ≤ _ := hself
       _ ≤ (2 * ((k + 1 : ℕ) : ℝ) + 1) * (ε₀ * (Fintype.card F : ℝ) ^ (k + 1)) +
             2 * ((k + 1 : ℕ) : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ k := by gcongr
       _ = ((2 * ((k + 1 : ℕ) : ℝ) + 1) * ε₀ + 2 * ((k + 1 : ℕ) : ℝ) ^ 2 / Fintype.card F) *
@@ -337,16 +343,7 @@ theorem exists_isMultilinear_hammingDist_lt (f : (Fin n → F) → F) {ε : ℝ}
         _ ≤ (1 - 1 / (Fintype.card F : ℝ)) ^ n * (2 * n * ε) * (Fintype.card F : ℝ) ^ n := by
           gcongr)
   refine ⟨g, hg, ?_⟩
-  have h2 : 2 * hammingDist f g ≤ Fintype.card F ^ n := by
-    have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ n := by positivity
-    have : ((2 * hammingDist f g : ℕ) : ℝ) ≤ ((Fintype.card F ^ n : ℕ) : ℝ) := by
-      push_cast
-      nlinarith
-    exact_mod_cast this
-  have hself := hg.hammingDist_le_of_two_mul_le h2
-  have hself' : (hammingDist f g : ℝ) ≤ (2 * (n : ℝ) + 1) * (∑ i, (#(wrongPoints f i) : ℝ)) +
-      2 * (n : ℝ) ^ 2 * (Fintype.card F : ℝ) ^ (n - 1) := by
-    exact_mod_cast hself
+  have hself' := hg.hammingDist_le_of_le_mul (by norm_num) hfg
   have hqn1 : (Fintype.card F : ℝ) ^ (n - 1) * Fintype.card F = (Fintype.card F : ℝ) ^ n := by
     rw [← pow_succ, Nat.sub_add_cancel hn]
   have hqpow : 0 ≤ (Fintype.card F : ℝ) ^ (n - 1) := by positivity

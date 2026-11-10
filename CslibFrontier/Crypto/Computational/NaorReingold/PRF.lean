@@ -20,7 +20,6 @@ import CslibFrontier.Crypto.Computational.GeneratorReindex
 import CslibFrontier.Crypto.Computational.PseudorandomFunction.TruthTable
 import CslibFrontier.Crypto.Computational.Stretch
 import CslibFrontier.Crypto.Game.Statistical
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.BitString
@@ -29,6 +28,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.StatisticalDistance.Product
 import CslibFrontier.Probability.Uniform
+import CslibFrontier.Tactic.Negligible
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -252,7 +252,7 @@ private theorem uniformList_map_listRows_binaryValue : ∀ (count width : ℕ),
           Cslib.BitString.listRows_succ_append count width hlen, List.map_cons]
       rw [hstep, uniformList_map_listRows_binaryValue count width]
       simp only [PMF.map_comp, Function.comp_def]
-      congr 1; funext v
+      congr 1 with v : 1
       simp [List.ofFn_succ]
 
 private theorem uniformList_map_parseNaorReingoldTape (count expWidth hashLen : ℕ) :
@@ -271,7 +271,7 @@ private theorem uniformList_map_parseNaorReingoldTape (count expWidth hashLen : 
           Cslib.BitString.binaryValue,
         (rest.drop (count * expWidth)).take hashLen))]
   conv_rhs => rw [PMF.bind_map]
-  congr 1; funext front
+  congr 1 with front : 1
   rw [Cslib.BitString.uniformList_bind_split (count * expWidth) hashLen
     (fun mid back => PMF.pure
       (Cslib.BitString.binaryValue front,
@@ -290,7 +290,7 @@ private theorem uniformList_map_parseNaorReingoldTape (count expWidth hashLen : 
     rw [PMF.bind_map]; rfl
   rw [hmid, uniformList_map_listRows_binaryValue count expWidth]
   dsimp only [Function.comp_def]
-  congr 1; funext αs
+  congr 1 with αs : 1
   rw [PMF.map]
   refine PMF.bind_congr_on_support _ _ _ fun back hback => ?_
   have hlen := Cslib.BitString.length_of_mem_support_uniformList hback
@@ -357,8 +357,8 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
     change ((μNat.bind fun α₀ => ((PMF.iid μNat m).map List.ofFn).bind fun αs =>
       (Cslib.BitString.uniformList H).map fun seed => (α₀, αs, seed)).bind _) = _
     simp only [pmf_norm, μ, PMF.iid_map]
-    congr 1; funext a₀; congr 1; funext aVec; congr 1; funext seed
-    congr 1; funext q
+    congr 1 with a₀ : 1; congr 1 with aVec : 1; congr 1 with seed : 1
+    congr 1 with q : 1
     cases q with
     | inl r => rfl
     | inr request =>
@@ -388,7 +388,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
           (adversary n [])) =
       ν.bind fun α₀ => (PMF.iid ν m).bind fun α => detRun (α₀, α)
     rw [PMF.bind_comm (Cslib.BitString.uniformList H) ν]
-    congr 1; funext α₀
+    congr 1 with α₀ : 1
     rw [PMF.bind_comm (Cslib.BitString.uniformList H)
       (PMF.uniformOfFintype (Fin m → ZMod (F.order d))), ← PMF.iid_uniformOfFintype m]
   change Game.advantage
@@ -598,13 +598,6 @@ private theorem eval_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
   rw [hH, OracleComp.run_interpret_lift, ← PMF.monad_map_eq_map, Functor.map_map]
   exact id_map _
 
-private theorem negligible_succ_div_two_pow {m : ℕ → ℕ} (hm : PolynomiallyBounded m) :
-    Negligible fun n => ((m n + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n := by
-  refine negligible_of_le
-    ((negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)).polynomiallyBounded_mul
-      (hm.add (.const 1))) fun n => ?_
-  rw [div_eq_mul_inv, ← inv_pow]
-
 private theorem negligible_naorReingoldHashedGame_pure {F : PrimeOrderGroupFamily}
     {desc : ℕ → F.Desc} {bound : F.Desc → ℕ}
     (hDDH : F.DDH (fun n => PMF.pure (desc n)))
@@ -664,8 +657,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
     (isPPT_prfTapeDistinguisher F hdesc hbound_poly hexpWidth_poly hadversary)
   have hnr_neg := negligible_naorReingoldHashedGame_pure hDDH hdesc hbound_poly hbound hneg
     hadversary
-  have hexp_neg : Negligible fun n => ((n + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n :=
-    negligible_succ_div_two_pow .id
+  have hexp_neg : Negligible fun n => ((n + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n := by negligible
   refine negligible_of_le ((hprg_neg.add hexp_neg).add hnr_neg) fun n => ?_
   let need := expWidth n + (n * expWidth n + n * (2 * bound (desc n) + 1))
   have hneed_le : need ≤ targetLen n := by
@@ -680,7 +672,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       ProbOracleComp.eval_interpret, BitString.eval_sampleList, D_tape, eval_prfTapeDistinguisher]
     refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
     have hklen : key.length = n := BitString.length_of_mem_support_uniformList hkey
-    congr 1; funext q
+    congr 1 with q : 1
     cases q with
     | inl r => rfl
     | inr request =>
@@ -699,7 +691,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
           (adversary n []) := by
     rw [← BitString.uniformList_take hneed_le]
     simp only [pmf_norm, distinguishingGame, D_tape, eval_prfTapeDistinguisher]
-    congr 1; funext x; congr 1; funext q
+    congr 1 with x : 1; congr 1 with q : 1
     cases q with
     | inl r => rfl
     | inr request =>
@@ -959,7 +951,8 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
     have hadv : IsOraclePPT encBool adv := isOraclePPT_ddhPRGAdv hinBits_t hcnt hD
     have hnr_neg := negligible_naorReingoldHashedGame_const_pure hDDH (.of_tidy hinBits_t)
       hdesc hbound_poly hbound hadv
-    have hexp_neg := negligible_succ_div_two_pow hinBits_t.polynomiallyBounded
+    have hexp_neg : Negligible fun n => ((inBits n + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n := by
+      negligible
     refine negligible_of_le (hexp_neg.add hnr_neg) fun n => ?_
     have hinterp (oracle : List Bool → List Bool) :
         OracleComp.interpret
@@ -988,7 +981,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
         simp [seedLen, hashLen]
       rw [hsl]
       simp only [pmf_norm, distinguishingGame]
-      congr 1; funext tape
+      congr 1 with tape : 1
       rw [hinterp (fun q =>
         if q.length = inBits n then
           F.evalNaorReingoldTape inBits (fun _ => 1) desc bound expWidth n tape q
@@ -1005,7 +998,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
         simpa only [seedLen, inBits] using seedLen_succ_le_two_pow (expWidth n) (hashLen n)
       rw [← uniformOfFintype_map_evalLowBitsHom hfit]
       simp only [pmf_norm, distinguishingGame]
-      congr 1; funext f
+      congr 1 with f : 1
       rw [hinterp (fun q =>
         if q.length = inBits n then List.ofFn (f (BitString.ofList (inBits n) q)) else [])]
       congr 2

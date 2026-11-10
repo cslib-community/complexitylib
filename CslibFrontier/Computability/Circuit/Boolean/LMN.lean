@@ -55,7 +55,7 @@ and at most one otherwise (Parseval), and the restriction is deep with probabili
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

@@ -12,6 +12,7 @@ public import CslibFrontier.Logics.FirstOrder.Reduction
 public import Mathlib.Basic.Finite.Sigma
 public import Mathlib.Basic.Finite.Sum
 public import Mathlib.Data.Set.Card
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.SetTheory.Cardinal.NatCard
 import Mathlib.Tactic.FinCases
 
@@ -40,9 +41,10 @@ most one element has no such pair; on it, the compiled interpretation is a given
 `S` of dimension one (`Cslib.Logic.FO.TaggedInterpretation.subsingletonEquiv`).
 
 So a tagged interpretation gives an order-free reduction to every class that is closed under
-isomorphism and under taking a positive number of disjoint copies, such as satisfiability of
-formulas in conjunctive normal form or colorability of graphs
-(`Cslib.Logic.FO.Reduces.of_tagged`).
+isomorphism and invariant under copies (`Cslib.Logic.FO.CopyInvariant`): a finite structure
+belongs to the class exactly when the disjoint union of a positive finite number of copies of it
+does. Examples are satisfiability of formulas in conjunctive normal form and colorability of
+graphs (`Cslib.Logic.FO.Reduces.of_tagged`).
 
 Binary relations of tagged interpretations are conveniently defined by templates
 (`Cslib.Logic.FO.TaggedInterpretation.Template`): a template from tag `t` relates an element of tag
@@ -58,7 +60,7 @@ from it, or are arbitrary.
   `Cslib.Logic.FO.TaggedInterpretation.reindexEquiv`: renaming the tags and the induced
   isomorphism.
 * `Cslib.Logic.FO.Copies`, `Cslib.Logic.FO.Copies.equivProd`, `Cslib.Logic.FO.CopyInvariant`:
-  disjoint copies of a structure, their product equivalence, and the classes closed under them.
+  disjoint copies of a structure, their product equivalence, and the classes invariant under them.
 * `Cslib.Logic.FO.TaggedInterpretation.Coord`, `Cslib.Logic.FO.TaggedInterpretation.Coord.tag`,
   `Cslib.Logic.FO.TaggedInterpretation.Coord.data`,
   `Cslib.Logic.FO.TaggedInterpretation.domainAt`, `Cslib.Logic.FO.TaggedInterpretation.relAt`,
@@ -81,7 +83,7 @@ from it, or are arbitrary.
 * `Cslib.Logic.FO.TaggedInterpretation.subsingletonEquiv`: on a structure with at most one
   element, it is the given interpretation of dimension one.
 * `Cslib.Logic.FO.Reduces.of_tagged`: tagged interpretations give order-free reductions to
-  classes closed under isomorphism and copies.
+  classes closed under isomorphism and invariant under copies.
 * `Cslib.Logic.FO.TaggedInterpretation.Template.realize_formula`: the semantics of templates.
 
 ## References
@@ -117,8 +119,7 @@ def subsingletonFormula (L : Language.{u, v}) (α : Type*) : L.Formula α :=
 @[simp]
 theorem realize_subsingletonFormula {L : Language.{u, v}} {α : Type*} {M : Type w}
     [L.Structure M] (v : α → M) : (subsingletonFormula L α).Realize v ↔ Subsingleton M := by
-  simp only [subsingletonFormula, Formula.Realize, BoundedFormula.realize_all,
-    BoundedFormula.realize_bdEqual]
+  fo_simp [subsingletonFormula, Formula.Realize]
   refine ⟨fun h => ⟨fun x y => ?_⟩, fun h x y => Subsingleton.elim _ _⟩
   simpa [Fin.snoc] using h x y
 
@@ -363,8 +364,7 @@ variable (S : Interpretation L L' Unit)
 `S.domain` at coordinate `p`. -/
 theorem realize_toInterpretation_domain_of_subsingleton [Subsingleton M] (c : Coord T ι → M) :
     (I.toInterpretation S).domain.Realize c ↔ S.domain.Realize fun _ => c p := by
-  simp only [toInterpretation, Formula.realize_sup, Formula.realize_inf,
-    realize_subsingletonFormula, Formula.realize_not, Formula.realize_relabel, Function.comp_def]
+  fo_simp [toInterpretation, realize_subsingletonFormula, Function.comp_def]
   simp only [show Subsingleton M from inferInstance, true_and, not_true_eq_false, false_and,
     or_false]
 
@@ -372,17 +372,14 @@ theorem realize_toInterpretation_domain_of_subsingleton [Subsingleton M] (c : Co
 `I.domainAt t` holds for some tag `t`. -/
 theorem realize_toInterpretation_domain_of_nontrivial [Nontrivial M] (c : Coord T ι → M) :
     (I.toInterpretation S).domain.Realize c ↔ ∃ t, (I.domainAt t).Realize c := by
-  simp only [toInterpretation, Formula.realize_sup, Formula.realize_inf,
-    realize_subsingletonFormula, Formula.realize_not, Formula.realize_iSup, not_subsingleton,
-    false_and, not_false_eq_true, true_and, false_or]
+  fo_simp [toInterpretation, realize_subsingletonFormula, not_subsingleton]
 
 /-- On a subsingleton structure `M`, the relation formula of `I.toInterpretation S` for `R` reduces
 to `S.rel R` at coordinate `p`. -/
 theorem realize_toInterpretation_rel_of_subsingleton [Subsingleton M] {n : ℕ}
     (R : L'.Relations n) (c : Fin n × Coord T ι → M) :
     ((I.toInterpretation S).rel R).Realize c ↔ (S.rel R).Realize fun x => c (x.1, p) := by
-  simp only [toInterpretation, Formula.realize_sup, Formula.realize_inf,
-    realize_subsingletonFormula, Formula.realize_not, Formula.realize_relabel, Function.comp_def]
+  fo_simp [toInterpretation, realize_subsingletonFormula, Function.comp_def]
   simp only [show Subsingleton M from inferInstance, true_and, not_true_eq_false, false_and,
     or_false]
 
@@ -391,9 +388,7 @@ to `I.relAt R`. -/
 theorem realize_toInterpretation_rel_of_nontrivial [Nontrivial M] {n : ℕ}
     (R : L'.Relations n) (c : Fin n × Coord T ι → M) :
     ((I.toInterpretation S).rel R).Realize c ↔ (I.relAt R).Realize c := by
-  simp only [toInterpretation, Formula.realize_sup, Formula.realize_inf,
-    realize_subsingletonFormula, Formula.realize_not, not_subsingleton, false_and,
-    not_false_eq_true, true_and, false_or]
+  fo_simp [toInterpretation, realize_subsingletonFormula, not_subsingleton]
 
 /-! #### Structures with at most one element -/
 
@@ -554,9 +549,9 @@ theorem TaggedInterpretation.nontrivial_toInterpretation_model
 /-! ### Reductions by tagged interpretations -/
 
 /-- **Tagged interpretations give order-free reductions** to classes closed under isomorphism and
-under copies: if the structure interpreted by `I` decides membership on the finite structures
-with two distinct elements, and the interpretation `S` of dimension one decides it on those with
-at most one element, then the compiled interpretation is a order-free reduction. -/
+invariant under copies: if the structure interpreted by `I` decides membership on the finite
+structures with two distinct elements, and the interpretation `S` of dimension one decides it on
+those with at most one element, then the compiled interpretation is an order-free reduction. -/
 theorem Reduces.of_tagged {L : Language.{u, v}} {L' : Language.{u', v'}} [L'.IsRelational]
     {K : Set (Bundled.{w} L.Structure)} {K' : Set (Bundled.{w} L'.Structure)} (hK' : IsoClosed K')
     (hcopy : CopyInvariant K') {T : Type} [Finite T] {ι : T → Type} [∀ t, Finite (ι t)]
@@ -623,8 +618,7 @@ theorem realize_formula [L.Structure M] {w : T} (x : ι t → M) (y : ι w → M
   unfold formula Holds
   by_cases h : τ.target = w
   · subst h
-    simp only [dite_true, Formula.realize_inf, Formula.realize_relabel, Formula.realize_iInf,
-      Sum.elim_comp_inl, Sigma.mk.inj_iff, heq_eq_eq, true_and, exists_eq_left', Compat]
+    fo_simp [dite_true, Sum.elim_comp_inl, Sigma.mk.inj_iff, heq_eq_eq, exists_eq_left', Compat]
     refine and_congr Iff.rfl (forall_congr' fun j => ?_)
     cases τ.map j <;> simp [eq_comm]
   · simp only [h, dite_false, Formula.realize_bot, false_iff, not_and, not_exists]

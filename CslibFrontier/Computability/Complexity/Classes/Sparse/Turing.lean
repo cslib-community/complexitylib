@@ -58,7 +58,7 @@ The sparse set need not lie in `NP`.
   classes*][KarpLipton1980]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -9,7 +9,9 @@ module
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Reduction
 public import CslibFrontier.Crypto.Computational.Homomorphic.KeyChain.Reduction.Game
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Exact chosen-message games of leveled encryption
@@ -61,7 +63,7 @@ theorem eval_keyGen_public (E : Scheme) (n budget : ℕ) :
     (ProbComp.eval (keyGen E n budget)).map Prod.fst =
       (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget) (2 * budget))).map encPublicKey := by
   rw [E.eval_publicKeyChainHybrid_depth]
-  simp only [keyGen, keyPair, ProbComp.eval_map, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, keyGen, keyPair]
 
 /-- The public artifact and tagged challenge in the actual scheme game agree with the real
 chain experiment; intermediate and endpoint secrets remain hidden. -/
@@ -72,9 +74,8 @@ theorem eval_game_keyGen (E : Scheme) (budget : ℕ → ℕ)
       ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) (2 * budget n) >>=
         publicKeyGame E adversary bit n) := by
   rw [ProbComp.eval_bind, E.eval_publicKeyChainHybrid_depth]
-  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte, keyGen, keyPair, encrypt,
-    publicKeyGame, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def,
-    publicKeyDecoder_decode_enc]
+  simp only [pmf_norm, Encryption.game, Encryption.gameOn, ↓reduceIte, keyGen, keyPair, encrypt,
+    publicKeyGame, publicKeyDecoder_decode_enc]
 
 /-- The zero-link base adversary simulates the entire adaptive chosen-message experiment.
 When the chain is nonempty, a generated secret supplies the unknown first secret's length;
@@ -86,11 +87,8 @@ theorem eval_zeroLinkAdversary (E : Scheme) (depth : ℕ → ℕ)
       (zeroLinkAdversary E depth adversary) bit n) =
       ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>=
         publicKeyGame E adversary bit n) := by
-  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte,
-    zeroLinkAdversary, Scheme.publicKeyChainHybrid_zero,
-    Scheme.generateKeys, OracleComp.replicate_succ, publicKeyGame,
-    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.bind_map, PMF.pure_bind, Function.comp_def,
+  simp only [pmf_norm, Encryption.game, Encryption.gameOn, ↓reduceIte, zeroLinkAdversary,
+    Scheme.publicKeyChainHybrid_zero, Scheme.generateKeys, OracleComp.replicate_succ, publicKeyGame,
     List.map_cons, List.getD_cons_zero]
   apply Probability.PMF.bind_congr_on_support
   intro first hfirst
@@ -218,10 +216,7 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
               (E.linkAdversary depth capacity (publicKeyGame E adversary false)) bit n) := by
   dsimp only [Encryption.game, Encryption.gameOn]
   simp only [leveledAdversary_choose, bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
-  rw [PMF.bind_comm]
-  congr 1 with first : 1
-  rw [PMF.bind_comm]
-  congr 1 with second : 1
+  pmf_swap with first second
   cases first <;> cases second
   · simp only [Bool.false_eq_true, ↓reduceIte]
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
@@ -230,8 +225,7 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
       eval_tagLeveledChoice_false_true E depth capacity adversary bit n
   · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, PMF.bind_bind]
-    rw [PMF.bind_comm]
-    congr 1 with keepLink : 1
+    pmf_swap with keepLink
     cases keepLink
     · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
       rw [← PMF.bind_const (ProbComp.eval (sampleDyadicCoin (capacity n) 1)) (PMF.pure false)]
@@ -240,8 +234,7 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
       simpa only [ProbComp.eval_bind] using
         eval_rejectLeveledChoice E depth capacity adversary bit n
     · simp only [↓reduceIte]
-      rw [PMF.bind_comm]
-      congr 1 with keepBit : 1
+      pmf_swap with keepBit
       cases keepBit
       · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
         simpa only [ProbComp.eval_bind] using

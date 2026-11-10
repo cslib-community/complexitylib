@@ -17,6 +17,8 @@ import Mathlib.Tactic.FinCases
 
 The reductions in this module use order-free first-order interpretations. Input structures have
 no built-in order or numeric predicates; these results are order-free variants of the standard ones.
+The input language is relational (`FirstOrder.Language.IsRelational`): it has no function or
+constant symbols.
 
 Every existential second-order definable class of finite structures that contains every empty
 structure is order-free reducible to the class `cnf.SAT` of satisfiable CNF structures
@@ -271,24 +273,39 @@ private theorem not_realize_domain_clause {k : ℕ}
 
 variable (A : Φ.groundInterpretation.Model M → Prop)
 
-/-- Every variable names the tautology `x ∨ ¬x`. -/
+/-- A clause with one unguarded positive literal and one unguarded negative literal, both copying
+coordinates of the clause, says that the negative literal's variable implies the positive one's. -/
+private theorem clauseSat_of_singletons {c : Φ.groundInterpretation.Model M} {t₀ t₁ : Φ.GroundTag}
+    {g₀ : t₀.Coord → c.1.Coord} {g₁ : t₁.Coord → c.1.Coord}
+    (h₀ : Φ.groundTemplates c.1 true = [⟨t₀, ⊤, fun j => some (g₀ j)⟩])
+    (h₁ : Φ.groundTemplates c.1 false = [⟨t₁, ⊤, fun j => some (g₁ j)⟩])
+    {hy₀ : (Φ.groundInterpretation.domain t₀).Realize fun j => c.2.1 (g₀ j)}
+    {hy₁ : (Φ.groundInterpretation.domain t₁).Realize fun j => c.2.1 (g₁ j)} :
+    ClauseSatisfied A c ↔
+      (A ⟨t₁, fun j => c.2.1 (g₁ j), hy₁⟩ → A ⟨t₀, fun j => c.2.1 (g₀ j), hy₀⟩) := by
+  rw [clauseSat_iff, h₀, h₁]
+  constructor
+  · rintro (⟨τ, hτ, -, y, hy, hc, ha⟩ | ⟨τ, hτ, -, y, hy, hc, ha⟩)
+    · obtain rfl := List.mem_singleton.1 hτ
+      obtain rfl : y = fun j => c.2.1 (g₀ j) := funext fun j => hc j _ rfl
+      exact fun _ => ha
+    · obtain rfl := List.mem_singleton.1 hτ
+      obtain rfl : y = fun j => c.2.1 (g₁ j) := funext fun j => hc j _ rfl
+      exact fun h => (ha h).elim
+  · intro h
+    by_cases ha : A ⟨t₁, fun j => c.2.1 (g₁ j), hy₁⟩
+    · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, _, hy₀,
+        fun j i hj => by cases Option.some.inj hj; rfl, h ha⟩
+    · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, _, hy₁,
+        fun j i hj => by cases Option.some.inj hj; rfl, ha⟩
+
 private theorem clauseSat_var (s : Φ.Subformula) (a : Fin s.1.1 → M) (ha) :
-    ClauseSatisfied A ⟨.var s, a, ha⟩ := by
-  refine (clauseSat_iff A _).2 ?_
-  by_cases h : A ⟨.var s, a, ha⟩
-  · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, a, ha, fun j i hj => by
-      cases Option.some.inj hj; rfl, h⟩
-  · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, a, ha, fun j i hj => by
-      cases Option.some.inj hj; rfl, h⟩
+    ClauseSatisfied A ⟨.var s, a, ha⟩ :=
+  (clauseSat_of_singletons A (c := ⟨.var s, a, ha⟩) (hy₀ := ha) (hy₁ := ha) rfl rfl).2 id
 
 private theorem clauseSat_relVar (r : Φ.Var) (b : Fin (Φ.arity r) → M) (hb) :
-    ClauseSatisfied A ⟨.relVar r, b, hb⟩ := by
-  refine (clauseSat_iff A _).2 ?_
-  by_cases h : A ⟨.relVar r, b, hb⟩
-  · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, b, hb, fun j i hj => by
-      cases Option.some.inj hj; rfl, h⟩
-  · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, b, hb, fun j i hj => by
-      cases Option.some.inj hj; rfl, h⟩
+    ClauseSatisfied A ⟨.relVar r, b, hb⟩ :=
+  (clauseSat_of_singletons A (c := ⟨.relVar r, b, hb⟩) (hy₀ := hb) (hy₁ := hb) rfl rfl).2 id
 
 private theorem clauseSat_top (x : Fin 0 → M) (hx) :
     ClauseSatisfied A ⟨.top, x, hx⟩ ↔ A (atom ⟨⟨0, Φ.matrix⟩, self_mem_subformulas _⟩ x) := by
@@ -373,45 +390,15 @@ private theorem clauseSat_relInr₀ {l : ℕ} {r : (varLanguage Φ.arity).Relati
     {ts : Fin l → (L.sum (varLanguage Φ.arity)).Term (Empty ⊕ Fin k)}
     (hs : ⟨k, .rel (.inr r) ts⟩ ∈ subformulas Φ.matrix) (hx) :
     ClauseSatisfied A ⟨.clause ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ 0, x, hx⟩ ↔
-      (A (atom ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ (Fin.init x)) → A (relAtom r.1 (relArgs x r ts))) := by
-  refine (clauseSat_iff A _).trans ?_
-  constructor
-  · rintro (⟨τ, hτ, -, y, hy, hc, ha⟩ | ⟨τ, hτ, -, y, hy, hc, ha⟩)
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = relArgs x r ts := funext fun j => hc j _ rfl
-      exact fun _ => ha
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = Fin.init x := funext fun j => hc j _ rfl
-      exact fun h => (ha h).elim
-  · intro h
-    by_cases ha : A (atom ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ (Fin.init x))
-    · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, relArgs x r ts,
-          formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, h ha⟩
-    · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, Fin.init x, formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, ha⟩
+      (A (atom ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ (Fin.init x)) → A (relAtom r.1 (relArgs x r ts))) :=
+  clauseSat_of_singletons A (by rfl) (by rfl)
 
 private theorem clauseSat_relInr₁ {l : ℕ} {r : (varLanguage Φ.arity).Relations l}
     {ts : Fin l → (L.sum (varLanguage Φ.arity)).Term (Empty ⊕ Fin k)}
     (hs : ⟨k, .rel (.inr r) ts⟩ ∈ subformulas Φ.matrix) (hx) :
     ClauseSatisfied A ⟨.clause ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ 1, x, hx⟩ ↔
-      (A (relAtom r.1 (relArgs x r ts)) → A (atom ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ (Fin.init x))) := by
-  refine (clauseSat_iff A _).trans ?_
-  constructor
-  · rintro (⟨τ, hτ, -, y, hy, hc, ha⟩ | ⟨τ, hτ, -, y, hy, hc, ha⟩)
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = Fin.init x := funext fun j => hc j _ rfl
-      exact fun _ => ha
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = relArgs x r ts := funext fun j => hc j _ rfl
-      exact fun h => (ha h).elim
-  · intro h
-    by_cases ha : A (relAtom r.1 (relArgs x r ts))
-    · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, Fin.init x, formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, h ha⟩
-    · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, relArgs x r ts,
-          formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, ha⟩
+      (A (relAtom r.1 (relArgs x r ts)) → A (atom ⟨⟨k, .rel (.inr r) ts⟩, hs⟩ (Fin.init x))) :=
+  clauseSat_of_singletons A (by rfl) (by rfl)
 
 section Imp
 
@@ -469,22 +456,8 @@ private theorem clauseSat_imp₁ (hx) :
 private theorem clauseSat_imp₂ (hx) :
     ClauseSatisfied A ⟨.clause ⟨⟨k, ψ.imp χ⟩, hs⟩ 2, x, hx⟩ ↔
       (A (atom ⟨⟨k, χ⟩, mem_subformulas_of_imp_right hs⟩ (Fin.init x)) →
-        A (atom ⟨⟨k, ψ.imp χ⟩, hs⟩ (Fin.init x))) := by
-  refine (clauseSat_iff A _).trans ?_
-  constructor
-  · rintro (⟨τ, hτ, -, y, hy, hc, ha⟩ | ⟨τ, hτ, -, y, hy, hc, ha⟩)
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = Fin.init x := funext fun j => hc j _ rfl
-      exact fun _ => ha
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = Fin.init x := funext fun j => hc j _ rfl
-      exact fun h => (ha h).elim
-  · intro h
-    by_cases h₂ : A (atom ⟨⟨k, χ⟩, mem_subformulas_of_imp_right hs⟩ (Fin.init x))
-    · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, Fin.init x, formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, h h₂⟩
-    · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, Fin.init x, formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, h₂⟩
+        A (atom ⟨⟨k, ψ.imp χ⟩, hs⟩ (Fin.init x))) :=
+  clauseSat_of_singletons A (by rfl) (by rfl)
 
 end Imp
 
@@ -496,22 +469,8 @@ variable {ψ : (L.sum (varLanguage Φ.arity)).BoundedFormula Empty (k + 1)}
 private theorem clauseSat_all₀ (hx) :
     ClauseSatisfied A ⟨.clause ⟨⟨k, ψ.all⟩, hs⟩ 0, x, hx⟩ ↔
       (A (atom ⟨⟨k, ψ.all⟩, hs⟩ (Fin.init x)) →
-        A (atom ⟨⟨k + 1, ψ⟩, mem_subformulas_of_all hs⟩ x)) := by
-  refine (clauseSat_iff A _).trans ?_
-  constructor
-  · rintro (⟨τ, hτ, -, y, hy, hc, ha⟩ | ⟨τ, hτ, -, y, hy, hc, ha⟩)
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : x = y := funext fun j => (hc j _ rfl).symm
-      exact fun _ => ha
-    · obtain rfl := List.mem_singleton.1 hτ
-      obtain rfl : y = Fin.init x := funext fun j => hc j _ rfl
-      exact fun h => (ha h).elim
-  · intro h
-    by_cases h₁ : A (atom ⟨⟨k, ψ.all⟩, hs⟩ (Fin.init x))
-    · exact .inl ⟨_, List.mem_singleton.2 rfl, formula_realize_top, x, formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, h h₁⟩
-    · exact .inr ⟨_, List.mem_singleton.2 rfl, formula_realize_top, Fin.init x, formula_realize_top,
-        fun j i hj => by cases Option.some.inj hj; rfl, h₁⟩
+        A (atom ⟨⟨k + 1, ψ⟩, mem_subformulas_of_all hs⟩ x)) :=
+  clauseSat_of_singletons A (by rfl) (by rfl)
 
 private theorem clauseSat_all₁ (hx) :
     ClauseSatisfied A ⟨.clause ⟨⟨k, ψ.all⟩, hs⟩ 1, x, hx⟩ ↔
@@ -825,10 +784,11 @@ open FO FO.TaggedInterpretation
 variable {L : Language.{u, v}} [L.IsRelational]
 
 /-- **Every existential second-order definable class containing every empty structure is
-order-free reducible to SAT** [Immerman, Chapter 7][Immerman1999]. The reduction grounds the
-defining sentence (`Cslib.Logic.ESO.Sentence.groundInterpretation`). The empty-structure hypothesis
-cannot be dropped in general: an interpretation of positive dimension maps every empty input to
-the empty CNF structure, which is satisfiable. -/
+order-free reducible to SAT** [Immerman, Chapter 7][Immerman1999]. The input language is
+relational. The reduction grounds the defining sentence
+(`Cslib.Logic.ESO.Sentence.groundInterpretation`). The empty-structure hypothesis cannot be dropped
+in general: an interpretation of positive dimension maps every empty input to the empty CNF
+structure, which is satisfiable. -/
 theorem Definable.reduces_SAT {K : Set (Bundled.{w} L.Structure)} (hK : Definable K)
     (hempty : ∀ M : Bundled.{w} L.Structure, IsEmpty M → M ∈ K) : Reduces K cnf.SAT.{w} := by
   obtain ⟨Φ, hΦ⟩ := hK
@@ -852,18 +812,18 @@ theorem Definable.reduces_SAT {K : Set (Bundled.{w} L.Structure)} (hK : Definabl
         Sentence.realize_subsingletonSentence]
 
 /-- **SAT is complete for existential second-order logic under order-free reductions**: a class
-containing every empty structure is existential second-order definable exactly when it is
-order-free reducible to SAT. -/
+of structures of a relational language containing every empty structure is existential
+second-order definable exactly when it is order-free reducible to SAT. -/
 theorem definable_iff_reduces_SAT {K : Set (Bundled.{w} L.Structure)}
     (hempty : ∀ M : Bundled.{w} L.Structure, IsEmpty M → M ∈ K) :
     Definable K ↔ Reduces K cnf.SAT.{w} :=
   ⟨fun h => h.reduces_SAT hempty, fun h => cnf.definable_SAT.of_reduces h⟩
 
 /-- **Every existential second-order definable class is order-free reducible to SAT on the
-nonempty structures**: some first-order interpretation maps every nonempty finite structure inside
-SAT exactly when it is in the class. This is an order-free variant of
-[Immerman, Chapter 7][Immerman1999], whose structures are ordered and have at least two elements.
-The construction reduces the class with every empty structure added. -/
+nonempty structures**, over a relational language: some first-order interpretation maps every
+nonempty finite structure inside SAT exactly when it is in the class. This is an order-free variant
+of [Immerman, Chapter 7][Immerman1999], whose structures are ordered and have at least two
+elements. The construction reduces the class with every empty structure added. -/
 theorem Definable.exists_interpretation_SAT_of_nonempty {K : Set (Bundled.{w} L.Structure)}
     (hK : Definable K) : ∃ (ι : Type) (_ : Finite ι) (I : Interpretation L cnf ι),
       ∀ (M : Bundled.{w} L.Structure) [Finite M] [Nonempty M],

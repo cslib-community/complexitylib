@@ -16,6 +16,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.BigOperators.ModEq
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.CharP.Two
+import Mathlib.Combinatorics.Enumerative.DoubleCounting
 import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -48,13 +49,13 @@ truncation from `CslibFrontier.Foundations.Data.Polynomial.ParityAmplifier` [Tod
   `commonZeroCount I P` on the nose via `(· % 2 ^ ℓ)` whenever `Fintype.card ι < ℓ`
   (`Cslib.BitString.emod_sum_sumCoeffsBelow_prod_parityFactor_eq_commonZeroCount`).
 
-Finally, for any system of equations with variable scopes `scope : κ → Finset ι` contained in a
-candidate variable set `V` (`∀ i ∈ F, scope i ⊆ V`) and positive incidence threshold `1 ≤ b₀`,
-the set `Cslib.BitString.heavyVars V F scope b₀` of variables in `V` appearing in more than `b₀`
-scopes has cardinality at most `totalIncidence F scope / b₀`
-(`Cslib.BitString.card_heavyVars_le_div`), while every
-remaining variable in `V \ heavyVars V F scope b₀` (and in any post-branching restricted equation
-scope when `∀ i ∈ I, equationScope (P i) ⊆ V`) has incidence at most `b₀`. Branching on all
+Finally, for any system of equations with variable scopes `scope : κ → Finset ι`, candidate
+variable set `V` and positive incidence threshold `1 ≤ b₀`, the set
+`Cslib.BitString.heavyVars V F scope b₀` of variables in `V` appearing in more than `b₀` scopes has
+cardinality at most `totalIncidence F scope / b₀` (`Cslib.BitString.card_heavyVars_le_div`). When
+the scopes lie in `V` (`∀ i ∈ F, scope i ⊆ V`), every remaining variable in
+`V \ heavyVars V F scope b₀` (and in any post-branching restricted equation scope when
+`∀ i ∈ I, equationScope (P i) ⊆ V`) has incidence at most `b₀`. Branching on all
 `2 ^ #S` assignments to a variable subset `S` and simplifying each equation via
 `Cslib.BitString.restrictMonomials` preserves degree bounds, never increases the number of
 monomials per equation, and decomposes `commonZeroCount` additively across the branches
@@ -69,8 +70,8 @@ monomials per equation, and decomposes `commonZeroCount` additively across the b
   `𝔽₂` polynomial equations on `ι → Bool` and their count.
 * `Cslib.BitString.varIncidence`, `Cslib.BitString.totalIncidence`, `Cslib.BitString.heavyVars`:
   variable-equation incidence counts and heavy-variable set above threshold `b₀`.
-* `Cslib.BitString.patchAssignment`, `Cslib.BitString.restrictMonomials`: patching a branch
-  assignment on `S` and reducing a monomial family modulo `2` after specializing `S`.
+* `Cslib.BitString.restrictMonomials`: reducing a monomial family modulo `2` after specializing
+  the variables in `S`.
 * `Cslib.BitString.parityBaseDigitCleared`, `Cslib.BitString.hPolyCleared`,
   `Cslib.BitString.parityFactorCleared`, `Cslib.BitString.clearedMonomialPoly`,
   `Cslib.BitString.clearedMonomialSumPoly`: cleared-denominator parity factors and degree-`k`
@@ -300,17 +301,16 @@ theorem sumCoeffsBelow_sum {α A : Type*} [Semiring A] (s : Finset α) (ℓ : �
   refine sum_congr rfl fun j _ => ?_
   rw [Polynomial.finsetSum_coeff]
 
-/-- **Equation (5.4) (congruence modulo `2 ^ ℓ`)**: for `ℓ ≥ 1`, summing the truncated product of
-parity factors of `monomialSum ℤ (P i) x` over `x : ι → Bool` recovers `commonZeroCount I P`
-modulo `2 ^ ℓ`. -/
+/-- **Equation (5.4) (congruence modulo `2 ^ ℓ`)**: summing the truncated product of parity factors
+of `monomialSum ℤ (P i) x` over `x : ι → Bool` recovers `commonZeroCount I P` modulo `2 ^ ℓ`. -/
 theorem sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount [Fintype ι] [DecidableEq ι]
-    (I : Finset κ) (P : κ → Finset (Finset ι)) {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
+    (I : Finset κ) (P : κ → Finset (Finset ι)) (ℓ : ℕ) :
     (∑ x : ι → Bool,
       Polynomial.sumCoeffsBelow ℓ (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum ℤ (P i) x))) ≡
       (commonZeroCount I P : ℤ) [ZMOD (2 : ℤ) ^ ℓ] := by
   rw [← sum_prod_even_monomialSum_eq_commonZeroCount I P]
   exact Int.ModEq.sum fun x _ =>
-    Polynomial.sumCoeffsBelow_prod_parityFactor_modEq I hℓ (fun i => monomialSum ℤ (P i) x)
+    Polynomial.sumCoeffsBelow_prod_parityFactor_modEq I ℓ (fun i => monomialSum ℤ (P i) x)
 
 /-- **Equation (5.4) (exact recovery via `% 2 ^ ℓ`)**: when `Fintype.card ι < ℓ` (in particular for
 `ℓ = Fintype.card ι + 1`), reducing the cube sum of truncated parity-factor products modulo
@@ -320,12 +320,11 @@ theorem emod_sum_sumCoeffsBelow_prod_parityFactor_eq_commonZeroCount [Fintype ι
     (∑ x : ι → Bool,
       Polynomial.sumCoeffsBelow ℓ (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum ℤ (P i) x))) %
       ((2 : ℤ) ^ ℓ) = commonZeroCount I P := by
-  have hℓ1 : 1 ≤ ℓ := by omega
   have hmod :
       (∑ x : ι → Bool,
         Polynomial.sumCoeffsBelow ℓ (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum ℤ (P i) x))) %
         ((2 : ℤ) ^ ℓ) = (commonZeroCount I P : ℤ) % ((2 : ℤ) ^ ℓ) :=
-    sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P hℓ1
+    sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P ℓ
   rw [hmod, Int.emod_eq_of_lt (Nat.cast_nonneg _)]
   have hle : (commonZeroCount I P : ℤ) ≤ (2 : ℤ) ^ Fintype.card ι := by
     exact_mod_cast commonZeroCount_le_two_pow I P
@@ -343,19 +342,26 @@ def varIncidence [DecidableEq ι] (F : Finset κ) (scope : κ → Finset ι) (v 
 def totalIncidence (F : Finset κ) (scope : κ → Finset ι) : ℕ :=
   ∑ i ∈ F, #(scope i)
 
+/-- Double counting over any universe `U`: the incidences of variables in `U` are the sizes of the
+scopes cut down to `U`. -/
+private theorem sum_varIncidence_eq_sum_card_inter [DecidableEq ι] (U : Finset ι) (F : Finset κ)
+    (scope : κ → Finset ι) :
+    ∑ v ∈ U, varIncidence F scope v = ∑ i ∈ F, #(U ∩ scope i) :=
+  (sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow fun v i => v ∈ scope i).trans <| by
+    simp only [bipartiteBelow, filter_mem_eq_inter]
+
 /-- Double-counting variable-constraint incidences over a universe `U` containing all scopes. -/
 theorem sum_varIncidence_eq_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
     (scope : κ → Finset ι) (hU : ∀ i ∈ F, scope i ⊆ U) :
     ∑ v ∈ U, varIncidence F scope v = totalIncidence F scope := by
-  unfold varIncidence totalIncidence
-  simp only [card_eq_sum_ones]
-  have h1 : (∑ v ∈ U, ∑ x ∈ {i ∈ F | v ∈ scope i}, 1) =
-      ∑ v ∈ U, ∑ i ∈ F, if v ∈ scope i then 1 else 0 := by
-    refine sum_congr rfl fun v _ => ?_
-    rw [sum_filter]
-  rw [h1, sum_comm]
-  refine sum_congr rfl fun i hi => ?_
-  rw [← sum_filter, filter_mem_eq_inter, inter_eq_right.mpr (hU i hi)]
+  rw [sum_varIncidence_eq_sum_card_inter, totalIncidence]
+  exact sum_congr rfl fun i hi => by rw [inter_eq_right.mpr (hU i hi)]
+
+/-- Over any universe `U`, the incidences of variables in `U` are at most the total incidence. -/
+theorem sum_varIncidence_le_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
+    (scope : κ → Finset ι) : ∑ v ∈ U, varIncidence F scope v ≤ totalIncidence F scope := by
+  rw [sum_varIncidence_eq_sum_card_inter, totalIncidence]
+  exact sum_le_sum fun i _ => card_le_card inter_subset_right
 
 /-- If every constraint in `F` has scope size at most `k`, then `totalIncidence F scope` is at
 most `k * #F`. -/
@@ -373,9 +379,9 @@ def heavyVars [DecidableEq ι] (U : Finset ι) (F : Finset κ) (scope : κ → F
 
 /-- Markov / counting bound: `#(heavyVars U F scope b₀) * (b₀ + 1) ≤ totalIncidence F scope`. -/
 theorem card_heavyVars_mul_succ_le_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) (b₀ : ℕ) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (scope : κ → Finset ι) (b₀ : ℕ) :
     #(heavyVars U F scope b₀) * (b₀ + 1) ≤ totalIncidence F scope := by
-  rw [← sum_varIncidence_eq_totalIncidence U F scope hU]
+  refine le_trans ?_ (sum_varIncidence_le_totalIncidence U F scope)
   calc
     #(heavyVars U F scope b₀) * (b₀ + 1)
       = ∑ _v ∈ heavyVars U F scope b₀, (b₀ + 1) := by
@@ -389,17 +395,17 @@ theorem card_heavyVars_mul_succ_le_totalIncidence [DecidableEq ι] (U : Finset �
 
 /-- `#(heavyVars U F scope b₀) * b₀ ≤ totalIncidence F scope`. -/
 theorem card_heavyVars_mul_le_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) (b₀ : ℕ) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (scope : κ → Finset ι) (b₀ : ℕ) :
     #(heavyVars U F scope b₀) * b₀ ≤ totalIncidence F scope := by
   refine (Nat.mul_le_mul_left _ (Nat.le_succ b₀)).trans ?_
-  exact card_heavyVars_mul_succ_le_totalIncidence U F scope b₀ hU
+  exact card_heavyVars_mul_succ_le_totalIncidence U F scope b₀
 
 /-- **§5.5 (heavy-variable cardinality bound)**: for `b₀ > 0`, the number of heavy variables is at
 most `totalIncidence F scope / b₀`. -/
 theorem card_heavyVars_le_div [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     #(heavyVars U F scope b₀) ≤ totalIncidence F scope / b₀ :=
-  (Nat.le_div_iff_mul_le hb₀).mpr (card_heavyVars_mul_le_totalIncidence U F scope b₀ hU)
+  (Nat.le_div_iff_mul_le hb₀).mpr (card_heavyVars_mul_le_totalIncidence U F scope b₀)
 
 /-- Every variable in `U \ heavyVars U F scope b₀` has incidence at most `b₀`. -/
 theorem varIncidence_le_of_mem_sdiff_heavyVars [DecidableEq ι] {U : Finset ι} {F : Finset κ}
@@ -428,47 +434,32 @@ theorem varIncidence_sdiff_heavyVars_le [DecidableEq ι] (U : Finset ι) (F : Fi
     rw [hzero]
     exact Nat.zero_le _
 
-/-! ### 5. Exact branching on a variable subset `S` (§5.5) -/
+/-! ### 5. Exact branching on a variable subset `S` (§5.5)
 
-/-- The assignment that takes values from `b` on `S` and from `y` outside `S`. -/
-def patchAssignment [DecidableEq ι] (S : Finset ι) (b y : ι → Bool) (v : ι) : Bool :=
-  if v ∈ S then b v else y v
+The assignment that takes values from a branch `b` on `S` and from `y` outside `S` is Mathlib's
+`S.piecewise b y`. -/
 
-/-- On `S`, `patchAssignment S b y` agrees with `b`. -/
-@[simp]
-theorem patchAssignment_of_mem [DecidableEq ι] {S : Finset ι} {b y : ι → Bool} {v : ι}
-    (hv : v ∈ S) :
-    patchAssignment S b y v = b v :=
-  ite_eq_left hv
-
-/-- Outside `S`, `patchAssignment S b y` agrees with `y`. -/
-@[simp]
-theorem patchAssignment_of_notMem [DecidableEq ι] {S : Finset ι} {b y : ι → Bool} {v : ι}
-    (hv : v ∉ S) :
-    patchAssignment S b y v = y v :=
-  ite_eq_right hv
-
-/-- A monomial `M` evaluated on `patchAssignment S b y` factors into the indicator that `b` is all
+/-- A monomial `M` evaluated on `S.piecewise b y` factors into the indicator that `b` is all
 `true` on `M ∩ S` times `monomial R (M \ S) y`. -/
-theorem monomial_patchAssignment (R : Type*) [CommRing R] [DecidableEq ι] (S : Finset ι)
+theorem monomial_piecewise (R : Type*) [CommRing R] [DecidableEq ι] (S : Finset ι)
     (b y : ι → Bool) (M : Finset ι) :
-    monomial R M (patchAssignment S b y) =
+    monomial R M (S.piecewise b y) =
       (if ∀ v ∈ M ∩ S, b v = true then 1 else 0) * monomial R (M \ S) y := by
   rw [monomial_apply, monomial_apply]
-  have hiff : (∀ v ∈ M, patchAssignment S b y v = true) ↔
+  have hiff : (∀ v ∈ M, S.piecewise b y v = true) ↔
       (∀ v ∈ M ∩ S, b v = true) ∧ (∀ v ∈ M \ S, y v = true) := by
     constructor
     · intro h
       refine ⟨fun v hv => ?_, fun v hv => ?_⟩
       · rw [mem_inter] at hv
-        simpa only [patchAssignment, hv.2, ↓reduceIte] using h v hv.1
+        simpa only [Finset.piecewise, hv.2, ↓reduceIte] using h v hv.1
       · rw [mem_sdiff] at hv
-        simpa only [patchAssignment, hv.2, ↓reduceIte] using h v hv.1
+        simpa only [Finset.piecewise, hv.2, ↓reduceIte] using h v hv.1
     · rintro ⟨h1, h2⟩ v hv
       by_cases hvs : v ∈ S
-      · simp only [patchAssignment, hvs, ↓reduceIte]
+      · simp only [Finset.piecewise, hvs, ↓reduceIte]
         exact h1 v (mem_inter.mpr ⟨hv, hvs⟩)
-      · simp only [patchAssignment, hvs, ↓reduceIte]
+      · simp only [Finset.piecewise, hvs, ↓reduceIte]
         exact h2 v (mem_sdiff.mpr ⟨hv, hvs⟩)
   by_cases h1 : ∀ v ∈ M ∩ S, b v = true
   · by_cases h2 : ∀ v ∈ M \ S, y v = true
@@ -507,32 +498,32 @@ theorem card_restrictMonomials_le [DecidableEq ι] (S : Finset ι) (b : ι → B
     #(restrictMonomials S b 𝓜) ≤ #𝓜 :=
   (card_filter_le _ _).trans card_image_le
 
-/-- Over any commutative ring `R`, `monomialSum R 𝓜 (patchAssignment S b y)` groups by restricted
+/-- Over any commutative ring `R`, `monomialSum R 𝓜 (S.piecewise b y)` groups by restricted
 monomials `M' ∈ 𝓜.image (· \ S)`. -/
-theorem monomialSum_patchAssignment_eq_sum_image (R : Type*) [CommRing R] [DecidableEq ι]
+theorem monomialSum_piecewise_eq_sum_image (R : Type*) [CommRing R] [DecidableEq ι]
     (S : Finset ι) (b y : ι → Bool) (𝓜 : Finset (Finset ι)) :
-    monomialSum R 𝓜 (patchAssignment S b y) =
+    monomialSum R 𝓜 (S.piecewise b y) =
       ∑ M' ∈ 𝓜.image (· \ S),
         (#{M ∈ 𝓜 | M \ S = M' ∧ ∀ v ∈ M ∩ S, b v = true} : R) * monomial R M' y := by
   unfold monomialSum
   rw [← sum_fiberwise_of_maps_to (fun M hM => mem_image_of_mem (· \ S) hM)]
   refine sum_congr rfl fun M' _ => ?_
   have hcongr :
-      (∑ M ∈ {M ∈ 𝓜 | M \ S = M'}, monomial R M (patchAssignment S b y)) =
+      (∑ M ∈ {M ∈ 𝓜 | M \ S = M'}, monomial R M (S.piecewise b y)) =
         ∑ M ∈ {M ∈ 𝓜 | M \ S = M'},
           (if ∀ v ∈ M ∩ S, b v = true then (1 : R) else 0) * monomial R M' y := by
     refine sum_congr rfl fun M hM => ?_
     rw [mem_filter] at hM
-    rw [monomial_patchAssignment, hM.2]
+    rw [monomial_piecewise, hM.2]
   rw [hcongr, ← sum_mul, sum_boole, filter_filter]
 
 /-- **§5.5 (exact `𝔽₂` specialization)**: over `ZMod 2`, evaluating `restrictMonomials S b 𝓜` at
-`y` equals evaluating the original family `𝓜` at `patchAssignment S b y`. -/
+`y` equals evaluating the original family `𝓜` at `S.piecewise b y`. -/
 theorem monomialSum_zmod_two_restrictMonomials [DecidableEq ι] (S : Finset ι) (b y : ι → Bool)
     (𝓜 : Finset (Finset ι)) :
     monomialSum (ZMod 2) (restrictMonomials S b 𝓜) y =
-      monomialSum (ZMod 2) 𝓜 (patchAssignment S b y) := by
-  rw [monomialSum_patchAssignment_eq_sum_image, monomialSum, restrictMonomials, sum_filter]
+      monomialSum (ZMod 2) 𝓜 (S.piecewise b y) := by
+  rw [monomialSum_piecewise_eq_sum_image, monomialSum, restrictMonomials, sum_filter]
   refine sum_congr rfl fun M' _ => ?_
   by_cases hodd : Odd #{M ∈ 𝓜 | M \ S = M' ∧ ∀ v ∈ M ∩ S, b v = true}
   · have hcast : (#{M ∈ 𝓜 | M \ S = M' ∧ ∀ v ∈ M ∩ S, b v = true} : ZMod 2) = 1 := by
@@ -546,11 +537,11 @@ theorem monomialSum_zmod_two_restrictMonomials [DecidableEq ι] (S : Finset ι) 
       (ZMod.natCast_eq_zero_iff_even.mpr heven)
     simp only [hodd, ↓reduceIte, hcast, zero_mul]
 
-/-- `patchAssignment S b y` is a common zero of `P` if and only if `y` is a common zero of the
+/-- `S.piecewise b y` is a common zero of `P` if and only if `y` is a common zero of the
 specialized system `fun i => restrictMonomials S b (P i)`. -/
-theorem isCommonZero_patchAssignment_iff [DecidableEq ι] (S : Finset ι) (b y : ι → Bool)
+theorem isCommonZero_piecewise_iff [DecidableEq ι] (S : Finset ι) (b y : ι → Bool)
     (I : Finset κ) (P : κ → Finset (Finset ι)) :
-    IsCommonZero I P (patchAssignment S b y) ↔
+    IsCommonZero I P (S.piecewise b y) ↔
       IsCommonZero I (fun i => restrictMonomials S b (P i)) y := by
   unfold IsCommonZero
   refine forall₂_congr fun i _ => ?_
@@ -637,11 +628,10 @@ theorem varIncidence_equationScope_restrictMonomials_heavyVars_le [DecidableEq �
 /-- **§5.5 (heavy-variable branch count bound)**: for `b₀ > 0`, the number of canonical branches on
 `heavyVars U F scope b₀` is at most `2 ^ (totalIncidence F scope / b₀)`. -/
 theorem card_branchAssignments_heavyVars_le [Fintype ι] [DecidableEq ι] (U : Finset ι)
-    (F : Finset κ) (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀)
-    (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (F : Finset κ) (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     #(branchAssignments (heavyVars U F scope b₀)) ≤ 2 ^ (totalIncidence F scope / b₀) := by
   rw [card_branchAssignments]
-  exact Nat.pow_le_pow_right (by omega) (card_heavyVars_le_div U F scope hb₀ hU)
+  exact Nat.pow_le_pow_right (by omega) (card_heavyVars_le_div U F scope hb₀)
 
 /-- **§5.5 (additive branch decomposition of `commonZeroCount`)**: branching over all canonical
 assignments `b ∈ branchAssignments S` to `S` partitions `commonZeroCount I P` into the sum of
@@ -657,11 +647,11 @@ theorem commonZeroCount_eq_sum_branches [Fintype ι] [DecidableEq ι] (S : Finse
   have hbij :
       #{x : ι → Bool | IsCommonZero I P x} =
         ∑ p ∈ branchAssignments S ×ˢ subproblemAssignments S,
-          if IsCommonZero I P (patchAssignment S p.1 p.2) then 1 else 0 := by
+          if IsCommonZero I P (S.piecewise p.1 p.2) then 1 else 0 := by
     rw [card_filter]
     refine sum_nbij' (fun x => (fun v => if v ∈ S then x v else false,
         fun v => if v ∈ S then false else x v))
-      (fun p => patchAssignment S p.1 p.2) ?_ ?_ ?_ ?_ ?_
+      (fun p => S.piecewise p.1 p.2) ?_ ?_ ?_ ?_ ?_
     · intro x _
       rw [mem_product, branchAssignments, subproblemAssignments, mem_filter, mem_filter]
       refine ⟨⟨mem_univ _, fun v hv => ite_eq_right hv⟩, ⟨mem_univ _, fun v hv => ite_eq_left hv⟩⟩
@@ -669,28 +659,28 @@ theorem commonZeroCount_eq_sum_branches [Fintype ι] [DecidableEq ι] (S : Finse
       exact mem_univ _
     · intro x _
       funext v
-      by_cases hv : v ∈ S <;> simp only [patchAssignment, hv, ↓reduceIte]
+      by_cases hv : v ∈ S <;> simp only [Finset.piecewise, hv, ↓reduceIte]
     · intro p hp
       rw [mem_product, branchAssignments, subproblemAssignments, mem_filter, mem_filter] at hp
       ext v
       · by_cases hv : v ∈ S
-        · simp only [patchAssignment, hv, ↓reduceIte]
+        · simp only [Finset.piecewise, hv, ↓reduceIte]
         · simp only [hv, ↓reduceIte, (hp.1.2 v hv).symm]
       · by_cases hv : v ∈ S
         · simp only [hv, ↓reduceIte, (hp.2.2 v hv).symm]
-        · simp only [patchAssignment, hv, ↓reduceIte]
+        · simp only [Finset.piecewise, hv, ↓reduceIte]
     · intro x _
       have hx :
-          patchAssignment S (fun v => if v ∈ S then x v else false)
+          S.piecewise (fun v => if v ∈ S then x v else false)
             (fun v => if v ∈ S then false else x v) = x := by
         funext v
-        by_cases hv : v ∈ S <;> simp only [patchAssignment, hv, ↓reduceIte]
+        by_cases hv : v ∈ S <;> simp only [Finset.piecewise, hv, ↓reduceIte]
       rw [hx]
   rw [commonZeroCount, hbij, sum_product]
   refine sum_congr rfl fun b _ => ?_
   rw [card_filter]
   refine sum_congr rfl fun y _ => ?_
-  simp only [isCommonZero_patchAssignment_iff]
+  simp only [isCommonZero_piecewise_iff]
 
 /-! ### 6. Cleared-denominator homogenization and `ℓ₁`-norm bounds (§5.4 & Appendix B.2) -/
 
@@ -739,18 +729,8 @@ theorem coeff_parityFactorCleared {A : Type*} [CommRing A] (ℓ : ℕ) (Δ A_i :
         Δ ^ (2 * (ℓ - 1 - s)) * parityBaseDigitCleared ℓ s Δ A_i * hPolyCleared Δ A_i ^ s
       else 0 := by
   rw [parityFactorCleared, Polynomial.finsetSum_coeff]
-  simp only [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, mul_ite, mul_one, mul_zero]
-  by_cases hs : s < ℓ
-  · rw [ite_eq_left hs, sum_eq_single s]
-    · simp only [↓reduceIte]
-    · intro j _ hjs
-      exact ite_eq_right (Ne.symm hjs)
-    · intro hns
-      exact absurd (mem_range.mpr hs) hns
-  · rw [ite_eq_right hs]
-    refine sum_eq_zero fun j hj => ?_
-    rw [mem_range] at hj
-    exact ite_eq_right (by omega)
+  simp only [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, mul_ite, mul_one, mul_zero,
+    sum_ite_eq, mem_range]
 
 /-- **§5.4 & Appendix B.2 (single-factor denominator clearing, $\Gamma = \Delta^{2\ell-1}$)**: for
 `ℓ ≥ 1`, `parityFactorCleared ℓ Δ (Δ * y) = C (Δ ^ (2 * ℓ - 1)) * parityFactor ℓ y`. -/

@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Local embeddings
@@ -260,8 +261,7 @@ theorem isEmbeddable_bind_prod (P₀ : PMF (X × Y)) (KS : X → PMF S) (KT : Y 
     (Cslib.Probability.PMF.pi KS).bind fun a => (Cslib.Probability.PMF.pi KT).map fun b => (a, b),
     fun x r => r.1 x, fun y r => r.2 y, le_of_eq ?_⟩
   rw [dist_eq_zero]
-  congr 1
-  funext xy
+  congr 1 with xy : 1
   simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
   rw [← Cslib.Probability.PMF.pi_map_eval KS xy.1, PMF.bind_map,
     ← Cslib.Probability.PMF.pi_map_eval KT xy.2]
@@ -370,10 +370,7 @@ theorem dist_withKernel_condY_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X × Y))
   have hT : withKernel P₀ (fun xy => condY J xy.2) = (P₀.map Prod.snd).bind Λ := by
     conv_lhs => rw [← hK]
     simp only [withKernel, PMF.bind_bind, PMF.bind_map, Function.comp_def, Λ]
-    congr 1
-    funext y
-    simp only [PMF.map, Function.comp_def]
-    exact PMF.bind_comm _ _ _
+    pmf_swap
   have hM : M.map Prod.fst = (J.map Prod.fst).map Prod.snd := by
     simp only [M, PMF.map_comp]
     rfl
@@ -405,10 +402,7 @@ theorem dist_withKernel_condX_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X × Y))
   have hT : withKernel P₀ (fun xy => condX J xy.1) = (P₀.map Prod.fst).bind Λ := by
     conv_lhs => rw [← hK]
     simp only [withKernel, PMF.bind_bind, PMF.bind_map, Function.comp_def, Λ]
-    congr 1
-    funext x
-    simp only [PMF.map, Function.comp_def]
-    exact PMF.bind_comm _ _ _
+    pmf_swap
   have hM : M.map Prod.fst = (J.map Prod.fst).map Prod.fst := by
     simp only [M, PMF.map_comp]
     rfl

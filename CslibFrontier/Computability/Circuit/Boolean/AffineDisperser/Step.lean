@@ -40,7 +40,7 @@ algorithm, and no running time is claimed.
   Boolean Circuits*][MishraSanthanam2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.AffineDisperser
 

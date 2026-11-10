@@ -18,9 +18,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.St
 # Resource certificates for read-machine simulations
 
 If the halting test, the address and the step of a read machine have plain charged resource
-certificates, then the step of `Turing.ReadMachine.toStepMachine` has a resource certificate on
-its states, which add the position of the head: the work space grows by the length of the position
-in binary, and the time by a factor of the position, to compare it with the address.
+certificates with time bound `T` and space bound `S` on its states, then
+`Turing.ReadMachine.toStepMachine` has a resource certificate on its states, which add the
+position of the head. Its space bound `Turing.ReadMachine.stateS` adds to `S` twice the length of
+the encoded pair of state and position, plus `4`; its time bound `Turing.ReadMachine.stateT` is
+the position plus one, times the square of the sum of `T` and that space bound.
 
 ## Main results
 
@@ -28,6 +30,8 @@ in binary, and the time by a factor of the position, to compare it with the addr
   a function of a state and a bit at the bit `false` within the space budget of the step.
 * `Turing.ReadMachine.toStepMachine_resourceCertificate`: the simulating step machine has a plain
   resource certificate.
+* `Turing.ReadMachine.exists_toStepMachine_resourceCertificate`: the same, from halting test,
+  address and step computable within the space bound of the states.
 -/
 
 @[expose] public section
@@ -302,6 +306,26 @@ theorem toStepMachine_resourceCertificate (hhalt : ComputableInO m.halt encS enc
     · have := inLen_le (encS := encS) p
       simp only [spaceB, stateS]
       omega
+
+/-- **The simulating step machine has a resource certificate** for some time bound, if the halting
+test, address and step are computable within the space bound `S` of the states. The time bound
+collects the time bounds of the three certificates. -/
+theorem exists_toStepMachine_resourceCertificate
+    (hhalt : ComputableInSpace m.halt encS encBool S)
+    (haddr : ComputableInSpace m.addr encS (encOption encNat) S)
+    (hstep : ComputableInSpace (fun p : σ × Bool => m.step p.1 p.2) (encPair encS encBool)
+      (encPair encS encBits) fun p => S p.1) :
+    ∃ T, (m.toStepMachine).ResourceCertificate (encPair encS encNat)
+      (stateT encS T S) (stateS encS S) := by
+  obtain ⟨T₁, h₁⟩ := hhalt.exists_inO
+  obtain ⟨T₂, h₂⟩ := haddr.exists_inO
+  obtain ⟨T₃, h₃⟩ := hstep.exists_inO
+  let T : σ → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
+  exact ⟨T, toStepMachine_resourceCertificate
+    (h₁.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
+    (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
+    (h₃.mono_le (fun p => by rcases p with ⟨s, _ | _⟩ <;> simp only [T] <;> omega)
+      fun _ => le_rfl)⟩
 
 end ReadMachine
 

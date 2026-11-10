@@ -117,19 +117,6 @@ private theorem greedyLabelStepBy_preserves (score : (V → Option L) → (F →
         have hne : g ≠ f := by intro heq; subst g; simp only [Sum.elim_inr, hf, reduceCtorEq] at h
         simpa only [greedyLabelStepBy, hf, Sum.elim_inr, Function.update_of_ne hne] using h
 
-/-- The first minimizer from an exhaustive candidate list is at most the average of `score`. -/
-private theorem argmin_le_expect [Fintype L] [Nonempty L] (score : L → ℚ) (values : List L)
-    (hcover : ∀ word, word ∈ values) :
-    ∃ chosen, values.argmin score = some chosen ∧ score chosen ≤ 𝔼 word, score word := by
-  cases harg : values.argmin score with
-  | none =>
-    have hnil : values = [] := List.argmin_eq_none.mp harg
-    obtain ⟨word⟩ := (inferInstance : Nonempty L)
-    simpa only [hnil, List.not_mem_nil] using hcover word
-  | some chosen =>
-    refine ⟨chosen, rfl, Finset.le_expect Finset.univ_nonempty fun word _ => ?_⟩
-    exact List.le_of_mem_argmin (hcover word) (by simp only [harg, Option.mem_some])
-
 private theorem greedyLabelStepBy_spec [Fintype L] [Nonempty L]
     (score : (V → Option L) → (F → Option L) → ℚ)
     (hvar : ∀ a d v, a v = none → 𝔼 word, score (Function.update a v (some word)) d ≤ score a d)
@@ -416,8 +403,8 @@ theorem greedySchedules_balanced [Nonempty T] [Nonempty V]
   have hE : 0 < Fintype.card E :=
     (by positivity : 0 < 2 * (b + w) * Fintype.card ((T → G) × (T → G)) ^ 2).trans_le
       hincidenceSize
-  exact incidence_and_group_bounds _ _ (b + w) hE Fintype.card_pos hbw
-    Fintype.card_pos Fintype.card_pos Fintype.card_pos hincidenceSize hgroupSize
+  exact incidence_and_group_bounds _ _ (b + w) hE hbw Fintype.card_pos Fintype.card_pos
+    hincidenceSize hgroupSize
     (greedySchedules_score_le_two edge hb hw hbw hE g₀)
 
 end Enumerated

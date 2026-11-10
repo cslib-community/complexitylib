@@ -199,12 +199,7 @@ theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
     gmSlabBelowIdx_lt hb_pos hp_lt
   have habv_lt : 0 < q_b → gmSlabMetaBase n_max + 4 * top_old + 3 < globalMetaLen n_max := by
     intro hq_pos
-    have htop_eq := hslab.top_eq b hb (q_b - 1) (by omega) (by omega)
-    have htop_lt : top_old < p_new := by
-      dsimp only [top_old, p_new]
-      rw [htop_eq]
-      exact hslab.ptr_lt b hb (q_b - 1) (by omega)
-    exact gmSlabAboveIdx_lt hb_pos (lt_trans htop_lt hp_lt)
+    exact gmSlabAboveIdx_lt hb_pos ((hslab.top_lt hb hq_pos).trans hp_lt)
   have hdir_lt : q_b < dirSlabsPerBucket n_max →
       gmSlabDirBase n_max + b * dirSlabsPerBucket n_max + q_b < globalMetaLen n_max :=
     fun hdir => gmSlabDirIdx_lt hb_pos hb hdir
@@ -289,8 +284,15 @@ theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
   rw [hg8, hg7, hg6, hg5, hg4, hg3, hg2, hg1]
   rfl
 
-private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (h : GmPushSlabPre U V w₀ n_max h_space w d.1 d.2 s) :
+/-- Bounds for the reads and writes of `gmPushSlabProg`, stated on the results of its reads;
+shared by `realizes_gmPushSlabGen` and `validProg_gmPushSlab`. -/
+private theorem gmPushSlab_bounds {U V w₀ n_max h_space : ℕ} {d : ℕ × ℕ} {s : Memory.State}
+    (h : SlabBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+        (fun b' => gmAt d.1 U V w₀ n_max h_space s.mem (gmQIdx b'))
+        (gmAt d.1 U V w₀ n_max h_space s.mem 0) ∧
+      d.2 < numBuckets n_max ∧
+      gmAt d.1 U V w₀ n_max h_space s.mem 0 < maxFullSlabs n_max ∧
+      0 < bucketBits n_max) :
     let e_qb := (Memory.spec 0).clientResult s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
     let s1 := (Memory.spec 0).clientState s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
     let e_pnew := (Memory.spec 0).clientResult s1 (readGMProg U V w₀ n_max h_space (d.1, 0))
@@ -308,7 +310,7 @@ private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × �
       gmSlabDirBase n_max + d.2 * dirSlabsPerBucket n_max + e_qb < globalMetaLen n_max) ∧
     e_qb + 1 ≤ n_max ∧
     e_pnew + 1 ≤ n_max := by
-  rcases h with ⟨_, hslab, hb, hp_lt, hb_pos⟩
+  rcases h with ⟨hslab, hb, hp_lt, hb_pos⟩
   set gm := gmAt d.1 U V w₀ n_max h_space s.mem
   have hq_idx_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
@@ -331,10 +333,7 @@ private theorem gmPushSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × �
   · intro hq_pos
     rw [heqb] at hq_pos
     rw [hetop]
-    have htop_eq := hslab.top_eq d.2 hb (gm (gmQIdx d.2) - 1) (by omega) (by omega)
-    have htop_lt : gm (gmSlabTopIdx d.2) < gm 0 := by
-      rw [htop_eq]; exact hslab.ptr_lt d.2 hb (gm (gmQIdx d.2) - 1) (by omega)
-    exact gmSlabAboveIdx_lt hb_pos (lt_trans htop_lt hp_lt)
+    exact gmSlabAboveIdx_lt hb_pos ((hslab.top_lt hb hq_pos).trans hp_lt)
   · intro hdir
     rw [heqb] at hdir ⊢
     exact gmSlabDirIdx_lt hb_pos hb hdir
@@ -375,37 +374,37 @@ theorem realizes_gmPushSlabGen :
     (fun d => by simp only [gmPushSlabGenProg, pure_bind])
   realizeDictWith [gmPushSlabGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmPushSlab_bounds h).1)
+      (le_of_lt (gmPushSlab_bounds h.2).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmPushSlab_bounds h).1
-  · exact (gmPushSlab_bounds h).2.1
+  · exact (gmPushSlab_bounds h.2).1
+  · exact (gmPushSlab_bounds h.2).2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmPushSlab_bounds h).2.2.1)
-  · exact (gmPushSlab_bounds h).2.2.1
+      (le_of_lt (gmPushSlab_bounds h.2).2.2.1)
+  · exact (gmPushSlab_bounds h.2).2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmPushSlab_bounds h).2.2.2.1)
+      (le_of_lt (gmPushSlab_bounds h.2).2.2.2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmPushSlab_bounds h).2.2.2.1
+  · exact (gmPushSlab_bounds h.2).2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmPushSlab_bounds h).2.2.2.2.1)
-  · exact (gmPushSlab_bounds h).2.2.2.2.1
+      (le_of_lt (gmPushSlab_bounds h.2).2.2.2.2.1)
+  · exact (gmPushSlab_bounds h.2).2.2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmPushSlab_bounds h).2.2.2.2.2.1)
-  · exact (gmPushSlab_bounds h).2.2.2.2.2.1
+      (le_of_lt (gmPushSlab_bounds h.2).2.2.2.2.2.1)
+  · exact (gmPushSlab_bounds h.2).2.2.2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmPushSlab_bounds h).2.2.2.2.2.2.1 hc))
+      (le_of_lt ((gmPushSlab_bounds h.2).2.2.2.2.2.2.1 hc))
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmPushSlab_bounds h).2.2.2.2.2.2.1 hc
+  · exact (gmPushSlab_bounds h.2).2.2.2.2.2.2.1 hc
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmPushSlab_bounds h).2.2.2.2.2.2.2.1 hc))
+      (le_of_lt ((gmPushSlab_bounds h.2).2.2.2.2.2.2.2.1 hc))
   · exact h.1
-  · exact ((gmPushSlab_bounds h).2.2.2.2.2.2.2.1 hc)
+  · exact ((gmPushSlab_bounds h.2).2.2.2.2.2.2.2.1 hc)
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmPushSlab_bounds h).2.2.2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
+      ((gmPushSlab_bounds h.2).2.2.2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmPushSlab_bounds h).2.2.2.2.2.2.2.2.2.trans (Nat.le_max_left n_max 1))
+      ((gmPushSlab_bounds h.2).2.2.2.2.2.2.2.2.2.trans (Nat.le_max_left n_max 1))
 
 /-! ## Section 3: `gmUnlinkTopSlabProg`, `gmCompactSlabProg`, `gmPopSlabProg` -/
 
@@ -491,9 +490,7 @@ theorem gmUnlinkTopSlabProg_effect {U V w n_max h_space base b : ℕ}
   set bel_del := gm (gmSlabBelowIdx n_max p_del)
   have hq_idx_lt : 4 + 3 * b < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have htop_idx_lt : 4 + 3 * b + 2 < globalMetaLen n_max := gmSlabTopIdx_lt hb_pos hb
-  have htop_eq := hslab.top_eq b hb (q_b - 1) (by omega) (by omega)
-  have hp_del_lt : p_del < gm 0 := by
-    dsimp only [p_del]; rw [htop_eq]; exact hslab.ptr_lt b hb (q_b - 1) (by omega)
+  have hp_del_lt : p_del < gm 0 := hslab.top_lt hb hq_pos
   have hp_del_cap : p_del < maxFullSlabs n_max := lt_of_lt_of_le hp_del_lt hslab.nslabs_le
   have hbel_idx_lt : gmSlabMetaBase n_max + 4 * p_del + 2 < globalMetaLen n_max :=
     gmSlabBelowIdx_lt hb_pos hp_del_cap
@@ -537,8 +534,15 @@ theorem gmUnlinkTopSlabProg_effect {U V w n_max h_space base b : ℕ}
   rw [hg2, hg1]
   rfl
 
-private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (h : GmPopSlabPre U V w₀ n_max h_space w d.1 d.2 s) :
+/-- Bounds for the reads and writes of `gmUnlinkTopSlabProg`, stated on the results of its reads;
+shared by `realizes_gmUnlinkTopSlabGen` and `validProg_gmUnlinkTopSlab`. -/
+private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space : ℕ} {d : ℕ × ℕ} {s : Memory.State}
+    (h : SlabBijection n_max (gmAt d.1 U V w₀ n_max h_space s.mem)
+        (fun b' => gmAt d.1 U V w₀ n_max h_space s.mem (gmQIdx b'))
+        (gmAt d.1 U V w₀ n_max h_space s.mem 0) ∧
+      d.2 < numBuckets n_max ∧
+      1 ≤ gmAt d.1 U V w₀ n_max h_space s.mem (gmQIdx d.2) ∧
+      0 < bucketBits n_max) :
     let e_qb := (Memory.spec 0).clientResult s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
     let s1 := (Memory.spec 0).clientState s (readGMProg U V w₀ n_max h_space (d.1, 4 + 3 * d.2))
     let e_pdel := (Memory.spec 0).clientResult s1
@@ -547,7 +551,7 @@ private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ
     4 + 3 * d.2 + 2 < globalMetaLen n_max ∧
     gmSlabMetaBase n_max + 4 * e_pdel + 2 < globalMetaLen n_max ∧
     1 ≤ e_qb := by
-  rcases h with ⟨_, hslab, hb, hq_pos, hb_pos⟩
+  rcases h with ⟨hslab, hb, hq_pos, hb_pos⟩
   set gm := gmAt d.1 U V w₀ n_max h_space s.mem
   have hq_idx_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have htop_idx_lt : 4 + 3 * d.2 + 2 < globalMetaLen n_max := gmSlabTopIdx_lt hb_pos hb
@@ -556,11 +560,8 @@ private theorem gmUnlinkTopSlab_bounds {U V w₀ n_max h_space w : ℕ} {d : ℕ
   have hs1 : s1 = s := rfl
   have hepdel : e_pdel = gm (gmSlabTopIdx d.2) := by
     dsimp only [e_pdel]; rw [hs1]; exact clientResult_readGMProg s htop_idx_lt
-  have htop_eq := hslab.top_eq d.2 hb (gm (gmQIdx d.2) - 1) (by omega) (by omega)
-  have hp_del_lt : gm (gmSlabTopIdx d.2) < gm 0 := by
-    rw [htop_eq]; exact hslab.ptr_lt d.2 hb (gm (gmQIdx d.2) - 1) (by omega)
   have hp_del_cap : gm (gmSlabTopIdx d.2) < maxFullSlabs n_max :=
-    lt_of_lt_of_le hp_del_lt hslab.nslabs_le
+    lt_of_lt_of_le (hslab.top_lt hb hq_pos) hslab.nslabs_le
   refine ⟨hq_idx_lt, htop_idx_lt,
     by rw [hepdel]; exact gmSlabBelowIdx_lt hb_pos hp_del_cap,
     by rw [heqb]; exact hq_pos⟩
@@ -586,18 +587,18 @@ theorem realizes_gmUnlinkTopSlabGen :
     (fun d => by simp only [gmUnlinkTopSlabGenProg, pure_bind])
   realizeDictWith [gmPopSlabGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmUnlinkTopSlab_bounds h).1)
+      (le_of_lt (gmUnlinkTopSlab_bounds h.2).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (gmUnlinkTopSlab_bounds h).1
+  · exact (gmUnlinkTopSlab_bounds h.2).1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmUnlinkTopSlab_bounds h).2.1)
-  · exact (gmUnlinkTopSlab_bounds h).2.1
+      (le_of_lt (gmUnlinkTopSlab_bounds h.2).2.1)
+  · exact (gmUnlinkTopSlab_bounds h.2).2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
-      (le_of_lt (gmUnlinkTopSlab_bounds h).2.2.1)
+      (le_of_lt (gmUnlinkTopSlab_bounds h.2).2.2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmUnlinkTopSlab_bounds h).2.2.1
-  · exact (gmUnlinkTopSlab_bounds h).2.2.2
+  · exact (gmUnlinkTopSlab_bounds h.2).2.2.1
+  · exact (gmUnlinkTopSlab_bounds h.2).2.2.2
 
 /-- Pure first half of `gmCompactSlab` when `p_del < p_last`: updates the directory and top pointer
 of `b_last`. -/
@@ -837,9 +838,11 @@ theorem gmRelinkMovedSlabProg_effect {U V w n_max h_space base p_del p_last : �
   rw [hg2, hg1]
   rfl
 
-private theorem gmRelinkMovedSlab_bounds {U V w₀ n_max h_space w : ℕ}
-    {d : (ℕ × ℕ) × ℕ} {s : Memory.State}
-    (h : GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s) :
+/-- Bounds for the reads and writes of `gmRelinkMovedSlabProg`, stated on the results of its
+reads; shared by `realizes_gmRelinkMovedSlabGen` and `validProg_gmRelinkMovedSlab`. -/
+private theorem gmRelinkMovedSlab_bounds {U V w₀ n_max h_space : ℕ}
+    {d : (ℕ × ℕ) × ℕ} {s : Memory.State} (hb_pos : 0 < bucketBits n_max)
+    (h : GmMovedSlabInv U V w₀ n_max h_space d.1.1 d.1.2 d.2 s) :
     let e_blast := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1.1, gmSlabMetaBase n_max + 4 * d.2))
     let s1 := (Memory.spec 0).clientState s
@@ -857,7 +860,7 @@ private theorem gmRelinkMovedSlab_bounds {U V w₀ n_max h_space w : ℕ}
       gmSlabDirBase n_max + e_blast * dirSlabsPerBucket n_max + e_slast < globalMetaLen n_max) ∧
     e_slast + 1 ≤ n_max ∧
     (e_slast + 1 = e_qlast → 4 + 3 * e_blast + 2 < globalMetaLen n_max) := by
-  rcases h with ⟨_, _, hp_last_cap, hb_last, hs_le, _, _, hb_pos⟩
+  rcases h with ⟨_, hp_last_cap, hb_last, hs_le, _⟩
   set gm := gmAt d.1.1 U V w₀ n_max h_space s.mem
   have hownB_lt := gmSlabOwnerBIdx_lt hb_pos hp_last_cap
   have hownS_lt := gmSlabOwnerSIdx_lt hb_pos hp_last_cap
@@ -902,29 +905,27 @@ theorem realizes_gmRelinkMovedSlabGen :
         else pure ()) ?_
     (fun d => by simp only [gmRelinkMovedSlabGenProg, pure_bind])
   realizeDictWith [gmMovedSlabGenPre_mk]
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds h).1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact (gmRelinkMovedSlab_bounds h).1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds h).2.1)
-  · exact (gmRelinkMovedSlab_bounds h).2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds h).2.2.1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmRelinkMovedSlab_bounds h).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmRelinkMovedSlab_bounds h).2.2.2.1 hc))
-  · exact h.1
-  · exact ((gmRelinkMovedSlab_bounds h).2.2.2.1 hc)
-  · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmRelinkMovedSlab_bounds h).2.2.2.2.1.trans (Nat.le_max_left n_max 1))
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmRelinkMovedSlab_bounds h).2.2.2.2.2 hc))
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact ((gmRelinkMovedSlab_bounds h).2.2.2.2.2 hc)
+  all_goals
+    obtain ⟨hdict, hinv⟩ := h
+    have hb_pos := hinv.2.2.2.2.2.2
+    obtain ⟨hlast0, hlast1, hq, hdir, hs_next, htop⟩ := gmRelinkMovedSlab_bounds hb_pos hinv
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast0.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact hlast0
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast1.le
+  · exact hlast1
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hq.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hq
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (hdir hc).le
+  · exact hdict
+  · exact hdir hc
+  · exact fits_of_le_max_n_one hdict hw hnU hU (hs_next.trans (Nat.le_max_left n_max 1))
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (htop hc).le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact htop hc
 
 /-- Parameter-free `Memory.Prog` helper performing `gmLinkMovedNeighbors` for
 `d = (dp, ((base, p_del), p_last))`. -/
@@ -1103,9 +1104,11 @@ theorem gmLinkMovedNeighborsProg_effect {U V w n_max h_space base p_del p_last :
   rw [hg6, hg5, hg4, hg3, hg2, hg1]
   rfl
 
-private theorem gmLinkMovedNeighbors_bounds {U V w₀ n_max h_space w : ℕ}
-    {d : (ℕ × ℕ) × ℕ} {s : Memory.State}
-    (h : GmMovedSlabPre U V w₀ n_max h_space w d.1.1 d.1.2 d.2 s) :
+/-- Bounds for the reads and writes of `gmLinkMovedNeighborsProg`, stated on the results of its
+reads; shared by `realizes_gmLinkMovedNeighborsGen` and `validProg_gmLinkMovedNeighbors`. -/
+private theorem gmLinkMovedNeighbors_bounds {U V w₀ n_max h_space : ℕ}
+    {d : (ℕ × ℕ) × ℕ} {s : Memory.State} (hb_pos : 0 < bucketBits n_max)
+    (h : GmMovedSlabInv U V w₀ n_max h_space d.1.1 d.1.2 d.2 s) :
     let e_blast := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (d.1.1, gmSlabMetaBase n_max + 4 * d.2))
     let s1 := (Memory.spec 0).clientState s
@@ -1136,7 +1139,7 @@ private theorem gmLinkMovedNeighbors_bounds {U V w₀ n_max h_space w : ℕ}
     gmSlabMetaBase n_max + 4 * d.1.2 + 1 < globalMetaLen n_max ∧
     gmSlabMetaBase n_max + 4 * d.1.2 + 2 < globalMetaLen n_max ∧
     gmSlabMetaBase n_max + 4 * d.1.2 + 3 < globalMetaLen n_max := by
-  rcases h with ⟨_, hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap, hb_pos⟩
+  rcases h with ⟨hp_del_cap, hp_last_cap, hb_last, hs_le, hbel_cap, habv_cap, _⟩
   set gm := gmAt d.1.1 U V w₀ n_max h_space s.mem
   have hownB_lt := gmSlabOwnerBIdx_lt hb_pos hp_last_cap
   have hownS_lt := gmSlabOwnerSIdx_lt hb_pos hp_last_cap
@@ -1208,48 +1211,41 @@ theorem realizes_gmLinkMovedNeighborsGen :
           writeGMGenProg (d.1, ((d.2.1.1, abv_del_idx), abv_last))) ?_
     (fun d => by simp only [gmLinkMovedNeighborsGenProg, pure_bind])
   realizeDictWith [gmMovedSlabGenPre_mk]
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact (gmLinkMovedNeighbors_bounds h).1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.1)
-  · exact (gmLinkMovedNeighbors_bounds h).2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.1 hc))
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.1 hc)
-  · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.1.trans (Nat.le_max_left n_max 1))
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.1 hc))
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact ((gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.1 hc)
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.2)
-  · exact (gmLinkMovedNeighbors_bounds h).2.2.2.2.2.2.2.2.2.2.2
+  all_goals
+    obtain ⟨hdict, hinv⟩ := h
+    have hb_pos := hinv.2.2.2.2.2.2
+    obtain ⟨hlast0, hlast1, hlast2, hlast3, hq, hbelow, hs_next, habove,
+      hdel0, hdel1, hdel2, hdel3⟩ := gmLinkMovedNeighbors_bounds hb_pos hinv
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast0.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact hlast0
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast1.le
+  · exact hlast1
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast2.le
+  · exact hlast2
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast3.le
+  · exact hlast3
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hq.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hq
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (hbelow hc).le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact hbelow hc
+  · exact fits_of_le_max_n_one hdict hw hnU hU (hs_next.trans (Nat.le_max_left n_max 1))
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (habove hc).le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact habove hc
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel0.le
+  · exact hdel0
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel1.le
+  · exact hdel1
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel2.le
+  · exact hdel2
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel3.le
+  · exact hdel3
 
 /-- Parameter-free `Memory.Prog` operation compacting the slab pool by relocating the metadata of
 `p_last = gm 0 - 1` into `p_del = d.2.2` (when `p_del < p_last`) and decrementing `gm 0`. -/
@@ -1516,9 +1512,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     fun _ => by unfold gmSlabBelowIdx gmSlabMetaBase gmTailOwnerBase gmTailPtrBase; omega
   have hAbv_ge : ∀ p, gmSlabDirBase n_max ≤ gmSlabAboveIdx n_max p :=
     fun _ => by unfold gmSlabAboveIdx gmSlabMetaBase gmTailOwnerBase gmTailPtrBase; omega
-  have htop_eq := hslab.top_eq b hb (gm (gmQIdx b) - 1) (by omega) (by omega)
-  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := by
-    rw [htop_eq]; exact hslab.ptr_lt b hb (gm (gmQIdx b) - 1) (by omega)
+  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := hslab.top_lt hb hq_pos
   unfold GmCompactSlabInv GmMovedSlabInv
   dsimp only
   rw [hres, hgm, hu0]
@@ -1536,7 +1530,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     have hbel_eq := hslab.below_eq _ hb_last _ hs_last hs_pos
     rw [hptr_last] at hbel_eq
     rw [hbel_eq]
-    exact lt_of_lt_of_le (hslab.ptr_lt _ hb_last _ (by omega)) hslab.nslabs_le
+    exact hslab.ptr_lt_maxFullSlabs hb_last (by omega)
   · intro hs_lt_q
     rw [huQ _ hb_last] at hs_lt_q
     have hs1_lt : gm (gmSlabOwnerSIdx n_max (gm 0 - 1)) + 1 <
@@ -1547,7 +1541,7 @@ theorem gmCompactSlabInv_of_slabBijection {U V w₀ n_max h_space base b : ℕ}
     have habv_eq := hslab.above_eq _ hb_last _ hs_last hs1_lt
     rw [hptr_last] at habv_eq
     rw [habv_eq]
-    exact lt_of_lt_of_le (hslab.ptr_lt _ hb_last _ hs1_lt) hslab.nslabs_le
+    exact hslab.ptr_lt_maxFullSlabs hb_last hs1_lt
 
 theorem gmCompactSlabPre_of_gmPopSlabPre {U V w₀ n_max h_space w base b : ℕ} {s : Memory.State}
     (hw : 0 < w₀)

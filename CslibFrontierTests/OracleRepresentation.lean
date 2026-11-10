@@ -62,7 +62,7 @@ example :
       (OracleComp.interpret
         (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) target)
           randomized).run false :=
-  ProbOracleComp.run_interpret_map_response_state (fun _ => Prod.fst) source target Prod.fst
+  ProbOracleComp.runWith_map_response_state (fun _ => Prod.fst) source target Prod.fst
     step randomized (false, true)
 
 -- The same transport, stated with `ProbOracleComp.runWith`.
@@ -98,5 +98,35 @@ example {result : Bool × Bool × Bool} {final : Bool × Bool}
       obtain ⟨-, rfl⟩ := hnext
       simpa using hstate)
     randomized (false, true) (by decide) result final h
+
+-- An interpreted client runs against the oracle that runs each handler program: here each call
+-- is answered by the first bit of one `source` reply.
+example :
+    ProbOracleComp.runWith source (OracleComp.interpret
+      (OracleComp.sumHandler (fun n => ProbOracleComp.sample (ProbComp.unifFin n))
+        (fun q => Prod.fst <$> ProbOracleComp.query q)) randomized) (false, true) =
+      ProbOracleComp.runWith sourceFirst randomized (false, true) := by
+  rw [ProbOracleComp.runWith_interpret_sumHandler]
+  congr 1
+
+-- Induction over returned values, private draws and external calls: against an oracle that
+-- answers with its state and keeps it, every run ends in the starting state.
+example {α : Type} (program : ProbOracleComp (fun _ : Bool => Bool) α) (s : Bool) {r : α}
+    {s' : Bool} (h : (r, s') ∈
+      (ProbOracleComp.runWith (fun _ state => PMF.pure (state, state)) program s).support) :
+    s' = s := by
+  induction program using ProbOracleComp.induction with
+  | pure a =>
+    rw [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at h
+    exact h.2
+  | sample_bind n cont ih =>
+    rw [ProbOracleComp.runWith_sample_bind, PMF.mem_support_bind_iff] at h
+    obtain ⟨i, -, h⟩ := h
+    exact ih i h
+  | query_bind q cont ih =>
+    rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, PMF.mem_support_bind_iff] at h
+    obtain ⟨⟨a, middle⟩, hmiddle, h⟩ := h
+    rw [PMF.mem_support_pure_iff, Prod.mk.injEq] at hmiddle
+    exact ih a (hmiddle.2 ▸ h)
 
 end CslibFrontierTests.OracleRepresentation

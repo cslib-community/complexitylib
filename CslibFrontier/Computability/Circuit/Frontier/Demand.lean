@@ -43,7 +43,7 @@ exponentially small fraction of the inputs.
   logarithm.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

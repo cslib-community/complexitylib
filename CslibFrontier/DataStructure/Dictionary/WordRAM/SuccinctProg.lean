@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.WordRAM.Realization.Reindex
 public import CslibFrontier.Computability.WordRAM.Realization.While
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
+import CslibFrontier.Computability.WordRAM.SymbolicExec
 import CslibFrontier.Computability.WordRAM.Width
 import CslibFrontier.Tactic.Realize
 
@@ -64,6 +65,8 @@ operations with uniform `Realizes .exact` certificates, and realizes `readBucket
   `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeLMProg_effect`,
   `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeGMProg_effect`: pure logical array update
   lemmas for the four packed dictionary arrays.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.memoryCost_bind_of_clientState_eq`: memory
+  charges of `p >>= k` after a state-preserving prefix `p`, in `do`-block form.
 -/
 
 public section
@@ -77,6 +80,17 @@ open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.Dictionary.FeistelQuotient
 open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
+
+/-- Memory charges of `p >>= k` when `p` leaves the state unchanged (for example, a run of reads):
+the continuation is charged from the same state. Unlike `memoryCost_bind`, this is stated for
+`>>=`, the form `do` blocks elaborate to, so it rewrites them directly. -/
+theorem memoryCost_bind_of_clientState_eq {α β : Type} {p : Memory.Prog α} {s : Memory.State}
+    (hp : (Memory.spec 0).clientState s p = s) (k : α → Memory.Prog β) :
+    memoryCost (p >>= k) s =
+      memoryCost p s + memoryCost (k ((Memory.spec 0).clientResult s p)) s := by
+  have h := memoryCost_bind p k s
+  rw [hp] at h
+  exact h
 
 /-! ## Section 1: `readPackedProg` and `writePackedProg` in `Memory.Prog` -/
 
@@ -246,87 +260,41 @@ theorem realizes_readPackedGen :
     have hsrc2 : x.regs (src 2) = d.1.2.1 := congrFun hin 2
     have hsrc3 : x.regs (src 3) = d.1.2.2 := congrFun hin 3
     have hsrc4 : x.regs (src 4) = d.2 := congrFun hin 4
-    let x₁ := x.set (tmp 2) (d.1.1.1 + d.1.1.2)
-    let x₂ := x₁.set (tmp 1) (x₁.regs (src 4))
-    let x₃ := x₂.set (tmp 8) (x₂.regs (src 3))
-    let x₄ := x₃.set (tmp 9) (x₃.regs (src 2))
-    have hc1 :
-        ExecWithin (B := .exact) w (.op (.exactBin .add (tmp 2) (src 0) (src 1))) x x₁ 1 := by
-      apply ExecWithin.op
-      rw [Op.eval_exactBin, hsrc0, hsrc1]
-      exact Data.put_of_fits (hfit.of_le (by omega))
-    have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 4))) x₁ x₂ 1 := ExecWithin.copy
-    have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 8) (src 3))) x₂ x₃ 1 := ExecWithin.copy
-    have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 9) (src 2))) x₃ x₄ 1 := ExecWithin.copy
-    have hx₄_bdd : x₄.Bounded w := hc4.bounded (hc3.bounded (hc2.bounded (hc1.bounded hx)))
-    have hne : ∀ (a b : Fin 10), a ≠ b → tmp a ≠ tmp b := fun a b hab h => hab (hi h)
-    have hbase0 : (x₄.comap (tmp ∘ perm)).regs 0 = d.1.1.1 + d.1.1.2 := by
-      change x₄.regs (tmp (perm 0)) = d.1.1.1 + d.1.1.2
-      have hp0 : perm 0 = 2 := by decide
-      rw [hp0]
-      dsimp only [x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 2 9 (by decide)),
-        Function.update_of_ne (hne 2 8 (by decide)),
-        Function.update_of_ne (hne 2 1 (by decide)),
-        Function.update_self]
-    have hidx1 : (x₄.comap (tmp ∘ perm)).regs 1 = d.2 := by
-      change x₄.regs (tmp (perm 1)) = d.2
-      have hp1 : perm 1 = 1 := by decide
-      rw [hp1]
-      dsimp only [x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 1 9 (by decide)),
-        Function.update_of_ne (hne 1 8 (by decide)),
-        Function.update_self, Function.update_of_ne (hd 4 2), hsrc4]
-    have hw8 : (x₄.comap (tmp ∘ perm)).regs 8 = w := by
-      change x₄.regs (tmp (perm 8)) = w
-      have hp8 : perm 8 = 8 := by decide
-      rw [hp8]
-      dsimp only [x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 8 9 (by decide)),
-        Function.update_self, Function.update_of_ne (hd 3 1),
-        Function.update_of_ne (hd 3 2), hsrc3, heq]
-    have hk9 : (x₄.comap (tmp ∘ perm)).regs 9 = d.1.2.1 := by
-      change x₄.regs (tmp (perm 9)) = d.1.2.1
-      have hp9 : perm 9 = 9 := by decide
-      rw [hp9]
-      dsimp only [x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_self, Function.update_of_ne (hd 2 8),
-        Function.update_of_ne (hd 2 1), Function.update_of_ne (hd 2 2), hsrc2]
-    obtain ⟨y_core, hex_core, hymem, _, _, hy2⟩ :=
-      readPackedCode_execWithin hw hkw hidx (hx₄_bdd.comap (tmp ∘ perm)) hbase0 hidx1 hw8 hk9 hfit
-    have hex_ren := hex_core.rename hperm_inj
-    let y := y_core.extend (tmp ∘ perm) x₄
-    refine ⟨y, (hc1.seq (hc2.seq (hc3.seq (hc4.seq hex_ren)))).mono
-      (by change 1 + (1 + (1 + (1 + 34))) ≤ 38 * (2 + 0 + 1); omega),
-      ?_, ?_, ?_⟩
-    · apply Memory.State.ext
-      · exact hymem
-      · change y.regs frontier = x.regs frontier
-        have hnot : ¬∃ j : Fin 10, (tmp ∘ perm) j = frontier := by
-          rintro ⟨j, hj⟩; exact hf (perm j) hj
-        change Function.extend (tmp ∘ perm) y_core.regs x₄.regs frontier = x.regs frontier
-        rw [Function.extend_apply' _ _ _ hnot]
-        dsimp only [x₄, x₃, x₂, x₁, Data.set]
-        rw [Function.update_of_ne (hf 9).symm, Function.update_of_ne (hf 8).symm,
-          Function.update_of_ne (hf 1).symm, Function.update_of_ne (hf 2).symm]
-    · intro i
-      have hi0 : i = 0 := Fin.eq_zero i
-      subst hi0
-      rw [clientResult_width]
-      change y.regs (tmp 0) = readPacked (d.1.1.1 + d.1.1.2) d.1.2.1 d.1.2.2 x.mem d.2
-      have hp2 : tmp 0 = (tmp ∘ perm) 2 := by congr 1
-      rw [hp2]
-      change (y.comap (tmp ∘ perm)).regs 2 = _
-      rw [Data.comap_extend hperm_inj, hy2, ← heq]
-      rfl
-    · intro i _ htmp
-      have hnot : ¬∃ j : Fin 10, (tmp ∘ perm) j = i := by
-        rintro ⟨j, hj⟩; exact htmp (perm j) hj
-      change Function.extend (tmp ∘ perm) y_core.regs x₄.regs i = x.regs i
-      rw [Function.extend_apply' _ _ _ hnot]
-      dsimp only [x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (htmp 9).symm, Function.update_of_ne (htmp 8).symm,
-        Function.update_of_ne (htmp 1).symm, Function.update_of_ne (htmp 2).symm]
+    refine WP.exists_execWithin ?_
+    wram_exec [hsrc0, hsrc1]
+    · refine WP.name fun x₄ hx₄ => ?_
+      have hx₄b : x₄.Bounded w := by rw [hx₄]; wram_bounded; exact hfit.of_le (by omega)
+      have hreg (a : Fin 10) (b : Fin 10) (h : perm a = b) :
+          (x₄.comap (tmp ∘ perm)).regs a = x₄.regs (tmp b) := by rw [← h]; rfl
+      obtain ⟨y_core, hex_core, hymem, _, _, hy2⟩ := readPackedCode_execWithin hw hkw hidx
+        (hx₄b.comap (tmp ∘ perm)) (by rw [hreg 0 2 (by decide), hx₄]; wram_simp)
+        (by rw [hreg 1 1 (by decide), hx₄]; wram_simp [hsrc4])
+        (by rw [hreg 8 8 (by decide), hx₄]; wram_simp [hsrc3, heq])
+        (by rw [hreg 9 9 (by decide), hx₄]; wram_simp [hsrc2]) hfit
+      refine WP.of_execWithin (hex_core.rename hperm_inj) ⟨?_, ?_, ?_, ?_⟩
+      · change 34 + 1 + 1 + 1 + 1 ≤ 38 * (2 + 0 + 1); omega
+      · apply Memory.State.ext
+        · change y_core.mem = x.mem
+          rw [hymem, hx₄]
+          rfl
+        · change Function.extend (tmp ∘ perm) y_core.regs x₄.regs frontier = x.regs frontier
+          rw [Function.extend_apply' (f := tmp ∘ perm) _ _ _ fun ⟨j, hj⟩ => hf (perm j) hj, hx₄]
+          wram_simp
+      · intro i
+        have hi0 : i = 0 := Fin.eq_zero i
+        subst hi0
+        rw [clientResult_width]
+        change (y_core.extend (tmp ∘ perm) x₄).regs (tmp 0) =
+          readPacked (d.1.1.1 + d.1.1.2) d.1.2.1 d.1.2.2 x.mem d.2
+        have hp2 : tmp 0 = (tmp ∘ perm) 2 := by congr 1
+        rw [hp2]
+        change ((y_core.extend (tmp ∘ perm) x₄).comap (tmp ∘ perm)).regs 2 = _
+        rw [Data.comap_extend hperm_inj, hy2, ← heq, hx₄]
+        rfl
+      · intro i _ htmp
+        change Function.extend (tmp ∘ perm) y_core.regs x₄.regs i = x.regs i
+        rw [Function.extend_apply' (f := tmp ∘ perm) _ _ _ fun ⟨j, hj⟩ => htmp (perm j) hj, hx₄]
+        wram_simp
 
 /-- Uniform parameter-free `Realizes .exact` certificate for `writePackedGenProg`. -/
 theorem realizes_writePackedGen :
@@ -353,86 +321,32 @@ theorem realizes_writePackedGen :
     have hsrc3 : x.regs (src 3) = d.1.1.2.2 := congrFun hin 3
     have hsrc4 : x.regs (src 4) = d.1.2 := congrFun hin 4
     have hsrc5 : x.regs (src 5) = d.2 := congrFun hin 5
-    let x₁ := x.set (tmp 0) (d.1.1.1.1 + d.1.1.1.2)
-    let x₂ := x₁.set (tmp 1) (x₁.regs (src 4))
-    let x₃ := x₂.set (tmp 2) (x₂.regs (src 5))
-    let x₄ := x₃.set (tmp 8) (x₃.regs (src 3))
-    let x₅ := x₄.set (tmp 9) (x₄.regs (src 2))
-    have hc1 :
-        ExecWithin (B := .exact) w (.op (.exactBin .add (tmp 0) (src 0) (src 1))) x x₁ 1 := by
-      apply ExecWithin.op
-      rw [Op.eval_exactBin, hsrc0, hsrc1]
-      exact Data.put_of_fits (hfit.of_le (by omega))
-    have hc2 : ExecWithin (B := .exact) w (.op (.copy (tmp 1) (src 4))) x₁ x₂ 1 := ExecWithin.copy
-    have hc3 : ExecWithin (B := .exact) w (.op (.copy (tmp 2) (src 5))) x₂ x₃ 1 := ExecWithin.copy
-    have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 8) (src 3))) x₃ x₄ 1 := ExecWithin.copy
-    have hc5 : ExecWithin (B := .exact) w (.op (.copy (tmp 9) (src 2))) x₄ x₅ 1 := ExecWithin.copy
-    have hx₅_bdd : x₅.Bounded w :=
-      hc5.bounded (hc4.bounded (hc3.bounded (hc2.bounded (hc1.bounded hx))))
-    have hne : ∀ (a b : Fin 10), a ≠ b → tmp a ≠ tmp b := fun a b hab h => hab (hi h)
-    have hbase0 : (x₅.comap tmp).regs 0 = d.1.1.1.1 + d.1.1.1.2 := by
-      change x₅.regs (tmp 0) = d.1.1.1.1 + d.1.1.1.2
-      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 0 9 (by decide)),
-        Function.update_of_ne (hne 0 8 (by decide)),
-        Function.update_of_ne (hne 0 2 (by decide)),
-        Function.update_of_ne (hne 0 1 (by decide)),
-        Function.update_self]
-    have hidx1 : (x₅.comap tmp).regs 1 = d.1.2 := by
-      change x₅.regs (tmp 1) = d.1.2
-      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 1 9 (by decide)),
-        Function.update_of_ne (hne 1 8 (by decide)),
-        Function.update_of_ne (hne 1 2 (by decide)),
-        Function.update_self, Function.update_of_ne (hd 4 0), hsrc4]
-    have hval2 : (x₅.comap tmp).regs 2 = d.2 := by
-      change x₅.regs (tmp 2) = d.2
-      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 2 9 (by decide)),
-        Function.update_of_ne (hne 2 8 (by decide)),
-        Function.update_self, Function.update_of_ne (hd 5 1),
-        Function.update_of_ne (hd 5 0), hsrc5]
-    have hw8 : (x₅.comap tmp).regs 8 = w := by
-      change x₅.regs (tmp 8) = w
-      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (hne 8 9 (by decide)),
-        Function.update_self, Function.update_of_ne (hd 3 2),
-        Function.update_of_ne (hd 3 1), Function.update_of_ne (hd 3 0), hsrc3, heq]
-    have hk9 : (x₅.comap tmp).regs 9 = d.1.1.2.1 := by
-      change x₅.regs (tmp 9) = d.1.1.2.1
-      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_self, Function.update_of_ne (hd 2 8),
-        Function.update_of_ne (hd 2 2), Function.update_of_ne (hd 2 1),
-        Function.update_of_ne (hd 2 0), hsrc2]
-    obtain ⟨y_core, hex_core, hymem, _, _, _⟩ :=
-      writePackedCode_execWithin hw hkw hidx (hx₅_bdd.comap tmp) hbase0 hidx1 hval2 hw8 hk9 hfit
-    have hex_ren := hex_core.rename hi
-    let y := y_core.extend tmp x₅
-    refine ⟨y, (hc1.seq (hc2.seq (hc3.seq (hc4.seq (hc5.seq hex_ren))))).mono
-      (by change 1 + (1 + (1 + (1 + (1 + 45)))) ≤ 50 * (4 + 0 + 1); omega), ?_, ?_, ?_⟩
-    · apply Memory.State.ext
-      · change y_core.mem =
-          writePacked (d.1.1.1.1 + d.1.1.1.2) d.1.1.2.1 d.1.1.2.2 x.mem d.1.2 d.2
-        rw [hymem, ← heq]
-        rfl
-      · change y.regs frontier = x.regs frontier
-        have hnot : ¬∃ j : Fin 10, tmp j = frontier := by rintro ⟨j, hj⟩; exact hf j hj
-        change Function.extend tmp y_core.regs x₅.regs frontier = x.regs frontier
-        rw [Function.extend_apply' _ _ _ hnot]
-        dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-        rw [Function.update_of_ne (hf 9).symm, Function.update_of_ne (hf 8).symm,
-          Function.update_of_ne (hf 2).symm, Function.update_of_ne (hf 1).symm,
-          Function.update_of_ne (hf 0).symm]
-    · intro i
-      exact Fin.elim0 i
-    · intro i _ htmp
-      have hnot : ¬∃ j : Fin 10, tmp j = i := by rintro ⟨j, hj⟩; exact htmp j hj
-      change Function.extend tmp y_core.regs x₅.regs i = x.regs i
-      rw [Function.extend_apply' _ _ _ hnot]
-      dsimp only [x₅, x₄, x₃, x₂, x₁, Data.set]
-      rw [Function.update_of_ne (htmp 9).symm, Function.update_of_ne (htmp 8).symm,
-        Function.update_of_ne (htmp 2).symm, Function.update_of_ne (htmp 1).symm,
-        Function.update_of_ne (htmp 0).symm]
+    refine WP.exists_execWithin ?_
+    wram_exec [hsrc0, hsrc1]
+    · refine WP.name fun x₅ hx₅ => ?_
+      have hx₅b : x₅.Bounded w := by rw [hx₅]; wram_bounded; exact hfit.of_le (by omega)
+      obtain ⟨y_core, hex_core, hymem, _, _, _⟩ := writePackedCode_execWithin (val := d.2) hw hkw
+        hidx (hx₅b.comap tmp) (by rw [Data.comap_regs, hx₅]; wram_simp)
+        (by rw [Data.comap_regs, hx₅]; wram_simp [hsrc4])
+        (by rw [Data.comap_regs, hx₅]; wram_simp [hsrc5])
+        (by rw [Data.comap_regs, hx₅]; wram_simp [hsrc3, heq])
+        (by rw [Data.comap_regs, hx₅]; wram_simp [hsrc2]) hfit
+      refine WP.of_execWithin (hex_core.rename hi) ⟨?_, ?_, ?_, ?_⟩
+      · change 45 + 1 + 1 + 1 + 1 + 1 ≤ 50 * (4 + 0 + 1); omega
+      · apply Memory.State.ext
+        · change y_core.mem =
+            writePacked (d.1.1.1.1 + d.1.1.1.2) d.1.1.2.1 d.1.1.2.2 x.mem d.1.2 d.2
+          rw [hymem, ← heq, hx₅]
+          rfl
+        · change Function.extend tmp y_core.regs x₅.regs frontier = x.regs frontier
+          rw [Function.extend_apply' (f := tmp) _ _ _ fun ⟨j, hj⟩ => hf j hj, hx₅]
+          wram_simp
+      · intro i
+        exact Fin.elim0 i
+      · intro i _ htmp
+        change Function.extend tmp y_core.regs x₅.regs i = x.regs i
+        rw [Function.extend_apply' (f := tmp) _ _ _ fun ⟨j, hj⟩ => htmp j hj, hx₅]
+        wram_simp
 
 /-! ## Section 2: Dictionary array `Memory.Prog` primitives (`Quot`, `Val`, `LM`, `GM`) -/
 
@@ -1131,13 +1045,7 @@ theorem clientResult_resolveIndexedSlotProg {U V w n_max h_space : ℕ}
       unfold gmSlabDirIdx at hdir_eq
       rw [hdir_eq]
       rfl
-    · unfold bCount at hj_bc
-      simp only [hb0, ↓reduceIte, hb] at hj_bc
-      have hr_lt : d.2 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max <
-          gmAt d.1.1 U V w n_max h_space s.mem (gmRIdx d.1.2) := by omega
-      have hr_cap : d.2 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max <
-          tailCapPerBucket n_max :=
-        lt_of_lt_of_le hr_lt ((hinv.multi_r_bounds hb_pos d.1.2 hb).1.le)
+    · have hr_cap := (hinv.tailOffset_lt hb_pos hb hj_bc hj_slab).2
       have hptr_lt : gmTailPtrBase n_max + (d.1.2 * tailCapPerBucket n_max +
           (d.2 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max)) <
           globalMetaLen n_max :=
@@ -1196,7 +1104,7 @@ private theorem resolveIndexedSlot_slab_fit {U V w₀ n_max h_space w : ℕ}
   exact fits_of_le_max_n_one henv hw hnU hU (by omega)
 
 private theorem resolveIndexedSlot_tailIdx_lt {U V w₀ n_max h_space : ℕ}
-    (hb0 : ¬bucketBits n_max = 0) (hb_pos : 0 < bucketBits n_max)
+    (hb_pos : 0 < bucketBits n_max)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State)
     (hinv : SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem))
     (hb : d.1.2 < numBuckets n_max)
@@ -1210,17 +1118,10 @@ private theorem resolveIndexedSlot_tailIdx_lt {U V w₀ n_max h_space : ℕ}
   have hj_not_slab := hc
   have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   rw [clientResult_readGMProg _ hq_lt] at hj_not_slab ⊢
-  unfold bCount at hj_bc
-  simp only [hb0, ↓reduceIte, hb, gmQIdx] at hj_bc
-  have hr_lt : d.2 - gmAt d.1.1 U V w₀ n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-      gmAt d.1.1 U V w₀ n_max h_space s.mem (gmRIdx d.1.2) := by omega
-  have hr_cap : d.2 - gmAt d.1.1 U V w₀ n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-      tailCapPerBucket n_max :=
-    lt_of_lt_of_le hr_lt ((hinv.multi_r_bounds hb_pos d.1.2 hb).1.le)
-  exact gmTailPtrIdx_lt hb_pos hb hr_cap
+  exact gmTailPtrIdx_lt hb_pos hb (hinv.tailOffset_lt hb_pos hb hj_bc hj_not_slab).2
 
 private theorem resolveIndexedSlot_tail_le {U V w₀ n_max h_space : ℕ}
-    (hb0 : ¬bucketBits n_max = 0) (hb_pos : 0 < bucketBits n_max)
+    (hb_pos : 0 < bucketBits n_max)
     (d : (ℕ × ℕ) × ℕ) (s : Memory.State)
     (hinv : SlotStoreInv n_max (gmAt d.1.1 U V w₀ n_max h_space s.mem))
     (hb : d.1.2 < numBuckets n_max)
@@ -1234,15 +1135,14 @@ private theorem resolveIndexedSlot_tail_le {U V w₀ n_max h_space : ℕ}
           (d.2 - (Memory.spec 0).clientResult s
             (readGMProg U V w₀ n_max h_space (d.1.1, 4 + 3 * d.1.2)) *
             slabSize n_max)))) ≤ n_max - 1 := by
-  have hptr_lt := resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s hinv hb hj_bc hc
+  have hptr_lt := resolveIndexedSlot_tailIdx_lt hb_pos d s hinv hb hj_bc hc
   have hj_not_slab := hc
   have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   rw [clientState_readGMProg, clientResult_readGMProg _ hptr_lt]
   rw [clientResult_readGMProg _ hq_lt] at hj_not_slab ⊢
-  unfold bCount at hj_bc
-  simp only [hb0, ↓reduceIte, hb, gmQIdx] at hj_bc
   have hr_lt : d.2 - gmAt d.1.1 U V w₀ n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-      gmAt d.1.1 U V w₀ n_max h_space s.mem (gmRIdx d.1.2) := by omega
+      gmAt d.1.1 U V w₀ n_max h_space s.mem (gmRIdx d.1.2) :=
+    (hinv.tailOffset_lt hb_pos hb hj_bc hj_not_slab).1
   have htail := hinv.multi_tail hb_pos
   have ht_lt : gmAt d.1.1 U V w₀ n_max h_space s.mem
       (gmTailPtrIdx n_max d.1.2
@@ -1312,17 +1212,14 @@ theorem realizes_resolveIndexedSlotGen :
   · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
     exact resolveIndexedSlot_slab_fit hw hnU hU hb_pos d s h.1 h.2.1 h.2.2.1 h.2.2.2.2 hc
   · omega
-  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
-    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
     exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
-      (le_of_lt (resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc))
+      (le_of_lt (resolveIndexedSlot_tailIdx_lt hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc))
   · exact h.1
-  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
-    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    exact resolveIndexedSlot_tailIdx_lt hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
-  · have hb0 : ¬bucketBits n_max = 0 := ‹¬bucketBits n_max = 0›
-    have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    exact resolveIndexedSlot_tail_le hb0 hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact resolveIndexedSlot_tailIdx_lt hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
+  · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero ‹¬bucketBits n_max = 0›
+    exact resolveIndexedSlot_tail_le hb_pos d s h.2.1 h.2.2.1 h.2.2.2.1 hc
 
 /-! ## Section 4: Pure state effects and costs of `read*Prog` and `write*Prog` -/
 

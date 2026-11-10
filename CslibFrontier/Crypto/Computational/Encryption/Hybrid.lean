@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # KEM–DEM hybrid public-key encryption
@@ -331,8 +332,8 @@ theorem eval_demKeyGame_restrict {Msg : Type} (valid : ℕ → List Bool → Msg
       ProbComp.eval (demKeyGameOn valid keyLen encryptSym adversary bit n) := by
   simp only [demKeyGame, demKeyGameOn, AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext k
-  congr 1; funext choice
+  congr 1 with k : 1
+  congr 1 with choice : 1
   cases valid n [] choice.1.1 choice.1.2 <;>
     simp [PMF.bind_const]
 
@@ -353,11 +354,10 @@ theorem isPPTOn_demKeyGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool} {keyLen : ℕ → ℕ}
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -394,8 +394,7 @@ stages have native certificates. -/
 theorem isPPTOn_demKeyGame {Msg : Type} {encMsg : Msg ↪ List Bool}
     {keyLen : ℕ → ℕ} (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -411,10 +410,9 @@ theorem isPPTOn_demGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -427,8 +425,7 @@ symmetric encryption and both adversary stages have native certificates. -/
 @[fun_prop]
 theorem isPPTOn_demGame {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -464,7 +461,7 @@ theorem DEMOneTimeKeyINDCPAOf.demOneTimeKeyINDCPAOn {Msg : Type} {encMsg : Msg �
     (h : DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym := by
   intro adversary hadversary
   simpa only [eval_demKeyGame_restrict] using
@@ -504,7 +501,7 @@ theorem DEMOneTimeINDCPAOf.demOneTimeINDCPAOn {Msg : Type} {encMsg : Msg ↪ Lis
     (h : DEMOneTimeINDCPAOf encMsg encryptSym)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     DEMOneTimeINDCPAOn valid encMsg encryptSym :=
   DEMOneTimeKeyINDCPAOf.demOneTimeKeyINDCPAOn h hvalid
 
@@ -572,9 +569,8 @@ theorem isPPTOn_hybridEncrypt {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
-    IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
+    IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, pk, msg⟩ => hybridEncrypt encaps encryptSym n pk msg) := by
   let E0 := encPair encUnary (encPair encBits encMsg)
   let E1 := encPair E0 (encPair encBits encBits)
@@ -597,13 +593,13 @@ theorem computableInPolyTime_hybridDecrypt {Msg : Type} {encMsg : Msg ↪ List B
     {decryptSym : ℕ → List Bool → List Bool → Option Msg}
     (hdecaps : ComputableInPolyTime
       (fun ⟨n, sk, ctKem⟩ => decaps n sk ctKem)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      (encKeyedInput encBits) (encOption encBits))
     (hdecryptSym : ComputableInPolyTime
       (fun ⟨n, k, ctDem⟩ => decryptSym n k ctDem)
-      (encPair encUnary (encPair encBits encBits)) (encOption encMsg)) :
+      (encKeyedInput encBits) (encOption encMsg)) :
     ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => hybridDecrypt decaps decryptSym n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encMsg) := by
+      (encKeyedInput encBits) (encOption encMsg) := by
   let I := encPair encUnary (encPair encBits encBits)
   have hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
   have hrest := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
@@ -749,8 +745,7 @@ adversary are. -/
 theorem isPPT_hybridToKEMDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : AdversaryOf Msg}
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     (hadversary : AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
     IsPPT encBool (hybridToKEMDistinguisher encryptSym adversary bit) := by
   let E0 := encPair encUnary encBits
@@ -781,8 +776,7 @@ hybrid adversary are. -/
 theorem isPPT_hybridToKEMHiddenBitDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : AdversaryOf Msg}
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     (hadversary : AdversaryOf.IsPPT encMsg adversary) :
     IsPPT encBool (hybridToKEMHiddenBitDistinguisher encryptSym adversary) := by
   let E0 := encPair encUnary encBits
@@ -866,8 +860,7 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
     hybridToKEMDistinguisher, game, gameOn, ↓reduceIte, hybridEncrypt,
     encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1; funext keys
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the ideal KEM experiment, `hybridToKEMDistinguisher` reproduces the intermediate game
 `hybridIdealGame`. -/
@@ -883,11 +876,7 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
   simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
     hybridToKEMDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind]
-  congr 1; funext keys
-  conv_lhs =>
-    rhs; ext encapsulated
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the one-time symmetric DEM experiment, `hybridToDEMAdversary` reproduces the intermediate
 game `hybridIdealGame`. -/
@@ -903,11 +892,7 @@ game `hybridIdealGame`. -/
     ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁, encPair_apply,
     encBits_apply, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     unframe_frame_append, dropFrame_frame_append]
-  rw [PMF.bind_comm]
-  congr 1; funext keys
-  rw [PMF.bind_comm]
-  congr 1; funext choice
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the real KEM experiment, `hybridToKEMHiddenBitDistinguisher` averages the two hybrid
 chosen-message games, complementing the second. -/
@@ -927,13 +912,7 @@ theorem eval_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
     hybridEncrypt, encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append,
     ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
     PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext keys
-  rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- In the ideal KEM experiment, `hybridToKEMHiddenBitDistinguisher` averages the two intermediate
 games `hybridIdealGame`, complementing the second. -/
@@ -953,18 +932,7 @@ theorem eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} (keyLen
     hybridToKEMHiddenBitDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext keys
-  conv_lhs =>
-    rhs; ext encapsulated
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext encapsulated
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- Success probability of `hybridToKEMHiddenBitDistinguisher` in `kemRealGame` is one half plus
 half the signed hybrid chosen-message gap. -/
@@ -981,10 +949,7 @@ theorem probability_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
         Game.succProbability (ProbComp.eval
           (game keyGen (hybridEncrypt encaps encryptSym) adversary true n))) / 2 := by
   rw [eval_kemRealGame_hybridToKEMHiddenBitDistinguisher]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, PMF.monad_bind_eq_bind,
-    PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- Success probability of `hybridToKEMHiddenBitDistinguisher` in `kemIdealGame` is one half plus
 half the signed `hybridIdealGame` gap. -/
@@ -1001,10 +966,7 @@ theorem probability_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} 
         Game.succProbability (ProbComp.eval
           (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))) / 2 := by
   rw [eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal, PMF.monad_bind_eq_bind,
-    PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- **Quantitative KEM–DEM reduction via two per-bit KEM distinguishers** (two-distinguisher
 variant of [BonehShoup2023], Exercise 11.9(b)): the hybrid IND-CPA advantage is bounded by the sum
@@ -1076,26 +1038,12 @@ theorem advantage_hybridGame_le_two_mul {Msg : Type} (keyLen : ℕ → ℕ)
         (ProbComp.eval
           (demKeyGame keyLen encryptSym
             (hybridToDEMAdversary keyGen encaps adversary) true n)) := by
-  rw [eval_demKeyGame_hybridToDEMAdversary, eval_demKeyGame_hybridToDEMAdversary]
-  apply NNReal.coe_le_coe.mp
-  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage,
-    probability_kemRealGame_hybridToKEMHiddenBitDistinguisher,
-    probability_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
-  have h := abs_sub_le
-    ((Game.succProbability (ProbComp.eval
-      (game keyGen (hybridEncrypt encaps encryptSym) adversary false n)) : ℝ) -
-      Game.succProbability (ProbComp.eval
-        (game keyGen (hybridEncrypt encaps encryptSym) adversary true n)))
-    ((Game.succProbability (ProbComp.eval
-      (hybridIdealGame keyLen keyGen encaps encryptSym adversary false n)) : ℝ) -
-      Game.succProbability (ProbComp.eval
-        (hybridIdealGame keyLen keyGen encaps encryptSym adversary true n))) 0
-  have hscale (a b c d : ℝ) :
-      2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    calc
-      _ = |2 * ((1 + a - b) / 2 - (1 + c - d) / 2)| := by rw [abs_mul]; norm_num
-      _ = _ := by congr 1; ring
-  simpa only [hscale, sub_zero] using h
+  rw [eval_demKeyGame_hybridToDEMAdversary, eval_demKeyGame_hybridToDEMAdversary,
+    eval_kemRealGame_hybridToKEMHiddenBitDistinguisher,
+    eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher]
+  exact Game.advantage_le_two_mul_uniform_bool_xor
+    (fun bit => ProbComp.eval (game keyGen (hybridEncrypt encaps encryptSym) adversary bit n))
+    (fun bit => ProbComp.eval (hybridIdealGame keyLen keyGen encaps encryptSym adversary bit n))
 
 /-- **IND-CPA security of KEM–DEM hybrid encryption** ([BonehShoup2023], Exercise 11.9(b)):
 if `(keyGen, encaps)` is an IND-CPA secure KEM and `encryptSym` is a one-time IND-CPA secure DEM
@@ -1110,8 +1058,7 @@ theorem KEMINDCPA.hybrid_indcpa {keyLen : ℕ → ℕ} {Msg : Type} {encMsg : Ms
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
     INDCPAOf encMsg keyGen (hybridEncrypt encaps encryptSym) := by
   intro adversary hadversary
   have hkemFalse := hkem (hybridToKEMDistinguisher encryptSym adversary false)
@@ -1144,9 +1091,9 @@ theorem eval_demKeyGame_hybridToDEMAdversary_restrict {Msg : Type} (keyLen : ℕ
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     apply_ite ProbComp.eval, encPair_apply, encBits_apply, unframe_frame_append,
     dropFrame_frame_append]
-  congr 1; funext k
-  congr 1; funext keys
-  congr 1; funext choice
+  congr 1 with k : 1
+  congr 1 with keys : 1
+  congr 1 with choice : 1
   rw [hpk n keys.1]
   cases valid n [] choice.1.1 choice.1.2 <;>
     simp only [Bool.false_eq_true, ↓reduceIte, List.headD_cons, List.tail_cons, PMF.bind_const]
@@ -1165,13 +1112,12 @@ theorem KEMINDCPA.hybrid_indcpaOn {keyLen : ℕ → ℕ} {Msg : Type} {encMsg : 
     (hdem : DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hpk : ∀ n pk m₀ m₁, valid n pk m₀ m₁ = valid n [] m₀ m₁)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
     INDCPAOn valid encMsg keyGen (hybridEncrypt encaps encryptSym) := by
   intro adversary hadversary
   have hA' := hadversary.restrict hvalid
@@ -1207,8 +1153,7 @@ theorem otpDecrypt_otpEncrypt (n : ℕ) (k : List Bool) (bit : Bool) :
 /-- One-time pad encryption is uniform strict PPT. -/
 @[fun_prop]
 theorem isPPTOn_otpEncrypt :
-    IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun ⟨n, k, bit⟩ => otpEncrypt n k bit) :=
+    IsPPTOn (encKeyedInput encBool) encBits (fun ⟨n, k, bit⟩ => otpEncrypt n k bit) :=
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBool)
   (ComputableInPolyTime.bitsCons
     (ComputableInPolyTime.bool_xor.comp'
@@ -1220,7 +1165,7 @@ theorem isPPTOn_otpEncrypt :
 theorem computableInPolyTime_otpDecrypt :
     ComputableInPolyTime
       (fun ⟨n, k, ct⟩ => otpDecrypt n k ct)
-      (encPair encUnary (encPair encBits encBits)) encBool :=
+      (encKeyedInput encBits) encBool :=
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   ComputableInPolyTime.bool_xor.comp'
     (((ComputableInPolyTime.headD false).comp' hp2.fst').prod
@@ -1239,10 +1184,10 @@ theorem eval_demGame_otpEncrypt_false_eq_true {n : ℕ} (hn : 1 ≤ n) (adversar
     Function.comp_def, PMF.pure_bind, List.headD_cons, Bool.false_eq_true, ↓reduceIte]
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext tail
+  congr 1 with tail : 1
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
+  congr 1 with choice : 1
   ext out
   simp only [PMF.bind_apply, PMF.uniformOfFintype_apply, Fintype.card_bool, tsum_bool]
   cases choice.1.1 <;> cases choice.1.2 <;>
@@ -1296,8 +1241,7 @@ time in unary. -/
 @[fun_prop]
 theorem isPPTOn_otpKeyWordEncrypt {keyLen : ℕ → ℕ}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) :=
+    IsPPTOn (encKeyedInput encBits) encBits (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) :=
   let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   ((hkeyLen.comp' hp1).bitsXorWithInput (hp2.fst'.cons' (hp2.snd'.cons' (.const [])))).isPPTOn
@@ -1310,7 +1254,7 @@ theorem computableInPolyTime_otpKeyWordDecrypt {keyLen : ℕ → ℕ}
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
         otpKeyWordDecrypt keyLen p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits :=
+      (encKeyedInput encBits) encBits :=
   let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   (hkeyLen.comp' hp1).bitsXorWithInput (hp2.fst'.cons' (hp2.snd'.cons' (.const [])))
@@ -1336,9 +1280,8 @@ theorem eval_demKeyGame_otpKeyWordEncrypt_false_eq_true (keyLen : ℕ → ℕ) (
     simpa only [PMF.bind_map, Function.comp_def, PMF.monad_bind_eq_bind] using h
   simp only [demKeyGame, demKeyGameOn, ↓reduceIte, otpKeyWordEncrypt, ProbComp.eval_bind,
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind, Bool.false_eq_true]
-  rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
+  pmf_hoist (adversary.choose n []).eval
+  congr 1 with choice : 1
   exact (hpad choice.1.1 choice.2).trans (hpad choice.1.2 choice.2).symm
 
 /-- Every word adversary has exact advantage `0` in
@@ -1387,8 +1330,7 @@ theorem otpWordDecrypt_otpWordEncrypt {n : ℕ} (k : List Bool) {m : List Bool}
 /-- One-time pad word encryption is uniform strict PPT. -/
 @[fun_prop]
 theorem isPPTOn_otpWordEncrypt :
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun ⟨n, k, m⟩ => otpWordEncrypt n k m) :=
+    IsPPTOn (encKeyedInput encBits) encBits (fun ⟨n, k, m⟩ => otpWordEncrypt n k m) :=
   isPPTOn_otpKeyWordEncrypt ComputableInPolyTime.id'
 
 /-- One-time pad word decryption is computable in polynomial time. -/
@@ -1396,7 +1338,7 @@ theorem isPPTOn_otpWordEncrypt :
 theorem computableInPolyTime_otpWordDecrypt :
     ComputableInPolyTime
       (fun ⟨n, k, ct⟩ => otpWordDecrypt n k ct)
-      (encPair encUnary (encPair encBits encBits)) encBits :=
+      (encKeyedInput encBits) encBits :=
   computableInPolyTime_otpKeyWordDecrypt ComputableInPolyTime.id'
 
 /-- A uniform `n`-bit key masks any challenge word perfectly in `demGame otpWordEncrypt`, so the

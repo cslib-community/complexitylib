@@ -271,8 +271,7 @@ theorem value_merge_arthur (b : Bool) (σ τ : List (AMMove × ℕ)) (n₁ n₂ 
     value b (σ ++ (.arthur, n₁) :: (.arthur, n₂) :: τ) f =
       value b (σ ++ (.arthur, n₁ + n₂) :: τ) f := by
   rw [value_append, value_append]
-  congr 1
-  funext s
+  congr 1 with s : 1
   rw [value_arthur, value_arthur]
   simp only [value_arthur]
   have hsum : (∑ r : Fin (n₁ + n₂) → Bool, value b τ fun t => f (s ++ (List.ofFn r ++ t))) =
@@ -289,8 +288,7 @@ theorem value_merge_merlin (σ τ : List (AMMove × ℕ)) (n₁ n₂ : ℕ) (f :
     value true (σ ++ (.merlin, n₁) :: (.merlin, n₂) :: τ) f =
       value true (σ ++ (.merlin, n₁ + n₂) :: τ) f := by
   rw [value_append, value_append]
-  congr 1
-  funext s
+  congr 1 with s : 1
   rw [value_merlin_true, value_merlin_true]
   simp only [value_merlin_true]
   refine le_antisymm (sup'_le _ _ fun y₁ _ => sup'_le _ _ fun y₂ _ => ?_)
@@ -308,8 +306,7 @@ theorem value_merge_merlin (σ τ : List (AMMove × ℕ)) (n₁ n₂ : ℕ) (f :
 theorem value_insert_zero (b : Bool) (σ τ : List (AMMove × ℕ)) (x : AMMove) (f : List Bool → ℚ) :
     value b (σ ++ (x, 0) :: τ) f = value b (σ ++ τ) f := by
   rw [value_append, value_append]
-  congr 1
-  funext s
+  congr 1 with s : 1
   have h0 (y : Fin 0 → Bool) : List.ofFn y = [] := List.ofFn_zero
   cases x
   · rw [value_arthur]
@@ -422,26 +419,12 @@ theorem isAMGameVerifier_iff_value {enc : α ↪ List Bool} {G : List (AMMove ×
         (fun t => ((V (a, t)).toNat : ℚ)) ≤ 1) := by
   refine forall_congr' fun a => and_congr (imp_congr_right fun _ => ?_)
     (imp_congr_right fun _ => ?_)
-  · rw [← Nat.cast_le (α := ℚ)]
+  all_goals
+    rw [← Nat.cast_le (α := ℚ)]
     push_cast
     rw [count_eq]
-    constructor
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
-  · rw [← Nat.cast_le (α := ℚ)]
-    push_cast
-    rw [count_eq]
-    constructor
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
-    · intro h
-      have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
-      nlinarith
+    have hp : (0 : ℚ) < 2 ^ arthurBits (evalShape G (enc a).length) := by positivity
+    constructor <;> intro h <;> nlinarith
 
 theorem AMGameClass_insert {enc : α ↪ List Bool} (σ τ : List AMMove) (x : AMMove) :
     AMGameClass enc (σ ++ τ) ⊆ AMGameClass enc (σ ++ x :: τ) := by

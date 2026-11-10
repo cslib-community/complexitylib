@@ -32,7 +32,7 @@ point-membership certificate. The construction includes empty covers and constan
   follows from the grouped certificate construction formalized here.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Fusion
 

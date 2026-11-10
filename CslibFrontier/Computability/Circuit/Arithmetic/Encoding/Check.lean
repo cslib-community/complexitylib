@@ -23,7 +23,7 @@ data. Output-wire checks remain separate.
 * `Arithmetic.computableInPolyTime_codeCheck`: uniform arithmetic gate validation.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic
 

@@ -60,7 +60,7 @@ The deterministic `Cslib.Communication.ecomplexityFun_equality` has the same fin
 * [E. Kushilevitz, N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Communication
 

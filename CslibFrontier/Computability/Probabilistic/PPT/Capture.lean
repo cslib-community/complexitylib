@@ -39,7 +39,7 @@ Adapted from Computability/Probabilistic/{Realization/Composition,Composition}.l
 and framed pair encoding.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -94,26 +94,6 @@ theorem IsPPTOn.map_with {program : α → ProbComp β} {f : α → β → γ}
   simpa only [bind_pure_comp] using
     hprogram.bind_with (right := right) (second := fun a b => pure (f a b)) hf.tidy.isPPTOn
 
-/-- Select a closed probabilistic branch with an efficient Boolean condition, using the
-empty-channel specialization of oracle branch selection. -/
-@[fun_prop]
-theorem IsPPTOn.cond {condition : α → Bool} {yes no : α → ProbComp β}
-    (hcondition : ComputableTidilyInPolyTime condition input encBool)
-    (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
-    IsPPTOn input left (fun a => if condition a then yes a else no a) := by
-  apply IsOraclePPTOn.isPPTOn
-  simpa only [apply_ite] using IsOraclePPTOn.cond hcondition
-    (hyes.isOraclePPTOn (Operation := Empty)) (hno.isOraclePPTOn (Operation := Empty))
-
-/-- Select a closed probabilistic branch with an efficiently decidable condition. -/
-@[fun_prop]
-theorem IsPPTOn.ite {condition : α → Prop} [∀ a, Decidable (condition a)]
-    {yes no : α → ProbComp β}
-    (hcondition : ComputableTidilyInPolyTime (fun a => decide (condition a)) input encBool)
-    (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
-    IsPPTOn input left (fun a => if condition a then yes a else no a) := by
-  simpa only [decide_eq_true_eq] using hyes.cond hcondition hno
-
 /-- `Cslib.Probability.IsPPTOn.cond` with a plain polynomial-time condition. -/
 @[fun_prop]
 theorem IsPPTOn.cond' {condition : α → Bool} {yes no : α → ProbComp β}
@@ -123,6 +103,24 @@ theorem IsPPTOn.cond' {condition : α → Bool} {yes no : α → ProbComp β}
   apply IsOraclePPTOn.isPPTOn
   simpa only [apply_ite] using IsOraclePPTOn.cond' hcondition
     (hyes.isOraclePPTOn (Operation := Empty)) (hno.isOraclePPTOn (Operation := Empty))
+
+/-- Select a closed probabilistic branch with an efficient Boolean condition, using the
+empty-channel specialization of oracle branch selection. -/
+@[fun_prop]
+theorem IsPPTOn.cond {condition : α → Bool} {yes no : α → ProbComp β}
+    (hcondition : ComputableTidilyInPolyTime condition input encBool)
+    (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
+    IsPPTOn input left (fun a => if condition a then yes a else no a) :=
+  hyes.cond' (.of_tidy hcondition) hno
+
+/-- Select a closed probabilistic branch with an efficiently decidable condition. -/
+@[fun_prop]
+theorem IsPPTOn.ite {condition : α → Prop} [∀ a, Decidable (condition a)]
+    {yes no : α → ProbComp β}
+    (hcondition : ComputableTidilyInPolyTime (fun a => decide (condition a)) input encBool)
+    (hyes : IsPPTOn input left yes) (hno : IsPPTOn input left no) :
+    IsPPTOn input left (fun a => if condition a then yes a else no a) := by
+  simpa only [decide_eq_true_eq] using hyes.cond hcondition hno
 
 /-- `Cslib.Probability.IsPPTOn.ite` with a plain polynomial-time decision. -/
 @[fun_prop]

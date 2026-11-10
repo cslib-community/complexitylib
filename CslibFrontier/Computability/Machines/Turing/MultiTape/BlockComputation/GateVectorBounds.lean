@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Tactic.EncLen
@@ -17,7 +18,9 @@ import CslibFrontier.Tactic.EncLen
 
 The vector caller retains its parameters once and appends one reduced field element per returned
 coordinate. The bounds cover every physical clock, including interpolation and replay calls.
-The number of coordinates multiplies only the encoded field-element width.
+The number of coordinates multiplies only the encoded field-element width. The correctness
+statement without the space bound (`exists_runFrom_gateExtension`) is read off from the bounded
+one.
 -/
 
 public section
@@ -74,42 +77,13 @@ theorem runFrom_one_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s)
       2 * callerSpace params + B + 2 := by
   have hcaller := prefixState_encoding_le params values j hj.le hp
   have hnext := prefixState_encoding_le params values (j + 1) (by omega) hp
-  by_cases htzero : t = 0
-  · subst t
-    simp only [QueryMachine.runFrom_zero, encState, encSum_inl, List.length_cons]
-    omega
-  by_cases htfinal : t = T + 2
-  · subst t
-    rw [runFrom_one M e params values w j T hj hpre hhalt hanswer]
-    simp only [encState, encSum_inl, List.length_cons]
-    omega
-  have htT : t - 1 ≤ T := by omega
-  have hentry : (machine M e).runFrom w (.inl (prefixState params values j)) 1 =
-      .inr (prefixState params values j, start (prefixState params values j)) := by
-    apply QueryMachine.withCalls_step_call
-    · change decide (params.2 ≤ j) = false
-      exact decide_eq_false (by omega)
-    · change (if j < params.2 then some (start (prefixState params values j)) else none) = _
-      simp only [hj, ↓reduceIte]
-  rw [show t = 1 + (t - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hprefix := QueryMachine.withCalls_runFrom_subroutine_prefix
-    caller (Interpolation.machine M e) request resume w
-    (prefixState params values j) (start (prefixState params values j)) (t - 1)
-    (fun u hu => hpre u (by omega))
-  rw [show (machine M e).runFrom w
-      (.inr (prefixState params values j, start (prefixState params values j))) (t - 1) =
-      .inr (prefixState params values j,
-        (Interpolation.machine M e).runFrom w (start (prefixState params values j)) (t - 1))
-    from hprefix]
-  have hcallee := hsize (t - 1) htT
-  rw [show (encState (.inr (prefixState params values j,
-      (Interpolation.machine M e).runFrom w
-        (start (prefixState params values j)) (t - 1)))).length =
-      2 * (encCaller (prefixState params values j)).length +
-        (Interpolation.encState ((Interpolation.machine M e).runFrom w
-          (start (prefixState params values j)) (t - 1))).length + 2 from
-    QueryMachine.withCalls_encoding_inr_length encCaller Interpolation.encState _ _]
-  omega
+  rw [← resume_prefix params values j _ hanswer] at hnext
+  refine QueryMachine.withCalls_runFrom_call_encoding_le caller (Interpolation.machine M e)
+    request resume w encCaller Interpolation.encState ?_ ?_ hpre hhalt hcaller hnext hsize t ht
+  · change decide (params.2 ≤ j) = false
+    exact decide_eq_false (by omega)
+  · change (if j < params.2 then some (start (prefixState params values j)) else none) = _
+    simp only [hj, ↓reduceIte]
 
 /-- Concatenated coordinate calls obey one bound at all physical clocks. -/
 theorem exists_runFrom_prefix_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s)
@@ -128,27 +102,13 @@ theorem exists_runFrom_prefix_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ 
     ∃ T, (machine M e).runFrom w (initial params) T = .inl (prefixState params values j) ∧
       ∀ t ≤ T, (encState ((machine M e).runFrom w (initial params) t)).length ≤
         2 * callerSpace params + B + 2 := by
-  induction j with
-  | zero =>
-    refine ⟨0, rfl, ?_⟩
-    intro t ht
-    have : t = 0 := by omega
-    subst t
-    have hc := prefixState_encoding_le params values 0 (by omega) hp
-    change (encCaller (prefixState params values 0)).length + 1 ≤ _
-    omega
-  | succ j ih =>
-    obtain ⟨T, hT, hbound⟩ := ih (by omega)
-    obtain ⟨U, hpre, hhalt, hans, hsize⟩ := hsupplier j (by omega)
-    refine ⟨T + (U + 2), ?_, ?_⟩
-    · rw [QueryMachine.runFrom_add, hT]
-      exact runFrom_one M e params values w j U (by omega) hpre hhalt hans
-    · intro t ht
-      by_cases htT : t ≤ T
-      · exact hbound t htT
-      · rw [show t = T + (t - T) by omega, QueryMachine.runFrom_add, hT]
-        exact runFrom_one_encoding_le M e params values w j U B (by omega) hp
-          hpre hhalt hans hsize (t - T) (by omega)
+  have h0 := prefixState_encoding_le params values 0 (Nat.zero_le _) hp
+  refine QueryMachine.exists_runFrom_chain_encoding_le encState
+    (fun j => .inl (prefixState params values j)) j
+    (by change (encCaller (prefixState params values 0)).length + 1 ≤ _; omega) fun i hi => ?_
+  obtain ⟨U, hpre, hhalt, hans, hsize⟩ := hsupplier i (by omega)
+  exact ⟨U + 2, runFrom_one M e params values w i U (by omega) hpre hhalt hans,
+    runFrom_one_encoding_le M e params values w i U B (by omega) hp hpre hhalt hans hsize⟩
 
 /-- Only the binary chunk-index metadata grows when the requested coordinate increases. -/
 theorem setChunk_encoding_mono (params : QueryGate.Params Interpolation.Context)
@@ -157,13 +117,14 @@ theorem setChunk_encoding_mono (params : QueryGate.Params Interpolation.Context)
       (QueryGate.encParams Interpolation.encContext (setChunk params b)).length := by
   rcases params with ⟨⟨N, block, σ, i, m, previous, stride⟩, parameters, point, limit⟩
   have h := length_encNat_mono hab
-  enc_len [setChunk, QueryGate.encParams, Interpolation.encContext]
+  enc_len [setChunk, QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields]
 
 omit [Finite Q] in
 /-- The replay allowance is monotone in the binary chunk-index metadata. -/
 theorem calleeSpace_chunk_mono (N block σ i m stride : ℕ) {a b : ℕ} (hab : a ≤ b) :
-    Interpolation.calleeSpace k s Q (N, block, σ, i, m, a, stride) ≤
-      Interpolation.calleeSpace k s Q (N, block, σ, i, m, b, stride) := by
+    Interpolation.calleeSpace k s Q (⟨N, block, σ, i, m, a, stride⟩ : Interpolation.Context) ≤
+      Interpolation.calleeSpace k s Q (⟨N, block, σ, i, m, b, stride⟩ : Interpolation.Context) := by
   have h := length_encNat_mono hab
   enc_len [Interpolation.calleeSpace, SupplierChunk.encContext]
 
@@ -177,8 +138,9 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
     let params : Params := (QueryGate.gateParams (s := 2 ^ m)
-      (w.length, b, σ, i.val, m, 0, r * m) x, r)
-    let maxContext : Interpolation.Context := (w.length, b, σ, i.val, m, r, r * m)
+      (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)
+    let maxContext : Interpolation.Context :=
+        (⟨w.length, b, σ, i.val, m, r, r * m⟩ : Interpolation.Context)
     let maxParams := QueryGate.gateParams (s := 2 ^ m) maxContext x
     ∃ T values, (machine M e).runFrom w (initial params) T = .inl (params, r, values) ∧
       values.length = r ∧ (∀ value ∈ values, value < p) ∧
@@ -192,8 +154,9 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
   let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
     (Encoding.encode e) (Encoding.decode e) (i.val + 1)
   let params : Params := (QueryGate.gateParams (s := 2 ^ m)
-    (w.length, b, σ, i.val, m, 0, r * m) x, r)
-  let maxContext : Interpolation.Context := (w.length, b, σ, i.val, m, r, r * m)
+    (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)
+  let maxContext : Interpolation.Context :=
+      (⟨w.length, b, σ, i.val, m, r, r * m⟩ : Interpolation.Context)
   let maxParams := QueryGate.gateParams (s := 2 ^ m) maxContext x
   let B := 16 * ((QueryGate.encParams Interpolation.encContext maxParams).length + 1) +
     Interpolation.calleeSpace k s Q maxContext + 2
@@ -219,7 +182,7 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
     · intro t ht
       have hpar := setChunk_encoding_mono
         (QueryGate.gateParams (s := 2 ^ m)
-          (w.length, b, σ, i.val, m, 0, r * m) x) (Nat.le_of_lt hjr)
+          (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x) (Nat.le_of_lt hjr)
       simp only [setChunk_gateParams] at hpar
       have hcallee := calleeSpace_chunk_mono (k := k) (s := s) (Q := Q)
         w.length b σ i.val m (r * m) (Nat.le_of_lt hjr)
@@ -227,7 +190,7 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
       dsimp only at hlocal
       have hbound : (Interpolation.encState ((Interpolation.machine M e).runFrom w
           (Interpolation.initial (QueryGate.gateParams (s := 2 ^ m)
-            (w.length, b, σ, i.val, m, j, r * m) x)) t)).length ≤ B := by
+            (⟨w.length, b, σ, i.val, m, j, r * m⟩ : Interpolation.Context) x)) t)).length ≤ B := by
         dsimp only [B, maxParams, maxContext]
         omega
       simpa only [start, prefixState, params, setChunk_gateParams] using hbound
@@ -249,5 +212,26 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
     have hbnd := hbound t ht
     dsimp only [B, params, maxParams, maxContext] at hbnd ⊢
     omega
+
+/-- The complete selected-field vector is returned by one fixed native vector machine. This is
+`exists_runFrom_gateExtension_bounded` without the space bound. -/
+theorem exists_runFrom_gateExtension {p q r m : ℕ} [Fact p.Prime]
+    (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (w : List Bool)
+    (b : ℕ) [NeZero b] (σ : ℕ) (i : Fin q)
+    (x : Fin (k * 3 + 1) → Fin r → ZMod p)
+    (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m)
+    (hsp : 2 ^ m ≤ p) (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
+    let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
+      (Encoding.encode e) (Encoding.decode e) (i.val + 1)
+    let params : Params := (QueryGate.gateParams (s := 2 ^ m)
+      (⟨w.length, b, σ, i.val, m, 0, r * m⟩ : Interpolation.Context) x, r)
+    ∃ T values, (machine M e).runFrom w (initial params) T = .inl (params, r, values) ∧
+      values.length = r ∧ (∀ value ∈ values, value < p) ∧
+      (∀ j : Fin r, (values.getD j.val 0 : ZMod p) =
+        Packed.gateExtension h (Packed.packBits hb) (Packed.unpackBits hb) f x j) ∧
+      (machine M e).halted ((machine M e).runFrom w (initial params) T) = true := by
+  obtain ⟨T, values, hrun, hlength, hcanonical, hvalues, hhalt, -⟩ :=
+    exists_runFrom_gateExtension_bounded M e w b σ i x hb hm hsp h hh
+  exact ⟨T, values, hrun, hlength, hcanonical, hvalues, hhalt⟩
 
 end Turing.MultiTapePTM.BlockComputation.QueryReplay.GateVector

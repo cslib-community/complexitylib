@@ -58,7 +58,7 @@ the binary length bounds of `Int.size_natAbs_add_le` and `Int.size_natAbs_mul_le
   `.intBin_pow'`, `.intBin_lt'`, `.intBin_le'`: composition rules for `fun_prop`.
 -/
 
-@[expose] public section
+public section
 
 namespace Int
 
@@ -404,6 +404,11 @@ theorem intBin_signMagnitude :
     ComputableInPolyTime (fun p : Bool × ℕ => if p.1 then -(p.2 : ℤ) else p.2)
       (encPair encBool encNat) encIntBin :=
   .of_tidy ComputableTidilyInPolyTime.intBin_signMagnitude
+
+/-- The sum of a list of binary integers. -/
+@[fun_prop]
+theorem intBin_sum : ComputableInPolyTime List.sum (encList encIntBin) encIntBin :=
+  .of_tidy ComputableTidilyInPolyTime.intBin_sum
 
 /-- The product of a list of binary integers. -/
 @[fun_prop]

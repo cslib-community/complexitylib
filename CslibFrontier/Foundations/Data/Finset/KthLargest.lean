@@ -34,6 +34,7 @@ is at least `t` exactly when at least `k` values are at least `t` (`Finset.le_kt
 * `Finset.kthLargest_nonneg`, `Finset.kthLargest_le`: bounds.
 * `Finset.kthLargest_congr`: congruence under pointwise equality on `s`.
 * `Finset.lt_kthLargest_iff`, `Finset.le_kthLargest_iff`: the threshold characterizations.
+* `Finset.kthLargest_le_of_lt_imp`: comparing ranks of two functions through a threshold.
 * `Finset.kthLargest_eq_of_eq_or_gt`: replacing values strictly above a bounded rank preserves it.
 * `Finset.kthLargest_le_kthLargest_add`, `Finset.abs_kthLargest_sub_kthLargest_le`: stability
   under perturbation of the values.
@@ -136,12 +137,28 @@ theorem le_kthLargest_iff (hk : 0 < k) (ht : 0 < t) :
     obtain ⟨x, hxs, htx, hkx⟩ := exists_le_card hk (t ≤ ·) hcard
     exact htx.trans (le_kthLargest_of_le_card hxs hkx)
 
-/-- Changing only values strictly above a nonnegative ceiling preserves every positive-order
-rank at most that ceiling. The bound may be an equality, and other values may be negative. -/
-theorem kthLargest_eq_of_eq_or_gt {f g : α → R} (hk : 0 < k) (ht : 0 ≤ t)
+/-- **Comparing ranks through a threshold.** If every value of `f` above `t ≥ 0` has the value of
+`g` above `t` too, a bound `t` on the `k`-th largest value of `g` bounds the `m`-th largest value
+of `f` for every `m ≥ k > 0`. -/
+theorem kthLargest_le_of_lt_imp {f g : α → R} {m : ℕ} (hk : 0 < k) (hkm : k ≤ m) (ht : 0 ≤ t)
+    (hfg : ∀ x ∈ s, t < f x → t < g x) (hg : kthLargest k s g ≤ t) :
+    kthLargest m s f ≤ t := by
+  refine not_lt.mp fun hlt => not_lt_of_ge hg ((lt_kthLargest_iff hk ht).mpr ?_)
+  refine hkm.trans (((lt_kthLargest_iff (hk.trans_le hkm) ht).mp hlt).trans
+    (card_le_card fun x hx => ?_))
+  rw [mem_filter] at hx ⊢
+  exact ⟨hx.1, hfg x hx.1 hx.2⟩
+
+/-- Changing only values strictly above a ceiling preserves every rank at most that ceiling. The
+bound may be an equality, and other values may be negative. -/
+theorem kthLargest_eq_of_eq_or_gt {f g : α → R}
     (h : ∀ x ∈ s, f x = g x ∨ (t < f x ∧ t < g x))
     (hg : kthLargest k s g ≤ t) : kthLargest k s f = kthLargest k s g := by
   classical
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine kthLargest_congr fun x hx => (h x hx).resolve_right fun hx' => ?_
+    exact (hx'.2.trans_le (le_kthLargest_of_le_card hx (Nat.zero_le _))).not_ge hg
+  have ht : 0 ≤ t := kthLargest_nonneg.trans hg
   have hfilter (a : R) (ha : a ≤ t) :
       ({x ∈ s | a < f x} : Finset α) = {x ∈ s | a < g x} := by
     ext x
@@ -150,11 +167,8 @@ theorem kthLargest_eq_of_eq_or_gt {f g : α → R} (hk : 0 < k) (ht : 0 ≤ t)
       · simp [heq]
       · simp [hx, ha.trans_lt hf, ha.trans_lt hg]
     · simp [hx]
-  have hf : kthLargest k s f ≤ t := by
-    refine not_lt.mp fun hlt => ?_
-    have hc := (lt_kthLargest_iff hk ht).mp hlt
-    rw [hfilter t le_rfl] at hc
-    exact (not_lt_of_ge hg) ((lt_kthLargest_iff hk ht).mpr hc)
+  have hf : kthLargest k s f ≤ t := kthLargest_le_of_lt_imp hk le_rfl ht
+    (fun x hx hfx => (h x hx).elim (fun he => he ▸ hfx) And.right) hg
   apply le_antisymm
   · refine not_lt.mp fun hlt => ?_
     have hc := (lt_kthLargest_iff hk kthLargest_nonneg).mp hlt

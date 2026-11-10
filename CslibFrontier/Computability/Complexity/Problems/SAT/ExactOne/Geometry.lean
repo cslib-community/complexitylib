@@ -61,22 +61,22 @@ instance (r : Route) : Decidable (SimpleCheck r) :=
 accesses. The core lies strictly inside the square cell of side `g.size`. -/
 def Check (g : LocalGeometry) : Prop :=
   (g.variablePositions ++ g.clausePositions).Nodup ∧
-  (g.incidenceRoutes.map fun e => (e.1, e.2.1)).Nodup ∧
+  (g.incidenceRoutes.map fun e => (e.clauseIndex, e.variableIndex)).Nodup ∧
   g.accessRoutes.length = g.terminalVariables.length ∧
   g.accessRoutes.length = g.boundaryPorts.length ∧
   (∀ e ∈ g.incidenceRoutes,
-    e.1 < g.clausePositions.length ∧ e.2.1 < g.variablePositions.length ∧
-      e.2.2.head? = some (g.clausePosition e.1) ∧
-      e.2.2.getLast? = some (g.variablePosition e.2.1) ∧
-      IsOrthogonal e.2.2 ∧ SimpleCheck e.2.2 ∧
-      ∀ p ∈ e.2.2, 20 ≤ p.1 ∧ p.1 ≤ (g.size : ℤ) - 20 ∧
+    e.clauseIndex < g.clausePositions.length ∧ e.variableIndex < g.variablePositions.length ∧
+      e.route.head? = some (g.clausePosition e.clauseIndex) ∧
+      e.route.getLast? = some (g.variablePosition e.variableIndex) ∧
+      IsOrthogonal e.route ∧ SimpleCheck e.route ∧
+      ∀ p ∈ e.route, 20 ≤ p.1 ∧ p.1 ≤ (g.size : ℤ) - 20 ∧
         20 ≤ p.2 ∧ p.2 ≤ (g.size : ℤ) - 20) ∧
   (∀ e ∈ g.incidenceRoutes, ∀ f ∈ g.incidenceRoutes, e ≠ f →
-    routeContactCheck (g.commonEndpoints e f) e.2.2 f.2.2 = true) ∧
-  (∀ e ∈ g.incidenceRoutes, ∀ v : Fin g.variablePositions.length, v.val ≠ e.2.1 →
-    routeContactCheck [] e.2.2 [g.variablePosition v] = true) ∧
-  (∀ e ∈ g.incidenceRoutes, ∀ i : Fin g.clausePositions.length, i.val ≠ e.1 →
-    routeContactCheck [] e.2.2 [g.clausePosition i] = true) ∧
+    routeContactCheck (g.commonEndpoints e f) e.route f.route = true) ∧
+  (∀ e ∈ g.incidenceRoutes, ∀ v : Fin g.variablePositions.length, v.val ≠ e.variableIndex →
+    routeContactCheck [] e.route [g.variablePosition v] = true) ∧
+  (∀ e ∈ g.incidenceRoutes, ∀ i : Fin g.clausePositions.length, i.val ≠ e.clauseIndex →
+    routeContactCheck [] e.route [g.clausePosition i] = true) ∧
   (∀ i : Fin g.accessRoutes.length,
     let r := g.accessRoutes.getD i []
     let v := g.terminalVariables.getD i 0
@@ -87,8 +87,8 @@ def Check (g : LocalGeometry) : Prop :=
       (∀ p ∈ r, 0 ≤ p.1 ∧ p.1 ≤ g.size ∧ 0 ≤ p.2 ∧ p.2 ≤ g.size) ∧
       (∀ p ∈ r.tail, 0 < p.1 ∧ p.1 < g.size ∧ 0 < p.2 ∧ p.2 < g.size) ∧
       (∀ e ∈ g.incidenceRoutes,
-        routeContactCheck (if e.2.1 = v then [g.variablePosition v] else [])
-          r e.2.2 = true) ∧
+        routeContactCheck (if e.variableIndex = v then [g.variablePosition v] else [])
+          r e.route = true) ∧
       (∀ j : Fin g.accessRoutes.length, i ≠ j →
         routeContactCheck [] r (g.accessRoutes.getD j []) = true) ∧
       (∀ w : Fin g.variablePositions.length, w.val ≠ v →
@@ -114,41 +114,41 @@ theorem isSimple_of_check {r : Route} (h : SimpleCheck r) : IsSimple r := by
 /-- Every checked incidence has its prescribed clause and variable endpoints. -/
 theorem incidence_endpoints {g : LocalGeometry} (h : Check g)
     {e : LocalIncidence} (he : e ∈ g.incidenceRoutes) :
-    e.1 < g.clausePositions.length ∧ e.2.1 < g.variablePositions.length ∧
-      e.2.2.head? = some (g.clausePosition e.1) ∧
-      e.2.2.getLast? = some (g.variablePosition e.2.1) := by
+    e.clauseIndex < g.clausePositions.length ∧ e.variableIndex < g.variablePositions.length ∧
+      e.route.head? = some (g.clausePosition e.clauseIndex) ∧
+      e.route.getLast? = some (g.variablePosition e.variableIndex) := by
   have he' := h.2.2.2.2.1 e he
   exact ⟨he'.1, he'.2.1, he'.2.2.1, he'.2.2.2.1⟩
 
 /-- Every checked incidence is properly orthogonal. -/
 theorem incidence_orthogonal {g : LocalGeometry} (h : Check g)
-    {e : LocalIncidence} (he : e ∈ g.incidenceRoutes) : IsOrthogonal e.2.2 :=
+    {e : LocalIncidence} (he : e ∈ g.incidenceRoutes) : IsOrthogonal e.route :=
   (h.2.2.2.2.1 e he).2.2.2.2.1
 
 /-- Every checked incidence is simple over its full continuous support. -/
 theorem incidence_isSimple {g : LocalGeometry} (h : Check g)
-    {e : LocalIncidence} (he : e ∈ g.incidenceRoutes) : IsSimple e.2.2 :=
+    {e : LocalIncidence} (he : e ∈ g.incidenceRoutes) : IsSimple e.route :=
   isSimple_of_check (h.2.2.2.2.1 e he).2.2.2.2.2.1
 
 /-- Checked incidence routes can meet only at a shared clause or variable vertex. -/
 theorem routes_contact {g : LocalGeometry} (h : Check g)
     {e f : LocalIncidence} (he : e ∈ g.incidenceRoutes) (hf : f ∈ g.incidenceRoutes)
-    (hne : e ≠ f) {p : ℝ × ℝ} (hp : p ∈ support e.2.2) (hq : p ∈ support f.2.2) :
+    (hne : e ≠ f) {p : ℝ × ℝ} (hp : p ∈ support e.route) (hq : p ∈ support f.route) :
     ∃ q ∈ g.commonEndpoints e f, p = realPoint q :=
   routeContactCheck_sound (h.2.2.2.2.2.1 e he f hf hne) hp hq
 
 /-- Checked incidences avoid every nonincident variable vertex. -/
 theorem variable_not_mem_support {g : LocalGeometry} (h : Check g)
     {e : LocalIncidence} (he : e ∈ g.incidenceRoutes)
-    {v : Fin g.variablePositions.length} (hv : v.val ≠ e.2.1) :
-    realPoint (g.variablePosition v) ∉ support e.2.2 :=
+    {v : Fin g.variablePositions.length} (hv : v.val ≠ e.variableIndex) :
+    realPoint (g.variablePosition v) ∉ support e.route :=
   not_mem_support_of_routeContactCheck (h.2.2.2.2.2.2.1 e he v hv)
 
 /-- Checked incidences avoid every nonincident clause vertex. -/
 theorem clause_not_mem_support {g : LocalGeometry} (h : Check g)
     {e : LocalIncidence} (he : e ∈ g.incidenceRoutes)
-    {i : Fin g.clausePositions.length} (hi : i.val ≠ e.1) :
-    realPoint (g.clausePosition i) ∉ support e.2.2 :=
+    {i : Fin g.clausePositions.length} (hi : i.val ≠ e.clauseIndex) :
+    realPoint (g.clausePosition i) ∉ support e.route :=
   not_mem_support_of_routeContactCheck (h.2.2.2.2.2.2.2.1 e he i hi)
 
 /-- Exterior access routes are simple over their full continuous support. -/
@@ -167,15 +167,10 @@ theorem access_disjoint {g : LocalGeometry} (h : Check g)
 theorem access_contact {g : LocalGeometry} (h : Check g)
     {i : Fin g.accessRoutes.length} {e : LocalIncidence} (he : e ∈ g.incidenceRoutes)
     {p : ℝ × ℝ} (hp : p ∈ support (g.accessRoutes.getD i []))
-    (hq : p ∈ support e.2.2) :
-    e.2.1 = g.terminalVariables.getD i 0 ∧
-      p = realPoint (g.variablePosition (g.terminalVariables.getD i 0)) := by
-  obtain ⟨q, hq, hpq⟩ := routeContactCheck_sound
-    ((h.2.2.2.2.2.2.2.2 i).2.2.2.2.2.2.2.1 e he) hp hq
-  split_ifs at hq with heq
-  · have hq' := List.mem_singleton.mp hq
-    exact ⟨heq, hq' ▸ hpq⟩
-  · exact False.elim (List.not_mem_nil hq)
+    (hq : p ∈ support e.route) :
+    e.variableIndex = g.terminalVariables.getD i 0 ∧
+      p = realPoint (g.variablePosition (g.terminalVariables.getD i 0)) :=
+  routeContactCheck_ite_sound ((h.2.2.2.2.2.2.2.2 i).2.2.2.2.2.2.2.1 e he) hp hq
 
 end LocalGeometry
 

@@ -22,7 +22,7 @@ unary-to-binary conversion folds the binary successor, and indexed access folds 
 before using the existing head codec. No higher tidy calculus supplies a plain primitive.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Truncated subtraction of unary naturals. -/

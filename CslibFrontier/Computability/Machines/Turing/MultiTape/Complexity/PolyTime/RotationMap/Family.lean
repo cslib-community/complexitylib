@@ -34,7 +34,7 @@ are enormous, so the certificate makes no claim of practical execution.
   constant-degree expanders*][ReingoldVadhanWigderson2002], Sections 1.2 and 5.1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.RotationMap.TowerTable
 

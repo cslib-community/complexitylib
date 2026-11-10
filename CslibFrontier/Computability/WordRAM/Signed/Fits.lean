@@ -23,7 +23,7 @@ addresses, counts and loop temporaries. The existing compiler executes at signed
 This representation bound is original and reuses the existing sign-and-magnitude encoding.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.Signed
 

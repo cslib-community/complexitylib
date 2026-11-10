@@ -7,6 +7,8 @@ Authors: Erik Demaine
 import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandThin
 import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCatalogue
 import CslibFrontier.Algorithms.MatrixMultiplication.Schonhage.MaskTable
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import CslibFrontier.Computability.WordRAM.Structured.FastEval
 
 -- These regressions evaluate actual native code; general execution proofs are checked separately.
 set_option linter.hashCommand false

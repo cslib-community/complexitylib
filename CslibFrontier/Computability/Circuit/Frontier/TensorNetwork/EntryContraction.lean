@@ -51,8 +51,10 @@ encoded length bounds it.
 **The interface** (`EntryContractionAlgorithm`). One native certificate maps an input
 `(P, fl, r, G)`, with the precision `P` in unary and the coefficients `fl` of a modulus, to a
 coefficient list whose value in `A_P` at the modulus `FastContraction.modulus m`, for `m` the
-number of edges, is the contraction of the entries' values, on every input. On admissible inputs
-at that modulus and precision `P ≤ D s (⌊log₂ s⌋ + 1)`, for each fixed `D`, it runs in time
+number of edges, is the contraction of the entries' values, on every input. The admissibility
+predicate is a parameter; Theorem D.1 takes it to be `EntryAdmissible ce`. On the inputs the
+predicate selects at a size `s ≥ 2`, at that modulus and precision
+`1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, for each fixed `D`, it runs in time
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space `K (n + 1) ^ K`. The original linear-precision
 bound is a corollary (`EntryContractionAlgorithm.bound`). The input format is
 that of the truncation-order reduction's contractions of specialized networks.
@@ -75,7 +77,8 @@ summation with it is the contraction of the explicit network
 * `Cslib.Circuits.Frontier.ceilNineTenths`: `⌈s ^ (9/10)⌉`.
 * `Cslib.Circuits.Frontier.EntryContraction.encInput`: the encoding of an input.
 * `Cslib.Circuits.Frontier.EntryAdmissible`: Theorem D.1's hypotheses.
-* `Cslib.Circuits.Frontier.EntryContractionAlgorithm`: the interface.
+* `Cslib.Circuits.Frontier.EntryContractionAlgorithm`: the interface, for a given admissibility
+  predicate.
 * `Cslib.Circuits.Frontier.EntryContraction.directCore`: direct summation with an entry procedure.
 
 ## Main results
@@ -231,10 +234,12 @@ logarithmic root precision, with entries in `A_P`. A native certificate maps `(P
 coefficient list `core (P, fl, r, G)`. At
 the modulus `fl = FastContraction.modulus m`, for `m` the number of edges of `G`, its value in
 `A_P` is the contraction of the values of the entries, on every input. For all constants `C` and
-`D` there is `K` such that on every network admissible at a size `s ≥ 2` with constant `C`, and
+`D` there is `K` such that on every `(r, G)` with `Admissible C s (r, G)` at a size `s ≥ 2`, and
 every precision `1 ≤ P ≤ D s (⌊log₂ s⌋ + 1)`, at that modulus the certificate takes time at most
 `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at most `K (n + 1) ^ K`, for `n` the encoded length
-of the input. -/
+of the input. The predicate `Admissible` is a parameter; Theorem D.1's interface is the case
+`Admissible = EntryAdmissible ce` for a native certificate `ce` of the entry procedure, which
+`Cslib.Complexity.CountingSimulation.entryContractionAlgorithm` implements. -/
 structure EntryContractionAlgorithm (Admissible : ℕ → ℕ → ℕ × DescribedNetwork T → Prop) where
   /-- The output on an input `(P, fl, r, G)`. -/
   core : ℕ × List ℕ × ℕ × DescribedNetwork T → List ℕ
@@ -552,19 +557,8 @@ theorem exists_entryAdmissible_of_isPolynomial
   rw [← hB]
   have hB1 : 1 ≤ B := by omega
   -- The argument of the procedure is at most `3 B`.
-  have hq : (encPair encT encBits (v.2, bs)).length + 1 ≤ 3 * B := by
-    have h1 := length_le_encList_of_mem (encPair (encList encNat) encT) hv
-    have h2 : (encList (encPair (encList encNat) encT) G.vertices).length ≤
-        (DescribedNetwork.encDescribed encT G).length := by
-      change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-        (G.numEdges, G.vertices)).length
-      rw [length_encPair]
-      dsimp only
-      omega
-    have h3 := length_le_length_encList encNat v.1
-    rw [length_encPair] at h1 ⊢
-    change 2 * (encT v.2).length + 1 + bs.length + 1 ≤ 3 * B
-    omega
+  have hq : (encPair encT encBits (v.2, bs)).length + 1 ≤ 3 * B :=
+    (G.length_entryInput_le hv hbs).trans (by omega)
   have hpow {c d : ℕ} : c * ((encPair encT encBits (v.2, bs)).length + 1) ^ d ≤
       c * 3 ^ d * B ^ d := by
     rw [Nat.mul_assoc, ← Nat.mul_pow]
@@ -584,8 +578,7 @@ theorem val_directCore_tableEntry (P : ℕ) (fl : List ℕ) (G : ExplicitTensorN
     ExplicitTensorNetwork.entry G
   simp only [Nat.coe_castRingHom] at h
   rw [h]
-  congr 1
-  funext t bs
+  congr 1 with t bs : 2
   exact VertexDesc.val_entry_inl P fl t bs
 
 end EntryContraction

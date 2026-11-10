@@ -58,14 +58,11 @@ private theorem scatterBody_eq (d : Fin 4 → ℕ) : scatterBody d =
     DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
       (scatterStep (d 2, d 3)) := by
   simp only [scatterBody, scatterStep, DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext deg
-  congr 1
-  funext c
+  congr 1 with deg : 1
+  congr 1 with c : 1
   by_cases hc : c = 0
   · simp only [hc, ite_true, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure]
-    congr 1
-    funext _
+    congr 1 with _ : 1
     by_cases hmax : d 3 < deg
     · rw [ite_eq_left hmax, max_eq_right (Nat.le_of_lt hmax)]
     · rw [ite_eq_right hmax, max_eq_left (Nat.le_of_not_lt hmax)]

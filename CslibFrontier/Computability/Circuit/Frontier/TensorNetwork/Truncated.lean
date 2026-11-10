@@ -44,12 +44,12 @@ bounds the degree of the contraction over `ℕ[V]` by `(ℓ - 1) k` for `k` vert
 contraction in `A_P` is the contraction over `ℕ[V]` evaluated at `ζ`
 (`DescribedNetwork.val_contraction_specNet`).
 
-**Interpolation.** At `n` points of `A_P` with unit differences, the Lagrange interpolant of the
-values (`GaloisRingArith.interp`) is a polynomial of degree below `n` agreeing with the contraction
-at the points. When `(ℓ - 1) k < n` it is the contraction, so the constant coordinates of its first
-`ℓ` coefficients, modulo `2 ^ P`, are the truncated contraction (`interpRecover`,
-`DescribedNetwork.interpRecover_eq_truncContraction`). The binary digits of `0, …, n - 1` are such
-points once `n ≤ 2 ^ deg f` and `f` is irreducible modulo `2` (`isUnit_val_sub_digits`).
+**Interpolation.** Let `f` be irreducible modulo `2`. At `n` points of `A_P` with unit differences,
+the Lagrange interpolant of the values (`GaloisRingArith.interp`) is a polynomial of degree below
+`n` agreeing with the contraction at the points. When `(ℓ - 1) k < n` it is the contraction, so the
+constant coordinates of its first `ℓ` coefficients, modulo `2 ^ P`, are the truncated contraction
+(`interpRecover`, `DescribedNetwork.interpRecover_eq_truncContraction`). The binary digits of
+`0, …, n - 1` are such points once `n ≤ 2 ^ deg f` (`isUnit_val_sub_digits`).
 
 **The reduction** (`DescribedNetwork.interpContract`). Given a contraction `core` over `A_P` of the
 specialized networks, contract the network specialized at each of the `(ℓ - 1) k + 1` digit
@@ -80,9 +80,9 @@ space bounds of Theorem D.1, is not formalized here (#1538).
 * `Cslib.Circuits.Frontier.DescribedNetwork.val_contraction_specNet`: specialization is
   evaluation.
 * `Cslib.Circuits.Frontier.interpRecover_eq`: recovery from values at points with unit
-  differences.
+  differences, for `f` irreducible modulo `2`.
 * `Cslib.Circuits.Frontier.DescribedNetwork.interpRecover_eq_truncContraction`: the truncated
-  contraction from the specialized contractions.
+  contraction from the specialized contractions, for `f` irreducible modulo `2`.
 * `Cslib.Circuits.Frontier.DescribedNetwork.interpContract_eq`: the reduction is correct.
 
 ## References
@@ -159,8 +159,7 @@ theorem truncContraction_congr {entry entry' : T → List Bool → List ℕ} {P 
     G.truncContraction entry P ℓ = G.truncContraction entry' P ℓ := by
   have hG : truncHom P ℓ (G.polyContraction entry) = truncHom P ℓ (G.polyContraction entry') := by
     rw [truncHom_polyContraction, truncHom_polyContraction]
-    congr 1
-    funext t bs
+    congr 1 with t bs : 2
     exact truncHom_eq_iff.mpr fun j hj => by simpa only [coeff_ofCoeffList] using h t bs j hj
   refine List.map_congr_left fun j hj => truncHom_eq_iff.mp hG j (List.mem_range.mp hj)
 
@@ -276,9 +275,10 @@ theorem length_pos_of_irreducible {fl : List ℕ}
   refine Nat.pos_of_ne_zero fun h => hirr.not_isUnit ?_
   simp [monicOf, h]
 
-/-- **Recovery from values at points with unit differences.** If `Z` over `ℕ` has degree below the
-number of points, the points have unit differences in `A_P`, and `ys` are the values of `Z` at
-them, then reading off the interpolant gives the coefficients of `Z` below `ℓ` modulo `2 ^ P`. -/
+/-- **Recovery from values at points with unit differences.** Let `f` be irreducible modulo `2`.
+If `Z` over `ℕ` has degree below the number of points, the points have unit differences in `A_P`,
+and `ys` are the values of `Z` at them, then reading off the interpolant gives the coefficients of
+`Z` below `ℓ` modulo `2 ^ P`. -/
 theorem interpRecover_eq {P ℓ : ℕ} {fl : List ℕ}
     (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2)))) {pts ys : List (List ℕ)}
     (hunit : Pairwise fun i j : Fin pts.length =>
@@ -299,8 +299,7 @@ theorem interpRecover_eq {P ℓ : ℕ} {fl : List ℕ}
     exact (degree_map_le.trans degree_le_natDegree).trans_lt (by exact_mod_cast hdeg)
   have hZ : Z' = Lagrange.ringInterpolate univ ζ fun i => val P fl (ys.getD i []) := by
     conv_lhs => rw [Lagrange.eq_ringInterpolate (fun i _ j _ hij => hunit hij) hdeg']
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact (hys i i.2).symm
   have hpval : pval P fl (interp P fl pts ys) = Z' := hg.trans hZ.symm
   refine List.map_congr_left fun j _ => ?_
@@ -328,9 +327,10 @@ namespace DescribedNetwork
 vertices. -/
 @[expose] def pointCount (ℓ : ℕ) (G : DescribedNetwork T) : ℕ := (ℓ - 1) * G.vertices.length + 1
 
-/-- **The truncated contraction from the specialized contractions.** At points with unit
-differences in `A_P`, more than `(ℓ - 1) k` of them, if `ys` are the contractions in `A_P` of the
-network specialized at the points, reading off the interpolant gives the truncated contraction. -/
+/-- **The truncated contraction from the specialized contractions.** Let `f` be irreducible modulo
+`2`. At points with unit differences in `A_P`, more than `(ℓ - 1) k` of them, if `ys` are the
+contractions in `A_P` of the network specialized at the points, reading off the interpolant gives
+the truncated contraction. -/
 theorem interpRecover_eq_truncContraction {entry : T → List Bool → List ℕ} {P ℓ : ℕ}
     {fl : List ℕ} (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
     (G : DescribedNetwork T) {pts ys : List (List ℕ)}

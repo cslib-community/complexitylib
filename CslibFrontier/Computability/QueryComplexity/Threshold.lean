@@ -50,7 +50,7 @@ complexity all equal `n`. The measures are those of [BuhrmanDeWolf2002].
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

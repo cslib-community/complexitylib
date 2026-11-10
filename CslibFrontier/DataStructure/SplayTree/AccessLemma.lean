@@ -292,6 +292,53 @@ private theorem two_add_logb_two_add_le {a b s : ℝ} (ha : 0 < a) (hb : 0 < b) 
   norm_num at hlog
   linarith
 
+private theorem splayUp_zig_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
+    {u₀ p₁ t₀ t₁ : BinaryTree α} (hu₀ : u₀ ≠ .nil) (hp₁ : p₁ ≠ .nil)
+    (hsw : subtreeWeight w t₁ = subtreeWeight w t₀)
+    (hp₁_le : subtreeWeight w p₁ ≤ subtreeWeight w t₀)
+    (hu₀_le : subtreeWeight w u₀ ≤ subtreeWeight w t₀)
+    (hpot : potential w t₁ - potential w t₀ =
+      nodeRank w t₁ - nodeRank w t₀ + nodeRank w p₁ - nodeRank w u₀) :
+    1 + potential w t₁ - potential w t₀ ≤ 3 * (nodeRank w t₀ - nodeRank w u₀) + 1 := by
+  have hr_eq : nodeRank w t₁ = nodeRank w t₀ := nodeRank_congr hsw
+  have hr_p₁ : nodeRank w p₁ ≤ nodeRank w t₀ :=
+    nodeRank_mono (subtreeWeight_pos hw hp₁) hp₁_le
+  have hr_u₀ : nodeRank w u₀ ≤ nodeRank w t₀ :=
+    nodeRank_mono (subtreeWeight_pos hw hu₀) hu₀_le
+  linarith
+
+private theorem splayUp_double_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
+    {x : α} {l r l' r' p₀ g₀ c₁ c₂ m₁ : BinaryTree α} {ctx : List (Frame α)}
+    (hc₁ : c₁ ≠ .nil) (hc₂ : c₂ ≠ .nil) (hm₁ : m₁ ≠ .nil)
+    (hsw : subtreeWeight w (.node x l' r') = subtreeWeight w g₀)
+    (hamgm : subtreeWeight w c₁ + subtreeWeight w c₂ ≤ subtreeWeight w (.node x l' r'))
+    (hm₁_le : subtreeWeight w m₁ ≤ subtreeWeight w (.node x l' r'))
+    (hu₀_le : subtreeWeight w (.node x l r) ≤ subtreeWeight w p₀)
+    (hpot : potential w (.node x l' r') - potential w g₀ =
+      nodeRank w (.node x l' r') + nodeRank w c₁ + nodeRank w c₂ + nodeRank w m₁ -
+        (nodeRank w g₀ + nodeRank w p₀ + 2 * nodeRank w (.node x l r)))
+    (ih : ((splayUp x l' r' ctx).rotations : ℝ) +
+        potential w (splayUp x l' r' ctx).tree - potential w (plug (.node x l' r') ctx) ≤
+      3 * (nodeRank w (plug (.node x l' r') ctx) - nodeRank w (.node x l' r')) +
+        if ctx.isEmpty then 0 else 1) :
+    (((splayUp x l' r' ctx).rotations + 2 : ℕ) : ℝ) +
+        potential w (splayUp x l' r' ctx).tree - potential w (plug g₀ ctx) ≤
+      3 * (nodeRank w (plug g₀ ctx) - nodeRank w (.node x l r)) + 1 := by
+  have hlog : 2 + nodeRank w c₁ + nodeRank w c₂ ≤ 2 * nodeRank w (.node x l' r') :=
+    two_add_logb_two_add_le (subtreeWeight_pos hw hc₁) (subtreeWeight_pos hw hc₂) hamgm
+  have hr_m₁ : nodeRank w m₁ ≤ nodeRank w (.node x l' r') :=
+    nodeRank_mono (subtreeWeight_pos hw hm₁) hm₁_le
+  have hr_u₀ : nodeRank w (.node x l r) ≤ nodeRank w p₀ :=
+    nodeRank_mono (subtreeWeight_pos hw (by simp)) hu₀_le
+  have hr_local : nodeRank w (.node x l' r') = nodeRank w g₀ := nodeRank_congr hsw
+  have hr_root : nodeRank w (plug (.node x l' r') ctx) = nodeRank w (plug g₀ ctx) :=
+    nodeRank_congr (subtreeWeight_plug_congr w ctx hsw)
+  have hpot_plug : potential w (plug (.node x l' r') ctx) - potential w (plug g₀ ctx) =
+      potential w (.node x l' r') - potential w g₀ := potential_plug_sub_eq w ctx hsw
+  have hite : (if ctx.isEmpty then (0 : ℝ) else 1) ≤ 1 := by split <;> norm_num
+  push_cast
+  linarith
+
 /-- **Bottom-Up Access Lemma** ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658):
 for any positive weights `w`, bottom-up splaying of `(x, l, r)` through `ctx` has amortized
 rotation cost at most `3 (r(root) - r(u))` when `ctx = []` and at most `3 (r(root) - r(u)) + 1`
@@ -310,208 +357,68 @@ theorem splayUp_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
     -- Terminal zig (left child of root)
     simp only [splayUp, plug_left, plug_nil, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte,
       Nat.cast_one]
-    set u₀ : BinaryTree α := .node x l r
-    set t₀ : BinaryTree α := .node p u₀ c
-    set p₁ : BinaryTree α := .node p r c
-    set t₁ : BinaryTree α := .node x l p₁
-    have hsw_eq : subtreeWeight w t₁ = subtreeWeight w t₀ := by
-      simp only [t₁, p₁, t₀, u₀, subtreeWeight_node]; ring
-    have hr_eq : nodeRank w t₁ = nodeRank w t₀ := nodeRank_congr hsw_eq
-    have hp₁_le : nodeRank w p₁ ≤ nodeRank w t₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [p₁]))
-      have hx := hw x
-      have hl := subtreeWeight_nonneg hw0 l
-      simp only [p₁, t₀, u₀, subtreeWeight_node]; linarith
-    have hu₀_le : nodeRank w u₀ ≤ nodeRank w t₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hc := subtreeWeight_nonneg hw0 c
-      simp only [u₀, t₀, subtreeWeight_node]; linarith
-    simp only [t₁, p₁, t₀, u₀, potential_node] at hr_eq hp₁_le hu₀_le ⊢
-    linarith
+    exact splayUp_zig_amortized_le hw (p₁ := .node p r c) (by simp) (by simp)
+      (by simp only [subtreeWeight_node]; ring)
+      (by simp only [subtreeWeight_node]; linarith [hw x, subtreeWeight_nonneg hw0 l])
+      (by simp only [subtreeWeight_node]; linarith [hw p, subtreeWeight_nonneg hw0 c])
+      (by simp only [potential_node]; ring)
   | case3 l r c p =>
     -- Terminal zig (right child of root)
     simp only [splayUp, plug_right, plug_nil, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte,
       Nat.cast_one]
-    set u₀ : BinaryTree α := .node x l r
-    set t₀ : BinaryTree α := .node p c u₀
-    set p₁ : BinaryTree α := .node p c l
-    set t₁ : BinaryTree α := .node x p₁ r
-    have hsw_eq : subtreeWeight w t₁ = subtreeWeight w t₀ := by
-      simp only [t₁, p₁, t₀, u₀, subtreeWeight_node]; ring
-    have hr_eq : nodeRank w t₁ = nodeRank w t₀ := nodeRank_congr hsw_eq
-    have hp₁_le : nodeRank w p₁ ≤ nodeRank w t₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [p₁]))
-      have hx := hw x
-      have hr := subtreeWeight_nonneg hw0 r
-      simp only [p₁, t₀, u₀, subtreeWeight_node]; linarith
-    have hu₀_le : nodeRank w u₀ ≤ nodeRank w t₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hc := subtreeWeight_nonneg hw0 c
-      simp only [u₀, t₀, subtreeWeight_node]; linarith
-    simp only [t₁, p₁, t₀, u₀, potential_node] at hr_eq hp₁_le hu₀_le ⊢
-    linarith
+    exact splayUp_zig_amortized_le hw (p₁ := .node p c l) (by simp) (by simp)
+      (by simp only [subtreeWeight_node]; ring)
+      (by simp only [subtreeWeight_node]; linarith [hw x, subtreeWeight_nonneg hw0 r])
+      (by simp only [subtreeWeight_node]; linarith [hw p, subtreeWeight_nonneg hw0 c])
+      (by simp only [potential_node]; ring)
   | case4 l r p c g d ctx ih =>
     -- Zig-zig (left-left)
-    simp only [splayUp, plug_left, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte, Nat.cast_add,
-      Nat.cast_ofNat]
-    set u₀ : BinaryTree α := .node x l r
-    set p₀ : BinaryTree α := .node p u₀ c
-    set g₀ : BinaryTree α := .node g p₀ d
-    set g₁ : BinaryTree α := .node g c d
-    set p₁ : BinaryTree α := .node p r g₁
-    set u₁ : BinaryTree α := .node x l p₁
-    have hsw_local : subtreeWeight w u₁ = subtreeWeight w g₀ := by
-      simp only [u₁, p₁, g₁, g₀, p₀, u₀, subtreeWeight_node]; ring
-    have hsw_root : subtreeWeight w (plug u₁ ctx) = subtreeWeight w (plug g₀ ctx) :=
-      subtreeWeight_plug_congr w ctx hsw_local
-    have hr_root : nodeRank w (plug u₁ ctx) = nodeRank w (plug g₀ ctx) := nodeRank_congr hsw_root
-    have hr_local : nodeRank w u₁ = nodeRank w g₀ := nodeRank_congr hsw_local
-    have hpot_plug : potential w (plug u₁ ctx) - potential w (plug g₀ ctx) =
-        potential w u₁ - potential w g₀ := potential_plug_sub_eq w ctx hsw_local
-    have hlog : 2 + nodeRank w u₀ + nodeRank w g₁ ≤ 2 * nodeRank w u₁ := by
-      apply two_add_logb_two_add_le
-        (subtreeWeight_pos hw (by simp [u₀]))
-        (subtreeWeight_pos hw (by simp [g₁]))
-      have hp := hw p
-      simp only [u₀, g₁, u₁, p₁, subtreeWeight_node]; linarith
-    have hp₁_le : nodeRank w p₁ ≤ nodeRank w u₁ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [p₁]))
-      have hx := hw x
-      have hl := subtreeWeight_nonneg hw0 l
-      simp only [p₁, u₁, subtreeWeight_node]; linarith
-    have hu₀_le_p₀ : nodeRank w u₀ ≤ nodeRank w p₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hc := subtreeWeight_nonneg hw0 c
-      simp only [u₀, p₀, subtreeWeight_node]; linarith
-    have hstep : 2 + potential w u₁ - potential w g₀ ≤ 3 * (nodeRank w u₁ - nodeRank w u₀) := by
-      simp only [u₁, p₁, g₁, g₀, p₀, u₀, potential_node] at hr_local hlog hp₁_le hu₀_le_p₀ ⊢
-      linarith
-    have hite : (if ctx.isEmpty then (0 : ℝ) else 1) ≤ 1 := by split <;> norm_num
-    linarith [ih]
+    simp only [splayUp, plug_left, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte]
+    exact splayUp_double_amortized_le hw
+      (p₀ := .node p (.node x l r) c) (c₁ := .node x l r) (c₂ := .node g c d)
+      (m₁ := .node p r (.node g c d)) (by simp) (by simp) (by simp)
+      (by simp only [subtreeWeight_node]; ring)
+      (by simp only [subtreeWeight_node]; linarith [hw p])
+      (by simp only [subtreeWeight_node]; linarith [hw x, subtreeWeight_nonneg hw0 l])
+      (by simp only [subtreeWeight_node]; linarith [hw p, subtreeWeight_nonneg hw0 c])
+      (by simp only [potential_node]; ring) ih
   | case5 l r c p d g ctx ih =>
     -- Zig-zig (right-right)
-    simp only [splayUp, plug_right, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte, Nat.cast_add,
-      Nat.cast_ofNat]
-    set u₀ : BinaryTree α := .node x l r
-    set p₀ : BinaryTree α := .node p c u₀
-    set g₀ : BinaryTree α := .node g d p₀
-    set g₁ : BinaryTree α := .node g d c
-    set p₁ : BinaryTree α := .node p g₁ l
-    set u₁ : BinaryTree α := .node x p₁ r
-    have hsw_local : subtreeWeight w u₁ = subtreeWeight w g₀ := by
-      simp only [u₁, p₁, g₁, g₀, p₀, u₀, subtreeWeight_node]; ring
-    have hsw_root : subtreeWeight w (plug u₁ ctx) = subtreeWeight w (plug g₀ ctx) :=
-      subtreeWeight_plug_congr w ctx hsw_local
-    have hr_root : nodeRank w (plug u₁ ctx) = nodeRank w (plug g₀ ctx) := nodeRank_congr hsw_root
-    have hr_local : nodeRank w u₁ = nodeRank w g₀ := nodeRank_congr hsw_local
-    have hpot_plug : potential w (plug u₁ ctx) - potential w (plug g₀ ctx) =
-        potential w u₁ - potential w g₀ := potential_plug_sub_eq w ctx hsw_local
-    have hlog : 2 + nodeRank w u₀ + nodeRank w g₁ ≤ 2 * nodeRank w u₁ := by
-      apply two_add_logb_two_add_le
-        (subtreeWeight_pos hw (by simp [u₀]))
-        (subtreeWeight_pos hw (by simp [g₁]))
-      have hp := hw p
-      simp only [u₀, g₁, u₁, p₁, subtreeWeight_node]; linarith
-    have hp₁_le : nodeRank w p₁ ≤ nodeRank w u₁ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [p₁]))
-      have hx := hw x
-      have hr := subtreeWeight_nonneg hw0 r
-      simp only [p₁, u₁, subtreeWeight_node]; linarith
-    have hu₀_le_p₀ : nodeRank w u₀ ≤ nodeRank w p₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hc := subtreeWeight_nonneg hw0 c
-      simp only [u₀, p₀, subtreeWeight_node]; linarith
-    have hstep : 2 + potential w u₁ - potential w g₀ ≤ 3 * (nodeRank w u₁ - nodeRank w u₀) := by
-      simp only [u₁, p₁, g₁, g₀, p₀, u₀, potential_node] at hr_local hlog hp₁_le hu₀_le_p₀ ⊢
-      linarith
-    have hite : (if ctx.isEmpty then (0 : ℝ) else 1) ≤ 1 := by split <;> norm_num
-    linarith [ih]
+    simp only [splayUp, plug_right, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte]
+    exact splayUp_double_amortized_le hw
+      (p₀ := .node p c (.node x l r)) (c₁ := .node x l r) (c₂ := .node g d c)
+      (m₁ := .node p (.node g d c) l) (by simp) (by simp) (by simp)
+      (by simp only [subtreeWeight_node]; ring)
+      (by simp only [subtreeWeight_node]; linarith [hw p])
+      (by simp only [subtreeWeight_node]; linarith [hw x, subtreeWeight_nonneg hw0 r])
+      (by simp only [subtreeWeight_node]; linarith [hw p, subtreeWeight_nonneg hw0 c])
+      (by simp only [potential_node]; ring) ih
   | case6 l r a p g d ctx ih =>
     -- Zig-zag (left-right)
-    simp only [splayUp, plug_right, plug_left, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte,
-      Nat.cast_add, Nat.cast_ofNat]
-    set u₀ : BinaryTree α := .node x l r
-    set p₀ : BinaryTree α := .node p a u₀
-    set g₀ : BinaryTree α := .node g p₀ d
-    set l₁ : BinaryTree α := .node p a l
-    set r₁ : BinaryTree α := .node g r d
-    set u₁ : BinaryTree α := .node x l₁ r₁
-    have hsw_local : subtreeWeight w u₁ = subtreeWeight w g₀ := by
-      simp only [u₁, l₁, r₁, g₀, p₀, u₀, subtreeWeight_node]; ring
-    have hsw_root : subtreeWeight w (plug u₁ ctx) = subtreeWeight w (plug g₀ ctx) :=
-      subtreeWeight_plug_congr w ctx hsw_local
-    have hr_root : nodeRank w (plug u₁ ctx) = nodeRank w (plug g₀ ctx) := nodeRank_congr hsw_root
-    have hr_local : nodeRank w u₁ = nodeRank w g₀ := nodeRank_congr hsw_local
-    have hpot_plug : potential w (plug u₁ ctx) - potential w (plug g₀ ctx) =
-        potential w u₁ - potential w g₀ := potential_plug_sub_eq w ctx hsw_local
-    have hlog : 2 + nodeRank w l₁ + nodeRank w r₁ ≤ 2 * nodeRank w u₁ := by
-      apply two_add_logb_two_add_le
-        (subtreeWeight_pos hw (by simp [l₁]))
-        (subtreeWeight_pos hw (by simp [r₁]))
-      have hx := hw x
-      simp only [l₁, r₁, u₁, subtreeWeight_node]; linarith
-    have hu₀_le_p₀ : nodeRank w u₀ ≤ nodeRank w p₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have ha := subtreeWeight_nonneg hw0 a
-      simp only [u₀, p₀, subtreeWeight_node]; linarith
-    have hu₀_le_u₁ : nodeRank w u₀ ≤ nodeRank w u₁ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hg := hw g
-      have ha := subtreeWeight_nonneg hw0 a
-      have hd := subtreeWeight_nonneg hw0 d
-      simp only [u₀, u₁, l₁, r₁, subtreeWeight_node]; linarith
-    have hstep : 2 + potential w u₁ - potential w g₀ ≤ 3 * (nodeRank w u₁ - nodeRank w u₀) := by
-      simp only [u₁, l₁, r₁, g₀, p₀, u₀, potential_node] at hr_local hlog hu₀_le_p₀ hu₀_le_u₁ ⊢
-      linarith
-    have hite : (if ctx.isEmpty then (0 : ℝ) else 1) ≤ 1 := by split <;> norm_num
-    linarith [ih]
+    simp only [splayUp, plug_right, plug_left, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte]
+    exact splayUp_double_amortized_le hw
+      (p₀ := .node p a (.node x l r)) (c₁ := .node p a l) (c₂ := .node g r d)
+      (m₁ := .node x l r) (by simp) (by simp) (by simp)
+      (by simp only [subtreeWeight_node]; ring)
+      (by simp only [subtreeWeight_node]; linarith [hw x])
+      (by
+        simp only [subtreeWeight_node]
+        linarith [hw p, hw g, subtreeWeight_nonneg hw0 a, subtreeWeight_nonneg hw0 d])
+      (by simp only [subtreeWeight_node]; linarith [hw p, subtreeWeight_nonneg hw0 a])
+      (by simp only [potential_node]; ring) ih
   | case7 l r p c d g ctx ih =>
     -- Zig-zag (right-left)
-    simp only [splayUp, plug_left, plug_right, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte,
-      Nat.cast_add, Nat.cast_ofNat]
-    set u₀ : BinaryTree α := .node x l r
-    set p₀ : BinaryTree α := .node p u₀ c
-    set g₀ : BinaryTree α := .node g d p₀
-    set l₁ : BinaryTree α := .node g d l
-    set r₁ : BinaryTree α := .node p r c
-    set u₁ : BinaryTree α := .node x l₁ r₁
-    have hsw_local : subtreeWeight w u₁ = subtreeWeight w g₀ := by
-      simp only [u₁, l₁, r₁, g₀, p₀, u₀, subtreeWeight_node]; ring
-    have hsw_root : subtreeWeight w (plug u₁ ctx) = subtreeWeight w (plug g₀ ctx) :=
-      subtreeWeight_plug_congr w ctx hsw_local
-    have hr_root : nodeRank w (plug u₁ ctx) = nodeRank w (plug g₀ ctx) := nodeRank_congr hsw_root
-    have hr_local : nodeRank w u₁ = nodeRank w g₀ := nodeRank_congr hsw_local
-    have hpot_plug : potential w (plug u₁ ctx) - potential w (plug g₀ ctx) =
-        potential w u₁ - potential w g₀ := potential_plug_sub_eq w ctx hsw_local
-    have hlog : 2 + nodeRank w l₁ + nodeRank w r₁ ≤ 2 * nodeRank w u₁ := by
-      apply two_add_logb_two_add_le
-        (subtreeWeight_pos hw (by simp [l₁]))
-        (subtreeWeight_pos hw (by simp [r₁]))
-      have hx := hw x
-      simp only [l₁, r₁, u₁, subtreeWeight_node]; linarith
-    have hu₀_le_p₀ : nodeRank w u₀ ≤ nodeRank w p₀ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hc := subtreeWeight_nonneg hw0 c
-      simp only [u₀, p₀, subtreeWeight_node]; linarith
-    have hu₀_le_u₁ : nodeRank w u₀ ≤ nodeRank w u₁ := by
-      apply nodeRank_mono (subtreeWeight_pos hw (by simp [u₀]))
-      have hp := hw p
-      have hg := hw g
-      have hc := subtreeWeight_nonneg hw0 c
-      have hd := subtreeWeight_nonneg hw0 d
-      simp only [u₀, u₁, l₁, r₁, subtreeWeight_node]; linarith
-    have hstep : 2 + potential w u₁ - potential w g₀ ≤ 3 * (nodeRank w u₁ - nodeRank w u₀) := by
-      simp only [u₁, l₁, r₁, g₀, p₀, u₀, potential_node] at hr_local hlog hu₀_le_p₀ hu₀_le_u₁ ⊢
-      linarith
-    have hite : (if ctx.isEmpty then (0 : ℝ) else 1) ≤ 1 := by split <;> norm_num
-    linarith [ih]
+    simp only [splayUp, plug_left, plug_right, List.isEmpty_cons, Bool.false_eq_true, ↓reduceIte]
+    exact splayUp_double_amortized_le hw
+      (p₀ := .node p (.node x l r) c) (c₁ := .node g d l) (c₂ := .node p r c)
+      (m₁ := .node x l r) (by simp) (by simp) (by simp)
+      (by simp only [subtreeWeight_node]; ring)
+      (by simp only [subtreeWeight_node]; linarith [hw x])
+      (by
+        simp only [subtreeWeight_node]
+        linarith [hw p, hw g, subtreeWeight_nonneg hw0 c, subtreeWeight_nonneg hw0 d])
+      (by simp only [subtreeWeight_node]; linarith [hw p, subtreeWeight_nonneg hw0 c])
+      (by simp only [potential_node]; ring) ih
 
 /-- Sleator–Tarjan `splayTime` Access Lemma on `splayUp` ([SleatorTarjan1985b], Section 2, Lemma 1,
 p. 658). -/
@@ -559,16 +466,32 @@ theorem subtreeWeight_unitWeight_eq_numNodes (t : BinaryTree α) :
       Nat.cast_one]
     ring
 
+private theorem nodeRank_unitWeight_node_nonneg (a : α) (l r : BinaryTree α) :
+    0 ≤ nodeRank (unitWeight (α := α)) (.node a l r) := by
+  apply Real.logb_nonneg (by norm_num)
+  have hl := subtreeWeight_unitWeight_nonneg l
+  have hr := subtreeWeight_unitWeight_nonneg r
+  simp only [subtreeWeight_node, unitWeight]; linarith
+
+private theorem nodeRank_unitWeight_nil_left_le (a : α) (l r : BinaryTree α) :
+    nodeRank (unitWeight (α := α)) (.node a .nil r) ≤
+      nodeRank (unitWeight (α := α)) (.node a l r) := by
+  apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
+  have hl := subtreeWeight_unitWeight_nonneg l
+  simp only [subtreeWeight_node, subtreeWeight_nil]; linarith
+
+private theorem nodeRank_unitWeight_nil_right_le (a : α) (l r : BinaryTree α) :
+    nodeRank (unitWeight (α := α)) (.node a l .nil) ≤
+      nodeRank (unitWeight (α := α)) (.node a l r) := by
+  apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
+  have hr := subtreeWeight_unitWeight_nonneg r
+  simp only [subtreeWeight_node, subtreeWeight_nil]; linarith
+
 theorem unitPotential_nonneg (t : BinaryTree α) : 0 ≤ unitPotential t := by
   induction t with
   | nil => exact le_rfl
   | node a l r ihl ihr =>
-    have hsw : 1 ≤ subtreeWeight (unitWeight (α := α)) (.node a l r) := by
-      have hl := subtreeWeight_unitWeight_nonneg l
-      have hr := subtreeWeight_unitWeight_nonneg r
-      simp only [subtreeWeight_node, unitWeight]; linarith
-    have hrk : 0 ≤ nodeRank (unitWeight (α := α)) (.node a l r) :=
-      Real.logb_nonneg (by norm_num) hsw
+    have hrk := nodeRank_unitWeight_node_nonneg a l r
     simp only [unitPotential, potential_node] at ihl ihr ⊢
     linarith
 
@@ -597,17 +520,8 @@ theorem subtreeWeight_eq_sum_elements (w : α → ℝ) {t : BinaryTree α} (ht :
   induction t with
   | nil => simp [elements]
   | node a l r ihl ihr =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      refine Finset.disjoint_left.mpr fun y hyl hyr => ?_
-      exact lt_asymm (hla y hyl) (har y hyr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro hmem
-      rcases Finset.mem_union.mp hmem with hmem | hmem
-      · exact lt_irrefl a (hla a hmem)
-      · exact lt_irrefl a (har a hmem)
-    simp only [subtreeWeight_node, elements, Finset.sum_insert ha,
-      Finset.sum_union hdis, ihl hl, ihr hr]
+    simp only [subtreeWeight_node, elements, Finset.sum_insert ht.notMem_elements_union,
+      Finset.sum_union ht.disjoint_elements, ihl ht.1, ihr ht.2.1]
     ring
 
 theorem le_subtreeWeight_of_mem {w : α → ℝ} (hw : ∀ y, 0 ≤ w y) {t : BinaryTree α}
@@ -628,10 +542,37 @@ theorem splay_splayTime_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y) {x :
   simp only [splay, hf, Focus.sub]
   simpa only [htree] using splayUp_splayTime_amortized_le hw f.key f.leftSub f.rightSub f.ctx
 
+private theorem focus_splayUp_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
+    {t : BinaryTree α} {f : Focus α} (hf : f.toTree = t) :
+    f.key ∈ elements t ∧
+      (splayTime (splayUp f.key f.leftSub f.rightSub f.ctx) : ℝ) +
+          potential w (splayUp f.key f.leftSub f.rightSub f.ctx).tree - potential w t ≤
+        3 * Real.logb 2 (subtreeWeight w t / w f.key) + 1 := by
+  have htree : plug (.node f.key f.leftSub f.rightSub) f.ctx = t := hf
+  have hne : t ≠ .nil := htree ▸ plug_ne_nil_of_ne_nil (by simp) f.ctx
+  have hmem : f.key ∈ elements t := by
+    have he := elements_splayUp f.key f.leftSub f.rightSub f.ctx
+    obtain ⟨l', r', hnode⟩ := exists_node_splayUp f.key f.leftSub f.rightSub f.ctx
+    rw [htree, hnode] at he
+    exact he ▸ by simp
+  refine ⟨hmem, ?_⟩
+  have hup := splayUp_splayTime_amortized_le hw f.key f.leftSub f.rightSub f.ctx
+  rw [htree] at hup
+  have hw_le : w f.key ≤ subtreeWeight w (.node f.key f.leftSub f.rightSub) := by
+    have hl := subtreeWeight_nonneg (fun y => (hw y).le) f.leftSub
+    have hr := subtreeWeight_nonneg (fun y => (hw y).le) f.rightSub
+    simp only [subtreeWeight_node]; linarith
+  have hrk_le : Real.logb 2 (w f.key) ≤ nodeRank w (.node f.key f.leftSub f.rightSub) :=
+    Real.logb_le_logb_of_le (by norm_num) (hw f.key) hw_le
+  have hdiv : Real.logb 2 (subtreeWeight w t / w f.key) =
+      nodeRank w t - Real.logb 2 (w f.key) :=
+    Real.logb_div (subtreeWeight_pos hw hne).ne' (hw f.key).ne'
+  linarith
+
 /-- **Access Lemma (general key-weight form)** ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658;
 Section 3, p. 664): on any non-empty `Ordered` tree `t` and any query `x` (present or absent),
-there exists a splayed key `u ∈ elements t` (equal to `x` if `x ∈ elements t`) such that the
-amortized `splayTime` of `splay x t` is at most `3 log₂(W / w(u)) + 1`. -/
+there exists a key `u ∈ elements t` (equal to `x` if `x ∈ elements t`, and otherwise unspecified)
+such that the amortized `splayTime` of `splay x t` is at most `3 log₂(W / w(u)) + 1`. -/
 theorem exists_mem_splay_splayTime_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
     {t : BinaryTree α} (ht : Ordered t) (hne : t ≠ .nil) (x : α) :
     ∃ u ∈ elements t, (x ∈ elements t → u = x) ∧
@@ -641,19 +582,9 @@ theorem exists_mem_splay_splayTime_amortized_le {w : α → ℝ} (hw : ∀ y, 0 
   | none => exact (hne ((focusSearch_eq_none_iff x t []).mp hf)).elim
   | some f =>
     obtain ⟨hmem, hxeq, _⟩ := focusSearch_ordered_spec ht hf
+    have hft : f.toTree = t := by simpa only [plug_nil] using (focusSearch_toTree_and_length hf).1
     refine ⟨f.key, hmem, hxeq, ?_⟩
-    have hacc := splay_splayTime_amortized_le hw hf
-    have hw_le : w f.key ≤ subtreeWeight w f.sub := by
-      have hl := subtreeWeight_nonneg (fun y => (hw y).le) f.leftSub
-      have hr := subtreeWeight_nonneg (fun y => (hw y).le) f.rightSub
-      simp only [Focus.sub, subtreeWeight_node]; linarith
-    have hrk_le : Real.logb 2 (w f.key) ≤ nodeRank w f.sub :=
-      Real.logb_le_logb_of_le (by norm_num) (hw f.key) hw_le
-    have hwt_pos : 0 < subtreeWeight w t := subtreeWeight_pos hw hne
-    have hdiv : Real.logb 2 (subtreeWeight w t / w f.key) =
-        nodeRank w t - Real.logb 2 (w f.key) :=
-      Real.logb_div hwt_pos.ne' (hw f.key).ne'
-    linarith
+    simpa only [splay, hf] using (focus_splayUp_amortized_le hw hft).2
 
 /-- **Access Lemma for present keys** ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658):
 when `x ∈ elements t` in an `Ordered` tree `t`, splaying `t` at `x` has amortized `splayTime`
@@ -685,29 +616,12 @@ theorem splayMin_rotations_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
   cases hf : focusMin t [] with
   | none => exact (hne ((focusMin_eq_none_iff t []).mp hf)).elim
   | some f =>
-    have htree : plug (.node f.key f.leftSub f.rightSub) f.ctx = t := by
-      simpa only [Focus.toTree, Focus.sub, plug_nil] using (focusMin_spec hf).1
-    have hmem : f.key ∈ elements t := by
-      have he := elements_splayUp f.key f.leftSub f.rightSub f.ctx
-      rw [htree] at he
-      obtain ⟨l', r', hnode⟩ := exists_node_splayUp f.key f.leftSub f.rightSub f.ctx
-      rw [hnode] at he
-      exact he ▸ by simp
-    refine ⟨f.key, hmem, ?_⟩
-    have hup := splayUp_splayTime_amortized_le hw f.key f.leftSub f.rightSub f.ctx
-    rw [htree] at hup
-    have hrot_le : ((splayUp f.key f.leftSub f.rightSub f.ctx).rotations : ℝ) ≤
+    have hft : f.toTree = t := by simpa only [plug_nil] using (focusMin_spec hf).1
+    obtain ⟨hmem, hbound⟩ := focus_splayUp_amortized_le hw hft
+    have hrot : ((splayUp f.key f.leftSub f.rightSub f.ctx).rotations : ℝ) ≤
         (splayTime (splayUp f.key f.leftSub f.rightSub f.ctx) : ℝ) := by
       exact_mod_cast rotations_le_splayTime _
-    have hw_le : w f.key ≤ subtreeWeight w (.node f.key f.leftSub f.rightSub) := by
-      have hl := subtreeWeight_nonneg (fun y => (hw y).le) f.leftSub
-      have hr := subtreeWeight_nonneg (fun y => (hw y).le) f.rightSub
-      simp only [subtreeWeight_node]; linarith
-    have hrk_le : Real.logb 2 (w f.key) ≤ nodeRank w (.node f.key f.leftSub f.rightSub) :=
-      Real.logb_le_logb_of_le (by norm_num) (hw f.key) hw_le
-    have hdiv : Real.logb 2 (subtreeWeight w t / w f.key) =
-        nodeRank w t - Real.logb 2 (w f.key) :=
-      Real.logb_div (subtreeWeight_pos hw hne).ne' (hw f.key).ne'
+    refine ⟨f.key, hmem, ?_⟩
     simp only [splayMin, hf]
     linarith
 
@@ -720,29 +634,12 @@ theorem splayMax_rotations_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
   cases hf : focusMax t [] with
   | none => exact (hne ((focusMax_eq_none_iff t []).mp hf)).elim
   | some f =>
-    have htree : plug (.node f.key f.leftSub f.rightSub) f.ctx = t := by
-      simpa only [Focus.toTree, Focus.sub, plug_nil] using (focusMax_spec hf).1
-    have hmem : f.key ∈ elements t := by
-      have he := elements_splayUp f.key f.leftSub f.rightSub f.ctx
-      rw [htree] at he
-      obtain ⟨l', r', hnode⟩ := exists_node_splayUp f.key f.leftSub f.rightSub f.ctx
-      rw [hnode] at he
-      exact he ▸ by simp
-    refine ⟨f.key, hmem, ?_⟩
-    have hup := splayUp_splayTime_amortized_le hw f.key f.leftSub f.rightSub f.ctx
-    rw [htree] at hup
-    have hrot_le : ((splayUp f.key f.leftSub f.rightSub f.ctx).rotations : ℝ) ≤
+    have hft : f.toTree = t := by simpa only [plug_nil] using (focusMax_spec hf).1
+    obtain ⟨hmem, hbound⟩ := focus_splayUp_amortized_le hw hft
+    have hrot : ((splayUp f.key f.leftSub f.rightSub f.ctx).rotations : ℝ) ≤
         (splayTime (splayUp f.key f.leftSub f.rightSub f.ctx) : ℝ) := by
       exact_mod_cast rotations_le_splayTime _
-    have hw_le : w f.key ≤ subtreeWeight w (.node f.key f.leftSub f.rightSub) := by
-      have hl := subtreeWeight_nonneg (fun y => (hw y).le) f.leftSub
-      have hr := subtreeWeight_nonneg (fun y => (hw y).le) f.rightSub
-      simp only [subtreeWeight_node]; linarith
-    have hrk_le : Real.logb 2 (w f.key) ≤ nodeRank w (.node f.key f.leftSub f.rightSub) :=
-      Real.logb_le_logb_of_le (by norm_num) (hw f.key) hw_le
-    have hdiv : Real.logb 2 (subtreeWeight w t / w f.key) =
-        nodeRank w t - Real.logb 2 (w f.key) :=
-      Real.logb_div (subtreeWeight_pos hw hne).ne' (hw f.key).ne'
+    refine ⟨f.key, hmem, ?_⟩
     simp only [splayMax, hf]
     linarith
 
@@ -756,22 +653,14 @@ theorem sum_logb_weight_le_potential {w : α → ℝ} (hw : ∀ y, 0 < w y)
   induction t with
   | nil => simp [elements]
   | node a l r ihl ihr =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      refine Finset.disjoint_left.mpr fun y hyl hyr => ?_
-      exact lt_asymm (hla y hyl) (har y hyr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro hmem
-      rcases Finset.mem_union.mp hmem with hmem | hmem
-      · exact lt_irrefl a (hla a hmem)
-      · exact lt_irrefl a (har a hmem)
     have ha_le : Real.logb 2 (w a) ≤ nodeRank w (.node a l r) := by
       apply Real.logb_le_logb_of_le (by norm_num) (hw a)
       have hwl := subtreeWeight_nonneg (fun y => (hw y).le) l
       have hwr := subtreeWeight_nonneg (fun y => (hw y).le) r
       simp only [subtreeWeight_node]; linarith
-    simp only [elements, Finset.sum_insert ha, Finset.sum_union hdis, potential_node]
-    linarith [ihl hl, ihr hr]
+    simp only [elements, Finset.sum_insert ht.notMem_elements_union,
+      Finset.sum_union ht.disjoint_elements, potential_node]
+    linarith [ihl ht.1, ihr ht.2.1]
 
 /-- Upper potential bound: if the total weight is at most `W`, every rank is at most `log₂ W`, so
 `Φ(t) ≤ ∑ y ∈ t, log₂ W` ([SleatorTarjan1985b], Section 2, p. 659). -/
@@ -781,15 +670,6 @@ theorem potential_le_sum_logb_of_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
   induction t with
   | nil => simp [elements]
   | node a l r ihl ihr =>
-    obtain ⟨hl, hr, hla, har⟩ := ht
-    have hdis : Disjoint (elements l) (elements r) := by
-      refine Finset.disjoint_left.mpr fun y hyl hyr => ?_
-      exact lt_asymm (hla y hyl) (har y hyr)
-    have ha : a ∉ elements l ∪ elements r := by
-      intro hmem
-      rcases Finset.mem_union.mp hmem with hmem | hmem
-      · exact lt_irrefl a (hla a hmem)
-      · exact lt_irrefl a (har a hmem)
     have hwl : subtreeWeight w l ≤ W := by
       have hwa := hw a
       have hwr := subtreeWeight_nonneg (fun y => (hw y).le) r
@@ -800,8 +680,9 @@ theorem potential_le_sum_logb_of_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
       simp only [subtreeWeight_node] at hW; linarith
     have hrk : nodeRank w (.node a l r) ≤ Real.logb 2 W :=
       Real.logb_le_logb_of_le (by norm_num) (subtreeWeight_pos hw (by simp)) hW
-    simp only [elements, Finset.sum_insert ha, Finset.sum_union hdis, potential_node]
-    linarith [ihl hl hwl, ihr hr hwr]
+    simp only [elements, Finset.sum_insert ht.notMem_elements_union,
+      Finset.sum_union ht.disjoint_elements, potential_node]
+    linarith [ihl ht.1 hwl, ihr ht.2.1 hwr]
 
 /-- **Fixed-Weight Potential Drop Bound** ([SleatorTarjan1985b], Section 2, p. 659):
 between any two `Ordered` trees `t₁` and `t₂` representing the same set of keys, if
@@ -1147,6 +1028,51 @@ private theorem logb_two_card_add_one_nonneg (n : ℕ) : 0 ≤ Real.logb 2 ((n :
   have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
   exact Real.logb_nonneg (by norm_num) (by linarith)
 
+private theorem unitPotential_splay_node {t : BinaryTree α} (ht : Ordered t) (hne : t ≠ .nil)
+    (x : α) :
+    ∃ r' l' R', (splay x t).tree = .node r' l' R' ∧
+      Ordered (.node r' l' R') ∧
+      subtreeWeight (unitWeight (α := α)) (.node r' l' R') = (elements t).card ∧
+      ((splay x t).rotations : ℝ) + unitPotential (.node r' l' R') - unitPotential t ≤
+        3 * Real.logb 2 ((elements t).card + 1) + 1 := by
+  obtain ⟨_, _, _, hacc⟩ := exists_mem_splay_splayTime_amortized_le
+    (w := unitWeight) (fun _ => zero_lt_one) ht hne x
+  rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
+  have hn_pos : (0 : ℝ) < (elements t).card := by
+    rw [← subtreeWeight_unitWeight_eq_card ht]
+    exact subtreeWeight_unitWeight_pos hne
+  have hlog_le : Real.logb 2 (elements t).card ≤ Real.logb 2 ((elements t).card + 1) :=
+    Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
+  have hrot_le : ((splay x t).rotations : ℝ) ≤ (splayTime (splay x t) : ℝ) := by
+    exact_mod_cast rotations_le_splayTime _
+  cases hs : (splay x t).tree with
+  | nil => exact (hne ((tree_splay_eq_nil_iff x t).mp hs)).elim
+  | node r' l' R' =>
+    have hsw : subtreeWeight (unitWeight (α := α)) (.node r' l' R') = (elements t).card := by
+      rw [← subtreeWeight_unitWeight_eq_card ht, ← subtreeWeight_splay unitWeight x t, hs]
+    rw [hs] at hacc
+    change (splayTime (splay x t) : ℝ) + unitPotential (.node r' l' R') - unitPotential t ≤ _
+      at hacc
+    exact ⟨r', l', R', rfl, hs ▸ ordered_splay ht x, hsw, by linarith⟩
+
+private theorem unitPotential_splayMin_node {u : BinaryTree α} (hu : u ≠ .nil) {B : ℝ}
+    (hB : subtreeWeight (unitWeight (α := α)) u ≤ B) :
+    ∃ m rm, (splayMin u).tree = .node m .nil rm ∧
+      subtreeWeight (unitWeight (α := α)) (.node m .nil rm) =
+        subtreeWeight (unitWeight (α := α)) u ∧
+      ((splayMin u).rotations : ℝ) + unitPotential (.node m .nil rm) - unitPotential u ≤
+        3 * Real.logb 2 B + 1 := by
+  obtain ⟨m, rm, hm⟩ := exists_node_nil_left_splayMin hu
+  obtain ⟨_, _, hacc⟩ := splayMin_rotations_amortized_le
+    (w := unitWeight) (fun _ => zero_lt_one) hu
+  have hlog : Real.logb 2 (subtreeWeight (unitWeight (α := α)) u) ≤ Real.logb 2 B :=
+    Real.logb_le_logb_of_le (by norm_num) (subtreeWeight_unitWeight_pos hu) hB
+  rw [unitWeight, div_one, hm] at hacc
+  change ((splayMin u).rotations : ℝ) + unitPotential (.node m .nil rm) - unitPotential u ≤ _
+    at hacc
+  refine ⟨m, rm, hm, ?_, by linarith⟩
+  rw [← subtreeWeight_splayMin unitWeight u, hm]
+
 /-- Unit-weight (`w = 1`) specialization of the `access` bound in [SleatorTarjan1985b], Section 3,
 Lemma 2, pp. 663–664, for `contains`. -/
 theorem contains_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
@@ -1158,32 +1084,9 @@ theorem contains_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t)
     simp only [contains, splay_nil, unitPotential_nil, Nat.cast_zero]
     linarith
   | node a l r =>
-    have hne : BinaryTree.node a l r ≠ .nil := by simp
-    obtain ⟨u, _, _, hacc⟩ := exists_mem_splay_splayTime_amortized_le
-      (w := unitWeight) (fun _ => zero_lt_one) ht hne x
-    rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
-    have hn_pos : (0 : ℝ) < (elements (.node a l r)).card := by
-      rw [← subtreeWeight_unitWeight_eq_card ht]
-      exact subtreeWeight_unitWeight_pos hne
-    have hlog_le : Real.logb 2 (elements (.node a l r)).card ≤
-        Real.logb 2 ((elements (.node a l r)).card + 1) :=
-      Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
-    have hrot_le : ((splay x (.node a l r)).rotations : ℝ) ≤
-        (splayTime (splay x (.node a l r)) : ℝ) := by
-      exact_mod_cast rotations_le_splayTime _
-    simp only [contains]
-    cases hs : (splay x (.node a l r)).tree with
-    | nil =>
-      have := (tree_splay_eq_nil_iff x (.node a l r)).mp hs
-      simp at this
-    | node r' l' R' =>
-      dsimp only
-      change ((splay x (.node a l r)).rotations : ℝ) +
-          unitPotential (.node r' l' R') - unitPotential (.node a l r) ≤ _
-      rw [hs] at hacc
-      change (splayTime (splay x (.node a l r)) : ℝ) +
-          unitPotential (.node r' l' R') - unitPotential (.node a l r) ≤ _ at hacc
-      linarith
+    obtain ⟨r', l', R', hs, -, -, hacc⟩ := unitPotential_splay_node ht (by simp) x
+    simp only [contains, hs]
+    linarith
 
 /-- Companion unit-weight amortized rotation bound for `minimum`, derived from the Access Lemma
 ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658) via `splayMin_rotations_amortized_le` (`minimum`
@@ -1197,29 +1100,11 @@ theorem minimum_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) 
     simp only [minimum, splayMin_nil, unitPotential_nil, Nat.cast_zero]
     linarith
   | node a l r =>
-    have hne : BinaryTree.node a l r ≠ .nil := by simp
-    obtain ⟨m, _, hacc⟩ := splayMin_rotations_amortized_le
-      (w := unitWeight) (fun _ => zero_lt_one) hne
-    rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
-    have hn_pos : (0 : ℝ) < (elements (.node a l r)).card := by
-      rw [← subtreeWeight_unitWeight_eq_card ht]
-      exact subtreeWeight_unitWeight_pos hne
-    have hlog_le : Real.logb 2 (elements (.node a l r)).card ≤
-        Real.logb 2 ((elements (.node a l r)).card + 1) :=
-      Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
-    simp only [minimum]
-    cases hs : (splayMin (.node a l r)).tree with
-    | nil =>
-      have := (tree_splayMin_eq_nil_iff (.node a l r)).mp hs
-      simp at this
-    | node m' l' R' =>
-      dsimp only
-      change ((splayMin (.node a l r)).rotations : ℝ) +
-          unitPotential (.node m' l' R') - unitPotential (.node a l r) ≤ _
-      rw [hs] at hacc
-      change ((splayMin (.node a l r)).rotations : ℝ) +
-          unitPotential (.node m' l' R') - unitPotential (.node a l r) ≤ _ at hacc
-      linarith
+    obtain ⟨m, rm, hm, -, hacc⟩ := unitPotential_splayMin_node
+      (u := .node a l r) (B := (elements (.node a l r)).card + 1) (by simp)
+      (by rw [subtreeWeight_unitWeight_eq_card ht]; linarith)
+    simp only [minimum, hm]
+    linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `split` bound in [SleatorTarjan1985b], Section 3,
 Lemma 2, pp. 663–664. -/
@@ -1233,44 +1118,15 @@ theorem split_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x
     simp only [split, splay_nil, unitPotential_nil, Nat.cast_zero]
     linarith
   | node a l r =>
-    have hne : BinaryTree.node a l r ≠ .nil := by simp
-    obtain ⟨u, _, _, hacc⟩ := exists_mem_splay_splayTime_amortized_le
-      (w := unitWeight) (fun _ => zero_lt_one) ht hne x
-    rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
-    have hn_pos : (0 : ℝ) < (elements (.node a l r)).card := by
-      rw [← subtreeWeight_unitWeight_eq_card ht]
-      exact subtreeWeight_unitWeight_pos hne
-    have hlog_le : Real.logb 2 (elements (.node a l r)).card ≤
-        Real.logb 2 ((elements (.node a l r)).card + 1) :=
-      Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
-    have hrot_le : ((splay x (.node a l r)).rotations : ℝ) ≤
-        (splayTime (splay x (.node a l r)) : ℝ) := by
-      exact_mod_cast rotations_le_splayTime _
-    simp only [split]
-    cases hs : (splay x (.node a l r)).tree with
-    | nil =>
-      have := (tree_splay_eq_nil_iff x (.node a l r)).mp hs
-      simp at this
-    | node r' l' R' =>
-      dsimp only
-      rw [hs] at hacc
-      change (splayTime (splay x (.node a l r)) : ℝ) +
-          unitPotential (.node r' l' R') - unitPotential (.node a l r) ≤ _ at hacc
-      split <;> dsimp only
-      · have hrk : nodeRank (unitWeight (α := α)) (.node r' .nil R') ≤
-            nodeRank (unitWeight (α := α)) (.node r' l' R') := by
-          apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
-          have hwl := subtreeWeight_unitWeight_nonneg l'
-          simp only [subtreeWeight_node, subtreeWeight_nil]; linarith
-        simp only [unitPotential, potential_node, potential_nil] at hacc ⊢
-        linarith
-      · have hrk : nodeRank (unitWeight (α := α)) (.node r' l' .nil) ≤
-            nodeRank (unitWeight (α := α)) (.node r' l' R') := by
-          apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
-          have hwR := subtreeWeight_unitWeight_nonneg R'
-          simp only [subtreeWeight_node, subtreeWeight_nil]; linarith
-        simp only [unitPotential, potential_node, potential_nil] at hacc ⊢
-        linarith
+    obtain ⟨r', l', R', hs, -, -, hacc⟩ := unitPotential_splay_node ht (by simp) x
+    simp only [split, hs]
+    split <;> dsimp only
+    · have hrk := nodeRank_unitWeight_nil_left_le r' l' R'
+      simp only [unitPotential, potential_node, potential_nil] at hacc ⊢
+      linarith
+    · have hrk := nodeRank_unitWeight_nil_right_le r' l' R'
+      simp only [unitPotential, potential_node, potential_nil] at hacc ⊢
+      linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `join` bound in [SleatorTarjan1985b], Section 3,
 Lemma 2, pp. 663–664. -/
@@ -1290,7 +1146,7 @@ theorem join_unitPotential_amortized_le {t₁ t₂ : BinaryTree α}
   | node a l r =>
     have hne : BinaryTree.node a l r ≠ .nil := by simp
     obtain ⟨m, lm, hm⟩ := exists_node_nil_right_splayMax (t := .node a l r) hne
-    obtain ⟨u, _, hacc⟩ := splayMax_rotations_amortized_le
+    obtain ⟨_, _, hacc⟩ := splayMax_rotations_amortized_le
       (w := unitWeight) (fun _ => zero_lt_one) hne
     rw [subtreeWeight_unitWeight_eq_card ht₁, unitWeight, div_one, hm] at hacc
     have hn₁_pos : (0 : ℝ) < (elements (.node a l r)).card := by
@@ -1329,58 +1185,26 @@ theorem insert_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (
     simp only [insert, unitPotential, potential_node, potential_nil, hrk0, Nat.cast_zero]
     linarith
   | node a l r =>
-    have hne : BinaryTree.node a l r ≠ .nil := by simp
-    obtain ⟨u, _, _, hacc⟩ := exists_mem_splay_splayTime_amortized_le
-      (w := unitWeight) (fun _ => zero_lt_one) ht hne x
-    rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
-    have hn_pos : (0 : ℝ) < (elements (.node a l r)).card := by
-      rw [← subtreeWeight_unitWeight_eq_card ht]
-      exact subtreeWeight_unitWeight_pos hne
-    have hlog_le : Real.logb 2 (elements (.node a l r)).card ≤
-        Real.logb 2 ((elements (.node a l r)).card + 1) :=
-      Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
-    have hrot_le : ((splay x (.node a l r)).rotations : ℝ) ≤
-        (splayTime (splay x (.node a l r)) : ℝ) := by
-      exact_mod_cast rotations_le_splayTime _
-    simp only [insert]
-    cases hs : (splay x (.node a l r)).tree with
-    | nil =>
-      have := (tree_splay_eq_nil_iff x (.node a l r)).mp hs
-      simp at this
-    | node r' l' R' =>
-      dsimp only
-      have hsw : subtreeWeight (unitWeight (α := α)) (.node r' l' R') =
-          (elements (.node a l r)).card := by
-        rw [← subtreeWeight_unitWeight_eq_card ht,
-          ← subtreeWeight_splay unitWeight x (.node a l r), hs]
-      rw [hs] at hacc
-      split
-      · dsimp only
-        have hrk_sub : nodeRank (unitWeight (α := α)) (.node r' .nil R') ≤
-            nodeRank (unitWeight (α := α)) (.node r' l' R') := by
-          apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
-          have hwl := subtreeWeight_unitWeight_nonneg l'
-          simp only [subtreeWeight_node, subtreeWeight_nil]; linarith
-        have hrk_new : nodeRank (unitWeight (α := α)) (.node x l' (.node r' .nil R')) =
+    obtain ⟨r', l', R', hs, -, hsw, hacc⟩ := unitPotential_splay_node ht (by simp) x
+    simp only [insert, hs]
+    split
+    · dsimp only
+      have hrk_sub := nodeRank_unitWeight_nil_left_le r' l' R'
+      have hrk_new : nodeRank (unitWeight (α := α)) (.node x l' (.node r' .nil R')) =
+          Real.logb 2 ((elements (.node a l r)).card + 1) := by
+        simp only [nodeRank, subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw ⊢
+        congr 1; linarith
+      simp only [unitPotential, potential_node, potential_nil, hrk_new] at hacc ⊢
+      linarith
+    · split <;> dsimp only
+      · have hrk_sub := nodeRank_unitWeight_nil_right_le r' l' R'
+        have hrk_new : nodeRank (unitWeight (α := α)) (.node x (.node r' l' .nil) R') =
             Real.logb 2 ((elements (.node a l r)).card + 1) := by
           simp only [nodeRank, subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw ⊢
           congr 1; linarith
         simp only [unitPotential, potential_node, potential_nil, hrk_new] at hacc ⊢
         linarith
-      · split <;> dsimp only
-        · have hrk_sub : nodeRank (unitWeight (α := α)) (.node r' l' .nil) ≤
-              nodeRank (unitWeight (α := α)) (.node r' l' R') := by
-            apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
-            have hwR := subtreeWeight_unitWeight_nonneg R'
-            simp only [subtreeWeight_node, subtreeWeight_nil]; linarith
-          have hrk_new : nodeRank (unitWeight (α := α)) (.node x (.node r' l' .nil) R') =
-              Real.logb 2 ((elements (.node a l r)).card + 1) := by
-            simp only [nodeRank, subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw ⊢
-            congr 1; linarith
-          simp only [unitPotential, potential_node, potential_nil, hrk_new] at hacc ⊢
-          linarith
-        · simp only [unitPotential] at hacc ⊢
-          linarith
+      · linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `delete` bound in [SleatorTarjan1985b], Section 3,
 Lemma 2, pp. 663–664, extended from `x ∈ elements t` to total set-idempotent `erase`. -/
@@ -1393,76 +1217,29 @@ theorem erase_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x
     simp only [erase, unitPotential_nil, Nat.cast_zero]
     linarith
   | node a l r =>
-    have hne : BinaryTree.node a l r ≠ .nil := by simp
-    obtain ⟨u, _, _, hacc⟩ := exists_mem_splay_splayTime_amortized_le
-      (w := unitWeight) (fun _ => zero_lt_one) ht hne x
-    rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
-    have hn_pos : (0 : ℝ) < (elements (.node a l r)).card := by
-      rw [← subtreeWeight_unitWeight_eq_card ht]
-      exact subtreeWeight_unitWeight_pos hne
-    have hlog_le : Real.logb 2 (elements (.node a l r)).card ≤
-        Real.logb 2 ((elements (.node a l r)).card + 1) :=
-      Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
-    have hrot_le : ((splay x (.node a l r)).rotations : ℝ) ≤
-        (splayTime (splay x (.node a l r)) : ℝ) := by
-      exact_mod_cast rotations_le_splayTime _
-    simp only [erase]
-    cases hs : (splay x (.node a l r)).tree with
-    | nil =>
-      have := (tree_splay_eq_nil_iff x (.node a l r)).mp hs
-      simp at this
-    | node r' l' R' =>
-      dsimp only
-      have hsw : subtreeWeight (unitWeight (α := α)) (.node r' l' R') =
-          (elements (.node a l r)).card := by
-        rw [← subtreeWeight_unitWeight_eq_card ht,
-          ← subtreeWeight_splay unitWeight x (.node a l r), hs]
-      rw [hs] at hacc
-      split <;> dsimp only
-      · cases hl_eq : l' with
-        | nil =>
-          have hrk_nonneg : 0 ≤ nodeRank (unitWeight (α := α)) (.node r' .nil R') := by
-            apply Real.logb_nonneg (by norm_num)
-            have hwR := subtreeWeight_unitWeight_nonneg R'
-            simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight]; linarith
-          rw [hl_eq] at hacc
-          simp only [join, unitPotential, potential_node, potential_nil, Nat.add_zero] at hacc ⊢
-          linarith
-        | node b ll lr =>
-          have hne_l : BinaryTree.node b ll lr ≠ .nil := by simp
-          obtain ⟨m, lm, hm⟩ := exists_node_nil_right_splayMax (t := .node b ll lr) hne_l
-          obtain ⟨v, _, hacc_l⟩ := splayMax_rotations_amortized_le
-            (w := unitWeight) (fun _ => zero_lt_one) hne_l
-          have hsw_l_pos : 0 < subtreeWeight (unitWeight (α := α)) (.node b ll lr) :=
-            subtreeWeight_unitWeight_pos hne_l
-          have hsw_l_le : subtreeWeight (unitWeight (α := α)) (.node b ll lr) ≤
-              (elements (.node a l r)).card + 1 := by
-            rw [hl_eq] at hsw
-            have hwR := subtreeWeight_unitWeight_nonneg R'
-            simp only [subtreeWeight_node, unitWeight] at hsw ⊢
-            linarith
-          have hlog_l : Real.logb 2 (subtreeWeight (unitWeight (α := α)) (.node b ll lr)) ≤
-              Real.logb 2 ((elements (.node a l r)).card + 1) :=
-            Real.logb_le_logb_of_le (by norm_num) hsw_l_pos hsw_l_le
-          rw [unitWeight, div_one, hm] at hacc_l
-          have hsw_m : subtreeWeight (unitWeight (α := α)) (.node m lm .nil) =
-              subtreeWeight (unitWeight (α := α)) (.node b ll lr) := by
-            rw [← subtreeWeight_splayMax unitWeight (.node b ll lr), hm]
-          have hrk_m_nonneg : 0 ≤ nodeRank (unitWeight (α := α)) (.node m lm .nil) := by
-            apply Real.logb_nonneg (by norm_num)
-            have hlm := subtreeWeight_unitWeight_nonneg lm
-            simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight]; linarith
-          have hrk_join_le : nodeRank (unitWeight (α := α)) (.node m lm R') ≤
-              nodeRank (unitWeight (α := α)) (.node r' (.node b ll lr) R') := by
-            apply nodeRank_mono (subtreeWeight_unitWeight_pos (by simp))
-            simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw_m ⊢
-            linarith
-          rw [hl_eq] at hacc
-          simp only [join, hm, unitPotential, potential_node, potential_nil, Nat.cast_add]
-            at hacc hacc_l ⊢
-          linarith
-      · simp only [unitPotential] at hacc ⊢
+    obtain ⟨r', l', R', hs, ho', hsw, hacc⟩ := unitPotential_splay_node ht (by simp) x
+    simp only [erase, hs]
+    split <;> dsimp only
+    · have hjoin := join_unitPotential_amortized_le ho'.1 ho'.2.1
+      have hcard_le :
+          ((elements l').card : ℝ) + (elements R').card + 1 ≤
+            (elements (.node a l r)).card + 1 := by
+        have hl := subtreeWeight_unitWeight_eq_card ho'.1
+        have hR := subtreeWeight_unitWeight_eq_card ho'.2.1
+        simp only [subtreeWeight_node, unitWeight] at hsw
         linarith
+      have hpos : (0 : ℝ) < (elements l').card + (elements R').card + 1 := by
+        have : (0 : ℝ) ≤ (elements l').card := Nat.cast_nonneg _
+        have : (0 : ℝ) ≤ (elements R').card := Nat.cast_nonneg _
+        linarith
+      have hlog_join :
+          Real.logb 2 (((elements l').card : ℝ) + (elements R').card + 1) ≤
+            Real.logb 2 ((elements (.node a l r)).card + 1) :=
+        Real.logb_le_logb_of_le (by norm_num) hpos hcard_le
+      have hrk_nn := nodeRank_unitWeight_node_nonneg r' l' R'
+      simp only [unitPotential, potential_node, Nat.cast_add] at hacc hjoin ⊢
+      linarith
+    · linarith
 
 /-- Companion unit-weight amortized rotation bound for `successor` (splaying `x`, followed by
 `splayMin` on the right subtree when `root ≤ x`), derived from the Access Lemma
@@ -1477,86 +1254,44 @@ theorem successor_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t
     simp only [successor, splay_nil, unitPotential_nil, Nat.cast_zero]
     linarith
   | node a l r =>
-    have hne : BinaryTree.node a l r ≠ .nil := by simp
-    obtain ⟨u, _, _, hacc⟩ := exists_mem_splay_splayTime_amortized_le
-      (w := unitWeight) (fun _ => zero_lt_one) ht hne x
-    rw [subtreeWeight_unitWeight_eq_card ht, unitWeight, div_one] at hacc
-    have hn_pos : (0 : ℝ) < (elements (.node a l r)).card := by
-      rw [← subtreeWeight_unitWeight_eq_card ht]
-      exact subtreeWeight_unitWeight_pos hne
-    have hlog_le : Real.logb 2 (elements (.node a l r)).card ≤
-        Real.logb 2 ((elements (.node a l r)).card + 1) :=
-      Real.logb_le_logb_of_le (by norm_num) hn_pos (by linarith)
-    have hrot_le : ((splay x (.node a l r)).rotations : ℝ) ≤
-        (splayTime (splay x (.node a l r)) : ℝ) := by
-      exact_mod_cast rotations_le_splayTime _
-    simp only [successor]
-    cases hs : (splay x (.node a l r)).tree with
-    | nil =>
-      have := (tree_splay_eq_nil_iff x (.node a l r)).mp hs
-      simp at this
-    | node r' l' R' =>
-      dsimp only
-      have hsw : subtreeWeight (unitWeight (α := α)) (.node r' l' R') =
-          (elements (.node a l r)).card := by
-        rw [← subtreeWeight_unitWeight_eq_card ht,
-          ← subtreeWeight_splay unitWeight x (.node a l r), hs]
-      rw [hs] at hacc
-      split
-      · dsimp only
-        simp only [unitPotential] at hacc ⊢
+    obtain ⟨r', l', R', hs, -, hsw, hacc⟩ := unitPotential_splay_node ht (by simp) x
+    simp only [successor, hs]
+    split
+    · dsimp only
+      linarith
+    · cases hR_eq : R' with
+      | nil =>
+        dsimp only
+        rw [hR_eq] at hacc
         linarith
-      · cases hR_eq : R' with
-        | nil =>
-          dsimp only
-          rw [hR_eq] at hacc
-          simp only [unitPotential] at hacc ⊢
+      | node b rl rr =>
+        dsimp only
+        have hsw_R_le : subtreeWeight (unitWeight (α := α)) (.node b rl rr) ≤
+            (elements (.node a l r)).card + 1 := by
+          rw [hR_eq] at hsw
+          have hwl := subtreeWeight_unitWeight_nonneg l'
+          simp only [subtreeWeight_node, unitWeight] at hsw ⊢
           linarith
-        | node b rl rr =>
-          dsimp only
-          have hne_R : BinaryTree.node b rl rr ≠ .nil := by simp
-          obtain ⟨m, rm, hm⟩ := exists_node_nil_left_splayMin (t := .node b rl rr) hne_R
-          obtain ⟨v, _, hacc_R⟩ := splayMin_rotations_amortized_le
-            (w := unitWeight) (fun _ => zero_lt_one) hne_R
-          have hsw_R_pos : 0 < subtreeWeight (unitWeight (α := α)) (.node b rl rr) :=
-            subtreeWeight_unitWeight_pos hne_R
-          have hsw_R_le : subtreeWeight (unitWeight (α := α)) (.node b rl rr) ≤
-              (elements (.node a l r)).card + 1 := by
-            rw [hR_eq] at hsw
-            have hwl := subtreeWeight_unitWeight_nonneg l'
-            simp only [subtreeWeight_node, unitWeight] at hsw ⊢
-            linarith
-          have hlog_R : Real.logb 2 (subtreeWeight (unitWeight (α := α)) (.node b rl rr)) ≤
-              Real.logb 2 ((elements (.node a l r)).card + 1) :=
-            Real.logb_le_logb_of_le (by norm_num) hsw_R_pos hsw_R_le
-          rw [unitWeight, div_one, hm] at hacc_R
-          have hsw_m : subtreeWeight (unitWeight (α := α)) (.node m .nil rm) =
-              subtreeWeight (unitWeight (α := α)) (.node b rl rr) := by
-            rw [← subtreeWeight_splayMin unitWeight (.node b rl rr), hm]
-          have hrk_m_nonneg : 0 ≤ nodeRank (unitWeight (α := α)) (.node m .nil rm) := by
-            apply Real.logb_nonneg (by norm_num)
-            have hrm := subtreeWeight_unitWeight_nonneg rm
-            simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight]; linarith
-          have hrk_root_eq :
-              nodeRank (unitWeight (α := α)) (.node m (.node r' l' .nil) rm) =
-                nodeRank (unitWeight (α := α)) (.node r' l' (.node b rl rr)) := by
-            apply nodeRank_congr
-            simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw_m ⊢
-            linarith
-          have hrk_left_le :
-              nodeRank (unitWeight (α := α)) (.node r' l' .nil) ≤
-                Real.logb 2 ((elements (.node a l r)).card + 1) := by
-            apply Real.logb_le_logb_of_le (by norm_num)
-              (subtreeWeight_unitWeight_pos (by simp))
-            rw [hR_eq] at hsw
-            have hrl := subtreeWeight_unitWeight_nonneg rl
-            have hrr := subtreeWeight_unitWeight_nonneg rr
-            simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw ⊢
-            linarith
-          rw [hR_eq] at hacc
-          simp only [hm, unitPotential, potential_node, potential_nil, hrk_root_eq, Nat.cast_add,
-            Nat.cast_one] at hacc hacc_R ⊢
+        obtain ⟨m, rm, hm, hsw_m, hacc_R⟩ :=
+          unitPotential_splayMin_node (by simp) hsw_R_le
+        have hrk_m_nn := nodeRank_unitWeight_node_nonneg m .nil rm
+        have hrk_root_eq :
+            nodeRank (unitWeight (α := α)) (.node m (.node r' l' .nil) rm) =
+              nodeRank (unitWeight (α := α)) (.node r' l' (.node b rl rr)) := by
+          apply nodeRank_congr
+          simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw_m ⊢
           linarith
+        have hrk_left_le :
+            nodeRank (unitWeight (α := α)) (.node r' l' .nil) ≤
+              Real.logb 2 ((elements (.node a l r)).card + 1) := by
+          apply Real.logb_le_logb_of_le (by norm_num) (subtreeWeight_unitWeight_pos (by simp))
+          rw [hR_eq] at hsw
+          simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight] at hsw ⊢
+          linarith [subtreeWeight_unitWeight_nonneg rl, subtreeWeight_unitWeight_nonneg rr]
+        rw [hR_eq] at hacc
+        simp only [hm, unitPotential, potential_node, potential_nil, hrk_root_eq, Nat.cast_add,
+          Nat.cast_one] at hacc hacc_R ⊢
+        linarith
 
 end OrderedAccess
 

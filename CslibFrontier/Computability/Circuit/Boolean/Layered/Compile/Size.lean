@@ -32,7 +32,7 @@ controls the number of layers. When `d = 0`, the schedule contributes no nodes o
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 6.1][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Layered
 

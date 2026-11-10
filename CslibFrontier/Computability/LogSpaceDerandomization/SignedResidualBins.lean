@@ -27,8 +27,9 @@ agreement and means are derived from the actual hierarchy residual bounds and pr
 sampling laws, rather than stored mean certificates. This is finite mathematical evaluation;
 statistical error induction and finite-accuracy access enumeration are not proved here.
 The negative correction has its own scale-`f` rank channel, separate from the bin rank channel.
-The cap is `k + 2` for residuals with `f ≤ 1` at top scale one. Fine bins retain their true
-upper support; their uniform bound uses the adjacent-scale ratio.
+The true residual fits the cap `k + 2` at top scale one, since it is nonnegative with row mass
+at most one. Fine bins retain their true upper support; their uniform bound uses the
+adjacent-scale ratio.
 
 ## Main definitions
 
@@ -45,7 +46,7 @@ Estimated copy-weight/routing-fraction root-error comparisons and the full thres
 with root/complement regularity are still needed for mean prefixes. The structural rank and
 range identities do not provide statistical-budget induction. Paired raw differences,
 full-coordinate walks/noise, compression, strong recursion and native workspace/class equality
-remain outside this bounded client. No selected formal abstract changes.
+remain outside this bounded client.
 -/
 
 public section
@@ -77,9 +78,10 @@ theorem residual_sum_le_one (hf : 0 < f)
   simpa only [residual, correction, mulVec, dotProduct, Pi.one_apply, mul_one] using hm
 
 /-- The true residual fits a fixed top cap when the top scale is one. The bound follows
-from the hierarchy input bounds, not from a desired mean or error estimate. -/
-theorem boundedRoutedBinCutoff_residual (hf : 0 < f) (hf1 : f ≤ 1)
-    (hC : ∀ x y, 0 ≤ C x y) (hCf : ∀ x y, C x y ≤ f) (hC1 : C *ᵥ 1 ≤ 1)
+from the hierarchy input bounds (each residual entry is nonnegative with row mass at most one),
+not from a desired mean or error estimate. -/
+theorem boundedRoutedBinCutoff_residual (hf : 0 < f)
+    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1)
     (χ : ℝ → ℝ) (b : ℕ → ℝ) (hb : ∀ i, 0 < b i) (hb0 : b 0 = 1)
     (i : ℕ) (route : ℝ → ℝ) (x y : V) :
     boundedRoutedBinCutoff χ b ((P.k : ℝ) + 2) i route
@@ -93,9 +95,10 @@ theorem boundedRoutedBinCutoff_residual (hf : 0 < f) (hf1 : f ≤ 1)
   · subst i
     apply boundedRoutedBinCutoff_eq hd
     rw [hb0, div_one]
-    have hk : 0 ≤ (P.k : ℝ) + 1 := by positivity
-    have hu := (P.residual_le_mul X Y hf hC hCf hC1 x y).trans
-      (mul_le_of_le_one_right hk hf1)
+    have hu : P.residual X Y f C x y ≤ 1 :=
+      (Finset.single_le_sum (fun y' _ => P.residual_nonneg (X := X) (Y := Y) hf hC x y')
+        (Finset.mem_univ y)).trans (P.residual_sum_le_one X Y hf hC1 x)
+    have hk : (0 : ℝ) ≤ P.k := Nat.cast_nonneg _
     linarith
   · simp [boundedRoutedBinCutoff, hi, not_lt.mpr hd]
 
@@ -171,9 +174,12 @@ variable {Ζ : Type*} [Fintype Ζ]
   {b : ℝ} {k : ℝ → ℝ}
   (L : P.CorrectionSampling X Y Xs Mid Midt f C i)
 
-/-- One direct/product bin contribution and the special negative correction. Summing bins
-includes the negative correction exactly once. Earlier tables are whole functions; negative
-and product-left factors have distinct endpoint/midpoint roles and usage slices. -/
+/-- One direct/product bin contribution plus the whole special negative correction, which
+does not depend on the bin scale `b`; summing this sample over several bins counts that
+correction once per bin. Bin assembly with a single negative correction uses the separate
+`HierarchyTask.rawPositiveSample` and `HierarchyTask.rawNegativeSample`. Earlier tables are
+whole functions; negative and product-left factors have distinct endpoint/midpoint roles
+and usage slices. -/
 @[expose] noncomputable def residualSample
     (Ya Yt Nt : Ω → V → Prop)
     [∀ s v, Decidable (Ya s v)] [∀ s v, Decidable (Yt s v)] [∀ s v, Decidable (Nt s v)]
@@ -210,9 +216,11 @@ theorem residualSample_eq_raw
   rw [heq]
   ring
 
-/-- All three signed means follow from primitive laws on the actual tuples. This is one
-bin contribution; the partition API sums positive contributions and `-E` is included once.
-No independence of estimated factors is asserted. -/
+/-- All three signed means follow from primitive laws on the actual tuples. This is the mean
+of one bin sample: the direct and product terms carry the cutoff `k` at scale `b`, and the
+whole `-E` is included, where `E` is correction iterate `i + 1`. Summing these means over
+several bins therefore repeats `-E` once per bin. No independence of estimated factors is
+asserted. -/
 theorem expect_residualSample
     (B : DenseSamplingLaws Yr Ya Yt k b 1)
     (N : P.CorrectionSampling X Y Xs Nr Nt f C i)
@@ -310,8 +318,8 @@ theorem expect_value_true {q cπ Cπ Cpair Cvar : ℝ}
     {ι κ : Type*} [Fintype ι] [Fintype κ]
     (X₀ : ι → V → Prop) (Y₀ : κ → V → Prop)
     [∀ s v, Decidable (X₀ s v)] [∀ s v, Decidable (Y₀ s v)]
-    {f : ℝ} (C : Matrix V V ℝ) (hf : 0 < f) (hf1 : f ≤ 1)
-    (hC : ∀ x y, 0 ≤ C x y) (hCf : ∀ x y, C x y ≤ f) (hC1 : C *ᵥ 1 ≤ 1)
+    {f : ℝ} (C : Matrix V V ℝ) (hf : 0 < f)
+    (hC : ∀ x y, 0 ≤ C x y) (hC1 : C *ᵥ 1 ≤ 1)
     (χ : ℝ → ℝ) (b : ℕ → ℝ) (hb : ∀ i, 0 < b i) (hb0 : b 0 = 1)
     (i : ℕ) (route : ℝ → ℝ)
     (X : Γ → V → Prop) (Y Ya Yt : Ω → V → Prop)
@@ -338,7 +346,7 @@ theorem expect_value_true {q cπ Cπ Cpair Cvar : ℝ}
   rw [hm]
   congr 1
   simpa only [CorrectionRowRecipe.residual_eq, ← P.residual_eq] using
-    P.boundedRoutedBinCutoff_residual X₀ Y₀ hf hf1 hC hCf hC1 χ b hb hb0 i route x y
+    P.boundedRoutedBinCutoff_residual X₀ Y₀ hf hC hC1 χ b hb hb0 i route x y
 
 end ResidualBinTask
 

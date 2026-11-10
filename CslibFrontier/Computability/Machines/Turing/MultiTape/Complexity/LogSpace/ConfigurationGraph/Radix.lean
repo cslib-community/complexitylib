@@ -27,7 +27,7 @@ The pure operations and their recovery/capacity results live in `Cslib.Radix`, i
 * `Turing.MultiTapeNTM.ConfigurationGraph.pack_inSpace`: finite-tuple packing.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeNTM.ConfigurationGraph
 

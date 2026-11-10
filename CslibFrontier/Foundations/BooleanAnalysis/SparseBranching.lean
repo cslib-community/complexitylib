@@ -33,7 +33,7 @@ This module completes the algebraic and combinatorial infrastructure of Sections
    `(k * R_deg) * (#I + 2 * (ℓ - 1))` (`Cslib.BitString.natDegree_univariateParityCoord_le`,
    `Cslib.BitString.natDegree_univariateParityTruncatedSum_le`). For integer-coefficient
    replacements `q : (ι → Bool) → κ → ι → ℤ[X]`, evaluating at $T = 0$ is congruent to
-   `commonZeroCount I P` modulo $2^\ell$ when `1 ≤ ℓ`
+   `commonZeroCount I P` modulo $2^\ell$
    (`Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount`) and recovers
    `commonZeroCount I P` via `(· % 2 ^ ℓ)` when `Fintype.card ι < ℓ`
    (`Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`). Note that
@@ -55,8 +55,8 @@ This module completes the algebraic and combinatorial infrastructure of Sections
    `Cslib.BitString.withNeutralFactors` and `Cslib.BitString.withNeutralScope` increments each
    variable's incidence by `1`, ensuring positive variable incidence (`1 ≤ varIncidence`),
    total incidence $M' \ge n'$ (`Cslib.BitString.card_le_totalIncidence_withNeutralFactors`), and
-   light-variable incidence at most $b_0 + 1$. Finally, when `1 ≤ b₀`, `1 ≤ s`,
-   `∀ i ∈ F, scope i ⊆ V`, and `totalIncidence F scope * s ≤ b₀ * #V` (which holds both for the
+   light-variable incidence at most $b_0 + 1$. Finally, when `1 ≤ s` and
+   `totalIncidence F scope * s ≤ b₀ * #V` (which holds both for the
    manuscript's threshold `paperHeavyThreshold M n s = ⌈M / n⌉ * s` and for the combined-ceiling
    variant `heavyThreshold M n s = ⌈M * s / n⌉` when `1 ≤ n`), the heavy-variable set has size at
    most `#V / s`, at most `2 ^ (Fintype.card ι / s)` branches, and leaves
@@ -86,7 +86,7 @@ This module completes the algebraic and combinatorial infrastructure of Sections
   $\deg_T \le (k R_{\mathrm{deg}})(m_{\mathrm{test}} + 2(\ell - 1))$.
 * `Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount` and
   `Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`: equation (5.5)
-  congruence (for `1 ≤ ℓ`) and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
+  congruence and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
   $T = 0$ under integer-coefficient replacements.
 * `Cslib.BitString.commonZeroCount_eq_sum_relabelRestrictedMonomials`: additive branch decomposition
   of `commonZeroCount` into `commonZeroCount` over the relabeled free-variable cube `ι' → Bool`.
@@ -294,13 +294,13 @@ theorem eval_zero_univariateParityTruncatedSum [Fintype ι] [DecidableEq ι] [Co
 replacement polynomial `q x i v` restores `bitVal ℤ (x v)` at `T = 0`,
 `(univariateParityTruncatedSum I P ℓ q).eval 0 ≡ commonZeroCount I P [ZMOD 2 ^ ℓ]`. -/
 theorem eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount [Fintype ι] [DecidableEq ι]
-    (I : Finset κ) (P : κ → Finset (Finset ι)) {ℓ : ℕ} (hℓ : 1 ≤ ℓ)
+    (I : Finset κ) (P : κ → Finset (Finset ι)) (ℓ : ℕ)
     (q : (ι → Bool) → κ → ι → Polynomial ℤ)
     (hq0 : ∀ x : ι → Bool, ∀ i ∈ I, ∀ M ∈ P i, ∀ v ∈ M, (q x i v).eval 0 = bitVal ℤ (x v)) :
     (univariateParityTruncatedSum I P ℓ q).eval 0 ≡
       (commonZeroCount I P : ℤ) [ZMOD (2 : ℤ) ^ ℓ] := by
   rw [eval_zero_univariateParityTruncatedSum I P ℓ q hq0]
-  exact sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P hℓ
+  exact sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P ℓ
 
 /-- **§5.3, eq. (5.5b) (exact recovery of $N(\mathcal{P})$ from $S_\ell(H(0)) \bmod 2^\ell$)**:
 when `Fintype.card ι < ℓ` and every replacement polynomial `q x i v` restores `bitVal ℤ (x v)` at
@@ -395,6 +395,12 @@ theorem card_relabelRestrictedMonomials_le [Fintype ι] [DecidableEq ι] [Decida
     #(relabelRestrictedMonomials S e b 𝓜) ≤ #𝓜 :=
   card_image_le.trans (card_restrictMonomials_le S b 𝓜)
 
+/-- Every monomial of a restricted branch equation lies among the free variables `univ \ S`. -/
+private theorem subset_sdiff_of_mem_restrictMonomials [Fintype ι] [DecidableEq ι] {S : Finset ι}
+    {b : ι → Bool} {𝓜 : Finset (Finset ι)} {M : Finset ι} (hM : M ∈ restrictMonomials S b 𝓜) :
+    M ⊆ univ \ S :=
+  subset_sdiff.mpr ⟨subset_univ M, disjoint_of_mem_restrictMonomials hM⟩
+
 /-- On any monomial `M ⊆ univ \ S`, the subtype-image map `M ↦ (M.subtype (· ∈ univ \ S)).image e`
 is injective. -/
 private theorem subtype_image_injOn_restrictMonomials [Fintype ι] [DecidableEq ι] [DecidableEq ι']
@@ -402,31 +408,12 @@ private theorem subtype_image_injOn_restrictMonomials [Fintype ι] [DecidableEq 
     Set.InjOn (fun M : Finset ι => (M.subtype (· ∈ univ \ S)).image e)
       (restrictMonomials S b 𝓜) := by
   intro M₁ hM₁ M₂ hM₂ hEq
-  dsimp only at hEq
-  have hsub₁ : M₁ ⊆ univ \ S := fun v hv =>
-    mem_sdiff.mpr ⟨mem_univ v, disjoint_left.mp (disjoint_of_mem_restrictMonomials hM₁) hv⟩
-  have hsub₂ : M₂ ⊆ univ \ S := fun v hv =>
-    mem_sdiff.mpr ⟨mem_univ v, disjoint_left.mp (disjoint_of_mem_restrictMonomials hM₂) hv⟩
-  ext v
-  constructor
-  · intro hv₁
-    have hvU : v ∈ univ \ S := hsub₁ hv₁
-    have hin : e ⟨v, hvU⟩ ∈ (M₁.subtype (· ∈ univ \ S)).image e :=
-      mem_image.mpr ⟨⟨v, hvU⟩, mem_subtype.mpr hv₁, rfl⟩
-    rw [hEq, mem_image] at hin
-    rcases hin with ⟨u, hu, hue⟩
-    have huv := e.injective hue
-    subst huv
-    exact mem_subtype.mp hu
-  · intro hv₂
-    have hvU : v ∈ univ \ S := hsub₂ hv₂
-    have hin : e ⟨v, hvU⟩ ∈ (M₂.subtype (· ∈ univ \ S)).image e :=
-      mem_image.mpr ⟨⟨v, hvU⟩, mem_subtype.mpr hv₂, rfl⟩
-    rw [← hEq, mem_image] at hin
-    rcases hin with ⟨u, hu, hue⟩
-    have huv := e.injective hue
-    subst huv
-    exact mem_subtype.mp hu
+  -- `image e` is injective, and a monomial inside `univ \ S` is recovered from its subtype
+  have h := image_injective e.injective hEq
+  calc M₁ = (M₁.subtype (· ∈ univ \ S)).map (Function.Embedding.subtype _) :=
+        (subtype_map_of_mem fun _ hv => subset_sdiff_of_mem_restrictMonomials hM₁ hv).symm
+    _ = (M₂.subtype (· ∈ univ \ S)).map (Function.Embedding.subtype _) := by rw [h]
+    _ = M₂ := subtype_map_of_mem fun _ hv => subset_sdiff_of_mem_restrictMonomials hM₂ hv
 
 /-- Evaluating `relabelRestrictedMonomials S e b 𝓜` at `y : ι' → Bool` in any commutative ring `R`
 agrees with evaluating `restrictMonomials S b 𝓜` at `extendFreeAssignment S e y`. -/
@@ -438,8 +425,7 @@ theorem monomialSum_relabelRestrictedMonomials [Fintype ι] [DecidableEq ι] [De
   rw [monomialSum, monomialSum, relabelRestrictedMonomials,
     sum_image (subtype_image_injOn_restrictMonomials S e b 𝓜)]
   refine sum_congr rfl fun M hM => ?_
-  have hsub : M ⊆ univ \ S := fun v hv =>
-    mem_sdiff.mpr ⟨mem_univ v, disjoint_left.mp (disjoint_of_mem_restrictMonomials hM) hv⟩
+  have hsub := subset_sdiff_of_mem_restrictMonomials hM
   rw [monomial, monomial, prod_image (fun u _ v _ huv => e.injective huv)]
   refine prod_nbij Subtype.val (fun x hx => mem_coe.mpr (mem_subtype.mp hx))
     Subtype.val_injective.injOn
@@ -477,6 +463,22 @@ theorem commonZeroCount_eq_sum_relabelRestrictedMonomials [Fintype ι] [Decidabl
     rw [← monomialSum_relabelRestrictedMonomials]
     exact hy.2 i hi
 
+/-- A variable `w` of the relabeled restricted equation comes from the variable `e.symm w` of the
+restricted equation. -/
+private theorem symm_mem_equationScope_restrictMonomials [Fintype ι] [DecidableEq ι]
+    [DecidableEq ι'] {S : Finset ι} {e : ↥(univ \ S) ≃ ι'} {b : ι → Bool}
+    {𝓜 : Finset (Finset ι)} {w : ι'}
+    (hw : w ∈ equationScope (relabelRestrictedMonomials S e b 𝓜)) :
+    (e.symm w).1 ∈ equationScope (restrictMonomials S b 𝓜) := by
+  rw [equationScope, mem_biUnion] at hw ⊢
+  rcases hw with ⟨M', hM', hwM'⟩
+  rw [relabelRestrictedMonomials, mem_image] at hM'
+  rcases hM' with ⟨M, hM, rfl⟩
+  rw [id_eq, mem_image] at hwM'
+  rcases hwM' with ⟨v, hv, rfl⟩
+  rw [Equiv.symm_apply_apply]
+  exact ⟨M, hM, mem_subtype.mp hv⟩
+
 /-- The variable scope of `relabelRestrictedMonomials S e b 𝓜` is contained in the image under `e`
 of `(equationScope 𝓜 \ S).subtype (· ∈ univ \ S)`. -/
 theorem equationScope_relabelRestrictedMonomials_subset [Fintype ι] [DecidableEq ι]
@@ -485,17 +487,9 @@ theorem equationScope_relabelRestrictedMonomials_subset [Fintype ι] [DecidableE
     equationScope (relabelRestrictedMonomials S e b 𝓜) ⊆
       ((equationScope 𝓜 \ S).subtype (· ∈ univ \ S)).image e := by
   intro w hw
-  rw [equationScope, mem_biUnion] at hw
-  rcases hw with ⟨M', hM', hwM'⟩
-  rw [relabelRestrictedMonomials, mem_image] at hM'
-  rcases hM' with ⟨M, hM, rfl⟩
-  rw [id_eq, mem_image] at hwM'
-  rcases hwM' with ⟨v, hv, rfl⟩
-  rw [mem_subtype] at hv
-  have hvScope : v.1 ∈ equationScope 𝓜 \ S :=
-    equationScope_restrictMonomials_subset_sdiff S b 𝓜
-      (mem_biUnion.mpr ⟨M, hM, hv⟩)
-  exact mem_image.mpr ⟨v, mem_subtype.mpr hvScope, rfl⟩
+  refine mem_image.mpr ⟨e.symm w, mem_subtype.mpr ?_, e.apply_symm_apply w⟩
+  exact equationScope_restrictMonomials_subset_sdiff S b 𝓜
+    (symm_mem_equationScope_restrictMonomials hw)
 
 /-- **§5.5–5.6 (free-variable incidence bound on `ι'` after branching on `heavyVars`)**: for
 `S = heavyVars univ F (fun i => equationScope (P i)) b₀` and `I ⊆ F`, every variable `w : ι'` has
@@ -514,16 +508,7 @@ theorem varIncidence_relabelRestrictedMonomials_heavyVars_le [Fintype ι] [Decid
         {i ∈ F | (e.symm w).1 ∈ equationScope (restrictMonomials S b (P i))} := by
     intro i hi
     rw [mem_filter] at hi ⊢
-    refine ⟨hIF hi.1, ?_⟩
-    rcases hi with ⟨_, hw⟩
-    rw [equationScope, mem_biUnion] at hw ⊢
-    rcases hw with ⟨M', hM', hwM'⟩
-    rw [relabelRestrictedMonomials, mem_image] at hM'
-    rcases hM' with ⟨M, hM, rfl⟩
-    rw [id_eq, mem_image] at hwM'
-    rcases hwM' with ⟨v, hv, rfl⟩
-    rw [Equiv.symm_apply_apply]
-    exact ⟨M, hM, mem_subtype.mp hv⟩
+    exact ⟨hIF hi.1, symm_mem_equationScope_restrictMonomials hi.2⟩
   calc
     varIncidence I
         (fun i => equationScope (relabelRestrictedMonomials S e b (P i))) w
@@ -627,59 +612,57 @@ theorem mul_le_paperHeavyThreshold_mul {M n s : ℕ} (hn : 1 ≤ n) :
     M * s ≤ (((M + n - 1) / n) * n) * s := Nat.mul_le_mul_right s hceil
     _ = (((M + n - 1) / n) * s) * n := by ring
 
-/-- **§5.5 ($|S| \le n / s$)**: whenever `totalIncidence F scope * s ≤ b₀ * #V`, `1 ≤ b₀`,
-`1 ≤ s`, and `∀ i ∈ F, scope i ⊆ V`, the heavy-variable set `heavyVars V F scope b₀` has
-cardinality at most `#V / s`. -/
+/-- **§5.5 ($|S| \le n / s$)**: whenever `totalIncidence F scope * s ≤ b₀ * #V` and `1 ≤ s`, the
+heavy-variable set `heavyVars V F scope b₀` has cardinality at most `#V / s`. -/
 theorem card_heavyVars_le_card_div [DecidableEq ι] (V : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 1 ≤ s)
-    (hV : ∀ i ∈ F, scope i ⊆ V) (hM : totalIncidence F scope * s ≤ b₀ * #V) :
+    (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 1 ≤ s)
+    (hM : totalIncidence F scope * s ≤ b₀ * #V) :
     #(heavyVars V F scope b₀) ≤ #V / s := by
   refine (Nat.le_div_iff_mul_le hs).mpr ?_
-  have hcard := card_heavyVars_mul_le_totalIncidence V F scope b₀ hV
-  have hmul : (#(heavyVars V F scope b₀) * s) * b₀ ≤ #V * b₀ := by
+  have hcard := card_heavyVars_mul_succ_le_totalIncidence V F scope b₀
+  have hmul : (#(heavyVars V F scope b₀) * s) * (b₀ + 1) ≤ #V * (b₀ + 1) := by
     calc
-      (#(heavyVars V F scope b₀) * s) * b₀
-        = (#(heavyVars V F scope b₀) * b₀) * s := by ring
+      (#(heavyVars V F scope b₀) * s) * (b₀ + 1)
+        = (#(heavyVars V F scope b₀) * (b₀ + 1)) * s := by ring
       _ ≤ totalIncidence F scope * s := Nat.mul_le_mul_right s hcard
       _ ≤ b₀ * #V := hM
-      _ = #V * b₀ := Nat.mul_comm _ _
-  exact Nat.le_of_mul_le_mul_right hmul hb₀
+      _ ≤ #V * (b₀ + 1) := by rw [Nat.mul_comm]; exact Nat.mul_le_mul_left _ (Nat.le_succ b₀)
+  exact Nat.le_of_mul_le_mul_right hmul (Nat.succ_pos b₀)
 
-/-- **§5.5 ($2^{|S|} \le 2^{n / s}$)**: under `totalIncidence F scope * s ≤ b₀ * Fintype.card ι`,
-`1 ≤ b₀`, and `1 ≤ s`, there are at most `2 ^ (Fintype.card ι / s)` heavy-variable branches. -/
+/-- **§5.5 ($2^{|S|} \le 2^{n / s}$)**: under `totalIncidence F scope * s ≤ b₀ * Fintype.card ι`
+and `1 ≤ s`, there are at most `2 ^ (Fintype.card ι / s)` heavy-variable branches. -/
 theorem card_branchAssignments_heavyVars_le_two_pow_div [Fintype ι] [DecidableEq ι]
-    (F : Finset κ) (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 1 ≤ s)
+    (F : Finset κ) (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 1 ≤ s)
     (hM : totalIncidence F scope * s ≤ b₀ * Fintype.card ι) :
     #(branchAssignments (heavyVars univ F scope b₀)) ≤ 2 ^ (Fintype.card ι / s) := by
   rw [card_branchAssignments]
-  have hle := card_heavyVars_le_card_div univ F scope hb₀ hs (fun _ _ => subset_univ _)
-    (by simpa [card_univ] using hM)
+  have hle := card_heavyVars_le_card_div univ F scope hs (by simpa [card_univ] using hM)
   rw [card_univ] at hle
   exact Nat.pow_le_pow_right (by decide) hle
 
-/-- **§5.5 ($n' = n - |S| \ge n - n / s$)**: under `totalIncidence F scope * s ≤ b₀ * #V`,
-`1 ≤ b₀`, `1 ≤ s`, and `∀ i ∈ F, scope i ⊆ V`, the set `V \ heavyVars V F scope b₀` of free
-variables has cardinality at least `#V - #V / s`. -/
+/-- **§5.5 ($n' = n - |S| \ge n - n / s$)**: under `totalIncidence F scope * s ≤ b₀ * #V` and
+`1 ≤ s`, the set `V \ heavyVars V F scope b₀` of free variables has cardinality at least
+`#V - #V / s`. -/
 theorem card_sdiff_heavyVars_ge [DecidableEq ι] (V : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 1 ≤ s)
-    (hV : ∀ i ∈ F, scope i ⊆ V) (hM : totalIncidence F scope * s ≤ b₀ * #V) :
+    (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 1 ≤ s)
+    (hM : totalIncidence F scope * s ≤ b₀ * #V) :
     #V - #V / s ≤ #(V \ heavyVars V F scope b₀) := by
   have hsub : heavyVars V F scope b₀ ⊆ V := filter_subset _ V
   rw [card_sdiff, inter_eq_left.mpr hsub]
-  have hle := card_heavyVars_le_card_div V F scope hb₀ hs hV hM
+  have hle := card_heavyVars_le_card_div V F scope hs hM
   omega
 
-/-- **§5.5 ($n' \ge n / 2$ for $s \ge 2$)**: when `2 ≤ s`, `1 ≤ b₀`, `∀ i ∈ F, scope i ⊆ V`, and
+/-- **§5.5 ($n' \ge n / 2$ for $s \ge 2$)**: when `2 ≤ s` and
 `totalIncidence F scope * s ≤ b₀ * #V`, at least half of the variables in `V` remain free after
 removing `heavyVars V F scope b₀`: `#V ≤ 2 * #(V \ heavyVars V F scope b₀)` and
 `#V / 2 ≤ #(V \ heavyVars V F scope b₀)`. -/
 theorem card_sdiff_heavyVars_ge_half [DecidableEq ι] (V : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 2 ≤ s)
-    (hV : ∀ i ∈ F, scope i ⊆ V) (hM : totalIncidence F scope * s ≤ b₀ * #V) :
+    (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 2 ≤ s)
+    (hM : totalIncidence F scope * s ≤ b₀ * #V) :
     #V ≤ 2 * #(V \ heavyVars V F scope b₀) ∧
       #V / 2 ≤ #(V \ heavyVars V F scope b₀) := by
   have hdiv : #V / s ≤ #V / 2 := Nat.div_le_div_left hs (by decide)
-  have hge := card_sdiff_heavyVars_ge V F scope hb₀ (by omega) hV hM
+  have hge := card_sdiff_heavyVars_ge V F scope (by omega) hM
   constructor <;> omega
 
 /-- **§5.1 & §5.5 ($\ell = n + 1$)**: the shared modular precision `n + 1` used for both the

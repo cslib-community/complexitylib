@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Data.Nat.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
@@ -96,12 +97,7 @@ theorem streamAcceptCount_eq_acceptCount (V : α × List Bool → Bool) (a : α)
   · intro i hi
     simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_univ, true_and] at hi ⊢
     obtain ⟨_, hl⟩ := BitString.iterate_increment t i hi.1
-    have hofFn : List.ofFn (fun j : Fin t =>
-        (increment^[i] (List.replicate t false)).getD j false) =
-        increment^[i] (List.replicate t false) := by
-      refine List.ext_getElem (by simp [hl]) fun j h₁ h₂ => ?_
-      simp
-    rw [hofFn]
+    rw [List.ofFn_getD_eq_of_length false hl]
     exact hi.2
   · intro f hf
     simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_univ, true_and] at hf ⊢
@@ -115,12 +111,7 @@ theorem streamAcceptCount_eq_acceptCount (V : α × List Bool → Bool) (a : α)
   · intro i hi
     simp only [Finset.mem_filter, Finset.mem_range] at hi
     obtain ⟨hv, hl⟩ := BitString.iterate_increment t i hi.1
-    have hofFn : List.ofFn (fun j : Fin t =>
-        (increment^[i] (List.replicate t false)).getD j false) =
-        increment^[i] (List.replicate t false) := by
-      refine List.ext_getElem (by simp [hl]) fun j h₁ h₂ => ?_
-      simp
-    rw [hofFn, hv]
+    rw [List.ofFn_getD_eq_of_length false hl, hv]
   · intro f _
     funext j
     have := BitString.iterate_increment_lsbValue (List.ofFn f)

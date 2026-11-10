@@ -41,7 +41,7 @@ family of polynomial-size circuits stays in `P/poly`.
 * [L. Adleman, *Two theorems on random polynomial time*][Adleman1978]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

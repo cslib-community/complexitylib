@@ -40,19 +40,19 @@ theorem K_proj : IsPythagoreanProjection K (metricProjection K) :=
 
 /-- The projection of `2` onto `[-1, 1]` is `1`. -/
 example : metricProjection K 2 = 1 := by
-  rw [metricProjection_eq_iff K_nonempty K_isComplete K_convex (by norm_num)]
+  rw [metricProjection_eq_iff K_isComplete K_convex (by norm_num)]
   intro z hz
   rw [real_inner]
   linarith [hz.2]
 
 /-- Points of `[-1, 1]` are fixed. -/
 example : metricProjection K (1 / 2) = 1 / 2 :=
-  metricProjection_eq_self K_nonempty K_isComplete K_convex (by norm_num)
+  metricProjection_eq_self K_isComplete K_convex (by norm_num)
 
 /-- With constant gradient `1` and step size `1` from `0`, the first iterate is `Π (-1) = -1`. -/
 example : ogd (metricProjection K) (fun _ => 1) (fun _ _ => 1) 0 1 = -1 := by
   simp only [ogd_succ, ogd_zero, one_smul, zero_sub]
-  exact metricProjection_eq_self K_nonempty K_isComplete K_convex (by norm_num)
+  exact metricProjection_eq_self K_isComplete K_convex (by norm_num)
 
 /-- The identity does not map into `[-1, 1]`. -/
 example : ¬ IsPythagoreanProjection K id := fun h => by

@@ -54,7 +54,7 @@ constants are not optimized; Jukna takes `s = ⌊(log n) / 8⌋` and `r = ⌊n ^
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*, Section 9.11][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

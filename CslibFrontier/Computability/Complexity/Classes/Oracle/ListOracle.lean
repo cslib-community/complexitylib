@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.Oracle
-import CslibFrontier.Computability.Complexity.Classes.Oracle.Deterministic
+import CslibFrontier.Computability.Complexity.Classes.Oracle.CanonicalReplay
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -24,9 +24,9 @@ against `ℓ` is polynomial-time in the input and `ℓ` together
 (`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_listOracle`). This is how a sparse oracle
 is replaced by advice, or by a guessed list of its short members.
 
-The proof replays the coin-fixed run of a machine certifying the computation
-(`Cslib.Probability.IsOraclePPTOn.exists_fin_run_pure_false`) from its instruction-indexed
-transcript of oracle replies, built against the list one bit at a time
+The proof replays the computation, as a fixed finite machine under a polynomial clock
+(`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_replayOutput`), from its
+instruction-indexed transcript of oracle replies, built against the list one bit at a time
 (`Turing.MultiTapePTM.listReplyStep`, in
 `CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/ListOracle.lean`).
 Oracles that agree on the words no longer than the clock give the same transcript
@@ -43,7 +43,7 @@ Oracles that agree on the words no longer than the clock give the same transcrip
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 3.4.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -62,12 +62,11 @@ theorem ComputableInPolyTimeWithOracle.exists_listOracle {f : α → β} {output
       ComputableInPolyTime F (encPair input (encList encBits)) encBits ∧
         ∀ a ℓ, (∀ w : List Bool, w.length ≤ q.eval (input a).length → (w ∈ ℓ ↔ w ∈ S)) →
           F (a, ℓ) = output (f a) := by
-  obtain ⟨program, hcert, hprogram⟩ := hf
-  obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  let T : α → ℕ := fun a => c * ((input a).length + 1) ^ d
-  have hTa : ComputableInPolyTime T input encUnary :=
-    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableInPolyTime.encoding_length input)).of_enc_eq fun a => by simp [T]
+  obtain ⟨k, m, machine, q, hrun⟩ := hf.exists_replayOutput
+  let T : α → ℕ := fun a => q.eval (input a).length
+  have hTa : ComputableInPolyTime T input encUnary := by
+    dsimp only [T]
+    fun_prop
   have hT : ComputableInPolyTime (fun x : α × List (List Bool) => T x.1)
       (encPair input (encList encBits)) encUnary :=
     hTa.comp (ComputableInPolyTime.fst _ _)
@@ -90,15 +89,12 @@ theorem ComputableInPolyTimeWithOracle.exists_listOracle {f : α → β} {output
       (encPair input (encList encBits)) encBits :=
     machine.computableInPolyTime_replayOutput.comp (g := fun x : α × List (List Bool) =>
       (input x.1, (machine.listReplyStep (input x.1, x.2))^[T x.1] [])) (hinput'.prod hiter)
-  refine ⟨_, Polynomial.C c * (Polynomial.X + 1) ^ d, hout, fun a ℓ hℓ => ?_⟩
+  refine ⟨_, q, hout, fun a ℓ hℓ => ?_⟩
+  -- the list's transcript is the canonical one: every query is shorter than the clock
   dsimp only
   rw [machine.iterate_listReplyStep, machine.oracleReplies_congr (g' := fun w => decide (w ∈ S))
-    _ fun w hw => ?_, machine.replayOutput_oracleReplies, ← hprogram a, ← hrun a]
-  · rfl
-  · refine decide_eq_decide.mpr (hℓ w ?_)
-    simp only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_add,
-      Polynomial.eval_X, Polynomial.eval_one]
-    exact hw.le
+    _ fun w hw => decide_eq_decide.mpr (hℓ w hw.le)]
+  exact hrun a
 
 /-- **A finite list can replace the oracle of a decision**: the Boolean form of
 `Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_listOracle`. -/

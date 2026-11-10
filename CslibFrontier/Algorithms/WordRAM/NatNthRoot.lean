@@ -10,6 +10,7 @@ module
 import CslibFrontier.Computability.WordRAM.Call
 public import CslibFrontier.Computability.WordRAM.Notation
 public import CslibFrontier.Computability.WordRAM.RegisterFrame
+import CslibFrontier.Foundations.Data.Nat.HalvingRecurrence
 public import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
 public import Mathlib.Data.Nat.Log
 import Mathlib.Tactic.Linarith
@@ -188,11 +189,6 @@ def body : Code .standard 10 :=
 def program : Code .standard 10 :=
   .seq (ram[ lo ← #0; one ← #1; two ← #2; hi ← n + one; t ← lo + one ]) (.loop (.lt t hi) body)
 
-private theorem clog_halve {d : ℕ} (hd : 2 ≤ d) {d' : ℕ} (hd' : d' ≤ (d + 1) / 2) :
-    Nat.clog 2 d' < Nat.clog 2 d := by
-  rw [Nat.clog_of_two_le one_lt_two hd]
-  exact Nat.lt_succ_of_le (Nat.clog_mono_right 2 (by omega))
-
 /-- Compute `Nat.nthRoot k n` for `k ≥ 1` within `⌈log₂ (n + 1)⌉ (6 k + 13) + 7` instructions,
 preserving `n`, `k` and memory. Products and search bounds are at most `n² + 2 n + 1`, but the
 probe counters run up to `k` whatever `n` is, hence the separate hypothesis `hkfit`. -/
@@ -270,7 +266,7 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
       · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hy₂mem.trans hymem⟩ <;>
           simp +decide [z, hy₂n, hy₂k, hy₂o, hy₂two, hy₂lo] <;> omega
       · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte, hy₂lo, hl, hh]
-        exact clog_halve (by omega) (by omega)
+        exact Nat.clog_two_lt_clog_two_of_le_half (by omega) (by omega)
     · have hc' : ¬(Cond.lt n p).Holds y₂ := by simpa only [Cond.holds_lt, hy₂n] using hover
       have hpow : ((l + h) / 2) ^ e ≤ N := hple.mp (not_lt.mp hover)
       have hinc : Fits w ((l + h) / 2 + 1) := hfit.of_le (by nlinarith)
@@ -284,7 +280,7 @@ theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.re
       · refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hy₂mem.trans hymem⟩ <;>
           simp +decide [z, hy₂n, hy₂k, hy₂o, hy₂two, hy₂hi] <;> omega
       · simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte, hy₂hi, hl, hh]
-        exact clog_halve (by omega) (by omega)
+        exact Nat.clog_two_lt_clog_two_of_le_half (by omega) (by omega)
   have hn1 : Fits w (x.regs n + 1) := hfit.of_le (by nlinarith)
   let x₀ := ((((x.set lo 0).set one 1).set two 2).set hi (N + 1)).set t 1
   have hx₀ : I x₀ := by

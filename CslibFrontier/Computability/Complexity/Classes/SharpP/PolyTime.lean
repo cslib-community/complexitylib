@@ -33,7 +33,7 @@ control certificate is separate from the branches' counting-class membership.
 * [L. Fortnow, *Counting Complexity*][Fortnow1997], Theorem 3.5.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

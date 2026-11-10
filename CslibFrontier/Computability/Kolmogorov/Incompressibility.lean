@@ -42,7 +42,7 @@ of length `n` have complexity below `n - c` [Li and Vitányi, Chapter 2][LiVitan
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov
 

@@ -36,7 +36,7 @@ the source credit.
 The linear bound using occurrence counts is original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

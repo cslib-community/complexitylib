@@ -42,7 +42,7 @@ Walking from a constant function to any function `f` shows that `f` costs at mos
 * [C. E. Shannon, *The synthesis of two-terminal switching circuits*][Shannon1949]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

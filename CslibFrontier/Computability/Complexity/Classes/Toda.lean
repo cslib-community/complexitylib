@@ -48,7 +48,7 @@ query, as in Toda's `PH ⊆ P^#P[1]`; the class `PWithSharpPOracle` itself does 
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

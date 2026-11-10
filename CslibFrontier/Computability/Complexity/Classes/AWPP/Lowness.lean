@@ -51,7 +51,7 @@ reject in both classes.
 * [S. Fenner, *PP-Lowness and a Simple Definition of AWPP*][Fenner2003]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -95,7 +95,7 @@ private theorem weightedReplay_error {k : ℕ} {Control : Type}
       (0 ≤ H (a, w) ∧ H (a, w) ≤ D) ∧
         (w.take (T a) ∈ A → (2 : ℤ) ^ e * (D - H (a, w)) ≤ D) ∧
         (w.take (T a) ∉ A → (2 : ℤ) ^ e * H (a, w) ≤ D)) :
-    (2 : ℤ) ^ e * |weightedReplay machine input T R H a -
+    (2 : ℤ) ^ e * |weightedReplay machine input T (fun x => 2 ^ R x) H a -
       (2 : ℤ) ^ (R a * T a) * (if (OracleComp.interpret (m := Id) (languageOracle A)
         (machine.run (pure false) (fun op word => OracleComp.query (op, word))
           (T a) (input a))).headD false then 1 else 0)| ≤
@@ -170,12 +170,12 @@ theorem PPWithOracle_eq_PP_of_mem_AWPP (hA : A ∈ AWPP encBits) (enc : α ↪ L
   let T' : α × List Bool → ℕ := fun x => T x.1
   let R' : α × List Bool → ℕ := fun x => R x.1
   let H' : (α × List Bool) × List Bool → ℤ := fun x => H (x.1.1, x.2)
-  let F := weightedReplay machine input T' R' H'
+  let F := weightedReplay machine input T' (fun x => 2 ^ R' x) H'
   have hF : F ∈ GapP (encPair enc encBits) := by
     apply GapP.weightedReplay_mem machine
     · dsimp [input]; fun_prop
     · dsimp [T']; fun_prop
-    · dsimp [R']; fun_prop
+    · exact mem_GapP_of_polyTime (by dsimp [R']; fun_prop)
     · exact GapP.comp_mem hH (by fun_prop)
   let S : α → ℤ := fun a => ∑ w : Fin (r a) → Bool, F (a, List.ofFn w)
   have hS : S ∈ GapP enc := GapP.sum_bits_mem hF hr

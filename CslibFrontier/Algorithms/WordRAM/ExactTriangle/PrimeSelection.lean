@@ -32,7 +32,9 @@ existing `ExactTriangle.IsSelectedPrime` and its finite false-positive bound app
 `D ≥ 16` ensures a nonempty window; general execution permits `D > n` and empty matrices.
 No prime list, counter run, time, answer or layout certificate is an input. The flat program
 uses at most 32824 slots including halt and does not read physical width. Global ET
-parameter/small-input handling, outer host composition and the full 3SUM endpoint remain open.
+parameter/small-input handling is `ParameterSelecting.program`, which calls this selector; its
+host interface is `ParameterSelecting.callee` and the full 3SUM endpoint is
+`ThreeSum.Decision.exists_one9992_runs`.
 
 ## References
 

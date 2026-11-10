@@ -31,8 +31,8 @@ Halting configurations remain fixed, so a clock may safely run beyond the source
 * `Turing.TM2.stepAux_polyTime`: executing one fixed statement is polynomial-time.
 * `Turing.TM2.stepTotal_polyTime`: one fixed source transition is polynomial-time in the complete
   encoded configuration.
-* `Turing.TM2.stepTotal_stack_bound`: a fixed source transition adds at most a constant number
-  of symbols to any stack.
+* `Turing.TM2.stepTotal_stack_bound`: for a fixed program, one padded transition raises a common
+  bound on all stack lengths by at most a constant.
 * `Turing.TM2.iterate_stepTotal_stack_le`: running `i` padded transitions from `initList` grows
   every stack by at most `C * i` symbols beyond the input length.
 
@@ -157,9 +157,7 @@ theorem stepAux_stack_bound (q : Stmt Γ Λ σ) (v : σ) (store : ∀ k, List (�
   induction q generalizing v store bound with
   | push j f q ih =>
     have hupdate (k : K) : (Function.update store j (f v :: store j) k).length ≤ bound + 1 := by
-      by_cases hk : k = j
-      · subst k; simpa using Nat.add_le_add_right (h j) 1
-      · simpa only [Function.update_of_ne hk] using (h k).trans (Nat.le_add_right bound 1)
+      grind
     simpa only [stepAux, pushBound, Nat.add_assoc, Nat.add_comm 1] using
       ih v _ (bound + 1) hupdate
   | peek j f q ih => exact ih _ _ bound h

@@ -41,7 +41,7 @@ come from countably many machines with control `Fin m`
   (oracle Turing machines).
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeMachine
 
@@ -117,6 +117,7 @@ theorem exists_run_pure_false {program : α → WordQueryComp Operation β}
   obtain ⟨-, k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨k, Control, hfinite, machine, c, d, fun a answer => ?_⟩
   have hcert := h a Unit (fun q s => PMF.pure (answer q, s)) ()
+  unfold ProbOracleComp.runWith OracleComp.runWith at hcert
   rw [OracleComp.interpret_map, StateT.run_map, run_interpret_interpret_query,
     PMF.monad_map_eq_map, PMF.pure_map] at hcert
   have hmem := MultiTapePTM.mem_support_runConfigFrom_pure machine false answer ()

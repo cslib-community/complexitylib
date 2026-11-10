@@ -42,7 +42,7 @@ instances; recognising which bit strings are encodings is not formalised.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.USTCON
 

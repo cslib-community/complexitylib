@@ -98,14 +98,6 @@ structure Shape (x₀ x : Call T) : Prop where
     ∃ d, v.2 = .inr d ∧
       PacketBound x₀.fl x₀.edges (x₀.prec + x.depth * (40 * x₀.edges ^ 2)) v.1.length d
 
-/-- The exponent tuple of a child of an active call has entries below the node's precision. -/
-theorem lt_nodePrec_of_mem_children {x : Call T} {c : State} (hc : c ∈ children x) :
-    ∀ b ∈ c.2.2.1, b < nodePrec x c.1 := by
-  simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
-    List.mem_range, List.mem_map] at hc
-  obtain ⟨j, -, i, -, β, hβ, g, -, rfl⟩ := hc
-  exact fun b hb => BudgetTuples.lt_of_mem_budgetTuples (weights_pos j) hβ hb
-
 /-- The ports of a vertex of a well-formed call are at most its edges. -/
 theorem length_le_edges_of_wf {x : Call T} (hx : WF x) {v : List ℕ × VertexDesc T}
     (hv : v ∈ x.net.vertices) : v.1.length ≤ x.edges := by
@@ -295,7 +287,7 @@ theorem Shape.child (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound + x₀
         omega
     · refine Or.inr ⟨_, hd, ?_⟩
       have hζ := getD_points_facts x c.2.1
-      have hβ := lt_nodePrec_of_mem_children hc
+      have hβ := (mem_children.mp hc).2.2.1
       have hp : nodePrec x c.1 ≤ x₀.prec + (x.depth + 1) * (40 * m ^ 2) := by
         have : x.prec ≤ x₀.prec + x.depth * (40 * m ^ 2) := h.prec_le
         rw [add_one_mul]
@@ -303,7 +295,9 @@ theorem Shape.child (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound + x₀
       have hfl : x.fl.length = x₀.fl.length := by rw [h.fl_eq]
       rw [h.fl_eq] at hζ ⊢
       refine packetBound_packetCtx hp haL hlev.le hnode (hfl ▸ hζ.1) hζ.2 htl (fun b hb => ?_)
-        (length_betaSlice_le _ _ _ _) fun b hb => (hβ b (mem_of_mem_betaSlice _ _ _ hb)).le
+        (length_betaSlice_le _ _ _ _) fun b hb =>
+          (BudgetTuples.lt_of_mem_budgetTuples (weights_pos _) hβ
+            (mem_of_mem_betaSlice _ _ _ hb)).le
       rcases hts b hb with h0 | ⟨y, hy, hy'⟩
       · rw [h0]; exact Nat.two_pow_pos _
       · rw [hy']; exact hslot y hy

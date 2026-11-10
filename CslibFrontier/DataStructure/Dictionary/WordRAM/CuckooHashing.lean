@@ -1973,6 +1973,15 @@ theorem queryCode_execWithin {w base c_exp n_max U V : ℕ}
   have hs2_seed_x : extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem =
       extractSeed (hashBase base) c_exp n_max U (tableBits n_max) x.mem :=
     hs2_seed.trans hs1_seed
+  -- Both query branches leave memory at `s2.mem`; restate the seed-indexed facts there.
+  have hs2_hash_x : HashPairRep (hashBase base) c_exp n_max U (tableBits n_max)
+      (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem) s2.mem :=
+    hs2_seed_x ▸ hs2_hash
+  have hs2_replay : pureReplay
+      (evalHash1 (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem))
+      (evalHash2 (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem))
+      (maxEvictions n_max) ks = some tbl :=
+    hs2_seed_x ▸ hreplay
   have hs2_slots : TableSlotsRep (t1Base base c_exp n_max) (t2Base base c_exp n_max) tbl s2.mem :=
     hslots.congr
       (fun b _ => hs2_frame_x _
@@ -2081,16 +2090,8 @@ theorem queryCode_execWithin {w base c_exp n_max U V : ℕ}
       ⟨_, by dsimp only [querySteps]; omega, hall⟩
     refine ⟨s10, hwithin, ?_, ?_, hs2_seed_x, hs2_mod⟩
     · simp only [s10, Data.set, Function.update_self, hsu, encodeOptionNat]
-    · refine ⟨hwithin.bounded hx_bdd, by simp +decide [s10, s9, s8, s7, s6, hs5_0],
-        hs2_hdr, ?_, hs2_kv, tbl, ?_, hs2_slots⟩
-      · change HashPairRep (hashBase base) c_exp n_max U (tableBits n_max)
-          (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem) s2.mem
-        rw [hs2_seed_x]; exact hs2_hash
-      · change pureReplay
-          (evalHash1 (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem))
-          (evalHash2 (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem))
-          (maxEvictions n_max) ks = some tbl
-        rw [hs2_seed_x]; exact hreplay
+    · exact ⟨hwithin.bounded hx_bdd, by simp +decide [s10, s9, s8, s7, s6, hs5_0],
+        hs2_hdr, hs2_hash_x, hs2_kv, tbl, hs2_replay, hs2_slots⟩
   · have hlkp := pureReplay_lookupEntry_of_notMem hnodup hreplay hmem
     rw [hlkp] at hs2_lookup
     have hcond : ¬(Cond.lt 15 16 : Cond 19).Holds s4 := by
@@ -2107,16 +2108,8 @@ theorem queryCode_execWithin {w base c_exp n_max U V : ℕ}
       exact fun h => hmem ((hdom_iff u).mpr h)
     refine ⟨s5, hwithin, ?_, ?_, hs2_seed_x, hs2_mod⟩
     · simp only [s5, Data.set, Function.update_self, hsu, encodeOptionNat]
-    · refine ⟨hwithin.bounded hx_bdd, by simp +decide [s5, hs4_0],
-        hs2_hdr, ?_, hs2_kv, tbl, ?_, hs2_slots⟩
-      · change HashPairRep (hashBase base) c_exp n_max U (tableBits n_max)
-          (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem) s2.mem
-        rw [hs2_seed_x]; exact hs2_hash
-      · change pureReplay
-          (evalHash1 (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem))
-          (evalHash2 (extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s2.mem))
-          (maxEvictions n_max) ks = some tbl
-        rw [hs2_seed_x]; exact hreplay
+    · exact ⟨hwithin.bounded hx_bdd, by simp +decide [s5, hs4_0],
+        hs2_hdr, hs2_hash_x, hs2_kv, tbl, hs2_replay, hs2_slots⟩
 
 /-! ### Section 4: Bounded cuckoo eviction loop (`putTableSlotCode`, `evictLoopCode`) -/
 
@@ -3571,17 +3564,15 @@ theorem replayLoopInner_execWithin {w base c_exp n_max U : ℕ}
     have hs1_hdr : HeaderConstsRep base c_exp n_max U s1.mem :=
       hhdr.congr fun k hk _ =>
         hs1_frame (base + k) (by omega) (by omega) (by omega) (by omega) (by omega)
+    have hs1_hb : ∀ a, hashBase base ≤ a → s1.mem a = x.mem a := fun a ha =>
+      hs1_frame a (by dsimp only [hashBase] at ha; omega) (by dsimp only [hashBase] at ha; omega)
+        (by dsimp only [hashBase] at ha; omega) (by dsimp only [hashBase] at ha; omega)
+        (by dsimp only [hashBase] at ha; omega)
     have hs1_hash : HashPairRep (hashBase base) c_exp n_max U (tableBits n_max) θ s1.mem :=
-      hrep_hash.congr_of_ge_hashBase fun a ha =>
-        hs1_frame a (by dsimp only [hashBase] at ha; omega) (by dsimp only [hashBase] at ha; omega)
-          (by dsimp only [hashBase] at ha; omega) (by dsimp only [hashBase] at ha; omega)
-          (by dsimp only [hashBase] at ha; omega)
+      hrep_hash.congr_of_ge_hashBase hs1_hb
     have hs1_seed : extractSeed (hashBase base) c_exp n_max U (tableBits n_max) s1.mem =
         extractSeed (hashBase base) c_exp n_max U (tableBits n_max) x.mem :=
-      extractSeed_congr_of_ge_hashBase fun a ha =>
-        hs1_frame a (by dsimp only [hashBase] at ha; omega) (by dsimp only [hashBase] at ha; omega)
-          (by dsimp only [hashBase] at ha; omega) (by dsimp only [hashBase] at ha; omega)
-          (by dsimp only [hashBase] at ha; omega)
+      extractSeed_congr_of_ge_hashBase hs1_hb
     have hle_hp := le_hashPairSpace c_exp n_max
     have hs1_slots : TableSlotsRep (t1Base base c_exp n_max) (t2Base base c_exp n_max) tbl s1.mem :=
       hslots.congr
@@ -5701,9 +5692,7 @@ theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
     (hfr : x₁.regs 1 = base + space c_exp n_max)
     (hpar : ∀ j : Fin 2, x₁.regs (![3, 4] j) = ![n_max, U] j)
     (hz : ∀ a ∈ (Block.mk base (space c_exp n_max)).footprint, x₁.mem a = 0)
-    (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
-    (hfit_ev : Fits w (maxEvictions n_max))
-    (hfit_U : Fits w (max U 2 + 1)) :
+    (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w) :
     ∃ ν₀ : PMF (Seed c_exp n_max U (tableBits n_max) × Data 19),
       ExecCodeDist w (initSetup c_exp n_max) x₁ (ν₀.map Prod.snd) (setupSteps c_exp n_max U) ∧
       (∀ θ, (ν₀.map Prod.fst) θ ≤ 2 * seedLaw c_exp n_max U (tableBits n_max) θ) ∧
@@ -5714,8 +5703,20 @@ theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
         Modifies (Block.mk base (space c_exp n_max)).footprint x₁.mem p.2.mem := by
   have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
     lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
-  have hfit_q : Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) :=
-    Nat.pow_lt_pow_right (by decide) (by omega)
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
+  have hfit_ev : Fits w (maxEvictions n_max) :=
+    hfit_q.of_le ((maxEvictions_le_tableSize n_max).trans
+      (Nat.pow_le_pow_right two_pos (Probability.le_trinomialDeg U (tableBits n_max))))
+  have hfit_U : Fits w (max U 2 + 1) := by
+    have hU : max U 2 ≤ 2 ^ Probability.trinomialDeg U (tableBits n_max) :=
+      (Nat.le_pow_clog one_lt_two _).trans (Nat.pow_le_pow_right two_pos
+        ((le_max_left _ _).trans
+          (Probability.trinomialTargetBits_le_trinomialDeg U (tableBits n_max))))
+    have hpow : 2 ^ Probability.trinomialDeg U (tableBits n_max) * 2 ≤ 2 ^ w := by
+      rw [← pow_succ]
+      exact Nat.pow_le_pow_right two_pos (by omega)
+    rw [fits_iff]
+    omega
   obtain ⟨μ_init, hdist, hseed, hsupp⟩ :=
     initSetup_spec (V := V) hx₁ hb hfr (hpar 0) (hpar 1) hz hfit_ev hfit_U hfit_q
   let ν₀ : PMF (Seed c_exp n_max U (tableBits n_max) × Data 19) :=
@@ -5770,10 +5771,7 @@ theorem opCode_coupled_step_spec {w base c_exp n_max U V : ℕ}
       (∑' p, ν p * (T_step p + ∑' q, (μ_step p) q * (0 : ℕ))) ≤
         (stepWorstCharge c_exp n_max U s o : ℝ≥0∞) + ∑' p, ν p * (0 : ℕ) := by
   classical
-  have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
-    lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
-  have hfit_q : Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) :=
-    Nat.pow_lt_pow_right (by decide) (by omega)
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   let μ_raw : Seed c_exp n_max U (tableBits n_max) × Data 19 → PMF (Data 19) := fun p =>
     if hp : Rep w base c_exp n_max U V s p.2 ∧ argMatch o p.2.regs then
       Classical.choose
@@ -5959,18 +5957,23 @@ theorem insertBaseSteps_le {c_exp n_max U : ℕ}
     evalHashAtBaseSteps]
   omega
 
+/-- The rehash scale `max n_max 1 * max (maxEvictions n_max) 1` dominates `1`, `n_max` and
+`maxEvictions n_max`. -/
+private theorem le_rehashScale (n_max : ℕ) :
+    1 ≤ max n_max 1 * max (maxEvictions n_max) 1 ∧
+      n_max ≤ max n_max 1 * max (maxEvictions n_max) 1 ∧
+      maxEvictions n_max ≤ max n_max 1 * max (maxEvictions n_max) 1 :=
+  ⟨Nat.mul_pos (le_max_right n_max 1) (le_max_right (maxEvictions n_max) 1),
+    (le_max_left n_max 1).trans
+      (Nat.le_mul_of_pos_right _ (le_max_right (maxEvictions n_max) 1)),
+    (le_max_left (maxEvictions n_max) 1).trans
+      (Nat.le_mul_of_pos_left _ (le_max_right n_max 1))⟩
+
 private theorem resampleAtBaseSteps_le_mul (c_exp n_max : ℕ) :
     resampleAtBaseSteps c_exp n_max ≤
       resampleAtBaseFactor c_exp * (max n_max 1 * max (maxEvictions n_max) 1) := by
+  obtain ⟨h1_D, hn_D, hev_D⟩ := le_rehashScale n_max
   set D := max n_max 1 * max (maxEvictions n_max) 1
-  have h1_D : 1 ≤ D :=
-    Nat.mul_pos (le_max_right n_max 1) (le_max_right (maxEvictions n_max) 1)
-  have hn_D : n_max ≤ D :=
-    le_trans (le_max_left n_max 1)
-      (Nat.le_mul_of_pos_right _ (le_max_right (maxEvictions n_max) 1))
-  have hev_D : maxEvictions n_max ≤ D :=
-    le_trans (le_max_left (maxEvictions n_max) 1)
-      (Nat.le_mul_of_pos_left _ (le_max_right n_max 1))
   have hev18 := eighteen_le_maxEvictions n_max
   have hmax4_D : max n_max 4 ≤ D := by omega
   dsimp only [resampleAtBaseSteps, resampleHashPairSteps, resampleSingleSteps]
@@ -6010,15 +6013,8 @@ private theorem resampleAtBaseSteps_le_mul (c_exp n_max : ℕ) :
 theorem rehashAmortizedSteps_le {c_exp n_max U : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) :
     rehashAmortizedSteps c_exp n_max U ≤ rehashAmortizedBound c_exp := by
+  obtain ⟨h1_D, hn_D, hev_D⟩ := le_rehashScale n_max
   set D := max n_max 1 * max (maxEvictions n_max) 1
-  have h1_D : 1 ≤ D :=
-    Nat.mul_pos (le_max_right n_max 1) (le_max_right (maxEvictions n_max) 1)
-  have hn_D : n_max ≤ D :=
-    le_trans (le_max_left n_max 1)
-      (Nat.le_mul_of_pos_right _ (le_max_right (maxEvictions n_max) 1))
-  have hev_D : maxEvictions n_max ≤ D :=
-    le_trans (le_max_left (maxEvictions n_max) 1)
-      (Nat.le_mul_of_pos_left _ (le_max_right n_max 1))
   have hnev_D : n_max * maxEvictions n_max ≤ D :=
     Nat.mul_le_mul (le_max_left n_max 1) (le_max_left (maxEvictions n_max) 1)
   have hmax4_D : max n_max 4 ≤ 4 * D := by omega
@@ -6111,7 +6107,7 @@ noncomputable def impl (w base c_exp n_max U V : ℕ)
       exact Data.put_of_fits hfit)
     (span_exec := fun hx hfr hpar => cuckoo_span_exec hfit_end hfit_ev hx hfr hpar)
     (setup_exec := fun hx₁ hb hfr hpar hz =>
-      initSetup_coupled_spec hx₁ hb hfr hpar hz hw hfit_ev hfit_U)
+      initSetup_coupled_spec hx₁ hb hfr hpar hz hw)
     (step_exec := fun {_s} o ν hv hseed hsupp =>
       opCode_coupled_step_spec o ν (isCuckooHashFamily_tableBits hU).rehash_prob_le_half
         hv hseed hsupp hw hfit_end hfit_ev hfit_V)
@@ -6162,10 +6158,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
   classical
   intro C
   have hfam := isCuckooHashFamily_tableBits hU
-  have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
-    lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
-  have hfit_q : Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) :=
-    Nat.pow_lt_pow_right (by decide) (by omega)
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   induction ops generalizing ks s ν with
   | nil =>
     obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
@@ -6403,10 +6396,7 @@ theorem cuckoo_seq_expected_amortized (w base c_exp n_max U V : ℕ)
             (Dictionary.empty U) ops : ℝ≥0∞) := by
   classical
   intro C
-  have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
-    lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
-  have hfit_q : Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) :=
-    Nat.pow_lt_pow_right (by decide) (by omega)
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   obtain ⟨x₁, ⟨t_span, ht_span, he_span⟩, hm₁, hb₁, hfr₁, h3₁, h4₁⟩ :=
     allocSpan_execWithin hfr h3 h4 hfit_end hfit_ev
   have hx₁_bdd : x₁.Bounded w := he_span.bounded hx

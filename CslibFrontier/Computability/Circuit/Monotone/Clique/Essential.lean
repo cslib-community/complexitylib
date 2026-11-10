@@ -41,7 +41,7 @@ for it are not vacuous.
   `Cslib.Circuits.Monotone.edgeCount_le_two_pow_depth`: the resulting size and depth bounds, for
   separating circuits and for circuits computing `k`-clique.
 -/
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 
@@ -74,10 +74,7 @@ theorem Separates.essentialAt (hk : 2 ≤ k) (hkn : k ≤ n) {f : BooleanFunctio
   let c : Fin n → Fin (k - 1) := fun w => φ (ρ w)
   -- Only the endpoints of `{u, v}` share a colour inside `t`.
   have hc : ∀ a ∈ t, ∀ b ∈ t, a ≠ b → c a = c b → s(a, b) = s(u, v) := by
-    have hρ (w : Fin n) (hw : w ∈ t) : (ρ w : Fin n) = if w = v then u else w := by
-      by_cases hwv : w = v
-      · simp [ρ, hwv]
-      · simp [ρ, hwv, hw]
+    have hρ (w : Fin n) (hw : w ∈ t) : (ρ w : Fin n) = if w = v then u else w := by grind
     intro a ha b hb hab hab'
     have h := congrArg Subtype.val (φ.injective hab')
     rw [hρ a ha, hρ b hb] at h

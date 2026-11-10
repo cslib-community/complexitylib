@@ -28,7 +28,7 @@ weights (Theorem 6.1).
 
 Bounding the syntactic state space `pendingBiasStates p k` yields finite-state width bounds under
 bounded fan-in (`2 ^ k`), bounded integer internal weights on a row basis
-(`∏ i ∈ rows, (1 + ∑ j, |w i j|)` and `(1 + k * W) ^ rows.card`), or column-constant internal
+(`∏ i ∈ rows, (1 + ∑ j, |w i j|)` and `(1 + k * W) ^ rows.card`), or row-constant internal
 weights (`k + 1`).
 
 On the input side, the complete gate valuation is determined by the direct input summary
@@ -362,7 +362,7 @@ theorem card_pendingBiasStates_le_pow_intWeight (p : Program signature n g) (k W
       omega
     _ = (1 + k * W) ^ rows.card := by simp
 
-/-- **Section 6.1 (Column-constant internal weights).** If every future gate `k + i` assigns a
+/-- **Section 6.1 (Row-constant internal weights).** If every future gate `k + i` assigns a
 single weight `β i` to all `k` earlier gates, the pending-bias state depends only on the Hamming
 weight of the prefix and has at most `k + 1` values. -/
 theorem card_pendingBiasStates_le_add_one_of_row_const (p : Program signature n g) (k : ℕ)
@@ -412,13 +412,8 @@ theorem eval_eq_of_inputSummary_eq_lt (p : Program signature n g) {x y : Fin n �
     rw [eval_gate_eq p x gate, eval_gate_eq p y gate]
     have hin : (∑ i, inputWeight p gate i * (x i).toNat) =
         ∑ i, inputWeight p gate i * (y i).toNat := h gate hgate
-    rw [hin]
-    congr 3
-    apply sum_congr rfl
-    intro prior _
-    by_cases hprior : prior < gate
-    · rw [ih (fun j hj => h j (by omega)) prior (by omega)]
-    · rw [gateWeight_eq_zero_of_le p gate prior (le_of_not_gt hprior), zero_mul, zero_mul]
+    rw [hin, sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p gate)
+      fun prior hprior => ih (fun j hj => h j (by omega)) prior (by omega)]
 
 /-- Equal direct input summaries produce identical complete gate valuations. -/
 theorem eval_eq_of_inputSummary_eq (p : Program signature n g) {x y : Fin n → Bool}

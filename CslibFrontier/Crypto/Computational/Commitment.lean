@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.BitString.List
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Naor's bit commitment scheme from pseudorandom generators
@@ -237,13 +238,19 @@ noncomputable def commitmentHidingGame (commit : List Bool → Bool → List Boo
   receiver.guess n state
     (commit r (if bit then b₁ else b₀) seed)
 
+/-- Opening `(b, seed)` of a bit commitment: the committed bit `b`, then the commitment seed as a
+bit word. The bit is framed. A committer takes it after the receiver string `r`, as
+`encPair encBits encBitOpening`, and a verifier after `(1ⁿ, r, c)`. -/
+abbrev encBitOpening : Bool × List Bool ↪ List Bool :=
+  encPair encBool encBits
+
 /-- The commitment-hiding experiment runs in strict PPT on `(n, aux, bit)` whenever `commit` is
 computable in plain polynomial time and `receiver` is strict PPT. -/
 theorem isPPTOn_commitmentHidingGame {commit : List Bool → Bool → List Bool → List Bool}
     {receiver : CommitmentReceiver}
     (hcommit : ComputableInPolyTime
       (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits)
+      (encPair encBits encBitOpening) encBits)
     (hR : receiver.IsPPT) :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBool
       (fun ⟨n, aux, bit⟩ => commitmentHidingGame commit receiver aux bit n) := by
@@ -269,7 +276,7 @@ theorem isPPT_commitmentHidingGame {commit : List Bool → Bool → List Bool �
     {receiver : CommitmentReceiver}
     (hcommit : ComputableInPolyTime
       (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits)
+      (encPair encBits encBitOpening) encBits)
     (hR : receiver.IsPPT) (bit : Bool) :
     IsPPT encBool (fun n aux => commitmentHidingGame commit receiver aux bit n) :=
   (isPPTOn_commitmentHidingGame hcommit hR).preprocess
@@ -282,7 +289,7 @@ theorem isPPTOn_commitmentHidingGame_aux {commit : List Bool → Bool → List B
     {receiver : CommitmentReceiver} {aux : ℕ → List Bool}
     (hcommit : ComputableInPolyTime
       (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits)
+      (encPair encBits encBitOpening) encBits)
     (hR : receiver.IsPPT)
     (haux : ComputableInPolyTime aux encUnary encBits) (bit : Bool) :
     IsPPTOn encUnary encBool (fun n => commitmentHidingGame commit receiver (aux n) bit n) :=
@@ -414,8 +421,7 @@ theorem distinguishingGame_uniformList_naorReceiverDistinguisher (m : ℕ)
           ProbComp.eval (receiver.guess n choice.2 c) := by
   unfold distinguishingGame naorReceiverDistinguisher
   simp only [ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  rw [PMF.bind_comm]
-  congr 1 with choice : 1
+  pmf_swap with choice
   have h := congrArg
     (fun p : PMF (List Bool) => p.bind fun c => ProbComp.eval (receiver.guess n choice.2 c))
     (uniformList_map_naorCommit_id m choice.1.1 (if bit then choice.1.2.2 else choice.1.2.1))
@@ -701,14 +707,19 @@ theorem getD_naorMaskBits (openFlags bits : List Bool) (i : ℕ) :
       | cons flag flags =>
         simpa only [naorMaskBits, List.tail_cons, List.getD_cons_succ] using ih flags i
 
+/-- A list of length `n` whose entries, read with `getD`, are `g i` is `(List.range n).map g`. -/
+private theorem eq_map_range_of_getD {α : Type} {l : List α} {d : α} {n : ℕ} {g : ℕ → α}
+    (hl : l.length = n) (h : ∀ i < n, l.getD i d = g i) : l = (List.range n).map g := by
+  subst hl
+  apply List.ext_getElem (by simp only [List.length_map, List.length_range])
+  intro i hi _
+  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
+    List.getElem_map, List.getElem_range] using h i hi
+
 theorem naorMaskBits_eq_map (openFlags bits : List Bool) :
     naorMaskBits openFlags bits =
-      (List.range bits.length).map (fun i => openFlags.getD i false && bits.getD i false) := by
-  apply List.ext_getElem (by simp only [length_naorMaskBits, List.length_map, List.length_range])
-  intro i hi hi'
-  have h := getD_naorMaskBits openFlags bits i
-  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
-    List.getElem_map, List.getElem_range] using h
+      (List.range bits.length).map (fun i => openFlags.getD i false && bits.getD i false) :=
+  eq_map_range_of_getD (length_naorMaskBits _ _) fun i _ => getD_naorMaskBits openFlags bits i
 
 @[fun_prop]
 theorem computableInPolyTime_naorMaskBits {α : Type} {input : α ↪ List Bool}
@@ -767,14 +778,9 @@ theorem naorCommitSplit_eq_map (generator : List Bool → List Bool) (r : List B
     naorCommitSplit generator r openFlags bits seeds pads =
       (List.range bits.length).map (fun i =>
         naorCommitAt generator r (openFlags.getD i false) (bits.getD i false)
-          (seeds.getD i []) (pads.getD i [])) := by
-  apply List.ext_getElem
-    (by simp only [length_naorCommitSplit, List.length_map, List.length_range])
-  intro i hi hi'
-  have hlt : i < bits.length := by simpa only [length_naorCommitSplit] using hi
-  have h := getD_naorCommitSplit generator r openFlags bits seeds pads i hlt
-  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
-    List.getElem_map, List.getElem_range] using h
+          (seeds.getD i []) (pads.getD i [])) :=
+  eq_map_range_of_getD (length_naorCommitSplit ..) fun i hi =>
+    getD_naorCommitSplit generator r openFlags bits seeds pads i hi
 
 @[fun_prop]
 theorem computableInPolyTime_naorCommitSplit {α : Type} {input : α ↪ List Bool}
@@ -916,15 +922,9 @@ theorem naorSelectSeeds_eq_map (s : ℕ) (openFlags bits : List Bool)
     naorSelectSeeds s openFlags bits seeds =
       (List.range bits.length).map (fun i =>
         if openFlags.getD i false then BitString.listRow s 0 (seeds.getD i [])
-        else List.replicate s false) := by
-  apply List.ext_getElem
-    (by simp only [length_naorSelectSeeds, List.length_map, List.length_range])
-  intro i hi hi'
-  have hlt : i < bits.length := by simpa only [length_naorSelectSeeds] using hi
-  have h := getD_naorSelectSeeds s openFlags bits seeds i hlt
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi] at h
-  simp only [List.getElem_map, List.getElem_range, List.getD_eq_getElem?_getD]
-  exact h
+        else List.replicate s false) :=
+  eq_map_range_of_getD (length_naorSelectSeeds ..) fun i hi =>
+    getD_naorSelectSeeds s openFlags bits seeds i hi
 
 @[simp] theorem naorSelectSeeds_naorMaskBits (s : ℕ) (openFlags bits : List Bool)
     (seeds : List (List Bool)) :
@@ -1082,12 +1082,12 @@ structure BitCommitmentScheme where
   /-- `commit` is computable in plain polynomial time. -/
   polyTime_commit :
     ComputableInPolyTime (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits
+      (encPair encBits encBitOpening) encBits
   /-- `verify` is computable in plain polynomial time. -/
   polyTime_verify :
     ComputableInPolyTime
       (fun ⟨n, r, c, b, seed⟩ => verify n r c b seed)
-      (encPair encUnary (encPair encBits (encPair encBits (encPair encBool encBits)))) encBool
+      (encPair encUnary (encPair encBits (encPair encBits encBitOpening))) encBool
   /-- Honest commitments have length `commitLength n` when `seed.length = n`. -/
   length_commit : ∀ (n : ℕ) (r : List Bool) (b : Bool) (seed : List Bool),
     seed.length = n → (commit r b seed).length = commitLength n

@@ -82,7 +82,8 @@ theorem numVars_hardCore (hE : ∀ e ∈ E, e.1 < n ∧ e.2 < n) : (hardCore n E
     ext v
     rw [List.mem_toFinset, mem_vars_hardCore hE, Finset.mem_range], Finset.card_range]
 
-/-- A vertex occurs once in its vertex constraint and once per incident edge. -/
+/-- A variable `v` occurs at most once in the vertex constraints, plus once for each time it is an
+endpoint in the edge list `E`, counting a loop twice and a repeated edge with its multiplicity. -/
 theorem count_vars_hardCore (n : ℕ) (E : List (ℕ × ℕ)) (v : ℕ) :
     (hardCore n E).vars.count v ≤ 1 + (E.flatMap fun e => [e.1, e.2]).count v := by
   rw [vars_hardCore, List.count_append]

@@ -51,7 +51,7 @@ Computability/Probabilistic/Adaptive.lean on the cslib `crypto` branch at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8` to strict oracle PPT.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -386,7 +386,6 @@ theorem IsPPTOn.isOraclePPTOn [Finite Operation] {program : α → ProbComp γ}
   obtain ⟨k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨inferInstance, k, Control, hfinite, ofClosed machine, c, d,
     fun a State oracle s => ?_⟩
-  change ProbOracleComp.runWith oracle _ s = ProbOracleComp.runWith oracle _ s
   rw [run_interpret_runOracle_ofClosed, ← h a, ← ProbOracleComp.sample_map,
     ProbOracleComp.runWith_sample, ProbComp.eval_map]
 
@@ -399,8 +398,8 @@ theorem IsOraclePPTOn.isPPTOn {program : α → ProbComp γ}
   obtain ⟨_, k, Control, hfinite, machine, c, d, h⟩ := h
   refine ⟨k, Control, hfinite, machine, c, d, fun a => ?_⟩
   have h := congrArg (PMF.map Prod.fst) (h a Unit (fun q => q.1.elim) ())
-  rw [← ProbOracleComp.sample_map, ProbOracleComp.run_interpret_sample,
-    runOracle_eq_sample_runClosed, ProbOracleComp.run_interpret_sample,
+  rw [← ProbOracleComp.sample_map, ProbOracleComp.runWith_sample,
+    runOracle_eq_sample_runClosed, ProbOracleComp.runWith_sample,
     PMF.map_comp, PMF.map_comp, ProbComp.eval_map] at h
   have hid : (Prod.fst ∘ fun word : List Bool => (word, ())) = id := rfl
   rwa [hid, PMF.map_id, PMF.map_id] at h

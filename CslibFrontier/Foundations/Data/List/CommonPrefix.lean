@@ -155,13 +155,15 @@ theorem lcpLen_sub_one_le_lcpLen_tail (u v : List α) :
 
 /-- Lists that agree on their first `m` entries have the same longest common prefix with any
 list `x`, up to `m`. -/
-theorem min_lcpLen_eq_of_take_eq {u v : List α} (x : List α) {m : ℕ} (hu : m ≤ u.length)
-    (hv : m ≤ v.length) (h : u.take m = v.take m) :
+theorem min_lcpLen_eq_of_take_eq {u v : List α} (x : List α) {m : ℕ}
+    (h : u.take m = v.take m) :
     min (lcpLen x u) m = min (lcpLen x v) m := by
   have key : ∀ k ≤ m, k ≤ lcpLen x u ↔ k ≤ lcpLen x v := by
     intro k hk
     have huk : u.take k = v.take k := by
       rw [← Nat.min_eq_left hk, ← take_take, h, take_take]
+    have hlen := congrArg length huk
+    rw [length_take, length_take] at hlen
     rw [le_lcpLen_iff, le_lcpLen_iff, huk]
     exact ⟨fun ⟨h1, _, h3⟩ => ⟨h1, by omega, h3⟩, fun ⟨h1, _, h3⟩ => ⟨h1, by omega, h3⟩⟩
   have h1 := (key (min (lcpLen x u) m) (Nat.min_le_right _ _)).mp (Nat.min_le_left _ _)
@@ -206,17 +208,10 @@ theorem lcpLen_le_lcpLen_of_le_of_le_left {u v x : List α} (huv : u ≤ v) (hvx
 with `x`. -/
 theorem lcpLen_le_lcpLen_of_le_of_le_right {u v x : List α} (huv : u ≤ v) (hvx : v ≤ x) :
     lcpLen u x ≤ lcpLen v x := by
-  set k := lcpLen u x
-  obtain ⟨hku, hkx, htake⟩ := le_lcpLen_iff.mp (le_refl k)
-  have hpu : u.take k <+: u := take_prefix k u
-  have hpx : u.take k <+: x := htake ▸ take_prefix k x
-  have hpv : u.take k <+: v := IsPrefix.of_prefix_of_le_of_le hpu hpx huv hvx
-  have hlen : (u.take k).length = k := by simp only [length_take]; omega
-  refine le_lcpLen_iff.mpr ⟨?_, hkx, ?_⟩
-  · have := hpv.length_le; omega
-  · have := prefix_iff_eq_take.mp hpv
-    rw [hlen] at this
-    rw [← this, htake]
+  -- `v` agrees with `u` on the first `lcpLen u x` entries, and `u` agrees there with `x`.
+  obtain ⟨-, hkv, huv'⟩ := le_lcpLen_iff.mp (lcpLen_le_lcpLen_of_le_of_le_left huv hvx)
+  obtain ⟨-, hkx, hux⟩ := le_lcpLen_iff.mp (le_refl (lcpLen u x))
+  exact le_lcpLen_iff.mpr ⟨hkv, hkx, huv'.symm.trans hux⟩
 
 end order
 

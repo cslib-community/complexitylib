@@ -40,8 +40,10 @@ and Mathlib's single-tape Turing machine stack.
 * `Cslib.Turing.SingleTapeTM.primrec_step`, `primrec_runFor`, `partrec_evalInit`,
   `partrec_eval`, and `partrec_eval_right₀`: every `SingleTapeTM Symbol` has primitive recursive
   step and clocked-run functions and partial recursive evaluation functions.
-* `Cslib.Turing.SingleTapeTM.partrec_tm0_eval` and `partrec_tm1_eval`: every finitely supported
-  Mathlib `TM0` or `TM1` machine has a partial recursive evaluation function.
+* `Cslib.Turing.SingleTapeTM.partrec_tm0_eval` and `partrec_tm1_eval`: a finitely supported
+  Mathlib `TM0` or `TM1` machine over the alphabet `Option Symbol`, with `Symbol` finite and, for
+  `TM1`, a finite store, has a partial recursive evaluation function on the blank-free inputs
+  `l.map some`.
 
 ## References
 
@@ -316,12 +318,8 @@ theorem extractWord_eq_some_iff {b : BiTape Symbol} {l : List Symbol} :
       rw [unmapSome_eq_some_iff.mp h, StackTape.mapSome]
     have hcons : StackTape.cons b.head b.right = StackTape.mapSome l :=
       StackTape.ext hcons_list
-    have h1 : b.head = (StackTape.mapSome l).head := by
-      have := congrArg StackTape.head hcons
-      rwa [StackTape.head_cons] at this
-    have h2 : b.right = (StackTape.mapSome l).tail := by
-      have := congrArg StackTape.tail hcons
-      rwa [StackTape.tail_cons] at this
+    have h1 : b.head = (StackTape.mapSome l).head := by grind [StackTape.head_cons]
+    have h2 : b.right = (StackTape.mapSome l).tail := by grind [StackTape.tail_cons]
     have hhead : b.head = (BiTape.mk₁ l).head :=
       h1.trans (by cases l <;> rfl)
     have hright : b.right = (BiTape.mk₁ l).right :=
@@ -572,7 +570,8 @@ end FintypeSymbol
 
 variable [Inhabited Symbol] [Finite Symbol] [Primcodable Symbol]
 
-/-- For any finitely supported Mathlib `_root_.Turing.TM0.Machine`, its partial evaluation
+/-- For any finitely supported Mathlib `_root_.Turing.TM0.Machine` over the alphabet
+`Option Symbol`, with `Symbol` finite, its partial evaluation on blank-free inputs
 `fun l => _root_.Turing.TM0.eval M (l.map some)` is `Partrec`. -/
 theorem partrec_tm0_eval {Λ : Type} [Inhabited Λ]
     (M : _root_.Turing.TM0.Machine (Option Symbol) Λ) (S : Finset Λ)
@@ -582,8 +581,9 @@ theorem partrec_tm0_eval {Λ : Type} [Inhabited Λ]
   have := Fintype.ofFinite Symbol
   exact (ofTM0 M S hs).partrec_eval_right₀.of_eq (eval_ofTM0 M S hs)
 
-/-- For any finitely supported Mathlib `_root_.Turing.TM1` statement family, its partial evaluation
-`fun l => _root_.Turing.TM1.eval M (l.map some)` is `Partrec`. -/
+/-- For any finitely supported Mathlib `_root_.Turing.TM1` statement family over the alphabet
+`Option Symbol`, with `Symbol` and the store `σ` finite, its partial evaluation on blank-free
+inputs `fun l => _root_.Turing.TM1.eval M (l.map some)` is `Partrec`. -/
 theorem partrec_tm1_eval {Λ σ : Type} [Inhabited Λ] [Inhabited σ] [Finite σ]
     (M : Λ → _root_.Turing.TM1.Stmt (Option Symbol) Λ σ) (S : Finset Λ)
     (hs : _root_.Turing.TM1.Supports M S) :

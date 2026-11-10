@@ -22,7 +22,7 @@ worker-claude-tidyspike-c4b0c164.
 * `ComputableInDegree.comp`: resource degree `max d₁ (e₁ * d₂)` and output degree `e₁ * e₂`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInDegree
 

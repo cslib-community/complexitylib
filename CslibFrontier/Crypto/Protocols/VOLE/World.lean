@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.VOLE.Basic
 public import CslibFrontier.Computability.Interactive.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 
@@ -86,7 +87,7 @@ theorem voleWorld_cached_run {α : Type} (c : VOLECorrelation F n)
           (fun _ => PMF.pure c.receiverView))) program).map (·, some c) := by
   let oracle := OracleComp.sumHandler (fun _ : Unit => PMF.pure c.senderView)
     (fun _ : Unit => PMF.pure c.receiverView)
-  have h := ProbOracleComp.run_interpret_map_state
+  have h := ProbOracleComp.runWith_map_state
     (fun q => StateT.lift (σ := Unit) (oracle q)) (voleWorld F n).impl
     (fun _ => some c) (fun q state => ?_) program ()
   · change (ProbOracleComp.runWith (fun q => StateT.lift (σ := Unit) (oracle q))
@@ -95,19 +96,9 @@ theorem voleWorld_cached_run {α : Type} (c : VOLECorrelation F n)
     rw [ProbOracleComp.runWith_lift] at h
     simp only [PMF.map_comp, Function.comp_def, OracleComp.evalWith, oracle] at h
     exact h.symm
-  · cases q with
-    | inl q =>
-      cases q
-      simp only [oracle, OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
-        voleWorld_cached_sender]
-      rfl
-    | inr q =>
-      cases q
-      simp only [oracle, OracleComp.sumHandler, StateT.lift, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.pure_bind, PMF.pure_map,
-        voleWorld_cached_receiver]
-      rfl
+  · rcases q with ⟨⟨⟩⟩ | ⟨⟨⟩⟩ <;>
+      simp only [pmf_norm, oracle, OracleComp.sumHandler, StateT.lift, voleWorld_cached_sender,
+        voleWorld_cached_receiver] <;> rfl
 
 /-- Sampling the cached correlation before execution preserves every output law, including
 for programs that never query setup. Each role still reads only its own fixed share. -/
@@ -126,22 +117,19 @@ theorem voleWorld_eval {α : Type}
     OracleComp.sumHandler (fun _ => PMF.pure c.senderView)
       (fun _ => PMF.pure c.receiverView) q
   let oracle := fun q c => (replies q c).map (·, c)
-  have h := ProbOracleComp.run_interpret_simulation (voleWorld F n).impl oracle relate
+  have h := ProbOracleComp.runWith_simulation (voleWorld F n).impl oracle relate
     (fun q state => ?_) program none
   · have houtput := congrArg (fun law => law.map Prod.fst) h
-    simp only [PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind,
-      PMF.bind_const] at houtput
+    simp only [pmf_norm, PMF.map, PMF.bind_const] at houtput
     refine houtput.trans ?_
     change (voleIdealDist F n).bind _ = _
-    congr 1
-    funext c
-    change ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      program).run c).map Prod.fst = _
-    rw [ProbOracleComp.run_interpret_readOnly replies]
+    congr 1 with c : 1
+    change (ProbOracleComp.runWith oracle program c).map Prod.fst = _
+    rw [ProbOracleComp.runWith_readOnly replies]
     simp only [PMF.map_comp, Function.comp_def]
     change PMF.map id _ = _
     rw [PMF.map_id]
+    rfl
   · rcases q with q | q <;> cases q <;> cases state <;>
       simp [voleWorld, relate, oracle, replies, OracleComp.sumHandler, PMF.map]
 

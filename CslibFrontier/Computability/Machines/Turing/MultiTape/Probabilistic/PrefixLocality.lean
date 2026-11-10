@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 
 /-!
 # Input-tape prefix locality of bounded machine runs
@@ -39,7 +40,7 @@ stateful external-oracle runs (`MultiTapePTM.runOracle`).
   specializations to oracle fair-coin runs.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeMachine
 
@@ -80,15 +81,10 @@ theorem runFrom_eq_of_prefix_agree {input₁ input₂ : List Symbol} {m : ℕ}
     | some state =>
       have hs₂ : cfg₂.tapes.state = some state := hstate ▸ hs₁
       have hsym : cfg₁.tapes.inputSymbol = cfg₂.tapes.inputSymbol := by
-        by_cases h0 : cfg₁.tapes.inputPos.val = 0
-        · rw [inputSymbol_eq_none_of_boundary (Or.inl h0),
-            inputSymbol_eq_none_of_boundary (Or.inl (hpos ▸ h0))]
-        · have hp₁ : cfg₁.tapes.inputPos.val - 1 < input₁.length := by lia
-          have hp₂ : cfg₁.tapes.inputPos.val - 1 < input₂.length := by lia
-          rw [inputSymbolInner (cfg₁.tapes.inputPos.val - 1) (by lia) hp₁,
-            inputSymbolInner (cfg₁.tapes.inputPos.val - 1) (by lia) hp₂]
-          have hj := hagree (cfg₁.tapes.inputPos.val - 1) (by lia)
-          rwa [List.getElem?_eq_getElem hp₁, List.getElem?_eq_getElem hp₂] at hj
+        rw [Cfg.inputSymbol_eq_inputAt, Cfg.inputSymbol_eq_inputAt, ← hpos, inputAt, inputAt]
+        split_ifs
+        · rfl
+        · exact hagree _ (by lia)
       have hworkSym : cfg₁.tapes.workTapeSymbols = cfg₂.tapes.workTapeSymbols := by
         funext i
         simp [Cfg.workTapeSymbols, hwork, hworkPos]

@@ -78,8 +78,7 @@ theorem programAtoms_map {n g : ℕ} (p : Program σ n g) (h : Homomorphism I J)
     (input : Fin n → U) (k : Fin g) :
     (programAtoms p I input k).map h.map = programAtoms p J (h.map ∘ input) k := by
   unfold programAtoms Atom.map
-  congr 1
-  funext a
+  congr 1 with a : 1
   exact congrFun (p.map_trace h input) ((p.lines k).wires a)
 
 /-- Map a cover of pulled-back predicates to a cover of the original predicates. -/

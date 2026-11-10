@@ -22,7 +22,7 @@ the initial configuration that has halted after the given number of steps with t
 * `Turing.MultiTapeTM.ComputesTidilyInTimeAndSpace.runFrom_initCfg`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

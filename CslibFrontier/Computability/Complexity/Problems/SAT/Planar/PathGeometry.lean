@@ -322,10 +322,7 @@ private theorem occurrencePath_clause_center_iff {φ : CNF ℕ} {o : Occurrence 
   have h := Graph.unitPath_center_iff (SAT.incidenceGraph φ)
     (fun _ => SAT.incidenceGraph_endpoints) (fun _ => SAT.incidenceGraph_loopless) hoidx
     (w := φ.distinctVars.length + i) (by simp only [SAT.incidenceGraph, List.length_range]; omega)
-  have he : (SAT.incidenceGraph φ).2[(Cslib.Logic.PL.occurrences φ).idxOf o] =
-      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1) := by
-    simp only [SAT.incidenceGraph, List.getElem_map]
-    rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem ho)]
+  have he := incidenceGraph_edge_idxOf ho
   have hb := SAT.incidenceGraph_bipartite (List.getElem_mem hoidx)
   rw [he] at hb h
   change Layout.center (φ.distinctVars.length + i) ∈ occurrencePath φ o ↔

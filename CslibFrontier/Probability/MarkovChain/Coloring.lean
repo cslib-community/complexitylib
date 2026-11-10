@@ -336,14 +336,12 @@ theorem exists_coupling_glauberColoringOn (hq : G.maxDegree < q) {U : Finset V}
   refine ⟨(uniformOfFinset U hU).bind fun w =>
     (γ w).map fun c => (Function.update x w c.1, Function.update y w c.2), ?_, ?_, ?_⟩
   · rw [PMF.map_bind, glauberColoringOn_apply]
-    congr 1
-    funext w
+    congr 1 with w : 1
     rw [PMF.map_comp, recolor_of_nonempty G (G.allowedColors_nonempty hq x w), ← hγ1 w,
       PMF.map_comp]
     rfl
   · rw [PMF.map_bind, glauberColoringOn_apply]
-    congr 1
-    funext w
+    congr 1 with w : 1
     rw [PMF.map_comp, recolor_of_nonempty G (G.allowedColors_nonempty hq y w), ← hγ2 w,
       PMF.map_comp]
     rfl

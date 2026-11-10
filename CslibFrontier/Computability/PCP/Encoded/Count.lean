@@ -22,7 +22,7 @@ its executable Boolean tests to the finite-edge semantics used by `ConstraintGra
 * `Cslib.PCP.Encoded.Graph.unsatFrac_toGraph`: the proportion of violations as a list count.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PCP.Encoded.Graph
 

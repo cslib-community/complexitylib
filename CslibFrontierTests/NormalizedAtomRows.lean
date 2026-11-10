@@ -145,8 +145,7 @@ theorem zero_start_nonzero_output : ∃ HP : FourthRootHierarchyParams 16 1 16 3
   have ha : iterate univ (fun _ => HP.K) (fun _ => HP.K) (fun _ => 0)
       (fun _ => w) (⟨0, 0⟩ : State Unit) 1 = ⟨0, w⟩ := by
     simp only [iterate, advance, zero_add, hz]
-    congr 1
-    funext y
+    congr 1 with y : 1
     cases y
     exact hw
   dsimp only
