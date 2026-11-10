@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
@@ -804,6 +805,21 @@ register_result "fo-tc-nl" where
     transitive closure on tuples of fixed width. Closures under negation are compiled \
     directly by inductive counting rather than by appeal to NL = coNL. The converse \
     NL ⊆ FO(TC) is not formalized."
+
+register_result "fo-dtc-l" where
+  title := "FO(DTC) is contained in L on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 4.2", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.DTCDefinable.encodedLanguage_mem_L
+  ]
+  scope := "A query defined by one FO(DTC) sentence over a finite relational vocabulary with the \
+    canonical numeric symbols, on Fin n with n ≥ 2, is in native L under encStructure; \
+    malformed tables and cardinalities below two are rejected. Deterministic closure is \
+    reflexive transitive closure of the deterministic reduct on tuples of fixed width, \
+    nested and at any polarity. The converse L ⊆ FO(DTC) is not formalized."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
