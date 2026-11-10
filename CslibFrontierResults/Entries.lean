@@ -28,6 +28,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
@@ -127,8 +128,27 @@ register_result "savitch" where
   scope := "Class equality for arbitrary injective encodings. PSPACE is total deterministic \
     decision by one native multi-tape machine in polynomial work space; NPSPACE uses one \
     finite-state nondeterministic machine whose every computation prefix respects a \
-    polynomial space bound and whose branches all halt. Not the parameterized quadratic-space \
-    simulation."
+    polynomial space bound and whose branches all halt. The parameterized quadratic-space \
+    simulation is the separate entry savitch-general."
+
+register_result "savitch-general" where
+  title := "Savitch: NSPACE(s) is contained in DSPACE(s²)"
+  topic := "space complexity"
+  sources := [
+    { paper := Savitch1970, theorem := unverified, locator := unverified },
+    { paper := Sipser2013, theorem := "Theorem 8.5",
+      locator := "Section 8.4, final paragraph (p. 351)" },
+    { paper := AroraBarak09, theorem := "Theorem 4.14", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.NSPACE_subset_DSPACE_sq,
+    Cslib.Complexity.mem_DSPACE_sq_of_recognizesInSpace
+  ]
+  scope := "NSPACE(s) ⊆ DSPACE(s²) for every s with log₂ n ≤ s(n); no constructibility \
+    assumed. One finite-state native nondeterministic machine per problem, work space \
+    c₁·s(n) + c₂ along every computation prefix; the recognizer form permits nonterminating \
+    branches. The deterministic machine halts on every input and reads its input in place; \
+    arbitrary injective encodings."
 
 register_result "alternation" where
   title := "Chandra–Kozen–Stockmeyer: AP equals PSPACE"
