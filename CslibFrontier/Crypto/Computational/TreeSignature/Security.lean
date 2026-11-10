@@ -37,6 +37,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 
 /-!
@@ -1490,40 +1491,13 @@ private theorem toOuterMeasure_bad_queryBounded_le {α σ : Type}
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) extHandler)
           (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤ _
-      rw [PMF.toOuterMeasure_bind_apply]
       set K : ℝ≥0∞ := ((2 * rem * (seen s + 1) + rem ^ 2 : ℕ) : ℝ≥0∞) * ε
-      have hterm (y : List Bool × σ) : (extHandler req s) y *
-          ((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) extHandler)
-            (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤
-          (extHandler req s) y * ({x : List Bool × σ | bad x.2}.indicator 1 y + K) := by
-        by_cases hmem : y ∈ (extHandler req s).support
-        · refine mul_le_mul_of_nonneg_left ?_ zero_le
-          by_cases hy : bad y.2
-          · have hy' : y ∈ {x : List Bool × σ | bad x.2} := hy
-            rw [Set.indicator_of_mem hy', Pi.one_apply]
-            exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-          · have hy' : y ∉ {x : List Bool × σ | bad x.2} := hy
-            rw [Set.indicator_of_notMem hy', zero_add]
+      calc _ ≤ (extHandler req s).toOuterMeasure {x | bad x.2} + K := by
+            refine Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ K fun y hmem hy => ?_
             have hnat : 2 * rem * seen y.2 + rem ^ 2 ≤ 2 * rem * (seen s + 1) + rem ^ 2 := by
               have := hgrow req s hs y hmem hy
               nlinarith
             exact (ih y.1 hy).trans (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr hnat) zero_le)
-        · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
-      calc ∑' y, (extHandler req s) y *
-            ((OracleComp.interpret
-              (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) extHandler)
-              (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
-          ≤ ∑' y, (extHandler req s) y * ({x : List Bool × σ | bad x.2}.indicator 1 y + K) :=
-            tsum_le_tsum hterm
-        _ = (extHandler req s).toOuterMeasure {x | bad x.2} + K := by
-            simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-              PMF.toOuterMeasure_apply]
-            congr 1
-            refine tsum_congr fun y => ?_
-            by_cases hy : y ∈ {x : List Bool × σ | bad x.2}
-            · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-            · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
         _ ≤ (seen s : ℝ≥0∞) * (2 * ε) + K := by
             rw [← htwo]
             exact add_le_add_left (hstep req s hs) K

@@ -170,10 +170,6 @@ private lemma tr_toTM (s : State Q) (x y : Option Bool) :
 
 /-! ### The phases of the machine -/
 
-private lemma length_frame_append (u v : List Bool) :
-    (frame u ++ v).length = 2 * u.length + 1 + v.length := by
-  rw [List.length_append, length_frame]
-
 /-- Copying the first word to the work tape, digit by digit. -/
 private lemma seg_copy {i : ℕ} (hi : i ≤ u.length) :
     Seg τ.toTM (cells u.length)

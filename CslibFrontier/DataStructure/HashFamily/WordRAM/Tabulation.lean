@@ -353,8 +353,7 @@ theorem map_extractSlice_eval_randFillComp (bits arrBase len : ℕ) (x : Data 6)
                 pure (z.1, 3 + z.2 + 2)).eval) =
           (PMF.uniformOfFintype (Fin (2 ^ bits - 1 + 1))).bind
             (fun a => (PMF.uniformOfFintype (Fin len → Fin (2 ^ bits))).map (Fin.cons (e a))) := by
-        congr 1
-        funext k
+        congr 1 with k : 1
         exact hbody k
       rw [hbind]
       have heq := PMF.uniformOfFintype_map_equiv e

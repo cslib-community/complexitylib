@@ -167,7 +167,12 @@ Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarj
 <a id="bhr12"></a>
 ## bhr12
 
-Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings (`BellareHoangRogaway2012`). The abstract garbling-scheme framework in `Garbling/{Scheme,Games,Foundations}.lean` follows Sections 3–4 of ePrint 2012/265 (syntax in §3.1, side information in §3.3, the five security games in §§3.4–3.6, invertible side information in §4.1, and the indistinguishability/simulation reductions of Propositions 2 and 3 in §§4.2–4.3), while the concrete point-and-permute circuit garbling in `Garbling/{Basic,Privacy}.lean` cites the garbling-scheme syntax and simulation-based privacy with topology side information at paper level only, because the ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in the pass that added those modules.
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings (`BellareHoangRogaway2012`). The abstract garbling-scheme framework in `Garbling/{Scheme,Games,Foundations,CircuitInverters}.lean` follows Sections 2.3 and 3–4 of ePrint 2012/265 (conventional Boolean circuits in §2.3, syntax in §3.1, side information in §3.3, the five security games in §§3.4–3.6, the explicit topology and size inverters of Proposition 1 in §4.1, and the indistinguishability/simulation reductions and circuit corollaries of Propositions 2 and 3 and Corollaries 1 and 2 in §§4.2–4.3), while the concrete point-and-permute circuit garbling in `Garbling/{Basic,Privacy}.lean` cites the garbling-scheme syntax and simulation-based privacy with topology side information at paper level only, because the ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in the pass that added those modules.
+
+<a id="bhr12b"></a>
+## bhr12b
+
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Adaptively Secure Garbling with Applications to One-Time Programs and Secure Outsourcing." *Advances in Cryptology – ASIACRYPT 2012*, LNCS 7658, 134–153, Springer, 2012. https://doi.org/10.1007/978-3-642-34961-4_10 . Full version: Cryptology ePrint Archive, Report 2012/564 (`BellareHoangRogaway2012b`). `Garbling/Adaptive.lean` formalizes the coarse-grained adaptive privacy game `Prv1` of Section 3.1, Figure 2, in which a two-stage adversary first receives `(F, d)` from `Garble(f)` and then adaptively queries `Input(x)` to receive `X` from a stateful two-stage simulator.
 
 <a id="bjkst02"></a>
 ## bjkst02
@@ -188,6 +193,11 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 ## bm15
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
+
+<a id="bmr16"></a>
+## bmr16
+
+Marshall Ball, Tal Malkin, Mike Rosulek. "Garbling Gadgets for Boolean and Arithmetic Circuits." *Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS '16)*, 565–577, 2016. https://doi.org/10.1145/2976749.2978410 . Full version: Cryptology ePrint Archive, Report 2016/969. Bibliographic data from the DOI record. Read in the ePrint text on 2026-11-09. Locators checked there: Figure 1 (the garbling scheme for mixed-moduli simple circuits, with free addition and constant multiplication and projection gates of at most `m - 1` ciphertexts after choosing `W_j^0 = -H(g, W_i^{-τ}) - φ(-τ)Δ_n`), the oracle `O(g, i, j, X, a, c) = H(g, X + aΔ_{m_i}) + cΔ_{m_j}`, and Definition 1 (mixed-modulus circular correlation robustness against adversaries that query their oracle on distinct `g` values and `a ≠ 0`). Section numbers were not checked.
 
 <a id="bmr90"></a>
 ## bmr90
@@ -446,6 +456,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of Pure Nash Equilibria*. Proceedings of the 36th Annual ACM Symposium on Theory of Computing (STOC 2004), 604–612. https://doi.org/10.1145/1007352.1007445 . Bibliographic metadata checked against Crossref on 2026-11-08; the PLS-completeness theorem is attributed as cited in Roughgarden's CS364A Lecture #19, Theorem 3.1. The paper itself was not consulted.
 
+<a id="fips203"></a>
+## fips203
+
+National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, Federal Information Processing Standards Publication 203, 2024. https://doi.org/10.6028/NIST.FIPS.203 . Cited for the rounding maps `Compress_d` and `Decompress_d` (Section 4.2.1), `SamplePolyCBD` (Section 4.2.2, Algorithm 8), K-PKE (Section 5, Algorithms 13–15), the internal ML-KEM algorithms (Section 6, Algorithms 16–18), the ML-KEM interface (Section 7, Algorithms 19–21) and the parameter sets (Section 8, Table 2); the Lean modules record the model differences (uniform matrix, sampled coins, coefficient form). The locators follow the structure of the published standard; the PDF was not re-read in this pass.
+
 <a id="fks84"></a>
 ## fks84
 
@@ -692,6 +707,11 @@ William M. Hoza. *Better Pseudodistributions and Derandomization for Space-Bound
 
 Falk Hüffner. "Algorithm Engineering for Optimal Graph Bipartization." *Journal of Graph Algorithms and Applications* 13(2), 77–98, 2009. https://doi.org/10.7155/jgaa.00177 . Journal PDF inspected on 2026-11-08 (https://jgaa.info/index.php/jgaa/article/download/paper177/2776): Section 3, Lemma 2 (p. 84; the disjoint-compression characterization by valid colourings and vertex cuts, after subdividing the edges at the old solution), the Compress-OCC routine (p. 85), and the running-time paragraph with Theorem 1 (p. 86). There Hüffner records that Reed, Smith and Vetta state `O(4^k · kmn)`, and shows that assigning each vertex of the old solution one of three roles (deleted, or one of two colourings of its neighbours) gives `3^k` minimum vertex cut problems and `O(3^k · kmn)` (Theorem 1). [OddCycleTransversal](../CslibFrontier/Algorithms/Lean/IterativeCompression/OddCycleTransversal.lean) credits the `3^k` count to this theorem; the improvement to `O(3^k · mn)` (Theorem 2, p. 88) is not formalized.
 
+<a id="iknp03"></a>
+## iknp03
+
+Yuval Ishai, Joe Kilian, Kobbi Nissim and Erez Petrank. "Extending Oblivious Transfers Efficiently." *Advances in Cryptology – CRYPTO 2003*, Lecture Notes in Computer Science 2729, 145–161, Springer, 2003. https://doi.org/10.1007/978-3-540-45146-4_9 . Bibliographic data from the DOI record; the full text was not inspected in this pass. The manual cites Section 3 for the semi-honest protocol (Figure 1) and Definition 1 for correlation robustness, as reported by secondary descriptions; theorem and lemma numbers are not claimed.
+
 <a id="immerman1988"></a>
 ## immerman1988
 
@@ -825,7 +845,7 @@ Peter Kairouz, Sewoong Oh and Pramod Viswanath. *The Composition Theorem for Dif
 <a id="ks08"></a>
 ## ks08
 
-Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
+Vladimir Kolesnikov, Thomas Schneider. "Improved Garbled Circuit: Free XOR Gates and Applications." *Automata, Languages and Programming, 35th International Colloquium (ICALP 2008)*, Lecture Notes in Computer Science 5126, 486–498, 2008. https://doi.org/10.1007/978-3-540-70583-3_40 ; author's copy: https://www.cs.toronto.edu/~vlad/papers/XOR_ICALP08.pdf . Cited at paper level for the free-XOR technique, which it proves secure in the random oracle model; no theorem numbers are claimed.
 
 <a id="lamportshostakpease1982"></a>
 ## lamportshostakpease1982
@@ -1326,3 +1346,8 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 ## zivlempel78
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
+
+<a id="zre15"></a>
+## zre15
+
+Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.

@@ -193,16 +193,14 @@ theorem simulatedOpening_coupled {State Output : Type} (A : Sender State) (k : �
   · simp only [joint, realOpening, Probability.PMF.monad_bind_eq_bind,
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
       senderRun_eq, PMF.bind_map]
-    congr 1
-    funext st
+    congr 1 with st : 1
     rw [PMF.bind_comm (PMF.uniformOfFintype (Fin k → Bool))]
     congr 1
     funext ⟨ts, final⟩
     exact PMF.bind_comm _ _ _
   · simp only [joint, simulatedOpening, Probability.PMF.monad_bind_eq_bind,
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
-    congr 1
-    funext st
+    congr 1 with st : 1
     congr 1
     funext ⟨ts, final⟩
     exact PMF.bind_comm _ _ _

@@ -147,9 +147,7 @@ end Correctness
 /-! ### Polynomial time -/
 
 open ComputableInPolyTime
-
-/-- The encoding of the list of nodes at a level of the tree. -/
-local notation "encNodes" => encList (encList (encPair encNat encBool))
+open Fortune (encNodes)
 
 /-- **The procedure is polynomial-time**, for polynomial-time queries `key j`, a fixed number `D`
 of depths and a bound `s` computed in unary. Each level keeps at most `2 D (s + 2) ^ (2 D)`

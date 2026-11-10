@@ -369,8 +369,7 @@ theorem exists_card_filter_run_eq (msg : C → ℕ → List Bool → List Bool)
       rw [hL, hP, count_prover]
       change φ y = _
       rw [← hy]
-      congr 1
-      funext y'
+      congr 1 with y' : 1
       exact count_congr_of_length g fun t _ =>
         (card_filter_agrees_prover msg n g j p S D y' t).symm
 
