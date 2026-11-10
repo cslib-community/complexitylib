@@ -29,7 +29,11 @@ ORDER = [
       'average-case-hardness', 'distributional-complexity', 'homomorphic-encryption']),
     ('algorithms-and-memory', ['index', 'ram-variants', 'wordram-and-bridges',
       'memory-specifications', 'online-and-streaming', 'strategic-games',
-      'catalytic-and-tree-evaluation', 'algorithm-endpoints', 'mechanism-design']),
+      'catalytic-and-tree-evaluation', 'algorithm-endpoints', 'sorting-and-recurrences',
+      'graph-paths-and-traversal', 'dynamic-programming-and-strings',
+      'dictionaries-hashing-and-randomized', 'flows-cuts-and-matching',
+      'three-sum-and-exact-triangle', 'approximation-algorithms', 'optimization-and-duality',
+      'mechanism-design']),
     ('development-history', ['index', 'methods', 'timings', 'case-studies', 'transcripts', 'study-design']),
 ]
 FILES = ['index.md'] + [f'{section}/{name}.md' for section, names in ORDER for name in names] + ['model-map.md']
