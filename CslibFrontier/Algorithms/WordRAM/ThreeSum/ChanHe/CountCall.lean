@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Count
-import CslibFrontier.Computability.WordRAM.Call
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -106,55 +106,27 @@ theorem exec {w M : ℕ} (j : Fin 3) (x : Data 64) (values : ℕ → ℤ) (hM : 
       ram_eval [prepare, q, source, length, registers, countSource, countScratch,
         countLength, countModulus, countHistogram, scratch, histogram, modulus,
         Count.src, Count.scratch, Count.len, Count.modulus, Count.dst, Fin.mk.injEq]
-  have hq (i : Fin 64) (hi : 28 ≤ i.val) : q.regs i = x.regs i := by
-    have hne (k : Fin 64) (hk : k.val < 28) : i ≠ k := by
-      intro h
-      have := congrArg Fin.val h
-      omega
-    simp only [q, Data.set_regs, Function.update_of_ne (hne countSource (by decide)),
-      Function.update_of_ne (hne countScratch (by decide)),
-      Function.update_of_ne (hne countLength (by decide)),
-      Function.update_of_ne (hne countModulus (by decide)),
-      Function.update_of_ne (hne countHistogram (by decide))]
-  have hqs : (q.comap registers).regs Count.src = x.regs (source j) := by
-    simp +decide [q, registers, countSource, countScratch, countLength, countModulus,
-      countHistogram, Count.src, Count.scratch, Count.len, Count.modulus, Count.dst]
-  have hqn : (q.comap registers).regs Count.len = x.regs (length j) := by
-    simp +decide [q, registers, countSource, countScratch, countLength, countModulus,
-      countHistogram, Count.src, Count.scratch, Count.len, Count.modulus, Count.dst]
-  have hqk : (q.comap registers).regs Count.scratch = x.regs scratch := by
-    simp +decide [q, registers, countSource, countScratch, countLength, countModulus,
-      countHistogram, Count.src, Count.scratch, Count.len, Count.modulus, Count.dst]
-  have hqd : (q.comap registers).regs Count.dst = x.regs histogram := by
-    simp +decide [q, registers, countSource, countScratch, countLength, countModulus,
-      countHistogram, Count.src, Count.scratch, Count.len, Count.modulus, Count.dst]
-  have hqm : (q.comap registers).regs Count.modulus = x.regs modulus := by
-    simp +decide [q, registers, countSource, countScratch, countLength, countModulus,
-      countHistogram, Count.src, Count.scratch, Count.len, Count.modulus, Count.dst]
-  have hcall := Count.exec_coll (q.comap registers) values hM hmod
-    (hqm.trans hmodreg) (by simpa only [hqn] using hfit)
-    (by simpa only [hqs, hqn] using hs) (by simpa only [hqk, hqn] using hk)
-    (by simpa only [hqd] using hd) (by simpa only [hqn] using ht)
-    (by simpa only [hqs, hqn, hqk] using hsk)
-    (by simpa only [hqk, hqn, hqd] using hkd)
-    (by
-      change ∀ i < (q.comap registers).regs Count.len,
-        x.mem ((q.comap registers).regs Count.src + i) = encode (values i)
-      simpa only [hqn, hqs] using hinput)
-    (by simpa only [hqn] using hinj)
-  have hqmem : q.mem = x.mem := rfl
-  simp only [hqn, hqk, hqd, Data.comap_mem, hqmem] at hcall
   unfold program
-  rw [show 34 * x.regs (length j) + 5 * M + 24 =
-    5 + (34 * x.regs (length j) + 5 * M + 18) + 1 by omega]
-  refine ExecWithin.call registers_injective hprep hcall ?_
-  intro y ⟨ham, hav, _⟩ hframe
-  refine ⟨y.set (result j) (y.regs countTotal), ExecWithin.copy, ham, ?_, ?_⟩
-  · simpa only [Data.set_regs, Function.update_self, Data.comap_regs, countTotal] using hav
-  · intro i hi hne
-    rw [Data.set_regs, Function.update_of_ne hne, hframe i, hq i hi]
-    intro k
-    exact Fin.ne_of_val_ne (by simpa only [registers, Fin.val_castAdd] using
-      (show k.val ≠ i.val by omega))
+  refine WP.exists_execWithin (WP.seq (WP.of_execWithin hprep (WP.seq ?_)))
+  wram_call (Count.exec_coll _ values hM hmod
+    (by wram_simp [q, Data.comap_regs, hmodreg])
+    (by wram_simp [q, Data.comap_regs]; exact hfit)
+    (by wram_simp [q, Data.comap_regs]; exact hs)
+    (by wram_simp [q, Data.comap_regs]; exact hk)
+    (by wram_simp [q, Data.comap_regs]; exact hd)
+    (by wram_simp [q, Data.comap_regs]; exact ht)
+    (by wram_simp [q, Data.comap_regs]; exact hsk)
+    (by wram_simp [q, Data.comap_regs]; exact hkd)
+    (by wram_simp [q, Data.comap_regs, Data.comap_mem]; exact hinput)
+    (by wram_simp [q, Data.comap_regs]; exact hinj)) renamed registers_injective
+    with y ⟨⟨ham, hav, _⟩, hframe⟩
+  wram_exec
+  wram_simp [q, Data.comap_regs, Data.comap_mem] at ham hav ⊢
+  refine ⟨by omega, ham, hav, fun i hi hres => ?_⟩
+  have hbank (k : Fin 28) : registers k ≠ i :=
+    Fin.ne_of_val_ne (by simp only [registers, Fin.val_castAdd]; omega)
+  wram_simp [hres]
+  rw [hframe i hbank]
+  wram_simp [q, hbank]
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
