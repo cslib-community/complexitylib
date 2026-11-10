@@ -32,7 +32,7 @@ Uses Christian Reitwiessner's native degree/resource calculus. The proof adapts
 preserving arbitrary resource bounds.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInO
 

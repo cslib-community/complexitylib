@@ -198,9 +198,19 @@ theorem isValid_ofTopo_iff (t : Topo) (G G' : Fin t.q → Bool → Bool → Bool
 abbrev ValidTopo := {t : Topo // (ofTopo t fun _ _ _ => false).IsValid}
 
 /-- Valid circuit shapes `(n, m, q)` satisfying `2 ≤ n`, `1 ≤ m`, `1 ≤ q`, `m ≤ q` and
-`m + 2 ≤ n + q`. -/
+`m + 2 ≤ n + q`. The predicate reads the triple by position because it defines the layout;
+elsewhere use the components `ValidShape.n`, `ValidShape.m` and `ValidShape.q`. -/
 abbrev ValidShape :=
   {s : ℕ × ℕ × ℕ // 2 ≤ s.1 ∧ 1 ≤ s.2.1 ∧ 1 ≤ s.2.2 ∧ s.2.1 ≤ s.2.2 ∧ s.2.1 + 2 ≤ s.1 + s.2.2}
+
+/-- The input count `n` of a shape. -/
+abbrev ValidShape.n (s : ValidShape) : ℕ := s.1.1
+
+/-- The output count `m` of a shape. -/
+abbrev ValidShape.m (s : ValidShape) : ℕ := s.1.2.1
+
+/-- The gate count `q` of a shape. -/
+abbrev ValidShape.q (s : ValidShape) : ℕ := s.1.2.2
 
 /-- The shape `(n, m, q)` of any valid conventional circuit is a `ValidShape`. -/
 theorem shape_of_isValid {f : ConventionalCircuit} (h : f.IsValid) :
@@ -225,9 +235,9 @@ def phiTopo : SideInfo ValidCircuit ValidTopo where
 gate count ([BellareHoangRogaway2012], Section 3.3). -/
 def phiSize : SideInfo ValidCircuit ValidShape where
   phi f := ⟨(f.1.n, f.1.m, f.1.q), shape_of_isValid f.2⟩
-  inLen s := s.1.1
-  outLen s := s.1.2.1
-  size s := s.1.2.2
+  inLen s := s.n
+  outLen s := s.m
+  size s := s.q
 
 /-- `Φ_circ(f) = f`: side information revealing the entire valid circuit
 ([BellareHoangRogaway2012], Section 3.3). -/
@@ -270,7 +280,8 @@ def mTopo (t : ValidTopo) (y : List Bool) : ValidCircuit × List Bool :=
 
 /-- The canonical wiring for a shape `(n, m, q)` ([BellareHoangRogaway2012], Section 4.1,
 Proposition 1): every gate takes wires `A(g) = 1` and `B(g) = 2`. -/
-def sizeTopo (s : ℕ × ℕ × ℕ) : Topo := ⟨s.1, s.2.1, s.2.2, fun _ => 1, fun _ => 2⟩
+def sizeTopo : ℕ × ℕ × ℕ → Topo
+  | (n, m, q) => ⟨n, m, q, fun _ => 1, fun _ => 2⟩
 
 theorem sizeTopo_valid (s : ValidShape) :
     (ofTopo (sizeTopo s.1) fun _ _ _ => false).IsValid := by
@@ -291,7 +302,7 @@ def mSize (s : ValidShape) (y : List Bool) : ValidCircuit × List Bool :=
 def mTopoInv (t : ValidTopo) : ValidCircuit := (mTopo t (List.replicate t.1.m false)).1
 
 /-- The `Φ_size`-inverter built from `mSize` by setting `y = 0^m`. -/
-def mSizeInv (s : ValidShape) : ValidCircuit := (mSize s (List.replicate s.1.2.1 false)).1
+def mSizeInv (s : ValidShape) : ValidCircuit := (mSize s (List.replicate s.m false)).1
 
 @[simp] theorem phiTopo_mTopo (t : ValidTopo) (y : List Bool) :
     phiTopo.phi (mTopo t y).1 = t := rfl

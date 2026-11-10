@@ -33,7 +33,7 @@ Mathlib's lexicographic `LinearOrder` on lists replaces core's `≤` on lists, s
 * `List.take_le_take_of_le`: if `a ≤ b`, then `a.take n ≤ b.take n`.
 -/
 
-@[expose] public section
+public section
 
 namespace List
 

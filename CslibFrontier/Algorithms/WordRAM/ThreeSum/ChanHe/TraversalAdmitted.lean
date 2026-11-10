@@ -24,7 +24,7 @@ invariant to carry per-call execution advice or a separate width for each select
 These resource and composition proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

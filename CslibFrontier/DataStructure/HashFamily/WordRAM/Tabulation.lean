@@ -1192,22 +1192,17 @@ theorem tabLoop_exec {w base b d M : ℕ} {T : Fin (d * 2 ^ b) → Fin (2 ^ M)} 
     have hfit_next : Fits w (base + 4 + j * 2 ^ b + 2 ^ b) := by
       have : (j + 1) * 2 ^ b ≤ d * 2 ^ b := Nat.mul_le_mul_right (2 ^ b) (by omega)
       exact hfit_space.of_le (by simp [spaceFromB]; omega)
-    have hbody : WP.Exact w tabBody d0 fun z n => n = 6 ∧ ∃ y, Exec w tabLoop z y (8 * rem + 2) ∧
-        y.regs regOut = (simpleTabAux b d M T (rem + 1) j u acc).val ∧ y.regs regBase = base ∧
-        y.mem = x.mem := by
-      unfold tabBody
-      wram_exec [hkey, hmaskB, hptr, hout, hb, hpowB, ← hch, hentry_mem,
-        show acc.val ^^^ entry = newAcc.val from rfl]
-      exact (ih (j + 1) (u >>> b) newAcc _ (by omega) (by exact hmem) (by wram_simp [hbase])
-        (by wram_simp [hnext_eq]) (by wram_simp [hend]) (by wram_simp [hb]) (by wram_simp [hpowB])
-        (by wram_simp [hmaskB]) (by wram_simp) (by wram_simp) hfit_shr).elim
-        fun y ⟨hrec, hy_out, hy_base, hy_mem⟩ => ⟨y, hrec, hy_out.trans
-          (by simp only [simpleTabAux, ch, idx, hidx_lt, ↓reduceDIte, entry, newAcc]), hy_base,
-          hy_mem⟩
-    obtain ⟨z, n, hbd, rfl, y, hrec, hy⟩ := hbody
-    refine ⟨y, ?_, hy⟩
-    simpa only [tabLoop, show 6 + (8 * rem + 2) + 2 = 8 * (rem + 1) + 2 by omega] using
-      Exec.loop_iter hc hbd hrec
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter hc ?_)
+    unfold tabBody
+    wram_exec [hkey, hmaskB, hptr, hout, hb, hpowB, ← hch, hentry_mem,
+      show acc.val ^^^ entry = newAcc.val from rfl]
+    wram_call (ih (j + 1) (u >>> b) newAcc _ (by omega) (by exact hmem) (by wram_simp [hbase])
+      (by wram_simp [hnext_eq]) (by wram_simp [hend]) (by wram_simp [hb]) (by wram_simp [hpowB])
+      (by wram_simp [hmaskB]) (by wram_simp) (by wram_simp) hfit_shr)
+      with y ⟨hy_out, hy_base, hy_mem⟩
+    exact ⟨by omega, hy_out.trans
+        (by simp only [simpleTabAux, ch, idx, hidx_lt, ↓reduceDIte, entry, newAcc]), hy_base,
+        hy_mem⟩
 
 /-- 7-instruction finishing suffix of `evalCode d`: loads `2 ^ M - 1` from `base + 3` and maps
 `acc` in `regOut` to `(2 * acc + 1) &&& (2 ^ M - 1)`. -/

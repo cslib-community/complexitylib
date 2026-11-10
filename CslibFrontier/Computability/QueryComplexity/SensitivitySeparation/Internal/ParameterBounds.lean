@@ -20,10 +20,10 @@ import Mathlib.Tactic.Positivity
 # Superquadratic sensitivity separation: parameter bounds
 
 Real-number estimates on the size parameter `M` under the hypotheses `1 ≤ d` and `9 ^ (d + 1) ≤ M`.
-The label count `r = max (Nat.ceil (Real.sqrt M)) 16` is at most `2 * Real.sqrt M`, so the relative
-label budget satisfies `r / M ≤ 2 / Real.sqrt M ≤ 2 / 3 ^ (d + 1)`; equivalently
-`r / M * 3 ^ (d + 1) ≤ 2`, which is the budget condition required by the sensitivity bound of the
-construction.
+The construction uses `r = Nat.ceil (Real.sqrt M)` labels. Here `max r 16` is at most
+`2 * Real.sqrt M`, so `max r 16 / M ≤ 2 / Real.sqrt M ≤ 2 / 3 ^ (d + 1)`; equivalently
+`max r 16 / M * 3 ^ (d + 1) ≤ 2`, which is the budget condition required by the sensitivity bound
+of the construction.
 
 ## Main results
 
@@ -38,7 +38,7 @@ construction.
   [Schlesinger2026Sensitivity] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity.SensitivitySeparation
 

@@ -12,7 +12,7 @@ Search CSLib, Mathlib, local modules and the in-flight work recorded in source m
 
 ## Place the API and preserve its clients
 
-Put general definitions and lemmas in the lowest suitable module imported by their consumers. Prefer a small topic module over a high-fan-out hub when both are mathematically appropriate. Keep specialized constructions with their applications. An exposed definition body is part of its interface: add `@[expose]` only when downstream proofs need it.
+Put general definitions and lemmas in the lowest suitable module imported by their consumers. Prefer a small topic module over a high-fan-out hub when both are mathematically appropriate. Keep specialized constructions with their applications. An exposed definition body is part of its interface: add `@[expose]` only when downstream proofs need it. A section-level `@[expose]` reaches only the section's `def`-kind declarations, and CI rejects a header over a section with nothing to expose. A hidden body that the module itself rewrites with `simp [f]` or `rw [f]` still reaches importers through its equation lemma; see [Public surface under the module system](../../CONTRIBUTING.md#public-surface-under-the-module-system).
 
 Do not copy an argument from one proof into another. Before re-deriving a fact inside a proof, even a short one, search this library, CSLib, Mathlib and core for it: the library's `Nat.mul_add_div_of_lt` in [Div](../../CslibFrontier/Foundations/Data/Nat/Div.lean) and core's `Nat.mul_add_mod_of_lt` already give the quotient and remainder of `k * m + i` by `m` when `i < m`. When a proof you write needs a construction, bound or change of variables that another proof makes and nothing provides it, state it once as a lemma and use it in both, provided the lemma makes both proofs clearer; otherwise leave them. Make the lemma `private` if it is plumbing within one module; place a lemma shared across modules as the previous paragraph describes. Derive a special case, or the same result with another constant, from the general statement instead of copying and editing its proof. A routine side goal of a few lines usually stays inline: extract it only when the lemma states a fact a reader would look up by name, such as a round trip, and replaces a fragile `simpa` or a similar opaque step. A shared lemma pays when each call site can supply its hypotheses directly; one whose hypotheses restate most of what the copied block derives saves nothing. When callers of a routine keep re-deriving the same frame or invariant after each call, state the frame in the routine's specification in a form they can apply, such as a `Finset` of written registers, or prove the invariant's transfer across the call once, as a corollary of that specification. [Reuse routine postconditions and register frames](../algorithms-and-memory/memory-specifications.md#reuse-routine-postconditions-and-register-frames) shows the existing frame rules. [Library quality standard](../../CONTRIBUTING.md#library-quality-standard)
 
@@ -30,9 +30,9 @@ After adding a library file, run `lake exe mk_all` to regenerate the aggregate. 
 scripts/check.sh --quick
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It then runs the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. Unsupported or ambiguous changes fall back to the full gate. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability ratchet on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. Unsupported or ambiguous changes fall back to the full check. Quick success is development feedback, not full integration validation.
 
-Lean, dependency or build changes need all six gates on the final revision:
+Lean, dependency or build changes need the six Lean gates on the final revision, together with the other required CI checks:
 
 ```bash
 lake build --wfail --iofail
@@ -43,7 +43,7 @@ lake exe lint-style
 lake exe checkInitImports
 ```
 
-`scripts/check.sh` restores available caches and runs the sequence. A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
+`scripts/check.sh` restores available caches and runs every required step of CI's `ci-checks` job that can run locally, with CI's commands: these gates, the Python tooling tests, source hygiene, the encoding readability ratchet, documentation pins, and the tidy statement ratchet, result registry and changed-file lints that read the build outputs. [`scripts/full_check.py`](../../scripts/full_check.py) lists the steps and why the rest stay CI-only. A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
 
 ## Update and review both manuals
 
@@ -53,7 +53,8 @@ manual remains accurate, record a specific reason for it in the PR’s manual-im
 A proof-only edit preserving statements, imports and automation may need no prose change;
 a changed encoding or resource bound normally does. An edit that changes the number of lines
 in a file still moves the declarations below it, so repoint any manual links such as
-`File.lean#L120` to them; the checker below reports a link that no longer starts a declaration.
+`File.lean#L120` to them. The checker below reports a link that no longer starts a
+declaration, or whose text names a declaration of the linked file that it does not start.
 
 Run `python3 scripts/check_operator_manual.py` from the repository root, and check changed
 complete Lean clients as above. The coordinator must review both assessments and ensure independent review of affected

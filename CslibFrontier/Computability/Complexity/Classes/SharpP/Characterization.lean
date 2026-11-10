@@ -37,7 +37,7 @@ The native construction and earlier formalization credits are in `MultiTape.Coun
 the forward certified checker and its source credit are in `Classes.SharpP.Machine`.
 -/
 
-@[expose] public section
+public section
 
 open Cslib Turing Turing.MultiTapeTM
 

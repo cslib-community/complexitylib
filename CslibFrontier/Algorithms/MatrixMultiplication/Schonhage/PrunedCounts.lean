@@ -27,7 +27,7 @@ The trace is from [AlmanWilliams2026, Section 2.4.2] and Anthropic's formal-math
 `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`, [pinned source](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2/Lemma10.lean).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 

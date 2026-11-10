@@ -26,14 +26,14 @@ already `NP`-complete. A subset sum instance is a single equation, so `SubsetSum
 
 ## Main definitions
 
-* `Cslib.Complexity.ZeroOneIP`.
+* `Cslib.Complexity.ZeroOneIP`, `Cslib.Complexity.encZeroOneIP`.
 * `Cslib.Complexity.ZeroOneIP.verifier`.
 * `Cslib.Complexity.SubsetSum.toZeroOneIP`.
 
 ## Main results
 
 * `Cslib.Complexity.sum_maskSelect`: the masked sum is the scalar product with the mask.
-* `Cslib.Complexity.ZeroOneIP.mem_NP`: `ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat))`.
+* `Cslib.Complexity.ZeroOneIP.mem_NP`: `ZeroOneIP ∈ NP encZeroOneIP`.
 * `Cslib.Complexity.polyTimeReducible_SubsetSum_ZeroOneIP`,
   `Cslib.Complexity.polyTimeReducible_ThreeSAT_ZeroOneIP`, `Cslib.Complexity.ZeroOneIP_npHard`,
   `Cslib.Complexity.ZeroOneIP_npComplete`: `ZeroOneIP` is `NP`-complete.
@@ -55,6 +55,11 @@ equality form of Karp's zero-one integer programming [Karp1972]. A constraint `(
 def ZeroOneIP : Set (List (List ℕ × ℕ)) :=
   {C | ∃ x : ℕ → Bool, ∀ c ∈ C, ∑ j ∈ range c.1.length, c.1.getD j 0 * (x j).toNat = c.2}
 
+/-- Instances of `ZeroOneIP`: the equations `(a, t)`, each framed, an equation being its list `a` of
+coefficients, framed, each coefficient framed, then its right-hand side `t`; all numbers in
+binary. -/
+abbrev encZeroOneIP : List (List ℕ × ℕ) ↪ List Bool := encList (encPair (encList encNat) encNat)
+
 /-- The numbers selected by a mask sum to the scalar product with the mask. -/
 theorem sum_maskSelect (a : List ℕ) (w : List Bool) :
     (maskSelect a w).sum = ∑ j ∈ range a.length, a.getD j 0 * (w.getD j false).toNat := by
@@ -75,11 +80,11 @@ def verifier (x : List (List ℕ × ℕ) × List Bool) : Bool :=
 
 /-- `ZeroOneIP.verifier` verifies `ZeroOneIP` with certificates as long as the encoded system. -/
 theorem isVerifier :
-    IsVerifier (encList (encPair (encList encNat) encNat)) Polynomial.X verifier ZeroOneIP := by
+    IsVerifier encZeroOneIP Polynomial.X verifier ZeroOneIP := by
   intro C
   simp only [ZeroOneIP, Set.mem_ofPred_eq, Polynomial.eval_X, verifier, List.all_eq_true,
     decide_eq_true_eq, sum_maskSelect]
-  set n := (encList (encPair (encList encNat) encNat) C).length
+  set n := (encZeroOneIP C).length
   have hlen : ∀ c ∈ C, c.1.length ≤ n := fun c hc =>
     (length_le_length_encPair encNat encNat c).trans (length_le_encList_of_mem _ hc)
   constructor
@@ -95,15 +100,14 @@ theorem isVerifier :
 /-- The `ZeroOneIP` verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier
-      (encPair (encList (encPair (encList encNat) encNat)) encBits) encBool := by
+    ComputableInPolyTime verifier (encPair encZeroOneIP encBits) encBool := by
   have hmask := computableInPolyTime_maskSelect encNat
   unfold verifier
   apply allWithInput (by fun_prop)
   fun_prop
 
 /-- `ZeroOneIP` belongs to `NP`. -/
-theorem mem_NP : ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat)) :=
+theorem mem_NP : ZeroOneIP ∈ NP encZeroOneIP :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end ZeroOneIP
@@ -130,8 +134,7 @@ theorem toZeroOneIP_mem_iff (x : List ℕ × ℕ) : toZeroOneIP x ∈ ZeroOneIP 
 /-- The reduction to `ZeroOneIP` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toZeroOneIP :
-    ComputableInPolyTime toZeroOneIP (encPair (encList encNat) encNat)
-      (encList (encPair (encList encNat) encNat)) := by
+    ComputableInPolyTime toZeroOneIP encSubsetSum encZeroOneIP := by
   unfold toZeroOneIP
   fun_prop
 
@@ -139,23 +142,22 @@ end SubsetSum
 
 /-- `SubsetSum` reduces to `ZeroOneIP` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_ZeroOneIP :
-    PolyTimeReducible (encPair (encList encNat) encNat)
-      (encList (encPair (encList encNat) encNat)) SubsetSum ZeroOneIP :=
+    PolyTimeReducible encSubsetSum encZeroOneIP SubsetSum ZeroOneIP :=
   ⟨SubsetSum.toZeroOneIP, SubsetSum.computableInPolyTime_toZeroOneIP,
     fun x => (SubsetSum.toZeroOneIP_mem_iff x).symm⟩
 
 /-- `ThreeSAT` reduces to `ZeroOneIP` in polynomial time, through Sipser's digit construction. -/
 theorem polyTimeReducible_ThreeSAT_ZeroOneIP :
-    PolyTimeReducible encCNF (encList (encPair (encList encNat) encNat)) ThreeSAT ZeroOneIP :=
+    PolyTimeReducible encCNF encZeroOneIP ThreeSAT ZeroOneIP :=
   polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_ZeroOneIP
 
 /-- `ZeroOneIP` is `NP`-hard. -/
-theorem ZeroOneIP_npHard : NPHard (encList (encPair (encList encNat) encNat)) ZeroOneIP :=
+theorem ZeroOneIP_npHard : NPHard encZeroOneIP ZeroOneIP :=
   ThreeSAT_npHard.trans polyTimeReducible_ThreeSAT_ZeroOneIP
 
 /-- **Zero-one integer programming is NP-complete**, in equality form with natural coefficients
 in binary [Karp1972]. -/
-theorem ZeroOneIP_npComplete : NPComplete (encList (encPair (encList encNat) encNat)) ZeroOneIP :=
+theorem ZeroOneIP_npComplete : NPComplete encZeroOneIP ZeroOneIP :=
   ⟨ZeroOneIP.mem_NP, ZeroOneIP_npHard⟩
 
 end Cslib.Complexity

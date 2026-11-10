@@ -22,30 +22,6 @@ namespace CslibFrontierTests.Crypto.TCRSignature
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 open scoped NNReal
 
-private theorem computableInPolyTime_unary_decide_eq {α : Type} {input : α ↪ List Bool}
-    {f g : α → ℕ} (hf : ComputableInPolyTime f input encUnary)
-    (hg : ComputableInPolyTime g input encUnary) :
-    ComputableInPolyTime (fun a => decide (f a = g a)) input encBool := by
-  have hiff : ∀ a, decide (f a = g a) = (decide (f a ≤ g a) && decide (g a ≤ f a)) := by
-    intro a
-    by_cases h : f a = g a
-    · simp [h]
-    · rcases Nat.lt_or_gt_of_ne h with hlt | hgt
-      · have hnot : ¬ g a ≤ f a := Nat.not_le_of_gt hlt
-        simp [h, hnot]
-      · have hnot : ¬ f a ≤ g a := Nat.not_le_of_gt hgt
-        simp [h, hnot]
-  simpa only [hiff] using (hf.unary_le' hg).bool_and' (hg.unary_le' hf)
-
-private theorem computableInPolyTime_unary_beq {α : Type} {input : α ↪ List Bool}
-    {f g : α → ℕ} (hf : ComputableInPolyTime f input encUnary)
-    (hg : ComputableInPolyTime g input encUnary) :
-    ComputableInPolyTime (fun a => f a == g a) input encBool := by
-  have hiff : ∀ a, (f a == g a) = decide (f a = g a) := by
-    intro a
-    cases h : (f a == g a) <;> simp_all
-  simpa only [hiff] using computableInPolyTime_unary_decide_eq hf hg
-
 /-! ### Concrete checks for `IndexedSignatureScheme.double` -/
 
 /-- Toy deterministic capacity-`1` indexed scheme whose valid signatures at index `0` have length
@@ -65,7 +41,7 @@ noncomputable def lengthIdxOne : IndexedSignatureScheme where
     have hrest := ComputableInPolyTime.snd encBits (encPair encUnary encBits)
     have hu := hrest.fst'
     have hmsg := hrest.snd'
-    have hcond := computableInPolyTime_unary_beq hu (.const 0)
+    have hcond := ComputableInPolyTime.unary_beq' hu (.const 0)
     have happ := ComputableInPolyTime.bitsAppend hsk hmsg
     exact ((hcond.ite happ (.const (encIn := encIn) (encOut := encBits) [])).of_enc_eq
       fun _ => rfl).isPPTOn
@@ -77,8 +53,8 @@ noncomputable def lengthIdxOne : IndexedSignatureScheme where
     have hu := hrest.fst'
     have hmsgLen := hrest.snd'.fst'.trans ComputableInPolyTime.length_bits
     have hsigLen := hrest.snd'.snd'.trans ComputableInPolyTime.length_bits
-    exact ((computableInPolyTime_unary_beq hu (.const 0)).bool_and'
-      (computableInPolyTime_unary_beq hsigLen (hpkLen.unary_add' hmsgLen))).of_enc_eq fun _ => rfl
+    exact ((ComputableInPolyTime.unary_beq' hu (.const 0)).bool_and'
+      (hsigLen.unary_beq' (hpkLen.unary_add' hmsgLen))).of_enc_eq fun _ => rfl
   verify_sign n keys hkeys u hu msg sig hsig := by
     have hu0 : u = 0 := by omega
     subst hu0
@@ -154,8 +130,8 @@ noncomputable def lengthOneTime : SignatureScheme where
     have hrest := ComputableInPolyTime.snd encBits encRest
     have hmsgLen := hrest.fst'.trans ComputableInPolyTime.length_bits
     have hsigLen := hrest.snd'.trans ComputableInPolyTime.length_bits
-    exact ((computableInPolyTime_unary_beq hpkLen hmsgLen).bool_and'
-      (computableInPolyTime_unary_beq hsigLen hmsgLen)).of_enc_eq fun _ => rfl
+    exact ((hpkLen.unary_beq' hmsgLen).bool_and'
+      (hsigLen.unary_beq' hmsgLen)).of_enc_eq fun _ => rfl
   verify_sign n keys hkeys msg hmsg sig hsig := by
     simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hkeys hsig
     subst hkeys

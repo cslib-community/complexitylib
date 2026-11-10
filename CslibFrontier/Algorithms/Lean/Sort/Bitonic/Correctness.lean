@@ -27,7 +27,7 @@ complete records. Sorting the two halves in opposite directions supplies the bit
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitonicSort
 

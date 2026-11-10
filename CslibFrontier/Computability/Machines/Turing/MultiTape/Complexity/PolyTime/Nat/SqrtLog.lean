@@ -35,7 +35,7 @@ subexponential algorithms, such as the depth-first recursion of the contraction 
 * `Turing.MultiTapeTM.ComputableInPolyTime.unary_two_pow_div_sqrt_log_two`: the clock.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

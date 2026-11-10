@@ -163,7 +163,7 @@ private theorem native_run (mode : Fin 4) (hm : mode ≠ 3) :
   have hsz : 1 ≤ size mode := by unfold size; split_ifs <;> omega
   obtain ⟨y, hy, hs, _, _, _⟩ := exec_siftDown frontier src tmp tmp_injective src_tmp
     tmp_frontier src_frontier layout (packed mode 1) (packed_bounded mode 1 (by decide))
-    (packed_input mode 1) hA le_rfl hsz (shape mode) (down_ordered mode)
+    (packed_input mode 1) hA hsz (shape mode) (down_ordered mode)
   exact ⟨y, hy, by simpa only [packed_state] using hs⟩
 
 -- Same emitted body, only a left child: swap, exact inverse positions, dirty frame retained.

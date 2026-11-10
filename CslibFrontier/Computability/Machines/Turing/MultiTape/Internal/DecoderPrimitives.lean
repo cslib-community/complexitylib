@@ -19,7 +19,7 @@ These witnesses apply to every input word, with the original independent degree-
 output bounds. The type-indexed Decoder field can reuse them without a higher tidy calculus.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.Internal.DecoderWords
 
 /-- A runtime word decodes to itself. -/

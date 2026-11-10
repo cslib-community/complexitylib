@@ -29,7 +29,7 @@ obligations of the buffered composition compiler.
 The shared compiler and its source credit are in `MultiTape.Machine.Sequential`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeCTM
 

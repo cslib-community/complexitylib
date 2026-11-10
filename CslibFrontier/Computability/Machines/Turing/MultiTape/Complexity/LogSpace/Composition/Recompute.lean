@@ -36,7 +36,7 @@ rule of `fun_prop` for `ComputableInLogSpace`.
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.5][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
