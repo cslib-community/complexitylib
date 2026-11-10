@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import CslibFrontier.Tactic.Realize
 
 /-!
@@ -3745,19 +3746,11 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
 theorem loadOffCode_exec {base w off : ℕ} {d : Fin 248} (hd : d ≠ 0)
     (hfit : Fits w (base + off)) {x : Data rQF} (h0 : x.regs (qfReg 0) = base) :
     Exec w (loadOffCode d off) x (x.set (qfReg d) (base + off)) 2 := by
-  have hfit_off : Fits w off := hfit.of_le (Nat.le_add_left _ _)
-  have e1 : Exec w (.op (.const (qfReg d) off) : Code .exact rQF) x (x.set (qfReg d) off) 1 :=
-    Exec.const hfit_off
-  have e2 : Exec w (.op (.exactBin .add (qfReg d) (qfReg 0) (qfReg d)) : Code .exact rQF)
-      (x.set (qfReg d) off) ((x.set (qfReg d) off).set (qfReg d) (base + off)) 1 := by
-    apply exec_exactBin _ hfit
-    simp [Data.set_regs, qfReg_inj, hd.symm, h0]
-  have hset : (x.set (qfReg d) off).set (qfReg d) (base + off) =
-      x.set (qfReg d) (base + off) := by
-    cases x
-    simp [Data.set]
-  rw [hset] at e2
-  exact e1.seq e2
+  have hd' : qfReg 0 ≠ qfReg d := by simp [qfReg_inj, hd.symm]
+  unfold loadOffCode
+  wram_exec [h0]
+  cases x
+  simp [Data.set]
 
 /-- Source register map `Fin 15 → Fin rQF` (`qfReg 10 .. qfReg 24`) for `clusterOpProg`. -/
 @[expose] noncomputable def clusterSrcRegs (i : Fin (WordEncoding.width ClusterInput)) : Fin rQF :=
@@ -3819,78 +3812,34 @@ theorem loadClusterInputCode_exec {base w w₀ n k : ℕ}
   intro d x₁
   have hfit_i (i : Fin (WordEncoding.width ClusterInput)) : Fits w (d i) :=
     encode_mkClusterInput_lt hw₀_pos hw hfit_space q r hop i
-  set s0 := x.set (qfReg 10) (d 0)
-  have e0 : Exec w (.op (.copy (qfReg 10) (qfReg 2)) : Code .exact rQF) x s0 1 := by
-    simpa [s0, d, h2] using
-      (Exec.copy (B := .exact) (w := w) (d := qfReg 10) (s := qfReg 2) (x := x))
-  set s1 := s0.set (qfReg 11) (d 1)
-  have e1 : Exec w (.op (.copy (qfReg 11) (qfReg 3)) : Code .exact rQF) s0 s1 1 := by
-    have hs0_3 : s0.regs (qfReg 3) = d 1 := by simp +decide [s0, d, h3]
-    simpa [s1, hs0_3] using
-      (Exec.copy (B := .exact) (w := w) (d := qfReg 11) (s := qfReg 3) (x := s0))
-  set s2 := s1.set (qfReg 12) (d 2)
-  have e2 : Exec w (.op (.copy (qfReg 12) (qfReg 247)) : Code .exact rQF) s1 s2 1 := by
-    have hs1_247 : s1.regs (qfReg 247) = d 2 := by simp +decide [s1, s0, d, h247]
-    simpa [s2, hs1_247] using
-      (Exec.copy (B := .exact) (w := w) (d := qfReg 12) (s := qfReg 247) (x := s1))
-  set s3 := s2.set (qfReg 13) (d 3)
-  have e3 : Exec w (.op (.const (qfReg 13) (d 3)) : Code .exact rQF) s2 s3 1 :=
-    Exec.const (hfit_i 3)
-  set s4 := s3.set (qfReg 14) (d 4)
-  have e4 : Exec w (.op (.const (qfReg 14) (d 4)) : Code .exact rQF) s3 s4 1 :=
-    Exec.const (hfit_i 4)
-  have hfit5 : Fits w (base + fullOff w w₀ n) := by
-    rw [base_add_fullOff]; exact hfit_i 5
-  set s5 := s4.set (qfReg 15) (d 5)
-  have e5 : Exec w (loadOffCode 15 (fullOff w w₀ n)) s4 s5 2 := by
-    have hs4_0 : s4.regs (qfReg 0) = base := by simp +decide [s4, s3, s2, s1, s0, h0]
-    have h := loadOffCode_exec (d := 15) (by decide) hfit5 hs4_0
-    rwa [base_add_fullOff] at h
-  have hfit6 : Fits w (base + occOff w w₀ n) := by
-    rw [base_add_occOff]; exact hfit_i 6
-  set s6 := s5.set (qfReg 16) (d 6)
-  have e6 : Exec w (loadOffCode 16 (occOff w w₀ n)) s5 s6 2 := by
-    have hs5_0 : s5.regs (qfReg 0) = base := by simp +decide [s5, s4, s3, s2, s1, s0, h0]
-    have h := loadOffCode_exec (d := 16) (by decide) hfit6 hs5_0
-    rwa [base_add_occOff] at h
-  have hfit7 : Fits w (base + runOff w w₀ n) := by
-    rw [base_add_runOff]; exact hfit_i 7
-  set s7 := s6.set (qfReg 17) (d 7)
-  have e7 : Exec w (loadOffCode 17 (runOff w w₀ n)) s6 s7 2 := by
-    have hs6_0 : s6.regs (qfReg 0) = base := by simp +decide [s6, s5, s4, s3, s2, s1, s0, h0]
-    have h := loadOffCode_exec (d := 17) (by decide) hfit7 hs6_0
-    rwa [base_add_runOff] at h
-  have hfit8 : Fits w (base + remOff w w₀ n) := by
-    rw [base_add_remOff]; exact hfit_i 8
-  set s8 := s7.set (qfReg 18) (d 8)
-  have e8 : Exec w (loadOffCode 18 (remOff w w₀ n)) s7 s8 2 := by
-    have hs7_0 : s7.regs (qfReg 0) = base := by simp +decide [s7, s6, s5, s4, s3, s2, s1, s0, h0]
-    have h := loadOffCode_exec (d := 18) (by decide) hfit8 hs7_0
-    rwa [base_add_remOff] at h
-  set s9 := s8.set (qfReg 19) (d 9)
-  have e9 : Exec w (.op (.const (qfReg 19) (d 9)) : Code .exact rQF) s8 s9 1 :=
-    Exec.const (hfit_i 9)
-  set s10 := s9.set (qfReg 20) (d 10)
-  have e10 : Exec w (.op (.const (qfReg 20) (d 10)) : Code .exact rQF) s9 s10 1 :=
-    Exec.const (hfit_i 10)
-  set s11 := s10.set (qfReg 21) (d 11)
-  have e11 : Exec w (.op (.const (qfReg 21) (d 11)) : Code .exact rQF) s10 s11 1 :=
-    Exec.const (hfit_i 11)
-  set s12 := s11.set (qfReg 22) (d 12)
-  have e12 : Exec w (.op (.const (qfReg 22) (d 12)) : Code .exact rQF) s11 s12 1 :=
-    Exec.const (hfit_i 12)
-  set s13 := s12.set (qfReg 23) (d 13)
-  have e13 : Exec w (.op (.const (qfReg 23) (d 13)) : Code .exact rQF) s12 s13 1 :=
-    Exec.const (hfit_i 13)
-  set s14 := s13.set (qfReg 24) (d 14)
-  have e14 : Exec w (.op (.const (qfReg 24) (d 14)) : Code .exact rQF) s13 s14 1 :=
-    Exec.const (hfit_i 14)
-  refine ⟨e0.seq (e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq
-      (e8.seq (e9.seq (e10.seq (e11.seq (e12.seq (e13.seq e14))))))))))))),
-    rfl,
-    by simp +decide [x₁, loadClusterInputData, h0],
-    by simp +decide [x₁, loadClusterInputData, hfr],
-    ?_⟩
+  have hf3 := hfit_i 3
+  have hf4 := hfit_i 4
+  have hf9 := hfit_i 9
+  have hf10 := hfit_i 10
+  have hf11 := hfit_i 11
+  have hf12 := hfit_i 12
+  have hf13 := hfit_i 13
+  have hf14 := hfit_i 14
+  simp only [d, mkClusterInput, Matrix.cons_val] at hf3 hf4 hf9 hf10 hf11 hf12 hf13 hf14
+  refine ⟨?_, rfl, by simp +decide [x₁, loadClusterInputData, h0],
+    by simp +decide [x₁, loadClusterInputData, hfr], ?_⟩
+  · unfold loadClusterInputCode
+    wram_exec [h2, h3, h247]
+    refine WP.Exact.of_exec (loadOffCode_exec (d := 15) (by decide)
+      (by rw [base_add_fullOff]; exact hfit_i 5) (by wram_simp [h0])) ?_
+    wram_exec
+    refine WP.Exact.of_exec (loadOffCode_exec (d := 16) (by decide)
+      (by rw [base_add_occOff]; exact hfit_i 6) (by wram_simp [h0])) ?_
+    wram_exec
+    refine WP.Exact.of_exec (loadOffCode_exec (d := 17) (by decide)
+      (by rw [base_add_runOff]; exact hfit_i 7) (by wram_simp [h0])) ?_
+    wram_exec
+    refine WP.Exact.of_exec (loadOffCode_exec (d := 18) (by decide)
+      (by rw [base_add_remOff]; exact hfit_i 8) (by wram_simp [h0])) ?_
+    wram_exec
+    simp only [x₁, loadClusterInputData, d, mkClusterInput, base_add_fullOff, base_add_occOff,
+      base_add_runOff, base_add_remOff]
+    rfl
   funext i
   change x₁.regs (clusterSrcRegs i) = d i
   fin_cases i <;> simp +decide [x₁, loadClusterInputData, clusterSrcRegs, d, mkClusterInput]
