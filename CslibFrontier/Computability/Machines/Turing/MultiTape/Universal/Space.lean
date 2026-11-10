@@ -131,17 +131,6 @@ lemma length_step_workTapes (d : Desc) (x : List ℕ) (c : SCfg) :
   repeat' split
   all_goals first | rfl | exact length_applyTapes_eq _ _
 
-/-- A step applies an action to every work tape. -/
-lemma step_tape (d : Desc) (x : List ℕ) (c : SCfg) (i : ℕ) :
-    ∃ a, (step d x c).1.workTapes.getD i .blank = (c.workTapes.getD i .blank).apply a := by
-  rcases Nat.lt_or_ge i c.workTapes.length with hi | hi
-  · rw [step_eq_stepWith, stepWith]
-    repeat' split
-    all_goals first | exact ⟨_, getD_applyTapes _ _ hi⟩ | exact ⟨(none, 0), (apply_none _).symm⟩
-  · refine ⟨(none, 0), ?_⟩
-    rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
-      (by rw [length_step_workTapes]; exact hi)]
-
 -- vendored: added for the descriptions of nondeterministic machines
 -- (`Universal/Nondeterministic.lean`)
 /-- An action applies a tape action to every work tape. -/
@@ -152,6 +141,14 @@ public lemma Act.apply_tape (a : Act) (x : List ℕ) (c : SCfg) (i : ℕ) :
   · refine ⟨(none, 0), ?_⟩
     rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
       (by simpa [Act.apply, length_applyTapes_eq] using hi)]
+
+-- vendored: derived from `Act.apply_tape` (review of #4180)
+/-- A step applies an action to every work tape. -/
+lemma step_tape (d : Desc) (x : List ℕ) (c : SCfg) (i : ℕ) :
+    ∃ a, (step d x c).1.workTapes.getD i .blank = (c.workTapes.getD i .blank).apply a := by
+  simp only [step]
+  repeat' split
+  all_goals first | exact Act.apply_tape _ x c i | exact ⟨(none, 0), (apply_none _).symm⟩
 
 lemma head_apply (t : Tape) (a : TapeAct) :
     (t.apply a).head = t.head - 1 ∨ (t.apply a).head = t.head ∨ (t.apply a).head = t.head + 1 := by
