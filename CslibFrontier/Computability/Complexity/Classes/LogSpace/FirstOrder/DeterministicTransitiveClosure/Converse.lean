@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 public import CslibFrontier.Logics.FirstOrder.Ordered.DeterministicTransitiveClosure
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
 import CslibFrontier.Logics.FirstOrder.Operator.DeterministicTransitiveClosure.Tuple
 
 /-!
@@ -32,6 +33,8 @@ none in the deterministic reduct.
 * `Cslib.Complexity.ConfigurationGraph.realize_acceptanceSentence_dtc`: under deterministic
   closure, the acceptance sentence of a deterministic machine holds exactly when it accepts.
 * `Cslib.Logic.FO.Ordered.DTCDefinable.of_encodedLanguage_mem_L`: L ⊆ FO(DTC).
+* `Cslib.Logic.FO.Ordered.dtcDefinable_iff_encodedLanguage_mem_L`: FO(DTC) captures L, with
+  the converse inclusion `DTCDefinable.encodedLanguage_mem_L`.
 
 ## References
 
@@ -87,5 +90,13 @@ theorem DTCDefinable.of_encodedLanguage_mem_L {L : Language} [L.IsRelational]
     (htm.decidesInSpace hA) fun _ _ =>
       DTC.deterministicReduct_eq_self (rightUnique_registerStep_fin tm.deterministic)
   exact ⟨φ, hφ⟩
+
+/-- **FO(DTC) captures L** ([Immerman1987], Theorem 4.2): a single FO(DTC) sentence defines an
+ordered query exactly when its source-only language is in native deterministic logarithmic
+space. -/
+theorem dtcDefinable_iff_encodedLanguage_mem_L {L : Language} [L.IsRelational]
+    (v : Vocabulary L) (K : Query L) :
+    DTCDefinable K ↔ K.encodedLanguage v ∈ Complexity.L encStructure :=
+  ⟨fun h => h.encodedLanguage_mem_L v, DTCDefinable.of_encodedLanguage_mem_L v⟩
 
 end Cslib.Logic.FO.Ordered
