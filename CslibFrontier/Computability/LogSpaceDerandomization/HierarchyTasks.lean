@@ -8,9 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.LogSpaceDerandomization.DenseRowRecipes
-import all CslibFrontier.Computability.LogSpaceDerandomization.DetectedHierarchy
-import all CslibFrontier.Computability.LogSpaceDerandomization.HierarchyParams
-import all CslibFrontier.Computability.LogSpaceDerandomization.CorrectionHierarchy
 
 /-!
 # Bounded cross-stage hierarchy tasks
@@ -483,7 +480,7 @@ theorem hierarchyTaskRecipe_bins (l i : ℕ) :
 theorem hierarchyTask_base_zero :
     hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.row 0 .base) = S := by
   simp only [hierarchyTaskValue, CorrectionSampling.value,
-    PilotRowRecipe.value, PilotTask.value, hierarchy]
+    PilotRowRecipe.value, PilotTask.value, hierarchy_zero]
 
 /-- At positive stages, the base row is the actual preceding correction-and-copy output. -/
 theorem hierarchyTask_base_succ (l : ℕ) :
@@ -507,7 +504,7 @@ theorem hierarchyTask_previousReward_succ (l : ℕ) :
   ext a
   rw [hierarchyProj_mulVec]
   simp only [hierarchyTaskValue, CorrectionSampling.value,
-    Fin.val_last, P.correctionIter_last, hierarchyCorrection]
+    Fin.val_last, P.correctionIter_last, hierarchyCorrection_eq]
 
 /-- The matrix output reads exactly its earlier base, final actual correction and copy
 weights. This is the existing residual and copy recipe, including all copy symbols. -/
@@ -522,8 +519,8 @@ theorem hierarchyTask_nextMatrix (l : ℕ) :
             (.row l (.correction (Fin.last P.k))) *
           hierarchyTaskValue P e X Y S e₀ Xs Z Zt A (.row l .base))).submatrix
         (fun a => ofLex (e l a)) (fun b => ofLex (e l b)) := by
-  simp only [hierarchyTaskValue, hierarchy, HierarchyParams.next, HierarchyParams.residual,
-    CorrectionSampling.value, PilotRowRecipe.value,
+  simp only [hierarchyTaskValue, hierarchy_succ, HierarchyParams.next_eq,
+    HierarchyParams.residual_eq, CorrectionSampling.value, PilotRowRecipe.value,
     PilotTask.value, Fin.val_last, P.correctionIter_last, submatrix_submatrix]
   rfl
 

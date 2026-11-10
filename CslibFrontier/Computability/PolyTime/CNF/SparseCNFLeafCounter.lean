@@ -447,7 +447,7 @@ variable {P : Type} {encP : P ↪ List Bool} {NOf BOf : P → ℕ}
 
 /-- Split Section 6.3 runtime upper bound: `poly L` outside `entersSparseFastPath`, and initial
 Tanner search plus `(3 * N + 1) * ((2 * m) ^ P + 1)` candidate system evaluations inside. -/
-def sparseCNFTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : ℕ)
+@[expose] def sparseCNFTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : ℕ)
     (poly qInit : ℕ → ℕ) (R : P × CNF ℕ → ℕ) (x : P × CNF ℕ) : ℕ :=
   let L := (encPair encP encCNF x).length; let N := NOf x.1; let B := BOf x.1; let m := x.2.length
   if entersSparseFastPath k N₀ N B x.2 then
@@ -457,7 +457,7 @@ def sparseCNFTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : 
 
 /-- Hypothesis bounding `cPoly.time (NOf x.1, sys) ≤ R x` on every compiled sparse system of at
 most `6 * NOf x.1` equations and polynomial encoded length produced on the Section 6.3 fast path. -/
-def ValidPolyTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : ℕ)
+@[expose] def ValidPolyTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : ℕ)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
     (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
     (polySys : ℕ → ℕ) (R : P × CNF ℕ → ℕ) : Prop :=
@@ -581,7 +581,9 @@ private theorem polyBounded_greedyBoundedCertificate_space (k : ℕ)
     unfold greedyBoundedCertificate; simp only [hSpace, ↓reduceDIte]
   rw [heq]; exact PolyBounded.of_polynomiallyBounded _ hG.choose_spec.1
 
-private theorem computableInPolyTime_validDeclaredInput (k : ℕ)
+/-- The declared-input check `validDeclaredInput k (NOf p) φ` is computable in polynomial time
+when the declared variable bound `NOf` is. -/
+theorem computableInPolyTime_validDeclaredInput (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (fun x : P × CNF ℕ => validDeclaredInput k (NOf x.1) x.2)
       (encPair encP encCNF) encBool := by

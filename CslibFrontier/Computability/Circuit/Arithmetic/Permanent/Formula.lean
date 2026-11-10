@@ -40,7 +40,9 @@ with one additional internal vertex. No new formula or complexity-class model is
 
 The closure of permanent projections under products and padding, with the private matrix
 description it rests on, is in
-`CslibFrontier.Computability.Circuit.Arithmetic.Permanent.Projection`.
+`CslibFrontier.Computability.Circuit.Arithmetic.Permanent.Projection`. This module reads that
+description (`IsSubstMatrix`, `IsSubstEntry`) through `import all`, since it is proof plumbing
+rather than API.
 
 ## References
 

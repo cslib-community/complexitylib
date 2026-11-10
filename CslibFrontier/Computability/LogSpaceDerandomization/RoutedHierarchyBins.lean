@@ -11,8 +11,6 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.HierarchyTasks
 public import CslibFrontier.Computability.LogSpaceDerandomization.ScheduledFineProductMean
 public import CslibFrontier.Computability.LogSpaceDerandomization.PairwiseIndependentHash.AtomChannels
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameSubstitution
-import all CslibFrontier.Computability.LogSpaceDerandomization.DetectedHierarchy
-import all CslibFrontier.Computability.LogSpaceDerandomization.HierarchyParams
 
 /-!
 # Routed bins of the actual correction-and-copy hierarchy
@@ -417,7 +415,8 @@ theorem sum_expect_hierarchy_routed_bins {Ω : Type*} [Fintype Ω]
           (ofLex (e l a)).1 (ofLex (e l d)).1)) = hierarchy P e X Y S (l + 1) a d := by
   simp_rw [DenseSamplingLaws.expect_direct (A _ _) (hb _) hD hDM]
   rw [← mul_sum, sum_routedBinCutoff n hb hχ hcover]
-  simp only [hierarchy, HierarchyParams.next, submatrix_apply, copyStage, copySplit, of_apply]
+  simp only [hierarchy_succ, HierarchyParams.next_eq, submatrix_apply, copyStage, copySplit,
+    of_apply]
   ring
 
 end Hierarchy

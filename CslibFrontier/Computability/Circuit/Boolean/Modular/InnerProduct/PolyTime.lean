@@ -22,6 +22,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 Unary array count and word width generate all block selectors, complete product circuits and the
 balanced sum. Binary wire numbers and every generated code list are charged.
 
+The code equation is proved stage by stage against the private block selectors
+`innerProductInputs` and summands `innerProductTerm` of `Modular.InnerProduct`, which this module
+reads through `import all`.
+
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Modular.innerProductCode`: raw circuit code for the modular inner product.
