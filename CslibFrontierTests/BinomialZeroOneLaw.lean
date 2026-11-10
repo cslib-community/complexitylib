@@ -10,10 +10,11 @@ import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 # Tests for the 0-1 law for `G(n, p)` with constant edge probability
 
 The law at the edge probability `p = 1/3 ≠ 1/2`: a triangle exists almost surely and "there are no
-edges" fails almost surely, both decided in the Rado graph. The hypothesis `0 < p < 1` is needed:
-in `G(n, 0)` (no edges) and in `G(n, 1)` (complete) an extension axiom that holds in the Rado graph
-has probability `0` for every `n ≥ 1`, so the Rado-graph characterization fails at `p = 0` and
-`p = 1`. Finally `G(2, 1/2)` agrees with the uniform random graph on its only potential edge.
+edges" fails almost surely, both decided in the Rado graph. The Rado-graph characterization needs
+the hypothesis `0 < p < 1`: in `G(n, 0)` (no edges) and in `G(n, 1)` (complete) an extension axiom
+that holds in the Rado graph has probability `0` for every `n ≥ 1`, so the characterization fails
+at `p = 0` and `p = 1`. Finally `G(2, 1/2)` agrees with the uniform random graph on its only
+potential edge.
 -/
 
 namespace CslibFrontierTests.BinomialZeroOneLaw
@@ -80,7 +81,7 @@ example (φ : Language.graph.Sentence) :
       Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) atTop (nhds 1) :=
   tendsto_binomialRandom_real_one_iff_tendsto_randomGraphProb third_pos third_lt_one φ
 
-/-! ### The hypothesis `0 < p < 1` is needed -/
+/-! ### The Rado-graph characterization needs `0 < p < 1` -/
 
 /-- `G(n, 0)` is the empty graph, which violates the extension axiom "every vertex has a neighbour"
 once `n ≥ 1`. -/
