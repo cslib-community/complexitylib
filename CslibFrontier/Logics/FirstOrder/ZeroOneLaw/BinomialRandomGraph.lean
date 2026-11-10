@@ -151,22 +151,17 @@ in the Rado graph. -/
 theorem tendsto_binomialRandom_real_one_iff_radoGraph {p : I} (hp0 : 0 < (p : ℝ))
     (hp1 : (p : ℝ) < 1) (φ : Language.graph.Sentence) :
     Tendsto (fun n => G(Fin n, p).real {G | Satisfies G φ}) atTop (nhds 1) ↔
-      Satisfies SimpleGraph.radoGraph φ := by
-  let := SimpleGraph.radoGraph.structure
-  have := model_radoGraph
-  rw [tendsto_binomialRandom_real_one_iff hp0 hp1]
-  exact (isComplete_randomGraphTheory.realize_sentence_iff φ ℕ).symm
+      Satisfies SimpleGraph.radoGraph φ :=
+  (tendsto_binomialRandom_real_one_iff hp0 hp1 φ).trans (models_iff_satisfies_radoGraph φ)
 
 /-- For constant `0 < p < 1`, a sentence holds in `G(n, p)` with probability tending to `0`
 exactly when it fails in the Rado graph. -/
 theorem tendsto_binomialRandom_real_zero_iff_radoGraph {p : I} (hp0 : 0 < (p : ℝ))
     (hp1 : (p : ℝ) < 1) (φ : Language.graph.Sentence) :
     Tendsto (fun n => G(Fin n, p).real {G | Satisfies G φ}) atTop (nhds 0) ↔
-      ¬Satisfies SimpleGraph.radoGraph φ := by
-  let := SimpleGraph.radoGraph.structure
-  have := model_radoGraph
-  rw [tendsto_binomialRandom_real_zero_iff hp0 hp1, ← satisfies_not]
-  exact (isComplete_randomGraphTheory.realize_sentence_iff φ.not ℕ).symm
+      ¬Satisfies SimpleGraph.radoGraph φ :=
+  (tendsto_binomialRandom_real_zero_iff hp0 hp1 φ).trans <|
+    (models_iff_satisfies_radoGraph φ.not).trans (satisfies_not _ φ)
 
 /-- **The almost-sure theory does not depend on `p`.** For constant `0 < p < 1`, a sentence holds
 almost surely in `G(n, p)` exactly when it holds almost surely in the uniform random graph

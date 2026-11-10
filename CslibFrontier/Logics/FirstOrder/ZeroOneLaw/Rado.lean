@@ -31,6 +31,8 @@ subgraph of it [Rado1964], and it is isomorphic to its complement.
 * `Cslib.Logic.FO.graph.satisfies_extensionAxiom_iff_exists_adj`: the extension axioms in the
   finite-set form `∀ A B` disjoint, `∃ z ∉ A ∪ B` adjacent to all of `A` and none of `B`.
 * `Cslib.Logic.FO.graph.model_radoGraph`: the Rado graph is a model of `randomGraphTheory`.
+* `Cslib.Logic.FO.graph.models_iff_satisfies_radoGraph`: the consequences of `randomGraphTheory`
+  are the sentences true in the Rado graph.
 * `Cslib.Logic.FO.graph.tendsto_randomGraphProb_one_iff_radoGraph`,
   `Cslib.Logic.FO.graph.tendsto_randomGraphProb_zero_iff_radoGraph`: a sentence holds almost
   surely iff it holds in the Rado graph, and almost never iff it fails there.
@@ -131,26 +133,29 @@ theorem model_radoGraph :
     @Theory.Model _ ℕ SimpleGraph.radoGraph.structure randomGraphTheory :=
   model_randomGraphTheory_of_satisfies _ satisfies_extensionAxiom_radoGraph
 
+/-- A sentence of the graph language is a consequence of `randomGraphTheory` exactly when it holds
+in the Rado graph: the theory is complete and the Rado graph is a model of it. -/
+theorem models_iff_satisfies_radoGraph (φ : Language.graph.Sentence) :
+    randomGraphTheory ⊨ᵇ φ ↔ Satisfies SimpleGraph.radoGraph φ := by
+  let := SimpleGraph.radoGraph.structure
+  have := model_radoGraph
+  exact (isComplete_randomGraphTheory.realize_sentence_iff φ ℕ).symm
+
 /-- **The almost-sure theory of `G(n, 1/2)` is the theory of the Rado graph.** A sentence of the
 graph language holds in `G(n, 1/2)` with probability tending to `1` exactly when it holds in the
 Rado graph [Libkin2004, Section 12.3]. -/
 theorem tendsto_randomGraphProb_one_iff_radoGraph (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 1) ↔
-      Satisfies SimpleGraph.radoGraph φ := by
-  let := SimpleGraph.radoGraph.structure
-  have := model_radoGraph
-  rw [tendsto_randomGraphProb_one_iff]
-  exact (isComplete_randomGraphTheory.realize_sentence_iff φ ℕ).symm
+      Satisfies SimpleGraph.radoGraph φ :=
+  (tendsto_randomGraphProb_one_iff φ).trans (models_iff_satisfies_radoGraph φ)
 
 /-- A sentence of the graph language holds in `G(n, 1/2)` with probability tending to `0` exactly
 when it fails in the Rado graph. -/
 theorem tendsto_randomGraphProb_zero_iff_radoGraph (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 0) ↔
-      ¬Satisfies SimpleGraph.radoGraph φ := by
-  let := SimpleGraph.radoGraph.structure
-  have := model_radoGraph
-  rw [tendsto_randomGraphProb_zero_iff, ← satisfies_not]
-  exact (isComplete_randomGraphTheory.realize_sentence_iff φ.not ℕ).symm
+      ¬Satisfies SimpleGraph.radoGraph φ :=
+  (tendsto_randomGraphProb_zero_iff φ).trans <|
+    (models_iff_satisfies_radoGraph φ.not).trans (satisfies_not _ φ)
 
 /-! ### Uniqueness, universality and self-complementarity -/
 

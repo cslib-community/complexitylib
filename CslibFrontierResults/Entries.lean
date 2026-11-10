@@ -914,12 +914,13 @@ register_result "zero-one-law-relational" where
     uniform measure on L-structures on {0, …, n - 1}. The limit is 1 exactly for the \
     consequences of the extension theory and 0 exactly when the negation is one. The law \
     fails with a nullary symbol. For Language.graph the measure is uniform on directed \
-    graphs with loops, so this is not the G(n, 1/2) law. The bernoulliStructure theorems \
-    extend this to a constant probability 0 < p R < 1 for each relation symbol R, with the \
-    same almost-sure sentences for every such p; this form is an adaptation of Fagin's \
-    proof, not checked against a primary source. With p R equal to 0 or 1 the \
-    characterization fails. Unlabelled structures and probabilities depending on n are not \
-    covered."
+    graphs with loops, so this is not the G(n, 1/2) law. The sources cover this uniform law, \
+    in which every atomic fact has probability 1/2 (Fagin1976). The bernoulliStructure \
+    theorems extend it to a constant probability 0 < p R < 1 for each relation symbol R, with \
+    the same almost-sure sentences for every such p. That extension is an adaptation of \
+    Fagin's proof made here; no primary source for it was found, and none of the listed \
+    sources is claimed for it. With p R equal to 0 or 1 the characterization fails. \
+    Unlabelled structures and probabilities depending on n are not covered."
 
 register_result "buchi-elgot-trakhtenbrot" where
   title := "Büchi–Elgot–Trakhtenbrot: MSO-definable languages are the regular languages"

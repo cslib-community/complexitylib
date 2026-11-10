@@ -20,9 +20,10 @@ import Mathlib.Data.Fintype.CardEmbedding
 
 Every extension axiom holds in the binomial random graph `G(n, p)` (Mathlib's
 `SimpleGraph.binomialRandom (Fin n) p`) with probability tending to `1`, for every constant
-`0 < p < 1` [Fagin1976] [AlonSpencer2016, Section 10.4]. For a tuple `x` of `k` distinct vertices
-and a pattern `s`, each of the `n - k` other vertices realizes `s` towards `x` with probability at
-least `min (p, 1 - p) ^ k`, independently of the others
+`0 < p < 1` [AlonSpencer2016, Section 10.4]. The argument is Fagin's for `p = 1/2` [Fagin1976],
+with the probability that one vertex realizes a pattern bounded below. For a tuple `x` of `k`
+distinct vertices and a pattern `s`, each of the `n - k` other vertices realizes `s` towards `x`
+with probability at least `min (p, 1 - p) ^ k`, independently of the others
 (`SimpleGraph.binomialRandom_real_forall_not_witness`). A union bound over the
 `n (n - 1) ⋯ (n - k + 1)` tuples gives
 `Pr[G(n, p) ⊭ EA(k, s)] ≤ n (n - 1) ⋯ (n - k + 1) · (1 - min (p, 1 - p) ^ k) ^ (n - k)`,
