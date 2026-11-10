@@ -15,7 +15,7 @@ Concrete nonvacuity, strong-to-weak specialization, fixed-output-length normaliz
 schedule-reindexing tests for `WeakOneWayAt`, `WeakOneWay`, and `OneWayReindex`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.WeakOneWayTests
 

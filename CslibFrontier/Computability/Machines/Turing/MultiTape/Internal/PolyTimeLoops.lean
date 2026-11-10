@@ -20,7 +20,7 @@ bounded only on reachable prefixes; no bound on arbitrary unreachable states is 
 The rules use the canonical direct core and its independent polynomial-growth algebra.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

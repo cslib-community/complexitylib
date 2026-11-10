@@ -16,6 +16,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
@@ -260,8 +261,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     rw [eval_prgRealGame]
     change (generatorEnsemble generator n).bind _ = _
     simp_rw [eval_reduction]
-    rw [PMF.bind_comm]
-    congr 1 with i : 1
+    pmf_swap with i
     exact eval_real_hop generator count adversary n i.val
   have hideal : ProbComp.eval (prgIdealGame (fun n => n + 1)
       (reduction generator count adversary) n) =
@@ -271,8 +271,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     rw [eval_prgIdealGame]
     change (uniformList (n + 1)).bind _ = _
     simp_rw [eval_reduction]
-    rw [PMF.bind_comm]
-    congr 1 with i : 1
+    pmf_swap with i
     exact eval_ideal_hop generator count adversary n i.val
   have havg := Game.advantage_hybrid_average
     (fun i => (hybrid generator n (count n) i).bind

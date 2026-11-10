@@ -58,7 +58,7 @@ within `ε` of `f` when `μ` computes `f` with error `ε`. So `adeg_ε(f) ≤ R_
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

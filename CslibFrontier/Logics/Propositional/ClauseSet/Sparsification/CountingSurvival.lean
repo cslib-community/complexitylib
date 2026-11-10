@@ -37,7 +37,7 @@ events or prove the complete Appendix A.2 recurrence, depth, leaf count or nativ
 * [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.1, Lemma A.1][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.ClauseSet.Sparsification
 

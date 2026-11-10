@@ -28,7 +28,7 @@ These elementary parameter bridges are original and reuse the existing finite Ch
 They do not change the finite instances or replace the actual input length by a padded input.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.ThreeSum.ChanHe
 

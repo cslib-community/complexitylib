@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.GenericRAM.Native.Certificate
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 
 /-!
 # Polynomial preprocessing and decoding of native algorithms
@@ -50,16 +52,9 @@ theorem exists_polynomial_overhead (c : NativeCertificate f eb ec)
   let Y : ℕ → ℕ := fun n => aY * (n + 1) ^ dY
   let Q : ℕ → ℕ := fun n => K * (Y n + 1) ^ K
   let F : ℕ → ℕ := fun n => p n + Q n + q (cO * (Q n + 1))
-  have hYp : PolyBounded id Y :=
-    (PolyBounded.const aY).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow dY)
-  have hQp : PolyBounded id Q :=
-    (PolyBounded.const K).mul ((hYp.add (PolyBounded.const 1)).pow K)
-  have hFp : PolyBounded id F :=
-    ((PolyBounded.of_polynomiallyBounded id hpp).add hQp).add
-      ((PolyBounded.of_polynomiallyBounded id hqp).comp
-        ((PolyBounded.const cO).mul (hQp.add (PolyBounded.const 1))))
-  obtain ⟨aF, dF, hF⟩ := hFp.exists_le
-  refine ⟨aF + dF, fun a X hX ht hs => ?_⟩
+  have hFp : PolyBounded id F := by growth_poly
+  obtain ⟨KF, hF⟩ := hFp.exists_le_succ_pow
+  refine ⟨KF, fun a X hX ht hs => ?_⟩
   set n := (ei a).length
   have hQ : K * ((eb (prepare a)).length + 1) ^ K ≤ Q n :=
     Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (Nat.add_le_add_right (hY a) 1) K)
@@ -71,9 +66,7 @@ theorem exists_polynomial_overhead (c : NativeCertificate f eb ec)
     (hqle (f (prepare a))).1.trans (hqm hlen)
   have hds : (ofPolyTime hd).space (f (prepare a)) ≤ q (cO * (Q n + 1)) :=
     (hqle (f (prepare a))).2.trans (hqm hlen)
-  have hbound : F n ≤ (aF + dF) * (n + 1) ^ (aF + dF) :=
-    (hF n).trans (Nat.mul_le_mul (by omega)
-      (Nat.pow_le_pow_right (by omega) (by omega)))
+  have hbound : F n ≤ KF * (n + 1) ^ KF := hF _ le_rfl n
   have hpt : (ofPolyTime hp).time a ≤ p n := (hple a).1
   have hps : (ofPolyTime hp).space a ≤ p n := (hple a).2
   change (ofPolyTime hp).time a + c.time (prepare a) +
@@ -88,10 +81,10 @@ theorem exists_polynomial_overhead (c : NativeCertificate f eb ec)
           (ofPolyTime hd).time (f (prepare a))
         ≤ p n * X + Q n * X + q (cO * (Q n + 1)) * X := by omega
       _ = F n * X := by simp only [F]; ring
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) * X := Nat.mul_le_mul_right _ hbound
+      _ ≤ KF * (n + 1) ^ KF * X := Nat.mul_le_mul_right _ hbound
   · calc (ofPolyTime hp).space a + c.space (prepare a) +
           (ofPolyTime hd).space (f (prepare a))
         ≤ F n := by dsimp only [F]; omega
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) := hbound
+      _ ≤ KF * (n + 1) ^ KF := hbound
 
 end Cslib.GenericRAM.NativeCertificate

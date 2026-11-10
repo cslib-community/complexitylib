@@ -282,7 +282,7 @@ private theorem exists_computableInO_accepts (d : ℕ) : ∃ D, ComputableInO
     (ComputableInO.snd encBits (encPair encBits encBits)).of_enc_eq fun _ => rfl
   have hsym := Universal.computableInO_map_eBit.comp hword
   have hy := (ComputableInO.snd encBits (encPair encBits encBits)).fst'
-  have hclock := (timeConstructible_succ_pow (k := d + 3) (by omega)).computableInO.comp hy
+  have hclock := (timeConstructible_succ_pow (d + 3)).computableInO.comp hy
   have hU := computableInO_universal.comp (hdesc.prod (hsym.prod hclock))
   have hv := Diagonal.computableInO_verdict.comp hU
   have hnot := (ComputableInDegree.of_finite (encIn := encBool) (encMid := encBool)
@@ -389,11 +389,13 @@ private theorem exists_computableInO_verifier (d : ℕ) :
   have hsz : ComputableInO (fun z : List Bool => Nat.size z.length) encBits encUnary
       (fun z => (z.length + 1) ^ 2 + (encNat z.length).length)
       (fun z => z.length + 1 + (encNat z.length).length) :=
-    (ComputableInO.lengthUnary.comp (ComputableInO.lengthNat.of_enc_eq (encC := encBits)
+    (ComputableInO.lengthUnary.comp ((ComputableInO.lengthNat.mono 1
+      (T' := fun z : List Bool => (z.length + 1) ^ 2) (S' := fun z => z.length + 1)
+      (fun z => by nlinarith) fun z => by omega).of_enc_eq (encC := encBits)
       (g := fun z : List Bool => encNat z.length) fun _ => rfl)).of_enc_eq fun z => by
         simp [encNat_apply, Nat.size_eq_bits_len]
-  have hE := ComputableInO.natToUnary.comp
-    ((timeConstructible_succ_pow (k := d + 3) (by omega)).computableInO.comp hbase)
+  have hE := (ComputableInO.natToUnary.mono_time 1 (T' := fun n => (n + 1) ^ 2)
+    fun n => by nlinarith).comp ((timeConstructible_succ_pow (d + 3)).computableInO.comp hbase)
   -- the numeric facts about the tests
   set G := 2 ^ (d + 3)
   set A := 8 + 4 * (G + 4) ^ 2
@@ -501,8 +503,8 @@ theorem lazyDiagonal_mem_NTIME (d : ℕ) :
       (fun x => x.length + x.length) (fun x => x.length + x.length) :=
     (ComputableInO.of_eq (f := fun x : List Bool => x) (encIn := encBits) (encMid := encBits)
       fun _ => rfl).append (ComputableInO.const (encMid := encBits) [false]) fun _ => rfl
-  have hℓ := (ComputableInO.natToUnary.comp
-    ((timeConstructible_succ_pow (k := d + 2) (Nat.le_add_left 2 d)).computableInO.comp
+  have hℓ := ((ComputableInO.natToUnary.mono_time 1 (T' := fun n => (n + 1) ^ 2)
+    fun n => by nlinarith).comp ((timeConstructible_succ_pow (d + 2)).computableInO.comp
       hsnoc)).of_enc_eq (encC := encUnary) (g := fun x : List Bool => certLen d (x.length + 1))
       fun x => by simp [certLen]
   obtain ⟨CD, hCD⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun m => (m + 1) ^ D)

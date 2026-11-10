@@ -41,7 +41,8 @@ polynomial time, the space is polynomial (`Cslib.Reachability.exists_polyBounded
 
 ## Main definitions
 
-* `Cslib.Reachability.encArgs`: the encoding of the inputs of Savitch's algorithm.
+* `Cslib.Reachability.encArgs`, `Cslib.Reachability.encEdgeArgs`: the encodings of the inputs of
+  Savitch's algorithm and of the edge test.
 * `Cslib.Reachability.edgeMax`: the cost of the edge test on the worst endpoints.
 * `Cslib.Reachability.Savitch.encFrame`, `Cslib.Reachability.Savitch.encReg`,
   `Cslib.Reachability.Savitch.encState`: the encoded states of the machine.
@@ -79,6 +80,11 @@ variable {π : Type} {encP : π ↪ List Bool}
 the depth in unary, and the endpoints. -/
 abbrev encArgs (encP : π ↪ List Bool) : π × ℕ × ℕ × List Bool × List Bool ↪ List Bool :=
   encPair encP (encPair encUnary (encPair encUnary (encPair encBits encBits)))
+
+/-- The encoding of the inputs `(p, u, v)` of the edge test: the parameter `p`, framed, then the
+endpoints `u`, framed, and `v`, as themselves. -/
+abbrev encEdgeArgs (encP : π ↪ List Bool) : π × List Bool × List Bool ↪ List Bool :=
+  encPair encP (encPair encBits encBits)
 
 /-- The largest value of `T` on the parameter `p` and two words of width `w`. -/
 def edgeMax (T : π × List Bool × List Bool → ℕ) (p : π) (w : ℕ) : ℕ :=
@@ -413,7 +419,7 @@ them; the other cases copy and rearrange the encoded state, in linear time. -/
 private theorem computableTidilyInO_roundStep {edge : π → List Bool → List Bool → Bool}
     {Te Se : π × List Bool × List Bool → ℕ}
     (hedge : ComputableTidilyInO (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
-      (encPair encP (encPair encBits encBits)) encBool Te Se) :
+      (encEdgeArgs encP) encBool Te Se) :
     ComputableTidilyInO (roundStep edge) (encRound encP) (encRound encP)
       (fun q => ((encRound encP q).length + 1) ^ 2 + q.2.reg.edgeCost Te q.1.1)
       (fun q => (encRound encP q).length + q.2.reg.edgeCost Se q.1.1) := by
@@ -425,7 +431,7 @@ private theorem computableTidilyInO_roundStep {edge : π → List Bool → List 
     fun_prop (disch := first | apply le_refl | lia)
   have hargs : ComputableTidilyInDegree
       (fun q : (π × ℕ) × State => (q.1.1, q.2.args.2.1, q.2.args.2.2)) (encRound encP)
-      (encPair encP (encPair encBits encBits)) 1 1 := by
+      (encEdgeArgs encP) 1 1 := by
     fun_prop (disch := first | apply le_refl | lia)
   have hends : ComputableTidilyInDegree
       (fun q : (π × ℕ) × State => (q.2.args.2.1, q.2.args.2.2)) (encRound encP)
@@ -471,7 +477,7 @@ them; the other cases copy and rearrange the encoded state, in linear time. -/
 theorem computableInO_roundStep {edge : π → List Bool → List Bool → Bool}
     {Te Se : π × List Bool × List Bool → ℕ}
     (hedge : ComputableInO (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
-      (encPair encP (encPair encBits encBits)) encBool Te Se) :
+      (encEdgeArgs encP) encBool Te Se) :
     ComputableInO (roundStep edge) (encRound encP) (encRound encP)
       (fun q => ((encRound encP q).length + 1) ^ 2 + q.2.reg.edgeCost Te q.1.1)
       (fun q => (encRound encP q).length + q.2.reg.edgeCost Se q.1.1) :=
@@ -745,7 +751,7 @@ time charges every round, which copies the state [Sipser, Theorem 8.5][Sipser201
 private theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
     {edge : π → List Bool → List Bool → Bool} {Te Se : π × List Bool × List Bool → ℕ}
     (hedge : ComputableTidilyInO (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
-      (encPair encP (encPair encBits encBits)) encBool Te Se)
+      (encEdgeArgs encP) encBool Te Se)
     {par : γ → π} {width depth : γ → ℕ} {src dst : γ → List Bool} {Tin Sin : γ → ℕ}
     (hin : ComputableTidilyInO (fun x => (par x, width x, depth x, src x, dst x)) encIn
       (encArgs encP) Tin Sin)
@@ -819,7 +825,7 @@ within space `O(Sin + (d + 1) * (d + w + 1) + |par| + edgeMax Se)` and exponenti
 theorem computableInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
     {edge : π → List Bool → List Bool → Bool} {Te Se : π × List Bool × List Bool → ℕ}
     (hedge : ComputableInO (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
-      (encPair encP (encPair encBits encBits)) encBool Te Se)
+      (encEdgeArgs encP) encBool Te Se)
     {par : γ → π} {width depth : γ → ℕ} {src dst : γ → List Bool} {Tin Sin : γ → ℕ}
     (hin : ComputableInO (fun x => (par x, width x, depth x, src x, dst x)) encIn
       (encArgs encP) Tin Sin)
@@ -842,7 +848,7 @@ width and the depth are polynomial since they are computed in unary
 theorem exists_polyBounded_space_savitch {γ : Type} {encIn : γ ↪ List Bool}
     {edge : π → List Bool → List Bool → Bool}
     (hedge : ComputableInPolyTime (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
-      (encPair encP (encPair encBits encBits)) encBool)
+      (encEdgeArgs encP) encBool)
     {par : γ → π} {width depth : γ → ℕ} {src dst : γ → List Bool}
     (hin : ComputableInPolyTime (fun x => (par x, width x, depth x, src x, dst x)) encIn
       (encArgs encP))

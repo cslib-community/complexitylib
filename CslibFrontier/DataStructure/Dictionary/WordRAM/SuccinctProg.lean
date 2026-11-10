@@ -65,6 +65,8 @@ operations with uniform `Realizes .exact` certificates, and realizes `readBucket
   `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeLMProg_effect`,
   `Cslib.DataStructure.Dictionary.WordRAM.Succinct.writeGMProg_effect`: pure logical array update
   lemmas for the four packed dictionary arrays.
+* `Cslib.DataStructure.Dictionary.WordRAM.Succinct.memoryCost_bind_of_clientState_eq`: memory
+  charges of `p >>= k` after a state-preserving prefix `p`, in `do`-block form.
 -/
 
 public section
@@ -78,6 +80,17 @@ open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.Dictionary.FeistelQuotient
 open Cslib.DataStructure.Dictionary.SuccinctBucket
 open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
+
+/-- Memory charges of `p >>= k` when `p` leaves the state unchanged (for example, a run of reads):
+the continuation is charged from the same state. Unlike `memoryCost_bind`, this is stated for
+`>>=`, the form `do` blocks elaborate to, so it rewrites them directly. -/
+theorem memoryCost_bind_of_clientState_eq {α β : Type} {p : Memory.Prog α} {s : Memory.State}
+    (hp : (Memory.spec 0).clientState s p = s) (k : α → Memory.Prog β) :
+    memoryCost (p >>= k) s =
+      memoryCost p s + memoryCost (k ((Memory.spec 0).clientResult s p)) s := by
+  have h := memoryCost_bind p k s
+  rw [hp] at h
+  exact h
 
 /-! ## Section 1: `readPackedProg` and `writePackedProg` in `Memory.Prog` -/
 

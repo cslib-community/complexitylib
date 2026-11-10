@@ -23,7 +23,7 @@ space bound is at least the number of work tapes.
 * `Turing.MultiTapeNTM.RunsInSpace.le`: a space bound is at least the number of work tapes.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeNTM
 

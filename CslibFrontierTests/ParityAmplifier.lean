@@ -85,14 +85,13 @@ example :
     sumCoeffsBelow 2 (∏ i ∈ (∅ : Finset (Fin 0)), parityFactor 2 (![] i)) ≡
       1 [ZMOD (2 : ℤ) ^ 2] := by
   simpa only [prod_empty] using
-    sumCoeffsBelow_prod_parityFactor_modEq (∅ : Finset (Fin 0)) (by decide : 1 ≤ 2) ![]
+    sumCoeffsBelow_prod_parityFactor_modEq (∅ : Finset (Fin 0)) 2 ![]
 
 /-- Two equations with both values even (`y = ![4, -2]`): truncated product is `≡ 1 (mod 4)`. -/
 example :
     sumCoeffsBelow 2 (∏ i : Fin 2, parityFactor 2 (![(4 : ℤ), -2] i)) ≡
       1 [ZMOD (2 : ℤ) ^ 2] := by
-  have h := sumCoeffsBelow_prod_parityFactor_modEq (univ : Finset (Fin 2)) (by decide : 1 ≤ 2)
-    ![(4 : ℤ), -2]
+  have h := sumCoeffsBelow_prod_parityFactor_modEq (univ : Finset (Fin 2)) 2 ![(4 : ℤ), -2]
   have hrhs : (∏ i : Fin 2, if Even (![(4 : ℤ), -2] i) then (1 : ℤ) else 0) = 1 := by
     rw [Fin.prod_univ_two]
     have h0 : Even (![(4 : ℤ), -2] 0) := ⟨2, by decide⟩
@@ -104,8 +103,7 @@ example :
 example :
     sumCoeffsBelow 2 (∏ i : Fin 2, parityFactor 2 (![(4 : ℤ), 3] i)) ≡
       0 [ZMOD (2 : ℤ) ^ 2] := by
-  have h := sumCoeffsBelow_prod_parityFactor_modEq (univ : Finset (Fin 2)) (by decide : 1 ≤ 2)
-    ![(4 : ℤ), 3]
+  have h := sumCoeffsBelow_prod_parityFactor_modEq (univ : Finset (Fin 2)) 2 ![(4 : ℤ), 3]
   have hrhs : (∏ i : Fin 2, if Even (![(4 : ℤ), 3] i) then (1 : ℤ) else 0) = 0 := by
     rw [Fin.prod_univ_two]
     have h1 : ¬Even (![(4 : ℤ), 3] 1) := by decide

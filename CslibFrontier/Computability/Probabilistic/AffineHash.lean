@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.LinearHash
 public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
+public import CslibFrontier.Probability.BitString.AffineHash.Word
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
@@ -17,8 +18,9 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 /-!
 # Plain polynomial-time Boolean affine hashing and prefix-collision conditioning
 
-This module certifies `Cslib.BitString.LinearHash.wordAffineHash` and
-`Cslib.BitString.LinearHash.wordAdjustAffineSeed` directly in the plain `ComputableInPolyTime`
+This module certifies `Cslib.BitString.LinearHash.wordAffineHash`,
+`Cslib.BitString.LinearHash.wordAdjustAffineSeed` and the zero test
+`Cslib.Complexity.SetLowerBound.hashZero` directly in the plain `ComputableInPolyTime`
 calculus, together with uniform strict-PPT sampling of prefix-colliding affine seeds.
 
 ## Main results
@@ -30,6 +32,8 @@ calculus, together with uniform strict-PPT sampling of prefix-colliding affine s
 * `Cslib.BitString.LinearHash.isPPTOn_sampleAdjustedAffineSeed`: uniform strict-PPT sampler
   drawing a fresh `(k * n + k)`-bit affine seed and projecting it onto prefix collisions of `y` and
   `y₀`.
+* `Cslib.Complexity.SetLowerBound.computableInPolyTime_hashZero`: plain polynomial-time
+  certificate for `hashZero`.
 
 ## References
 
@@ -164,3 +168,19 @@ theorem isPPTOn_sampleAdjustedAffineSeed {α : Type} {encode : α ↪ List Bool}
   simpa only [bind_pure_comp, Function.comp_def] using IsPPTOn.of_seeded hseedLen hcallback
 
 end Cslib.BitString.LinearHash
+
+namespace Cslib.Complexity.SetLowerBound
+
+open Turing.MultiTapeTM
+
+/-- `hashZero` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_hashZero {β : Type} {encIn : β ↪ List Bool} {m M : β → ℕ}
+    {seed x : β → List Bool} (hm : ComputableInPolyTime m encIn encUnary)
+    (hM : ComputableInPolyTime M encIn encUnary) (hseed : ComputableInPolyTime seed encIn encBits)
+    (hx : ComputableInPolyTime x encIn encBits) :
+    ComputableInPolyTime (fun b => hashZero (m b) (M b) (seed b) (x b)) encIn encBool := by
+  unfold hashZero
+  fun_prop
+
+end Cslib.Complexity.SetLowerBound

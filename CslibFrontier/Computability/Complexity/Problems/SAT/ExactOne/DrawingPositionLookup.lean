@@ -23,7 +23,7 @@ import Mathlib.Data.List.GetD
 This is an elementary consequence of the actual finite position-table construction.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 
