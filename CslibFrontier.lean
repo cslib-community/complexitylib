@@ -6066,6 +6066,7 @@ public import CslibFrontier.Probability.StochasticOracle.PartialCover
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverAsymptotics
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverGreedy
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverGreedyNative
+public import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeExecution
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverRisk
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverThreshold
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverThresholdNative

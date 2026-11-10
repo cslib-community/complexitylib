@@ -146,6 +146,22 @@ private theorem fields : ComputableInPolyTime
 theorem computable_opportunities : ComputableInPolyTime State.opportunities encoding encUnary :=
   fields.snd'.snd'.snd'.snd'.fst'
 
+/-- Read the stored native request word through the runtime State ABI. -/
+theorem computable_privateWord : ComputableInPolyTime State.privateWord encoding encBits :=
+  fields.snd'.snd'.fst'
+
+/-- Remove the actual self-delimiting outer State frame before reading its fields. -/
+theorem computable_unframe : ComputableInPolyTime
+    (fun state : RuntimeControl.State => state)
+    (encoding.trans NativeReplyContext.framedBits) encoding := by
+  have he : ComputableInPolyTime
+      (fun state : RuntimeControl.State => frame (encoding state))
+      (encoding.trans NativeReplyContext.framedBits) encBits :=
+    .of_eq fun _ => by rw [Function.Embedding.trans_apply]; rfl
+  apply (ComputableInPolyTime.unframe.comp he).of_enc_eq
+  intro state
+  simp only [encBits_apply, Function.comp_apply, unframe_frame]
+
 private abbrev inputEncoding := encPair encoding NativeReplyContext.framedBits
 
 private theorem reply_computable :

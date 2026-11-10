@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.GuardedStartup
 public import CslibFrontier.Computability.Probabilistic.NativeResponseReuse
 public import CslibFrontier.Computability.Probabilistic.NativeFeedbackLoop
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
@@ -45,6 +47,7 @@ realization and the Theorem 6 specialization remain open. The source conventions
 ## Main results
 
 * `exists_round`: actual native runtime preparation/query/update with the whole ready invariant.
+* `exists_native_controller_from_state`: native feedback after a proved runtime initializer.
 * `exists_native_controller`: actual same-code feedback from original blank-tape input.
 * `run_stopped`, `run_history_matches`, `run_call_bounds`: computed stopping, authenticated
   raw histories and bounds by each scalar allowance.
@@ -636,17 +639,21 @@ preserves the complete request/reply/invoice/duration ledger. This is the concre
 controller with a compiled request planner. It does not assume a realization law
 or compile arbitrary Scheduler functions; source admission is a separate derived
 property and its reservation counter does not measure physical time. -/
-theorem exists_native_controller_with_request (request : RuntimeControl.State → List Bool)
+theorem exists_native_controller_from_state {A : Type} (encoding : A ↪ List Bool)
+    (prepareState : A → RuntimeControl.State) (time space : A → ℕ)
+    (hprepareState : ComputableInTimeAndSpace prepareState encoding RuntimeControl.encoding
+      time space)
+    (request : RuntimeControl.State → List Bool)
     (hrequest : ComputableInPolyTime request
       (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits) :
     ∃ (width : ℕ) (R : Type) (_ : Finite R)
       (program : MultiTapePTM width Bool R Unit) (context : Fin width),
-      ∀ (P : Type) (env : Environment Unit P) (data : GuardedStartup.Input)
+      ∀ (P : Type) (env : Environment Unit P) (data : A)
         (memory : Memory Unit P),
         (NativeUnboundedExecution.terminal program env
-          ⟨program.initialConfig (GuardedStartup.encoding data), memory⟩).map
+          ⟨program.initialConfig (encoding data), memory⟩).map
           (Option.map (NativeReplyContext.observe context)) =
-        let state := GuardedStartup.state data
+        let state := prepareState data
         (run env state.turns state (fun _ => ⟨[], [], 0⟩) memory request).map fun outcome =>
           some (⟨tapeOfList (RuntimeControl.packet outcome.state),
             RuntimeControl.result outcome.state,
@@ -657,19 +664,19 @@ theorem exists_native_controller_with_request (request : RuntimeControl.State �
   let emit := (NativeStopGuard.machine
     (MultiTapePTM.ofDeterministic (Oracle := Unit) (nop 4 Bool))).extendTapes g
   let consumer := loop.seq emit
-  have hconsumer (P : Type) (env : Environment Unit P) (data : GuardedStartup.Input)
+  have hconsumer (P : Type) (env : Environment Unit P) (data : A)
       (memory : Memory Unit P) :
       (NativeUnboundedExecution.terminal consumer env
-        (NativeContextLoader.loadedStart consumer (GuardedStartup.encoding data)
-          (RuntimeControl.packet (GuardedStartup.state data)) memory)).map
+        (NativeContextLoader.loadedStart consumer (encoding data)
+          (RuntimeControl.packet (prepareState data)) memory)).map
           (Option.map (NativeReplyContext.observe 0)) =
-      (run env (GuardedStartup.state data).turns (GuardedStartup.state data)
+      (run env (prepareState data).turns (prepareState data)
         (fun _ => ⟨[], [], 0⟩) memory request).map fun outcome =>
           some (⟨tapeOfList (RuntimeControl.packet outcome.state),
             RuntimeControl.result outcome.state,
             outcome.memory⟩ : NativeReplyContext.Observation P) := by
-    let state := GuardedStartup.state data
-    let input := GuardedStartup.encoding data
+    let state := prepareState data
+    let input := encoding data
     let words : Fin (width + 2) → List Bool :=
       Function.update (fun _ => []) 0 (RuntimeControl.packet state)
     let channels : Unit → Channel Bool := fun _ => ⟨[], [], 0⟩
@@ -697,21 +704,23 @@ theorem exists_native_controller_with_request (request : RuntimeControl.State �
       funext result
       cases result <;> rfl
     · exact emit_terminal g (Fin.ext rfl) env input outcome.state hs outcome.channels outcome.memory
-  have hinit : ComputableInPolyTime
-      (fun data => RuntimeControl.packet (GuardedStartup.state data))
-      GuardedStartup.encoding encBits :=
-    RuntimeControl.computable_packet.comp GuardedStartup.computable_state
-  obtain ⟨scratch, T, hT, loader, hloader⟩ := NativeContextLoader.exists_load_then
-    GuardedStartup.encoding (fun data => RuntimeControl.packet (GuardedStartup.state data))
-    hinit (width + 2)
+  obtain ⟨tp, sp, _, _, hp⟩ := RuntimeControl.computable_packet.exists_computableInO
+  have hi : ComputableInO prepareState encoding RuntimeControl.encoding time
+      (fun a => space a + time a) :=
+    .of_bounds hprepareState 1 (fun _ => by omega) (fun _ => by omega) fun a => by
+      have := hprepareState.length_le a
+      omega
+  obtain ⟨c, hc, _⟩ := hp.comp hi
+  obtain ⟨scratch, T, hT, loader, hloader⟩ := NativeContextLoader.exists_load_then_in_time_space
+    encoding (fun data => RuntimeControl.packet (prepareState data)) _ _ hc (width + 2)
   let program := (MultiTapePTM.ofDeterministic (Oracle := Unit) loader).seq
     (consumer.extendTapes (Fin.castAddEmb scratch))
   refine ⟨_, _, inferInstance, program, (0 : Fin (width + 2)).castAdd scratch, ?_⟩
   intro P env data memory
   rw [hloader, PMF.map_comp]
   trans (NativeUnboundedExecution.terminal consumer env
-    (NativeContextLoader.loadedStart consumer (GuardedStartup.encoding data)
-      (RuntimeControl.packet (GuardedStartup.state data)) memory)).map
+    (NativeContextLoader.loadedStart consumer (encoding data)
+      (RuntimeControl.packet (prepareState data)) memory)).map
       (Option.map (NativeReplyContext.observe 0))
   · congr 1
     funext result
@@ -721,6 +730,32 @@ theorem exists_native_controller_with_request (request : RuntimeControl.State �
       exact congrArg some (NativeReplyContext.observe_embedStorage
         0 (Fin.castAddEmb scratch) world)
   · exact hconsumer P env data memory
+
+/-- One actual finite native program starts on original encoded input with blank
+work tapes, executes repeated feedback on the updated State, and emits only the
+computed final mask/failure word. It uses one consistent stateful environment and
+preserves the complete request/reply/invoice/duration ledger. This is the concrete
+controller with a compiled request planner. It does not assume a realization law
+or compile arbitrary Scheduler functions; source admission is a separate derived
+property and its reservation counter does not measure physical time. -/
+theorem exists_native_controller_with_request (request : RuntimeControl.State → List Bool)
+    (hrequest : ComputableInPolyTime request
+      (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits) :
+    ∃ (width : ℕ) (R : Type) (_ : Finite R)
+      (program : MultiTapePTM width Bool R Unit) (context : Fin width),
+      ∀ (P : Type) (env : Environment Unit P) (data : GuardedStartup.Input)
+        (memory : Memory Unit P),
+        (NativeUnboundedExecution.terminal program env
+          ⟨program.initialConfig (GuardedStartup.encoding data), memory⟩).map
+          (Option.map (NativeReplyContext.observe context)) =
+        let state := GuardedStartup.state data
+        (run env state.turns state (fun _ => ⟨[], [], 0⟩) memory request).map fun outcome =>
+          some (⟨tapeOfList (RuntimeControl.packet outcome.state),
+            RuntimeControl.result outcome.state,
+            outcome.memory⟩ : NativeReplyContext.Observation P) := by
+  obtain ⟨time, space, _, _, hc⟩ := GuardedStartup.computable_state
+  exact exists_native_controller_from_state GuardedStartup.encoding GuardedStartup.state
+    _ _ hc request hrequest
 
 /-- Original blank-input raw-State feedback, with all previous transport conventions. -/
 theorem exists_native_controller :

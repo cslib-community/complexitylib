@@ -360,8 +360,34 @@ in [the bibliography](../../references.bib). The checked clients are in
   also covers earlier-row ties, zero gains, repeated scans, empty ground, zero
   demand and short/excess masks.
   This closes native offline planning/resource composition for the stated finite
-  binary-rational representation. Full oracle request/response execution,
-  unrestricted external encodings and source WSC/subinstance codecs remain open.
+  binary-rational representation.
+  [PartialCoverNativeExecution](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeExecution.lean)
+  now composes the computed plan with a single actual native query/read/retain/output
+  episode from original input and blank tapes. Its opportunity count is computed
+  from the runtime plan, rather than fixed in the finite control. Every query is
+  preformed, with a computed binary source index and the original rational WSC data;
+  distinct opportunities represent repeated calls. `admit_requests` derives source
+  admission before response sampling. `source_law` identifies the same named
+  `controller`'s output/context/hidden-state/bill/duration law with the actual joint
+  trajectory sample, including cutoff and cancellation invoices. No independent
+  responses or supplied native-realization law are assumed. `completed_decodes`,
+  `completed_certificate` and `report_provenance` connect the computed completion
+  decision to the decoded tape mask, local certificate and actual completed reports.
+  `native_resources` derives terminal summed billing, maximum-latency bounds,
+  exactly one event and source feasibility for this same native program from
+  individual accrued-charge caps on possible joint trajectories. It also excludes
+  divergent terminal mass. Local instructions are outside the source deadline.
+  The [native execution client](../../CslibFrontierTests/StochasticOraclePartialCoverNativeExecution.lean)
+  derives two calls from $q=1/2$, $\delta=1/4$ and proves that this actual native
+  program emits the successful singleton mask with probability $3/4$ on a genuinely
+  correlated two-report oracle. It also checks the two-token/one-time-unit receipt,
+  arbitrary finite reply words, and stopping before query on an empty computed plan.
+  Run `lake build CslibFrontierTests.StochasticOraclePartialCoverNativeExecution`.
+  This execution law is not yet the general source conditional-success theorem:
+  the reached per-response envelopes must still be transported from arbitrary
+  joint receipts to the existing risk recurrence for this same controller.
+  The addressed binary-rational wire format also needs adapters to unrestricted
+  external source query/WSC encodings. Source WSC/subinstance codecs remain open.
   Set Cover approximation hardness is tracked in
   [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
   not supplied as a premise.
@@ -871,7 +897,7 @@ selection-only PTM or general measurable alphabets. Native encoded machine resou
 also remain open. The Poisson-binomial domination needed for Lemma 2 and for the
 measurable or unbounded-horizon Theorem 5 is tracked in
 [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native offline greedy runtime is now proved for the finite binary-rational
-representation above; native oracle execution and hardness remain open;
+representation above; unrestricted source-interface/success transfer and hardness remain open;
 its asymptotic factors are now proved.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
@@ -1009,7 +1035,7 @@ representation required by Theorem 5 and the full two-turn lower optimum in
 Theorem 6. Later sections derive native query epochs and the concrete block controller.
 General response alphabets and external PTM/query encodings, canonical-label
 recovery and arbitrary source-policy compilation remain open.
-The remaining Theorem 4 native oracle-execution/encoding and hardness gaps remain. ROADMAP preserves
+The remaining Theorem 4 unrestricted source-interface/success and encoding/hardness gaps remain. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
 review and validation procedures are unchanged. No curated abstract depends on
@@ -1612,7 +1638,7 @@ established. The trace preserves divergent mass and its earlier receipts, but eq
 with a cofinal infinite-instruction path-cost law and real integrability are separate
 obligations. Divergence has no native terminal-world bill.
 
-Theorem 4's native oracle-execution/encoding and hardness gaps remain. Neither unrestricted
+Theorem 4's unrestricted source-interface/success and encoding/hardness gaps remain. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes. The Agent Operator's Manual requires no edit because human direction,
 ownership, review and validation procedures are unchanged.

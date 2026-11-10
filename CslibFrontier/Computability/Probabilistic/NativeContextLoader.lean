@@ -34,7 +34,8 @@ p. 16, rather than a complete source-admitted adaptive selector.
 
 ## Main results
 
-* `exists_load_then`: constructed native loading followed by arbitrary open native code.
+* `exists_load_then_in_time_space`, `exists_load_then`: native loading with general
+  terminating resource bounds or polynomial time, followed by actual open native code.
 * `exists_loaded_runtime`: original-input loading composed with both runtime queries.
 -/
 
@@ -142,11 +143,14 @@ private theorem prepare_terminal {width : ℕ} [NeZero width] {scratch : ℕ} {R
   rfl
 
 /-- Construct a loader from a pure algorithm and compose it with actual native
-consumer code. All work tapes start blank; no preinstalled context, termination,
+consumer code. All work tapes start blank; no preinstalled context, consumer termination,
 consumer-success or machine-to-program representation premise is supplied.
 The loader is independent of the consumer, oracle and original input. -/
-theorem exists_load_then {A : Type} (encoding : A ↪ List Bool) (context : A → List Bool)
-    (hcontext : ComputableInPolyTime context encoding encBits) (width : ℕ := 4) [NeZero width] :
+theorem exists_load_then_in_time_space {A : Type} (encoding : A ↪ List Bool)
+    (context : A → List Bool)
+    (time space : A → ℕ)
+    (hcontext : ComputableInTimeAndSpace context encoding encBits time space)
+    (width : ℕ := 4) [NeZero width] :
     ∃ (scratch : ℕ) (R : Type) (_ : Finite R)
       (loader : MultiTapeTM (width + scratch) Bool R),
       ∀ (S P : Type) (consumer : MultiTapePTM width Bool S Unit) (env : Environment Unit P)
@@ -159,8 +163,7 @@ theorem exists_load_then {A : Type} (encoding : A ↪ List Bool) (context : A �
           (loadedStart consumer (encoding a) (context a) memory)).map
           (Option.map fun final => NativeSequential.right (First := R)
             (extendWorld scratch final)) := by
-  obtain ⟨t, s, _, _, hc⟩ := hcontext
-  obtain ⟨_, ht⟩ := hc.exists_computableTidilyInTimeAndSpace
+  obtain ⟨_, ht⟩ := hcontext.exists_computableTidilyInTimeAndSpace
   obtain ⟨scratch, R, hR, code, hcode⟩ := ht
   let loader := code.outputToWord.extendTapes (loaderTapes (width := width) scratch)
   refine ⟨scratch, R ⊕ RewindWorkState, inferInstance, loader, ?_⟩
@@ -195,6 +198,27 @@ theorem exists_load_then {A : Type} (encoding : A ↪ List Bool) (context : A �
   congr 1
   funext result
   cases result <;> rfl
+
+/-- Construct a loader from a pure algorithm and compose it with actual native
+consumer code. All work tapes start blank; no preinstalled context, consumer termination,
+consumer-success or machine-to-program representation premise is supplied.
+The loader is independent of the consumer, oracle and original input. -/
+theorem exists_load_then {A : Type} (encoding : A ↪ List Bool) (context : A → List Bool)
+    (hcontext : ComputableInPolyTime context encoding encBits) (width : ℕ := 4) [NeZero width] :
+    ∃ (scratch : ℕ) (R : Type) (_ : Finite R)
+      (loader : MultiTapeTM (width + scratch) Bool R),
+      ∀ (S P : Type) (consumer : MultiTapePTM width Bool S Unit) (env : Environment Unit P)
+        (a : A) (memory : Memory Unit P),
+      let machine := (MultiTapePTM.ofDeterministic loader).seq
+        (consumer.extendTapes (Fin.castAddEmb scratch))
+      NativeUnboundedExecution.terminal machine env
+        ⟨machine.initialConfig (encoding a), memory⟩ =
+        (NativeUnboundedExecution.terminal consumer env
+          (loadedStart consumer (encoding a) (context a) memory)).map
+          (Option.map fun final => NativeSequential.right (First := R)
+            (extendWorld scratch final)) := by
+  obtain ⟨time, space, _, _, hc⟩ := hcontext
+  exact exists_load_then_in_time_space encoding context _ _ hc width
 
 /-- Read the consumer's actual context and resource observations, ignoring only
 loader scratch tapes. -/

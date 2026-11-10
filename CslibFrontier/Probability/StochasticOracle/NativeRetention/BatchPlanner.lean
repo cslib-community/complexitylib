@@ -102,21 +102,10 @@ theorem decode_request (n width : ℕ) (state : RuntimeControl.State) (hw : 0 < 
       some ⟨slots n width state, nonempty n width state hw hs⟩ :=
   decodeBatch_encode ⟨slots n width state, nonempty n width state hw hs⟩
 
-private theorem framed_identity : ComputableInPolyTime
-    (fun state : RuntimeControl.State => state)
-    (RuntimeControl.encoding.trans NativeReplyContext.framedBits) RuntimeControl.encoding := by
-  have he : ComputableInPolyTime
-      (fun state : RuntimeControl.State => frame (RuntimeControl.encoding state))
-      (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encBits :=
-    .of_eq fun _ => by rw [Function.Embedding.trans_apply]; rfl
-  apply (ComputableInPolyTime.unframe.comp he).of_enc_eq
-  intro state
-  simp only [encBits_apply, Function.comp_apply, unframe_frame]
-
 private theorem computable_stage (n : ℕ) : ComputableInPolyTime (stage n)
     (RuntimeControl.encoding.trans NativeReplyContext.framedBits) encUnary :=
   ComputableInPolyTime.unary_sub.comp ((ComputableInPolyTime.const n).prod
-    (RuntimeControl.computable_opportunities.comp framed_identity))
+    (RuntimeControl.computable_opportunities.comp RuntimeControl.computable_unframe))
 
 private theorem computable_slots (total : ℕ) : ∀ (n : ℕ) (group : Fin n → ℕ),
     ComputableInPolyTime (fun state : RuntimeControl.State => encodeSlots n
