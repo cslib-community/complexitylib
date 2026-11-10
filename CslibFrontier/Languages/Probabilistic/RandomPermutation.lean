@@ -13,6 +13,7 @@ public import Mathlib.Data.Fintype.Perm
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformSubset
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Tactic.Linarith
@@ -1239,65 +1240,6 @@ private theorem run_interpret_forgetfulWithBad_map_fst {β : Type}
   OracleComp.run_interpret_map_state forgetfulWithBad forgetfulAnswer Prod.fst
     forgetfulWithBad_map_fst program (cache, bad)
 
-/-- **Finite-set resampling identity**: drawing `a₀ ← PMF.uniformOfFintype α` and returning `a₀` if
-`a₀ ∈ S` or resampling from `PMF.uniformOfFinset S hS` if `a₀ ∉ S` produces
-`PMF.uniformOfFinset S hS`. -/
-private theorem uniformOfFintype_bind_ite_uniformOfFinset (S : Finset α) (hS : S.Nonempty) :
-    ((PMF.uniformOfFintype α).bind fun a₀ =>
-      if a₀ ∈ S then PMF.pure a₀ else PMF.uniformOfFinset S hS) =
-    PMF.uniformOfFinset S hS := by
-  ext a
-  rw [PMF.bind_apply, tsum_fintype, PMF.uniformOfFinset_apply]
-  by_cases ha : a ∈ S
-  · simp only [ha, ↓reduceIte]
-    have hsplit :
-        (∑ a₀ : α, PMF.uniformOfFintype α a₀ *
-          (if a₀ ∈ S then PMF.pure a₀ else PMF.uniformOfFinset S hS) a) =
-        (∑ a₀ ∈ S, PMF.uniformOfFintype α a₀ * PMF.pure a₀ a) +
-          (∑ a₀ ∈ Sᶜ, PMF.uniformOfFintype α a₀ * PMF.uniformOfFinset S hS a) := by
-      rw [← Finset.sum_add_sum_compl S]
-      congr 1
-      · refine Finset.sum_congr rfl fun a₀ ha₀ => by simp [ha₀]
-      · refine Finset.sum_congr rfl fun a₀ ha₀ => by
-          rw [Finset.mem_compl] at ha₀
-          simp [ha₀]
-    rw [hsplit]
-    have h1 : (∑ a₀ ∈ S, PMF.uniformOfFintype α a₀ * PMF.pure a₀ a) =
-        (Fintype.card α : ℝ≥0∞)⁻¹ := by
-      have hterm (a₀ : α) : PMF.uniformOfFintype α a₀ * PMF.pure a₀ a =
-          if a₀ = a then (Fintype.card α : ℝ≥0∞)⁻¹ else 0 := by
-        by_cases h0 : a₀ = a
-        · subst h0; simp [PMF.uniformOfFintype_apply]
-        · simp [PMF.pure_apply, h0, Ne.symm h0]
-      simp_rw [hterm]
-      rw [Finset.sum_ite_eq' S a, ite_eq_left ha]
-    have h2 : (∑ a₀ ∈ Sᶜ, PMF.uniformOfFintype α a₀ * PMF.uniformOfFinset S hS a) =
-        (Sᶜ.card : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ * (S.card : ℝ≥0∞)⁻¹ := by
-      simp only [PMF.uniformOfFintype_apply, PMF.uniformOfFinset_apply, ha, ↓reduceIte,
-        Finset.sum_const, nsmul_eq_mul, mul_assoc]
-    rw [h1, h2]
-    have hcard : (S.card : ℝ≥0∞) + Sᶜ.card = Fintype.card α := by
-      exact_mod_cast Finset.card_add_card_compl S
-    have hS_ne : (S.card : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr hS.card_pos.ne'
-    have hS_top : (S.card : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-    have hα_ne : (Fintype.card α : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-    have hα_top : (Fintype.card α : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-    calc (Fintype.card α : ℝ≥0∞)⁻¹ +
-          (Sᶜ.card : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ * (S.card : ℝ≥0∞)⁻¹
-        = (S.card : ℝ≥0∞) * (S.card : ℝ≥0∞)⁻¹ * (Fintype.card α : ℝ≥0∞)⁻¹ +
-            (Sᶜ.card : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ * (S.card : ℝ≥0∞)⁻¹ := by
-          rw [ENNReal.mul_inv_cancel hS_ne hS_top, one_mul]
-      _ = ((S.card : ℝ≥0∞) + Sᶜ.card) * (Fintype.card α : ℝ≥0∞)⁻¹ * (S.card : ℝ≥0∞)⁻¹ := by
-          ring
-      _ = (S.card : ℝ≥0∞)⁻¹ := by
-          rw [hcard, ENNReal.mul_inv_cancel hα_ne hα_top, one_mul]
-  · simp only [ha, ↓reduceIte]
-    refine Finset.sum_eq_zero fun a₀ _ => ?_
-    by_cases ha₀ : a₀ ∈ S
-    · have hne : a ≠ a₀ := fun h => ha (h ▸ ha₀)
-      simp [ha₀, PMF.pure_apply, hne]
-    · simp [ha₀, PMF.uniformOfFinset_apply, ha]
-
 private theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st : Cache α × Bool)
     (hst : IsPartialBijection st.1) (a : α) (st' : Cache α × Bool)
     (hmem : (a, st') ∈ (exactWithBad q st).support) :
@@ -1331,7 +1273,7 @@ private theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
     have hans := answer_of_cachedAnswer_eq_none hq hne
     simp only [exactWithBad, hq, Probability.PMF.monad_bind_eq_bind]
     conv_rhs =>
-      rw [hans, ← uniformOfFintype_bind_ite_uniformOfFinset (freshAnswers cache q) hne,
+      rw [hans, ← PMF.unifOn_rehash_eq (Finset.subset_univ _) Finset.univ_nonempty hne,
         PMF.map_bind]
     rw [PMF.map_bind]
     congr 1 with a₀ : 1
