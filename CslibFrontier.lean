@@ -1292,6 +1292,7 @@ public import CslibFrontier.Computability.Circuit.Cyclic.Feedback
 public import CslibFrontier.Computability.Circuit.DagProtocol
 public import CslibFrontier.Computability.Circuit.Decomposable
 public import CslibFrontier.Computability.Circuit.Depth
+public import CslibFrontier.Computability.Circuit.Descending
 public import CslibFrontier.Computability.Circuit.Encoding.Check
 public import CslibFrontier.Computability.Circuit.Encoding.Evaluation
 public import CslibFrontier.Computability.Circuit.Encoding.Layer
@@ -2670,6 +2671,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchCorrect
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputationProgram
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputationTree
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockTrace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Append
