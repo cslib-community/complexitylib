@@ -152,7 +152,7 @@ theorem targetCandidates_biUnion_card_le {k r h : ℕ} {I : Type} [Fintype I]
       15 * sideSensitivity F false :=
   calc
     _ ≤ (targetCandidates T A.label F q x).card * sideSensitivity F false :=
-      card_biUnion_le_mul _ _ _ fun i hi => by
+      Finset.card_biUnion_le_card_mul _ _ _ fun i hi => by
         rw [childChanges_card]
         exact sensitivityAt_le_sideSensitivity F false _ _
           (targetWitness_false T A.label F q x hr i hi)

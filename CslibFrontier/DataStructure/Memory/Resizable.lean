@@ -59,13 +59,15 @@ may **grow** (`grow k`, `growDirty k`) or **shrink** (`shrink k`) the active pre
 ## References
 
 * [LiLiangYuZhou2023Succincter] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
-  "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 2.1).
+  "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 1.3, PDF p. 4 / printed
+  p. 3, and Section 2.1, PDF pp. 6–7 / printed pp. 5–6).
 * [LiLiangYuZhou2024] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
   Dictionary with Subconstant Wasted Bits per Key*, SODA 2024 (`arXiv:2310.20536v1`, Section 3.2,
-  PDF pp. 9–11 / printed pp. 8–10).
+  PDF pp. 9–10 / printed pp. 8–9).
 * [KuszmaulLiangZhou2026] William Kuszmaul, Jingxun Liang, and Renfei Zhou, *Succinct Dynamic
   Rank/Select: Bypassing the Tree-Structure Bottleneck*, SODA 2026 (`arXiv:2510.19175v1`,
-  Section 5.1, PDF pp. 16–19 / printed pp. 15–18, and Footnote 10, PDF p. 18 / printed p. 17).
+  Section 5.1, PDF pp. 16–20 / printed pp. 15–19; Theorem 5.2(6) and Footnote 10, PDF p. 18 /
+  printed p. 17).
 -/
 
 @[expose] public section
@@ -379,16 +381,18 @@ theorem spec_refines_demonicSpec (w : ℕ) : Nonempty (Refinement (demonicSpec w
 
 /-! ## Cost, live space measures, and resize-aware frame condition -/
 
-/-- Operation cost measure (`charge`): `read`, `write`, and `growDirty` cost `1` unit; zeroed
-`grow k` and `shrink k` cost `max k 1` units. -/
+/-- Operation cost measure (`charge`): `read` and `write` cost `1` unit; bulk resize operations
+`grow k`, `growDirty k`, and `shrink k` cost `max k 1` units, matching the `Θ(k + 1)` step cost of
+looping single-word hardware `.grow` and `.shrink` primitives ([KuszmaulLiangZhou2026], Section 5.1,
+PDF pp. 16–17 / printed pp. 15–16). -/
 def charge (_ : State) : Op → ℕ
-  | .read _ | .write _ _ | .growDirty _ => 1
-  | .grow k | .shrink k => max k 1
+  | .read _ | .write _ _ => 1
+  | .grow k | .growDirty k | .shrink k => max k 1
 
 @[simp] theorem charge_read (s : State) (a : ℕ) : charge s (.read a) = 1 := rfl
 @[simp] theorem charge_write (s : State) (a v : ℕ) : charge s (.write a v) = 1 := rfl
 @[simp] theorem charge_grow (s : State) (k : ℕ) : charge s (.grow k) = max k 1 := rfl
-@[simp] theorem charge_growDirty (s : State) (k : ℕ) : charge s (.growDirty k) = 1 := rfl
+@[simp] theorem charge_growDirty (s : State) (k : ℕ) : charge s (.growDirty k) = max k 1 := rfl
 @[simp] theorem charge_shrink (s : State) (k : ℕ) : charge s (.shrink k) = max k 1 := rfl
 
 theorem one_le_charge (s : State) (o : Op) : 1 ≤ charge s o := by
@@ -401,7 +405,9 @@ abbrev spaceWords (s : State) : ℕ := s.frontier
 def spaceBits (w : ℕ) (s : State) : ℕ := w * s.frontier
 
 /-- Total space in bits of `s.frontier` allocated words plus a spillover integer in `[0, K)`
-([LiLiangYuZhou2023Succincter], Section 2.1; [KuszmaulLiangZhou2026], Section 5.1). -/
+([LiLiangYuZhou2023Succincter], Section 1.3, PDF p. 4 / printed p. 3; [KuszmaulLiangZhou2026],
+Section 5.1, PDF p. 17 / printed p. 16). Here `Nat.clog 2 K = ⌈log₂ K⌉` rounds the papers'
+real-valued `lg K` up to `ℕ` (adding `< 1` bit of slack when `K` is not a power of two). -/
 def spilloverSpaceBits (w K : ℕ) (s : State) : ℕ := w * s.frontier + Nat.clog 2 K
 
 /-- Peak number of allocated words reached during execution of `p` from `s` on `spec`. -/

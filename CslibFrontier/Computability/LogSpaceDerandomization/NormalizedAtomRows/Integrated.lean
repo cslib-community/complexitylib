@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.LogSpaceDerandomization.NormalizedAtomRows.Sharp
 public import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.FourthMoment
 public import CslibFrontier.Computability.LogSpaceDerandomization.HeavyCountRarity
+import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.FalseOverflowNorm
 
 /-!
 # Integrated support and false-event comparison for actual normalized rows
@@ -87,41 +88,11 @@ open Classical in
 /-- Uniform bound for the difference of two actual output fourth roots. -/
 @[expose] noncomputable def rangeBound := 2 * HP.Q HP.toHierarchyParams.atomCap ^ (4⁻¹ : ℝ)
 
-open Classical in
-private theorem sum_stateRootError_pow_four_le_of_false {η : ℝ}
-    {S : Finset ι} {n : ℕ → ℕ} (_hK : 0 < HP.K)
-    {Δ : ℕ → ι → Fin 2 → ℝ} {a : State ι} {truth : ι → Fin 2 → ℝ}
-    (hη : 0 < η) (hη1 : η ≤ 1) (ha : a.defaultValue = 0)
-    (m j : ℕ) (hj : j < m) (hn : 0 < n j)
-    (hover : IsFirstOverflow S n (fun _ => HP.K) (dyadicFloor η m) Δ a j)
-    (hfirst : ∀ y ∈ S, 0 ≤ truth y 0)
-    (hsecond : ∀ y ∈ S, truth y 0 ≤ dyadicFloor η m j / 4 → truth y 1 = 0)
-    (hheavy : 2 * #{y ∈ S | dyadicFloor η m j / 4 < truth y 0} < n j)
-    (b : State ι) :
-    ∑ y ∈ S, |stateRootError (output HP ζ) S HP.K b ⟨0, truth⟩ y| ^ 4 ≤
-      (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4)) *
-        ∑ y ∈ S, |clippedError (truth y 0) (truth y 1)
-          (uncompressedRow Δ a.row (j + 1) y)| ^ 4 := by
-  have hcharge := one_le_sum_clippedError_pow_of_firstOverflow_dyadic hη hη1 ha
-    m j hj hn hover hfirst hsecond hheavy 4
-  have he (y : ι) : |clippedError (truth y 0) (truth y 1)
-      (uncompressedRow Δ a.row (j + 1) y)| =
-      clippedError (truth y 0) (truth y 1) (uncompressedRow Δ a.row (j + 1) y) :=
-    abs_of_nonneg (clippedError_nonneg _ _ _)
-  calc
-    _ ≤ 2 * (HP.K : ℝ) * (rangeBound HP) ^ 4 := sum_rootError_four HP S ζ _ _ (by
-      unfold rangeBound
-      exact mul_nonneg (by norm_num) (Real.rpow_nonneg (HP.Q_nonneg _) _)) (fun y _ =>
-      rootError_range HP S ζ _ _ y)
-    _ = (2 * (HP.K : ℝ) * (rangeBound HP) ^ 4) * 1 := by ring
-    _ ≤ (2 * (HP.K : ℝ) * (rangeBound HP) ^ 4) * ((2 : ℝ) ^ (4 + 1) /
-        ((n j : ℝ) * dyadicFloor η m j ^ 4) *
-          ∑ y ∈ S, clippedError (truth y 0) (truth y 1)
-            (uncompressedRow Δ a.row (j + 1) y) ^ 4) :=
-      mul_le_mul_of_nonneg_left hcharge (by positivity)
-    _ = _ := by simp only [he]; norm_num; ring
-
 variable {Ω V : Type*} [Fintype Ω] [Fintype V]
+
+private theorem rangeBound_nonneg (HP : Matrix.FourthRootHierarchyParams 16 1 16 32 8) :
+    0 ≤ rangeBound HP :=
+  mul_nonneg (by norm_num) (Real.rpow_nonneg (HP.Q_nonneg _) _)
 
 open Classical in
 /-- The final actual polynomial outputs on a specified false-first-overflow event are paid
@@ -129,7 +100,7 @@ for by the raw-prefix moment at `j + 1`. Every random quantity may share the env
 theorem rowNormPow_falseFirstOverflow_le {η N u : ℝ}
     (hη : 0 < η) (hη1 : η ≤ 1) (hNu : 0 ≤ N * u)
     (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
-    (n : ℕ → ℕ) (hK : 0 < HP.K) (m j : ℕ) (hj : j < m) (hn : 0 < n j)
+    (n : ℕ → ℕ) (_hK : 0 < HP.K) (m j : ℕ) (hj : j < m) (hn : 0 < n j)
     (Δ : Ω → V → ℕ → V → Fin 2 → ℝ) (a : Ω → V → State V)
     (truth : Ω → V → V → Fin 2 → ℝ)
     (ha : ∀ σ x, X σ x → (a σ x).defaultValue = 0)
@@ -145,34 +116,16 @@ theorem rowNormPow_falseFirstOverflow_le {η N u : ℝ}
       if F σ x then stateRootError (output HP ζ) (S σ) HP.K (b σ x) ⟨0, truth σ x⟩ y else 0) ≤
       (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4)) *
         rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
-          (uncompressedRow (Δ σ x) (a σ x).row (j + 1) y)) := by
-  classical
-  dsimp only
-  unfold rowNormPow
-  have hc : 0 ≤ 64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4) := by
-    positivity
-  calc
-    _ ≤ (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V),
-        (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4)) *
-          ∑ y ∈ ({y | Y σ y} : Finset V),
-            |clippedError (truth σ x y 0) (truth σ x y 1)
-              (uncompressedRow (Δ σ x) (a σ x).row (j + 1) y)| ^ 4 := by
-      refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (inv_nonneg.mpr hNu)
-      refine sum_le_sum fun x hx => ?_
-      have hx' := (mem_filter.mp hx).2
-      dsimp only
-      split_ifs with hF
-      · apply sum_stateRootError_pow_four_le_of_false HP ζ (NormalizedRow.rank_pos HP) hη hη1 (ha
-        σ x hx')
-          m j hj hn hF.1
-        · intro y hy
-          exact hfirst σ x y hx' (mem_filter.mp hy).2
-        · intro y hy
-          exact hsecond σ x y hx' (mem_filter.mp hy).2
-        · simpa only [heavyCountEvent, filter_filter] using Nat.lt_of_not_ge hF.2
-      · simp only [abs_zero, zero_pow (by decide : (4 : ℕ) ≠ 0), sum_const_zero]
-        exact mul_nonneg hc (sum_nonneg fun _ _ => by positivity)
-    _ = _ := by simp only [← mul_sum, ← mul_expect]; ring
+          (uncompressedRow (Δ σ x) (a σ x).row (j + 1) y)) :=
+  rowNormPow_falseFirstOverflow_le_of_bound hη hη1 hNu X Y n HP.K m j
+    hj hn Δ a truth
+    (fun σ x y => stateRootError (output HP ζ) ({y | Y σ y} : Finset V) HP.K
+      (iterate ({y | Y σ y} : Finset V) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) (a σ x) m)
+      ⟨0, truth σ x⟩ y)
+    (pow_nonneg (rangeBound_nonneg HP) 4)
+    (fun _ _ _ => sum_rootError_four HP _ ζ _ _ (rangeBound_nonneg HP) fun y _ =>
+      rootError_range HP _ ζ _ _ y)
+    ha hfirst hsecond
 
 open Classical in
 /-- **The false-type contribution to actual final output error.** Taking the union of the
@@ -197,52 +150,13 @@ theorem rowNormPow_falseFirstOverflowBefore_le {η N u : ℝ}
       if ∃ j < m, F j σ x then stateRootError (output HP ζ) (S σ) HP.K (b σ x) ⟨0, truth σ x⟩ y
         else 0) ≤
       ∑ j ∈ range m, (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4))
- *
-        rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
+        * rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
           (uncompressedRow (Δ σ x) (a σ x).row (j + 1) y)) := by
   classical
-  let S := fun σ => ({y | Y σ y} : Finset V)
-  let b := fun σ x => iterate (S σ) n (fun _ => HP.K) (dyadicFloor η m) (Δ σ x) (a σ x) m
-  let F := fun j σ x => IsFirstOverflow (S σ) n (fun _ => HP.K)
-    (dyadicFloor η m) (Δ σ x) (a σ x) j ∧
-      ¬ heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ
-  let D := fun σ x y => stateRootError (output HP ζ) (S σ) HP.K (b σ x) ⟨0, truth σ x⟩ y
-  change rowNormPow 4 N u X Y (fun σ x y => if ∃ j < m, F j σ x then D σ x y else 0) ≤ _
-  have hgroup (j : ℕ) (hj : j ∈ range m) :
-      rowNormPow 4 N u X Y (fun σ x y => if F j σ x then D σ x y else 0) ≤
-        (64 * (HP.K : ℝ) * (rangeBound HP) ^ 4 / ((n j : ℝ) * dyadicFloor η m j ^ 4)) *
-          rowNormPow 4 N u X Y (fun σ x y => clippedError (truth σ x y 0) (truth σ x y 1)
-            (uncompressedRow (Δ σ x) (a σ x).row (j + 1) y)) :=
-    rowNormPow_falseFirstOverflow_le HP ζ hη hη1 hNu X Y n hK m j
-      (mem_range.mp hj) (hn j (mem_range.mp hj)) Δ a truth ha hfirst (hsecond j (mem_range.mp hj))
-  refine le_trans ?_ (sum_le_sum hgroup)
-  have hpoint (σ : Ω) (x y : V) :
-      |if ∃ j < m, F j σ x then D σ x y else 0| ^ 4 ≤
-        ∑ j ∈ range m, |if F j σ x then D σ x y else 0| ^ 4 := by
-    by_cases hF : ∃ j < m, F j σ x
-    · obtain ⟨j, hj, hjF⟩ := hF
-      have hsome : ∃ i < m, F i σ x := ⟨j, hj, hjF⟩
-      have hsingle := single_le_sum (s := range m)
-        (f := fun i => |if F i σ x then D σ x y else 0| ^ 4)
-        (fun _ _ => by positivity) (mem_range.mpr hj)
-      simpa only [hsome, hjF, ↓reduceIte] using hsingle
-    · simp only [hF, ↓reduceIte, abs_zero, zero_pow (by decide : (4 : ℕ) ≠ 0)]
-      exact sum_nonneg fun _ _ => by positivity
-  have hswap (σ : Ω) :
-      (∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V),
-        ∑ j ∈ range m, |if F j σ x then D σ x y else 0| ^ 4) =
-      ∑ j ∈ range m, ∑ x ∈ ({x | X σ x} : Finset V),
-        ∑ y ∈ ({y | Y σ y} : Finset V), |if F j σ x then D σ x y else 0| ^ 4 := by
-    simp_rw [sum_comm (s := ({y | Y σ y} : Finset V)) (t := range m)]
-    rw [sum_comm]
-  unfold rowNormPow
-  calc
-    _ ≤ (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V),
-        ∑ y ∈ ({y | Y σ y} : Finset V), ∑ j ∈ range m,
-          |if F j σ x then D σ x y else 0| ^ 4 := by
-      refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (inv_nonneg.mpr hNu)
-      exact sum_le_sum fun x _ => sum_le_sum fun y _ => hpoint σ x y
-    _ = _ := by simp only [hswap, expect_sum_comm, mul_sum]
+  exact (rowNormPow_ite_exists_le_sum hNu X Y m _ _).trans <|
+    sum_le_sum fun j hj => rowNormPow_falseFirstOverflow_le HP ζ hη hη1 hNu X Y n hK m j
+      (mem_range.mp hj) (hn j (mem_range.mp hj)) Δ a truth ha hfirst
+      (hsecond j (mem_range.mp hj))
 
 end Matrix.FourthRootHierarchyParams.NormalizedRow
 namespace Matrix.FourthRootHierarchyParams.NormalizedRow

@@ -14,6 +14,7 @@ public import CslibFrontier.Crypto.Computational.Pseudoentropy.WordSeedExtractio
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -252,8 +253,7 @@ theorem eval_ideal_remaining
       return front ++ (extractedSeed third ++ extractedDigest third)) =
       ProbComp.eval (withoutSeeds count seedBits bound observationBits labelBits remainingBits
         source) := by
-  simpa only [withoutSeeds, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind] using
+  simpa only [pmf_norm, withoutSeeds, PMF.map] using
     eval_extractMatrixLabelsIdeal_append source count (count * seedBits) remainingBits
       (fun samples => extractWordLabels count labelBits samples >>= finish bound observationBits)
 
@@ -266,8 +266,7 @@ theorem eval_ideal_labels (count bound observationBits labelBits : ℕ)
         let first ← extractWordObservations bound observationBits samples
         let middle ← BitString.sampleList (labelBits * count + labelBits)
         return first ++ middle) := by
-  simpa only [extractWordLabelsIdeal, ProbComp.eval_bind, finish, ProbComp.eval_map,
-    ProbComp.eval_pure, PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind] using
+  simpa only [pmf_norm, extractWordLabelsIdeal, finish, PMF.map] using
     eval_extractMatrixLabelsIdeal_append source count count labelBits
       (extractWordObservations bound observationBits)
 
@@ -333,9 +332,8 @@ theorem replace_observations {pair : SamplablePair} (saved : pair.SeedRealizatio
       return (first ++ middle) ++ third)).bind (test n)) trivial
   apply h.congr
   intro n
-  simp only [withoutLabels, outputLength, count, ProbComp.eval_bind, BitString.eval_sampleList,
-    ProbComp.eval_pure, uniformList_add, PMF.bind_bind, PMF.pure_bind, PMF.map,
-    Function.comp_def, List.append_assoc]
+  simp only [pmf_norm, withoutLabels, outputLength, count, BitString.eval_sampleList,
+    uniformList_add, PMF.map, List.append_assoc]
 
 /-- Plain polynomial-time computation of the schedules used by three-source extraction.
 This contract covers every candidate; it imposes no computability requirement on the index chosen
@@ -435,13 +433,11 @@ theorem replace_indexed_labels_withAdvice {pair : SamplablePair} {gap : ℕ → 
         adversary a i (front ++ suffix))))
       (eval_ideal_labels (count a.1) (bound a.1) (observationBits a.1 i) (labelBits a.1 i)
         (Prod.fst <$> pair.sample a.1))
-    simpa only [test, withoutLabels, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.bind_bind, PMF.pure_bind] using heq
+    simpa only [pmf_norm, test, withoutLabels] using heq
   apply h.congr
   intro n
   rw [hideal (n, advice n)]
-  simp only [count, test, withoutSeeds, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, count, test, withoutSeeds]
 
 open Probability.PMF Filter in
 /-- Indexed label extraction remains secure when the test computes the observation hash and

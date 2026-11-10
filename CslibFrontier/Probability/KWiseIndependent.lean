@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.PairwiseIndependentHash
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.Data.Fintype.Pi
+import CslibFrontier.Foundations.Data.Finset.Density
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Probability.Uniform
 import Mathlib.Algebra.BigOperators.Balance
@@ -122,10 +123,8 @@ theorem mono (hh : IsKWiseIndependentHash k h) {k' : ℕ} (hk : k' ≤ k) :
 theorem comp_seedEquiv {ι' : Type*} [Fintype ι'] (hh : IsKWiseIndependentHash k h)
     (e : ι' ≃ ι) : IsKWiseIndependentHash k (fun i' x => h (e i') x) where
   dens_filter_restrict_eq {T} hT y := by
-    rw [dens_eq_card_div_card, ← hh.dens_filter_restrict_eq hT y, dens_eq_card_div_card,
-      Fintype.card_congr e]
-    congr 2
-    exact card_equiv e fun i' => by simp
+    rw [Fintype.dens_filter_comp_equiv e fun i => T.restrict (h i) = y]
+    exact hh.dens_filter_restrict_eq hT y
 
 /-- Precomposing the input domain with an injective map `e : X' → X` preserves `k`-wise
 independence. -/

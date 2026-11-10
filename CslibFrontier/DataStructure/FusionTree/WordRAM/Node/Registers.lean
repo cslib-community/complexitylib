@@ -31,6 +31,12 @@ multiword highest-bit workspaces occupy disjoint intervals. Explicit copies conn
   and their resulting state.
 * `NodeProgram.Prepared`: the actual eighteen loaded header words supply node parameters.
 
+## Main results
+
+* `NodeProgram.exec_moves`, `NodeProgram.frame_moved`: cost and frame of the charged copies.
+* `NodeProgram.exec_bankCall`, `NodeProgram.regs_extend_bank`: a charged call into a register
+  bank, and reading its results back.
+
 ## References
 
 * [FredmanWillard1993]
@@ -163,13 +169,28 @@ theorem frame_moved (xs : List (Fin registers × Fin registers)) (x : Data regis
   induction xs generalizing x with
   | nil => exact Frame.refl x
   | cons p ps ih =>
-    have hp := hs p (by simp)
-    have hf : Frame x (x.set p.1 (x.regs p.2)) := by
-      refine ⟨rfl, ?_⟩
-      intro i hi
-      have hn : i ≠ p.1 := by intro he; subst i; omega
-      exact Function.update_of_ne hn _ _
-    exact hf.trans (ih _ (fun q hq => hs q (by simp only [List.mem_cons]; exact Or.inr hq)))
+    exact (frame_set x p.1 _ (hs p (by simp))).trans
+      (ih _ (fun q hq => hs q (by simp only [List.mem_cons]; exact Or.inr hq)))
+
+/-- A charged call into a register bank at offset at least `40`: `moves xs` copies the
+arguments into registers at index at least `40`, then the routine runs renamed into the bank.
+The cost is the copies plus the routine, and the caller's frame is preserved. -/
+theorem exec_bankCall {w t k offset : ℕ} (hk : offset + k ≤ registers) (ho : 40 ≤ offset)
+    {xs : List (Fin registers × Fin registers)} (hxs : ∀ p ∈ xs, 40 ≤ p.1.val)
+    {c : Code .standard k} {x : Data registers} {v : Data k}
+    (hev : Exec w c ((moved xs x).comap (bank offset hk)) v t)
+    (hm : v.mem = (moved xs x).mem) :
+    Exec w (.seq (moves xs) (c.rename (bank offset hk))) x
+        (v.extend (bank offset hk) (moved xs x)) (xs.length + 1 + t) ∧
+      Frame x (v.extend (bank offset hk) (moved xs x)) :=
+  ⟨(exec_moves w xs x).seq (hev.rename (bank_injective hk)),
+    (frame_moved xs x hxs).trans (frame_extend hk ho _ v hm)⟩
+
+/-- After a bank call, a bank register holds the routine's corresponding register. -/
+theorem regs_extend_bank {k offset : ℕ} (hk : offset + k ≤ registers) (v : Data k)
+    (u : Data registers) (i : Fin k) :
+    (v.extend (bank offset hk) u).regs (bank offset hk i) = v.regs i :=
+  (bank_injective hk).extend_apply _ _ _
 
 /-- Literal values loaded from the actual header. This is a register contract, with no
 correctness, execution, or rank oracle among its fields. -/

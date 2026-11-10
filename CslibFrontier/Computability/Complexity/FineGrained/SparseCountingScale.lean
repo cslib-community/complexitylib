@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingScale
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementParams
 public import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import Mathlib.Analysis.Asymptotics.Lemmas
 import Mathlib.Analysis.Complex.ExponentialBounds
 
@@ -235,10 +236,6 @@ private theorem clog_two_le_three_mul_log (n : ℕ) :
       exact mul_le_mul_of_nonneg_left (by linarith [Real.log_two_gt_d9]) (Nat.cast_nonneg k)
     linarith
 
-private theorem tendsto_clog_two_atTop : Tendsto (Nat.clog 2) atTop atTop :=
-  tendsto_atTop_atTop.mpr fun b => ⟨2 ^ b, fun _ hn =>
-    (Nat.clog_pow 2 b one_lt_two).symm.le.trans (Nat.clog_mono_right 2 hn)⟩
-
 /-- The discrete sparsification parameter `numGroups n` (`s_n`) tends to infinity, justifying the
 finiteness of the exhaustive-search fallback `s_n < 2` in Proposition 6.4. -/
 theorem tendsto_numGroups_atTop : Tendsto numGroups atTop atTop := by
@@ -263,8 +260,9 @@ theorem tendsto_numGroups_atTop : Tendsto numGroups atTop atTop := by
         _ = 2 * Real.sqrt x := by rw [Real.sqrt_mul (by norm_num), h4]
     simpa only [Function.comp_def, Real.rpow_two, Real.sqrt_eq_rpow] using
       (h1.trans_isBigO h2).tendsto_div_nhds_zero.comp tendsto_natCast_atTop_atTop
-  obtain ⟨N₁, hN₁⟩ := eventually_atTop.mp <| (hsmall.comp tendsto_clog_two_atTop).eventually
-    (gt_mem_nhds (show (0 : ℝ) < 1 / (9 * ((B : ℝ) + 1)) by positivity))
+  obtain ⟨N₁, hN₁⟩ := eventually_atTop.mp <|
+    (hsmall.comp (Nat.tendsto_clog_atTop one_lt_two)).eventually
+      (gt_mem_nhds (show (0 : ℝ) < 1 / (9 * ((B : ℝ) + 1)) by positivity))
   refine ⟨max N₁ 3, fun n hn => ?_⟩
   let lam := Nat.clog 2 n
   let nu := Nat.clog 2 lam

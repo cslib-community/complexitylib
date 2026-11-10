@@ -24,7 +24,8 @@ flat clocked adaptive-adversary execution (`ExecRProgramDist`) for the word-gran
 `ExecRCodeDist w c x μ T L_peak` couples an adversary-independent fallthrough distribution
 `μ : PMF (RData r)` with an expected instruction bound `T : ℝ≥0∞` and an every-step peak hardware
 frontier bound `L_peak : ℕ`. Deterministic big-step `RDemonicExec` certificates (including
-`growZeroCode`, `.shrink`, and `by realize` segments lifted via `RDemonicExec.of_execBounded`) lift
+single-word `.shrink`, the derived `Θ(k + 1)` subroutines `growDirtyCode`, `growZeroCode`, and
+`shrinkCode`, and `by realize` segments lifted via `RDemonicExec.of_execBounded`) lift
 via `ExecRCodeDist.of_demonicExec`, compose with `.rand`, `.seq`, `.branch`, `.loop_bounded`, and
 `.loop_geometric`, transfer along basis simulations (`mapSimulates`), and compile via
 `ExecRCodeDist.toExecRProgramDist` to `ExecRProgramDist w (c.program out) out x μ (T + 1) L_peak`.
@@ -47,7 +48,7 @@ via `ExecRCodeDist.of_demonicExec`, compose with `.rand`, `.seq`, `.branch`, `.l
 
 * [KuszmaulLiangZhou2026] William Kuszmaul, Jingxun Liang, and Renfei Zhou, *Succinct Dynamic
   Rank/Select: Bypassing the Tree-Structure Bottleneck*, SODA 2026 (`arXiv:2510.19175v1`,
-  Section 5.1, PDF p. 16 / printed p. 15).
+  Section 5.1, PDF pp. 16–20 / printed pp. 15–19).
 * [MitzenmacherUpfal2017] Michael Mitzenmacher and Eli Upfal, *Probability and Computing*, 2nd ed.,
   Cambridge University Press, 2017, Sections 2.1, 2.3, and 2.4.
 -/
@@ -264,15 +265,15 @@ theorem RDemonicExec.le_haltedReach_assemble {w L_peak n pc v : ℕ} {c : RCode 
       (haltedReach_le_of_const (v := v) (d := d)
         fun _ => stepRandResizable_op (s := ⟨pc, x⟩) hp.head he)
     exact iInf₂_le y hp_y
-  | @grow dst kReg x P _ hfit hp_y =>
+  | @grow dst x P _ hfit hp_y =>
     refine LE.le.trans ?_
       (haltedReach_le_of_pure (v := v) (d := d)
         fun f => stepRandResizable_grow_of_fits (s := ⟨pc, x⟩) hp.head hfit)
     exact le_iInf fun f => iInf₂_le _ (hp_y _ (demonicGrow_advGrowMem w (f ⟨pc, x⟩) _ _ _))
-  | @shrink kReg x P _ hk hp_y =>
+  | @shrink x P _ hk hp_y =>
     refine LE.le.trans ?_
       (haltedReach_le_of_const (v := v) (d := d)
-        fun _ => stepRandResizable_shrink_of_le (s := ⟨pc, x⟩) hp.head hk)
+        fun _ => stepRandResizable_shrink_of_pos (s := ⟨pc, x⟩) hp.head hk)
     exact iInf₂_le _ hp_y
   | @rand dst src x P _ hfit hp_y =>
     set B_inf := ⨅ (y : RData r) (_ : P y), haltedReach w p v d (pc + 1) y

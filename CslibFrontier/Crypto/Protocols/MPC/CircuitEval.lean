@@ -358,9 +358,6 @@ other parties hold `false`. -/
 private theorem bool_not_eq_add_true (a : Bool) : (!a) = a + true := by
   cases a <;> rfl
 
-private theorem bool_and_eq_mul (a b : Bool) : (a && b) = a * b := by
-  cases a <;> cases b <;> rfl
-
 private theorem bool_or_eq_add_add_mul (a b : Bool) : (a || b) = a + b + a * b := by
   cases a <;> cases b <;> rfl
 
@@ -505,7 +502,7 @@ private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       simp only [lineSteps, Steps.outputAt, deliverMulOracle, Round.deliverOracle]
       refine Wire.lastCases ?_ (fun wire => ?_) wire
-      · simp [hsum, Line.eval, Program.trace, Boolean.interpretation, bool_and_eq_mul]
+      · simp [hsum, Line.eval, Program.trace, Boolean.interpretation, ← Bool.mul_eq_and]
       · simp [hw wire]
   | or =>
     constructor

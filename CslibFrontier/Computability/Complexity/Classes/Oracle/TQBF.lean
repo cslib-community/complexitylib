@@ -90,30 +90,16 @@ private theorem foldl_wfStep_false (ts : List (QBF.Kind × ℕ)) (n : ℕ) :
 private theorem foldl_wfStep_tokens (φ : QBF ℕ) (n : ℕ) (rest : List (QBF.Kind × ℕ)) :
     (φ.tokens ++ rest).foldl wfStep (true, n + 1) = rest.foldl wfStep (true, n) := by
   induction φ generalizing n rest with
-  | var v => simp [QBF.tokens, wfStep, tokenOk, arity]
-  | top => simp [QBF.tokens, wfStep, tokenOk, arity]
-  | bot => simp [QBF.tokens, wfStep, tokenOk, arity]
-  | not φ ih =>
+  | var _ | top | bot => simp [QBF.tokens, wfStep, tokenOk, arity]
+  | not φ ih | ex _ φ ih | all _ φ ih =>
     simp only [QBF.tokens, List.cons_append, List.foldl_cons, wfStep, tokenOk, arity]
     simpa using ih n rest
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [QBF.tokens, List.cons_append, List.foldl_cons, wfStep, tokenOk, arity,
       List.append_assoc]
     have e : (true && decide (n + 1 ≠ 0) && decide True, n + 1 - 1 + 2) = (true, n + 1 + 1) := by
       simp
     rw [e, ihφ, ihψ]
-  | or φ ψ ihφ ihψ =>
-    simp only [QBF.tokens, List.cons_append, List.foldl_cons, wfStep, tokenOk, arity,
-      List.append_assoc]
-    have e : (true && decide (n + 1 ≠ 0) && decide True, n + 1 - 1 + 2) = (true, n + 1 + 1) := by
-      simp
-    rw [e, ihφ, ihψ]
-  | ex v φ ih =>
-    simp only [QBF.tokens, List.cons_append, List.foldl_cons, wfStep, tokenOk, arity]
-    simpa using ih n rest
-  | all v φ ih =>
-    simp only [QBF.tokens, List.cons_append, List.foldl_cons, wfStep, tokenOk, arity]
-    simpa using ih n rest
 
 /-- The concatenated tokens of `n` formulas are accepted. -/
 private theorem foldl_wfStep_flatten (φs : List (QBF ℕ)) :

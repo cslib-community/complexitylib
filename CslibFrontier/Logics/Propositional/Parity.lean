@@ -23,8 +23,9 @@ holds at an isolated true input mentions every variable, since flipping an unmen
 would keep it true; so it holds at no other input. Hence such a formula has at least as many terms
 as `g` has isolated true inputs (`DNF.card_isolatedInputs_le_length`), and dually a formula in
 conjunctive normal form has at least as many clauses as isolated false inputs. Every input is
-isolated for parity, so its normal forms on `n ≥ 1` bits have at least `2 ^ (n - 1)` terms or
-clauses (`DNF.two_pow_le_length_of_eval_eq_parity`, `CNF.two_pow_le_length_of_eval_eq_parity`).
+isolated for parity (`BitString.card_isolatedInputs_parity`), so its normal forms on `n ≥ 1` bits
+have at least `2 ^ (n - 1)` terms or clauses (`DNF.two_pow_le_length_of_eval_eq_parity`,
+`CNF.two_pow_le_length_of_eval_eq_parity`).
 The same flip shows that a formula in disjunctive normal form whose terms have fewer literals than
 a partial assignment has free bits does not compute the parity of the bits it fills in, up to
 negation (`DNF.not_forall_eval_eq_parity_fill_bne`); this ends Håstad's argument for circuits of
@@ -35,6 +36,7 @@ ORs of formulas in conjunctive normal form for parity, of depth three, are in
 
 ## Main results
 
+* `Cslib.BitString.card_isolatedInputs_parity`: every input of parity is isolated.
 * `Cslib.Logic.PL.DNF.card_isolatedInputs_le_length`,
   `Cslib.Logic.PL.CNF.card_isolatedInputs_le_length`: normal forms have a term or clause per
   isolated input.
@@ -56,6 +58,18 @@ namespace Cslib.Logic.PL
 open Finset Function
 
 variable {n : ℕ}
+
+/-- **Every input of parity is isolated:** flipping any bit flips the parity, so parity of `n ≥ 1`
+bits has `2 ^ (n - 1)` isolated inputs with either value. -/
+theorem _root_.Cslib.BitString.card_isolatedInputs_parity (hn : 1 ≤ n) (b : Bool) :
+    #(BitString.isolatedInputs (parity n) b) = 2 ^ (n - 1) := by
+  have hcard : #{x : BitString n | parity n x = b} = 2 ^ (n - 1) := by
+    cases b
+    exacts [card_filter_parity_eq_false hn, card_filter_parity_eq_true hn]
+  rw [← hcard]
+  congr 1
+  ext x
+  simp +contextual [parity_update_not]
 
 /-- **A formula in disjunctive normal form has a term per isolated true input** of the function it
 computes. -/
@@ -103,22 +117,16 @@ theorem CNF.card_isolatedInputs_le_length {g : BitString n → Bool} {φ : CNF (
 /-- **Formulas in disjunctive normal form for parity** of `n ≥ 1` bits have at least
 `2 ^ (n - 1)` terms. -/
 theorem DNF.two_pow_le_length_of_eval_eq_parity (hn : 1 ≤ n) {D : DNF (Fin n)}
-    (hD : ∀ x, D.eval x = parity n x) : 2 ^ (n - 1) ≤ D.length := by
-  refine le_of_eq_of_le ?_ (DNF.card_isolatedInputs_le_length hD)
-  rw [← card_filter_parity_eq_true hn]
-  congr 1
-  ext x
-  simp +contextual [parity_update_not]
+    (hD : ∀ x, D.eval x = parity n x) : 2 ^ (n - 1) ≤ D.length :=
+  (BitString.card_isolatedInputs_parity hn true).symm.trans_le
+    (DNF.card_isolatedInputs_le_length hD)
 
 /-- **Formulas in conjunctive normal form for parity** of `n ≥ 1` bits have at least
 `2 ^ (n - 1)` clauses. -/
 theorem CNF.two_pow_le_length_of_eval_eq_parity (hn : 1 ≤ n) {φ : CNF (Fin n)}
-    (hφ : ∀ x, φ.eval x = parity n x) : 2 ^ (n - 1) ≤ φ.length := by
-  refine le_of_eq_of_le ?_ (CNF.card_isolatedInputs_le_length hφ)
-  rw [← card_filter_parity_eq_false hn]
-  congr 1
-  ext x
-  simp +contextual [parity_update_not]
+    (hφ : ∀ x, φ.eval x = parity n x) : 2 ^ (n - 1) ≤ φ.length :=
+  (BitString.card_isolatedInputs_parity hn false).symm.trans_le
+    (CNF.card_isolatedInputs_le_length hφ)
 
 /-- **Narrow formulas in disjunctive normal form miss restricted parity.** If every term of `D` has
 fewer literals than `ρ` has free bits, and `ρ` has a free bit, then `D` does not compute the parity

@@ -128,7 +128,7 @@ example : ¬ IsOraclePPTOn encUnary (encPair encBits encBits) (fun n =>
   have hlength := hbound 0 Unit (fun _ s => PMF.pure (reply, s)) () () ([], reply) (by
     simp only [requestHead, OracleComp.interpret_map, ProbOracleComp.interpret_query,
       StateT.run_map, run_copyReply]
-    simp [StateT.run])
+    simp)
   simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, reply,
     List.length_nil] at hlength
   lia

@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Probabilistic.LinearHash
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.Collision
 import CslibFrontier.Tactic.PPT
 
@@ -189,10 +190,9 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
     (n : ℕ) :
     F.ddhRealGame setup (F.seededDDHDistinguisher seedLen distinguisher) n =
       F.withSeed.ddhRealGame (F.seededSetup setup seedLen) distinguisher n := by
-  simp only [ddhRealGame, seededDDHDistinguisher, seededSetup, withSeed, ProbComp.eval_bind,
-    Cslib.BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
-  congr 1; funext d
+  simp only [pmf_norm, ddhRealGame, seededDDHDistinguisher, seededSetup, withSeed,
+    Cslib.BitString.eval_sampleList]
+  congr 1 with d : 1
   change _ =
     (Cslib.BitString.uniformList (seedLen n d)).bind fun a =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
@@ -201,7 +201,7 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
             ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
               F.encode d ((α * β) • F.generator d)))
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext α
+  congr 1 with α : 1
   conv_rhs => rw [PMF.bind_comm]
 
 /-- In `ddhIdealGame`, `seededDDHDistinguisher` simulates `F.withSeed.ddhIdealGame` under
@@ -212,10 +212,9 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
     (n : ℕ) :
     F.ddhIdealGame setup (F.seededDDHDistinguisher seedLen distinguisher) n =
       F.withSeed.ddhIdealGame (F.seededSetup setup seedLen) distinguisher n := by
-  simp only [ddhIdealGame, seededDDHDistinguisher, seededSetup, withSeed, ProbComp.eval_bind,
-    Cslib.BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
-  congr 1; funext d
+  simp only [pmf_norm, ddhIdealGame, seededDDHDistinguisher, seededSetup, withSeed,
+    Cslib.BitString.eval_sampleList]
+  congr 1 with d : 1
   change _ =
     (Cslib.BitString.uniformList (seedLen n d)).bind fun a =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
@@ -225,9 +224,9 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
               ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
                 F.encode d (γ • F.generator d)))
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext α
+  congr 1 with α : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext β
+  congr 1 with β : 1
   conv_rhs => rw [PMF.bind_comm]
 
 /-- `seededDDHDistinguisher` is uniform strict PPT whenever `seedLen` is polynomial-time computable
@@ -391,8 +390,7 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
       (F.withSeed.kdfIdealGame (F.seededSetup setup (F.linearHashSeedLen msgLen bound))
         msgLen distinguisher n) ≤
       NNReal.sqrt ((2 : ℝ≥0) ^ (msgLen n) / (qMin : ℝ≥0)) / 2 := by
-  simp only [kdfRealGame, kdfIdealGame, seededSetup, withSeed, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, kdfRealGame, kdfIdealGame, seededSetup, withSeed]
   refine Game.advantage_bind_le_of_support (setup n) _ _ fun d hd => ?_
   change Game.advantage
     ((Cslib.BitString.uniformList (F.linearHashSeedLen msgLen bound n d)).bind fun a =>
@@ -431,11 +429,11 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
         (fun seed =>
           Cslib.BitString.LinearHash.hash
             (Cslib.BitString.blocksEquiv (m := m) (k := W) seed))).bind test := by
-    simp only [linearHashSeedLen, Cslib.BitString.uniformList, seededHash_eq_bind, source, test,
-      PMF.bind_map, PMF.bind_bind, Function.comp_def]
+    simp only [pmf_norm, linearHashSeedLen, Cslib.BitString.uniformList, seededHash_eq_bind, source,
+      test]
     conv_rhs => rw [PMF.bind_comm]
-    congr 1; funext seed
-    congr 1; funext γ
+    congr 1 with seed : 1
+    congr 1 with γ : 1
     have hpad := F.ofFn_paddedGeneratorMultiple (hbound d hd) γ
     have hhash :
         F.linearHashKDF keyLen bound ((d, List.ofFn seed), F.encode d (γ • F.generator d)) =
@@ -453,8 +451,7 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
             ((d, s), F.encode d (α • F.generator d), F.encode d (β • F.generator d), pad))) =
       ((PMF.uniformOfFintype (BitString (m * W))).bind fun seed =>
         (PMF.uniformOfFintype (BitString m)).map (seed, ·)).bind test := by
-    simp only [linearHashSeedLen, Cslib.BitString.uniformList, test,
-      PMF.bind_map, PMF.bind_bind, Function.comp_def]
+    simp only [pmf_norm, linearHashSeedLen, Cslib.BitString.uniformList, test]
     rfl
   rw [hreal, hideal, Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
   have hlhl := (Cslib.BitString.LinearHash.isTwoUniversal_flat W m).leftover_hash source

@@ -159,37 +159,36 @@ private theorem spread_update {k : Nat} (t : Fin k → Int) (a : Fin k) (y : Int
   rw [Finset.sum_congr rfl fun j _ => hga j] at hsplit
   linarith
 
-private theorem spread_update_zero {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone t) {r : Int}
-    (hr : r ≤ t 0) : spread (Function.update t 0 r) = spread t + 2 * (n * (t 0 - r)) := by
+/-- Moving server `a` to `r` changes the spread by `2 * n * δ` when the distance from every other
+server changes by the same `δ`. Shared by `spread_update_zero` and `spread_update_last`. -/
+private theorem spread_update_of_forall_eq {n : Nat} (t : Fin (n + 1) → Int) (a : Fin (n + 1))
+    {r δ : Int} (h : ∀ j, |r - t j| - |t a - t j| = δ) :
+    spread (Function.update t a r) = spread t + 2 * (n * δ) := by
   rw [spread_update]
   congr 2
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ 0)]
-  have hrest : ∀ j ∈ Finset.univ.erase (0 : Fin (n + 1)),
-      |r - Function.update t 0 r j| - |t 0 - t j| = t 0 - r := fun j hj => by
-    rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
-    have := ht (Fin.zero_le j)
-    rw [abs_of_nonpos (by linarith), abs_of_nonpos (by linarith)]
-    ring
+  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ a)]
+  have hrest : ∀ j ∈ Finset.univ.erase a, |r - Function.update t a r j| - |t a - t j| = δ :=
+    fun j hj => by
+      rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
+      exact h j
   rw [Finset.sum_congr rfl hrest, Finset.sum_const, Finset.card_erase_of_mem (Finset.mem_univ _),
     Finset.card_univ, Fintype.card_fin, Function.update_self]
   simp only [sub_self, abs_zero, add_tsub_cancel_right, nsmul_eq_mul, zero_add]
 
+private theorem spread_update_zero {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone t) {r : Int}
+    (hr : r ≤ t 0) : spread (Function.update t 0 r) = spread t + 2 * (n * (t 0 - r)) :=
+  spread_update_of_forall_eq t 0 fun j => by
+    have := ht (Fin.zero_le j)
+    rw [abs_of_nonpos (by linarith), abs_of_nonpos (by linarith)]
+    ring
+
 private theorem spread_update_last {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone t) {r : Int}
     (hr : t (Fin.last n) ≤ r) :
-    spread (Function.update t (Fin.last n) r) = spread t + 2 * (n * (r - t (Fin.last n))) := by
-  rw [spread_update]
-  congr 2
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ (Fin.last n))]
-  have hrest : ∀ j ∈ Finset.univ.erase (Fin.last n),
-      |r - Function.update t (Fin.last n) r j| - |t (Fin.last n) - t j| = r - t (Fin.last n) :=
-    fun j hj => by
-      rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
-      have := ht (Fin.le_last j)
-      rw [abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)]
-      ring
-  rw [Finset.sum_congr rfl hrest, Finset.sum_const, Finset.card_erase_of_mem (Finset.mem_univ _),
-    Finset.card_univ, Fintype.card_fin, Function.update_self]
-  simp only [sub_self, abs_zero, add_tsub_cancel_right, nsmul_eq_mul, zero_add]
+    spread (Function.update t (Fin.last n) r) = spread t + 2 * (n * (r - t (Fin.last n))) :=
+  spread_update_of_forall_eq t (Fin.last n) fun j => by
+    have := ht (Fin.le_last j)
+    rw [abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)]
+    ring
 
 private theorem spread_update_mid {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone t)
     {a b : Fin (n + 1)}
@@ -484,22 +483,19 @@ theorem doubleCoverage_costFrom_le {n : Nat} (s s_off : Fin (n + 1) → Int) (re
     2 * (doubleCoverage n).costFrom s reqs ≤
       2 * (n + 1) * (problem NatMetric.line (n + 1)).scheduleCost s_off reqs offStates +
         (2 * (n + 1) * matchCost NatMetric.line s s_off + pairSum NatMetric.line s) := by
-  induction reqs generalizing s s_off offStates with
+  induction hv using Problem.ValidSchedule.induction (P := problem NatMetric.line (n + 1))
+    generalizing s with
   | nil => exact (Nat.mul_zero 2).symm ▸ Nat.zero_le _
-  | cons r rs ih =>
-    cases offStates with
-    | nil => cases hv
-    | cons o' os =>
-      obtain ⟨hstep, hrest⟩ := hv
-      have hih := ih (dcStep s r) o' os hrest
-      have hamort := dcStep_amortized_offline s s_off o' hstep
-      change 2 * (moveCost NatMetric.line s (dcStep s r) +
-          (doubleCoverage n).costFrom (dcStep s r) rs) ≤
-        2 * (n + 1) * (moveCost NatMetric.line s_off o' +
-          (problem NatMetric.line (n + 1)).scheduleCost o' rs os) + _
-      generalize 2 * (n + 1) = K at hih hamort ⊢
-      rw [Nat.mul_add, Nat.mul_add]
-      omega
+  | cons s_off r rs o' os hstep _ ih =>
+    have hih := ih (dcStep s r)
+    have hamort := dcStep_amortized_offline s s_off o' hstep
+    change 2 * (moveCost NatMetric.line s (dcStep s r) +
+        (doubleCoverage n).costFrom (dcStep s r) rs) ≤
+      2 * (n + 1) * (moveCost NatMetric.line s_off o' +
+        (problem NatMetric.line (n + 1)).scheduleCost o' rs os) + _
+    generalize 2 * (n + 1) = K at hih hamort ⊢
+    rw [Nat.mul_add, Nat.mul_add]
+    omega
 
 /-- **Chrobak–Karloff–Payne–Vishwanathan.** With `k = n + 1` servers on the line, Double
 Coverage from `s₀` costs at most `k` times any valid offline schedule from any `s_off`, plus

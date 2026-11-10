@@ -67,7 +67,7 @@ private theorem length_enc_normalize_le (p : ℕ) (point : List ℕ) :
     (encList encNat (normalize p point)).length ≤ (encList encNat point).length := by
   apply length_encList_map_le encNat encNat
   intro v _hv
-  exact ComputableTidilyInO.length_encNat_mono (Nat.mod_le v p)
+  exact length_encNat_mono (Nat.mod_le v p)
 
 private theorem fold_normalize (p : ℕ) (point out : List ℕ) :
     point.foldl (fun acc v => acc ++ [v % p]) out = out ++ normalize p point := by

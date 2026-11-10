@@ -110,8 +110,7 @@ theorem runOracle_ofClosed (machine : MultiTapePTM k Symbol State) (fuel : ℕ)
         have hanswer : cfg.answerSymbols = Empty.elim := funext fun oracle => oracle.elim
         dsimp only [embed]
         simp only [MultiTapeMachine.runConfigFrom, hs, hanswer, bind_map_left, map_bind]
-        congr 1
-        funext bit
+        congr 1 with bit : 1
         cases htr : machine.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols Empty.elim
             bit with
         | step action symbol move =>
@@ -132,8 +131,7 @@ theorem runOracle_ofClosed (machine : MultiTapePTM k Symbol State) (fuel : ℕ)
     _ = ProbOracleComp.sample (machine.runClosed fuel input) := by
       simp only [runClosed, run, runFrom, runConfigFrom, ProbOracleComp.sample,
         OracleComp.interpret_map, MultiTapeMachine.interpret_runConfigFrom]
-      congr 2
-      funext oracle
+      congr 2 with oracle : 1
       exact oracle.elim
 
 /-- A machine without external channels never calls the external oracle: its oracle run is its
@@ -143,8 +141,7 @@ theorem runOracle_eq_sample_runClosed (machine : MultiTapePTM k Symbol State) (f
     machine.runOracle fuel input = ProbOracleComp.sample (machine.runClosed fuel input) := by
   simp only [runOracle, runClosed, run, runFrom, runConfigFrom, ProbOracleComp.sample,
     OracleComp.interpret_map, MultiTapeMachine.interpret_runConfigFrom]
-  congr 2
-  funext oracle
+  congr 2 with oracle : 1
   exact oracle.elim
 
 /-- A closed machine's oracle run preserves every external oracle state and has the closed

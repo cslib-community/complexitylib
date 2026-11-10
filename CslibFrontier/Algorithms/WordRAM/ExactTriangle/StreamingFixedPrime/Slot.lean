@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Cursor
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordWitness.Readback
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Actual record readback after one-slot production
@@ -84,8 +85,7 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
     ChunkCatalogue.before_add_lt C (queryCap n D) idx.1.isLt hk'
   have hdiv : x.regs Instances.produced / x.regs Instances.pieces = chunk := by
     rw [hi, cursor.pieces]
-    change (chunk * H + idx.2.2) / H = chunk
-    rw [Nat.mul_comm chunk H, Nat.mul_add_div hH, Nat.div_eq_of_lt hj, Nat.add_zero]
+    exact Nat.mul_add_div_of_lt chunk hj
   have hmod : x.regs Instances.produced % x.regs Instances.pieces = idx.2.2 := by
     rw [hi, cursor.pieces]
     exact Nat.mul_add_mod_of_lt hj

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.Instances
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.QuerySpec
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.MatrixSpec
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Exact finite meaning of prepared native instances
@@ -150,9 +151,7 @@ theorem instance_readback {n D g p : ℕ} (values : ℕ → ℤ) (wAB : Fin n �
   have hbound := Nat.mul_le_mul_right H (Nat.succ_le_of_lt hord)
   rw [Nat.succ_mul] at hbound
   have hi : i < K * H := by dsimp only [i]; omega
-  have hdiv : i / H = ord := by
-    dsimp only [i]
-    rw [Nat.mul_comm ord H, Nat.mul_add_div hH, Nat.div_eq_of_lt hj, Nat.add_zero]
+  have hdiv : i / H = ord := by dsimp only [i]; exact Nat.mul_add_div_of_lt ord hj
   have hmod : i % H = idx.2.2 := by dsimp only [i]; exact Nat.mul_add_mod_of_lt hj
   obtain ⟨-, -, -, -, -, -, -, -, -, hdesc, hblocks, -⟩ := h
   have hd := hdesc idx.1.val idx.1.isLt idx.2.1 hchunk

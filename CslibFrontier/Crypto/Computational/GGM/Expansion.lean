@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.GGM.Hybrid
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Probabilistic.Memoize
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -206,12 +207,11 @@ private theorem expansionOracle_generated_step (generator : List Bool → List B
         (BitString.uniformList n).map (fun seed => (generator seed).take (2 * n)))
       (fun _ => rfl) (query.take depth) cache
     simp only [PMF.monad_map_eq_map, Function.Embedding.refl_apply] at hmap
-    simp only [frontierOracle, expansionOracle, hquery, ite_true, ProbComp.eval_bind,
-      ProbComp.eval_pure, ProbComp.eval_memoize, ProbComp.eval_map,
-      BitString.eval_sampleList, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, frontierOracle, expansionOracle, hquery, ite_true, ProbComp.eval_memoize,
+      BitString.eval_sampleList]
     rw [show expandCache generator n cache =
       cache.map (fun entry => (entry.1, (generator entry.2).take (2 * n))) from rfl, ← hmap]
-    simp only [PMF.map_bind, PMF.pure_map, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm]
     apply PMF.bind_congr_on_support
     rintro ⟨seed, next⟩ hseed
     have hlength := (RandomOracle.memoize_invariant (fun _ : List Bool => BitString.uniformList n)
@@ -359,9 +359,8 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
       simp only [expansionGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
       congr 4 with request cache : 2
       by_cases hquery : request.2.length = n
-      · simp only [expansionOracle, hquery, ite_true, ProbComp.eval_bind,
-          ProbComp.eval_memoize, ProbComp.eval_map, BitString.eval_sampleList,
-          BitString.uniformList_take (Nat.le_refl (2 * n)), ProbComp.eval_pure]
+      · simp only [pmf_norm, expansionOracle, hquery, ite_true, ProbComp.eval_memoize,
+          BitString.eval_sampleList, BitString.uniformList_take (Nat.le_refl (2 * n))]
         rfl
       · simp [expansionOracle, hquery]
     _ = (PMF.uniformOfFintype (BitString (depth + 1) → BitString n)).bind later := by

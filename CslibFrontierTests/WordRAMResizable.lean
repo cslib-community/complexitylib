@@ -24,14 +24,18 @@ Concrete end-to-end checks for Milestone M1 of the word-granular **Resizable Wor
    both sequential read/write/arithmetic code (`addToNext`) and `iterate` pointer chasing
    (`chaseProg`), while keeping existing `Realizes` goals intact, and lifting directly to
    `RDemonicExec` and `ExecRProgramDist` via `RDemonicExec.of_realizesBounded`.
-2. Adversarial `DemonicGrow` erased by `growZeroCode`, composed with `.rand` and `.shrink` in
-   `ExecRCodeDist`, transported along `Basis.Simulates.exactStandard` to `Basis.standard`, and
-   compiled via `toExecRProgramDist` with an explicit peak-frontier bound `x.frontier + 4`.
+2. Single-word `.grow` / `.shrink` primitives (including boundary faults at `frontier = 0` and
+   `¬Fits w (frontier + 1)`), derived `Θ(k + 1)` bulk resize subroutines `growDirtyCode`,
+   `growZeroCode`, and `shrinkCode`, and adversarial `DemonicGrow` erased by `growZeroCode`,
+   composed with `.rand` and `shrinkCode` in `ExecRCodeDist`, transported along
+   `Basis.Simulates.exactStandard` to `Basis.standard`, and compiled via `toExecRProgramDist` with
+   an explicit peak-frontier bound `x.frontier + 4`.
 3. Randomized `while` termination via `ExecRCodeDist.loop_geometric`.
 4. Soundness check `not_execRProgramDist_halt` confirming `[.halt out]` cannot satisfy any
    state-changing or frontier-growing transition.
 5. `Memory.Resizable.spec_refines_demonicSpec`, `demonicStep_growDirty_of_demonicGrow`, zeroed
-   `demonicStep` on `.grow`, and `Block.realizes_of_unchangedOutside`.
+   `demonicStep` on `.grow`, `charge s (.growDirty k) = max k 1`, and
+   `Block.realizes_of_unchangedOutside`.
 -/
 
 @[expose] public section
@@ -218,60 +222,115 @@ theorem addToNext_lifts_to_execRProgramDist {w L_peak : ℕ} (base delta : ℕ) 
     change y_d.regs out = Function.update x.mem (base + 1) (x.mem base + delta) (base + 1) at hout0
     simpa [y] using hout0
 
-/-! ## 2. `growZeroCode` erasing demonic growth + `.rand` + `.shrink` + `exactStandard` -/
+/-! ## 2. 1-word resize primitives, derived `Θ(k + 1)` subroutines, `.rand`, & `exactStandard` -/
+
+/-- Single-word `.grow 0` followed by `.shrink` restores `x.frontier` and `x.mem` in 2 steps across
+every demonic growth choice on `[x.frontier, x.frontier + 1)`. -/
+theorem oneWordGrowShrink_exec {w L_peak : ℕ} {x : RData 2}
+    (hx : x.Bounded w) (hL : x.frontier + 1 ≤ L_peak) (hfit : Fits w (x.frontier + 1)) :
+    RDemonicExec (B := .exact) w L_peak (.seq (.grow 0) .shrink) x 2 (· = x.set 0 x.frontier) := by
+  refine (RDemonicExec.grow hL hfit fun mem' hgrow => ⟨mem', hgrow, rfl⟩).seq ?_
+  rintro _ ⟨mem', hgrow, rfl⟩
+  refine RDemonicExec.shrink hL (by omega) ?_
+  ext a
+  · rfl
+  · simp only [RData.set_mem, Nat.add_sub_cancel]
+    by_cases ha : (Block.mk x.frontier 1).Owns a
+    · rw [clear_of_owns ha, hx.zero_above ha.1]
+    · rw [clear_of_not_owns ha]
+      rcases lt_or_ge a x.frontier with hlt | hge
+      · exact hgrow.1 a hlt
+      · have hge1 : x.frontier + 1 ≤ a := by simp only [Block.Owns] at ha; omega
+        rw [hgrow.2.2 a hge1, hx.zero_above hge]
+  · simp
+
+/-- Single-word `.shrink` faults immediately when `frontier = 0`. -/
+theorem shrink_zero_faults (w : ℕ) (advStep : RState 2 → ℕ → ℕ) {x : RData 2}
+    (hz : x.frontier = 0) :
+    stepRandResizable (B := .standard) w advStep [.shrink] (.running ⟨0, x⟩) = pure .faulted :=
+  stepRandResizable_shrink_of_eq_zero (s := ⟨0, x⟩) rfl hz
+
+/-- Single-word `.grow` faults immediately when `frontier + 1` overflows word width `w`. -/
+theorem grow_overflow_faults (w : ℕ) (advStep : RState 2 → ℕ → ℕ) {x : RData 2}
+    (hov : ¬Fits w (x.frontier + 1)) :
+    stepRandResizable (B := .standard) w advStep [.grow 0] (.running ⟨0, x⟩) = pure .faulted :=
+  stepRandResizable_grow_of_not_fits (s := ⟨0, x⟩) rfl hov
+
+/-- Derived `growDirtyCode` grows `[0, x.frontier)` by `x.regs 0` words in `4 * x.regs 0 + 5`
+instructions with arbitrary `w`-bit `DemonicGrow` initialization. -/
+theorem growDirtyCode_exec_check {w L_peak : ℕ} {x : RData 6}
+    (hx : x.Bounded w) (h1 : Fits w 1) (hL : x.frontier + x.regs 0 ≤ L_peak)
+    (hfit : Fits w (x.frontier + x.regs 0)) :
+    RDemonicExec w L_peak (growDirtyCode 0 1 2 3 4 5) x (4 * x.regs 0 + 5) fun y =>
+      y.Bounded w ∧ DemonicGrow w x.frontier (x.regs 0) x.mem y.mem ∧
+        y.frontier = x.frontier + x.regs 0 := by
+  have hnodup : ([0, 1, 2, 3, 4, 5] : List (Fin 6)).Nodup := by decide
+  exact (growDirtyCode_exec hx hnodup h1 hL hfit).mono le_rfl fun _ hy =>
+    ⟨hy.1, hy.2.1, hy.2.2.1⟩
 
 /-- Allocate 4 words via `growZeroCode` (erasing any demonic dirty words), sample a uniform word in
 `[0, 4]` into register `6`, store and reload it in the newly allocated word `x.frontier`, and
-shrink the 4 words before halting. -/
+release the 4 words via `shrinkCode` before halting. -/
 def growSampleShrinkCode : RCode .exact 7 :=
   .seq (.op (.const 0 4)) <|
   .seq (growZeroCode 0 1 2 3 4 5) <|
   .seq (.rand 6 0) <|
   .seq (RCode.ofCode (.seq (.op (.store 1 6)) (.op (.load 6 1)))) <|
-       (.shrink 0)
+       (shrinkCode 0 3 4 5)
 
 /-- Full `ExecRCodeDist` → `Basis.standard` → `ExecRProgramDist` pipeline for
 `growSampleShrinkCode`,
 certifying peak frontier `x.frontier + 4` while restoring final frontier `x.frontier` and canonical
-zeroed memory `x.mem` across every adaptive adversary. -/
+zeroed memory `x.mem` across every adaptive adversary in at most `52` instructions. -/
 theorem growSampleShrinkCode_standard_execRProgramDist {w : ℕ} {x : RData 7}
     (hx : x.Bounded w) (hfit4 : Fits w 4) (hfit_grow : Fits w (x.frontier + 4)) :
     ∃ μ : PMF (RData 7),
       (∀ y ∈ μ.support, y.frontier = x.frontier ∧ y.mem = x.mem ∧ y.regs 6 ≤ 4) ∧
       ExecRProgramDist w
         ((growSampleShrinkCode.mapSimulates Basis.Simulates.exactStandard).program 6)
-        6 x μ 30 (x.frontier + 4) := by
+        6 x μ 52 (x.frontier + 4) := by
   set L_peak := x.frontier + 4
   have h1 : Fits w 1 := hfit4.of_le (by omega)
   set x₁ := x.set 0 4
   have hx₁_bdd : x₁.Bounded w := hx.set hfit4
   have e_const : RDemonicExec (B := .exact) w L_peak (.op (.const 0 4)) x 1 (· = x₁) :=
     RDemonicExec.const (by omega) hfit4
-  have hnodup : ([0, 1, 2, 3, 4, 5] : List (Fin 7)).Nodup := by decide
+  have hnodup6 : ([0, 1, 2, 3, 4, 5] : List (Fin 7)).Nodup := by decide
+  have hnodup4 : ([0, 3, 4, 5] : List (Fin 7)).Nodup := by decide
   have e_grow := growZeroCode_exec (w := w) (L_peak := L_peak)
-    (count := 0) (result := 1) (cur := 2) (stop := 3) (zero := 4) (one := 5)
-    hx₁_bdd hnodup h1 (by simp [x₁, L_peak]) (by simpa [x₁] using hfit_grow)
-  set regs₂ : Fin 7 → ℕ :=
-    Function.update (Function.update (Function.update (Function.update (Function.update
-      x₁.regs 4 0) 5 1) 1 x₁.frontier) 2 x₁.frontier) 3 (x₁.frontier + x₁.regs 0) |>
-      fun regs => Function.update regs 2 (x₁.frontier + x₁.regs 0)
-  set x₂ : RData 7 := ⟨regs₂, x₁.mem, x₁.frontier + x₁.regs 0⟩
-  have hx₂_fr : x₂.frontier = x.frontier + 4 := by simp [x₂, x₁]
-  have hx₂_r0 : x₂.regs 0 = 4 := by simp [x₂, regs₂, x₁]
-  have hx₂_r1 : x₂.regs 1 = x.frontier := by simp [x₂, regs₂, x₁]
+    (count := 0) (result := 1) (cur := 2) (idx := 3) (zero := 4) (one := 5)
+    hx₁_bdd hnodup6 h1 (by simp [x₁, L_peak]) (by simpa [x₁] using hfit_grow)
+  set x₂ : RData 7 := growZeroPost 0 1 2 3 4 5 x₁
+  have hx₂_fr : x₂.frontier = x.frontier + 4 := by simp [x₂, growZeroPost, x₁]
+  have hx₂_r0 : x₂.regs 0 = 4 := by simp [x₂, growZeroPost, x₁]
+  have hx₂_r1 : x₂.regs 1 = x.frontier := by simp [x₂, growZeroPost, x₁]
   have hx₂_mem : x₂.mem = x.mem := rfl
+  have hx₂_bdd : x₂.Bounded w := by
+    refine ⟨⟨fun i => ?_, hx.1.2⟩, hfit_grow, fun a ha => hx.2.2 a (by omega)⟩
+    fin_cases i <;> simp only [x₂, growZeroPost, RData.toData_regs, x₁, RData.set_regs]
+    · simpa using hfit4
+    · simpa using hx.frontier_fits
+    · simpa using fits_zero w
+    · simpa using hfit4
+    · simpa using fits_zero w
+    · simpa using h1
+    · simpa using hx.regs_fits 6
   have d_rand : ExecRCodeDist (B := .exact) w (.rand 6 0) x₂
       ((ProbComp.unifFin (x₂.regs 0)).eval.map fun k => x₂.set 6 k.val) 1 L_peak :=
     ExecRCodeDist.rand (by rw [hx₂_fr]) (by rw [hx₂_r0]; exact hfit4)
-  let postState (z : RData 7) : RData 7 := ⟨z.regs, x.mem, x.frontier⟩
+  let postState (z : RData 7) : RData 7 :=
+    ⟨Function.update (Function.update (Function.update z.regs 4 0) 5 1) 3 4, x.mem, x.frontier⟩
   have htail : ∀ z ∈ ((ProbComp.unifFin (x₂.regs 0)).eval.map fun k => x₂.set 6 k.val).support,
       ExecRCodeDist (B := .exact) w
-        (.seq (RCode.ofCode (.seq (.op (.store 1 6)) (.op (.load 6 1)))) (.shrink 0))
-        z (PMF.pure (postState z)) 3 L_peak := by
+        (.seq (RCode.ofCode (.seq (.op (.store 1 6)) (.op (.load 6 1)))) (shrinkCode 0 3 4 5))
+        z (PMF.pure (postState z)) 23 L_peak := by
     intro z hz
     rw [PMF.mem_support_map_iff] at hz
     obtain ⟨k, _, rfl⟩ := hz
     set z₀ := x₂.set 6 k.val
+    have hk_le4 : k.val ≤ 4 := by have := k.isLt; omega
+    have hk_fit : Fits w k.val := hfit4.of_le hk_le4
+    have hz₀_bdd : z₀.Bounded w := hx₂_bdd.set hk_fit
     have hz₀_r1 : z₀.regs 1 = x.frontier := by simp [z₀, hx₂_r1]
     have hz₀_r0 : z₀.regs 0 = 4 := by simp [z₀, hx₂_r0]
     have hz₀_fr : z₀.frontier = x.frontier + 4 := hx₂_fr
@@ -290,41 +349,48 @@ theorem growSampleShrinkCode_standard_execRProgramDist {w : ℕ} {x : RData 7}
         (d := 6) (a := 1) (x := z₀.toData.write x.frontier k.val)
         (by simp [Data.write, RData.toData, hz₀_r1])
       rwa [hmem_at] at hld
+    set z₁ : RData 7 := z₀.write x.frontier k.val
+    have hz₁_bdd : z₁.Bounded w := hz₀_bdd.write (by rw [hz₀_fr]; omega) hk_fit
     have ed_rw : RDemonicExec (B := .exact) w L_peak
-        (RCode.ofCode (.seq (.op (.store 1 6)) (.op (.load 6 1)))) z₀ 2
-        (· = ⟨z₀.regs, Function.update x.mem x.frontier k.val, x.frontier + 4⟩) := by
+        (RCode.ofCode (.seq (.op (.store 1 6)) (.op (.load 6 1)))) z₀ 2 (· = z₁) := by
       have h12 := RDemonicExec.of_execBounded (x := z₀) (L_peak := L_peak)
         (by rw [hz₀_fr]) (by omega) (eb_st.seq eb_ld)
       refine h12.mono le_rfl ?_
       rintro _ rfl
       ext a
-      · simp [z₀, Data.set, Data.write, RData.set, RData.toData]
-      · simp [z₀, Data.set, Data.write, RData.set, RData.toData, hx₂_mem]
+      · simp [z₁, z₀, Data.set, Data.write, RData.set, RData.write, RData.toData]
+      · simp [z₁, z₀, Data.set, Data.write, RData.set, RData.write, RData.toData, hx₂_mem]
       · exact hz₀_fr
-    set z₁ : RData 7 := ⟨z₀.regs, Function.update x.mem x.frontier k.val, x.frontier + 4⟩
     have hclear_eq : clear z₁.mem (z₁.frontier - z₁.regs 0) (z₁.regs 0) = x.mem := by
       funext a
-      have hfr_sub : z₁.frontier - z₁.regs 0 = x.frontier := by simp [z₁, z₀, hz₀_r0]
-      have hlen : z₁.regs 0 = 4 := by simp [z₁, z₀, hz₀_r0]
+      have hfr_sub : z₁.frontier - z₁.regs 0 = x.frontier := by simp [z₁, hz₀_fr, hz₀_r0]
+      have hlen : z₁.regs 0 = 4 := by simp [z₁, hz₀_r0]
       rw [hfr_sub, hlen]
       by_cases hown : (Block.mk x.frontier 4).Owns a
       · rw [clear_of_owns hown]
         exact (hx.2.2 a hown.1).symm
       · rw [clear_of_not_owns hown]
         have hne : a ≠ x.frontier := by simp only [Block.Owns] at hown; omega
-        simp [z₁, Function.update_of_ne hne]
-    have ed_sh : RDemonicExec (B := .exact) w L_peak (.shrink 0) z₁ 1 (· = postState z₀) := by
-      refine RDemonicExec.shrink (by simp [z₁, L_peak]) (by simp [z₁, z₀, hz₀_r0]) ?_
-      rw [hclear_eq]
-      simp [postState, z₁, z₀, hz₀_r0]
+        simp [z₁, z₀, hx₂_mem, Function.update_of_ne hne]
+    have ed_sh : RDemonicExec (B := .exact) w L_peak (shrinkCode 0 3 4 5) z₁ 21
+        (· = postState z₀) := by
+      have hsh := shrinkCode_exec (w := w) (L_peak := L_peak)
+        (count := 0) (idx := 3) (zero := 4) (one := 5)
+        hz₁_bdd hnodup4 h1 (by simp [z₁, hz₀_fr, L_peak]) (by simp [z₁, hz₀_fr, hz₀_r0])
+      refine hsh.mono (by simp [z₁, hz₀_r0]) ?_
+      rintro _ rfl
+      ext a
+      · simp [shrinkPost, postState, z₁, hz₀_r0]
+      · exact congrFun hclear_eq a
+      · simp [shrinkPost, postState, z₁, hz₀_fr, hz₀_r0]
     exact ExecRCodeDist.of_demonicExec (ed_rw.seq_eq ed_sh)
   have d_mid := d_rand.seq_const htail (fun _ _ => le_rfl)
   have d_all : ExecRCodeDist (B := .exact) w growSampleShrinkCode x
       (((ProbComp.unifFin (x₂.regs 0)).eval.map fun k => x₂.set 6 k.val).bind
-        (fun z => PMF.pure (postState z))) 28 L_peak := by
+        (fun z => PMF.pure (postState z))) 51 L_peak := by
     have h := (ExecRCodeDist.of_demonicExec e_const).seq_pure
       ((ExecRCodeDist.of_demonicExec e_grow).seq_pure d_mid)
-    simpa [growSampleShrinkCode, x₁, x₂, regs₂, add_assoc] using
+    simpa [growSampleShrinkCode, x₁, x₂, add_assoc] using
       h.mono (by simp [x₁]; norm_num)
   have d_std := (d_all.mapSimulates Basis.Simulates.exactStandard).toExecRProgramDist 6
   refine ⟨_, ?_, d_std.mono (by norm_num) le_rfl⟩
@@ -337,7 +403,9 @@ theorem growSampleShrinkCode_standard_execRProgramDist {w : ℕ} {x : RData 7}
   subst hyz
   refine ⟨rfl, rfl, ?_⟩
   have hk := k.isLt
-  simp only [postState, RData.set, Function.update_self]
+  simp only [postState, RData.set, Function.update_of_ne (by decide : (6 : Fin 7) ≠ 3),
+    Function.update_of_ne (by decide : (6 : Fin 7) ≠ 5),
+    Function.update_of_ne (by decide : (6 : Fin 7) ≠ 4), Function.update_self]
   omega
 
 /-! ## 3. Geometric `while` loop (`ExecRCodeDist.loop_geometric`) -/
@@ -453,15 +521,17 @@ theorem memoryResizable_refinement_and_frame (w : ℕ) (b : Block)
   omega
 
 /-- Under `demonicSpec w`, `.grow k` guarantees zeroed words on `[s.frontier, s.frontier + k)`,
-whereas `.growDirty k` accepts arbitrary `w`-bit hardware `DemonicGrow` transitions. -/
+whereas `.growDirty k` accepts arbitrary `w`-bit hardware `DemonicGrow` transitions and charges
+`max k 1` units. -/
 theorem memoryResizable_demonicGrow_and_zeroedGrow {w k : ℕ} {s s_zero s_dirty : Memory.State}
     {r₀ : ℕ} (hs : Memory.Resizable.ZeroAbove s)
     (hz : Memory.Resizable.demonicStep w s (.grow k) s_zero r₀)
     (hfront : s_dirty.frontier = s.frontier + k)
     (hg : DemonicGrow w s.frontier k s.mem s_dirty.mem) :
     (∀ a, s.frontier ≤ a → a < s.frontier + k → s_zero.mem a = 0) ∧
-      Memory.Resizable.demonicStep w s (.growDirty k) s_dirty s.frontier := by
-  refine ⟨?_, Memory.Resizable.demonicStep_growDirty_of_demonicGrow hs hfront hg⟩
+      Memory.Resizable.demonicStep w s (.growDirty k) s_dirty s.frontier ∧
+      Memory.Resizable.charge s (.growDirty k) = max k 1 := by
+  refine ⟨?_, Memory.Resizable.demonicStep_growDirty_of_demonicGrow hs hfront hg, rfl⟩
   rcases hz with ⟨rfl, -⟩
   intro a hlo hhi
   exact clear_of_owns ⟨hlo, hhi⟩

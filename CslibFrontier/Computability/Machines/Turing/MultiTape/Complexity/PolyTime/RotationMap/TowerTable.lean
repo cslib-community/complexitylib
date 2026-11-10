@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.Expander.TowerFamily
 import Mathlib.Data.List.GetD
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Complete rotation tables for the zig-zag tower
@@ -206,13 +207,11 @@ theorem lookup_iterate_numbered {B : Type*} (H : RotationMap B D)
     rw [Function.iterate_succ_apply', lookup_next _ _ _ _ hindex, hstep]
     have hmod :
         ((ZigzagTowerVertex.equivFin numbering level vertex).val * b + (numbering cloud).val) % b =
-          (numbering cloud).val := by
-      simp [Nat.add_mod, Nat.mod_eq_of_lt (numbering cloud).isLt]
+          (numbering cloud).val := Nat.mul_add_mod_of_lt (numbering cloud).isLt
     have hdiv :
         ((ZigzagTowerVertex.equivFin numbering level vertex).val * b + (numbering cloud).val) / b =
-          (ZigzagTowerVertex.equivFin numbering level vertex).val := by
-      rw [Nat.mul_comm (ZigzagTowerVertex.equivFin numbering level vertex).val,
-        Nat.mul_add_div hb, Nat.div_eq_of_lt (numbering cloud).isLt, Nat.add_zero]
+          (ZigzagTowerVertex.equivFin numbering level vertex).val :=
+      Nat.mul_add_div_of_lt _ (numbering cloud).isLt
     simp only [nextRow, hmod, hdiv, reindexRot, Equiv.trans_apply, Fin.eta,
       Equiv.symm_apply_apply, Equiv.symm_trans_apply, Equiv.apply_symm_apply]
     rw [ih, ih]

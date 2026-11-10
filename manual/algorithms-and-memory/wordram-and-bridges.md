@@ -2,13 +2,28 @@
 
 ## Concrete machine and operation basis
 
-[CslibFrontier/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [complexitylib][complexitylib].
+[CslibFrontier/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) uses finite register indices, natural memory addresses and word values below `2^w`. The program is a finite instruction list. The default memory is zero; input length is stored at address zero and input words at `1,…,n`. A scalar result is returned by `halt`, which costs one instruction. Installing the input and reading the result are conventions, not hidden execution steps [cslib-frontier][complexitylib].
 
 `Basis` separates ALU symbols/arity from their interpretation. `standard` uses natural truncated subtraction and Lean's total division/modulo conventions; `exact` faults on subtraction underflow and division/modulo by zero. Both check result width rather than silently wrapping arithmetic modulo `2^w`. Restricted additive/arithmetic bases expose which operations an algorithm uses. `Basis.Hom` preserves interpretation; successful-run simulations can relate a partial basis to a more total one.
 
 Copies and memory moves rely on a bounded-state invariant rather than rechecking every existing word. The program counter is naturally unbounded in the base Word-RAM; code-length/address restrictions are separate. An instruction can explicitly read the width, and `ReadsWidth` tracks that feature. Without it, successful runs have a width-monotonicity theorem.
 
 Structured [CslibFrontier/Computability/WordRAM/Structured.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Structured.lean) has operations, sequencing, branches and loops. Its `Exec` relation counts actual branch/jump overhead, and assembly preserves exact counts. Hoare and potential rules prove executions of this code; they do not treat a source-language loop as one machine instruction.
+
+## Running concrete programs in tests
+
+`Code.eval` runs a structured program on concrete data, and `Exec.of_eval` turns a successful
+result into an execution. It keeps registers and memory as `Function.update` chains, so a compiled
+`#eval` or `#guard` of a run takes time quadratic in its length. For a run longer than a few
+thousand instructions, import
+[`Structured.FastEval`](../../CslibFrontier/Computability/WordRAM/Structured/FastEval.lean) in the
+test file. Its proved `@[csimp]` lemma makes compiled code use an array-backed interpreter, and the
+observations do not change. For example,
+[`NativeChanHeVisitor`](../../CslibFrontierTests/NativeChanHeVisitor.lean) drops from about nine
+minutes to under ten seconds. The import affects only compiled evaluation. `decide` and `rfl`
+still reduce `Code.eval` in the kernel. When such a check is slow in its tactic step rather than in
+type checking (see `set_option profiler true`), `decide +kernel` skips the elaborator's evaluation.
+Keep the library modules that define programs free of this import, so that it stays a leaf.
 
 ## Proving a constant-cost counting loop
 
@@ -42,6 +57,15 @@ The routine specification supplies its instruction allowance and full postcondit
 routine body stays closed. A fixed-time existential contract and a time-indexed `WP` contract
 are both supported. In the latter case, bind `y`, the returned allowance, and its postcondition.
 
+The same tactics prove exact instruction counts. On a goal `Exec w c x y T` or
+`∃ y, Exec w c x y T ∧ P y`, `wram_exec` runs with the rules of `WP.Exact`, the
+weakest-precondition form of `Exec`, and closes the final count `t = T` with `omega` when it can;
+a count it cannot close remains as the first conjunct of the goal. At a stop, continue from an
+exact specification with `refine WP.Exact.of_exec h ?_`, or apply an exact contract
+`∃ y, Exec w c x y T ∧ P y` with `wram_call`. `WP.Exact.toWP` weakens an exact count to a bound.
+The [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check exact
+counts through a conditional, a wrong count left as a goal and a call to an exact specification.
+
 For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
 Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
 outside the bank. Memory and register projections of bank views are normalized once. Preparation,
@@ -50,6 +74,32 @@ existing separate rules. Missing word fits, alias conditions or a mismatched rou
 proof. Open the complete ordinary-import
 [call examples](../../CslibFrontierTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
+
+`wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
+also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
+round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
+`f a`, an instance of a quantified disequality `∀ xs, a ≠ b` or `∀ xs, ¬a = b` either way round,
+or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates. A
+quantified hypothesis such as `∀ i j, src i ≠ tmp j` separates two renamed banks. It is used only
+when matching its two sides against the names determines every bound variable. A hypothesis with
+a premise, such as `∀ i j, i ≠ j → tmp i ≠ tmp j`, is never instantiated; state that fact as
+`Function.Injective tmp`. Other names stay unread. Memory passed whole to a definition, as in
+`swapMem y.mem i j`, becomes `Function.update`; reads at an address still go through the
+discharger. `Data.set_set` drops an overwritten register. The
+[symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each case,
+including two banks separated by quantified hypotheses, a premise-bearing hypothesis left unused,
+and names left unread.
+
+`wram_exec` also runs `Op.alu` instructions through `WP.alu`, for a basis given by a definition,
+such as `Basis.additive` (including `Op.addAdditive`), or for `Basis.standard` written with the
+constructor. `Basis.reduceInterp` unfolds the operation on the argument registers' values, and
+execution continues only when the result is `some v`. The fitting condition `Fits w v` is
+proved like other fitting conditions or left as a goal, and the instruction is charged as one
+instruction. An operation that does not unfold to `some v` without comparing the values, such as
+`Basis.exact` subtraction, stops `wram_exec` with a `could not evaluate` error; write such
+instructions as `Op.exactBin`, which has its own rules. The
+[other-bases examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check additive and
+standard instructions and that failure.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
@@ -193,7 +243,7 @@ conditional but still uses the delivered-argument, body-only calling convention 
 This explicit route does not retain concrete witnesses through every bind, loop or
 randomized constructor. Existing existential Backend clients remain available through the
 choice fallback. Fixed-resource Karger endpoints still need their own compatible emitter and
-resource proofs; no selected abstract bound follows from this example.
+resource proofs; no fixed-resource Karger bound follows from this example.
 
 ### Retain scalar code and share its scratch bank
 
@@ -309,9 +359,9 @@ There are two structured interfaces. `expectedCodeTime` uses the finite fault-fr
 
 ## Word-granular Resizable Word RAM
 
-[`Resizable.Basic`](../../CslibFrontier/Computability/WordRAM/Resizable/Basic.lean) models a word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`), corresponding to the word-addressed prefix model (termed the "virtual memory" model in Li, Liang, Yu, and Zhou, FOCS 2023 and SODA 2024, and Kuszmaul, Liang, and Zhou, SODA 2026) with 0-indexed addresses `[0, frontier)`. A data configuration `RData r` pairs `r` registers and memory `ℕ → ℕ` with the hardware word frontier `frontier : ℕ`. Ordinary `load` and `store` instructions fault whenever the target address satisfies `a ≥ frontier`. The instruction set (`RInstr`, structured `RCode`) adds `.grow dst kReg` (requiring `Fits w (frontier + regs kReg)`, storing the old `frontier` in `dst`, advancing `frontier` by `regs kReg`, and permitting any `DemonicGrow` post-memory with arbitrary `w`-bit words in `[frontier, frontier + regs kReg)`) and `.shrink kReg` (requiring `regs kReg ≤ frontier`, reducing `frontier` by `regs kReg`, and zeroing `[frontier - regs kReg, frontier)` so `RData.Bounded w` is preserved). `growZeroCode` (`growZeroCode_exec`) zeroes a newly grown `k`-word block in `4*k+7` `Basis.exact` instructions, erasing all demonically initialized words.
+[`Resizable.Basic`](../../CslibFrontier/Computability/WordRAM/Resizable/Basic.lean) models a word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`), corresponding to the word-addressed prefix model (termed the "virtual memory" model in Li, Liang, Yu, and Zhou, FOCS 2023 and SODA 2024, and Kuszmaul, Liang, and Zhou, SODA 2026) with 0-indexed addresses `[0, frontier)`. A data configuration `RData r` pairs `r` registers and memory `ℕ → ℕ` with the hardware word frontier `frontier : ℕ`. Ordinary `load` and `store` instructions fault whenever the target address satisfies `a ≥ frontier`. The instruction set (`RInstr`, structured `RCode`) adds single-word `.grow dst` (costing 1 step, requiring `Fits w (frontier + 1)`, storing the old `frontier` in `dst`, advancing `frontier` to `frontier + 1`, and permitting any `DemonicGrow w frontier 1` post-memory with an arbitrary `w`-bit word at `frontier`) and single-word `.shrink` (costing 1 step, requiring `1 ≤ frontier`, reducing `frontier` to `frontier - 1`, and zeroing `frontier - 1` so `RData.Bounded w` is preserved). Derived `Basis.exact` subroutines `growDirtyCode` (`growDirtyCode_exec`, `4*k+5` instructions), `growZeroCode` (`growZeroCode_exec`, `5*k+6` instructions, zeroing all newly grown words), and `shrinkCode` (`shrinkCode_exec`, `4*k+5` instructions) provide `Θ(k + 1)`-step bulk resizing.
 
-To reuse ordinary `Memory.Prog` code on the Resizable Word RAM without duplicating `CslibFrontier/Tactic/Realize.lean`, [`BoundedExec`](../../CslibFrontier/Computability/WordRAM/BoundedExec.lean) defines `ExecBounded w L`, tracking `x.regs a < L` on every `.load` and `.store`, and `Realization.RealizesBounded` strengthens `Realizes` with `ExecBounded w (y.regs frontier)`. Importing `CslibFrontier.Computability.WordRAM.Resizable.Basic` registers an `elab_rules` handler so `by realize` proves `RealizesBounded` goals directly while leaving `Realizes` goals unchanged. Any non-allocating `Memory.Prog` client (`clientState.frontier ≤ x.frontier`) then lifts directly onto `RCode.ofCode` via `RDemonicExec.of_realizesBounded` (or `RDemonicExec.of_execBounded`).
+To reuse ordinary `Memory.Prog` code on the Resizable Word RAM without duplicating `CslibFrontier/Tactic/Realize.lean`, [`BoundedExec`](../../CslibFrontier/Computability/WordRAM/BoundedExec.lean) defines `ExecBounded w L`, tracking `x.regs a < L` on every `.load` and `.store`, and `Realization.RealizesBounded` strengthens `Realizes` with `ExecBounded w (y.regs frontier)`. Importing [`BoundedTactic`](../../CslibFrontier/Computability/WordRAM/Realization/BoundedTactic.lean) (publicly re-exported by `CslibFrontier.Computability.WordRAM.Resizable.Basic`) registers an `elab_rules` handler so `by realize` proves `RealizesBounded` goals directly while leaving `Realizes` goals unchanged. Any non-allocating `Memory.Prog` client (`clientState.frontier ≤ x.frontier`) then lifts directly onto `RCode.ofCode` via `RDemonicExec.of_realizesBounded` (or `RDemonicExec.of_execBounded`).
 
 For randomized resizable algorithms, [`Resizable.Randomized`](../../CslibFrontier/Computability/WordRAM/Resizable/Randomized.lean) (re-exporting [`Resizable.Clocked`](../../CslibFrontier/Computability/WordRAM/Resizable/Clocked.lean) and [`Resizable.LoopDist`](../../CslibFrontier/Computability/WordRAM/Resizable/LoopDist.lean)) runs flat programs `RProgram B r` against a time- and state-adaptive adversary `RAdv r := ℕ → RState r → ℕ → ℕ`. `ExecRCodeDist w c x μ T L_peak` composes deterministic `RDemonicExec` blocks (`of_demonicExec`) with `.rand`, `.seq`, `.branch`, `.loop_bounded`, and `.loop_geometric`, transports along `Basis.Simulates` (`mapSimulates`), and compiles via `toExecRProgramDist` to `ExecRProgramDist w (c.program out) out x μ (T + 1) L_peak`. `ExecRProgramDist` bundles `RDemonicFaultFree`, every-step `PeakFrontierLe w L_peak`, `expectedTimeDemonic ≤ T + 1`, and exact halting-state probabilities (`iSup_evalRandDemonic_halted_eq`, `almostSurelyHaltsDemonic`), while `not_execRProgramDist_halt` rejects trivial `[.halt out]` stubs whenever the target law changes registers, memory, or `frontier`. Open the complete checked [WordRAMResizable clients](../../CslibFrontierTests/WordRAMResizable.lean) and validate them with `scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMResizable`; data-structure `StateTransitionImpl` and `ObliviousSequenceImpl` wrappers over resizable memory remain separate.
 

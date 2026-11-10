@@ -168,13 +168,7 @@ private theorem EXP_encPair_subset_PPolyOn_of_EXP_subset_PPoly
     change n + n + 2 ^ (encPair encBits encBits (decodePair w)).length ^ (k + 1) ≤
       3 * 2 ^ (n + 1) ^ (k + 1) + 3
     omega
-  have hpre_EXP : decodePair ⁻¹' L ∈ EXP encBits := by
-    refine mem_EXP_iff.mpr ⟨2 * (k + 1), DTIME_mono_of_eventually_le
-      (eventually_atTop.mpr ⟨2, fun n hn => Nat.pow_le_pow_right (by norm_num) ?_⟩) hpre⟩
-    have hn2 : n + 1 ≤ n ^ 2 := by nlinarith
-    calc (n + 1) ^ (k + 1)
-        ≤ (n ^ 2) ^ (k + 1) := Nat.pow_le_pow_left hn2 (k + 1)
-      _ = n ^ (2 * (k + 1)) := (pow_mul n 2 (k + 1)).symm
+  have hpre_EXP : decodePair ⁻¹' L ∈ EXP encBits := DTIME_two_pow_subset_EXP (by fun_prop) hpre
   have hpre_PPoly : decodePair ⁻¹' L ∈ PPolyOn encBits := hEXP hpre_EXP
   have hred : PolyTimeReducible (encPair encBits encBits) encBits L (decodePair ⁻¹' L) :=
     ⟨encPair encBits encBits, .of_eq fun _ => rfl, fun p => by
@@ -196,6 +190,18 @@ private theorem certLength_mono {m₁ m₂ s₁ s₂ : ℕ} (hm : m₁ ≤ m₂)
     certLength m₁ s₁ ≤ certLength m₂ s₂ := by
   unfold certLength
   gcongr
+
+/-- Enumerating all bit strings of a length `c ≤ Nat.log 2 B` costs at most `2 * (B + 1) ^ 2`, the
+budget shape used by `bitsEnumList` and `computableInPolyTime_checkCertificate`. -/
+private theorem two_pow_mul_le_of_le_log {c B : ℕ} (h : c ≤ Nat.log 2 B) :
+    2 ^ c * (2 * c + 1) ≤ 2 * (B + 1) ^ 2 := by
+  have hpow : 2 ^ c ≤ B + 1 :=
+    (Nat.pow_le_pow_right (by norm_num) h).trans (Nat.pow_log_le_add_one 2 B)
+  have hlin : 2 * c + 1 ≤ 2 * (B + 1) := by
+    have := Nat.log_le_self 2 B
+    omega
+  calc 2 ^ c * (2 * c + 1) ≤ (B + 1) * (2 * (B + 1)) := Nat.mul_le_mul hpow hlin
+    _ = 2 * (B + 1) ^ 2 := by ring
 
 /-- Check whether a truth table `T` (of arity `m = Nat.log 2 T.length`) has a circuit of size at
 most `S` by enumerating all certificates of length `min (certLength m S) (Nat.log 2 K)`. Because
@@ -238,21 +244,10 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     fun_prop
   have hbudget_enum (a : γ) :
       2 ^ cLen a * (2 * cLen a + 1) ≤ size_enum (encIn a).length := by
-    have hc_le_log : cLen a ≤ Nat.log 2 (K a) := Nat.min_le_right _ _
-    have hlog_le : Nat.log 2 (K a) ≤ K a := Nat.log_le_self 2 (K a)
-    have hpow_le : 2 ^ cLen a ≤ K a + 1 := by
-      calc 2 ^ cLen a
-          ≤ 2 ^ Nat.log 2 (K a) := Nat.pow_le_pow_right (by norm_num) hc_le_log
-        _ ≤ K a + 1 := by
-          rcases Nat.eq_zero_or_pos (K a) with h0 | hpos
-          · simp [h0]
-          · exact (Nat.pow_log_le_self 2 hpos.ne').trans (Nat.le_succ _)
-    have hlin_le : 2 * cLen a + 1 ≤ 2 * (K a + 1) := by omega
     have hKa : K a + 1 ≤ c_K * ((encIn a).length + 1) ^ d_K + 1 :=
       Nat.add_le_add_right (hK_len a) 1
     calc 2 ^ cLen a * (2 * cLen a + 1)
-        ≤ (K a + 1) * (2 * (K a + 1)) := Nat.mul_le_mul hpow_le hlin_le
-      _ = 2 * (K a + 1) ^ 2 := by ring
+        ≤ 2 * (K a + 1) ^ 2 := two_pow_mul_le_of_le_log (Nat.min_le_right _ _)
       _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 := by gcongr
   have henum : ComputableInPolyTime (fun a => BitString.enumList (cLen a))
       encIn (encList encBits) :=
@@ -266,13 +261,6 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
   have hbudget_T (p : γ × List Bool) :
       2 ^ m p.1 * (2 * m p.1 + 1) ≤ size_T (encPair encIn encBits p).length := by
     set lenT := (T p.1).length
-    have hpow : 2 ^ m p.1 ≤ lenT + 1 := by
-      rcases Nat.eq_zero_or_pos lenT with h0 | hpos
-      · simp [m, lenT, h0]
-      · exact (Nat.pow_log_le_self 2 hpos.ne').trans (Nat.le_succ _)
-    have hlog : 2 * m p.1 + 1 ≤ 2 * (lenT + 1) := by
-      have : m p.1 ≤ lenT := Nat.log_le_self 2 lenT
-      omega
     have hlen_p : (encIn p.1).length ≤ (encPair encIn encBits p).length :=
       length_le_encPair_left encIn encBits p
     have hlenT_le : lenT + 1 ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by
@@ -280,8 +268,7 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
           ≤ c_T * ((encIn p.1).length + 1) ^ d_T + 1 := Nat.add_le_add_right (hT_len p.1) 1
         _ ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by gcongr
     calc 2 ^ m p.1 * (2 * m p.1 + 1)
-        ≤ (lenT + 1) * (2 * (lenT + 1)) := Nat.mul_le_mul hpow hlog
-      _ = 2 * (lenT + 1) ^ 2 := by ring
+        ≤ 2 * (lenT + 1) ^ 2 := two_pow_mul_le_of_le_log le_rfl
       _ ≤ 2 * (c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1) ^ 2 := by gcongr
   have haccept : ComputableInPolyTime
       (fun q : ((γ × List Bool) × List Bool) × Bool =>
@@ -452,22 +439,17 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   -- Compose the unary bounds explicitly: one `fun_prop` over the unfolded nest is too slow.
   have hid : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary := .id'
   have hc (a : ℕ) : ComputableInPolyTime (fun _ : ℕ => a) encUnary encUnary := .const a
-  have hadd {u v : ℕ → ℕ} (hu : ComputableInPolyTime u encUnary encUnary)
-      (hv : ComputableInPolyTime v encUnary encUnary) :
-      ComputableInPolyTime (fun n => u n + v n) encUnary encUnary :=
-    ComputableInPolyTime.unary_add.comp (hu.prod hv)
-  have hmul {u v : ℕ → ℕ} (hu : ComputableInPolyTime u encUnary encUnary)
-      (hv : ComputableInPolyTime v encUnary encUnary) :
-      ComputableInPolyTime (fun n => u n * v n) encUnary encUnary :=
-    ComputableInPolyTime.unary_mul.comp (hu.prod hv)
   have hm_bound : ComputableInPolyTime m_bound encUnary encUnary :=
-    hadd (hc c_R) (hmul (hadd hf (hc 2)) (hc d_R))
-  have hs_bound : ComputableInPolyTime s_bound encUnary encUnary :=
-    hadd (hmul (hc c_M) ((ComputableInPolyTime.unary_pow d_M).comp
-      (hadd (hadd (hadd (hmul (hc 2) hid) (hc 1)) hm_bound) (hc 1)))) (hc 2)
+    (hc c_R).unary_add' ((hf.unary_add' (hc 2)).unary_mul' (hc d_R))
+  have hs_bound : ComputableInPolyTime s_bound encUnary encUnary := by
+    have hbase : ComputableInPolyTime (fun n => 2 * n + 1 + m_bound n + 1) encUnary encUnary :=
+      ((((hc 2).unary_mul' hid).unary_add' (hc 1)).unary_add' hm_bound).unary_add' (hc 1)
+    exact ((hc c_M).unary_mul' ((ComputableInPolyTime.unary_pow d_M).comp hbase)).unary_add'
+      (hc 2)
   have hg : ComputableInPolyTime g encUnary encUnary := by
-    have hns := hadd hm_bound hs_bound
-    exact hadd (hadd (hadd hs_bound hns) (hmul hs_bound (hadd (hc 3) (hmul (hc 2) hns)))) hid
+    have hns := hm_bound.unary_add' hs_bound
+    exact ((hs_bound.unary_add' hns).unary_add'
+      (hs_bound.unary_mul' ((hc 3).unary_add' ((hc 2).unary_mul' hns)))).unary_add' hid
   let B_search : Set (List Bool × ℕ) :=
     {p : List Bool × ℕ |
       boundedMCSPSearch (List.ofFn (R p.1).table)

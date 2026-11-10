@@ -203,8 +203,7 @@ example : meanError ≤ 8388608 *
     (CF := 1) (CB := 1) (Kf := 1) (Kr := 1) (Kc := 1)
     (F := F) (F' := F') (B := B) (B' := B')
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) broad_density fine_density fine_sub
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) broad_density fine_density fine_sub
     (by norm_num) (by norm_num)
     (fun _ _ _ => by unfold F; split_ifs <;> norm_num)
     (fun _ _ _ => by unfold F'; split_ifs <;> norm_num)

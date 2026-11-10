@@ -15,6 +15,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -258,18 +259,11 @@ theorem succProbability_collisionGameFor_map_le
   unfold Game.succProbability
   apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
   simp only [collisionGameFor, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
-  apply PMF.bind_apply_mono_on_support
-  intro p₁ hp₁
-  apply PMF.bind_apply_mono_on_support
-  intro pair _
-  cases hcol : isCollisionFor H₂ valid₂ n (f n p₁) pair.1 pair.2
-  · simp
-  · rw [isCollisionFor_eq_true_iff] at hcol
-    obtain ⟨hv₁, hv₂, hH₁⟩ := hinj p₁ hp₁ pair.1 pair.2 hcol.1 hcol.2.1 hcol.2.2.2
-    have hcol' : isCollisionFor H₁ valid₁ n p₁ pair.1 pair.2 = true := by
-      rw [isCollisionFor_eq_true_iff]
-      exact ⟨hv₁, hv₂, hcol.2.2.1, hH₁⟩
-    rw [hcol']
+  refine PMF.bind_apply_mono_on_support _ _ fun p₁ hp₁ =>
+    PMF.map_true_mono _ fun pair _ hcol => ?_
+  rw [isCollisionFor_eq_true_iff] at hcol ⊢
+  obtain ⟨hv₁, hv₂, hH₁⟩ := hinj p₁ hp₁ pair.1 pair.2 hcol.1 hcol.2.1 hcol.2.2.2
+  exact ⟨hv₁, hv₂, hcol.2.2.1, hH₁⟩
 
 /-- **Parameter-map and injective-digest reduction for `CollisionResistantForOn`**: if `f` is
 computable in polynomial time and every `H₂ (f n p₁)`-collision on `p₁ ∈ (setup₁ n).support` is a
@@ -468,16 +462,9 @@ theorem succProbability_collisionGame_le_of_extract
   unfold Game.succProbability
   apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
   simp only [collisionGame, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  apply PMF.bind_apply_mono_on_support
-  intro k hk
-  have hklen : k.length = n := by
-    rw [BitString.eval_sampleList] at hk
-    exact BitString.length_of_mem_support_uniformList hk
-  apply PMF.bind_apply_mono_on_support
-  intro pair _
-  cases hcol : isCollision H₁ valid₁ n k pair.1 pair.2
-  · simp
-  · rw [himp k hklen pair.1 pair.2 hcol]
+  refine PMF.bind_apply_mono_on_support _ _ fun k hk => PMF.map_true_mono _ fun pair _ hcol => ?_
+  rw [BitString.eval_sampleList] at hk
+  exact himp k (BitString.length_of_mem_support_uniformList hk) pair.1 pair.2 hcol
 
 /-- **Deterministic collision-extraction reduction**: if a polynomial-time function `extract`
 turns every `H₁`-collision at parameter `n` (for all sufficiently large `n` and `n`-bit keys `k`)

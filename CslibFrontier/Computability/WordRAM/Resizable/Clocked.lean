@@ -24,11 +24,11 @@ hardware-frontier bounds (`PeakFrontierLe`), `ℝ≥0∞`-valued expected runnin
 (`expectedTimeDemonic`), and flat-program halting-distribution specifications (`ExecRProgramDist`)
 for the word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`).
 
-When a flat program `p : RProgram B r` executes `.grow dst kReg`, a time- and state-adaptive
+When a flat program `p : RProgram B r` executes single-word `.grow dst`, a time- and state-adaptive
 adversary `adv : RAdv r` (`ℕ → RState r → ℕ → ℕ`), observing the step index `t` and the full
-current machine state `s : RState r`, chooses arbitrary `w`-bit initial words in
-`[s.data.frontier, s.data.frontier + k)` (`advGrowMem`). Every flat-program specification
-quantifies universally (or takes the supremum in `ℝ≥0∞`) over all `adv : RAdv r`.
+current machine state `s : RState r`, chooses an arbitrary `w`-bit initial word at address
+`s.data.frontier` (`advGrowMem w (advStep s) s.data.frontier 1 s.data.mem`). Every flat-program
+specification quantifies universally (or takes the supremum in `ℝ≥0∞`) over all `adv : RAdv r`.
 
 ## Main definitions
 
@@ -58,7 +58,8 @@ quantifies universally (or takes the supremum in `ℝ≥0∞`) over all `adv : R
 
 * [KuszmaulLiangZhou2026] William Kuszmaul, Jingxun Liang, and Renfei Zhou, *Succinct Dynamic
   Rank/Select: Bypassing the Tree-Structure Bottleneck*, SODA 2026 (`arXiv:2510.19175v1`,
-  Section 5.1, PDF p. 16 / printed p. 15).
+  Section 5.1, PDF pp. 16–20 / printed pp. 15–19; Theorem 5.2(6) and Footnote 10, PDF p. 18 /
+  printed p. 17).
 * [MitzenmacherUpfal2017] Michael Mitzenmacher and Eli Upfal, *Probability and Computing*, 2nd ed.,
   Cambridge University Press, 2017, Sections 2.1, 2.3, and 2.4.
 -/
@@ -133,18 +134,16 @@ def stepRandResizable (w : ℕ) (advStep : RState r → ℕ → ℕ) (p : RProgr
         let k ← ProbComp.unifFin (s.data.regs src)
         pure (.running ⟨s.pc + 1, s.data.set dst k.val⟩)
       else pure .faulted
-    | some (.grow dst kReg) =>
-      let k := s.data.regs kReg
-      if Fits w (s.data.frontier + k) then
-        let mem' := advGrowMem w (advStep s) s.data.frontier k s.data.mem
+    | some (.grow dst) =>
+      if Fits w (s.data.frontier + 1) then
+        let mem' := advGrowMem w (advStep s) s.data.frontier 1 s.data.mem
         pure (.running ⟨s.pc + 1,
-          ⟨Function.update s.data.regs dst s.data.frontier, mem', s.data.frontier + k⟩⟩)
+          ⟨Function.update s.data.regs dst s.data.frontier, mem', s.data.frontier + 1⟩⟩)
       else pure .faulted
-    | some (.shrink kReg) =>
-      let k := s.data.regs kReg
-      if k ≤ s.data.frontier then
+    | some .shrink =>
+      if 1 ≤ s.data.frontier then
         pure (.running ⟨s.pc + 1,
-          ⟨s.data.regs, clear s.data.mem (s.data.frontier - k) k, s.data.frontier - k⟩⟩)
+          ⟨s.data.regs, clear s.data.mem (s.data.frontier - 1) 1, s.data.frontier - 1⟩⟩)
       else pure .faulted
   | cfg => pure cfg
 
@@ -152,10 +151,10 @@ section StepLemmas
 
 variable {w : ℕ} {advStep : RState r → ℕ → ℕ} {p : RProgram B r} {s : RState r}
 
-@[simp] theorem stepRandResizable_halted (v : ℕ) (d : RData r) :
+theorem stepRandResizable_halted (v : ℕ) (d : RData r) :
     stepRandResizable w advStep p (.halted v d) = pure (.halted v d) := rfl
 
-@[simp] theorem stepRandResizable_faulted :
+theorem stepRandResizable_faulted :
     stepRandResizable w advStep p .faulted = pure .faulted := rfl
 
 theorem stepRandResizable_op {o : Op B r} {y : RData r} (hp : p[s.pc]? = some (.op o))
@@ -193,20 +192,28 @@ theorem stepRandResizable_rand_of_fits {dst src : Fin r} (hp : p[s.pc]? = some (
       pure (.running ⟨s.pc + 1, s.data.set dst k.val⟩)) := by
   simp [stepRandResizable, hp, hf]
 
-theorem stepRandResizable_grow_of_fits {dst kReg : Fin r} (hp : p[s.pc]? = some (.grow dst kReg))
-    (hf : Fits w (s.data.frontier + s.data.regs kReg)) :
+theorem stepRandResizable_grow_of_fits {dst : Fin r} (hp : p[s.pc]? = some (.grow dst))
+    (hf : Fits w (s.data.frontier + 1)) :
     stepRandResizable w advStep p (.running s) =
       pure (.running ⟨s.pc + 1, ⟨Function.update s.data.regs dst s.data.frontier,
-        advGrowMem w (advStep s) s.data.frontier (s.data.regs kReg) s.data.mem,
-        s.data.frontier + s.data.regs kReg⟩⟩) := by
+        advGrowMem w (advStep s) s.data.frontier 1 s.data.mem, s.data.frontier + 1⟩⟩) := by
   simp [stepRandResizable, hp, hf]
 
-theorem stepRandResizable_shrink_of_le {kReg : Fin r} (hp : p[s.pc]? = some (.shrink kReg))
-    (hk : s.data.regs kReg ≤ s.data.frontier) :
+theorem stepRandResizable_grow_of_not_fits {dst : Fin r} (hp : p[s.pc]? = some (.grow dst))
+    (hf : ¬Fits w (s.data.frontier + 1)) :
+    stepRandResizable w advStep p (.running s) = pure .faulted := by
+  simp [stepRandResizable, hp, hf]
+
+theorem stepRandResizable_shrink_of_pos (hp : p[s.pc]? = some .shrink)
+    (hk : 1 ≤ s.data.frontier) :
     stepRandResizable w advStep p (.running s) =
       pure (.running ⟨s.pc + 1, ⟨s.data.regs,
-        clear s.data.mem (s.data.frontier - s.data.regs kReg) (s.data.regs kReg),
-        s.data.frontier - s.data.regs kReg⟩⟩) := by
+        clear s.data.mem (s.data.frontier - 1) 1, s.data.frontier - 1⟩⟩) := by
+  simp [stepRandResizable, hp, hk]
+
+theorem stepRandResizable_shrink_of_eq_zero (hp : p[s.pc]? = some .shrink)
+    (hk : s.data.frontier = 0) :
+    stepRandResizable w advStep p (.running s) = pure .faulted := by
   simp [stepRandResizable, hp, hk]
 
 end StepLemmas
@@ -231,13 +238,13 @@ theorem runRandResizable_succ (w : ℕ) (adv : RAdv r) (p : RProgram B r) (t : �
     (d : RData r) : runRandResizable w adv p t (.halted v d) = pure (.halted v d) := by
   induction t generalizing adv with
   | zero => rfl
-  | succ t ih => simp [runRandResizable, ih]
+  | succ t ih => simp [runRandResizable, stepRandResizable_halted, ih]
 
 @[simp] theorem runRandResizable_faulted (w : ℕ) (adv : RAdv r) (p : RProgram B r) (t : ℕ) :
     runRandResizable w adv p t .faulted = pure .faulted := by
   induction t generalizing adv with
   | zero => rfl
-  | succ t ih => simp [runRandResizable, ih]
+  | succ t ih => simp [runRandResizable, stepRandResizable_faulted, ih]
 
 theorem runRandResizable_add (w : ℕ) (adv : RAdv r) (p : RProgram B r) (t₁ t₂ : ℕ)
     (cfg : RCfg r) :
@@ -645,8 +652,8 @@ theorem RDemonicExec.exists_post_frontier_le {w L_peak n : ℕ} {c : RCode B r} 
     ∃ y, P y ∧ y.frontier ≤ L_peak := by
   induction h with
   | op hL he hp => exact ⟨_, hp, (evalResizable_frontier_eq he).trans_le hL⟩
-  | @grow dst kReg x P hL _ hp =>
-    exact ⟨_, hp _ (demonicGrow_advGrowMem w (fun _ => 0) x.frontier (x.regs kReg) x.mem), hL⟩
+  | @grow dst x P hL _ hp =>
+    exact ⟨_, hp _ (demonicGrow_advGrowMem w (fun _ => 0) x.frontier 1 x.mem), hL⟩
   | shrink hL _ hp => exact ⟨_, hp, Nat.sub_le _ _ |>.trans hL⟩
   | rand hL _ hp => exact ⟨_, hp 0 (Nat.zero_le _), hL⟩
   | seq _ _ ih₁ ih₂ =>
@@ -796,15 +803,15 @@ theorem RDemonicExec.supExpectedStepsWithin_assemble {w L_peak n pc N : ℕ} {c 
       stepRandResizable_op (s := ⟨pc, x⟩) hp.head he).trans ?_
     simp only [RCode.size, Nat.cast_one]
     exact add_le_add le_rfl (le_iSup₂_of_le y hp_y le_rfl)
-  | @grow dst kReg x P _ hfit hp_y =>
+  | @grow dst x P _ hfit hp_y =>
     refine (supExpectedStepsWithin_le_of_pure fun f =>
       stepRandResizable_grow_of_fits (s := ⟨pc, x⟩) hp.head hfit).trans ?_
     simp only [RCode.size, Nat.cast_one]
     refine add_le_add le_rfl (iSup_le fun f => ?_)
     exact le_iSup₂_of_le _ (hp_y _ (demonicGrow_advGrowMem w (f ⟨pc, x⟩) _ _ _)) le_rfl
-  | @shrink kReg x P _ hk hp_y =>
+  | @shrink x P _ hk hp_y =>
     refine (supExpectedStepsWithin_le_of_const fun f =>
-      stepRandResizable_shrink_of_le (s := ⟨pc, x⟩) hp.head hk).trans ?_
+      stepRandResizable_shrink_of_pos (s := ⟨pc, x⟩) hp.head hk).trans ?_
     simp only [RCode.size, Nat.cast_one]
     exact add_le_add le_rfl (le_iSup₂_of_le _ hp_y le_rfl)
   | @rand dst src x P _ hfit hp_y =>
@@ -914,13 +921,13 @@ theorem RDemonicExec.demonicSafeWithin_assemble {w L_peak n pc T_hor : ℕ} {c :
     exact demonicSafeWithin_of_pure hL
       (fun _ => stepRandResizable_op (s := ⟨pc, x⟩) hp.head he)
       fun _ k hk => (hcont y hp_y).anti (by omega)
-  | @grow dst kReg x P hL hfit hp_y =>
+  | @grow dst x P hL hfit hp_y =>
     exact demonicSafeWithin_of_pure (s := ⟨pc, x⟩) (by dsimp only; omega)
       (fun f => stepRandResizable_grow_of_fits (s := ⟨pc, x⟩) hp.head hfit)
       fun f k hk => (hcont _ (hp_y _ (demonicGrow_advGrowMem w (f ⟨pc, x⟩) _ _ _))).anti (by omega)
-  | @shrink kReg x P hL hk hp_y =>
+  | @shrink x P hL hk hp_y =>
     exact demonicSafeWithin_of_pure hL
-      (fun _ => stepRandResizable_shrink_of_le (s := ⟨pc, x⟩) hp.head hk)
+      (fun _ => stepRandResizable_shrink_of_pos (s := ⟨pc, x⟩) hp.head hk)
       fun _ k hk' => (hcont _ hp_y).anti (by omega)
   | @rand dst src x P hL hfit hp_y =>
     exact demonicSafeWithin_of_rand hL hp.head hfit fun j k hk =>

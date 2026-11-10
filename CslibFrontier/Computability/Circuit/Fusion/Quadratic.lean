@@ -207,8 +207,7 @@ theorem eval_stageCircuit (k : ℕ) :
     simp only [stageCircuit, Circuit.iterate, Circuit.eval_comp, Circuit.id,
       Circuit.eval_wiring, Function.comp_id,
       initialCircuit, Circuit.eval_append, Circuit.eval_pi, Formula.eval_toCircuit]
-    congr 1
-    funext j
+    congr 1 with j : 1
     induction j using Fin.lastCases <;> simp [Monotone.const, stages]
   | succ k ih =>
     obtain ⟨output, houtput⟩ := ih

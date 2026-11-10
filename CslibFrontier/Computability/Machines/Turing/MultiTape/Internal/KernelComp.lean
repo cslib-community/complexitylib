@@ -89,9 +89,7 @@ public theorem ComputesTidilyInTimeAndSpace.comp {tm₁ : MultiTapeTM k₁ Symbo
     (fun _ _ hws => hws.trans hA.symm) (fun _ _ _ _ _ ⟨hws', he⟩ => ⟨hws'.trans hA, he⟩)
     le_rfl le_rfl
   -- phase 3: clear `A`
-  have hclear : Function.update (Function.update (fun _ => []) A w) A [] = fun _ => [] := by
-    rw [Function.update_idem]
-    exact Function.update_eq_self A _
+  have hclear : Function.update (Function.update (fun _ => []) A w) A [] = fun _ => [] := by grind
   have hp₃ := (transformsTapes_clearWork_tapeEmb (Symbol := Symbol) A w).imp
     (P' := fun _ ws => ws = Function.update (fun _ => []) A w)
     (Q' := fun _ _ ws' e => ws' = (fun _ => []) ∧ e = [])
