@@ -36,7 +36,7 @@ of primes in a window of ratio two needs.
 
 The prime-factorization bound adapts `Nat.centralBinom_le_of_no_bertrand_prime` from
 `Mathlib/NumberTheory/Bertrand.lean` (Apache 2.0, by Patrick Stevens and Bolton Bailey), which is
-the case `k = 0`, and the version in `CslibFrontier/Foundations/NumberTheory/PrimeWindow.lean`.
+the case `k = 0`.
 -/
 
 public section

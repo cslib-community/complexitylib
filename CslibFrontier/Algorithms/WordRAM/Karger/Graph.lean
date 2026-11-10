@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
@@ -533,18 +534,6 @@ theorem telescope_survival_step {t m : ℕ} (ht : 2 ≤ t) (htm : t ≤ m) :
       (t * (t - 1)) * ((m + 1) * (m * (m - 1))) := by ring
   exact_mod_cast hnat
 
-/-- Elementary Bernoulli power bound `2 * (m - 1) ^ m ≤ m ^ m` for `1 ≤ m`. -/
-theorem two_mul_pred_pow_le_pow {m : ℕ} (hm : 1 ≤ m) :
-    2 * (m - 1) ^ m ≤ m ^ m := by
-  obtain ⟨d, rfl⟩ : ∃ d, m = d + 1 := ⟨m - 1, by omega⟩
-  simp only [Nat.add_sub_cancel]
-  have hbern := pow_add_mul_le_add_pow (a := d) (b := 1) (Nat.zero_le d) (by omega) (d + 1)
-  simp only [Nat.add_sub_cancel, mul_one, Nat.cast_id] at hbern
-  have hle : d ^ (d + 1) ≤ (d + 1) * d ^ d := by
-    rw [pow_succ']
-    exact Nat.mul_le_mul_right (d ^ d) (Nat.le_succ d)
-  omega
-
 theorem one_sub_two_div_pairs_eq {n : ℕ} (hn : 2 ≤ n) :
     (1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) =
       (((n * (n - 1) / 2 - 1 : ℕ) : ℝ≥0∞) / ((n * (n - 1) / 2 : ℕ) : ℝ≥0∞)) := by
@@ -604,7 +593,7 @@ theorem one_sub_two_div_pow_pairs_le_half {n : ℕ} (hn : 2 ≤ n) :
   rw [← ENNReal.mul_div_right_comm, one_mul]
   rw [ENNReal.le_div_iff_mul_le (Or.inl h2_ne0) (Or.inl h2_top)]
   rw [mul_comm]
-  exact_mod_cast two_mul_pred_pow_le_pow hm_pos
+  exact_mod_cast Nat.two_mul_pred_pow_le_pow hm_pos
 
 /-- Elementary high-probability trial count `(n * (n - 1) / 2) * (Nat.log 2 n + 2)` for Basic
 Karger amplification. -/

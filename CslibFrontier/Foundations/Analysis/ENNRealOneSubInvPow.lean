@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Karn Seth. All rights reserved.
+Copyright (c) 2026 Renfei Zhou, Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Renfei Zhou, Karn Seth
 -/
 
 module
@@ -22,6 +22,7 @@ denominators it is `2 (k - 1) ^ k ≤ k ^ k`, an instance of Bernoulli's inequal
 
 ## Main results
 
+* `Nat.two_mul_pred_pow_le_pow`: `2 * (m - 1) ^ m ≤ m ^ m` for `1 ≤ m`.
 * `ENNReal.one_sub_inv_pow_le_inv_two`: `(1 - k⁻¹) ^ k ≤ 2⁻¹` for every positive natural `k`.
 -/
 
@@ -29,20 +30,19 @@ public section
 
 open scoped ENNReal
 
-namespace ENNReal
-
-/-- `2 (k - 1) ^ k ≤ k ^ k` for positive `k`, by Bernoulli's inequality
-`(k - 1) ^ k + k (k - 1) ^ (k - 1) ≤ k ^ k`. -/
-private theorem sub_one_pow_mul_two_le_pow {k : ℕ} (hk : k ≠ 0) :
-    (k - 1) ^ k * 2 ≤ 1 * k ^ k := by
-  obtain ⟨d, rfl⟩ : ∃ d, k = d + 1 := ⟨k - 1, by omega⟩
+/-- Elementary Bernoulli power bound `2 * (m - 1) ^ m ≤ m ^ m` for `1 ≤ m`. -/
+theorem Nat.two_mul_pred_pow_le_pow {m : ℕ} (hm : 1 ≤ m) :
+    2 * (m - 1) ^ m ≤ m ^ m := by
+  obtain ⟨d, rfl⟩ : ∃ d, m = d + 1 := ⟨m - 1, by omega⟩
+  simp only [Nat.add_sub_cancel]
   have hbern := pow_add_mul_le_add_pow (a := d) (b := 1) (Nat.zero_le d) (by omega) (d + 1)
   simp only [Nat.add_sub_cancel, mul_one, Nat.cast_id] at hbern
   have hle : d ^ (d + 1) ≤ (d + 1) * d ^ d := by
     rw [pow_succ']
     exact Nat.mul_le_mul_right (d ^ d) (Nat.le_succ d)
-  rw [Nat.add_sub_cancel]
   omega
+
+namespace ENNReal
 
 /-- **`(1 - 1 / k) ^ k ≤ 1 / 2`** in `ℝ≥0∞` for every positive natural number `k`. -/
 theorem one_sub_inv_pow_le_inv_two {k : ℕ} (hk : k ≠ 0) : (1 - (k : ℝ≥0∞)⁻¹) ^ k ≤ 2⁻¹ := by
@@ -54,7 +54,7 @@ theorem one_sub_inv_pow_le_inv_two {k : ℕ} (hk : k ≠ 0) : (1 - (k : ℝ≥0�
   have hfrac : (((k - 1) ^ k : ℕ) : ℝ≥0∞) / ((k ^ k : ℕ) : ℝ≥0∞) ≤
       ((1 : ℕ) : ℝ≥0∞) / ((2 : ℕ) : ℝ≥0∞) :=
     (natCast_div_le_natCast_div_iff (pow_ne_zero k hk) two_ne_zero).mpr
-      (sub_one_pow_mul_two_le_pow hk)
+      (by rw [mul_comm, one_mul]; exact Nat.two_mul_pred_pow_le_pow (Nat.one_le_iff_ne_zero.mpr hk))
   calc (1 - (k : ℝ≥0∞)⁻¹) ^ k = (((k - 1) ^ k : ℕ) : ℝ≥0∞) / ((k ^ k : ℕ) : ℝ≥0∞) := by
         rw [hsub, Nat.cast_pow, Nat.cast_pow, div_eq_mul_inv, div_eq_mul_inv, mul_pow,
           ENNReal.inv_pow]
