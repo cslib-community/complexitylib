@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Randomized reductions with one-sided error on promise problems
@@ -244,9 +245,8 @@ theorem rpReducible_iff_exists_seeded :
       IsPPTOn.of_seeded
         ((ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length encA)) hf
     refine ⟨R, hR, fun a ha b hb => ?_, fun a ha => ?_⟩
-    · simp only [R, ProbComp.eval_map, BitString.eval_sampleList,
-        PMF.mem_support_map_iff, BitString.mem_support_uniformList_iff] at hb
-      obtain ⟨w, hw, rfl⟩ := hb
+    · supp_cases hb [R, BitString.eval_sampleList, BitString.mem_support_uniformList_iff] with
+        ⟨w, hw, rfl⟩
       have hr := hyes a ha fun i => w[i.val]'(by omega)
       rwa [show (List.ofFn fun i : Fin (p.eval (encA a).length) => w[i.val]'(by omega)) = w from
         List.ext_getElem (by simp [hw]) fun i _ _ => by simp] at hr
@@ -320,8 +320,7 @@ theorem RPReducibleWithError.trans {s₁ : α → ℝ} {s₂ : ℝ}
   obtain ⟨R₁, hR₁, hyes₁, hno₁⟩ := hXY
   obtain ⟨R₂, hR₂, hyes₂, hno₂⟩ := hYZ
   refine ⟨fun a => R₁ a >>= R₂, hR₁.bind hR₂, fun a ha c hc => ?_, fun a ha => ?_⟩
-  · simp only [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hc
-    obtain ⟨b, hb, hc⟩ := hc
+  · supp_cases hc with ⟨b, hb, hc⟩
     exact hyes₂ b (hyes₁ a ha b hb) c hc
   · rw [ProbComp.eval_bind]
     exact PMF.toOuterMeasure_bind_ge_mul (ProbComp.eval (R₁ a)) (fun b => ProbComp.eval (R₂ b))
@@ -340,8 +339,7 @@ theorem RPReducibleWithError.trans_add {s₁ : α → ℝ} {s₂ : ℝ}
   obtain ⟨R₁, hR₁, hyes₁, hno₁⟩ := hXY
   obtain ⟨R₂, hR₂, hyes₂, hno₂⟩ := hYZ
   refine ⟨fun a => R₁ a >>= R₂, hR₁.bind hR₂, fun a ha c hc => ?_, fun a ha => ?_⟩
-  · simp only [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hc
-    obtain ⟨b, hb, hc⟩ := hc
+  · supp_cases hc with ⟨b, hb, hc⟩
     exact hyes₂ b (hyes₁ a ha b hb) c hc
   · rw [ProbComp.eval_bind]
     have hfail := PMF.toOuterMeasure_bind_failure_toReal_le
@@ -387,8 +385,7 @@ theorem RPReducibleWithError.trans_polyTimeReducible {s : α → ℝ}
   obtain ⟨g, hg, gyes, gno⟩ := hYZ
   refine ⟨fun a => g <$> R a, hR.map_with (hg.comp (.snd encA encB)),
     fun a ha c hc => ?_, fun a ha => ?_⟩
-  · simp only [ProbComp.eval_map, PMF.mem_support_map_iff] at hc
-    obtain ⟨b, hb, rfl⟩ := hc
+  · supp_cases hc with ⟨b, hb, rfl⟩
     exact gyes (hyes a ha b hb)
   · simp only [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
     exact (hno a ha).trans
@@ -458,10 +455,8 @@ theorem RPReducible.mem_PromiseCoRP (hXY : RPReducible encA encB X Y)
     rw [← ProbComp.eval_bind, PMF.toOuterMeasure_apply_singleton] at h
     linarith
   · -- on a yes-instance of `X`, every output of the reduction is a yes-instance of `Y`
-    simp only [M, ProbComp.eval_bind, ProbComp.eval_map, BitString.eval_sampleList,
-      PMF.mem_support_bind_iff, PMF.mem_support_map_iff,
-      BitString.mem_support_uniformList_iff] at hmem
-    obtain ⟨b, hb, w, hw, hVw⟩ := hmem
+    supp_cases hmem [M, BitString.eval_sampleList, BitString.mem_support_uniformList_iff] with
+      ⟨b, hb, w, hw, hVw⟩
     have := ((hYV.solvesWithOneSidedError fun _ => by simp).exists_certificate).2 b
       (hyesR a ha b hb) w hw
     rw [this] at hVw
