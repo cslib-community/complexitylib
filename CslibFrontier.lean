@@ -4928,6 +4928,7 @@ public import CslibFrontier.Foundations.Data.Matrix.Reindex
 public import CslibFrontier.Foundations.Data.Matrix.Ryser
 public import CslibFrontier.Foundations.Data.Matrix.TotallyRegular
 public import CslibFrontier.Foundations.Data.MvPolynomial.AffineTaylor
+public import CslibFrontier.Foundations.Data.MvPolynomial.Bihomogeneous
 public import CslibFrontier.Foundations.Data.MvPolynomial.Catalecticant
 public import CslibFrontier.Foundations.Data.MvPolynomial.CoefficientDegree
 public import CslibFrontier.Foundations.Data.MvPolynomial.DualNumber
