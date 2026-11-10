@@ -85,8 +85,8 @@ attribute [supp_norm]
   ProbComp.mem_support_unifFin
   -- the shape of the result
   Set.mem_singleton_iff Set.mem_univ true_and and_true exists_eq_left Prod.mk.injEq
-  -- a decided condition selects its branch
-  not_true_eq_false not_false_eq_true false_and false_or or_false
+  -- a decided condition selects its branch, also inside a program the set cannot split
+  ite_true ite_false not_true_eq_false not_false_eq_true false_and false_or or_false
 
 end Cslib
 

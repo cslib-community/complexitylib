@@ -122,6 +122,13 @@ example (p : ProbComp ℕ) (x : ℕ) (hp : ∀ a ∈ (ProbComp.eval p).support, 
   omega
 
 -- A named program is unfolded by passing its definition.
+-- A decided condition selects its branch even under `ProbComp.eval`, which does not split `if`.
+example (p : ProbComp ℕ) (n x : ℕ) (hn : n = 3) (hp : ∀ a ∈ (ProbComp.eval p).support, a < 4)
+    (h : x ∈ (ProbComp.eval (if n = 3 then (2 * ·) <$> p else pure 0)).support) : x < 8 := by
+  supp_cases h [hn] with ⟨a, ha, rfl⟩
+  have := hp a ha
+  omega
+
 private def double (p : ProbComp ℕ) : ProbComp ℕ := (2 * ·) <$> p
 
 example (p : ProbComp ℕ) (x : ℕ) (h : x ∈ (double p).support) : Even x := by
