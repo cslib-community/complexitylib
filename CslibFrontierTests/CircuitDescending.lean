@@ -38,7 +38,7 @@ theorem fibChild_lt : ∀ i, 0 < i → ∀ a, fibChild i a < i := by
 theorem trace_fib {g i : ℕ} (hi : i ≤ g) :
     (Descending.program fibChild g).trace (Descending.interpretation fibGate) (fun _ => 0)
       (Descending.node g i) = Nat.fib i :=
-  Descending.trace_node_eq fibChild fibGate 0 fibChild_lt Nat.fib_zero (fun i => by
+  Descending.trace_node_eq fibChild fibGate 0 fibChild_lt Nat.fib_zero (fun i _ => by
     cases i with
     | zero => simp [fibGate]
     | succ i =>

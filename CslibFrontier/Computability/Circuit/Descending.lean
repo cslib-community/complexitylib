@@ -55,7 +55,7 @@ the gate `i`. Indices beyond `g` are sent to the input; `program` only uses indi
   | i + 1 => if h : i < g then .gate ⟨i, h⟩ else .input 0
 
 /-- The gate at index `j + 1`, reading the wires of its children. -/
-@[expose] def line (child : ℕ → Fin d → ℕ) (g j : ℕ) : Line (signature d) 1 g :=
+def line (child : ℕ → Fin d → ℕ) (g j : ℕ) : Line (signature d) 1 g :=
   ⟨j, fun a => node g (child (j + 1) a)⟩
 
 /-- The descending computation on indices `0, …, g` as a straight-line program with one input
@@ -98,7 +98,7 @@ theorem lines_program (hchild : ∀ i, 0 < i → ∀ a, child i a < i) {g : ℕ}
 variable {U : Type*} (gates : ℕ → (Fin d → U) → U) (source : U)
 
 /-- The interpretation of `signature d` running gate `gates (i + 1)` at operation `i`. -/
-@[expose] def interpretation : Interpretation (signature d) U := fun (i : ℕ) => gates (i + 1)
+def interpretation : Interpretation (signature d) U := fun (i : ℕ) => gates (i + 1)
 
 /-- The trace at index `0` is the source. -/
 theorem trace_node_zero (g : ℕ) :
@@ -113,18 +113,18 @@ theorem trace_node_succ (hchild : ∀ i, 0 < i → ∀ a, child i a < i) {g i : 
   rw [node_succ hi, Program.trace_gate, lines_program child hchild]
   rfl
 
-/-- **Uniqueness.** A function on indices that takes the source at `0` and satisfies every gate
-equation agrees with the trace on indices `0, …, g`. -/
-theorem trace_node_eq (hchild : ∀ i, 0 < i → ∀ a, child i a < i) {v : ℕ → U}
-    (hzero : v 0 = source) (hsucc : ∀ i, v (i + 1) = gates (i + 1) fun a => v (child (i + 1) a))
-    {g i : ℕ} (hi : i ≤ g) :
+/-- **Uniqueness.** A function on indices that takes the source at `0` and satisfies the gate
+equations at the indices `1, …, g` agrees with the trace on indices `0, …, g`. -/
+theorem trace_node_eq (hchild : ∀ i, 0 < i → ∀ a, child i a < i) {v : ℕ → U} {g : ℕ}
+    (hzero : v 0 = source) (hsucc : ∀ i < g, v (i + 1) = gates (i + 1) fun a => v (child (i + 1) a))
+    {i : ℕ} (hi : i ≤ g) :
     (program child g).trace (interpretation gates) (fun _ => source) (node g i) = v i := by
   induction i using Nat.strong_induction_on with
   | _ i ih =>
     cases i with
     | zero => exact hzero.symm
     | succ i =>
-      rw [trace_node_succ child gates source hchild (by omega), hsucc]
+      rw [trace_node_succ child gates source hchild (by omega), hsucc i (by omega)]
       congr 1
       funext a
       have ha := hchild (i + 1) (by omega) a

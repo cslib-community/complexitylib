@@ -21,9 +21,11 @@ unfolding them into a tree as `BlockComputationTree` does, gives a straight-line
 input (the initial view) and `q` gates of fan-in `3 * k + 1`. Its computation DAG has `q + 1`
 vertices and depends only on `σ`.
 
-This is the graph of the Hopcroft–Paul–Valiant simulation, with the aligned three-block windows of
-the library in place of a block-respecting normal form: a black pebbling of the DAG with `s`
-pebbles is an evaluation of the block computation holding at most `s` interval views at a time
+This is Williams's computation graph of the block computation, an edge from the preceding interval
+and one from the last provider of each active block, with the library's aligned three-block windows.
+Williams notes that it is very similar to the computation graphs of Hopcroft, Paul and Valiant; it
+plays their role here, in place of a block-respecting normal form. A black pebbling of the DAG with
+`s` pebbles is an evaluation of the block computation holding at most `s` interval views at a time
 (`Turing.MultiTapePTM.BlockComputation.exists_registerLTS_value`). The pebbling bound, the
 native search over schedules and the space accounting are separate obligations.
 
@@ -45,9 +47,10 @@ native search over schedules and the space accounting are separate obligations.
 
 * [J. Hopcroft, W. Paul, L. Valiant, *On time versus space*][HopcroftPaulValiant1977]: the
   computation graph of a block-respecting machine and its pebbling (journal text not inspected).
-* [R. Williams, *Simulating Time With Square-Root Space*][Williams2025], arXiv v1, §3.3: the
-  computation graph of the block computation, and its pebbling following Hopcroft, Paul and
-  Valiant.
+* [R. Williams, *Simulating Time With Square-Root Space*][Williams2025], arXiv v1, §3.1 (p. 5),
+  refined in §3.2: the computation graph of the block computation. §3.3 (p. 13) remarks that the
+  Hopcroft–Paul–Valiant line of simulations pebbles such graphs with few pebbles, an approach
+  orthogonal to Williams's.
 -/
 
 public section
@@ -66,7 +69,7 @@ view, and gate `n` computes interval `n + 1` from its `3 * k + 1` dependencies. 
 variable (machine : MultiTapePTM k Bool State) (input : List Bool) (b : ℕ) (σ : Schedule k q)
 
 /-- The interval gates of the block computation, with failure. -/
-@[expose] noncomputable def interpretation :
+noncomputable def interpretation :
     Interpretation (Descending.signature (k * 3 + 1)) (Option (View k State b)) :=
   Descending.interpretation (intervalGate machine input b σ)
 
@@ -74,11 +77,8 @@ variable (machine : MultiTapePTM k Bool State) (input : List Bool) (b : ℕ) (σ
 theorem trace_program {n : ℕ} (hn : n ≤ q) :
     (program σ).trace (interpretation machine input b σ) (fun _ => some (initialView machine b))
       (Descending.node q n) = value machine input b σ n := by
-  refine Descending.trace_node_eq (child σ) (intervalGate machine input b σ) _ (child_lt σ)
-    (by rw [value]) (fun i => ?_) hn
-  by_cases hi : i < q
-  · exact (intervalGate_value machine input b σ hi).symm
-  · rw [value, dite_eq_right hi, intervalGate, dite_eq_right hi]
+  exact Descending.trace_node_eq (child σ) (intervalGate machine input b σ) _ (child_lt σ)
+    (by rw [value]) (fun _ hi => (intervalGate_value machine input b σ hi).symm) hn
 
 /-- Every vertex of the computation DAG reads at most `3 * k + 1` earlier vertices. -/
 theorem ncard_dag_adj_program_le (v : Wire 1 q) :

@@ -8,13 +8,15 @@ module
 -- upstream: local-only (tests of the HPV block computation as a program)
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputationProgram
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ImplicitPathCorrect
 
 /-!
 # Pebbling the HPV block computation
 
-Every interval reads its predecessor's control record, every vertex has in-degree at most
-`3 * k + 1`, and a black pebbling of the root is an evaluation that validates the guessed schedule
-whenever its root register holds a view. With one pebble per vertex the root can always be
+Every interval reads its predecessor's control record, a concrete schedule has a window edge
+besides the control edges, every vertex has in-degree at most `3 * k + 1`, and a black pebbling
+of the root is an evaluation that validates the guessed schedule whenever its root register holds
+a view. With one pebble per vertex the root can always be
 evaluated.
 -/
 
@@ -28,6 +30,15 @@ open Turing MultiTapePTM.BlockComputation Cslib.Circuits Cslib.Pebbling
 example {k q : ℕ} (σ : MultiTapePTM.Schedule k q) {n : ℕ} (hn : n < q) :
     (program σ).dag.Adj (Descending.node q n) (Descending.node q (n + 1)) :=
   (Descending.dag_adj_node (child σ) (child_lt σ) hn).2 ⟨0, by simp [child, hn]⟩
+
+/- A window edge. Under the one-tape schedule `380` with three intervals (rows `(2,0)`, `(0,2)`,
+`(1,1)`), the third window entry of interval `3` was last provided by interval `1`, so the DAG has
+the edge `1 → 3` besides the control edge `2 → 3`. -/
+example :
+    (program (MultiTapePTM.scheduleOfNat 1 3 380)).dag.Adj (Descending.node 3 1)
+      (Descending.node 3 3) :=
+  (Descending.dag_adj_node _ (child_lt _) (by decide)).2
+    ⟨3, congrArg (Descending.node 3) (by rw [← ImplicitPath.child_eq]; decide)⟩
 
 -- On one work tape, every vertex reads at most four earlier vertices.
 example (σ : MultiTapePTM.Schedule 1 2) (v : Wire 1 2) :
