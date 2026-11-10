@@ -905,29 +905,27 @@ theorem realizes_gmRelinkMovedSlabGen :
         else pure ()) ?_
     (fun d => by simp only [gmRelinkMovedSlabGenProg, pure_bind])
   realizeDictWith [gmMovedSlabGenPre_mk]
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact (gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.1)
-  · exact (gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.1 hc))
-  · exact h.1
-  · exact ((gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.1 hc)
-  · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.1.trans (Nat.le_max_left n_max 1))
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2 hc))
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact ((gmRelinkMovedSlab_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2 hc)
+  all_goals
+    obtain ⟨hdict, hinv⟩ := h
+    have hb_pos := hinv.2.2.2.2.2.2
+    obtain ⟨hlast0, hlast1, hq, hdir, hs_next, htop⟩ := gmRelinkMovedSlab_bounds hb_pos hinv
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast0.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact hlast0
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast1.le
+  · exact hlast1
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hq.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hq
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (hdir hc).le
+  · exact hdict
+  · exact hdir hc
+  · exact fits_of_le_max_n_one hdict hw hnU hU (hs_next.trans (Nat.le_max_left n_max 1))
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (htop hc).le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact htop hc
 
 /-- Parameter-free `Memory.Prog` helper performing `gmLinkMovedNeighbors` for
 `d = (dp, ((base, p_del), p_last))`. -/
@@ -1213,49 +1211,41 @@ theorem realizes_gmLinkMovedNeighborsGen :
           writeGMGenProg (d.1, ((d.2.1.1, abv_del_idx), abv_last))) ?_
     (fun d => by simp only [gmLinkMovedNeighborsGenProg, pure_bind])
   realizeDictWith [gmMovedSlabGenPre_mk]
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.1)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.1)
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.1 hc))
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact ((gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.1 hc)
-  · exact fits_of_le_max_n_one h.1 hw hnU hU
-      ((gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.1.trans
-        (Nat.le_max_left n_max 1))
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt ((gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.1 hc))
-  · exact fits_const_of_dictEnv h.1 (by omega)
-  · exact h.1
-  · exact ((gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.1 hc)
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.2.2.1)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.2.2.1
-  · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2.2.2.2 hw hnU hU
-      (le_of_lt (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.2.2.2)
-  · exact (gmLinkMovedNeighbors_bounds h.2.2.2.2.2.2.2 h.2).2.2.2.2.2.2.2.2.2.2.2
+  all_goals
+    obtain ⟨hdict, hinv⟩ := h
+    have hb_pos := hinv.2.2.2.2.2.2
+    obtain ⟨hlast0, hlast1, hlast2, hlast3, hq, hbelow, hs_next, habove,
+      hdel0, hdel1, hdel2, hdel3⟩ := gmLinkMovedNeighbors_bounds hb_pos hinv
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast0.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact hlast0
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast1.le
+  · exact hlast1
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast2.le
+  · exact hlast2
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hlast3.le
+  · exact hlast3
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hq.le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hq
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (hbelow hc).le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact hbelow hc
+  · exact fits_of_le_max_n_one hdict hw hnU hU (hs_next.trans (Nat.le_max_left n_max 1))
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU (habove hc).le
+  · exact fits_const_of_dictEnv hdict (by omega)
+  · exact hdict
+  · exact habove hc
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel0.le
+  · exact hdel0
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel1.le
+  · exact hdel1
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel2.le
+  · exact hdel2
+  · exact fits_of_le_globalMetaLen hdict hb_pos hw hnU hU hdel3.le
+  · exact hdel3
 
 /-- Parameter-free `Memory.Prog` operation compacting the slab pool by relocating the metadata of
 `p_last = gm 0 - 1` into `p_del = d.2.2` (when `p_del < p_last`) and decrementing `gm 0`. -/
