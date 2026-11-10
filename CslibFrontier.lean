@@ -5371,6 +5371,7 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
 public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
