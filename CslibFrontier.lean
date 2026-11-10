@@ -4981,6 +4981,7 @@ public import CslibFrontier.Foundations.Data.Polynomial.TaperedHermite
 public import CslibFrontier.Foundations.Data.Rat.Basic
 public import CslibFrontier.Foundations.Data.Seq.Computation
 public import CslibFrontier.Foundations.Data.Set.Card
+public import CslibFrontier.Foundations.Data.Set.EqOnUpdate
 public import CslibFrontier.Foundations.Data.Set.SymmDiff
 public import CslibFrontier.Foundations.Data.StackTape
 public import CslibFrontier.Foundations.Data.TreeMap.SortedAssoc
@@ -5115,6 +5116,7 @@ public import CslibFrontier.Foundations.NumberTheory.Primality.Witness
 public import CslibFrontier.Foundations.NumberTheory.PrimeCounting
 public import CslibFrontier.Foundations.NumberTheory.PrimeWindow
 public import CslibFrontier.Foundations.NumberTheory.SqrtPrimeWindow
+public import CslibFrontier.Foundations.Order.AntitoneSwap
 public import CslibFrontier.Foundations.Order.BooleanSubalgebra
 public import CslibFrontier.Foundations.Order.Changes
 public import CslibFrontier.Foundations.Order.FiniteFixedPoint

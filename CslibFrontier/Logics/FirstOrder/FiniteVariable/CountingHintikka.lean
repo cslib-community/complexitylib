@@ -65,8 +65,7 @@ structures.
   identification*][CaiFurerImmerman1992], Theorem 4.5, for the variant of the game in which the
   players exchange sets of equal size, and Theorem 5.2, whose proof is by induction on the number
   of rounds as here.
-* [N. Immerman, *Descriptive Complexity*][Immerman1999], Section 12.4 and Theorem 12.23
-  (unverified locators).
+* [N. Immerman, *Descriptive Complexity*][Immerman1999], Section 12.4 (unverified locator).
 * [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Definition 8.12 and Theorem 8.13,
   the corresponding result for the bijective Ehrenfeucht–Fraïssé game and the infinitary counting
   logic `L*∞ω(Cnt)`.
@@ -234,7 +233,7 @@ theorem bijPebbleWins_of_forall_realize_iff [Finite (Σ l, L.Relations l)] [Fini
   exact ((realize_countingHintikka S _ b).1 hb).symm
 
 /-- **The game characterization of `C^k`** ([Hella1996]; [CaiFurerImmerman1992], Theorem 4.5;
-[Immerman1999], Theorem 12.23). For a language with finitely many relation symbols and finite
+[Immerman1999], Section 12.4). For a language with finitely many relation symbols and finite
 structures, Duplicator wins the `n`-round bijective `k`-pebble game from `(S, a, b)` exactly when
 `a` and `b` satisfy the same `k`-variable counting formulas of quantifier rank at most `n` with
 free variables in `S`. -/

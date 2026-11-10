@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/Data/List/Basic.lean`)
+-- upstream: candidate (Mathlib: `List.apply_foldr_iff_forall` in `Mathlib/Data/List/Basic.lean`,
+-- `List.apply_foldr_map_univ_toList_iff` in `Mathlib/Data/Fintype/Basic.lean`)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Fintype.Basic

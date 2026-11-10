@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
+import CslibFrontier.Foundations.Data.Set.EqOnUpdate
+import CslibFrontier.Foundations.Order.AntitoneSwap
 
 /-!
 # Pebble games
@@ -192,27 +194,15 @@ theorem PebbleWins.of_subset : ∀ {n : ℕ} {S T : Set (Fin k)} {a : Fin k → 
       fun i c => (h.forth i c).imp fun _ hd => hd.of_subset (Set.insert_subset_insert hST),
       fun i d => (h.back i d).imp fun _ hc => hc.of_subset (Set.insert_subset_insert hST)⟩
 
-/-- Moving pebble `i` to the same element in two assignments that agree on the placed pebbles `S`
-gives assignments that agree on `insert i S`. -/
-theorem eqOn_update_insert {α : Type*} {S : Set (Fin k)} {a a' : Fin k → α}
-    (h : Set.EqOn a a' S) (i : Fin k) (c : α) :
-    Set.EqOn (Function.update a i c) (Function.update a' i c) (insert i S) := by
-  intro j hj
-  by_cases hji : j = i
-  · subst hji
-    simp only [Function.update_self]
-  · rw [Function.update_of_ne hji, Function.update_of_ne hji]
-    exact h ((Set.mem_insert_iff.1 hj).resolve_left hji)
-
 /-- Winning depends only on the positions of the placed pebbles. -/
 theorem pebbleWins_congr : ∀ {n : ℕ} {S : Set (Fin k)} {a a' : Fin k → M} {b b' : Fin k → N},
     Set.EqOn a a' S → Set.EqOn b b' S → PebbleWins L n S a b → PebbleWins L n S a' b'
   | 0, _, _, _, _, _, ha, hb, h => pebbleWins_zero.2 (h.partialIsoOn.congr ha hb)
   | _ + 1, _, _, _, _, _, ha, hb, h => pebbleWins_succ.2 ⟨h.partialIsoOn.congr ha hb,
       fun i c => (h.forth i c).imp fun d hd =>
-        pebbleWins_congr (eqOn_update_insert ha i c) (eqOn_update_insert hb i d) hd,
+        pebbleWins_congr (ha.update_insert i c) (hb.update_insert i d) hd,
       fun i d => (h.back i d).imp fun c hc =>
-        pebbleWins_congr (eqOn_update_insert ha i c) (eqOn_update_insert hb i d) hc⟩
+        pebbleWins_congr (ha.update_insert i c) (hb.update_insert i d) hc⟩
 
 theorem PebbleWins.refl :
     ∀ (n : ℕ) (S : Set (Fin k)) (a : Fin k → M), PebbleWins L n S a a
@@ -285,17 +275,6 @@ theorem PebbleWinsForever.pebbleWins {S : Set (Fin k)} {a : Fin k → M} {b : Fi
   let ⟨_, hI, hS⟩ := h
   hI.pebbleWins hS
 
-/-- If, for each `n`, some answer `d` from a finite type wins the `n`-th of a sequence of games
-that gets harder with `n`, then a single answer wins all of them. -/
-theorem exists_forall_of_forall_exists [Finite N] {p : ℕ → N → Prop}
-    (hp : ∀ {m n : ℕ} {d : N}, m ≤ n → p n d → p m d) (h : ∀ n, ∃ d, p n d) : ∃ d, ∀ n, p n d := by
-  have := Fintype.ofFinite N
-  by_contra hne
-  simp only [not_exists, not_forall] at hne
-  choose f hf using hne
-  obtain ⟨d, hd⟩ := h (Finset.univ.sup f)
-  exact hf d (hp (Finset.le_sup (Finset.mem_univ d)) hd)
-
 /-- **The infinite pebble game on finite structures.** On finite structures, Duplicator wins the
 `k`-pebble game that continues forever exactly when she wins the `n`-round game for every `n`
 [Libkin2004] (remark before Proposition 11.8). On infinite structures only the forward
@@ -303,10 +282,10 @@ implication holds in general. -/
 theorem pebbleWinsForever_iff_forall_pebbleWins [Finite M] [Finite N] {S : Set (Fin k)}
     {a : Fin k → M} {b : Fin k → N} : PebbleWinsForever L S a b ↔ ∀ n, PebbleWins L n S a b := by
   refine ⟨PebbleWinsForever.pebbleWins, fun h => ⟨fun S a b => ∀ n, PebbleWins L n S a b,
-    ⟨fun h => (h 0).partialIsoOn, fun h i c => ?_, fun h i d => ?_⟩, h⟩⟩
-  · exact exists_forall_of_forall_exists (fun hmn hd => hd.mono hmn)
+    ⟨fun h => (h 0).partialIsoOn, fun {S a b} h i c => ?_, fun {S a b} h i d => ?_⟩, h⟩⟩
+  · exact (Finite.forall_exists_iff_exists_forall_of_antitone fun _ _ _ hmn hd => hd.mono hmn).1
       fun n => (h (n + 1)).forth i c
-  · exact exists_forall_of_forall_exists (fun hmn hc => hc.mono hmn)
+  · exact (Finite.forall_exists_iff_exists_forall_of_antitone fun _ _ _ hmn hc => hc.mono hmn).1
       fun n => (h (n + 1)).back i d
 
 /-- Duplicator wins the infinite game between a structure and an isomorphic copy, from a position

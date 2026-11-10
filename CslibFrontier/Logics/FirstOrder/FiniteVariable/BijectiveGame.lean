@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame
+import CslibFrontier.Foundations.Data.Set.EqOnUpdate
+import CslibFrontier.Foundations.Order.AntitoneSwap
 
 /-!
 # Bijective pebble games
@@ -17,10 +19,15 @@ Hella's bijective `k`-pebble game is the game for the counting logic `C^k`. Each
 parts: Spoiler picks a pebble index `i`, Duplicator answers with a bijection `f : M ≃ N`, and then
 Spoiler places the `M`-pebble of pair `i` on any `c`, which puts the `N`-pebble of pair `i` on
 `f c`. Duplicator wins a play when, after every round, the placed pairs define a partial
-isomorphism. Spoiler chooses the pebble before seeing the bijection, which is the stronger
-order for him and the one used by [Hella1996] and [Immerman1999] (Definition 12.22). Because she
-answers with a bijection, Duplicator commits to one answer for every possible move of
-Spoiler and must use every element of `N` exactly once.
+isomorphism. Because she answers with a bijection, Duplicator commits to one answer for every
+point Spoiler may choose and must use every element of `N` exactly once.
+
+Spoiler picks the pebble before Duplicator picks the bijection. This is Hella's order
+([Hella1996]), and Duplicator can use the choice. If she had to commit to one bijection for every
+pebble, the game would be strictly harder for her and would no longer characterize `C^k`. On the
+cycle `C₆` and two disjoint triangles, which agree on `C²`, Spoiler would then win in three rounds:
+he puts the two pebbles on vertices at distance two in `C₆`, which a bijection fixed in advance
+sends to different triangles, and then moves one of them to their common neighbor.
 
 Positions are as in `CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame`: a set
 `S : Set (Fin k)` of placed pebbles with total assignments `a : Fin k → M`, `b : Fin k → N`, so
@@ -56,8 +63,7 @@ structures, is in `CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintik
 ## References
 
 * [L. Hella, *Logical hierarchies in PTIME*][Hella1996] (unverified locator).
-* [N. Immerman, *Descriptive Complexity*][Immerman1999], Definition 12.22 (unverified locator; the
-  game order is confirmed by its use in the proof of Lemma 13.35).
+* [N. Immerman, *Descriptive Complexity*][Immerman1999], Section 12.4 (unverified locator).
 * [J.-Y. Cai, M. Fürer, N. Immerman, *An optimal lower bound on the number of variables for graph
   identification*][CaiFurerImmerman1992], Section 4.1, for the equivalent game in which Spoiler and
   Duplicator exchange sets of equal size.
@@ -81,7 +87,8 @@ chosen by Spoiler there is a bijection `f : M ≃ N` such that, wherever Spoiler
 `M`-pebble of pair `i`, say on `c`, the position with the `N`-pebble of pair `i` on `f c` is won
 for the remaining rounds.
 
-Spoiler picks the pebble index before Duplicator picks the bijection. As for `PebbleWins`,
+Spoiler picks the pebble index before Duplicator picks the bijection, which lets the bijection
+depend on the index (see the module docstring). As for `PebbleWins`,
 positions are total assignments, so the statement is vacuous for `k > 0` when `M` or `N` is
 empty. -/
 def BijPebbleWins : ℕ → Set (Fin k) → (Fin k → M) → (Fin k → N) → Prop
@@ -145,7 +152,7 @@ theorem bijPebbleWins_congr :
   | 0, _, _, _, _, _, ha, hb, h => bijPebbleWins_zero.2 (h.partialIsoOn.congr ha hb)
   | _ + 1, _, _, _, _, _, ha, hb, h => bijPebbleWins_succ.2 ⟨h.partialIsoOn.congr ha hb,
       fun i => (h.move i).imp fun f hf c =>
-        bijPebbleWins_congr (eqOn_update_insert ha i c) (eqOn_update_insert hb i (f c)) (hf c)⟩
+        bijPebbleWins_congr (ha.update_insert i c) (hb.update_insert i (f c)) (hf c)⟩
 
 theorem BijPebbleWins.refl : ∀ (n : ℕ) (S : Set (Fin k)) (a : Fin k → M), BijPebbleWins L n S a a
   | 0, S, a => bijPebbleWins_zero.2 (PartialIsoOn.refl S a)
@@ -251,10 +258,10 @@ theorem bijPebbleWinsForever_iff_forall_bijPebbleWins [Finite M] {S : Set (Fin k
     {a : Fin k → M} {b : Fin k → N} :
     BijPebbleWinsForever L S a b ↔ ∀ n, BijPebbleWins L n S a b := by
   refine ⟨BijPebbleWinsForever.bijPebbleWins, fun h => ⟨fun S a b => ∀ n, BijPebbleWins L n S a b,
-    ⟨fun h => (h 0).partialIsoOn, fun h i => ?_⟩, h⟩⟩
-  obtain ⟨f, hf⟩ := exists_forall_of_forall_exists (N := M ≃ N)
-    (p := fun n f => ∀ c, BijPebbleWins L n _ (Function.update _ i c) (Function.update _ i (f c)))
-    (fun hmn hf c => (hf c).mono hmn) fun n => (h (n + 1)).move i
+    ⟨fun h => (h 0).partialIsoOn, fun {S a b} h i => ?_⟩, h⟩⟩
+  obtain ⟨f, hf⟩ := (Finite.forall_exists_iff_exists_forall_of_antitone (p := fun (f : M ≃ N) n =>
+      ∀ c, BijPebbleWins L n (insert i S) (Function.update a i c) (Function.update b i (f c)))
+    fun _ _ _ hmn hf c => (hf c).mono hmn).1 fun n => (h (n + 1)).move i
   exact ⟨f, fun c n => hf n c⟩
 
 /-- Duplicator wins the infinite bijective game between a structure and an isomorphic copy, from a

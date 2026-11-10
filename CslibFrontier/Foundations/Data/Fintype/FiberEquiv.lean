@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, next to `Equiv.ofFiberEquiv` in `Mathlib/Logic/Equiv/Basic.lean`)
+-- upstream: candidate (Mathlib, `Mathlib/SetTheory/Cardinal/Finite.lean`, which has `Nat.card`
+-- and imports `Equiv.ofFiberEquiv` and `Fintype.card`)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Fintype.Card

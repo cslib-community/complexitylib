@@ -1032,7 +1032,7 @@ register_result "bijective-pebble-games-c-k" where
     { paper := CaiFurerImmerman1992, theorem := "Theorem 4.5",
       locator := "Section 4.1; the round-indexed form is in the proof of Theorem 5.2" },
     { paper := Hella1996, theorem := unverified, locator := unverified },
-    { paper := Immerman1999, theorem := unverified, locator := "Section 12.4, p. 237" }
+    { paper := Immerman1999, theorem := unverified, locator := unverified }
   ]
   theorems := [
     Cslib.Logic.FO.bijPebbleWins_iff_forall_realize_iff,
