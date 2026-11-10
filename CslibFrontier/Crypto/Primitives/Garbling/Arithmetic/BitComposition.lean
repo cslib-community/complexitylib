@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.AffineLabel
+public import CslibFrontier.Foundations.Data.Nat.Radix.Digit
 public import CslibFrontier.Languages.Probabilistic.Sharing
 public import Mathlib.Data.Nat.Log
 public import Mathlib.Data.ZMod.Basic
@@ -17,7 +18,9 @@ public import Mathlib.Data.ZMod.Basic
 
 Mixed garbling schemes convert between Boolean wires and arithmetic wires over `ℤ/p^k`. Li and
 Liu [LiLiu2024] write `x : ℤ/p^k` with `k` base-`p` digits and each digit with
-`⌈log₂ p⌉` bits (bit decomposition `bitDecomp`); bit composition `bitComp` maps a bit array back
+`⌈log₂ p⌉` bits (bit decomposition `bitDecomp`). The digits are the fixed-position digits
+`Cslib.Radix.digit`, whose lemmas are in `CslibFrontier/Foundations/Data/Nat/Radix/Digit.lean`.
+Bit composition `bitComp` maps a bit array back
 to `∑ i j, p ^ i * 2 ^ j * z i j`. Composition inverts decomposition (`bitComp_bitDecomp`), and is
 `ℤ/p^k`-linear in the bits, which is what makes it cheap to garble.
 
@@ -35,9 +38,22 @@ key `b` is a uniform additive sharing of the output key, these values are a unif
 sharing of the output label; they reveal nothing about `z` beyond the output label
 (`eval_activeShares`). Hiding the inactive rows is the job of the pads and is not formalized here.
 
+Source mapping (ePrint 2023/1584 version of [LiLiu2024], dated 2023-10-13). Digit convention:
+§2 (pp. 4–5) defines the base-`p` digit representation of `x ∈ [p^k]` and its base-`p` bit
+representation, with `⌈log p⌉` bits per digit, and §2.1, equation (1) (p. 6), defines the
+bit-decomposition gate over `ℤ/p^k` by `x = ∑ i j, p ^ i * 2 ^ j * x i j`. `bitDecomp`,
+`digitWidth` and `bitComp` follow this convention, reading `log` as `log₂`. Linear composition:
+§4.1, Figure 5 (p. 20) is the linear bit-composition gadget over `ℤ/p^k`, and Lemma 4
+(pp. 20–21) states its security. Its ciphertexts are `H(K_i(β), (id, i)) ⊕ (A c_i β + B_i mod p^k)`,
+a bit-string pad XORed onto a ring element. `linCompTable` instead adds a ring-valued pad
+`pad i β`, which the evaluator subtracts in `ℤ/p^k`. With that change, the slope `s` plays the
+role of `A`, the key shares `b i` that of the additive sharing `B_i` of `B`, and the row colour `ρ`
+that of the row index `β + α_i mod 2`. `eval_activeShares` is the step of the proof of Lemma 4
+showing that the active values form a uniform additive sharing of the output label. The inactive
+rows, which that proof simulates by random strings in the random-oracle model, are not covered.
+
 ## Main definitions
 
-* `Cslib.Crypto.Garbling.Arithmetic.digit`: the base-`b` digits of a natural number.
 * `Cslib.Crypto.Garbling.Arithmetic.bitDecomp`, `Cslib.Crypto.Garbling.Arithmetic.bitComp`:
   bit decomposition and bit composition over `ℤ/p^k`.
 * `Cslib.Crypto.Garbling.Arithmetic.linCompTable`,
@@ -46,8 +62,7 @@ sharing of the output label; they reveal nothing about `z` beyond the output lab
 
 ## Main results
 
-* `Cslib.Crypto.Garbling.Arithmetic.sum_digit_mul_pow`: `∑ i < k, b ^ i * digit b x i =
-  x % b ^ k`.
+* `Cslib.Crypto.Garbling.Arithmetic.sum_testBit_mul_pow`: the bits of a base-`p` digit recover it.
 * `Cslib.Crypto.Garbling.Arithmetic.bitComp_bitDecomp`: composition inverts decomposition.
 * `Cslib.Crypto.Garbling.Arithmetic.linCompEval_linCompTable`: correctness of the gadget.
 * `Cslib.Crypto.Garbling.Arithmetic.eval_activeShares`: the active rows are a uniform sharing of
@@ -63,25 +78,9 @@ public section
 
 namespace Cslib.Crypto.Garbling.Arithmetic
 
-open Probability
+open Probability Cslib.Radix
 
 /-! ### Digits and bits -/
-
-/-- The `i`-th base-`b` digit of `x`, least significant first. -/
-@[expose] def digit (b x i : ℕ) : ℕ := x / b ^ i % b
-
-theorem digit_lt {b : ℕ} (hb : 0 < b) (x i : ℕ) : digit b x i < b := Nat.mod_lt _ hb
-
-/-- The first `k` base-`b` digits of `x` recover `x` modulo `b ^ k`. -/
-theorem sum_digit_mul_pow (b x k : ℕ) :
-    ∑ i ∈ Finset.range k, b ^ i * digit b x i = x % b ^ k := by
-  induction k with
-  | zero => simp [Nat.mod_one]
-  | succ k ih => rw [Finset.sum_range_succ, ih, digit, Nat.mod_pow_succ]
-
-/-- The bit `j` of `x` is its base-`2` digit `j`. -/
-theorem toNat_testBit_eq_digit (x j : ℕ) : (x.testBit j).toNat = digit 2 x j := by
-  rw [digit, Nat.toNat_testBit]
 
 /-- The number of bits of a base-`p` digit: `⌈log₂ p⌉`. -/
 @[expose] def digitWidth (p : ℕ) : ℕ := Nat.clog 2 p

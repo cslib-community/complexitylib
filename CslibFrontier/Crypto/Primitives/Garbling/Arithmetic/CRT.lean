@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.ConstantDivision
 public import Mathlib.Algebra.BigOperators.Fin
+import CslibFrontier.Foundations.Data.Nat.BigOperators
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Data.Nat.GCD.BigOperators
 import Mathlib.RingTheory.Coprime.Lemmas
@@ -27,9 +28,19 @@ public linear combination `∑ i, c i * (x % m i)` reduced modulo `N` (`crtSum_m
 
 The combination is computed in a larger ring `ℤ/p^(2k+1)` with `N ^ 2 ≤ p ^ k`. It does not wrap
 around there: each coefficient is below `N` (`crtCoeff_lt`) and the residues add up to at most
-`N - 1` (`sum_sub_one_le_prod_sub_one`), so the combination is at most `(N - 1) ^ 2`
+`N - 1` (`Nat.sum_sub_one_le_prod_sub_one`), so the combination is at most `(N - 1) ^ 2`
 (`crtSum_le_sq`). The exact remainder gadget of `ConstantDivision` then recovers `x mod N` in the
 ring (`constMod_crtSum`).
+
+Source mapping (ePrint 2023/1584 version of [LiLiu2024], dated 2023-10-13). Section 5
+(pp. 23–24) takes `N = ∏ i, p_i ^ k_i` and constants `c_i` with `x = ∑ i, c_i * x^(i) mod N` for
+the residues `x^(i) = x mod p_i ^ k_i` (p. 23). Its bit decomposition for `ℤ/N` feeds the bits of
+the residues into the linear bit-composition gate over `ℤ/p^(2k+1)`, where `p ^ k > N ^ 2` exceeds
+the combination, and then applies `mod*_N` (pp. 23–24). Here the moduli `m i` are any positive
+pairwise coprime numbers rather than prime powers, the constants are the standard coefficients
+`crtCoeff`, `crtSum_le_sq` proves the bound on the combination that the source asserts, and the
+hypothesis is `N ^ 2 ≤ p ^ k`. The combination is computed on natural numbers: the linear
+bit-composition gadget and the garbled per-channel circuits are not part of this file.
 
 ## Main definitions
 
@@ -115,20 +126,6 @@ theorem crtSum_modEq (hm : ∀ i, 0 < m i) (hco : Pairwise (Nat.Coprime on m)) (
   rw [Nat.modEq_iff_dvd]
   exact_mod_cast hint
 
-/-- Residues are at most their moduli minus one, and these bounds add up to at most
-`∏ i, m i - 1`. -/
-theorem sum_sub_one_le_prod_sub_one (hm : ∀ i, 0 < m i) :
-    ∑ i, (m i - 1) ≤ ∏ i, m i - 1 := by
-  suffices h : ∀ t : Finset (Fin s), ∑ i ∈ t, (m i - 1) ≤ ∏ i ∈ t, m i - 1 from h _
-  intro t
-  induction t using Finset.induction_on with
-  | empty => simp
-  | insert a t ha ih =>
-    rw [Finset.sum_insert ha, Finset.prod_insert ha]
-    have hP : 0 < ∏ i ∈ t, m i := Finset.prod_pos fun j _ => hm j
-    have ha' := hm a
-    have key : m a + ∏ i ∈ t, m i ≤ m a * ∏ i ∈ t, m i + 1 := by nlinarith
-    omega
 
 /-- **No wrap-around**: the CRT combination of the residues of any `x` is at most
 `(N - 1) ^ 2` for `N = ∏ i, m i`. -/
@@ -141,7 +138,8 @@ theorem crtSum_le_sq (hm : ∀ i, 0 < m i) (x : ℕ) : crtSum m x ≤ (∏ i, m 
         · have := Nat.mod_lt x (hm i)
           omega
     _ = (N - 1) * ∑ i, (m i - 1) := (Finset.mul_sum _ _ _).symm
-    _ ≤ (N - 1) * (N - 1) := Nat.mul_le_mul_left _ (sum_sub_one_le_prod_sub_one hm)
+    _ ≤ (N - 1) * (N - 1) :=
+      Nat.mul_le_mul_left _ (Nat.sum_sub_one_le_prod_sub_one Finset.univ fun i _ => hm i)
     _ = (N - 1) ^ 2 := (sq _).symm
 
 /-- **Reconstruction in `ℤ/p^(2k+1)`**: if `(∏ i, m i) ^ 2 ≤ p ^ k`, the remainder gadget

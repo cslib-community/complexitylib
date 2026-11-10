@@ -46,7 +46,7 @@ example :
 -- Base-`3` digits of `7 = 1 + 2 * 3`, each written with `⌈log₂ 3⌉ = 2` bits.
 example : digitWidth 3 = 2 := by decide
 
-example : digit 3 7 0 = 1 ∧ digit 3 7 1 = 2 := by decide
+example : Radix.digit 3 7 0 = 1 ∧ Radix.digit 3 7 1 = 2 := by decide
 
 -- Composition inverts decomposition on `ℤ/9`.
 example (x : ZMod (3 ^ 2)) : bitComp 3 2 (bitDecomp 3 2 x) = x := bitComp_bitDecomp x
@@ -75,7 +75,7 @@ example : constMod 2 3 3 (7 : ZMod (2 ^ (2 * 3 + 1))) = 1 := by
   rfl
 
 -- The multiplier for `p = 2`, `k = 3`, `N = 3` is `⌈2^5 / 3⌉ = 11 ≤ 2^4`.
-example : constDivMultiplier 2 3 3 = 11 := by decide
+example : Nat.constDivMultiplier 2 3 3 = 11 := by decide
 
 /-- Two coprime moduli with product `36`. -/
 def moduli : Fin 2 → ℕ := ![4, 9]

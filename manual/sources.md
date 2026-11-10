@@ -27,7 +27,7 @@ Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibli
 <a id="aik11"></a>
 ## aik11
 
-Benny Applebaum, Yuval Ishai, Eyal Kushilevitz. "How to Garble Arithmetic Circuits." *52nd Annual IEEE Symposium on Foundations of Computer Science (FOCS 2011)*, 120–129, 2011. https://doi.org/10.1109/FOCS.2011.40 . Bibliographic data from the DOI record and secondary listings. The full text was not inspected in this pass, so no section or lemma numbers are claimed. Cited at paper level for the framework of affine key encodings over a ring (with per-wire keys) and for affinization gadgets in the sense of randomized encodings.
+Benny Applebaum, Yuval Ishai, Eyal Kushilevitz. "How to Garble Arithmetic Circuits." *52nd Annual IEEE Symposium on Foundations of Computer Science (FOCS 2011)*, 120–129, 2011. https://doi.org/10.1109/FOCS.2011.40 . Checked on 2026-11-10 against the author-hosted copy of the FOCS version, https://bennyapplebaum.sites.tau.ac.il/_files/ugd/f706bf_ccb157901f504e32a79d89a666f56de3.pdf , which has no printed page numbers: Definition 4.2 (affinization gadget), Definition 4.5 (perfect privacy of a gadget) and Section 5, Fact 5.1. Cited for the framework of affine key encodings over a ring (with per-wire keys) and for the notion of an affinization gadget; the four-value multiplication gadget formalized here is an explicit instance derived in the Lean source, not the general compiler of the paper.
 
 <a id="alonbabaisuzuki1991"></a>
 ## alonbabaisuzuki1991
@@ -559,7 +559,7 @@ Chun Guo, Jonathan Katz, Xiao Wang and Yu Yu. "Efficient and Secure Multiparty C
 <a id="gm94"></a>
 ## gm94
 
-Torbjörn Granlund, Peter L. Montgomery. "Division by Invariant Integers using Multiplication." *Proceedings of the ACM SIGPLAN 1994 Conference on Programming Language Design and Implementation (PLDI 1994)*, 61–72, 1994. https://doi.org/10.1145/178243.178249 . Bibliographic data from the DOI record and secondary listings. Cited at paper level for the multiply-and-shift method of dividing by a constant; the bounds formalized here are proved in the Lean source and no theorem number is claimed.
+Torbjörn Granlund, Peter L. Montgomery. "Division by Invariant Integers using Multiplication." *Proceedings of the ACM SIGPLAN 1994 Conference on Programming Language Design and Implementation (PLDI 1994)*, 61–72, 1994. https://doi.org/10.1145/178243.178249 . Checked on 2026-11-10 against the copy at https://gmplib.org/~tege/divcnst-pldi94.pdf : Section 4, Theorem 4.2 (multiply-and-shift division by an invariant integer, base 2, word size `N`, with a non-strict bound on the multiplier). The formalized identity is a radix-`p` variant with a strict bound, in the form of [ll24](#ll24) Lemma 5; the bound `m ≤ p ^ (k + 1)` on the chosen multiplier is proved in the Lean source.
 
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
@@ -900,7 +900,7 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 <a id="ll24"></a>
 ## ll24
 
-Hanjun Li, Tianren Liu. "How to Garble Mixed Circuits that Combine Boolean and Arithmetic Computations." *Advances in Cryptology – EUROCRYPT 2024, Part VI*, LNCS 14656, Springer, 2024. https://doi.org/10.1007/978-3-031-58751-1_12 . Full version: Cryptology ePrint Archive, Report 2023/1584. Bibliographic data from the DOI record and secondary listings. The constructions were compared at paper level with the ePrint full version during independent review. No section, figure, lemma or page numbers are claimed.
+Hanjun Li, Tianren Liu. "How to Garble Mixed Circuits that Combine Boolean and Arithmetic Computations." *Advances in Cryptology – EUROCRYPT 2024, Part VI*, LNCS 14656, Springer, 2024. https://doi.org/10.1007/978-3-031-58751-1_12 . Full version: Cryptology ePrint Archive, Report 2023/1584, https://eprint.iacr.org/2023/1584 . Checked on 2026-11-10 against the ePrint version dated 2023-10-13 (page numbers below are those printed in that version): Section 2, pp. 4–5 (digit and bit representations) and equation (1), p. 6; Section 3.1, pp. 8–9 (global offset `Δ`, labels `(Δx + A, x + α)`, and the affinization gadget simulated from the label of `xy`, p. 9); Section 4.1, Figure 5, p. 20, and Lemma 4, pp. 20–21 (bit composition); Section 4.2, pp. 21–22 (division and remainder by a constant `N`, Lemma 5, p. 22); Section 5, pp. 23–24 (CRT reconstruction, Theorem 2, p. 24). The formalization uses additive pads over the ring where the paper uses XOR pads, and generalizes Section 5 to arbitrary pairwise coprime moduli.
 
 <a id="lll82"></a>
 ## lll82

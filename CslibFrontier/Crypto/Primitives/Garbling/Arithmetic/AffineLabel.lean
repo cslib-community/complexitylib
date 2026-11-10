@@ -27,9 +27,9 @@ known key determine the value (`affineLabel_injective`). The labels `(Δ x + A, 
 
 Multiplication of two wires uses a degree-two affinization gadget in the sense of
 [ApplebaumIshaiKushilevitz2011], the interface that [LiLiu2024] uses for multiplication gates; the
-concrete four-value encoding below is one such gadget. To give the
-evaluator the label `c + (x * y) • s` of the product from separate encodings of `x` and of `y`,
-the garbler samples coins `r : R` and `b₁ b₀ : ι → R` and publishes four values
+concrete four-value encoding below is one such gadget, derived here rather than taken from either
+source. To give the evaluator the label `c + (x * y) • s` of the product from separate encodings
+of `x` and of `y`, the garbler samples coins `r : R` and `b₁ b₀ : ι → R` and publishes four values
 (`mulEncodeWith`): the scalar `r + x` and the vector `(c - r • b₁ - b₀) - x • b₁`, both affine in
 `x`, and the vectors `b₁ + y • s` and `b₀ - y • (r • s)`, both affine in `y`. The decoder
 `MulEncoding.decode` computes `z • v + u + w` from the four values `(z, u, v, w)`; it returns
@@ -37,6 +37,19 @@ the product's label (`decode_mulEncodeWith`). The gadget is perfectly private: o
 the four values are distributed exactly as the simulator `mulSimulate`, which sees only the output
 label (`eval_mulEncode`). The proof is a change of variables `(r, b₁, b₀) ↦ (z, v, u)` that is a
 bijection for every `x`, `y`.
+
+Source mapping. The author-hosted FOCS 2011 version of [ApplebaumIshaiKushilevitz2011] (it has no
+printed page numbers) defines affine circuits, the affine randomized encodings, in Definition 4.2
+and compiler privacy in Definition 4.5; perfect privacy is the case where the adversary wins with
+probability exactly `1/2`. Section 5 (affinization gadgets), Fact 5.1, gives a perfect affinization
+gadget over any finite ring for arithmetic formulas and branching programs. `mulEncodeWith` is not
+that general compiler: it is one explicit encoding of the single function
+`(x, y) ↦ c + (x * y) • s`, perfectly private in the sense of Definition 4.5 (`eval_mulEncode`).
+In the ePrint 2023/1584 version of [LiLiu2024] (dated 2023-10-13), §3.1 (pp. 8–9) recalls this
+framework with a global key `Δ` for all arithmetic wires, labels `AK(x) = (Δx + A, x + α)`, free
+addition, and multiplication through an affinization gadget whose output is simulated from
+`AK(xy)` alone (p. 9). `affineLabel` with a shared slope models these labels, and `mulEncodeWith`
+is an instance of that gadget for the label `c + (x * y) • s`.
 
 This file contains the information-theoretic layer only. How a garbler delivers the encodings of
 `x` and of `y` to the evaluator (key extension, random oracles) is not formalized here.
@@ -220,13 +233,6 @@ noncomputable def mulSimulate (L : ι → R) : ProbComp (MulEncoding R ι) := do
   let u ← ProbComp.uniform (ι → R)
   return mulSimulateWith L z v u
 
-omit [CommRing R] [DecidableEq ι] in
-/-- Reparametrizing a uniform sample by a bijection does not change an experiment. -/
-private theorem bind_uniform_comp_equiv {α β : Type} [Fintype α] [Nonempty α] (e : α ≃ α)
-    (f : α → PMF β) :
-    (PMF.uniformOfFintype α).bind (fun a => f (e a)) = (PMF.uniformOfFintype α).bind f :=
-  calc _ = (PMF.uniformOfFintype α).bind (f ∘ e) := rfl
-    _ = _ := by rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
 
 /-- **Perfect privacy**: over uniform coins, the gadget's encoding of `x` and `y` is distributed
 exactly as the simulation from the product's label `c + (x * y) • s` alone. -/
@@ -234,11 +240,11 @@ theorem eval_mulEncode (s c : ι → R) (x y : R) :
     (mulEncode s c x y).eval = (mulSimulate (affineLabel c s (x * y))).eval := by
   simp only [mulEncode, mulSimulate, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure]
-  rw [← bind_uniform_comp_equiv (Equiv.subRight x)]
+  rw [← PMF.uniformOfFintype_bind_equiv (Equiv.subRight x)]
   refine congrArg _ (funext fun z => ?_)
-  rw [← bind_uniform_comp_equiv (Equiv.subRight (y • s))]
+  rw [← PMF.uniformOfFintype_bind_equiv (Equiv.subRight (y • s))]
   refine congrArg _ (funext fun v => ?_)
-  rw [← bind_uniform_comp_equiv (Equiv.subLeft (c - z • (v - y • s)))]
+  rw [← PMF.uniformOfFintype_bind_equiv (Equiv.subLeft (c - z • (v - y • s)))]
   refine congrArg _ (funext fun u => ?_)
   simp only [Equiv.subRight_apply, Equiv.subLeft_apply]
   rw [mulEncodeWith_eq_mulSimulateWith]
