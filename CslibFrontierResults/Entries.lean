@@ -59,6 +59,7 @@ import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
+import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
@@ -824,8 +825,8 @@ register_result "trakhtenbrot" where
     many symbols of arity at most three. FinSat asks for some, FinValid for every, finite \
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
-    Libkin's form for a fixed vocabulary with a binary relation symbol is a separate entry; \
-    a computable bridge to Mathlib sentences is not formalized."
+    Libkin's form for a fixed vocabulary with a binary relation symbol and the transfer to \
+    Mathlib sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
   title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
@@ -842,8 +843,28 @@ register_result "trakhtenbrot-binary" where
   scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
     symbol, no computable procedure is correct for finite satisfiability on the raw \
     sentences over σ, and the finitely valid sentences over σ are not r.e. Raw \
-    library-local syntax with finite nonempty models; a computable translation from \
-    Mathlib's L.Sentence is not formalized."
+    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
+    the entry trakhtenbrot-sentence."
+
+register_result "trakhtenbrot-sentence" where
+  title := "Trakhtenbrot's theorem for Mathlib sentences"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.rePred_finSat,
+    FirstOrder.Language.Sentence.not_computablePred_finSat,
+    FirstOrder.Language.Sentence.not_rePred_finValid,
+    FirstOrder.Language.Sentence.exists_finValid_unprovable
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols; the negative results need a binary symbol. Sentences are coded by \
+    primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
+    recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
+    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
+    have arity at least three are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"

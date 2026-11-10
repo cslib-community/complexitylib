@@ -3988,6 +3988,8 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.CRT
 public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.ConstantDivision
 public import CslibFrontier.Crypto.Primitives.Garbling.BMR16
 public import CslibFrontier.Crypto.Primitives.Garbling.Basic
+public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHot
+public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHotObliviousness
 public import CslibFrontier.Crypto.Primitives.Garbling.CircuitInverters
 public import CslibFrontier.Crypto.Primitives.Garbling.CorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Foundations
@@ -3996,6 +3998,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Games
 public import CslibFrontier.Crypto.Primitives.Garbling.HalfGates
 public import CslibFrontier.Crypto.Primitives.Garbling.HalfGates.Privacy
 public import CslibFrontier.Crypto.Primitives.Garbling.MixedModulus
+public import CslibFrontier.Crypto.Primitives.Garbling.OneHot
 public import CslibFrontier.Crypto.Primitives.Garbling.Privacy
 public import CslibFrontier.Crypto.Primitives.Garbling.Rerandomizable
 public import CslibFrontier.Crypto.Primitives.Garbling.Scheme
@@ -4903,6 +4906,7 @@ public import CslibFrontier.Foundations.Data.Nat.Asymptotics
 public import CslibFrontier.Foundations.Data.Nat.BigOperators
 public import CslibFrontier.Foundations.Data.Nat.BinarySize
 public import CslibFrontier.Foundations.Data.Nat.Bits
+public import CslibFrontier.Foundations.Data.Nat.Bits.Halving
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.Carry
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.CommonPrefix
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.HighestDiff
@@ -4940,6 +4944,7 @@ public import CslibFrontier.Foundations.Data.Nat.MasterTheoremAsymptotics
 public import CslibFrontier.Foundations.Data.Nat.Morton
 public import CslibFrontier.Foundations.Data.Nat.OddMulMod
 public import CslibFrontier.Foundations.Data.Nat.OfDigits
+public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Choose
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Log
@@ -5369,9 +5374,11 @@ public import CslibFrontier.Logics.FirstOrder.ProjectionFormula
 public import CslibFrontier.Logics.FirstOrder.QuantifierFree
 public import CslibFrontier.Logics.FirstOrder.QuantifierRank
 public import CslibFrontier.Logics.FirstOrder.Raw.Basic
+public import CslibFrontier.Logics.FirstOrder.Raw.BoundedFormula
 public import CslibFrontier.Logics.FirstOrder.Raw.FinSat
 public import CslibFrontier.Logics.FirstOrder.Raw.Graph
 public import CslibFrontier.Logics.FirstOrder.Raw.Interpret
+public import CslibFrontier.Logics.FirstOrder.Raw.Levels
 public import CslibFrontier.Logics.FirstOrder.Raw.Primrec
 public import CslibFrontier.Logics.FirstOrder.Raw.Sentence
 public import CslibFrontier.Logics.FirstOrder.Raw.Uniformize
@@ -5382,6 +5389,7 @@ public import CslibFrontier.Logics.FirstOrder.Subformula
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Arithmetic
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Evaln
+public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 public import CslibFrontier.Logics.FirstOrder.Tuple
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
@@ -5853,6 +5861,7 @@ public import CslibFrontier.Tactic.FirstOrder.Init
 public import CslibFrontier.Tactic.Fits
 public import CslibFrontier.Tactic.LogSpace
 public import CslibFrontier.Tactic.LogSpace.Init
+public import CslibFrontier.Tactic.Negligible
 public import CslibFrontier.Tactic.OptionMatch
 public import CslibFrontier.Tactic.PMFSwap
 public import CslibFrontier.Tactic.PPT

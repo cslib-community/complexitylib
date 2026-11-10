@@ -692,6 +692,16 @@ Carl Hierholzer. “Ueber die Möglichkeit, einen Linienzug ohne Wiederholung un
 
 Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudorandom Generator from Any One-Way Function.” *SIAM Journal on Computing* 28(4), 1364–1396, 1999. https://doi.org/10.1137/S0097539793244708 . Publisher abstract checked; full article not independently audited.
 
+<a id="hk21"></a>
+## hk21
+
+David Heath, Vladimir Kolesnikov. “One Hot Garbling.” *ACM CCS 2021*, 574–593. https://doi.org/10.1145/3460120.3484764 . Full version: Cryptology ePrint Archive, Paper 2022/798, https://eprint.iacr.org/2022/798 . The ePrint full text was read in this pass for §4.1 (p. 10): the binary-to-one-hot conversion expands a GGM tree, sending two encrypted values per level and a final correction, `2(n − 1) + 1` ciphertexts in all. Cited as the origin of one-hot garbling. The library's single-ciphertext construction is the one of [heath24](#heath24), not this one, and its obliviousness reduction is original rather than a transcription of this paper's proof.
+
+<a id="hkn24"></a>
+## hkn24
+
+David Heath, Vladimir Kolesnikov, Lucien K. L. Ng. “Garbled Circuit Lookup Tables with Logarithmic Number of Ciphertexts.” *EUROCRYPT 2024*. Full version: Cryptology ePrint Archive, Paper 2024/369, https://eprint.iacr.org/2024/369 . The ePrint full text was read in this pass for Definition 1 (circular correlation robustness, following Zahur–Rosulek–Evans, with `Δ ∈ 1{0,1}^{κ−1}`), Figure 1 (p. 10, the interface of one-hot garbling, credited to [hk21](#hk21); it states `(2n − 1)κ` bits, the count of [hk21](#hk21), whereas Theorem 1 uses the `(n − 1)κ` of [heath24](#heath24)), Lemma 1 and the display after it (`T(f)ᵀ · H(x) = f(x)` and its garbled form), Theorem 1 (p. 19, cost `2ⁿm + (n − 1)κ + nmκ` per gate, matching the cost breakdown on p. 20) and the proof of Theorem 3 (obliviousness; the `n − 1` one-hot rows are simulated by uniform strings, as shown in [hk21](#hk21)).
+
 <a id="hmu06"></a>
 ## hmu06
 

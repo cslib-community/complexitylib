@@ -6,6 +6,8 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Complexity.Classes.EXP
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import CslibFrontier.Foundations.Data.Nat.Bits.Halving
 
 /-! Time-constructible bounds, the clocked diagonal on concrete machines and on a word without a
 short description, the time hierarchy theorem for polynomial and exponential bounds, and the
@@ -15,7 +17,29 @@ namespace CslibFrontierTests.HierarchyTheorems
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal Filter
 
+/-! ### Linear conversions between unary and binary -/
+
+example : ComputableInO (fun l : List Bool => l.length) encBits encNat (fun l => l.length)
+    fun l => l.length :=
+  ComputableInO.lengthNat
+
+example : ComputableInO (fun n : ℕ => n) encNat encUnary (fun n => n) fun n => n :=
+  ComputableInO.natToUnary
+
+/-- Emitting the parity of each nonzero value among the halvings `13, 6, 3, 1, 0, …` writes the
+binary digits of `13`, least significant first. -/
+example : ((List.range 13).map fun i => Nat.halfBit ((· / 2)^[i] 13)).flatten =
+    [true, false, true, true] := by
+  rw [Nat.flatten_map_range_halfBit le_rfl]
+  decide
+
 /-! ### Time-constructible bounds -/
+
+example : TimeConstructible fun n => n := timeConstructible_id
+
+example : TimeConstructible fun n => n + 1 := timeConstructible_succ
+
+example : TimeConstructible fun n => (n + 1) ^ 1 := timeConstructible_succ_pow 1
 
 example : ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encNat
     (fun x => 2 ^ x.length) (fun x => 2 ^ x.length) :=
@@ -27,7 +51,7 @@ example : ComputableInO (fun x : List Bool => (x.length + 1) ^ 2) encBits encNat
 
 example : ComputableInO (fun x : List Bool => (x.length + 1) ^ 7) encBits encNat
     (fun x => (x.length + 1) ^ 7) (fun x => (x.length + 1) ^ 7) :=
-  (timeConstructible_succ_pow (by norm_num)).computableInO
+  (timeConstructible_succ_pow _).computableInO
 
 example : TimeConstructible fun n => (n + 1) * 2 ^ n :=
   timeConstructible_two_pow.succ_mul fun _ => Nat.lt_two_pow_self.le
