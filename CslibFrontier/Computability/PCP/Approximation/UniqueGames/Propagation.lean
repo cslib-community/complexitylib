@@ -1005,7 +1005,7 @@ private theorem good_settle [Inhabited α] {labels : List α} (hlabels : ∀ a, 
     rw [settle_get]
     split_ifs with hvc
     · rw [hv]; rfl
-    · rw [hv]; congr 1; funext a; exact hold v f hv hvc a
+    · rw [hv]; congr 1 with a : 1; exact hold v f hv hvc a
   have hτ' : ∀ v f, S.get v = some f →
       ((settle labels S).get v).elim (τ v) (fun f => f default) = f c := by
     intro v f hv; rw [hval v f hv]; rfl

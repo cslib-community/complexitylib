@@ -32,7 +32,7 @@ history = load('manual_history', HISTORY / 'git_history.py')
 
 class ModelIndexTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix='complexitylib-index-test-')
+        self.temp = tempfile.TemporaryDirectory(prefix='cslib-frontier-index-test-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'topic.md').write_text('# Topic\n')
@@ -86,7 +86,7 @@ class PublicDataTests(unittest.TestCase):
             audit.reconcile(census, {**summary, 'first_parent_commits': 3}, daily)
 
     def test_shallow_history_is_rejected_without_fetching(self):
-        with tempfile.TemporaryDirectory(prefix='complexitylib-history-test-') as temp:
+        with tempfile.TemporaryDirectory(prefix='cslib-frontier-history-test-') as temp:
             response = subprocess.CompletedProcess([], 0, stdout='true\n')
             with patch.object(sys, 'argv', ['git_history.py', temp, '--output', temp]), \
                     patch.object(history.subprocess, 'run', return_value=response) as run, \
@@ -136,7 +136,7 @@ class ExtractionTests(unittest.TestCase):
         return result
 
     def test_analysis_and_plot_read_only_the_selected_input_directories(self):
-        with tempfile.TemporaryDirectory(prefix='complexitylib-analysis-test-') as temp:
+        with tempfile.TemporaryDirectory(prefix='cslib-frontier-analysis-test-') as temp:
             root = Path(temp)
             data, census, figures = root / 'inputs', root / 'census', root / 'figures'
             data.mkdir()
@@ -176,7 +176,7 @@ class ExtractionTests(unittest.TestCase):
             self.assertNotEqual(failed.returncode, 0)
 
     def test_codex_plain_logs_obey_cutoff_and_omit_private_content(self):
-        with tempfile.TemporaryDirectory(prefix='complexitylib-session-test-') as temp:
+        with tempfile.TemporaryDirectory(prefix='cslib-frontier-session-test-') as temp:
             root = Path(temp)
             logs, out, private = root / 'logs', root / 'public', root / 'private'
             logs.mkdir()
@@ -201,7 +201,7 @@ class ExtractionTests(unittest.TestCase):
             self.assertIn('PRIVATE PROMPT TEXT', (private / 'session_provenance.json').read_text())
 
     def test_claude_plain_logs_deduplicate_and_omit_private_content(self):
-        with tempfile.TemporaryDirectory(prefix='complexitylib-claude-test-') as temp:
+        with tempfile.TemporaryDirectory(prefix='cslib-frontier-claude-test-') as temp:
             root = Path(temp)
             logs, out, private = root / 'logs', root / 'public', root / 'private'
             project = logs / '-private-cslib-community-complexitylib'
@@ -224,7 +224,7 @@ class ExtractionTests(unittest.TestCase):
 
 class CitationTests(unittest.TestCase):
     def test_canonical_citation_and_missing_key_control(self):
-        with tempfile.TemporaryDirectory(prefix='complexitylib-citation-test-') as temp:
+        with tempfile.TemporaryDirectory(prefix='cslib-frontier-citation-test-') as temp:
             root = Path(temp)
             (root / 'sources.md').write_text('<a id="example"></a>\n## example\nAuthored citation.\n')
             (root / 'chapter.md').write_text('[example][example]\n\n[example]: sources.md#example\n')

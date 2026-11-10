@@ -19,8 +19,8 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 # Exponentials of constructible clocks
 
 If `T` is time-constructible, so is `n ↦ 2 ^ (T n / k)` for every `k ≥ 1`. The machine computes
-`T n` in binary within `O(T n)` steps and divides it by `k`. It then counts the quotient `m` down
-to unary within `O((m + 1) ^ 2)` steps (`Turing.MultiTapeTM.ComputableInO.natToUnary`) and writes
+`T n` in binary within `O(T n)` steps and divides it by `k`. It then converts the quotient `m`
+to unary within `O(m + 1)` steps (`Turing.MultiTapeTM.ComputableInO.natToUnary`) and writes
 `2 ^ m` in binary, as `m` zeros followed by a one. Since `T n < k * (m + 1)`, every stage is
 polynomial in `m`, hence `O(2 ^ m)`.
 

@@ -66,12 +66,9 @@ example : IsPPTOn (encPair encUnary (encPair encUnary encUnary)) (encOption (enc
 -- The same sampler supports an exponentially large binary bound; no unary 2^width is charged.
 example : IsPPTOn (encPair encUnary encUnary) (encOption encNat)
     (fun p : ℕ × ℕ => sampleUniformInterval (2 ^ p.1) p.2) := by
-  apply isPPTOn_sampleUniformInterval_binary (width := fun p => p.1 + 1)
+  apply isPPTOn_sampleUniformInterval_binary
   · exact ComputableInPolyTime.binary_two_pow.comp (by fun_prop)
   · polytime
-  · polytime
-  · intro p
-    simp [Nat.log_pow Nat.one_lt_two]
 
 -- Every supported outcome of `sampleIntegerBox 1 2 1` has encoded length at most `2 * 5 + 1 = 11`.
 example {out : Option (List ℤ)}

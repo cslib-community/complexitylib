@@ -20,7 +20,8 @@ Checks concrete unconditional instances of:
    cannot be trivially satisfied by taking `accSet = fiberSet`).
 3. Concrete unconditional instantiations of `isPPT_rompelBaseInverter`,
    `rompelBase_escape_le_four_mul_inversion`, and `rompelBase_accessible_le_conditionalEntropy_sub`
-   on `g = id` at security parameter `n = 2`.
+   on `g = id` at security parameter `n = 2`, plus the explicit `bind_with` and
+   `IsPPT.preprocess` composition that certifies such inverters.
 4. Parallel repetition (`repHashFin`, `repAccessibleSet`, `repEscapeInverter`), two-universal
    input/output entropy reduction (`shrunkHashOutLen_add_one`, `card_image_inputHashFin_le`,
    `shrunkHashFin_false_positive_le`, `shrunkHash_randomCollision_le`), and the candidate-grid
@@ -149,6 +150,19 @@ example :
     IsPPT encBits
       (rompelBaseInverter id id (fun n _ => pure (List.replicate n false))) :=
   isPPT_rompelBaseInverter .id' .id' (by ppt)
+
+/-- The explicit composition behind `isPPT_rompelBaseInverter`, on a smaller inverter: sample,
+call a parameterized adversary on prepared inputs, then post-process its answer. -/
+example {A : ℕ → List Bool → ProbComp (List Bool)} (hA : IsPPT encBits A) :
+    IsPPT encBits (fun n y => do
+      let pad ← Cslib.BitString.sampleList n
+      let raw ← A n (y ++ pad)
+      return raw.take n) := by
+  apply IsPPTOn.isPPT
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
 
 example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
     (Game.succProbability (ProbComp.eval

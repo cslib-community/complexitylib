@@ -141,10 +141,7 @@ theorem length_encBank_packed_le (hd : 0 < d) (hb : 0 < b)
     (encList encNat (ofRegs S)).length ≤ 17 * (d + 1) * (b + chunkWidth d b) := by
   let : NeZero (fieldModulus d b) := ⟨(fieldModulus_prime d b).ne_zero⟩
   have hbank := length_encBank_ofRegs_le S
-  have hprod := chunkCount_mul_fieldModulus_size_le hd hb
-  have hr := chunkCount_le hd hb
-  have hscalar : chunkCount d b * (4 * (fieldModulus d b).size + 1) ≤
-      17 * (b + chunkWidth d b) := by nlinarith
+  have hscalar := chunkCount_mul_framed_fieldModulus_size_le hd hb 4
   calc
     _ ≤ (d + 1) * chunkCount d b * (4 * (fieldModulus d b).size + 1) := hbank
     _ = (d + 1) * (chunkCount d b * (4 * (fieldModulus d b).size + 1)) := Nat.mul_assoc ..
@@ -170,10 +167,9 @@ theorem fullSpaceBound_packed_le (hd : 0 < d) (hb : 0 < b) :
         2 * (H * (22 * chunkWidth d b + 33)) + 20 * chunkWidth d b + 30 := by
   have hp := fieldModulus_size_le hd hb
   obtain ⟨hdsize, hrsize, htarget⟩ := selected_parameter_sizes hd hb
-  have hprod := chunkCount_mul_fieldModulus_size_le hd hb
-  have hr := chunkCount_le hd hb
   have hscalar : chunkCount d b * (4 * (fieldModulus d b).size + 1) ≤
-      17 * (b + chunkWidth d b) := by nlinarith
+      17 * (b + chunkWidth d b) :=
+    chunkCount_mul_framed_fieldModulus_size_le hd hb 4
   have hbank := Nat.mul_le_mul_left (d + 1) hscalar
   have hframe : 2 * frameSpace (fieldModulus d b) d + 1 ≤ 22 * chunkWidth d b + 33 := by
     unfold frameSpace

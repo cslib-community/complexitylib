@@ -12,6 +12,8 @@ public import Mathlib.ModelTheory.Satisfiability
 public import Mathlib.Order.Filter.AtTopBot.Basic
 public import Mathlib.Topology.Instances.Real.Lemmas
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Probability.PMF.Union
 import Mathlib.Topology.Algebra.Monoid
 import Mathlib.Topology.Order.Basic
 
@@ -105,8 +107,7 @@ theorem structProb_le_one (P : L.Structure α → Prop) : structProb μ P ≤ 1 
 variable {μ} in
 theorem structProb_mono {P Q : L.Structure α → Prop} (h : ∀ S, P S → Q S) :
     structProb μ P ≤ structProb μ Q :=
-  ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono fun S hS => h S hS)
+  PMF.toOuterMeasure_toReal_mono _ fun S hS => h S hS
 
 @[simp]
 theorem structProb_false : structProb μ (fun _ => False) = 0 := by
@@ -135,12 +136,7 @@ theorem structProb_exists_le {ι : Type*} (I : Finset ι) (P : ι → L.Structur
     ext S
     simp only [Set.mem_ofPred_eq, Set.mem_iUnion, exists_prop]
   rw [structProb, hset]
-  calc _ ≤ (∑ i ∈ I, μ.toOuterMeasure {S | P i S}).toReal :=
-        ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun i _ => PMF.toOuterMeasure_ne_top _ _)
-          (MeasureTheory.measure_biUnion_finset_le I _)
-    _ = _ := by
-        rw [ENNReal.toReal_sum fun i _ => PMF.toOuterMeasure_ne_top _ _]
-        rfl
+  exact Cslib.Probability.PMF.toOuterMeasure_toReal_biUnion_finset_le μ I fun i => {S | P i S}
 
 theorem sentenceProb_not (φ : L.Sentence) : sentenceProb μ φ.not = 1 - sentenceProb μ φ := by
   rw [sentenceProb, sentenceProb, ← structProb_not]

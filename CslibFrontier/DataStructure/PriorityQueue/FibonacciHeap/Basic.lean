@@ -145,72 +145,63 @@ variable {n : ℕ} (g : Cell → ℕ) (x : ℕ)
     view n (Function.update g (.key v) x) =
       { view n g with key := Function.update (view n g).key v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_par (v : Fin n) :
     view n (Function.update g (.par v) x) =
       { view n g with par := Function.update (view n g).par v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_child (v : Fin n) :
     view n (Function.update g (.child v) x) =
       { view n g with child := Function.update (view n g).child v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_left (v : Fin n) :
     view n (Function.update g (.left v) x) =
       { view n g with left := Function.update (view n g).left v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_right (v : Fin n) :
     view n (Function.update g (.right v) x) =
       { view n g with right := Function.update (view n g).right v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_deg (v : Fin n) :
     view n (Function.update g (.deg v) x) =
       { view n g with deg := Function.update (view n g).deg v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_mark (v : Fin n) :
     view n (Function.update g (.mark v) x) =
       { view n g with mark := Function.update (view n g).mark v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_inHeap (v : Fin n) :
     view n (Function.update g (.inHeap v) x) =
       { view n g with inHeap := Function.update (view n g).inHeap v x } := by
   simp only [view]
-  congr 1
-  funext u
+  congr 1 with u : 1
   simp [Function.update_apply, Fin.val_inj]
 
 @[simp] theorem view_update_cons (d : ℕ) :
     view n (Function.update g (.cons d) x) =
       { view n g with cons := Function.update (view n g).cons d x } := by
   simp only [view]
-  congr 1
-  funext e
+  congr 1 with e : 1
   simp [Function.update_apply]
 
 @[simp] theorem view_update_minRoot :

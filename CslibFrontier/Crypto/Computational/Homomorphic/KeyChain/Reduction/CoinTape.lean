@@ -171,15 +171,6 @@ and unary budgets. This total certificate does not assume that the saved context
     (htape : ComputableInPolyTime tape input encBits) :
     ComputableInPolyTime (fun a => guessLinkCoins evaluateEncrypt evaluateTest (n a)
       (encCoins a) (capacity a) (state a) (challenge a) (tape a)) input encBool := by
-  have hcontext := linkStateDecoder.computableInPolyTime.comp hstate
-  dsimp only [encLinkState] at hcontext
-  have hbefore := hcontext.snd'.fst'
-  have hpredecessor := hcontext.snd'.snd'.fst'
-  have hpk := hcontext.snd'.snd'.snd'.fst'
-  have hafter := hcontext.snd'.snd'.snd'.snd'.fst'
-  have hindex := hcontext.snd'.snd'.snd'.snd'.snd'
-  have htarget := hpk.prod ((ComputableInPolyTime.bitsReplicate false).comp
-    (ComputableInPolyTime.length_bits.comp hpredecessor.snd'))
   unfold guessLinkCoins
   apply ComputableInPolyTime.ite (by fun_prop)
   · let context := fun a => linkStateDecoder.decode (state a)

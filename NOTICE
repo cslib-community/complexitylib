@@ -33,7 +33,7 @@ The shared tensor encoder in
 CslibFrontier/Algorithms/WordRAM/MatrixMultiplication/Schonhage/
 is also part of the Anthropic adaptation described above.
 
-The explicit-stack pruned-query evaluator uses original native code against Complexitylib's
+The explicit-stack pruned-query evaluator uses original native code against cslib-frontier's
 standard WordRAM APIs. Its finite pruning specification reuses the credited pinned source
 above; no source machine or instruction-cost contract supplies its native execution proofs.
 

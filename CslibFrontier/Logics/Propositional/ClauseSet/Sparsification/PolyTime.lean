@@ -50,6 +50,8 @@ parameter.
 * `Cslib.Logic.PL.CNF.Sparsification.computableInPolyTime_heavyWith`,
   `Cslib.Logic.PL.CNF.Sparsification.computableInPolyTime_choiceWith`: the heavy-heart test and the
   choice, for runtime thresholds.
+* `Cslib.Logic.PL.CNF.Sparsification.computableInPolyTime_childAtChoiceWith`: a child at the
+  computed choice, for runtime thresholds; shared with the counting step.
 * `Cslib.Logic.PL.CNF.Sparsification.computableInPolyTime_normalize`: normalization.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.computableInPolyTime_threshold_le`: comparisons
   with the explicit thresholds.
@@ -225,11 +227,34 @@ theorem computableInPolyTime_isSparse {θ : ℕ → ℕ}
     (computableInPolyTime_const_threshold hθ) k
   simpa only [Function.comp_def] using h.comp ((const (encOut := encUnary) 0).prod id')
 
+/-- **A step at the computed choice for runtime thresholds** is polynomial-time: if computing a
+child `f ψ c H b` of a node for a supplied choice `(c, H)` is polynomial-time, then so is computing
+the child for the computed choice `choice (θ p) k ψ`, charging the encoding of the parameter `p`.
+This is shared by the step `next` and the counting step `countingNext`. -/
+theorem computableInPolyTime_childAtChoiceWith {P : Type} {encP : P ↪ List Bool}
+    {θ : P → ℕ → ℕ}
+    (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
+      (encUnaryComparison encP) encBool) (k : ℕ) {f : CNF V → ℕ → Clause V → Bool → CNF V}
+    (hf : ComputableInPolyTime
+      (fun x : CNF V × ((ℕ × Clause V) × Bool) => f x.1 x.2.1.1 x.2.1.2 x.2.2)
+      (encPair encF (encPair (encCandidate encV) encBool)) encF) :
+    ComputableInPolyTime
+      (fun x : P × (CNF V × Bool) =>
+        f x.2.1 (choice (θ x.1) k x.2.1).1 (choice (θ x.1) k x.2.1).2 x.2.2)
+      (encPair encP (encPair encF encBool)) encF := by
+  have hchoice : ComputableInPolyTime
+      (fun x : P × (CNF V × Bool) => choice (θ x.1) k x.2.1)
+      (encPair encP (encPair encF encBool)) (encCandidate encV) := by
+    simpa only [Function.comp_def] using (computableInPolyTime_choiceWith encV hθ k).comp
+      ((fst encP (encPair encF encBool)).prod (snd encP (encPair encF encBool)).fst')
+  simpa only [Function.comp_def] using hf.comp ((snd encP (encPair encF encBool)).fst'.prod
+    (hchoice.prod (snd encP (encPair encF encBool)).snd'))
+
 /-- A child of a branching node, for a supplied choice, is polynomial-time. -/
 private theorem computableInPolyTime_child :
     ComputableInPolyTime
       (fun x : CNF V × ((ℕ × Clause V) × Bool) => child x.1 x.2.1.1 x.2.1.2 x.2.2)
-      (encPair encF (encPair (encPair encUnary encC) encBool)) encF := by
+      (encPair encF (encPair (encCandidate encV) encBool)) encF := by
   have := computableInPolyTime_reduce encV
   have := computableInPolyTime_flower encV
   unfold child intro petals
@@ -241,17 +266,8 @@ theorem computableInPolyTime_nextWith {P : Type} {encP : P ↪ List Bool} {θ : 
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
       (encUnaryComparison encP) encBool) (k : ℕ) :
     ComputableInPolyTime (fun x : P × (CNF V × Bool) => next (θ x.1) k x.2.1 x.2.2)
-      (encPair encP (encPair encF encBool)) encF := by
-  have hchild := computableInPolyTime_child encV
-  have hc0 := computableInPolyTime_choiceWith encV hθ k
-  have hchoice : ComputableInPolyTime
-      (fun x : P × (CNF V × Bool) => choice (θ x.1) k x.2.1)
-      (encPair encP (encPair encF encBool)) (encPair encUnary encC) := by
-    simpa only [Function.comp_def] using
-      hc0.comp ((fst encP (encPair encF encBool)).prod (snd encP (encPair encF encBool)).fst')
-  have h := hchild.comp ((snd encP (encPair encF encBool)).fst'.prod
-    (hchoice.prod (snd encP (encPair encF encBool)).snd'))
-  simpa only [Function.comp_def, next] using h
+      (encPair encP (encPair encF encBool)) encF :=
+  computableInPolyTime_childAtChoiceWith encV hθ k (f := child) (computableInPolyTime_child encV)
 
 /-- **The list-level step is polynomial-time.** -/
 theorem computableInPolyTime_next {θ : ℕ → ℕ}

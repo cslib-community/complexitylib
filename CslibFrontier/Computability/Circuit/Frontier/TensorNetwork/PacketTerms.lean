@@ -337,21 +337,6 @@ theorem intConst_oddPart_polyTime {p : α → ℕ} {fl : α → List ℕ} {z : �
 
 /-! ### Sums and products of lists -/
 
-private theorem polyBounded_reduced' {p : α → ℕ} {fl : α → List ℕ}
-    (hp : ComputableInPolyTime p encIn encUnary)
-    (hfl : ComputableInPolyTime fl encIn (encList encNat)) :
-    PolyBounded (fun x => (encIn x).length) (fun x => (fl x).length * (2 * p x + 1)) := by
-  have hpl := ComputableInPolyTime.polyBounded_length hp
-  have hfll := ComputableInPolyTime.polyBounded_length hfl
-  refine (hfll.mul (((PolyBounded.const 2).mul hpl).add (PolyBounded.const 1))).mono fun x => ?_
-  have h1 : p x ≤ (encUnary (p x)).length := by simp
-  have h2 : (fl x).length ≤ (encList encNat (fl x)).length := by
-    rw [length_encList]
-    calc (fl x).length = ((fl x).map fun _ => 1).sum := by simp
-      _ ≤ ((fl x).map fun a => 2 * (encNat a).length + 1).sum :=
-        List.sum_le_sum fun a _ => by omega
-  exact Nat.mul_le_mul h2 (Nat.add_le_add_right (Nat.mul_le_mul_left 2 h1) 1)
-
 /-- **Products of computed lists of coefficient lists are polynomial-time.** -/
 theorem prodList_polyTime {p : α → ℕ} {fl : α → List ℕ} {cs : α → List (List ℕ)}
     (hp : ComputableInPolyTime p encIn encUnary)
@@ -368,7 +353,8 @@ theorem prodList_polyTime {p : α → ℕ} {fl : α → List ℕ} {cs : α → L
   exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
     (encA := encList encNat) (encL := encList (encList encNat))
     (step := fun x acc c => mul (p x) (fl x) acc c) (computableInPolyTime_one hfl)
-    ⟨hcs, hstep, inferInstance, inferInstance⟩ ⟨polyBounded_reduced' hp hfl, fun x acc c _ => by
+    ⟨hcs, hstep, inferInstance, inferInstance⟩
+    ⟨polyBounded_reducedLength hp hfl, fun x acc c _ => by
       have := length_encList_le (length_mul (p x) (fl x) acc c) fun _ h => lt_of_mem_mul h
       omega⟩
 
@@ -390,7 +376,8 @@ theorem sumList_polyTime {p : α → ℕ} {fl : α → List ℕ} {cs : α → Li
     (step := fun x acc c => add (p x) (fl x) acc c)
     (computableInPolyTime_tabulate (g := fun _ _ => 0)
       ((ComputableInPolyTime.length_list encNat).comp hfl) (ComputableInPolyTime.const 0))
-    ⟨hcs, hstep, inferInstance, inferInstance⟩ ⟨polyBounded_reduced' hp hfl, fun x acc c _ => by
+    ⟨hcs, hstep, inferInstance, inferInstance⟩
+    ⟨polyBounded_reducedLength hp hfl, fun x acc c _ => by
       have := length_encList_le (length_add (p x) (fl x) acc c) fun _ h => lt_of_mem_add h
       omega⟩
 
@@ -425,15 +412,6 @@ section PolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-/-- Whether two binary integers differ. -/
-private theorem decide_ne_polyTime {u v : α → ℤ} (hu : ComputableInPolyTime u encIn encIntBin)
-    (hv : ComputableInPolyTime v encIn encIntBin) :
-    ComputableInPolyTime (fun x => decide (u x ≠ v x)) encIn encBool :=
-  (ComputableInPolyTime.ite (ComputableInPolyTime.beq hu hv)
-    (ComputableInPolyTime.const (encOut := encBool) false)
-    (ComputableInPolyTime.const (encOut := encBool) true)).of_enc_eq fun x => by
-      by_cases h : u x = v x <;> simp [h]
-
 /-- **The odd part of `C'(0)` is polynomial-time**, with `L` in unary. -/
 theorem kernelUnitDen_polyTime {p : α → ℕ} {fl : α → List ℕ} {L : α → ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
@@ -443,7 +421,7 @@ theorem kernelUnitDen_polyTime {p : α → ℕ} {fl : α → List ℕ} {L : α �
   have h1 := ComputableInPolyTime.fst encIn encIntBin
   have h2 := ComputableInPolyTime.snd encIn encIntBin
   have hfilt := ComputableInPolyTime.filterWithInput (test := fun _ q => decide (q ≠ 0))
-    (gridList_polyTime.comp hL) (decide_ne_polyTime h2 (ComputableInPolyTime.const 0))
+    (gridList_polyTime.comp hL) (h2.decide_ne (ComputableInPolyTime.const 0))
   exact prodList_polyTime hp hfl (ComputableInPolyTime.mapWithInput
     (f := fun x q => intConst (p x) (fl x) ((0 - q) / 2 ^ twoVal (0 - q))) hfilt
     (intConst_oddPart_polyTime (hp.comp h1) (hfl.comp h1)

@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
+import CslibFrontier.GameTheory.Bimatrix.Existence
 
 /-!
 # Bimatrix games, vertices and the Lemke–Howson parity theorem
@@ -17,7 +18,7 @@ import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
   the three equilibria (both pure pairs and uniform mixing).
 * The zero game is degenerate, and every pair of mixed strategies is an equilibrium: the
   nondegeneracy hypothesis of `IsNondegenerate.odd_ncard_isNash` cannot be dropped (here
-  `ncard = 0`).
+  `ncard = 0`). Nash's theorem `exists_isNash` still applies to it.
 * For the polyhedral API: the interval `0 ≤ t ≤ 1` has the vertex `0` but not the vertex `1/2`;
   repeating a row gives a degenerate system.
 * In the positive coordination game `1 + 1`, the artificial pair `(0, 0)` is a node of degree `1`
@@ -164,6 +165,10 @@ theorem zeroGame_infinite_isNash :
     exact Subtype.ext (by simpa using this)
   · exact zeroGame_isNash (isMixedStrategy_fin2 t.2.1 (by linarith [t.2.2]) (by ring))
       (isMixedStrategy_fin2 (by norm_num) le_rfl (by norm_num))
+
+/-- Nash's theorem needs no nondegeneracy: it applies to the degenerate zero game. -/
+example : ¬ zeroGame.IsNondegenerate ∧ ∃ x y, zeroGame.IsNash x y :=
+  ⟨zeroGame_not_isNondegenerate, zeroGame.exists_isNash⟩
 
 theorem zeroGame_not_odd_ncard_isNash :
     ¬ Odd {p : (Fin 2 → ℝ) × (Fin 2 → ℝ) | zeroGame.IsNash p.1 p.2}.ncard := by

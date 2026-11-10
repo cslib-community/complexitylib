@@ -18,15 +18,50 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-!
 # The PCP theorem
 
-Compose Cook–Levin's polynomial-time reduction with the concrete SAT-to-gap construction and
-the encoded graph verifier. The fixed output alphabet has an explicit binary representation:
-seven bits: one for the input label and six for the selected tester's claimed answers.
-The construction uses logarithmic randomness, constantly many queries, perfect completeness and
-soundness at most one half. Its enormous fixed parameters remain asymptotic construction constants.
+`NP = PCP(log n, 1)`: every problem in NP has a polynomial-time verifier that uses `O(log n)`
+random bits and reads a constant number of proof bits, accepts some proof of every member on every
+random string, and accepts every proof of a non-member on at most half of the random strings. NP
+is the library's deterministic-verifier class.
 
-Conversely, exhaustive checking of logarithmically many random bits has polynomial cost. A
-certificate supplies the bits at all queried addresses, with repeated addresses sharing one bit.
-This gives `NP = PCP(log n, 1)` for the library's deterministic-verifier definition of NP.
+## Proof overview
+
+The inclusion `NP ⊆ PCP(log n, 1)` follows Dinur [Dinur2007]. Every stage after Cook–Levin is a
+program on explicit constraint graphs (`Cslib.PCP.Encoded.Graph`), with a polynomial-time
+certificate and an exact interpretation as a construction on mathematical constraint graphs
+(`Cslib.PCP.ConstraintGraph`), where its soundness is proved.
+
+1. **Cook–Levin** (`Cslib.Complexity.CookLevin.SAT_npHard`) reduces the problem to SAT.
+2. **The constraint graph of a formula** (`Cslib.PCP.Encoded.Graph.ofCompactCNF`, after splitting
+   clauses with `Cslib.Logic.PL.CNF.to3CNF`) has three edges per clause and the alphabet
+   `Fin 3 → Bool`, and is satisfiable exactly when the formula is.
+3. **Composition** (`Cslib.PCP.Encoded.Graph.composeSelectedEnumerated`) with the six-query
+   Hadamard assignment tester brings the alphabet to the fixed `Cslib.PCP.SelectedAlphabet` of
+   `128` symbols, losing at most a factor `840` of the value
+   (`Cslib.PCP.ConstraintGraph.le_unsatVal_composeSelected`).
+4. **Gap amplification** (`Cslib.PCP.Encoded.Graph.arithmeticAmplify`) runs `⌈log₂ |E|⌉` rounds.
+   Each round preprocesses with the explicit arithmetic expanders
+   (`Cslib.PCP.ConstraintGraph.preprocessWith`), powers along killed walks
+   (`Cslib.PCP.RegularConstraintGraph.power`), and composes back to `SelectedAlphabet`; it doubles
+   the value up to the fixed threshold `Cslib.PCP.ConstraintGraph.Amplification.Arithmetic.gap`
+   (`Cslib.PCP.ConstraintGraph.min_le_div_unsatVal_power_preprocessWith`). Since an
+   unsatisfiable graph with `|E|` edges has value at least `1 / |E|`, the rounds reach the threshold
+   (`Cslib.PCP.ConstraintGraph.gap_le_of_min_two_pow_mul_le`). Stages 2 to 4 form
+   `Cslib.PCP.Encoded.gapGraph`.
+5. **The verifier** (`Cslib.PCP.Encoded.Graph.reductionVerifier`) builds the graph and checks a
+   constant number of independently sampled edges, reading the labels of their ends from the proof,
+   seven bits each: one for the input label and six for the selected tester's claimed answers. A
+   single check rejects with probability at least half the value
+   (`Cslib.PCP.Encoded.Graph.unsatVal_div_two_le_rejectProb`), so a constant number of repetitions
+   brings the soundness error to one half (`Cslib.PCP.Encoded.Graph.mem_PCP_of_gapReduction`).
+
+The converse inclusion (`Cslib.Complexity.PCP_log_subset_NP`) checks all polynomially many random
+strings. Its certificate supplies the bits at all queried addresses, with repeated addresses
+sharing one bit.
+
+`Cslib.PCP.Dinur.gapGraph` in `CslibFrontier.Computability.PCP.GapTheorem` renders the same
+argument noncomputably, with non-explicit expanders and smaller constants; the theorem here does
+not use it. The fixed constants of the explicit construction are enormous, so the result is
+asymptotic.
 
 ## Main results
 

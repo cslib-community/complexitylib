@@ -18,11 +18,13 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.BitString.List.Binary
+import CslibFrontier.Foundations.Data.BitString.List.LowBits
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # Unconditional `2n - 2` `B₂`-circuit size lower bound for pseudorandom functions
@@ -366,19 +368,6 @@ private theorem ofList_insertBitAt {n : ℕ} {w : List Bool} (hw : w.length = n 
     · rw [getD_insertBitAt_of_lt hlt hxle, getD_insertBitAt_of_lt hlt hxle]
     · rw [getD_insertBitAt_of_gt hxle hgt, getD_insertBitAt_of_gt hxle hgt]
 
-/-- `BitString.lowBits w` is injective on naturals strictly below `2 ^ w`. -/
-private theorem lowBits_injective_of_lt {w a b : ℕ} (ha : a < 2 ^ w) (hb : b < 2 ^ w)
-    (h : BitString.lowBits w a = BitString.lowBits w b) : a = b := by
-  refine Nat.eq_of_testBit_eq fun i => ?_
-  by_cases hi : i < w
-  · have hget := congrArg (fun l : List Bool => l.getD i false) h
-    simpa only [BitString.lowBits, List.getD_eq_getElem?_getD,
-      List.getElem?_eq_getElem (by simp only [List.length_map, List.length_range, hi] :
-        i < ((List.range w).map _).length),
-      List.getElem_map, List.getElem_range, Option.getD_some] using hget
-  · have hpow : 2 ^ w ≤ 2 ^ i := Nat.pow_le_pow_right two_pos (by omega)
-    rw [Nat.testBit_lt_two_pow (ha.trans_le hpow), Nat.testBit_lt_two_pow (hb.trans_le hpow)]
-
 private theorem le_two_pow_sub_one {n : ℕ} (hn : 2 ≤ n) : n ≤ 2 ^ (n - 1) := by
   obtain ⟨k, rfl⟩ : ∃ k, n = k + 2 := ⟨n - 2, by omega⟩
   simp only [show k + 2 - 1 = k + 1 by omega]
@@ -426,7 +415,7 @@ private theorem ofList_spliceOne_injective {n : ℕ} (hn : 2 ≤ n) (x : Fin n) 
     omega
   obtain ⟨hlow, rfl⟩ := insertBitAt_inj (hxle t₁.val) (hxle t₂.val) hlist
   have hpow := le_two_pow_sub_one hn
-  have ht := lowBits_injective_of_lt (t₁.isLt.trans_le hpow) (t₂.isLt.trans_le hpow) hlow
+  have ht := BitString.lowBits_injective_of_lt (t₁.isLt.trans_le hpow) (t₂.isLt.trans_le hpow) hlow
   exact Prod.ext (Fin.ext ht) rfl
 
 /-- Splicing bits `bx, by_` at coordinates `x < y` into the `(n - 2)`-bit restriction `t`. -/
@@ -496,7 +485,7 @@ private theorem ofList_spliceTwo_injective {n : ℕ} (hn : 5 ≤ n) {x y : Fin n
   obtain ⟨hmid, rfl⟩ := insertBitAt_inj (hyle t₁.val bx₁) (hyle t₂.val bx₂) hlist
   obtain ⟨hlow, rfl⟩ := insertBitAt_inj (hxle t₁.val) (hxle t₂.val) hmid
   have hpow := le_two_pow_sub_two hn
-  have ht := lowBits_injective_of_lt (t₁.isLt.trans_le hpow) (t₂.isLt.trans_le hpow) hlow
+  have ht := BitString.lowBits_injective_of_lt (t₁.isLt.trans_le hpow) (t₂.isLt.trans_le hpow) hlow
   exact Prod.ext (Fin.ext ht) rfl
 
 /-! ### Polynomial-time certificates and uniform finite-probability helpers -/
@@ -1290,11 +1279,7 @@ theorem BooleanPRF.negligible_complexity_lt_two_mul_sub_two {D : ∀ n, PMF (Boo
     refine tsum_le_tsum fun f => ?_
     rw [← mul_add]
     exact mul_le_mul_of_nonneg_left (hpt f) zero_le
-  have hfin :
-      booleanPRFRealGame D isolatedVarDistinguisher n true +
-        booleanPRFRealGame D criticalPathDistinguisher n true ≠ ⊤ :=
-    ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _, PMF.apply_ne_top _ _⟩
-  have hnn := ENNReal.toNNReal_mono hfin htsum
+  have hnn := ENNReal.toNNReal_mono (by finiteness) htsum
   simpa only [Game.succProbability,
     ENNReal.toNNReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)] using hnn
 

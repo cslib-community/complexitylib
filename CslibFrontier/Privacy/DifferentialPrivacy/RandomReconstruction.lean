@@ -474,8 +474,7 @@ theorem exists_not_reconstructionFails {α η : ℝ} (hη : 0 < η)
     Set.eq_univ_of_forall hall'
   rw [huniv, (PMF.toOuterMeasure_apply_eq_one_iff _ _).2 (Set.subset_univ _)] at h
   rw [three_pow_eq_ofReal_exp, ← ENNReal.ofReal_mul (Real.exp_pos _).le, ← Real.exp_add,
-    ← ENNReal.ofReal_one, ENNReal.ofReal_le_ofReal_iff (Real.exp_pos _).le, ← Real.exp_zero,
-    Real.exp_le_exp] at h
+    ENNReal.one_le_ofReal, Real.one_le_exp_iff] at h
   linarith
 
 namespace DifferentiallyPrivate

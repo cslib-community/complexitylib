@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.Decision.VisitorPop
+public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStackFrame
 
 /-!
 # Actual skipped transitions in the fused Chan–He visitor
@@ -44,20 +45,12 @@ theorem skip_transition {r w κ n : ℕ} {a : Arena} {target : List Node}
       (∀ T, 109 + (Cursor.mk es ns).credit a T ≤ (Cursor.mk (e :: es) ns).credit a T) ∧
       y.regs (preprocessingRegisters r heap) = x.regs (preprocessingRegisters r heap) := by
   obtain ⟨y, hy, hstack, hloaded, hframe, hp, hm⟩ := pop_entry x e es h2 hcap h.stack
-  have hreg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
-      y.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) :=
-    hp i (Or.inl hi') (Or.inr hi)
-  have hheap : y.regs (preprocessingRegisters r ChanHe.Traversal.heap) =
-      x.regs (preprocessingRegisters r ChanHe.Traversal.heap) := hreg _ (by decide) (by decide)
-  have hcontrols : a.Controls (y.comap (preprocessingRegisters r)) := h.controls.congr (by
-    intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact hreg i (by omega) (by omega))
+  obtain ⟨(hheap : y.regs (preprocessingRegisters r ChanHe.Traversal.heap) =
+      x.regs (preprocessingRegisters r ChanHe.Traversal.heap)), -, hcontrols, hmem, -, hstored,
+      hends, hbitmap, hfloor⟩ :=
+    Arena.preserved_of_stack_frame _ (y.comap (preprocessingRegisters r)) ha h.controls h.bitmap
+      h.stored h.around h.ends h.floor hframe (fun i hi hi' => hp i (Or.inl hi') (Or.inr hi))
   have hbody := body_skip solver hy hloaded hcontrols.2.2.2.2.2.2.2.2.2.1 hskip
-  have hmem (p : ℕ) (hp : p < a.stack ∨ a.stack + a.capacity ≤ p) : y.mem p = x.mem p := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
   have hstep := Entry.step_of_skip (Nat.primesLE a.m) a.Λ e es hskip
   have hdec := Math.potential_step (Nat.primesLE a.m) a.Λ e.task (es.map Entry.task)
   rw [hstep] at hdec
@@ -78,14 +71,14 @@ theorem skip_transition {r w κ n : ℕ} {a : Arena} {target : List Node}
   refine {
     bounded := hbody.bounded h.bounded
     controls := hcontrols
-    bitmap := ?_
+    bitmap := hbitmap
     stack := hstack
     depth := h.depth.2
     valid := fun d hd => h.valid d (List.mem_cons_of_mem e hd)
-    stored := ?_
+    stored := fun d hd => hstored d (List.mem_cons_of_mem e hd)
     around := fun d hd => h.around d (List.mem_cons_of_mem e hd)
-    ends := ?_
-    floor := hheap.symm ▸ h.floor
+    ends := fun d hd => hends d (List.mem_cons_of_mem e hd)
+    floor := hfloor
     heapBudget := ?_
     packedLength := ?_
     envelopeValue := (hm _).trans h.envelopeValue
@@ -94,18 +87,6 @@ theorem skip_transition {r w κ n : ℕ} {a : Arena} {target : List Node}
     verdict := ?_
     exactOutput := ?_
     protectedMemory := ?_ }
-  · intro q hq
-    rw [hmem _ (Or.inl (by have := ha.1; omega))]
-    exact h.bitmap q hq
-  · intro d hd
-    exact (h.stored d (List.mem_cons_of_mem e hd)).of_stack_frame
-      ((h.around d (List.mem_cons_of_mem e hd)).mono_capacity (by
-        have ht := ha.2.1
-        have hf := ha.2.2.1
-        omega)) hframe
-  · intro d hd j
-    rw [hheap]
-    exact h.ends d (List.mem_cons_of_mem e hd) j
   · rw [hheap]
     have hb := h.heapBudget
     have hd := Nat.mul_le_mul_right (ChanHe.Traversal.allocationSize a.n a.m a.N)

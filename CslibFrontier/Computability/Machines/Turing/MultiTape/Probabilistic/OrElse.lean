@@ -94,8 +94,7 @@ theorem eval_runClosedConfigFrom_map (M : MultiTapePTM k Symbol S)
     ProbComp.eval (N.runClosedConfigFrom fuel (f c)) =
       (ProbComp.eval (M.runClosedConfigFrom fuel c)).map f := by
   rw [eval_runClosedConfigFrom_eq_map_coins, eval_runClosedConfigFrom_eq_map_coins, PMF.map_comp]
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   exact runClosedConfigFromCoins_map M N f h coins c
 
 /-- A step that does not depend on the coin is taken with certainty. -/
@@ -750,8 +749,7 @@ theorem eval_runClosed_orElse :
   rw [runClosed_eq_map, ProbComp.eval_map,
     OrElse.eval_runClosedConfigFrom_orElse first second input t₁ t₂ h₁ h₂, runClosed_eq_map,
     ProbComp.eval_map, Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp only [Function.comp_apply, OrElse.contResult, PMF.map_comp]
   split_ifs with hacc
   · rw [PMF.pure_map]

@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Problems.SharpDNF
+import CslibFrontier.Probability.PMF.ToReal
 
 /-! Concrete checks of the Karp–Luby–Madras FPRAS for #DNF: exact model counts, contradictory
 terms, the zero-count case, the exact trial law, and the relative-error predicate. -/
@@ -145,8 +146,7 @@ example (p t : ℕ) : (ProbComp.eval (estimate unsat p t)).toOuterMeasure {out |
 example (t : ℕ) : 1 - (1 / 2 : ℝ) ^ t ≤ ((ProbComp.eval (estimate unsat 1 t)).toOuterMeasure
     {out | out.1 = 0}).toReal := by
   refine (approxWithin_estimate unsat (p := 1) (by norm_num) t).trans ?_
-  refine ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono fun out hout => ?_)
+  refine Probability.PMF.toOuterMeasure_toReal_mono _ fun out hout => ?_
   have h1 : DNF.modelCount unsat = 0 := by
     rw [DNF.modelCount_eq_card_filter]
     decide +kernel

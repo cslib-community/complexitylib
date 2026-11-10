@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Flat
-import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.ClogPow
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -27,13 +27,6 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.CountPrime
 
 open Cslib.WordRAM
 
-private theorem padding_le (n : ℕ) : 2 ^ Nat.clog 2 n ≤ (n + 2) ^ 2 := by
-  have hm := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ))
-    (Nat.clog_mono_right 2 (by omega : n ≤ n + 1))
-  have hp := Nat.pow_clog_le_mul (by decide : 1 < (2 : ℕ)) (by omega : n + 1 ≠ 0)
-  have hb : 2 * (n + 1) ≤ (n + 2) ^ 2 := by nlinarith
-  exact (hm.trans hp).trans hb
-
 private theorem envelope_le_pow {n p A κ : ℕ}
     (hp : p ≤ (n + 2) ^ κ) (hA : A ≤ (n + 2) ^ κ) :
     envelope n p A ≤ (n + 2) ^ (κ + 21) := by
@@ -47,7 +40,9 @@ private theorem envelope_le_pow {n p A κ : ℕ}
   have hn : n ≤ b := by dsimp only [b]; omega
   have hk : k ≤ n := Nat.clog_le_of_le_pow (Nat.lt_two_pow_self.le)
   have hκ : 1 ≤ b ^ κ := Nat.one_le_pow _ _ hb1
-  have htwo : 2 ^ k ≤ b ^ 2 := padding_le n
+  have htwo : 2 ^ k ≤ b ^ 2 :=
+    (Nat.pow_le_pow_right (by decide) (Nat.clog_mono_right 2 hn)).trans
+      (Nat.two_pow_clog_le_sq (by omega))
   have hfour : 4 ^ k ≤ b ^ 4 := by
     calc
       _ = (2 ^ k) ^ 2 := by rw [pow_two, ← mul_pow]; rfl

@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # The self-reduction of `SAT` relative to an oracle
@@ -142,8 +143,7 @@ theorem interpret_searchProgram {A : Set (List Bool)}
     OracleComp.interpret (m := Id) (languageOracle A) (searchProgram prog φ) =
       selfReduce (fun ψ => decide (encCNF ψ ∈ A)) φ := by
   rw [searchProgram, OracleComp.interpret_id_iterate, selfReduce_eq_iterate]
-  congr 1
-  funext answers
+  congr 1 with answers : 1
   exact interpret_searchStepProgram hprog φ answers
 
 /-! ### Polynomial time -/
@@ -212,9 +212,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
   have hcount : ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary :=
     (ComputableInPolyTime.length_list _).comp computableInPolyTime_vars
   have hsize : PolyBounded (fun φ => (encCNF φ).length)
-      (fun φ => (encUnary φ.vars.length).length * (4 * (encCNF φ).length + 5)) :=
-    hcount.polyBounded_length.mul (((PolyBounded.const 4).mul
-      (PolyBounded.of_forall_le 1 1 fun φ => by simp)).add (.const 5))
+      (fun φ => (encUnary φ.vars.length).length * (4 * (encCNF φ).length + 5)) := by growth_poly
   have hit := IsOraclePPTOn.iterateWith_spec' (input := encCNF)
     (stateEncoding := encList (encPair encNat encBool))
     (count := fun φ => φ.vars.length) (initial := fun _ => [])

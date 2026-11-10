@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Encoding
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
@@ -202,32 +203,17 @@ private theorem eval_run_substituted_phase {α : Type}
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request (s : Unit) => pure (reply request, s))) program).run ())).map
             (fun result => (result.1, state)) := by
-  let ext := OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-    (fun request s => ProbComp.eval (oracle request s))
-  have hsim := ProbOracleComp.run_interpret_map_state
+  have hsim := ProbOracleComp.runWith_map_state
     (fun request (s : Unit) => PMF.pure (reply request, s))
-    (fun request => OracleComp.interpret ext (handler request))
+    (fun request => ProbOracleComp.runWith (fun q s => ProbComp.eval (oracle q s))
+      (handler request))
     (fun _ : Unit => state) (fun request s => by
       have h := congrArg ProbComp.eval (hstep request)
-      simp only [ProbOracleComp.eval_run_interpret, ProbComp.eval_pure] at h
-      simpa only [PMF.pure_map, ext, StateT.run] using h.symm) program ()
-  rw [ProbOracleComp.eval_run_interpret, OracleComp.interpret_interpret]
-  have hhandler : (fun q => OracleComp.interpret ext
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler q)) =
-      OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-        (fun request => OracleComp.interpret ext (handler request)) := by
-    funext q
-    cases q with
-    | inl m =>
-      simp only [OracleComp.sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
-        OracleComp.interpret_query, ext]
-    | inr request => rfl
-  change (OracleComp.interpret
-    (fun q => OracleComp.interpret ext
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler q))
-      program).run state = _
-  rw [hhandler, ← hsim, ProbOracleComp.eval_run_interpret]
-  rfl
+      rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
+      simpa only [PMF.pure_map] using h.symm) program ()
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_interpret_sumHandler,
+    ← hsim, ProbOracleComp.eval_run_interpret_eq_runWith]
+  simp only [ProbComp.eval_pure]
 
 private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)
     (decaps : ℕ → List Bool → List Bool → Option (List Bool))
@@ -254,17 +240,16 @@ private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)
     (fun request => encOption encBits (decrypt n sk request.2)) []
     (run_hybridDEMHandler_before E decaps decBound n sk ctK k bit hdec)
     (adversary.choose n pk)
-  simp only [hybridDEMContinuation, cca2GameOn, OracleComp.interpret_bind, StateT.run_bind,
-    ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind]
+  simp only [pmf_norm, hybridDEMContinuation, cca2GameOn, OracleComp.interpret_bind,
+    StateT.run_bind]
   rw [hchoose]
-  simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
+  simp only [pmf_norm]
   apply PMF.bind_congr_on_support
   intro choice hchoice
   by_cases hvalid : ((ChoiceOut.msg₀ choice.1).length == n &&
       (ChoiceOut.msg₁ choice.1).length == n) = true
-  · simp only [hvalid, ↓reduceIte, OracleComp.interpret_bind, StateT.run_bind,
-      OracleComp.interpret_map, ProbOracleComp.interpret_query, StateT.run_map,
-      ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  · simp only [pmf_norm, hvalid, ↓reduceIte, OracleComp.interpret_bind, StateT.run_bind,
+      OracleComp.interpret_map, ProbOracleComp.interpret_query, StateT.run_map]
     have henc : (E.oneTimeCCAOracle n k bit
         (false, encPair encBits encBits
           (ChoiceOut.msg₀ choice.1, ChoiceOut.msg₁ choice.1))).run [] =
@@ -274,7 +259,7 @@ private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)
       simp [StateT.run, SymmetricCipher.oneTimeCCAOracle, encPair_apply, encBits_apply,
         unframe_frame_append, dropFrame_frame_append, hvalid]
     rw [henc]
-    simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+    simp only [pmf_norm]
     apply PMF.bind_congr_on_support
     intro ct hmem
     have hlen : (if bit then ChoiceOut.msg₁ choice.1 else ChoiceOut.msg₀ choice.1).length = n := by
@@ -320,10 +305,9 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
       ProbComp.eval (E.ccaOneTimeGame
         (hybridToOneTimeCCAAdversary E keyGen encaps decaps ctBound decBound adversary) bit n) := by
   symm
-  simp only [hybridDEMGame, SymmetricCipher.ccaOneTimeGame, hybridToOneTimeCCAAdversary,
-    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
-    OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.run_interpret_sample, PMF.bind_map, Function.comp_def, PMF.bind_bind]
+  simp only [pmf_norm, hybridDEMGame, SymmetricCipher.ccaOneTimeGame, hybridToOneTimeCCAAdversary,
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_sample]
   rw [PMF.bind_comm]
   apply PMF.bind_congr_on_support
   intro keys _
@@ -332,7 +316,8 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
   intro encapsulated _
   apply PMF.bind_congr_on_support
   intro k hk
-  simpa only [ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret] using
+  simpa only [ProbComp.eval_bind, ProbComp.eval_pure,
+    ProbOracleComp.eval_run_interpret_eq_runWith] using
     eval_run_hybridDEMContinuation E decaps ctBound decBound adversary bit n keys.1 keys.2
       encapsulated.2 k (hct k hk) (hdec k hk)
 

@@ -75,6 +75,9 @@ with elements drawn from fair coins, each with probability at most `2 / p`
 ## Main results
 
 * `Cslib.Complexity.QBFProtocol.acceptProb_honest_verify`: perfect completeness.
+* `Cslib.Complexity.QBFProtocol.acceptProbWith_bind_ite_le_add`,
+  `Cslib.Complexity.QBFProtocol.acceptProbWith_sample_le`: the soundness bounds for one round at a
+  binary connective and at an operator, against an arbitrary oracle.
 * `Cslib.Complexity.QBFProtocol.acceptProb_verify_le`,
   `Cslib.Complexity.QBFProtocol.acceptProb_verify_uniform_le`: soundness against every prover.
 * `Cslib.Complexity.QBFProtocol.acceptProb_honest_arithmetize`,
@@ -188,7 +191,76 @@ theorem acceptProb_honest_verify (e : ArithQBF V) (r : V → F) :
   rw [acceptProbWith, run_honest_verify, PMF.pure_map, PMF.pure_apply]
   exact ite_eq_left rfl
 
-/-! ### Soundness -/
+/-! ### Soundness
+
+The two kinds of rounds are bounded once, for an arbitrary oracle, and both verifiers of this
+directory use these bounds: `Cslib.Complexity.QBFProtocol.verify` here and
+`Cslib.Complexity.QBFProtocol.verifyAt` in `Classes.IP.TQBF.Tokens`. -/
+
+section Rounds
+
+variable {Q : Type} {spec : Q → Type} {S : Type} (oracle : (q : Q) → StateT S PMF (spec q))
+
+/-- **A checked query**: sending `q` and continuing with `next l` only when the reply `l` passes
+`check` accepts with probability at most `B` if, for every passing reply `l`, `next l` accepts with
+probability at most `B` from every oracle state. -/
+theorem acceptProbWith_query_ite_le (q : Q) (check : spec q → Prop) [DecidablePred check]
+    {next : spec q → ProbOracleComp spec Bool} {B : ℝ≥0∞}
+    (hnext : ∀ l, check l → ∀ s, acceptProbWith oracle (next l) s ≤ B) (s : S) :
+    acceptProbWith oracle
+      (ProbOracleComp.query (spec := spec) q >>= fun l => if check l then next l else pure false)
+      s ≤ B := by
+  rw [ProbOracleComp.acceptProbWith_query_bind]
+  refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
+  split_ifs with hcheck
+  · exact hnext x.1 hcheck x.2
+  · rw [ProbOracleComp.acceptProbWith_pure]
+    exact zero_le
+
+/-- **The round at a binary connective**: running `second` only after `first` accepted accepts
+with probability at most `B₁ + B₂` if `first` accepts with probability at most `B₁` or `second`
+accepts with probability at most `B₂` from every state. At a false claim about a connective, one
+of the two claims passed on is false. -/
+theorem acceptProbWith_bind_ite_le_add {first second : ProbOracleComp spec Bool}
+    {B₁ B₂ : ℝ≥0∞} (h : (∀ s, acceptProbWith oracle first s ≤ B₁) ∨
+      ∀ s, acceptProbWith oracle second s ≤ B₂) (s : S) :
+    acceptProbWith oracle (first >>= fun b => if b then second else pure false) s ≤ B₁ + B₂ := by
+  rcases h with h₁ | h₂
+  · exact (ProbOracleComp.acceptProbWith_bind_ite_le oracle _ _ _).trans ((h₁ s).trans le_self_add)
+  · rw [ProbOracleComp.acceptProbWith_bind]
+    refine (Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_).trans le_add_self
+    cases x.1
+    · simp only [Bool.false_eq_true, ↓reduceIte, ProbOracleComp.acceptProbWith_pure]
+      exact zero_le
+    · exact h₂ x.2
+
+omit [DecidableEq F] in
+/-- **The round at an operator** (the Schwartz–Zippel step of the sum-check protocol): let `p` be
+the claimed and `g` the true restriction of the body, two different polynomials of degree at most
+`d`. Drawing `z` from a sampler that gives every element probability at most `ε` and continuing
+with `next z` accepts with probability at most `d * ε + B` if `next z` accepts with probability at
+most `B` whenever `p` and `g` differ at `z`: they agree on at most `d` points. -/
+theorem acceptProbWith_sample_le [IsDomain F] {ε : ℝ≥0∞}
+    (hsampler : ∀ z, ProbComp.eval sampler z ≤ ε) {p g : F[X]} {d : ℕ} (hne : p ≠ g)
+    (hp : p.natDegree ≤ d) (hg : g.natDegree ≤ d) {next : F → ProbOracleComp spec Bool}
+    {B : ℝ≥0∞} {s : S} (hnext : ∀ z, p.eval z ≠ g.eval z → acceptProbWith oracle (next z) s ≤ B) :
+    acceptProbWith oracle (ProbOracleComp.sample sampler >>= next) s ≤ d * ε + B := by
+  classical
+  rw [ProbOracleComp.acceptProbWith_sample_bind]
+  have hne' : p - g ≠ 0 := sub_ne_zero.2 hne
+  have hcard : ((p - g).roots.toFinset.card : ℝ≥0∞) ≤ d := by
+    exact_mod_cast (Multiset.toFinset_card_le _).trans
+      ((card_roots' _).trans ((natDegree_sub_le _ _).trans (max_le hp hg)))
+  refine (Probability.PMF.tsum_mul_le_card_mul_add _ hsampler (p - g).roots.toFinset
+    fun z => ?_).trans (by gcongr)
+  by_cases hz : p.eval z = g.eval z
+  · have : z ∈ (p - g).roots.toFinset := by
+      rw [Multiset.mem_toFinset, mem_roots hne', IsRoot, eval_sub, hz, sub_self]
+    simp only [this, ↓reduceIte]
+    exact (ProbOracleComp.acceptProbWith_le_one _ _ _).trans le_self_add
+  · exact (hnext z hz).trans le_add_self
+
+end Rounds
 
 /-- **Soundness**: over an integral domain, if the sampler gives every element probability at most
 `ε`, every prover is accepted on a false claim with probability at most `e.roundDegree * ε`. -/
@@ -211,59 +283,24 @@ theorem acceptProb_verify_le [IsDomain F] {ε : ℝ≥0∞}
     rw [verify, ArithQBF.roundDegree]
     exact ih (fun h => hc (by rw [ArithQBF.eval_not, h, sub_sub_cancel])) s
   | bin o e₁ e₂ ih₁ ih₂ =>
-    rw [verify, ProbOracleComp.acceptProbWith_query_bind]
-    refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
-    split_ifs with hcheck
-    · by_cases h₁ : e₁.eval r = x.1.getD 0 0
-      · have h₂ : e₂.eval r ≠ x.1.getD 1 0 := fun h₂ =>
-          hc (by rw [ArithQBF.eval_bin, h₁, h₂, hcheck])
-        rw [ProbOracleComp.acceptProbWith_bind]
-        refine (Probability.PMF.tsum_mul_le_of_forall_le (B := (e₂.roundDegree : ℝ≥0∞) * ε) _
-          fun y => ?_).trans ?_
-        · cases y.1
-          · simp only [Bool.false_eq_true, ↓reduceIte, ProbOracleComp.acceptProbWith_pure]
-            exact zero_le
-          · simp only [↓reduceIte]
-            exact ih₂ h₂ _
-        · rw [ArithQBF.roundDegree, Nat.cast_add, add_mul]
-          exact le_add_self
-      · refine (ProbOracleComp.acceptProbWith_bind_ite_le respond _ _ _).trans ((ih₁ h₁ _).trans ?_)
-        rw [ArithQBF.roundDegree, Nat.cast_add, add_mul]
-        exact le_self_add
-    · rw [ProbOracleComp.acceptProbWith_pure]
-      exact zero_le
+    rw [verify, ArithQBF.roundDegree, Nat.cast_add, add_mul]
+    refine acceptProbWith_query_ite_le respond _ _ (fun l hcheck s => ?_) s
+    refine acceptProbWith_bind_ite_le_add respond ?_ s
+    by_cases h₁ : e₁.eval r = l.getD 0 0
+    · exact .inr (ih₂ fun h₂ => hc (by rw [ArithQBF.eval_bin, h₁, h₂, hcheck]))
+    · exact .inl (ih₁ h₁)
   | op o v e ih =>
-    rw [verify, ProbOracleComp.acceptProbWith_query_bind]
-    refine Probability.PMF.tsum_mul_le_of_forall_le _ fun x => ?_
-    dsimp only
-    split_ifs with hcheck
-    · rw [ProbOracleComp.acceptProbWith_sample_bind]
-      set g := e.restrict r v
-      set p := ofCoeffList (x.1.take (e.degBound v + 1))
-      have hp (z : F) : evalCoeffList z (x.1.take (e.degBound v + 1)) = p.eval z :=
-        (eval_ofCoeffList z _).symm
-      have hg (z : F) : g.eval z = e.eval (Function.update r v z) := e.eval_restrict r v z
-      have hne : p - g ≠ 0 := by grind [sub_eq_zero, ArithQBF.eval_op]
-      have hdeg : (p - g).natDegree ≤ e.degBound v :=
-        (natDegree_sub_le _ _).trans (max_le ((natDegree_ofCoeffList_le _).trans (by
-          rw [List.length_take]; omega)) (e.natDegree_restrict_le r v))
-      classical
-      have hcard : ((p - g).roots.toFinset.card : ℝ≥0∞) ≤ e.degBound v := by
-        exact_mod_cast (Multiset.toFinset_card_le _).trans ((card_roots' _).trans hdeg)
-      refine (Probability.PMF.tsum_mul_le_card_mul_add _ hsampler (p - g).roots.toFinset
-        (B := e.roundDegree * ε) fun z => ?_).trans ?_
-      · by_cases hz : p.eval z = g.eval z
-        · have : z ∈ (p - g).roots.toFinset := by
-            rw [Multiset.mem_toFinset, mem_roots hne, IsRoot, eval_sub, hz, sub_self]
-          simp only [this, ↓reduceIte]
-          exact (ProbOracleComp.acceptProbWith_le_one _ _ _).trans le_self_add
-        · rw [hp]
-          refine (ih (fun h => hz ?_) _).trans le_add_self
-          rw [hg, h]
-      · rw [ArithQBF.roundDegree, Nat.cast_add, add_mul]
-        gcongr
-    · rw [ProbOracleComp.acceptProbWith_pure]
-      exact zero_le
+    rw [verify, ArithQBF.roundDegree, Nat.cast_add, add_mul]
+    refine acceptProbWith_query_ite_le respond _ _ (fun l hcheck s => ?_) s
+    set L := l.take (e.degBound v + 1)
+    have hL (z : F) : evalCoeffList z L = (ofCoeffList L).eval z := (eval_ofCoeffList z _).symm
+    have hg (z : F) := e.eval_restrict r v z
+    refine acceptProbWith_sample_le sampler respond hsampler (p := ofCoeffList L)
+      (g := e.restrict r v) (fun h => hc ?_) ((natDegree_ofCoeffList_le L).trans (by
+        rw [List.length_take]; omega)) (e.natDegree_restrict_le r v) fun z hz => ?_
+    · rw [ArithQBF.eval_op, ← hg, ← hg, ← h, ← hL, ← hL, hcheck]
+    · rw [hL]
+      exact ih (fun h => hz (by rw [hg, h])) s
 
 /-- **Soundness for uniform samples**: with ring elements drawn uniformly from a finite integral
 domain, every prover is accepted on a false claim with probability at most

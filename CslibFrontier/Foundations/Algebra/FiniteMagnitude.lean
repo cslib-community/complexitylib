@@ -17,6 +17,7 @@ import Mathlib.Tactic.Linarith
 ## Main results
 
 * `Finset.abs_sum_mul_le`: bounded signed linear combinations.
+* `Finset.sum_mul_le_of_card_support_le`: sums of bounded products with few nonzero factors.
 * `Finset.abs_prod_le_one`: products of coefficients bounded by one.
 * `List.abs_sum_map_le`: a sum of at most unit integers is bounded by the list length.
 
@@ -40,6 +41,23 @@ variable {ι R : Type*}
 theorem abs_sum_le_card_mul [Ring R] [LinearOrder R] [IsOrderedRing R] (s : Finset ι) {f : ι → R}
     {A : R} (h : ∀ i ∈ s, |f i| ≤ A) : |∑ i ∈ s, f i| ≤ s.card * A :=
   (abs_sum_le_sum_abs f s).trans ((sum_le_card_nsmul s _ A h).trans_eq (nsmul_eq_mul _ _))
+
+/-- A sum of products `A i * D i` over `s` in which at most `K` of the factors `A i` are nonzero,
+each at most `CA`, and every `D i` lies in `[0, CD]`, is at most `K * CA * CD`. -/
+theorem sum_mul_le_of_card_support_le [Semiring R] [PartialOrder R] [IsOrderedRing R]
+    [DecidableEq R] (s : Finset ι) {A D : ι → R} {CA CD : R} {K : ℕ} (hCA : 0 ≤ CA)
+    (hCD : 0 ≤ CD) (hA : ∀ i ∈ s, A i ≤ CA) (hD0 : ∀ i ∈ s, 0 ≤ D i)
+    (hD : ∀ i ∈ s, D i ≤ CD) (hK : #{i ∈ s | A i ≠ 0} ≤ K) :
+    ∑ i ∈ s, A i * D i ≤ K * CA * CD := by
+  calc
+    _ = ∑ i ∈ s with A i ≠ 0, A i * D i :=
+      (sum_filter_of_ne fun _ _ h => left_ne_zero_of_mul h).symm
+    _ ≤ #{i ∈ s | A i ≠ 0} • (CA * CD) := sum_le_card_nsmul _ _ _ fun i hi => by
+      have hi := (mem_filter.mp hi).1
+      exact mul_le_mul (hA i hi) (hD i hi) (hD0 i hi) hCA
+    _ ≤ K * CA * CD := by
+      rw [nsmul_eq_mul, mul_assoc]
+      exact mul_le_mul_of_nonneg_right (Nat.mono_cast hK) (mul_nonneg hCA hCD)
 
 /-- If `|c i| ≤ 1` and `|a i| ≤ A` for all `i ∈ s`, then `|∑ i ∈ s, c i * a i| ≤ s.card * A`. -/
 theorem abs_sum_mul_le [Ring R] [LinearOrder R] [IsOrderedRing R] (s : Finset ι) {c a : ι → R}

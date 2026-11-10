@@ -279,9 +279,7 @@ theorem IsReducedBranch.le_two_mul {n n' : ℕ} {sys sys' : List (List (List ℕ
     n' = n - (branchVars n sys).length ∧ n ≤ 2 * n' := by
   obtain ⟨vals, -, hred⟩ := hb
   have hn' := HeavyBranchFold.prepareBranch_freeVars_eq.2 sys' hred
-  have hlam : 2 ≤ Nat.clog 2 n := by
-    have := Nat.clog_mono_right 2 hn
-    rwa [show Nat.clog 2 3 = 2 by decide] at this
+  have hlam : 2 ≤ Nat.clog 2 n := (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).2 (by omega)
   have hs : 2 ≤ (Nat.clog 2 n - 1).sqrt + 1 := by
     have := Nat.sqrt_pos.mpr (by omega : 0 < Nat.clog 2 n - 1); omega
   have hS := (length_branchVars_le hvars).trans (Nat.div_le_div_left hs (by norm_num))
@@ -315,9 +313,7 @@ theorem isSparseBranch_of_isReducedBranch {k c n n' : ℕ} {sys sys' : List (Lis
   obtain ⟨hlen', hshrink⟩ := HeavyBranchFold.prepareBranch_reduced_length_le hred
   set lam := Nat.clog 2 n
   set lam' := Nat.clog 2 n'
-  have hlam'2 : 2 ≤ lam' := by
-    have := Nat.clog_mono_right 2 (by omega : 3 ≤ n')
-    rwa [show Nat.clog 2 3 = 2 by decide] at this
+  have hlam'2 : 2 ≤ lam' := (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).2 (by omega)
   have hlam_sq : lam ≤ lam' ^ 2 :=
     (Nat.clog_two_le_two_mul_of_le_two_mul hn2 (by omega)).trans (by nlinarith)
   have htransfer {α : ℕ} (hα : 2 * α ≤ 2 * c + 4) : lam ^ α ≤ lam' ^ (2 * c + 4) :=
