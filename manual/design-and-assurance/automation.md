@@ -55,6 +55,7 @@ say which.
 | `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `simp only [client_simps]` (simp set) | `DataStructure.StateTransition`; `Computability.WordRAM.Realization.Basic` for `memoryCost` | splits `clientResult`, `clientState`, `clientHistory`, `totalCost`, `ValidHistory` and `memoryCost` at the binds of a client | [Relational operations and adaptive clients](../algorithms-and-memory/memory-specifications.md#relational-operations-and-adaptive-clients) |
 
 **Circuits, logic and probability**
 
@@ -70,9 +71,12 @@ say which.
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
 | `pmf_swap`, `pmf_swap with x y` | `Tactic.PMFSwap` | an equation of distributions that draw the same independent samples in different orders | [Reorder independent samples](#reorder-independent-samples) |
 | `pmf_hoist q`, `pmf_hoist q at h` | `Tactic.PMFSwap` | moves the samples of `q` toward the front of their `PMF.bind` chains | [Reorder independent samples](#reorder-independent-samples) |
+| `supp_cases h`, `supp_cases h [p] with pat`; `simp only [supp_norm]` (simp set) | `Tactic.SuppCases` | inverts `h : x ∈ m.support` for a `PMF` or `OracleComp` program into the results of its parts | [Invert a support membership](../workflows/probabilistic-workflows.md#invert-a-support-membership) |
+| `negligible`, `negligible using hle`, `negligible eventually hle` | `Tactic.Negligible` | `Cslib.Crypto.Negligible f` | [Close negligibility bounds](#close-negligibility-bounds) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
-simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, and `fo_realize`, used by `fo_simp`,
+simp sets `wram_simps` (used by `wram_exec` and `wram_simp`), `fo_realize` (used by `fo_simp`)
+and `supp_norm` (used by `supp_cases`),
 and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`, `FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
@@ -240,12 +244,14 @@ and the diagnostics for a goal of the wrong form, a value that cannot be evaluat
 with nothing to execute. Calls, register renaming and memory frames are covered in
 [routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames).
 
-If `ram_eval` does not close its goal, check that every program given by name is among its simp
-lemmas, that `n` covers the iterations of every loop, and that the simp lemmas decide each
-condition the run tests: pass a hypothesis such as `h : x.regs i < x.regs j` explicitly, as in
-`ram_eval [p, h]`, because its `simp` call does not read hypotheses from the context. Fitting
-conditions are decided from the `Fits` hypotheses in context. A loop with a symbolic iteration
-count needs an invariant, such as `ExecWithin.loop_count` in the
+If `ram_eval` does not close its goal, its error names the failing step: a goal of neither form,
+a program `simp` cannot evaluate, a run that returns `none`, an undecided condition or an
+instruction bound that `omega` cannot prove, showing the last two. Check that every program given
+by name is among its simp lemmas, that `n` covers the iterations of every loop, and that the simp
+lemmas decide each condition the run tests: pass a hypothesis such as `h : x.regs i < x.regs j`
+explicitly, as in `ram_eval [p, h]`, because its `simp` call does not read hypotheses from the
+context. Fitting conditions are decided from the `Fits` hypotheses in context. A loop with a
+symbolic iteration count needs an invariant, such as `ExecWithin.loop_count` in the
 [counting-loop chapter](../algorithms-and-memory/wordram-and-bridges.md#proving-a-constant-cost-counting-loop),
 not a larger `n`.
 
