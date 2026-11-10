@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.SemiCircuit
 public import Cslib.Computability.Circuit.Full
 public import Mathlib.Data.Fin.VecNotation
 import CslibFrontier.Computability.Circuit.Program
+import CslibFrontier.Computability.Circuit.Topology
 
 /-!
 # The semi-circuit of a circuit
@@ -138,18 +139,14 @@ theorem wellFormed_ofCircuit (C : Circuit (fullSignature 2 Bool) n 1) :
     simp only [ofCircuit, Finset.mem_range, Finset.mem_Ico] at hi hg
     omega
   disjoint_aux_gates := Finset.disjoint_empty_left _
-  reads_lt J hJ i hi hr := by
+  reads_lt J hJ i _ hr := by
     obtain ⟨k, rfl⟩ := exists_eq_add_of_mem_gates hJ
     rw [ofCircuit_gate] at hr
-    obtain ⟨a, ha⟩ := reads_lineGate hr
-    simp only [ofCircuit, Finset.mem_Ico] at hi
-    cases hw : (C.program.lines k).wires a with
-    | input i' => rw [hw] at ha; simp only [wireName] at ha; omega
-    | gate j =>
-      rw [hw] at ha
-      simp only [wireName] at ha
-      rw [← ha]
-      exact Nat.add_lt_add_left (C.program.lt_of_lines_wires_eq_gate k a j hw) n
+    obtain ⟨a, rfl⟩ := reads_lineGate hr
+    -- `wireName` is the wire numbering `Wire.toNat`, so this is `Circuit.isOrdered_topology`.
+    have hname (w : Wire n C.size) : wireName w = w.toNat := by cases w <;> rfl
+    rw [hname]
+    exact C.isOrdered_topology k a
   reads_live J hJ i hr := by
     obtain ⟨k, rfl⟩ := exists_eq_add_of_mem_gates hJ
     rw [ofCircuit_gate] at hr
