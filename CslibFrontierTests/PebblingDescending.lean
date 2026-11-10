@@ -62,12 +62,12 @@ theorem walk_end : walk 7 = indicatorList ({3} : Finset (Fin 4)) := by
   decide
 
 -- The correctness theorem returns the value of index `3`.
-example : lookupD (tables 7) 3 = 5 :=
-  lookupD_eq_of_tableStep (N := 4) child gates 1 child_lt rfl value_succ walk tables 7
+example : (tables 7).lookup 3 = some 5 :=
+  lookup_eq_of_tableStep (N := 4) child gates 1 child_lt rfl value_succ walk tables 7
     (by decide) rfl walk_legal rfl (fun _ _ => rfl) (v := 3) walk_end
 
 -- The same value, computed directly; the table never holds more than three entries.
-example : lookupD (tables 7) 3 = 5 ∧ ∀ j ≤ 7, (tables j).length ≤ 3 := by
+example : (tables 7).lookup 3 = some 5 ∧ ∀ j ≤ 7, (tables j).length ≤ 3 := by
   decide
 
 -- The dependency graph is a DAG of in-degree at most two.
