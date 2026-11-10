@@ -44,6 +44,7 @@ import CslibFrontier.Logics.Propositional.CNF.Majority
 import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
@@ -85,6 +86,7 @@ import CslibFrontier.Computability.Complexity.Problems.Clique
 import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
@@ -814,8 +816,58 @@ example : ComputableInPolyTime
 Original variable labels remain binary. Iteration uses actual list lengths,
 never a maximum label or supplied successor index. Nullary port order is
 vacuous; semantic rejection and exact relation arity remain separate guards.
-These theorems do not yet construct a rotation from a bare instance or establish
-geometric/source correspondence, planar duality, an edge solver or the dichotomy.
+These supplied-certificate theorems leave bare-instance construction, geometric
+correspondence, an edge solver and the dichotomy open. The finite duality and
+Boolean difference interface is proved below.
+
+
+# Indexed Duality and Boolean Difference Lifting
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting`
+for the complete graph entry point. The actual dual keeps listed edge positions,
+including loops and parallel occurrences, and gives every source face its least
+actual dart index as a vertex name. Its vertex permutation is the source face
+successor. Complete face/incident-vertex and component bijections establish:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
+    r.dualRotation.NumericalGenusZero ↔ r.NumericalGenusZero :=
+  r.numericalGenusZero_dual_iff hG
+```
+
+The endpoint guard is essential. Isolated source vertices have no darts and
+are omitted by dualization; their conventional Euler equation is trivial.
+Empty and disconnected graphs, duplicate declarations and sparse names are
+covered. Face parity counts dart occurrences with boundary multiplicity.
+For an indexed Boolean edge assignment, all face parities vanish exactly when
+it is the endpoint XOR of vertex spins:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hgenus : r.NumericalGenusZero) (x : Fin G.2.length → Bool) :
+    r.FaceEven x ↔ ∃ spin : ℕ → Bool, G.edgeGradient spin = x :=
+  r.faceEven_iff_exists_vertexSpins hG hgenus x
+```
+
+The proof discharges the characteristic-two incidence-rank and connectivity
+facts internally. The gradient-to-parity direction telescopes without either
+premise:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G) (spin : ℕ → Bool) :
+    r.FaceEven (G.edgeGradient spin) :=
+  r.faceEven_edgeGradient spin
+```
+
+`CslibFrontierTests/RotationDual.lean` contains concrete bridge, loop, digon,
+torus and disconnected sparse-name cases. These are finite combinatorial
+results. Geometric realization, bare recognition, native compilation, the
+whole cyclic-difference CSP reduction and recursive solver remain open.
 
 
 # Delta-Matroid Closure for Local Contraction
