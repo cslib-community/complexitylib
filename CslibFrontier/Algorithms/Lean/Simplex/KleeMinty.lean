@@ -763,14 +763,15 @@ theorem dantzigRun_dict {N : ℕ} (hN : N ≤ 2 ^ n - 1) (f : ℕ) :
   | zero =>
     rcases hN.lt_or_eq with h | rfl
     · obtain ⟨r, s, hstep, -⟩ := dantzigStep_dict (K := K) h
-      simp only [Dictionary.dantzigRun, hstep, add_zero, h, ↓reduceIte]
-    · simp only [Dictionary.dantzigRun, dantzigStep_dict_top, add_zero, lt_irrefl, ↓reduceIte]
+      simp only [Dictionary.dantzigRun, Dictionary.runWith, hstep, add_zero, h, ↓reduceIte]
+    · simp only [Dictionary.dantzigRun, Dictionary.runWith, dantzigStep_dict_top, add_zero,
+        lt_irrefl, ↓reduceIte]
   | succ f ih =>
     rcases hN.lt_or_eq with h | rfl
     · obtain ⟨r, s, hstep, hpiv⟩ := dantzigStep_dict (K := K) h
-      simp only [Dictionary.dantzigRun, hstep, hpiv]
+      simp only [Dictionary.dantzigRun, Dictionary.runWith, hstep, hpiv] at ih ⊢
       rw [ih (by omega), show N + 1 + f = N + (f + 1) by omega]
-    · simp only [Dictionary.dantzigRun, dantzigStep_dict_top]
+    · simp only [Dictionary.dantzigRun, Dictionary.runWith, dantzigStep_dict_top]
       rw [ite_eq_right (by omega)]
 
 theorem objConst_dict_lt {N : ℕ} (hN : N < 2 ^ n - 1) :
