@@ -65,7 +65,8 @@ The gap `f = o(g)` and the lower bound `log n ≤ g n` are those of the determin
 
 ## Main definitions
 
-* `Cslib.Complexity.nspaceDiagonal`: the nondeterministic diagonal within a space budget.
+* `Cslib.Complexity.nspaceDiagonal`: the nondeterministic diagonal within a space budget, with
+  membership `Cslib.Complexity.mem_nspaceDiagonal`.
 
 ## Main results
 
