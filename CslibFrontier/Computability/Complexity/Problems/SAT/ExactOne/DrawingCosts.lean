@@ -74,7 +74,7 @@ private theorem clause_routes_grouped (φ : CNF ℕ) (d : Graph.OrthogonalDrawin
   let g := profilePrefixGeometry (clauseProfile c)
   let s := clausePorts φ d i
   let f (e : LocalIncidence) : LocalIncidence :=
-    (e.1, e.variableIndex, if e.variableIndex ∈ g.terminalVariables then
+    (e.clauseIndex, e.variableIndex, if e.variableIndex ∈ g.terminalVariables then
       collarPrefixRoute s (terminalIndex g e.variableIndex) e.route
       else collarRoute (collarReflected s) e.route)
   simpa only [clauseGeometry, collaredPrefixGeometry, List.map_flatMap, List.filter_map,
