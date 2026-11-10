@@ -260,8 +260,7 @@ theorem scan_while_safe {n K V w : ℕ}
   · intro a s hi ha _
     obtain ⟨hfirst, hinv, hrest⟩ := remainingEdges_step M u du b a s ha hi.2.1 hi.2.2
     have hres : (Memory.spec 0).clientResult s (do step a; pure (a + 1)) = a + 1 := by
-      rw [StateTransitionSpec.clientResult_bind]
-      rfl
+      simp only [client_simps]
     have hstate : (Memory.spec 0).clientState s (do step a; pure (a + 1)) =
         (Memory.spec w).clientState s (link M.methods (relaxEdge u du a)) := by
       rw [StateTransitionSpec.clientState_bind]

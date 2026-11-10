@@ -1250,162 +1250,46 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
   have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
   have hfit_base : Fits w base := hfit_btab.of_le (by omega)
-  set s1 := x.set regCond u.val
-  have e1 : Exec w (.op (.copy regCond regU) : Code .exact 16) x s1 1 := by
-    simpa [s1, hu] using (Exec.copy (B := .exact) (w := w) (d := regCond) (s := regU) (x := x))
-  have hs1_base : (s1.comap dtMap).regs 0 = base := by
-    simpa +decide [s1, dtMap, Data.comap] using hrep.regs_base
-  have hs1_key : (s1.comap dtMap).regs 1 = u.val := by
-    simp +decide [s1, dtMap, Data.comap]
-  obtain ⟨yPrim, hprim_exec, hyPrim_mem, hyPrim_base, hyPrim_key, hyPrim_out⟩ :=
-    DoubleTabulation.evalCode_exec u hs1_base hs1_key hrep.primary_rep
-      hfit_btab hfit_powB hfit_powM hu_fit
-  set s2 := yPrim.extend dtMap s1
-  have e2 : Exec w
-      ((DoubleTabulation.evalCode (numChars c_exp) (tupleLen c_exp) (charBits n_max)).rename dtMap)
-      s1 s2 (DoubleTabulation.evalSteps (numChars c_exp) (tupleLen c_exp)) :=
-    hprim_exec.rename injective_dtMap
-  have hs2_mem : s2.mem = x.mem := hyPrim_mem
-  have hs2_base : s2.regs regBase = base := by
-    change (s2.comap dtMap).regs 0 = base
-    rw [Data.comap_extend injective_dtMap]
-    exact hyPrim_base
-  have hs2_cond : s2.regs regCond = u.val := by
-    change (s2.comap dtMap).regs 1 = u.val
-    rw [Data.comap_extend injective_dtMap]
-    exact hyPrim_key
-  have hs2_addr : s2.regs regAddr = (primaryHash θ u).val := by
-    change (s2.comap dtMap).regs 2 = (primaryHash θ u).val
-    rw [Data.comap_extend injective_dtMap]
-    rcases θ with ⟨⟨T₁, T₂⟩, _⟩
-    exact hyPrim_out
-  have hs2_op : s2.regs regOp = x.regs regOp := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s1]
-  have hs2_u : s2.regs regU = u.val := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s1, hu]
-  have hs2_v : s2.regs regV = x.regs regV := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s1]
-  -- Execute opMidEvalCode
-  set s3 := s2.set regSave (primaryHash θ u).val
-  have e3 : Exec w (.op (.copy regSave regAddr) : Code .exact 16) s2 s3 1 := by
-    simpa [s3, hs2_addr] using
-      (Exec.copy (B := .exact) (w := w) (d := regSave) (s := regAddr) (x := s2))
-  set s4 := s3.set regAddr (singleTabSpace c_exp n_max)
-  have e4 : Exec w (.op (.const regAddr (singleTabSpace c_exp n_max)) : Code .exact 16) s3 s4 1 :=
-    Exec.const hfit_tab
-  set s5 := s4.set regBase (base + singleTabSpace c_exp n_max)
-  have e5 : Exec w (.op (.exactBin .add regBase regBase regAddr) : Code .exact 16) s4 s5 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s4, s3, hs2_base]) hfit_btab
-  have eMid : Exec w (opMidEvalCode c_exp n_max) s2 s5 3 := e3.seq (e4.seq e5)
-  -- Execute stride DoubleTabulation.evalCode
-  have hs5_base : (s5.comap dtMap).regs 0 = base + singleTabSpace c_exp n_max := by
-    simp +decide [s5, dtMap, Data.comap]
-  have hs5_key : (s5.comap dtMap).regs 1 = u.val := by
-    simp +decide [s5, s4, s3, dtMap, Data.comap, hs2_cond]
-  have hs5_mem : (s5.comap dtMap).mem = x.mem := hs2_mem
-  obtain ⟨yStr, hstr_exec, hyStr_mem, hyStr_base, _, hyStr_out⟩ :=
-    DoubleTabulation.evalCode_exec u hs5_base hs5_key (hs5_mem ▸ hrep.stride_rep)
-      hfit_b2tab hfit_powB hfit_powM1 hu_fit
-  set s6 := yStr.extend dtMap s5
-  have e6 : Exec w
-      ((DoubleTabulation.evalCode (numChars c_exp) (tupleLen c_exp) (charBits n_max)).rename dtMap)
-      s5 s6 (DoubleTabulation.evalSteps (numChars c_exp) (tupleLen c_exp)) :=
-    hstr_exec.rename injective_dtMap
-  have hs6_mem : s6.mem = x.mem := hyStr_mem.trans hs5_mem
-  have hs6_base : s6.regs regBase = base + singleTabSpace c_exp n_max := by
-    change (s6.comap dtMap).regs 0 = base + singleTabSpace c_exp n_max
-    rw [Data.comap_extend injective_dtMap]
-    exact hyStr_base
-  have hs6_addr : s6.regs regAddr = (rawStrideHash θ u).val := by
-    change (s6.comap dtMap).regs 2 = (rawStrideHash θ u).val
-    rw [Data.comap_extend injective_dtMap]
-    rcases θ with ⟨_, ⟨S₁, S₂⟩⟩
-    exact hyStr_out
-  have hs6_save : s6.regs regSave = (primaryHash θ u).val := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3]
-  have hs6_op : s6.regs regOp = x.regs regOp := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3, hs2_op]
-  have hs6_u : s6.regs regU = u.val := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3, hs2_u]
-  have hs6_v : s6.regs regV = x.regs regV := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3, hs2_v]
-  -- Execute opPostEvalCode
   have hraw_lt := two_mul_rawStrideHash_add_one_lt θ u
   have hM_eq : 2 ^ bucketBits n_max = numBuckets n_max := rfl
   have hfit_2raw : Fits w ((rawStrideHash θ u).val + (rawStrideHash θ u).val) :=
     hfit_powM.of_le (by omega)
   have hfit_stride : Fits w ((strideHash θ u).val) :=
     hfit_powM.of_le (by have := (strideHash θ u).isLt; omega)
-  have hfit_so : Fits w (slotOffset c_exp n_max) := hS.of_le (by omega)
   have hfit_bso : Fits w (base + slotOffset c_exp n_max) := hS.of_le (by omega)
-  have hfit_m : Fits w (numBuckets n_max) := hS.of_le (by omega)
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  set s7 := s6.set regCond (singleTabSpace c_exp n_max)
-  have e7 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) s6 s7 1 :=
-    Exec.const hfit_tab
-  set s8 := s7.set regBase base
-  have e8 : Exec w (.op (.exactBin .sub regBase regBase regCond) : Code .exact 16) s7 s8 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s7, hs6_base]) hfit_base
-  set s9 := s8.set regCond 1
-  have e9 : Exec w (.op (.const regCond 1) : Code .exact 16) s8 s9 1 :=
-    Exec.const hfit_1
-  set s10 := s9.set regStride ((rawStrideHash θ u).val + (rawStrideHash θ u).val)
-  have e10 : Exec w (.op (.exactBin .add regStride regAddr regAddr) : Code .exact 16) s9 s10 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s9, s8, s7, hs6_addr]) hfit_2raw
-  set s11 := s10.set regStride (strideHash θ u).val
-  have e11 : Exec w (.op (.exactBin .add regStride regStride regCond) : Code .exact 16)
-      s10 s11 1 := by
-    refine Exec.alu ?_ hfit_stride
-    have hval : (rawStrideHash θ u).val + (rawStrideHash θ u).val + 1 = (strideHash θ u).val := by
-      rw [val_strideHash]
-      omega
-    simp +decide [StandardOp.evalExact, s10, s9, hval]
-  set s12 := s11.set regSlot (primaryHash θ u).val
-  have e12 : Exec w (.op (.copy regSlot regSave) : Code .exact 16) s11 s12 1 := by
-    simpa +decide [s12, s11, s10, s9, s8, s7, hs6_save] using
-      (Exec.copy (B := .exact) (w := w) (d := regSlot) (s := regSave) (x := s11))
-  set s13 := s12.set regSlotBase (slotOffset c_exp n_max)
-  have e13 : Exec w (.op (.const regSlotBase (slotOffset c_exp n_max)) : Code .exact 16)
-      s12 s13 1 :=
-    Exec.const hfit_so
-  set s14 := s13.set regSlotBase (base + slotOffset c_exp n_max)
-  have e14 : Exec w (.op (.exactBin .add regSlotBase regBase regSlotBase) : Code .exact 16)
-      s13 s14 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s13, s12, s11, s10, s9, s8]) hfit_bso
-  set s15 := s14.set regMaskM (numBuckets n_max - 1)
-  have e15 : Exec w (.op (.const regMaskM (numBuckets n_max - 1)) : Code .exact 16) s14 s15 1 :=
-    Exec.const hfit_mask_M
-  set s16 := s15.set regM (numBuckets n_max)
-  have e16 : Exec w (.op (.const regM (numBuckets n_max)) : Code .exact 16) s15 s16 1 :=
-    Exec.const hfit_m
-  set s17 := s16.set regZero 0
-  have e17 : Exec w (.op (.const regZero 0) : Code .exact 16) s16 s17 1 :=
-    Exec.const hfit_0
-  have ePost : Exec w (opPostEvalCode c_exp n_max) s6 s17 11 :=
-    e7.seq (e8.seq (e9.seq (e10.seq (e11.seq
-      (e12.seq (e13.seq (e14.seq (e15.seq (e16.seq e17)))))))))
-  have eAll : ExecWithin w (opEvalHashesCode c_exp n_max) x s17 (hashEvalSteps c_exp) := by
-    refine (e1.within.seq (e2.within.seq (eMid.within.seq (e6.within.seq ePost.within)))).mono ?_
-    dsimp only [hashEvalSteps]
+  have hval : (rawStrideHash θ u).val + (rawStrideHash θ u).val + 1 = (strideHash θ u).val := by
+    rw [val_strideHash]
     omega
-  refine ⟨s17, eAll, hs6_mem,
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8],
-    by rw [probePerm_zero]; simp +decide [s17, s16, s15, s14, s13, s12],
-    by simp +decide [s17, s16, s15, s14],
-    by simp +decide [s17, s16, s15],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11],
-    by simp +decide [s17, s16],
-    by simp +decide [s17],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_op],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_u],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_v]⟩
+  refine WP.exists_execWithin (WP.Exact.toWP ?_)
+  unfold opEvalHashesCode opMidEvalCode opPostEvalCode
+  wram_exec [hu]
+  wram_call (DoubleTabulation.evalCode_exec u (x := (x.set regCond u.val).comap dtMap)
+    (by simp only [Data.comap_regs]; wram_simp; exact hrep.regs_base)
+    (by simp only [Data.comap_regs]; wram_simp) hrep.primary_rep hfit_btab hfit_powB hfit_powM
+    hu_fit) renamed injective_dtMap with yP ⟨⟨hyP_mem, hyP_base, hyP_key, hyP_out⟩, hyP_frame⟩
+  have hyP_addr : yP.regs regAddr = (primaryHash θ u).val := by
+    change yP.regs (dtMap 2) = _
+    rcases θ with ⟨⟨T₁, T₂⟩, _⟩
+    exact hyP_out
+  wram_exec [show yP.regs regBase = base from hyP_base, hyP_addr]
+  wram_call (DoubleTabulation.evalCode_exec u (x := (((yP.set regSave (primaryHash θ u).val).set
+      regAddr (singleTabSpace c_exp n_max)).set regBase (base + singleTabSpace c_exp n_max)).comap
+      dtMap)
+    (by simp only [Data.comap_regs]; wram_simp)
+    (by simp only [Data.comap_regs]; wram_simp; exact hyP_key)
+    (by simp only [Data.comap_mem, Data.set_mem, hyP_mem]; exact hrep.stride_rep)
+    hfit_b2tab hfit_powB hfit_powM1 hu_fit)
+    renamed injective_dtMap with yS ⟨⟨hyS_mem, hyS_base, -, hyS_out⟩, hyS_frame⟩
+  have hyS_addr : yS.regs regAddr = (rawStrideHash θ u).val := by
+    change yS.regs (dtMap 2) = _
+    rcases θ with ⟨_, ⟨S₁, S₂⟩⟩
+    exact hyS_out
+  wram_exec [show yS.regs regBase = base + singleTabSpace c_exp n_max from hyS_base, hyS_addr,
+    hyS_frame, hval]
+  rw [probePerm_zero]
+  wram_simp [hyS_frame, hyP_frame, hyS_mem, hyP_mem, hu]
+  simp only [hashEvalSteps]
+  omega
 
 /-- Lookup completion program `finishQueryCode` (`≤ 9` instructions): inspects `used[regSlot]`;
 if `0`, writes `0` (`none`) into `regOp`, and if `1`, loads `val[regSlot]` and writes
@@ -1439,72 +1323,37 @@ theorem finishQueryCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_e
       y.mem = x.mem ∧
       y.regs regBase = base ∧
       y.regs regOp = (match s u with | none => 0 | some v => v + 1) := by
-  let T := extractSlots base c_exp U n_max x.mem
-  let slot := targetSlot (probePerm θ) T u hO
+  have htarget := hrep.table_rep.toTableRep.apply_targetSlot u hO
+  obtain ⟨slot, hslot_def⟩ : ∃ j, targetSlot (probePerm θ) (extractSlots base c_exp U n_max x.mem)
+      u hO = j := ⟨_, rfl⟩
+  rw [hslot_def] at hslot htarget
   have hslot_lt := slot.isLt
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  have hfit_1 : Fits w 1 := hS.of_le (by omega)
-  let sBase := base + slotOffset c_exp n_max
-  let m := numBuckets n_max
+  obtain ⟨sBase, hsB⟩ : ∃ v, base + slotOffset c_exp n_max = v := ⟨_, rfl⟩
+  rw [hsB] at hsbase
   have hfit_a0 : Fits w (sBase + slot.val) := hS.of_le (by omega)
-  have hfit_a1 : Fits w (sBase + slot.val + m) := hS.of_le (by omega)
-  have hfit_a2 : Fits w (sBase + slot.val + m + m) := hS.of_le (by omega)
-  set s1 := d.set regAddr (sBase + slot.val)
-  have e1 : Exec w (.op (.exactBin .add regAddr regSlotBase regSlot) : Code .exact 16) d s1 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase, slot, T]) hfit_a0
-  let usedVal := x.mem (sBase + slot.val)
-  set s2 := s1.set regCond usedVal
-  have e2 : Exec w (.op (.load regCond regAddr) : Code .exact 16) s1 s2 1 := by
-    simpa +decide [s2, s1, hmem, usedVal] using
-      (Exec.load (B := .exact) (w := w) (d := regCond) (a := regAddr) (x := s1))
-  have htarget := hrep.table_rep.toTableRep.apply_targetSlot u hO
+  have hfit_a1 : Fits w (sBase + slot.val + numBuckets n_max) := hS.of_le (by omega)
+  have hfit_a2 : Fits w (sBase + slot.val + numBuckets n_max + numBuckets n_max) :=
+    hS.of_le (by omega)
+  unfold finishQueryCode
   cases hsu : s u with
   | none =>
-    have hT_none : extractSlots base c_exp U n_max x.mem slot = none := by
-      simpa [slot, T, hsu] using htarget
-    have hused0 : usedVal = 0 := (extractSlots_eq_none_iff hrep.slot_wf slot).mp hT_none
-    have hc : (Cond.eq regCond regZero).Holds s2 := by
-      simp +decide [Cond.Holds, s2, s1, hused0, hzero]
-    set s3 := s2.set regOp 0
-    have e3 : Exec w (.op (.const regOp 0) : Code .exact 16) s2 s3 1 := Exec.const hfit_0
-    refine ⟨s3,
-      (e1.within.seq (e2.within.seq (ExecWithin.branch_pos hc e3.within))).mono (by omega),
-      hmem, by simp +decide [s3, s2, s1, hbase], by simp +decide [s3]⟩
+    have hused0 : x.mem (sBase + slot.val) = 0 := by
+      rw [← hsB]
+      exact (extractSlots_eq_none_iff hrep.slot_wf slot).mp (by simpa [hsu] using htarget)
+    wram_exec [hsbase, hslot, hmem, hused0, hzero, hbase]
+    wram_simp [hmem, hbase]
   | some v =>
-    have hT_some : extractSlots base c_exp U n_max x.mem slot = some (u, v) := by
-      simpa [slot, T, hsu] using htarget
-    obtain ⟨hused1, _, hval_eq⟩ := (extractSlots_eq_some_iff hrep.slot_wf slot u v).mp hT_some
+    obtain ⟨hused1, _, hval_eq⟩ :=
+      (extractSlots_eq_some_iff hrep.slot_wf slot u v).mp (by simpa [hsu] using htarget)
+    rw [hsB] at hused1
     have hv_lt : v < V := hrep.vals_bounded u v hsu
     have hfit_v1 : Fits w (v + 1) := hV.of_le (by omega)
-    have hc : ¬(Cond.eq regCond regZero).Holds s2 := by
-      simp +decide [Cond.Holds, s2, s1, usedVal, sBase, hused1, hzero]
-    set s3 := s2.set regAddr (sBase + slot.val + m)
-    have e3 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s2 s3 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s2, s1, hm, m]) hfit_a1
-    set s4 := s3.set regAddr (sBase + slot.val + m + m)
-    have e4 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s3 s4 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s3, s2, s1, hm, m]) hfit_a2
-    have haddr2_eq :
-        sBase + slot.val + m + m =
-          base + slotOffset c_exp n_max + 2 * numBuckets n_max + slot.val := by
-      dsimp only [sBase, m]
+    have haddr2_eq : sBase + slot.val + numBuckets n_max + numBuckets n_max =
+        base + slotOffset c_exp n_max + 2 * numBuckets n_max + slot.val := by
       omega
-    set s5 := s4.set regOp v
-    have e5 : Exec w (.op (.load regOp regAddr) : Code .exact 16) s4 s5 1 := by
-      simpa +decide [s5, s4, s3, s2, s1, hmem, haddr2_eq, hval_eq] using
-        (Exec.load (B := .exact) (w := w) (d := regOp) (a := regAddr) (x := s4))
-    set s6 := s5.set regCond 1
-    have e6 : Exec w (.op (.const regCond 1) : Code .exact 16) s5 s6 1 := Exec.const hfit_1
-    set s7 := s6.set regOp (v + 1)
-    have e7 : Exec w (.op (.exactBin .add regOp regOp regCond) : Code .exact 16) s6 s7 1 :=
-      Exec.alu (by simp +decide [StandardOp.evalExact, s6, s5]) hfit_v1
-    refine ⟨s7,
-      (e1.within.seq (e2.within.seq
-        (ExecWithin.branch_neg hc
-          (e3.within.seq (e4.within.seq (e5.within.seq (e6.within.seq e7.within))))))).mono
-        (by omega),
-      hmem, by simp +decide [s7, s6, s5, s4, s3, s2, s1, hbase], by simp +decide [s7]⟩
+    wram_exec [hsbase, hslot, hmem, hused1, hzero, hm, haddr2_eq, hval_eq, hbase]
+    wram_simp [hmem, hbase]
 
 /-- Insertion completion program `finishInsertCode` (`8` instructions): writes `used[regSlot] := 1`,
 `key[regSlot] := regU`, `val[regSlot] := regV`, and sets `regOp := 0`. -/
@@ -1549,50 +1398,32 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
       Modifies (Block.mk base (space c_exp n_max)).footprint x.mem y.mem := by
   let T := extractSlots base c_exp U n_max x.mem
   let slot := targetSlot (probePerm θ) T u hO
+  have hslot' : d.regs regSlot = slot.val := hslot
   have hslot_lt := slot.isLt
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
   have hso : slotOffset c_exp n_max = 2 * singleTabSpace c_exp n_max := rfl
   have hfit_0 : Fits w 0 := hS.of_le (by omega)
   have hfit_1 : Fits w 1 := hS.of_le (by omega)
-  let sBase := base + slotOffset c_exp n_max
+  set sBase := base + slotOffset c_exp n_max with hsBase
   let m := numBuckets n_max
+  have hm' : d.regs regM = m := hm
   have hfit_a0 : Fits w (sBase + slot.val) := hS.of_le (by omega)
   have hfit_a1 : Fits w (sBase + slot.val + m) := hS.of_le (by omega)
   have hfit_a2 : Fits w (sBase + slot.val + m + m) := hS.of_le (by omega)
   have ha1_eq : sBase + slot.val + m = sBase + m + slot.val := by omega
-  have ha2_eq : sBase + slot.val + m + m = sBase + 2 * m + slot.val := by omega
-  set s1 := d.set regAddr (sBase + slot.val)
-  have e1 : Exec w (.op (.exactBin .add regAddr regSlotBase regSlot) : Code .exact 16) d s1 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, hsbase, hslot, sBase, slot, T]) hfit_a0
-  set s2 := s1.set regCond 1
-  have e2 : Exec w (.op (.const regCond 1) : Code .exact 16) s1 s2 1 := Exec.const hfit_1
-  set s3 := s2.write (sBase + slot.val) 1
-  have e3 : Exec w (.op (.store regAddr regCond) : Code .exact 16) s2 s3 1 := by
-    simpa +decide [s3, s2, s1] using
-      (Exec.store (B := .exact) (w := w) (a := regAddr) (s := regCond) (x := s2))
-  set s4 := s3.set regAddr (sBase + slot.val + m)
-  have e4 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s3 s4 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s3, s2, s1, hm, m]) hfit_a1
-  set s5 := s4.write (sBase + m + slot.val) u.val
-  have e5 : Exec w (.op (.store regAddr regU) : Code .exact 16) s4 s5 1 := by
-    simpa +decide [s5, s4, s3, s2, s1, ha1_eq, hu] using
-      (Exec.store (B := .exact) (w := w) (a := regAddr) (s := regU) (x := s4))
-  set s6 := s5.set regAddr (sBase + slot.val + m + m)
-  have e6 : Exec w (.op (.exactBin .add regAddr regAddr regM) : Code .exact 16) s5 s6 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s5, s4, s3, s2, s1, hm, m]) hfit_a2
-  set s7 := s6.write (sBase + 2 * m + slot.val) v
-  have e7 : Exec w (.op (.store regAddr regV) : Code .exact 16) s6 s7 1 := by
-    simpa +decide [s7, s6, s5, s4, s3, s2, s1, ha2_eq, hv] using
-      (Exec.store (B := .exact) (w := w) (a := regAddr) (s := regV) (x := s6))
-  set s8 := s7.set regOp 0
-  have e8 : Exec w (.op (.const regOp 0) : Code .exact 16) s7 s8 1 := Exec.const hfit_0
-  have eAll := (e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))).within
+  have ha2_eq : sBase + m + slot.val + m = sBase + 2 * m + slot.val := by omega
+  set s8 := ((((((((d.set regAddr (sBase + slot.val)).set regCond 1).write (sBase + slot.val) 1).set
+    regAddr (sBase + m + slot.val)).write (sBase + m + slot.val) u.val).set regAddr
+    (sBase + 2 * m + slot.val)).write (sBase + 2 * m + slot.val) v).set regOp 0) with hs8
+  have eAll : ExecWithin w finishInsertCode d s8 8 := by
+    unfold finishInsertCode
+    wram_exec [hsbase, hslot', hm', hu, hv, ha1_eq, ha2_eq]
   have hs8_mem_below : ∀ a < sBase, s8.mem a = x.mem a := by
     intro a ha
     have hne0 : a ≠ sBase + slot.val := by omega
     have hne1 : a ≠ sBase + m + slot.val := by omega
     have hne2 : a ≠ sBase + 2 * m + slot.val := by omega
-    simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+    simp [s8, Data.write,
       Function.update_of_ne hne0, Function.update_of_ne hne1, Function.update_of_ne hne2, hmem]
   have hprim : DoubleTabulation.SeedRep base (numChars c_exp) (tupleLen c_exp) (charBits n_max)
       (bucketBits n_max) θ.1 s8.mem :=
@@ -1609,13 +1440,13 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   have hs8_slot0 : s8.mem (sBase + slot.val) = 1 := by
     have hne2 : sBase + slot.val ≠ sBase + 2 * m + slot.val := by omega
     have hne1 : sBase + slot.val ≠ sBase + m + slot.val := by omega
-    simp [s8, s7, s6, s5, s4, s3, Data.write,
+    simp [s8, Data.write,
       Function.update_of_ne hne2, Function.update_of_ne hne1]
   have hs8_slot1 : s8.mem (sBase + m + slot.val) = u.val := by
     have hne2 : sBase + m + slot.val ≠ sBase + 2 * m + slot.val := by omega
-    simp [s8, s7, s6, s5, Data.write, Function.update_of_ne hne2]
+    simp [s8, Data.write, Function.update_of_ne hne2]
   have hs8_slot2 : s8.mem (sBase + 2 * m + slot.val) = v := by
-    simp [s8, s7, Data.write]
+    simp [s8, Data.write]
   have hwf : SlotArrayWF base c_exp U n_max s8.mem := by
     intro j
     have hj := j.isLt
@@ -1624,12 +1455,12 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
       exact ⟨Or.inr hs8_slot0, fun _ => hs8_slot1 ▸ u.isLt⟩
     · have hne_val : j.val ≠ slot.val := fun h => hjs (Fin.ext h)
       have h0 : s8.mem (sBase + j.val) = x.mem (sBase + j.val) := by
-        simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+        simp [s8, Data.write,
           Function.update_of_ne (show sBase + j.val ≠ sBase + 2 * m + slot.val by omega),
           Function.update_of_ne (show sBase + j.val ≠ sBase + m + slot.val by omega),
           Function.update_of_ne (show sBase + j.val ≠ sBase + slot.val by omega), hmem]
       have h1 : s8.mem (sBase + m + j.val) = x.mem (sBase + m + j.val) := by
-        simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+        simp [s8, Data.write,
           Function.update_of_ne (show sBase + m + j.val ≠ sBase + 2 * m + slot.val by omega),
           Function.update_of_ne (show sBase + m + j.val ≠ sBase + m + slot.val by omega),
           Function.update_of_ne (show sBase + m + j.val ≠ sBase + slot.val by omega), hmem]
@@ -1651,17 +1482,17 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
     · have hne_val : j.val ≠ slot.val := fun h => hjs (Fin.ext h)
       simp only [slot, Function.update_of_ne hjs]
       have h0 : s8.mem (sBase + j.val) = x.mem (sBase + j.val) := by
-        simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+        simp [s8, Data.write,
           Function.update_of_ne (show sBase + j.val ≠ sBase + 2 * m + slot.val by omega),
           Function.update_of_ne (show sBase + j.val ≠ sBase + m + slot.val by omega),
           Function.update_of_ne (show sBase + j.val ≠ sBase + slot.val by omega), hmem]
       have h1 : s8.mem (sBase + m + j.val) = x.mem (sBase + m + j.val) := by
-        simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+        simp [s8, Data.write,
           Function.update_of_ne (show sBase + m + j.val ≠ sBase + 2 * m + slot.val by omega),
           Function.update_of_ne (show sBase + m + j.val ≠ sBase + m + slot.val by omega),
           Function.update_of_ne (show sBase + m + j.val ≠ sBase + slot.val by omega), hmem]
       have h2 : s8.mem (sBase + 2 * m + j.val) = x.mem (sBase + 2 * m + j.val) := by
-        simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+        simp [s8, Data.write,
           Function.update_of_ne (show sBase + 2 * m + j.val ≠ sBase + 2 * m + slot.val by omega),
           Function.update_of_ne (show sBase + 2 * m + j.val ≠ sBase + m + slot.val by omega),
           Function.update_of_ne (show sBase + 2 * m + j.val ≠ sBase + slot.val by omega), hmem]
@@ -1690,10 +1521,10 @@ theorem finishInsertCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
     have hne0 : a ≠ sBase + slot.val := by omega
     have hne1 : a ≠ sBase + m + slot.val := by omega
     have hne2 : a ≠ sBase + 2 * m + slot.val := by omega
-    simp [s8, s7, s6, s5, s4, s3, s2, s1, Data.write,
+    simp [s8, Data.write,
       Function.update_of_ne hne0, Function.update_of_ne hne1, Function.update_of_ne hne2, hmem]
   exact ⟨s8, eAll,
-    by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, hbase],
+    by simp +decide [s8, hbase],
     by simp +decide [s8],
     hprim, hstr, hwf, htrep, hdom_le, hvals, hmod⟩
 
