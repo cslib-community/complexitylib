@@ -12,11 +12,11 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Norm.Init
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 
 /-!
-# Confluent normalization of stateful and stateless oracle runs
+# Priority-ordered normalization of stateful and stateless oracle runs
 
 Tags the lemmas of the simp set `runWith_norm`. Combined with `pmf_norm`,
 `simp only [runWith_norm, pmf_norm]` reduces concrete `ProbOracleComp` and `OracleComp` `do`-blocks
-to `PMF.bind`, `PMF.pure`, and `PMF.map` in one confluent pass, while stopping cleanly at
+to `PMF.bind`, `PMF.pure`, and `PMF.map` in one pass, while stopping cleanly at
 `ProbOracleComp.runWith oracle (adversary n pk) s` when `adversary` is a black-box parameter:
 
 * folding spelled-out runs into `ProbOracleComp.runWith`:
@@ -46,6 +46,11 @@ to `PMF.bind`, `PMF.pure`, and `PMF.map` in one confluent pass, while stopping c
 otherwise rewrite inside `((OracleComp.interpret …).run s)` before
 `ProbOracleComp.eval_run_interpret_eq_runWith` or `ProbOracleComp.runWith_run_interpret` matches the
 enclosing run.
+
+The set is priority-ordered and is not claimed to be confluent: when several rules match the same
+term, the run-folding and handler-composition rules (priority 1200) and the lifted-oracle and
+embedded-sampling rules (priority 1100) take precedence over the default-priority syntax-stepping
+rules.
 
 ## Main results
 
