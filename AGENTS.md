@@ -530,6 +530,16 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
+When the only conflicts with `main` are in the aggregates or `references.bib`,
+`python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
+without running the PR's code. It requires the `check_restack.py` check below to pass for the
+current head, merges `origin/main` with both drivers, writes the aggregates as `lake exe mk_all`
+would for the merged tree, and runs the check on the result, both times from a checkout of
+`origin/main`. It refuses any other conflict and is a dry run unless given `--push`, which pushes
+the merge only when the check passes and the PR's branch still points at the head it merged. It
+never queues and never comments: post its result line, and queue the new head under the rules
+below once CI passes.
+
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
 `main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
