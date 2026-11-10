@@ -15,8 +15,8 @@ public meta import Lean.Elab.Command
 /-!
 # Encodings of structures as the tuple of their fields
 
-`enc_structure eS : S where f₁ : e₁; …` declares the encoding of a structure as the framed tuple
-of its fields, with everything a certificate needs to work with it:
+`enc_structure eS : S where f₁ : e₁, …, fₙ : eₙ` declares the encoding of a structure as the framed
+tuple of its fields, with everything a certificate needs to work with it:
 
 * `eSFields`, the encoding of the tuple, and `eS`, the encoding of the structure;
 * `eS_apply`, unfolding `eS` to `eSFields` of the tuple;
@@ -29,6 +29,11 @@ of its fields, with everything a certificate needs to work with it:
 
 The rules are `scoped` `fun_prop` rules, so that a program using the structure is assembled by
 `fun_prop` inside the namespace of the declaration.
+
+The fields `f₁, …, fₙ` must be the fields of `S` (as `getStructureFields` lists them, so a parent
+structure is the single field `toParent`), each once and in declaration order, since that order
+fixes the encoded words. The command checks this before declaring anything, and names the first
+unknown, repeated, misplaced or missing field.
 -/
 
 public meta section
@@ -38,7 +43,8 @@ namespace Turing.MultiTapeTM
 open Lean Elab Command
 
 /-- `enc_structure eS : S where f₁ : e₁, f₂ : e₂` declares the encoding `eS` of the structure `S`
-as the tuple of its fields encoded by `e₁`, `e₂`, with its rules. -/
+as the tuple of its fields encoded by `e₁`, `e₂`, with its rules. List every field of `S` once, in
+declaration order; the command reports an unknown, repeated, misplaced or missing field. -/
 syntax (name := encStructure) (docComment)? "enc_structure " ident " : " ident " where "
   (ident " : " term:max),+ : command
 
@@ -62,10 +68,39 @@ private def component (ns : Name) (h : Term) (i n : Nat) : MacroM Term := do
   if i + 1 < n then r ← `($fst $r)
   return r
 
+/-- Check that `fs` lists every field of the structure `S` once, in declaration order, and report
+the first unknown, repeated, misplaced or missing field otherwise. -/
+private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
+  let s ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo S
+  let env ← getEnv
+  unless isStructure env s do
+    throwErrorAt S "enc_structure: `{MessageData.ofConstName s}` is not a structure"
+  let sName := MessageData.ofConstName s
+  let expected := getStructureFields env s
+  let order := m!"the fields of `{sName}` in declaration order are \
+    {MessageData.joinSep (expected.toList.map fun n => m!"`{n}`") ", "}"
+  let mut seen : Array Name := #[]
+  for f in fs do
+    let n := f.getId
+    let some i := expected.idxOf? n |
+      throwErrorAt f "enc_structure: `{n}` is not a field of `{sName}`; {order}"
+    if seen.contains n then
+      throwErrorAt f "enc_structure: field `{n}` is listed twice"
+    if let some prev := seen.back? then
+      if i < expected.idxOf prev then
+        throwErrorAt f "enc_structure: field `{n}` must come before `{prev}`; {order}"
+    seen := seen.push n
+  let missing := expected.filter (!seen.contains ·)
+  unless missing.isEmpty do
+    let names := MessageData.joinSep (missing.toList.map fun n => m!"`{n}`") ", "
+    throwErrorAt S "enc_structure: missing {if missing.size = 1 then "field" else "fields"} \
+      {names} of `{sName}`; {order}"
+
 /-- Elaborate `enc_structure`: the encoding, its unfolding lemma and its rules. -/
 @[command_elab encStructure] def elabEncStructure : CommandElab := fun stx => do
   let `($[$doc:docComment]? enc_structure $eS:ident : $S:ident where $[$fs:ident : $es:term],*) :=
     stx | throwUnsupportedSyntax
+  checkFields S fs
   let name := eS.getId
   let (fields, encoding, fieldsOf, cmds) ← liftMacroM do
     let a := mkIdent `a
