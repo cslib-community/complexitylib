@@ -66,7 +66,7 @@ theorem isPPTOn_lyubashevskySigningParams
     IsPPTOn
       (encPair encUnary
         (encPair (encList (encList encIntBin)) (encPair (encList (encList encIntBin)) encBits)))
-      (encOption (encPair encBits encBits))
+      encCommitResponseOrAbort
       (fun input : ℕ × List (List ℤ) × List (List ℤ) × List Bool =>
         let (security, secret, matrix, msg) := input
         lyubashevskySignBoundedNative hash
