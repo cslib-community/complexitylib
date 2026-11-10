@@ -46,7 +46,7 @@ Adapted in part from Probability/PMF.lean on the cslib `crypto` branch at
 Renfei Zhou's Karger algorithm development.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 
