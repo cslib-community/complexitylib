@@ -101,13 +101,9 @@ private theorem sum_pi_mul_sum_clampScore_eq [DecidableEq ι]
 omit [Fintype ι] [∀ i, Fintype (α i)] in
 private theorem toOuterMeasure_congr_on_support {β : Type*} (q : PMF β) {s t : Set β}
     (h : ∀ outcome ∈ q.support, outcome ∈ s ↔ outcome ∈ t) :
-    q.toOuterMeasure s = q.toOuterMeasure t := by
-  classical
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply]
-  refine tsum_congr fun outcome => ?_
-  by_cases ho : outcome ∈ q.support
-  · simp only [Set.indicator_apply, h outcome ho]
-  · simp [Set.indicator_apply, (q.apply_eq_zero_iff outcome).mpr ho]
+    q.toOuterMeasure s = q.toOuterMeasure t :=
+  le_antisymm (q.toOuterMeasure_mono fun o ho => (h o ho.2).mp ho.1)
+    (q.toOuterMeasure_mono fun o ho => (h o ho.2).mpr ho.1)
 
 private theorem toOuterMeasure_pi_clampScore_eq [DecidableEq ι]
     (p : ∀ i, PMF (α i)) (score : ∀ i, α i → ℝ) (P : ℝ → ℝ → Prop) :

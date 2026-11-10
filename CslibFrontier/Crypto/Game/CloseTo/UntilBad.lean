@@ -46,8 +46,6 @@ theorem CloseTo.bind_of_eq_on {α β : Type} (μ : PMF α) (f g : α → PMF β)
       exact (PMF.toOuterMeasure_le_one (f a) event).trans le_add_self
     · rw [h a ha hbad, Set.indicator_of_notMem hbad]
       exact CloseTo.refl _
-  · rw [PMF.toOuterMeasure_apply]
-    refine le_of_eq (tsum_congr fun a => ?_)
-    by_cases hbad : a ∈ bad <;> simp [hbad]
+  · exact (PMF.toOuterMeasure_eq_tsum_mul_indicator μ bad).ge
 
 end Cslib.Interactive

@@ -129,7 +129,7 @@ theorem measure_pi_le_abs_empiricalMiscount_div_sub_error (D : Measure (α × β
   have hne : (Cslib.Probability.PMF.pi fun _ : Fin m => q).toOuterMeasure
       {b : Fin m → Bool |
         m * ε ≤ |∑ i, score i (b i) - ∑ i : Fin m, ∑ a, (q a).toReal * score i a|} ≠ ⊤ :=
-    ne_top_of_le_ne_top ENNReal.one_ne_top (Cslib.Probability.PMF.toOuterMeasure_le_one _ _)
+    Cslib.Probability.PMF.toOuterMeasure_ne_top _ _
   rw [ENNReal.le_ofReal_iff_toReal_le hne (by positivity)]
   refine (Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge (fun _ : Fin m => q) score
     (bound := 1) zero_le_one hscore (by positivity)).trans_eq ?_

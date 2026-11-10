@@ -380,7 +380,7 @@ private theorem measure_pi_card_lt_le_half (μ : Measure Z) [IsProbabilityMeasur
     hsub
   have hne : (Cslib.Probability.PMF.pi fun _ : Fin m => q).toOuterMeasure
       {b | ∑ i, score i (b i) ≤ (1 - 1 / 2) * (ε * m)} ≠ ⊤ :=
-    ne_top_of_le_ne_top ENNReal.one_ne_top (Cslib.Probability.PMF.toOuterMeasure_le_one _ _)
+    Cslib.Probability.PMF.toOuterMeasure_ne_top _ _
   refine hle.trans ?_
   rw [show (1 / 2 : ℝ≥0∞) = ENNReal.ofReal (1 / 2) by
       rw [ENNReal.ofReal_div_of_pos (by norm_num), ENNReal.ofReal_one, ENNReal.ofReal_ofNat],

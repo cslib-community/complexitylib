@@ -4001,29 +4001,11 @@ theorem rehashDetTail_execWithin {w base c_exp n_max U V : ℕ}
     exact hiff.mpr
       (mem_survivingSeeds_of_goodForSet hnodup (fun u hu => (hdom_iff u).mp hu) hgood)
 
-theorem pmf_toOuterMeasure_mono_on_support {α : Type*} (p : PMF α) {S T : Set α}
-    (h : ∀ y ∈ p.support, y ∈ S → y ∈ T) :
-    p.toOuterMeasure S ≤ p.toOuterMeasure T := by
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply]
-  refine tsum_le_tsum fun y => ?_
-  by_cases hyS : y ∈ S
-  · by_cases hyp : y ∈ p.support
-    · rw [Set.indicator_of_mem hyS, Set.indicator_of_mem (h y hyp hyS)]
-    · have hp0 : p y = 0 := (PMF.apply_eq_zero_iff p y).mpr hyp
-      rw [Set.indicator_of_mem hyS, hp0]
-      exact zero_le
-  · rw [Set.indicator_of_notMem hyS]
-    exact zero_le
-
 theorem half_le_toOuterMeasure_of_compl_le_half {α : Type*} (p : PMF α) (S : Set α)
     (hc : p.toOuterMeasure {x | x ∉ S} ≤ 1 / 2) :
     (1 : ℝ≥0∞) / 2 ≤ p.toOuterMeasure S := by
-  have hsum : p.toOuterMeasure S + p.toOuterMeasure {x | x ∉ S} = 1 := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply,
-      ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
-    conv_rhs => rw [← p.tsum_coe]
-    refine tsum_congr fun x => ?_
-    by_cases hx : x ∈ S <;> simp [hx]
+  have hsum : p.toOuterMeasure S + p.toOuterMeasure {x | x ∉ S} = 1 :=
+    toOuterMeasure_add_compl_ennreal p S
   have hle : (1 : ℝ≥0∞) / 2 + (1 : ℝ≥0∞) / 2 ≤ p.toOuterMeasure S + (1 : ℝ≥0∞) / 2 := by
     calc (1 : ℝ≥0∞) / 2 + (1 : ℝ≥0∞) / 2
       _ = 1 := ENNReal.add_halves 1
@@ -4053,8 +4035,8 @@ theorem survivingSeeds_card_and_nonempty {c_exp n_max U : ℕ}
       (PMF.uniformOfFintype (Seed c_exp n_max U (tableBits n_max))).toOuterMeasure
         {θ : Seed c_exp n_max U (tableBits n_max) |
           θ ∉ survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) ks} ≤ 1 / 2 := by
-    refine le_trans (pmf_toOuterMeasure_mono_on_support _ ?_) (hreh ks.toFinset hcard_S)
-    intro θ _ hnot hgood
+    refine le_trans (PMF.toOuterMeasure_mono _ ?_) (hreh ks.toFinset hcard_S)
+    rintro θ ⟨hnot, -⟩ hgood
     exact hnot (mem_survivingSeeds_of_goodForSet hnodup
       (fun u hu => List.mem_toFinset.mpr hu) hgood)
   exact card_le_two_mul_card_of_uniformOfFintype_compl_le_half hprob
@@ -4200,8 +4182,8 @@ theorem rehashAttemptCode_execCodeDist {w base c_exp n_max U V : ℕ}
       half_le_toOuterMeasure_of_compl_le_half (seedLaw c_exp n_max U (tableBits n_max)) G
         (hreh (Dictionary.dom s) hcard_le)
     rw [← hlaw_att, PMF.toOuterMeasure_map_apply] at hgood_prob
-    refine le_trans hgood_prob (pmf_toOuterMeasure_mono_on_support μ_att ?_)
-    intro y hy hyG
+    refine le_trans hgood_prob (PMF.toOuterMeasure_mono μ_att ?_)
+    rintro y ⟨hyG, hy⟩
     dsimp only [μ_att] at hy
     rw [PMF.mem_support_map_iff] at hy
     obtain ⟨z1, hz1, rfl⟩ := hy

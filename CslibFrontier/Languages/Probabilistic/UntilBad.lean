@@ -154,16 +154,8 @@ theorem symm (h : IdenticalUntilBad first second bad) : IdenticalUntilBad second
 
 /-- A run gives the bad states and the good states total probability one. -/
 private theorem toOuterMeasure_bad_add_good (p : PMF (α × σ)) :
-    p.toOuterMeasure {x | bad x.2} + p.toOuterMeasure {x | ¬bad x.2} = 1 := by
-  classical
-  simp only [PMF.toOuterMeasure_apply]
-  rw [← tsum_add, ← p.tsum_coe]
-  refine tsum_congr fun x => ?_
-  by_cases hx : bad x.2
-  · rw [Set.indicator_of_mem (show x ∈ {x : α × σ | bad x.2} from hx),
-      Set.indicator_of_notMem (show x ∉ {x : α × σ | ¬bad x.2} from fun h => h hx), add_zero]
-  · rw [Set.indicator_of_notMem (show x ∉ {x : α × σ | bad x.2} from hx),
-      Set.indicator_of_mem (show x ∈ {x : α × σ | ¬bad x.2} from hx), zero_add]
+    p.toOuterMeasure {x | bad x.2} + p.toOuterMeasure {x | ¬bad x.2} = 1 :=
+  Probability.PMF.toOuterMeasure_add_compl_ennreal p _
 
 /-- Handlers that agree until a bad state reach a bad state with the same probability. -/
 theorem bad_eq (h : IdenticalUntilBad first second bad) (program : OracleComp spec α) (s : σ) :

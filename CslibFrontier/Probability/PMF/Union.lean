@@ -62,8 +62,7 @@ theorem toOuterMeasure_biUnion_finset {ι : Type*} (p : PMF α) (J : Finset ι) 
 theorem sum_toOuterMeasure_le_one {ι : Type*} (p : PMF α) (J : Finset ι) {B : ι → Set α}
     (hB : (J : Set ι).PairwiseDisjoint B) : ∑ j ∈ J, p.toOuterMeasure (B j) ≤ 1 := by
   rw [← toOuterMeasure_biUnion_finset p J hB]
-  exact (p.toOuterMeasure.mono (Set.subset_univ _)).trans_eq
-    ((PMF.toOuterMeasure_apply_eq_one_iff p _).mpr (Set.subset_univ _))
+  exact toOuterMeasure_le_one p _
 
 /-- **Union bound** for real-valued probabilities: the probability of a union of finitely many
 events is at most the sum of their probabilities. -/
