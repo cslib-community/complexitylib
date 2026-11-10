@@ -24,7 +24,8 @@ explicitly. With `ℓ = ⌊log₂ N⌋`:
 
 * `L = ⌊ℓ / 3⌋` (`Cslib.AffineDisperser.Explicit.primeBound`);
 * the field degree `n` is the product of the primes chosen greedily, in increasing order, from
-  the primes in `(L, 4 L]` with product at most `N / (ℓ + 1) ^ 2`
+  the primes in `(L, 4 L]` with product at most `⌊N / (ℓ + 1) ^ 2⌋` when that is at least `1`;
+  when it is `0` no prime is chosen and `n = 1`
   (`Cslib.AffineDisperser.Explicit.degreePrimes`, `Cslib.AffineDisperser.Explicit.fieldDegree`);
 * `F = 𝔽_{2 ^ n}` with the monomial basis in roots of the irreducible polynomials of least code of
   the prime degrees (`Cslib.AffineDisperser.compositeBasis`); each of these polynomials is found
@@ -93,7 +94,8 @@ def primeBound (N : ℕ) : ℕ :=
   Nat.log 2 N / 3
 
 /-- The primes whose product is the field degree on `N` bits: chosen greedily, in increasing order,
-from the primes in `(L, 4 L]` with product at most `N / (⌊log₂ N⌋ + 1) ^ 2`. -/
+from the primes in `(L, 4 L]` with product at most `⌊N / (⌊log₂ N⌋ + 1) ^ 2⌋` when that is at
+least `1`; when it is `0` the list is empty, with product `1`. -/
 def degreePrimes (N : ℕ) : List ℕ :=
   selectBelow (N / (Nat.log 2 N + 1) ^ 2) (primesIoc (primeBound N) (4 * primeBound N))
 
