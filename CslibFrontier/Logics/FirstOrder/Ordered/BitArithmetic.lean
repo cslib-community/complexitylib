@@ -108,7 +108,7 @@ theorem realize_natEq (k : ℕ) (x : (language L).Term α) (v : α → Fin n) :
     (natEq L k x).Realize v ↔ (x.realize v).val = k := by
   induction k generalizing α with
   | zero =>
-    simp only [natEq, Formula.realize_equal, ← Fin.val_inj, realize_zero_val]
+    fo_simp [natEq, ← Fin.val_inj]
   | succ k ih =>
     fo_simp [natEq, ih, realize_one_val, Function.comp_def]
     exact ⟨fun ⟨a, ha, he⟩ => by lia,

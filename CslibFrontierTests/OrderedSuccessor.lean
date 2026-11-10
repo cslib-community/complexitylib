@@ -66,29 +66,20 @@ example : ¬(successor L).Realize (![2, 0] : Fin 2 → Fin 3) := by
   rw [realize_successor]
   decide
 
-/-- A genuine source vocabulary with an atomic successor predicate. -/
-inductive SuccRelation : ℕ → Type
-  | succ : SuccRelation 2
-
-abbrev S : Language := ⟨fun _ => Empty, SuccRelation⟩
-
-instance {n : ℕ} : S.Structure (Fin n) where
-  funMap f := f.elim
-  RelMap | .succ, v => (v 1).val = (v 0).val + 1
-
-def atomicSuccessor : (language S).Formula (Fin 2) :=
-  (LHom.sumInl : S →ᴸ language S).onFormula
-    (Relations.formula (L := S) SuccRelation.succ fun i => .var i)
+/-- A genuine source vocabulary with an atomic successor predicate: the library's successor
+atom over `succLanguage L`. -/
+def atomicSuccessor : (language (succLanguage L)).Formula (Fin 2) :=
+  succ L (.var 0) (.var 1)
 
 /-- The supplied quantifier-free successor has a genuine canonical model. -/
 theorem atomicSuccessor_correct (v : Fin 2 → Fin 3) :
     atomicSuccessor.Realize v ↔ (v 1).val = (v 0).val + 1 := by
-  rw [atomicSuccessor, LHom.realize_onFormula, Formula.realize_rel]
-  rfl
+  rw [atomicSuccessor, realize_succ]
+  exact eq_comm
 
 example : (tupleSuccOf atomicSuccessor 2).IsQF := by
   apply isQF_tupleSuccOf
-  exact (BoundedFormula.IsAtomic.rel _ _).isQF.onFormula _
+  exact isQF_succ L _ _
 
 /-- The generic compiler is exercised on its atomic, quantifier-free source instance. -/
 example : (tupleSuccOf atomicSuccessor 2).Realize
