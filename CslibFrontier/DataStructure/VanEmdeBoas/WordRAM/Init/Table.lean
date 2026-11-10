@@ -146,7 +146,6 @@ def initSetupData (s : Data 32) : Data 32 :=
 /-- `initSetup` executes in 9 instructions and produces `initSetupData s`. -/
 theorem initSetup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
     Exec w initSetup s (initSetupData s) 9 := by
-  -- `ram_eval` derives the bounds of the smaller constants from `hw`.
   ram_eval [initSetup, initSetupData]
 
 /-- State after one iteration of `sizeBody` at depth `k`. -/
@@ -233,7 +232,6 @@ theorem tableSetup_exec {w base d : ℕ} {s : Data 32} (ha : Fits w (base + span
     (h0 : s.regs zero = 0) (h1 : s.regs one = 1) (h2 : s.regs two = 2) (h5 : s.regs five = 5)
     (hroot : s.regs root = base) (ht : s.regs t = span d) :
     Exec w tableSetup s (tableSetupData s base d) 11 := by
-  -- `ram_eval` derives the table-address bounds from `ha`.
   ram_eval [tableSetup, tableSetupData, h0, h1, h2, h5, hroot, ht]
 
 /-- State after one iteration of `tableBody` at depth `k` and pointer `sp₀`. -/
@@ -255,8 +253,7 @@ private theorem tableBody_exec {w base d k : ℕ} {s : Data 32} (hk : k < d)
     have := two_le_universeSize k; rw [universeSize_succ]; nlinarith
   have h_prod_le : (universeSize k + 1) * span k + 5 = span (k + 1) := by
     rw [span_succ]; omega
-  -- These bounds need the non-`Fits` facts above; `ram_eval` derives the remaining ones (the
-  -- first stack word and `k + 1` from `hf_sp2`, the product from `hf3`).
+  -- Bounds that need the non-`Fits` facts above; `ram_eval` reads them from context.
   have hf_sp2 : Fits w (base + span d + 2 * (k + 1) + 1 + 1) := ha.of_le (by omega)
   have hf1 : Fits w (universeSize k + 1) := ha.of_le (by omega)
   have hf3 : Fits w ((universeSize k + 1) * span k + 5) := ha.of_le (by omega)

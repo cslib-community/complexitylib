@@ -147,7 +147,7 @@ theorem insertBody_exec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
     ExecWithin w insertBody s (insertNext s base key) 37 := by
   obtain ⟨hz, ho, htwo, hthree, hfour, hfive, hp, hx, _⟩ := hs
   -- `ram_eval` derives the smaller header bounds `Fits w (base + k)` from this one.
-  have h₄ : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
+  have hbase4 : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
   -- The early exits read only the header, so split on the cached bounds before the shape.
   have hheader := hr.header
   rcases hb : tree.bounds with _ | ⟨m, M⟩ <;> rw [hb] at hheader
@@ -168,13 +168,13 @@ theorem insertBody_exec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
           he, hm, hM, hq, splitSize, heq, hlt, hmx, Nat.add_left_cancel_iff]
   | @node d b _ _ =>
     obtain rfl : b = some (m, M) := hb
-    -- The displaced key `max m key` descends. These three bounds cover every value the
-    -- descent writes; `ram_eval` derives the others (the high coordinate, the product,
-    -- `base + 5`, the child header) from them.
+    -- The displaced key `max m key` descends.
     obtain ⟨hi, hlo_lt, hend⟩ := insert_descent_safe (base := base) ht hkey
     have hqne : universeSize d ≠ 0 := Nat.ne_of_gt (universeSize_pos d)
     have hu := universeSize_le_span d
     have hu' := span_le_succ d
+    -- `hlo`, `hnext` and `hch2` cover every value the descent writes; `ram_eval` derives the
+    -- others (the high coordinate, the product, `base + 5`, the child header) from them.
     have hlo : Fits w (max m key % universeSize d) := ha.of_le (by omega)
     have hnext : Fits w (max m key / universeSize d + 1) := ha.of_le (by omega)
     have hch2 : Fits w (base + 5 + (max m key / universeSize d + 1) * span d + 2) := by

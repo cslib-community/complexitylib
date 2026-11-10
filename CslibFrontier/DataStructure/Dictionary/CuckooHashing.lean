@@ -2343,6 +2343,7 @@ private theorem mul_card_stepRehash_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [Fi
       ≤ (max n_max 1 * max MaxLoop 1) *
           #{θ : Θ₁ × Θ₂ | WalkBadAt (h₁ θ.1) (h₂ θ.2) ks.toFinset u MaxLoop} :=
         Nat.mul_le_mul_left _ (Finset.card_le_card hsub)
+    -- Only reassociates to match `hwalk`, whose product `omega` treats as a single atom.
     _ ≤ 2 * (max n_max 1 * max MaxLoop 1) *
           #{θ : Θ₁ × Θ₂ | WalkBadAt (h₁ θ.1) (h₂ θ.2) ks.toFinset u MaxLoop} := by
         rw [Nat.mul_assoc 2]

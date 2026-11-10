@@ -98,7 +98,7 @@ theorem memberBody_exec {d w base query : ℕ} {tree : Tree d} {s : Data 32}
     ExecWithin w memberBody s (memberNext s base query) 26 := by
   obtain ⟨hz, ho, htwo, hthree, hfour, hfive, hp, hx, _, _⟩ := hs
   -- `ram_eval` derives the smaller header bounds `Fits w (base + k)` from this one.
-  have h₄ : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
+  have hbase4 : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
   -- The early exits read only the header, so split on the cached bounds before the shape.
   have hheader := hr.header
   rcases hb : tree.bounds with _ | ⟨m, M⟩ <;> rw [hb] at hheader
