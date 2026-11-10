@@ -176,7 +176,7 @@ theorem toFinset_heavyVarList_eq_heavyVars (n b₀ : ℕ) (sys : List (List (Lis
 
 /-- **Markov heavy-variable bound (§5.5, p. 38)**: for `0 < b₀`,
 `(heavyVarList n b₀ sys).length ≤ (sys.map fun eq => (equationVars eq).length).sum / b₀`. -/
-theorem length_heavyVarList_le_div {n b₀ : ℕ} {sys : List (List (List ℕ))} (hb₀ : 0 < b₀) :
+theorem length_heavyVarList_le_div (n : ℕ) (sys : List (List (List ℕ))) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     (heavyVarList n b₀ sys).length ≤ (sys.map fun eq => (equationVars eq).length).sum / b₀ := by
   rw [← List.toFinset_card_of_nodup (nodup_heavyVarList n b₀ sys),
     toFinset_heavyVarList_eq_heavyVars]

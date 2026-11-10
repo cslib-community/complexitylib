@@ -191,7 +191,7 @@ theorem threshold_eq_ceil {n : ℕ} (hn : 1 ≤ n) (sys : List (List (List ℕ))
 
 /-- **Few branching variables** (p. 54): at most `n / ⌈√λ⌉` variables lie in more than `D*`
 scopes, where `⌈√λ⌉ = ⌊√(λ - 1)⌋ + 1`. -/
-theorem length_branchVars_le {n : ℕ} {sys : List (List (List ℕ))} :
+theorem length_branchVars_le (n : ℕ) (sys : List (List (List ℕ))) :
     (branchVars n sys).length ≤ n / ((Nat.clog 2 n - 1).sqrt + 1) := by
   rcases Nat.lt_or_ge n 2 with hn | hn
   · have hc : Nat.clog 2 n = 0 := Nat.clog_of_right_le_one (by omega) 2
@@ -206,17 +206,17 @@ theorem length_branchVars_le {n : ℕ} {sys : List (List (List ℕ))} :
   have hD : threshold n sys = q * s := threshold_eq_mul hn sys
   have hN : N ≤ q * n := (le_max_right 1 N).trans (Nat.le_ceilDiv_mul (by omega))
   calc (branchVars n sys).length ≤ N / threshold n sys :=
-        HeavyBranchFold.length_heavyVarList_le_div (by rw [hD]; positivity)
+        HeavyBranchFold.length_heavyVarList_le_div n sys (by rw [hD]; positivity)
     _ ≤ (q * n) / (q * s) := by rw [hD]; exact Nat.div_le_div_right hN
     _ = n / s := Nat.mul_div_mul_left n s hq_pos
 
 /-- **Few branching variables**, against `⌊√⌊log₂ n⌋⌋`: for `n ≥ 2`, at most
 `n / ⌊√⌊log₂ n⌋⌋` variables lie in more than `D*` scopes. -/
-theorem length_branchVars_le_div_sqrt_log {n : ℕ} {sys : List (List (List ℕ))} (hn : 2 ≤ n) :
+theorem length_branchVars_le_div_sqrt_log {n : ℕ} (sys : List (List (List ℕ))) (hn : 2 ≤ n) :
     (branchVars n sys).length ≤ n / Nat.sqrt (Nat.log 2 n) := by
   have hlog : 1 ≤ Nat.log 2 n := Nat.le_log_of_pow_le Nat.one_lt_two (by simpa using hn)
   have hsqrt : 0 < Nat.sqrt (Nat.log 2 n) := Nat.sqrt_pos.mpr hlog
-  exact length_branchVars_le.trans
+  exact (length_branchVars_le n sys).trans
     (Nat.div_le_div_left (Nat.sqrt_log_two_le_sqrt_clog_two_sub_one_add_one n) hsqrt)
 
 /-- **The number of scope incidences** under the hypotheses of Lemma D.2:
@@ -280,8 +280,7 @@ theorem IsReducedBranch.le_two_mul {n n' : ℕ} {sys sys' : List (List (List ℕ
   have hlam : 2 ≤ Nat.clog 2 n := (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).2 (by omega)
   have hs : 2 ≤ (Nat.clog 2 n - 1).sqrt + 1 := by
     have := Nat.sqrt_pos.mpr (by omega : 0 < Nat.clog 2 n - 1); omega
-  have hS := (length_branchVars_le (n := n) (sys := sys)).trans
-    (Nat.div_le_div_left hs (by norm_num))
+  have hS := (length_branchVars_le n sys).trans (Nat.div_le_div_left hs (by norm_num))
   have := Nat.div_mul_le_self n 2
   exact ⟨hn', by omega⟩
 

@@ -16,6 +16,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.BigOperators.ModEq
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.CharP.Two
+import Mathlib.Combinatorics.Enumerative.DoubleCounting
 import Mathlib.Data.Fintype.Card
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -347,16 +348,9 @@ def totalIncidence (F : Finset κ) (scope : κ → Finset ι) : ℕ :=
 scopes cut down to `U`. -/
 private theorem sum_varIncidence_eq_sum_card_inter [DecidableEq ι] (U : Finset ι) (F : Finset κ)
     (scope : κ → Finset ι) :
-    ∑ v ∈ U, varIncidence F scope v = ∑ i ∈ F, #(U ∩ scope i) := by
-  unfold varIncidence
-  simp only [card_eq_sum_ones]
-  have h1 : (∑ v ∈ U, ∑ x ∈ {i ∈ F | v ∈ scope i}, 1) =
-      ∑ v ∈ U, ∑ i ∈ F, if v ∈ scope i then 1 else 0 := by
-    refine sum_congr rfl fun v _ => ?_
-    rw [sum_filter]
-  rw [h1, sum_comm]
-  refine sum_congr rfl fun i _ => ?_
-  rw [← sum_filter, filter_mem_eq_inter]
+    ∑ v ∈ U, varIncidence F scope v = ∑ i ∈ F, #(U ∩ scope i) :=
+  (sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow fun v i => v ∈ scope i).trans <| by
+    simp only [bipartiteBelow, filter_mem_eq_inter]
 
 /-- Double-counting variable-constraint incidences over a universe `U` containing all scopes. -/
 theorem sum_varIncidence_eq_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
