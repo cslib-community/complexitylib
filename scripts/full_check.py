@@ -53,6 +53,8 @@ STEPS = (
     Step("Source hygiene", ("python3 -B scripts/check_hygiene.py --check-simp",)),
     Step("Encoding readability ratchet (changed modules)",
          ('python3 -B scripts/check_encoding_readability.py --base "$BASE"',)),
+    Step("Projection chain ratchet (changed modules)",
+         ('python3 -B scripts/check_projection_chains.py --base "$BASE"',)),
     Step("Documentation pins", ("python3 -B scripts/check_docs.py --config-only",)),
     Step("Test Lake build handoff reuse",
          ("python3 -B -m unittest test_cache_handoff.HandoffTests"
@@ -89,6 +91,8 @@ CI_ONLY = {
     "Prepare optional handoff measurement":
         "main-push cache experiment (#1728); needs the GitHub API",
     "Encoding readability report":
+        "merge groups and main pushes only; reports and always succeeds",
+    "Projection chain report":
         "merge groups and main pushes only; reports and always succeeds",
     "Repeated-proof-block notice (advisory)":
         "advisory; never fails the job. Run `scripts/proof_copies.py --base REF` to see it",

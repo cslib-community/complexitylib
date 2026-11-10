@@ -129,6 +129,12 @@ Two places keep projections, as standing exceptions:
   ([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
 
+`scripts/check_projection_chains.py` counts the chains of depth 2 or more in each module's public
+statements and public definition bodies, leaving out proofs, these two exceptions and named
+accessors. CI fails a pull request when a module it changes has more chains than its entry in
+`scripts/projection_chains_baseline.json`; a new module starts at 0. Fewer chains pass, and
+`--update-baseline` lowers the entry. `--list PREFIX` shows the remaining chains of an area.
+
 **Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
 reader parse the same nested encoding again and again. Name a compound encoding that recurs in a

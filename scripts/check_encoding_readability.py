@@ -79,6 +79,7 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -278,12 +279,71 @@ def public_declarations(text: str, notations: list[Notation] | None = None
     """The public declarations of a Lean source file outside `Internal` namespaces, with their
     signatures. If `notations` is given, append to it the `local notation`s outside `Internal`
     namespaces whose right-hand side contains a compound encoding."""
+    found = []
+    for command in commands(text):
+        scope, keyword = command.scope, command.keyword
+        if keyword == "notation" and "local" in command.modifiers and notations is not None:
+            arrow = command.text.find("=>", command.pos)
+            if arrow < 0 or "Internal" in scope.namespace:
+                continue
+            rhs = command.text[arrow + 2:]
+            if any(compound for *_, compound in encoding_terms(rhs)):
+                notations.append(Notation(command.line,
+                                          _normalize(text[command.start + command.pos:
+                                                          command.start + arrow]),
+                                          _normalize(rhs)))
+        elif keyword in DECLARATIONS and command.public:
+            name, pos, split = command.parts()
+            if "Internal" in scope.namespace or (name and "Internal" in name.split(".")):
+                continue
+            rest = command.text[pos:]
+            local_names = scope.variables | binder_names(rest[:split - pos], stop_at_colon=True)
+            name = name or f"{keyword}@{command.line}"
+            found.append(Declaration(name, command.line, rest[:split - pos], local_names))
+            if keyword in ("structure", "class") and re.match(r"where\b", command.text[split:]):
+                found += _fields(command.syntax, command.start + split + 5, command.end, name,
+                                 local_names)
+    return found
+
+
+@dataclass
+class Command:
+    """A command of a Lean source file other than one that opens or closes a scope."""
+    syntax: str  # the whole file, masked
+    start: int  # the command's offsets in `syntax`
+    end: int
+    modifiers: set[str]
+    keyword: str
+    keyword_start: int  # the keyword's offsets in `text`
+    pos: int
+    line: int  # the keyword's line
+    scope: _Scope  # the scope it is in
+
+    @property
+    def text(self) -> str:
+        return self.syntax[self.start:self.end]
+
+    @property
+    def public(self) -> bool:
+        """Whether a declaration with this header is public."""
+        return not self.modifiers & {"private", "local"} and (
+            self.scope.public or "public" in self.modifiers)
+
+    def parts(self) -> tuple[str | None, int, int]:
+        """For a declaration: its name (`None` for an anonymous instance), and the offsets in
+        `text` where its signature starts and ends."""
+        name, pos = _name(self.text, self.pos, self.keyword)
+        return name, pos, pos + _signature_end(self.text[pos:], self.keyword)
+
+
+def commands(text: str) -> Iterator[Command]:
+    """The commands of a Lean source file that do not open or close a scope, each with the
+    namespace, default visibility and `variable`s in force. Comments and strings are masked."""
     _, syntax = masks(text)
     in_module = re.search(r"^module\b", syntax, re.M) is not None
     starts = sorted(set(command_starts(syntax)) | {m.start() for m in EXTRA_SCOPE.finditer(syntax)})
     starts.append(len(syntax))
     scopes = [_Scope("", (), not in_module)]
-    found = []
     for start, end in zip(starts, starts[1:]):
         command = syntax[start:end]
         header = _header(command)
@@ -310,32 +370,12 @@ def public_declarations(text: str, notations: list[Notation] | None = None
             if ".".join(labels) != label:
                 count = 1
             del scopes[max(1, len(scopes) - count):]
-        elif keyword == "variable":
-            scope.variables = scope.variables | binder_names(command[pos:], stop_at_colon=False)
-        elif keyword == "notation" and "local" in modifiers and notations is not None:
-            arrow = command.find("=>", pos)
-            if arrow < 0 or "Internal" in scope.namespace:
-                continue
-            rhs = command[arrow + 2:]
-            if any(compound for *_, compound in encoding_terms(rhs)):
-                notations.append(Notation(text.count("\n", 0, start + keyword_start) + 1,
-                                          _normalize(text[start + pos:start + arrow]),
-                                          _normalize(rhs)))
-        elif keyword in DECLARATIONS:
-            if modifiers & {"private", "local"} or not (scope.public or "public" in modifiers):
-                continue
-            name, pos = _name(command, pos, keyword)
-            if "Internal" in scope.namespace or (name and "Internal" in name.split(".")):
-                continue
-            rest = command[pos:]
-            split = _signature_end(rest, keyword)
-            local_names = scope.variables | binder_names(rest[:split], stop_at_colon=True)
-            line = text.count("\n", 0, start + keyword_start) + 1
-            name = name or f"{keyword}@{line}"
-            found.append(Declaration(name, line, rest[:split], local_names))
-            if keyword in ("structure", "class") and re.match(r"where\b", rest[split:]):
-                found += _fields(syntax, start + pos + split + 5, end, name, local_names)
-    return found
+        else:
+            if keyword == "variable":
+                scope.variables = scope.variables | binder_names(command[pos:],
+                                                                 stop_at_colon=False)
+            yield Command(syntax, start, end, modifiers, keyword, keyword_start, pos,
+                          syntax.count("\n", 0, start + keyword_start) + 1, scope)
 
 
 def _normalize(term: str) -> str:
