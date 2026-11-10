@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.RawControllerNative
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.TreeEval.Ary.IterativeCorrect
 
 /-!
@@ -300,36 +301,10 @@ theorem runFrom_requested_encoding_le (encG : γ ↪ List Bool) (encT : τ ↪ L
     (hcallee : ∀ i ≤ T, (encT (N.runFrom w (start (q.1, q.2.1, req)) i)).length ≤ B)
     (i : ℕ) (hi : i ≤ T + 2) :
     (encMachineState encG encT ((machine initial N start answer).runFrom w (.inl q) i)).length ≤
-      2 * R + B + 2 := by
-  by_cases hizero : i = 0
-  · subst i
-    simp only [QueryMachine.runFrom_zero, encMachineState, encSum_inl, List.length_cons]
-    omega
-  by_cases hifinal : i = T + 2
-  · subst i
-    rw [runFrom_requested initial N start answer w q req hneed T hpre hhalt]
-    simp only [encMachineState, encSum_inl, List.length_cons]
-    omega
-  have hiT : i - 1 ≤ T := by omega
-  have hentry : (machine initial N start answer).runFrom w (.inl q) 1 =
-      .inr (q, start (q.1, q.2.1, req)) := by
-    apply QueryMachine.withCalls_step_call
-    · exact halted_of_need_some q req hneed
-    · simp [request, hneed]
-  rw [show i = 1 + (i - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hprefix := QueryMachine.withCalls_runFrom_subroutine_prefix (caller initial) N
-    (request start) (resume answer) w q (start (q.1, q.2.1, req)) (i - 1)
-    (fun k hk => hpre k (by omega))
-  rw [show (machine initial N start answer).runFrom w
-      (.inr (q, start (q.1, q.2.1, req))) (i - 1) =
-      .inr (q, N.runFrom w (start (q.1, q.2.1, req)) (i - 1)) from hprefix]
-  rw [show (encMachineState encG encT
-      (.inr (q, N.runFrom w (start (q.1, q.2.1, req)) (i - 1)))).length =
-      2 * (encContext encG q).length +
-        (encT (N.runFrom w (start (q.1, q.2.1, req)) (i - 1))).length + 2 from
-    QueryMachine.withCalls_encoding_inr_length (encContext encG) encT _ _]
-  have hc := hcallee (i - 1) hiT
-  omega
+      2 * R + B + 2 :=
+  QueryMachine.withCalls_runFrom_call_encoding_le (caller initial) N (request start)
+    (resume answer) w (encContext encG) encT (halted_of_need_some q req hneed)
+    (by simp [request, hneed]) hpre hhalt hcaller hreturn hcallee i hi
 
 /-- Reader context, one packed caller and the peak supplier state, including call framing. -/
 @[expose] def queryStateBound (contextBits p d r height supplierBits : ℕ) : ℕ :=
@@ -499,76 +474,60 @@ theorem exists_runFrom_typedPrefix_bounded (encG : γ ↪ List Bool) (encT : τ 
         ((machine initial N start answer).runFrom w
           (.inl (ctx, (p, d, r), ofCfg (Ary.Iter.initialCfg S c t))) i)).length ≤
           2 * R + B + 2 := by
-  induction n with
-  | zero =>
-    refine ⟨0, rfl, ?_⟩
+  refine QueryMachine.exists_runFrom_chain_encoding_le (encMachineState encG encT)
+    (fun n => .inl (ctx, (p, d, r),
+      ofCfg (Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n))) n
+    (by have hq := hcaller 0; simp only [encMachineState, encSum_inl, List.length_cons]; omega)
+    fun n _ => ?_
+  let typed := Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n
+  let typedNext :=
+    Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) (n + 1)
+  let q : Context γ := (ctx, (p, d, r), ofCfg typed)
+  let qnext : Context γ := (ctx, (p, d, r), ofCfg typedNext)
+  have hq : (encContext encG q).length ≤ R := hcaller n
+  have hqnext : (encContext encG qnext).length ≤ R := hcaller (n + 1)
+  have hround : ∀ fr ∈ typed.stack, fr.round < p - 1 :=
+    (controlBounds_runFrom_units hd e E T S c t n).2
+  change ∃ U, (machine initial N start answer).runFrom w (.inl q) U = .inl qnext ∧
+      ∀ i ≤ U, (encMachineState encG encT
+        ((machine initial N start answer).runFrom w (.inl q) i)).length ≤ 2 * R + B + 2
+  cases hn : need p d r (ofCfg typed) with
+  | none =>
+    have hreply := replyCorrect_of_need_none e E T.nodeAt typed hn (0, [])
+    have hadvance : advance q (0, []) = qnext :=
+      (advance_ofCfg hd e E T.nodeAt ctx typed (0, []) hreply hround).trans
+        (congrArg (fun typed => (ctx, (p, d, r), ofCfg typed))
+          (Ary.Iter.runFrom_succ hd e E (units p) T.nodeAt
+            (Ary.Iter.initialCfg S c t) n).symm)
+    have hnormal := runFrom_normal initial N start answer w q hn
+    rw [hadvance] at hnormal
+    refine ⟨1, hnormal, ?_⟩
     intro i hi
-    have hizero : i = 0 := by omega
-    subst i
-    have hq := hcaller 0
-    simp only [Ary.Iter.runFrom_zero] at hq
-    simp only [QueryMachine.runFrom_zero, encMachineState, encSum_inl, List.length_cons]
-    omega
-  | succ n ih =>
-    obtain ⟨clock, hclock, hclockBound⟩ := ih
-    let typed := Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) n
-    let typedNext :=
-      Ary.Iter.runFrom hd e E (units p) T.nodeAt (Ary.Iter.initialCfg S c t) (n + 1)
-    let q : Context γ := (ctx, (p, d, r), ofCfg typed)
-    let qnext : Context γ := (ctx, (p, d, r), ofCfg typedNext)
-    have hq : (encContext encG q).length ≤ R := hcaller n
-    have hqnext : (encContext encG qnext).length ≤ R := hcaller (n + 1)
-    have hround : ∀ fr ∈ typed.stack, fr.round < p - 1 :=
-      (controlBounds_runFrom_units hd e E T S c t n).2
-    have hmacro : ∃ U, (machine initial N start answer).runFrom w (.inl q) U = .inl qnext ∧
-        ∀ i ≤ U, (encMachineState encG encT
-          ((machine initial N start answer).runFrom w (.inl q) i)).length ≤ 2 * R + B + 2 := by
-      cases hn : need p d r (ofCfg typed) with
-      | none =>
-        have hreply := replyCorrect_of_need_none e E T.nodeAt typed hn (0, [])
-        have hadvance : advance q (0, []) = qnext :=
-          (advance_ofCfg hd e E T.nodeAt ctx typed (0, []) hreply hround).trans
-            (congrArg (fun typed => (ctx, (p, d, r), ofCfg typed))
-              (Ary.Iter.runFrom_succ hd e E (units p) T.nodeAt
-                (Ary.Iter.initialCfg S c t) n).symm)
-        have hnormal := runFrom_normal initial N start answer w q hn
-        rw [hadvance] at hnormal
-        refine ⟨1, hnormal, ?_⟩
-        intro i hi
-        by_cases hizero : i = 0
-        · subst i
-          simp only [QueryMachine.runFrom_zero, encMachineState, encSum_inl, List.length_cons]
-          omega
-        · have hione : i = 1 := by omega
-          subst i
-          rw [hnormal]
-          simp only [encMachineState, encSum_inl, List.length_cons]
-          omega
-      | some req =>
-        obtain ⟨U, hpre, hhalt, hreply, hcallee⟩ := hsupplier n req hn
-        have hadvance : advance q
-            (answer (N.runFrom w (start (ctx, (p, d, r), req)) U)) = qnext :=
-          (advance_ofCfg hd e E T.nodeAt ctx typed _ hreply hround).trans
-            (congrArg (fun typed => (ctx, (p, d, r), ofCfg typed))
-              (Ary.Iter.runFrom_succ hd e E (units p) T.nodeAt
-                (Ary.Iter.initialCfg S c t) n).symm)
-        have hreturn : (encContext encG (advance q
-            (answer (N.runFrom w (start (ctx, (p, d, r), req)) U)))).length ≤ R := by
-          rw [hadvance]
-          exact hqnext
-        refine ⟨U + 2, ?_, ?_⟩
-        · rw [runFrom_requested initial N start answer w q req hn U hpre hhalt, hadvance]
-        · exact fun i hi => runFrom_requested_encoding_le encG encT initial N start answer
-            w q req hn U R B hpre hhalt hq hreturn hcallee i hi
-    obtain ⟨U, hU, hUBound⟩ := hmacro
-    refine ⟨clock + U, ?_, ?_⟩
-    · rw [QueryMachine.runFrom_add, hclock]
-      exact hU
-    · intro i hi
-      by_cases hiclock : i ≤ clock
-      · exact hclockBound i hiclock
-      · rw [show i = clock + (i - clock) by omega, QueryMachine.runFrom_add, hclock]
-        exact hUBound (i - clock) (by omega)
+    by_cases hizero : i = 0
+    · subst i
+      simp only [QueryMachine.runFrom_zero, encMachineState, encSum_inl, List.length_cons]
+      omega
+    · have hione : i = 1 := by omega
+      subst i
+      rw [hnormal]
+      simp only [encMachineState, encSum_inl, List.length_cons]
+      omega
+  | some req =>
+    obtain ⟨U, hpre, hhalt, hreply, hcallee⟩ := hsupplier n req hn
+    have hadvance : advance q
+        (answer (N.runFrom w (start (ctx, (p, d, r), req)) U)) = qnext :=
+      (advance_ofCfg hd e E T.nodeAt ctx typed _ hreply hround).trans
+        (congrArg (fun typed => (ctx, (p, d, r), ofCfg typed))
+          (Ary.Iter.runFrom_succ hd e E (units p) T.nodeAt
+            (Ary.Iter.initialCfg S c t) n).symm)
+    have hreturn : (encContext encG (advance q
+        (answer (N.runFrom w (start (ctx, (p, d, r), req)) U)))).length ≤ R := by
+      rw [hadvance]
+      exact hqnext
+    refine ⟨U + 2, ?_, ?_⟩
+    · rw [runFrom_requested initial N start answer w q req hn U hpre hhalt, hadvance]
+    · exact fun i hi => runFrom_requested_encoding_le encG encT initial N start answer
+        w q req hn U R B hpre hhalt hq hreturn hcallee i hi
 
 /-- The actual same-input evaluator reaches the masking result with a bound on every physical
 state, under native-supplier state bounds and the separately charged caller representation. -/

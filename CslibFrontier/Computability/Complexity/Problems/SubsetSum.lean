@@ -46,7 +46,8 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 
 ## Main definitions
 
-* `Cslib.Complexity.SubsetSum`, `Cslib.Complexity.SubsetSum.verifier`.
+* `Cslib.Complexity.SubsetSum`, `Cslib.Complexity.encSubsetSum`,
+  `Cslib.Complexity.SubsetSum.verifier`.
 * `Cslib.Complexity.ThreeSAT.literalDigits`,
   `Cslib.Complexity.ThreeSAT.digitNumbers`, `Cslib.Complexity.ThreeSAT.digitTarget`.
 * `Cslib.Complexity.ThreeSAT.toSubsetSum`: Sipser's reduction.
@@ -55,7 +56,7 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 
 * `Cslib.Complexity.mem_SubsetSum_iff_sublist`: solutions are subsequences of the numbers.
 * `Cslib.Complexity.SubsetSum.isVerifier`, `Cslib.Complexity.SubsetSum.mem_NP`:
-  `SubsetSum ∈ NP (encPair (encList encNat) encNat)`.
+  `SubsetSum ∈ NP encSubsetSum`.
 * `Cslib.Complexity.ThreeSAT.digit_mem_SubsetSum_iff_counts`,
   `Cslib.Complexity.ThreeSAT.counts_iff_satisfiable`: the digit construction has a solution
   exactly when the digit positions can be filled, exactly when the formula is satisfiable.
@@ -83,6 +84,10 @@ open scoped List
 /-- The instances `(a, t)` of subset sum: some sub-multiset of the numbers `a` sums to `t`
 [Karp1972], [Sipser, Chapter 7][Sipser2013]. -/
 def SubsetSum : Set (List ℕ × ℕ) := {x | ∃ s ≤ (x.1 : Multiset ℕ), s.sum = x.2}
+
+/-- Instances `(a, t)` of `SubsetSum`: the list `a`, framed, each of its numbers framed, then the
+target `t`; all numbers in binary. -/
+abbrev encSubsetSum : List ℕ × ℕ ↪ List Bool := encPair (encList encNat) encNat
 
 theorem mem_SubsetSum {x : List ℕ × ℕ} :
     x ∈ SubsetSum ↔ ∃ s ≤ (x.1 : Multiset ℕ), s.sum = x.2 :=
@@ -130,7 +135,7 @@ def verifier (x : (List ℕ × ℕ) × List Bool) : Bool := decide ((maskSelect 
 /-- `SubsetSum.verifier` verifies `SubsetSum` with certificates as long as the encoded
 instance. -/
 theorem isVerifier :
-    IsVerifier (encPair (encList encNat) encNat) Polynomial.X verifier SubsetSum := by
+    IsVerifier encSubsetSum Polynomial.X verifier SubsetSum := by
   intro x
   simp only [mem_SubsetSum, Polynomial.eval_X, verifier, decide_eq_true_eq]
   simpa only [Multiset.sum_coe] using exists_le_iff_exists_maskSelect
@@ -140,13 +145,12 @@ theorem isVerifier :
 binary and compares the sum with the target. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier
-      (encPair (encPair (encList encNat) encNat) encBits) encBool := by
+    ComputableInPolyTime verifier (encPair encSubsetSum encBits) encBool := by
   unfold verifier
   fun_prop
 
 /-- `SubsetSum` belongs to `NP`. -/
-theorem mem_NP : SubsetSum ∈ NP (encPair (encList encNat) encNat) :=
+theorem mem_NP : SubsetSum ∈ NP encSubsetSum :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end SubsetSum
@@ -627,7 +631,7 @@ theorem computableInPolyTime_digitTarget :
 /-- Sipser's reduction is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toSubsetSum :
-    ComputableInPolyTime toSubsetSum encCNF (encPair (encList encNat) encNat) := by
+    ComputableInPolyTime toSubsetSum encCNF encSubsetSum := by
   unfold toSubsetSum encCNF
   fun_prop
 
@@ -635,17 +639,17 @@ end ThreeSAT
 
 /-- `ThreeSAT` reduces to `SubsetSum` in polynomial time by Sipser's digit construction. -/
 theorem polyTimeReducible_ThreeSAT_SubsetSum :
-    PolyTimeReducible encCNF (encPair (encList encNat) encNat) ThreeSAT SubsetSum :=
+    PolyTimeReducible encCNF encSubsetSum ThreeSAT SubsetSum :=
   ⟨ThreeSAT.toSubsetSum, ThreeSAT.computableInPolyTime_toSubsetSum,
     fun φ => (ThreeSAT.toSubsetSum_mem_iff φ).symm⟩
 
 /-- `SubsetSum` is `NP`-hard. -/
-theorem SubsetSum_npHard : NPHard (encPair (encList encNat) encNat) SubsetSum :=
+theorem SubsetSum_npHard : NPHard encSubsetSum SubsetSum :=
   ThreeSAT_npHard.trans polyTimeReducible_ThreeSAT_SubsetSum
 
 /-- **Subset sum is NP-complete**, with the numbers and the target in binary [Karp1972],
 [Sipser, Theorem 7.56][Sipser2013]. -/
-theorem SubsetSum_npComplete : NPComplete (encPair (encList encNat) encNat) SubsetSum :=
+theorem SubsetSum_npComplete : NPComplete encSubsetSum SubsetSum :=
   ⟨SubsetSum.mem_NP, SubsetSum_npHard⟩
 
 end Cslib.Complexity

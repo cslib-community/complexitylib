@@ -52,7 +52,7 @@ open Turing.MultiTapeTM Filter
 private theorem coarse_polynomial_hierarchy {d : ℕ} (hd : 2 ≤ d) :
     DTIME encBits (fun n => (n + 1) ^ d) ⊂
       DTIME encBits (fun n => (n + 1) ^ (3 * d + 9)) := by
-  refine DTIME_ssubset_DTIME (timeConstructible_succ_pow hd)
+  refine DTIME_ssubset_DTIME (timeConstructible_succ_pow d)
     (fun n => (Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)) ?_
   filter_upwards [eventually_ge_atTop 7] with n hn
   have hp : (n + 1) ^ d + 1 ≤ 2 * (n + 1) ^ d := by grind

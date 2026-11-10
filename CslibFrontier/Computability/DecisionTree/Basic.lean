@@ -261,8 +261,8 @@ theorem depth_queryAll_le (f : (ι → Bool) → β) (l : List ι) (a : ι → B
 
 end Graft
 
-/-- Over finitely many variables, every function has a decision tree that queries each variable
-once. -/
+/-- Over finitely many variables, every function is computed by a decision tree of depth at most
+the number of variables. -/
 theorem exists_computes [Fintype ι] (f : (ι → Bool) → β) :
     ∃ t : DecisionTree ι β, t.Computes f ∧ t.depth ≤ Fintype.card ι := by
   classical

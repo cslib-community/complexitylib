@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Logics.FirstOrder.Basic
 public import CslibFrontier.Logics.FirstOrder.QuantifierRank
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # Shared first-order counter-program control
@@ -307,15 +308,13 @@ private theorem reaches_formulaCodeWith_all_loop (hnB : n ≤ B) (hbase : 0 < ba
             (fun i hi => by rw [List.getD_set_ne (by omega), hkeep₁ i (by omega), hkeepm i hi])
             (List.getD_set_self (by rw [hlen₁, hlenm]; exact hk))
             (List.forall_mem_set_of_forall_mem hB₁ (by omega)) hprev'
-        refine ⟨r, regs', hr, hr₁'.trans (Reaches.lt hc₂ hB₁ ?_), hlen, hkeep, hB'⟩
-        simp only [eval_add, eval_reg, eval_const, hv₁, h0₁, hnext, ↓reduceIte]
-        exact Reaches.assign hc₃ hB₁
-          (by simpa only [eval_add, eval_reg, eval_const, hv₁] using hreach)
+        refine ⟨r, regs', hr, hr₁'.trans ?_, hlen, hkeep, hB'⟩
+        cp_step [hv₁, h0₁, hnext]
+        cp_step [hv₁]
       · refine ⟨true, regs₁, by simpa using fun y : Fin n => hprev' y (by omega),
-          hr₁'.trans (Reaches.lt hc₂ hB₁ ?_), hlen₁.trans hlenm,
+          hr₁'.trans ?_, hlen₁.trans hlenm,
           fun i hi => (hkeep₁ i (by omega)).trans (hkeepm i hi), hB₁⟩
-        simp only [eval_add, eval_reg, eval_const, hv₁, h0₁, hnext, ↓reduceIte]
-        exact Reaches.refl _
+        cp_step [hv₁, h0₁, hnext]
 
 private theorem reaches_formulaCodeWith_all (hnB : n ≤ B) (hbase : 0 < base)
     (hfv : ∀ x, fv x < base) {k : ℕ} (φ : L.BoundedFormula α (k + 1)) (b T F : ℕ)
@@ -354,13 +353,11 @@ private theorem reaches_formulaCodeWith_all (hnB : n ≤ B) (hbase : 0 < base)
         (List.forall_mem_set_of_forall_mem hB (Nat.zero_le _))
         (fun m' hm' => absurd hm' (Nat.not_lt_zero _))
     refine ⟨res, regs', by rw [hres, BoundedFormula.realize_all], ?_, hlen, hkeep, hB'⟩
-    refine Reaches.lt hc₀ hB ?_
-    simp only [eval_const, eval_reg, h0, hn, ↓reduceIte]
-    exact Reaches.assign hc₁ hB (by simpa using hreach)
+    cp_step [h0, hn]
+    cp_step
   · refine ⟨true, regs, ?_, ?_, rfl, fun _ _ => rfl, hB⟩
     · simp only [true_iff, BoundedFormula.realize_all]; exact fun y => absurd y.2 (by omega)
-    · refine Reaches.lt hc₀ hB ?_
-      simp only [eval_const, eval_reg, h0, hn, ↓reduceIte]; exact Reaches.refl _
+    · cp_step [h0, hn]
 
 end Reaches
 

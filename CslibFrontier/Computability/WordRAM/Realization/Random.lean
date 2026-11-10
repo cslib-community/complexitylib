@@ -401,20 +401,22 @@ theorem exists_init_program (h : RealizesRand .exact p input output safe time ca
           Function.Injective src → Function.Injective tmp → (∀ i j, src i ≠ tmp j) →
           (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
           ∀ (i : Fin l) (w : ℕ) (d : δ) (xs : List ℕ), (∀ j : Fin k, xs.getD j.val 0 = input d j) →
-          k ≤ xs.length → Fits w (xs.length + 1) → InputFits w xs → safe w d (inputState xs) →
-          (Memory.spec w).toRandomized.withCoins.toSpec.DemonicValid (inputState xs) (p d) →
+          k ≤ xs.length → Fits w (xs.length + 1) → InputFits w xs →
+          safe w d (Memory.State.init xs) →
+          (Memory.spec w).toRandomized.withCoins.toSpec.DemonicValid (Memory.State.init xs) (p d) →
           ∀ F : RandCfg r → ℕ × Memory.State,
           (∀ v y, F (.halted v y) = (v, memoryState frontier y)) →
           RandHaltsWithin w ((Code.seq (inputPrefix frontier (tmp (Fin.last (l + n))) src)
               (emit frontier src tmp)).program (tmp (Fin.castAdd (n + 1) i)))
-            (State.init xs) (C * (time d (inputState xs) + 1) + 1) ∧
+            (State.init xs) (C * (time d (Memory.State.init xs) + 1) + 1) ∧
           RandCallsBounded w ((Code.seq (inputPrefix frontier (tmp (Fin.last (l + n))) src)
               (emit frontier src tmp)).program (tmp (Fin.castAdd (n + 1) i)))
-            (State.init xs) (C * (time d (inputState xs) + 1) + 1) (calls d (inputState xs)) ∧
+            (State.init xs) (C * (time d (Memory.State.init xs) + 1) + 1)
+            (calls d (Memory.State.init xs)) ∧
           (evalRand w ((Code.seq (inputPrefix frontier (tmp (Fin.last (l + n))) src)
               (emit frontier src tmp)).program (tmp (Fin.castAdd (n + 1) i)))
-            (C * (time d (inputState xs) + 1) + 1) (State.init xs)).map F =
-            ((Memory.spec w).toRandomized.withCoins.run (p d) (inputState xs)).map
+            (C * (time d (Memory.State.init xs) + 1) + 1) (State.init xs)).map F =
+            ((Memory.spec w).toRandomized.withCoins.run (p d) (Memory.State.init xs)).map
               fun (a, s) => (output a i, s) := by
   obtain ⟨n, C, emit, he⟩ := h
   refine ⟨n, C + (2 * k + 5), emit, ?_⟩
@@ -427,10 +429,10 @@ theorem exists_init_program (h : RealizesRand .exact p input output safe time ca
     (hm.symm ▸ hv)
   rw [hm] at h₁
   have h₂ := ExecRandLaw.seq_det ex (h₁.map fun (v, s) => (v i, s))
-  have hT : 2 * k + 5 + C * (time d (inputState xs) + 1) + 1 ≤
-      (C + (2 * k + 5)) * (time d (inputState xs) + 1) + 1 := by
+  have hT : 2 * k + 5 + C * (time d (Memory.State.init xs) + 1) + 1 ≤
+      (C + (2 * k + 5)) * (time d (Memory.State.init xs) + 1) + 1 := by
     rw [Nat.add_mul]
-    have := Nat.mul_le_mul_left (2 * k + 5) (Nat.le_add_left 1 (time d (inputState xs)))
+    have := Nat.mul_le_mul_left (2 * k + 5) (Nat.le_add_left 1 (time d (Memory.State.init xs)))
     omega
   obtain ⟨hhalt, hcalls, -, hlaw⟩ := h₂.program (tmp (Fin.castAdd (n + 1) i)) hT F
     fun y _ => hF _ y

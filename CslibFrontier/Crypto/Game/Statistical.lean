@@ -26,7 +26,7 @@ Copied from cslib PR #1072 at `1606f7e2fb50e15a8843c9a26a04a8d94cb424c3`.
 Only the Boolean equality is included: the remaining arbitrary-type metric API requires #1065.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 

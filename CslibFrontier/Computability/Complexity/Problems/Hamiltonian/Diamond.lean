@@ -10,9 +10,9 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Defs
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Soundness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import CslibFrontier.Foundations.Data.List.FlatMapRange
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Foundations.Data.List.FlatMapRange
 
 /-!
 # Diamond graphs
@@ -306,7 +306,7 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
       exact hdiam _ (by simp [diamondArcs])
     · simpa using ⟨0, hpos, step_ne_nil 0⟩
   · have hd' : dir i = false := by simpa using hd
-    refine ⟨List.isChain_flatMap_range_reverse (fun a _ => step_ne_nil a)
+    refine ⟨List.isChain_flatMap_reverse_range (fun a _ => step_ne_nil a)
       (fun a _ => isChain_step fun j hv => ?_)
       (fun a ha => link_step (arc_row_pred hi ha) fun j hv => ?_), ?_, ?_, ?_⟩
     · obtain ⟨hj, rfl, rfl⟩ := (leftVisit_eq_some_iff hD hpick).1 hv
@@ -315,12 +315,12 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
       obtain rfl : a = 3 * (pick j).2.2.1 + 2 := by omega
       exact ((arc_detour (N := N) (slots := slots) hpick hj).2 hd').2
     · intro x hx
-      rw [List.head?_flatMap_range_reverse hpos (step_ne_nil _), head?_step,
+      rw [List.head?_flatMap_reverse_range hpos (step_ne_nil _), head?_step,
         Option.mem_some_iff] at hx
       subst hx
       exact hdiam _ (by simp [diamondArcs])
     · intro x hx
-      rw [List.getLast?_flatMap_range_reverse hpos (step_ne_nil 0)] at hx
+      rw [List.getLast?_flatMap_reverse_range hpos (step_ne_nil 0)] at hx
       simp only [step, leftVisit, lt_irrefl, and_false, ite_false, Option.map_none,
         Option.toList_none, List.getLast?_singleton, Option.mem_def, Option.some.injEq] at hx
       subst hx
