@@ -30,7 +30,7 @@ uses one fixed body emitter and static registers for the mutable state and count
 
 * `iterationSum_eq`: the native grading rule's semantic sum is memory charge plus local work.
 * `loopEmit_entry`, `loopBody_tail`: the native loop's entry prologue and the control tail of one
-  iteration, shared by the deterministic, randomized and `while` loop realizations.
+  iteration, shared by the deterministic and randomized loop realizations.
 * `bodyBank_layout`, `bodySlot_injective`, `stateSlot_ne_bodySlot`,
   `regs_comp_append_eq_appendWords`, `loopEmit_not_readsWidth`: the body bank's register premises,
   the state words read back as appended words, and width-freedom of the loop.
