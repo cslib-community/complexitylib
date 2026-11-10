@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting.Machine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting.Routines
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 
 /-!
 # Native callbacks for the complete counting query machine
@@ -37,27 +38,6 @@ four times the current one.
 namespace Turing.InductiveCounting
 
 open MultiTapeTM ComputableInSpace MultiTapeNTM.ConfigurationGraph
-
-/-- One unary output bit per input bit. -/
-def unaryLengthT : Transducer Bool Unit where
-  q₀ := ()
-  step _ _ := ((), [true])
-  final _ := []
-  length_step_le _ _ := by simp
-  length_final_le _ := by simp
-
-theorem unaryLengthT_run (w : List Bool) :
-    unaryLengthT.run () w = List.replicate w.length true := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => rw [Transducer.run_cons, ih]; rfl
-
-/-- Reading binary digits and emitting one true bit per digit computes their width in linear
-time and space; there is no unary expansion of the original number. -/
-private theorem sizeUnary_inSpace : ComputableInSpace Nat.size encNat encUnary
-    fun n => (encNat n).length := by
-  exact of_inO (.of_linear (.of_transducer unaryLengthT fun n => by
-    rw [encUnary_apply, unaryLengthT_run, encNat_apply, Nat.size_eq_bits_len]))
 
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
 
@@ -246,7 +226,7 @@ private theorem runtimeNext_budget (ntm : MultiTapeNTM k Bool State)
   have hchk := runtimeChecked_budget hs
   have hc := controller_budget hs
   have hN := (vertexBound_budget (k := k) hB hin)
-  have hw := budget_comp_linear sizeUnary_inSpace hN
+  have hw := budget_comp_linear natSizeUnary hN
   have hsource := (startID_budget ntm hB hin)
   have ha := localAnswer_budget ntm hB hn hchk hc hsymbol hin
   have hadvance := runtime_budget hn hB hchk
