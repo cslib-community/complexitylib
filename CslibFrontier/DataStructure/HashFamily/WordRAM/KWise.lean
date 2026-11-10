@@ -1804,78 +1804,12 @@ theorem reduceStepCode_exec {w base b U M k c : ℕ} {s : Data 18}
       ((Nat.xor_lt_two_pow
         (Nat.xor_lt_two_pow (Nat.xor_lt_two_pow hcLow_lt hc3_lt) hc2_lt) hc2_sh_lt).trans_le
         hpow_q_le)
-  set s1 := s.set 10 r
-  have e1 : Exec w (.op (.load 10 0) : Code .exact 18) s s1 1 := by
-    simpa +decide [s1, h0, hm0] using (Exec.load (B := .exact) (w := w) (d := 10) (a := 0) (x := s))
-  set s2 := s1.set 15 (base + 1)
-  have e2 : Exec w (.op (.exactBin .add 15 0 8) : Code .exact 18) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0, h8]) (by fits)
-  set s3 := s2.set 11 q
-  have e3 : Exec w (.op (.load 11 15) : Code .exact 18) s2 s3 1 := by
-    simpa +decide [s3, s2, s1, hm1] using
-      (Exec.load (B := .exact) (w := w) (d := 11) (a := 15) (x := s2))
-  set s4 := s3.set 15 (base + 2)
-  have e4 : Exec w (.op (.exactBin .add 15 15 8) : Code .exact 18) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h8, Nat.add_assoc]) (by fits)
-  set s5 := s4.set 12 (2 ^ r - 1)
-  have e5 : Exec w (.op (.load 12 15) : Code .exact 18) s4 s5 1 := by
-    simpa +decide [s5, s4, s3, s2, s1, hm2] using
-      (Exec.load (B := .exact) (w := w) (d := 12) (a := 15) (x := s4))
-  set s6 := s5.set 15 (base + 3)
-  have e6 : Exec w (.op (.exactBin .add 15 15 8) : Code .exact 18) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h8, Nat.add_assoc]) (by fits)
-  set s7 := s6.set 13 (2 ^ q - 1)
-  have e7 : Exec w (.op (.load 13 15) : Code .exact 18) s6 s7 1 := by
-    simpa +decide [s7, s6, s5, s4, s3, s2, s1, hm3] using
-      (Exec.load (B := .exact) (w := w) (d := 13) (a := 15) (x := s6))
-  set s8 := s7.set 14 (q + r)
-  have e8 : Exec w (.op (.exactBin .add 14 11 10) : Code .exact 18) s7 s8 1 :=
-    exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1]) hfit_3r
-  set s9 := s8.set 15 c3
-  have e9 : Exec w (.op (.exactBin .shiftRight 15 2 14) : Code .exact 18) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h2, c3]) hfit_c3
-  set s10 := s9.set 16 c2_raw
-  have e10 : Exec w (.op (.exactBin .shiftRight 16 2 11) : Code .exact 18) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h2, c2_raw]) hfit_c2_raw
-  set s11 := s10.set 16 c2
-  have e11 : Exec w (.op (.exactBin .and 16 16 12) : Code .exact 18) s10 s11 1 :=
-    exec_exactBin (by simp +decide [s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, c2]) hfit_c2
-  set s12 := s11.set 2 cLow
-  have e12 : Exec w (.op (.exactBin .and 2 2 13) : Code .exact 18) s11 s12 1 :=
-    exec_exactBin (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h2, cLow])
-      hfit_cLow
-  set s13 := s12.set 2 (cLow ^^^ c3)
-  have e13 : Exec w (.op (.exactBin .xor 2 2 15) : Code .exact 18) s12 s13 1 :=
-    exec_exactBin (by simp +decide [s12, s11, s10, s9]) hfit_xor1
-  set s14 := s13.set 2 ((cLow ^^^ c3) ^^^ c2)
-  have e14 : Exec w (.op (.exactBin .xor 2 2 16) : Code .exact 18) s13 s14 1 :=
-    exec_exactBin (by simp +decide [s13, s12, s11]) hfit_xor2
-  set s15 := s14.set 16 (c2 <<< r)
-  have e15 : Exec w (.op (.exactBin .shiftLeft 16 16 10) : Code .exact 18) s14 s15 1 :=
-    exec_exactBin (by simp +decide [s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1])
-      hfit_c2_sh
-  set s16 := s15.set 2 (((cLow ^^^ c3) ^^^ c2) ^^^ (c2 <<< r))
-  have e16 : Exec w (.op (.exactBin .xor 2 2 16) : Code .exact 18) s15 s16 1 :=
-    exec_exactBin (by simp +decide [s15, s14]) hfit_xor3
-  have hall :=
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq
-      (e11.seq (e12.seq (e13.seq (e14.seq (e15.seq e16))))))))))))))
-  refine ⟨s16, hall, ?_, ?_, rfl⟩
-  · simp only [s16, Data.set, Function.update_self, reduceTrinomialCode,
-      cLow, c3, c2, c2_raw, q, trinomialDeg, r, t,
+  unfold reduceStepCode
+  wram_exec [h0, h2, h8, hm0, hm1, hm2, hm3, Nat.add_assoc]
+  refine ⟨?_, fun reg ⟨hreg_lt, hreg2⟩ => ?_, rfl⟩
+  · wram_simp [reduceTrinomialCode, cLow, c3, c2, c2_raw, q, trinomialDeg, r, t,
       show 2 * 3 ^ trinomialStep U M + 3 ^ trinomialStep U M = 3 * 3 ^ trinomialStep U M by ring]
-  · intro reg ⟨hreg_lt, hreg2⟩
-    have hr10 : reg ≠ 10 := by omega
-    have hr11 : reg ≠ 11 := by omega
-    have hr12 : reg ≠ 12 := by omega
-    have hr13 : reg ≠ 13 := by omega
-    have hr14 : reg ≠ 14 := by omega
-    have hr15 : reg ≠ 15 := by omega
-    have hr16 : reg ≠ 16 := by omega
-    simp only [s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, Data.set,
-      Function.update_of_ne hreg2, Function.update_of_ne hr10, Function.update_of_ne hr11,
-      Function.update_of_ne hr12, Function.update_of_ne hr13, Function.update_of_ne hr14,
-      Function.update_of_ne hr15, Function.update_of_ne hr16]
+  · wram_simp
 
 /-- Body of `hornerLoop` on `Data 18`: decrements `j` (`reg 3`), multiplies `acc` (`reg 2`) by
 `u` (`reg 1`) in `TrinomialField (trinomialStep U M)` via `outerClmulLoop` and `reduceStepCode`,
