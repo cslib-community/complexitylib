@@ -512,8 +512,8 @@ of the `c i` sums to `m`, completeness gives a refutation of degree `n + 1`
 
 Run `scripts/build.sh CslibFrontierTests.ProofComplexity.Algebraic` from the repository root to
 check them. Not yet formalized: the matching upper bound of Theorem 4.2, the size lower bounds of
-the same paper, pigeonhole degree lower bounds, the simulation of bounded-width resolution by
-polynomial calculus, and sum-of-squares.
+the same paper, pigeonhole degree lower bounds, and the simulation of bounded-width resolution by
+polynomial calculus.
 
 ## Timestamped f-DAGs and local surgery
 
