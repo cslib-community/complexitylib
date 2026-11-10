@@ -17,13 +17,17 @@ import Mathlib.Tactic.Abel
 /-!
 # Obliviousness of the garbled binary-to-one-hot conversion
 
-The evaluator of the binary-to-one-hot gadget of Heath and Kolesnikov [HeathKolesnikov2021], as
-used in `logrow` [HeathKolesnikovNg2024], sees a `OneHotView`: one label on each of the `n + 1`
-input wires and the `n` ciphertexts. Its index `x` is public. The simulator `simulate` samples all
-of these uniformly, from `n` alone. A simulator that sees neither the input nor an output is
-*obliviousness* in the sense of Bellare, Hoang and Rogaway [BellareHoangRogaway2012], the notion
-of [HeathKolesnikovNg2024], Theorem 3, whose proof simulates the one-hot rows (`n` here, the
-paper's `n - 1`) by uniform strings, as shown in [HeathKolesnikov2021].
+The evaluator of the binary-to-one-hot conversion `bin-to-hot` of Heath [Heath2024] (§4.1, p. 14),
+used for one-hot garbling in `logrow` [HeathKolesnikovNg2024], sees a `OneHotView`: one label on
+each of the `n + 1` input wires and the `n` ciphertexts. Its index `x` is public. The simulator
+`simulate` samples all of these uniformly, from `n` alone. A simulator that sees neither the input
+nor an output is *obliviousness* in the sense of Bellare, Hoang and Rogaway
+[BellareHoangRogaway2012], the notion of [HeathKolesnikovNg2024], Theorem 3, whose proof simulates
+the one-hot rows (`n` here, the paper's `n - 1`) by uniform strings and refers to
+[HeathKolesnikov2021] for this. The argument of [HeathKolesnikov2021] is for its own GGM-tree
+construction, and [Heath2024] obtains obliviousness from its general switch-system theorem
+(Theorem 4). The reduction below is original to this file: an exact finite reduction from the
+single-ciphertext construction to the tweaked circular correlation robustness game.
 
 Security rests on circular correlation robustness [ChoiKatzKumaresanZhou2012], in the tweaked form
 of [HeathKolesnikovNg2024], Definition 1, which follows [ZahurRosulekEvans2015] (see also
@@ -71,6 +75,7 @@ tracked. Obliviousness, privacy and authenticity of the full `logrow` gate are n
 
 ## References
 
+* [D. Heath, *Efficient Arithmetic in Garbled Circuits*][Heath2024]
 * [D. Heath, V. Kolesnikov, *One Hot Garbling*][HeathKolesnikov2021]
 * [D. Heath, V. Kolesnikov, L. K. L. Ng, *Garbled Circuit Lookup Tables with Logarithmic Number
   of Ciphertexts*][HeathKolesnikovNg2024]
@@ -97,8 +102,8 @@ abbrev OneHotView (L : Type) (n : ℕ) : Type := (Fin (n + 1) → L) × (Fin n �
 
 /-- The circular correlation robust oracle with offset `Δ`, `(X, τ, b) ↦ H (X + Δ) τ + b Δ`
 ([HeathKolesnikovNg2024], Definition 1, with the tweak `τ` in the role of the paper's `i`). -/
-@[expose] def ccr (H : L → T → L) (Δ : L) (q : L × T × Bool) : L :=
-  H (q.1 + Δ) q.2.1 + bitOffset Δ q.2.2
+@[expose] def ccr (H : L → T → L) (Δ : L) : L × T × Bool → L
+  | (X, τ, b) => H (X + Δ) τ + bitOffset Δ b
 
 /-- The circular correlation robust oracle as a keyed function: the key `k` selects the offset
 `δ k`. Taking `δ` to be the identity samples a uniform offset; a subtype of `L` can fix bits of

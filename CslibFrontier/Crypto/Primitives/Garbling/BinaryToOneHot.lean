@@ -15,17 +15,23 @@ import Mathlib.Tactic.Abel
 /-!
 # Garbled binary-to-one-hot conversion
 
-The one-hot garbling gadget of Heath and Kolesnikov [HeathKolesnikov2021], which the
-lookup-table garbling scheme `logrow` of Heath, Kolesnikov and Ng [HeathKolesnikovNg2024] uses
-through the interface of its Figure 1. Wire labels live in an additive group `L` of
-characteristic two (over `GF(2)^λ`, addition is XOR) with a Free-XOR global offset `Δ`
-[KolesnikovSchneider2008]: the label of bit `b` on a wire with zero-label `X` is
-`X + bitOffset Δ b`. From one label on each of `n + 1` input wires and `n` ciphertexts of one
-label each, the evaluator obtains Free-XOR labels of the one-hot vector of its input, a vector of
-`2 ^ (n + 1)` bits. With the paper's `n` equal to `n + 1` here, this is the `(n - 1) κ` term of
-the `logrow` material size ([HeathKolesnikovNg2024], Theorem 1). The construction below follows a
-reconstruction of the gadget; it was checked against the interface and cost stated in
-[HeathKolesnikovNg2024], not against the text of [HeathKolesnikov2021].
+The binary-to-one-hot conversion `bin-to-hot` of Heath [Heath2024] (§4, pp. 13–14; the
+construction is in §4.1, p. 14). The lookup-table garbling scheme `logrow` of Heath, Kolesnikov
+and Ng [HeathKolesnikovNg2024] uses one-hot garbling through the interface of its Figure 1
+(p. 10). Wire labels live in an additive group `L` of characteristic two (over `GF(2)^λ`, addition
+is XOR) with a Free-XOR global offset `Δ` [KolesnikovSchneider2008]: the label of bit `b` on a
+wire with zero-label `X` is `X + bitOffset Δ b`. From one label on each of `n + 1` input wires
+and `n` ciphertexts of one label each, the evaluator obtains Free-XOR labels of the one-hot vector
+of its input, a vector of `2 ^ (n + 1)` bits.
+
+One-hot garbling is due to Heath and Kolesnikov [HeathKolesnikov2021]. Their conversion (§4.1,
+p. 10 of the ePrint full version) expands a GGM tree and sends two encrypted values per level and a
+final correction, `2(n - 1) + 1` ciphertexts for `n` input bits. The single-ciphertext step used
+here is Heath's, which [Heath2024], §4, notes halves that material to `(n - 1) κ` bits. With the
+paper's `n` equal to `n + 1` here, this is the `(n - 1) κ` term of the `logrow` material size
+([HeathKolesnikovNg2024], Theorem 1, p. 19, and the cost breakdown on p. 20). Figure 1 of
+[HeathKolesnikovNg2024] instead states `(2n - 1) κ` bits for the one-hot interface, the count of
+[HeathKolesnikov2021]; the gadget here matches Theorem 1, not Figure 1.
 
 Positions of the one-hot vector over `t + 1` input bits are bit vectors `j : Fin (t + 1) → Bool`;
 the position `Fin.snoc j c` of the next vector extends `j` by the next input bit `c`. Over one
@@ -37,6 +43,13 @@ at position `Fin.snoc j false` and `y j` at `Fin.snoc j true`, and sends the cip
 knows the hot position `x` but not the zero-label at `x`. It recomputes `y j` at every other
 position, and recovers `y x + bitOffset Δ c` from its label `b + bitOffset Δ c` of the new bit
 and the ciphertext.
+
+In the notation of [Heath2024], §4.1, a step scales the one-hot vector `h` of the bits so far by
+the new bit (`scale₁`, which needs no material), joins the sum `s` of the scaled vector `h′` with
+the new bit, and returns `(h′ + h) ⊔ h′`. Here `y j` is the zero-label of `h′` at position `j`,
+the ciphertext is that one join, and `G j + y j` and `y j` are the zero-labels of the halves
+`h′ + h` and `h′`. [Heath2024] recurses on `x[1..]` and joins `x[0]`; this file appends the new
+bit last.
 
 Hashes are a tweakable function `H : L → T → L`; step `t` hashes position `j` with tweak `tw t j`.
 Correctness (`evaluate_garble`) holds for every `H`, `tw`, `Δ`, choice of zero-labels and
@@ -61,6 +74,7 @@ index (`tableMul_evaluate_garble`). Obliviousness is in
 
 ## References
 
+* [D. Heath, *Efficient Arithmetic in Garbled Circuits*][Heath2024]
 * [D. Heath, V. Kolesnikov, *One Hot Garbling*][HeathKolesnikov2021]
 * [D. Heath, V. Kolesnikov, L. K. L. Ng, *Garbled Circuit Lookup Tables with Logarithmic Number
   of Ciphertexts*][HeathKolesnikovNg2024]
