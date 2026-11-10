@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Logics.FirstOrder.Ordered.TransitiveClosure
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # FO(TC) model checking in nondeterministic logarithmic space
@@ -413,9 +414,7 @@ theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
         ⟨fun fv base val => ModelChecker.atomicCompiler_correct hwf fv base val, hB1, hnB,
           by rw [hrej]; rfl, fun s hs h => by simp [hs, hrej] at h⟩
       refine Sound.of_oblivious hB1 (l' := 5 + 6 * v.count) (regs' := regs₁) ?_ ?_
-      · refine Reaches.slt hguard (Nat.zero_le _) hB₁ ?_
-        rw [ite_eq_right (by simp only [Expr.eval_reg, Expr.eval_const, h0₁ hwf]; omega)]
-        exact Reaches.refl _
+      · cp_step [h0₁ hwf]
       have hC := correct hE φ rfl true hwidth (fun e : Empty => e.elim) 3 Empty.elim
         RelEnv.empty (5 + 6 * v.count) (5 + 6 * v.count + len φ true) regs₁ hcomp (by decide)
         (fun e => e.elim) (by rw [hlen₁]; simp) (h0₁ hwf) (fun e => e.elim) hB₁
@@ -425,9 +424,7 @@ theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
         ⟨hwf, hn, (hφ (decoded v a hn)).mpr hsat⟩)
     · refine Sound.of_oblivious hB1 (l' := 6 + 6 * v.count + len φ true) (regs' := regs₁) ?_
         (hreject regs₁ hB₁)
-      refine Reaches.slt hguard (Nat.zero_le _) hB₁ ?_
-      rw [ite_eq_left (by simp only [Expr.eval_reg, Expr.eval_const, h0₁ hwf]; omega)]
-      exact Reaches.refl _
+      cp_step [h0₁ hwf]
   · rw [ite_eq_right hwf]
     exact hreject regs₁ hB₁
 
@@ -461,9 +458,7 @@ theorem accepts_decider {φ : Formula (language L) TC.shape [] Empty}
   have hguardStep : (decider v φ).Reaches (encStructure a)
       ((decider v φ).Oblivious (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ)))
       (4 + 6 * v.count, 0 :: regs₁) (5 + 6 * v.count, 0 :: regs₁) := by
-    refine Reaches.slt hguard (Nat.zero_le _) hB₁ ?_
-    rw [ite_eq_right (by simp only [Expr.eval_reg, Expr.eval_const, h0₁ hwf]; omega)]
-    exact Reaches.refl _
+    cp_step [h0₁ hwf]
   obtain ⟨regs', -, hbr⟩ := Complete.of_reaches hshape hreach₁
     (Complete.of_oblivious hguardStep (hC.2 ((hφ (decoded v a hn)).mp hK)))
   obtain ⟨c', hc'⟩ := hbr false

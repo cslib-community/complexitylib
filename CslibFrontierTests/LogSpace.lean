@@ -6,11 +6,13 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import CslibFrontier.Tactic.LogSpace
 
 /-! Logarithmic space: a nontrivial problem in `L` decided in constant workspace, complements,
-reductions and composition, a nondeterministic machine with a branch running forever, the
+reductions and composition, a nondeterministic machine with a branch running forever, decided in
+polynomial time and in time `2 ^ O(log₂ n)` by searching its reachable views, the
 bounds at inputs of length zero and one, codes of views without their input, and breadth-first
 search on small graphs. -/
 
@@ -116,6 +118,11 @@ private theorem recognizesInSpace_loopOrAccept :
 /-- Breadth-first search ignores the looping branch. -/
 example : (Set.univ : Set (List Bool)) ∈ P encBits :=
   mem_P_of_recognizesInSpace recognizesInSpace_loopOrAccept
+
+/-- The search through the reachable views stops by itself, here within time `2 ^ O(log₂ n)`. -/
+example : ∃ c, (Set.univ : Set (List Bool)) ∈ DTIME encBits fun n => 2 ^ (c * (Nat.log2 n + 1)) :=
+  (recognizesInSpace_loopOrAccept.mem_DTIME (s := fun n => 0 * (Nat.log2 n + 1))).imp
+    fun _ h => DTIME_mono (fun _ => by simp) h
 
 /-! ### Codes of views without their input -/
 

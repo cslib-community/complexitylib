@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -356,4 +356,57 @@ theorem returnSome {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ)) (j : F
   · exact hv
 
 end Realizes
+
+namespace RealizesBounded
+
+/-- Frontier-bounded realization of a finite result vector computed by scalar glue. -/
+theorem glueVector (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ))
+    (f : δ → α) (g bound : Fin l → (Fin k → ℕ) → ℕ) (time : Fin l → ℕ)
+    {P : (Fin k → ℕ) → Prop}
+    (hresult : ∀ d i, output (f d) i = g i (input d))
+    (hcoord : ∀ i, GlueComputes B P (g i) (bound i) (time i)) :
+    RealizesBounded B (fun d => pure (f d)) input output
+      (fun w d _ => P (input d) ∧ ∀ i, Fits w (bound i (input d)))
+      (fun _ _ => (∑ i, time i) + l) := by
+  let scalars := fun i => GlueComputes.Witness.ofGlueComputes (hcoord i)
+  let W := Realizes.Witness.glueVectorOfScalars input output f g bound time hresult scalars
+  refine ⟨W.scratchSize, W.factor, W.code, fun frontier src tmp hi hd hf hs => ?_⟩
+  obtain ⟨hnw, hrun⟩ := W.code_spec frontier src tmp hi hd hf hs
+  have hn (i : Fin l) : (scalars i).scratchSize ≤ W.scratchSize :=
+    Finset.le_sup (f := fun j => (scalars j).scratchSize) (Finset.mem_univ i)
+  let aux (i : Fin l) : Fin ((scalars i).scratchSize + 1) → Fin _ :=
+    fun j => tmp ⟨l + j.val, by have := hn i; omega⟩
+  have hauxi (i : Fin l) : Function.Injective (aux i) := by
+    intro a b hab
+    apply Fin.ext
+    have hh := congrArg Fin.val (hi hab)
+    dsimp only [aux] at hh
+    omega
+  have hcglue (i : Fin l) :
+      (Code.seq ((scalars i).code src (aux i))
+        (.op (.copy (tmp (Fin.castAdd (W.scratchSize + 1) i)) (tmp ⟨l, by omega⟩)))).IsGlue :=
+    ⟨((scalars i).code_spec src (aux i) (hauxi i) (fun _ _ => hd _ _)).1, trivial⟩
+  have hreg : IsRegOnlyCode (W.code frontier src tmp) :=
+    (coordinateSeq_glue _ (tmp ⟨l, by omega⟩) hcglue (List.finRange l)).isRegOnlyCode
+  refine ⟨hnw, fun w d x hx hin hsafe hv => ?_⟩
+  obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv
+  exact ⟨y, ExecBounded.of_execWithin_regOnly hreg hy, hm, hout, hframe⟩
+
+/-- Frontier-bounded `pure₀` rule with absorbed native glue cost. -/
+theorem pure₀ {B : Basis} {δ α : Type} {k l : ℕ}
+    (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ)) (f : δ → α)
+    (g : Fin l → (Fin k → ℕ) → ℕ) {P : (Fin k → ℕ) → Prop} {bound : (Fin k → ℕ) → ℕ}
+    (need : ℕ → (Fin k → ℕ) → Prop)
+    (hresult : ∀ d i, output (f d) i = g i (input d))
+    (hcoord : ∀ i, GlueComputable B (g i) P bound)
+    (hneed : ∀ w v, (∀ i, Fits w (v i)) → P v → need w v → Fits w (bound v)) :
+    RealizesBounded B (fun d => pure (f d)) input output
+      (fun w d _ => P (input d) ∧ need w (input d)) (fun _ _ => 0) := by
+  choose time htime using hcoord
+  refine ((glueVector input output f g (fun _ => bound) time hresult htime).consequence
+    (fun w d _ hwords _ h => ⟨h.1, fun _ => hneed w _ hwords h.1 h.2⟩)
+    (fun _ _ => le_rfl)).mono_mul ((∑ i, time i) + l) (fun _ _ => ?_)
+  exact Nat.le_mul_of_pos_right _ (by omega)
+
+end RealizesBounded
 end Cslib.WordRAM.Realization

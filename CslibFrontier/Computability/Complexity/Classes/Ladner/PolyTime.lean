@@ -439,12 +439,6 @@ theorem exists_index_of_mem_P {A : Set (List Bool)} (h : A ∈ P encBits) (B : �
   obtain ⟨i, hi, hrun⟩ := exists_index_runIndexed_eq tm (t := fun x => t x.length)
     (fun x => (htm x).runFrom_of_le le_rfl) (B + c + e)
   -- the clock of the index exceeds the time bound
-  have hclock (x : List Bool) : t x.length ≤ clock i x.length := by
-    calc t x.length ≤ c * (x.length + 1) ^ e := hle x
-      _ ≤ 2 ^ i * (x.length + 1) ^ i :=
-          Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
-            (Nat.pow_le_pow_right (by omega) (by omega))
-      _ = clock i x.length := by rw [clock, ← mul_pow]; ring_nf
-  exact ⟨f, hf, i, by omega, fun w => hrun w _ (hclock _)⟩
+  exact ⟨f, hf, i, by omega, fun w => hrun w _ ((hle w).trans (le_clock (by omega) w.length))⟩
 
 end Cslib.Complexity.Ladner
