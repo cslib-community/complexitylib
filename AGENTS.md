@@ -258,16 +258,21 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs this sequence. Both full and quick modes require those manual checks;
-CI runs them too, with the tests included in its Python tooling suite. These stdlib-only checks
-need no PDF tools or generated research data. They catch source/link drift and malformed visual
-markup; they do not replace the required review of both manuals' meaning and usability.
-CI runs the same six Lean checks.
-For Lean, dependency or build changes, all six gates must pass on the final source revision before
+optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
+CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
+hygiene, the encoding readability ratchet, documentation pins, and the post-build tidy statement
+ratchet, result registry and changed-file lints. Changed-file checks compare with the merge base
+of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining step
+stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
+fails when the workflow gains a step that is neither mirrored nor recorded there. Both full and
+quick modes require the manual checks; these stdlib-only checks need no PDF tools or generated
+research data. They catch source/link drift and malformed visual markup; they do not replace the
+required review of both manuals' meaning and usability.
+For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
 repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-when hosted coverage is unavailable; changes to validation machinery also need direct checks of
-the changed behavior. Required CI and merge-group checks still apply.
+(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
+need direct checks of the changed behavior. Required CI and merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
@@ -276,10 +281,12 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. Quick mode lints only the affected library modules, skips the global
-test/style/init-import gates and is not full validation. Non-Lean changes, deletions/renames,
-changed aggregates, unsupported layouts and ambiguous change/import analysis fall back to all
-six gates. The one exception is
+it does not fetch. It also runs source hygiene on the changed library and test files and, when a
+library module changed, the encoding readability ratchet: both read only sources and take seconds.
+Quick mode lints only the affected library modules, skips the global test/style/init-import gates
+and the post-build audits, which need whole-library outputs, and is not full validation. Non-Lean
+changes, deletions/renames, changed aggregates, unsupported layouts and ambiguous change/import
+analysis fall back to the full check. The one exception is
 `scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
