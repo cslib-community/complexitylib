@@ -45,7 +45,7 @@ Adapted from [Average.lean](https://github.com/anthropics/formal-math/blob/16a5c
 
 -/
 
-@[expose] public section
+public section
 
 namespace Finset
 

@@ -15,6 +15,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 
 import CslibFrontier.Computability.Probabilistic.UniformNat
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -280,13 +281,7 @@ theorem eval_predictionGame {n imageLength : ℕ} {Image : Type*}
   simp_rw [← fixedPredictor_distribution encodeImage adversary evaluate c d hrealize n
     imageLength _ (hlength _), PMF.bind_map]
   simp only [Function.comp_def, matrixPrediction, PMF.map, PMF.monad_bind_eq_bind]
-  simp_rw [← PMF.bind_comm (PMF.uniformOfFintype (BitString (coinBudget c d n imageLength)))]
-  congr 1 with coins : 1
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with index : 1
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with rows : 1
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- The word one-wayness game is the finite inversion experiment under the same
 image encoding. Success still means finding any preimage. -/

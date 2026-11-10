@@ -58,7 +58,7 @@ unconditionally at `M = countingThresholdBase K B`.
   Appendix A.2–A.3][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

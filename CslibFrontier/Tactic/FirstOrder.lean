@@ -9,7 +9,9 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Projection
 public import CslibFrontier.Logics.FirstOrder.Reduction.QuantifierFree
+public import CslibFrontier.Tactic.FailureNote
 public import CslibFrontier.Tactic.FirstOrder.Init
+public import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Automation for first-order interpretations and reductions
@@ -29,10 +31,11 @@ latter, so that a new reduction costs only its semantic argument.
   concrete vocabulary.
 * `fo_iso_closed` runs the same search on closure of a class under isomorphism (`IsoClosed`),
   whose lemmas are registered in the rule set `FirstOrder` too.
-* `fo_simp` simplifies with the simp set `fo_realize`, unfolding the realization of formulas,
-  projection formulas and the relations of interpreted structures to propositions about the
-  input structure. The relation and domain formulas of concrete interpretations and projections
-  are unfolded by the simprocs `reduceInterpretationDomain`, `reduceInterpretationRel`,
+* `fo_simp`, defined in `CslibFrontier.Tactic.FirstOrder.Simp` and re-exported here, simplifies
+  with the simp set `fo_realize`, unfolding the realization of formulas, projection formulas and
+  the relations of interpreted structures to propositions about the input structure. The
+  relation and domain formulas of concrete interpretations and projections are unfolded by the
+  simprocs `reduceInterpretationDomain`, `reduceInterpretationRel`,
   `reduceProjectionNumeric` and `reduceProjectionRel`. Composites `J.comp I` are not unfolded
   into raw pullback formulas: the domains, relations and input relations of composite
   interpretations and projections are rewritten through the iterated interpretation or projection
@@ -59,7 +62,7 @@ definition of the relations are unaffected.
 
 ## Main definitions
 
-* `fo_qf`, `fo_iso_closed`, `fo_simp`, `fo_reduction`: the tactics above.
+* `fo_qf`, `fo_iso_closed`, `fo_reduction`: the tactics above.
 * `reduceInterpretationDomain`, `reduceInterpretationRel`, `reduceProjectionNumeric`,
   `reduceProjectionRel`: simprocs unfolding concrete interpretations and projections.
 
@@ -68,7 +71,8 @@ definition of the relations are unaffected.
 The simprocs unfold a projection of `Interpretation` or `Projection` only when its argument
 unfolds to a structure instance, and a relation definition only when the match on the relation
 symbol reduces, so they never expose auxiliary matchers; for quantifier-freeness, composites are
-unfolded too. Aesop's simplifier is disabled in `fo_qf`: the default simp set would rewrite the
+unfolded too. `fo_qf` and `fo_iso_closed` run one search and differ only in the note added to
+its error on failure. Aesop's simplifier is disabled in it: the default simp set would rewrite the
 formulas whose shape the rules inspect. Relation symbols are split by a safe rule, as Aesop's
 normalisation rules may not produce several goals.
 
@@ -189,56 +193,35 @@ private meta def casesRelationSymbol : TacticM Unit := withMainContext do
     catch _ => pure ()
   throwError "no relation symbol of a concrete vocabulary"
 
+/-- The search shared by `fo_qf` and `fo_iso_closed`: the Aesop rule set `FirstOrder` alone,
+without Aesop's simplifier, appending `note` to its error when it fails. -/
+private meta def searchFirstOrder (note : MessageData) : TacticM Unit :=
+  Cslib.Tactic.withFailureNote note do
+    evalTactic (← `(tactic| aesop (config := { terminal := true, enableSimp := false })
+      (rule_sets := [-default, FirstOrder])))
+
 /-- `fo_qf` proves that a formula, interpretation, projection formula or projection built from the
 usual constructors is quantifier-free, searching the Aesop rule set `FirstOrder`. It fails if it
 cannot close the goal. -/
-macro (name := foQF) "fo_qf" : tactic => `(tactic|
-  aesop (config := { terminal := true, enableSimp := false })
-    (rule_sets := [-default, FirstOrder]))
+syntax (name := foQF) "fo_qf" : tactic
 
 /-- `fo_iso_closed` proves that a class of structures is closed under isomorphism from a lemma
 registered in the Aesop rule set `FirstOrder` or a hypothesis. It runs the same search as `fo_qf`
 and fails if it cannot close the goal. -/
-macro (name := foIsoClosed) "fo_iso_closed" : tactic => `(tactic|
-  aesop (config := { terminal := true, enableSimp := false })
-    (rule_sets := [-default, FirstOrder]))
+syntax (name := foIsoClosed) "fo_iso_closed" : tactic
 
-/-! ### Realization -/
+/-- Elaborate `fo_qf`: the shared search, with a note on failure. -/
+@[tactic foQF] meta def evalFoQF : Tactic := fun _ =>
+  searchFirstOrder m!"fo_qf proves quantifier-freeness from the rules of the Aesop rule set \
+    `FirstOrder` and hypotheses. Unfold a local definition first, assume `IsQF` for an abstract \
+    formula or interpretation, or register a lemma for a new combinator with \
+    `@[aesop safe apply (rule_sets := [FirstOrder])]`."
 
-open FirstOrder.Language in
-attribute [fo_realize]
-  BoundedFormula.realize_bot BoundedFormula.realize_not BoundedFormula.realize_bdEqual
-  BoundedFormula.realize_top BoundedFormula.realize_inf BoundedFormula.realize_imp
-  BoundedFormula.realize_rel BoundedFormula.realize_rel₁ BoundedFormula.realize_rel₂
-  BoundedFormula.realize_sup BoundedFormula.realize_all BoundedFormula.realize_ex
-  BoundedFormula.realize_iff BoundedFormula.realize_relabel BoundedFormula.realize_iSup
-  BoundedFormula.realize_iInf BoundedFormula.realize_iAlls BoundedFormula.realize_iExs
-  Formula.realize_not Formula.realize_bot Formula.realize_top Formula.realize_inf
-  Formula.realize_imp Formula.realize_rel Formula.realize_rel₁ Formula.realize_rel₂
-  Formula.realize_sup Formula.realize_iff Formula.realize_relabel Formula.realize_equal
-  Formula.realize_iSup Formula.realize_iInf Formula.realize_iAlls Formula.realize_iExs
-  Sentence.realize_not Sentence.realize_top Sentence.realize_inf Sentence.realize_sup
-  Sentence.realize_imp Sentence.realize_iff
-  LHom.realize_onBoundedFormula LHom.realize_onFormula LHom.realize_onSentence
-  Term.realize_var Term.realize_relabel
-  Sum.elim_inl Sum.elim_inr Function.comp_apply Unique.forall_iff PUnit.default_eq_unit
-  Matrix.cons_val_zero Matrix.cons_val_one Matrix.head_cons Matrix.cons_val_fin_one
-  Set.mem_ofPred_eq
-  true_and and_true false_and and_false true_or or_true false_or or_false not_true_eq_false
-  not_false_eq_true not_not ne_eq iff_self eq_self_iff_true implies_true true_implies
-  false_implies imp_false forall_const Bool.false_eq_true exists_prop
-  ite_true ite_false
-
-/-- `fo_simp` simplifies with the simp set `fo_realize`, unfolding the realization of first-order
-formulas, projection formulas and the relations of interpreted structures, and the definitions of
-concrete interpretations and projections. `fo_simp [h₁, h₂] at l` adds simp lemmas and a location,
-as for `simp only`. -/
-syntax (name := foSimp) "fo_simp" (simpArgs)? (location)? : tactic
-
-macro_rules
-  | `(tactic| fo_simp $[[$args,*]]? $[at $location]?) =>
-    let args := args.map (·.getElems) |>.getD #[]
-    `(tactic| simp only [fo_realize, $args,*] $[at $location]?)
+/-- Elaborate `fo_iso_closed`: the shared search, with a note on failure. -/
+@[tactic foIsoClosed] meta def evalFoIsoClosed : Tactic := fun _ =>
+  searchFirstOrder m!"fo_iso_closed proves `IsoClosed K` from lemmas of the Aesop rule set \
+    `FirstOrder` and hypotheses. Assume it, or prove it for `K` and register the lemma with \
+    `@[aesop safe apply (rule_sets := [FirstOrder])]`."
 
 /-! ### Reductions -/
 

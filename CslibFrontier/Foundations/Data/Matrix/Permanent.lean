@@ -25,7 +25,7 @@ expansions of the permanent, without signs: for an `(n + 1) × (n + 1)` matrix `
 * `Matrix.permanent_succ_row_zero`: Laplace expansion of the permanent along row 0.
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

@@ -77,9 +77,9 @@ Primary-source correspondence:
   (worst-case `O(log n)` per operation from union by rank, rather than Tarjan's amortized
   `O(α(n))` inverse-Ackermann bound).
 * `realized_kruskal` additionally decouples Kruskal's scan from any particular concrete forest:
-  any `Cslib.DataStructure.StateTransitionImpl` and `Cslib.DataStructure.Bound` for
-  `DisjointSet.spec n` immediately
-  transfers its cost certificate to `kruskalClient (sortEdges es)`.
+  for any `Cslib.DataStructure.StateTransitionImpl` and `Cslib.DataStructure.Bound` for
+  `DisjointSet.spec n` there is an execution of `kruskalClient (sortEdges es)` whose total cost
+  is at most the certificate's total charge.
 
 `DisjointSet.UnionFind.init n` (`O(n)` `MAKE-SET` initialization in `[CLRS2009]`, `MST-KRUSKAL`
 lines 2–3, pp. 631, 633), list splitting/allocation in `List.mergeSortM` and `kruskalClient`, and
@@ -112,9 +112,9 @@ could copy, whereas `DisjointSet.UnionFind.run` threads its state single-threade
   (and a minimum spanning tree when connected).
 * `perm_kruskalEdges_of_isMinSpanningForest_of_nodup_weights`: uniqueness of the minimum spanning
   forest up to permutation when edge weights are pairwise distinct.
-* `realized_kruskal`: backend-parametric `Cslib.DataStructure` correctness and resource bound for
-  any
-  realization of `DisjointSet.spec n`.
+* `realized_kruskal`: for any realization of `DisjointSet.spec n` with a resource bound, existence
+  of a `Cslib.DataStructure` execution of the Kruskal client that returns `kruskalEdges es` within
+  that bound.
 * `kruskalM_forest`, `kruskalM_rep`, `kruskalM_comparisons_le`, `kruskalM_ufSteps_le`,
   `kruskalM_total_le`: functional correctness, final union-find representation, `m ⌈log₂ m⌉`
   comparison bound, and `m (2 ⌊log₂ n⌋ + 3)` disjoint-set step bound for `kruskalM`.
@@ -966,10 +966,11 @@ theorem kruskalScan_map_endpoints {n : ℕ} {W : Type} (p : Partition n)
     · simp [hrel, Partition.merge_of_rel hrel, ih p]
     · simp [hrel, ih (p.merge e.u e.v)]
 
-/-- Backend-parametric Kruskal execution: any `Cslib.DataStructure.StateTransitionImpl` and
-`Cslib.DataStructure.Bound` for `DisjointSet.spec n` executes `kruskalClient (sortEdges es)` to
-produce
-`kruskalEdges es` and transfers its resource bound along the `m` `Op.union` calls. -/
+/-- Backend-parametric Kruskal execution: for any `Cslib.DataStructure.StateTransitionImpl` and
+`Cslib.DataStructure.Bound` for `DisjointSet.spec n`, from a state representing
+`Partition.discrete n` there is an execution of `kruskalClient (sortEdges es)` that returns
+`kruskalEdges es`, ends in a state representing `edgePartition es`, and has total cost at most
+the total charge of its `m` `Op.union` calls. -/
 theorem realized_kruskal {n : ℕ} {W : Type} [LE W] [DecidableLE W]
     {C τ : Type} {exec : Execution (DisjointSet.spec n) C τ}
     (R : StateTransitionImpl (DisjointSet.spec n) exec)

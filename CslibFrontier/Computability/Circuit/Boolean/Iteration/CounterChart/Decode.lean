@@ -19,7 +19,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.Iteration.CounterChart
 
 ## Main results
 
-* `CounterIntervalChart.decode_spec`: decoding canonical coordinates recovers the state.
+* `CounterIntervalChart.decode_spec`: for injective `f`, decoding canonical coordinates recovers
+  the state.
 
 ## References
 
@@ -150,7 +151,8 @@ noncomputable def decode (rep : BitVec n) (p : BitVec (chartWidth n)) : BitStrin
   chooseRecord (fun j => chart.decodeFlag j rep p)
     (fun j i => (chart.decodedRow j p).getLsbD i.val) (fun _ => false) R
 
-/-- Decoding the canonical cycle representative and phase of `y` recovers the bits of `y`. -/
+/-- For injective `f`, decoding the canonical cycle representative and phase of `y` recovers the
+bits of `y`. -/
 theorem decode_spec (hf : Function.Injective f) (y : BitVec n) :
     chart.decode (canonicalCycle f y) (BitVec.ofNat (chartWidth n) (phase f y)) =
       fun i => y.getLsbD i.val := by

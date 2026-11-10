@@ -32,10 +32,8 @@ open RecordProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
-/-- The complete real producer, using its original low bank. -/
-@[expose] def produce : Code .standard 320 := Instances.program.rename producerBank
-
-/-- One fixed initialized composition; selecting the first record costs one actual instruction. -/
+/-- One fixed initialized composition of the record producer `RecordProduct.produce` with the
+record consumer; selecting the first record costs one actual instruction. -/
 @[expose] def entryProgram : Code .standard 320 :=
   .seq produce (.seq (.op (.const Reg.ordinal 0)) program)
 

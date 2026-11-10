@@ -35,7 +35,7 @@ The finite-distribution forms, in terms of statistical distance, are in `Probabi
 * [T. M. Cover, J. A. Thomas, *Elements of Information Theory*][CoverThomas2006], Lemma 11.6.1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

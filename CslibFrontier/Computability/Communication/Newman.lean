@@ -47,7 +47,7 @@ For inputs of at most `n` bits, `k = ⌈log₂ ⌈n / δ²⌉⌉` random bits su
 * [E. Kushilevitz and N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Communication
 

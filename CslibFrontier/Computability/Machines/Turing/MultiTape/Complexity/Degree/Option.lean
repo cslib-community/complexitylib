@@ -31,7 +31,7 @@ which is what composition at degree one needs.
 * `Turing.MultiTapeTM.ComputableInDegree.head?_one`: the head of a framed list.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInDegree
 

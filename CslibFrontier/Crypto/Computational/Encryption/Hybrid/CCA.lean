@@ -84,7 +84,7 @@ theorem eval_kemCCARealGame_sample (keyGen : ℕ → ProbComp (List Bool × List
       (fun n input => ProbOracleComp.sample (distinguisher n input)) n) =
       ProbComp.eval (kemRealGame keyGen encaps distinguisher n) := by
   simp only [pmf_norm, kemCCARealGame, kemRealGame, kemRealGameWith, kemCCAContinuation,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample]
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_sample]
 
 /-- A closed distinguisher ignores the decapsulation oracle, recovering the ideal CPA game. -/
 theorem eval_kemCCAIdealGame_sample (keyLen : ℕ → ℕ)
@@ -96,6 +96,6 @@ theorem eval_kemCCAIdealGame_sample (keyLen : ℕ → ℕ)
       (fun n input => ProbOracleComp.sample (distinguisher n input)) n) =
       ProbComp.eval (kemIdealGame keyLen keyGen encaps distinguisher n) := by
   simp only [pmf_norm, kemCCAIdealGame, kemIdealGame, kemIdealGameWith, kemRealGameWith,
-    kemCCAContinuation, ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample]
+    kemCCAContinuation, ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_sample]
 
 end Cslib.Crypto.Encryption

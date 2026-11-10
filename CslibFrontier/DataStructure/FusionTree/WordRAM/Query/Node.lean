@@ -27,7 +27,7 @@ Neither branch assumes a node oracle. Both frame the caller's persistent registe
 * [FredmanWillard1993]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.FusionTree.WordRAM.QueryProgram
 

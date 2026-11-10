@@ -144,11 +144,6 @@ theorem rankCombination_unrankCombination {m k r : ℕ} (hr : r < m.choose k) :
   have hunr := unrankCombination_rankCombination bs
   rwa [hlen, hcnt] at hunr
 
-/-- The indicator list of a `k`-element subset of `Fin m` has `k` entries `true`. -/
-private theorem count_true_ofFn_decide_mem {m k : ℕ} {S : Finset (Fin m)} (hS : S.card = k) :
-    (List.ofFn fun u : Fin m => decide (u ∈ S)).count true = k := by
-  rw [← card_supportOfList_of_length List.length_ofFn, supportOfList_ofFn_decide, hS]
-
 /-- Computable bijection between `k`-element subsets of `Fin m` and `Fin (m.choose k)`, obtained by
 composing `rankCombination` / `unrankCombination` with `supportOfList`. -/
 def subsetEquiv (m k : ℕ) : { S : Finset (Fin m) // S.card = k } ≃ Fin (m.choose k) where

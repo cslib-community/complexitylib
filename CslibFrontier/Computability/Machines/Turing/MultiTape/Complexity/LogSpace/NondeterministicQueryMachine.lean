@@ -28,6 +28,7 @@ work tapes of the machine. Acceptance requires both halting and an accepting sta
 * `Turing.NondeterministicQueryMachine.replay`: replay choices from an arbitrary state.
 * `Turing.NondeterministicQueryMachine.RunPath`: finite paths of the step relation.
 * `Turing.NondeterministicQueryMachine.Accepts`: existential acceptance by a halted branch.
+* `Turing.NondeterministicQueryMachine.withInit`: the same machine with another start state.
 
 ## Main results
 
@@ -90,6 +91,21 @@ def Accepts : Prop :=
 /-- Every branch of exactly `t` abstract steps has halted. -/
 def HaltsWithin (t : ℕ) : Prop :=
   ∀ choices : List Bool, choices.length = t → M.halted (M.run input choices) = true
+
+/-- The same machine started in `s`. The compiler uses it to start each input in its own state. -/
+def withInit (s : σ) : NondeterministicQueryMachine σ := { M with init := s }
+
+@[simp]
+theorem withInit_init : M.withInit M.init = M := rfl
+
+@[simp]
+theorem step_withInit (s : σ) : (M.withInit s).step = M.step := rfl
+
+@[simp]
+theorem replay_withInit (s : σ) : (M.withInit s).replay = M.replay := rfl
+
+theorem run_withInit (s : σ) (choices : List Bool) :
+    (M.withInit s).run input choices = M.replay input choices s := rfl
 
 @[simp]
 theorem replay_nil (s : σ) : M.replay input [] s = s := rfl
