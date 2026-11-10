@@ -24,7 +24,7 @@ bounded query budgets remain polynomially bounded.
 * `Cslib.PolynomiallyBounded.choose_two`: pair counts `(f n).choose 2` preserve polynomial bounds.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PolynomiallyBounded
 

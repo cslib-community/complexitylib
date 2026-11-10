@@ -433,7 +433,7 @@ private meta def applyBound (eventually : Bool) (hle : TSyntax `term) : TacticM 
     else
       `(tactic| refine Cslib.Crypto.negligible_of_coe_le ?_ $hle)
   try
-    evalTactic realTac
+    Term.withoutErrToSorry <| withoutRecover <| evalTactic realTac
     pushGoalToNNReal
   catch ex =>
     saved.restore
@@ -441,9 +441,12 @@ private meta def applyBound (eventually : Bool) (hle : TSyntax `term) : TacticM 
     let target ← instantiateMVars (← g.getType)
     let mode :=
       if eventually then "eventually (`∀ᶠ n in Filter.atTop, …`)" else "pointwise (`∀ n, …`)"
+    let detail := match ex with
+      | .error _ msg => m!"\n{msg}"
+      | .internal _ _ => m!""
     throwError "negligible: could not apply {mode} upper bound `{hle}` to goal:\
       {indentExpr target}\n\
-      Expected a bound in `ℝ≥0` (`f n ≤ B n`) or `ℝ` (`(f n : ℝ) ≤ B n`).\n{ex.toMessageData}"
+      Expected a bound in `ℝ≥0` (`f n ≤ B n`) or `ℝ` (`(f n : ℝ) ≤ B n`).{detail}"
 
 /-- Pointwise bound clause `using hle` for `negligible`. -/
 syntax negligibleUsingClause := " using " term

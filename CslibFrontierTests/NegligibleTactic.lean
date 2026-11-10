@@ -130,4 +130,51 @@ error: negligible: expected a goal `Cslib.Crypto.Negligible f`, got:
 example : 1 ≤ 2 := by
   negligible
 
+/--
+error: negligible: could not apply pointwise (`∀ n, …`) upper bound `h` to goal:
+  Negligible f
+Expected a bound in `ℝ≥0` (`f n ≤ B n`) or `ℝ` (`(f n : ℝ) ≤ B n`).
+Application type mismatch: The argument
+  h
+has type
+  True
+but is expected to have type
+  ∀ (n : ℕ), ↑(f n) ≤ ?m.3 n
+in the application
+  negligible_of_coe_le ?m.4 h
+-/
+#guard_msgs in
+example {f : ℕ → ℝ≥0} (h : True) : Negligible f := by
+  negligible using h
+
+/--
+error: negligible: could not apply eventually (`∀ᶠ n in Filter.atTop, …`) upper bound `h` to goal:
+  Negligible f
+Expected a bound in `ℝ≥0` (`f n ≤ B n`) or `ℝ` (`(f n : ℝ) ≤ B n`).
+Application type mismatch: The argument
+  h
+has type
+  True
+but is expected to have type
+  ∀ᶠ (n : ℕ) in Filter.atTop, ↑(f n) ≤ ?m.3 n
+in the application
+  negligible_of_eventually_coe_le ?m.4 h
+-/
+#guard_msgs in
+example {f : ℕ → ℝ≥0} (h : True) : Negligible f := by
+  negligible eventually h
+
+/--
+error: negligible: `fun_prop` could not close the normalized goal:
+  Negligible fun n => 1
+Supply missing `Negligible` or `PolynomiallyBounded` hypotheses in context, or pass an explicit upper bound with `negligible using hle` / `negligible eventually hle`.
+`fun_prop` was unable to prove `Negligible fun n => 1`
+
+Issues:
+  No theorems found for `OfNat.ofNat` in order to prove `Negligible fun n => 1`
+-/
+#guard_msgs in
+example : Negligible (fun n => (1 : ℝ≥0)) := by
+  negligible
+
 end

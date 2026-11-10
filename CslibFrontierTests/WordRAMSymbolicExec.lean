@@ -338,6 +338,20 @@ example (x : Data 4) : ∃ y, Exec 8 callDouble x y 3 ∧ y.regs c = 6 := by
   wram_exec
   wram_simp
 
+/-- Instructions `Op.alu` with an exact count (`WP.Exact.alu`), over `Basis.additive`, where the
+operation is evaluated by `Basis.reduceInterp`, and over the standard basis. -/
+example (w u v : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (huv : Fits w (u + v))
+    (hu : Fits w u) :
+    ∃ y, Exec w addSub x y 2 ∧ y.regs a = u ∧ y.regs c = u + v := by
+  unfold addSub
+  wram_exec [ha, hb]
+  wram_simp
+
+example (w u v : ℕ) (x : Data 4) (ha : x.regs a = u) (hb : x.regs b = v) (h : Fits w (u * v)) :
+    ∃ y, Exec w (.op (.alu (B := .standard) (.bin .mul) c ![a, b])) x y 1 ∧ y.regs c = u * v := by
+  wram_exec [ha, hb]
+  wram_simp
+
 /-- An exact count is a bound: `WP.Exact.toWP` turns an exact goal into a bounded one. -/
 example (x : Data 4) : ∃ y, ExecWithin 8 straight x y 6 ∧ y.mem 5 = 7 :=
   WP.exists_execWithin <| WP.Exact.toWP <| by
