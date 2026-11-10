@@ -282,14 +282,11 @@ theorem eval_predictionGame {n imageLength : ℕ} {Image : Type*}
     imageLength _ (hlength _), PMF.bind_map]
   simp only [Function.comp_def, matrixPrediction, PMF.map, PMF.monad_bind_eq_bind]
   simp_rw [← PMF.bind_comm (PMF.uniformOfFintype (BitString (coinBudget c d n imageLength)))]
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext index
+  congr 1 with index : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext rows
+  congr 1 with rows : 1
   rw [PMF.bind_comm]
 
 /-- The word one-wayness game is the finite inversion experiment under the same

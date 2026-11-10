@@ -57,11 +57,6 @@ theorem values_eq_ofFn (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (limit m r :
   · intro i hi hi'
     simp only [values, List.getElem_mapIdx, List.getElem_ofFn]
 
-private theorem length_encNat_ofBits_le (word : List Bool) :
-    (encNat (ofBits word)).length ≤ word.length := by
-  rw [length_encNat_eq_size, ← Nat.size_eq_bits_len, bits_ofBits]
-  exact (List.rdropWhile_prefix _ _).length_le
-
 /-- Source coordinates have bounded encoded size independently of runtime chunk metadata. -/
 theorem length_chunk_le (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (m j : ℕ) :
     (encNat (InitialChunk.chunk M e (m, j))).length ≤ (InitialChunk.headerWord M e).length := by

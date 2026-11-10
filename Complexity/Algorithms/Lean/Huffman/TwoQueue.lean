@@ -768,14 +768,8 @@ theorem huffman_spec {α β : Type}
   have hsorted_ne : sorted ≠ [] := fun hnil =>
     hne (List.Perm.nil_eq (hnil ▸ hperm)).symm
   have hpw : sorted.Pairwise (fun a b => w a ≤ w b) := by
-    have htot : ∀ a b, (cmp a b || cmp b a) = true := by
-      intro a b
-      simp only [cmp, Bool.or_eq_true, decide_eq_true_eq]
-      exact le_total (w a) (w b)
-    have htr : ∀ a b c, cmp a b = true → cmp b c = true → cmp a c = true := by
-      intro a b c hab hbc
-      simp only [cmp, decide_eq_true_eq] at hab hbc ⊢
-      exact le_trans hab hbc
+    have htot : ∀ a b, (cmp a b || cmp b a) = true := by grind
+    have htr : ∀ a b c, cmp a b = true → cmp b c = true → cmp a c = true := by grind
     simpa [cmp, decide_eq_true_eq] using List.pairwise_mergeSort htr htot syms
   have hw_sorted : ∀ a ∈ sorted, 0 ≤ w a := fun a ha => hw a (hperm.subset ha)
   rcases huffmanFromSorted_spec hsorted_ne hpw hw_sorted with ⟨T, hT_eq, hT_build, hT_perm⟩

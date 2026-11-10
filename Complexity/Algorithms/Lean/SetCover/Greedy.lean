@@ -347,8 +347,7 @@ theorem sum_greedyLoop_le_sum_harmonic {k : ℕ} {R : Finset α} {C : Finset ι}
               positivity
             exact mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hρj (hx j hj)) hab
         _ = x j * w j * (((a : 𝕜) - b) / a) := by ring
-        _ ≤ x j * w j * ((harmonic a : 𝕜) - harmonic b) :=
-            mul_le_mul_of_nonneg_left hH hxw
+        _ ≤ x j * w j * ((harmonic a : 𝕜) - harmonic b) := by gcongr
     calc w i + ((greedyLoop S w J k (R \ S i)).map w).sum
         ≤ ∑ j ∈ C, x j * ρ * (S j ∩ A).card +
             ∑ j ∈ C, x j * w j * (harmonic (S j ∩ (R \ S i)).card : 𝕜) := add_le_add hwi ih'

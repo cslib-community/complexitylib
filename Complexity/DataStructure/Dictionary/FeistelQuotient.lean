@@ -160,8 +160,7 @@ theorem le_two_pow_bucketBits_add (n : ℕ) :
   · exact Nat.zero_le _
   · have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by decide) n
     have hle : Nat.log 2 n + 1 ≤ bucketBits n + 3 * Dynamic.logLogFactor n + 1 := by
-      unfold bucketBits
-      omega
+      grind [bucketBits]
     exact hlt.le.trans (Nat.pow_le_pow_right (by decide) hle)
 
 /-- For every `n`, `n ≤ 2 * numBuckets n * (slabScale n) ^ 3`. -/
@@ -486,9 +485,7 @@ theorem dens_filter_apply_eq_three {Y : Type*} [Fintype Y] [DecidableEq Y]
   let T : Finset Q := insert q {q₁, q₂}
   have hq_notMem : q ∉ ({q₁, q₂} : Finset Q) := by
     simp [hq₁.symm, hq₂.symm]
-  have hcard : #T = 3 := by
-    dsimp only [T]
-    rw [card_insert_of_notMem hq_notMem, card_pair h12]
+  have hcard : #T = 3 := by grind
   have h3 := hh.dens_filter_restrict_eq (T := T) (by omega)
     fun z => if z.1 = q then y else if z.1 = q₁ then y₁ else y₂
   rw [hcard] at h3

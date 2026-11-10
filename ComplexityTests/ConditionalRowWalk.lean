@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (actual retained-pair walk regressions)
 
-public import Complexity.Probability.PairwiseIndependentHash.RowFourthMoment
+public import Complexity.Computability.LogSpaceDerandomization.PairwiseIndependentHash.RowFourthMoment
 import Complexity.Foundations.Data.Finset.Expect
 import Mathlib.Tactic.FinCases
 

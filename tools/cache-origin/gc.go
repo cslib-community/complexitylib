@@ -17,6 +17,7 @@ type gcReport struct {
 	ExpiredMappings []string `json:"expired_mappings"`
 	DeleteArtifacts []string `json:"delete_artifacts"`
 	DeleteStaging   []string `json:"delete_staging"`
+	DeletedBytes    int64    `json:"deleted_bytes"`
 	Applied         bool     `json:"applied"`
 }
 
@@ -108,9 +109,16 @@ func (s *store) collect(retain time.Duration, apply bool) (gcReport, error) {
 		}
 	}
 	for _, key := range append(report.ExpiredMappings, report.DeleteArtifacts...) {
+		info, err := s.root.Stat("public/" + key)
+		if err != nil {
+			return report, err
+		}
 		if err := s.root.Remove("public/" + key); err != nil {
 			return report, err
 		}
+		// Count removed public payloads, not staging files, directory blocks,
+		// logical references or filesystem free-space changes.
+		report.DeletedBytes += info.Size()
 		if err := s.syncDir(path.Dir("public/" + key)); err != nil {
 			return report, err
 		}

@@ -357,8 +357,7 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
       dsimp only [earlier]
       rw [hearlier]
       simp only [expansionGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
-      congr 4
-      funext request cache
+      congr 4 with request cache : 2
       by_cases hquery : request.2.length = n
       · simp only [expansionOracle, hquery, ite_true, ProbComp.eval_bind,
           ProbComp.eval_memoize, ProbComp.eval_map, BitString.eval_sampleList,
@@ -372,8 +371,7 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
       dsimp only [later]
       rw [hlater]
       simp only [hybridGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
-      congr 4
-      funext request cache
+      congr 4 with request cache : 2
       by_cases hquery : request.2.length = n <;>
         simp [frontierOracle, hquery, ProbComp.eval_memoize, PMF.map, Function.comp_def]
 

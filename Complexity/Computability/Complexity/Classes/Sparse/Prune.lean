@@ -270,8 +270,7 @@ theorem length_prunePositions_le (n d : ℕ) (starts : List ℕ) :
         _ = Y := by ring
     have h2 : starts.length * P ^ 2 ≤ Y := Nat.le_mul_of_pos_right _ hX
     have h3 : 2 * n * left.length * X ≤ 2 * n * Y := by
-      calc 2 * n * left.length * X ≤ 2 * n * (starts.length * P ^ 2) * X :=
-            Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hleft)
+      calc 2 * n * left.length * X ≤ 2 * n * (starts.length * P ^ 2) * X := by gcongr
         _ = 2 * n * Y := by ring
     have hgoal : 2 * (n + 1) * starts.length * P ^ (2 * (n + 1)) = 2 * (n + 1) * Y := by
       rw [show 2 * (n + 1) = 2 + 2 * n by ring, pow_add]

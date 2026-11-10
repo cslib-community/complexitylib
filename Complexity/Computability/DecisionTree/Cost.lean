@@ -126,4 +126,9 @@ theorem cost_le_depth (t : DecisionTree ι β) (x : ι → Bool) : t.cost x ≤ 
   | leaf => rfl
   | node i left right ihl ihr => simp [mapQueries, ihl, ihr]
 
+/-- Relabelling queries pulls back the oracle and keeps the number of queries. -/
+@[simp] theorem cost_mapQueries (f : ι → κ) (t : DecisionTree ι β) (x : κ → Bool) :
+    (t.mapQueries f).cost x = t.cost (x ∘ f) :=
+  weightedCost_mapQueries f t _ x
+
 end Cslib.DecisionTree

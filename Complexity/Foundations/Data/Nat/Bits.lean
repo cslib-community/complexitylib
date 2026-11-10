@@ -24,6 +24,8 @@ with initial value zero reconstructs the original number.
 * `Nat.bits_eq_nil_iff`: a natural has no binary digits exactly when it is zero.
 * `Nat.foldr_bit_bits`: folding `Nat.bit` over the binary representation of `n` gives `n`.
 * `Nat.foldr_bit_lt`, `Nat.foldr_bit_testBit`: fixed-width little-endian reconstruction.
+* `Nat.foldr_bit_replicate_false`, `Nat.foldr_bit_append_replicate_false`: high-order zero digits
+  do not change the value.
 * `Nat.foldr_bit_one_ne_zero`, `Nat.bits_foldr_bit_one`, `Nat.foldr_bit_one_lt`: reconstruction
   with base value `1`, producing a positive number whose binary digits end in `true`.
 * `Nat.foldr_bit_ofFn`: reconstruction is the sum of the digits' binary place values.
@@ -63,6 +65,18 @@ theorem Nat.foldr_bit_lt (l : List Bool) : l.foldr Nat.bit 0 < 2 ^ l.length := b
   | cons b l ih =>
     simp only [List.foldr_cons, Nat.bit_val, List.length_cons, Nat.pow_succ]
     cases b <;> simp only [Bool.toNat_true, Bool.toNat_false] <;> lia
+
+/-- A word of zero digits represents zero. -/
+@[simp]
+theorem Nat.foldr_bit_replicate_false (n : ℕ) : (List.replicate n false).foldr Nat.bit 0 = 0 := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [List.replicate_succ, List.foldr_cons, ih]; rfl
+
+/-- Padding a little-endian word with high-order zero digits does not change its value. -/
+theorem Nat.foldr_bit_append_replicate_false (l : List Bool) (n : ℕ) :
+    (l ++ List.replicate n false).foldr Nat.bit 0 = l.foldr Nat.bit 0 := by
+  rw [List.foldr_append, Nat.foldr_bit_replicate_false]
 
 /-- Folding `Nat.bit` with base `1` over any word gives a positive number. -/
 theorem Nat.foldr_bit_one_ne_zero (w : List Bool) : w.foldr Nat.bit 1 ≠ 0 := by

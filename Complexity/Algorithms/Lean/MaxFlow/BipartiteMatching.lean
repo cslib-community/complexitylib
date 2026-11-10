@@ -59,7 +59,9 @@ solver in `TimeM ℕ` via `edmondsKarpDenseM`.
   operations, `ℕ` arithmetic, and edge-indicator queries `G (u, v)` inside each charged step are
   treated as unit-cost primitives (not persistent copy-on-write or bit-level Turing costs).
 * **Algorithmic scope:** `bipartiteMatchingM` uses the dense Edmonds–Karp wrapper in `O((m + r)^5)`
-  ticks rather than specialized unit-capacity blocking-flow phases (Hopcroft–Karp `O(|E| √|V|)`).
+  ticks rather than specialized unit-capacity blocking-flow phases. The Hopcroft–Karp solver
+  `hopcroftKarpM` in `Complexity.Algorithms.Lean.MaxFlow.HopcroftKarp` computes the same outputs in
+  `O((m + r + |E|) √ν)` ticks.
 
 ## Main definitions
 
@@ -1118,8 +1120,7 @@ theorem bipartiteMatchingM_time_le {m r : ℕ} (G : Fin m × Fin r → Bool) :
       (N_v * N_v * (N_v / 2) + 2) * (N_v * N_v + 5 * N_v) :=
     edmondsKarpDenseM_time_le (bipartiteFinNetwork G)
   have hcov := extractCoverM_time_le G (edmondsKarpDenseM (bipartiteFinNetwork G)).ret.cut
-  have hprod : m * (r + 1) ≤ N_v * N_v :=
-    Nat.mul_le_mul (by omega) (by omega)
+  have hprod : m * (r + 1) ≤ N_v * N_v := by gcongr <;> omega
   have hpost : m * (r + 1) + (extractCoverM G
       (edmondsKarpDenseM (bipartiteFinNetwork G)).ret.cut).time ≤
       2 * (N_v * N_v + 5 * N_v) := by

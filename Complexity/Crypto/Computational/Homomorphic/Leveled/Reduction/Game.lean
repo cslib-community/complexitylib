@@ -219,11 +219,9 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
   dsimp only [Encryption.game, Encryption.gameOn]
   simp only [leveledAdversary_choose, bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   rw [PMF.bind_comm]
-  congr 1
-  funext first
+  congr 1 with first : 1
   rw [PMF.bind_comm]
-  congr 1
-  funext second
+  congr 1 with second : 1
   cases first <;> cases second
   · simp only [Bool.false_eq_true, ↓reduceIte]
     simpa only [Encryption.game, Encryption.gameOn, ↓reduceIte, ProbComp.eval_bind] using
@@ -233,20 +231,17 @@ theorem eval_leveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
       eval_tagLeveledChoice_false_true E depth capacity adversary bit n
   · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, PMF.bind_bind]
     rw [PMF.bind_comm]
-    congr 1
-    funext keepLink
+    congr 1 with keepLink : 1
     cases keepLink
     · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
       rw [← PMF.bind_const (ProbComp.eval (sampleDyadicCoin (capacity n) 1)) (PMF.pure false)]
       rw [PMF.bind_comm]
-      congr 1
-      funext _
+      congr 1 with _ : 1
       simpa only [ProbComp.eval_bind] using
         eval_rejectLeveledChoice E depth capacity adversary bit n
     · simp only [↓reduceIte]
       rw [PMF.bind_comm]
-      congr 1
-      funext keepBit
+      congr 1 with keepBit : 1
       cases keepBit
       · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
         simpa only [ProbComp.eval_bind] using
@@ -363,17 +358,11 @@ theorem advantage_game_eq_leveledAdversary (E : Scheme) (budget capacity : ℕ �
     (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (fun n => keyGen E n (budget n)) (encrypt E)
-        adversary false n))
-      (ProbComp.eval (Encryption.game (fun n => keyGen E n (budget n)) (encrypt E)
-        adversary true n)) =
+    Encryption.advantage
+      (Encryption.game (fun n => keyGen E n (budget n)) (encrypt E) adversary) n =
     4 * (dyadicSize (2 * budget n) : ℝ≥0) * dyadicSize (capacity n) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) := by
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n := by
   apply NNReal.eq
   rw [NNReal.coe_mul, NNReal.coe_mul, NNReal.coe_mul, NNReal.coe_ofNat,
     NNReal.coe_natCast, NNReal.coe_natCast, Game.coe_advantage, Game.coe_advantage,
@@ -390,17 +379,11 @@ theorem advantage_game_le_mul_leveledAdversary (E : Scheme) (budget capacity : �
     (adversary : Encryption.Adversary) (n width : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity n) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (fun n => keyGen E n (budget n)) (encrypt E)
-        adversary false n))
-      (ProbComp.eval (Encryption.game (fun n => keyGen E n (budget n)) (encrypt E)
-        adversary true n)) ≤
+    Encryption.advantage
+      (Encryption.game (fun n => keyGen E n (budget n)) (encrypt E) adversary) n ≤
     16 * (2 * budget n + 1 : ℝ≥0) * (capacity n + 1) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-        (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-          (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) := by
+      Encryption.advantage (Encryption.game E.keyGen E.encrypt
+        (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n := by
   rw [advantage_game_eq_leveledAdversary E budget capacity adversary n width hwidth hcapacity]
   have hdepth : (dyadicSize (2 * budget n) : ℝ≥0) ≤ 2 * (2 * budget n + 1) := by
     exact_mod_cast dyadicSize_le (2 * budget n)
@@ -408,24 +391,15 @@ theorem advantage_game_le_mul_leveledAdversary (E : Scheme) (budget capacity : �
     exact_mod_cast dyadicSize_le (capacity n)
   calc
     4 * (dyadicSize (2 * budget n) : ℝ≥0) * dyadicSize (capacity n) *
-        Game.advantage
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n))
+        Encryption.advantage (Encryption.game E.keyGen E.encrypt
+          (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n
       ≤ 4 * (2 * (2 * budget n + 1 : ℝ≥0)) * (2 * (capacity n + 1)) *
-        Game.advantage
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) := by
+        Encryption.advantage (Encryption.game E.keyGen E.encrypt
+          (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n := by
         gcongr
     _ = 16 * (2 * budget n + 1 : ℝ≥0) * (capacity n + 1) *
-        Game.advantage
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (leveledAdversary E (fun n => 2 * budget n) capacity adversary) false n))
-          (ProbComp.eval (Encryption.game E.keyGen E.encrypt
-            (leveledAdversary E (fun n => 2 * budget n) capacity adversary) true n)) := by
+        Encryption.advantage (Encryption.game E.keyGen E.encrypt
+          (leveledAdversary E (fun n => 2 * budget n) capacity adversary)) n := by
         ring
 
 end Cslib.Crypto.Homomorphic.Leveled

@@ -256,8 +256,7 @@ theorem mul_complexity_directProduct_le {P X n d p m : ℕ}
     have h3 : X ^ 3 * (n * K ^ d * L) ≤ (X + 1) ^ 3 * 2 ^ n := by
       refine Nat.le_of_mul_le_mul_right ?_ hm
       calc X ^ 3 * (n * K ^ d * L) * m = (X * n) * (X * K ^ d) * (X * m * L) := by ring
-        _ ≤ ((X + 1) * m) * ((X + 1) * 2 ^ (p * d)) * ((X + 1) * 2 ^ m) :=
-          Nat.mul_le_mul (Nat.mul_le_mul hXn hKX) hLspec
+        _ ≤ ((X + 1) * m) * ((X + 1) * 2 ^ (p * d)) * ((X + 1) * 2 ^ m) := by gcongr
         _ = (X + 1) ^ 3 * 2 ^ n * m := by rw [h2n]; ring
     refine Nat.le_of_mul_le_mul_left ?_ (show 0 < X ^ 3 by positivity)
     calc X ^ 3 * (2 * P * n * (K ^ d * L)) = 2 * P * (X ^ 3 * (n * K ^ d * L)) := by ring

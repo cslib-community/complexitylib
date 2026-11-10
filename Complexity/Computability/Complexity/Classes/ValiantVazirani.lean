@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Logics.Propositional.CNF.PolyTime
+import Complexity.Tactic.EncLen
 
 /-!
 # The Valiant–Vazirani theorem
@@ -170,9 +171,7 @@ private theorem isOraclePPTOn_queryAny :
     | nil => rw [OracleComp.eq_of_mem_supportWith_pure hnext]; simp
     | cons word words =>
       obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
-      simp only [length_encPair, encBool_apply, List.length_singleton, List.tail_cons,
-        length_encList, List.map_cons, List.sum_cons]
-      omega
+      enc_len [List.length_singleton, List.tail_cons, length_encList, List.map_cons, List.sum_cons]
 
 open Classical in
 private theorem interpret_id_queryAnyStep (A : Set (List Bool)) (word : List Bool)

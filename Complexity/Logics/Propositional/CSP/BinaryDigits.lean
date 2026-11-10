@@ -126,8 +126,7 @@ theorem eval_one_binaryPartitionPolynomial_lt_two_pow
   calc (F.binaryPartitionPolynomial wt).eval 1
       ≤ 2 ^ F.numVars * (F.map fun c => b c.1).prod :=
         eval_one_binaryPartitionPolynomial_le hb
-    _ ≤ 2 ^ F.numVars * 2 ^ (F.map fun c => (b c.1).size).sum :=
-        Nat.mul_le_mul_left _ hprod
+    _ ≤ 2 ^ F.numVars * 2 ^ (F.map fun c => (b c.1).size).sum := by gcongr
     _ = 2 ^ (F.numVars + (F.map fun c => (b c.1).size).sum) := (pow_add _ _ _).symm
     _ < 2 ^ F.binaryPrecision b := Nat.pow_lt_pow_right (by decide) (Nat.lt_succ_self _)
 

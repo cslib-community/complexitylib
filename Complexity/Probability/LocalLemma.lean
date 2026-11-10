@@ -11,6 +11,7 @@ public import Complexity.Probability.Product
 public import Mathlib.Analysis.SpecialFunctions.Exp
 public import Mathlib.Logic.Function.DependsOn
 public import Mathlib.MeasureTheory.Measure.Real
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
 import Complexity.Foundations.Probability.SecondMoment
 import Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset
 import Mathlib.Analysis.Complex.Exponential
@@ -175,19 +176,14 @@ theorem prod_one_sub_le_measureReal_iInter_compl [Fintype ι]
   simpa only [notMem_empty, Set.iInter_of_empty, Set.iInter_univ, probReal_univ,
     mul_one, empty_union, mem_univ, Set.iInter_true] using h
 
-/-- `(d / (d + 1)) ^ d ≥ 1 / e`, from `(1 + 1 / d) ^ d ≤ e`. -/
+/-- `(d / (d + 1)) ^ d ≥ 1 / e`. -/
 private theorem exp_one_inv_le_div_pow (d : ℕ) :
     (Real.exp 1)⁻¹ ≤ ((d : ℝ) / (d + 1)) ^ d := by
-  rcases Nat.eq_zero_or_pos d with rfl | hd
-  · simp only [pow_zero, inv_le_one_iff₀]
-    exact Or.inr (Real.one_le_exp zero_le_one)
-  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
-  have hmul : ((d : ℝ) / (d + 1)) ^ d * (1 + (d : ℝ)⁻¹) ^ d = 1 := by
-    rw [← mul_pow]
+  have hsub : 1 - ((d : ℝ) + 1)⁻¹ = d / (d + 1) := by
     field_simp
-    simp
-  rw [eq_inv_of_mul_eq_one_left hmul]
-  exact inv_anti₀ (by positivity) Real.one_add_inv_pow_le_exp
+    ring
+  rw [← Real.exp_neg, ← hsub]
+  exact Real.exp_neg_one_le_one_sub_inv_pow le_rfl
 
 /-- **The symmetric Lovász Local Lemma, quantitative form**: if each of `n` measurable events has
 probability at most `q`, each `A i` is lopsidedly independent of the events outside `Γ i ∪ {i}`,

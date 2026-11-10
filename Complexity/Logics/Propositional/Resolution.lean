@@ -209,7 +209,7 @@ theorem Derives.exists_of_restrict {c : Clause V} (h : (φ.restrict v b).Derives
 
 omit [DecidableEq V] in
 /-- A formula without variables is unsatisfiable only if it has the empty clause. -/
-private theorem nil_mem_of_vars_eq_nil (hφ : φ.vars = []) (h : ¬ φ.Satisfiable) : [] ∈ φ := by
+theorem nil_mem_of_vars_eq_nil (hφ : φ.vars = []) (h : ¬ φ.Satisfiable) : [] ∈ φ := by
   by_contra hnil
   refine h ⟨fun _ => false, (CNF.eval_eq_true_iff _ _).2 fun c hc => ?_⟩
   obtain ⟨l, hl⟩ := List.exists_mem_of_ne_nil c fun hc' => hnil (hc' ▸ hc)

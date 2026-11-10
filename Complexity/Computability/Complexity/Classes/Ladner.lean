@@ -103,31 +103,6 @@ theorem SAT_notMem_P {α : Type} {enc : α ↪ List Bool} (h : P enc ≠ NP enc)
 
 /-! ### A machine deciding Ladner's language bounds the exponent -/
 
-/-- A finite binary machine halting within time `t x` with output `[f x]`, simulated by the
-universal function on its description for at least `t x` steps, halts with output `[eBit (f x)]`.
--/
-theorem universal_desc_of_halted {k : ℕ} {State : Type} [Fintype State] (eS : State ↪ ℕ)
-    (tm : MultiTapeTM k Bool State) {f : List Bool → Bool} {t : List Bool → ℕ}
-    (h : ∀ x, (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x)).output = [f x])
-    {x : List Bool} {T : ℕ} (hT : t x ≤ T) :
-    universal (desc eS eBit tm, x.map eBit, T) = ([eBit (f x)], true) := by
-  obtain ⟨hhalt, hout⟩ := h x
-  simp only [Cfg.Halted] at hhalt
-  rw [universal_desc, MultiTapeTM.runFrom_eq_of_halt tm _ hT hhalt, hout, hhalt]
-  rfl
-
-/-- Every description is the description of machines with arbitrarily large indices. -/
-private theorem exists_index_ge (d : Desc) (B : ℕ) :
-    ∃ i, B ≤ i ∧ decodeDesc (unframe (word i)) = d := by
-  refine ⟨index (frame (eDesc d) ++ List.replicate B false), ?_, by
-    rw [word_index, decodeDesc_unframe_frame_append]⟩
-  have h₁ := two_pow_length_word_le (index (frame (eDesc d) ++ List.replicate B false))
-  rw [word_index, List.length_append, List.length_replicate] at h₁
-  have h₂ : B < 2 ^ ((frame (eDesc d)).length + B) :=
-    Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right (by omega) (by omega))
-  omega
-
 /-- From some point on, the clock of the machine with index `i` on the words with indices below
 `n` is at most `n`. -/
 private theorem eventually_clock_le (i : ℕ) :
@@ -146,29 +121,15 @@ private theorem eventually_clock_le (i : ℕ) :
 /-- **If `SATH` is in `P`, then `H` is bounded**: some index of a machine deciding `SATH` has a
 clock exceeding its polynomial time bound, and from some point on `H` is at most that index. -/
 theorem exists_H_le_of_mem_P (h : SATH ∈ P encBits) : ∃ C, ∀ n, H n ≤ C := by
-  obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P.mp h
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x.length)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x.length)).output = [f x] :=
-    (htm x).runFrom_of_le le_rfl
-  obtain ⟨c, e, hle⟩ := (PolyBounded.of_polynomiallyBounded List.length ht).exists_le
-  obtain ⟨i, hi, hdesc⟩ := exists_index_ge (desc eS eBit tm) (c + e)
-  -- the clock of the index exceeds the time bound
-  have hclock (x : List Bool) : t x.length ≤ clock i x.length := by
-    calc t x.length ≤ c * (x.length + 1) ^ e := hle x
-      _ ≤ 2 ^ i * (x.length + 1) ^ i :=
-          Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
-            (Nat.pow_le_pow_right (by omega) (by omega))
-      _ = clock i x.length := by rw [clock, ← mul_pow]; ring_nf
+  obtain ⟨f, hf, i, -, hrun⟩ := exists_index_of_mem_P h 0
   obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp (eventually_clock_le i)
   refine ⟨max i N, fun n => ?_⟩
   rcases lt_or_ge n N with hn | hn
   · exact (H_le_self n).trans (by omega)
   · refine (H_le_of_agrees fun j hj => ⟨f (word j), ?_, hf (word j) |>.symm⟩).trans
       (le_max_left _ _)
-    rw [runIndexed, hdesc, min_eq_left (hN n hn j hj)]
-    exact universal_desc_of_halted eS tm hrun (hclock _)
+    rw [min_eq_left (hN n hn j hj)]
+    exact hrun _
 
 /-! ### The first hole: padding along a bounded exponent -/
 

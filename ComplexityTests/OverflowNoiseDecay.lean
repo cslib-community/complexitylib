@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Analysis.RowCompression.NoiseDecay
+import Complexity.Computability.LogSpaceDerandomization.RowCompression.NoiseDecay
 import Complexity.Foundations.Data.Finset.Expect
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.NormNum

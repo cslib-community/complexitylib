@@ -113,11 +113,7 @@ private theorem contains_node_update {s s' : Tree d}
       y = x ∨ (node (some (m, M)) s c).Contains y := by
   intro y
   simp only [contains_node_some, hc]
-  have hminmax : y = min m x ∨ y = max m x ↔ y = x ∨ y = m := by
-    rcases le_total m x with h | h
-    · simp only [min_eq_left h, max_eq_right h]
-      tauto
-    · simp only [min_eq_right h, max_eq_left h]
+  have hminmax : y = min m x ∨ y = max m x ↔ y = x ∨ y = m := by grind
   constructor
   · rintro (hy | ⟨j, b, (⟨rfl, rfl⟩ | hb), he⟩)
     · rcases hminmax.mp (Or.inl hy) with h | h

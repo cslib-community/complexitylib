@@ -219,6 +219,11 @@ func TestGCDryRunReportsSameDeletionsWithoutChangingFiles(t *testing.T) {
 		t.Fatalf("apply failed: %+v %v", applied, err)
 	}
 	dry.Applied = true
+	// Only an applied run measures bytes actually removed.
+	if dry.DeletedBytes != 0 || applied.DeletedBytes <= 0 {
+		t.Fatalf("unexpected deleted bytes: dry %+v, applied %+v", dry, applied)
+	}
+	dry.DeletedBytes = applied.DeletedBytes
 	if !reflect.DeepEqual(dry, applied) {
 		t.Fatalf("apply differs from dry run: %+v versus %+v", applied, dry)
 	}
@@ -315,6 +320,28 @@ func TestGCStoreLockExcludesPublicationAndOtherProcesses(t *testing.T) {
 	cmd.Env = append(os.Environ(), "CACHE_ORIGIN_GC_LOCK_CHILD="+dir)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("interprocess exclusion failed: %v\n%s", err, output)
+	}
+}
+
+func TestGCReportsOnlyAppliedPublicPayloadBytes(t *testing.T) {
+	s, dir, now := gcStore(t)
+	old, current := gcMapping("old", 1), gcMapping("new", 2)
+	oldMapping := gcMappingBytes(1)
+	gcPut(t, s, dir, gcArtifact(1), []byte("collected bytes"), now.Add(-3*gcDay))
+	gcPut(t, s, dir, gcArtifact(2), []byte("retained bytes"), now)
+	gcPut(t, s, dir, old, oldMapping, now.Add(-3*gcDay))
+	gcPut(t, s, dir, current, gcMappingBytes(2), now)
+	report, err := s.collect(2*gcDay, false)
+	if err != nil || report.DeletedBytes != 0 {
+		t.Fatalf("dry run reports no actual deleted bytes: %+v %v", report, err)
+	}
+	report, err = s.collect(2*gcDay, true)
+	if err != nil || report.DeletedBytes != int64(len(oldMapping)+len("collected bytes")) {
+		t.Fatalf("count removed mapping and artifact payload bytes only: %+v %v", report, err)
+	}
+	report, err = s.collect(2*gcDay, true)
+	if err != nil || report.DeletedBytes != 0 {
+		t.Fatalf("repeated collection reports zero new deleted bytes: %+v %v", report, err)
 	}
 }
 

@@ -45,6 +45,8 @@ of the valid variants is the conditional walk.
 
 * `Cslib.Probability.walk_pow_sliceGraph_lazy_ofPerms_eq`: validated words of every length
   compute the lazy conditional walk.
+* `Cslib.Probability.wrap_affineGenerator_mem`: every valid wrap of the affine generators and
+  their inverses lies in `{-3, …, 3} ^ H`.
 * `Cslib.Probability.walk_pow_sliceGraph_lazy_affineMove_eq`: the same for the affine generators,
   with the candidate wraps `{-3, …, 3} ^ H`.
 
@@ -121,7 +123,7 @@ private theorem sum_abs_transvection_le {a b : Fin H} (h : a ≠ b) (c : ℤ) (i
     _ = 1 + |c| := by simp [sum_add_distrib]
 
 /-- Every valid wrap of the affine generators and their inverses lies in `{-3, …, 3} ^ H`. -/
-private theorem wrap_affineGenerator_mem (k : {p : Fin H × Fin H // p.1 ≠ p.2} ⊕ Fin H) (b : Bool)
+theorem wrap_affineGenerator_mem (k : {p : Fin H × Fin H // p.1 ≠ p.2} ⊕ Fin H) (b : Bool)
     {w : Fin H → ZMod P} (hw : w ∈ retentionBox P H L) [NeZero L] :
     wrap L (signedMove (affineGenerator H k) b).1 (signedMove (affineGenerator H k) b).2 w ∈
       Fintype.piFinset fun _ ↦ Icc (-3 : ℤ) 3 := by

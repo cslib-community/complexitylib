@@ -128,8 +128,7 @@ theorem power_amplification {I : Type} [Fintype I]
     have hden : ((A : ℝ) ^ 2) ^ m = ((A : ℝ) ^ m) ^ 2 := by
       rw [← pow_mul, ← pow_mul, Nat.mul_comm 2 m]
     calc
-      _ ≤ ((B : ℝ) / (A : ℝ) ^ 2) ^ m * ((A : ℝ) ^ m) ^ 2 :=
-        mul_le_mul_of_nonneg_left hsq (by positivity)
+      _ ≤ ((B : ℝ) / (A : ℝ) ^ 2) ^ m * ((A : ℝ) ^ m) ^ 2 := by gcongr
       _ = (B : ℝ) ^ m := by
         rw [div_pow, hden]
         exact div_mul_cancel₀ _ (ne_of_gt (pow_pos (pow_pos hAp m) 2))

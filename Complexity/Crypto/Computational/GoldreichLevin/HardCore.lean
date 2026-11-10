@@ -146,12 +146,9 @@ theorem eval_paddedPrediction (f : List Bool → List Bool) (adversary : Disting
     BitString.eval_sampleList, ProbComp.eval_pure, two_mul]
   rw [uniformList_add (n + n) spare, uniformList_add n n]
   simp only [uniformList, PMF.bind_bind, PMF.bind_map, Function.comp_def]
-  congr 1
-  funext x
-  congr 1
-  funext r
-  congr 1
-  funext extra
+  congr 1 with x : 1
+  congr 1 with r : 1
+  congr 1 with extra : 1
   rw [paddedFunction_chunks f x r (List.ofFn extra) (by simpa using hspare),
     paddedPredicate_chunks x r (List.ofFn extra) (by simpa using hspare), dotProduct_eq_foldl]
 

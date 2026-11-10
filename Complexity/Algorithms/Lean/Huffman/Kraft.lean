@@ -125,11 +125,7 @@ theorem natOfBits_bitsOfNat {k q : ℕ} (hq : q < 2 ^ k) :
     rw [Nat.pow_succ] at hq
     have hdiv : q / 2 < 2 ^ k := by omega
     rw [bitsOfNat, natOfBits_append, ih hdiv]
-    have hbit : natOfBits [decide (q % 2 = 1)] = q % 2 := by
-      by_cases h : q % 2 = 1
-      · simp [natOfBits, h]
-      · have h0 : q % 2 = 0 := by omega
-        simp [natOfBits, h0]
+    have hbit : natOfBits [decide (q % 2 = 1)] = q % 2 := by grind [natOfBits]
     simp only [List.length_singleton, Nat.pow_one, hbit]
     omega
 
@@ -224,9 +220,7 @@ private theorem kraftAssign_spec {α : Type*} {L : ℕ} {ℓ : α → ℕ} (xs :
     have hL' : ∀ x ∈ xs, ℓ x ≤ L := fun x hx => hL x (List.mem_cons_of_mem a hx)
     have hdvd' : ∀ x ∈ xs, 2 ^ (L - ℓ x) ∣ offset + 2 ^ (L - ℓ a) := by
       intro x hx
-      have hle : L - ℓ x ≤ L - ℓ a := by
-        have := hpw.1 x hx
-        omega
+      have hle : L - ℓ x ≤ L - ℓ a := by grind
       exact Nat.dvd_add (hdvd x (List.mem_cons_of_mem a hx)) (Nat.pow_dvd_pow 2 hle)
     have hsum' : (offset + 2 ^ (L - ℓ a)) + (xs.map fun x => 2 ^ (L - ℓ x)).sum ≤ 2 ^ L := by
       omega
@@ -302,10 +296,7 @@ theorem exists_isPrefixFree_of_kraft_nat {α : Type*} (s : Finset α) (ℓ : α 
   let sorted := s.toList.mergeSort (fun a b => decide (ℓ a ≤ ℓ b))
   have hperm : sorted.Perm s.toList := List.mergeSort_perm s.toList _
   have hpw_sorted : sorted.Pairwise (fun a b => ℓ a ≤ ℓ b) := by
-    have htot : ∀ a b, (decide (ℓ a ≤ ℓ b) || decide (ℓ b ≤ ℓ a)) = true := by
-      intro a b
-      simp only [Bool.or_eq_true, decide_eq_true_eq]
-      exact le_total (ℓ a) (ℓ b)
+    have htot : ∀ a b, (decide (ℓ a ≤ ℓ b) || decide (ℓ b ≤ ℓ a)) = true := by grind
     have htr : ∀ a b c, decide (ℓ a ≤ ℓ b) = true → decide (ℓ b ≤ ℓ c) = true →
         decide (ℓ a ≤ ℓ c) = true := by
       intro a b c hab hbc

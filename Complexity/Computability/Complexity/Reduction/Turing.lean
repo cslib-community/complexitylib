@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Tactic.EncLen
 
 /-!
 # Polynomial-time Turing reductions and the Turing bridge
@@ -197,9 +198,7 @@ theorem isOraclePPTOn_queryWords :
     | nil => rw [OracleComp.eq_of_mem_supportWith_pure hnext]; simp
     | cons word words =>
       obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
-      simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton,
-        List.tail_cons, length_encList, List.map_cons, List.sum_cons]
-      omega
+      enc_len [List.length_singleton, List.tail_cons, length_encList, List.map_cons, List.sum_cons]
 
 open Classical in
 private theorem interpret_id_queryWordsStep (O : Set (List Bool)) (word : List Bool)

@@ -22,7 +22,8 @@ coefficients on the sets of size `k` (`BitString.fourierCoeff_levelPart`), has d
 parts of different degrees are orthogonal, and the part of degree `k` has squared norm `W^k[f]`
 (`BitString.expect_levelPart_mul_levelPart`) [O'Donnell, Exercise 1.18][ODonnell2014], so the
 weights sum to `𝔼 f ^ 2` (`BitString.sum_levelWeight`). The weight at degree zero is the squared
-mean (`BitString.levelWeight_zero`), and the weights above a level `t` are the Fourier weight
+mean (`BitString.levelWeight_zero`), the weight at degree one is `∑ᵢ f̂({i}) ^ 2`
+(`BitString.levelWeight_one`), and the weights above a level `t` are the Fourier weight
 `∑_{t < |S|} f̂(S) ^ 2` that the library uses for spectral concentration
 (`BitString.sum_levelWeight_Ioc`).
 
@@ -39,8 +40,9 @@ mean (`BitString.levelWeight_zero`), and the weights above a level `t` are the F
   `‖f^{=k}‖² = W^k[f]`.
 * `Cslib.BitString.sum_levelWeight`: the weights sum to `𝔼 f ^ 2`, and to one for a Boolean
   function read as signs (`Cslib.BitString.sum_levelWeight_signVal`).
-* `Cslib.BitString.levelWeight_zero`, `Cslib.BitString.sum_levelWeight_Ioc`: the weight at degree
-  zero and the weight above a level.
+* `Cslib.BitString.levelWeight_zero`, `Cslib.BitString.levelWeight_one`,
+  `Cslib.BitString.sum_levelWeight_Ioc`: the weights at degrees zero and one and the weight above
+  a level.
 
 ## References
 
@@ -145,6 +147,18 @@ theorem levelWeight_zero (f : (ι → Bool) → ℝ) : levelWeight 0 f = (𝔼 x
     ext S
     simp
   rw [levelWeight, h, sum_singleton, fourierCoeff_empty]
+
+/-- The Fourier weight at degree one is the sum of the squared degree-one coefficients,
+`W^1[f] = ∑ᵢ f̂({i}) ^ 2`. -/
+theorem levelWeight_one (f : (ι → Bool) → ℝ) :
+    levelWeight 1 f = ∑ i, fourierCoeff f {i} ^ 2 := by
+  have h : (univ.filter fun S : Finset ι => #S = 1) =
+      univ.map ⟨fun i => {i}, singleton_injective⟩ := by
+    ext S
+    simp only [mem_filter, mem_univ, true_and, mem_map, Function.Embedding.coeFn_mk, card_eq_one]
+    exact ⟨fun ⟨i, hi⟩ => ⟨i, hi.symm⟩, fun ⟨i, hi⟩ => ⟨i, hi.symm⟩⟩
+  rw [levelWeight, h, sum_map]
+  rfl
 
 /-- The Fourier weights above level `t` are the Fourier weight on the sets of more than `t`
 coordinates. -/

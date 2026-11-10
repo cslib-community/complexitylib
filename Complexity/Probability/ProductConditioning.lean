@@ -13,6 +13,7 @@ import Complexity.Probability.Divergence
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Algebra.Order.Chebyshev
 
 /-!
@@ -168,8 +169,7 @@ theorem toOuterMeasure_toReal_le_two_rpow (p : ∀ i, PMF (β i)) (W : Set (∀ 
       (2 : ℝ) ^ (-∑ j, dist (((pi p).filter W hW).map fun u => u j) (p j) ^ 2) := by
   set w := ((pi p).toOuterMeasure W).toReal
   have hw0 : 0 < w := (toOuterMeasure_toReal_pos_iff _ W).mpr hW
-  have hw1 : w ≤ 1 := by
-    simpa using ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one (pi p) W)
+  have hw1 : w ≤ 1 := toOuterMeasure_toReal_le_one (pi p) W
   have hlog : 0 ≤ Real.log (1 / w) := Real.log_nonneg (by rw [le_div_iff₀ hw0]; linarith)
   have hln2 : 0 < Real.log 2 := Real.log_pos one_lt_two
   -- `ln (1 / w) / 2 ≤ log₂ (1 / w)` because `ln 2 < 2`.
@@ -204,8 +204,7 @@ theorem sum_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β i)
     (hW : ∃ u ∈ W, u ∈ (pi p).support) :
     ∑ j, dist (((pi p).filter W hW).map fun u => u j) (p j) ≤
       Real.sqrt (Fintype.card ι * Real.log (1 / ((pi p).toOuterMeasure W).toReal)) := by
-  have hw : ((pi p).toOuterMeasure W).toReal ≤ 1 := by
-    simpa using ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one (pi p) W)
+  have hw : ((pi p).toOuterMeasure W).toReal ≤ 1 := toOuterMeasure_toReal_le_one (pi p) W
   have hw0 : 0 < ((pi p).toOuterMeasure W).toReal := (toOuterMeasure_toReal_pos_iff _ W).mpr hW
   have hlog : 0 ≤ Real.log (1 / ((pi p).toOuterMeasure W).toReal) :=
     Real.log_nonneg (by rw [le_div_iff₀ hw0]; linarith)

@@ -882,9 +882,7 @@ theorem wp_setKey {K : ℕ} {s' : IndexedMinPQ.State n} {g : Cell → ℕ} {v m 
     Record.wp (Cell.ok n) w (setKey v k) Q g := by
   have hm' : g .minRoot = m.val + 1 := hm
   have hkm : Function.update g (.key v) k (.key m) = Function.update (view n g).key v k m := by
-    by_cases hmv : m = v
-    · subst hmv; simp
-    · simp [Function.update_of_ne hmv, Fin.val_ne_of_ne hmv, view]
+    grind [view]
   simp only [setKey, Record.wp_write_bind, Record.wp_read_bind, Function.update_apply,
     reduceCtorEq, ite_false, hm', Nat.add_sub_cancel, Cell.ok, true_and]
   rw [← Function.update_apply (f := g), hkm]

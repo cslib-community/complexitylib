@@ -13,6 +13,7 @@ public import Complexity.Crypto.Computational.Pseudoentropy.ExtractionSchedule
 public import Cslib.Foundations.Data.BitString
 public import Complexity.Probability.Entropy
 public import Complexity.Probability.UniversalHash
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.EntropyExtraction
 import Complexity.Crypto.Game.Statistical
 import Complexity.Computability.Probabilistic.PPT.Capture
@@ -89,8 +90,7 @@ theorem extractLabelsIdeal_map_observation {α β Seed Output : Type}
     (extractLabelsIdeal (Output := Output) source count seed).map
       (fun result => (result.1.map observe, result.2)) =
         extractLabelsIdeal encoded count seed := by
-  simp only [extractLabelsIdeal, monad_bind_eq_bind, ProbComp.eval_replicate_map hsource,
-    PMF.map_bind, PMF.map_comp, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, extractLabelsIdeal, monad_bind_eq_bind, ProbComp.eval_replicate_map hsource]
 
 /-- Forgetting side information leaves an independent public seed and uniform output. -/
 theorem extractLabelsIdeal_map_snd {Observation Seed Output : Type}
@@ -98,8 +98,7 @@ theorem extractLabelsIdeal_map_snd {Observation Seed Output : Type}
     (seed : ProbComp Seed) :
     (extractLabelsIdeal (Output := Output) source count seed).map Prod.snd =
       (ProbComp.eval seed).bind (fun key => (PMF.uniformOfFintype Output).map (key, ·)) := by
-  simp only [extractLabelsIdeal, monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def,
-    PMF.bind_const]
+  simp only [pmf_norm, extractLabelsIdeal, monad_bind_eq_bind, PMF.bind_const]
 
 /-- Re-encoding both fields changes only the hash's input representation and public output. -/
 theorem extractLabels_map_pair {α β Label Value Seed Output : Type}
@@ -122,8 +121,7 @@ theorem eval_replicate_extractLabels_map_pair {α β Label Value Seed Output : T
       (ProbComp.eval (OracleComp.replicate count source >>=
         extractLabels seed (fun key values => hash key (values.map encode)))).map
           (fun result => (result.1.map observe, result.2)) := by
-  simp only [ProbComp.eval_bind, ProbComp.eval_replicate_map hsource, PMF.bind_map,
-    Function.comp_def, extractLabels_map_pair, ProbComp.eval_map, PMF.map_bind]
+  simp only [pmf_norm, ProbComp.eval_replicate_map hsource, extractLabels_map_pair]
 
 /-- Label extraction composes ordinary sampling, list projections, and an efficient hash. -/
 theorem isPPTOn_extractLabels {Param Observation Seed Output : Type} {input : Param ↪ List Bool}
@@ -174,8 +172,7 @@ theorem eval_replicate_extractLabels {Observation Label Seed Output : Type}
         (ProbComp.eval seed).map (fun s =>
           (fun i => (outcome i).1, s, hash s (List.ofFn (fun i => (outcome i).2)))))).map
         (fun result => (List.ofFn result.1, result.2)) := by
-  simp only [ProbComp.eval_bind, ProbComp.eval_replicate, PMF.bind_map, extractLabels,
-    bind_pure_comp, ProbComp.eval_map, PMF.map_bind, PMF.map_comp, Function.comp_def, List.map_ofFn]
+  simp only [pmf_norm, ProbComp.eval_replicate, extractLabels, bind_pure_comp, List.map_ofFn]
 
 /-- Extraction error for the supplied test is the only loss when converting its distinguishing
 advantage into a gap between original and comparison sample sequences. The hash seed is public. -/
@@ -230,9 +227,8 @@ theorem extractLabels_dist_bind_le {Observation Label Seed Output : Type}
   have hmap := (dist_bind_le _ _
     (fun result : (Fin count → Observation) × Seed × Output =>
       test (List.ofFn result.1, result.2))).trans h
-  simp only [extractLabelsIdeal, eval_replicate_extractLabels, ProbComp.eval_replicate,
-    ProbComp.eval_map, monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
-    Function.comp_def] at hmap ⊢
+  simp only [pmf_norm, extractLabelsIdeal, eval_replicate_extractLabels, ProbComp.eval_replicate,
+    monad_bind_eq_bind] at hmap ⊢
   exact hmap.trans (by gcongr; norm_num)
 
 /-- Extracting into a singleton is exactly ideal, including its public observations and seed.
@@ -249,9 +245,8 @@ theorem eval_extractLabels_of_subsingleton {Observation Label Seed Output : Type
     ext result
     simp [PMF.uniformOfFintype_apply, PMF.pure_apply, Fintype.card_unique,
       Subsingleton.elim result value]
-  simp only [extractLabelsIdeal, OracleComp.replicate_map, ProbComp.eval_map,
-    ProbComp.eval_bind, extractLabels, bind_pure_comp, monad_bind_eq_bind, PMF.bind_map,
-    PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, extractLabelsIdeal, OracleComp.replicate_map, extractLabels, bind_pure_comp,
+    monad_bind_eq_bind]
   congr 1; funext samples; rw [PMF.map]
   congr 1; funext key
   rw [huniform (hash key (samples.map Prod.snd)), PMF.pure_map]
@@ -355,8 +350,7 @@ theorem seededHash_replicate_indistinguishable {Label Seed : ℕ → Type}
   simp only [PMF.bind_map, Function.comp_def] at hideal
   rw [hideal]
   refine congrArg₂ Game.advantage ?_ (by simp only [monad_bind_eq_bind, PMF.bind_bind])
-  simp only [OracleComp.replicate_map, ProbComp.eval_bind, ProbComp.eval_map,
-    extractLabels, bind_pure_comp, PMF.bind_map, PMF.bind_bind,
-    Function.comp_def, List.map_map, List.map_id_fun', id_eq, seededHash_eq_bind]
+  simp only [pmf_norm, OracleComp.replicate_map, extractLabels, bind_pure_comp, List.map_map,
+    List.map_id_fun', id_eq, seededHash_eq_bind]
 
 end Cslib.Crypto.Pseudoentropy

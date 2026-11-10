@@ -94,4 +94,9 @@ example (h : SAT ∈ P encCNF) : PH encBits ⊆ PNPLog encBits :=
   PH_subset_PNPLog_of_sparse Set.finite_empty.mem_SPARSE empty_mem_NP
     (P_subset_PWithOracle ∅ encCNF h) encBits
 
+-- Under the same hypotheses the hierarchy equals `P^{NP[O(log n)]}`.
+example (h : SAT ∈ P encCNF) : PH encBits = PNPLog encBits :=
+  PH_eq_PNPLog_of_sparse Set.finite_empty.mem_SPARSE empty_mem_NP
+    (P_subset_PWithOracle ∅ encCNF h) encBits
+
 end ComplexityTests.SparseKadin

@@ -304,11 +304,9 @@ theorem formulaSize_sub_sq_mul_pow_three_le_andreev (h : BooleanFunction b) (hb 
       = (formulaSize h - 2 * b * r) ^ 2 * (#ρ₀.free) ^ 3 := by
           rw [hfree₀]
           ring
-    _ ≤ (formulaSize (andreev b m ∘ ρ.fill) - 2 * k) ^ 2 * (#ρ₀.free) ^ 3 :=
-          Nat.mul_le_mul_right _ hsub_le
+    _ ≤ (formulaSize (andreev b m ∘ ρ.fill) - 2 * k) ^ 2 * (#ρ₀.free) ^ 3 := by gcongr
     _ ≤ 4 * formulaSize (andreev b m ∘ ρ₀.fill) ^ 2 * k ^ 3 := hshrink
-    _ ≤ 4 * formulaSize (andreev b m) ^ 2 * k ^ 3 :=
-          Nat.mul_le_mul_right _ (Nat.mul_le_mul_left 4 (Nat.pow_le_pow_left hle₀ 2))
+    _ ≤ 4 * formulaSize (andreev b m) ^ 2 * k ^ 3 := by gcongr
     _ = 4 * formulaSize (andreev b m) ^ 2 * r ^ 3 * b ^ 3 := by
           dsimp only [k]
           ring
@@ -393,14 +391,12 @@ theorem pow_two_mul_pow_three_le_formulaSize_andreev_sq :
     have h2 : 6 * b * (2 * b * r) = 12 * b ^ 2 * r := by ring
     rw [h1, h2]
     omega
-  have hsq : (2 ^ b) ^ 2 ≤ (6 * b * (formulaSize h - 2 * b * r)) ^ 2 :=
-    Nat.pow_le_pow_left hhalf 2
+  have hsq : (2 ^ b) ^ 2 ≤ (6 * b * (formulaSize h - 2 * b * r)) ^ 2 := by gcongr
   calc 2 ^ (2 * b) * m ^ 3
       = (2 ^ b) ^ 2 * m ^ 3 := by rw [← pow_mul, mul_comm 2 b]
     _ ≤ (6 * b * (formulaSize h - 2 * b * r)) ^ 2 * m ^ 3 := Nat.mul_le_mul_right _ hsq
     _ = 36 * b ^ 2 * ((formulaSize h - 2 * b * r) ^ 2 * m ^ 3) := by ring
-    _ ≤ 36 * b ^ 2 * (4 * formulaSize (andreev b m) ^ 2 * r ^ 3) :=
-        Nat.mul_le_mul_left _ handreev
+    _ ≤ 36 * b ^ 2 * (4 * formulaSize (andreev b m) ^ 2 * r ^ 3) := by gcongr
     _ = 144 * b ^ 2 * r ^ 3 * formulaSize (andreev b m) ^ 2 := by ring
 
 /-- **Andreev's `n ^ (5 / 2 - o(1))` lower bound** at block size `m = 2 ^ b` (input length

@@ -65,31 +65,22 @@ every circuit of fan-in at most `r ≥ 2` deciding `S_n`, over any basis and int
 has `s` inner gates with `(r - 1) s > (1 + 1/A_{r+1} - ε) n`, where `A_d` is
 `Gaussian.degreeCoefficient d`. -/
 theorem eventually_degreeCoefficient_lt_mul_innerSize {r : ℕ} (hr : 2 ≤ r)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost r → c.Decides I Acc (S n) →
         (1 + 1 / Gaussian.degreeCoefficient (r + 1) - ε) * n < (r - 1) * c.innerSize :=
   eventually_lt_mul_innerSize hr (Gaussian.degreeCoefficient_pos (by omega))
-    (layoutBound_degree (by omega)) hfree hK hdense hε
+    (layoutBound_degree (by omega)) hSK hε
 
 /-- **The frontier lower bound for fan-in at most three.** Under the hypotheses of
 `eventually_degreeCoefficient_lt_mul_innerSize`, every circuit of fan-in at most three deciding
 `S_n` has `s` inner gates with `2 s > (7/2 - ε) n`. -/
 theorem eventually_seven_div_two_lt_two_mul_innerSize
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 3 → c.Decides I Acc (S n) →
         (7 / 2 - ε) * n < 2 * c.innerSize := by
-  have h := eventually_degreeCoefficient_lt_mul_innerSize.{u, v} (r := 3) (by norm_num) hfree hK
-    hdense hε
+  have h := eventually_degreeCoefficient_lt_mul_innerSize.{u, v} (r := 3) (by norm_num) hSK hε
   norm_num only [Gaussian.degreeCoefficient_four] at h
   exact h
 

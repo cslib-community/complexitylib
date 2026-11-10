@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of common envelopes and actual finite reserve output)
-import Complexity.Foundations.Probability.NormalizedAtomRows.ReserveOutput
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.ReserveOutput
 
 /-! Actual full-matrix two-bin input, nonzero common envelopes and empty prefixes. -/
 set_option linter.privateModule false

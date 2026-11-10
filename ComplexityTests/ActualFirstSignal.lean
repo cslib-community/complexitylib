@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual first-signal prefixes)
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.FirstSignal
 
 /-! Nonconstant positive prefixes, literal zero inputs and empty-slice stationarity. -/
 

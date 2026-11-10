@@ -3,8 +3,8 @@
 Optional MIT cache origin for [#2503](https://github.com/cslib-community/complexitylib/issues/2503)
 and [#2506](https://github.com/cslib-community/complexitylib/pull/2506). The
 [migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
-GCS remains the active CI publisher and default reader; keep MIT CI publication disabled until
-the remaining commissioning checks pass. The source and examples do not provision infrastructure
+GCS remains an active CI publisher and the default reader. MIT CI publication is enabled;
+reader cutover remains a separate decision. The source and examples do not provision infrastructure
 or install credentials automatically.
 
 One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
@@ -20,6 +20,8 @@ See the [security contract, incident recovery and milestone scope](SECURITY.md) 
 The [operator runbook](OPERATIONS.md) covers identities, credentials, limits, email alerts and updates.
 It also covers [usage statistics](OPERATIONS.md#usage-statistics): a separate bounded journal of
 downloads, misses, response bytes and durations, with commands to inspect and summarize requests.
+The [dashboard](DASHBOARD.md) presents aggregate traffic, storage, publication and GC
+statistics as a static public page without changing artifact uploads or downloads.
 
 ## MIT deployment status
 
@@ -38,8 +40,8 @@ As of November 5, 2026, the operator has deployed the origin at
   with existing bytes and timestamps unchanged, anonymous GET/HEAD matched, and private paths,
   listing and DELETE were rejected. Public-origin authentication also passed. Test fixtures were
   removed under the publication/GC lock, leaving the store empty.
-- The exclusive proxy group, request/connection limits, host egress shaping, bounded journal,
-  Fail2ban and queued email alerts are installed. Rate/concurrency, capacity and ACME renewal
+- Initial hardening included the exclusive proxy group, request/connection limits, an egress
+  shaper, bounded journal, Fail2ban and queued email alerts. Rate/concurrency, capacity and ACME renewal
   tests passed; the reserved test IP was unbanned. Service-failure email reached the operator's
   inbox. Fail2ban bans remain enabled with journal logging; its email notifications are disabled.
 
@@ -51,8 +53,9 @@ production GET/HEAD probes matched recorded status/body bytes and privacy rules.
 rotation and service restart preserved history and accepted new records. Services stayed healthy,
 with no new mail. The collector preserves the host's kernel audit policy.
 
-These checks used small synthetic packages. A real Lean build publication and cold restore,
-review of the deployment evidence, and integration approval remain before activation. The
+Initial commissioning used small synthetic packages. By November 7, 2026, main CI was publishing
+real builds successfully to both MIT and GCS. Reader cutover still requires a real MIT cold
+restore and recovery exercise. The
 [migration checklist](../../scripts/cache/README.md#mit-origin-migration) gives the repository
 administrator's configuration and the separate publication/reader cutover steps. Credentials
 and host-specific private configuration must stay outside this repository.
@@ -133,8 +136,13 @@ unknown: retry the same package. Successful retries do not refresh mapping reten
 Malformed packages are fully rejected before anything enters the public namespace. A failure
 during installation may leave unreferenced complete artifacts, but installs the mapping last.
 
-Uploads stream to private, server-created staging files, with limits of 1 GiB per request,
-256 MiB per artifact, 8 MiB per mapping, 4 MiB inventory and 10,000 inventory entries. Links,
+Uploads stream to private, server-created staging files, with limits of 4 GiB per request,
+256 MiB per artifact, 8 MiB per mapping and 16 MiB inventory. The inventory-entry limit derives
+from the 100,000-entry store budget, including its mapping. That store budget also counts
+directories and all retained publications, so admission still requires free entry capacity.
+The metadata bound covers the full supported inventory and matches the Python publisher.
+Uploads are also buffered by nginx on the data disk; leave room for buffering, staging and
+retained objects. The Go services retain their 256 MiB memory limits. Links,
 unexpected paths/files, duplicate tar entries, missing references and unknown mapping versions
 are rejected. Only regular USTAR entries are accepted. The handler never executes uploaded bytes.
 

@@ -372,8 +372,7 @@ theorem runBit_computableInDegree :
     simp only [length_encPair, encUnary_apply, List.length_replicate, pow_one]
     generalize ((encList encBool) x.1).length = L at h1 ⊢
     have h2 : x.1.length + C * x.2 + 1 ≤ (C + 2) * (2 * L + 1 + x.2 + 1) := by nlinarith
-    calc A * (x.1.length + C * x.2 + 1) ≤ A * ((C + 2) * (2 * L + 1 + x.2 + 1)) :=
-          Nat.mul_le_mul_left A h2
+    calc A * (x.1.length + C * x.2 + 1) ≤ A * ((C + 2) * (2 * L + 1 + x.2 + 1)) := by gcongr
       _ = A * (C + 2) * (2 * L + 1 + x.2 + 1) := by ring
   have hfold := ComputableInDegree.foldl' (encA := encBool) (encL := encBits)
     (encB := encCfg) (list := fun x : List Bool × ℕ => List.replicate x.2 true)

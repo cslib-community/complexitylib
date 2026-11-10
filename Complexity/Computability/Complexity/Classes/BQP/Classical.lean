@@ -33,6 +33,8 @@ state, so the final measurement reads the circuit's output with certainty. This 
 simulation of Boolean circuits by permutation gates in [Arora, Barak][AroraBarak09], Chapter 10
 (Section 20.4 of the January 2007 web draft, used there for Theorem 20.17, `BPP ⊆ BQP`), without
 the final uncomputation, which is unnecessary when only qubit `0` is measured.
+With Hadamard gates preparing the random bits, the same compilation gives `BPP ⊆ BQP`
+(`Cslib.Complexity.BPP_subset_BQP`, in `Complexity.Computability.Complexity.Classes.QMA.MA`).
 
 ## Main definitions
 

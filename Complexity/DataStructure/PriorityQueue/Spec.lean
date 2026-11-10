@@ -786,9 +786,7 @@ theorem allocHandle_spec {n_max : ℕ} {s : AllocState n_max}
       (AllocState.mk (Function.update s.entries h (some (u, v))) freeList' fresh').WellFormed := by
   obtain ⟨hfr_le, hnd, hfree, hbump, hsum⟩ := hwf
   rcases hfl : s.freeList with _ | ⟨h, tl⟩
-  · have hfr_lt : s.fresh < n_max := by
-      rw [hfl, List.length_nil, Nat.add_zero] at hsum
-      omega
+  · have hfr_lt : s.fresh < n_max := by grind
     let hfin : Fin n_max := ⟨s.fresh, hfr_lt⟩
     have hh_none : s.entries hfin = none := hbump hfin le_rfl
     refine ⟨hfin, [], s.fresh + 1, ?_, hh_none, ?_⟩
@@ -873,10 +871,7 @@ theorem stepAlloc_refines_spec {n_max U V : ℕ} {s : AllocState n_max} (hwf : s
       have hh_not_free : h ∉ s.freeList := fun hm => by
         rw [(hfree h hm).2] at hsh
         cases hsh
-      have hh_lt : h.val < s.fresh := by
-        by_contra hge
-        rw [hbump h (Nat.le_of_not_lt hge)] at hsh
-        cases hsh
+      have hh_lt : h.val < s.fresh := by grind
       have hsz_pos : 1 ≤ size s.entries :=
         Finset.card_pos.mpr ⟨h, mem_dom_iff.mpr ⟨u, v, hsh⟩⟩
       dsimp only [AllocState.WellFormed]

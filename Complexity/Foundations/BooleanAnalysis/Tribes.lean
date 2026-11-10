@@ -9,6 +9,7 @@ module
 
 public import Complexity.Probability.Resilience
 import Complexity.Foundations.Data.BitString.AgreeExpect
+import Complexity.Foundations.Data.Finset.ExpectPi
 
 /-!
 # The Tribes function
@@ -26,8 +27,11 @@ O'Donnell takes `s` largest with this probability at most `1 / 2`
 bounds are ours. For such `s` we show that the probability is within `2 ^ (-w)` of `1 / 2`
 (`Cslib.BitString.abs_expect_bitVal_tribes_sub_half_le`); this explicit bound is ours. O'Donnell's
 asymptotic statements, that then `2 ^ w = (n / ln n) (1 + o(1))` for `n = s w` with bias
-`1 / 2 - O(log n / n)` and that each bit has influence `(ln n / n) (1 ± o(1))`
-[O'Donnell, Propositions 4.12 and 4.13][ODonnell2014], are not formalized.
+`1 / 2 - O(log n / n)` [O'Donnell, Proposition 4.12][ODonnell2014], are not formalized. The
+influences of Tribes [O'Donnell, Proposition 4.13][ODonnell2014] are computed exactly, and bounded
+by explicit multiples of `log n / n`, in `Complexity.Foundations.BooleanAnalysis.TribesInfluence`,
+from the independence of the tribes (`Cslib.BitString.expect_prod_tribe`); the asymptotic form
+`(ln n / n) (1 ± o(1))` of that proposition is not formalized.
 
 A coalition `Q` leaves Tribes undetermined only if some tribe meets `Q` and is all `true` outside
 `Q`. A union bound over these tribes bounds the influence of `Q` by `2 ^ (|Q| - w)`
@@ -50,6 +54,7 @@ This computation and conclusion are ours and are not formalized.
 
 * `Cslib.BitString.monotone_tribes`: Tribes is monotone.
 * `Cslib.BitString.expect_bitVal_tribes`: the probability that Tribes is true.
+* `Cslib.BitString.expect_prod_tribe`: the tribes are independent.
 * `Cslib.BitString.one_div_two_le_pow_tribesSize`,
   `Cslib.BitString.pow_tribesSize_add_one_lt_one_div_two`,
   `Cslib.BitString.two_pow_sub_one_le_tribesSize`, `Cslib.BitString.tribesSize_lt_two_pow`: the
@@ -145,6 +150,14 @@ theorem expect_bitVal_tribes (w s : ℕ) :
     card_univ, Fintype.card_fun, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
     Fintype.card_fin, Nat.cast_pow, Nat.cast_pow, Nat.cast_ofNat, ← div_pow, sub_div,
     div_self (by positivity), inv_pow, one_div]
+
+/-- **The tribes are independent**: the average of a product of functions of the separate tribes
+is the product of their averages. -/
+theorem expect_prod_tribe (g : Fin s → (Fin w → Bool) → ℝ) :
+    𝔼 x : BitString (s * w), ∏ j, g j (fun i => x (finProdFinEquiv (j, i))) =
+      ∏ j, 𝔼 z, g j z := by
+  rw [Fintype.prod_expect]
+  exact Fintype.expect_equiv (blocks w s).symm _ _ fun x => rfl
 
 /-! ### The number of tribes -/
 

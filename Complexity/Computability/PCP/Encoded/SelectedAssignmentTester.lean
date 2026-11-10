@@ -91,7 +91,7 @@ theorem isPolyTime_query (coinsEncoding : (Fin 5 × Rand α) ↪ List Bool)
     (queryEncoding : Fin 6 ↪ List Bool) (positionEncoding : Pos α ↪ List Bool) :
     ComputableInPolyTime
       (fun p : (α → α → Bool) × (Fin 5 × Rand α) × Fin 6 ↦ query p.1 p.2.1 p.2.2)
-      (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding)) positionEncoding :=
+      (encTableCoinsQuery coinsEncoding queryEncoding) positionEncoding :=
   ComputableInPolyTime.of_finite _
 
 /-- Acceptance charges the full supplied input, including all six answers. -/
@@ -99,7 +99,7 @@ theorem isPolyTime_query (coinsEncoding : (Fin 5 × Rand α) ↪ List Bool)
 theorem isPolyTime_accepts (coinsEncoding : (Fin 5 × Rand α) ↪ List Bool) :
     ComputableInPolyTime
       (fun p : (α → α → Bool) × (Fin 5 × Rand α) × (Fin 6 → Bool) ↦ accepts p.1 p.2.1 p.2.2)
-      (encPair (encPi (encPi encBool)) (encPair coinsEncoding (encPi encBool))) encBool :=
+      (encPair encConstraintTable (encPair coinsEncoding (encPi encBool))) encBool :=
   ComputableInPolyTime.of_finite _
 
 end Cslib.PCP.Encoded.SelectedHadamardTester

@@ -12,6 +12,7 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Data.Fintype.Pi
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.PMF.Uniform
 
 /-!
@@ -169,8 +170,7 @@ theorem lazyRandomWalkCoupling_pow_toOuterMeasure_ne_le (i : ι) (t : ℕ)
   induction t generalizing z with
   | zero =>
     rw [pow_zero]
-    exact (ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one _ _)).trans_eq
-      ENNReal.toReal_one
+    exact toOuterMeasure_toReal_le_one _ _
   | succ t ih =>
     rw [pow_succ_apply]
     have hle := toOuterMeasure_bind_le_mul_ennreal ((lazyRandomWalkCoupling ι ^ t) z)

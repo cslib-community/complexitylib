@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of changing actual correction children)
-import Complexity.Foundations.Probability.HierarchyCorrectionRawStability
+import Complexity.Computability.LogSpaceDerandomization.HierarchyCorrectionRawStability
 
 /-! Nonzero RAW/PREP perturbations of the actual correction, on one shared environment. -/
 set_option linter.privateModule false

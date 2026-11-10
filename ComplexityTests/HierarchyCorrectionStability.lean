@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual correction maximum sensitivity)
-import Complexity.Foundations.Probability.HierarchyCorrectionStability
+import Complexity.Computability.LogSpaceDerandomization.HierarchyCorrectionStability
 
 /-! A nonzero actual incoming-normalized request responds to its pilot multiplier. -/
 set_option linter.privateModule false

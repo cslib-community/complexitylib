@@ -105,8 +105,7 @@ theorem not_NEXP_subset_NP : ¬ (NEXP encBits ⊆ NP encBits) := by
         List.replicate (2 ^ (g₂ x).length) true)).length
     have hM : 2 ^ (x.length + 4) ≤ (g₂ x).length := by
       simp only [g₂, List.length_append, length_frame, List.length_replicate]; omega
-    have hpow_le : 2 ^ (2 ^ (x.length + 4)) ≤ 2 ^ (g₂ x).length :=
-      Nat.pow_le_pow_right (by norm_num) hM
+    have hpow_le : 2 ^ (2 ^ (x.length + 4)) ≤ 2 ^ (g₂ x).length := by gcongr
     have hlen_ge : 2 ^ (2 ^ (x.length + 4)) + 1 ≤
         (frame x ++ (List.replicate (2 ^ (x.length + 4)) true ++
           List.replicate (2 ^ (g₂ x).length) true)).length := by

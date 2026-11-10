@@ -427,8 +427,8 @@ private theorem isLittleO_log_add (c : ℝ) :
 
 /-- **The hypotheses of the worst-case frontier lower bounds can be met.** There is a family of
 sets `S_n ⊆ Bool^n` that are `(n + 2)`-rectangle-free, with `log (n + 2) = o(n)` and
-`n log 2 - log |S_n| = o(n)`: the hypotheses `hfree`, `hK` and `hdense` of
-`CircuitLowerBound` for the alphabet `Bool` and `K_n = n + 2`. Moreover `|S_n| ≥ 2 ^ (n - 1)`. -/
+`n log 2 - log |S_n| = o(n)`: the three fields of `DenseRectangleFree`, the hypothesis of
+`CircuitLowerBound`, for the alphabet `Bool` and `K_n = n + 2`. Moreover `|S_n| ≥ 2 ^ (n - 1)`. -/
 theorem exists_rectangleFree_family :
     ∃ S : ∀ n, Set (Fin n → Bool), (∀ᶠ n in atTop, RectangleFree (S n) (n + 2)) ∧
       (fun n : ℕ => Real.log ((n + 2 : ℕ) : ℝ)) =o[atTop] (fun n => (n : ℝ)) ∧

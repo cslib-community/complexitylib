@@ -17,7 +17,7 @@ import Complexity.Probability.PMF.Bind
 # Clock bridge for auxiliary-input zero knowledge with unbounded auxiliary input
 
 In `AuxiliaryInputZeroKnowledge`, the malicious verifier `Vstar` is a standard `IsOraclePPTOn`
-program on `encPair encUnary (encPair enc encBits)`, so its polynomial clock is allowed to depend
+program on `encInstanceAuxInput enc`, so its polynomial clock is allowed to depend
 on the length of the auxiliary input `z`, and the family `z : ℕ → List Bool` is required to be
 polynomially bounded.
 
@@ -43,6 +43,8 @@ condition on `S₀`.
 
 ## Main definitions
 
+* `Cslib.Probability.encAuxTriple`: the encoding of a primary input pair and an auxiliary word,
+  flattened into a triple.
 * `Cslib.Crypto.UnboundedAuxiliaryInputZeroKnowledge`,
   `Cslib.Crypto.ZeroKnowledgeProof.UnboundedAuxiliaryInputZeroKnowledge`: family-indexed
   auxiliary-input zero knowledge against prefix-clocked verifiers (`IsOraclePPTWithAux`) and
@@ -107,13 +109,21 @@ open Turing.MultiTapeTM
 variable {Operation α β γ : Type} [DecidableEq Operation]
   {enc₁ : α ↪ List Bool} {enc₂ : β ↪ List Bool} {output : γ ↪ List Bool}
 
+/-- Input `(a, b, z)` of a program with a primary input pair `(a, b)` and an auxiliary bit word
+`z`, flattened into a triple: `a` encoded by `enc₁`, `b` by `enc₂`, then `z` as a bit word. `a`
+and `b` are framed; `z` is not. `IsPPTWithAux (encPair enc₁ enc₂)` keeps the pair and the word
+apart, and the lemmas below pass between the two forms. With `enc₁ = encUnary`, the layout is that
+of the zero-knowledge input `Cslib.Crypto.encInstanceAuxInput enc₂`. -/
+abbrev encAuxTriple (enc₁ : α ↪ List Bool) (enc₂ : β ↪ List Bool) :
+    α × β × List Bool ↪ List Bool :=
+  encPair enc₁ (encPair enc₂ encBits)
+
 /-- Reassociate `IsOraclePPTWithAux (encPair enc₁ enc₂)` into a standard `IsOraclePPTOn`
-certificate on `encPair enc₁ (encPair enc₂ encBits)`. -/
+certificate on `encAuxTriple enc₁ enc₂`. -/
 theorem IsOraclePPTWithAux.isOraclePPTOn_triple
     {program : α → β → List Bool → WordOracleComp Operation γ}
     (h : IsOraclePPTWithAux (encPair enc₁ enc₂) output (fun (a, b) z => program a b z)) :
-    IsOraclePPTOn (encPair enc₁ (encPair enc₂ encBits)) output
-      (fun ⟨a, b, z⟩ => program a b z) :=
+    IsOraclePPTOn (encAuxTriple enc₁ enc₂) output (fun ⟨a, b, z⟩ => program a b z) :=
   h.isOraclePPTOn.preprocess'
     (prepare := fun p : α × β × List Bool => ((p.1, p.2.1), p.2.2)) (by fun_prop)
 
@@ -121,8 +131,7 @@ theorem IsOraclePPTWithAux.isOraclePPTOn_triple
 encoded primary pair `encPair enc₁ enc₂ (a, b)` yields an `IsPPTWithAux (encPair enc₁ enc₂)`
 certificate. -/
 theorem IsPPTOn.isPPTWithAux_take_triple {program : α → β → List Bool → ProbComp γ}
-    (h : IsPPTOn (encPair enc₁ (encPair enc₂ encBits)) output
-      (fun ⟨a, b, z⟩ => program a b z))
+    (h : IsPPTOn (encAuxTriple enc₁ enc₂) output (fun ⟨a, b, z⟩ => program a b z))
     (c d : ℕ) :
     IsPPTWithAux (encPair enc₁ enc₂) output
       (fun (a, b) z =>
@@ -135,10 +144,9 @@ theorem IsPPTOn.isPPTWithAux_take_triple {program : α → β → List Bool → 
 /-- Truncating the auxiliary input of a three-argument `IsPPTOn` program to a polynomial in the
 encoded primary pair `encPair enc₁ enc₂ (a, b)` preserves `IsPPTOn`. -/
 theorem IsPPTOn.take_aux_triple {program : α → β → List Bool → ProbComp γ}
-    (h : IsPPTOn (encPair enc₁ (encPair enc₂ encBits)) output
-      (fun ⟨a, b, z⟩ => program a b z))
+    (h : IsPPTOn (encAuxTriple enc₁ enc₂) output (fun ⟨a, b, z⟩ => program a b z))
     (c d : ℕ) :
-    IsPPTOn (encPair enc₁ (encPair enc₂ encBits)) output
+    IsPPTOn (encAuxTriple enc₁ enc₂) output
       (fun ⟨a, b, z⟩ =>
         program a b (z.take (c * ((encPair enc₁ enc₂ (a, b)).length + 1) ^ d))) :=
   (h.isPPTWithAux_take_triple c d).isPPTOn.preprocess

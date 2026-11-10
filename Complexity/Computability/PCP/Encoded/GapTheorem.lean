@@ -61,10 +61,9 @@ names retain their supplied encoding until compaction, including sparse or repea
 @[fun_prop]
 theorem isPolyTime_gapGraph {V Input : Type} [DecidableEq V]
     {enc : V ↪ List Bool} {input : Input ↪ List Bool} {formula : Input → CNF V}
-    (hformula : ComputableInPolyTime formula input
-      (encList (encList (encPair enc encBool)))) :
+    (hformula : ComputableInPolyTime formula input (encCNFOver enc)) :
     ComputableInPolyTime (fun x => gapGraph (formula x)) input
-      (Graph.encoding (encPi (encPi encBool))) := by
+      (Graph.encoding encConstraintTable) := by
   unfold gapGraph
   apply Graph.isPolyTime_arithmeticAmplify
   · exact Graph.isPolyTime_composeSelectedEnumerated

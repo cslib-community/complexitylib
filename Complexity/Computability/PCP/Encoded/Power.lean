@@ -209,7 +209,7 @@ private theorem polytime_powerPreprocessEdge (eval : C → α → α → Bool) (
         p.1.powerPreprocessEdge eval fallback rotate T q p.2)
       (encPair (encoding enc) (encPair (encPair encUnary encBool)
         (encPair (encPi (encFinite (PreprocessLabel D))) (encPi (encFinEnum (Fin q))))))
-      (Edge.encoding (encPi (encPi encBool))) := by
+      (Edge.encoding encConstraintTable) := by
   have hr : ComputableInPolyTime
       (fun p : Graph C × ((ℕ × Bool) × PreprocessLabel D) =>
         p.1.preprocessRotation fallback rotate p.2)
@@ -250,7 +250,7 @@ private theorem polytime_powerPreprocess (eval : C → α → α → Bool) (fall
       (encPair enc (encPair alphabet alphabet)) encBool)
     (T q : ℕ) [NeZero q] (walks : List (PowerLabel D T q)) :
     ComputableInPolyTime (powerPreprocess eval fallback rotate T q walks)
-      (encoding enc) (encoding (encPi (encPi encBool))) := by
+      (encoding enc) (encoding encConstraintTable) := by
   have hedge := polytime_powerPreprocessEdge eval fallback rotate hrotate heval T q
   have hdarts : ComputableInPolyTime
       (fun g : Graph C => g.halfEdges.product walks) (encoding enc)

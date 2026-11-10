@@ -192,8 +192,7 @@ private theorem eval_schnorrSimulateWord (n : ℕ) (d : F.Desc) (u : F.Carrier d
     F.add_encode, hneg,
     neg_smul, ← sub_eq_add_neg]
   rw [← PMF.bind_pure_comp]
-  congr 1
-  funext a
+  congr 1 with a : 1
   simp only [Function.comp_apply, ZMod.val_natCast]
 
 /-- `schnorrSimulateWord` is uniform strict PPT in the security parameter, the description and the

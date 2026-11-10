@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Complexity.Probability.PMF.Uniform
 import Complexity.Probability.Uniform
 import Complexity.Tactic.PPT
@@ -954,11 +955,8 @@ private theorem shrunkHash_pointwise_toReal_le {w₁ out₁ j₀ : ℕ}
   have hle_one :
       ((pA >>= fun raw =>
           PMF.pure (decide (shrunkCollPred w₁ out₁ j₀ evalWord₁ ⟨⟨z, iRows⟩, oRows⟩ raw)))
-        true).toReal ≤ 1 := by
-    have h := ENNReal.toReal_mono ENNReal.one_ne_top
-      (PMF.coe_le_one (pA >>= fun raw =>
-        PMF.pure (decide (shrunkCollPred w₁ out₁ j₀ evalWord₁ ⟨⟨z, iRows⟩, oRows⟩ raw))) true)
-    simpa only [ENNReal.toReal_one] using h
+        true).toReal ≤ 1 :=
+    PMF.toReal_apply_le_one _ true
   have hesc_nonneg :
       0 ≤ ((pA >>= fun raw =>
           PMF.pure (decide (shrunkEscPred w₁ evalWord₁ L z raw))) true).toReal :=

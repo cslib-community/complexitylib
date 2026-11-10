@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.Matrix.Mul
+public import Mathlib.LinearAlgebra.Matrix.Trace
 
 /-!
 # Entries of a product of matrices as a sum over paths
@@ -17,11 +18,14 @@ public import Mathlib.Data.Matrix.Mul
 The entry `(a, b)` of a product `M 0 * M 1 * ⋯ * M (d - 1)` of square matrices is the sum, over
 all paths `p 0, p 1, …, p d` of indices from `p 0 = a` to `p d = b`, of the products
 `∏ i, M i (p i) (p (i + 1))` of the entries along the path. This is the standard expansion behind
-algebraic branching programs.
+algebraic branching programs. Taking all factors equal and summing the diagonal, the trace of a
+power `M ^ d` is the sum, over the closed paths of length `d`, of the products of the entries along
+them.
 
 ## Main results
 
 * `Matrix.list_prod_ofFn_apply`: the path expansion of an entry of `(List.ofFn M).prod`.
+* `Matrix.trace_pow_eq_sum`: the trace of a power as a sum over closed paths.
 -/
 
 @[expose] public section
@@ -68,5 +72,24 @@ theorem list_prod_ofFn_apply : ∀ {d : ℕ} (M : Fin d → Matrix ι ι R) (a b
       refine Finset.sum_eq_zero fun q _ => ite_eq_right ?_
       simp [hc]
     · simp
+
+/-- **The trace of a power as a sum over closed paths**: `tr (M ^ d)` is the sum, over the paths
+`p : Fin (d + 1) → ι` with `p 0 = p d`, of the product of the entries `M (p i) (p (i + 1))` along
+the path. -/
+theorem trace_pow_eq_sum (M : Matrix ι ι R) (d : ℕ) :
+    (M ^ d).trace = ∑ p : Fin (d + 1) → ι,
+      if p 0 = p (Fin.last d) then ∏ i : Fin d, M (p i.castSucc) (p i.succ) else 0 := by
+  have hM : M ^ d = (List.ofFn fun _ : Fin d => M).prod := by
+    rw [List.ofFn_const, List.prod_replicate]
+  rw [hM, trace]
+  simp only [diag_apply, list_prod_ofFn_apply]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun p _ => ?_
+  rw [Finset.sum_eq_single (p 0)]
+  · simp only [true_and]
+    exact if_congr eq_comm rfl rfl
+  · intro c _ hc
+    exact ite_eq_right fun h => hc h.1.symm
+  · simp
 
 end Matrix

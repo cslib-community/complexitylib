@@ -10,6 +10,7 @@ module
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.UntilBad
 public import Mathlib.Data.Fintype.Perm
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
 import Mathlib.Data.Finset.Card
@@ -532,9 +533,8 @@ theorem map_fst_interpret_bidirDedupStep_evalPerm {β : Type} (π : Equiv.Perm �
         exact ih y hcache
       | none =>
         rw [bidirDedupStep_forward_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, evalPerm_forward]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_forward]
         exact ih (π x) ((agreesWith_cons _ _ _).mpr ⟨rfl, hcache⟩)
     | inverse y =>
       cases h : invLookup cache y with
@@ -545,9 +545,8 @@ theorem map_fst_interpret_bidirDedupStep_evalPerm {β : Type} (π : Equiv.Perm �
         exact ih x hcache
       | none =>
         rw [bidirDedupStep_inverse_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, evalPerm_inverse]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_inverse]
         exact ih (π.symm y) ((agreesWith_cons _ _ _).mpr ⟨Equiv.apply_symm_apply π y, hcache⟩)
 
 /-- **Exact `evalPerm` equivalence for `bidirDedup`**: deduplicating a bidirectional permutation
@@ -618,10 +617,9 @@ private theorem bidirDedupStep_transcript_inv {β σ : Type}
         exact ih y hmem
       | none =>
         rw [bidirDedupStep_forward_of_none hx] at hmem
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
           OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind, PMF.mem_support_bind_iff] at hmem
+          PMF.mem_support_bind_iff] at hmem
         obtain ⟨⟨y, s₁, tr₁⟩, hfirst, hrest⟩ := hmem
         simp only [StateT.run, OracleComp.withTranscript, PMF.mem_support_map_iff] at hfirst
         obtain ⟨⟨y', s₁'⟩, -, heq⟩ := hfirst
@@ -652,10 +650,9 @@ private theorem bidirDedupStep_transcript_inv {β σ : Type}
         exact ih x hmem
       | none =>
         rw [bidirDedupStep_inverse_of_none hy] at hmem
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
           OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind, PMF.mem_support_bind_iff] at hmem
+          PMF.mem_support_bind_iff] at hmem
         obtain ⟨⟨x, s₁, tr₁⟩, hfirst, hrest⟩ := hmem
         simp only [StateT.run, OracleComp.withTranscript, PMF.mem_support_map_iff] at hfirst
         obtain ⟨⟨x', s₁'⟩, -, heq⟩ := hfirst
@@ -801,9 +798,8 @@ theorem agreesWith_and_pairwise_of_mem_support_run_bidirDedupStep {β : Type} (�
         exact ih y hπ hp1 hmem
       | none =>
         rw [bidirDedupStep_forward_of_none hx] at hmem
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, evalPerm_forward] at hmem
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_forward] at hmem
         exact ih (π x) ((agreesWith_cons _ _ _).mpr ⟨rfl, hπ⟩)
           (List.pairwise_cons.mpr ⟨fun e he => (lookup_eq_none_iff.mp hx e he).symm, hp1⟩) hmem
     | inverse y =>
@@ -815,9 +811,8 @@ theorem agreesWith_and_pairwise_of_mem_support_run_bidirDedupStep {β : Type} (�
         exact ih x hπ hp1 hmem
       | none =>
         rw [bidirDedupStep_inverse_of_none hy] at hmem
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, evalPerm_inverse] at hmem
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_inverse] at hmem
         have hx : cache.lookup (π.symm y) = none := hπ.lookup_symm_apply_eq_none hy
         exact ih (π.symm y)
           ((agreesWith_cons _ _ _).mpr ⟨Equiv.apply_symm_apply π y, hπ⟩)
@@ -1227,8 +1222,7 @@ theorem run_interpret_answer_complete {β : Type}
     (fun q π => (·, π) <$> PMF.pure (evalPerm π q)) complete IsPartialBijection
     answer_preserve_isPartialBijection
     (fun q c hc => by
-      simpa only [PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.pure_map, PMF.map,
-        Function.comp_def, PMF.pure_bind] using answer_complete q c hc)
+      simpa only [pmf_norm, PMF.map] using answer_complete q c hc)
     program cache hcache
   refine h.trans (congrArg ((complete cache).bind) (funext fun π => ?_))
   simpa only [PMF.monad_map_eq_map] using OracleComp.run_interpret_readOnly
@@ -1245,8 +1239,7 @@ theorem uniform_interpret_eq_lazy {β : Type} (program : OracleComp (PermOracleS
     ((OracleComp.interpret answer program).run []).map Prod.fst := by
   have h := congrArg (PMF.map Prod.fst)
     (run_interpret_answer_complete program [] isPartialBijection_nil)
-  simpa only [PMF.monad_bind_eq_bind, complete_nil, PMF.map_bind, PMF.map_comp, PMF.map,
-    Function.comp_def, PMF.bind_const, PMF.bind_pure, PMF.bind_bind, PMF.pure_bind] using h.symm
+  simpa only [pmf_norm, complete_nil, PMF.map, PMF.bind_const] using h.symm
 
 /-! ### Forgetful lazy permutation sampler and bidirectional switching bound -/
 
@@ -1318,10 +1311,8 @@ theorem interpret_run_bidirDedupStep_uniformOfFintype {β : Type}
         exact ih y cache
       | none =>
         rw [bidirDedupStep_forward_of_none h, forgetfulAnswer_forward_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, PMF.bind_map,
-          Function.comp_def]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure]
         exact congrArg (PMF.bind _) (funext fun y => ih y ((x, y) :: cache))
     | inverse y =>
       cases h : invLookup cache y with
@@ -1331,10 +1322,8 @@ theorem interpret_run_bidirDedupStep_uniformOfFintype {β : Type}
         exact ih x cache
       | none =>
         rw [bidirDedupStep_inverse_of_none h, forgetfulAnswer_inverse_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, PMF.bind_map,
-          Function.comp_def]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure]
         exact congrArg (PMF.bind _) (funext fun x => ih x ((x, y) :: cache))
 
 /-- Interpreting `bidirDedup program` against i.i.d. uniform answers from `α` produces the exact
@@ -1855,7 +1844,7 @@ theorem uniformPerm_bind_apply_le_forgetful {β γ : Type}
   rw [uniform_interpret_eq_lazy,
     ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
     ← run_interpret_forgetfulWithBad_map_fst program [] false]
-  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  simp only [pmf_norm]
   have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.bind_apply_le
     program ([], false) (fun x => next x.1) c
   rw [identicalUntilBad_exactWithBad_forgetfulWithBad.bad_eq] at hdiff
@@ -1877,7 +1866,7 @@ theorem forgetfulAnswer_bind_apply_le_uniformPerm {β γ : Type}
   rw [uniform_interpret_eq_lazy,
     ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
     ← run_interpret_forgetfulWithBad_map_fst program [] false]
-  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  simp only [pmf_norm]
   have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.symm.bind_apply_le
     program ([], false) (fun x => next x.1) c
   refine hdiff.trans (add_le_add le_rfl ?_)
@@ -2014,7 +2003,7 @@ theorem abs_sub_uniformPerm_forgetful_le {β γ : Type}
   rw [uniform_interpret_eq_lazy,
     ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
     ← run_interpret_forgetfulWithBad_map_fst program [] false]
-  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  simp only [pmf_norm]
   have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.abs_sub_le
     program ([], false) (fun x => next x.1) c
   rw [identicalUntilBad_exactWithBad_forgetfulWithBad.bad_eq] at hdiff

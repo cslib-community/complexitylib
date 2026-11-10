@@ -108,7 +108,7 @@ Following Boneh–Shoup Exercises 10.4, 10.8, 10.11, and 4.18, we formalize:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.11 (Exercise 4.18, p. 172) and Section 10.11
+  Version 0.6][BonehShoup2023], Section 4.10 (Exercise 4.18, p. 172) and Section 10.11
   (Exercises 10.4, 10.8, 10.11, pp. 424–426).
 * [M. Naor, O. Reingold, *Number-Theoretic Constructions of Efficient Pseudo-Random
   Functions*][NaorReingold2004], Section 4.1 (Construction 4.1 & Theorem 4.1).
@@ -184,7 +184,7 @@ def naorReingoldPRG (d : F.Desc) (α : ZMod (F.order d)) (u : F.Carrier d) :
     F.Carrier d × F.Carrier d :=
   (u, α • u)
 
-/-- One step of the augmented tree construction ([BonehShoup2023], Section 4.11, Exercise 4.18,
+/-- One step of the augmented tree construction ([BonehShoup2023], Section 4.10, Exercise 4.18,
 p. 172, and Section 10.11, Exercise 10.4(a), p. 424): select the `false` (`u`) or `true` (`α • u`)
 child of `naorReingoldPRG d α u`. -/
 def naorReingoldStep (d : F.Desc) (u : F.Carrier d) (p : ZMod (F.order d) × Bool) :

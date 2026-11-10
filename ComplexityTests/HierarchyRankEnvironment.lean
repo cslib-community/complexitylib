@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 
-import Complexity.Foundations.Probability.HierarchyRankEnvironment
+import Complexity.Computability.LogSpaceDerandomization.HierarchyRankEnvironment
 
 /-! Arbitrary-prime clients exercise full spectator coordinates and nonconstant dense rows. -/
 

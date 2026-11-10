@@ -165,8 +165,7 @@ private theorem Line.card_opened_le (line : Line σ n g) (w : σ.Op → ℕ)
     have frontierPositive : 1 ≤ frontier.card := Finset.one_le_card.mpr ⟨_, lastSelected⟩
     calc
       (prior ∪ lineInputs).card ≤ prior.card + lineInputs.card := Finset.card_union_le _ _
-      _ ≤ (frontier.erase (Wire.gate (Fin.last g))).card + (1 + w line.op) :=
-        Nat.add_le_add priorEraseBound lineBound
+      _ ≤ (frontier.erase (Wire.gate (Fin.last g))).card + (1 + w line.op) := by gcongr
       _ = frontier.card + w line.op := by omega
   · exact priorBound.trans (Nat.le_add_right _ _)
 

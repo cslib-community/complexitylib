@@ -302,8 +302,7 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
     simp only [modLeveledAdversary, hpos, and_self, ↓reduceIte, ProbComp.eval_bind,
       Scheme.sampleModIndex, ProbComp.sampleModNat, ProbComp.sampleBinaryNat,
       ProbComp.eval_map, BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
-    congr 1
-    funext first
+    congr 1 with first : 1
     by_cases hfirst : index 3 first = 0
     · change min 3 (BitString.binaryValue first % 3) = 0 at hfirst
       have hlaw := E.eval_modLinkAdversary_choose_eq_map_coins evaluateKey coins depth capacity
@@ -332,8 +331,7 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
                 tagLeveledChoice true false (evaluateZero (n, challengePk) (rest.drop (coins n)))
               else rejectLeveledChoice
             else rejectLeveledChoice))]
-        congr 1
-        funext second
+        congr 1 with second : 1
         rw [BitString.uniformList_bind_split (coins n) zeroCoins
           (fun third rest => PMF.pure
             (if index (depth n) second = 0 then
@@ -341,8 +339,7 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
                 tagLeveledChoice true false (evaluateZero (n, challengePk) rest)
               else rejectLeveledChoice
             else rejectLeveledChoice))]
-        congr 1
-        funext third
+        congr 1 with third : 1
         split_ifs <;> simp [hzero, PMF.map, Function.comp_def]
   · simp only [modLeveledAdversary, hpos, ↓reduceIte, ProbComp.eval_map, hzero, PMF.map_comp]
     unfold modLeveledChooseCoins

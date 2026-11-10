@@ -529,8 +529,7 @@ theorem ComputableInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bool}
       fsize (some (.inl a)) + fsize (some (.inr (D.mid (a, b₁)).2)) + 2 ≤ 6 * cn a b₁ b₂ := by
     intro a b₁ b₂ ha
     have h₁ := hcn a b₁ b₂ ha
-    simp only [fsize, hencF, encOption_some, encSum_inl, encSum_inr, List.length_cons]
-    omega
+    enc_len [fsize, hencF]
   -- the trace of every input
   have htrace := fun x => D.eval_trace hb' hc' hm' hj' hf' ((heval x).scale 6) []
   choose m hm hh hs using htrace

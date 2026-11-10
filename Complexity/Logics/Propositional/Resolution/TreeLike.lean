@@ -32,10 +32,10 @@ A tree-like refutation is such a tree, with one leaf for each leaf of the refuta
 the variable resolved at each node
 (`Cslib.Logic.PL.CNF.Derivation.findsFalsifiedClause_toDecisionTree`).
 Conversely, a decision tree finding falsified clauses gives a tree-like refutation with fewer
-nodes than twice its number of leaves
-(`Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation`): along a path, the clauses reached
-below each node resolve on the variable queried there to a clause falsified by the answers above
-it.
+nodes than twice its number of leaves, whose decision tree has at most its Ehrenfeucht–Haussler
+rank (`Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le`): along a path, the
+clauses reached below each node resolve on the variable queried there to a clause falsified by the
+answers above it.
 
 **Short tree-like refutations are narrow** [Ben-Sasson and Wigderson, Theorem 3.3]
 [BenSassonWigderson2001]: a formula with clauses of width at most `k` and a tree-like refutation of
@@ -62,7 +62,8 @@ nodes, so by induction its restriction is refutable in width `k + b - 1`, and th
 * `Cslib.Logic.PL.CNF.Derivation.restrict`: restricting a tree-like derivation.
 * `Cslib.Logic.PL.CNF.Derivation.findsFalsifiedClause_toDecisionTree`,
   `Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation`: tree-like refutations and decision
-  trees finding falsified clauses convert into each other.
+  trees finding falsified clauses convert into each other;
+  `Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le` also bounds the rank.
 * `Cslib.Logic.PL.CNF.RefutableInWidth.of_derivation`: short tree-like refutations are narrow.
 
 ## References
@@ -303,13 +304,13 @@ theorem Derivation.findsFalsifiedClause_toDecisionTree (d : φ.Derivation []) :
 /-- The induction behind `DecisionTree.FindsFalsifiedClause.exists_derivation`: if `t` finds a
 falsified clause of `φ` on the assignments extending the consistent literals `π`, then it
 gives a tree-like derivation of a clause falsified by `π`, with at most twice as many nodes as `t`
-has leaves. -/
+has leaves and a decision tree of rank at most that of `t`. -/
 private theorem exists_derivation_of_eval (φ : CNF V) :
     ∀ (t : DecisionTree V (Clause V)) (π : List (Literal V)),
       (∀ v, (v, true) ∈ π → (v, false) ∉ π) →
       (∀ σ : V → Bool, (∀ l ∈ π, σ l.1 = l.2) → t.eval σ ∈ φ ∧ (t.eval σ).eval σ = false) →
       ∃ (c : Clause V) (d : φ.Derivation c), (∀ l ∈ c, (l.1, !l.2) ∈ π) ∧
-        d.size + 1 ≤ 2 * t.leafCount
+        d.size + 1 ≤ 2 * t.leafCount ∧ d.toDecisionTree.rank ≤ t.rank
   | .leaf c, π, hπ, ht => by
     -- the assignment setting the variables of `π` as `π` does, and the others to `false`
     let σ₀ : V → Bool := fun x => decide ((x, true) ∈ π)
@@ -317,7 +318,7 @@ private theorem exists_derivation_of_eval (φ : CNF V) :
       rintro ⟨x, _ | _⟩ hl
       · simpa [σ₀] using fun h => hπ x h hl
       · simpa [σ₀] using hl
-    refine ⟨c, .mem (ht σ₀ hσ₀).1, fun ⟨u, a⟩ hl => ?_, le_rfl⟩
+    refine ⟨c, .mem (ht σ₀ hσ₀).1, fun ⟨u, a⟩ hl => ?_, le_rfl, le_rfl⟩
     by_contra hna
     -- setting `u` to `a` extends `π` and satisfies `c`
     have hext : ∀ l ∈ π, Function.update σ₀ u a l.1 = l.2 := by
@@ -333,14 +334,16 @@ private theorem exists_derivation_of_eval (φ : CNF V) :
     exact this ((Clause.eval_eq_true_iff _ _).2 ⟨(u, a), hl, by simp⟩)
   | .node u t₀ t₁, π, hπ, ht => by
     have hcount : t₀.leafCount + t₁.leafCount = (DecisionTree.node u t₀ t₁).leafCount := rfl
+    have hr₀ := DecisionTree.rank_left_le_rank_node u t₀ t₁
+    have hr₁ := DecisionTree.rank_right_le_rank_node u t₀ t₁
     by_cases hu₁ : (u, true) ∈ π
-    · obtain ⟨c, d, hc, hsize⟩ := exists_derivation_of_eval φ t₁ π hπ fun σ hσ => by
+    · obtain ⟨c, d, hc, hsize, hrank⟩ := exists_derivation_of_eval φ t₁ π hπ fun σ hσ => by
         simpa [DecisionTree.eval, hσ _ hu₁] using ht σ hσ
-      exact ⟨c, d, hc, by omega⟩
+      exact ⟨c, d, hc, by omega, hrank.trans hr₁⟩
     by_cases hu₀ : (u, false) ∈ π
-    · obtain ⟨c, d, hc, hsize⟩ := exists_derivation_of_eval φ t₀ π hπ fun σ hσ => by
+    · obtain ⟨c, d, hc, hsize, hrank⟩ := exists_derivation_of_eval φ t₀ π hπ fun σ hσ => by
         simpa [DecisionTree.eval, hσ _ hu₀] using ht σ hσ
-      exact ⟨c, d, hc, by omega⟩
+      exact ⟨c, d, hc, by omega, hrank.trans hr₀⟩
     -- query `u` afresh: derive from both answers and resolve on `u` if necessary
     have hπ₀ : ∀ v, (v, true) ∈ (u, false) :: π → (v, false) ∉ (u, false) :: π := by
       intro v hv hv'
@@ -356,11 +359,11 @@ private theorem exists_derivation_of_eval (φ : CNF V) :
       · obtain ⟨rfl, -⟩ := Prod.mk.inj h
         exact hu₀ hv'
       · exact hπ v h hv'
-    obtain ⟨c₀, d₀, hc₀, hsize₀⟩ := exists_derivation_of_eval φ t₀ ((u, false) :: π) hπ₀
+    obtain ⟨c₀, d₀, hc₀, hsize₀, hrank₀⟩ := exists_derivation_of_eval φ t₀ ((u, false) :: π) hπ₀
       fun σ hσ => by
         have hσu : σ u = false := hσ _ List.mem_cons_self
         simpa [DecisionTree.eval, hσu] using ht σ fun l hl => hσ l (List.mem_cons_of_mem _ hl)
-    obtain ⟨c₁, d₁, hc₁, hsize₁⟩ := exists_derivation_of_eval φ t₁ ((u, true) :: π) hπ₁
+    obtain ⟨c₁, d₁, hc₁, hsize₁, hrank₁⟩ := exists_derivation_of_eval φ t₁ ((u, true) :: π) hπ₁
       fun σ hσ => by
         have hσu : σ u = true := hσ _ List.mem_cons_self
         simpa [DecisionTree.eval, hσu] using ht σ fun l hl => hσ l (List.mem_cons_of_mem _ hl)
@@ -379,24 +382,34 @@ private theorem exists_derivation_of_eval (φ : CNF V) :
       · exact h
     by_cases hv₀ : (u, true) ∈ c₀
     · by_cases hv₁ : (u, false) ∈ c₁
-      · refine ⟨_, .resolvent u d₀ d₁ hv₀ hv₁, fun l hl => ?_, ?_⟩
+      · refine ⟨_, .resolvent u d₀ d₁ hv₀ hv₁, fun l hl => ?_, ?_,
+          DecisionTree.rank_node_le_rank_node hrank₀ hrank₁⟩
         · rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
           exacts [hc₀' l hl hne, hc₁' l hl hne]
         · rw [Derivation.size_resolvent]
           omega
-      · exact ⟨c₁, d₁, fun l hl => hc₁' l hl fun h => hv₁ (h ▸ hl), by omega⟩
-    · exact ⟨c₀, d₀, fun l hl => hc₀' l hl fun h => hv₀ (h ▸ hl), by omega⟩
+      · exact ⟨c₁, d₁, fun l hl => hc₁' l hl fun h => hv₁ (h ▸ hl), by omega, hrank₁.trans hr₁⟩
+    · exact ⟨c₀, d₀, fun l hl => hc₀' l hl fun h => hv₀ (h ▸ hl), by omega, hrank₀.trans hr₀⟩
 
 end CNF
+
+/-- **A DPLL tree is a tree-like refutation, preserving rank**: a decision tree finding a
+falsified clause of `φ` gives a tree-like refutation of `φ` with fewer nodes than twice its number
+of leaves, whose decision tree has rank at most that of the given tree. -/
+theorem _root_.Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation_rank_le {φ : CNF V}
+    {t : DecisionTree V (Clause V)} (ht : t.FindsFalsifiedClause φ) :
+    ∃ d : φ.Derivation [], d.size + 1 ≤ 2 * t.leafCount ∧ d.toDecisionTree.rank ≤ t.rank := by
+  obtain ⟨c, d, hc, hsize, hrank⟩ :=
+    CNF.exists_derivation_of_eval φ t [] (by simp) fun σ _ => ht σ
+  obtain rfl : c = [] := List.eq_nil_iff_forall_not_mem.2 fun l hl => by simpa using hc l hl
+  exact ⟨d, hsize, hrank⟩
 
 /-- **A DPLL tree is a tree-like refutation**: a decision tree finding a falsified clause of `φ`
 gives a tree-like refutation of `φ` with fewer nodes than twice its number of leaves. -/
 theorem _root_.Cslib.DecisionTree.FindsFalsifiedClause.exists_derivation {φ : CNF V}
     {t : DecisionTree V (Clause V)} (ht : t.FindsFalsifiedClause φ) :
-    ∃ d : φ.Derivation [], d.size + 1 ≤ 2 * t.leafCount := by
-  obtain ⟨c, d, hc, hsize⟩ := CNF.exists_derivation_of_eval φ t [] (by simp) fun σ _ => ht σ
-  obtain rfl : c = [] := List.eq_nil_iff_forall_not_mem.2 fun l hl => by simpa using hc l hl
-  exact ⟨d, hsize⟩
+    ∃ d : φ.Derivation [], d.size + 1 ≤ 2 * t.leafCount :=
+  ht.exists_derivation_rank_le.imp fun _ h => h.1
 
 namespace CNF
 

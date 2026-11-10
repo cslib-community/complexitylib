@@ -764,15 +764,11 @@ section FrontierWitness
 
 open Cslib.Circuits Cslib.Circuits.Frontier Filter
 
-/-- The hypotheses `hfree`, `hK` and `hdense` of the worst-case claim `CircuitLowerBound` can be
-met over the alphabet `Bool`, with `K_n = n + 2`. -/
-example : ∃ (S : ∀ n, Set (Fin n → Bool)) (K : ℕ → ℕ),
-    (∀ᶠ n in atTop, RectangleFree (S n) (K n)) ∧
-    (fun n => Real.log (K n)) =o[atTop] (fun n => (n : ℝ)) ∧
-    (fun n => n * Real.log (Nat.card Bool) - Real.log (S n).ncard) =o[atTop]
-      (fun n => (n : ℝ)) := by
+/-- The hypothesis `DenseRectangleFree` of the worst-case claim `CircuitLowerBound` can be met
+over the alphabet `Bool`, with `K_n = n + 2`. -/
+example : ∃ (S : ∀ n, Set (Fin n → Bool)) (K : ℕ → ℕ), DenseRectangleFree S K := by
   obtain ⟨S, hfree, hK, hdense, -⟩ := exists_rectangleFree_family
-  exact ⟨S, fun n => n + 2, hfree, hK, hdense⟩
+  exact ⟨S, fun n => n + 2, ⟨hfree, hK, hdense⟩⟩
 
 /-- So `CircuitLowerBound 4` applies non-vacuously: for every `ε > 0` and all large `n`, circuits
 of fan-in at most two deciding a set of at least `2 ^ (n - 1)` bit strings (half of the cube) need
@@ -782,7 +778,7 @@ example : ∃ S : ∀ n, Set (Fin n → Bool), (∀ n, 2 ^ (n - 1) ≤ (S n).nca
       ∀ (σ : Signature.{0}) (I : Interpretation σ Bool) (Acc : Set Bool) (c : Circuit σ n 1),
         c.FanInAtMost 2 → c.Decides I Acc (S n) → (4 - ε) * n < c.innerSize := by
   obtain ⟨S, hfree, hK, hdense, hhalf⟩ := exists_rectangleFree_family
-  exact ⟨S, hhalf, circuitLowerBound_four.{0, 0} Bool S (fun n => n + 2) hfree hK hdense⟩
+  exact ⟨S, hhalf, circuitLowerBound_four.{0, 0} Bool S (fun n => n + 2) ⟨hfree, hK, hdense⟩⟩
 
 /-- The hypotheses of the average-case claim `AverageCaseBound` can be met over the alphabet
 `Bool` with bias `b_n = 1 / (n + 1)` tending to zero, and `K_n = (n + 1) ^ 3`. -/

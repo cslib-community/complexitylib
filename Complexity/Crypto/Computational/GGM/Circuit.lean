@@ -140,8 +140,7 @@ theorem ofFn_evalBits (G : PRG.Generator (BitString k) (BitString (2 * k)))
     rw [evalBits_succ, ih, List.ofFn_succ, eval_cons]
     congr 1
     rw [child, List.length_ofFn, ofFn_block, listGenerator]
-    congr 3
-    funext i
+    congr 3 with i : 1
     simp
 
 /-- **The GGM family of Boolean functions** [RazborovRudich1997]: the function with key `seed`
@@ -301,8 +300,7 @@ private theorem leaves_succ (G : PRG.Generator (BitString k) (BitString (2 * k))
       leaves G (j + 1) m (by omega) (reshape fun q => G (labels q)) := by
   funext x
   rw [leaves, evalBits_succ]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp only [Fin.tail, Fin.val_succ]
   congr 1
   ext

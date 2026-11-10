@@ -998,8 +998,7 @@ private lemma factorJet_cap_le_two_pow (J ℓ : ℕ) (Δ : ℤ) (yJet : List ℤ
       ≤ 2 ^ ℓ * 2 ^ (7 * ℓ ^ 2) * 2 ^ (2 * ℓ * M.size) :=
         Nat.mul_le_mul (Nat.mul_le_mul_right _ Nat.lt_two_pow_self.le) hMpow
     _ = 2 ^ (ℓ + 7 * ℓ ^ 2 + 2 * ℓ * M.size) := by rw [← pow_add, ← pow_add]
-    _ ≤ 2 ^ (8 * ℓ ^ 2 + 2 * ℓ * M.size) :=
-        Nat.pow_le_pow_right (by norm_num) (Nat.add_le_add_right hexp _)
+    _ ≤ 2 ^ (8 * ℓ ^ 2 + 2 * ℓ * M.size) := by gcongr
 
 /-- **Entry and row-prefix bit-length bound** ([OpenAI2026ETH], Appendix B.2): every entry and row
 prefix sum uses $O(\ell^2 + \ell \log(\|\widetilde{y}\|_1 + |\Delta| + 2))$ bits under

@@ -59,6 +59,15 @@ theorem eval_game_adversary (bit : Bool) (n : ℕ) :
   cases bit <;>
     simp [eval_game, keyGen, encrypt, adversary, ProbComp.eval_map]
 
+/-- The stateful adversary's advantage against the leaking encryption is one. -/
+example (n : ℕ) : Encryption.advantage (game keyGen encrypt adversary) n = 1 := by
+  simp [Encryption.advantage, eval_game_adversary, Game.advantage, Game.succProbability]
+
+/-- IND-CPA asks for negligible `Encryption.advantage` of every admissible adversary. -/
+example : INDCPA keyGen encrypt ↔
+    ∀ A : Adversary, A.IsPPT → Negligible (Encryption.advantage (game keyGen encrypt A)) :=
+  Iff.rfl
+
 /-- An explicit admissible adversary has constant advantage one, so the leaking encryption
 algorithm does not satisfy the new security predicate. -/
 theorem not_indCPA : ¬ INDCPA keyGen encrypt := by

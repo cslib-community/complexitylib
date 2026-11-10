@@ -10,7 +10,9 @@ module
 public import Cslib.MachineLearning.PACLearning.VCDimension
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import Complexity.Foundations.Combinatorics.SmallSubsets
+import Complexity.Foundations.Data.Nat.Choose.Sum
 import Complexity.Foundations.Data.Nat.Choose.Real
+import Complexity.MachineLearning.PACLearning.VCDimension
 
 /-! # The growth function and Sauer's lemma
 
@@ -34,7 +36,7 @@ follow (`growthFunction_le_sum_choose_vcDim`).
 
 ## Main definitions
 
-- `restrictions C x`: the labelings of the points `x : Fin m → α` realized by concepts of `C`.
+- `restriction C x`: the labelings of the points `x : Fin m → α` realized by concepts of `C`.
 - `growthFunction C m`: the maximum number of labelings of `m` points realized by `C`.
 
 ## Main results
@@ -64,50 +66,50 @@ variable {α : Type*}
 /-- The *restriction* of a binary concept class `C` to the points `x : Fin m → α`: the set of
 labelings `i ↦ c (x i)` realized by concepts `c ∈ C` [ShalevShwartzBenDavid2014, Definition 6.2].
 -/
-def restrictions (C : ConceptClass α Bool) {m : ℕ} (x : Fin m → α) : Set (Fin m → Bool) :=
+def restriction (C : ConceptClass α Bool) {m : ℕ} (x : Fin m → α) : Set (Fin m → Bool) :=
   (fun c i => c (x i)) '' C
 
 /-- The *growth function* of a binary concept class `C`: the largest number of labelings of `m`
 points realized by concepts of `C` [ShalevShwartzBenDavid2014, Definition 6.9]. -/
 noncomputable def growthFunction (C : ConceptClass α Bool) (m : ℕ) : ℕ :=
-  ⨆ x : Fin m → α, (restrictions C x).ncard
+  ⨆ x : Fin m → α, (restriction C x).ncard
 
-theorem mem_restrictions {C : ConceptClass α Bool} {m : ℕ} {x : Fin m → α} {v : Fin m → Bool} :
-    v ∈ restrictions C x ↔ ∃ c ∈ C, ∀ i, c (x i) = v i := by
-  simp only [restrictions, Set.mem_image, funext_iff]
+theorem mem_restriction {C : ConceptClass α Bool} {m : ℕ} {x : Fin m → α} {v : Fin m → Bool} :
+    v ∈ restriction C x ↔ ∃ c ∈ C, ∀ i, c (x i) = v i := by
+  simp only [restriction, Set.mem_image, funext_iff]
 
-theorem restrictions_mono {C C' : ConceptClass α Bool} (h : C ⊆ C') {m : ℕ} (x : Fin m → α) :
-    restrictions C x ⊆ restrictions C' x :=
+theorem restriction_mono {C C' : ConceptClass α Bool} (h : C ⊆ C') {m : ℕ} (x : Fin m → α) :
+    restriction C x ⊆ restriction C' x :=
   Set.image_mono h
 
-theorem ncard_restrictions_le_two_pow (C : ConceptClass α Bool) {m : ℕ} (x : Fin m → α) :
-    (restrictions C x).ncard ≤ 2 ^ m := by
-  calc (restrictions C x).ncard ≤ (Set.univ : Set (Fin m → Bool)).ncard :=
+theorem ncard_restriction_le_two_pow (C : ConceptClass α Bool) {m : ℕ} (x : Fin m → α) :
+    (restriction C x).ncard ≤ 2 ^ m := by
+  calc (restriction C x).ncard ≤ (Set.univ : Set (Fin m → Bool)).ncard :=
         Set.ncard_le_ncard (Set.subset_univ _)
     _ = 2 ^ m := by simp [Set.ncard_univ]
 
-theorem bddAbove_range_ncard_restrictions (C : ConceptClass α Bool) (m : ℕ) :
-    BddAbove (Set.range fun x : Fin m → α => (restrictions C x).ncard) :=
-  ⟨2 ^ m, by rintro _ ⟨x, rfl⟩; exact ncard_restrictions_le_two_pow C x⟩
+theorem bddAbove_range_ncard_restriction (C : ConceptClass α Bool) (m : ℕ) :
+    BddAbove (Set.range fun x : Fin m → α => (restriction C x).ncard) :=
+  ⟨2 ^ m, by rintro _ ⟨x, rfl⟩; exact ncard_restriction_le_two_pow C x⟩
 
-theorem ncard_restrictions_le_growthFunction (C : ConceptClass α Bool) {m : ℕ}
-    (x : Fin m → α) : (restrictions C x).ncard ≤ growthFunction C m :=
-  le_ciSup (bddAbove_range_ncard_restrictions C m) x
+theorem ncard_restriction_le_growthFunction (C : ConceptClass α Bool) {m : ℕ}
+    (x : Fin m → α) : (restriction C x).ncard ≤ growthFunction C m :=
+  le_ciSup (bddAbove_range_ncard_restriction C m) x
 
 theorem growthFunction_le {C : ConceptClass α Bool} {m n : ℕ}
-    (h : ∀ x : Fin m → α, (restrictions C x).ncard ≤ n) : growthFunction C m ≤ n := by
+    (h : ∀ x : Fin m → α, (restriction C x).ncard ≤ n) : growthFunction C m ≤ n := by
   rcases isEmpty_or_nonempty (Fin m → α) with hx | hx
   · simp [growthFunction]
   · exact ciSup_le h
 
 theorem growthFunction_le_two_pow (C : ConceptClass α Bool) (m : ℕ) :
     growthFunction C m ≤ 2 ^ m :=
-  growthFunction_le (ncard_restrictions_le_two_pow C)
+  growthFunction_le (ncard_restriction_le_two_pow C)
 
 theorem growthFunction_mono {C C' : ConceptClass α Bool} (h : C ⊆ C') (m : ℕ) :
     growthFunction C m ≤ growthFunction C' m :=
-  growthFunction_le fun x => (Set.ncard_le_ncard (restrictions_mono h x) (Set.toFinite _)).trans
-    (ncard_restrictions_le_growthFunction C' x)
+  growthFunction_le fun x => (Set.ncard_le_ncard (restriction_mono h x) (Set.toFinite _)).trans
+    (ncard_restriction_le_growthFunction C' x)
 
 /-- A finite class realizes at most `|H|` labelings of any points. -/
 theorem growthFunction_le_card (H : Finset (α → Bool)) (m : ℕ) :
@@ -124,14 +126,14 @@ theorem growthFunction_eq_two_pow_of_setShatters {C : ConceptClass α Bool} {W :
   set x : Fin W.card → α := fun i => (W.equivFin.symm i : α)
   have hx : Function.Injective x := fun i j h => W.equivFin.symm.injective (Subtype.ext h)
   have hxW : ∀ i, x i ∈ (W : Set α) := fun i => Finset.mem_coe.2 (W.equivFin.symm i).2
-  have huniv : restrictions C x = Set.univ := by
+  have huniv : restriction C x = Set.univ := by
     refine Set.eq_univ_of_forall fun v => ?_
     obtain ⟨c, hc, hcW⟩ := hW ((Finset.univ.filter fun i => v i = true).image x : Set α)
       (by
         intro y hy
         obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 (Finset.mem_coe.1 hy)
         exact hxW i)
-    refine mem_restrictions.2 ⟨c, hc, fun i => ?_⟩
+    refine mem_restriction.2 ⟨c, hc, fun i => ?_⟩
     have hmem : x i ∈ c ⁻¹' {true} ∩ ↑W ↔
         x i ∈ ((Finset.univ.filter fun i => v i = true).image x : Set α) := by
       rw [hcW]
@@ -141,18 +143,18 @@ theorem growthFunction_eq_two_pow_of_setShatters {C : ConceptClass α Bool} {W :
     have := hxW i
     cases hv : v i <;> cases hci : c (x i) <;> simp_all
   calc 2 ^ W.card = (Set.univ : Set (Fin W.card → Bool)).ncard := by simp [Set.ncard_univ]
-    _ = (restrictions C x).ncard := by rw [huniv]
-    _ ≤ growthFunction C W.card := ncard_restrictions_le_growthFunction C x
+    _ = (restriction C x).ncard := by rw [huniv]
+    _ ≤ growthFunction C W.card := ncard_restriction_le_growthFunction C x
 
 /-- **Sauer's lemma** for one choice of points: if every finite set shattered by `C` has at most
 `d` points, then `C` realizes at most `∑_{i ≤ d} (m choose i)` labelings of any `m` points
 [ShalevShwartzBenDavid2014, Lemma 6.10]. -/
-theorem ncard_restrictions_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
+theorem ncard_restriction_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
     (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) {m : ℕ} (x : Fin m → α) :
-    (restrictions C x).ncard ≤ ∑ i ∈ Finset.range (d + 1), m.choose i := by
+    (restriction C x).ncard ≤ ∑ i ∈ Finset.range (d + 1), m.choose i := by
   classical
   -- Encode each realized labeling by its support, a subset of `Fin m`.
-  set P : Finset (Fin m → Bool) := (restrictions C x).toFinite.toFinset with hP
+  set P : Finset (Fin m → Bool) := (restriction C x).toFinite.toFinset with hP
   set supp : (Fin m → Bool) → Finset (Fin m) := fun v => Finset.univ.filter fun i => v i = true
   have hsupp : Function.Injective supp := by
     intro v w hvw
@@ -161,7 +163,7 @@ theorem ncard_restrictions_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
     simp only [supp, Finset.mem_filter, Finset.mem_univ, true_and, eq_iff_iff] at this
     cases hv : v i <;> cases hw : w i <;> simp_all
   set 𝒜 : Finset (Finset (Fin m)) := P.image supp
-  have hcard : (restrictions C x).ncard = #𝒜 := by
+  have hcard : (restriction C x).ncard = #𝒜 := by
     rw [Finset.card_image_of_injective _ hsupp, hP, Set.ncard_eq_toFinset_card _ (Set.toFinite _)]
   -- A set of indices shattered by `𝒜` is mapped injectively by `x` to a set shattered by `C`.
   have hsh : ∀ s ∈ 𝒜.shatterer, #s ≤ d := by
@@ -170,7 +172,7 @@ theorem ncard_restrictions_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
     have h𝒜 : ∀ u ∈ 𝒜, ∃ c ∈ C, ∀ i, i ∈ u ↔ c (x i) = true := by
       intro u hu
       obtain ⟨v, hv, rfl⟩ := Finset.mem_image.1 hu
-      rw [hP, Set.Finite.mem_toFinset, mem_restrictions] at hv
+      rw [hP, Set.Finite.mem_toFinset, mem_restriction] at hv
       obtain ⟨c, hc, hcv⟩ := hv
       exact ⟨c, hc, fun i => by simp [supp, hcv]⟩
     have hinj : Set.InjOn x s := by
@@ -205,7 +207,7 @@ theorem ncard_restrictions_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
   have hsub : 𝒜.shatterer ⊆ (Finset.univ : Finset (Finset (Fin m))).filter fun s => #s ≤ d :=
     fun s hs => Finset.mem_filter.2 ⟨Finset.mem_univ _, hsh s hs⟩
   -- Mathlib's Sauer–Shelah lemma: a family has at most as many members as shattered sets.
-  calc (restrictions C x).ncard = #𝒜 := hcard
+  calc (restriction C x).ncard = #𝒜 := hcard
     _ ≤ #𝒜.shatterer := Finset.card_le_card_shatterer 𝒜
     _ ≤ #((Finset.univ : Finset (Finset (Fin m))).filter fun s => #s ≤ d) :=
         Finset.card_le_card hsub
@@ -217,23 +219,13 @@ theorem ncard_restrictions_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
 theorem growthFunction_le_sum_choose {C : ConceptClass α Bool} {d : ℕ}
     (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) (m : ℕ) :
     growthFunction C m ≤ ∑ i ∈ Finset.range (d + 1), m.choose i :=
-  growthFunction_le (ncard_restrictions_le_sum_choose hC)
-
-/-- `∑_{i ≤ d} (m choose i) ≤ (m + 1) ^ d`. -/
-theorem sum_range_choose_le_add_one_pow (m d : ℕ) :
-    ∑ i ∈ Finset.range (d + 1), m.choose i ≤ (m + 1) ^ d := by
-  rw [add_pow]
-  refine Finset.sum_le_sum fun i hi => ?_
-  rw [one_pow, mul_one]
-  calc m.choose i ≤ m ^ i := Nat.choose_le_pow m i
-    _ ≤ m ^ i * d.choose i :=
-        Nat.le_mul_of_pos_right _ (Nat.choose_pos (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)))
+  growthFunction_le (ncard_restriction_le_sum_choose hC)
 
 /-- Polynomial form of Sauer's lemma: `growthFunction C m ≤ (m + 1) ^ d`. -/
 theorem growthFunction_le_add_one_pow {C : ConceptClass α Bool} {d : ℕ}
     (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) (m : ℕ) :
     growthFunction C m ≤ (m + 1) ^ d :=
-  (growthFunction_le_sum_choose hC m).trans (sum_range_choose_le_add_one_pow m d)
+  (growthFunction_le_sum_choose hC m).trans (Cslib.sum_range_choose_le_add_one_pow m d)
 
 /-- Sauer's lemma in the form `growthFunction C m ≤ (e m / d) ^ d` for `d ≤ m`
 [ShalevShwartzBenDavid2014, Lemma 6.10, which states it for `m > d + 1`]. At `d = 0` both sides
@@ -248,6 +240,6 @@ theorem growthFunction_le_exp_one_mul_div_pow {C : ConceptClass α Bool} {d m : 
 /-- Sauer's lemma in terms of the VC dimension, for a class of finite VC dimension. -/
 theorem growthFunction_le_sum_choose_vcDim {C : ConceptClass α Bool} (hC : HasFiniteVCDim C)
     (m : ℕ) : growthFunction C m ≤ ∑ i ∈ Finset.range (vcDim C + 1), m.choose i :=
-  growthFunction_le_sum_choose (fun W hW => le_csSup hC ⟨W, rfl, hW⟩) m
+  growthFunction_le_sum_choose (fun _ hW => hW.card_le_vcDim hC) m
 
 end Cslib.MachineLearning.PACLearning

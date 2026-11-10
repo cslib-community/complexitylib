@@ -101,8 +101,7 @@ theorem eval_publicKeyGame_eq_map_coins (E : Scheme) (adversary : Encryption.Adv
         if bit then (evaluateChoose (n, encPublicKey artifact) first).1.2
         else (evaluateChoose (n, encPublicKey artifact) first).1.1) (rest.take encCoins))
       (rest.drop encCoins)))]
-  congr 1
-  funext first
+  congr 1 with first : 1
   rw [BitString.uniformList_bind_split _ _ (fun second third => PMF.pure
     (evaluateGuess (n, (evaluateChoose (n, encPublicKey artifact) first).2,
       false :: evaluateEncrypt (n, artifact.1.getD 0 [],

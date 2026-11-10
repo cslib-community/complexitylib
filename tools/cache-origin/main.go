@@ -106,6 +106,8 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
+		log.Printf("cache_gc_summary applied=%t artifacts=%d mappings=%d bytes=%d", report.Applied,
+			len(report.DeleteArtifacts), len(report.ExpiredMappings), report.DeletedBytes)
 		return json.NewEncoder(os.Stdout).Encode(report)
 	}
 	if *socket == "" {

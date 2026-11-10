@@ -12,6 +12,7 @@ public import Complexity.Probability.PMF
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Complexity.Foundations.Data.BitString.Isolation
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.UniformOrder
 import Mathlib.Analysis.MeanInequalities
 
 /-!
@@ -663,89 +664,14 @@ theorem forced_ne_none_of_isLast {φ : CNF (Fin n)} {σ : Fin n → Bool} {x : F
 
 /-! ### Random orders -/
 
-/-- Swapping two variables of `S` exchanges which of them comes last. -/
-private theorem isLast_trans_swap {π : Equiv.Perm (Fin n)} {S : Finset (Fin n)} {x y : Fin n}
-    (hx : x ∈ S) (hy : y ∈ S) : IsLast (π.trans (Equiv.swap x y)) S y ↔ IsLast π S x := by
-  unfold IsLast
-  simp only [Equiv.symm_trans_apply, Equiv.symm_swap, Equiv.swap_apply_right]
-  constructor
-  · intro h v hv hvx
-    have := h (Equiv.swap x y v) ?_ ?_
-    · rwa [Equiv.swap_apply_self] at this
-    · by_cases hvy : v = y
-      · subst hvy
-        simpa using hx
-      · rw [Equiv.swap_apply_of_ne_of_ne hvx hvy]
-        exact hv
-    · intro e
-      apply hvx
-      have := congrArg (Equiv.swap x y) e
-      simpa using this
-  · intro h v hv hvy
-    apply h (Equiv.swap x y v)
-    · by_cases hvx : v = x
-      · subst hvx
-        simpa using hy
-      · rw [Equiv.swap_apply_of_ne_of_ne hvx hvy]
-        exact hv
-    · intro e
-      apply hvy
-      have := congrArg (Equiv.swap x y) e
-      simpa using this
-
 /-- **Each variable of `S` comes last in a `1 / |S|` fraction of the orders.** -/
 theorem card_isLast_mul {S : Finset (Fin n)} {x : Fin n} (hx : x ∈ S) :
     (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S x).card * S.card = n.factorial := by
-  classical
-  have hinv : ∀ (π : Equiv.Perm (Fin n)) (y : Fin n),
-      (π.trans (Equiv.swap x y)).trans (Equiv.swap x y) = π := by
-    intro π y
-    ext i
-    simp
-  have hequal : ∀ y ∈ S, (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S y).card =
-      (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S x).card := by
-    intro y hy
-    refine card_bij' (fun π _ => π.trans (Equiv.swap x y)) (fun π _ => π.trans (Equiv.swap x y))
-      (fun π hπ => ?_) (fun π hπ => ?_) (fun π _ => hinv π y) (fun π _ => hinv π y)
-    · simp only [mem_filter, mem_univ, true_and] at hπ ⊢
-      have := isLast_trans_swap (π := π.trans (Equiv.swap x y)) hx hy
-      rw [hinv] at this
-      exact this.mp hπ
-    · simp only [mem_filter, mem_univ, true_and] at hπ ⊢
-      exact (isLast_trans_swap hx hy).mpr hπ
-  -- Every order has exactly one last variable of `S`.
-  have hone : ∀ π : Equiv.Perm (Fin n), (S.filter fun y => IsLast π S y).card = 1 := by
-    intro π
-    obtain ⟨y, hyS, hymax⟩ := S.exists_max_image (fun v => π.symm v) ⟨x, hx⟩
-    rw [card_eq_one]
-    refine ⟨y, ?_⟩
-    ext v
-    simp only [mem_filter, mem_singleton]
-    constructor
-    · rintro ⟨hvS, hvlast⟩
-      by_contra hvy
-      have h1 := hvlast y hyS (Ne.symm hvy)
-      have h2 := hymax v hvS
-      exact absurd h1 (not_lt.mpr h2)
-    · rintro rfl
-      refine ⟨hyS, fun v hv hvy => lt_of_le_of_ne (hymax v hv) ?_⟩
-      intro e
-      exact hvy (π.symm.injective e)
-  have hsum : ∑ y ∈ S, (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S y).card =
-      n.factorial := by
-    have hcard : (univ : Finset (Equiv.Perm (Fin n))).card = n.factorial := by
-      rw [card_univ, Fintype.card_perm, Fintype.card_fin]
-    calc
-      ∑ y ∈ S, (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S y).card =
-          ∑ π : Equiv.Perm (Fin n), (S.filter fun y => IsLast π S y).card := by
-        simp only [card_filter]
-        rw [sum_comm]
-      _ = n.factorial := by
-        simp only [hone, sum_const, smul_eq_mul, mul_one]
-        exact hcard
-  rw [sum_congr rfl hequal, sum_const, smul_eq_mul] at hsum
-  rw [mul_comm]
-  exact hsum
+  have heq : (univ.filter fun π : Equiv.Perm (Fin n) => IsLast π S x) =
+      (univ.filter fun π : Equiv.Perm (Fin n) => ∀ w ∈ S, w ≠ x → π.symm w < π.symm x) :=
+    Finset.filter_congr (fun _ _ => Iff.rfl)
+  rw [heq]
+  simpa [Fintype.card_fin] using Cslib.Probability.card_filter_perm_symm_greatest_mul_card hx
 
 /-! ### The success probability -/
 

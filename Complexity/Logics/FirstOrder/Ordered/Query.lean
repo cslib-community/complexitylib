@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.FirstOrder.Encoding
 public import Complexity.Logics.FirstOrder.Ordered.Basic
+import Complexity.Foundations.ModelTheory.Basic
 
 /-!
 # Arbitrary canonically ordered queries
@@ -74,11 +75,7 @@ theorem Structure.ext {L : Language} [L.IsRelational] {M N : Structure L} (h : M
   change m = n at h
   subst h
   congr 1
-  apply FirstOrder.Language.Structure.ext
-  · funext r f
-    exact isEmptyElim f
-  · funext r R x
-    exact propext (hrel R x)
+  exact FirstOrder.Language.Structure.ext_of_isRelational fun R x => hrel R x
 
 /-- An ordered query is an arbitrary class of canonically ordered structures. Input relations
 need not be invariant under permutations that change the fixed order. -/

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.Oracle.Parameter
 public import Complexity.Computability.Probabilistic.Parameter
+public import Complexity.Crypto.Encoding
 public import Complexity.Crypto.Game
 import Complexity.Probability.PMF.Bind
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -49,6 +50,7 @@ We formalize two adaptive chosen-message security notions against uniform strict
 ## Main definitions
 
 * `Cslib.Crypto.Forger`: adaptive oracle adversary outputting a `(message, signature)` pair.
+* `Cslib.Crypto.encForgeryLog`: the encoding of a forgery with the list of queried messages.
 * `Cslib.Crypto.SignatureScheme`: uniform digital signature scheme on `n`-bit messages.
 * `Cslib.Crypto.SignatureScheme.signingOracleOf`, `Cslib.Crypto.SignatureScheme.signingOracle`,
   `eufCmaGame`, `EUFCMA`: message-logging signing oracle and full adaptive EUF-CMA experiment and
@@ -89,6 +91,12 @@ open scoped NNReal
 /-- An adaptive forger receives a unary security parameter and a public verification key, queries a
 signing oracle on chosen messages, and outputs a candidate `(message, signature)` pair. -/
 abbrev Forger := ℕ → List Bool → WordOracleComp Unit (List Bool × List Bool)
+
+/-- Output `((msg, sig), queried)` of a forger run against a message-logging signing oracle: the
+candidate forgery `(msg, sig)` as bit words, then the list of queried messages. The forgery is
+framed, with `msg` framed again inside it, and so is each queried message. -/
+abbrev encForgeryLog : (List Bool × List Bool) × List (List Bool) ↪ List Bool :=
+  encPair (encPair encBits encBits) (encList encBits)
 
 /-- A uniform digital signature scheme on `n`-bit messages at security parameter `n`, with strict
 polynomial-time key generation and signing, deterministic polynomial-time verification, and perfect
@@ -146,7 +154,7 @@ private theorem computableInPolyTime_signResources (c d : ℕ) :
     ComputableInPolyTime
       (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
         c * (2 * pair.1.2.2.length + pair.2.length + 2) ^ d + 2 * pair.2.length + 2)
-      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary := by
+      (encPair encKeyPairInput encBits) encUnary := by
   have hskLen := (ComputableInPolyTime.fst
     (encPair encUnary (encPair encBits encBits)) encBits).snd'.snd'.length_bits_comp
   have hqLen := (ComputableInPolyTime.snd
@@ -161,8 +169,7 @@ private theorem computableTidilyInPolyTime_eufPost (S : SignatureScheme) :
       (fun pair : (ℕ × (List Bool × List Bool)) × ((List Bool × List Bool) × List (List Bool)) =>
         (pair.2.1.1.length == pair.1.1) && !pair.2.2.contains pair.2.1.1 &&
           S.verify pair.1.2.1 pair.2.1.1 pair.2.1.2)
-      (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair encBits encBits) (encList encBits))) encBool := by
+      (encPair encKeyPairInput encForgeryLog) encBool := by
   have hcaller := ComputableTidilyInPolyTime.fst
     (encPair encUnary (encPair encBits encBits))
     (encPair (encPair encBits encBits) (encList encBits))
@@ -221,8 +228,7 @@ unary security parameter, public/auxiliary input, and secret key. -/
 theorem isPPTOn_run_signingOracleOf {sign : List Bool → List Bool → ProbComp (List Bool)}
     (hsign : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2))
     {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair encBits encBits) (encList encBits))
+    IsPPTOn encKeyPairInput encForgeryLog
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -264,8 +270,7 @@ security parameter, public key, and secret key. -/
 @[program_certificate]
 theorem isPPTOn_run_signingOracle (S : SignatureScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair encBits encBits) (encList encBits))
+    IsPPTOn encKeyPairInput encForgeryLog
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -354,8 +359,7 @@ the unary security parameter, public/auxiliary input, and secret key. -/
 theorem isPPTOn_run_oneTimeSigningOracleOf {sign : List Bool → List Bool → ProbComp (List Bool)}
     (hsign : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2))
     {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair encBits encBits) (encList encBits))
+    IsPPTOn encKeyPairInput encForgeryLog
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -406,8 +410,7 @@ unary security parameter, public key, and secret key. -/
 @[program_certificate]
 theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forger}
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair encBits encBits) (encList encBits))
+    IsPPTOn encKeyPairInput encForgeryLog
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))

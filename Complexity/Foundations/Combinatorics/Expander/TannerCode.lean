@@ -68,24 +68,6 @@ section LocalCode
 
 variable {c d : ℕ}
 
-/-- The rows orthogonal to a nonzero `w`: `2 ^ (d - 1)` of the `2 ^ d`. -/
-theorem card_dotProduct_eq_false {w : Fin d → Bool} (hw : w ≠ 0) :
-    #{x : Fin d → Bool | x ⬝ᵥ w = false} = 2 ^ (d - 1) := by
-  obtain ⟨j, hj⟩ : ∃ j, w j = true := by
-    by_contra h
-    simp only [not_exists, Bool.not_eq_true] at h
-    exact hw (funext h)
-  simp only [dotProduct_eq_parityOn]
-  rw [card_filter_parityOn_eq ⟨j, by simpa using hj⟩, Fintype.card_fin]
-
-/-- Matrices with `c` rows whose kernel contains a nonzero `w`: `2 ^ ((d - 1) c)`. -/
-theorem card_kernel {w : Fin d → Bool} (hw : w ≠ 0) :
-    #{A : Fin c → Fin d → Bool | ∀ i, A i ⬝ᵥ w = false} = (2 ^ (d - 1)) ^ c := by
-  rw [← card_dotProduct_eq_false hw, ← Fintype.card_piFinset_const]
-  congr 1
-  ext A
-  simp [Fintype.mem_piFinset]
-
 /-- **Local codes by the union bound**: if fewer than `2 ^ c` nonzero strings have weight at most
 `h`, some matrix with `c` rows rejects them all. -/
 theorem exists_forall_weight_le {h : ℕ}

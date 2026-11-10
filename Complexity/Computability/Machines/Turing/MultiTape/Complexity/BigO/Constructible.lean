@@ -15,6 +15,7 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Tactic.EncLen
 
 /-!
 # Lengths, comparisons and unary conversion within given bounds
@@ -148,9 +149,7 @@ theorem unaryLe : ComputableInO (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
   · simp only [length_encPair, encUnary_apply, List.length_replicate,
       encBits_apply]
     nlinarith
-  · simp only [length_encPair, encUnary_apply, List.length_replicate,
-      encBits_apply]
-    omega
+  · enc_len
   · simp only [Function.comp_apply, hrep, Nat.sub_eq_zero_iff_le]
 
 end ComputableInO

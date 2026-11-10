@@ -442,7 +442,6 @@ open Finset Cslib.BitString Cslib.GenericRAM Cslib.GenericRAM.ExhaustiveCountFal
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.CNF.GreedyContext
 open Cslib.Complexity.InitialTestsSearch Turing.MultiTapeTM ComputableInPolyTime
 
-private abbrev encSys := encList (encList (encList encNat))
 private abbrev encCandCtx := encPair encUnary encCNF
 private abbrev encCandIn := encPair encCandCtx (encList encBits)
 
@@ -463,8 +462,7 @@ def sparseCNFTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : 
 most `6 * NOf x.1` equations and polynomial encoded length produced on the Section 6.3 fast path. -/
 def ValidPolyTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : ℕ)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
     (polySys : ℕ → ℕ) (R : P × CNF ℕ → ℕ) : Prop :=
   ∀ x : P × CNF ℕ, entersSparseFastPath k N₀ (NOf x.1) (BOf x.1) x.2 = true →
     ∀ sys : List (List (List ℕ)),
@@ -502,7 +500,7 @@ private abbrev toSysInput (k : ℕ) (q : (ℕ × CNF ℕ) × List (List Bool)) :
     ℕ × List (List (List ℕ)) := (q.1.1, compileParitySystemBounded k q.1.2 q.2)
 
 private theorem computableInPolyTime_toSysInput (k : ℕ) :
-    ComputableInPolyTime (toSysInput k) encCandIn (encPair encUnary encSys) :=
+    ComputableInPolyTime (toSysInput k) encCandIn (encPair encUnary encSparseSystem) :=
   ((fst encCandCtx (encList encBits)).fst').prod
     (((computableInPolyTime_compileParitySystemBounded k (encRow := encBits)).comp'
       (((fst encCandCtx (encList encBits)).snd').prod
@@ -515,7 +513,7 @@ private theorem computableInPolyTime_rowLenGuard :
     (unary_mul' (.const 6) ((fst encCandCtx (encList encBits)).fst'))
 
 private noncomputable def compiledRowCertificate (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (compiledRowCounter k polyCounter) encCandIn encNat :=
   guardedTargetOfPolyTime computableInPolyTime_rowLenGuard
     (cPoly.comp (NativeCertificate.ofPolyTime (computableInPolyTime_toSysInput k)))
@@ -524,8 +522,8 @@ private noncomputable def compiledRowCertificate (k : ℕ)
     (fun _ h => by simp only [compiledRowCounter, h, Bool.false_eq_true, ↓reduceIte])
 
 private theorem polyBounded_compiledRowCertificate_space (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
-    (hSpace : PolyBounded (fun y => (encPair encUnary encSys y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     PolyBounded (fun q => (encCandIn q).length) (compiledRowCertificate k cPoly).space :=
   polyBounded_branch_space _ _ _
     (NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_rowLenGuard).2
@@ -534,7 +532,7 @@ private theorem polyBounded_compiledRowCertificate_space (k : ℕ)
     PolyBounded.self
 
 private noncomputable def greedyCellTime (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
     (a : (ℕ × CNF ℕ) × ℕ × ℕ × ℕ × List (List Bool)) (i j : ℕ) : ℕ :=
   (compiledRowCertificate k cPoly).time (a.1,
     greedyParityRowsAt (fun r => compiledRowCounter k polyCounter (a.1, r))
@@ -542,13 +540,13 @@ private noncomputable def greedyCellTime (k : ℕ)
       [materializeTestRow a.2.2.1 (decodeTestTuple a.2.2.1 a.2.2.2.1 j)])
 
 private noncomputable def greedyMaxCellTime (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
     (a : (ℕ × CNF ℕ) × ℕ × ℕ × ℕ × List (List Bool)) : ℕ :=
   listMax (fun i => listMax (greedyCellTime k cPoly a i)
     (List.range (candidateTupleCount a.2.2.1 a.2.2.2.1 + 1))) (List.range (3 * a.2.1 + 1))
 
 private theorem le_greedyMaxCellTime (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
     (a : (ℕ × CNF ℕ) × ℕ × ℕ × ℕ × List (List Bool)) {i j : ℕ}
     (hi : i ≤ 3 * a.2.1) (hj : j ≤ candidateTupleCount a.2.2.1 a.2.2.2.1) :
     greedyCellTime k cPoly a i j ≤ greedyMaxCellTime k cPoly a :=
@@ -558,14 +556,14 @@ private theorem le_greedyMaxCellTime (k : ℕ)
 
 open Classical in
 private noncomputable def greedyBoundedCertificate (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate
       (fun a : (ℕ × CNF ℕ) × ℕ × ℕ × ℕ × List (List Bool) =>
         greedyParityRows (fun r => compiledRowCounter k polyCounter (a.1, r))
           a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2)
       (encGreedyInput encCandCtx) (encList encBits) :=
   let cCand := compiledRowCertificate k cPoly
-  if h : PolyBounded (fun y => (encPair encUnary encSys y).length) cPoly.space then
+  if h : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space then
     let hG := computableInO_greedy cCand (polyBounded_compiledRowCertificate_space k cPoly h)
       (greedyMaxCellTime k cPoly) (fun a _ hi _ hj => le_greedyMaxCellTime k cPoly a hi hj)
     ⟨fun a => (3 * a.2.1 + 1) * (candidateTupleCount a.2.2.1 a.2.2.2.1 + 1) *
@@ -574,8 +572,8 @@ private noncomputable def greedyBoundedCertificate (k : ℕ)
   else greedyCertificate cCand
 
 private theorem polyBounded_greedyBoundedCertificate_space (k : ℕ)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
-    (hSpace : PolyBounded (fun y => (encPair encUnary encSys y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     PolyBounded (fun a => (encGreedyInput encCandCtx a).length)
       (greedyBoundedCertificate k cPoly).space := by
   let hG := computableInO_greedy (compiledRowCertificate k cPoly)
@@ -814,13 +812,13 @@ private noncomputable def fastPathGreedyInCert
 
 private noncomputable def fastPathFinalCandCert (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat) :=
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :=
   withInputPost ((greedyBoundedCertificate k cPoly).comp (fastPathGreedyInCert hNOf hBOf))
     (computableInPolyTime_assembleFinalCand hNOf)
 
 private noncomputable def fastPathCertificate (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (fun x : P × CNF ℕ => sparseCNFFastPath k (NOf x.1) (BOf x.1) polyCounter x.2)
       (encPair encP encCNF) encNat :=
   (withInputPost ((compiledRowCertificate k cPoly).comp (fastPathFinalCandCert k hNOf hBOf cPoly))
@@ -837,8 +835,8 @@ private theorem polyBounded_fastPathGreedyInCert_space
 
 private theorem polyBounded_fastPathFinalCandCert_space (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
-    (hSpace : PolyBounded (fun y => (encPair encUnary encSys y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     PolyBounded (fun x : P × CNF ℕ => (encPair encP encCNF x).length)
       (fastPathFinalCandCert k hNOf hBOf cPoly).space :=
   polyBounded_withInputPost_space _ _ (polyBounded_comp_space _ _
@@ -847,8 +845,8 @@ private theorem polyBounded_fastPathFinalCandCert_space (k : ℕ)
 
 private theorem polyBounded_fastPathCertificate_space (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat)
-    (hSpace : PolyBounded (fun y => (encPair encUnary encSys y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     PolyBounded (fun x : P × CNF ℕ => (encPair encP encCNF x).length)
       (fastPathCertificate k hNOf hBOf cPoly).space :=
   polyBounded_withInputPost_space _ _ (polyBounded_comp_space _ _
@@ -885,8 +883,7 @@ private theorem nonFastFallback_agrees {k N₀ : ℕ} (x : P × CNF ℕ)
 noncomputable def sparseCNFDeclaredCertificate (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (sparseCNFDeclaredCounter NOf BOf k N₀ polyCounter)
       (encPair encP encCNF) encNat :=
   guardedTargetOfPolyTime (computableInPolyTime_entersSparseFastPath k N₀ hNOf hBOf)
@@ -897,10 +894,8 @@ noncomputable def sparseCNFDeclaredCertificate (k N₀ : ℕ)
 theorem polyBounded_sparseCNFDeclaredCertificate_space (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
-    (hSpace : PolyBounded
-      (fun y => (encPair encUnary (encList (encList (encList encNat))) y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     PolyBounded (fun x : P × CNF ℕ => (encPair encP encCNF x).length)
       (sparseCNFDeclaredCertificate k N₀ hNOf hBOf cPoly).space := by
   unfold sparseCNFDeclaredCertificate
@@ -923,7 +918,7 @@ private theorem mem_greedyParityRowsAt_or {countSys : List (List Bool) → ℕ}
 
 private theorem exists_compiledRowCertificate_bounds (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary)
-    (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
     ∃ pCandOver polySys : ℕ → ℕ,
       Cslib.PolynomiallyBounded pCandOver ∧ Cslib.PolynomiallyBounded polySys ∧
       ∀ R, ValidPolyTimeBound encP NOf BOf k N₀ cPoly polySys R → ∀ x : P × CNF ℕ,
@@ -985,10 +980,8 @@ private theorem exists_compiledRowCertificate_bounds (k N₀ : ℕ)
 theorem exists_sparseCNFDeclaredCertificate_bounds (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
-    (hSpace : PolyBounded
-      (fun y => (encPair encUnary (encList (encList (encList encNat))) y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     ∃ poly qInit polySys : ℕ → ℕ,
       Cslib.PolynomiallyBounded poly ∧ Cslib.PolynomiallyBounded qInit ∧
       Cslib.PolynomiallyBounded polySys ∧
@@ -1116,10 +1109,8 @@ theorem exists_sparseCNFDeclaredCertificate_bounds (k N₀ : ℕ)
 theorem computableInO_sparseCNFDeclaredCounter (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
-    (hSpace : PolyBounded
-      (fun y => (encPair encUnary (encList (encList (encList encNat))) y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     ∃ poly qInit polySys : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       Cslib.PolynomiallyBounded qInit ∧ Cslib.PolynomiallyBounded polySys ∧
       ∀ R, ValidPolyTimeBound encP NOf BOf k N₀ cPoly polySys R →
@@ -1212,8 +1203,7 @@ theorem computableInO_normalizeDeclaredLeaf
 noncomputable def sparseCNFLeafCertificate (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (sparseCNFLeafCounter NOf BOf k N₀ polyCounter)
       (encPair encP encCNF) encNat :=
   (normalizeDeclaredLeafCertificate hNOf
@@ -1223,10 +1213,8 @@ noncomputable def sparseCNFLeafCertificate (k N₀ : ℕ)
 theorem polyBounded_sparseCNFLeafCertificate_space (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
-    (hSpace : PolyBounded
-      (fun y => (encPair encUnary (encList (encList (encList encNat))) y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     PolyBounded (fun x : P × CNF ℕ => (encPair encP encCNF x).length)
       (sparseCNFLeafCertificate k N₀ hNOf hBOf cPoly).space := by
   unfold sparseCNFLeafCertificate
@@ -1237,10 +1225,8 @@ theorem polyBounded_sparseCNFLeafCertificate_space (k N₀ : ℕ)
 theorem exists_sparseCNFLeafCertificate_bounds (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
-    (hSpace : PolyBounded
-      (fun y => (encPair encUnary (encList (encList (encList encNat))) y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     ∃ poly qInit polySys : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       Cslib.PolynomiallyBounded qInit ∧ Cslib.PolynomiallyBounded polySys ∧
       (∀ x, (sparseCNFLeafCertificate k N₀ hNOf hBOf cPoly).space x ≤
@@ -1276,10 +1262,8 @@ theorem exists_sparseCNFLeafCertificate_bounds (k N₀ : ℕ)
 theorem computableInO_sparseCNFLeafCounter (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) (hBOf : ComputableInPolyTime BOf encP encUnary)
     {polyCounter : ℕ × List (List (List ℕ)) → ℕ}
-    (cPoly : NativeCertificate polyCounter
-      (encPair encUnary (encList (encList (encList encNat)))) encNat)
-    (hSpace : PolyBounded
-      (fun y => (encPair encUnary (encList (encList (encList encNat))) y).length) cPoly.space) :
+    (cPoly : NativeCertificate polyCounter (encPair encUnary encSparseSystem) encNat)
+    (hSpace : PolyBounded (fun y => (encPair encUnary encSparseSystem y).length) cPoly.space) :
     ∃ poly qInit polySys : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       Cslib.PolynomiallyBounded qInit ∧ Cslib.PolynomiallyBounded polySys ∧
       ∀ R, ValidPolyTimeBound encP NOf BOf k N₀ cPoly polySys R →

@@ -93,8 +93,7 @@ theorem ten_pow_mul_two_rpow_div_three_pow_lt :
           Real.rpow_le_rpow_of_exponent_le (by norm_num) (by norm_num)
       _ = 2 := Real.rpow_one 2
   rw [div_lt_iff₀ (by positivity)]
-  calc (10 : ℝ) ^ 19 * (2 : ℝ) ^ (1 / 9 : ℝ) ≤ (10 : ℝ) ^ 19 * 2 :=
-        mul_le_mul_of_nonneg_left htwo (by positivity)
+  calc (10 : ℝ) ^ 19 * (2 : ℝ) ^ (1 / 9 : ℝ) ≤ (10 : ℝ) ^ 19 * 2 := by gcongr
     _ < (4 : ℝ) ^ 18 * (3 : ℝ) ^ 18 := by norm_num
 
 /-- At `L = 19 * m`, the real quotient `10 ^ L * 2 ^ (m / 9) / N0 L m` is at most `D m ^ 18`. -/

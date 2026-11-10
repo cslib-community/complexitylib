@@ -162,14 +162,6 @@ private theorem replay_seq_window {State₀ State₁ : Type}
   · rw [h]; exact hfirst before i
   · rw [h]; exact hsecond before hh after i
 
-private theorem replay_ofDeterministic (machine : MultiTapeTM k Symbol State)
-    (coins : List Bool) (initial : Config k Symbol State Empty input) :
-    (ofDeterministic machine).runClosedConfigFromCoins coins initial =
-      { initial with tapes := machine.runFrom initial.tapes coins.length } := by
-  have h := (ofDeterministic machine).runClosedConfigFromCoins_mem_support coins initial
-  simpa only [eval_runClosedConfigFrom_ofDeterministic, PMF.support_pure,
-    Set.mem_singleton_iff] using h
-
 private theorem source_replay_exists {k₀ k₁ : ℕ} {State₀ : Type}
     (first : MultiTapePTM k₀ Symbol State₀) (coins : List Bool) :
     ∃ sourceCoins, (source first k₁).runClosedConfigFromCoins coins

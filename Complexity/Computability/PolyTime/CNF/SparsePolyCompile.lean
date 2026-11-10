@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Foundations.BooleanAnalysis.LowDegree
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Logics.Propositional.CNF.ParityTests
 public import Mathlib.Data.ZMod.Basic
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
@@ -63,6 +64,8 @@ restriction algorithms from §5.5 (pp. 38–39) and §6 / §6.2–6.3 (pp. 39–
   equation variable support, variable incidence degree, and heavy-variable finder.
 * `Cslib.Complexity.restrictEquation`, `Cslib.Complexity.restrictSystem`: single-variable Boolean
   substitution on sparse `𝔽₂` equations and systems.
+* `Cslib.Complexity.encSparseEquation`, `Cslib.Complexity.encSparseSystem`: the encodings of sparse
+  `𝔽₂` equations and systems, with variable indices in binary.
 
 ## Main results
 
@@ -666,8 +669,7 @@ private theorem compileParityRow_prefix_props (φ : CNF ℕ) (row : List Bool) (
           (length_compileClause_le φ[n]).trans (Nat.pow_le_pow_right (by omega) (hφ φ[n] hc_mem))
         calc (xorEquation _ (compileClause φ[n])).length
             ≤ _ + (compileClause φ[n]).length := length_xorEquation_le _ _
-          _ ≤ ((List.range n).countP fun e => row.getD e false) * 2 ^ k + 2 ^ k :=
-              Nat.add_le_add hlen hcl
+          _ ≤ ((List.range n).countP fun e => row.getD e false) * 2 ^ k + 2 ^ k := by gcongr
           _ = (((List.range n).countP fun e => row.getD e false) + (0 + 1)) * 2 ^ k := by ring
     · simpa only [Nat.add_zero] using ⟨hcan, hdeg, hlen⟩
 
@@ -902,6 +904,18 @@ section PolyTime
 open ComputableInPolyTime
 attribute [local irreducible] ComputableInPolyTime
 
+/-- Sparse `𝔽₂` equations with variable indices in binary: the concatenation of the framed
+monomials, each monomial the concatenation of its framed variable indices, each encoded by
+`encNat`. This is the layout `encList (encList encNat)` of `Cslib.LinearAlgebra.encVarSets` and
+`Cslib.LinearAlgebra.encSchedules`; the name records the role. -/
+abbrev encSparseEquation : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
+/-- Sparse `𝔽₂` polynomial systems with variable indices in binary: the concatenation of the framed
+equations, each encoded by `encSparseEquation`. -/
+abbrev encSparseSystem : List (List (List ℕ)) ↪ List Bool :=
+  encList encSparseEquation
+
 private theorem computableInPolyTime_toggleMonomial :
     ComputableInPolyTime (fun p : List (List ℕ) × List ℕ => toggleMonomial p.1 p.2)
       (encPair (encList (encList encNat)) (encList encNat)) (encList (encList encNat)) := by
@@ -911,7 +925,7 @@ private theorem computableInPolyTime_toggleMonomial :
 @[fun_prop]
 theorem computableInPolyTime_reduceEquation :
     ComputableInPolyTime reduceEquation
-      (encList (encList encNat)) (encList (encList encNat)) := by
+      encSparseEquation encSparseEquation := by
   unfold reduceEquation
   let eM := encList encNat; let eEq := encList eM
   have hq := fst (encPair eEq eEq) eM
@@ -932,8 +946,7 @@ theorem computableInPolyTime_reduceEquation :
 @[fun_prop]
 theorem computableInPolyTime_xorEquation :
     ComputableInPolyTime (fun p : List (List ℕ) × List (List ℕ) => xorEquation p.1 p.2)
-      (encPair (encList (encList encNat)) (encList (encList encNat)))
-      (encList (encList encNat)) := by
+      (encPair encSparseEquation encSparseEquation) encSparseEquation := by
   exact computableInPolyTime_reduceEquation.comp (listAppend' (fst _ _) (snd _ _))
 
 private theorem computableInPolyTime_insertSorted :
@@ -1032,7 +1045,7 @@ sparse `𝔽₂` polynomial is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_compileClauseBounded (k : ℕ) :
     ComputableInPolyTime (compileClauseBounded k)
-      (encList (encPair encNat encBool)) (encList (encList encNat)) := by
+      (encClause encNat) encSparseEquation := by
   let eM := encList encNat; let eEq := encList eM; let eC := encList (encPair encNat encBool)
   have htake : ComputableInPolyTime (fun c : Clause ℕ => c.take k) eC eC := by fun_prop
   have hstep : ComputableInPolyTime
@@ -1068,8 +1081,7 @@ theorem computableInPolyTime_compileClauseBounded (k : ℕ) :
 
 /-- Reducing an equation modulo `2` (`reduceEquation`) does not increase its encoded length. -/
 theorem length_enc_reduceEquation_le (l : List (List ℕ)) :
-    (encList (encList encNat) (reduceEquation l)).length ≤
-      (encList (encList encNat) l).length := by
+    (encSparseEquation (reduceEquation l)).length ≤ (encSparseEquation l).length := by
   let eM := encList encNat; let eEq := encList eM
   have hred : ∀ (L acc : List (List ℕ)),
       (eEq (L.foldl toggleMonomial acc)).length ≤ (eEq acc).length + (eEq L).length := by
@@ -1087,8 +1099,7 @@ theorem length_enc_reduceEquation_le (l : List (List ℕ)) :
             List.length_append, le_rfl]
       calc (eEq ((m :: ms).foldl toggleMonomial acc)).length
           ≤ (eEq (toggleMonomial acc m)).length + (eEq ms).length := ih _
-        _ ≤ (eEq acc).length + (frame (eM m)).length + (eEq ms).length :=
-            Nat.add_le_add_right hstep _
+        _ ≤ (eEq acc).length + (frame (eM m)).length + (eEq ms).length := by gcongr
         _ = (eEq acc).length + (eEq (m :: ms)).length := by
             simp only [eEq, encList_cons, List.length_append]; omega
   simpa only [reduceEquation, eEq, encList_nil, List.length_nil, Nat.zero_add] using hred l []
@@ -1145,7 +1156,7 @@ theorem computableInPolyTime_compileParityRowBounded (k : ℕ)
     {encRow : List Bool ↪ List Bool} [ListEncoding encBool encRow]
     [SizedListEncoding encBool encRow] :
     ComputableInPolyTime (fun p : CNF ℕ × List Bool => compileParityRowBounded k p.1 p.2)
-      (encPair encCNF encRow) (encList (encList encNat)) := by
+      (encPair encCNF encRow) encSparseEquation := by
   unfold encCNF
   let eC := encList (encPair encNat encBool)
   let eEq := encList (encList encNat)
@@ -1197,7 +1208,7 @@ theorem computableInPolyTime_compileParitySystemBounded (k : ℕ)
     [SizedListEncoding encBool encRow] :
     ComputableInPolyTime
       (fun p : CNF ℕ × List (List Bool) => compileParitySystemBounded k p.1 p.2)
-      (encPair encCNF (encList encRow)) (encList (encList (encList encNat))) := by
+      (encPair encCNF (encList encRow)) encSparseSystem := by
   exact mapWithInput (snd encCNF (encList encRow))
     ((computableInPolyTime_compileParityRowBounded k (encRow := encRow)).comp
       (((fst _ _).fst').prod (snd _ _)))
@@ -1205,14 +1216,14 @@ theorem computableInPolyTime_compileParitySystemBounded (k : ℕ)
 /-- The variable scope `equationVars` of an equation is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_equationVars :
-    ComputableInPolyTime equationVars (encList (encList encNat)) (encList encNat) := by
+    ComputableInPolyTime equationVars encSparseEquation (encList encNat) := by
   exact computableInPolyTime_sortDedup.comp (.of_tidy (ComputableTidilyInPolyTime.flatten encNat))
 
 /-- Computing `varDegree v sys` (returned in unary) is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_varDegree :
     ComputableInPolyTime (fun p : ℕ × List (List (List ℕ)) => varDegree p.1 p.2)
-      (encPair encNat (encList (encList (encList encNat)))) encUnary := by
+      (encPair encNat encSparseSystem) encUnary := by
   unfold varDegree; fun_prop
 
 /-- Finding the first heavy variable `v < n` with `varDegree v sys > b₀` (`n` in unary, `b₀` in
@@ -1220,8 +1231,7 @@ binary, result in `encOption encNat`) is polynomial-time. -/
 theorem computableInPolyTime_findHeavyVar :
     ComputableInPolyTime
       (fun (((n, b), sys) : (ℕ × ℕ) × List (List (List ℕ))) => findHeavyVar n b sys)
-      (encPair (encPair encUnary encNat) (encList (encList (encList encNat))))
-      (encOption encNat) := by
+      (encPair (encPair encUnary encNat) encSparseSystem) (encOption encNat) := by
   let eSys := encList (encList (encList encNat))
   have hdeg := computableInPolyTime_varDegree
   have hrange : ComputableInPolyTime
@@ -1242,7 +1252,7 @@ theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List
     {fn fb : α → ℕ} {fsys : α → List (List (List ℕ))}
     (hn : ComputableInPolyTime fn encIn encUnary)
     (hb : ComputableInPolyTime fb encIn encNat)
-    (hsys : ComputableInPolyTime fsys encIn (encList (encList (encList encNat)))) :
+    (hsys : ComputableInPolyTime fsys encIn encSparseSystem) :
     ComputableInPolyTime (fun x => findHeavyVar (fn x) (fb x) (fsys x)) encIn (encOption encNat) :=
   by exact computableInPolyTime_findHeavyVar.comp ((hn.prod hb).prod hsys)
 
@@ -1250,7 +1260,7 @@ theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List
 theorem computableInPolyTime_restrictEquation :
     ComputableInPolyTime
       (fun (((v, val), eq) : (ℕ × Bool) × List (List ℕ)) => restrictEquation v val eq)
-      (encPair (encPair encNat encBool) (encList (encList encNat))) (encList (encList encNat)) := by
+      (encPair (encPair encNat encBool) encSparseEquation) encSparseEquation := by
   refine ComputableInPolyTime.of_enc_eq (f := fun p : (ℕ × Bool) × List (List ℕ) =>
     restrictEquation p.1.1 p.1.2 p.2) ?_ fun ⟨⟨_, _⟩, _⟩ => rfl
   unfold restrictEquation; fun_prop
@@ -1260,17 +1270,16 @@ theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ 
     {fv : α → ℕ} {fval : α → Bool} {feq : α → List (List ℕ)}
     (hv : ComputableInPolyTime fv encIn encNat)
     (hval : ComputableInPolyTime fval encIn encBool)
-    (heq : ComputableInPolyTime feq encIn (encList (encList encNat))) :
+    (heq : ComputableInPolyTime feq encIn encSparseEquation) :
     ComputableInPolyTime (fun x => restrictEquation (fv x) (fval x) (feq x))
-      encIn (encList (encList encNat)) := by
+      encIn encSparseEquation := by
   exact computableInPolyTime_restrictEquation.comp ((hv.prod hval).prod heq)
 
 /-- Substituting `x_v = val` across a sparse `𝔽₂` system (`restrictSystem`) is polynomial-time. -/
 theorem computableInPolyTime_restrictSystem :
     ComputableInPolyTime
       (fun (((v, val), sys) : (ℕ × Bool) × List (List (List ℕ))) => restrictSystem v val sys)
-      (encPair (encPair encNat encBool) (encList (encList (encList encNat))))
-      (encList (encList (encList encNat))) := by
+      (encPair (encPair encNat encBool) encSparseSystem) encSparseSystem := by
   exact (mapWithInput (f := fun x a => restrictEquation x.1.1 x.1.2 a)
     (snd (encPair encNat encBool) (encList (encList (encList encNat))))
     (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))).of_enc_eq
@@ -1281,9 +1290,9 @@ theorem computableInPolyTime_restrictSystem_apply {α : Type} {encIn : α ↪ Li
     {fv : α → ℕ} {fval : α → Bool} {fsys : α → List (List (List ℕ))}
     (hv : ComputableInPolyTime fv encIn encNat)
     (hval : ComputableInPolyTime fval encIn encBool)
-    (hsys : ComputableInPolyTime fsys encIn (encList (encList (encList encNat)))) :
+    (hsys : ComputableInPolyTime fsys encIn encSparseSystem) :
     ComputableInPolyTime (fun x => restrictSystem (fv x) (fval x) (fsys x))
-      encIn (encList (encList (encList encNat))) := by
+      encIn encSparseSystem := by
   exact computableInPolyTime_restrictSystem.comp ((hv.prod hval).prod hsys)
 
 end PolyTime

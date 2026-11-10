@@ -282,8 +282,7 @@ theorem card_quotHash_eq_le {U w₀ n : ℕ} (hw₀ : 0 < w₀) (hU : U ≤ 2 ^ 
       _ = (#Bad * 2 ^ b) * Fintype.card Bot := by
           rw [Finset.sum_const, smul_eq_mul]
           ring
-      _ ≤ Fintype.card Top * Fintype.card Bot :=
-          Nat.mul_le_mul_right _ hbad_card
+      _ ≤ Fintype.card Top * Fintype.card Bot := by gcongr
   have hcard_prod : Fintype.card (QuotSeed w₀ n) = Fintype.card Top * Fintype.card Bot :=
     Fintype.card_prod Top Bot
   omega
@@ -351,8 +350,7 @@ theorem card_falsePositive_mul_le {U w₀ n k : ℕ} (hw₀ : 0 < w₀) (hU : U 
             (effCap w₀ n * 2 ^ k)
           = (#{θ : QuotSeed w₀ n | quotHash U w₀ n θ x = quotHash U w₀ n θ u} * effCap w₀ n) *
               (#{γ : RemSeed w₀ | remHash U w₀ k γ x = remHash U w₀ k γ u} * 2 ^ k) := by ring
-        _ ≤ Fintype.card (QuotSeed w₀ n) * Fintype.card (RemSeed w₀) :=
-            Nat.mul_le_mul hq' hr
+        _ ≤ Fintype.card (QuotSeed w₀ n) * Fintype.card (RemSeed w₀) := by gcongr
         _ = Fintype.card (FilterSeed w₀ n) := (Fintype.card_prod _ _).symm
     have hsum :
         #FP * (effCap w₀ n * 2 ^ k) ≤ effCap w₀ n * Fintype.card (FilterSeed w₀ n) := by
@@ -421,8 +419,7 @@ theorem toOuterMeasure_falsePositive_le {U w₀ n k : ℕ} (hw₀ : 0 < w₀) (h
   calc (#FP : ℝ≥0∞)
       = (#FP : ℝ≥0∞) * (2 ^ k : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)⁻¹ :=
         (ENNReal.mul_inv_cancel_right hpow_ne_zero hpow_ne_top).symm
-    _ ≤ (Fintype.card (FilterSeed w₀ n) : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)⁻¹ :=
-        mul_le_mul_of_nonneg_right hcast (by positivity)
+    _ ≤ (Fintype.card (FilterSeed w₀ n) : ℝ≥0∞) * (2 ^ k : ℝ≥0∞)⁻¹ := by gcongr
     _ = (2 ^ k : ℝ≥0∞)⁻¹ * (Fintype.card (FilterSeed w₀ n) : ℝ≥0∞) := mul_comm _ _
 
 /-- Minimum exponent `k = max 1 ⌈log₂(1 / ε)⌉` such that `(1 / 2 : ℝ≥0∞) ^ k ≤ ε` for any
@@ -702,8 +699,7 @@ theorem sum_seedClusterBound_le {U w₀ n : ℕ} (hw₀ : 0 < w₀) (hU : U ≤ 
       _ = (#Bad * 2 ^ b) * Fintype.card Bot := by
           simp only [Finset.sum_const, Finset.card_univ, smul_eq_mul]
           ring
-      _ ≤ Fintype.card Top * Fintype.card Bot :=
-          Nat.mul_le_mul_right _ hbad_card
+      _ ≤ Fintype.card Top * Fintype.card Bot := by gcongr
       _ = Fintype.card (QuotSeed w₀ n) := (Fintype.card_prod Top Bot).symm
   rw [hprod_sum, hsplit]
   omega

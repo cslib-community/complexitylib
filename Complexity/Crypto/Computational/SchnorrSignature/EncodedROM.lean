@@ -204,8 +204,7 @@ theorem runWith_schnorrDecodedForger
   congr 1
   unfold runWith
   rw [interpret_interpret]
-  congr 2
-  funext q
+  congr 2 with q : 1
   cases q with
   | inl msg =>
     funext st

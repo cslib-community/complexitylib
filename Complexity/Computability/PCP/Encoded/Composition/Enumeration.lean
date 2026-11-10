@@ -71,7 +71,7 @@ theorem isPolyTime_composeEnumerated {Input : Type} {input : Input ↪ List Bool
     {graph : Input → Graph (α → α → Bool)}
     (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
     ComputableInPolyTime (fun x => (graph x).composeEnumerated)
-      input (encoding (encPi (encPi encBool))) :=
+      input (encoding encConstraintTable) :=
   Encoded.HadamardTester.implementation.isPolyTime_composeEnumerated hgraph
 
 /-- The declared vertex count includes the complete input, proof, and coin slots. -/

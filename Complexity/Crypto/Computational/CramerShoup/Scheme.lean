@@ -22,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Crypto.Game.Statistical
 import Complexity.Probability.PMF
 import Complexity.Probability.StatisticalDistance
+import Complexity.Tactic.EncLen
 
 /-!
 # Multiplicative Cramer–Shoup Encryption Scheme and Adaptive Projective-Hash Rejection
@@ -376,20 +377,17 @@ theorem ADCCA2AdversaryOf.IsPPT.query_bounds {Msg AD : Type} {encMsg : Msg ↪ L
     fun n state ct => ?_, fun n pk State oracle s s' choice hmem => ?_⟩
   · have hsize : (encPair encUnary (encPair encBits encBits) (n, state, ct)).length + 1 ≤
         4 * (n + state.length + ct.length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     have hpoly := Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left hsize d₂)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact (hguess (n, state, ct)).1.mono hpoly
   · have hbound := hlen (n, pk) State oracle s s' choice hmem
     have hstate : choice.2.length ≤
         (encPair (encPair (encPair encMsg encMsg) encAD) encBits choice).length := by
-      simp only [length_encPair, encBits_apply]
-      omega
+      enc_len
     have hsize : (encPair encUnary encBits (n, pk)).length + 1 ≤
         2 * (n + pk.length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     have hpoly := Nat.mul_le_mul_left cs (Nat.pow_le_pow_left hsize ds)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact (hstate.trans hbound).trans hpoly

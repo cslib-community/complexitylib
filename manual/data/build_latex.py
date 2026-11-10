@@ -28,7 +28,8 @@ ORDER = [
       'security-games-and-primitives', 'interactive-reductions', 'protocols-and-privacy',
       'average-case-hardness', 'distributional-complexity', 'homomorphic-encryption']),
     ('algorithms-and-memory', ['index', 'ram-variants', 'wordram-and-bridges',
-      'memory-specifications', 'online-and-streaming', 'catalytic-and-tree-evaluation', 'algorithm-endpoints']),
+      'memory-specifications', 'online-and-streaming', 'strategic-games',
+      'catalytic-and-tree-evaluation', 'algorithm-endpoints', 'mechanism-design']),
     ('development-history', ['index', 'methods', 'timings', 'case-studies', 'transcripts', 'study-design']),
 ]
 FILES = ['index.md'] + [f'{section}/{name}.md' for section, names in ORDER for name in names] + ['model-map.md']

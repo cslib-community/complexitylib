@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Builds, traffic and storage for the Complexitylib build cache.">
+  <title>Complexitylib cache</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="wordmark" href="/" aria-label="Complexitylib cache home"><span class="mark" aria-hidden="true">C<span>↗</span></span><span>Complexitylib<span class="wordmark-sub">BUILD CACHE</span></span></a>
+      <div class="header-links"><a href="https://www.cslib.io/complexitylib/">Complexitylib <span aria-hidden="true">↗</span></a><a href="https://github.com/cslib-community/complexitylib">Repository <span aria-hidden="true">↗</span></a></div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div><div class="eyebrow"><span class="live-dot" id="live-dot"></span><span id="freshness">Waiting for a snapshot</span></div><h1 id="page-title">Complexitylib cache</h1></div>
+        <div class="latest-summary"><span class="small-label">LATEST PUBLICATION</span><div class="latest-line"><a id="latest-commit" class="commit" hidden></a><span id="latest-age">Not available yet</span></div><span id="latest-detail" class="secondary">Build information will appear here.</span></div>
+      </section>
+
+      <div id="notice" class="notice" role="status">Loading the latest cache statistics…</div>
+      <section class="traffic-section" aria-labelledby="traffic-title">
+        <div class="section-heading"><div><h2 id="traffic-title">Traffic</h2><p id="coverage-label" class="secondary">Retained cache requests</p></div><div class="toolbar"><div class="segmented" role="group" aria-label="Statistics window"><button type="button" data-window="hour" aria-pressed="false">1 hour</button><button type="button" data-window="day" aria-pressed="true">24 hours</button><button type="button" data-window="week" aria-pressed="false">7 days</button></div><button class="refresh-button" id="refresh" type="button" aria-label="Refresh statistics"><span aria-hidden="true">↻</span></button></div></div>
+        <div class="metric-grid">
+          <article class="metric"><p class="small-label">DATA DELIVERED</p><div class="metric-value" id="delivered">—</div><p class="secondary">Successful cache downloads</p></article>
+          <article class="metric"><p class="small-label">AVERAGE TRAFFIC RATE</p><div class="metric-value" id="bitrate">—</div><p class="secondary">Including idle time</p></article>
+          <article class="metric"><p class="small-label">ARTIFACT DOWNLOADS</p><div class="metric-value" id="downloads">—</div><p class="secondary" id="mapping-count">— mapping requests</p></article>
+          <article class="metric"><p class="small-label">SUCCESSFUL REQUESTS</p><div class="metric-value" id="success-rate">—</div><p class="secondary" id="request-count">— cache requests</p></article>
+        </div>
+
+        <div class="traffic-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><h3>Over time</h3><div class="chart-choices" role="group" aria-label="Traffic chart metric"><button type="button" data-chart="body_bytes" aria-pressed="true">Data</button><button type="button" data-chart="average_mbps" aria-pressed="false">Traffic rate</button><button type="button" data-chart="requests" aria-pressed="false">Requests</button></div></div>
+            <svg id="traffic-chart" class="traffic-chart" viewBox="0 0 720 230" role="img" aria-label="Traffic history is loading"><title>Cache traffic history</title></svg>
+            <div class="chart-footer"><span><i class="legend-dot"></i><span id="chart-label">Response-body bytes per hour</span></span><span id="chart-total">—</span></div>
+          </article>
+          <article class="panel response-panel">
+            <div class="panel-heading"><h3>Responses</h3><span id="response-total" class="secondary">—</span></div>
+            <svg id="response-chart" class="response-chart" viewBox="0 0 400 16" role="img" aria-label="Response distribution is loading"></svg>
+            <dl class="response-list"><div><dt><i class="status-dot successful"></i>Successful</dt><dd id="response-success">—</dd></div><div><dt><i class="status-dot missed"></i>Not found</dt><dd id="response-miss">—</dd></div><div><dt><i class="status-dot rejected"></i>Throttled / unauthorized</dt><dd id="response-reject">—</dd></div><div><dt><i class="status-dot failed"></i>Server errors</dt><dd id="response-error">—</dd></div><div><dt><i class="status-dot other"></i>Other</dt><dd id="response-other">—</dd></div></dl>
+            <div class="latency-pair"><div><span class="small-label">MEDIAN REQUEST</span><strong id="latency-median">—</strong></div><div><span class="small-label">95TH PERCENTILE</span><strong id="latency-p95">—</strong></div></div>
+            <p class="fine-print">Successful cache GET duration, including transfer time.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="storage-section" aria-labelledby="storage-title">
+        <div class="section-heading"><div><h2 id="storage-title">Storage</h2><p id="sharing-label" class="secondary">Builds share unchanged artifacts.</p></div><span id="storage-freshness" class="secondary"></span></div>
+        <div class="storage-grid">
+          <article class="panel disk-panel"><div class="panel-heading"><h3>Data disk</h3><strong id="disk-percent">—</strong></div><progress id="disk-meter" max="100" value="0" aria-label="Data disk capacity used"></progress><div class="disk-amounts"><span id="disk-used">— used</span><span id="disk-free">— available</span></div><dl class="mini-stats"><div><dt>Stored artifacts</dt><dd id="artifact-size">—</dd></div><div><dt>Artifact files</dt><dd id="artifact-count">—</dd></div><div><dt>Available inodes</dt><dd id="inode-free">—</dd></div></dl></article>
+          <article class="panel reuse-panel"><div class="panel-heading"><h3>Artifact sharing</h3><span class="tag" id="saved-bytes">— saved</span></div><div class="reuse-value" id="dedup-ratio">—</div><p class="secondary">Separate copies ÷ stored artifact bytes</p><svg id="reuse-chart" class="reuse-chart" viewBox="0 0 500 38" role="img" aria-label="Storage sharing is loading"></svg><div class="reuse-legend"><span><i class="legend-dot"></i><span id="physical-bytes">— actual</span></span><span><i class="legend-dot neutral"></i><span id="logical-bytes">— separate copies</span></span></div><p class="fine-print">Compares compressed artifacts, not source or uncompressed build size.</p></article>
+        </div>
+      </section>
+
+      <section class="builds-grid" aria-label="Retained and requested builds">
+        <article class="panel builds-panel"><div class="panel-heading"><div><h2>Recent builds</h2><p class="secondary">Newest retained builds</p></div><span class="tag" id="retained-count">— builds</span></div><div class="table-scroll"><table><thead><tr><th>Commit / Lean</th><th>Published</th><th class="number-cell">Modules</th><th class="number-cell">Artifacts</th></tr></thead><tbody id="builds-body"><tr><td colspan="4" class="empty-cell">No build snapshot yet.</td></tr></tbody></table></div><button type="button" class="text-button" id="show-builds" hidden>Show all retained snapshots</button></article>
+        <article class="panel popular-panel"><div class="panel-heading"><div><h2>Most requested</h2><p class="secondary">Build mapping requests · retained history</p></div></div><ol id="popular-builds" class="popular-list"><li class="empty-cell">No mapping requests yet.</li></ol><p class="fine-print">Requests indicate interest in a build, not distinct users or completed restores.</p></article>
+      </section>
+
+      <section class="panel gc-panel" aria-labelledby="gc-title"><div class="gc-intro"><span class="gc-icon" aria-hidden="true">↺</span><div><h2 id="gc-title">Garbage collection</h2><p id="gc-last" class="secondary">Collection history is not available yet.</p></div></div><div class="gc-metrics"><div><span class="small-label">LAST RESULT</span><strong id="gc-status">Not recorded</strong></div><div><span class="small-label">ARTIFACTS REMOVED</span><strong id="gc-artifacts">—</strong></div><div><span class="small-label">SPACE RECLAIMED</span><strong id="gc-bytes">Not recorded</strong></div></div></section>
+
+      <details class="measurement-notes"><summary>What these numbers mean</summary><div><p>Traffic covers cache artifacts, build mappings and publication requests found in retained logs. Dashboard views are excluded. Byte totals count successful GET response bodies; HTTP/TLS overhead and uploads are excluded. Average traffic rate divides those bytes × 8 by the observed wall-clock interval, including idle time. It measures traffic volume over time, not client download speed.</p><p>Log retention and collection outages can leave gaps. Statistics describe the available sample, not exact accounting. A request is not a distinct person or a complete build restore. Latency includes the transfer and is not time to first byte.</p><dl><div><dt>Observed records</dt><dd id="record-count">—</dd></div><div><dt>Outside cache routes</dt><dd id="excluded-count">—</dd></div><div><dt>Skipped invalid records</dt><dd id="invalid-count">—</dd></div><div><dt>Publications acknowledged</dt><dd id="publication-count">—</dd></div><div><dt>Missing referenced artifacts</dt><dd id="missing-artifacts">—</dd></div><div><dt>Collection mappings removed</dt><dd id="gc-mappings">—</dd></div></dl></div></details>
+      <noscript><p class="notice">JavaScript is needed to display the statistics. You can also read the <a href="/stats.json">JSON snapshot</a>.</p></noscript>
+    </main>
+    <footer><a href="https://www.cslib.io/complexitylib/">Complexitylib</a><span>Refreshes about every five minutes <span aria-hidden="true">·</span> <a href="/stats.json">JSON</a></span></footer>
+  </div>
+</body>
+</html>

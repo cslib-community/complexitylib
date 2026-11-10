@@ -189,14 +189,6 @@ private theorem mem_literals_of_isProof {ls : List (Clause V)} (h : φ.IsProof l
   fun _ hc _ hl => Finset.mem_product.2 ⟨List.mem_toFinset.2 (h.fst_mem_vars hc hl),
     Finset.mem_univ _⟩
 
-/-- A line of a proof from `φ` is at most twice as wide as `φ` has variables. -/
-private theorem width_le_of_isProof {ls : List (Clause V)} (h : φ.IsProof ls) {c : Clause V}
-    (hc : c ∈ ls) : c.width ≤ 2 * φ.vars.toFinset.card := by
-  calc c.width ≤ (φ.vars.toFinset ×ˢ (Finset.univ : Finset Bool)).card :=
-        Finset.card_le_card fun l hl => mem_literals_of_isProof h c hc l (List.mem_toFinset.1 hl)
-    _ = 2 * φ.vars.toFinset.card := by rw [Finset.card_product, Finset.card_univ,
-        Fintype.card_bool, mul_comm]
-
 /-- The induction behind `RefutableInWidth.of_refutableInSize`, on a bound `n` on the number of
 variables. -/
 private theorem refutableInWidth_of_countP_wide (N d k : ℕ) :
@@ -209,7 +201,7 @@ private theorem refutableInWidth_of_countP_wide (N d k : ℕ) :
   | zero =>
     intro φ ls b hn _ h hnil _ _
     refine ⟨ls, h, hnil, fun c hc => ?_⟩
-    have := width_le_of_isProof h hc
+    have := h.width_le hc
     omega
   | succ n ih =>
     intro φ ls b hn hnN h hnil hk hcount
@@ -236,7 +228,7 @@ private theorem refutableInWidth_of_countP_wide (N d k : ℕ) :
     have hdN : d < 2 * N := by
       obtain ⟨c, hc⟩ := List.exists_mem_of_ne_nil F hFne
       have h1 := (List.mem_filter.1 hc)
-      have := width_le_of_isProof h h1.1
+      have := h.width_le h1.1
       simp only [decide_eq_true_eq] at h1
       omega
     obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := by
@@ -336,7 +328,7 @@ theorem exists_refutableInWidth_le_of_refutableInSize {k s N : ℕ} (hk : ∀ c 
   by_cases htriv : N = 0 ∨ s ≤ 1
   · refine ⟨0, ⟨ls, h, hnil, fun c hc => ?_⟩, by exact_mod_cast hpos⟩
     rcases htriv with hN0 | hs1
-    · have := width_le_of_isProof h hc
+    · have := h.width_le hc
       omega
     · obtain rfl : ls = [[]] := by
         rcases ls with _ | ⟨c₀, _ | ⟨c₁, ls⟩⟩

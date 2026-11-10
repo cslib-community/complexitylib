@@ -8,8 +8,10 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.PCP.Encoded.Basic
+public import Complexity.Computability.PCP.Encoded.Encoding
 public import Complexity.Computability.PCP.ThreeSAT
 public import Complexity.Logics.Propositional.CNF.Compact
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
@@ -84,7 +86,7 @@ def ofCompactCNF {V : Type} [DecidableEq V] (φ : CNF V) :
 @[fun_prop]
 theorem isPolyTime_clauseHolds :
     ComputableInPolyTime (fun p : Clause ℕ × (Fin 3 → Bool) => clauseHolds p.1 p.2)
-      (encPair (encList (encPair encUnary encBool)) (encPi encBool)) encBool := by
+      (encPair (encClause encUnary) (encPi encBool)) encBool := by
   unfold clauseHolds
   apply anyWithInput (encA := encFinEnum (Fin 3)) (by fun_prop)
   apply finite_cases (branch := fun (i : Fin 3) (p : (Clause ℕ × (Fin 3 → Bool)) × Fin 3) =>
@@ -96,9 +98,8 @@ theorem isPolyTime_clauseHolds :
 @[fun_prop]
 theorem isPolyTime_cnfEdge :
     ComputableInPolyTime (fun p : CNF ℕ × (ℕ × Fin 3) => cnfEdge p.1 p.2)
-      (encPair (encList (encList (encPair encUnary encBool)))
-        (encPair encUnary (encFinEnum (Fin 3))))
-      (Edge.encoding (encPi (encPi encBool))) := by
+      (encPair (encCNFOver encUnary) (encPair encUnary (encFinEnum (Fin 3))))
+      (Edge.encoding encConstraintTable) := by
   have hindex : ComputableInPolyTime (Fin.val (n := 3))
       (encFinEnum (Fin 3)) encUnary := .of_finite _
   have hclause : ComputableInPolyTime
@@ -118,8 +119,7 @@ theorem isPolyTime_cnfEdge :
 @[fun_prop]
 theorem isPolyTime_ofCNF :
     ComputableInPolyTime (fun p : ℕ × CNF ℕ => ofCNF p.1 p.2)
-      (encPair encUnary (encList (encList (encPair encUnary encBool))))
-      (encoding (encPi (encPi encBool))) := by
+      (encPair encUnary (encCNFOver encUnary)) (encoding encConstraintTable) := by
   have hdarts : ComputableInPolyTime
       (fun p : ℕ × CNF ℕ => (List.range p.2.length).product (List.finRange 3))
       (encPair encUnary (encList (encList (encPair encUnary encBool))))
@@ -133,10 +133,9 @@ theorem isPolyTime_ofCNF :
 @[fun_prop]
 theorem isPolyTime_ofCompactCNF {V Input : Type} [DecidableEq V]
     {enc : V ↪ List Bool} {input : Input ↪ List Bool} {formula : Input → CNF V}
-    (hformula : ComputableInPolyTime formula input
-      (encList (encList (encPair enc encBool)))) :
+    (hformula : ComputableInPolyTime formula input (encCNFOver enc)) :
     ComputableInPolyTime (fun x => ofCompactCNF (formula x))
-      input (encoding (encPi (encPi encBool))) := by
+      input (encoding encConstraintTable) := by
   unfold ofCompactCNF
   fun_prop
 

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Interactive.Basic
+public import Complexity.Probability.StatisticalDistance.CloseTo
 import Complexity.Probability.PMF.Event
 
 /-!
@@ -45,20 +46,12 @@ PPT simulator over an indexed family of reductions.
 
 ## Main definitions
 
-* `Interactive.language`, `Interactive.Accept`, `Interactive.CloseTo`.
+* `Interactive.language`, `Interactive.Accept`.
 * `Interactive.Reduction.Complete`, `Interactive.Verifier.Sound`,
   `Interactive.Verifier.KnowledgeSound`.
 * `Interactive.Prefix`, `Interactive.Prefix.empty`, `Interactive.PerChallenge.sum`,
   `Interactive.RbrFrom`, `Interactive.Verifier.outputOn`, `Interactive.Verifier.RbrSound`.
 * `Interactive.Reduction.HVZK`.
-
-## Main results
-
-* `Interactive.CloseTo.refl`, `Interactive.CloseTo.mono`, `Interactive.CloseTo.symm`,
-  `Interactive.CloseTo.map`, `Interactive.CloseTo.trans`: equivalence-like and postprocessing laws
-  for all-events statistical distance.
-* `Interactive.CloseTo.bind_left`, `Interactive.CloseTo.bind_right`, `Interactive.CloseTo.bind`:
-  data processing across randomized continuations without finiteness assumptions.
 
 ## References
 
@@ -71,7 +64,7 @@ PPT simulator over an indexed family of reductions.
 namespace Cslib.Interactive
 
 open scoped ENNReal
-open Spec
+open Spec Probability
 
 variable {ιP ιV : Type} {oP : OracleSpec ιP} {oV : OracleSpec ιV} {s : Spec}
   {StmtIn WitIn StmtOut WitOut : Type}
@@ -81,115 +74,6 @@ def language {Stmt Wit : Type} (rel : Stmt → Wit → Prop) : Set Stmt := {x | 
 
 /-- The trivial relation that proof systems reduce to: acceptance. -/
 def Accept : Unit → Unit → Prop := fun _ _ => True
-
-/-- `μ` is within statistical distance `ε` of `ν`: no event is more likely under `μ` than under
-`ν` by more than `ε`. Quantifying over all events makes this symmetric, and it is the total
-variation distance on any type, finite or not. -/
-def CloseTo {α : Type} (μ ν : PMF α) (ε : ℝ≥0∞) : Prop :=
-  ∀ event : Set α, μ.toOuterMeasure event ≤ ν.toOuterMeasure event + ε
-
-/-- Every distribution is `0`-close to itself. -/
-@[simp] theorem CloseTo.refl {α : Type} (μ : PMF α) : CloseTo μ μ 0 :=
-  fun _ => by rw [add_zero]
-
-/-- Enlarging the error bound preserves statistical closeness. -/
-theorem CloseTo.mono {α : Type} {μ ν : PMF α} {ε δ : ℝ≥0∞} (h : CloseTo μ ν ε)
-    (hle : ε ≤ δ) : CloseTo μ ν δ :=
-  fun event => (h event).trans (add_le_add le_rfl hle)
-
-/-- Statistical closeness is symmetric, on any type. -/
-theorem CloseTo.symm {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) :
-    CloseTo ν μ ε := fun event => by
-  have hc := h eventᶜ
-  refine WithTop.le_of_add_le_add_right
-    (Cslib.Probability.PMF.toOuterMeasure_ne_top ν eventᶜ) ?_
-  calc
-    ν.toOuterMeasure event + ν.toOuterMeasure eventᶜ = 1 :=
-      Cslib.Probability.PMF.toOuterMeasure_add_compl_ennreal ν event
-    _ = μ.toOuterMeasure event + μ.toOuterMeasure eventᶜ :=
-      (Cslib.Probability.PMF.toOuterMeasure_add_compl_ennreal μ event).symm
-    _ ≤ μ.toOuterMeasure event + (ν.toOuterMeasure eventᶜ + ε) :=
-      add_le_add le_rfl hc
-    _ = μ.toOuterMeasure event + ε + ν.toOuterMeasure eventᶜ := by
-      rw [add_comm _ ε, add_assoc]
-
-/-- Statistical closeness is preserved by postprocessing. -/
-theorem CloseTo.map {α β : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε) (f : α → β) :
-    CloseTo (μ.map f) (ν.map f) ε := fun event => by
-  simpa only [PMF.toOuterMeasure_map_apply] using h (f ⁻¹' event)
-
-/-- Statistical closeness errors add along a chain. -/
-theorem CloseTo.trans {α : Type} {μ ν ρ : PMF α} {ε δ : ℝ≥0∞} (h₁ : CloseTo μ ν ε)
-    (h₂ : CloseTo ν ρ δ) : CloseTo μ ρ (ε + δ) := fun event =>
-  (h₁ event).trans <| by
-    rw [add_comm ε δ, ← add_assoc]
-    exact add_le_add (h₂ event) le_rfl
-
-/-- Data processing in the first stage: replacing `μ` by an `ε`-close `ν` before a common
-randomized continuation `f` preserves `ε`-closeness, without finiteness assumptions. -/
-theorem CloseTo.bind_left {α β : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h : CloseTo μ ν ε)
-    (f : α → PMF β) : CloseTo (μ.bind f) (ν.bind f) ε := fun event => by
-  classical
-  let S : Set α := {a | ν a ≤ μ a}
-  let d : α → ℝ≥0∞ := S.indicator fun a => μ a - ν a
-  have hpt (a : α) : S.indicator ν a + d a = S.indicator μ a := by
-    by_cases ha : a ∈ S
-    · simp only [d, Set.indicator_of_mem ha]
-      exact add_tsub_cancel_of_le ha
-    · simp only [d, Set.indicator_of_notMem ha, add_zero]
-  have hd_sum : ∑' a, d a ≤ ε := by
-    refine (ENNReal.add_le_add_iff_left
-      (Cslib.Probability.PMF.toOuterMeasure_ne_top ν S)).mp ?_
-    rw [PMF.toOuterMeasure_apply, ← tsum_add]
-    simp_rw [hpt]
-    simpa only [PMF.toOuterMeasure_apply] using h S
-  rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
-  calc
-    ∑' a, μ a * (f a).toOuterMeasure event
-      ≤ ∑' a, (ν a * (f a).toOuterMeasure event + d a) := by
-        refine tsum_le_tsum fun a => ?_
-        by_cases ha : a ∈ S
-        · simp only [d, Set.indicator_of_mem ha]
-          calc
-            μ a * (f a).toOuterMeasure event
-              = (ν a + (μ a - ν a)) * (f a).toOuterMeasure event := by
-                rw [add_tsub_cancel_of_le ha]
-            _ = ν a * (f a).toOuterMeasure event +
-                  (μ a - ν a) * (f a).toOuterMeasure event := add_mul _ _ _
-            _ ≤ ν a * (f a).toOuterMeasure event + (μ a - ν a) := by
-                refine add_le_add le_rfl ?_
-                exact (mul_le_mul_of_nonneg_left
-                  (Cslib.Probability.PMF.toOuterMeasure_le_one (f a) event) zero_le).trans
-                  (mul_one _).le
-        · have hle : μ a ≤ ν a := le_of_not_ge ha
-          simp only [d, Set.indicator_of_notMem ha, add_zero]
-          exact mul_le_mul_of_nonneg_right hle zero_le
-    _ = ∑' a, ν a * (f a).toOuterMeasure event + ∑' a, d a := tsum_add
-    _ ≤ ∑' a, ν a * (f a).toOuterMeasure event + ε := add_le_add le_rfl hd_sum
-
-/-- Pointwise statistical closeness of continuations on `μ.support` is preserved across
-`PMF.bind`. -/
-theorem CloseTo.bind_right {α β : Type} (μ : PMF α) {f g : α → PMF β} {ε : ℝ≥0∞}
-    (h : ∀ a ∈ μ.support, CloseTo (f a) (g a) ε) :
-    CloseTo (μ.bind f) (μ.bind g) ε := fun event => by
-  rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
-  calc
-    ∑' a, μ a * (f a).toOuterMeasure event
-      ≤ ∑' a, μ a * ((g a).toOuterMeasure event + ε) := by
-        refine tsum_le_tsum fun a => ?_
-        by_cases ha : a ∈ μ.support
-        · exact mul_le_mul_of_nonneg_left (h a ha event) zero_le
-        · have hz : μ a = 0 := (PMF.apply_eq_zero_iff μ a).mpr ha
-          simp [hz]
-    _ = ∑' a, μ a * (g a).toOuterMeasure event + ε := by
-        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
-
-/-- Combining `CloseTo.bind_left` and `CloseTo.bind_right` adds the first-stage and continuation
-errors. -/
-theorem CloseTo.bind {α β : Type} {μ ν : PMF α} {f g : α → PMF β} {ε δ : ℝ≥0∞}
-    (h₁ : CloseTo μ ν ε) (h₂ : ∀ a ∈ ν.support, CloseTo (f a) (g a) δ) :
-    CloseTo (μ.bind f) (ν.bind g) (ε + δ) :=
-  (h₁.bind_left f).trans (CloseTo.bind_right ν h₂)
 
 /-! ### Completeness, soundness and knowledge soundness -/
 

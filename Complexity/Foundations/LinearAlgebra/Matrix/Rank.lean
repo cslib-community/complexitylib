@@ -30,6 +30,7 @@ matrix of rank `r` factors through `r`-dimensional space (`Matrix.exists_eq_mul_
 * `Matrix.rank_smul_le`: scaling does not increase rank.
 * `Matrix.natCast_rank_eq_rank_toLin'`: the natural matrix rank agrees with linear-map rank.
 * `Matrix.exists_eq_mul_rank`: rank factorization `A = C * D` through `Fin A.rank`.
+* `Matrix.rank_eq_zero_iff`: only the zero matrix has rank zero.
 
 ## References
 
@@ -94,5 +95,14 @@ theorem natCast_rank_eq_rank_toLin' [DecidableEq n] (M : Matrix m n K) :
     (M.rank : Cardinal) = M.toLin'.rank := by
   rw [Matrix.rank, Matrix.toLin'_apply']
   exact Module.finrank_eq_rank _ _
+
+/-- A matrix over a field has rank zero exactly when it is zero. -/
+theorem rank_eq_zero_iff {C : Matrix m n K} : C.rank = 0 ↔ C = 0 := by
+  classical
+  refine ⟨fun h => ?_, fun h => h ▸ rank_zero⟩
+  rw [Matrix.rank, Submodule.finrank_eq_zero, LinearMap.range_eq_bot] at h
+  ext i j
+  have := congrFun (LinearMap.congr_fun h (Pi.single j 1)) i
+  rwa [mulVecLin_apply, mulVec_single_one, col_apply] at this
 
 end Matrix

@@ -171,9 +171,7 @@ theorem valid_insert_iff_of_le {U V n_max : ℕ} (hU : U ≤ n_max) (s : State U
   by_cases hu : (s u).isSome
   · exact Or.inr hu
   · refine Or.inl ?_
-    have hnot : u ∉ dom s := by
-      rw [Dictionary.mem_dom_iff_isSome]
-      exact hu
+    have hnot : u ∉ dom s := by grind [Dictionary.mem_dom_iff_isSome]
     have hcard : (dom s).card + 1 = (insert u (dom s)).card :=
       (Finset.card_insert_of_notMem hnot).symm
     have hle : (insert u (dom s)).card ≤ U := by

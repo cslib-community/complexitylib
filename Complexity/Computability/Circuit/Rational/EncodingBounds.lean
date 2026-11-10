@@ -116,8 +116,7 @@ private lemma determinant_pow_bound {d b : ℕ} (A : Matrix (Fin d) (Fin d) ℤ)
   have hn : |A.det| ≤ (2 : ℤ) ^ (d * d + d * b) := by
     calc |A.det| ≤ (d.factorial : ℤ) * ((2 : ℤ) ^ b) ^ d := by
            simpa only [AbsoluteValue.abs_apply, nsmul_eq_mul, Fintype.card_fin] using hb
-         _ ≤ ((2 : ℤ) ^ d) ^ d * ((2 : ℤ) ^ b) ^ d :=
-           mul_le_mul_of_nonneg_right hfc (by positivity)
+         _ ≤ ((2 : ℤ) ^ d) ^ d * ((2 : ℤ) ^ b) ^ d := by gcongr
          _ = _ := by rw [← pow_mul, ← pow_mul, ← pow_add]; congr 1; ring
   apply hn.trans_lt
   rw [pow_succ]
@@ -225,8 +224,7 @@ theorem logarithmic_bound (n s : ℕ) :
          _ ≤ _ := lift_power _ _ _ _ hm (by omega)
   have h₃ : 3 * Parameters.ambientDimension n s * Parameters.gridSize n s ≤
       (3 * 16 * 49153) * m ^ 22 := by
-    calc _ ≤ (3 * (16 * m ^ 5)) * (49153 * m ^ 17) :=
-           Nat.mul_le_mul (Nat.mul_le_mul_left 3 hM) hH
+    calc _ ≤ (3 * (16 * m ^ 5)) * (49153 * m ^ 17) := by gcongr
          _ = (48 * m ^ 5) * (49153 * m ^ 17) := by rw [← Nat.mul_assoc 3 16]
          _ = _ := mul_monomials 48 49153 m 5 17
   unfold logarithmic logConstant

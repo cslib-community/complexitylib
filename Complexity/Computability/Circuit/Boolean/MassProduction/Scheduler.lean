@@ -163,8 +163,7 @@ private theorem total_le {D L b s P F : ℕ} (hb : b ≤ L)
   have hD : D + 1 ≤ V := by lia
   have hP' : P ≤ 262144 * n * (s + 1) * V ^ 5 :=
     calc P ≤ (D + 1) * (16384 * n * (s + 1) * (D + L + b + 2) ^ 4) := hP
-      _ ≤ V * (16384 * n * (s + 1) * (2 * V) ^ 4) :=
-          Nat.mul_le_mul hD (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hW 4))
+      _ ≤ V * (16384 * n * (s + 1) * (2 * V) ^ 4) := by gcongr
       _ = 262144 * n * (s + 1) * V ^ 5 := by ring
   have hwidth : 2 * D + 2 * Scheduler.width D L s + 1 ≤ 6 * ((s + 1) * V) := by
     have : s * L ≤ s * V := Nat.mul_le_mul_left _ (by lia)
@@ -173,8 +172,7 @@ private theorem total_le {D L b s P F : ℕ} (hb : b ≤ L)
     lia
   have hF' : F ≤ 6 * n * (s + 1) * V ^ 5 :=
     calc F ≤ (D + 1) ^ 2 * n * (2 * D + 2 * Scheduler.width D L s + 1) := hF
-      _ ≤ V ^ 2 * n * (6 * ((s + 1) * V)) :=
-          Nat.mul_le_mul (Nat.mul_le_mul_right _ (Nat.pow_le_pow_left hD 2)) hwidth
+      _ ≤ V ^ 2 * n * (6 * ((s + 1) * V)) := by gcongr
       _ = 6 * n * (s + 1) * V ^ 3 := by ring
       _ ≤ 6 * n * (s + 1) * V ^ 5 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hV1 (by decide))
   have h2 : 2 ≤ 2 * n * (s + 1) * V ^ 5 := by

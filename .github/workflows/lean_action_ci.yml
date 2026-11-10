@@ -49,6 +49,11 @@ jobs:
           go vet ./...
           go test -run='^$' -fuzz=FuzzMapping -fuzztime=10s -parallel=2
           go build -o "$RUNNER_TEMP/cache-origin" .
+      - name: Test dashboard snapshots and frontend
+        run: |
+          python3 -B -m unittest discover -s scripts -p 'test_cache_dashboard.py'
+          node --check tools/cache-origin/dashboard/app.js
+          node scripts/test_cache_dashboard_frontend.cjs
       - name: Install nginx for loopback integration tests
         run: |
           sudo apt-get update
@@ -89,6 +94,25 @@ jobs:
         run: python3 -B scripts/check_operator_manual.py
       - name: "Source hygiene"
         run: python3 -B scripts/check_hygiene.py --check-simp
+      # A compound encoding that three or more public statements of a module spell out needs a
+      # name (#1656). The existing ones are counted per module in
+      # scripts/encoding_readability_baseline.json, which only falls. Pull requests enforce it in
+      # the modules they change, against the first parent of the merge commit as in the
+      # changed-file lints below; merge groups and pushes only report, so that queued PRs written
+      # before an entry was lowered are not ejected. Sources only: no Lean.
+      - name: "Encoding readability ratchet (changed modules)"
+        if: github.event_name == 'pull_request'
+        env:
+          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -e
+          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
+          BASE=${BASE:-$RECORDED_BASE}
+          git fetch --no-tags --depth=1 origin "$BASE"
+          python3 -B scripts/check_encoding_readability.py --base "$BASE"
+      - name: "Encoding readability report"
+        if: github.event_name != 'pull_request'
+        run: python3 -B scripts/check_encoding_readability.py --report
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
       # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
       # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates
@@ -99,8 +123,7 @@ jobs:
       - name: Reclaim unused hosted-runner SDK space
         continue-on-error: true
         run: scripts/ci/prepare-runner.sh
-      # lean-action has no hook between installing the toolchain and building, so here it only
-      # installs elan. The steps around it do the rest of what it did, with bounded cache retries:
+      # The steps below do what lean-action did, with bounded cache retries: install the toolchain,
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.
       - name: Restore .lake from the Actions cache
         id: lake-cache
@@ -110,17 +133,10 @@ jobs:
           path: ./.lake
           key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
           restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
-      # Restore the toolchain from the Actions cache, or install it with retries, so that
-      # lean-action does not download it (.github/actions/install-lean, #1426).
+      # Restore elan and the toolchain from the Actions cache, or install them with retries
+      # (.github/actions/install-lean, #1426). lean-action is not used: with every feature off it
+      # only reinstalled elan from GitHub releases, without retries, so a release outage failed CI.
       - uses: ./.github/actions/install-lean
-      - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1.7.0
-        with:
-          auto-config: "false"
-          build: "false"
-          test: "false"
-          lint: "false"
-          use-github-cache: "false"
-          use-mathlib-cache: "false"
       - name: Restore Mathlib cache with retries
         if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
         continue-on-error: true
@@ -175,7 +191,7 @@ jobs:
           vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true' &&
           steps.handoff-measurement-result.outputs.bypass_restore != 'true'
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 10
         env:
           GH_TOKEN: ${{ github.token }}
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
@@ -299,14 +315,14 @@ jobs:
           github.event_name == 'merge_group' &&
           vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 10
         env:
           DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py pack --output "$RUNNER_TEMP/lean-handoff"
       - name: Upload merge-group build outputs
         if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 10
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.cache-handoff.outputs.artifact-name }}

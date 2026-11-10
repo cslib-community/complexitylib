@@ -14,10 +14,9 @@ public import Mathlib.LinearAlgebra.Span.Defs
 public import Mathlib.Algebra.Algebra.Operations
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.RingTheory.MvPolynomial.Basic
+import Complexity.Foundations.Data.Nat.Choose.Sum
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Data.Fintype.Powerset
-import Mathlib.Data.Nat.Choose.Bounds
-import Mathlib.Tactic.Linarith
 
 /-!
 # Low-degree functions on the Boolean cube
@@ -267,18 +266,6 @@ theorem finrank_lowDegree_le [StrongRankCondition R] (D : ℕ) :
     simp]
   exact (finrank_span_finset_le_card _).trans card_image_le
 
-/-- `∑_{i ≤ D} n ^ i ≤ (n + 1) ^ D`. -/
-private theorem sum_range_pow_le_add_one_pow (n D : ℕ) :
-    ∑ i ∈ range (D + 1), n ^ i ≤ (n + 1) ^ D := by
-  induction D with
-  | zero => simp
-  | succ D ih =>
-    rw [sum_range_succ, pow_succ (n + 1) D]
-    have h : n ^ (D + 1) ≤ (n + 1) ^ D * n := by
-      rw [pow_succ]
-      exact Nat.mul_le_mul_right n (Nat.pow_le_pow_left (Nat.le_succ n) D)
-    linarith [mul_add ((n + 1) ^ D) n 1]
-
 /-- There are at most `(n + 1) ^ D` sets of at most `D` of the `n` coordinates. -/
 theorem card_filter_card_le_le_pow (D : ℕ) :
     #{S : Finset ι | #S ≤ D} ≤ (Fintype.card ι + 1) ^ D := by
@@ -297,7 +284,7 @@ theorem card_filter_card_le_le_pow (D : ℕ) :
     · exact fun h => h.2
     · exact fun h => ⟨h ▸ Nat.le_of_lt_succ (mem_range.1 hi), h⟩
   rw [hfib, sum_congr rfl hchoose]
-  exact (sum_le_sum fun i _ => Nat.choose_le_pow _ i).trans (sum_range_pow_le_add_one_pow _ D)
+  exact Cslib.sum_range_choose_le_add_one_pow _ D
 
 /-- The empty set has at most `D` coordinates, so there is at least one such set. -/
 theorem card_filter_card_le_pos (D : ℕ) : 0 < #{S : Finset ι | #S ≤ D} :=

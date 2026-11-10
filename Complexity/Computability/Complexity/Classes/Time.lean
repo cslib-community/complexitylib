@@ -371,12 +371,6 @@ theorem mem_NP_iff_exists_mem_NTIME {α : Type} {enc : α ↪ List Bool} {A : Se
 open Cslib.Probability
 open scoped ENNReal
 
-/-- An injective map keeps the probability of the image of a value. -/
-private theorem map_apply_of_injective {β γ : Type} {p : PMF β} {f : β → γ}
-    (hf : Function.Injective f) (b : β) : p.map f (f b) = p b := by
-  rw [PMF.map_apply, tsum_eq_single b fun x hx => ite_eq_right fun h => hx (hf h).symm,
-    ite_eq_left rfl]
-
 /-- The right answer of a bounded-error verifier, on at least two thirds of the random strings. -/
 private theorem DecidesWithBoundedError.two_mul_le {α : Type} {enc : α ↪ List Bool}
     {p : Polynomial ℕ} {V : α × List Bool → Bool} {A : Set α}
@@ -407,7 +401,7 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
       MultiTapePTM.DecidesWithBoundedErrorInTime.mono (t := fun a => c * ((enc a).length + 1) ^ d)
         (fun a => ⟨hhalt (enc a), ?_⟩) fun a => Nat.mul_add_one_pow_le_two_pow c d _⟩
     rw [← heval a, show [MultiTapeTM.indicator A a] = encBool (MultiTapeTM.indicator A a) from rfl,
-      map_apply_of_injective encBool.injective]
+      Probability.PMF.map_apply_of_injective _ encBool.injective]
     simp only [program, ProbComp.eval_map, BitString.eval_sampleList]
     rw [BitString.uniformList_map_apply]
     exact ENNReal.two_div_three_le_natCast_div_two_pow_iff.mpr (hA.two_mul_le a)

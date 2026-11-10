@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Interactive.Security
 public import Complexity.Languages.Probabilistic.QueryCount
+public import Complexity.Probability.StatisticalDistance.CloseTo
 
 /-!
 # Statistical error under stateful oracle replacement
@@ -31,7 +32,7 @@ public section
 
 namespace Cslib.OracleComp.IsCostBounded
 
-open Interactive
+open Interactive Probability
 open scoped ENNReal
 
 /-- Pointwise replacement of joint reply/state laws accumulates error according to the existing

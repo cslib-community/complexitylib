@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Encryption.Hybrid.CCA
 public import Complexity.Crypto.Computational.Encryption.Authenticated
+public import Complexity.Crypto.Encoding
 import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Probability.PMF.Bind
 import Complexity.Computability.Probabilistic.Oracle.Substitution
@@ -340,7 +341,7 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
 theorem isOraclePPTOn_hybridDEMHandler (E : SymmetricCipher)
     {decaps : ℕ → List Bool → List Bool → Option (List Bool)}
     (hdecaps : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
-      decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      decaps p.1 p.2.1 p.2.2) (encKeyedInput encBits) (encOption encBits))
     {decBound : ℕ → List Bool → ℕ}
     (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
       (encPair encUnary encBits) encUnary)
@@ -368,7 +369,7 @@ theorem isOraclePPTOn_hybridDEMHandler (E : SymmetricCipher)
 private theorem isOraclePPTOn_hybridDEMInterpret (E : SymmetricCipher)
     {decaps : ℕ → List Bool → List Bool → Option (List Bool)}
     (hdecaps : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
-      decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      decaps p.1 p.2.1 p.2.2) (encKeyedInput encBits) (encOption encBits))
     {decBound : ℕ → List Bool → ℕ}
     (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
       (encPair encUnary encBits) encUnary)
@@ -413,7 +414,7 @@ are read only up to the supplied unary-computable limits. -/
 theorem isOraclePPTOn_hybridDEMContinuation (E : SymmetricCipher)
     {decaps : ℕ → List Bool → List Bool → Option (List Bool)}
     (hdecaps : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
-      decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      decaps p.1 p.2.1 p.2.2) (encKeyedInput encBits) (encOption encBits))
     {ctBound : ℕ → ℕ} (hctBound : ComputableInPolyTime ctBound encUnary encUnary)
     {decBound : ℕ → List Bool → ℕ}
     (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
@@ -464,7 +465,7 @@ theorem isOraclePPT_hybridToOneTimeCCAAdversary (E : SymmetricCipher)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
     (hdecaps : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
-      decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      decaps p.1 p.2.1 p.2.2) (encKeyedInput encBits) (encOption encBits))
     {ctBound : ℕ → ℕ} (hctBound : ComputableInPolyTime ctBound encUnary encUnary)
     {decBound : ℕ → List Bool → ℕ}
     (hdecBound : ComputableInPolyTime (fun p : ℕ × List Bool => decBound p.1 p.2)
@@ -499,7 +500,7 @@ theorem isPPTOn_hybridDEMGame (E : SymmetricCipher)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
     (hdecaps : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
-      decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      decaps p.1 p.2.1 p.2.2) (encKeyedInput encBits) (encOption encBits))
     {adversary : WordCCA2Adversary} (hA : adversary.IsPPT) (bit : Bool) :
     IsPPTOn encUnary encBool (hybridDEMGame E keyGen encaps decaps adversary bit) := by
   obtain ⟨ctBound, hctPoly, hct⟩ := E.exists_ciphertext_length_bound_of_length_eq
@@ -522,7 +523,7 @@ theorem _root_.Cslib.Crypto.SymmetricCipher.OneTimeINDCCA.indistinguishable_hybr
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
     (hdecaps : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool =>
-      decaps p.1 p.2.1 p.2.2) (encPair encUnary (encPair encBits encBits)) (encOption encBits)) :
+      decaps p.1 p.2.1 p.2.2) (encKeyedInput encBits) (encOption encBits)) :
     Game.Indistinguishable
       (fun A n => ProbComp.eval (hybridDEMGame E keyGen encaps decaps A false n))
       (fun A n => ProbComp.eval (hybridDEMGame E keyGen encaps decaps A true n))

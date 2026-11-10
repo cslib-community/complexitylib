@@ -69,7 +69,7 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLo
 challenges, a strict-PPT honest conversation at security parameter `5` is within statistical
 distance `2 / 32` of a strict-PPT simulated conversation on `Nat.bits 8`. -/
 example :
-    Interactive.CloseTo
+    CloseTo
       (ProbComp.eval (schnorrGroups.schnorrRealTranscript 5 d23 (3 : ℕ) 3))
       (ProbComp.eval (schnorrGroups.schnorrSimulatedTranscript 5 d23 (Nat.bits 8) 3))
       (2 / 2 ^ 5 : ℝ≥0) := by
@@ -87,7 +87,7 @@ example :
 the strict-PPT honest and simulated transcript lists at security parameter `5` are within
 statistical distance `20 / 32`. -/
 example :
-    Interactive.CloseTo
+    CloseTo
       (ProbComp.eval (OracleComp.replicate 10
         (schnorrGroups.schnorrRealTranscript 5 d23 (3 : ℕ) 3)))
       (ProbComp.eval (OracleComp.replicate 10

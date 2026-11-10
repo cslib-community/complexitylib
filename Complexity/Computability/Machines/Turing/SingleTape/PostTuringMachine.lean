@@ -102,6 +102,20 @@ lemma step_some (tm : SingleTapeTM Symbol) (q : tm.State) (t : BiTape Symbol) :
         (t.write (tm.tr q t.head).1.symbol).optionMove (tm.tr q t.head).1.movement⟩ := by
   simp only [step]
 
+/-- Convert an optional `Turing.Dir` to a `SignType` head movement. -/
+def dirToSign : Option _root_.Turing.Dir → SignType
+  | none => .zero
+  | some .left => .neg
+  | some .right => .pos
+
+omit [Inhabited Symbol] [Fintype Symbol] in
+lemma biTape_step_dirToSign (t : BiTape Symbol) (wr : Option Symbol)
+    (dir : Option _root_.Turing.Dir) :
+    t.step (some wr, dirToSign dir) = (t.write wr).optionMove dir := by
+  cases dir with
+  | none => rfl
+  | some d => cases d <;> rfl
+
 /-- `tm.Outputs l l'` holds if and only if `StateTransition.eval tm.step (tm.initCfg l)`
 evaluates to `tm.haltCfg l'`. -/
 theorem outputs_iff_mem_eval (tm : SingleTapeTM Symbol) (l l' : List Symbol) :

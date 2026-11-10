@@ -191,7 +191,8 @@ theorem exists_clientRun_of_mem_support {p : D.toSpec.Client α} {s s' : D.toSpe
     exact ⟨_, .liftBind o k r hv_o hstep htr⟩
 
 /-- The expected total charge of a client run from `s`, where a call `o` from state `s` costs
-`charge s o`. -/
+`charge s o`. `Cslib.OracleComp.expectedCost` is the stateless counterpart, for calls answered by
+fixed distributions. -/
 noncomputable def expectedCost (charge : D.State → D.Op → ℕ) :
     OracleComp D.Result α → D.State → ℝ≥0∞
   | .pure _, _ => 0

@@ -72,6 +72,7 @@ GROUPS = [
     ("Cook-Levin", "Computability/Complexity/CookLevin/"),
     ("Complexity classes and reductions", "Computability/Complexity/"),
     ("PCP", "Computability/PCP/"),
+    ("Logspace derandomization", "Computability/LogSpaceDerandomization/"),
     ("Boolean analysis", "Foundations/BooleanAnalysis/"),
     ("Expanders", "Foundations/Combinatorics/Expander/"),
     ("Linear algebra", "Foundations/LinearAlgebra/"),

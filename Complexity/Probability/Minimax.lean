@@ -53,7 +53,8 @@ functions (`PMF`), whose supports may be infinite. On a finite type the two corr
 
 * `Convexity.StdSimplex.exists_mem_support_le_sum_mul`,
   `Cslib.Probability.PMF.exists_mem_support_le_tsum_mul`: some outcome is at most the mean.
-* `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le`,
+* `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul`,
+  `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le`,
   `Cslib.Probability.PMF.exists_mem_support_toOuterMeasure_le`: the averaging argument.
 * `Convexity.StdSimplex.exists_forall_sum_le_of_forall_exists_sum_le`,
   `Cslib.Probability.PMF.exists_forall_sum_mul_le`: the minimax theorem for finite games.
@@ -201,6 +202,18 @@ theorem exists_mem_support_le_tsum_mul (μ : PMF α) (g : α → ℝ≥0∞) :
   rw [ENNReal.tsum_mul_right, μ.tsum_coe, one_mul] at this
   exact lt_irrefl _ this
 
+/-- **The averaging argument**, the easy direction of Yao's principle: for any strategy
+distribution `μ`, input distribution `ν`, and `[0, ∞]`-valued loss `loss`, some strategy in the
+support of `μ` has `ν`-expected loss at most the `ν`-expectation of the `μ`-expected loss. The
+sample spaces may be infinite. -/
+theorem exists_mem_support_tsum_mul_le_tsum_mul (μ : PMF α) (ν : PMF β) (loss : α → β → ℝ≥0∞) :
+    ∃ a ∈ μ.support, ∑' b, ν b * loss a b ≤ ∑' b, ν b * ∑' a, μ a * loss a b := by
+  obtain ⟨a, ha, hle⟩ := exists_mem_support_le_tsum_mul μ fun a => ∑' b, ν b * loss a b
+  refine ⟨a, ha, hle.trans (le_of_eq ?_)⟩
+  simp only [← ENNReal.tsum_mul_left]
+  rw [tsum_comm]
+  exact tsum_congr fun b => tsum_congr fun a => by ring
+
 /-- **The averaging argument**, the easy direction of Yao's principle. Let `loss a b` be the loss
 of a strategy `a` on an input `b`. If drawing the strategy from `μ` has expected loss at most `ε` on
 every input that `ν` can produce, then some strategy that `μ` can produce has expected loss at most
@@ -208,20 +221,14 @@ every input that `ν` can produce, then some strategy that `μ` can produce has 
 theorem exists_mem_support_tsum_mul_le (μ : PMF α) (ν : PMF β) (loss : α → β → ℝ≥0∞)
     {ε : ℝ≥0∞} (h : ∀ b ∈ ν.support, ∑' a, μ a * loss a b ≤ ε) :
     ∃ a ∈ μ.support, ∑' b, ν b * loss a b ≤ ε := by
-  obtain ⟨a, ha, hle⟩ := exists_mem_support_le_tsum_mul μ fun a => ∑' b, ν b * loss a b
-  refine ⟨a, ha, hle.trans ?_⟩
-  calc ∑' a, μ a * ∑' b, ν b * loss a b
-      = ∑' b, ν b * ∑' a, μ a * loss a b := by
-        simp only [← ENNReal.tsum_mul_left]
-        rw [tsum_comm]
-        exact tsum_congr fun b => tsum_congr fun a => by ring
-    _ ≤ ∑' b, ν b * ε := by
-        refine tsum_le_tsum fun b => ?_
-        by_cases hb : b ∈ ν.support
-        · gcongr
-          exact h b hb
-        · simp [(PMF.apply_eq_zero_iff ν b).mpr hb]
-    _ = ε := by rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
+  obtain ⟨a, ha, hle⟩ := exists_mem_support_tsum_mul_le_tsum_mul μ ν loss
+  refine ⟨a, ha, hle.trans ((tsum_le_tsum (g := fun b => ν b * ε) fun b => ?_).trans ?_)⟩
+  · by_cases hb : b ∈ ν.support
+    · dsimp
+      gcongr
+      exact h b hb
+    · simp [(PMF.apply_eq_zero_iff ν b).mpr hb]
+  · rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
 
 /-- The probability of an event as the mean of its indicator. -/
 private theorem toOuterMeasure_eq_tsum_mul_ite {γ : Type*} (π : PMF γ) (s : Set γ)

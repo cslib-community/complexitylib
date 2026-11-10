@@ -108,7 +108,7 @@ noncomputable def signingRun (answer : Query → StateT Cache PMF Digest) := do
   return (A, out)
 
 /-- The actual averaged two-attempt laws have a nontrivial bound, including full caches. -/
-example : Interactive.CloseTo (signingRun (oracle Digest)) (signingRun program) (1 / 10) := by
+example : CloseTo (signingRun (oracle Digest)) (signingRun program) (1 / 10) := by
   have h := (closeTo_lyubashevskySign_program 1 8 1 17 3 1 2 0 (by decide)
     (fun _ => PMF.pure ()) (fun _ => 0) (fun _ _ => 0) (fun _ => ()) (fun _ => [])
     (by intro A h hh; simp)).map (fun out => (out.1, out.2.2))

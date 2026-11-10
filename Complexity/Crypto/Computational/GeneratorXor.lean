@@ -112,8 +112,7 @@ theorem generate_distribution (count seedBits outputBits : ℕ)
         (fun seeds => List.ofFn (∑ i : Fin count,
           ofList outputBits (generator i.val (List.ofFn (seeds i))))) := by
   rw [← uniformList_blocks count seedBits, PMF.map_comp]
-  congr 1
-  funext seed
+  congr 1 with seed : 1
   exact generate_eq_sum ..
 
 /-- A real challenge can replace the chosen candidate's output because its seed is independent
@@ -133,10 +132,8 @@ theorem real_distribution (count seedBits outputBits : ℕ) (generator : ℕ →
     (PMF.uniformOfFintype_update (γ := BitString seedBits) i)
   simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at h
   refine Eq.trans ?_ h
-  congr 1
-  funext fresh
-  congr 1
-  funext seeds
+  congr 1 with fresh : 1
+  congr 1 with seeds : 1
   apply congrArg List.ofFn
   apply Finset.sum_congr rfl
   intro j _
@@ -157,14 +154,12 @@ theorem ideal_distribution (count seedBits outputBits : ℕ) (generator : ℕ �
   calc
     _ = (PMF.uniformOfFintype (Fin count → BitString seedBits)).bind
         (fun _ => (PMF.uniformOfFintype (BitString outputBits)).map List.ofFn) := by
-      congr 1
-      funext seeds
+      congr 1 with seeds : 1
       have h := congrArg (PMF.map List.ofFn) (PMF.uniformOfFintype_map_sum_update
         (fun j : Fin count => ofList outputBits (generator j.val (List.ofFn (seeds j)))) i)
       simp only [PMF.map_comp, Function.comp_def] at h
       refine Eq.trans ?_ h
-      congr 1
-      funext challenge
+      congr 1 with challenge : 1
       apply congrArg (PMF.pure ∘ List.ofFn)
       apply Finset.sum_congr rfl
       intro j _

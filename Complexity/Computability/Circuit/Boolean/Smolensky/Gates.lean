@@ -227,8 +227,7 @@ theorem card_orApprox_wrong_mul_le (u : Fin m → Bool) :
       simp only [Z, mem_filter, mem_univ, true_and]
       by_contra hj
       exact hT (orApprox_bitVal_of_exists T u ⟨j, hj⟩)
-    calc _ ≤ #(Fintype.piFinset fun _ : Fin ℓ => Z) * 2 ^ ℓ :=
-          Nat.mul_le_mul_right _ (card_le_card hsub)
+    calc _ ≤ #(Fintype.piFinset fun _ : Fin ℓ => Z) * 2 ^ ℓ := by gcongr
       _ = (2 * #Z) ^ ℓ := by
           rw [Fintype.card_piFinset, prod_const, card_univ, Fintype.card_fin, mul_pow, mul_comm]
       _ ≤ (2 ^ m) ^ ℓ := by

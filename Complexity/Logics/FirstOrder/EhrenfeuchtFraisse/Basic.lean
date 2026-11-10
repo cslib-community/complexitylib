@@ -315,6 +315,19 @@ theorem DuplicatorWins.realize_iff [L.IsRelational] {n k : ℕ} {a : Fin k → M
       obtain ⟨d, hd⟩ := h.forth c
       exact (ih hd (by omega)).2 (hB d)
 
+/-- A bounded formula `φ` with `k` bound variables and no free variables, turned into a formula
+with free variables `Fin k` by `BoundedFormula.toFormula` and relabeling, holds of `a` exactly when
+`φ` holds with bound variables `a`. With `quantifierRank_formula_relabel` and
+`quantifierRank_toFormula`, it moves rank-bounded statements from `L.BoundedFormula Empty k` to
+`L.Formula (Fin k)`. -/
+theorem realize_toFormula_relabel {P : Type*} [L.Structure P] {k : ℕ}
+    (φ : L.BoundedFormula Empty k) (a : Fin k → P) :
+    (φ.toFormula.relabel (Sum.elim Empty.elim id : Empty ⊕ Fin k → Fin k)).Realize a ↔
+      φ.Realize default a := by
+  rw [Formula.realize_relabel, BoundedFormula.realize_toFormula,
+    Subsingleton.elim ((a ∘ Sum.elim Empty.elim id) ∘ Sum.inl) default]
+  rfl
+
 /-- **Ehrenfeucht–Fraïssé, easy direction, for formulas with free variables.** For a relational
 language, a winning position `(a, b)` of the `n`-round game satisfies the same formulas
 `φ : L.Formula (Fin k)` of quantifier rank at most `n`, the free variables naming the pebbles. -/

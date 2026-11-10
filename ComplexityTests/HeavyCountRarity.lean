@@ -3,9 +3,9 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
-import Complexity.Foundations.Probability.HeavyCount
-import Complexity.Foundations.Probability.HeavyCountRarity
-import Complexity.Probability.PairwiseIndependentHash.HeavyCount
+import Complexity.Computability.LogSpaceDerandomization.HeavyCount
+import Complexity.Computability.LogSpaceDerandomization.HeavyCountRarity
+import Complexity.Computability.LogSpaceDerandomization.PairwiseIndependentHash.HeavyCount
 import Mathlib.Tactic.NormNum
 
 /-!

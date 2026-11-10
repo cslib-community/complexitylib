@@ -71,7 +71,6 @@ namespace Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
 open Finset Cslib Cslib.BitString Cslib.CommonCountingAccum Cslib.Complexity Cslib.GenericRAM
 open Cslib.LinearAlgebra Turing.MultiTapeTM ComputableInPolyTime
 
-local notation "encSys" => encList (encList (encList encNat))
 local notation "PolyT" => ComputableInPolyTime
 local notation "Cert" => NativeCertificate
 
@@ -136,7 +135,8 @@ private theorem step_prefactor_le {rQ Q r S M G L : ℕ} (hrQ : rQ ≤ L) (hQ : 
 /-- Core subexponential step-count bound for Proposition 5.3: under `checkBranchFeasible`,
 polylogarithmic `(b, w)` bounds, linear equation count `sys'.length ≤ C_inc * n'`, and degree
 `sysMaxDegree sys' ≤ k_deg`, any parametric loop-product bound is dominated above
-`max 16384 (2 ^ C_inc)` by a fixed polynomial in `(encPair encUnary encSys (n', sys')).length`
+`max 16384 (2 ^ C_inc)` by a fixed polynomial in
+`(encPair encUnary encSparseSystem (n', sys')).length`
 times `2 ^ (A_br * interpolationScale n')`. -/
 private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p : ℕ}
     {T : ℕ × List (List (List ℕ)) → ℕ}
@@ -150,7 +150,7 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
         d_max ≤ 2 * n' / r ∧ T (n', sys') ≤ ((r ^ Q + 1) + (Q + 1) *
           (SubsetPairFold.subsetPairCount n' q + 1) * ((2 * r ^ (2 * Q) + 1) ^ c_meas + 1) *
             (r * (2 ^ d_max + 1) + 1)) *
-          (C_p * ((encPair encUnary encSys (n', sys')).length + 1) ^ d_p)) :
+          (C_p * ((encPair encUnary encSparseSystem (n', sys')).length + 1) ^ d_p)) :
     let c_deg := k_deg * (C_inc + 2); let A_br := 65792 * (c_deg + 4) * (β + 4)
     ∀ n' : ℕ, ∀ sys' : List (List (List ℕ)),
       checkBranchFeasible N₀_branch (n', sys') = true → max 16384 (2 ^ C_inc) ≤ n' →
@@ -158,7 +158,8 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
       branchMaxFactorIncidence n' sys' ≤ C_inc * Nat.clog 2 n' ^ β →
       branchMaxFactorWidth n' sys' ≤ C_inc * Nat.clog 2 n' ^ β →
       (T (n', sys') : ℝ) ≤
-        ((64 * C_p : ℕ) : ℝ) * ((encPair encUnary encSys (n', sys')).length + 1 : ℝ) ^ (d_p + 3) *
+        ((64 * C_p : ℕ) : ℝ) *
+            ((encPair encUnary encSparseSystem (n', sys')).length + 1 : ℝ) ^ (d_p + 3) *
           (2 : ℝ) ^ ((A_br : ℝ) * interpolationScale n') := by
   intro c_deg A_br n' sys' hfeas hn' hdeg hlen hb hw
   have hn16384 : 16384 ≤ n' := (le_max_left _ _).trans hn'
@@ -181,8 +182,8 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
       simpa only [pow_one] using Nat.pow_le_pow_right (by omega) (by decide : 1 ≤ 2)
     exact (one_mul r).symm.le.trans ((Nat.mul_le_mul (by omega) hr_sq).trans hvar_bal)
   have hrQ_le_n : r ^ Q ≤ n' := numGroups_pow_numNodes_le_self (by omega) (by omega)
-  have hn_le_enc : n' ≤ (encPair encUnary encSys (n', sys')).length := by enc_len
-  generalize hL_eq : (encPair encUnary encSys (n', sys')).length = L at hn_le_enc hT_le ⊢
+  have hn_le_enc : n' ≤ (encPair encUnary encSparseSystem (n', sys')).length := by enc_len
+  generalize hL_eq : (encPair encUnary encSparseSystem (n', sys')).length = L at hn_le_enc hT_le ⊢
   set S_sp := Cslib.subsetPairCount n' q; set D := ReplacementParams.auxDim n'
   have hS_eq : SubsetPairFold.subsetPairCount n' q = S_sp := SubsetPairFold.subsetPairCount_eq n' q
   have hS_pos : 1 ≤ S_sp := hS_eq ▸ SubsetPairFold.subsetPairCount_pos n' q
@@ -248,8 +249,7 @@ private theorem parametric_branch_step_bound {N₀_branch k_deg β C_inc C_p d_p
               ((by norm_num : (2 : ℝ) * (2 - 1) ≤ 2).trans h2le_cdeg)
           calc Real.log 2 * (2 * (n' : ℝ) / r)
               = (2 * Real.log 2) * ((n' : ℝ) * (1 / (r : ℝ))) := by ring
-            _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) * (1 / (r : ℝ))) :=
-                mul_le_mul_of_nonneg_right h2le (by positivity)
+            _ ≤ ((c_deg : ℝ) + 4) * ((n' : ℝ) * (1 / (r : ℝ))) := by gcongr
             _ = ((c_deg : ℝ) + 4) * (n' : ℝ) * (1 / (r : ℝ)) := by ring
   have hE_exp : (E_nat : ℝ) ≤
       Real.exp (((c_deg : ℝ) + 4) * (n' : ℝ) * ReplacementParams.rowCost β' n') := by
@@ -835,7 +835,7 @@ private def branchAugScopes (inp : BranchEvalInput) : List (List ℕ) :=
 private theorem computableInPolyTime_branchClamped :
     PolyT BranchEvalInput.numVars encBranchEvalInput encUnary ∧
     PolyT BranchEvalInput.maxDegree encBranchEvalInput encUnary ∧
-    PolyT BranchEvalInput.equations encBranchEvalInput encSys ∧
+    PolyT BranchEvalInput.equations encBranchEvalInput encSparseSystem ∧
     PolyT branchQ_u encBranchEvalInput encUnary ∧
     PolyT branchR_u encBranchEvalInput encUnary ∧
     PolyT branchr_u encBranchEvalInput encUnary ∧
@@ -1270,7 +1270,7 @@ public theorem exists_boundedIncidenceBranchCertificate_time_bound
         branchMaxFactorIncidence n' sys' ≤ C_inc * Nat.clog 2 n' ^ β →
         branchMaxFactorWidth n' sys' ≤ C_inc * Nat.clog 2 n' ^ β →
         (boundedIncidenceBranchCertificate.time (prepareBranchEvalInput (n', sys')) : ℝ) ≤
-          (C_br : ℝ) * ((encPair encUnary encSys (n', sys')).length + 1 : ℝ) ^ d_br *
+          (C_br : ℝ) * ((encPair encUnary encSparseSystem (n', sys')).length + 1 : ℝ) ^ d_br *
             (2 : ℝ) ^ ((A_br : ℝ) * interpolationScale n') := by
   obtain ⟨P, hP_pb, htime⟩ := exists_boundedIncidenceBranch_cert.choose_spec.2
   obtain ⟨C_p, d_p, hCp⟩ :=

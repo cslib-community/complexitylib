@@ -3,8 +3,8 @@ Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
-import Complexity.Foundations.Probability.StochasticAtom
-import Complexity.Probability.PairwiseIndependentHash.DetectorChannels
+import Complexity.Computability.LogSpaceDerandomization.StochasticAtom
+import Complexity.Computability.LogSpaceDerandomization.PairwiseIndependentHash.DetectorChannels
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum

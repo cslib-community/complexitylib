@@ -104,7 +104,8 @@ theorem quantifierRank_hasBelow : quantifierRank hasBelow = 1 := by
   simp [hasBelow, Term.lt, Term.le]
 
 /-- Spoiler wins one round from the position `(0, 1)` on `Fin 3`: `hasBelow` separates the
-pebbles, by the Ehrenfeucht–Fraïssé theorem for formulas with free variables. -/
+pebbles. This uses the forward direction of `duplicatorWins_iff_forall_formula`, which is
+`DuplicatorWins.formula_realize_iff`. -/
 example : ¬ DuplicatorWins Language.order 1 ![(0 : Fin 3)] ![(1 : Fin 3)] := by
   rw [duplicatorWins_iff_forall_formula]
   intro h

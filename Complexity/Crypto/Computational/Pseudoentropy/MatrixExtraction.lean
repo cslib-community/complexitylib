@@ -167,8 +167,7 @@ theorem eval_extractMatrixLabelsIdeal_append {Observation : Type}
     (fun observations suffix => (fun front => front ++ suffix) <$> next observations)]
   simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
     BitString.eval_sampleList]
-  congr 1
-  funext observations
+  congr 1 with observations : 1
   simp only [PMF.map, Function.comp_def]
   rw [PMF.bind_comm]
 

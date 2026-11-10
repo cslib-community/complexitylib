@@ -77,8 +77,7 @@ private theorem eval_modNat_residue (width q : ℕ) :
     eval (sampleModNat width q) =
       (eval ((Nat.cast : ℕ → ZMod q) <$> sampleModNat width q)).map ZMod.val := by
   rw [eval_map, eval_sampleModNat, PMF.map_comp, PMF.map_comp]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp only [Function.comp_apply, ZMod.val_natCast, Nat.mod_mod]
 
 private theorem eval_coefficients (d k n width q : ℕ) [NeZero q] :
@@ -120,8 +119,7 @@ theorem exists_isPPTOn_approximateEncodedModuleMatrix :
         (eval (sampleModNat width q)).map (Nat.cast : ℕ → ZMod q)).map
           ModuleSIS.encodeMatrix := by
     rw [sampledWord, eval_map, eval_coefficients, PMF.map_comp]
-    congr 1
-    funext A
+    congr 1 with A : 1
     exact hexpand d k n q hq A
   refine ⟨hlaw, ?_⟩
   rw [hlaw]

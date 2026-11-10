@@ -131,13 +131,48 @@ rows of the matrix, then the offset. -/
 def seedEquiv (m M : ℕ) : BitString (m * M + m) ≃ (Fin m → BitString M) × BitString m :=
   (Fin.appendEquiv (m * M) m).symm.trans (BitString.blocksEquiv.prodCongr (Equiv.refl _))
 
+/-- Whether the affine hash to `m` bits of strings of `M` bits with seed `seed` sends `x` to zero,
+computed on words (`Cslib.BitString.LinearHash.wordHash`): the hash of the matrix part of the seed
+is the offset part. -/
+def hashZero (m M : ℕ) (seed x : List Bool) : Bool :=
+  !(List.zipWith Bool.xor (BitString.LinearHash.wordHash m seed x)
+    (BitString.listRow m M seed)).any fun b => b
+
+/-- On strings of the right lengths, `hashZero` decides whether the affine hash given by the seed
+sends the string to zero. -/
+theorem hashZero_ofFn {m M : ℕ} (r : BitString (m * M + m)) (x : BitString M) :
+    hashZero m M (List.ofFn r) (List.ofFn x) = true ↔
+      BitString.LinearHash.affineHash (seedEquiv m M r) x = 0 := by
+  have hoffset : BitString.listRow m M (List.ofFn r) =
+      List.ofFn ((Fin.appendEquiv _ _).symm r).2 := by
+    rw [List.ofFn_add, BitString.listRow, Nat.mul_comm M,
+      List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
+    rfl
+  have hhash : BitString.LinearHash.wordHash m (List.ofFn r) (List.ofFn x) =
+      List.ofFn (BitString.LinearHash.hash
+        (BitString.block ((Fin.appendEquiv _ _).symm r).1) x) := by
+    rw [BitString.LinearHash.wordHash_eq_ofFn, List.ofFn_add, BitString.ofList_ofFn_append]
+    rfl
+  rw [hashZero, hhash, hoffset, ← BitString.ofFn_add, BitString.not_any_ofFn_eq_true_iff]
+  rfl
+
+/-- `hashZero` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_hashZero {β : Type} {encIn : β ↪ List Bool} {m M : β → ℕ}
+    {seed x : β → List Bool} (hm : ComputableInPolyTime m encIn encUnary)
+    (hM : ComputableInPolyTime M encIn encUnary) (hseed : ComputableInPolyTime seed encIn encBits)
+    (hx : ComputableInPolyTime x encIn encBits) :
+    ComputableInPolyTime (fun b => hashZero (m b) (M b) (seed b) (x b)) encIn encBool := by
+  unfold hashZero
+  fun_prop
+
 /-- The Arthur–Merlin verifier of the set lower bound protocol, with element length `N`,
 certificate length `c`, hash length `m`, padding length `T` and padding threshold `ℓ`, where `n` is
 the length of the encoded instance. The string is Arthur's hash seed of `m(n) M(n) + m(n)` bits,
 with `M(n) = 5 N(n) + T(n)`, followed by Merlin's element of `M(n)` bits and five certificates of
 `c(n)` bits. The verifier accepts when the five blocks of the element have accepted certificates,
 the first `ℓ` padding bits are `false` and the element hashes to zero
-(`Cslib.BitString.LinearHash.wordHash`). Bits missing from a short string read as `false`. -/
+(`Cslib.Complexity.SetLowerBound.hashZero`). Bits missing from a short string read as `false`. -/
 def verifier (enc : α ↪ List Bool) (N c m T : Polynomial ℕ) (ℓ : α → ℕ)
     (R : α × List Bool → Bool) (x : α × List Bool) : Bool :=
   let n := (enc x.1).length
@@ -147,8 +182,7 @@ def verifier (enc : α ↪ List Bool) (N c m T : Polynomial ℕ) (ℓ : α → �
   ((List.range 5).all fun i => R (x.1, BitString.listRow (N.eval n) i (e.take (5 * N.eval n)) ++
       BitString.listRow (c.eval n) i (x.2.drop (P + M)))) &&
     (!((e.drop (5 * N.eval n)).take (ℓ x.1)).any fun b => b) &&
-    !(List.zipWith Bool.xor (BitString.LinearHash.wordHash (m.eval n) (x.2.take P) e)
-      (BitString.listRow (m.eval n) M (x.2.take P))).any fun b => b
+    hashZero (m.eval n) M (x.2.take P) e
 
 /-- The verifier of the set lower bound protocol is polynomial-time. -/
 @[fun_prop]
@@ -187,18 +221,7 @@ private theorem verifier_ofFn_append {N c m T : Polynomial ℕ} {ℓ : α → �
   have htake : (List.ofFn r ++ (List.ofFn e ++ List.ofFn z)).take
       (m.eval n * (5 * N.eval n + T.eval n) + m.eval n) = List.ofFn r :=
     List.take_left' List.length_ofFn
-  have hoffset : BitString.listRow (m.eval n) (5 * N.eval n + T.eval n) (List.ofFn r) =
-      List.ofFn ((Fin.appendEquiv _ _).symm r).2 := by
-    rw [List.ofFn_add, BitString.listRow, Nat.mul_comm (5 * N.eval n + T.eval n),
-      List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
-    rfl
-  have hhash : BitString.LinearHash.wordHash (m.eval n) (List.ofFn r) (List.ofFn e) =
-      List.ofFn (BitString.LinearHash.hash
-        (BitString.block ((Fin.appendEquiv _ _).symm r).1) e) := by
-    rw [BitString.LinearHash.wordHash_eq_ofFn, List.ofFn_add, BitString.ofList_ofFn_append]
-    rfl
-  rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, hhash, hoffset,
-    ← BitString.ofFn_add, BitString.not_any_ofFn_eq_true_iff, and_assoc]
+  rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, hashZero_ofFn, and_assoc]
   refine and_congr ⟨fun h i => ?_, fun h i hi => ?_⟩ Iff.rfl
   · have := h i i.2
     rwa [BitString.listRow_eq_ofFn (count := 5) _ i, BitString.listRow_eq_ofFn (count := 5) _ i,
