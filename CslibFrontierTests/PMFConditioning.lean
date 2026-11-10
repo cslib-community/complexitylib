@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Probability.PMF.Coin
 import CslibFrontier.Probability.PMF.Filter
+import CslibFrontier.Probability.Product.Event
 import CslibFrontier.Probability.Product.Split
 import CslibFrontier.Probability.StatisticalDistance.Event
 
@@ -13,7 +15,9 @@ import CslibFrontier.Probability.StatisticalDistance.Event
 Conditioning two independent fair bits on the first being `true` leaves the second bit uniform,
 and conditioning them on both being `true` gives the point mass at `(true, true)`. Splitting off
 the first of two independent fair bits leaves the other one an independent fair bit. Relabeling two
-point masses injectively keeps them at distance one.
+point masses injectively keeps them at distance one. Restricting independent coins of different
+biases, reading them along an injection or currying them keeps them independent, three coins of
+bias `p` all show `true` with probability `p³`, and a coin of bias `1/2` is fair.
 -/
 
 namespace CslibFrontierTests.PMFConditioning
@@ -59,5 +63,32 @@ example : ((pi fun _ : Fin 2 => uniformOfFintype Bool).map
     (PMF.map_comp _ _ _).trans (PMF.map_id _)
   rw [pi_map_piEquivPiSubtypeProd, PMF.map_bind]
   simp only [hk, PMF.bind_const]
+
+-- Restricting independent coins to the coordinates other than `0` keeps the other coins.
+example (q : Fin 3 → unitInterval) :
+    (pi fun i => coin (q i)).map (fun a (i : {i : Fin 3 // i ≠ 0}) => a i) =
+      pi fun i : {i : Fin 3 // i ≠ 0} => coin (q i) :=
+  pi_map_restrict _ _
+
+-- Reading three independent coins along the injection `Fin.succ` keeps the last two coins.
+example (q : Fin 3 → unitInterval) :
+    (pi fun i => coin (q i)).map (fun a (k : Fin 2) => a k.succ) = pi fun k => coin (q k.succ) :=
+  pi_map_comp_injective _ (Fin.succ_injective 2)
+
+-- Currying independent coins indexed by pairs gives independent blocks of coins.
+example (q : Fin 2 × Fin 3 → unitInterval) :
+    (pi fun ik => coin (q ik)).map Function.curry = pi fun i => pi fun k => coin (q (i, k)) :=
+  pi_map_curry _
+
+-- Three independent coins of bias `p` all show `true` with probability `p³`.
+example (p : unitInterval) :
+    (pi fun _ : Fin 3 => coin p).toOuterMeasure {u | ∀ i, u i ∈ ({true} : Set Bool)} =
+      ENNReal.ofReal p ^ 3 := by
+  rw [toOuterMeasure_pi_forall]
+  simp [coin_apply]
+
+-- A coin of bias `1/2` is fair.
+example : coin ⟨1 / 2, by norm_num, by norm_num⟩ = uniformOfFintype Bool :=
+  coin_eq_uniformOfFintype rfl
 
 end CslibFrontierTests.PMFConditioning

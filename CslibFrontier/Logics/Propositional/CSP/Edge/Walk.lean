@@ -192,7 +192,8 @@ theorem flipSteps_append (f : OccurrenceLabeling F Bool)
   | cons a s ih => exact ih _
 
 omit [DecidableEq V] in
-private theorem nodup_edges_snoc (w : Walk F) (o p : Occurrence F)
+/-- Appending a step with two distinct fresh incidences preserves incidence uniqueness. -/
+theorem nodup_edges_snoc (w : Walk F) (o p : Occurrence F)
     (hw : w.edges.Nodup) (ho : o ∉ w.edges) (hp : p ∉ w.edges) (hop : o ≠ p) :
     (w.snoc o p).edges.Nodup := by
   change (edgesOf (w.steps ++ [(o, p)])).Nodup

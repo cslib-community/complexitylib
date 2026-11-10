@@ -17,6 +17,14 @@ with open(os.environ["BOOTSTRAP_LOG"], "a") as log:
     log.write(json.dumps({"kind": "fetch", "cwd": os.getcwd()}) + "\n")
 sys.exit(int(os.environ.get("BOOTSTRAP_FETCH_EXIT", "0")))
 '''
+# Stands in for scripts/full_check.py, whose steps test_full_check.py covers: it records its
+# arguments and returns the status of one build, so a failing gate still fails check.sh.
+FAKE_FULL_CHECK = r'''#!/usr/bin/env python3
+import json, os, subprocess, sys
+with open(os.environ["BOOTSTRAP_LOG"], "a") as log:
+    log.write(json.dumps({"kind": "full", "args": sys.argv[1:]}) + "\n")
+sys.exit(1 if subprocess.run(["lake", "build", "--wfail", "--iofail"]).returncode else 0)
+'''
 FAKE_LAKE = r'''#!/usr/bin/env python3
 import json, os, pathlib, re, sys
 args = sys.argv[1:]
@@ -58,6 +66,7 @@ class CacheBootstrapTests(unittest.TestCase):
         # manual preflight and its failure behavior are covered in test_quick_check.py.
         for name in ("scripts/check_operator_manual.py", "scripts/test_operator_manual.py"):
             self.write(name, "raise SystemExit(0)\n")
+        self.write("scripts/full_check.py", FAKE_FULL_CHECK)
         self.write("scripts/cache/get.sh", FAKE_FETCH).chmod(0o755)
         self.write(".gitignore", ".lake/\n")
         self.write("lean-toolchain", "leanprover/lean4:v4.36.0-rc1\n")
@@ -118,10 +127,9 @@ class CacheBootstrapTests(unittest.TestCase):
         self.assert_success(self.run_script("build.sh", "Demo.Client"))
         self.assert_success(self.run_script("check.sh"))
         self.assertEqual(self.fetch_count(), 1)
-        self.assertEqual([e["args"] for e in self.events() if e["kind"] == "lake"][-6:], [
-            ["build", "--wfail", "--iofail"], ["exe", "mk_all", "--check"],
-            ["test", "--wfail", "--iofail"], ["lint"], ["exe", "lint-style"],
-            ["exe", "checkInitImports"]])
+        self.assertEqual([(e["kind"], e["args"]) for e in self.events()
+                          if e["kind"] in ("full", "lake")][-2:], [
+            ("full", ["--base", "origin/main"]), ("lake", ["build", "--wfail", "--iofail"])])
 
     def test_quick_check_restores_before_lean_header_inspection_and_build(self):
         self.write("Demo/Base.lean", "def value := 2\n")
@@ -138,10 +146,9 @@ class CacheBootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("falls back", result.stdout)
         self.assertEqual(self.fetch_count(), 1)
-        commands = [e["args"] for e in self.events() if e["kind"] == "lake"]
-        self.assertEqual(len(commands), 6)
-        self.assertEqual(commands[0], ["build", "--wfail", "--iofail"])
-        self.assertEqual(commands[-1], ["exe", "checkInitImports"])
+        self.assertEqual([(e["kind"], e["args"]) for e in self.events()
+                          if e["kind"] in ("full", "lake")][-2:], [
+            ("full", ["--base", "origin/main"]), ("lake", ["build", "--wfail", "--iofail"])])
 
     def test_configuration_revision_endpoint_and_cache_directory_each_invalidate(self):
         self.assert_success(self.run_script("cache/ensure.sh"))

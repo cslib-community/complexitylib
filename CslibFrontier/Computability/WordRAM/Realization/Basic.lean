@@ -103,7 +103,7 @@ def appendWords (input : δ ↪ (Fin k → ℕ)) (output : α ↪ (Fin l → ℕ
   (input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding
 
 /-- A semantic return issues no memory operation. Its native glue is charged separately. -/
-@[simp] theorem memoryCost_pure (a : α) (s : Memory.State) :
+@[simp, client_simps] theorem memoryCost_pure (a : α) (s : Memory.State) :
     memoryCost (pure a) s = 0 := rfl
 
 /-- Memory charges add at the actual intermediate state; the local bind charge is separate. -/
@@ -114,6 +114,13 @@ theorem memoryCost_bind {β : Type} (p : Memory.Prog α) (q : α → Memory.Prog
   unfold memoryCost
   simp only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_bind]
   rw [StateTransitionSpec.totalCost_append, StateTransitionSpec.run_runClient]
+
+/-- `memoryCost_bind` stated with `>>=`, the form `do` blocks elaborate to. -/
+@[client_simps] theorem memoryCost_bind' {β : Type} (p : Memory.Prog α) (q : α → Memory.Prog β)
+    (s : Memory.State) :
+    memoryCost (p >>= q) s = memoryCost p s +
+      memoryCost (q ((Memory.spec 0).clientResult s p)) ((Memory.spec 0).clientState s p) :=
+  memoryCost_bind p q s
 
 /-- The execution contract for specified scratch, exchange factor and emitter. Both the
 existential judgment and data witnesses use this same contract. -/

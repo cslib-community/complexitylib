@@ -53,6 +53,9 @@ import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
 import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -91,6 +94,9 @@ import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
 import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -893,7 +899,8 @@ example : ComputableInPolyTime (fun input => (run input).isSome)
 mathematical routine when buffer widths match.
 {name}`Cslib.Complexity.CSP.EdgeAugmenting.run_spec` supplies an actual augmenting
 walk and the combined exchange bound given a valid improving comparison.
-A `none` output does not establish unsatisfiability. Finding the comparison remains open.
+A `none` output does not establish unsatisfiability. The fresh forest search below
+uses only the base labeling and stops at its first blossom or augmentation.
 The complete behavioral clients are in `CslibFrontierTests/EdgeCSPAugmentingNative.lean`.
 
 
@@ -936,8 +943,143 @@ example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
 
 Arbitrary f-walk reversal need not preserve prefix validity, even for even
 delta-matroid relations. Operation tests give a counterexample. These results
-still leave forest construction/Lemma 34, whole-blossom search, native cost and
-the full planar dichotomy open.
+feed the fresh forest search below. Whole-blossom contraction/lifting, native
+recursive solving and the full planar dichotomy remain open.
+
+
+# Fresh Forest Search
+
+{name}`Cslib.Logic.PL.CSP.Forest.search` starts from the actual defective variables,
+without an improving comparison. Its positional log keeps copied constraints and
+zero-based timestamps. It stops at exhaustion, an augmentation or a blossom.
+{name}`Cslib.Logic.PL.CSP.Forest.search_terminal_isFDAG` proves both terminal DAG
+invariants from the edge-instance condition and base validity, without evenness.
+
+The three outcome theorems add even delta-matroid constraints, permitting odd
+local common parity. Exhaustion certifies genuine optimality:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
+    (hF : EdgeInstance F) (hf : ValidLabeling sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) {es : Log F}
+    (hr : search sem f = .exhausted es) : IsOptimalLabeling sem f :=
+  search_exhausted_isOptimalLabeling sem f hF hf hM hr
+```
+
+An actual returned augmentation is prefix-valid, its flip is valid, and it removes
+exactly two defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
+    (hF : EdgeInstance F) (hf : ValidLabeling sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) {m : Meeting F}
+    (hr : search sem f = .augment m) :
+    m.walk.IsAugmenting sem f ∧ ValidLabeling sem (m.walk.flip f) ∧
+      (defects (m.walk.flip f)).card + 2 = (defects f).card :=
+  search_augment_correct sem f hF hf hM hr
+```
+
+A blossom result certifies the data actually computed by the extractor. Preparation
+preserves validity and defect count. Its cycle has distinct copied steps, and
+the actual timestamps are distinct:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
+    (hF : EdgeInstance F) (hf : ValidLabeling sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) {m : Meeting F}
+    (hr : search sem f = .blossom m) :
+    ∃ b, m.blossomData = some b ∧ b.cycle.IsBlossom sem (b.prepare.flip f) ∧
+      b.times.Nodup ∧ ValidLabeling sem (b.prepare.flip f) ∧
+      (defects (b.prepare.flip f)).card = (defects f).card := by
+  obtain ⟨b, hb, hbl, hv, hd⟩ := search_blossom_correct sem f hF hf hM hr
+  have ht := search_trace sem f hF
+  rw [hr] at ht
+  exact ⟨b, hb, hbl, ht.blossom_times_nodup hb, hv, hd⟩
+```
+
+No supplied forest/event invariant or finite universe of variable names is needed.
+Both variable and constraint least-common-ancestor cases are proved.
+{name}`Cslib.Logic.PL.CSP.Walk.DistinctCopies` forbids sharing a copied node
+between cycle steps; original constraints may recur at different timestamps.
+The graph union alone admits an invalid-prefix counterexample, checked in
+`CslibFrontierTests/EdgeCSPBlossomCopies.lean`. The cycle certificate also retains
+the pivot, feasibility and no shortcuts;
+its validity does not follow from reversing an arbitrary f-walk. Exhaustion uses
+an alternative exchange-counting proof of KKR Lemma 45. The preparation proof uses
+chronological prefix transfer and Lemma 37 rerooting.
+
+Complete actual-run clients are in `CslibFrontierTests/EdgeCSPForestEvents.lean`,
+`CslibFrontierTests/EdgeCSPForestTerminal.lean` and
+`CslibFrontierTests/EdgeCSPForestOptimality.lean`. They include nonempty preparation,
+repeated original constraints, timestamp zero, odd parity and sparse labels.
+These mathematical endpoints compose with the native compiler below. Whole-blossom
+contraction/lifting, recursive solving and the full planar dichotomy remain separate.
+
+
+# Native Fresh Forest Search
+
+Import `CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec` for the complete
+fresh-search entry point. Its input is an explicit-table CSP with binary original
+names and one finite occurrence-bit buffer. Table arities and output indices are
+binary, while internal constraint/scope positions are unary. All clocks are
+funded by actual lists, including on malformed input:
+
+```lean
+open Cslib.Complexity.CSP.EdgeForest Turing.MultiTapeTM in
+example : ComputableInPolyTime run encInput (encOption encResultCode) := by
+  fun_prop
+```
+
+Correct buffer width alone gives exact agreement and decoding, without semantic
+or forest-invariant hypotheses:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP Cslib.Complexity.CSP.EdgeForest in
+example (input : Input)
+    (hw : input.labels.length = (incidenceList input.body).length) :
+    (run input).bind (decode input.body) =
+      some (Forest.search Table.sem
+        (EdgeAugmenting.labeling input.body input.labels)) :=
+  decode_run input hw
+```
+
+{name}`Cslib.Complexity.CSP.EdgeForest.run_eq_none_iff` proves that `none` means
+width mismatch. A correctly sized buffer never exhausts the clock. Logs, roots,
+partial current copies and timestamps are retained; decoding external codes
+rejects invalid indices. This establishes no semantic correctness for an event
+on invalid input. With the model hypotheses, the composed specification applies
+to the actual decoded result:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity.CSP Cslib.Complexity.CSP.EdgeForest in
+example (input : Input)
+    (hw : input.labels.length = (incidenceList input.body).length)
+    (hF : EdgeInstance input.body)
+    (hf : ValidLabeling Table.sem
+      (EdgeAugmenting.labeling input.body input.labels))
+    (hM : EdgeInstance.EvenConstraints Table.sem input.body)
+    {m : Forest.Meeting input.body}
+    (hr : (run input).bind (decode input.body) = some (.augment m)) :
+    m.walk.IsAugmenting Table.sem
+      (EdgeAugmenting.labeling input.body input.labels) := by
+  have hs := run_spec input hw hF hf hM
+  rw [hr] at hs
+  exact hs.1
+```
+
+The same specification supplies optimality for exhaustion and valid
+count-preserving preparation for a blossom. This is a native fresh-search routine,
+without an improving comparison input. The existing augmentation API is preserved
+through the shared buffer module. `CslibFrontierTests/EdgeCSPForestNative.lean` checks
+actual executions, including an end-to-end valid augmentation to zero defects.
+Whole-blossom contraction/lifting, recursive solving, geometric recognition and
+the full planar dichotomy remain open.
 
 
 # Finite Crossover Gadget Semantics
