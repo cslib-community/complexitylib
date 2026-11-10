@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF
 
 /-!
@@ -47,7 +47,6 @@ theorem eval_worldRealize_eq_bind {PK SK M Sig Query Digest Coins : Type}
     (accept : Bool → M × Sig → List (M × Sig) → Bool) :
     (world scheme sk).eval (worldRealize scheme pk program accept) = coins.bind (fun r =>
       (world scheme sk).eval (worldRealize scheme pk (liftOracleForger (replay r)) accept)) := by
-  simp only [eval_world_worldRealize, runLoggedForger, ProbOracleComp.runWith_run_interpret, h]
-  simp only [PMF.map_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
+  simp only [eval_world_worldRealize, runLoggedForger, h, runWith_norm, pmf_norm]
 
 end Cslib.Crypto.Protocols.ROMSignature
