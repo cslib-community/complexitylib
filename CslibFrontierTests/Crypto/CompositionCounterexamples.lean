@@ -12,8 +12,9 @@ import CslibFrontier.Probability.BitString
 
 Exercises the definitions, concrete evaluations, runtime certificates (`IsPPT`, `IsOraclePPT`),
 quantitative game bounds, and generic composition counterexamples from
-`CslibFrontier.Crypto.Computational.Encryption.CompositionCounterexamples` on concrete PRF-based
-schemes (`echoPrfCipher`, `echoPrfMAC`, `echoPrfEtM`, `echoPrfEtM.tailFallback`, and
+`CslibFrontier/Crypto/Computational/Encryption/EncForge.lean` and
+`CslibFrontier/Crypto/Computational/Encryption/CompositionCounterexamples.lean` on concrete
+PRF-based schemes (`echoPrfCipher`, `echoPrfMAC`, `echoPrfEtM`, `echoPrfEtM.tailFallback`, and
 `echoPrfEtMRedundant`).
 -/
 
@@ -65,6 +66,22 @@ theorem isOraclePPT_zeroCIAdversary : IsOraclePPT encBits zeroCIAdversary := by
 theorem isQueryBounded_zeroCIAdversary (n : ℕ) :
     (zeroCIAdversary n []).IsQueryBounded 0 :=
   ProbOracleComp.IsQueryBounded.sample (pure (List.replicate n false))
+
+/-- Every `echoPrfMAC` tag under a key sampled at parameter `n` has length at most `2 * n`. -/
+theorem echoPrfMAC_tag_length_le (n : ℕ) (km : List Bool)
+    (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
+    (m : List Bool) (_hm : m.length = echoPrfMAC.msgLen n)
+    (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km m)).support) :
+    tag.length ≤ 2 * n := by
+  change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
+  rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
+  change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km m))).support at htag
+  rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
+  subst htag
+  unfold prfOracle
+  split_ifs with hlen
+  · exact (echoFamily_length km m hlen).le.trans hkm.le
+  · simp
 
 /-! ### Concrete Evaluation of `tailFallback`, `redundantTag`, and `prfEncryptThenMACRedundantTag`
 -/
@@ -180,23 +197,10 @@ example (n : ℕ) (forger : Forger) :
       Game.succProbability (ProbComp.eval (echoPrfMAC.eufCmaGame forger n)) +
         Game.succProbability
           (ProbComp.eval (echoPrfMAC.eufCmaGame (MACScheme.tailTagForger forger) n)) := by
-  have htag (km : List Bool) (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
-      (c : List Bool) (_hc : c.length = echoPrfMAC.msgLen n)
-      (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km c)).support) :
-      tag.length ≤ 2 * n := by
-    change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
-    rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
-    change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km c))).support at htag
-    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
-    subst htag
-    unfold prfOracle
-    split_ifs with hlen
-    · exact (echoFamily_length km c hlen).le.trans hkm.le
-    · simp
   exact ⟨echoPrfEtM.succProbability_encForgeGame_le_ciGame zeroCIAdversary n,
     succProbability_encForgeGame_encryptThenMAC_le echoPrfCipher echoPrfMAC
       (prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length)
-      (fun n => 2 * n) zeroCIAdversary n htag,
+      (fun n => 2 * n) zeroCIAdversary n (echoPrfMAC_tag_length_le n),
     echoPrfEtM.succProbability_encForgeGame_tailFallback_le zeroCIAdversary n,
     echoPrfMAC.succProbability_eufCmaGame_redundantTag_le forger n⟩
 
@@ -243,16 +247,7 @@ example (n : ℕ) :
     have hcLen : c.length = 2 * n :=
       prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length n ke hke m hm
         c hc
-    change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
-    rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
-    change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km c))).support at htag
-    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
-    subst htag
-    have htagLen : (prfOracle echoFamily km.length km c).length ≤ 2 * n := by
-      unfold prfOracle
-      split_ifs with hlen
-      · exact (echoFamily_length km c hlen).le.trans hkm.le
-      · simp
+    have htagLen := echoPrfMAC_tag_length_le n km hkm c hcLen tag htag
     simp only [length_encPair, encBits_apply, hcLen]
     omega
   exact ⟨echoPrfEtM.eval_ciOneTimeGame_tailFallback_prependFalseBitCIAdversary
@@ -288,19 +283,7 @@ example (n : ℕ) :
     ¬ echoPrfEtMRedundant.AuthenticatedEncryption ∧
     ¬ echoPrfEtMRedundant.OneTimeINDCCA ∧
     ¬ echoPrfEtMRedundant.INDCCA := by
-  have htag_le (km : List Bool) (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
-      (m : List Bool) (_hm : m.length = echoPrfMAC.msgLen n)
-      (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km m)).support) :
-      tag.length ≤ 2 * n := by
-    change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
-    rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
-    change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km m))).support at htag
-    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
-    subst htag
-    unfold prfOracle
-    split_ifs with hlen
-    · exact (echoFamily_length km m hlen).le.trans hkm.le
-    · simp
+  have htag_le := echoPrfMAC_tag_length_le n
   have hctLen : ∀ m ke, ke ∈ (ProbComp.eval (echoPrfCipher.keyGen m)).support →
       ∀ msg, msg.length = m →
       ∀ c ∈ (ProbComp.eval (echoPrfCipher.encrypt m ke msg)).support,

@@ -613,24 +613,26 @@ collision of Exercise 7.24 (`daviesMeyer_collision_of_fixedPoints`); the ideal-c
 Theorem 7.5 is not formalized. Concrete checks are in
 [`CslibFrontierTests/Crypto/Sponge.lean`](../../CslibFrontierTests/Crypto/Sponge.lean).
 
-For fresh-message encryption unforgeability and generic authenticated-encryption composition
-separations ([katzlindell20][katzlindell20], §5.2, Definition 5.2, p. 151, and Exercises 5.4, 5.5,
-and 5.10, pp. 164–165), import
-[`Encryption/CompositionCounterexamples.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CompositionCounterexamples.lean).
+For fresh-message encryption unforgeability ([katzlindell20][katzlindell20], §5.2, Definition 5.2,
+p. 151, and Exercise 5.5, p. 165), import
+[`Encryption/EncForge.lean`](../../CslibFrontier/Crypto/Computational/Encryption/EncForge.lean).
 `SymmetricCipher.encForgeGame` and `SymmetricCipher.EncForge` test whether a uniform strict
 `IsOraclePPT encBits` adversary can produce a ciphertext decrypting to `some m` for a plaintext `m`
 not queried to `encForgeOracle`. Ciphertext integrity implies `EncForge`
 (`SymmetricCipher.succProbability_encForgeGame_le_ciGame`, `CiphertextIntegrity.encForge`), and
 ordinary fresh-message MAC security (`MACScheme.EUFCMA`, without `SUFCMA` or `E.INDCPA`) already
 suffices for `(encryptThenMAC E M hctLen).EncForge` (`succProbability_encForgeGame_encryptThenMAC_le`,
-`encForge_encryptThenMAC`, Exercise 5.5). Conversely, `SymmetricCipher.tailFallback` (falling back
-to `E.decrypt n k ct.tail` when direct decryption returns `none`) preserves `INDCPA` and `EncForge`
-while breaking `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`
+`encForge_encryptThenMAC`, Exercise 5.5). The generic authenticated-encryption composition
+separations (Exercises 5.4 and 5.10, pp. 164–165) are in
+[`Encryption/CompositionCounterexamples.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CompositionCounterexamples.lean).
+`SymmetricCipher.tailFallback` (falling back to `E.decrypt n k ct.tail` when direct decryption
+returns `none` and `ct` is non-empty) preserves `INDCPA` and `EncForge` while breaking
+`OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`
 (`SymmetricCipher.tailFallback_counterexample`,
 `PseudorandomFunction.tailFallback_prfEncryptThenMAC_counterexample`, Exercise 5.10); and
 `MACScheme.redundantTag` (accepting `tag` or `tag.tail`) preserves `EUFCMA` while breaking `SUFCMA`,
 so `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` yet fails
-`CiphertextIntegrity` and `INDCCA` with advantage `1`
+`CiphertextIntegrity` and `INDCCA` with advantage `1` for every `n ≥ 1`
 (`encryptThenMAC_redundantTag_counterexample`,
 `PseudorandomFunction.prfEncryptThenMACRedundantTag_counterexample`, Exercise 5.4). Concrete
 evaluations and composed `IsPPT` / `IsOraclePPT` checks on `echoFamily` are in
