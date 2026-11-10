@@ -5,10 +5,12 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Nondeterministic
 
 /-! Space-bounded machines at the boundaries of the polynomial-space development: output written
-twice is not acceptance, a work tape that is actually written is within its space bound, a head
-running right forever is within no space bound, and malformed codes have no edges. -/
+twice is not acceptance, a work tape that is actually written is within its space bound (and so
+is the run of its description), a head running right forever is within no space bound, and
+malformed codes have no edges. -/
 
 namespace CslibFrontierTests.SpaceMachines
 
@@ -130,6 +132,19 @@ example (input : List Bool) :
     fun a => ⟨1, runsInTime_writeAccept a⟩⟩⟩,
     (savitchDecide_eq_true_iff (runsInSpace_writeAccept input) (by simp)).mpr
       (accepts_writeAccept input)⟩
+
+open Turing.MultiTapeTM.Universal in
+/-- The description of `writeAccept` accepts within the space bound for one work tape and one
+cell, so the covering invariant of the universal simulation is used on a written cell. -/
+example (input : List Bool) :
+    ∃ s, s.state = none ∧
+      Relation.ReflTransGen (fun p p' =>
+          NStep (descN (.punit 0) eBit writeAccept) (input.map eBit) p p' ∧
+          (eCfg p'.1).length ≤
+            cfgSpaceBound (descLen (descN (.punit 0) eBit writeAccept)) input.length 1 1)
+        (init (descN (.punit 0) eBit writeAccept), []) (s, [eBit true]) :=
+  (accepts_iff_reflTransGen_nStep_fits _ writeAccept input (runsInSpace_writeAccept input)).mp
+    (accepts_writeAccept input)
 
 /-! ### A head running right forever -/
 
