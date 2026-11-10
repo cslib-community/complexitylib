@@ -455,8 +455,6 @@ theorem clmulTabLoop_exec {w tabBase b : ℕ}
     set v := idx &&& (2 ^ b - 1) with hv
     set prevIdx := (u <<< b) + (v >>> 1) with hprev
     have hpow_le : 2 ^ b ≤ 2 ^ (2 * b) := Nat.pow_le_pow_right (by decide) (by omega)
-    have hfit_idx : Fits w idx := by fits
-    have hfit_addr : Fits w (tabBase + idx) := by fits
     have hfit_v : Fits w v := by fits
     have hprev_val_lt : clmul u (v >>> 1) < 2 ^ (2 * b - 1) := by
       by_cases hb0 : b = 0
@@ -1692,7 +1690,6 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
     have hfit_tabEnd : Fits w (base + 8 + k + 2 ^ (2 * b)) :=
       hfit_space.of_le (by dsimp only [spaceFromB]; omega)
     have hfit_end8 : Fits w (base + 8) := by fits
-    have hfit_end_k : Fits w (base + 8 + k) := by fits
     have hq_le_Lb : q ≤ L * b := le_limbCountFromB_mul hb q
     have hpow_q_Lb : 2 ^ q ≤ 2 ^ (L * b) := Nat.pow_le_pow_right (by decide) hq_le_Lb
     have hu_bound : u.val < 2 ^ q :=
