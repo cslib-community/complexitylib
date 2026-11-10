@@ -6,6 +6,16 @@ cslib-frontier represents propositional syntax as concrete finite data and disti
 
 [CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals.
 
+To certify a program that evaluates a formula, import
+`CslibFrontier.Logics.Propositional.CNF.PolyTime`. Its `fun_prop` rules
+`Literal.computableInPolyTime_eval`, `Clause.computableInPolyTime_eval` and
+`CNF.computableInPolyTime_eval` handle evaluation under an assignment `σ a`. They need a
+certificate for `fun p => σ p.1 p.2` on the pair of the input and a variable, so do not pass
+`CNF.eval`, `Clause.eval` or `Literal.eval` to `fun_prop`. If the assignment is a named
+definition whose certificate is stated for a differently nested input, unfold that definition
+instead, as in `fun_prop [assignment]`. The [checked examples](../../CslibFrontierTests/CNFPolyTime.lean)
+include an assignment without a certificate, which `fun_prop` rejects.
+
 The [ClauseSet](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/ClauseSet/Basic.lean#L55) representation instead uses finite sets of finite sets of literals, so order and repetitions disappear. Its occurrence measure counts clauses mentioning a variable. List/set conversions preserve satisfying assignments but need separate size/occurrence lemmas. This is the representation used by the sparsification development.
 
 For ordinary disjunction with exactly three distinct variables per clause, import

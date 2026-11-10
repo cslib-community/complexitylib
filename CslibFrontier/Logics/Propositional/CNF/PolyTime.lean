@@ -55,6 +55,10 @@ needed separately when transferring satisfiability.
   `Cslib.Logic.PL.CNF.computableInPolyTime_vars_length`,
   `Cslib.Logic.PL.CNF.computableInPolyTime_numVars`: clause, formula, variable-occurrence and
   distinct-variable counts in unary.
+* `Cslib.Logic.PL.Literal.computableInPolyTime_eval`,
+  `Cslib.Logic.PL.Clause.computableInPolyTime_eval`,
+  `Cslib.Logic.PL.CNF.computableInPolyTime_eval`: evaluating literals, clauses and formulas under
+  a polynomial-time assignment, as `fun_prop` rules.
 * `Cslib.Logic.PL.CNF.computableInPolyTime_eval_bitsAssignment`: evaluating a formula under a
   numbered assignment.
 * `Cslib.Logic.PL.CNF.isPolyTime_compact`: compact unary indices for arbitrary variable names.
@@ -175,6 +179,40 @@ theorem computableInPolyTime_occurrences (enc : V ↪ List Bool) :
   unfold occurrences encOccurrence
   fun_prop
 
+/-- Evaluating a computed literal is polynomial-time under an assignment that is polynomial-time
+in the input and the variable. The literal's certificate comes first, so that it fixes the
+variable encoding before `fun_prop` certifies the assignment. -/
+@[fun_prop]
+theorem Literal.computableInPolyTime_eval {α : Type} {input : α ↪ List Bool}
+    {σ : α → V → Bool} {l : α → Literal V}
+    (hl : ComputableInPolyTime l input (encPair encV encBool))
+    (hσ : ComputableInPolyTime (fun p : α × V => σ p.1 p.2) (encPair input encV) encBool) :
+    ComputableInPolyTime (fun a => Literal.eval (σ a) (l a)) input encBool := by
+  unfold Literal.eval
+  fun_prop
+
+/-- Evaluating a computed clause is polynomial-time under an assignment that is polynomial-time
+in the input and the variable. -/
+@[fun_prop]
+theorem Clause.computableInPolyTime_eval {α : Type} {input : α ↪ List Bool}
+    {σ : α → V → Bool} {c : α → Clause V}
+    (hc : ComputableInPolyTime c input (encClause encV))
+    (hσ : ComputableInPolyTime (fun p : α × V => σ p.1 p.2) (encPair input encV) encBool) :
+    ComputableInPolyTime (fun a => Clause.eval (σ a) (c a)) input encBool := by
+  unfold Clause.eval
+  fun_prop
+
+/-- Evaluating a computed formula is polynomial-time under an assignment that is polynomial-time
+in the input and the variable. -/
+@[fun_prop]
+theorem CNF.computableInPolyTime_eval {α : Type} {input : α ↪ List Bool}
+    {σ : α → V → Bool} {φ : α → CNF V}
+    (hφ : ComputableInPolyTime φ input (encCNFOver encV))
+    (hσ : ComputableInPolyTime (fun p : α × V => σ p.1 p.2) (encPair input encV) encBool) :
+    ComputableInPolyTime (fun a => CNF.eval (σ a) (φ a)) input encBool := by
+  unfold CNF.eval
+  fun_prop
+
 /-- Evaluating a formula under the assignment numbered by `i` on a list of variables is
 polynomial-time. -/
 @[fun_prop]
@@ -189,7 +227,7 @@ theorem CNF.computableInPolyTime_eval_bitsAssignment [DecidableEq V] (enc : V �
     congr 1 with v : 1
     exact bitsAssignment_eq_getD ..
   rw [e]
-  fun_prop [CNF.eval, Clause.eval, Literal.eval]
+  fun_prop
 
 /-- Construct the clause requiring at least one listed variable to hold. -/
 @[fun_prop]

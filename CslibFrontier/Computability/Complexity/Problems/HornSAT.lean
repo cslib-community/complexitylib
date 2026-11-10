@@ -221,7 +221,7 @@ theorem computableInPolyTime_assignment :
 @[fun_prop]
 theorem computableInPolyTime_solve :
     ComputableInPolyTime (solve (V := ℕ)) encCNF encBool := by
-  fun_prop [solve, CNF.eval, Clause.eval, Literal.eval]
+  fun_prop [solve]
 
 /-- Ordinary HornSAT is in native multi-tape polynomial time under `encCNF`. -/
 theorem mem_P : HornSAT ∈ P encCNF :=
