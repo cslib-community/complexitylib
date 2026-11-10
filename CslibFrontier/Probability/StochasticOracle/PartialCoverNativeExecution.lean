@@ -57,9 +57,27 @@ structure Input where
   planner : GreedyNative.Input
   /-- Original rational WSC rows, weights and dual certificate. -/
   system : NativeRetention.Input
+  /-- Both parts refer to the same ground prefix; no extra runtime proof bits. -/
+  ground_eq : planner.val.ground = system.dual.length
 
-/-- Framed planning input, then the rational WSC/local-test input. -/
-enc_structure encoding : Input where planner : GreedyNative.encoding, system : encInput
+/-- Framed planning input, then rational WSC data. The ground-agreement proof is erased. -/
+@[expose] def encoding : Input ↪ List Bool :=
+  ⟨fun x => encPair GreedyNative.encoding encInput (x.planner, x.system), by
+    intro x y h
+    have he := (encPair GreedyNative.encoding encInput).injective h
+    cases x; cases y; cases he; rfl⟩
+
+private theorem input_fields : ComputableInPolyTime
+    (fun x : Input => (x.planner, x.system)) encoding
+    (encPair GreedyNative.encoding encInput) := .of_eq fun _ => rfl
+
+/-- Native readback of original planning data; proof erasure changes no bytes. -/
+theorem computable_planner : ComputableInPolyTime Input.planner encoding
+    GreedyNative.encoding := input_fields.fst'
+
+/-- Native readback of the original WSC system sharing the planning ground. -/
+theorem computable_system : ComputableInPolyTime Input.system encoding encInput :=
+  input_fields.snd' 
 
 /-- One addressed source query contains a binary oracle index and original WSC data.
 The index is framed and the WSC word occupies the remaining suffix. -/
@@ -122,7 +140,7 @@ private theorem prepare_computable : ComputableInPolyTime prepare preparedEncodi
     RuntimeControl.encoding := by
   have hx := ComputableInPolyTime.fst encoding (encList encNat)
   have hl := ComputableInPolyTime.snd encoding (encList encNat)
-  have hs := encoding_system_deg.computableInPolyTime.comp hx
+  have hs := computable_system.comp hx
   have hn := (ComputableInPolyTime.length_list encNat).comp hl
   have hw : ComputableInPolyTime (fun p : Input × List ℕ => encInput p.1.system)
       preparedEncoding encBits :=
@@ -151,7 +169,7 @@ is derived from the planner and assembler certificates, not an input promise. -/
 theorem initial_computable : ∃ T S : Input → ℕ,
     ComputableInTimeAndSpace initial encoding RuntimeControl.encoding T S := by
   obtain ⟨T, S, _, _, hl⟩ := GreedyNative.uniform_plan
-  have hp := encoding_planner_deg.computableInPolyTime
+  have hp := computable_planner
   obtain ⟨tp, sp, _, _, hpo⟩ := hp.exists_computableInO
   have hlo : ComputableInO GreedyNative.labels GreedyNative.encoding (encList encNat) T
       (fun x => S x + T x) :=

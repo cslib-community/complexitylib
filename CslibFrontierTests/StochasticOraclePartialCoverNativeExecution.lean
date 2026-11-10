@@ -27,7 +27,7 @@ private def input : NativeExecution.Input :=
   ⟨⟨⟨1, [⟨99, [true], 1⟩], ⟨1 / 2, 1 / 4⟩⟩, by
     constructor
     · norm_num
-    · constructor <;> norm_num⟩, ⟨[[0]], [1], [1], 1, []⟩⟩
+    · constructor <;> norm_num⟩, ⟨[[0]], [1], [1], 1, []⟩, rfl⟩
 
 private theorem count_two : GreedyNative.count input.planner = 2 := by
   let t := GreedyNative.thresholdInput input.planner
@@ -170,7 +170,8 @@ example (reply : Word) :
 example {P : Type} (env : Environment Unit P) (mem : Memory Unit P) :
     let empty : NativeExecution.Input :=
       ⟨⟨{ input.planner.val with rows := [] },
-        ⟨input.planner.property.ground_pos, input.planner.property.parameters_valid⟩⟩, input.system⟩
+        ⟨input.planner.property.ground_pos, input.planner.property.parameters_valid⟩⟩,
+        input.system, input.ground_eq⟩
     (NativeUnboundedExecution.terminal controller.program env
       ⟨controller.program.initialConfig (encoding empty), mem⟩).map
       (Option.map (NativeReplyContext.observe controller.context)) =

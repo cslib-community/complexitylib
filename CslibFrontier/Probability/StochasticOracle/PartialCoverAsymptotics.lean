@@ -106,17 +106,30 @@ private theorem repetitions_le_log {q δ : ℝ} (hq : 0 < q) (hqone : q < 1)
       linarith
     _ = _ := by ring
 
+/-- The source approximation factor is strictly positive on every nonempty ground,
+including the singleton case needed by native execution clients. -/
+theorem factor_pos {q δ : ℝ} (hq : 0 < q) (hqone : q < 1)
+    (hδ : 0 < δ) (hδone : δ < 1) {n : ℕ} (hn : 0 < n) : 0 < factor q δ n := by
+  have hnreal : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hnp : (0 : ℝ) < n := by positivity
+  have hδn : δ / n < 1 := (div_lt_one hnp).mpr (hδone.trans_le hnreal)
+  have h0 := (threshold_bounds hq hqone hδ hδone).1
+  have h1 := (threshold_bounds hq hqone (div_pos hδ hnp) hδn).1
+  have hr := repeatFactor_sufficient h0 (repetitions q (δ / n))
+  have hm : 0 < repeatFactor (repetitions q δ) (repetitions q (δ / n)) := by
+    by_contra h
+    have hz : repeatFactor (repetitions q δ) (repetitions q (δ / n)) = 0 := by omega
+    rw [hz, zero_mul] at hr
+    omega
+  have hl : 0 ≤ Real.log (n * repetitions q (δ / n)) := Real.log_nonneg (by
+    have h1r : (1 : ℝ) ≤ repetitions q (δ / n) := by exact_mod_cast h1
+    nlinarith)
+  exact mul_pos (by linarith : 0 < 1 + Real.log (n * repetitions q (δ / n)))
+    (by exact_mod_cast hm)
+
 private theorem factor_nonneg {q δ : ℝ} (hq : 0 < q) (hqone : q < 1)
-    (hδ : 0 < δ) (hδone : δ < 1) {n : ℕ} (hn : 2 ≤ n) : 0 ≤ factor q δ n := by
-  unfold factor
-  have hnreal : (1 : ℝ) < n := by exact_mod_cast hn
-  have hrpos := (threshold_bounds hq hqone (div_pos hδ (by positivity))
-    ((div_lt_one (by positivity)).mpr (hδone.trans hnreal))).1
-  have hmul : (1 : ℝ) ≤ n * repetitions q (δ / n) := by
-    have : (1 : ℝ) ≤ repetitions q (δ / n) := by exact_mod_cast hrpos
-    have : (2 : ℝ) ≤ n := by exact_mod_cast hn
-    nlinarith
-  exact mul_nonneg (add_nonneg zero_le_one (Real.log_nonneg hmul)) (Nat.cast_nonneg _)
+    (hδ : 0 < δ) (hδone : δ < 1) {n : ℕ} (hn : 2 ≤ n) : 0 ≤ factor q δ n :=
+  (factor_pos hq hqone hδ hδone (by omega : 0 < n)).le
 
 /-- A fixed source failure budget gives the stated squared-logarithmic factor.
 The constants may depend on the fixed oracle reliability and success target. -/

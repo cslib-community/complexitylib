@@ -60,7 +60,9 @@ structure State where
   ABI; the source-batch planner retains them as a context cache and records its
   different actual batch request bytes in the native oracle ledger. -/
   requests : List (List Bool)
-  /-- Private seed followed by framed visible replies. -/
+  /-- Planner-owned bytes followed by framed visible replies. The adaptive block
+  controller initializes these with a private seed; a one-turn controller can
+  instead install its preformed request. The updater appends the actual reply. -/
   privateWord : List Bool
   /-- Remaining transaction budget. -/
   turns : ℕ
