@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Problems.TwoSAT
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.Layout
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Foundations.Data.Nat.Bits.Halving
 
 /-!
 # Unreachability as 2SAT
@@ -174,18 +175,6 @@ def literalCode (b r : ℕ) (sign : Bool) (exit : ℕ) : List Instr :=
 theorem length_literalCode (b r : ℕ) (sign : Bool) (exit : ℕ) :
     (literalCode b r sign exit).length = 23 := rfl
 
-/-- The binary digits of a positive number: its remainder by two, then those of its half. -/
-private theorem bits_of_pos {q : ℕ} (hq : 0 < q) : q.bits = decide (q % 2 = 1) :: (q / 2).bits := by
-  rcases Nat.mod_two_eq_zero_or_one q with h | h
-  · have hq' : q = 2 * (q / 2) := by omega
-    conv_lhs => rw [hq']
-    rw [Nat.bit0_bits _ (by omega), h]
-    rfl
-  · have hq' : q = 2 * (q / 2) + 1 := by omega
-    conv_lhs => rw [hq']
-    rw [Nat.bit1_bits, h]
-    rfl
-
 variable {P : CounterProgram} {w : List Bool} {B : ℕ}
 
 /-- The digit-writing loop of `literalCode`, writing the binary digits of `q` from register `5`. -/
@@ -213,7 +202,7 @@ private theorem reachesOut_literalCode_loop {b r exit : ℕ} {sign : Bool}
     rw [← hq, set_getD_self hlen]
     exact ReachesOut.refl _
   · simp only [eval_const, eval_reg, hq, hq0, ↓reduceIte]
-    rw [bits_of_pos hq0, List.flatMap_cons, List.append_assoc, List.singleton_append]
+    rw [Nat.bits_of_pos hq0, List.flatMap_cons, List.append_assoc, List.singleton_append]
     refine (hmarks regs' hB').trans ?_
     have hqB : q ≤ B := by
       rw [← hq, List.getD_eq_getElem _ _ hlen]
