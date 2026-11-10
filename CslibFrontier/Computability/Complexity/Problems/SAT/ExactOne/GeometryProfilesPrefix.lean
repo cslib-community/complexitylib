@@ -121,7 +121,7 @@ theorem profilePrefixGeometry_check (p : ClauseProfile) :
 
 /-- Extending source incidences preserves the exact logical incidence signature. -/
 theorem profilePrefixGeometry_signature (p : ClauseProfile) :
-    ((profilePrefixGeometry p).incidenceRoutes.map fun e => (e.1, e.2.1)) =
+    ((profilePrefixGeometry p).incidenceRoutes.map fun e => (e.clauseIndex, e.variableIndex)) =
       profileSignature p := by
   rw [← profileGeometry_signature]
   simp [profilePrefixGeometry, LocalGeometry.toPrefix, List.map_map, Function.comp_def]
@@ -151,7 +151,7 @@ theorem profilePrefixGeometry_clause_interior (p : ClauseProfile) :
 /-- Source-boundary extension preserves the single incidence at every source placeholder. -/
 theorem profilePrefixGeometry_terminal_degree (p : ClauseProfile) :
     ∀ v ∈ (profilePrefixGeometry p).terminalVariables,
-      ((profilePrefixGeometry p).incidenceRoutes.map fun e => e.2.1).count v = 1 := by
+      ((profilePrefixGeometry p).incidenceRoutes.map fun e => e.variableIndex).count v = 1 := by
   simpa [profilePrefixGeometry, LocalGeometry.toPrefix, List.map_map, Function.comp_def] using
     profileGeometry_terminal_degree p
 
@@ -160,8 +160,8 @@ theorem profilePrefixGeometry_costs (p : ClauseProfile) :
     (profilePrefixGeometry p).variablePositions.length ≤ 29 ∧
       (profilePrefixGeometry p).clausePositions.length ≤ 22 ∧
       (profilePrefixGeometry p).incidenceRoutes.length ≤ 66 ∧
-      (((profilePrefixGeometry p).incidenceRoutes.map fun e => e.2.2.length - 1).sum ≤ 113) ∧
-      (((profilePrefixGeometry p).incidenceRoutes.map fun e => wireLength e.2.2).sum ≤
+      (((profilePrefixGeometry p).incidenceRoutes.map fun e => e.route.length - 1).sum ≤ 113) ∧
+      (((profilePrefixGeometry p).incidenceRoutes.map fun e => wireLength e.route).sum ≤
         652600) ∧ (profilePrefixGeometry p).size = 180000 := by
   fin_cases p <;> decide +kernel
 

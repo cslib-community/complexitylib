@@ -25,6 +25,7 @@ source placeholders are removed, and their incidences join the trimmed source ro
 
 * `positiveDrawing`: finite drawing data for the actual positive exact-one output formula.
 * `positivePlacedClauses`: clause records in the actual compiler's list order.
+* `PositivePlacedClause`: a placed clause record, read through `clause`, `point` and `routes`.
 
 ## Main results
 
@@ -67,13 +68,27 @@ def positiveExterior (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) (i j : ℕ) : 
 /-- A source prefix joins its inherited route; an auxiliary prefix already ends at its variable. -/
 def positiveIncidenceRoute (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) (i : ℕ)
     (c : Clause ℕ) (e : LocalIncidence) : Route :=
-  let stem := translate (positiveBoxOrigin φ d i) e.2.2
-  match (profileVariables (clauseProfile c)).getD e.2.1 (.inl (.inl 0)) with
+  let stem := translate (positiveBoxOrigin φ d i) e.route
+  match (profileVariables (clauseProfile c)).getD e.variableIndex (.inl (.inl 0)) with
   | .inl (.inl j) => stem ++ (positiveExterior φ d i j).tail
   | _ => stem
 
 /-- An actual clause, its position, and its literal routes in literal order. -/
 abbrev PositivePlacedClause := Clause (CNF.PositiveExactOneCompile.Variable ℕ) × Point × List Route
+
+namespace PositivePlacedClause
+
+/-- The output clause. -/
+abbrev clause (pc : PositivePlacedClause) : Clause (CNF.PositiveExactOneCompile.Variable ℕ) :=
+  pc.1
+
+/-- The position of the clause vertex. -/
+abbrev point (pc : PositivePlacedClause) : Point := pc.2.1
+
+/-- The routes of the clause's literals, in literal order. -/
+abbrev routes (pc : PositivePlacedClause) : List Route := pc.2.2
+
+end PositivePlacedClause
 
 /-- One original clause's output, using its actual global auxiliary offsets. -/
 def positiveClauseBlock (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) (i : ℕ) (c : Clause ℕ) :
@@ -81,7 +96,7 @@ def positiveClauseBlock (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) (i : ℕ) (
   (profileFormula (clauseProfile c)).zipIdx.map fun a =>
     (a.1.relabel (profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) c),
       positiveBoxOrigin φ d i + (clauseGeometry φ d i c).clausePosition a.2,
-      ((clauseGeometry φ d i c).incidenceRoutes.filter fun e => e.1 == a.2).map
+      ((clauseGeometry φ d i c).incidenceRoutes.filter fun e => e.clauseIndex == a.2).map
         (positiveIncidenceRoute φ d i c))
 
 /-- Actual output clause records in source-block and local-clause order. -/
@@ -124,8 +139,8 @@ def positiveVariablePoint (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
 /-- The actual compact output drawing omits all private source-placeholder vertices. -/
 def positiveDrawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) : Graph.OrthogonalDrawing :=
   (((CNF.PositiveExactOneCompile.rawFormula φ).distinctVars.map (positiveVariablePoint φ d)) ++
-    ((positivePlacedClauses φ d).map fun c => c.2.1),
-    (positivePlacedClauses φ d).flatMap fun c => c.2.2)
+    ((positivePlacedClauses φ d).map fun pc => pc.point),
+    (positivePlacedClauses φ d).flatMap fun pc => pc.routes)
 
 private theorem source_table_lookup (vs : List ℕ)
     (tail : List (CNF.PositiveExactOneCompile.Variable ℕ × Point))

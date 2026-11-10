@@ -47,7 +47,7 @@ theorem clauseGeometry_clause_length (φ : CNF ℕ) (d : Graph.OrthogonalDrawing
 /-- A clause block lists precisely the translated local clause positions in order. -/
 theorem positiveClauseBlock_positions (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
     (i : ℕ) (c : Clause ℕ) :
-    ((positiveClauseBlock φ d i c).map fun pc => pc.2.1) =
+    ((positiveClauseBlock φ d i c).map fun pc => pc.point) =
       (clauseGeometry φ d i c).clausePositions.map (positiveBoxOrigin φ d i + ·) := by
   simp only [positiveClauseBlock, List.map_map, Function.comp_def]
   have he := congrArg (List.map (positiveBoxOrigin φ d i + ·))
@@ -67,7 +67,7 @@ theorem clauseGeometry_clause_bounds (φ : CNF ℕ) (d : Graph.OrthogonalDrawing
 /-- A single actual clause box has distinct clause points. -/
 theorem positiveClauseBlock_positions_nodup (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
     (i : ℕ) (c : Clause ℕ) :
-    ((positiveClauseBlock φ d i c).map fun pc => pc.2.1).Nodup := by
+    ((positiveClauseBlock φ d i c).map fun pc => pc.point).Nodup := by
   rw [positiveClauseBlock_positions]
   apply List.Nodup.map
   · exact fun _ _ => add_left_cancel
@@ -81,8 +81,8 @@ theorem positiveClauseBlock_positions_disjoint {φ : CNF ℕ} {d : Graph.Orthogo
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d)
     {i j : ℕ} (hi : i < φ.length) (hj : j < φ.length) (hij : i ≠ j)
     (c c' : Clause ℕ) :
-    List.Disjoint ((positiveClauseBlock φ d i c).map fun pc => pc.2.1)
-      ((positiveClauseBlock φ d j c').map fun pc => pc.2.1) := by
+    List.Disjoint ((positiveClauseBlock φ d i c).map fun pc => pc.point)
+      ((positiveClauseBlock φ d j c').map fun pc => pc.point) := by
   rw [positiveClauseBlock_positions, positiveClauseBlock_positions, List.disjoint_left]
   intro p hpi hpj
   obtain ⟨q, hq, hqp⟩ := List.mem_map.mp hpi
@@ -95,7 +95,7 @@ theorem positiveClauseBlock_positions_disjoint {φ : CNF ℕ} {d : Graph.Orthogo
 /-- Every actual output clause has its own distinct displayed point. -/
 theorem positiveClausePositions_nodup {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) :
-    ((positivePlacedClauses φ d).map fun pc => pc.2.1).Nodup := by
+    ((positivePlacedClauses φ d).map fun pc => pc.point).Nodup := by
   rw [positivePlacedClauses, List.map_flatMap]
   apply List.nodup_flatMap.mpr
   constructor
@@ -132,7 +132,7 @@ theorem positiveVariablePoint_ne_clause {φ : CNF ℕ} {d : Graph.OrthogonalDraw
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d)
     {v : CNF.PositiveExactOneCompile.Variable ℕ}
     (hv : v ∈ (CNF.PositiveExactOneCompile.rawFormula φ).vars) {p : Point}
-    (hp : p ∈ (positivePlacedClauses φ d).map fun pc => pc.2.1) :
+    (hp : p ∈ (positivePlacedClauses φ d).map fun pc => pc.point) :
     positiveVariablePoint φ d v ≠ p := by
   obtain ⟨c', hc', hp⟩ := List.mem_flatMap.mp (by
     simpa only [positivePlacedClauses, List.map_flatMap] using hp)
