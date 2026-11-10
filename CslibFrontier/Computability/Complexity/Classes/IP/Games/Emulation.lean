@@ -9,12 +9,13 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games
-public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
+public import CslibFrontier.Probability.BitString.AffineHash.Word
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Computability.Probabilistic.AffineHash
 import CslibFrontier.Foundations.Data.BitString.WordCount
 
 /-!
@@ -83,46 +84,6 @@ counts, which removes the separate normalisation of the set lower bound protocol
 namespace Cslib.Complexity
 
 open Finset Turing.MultiTapeTM SetLowerBound
-
-namespace IPGame
-
-/-- The number of verifier moves of a private-coin game shape. -/
-def verifierMoves (g : List (IPMove × ℕ)) : ℕ := (g.map Prod.fst).count .verifier
-
-@[simp] theorem verifierMoves_nil : verifierMoves [] = 0 := rfl
-
-@[simp] theorem verifierMoves_verifier (n : ℕ) (g : List (IPMove × ℕ)) :
-    verifierMoves ((.verifier, n) :: g) = verifierMoves g + 1 := by
-  simp [verifierMoves]
-
-@[simp] theorem verifierMoves_prover (n : ℕ) (g : List (IPMove × ℕ)) :
-    verifierMoves ((.prover, n) :: g) = verifierMoves g := by
-  simp [verifierMoves]
-
-/-- A count of a `0`/`1`-bounded payoff is at most `2 ^ verifierBits g`. -/
-theorem count_le_two_pow (g : List (IPMove × ℕ)) (f : List Bool → ℕ) (hf : ∀ t, f t ≤ 1) :
-    count g f ≤ 2 ^ verifierBits g := by
-  have h := count_eq_value g f
-  have hv : AMGame.value true (toAM g) (fun t => (f t : ℚ)) ≤ 1 :=
-    AMGame.value_le_one _ _ fun t => by exact_mod_cast hf t
-  have : (count g f : ℚ) ≤ 2 ^ verifierBits g := by
-    rw [h]
-    have : (0 : ℚ) < 2 ^ verifierBits g := by positivity
-    nlinarith
-  exact_mod_cast this
-
-/-- The count of a concatenation of shapes: the count of the first shape, whose payoff is the count
-of the second. -/
-theorem count_append (g h : List (IPMove × ℕ)) (f : List Bool → ℕ) :
-    count (g ++ h) f = count g fun t => count h fun u => f (t ++ u) := by
-  induction g generalizing f with
-  | nil => rfl
-  | cons x g ih =>
-    obtain ⟨_ | _, n⟩ := x
-    · simp only [List.cons_append, count_verifier, ih, List.append_assoc]
-    · simp only [List.cons_append, count_prover, ih, List.append_assoc]
-
-end IPGame
 
 namespace Emulation
 
