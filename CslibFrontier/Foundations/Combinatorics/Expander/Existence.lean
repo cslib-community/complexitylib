@@ -46,7 +46,7 @@ The multigraphs `expander V` form a family of expanders (`Cslib.RotationMap.Expa
 
 * `Cslib.RotationMap.exists_spectralExpansion_le`: such a multigraph exists on every finite type.
 * `Cslib.RotationMap.exists_forall_exists_spectralExpansion_le`: constant-degree expanders exist,
-  with the same degree and spectral bound on every finite type.
+  with the same positive degree and spectral bound on every finite type.
 * `Cslib.RotationMap.le_edgeExpansion_expander`: they have edge expansion at least `1 / 6000`.
 
 ## References
@@ -99,12 +99,14 @@ theorem exists_spectralExpansion_le :
 
 /-- **Constant-degree expanders exist**
 [Hoory, Linial and Wigderson, Theorem 4.16][HooryLinialWigderson2006]
-[Arora and Barak, Chapter 21][AroraBarak09]: there are a degree `d` and a bound `μ < 1` such that
-every finite type carries a `d`-regular multigraph of spectral expansion at most `μ`. -/
+[Arora and Barak, Chapter 21][AroraBarak09]: there are a positive degree `d` and a bound `μ < 1`
+such that every finite type carries a `d`-regular multigraph of spectral expansion at most `μ`.
+The degree is required to be positive because the multigraph of degree `0` has spectral expansion
+`0` on every type. -/
 theorem exists_forall_exists_spectralExpansion_le :
-    ∃ d : ℕ, ∃ μ < 1, ∀ (V : Type u) [Fintype V],
+    ∃ d : ℕ, 0 < d ∧ ∃ μ < 1, ∀ (V : Type u) [Fintype V],
       ∃ G : RotationMap V (Fin d), G.spectralExpansion ≤ μ :=
-  ⟨120, 1 - 1 / 360000, by norm_num, fun V _ ↦ exists_spectralExpansion_le V⟩
+  ⟨120, by norm_num, 1 - 1 / 360000, by norm_num, fun V _ ↦ exists_spectralExpansion_le V⟩
 
 /-- A `120`-regular multigraph on a finite type `V` of spectral expansion at most
 `1 - 1 / 360000` (`spectralExpansion_expander_le`), chosen non-constructively by
