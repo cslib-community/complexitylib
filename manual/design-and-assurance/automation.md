@@ -191,36 +191,6 @@ inspect its bounds, supply missing arithmetic facts or name a local encoding lem
 lemma reports the underlying name-resolution error; check its spelling, namespace and import.
 The tactic neither invents a growth bound nor searches for an encoding definition to unfold.
 
-## Close word-size bounds
-
-Word-RAM instructions need a fitting condition `Fits w v`, which unfolds to `v < 2 ^ w`, for
-each value they write. Import `CslibFrontier.Tactic.Fits` and prove such a condition with `fits`
-instead of choosing a larger fact `h` and writing `h.of_le (by omega)`. The tactic unfolds `Fits`
-in the goal and in the hypotheses that mention it, adds that each power of two `2 ^ e` among them
-is positive, and runs `omega`. It finds the hypotheses by their statements, so it does not depend
-on their names, and the goal may also be written `v < 2 ^ w`. The
-[checked clients](../../CslibFrontierTests/FitsTactic.lean) cover offsets, constants, masks, shifts,
-a wider word, conjunctions and negations of fitting facts, a product bound and both diagnostics.
-To check them, run `lake build CslibFrontierTests.FitsTactic --wfail --iofail` from the repository
-root after [setup](../workflows/getting-started.md).
-
-`ram_eval` and `ram_exact_eval` decide the fitting conditions of the values they write the same
-way, with the simplification procedure `Cslib.WordRAM.reduceFits`. It uses only the hypotheses
-that mention `Fits`, and at most 16 of them; past that it only matches a hypothesis of the same
-statement. A value that fits by a larger fitting fact in context therefore needs no named
-`Fits` statement among their simp lemmas. These tactics' modules import `CslibFrontier.Tactic.Fits`,
-so their clients can call `fits` without importing it.
-
-A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
-are atoms for `omega`: give a bound on one as a term, as in
-`fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`
-only when `omega` can see it, as for `w + 1`; otherwise weaken it first with `Fits.mono`.
-
-If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic recommends plain
-`omega`.
-If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
-missing bound, for instance on a product or on a value read from memory.
-
 ## Close negligibility bounds
 
 Asymptotic security theorems finish by showing that a concrete advantage or failure bound is
@@ -260,6 +230,36 @@ displays the normalized residual `Negligible` goal; supply the missing `Negligib
 `PolynomiallyBounded` fact in context, or bound an indexed sum first with
 `Negligible.sum_range_of_le`. The tactic discharges asymptotic decay from a proved quantitative
 bound; it does not perform game hops or probability rewrites itself.
+
+## Close word-size bounds
+
+Word-RAM instructions need a fitting condition `Fits w v`, which unfolds to `v < 2 ^ w`, for
+each value they write. Import `CslibFrontier.Tactic.Fits` and prove such a condition with `fits`
+instead of choosing a larger fact `h` and writing `h.of_le (by omega)`. The tactic unfolds `Fits`
+in the goal and in the hypotheses that mention it, adds that each power of two `2 ^ e` among them
+is positive, and runs `omega`. It finds the hypotheses by their statements, so it does not depend
+on their names, and the goal may also be written `v < 2 ^ w`. The
+[checked clients](../../CslibFrontierTests/FitsTactic.lean) cover offsets, constants, masks, shifts,
+a wider word, conjunctions and negations of fitting facts, a product bound and both diagnostics.
+To check them, run `lake build CslibFrontierTests.FitsTactic --wfail --iofail` from the repository
+root after [setup](../workflows/getting-started.md).
+
+`ram_eval` and `ram_exact_eval` decide the fitting conditions of the values they write the same
+way, with the simplification procedure `Cslib.WordRAM.reduceFits`. It uses only the hypotheses
+that mention `Fits`, and at most 16 of them; past that it only matches a hypothesis of the same
+statement. A value that fits by a larger fitting fact in context therefore needs no named
+`Fits` statement among their simp lemmas. These tactics' modules import `CslibFrontier.Tactic.Fits`,
+so their clients can call `fits` without importing it.
+
+A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
+are atoms for `omega`: give a bound on one as a term, as in
+`fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`
+only when `omega` can see it, as for `w + 1`; otherwise weaken it first with `Fits.mono`.
+
+If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic recommends plain
+`omega`.
+If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
+missing bound, for instance on a product or on a value read from memory.
 
 ## Proof style as interface maintenance
 
