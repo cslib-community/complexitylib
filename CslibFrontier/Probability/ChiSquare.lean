@@ -62,7 +62,9 @@ Note that the reference/denominator distribution `q` is the **second** argument,
 * [Alexandre B. Tsybakov, *Introduction to Nonparametric Estimation*][Tsybakov2009], Springer,
   2009, Section 2.4.
 * [Clément L. Canonne, *Topics and Techniques in Distribution Testing*][Canonne2022], Foundations
-  and Trends in Communications and Information Theory, 2022, Chapter 1.
+  and Trends in Communications and Information Theory, 2022; locators checked against the
+  author-hosted draft (March 10, 2024): Appendix B (Definition B.1, `(B.2)`, `(B.5)`, Lemmas B.2
+  and B.5) and Section 3.1 (Lemma 3.1 and `(3.10)`).
 -/
 
 public section

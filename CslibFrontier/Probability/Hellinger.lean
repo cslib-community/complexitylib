@@ -57,7 +57,9 @@ definiteness, and `hellingerDist_triangle` are exposed directly.
   2009, Section 2.4 (note Tsybakov scales squared Hellinger by `2`, whereas we normalize
   `h(p, q) ∈ [0, 1]`).
 * [Clément L. Canonne, *Topics and Techniques in Distribution Testing*][Canonne2022], Foundations
-  and Trends in Communications and Information Theory, 2022, Chapter 1.
+  and Trends in Communications and Information Theory, 2022; locators checked against the
+  author-hosted draft (March 10, 2024): Appendix B (Definition B.1, `(B.3)`, `(B.6)`, Lemma B.1)
+  and Section 3.1 (`(3.3)`).
 -/
 
 public section
@@ -108,18 +110,6 @@ private lemma sqrt_mul_left_mul_sqrt_mul_left {c u v : ℝ} (hc : 0 ≤ c) (hu :
   have hmul : Real.sqrt c * Real.sqrt u * (Real.sqrt c * Real.sqrt v) =
       (Real.sqrt c * Real.sqrt c) * (Real.sqrt u * Real.sqrt v) := by ring
   rw [hmul, Real.mul_self_sqrt hc]
-
-private lemma sum_sqrt_mul_sqrt_le_sqrt_mul {κ : Type*} [Fintype κ] (u v : κ → ℝ)
-    (hu : ∀ i, 0 ≤ u i) (hv : ∀ i, 0 ≤ v i) :
-    ∑ i, Real.sqrt (u i) * Real.sqrt (v i) ≤ Real.sqrt ((∑ i, u i) * (∑ i, v i)) := by
-  refine Real.le_sqrt_of_sq_le ?_
-  have hcs := Finset.sum_mul_sq_le_sq_mul_sq (Finset.univ : Finset κ)
-    (fun i => Real.sqrt (u i)) (fun i => Real.sqrt (v i))
-  have h1 : ∑ i, Real.sqrt (u i) ^ 2 = ∑ i, u i :=
-    Finset.sum_congr rfl fun i _ => Real.sq_sqrt (hu i)
-  have h2 : ∑ i, Real.sqrt (v i) ^ 2 = ∑ i, v i :=
-    Finset.sum_congr rfl fun i _ => Real.sq_sqrt (hv i)
-  simpa only [h1, h2] using hcs
 
 private lemma one_sub_prod_le_sum_one_sub {κ : Type*} (s : Finset κ) (c : κ → ℝ)
     (hc0 : ∀ i ∈ s, 0 ≤ c i) (hc1 : ∀ i ∈ s, c i ≤ 1) :
@@ -525,11 +515,13 @@ theorem sum_mul_bhattacharyya_le_bhattacharyya_bind [Finite α] [Finite β]
         Real.sqrt ((μ a).toReal * (p a b).toReal) * Real.sqrt ((μ a).toReal * (q a b).toReal) :=
     (sqrt_mul_left_mul_sqrt_mul_left ENNReal.toReal_nonneg ENNReal.toReal_nonneg).symm
   simp_rw [hpt]
-  have hcs := sum_sqrt_mul_sqrt_le_sqrt_mul
-    (fun a => (μ a).toReal * (p a b).toReal)
-    (fun a => (μ a).toReal * (q a b).toReal)
+  have hcs := (Real.sum_sqrt_mul_sqrt_le Finset.univ
+    (f := fun a => (μ a).toReal * (p a b).toReal)
+    (g := fun a => (μ a).toReal * (q a b).toReal)
     (fun _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
-    (fun _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
+    (fun _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)).trans_eq
+    (Real.sqrt_mul
+      (Finset.sum_nonneg fun _ _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg) _).symm
   simpa only [← bind_apply_toReal] using hcs
 
 /-- Joint convexity of squared Hellinger distance under mixing with weights `μ`. -/
@@ -565,11 +557,13 @@ theorem bhattacharyya_le_bhattacharyya_bind [Finite α] [Finite β]
     simp_rw [hpt, ← Finset.mul_sum, sum_toReal, mul_one]
   rw [hrewrite]
   refine Finset.sum_le_sum fun b _ => ?_
-  have hcs := sum_sqrt_mul_sqrt_le_sqrt_mul
-    (fun a => (p a).toReal * (kernel a b).toReal)
-    (fun a => (q a).toReal * (kernel a b).toReal)
+  have hcs := (Real.sum_sqrt_mul_sqrt_le Finset.univ
+    (f := fun a => (p a).toReal * (kernel a b).toReal)
+    (g := fun a => (q a).toReal * (kernel a b).toReal)
     (fun _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
-    (fun _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)
+    (fun _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg)).trans_eq
+    (Real.sqrt_mul
+      (Finset.sum_nonneg fun _ _ => mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg) _).symm
   simpa only [← bind_apply_toReal] using hcs
 
 /-- Data processing inequality for squared Hellinger distance under a Markov kernel. -/

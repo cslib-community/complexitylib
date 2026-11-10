@@ -267,7 +267,7 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 <a id="canonne22"></a>
 ## canonne22
 
-Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Bibliographic metadata checked on 2026-11-10; cited in Chapter 1 background for standard Bhattacharyya, Hellinger, `χ²`, and total-variation/KL comparison inequalities (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
+Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Checked on 2026-11-10 against the author-hosted draft dated March 10, 2024 at https://ccanonne.github.io/files/misc/main-survey-fnt.pdf (journal pagination not inspected; locators follow that March 10, 2024 draft): Appendix B (pp. 149–152: Definition B.1, `(B.1)`–`(B.3)`, `(B.5)`–`(B.6)`, Lemmas B.1, B.2, and B.5) for Hellinger/`χ²`/KL definitions, tensorization, and comparison inequalities, and Section 3.1 (pp. 99–103: `(3.3)`, Lemma 3.1, and `(3.10)`) for the `√(2n)` Hellinger i.i.d. bound and Ingster's mixture second-moment identity (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
 
 <a id="ccpv11"></a>
 ## ccpv11
@@ -1324,7 +1324,7 @@ Jacobo Torán. “Space and Width in Propositional Resolution.” The Computatio
 <a id="tsybakov09"></a>
 ## tsybakov09
 
-Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Series in Statistics, Springer, 2009 (ISBN 978-0-387-79051-0). https://doi.org/10.1007/b13794 . Bibliographic metadata checked on 2026-11-10; Section 2.4 (`Divergence Measures and Lower Bounds`) is cited for `f`-divergence properties, Hellinger/TV comparisons (with Tsybakov scaling squared Hellinger by `2`, whereas the library normalizes `h ∈ [0, 1]`), `χ²` tensorization, `2 h² ≤ KL ≤ χ²`, and the Ingster/Le Cam mixture second-moment reduction.
+Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Series in Statistics, Springer, 2009 (ISBN 978-0-387-79051-0). https://doi.org/10.1007/b13794 . Bibliographic metadata checked on 2026-11-10 (full text not inspected); Section 2.4 (`Divergence Measures and Lower Bounds`) is cited for `f`-divergence properties, Hellinger/TV comparisons (with Tsybakov scaling squared Hellinger by `2`, whereas the library normalizes `h ∈ [0, 1]`), `χ²` tensorization, `2 h² ≤ KL ≤ χ²`, and the Ingster/Le Cam mixture second-moment reduction.
 
 <a id="tutte48"></a>
 ## tutte48
