@@ -3812,14 +3812,8 @@ theorem loadClusterInputCode_exec {base w w₀ n k : ℕ}
   intro d x₁
   have hfit_i (i : Fin (WordEncoding.width ClusterInput)) : Fits w (d i) :=
     encode_mkClusterInput_lt hw₀_pos hw hfit_space q r hop i
-  have hf3 := hfit_i 3
-  have hf4 := hfit_i 4
-  have hf9 := hfit_i 9
-  have hf10 := hfit_i 10
-  have hf11 := hfit_i 11
-  have hf12 := hfit_i 12
-  have hf13 := hfit_i 13
-  have hf14 := hfit_i 14
+  have hf3 := hfit_i 3; have hf4 := hfit_i 4; have hf9 := hfit_i 9; have hf10 := hfit_i 10
+  have hf11 := hfit_i 11; have hf12 := hfit_i 12; have hf13 := hfit_i 13; have hf14 := hfit_i 14
   simp only [d, mkClusterInput, Matrix.cons_val] at hf3 hf4 hf9 hf10 hf11 hf12 hf13 hf14
   refine ⟨?_, rfl, by simp +decide [x₁, loadClusterInputData, h0],
     by simp +decide [x₁, loadClusterInputData, hfr], ?_⟩
@@ -3837,7 +3831,7 @@ theorem loadClusterInputCode_exec {base w w₀ n k : ℕ}
     refine WP.Exact.of_exec (loadOffCode_exec (d := 18) (by decide)
       (by rw [base_add_remOff]; exact hfit_i 8) (by wram_simp [h0])) ?_
     wram_exec
-    simp only [x₁, loadClusterInputData, d, mkClusterInput, base_add_fullOff, base_add_occOff,
+    simp only [x₁, loadClusterInputData, mkClusterInput, base_add_fullOff, base_add_occOff,
       base_add_runOff, base_add_remOff]
     rfl
   funext i
