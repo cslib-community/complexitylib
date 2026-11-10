@@ -1,8 +1,8 @@
 # Results and reference inventory
 
-The canonical collection is [Entries.lean](../ComplexityResults/Entries.lean): readable Lean
+The canonical collection is [Entries.lean](../CslibFrontierResults/Entries.lean): readable Lean
 commands with real theorem identifiers. This is the initial collection for
-[#2012](https://github.com/cslib-community/complexitylib/issues/2012), not a complete inventory
+[#2012](https://github.com/cslib-community/cslib-frontier/issues/2012), not a complete inventory
 or a claim that every cited paper is fully formalized.
 Initial collection: Christian Reitwiessner, with Codex assistance.
 
@@ -43,7 +43,7 @@ imports or renamed declarations. The command also rejects private names, non-pro
 repeated IDs/references and theorem lists spanning different defining modules. It derives fully
 qualified names and module ownership; these are not maintained as duplicate strings.
 
-`ComplexityResults` is a separate local documentation library, included in the default
+`CslibFrontierResults` is a separate local documentation library, included in the default
 `lake build` targets. Mathematical modules do not import the registry. Compiled environment
 entries survive imports and are exported by [ExportResults.lean](../scripts/ExportResults.lean).
 JSON is generated output; there is no hand-maintained `registry.json`.
@@ -53,7 +53,7 @@ JSON is generated output; there is no hand-maintained `registry.json`.
 Run from the repository root:
 
 ```bash
-lake build ComplexityResults
+lake build CslibFrontierResults
 python3 scripts/results_registry.py                  # collection and bibliography checks
 python3 scripts/results_registry.py --markdown         # results grouped by topic
 python3 scripts/results_registry.py --papers           # grouped by cited bibliography key

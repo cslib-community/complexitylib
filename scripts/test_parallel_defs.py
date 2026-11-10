@@ -22,8 +22,8 @@ import parallel_defs as p  # noqa: E402
 TIERS = p.parse_tiers("200:0.3,120:0.6")
 
 
-def pair(a: str, b: str, size: int, sizes: tuple[int, int], am: str = "Complexity.New",
-         bm: str = "Complexity.Old", private: bool = False, constants: tuple[str, ...] = ()
+def pair(a: str, b: str, size: int, sizes: tuple[int, int], am: str = "CslibFrontier.New",
+         bm: str = "CslibFrontier.Old", private: bool = False, constants: tuple[str, ...] = ()
          ) -> dict:
     return {"pair": size, "a": a, "am": am, "al": 10, "b": b, "bm": bm, "bl": 20, "bp": private,
             "bx": False, "as": sizes[0], "bs": sizes[1], "c": list(constants)}
@@ -38,8 +38,8 @@ def group(*thms: tuple[str, str, bool], ext: tuple[tuple[str, str], ...] = (),
             "ext": [{"n": n, "m": m} for n, m in ext]}
 
 
-ALIAS = {"alias": "Cslib.MCSP.MCSPAt", "am": "Complexity.MCSP.Magnification", "al": 86,
-         "b": "Cslib.GapMCSP.yesSet", "bm": "Complexity.MCSP.Basic", "bl": 40, "bp": False}
+ALIAS = {"alias": "Cslib.MCSP.MCSPAt", "am": "CslibFrontier.MCSP.Magnification", "al": 86,
+         "b": "Cslib.GapMCSP.yesSet", "bm": "CslibFrontier.MCSP.Basic", "bl": 40, "bp": False}
 
 
 class ChangedLinesTests(unittest.TestCase):
@@ -50,15 +50,15 @@ class ChangedLinesTests(unittest.TestCase):
         self.assertEqual(p.added_ranges(diff), [(1, 1), (3, 3), (11, 12), (22, 23), (31, 31)])
 
     def test_requests(self) -> None:
-        stdin = p.requests(["Complexity.A", "Complexity.B", "Complexity.C"],
-                           {"Complexity/B.lean": None, "Complexity/C.lean": [(3, 4), (9, 9)]},
+        stdin = p.requests(["CslibFrontier.A", "CslibFrontier.B", "CslibFrontier.C"],
+                           {"CslibFrontier/B.lean": None, "CslibFrontier/C.lean": [(3, 4), (9, 9)]},
                            ["Cslib.thing"])
-        self.assertEqual(stdin.splitlines(), ["env Complexity.A", "lines Complexity.B *",
-                                              "lines Complexity.C 3-4,9-9", "decl Cslib.thing"])
-        stdin = p.requests(["Complexity.A"], {}, [], theorems=True, external=True)
-        self.assertEqual(stdin.splitlines(), ["theorems", "external", "env Complexity.A"])
-        self.assertEqual(p.requests(["Complexity.A"], {}, [], theorems=True).splitlines(),
-                         ["theorems", "env Complexity.A"])
+        self.assertEqual(stdin.splitlines(), ["env CslibFrontier.A", "lines CslibFrontier.B *",
+                                              "lines CslibFrontier.C 3-4,9-9", "decl Cslib.thing"])
+        stdin = p.requests(["CslibFrontier.A"], {}, [], theorems=True, external=True)
+        self.assertEqual(stdin.splitlines(), ["theorems", "external", "env CslibFrontier.A"])
+        self.assertEqual(p.requests(["CslibFrontier.A"], {}, [], theorems=True).splitlines(),
+                         ["theorems", "env CslibFrontier.A"])
 
     def test_changed_ranges_on_a_repository(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -76,27 +76,27 @@ class ChangedLinesTests(unittest.TestCase):
             git("config", "user.email", "fixture@example.invalid")
             # Review 6400055370: forced colour must not hide the hunk headers.
             git("config", "color.ui", "always")
-            write("Complexity/Old.lean", "".join(f"line {i}\n" for i in range(1, 11)))
-            write("Complexity/Gone.lean", "x\n")
-            write("Complexity/Deleted.lean", "a\nb\nc\n")
+            write("CslibFrontier/Old.lean", "".join(f"line {i}\n" for i in range(1, 11)))
+            write("CslibFrontier/Gone.lean", "x\n")
+            write("CslibFrontier/Deleted.lean", "a\nb\nc\n")
             git("add", ".")
             git("commit", "-qm", "base")
             git("update-ref", "refs/remotes/origin/main", "HEAD")
             git("checkout", "-q", "-b", "side")
-            lines = (root / "Complexity/Old.lean").read_text().splitlines(keepends=True)
+            lines = (root / "CslibFrontier/Old.lean").read_text().splitlines(keepends=True)
             lines[3] = "changed 4\n"
             lines.insert(7, "inserted\n")
-            write("Complexity/Old.lean", "".join(lines))
-            write("Complexity/Deleted.lean", "a\nc\n")
-            write("Complexity/New.lean", "def x := 1\n")
-            write("ComplexityTests/New.lean", "example : True := trivial\n")
-            (root / "Complexity/Gone.lean").unlink()
-            # Untracked files count as added; deleted files and files outside `Complexity/` are
+            write("CslibFrontier/Old.lean", "".join(lines))
+            write("CslibFrontier/Deleted.lean", "a\nc\n")
+            write("CslibFrontier/New.lean", "def x := 1\n")
+            write("CslibFrontierTests/New.lean", "example : True := trivial\n")
+            (root / "CslibFrontier/Gone.lean").unlink()
+            # Untracked files count as added; deleted files and files outside `CslibFrontier/` are
             # not examined, and a pure deletion marks the lines around it.
             self.assertEqual(p.changed_ranges(root, "origin/main"),
-                             {"Complexity/New.lean": None,
-                              "Complexity/Deleted.lean": [(1, 2)],
-                              "Complexity/Old.lean": [(4, 4), (8, 8)]})
+                             {"CslibFrontier/New.lean": None,
+                              "CslibFrontier/Deleted.lean": [(1, 2)],
+                              "CslibFrontier/Old.lean": [(4, 4), (8, 8)]})
 
     def test_reader_output_ignores_other_lines(self) -> None:
         # Review 6400055370: an elaboration message from `lean --run` must not break parsing.
@@ -127,11 +127,11 @@ class SelectionTests(unittest.TestCase):
                          ["Cslib.MCSP.MCSPAt", "New.big", "New.copy"])
         self.assertEqual(found[0].size, 0)
         self.assertEqual((found[1].path, found[1].line, found[1].other_path, found[1].other_line),
-                         ("Complexity/New.lean", 10, "Complexity/Old.lean", 20))
+                         ("CslibFrontier/New.lean", 10, "CslibFrontier/Old.lean", 20))
         self.assertAlmostEqual(found[2].share, 149 / 230)
 
     def test_same_module_candidates_are_left_out_by_default(self) -> None:
-        rows = [pair("A.x", "A.y", 300, (400, 400), am="Complexity.A", bm="Complexity.A"),
+        rows = [pair("A.x", "A.y", 300, (400, 400), am="CslibFrontier.A", bm="CslibFrontier.A"),
                 dict(ALIAS, bm=ALIAS["am"])]
         self.assertEqual(p.select(rows, TIERS, same_module=False), [])
         self.assertEqual(len(p.select(rows, TIERS, same_module=True)), 2)
@@ -145,9 +145,9 @@ class SelectionTests(unittest.TestCase):
 
 
 class StatementSelectionTests(unittest.TestCase):
-    ROWS = [group(("New.dup", "Complexity.New", True), ("privOld.dup", "Complexity.Old", False)),
-            group(("New.local", "Complexity.New", True), ("New.local'", "Complexity.New", True)),
-            group(("New.core", "Complexity.New", True), ext=(("Nat.add_comm", "Init.Core"),),
+    ROWS = [group(("New.dup", "CslibFrontier.New", True), ("privOld.dup", "CslibFrontier.Old", False)),
+            group(("New.local", "CslibFrontier.New", True), ("New.local'", "CslibFrontier.New", True)),
+            group(("New.core", "CslibFrontier.New", True), ext=(("Nat.add_comm", "Init.Core"),),
                   exact=False),
             {"examined": 4, "theorems": 9, "modules": 2, "external": 3, "missing": []}]
 
@@ -160,11 +160,11 @@ class StatementSelectionTests(unittest.TestCase):
         self.assertEqual(len(p.select_groups(self.ROWS, same_module=True)), 3)
 
     def test_examined_theorems_come_first(self) -> None:
-        row = group(("Old.a", "Complexity.Old", False), ("New.b", "Complexity.New", True))
+        row = group(("Old.a", "CslibFrontier.Old", False), ("New.b", "CslibFrontier.New", True))
         [found] = p.select_groups([row], same_module=False)
         self.assertEqual([(t.name, t.path, t.examined) for t in found.theorems],
-                         [("New.b", "Complexity/New.lean", True),
-                          ("Old.a", "Complexity/Old.lean", False)])
+                         [("New.b", "CslibFrontier/New.lean", True),
+                          ("Old.a", "CslibFrontier/Old.lean", False)])
 
 
 class ReportTests(unittest.TestCase):
@@ -176,10 +176,10 @@ class ReportTests(unittest.TestCase):
     def test_texts(self) -> None:
         self.assertEqual(self.found[0].text(),
                          "`Cslib.MCSP.MCSPAt` is `Cslib.GapMCSP.yesSet` "
-                         "(Complexity/MCSP/Basic.lean:40) applied to its arguments: a second name "
+                         "(CslibFrontier/MCSP/Basic.lean:40) applied to its arguments: a second name "
                          "for an existing notion.")
         self.assertEqual(self.found[1].text(),
-                         "`New.big` and `Old.big` (private) (Complexity/Old.lean:20) share a "
+                         "`New.big` and `Old.big` (private) (CslibFrontier/Old.lean:20) share a "
                          "549-node subterm, 48% of the smaller body, built from `Finset.card`.")
 
     def test_markdown(self) -> None:
@@ -188,23 +188,23 @@ class ReportTests(unittest.TestCase):
         text = p.markdown(self.found, 7, 1)
         self.assertIn("2 candidate(s) among the 7 examined declarations. The first 1 are listed.",
                       text)
-        self.assertIn("- Complexity/MCSP/Magnification.lean:86: `Cslib.MCSP.MCSPAt` is", text)
+        self.assertIn("- CslibFrontier/MCSP/Magnification.lean:86: `Cslib.MCSP.MCSPAt` is", text)
         self.assertNotIn("New.big", text)
 
     def test_statement_texts(self) -> None:
         exact, symmetric = p.select_groups(StatementSelectionTests.ROWS, same_module=False)
         exact.theorems[0].proof = "Nat.add_comm"
         self.assertEqual(exact.text(),
-                         "`New.dup` (Complexity/New.lean:10, proved as `Nat.add_comm`) has the "
-                         "same statement as `privOld.dup` (Complexity/Old.lean:20, private).")
+                         "`New.dup` (CslibFrontier/New.lean:10, proved as `Nat.add_comm`) has the "
+                         "same statement as `privOld.dup` (CslibFrontier/Old.lean:20, private).")
         self.assertEqual(symmetric.text(),
-                         "`New.core` (Complexity/New.lean:10) has the same statement as "
+                         "`New.core` (CslibFrontier/New.lean:10) has the same statement as "
                          "`Nat.add_comm` (in `Init.Core`) (up to the order of hypotheses and "
                          "instance arguments, the sides of `=` and `↔`, and `≥`, `>` and `≠`).")
-        three = p.Group(9, True, exact.theorems + [p.Theorem("C.c", "Complexity/C.lean", 3)],
+        three = p.Group(9, True, exact.theorems + [p.Theorem("C.c", "CslibFrontier/C.lean", 3)],
                         [("Nat.x", "Init.Core")])
-        self.assertIn("`privOld.dup` (Complexity/Old.lean:20, private), `C.c` "
-                      "(Complexity/C.lean:3) and `Nat.x` (in `Init.Core`).", three.text())
+        self.assertIn("`privOld.dup` (CslibFrontier/Old.lean:20, private), `C.c` "
+                      "(CslibFrontier/C.lean:3) and `Nat.x` (in `Init.Core`).", three.text())
 
     def test_statement_markdown_and_annotations(self) -> None:
         found = p.select_groups(StatementSelectionTests.ROWS, same_module=False)
@@ -212,18 +212,18 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(text.startswith("### Duplicate-statement notice (advisory)"))
         self.assertIn("2 group(s) of theorems with the same statement among the 4 examined "
                       "theorems.", text)
-        self.assertIn("- `New.dup` (Complexity/New.lean:10)", text)
+        self.assertIn("- `New.dup` (CslibFrontier/New.lean:10)", text)
         self.assertIn("No theorem among the 4 examined has the statement",
                       p.markdown([], 4, 10, theorems=True))
         [line] = p.annotations(found, 1)
-        self.assertTrue(line.startswith("::notice file=Complexity/New.lean,line=10,"
+        self.assertTrue(line.startswith("::notice file=CslibFrontier/New.lean,line=10,"
                                         "title=Possible duplicate statement::`New.dup`"))
 
     def test_annotations_are_escaped(self) -> None:
-        finding = p.Finding("a", "Complexity/x,y:z.lean", 3, "b%", "Complexity/O.lean", 4, 300,
+        finding = p.Finding("a", "CslibFrontier/x,y:z.lean", 3, "b%", "CslibFrontier/O.lean", 4, 300,
                             0.5)
         [line] = p.annotations([finding], 10)
-        self.assertTrue(line.startswith("::notice file=Complexity/x%2Cy%3Az.lean,line=3,"
+        self.assertTrue(line.startswith("::notice file=CslibFrontier/x%2Cy%3Az.lean,line=3,"
                                         "title=Possible parallel definition::"))
         self.assertIn("`b%25`", line)
         self.assertEqual(len(p.annotations(self.found, 1)), 1)
@@ -239,11 +239,11 @@ class DriverTests(unittest.TestCase):
         self.build = self.root / "build"
         self.summary = self.root / "summary.md"
         changed = mock.patch.object(p, "changed_ranges",
-                                    lambda root, ref: {"Complexity/New.lean": None})
+                                    lambda root, ref: {"CslibFrontier/New.lean": None})
         changed.start()
         self.addCleanup(changed.stop)
-        (self.root / "Complexity").mkdir()
-        (self.root / "Complexity/New.lean").write_text("def x := 1\n")
+        (self.root / "CslibFrontier").mkdir()
+        (self.root / "CslibFrontier/New.lean").write_text("def x := 1\n")
 
     def run_main(self, *flags: str) -> tuple[int, str]:
         out = io.StringIO()
@@ -257,41 +257,41 @@ class DriverTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("skipped: no build outputs", out)
         self.assertIn("skipped: no build outputs", self.summary.read_text())
-        (self.build / "Complexity").mkdir(parents=True)
+        (self.build / "CslibFrontier").mkdir(parents=True)
         code, out = self.run_main()
         self.assertEqual(code, 0)
         self.assertIn("skipped: 1 changed module(s) are not built", out)
 
     def test_reader_failure_does_not_fail(self) -> None:
-        (self.build / "Complexity").mkdir(parents=True)
-        (self.build / "Complexity/New.olean").write_text("")
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
         with mock.patch.object(p, "run_reader", side_effect=RuntimeError("boom")):
             code, out = self.run_main()
         self.assertEqual(code, 0)
         self.assertIn("skipped: the tool failed (boom)", out)
 
     def test_findings_go_to_the_summary_and_annotations(self) -> None:
-        (self.build / "Complexity").mkdir(parents=True)
-        (self.build / "Complexity/New.olean").write_text("")
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
         rows = [ALIAS, {"examined": 3, "modules": 2, "missing": []}]
         with mock.patch.object(p, "run_reader", return_value=rows) as reader:
             code, out = self.run_main("--github")
         self.assertEqual(code, 0)
-        self.assertEqual(reader.call_args.args[1].splitlines(), ["lines Complexity.New *"])
+        self.assertEqual(reader.call_args.args[1].splitlines(), ["lines CslibFrontier.New *"])
         self.assertEqual(reader.call_args.args[2:], (120, 4))
         self.assertIn("1 candidate(s) among the 3 examined declarations.", out)
-        self.assertIn("::notice file=Complexity/MCSP/Magnification.lean,line=86,", out)
+        self.assertIn("::notice file=CslibFrontier/MCSP/Magnification.lean,line=86,", out)
         self.assertIn("`Cslib.MCSP.MCSPAt` is `Cslib.GapMCSP.yesSet`", self.summary.read_text())
 
     def test_theorems_mode(self) -> None:
-        (self.build / "Complexity").mkdir(parents=True)
-        (self.build / "Complexity/New.olean").write_text("")
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
         rows = StatementSelectionTests.ROWS
         with mock.patch.object(p, "run_reader", return_value=rows) as reader:
             code, out = self.run_main("--theorems", "--github")
         self.assertEqual(code, 0)
         self.assertEqual(reader.call_args.args[1].splitlines(),
-                         ["theorems", "external", "lines Complexity.New *"])
+                         ["theorems", "external", "lines CslibFrontier.New *"])
         self.assertIn("2 group(s) of theorems with the same statement", out)
         self.assertIn("title=Possible duplicate statement::", out)
         self.assertIn("### Duplicate-statement notice", self.summary.read_text())
@@ -300,22 +300,22 @@ class DriverTests(unittest.TestCase):
         self.assertNotIn("external", reader.call_args.args[1].splitlines())
 
     def test_all_examines_every_module_even_unbuilt(self) -> None:
-        (self.root / "Complexity/Old.lean").write_text("theorem t : True := trivial\n")
-        (self.build / "Complexity").mkdir(parents=True)
-        (self.build / "Complexity/New.olean").write_text("")
+        (self.root / "CslibFrontier/Old.lean").write_text("theorem t : True := trivial\n")
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
         stats = {"examined": 1, "theorems": 1, "modules": 1, "external": 0,
-                 "missing": ["Complexity.Old"]}
+                 "missing": ["CslibFrontier.Old"]}
         with mock.patch.object(p, "run_reader", return_value=[stats]) as reader:
             code, out = self.run_main("--theorems", "--all")
         self.assertEqual(code, 0)
         self.assertEqual(reader.call_args.args[1].splitlines()[2:],
-                         ["lines Complexity.New *", "lines Complexity.Old *"])
+                         ["lines CslibFrontier.New *", "lines CslibFrontier.Old *"])
         self.assertIn("No theorem among the 1 examined", out)
         self.assertIn("1 library module(s) have no build outputs", out)
 
     def test_tool_failure_in_theorems_mode(self) -> None:
-        (self.build / "Complexity").mkdir(parents=True)
-        (self.build / "Complexity/New.olean").write_text("")
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
         with mock.patch.object(p, "run_reader", side_effect=RuntimeError("boom")):
             code, out = self.run_main("--theorems")
         self.assertEqual(code, 0)
@@ -325,7 +325,7 @@ class DriverTests(unittest.TestCase):
         with mock.patch.object(p, "changed_ranges", lambda root, ref: {}):
             code, out = self.run_main("--github")
         self.assertEqual(code, 0)
-        self.assertIn("no `Complexity/` definitions added or modified", out)
+        self.assertIn("no `CslibFrontier/` definitions added or modified", out)
         self.assertFalse(self.summary.exists())
 
 

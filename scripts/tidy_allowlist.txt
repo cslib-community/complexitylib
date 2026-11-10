@@ -1,50 +1,50 @@
 # The raw machine constructions that may state tidy computability publicly: finite controls,
 # tape routing, blank-work-tape restoration, exact-time TM/PTM composition. One path per line.
-# Source: #608 (https://github.com/cslib-community/complexitylib/issues/608#issuecomment-6376743596),
+# Source: #608 (https://github.com/cslib-community/cslib-frontier/issues/608#issuecomment-6376743596),
 # checked at main cded1fc9. Exact paths only; mixed modules need declaration-level handling.
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/Append.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/Comp.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/CopyWord.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/Foldl.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/Ite.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/IterateWhile.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/MultiPass.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/Reverse.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/StepMachine.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/StreamFold.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/TidyNormalForm.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/TidyZeroSpace.lean
-Complexity/Computability/Machines/Turing/MultiTape/Combinators/Transducer.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/Append.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/Comp.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/CopyWord.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/Foldl.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/Ite.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/IterateWhile.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/MultiPass.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/Reverse.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepMachine.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StreamFold.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/TidyNormalForm.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/TidyZeroSpace.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/Transducer.lean
 # Bare fixed-machine combinators and supplied-machine conditional assembly, #862:
-# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6408000749
-Complexity/Computability/Machines/Turing/MultiTape/Internal/ConditionalMachine.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelAppend.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelComp.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelFacts.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelIte.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelNormalForm.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelTransducer.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelZeroSpace.lean
+# https://github.com/cslib-community/cslib-frontier/issues/862#issuecomment-6408000749
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/ConditionalMachine.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelAppend.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelComp.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelFacts.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelIte.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelNormalForm.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelTransducer.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelZeroSpace.lean
 # Existing loop/wrapper laws and supplied-machine fold compiler, exact #862 disposition:
-# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6408754101
-Complexity/Computability/Machines/Turing/MultiTape/Internal/FoldCompiler.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelIterateWhile.lean
-Complexity/Computability/Machines/Turing/MultiTape/Internal/KernelOnWords.lean
+# https://github.com/cslib-community/cslib-frontier/issues/862#issuecomment-6408754101
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/FoldCompiler.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelIterateWhile.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/KernelOnWords.lean
 # Bare machine-witness normalization only; Internal kernel boundary approved in #862:
-# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6400704445
-Complexity/Computability/Machines/Turing/MultiTape/Internal/NormalForm.lean
+# https://github.com/cslib-community/cslib-frontier/issues/862#issuecomment-6400704445
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/NormalForm.lean
 # Charged-space machine witness normalization for native multi-pass routines (#862).
-Complexity/Computability/Machines/Turing/MultiTape/Internal/SpaceNormalForm.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/SpaceNormalForm.lean
 # Three unchanged fixed-machine tape lemmas; kernel classification approved in #862:
-# https://github.com/cslib-community/complexitylib/issues/862#issuecomment-6403378531
-Complexity/Computability/Machines/Turing/MultiTape/Internal/OnWords.lean
-Complexity/Computability/Machines/Turing/MultiTape/Plumbing/InputFromTape.lean
-Complexity/Computability/Machines/Turing/MultiTape/Plumbing/OnWords.lean
-Complexity/Computability/Machines/Turing/MultiTape/Plumbing/OutputToTape.lean
-Complexity/Computability/Machines/Turing/MultiTape/Plumbing/Tidy/Basic.lean
-Complexity/Computability/Machines/Turing/MultiTape/Plumbing/Tidy/Defs.lean
-Complexity/Computability/Machines/Turing/MultiTape/Plumbing/Tidy/Run.lean
-Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/RunsWords.lean
-Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Tidy.lean
-Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Tidy/Redirect.lean
-Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/IterateWhile.lean
+# https://github.com/cslib-community/cslib-frontier/issues/862#issuecomment-6403378531
+CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/OnWords.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Plumbing/InputFromTape.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Plumbing/OnWords.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Plumbing/OutputToTape.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Plumbing/Tidy/Basic.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Plumbing/Tidy/Defs.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Plumbing/Tidy/Run.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/RunsWords.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/Tidy.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/Tidy/Redirect.lean
+CslibFrontier/Computability/Machines/Turing/MultiTape/Probabilistic/IterateWhile.lean

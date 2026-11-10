@@ -13,7 +13,7 @@ import proof_lengths
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ABSTRACTS_DIR = ROOT / "abstracts/ComplexityAbstracts"
+ABSTRACTS_DIR = ROOT / "abstracts/CslibFrontierAbstracts"
 
 
 class AbstractToTexTests(unittest.TestCase):
@@ -94,10 +94,10 @@ end Example
                 self.assertIn(snippet, md, f"Missing {snippet!r} in Markdown for {filename}")
 
             # Verify proof bodies and #check_abstract command are stripped from code blocks
-            self.assertNotIn("#check_abstract ComplexityTests", md)
+            self.assertNotIn("#check_abstract CslibFrontierTests", md)
             self.assertNotIn("abstract audit passed", md)
             self.assertNotIn("guard_msgs", md)
-            self.assertNotIn("check\\_abstract ComplexityTests", tex)
+            self.assertNotIn("check\\_abstract CslibFrontierTests", tex)
             self.assertNotIn("Bridge.", md.split("## Main result")[-1])
 
             # Verify LaTeX output contains only ASCII characters (safe for pdflatex T1 fontenc)
@@ -372,7 +372,7 @@ end Example
             "/-- A definition. -/\ndef x : Nat := 0\n\n"
             "/-- info: audit passed -/\n#guard_msgs in\n"
             "#check_abstract Foo allowing [\n"
-            "  Complexity.First,\n  Complexity.Second\n]\n\n"
+            "  CslibFrontier.First,\n  CslibFrontier.Second\n]\n\n"
             "end Foo\n"
         )
         title, intro, sections = abstract_to_tex.parse_abstract(sample)
@@ -382,8 +382,8 @@ end Example
             abstract_to_tex.render_markdown(title, intro, sections),
             abstract_to_tex.render_tex(title, intro, sections),
         ):
-            self.assertNotIn("Complexity.First", rendered)
-            self.assertNotIn("Complexity.Second", rendered)
+            self.assertNotIn("CslibFrontier.First", rendered)
+            self.assertNotIn("CslibFrontier.Second", rendered)
             self.assertNotIn("audit passed", rendered)
 
     @unittest.skipUnless(shutil.which("pdflatex"), "pdflatex not installed")

@@ -20,7 +20,7 @@ class ComparatorRunnerTests(unittest.TestCase):
         self.script = self.root / "scripts/check_comparator.py"
         self.script.parent.mkdir()
         shutil.copyfile(Path(__file__).with_name("check_comparator.py"), self.script)
-        self.generated = self.root / "comparator/ComplexityComparatorChallenges"
+        self.generated = self.root / "comparator/CslibFrontierComparatorChallenges"
 
     def run_script(self, *arguments: str, env: dict[str, str] | None = None):
         return subprocess.run(

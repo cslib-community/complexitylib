@@ -176,7 +176,7 @@ def entry_foundations(entry, root=ROOT):
         raise ValueError(f"Duplicate foundation in {entry['id']}")
     for module in listed:
         path = module_source_path(module, root)
-        if module == "ComplexityAbstracts.Check" or module.endswith(("Abstract", "Bridge")):
+        if module == "CslibFrontierAbstracts.Check" or module.endswith(("Abstract", "Bridge")):
             raise ValueError(f"Not a shared foundation: {module}")
         if not path.is_file():
             raise ValueError(f"Missing shared foundation source: {module}")

@@ -14,7 +14,7 @@ import ImportGraph
 /-!
 # Check Init Imports
 
-This script checks that all `Complexity` modules (transitively) publicly import `Cslib.Init`,
+This script checks that all `CslibFrontier` modules (transitively) publicly import `Cslib.Init`,
 exactly as cslib's own `CheckInitImports` requires of `Cslib` modules. Every module here is an
 upstream candidate, so it must satisfy cslib's invariant already.
 -/
@@ -28,7 +28,7 @@ def exceptions : List Name := []
 
 def main : IO UInt32 := do
   let searchPath ← addSearchPathFromEnv (← getBuiltinSearchPath (← findSysroot))
-  CoreM.withImportModules #[`Complexity] (searchPath := searchPath) (trustLevel := 1024) do
+  CoreM.withImportModules #[`CslibFrontier] (searchPath := searchPath) (trustLevel := 1024) do
     let env ← getEnv
     let mut publicImports : NameMap (Array Name) := {}
     for name in env.header.moduleNames, data in env.header.moduleData do
@@ -37,7 +37,7 @@ def main : IO UInt32 := do
     let graph := publicImports.transitiveClosure
     let noInitGraph :=
       graph.filter (fun name imports =>
-        name.getRoot = `Complexity ∧ name ≠ `Complexity ∧ !imports.contains `Cslib.Init)
+        name.getRoot = `CslibFrontier ∧ name ≠ `CslibFrontier ∧ !imports.contains `Cslib.Init)
     let diff := noInitGraph.keys.diff exceptions
     if diff.length > 0 then
       IO.eprintln s!"error: the following modules do not publicly import `Cslib.Init`: {diff}"

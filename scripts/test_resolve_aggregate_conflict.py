@@ -22,7 +22,7 @@ PREAMBLE = "module  -- shake: keep-all --deprecated_module: ignore\n\n"
 
 def aggregate(*names: str, preamble: str = PREAMBLE, keyword: str = "public import") -> str:
     """An aggregate importing `Complexity.<name>` for each name, in the order given."""
-    return preamble + "".join(f"{keyword} Complexity.{name}\n" for name in names)
+    return preamble + "".join(f"{keyword} CslibFrontier.{name}\n" for name in names)
 
 
 class MergeAggregateTests(unittest.TestCase):
@@ -66,7 +66,7 @@ class MergeAggregateTests(unittest.TestCase):
     def test_a_line_that_is_not_an_import_is_refused(self) -> None:
         base = aggregate("A")
         for extra in ("set_option linter.style.longLine false\n", "\n", "import A B\n",
-                      "public import Complexity.B\r\n", "<<<<<<< ours\n"):
+                      "public import CslibFrontier.B\r\n", "<<<<<<< ours\n"):
             with self.subTest(extra=extra), self.assertRaisesRegex(rac.Refusal, "not an import"):
                 rac.merge_aggregate(base, aggregate("A", "B") + extra, aggregate("A", "C"))
 
@@ -90,8 +90,8 @@ class DriverTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         self.git("init", "-q", "-b", "main")
-        self.write(".gitattributes", "Complexity.lean merge=leanagg\n")
-        self.write("Complexity.lean", aggregate("A", "C", "E"))
+        self.write(".gitattributes", "CslibFrontier.lean merge=leanagg\n")
+        self.write("CslibFrontier.lean", aggregate("A", "C", "E"))
         self.git("add", ".")
         self.git("commit", "-qm", "base")
 
@@ -110,12 +110,12 @@ class DriverTests(unittest.TestCase):
         """Merge a branch writing `theirs` into one writing `ours`, both from `main`."""
         for branch, text in (("theirs", theirs), ("ours", ours)):
             self.git("checkout", "-q", "-b", branch, "main")
-            self.write("Complexity.lean", text)
+            self.write("CslibFrontier.lean", text)
             self.git("commit", "-qam", branch)
         return self.git("merge", "--no-edit", "theirs", check=False)
 
     def result(self) -> str:
-        return (self.root / "Complexity.lean").read_text(encoding="utf-8")
+        return (self.root / "CslibFrontier.lean").read_text(encoding="utf-8")
 
     def test_driver_merges_import_sets(self) -> None:
         self.configure()
@@ -130,7 +130,7 @@ class DriverTests(unittest.TestCase):
         self.assertIn("headers before the imports differ", merged.stderr)
         self.assertIn("<<<<<<< ours", self.result())
         unmerged = self.git("diff", "--name-only", "--diff-filter=U").stdout.split()
-        self.assertEqual(unmerged, ["Complexity.lean"])
+        self.assertEqual(unmerged, ["CslibFrontier.lean"])
 
     def test_driver_failure_leaves_a_conflict(self) -> None:
         paths = [self.root / name for name in ("base", "ours", "theirs")]

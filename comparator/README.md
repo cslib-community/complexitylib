@@ -54,7 +54,7 @@ the check. Consult Lean's documentation for expert workflows with separately pro
 | `sat` | For each fixed clause width, an exact model counter has the stated subexponential time and polynomial space bounds | `Cslib.Complexity.CountingNativeEndpoint.exists_modelCounter` |
 | `sat` | The independently stated ETH is false | `Cslib.Complexity.CountingNativeEndpoint.not_ETH` |
 
-Each `ComplexityComparator/<Suite>/Statements.lean` defines propositions without importing
+Each `CslibFrontierComparator/<Suite>/Statements.lean` defines propositions without importing
 complexitylib's implementations. Each corresponding `Solution.lean` proves its fixed
 propositions by applying the source theorems. The two automation source proofs use `polytime`.
 Their independent contract quantifies a binary finite-state multi-tape machine and polynomial
@@ -86,20 +86,20 @@ definition holes. A successful suite certifies its named contracts and their pro
 under the checkers' assumptions; it does not certify every theorem or file in the repository.
 
 No admitted proof is committed. The runner generates the deliberate challenge placeholders and
-their configurations under the ignored `comparator/ComplexityComparatorChallenges/` directory
+their configurations under the ignored `comparator/CslibFrontierComparatorChallenges/` directory
 before invoking Lake. This source directory is outside `.lake`, so the official build sandbox
 cannot modify the trusted challenge source. The solution has no challenge placeholders.
 
-The optional `ComplexityComparator` library builds the committed statements and solutions.
+The optional `CslibFrontierComparator` library builds the committed statements and solutions.
 The generated-challenge library has no roots and no default build facets; Lake resolves its
 modules only when comparator explicitly requests one. Neither a normal build nor
-`lake build @complexitylib` needs generated files or builds admitted challenge stubs. Both
+`lake build @cslib-frontier` needs generated files or builds admitted challenge stubs. Both
 comparator libraries use `roots = []`, so `mk_all` never generates aggregates importing their
-children. The default `Complexity` target and test driver are unchanged. To compile just the
+children. The default `CslibFrontier` target and test driver are unchanged. To compile just the
 committed checks:
 
 ```sh
-lake build ComplexityComparator
+lake build CslibFrontierComparator
 ```
 
 The Comparator workflow runs all suites and the negative control. It is manual-only: start it from

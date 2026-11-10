@@ -135,7 +135,7 @@ def lean_code(text: str) -> str:
 def module_source_path(module: str, root: Path) -> Path:
     """Resolve a module in the dedicated abstract library, never an arbitrary path."""
     if not isinstance(module, str) or not re.fullmatch(
-            r"ComplexityAbstracts\.[A-Za-z_][A-Za-z0-9_]*", module):
+            r"CslibFrontierAbstracts\.[A-Za-z_][A-Za-z0-9_]*", module):
         raise ValueError(f"Not a formal-abstract module: {module}")
     return Path(root).joinpath("abstracts", *module.split(".")).with_suffix(".lean")
 
@@ -152,10 +152,10 @@ def foundation_modules(source: Path, root: Path) -> list[str]:
         for match in re.finditer(r"^\s*(?:(?:public|meta)\s+)*import\s+([^\n]+)",
                                  lean_code(path.read_text()), re.MULTILINE):
             for module in match.group(1).split():
-                if not module.startswith("ComplexityAbstracts."):
+                if not module.startswith("CslibFrontierAbstracts."):
                     continue
                 dependency = module_source_path(module, root)
-                if module == "ComplexityAbstracts.Check" or module.endswith("Bridge"):
+                if module == "CslibFrontierAbstracts.Check" or module.endswith("Bridge"):
                     continue
                 if module.endswith("Abstract"):
                     raise ValueError(f"A shared foundation cannot be another abstract: {module}")

@@ -315,7 +315,7 @@ old data, revoke an origin, stop old workflow revisions or disable publishers: f
 Neither variable changes Lake's artifact IDs or ordinary retention.
 
 This PR does not complete repository-managed provisioning or automated upgrades. Those remain
-open under [#2503](https://github.com/cslib-community/complexitylib/issues/2503); the
+open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503); the
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
 the source/host checks from reader activation and integration approval.
 
