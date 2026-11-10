@@ -111,7 +111,8 @@ preference:
 2. Use `Function.uncurry`, `Prod.map` or composed projections, as the plain calculus rules
    already do.
 3. Turn a recurring tuple context into a small `structure` with named fields.
-4. If restructuring is too invasive, add named `abbrev` accessors such as `Ctx.desc`.
+4. If restructuring is too invasive, add named `abbrev` accessors such as
+   `LocalIncidence.route`.
 
 The rewritten form should stay definitionally equal to the old one, so that clients and automation
 (`fun_prop`, `@[program_certificate]`) keep working. Single projections (`p.1`) and

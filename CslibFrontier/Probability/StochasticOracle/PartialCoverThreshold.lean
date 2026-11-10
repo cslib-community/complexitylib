@@ -17,7 +17,9 @@ For rational failure probabilities and budgets, the logarithmic repetition
 threshold of [Wang2027], Theorem 4 (Section 5, PDF pp. 10–11), can be evaluated
 by searching exact rational powers. This includes equality at an integral
 logarithmic threshold, where approximate real logarithms need special care.
-The search is executable; no binary time or space bound is claimed.
+The search is executable. `PartialCoverThresholdNative.uniform_threshold`
+compiles it with derived native time/space bounds in the binary input length
+and numerical threshold. Native greedy batch construction remains separate.
 
 ## Main results
 

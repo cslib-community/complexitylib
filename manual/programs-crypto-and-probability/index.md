@@ -295,7 +295,19 @@ in [the bibliography](../../references.bib). The checked clients are in
   real-log ceiling, including equality at an integral threshold. `rationalBatch`
   uses that search and emits exactly the batch analyzed with real logarithms;
   for the sufficient demand pass the rational failure budget `(1-η)/n`.
-  The search has no native binary resource bound. Check the complete
+  [PartialCoverThresholdNative](../../CslibFrontier/Probability/StochasticOracle/PartialCoverThresholdNative.lean)
+  supplies `uniform_threshold`: a single native machine computes the exact least
+  exponent on all valid runtime binary rational probability/budget inputs.
+  Its multiplication/normalization, budget tests, unary counter and loop are charged.
+  For binary input length $N$ and actual least exponent $r$, the derived bounds are
+  $c(r+1)(r+N+1)^d$ time and $c(r+N+1)^d$ workspace, with constants independent
+  of the inputs. No termination count or resource certificate is supplied as input.
+  The valid domain is $0<q<1$ and $\delta>0$; budgets at least one return zero.
+  `count_eq_repetitions` identifies the output with the exact logarithmic ceiling.
+  Check the [native threshold client](../../CslibFrontierTests/StochasticOraclePartialCoverThresholdNative.lean)
+  for exact-power, between-power and zero-repetition search-loop traces, counts
+  and the shared native certificate.
+  Check the complete
   [threshold client](../../CslibFrontierTests/StochasticOraclePartialCoverThreshold.lean)
   with `lake build CslibFrontierTests.StochasticOraclePartialCoverThreshold` for
   exact-power, between-power and zero-demand cases and compiled selector execution.
@@ -320,8 +332,10 @@ in [the bibliography](../../references.bib). The checked clients are in
   $\delta_n=n^{-\Theta(1)}$ regime. The
   [asymptotic client](../../CslibFrontierTests/StochasticOraclePartialCoverAsymptotics.lean)
   checks fixed failure and the nonconstant budget $\delta_n=1/n$.
-  Native binary time/space composition remains open: the executable greedy scan
-  and rational threshold search have no uniform native machine/resource certificate.
+  Native greedy time/space composition remains open: the eligibility/cost scan,
+  residual updates and emitted-batch loop lack a uniform native machine/resource
+  certificate. The separate native threshold certificate above does not compile
+  that greedy planner.
   Set Cover approximation hardness is tracked in
   [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
   not supplied as a premise.

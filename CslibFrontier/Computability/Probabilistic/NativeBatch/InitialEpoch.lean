@@ -20,6 +20,11 @@ including rejected raw requests, preserves the original source state. Conditioni
 on a positive-probability issued observation therefore leaves exactly the original
 sampler at that selected batch. No finite hidden-state approximation, independence
 between simultaneous calls, or supplied representation equality is used.
+
+## Main results
+
+* `conditional_records`: the selected first-batch posterior is the original joint
+  response law at that batch, including the actual resource receipt.
 -/
 
 public section
