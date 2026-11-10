@@ -1307,6 +1307,19 @@ explicit inventory stay open.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 
+The independent-domination module now also provides `Signed.Witness.Minimum.run`, an actual
+ascending exact-size search. It calls the checked solver at sizes zero through the original
+vertex declaration and retains the first successful value and word. `seek_first` proves the
+least-successful-size invariant. `exists_optimal_search` instantiates the proved signed solver:
+every returned word is an independent dominating set of the returned cardinality, which is no
+larger than any other independent dominating set. Success is equivalent to conventional
+feasibility. The computed graph client checks empty/isolated/path/star inputs; the star returns
+its center, distinguishing minimum independent domination from maximum upper domination.
+This is search correctness only. The full search's encoded iteration/time/workspace composition
+remains open, so the Corollary 7.4 ROADMAP entry is retained.
+`exists_attained_optimal_search` proves unconditional finite-graph success, including the empty
+graph: a finite maximal independent set dominates, so the actual search always returns a word. No threshold-output or runtime premise is substituted for those obligations.
+
 ### General fixed finite/cofinite degree rules
 
 Import `CslibFrontier.Computability.Complexity.FineGrained.SigmaRhoCountingResources`.

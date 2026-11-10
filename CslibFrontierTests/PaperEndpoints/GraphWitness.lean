@@ -188,4 +188,21 @@ example :
             (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) :=
   IndependentDominationInterval.Signed.Witness.exists_solver_realEta_certificate
 
+/-- Execute the real ascending search with the existing tiny checked-gate test solver. -/
+@[expose] def minimum (g : IndependentDomination.Input) : Option (ℕ × List Bool) :=
+  IndependentDominationInterval.Signed.Witness.Minimum.run
+    (fun (g, lo, hi) => bounded g lo hi) g
+
+/- Empty, isolated and path cases return the least attainable size and the actual vertices. -/
+/-- info: (some (0, []), some (1, [true]), some (1, [false, true, false])) -/
+#guard_msgs in
+#eval (minimum (0, []), minimum (1, [[false]]), minimum path)
+
+/- A star's minimum is its center, unlike the already implemented maximum upper domination. -/
+/-- info: (some (1, [true, false, false, false]), some (3, [true, true, true])) -/
+#guard_msgs in
+#eval (minimum (4, [[false, true, true, true], [true, false, false, false],
+  [true, false, false, false], [true, false, false, false]]),
+  minimum (3, List.replicate 3 (List.replicate 3 false)))
+
 end GraphWitnessTests

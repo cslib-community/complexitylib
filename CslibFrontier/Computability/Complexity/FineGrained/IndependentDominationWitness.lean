@@ -24,6 +24,9 @@ and Appendix D.5 (PDF pp.26,36–37), including arbitrary runtime integer size b
 
 * `exists_solver_realEta_certificate`: actual original sets within signed input bounds,
   sharp original-vertex native time and global polynomial workspace.
+* `Minimum.seek_first`, `Minimum.exists_optimal_search`: actual least-successful size and
+  original minimum-word correctness; complete search resource composition is still open.
+* `Minimum.exists_attained_optimal_search`: every finite graph returns an actual optimum word.
 -/
 
 public section
@@ -160,3 +163,166 @@ theorem exists_solver_realEta_certificate :
       (Nat.two_pow_mul_logLogSqrtLogScale_le A hn16) (by positivity))
 
 end Cslib.Logic.PL.IndependentDominationInterval.Signed.Witness
+
+namespace Cslib.Logic.PL.IndependentDominationInterval.Signed.Witness.Minimum
+
+/-- Actual ascending exact-size search. Retain the first returned original vertex word;
+no vertex-set family is enumerated. The recursion makes at most `limit + 1` solver calls. -/
+@[expose] def seek (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (g : IndependentDomination.Input) : ℕ → Option (ℕ × List Bool)
+  | 0 => (solver (g, 0, 0)).map (fun bits => (0, bits))
+  | k + 1 => match seek solver g k with
+    | some out => some out
+    | none => (solver (g, (k + 1 : ℕ), (k + 1 : ℕ))).map (fun bits => (k + 1, bits))
+
+/-- The actual bounded search succeeds exactly when one of its actual size tests succeeds. -/
+theorem seek_isSome (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (g : IndependentDomination.Input) (limit : ℕ) :
+    (seek solver g limit).isSome = true ↔
+      ∃ k ≤ limit, (solver (g, (k : ℤ), (k : ℤ))).isSome = true := by
+  induction limit with
+  | zero => simp [seek]
+  | succ k ih =>
+    cases h : seek solver g k with
+    | none =>
+      have hn : ¬ ∃ j ≤ k, (solver (g, (j : ℤ), (j : ℤ))).isSome = true := by
+        rw [← ih, h]; simp
+      simp only [seek, h, Option.isSome_map]
+      constructor
+      · intro hs; exact ⟨k + 1, le_rfl, hs⟩
+      · rintro ⟨j, hj, hs⟩
+        have he : j = k + 1 := by
+          by_contra he
+          exact hn ⟨j, by omega, hs⟩
+        simpa only [he] using hs
+    | some out =>
+      have he := ih.mp (by rw [h]; rfl)
+      simp only [seek, h, Option.isSome_some, true_iff]
+      obtain ⟨j, hj, hs⟩ := he
+      exact ⟨j, by omega, hs⟩
+
+/-- A returned pair contains the actual successful word at the least successful size. -/
+theorem seek_first (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (g : IndependentDomination.Input) (limit k : ℕ) (bits : List Bool)
+    (h : seek solver g limit = some (k, bits)) :
+    k ≤ limit ∧ solver (g, (k : ℤ), (k : ℤ)) = some bits ∧
+      ∀ j < k, (solver (g, (j : ℤ), (j : ℤ))).isSome = false := by
+  induction limit with
+  | zero =>
+    simp only [seek, Option.map_eq_some_iff] at h
+    obtain ⟨word, hw, he⟩ := h
+    cases he
+    exact ⟨le_rfl, hw, by omega⟩
+  | succ limit ih =>
+    cases hp : seek solver g limit with
+    | some out =>
+      have he : out = (k, bits) := by simpa only [seek, hp, Option.some.injEq] using h
+      subst out
+      obtain ⟨hk, hw, hj⟩ := ih hp
+      exact ⟨by omega, hw, hj⟩
+    | none =>
+      simp only [seek, hp, Option.map_eq_some_iff] at h
+      obtain ⟨word, hw, he⟩ := h
+      cases he
+      refine ⟨le_rfl, hw, ?_⟩
+      intro j hj
+      by_contra hn
+      have hs : (solver (g, (j : ℤ), (j : ℤ))).isSome = true := by
+        cases ht : (solver (g, (j : ℤ), (j : ℤ))).isSome <;> simp_all
+      have hh := (seek_isSome solver g limit).mpr ⟨j, by omega, hs⟩
+      simp only [hp, Option.isSome_none, Bool.false_eq_true] at hh
+
+/-- Search only the original declaration's possible cardinalities. This writes an actual value
+and original word; the complete native resource composition remains a separate obligation. -/
+@[expose] def run (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (g : IndependentDomination.Input) : Option (ℕ × List Bool) :=
+  seek solver g (IndependentDomination.order g)
+
+open Classical in
+/-- Instantiate the actual proved signed-bound solver: the returned value is the cardinality
+of the returned independent dominating word and is no larger than any other such cardinality.
+This is executable search correctness, not yet a native resource certificate for the search. -/
+theorem exists_optimal_search :
+    ∃ optimize : IndependentDomination.Input → Option (ℕ × List Bool),
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
+        ((optimize (IndependentDomination.ofGraph G)).isSome = true ↔
+          ∃ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} ∧
+            G.IsDominatingSet {u | σ u = true}) ∧
+        ∀ k bits, optimize (IndependentDomination.ofGraph G) = some (k, bits) →
+          bits.length = n ∧ Feasible G k k (fun u => bits.getD u.val false) ∧
+            ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
+              G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ := by
+  obtain ⟨solver, cs, C, e, A, hs, h⟩ := exists_solver_realEta_certificate
+  refine ⟨run solver, ?_⟩
+  intro n G _
+  constructor
+  · rw [run, seek_isSome]
+    constructor
+    · rintro ⟨k, hk, ht⟩
+      obtain ⟨σ, hi, hd, _⟩ := ((h G k k).1.mp ht)
+      exact ⟨σ, hi, hd⟩
+    · rintro ⟨σ, hi, hd⟩
+      refine ⟨Cslib.BitString.weight σ, ?_, (h G _ _).1.mpr ⟨σ, hi, hd, le_rfl, le_rfl⟩⟩
+      exact Cslib.BitString.weight_le_length σ
+  · intro k bits hb
+    obtain ⟨hk, hw, hj⟩ := seek_first solver (IndependentDomination.ofGraph G) n k bits hb
+    obtain ⟨hlen, hf⟩ := (h G k k).2.1 bits hw
+    refine ⟨hlen, hf, ?_⟩
+    intro σ hi hd
+    by_contra hn
+    have hh := (h G (Cslib.BitString.weight σ) (Cslib.BitString.weight σ)).1.mpr
+      ⟨σ, hi, hd, le_rfl, le_rfl⟩
+    have hz := hj (Cslib.BitString.weight σ) (by omega)
+    change (solver (Signed.ofGraph G _ _)).isSome = false at hz
+    rw [hz] at hh
+    contradiction
+
+open Classical in
+private theorem exists_independent_dominating {n : ℕ} (G : SimpleGraph (Fin n)) :
+    ∃ S : Set (Fin n), G.IsIndepSet S ∧ G.IsDominatingSet S := by
+  obtain ⟨S, hi, hm⟩ := exists_maximal_of_wellFoundedGT G.IsIndepSet
+    ⟨∅, by rw [G.isIndepSet_iff]; simp⟩
+  refine ⟨S, hi, ?_⟩
+  rw [SimpleGraph.isDominatingSet_iff]
+  intro u
+  by_cases hu : u ∈ S
+  · exact Or.inl hu
+  · right
+    by_contra hn
+    push Not at hn
+    have hit : G.IsIndepSet (insert u S) := by
+      rw [G.isIndepSet_iff]
+      intro v hv w hw hne
+      rcases hv with rfl | hv <;> rcases hw with rfl | hw
+      · exact False.elim (hne rfl)
+      · exact hn w hw
+      · exact fun ha => hn v hv (G.adj_symm ha)
+      · exact (G.isIndepSet_iff.mp hi) hv hw hne
+    exact hu (hm hit (Set.subset_insert u S) (Set.mem_insert u S))
+
+open Classical in
+/-- Every finite graph, including the empty graph, yields an actual globally minimum word.
+The size is attained by this output, rather than merely by an existential threshold witness. -/
+theorem exists_attained_optimal_search :
+    ∃ optimize : IndependentDomination.Input → Option (ℕ × List Bool),
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
+        ∃ k bits, optimize (IndependentDomination.ofGraph G) = some (k, bits) ∧
+          bits.length = n ∧ Feasible G k k (fun u => bits.getD u.val false) ∧
+            ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
+              G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ := by
+  obtain ⟨optimize, h⟩ := exists_optimal_search
+  refine ⟨optimize, ?_⟩
+  intro n G _
+  obtain ⟨S, hi, hd⟩ := exists_independent_dominating G
+  have he : ∃ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} ∧
+      G.IsDominatingSet {u | σ u = true} := by
+    refine ⟨fun u => decide (u ∈ S), ?_⟩
+    simpa only [decide_eq_true_eq, Set.ofPred_mem_eq] using And.intro hi hd
+  have hs := (h G).1.mpr he
+  cases ho : optimize (IndependentDomination.ofGraph G) with
+  | none => simp only [ho, Option.isSome_none, Bool.false_eq_true] at hs
+  | some out =>
+    obtain ⟨k, bits⟩ := out
+    exact ⟨k, bits, rfl, (h G).2 k bits ho⟩
+
+end Cslib.Logic.PL.IndependentDominationInterval.Signed.Witness.Minimum
