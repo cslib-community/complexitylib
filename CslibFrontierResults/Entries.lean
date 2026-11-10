@@ -173,8 +173,8 @@ register_result "nspace-hierarchy" where
   title := "The nondeterministic space hierarchy"
   topic := "space complexity"
   sources := [
+    { paper := Immerman1988, theorem := "Corollary 4", locator := unverified },
     { paper := Sipser2013, theorem := unverified, locator := unverified },
-    { paper := Immerman1988, theorem := unverified, locator := unverified },
     { paper := Szelepcsenyi1987, theorem := unverified, locator := unverified }
   ]
   theorems := [

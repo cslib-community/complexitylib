@@ -48,7 +48,8 @@ Conversely, the universal recognizer within a budget
 description, reading the input in place, and so recognizes the complement of the diagonal within
 space `O(G n + log n)` for a space-constructible `G`. By the Immerman–Szelepcsényi theorem
 [Immerman1988] [Szelepcsenyi1987] the diagonal itself is then in `NSPACE G` when `log₂ n ≤ G n`
-(`Cslib.Complexity.nspaceDiagonal_mem_NSPACE`). Hence the nondeterministic space hierarchy:
+(`Cslib.Complexity.nspaceDiagonal_mem_NSPACE`). Hence the nondeterministic space hierarchy
+[Immerman, Corollary 4][Immerman1988]:
 
 * `NSPACE f ⊂ NSPACE g` for a space-constructible `g` with `log₂ n ≤ g n`, when every
   `c * f n + c` is eventually below `g n` (`Cslib.Complexity.NSPACE_ssubset_NSPACE`);
@@ -216,7 +217,8 @@ theorem nspaceDiagonal_mem_NSPACE {G : ℕ → ℕ} (hG : SpaceConstructible G)
 
 /-- **The nondeterministic space hierarchy theorem.** If `g` is space-constructible,
 `log₂ n ≤ g n`, and every `c * f n + c` is eventually below `g n`, then `NSPACE f` is strictly
-contained in `NSPACE g`. The nondeterministic diagonal within space `4 * g` separates the classes:
+contained in `NSPACE g` [Immerman, Corollary 4][Immerman1988], which Immerman credits to Fischer.
+The nondeterministic diagonal within space `4 * g` separates the classes:
 it is in `NSPACE g` by the Immerman–Szelepcsényi theorem
 (`Cslib.Complexity.nspaceDiagonal_mem_NSPACE`), and not in `NSPACE f` by the diagonal argument
 (`Cslib.Complexity.nspaceDiagonal_notMem_NSPACE`). -/
