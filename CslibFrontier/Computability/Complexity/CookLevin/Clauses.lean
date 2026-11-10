@@ -108,14 +108,13 @@ theorem computableInPolyTime_oneHotClauses [DecidableEq State]
     (ht : ComputableInPolyTime t enc encUnary) :
     ComputableInPolyTime
       (fun a => oneHotClauses (k := k) (State := State) (u a) (L a) (T a) (t a)) enc
-      (encList (encList (encPair encVar encBool))) := by
+      (encCNFOver encVar) := by
   fun_prop [oneHotClauses]
 
 /-- Build the existing initial-configuration clauses from a unary window bound. -/
 @[fun_prop]
 theorem computableInPolyTime_initClauses (tm : MultiTapeTM k Bool State) :
-    ComputableInPolyTime (initClauses tm) encUnary
-      (encList (encList (encPair encVar encBool))) := by
+    ComputableInPolyTime (initClauses tm) encUnary (encCNFOver encVar) := by
   unfold initClauses
   refine (const _).listAppend' (flatMapConst_plain _ fun i _ => (const _).cons' ?_)
   fun_prop
@@ -124,21 +123,20 @@ theorem computableInPolyTime_initClauses (tm : MultiTapeTM k Bool State) :
 @[fun_prop]
 theorem computableInPolyTime_acceptClauses :
     ComputableInPolyTime (acceptClauses (k := k) (State := State)) encUnary
-      (encList (encList (encPair encVar encBool))) := by
+      (encCNFOver encVar) := by
   fun_prop [acceptClauses]
 
 /-- Build the situation clauses at a unary time, with the finite machine data fixed. -/
 @[fun_prop]
 theorem computableInPolyTime_sitClauses :
-    ComputableInPolyTime (sitClauses (k := k) (State := State)) encUnary
-      (encList (encList (encPair encVar encBool))) := by
+    ComputableInPolyTime (sitClauses (k := k) (State := State)) encUnary (encCNFOver encVar) := by
   fun_prop [sitClauses]
 
 /-- Build the uniqueness clauses at a unary time, with the finite machine data fixed. -/
 @[fun_prop]
 theorem computableInPolyTime_uniqueClauses [DecidableEq State] :
     ComputableInPolyTime (uniqueClauses (k := k) (State := State)) encUnary
-      (encList (encList (encPair encVar encBool))) := by
+      (encCNFOver encVar) := by
   fun_prop [uniqueClauses]
 
 /-- Build input-symbol clauses from computed input, certificate length, time and position. -/
@@ -151,7 +149,7 @@ theorem computableInPolyTime_inputClauses {α : Type} {enc : α ↪ List Bool}
     (hj : ComputableInPolyTime j enc encUnary) :
     ComputableInPolyTime
       (fun a => inputClauses (k := k) (State := State) (u a) (L a) (t a) (j a))
-      enc (encList (encList (encPair encVar encBool))) := by
+      enc (encCNFOver encVar) := by
   fun_prop [inputClauses]
 
 /-- Enumerate work-tape and input-symbol clauses, charging the complete input-dependent lists. -/
@@ -164,7 +162,7 @@ theorem computableInPolyTime_readClauses
     (ht : ComputableInPolyTime t enc encUnary) :
     ComputableInPolyTime
       (fun a => readClauses (k := k) (State := State) (u a) (L a) (T a) (t a)) enc
-      (encList (encList (encPair encVar encBool))) := by
+      (encCNFOver encVar) := by
   unfold readClauses
   apply listAppend' <;> fun_prop
 
@@ -226,7 +224,7 @@ private theorem stepImpClauses {t : α → ℕ} {feature : α → Feature k Stat
       (encList (encList (encPair encFeature encBool)))) :
     ComputableInPolyTime (fun a => (terms a).map fun c =>
       Clause.impLits (c.map fun l => (.holds (t a) l.1, l.2))
-        (.holds (t a + 1) (feature a))) enc (encList (encList (encPair encVar encBool))) := by
+        (.holds (t a + 1) (feature a))) enc (encCNFOver encVar) := by
   apply mapWithInput (encA := encList (encPair encFeature encBool))
   · exact hterms
   · fun_prop
@@ -244,8 +242,7 @@ theorem computableInPolyTime_stepClauses [DecidableEq State]
     (hT : ComputableInPolyTime T enc encUnary)
     (ht : ComputableInPolyTime t enc encUnary) :
     ComputableInPolyTime
-      (fun a => stepClauses tm (u a) (L a) (T a) (t a)) enc
-      (encList (encList (encPair encVar encBool))) := by
+      (fun a => stepClauses tm (u a) (L a) (T a) (t a)) enc (encCNFOver encVar) := by
   unfold stepClauses
   simp only [Feature.basic, Feature.groups, List.flatten_eq_flatMap, List.flatMap_assoc,
     List.flatMap_cons, List.flatMap_nil, List.flatMap_map, List.flatMap_append,

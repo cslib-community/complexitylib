@@ -343,8 +343,7 @@ theorem computableInPolyTime_sparseDiamondGraph :
 /-- The reduction `toSparseDirHamPath` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toSparseDirHamPath :
-    ComputableInPolyTime toSparseDirHamPath encCNF
-      (encPair encGraph (encPair encNat encNat)) := by
+    ComputableInPolyTime toSparseDirHamPath encCNF encPathInstance := by
   have hn := computableInPolyTime_numDiamonds
   unfold toSparseDirHamPath
   fun_prop

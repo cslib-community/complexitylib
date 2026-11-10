@@ -325,7 +325,7 @@ open ComputableInPolyTime in
 /-- The table on `N` color sets, for `N` in unary, is polynomial-time. -/
 theorem ColorCoding.computableInPolyTime_table :
     ComputableInPolyTime (fun x : (Graph × List ℕ) × ℕ => table x.1.1 (colorOf x.1.1 x.1.2) x.2)
-      (encPair (encPair encGraph (encList encNat)) encUnary) (encList (encList encNat)) := by
+      (encPair encColoredGraph encUnary) (encList (encList encNat)) := by
   simp only [table_eq_foldl]
   have hstep : ComputableInPolyTime
       (fun q : StepInput =>
@@ -414,15 +414,13 @@ private theorem computableInPolyTime_colorfulPathExponent :
 (`Cslib.Complexity.colorfulPathBool`) runs on the input padded to length `2 ^ min(n, k)`. The
 constant `δ` is not explicit; the bound `2 ^ k` of the RAM analysis is not claimed. -/
 theorem ColorfulPath_decidableInExpTime :
-    ∃ δ : ℝ, DecidableInExpTime ColorfulPath (encPair (encPair encGraph (encList encNat)) encNat)
-      Prod.snd δ :=
+    ∃ δ : ℝ, DecidableInExpTime ColorfulPath (encPair encColoredGraph encNat) Prod.snd δ :=
   DecidableInExpTime.of_computableInPolyTime_pad computableInPolyTime_colorfulPathPad
     computableInPolyTime_colorfulPathExponent (fun _ => min_le_right _ _)
     fun x => (colorfulPathBool_eq_true_iff x).symm
 
 /-- **Colorful k-Path is fixed-parameter tractable** in `k`. -/
-theorem ColorfulPath_mem_FPT :
-    ColorfulPath ∈ FPT (encPair (encPair encGraph (encList encNat)) encNat) Prod.snd :=
+theorem ColorfulPath_mem_FPT : ColorfulPath ∈ FPT (encPair encColoredGraph encNat) Prod.snd :=
   let ⟨_, h⟩ := ColorfulPath_decidableInExpTime
   h.mem_FPT
 

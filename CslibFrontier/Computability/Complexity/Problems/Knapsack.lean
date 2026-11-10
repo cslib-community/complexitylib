@@ -135,14 +135,14 @@ theorem toKnapsack_mem_iff (x : List ℕ × ℕ) : toKnapsack x ∈ Knapsack ↔
 /-- The reduction to `Knapsack` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toKnapsack :
-    ComputableInPolyTime toKnapsack (encPair (encList encNat) encNat) encKnapsack :=
+    ComputableInPolyTime toKnapsack encSubsetSum encKnapsack :=
   ((map (id'.prod id')).comp (fst _ _)).prod ((snd _ _).prod (snd _ _))
 
 end SubsetSum
 
 /-- `SubsetSum` reduces to `Knapsack` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_Knapsack :
-    PolyTimeReducible (encPair (encList encNat) encNat) encKnapsack SubsetSum Knapsack :=
+    PolyTimeReducible encSubsetSum encKnapsack SubsetSum Knapsack :=
   ⟨SubsetSum.toKnapsack, SubsetSum.computableInPolyTime_toKnapsack,
     fun x => (SubsetSum.toKnapsack_mem_iff x).symm⟩
 

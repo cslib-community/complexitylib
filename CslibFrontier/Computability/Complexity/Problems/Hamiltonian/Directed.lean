@@ -203,7 +203,7 @@ theorem computableInPolyTime_diamondGraph :
 /-- The reduction `toDirHamPath` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toDirHamPath :
-    ComputableInPolyTime toDirHamPath encCNF (encPair encGraph (encPair encNat encNat)) := by
+    ComputableInPolyTime toDirHamPath encCNF encPathInstance := by
   have hvars := computableInPolyTime_vars
   have hlen : ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary :=
     (length_list encNat).comp hvars
@@ -229,7 +229,7 @@ end SAT
 
 /-- `SAT` reduces to `DirHamPath` in polynomial time via `SAT.toDirHamPath`. -/
 theorem polyTimeReducible_SAT_DirHamPath :
-    PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath :=
+    PolyTimeReducible encCNF encPathInstance SAT DirHamPath :=
   ⟨SAT.toDirHamPath, SAT.computableInPolyTime_toDirHamPath,
     fun φ => (SAT.toDirHamPath_mem_iff φ).symm⟩
 
@@ -237,7 +237,7 @@ theorem polyTimeReducible_SAT_DirHamPath :
 three literals is mapped to the diamond graph of the empty clause, which has no Hamiltonian
 path. -/
 theorem polyTimeReducible_ThreeSAT_DirHamPath :
-    PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) ThreeSAT DirHamPath := by
+    PolyTimeReducible encCNF encPathInstance ThreeSAT DirHamPath := by
   refine ⟨fun φ => if φ.all (fun c => decide (c.length ≤ 3)) then SAT.toDirHamPath φ
     else SAT.toDirHamPath [[]], by fun_prop, fun φ => ?_⟩
   simp only [ThreeSAT, Set.mem_ofPred_eq]
@@ -251,7 +251,7 @@ theorem polyTimeReducible_ThreeSAT_DirHamPath :
     simp at hσ
 
 /-- `DirHamPath` is `NP`-hard. -/
-theorem DirHamPath_npHard : NPHard (encPair encGraph (encPair encNat encNat)) DirHamPath :=
+theorem DirHamPath_npHard : NPHard encPathInstance DirHamPath :=
   CookLevin.SAT_npHard.trans polyTimeReducible_SAT_DirHamPath
 
 /-- `SAT` reduces to `DirHamCycle` in polynomial time via `SAT.toDirHamCycle`. -/
@@ -264,8 +264,7 @@ theorem DirHamCycle_npHard : NPHard encGraph DirHamCycle :=
   CookLevin.SAT_npHard.trans polyTimeReducible_SAT_DirHamCycle
 
 /-- **`DirHamPath` is NP-complete.** -/
-theorem DirHamPath_npComplete :
-    NPComplete (encPair encGraph (encPair encNat encNat)) DirHamPath :=
+theorem DirHamPath_npComplete : NPComplete encPathInstance DirHamPath :=
   ⟨DirHamPath.mem_NP, DirHamPath_npHard⟩
 
 /-- **`DirHamCycle` is NP-complete.** -/
