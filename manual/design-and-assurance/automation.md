@@ -507,8 +507,9 @@ is a library client.
 A conditional label `if c then l₁ else l₂` is decided when `c` or its negation is a hypothesis
 or, for a comparison of numbers, follows from the hypotheses by `omega`: a hypothesis `hn : 2 ≤ n`
 decides `if n < 2 then F else E` without passing `Nat.not_lt.mpr hn`. This applies to the label
-before a step, and after a step when deciding a label closes the goal. A fact stated about
-expressions that `cp_simps` would evaluate first, such as
+before a step, and after a step to the label of either configuration when the other's label is
+one of its branches; the decided label stays even when the goal does not then close. A fact
+stated about expressions that `cp_simps` would evaluate first, such as
 `(const 0).eval regs < e.eval regs ↔ us ≠ zs`, applies only before that simplification: pass it
 as `cp_step [↓h]`. A label still undecided, or a `match` on an input bit the lemmas do not give,
 stops the tactic with a diagnostic. Split into cases first, as in
