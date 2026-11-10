@@ -170,7 +170,8 @@ theorem collaredProfile_incidence_endpoints (p : ClauseProfile)
     ?_, ?_⟩
   · rw [collared_clausePoint _ _ hfend.1]
     have hhead : (collarRoute (collarReflected s) f.route).head? =
-        some (collarPoint (collarReflected s) ((profilePrefixGeometry p).clausePosition f.1)) := by
+        some (collarPoint (collarReflected s)
+          ((profilePrefixGeometry p).clausePosition f.clauseIndex)) := by
       rw [collarRoute_eq_map, List.head?_map, hfend.2.2.1, Option.map_some]
     dsimp only [LocalIncidence.route]
     split_ifs <;> first | exact head_join_of_some hhead | exact hhead

@@ -149,7 +149,7 @@ theorem weaken_contract (S : ObliviousSequenceSpec.{u, v}) (V C)
 
 /-- Monotonicity of `ObliviousSequenceSpec.weaken`: any distribution satisfying `S.Contract` on
 `S.ValidOpSeq` also satisfies `(S.weaken V C).Contract` on `V` when `V` implies `S.ValidOpSeq` and
-`S.Contract` implies `C`. -/
+`S.Contract` implies `C` on `S.ValidOpSeq`. -/
 theorem contract_weaken {S : ObliviousSequenceSpec.{u, v}}
     {V : List S.Op → Prop}
     {C : (ops : List S.Op) → PMF (List (Sigma S.Result)) → Prop}

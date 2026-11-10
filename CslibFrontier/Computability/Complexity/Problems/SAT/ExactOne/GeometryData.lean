@@ -13,7 +13,9 @@ public import CslibFrontier.Foundations.Geometry.Orthogonal
 # Local orthogonal drawings for parsimonious exact-one gadgets
 
 The three fixed drawings fit in `[0,180]²`. Their core vertices and routes lie in
-`[20,160]²`; access routes run from designated side midpoints to their terminals.
+`[20,160]²`; access routes run from designated boundary ports to their terminals. The ports are
+on the `y = 0` (north), `x = 0` (west) and `x = 180` (east) sides: the side midpoints for
+`disjunctionGeometry` and `complementGeometry`, and `(80, 0)` for `falseGeometry`.
 The unsigned incidence signatures deliberately leave clause semantics to the logical gadgets.
 
 ## Main definitions

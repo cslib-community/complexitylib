@@ -23,7 +23,7 @@ payload interpretation survives a frame on the concrete allocated prefix.
 This memory-frame bridge is original and reuses the existing output and block predicates.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Frontend
 

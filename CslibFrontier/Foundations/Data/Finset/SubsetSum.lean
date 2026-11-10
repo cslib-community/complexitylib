@@ -28,7 +28,7 @@ complement both have weight at least `k`. A first subset reaching `k` overshoots
   Threshold/Internal/Excess][Schlesinger2026Algebraic]
 -/
 
-@[expose] public section
+public section
 
 open scoped BigOperators
 

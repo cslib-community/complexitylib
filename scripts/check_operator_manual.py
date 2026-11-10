@@ -2,9 +2,11 @@
 """Check current manual links, book chapter lists and Lean excerpt identity (stdlib only).
 
 Relative `File.lean#L<n>` links must also start on a declaration, attribute, docstring or (for
-ranges) section header. This does not fetch URLs, elaborate Lean, audit mathematical meaning,
-check that a source line link names the declaration it starts on, or assert that historical
-evidence describes the current checkout. Run from any working directory.
+ranges) section header, and an inline link whose text names a declaration of the linked file
+(`[Ns.name](…#L<n>)`) must start on that declaration's header. This does not fetch URLs, elaborate
+Lean, audit mathematical meaning, check links whose text names no declaration of the linked file
+(prose, a file, a module, a declaration that moved elsewhere), or assert that historical evidence
+describes the current checkout. Run from any working directory.
 """
 from __future__ import annotations
 
@@ -33,24 +35,33 @@ DECLARATION_START = re.compile(
     r"|local)\s+)*(?:theorem|lemma|def|abbrev|structure|class|instance|inductive|opaque|example)\b)")
 SECTION_START = re.compile(r"(?:/-!|(?:(?:public|noncomputable)\s+)*(?:section|namespace)\b)")
 STALE_SOURCE_ANCHOR = "source line anchor does not start a declaration"
+# When the text of an inline link into a Lean file names a declaration of that file, the link
+# must start on that declaration's header (docstring, attributes or the line naming it); a
+# range must overlap it. Names match up to namespace qualification: `[Ns.name]` matches a
+# declared `name` and vice versa. Text naming no declaration of the file (prose, a file or
+# module, a declaration that moved to another file) is not checked.
+MISNAMED_SOURCE_ANCHOR = "source line anchor does not start the declaration its link text names"
+DECLARED_NAME = re.compile(
+    r"(?:@\[[^\]]*\]\s*)*(?:(?:private|protected|public|noncomputable|partial|unsafe|nonrec|meta"
+    r"|scoped|local)\s+)*(?:class\s+(?:inductive|abbrev)|theorem|lemma|def|abbrev|structure|class"
+    r"|inductive|opaque|instance(?:\s+\(priority\s*:=[^)]*\))?)\s+([^\s:({\[]+)")
+CODE_SPAN = re.compile(r"(`+).*?\1")
+# Label, then the URL with or without `<…>`, matching the targets `links()` reads.
+INLINE_LINK = re.compile(r"\[([^\]\n]+)\]\(\s*(?:<([^>\n]+)>|([^\s)]+))")
 # Anchors, as (Lean file, start line), that are stale or that queued pull requests will make
 # stale; the check tolerates them until they can be repointed without conflicting with or
 # ejecting those pull requests. Repoint the manual link and delete the entry (#3991). An entry
 # that no longer matches is listed in the result, not reported as an error, so a pull request
 # that repoints a link does not have to edit this list.
 STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
-    # Stale on main. #3728 edits the manual paragraph that links it.
-    ("CslibFrontier/Crypto/Computational/TreeSignature/Security.lean", 4779),
-    # Stale on main. #3981 moves this file's declarations.
+    # Starts `computableInPolyTime_verify`, not the linked `scheme`; #4279 repoints it.
+    ("CslibFrontier/Crypto/Computational/TreeSignature.lean", 550),
+    # Stale on main. #4205 rewrites the manual sentence that links them.
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 243),
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 528),
-    # Correct on main, but queued #3875 and #3977 move these declarations without repointing.
+    # Stale on main. #3538 edits the adjacent manual line; repoint them after it lands.
     *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Computational.lean", line)
       for line in (107, 217, 228, 243)),
-    ("CslibFrontier/Crypto/Protocols/VOLE/Basic.lean", 175),
-    ("CslibFrontier/Foundations/NumberTheory/Primality/EulerLiars.lean", 152),
-    ("CslibFrontier/Foundations/NumberTheory/Primality/RabinMonier.lean", 343),
-    ("CslibFrontier/Foundations/NumberTheory/Primality/StrongLiars.lean", 222),
 }
 
 
@@ -154,6 +165,86 @@ def source_anchor_error(fragment: str, lines: list[str]) -> str | None:
     return STALE_SOURCE_ANCHOR
 
 
+def declarations(lines: list[str]) -> dict[str, list[tuple[int, int]]]:
+    """Header lines `(first, last)`, 1-based, of each named unindented declaration by name.
+
+    A header runs from the declaration's docstring opener or first attribute to the line naming
+    it, across line comments and `… in` lines; anonymous declarations (`example`, unnamed
+    `instance`) and commented-out code are absent.
+    """
+    found: dict[str, list[tuple[int, int]]] = {}
+    lead = None
+    for number, (line, depth) in enumerate(zip(lines, comment_depths(lines)), 1):
+        if depth:
+            continue
+        if match := DECLARED_NAME.match(line):
+            found.setdefault(match[1].rstrip("."), []).append((lead or number, number))
+            lead = None
+        elif line.startswith(("/--", "@[")):
+            lead = lead or number
+        elif line[:1].strip() and not line.startswith("--") and not line.rstrip().endswith(" in"):
+            lead = None
+    return found
+
+
+def link_texts(text: str) -> list[tuple[str, str]]:
+    """`(display text, URL)` of each inline Markdown link, found as `links()` finds them.
+
+    Fenced code and code spans are skipped, so code showing a link is not a link, while a
+    code-formatted label (`` [`name`](…) ``) keeps its text. An optional `<…>` around the URL is
+    dropped.
+    """
+    found, fence = [], None
+    for line in text.splitlines():
+        match = FENCE.match(line)
+        if fence is not None:
+            if match and match[1][0] == fence[0] and len(match[1]) >= len(fence):
+                fence = None
+            continue
+        if match:
+            fence = match[1]
+            continue
+        # Blank out code spans, keeping offsets, and read each label from the original line.
+        masked = CODE_SPAN.sub(lambda span: " " * len(span[0]), line)
+        found.extend((line[link.start(1):link.end(1)], link[2] or link[3])
+                     for link in INLINE_LINK.finditer(masked))
+    return found
+
+
+def names_declaration(text: str, name: str) -> bool:
+    """Whether link text and a declared name agree up to namespace qualification."""
+    name = name.removeprefix("_root_.")
+    return text == name or text.endswith("." + name) or name.endswith("." + text)
+
+
+def misnamed_anchor(display: str, module: str, fragment: str,
+                    found: dict[str, list[tuple[int, int]]]) -> list[int] | None:
+    """Header starts of the declaration the link text names, if the `L<a>[-L<b>]` fragment
+    misses all of them; `None` when the anchor is right or the text names no declaration."""
+    text = display.strip().strip("`").removeprefix("_root_.")
+    if text.endswith((".lean", ".md")):
+        return None
+    # An exact name match takes precedence, so `[toX]` and `[Complete.toX]` stay distinct when
+    # the file declares both, and `[Foo](…/Foo.lean#L…)` is checked when `Foo.lean` declares
+    # `Foo`. Otherwise text naming the linked module is not checked, and qualified matches keep
+    # only the declared names sharing the most trailing components with the text, so
+    # `[Corr.Valid.add]` needs `Valid.add`, not a bare `add`.
+    headers = found.get(text)
+    if not headers:
+        if module == text or module.endswith("." + text):
+            return None
+        shared = {name: min(text.count("."), name.removeprefix("_root_.").count("."))
+                  for name in found if names_declaration(text, name)}
+        headers = [header for name, spans in found.items()
+                   if name in shared and shared[name] == max(shared.values()) for header in spans]
+    bounds = [int(n) for n in re.findall(r"\d+", fragment)]
+    # Line 1 links the whole file.
+    if not headers or bounds[0] == 1 or any(
+            first <= bounds[-1] and bounds[0] <= last for first, last in headers):
+        return None
+    return sorted(first for first, _ in headers)
+
+
 def load_book_builder(data: Path):
     """Import `data/build_manual.py` with its own sibling modules, leaving `sys.modules` as found."""
     siblings = {path.stem for path in data.glob("*.py")}
@@ -195,6 +286,8 @@ def check(repo: Path, manual: Path | None = None) -> dict:
     edges = {p: set() for p in documents}
     link_count = 0
     allowed_stale: set[tuple[str, int]] = set()
+    sources: dict[Path, dict[str, list[tuple[int, int]]]] = {}
+    unnamed: set[tuple[Path, str]] = set()
     visual_counts = {'diagrams': 0, 'worked_examples': 0}
     for doc in documents:
         try:
@@ -228,6 +321,29 @@ def check(repo: Path, manual: Path | None = None) -> dict:
                     allowed_stale.add(known)
                 elif problem:
                     errors.append(f"{doc.relative_to(manual)}: {problem}: {url}")
+                if problem:
+                    unnamed.add((target, fragment))
+        # Name check, for anchors that start some declaration. A `STALE_SOURCE_ANCHORS` entry
+        # also tolerates an anchor that fails only this check.
+        for display, url in link_texts(doc.read_text()):
+            parsed = urlsplit(html.unescape(url))
+            fragment = unquote(parsed.fragment)
+            if parsed.scheme or parsed.netloc or not parsed.path.endswith(".lean") or \
+                    not re.fullmatch(r"L\d+(?:-L\d+)?", fragment):
+                continue
+            target = (doc.parent / unquote(parsed.path)).resolve()
+            if (target, fragment) in unnamed or not within(target, repo) or not target.is_file():
+                continue
+            if target not in sources:
+                sources[target] = declarations(target.read_text().splitlines())
+            module = target.relative_to(repo).with_suffix("").as_posix().replace("/", ".")
+            starts = misnamed_anchor(display, module, fragment, sources[target])
+            known = (target.relative_to(repo).as_posix(), int(re.match(r"L(\d+)", fragment)[1]))
+            if starts is not None and known in STALE_SOURCE_ANCHORS:
+                allowed_stale.add(known)
+            elif starts is not None:
+                errors.append(f"{doc.relative_to(manual)}: {MISNAMED_SOURCE_ANCHOR} (declared at "
+                              f"{', '.join(f'L{n}' for n in starts)}): {url}")
     start = manual / "README.md"
     if start not in document_set:
         errors.append("Missing manual/README.md entry page")

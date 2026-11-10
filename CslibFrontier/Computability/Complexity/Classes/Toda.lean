@@ -59,9 +59,10 @@ variable {α : Type} {enc : α ↪ List Bool}
 /-! ### `BP·⊕P ⊆ P^#P` -/
 
 open Toda Classical in
-/-- **A problem in `BP·⊕P` is one bit of a `#P` value**: for a problem decided with bounded error,
-using random strings of length `R = p (enc a).length`, by the parity of a verifier's number of
-witnesses, some function in `#P` has bit `R + 1` set exactly at the members of the problem. -/
+/-- **A problem in `BP·⊕P` is one bit of a `#P` value**: for a problem decided with bounded error
+by a problem in `⊕P` about pairs of an instance and a random string, there are a function `f` in
+`#P` and a polynomial `p` such that bit `p (enc a).length` of `f a` is set exactly when `a` is in
+the problem. In the proof, `p` is one more than the polynomial length of the random strings. -/
 theorem exists_SharpP_testBit_of_mem_BPOp_ParityP {L : Set α}
     (hL : L ∈ BPOp enc (ParityP (encPair enc encBits))) :
     ∃ f ∈ SharpP enc, ∃ p : Polynomial ℕ, ∀ a, a ∈ L ↔ (f a).testBit (p.eval (enc a).length) := by
@@ -103,16 +104,17 @@ theorem exists_SharpP_testBit_of_mem_BPOp_ParityP {L : Set α}
     fun hlt => by by_contra ha; have := hno ha; omega⟩
 
 /-- **`BP·⊕P ⊆ P^#P`**: a problem decided with bounded error by a problem in `⊕P` about pairs of
-an instance and a random string is in `P^#P`, decided by a program asking for one bit of a
-function in `#P`. -/
+an instance and a random string is in `P^#P`. The program of the proof asks for one bit of a
+function in `#P`; membership in `PWithSharpPOracle` does not record the number of queries. -/
 theorem BPOp_ParityP_subset_PWithSharpPOracle :
     BPOp enc (ParityP (encPair enc encBits)) ⊆ PWithSharpPOracle enc := fun _ hL =>
   let ⟨_, hf, _, h⟩ := exists_SharpP_testBit_of_mem_BPOp_ParityP hL
   mem_PWithSharpPOracle_of_testBit hf h
 
-/-- **Toda's theorem: `PH ⊆ P^#P`.** Every problem in the polynomial hierarchy is decided by a
-polynomial-time oracle program, asking for one bit of a function in `#P`, against every oracle
-language answering the bits of that function. -/
+/-- **Toda's theorem: `PH ⊆ P^#P`.** Every problem in the polynomial hierarchy has a function in
+`#P` and a polynomial-time oracle program that decides the problem against every oracle language
+answering the bits of that function. The program of the proof asks for one bit of the function;
+membership in `PWithSharpPOracle` does not record the number of queries. -/
 theorem PH_subset_PWithSharpPOracle : PH enc ⊆ PWithSharpPOracle enc :=
   PH_subset_BPOp_ParityP.trans BPOp_ParityP_subset_PWithSharpPOracle
 

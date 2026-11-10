@@ -39,8 +39,8 @@ variable {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
 
 /-- **A computation within space `s n` halts within a time bound of `n`.** A function computable
 within space `s n` on encoded inputs of length `n`, within any time bound, is computable within the
-same space and the time `(n + 2) * storageBound Bool State k (s n)` of the configuration count of
-its machine (`Turing.MultiTapeTM.haltsAt_le_card`), a function of `n` alone. -/
+same space and some time bound that depends only on `n`; for an explicit bound see
+`Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_time_two_pow`. -/
 theorem ComputableInTimeAndSpace.exists_time_of_length {f : α → β} {t : α → ℕ} {s : ℕ → ℕ}
     (h : ComputableInTimeAndSpace f encIn encOut t fun a => s (encIn a).length) :
     ∃ t' : ℕ → ℕ, ComputableInTimeAndSpaceOfLength f encIn encOut t' s := by

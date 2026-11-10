@@ -16,9 +16,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Bo
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingParametersPolyTime
-import all CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 import CslibFrontier.Computability.Complexity.FineGrained.CountingScaleBounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Computability.PolyTime.CNF.DeclaredInput
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -454,7 +454,7 @@ threshold `N₀_br`, every feasible reduced branch `(n', sys')` with `sysMaxDegr
 `sys'.length ≤ C_inc * n'`, and neutral-augmented incidence and scope width
 `≤ C_inc * ⌈log₂ n'⌉ ^ β` runs in at most
 `C_br * (|enc (n', sys')| + 1) ^ d_br * 2 ^ (A_br * interpolationScale n')` steps. -/
-def BranchPolylogTimeBound (N₀_branch : ℕ) {branchEval : BranchEvalInput → ℕ}
+@[expose] def BranchPolylogTimeBound (N₀_branch : ℕ) {branchEval : BranchEvalInput → ℕ}
     (cBranch : NativeCertificate branchEval encBranchEvalInput encNat) : Prop :=
   ∀ k_deg β C_inc : ℕ, ∃ N₀_br C_br d_br A_br : ℕ,
     ∀ n' : ℕ, ∀ sys' : List (List (List ℕ)),

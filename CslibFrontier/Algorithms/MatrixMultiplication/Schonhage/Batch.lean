@@ -29,7 +29,7 @@ Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathema
 counts and identities; they give no native program or instruction-cost certificate.
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

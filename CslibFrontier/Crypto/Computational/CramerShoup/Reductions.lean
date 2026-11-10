@@ -170,12 +170,13 @@ theorem advantage_bind_sampleCramerShoupTripleExponents_le (n : ℕ) (d : F.Desc
       3 / 2 ^ n := by
   have hbind :
       ((ProbComp.eval (F.sampleCramerShoupTripleExponents n d)).bind fun p =>
-        k (p.1 : ZMod (F.order d)) (p.2.1 : ZMod (F.order d)) (p.2.2 : ZMod (F.order d))) =
+        k (csExpA p : ZMod (F.order d)) (csExpB p : ZMod (F.order d))
+          (csExpC p : ZMod (F.order d))) =
       (ProbComp.eval (F.sampleExp n d)).bind fun a =>
         (ProbComp.eval (F.sampleCramerShoupPair n d)).bind fun bc =>
           k (a : ZMod (F.order d)) (bc.1 : ZMod (F.order d)) (bc.2 : ZMod (F.order d)) := by
     simp only [sampleCramerShoupTripleExponents, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.bind_bind, PMF.pure_bind]
+      PMF.bind_bind, PMF.pure_bind, csExpA, csExpBC, csExpB, csExpC]
   rw [hbind]
   refine (Game.advantage_triangle _
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
@@ -851,15 +852,15 @@ theorem decodeCramerShoup_eq_skNatOfZMod
           ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))) ct ad := by
   unfold decodeCramerShoup
   by_cases hvw :
-      isElem (d, (decodeBits4 ct).1) = true ∧ isElem (d, (decodeBits4 ct).2.1) = true
+      isElem (d, csCtV (decodeBits4 ct)) = true ∧ isElem (d, csCtW (decodeBits4 ct)) = true
   · obtain ⟨v, hv⟩ := (hmem d _).mp hvw.1
     obtain ⟨w, hw⟩ := (hmem d _).mp hvw.2
     simp only [← hv, ← hw, skNatOfZMod, encodeProjHash2_encode, encodeProjHash_encode,
       csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂, ZMod.natCast_zmod_val]
-  · have hfalse : ((encBits4 (decodeBits4 ct) == ct) && isElem (d, (decodeBits4 ct).1) &&
-        isElem (d, (decodeBits4 ct).2.1) && isElem (d, (decodeBits4 ct).2.2.1)) = false := by
+  · have hfalse : ((encBits4 (decodeBits4 ct) == ct) && isElem (d, csCtV (decodeBits4 ct)) &&
+        isElem (d, csCtW (decodeBits4 ct)) && isElem (d, csCtE (decodeBits4 ct))) = false := by
       revert hvw
-      cases isElem (d, (decodeBits4 ct).1) <;> cases isElem (d, (decodeBits4 ct).2.1) <;> simp
+      cases isElem (d, csCtV (decodeBits4 ct)) <;> cases isElem (d, csCtW (decodeBits4 ct)) <;> simp
     simp [hfalse]
 
 /-- `cramerShoupPhase1Oracle` depends on `sk` only through its residues modulo `F.order d`. -/

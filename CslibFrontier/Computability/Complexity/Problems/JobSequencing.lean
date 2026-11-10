@@ -278,7 +278,7 @@ theorem toJobSequencing_mem_iff (x : List ℕ × ℕ) :
 /-- The reduction `toJobSequencing` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toJobSequencing :
-    ComputableInPolyTime toJobSequencing (encPair (encList encNat) encNat) encJobSequencing := by
+    ComputableInPolyTime toJobSequencing encSubsetSum encJobSequencing := by
   unfold toJobSequencing
   fun_prop
 
@@ -286,7 +286,7 @@ end SubsetSum
 
 /-- `SubsetSum` reduces to `JobSequencing` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_JobSequencing :
-    PolyTimeReducible (encPair (encList encNat) encNat) encJobSequencing SubsetSum
+    PolyTimeReducible encSubsetSum encJobSequencing SubsetSum
       JobSequencing :=
   ⟨SubsetSum.toJobSequencing, SubsetSum.computableInPolyTime_toJobSequencing,
     fun x => (SubsetSum.toJobSequencing_mem_iff x).symm⟩

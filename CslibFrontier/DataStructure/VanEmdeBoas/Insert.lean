@@ -32,7 +32,7 @@ The algorithm and recursive invariant are `Tree.insert` and `Tree.Valid`, import
 * [E. Demaine, *Divide and conquer: van Emde Boas trees*, Lecture 4][Demaine2015VanEmdeBoas]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.VanEmdeBoas.Tree
 

@@ -8,12 +8,13 @@
 
 A client charge sums explicitly chosen operation weights. Pure Lean work in the continuation is uncharged. An abstract client bound therefore measures interaction with the supplied backend, not total machine time. Refinement packages an invariant, abstract-state map and lower-level method programs; composition transports correctness and cost bounds. [CslibFrontier/DataStructure/StateTransition/Amortized.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition/Amortized.lean) adds potential-based telescoping.
 
-For a deterministic specification, `clientResult`, `clientState` and `clientHistory` give the
-answer, final state and operation history of a client run. To split them at the binds of a `do`
-block, use `simp only [client_simps]` instead of rewriting with `clientState_bind` and its
-relatives by hand. The simp set also splits `totalCost` and `ValidHistory` of the history at the
-state where the first client stops, and, with `WordRAM.Realization` imported, `memoryCost`. It
-does not unfold individual operations: add their step lemmas yourself. See the
+For a specification given by a transition function `f` (`[D.HasStepFn f]`), `clientResult`,
+`clientState` and `clientHistory` give the answer, final state and operation history of a client
+run. To split them at the binds of a `do` block, use `simp only [client_simps]` instead of rewriting
+with `clientState_bind` and its relatives by hand. The simp set also splits `totalCost` and
+`ValidHistory` of the history at the state where the first client stops, and, with
+`WordRAM.Realization` imported, `memoryCost`. It does not unfold individual operations: add their
+step lemmas yourself. See the
 [client-splitting regressions](../../CslibFrontierTests/StateTransitionClientSimps.lean), which
 cover a generic specification and `Memory.spec w`.
 
@@ -38,7 +39,7 @@ Import [`CslibFrontier.DataStructure.CellProbe.StateTransition`](../../CslibFron
 
 - `CellProbe.StateTransitionImpl D P s₀` certifies a deterministic `CellProbe.Scheme` with potential-amortized probe charge `charge`, projecting via `toBaseImpl`, `toAmortized`, and (when `potential = 0`) `toBound` over `ExecOp P` to adaptive `D.Client` bounds (`run_client_amortized`, `run_client_bound`) and multi-step `P.runSeq` / `P.seqProbes` bounds (`runSeq_amortized`, `runSeq_ofFn`), with cell-count monotonicity `padCells`.
 - `CellProbe.Randomized.StateTransitionImpl D P s₀` couples `Randomized.Scheme` execution with a latent `Seed` (`seedSlack * seedLaw`), `CoupledState` / `CoupledOutcome` marginals, and an addition-only `ℝ≥0∞` amortized-in-expectation probe inequality (`seq_expected_amortized`, `seq_expected_amortized_ofFn`), lifting deterministic implementations via `toRandomized` and projecting to `CellProbe.Randomized.ObliviousSequenceImpl` via `toObliviousSequenceImpl`.
-- For **zero-error (Las Vegas)** schemes on deterministic specifications (`[D.HasStepFn f]`) against oblivious sequences (bounded-error Monte Carlo schemes and adaptive sequence adversaries are out of scope), `CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes` and `StateTransitionImpl.le_expected_totalCost_of_det_indexedScheme` package the **averaging (easy) direction of Yao's principle** over an explicit finite `opsAlphabet : Finset D.Op` and `horizon : ℕ` (separating `correctSeqs` from `hardDist`, so infinite operation types such as `Dictionary.Op U` need no `[Fintype]` instance). Because per-step coin fixing returns a step-indexed `IndexedScheme` (the **time-aware relaxation** with a free step clock outside cell memory), any deterministic cell-probe lower bound paired with it must hold against step-indexed `IndexedScheme`s; in the **random initial memory / coin-free steps** specialization (`IsCoinFree`), `exists_det_scheme_le_expectedSeqProbes` and `StateTransitionImpl.exists_det_scheme` return a time-invariant `CellProbe.Scheme` without `opsAlphabet` or `horizon`.
+- For **zero-error (Las Vegas)** schemes on specifications given by a transition function (`[D.HasStepFn f]`) against oblivious sequences (bounded-error Monte Carlo schemes and adaptive sequence adversaries are out of scope), `CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes` and `StateTransitionImpl.le_expected_totalCost_of_det_indexedScheme` package the **averaging (easy) direction of Yao's principle** over an explicit finite `opsAlphabet : Finset D.Op` and `horizon : ℕ` (separating `correctSeqs` from `hardDist`, so infinite operation types such as `Dictionary.Op U` need no `[Fintype]` instance). Because per-step coin fixing returns a step-indexed `IndexedScheme` (the **time-aware relaxation** with a free step clock outside cell memory), any deterministic cell-probe lower bound paired with it must hold against step-indexed `IndexedScheme`s; in the **random initial memory / coin-free steps** specialization (`IsCoinFree`), `exists_det_scheme_le_expectedSeqProbes` and `StateTransitionImpl.exists_det_scheme` return a time-invariant `CellProbe.Scheme` without `opsAlphabet` or `horizon`.
 
 Open the complete [checked client](../../CslibFrontierTests/DataStructureCellProbe.lean) for a non-zero-potential 2-bit binary counter (`4` probes on carry vs. amortized charge `3`), a worst-case direct-mapped `Dictionary.spec` instance, a randomized 2-key dictionary combining a uniform initial swap seed with per-query coin flips, zero-error coin-fixing over non-`Fintype` `Dictionary.Op 2`, and a `3 / 2` probe lower-bound transfer check across arbitrary `cells` and `w`. Run `scripts/build.sh --wfail --iofail CslibFrontierTests.DataStructureCellProbe`. Word-RAM-to-cell-probe simulation bridges follow separately; these modules do not by themselves transfer cell-probe lower bounds to Word-RAM instruction counts.
 
@@ -131,8 +132,8 @@ Choose the conclusion your client needs:
   exports in [Program](../../CslibFrontier/Computability/WordRAM/Realization/Program.lean).
 
 For each runtime input, prove `k ≤ words.length`, `Fits w (words.length + 1)`,
-`InputFits w words`, the certificate's `safe w d (inputState words)` condition, and
-`Memory.spec`'s `ValidHistory` for that client from `inputState words`. The raw-words rule
+`InputFits w words`, the certificate's `safe w d (Memory.State.init words)` condition, and
+`Memory.spec`'s `ValidHistory` for that client from `Memory.State.init words`. The raw-words rule
 also requires the prefix equality described above; the other two take that equality for
 `raw d` when choosing the program. The resulting instruction bound is
 `C * (memoryCost + work + 1) + 1`, including the executed prefix, body and halt.

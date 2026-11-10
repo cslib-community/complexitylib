@@ -22,6 +22,10 @@ and quotient/remainder slot conversions. The vertex count is unary: the result i
 the number of vertices, not in the bit length of their names. Fixed-base and edge-label constants
 are enormous, so the certificate makes no claim of practical execution.
 
+## Main definitions
+
+* `Cslib.RotationMap.encRotationQuery`: the encoding of a rotation query to a family member.
+
 ## Main results
 
 * `Cslib.RotationMap.TowerTable.polytime_contract`: slot contraction runs in polynomial time.
@@ -42,6 +46,13 @@ open Turing.MultiTapeTM
 
 variable {D : Type} {b : ℕ}
 
+/-- The encoding of a rotation query `(n, v, l)` to the member of a family with `n` vertices: the
+vertex count `n`, framed, then the vertex `v`, framed, both in unary, and the label `l`. Slot
+contraction (`contract`) takes the same triple after its table. -/
+abbrev _root_.Cslib.RotationMap.encRotationQuery {L : Type} (label : L ↪ List Bool) :
+    ℕ × ℕ × L ↪ List Bool :=
+  encPair encUnary (encPair encUnary label)
+
 section Efficiency
 
 variable [Fintype D]
@@ -53,7 +64,7 @@ theorem polytime_contract (hb : 0 < b) (label : D ↪ List Bool)
     ComputableInPolyTime
       (fun p : TowerTable D × (ℕ × (ℕ × (Fin b × (D × D)))) =>
         contract hb p.1 p.2.1 p.2.2)
-      (encPair (encoding label) (encPair encUnary (encPair encUnary slot)))
+      (encPair (encoding label) (encRotationQuery slot))
       (encPair encUnary slot) := by
   have htable := ComputableInPolyTime.fst (encoding label)
     (encPair encUnary (encPair encUnary slot))
@@ -88,7 +99,7 @@ theorem polytime_rotateFamily [Finite D] (H : RotationMap (Fin b) D)
     (e : Fin b ≃ (Fin 2 → D × D)) (hb : 1 < b)
     (edge : ((Fin b × (D × D)) ⊕ (Fin b × (D × D))) ↪ List Bool) :
     ComputableInPolyTime (rotateFamily H e (by lia))
-      (encPair encUnary (encPair encUnary edge)) (encPair encUnary edge) := by
+      (encRotationQuery edge) (encPair encUnary edge) := by
   let _ := Fintype.ofFinite D
   let label := encFinite D
   let slot := encFinite (Fin b × (D × D))
@@ -130,7 +141,7 @@ in the unary vertex count, with any fixed encoding of their constant edge-label 
 theorem polytime_arithmeticExpanderRotate
     (label : AffinePlaneFamilyLabel (ZMod 257) 257 ↪ List Bool) :
     ComputableInPolyTime arithmeticExpanderRotate
-      (encPair encUnary (encPair encUnary label)) (encPair encUnary label) := by
+      (encRotationQuery label) (encPair encUnary label) := by
   have : Fact (Nat.Prime 257) := ⟨by norm_num⟩
   exact TowerTable.polytime_rotateFamily _ _ (by decide) label
 

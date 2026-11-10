@@ -108,20 +108,21 @@ theorem eventually_four_sub_mul_lt_innerSize
 
 /-! ### The bundled claims -/
 
-/-- **Circuits of fan-in two need `(L - ε) n` gates**, by median edge-score layouts, where
-`L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`. -/
+/-- **Circuits of fan-in two deciding dense rectangle-free sets need `(L - ε) n` gates**, by
+median edge-score layouts, where `L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`. -/
 theorem circuitLowerBound_gaussian :
     CircuitLowerBound.{u, v} (1 + π / (3 * arccos ((1 + 2 * √2) / 4))) := by
   have h := circuitLowerBound_of_layoutBound.{u, v}
     (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian
   rwa [Gaussian.one_add_inv_two_mul_gaussianCoefficient] at h
 
-/-- **Circuits of fan-in two need `(4.56 - ε) n` gates**: the Gaussian coefficient is at least
-`114/25`. -/
+/-- **Circuits of fan-in two deciding dense rectangle-free sets need `(4.56 - ε) n` gates**: the
+Gaussian coefficient is at least `114/25`. -/
 theorem circuitLowerBound_114_div_25 : CircuitLowerBound.{u, v} (114 / 25) :=
   circuitLowerBound_gaussian.mono Gaussian.circuitCoefficient_ge_456
 
-/-- **Circuits of fan-in two need `(4 - ε) n` gates**, by Gaussian vertex-score layouts. -/
+/-- **Circuits of fan-in two deciding dense rectangle-free sets need `(4 - ε) n` gates**, by
+Gaussian vertex-score layouts. -/
 theorem circuitLowerBound_four : CircuitLowerBound.{u, v} 4 := by
   have h := circuitLowerBound_of_layoutBound.{u, v} (by norm_num) layoutBound_one_third
   rwa [show (1 : ℝ) + 1 / (1 / 3) = 4 by norm_num] at h
@@ -135,13 +136,13 @@ theorem averageCaseBound_gaussian :
     (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian
   rwa [Gaussian.one_add_inv_two_mul_gaussianCoefficient] at h
 
-/-- **Circuits of fan-in two below `(4.56 - ε) n` gates barely beat guessing**: the Gaussian
-coefficient is at least `114/25`. -/
+/-- **Circuits of fan-in two below `(4.56 - ε) n` gates barely beat guessing** on sets of small
+bias on large rectangles: the Gaussian coefficient is at least `114/25`. -/
 theorem averageCaseBound_114_div_25 : AverageCaseBound.{u, v} (114 / 25) :=
   averageCaseBound_gaussian.mono Gaussian.circuitCoefficient_ge_456
 
-/-- **Circuits of fan-in two below `(4 - ε) n` gates barely beat guessing**, by Gaussian
-vertex-score layouts. -/
+/-- **Circuits of fan-in two below `(4 - ε) n` gates barely beat guessing** on sets of small bias
+on large rectangles, by Gaussian vertex-score layouts. -/
 theorem averageCaseBound_four : AverageCaseBound.{u, v} 4 := by
   have h := averageCaseBound_of_layoutBound.{u, v} (by norm_num) layoutBound_one_third
   rwa [show (1 : ℝ) + 1 / (1 / 3) = 4 by norm_num] at h

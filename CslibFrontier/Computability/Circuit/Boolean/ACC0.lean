@@ -40,7 +40,9 @@ This module adds the resulting separations:
 * **Fixed-exponent `MOD_q` circuit lower bounds in `Σ₂`**: for every modulus `q` (prime or
   composite) and every exponent `k`, combining `SIZEMod_subset_SIZE` with Kannan's theorem gives a
   language in `Σ₂` with no `MOD_q` circuits of size `O(n ^ k)` of any depth
-  (`Kannan.language_notMem_SIZEMod`, `exists_mem_SigmaP_two_notMem_SIZEMod`) [Kannan1982].
+  (`exists_mem_SigmaP_two_notMem_SIZEMod`) [Kannan1982]. Kannan's language
+  `Kannan.language (8 * (k + 1))`, which is in `Σ₃`, has no such circuits either
+  (`Kannan.language_notMem_SIZEMod`).
 
 ## Main results
 
@@ -48,8 +50,10 @@ This module adds the resulting separations:
 * `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0`,
   `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod`: `P ⊄ AC⁰` and `P ⊄ AC⁰[p]` for odd primes
   `p`.
-* `Cslib.Circuits.Boolean.Kannan.language_notMem_SIZEMod`,
-  `Cslib.Circuits.Boolean.exists_mem_SigmaP_two_notMem_SIZEMod`: fixed-exponent `MOD_q` circuit
+* `Cslib.Circuits.Boolean.Kannan.language_notMem_SIZEMod`: Kannan's language
+  `Kannan.language (8 * (k + 1))`, which is in `Σ₃`, has no `MOD_q` circuits of size `O(n ^ k)`,
+  for every modulus `q`.
+* `Cslib.Circuits.Boolean.exists_mem_SigmaP_two_notMem_SIZEMod`: fixed-exponent `MOD_q` circuit
   lower bounds in `Σ₂` for every modulus `q`.
 
 ## References

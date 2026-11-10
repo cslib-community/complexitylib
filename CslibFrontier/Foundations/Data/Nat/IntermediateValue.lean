@@ -29,7 +29,7 @@ intermediate value in `(t, t + B]` (`Nat.exists_lt_le_add_of_update_le`).
 * `Nat.exists_lt_le_add_of_update_le`: discrete intermediate values under coordinate updates.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

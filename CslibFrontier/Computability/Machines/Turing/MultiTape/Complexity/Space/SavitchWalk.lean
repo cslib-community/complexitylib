@@ -50,7 +50,6 @@ costs the same work space, plus that of the inputs and `O(log n)` for the counte
 
 ## Main definitions
 
-* `Cslib.Reachability.Walk.encEdgeArgs`: the input of an edge test.
 * `Cslib.Reachability.Walk.encEntry`, `Cslib.Reachability.Walk.encState`: the encoded states.
 * `Cslib.Reachability.Walk.roundStep`, `Cslib.Reachability.Walk.encRound`: a step carrying the
   parameter of the edge test and the width, and its encoding.
@@ -78,10 +77,6 @@ namespace Cslib.Reachability.Walk
 open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInSpace
 
 variable {π : Type} {encP : π ↪ List Bool}
-
-/-- The input of an edge test: its parameter and two words. -/
-abbrev encEdgeArgs (encP : π ↪ List Bool) : π × List Bool × List Bool ↪ List Bool :=
-  encPair encP (encPair encBits encBits)
 
 /-! ### Words of a given width -/
 

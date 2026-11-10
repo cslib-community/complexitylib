@@ -52,7 +52,7 @@ the overwritten string and the old part together determine `(a, b)`.
   event is the fraction of its members.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

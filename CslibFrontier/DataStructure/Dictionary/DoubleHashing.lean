@@ -37,7 +37,7 @@ Under the hypotheses of the cited theorems, the expected probe count is at most 
 $(2 L + 1)$-wise independence (`expect_probeCount_oddStride_of_kWiseIndependent`) and at most `3`
 under Double Tabulation with an explicit code bound
 (`expect_probeCount_oddStride_doubleTab_of_codeBound_le`). For the exponent `c_exp`, the bound `3`
-needs `doubleTabThreshold c_exp ≤ n_max` (`expect_probeCount_oddStride_doubleTab_le`), where
+is proved for `doubleTabThreshold c_exp ≤ n_max` (`expect_probeCount_oddStride_doubleTab_le`), where
 `doubleTabThreshold c_exp = 2 ^ (2 * doubleTabMinB c_exp) ≥ 2 ^ 25088`. Below the threshold the
 proof uses only the deterministic bound `probeCount ≤ n_max + 1` (`probeCount_le_add_one`), valid
 for every probe permutation family representing the table; together the two cases give
@@ -2287,6 +2287,14 @@ noncomputable def twoStageOddStridePerm {Θ_top₁ Θ_bot₁ Θ_top₂ Θ_bot₂
     (H₂ : Θ_top₂ → Θ_bot₂ → Fin U → Fin (2 ^ (M - 1))) :
     (Θ_top₁ × Θ_bot₁) × (Θ_top₂ × Θ_bot₂) → Fin U → Equiv.Perm (Fin (2 ^ M))
   | ((top₁, bottom₁), (top₂, bottom₂)) => oddStridePerm (H₁ top₁ bottom₁) (H₂ top₂ bottom₂)
+
+theorem twoStageOddStridePerm_apply {Θ_top₁ Θ_bot₁ Θ_top₂ Θ_bot₂ : Type*} {U M : ℕ}
+    (H₁ : Θ_top₁ → Θ_bot₁ → Fin U → Fin (2 ^ M))
+    (H₂ : Θ_top₂ → Θ_bot₂ → Fin U → Fin (2 ^ (M - 1))) (top₁ : Θ_top₁) (bottom₁ : Θ_bot₁)
+    (top₂ : Θ_top₂) (bottom₂ : Θ_bot₂) :
+    twoStageOddStridePerm H₁ H₂ ((top₁, bottom₁), (top₂, bottom₂)) =
+      oddStridePerm (H₁ top₁ bottom₁) (H₂ top₂ bottom₂) := by
+  rfl
 
 /-- **High-Probability Conditioning Bridge for Odd-Stride Double Hashing**:
 if `H₁ top₁` and `H₂ top₂` are `(2 * maxProbeCutoff n_max + 1)`-wise independent whenever
