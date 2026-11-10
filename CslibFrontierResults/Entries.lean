@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicT
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
@@ -53,6 +54,7 @@ import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
@@ -846,6 +848,26 @@ register_result "nash-existence" where
     itself derived from the hypergrid Sperner lemma. Nonconstructive: no algorithm or \
     complexity bound."
 
+register_result "correlated-equilibrium-hierarchy" where
+  title := "Pure Nash, mixed Nash, correlated and coarse correlated equilibria are nested"
+  topic := "game theory"
+  sources := [
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 13, Section 3 and Figure 2; Lecture 18, Section 1" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.isCorrelatedEquilibrium_iff,
+    Cslib.GameTheory.CostGame.IsPureNash.isCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.IsMixedNash.isCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.IsCorrelatedEquilibrium.isCoarseCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.exists_isCorrelatedEquilibrium
+  ]
+  scope := "Finite cost-minimization games and finitely supported distributions on profiles. \
+    Correlated equilibria are defined by switching functions and shown equivalent to the \
+    conditional form. Strictness of the inclusions is checked on examples in the test suite \
+    (traffic light, Rock-Paper-Scissors), not stated as library theorems. Swap regret and \
+    convergence of learning dynamics are not covered."
+
 register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"
   topic := "game theory"
@@ -1337,3 +1359,20 @@ register_result "color-refinement" where
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
     test is incomplete (equal-order d-regular graphs). No k-dimensional Weisfeiler–Leman, \
     fractional isomorphism or certified algorithm."
+
+register_result "translational-time-hierarchy" where
+  title := "Deterministic time hierarchy below every power of the logarithm, by translation"
+  topic := "time complexity"
+  sources := [
+    { paper := FortnowSanthanam2006, theorem := "Lemma 5", locator := "Section 3.3" }
+  ]
+  theorems := [
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow,
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_log_rpow
+  ]
+  scope := "DTIME(n^a) is strictly inside DTIME(g) whenever g(n) >= n^a (ln n)^eps eventually, \
+    for every integer a >= 1 and real eps > 0, on bit strings with native multitape DTIME. \
+    Derived by translation (padding) from the library's polylogarithmic-gap diagonal theorem; \
+    the source lemma is the translation method, not this statement. Only the bounds n^a are \
+    covered, not arbitrary time-constructible t, and this is not W. J. Paul's fixed-tape \
+    hierarchy."
