@@ -84,17 +84,17 @@ proof. Open the complete ordinary-import
 [call examples](../../CslibFrontierTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
 
-`wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and
-also when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way
-round, `j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and
-`f a`, an instance of a quantified disequality `∀ xs, a ≠ b` or `∀ xs, ¬a = b` either way round,
-or names such as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates, from each
-other or from a literal name such as `10`. A quantified hypothesis such as
-`∀ i j, src i ≠ tmp j` separates two renamed banks. It is used only when matching its two sides against the names determines every bound variable. A hypothesis with
-a premise, such as `∀ i j, i ≠ j → tmp i ≠ tmp j`, is never instantiated; state that fact as
-`Function.Injective tmp`. Other names stay unread. Memory passed whole to a definition, as in
-`swapMem y.mem i j`, becomes `Function.update`; reads at an address still go through the
-discharger. `Data.set_set` drops an overwritten register. The
+`wram_exec` and `wram_simp` read a register past `Data.set` when both names are literals, and also
+when names with free variables are distinct by the context: a hypothesis `j ≠ i` either way round,
+`j ∉ Set.range f` against a renamed register `f a`, `Function.Injective f` for `f b` and `f a`, an
+instance of a quantified disequality `∀ xs, a ≠ b` or `∀ xs, ¬a = b` either way round, or names such
+as `i.castAdd 3` and `⟨i + 9, _⟩` whose values the discharger separates, from each other or from a
+literal name such as `10`. A quantified hypothesis such as `∀ i j, src i ≠ tmp j` separates two
+renamed banks. It is used only when matching its two sides against the names determines every bound
+variable. A hypothesis with a premise, such as `∀ i j, i ≠ j → tmp i ≠ tmp j`, is never
+instantiated; state that fact as `Function.Injective tmp`. Other names stay unread. Memory passed
+whole to a definition, as in `swapMem y.mem i j`, becomes `Function.update`; reads at an address
+still go through the discharger. `Data.set_set` drops an overwritten register. The
 [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each case,
 including two banks separated by quantified hypotheses, a premise-bearing hypothesis left unused,
 and names left unread.
