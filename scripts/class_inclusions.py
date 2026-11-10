@@ -110,18 +110,16 @@ THEOREM = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:public\s+|private\s+|protected\s+)
 RELATIONS = ("not_subset", "ssubset", "subset", "eq")
 
 
-def locate() -> dict[str, tuple[Path, int]]:
-    """The first source location of every theorem name."""
-    found: dict[str, tuple[Path, int]] = {}
+def locate() -> dict[str, Path]:
+    """The first source file declaring each theorem name."""
+    found: dict[str, Path] = {}
     for path in sorted(SOURCES.rglob("*.lean")):
-        text = path.read_text(encoding="utf-8")
-        for match in THEOREM.finditer(text):
-            line = text.count("\n", 0, match.start()) + 1
-            found.setdefault(match[1], (path, line))
+        for match in THEOREM.finditer(path.read_text(encoding="utf-8")):
+            found.setdefault(match[1], path)
     return found
 
 
-def library_facts(grid: dict[str, str], theorems: dict[str, tuple[Path, int]]):
+def library_facts(grid: dict[str, str], theorems: dict[str, Path]):
     """(A, relation, B, declaration) for every library theorem between classes of `grid`."""
     label = {token: name for name, token in grid.items()}
     pattern = re.compile(r"(.+?)_(%s)_(.+)$" % "|".join(RELATIONS))
@@ -170,8 +168,7 @@ def close(nodes, facts, complements: bool):
 
 
 def link(declaration, theorems):
-    path, line = theorems[declaration.split()[0]]
-    return f"../../{path.relative_to(ROOT).as_posix()}#L{line}"
+    return f"../../{theorems[declaration.split()[0]].relative_to(ROOT).as_posix()}"
 
 
 def grid_table(title, grid, theorems, problems):
