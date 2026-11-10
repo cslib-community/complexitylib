@@ -141,9 +141,9 @@ theorem isOraclePPT_sameMessageNewTagForger :
   have hq : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool =>
         List.take 1 <$> ProbOracleComp.query ((), List.replicate p.1 false)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   unfold sameMessageNewTagForger
-  exact (hq.map_with (by polytime)).isOraclePPT
+  exact (hq.map_with' (by polytime)).isOraclePPT
 
 /-- In the fresh-message `eufCmaGame`, `sameMessageNewTagForger` always loses (`PMF.pure false`)
 because its forgery message `0^n` was previously queried to the signing oracle. -/

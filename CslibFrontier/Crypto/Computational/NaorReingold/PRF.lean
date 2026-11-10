@@ -613,8 +613,8 @@ private theorem negligible_naorReingoldHashedGame_pure {F : PrimeOrderGroupFamil
         (F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) id id bound
           (fun k _ => adversary k []) n) := by
   have hadv_aux : IsOraclePPT encBool (fun k (_ : List Bool) => adversary k []) :=
-    hadversary.on.preprocess
-      ((ComputableTidilyInPolyTime.fst encUnary encBits).prod (ComputableTidilyInPolyTime.const []))
+    hadversary.on.preprocess'
+      ((ComputableInPolyTime.fst encUnary encBits).prod (ComputableInPolyTime.const []))
   obtain ⟨cD, eD, hdesc_b⟩ := hdesc.tidy.polyBounded_length.exists_le
   have hdesc_poly : PolynomiallyBounded (fun n => cD * (n + 1) ^ eD) :=
     (PolynomiallyBounded.const cD).mul ((PolynomiallyBounded.id.add (.const 1)).pow eD)
@@ -864,7 +864,7 @@ private theorem isOraclePPT_ddhPRGAdv {inBits seedLen : ℕ → ℕ} {D : Distin
           (ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encUnary)))
         (ComputableTidilyInPolyTime.unary_to_binary.comp
           (ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encUnary)))
-  exact ((KabanetsCai.isOraclePPTOn_queryTable.preprocess hqueries).bind_with
+  exact ((KabanetsCai.isOraclePPTOn_queryTable.preprocess' (.of_tidy hqueries)).bind_with
     ((hD.preprocess
       ((ComputableTidilyInPolyTime.fst encUnary encBits).comp'
         (ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encBits))
@@ -886,9 +886,8 @@ private theorem negligible_naorReingoldHashedGame_const_pure {F : PrimeOrderGrou
         (F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) inBits (fun _ => 1) bound
           (fun k _ => adv k []) n) := by
   have hadv_aux : IsOraclePPT encBool (fun k (_ : List Bool) => adv k []) :=
-    (hadv.on.preprocess
-      ((ComputableTidilyInPolyTime.fst encUnary encBits).prod
-        (ComputableTidilyInPolyTime.const []))).isOraclePPT
+    (hadv.on.preprocess'
+      ((ComputableInPolyTime.fst encUnary encBits).prod (ComputableInPolyTime.const []))).isOraclePPT
   obtain ⟨cD, eD, hdesc_b⟩ := hdesc.tidy.polyBounded_length.exists_le
   have hdesc_poly : PolynomiallyBounded (fun n => cD * (n + 1) ^ eD) :=
     (PolynomiallyBounded.const cD).mul ((PolynomiallyBounded.id.add (.const 1)).pow eD)

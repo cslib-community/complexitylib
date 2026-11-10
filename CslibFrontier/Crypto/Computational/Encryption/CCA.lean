@@ -1558,17 +1558,17 @@ theorem CCA2AdversaryOf.isPPT_toMulti {Msg : Type} {encMsg : Msg ↪ List Bool}
     (adversary.toMulti).IsPPT encMsg where
   choose := by
     let EIn := encPair (encPair encMsg encMsg) encBits
-    have hpair : ComputableTidilyInPolyTime
+    have hpair : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => choice.1) EIn (encPair encMsg encMsg) :=
-      ComputableTidilyInPolyTime.fst _ _
-    have hsingleton : ComputableTidilyInPolyTime
+      ComputableInPolyTime.fst _ _
+    have hsingleton : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => [choice.1])
         EIn (encList (encPair encMsg encMsg)) :=
-      ComputableTidilyInPolyTime.cons' hpair (ComputableTidilyInPolyTime.const [])
-    have hstate : ComputableTidilyInPolyTime
+      ComputableInPolyTime.cons' hpair (ComputableInPolyTime.const [])
+    have hstate : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => choice.2) EIn encBits :=
-      ComputableTidilyInPolyTime.snd _ _
-    exact (hA.choose.on.map (ComputableTidilyInPolyTime.prod hsingleton hstate)).isOraclePPT
+      ComputableInPolyTime.snd _ _
+    exact (hA.choose.on.map' (ComputableInPolyTime.prod hsingleton hstate)).isOraclePPT
   guess := by
     let EGuess := encPair encUnary (encPair encBits (encList encBits))
     have hhead : ComputableInPolyTime
