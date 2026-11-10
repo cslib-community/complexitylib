@@ -494,5 +494,3 @@ The executable selector chooses exhaustive solving below it. This cutoff follows
 the proved integer family; it is not a measured crossover, an optimized cutoff, or a claim
 about practical performance. The asymptotic threshold can be larger still, and the
 existential false-positive constant in the proof does not supply a numerical benchmark.
-
-
