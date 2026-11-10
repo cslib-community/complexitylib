@@ -24,8 +24,9 @@ The rules reach `fun_prop` only where this module is imported, directly or throu
 The intermediate encoding of `budget_finite` and `budget_decideEq` is not determined by the goal.
 When no premise determines it, as for a finite function of a component of a finite value,
 `budget_finite_encFinite` and `budget_decideEq_encFinite` pass through the canonical encoding
-`encFinite`. Several finite values combined into one argument still need their encoding stated,
-for example `have := budget_finite (encC := encFinEnum Guard) Ref.guardOf hr`.
+`encFinite`. Such a value used as a component of the argument of another finite function, as in
+`g ((r x).opp, b x)`, still needs its encoding stated, for example
+`have := budget_finite (encC := encFinEnum Guard) Ref.guardOf hr`.
 
 `budget_decideEq_encFinite`, conjunctions and disjunctions (`budget_decideAnd`, `budget_decideOr`)
 and comparisons `≤` of numbers (`budget_natLe`) are not registered: each would be tried, and fail,

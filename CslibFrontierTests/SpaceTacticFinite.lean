@@ -28,6 +28,11 @@ def Dir.opp : Dir → Dir
   | .stay => .stay
   | .right => .left
 
+/-- A finite function of a pair of finite values. -/
+def g2 : Dir × Bool → Bool
+  | (.left, b) => b
+  | _ => false
+
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {a b : α → ℕ} {r : α → Dir}
   (ha : ComputableInSpace a enc encNat S) (hb : ComputableInSpace b enc encNat S)
   (hr : ComputableInSpace r enc (encFinEnum Dir) S) (hin : (fun x => (enc x).length) ≼ S)
@@ -70,6 +75,21 @@ example : ComputableInSpace (fun x => if r x ≠ .left then a x else b x) enc en
 
 -- The value of a finite function feeding an equality passes through the canonical encoding.
 example : ComputableInSpace (fun x => if (r x).opp = .left then a x else b x) enc encNat S := by
+  space
+
+-- A finite function of a finite value, as a component of the argument of another finite function:
+-- the encoding of `(r x).opp` is undetermined.
+/--
+Failed to infer `(?encB✝ : Dir ↪ List Bool)` when applying theorem
+`Turing.MultiTapeTM.ComputableInSpace.budget_finite`.
+-/
+#guard_msgs (substring := true) in
+example : ComputableInSpace (fun x => g2 ((r x).opp, decide (a x = 0))) enc encBool S := by
+  space
+
+-- Stating the encoding of that component first closes the goal.
+example : ComputableInSpace (fun x => g2 ((r x).opp, decide (a x = 0))) enc encBool S := by
+  have := budget_finite (encC := encFinEnum Dir) Dir.opp hr
   space
 
 omit ha hb hin hr
