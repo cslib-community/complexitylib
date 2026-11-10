@@ -46,7 +46,8 @@ macro_rules | `(tactic| synthesis_union) => `(tactic| first
   | with_reducible exact Set.subset_union_right
   | (with_reducible refine Set.subset_union_of_subset_left ?_ _); synthesis_union
   | (with_reducible refine Set.mem_union_right _ ?_); synthesis_union
-  | (with_reducible refine Set.mem_union_left _ ?_); synthesis_union)
+  | (with_reducible refine Set.mem_union_left _ ?_); synthesis_union
+  | (with_reducible refine Set.subset_union_of_subset_right ?_ _); with_reducible assumption)
 
 /-- The recursive search behind `synthesis_available`. Its failures are discarded by the
 alternatives that call it, so only `synthesis_available` reports one. -/

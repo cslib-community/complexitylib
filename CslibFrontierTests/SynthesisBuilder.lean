@@ -111,6 +111,12 @@ example {n w : ℕ} (a b : BitString n → BitVec w) (s : Set (BooleanFunction n
       wordWires (fun x => b x - a x) :=
   ⟨by synthesis_available, by synthesis_available⟩
 
+-- `synthesis_union` closes containment in any member of a union by a local hypothesis, here a
+-- middle member and the last one.
+example {α : Type} (X Y s T₁ T₂ T₃ : Set α) (hX : X ⊆ T₂) (hY : Y ⊆ T₃) :
+    X ⊆ s ∪ T₁ ∪ T₂ ∪ T₃ ∧ Y ⊆ s ∪ T₁ ∪ T₂ ∪ T₃ :=
+  ⟨by synthesis_union, by synthesis_union⟩
+
 -- `synthesis_union` alone does not unfold `Builder.add`, so it cannot see the sources inside a
 -- builder's `wires`; `synthesis_available` falls back to the general search.
 example {n k w : ℕ} (records : Fin k → BitString n → BitVec w) (j : Fin k) :

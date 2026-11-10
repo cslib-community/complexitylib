@@ -282,7 +282,10 @@ theorem gates_of_two_le {w : ℕ} (hw : 2 ≤ w) :
 /-! ### The synthesis bound -/
 
 -- The availability premises below are closed by `synthesis_union`, which matches syntactic
--- members of the accumulated union `s ∪ T₁ ∪ ⋯ ∪ T₁₅` at reducible transparency.
+-- members of the accumulated union `s ∪ T₁ ∪ ⋯ ∪ T₁₅` at reducible transparency. They call it
+-- rather than `synthesis_available`, which costs the same here, so that a premise that leaves
+-- this shape fails at once instead of falling back to the general search, which exhausts the
+-- heartbeat budget on this chain.
 
 private theorem synthesis_wideMul {n : ℕ} (w : ℕ) : ∀ (s : Set (BooleanFunction n))
     (a b : BitString n → BitVec w), wordWires a ⊆ s → wordWires b ⊆ s →
