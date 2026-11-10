@@ -12,14 +12,14 @@ import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 # Symbolic execution of structured word-RAM code
 
 Regressions for `wram_exec` and `wram_simp`: a concrete program runs to its exact result and
-instruction count; registers and memory hold symbolic values, reads after writes to other
-addresses reduce, and a conditional the facts do not decide splits; instructions `Op.alu` of other
-bases, such as `Basis.additive`, run too; execution stops at a subprogram, continues from its
-specification and resumes; a loop proved by induction takes one iteration at a time with
-`WP.loop_iter` and `WP.Exact.loop_iter`; and goals of the wrong form, or programs with nothing to
-execute, fail with an explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read
-through writes on their own, also with register names that have free variables and banks separated
-by quantified hypotheses, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
+instruction count; registers and memory hold symbolic values, reads after writes to other addresses
+reduce, and a conditional the facts do not decide splits; instructions `Op.alu` of other bases, such
+as `Basis.additive`, run too; execution stops at a subprogram, continues from its specification and
+resumes; a loop proved by induction takes one iteration at a time with `WP.loop_iter` and
+`WP.Exact.loop_iter`; and goals of the wrong form, or programs with nothing to execute, fail with an
+explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read through
+writes on their own, also with register names that have free variables and banks separated by
+quantified hypotheses, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
 `wram_bounded` proves the fitting conditions it can.
 -/
 
