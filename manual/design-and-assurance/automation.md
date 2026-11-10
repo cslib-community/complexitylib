@@ -240,7 +240,8 @@ which [`Notation`](../../CslibFrontier/Computability/WordRAM/Notation.lean) and
 [`ExactNotation`](../../CslibFrontier/Computability/WordRAM/ExactNotation.lean) fill and index
 once with `ram_eval_simp_set_for`, so a call no longer elaborates the list. Do not tag a lemma
 with either attribute, because that changes every call; pass it as a simp lemma of the call
-instead. To change the fixed list, edit the `ram_eval_simp_set_for` line. The
+instead. To change the shared lemmas, edit the `ram_eval_simp_set_for` macro in `Notation`; to
+change a basis's lemmas, edit its `ram_eval_simp_set_for` command. The
 [equivalence test](../../CslibFrontierTests/WordRAMEvalSimpSet.lean) then fails until its copy of
 the old literal list is updated to match, and the
 [pinned budget](../../CslibFrontierTests/AutomationRamEval.lean) catches a return of the per-call

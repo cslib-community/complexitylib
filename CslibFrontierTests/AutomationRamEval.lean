@@ -22,7 +22,8 @@ abbrev r0 : Fin 2 := 0
 abbrev r1 : Fin 2 := 1
 
 set_option maxHeartbeats 1000 in
--- Pin the indexed simp sets' cost as the regression budget; do not raise it.
+-- Pin the indexed simp sets' cost as the regression budget; do not raise it to absorb a return
+-- of per-call elaboration of the lemma list, only for a toolchain change that moves the cost.
 example (x : Data 2) (n w : ℕ) (hx : x.regs r0 = n) (hfit : Fits w (2 * n + 1)) :
     ExecWithin 8 ram[ r0 ← #3; r1 ← r0 + r0 ] x ((x.set r0 3).set r1 6) 2 ∧
     ExecWithin w ram[ r1 ← r0 + r0 ] x (x.set r1 (n + n)) 1 ∧
