@@ -82,6 +82,19 @@ theorem map_min_of_mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {
         omega
     _ = β := List.map_id β
 
+/-- **The children of an active call** are the states of a node, a point, a tuple of weight below
+the node's precision and a group. -/
+theorem mem_children {j i g : ℕ} {β : List ℕ} : (j, i, β, g) ∈ children x ↔
+    j < (nodes x).length ∧ i < numPoints x ∧
+      β ∈ BudgetTuples.budgetTuples (weights x j) (nodePrec x j) ∧ g < 64 := by
+  simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
+    List.mem_range, List.mem_map, Prod.mk.injEq]
+  constructor
+  · rintro ⟨j, hj, i, hi, β, hβ, g, hg, rfl, rfl, rfl, rfl⟩
+    exact ⟨hj, hi, hβ, hg⟩
+  · rintro ⟨hj, hi, hβ, hg⟩
+    exact ⟨j, hj, i, hi, β, hβ, g, hg, rfl, rfl, rfl, rfl⟩
+
 /-- **The caps of `nativeMk` are inactive** at a well-formed active call and a state of its cursor:
 the builder is the native child of the rows and the exponents of the state. -/
 theorem nativeMk_eq (hx : WF x) (ha : active x = true) {c : State} (hc : c ∈ children x) :
@@ -92,12 +105,8 @@ theorem nativeMk_eq (hx : WF x) (ha : active x = true) {c : State} (hc : c ∈ c
         (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows x.net
         (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 c.2.2.2) := by
   have hr := DescribedNetwork.rows_le_of_isRowsFirstBipartite hx.2 (one_le_edges_of_active ha)
-  have hβ : c.2.2.1 ∈ BudgetTuples.budgetTuples (weights x c.1) (nodePrec x c.1) := by
-    simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
-      List.mem_range, List.mem_map] at hc
-    obtain ⟨j, -, i, -, β, hβ, g, -, rfl⟩ := hc
-    exact hβ
-  rw [nativeMk, packing_eq hr, rowCap_eq hr, map_min_of_mem_budgetTuples (weights_pos _) hβ]
+  rw [nativeMk, packing_eq hr, rowCap_eq hr,
+    map_min_of_mem_budgetTuples (weights_pos _) (mem_children.mp hc).2.2.1]
 
 /-- The level of a node index is the `2`-adic valuation of its node. -/
 theorem level_eq {k : ℕ} (hk : k < 2 ^ (slots x + 1)) :
@@ -115,15 +124,6 @@ theorem sum_taperMult_le (a u h : ℕ) :
         · exact Nat.zero_le _
         · exact Nat.mul_le_mul_left _ (Nat.sub_le _ _)
     _ = 2 ^ (a + 1) * (h * u) := by rw [sum_const, card_range, smul_eq_mul]
-
-/-- The children of an active call include every state of a node, a point, a tuple of weight
-below the node's precision and a group. -/
-theorem mem_children {j i : ℕ} {β : List ℕ} {g : ℕ} (hj : j < (nodes x).length)
-    (hi : i < numPoints x) (hβ : β ∈ BudgetTuples.budgetTuples (weights x j) (nodePrec x j))
-    (hg : g < 64) : (j, i, β, g) ∈ children x := by
-  simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
-    List.mem_range, List.mem_map]
-  exact ⟨j, hj, i, hi, β, hβ, g, hg, rfl⟩
 
 /-- **The interpolation points of an active call have lifts with unit differences**: they are the
 binary digits of `0, …, n - 1` with `n ≤ 2 ^ e`
@@ -181,7 +181,8 @@ theorem stepCorrect_nativeMk (ev : T → List Bool → List ℕ) :
     refine congrArg List.prod (List.map_congr_left fun g hg => ?_)
     have hβ' : β ∈ BudgetTuples.budgetTuples (weights x j) (nodePrec x j) := by
       rw [hw, hprec]; exact hβ
-    have hmem := mem_children hj (by omega) hβ' (List.mem_range.mp hg)
+    have hmem : (j, i, β, g) ∈ children x :=
+      mem_children.mpr ⟨hj, by omega, hβ', List.mem_range.mp hg⟩
     have key : ∀ v P, level x k = v → nodePrec x j = P →
         val P x.fl (vals (j, i, β, g)) =
           (nativeChild x.fl (slots x) v P (node (slots x) k) ((points x).getD i []) x.rows x.net
@@ -202,11 +203,9 @@ theorem mem_nodes {k : ℕ} : k ∈ nodes x ↔
 
 /-- A child of the cursor lies at a node, a point and a group in range. -/
 theorem lt_of_mem_children {c : State} (hc : c ∈ children x) :
-    c.1 < (nodes x).length ∧ c.2.1 < numPoints x ∧ c.2.2.2 < 64 := by
-  simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
-    List.mem_range, List.mem_map] at hc
-  obtain ⟨j, hj, i, hi, β, -, g, hg, rfl⟩ := hc
-  exact ⟨hj, hi, hg⟩
+    c.1 < (nodes x).length ∧ c.2.1 < numPoints x ∧ c.2.2.2 < 64 :=
+  let ⟨hj, hi, _, hg⟩ := mem_children.mp hc
+  ⟨hj, hi, hg⟩
 
 /-- **Well-formedness passes to the native children**: they keep the modulus, and they are
 rows-first (`NativeChild.isRowsFirstBipartite_nativeChild`). -/

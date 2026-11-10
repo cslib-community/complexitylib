@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Foundations.Data.BitString.WordCount
 public import CslibFrontier.Languages.Probabilistic.Iteration
+public import CslibFrontier.Logics.Propositional.CNF.Encoding
 public import CslibFrontier.Probability.BitString.AffineHash
 public import CslibFrontier.Probability.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -121,8 +122,7 @@ def reduce (x : CNF ℕ × List Bool) : CNF ℕ :=
 theorem computableInPolyTime_stepClauses :
     ComputableInPolyTime (fun p : Bool × Var × Var × Var =>
       stepClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encBool (encPair encVar (encPair encVar encVar)))
-      (encList (encList (encPair encVar encBool))) := by
+      (encPair encBool (encPair encVar (encPair encVar encVar))) (encCNFOver encVar) := by
   unfold stepClauses encVar
   fun_prop
 
@@ -132,7 +132,7 @@ theorem computableInPolyTime_rowClauses :
     ComputableInPolyTime (fun p : List ℕ × ℕ × List Bool × Bool =>
       rowClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair (encList encNat) (encPair encUnary (encPair encBits encBool)))
-      (encList (encList (encPair encVar encBool))) := by
+      (encCNFOver encVar) := by
   unfold rowClauses encVar
   fun_prop
 
@@ -140,8 +140,7 @@ theorem computableInPolyTime_rowClauses :
 @[fun_prop]
 theorem computableInPolyTime_hashCNF :
     ComputableInPolyTime (fun p : List ℕ × ℕ × List Bool => hashCNF p.1 p.2.1 p.2.2)
-      (encPair (encList encNat) (encPair encUnary encBits))
-      (encList (encList (encPair encVar encBool))) := by
+      (encPair (encList encNat) (encPair encUnary encBits)) (encCNFOver encVar) := by
   unfold hashCNF
   fun_prop
 

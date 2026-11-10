@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Commitme
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.RandomOracle
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Visible signing simulation
@@ -135,9 +136,7 @@ private theorem counterfactual_hit_le {Ω M α : Type} [DecidableEq M]
         let coin ← (lyubashevsky n m k q γ β).commit (S h) (A, T A h)
         return ((trace.2.2.map entryToPair).lookup (msg h, coin.1)).isSome) := by
     simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-    congr 1 with A : 1
-    congr 1 with h : 1
-    exact PMF.bind_comm _ _ _
+    pmf_swap
   rw [horder]
   simpa only [pmf_norm, history] using hb
 
@@ -193,8 +192,7 @@ private theorem hybrid_eq_simulate {Ω M α : Type} [DecidableEq M]
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   congr 1 with A : 1
   refine PMF.bind_congr_on_support (H A) _ _ fun h hh => ?_
-  rw [PMF.bind_comm]
-  congr 1 with c : 1
+  pmf_swap with c
   have heq := (lyubashevsky_nonAbortSpecialHVZK (n := n) (m := m) (k := k) (q := q)
     (γ := γ) (β := β) hβ hη).acceptedTranscript_eq (S h) (A, T A h) (hvalid A h hh) c
   rw [heq]
@@ -408,8 +406,7 @@ public theorem lyubashevskySignVisibleProg_eq_sim_of_pure {Ω M α : Type} [Deci
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   congr 1 with A : 1
   refine PMF.bind_congr_on_support (H A) _ _ fun h hh => ?_
-  rw [PMF.bind_comm]
-  congr 1 with c : 1
+  pmf_swap with c
   have heq := (lyubashevsky_nonAbortSpecialHVZK (n := n) (m := m) (k := k) (q := q)
     (γ := γ) (β := β) hβ hη).acceptedTranscript_eq (S h) (A, T A h) (hvalid A h hh) c
   rw [heq]

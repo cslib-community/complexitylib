@@ -56,7 +56,7 @@ follow the full version `arXiv:2009.11514v1` (and ECCC TR20-052).
   full version `arXiv:2009.11514v1` (Section 5.2).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov
 

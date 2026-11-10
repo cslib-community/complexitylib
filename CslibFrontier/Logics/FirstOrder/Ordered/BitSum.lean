@@ -140,9 +140,8 @@ private theorem realize_nodeChecks (m h : (language L).Term α)
   fo_simp [nodeChecks, Function.comp_def, not_le, and_assoc]
   refine forall_congr' fun u => imp_congr_right fun hu => ?_
   refine exists_congr fun a => ?_
-  simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-      Sum.elim_inl, Sum.elim_inr]; lia)) only [realize_nodeValue, Term.realize_var,
-    Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr]
+  fo_simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
+      Sum.elim_inl, Sum.elim_inr]; lia)) [Function.comp_def]
 
 omit [Fact (2 ≤ n)] in
 private theorem count_eq_of_checks (m h k x : Fin n) (w : Fin 8 → ℕ)

@@ -18,8 +18,10 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ChildSi
 # One active call of the contraction recursion
 
 This file proves the correctness of one active call of the recursive contraction algorithm of
-[OpenAI2026ETH] (§D.4.4–§D.4.7, pp. 61–64): the contraction modulo `2 ^ p` is recovered from the
-contractions of the children modulo the higher precisions `2 ^ p_t`.
+[OpenAI2026ETH] (§D.4.4–§D.4.7, pp. 61–64): the contraction modulo `2 ^ p` is recovered from
+values that reduce, modulo the higher precisions `2 ^ p_t`, to deformed contractions of the reduced
+network. The contractions of the children enter through the child identity (D.16), under the
+conditions stated below.
 
 **Setting.** Let `K` be a `ℚ`-algebra and `B` a subring containing `ℤ_(2)` (in the manuscript,
 `K = ℚ[U] / (f)` and `B = O`), and let `N` be a Boolean tensor network with entries in `B` whose
@@ -38,10 +40,15 @@ interpolant agrees with `F(t + α z)` modulo `2 ^ p_t` (`Lagrange.exists_ringInt
 and Lemma D.5 (`Cslib.Circuits.Frontier.exists_taperedRecovery_eq_add_of_params`) recovers
 `F(0) = Z(N)` modulo `2 ^ p` (`TensorNetwork.exists_recoverFromValues_eq_add`). Modulo `2 ^ p_t`,
 `F(t + α ζ)` is the deformed contraction of the reduced network along the Cauchy matrix at
-`T = t + α ζ` (`TensorNetwork.mk_eval_localDeformation`), which the child identity (D.16),
-`TensorNetwork.deformedContraction_cauchyValueMatrix_eq_sum`, writes as the sum over the mode tuples
-of the products of the contractions of the children. So the values may be computed from the
-children's contractions modulo `2 ^ p_t` (`TensorNetwork.exists_recoverFromValues_eq_add_of_mk`).
+`T = t + α ζ` (`TensorNetwork.mk_eval_localDeformation`), so values that reduce modulo `2 ^ p_t`
+to these deformed contractions recover `Z(N)` modulo `2 ^ p`
+(`TensorNetwork.exists_recoverFromValues_eq_add_of_mk`). That theorem does not mention the
+children. The child identity (D.16), `TensorNetwork.deformedContraction_cauchyValueMatrix_eq_sum`,
+writes the deformed contraction as the sum over the mode tuples of the products of the contractions
+of the children at a node of valuation `i < a`, for edges from rows to columns and groups oriented
+by digit `i` of the slots. A node of positive multiplicity has valuation below `u`, so for `u ≤ a`
+and a packing of such edges the values may be computed from the children's contractions modulo
+`2 ^ p_t` (`TensorNetwork.exists_recoverFromValues_eq_add_of_children`, in `Recursion.lean`).
 
 **The packing bridge.** The orientation that the child identity needs is property (2) of
 Lemma D.3 for `Cslib.PacketPacking.Packing` (`packingGroup_src_tgt`), and the port
@@ -64,7 +71,7 @@ counts of Lemma D.3 (3) are the group sizes that bound the children
 * `Cslib.Circuits.Frontier.TensorNetwork.mk_eval_localDeformation`: the values of the local
   deformation modulo `2 ^ p_t` are deformed contractions along `cauchyValueMatrix`.
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_recoverFromValues_eq_add_of_mk`: correctness of
-  one active call.
+  one active call, from values that reduce modulo `2 ^ p_t` to the deformed contractions.
 * `Cslib.Circuits.Frontier.packingGroup_src_tgt`: the packing bridge, with
   `packing_slot_lt`, `packing_slot_injective`, `card_packingGroup_src` and
   `card_packingGroup_tgt`.
@@ -265,9 +272,11 @@ theorem mk_eval_localDeformation {B : Type*} [CommRing B] (N : TensorNetwork B B
 /-- **Correctness of one active call** ([OpenAI2026ETH], §D.4.4–§D.4.7). Under the hypotheses of
 `exists_recoverFromValues_eq_add`, suppose that at every node `t` of positive multiplicity, each
 value `v t k` reduces modulo `2 ^ p_t` to the deformed contraction of the reduced network along the
-Cauchy matrix at `T = t + α ζ k`, `p_t = p + 8 h D_t + 8 M (a + 1)`: by the child identity (D.16),
-the sum over the mode tuples of the products of the contractions of the children. Then the
-recovered value agrees with the contraction modulo `2 ^ p`. -/
+Cauchy matrix at `T = t + α ζ k`, `p_t = p + 8 h D_t + 8 M (a + 1)`. Then the recovered value
+agrees with the contraction modulo `2 ^ p`. The children do not appear in this statement: for
+`u ≤ a` and a packing of edges that run from rows to columns, the child identity (D.16) writes
+each of these deformed contractions as the sum over the mode tuples of the products of the
+contractions of the children (`exists_recoverFromValues_eq_add_of_children`). -/
 theorem exists_recoverFromValues_eq_add_of_mk (B : Subring K)
     (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B) (N : TensorNetwork B Bool V E) (side : V → Bool)
     {a : ℕ} {packet : E → P} {slot : E → ℕ} (hslot : ∀ e, slot e < 2 ^ a)

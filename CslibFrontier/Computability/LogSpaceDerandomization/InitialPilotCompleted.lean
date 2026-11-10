@@ -181,9 +181,10 @@ theorem initialPilotCompleted_error
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Positive-tolerance accuracy toward the genuine canonical FIRST pilot correction.
-The outer range budget and length are fixed before invoking normalized-child allocation;
-its RAW and detector tolerances are in turn fixed before completing their actual calls.
-All regularity constants are selected for fixed HP before the prime and requests.
+The outer length is the explicit `initialPilotOuterSteps` at a tolerance depending only
+on ε, the rate exponent and HP. For each instance there exist positive RAW and detector
+lengths, with preparation parameter one, meeting the bound; they are quantified after
+every other argument, so they may depend on all of them.
 This proves an ordinary fourth-moment error in parent matrix units, for a common
 source/rank/usage rate and one covering dense bin. It is not recursive closure. -/
 theorem initialPilotCompleted_accuracy

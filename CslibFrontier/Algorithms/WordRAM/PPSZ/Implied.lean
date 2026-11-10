@@ -1279,7 +1279,8 @@ section Outer
 variable {w : ℕ} {φ : CNF (Fin n)} {τ : Fin n → Option Bool} {x : Fin n} {b : Bool}
   {C Tb s Db : ℕ}
 
-/-- The test of the clause search: no compatible choice of literals, on the memory `m`. -/
+/-- The test of the clause search: the clauses at the addresses `t` have a compatible choice of
+literals, on the memory `m`. -/
 def clauseOk (m : ℕ → ℕ) (C Tb : ℕ) (φ : CNF (Fin n)) (x : Fin n) (b : Bool) (t : List ℕ) :
     Bool :=
   (t.map (litAddrs C φ)).sections.any (litOk m Tb x b)

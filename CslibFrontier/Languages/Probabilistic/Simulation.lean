@@ -40,7 +40,7 @@ There is one oracle specification and one interpreter; stateful execution uses `
   calls, followed by a stateful oracle for those calls, is one handler on the joint state.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.OracleComp
 

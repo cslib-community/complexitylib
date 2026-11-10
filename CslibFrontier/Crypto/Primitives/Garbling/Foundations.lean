@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Primitives.Garbling.Games
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Indistinguishability and simulation security of garbling schemes
@@ -225,8 +226,7 @@ private theorem eval_prvSimExp_true_prvIndToSim (hCompat : Φ.Compatible G)
         (ProbComp.eval (prvIndExp G Φ c A k)).map (fun guess => guess == c) := by
   simp only [prvSimExp, prvIndToSim, prvIndExp, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
-  rw [PMF.bind_comm]
-  congr 1 with c : 1
+  pmf_swap with c
   congr 1
   funext ⟨⟨f₀, f₁, x₀, x₁⟩, st⟩
   by_cases hV : prvIndValid G Φ f₀ f₁ x₀ x₁
@@ -342,8 +342,7 @@ private theorem eval_obvSimExp_true_obvIndToSim (hCompat : Φ.Compatible G)
         (ProbComp.eval (obvIndExp G Φ c A k)).map (fun guess => guess == c) := by
   simp only [obvSimExp, obvIndToSim, obvIndExp, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
-  rw [PMF.bind_comm]
-  congr 1 with c : 1
+  pmf_swap with c
   congr 1
   funext ⟨⟨f₀, f₁, x₀, x₁⟩, st⟩
   by_cases hV : obvIndValid G Φ f₀ f₁ x₀ x₁

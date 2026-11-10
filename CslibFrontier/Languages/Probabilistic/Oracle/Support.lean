@@ -43,7 +43,7 @@ calls, for the loop rules adapted from Christian Reitwiessner's `Combinators/Ite
 (crei:crei/tidy-universal @7f7c0696).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.ProbOracleComp
 
