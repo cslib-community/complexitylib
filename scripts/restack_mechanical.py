@@ -7,38 +7,42 @@ Usage: python3 scripts/restack_mechanical.py PR --approved-head SHA [--approved-
 GitHub ignores the local `leanagg` and `bibkeys` merge drivers (`.gitattributes`), so the merge
 queue ejects a PR when `main` adds lines next to the PR's in the `mk_all` aggregates
 (`CslibFrontier.lean`, `CslibFrontierResults.lean`) or in `references.bib`. This script makes
-that restack one command. After `git fetch origin` it
+that restack one command. It runs no code from the PR: only Git, this script and `origin/main`'s
+scripts. After fetching `origin/main` and the PR head, it
 
-1. lists the paths on which the PR head conflicts with `origin/main` under a plain text merge,
-   and refuses unless every one is an aggregate or `references.bib` (`--allow-clean` also
+1. runs `origin/main`'s `scripts/check_restack.py APPROVED HEAD` (with `--approved-base`) from a
+   temporary checkout of `origin/main`, and refuses unless the PR head is the approved change, or
+   an earlier restack of it, so that nothing unreviewed is restacked;
+2. lists the paths on which the head conflicts with `origin/main` under a plain text merge, as on
+   GitHub, and refuses unless every one is an aggregate or `references.bib` (`--allow-clean` also
    restacks a PR with no conflict, for a lower PR that landed or a fix on `main` it needs);
-2. merges `origin/main` into the head in a temporary detached worktree, never the caller's
-   checkout, with the two drivers configured for that merge only. The drivers are
-   `origin/main`'s `scripts/resolve_aggregate_conflict.py` and `scripts/resolve_bib_conflict.py`,
-   assigned by `origin/main`'s `.gitattributes`. A `references.bib` conflict the driver refuses
-   (both sides changed one entry), or any other path left unmerged, is refused;
-3. regenerates the aggregates with `lake exe mk_all`, requires `lake exe mk_all --check` to pass,
-   and commits the merge. The temporary worktree borrows the caller's `.lake/packages` (or the
-   primary checkout's) through a symbolic link, only when its `lake-manifest.json` and
-   `lean-toolchain` equal the merged tree's;
-4. runs `origin/main`'s `scripts/check_restack.py APPROVED NEW` from a temporary checkout of
-   `origin/main`, as AGENTS.md ("Restacks") requires, and prints its output;
-5. with `--push`, and only when the check passes, pushes the merge to the PR's head branch, and
-   only if that branch still points at the head it merged: the head GitHub reported must be the
+3. merges `origin/main` into the head with `git merge-tree`, without a worktree, using the two
+   drivers for that merge only: `origin/main`'s `scripts/resolve_aggregate_conflict.py` and
+   `scripts/resolve_bib_conflict.py`, assigned by `origin/main`'s `.gitattributes`. A
+   `references.bib` conflict that the driver refuses (both sides changed one entry) is refused;
+4. writes each aggregate exactly as `lake exe mk_all` would for the merged tree, as
+   `check_restack.py` derives it (from `lakefile.toml` and the module files, without running
+   Lake), and commits the merge with `git commit-tree`, so no hook runs and no ref changes. CI's
+   `lake exe mk_all --check` still pins the aggregates;
+5. runs `origin/main`'s `scripts/check_restack.py APPROVED NEW` from that checkout, as AGENTS.md
+   ("Restacks") requires, and prints its output;
+6. with `--push`, and only when that check passes, pushes the merge to the PR's head branch, and
+   only if the branch still points at the head it merged: the head GitHub reported must be the
    one fetched, `git ls-remote` must still show it, and the push carries
    `--force-with-lease=<branch>:<head>`. The new head is a merge commit whose first parent is the
    old head, so the push is a fast-forward; history is never rewritten.
 
-The default is `--dry-run`: everything except the push. A dry run leaves the caller's checkout,
-every branch and every remote branch as they were; the merge commit exists only as an
-unreferenced object. The script never queues a PR and never posts on GitHub: it prints the
-check's result line and the `scripts/queue_pr.py` command to run once CI passes at the new head,
-and the caller decides what to post and who queues ("Approve and queue" in AGENTS.md). A fork's
-branch needs "Allow edits by maintainers".
+The default is `--dry-run`: everything except the push. Apart from fetching `origin/main` into
+`refs/remotes/origin/main`, a dry run leaves the caller's checkout and every local and remote
+branch as they were; other fetches write only the temporary checkout's `FETCH_HEAD`, and the
+merge commit exists only as an unreferenced object. The script never queues a PR and never posts
+on GitHub: it prints the check's result line and the `scripts/queue_pr.py` command to run once CI
+passes at the new head, and the caller decides what to post and who queues ("Approve and queue"
+in AGENTS.md). A fork's branch needs "Allow edits by maintainers".
 
 Exit status: 0 when the restack is done (pushed, or ready to push in a dry run) or not needed;
-1 when it is refused or the check reports differences (nothing is pushed); 2 on a usage, `gh`,
-Git or Lake error. Requires Git 2.42 or later and an authenticated `gh`.
+1 when it is refused or a check reports differences (nothing is pushed); 2 on a usage, `gh` or
+Git error. Requires Git 2.42 or later and an authenticated `gh`.
 """
 
 from __future__ import annotations
@@ -46,7 +50,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -59,12 +62,6 @@ REPOSITORY = "cslib-community/cslib-frontier"
 BIB = "references.bib"
 # The only paths whose conflicts this script resolves.
 GENERATED = frozenset((*cr.AGGREGATES, BIB))
-# The command that regenerates the aggregates; `--check` is appended to verify them.
-MK_ALL = ("lake", "exe", "mk_all")
-# Files that must agree between the merged tree and the checkout whose `.lake/packages` is borrowed.
-LAKE_PINS = ("lake-manifest.json", "lean-toolchain")
-# `git status --porcelain` codes of a change that is staged and otherwise clean.
-STAGED = ("M ", "A ", "D ", "R ", "T ")
 PR_FIELDS = ("number", "state", "baseRefName", "headRefName", "headRefOid", "isCrossRepository",
              "headRepositoryOwner", "headRepository", "maintainerCanModify")
 
@@ -83,6 +80,16 @@ def git(root: Path, *args: str, ok: tuple[int, ...] = (0,)) -> subprocess.Comple
 
 def out(root: Path, *args: str) -> str:
     return cr.out(root, *args)
+
+
+def git_input(root: Path, data: bytes, *args: str) -> str:
+    """Run git on `data` as standard input; returns its stripped output."""
+    result = subprocess.run(["git", "-C", str(root), *args], input=data, capture_output=True,
+                            env=cr.environment())
+    if result.returncode != 0:
+        raise cr.GitError(f"git {' '.join(args)}: "
+                          + result.stderr.decode("utf-8", "replace").strip())
+    return result.stdout.decode().strip()
 
 
 def pr_info(repository: str, number: int) -> dict:
@@ -108,116 +115,70 @@ def push_target(info: dict) -> str:
 
 
 def plain_conflicts(root: Path, head: str, main: str) -> set[str]:
-    """The paths on which `head` and `main` conflict under a text merge with no attributes, as on
-    GitHub, with `check_restack`'s merge settings."""
+    """The paths on which `head` and `main` conflict under a text merge with no attributes or
+    drivers, as on GitHub, with `check_restack`'s merge settings."""
     empty = out(root, "hash-object", "-t", "tree", os.devnull)
-    result = git(root, f"--attr-source={empty}", "-c", f"core.attributesFile={os.devnull}",
-                 *cr.MERGE_CONFIG, "merge-tree", "--write-tree", "--name-only", "-z",
-                 "--no-messages", main, head, ok=(0, 1))
-    fields = result.stdout.split(b"\0")
-    return {f.decode("utf-8", "surrogateescape") for f in fields[1:] if f}
+    return cr.merge_tree(root, (f"--attr-source={empty}", "-c",
+                                f"core.attributesFile={os.devnull}", *cr.MERGE_CONFIG),
+                         head, main)[1]
 
 
-def driver_options(root: Path, scripts: Path) -> list[str]:
-    """`check_restack`'s pinned drivers, with `bibkeys` and `leanagg` running `scripts`' resolvers
-    (those of `origin/main`) and every other configured driver reporting a conflict."""
-    python, bib, aggregate = (shlex.quote(str(p)).replace("%", "%%") for p in (
-        sys.executable, scripts / "resolve_bib_conflict.py",
-        scripts / "resolve_aggregate_conflict.py"))
-    return [*cr.driver_config(root),
-            "-c", f"merge.{cr.BIB_DRIVER}.driver={python} {bib} --driver %O %A %B",
-            "-c", f"merge.{cr.AGGREGATE_DRIVER}.driver={python} {aggregate} %O %A %B"]
+def driver_merge(root: Path, head: str, main: str, scripts: Path) -> str:
+    """The tree of `main` merged into `head` with `origin/main`'s attributes and the resolvers in
+    `scripts`; refuses when a path other than an aggregate is left conflicted."""
+    tree, conflicts = cr.merge_tree(root, (f"--attr-source={main}", "-c",
+                                           f"core.attributesFile={os.devnull}", *cr.MERGE_CONFIG,
+                                           *cr.driver_config(root, scripts)), head, main)
+    if conflicts - set(cr.AGGREGATES):
+        raise Refused("the merge drivers left conflicts in "
+                      + ", ".join(sorted(conflicts - set(cr.AGGREGATES)))
+                      + " (a `references.bib` entry both sides changed needs a person)")
+    return tree
 
 
-def add_worktree(root: Path, path: Path, commit: str) -> Path:
-    git(root, "worktree", "add", "--quiet", "--detach", str(path), commit)
-    return path
+def write_aggregates(root: Path, tree: str, sides: tuple[str, str, str]) -> str:
+    """`tree` with each aggregate replaced by what `lake exe mk_all` writes for it, as
+    `check_restack` derives it; `sides` (merge base, `main`, head) settle the module style."""
+    entries = cr.tree_entries(root, tree)
+    try:
+        roots = cr.library_roots(root, tree, entries)
+        replaced = {}
+        for path in cr.AGGREGATES:
+            if path not in entries:
+                continue
+            if path not in roots or "/" in path:
+                raise cr.Underivable("`lakefile.toml` names no library root that `mk_all` writes "
+                                     "here")
+            style, _ = cr.aggregate_style(tuple(cr.blob(root, side, path) for side in sides),
+                                          cr.blob(root, tree, path) or b"")
+            content = cr.canonical_aggregate(entries, *roots[path], style)
+            replaced[path] = git_input(root, content, "hash-object", "-w", "--stdin")
+    except cr.Underivable as error:
+        raise Refused(f"cannot derive what `mk_all` writes: {error}") from None
+    rows = []
+    for row in git(root, "ls-tree", "-z", tree).stdout.split(b"\0"):
+        if not row:
+            continue
+        info, name = row.split(b"\t", 1)
+        path = name.decode("utf-8", "surrogateescape")
+        if path in replaced:
+            row = f"100644 blob {replaced[path]}\t{path}".encode()
+        rows.append(row + b"\0")
+    return git_input(root, b"".join(rows), "mktree", "-z")
 
 
-def remove_worktree(root: Path, path: Path) -> None:
-    link = path / ".lake" / "packages"
-    if link.is_symlink():
-        link.unlink()
-    if path.exists():
-        try:
-            git(root, "worktree", "remove", "--force", str(path))
-        except cr.GitError as error:
-            log(f"warning: could not remove the temporary worktree {path}: {error}")
-
-
-def packages_source(root: Path) -> Path | None:
-    """The checkout whose `.lake/packages` the temporary worktree borrows: this checkout's, or the
-    primary checkout's."""
-    common = Path(out(root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
-    for checkout in (root, common.parent):
-        if (checkout / ".lake" / "packages").is_dir():
-            return checkout
-    return None
-
-
-def link_packages(root: Path, worktree: Path) -> None:
-    """Give `worktree` the Lake packages of a checkout pinned to the same dependencies."""
-    source = packages_source(root)
-    if source is None:
-        raise Refused("no checkout has `.lake/packages` to run `lake exe mk_all` with; "
-                      "run `scripts/cache/ensure.sh` in this checkout first")
-    for name in LAKE_PINS:
-        mine, theirs = source / name, worktree / name
-        if (mine.read_bytes() if mine.is_file() else None) != (
-                theirs.read_bytes() if theirs.is_file() else None):
-            raise Refused(f"the merged {name} differs from {mine}, whose `.lake/packages` would "
-                          "be borrowed; update that checkout to current `main` and retry")
-    (worktree / ".lake").mkdir(exist_ok=True)
-    (worktree / ".lake" / "packages").symlink_to(source / ".lake" / "packages",
-                                                 target_is_directory=True)
-
-
-def run_mk_all(worktree: Path) -> None:
-    """Regenerate the aggregates in `worktree`, then require `mk_all --check` to pass."""
-    # `mk_all` exits with the number of files it changed, so only the check's status counts.
-    output = []
-    for command in (MK_ALL, (*MK_ALL, "--check")):
-        try:
-            result = subprocess.run(command, cwd=worktree, capture_output=True, text=True)
-        except OSError as error:
-            raise cr.GitError(f"cannot run `{' '.join(command)}`: {error}") from None
-        output.append((result.stdout + result.stderr).strip())
-    if result.returncode != 0:
-        raise Refused(f"`{' '.join(MK_ALL)} --check` fails after regenerating the aggregates:\n"
-                      + "\n".join(filter(None, output)))
-
-
-def merge(root: Path, worktree: Path, main: str, scripts: Path, branch: str) -> str:
-    """Merge `main` into the worktree's head with the drivers, regenerate the aggregates and commit;
-    returns the merge commit."""
-    head = out(worktree, "rev-parse", "HEAD")
-    git(worktree, f"--attr-source={main}", "-c", f"core.attributesFile={os.devnull}",
-        *cr.MERGE_CONFIG, *driver_options(root, scripts),
-        "merge", "--quiet", "--no-ff", "--no-commit", main, ok=(0, 1))
-    raw = git(worktree, "ls-files", "--unmerged", "-z").stdout.split(b"\0")
-    unmerged = {row.split(b"\t", 1)[1].decode("utf-8", "surrogateescape") for row in raw if row}
-    if unmerged - set(cr.AGGREGATES):
-        raise Refused("the merge drivers left conflicts in " + ", ".join(sorted(unmerged - set(
-            cr.AGGREGATES))) + " (a `references.bib` entry both sides changed needs a person)")
-    link_packages(root, worktree)
-    run_mk_all(worktree)
-    present = [path for path in cr.AGGREGATES if (worktree / path).is_file()]
-    git(worktree, "add", "--", *present)
-    for path in (*present, BIB):
-        file = worktree / path
-        if file.is_file() and any(cr.CONFLICT_MARKER.match(line)
-                                  for line in file.read_bytes().splitlines()):
+def merge(root: Path, head: str, main: str, scripts: Path, branch: str) -> str:
+    """Merge `main` into `head`, write the aggregates and commit; returns the merge commit."""
+    tree = driver_merge(root, head, main, scripts)
+    tree = write_aggregates(root, tree, (cr.merge_base(root, main, head), main, head))
+    for path in (*cr.AGGREGATES, BIB):
+        content = cr.blob(root, tree, path) or b""
+        if any(cr.CONFLICT_MARKER.match(line) for line in content.splitlines()):
             raise Refused(f"{path} still has conflict markers")
-    # Only staged changes may remain: no unstaged edit, untracked file or unmerged path.
-    dirty = git(worktree, "status", "--porcelain", "--untracked-files=all",
-                "--ignore-submodules=none").stdout.decode("utf-8", "replace")
-    unexpected = [line for line in dirty.splitlines() if line[:2] not in STAGED]
-    if unexpected:
-        raise Refused("the merge left unexpected changes:\n" + "\n".join(unexpected))
-    git(worktree, "commit", "--quiet", "--no-edit", "-m", f"Merge origin/main into {branch}",
-        "-m", "Restacked with scripts/restack_mechanical.py: conflicts only in generated files.")
-    new = out(worktree, "rev-parse", "HEAD")
-    if out(worktree, "rev-parse", f"{new}^1", f"{new}^2").split() != [head, main]:
+    message = (f"Merge origin/main into {branch}\n\nRestacked with "
+               "scripts/restack_mechanical.py: conflicts only in generated files.\n")
+    new = git_input(root, message.encode(), "commit-tree", tree, "-p", head, "-p", main)
+    if out(root, "rev-parse", f"{new}^1", f"{new}^2").split() != [head, main]:
         raise cr.GitError(f"the merge commit {new[:12]} does not have parents {head[:12]}, "
                           f"{main[:12]}")
     return new
@@ -242,7 +203,7 @@ def remote_head(root: Path, remote: str, branch: str) -> str | None:
 
 def push(root: Path, remote: str, branch: str, old: str, new: str) -> None:
     """Push `new` to `branch` only if the remote branch still points at `old`."""
-    if not cr.git(root, "merge-base", "--is-ancestor", old, new, ok=(0, 1)).returncode == 0:
+    if git(root, "merge-base", "--is-ancestor", old, new, ok=(0, 1)).returncode != 0:
         raise cr.GitError(f"{new[:12]} does not descend from {old[:12]}")
     current = remote_head(root, remote, branch)
     if current != old:
@@ -268,14 +229,19 @@ def restack(args: argparse.Namespace, root: Path, tmp: Path) -> int:
     git(root, "fetch", "--quiet", "--no-tags", "--no-write-fetch-head", "origin",
         "+refs/heads/main:refs/remotes/origin/main")
     main = cr.resolve(root, "origin/main")
-    approved = cr.resolve(root, args.approved_head)
-    main_checkout = add_worktree(root, tmp / "main", main)
-    # FETCH_HEAD is per worktree, so this fetch writes only the temporary worktree's.
+    main_checkout = tmp / "main"
+    git(root, "worktree", "add", "--quiet", "--detach", str(main_checkout), main)
+    # FETCH_HEAD is per worktree, so these fetches write only the temporary checkout's.
+    approved = cr.resolve(main_checkout, args.approved_head)
     git(main_checkout, "fetch", "--quiet", "--no-tags", "origin", f"refs/pull/{number}/head")
     head = out(main_checkout, "rev-parse", "FETCH_HEAD^{commit}")
     if head != old:
         raise Refused(f"GitHub reports head {old[:12]} but {head[:12]} was fetched; the PR moved "
                       "during the run, so rerun it")
+    log(f"checking that PR #{number}'s head {head[:12]} is the approved change")
+    if run_check(main_checkout, approved, head, args.approved_base) != 0:
+        raise Refused(f"the head {head[:12]} is not the approved change {approved[:12]}, so it "
+                      "needs review before a restack; nothing was merged")
     if git(root, "merge-base", "--is-ancestor", main, head, ok=(0, 1)).returncode == 0:
         log(f"PR #{number} already contains origin/main {main[:12]}; nothing to restack")
         return 0
@@ -289,10 +255,9 @@ def restack(args: argparse.Namespace, root: Path, tmp: Path) -> int:
         return 0
     log(f"PR #{number} ({branch}, head {head[:12]}) conflicts with origin/main {main[:12]} in: "
         + (", ".join(sorted(conflicts)) or "nothing"))
-    new = merge(root, add_worktree(root, tmp / "pr", head), main, main_checkout / "scripts", branch)
+    new = merge(root, head, main, main_checkout / "scripts", branch)
     log(f"merged: new head {new}")
-    status = run_check(main_checkout, approved, new, args.approved_base)
-    if status != 0:
+    if run_check(main_checkout, approved, new, args.approved_base) != 0:
         raise Refused("check_restack.py did not pass, so nothing is pushed; review its output")
     queue = f"python3 scripts/queue_pr.py {number} {new}"
     if not args.push:
@@ -327,12 +292,15 @@ def main(argv: list[str] | None = None) -> int:
         if out(root, "rev-parse", "--is-shallow-repository") == "true":
             raise cr.GitError("the repository is shallow; run `git fetch --unshallow origin` first")
         with tempfile.TemporaryDirectory(prefix="restack-mechanical-") as name:
-            tmp = Path(name)
+            main_checkout = Path(name) / "main"
             try:
-                return restack(args, root, tmp)
+                return restack(args, root, Path(name))
             finally:
-                for worktree in (tmp / "pr", tmp / "main"):
-                    remove_worktree(root, worktree)
+                if main_checkout.exists():
+                    try:
+                        git(root, "worktree", "remove", "--force", str(main_checkout))
+                    except cr.GitError as error:
+                        log(f"warning: could not remove the temporary checkout: {error}")
     except Refused as refusal:
         log(f"refused: {refusal}")
         return 1

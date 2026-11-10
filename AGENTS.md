@@ -532,11 +532,13 @@ never trust a `merge=union` result, which keeps deleted imports and can misorder
 
 When the only conflicts with `main` are in the aggregates or `references.bib`,
 `python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
-in a temporary worktree: it merges `origin/main` with both drivers, regenerates the aggregates and
-runs the `check_restack.py` check below from a checkout of `origin/main`. It refuses any other
-conflict and is a dry run unless given `--push`, which pushes the merge only when the check passes
-and the PR's branch still points at the head it merged. It never queues and never comments: post
-its result line, and queue the new head under the rules below once CI passes.
+without running the PR's code. It requires the `check_restack.py` check below to pass for the
+current head, merges `origin/main` with both drivers, writes the aggregates as `lake exe mk_all`
+would for the merged tree, and runs the check on the result, both times from a checkout of
+`origin/main`. It refuses any other conflict and is a dry run unless given `--push`, which pushes
+the merge only when the check passes and the PR's branch still points at the head it merged. It
+never queues and never comments: post its result line, and queue the new head under the rules
+below once CI passes.
 
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
