@@ -35,7 +35,7 @@ generalizes the disjoint case to events that overlap at most `Q` times.
   key in an association list.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 
