@@ -30,6 +30,11 @@ of the single pebble `v` ends with the value of `v` in the table. The table neve
 `s` entries, whatever the walk. This is how the simulation of Hopcroft, Paul and Valiant uses a
 pebbling: one stored value per pebble.
 
+The same computation as a straight-line program is `Cslib.Circuits.Descending.program`. Its
+computation DAG has the dependency edges on the wires `Cslib.Circuits.Descending.node`
+(`Cslib.Circuits.Descending.dag_adj_node`), and its register evaluation is the alternative to
+following a word walk.
+
 ## Main definitions
 
 * `Cslib.Pebbling.Descending.graph`: the dependency graph of a descending computation.
