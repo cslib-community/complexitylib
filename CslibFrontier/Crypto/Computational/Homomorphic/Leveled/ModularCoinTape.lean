@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Saved tapes for the actual modular leveled adversary
@@ -62,31 +63,23 @@ theorem modLeveledAdversary_choose_support (E : Scheme) (adversary : Encryption.
         ((zeroLinkAdversary E depth adversary).choose n challengePk)).support ∧
         choice = tagLeveledChoice true false chosen := by
   by_cases hpos : 0 < depth n ∧ 0 < capacity n
-  · simp only [modLeveledAdversary, hpos, and_self, ↓reduceIte, ProbComp.eval_bind,
-      PMF.mem_support_bind_iff] at hchoice
-    obtain ⟨hop, _, hchoice⟩ := hchoice
+  · supp_cases hchoice [modLeveledAdversary, hpos] with ⟨hop, _, hchoice⟩
     split at hchoice
-    · obtain ⟨chosen, hchosen, rfl⟩ :=
-        (PMF.mem_support_map_iff _ _ _).mp (by simpa only [ProbComp.eval_map] using hchoice)
+    · supp_cases hchoice with ⟨chosen, hchosen, rfl⟩
       exact Or.inr (Or.inl ⟨chosen, hchosen, rfl⟩)
     · split at hchoice
-      · obtain ⟨chosen, hchosen, rfl⟩ :=
-          (PMF.mem_support_map_iff _ _ _).mp (by simpa only [ProbComp.eval_map] using hchoice)
+      · supp_cases hchoice with ⟨chosen, hchosen, rfl⟩
         exact Or.inr (Or.inr (Or.inl ⟨chosen, hchosen, rfl⟩))
-      · simp only [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hchoice
-        obtain ⟨reverseIndex, _, bitIndex, _, hchoice⟩ := hchoice
+      · supp_cases hchoice with ⟨reverseIndex, _, bitIndex, _, hchoice⟩
         split at hchoice
         · split at hchoice
-          · obtain ⟨chosen, hchosen, rfl⟩ :=
-              (PMF.mem_support_map_iff _ _ _).mp
-                (by simpa only [ProbComp.eval_map] using hchoice)
+          · supp_cases hchoice with ⟨chosen, hchosen, rfl⟩
             exact Or.inr (Or.inr (Or.inr ⟨chosen, hchosen, rfl⟩))
-          · exact Or.inl (by simpa only [ProbComp.eval_pure, PMF.mem_support_pure_iff]
-              using hchoice)
-        · exact Or.inl (by simpa only [ProbComp.eval_pure, PMF.mem_support_pure_iff] using hchoice)
-  · simp only [modLeveledAdversary, hpos, ↓reduceIte, ProbComp.eval_map,
-      PMF.mem_support_map_iff] at hchoice
-    obtain ⟨chosen, hchosen, rfl⟩ := hchoice
+          · supp_cases hchoice
+            exact Or.inl rfl
+        · supp_cases hchoice
+          exact Or.inl rfl
+  · supp_cases hchoice [modLeveledAdversary, hpos] with ⟨chosen, hchosen, rfl⟩
     exact Or.inr (Or.inr (Or.inr ⟨chosen, hchosen, rfl⟩))
 
 /-- Replay the original tagged dispatch. The zero-link branch uses a prefix of the allocated
