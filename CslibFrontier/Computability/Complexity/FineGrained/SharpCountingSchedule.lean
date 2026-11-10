@@ -29,6 +29,8 @@ public section
 
 namespace Cslib.Complexity.CountingSparsify
 
+open Sparsify (rounds)
+
 open Cslib.Logic.PL Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM
 
 /-- The source divisor, rounded up; zero-logarithm inputs use the total value one. -/

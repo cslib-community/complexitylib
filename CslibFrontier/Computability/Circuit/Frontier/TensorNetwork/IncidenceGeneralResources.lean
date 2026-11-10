@@ -41,6 +41,7 @@ namespace Cslib.Circuits.Frontier.IncidenceNetwork
 open Cslib.GenericRAM Cslib.Complexity Cslib.Logic.PL Cslib.Logic.PL.CNF
 open Cslib.Logic.PL.ClauseSet.Sparsification CountingSparsify Turing.MultiTapeTM
 open ExhaustiveCountFallback Cslib.Logic.PL.CNF.Sparsification
+open Sparsify (rounds)
 
 private abbrev Input := ℕ × CNF ℕ
 private abbrev Context := Unit × ℕ

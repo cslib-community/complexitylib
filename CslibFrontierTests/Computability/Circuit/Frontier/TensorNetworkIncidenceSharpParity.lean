@@ -20,6 +20,7 @@ namespace CslibFrontierTests.TensorNetworkIncidenceSharpParity
 open Cslib Cslib.BitString Cslib.GenericRAM Cslib.Complexity
 open Cslib.Circuits.Frontier.IncidenceNetwork Cslib.Logic.PL Cslib.Logic.PL.CNF
 open CountingSparsify Turing.MultiTapeTM
+open Sparsify (rounds)
 
 /-- The source schedule rounds square roots up, without the old iterated-log denominator. -/
 example : sharpSearchDivisor 256 = 3 ∧ sharpSearchDivisor 1024 = 4 := by
