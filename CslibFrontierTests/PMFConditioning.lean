@@ -91,4 +91,9 @@ example (p : unitInterval) :
 example : coin ⟨1 / 2, by norm_num, by norm_num⟩ = uniformOfFintype Bool :=
   coin_eq_uniformOfFintype rfl
 
+-- As a measure, a coin is Mathlib's Bernoulli distribution; at bias `0` it is the point mass at
+-- `false`.
+example : (coin 0).toMeasure = MeasureTheory.Measure.dirac false := by
+  rw [toMeasure_coin, ProbabilityTheory.bernoulliMeasure_zero]
+
 end CslibFrontierTests.PMFConditioning

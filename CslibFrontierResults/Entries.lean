@@ -903,13 +903,23 @@ register_result "zero-one-law-relational" where
     Cslib.Logic.FO.Relational.tendsto_sentenceProb_one_iff,
     Cslib.Logic.FO.Relational.tendsto_sentenceProb_zero_iff,
     Cslib.Logic.FO.Relational.not_exists_sentence_even_card,
-    Cslib.Logic.FO.Relational.not_definable_even_card
+    Cslib.Logic.FO.Relational.not_definable_even_card,
+    Cslib.Logic.FO.Relational.bernoulliStructure_zero_one_law,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_one_iff,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_zero_iff,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_one_iff_uniformStructure,
+    Cslib.Logic.FO.Relational.not_exists_sentence_of_not_tendsto_bernoulliStructure
   ]
   scope := "Relational languages with finitely many relation symbols, none nullary, under the \
     uniform measure on L-structures on {0, …, n - 1}. The limit is 1 exactly for the \
     consequences of the extension theory and 0 exactly when the negation is one. The law \
     fails with a nullary symbol. For Language.graph the measure is uniform on directed \
-    graphs with loops, so this is not the G(n, 1/2) law."
+    graphs with loops, so this is not the G(n, 1/2) law. The bernoulliStructure theorems \
+    extend this to a constant probability 0 < p R < 1 for each relation symbol R, with the \
+    same almost-sure sentences for every such p; this form is an adaptation of Fagin's \
+    proof, not checked against a primary source. With p R equal to 0 or 1 the \
+    characterization fails. Unlabelled structures and probabilities depending on n are not \
+    covered."
 
 register_result "buchi-elgot-trakhtenbrot" where
   title := "Büchi–Elgot–Trakhtenbrot: MSO-definable languages are the regular languages"
