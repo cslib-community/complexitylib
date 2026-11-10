@@ -1725,67 +1725,10 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
     have hfit_2Lb : Fits w (0 + L * b + L * b) := by
       dsimp only [Fits]
       omega
-    set s1 := s.set 3 m
-    have e1 : Exec w (.op (.exactBin .sub 3 3 8) : Code .exact 18) s s1 1 :=
-      exec_exactBin (by simp +decide [h3, h8]) (by fits)
-    set s2 := s1.set 11 acc_val
-    have e2 : Exec w (.op (.copy 11 2) : Code .exact 18) s1 s2 1 := by
-      simpa +decide [s2, s1, h2, acc_val] using
-        (Exec.copy (B := .exact) (w := w) (d := 11) (s := 2) (x := s1))
-    set s3 := s2.set 2 0
-    have e3 : Exec w (.op (.copy 2 9) : Code .exact 18) s2 s3 1 := by
-      simpa +decide [s3, s2, s1, h9] using
-        (Exec.copy (B := .exact) (w := w) (d := 2) (s := 9) (x := s2))
-    set s4 := s3.set 10 L
-    have e4 : Exec w (.op (.copy 10 6) : Code .exact 18) s3 s4 1 := by
-      simpa +decide [s4, s3, s2, s1, h6] using
-        (Exec.copy (B := .exact) (w := w) (d := 10) (s := 6) (x := s3))
-    set s5 := s4.set 12 0
-    have e5 : Exec w (.op (.copy 12 9) : Code .exact 18) s4 s5 1 := by
-      simpa +decide [s5, s4, s3, s2, s1, h9] using
-        (Exec.copy (B := .exact) (w := w) (d := 12) (s := 9) (x := s4))
-    obtain ⟨s6, e6, hs6_2, hs6_low, hs6_mem⟩ :=
-      outerClmulLoop_exec hb hw hfit_tabEnd hu_limbs hu_bound L acc_val 0 0 s5
-        hacc_limbs (by simpa using hacc_bound) (by positivity) hfit_2Lb
-        (by simp +decide [s5, s4, s3, s2, s1, h1])
-        (by simp +decide [s5, s4, s3])
-        (by simp +decide [s5, s4, s3, s2, s1, h4])
-        (by simp +decide [s5, s4, s3, s2, s1, h5])
-        (by simp +decide [s5, s4, s3, s2, s1, h6])
-        (by simp +decide [s5, s4, s3, s2, s1, h7])
-        (by simp +decide [s5, s4, s3, s2, s1, h8])
-        (by simp +decide [s5, s4, s3, s2, s1, h9])
-        (by simp +decide [s5, s4])
-        (by simp +decide [s5, s4, s3, s2])
-        (by simp +decide [s5])
-        htab.2.2.2.2.2.2.2.2
-    simp only [Nat.shiftLeft_zero, Nat.zero_xor] at hs6_2
     have hcl_lt : clmul acc_val u.val < 2 ^ (2 * q) :=
       clmul_lt_two_pow_two_mul hacc_bound hu_bound
-    have hs6_0 : s6.regs 0 = base := by
-      rw [hs6_low 0 ⟨by decide, by decide⟩]
-      simp +decide [s5, s4, s3, s2, s1, h0]
-    have hs6_8 : s6.regs 8 = 1 := by
-      rw [hs6_low 8 ⟨by decide, by decide⟩]
-      simp +decide [s5, s4, s3, s2, s1, h8]
-    have htab_s6 : TableRep base b U M k s6.mem := by
-      rw [hs6_mem]
-      exact htab
-    obtain ⟨s7, e7, hs7_2, hs7_low, hs7_mem⟩ :=
-      reduceStepCode_exec htab_s6 hw hfit_end8 hcl_lt hs6_0 hs6_2 hs6_8
-    have hs7_low_eq : ∀ r : Fin 18, r.val < 10 ∧ r ≠ 2 → s7.regs r = s5.regs r := by
-      intro r hr
-      rw [hs7_low r hr, hs6_low r hr]
-    have hs7_0 : s7.regs 0 = base := by
-      rw [hs7_low_eq 0 ⟨by decide, by decide⟩]
-      simp +decide [s5, s4, s3, s2, s1, h0]
-    have hs7_3 : s7.regs 3 = m := by
-      rw [hs7_low_eq 3 ⟨by decide, by decide⟩]
-      simp +decide [s5, s4, s3, s2, s1]
     have hm_lt : m < k := by omega
-    have hmem_seed : s7.mem (base + 8 + m) = (c ⟨m, hm_lt⟩).val := by
-      rw [hs7_mem, hs6_mem]
-      exact hseed ⟨m, hm_lt⟩
+    have hmem_seed : s.mem (base + 8 + m) = (c ⟨m, hm_lt⟩).val := hseed ⟨m, hm_lt⟩
     have hx_val : (TrinomialField.equivFin t x_field).val = u.val :=
       TrinomialField.val_equivFin_mk_polyOfCode t hu_bound
     have hmul_val : reduceTrinomialCode t (clmul acc_val u.val) =
@@ -1806,57 +1749,9 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
       fits_of_lt_two_pow_two_mul hw
         (lt_of_lt_of_le hacc_next_lt_q
           (Nat.pow_le_pow_right (by decide) (by omega)))
-    set s8 := s7.set 15 8
-    have e8 : Exec w (.op (.const 15 8) : Code .exact 18) s7 s8 1 := Exec.const (by fits)
-    set s9 := s8.set 15 (base + 8)
-    have e9 : Exec w (.op (.exactBin .add 15 0 15) : Code .exact 18) s8 s9 1 :=
-      exec_exactBin (by simp +decide [s8, hs7_0]) hfit_end8
-    set s10 := s9.set 15 (base + 8 + m)
-    have e10 : Exec w (.op (.exactBin .add 15 15 3) : Code .exact 18) s9 s10 1 :=
-      exec_exactBin (by simp +decide [s9, s8, hs7_3]) (by fits)
-    set s11 := s10.set 15 (c ⟨m, hm_lt⟩).val
-    have e11 : Exec w (.op (.load 15 15) : Code .exact 18) s10 s11 1 := by
-      simpa +decide [s11, s10, s9, s8, hmem_seed] using
-        (Exec.load (B := .exact) (w := w) (d := 15) (a := 15) (x := s10))
-    set s12 := s11.set 2 (TrinomialField.equivFin t acc_next).val
-    have e12 : Exec w (.op (.exactBin .xor 2 2 15) : Code .exact 18) s11 s12 1 :=
-      exec_exactBin (by simp +decide [s11, s10, s9, s8, hs7_2, t, hxor_val]) hfit_acc_next
-    have hbody :=
-      e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq
-        (e11.seq e12))))))))))
-    have hs12_low : ∀ r : Fin 18, r.val < 10 ∧ r ≠ 2 → s12.regs r = s5.regs r := by
-      intro r ⟨hr_lt, hr2⟩
-      have hr15 : r ≠ 15 := by omega
-      calc s12.regs r = s7.regs r := by
-            simp only [s12, s11, s10, s9, s8, Data.set,
-              Function.update_of_ne hr2, Function.update_of_ne hr15]
-        _ = s5.regs r := hs7_low_eq r ⟨hr_lt, hr2⟩
-    have hs12_mem : s12.mem = s.mem := by
-      change s7.mem = s.mem
-      rw [hs7_mem, hs6_mem]
-      rfl
     have hm_le : m ≤ k := Nat.le_of_succ_le hm
-    obtain ⟨y, hrec, hy0, hy1, hy2, hy_mem⟩ :=
-      ih hm_le acc_next s12
-        (by rw [hs12_mem]; exact ⟨htab, hseed⟩)
-        (by rw [hs12_low 0 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h0])
-        (by rw [hs12_low 1 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h1])
-        (by simp only [s12, Data.set, Function.update_self])
-        (by rw [hs12_low 3 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1])
-        (by rw [hs12_low 4 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h4])
-        (by rw [hs12_low 5 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h5])
-        (by rw [hs12_low 6 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h6])
-        (by rw [hs12_low 7 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h7])
-        (by rw [hs12_low 8 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h8])
-        (by rw [hs12_low 9 ⟨by decide, by decide⟩]; simp +decide [s5, s4, s3, s2, s1, h9])
-    have hiter := Exec.loop_iter hc hbody hrec
-    refine ⟨y, ?_, hy0, hy1, ?_, by rw [hy_mem, hs12_mem]⟩
-    · simpa only [hornerLoop, hornerBody,
-        show 1 + (1 + (1 + (1 + (1 + (((11 * L + 12) * L + 2) +
-          (16 + (1 + (1 + (1 + (1 + 1)))))))))) + (((11 * L + 12) * L + 30) * m + 2) + 2 =
-          ((11 * L + 12) * L + 30) * (m + 1) + 2 by ring] using hiter
-    · rw [hy2]
-      congr 2
+    have hsum : acc_next * x_field ^ m + ∑ i : Fin m, c_field (Fin.castLE hm_le i) * x_field ^ (i : ℕ) =
+        acc * x_field ^ (m + 1) + ∑ i : Fin (m + 1), c_field (Fin.castLE hm i) * x_field ^ (i : ℕ) := by
       rw [Fin.sum_univ_castSucc]
       simp only [acc_next, Fin.val_castSucc, Fin.val_last, pow_succ]
       have hcast : ∀ i : Fin m, Fin.castLE hm i.castSucc = Fin.castLE hm_le i :=
@@ -1864,6 +1759,36 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
       have hlast : Fin.castLE hm (Fin.last m) = ⟨m, hm_lt⟩ := rfl
       simp only [hcast, hlast]
       ring
+    have hbody : WP.Exact w hornerBody s fun z n => n = (11 * L + 12) * L + 28 ∧
+        ∃ y, Exec w hornerLoop z y (((11 * L + 12) * L + 30) * m + 2) ∧ y.regs 0 = base ∧
+          y.regs 1 = u.val ∧ y.regs 2 = (TrinomialField.equivFin t (acc * x_field ^ (m + 1) +
+            ∑ i : Fin (m + 1), c_field (Fin.castLE hm i) * x_field ^ (i : ℕ))).val ∧
+          y.mem = s.mem := by
+      unfold hornerBody
+      wram_exec [h2, h3, h6, h8, h9]
+      wram_call (outerClmulLoop_exec hb hw hfit_tabEnd hu_limbs hu_bound L acc_val 0 0 _
+        hacc_limbs (by simpa using hacc_bound) (by positivity) hfit_2Lb (by wram_simp [h1])
+        (by wram_simp) (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp [h6])
+        (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp)
+        (by wram_simp) (by wram_simp) (by exact htab.2.2.2.2.2.2.2.2))
+        with s6 ⟨hs6_2, hs6_low, hs6_mem⟩
+      simp only [Nat.shiftLeft_zero, Nat.zero_xor] at hs6_2
+      wram_exec
+      wram_call (reduceStepCode_exec (by rw [hs6_mem]; exact htab) hw hfit_end8 hcl_lt
+        (by wram_simp [hs6_low, h0]) hs6_2 (by wram_simp [hs6_low, h8]))
+        with s7 ⟨hs7_2, hs7_low, hs7_mem⟩
+      wram_exec [hs7_low, hs6_low, hs7_mem, hs6_mem, h0, hmem_seed, hs7_2, t, hxor_val]
+      exact (ih hm_le acc_next _ (by wram_simp [hs7_mem, hs6_mem]; exact ⟨htab, hseed⟩)
+        (by wram_simp [hs7_low, hs6_low, h0]) (by wram_simp [hs7_low, hs6_low, h1]) (by wram_simp [t])
+        (by wram_simp [hs7_low, hs6_low]) (by wram_simp [hs7_low, hs6_low, h4])
+        (by wram_simp [hs7_low, hs6_low, h5]) (by wram_simp [hs7_low, hs6_low, h6])
+        (by wram_simp [hs7_low, hs6_low, h7]) (by wram_simp [hs7_low, hs6_low, h8])
+        (by wram_simp [hs7_low, hs6_low, h9])).elim fun y ⟨hrec, hy0, hy1, hy2, hy_mem⟩ =>
+        ⟨y, hrec, hy0, hy1, by rw [hy2, hsum], by rw [hy_mem]; wram_simp [hs7_mem, hs6_mem]⟩
+    obtain ⟨z, t', hb, rfl, y, hrec, hy⟩ := hbody
+    refine ⟨y, ?_, hy⟩
+    simpa only [hornerLoop, show (11 * L + 12) * L + 28 + (((11 * L + 12) * L + 30) * m + 2) + 2 =
+      ((11 * L + 12) * L + 30) * (m + 1) + 2 by ring] using Exec.loop_iter hc hb hrec
 
 /-- 13-instruction setup block for `evalCode k`: initializes `reg 8 = 1`, `reg 9 = 0`,
 `reg 2 = 0`, `reg 3 = k`, loads `b`, `2 ^ b - 1`, `L` from `base + 5 .. base + 7` into `reg 4..6`,
