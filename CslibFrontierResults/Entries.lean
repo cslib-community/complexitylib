@@ -47,6 +47,7 @@ import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -759,6 +760,26 @@ register_result "nash-existence" where
     distribution by a pure deviation. Proved by Brouwer's theorem on products of simplices, \
     itself derived from the hypergrid Sperner lemma. Nonconstructive: no algorithm or \
     complexity bound."
+
+register_result "correlated-equilibrium-hierarchy" where
+  title := "Pure Nash, mixed Nash, correlated and coarse correlated equilibria are nested"
+  topic := "game theory"
+  sources := [
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 13, Section 3 and Figure 2; Lecture 18, Section 1" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.isCorrelatedEquilibrium_iff,
+    Cslib.GameTheory.CostGame.IsPureNash.isCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.IsMixedNash.isCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.IsCorrelatedEquilibrium.isCoarseCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.exists_isCorrelatedEquilibrium
+  ]
+  scope := "Finite cost-minimization games and finitely supported distributions on profiles. \
+    Correlated equilibria are defined by switching functions and shown equivalent to the \
+    conditional form. Strictness of the inclusions is checked on examples in the test suite \
+    (traffic light, Rock-Paper-Scissors), not stated as library theorems. Swap regret and \
+    convergence of learning dynamics are not covered."
 
 register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"
