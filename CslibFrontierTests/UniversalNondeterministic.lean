@@ -14,7 +14,8 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.No
 
 A machine without work tapes that emits either bit and halts. Its description lists both
 transitions, so from the initial configuration it can step to either output; a halted
-configuration takes no step; and the machine accepts every input, read off its description.
+configuration takes no step; and the machine accepts every input, read off its description, also
+within the space bound for no cells.
 -/
 
 @[expose] public section
@@ -54,7 +55,16 @@ example (input : List Bool) (b : Bool) :
   .single (nStep_init input b)
 
 /-- `coin` accepts every input, read off its description. -/
-example (input : List Bool) : coin.Accepts input :=
+theorem coin_accepts (input : List Bool) : coin.Accepts input :=
   (accepts_iff_reflTransGen_nStep eUnit coin input).mpr ⟨_, rfl, .single (nStep_init input true)⟩
+
+/-- Without work tapes `coin` runs within no cells, so its description accepts within the bound
+for `S = 0`. -/
+example (input : List Bool) :
+    ∃ s, s.state = none ∧
+      Relation.ReflTransGen (fun p p' => NStep (descN eUnit eBit coin) (input.map eBit) p p' ∧
+          (eCfg p'.1).length ≤ cfgSpaceBound (descLen (descN eUnit eBit coin)) input.length 0 0)
+        (init (descN eUnit eBit coin), []) (s, [eBit true]) :=
+  (accepts_iff_reflTransGen_nStep_fits eUnit coin input (by simp)).mp (coin_accepts input)
 
 end CslibFrontierTests.UniversalNondeterministic

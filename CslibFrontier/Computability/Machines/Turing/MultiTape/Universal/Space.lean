@@ -27,9 +27,13 @@ visited cells are those of the machine (`Turing.MultiTapeTM.Universal.simSpace_d
 ## Main definitions
 
 * `Turing.MultiTapeTM.Universal.simSpace`: the number of cells visited by the simulation.
+* `Turing.MultiTapeTM.Universal.Tape.Covered`: the cells of a zipper are at given positions.
+* `Turing.MultiTapeTM.Universal.cfgSpaceBound`: the bound on the size of a configuration.
 
 ## Main results
 
+* `Turing.MultiTapeTM.Universal.length_eCfg_le_of_covered`: the size of a configuration whose
+  zippers are covered by sets of positions, in their total size.
 * `Turing.MultiTapeTM.Universal.length_eCfg_le_space`: the size of the configuration, in the
   visited cells.
 * `Turing.MultiTapeTM.Universal.simSpace_desc`: for descriptions of machines, the visited cells
@@ -40,17 +44,19 @@ namespace Turing.MultiTapeTM.Universal
 
 /-! ### Zippers within the visited positions -/
 
+-- vendored: `Tape.Covered`, `Tape.Covered.mono` and `Tape.Covered.apply` are public for the
+-- descriptions of nondeterministic machines (`Universal/Nondeterministic.lean`)
 /-- The cells of the zipper `t` are at positions in `V`. -/
-structure Tape.Covered (t : Tape) (V : Set ℤ) : Prop where
+public structure Tape.Covered (t : Tape) (V : Set ℤ) : Prop where
   left : ∀ k < t.left.length, t.head - 1 - k ∈ V
   right : ∀ k < t.right.length, t.head + k ∈ V
 
-lemma Tape.Covered.mono {t : Tape} {V W : Set ℤ} (h : t.Covered V) (hVW : V ⊆ W) :
+public lemma Tape.Covered.mono {t : Tape} {V W : Set ℤ} (h : t.Covered V) (hVW : V ⊆ W) :
     t.Covered W :=
   ⟨fun k hk => hVW (h.left k hk), fun k hk => hVW (h.right k hk)⟩
 
 /-- An action keeps a zipper covered, if the heads before and after are covered. -/
-lemma Tape.Covered.apply {t : Tape} {V : Set ℤ} (h : t.Covered V) (hh : t.head ∈ V)
+public lemma Tape.Covered.apply {t : Tape} {V : Set ℤ} (h : t.Covered V) (hh : t.head ∈ V)
     (a : Option (Option ℕ) × SignType) (ha : (t.apply a).head ∈ V) : (t.apply a).Covered V := by
   obtain ⟨hl, hr⟩ := h
   obtain ⟨w, m⟩ := a
@@ -135,6 +141,17 @@ lemma step_tape (d : Desc) (x : List ℕ) (c : SCfg) (i : ℕ) :
   · refine ⟨(none, 0), ?_⟩
     rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
       (by rw [length_step_workTapes]; exact hi)]
+
+-- vendored: added for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
+/-- An action applies a tape action to every work tape. -/
+public lemma Act.apply_tape (a : Act) (x : List ℕ) (c : SCfg) (i : ℕ) :
+    ∃ ta, (a.apply x c).workTapes.getD i .blank = (c.workTapes.getD i .blank).apply ta := by
+  rcases Nat.lt_or_ge i c.workTapes.length with hi | hi
+  · exact ⟨_, getD_applyTapes _ _ hi⟩
+  · refine ⟨(none, 0), ?_⟩
+    rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
+      (by simpa [Act.apply, length_applyTapes_eq] using hi)]
 
 lemma head_apply (t : Tape) (a : TapeAct) :
     (t.apply a).head = t.head - 1 ∨ (t.apply a).head = t.head ∨ (t.apply a).head = t.head + 1 := by
@@ -245,28 +262,48 @@ lemma length_run_workTapes (j : ℕ) : (run d x j).workTapes.length = d.tapes :=
   | zero => simp [run, init]
   | succ j ih => rw [run_succ, length_step_workTapes, ih]
 
+-- vendored: `cfgSpaceBound` and `length_eCfg_le_of_covered` are extracted from
+-- `length_eCfg_le_space` for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
+/-- The bound on the size of a configuration for a description of length `D`, an input of length
+`X`, `k` work tapes and `S` cells. -/
+public abbrev cfgSpaceBound (D X k S : ℕ) : ℕ :=
+  2 * D + 3 + 2 * (encNat (X + 1)).length + 1 + 3 * (2 * D + 5) * 2 * S + k
+
+/-- **The size of a configuration whose zippers are covered** by sets of positions that hold their
+heads: linear in the total size of the sets and the number of work tapes, times the size of a
+symbol, plus the length of the position of the input head in binary. -/
+public theorem length_eCfg_le_of_covered {D X j k S : ℕ} {c : SCfg} (hinv : Inv D X j c)
+    (hk : c.workTapes.length = k) {V : ℕ → Finset ℤ}
+    (hc : ∀ i < k, (c.workTapes.getD i .blank).Covered (V i))
+    (hh : ∀ i < k, (c.workTapes.getD i .blank).head.natAbs < (V i).card)
+    (hS : ∑ i ∈ Finset.range k, (V i).card ≤ S) :
+    (eCfg c).length ≤ cfgSpaceBound D X k S := by
+  have h₁ := length_eSym_le hinv.state
+  have h₂ := length_encNat_mono hinv.inputPos
+  have h₃ : (encList eTape c.workTapes).length ≤
+      ∑ i ∈ Finset.range k, (2 * (3 * (2 * D + 5) * (V i).card) + 1) := by
+    rw [length_encList_eq_sum, hk]
+    refine Finset.sum_le_sum fun i hi => ?_
+    have hi : i < k := Finset.mem_range.mp hi
+    refine Nat.add_le_add_right (Nat.mul_le_mul_left 2
+      (length_eTape_le_space (hc i hi) (hh i hi) fun o ho => ?_)) 1
+    have hi' : i < c.workTapes.length := hk ▸ hi
+    rw [List.getD_eq_getElem _ _ hi'] at ho
+    exact (hinv.workTapes _ (List.getElem_mem hi')).val o ho
+  rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum] at h₃
+  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul, mul_one] at h₃
+  simp only [eCfg_apply, length_encPair, cfgSpaceBound]
+  nlinarith [Nat.mul_le_mul_left (3 * (2 * D + 5)) hS]
+
 /-- **The size of the configuration** after `j` steps, in the number of visited cells: linear in
 the visited cells and the number of work tapes, times the size of a symbol, plus the length of
 the position of the input head in binary. -/
 public theorem length_eCfg_le_space (j : ℕ) :
     (eCfg (run d x j)).length ≤ 2 * descLen d + 3 + 2 * (encNat (x.length + 1)).length + 1 +
-      3 * (2 * (descLen d) + 5) * 2 * simSpace d x j + d.tapes := by
-  obtain ⟨hinv, -, -⟩ := inv_iterate d x j
-  have hk := length_run_workTapes d x j
-  have h₁ := length_eSym_le hinv.state
-  have h₂ := length_encNat_mono hinv.inputPos
-  have h₃ : (encList eTape (run d x j).workTapes).length ≤
-      ∑ i ∈ Finset.range d.tapes, (2 * (3 * (2 * descLen d + 5) * (visited d x j i).card) + 1) := by
-    rw [length_encList_eq_sum, hk]
-    refine Finset.sum_le_sum fun i hi => Nat.add_le_add_right (Nat.mul_le_mul_left 2
-      (length_eTape_le_space (covered d x j i) (natAbs_headAt_lt d x j i) fun o ho => ?_)) 1
-    have hi : i < (run d x j).workTapes.length := by rw [hk]; exact Finset.mem_range.mp hi
-    rw [List.getD_eq_getElem _ _ hi] at ho
-    exact (hinv.workTapes _ (List.getElem_mem hi)).val o ho
-  rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum] at h₃
-  simp only [Finset.sum_const, Finset.card_range, smul_eq_mul, mul_one] at h₃
-  simp only [eCfg_apply, length_encPair, simSpace, run] at *
-  nlinarith
+      3 * (2 * (descLen d) + 5) * 2 * simSpace d x j + d.tapes :=
+  length_eCfg_le_of_covered (inv_iterate d x j).1 (length_run_workTapes d x j)
+    (fun i _ => covered d x j i) (fun i _ => natAbs_headAt_lt d x j i) le_rfl
 
 /-! ### Descriptions of machines -/
 
