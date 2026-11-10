@@ -19,9 +19,10 @@ public import CslibFrontier.Computability.WordRAM.Realization.Witness
 `UniformComputableInPolyTime`. The flat program is the certificate's emitted body, preceded by
 the charged argument-installation prefix `inputPrefix` and followed by a halt on one result
 coordinate; it is chosen before every width and input. The client supplies the input layout and
-an entry width and, at every admitted width, the program's domain, its admissible history, its
-answer and a polynomial bound on its memory charge plus local work. A basis simulation carries
-the exact-basis code to the target basis.
+an entry width. At every admitted width that the input fits, it shows that the input has at least
+`k` words and that its length plus one (the frontier) fits a word, and supplies the program's
+domain, its admissible history, its answer and a polynomial bound on its memory charge plus local
+work. A basis simulation carries the exact-basis code to the target basis.
 
 ## Main results
 
@@ -39,7 +40,8 @@ variable {δ α : Type} {k l : ℕ} {p : δ → Memory.Prog α} {input : δ ↪ 
   {work : δ → Memory.State → ℕ}
 
 /-- **Uniform polynomial time from a realization.** If the first `k` input words encode the
-argument, and at every width admitted by `logWidth c` the input fits, the program's domain and
+argument, and at every width admitted by `logWidth c` that the input fits, the input has at
+least `k` words, its length plus one (the frontier) fits a word, the program's domain and
 admissible history hold, result coordinate `i` is the function's value, and the memory charge
 plus local work is at most `T (size d)` for a polynomially bounded `T`, then one flat program
 computes the function in polynomial time. Argument installation and the halt are charged. -/
@@ -50,12 +52,12 @@ theorem uniformComputableInPolyTime {B : Basis} (φ : Basis.exact.Simulates B)
     (hlayout : ∀ w d (j : Fin k), (encode w d).getD j.val 0 = input d j)
     (hspec : ∀ d w, logWidth c (size d) ≤ w → InputFits w (encode w d) →
       k ≤ (encode w d).length ∧ Fits w ((encode w d).length + 1) ∧
-        safe w d (inputState (encode w d)) ∧
-        (Memory.spec w).ValidHistory (inputState (encode w d))
-          ((Memory.spec w).clientHistory (inputState (encode w d)) (p d)) ∧
-        output ((Memory.spec w).clientResult (inputState (encode w d)) (p d)) i = f d ∧
-        memoryCost (p d) (inputState (encode w d)) + work d (inputState (encode w d)) ≤
-          T (size d)) :
+        safe w d (Memory.State.init (encode w d)) ∧
+        (Memory.spec w).ValidHistory (Memory.State.init (encode w d))
+          ((Memory.spec w).clientHistory (Memory.State.init (encode w d)) (p d)) ∧
+        output ((Memory.spec w).clientResult (Memory.State.init (encode w d)) (p d)) i = f d ∧
+        memoryCost (p d) (Memory.State.init (encode w d)) +
+            work d (Memory.State.init (encode w d)) ≤ T (size d)) :
     UniformComputableInPolyTime B f encode size := by
   let r := k + (l + h.scratchSize + 1) + 1
   let fr : Fin r := ⟨0, by omega⟩

@@ -40,7 +40,7 @@ matrices in [E. Kushilevitz and N. Nisan, *Communication Complexity*][Kushilevit
 [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

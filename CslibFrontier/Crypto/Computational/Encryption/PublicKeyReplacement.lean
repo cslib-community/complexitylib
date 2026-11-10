@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -149,10 +150,7 @@ theorem distinguishingGame_keyDistinguisher (keys : PMF (List Bool))
       (publicKeyGame keys encrypt adversary bit security).map (fun guess => guess ^^ bit)) := by
   simp only [distinguishingGame, keyDistinguisher, publicKeyGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
-  rw [PMF.bind_comm]
-  congr 1 with pk : 1
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- Acceptance is one half plus half the signed chosen-message gap. -/
 theorem probability_keyDistinguisher (keys : PMF (List Bool))

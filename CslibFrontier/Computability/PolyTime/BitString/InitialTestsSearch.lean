@@ -26,6 +26,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Analysis.Complex.ExponentialBounds
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Sequential initial-test search and shortened Tanner check matrices
@@ -457,10 +458,7 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
       (fun p => by dsimp only; generalize 2 ^ wCheck p.2.1 = z; omega)).congr (fun _ => rfl)
   let B (a : α) : ℕ :=
     2 * (encQ (qOf a)).length + 1 + (3 + rowsOf (qOf a) * (2 * colsOf (qOf a) + 1))
-  have hBP : PolyBounded (fun a => (encIn a).length) B :=
-    (((PolyBounded.const 2).mul hq.polyBounded_length).add (.const 1)).add
-      ((PolyBounded.const 3).add ((polyBounded hra).mul
-        (((PolyBounded.const 2).mul (polyBounded hca)).add (.const 1))))
+  have hBP : PolyBounded (fun a => (encIn a).length) B := by growth_poly
   have hB (a : α) (j : ℕ) (_ : j ≤ 2 ^ (rowsOf (qOf a) * colsOf (qOf a))) :
       (encSt (IndexFold.run (searchMatrixStep rowsOf colsOf check) j
         (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))).2).length ≤ B a := by

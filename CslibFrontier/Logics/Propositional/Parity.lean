@@ -51,7 +51,7 @@ ORs of formulas in conjunctive normal form for parity, of depth three, are in
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

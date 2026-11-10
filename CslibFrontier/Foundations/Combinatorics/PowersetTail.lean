@@ -53,7 +53,7 @@ step of Razborov's corruption bound for disjointness [Razborov1992].
 * [A. A. Razborov, *On the distributional complexity of disjointness*][Razborov1992]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

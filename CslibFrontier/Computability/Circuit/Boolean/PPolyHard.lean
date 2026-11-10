@@ -29,7 +29,7 @@ polynomial [Arora and Barak, Theorem 6.21][AroraBarak09].
 * [C. E. Shannon, *The synthesis of two-terminal switching circuits*][Shannon1949]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

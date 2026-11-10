@@ -30,7 +30,7 @@ with Mathlib's `MeasureTheory.lpNorm` with respect to both `ProbabilityTheory.un
   `(Probability.PMF.uniformOfFintype α).toMeasure`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

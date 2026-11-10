@@ -34,7 +34,7 @@ The exact statements for box secrets and binary challenges are original. The wit
 role is motivated by [Lyubashevsky2009], Section 3.1. No full CMA theorem is claimed.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 

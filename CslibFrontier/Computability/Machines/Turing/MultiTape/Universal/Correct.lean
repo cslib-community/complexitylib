@@ -154,6 +154,24 @@ lemma inputSymbol_val (c : Cfg k ℕ ℕ x) : inputSymbol x c.inputPos.val = c.i
   have := c.inputPos.isLt
   split_ifs <;> grind [List.head?_drop, Fin.ext_iff]
 
+-- vendored: extracted from `toCfg_step` for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
+/-- The key of a well-shaped configuration of the simulation is the key of the configuration it
+represents. -/
+public lemma key_toCfg {s : SCfg} (hs : s.WellShaped k x) (out : List ℕ) (q : ℕ) :
+    s.key x q = key q (s.toCfg k x out).inputSymbol (s.toCfg k x out).workTapeSymbols := by
+  obtain ⟨st, ip, ws⟩ := s
+  obtain ⟨hk, hp⟩ := hs
+  dsimp only at hk hp
+  obtain ⟨ts, rfl⟩ : ∃ ts : Fin k → Tape, ws = List.ofFn ts :=
+    ⟨fun i => ws[i], List.ext_getElem (by simp [hk]) fun _ _ _ => by simp⟩
+  set c := SCfg.toCfg k x ⟨st, ip, List.ofFn ts⟩ out
+  have hip : (c.inputPos : ℕ) = ip := by simp only [c, SCfg.toCfg]; omega
+  simp only [SCfg.key, key, ← hip, inputSymbol_val, List.map_ofFn]
+  congr 2
+  funext i
+  simp [Tape.read_eq, c, SCfg.toCfg, Cfg.workTapeSymbols]
+
 /-- **A step of the simulation is a step of the machine**, emitting the same symbol, if the
 description holds the transition for the current key. -/
 public theorem toCfg_step {tm : MultiTapeTM k ℕ ℕ} {d : Desc} {s : SCfg} {out : List ℕ}
@@ -174,11 +192,7 @@ public theorem toCfg_step {tm : MultiTapeTM k ℕ ℕ} {d : Desc} {s : SCfg} {ou
     set c := SCfg.toCfg k x ⟨some q, ip, List.ofFn ts⟩ out
     have hip : (c.inputPos : ℕ) = ip := by simp only [c, SCfg.toCfg]; omega
     have hkey : SCfg.key ⟨some q, ip, List.ofFn ts⟩ x q =
-        key q c.inputSymbol c.workTapeSymbols := by
-      simp only [SCfg.key, key, ← hip, inputSymbol_val, List.map_ofFn]
-      congr 2
-      funext i
-      simp [Tape.read_eq, c, SCfg.toCfg, Cfg.workTapeSymbols]
+        key q c.inputSymbol c.workTapeSymbols := key_toCfg ⟨hk, hp⟩ out q
     obtain ⟨⟨_, _⟩, he, rfl⟩ := Option.map_eq_some_iff.mp (hd q rfl)
     rw [step_of_state (show c.state = some q from rfl)]
     simp only [step, hkey, he]
@@ -195,6 +209,21 @@ public theorem toCfg_step {tm : MultiTapeTM k ℕ ℕ} {d : Desc} {s : SCfg} {ou
     · simp [SCfg.toCfg, Act.apply, Act.ofAction, applyTapes_ofFn, Tape.apply, Tape.head_move, c]
       cases (a.workTapes i).1 <;> simp [Tape.write]
     · simp [SCfg.toCfg, Act.ofAction, c]
+
+-- vendored: added for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
+/-- **An action applied to a running configuration of the simulation** is the action applied to
+the configuration it represents, and the symbol it emits is appended to the output. -/
+public theorem toCfg_apply {s : SCfg} {q : ℕ} (hs : s.WellShaped k x) (hq : s.state = some q)
+    (out : List ℕ) (a : Action k ℕ ℕ) :
+    ((Act.ofAction a).apply x s).toCfg k x (out ++ a.output.toList) = a.apply (s.toCfg k x out) ∧
+      ((Act.ofAction a).apply x s).WellShaped k x := by
+  have h := toCfg_step (tm := ofTr 0 fun _ _ _ => a) (d := ⟨k, 0, [(s.key x q, .ofAction a)]⟩)
+    (out := out) hs fun q' hq' => by
+      obtain rfl : q' = q := Option.some_injective _ (hq'.symm.trans hq)
+      simp [Desc.Holds, ← key_toCfg hs out]
+  rw [step_of_state (show (s.toCfg k x out).state = some q from hq), tr_ofTr] at h
+  simpa [step, hq, Act.ofAction] using h
 
 /-- The initial configuration of the simulation is the initial configuration. -/
 public theorem toCfg_init {d : Desc} (hk : d.tapes = k) :
@@ -217,8 +246,12 @@ and `eY`: a transition for every state and every choice of read symbols. -/
       .ofAction ((tm.tr e.1 e.2.1 e.2.2).map eS eY))⟩
 
 omit [Fintype State] [Fintype Symbol] in
-lemma key_injective : Function.Injective fun e : State × Option Symbol × (Fin k → Option Symbol) =>
-    key (eS e.1) (e.2.1.map eY) (Option.map eY ∘ e.2.2) := by
+-- vendored: public for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
+/-- Renamed keys determine the state and the read symbols. -/
+public lemma key_injective :
+    Function.Injective fun e : State × Option Symbol × (Fin k → Option Symbol) =>
+      key (eS e.1) (e.2.1.map eY) (Option.map eY ∘ e.2.2) := by
   rintro ⟨q, i, w⟩ ⟨q', i', w'⟩ h
   simp only [key, Key.mk.injEq] at h
   rw [eS.injective h.1, Option.map_injective eY.injective h.2.1,

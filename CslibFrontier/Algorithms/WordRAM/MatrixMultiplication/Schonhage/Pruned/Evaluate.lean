@@ -26,7 +26,7 @@ This module is an internal implementation API used to prove the initialized and 
 client interfaces in `Pruned.Flat`, `Pruned.Width` and `Pruned.Kernel`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

@@ -52,7 +52,7 @@ This module formalizes:
   `Cslib.Complexity.PolyTimeIsomorphic.refl`,
   `Cslib.Complexity.PolyTimeIsomorphic.symm`,
   `Cslib.Complexity.PolyTimeIsomorphic.trans`.
-* Preorder properties of `≤₁,ᵢ`, `≤₁,ₗᵢ`, and `≤₁,ᵢₗ`:
+* Reflexivity and transitivity of `≤₁,ᵢ`; transitivity of `≤₁,ₗᵢ` and `≤₁,ᵢₗ`:
   `Cslib.Complexity.PolyTimeInvertibleOneOneReducible.refl`,
   `Cslib.Complexity.PolyTimeInvertibleOneOneReducible.trans`,
   `Cslib.Complexity.PolyTimeLengthIncreasingOneOneReducible.trans`,
