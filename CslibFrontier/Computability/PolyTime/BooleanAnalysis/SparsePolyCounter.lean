@@ -294,15 +294,6 @@ abbrev SparseSystemInput.heavyThreshold (inp : SparseSystemInput) : ℕ := inp.2
 /-- Equation list `eqs` of a `SparseSystemInput`. -/
 abbrev SparseSystemInput.equations (inp : SparseSystemInput) : List (List (List ℕ)) := inp.2.2
 
-/-- Number of variables `n` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputNumVars (inp : HeavyBranchFold.BranchInput) : ℕ := inp.1
-
-/-- Branching variable list `S` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputVars (inp : HeavyBranchFold.BranchInput) : List ℕ := inp.2.1
-
-/-- Equation list `eqs` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputEquations (inp : HeavyBranchFold.BranchInput) : List (List (List ℕ)) := inp.2.2
-
 /-- Native encoding of `SparseSystemInput` (`n` and `k_deg` unary, `s_div` and `b₀` binary). -/
 def encSparseSystemInput : SparseSystemInput ↪ List Bool :=
   encPair encUnary
@@ -1053,7 +1044,7 @@ noncomputable def guardedBranchingCertificate (N₀_branch : ℕ)
   let csolver := guardedBranchCertificate N₀_branch cBranch
   { time := fun inp =>
       HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-        (2 ^ (branchInputVars inp).length + 1) *
+        (2 ^ inp.vars.length + 1) *
           (HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
             HeavyBranchFold.maxReducedCost csolver.time inp)
     space := fun inp => HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
