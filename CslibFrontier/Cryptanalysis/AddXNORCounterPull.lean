@@ -370,6 +370,19 @@ theorem run_computable : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Mo
   · simpa only [NativeCertificate.fst_space, original, NativeCertificate.linear_space,
       id_eq] using (bounds input).2
 
+/-- A complete keyed counter record charges binary key and counter widths separately. -/
+theorem graph_record_width {m B : ℕ} (f : BitVec m → ℕ)
+    (bound : ∀ s, Nat.size (f s) ≤ B) :
+    ∀ row ∈ graph f, (encPair encNat encNat row).length ≤ 2*m+1+B := by
+  intro row hrow
+  obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hrow
+  have key := length_encNat_le_of_lt_two_pow i.isLt
+  have value : (encNat (f (BitVec.ofFin i))).length ≤ B := by
+    simpa only [encNat_apply, Nat.size_eq_bits_len] using bound (BitVec.ofFin i)
+  simp only [length_encPair]
+  change 2*(encNat i.val).length+1+(encNat (f (BitVec.ofFin i))).length ≤ _
+  omega
+
 /-- Complete-table physical width follows from counter bits, not from a unit-cost record model. -/
 theorem graph_width {m B : ℕ} (f : BitVec m → ℕ) (bound : ∀ s, Nat.size (f s) ≤ B)
     (a : BitVec m) (inverse operator : Bool) :
@@ -379,15 +392,7 @@ theorem graph_width {m B : ℕ} (f : BitVec m → ℕ) (bound : ∀ s, Nat.size 
     simp only [parameterEncoding, length_encPair, encUnary_apply, List.length_replicate,
       encBool_apply, List.length_singleton]
     omega
-  have records : ∀ row ∈ graph f, (encPair encNat encNat row).length ≤ 2*m+1+B := by
-    intro row hrow
-    obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hrow
-    have key := length_encNat_le_of_lt_two_pow i.isLt
-    have value : (encNat (f (BitVec.ofFin i))).length ≤ B := by
-      simpa only [encNat_apply, Nat.size_eq_bits_len] using bound (BitVec.ofFin i)
-    simp only [length_encPair]
-    change 2*(encNat i.val).length+1+(encNat (f (BitVec.ofFin i))).length ≤ _
-    omega
+  have records := graph_record_width f bound
   have maximum := listMax_le records
   change streamRecordLength (encPair encNat encNat) (graph f) ≤ 2*m+1+B at maximum
   dsimp only [width]

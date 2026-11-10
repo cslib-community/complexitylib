@@ -29,8 +29,8 @@ small-state adjacent-payload writer then supplies the approved binary adder.
 There is no semantic `List.zip` or table lookup in this execution route.
 
 These are the pull/pair/add stages of [WangLvShenZhang2027], Lemma 8, PDF pp. 21–22.
-Complete table initialization, numeric-key restoration, operand iteration/reuse and readback remain
-necessary for the full reachable-state DP and faster all-count prepass.
+`AddXNORCounterDP` composes table initialization, numeric-key restoration, operand
+iteration/reuse and encoded output. The faster balance-prepass composition remains open.
 
 ## Main results
 

@@ -2373,6 +2373,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.StackRecursion
 public import CslibFrontier.Computability.GenericRAM.Native.StackRecursionTree
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingEmit
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingEmitBounds
+public import CslibFrontier.Computability.GenericRAM.Native.StreamingEmitWidth
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingFold
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingFoldBounds
 public import CslibFrontier.Computability.GenericRAM.Native.SubsetPairFold
@@ -2601,6 +2602,7 @@ public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Runti
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Simulation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.AdjacentPairs
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.BinaryPairSums
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.IndexNat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoin
@@ -3738,6 +3740,9 @@ public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
 public import CslibFrontier.Cryptanalysis.AddXNORClasses
 public import CslibFrontier.Cryptanalysis.AddXNORCompactExecution
+public import CslibFrontier.Cryptanalysis.AddXNORCounterDP
+public import CslibFrontier.Cryptanalysis.AddXNORCounterDPResources
+public import CslibFrontier.Cryptanalysis.AddXNORCounterInitialization
 public import CslibFrontier.Cryptanalysis.AddXNORCounterPairing
 public import CslibFrontier.Cryptanalysis.AddXNORCounterPull
 public import CslibFrontier.Cryptanalysis.AddXNORCounterSerialization

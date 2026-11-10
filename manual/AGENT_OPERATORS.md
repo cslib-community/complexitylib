@@ -311,10 +311,14 @@ encoding names (`encNatPairList`, `encNatPairOption`, `encFoldStep`, `subsetSumE
 Run the changed-module encoding ratchet against the PR base; do not exempt new modules
 by raising the baseline. These names preserve layout and do not introduce defaults.
 Orientation recomputes counts; no cached-size oracle is input. The faster source
-reachable-state-DP all-count and quarter-time prepass remain separate open endpoints.
+reachable-state-DP machine now initializes, loops and returns all counts in both
+directions. Its original-width resource normalization is in
+`CounterDP.source_certificate`; reuse this certificate rather than a semantic table
+or a generic polynomial in its full wire. The faster quarter-time balance-prepass
+composition remains an open endpoint.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
 sharp source TM bounds. The global worst-case inequalities are now proved for the
-sorted-list source certificate; the source fast prepass/DP and other main clauses
+sorted-list source certificate; the source fast prepass and other main clauses
 remain open. The old solvers and
 all their charges remain intact; the new direct route bypasses their interpreter.
 

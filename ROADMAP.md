@@ -16,7 +16,7 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 ## STOC submission 733
 
 - **Remaining Add/XNOR source clauses** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
-  Exact reachable-state counting DP and the faster all-count/balance prepass of Lemma 8/Theorem 7;
+  The faster all-count/balance prepass composition of Lemma 8/Theorem 7;
   small-operand bounds, reduction multiplicity, sparsification and repaired ideal-model claims.
   Preserve the well-formed typed-input model, computed projection depth and explicit bit resources.
 

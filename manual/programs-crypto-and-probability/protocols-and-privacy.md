@@ -2594,8 +2594,8 @@ this correctness and both resource inequalities for arbitrary typed source input
 as well as arithmetic hit/miss, backward retention and empty/zero-width cases.
 
 These are the whole solver's worst-case time/space bounds, not the complete
-source Theorem 7: reachable-state-DP all-counts and the faster quarter-time balance
-prepass remain unproved. The old association-list/cubic-filter interpreter is
+source Theorem 7: the faster quarter-time balance prepass remains unproved. The
+reachable-state all-count DP is now proved below. The old association-list/cubic-filter interpreter is
 unchanged; the resource theorem uses the assembled sorted-list route. Other
 small-operand, multiplicity, sparsification and ideal-model paper objectives also
 remain open.
@@ -2615,9 +2615,8 @@ and the output is a framed list of binary counters.
 This certificate starts **after** the two pull transformations and interleaving.
 It includes the addition pass's input/output and callback temporaries, but does
 not charge generation of that input. The state-keyed pull/pair/add route below
-addresses those stages; initialization, indexing for reuse, the operand loop and
-readback still need composition
-to obtain Lemma 8's $O^*(2^p)$ all-count prepass. The installed dissection
+addresses those stages; the following `CounterDP` endpoint composes initialization,
+indexing, the operand loop and readback to obtain Lemma 8's $O^*(2^p)$ all-count DP. The installed dissection
 certificate and its proved whole-run bound are unchanged. The checked client is
 [`AddXNORCounterSerialization.lean`](../../CslibFrontierTests/AddXNORCounterSerialization.lean);
 from the repository root run
@@ -2654,14 +2653,47 @@ binary-arithmetic temporaries and final count list are included. The generic
 adjacent writer discards an unmatched final record; the source proof derives an
 even stream with exactly two records per state, including zeros and equal counts.
 
-The output is a counter list in numeric state order. Efficiently restoring its
-keys for another pass, table initialization, the complete operand loop with
-reuse and readback remain necessary for the full DP and Lemma 8's faster prepass.
-The older `WordTable.entries` uses recursive low-bit-child order; that order is
-kept distinct. The checked clients include actual forward and inverse updates,
+The output of this single pass is a counter list in numeric state order. The
+complete initialization/indexing/operand-loop composition is described below;
+the faster balance prepass remains separate. The older `WordTable.entries` uses
+recursive low-bit-child order; that order is kept distinct. The checked clients include actual forward and inverse updates,
 zero width, zero counters, collisions and non-self-inverse addition. From the
 repository root run
 `lake build CslibFrontierTests.AddXNORCounterPairing --wfail --iofail`.
+
+The full reachable-state counting machine is now in
+[`AddXNORCounterDP.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterDP.lean).
+`CounterInitialization.run` uses the existing uniform binary index generator to
+write every state with its original seed/target indicator, including zeros.
+`IndexNat.run` restores numeric keys with a binary position as its only evolving
+callback state. Its time and workspace are linear in record count times a
+polynomial in maximum counter/index width; a whole table is never a scalar
+callback argument.
+
+`CounterDP.runCertificate` composes initialization, the actual pull/pair/add pass,
+indexing after each pass and the original operand fold. Forward execution consumes
+operands left to right; reverse execution consumes them right to left using the
+actual inverse transition. `run_words` proves that its output tape contains the
+complete native forward/backward table. The output includes indexed operator
+multiplicities, physical zeros and every numeric state key. No table, execution
+or counting conclusion is supplied as an endpoint premise.
+
+[`AddXNORCounterDPResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterDPResources.lean)
+normalizes the installed machine's actual profiles in `CounterDP.source_certificate`:
+bit time and charged peak workspace are $O(2^p P(p+q+1))$, for one fixed polynomial
+and machine, on original width-$p$ typed operands of length $q$. Initialization,
+operand reversal, all counter-table copies, mapping and radix-sort buffers,
+pairing, binary addition, reindexing, fold control and encoded readback are
+charged. Callback clocks are summed; workspace uses their maximum and every
+prefix table, including initialization and final output. This proves the
+reachable-state all-count DP resource clause of source Lemma 8. It does not yet
+replace the dissection solver's existing balance prepass with the faster DP route;
+that composition and the other recorded source clauses remain open. The existing
+whole-run dissection theorem is unchanged.
+
+Checked clients execute empty/zero-width chains, physical zero counters,
+collisions, repeated operands and both original directions. From the repository
+root run `lake build CslibFrontierTests.AddXNORCounterDP --wfail --iofail`.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),
