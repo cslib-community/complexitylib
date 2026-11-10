@@ -66,14 +66,14 @@ zero-error (Las Vegas) schemes against oblivious operation sequences:
   `opsAlphabet` (or `[Fintype D.Op]`).
 * `Cslib.DataStructure.CellProbe.Randomized.exists_det_scheme_le_expectedSeqProbes`: random initial
   memory / coin-free steps specialization producing a time-invariant `Cslib.CellProbe.Scheme`.
-* Under `Cslib.DataStructure.CellProbe.Randomized`:
-  `ObliviousSequenceImpl.exists_det_indexedScheme`,
-  `ObliviousSequenceImpl.le_expected_charge_of_det_indexedScheme`,
-  `StateTransitionImpl.exists_det_indexedScheme`,
-  `StateTransitionImpl.exists_det_scheme`, and
-  `StateTransitionImpl.le_expected_totalCost_of_det_indexedScheme` — end-to-end coin-fixing and
-  lower-bound transfer corollaries for `ObliviousSequenceImpl` and `Randomized.StateTransitionImpl`
-  (bounding the certified budget `initPotential + E[totalCost]`, not raw `E[P.expectedSeqProbes]`).
+* `Randomized.ObliviousSequenceImpl.exists_det_indexedScheme`,
+  `Randomized.ObliviousSequenceImpl.le_expected_charge_of_det_indexedScheme`,
+  `Randomized.StateTransitionImpl.exists_det_indexedScheme`,
+  `Randomized.StateTransitionImpl.exists_det_scheme`, and
+  `Randomized.StateTransitionImpl.le_expected_totalCost_of_det_indexedScheme`:
+  end-to-end coin-fixing and lower-bound transfer corollaries in
+  `Cslib.DataStructure.CellProbe.Randomized` (bounding the certified budget
+  `initPotential + E[totalCost]`, not raw `E[P.expectedSeqProbes]`).
 
 ## References
 

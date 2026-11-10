@@ -1578,6 +1578,28 @@ theorem simProgDetAuto_spec {B : Basis} {r S regCells w wCell : ℕ} {input : Fi
   simProgDet_spec L p argRegs decode defaultAns hm harg hruns hhalt
     (le_autoFuel_of_runs_halt L hruns hhalt)
 
+private theorem simExecWithinLayout {B : Basis} {r S regCells w wCell : ℕ}
+    {input : Fin r → Bool} {base : ℕ} {Out : Type}
+    (L : RegLayout r input base S w regCells wCell)
+    (c : Code B r) (retReg : Fin r) (argRegs : Fin r → ℕ)
+    (decode : (Fin r → ℕ) → Option Out) (defaultAns : Out)
+    (harg : ∀ i, input i = true → Fits w (argRegs i))
+    {m : Mem (S + regCells) wCell} (hm : L.ValidMem m) {y : Data r} {T : ℕ}
+    (hexec : ExecWithin w c (L.unpack argRegs m) y T) :
+    let tree := simProgDetAuto L (c.program retReg) argRegs (fun _ regs => decode regs) defaultAns
+    tree.run m = ((decode y.regs).getD defaultAns, L.pack y) ∧
+      tree.probes m ≤ T + L.overhead := by
+  intro tree
+  obtain ⟨n, hn_le, hex⟩ := hexec
+  have hruns : Runs w (c.program retReg) ⟨0, L.unpack argRegs m⟩ ⟨0 + c.size, y⟩ n :=
+    hex.runs (pc := 0) (p := c.program retReg) (Program.Contains.self _).append_left
+  have hhalt : step w (c.program retReg) ⟨0 + c.size, y⟩ = .halt (y.regs retReg) :=
+    step_halt (by simp [Code.program])
+  obtain ⟨hrun, hpr⟩ :=
+    simProgDetAuto_spec L (c.program retReg) argRegs (fun _ regs => decode regs) defaultAns
+      hm harg hruns hhalt
+  exact ⟨hrun, hpr.trans (Nat.add_le_add_right hn_le L.overhead)⟩
+
 /-- Structured `ExecWithin` simulation in standard `w`-bit layout (`S + persCount input` cells of
 width `w`): simulates `c` in at most `T + 2 * persCount input` probes (`≤ T` when
 `persCount input = 0`). -/
@@ -1591,19 +1613,10 @@ theorem simExecWithin {B : Basis} {r S w : ℕ} {input : Fin r → Bool} {base :
       (fun _ regs => decode regs) defaultAns
     tree.run m = ((decode y.regs).getD defaultAns, packMem input base S w y) ∧
       tree.probes m ≤ T + 2 * persCount input := by
-  intro tree
-  obtain ⟨n, hn_le, hex⟩ := hexec
-  have hruns : Runs w (c.program retReg) ⟨0, unpackData input argRegs base S w m⟩
-      ⟨0 + c.size, y⟩ n :=
-    hex.runs (pc := 0) (p := c.program retReg) (Program.Contains.self _).append_left
-  have hhalt : step w (c.program retReg) ⟨0 + c.size, y⟩ = .halt (y.regs retReg) :=
-    step_halt (by simp [Code.program])
-  obtain ⟨hrun, hpr⟩ :=
-    simProgDetAuto_spec (standardLayout input base S w) (c.program retReg) argRegs
-      (fun _ regs => decode regs) defaultAns trivial harg hruns hhalt
-  refine ⟨hrun, hpr.trans ?_⟩
-  rw [standardLayout_overhead]
-  omega
+  obtain ⟨hrun, hpr⟩ := simExecWithinLayout (standardLayout input base S w) c retReg argRegs
+    decode defaultAns harg trivial hexec
+  rw [standardLayout_overhead] at hpr
+  exact ⟨hrun, hpr⟩
 
 /-- Structured `ExecWithin` simulation in wide-cell single-spill layout (`S + 1` cells of width
 `wideWidth input w`): simulates `c` in at most `T + (if persCount input = 0 then 0 else 2)` probes
@@ -1619,19 +1632,10 @@ theorem simExecWithinWide {B : Basis} {r S w : ℕ} {input : Fin r → Bool} {ba
       (fun _ regs => decode regs) defaultAns
     tree.run m = ((decode y.regs).getD defaultAns, packMemWide input base S w y) ∧
       tree.probes m ≤ T + (if persCount input = 0 then 0 else 2) := by
-  intro tree
-  obtain ⟨n, hn_le, hex⟩ := hexec
-  have hruns : Runs w (c.program retReg) ⟨0, unpackDataWide input argRegs base S w m⟩
-      ⟨0 + c.size, y⟩ n :=
-    hex.runs (pc := 0) (p := c.program retReg) (Program.Contains.self _).append_left
-  have hhalt : step w (c.program retReg) ⟨0 + c.size, y⟩ = .halt (y.regs retReg) :=
-    step_halt (by simp [Code.program])
-  obtain ⟨hrun, hpr⟩ :=
-    simProgDetAuto_spec (wideLayout input base S w) (c.program retReg) argRegs
-      (fun _ regs => decode regs) defaultAns hm harg hruns hhalt
-  refine ⟨hrun, hpr.trans ?_⟩
-  rw [wideLayout_overhead]
-  omega
+  obtain ⟨hrun, hpr⟩ := simExecWithinLayout (wideLayout input base S w) c retReg argRegs
+    decode defaultAns harg hm hexec
+  rw [wideLayout_overhead] at hpr
+  exact ⟨hrun, hpr⟩
 
 
 /-! ### 4. Randomized (`ExecRand`) and unbounded Las Vegas (`ExecProgramDist` / `ExecCodeDist`)

@@ -1106,6 +1106,59 @@ namespace Cslib.DataStructure.CellProbe
 
 universe u v
 
+private theorem wordRAM_lower_bound_of_det_cellProbeLayout
+    {B : Basis} {r_ds k_init regCells wCell w base S_max : ℕ}
+    {P : SubroutineCode B r_ds k_init}
+    {D : StateTransitionSpec.{u, v, 0}}
+    {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
+    {params : Fin k_init → ℕ} {s₀ : D.State}
+    (C : WordRAM.Randomized.StateTransitionImpl P D w base params s₀)
+    (L : RegLayout r_ds P.input base C.space w regCells wCell)
+    {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
+    (hfr : d₀.regs P.frontierReg = base)
+    (hpar : ∀ j, d₀.regs (P.initParams j) = params j)
+    (hspace : C.space + regCells ≤ S_max)
+    (opsAlphabet : Finset D.Op) (M_corr : ℕ)
+    (correctSeqs : Set (List D.Op))
+    (hcorrectSeqs : ∀ ops ∈ correctSeqs,
+      D.ValidHistory s₀ ops ∧ ops.length ≤ M_corr ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
+    (hardDist : PMF (List D.Op))
+    (hhardDist : ∀ ops ∈ hardDist.support,
+      D.ValidHistory s₀ ops ∧ ops.length ≤ M_corr ∧ ∀ o ∈ ops, o ∈ opsAlphabet)
+    {ovBound : ℝ≥0∞} (hov : (L.overhead : ℝ≥0∞) ≤ ovBound)
+    {LB : ℝ≥0∞}
+    (hlb : ∀ D_det : IndexedScheme D.Op D.Result S_max wCell,
+      (∀ ops ∈ correctSeqs, (D_det.runSeq ops).1 = (D.run s₀ ops).2) →
+      LB ≤ ∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) :
+    LB ≤ (C.initPotential : ℝ≥0∞) +
+      ∑' ops, hardDist ops *
+        ((D.totalCost C.charge s₀ ops : ℝ≥0∞) + ovBound * (ops.length : ℝ≥0∞)) := by
+  obtain ⟨ν₀, hsupp₀, hsteps⟩ := C.exists_init_and_flat_steps hd₀ hfr hpar
+  have hraw :=
+    flat_lower_bound_layout s₀ L hspace (P.code.program P.output) C.encode
+      (fun o _ regs => C.decode o regs) ν₀ hsupp₀ opsAlphabet M_corr correctSeqs hcorrectSeqs
+      (fun ops hops => by
+        obtain ⟨ν_f, T_ops, _, hT_fin, hex⟩ := hsteps ops (hcorrectSeqs ops hops).1
+        exact ⟨ν_f, T_ops, hT_fin, hex⟩)
+      hardDist hhardDist
+      (fun ops => (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞))
+      (fun ops hops => hsteps ops (hhardDist ops hops).1)
+      hlb
+  refine hraw.trans ?_
+  have hpt : ∀ ops,
+      hardDist ops *
+          (((C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞)) +
+            (L.overhead : ℝ≥0∞) * (ops.length : ℝ≥0∞)) ≤
+        hardDist ops * (C.initPotential : ℝ≥0∞) +
+          hardDist ops *
+            ((D.totalCost C.charge s₀ ops : ℝ≥0∞) + ovBound * (ops.length : ℝ≥0∞)) := by
+    intro ops
+    rw [add_assoc, mul_add]
+    exact add_le_add le_rfl
+      (mul_le_mul' le_rfl (add_le_add le_rfl (mul_le_mul' hov le_rfl)))
+  refine (tsum_le_tsum hpt).trans ?_
+  rw [tsum_add, ENNReal.tsum_mul_right, hardDist.tsum_coe, one_mul]
+
 /-- **Contrapositive Deterministic-Cell-Probe-to-Word-RAM Lower-Bound Transfer
 (`wordRAM_lower_bound_of_det_cellProbe_lower_bound`, standard `w`-bit layout):**
 Any distributional probe lower bound `LB` proved against deterministic step-indexed
@@ -1140,31 +1193,11 @@ theorem wordRAM_lower_bound_of_det_cellProbe_lower_bound
       ∑' ops, hardDist ops *
         ((D.totalCost C.charge s₀ ops : ℝ≥0∞) +
           ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by
-  obtain ⟨ν₀, hsupp₀, hsteps⟩ := C.exists_init_and_flat_steps hd₀ hfr hpar
-  have hraw :=
-    flat_wordRAM_lower_bound_of_det_cellProbe (input := P.input) s₀ hspace
-      (P.code.program P.output) C.encode (fun o _ regs => C.decode o regs) ν₀ hsupp₀
-      opsAlphabet M_corr correctSeqs hcorrectSeqs
-      (fun ops hops => by
-        obtain ⟨ν_f, T_ops, _, hT_fin, hex⟩ := hsteps ops (hcorrectSeqs ops hops).1
-        exact ⟨ν_f, T_ops, hT_fin, hex⟩)
-      hardDist hhardDist
-      (fun ops => (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞))
-      (fun ops hops => hsteps ops (hhardDist ops hops).1)
-      hlb
-  refine hraw.trans ?_
-  have hrw : ∀ ops,
-      hardDist ops *
-          (((C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞)) +
-            ((2 * persCount P.input : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) =
-        hardDist ops * (C.initPotential : ℝ≥0∞) +
-          hardDist ops *
-            ((D.totalCost C.charge s₀ ops : ℝ≥0∞) +
-              ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by
-    intro ops
-    rw [persistentRegCount_eq_persCount, add_assoc, mul_add]
-  simp_rw [hrw]
-  rw [tsum_add, ENNReal.tsum_mul_right, hardDist.tsum_coe, one_mul]
+  have hspace' : C.space + persCount P.input ≤ S_max := by
+    rwa [← persistentRegCount_eq_persCount]
+  exact wordRAM_lower_bound_of_det_cellProbeLayout C (standardLayout P.input base C.space w)
+    hd₀ hfr hpar hspace' opsAlphabet M_corr correctSeqs hcorrectSeqs hardDist hhardDist
+    (by simp [standardLayout_overhead, persistentRegCount_eq_persCount]) hlb
 
 set_option linter.unusedFintypeInType false in
 /-- `[Fintype D.Op]` convenience specialization of
@@ -1232,34 +1265,9 @@ theorem wordRAM_lower_bound_of_det_cellProbe_wide
     LB ≤ (C.initPotential : ℝ≥0∞) +
       ∑' ops, hardDist ops *
         ((D.totalCost C.charge s₀ ops : ℝ≥0∞) + (2 : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by
-  obtain ⟨ν₀, hsupp₀, hsteps⟩ := C.exists_init_and_flat_steps hd₀ hfr hpar
-  have hraw :=
-    flat_wordRAM_lower_bound_of_det_cellProbe_wide (input := P.input) s₀ hspace
-      (P.code.program P.output) C.encode (fun o _ regs => C.decode o regs) ν₀ hsupp₀
-      opsAlphabet M_corr correctSeqs hcorrectSeqs
-      (fun ops hops => by
-        obtain ⟨ν_f, T_ops, _, hT_fin, hex⟩ := hsteps ops (hcorrectSeqs ops hops).1
-        exact ⟨ν_f, T_ops, hT_fin, hex⟩)
-      hardDist hhardDist
-      (fun ops => (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞))
-      (fun ops hops => hsteps ops (hhardDist ops hops).1)
-      hlb
-  refine hraw.trans ?_
-  have hov_le : ((if persCount P.input = 0 then 0 else 2 : ℕ) : ℝ≥0∞) ≤ 2 := by
-    split_ifs <;> norm_num
-  have hpt : ∀ ops,
-      hardDist ops *
-          (((C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞)) +
-            ((if persCount P.input = 0 then 0 else 2 : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) ≤
-        hardDist ops * (C.initPotential : ℝ≥0∞) +
-          hardDist ops *
-            ((D.totalCost C.charge s₀ ops : ℝ≥0∞) + (2 : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by
-    intro ops
-    rw [add_assoc, mul_add]
-    exact add_le_add le_rfl
-      (mul_le_mul' le_rfl (add_le_add le_rfl (mul_le_mul' hov_le le_rfl)))
-  refine (tsum_le_tsum hpt).trans ?_
-  rw [tsum_add, ENNReal.tsum_mul_right, hardDist.tsum_coe, one_mul]
+  exact wordRAM_lower_bound_of_det_cellProbeLayout C (wideLayout P.input base C.space w)
+    hd₀ hfr hpar hspace opsAlphabet M_corr correctSeqs hcorrectSeqs hardDist hhardDist
+    (by rw [wideLayout_overhead]; split_ifs <;> norm_num) hlb
 
 set_option linter.unusedFintypeInType false in
 /-- `[Fintype D.Op]` convenience specialization of `wordRAM_lower_bound_of_det_cellProbe_wide`. -/
