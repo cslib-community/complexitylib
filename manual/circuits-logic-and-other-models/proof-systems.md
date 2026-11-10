@@ -555,6 +555,60 @@ check them. Not yet formalized: the matching upper bound of Theorem 4.2, the siz
 the same paper, pigeonhole degree lower bounds, and the simulation of bounded-width resolution by
 polynomial calculus.
 
+### Tseitin formulas
+
+[The Tseitin degree lower bound](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Tseitin.lean)
+is the polynomial calculus counterpart of the Ben-Sasson–Wigderson width lower bound. Take a field
+`K` with `2 ≠ 0` and a connected multigraph `ends : E → Sym2 V`. Then a polynomial calculus
+refutation of degree `d` of the clause polynomials of `CNF.tseitinFormula ends χ`, together with
+the Boolean axioms, forces `e(G) ≤ 2 d`
+(`Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Here `e(G)` is
+`Multigraph.minBalancedCut`, the same expansion used in the width bound. The Nullstellensatz form
+follows through `PC.RefutableInDegree.of_ns`
+(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). The sum-of-squares counterpart,
+Grigoriev's bound `e(G) ≤ d` for the `±1` encoding of the Tseitin parity system, is described
+under [Sum-of-squares](#sum-of-squares). That Tseitin formulas are hard for
+polynomial calculus over fields of characteristic `≠ 2` is due to Buss, Grigoriev, Impagliazzo
+and Pitassi (JCSS 2001), and for the Nullstellensatz to Grigoriev (FOCS 1998). Buss and
+Nordström, Handbook of Satisfiability, §7.5.4, record this hardness qualitatively and describe the
+`R`-operator method. The quantitative form `e(G) ≤ 2 d`, with the Ben-Sasson–Wigderson expansion,
+is the form proved here; it is not taken from a checked source statement. The theorem numbers and
+constants of the two original papers have not been checked against a copy. The proof uses the
+invariant method with the change of variables `x ↦ (1 - y) / 2`. The invariant is the common
+kernel of linear functionals indexed by sets `T` of at most `d` edges. Each functional sends a
+monomial to the sign `(-1) ^ χ(U)` of the unique set `U` of fewer than `|V| / 3` vertices whose
+edge cut is the symmetric difference of `T` and the set of odd-degree variables of the monomial,
+or to `0` if there is no such `U`. The terms of a clause polynomial cancel in pairs, and `2 ≠ 0`
+turns `2 S = 0` into `S = 0`.
+
+[The expander corollary](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/TseitinExpander.lean)
+turns this into `h(G) |V| / 6 ≤ d` on rotation maps with edge expansion `h(G) > 0`. With
+`RotationMap.expander` it gives `CNF.exists_forall_pc_refutableInDegree_le`. For every `n ≥ 2`,
+this is an unsatisfiable formula with at most `120 n` variables, at most `2 ^ 120 · n` clauses
+and at most `120` literals per clause. Every polynomial calculus refutation of it over every field
+with `2 ≠ 0` has degree at least `n / 36000`. As in the resolution case, the expanders come from
+a counting argument, so the formulas exist but have no explicit generator.
+
+[The characteristic-2 upper bound](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Tseitin.lean)
+shows that `2 ≠ 0` cannot be dropped. In characteristic `2`, the clause polynomials of the parity
+constraint at a vertex add up to the charge plus the sum of the incident variables
+(`CNF.sum_toBoolPolys_parityOnEq`). By the handshake argument the clause polynomials of the whole
+formula add up to `1`, so `CNF.ns_refutableInDegree_tseitinFormula_of_charP_two` gives a
+Nullstellensatz refutation whose degree is the largest number of edges at a vertex. The
+[tests](../../CslibFrontierTests/ProofComplexity/AlgebraicTseitin.lean) check the following instances:
+
+- On the triangle, the bound rules out degree `0` over `ℚ` and over `ZMod 3`, and over `ZMod 2`
+  the formula has a refutation of degree `2`.
+- A triangle with an isolated charged vertex has `e(G) = 2` but a refutation of degree `0`, so
+  connectivity is needed.
+- An expander on `5000000` vertices has `e(G) > 240`. Its Tseitin formula has a refutation of
+  degree `120` over `ZMod 2` but none over `ZMod 3`, so `2 ≠ 0` is needed.
+- The hard formulas, instantiated over `ZMod 3`.
+
+Run `scripts/build.sh CslibFrontierTests.ProofComplexity.AlgebraicTseitin` to check them. Not yet
+formalized: the size–degree trade-off for polynomial calculus, which would turn the degree bound
+into an exponential size lower bound for Tseitin formulas on expanders.
+
 ## Timestamped f-DAGs and local surgery
 
 Import `CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths` for finite incidence DAGs, their
@@ -947,7 +1001,7 @@ The [checked examples](../../CslibFrontierTests/ProofComplexity/SumOfSquares.lea
 
 ## Known Limitations
 
-This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates and polynomial calculus (including refutations over the Boolean cube and one degree lower bound), sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates and polynomial calculus (including refutations over the Boolean cube and two degree lower bounds, for subset sum and Tseitin formulas), sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [barak-steurer16]: ../sources.md#barak-steurer16
 [beyersdorffgalesilauria10]: ../sources.md#beyersdorffgalesilauria10

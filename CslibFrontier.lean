@@ -4981,6 +4981,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinear
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjectionProd
+public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
 public import CslibFrontier.Foundations.Data.Nat.ArithmeticProgression
@@ -5516,12 +5517,16 @@ public import CslibFrontier.Logics.Polymorphism.BooleanClone
 public import CslibFrontier.Logics.Propositional.Algebraic.Boolean
 public import CslibFrontier.Logics.Propositional.Algebraic.CNF
 public import CslibFrontier.Logics.Propositional.Algebraic.CNF.Boolean
+public import CslibFrontier.Logics.Propositional.Algebraic.CNF.Parity
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Combination
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.PolynomialCalculus
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Proof
+public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Tseitin
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Invariant
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Proof
+public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Tseitin
+public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.TseitinExpander
 public import CslibFrontier.Logics.Propositional.Algebraic.SubsetSum
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.Basic
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.CNF
