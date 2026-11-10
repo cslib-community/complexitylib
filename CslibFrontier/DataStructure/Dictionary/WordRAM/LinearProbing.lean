@@ -1234,10 +1234,9 @@ theorem allocSpan_execWithin {w base n_max : ℕ} {x : Data rLP}
       x₁.mem = x.mem ∧
       x₁.regs 0 = base ∧
       x₁.regs 18 = base + space n_max := by
-  have hfit_sp : Fits w (space n_max) := hfit.of_le (by omega)
   refine WP.exists_execWithin ?_
   unfold allocSpan
-  wram_exec [hfr, hfit_sp, hfit]
+  wram_exec [hfr, hfit]
   wram_simp
 
 /-- `initSetup U n_max` initializes the `5`-wise independent hash table and leaves the zeroed
@@ -1261,17 +1260,15 @@ theorem initSetup_exec {U V n_max w base : ℕ} {x₁ : Data rLP}
   have hfit_kwise : Fits w (base + KWise.space n_max 5) :=
     hfit_space.of_le (by dsimp only [space]; omega)
   have hfit_n : Fits w (max n_max 2) := fits_max_n_max_of_space hfit_space
-  have hfit_n_val : Fits w n_max := hfit_n.of_le (le_max_left _ _)
   have hfit_U1 : Fits w (max U 2 + 1) := fits_max_U_add_one_of_hw hw
-  have hfit_U : Fits w U := fits_U_of_hw hw
   have hfit_M : Fits w (tableLog n_max) := fits_tableLog_of_hw hw
   have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   set x₀ : Data 18 := x₁.comap kwiseMap
   have hx₀_0 : x₀.regs 0 = base := hb
   set s1 := x₀.set 1 n_max
-  have e1 : Exec w (.op (.const 1 n_max) : Code .exact 18) x₀ s1 1 := Exec.const hfit_n_val
+  have e1 : Exec w (.op (.const 1 n_max) : Code .exact 18) x₀ s1 1 := Exec.const (by fits)
   set s2 := s1.set 2 U
-  have e2 : Exec w (.op (.const 2 U) : Code .exact 18) s1 s2 1 := Exec.const hfit_U
+  have e2 : Exec w (.op (.const 2 U) : Code .exact 18) s1 s2 1 := Exec.const (by fits)
   set s3 := s2.set 3 (tableLog n_max)
   have e3 : Exec w (.op (.const 3 (tableLog n_max)) : Code .exact 18) s2 s3 1 :=
     Exec.const hfit_M
@@ -1656,7 +1653,6 @@ theorem insertFinishCode_execWithin {U w base n_max : ℕ} (u : Fin U) (v : ℕ)
     hfit_space.of_le (by dsimp only [keyBase, usedBase, space]; omega)
   have hfit_vaddr : Fits w (valBase base n_max + p.val) :=
     hfit_space.of_le (by dsimp only [valBase, keyBase, usedBase, space]; omega)
-  have hfit_0 : Fits w 0 := hfit_space.of_le (Nat.zero_le _)
   refine WP.exists_execWithin ?_
   unfold insertFinishCode
   wram_exec [h1, h2, h4, h5, h6, h10, h23, hfit_uaddr, hfit_kaddr, hfit_vaddr]
@@ -1697,8 +1693,7 @@ theorem queryFinishCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
   · wram_exec [h9, h10, hp0]
     exact ⟨rfl, by wram_simp [h0], by wram_simp [decodeOp, hnone]⟩
   · have hv_lt : valAt base n_max x.mem p < V := hinv.values_bounded u _ hsome
-    have hfit_vp1 : Fits w (valAt base n_max x.mem p + 1) := hfit_V.of_le (by omega)
-    wram_exec [h2, h6, h9, h10, hp1, hfit_vaddr, hval, hfit_vp1]
+    wram_exec [h2, h6, h9, h10, hp1, hfit_vaddr, hval]
     exact ⟨rfl, by wram_simp [h0], by wram_simp [decodeOp, hsome]⟩
 
 /-- The key queried or updated by dictionary operation `o`. -/
