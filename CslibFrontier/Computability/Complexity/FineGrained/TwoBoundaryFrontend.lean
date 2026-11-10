@@ -20,6 +20,17 @@ constructor. Empty condition lists make one counting call; nonempty lists make t
 calls and a binary subtraction. Construction, query copies, output lengths and peak workspace
 are charged. The exponent depends on original declaration plus number of conditions, without
 assuming that this number is linear in the declaration. See [ChenJiangZhu2027], PDF pp. 4–5.
+
+## Main definitions
+
+* `encCounter`: unary declared dimension and framed binary signed formula.
+* `execute`: actual one/two-query dispatch and binary reconstruction.
+
+## Main results
+
+* `exists_execute_overhead`: reusable native execution and derived polynomial overhead.
+* `exists_count_sharp_certificate`, `exists_count_realEta_certificate`: original-input counting
+  with sharp time and global polynomial workspace.
 -/
 
 public section

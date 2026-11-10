@@ -2130,6 +2130,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Padding
 public import CslibFrontier.Computability.Complexity.FineGrained.PerfectMatchingCut
 public import CslibFrontier.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
+public import CslibFrontier.Computability.Complexity.FineGrained.RegularInducedInterval
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementParams
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import CslibFrontier.Computability.Complexity.FineGrained.Schoening
@@ -3388,6 +3389,7 @@ public import CslibFrontier.Computability.PolyTime.CNF.PaddedCardinality
 public import CslibFrontier.Computability.PolyTime.CNF.PartitionSizeVectors
 public import CslibFrontier.Computability.PolyTime.CNF.PerfectMatchingCut
 public import CslibFrontier.Computability.PolyTime.CNF.RegularInducedCore
+public import CslibFrontier.Computability.PolyTime.CNF.RegularInducedInterval
 public import CslibFrontier.Computability.PolyTime.CNF.SigmaRho
 public import CslibFrontier.Computability.PolyTime.CNF.SigmaRhoInput
 public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter

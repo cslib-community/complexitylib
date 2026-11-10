@@ -19,7 +19,8 @@ Set decider. The returned value is attained by an inclusion-minimal dominating s
 all such sets. This is the optimum-threshold clause of [ChenJiangZhu2027], Corollary 7.4 /
 Appendix D.5 (PDF pp.26,37). A polynomial scan replaces binary search with the same sharp bound.
 This returns the original set cardinality, not a number of private-neighbor markings. Witness
-output and the unique-mark refinements of Proposition 7.6 remain separate clauses.
+output is a separate clause; the unique-mark refinements of Proposition 7.6 and their sharp
+resources are supplied by the unique/shared-marker counter modules.
 
 ## Main definitions
 

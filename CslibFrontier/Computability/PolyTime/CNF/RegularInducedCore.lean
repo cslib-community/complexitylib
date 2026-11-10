@@ -18,7 +18,8 @@ import all CslibFrontier.Computability.PolyTime.CNF.WeightedQuery
 The threshold-free core of [ChenJiangZhu2027], Proposition C.2 (PDF pp.32–33). It uses only
 original selection variables, with no degree-threshold bits or subset witnesses. Fixed-length
 neighbor sublists are enumerated directly, with the existing binary machine certificate.
-Size-test gates and the complete source resource endpoint are separate frontend obligations.
+The companion interval frontend attaches the actual functional size gates; its native resource
+module supplies the complete size-constrained source endpoint.
 
 ## Main definitions
 

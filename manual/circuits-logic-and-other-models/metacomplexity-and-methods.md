@@ -807,8 +807,9 @@ The general Corollary 7.2 degree rules and Theorem 7.3 labeled partitions are co
 including their size distributions in the recorded explicit/native model. The continuations also
 cover all six Corollary 7.4 decision predicates. Full optimum/witness extraction is supplied for
 Maximum Induced Matching and Upper Domination. The other four recovery specializations and
-Proposition 7.6's shared width-three path-marker refinement remain open; its exact width-four
-counter appears below. These graph milestones do not complete ALL-main.
+Proposition 7.6's shared width-three path-marker refinement, including sharp resources, are
+supplied below alongside its exact width-four counter. These graph milestones do not complete
+ALL-main.
 
 ### Perfect matching cuts with labeled sides
 
@@ -860,12 +861,14 @@ metadata is computed without partition enumeration. Tiny exhaustive oracles are 
 production certificates instantiate the proved sharp counter.
 
 Corollary 7.2's general sigma-rho rules and Theorem 7.3's fixed labeled degree matrices/per-class
-bounds and distributions are supplied below. Of the six Corollary 7.4 predicates, independent-domination counting with size
-bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
-The continuations below cover dominating induced matching and signed-threshold Maximum Induced
-Matching, its complete optimum/witness recovery, Corollary 7.5's full distribution and Upper
-Dominating Set decision. Other predicates' full witness/optimum recovery is supplied below; Proposition 7.6's
-width-three path-marker refinement remains open; exact width-four counting appears below. The general partition endpoint appears below; ALL-main remains open.
+bounds and distributions are supplied below. Of the six Corollary 7.4 predicates,
+independent-domination counting with size bounds, kernel counting/decision and labeled
+perfect-matching-cut counting/decision are covered. The continuations below cover dominating
+induced matching and signed-threshold Maximum Induced Matching, its complete optimum/witness
+recovery, Corollary 7.5's full distribution and Upper Dominating Set decision. Other predicates'
+full witness/optimum recovery is supplied below. Proposition 7.6's width-three path-marker
+refinement and exact width-four counting, with sharp resources, also appear below. The general
+partition endpoint appears below; ALL-main remains open.
 
 ### Dominating induced matchings with exact edge-domination counts
 
@@ -917,16 +920,15 @@ the middle edge. Actual matching/nonmatching examples check the original predica
 at 32 vertices writes queries without support enumeration. Exhaustive tiny query oracles are tests
 only; production uses the instantiated proved sharp counter.
 
-Corollary 7.2's general sigma-rho rules and Theorem 7.3's complete bounded degree-matrix
-frontend and distribution are supplied below.
-For Corollary 7.4, independent-domination counting with size bounds is covered, as are count/
-decision for kernels, perfect matching cuts and dominating induced matchings.
-The continuations below supply signed-threshold Maximum Induced Matching and Upper Dominating
-Set decision and their full optimum/witness composition. The other four recovery specializations
-remain open.
-Corollary 7.5's unrestricted matching bijection, total counts and full size distribution are covered below.
-Proposition 7.6's width-three path-marker refinement remains open; its exact width-four and initial set–marking
-construction is supplied below. ALL-main remains open.
+Corollary 7.2's general sigma-rho rules and Theorem 7.3's complete bounded degree-matrix frontend
+and distribution are supplied below. For Corollary 7.4, independent-domination counting with size
+bounds is covered, as are count/ decision for kernels, perfect matching cuts and dominating
+induced matchings. The continuations below supply signed-threshold Maximum Induced Matching and
+Upper Dominating Set decision and their full optimum/witness composition. The other four recovery
+specializations are supplied below. Corollary 7.5's unrestricted matching bijection, total counts
+and full size distribution are covered below. Proposition 7.6's width-three path-marker
+refinement, exact width-four counter and initial set–marking construction are supplied below,
+including sharp resources. ALL-main remains open.
 
 ### Maximum induced matching with a varying binary threshold
 
@@ -970,11 +972,13 @@ The client checks actual query writing, exact endpoint-size coefficients, and ne
 uses the certified sharp counter, never an exhaustive auxiliary cube traversal.
 
 This closes the signed-threshold counting/decision specialization; the continuation below supplies
-its optimum value and witness. Threshold zero gives Corollary 7.5's unrestricted total count, using
-the functional size circuit rather than that corollary's sharper no-size-test query budget. Witness/optimum extraction for the other four graph predicates and Proposition 7.6
-width-three upper-domination path-marker refinement remain open; general Corollary 7.2
-sigma-rho rules and Theorem 7.3 labeled degree matrices are supplied below; its initial decision construction appears
-below. These remaining source endpoints keep ALL-main open.
+its optimum value and witness. Threshold zero gives Corollary 7.5's unrestricted total count,
+using the functional size circuit rather than that corollary's sharper no-size-test query budget.
+Witness/optimum extraction for the other four graph predicates and the Proposition 7.6 width-three
+upper-domination path-marker refinement are supplied below, with sharp resources. General
+Corollary 7.2 sigma-rho rules, Theorem 7.3 labeled degree matrices and the initial
+upper-domination decision construction also appear below. These remaining source endpoints keep
+ALL-main open.
 
 ### Returning the optimum value and an actual maximum induced matching
 
@@ -1020,10 +1024,11 @@ edges' four endpoints and clears the middle vertex. The tiny threshold oracle ev
 approved real construction on original selections/unique traces; production instantiates the
 proved sharp native decider. It is not exhaustive matching search.
 
-The other four graph predicates' full witness/optimum composition and the width-three
-Upper Dominating Set path-marker refinement remain open. General sigma-rho rules and labeled
-degree matrices are supplied below. The continuation below completes Corollary 7.5's full distribution and sharper no-size-test construction. The other source
-clauses keep the paperwide/ALL-main objective open.
+The other four graph predicates' full witness/optimum composition and the width-three Upper
+Dominating Set path-marker refinement, with sharp resources, are supplied below. General sigma-rho
+rules and labeled degree matrices are supplied below. The continuation below completes Corollary
+7.5's full distribution and sharper no-size-test construction. The other source clauses keep the
+paperwide/ALL-main objective open.
 
 ### Total induced matching counts and the complete size distribution
 
@@ -1116,12 +1121,14 @@ Its tiny assignment enumeration is a test oracle; the production machine uses th
 This completes Proposition 7.6's initial width-three decision construction and Corollary 7.4's
 Upper Dominating Set decision specialization for the stated encoding. The unique-mark width-four
 original-set counter on $5v+a-1$ query variables appears below. The width-three path-marker
-refinement on at most $6v+a-1$ variables remains open. Upper-domination optimum-value and actual witness extraction are supplied below.
-All six Corollary 7.4 decision predicates are now covered in their recorded explicit models;
-Maximum Induced Matching and Upper Domination have full optimum/witness composition, as
-described below; the other four recovery specializations and their resources are supplied below. General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
-are supplied below. Alternative admission/succinct encodings and the paperwide independent
-audit remain outstanding. These limits keep ALL-main open.
+refinement on at most $6v+a-1$ variables, with exact counts and sharp resources, appears below.
+Upper-domination optimum-value and actual witness extraction are supplied below. All six Corollary
+7.4 decision predicates are now covered in their recorded explicit models; Maximum Induced
+Matching and Upper Domination have full optimum/witness composition, as described below; the other
+four recovery specializations and their resources are supplied below. General Corollary 7.2
+finite/cofinite degree rules and Theorem 7.3 labeled degree partitions are supplied below.
+Alternative admission/succinct encodings and the paperwide independent audit remain outstanding.
+These limits keep ALL-main open.
 
 ### Compute the upper-domination optimum value
 
@@ -1195,13 +1202,13 @@ A generic CNF/DNF client also retains a declared unused variable. Tiny trace enu
 oracle; production uses the proved sharp counter and never enumerates a vertex-set or gate cube.
 
 This completes Upper Domination's Corollary 7.4 optimum/witness clause for the recorded encoding.
-The four other recovery specializations are supplied below, including runtime signed bounds
-for independent domination. Its complete minimum-cardinality machine and resources are also
-supplied below.
-General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
-are supplied below. Proposition 7.6's width-three path-marker refinement, alternative
-encodings/admission and the independent paperwide audit remain open. The initial pair counter is still not an exact unmarked-set counter. ALL-main
-is not completed by this witness endpoint.
+The four other recovery specializations are supplied below, including runtime signed bounds for
+independent domination. Its complete minimum-cardinality machine and resources are also supplied
+below. General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree
+partitions are supplied below, as is Proposition 7.6's width-three path-marker refinement with
+sharp resources. Alternative encodings/admission and the independent paperwide audit remain open.
+The initial pair counter is still not an exact unmarked-set counter. ALL-main is not completed by
+this witness endpoint.
 
 ### Checked original graph solutions
 
@@ -1308,9 +1315,10 @@ negative conventional marking instances ensure completeness is not vacuous. Tiny
 selection/mark enumeration is test-only; production uses the certified sharp counter.
 
 This closes the augmented width-four exact-set clause. The source's shared path-marker
-width-three construction on at most $6v+a-1$ variables is still open; ordinary clause splitting
-would add too many variables. The remaining refined-construction and encoding/model-transfer
-inventory stays open; independent-domination optimum recovery is completed below.
+width-three construction on at most $6v+a-1$ variables is supplied in the next section, including
+count transport and sharp resources; it avoids the extra variables of ordinary clause splitting.
+The compact regular construction and independent-domination optimum recovery are completed below.
+Degree-rule optimization and encoding/model transfers remain in the paperwide inventory.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 
@@ -1384,7 +1392,8 @@ covered by the rounded clock, without a supplied dimension or runtime premise.
 $L^{O(1)}2^{O(\eta(v))}$ for $v\ge16$, with global polynomial workspace. No additional loglog
 factor is hidden. Together with the exact count and query budgets above, this closes the
 shared-marker refinement of Proposition 7.6 in the recorded native/encoding model. The combined
-ROADMAP entry retains Proposition C.2; broader encoding/model transfers remain separate.
+ROADMAP entry has been removed after the C.2 completion below; degree-rule optimization and
+broader encoding/model transfers remain separate.
 The reviewed width-four exact-set counter is unchanged.
 
 From the checkout root run:
@@ -1424,12 +1433,12 @@ exact regularity through the existing `IsSigmaRhoSet {d} Set.univ` predicate, an
 counts original selection words, with one word per original vertex set. For $d\ge1$,
 `query_budget` gives $N=2v-1$, width at most $d+2$, and at most
 $v^{d+2}+2(v+v^{d+1})$ clauses, with all literal indices checked. These are the compact **no-size**
-budgets ($a=0$), not a claim that the full size-constrained C.2 endpoint is complete.
+budgets ($a=0$); the following size frontend extends them to the complete C.2 endpoint.
 
-The actual signed size-test frontend, its functional gate/count transport and the complete
-native sharp-time/workspace composition remain open for C.2. The ROADMAP entry is retained.
-For $d=2$, the semantic predicate permits disjoint unions of cycles and imposes no connectivity
-condition. The empty selection is permitted, including on an empty graph.
+The following section supplies the signed size-test frontend, functional gate/count transport and
+complete native sharp-time/workspace composition. For $d=2$, the semantic predicate permits
+disjoint unions of cycles and imposes no connectivity condition. The empty selection is permitted,
+including on an empty graph.
 
 From the checkout root run:
 
@@ -1440,6 +1449,53 @@ scripts/build.sh CslibFrontierTests.PaperEndpoints.RegularInducedCore --wfail --
 The computed client checks degrees two and three on complete graphs, the empty graph, and a
 disjoint pair of triangles. It also checks actual emitted query declarations and widths.
 Selection-word enumeration occurs only in these tiny regression tests.
+
+### Compact regular subgraphs with signed input size bounds
+
+Import `CslibFrontier.Computability.Complexity.FineGrained.RegularInducedInterval` and open
+`Cslib.Logic.PL.RegularInducedInterval`. This completes Proposition C.2 (PDF pp.32–33) for each
+fixed $d\ge1$, including the previously missing degrees at least two. Input types and encodings
+are reused from `IndependentDominationInterval`: the original explicit matrix/unary declaration
+and two binary bounds, with `Signed` retaining unrestricted signed binary bounds.
+
+`build` adds only the actual functional cardinality gates to the compact degree core. Its
+`representation` and `plan_count` give exactly one full gate extension per accepted original
+selection, preserving every degree predicate on the same original bits. `Signed.plan_count`
+transports the actual query-count difference through binary signed normalization. Negative upper
+bounds and contradictory intervals count zero. Upper, lower and equality size tests are ordinary
+interval specializations; size always means original vertices, with no edge-count factor.
+
+For positive graphs, `query_count` gives two ordinary queries, and `Signed.query_budget` gives
+$N=2v+a-1$, width at most $d+2$, at most $6000v^{d+2}$ clauses and every literal index below $N$.
+Here $a$ is the size of the actually generated circuit, not an input promise, and
+$a\le952(v+1)$. The degree is fixed outside the input; no polynomial uniformity for a growing
+input degree is asserted. Empty graphs use a direct count of their sole empty selection.
+
+`Signed.exists_count_sharp_certificate` and `Signed.exists_count_realEta_certificate` compose
+actual signed normalization, fixed-degree neighbor enumeration, size gates, ordinary query
+writing, sequential native counting and binary reconstruction. The time is
+$L^{O_d(1)}2^{O_d(\eta(v))}$, with the real clock for $v\ge16$ and rounded bounds for every smaller
+graph. Polynomial workspace holds on all raw inputs; original graph semantics use the canonical
+simple-graph representation. The fixed-linear dimension rescaling uses the proved gate bound.
+No runtime/constructor/output contract is supplied, and no extra loglog factor is hidden.
+`Signed.exists_decide_realEta_certificate` supplies an actual yes/no interval decision with the
+same bounds. Its binary positivity test is charged using the producer's proved output/space
+bound. Setting the lower bound to $k$ and upper bound to $v$ tests existence of a regular set of
+at least $k$ vertices, regardless of whether the feasible family is monotone under inclusion.
+
+From the checkout root run:
+
+```bash
+scripts/build.sh CslibFrontierTests.PaperEndpoints.RegularInducedInterval --wfail --iofail
+```
+
+The computed client enumerates only tiny original selections and computes their unique gate
+traces, rather than enumerating auxiliaries. It checks exact/upper/lower intervals, contradictions,
+512-bit signed bounds, degree-three cliques, declared isolates, direct empty dispatch and sizes
+three/six/four on two disjoint triangles. It also checks the actual gate-dependent query metadata,
+a formal zero count for a contradictory compiled plan, and the native count/decision interfaces.
+The C.2 ROADMAP entry is removed; Theorem 7.3 optimization, encoding/model transfers and the
+independent paperwide audit remain open.
 
 ### Minimum independent-domination resources
 
@@ -1577,16 +1633,17 @@ durable theorem-by-theorem source inventory and completion criteria.
 
 ### Input-bounded labeled partitions and complete size-vector output
 
-Import `CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionDistribution`.
-Theorem 7.3 / Appendix C.2 (PDF pp.25,32) is supplied in the recorded explicit graph/native model.
-The label count $q$, finite/cofinite matrix and common positive cutoff are fixed; the original
-graph and **every** class's inclusive interval vary at runtime. No maximum-degree or connectivity
-promise is imposed. `Bounded.BinaryFrontend.ofGraph`
-(in `DegreePartition`) encodes an explicit simple graph with its unary declaration and a label-ordered
-list of binary natural bound pairs. Upper/lower/equality tests are interval specializations.
-Empty classes remain allowed when their lower bound is zero; contradictory bounds reject.
-The actual generator caps out-of-range thresholds before circuit materialization, so 512-bit bounds
-do not allocate a circuit proportional to their numeric magnitude.
+Import `CslibFrontier.Computability.Complexity.FineGrained.DegreePartitionDistribution`. The
+counting and size-vector clauses of Theorem 7.3 / Appendix C.2 (PDF pp.25,32) are supplied in the
+recorded explicit graph/native model. Native minimum/maximum extraction remains open. The label
+count $q$, finite/cofinite matrix and common positive cutoff are fixed; the original graph and
+**every** class's inclusive interval vary at runtime. No maximum-degree or connectivity promise is
+imposed. `Bounded.BinaryFrontend.ofGraph` (in `DegreePartition`) encodes an explicit simple graph
+with its unary declaration and a label-ordered list of binary natural bound pairs.
+Upper/lower/equality tests are interval specializations. Empty classes remain allowed when their
+lower bound is zero; contradictory bounds reject. The actual generator caps out-of-range
+thresholds before circuit materialization, so 512-bit bounds do not allocate a circuit
+proportional to their numeric magnitude.
 
 `Bounded.BinaryFrontend.build` relocates the existing no-test literals and appends the existing
 functional interval test for each original class word. Each class has $A=952(v+1)$ allocated gate
