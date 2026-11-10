@@ -89,18 +89,7 @@ theorem space_prepare_le (k s N b σ q : ℕ) :
   let B := Encoding.width k s b
   have hd : 0 < d := by omega
   have hB : 0 < B := Encoding.width_pos k s b
-  have ha := length_encNat_mono (alphabetSize_lt hd hB).le
-  have hp : 1 ≤ (fieldModulus d B).size :=
-    Nat.size_pos.mpr (fieldModulus_prime d B).pos
-  rw [length_encNat_eq_size, length_encNat_eq_size] at ha
-  have hregister := chunkCount_mul_fieldModulus_size_le hd hB
-  have hcells : chunkCount d B *
-      ((fieldModulus d B).size + (2 ^ chunkWidth d B).size + 1) ≤
-      12 * (B + chunkWidth d B) := by
-    calc
-      _ ≤ chunkCount d B * (3 * (fieldModulus d B).size) :=
-        Nat.mul_le_mul_left _ (by omega)
-      _ ≤ 12 * (B + chunkWidth d B) := by nlinarith
+  have hcells := chunkCount_mul_parameter_sizes_le hd hB
   have hm := chunkWidth_le d B
   have hwidth : B + chunkWidth d B ≤ 2 * B + d.size := by omega
   have htotal := Nat.mul_le_mul_left (16 * (d + 1)) hcells
