@@ -29,6 +29,11 @@ uses one fixed body emitter and static registers for the mutable state and count
 ## Main results
 
 * `iterationSum_eq`: the native grading rule's semantic sum is memory charge plus local work.
+* `loopEmit_entry`, `loopBody_tail`: the native loop's entry prologue and the control tail of one
+  iteration, shared by the deterministic, randomized and `while` loop realizations.
+* `bodyBank_layout`, `bodySlot_injective`, `stateSlot_ne_bodySlot`,
+  `regs_comp_append_eq_appendWords`, `loopEmit_not_readsWidth`: the body bank's register premises,
+  the state words read back as appended words, and width-freedom of the loop.
 * `Realizes.Witness.loopEmit_spec`: the loop emitter with additive per-iteration overhead.
 * `Realizes.Witness.iterateRuntime`, `Realizes.iterateRuntime`: one uniform body witness or
   certificate realizes a runtime-bounded loop.
@@ -176,7 +181,7 @@ theorem regs_comp_append_eq_appendWords (input : δ ↪ (Fin k → ℕ)) (output
 
 /-- A body bank `tmp ∘ btS` inside an injective scratch bank `tmp` meets the register hypotheses
 of the body's certificate, which reads the environment `env` and the state words `tmp ∘ stS`. -/
-theorem bodyBank_hyps {m p : ℕ} {frontier : Fin r} {env : Fin k → Fin r}
+theorem bodyBank_layout {m p : ℕ} {frontier : Fin r} {env : Fin k → Fin r}
     {tmp : Fin m → Fin r} {stS : Fin l → Fin m} {btS : Fin p → Fin m}
     (hi : Function.Injective tmp) (hbt : Function.Injective btS) (hsb : ∀ i j, stS i ≠ btS j)
     (hd : ∀ i j, env i ≠ tmp j) (hf : ∀ j, tmp j ≠ frontier) (hs : ∀ i, env i ≠ frontier) :
@@ -288,7 +293,7 @@ and every register outside the scratch bank keep their values. -/
 theorem loopBody_tail {n : ℕ} (frontier : Fin r) (tmp : Fin (l + (l + n + 3) + 1) → Fin r)
     (hi : Function.Injective tmp) (hf : ∀ j, tmp j ≠ frontier) (w j : ℕ) {y u : Data r}
     (hub : u.Bounded w) (hyc : y.regs (tmp (counterSlot l n)) = j + 1)
-    (huf : ∀ i, i ≠ frontier → (∀ j, tmp (bodySlot j) ≠ i) → u.regs i = y.regs i) :
+    (huf : ∀ i, i ≠ frontier → (∀ b, tmp (bodySlot b) ≠ i) → u.regs i = y.regs i) :
     ∃ y', ExecWithin (B := .exact) w
         (.seq (copyBank (fun i : Fin l => tmp (bodySlot (Fin.castAdd (n + 1) i)))
           (fun i => tmp (stateSlot i)) (tmp (zeroSlot l n))) <|
@@ -299,7 +304,7 @@ theorem loopBody_tail {n : ℕ} (frontier : Fin r) (tmp : Fin (l + (l + n + 3) +
       (∀ i, y'.regs (tmp (stateSlot i)) = u.regs (tmp (bodySlot (Fin.castAdd (n + 1) i)))) ∧
       y'.regs (tmp (counterSlot l n)) = j ∧
       y'.regs (tmp (zeroSlot l n)) = y.regs (tmp (zeroSlot l n)) ∧
-      ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y'.regs i = y.regs i := by
+      ∀ i, i ≠ frontier → (∀ b, tmp b ≠ i) → y'.regs i = y.regs i := by
   let st : Fin l → Fin r := fun i => tmp (stateSlot i)
   let ctr := tmp (counterSlot l n)
   let zero := tmp (zeroSlot l n)
@@ -396,7 +401,7 @@ theorem Witness.loopEmit_spec (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ 
   let bt : Fin (l + n + 1) → Fin r := fun i => tmp (bodySlot i)
   let env : Fin k → Fin r := fun i => src ⟨i.val, by omega⟩
   let bs := Fin.append env st
-  obtain ⟨hbt, hbdis, hbf, hbs⟩ := bodyBank_hyps (env := env) hi bodySlot_injective
+  obtain ⟨hbt, hbdis, hbf, hbs⟩ := bodyBank_layout (env := env) hi bodySlot_injective
     stateSlot_ne_bodySlot (fun _ _ => hd _ _) hf (fun _ => hs _)
   obtain ⟨hnw, hrun⟩ := he frontier bs bt hbt hbdis hbf hbs
   refine ⟨loopEmit_not_readsWidth emit hnw, ?_⟩

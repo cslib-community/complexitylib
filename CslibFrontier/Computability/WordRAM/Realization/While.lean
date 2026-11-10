@@ -252,7 +252,7 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
   have hbi : Function.Injective (whileBodySlot (l := l) (n := n)) := fun i j h =>
     Fin.ext (by have := congrArg Fin.val h; dsimp only [whileBodySlot] at this; omega)
   obtain ⟨hbt, hbdis, hbf, hbs⟩ :=
-    bodyBank_hyps (env := env) hi hbi hsb (fun _ _ => hd _ _) hf (fun _ => hs _)
+    bodyBank_layout (env := env) hi hbi hsb (fun _ _ => hd _ _) hf (fun _ => hs _)
   obtain ⟨hnw, hrun⟩ := he frontier bs bt hbt hbdis hbf hbs
   have houtdis : ∀ i j : Fin l, bt (Fin.castAdd (n + 1) i) ≠ st j :=
     fun i j => hi.ne (hsb j _).symm

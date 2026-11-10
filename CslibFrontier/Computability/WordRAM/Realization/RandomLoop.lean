@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Computability.WordRAM.Realization.Loop
 public import CslibFrontier.Computability.WordRAM.Realization.Random
 
-import CslibFrontier.Computability.WordRAM.SymbolicExec
 /-!
 # Runtime-bounded loops with private coins
 
@@ -72,7 +71,7 @@ theorem iterate (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ
   let bt : Fin (l + n + 1) → Fin r := fun i => tmp (bodySlot i)
   let env : Fin k → Fin r := fun i => src ⟨i.val, by omega⟩
   let bs := Fin.append env st
-  obtain ⟨hbt, hbdis, hbf, hbs⟩ := bodyBank_hyps (env := env) hi bodySlot_injective
+  obtain ⟨hbt, hbdis, hbf, hbs⟩ := bodyBank_layout (env := env) hi bodySlot_injective
     stateSlot_ne_bodySlot (fun _ _ => hd _ _) hf (fun _ => hs _)
   obtain ⟨hnw, hrun⟩ := he frontier bs bt hbt hbdis hbf hbs
   refine ⟨loopEmit_not_readsWidth emit hnw, ?_⟩
