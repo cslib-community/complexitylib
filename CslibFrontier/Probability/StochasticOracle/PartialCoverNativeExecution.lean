@@ -28,8 +28,9 @@ each occurrence, so repeated calls to an underlying oracle remain distinct.
 The theorem preserves the actual joint hidden state, raw report, bill and oracle
 duration. Local instructions are excluded from the source deadline (PDF p. 5).
 This codec does not claim universality for arbitrary external PTM/query encodings.
-General source conditional-success transfer from per-response reached-history
-envelopes is still separate from this execution law and its concrete correlated client.
+The conditional-success transfer and comparison with the source risk optimum
+are in the importing native-risk and native-optimum modules; external source
+encoding adapters remain separate.
 
 ## Main definitions
 

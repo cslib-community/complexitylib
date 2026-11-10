@@ -49,7 +49,7 @@ def finsetMinorIndexEquiv (n m : ℕ) :
     FinsetMinorIndex n m ≃
       {p : Finset (Fin n) × Finset (Fin m) // p.1.card = p.2.card} where
   toFun d := ⟨(d.rows, d.cols), d.card_eq⟩
-  invFun p := ⟨p.1.1, p.1.2, p.2⟩
+  invFun := fun ⟨(rows, cols), hcard⟩ => ⟨rows, cols, hcard⟩
   left_inv := by intro d; cases d; rfl
   right_inv := by intro p; cases p; rfl
 

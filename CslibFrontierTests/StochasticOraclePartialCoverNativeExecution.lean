@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeExecution
+import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeRisk
 import Mathlib.Tactic
 
 /-!
@@ -241,3 +241,57 @@ example :
   norm_num [proposals, List.ofFn_succ, decodeFamily, sourceIndices,
     List.filterMap_cons, List.filterMap_nil, Finset.univ_unique,
     List.finRange_succ, List.finRange_zero]
+
+
+private theorem valid : Valid input.system := by
+  constructor
+  · intro j; cases j <;> norm_num [input]
+  · intro e; cases e <;> norm_num [input]
+  · intro j; cases j <;> norm_num [elements, ground, input]
+
+private theorem eligibility : ∀ e : Fin input.planner.val.ground,
+    ∃ row ∈ input.planner.val.rows, row.mask[e.val]?.getD false = true := by
+  intro e
+  have he : e.val = 0 := by have := e.isLt; change e.val < 1 at this; omega
+  exact ⟨⟨99, [true], 1⟩, by simp [input], by simp [he]⟩
+
+-- The source optimum is finite here: two calls have risk 1/4 and total cost two.
+-- The finite oracle dimension is computed from a semireducible input encoding.
+set_option backward.isDefEq.respectTransparency false in
+example : riskOptimum input ≤ 2 := by
+  let row := GreedyNative.oracleAt input.planner.val 0
+  have hb : Benchmark input [row, row] := by
+    constructor
+    · intro r hr
+      have : r = row := by simpa using hr
+      subst r
+      simpa only [row, GreedyNative.oracleAt, input, List.getD, List.getElem?_cons_zero,
+        Option.getD_some, List.map_cons, List.map_nil] using
+          (List.mem_singleton_self
+            (Algorithms.Lean.Multicover.Native.interpret 1 ⟨99, [true], 1⟩))
+    · have hc := computed_risk input valid eligibility
+      simpa only [labels_two, List.map_cons, List.map_nil] using hc
+  exact (iInf_le_of_le ⟨[row, row], hb⟩ (by
+    norm_num [row, Algorithms.Lean.Multicover.bill, GreedyNative.oracleAt, input,
+      Algorithms.Lean.Multicover.Native.interpret]))
+
+-- The combined native bill/factor/OPT conclusion is for the actual correlated
+-- terminal law already shown above to emit the singleton mask with probability 3/4.
+example (outcome : Option (NativeReplyContext.Observation
+      (ServerState (GreedyNative.labels input.planner).length (Fin 4))))
+    (h : outcome ∈ ((NativeUnboundedExecution.terminal controller.program
+      (environment limits sample) ⟨controller.program.initialConfig (encoding input), memory⟩).map
+        (Option.map (NativeReplyContext.observe controller.context))).support) :
+    ∃ final, outcome = some final ∧
+      (tokenBill final.memory.events : ℝ≥0∞) ≤
+        ENNReal.ofReal (Asymptotics.factor (1 / 2) (1 / 4) 1) * riskOptimum input ∧
+      elapsed final.memory.events ≤ 1 := by
+  simpa only [input, limits, Rat.cast_div, Rat.cast_one, Rat.cast_ofNat] using
+    native_bill_le_riskOptimum input valid eligibility
+    (by intro row hr; simp only [input, List.mem_cons, List.not_mem_nil, or_false] at hr
+        subst row; norm_num)
+    (by norm_num [input]) limits sample 0 live (by norm_num [limits])
+    (by norm_num [limits]) (by
+      intro pair hp i
+      obtain ⟨a, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hp
+      exact invoice_cap a i) outcome h

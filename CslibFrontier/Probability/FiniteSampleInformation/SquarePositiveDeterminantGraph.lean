@@ -167,7 +167,7 @@ def positiveSingularBase :
 
 /-- The explicit coefficient assignment used to obtain a positive chart neighborhood. -/
 def graphBaseAssignment : DetCoeffVar m → ℝ :=
-  fun q => positiveSingularBase m q.1.1 q.1.2
+  fun ⟨(row, col), _⟩ => positiveSingularBase m row col
 
 lemma graphMinor_base :
     graphMinor m (graphBaseAssignment m) = positiveMinorBase m := by

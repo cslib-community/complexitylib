@@ -814,9 +814,10 @@ theorem standardMaximalPrefixSubmodule_eq_standardBasisPrefixSubmodule
 def cornerAppendIndex {n m : ℕ}
     (s : StandardMinorProductIndex (n + 1) (m + 1)) :
     StandardMinorProductIndex (n + 1) (m + 1) :=
-  ⟨s.1 ++ [cornerMinorIndex n m],
-    isStandardMinorList_append_corner s.2.1 s.2.2,
-    hasNoEmptyMinors_append_corner s.2.2⟩
+  let ⟨factors, hstandard, hnonempty⟩ := s
+  ⟨factors ++ [cornerMinorIndex n m],
+    isStandardMinorList_append_corner hstandard hnonempty,
+    hasNoEmptyMinors_append_corner hnonempty⟩
 
 lemma cornerAppendIndex_injective {n m : ℕ} :
     Function.Injective (cornerAppendIndex (n := n) (m := m)) := by

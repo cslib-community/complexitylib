@@ -383,11 +383,29 @@ in [the bibliography](../../references.bib). The checked clients are in
   correlated two-report oracle. It also checks the two-token/one-time-unit receipt,
   arbitrary finite reply words, and stopping before query on an empty computed plan.
   Run `lake build CslibFrontierTests.StochasticOraclePartialCoverNativeExecution`.
-  This execution law is not yet the general source conditional-success theorem:
-  the reached per-response envelopes must still be transported from arbitrary
-  joint receipts to the existing risk recurrence for this same controller.
-  The addressed binary-rational wire format also needs adapters to unrestricted
-  external source query/WSC encodings. Source WSC/subinstance codecs remain open.
+  [PartialCoverNativeRisk](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeRisk.lean)
+  constructs the per-response posterior kernels from the original joint receipt
+  sample. `native_risk` transfers their reached-history local certification and
+  coverage envelopes to the same controller's decoded tape output, retaining the
+  actual deadline event. `native_success` derives the computed plan's $1-\delta$
+  guarantee. No independence or supplied conditional-law identity is used; null
+  histories receive harmless prior completion. The input enforces that the planner
+  and original WSC ground sets agree.
+  [PartialCoverNativeOptimum](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeOptimum.lean)
+  defines `riskOptimum` over every risk-feasible repeated-call batch from the
+  original table. `native_bill_le_riskOptimum` bounds the actual terminal bill by
+  the source factor times this infimum, without assuming an optimum value,
+  integrability or total-cost bound. The native execution client applies that
+  combined theorem to the correlated oracle above and constructs a cost-two
+  feasible benchmark. The separate
+  [disintegration client](../../CslibFrontierTests/StochasticOraclePartialCoverDisintegration.lean)
+  derives positive conditional envelopes and the $3/4$ certified-risk bound from
+  a shared four-valued hidden seed, including conditional success probability
+  $1/2$ for the second report after the first failure. Instantiating the native
+  theorem's posterior-envelope premise for the compiled client remains separate.
+  These results retain the implemented binary-rational format, discrete joint
+  sample, computational live-entry condition and oracle-only deadline. External
+  source query/WSC encoding adapters and source WSC/subinstance codecs remain open.
   Set Cover approximation hardness is tracked in
   [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
   not supplied as a premise.

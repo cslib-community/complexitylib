@@ -37,7 +37,8 @@ variable (M : FiniteMDP S A) (π : MarkovPolicy S A)
 
 /-- Actual bandit-feedback law for a deterministic binary loss table. -/
 @[expose] def logLaw (loss : S → A → Bool) (z : S × A × Bool) : ℝ :=
-  M.initial z.1 * π.prob 0 z.1 z.2.1 * if z.2.2 = loss z.1 z.2.1 then 1 else 0
+  let (state, action, observed) := z
+  M.initial state * π.prob 0 state action * if observed = loss state action then 1 else 0
 
 /-- Independent repeated logs; the empty log has probability one. -/
 @[expose] def sampleLaw (loss : S → A → Bool) (T : ℕ)

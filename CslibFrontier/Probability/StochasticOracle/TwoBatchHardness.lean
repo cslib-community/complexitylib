@@ -78,11 +78,17 @@ structure Input where
 @[expose] def Input.instance (x : Input) : FullCoverInstance (Fin x.calls.length) ℚ where
   success i := callProbability (x.calls.get i)
   success_pos i := (x.valid _ (List.get_mem x.calls i)).1
-  success_lt_one i := (x.valid _ (List.get_mem x.calls i)).2.1
+  success_lt_one i := by
+    obtain ⟨_, hprob, _, _⟩ := x.valid _ (List.get_mem x.calls i)
+    exact hprob
   cost i := callCost (x.calls.get i)
-  cost_pos i := (x.valid _ (List.get_mem x.calls i)).2.2.1
+  cost_pos i := by
+    obtain ⟨_, _, hcost, _⟩ := x.valid _ (List.get_mem x.calls i)
+    exact hcost
   cutoff i := callCutoff (x.calls.get i)
-  cutoff_pos i := (x.valid _ (List.get_mem x.calls i)).2.2.2
+  cutoff_pos i := by
+    obtain ⟨_, _, _, hcutoff⟩ := x.valid _ (List.get_mem x.calls i)
+    exact hcutoff
 
 /-- Actual randomized-policy decision language for two-turn maximum-success selection. -/
 @[expose] def Decision : Set Input := {x | ∃ π : Policy (Fin x.calls.length) ℝ 2,

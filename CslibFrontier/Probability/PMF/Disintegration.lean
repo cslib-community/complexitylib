@@ -20,6 +20,7 @@ alphabet must be finite; PMF semantics still describes discrete laws.
 ## Main results
 
 * `posterior_factor`: the conditional joint mass is the original fiber mass.
+* `posterior_map_factor`: conditional observation probabilities factor the actual joint mass.
 * `posterior_bind`: every continuation has the original joint law after disintegration.
 -/
 
@@ -66,6 +67,24 @@ theorem posterior_factor (p : PMF S) (observe : S → H) (h : H) (s : S) :
         exact hp ((PMF.mem_support_map_iff _ _ _).mpr ⟨s, ht, hs⟩)
       exact hz'.symm
     · rfl
+
+/-- Conditioning a later observable factors the original joint observation mass.
+This does not require finite hidden storage, injective observations or independent samples. -/
+theorem posterior_map_factor (p : PMF S) (observe : S → H) (next : S → B)
+    (h : H) (b : B) :
+    p.map observe h * (posterior p observe h).map next b =
+      (p.map fun s => (observe s, next s)) (h, b) := by
+  classical
+  rw [PMF.map_apply next (posterior p observe h) b, ← ENNReal.tsum_mul_left,
+    PMF.map_apply (fun s => (observe s, next s)) p (h, b)]
+  apply tsum_congr
+  intro s
+  by_cases hb : b = next s
+  · simp only [hb, ite_true, posterior_factor]
+    by_cases hh : observe s = h
+    · simp [hh]
+    · simp [hh, Ne.symm hh]
+  · simp [hb, Prod.mk.injEq]
 
 /-- Disintegrating hidden state before any observation-dependent continuation
 preserves the entire resulting law, with no supplied conditional-law identity. -/

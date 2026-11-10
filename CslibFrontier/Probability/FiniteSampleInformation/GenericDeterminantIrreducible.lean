@@ -231,7 +231,7 @@ def swapZeroOne {n : ℕ} (hn : 0 < n) : Equiv.Perm (Fin (n + 1)) :=
 
 /-- Specialize the pivot coefficient variables to a transposition matrix. -/
 def swapCoeffAssignment {n : ℕ} (hn : 0 < n) : DetCoeffVar n → K :=
-  fun q => (swapZeroOne hn).permMatrix K q.1.1 q.1.2
+  fun ⟨(row, col), _⟩ => (swapZeroOne hn).permMatrix K row col
 
 lemma eval_lowerDet_swap_eq_zero {n : ℕ} (hn : 0 < n) :
     MvPolynomial.eval (swapCoeffAssignment (K := K) hn) (lowerDet K n) = 0 := by
