@@ -56,10 +56,13 @@ This module bridges the two layers without introducing a third intermediate inte
 
 3. **Combined Lemma 4.7 → Proposition 3.4 existence theorem (`exists_countingDesign_of_scopes`):**
    Under the algebraic Lemma 4.7 hypotheses on `scope : F → Finset (Fin n)` with `0 < τ ≤ 1 / 2`,
-   there exists a concrete `D : Cslib.LinearAlgebra.ReplacementDesign scope Q r A₀ R τ` whose
-   induced `D.toCountingDesign` satisfies Proposition 3.4's Hermite jet recovery, restricted-slice
-   measurement-fiber factorization, and exponential domain-examination bounds while preserving all
-   Lemma 4.5–4.7 incidence, copy, denominator, and coefficient-norm bounds.
+   for each `s : Finset F` there exists a concrete
+   `D : Cslib.LinearAlgebra.ReplacementDesign scope Q r A₀ R τ` satisfying the bounds of the
+   statement, whose integer replacement rows are `commonDenom Q R` times the rows of
+   `D.toCountingDesign s`. That design is a `Cslib.ReplacementCounting.Design`, so
+   Proposition 3.4's Hermite jet recovery, restricted-slice measurement-fiber factorization, and
+   exponential domain-examination bounds apply to it; the statement itself asserts only that a
+   design with these parameters exists, and mentions `D.toCountingDesign s` in the row identity.
    Formal bit-length and native runtime-cost bounds remain separate.
 
 ## Main definitions
@@ -594,12 +597,18 @@ variable {Q r A₀ R n : ℕ}
 /-- **Lemma 4.7 → Definition 3.1 / Proposition 3.4 existence bridge**
 ([OpenAI2026ETH], Definition 3.1, Proposition 3.4, and Lemma 4.7, pp. 21–25, 33–34):
 Under the algebraic Lemma 4.7 hypotheses on `scope : F → Finset (Fin n)` with `0 < τ ≤ 1 / 2`,
-there exists a concrete `D : ReplacementDesign scope Q r A₀ R τ` whose canonical
-`D.toCountingDesign s hr hR hRQ hτ_pos hτ_le` is a valid `Cslib.ReplacementCounting.Design` for
-every `s : Finset F` (automatically inheriting `Design.targetSum_eq_of_taylorJet_jetOrder`,
+for each `s : Finset F` there exists a concrete `D : ReplacementDesign scope Q r A₀ R τ`
+satisfying the bounds stated below (on `D.h`, on the assignment of factors with empty scope, and on
+the `ℓ₁` coefficient norms of its integer replacement rows), whose integer replacement rows are
+`commonDenom Q R` times the rows of `D.toCountingDesign s hr hR hRQ hτ_pos hτ_le`.
+
+The statement fixes `s` before `D`, and its `Nonempty` conjunct asserts only that some
+`Cslib.ReplacementCounting.Design` with these parameters exists, without naming it. The proof takes
+`D` from `exists_replacementDesign`, independently of `s`, and uses `D.toCountingDesign s …` as that
+design; since `toCountingDesign` is defined for every `D` and `s`, the same `D` serves every `s`,
+and `Design.targetSum_eq_of_taylorJet_jetOrder`,
 `Design.sum_restricted_shiftedFactor_eq_sum_measurement_fibers`, and
-`Design.domainExaminationBound_le_mul_exp_threeTermExponent` while preserving all Lemma 4.5–4.7
-incidence, copy, denominator, and `ℓ₁` coefficient norm bounds on `D`). -/
+`Design.domainExaminationBound_le_mul_exp_threeTermExponent` apply to it. -/
 theorem exists_countingDesign_of_scopes {F : Type*} [Fintype F]
     (scope : F → Finset (Fin n)) (s : Finset F) {Q r A₀ R b w : ℕ} {τ : ℚ}
     (hn : 1 ≤ n) (hb_pos : 1 ≤ b) (hw_pos : 1 ≤ w)
