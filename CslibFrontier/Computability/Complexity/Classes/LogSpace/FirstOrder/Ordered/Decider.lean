@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # Deterministic deciders of ordered queries
@@ -135,9 +136,7 @@ theorem mem_L_of_decidingBlock {S : Set EncodedStructure} {C : ℕ → ℕ → �
         ((blockDecider v C c s).Running (((encStructure a).length + 1) ^ (v.maxArity + k)))
         (4 + 6 * v.count, regs₁)
         (if a.1 < 2 then 6 + 6 * v.count + c else 5 + 6 * v.count, regs₁) := by
-      refine Reaches.lt hguard hB₁ ?_
-      simp only [eval_reg, eval_const, h0₁ hwf]
-      exact Reaches.refl _
+      cp_step [h0₁ hwf]
     by_cases hn : 2 ≤ a.1
     · rw [ite_eq_right (Nat.not_lt.mpr hn)] at hreachGuard
       obtain ⟨res, regs₂, hres, hreach₂, hB₂⟩ := hblock a hwf hn _ _ _ _ regs₁ hcomp
