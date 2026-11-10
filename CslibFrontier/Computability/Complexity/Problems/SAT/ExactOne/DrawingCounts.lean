@@ -77,7 +77,7 @@ theorem positiveDrawing_edgeCount (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
       (SAT.incidenceGraph (CNF.PositiveExactOneCompile.formula φ)).2.length := by
   rw [CNF.PositiveExactOneCompile.formula, SAT.incidenceGraph_compact,
     SAT.length_edges_incidenceGraph]
-  change ((positivePlacedClauses φ d).flatMap fun c => c.2.2).length = _
+  change ((positivePlacedClauses φ d).flatMap fun pc => pc.routes).length = _
   rw [← positivePlacedClauses_formula φ d, CNF.length_vars, List.length_flatMap, List.map_map]
   congr 1
   apply List.map_congr_left

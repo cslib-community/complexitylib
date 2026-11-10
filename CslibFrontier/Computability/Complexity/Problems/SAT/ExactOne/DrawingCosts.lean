@@ -104,14 +104,14 @@ private theorem positiveDrawing_weight (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
       (φ.zipIdx.map fun a => ((clauseGeometry φ d a.2 a.1).incidenceRoutes.map fun e =>
         weight (positiveIncidenceRoute φ d a.2 a.1 e)).sum).sum := by
   have hlocal (c : Clause ℕ) (i : ℕ) :
-      (((positiveClauseBlock φ d i c).flatMap fun a => a.2.2).map weight).sum =
+      (((positiveClauseBlock φ d i c).flatMap fun pc => pc.routes).map weight).sum =
         ((clauseGeometry φ d i c).incidenceRoutes.map fun e =>
           weight (positiveIncidenceRoute φ d i c e)).sum := by
     have he := congrArg (fun es => (es.map fun e =>
       weight (positiveIncidenceRoute φ d i c e)).sum) (clause_routes_grouped φ d i c)
-    simpa only [positiveClauseBlock, List.flatMap_map, List.map_flatMap, List.map_map,
-      Function.comp_def] using he
-  change (((positivePlacedClauses φ d).flatMap fun c => c.2.2).map weight).sum = _
+    simpa only [positiveClauseBlock, PositivePlacedClause.routes, List.flatMap_map,
+      List.map_flatMap, List.map_map, Function.comp_def] using he
+  change (((positivePlacedClauses φ d).flatMap fun pc => pc.routes).map weight).sum = _
   rw [positivePlacedClauses, List.flatMap_assoc, List.map_flatMap]
   rw [List.flatMap_def, List.sum_flatten, List.map_map]
   apply congrArg List.sum

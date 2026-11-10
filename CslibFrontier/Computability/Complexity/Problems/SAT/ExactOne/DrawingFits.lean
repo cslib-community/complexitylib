@@ -204,7 +204,7 @@ private theorem actual_variablePoint_bounds {φ : CNF ℕ} {d : Graph.Orthogonal
 private theorem actual_clausePoint_bounds {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     {W H : ℕ} (hd : Graph.drawingFits d W H) {pc : PositivePlacedClause}
     (hpc : pc ∈ positivePlacedClauses φ d) :
-    Rect (1080000 * (W + 1)) (1080000 * (H + 1)) pc.2.1 := by
+    Rect (1080000 * (W + 1)) (1080000 * (H + 1)) pc.point := by
   obtain ⟨⟨c, i⟩, _, hpc⟩ := List.mem_flatMap.mp hpc
   obtain ⟨⟨a, j⟩, _, rfl⟩ := List.mem_map.mp hpc
   exact placed_point_bounds (input_position_bounds hd _ _)

@@ -47,14 +47,15 @@ def positiveFormulaDrawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
     ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []
 
 private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
-    (hc : ∀ pc ∈ pcs, pc.2.2.length = pc.1.length) :
+    (hc : ∀ pc ∈ pcs, pc.routes.length = pc.clause.length) :
     ((Cslib.Logic.PL.occurrences (pcs.map Prod.fst)).map fun o =>
-      (pcs.getD o.1 ([], (0, 0), [])).2.2.getD o.2.1 []) = pcs.flatMap fun pc => pc.2.2 := by
+      (pcs.getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []) =
+        pcs.flatMap fun pc => pc.routes := by
   rw [Cslib.Logic.PL.occurrences, List.zipIdx_map]
   simp only [List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def]
-  have he : pcs.flatMap (fun pc => pc.2.2) =
-      pcs.zipIdx.flatMap (fun pc => pc.1.2.2) := by
-    have h := congrArg (List.flatMap (fun pc : PositivePlacedClause => pc.2.2))
+  have he : pcs.flatMap (fun pc => pc.routes) =
+      pcs.zipIdx.flatMap (fun pc => pc.1.routes) := by
+    have h := congrArg (List.flatMap (fun pc : PositivePlacedClause => pc.routes))
       (List.zipIdx_map_fst (l := pcs) (i := 0))
     simpa only [List.flatMap_map, Function.comp_def] using h.symm
   rw [he]
@@ -64,7 +65,7 @@ private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
   rintro ⟨pc, i⟩ hi
   obtain ⟨hi', hpc⟩ := List.mem_zipIdx' hi
   have hg : pcs.getD i ([], (0, 0), []) = pc := (List.getD_eq_getElem _ _ hi').trans hpc.symm
-  change pc.1.zipIdx.map (fun x => (pcs.getD i ([], (0, 0), [])).2.2.getD x.2 []) = _
+  change pc.1.zipIdx.map (fun x => (pcs.getD i ([], (0, 0), [])).routes.getD x.2 []) = _
   rw [hg]
   exact List.map_getD_zipIdx pc.1 pc.2.2 [] (hc pc (List.fst_mem_of_mem_zipIdx hi))
 
@@ -74,7 +75,7 @@ theorem positiveFormulaDrawing_drawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
   apply Prod.ext
   · rfl
   · change ((Cslib.Logic.PL.occurrences (CNF.PositiveExactOneCompile.rawFormula φ)).map
-      fun o => ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).2.2.getD o.2.1 []) = _
+      fun o => ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []) = _
     rw [← positivePlacedClauses_formula φ d]
     exact placed_occurrence_routes _ (fun pc hpc => positivePlacedClauses_route_count φ d hpc)
 
@@ -92,22 +93,23 @@ theorem positiveFormulaDrawing_occurrence (φ : CNF ℕ) (d : Graph.OrthogonalDr
     omega
   let pc := (positivePlacedClauses φ d)[o.1]
   have hpc : pc ∈ positivePlacedClauses φ d := List.getElem_mem hip
-  have hec : pc.1 = (CNF.PositiveExactOneCompile.rawFormula φ)[o.1] := by
+  have hec : pc.clause = (CNF.PositiveExactOneCompile.rawFormula φ)[o.1] := by
     have h := congrArg (fun cs => cs.getD o.1 []) (positivePlacedClauses_formula φ d)
     simpa only [List.getD_eq_getElem _ _ (show o.1 <
       ((positivePlacedClauses φ d).map Prod.fst).length by simpa using hip), List.getElem_map,
       List.getD_eq_getElem _ _ hi] using h
-  have hjp : o.2.1 < pc.1.length := by simpa only [hec] using hj
-  have hjr : o.2.1 < pc.2.2.length := by rw [positivePlacedClauses_route_count φ d hpc]; exact hjp
+  have hjp : o.2.1 < pc.clause.length := by simpa only [hec] using hj
+  have hjr : o.2.1 < pc.routes.length := by
+    rw [positivePlacedClauses_route_count φ d hpc]; exact hjp
   refine ⟨pc, hpc, ?_, ?_⟩
-  · change pc.2.1 = ((positivePlacedClauses φ d).map (fun pc => pc.2.1)).getD o.1 (0, 0)
+  · change pc.point = ((positivePlacedClauses φ d).map (fun pc => pc.point)).getD o.1 (0, 0)
     rw [List.getD_eq_getElem _ _ (by simpa using hip), List.getElem_map]
-  · have hr : (positiveFormulaDrawing φ d).incidenceRoute o = pc.2.2[o.2.1] := by
-      change ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).2.2.getD o.2.1 [] = _
+  · have hr : (positiveFormulaDrawing φ d).incidenceRoute o = pc.routes[o.2.1] := by
+      change ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 [] = _
       rw [List.getD_eq_getElem _ _ hip, List.getD_eq_getElem _ _ hjr]
-    have hli : o.2.2 = pc.1[o.2.1] := by grind
+    have hli : o.2.2 = pc.clause[o.2.1] := by grind
     rw [hr, hli]
-    have hz := List.getElem_mem (l := pc.1.zip pc.2.2) (n := o.2.1)
+    have hz := List.getElem_mem (l := pc.clause.zip pc.routes) (n := o.2.1)
       (by simp only [List.length_zip]; omega)
     rw [List.getElem_zip] at hz
     exact hz
