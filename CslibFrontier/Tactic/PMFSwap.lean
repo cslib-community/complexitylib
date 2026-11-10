@@ -24,14 +24,15 @@ The tactics here match samples by their distributions instead of their positions
 ending in `PMF.pure`, `PMF.map` or another distribution, the normal form of `simp only [pmf_norm]`.
 It brings a sample of the right side that the left side draws independently of its earlier samples
 to the front of both sides, by `PMF.bind_comm`, strips it, and continues with the continuations.
-Samples of the same distribution may be matched in any order: the tactic searches, within a fixed
-budget, for an order in which the two sides become equal up to reducible unfolding, and then closes
-the goal. Otherwise it strips common samples and leaves the equation of the remaining continuations,
-with the stripped samples as variables. It first strips samples whose distribution occurs once on
-each side, which have only one possible partner, and then the first matches of the others.
-`pmf_swap with x y` strips exactly two samples and names them; plain `pmf_swap` strips every sample
-it can. It fails when it can strip no sample, listing the samples of both sides and marking those
-that depend on earlier ones, which cannot move.
+Samples of the same distribution may be matched in any order: the tactic searches for an order in
+which the two sides become equal up to reducible unfolding, and then closes the goal. The search
+has a budget, renewed after stripping each sample with a single possible partner, and the tactic
+fails when it runs out. If no order works, it strips common samples and leaves the equation of the
+remaining continuations, with the stripped samples as variables. It first strips samples whose
+distribution occurs once on each side, which have only one possible partner, and then the first
+matches of the others. `pmf_swap with x y` skips the search and strips exactly two samples, naming
+them; plain `pmf_swap` strips every sample it can. It fails when it can strip no sample, listing
+the samples of both sides and marking those that depend on earlier ones, which cannot move.
 
 `pmf_hoist q` moves every sample of the distribution `q` in the goal, or in a hypothesis with
 `at h`, as far toward the front of its chain as its independence allows. It works anywhere in the
@@ -187,9 +188,13 @@ private def combine (lhs rhs q f hl hr h : Expr) : MetaM Expr := do
   let pf ← mkEqTrans (← mkEqTrans hl hmid) (← mkEqSymm hr)
   mkExpectedTypeHint pf (← mkEq lhs rhs)
 
+/-- The number of steps of `search` for the goal and again after each forced alignment. -/
+private def searchBudget : Nat := 256
+
 /-- Search for a proof of `lhs = rhs` that aligns the samples of the two sides until the remaining
 continuations are reducibly equal, trying every matching sample of the other side. Each call
-spends one unit of `fuel`. -/
+spends one unit of `fuel`; when `fuel` reaches zero the search gives up, so `none` with no fuel
+left means that the budget ran out, not that no matching exists. -/
 private partial def search (fuel : IO.Ref Nat) (lhs rhs : Expr) : MetaM (Option Expr) := do
   if (← fuel.get) == 0 then return none
   fuel.modify (· - 1)
@@ -205,14 +210,17 @@ private partial def search (fuel : IO.Ref Nat) (lhs rhs : Expr) : MetaM (Option 
   return none
 
 /-- Strip one common sample from both sides of the goal `lhs = rhs` and introduce it as a variable
-named `name?`, or an inaccessible one. A forced alignment comes first; otherwise the first sample of
-`rhs` that `lhs` also draws. Returns the new goal, or `none` when no sample can be aligned. -/
-private def peel? (goal : MVarId) (name? : Option Name) : MetaM (Option MVarId) :=
+named `name?`, or an inaccessible one. A forced alignment comes first; otherwise, unless
+`forcedOnly`, the first sample of `rhs` that `lhs` also draws. Returns the new goal, or `none` when
+no sample can be aligned. -/
+private def peel? (goal : MVarId) (name? : Option Name) (forcedOnly := false) :
+    MetaM (Option MVarId) :=
   goal.withContext do
     let some (_, lhs, rhs) := (← instantiateMVars (← goal.getType)).cleanupAnnotations.eq?
       | return none
     let some a ← (do
         if let some a ← forced? lhs rhs then return some a
+        if forcedOnly then return none
         return (← alignments lhs rhs)[0]?) | return none
     let (q, f, g, hl, hr) ← realize lhs rhs a
     let ty ← withBody f fun x fx => do mkForallFVars #[x] (← mkEq fx (g.beta #[x]))
@@ -222,6 +230,35 @@ private def peel? (goal : MVarId) (name? : Option Name) : MetaM (Option MVarId) 
       | some n => m.mvarId!.intro n
       | none => m.mvarId!.intro1
     return some goal'
+
+/-- The outcome of trying to close a goal by `search`. -/
+private inductive Closed where
+  /-- The goal is closed. -/
+  | closed
+  /-- No order of the samples makes the two sides equal. -/
+  | noMatching
+  /-- The budget ran out, and no remaining sample has a single possible partner. -/
+  | outOfBudget
+
+/-- Close the goal `g` by `search`. When the budget runs out, strip a sample with a single possible
+partner, which every matching aligns the same way, and search the rest with a fresh budget. -/
+private partial def closeGo (g : MVarId) : MetaM Closed := g.withContext do
+  let some (_, lhs, rhs) := (← instantiateMVars (← g.getType)).cleanupAnnotations.eq?
+    | return .noMatching
+  let fuel ← IO.mkRef searchBudget
+  if let some pf ← search fuel lhs rhs then
+    g.assign pf
+    return .closed
+  if (← fuel.get) != 0 then return .noMatching
+  let some g' ← peel? g none (forcedOnly := true) | return .outOfBudget
+  closeGo g'
+
+/-- Close the goal by `search`, as `closeGo`, assigning it only when it is closed. -/
+private def close (goal : MVarId) : MetaM Closed := do
+  let s ← saveState
+  let r ← closeGo goal
+  unless r matches .closed do s.restore
+  return r
 
 /-- The distributions sampled by the chain `e`, each marked when it depends on an earlier sample. -/
 private partial def chainMsgs (e : Expr) (earlier : Array Expr := #[]) :
@@ -252,12 +289,14 @@ earlier samples to the front of both, by `PMF.bind_comm`, strips it, and continu
 matched by their distributions, up to reducible unfolding, not by position.
 
 If the samples can be matched so that the two sides become equal, up to reducible unfolding, the
-goal is closed; samples of the same distribution are tried in every order, within a fixed budget.
-Otherwise `pmf_swap` strips common samples and leaves the equation of what remains, with the
+goal is closed; samples of the same distribution are tried in every order. The search has a budget
+of 256 steps, renewed after stripping each sample whose distribution occurs once on each side, and
+the tactic fails when the budget runs out with no such sample left. If no order makes the sides
+equal, `pmf_swap` strips common samples and leaves the equation of what remains, with the
 stripped samples as variables: first the samples whose distribution occurs once on each side, then
-the first match of each remaining sample of the right side. `pmf_swap with x y` strips exactly two
-samples, named in the order they are stripped, and fails if it cannot; plain `pmf_swap` strips
-every sample it can, and fails when it can strip none. -/
+the first match of each remaining sample of the right side, and fails when it can strip none.
+`pmf_swap with x y` skips the search and strips exactly two samples in the same way, named in the
+order they are stripped, and fails if it cannot. -/
 syntax (name := pmfSwap) "pmf_swap" (" with" (ppSpace colGt binderIdent)+)? : tactic
 
 @[inherit_doc pmfSwap]
@@ -274,11 +313,13 @@ elab_rules : tactic
       unless (← whnfR ty).isAppOf ``PMF do
         throwError "pmf_swap: the goal is an equation in{indentExpr ty}\n\
           not an equation of distributions `PMF α`"
-      let fuel ← IO.mkRef 256
-      if let some pf ← search fuel lhs rhs then
-        goal.assign pf
-        replaceMainGoal []
-        return
+      if names.isEmpty then
+        match ← close goal with
+        | .closed => replaceMainGoal []; return
+        | .outOfBudget => throwError "pmf_swap: the search for an order of the samples ran out \
+            of its budget of {searchBudget} steps.\nStrip samples with `pmf_swap with x …`, or \
+            reorder them with `pmf_hoist` or `PMF.bind_comm`, to leave fewer samples to match."
+        | .noMatching => pure ()
       let mut g := goal
       let mut i := 0
       repeat

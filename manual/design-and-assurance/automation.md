@@ -227,10 +227,14 @@ Two experiments that draw the same independent samples in different orders have 
 Import `CslibFrontier.Tactic.PMFSwap` and, after `simp only [pmf_norm]`, prove the equation with
 `pmf_swap`. It matches the samples of the two sides by their distributions, not their positions,
 moves them to the front with `PMF.bind_comm` and strips them. It closes the goal when the remaining
-continuations agree up to reducible unfolding, trying the matches of repeated distributions within
-a fixed budget; `simp [PMF.bind_comm]` instead loops on two samples of one distribution. Otherwise
-it strips the common samples, first those whose distribution occurs once on each side, and leaves
-the equation of the continuations. `pmf_swap with x y` strips exactly two samples and names them.
+continuations agree up to reducible unfolding, trying the matches of repeated distributions; `simp
+[PMF.bind_comm]` instead loops on two samples of one distribution. That search has a budget of 256
+steps, renewed after stripping each sample whose distribution occurs once on each side. When it
+runs out, `pmf_swap` fails rather than guess an order: many samples of one distribution, such as
+six drawn in reverse order, exceed it. Then strip or reorder some samples first. If no order makes
+the sides agree, it strips the common samples, first those whose distribution occurs once on each
+side, and leaves the equation of the continuations. `pmf_swap with x y` skips the search, strips
+exactly two samples the same way and names them.
 
 When both sides draw the same distributions and differ only in what they return, the goal does
 not determine which sample to strip. Choose it with `pmf_hoist q`, which moves the samples of `q`

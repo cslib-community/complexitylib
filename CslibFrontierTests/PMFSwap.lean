@@ -63,6 +63,46 @@ example (p : PMF α) (q : PMF β) (f g : α → β → PMF γ) :
     (p.bind fun a => q.bind fun b => f a b) = q.bind fun b => p.bind fun a => g a b := by
   pmf_swap with b a c
 
+-- `with` skips the search: it strips the named samples even when the search would close the goal.
+example (p : PMF α) (q : PMF β) (f : α → β → PMF γ) :
+    (p.bind fun a => q.bind fun b => f a b) = q.bind fun b => p.bind fun a => f a b := by
+  pmf_swap with b a
+  rfl
+
+-- The search has a budget. Six samples of one distribution, reversed, exceed it, and the tactic
+-- fails instead of stripping samples in an order that leaves a false equation.
+/--
+error: pmf_swap: the search for an order of the samples ran out of its budget of 256 steps.
+Strip samples with `pmf_swap with x …`, or reorder them with `pmf_hoist` or `PMF.bind_comm`, to leave fewer samples to match.
+-/
+#guard_msgs in
+example (c : PMF α) (f : α → α → α → α → α → α → PMF β) :
+    (c.bind fun a₁ => c.bind fun a₂ => c.bind fun a₃ => c.bind fun a₄ => c.bind fun a₅ =>
+      c.bind fun a₆ => f a₁ a₂ a₃ a₄ a₅ a₆) =
+      c.bind fun b₁ => c.bind fun b₂ => c.bind fun b₃ => c.bind fun b₄ => c.bind fun b₅ =>
+        c.bind fun b₆ => f b₆ b₅ b₄ b₃ b₂ b₁ := by
+  pmf_swap
+
+-- Monad notation must be normalized first.
+/--
+error: pmf_swap: both sides must be chains of `PMF.bind`; normalize them with `simp only [pmf_norm]` first.
+Left side:
+  do
+    let a ← p
+    let b ← q
+    pure (f a b)
+Right side:
+  do
+    let b ← q
+    let a ← p
+    pure (f a b)
+-/
+#guard_msgs in
+example (p : PMF α) (q : PMF β) (f : α → β → γ) :
+    (do let a ← p; let b ← q; pure (f a b) : PMF γ) =
+      (do let b ← q; let a ← p; pure (f a b) : PMF γ) := by
+  pmf_swap
+
 -- A goal produced by `simp only [pmf_norm]` from monad notation.
 example (p : PMF α) (q : PMF β) (f : α → β → γ) :
     (do let a ← p; let b ← q; pure (f a b) : PMF γ) =
