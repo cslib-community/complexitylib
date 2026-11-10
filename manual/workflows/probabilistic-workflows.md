@@ -84,7 +84,9 @@ indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
 box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
-`PMF.bernoulli` is deprecated.
+`PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
+`ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
+[Entropy/Fano.lean](../../CslibFrontier/Probability/Entropy/Fano.lean) is its entropy `h₂(p)`.
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
 rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
