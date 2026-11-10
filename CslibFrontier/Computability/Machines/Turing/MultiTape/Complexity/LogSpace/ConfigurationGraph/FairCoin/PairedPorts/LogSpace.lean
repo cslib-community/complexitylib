@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunPropFinite
 import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.Nat.Size
@@ -650,7 +651,7 @@ private theorem computableInLogSpace_portGuard (k D d P : ℕ) :
   have htest : ComputableInSpace
       (fun z : NAP => decide (napId z < E * (napLen z + 1) + 1 ∧ napPort z < Nat.size P + 1))
       encNAP encBool fun z => (encNAP z).length := by
-    refine (and_inSpace
+    refine (budget_boolAnd
       (budget_natLt hla_s
         (budget_natSucc (budget_natMul (budget_const E (.refl _)) (budget_natSucc hln_s))))
       (budget_natLt hlp_s (budget_const (Nat.size P + 1) (.refl _)))).of_enc_eq fun z => ?_
