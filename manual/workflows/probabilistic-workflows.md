@@ -1,6 +1,6 @@
 # Work with randomized and oracle programs
 
-Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [complexitylib][complexitylib]
+Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
 ## Transport a distribution bound through a map
 
@@ -74,10 +74,22 @@ conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Cheb
 `∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
-satisfying `P` and the remaining coordinates form two independent products.
+satisfying `P` and the remaining coordinates form two independent products. Its corollaries
+`pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
+coordinates satisfying `P`, or reading it along an injection `e` of index types as
+`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
+counting tuples when the factors are not uniform. `pi_map_curry` in
+[Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
+indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
+[Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
+box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+[PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
+`PMF.bernoulli` is deprecated.
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
-rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
+rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
+and curry independent coins of different biases, and compute the probability that three coins all
+show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
@@ -89,6 +101,22 @@ event (these short names need `open Cslib.Probability`), rather than converting 
 [checked examples](../../CslibFrontierTests/ProbabilityNotation.lean) bound a program and a set event.
 Run `scripts/build.sh CslibFrontierTests.ProbabilityNotation`.
 
+Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
+`ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
+[PMF/Finiteness.lean](../../CslibFrontier/Probability/PMF/Finiteness.lean) and discharge each side
+condition with `by finiteness`, in place, instead of assembling it from `ENNReal.add_ne_top`,
+`ENNReal.sum_ne_top` and `PMF.apply_ne_top`. The module makes Mathlib's `finiteness` know that a
+mass `p a`, an event probability `p.toOuterMeasure s` and a finite sum of finite terms are finite;
+Mathlib already covers sums, products, powers, casts and inverses of nonzero terms, and local
+hypotheses. A factor with no such reason, such as an arbitrary `x : ℝ≥0∞`, makes it fail, often
+only after Aesop's rule-application limit; add a hypothesis `x ≠ ∞` or prove that factor
+separately. Each call costs roughly 100 to 700 heartbeats of Aesop search and positivity, so
+where the explicit term is a single `PMF.apply_ne_top _ _` keep the term. To compare success
+probabilities, import [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
+`apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
+`Game.succProbability`. The [checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover
+each rule and the failure.
+
 ## Count the fair coins used by an exact sampler
 
 Import [DDGTree.lean](../../CslibFrontier/Probability/DDGTree.lean) to describe an exact sampler as
@@ -98,7 +126,7 @@ outcome-labelled leaf, and it may be infinite. A `DDGTree α` is given by its pr
 `n` fair bits, where `none` means "still running". `T.Generates p` states that the eventual output
 has law `p`. `T.expectedFlips` is the tail sum `∑ₙ P(T > n)`. For trees that halt almost surely,
 `expectedFlips_eq_tsum_mul` converts it to `∑ₖ (k + 1) P(T = k + 1)`, and
-`tendsto_run_none_of_generates` shows that every generator of a finite distribution halts almost
+`tendsto_run_none_of_generates` shows that every generator of a `PMF` distribution halts almost
 surely. A tree that fails to halt with positive probability has `expectedFlips = ⊤`
 (`expectedFlips_eq_top`). `T.output <$> BitString.sampleList n` is the same experiment written as a
 `ProbComp`; its `eval` is `T.run n`.
@@ -371,14 +399,24 @@ The bound comes from two lemmas in
 [MvPolynomial/SchwartzZippel.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SchwartzZippel.lean):
 `MvPolynomial.schwartz_zippel_totalDegree_fintype` extends Mathlib's Schwartz–Zippel lemma from
 the variables `Fin n` to any finite type, and `MvPolynomial.totalDegree_det_le` bounds the total
-degree of a determinant of polynomials. Use them for other symbolic-determinant tests.
+degree of a determinant of polynomials. Use them for other symbolic-determinant tests. The same
+module has two consequences. `MvPolynomial.exists_eval_ne_zero_of_totalDegree_lt_card` finds a
+nonvanishing point of `S ^ σ` when the total degree is below `|S|`; the `exists_det_…_ne_zero`
+theorems use it. `MvPolynomial.card_filter_eval_eq_zero_mul_card_le` is the counting form over a
+finite domain, `#zeros * q ≤ d * q ^ n`. For one variable under a uniform `PMF`,
+[PMF/PolynomialAgreement.lean](../../CslibFrontier/Probability/PMF/PolynomialAgreement.lean) has
+`Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_eval_eq`: two distinct polynomials of
+degree at most `d` agree at a uniform point with probability at most `d / |R|`. The round
+soundness proofs of the sum-check and GKR protocols use it.
 
 The [checked clients](../../CslibFrontierTests/EdmondsMatching.lean) compute the `2 × 2`
 determinant of the complete graph, apply the test to a graph whose right vertex `1` is
 unmatched, and show that values from the one-element set `{0}` miss the matching of a single edge.
-The bound `|V| < |S|` comes from Schwartz–Zippel and is not sharp in general: the determinant has
-degree at most `1` in each variable, so over an integral domain any `S` with two elements detects a
-perfect matching (not formalized). Run
+The hypothesis `|V| < |S|` is not sharp. `exists_det_edmondsEval_ne_zero` applies Mathlib's
+`MvPolynomial.eq_zero_of_eval_zero_at_prod_finset` with the total degree `|V|` as a crude bound on
+each variable's degree. The determinant has degree at most `1` in each variable, so the same lemma
+shows that over an integral domain any `S` with two elements detects a perfect matching (not
+formalized). Run
 `scripts/build.sh CslibFrontierTests.EdmondsMatching`.
 
 For a general graph, import [Matching/Tutte.lean](../../CslibFrontier/Algorithms/Matching/Tutte.lean).
@@ -1018,6 +1056,32 @@ substituted and maps pushed into the continuations: the shape that `PMF.bind_con
 `PMF.bind_apply` and the support lemmas expect. The set is curated, so later steps may rely on its
 normal form; it does not unfold support membership or probability masses. The checked examples in
 [PMFNorm.lean](../../CslibFrontierTests/PMFNorm.lean) show the normal form of each kind of term.
+To prove that two normal forms differ only in the order of independent samples, use `pmf_swap`
+([Reorder independent samples](../design-and-assurance/automation.md#reorder-independent-samples)).
+
+## Invert a support membership
+
+A proof that starts from `h : x ∈ m.support` usually needs the intermediate results that produced
+`x`. Import [SuppCases.lean](../../CslibFrontier/Tactic/SuppCases.lean) in the proof and call
+`supp_cases h with ⟨a, ha, b, hb, rfl⟩`. It rewrites `h` through every `bind`, `map`, `pure`,
+`if` and uniform draw of `m`, for a `PMF`, `ProbComp.eval`, or `OracleComp.supportWith` and
+`OracleComp.support` (so `ProbComp`), into existentials in program order, then applies the
+`rcases` pattern. A uniform draw contributes only its witness, a returned pair is split into its
+components, and a conditional becomes a disjunction, so a pattern such as `⟨-, h⟩ | ⟨-, h⟩` splits
+it. Without `with`, `supp_cases h` destructures completely, substitutes every equation that has a
+local variable on one side and closes the goal when two different constructors are equated, such
+as `false = true`; the names it introduces are inaccessible, so use this form when the rest of the
+proof refers to hypotheses only by type, through `‹_›`, `assumption` or `omega`.
+
+When `m` is a definition or a local `let`, pass it as in `supp_cases h [realRoundHandler]` or
+`supp_cases h [ν_det]`; the same list takes a hypothesis that decides a condition. The tactic fails
+when `h` is not a support membership, and when `supp_norm` cannot rewrite it, usually because
+something needs unfolding first. `simp only [supp_norm] at h` gives the rewritten form without
+destructuring it. Membership in a `dite` and an `ExecRand` derivation are not covered; induct on
+the derivation and call `supp_cases` in each case, as the proofs in
+[Structured.lean](../../CslibFrontier/Computability/WordRAM/Randomized/Structured.lean) do. The
+checked examples, including the failure messages, are in
+[SuppCases.lean](../../CslibFrontierTests/SuppCases.lean).
 
 ## Certify a closed randomized routine
 
@@ -1060,6 +1124,24 @@ example (test : List Bool × Bool × ℕ → Bool)
 <!-- /worked-example -->
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
+
+`ppt` pays a search cost at every call, even on small goals. When a file certifies many inverters or reductions, or `ppt` fails on an adversary call whose inputs need preparation, compose the rules directly. Start with `IsPPTOn.isPPT`, then bind each sampled word with `(ComputableInPolyTime.sampleList h).bind_with`. Call the adversary through `IsPPT.preprocess`, which takes separate tidy certificates for the parameter and auxiliary input; `ComputableInPolyTime.tidy` converts plain ones. Close the deterministic leaves with `fun_prop`. The more general `IsPPTOn.preprocess` takes one certificate for the pair. Given `.prod` of two projections, it cannot infer the preparation function, so `fun_prop` meets goals with unassigned metavariables. The [InaccessibleEntropy client](../../CslibFrontierTests/Crypto/InaccessibleEntropy.lean) checks this pattern on a small inverter:
+
+<!-- excerpt: ppt-explicit-adversary-call -->
+```lean
+example {A : ℕ → List Bool → ProbComp (List Bool)} (hA : IsPPT encBits A) :
+    IsPPT encBits (fun n y => do
+      let pad ← Cslib.BitString.sampleList n
+      let raw ← A n (y ++ pad)
+      return raw.take n) := by
+  apply IsPPTOn.isPPT
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
+```
+
+The inverters in the [InaccessibleEntropy development](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/OneWay.lean) are certified this way. In November 2026 a `ppt` call there cost about 11,000–14,000 heartbeats even on small goals, against a few hundred for the explicit proof. Without the right definition hints, a call could exhaust Aesop's rule limit.
 
 ## Bound a centered-binomial sampler tail
 
@@ -1115,6 +1197,8 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 <!-- /worked-example -->
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
+
+When the allowance is polynomially bounded but not conveniently computed, apply `IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded` instead (the uniform-clock form is `IsOraclePPT.run_interpret_preprocess_open_of_polyBounded` in [Oracle/Parameter.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Parameter.lean)). Its `hresources` premise is only `PolyBounded` growth of `resources caller request` in the length of the encoded caller–request pair, so no unary computation of the allowance is needed; both certificate variants are derived from it. The other premises are unchanged: the invariant must still hold for every handler result in the support under every external oracle, and the allowance must still bound each reply and the added encoded state. [`isPPTOn_run_signingOracle`](../../CslibFrontier/Crypto/Computational/WordSignature.lean) is a checked client: it proves the allowance's growth with `growth_poly` from the lengths of the secret key and the request.
 
 ## Derive adaptive decapsulation security
 
@@ -1177,7 +1261,7 @@ provides it for every seed, while the simple split map needs real keys of length
 The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
 postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
 
-When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) rather than `KEMFromPKE.lean`. That module supplies `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`) together with the deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); random-oracle IND-CCA security games and reductions are not included in this module.
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); multi-hop game transitions from `eagerIndCcaGame` to `simHitProb` via fallback-seed decoupling and `δ`-correctness bad-event bounds remain separate.
 
 ## Certify a list accumulator
 
@@ -1815,8 +1899,7 @@ it does not supply nonzero detector variation or finite-walk mixing error.
 
 Full well-founded approximate evaluation remains open: later pilot/correction iterations,
 general finite bin sums, recursive closure and growth, copy routing, native workspace and
-RL=L are not supplied by this single-bin first-pilot fragment. This partial construction is not
-a selected headline abstract.
+RL=L are not supplied by this single-bin first-pilot fragment.
 
 The regressions additionally check a correlated detector moment of
 `1/32`, a distinct child normalization `1/16`, and nonconstant padded frame source/rank

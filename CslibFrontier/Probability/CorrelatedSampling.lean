@@ -11,6 +11,7 @@ public import Cslib.Probability.StatisticalDistance
 public import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Data.Finset.Max
 
 /-!
@@ -421,8 +422,7 @@ theorem agree_ge (i j : I) :
     have hi := firstIn_of_firstIn_union hl.symm hc.1
     have hj := firstIn_of_firstIn_union (union_comm (region P i) _ ▸ hl.symm) hc.2
     simp [sample, hi, hj]
-  refine le_trans ?_ (ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono (μ := (shared P).toOuterMeasure) hsub))
+  refine le_trans ?_ (PMF.toOuterMeasure_toReal_mono (shared P) hsub)
   rw [toOuterMeasure_firstIn_union, ← ENNReal.ofNNReal_finsetSum, ← ENNReal.ofNNReal_finsetSum,
     sum_weight_region_inter, sum_weight_region_union, ENNReal.toReal_mul, ENNReal.toReal_inv,
     ENNReal.coe_toReal, ENNReal.coe_toReal, NNReal.coe_sum, NNReal.coe_sum, ← div_eq_mul_inv]

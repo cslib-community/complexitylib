@@ -11,6 +11,7 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph
 public import Mathlib.Combinatorics.SimpleGraph.Acyclic
 public import Mathlib.Combinatorics.SimpleGraph.Bipartite
 public import Mathlib.Combinatorics.SimpleGraph.CycleGraph
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Combinatorics.SimpleGraph.Coloring.Constructions
 
 /-!
@@ -91,9 +92,8 @@ theorem definedGraph_cycleArcFormula_adj_fin (x y : Fin m) :
     (definedGraph (Fin m) cycleArcFormula).Adj x y ↔ (x : ℕ) ≠ y ∧
       ((x : ℕ) + 1 = y ∨ ((x : ℕ) + 1 = m ∧ (y : ℕ) = 0) ∨
         (y : ℕ) + 1 = x ∨ ((y : ℕ) + 1 = m ∧ (x : ℕ) = 0)) := by
-  simp only [definedGraph_adj, cycleArcFormula, Formula.realize_sup, Formula.realize_inf,
-    realize_covByFormula_fin, realize_isTopFormula_fin, realize_isBotFormula_fin,
-    Matrix.cons_val_zero, Matrix.cons_val_one, ne_eq, Fin.val_inj, or_assoc]
+  fo_simp [definedGraph_adj, cycleArcFormula, realize_covByFormula_fin, realize_isTopFormula_fin,
+    realize_isBotFormula_fin, Fin.val_inj, or_assoc]
 
 /-- On `Fin m`, `cycleArcFormula` defines Mathlib's cycle graph `SimpleGraph.cycleGraph m`. -/
 theorem definedGraph_cycleArcFormula_fin :

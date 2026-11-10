@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Serial
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.CompleteSender
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Complete senders in the common serial world
@@ -133,7 +134,7 @@ private theorem run_senderSchedule {Output : Type} (k : ℕ) (choices : List Boo
           (senderSchedule choices)) program).run 0) {} =
       (ProbComp.eval (sessionProgram k program)).map (fun (out, s) =>
         ((out, s.tables.length), senderStore choices s)) := by
-  have h := ProbOracleComp.run_interpret_map_state
+  have h := ProbOracleComp.runWith_map_state
     (fun request (s : Session) => PMF.pure ([], s.advance k request))
     (scheduledHandler k choices) (fun s => (s.tables.length, senderStore choices s))
     (fun request s => by
@@ -142,10 +143,8 @@ private theorem run_senderSchedule {Output : Type} (k : ℕ) (choices : List Boo
   have hh := congrArg (PMF.map (fun (out, index, store) => ((out, index), store))) h
   rw [PMF.map_comp] at hh
   delta scheduledHandler at hh
-  dsimp only [ProbOracleComp.runWith, OracleComp.runWith] at hh
-  simp only [ProbOracleComp.runWith, OracleComp.runWith]
-  rw [ProbOracleComp.run_interpret_run_interpret]
-  simp only [sessionProgram, ProbOracleComp.eval_run_interpret, ProbComp.eval_pure,
+  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [sessionProgram, ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure,
     Function.comp_def, Session.initial, senderStore, senderReceipts,
     List.zip_nil_left, List.map_nil,
     List.length_nil] at hh ⊢
@@ -181,8 +180,8 @@ theorem eval_senderAdapter {Output : Type} (k : ℕ)
     (program : WordOracleComp SenderOperation Output) :
     (world k).eval (senderAdapter k program) = ProbComp.eval (completeSenderReal k program) := by
   rw [Interactive.World.eval, senderAdapter, ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_sample, BitString.eval_sampleList, BitString.uniformList,
-    PMF.bind_map, PMF.map_comp, Function.comp_def, PMF.map_bind]
+  simp only [pmf_norm, ProbOracleComp.runWith_sample, BitString.eval_sampleList,
+    BitString.uniformList]
   simp_rw [run_senderTail k (List.ofFn _) List.length_ofFn program]
   rw [eval_completeSenderReal]
   simp only [PMF.map, PMF.monad_bind_eq_bind,

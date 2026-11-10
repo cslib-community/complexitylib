@@ -2,9 +2,6 @@
  "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/ClauseNetworkPolyTime.lean": {
   "encPair (encList encNat) (encList encNat)": 3
  },
- "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/DescribedContraction.lean": {
-  "encPair (encList encNat) ?1": 4
- },
  "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/IncidenceEntryPolyTime.lean": {
   "encList (encPair encNat encNat)": 3
  },
@@ -98,9 +95,6 @@
  },
  "CslibFrontier/Computability/Probabilistic/Memoize.lean": {
   "encList (encPair ?1 ?2)": 4
- },
- "CslibFrontier/Computability/Probabilistic/Oracle/Parameter.lean": {
-  "encPair ?1 (encPair (encPair ?2 encBits) ?3)": 4
  },
  "CslibFrontier/Computability/WordRAM/Native.lean": {
   "encPair encUnary (encPi encNat)": 11

@@ -186,68 +186,65 @@ private theorem abs_recipProdVal_le {x : ℕ → ℤ} (hx : IsSignedStream x)
       ≤ 1 * (3 / 64) := mul_le_mul hβ he (abs_nonneg _) (by norm_num)
     _ = 3 / 64 := one_mul _
 
+/-- Certificate for `recipProdStream = diffDigit N`: its value is bounded by `1` and `N` is a scaled
+approximation of it. -/
+private theorem recipProdStream_certificate {x : ℕ → ℤ} (hx : IsSignedStream x)
+    (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
+    |(recipBeta x t : ℝ) * streamVal (suffixStream x (recipCutoff t))| ≤ 1 ∧
+      IsScaledApprox ((recipBeta x t : ℝ) * streamVal (suffixStream x (recipCutoff t)))
+        (mulApprox (ratStream (recipBeta x t)) (suffixStream x (recipCutoff t))) := by
+  have hm := mulApprox_isScaledApprox (ratStream_isSignedStream (abs_recipBeta_le_one hx hx_mem t))
+    (suffixStream_isSignedStream hx (recipCutoff t))
+  rw [streamVal_ratStream (abs_recipBeta_le_one hx hx_mem t)] at hm
+  exact ⟨(abs_recipProdVal_le hx hx_mem t).trans (by norm_num), hm⟩
+
 theorem recipProdStream_isSignedStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
-    IsSignedStream (recipProdStream x t) := by
-  unfold recipProdStream
-  have hβ := ratStream_isSignedStream (abs_recipBeta_le_one hx hx_mem t)
-  have hsuff := suffixStream_isSignedStream hx (recipCutoff t)
-  have hm := mulApprox_isScaledApprox hβ hsuff
-  rw [streamVal_ratStream (abs_recipBeta_le_one hx hx_mem t)] at hm
-  have hbound : |(recipBeta x t : ℝ) * streamVal (suffixStream x (recipCutoff t))| ≤ 1 :=
-    (abs_recipProdVal_le hx hx_mem t).trans (by norm_num)
-  exact diffDigit_isSignedStream hbound hm
+    IsSignedStream (recipProdStream x t) :=
+  diffDigit_isSignedStream (recipProdStream_certificate hx hx_mem t).1
+    (recipProdStream_certificate hx hx_mem t).2
 
 theorem streamVal_recipProdStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
     streamVal (recipProdStream x t) =
       (recipBeta x t : ℝ) * (streamVal x - (recipPrefixRat x t : ℝ)) := by
-  unfold recipProdStream
-  have hβ := ratStream_isSignedStream (abs_recipBeta_le_one hx hx_mem t)
-  have hsuff := suffixStream_isSignedStream hx (recipCutoff t)
-  have hm := mulApprox_isScaledApprox hβ hsuff
-  rw [streamVal_ratStream (abs_recipBeta_le_one hx hx_mem t)] at hm
-  have hbound : |(recipBeta x t : ℝ) * streamVal (suffixStream x (recipCutoff t))| ≤ 1 :=
-    (abs_recipProdVal_le hx hx_mem t).trans (by norm_num)
-  rw [streamVal_diffDigit hbound hm, streamVal_suffixStream hx, ← recipPrefixRat_cast]
+  obtain ⟨hbound, hm⟩ := recipProdStream_certificate hx hx_mem t
+  rw [recipProdStream, streamVal_diffDigit hbound hm, streamVal_suffixStream hx,
+    ← recipPrefixRat_cast]
 
-theorem recipHalfStream_isSignedStream {x : ℕ → ℤ} (hx : IsSignedStream x)
+/-- Certificate for `recipHalfStream = diffDigit N`: its value is bounded by `1` and `N` is a scaled
+approximation of it. -/
+private theorem recipHalfStream_certificate {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
-    IsSignedStream (recipHalfStream x t) := by
-  unfold recipHalfStream
-  have hα := ratStream_isSignedStream (abs_recipAlpha_le_one hx hx_mem t)
-  have hp := recipProdStream_isSignedStream hx hx_mem t
-  have havg := pairAvgApprox_isScaledApprox hα hp
+    |((recipAlpha x t : ℝ) + streamVal (recipProdStream x t)) / 2| ≤ 1 ∧
+      IsScaledApprox (((recipAlpha x t : ℝ) + streamVal (recipProdStream x t)) / 2)
+        (pairAvgApprox (ratStream (recipAlpha x t)) (recipProdStream x t)) := by
+  have havg := pairAvgApprox_isScaledApprox
+    (ratStream_isSignedStream (abs_recipAlpha_le_one hx hx_mem t))
+    (recipProdStream_isSignedStream hx hx_mem t)
   rw [streamVal_ratStream (abs_recipAlpha_le_one hx hx_mem t)] at havg
+  refine ⟨?_, havg⟩
   have hα_le : |(recipAlpha x t : ℝ)| ≤ 1 := by exact_mod_cast abs_recipAlpha_le_one hx hx_mem t
   have hp_le : |streamVal (recipProdStream x t)| ≤ 3 / 64 := by
     rw [streamVal_recipProdStream hx hx_mem t, recipPrefixRat_cast, ← streamVal_suffixStream hx]
     exact abs_recipProdVal_le hx hx_mem t
-  have hbound : |((recipAlpha x t : ℝ) + streamVal (recipProdStream x t)) / 2| ≤ 1 := by
-    rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
-    have htri := abs_add_le (recipAlpha x t : ℝ) (streamVal (recipProdStream x t))
-    linarith
-  exact diffDigit_isSignedStream hbound havg
+  rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+  have htri := abs_add_le (recipAlpha x t : ℝ) (streamVal (recipProdStream x t))
+  linarith
+
+theorem recipHalfStream_isSignedStream {x : ℕ → ℤ} (hx : IsSignedStream x)
+    (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
+    IsSignedStream (recipHalfStream x t) :=
+  diffDigit_isSignedStream (recipHalfStream_certificate hx hx_mem t).1
+    (recipHalfStream_certificate hx hx_mem t).2
 
 theorem streamVal_recipHalfStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
     streamVal (recipHalfStream x t) =
       ((recipAlpha x t : ℝ) +
         (recipBeta x t : ℝ) * (streamVal x - (recipPrefixRat x t : ℝ))) / 2 := by
-  unfold recipHalfStream
-  have hα := ratStream_isSignedStream (abs_recipAlpha_le_one hx hx_mem t)
-  have hp := recipProdStream_isSignedStream hx hx_mem t
-  have havg := pairAvgApprox_isScaledApprox hα hp
-  rw [streamVal_ratStream (abs_recipAlpha_le_one hx hx_mem t)] at havg
-  have hα_le : |(recipAlpha x t : ℝ)| ≤ 1 := by exact_mod_cast abs_recipAlpha_le_one hx hx_mem t
-  have hp_le : |streamVal (recipProdStream x t)| ≤ 3 / 64 := by
-    rw [streamVal_recipProdStream hx hx_mem t, recipPrefixRat_cast, ← streamVal_suffixStream hx]
-    exact abs_recipProdVal_le hx hx_mem t
-  have hbound : |((recipAlpha x t : ℝ) + streamVal (recipProdStream x t)) / 2| ≤ 1 := by
-    rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
-    have htri := abs_add_le (recipAlpha x t : ℝ) (streamVal (recipProdStream x t))
-    linarith
-  rw [streamVal_diffDigit hbound havg, streamVal_recipProdStream hx hx_mem t]
+  obtain ⟨hbound, havg⟩ := recipHalfStream_certificate hx hx_mem t
+  rw [recipHalfStream, streamVal_diffDigit hbound havg, streamVal_recipProdStream hx hx_mem t]
 
 private theorem abs_recipTaylor_remainder_le {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) (t : ℕ) :
@@ -359,25 +356,26 @@ theorem recip64Approx_isScaledApprox {x : ℕ → ℤ} (hx : IsSignedStream x)
     simpa only [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)] using hrem
   linarith
 
+/-- The target value `1 / (64 * streamVal x)` of `recip64Stream` is bounded by `1`. -/
+private theorem abs_one_div_sixtyfour_mul_le_one {x : ℕ → ℤ}
+    (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) :
+    |1 / (64 * streamVal x)| ≤ 1 := by
+  have hx_pos : 0 < streamVal x := by linarith [hx_mem.1]
+  rw [abs_of_pos (by positivity)]
+  have hden : (16 : ℝ) ≤ 64 * streamVal x := by linarith [hx_mem.1]
+  exact (one_div_le_one_div_of_le (by norm_num) hden).trans (by norm_num)
+
 theorem recip64Stream_isSignedStream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) :
-    IsSignedStream (recip64Stream x) := by
-  have hz : |1 / (64 * streamVal x)| ≤ 1 := by
-    have hx_pos : 0 < streamVal x := by linarith [hx_mem.1]
-    rw [abs_of_pos (by positivity)]
-    have hden : (16 : ℝ) ≤ 64 * streamVal x := by linarith [hx_mem.1]
-    exact (one_div_le_one_div_of_le (by norm_num) hden).trans (by norm_num)
-  exact diffDigit_isSignedStream hz (recip64Approx_isScaledApprox hx hx_mem)
+    IsSignedStream (recip64Stream x) :=
+  diffDigit_isSignedStream (abs_one_div_sixtyfour_mul_le_one hx_mem)
+    (recip64Approx_isScaledApprox hx hx_mem)
 
 theorem streamVal_recip64Stream {x : ℕ → ℤ} (hx : IsSignedStream x)
     (hx_mem : streamVal x ∈ Set.Icc (1 / 4 : ℝ) 1) :
-    streamVal (recip64Stream x) = 1 / (64 * streamVal x) := by
-  have hz : |1 / (64 * streamVal x)| ≤ 1 := by
-    have hx_pos : 0 < streamVal x := by linarith [hx_mem.1]
-    rw [abs_of_pos (by positivity)]
-    have hden : (16 : ℝ) ≤ 64 * streamVal x := by linarith [hx_mem.1]
-    exact (one_div_le_one_div_of_le (by norm_num) hden).trans (by norm_num)
-  exact streamVal_diffDigit hz (recip64Approx_isScaledApprox hx hx_mem)
+    streamVal (recip64Stream x) = 1 / (64 * streamVal x) :=
+  streamVal_diffDigit (abs_one_div_sixtyfour_mul_le_one hx_mem)
+    (recip64Approx_isScaledApprox hx hx_mem)
 
 theorem recip64Approx_emod_eq (x : ℕ → ℤ) (t q : ℕ) :
     recip64Approx x t % (2 : ℤ) ^ q =
@@ -572,9 +570,8 @@ private theorem dyadicSwitch_eq_zero_of_le {k : ℕ} {w : ℝ} (hw : w ≤ (2 : 
   unfold dyadicSwitch Cslib.polynomialSwitch4
   apply Cslib.polynomialTransition4_of_nonpos
   have hden : 0 < (2 : ℝ) ^ (k + 1) - (2 : ℝ) ^ k := by
-    have hp : (2 : ℝ) ^ (k + 1) = 2 * (2 : ℝ) ^ k := by ring
-    have hk : 0 < (2 : ℝ) ^ k := by positivity
-    linarith
+    rw [pow_succ]
+    linarith [pow_pos (two_pos : (0 : ℝ) < 2) k]
   exact div_nonpos_of_nonpos_of_nonneg (by linarith) hden.le
 
 private theorem dyadicSwitch_eq_one_of_ge {k : ℕ} {w : ℝ} (hw : (2 : ℝ) ^ (k + 1) ≤ w) :
@@ -582,10 +579,22 @@ private theorem dyadicSwitch_eq_one_of_ge {k : ℕ} {w : ℝ} (hw : (2 : ℝ) ^ 
   unfold dyadicSwitch Cslib.polynomialSwitch4
   apply Cslib.polynomialTransition4_of_one_le
   have hden : 0 < (2 : ℝ) ^ (k + 1) - (2 : ℝ) ^ k := by
-    have hp : (2 : ℝ) ^ (k + 1) = 2 * (2 : ℝ) ^ k := by ring
-    have hk : 0 < (2 : ℝ) ^ k := by positivity
-    linarith
+    rw [pow_succ]
+    linarith [pow_pos (two_pos : (0 : ℝ) < 2) k]
   exact (one_le_div hden).mpr (by linarith)
+
+/-- Closing step of `scaled_mem_Icc_of_dyadicWeight_ne_zero` for `r ≠ 0`: if
+`2 ^ (r - 1) < w ≤ 2 ^ (r + 1)`, then `w / 2 ^ (r + 1) ∈ [1 / 4, 1]`. -/
+private theorem scaled_mem_Icc_of_two_pow_pred_lt {r : ℕ} {w : ℝ} (hr0 : r ≠ 0)
+    (hlo : (2 : ℝ) ^ (r - 1) < w) (hhi : w ≤ (2 : ℝ) ^ (r + 1)) :
+    w / (2 : ℝ) ^ (r + 1) ∈ Set.Icc (1 / 4 : ℝ) 1 := by
+  have hr_pow : (2 : ℝ) ^ (r + 1) = 4 * (2 : ℝ) ^ (r - 1) := by
+    have hr_eq : r + 1 = 2 + (r - 1) := by omega
+    rw [hr_eq, pow_add]
+    norm_num
+  refine ⟨?_, (div_le_one (by positivity)).mpr hhi⟩
+  rw [le_div_iff₀ (by positivity), hr_pow]
+  linarith
 
 /-- Whenever `dyadicWeight m r w ≠ 0` on `w ∈ [1, 2 ^ (m + 1)]`, the scaled argument
 `w / 2 ^ (r + 1)` automatically lies in `[1 / 4, 1]`. -/
@@ -631,14 +640,7 @@ theorem scaled_mem_Icc_of_dyadicWeight_ne_zero {m r : ℕ} {w : ℝ}
           have hs2 := dyadicSwitch_eq_one_of_ge hge
           unfold dyadicWeight at hne
           simp [hm_ne, hr0, hrm, hs1, hs2] at hne
-        have hr_pow : (2 : ℝ) ^ (r + 1) = 4 * (2 : ℝ) ^ (r - 1) := by
-          have hr_eq : r + 1 = 2 + (r - 1) := by omega
-          rw [hr_eq, pow_add]
-          norm_num
-        refine ⟨?_, ?_⟩
-        · rw [le_div_iff₀ (by positivity), hr_pow]
-          linarith
-        · exact (div_le_one (by positivity)).mpr hlt_hi.le
+        exact scaled_mem_Icc_of_two_pow_pred_lt hr0 hgt_lo hlt_hi.le
       · by_cases hreq : r = m
         · subst hreq
           have hgt_lo : (2 : ℝ) ^ (r - 1) < w := by
@@ -647,14 +649,7 @@ theorem scaled_mem_Icc_of_dyadicWeight_ne_zero {m r : ℕ} {w : ℝ}
             have hs1 := dyadicSwitch_eq_zero_of_le hle
             unfold dyadicWeight at hne
             simp [hm_ne, hs1] at hne
-          have hr_pow : (2 : ℝ) ^ (r + 1) = 4 * (2 : ℝ) ^ (r - 1) := by
-            have hr_eq : r + 1 = 2 + (r - 1) := by omega
-            rw [hr_eq, pow_add]
-            norm_num
-          refine ⟨?_, ?_⟩
-          · rw [le_div_iff₀ (by positivity), hr_pow]
-            linarith
-          · exact (div_le_one (by positivity)).mpr hw_hi
+          exact scaled_mem_Icc_of_two_pow_pred_lt hr0 hgt_lo hw_hi
         · unfold dyadicWeight at hne
           simp [hm_ne, hr0, hrm, hreq] at hne
 

@@ -232,13 +232,8 @@ matching: some choice of them makes the Tutte matrix nonsingular. -/
 theorem exists_det_tutteEval_ne_zero [IsDomain R] {M : G.Subgraph} (hM : M.IsPerfectMatching)
     {S : Finset R} (hS : Fintype.card V < #S) :
     ∃ r : Sym2 V → R, (∀ e, r e ∈ S) ∧ (tutteEval G r).det ≠ 0 := by
-  classical
-  by_contra! h
-  have hb := card_det_tutteEval_eq_zero_div_le G hM S
-  rw [filter_true_of_mem fun r hr => h r (Fintype.mem_piFinset.1 hr), Fintype.card_piFinset,
-    prod_const, card_univ] at hb
-  have hpos : (0 : ℚ≥0) < #S := by exact_mod_cast (Nat.zero_le _).trans_lt hS
-  rw [Nat.cast_pow, div_self (pow_ne_zero _ hpos.ne'), le_div_iff₀ hpos, one_mul] at hb
-  exact absurd hb (not_le.2 (by exact_mod_cast hS))
+  simp_rw [det_tutteEval]
+  exact exists_eval_ne_zero_of_totalDegree_lt_card (det_tutteMatrix_ne_zero G hM)
+    ((totalDegree_det_tutteMatrix_le G).trans_lt hS)
 
 end Cslib.Algorithms.Matching

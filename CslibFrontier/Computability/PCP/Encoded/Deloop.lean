@@ -98,8 +98,7 @@ theorem countP_deloop (g : Graph (α → α → Bool)) (τ : ℕ → α) :
     (deloop g).edges.countP (fun d => !d.constraint (τ d.src) (τ d.dst)) =
       g.edges.countP (fun d => !d.constraint (τ (2 * d.src)) (τ (2 * d.dst))) := by
   rw [deloop, List.countP_map]
-  congr 1
-  funext d
+  congr 1 with d : 1
   simp only [Function.comp_apply, deloopEdge]
   split
   · rename_i h

@@ -220,8 +220,7 @@ def consEdge {k : ℕ} (d : Edge (β → γ)) (e : Edge ((Fin k → β) → Fin 
 theorem repEdge_cons {k : ℕ} (d : Edge (β → γ)) (e : Fin k → Edge (β → γ)) :
     repEdge (Fin.cons d e : Fin (k + 1) → Edge (β → γ)) = consEdge d (repEdge e) := by
   simp only [repEdge, consEdge, tupleCode, Fin.cons_zero]
-  congr 1
-  funext a i
+  congr 1 with a i : 2
   refine Fin.cases ?_ (fun j => ?_) i <;> simp [Fin.tail]
 
 /-- The edges of the `(k + 1)`-fold repetition, by prepending each edge to each edge of the
@@ -229,10 +228,8 @@ theorem repEdge_cons {k : ℕ} (d : Edge (β → γ)) (e : Fin k → Edge (β �
 theorem edges_pow_succ (k : ℕ) (g : Graph (β → γ)) :
     (pow (k + 1) g).edges = g.edges.flatMap fun d => (pow k g).edges.map (consEdge d) := by
   simp only [edges_pow, tuples, List.map_flatMap, List.map_map]
-  congr 1
-  funext d
-  congr 1
-  funext e
+  congr 1 with d : 1
+  congr 1 with e : 1
   exact repEdge_cons d e
 
 /-- The repetition of a well-formed instance is well formed: the numbers of tuples of declared

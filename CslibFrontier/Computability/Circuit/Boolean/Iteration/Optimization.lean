@@ -49,6 +49,12 @@ circuits of polynomial size give fixed powers of polynomial times half-exponenti
 
 namespace Cslib.Circuits.Boolean.Iteration
 
+/-- The polynomial overhead `(n + 1) ^ 3` is at most the fixed-power budget, for every parameter
+`L`. -/
+theorem cube_le_powerBudget (n s M L : ℕ) : (n + 1) ^ 3 ≤ powerBudget n s M L := by
+  unfold powerBudget
+  exact (Nat.le_mul_of_pos_right _ (Nat.succ_pos _)).trans (Nat.le_add_left _ _)
+
 /-- The balanced budget `s' + √((n + 1) ^ 3 * M * s')` with `s' = s + (n + 1) ^ 3`. -/
 noncomputable def optimizedBudget (n s M : ℕ) : ℝ :=
   (s + (n + 1) ^ 3 : ℕ) + Real.sqrt ((n + 1 : ℝ) ^ 3 * M * (s + (n + 1) ^ 3 : ℕ))

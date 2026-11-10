@@ -211,8 +211,7 @@ def coinWitness (input : δ ↪ (Fin k → ℕ)) (i : Fin k) :
     have hsrc : x.regs (src i) = input d i := congrFun hin i
     rw [RandomizedSpec.run_map, RandomizedSpec.withCoins_run_sample, ProbComp.eval_unifFin,
       PMF.map_comp, PMF.map_comp, ← hsrc]
-    congr 1
-    funext c
+    congr 1 with c : 1
     refine Prod.ext (funext fun j => ?_) ?_
     · rw [Fin.fin_one_eq_zero j]
       simp [Data.set]

@@ -12,9 +12,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Crypto.Game.Order
 
 /-!
 # Merkle trees as authenticated data structures: verification and position binding
@@ -305,10 +307,8 @@ theorem succProbability_merkleBindingGame_le (adversary : MerkleBindingAdversary
     Game.succProbability (ProbComp.eval (merkleBindingGame H adversary n)) ≤
       Game.succProbability (ProbComp.eval
         (collisionGame H (fun _ _ => true) (merkleCollisionFinder H adversary) n)) := by
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-  simp only [merkleBindingGame, collisionGame, merkleCollisionFinder, ProbComp.eval_bind,
-    ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+  apply Game.succProbability_mono
+  simp only [pmf_norm, merkleBindingGame, collisionGame, merkleCollisionFinder]
   apply PMF.bind_apply_mono_on_support
   intro k _
   apply PMF.bind_apply_mono_on_support

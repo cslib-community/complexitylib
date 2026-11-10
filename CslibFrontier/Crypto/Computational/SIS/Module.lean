@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.In
 public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.SIS.Basic
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
 import Mathlib.Tactic.Abel
@@ -411,8 +412,7 @@ theorem succProbability_ajtaiCollisionGame_le (P : GeneralSISParams)
       Game.succProbability
         (sisGame P (fun s w => extractSISWord (P.m s) <$> finder s w) security) := by
   unfold ajtaiCollisionGame sisGame
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, ProbComp.eval_map, PMF.bind_map,
-    Function.comp_def, extractSISWord, decodeVec_encodeVec]
+  simp only [pmf_norm, extractSISWord, decodeVec_encodeVec]
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
     (bind_true_le _ _ _ fun A => bind_true_le _ _ _ fun word => ?_)
   by_cases h : isAjtaiCollision A (P.β security)

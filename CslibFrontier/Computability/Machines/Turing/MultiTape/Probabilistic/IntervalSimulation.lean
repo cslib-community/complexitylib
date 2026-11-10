@@ -201,8 +201,7 @@ theorem LocalCfg.Represents.blockControl (h : l.Represents c) :
     l.blockControl b = c.blockControl b := by
   simp only [LocalCfg.blockControl, Cfg.blockControl, h.state, h.track, h.inputPos,
     h.workTapePos]
-  congr 2
-  funext head
+  congr 2 with head : 1
   cases head <;> simp
 
 omit [NeZero b] in

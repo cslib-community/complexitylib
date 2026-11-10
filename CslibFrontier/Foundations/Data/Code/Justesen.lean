@@ -168,6 +168,11 @@ noncomputable def justesenCode (φ : F ≃+ BitString b) (K : ℕ) :
 
 variable [Fintype F] [DecidableEq F]
 
+omit [DecidableEq F] in
+/-- A field written as `b` bits has `2 ^ b` elements. -/
+private theorem card_eq_two_pow (φ : F ≃+ BitString b) : Fintype.card F = 2 ^ b := by
+  rw [Fintype.card_congr φ.toEquiv, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
+
 /-- **The distance of Justesen codes** [Justesen1972]. For a field with `q` elements written as
 `b` bits, the Justesen code of outer dimension `K` has minimum distance at least
 `(q - K - V(r)) * (r + 1)` for every `r`, where `V(r) = ∑_{j ≤ r} C(2 * b, j)` is the number of
@@ -213,12 +218,11 @@ omit [DecidableEq F] in
 theorem card_justesenCode (φ : F ≃+ BitString b) {K : ℕ} (hK : K ≤ Fintype.card F - 1) :
     Nat.card (justesenCode φ K) = 2 ^ (b * K) := by
   classical
-  have hq : Fintype.card F = 2 ^ b := by
-    rw [Fintype.card_congr φ.toEquiv, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
   rw [justesenCode, Nat.card_image_of_injective (justesen_injective φ), Nat.card_coe_set_eq,
     ← Nat.card_coe_set_eq, SetLike.coe_sort_coe, Nat.card_eq_fintype_card,
     Module.card_eq_pow_finrank (K := F),
-    finrank_reedSolomon Units.val_injective (by rwa [Fintype.card_units]), hq, ← pow_mul]
+    finrank_reedSolomon Units.val_injective (by rwa [Fintype.card_units]), card_eq_two_pow φ,
+    ← pow_mul]
 
 /-- **The relative distance of Justesen codes at rate at least `1 / 4`** [Justesen1972]. Let `s ≥ 1`
 and let `F` be a field written as `b = 16 * s` bits, which then has `2 ^ (16 * s)` elements. The
@@ -227,8 +231,7 @@ Justesen code of outer dimension `K = 2 ^ (16 * s - 1)` is a binary code of leng
 theorem card_le_mul_minDist_justesenCode {s : ℕ} (hs : 1 ≤ s) (φ : F ≃+ BitString (16 * s)) :
     (Fintype.card (Fˣ × (Fin 2 × Fin (16 * s))) : ℕ∞) ≤
       128 * minDist (justesenCode φ (2 ^ (16 * s - 1))) := by
-  have hq : Fintype.card F = 2 ^ (16 * s) := by
-    rw [Fintype.card_congr φ.toEquiv, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
+  have hq := card_eq_two_pow φ
   have hpow : 2 ^ (16 * s) = 2 * 2 ^ (16 * s - 1) := by
     rw [← pow_succ']
     congr 1
@@ -275,10 +278,8 @@ theorem isAsymptoticallyGood_justesenCode
     IsAsymptoticallyGood fun s => justesenCode (φ s) (2 ^ (16 * (s + 1) - 1)) where
   exists_le_card N := by
     refine ⟨N, ?_⟩
-    have hq : Fintype.card (F N) = 2 ^ (16 * (N + 1)) := by
-      rw [Fintype.card_congr (φ N).toEquiv, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
-    rw [Fintype.card_prod, Fintype.card_units, hq, Fintype.card_prod, Fintype.card_fin,
-      Fintype.card_fin]
+    rw [Fintype.card_prod, Fintype.card_units, card_eq_two_pow (φ N), Fintype.card_prod,
+      Fintype.card_fin, Fintype.card_fin]
     have hpow : 1 ≤ 2 ^ (16 * (N + 1)) - 1 := by
       have : 2 ≤ 2 ^ (16 * (N + 1)) :=
         calc 2 = 2 ^ 1 := rfl
@@ -288,23 +289,15 @@ theorem isAsymptoticallyGood_justesenCode
       _ ≤ (2 ^ (16 * (N + 1)) - 1) * (2 * (16 * (N + 1))) := Nat.mul_le_mul_right _ hpow
   exists_rate := by
     refine ⟨4, by norm_num, fun s => ⟨16 * (s + 1) * 2 ^ (16 * (s + 1) - 1), ?_, ?_⟩⟩
-    · have hq : Fintype.card (F s) = 2 ^ (16 * (s + 1)) := by
-        rw [Fintype.card_congr (φ s).toEquiv, Fintype.card_fun, Fintype.card_bool,
-          Fintype.card_fin]
-      have hpow : 2 ^ (16 * (s + 1)) = 2 * 2 ^ (16 * (s + 1) - 1) := by
+    · have hpow : 2 ^ (16 * (s + 1)) = 2 * 2 ^ (16 * (s + 1) - 1) := by
         rw [← pow_succ', Nat.sub_add_cancel (by omega)]
-      rw [Fintype.card_prod, Fintype.card_units, hq, Fintype.card_prod, Fintype.card_fin,
-        Fintype.card_fin, hpow]
+      rw [Fintype.card_prod, Fintype.card_units, card_eq_two_pow (φ s), Fintype.card_prod,
+        Fintype.card_fin, Fintype.card_fin, hpow]
       have := Nat.sub_le (2 * 2 ^ (16 * (s + 1) - 1)) 1
       nlinarith
-    · have hq : Fintype.card (F s) = 2 ^ (16 * (s + 1)) := by
-        rw [Fintype.card_congr (φ s).toEquiv, Fintype.card_fun, Fintype.card_bool,
-          Fintype.card_fin]
-      have hpow : 2 ^ (16 * (s + 1)) = 2 * 2 ^ (16 * (s + 1) - 1) := by
-        rw [← pow_succ', Nat.sub_add_cancel (by omega)]
-      have hK : 2 ^ (16 * (s + 1) - 1) ≤ Fintype.card (F s) - 1 := by
-        have := Nat.one_le_two_pow (n := 16 * (s + 1) - 1)
-        omega
+    · have hK : 2 ^ (16 * (s + 1) - 1) ≤ Fintype.card (F s) - 1 := by
+        rw [card_eq_two_pow (φ s)]
+        exact Nat.le_sub_one_of_lt (Nat.pow_lt_pow_right (by norm_num) (by omega))
       rw [Fintype.card_bool, card_justesenCode (φ s) hK]
   exists_minDist :=
     ⟨128, by norm_num, fun s => by

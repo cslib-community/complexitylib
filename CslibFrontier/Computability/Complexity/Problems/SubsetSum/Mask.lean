@@ -84,8 +84,7 @@ theorem exists_maskSelect_eq {s l : List α} (h : s <+ l) :
 theorem maskSelect_append_replicate_false (l : List α) (w : List Bool) (k : ℕ) :
     maskSelect l (w ++ List.replicate k false) = maskSelect l w := by
   unfold maskSelect
-  congr 2
-  funext p
+  congr 2 with p : 1
   rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_append]
   split
   · rfl

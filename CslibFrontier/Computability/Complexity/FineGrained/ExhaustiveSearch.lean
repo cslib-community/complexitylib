@@ -156,7 +156,7 @@ private theorem exists_search_length_bounds {f : α × ℕ → β} {ν : α → 
     rw [rounds, encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
   have hpair (a : α) {k : ℕ} (hk : k ≤ rounds ν a) :
       (encPair encA encNat (a, k)).length ≤ 2 * (encA a).length + ν a + 2 := by
-    have := ComputableTidilyInO.length_encNat_mono hk
+    have := length_encNat_mono hk
     rw [hrounds] at this
     simp only [length_encPair]
     omega

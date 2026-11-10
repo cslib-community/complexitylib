@@ -8,11 +8,11 @@ which evidence is required. A zero exit status means that command's stated scope
 |---|---|---|
 | Cold editor checkout | `scripts/cache/ensure.sh` | Attempts cache restoration; if imports are still missing, build the affected target or follow the cache guide |
 | Check a complete named client | `scripts/build.sh CslibFrontierTests.NPCompleteness --wfail --iofail` | Builds that client and dependencies; inspect the first error before broadening the build |
-| Check library changes and importing clients | `scripts/check.sh --quick` | Checks the manuals, then uses local Git comparison; unsupported layouts fall back to full checks; inspect the reported scope |
-| Validate the final source locally | `scripts/check.sh` | Checks the manuals and runs all six Lean gates; any failure prevents treating the run as full validation |
+| Check library changes and importing clients | `scripts/check.sh --quick` | Checks the manuals and the changed files' sources, then uses local Git comparison; unsupported layouts fall back to full checks; inspect the reported scope |
+| Validate the final source locally | `scripts/check.sh` | Checks the manuals and runs every locally runnable required CI step, including the six Lean gates; any failure prevents treating the run as full validation |
 | Add a library module | `lake exe mk_all` | Regenerates the library aggregate; inspect its diff and check the affected client |
 | Check aggregate completeness | `lake exe mk_all --check` | Fails if an aggregate is stale; regenerate it and review the change |
-| Check manual links and contextual excerpts | `python3 scripts/check_operator_manual.py` | Reports current-source matches, broken links and pages missing from the book's chapter lists; repair the affected prose, canonical example or list |
+| Check manual links and contextual excerpts | `python3 scripts/check_operator_manual.py` | Reports current-source matches, broken links, source line links that no longer start a declaration and pages missing from the book's chapter lists; repair the affected prose, link, canonical example or list |
 | Check the manual checker | `python3 scripts/test_operator_manual.py` | Runs isolated positive and negative controls; failure identifies a checker regression |
 | Generate an editable book | `python3 scripts/build_operator_manual.py` | Writes LaTeX/PDF under ignored `manual/_build/`; inspect changed pages before distributing |
 | See isolated worktrees | `scripts/worktree.sh list` | Lists registered work; inspect ownership before takeover or removal |

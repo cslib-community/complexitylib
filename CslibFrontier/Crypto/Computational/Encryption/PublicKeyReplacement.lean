@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -31,8 +32,8 @@ controls the change in their chosen-message gaps, with an exact factor of two.
 * `eval_game_eq_publicKeyGame`: the actual encryption game uses its public-key marginal.
 * `isPPT_keyDistinguisher`: native strict PPT composition of the actual reduction.
 * `probability_keyDistinguisher`: the exact affine identity for the signed chosen-message gap.
-* `advantage_le_of_hiddenBit`: the generic loss-two bound from two such affine identities.
-* `advantage_publicKeyGame_le`: quantitative public-key replacement with loss two.
+* `advantage_publicKeyGame_le`: quantitative public-key replacement with loss two, an instance of
+  `Game.advantage_le_two_mul_uniform_bool_xor`.
 
 ## References
 
@@ -149,11 +150,7 @@ theorem distinguishingGame_keyDistinguisher (keys : PMF (List Bool))
       (publicKeyGame keys encrypt adversary bit security).map (fun guess => guess ^^ bit)) := by
   simp only [distinguishingGame, keyDistinguisher, publicKeyGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
-  rw [PMF.bind_comm]
-  congr 1
-  funext pk
-  rw [PMF.bind_comm]
-  rfl
+  pmf_swap
 
 /-- Acceptance is one half plus half the signed chosen-message gap. -/
 theorem probability_keyDistinguisher (keys : PMF (List Bool))
@@ -164,31 +161,7 @@ theorem probability_keyDistinguisher (keys : PMF (List Bool))
       (1 + (Game.succProbability (publicKeyGame keys encrypt adversary false security) : ℝ) -
         Game.succProbability (publicKeyGame keys encrypt adversary true security)) / 2 := by
   rw [distinguishingGame_keyDistinguisher]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    PMF.monad_bind_eq_bind, PMF.bind_apply_toReal, Fintype.sum_bool,
-    PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
-
-/-- Hidden-bit algebra: if two distinguishing games each accept with probability one half plus half
-the signed gap of a pair of chosen-message games, then the gap of the first pair is at most twice
-the distinguishing advantage plus the gap of the second pair. -/
-theorem advantage_le_of_hiddenBit {real₀ real₁ ideal₀ ideal₁ distReal distIdeal : Game}
-    (hreal : (Game.succProbability distReal : ℝ) =
-      (1 + (Game.succProbability real₀ : ℝ) - Game.succProbability real₁) / 2)
-    (hideal : (Game.succProbability distIdeal : ℝ) =
-      (1 + (Game.succProbability ideal₀ : ℝ) - Game.succProbability ideal₁) / 2) :
-    Game.advantage real₀ real₁ ≤
-      2 * Game.advantage distReal distIdeal + Game.advantage ideal₀ ideal₁ := by
-  apply NNReal.coe_le_coe.mp
-  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage, hreal, hideal]
-  have h := abs_sub_le ((Game.succProbability real₀ : ℝ) - Game.succProbability real₁)
-    ((Game.succProbability ideal₀ : ℝ) - Game.succProbability ideal₁) 0
-  have hscale (a b c d : ℝ) :
-      2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    rw [show (1 + a - b) / 2 - (1 + c - d) / 2 = ((a - b) - (c - d)) / 2 by ring, abs_div,
-      abs_two]; ring
-  simpa only [hscale, sub_zero] using h
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- Replacing the public-key law costs at most twice the advantage of one uniform hidden-bit
 distinguisher, plus the chosen-message advantage under the replacement law. -/
@@ -201,8 +174,10 @@ theorem advantage_publicKeyGame_le (real ideal : PMF (List Bool))
           (distinguishingGame real (keyDistinguisher encrypt adversary security))
           (distinguishingGame ideal (keyDistinguisher encrypt adversary security)) +
             Game.advantage (publicKeyGame ideal encrypt adversary false security)
-              (publicKeyGame ideal encrypt adversary true security) :=
-  advantage_le_of_hiddenBit (probability_keyDistinguisher real encrypt adversary security)
-    (probability_keyDistinguisher ideal encrypt adversary security)
+              (publicKeyGame ideal encrypt adversary true security) := by
+  rw [distinguishingGame_keyDistinguisher, distinguishingGame_keyDistinguisher]
+  exact Game.advantage_le_two_mul_uniform_bool_xor
+    (publicKeyGame real encrypt adversary · security)
+    (publicKeyGame ideal encrypt adversary · security)
 
 end Cslib.Crypto.Encryption

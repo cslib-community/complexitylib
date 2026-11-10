@@ -291,28 +291,22 @@ def cramerShoupINDCCA2
     (fun adversary n => F.cramerShoupCCA2Game setup H isElem adversary true n)
     CCA2Adversary.IsPPT
 
-/-- **Game 1** ([BonehShoup2023], Section 12.5.3, printed p. 490, adapted to
-$\mathcal{E}_{\mathrm{MCS}}$ with associated data): draw `(α, β)` and `sk` uniformly from `ZMod q`,
-and compute the challenge ciphertext from `(v, w) = (β • g, (α * β) • g)` using the secret key via
-`encodeCramerShoupChallenge`. -/
-noncomputable def cramerShoupGame1
+/-- Shared challenge experiment for **Games 1 and 2** ([BonehShoup2023], Section 12.5.3, printed
+p. 490) at fixed group `d` and triple exponents `(α, β, γ)`: sample the six secret-key exponents
+uniformly from `ZMod (F.order d)` and compute the challenge ciphertext from
+`(u, v, w) = (α • g, β • g, γ • g)` using the secret key via `encodeCramerShoupChallenge`. -/
+noncomputable def cramerShoupChallengeGame
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
-    (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
+    (encodeAD : F.Desc × AD → List Bool)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let β ← PMF.uniformOfFintype (ZMod (F.order d))
-  let σ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let τ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let σ₁ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let τ₁ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let σ₂ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let τ₂ ← PMF.uniformOfFintype (ZMod (F.order d))
+    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ)
+    (d : F.Desc) (α β γ : ZMod (F.order d)) : Game := do
+  let U := PMF.uniformOfFintype (ZMod (F.order d))
+  let σ ← U; let τ ← U; let σ₁ ← U; let τ₁ ← U; let σ₂ ← U; let τ₂ ← U
   let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
   let u := F.encode d (α • F.generator d)
   let v := F.encode d (β • F.generator d)
-  let w := F.encode d ((α * β) • F.generator d)
+  let w := F.encode d (γ • F.generator d)
   let pk := F.encodeCramerShoupPublicKey d u sk
   let choiceOut ← ProbComp.eval ((OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -333,6 +327,20 @@ noncomputable def cramerShoupGame1
   else
     return false
 
+/-- **Game 1** ([BonehShoup2023], Section 12.5.3, printed p. 490, adapted to
+$\mathcal{E}_{\mathrm{MCS}}$ with associated data): draw `(α, β)` and `sk` uniformly from `ZMod q`,
+and compute the challenge ciphertext from `(v, w) = (β • g, (α * β) • g)` using the secret key via
+`encodeCramerShoupChallenge`. -/
+noncomputable def cramerShoupGame1
+    (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
+    (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
+    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
+    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ) : Game := do
+  let d ← setup n
+  let α ← PMF.uniformOfFintype (ZMod (F.order d))
+  let β ← PMF.uniformOfFintype (ZMod (F.order d))
+  F.cramerShoupChallengeGame hasAD encodeMsg encodeAD H isElem adversary bit n d α β (α * β)
+
 /-- **Game 0 = Game 1** ([BonehShoup2023], Section 12.5.3, equation (12.21), printed p. 490):
 computing the challenge ciphertext from `(v, w) = (β • g, (α * β) • g)` using the secret key
 produces the exact same distribution as public-key encryption. -/
@@ -343,8 +351,8 @@ theorem cramerShoupMsgCCA2Game_eq_game1
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ) :
     F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary bit n =
       F.cramerShoupGame1 hasAD encodeMsg encodeAD setup H isElem adversary bit n := by
-  simp only [cramerShoupMsgCCA2Game, cramerShoupGame1, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, encodeCramerShoupPublicKey_encode, skNatOfZMod,
+  simp only [cramerShoupMsgCCA2Game, cramerShoupGame1, cramerShoupChallengeGame,
+    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, encodeCramerShoupPublicKey_encode, skNatOfZMod,
     csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂, csChoiceMsg₀, csChoiceMsg₁, csChoiceAD,
     ZMod.natCast_zmod_val, encodeCramerShoupEncrypt_publicKey_eq_challenge]
   refine congrArg _ (funext fun d => congrArg _ (funext fun α => ?_))
@@ -380,81 +388,25 @@ noncomputable def cramerShoupGame2
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let γ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let σ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let τ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let σ₁ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let τ₁ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let σ₂ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let τ₂ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
-  let u := F.encode d (α • F.generator d)
-  let v := F.encode d (β • F.generator d)
-  let w := F.encode d (γ • F.generator d)
-  let pk := F.encodeCramerShoupPublicKey d u sk
-  let choiceOut ← ProbComp.eval ((OracleComp.interpret
-    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
-    (adversary.choose n pk)).run ())
-  let choice := choiceOut.1
-  let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
-  let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
-  let ad := encodeAD (d, csChoiceAD choice)
-  if isElem (d, m₀) && isElem (d, m₁) then
-    let m := if bit then m₁ else m₀
-    let ct := F.encodeCramerShoupChallenge H d sk v w m ad
-    let guessOut ← ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-      (adversary.guess n choice.2 ct)).run ())
-    return guessOut.1
-  else
-    return false
+  F.cramerShoupChallengeGame hasAD encodeMsg encodeAD H isElem adversary bit n d α β γ
 
-private theorem advantage_ddhRealGame_cramerShoupGame1_le
+private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
-    (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
+    (encodeAD : F.Desc × AD → List Bool)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
-    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ) :
+    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ)
+    (d : F.Desc) (α β γ : ZMod (F.order d)) :
     Game.advantage
-      (F.ddhRealGame setup
-        (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n)
-      (F.cramerShoupGame1 hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
+      (ProbComp.eval
+        (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit n
+          (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+            F.encode d (γ • F.generator d))))
+      (F.cramerShoupChallengeGame hasAD encodeMsg encodeAD H isElem adversary bit n d α β γ) ≤
       6 / 2 ^ n := by
-  unfold ddhRealGame cramerShoupGame1 cramerShoupMsgToDDHDistinguisher
+  unfold cramerShoupChallengeGame cramerShoupMsgToDDHDistinguisher
   simp only [pmf_norm]
-  refine advantage_bind_le_nnreal (setup n) _ _ fun d =>
-    advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α =>
-      advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun β =>
-        F.advantage_bind_sampleCramerShoupSK_le n d _ _ fun s t s₁ t₁ s₂ t₂ => ?_
-  rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod d α ((s, t), ((s₁, t₁), (s₂, t₂))),
-    F.cramerShoupPhase1Oracle_eq_skNatOfZMod hasAD H isElem hmem d ((s, t), ((s₁, t₁), (s₂, t₂)))]
-  refine congrArg _ (funext fun choiceOut => ?_)
-  by_cases h : (isElem (d, encodeMsg (d, choiceOut.1.1.1.1)) &&
-      isElem (d, encodeMsg (d, choiceOut.1.1.1.2))) = true
-  · simp only [h, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure]
-    rw [F.encodeCramerShoupChallenge_eq_skNatOfZMod H d ((s, t), ((s₁, t₁), (s₂, t₂))),
-      F.cramerShoupPhase2Oracle_eq_skNatOfZMod hasAD H isElem hmem d ((s, t), ((s₁, t₁), (s₂, t₂)))]
-  · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
-
-private theorem advantage_ddhIdealGame_cramerShoupGame2_le
-    (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
-    (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
-    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
-    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) (n : ℕ) :
-    Game.advantage
-      (F.ddhIdealGame setup
-        (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n)
-      (F.cramerShoupGame2 hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
-      6 / 2 ^ n := by
-  unfold ddhIdealGame cramerShoupGame2 cramerShoupMsgToDDHDistinguisher
-  simp only [pmf_norm]
-  refine advantage_bind_le_nnreal (setup n) _ _ fun d =>
-    advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α =>
-      advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun β =>
-        advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun γ =>
-          F.advantage_bind_sampleCramerShoupSK_le n d _ _ fun s t s₁ t₁ s₂ t₂ => ?_
+  refine F.advantage_bind_sampleCramerShoupSK_le n d _ _ fun s t s₁ t₁ s₂ t₂ => ?_
   rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod d α ((s, t), ((s₁, t₁), (s₂, t₂))),
     F.cramerShoupPhase1Oracle_eq_skNatOfZMod hasAD H isElem hmem d ((s, t), ((s₁, t₁), (s₂, t₂)))]
   refine congrArg _ (funext fun choiceOut => ?_)
@@ -492,12 +444,23 @@ theorem advantage_cramerShoupGame1_game2_le
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n)
         (F.ddhIdealGame setup
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n) +
-      12 / 2 ^ n :=
-  advantage_four_le _ _ _ _
-    (F.advantage_ddhRealGame_cramerShoupGame1_le hasAD encodeMsg encodeAD setup H isElem hmem
-      adversary bit n)
-    (F.advantage_ddhIdealGame_cramerShoupGame2_le hasAD encodeMsg encodeAD setup H isElem hmem
-      adversary bit n)
+      12 / 2 ^ n := by
+  refine advantage_four_le _ _ _ _ ?_ ?_
+  · unfold ddhRealGame cramerShoupGame1
+    simp only [PMF.monad_bind_eq_bind]
+    exact advantage_bind_le_nnreal (setup n) _ _ fun d =>
+      advantage_bind_le_nnreal _ _ _ fun α =>
+        advantage_bind_le_nnreal _ _ _ fun β =>
+          F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
+            hmem adversary bit n d α β (α * β)
+  · unfold ddhIdealGame cramerShoupGame2
+    simp only [PMF.monad_bind_eq_bind]
+    exact advantage_bind_le_nnreal (setup n) _ _ fun d =>
+      advantage_bind_le_nnreal _ _ _ fun α =>
+        advantage_bind_le_nnreal _ _ _ fun β =>
+          advantage_bind_le_nnreal _ _ _ fun γ =>
+            F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
+              hmem adversary bit n d α β γ
 
 private noncomputable def cramerShoupExactCollisionInner
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
@@ -563,7 +526,7 @@ private theorem advantage_cramerShoupGame2_game3_le_exactCollision
       Game.succProbability
         (F.cramerShoupExactCollisionGame hasAD encodeMsg encodeAD setup H isElem adversary
           bit n) := by
-  unfold cramerShoupGame2 cramerShoupGame3 cramerShoupExactCollisionGame
+  unfold cramerShoupGame2 cramerShoupChallengeGame cramerShoupGame3 cramerShoupExactCollisionGame
     cramerShoupExactCollisionInner
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine advantage_bind_le_succProbability_bind (setup n) _ _ _ fun d => ?_
@@ -770,6 +733,35 @@ theorem advantage_cramerShoupMsgCCA2Game_game5_le
   push_cast
   ring
 
+/-- Concrete upper-bound expression for the two-run single-bit Theorem 12.9 / Exercise 12.27 1CCA
+reduction ([BonehShoup2023], equation (12.19), printed p. 489): the DDH advantages of
+`cramerShoupMsgToDDHDistinguisher` at `false` and `true`, the collision-finding success
+probabilities of `cramerShoupMsgToCollisionFinder` at `false` and `true`, plus
+`(2 * Q₁ + 2 * Q₂ + 2) / m + 42 / 2 ^ n`. -/
+noncomputable abbrev cramerShoupCCA2Bound
+    (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
+    (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
+    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
+    (adversary : ADCCA2AdversaryOf Msg AD) (n Q₁ Q₂ m : ℕ) : ℝ≥0 :=
+  Game.advantage
+    (F.ddhRealGame setup
+      (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false) n)
+    (F.ddhIdealGame setup
+      (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false) n) +
+  Game.advantage
+    (F.ddhRealGame setup
+      (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true) n)
+    (F.ddhIdealGame setup
+      (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true) n) +
+  Game.succProbability
+    (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
+      (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary false) n) +
+  Game.succProbability
+    (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
+      (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary true) n) +
+  ((2 * Q₁ + 2 * Q₂ + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
+  42 / 2 ^ n
+
 /-- **Concrete ideal-game 1CCA security bound under honest query bounds**: combining the Game 0
 $\to$ Game 5 bounds for `bit = false` and `bit = true` via `cramerShoupGame5_false_eq_true` (where
 `42 / 2 ^ n` is the reduction loss from the `sampleModNat` exponent draws inside the reductions). -/
@@ -785,27 +777,7 @@ theorem advantage_cramerShoupMsgCCA2Game_le_of_honest_bounds
     Game.advantage
       (F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary false n)
       (F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary true n) ≤
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false)
-          n) +
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true)
-          n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary false)
-          n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary true) n) +
-      ((2 * Q₁ + 2 * Q₂ + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      42 / 2 ^ n := by
+      F.cramerShoupCCA2Bound hasAD encodeMsg encodeAD setup H isElem adversary n Q₁ Q₂ m := by
   have hfalse := F.advantage_cramerShoupMsgCCA2Game_game5_le hasAD encodeMsg encodeAD setup H
     isElem hmem adversary false n Q₁ Q₂ m hm0 hm hQ₁ hQ₂
   have htrue := F.advantage_cramerShoupMsgCCA2Game_game5_le hasAD encodeMsg encodeAD setup H
@@ -818,6 +790,7 @@ theorem advantage_cramerShoupMsgCCA2Game_le_of_honest_bounds
     Game.advantage_comm
       (F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary true n)] at htri
   refine (htri.trans (add_le_add hfalse htrue)).trans_eq ?_
+  dsimp only [cramerShoupCCA2Bound]
   push_cast
   ring
 
@@ -839,27 +812,8 @@ theorem advantage_cramerShoupMsgCCA2Game_le
     Game.advantage
       (F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary false n)
       (F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary true n) ≤
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false)
-          n) +
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true)
-          n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary false)
-          n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary true) n) +
-      ((2 * Q₁ n + 2 * Q₂ n + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      42 / 2 ^ n :=
+      F.cramerShoupCCA2Bound hasAD encodeMsg encodeAD setup H isElem adversary
+        n (Q₁ n) (Q₂ n) m :=
   F.advantage_cramerShoupMsgCCA2Game_le_of_honest_bounds hasAD encodeMsg encodeAD setup H isElem
     hmem adversary n (Q₁ n) (Q₂ n) m hm0 hm
     (fun _ _ _ _ _ _ => hQ.1 n _)
@@ -884,27 +838,9 @@ theorem advantage_cramerShoupADGroupCCA2Game_le
     Game.advantage
       (F.cramerShoupADGroupCCA2Game encAD setup H isElem adversary false n)
       (F.cramerShoupADGroupCCA2Game encAD setup H isElem adversary true n) ≤
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupADToDDHDistinguisher encAD H isElem adversary false) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupADToDDHDistinguisher encAD H isElem adversary false) n) +
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupADToDDHDistinguisher encAD H isElem adversary true) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupADToDDHDistinguisher encAD H isElem adversary true) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupADToCollisionFinder encAD H isElem adversary false) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupADToCollisionFinder encAD H isElem adversary true) n) +
-      ((2 * Q₁ n + 2 * Q₂ n + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      42 / 2 ^ n := by
-  dsimp only [cramerShoupADGroupCCA2Game, cramerShoupADToDDHDistinguisher,
-    cramerShoupADToCollisionFinder]
-  exact F.advantage_cramerShoupMsgCCA2Game_le true Prod.snd (fun p => encAD p.2) setup H isElem
+      F.cramerShoupCCA2Bound true Prod.snd (fun p => encAD p.2) setup H isElem adversary
+        n (Q₁ n) (Q₂ n) m :=
+  F.advantage_cramerShoupMsgCCA2Game_le true Prod.snd (fun p => encAD p.2) setup H isElem
     hmem adversary Q₁ Q₂ hQ n m hm0 hm
 
 /-- **Theorem 12.9 & Exercise 12.27 concrete ideal-game bound (group-element messages)**
@@ -924,27 +860,9 @@ theorem advantage_cramerShoupGroupCCA2Game_le
     Game.advantage
       (F.cramerShoupGroupCCA2Game setup H isElem adversary false n)
       (F.cramerShoupGroupCCA2Game setup H isElem adversary true n) ≤
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupToDDHDistinguisher H isElem adversary false) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupToDDHDistinguisher H isElem adversary false) n) +
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupToDDHDistinguisher H isElem adversary true) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupToDDHDistinguisher H isElem adversary true) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupToCollisionFinder H isElem adversary false) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupToCollisionFinder H isElem adversary true) n) +
-      ((2 * Q₁ n + 2 * Q₂ n + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      42 / 2 ^ n := by
-  dsimp only [cramerShoupGroupCCA2Game, cramerShoupToDDHDistinguisher,
-    cramerShoupToCollisionFinder]
-  exact F.advantage_cramerShoupMsgCCA2Game_le false Prod.snd (fun _ => []) setup H isElem hmem
+      F.cramerShoupCCA2Bound false Prod.snd (fun _ => []) setup H isElem adversary.toADUnit
+        n (Q₁ n) (Q₂ n) m :=
+  F.advantage_cramerShoupMsgCCA2Game_le false Prod.snd (fun _ => []) setup H isElem hmem
     adversary.toADUnit Q₁ Q₂ hQ.toADUnit n m hm0 hm
 
 /-- **Concrete ideal-game 1CCA security bound for single-bit messages with associated data
@@ -961,30 +879,8 @@ theorem advantage_cramerShoupADCCA2Game_le
     Game.advantage
       (F.cramerShoupADCCA2Game encAD setup H isElem adversary false n)
       (F.cramerShoupADCCA2Game encAD setup H isElem adversary true n) ≤
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher true (fun p => F.encodeBit p.1 p.2)
-            (fun p => encAD p.2) H isElem adversary false) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher true (fun p => F.encodeBit p.1 p.2)
-            (fun p => encAD p.2) H isElem adversary false) n) +
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher true (fun p => F.encodeBit p.1 p.2)
-            (fun p => encAD p.2) H isElem adversary true) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher true (fun p => F.encodeBit p.1 p.2)
-            (fun p => encAD p.2) H isElem adversary true) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder true (fun p => F.encodeBit p.1 p.2)
-            (fun p => encAD p.2) H isElem adversary false) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder true (fun p => F.encodeBit p.1 p.2)
-            (fun p => encAD p.2) H isElem adversary true) n) +
-      ((2 * Q₁ n + 2 * Q₂ n + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      42 / 2 ^ n :=
+      F.cramerShoupCCA2Bound true (fun p => F.encodeBit p.1 p.2) (fun p => encAD p.2) setup H
+        isElem adversary n (Q₁ n) (Q₂ n) m :=
   F.advantage_cramerShoupMsgCCA2Game_le true (fun p => F.encodeBit p.1 p.2) (fun p => encAD p.2)
     setup H isElem hmem adversary Q₁ Q₂ hQ n m hm0 hm
 
@@ -1000,30 +896,8 @@ theorem advantage_cramerShoupCCA2Game_le
     Game.advantage
       (F.cramerShoupCCA2Game setup H isElem adversary false n)
       (F.cramerShoupCCA2Game setup H isElem adversary true n) ≤
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher false (fun p => F.encodeBit p.1 p.2) (fun _ => [])
-            H isElem adversary.toADUnit false) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher false (fun p => F.encodeBit p.1 p.2) (fun _ => [])
-            H isElem adversary.toADUnit false) n) +
-      Game.advantage
-        (F.ddhRealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher false (fun p => F.encodeBit p.1 p.2) (fun _ => [])
-            H isElem adversary.toADUnit true) n)
-        (F.ddhIdealGame setup
-          (F.cramerShoupMsgToDDHDistinguisher false (fun p => F.encodeBit p.1 p.2) (fun _ => [])
-            H isElem adversary.toADUnit true) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder false (fun p => F.encodeBit p.1 p.2) (fun _ => [])
-            H isElem adversary.toADUnit false) n) +
-      Game.succProbability
-        (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
-          (F.cramerShoupMsgToCollisionFinder false (fun p => F.encodeBit p.1 p.2) (fun _ => [])
-            H isElem adversary.toADUnit true) n) +
-      ((2 * Q₁ n + 2 * Q₂ n + 2 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      42 / 2 ^ n :=
+      F.cramerShoupCCA2Bound false (fun p => F.encodeBit p.1 p.2) (fun _ => []) setup H
+        isElem adversary.toADUnit n (Q₁ n) (Q₂ n) m :=
   F.advantage_cramerShoupMsgCCA2Game_le false (fun p => F.encodeBit p.1 p.2) (fun _ => []) setup H
     isElem hmem adversary.toADUnit Q₁ Q₂ hQ.toADUnit n m hm0 hm
 
@@ -1146,7 +1020,7 @@ theorem DDH.cramerShoupMsgINDCCA2
       have := hpk_le hd α δ δ₁ δ₂; dsimp only [Q₁]; gcongr)
     ?_
   intro d hd α β γ δ τ δ₁ δ₂ ξ choiceOut hchoice mElem
-  rw [ProbOracleComp.eval_run_interpret] at hchoice
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hchoice
   have hpk := hpk_le hd α δ δ₁ δ₂
   have hst : choiceOut.1.2.length ≤ Lst n :=
     (hstate n _ Unit _ () choiceOut.2 choiceOut.1 hchoice).trans (by dsimp only [Lst]; gcongr)
@@ -1350,6 +1224,29 @@ private noncomputable def cramerShoupCCA2InnerSK
   else
     pure false
 
+private noncomputable def cramerShoupCCA2SampledSK
+    (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
+    (H : F.Desc × List Bool → List Bool)
+    (isElem : F.Desc × List Bool → Bool)
+    (d : F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ)
+    (α : ZMod (F.order d)) : Game :=
+  (ProbComp.eval (F.sampleCramerShoupSK n d)).bind fun sk =>
+    F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n α
+      (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
+      (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
+      (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false
+
+private noncomputable def cramerShoupCCA2UniformSK
+    (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
+    (H : F.Desc × List Bool → List Bool)
+    (isElem : F.Desc × List Bool → Bool)
+    (d : F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ)
+    (useExactB : Bool) : Game := do
+  let U := PMF.uniformOfFintype (ZMod (F.order d))
+  let α ← U; let σ ← U; let τ ← U; let σ₁ ← U; let τ₁ ← U; let σ₂ ← U; let τ₂ ← U
+  F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
+    α σ τ σ₁ τ₁ σ₂ τ₂ useExactB
+
 private theorem advantage_cramerShoupCCA2InnerSK_le
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
     (H : F.Desc × List Bool → List Bool)
@@ -1357,29 +1254,15 @@ private theorem advantage_cramerShoupCCA2InnerSK_le
     (d : F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ) :
     Game.advantage
       ((ProbComp.eval (F.sampleExp n d)).bind fun a =>
-        (ProbComp.eval (F.sampleCramerShoupSK n d)).bind fun sk =>
-          F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
-            (a : ZMod (F.order d))
-            (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-            (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-            (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false)
-      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ =>
-            (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ₁ =>
-              (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ₁ =>
-                (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ₂ =>
-                  (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ₂ =>
-                    F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
-                      α σ τ σ₁ τ₁ σ₂ τ₂ true) ≤
+        F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n
+          (a : ZMod (F.order d)))
+      (F.cramerShoupCCA2UniformSK hasAD encodeAD H isElem d adversary bit n true) ≤
       8 / 2 ^ n := by
+  unfold cramerShoupCCA2UniformSK
+  simp only [PMF.monad_bind_eq_bind]
   refine advantage_four_le_eight _
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-      (ProbComp.eval (F.sampleCramerShoupSK n d)).bind fun sk =>
-        F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n α
-          (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false)
+    ((PMF.uniformOfFintype (ZMod (F.order d))).bind
+      (F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n))
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ =>
@@ -1389,23 +1272,19 @@ private theorem advantage_cramerShoupCCA2InnerSK_le
                 (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ₂ =>
                   F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
                     α σ τ σ₁ τ₁ σ₂ τ₂ false) _
-    (F.advantage_bind_sampleExp_le n d (fun α =>
-      (ProbComp.eval (F.sampleCramerShoupSK n d)).bind fun sk =>
-        F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n α
-          (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false))
+    (F.advantage_bind_sampleExp_le n d
+      (F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n))
     (advantage_bind_le_nnreal _ _ _ fun α =>
       F.advantage_bind_sampleCramerShoupSK_le n d _ (fun σ τ σ₁ τ₁ σ₂ τ₂ =>
         F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
           α σ τ σ₁ τ₁ σ₂ τ₂ false) (fun _ _ _ _ _ _ => rfl)) ?_
-  refine advantage_bind_le_nnreal _ _ _ fun α => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun σ => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun τ => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun σ₁ => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun τ₁ => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun σ₂ => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun τ₂ => ?_
+  refine advantage_bind_le_nnreal _ _ _ fun α =>
+    advantage_bind_le_nnreal _ _ _ fun σ =>
+      advantage_bind_le_nnreal _ _ _ fun τ =>
+        advantage_bind_le_nnreal _ _ _ fun σ₁ =>
+          advantage_bind_le_nnreal _ _ _ fun τ₁ =>
+            advantage_bind_le_nnreal _ _ _ fun σ₂ =>
+              advantage_bind_le_nnreal _ _ _ fun τ₂ => ?_
   dsimp only [cramerShoupCCA2InnerSK]
   refine advantage_bind_le_nnreal _ _ _ fun choiceOut => ?_
   by_cases h : (isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2)) = true
@@ -1421,16 +1300,8 @@ private theorem cramerShoupMsgCCA2Game_pure_eq_innerSK
     (d : ℕ → F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n : ℕ) :
     F.cramerShoupMsgCCA2Game hasAD (fun p => p.2) encodeAD (fun n => PMF.pure (d n)) H isElem
       adversary bit n =
-    (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
-      (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun σ =>
-        (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun τ =>
-          (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun σ₁ =>
-            (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun τ₁ =>
-              (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun σ₂ =>
-                (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun τ₂ =>
-                  F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem (d n) adversary bit n
-                    α σ τ σ₁ τ₁ σ₂ τ₂ true := by
-  simp only [pmf_norm, cramerShoupMsgCCA2Game]
+    F.cramerShoupCCA2UniformSK hasAD encodeAD H isElem (d n) adversary bit n true := by
+  simp only [pmf_norm, cramerShoupMsgCCA2Game, cramerShoupCCA2UniformSK]
   refine congrArg _ (funext fun α => congrArg _ (funext fun σ =>
     congrArg _ (funext fun τ => congrArg _ (funext fun σ₁ =>
       congrArg _ (funext fun τ₁ => congrArg _ (funext fun σ₂ =>
@@ -1441,6 +1312,57 @@ private theorem cramerShoupMsgCCA2Game_pure_eq_innerSK
     csPkU, csPkH, csPkH₁, csPkH₂, csSkS, csSkT, csSkS₁, csSkT₁, csSkS₂, csSkT₂,
     csChoiceMsg₀, csChoiceMsg₁, csChoiceAD, ZMod.natCast_zmod_val]
 
+private theorem cramerShoupCCA2InnerSK_false_eq
+    (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
+    (H : F.Desc × List Bool → List Bool)
+    (isElem : F.Desc × List Bool → Bool)
+    (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
+    (d : F.Desc) (adversary : WordADCCA2Adversary AD) (bit : Bool) (n a : ℕ)
+    (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    let pk := F.encodeCramerShoupPublicKey d
+      (F.encode d ((a : ZMod (F.order d)) • F.generator d)) sk
+    (ProbComp.eval ((OracleComp.interpret
+      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+        (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
+      (adversary.choose n pk)).run ())).bind (fun choiceOut =>
+        ProbComp.eval
+          (if (isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2)) = true then do
+            let b ← F.sampleExp n d
+            let ct := F.encodeCramerShoupEncrypt H d (decodeBits4 (dropFrame pk))
+              (if bit then choiceOut.1.1.1.2 else choiceOut.1.1.1.1)
+              (encodeAD (d, choiceOut.1.1.2)) b
+            let guessOut ← (OracleComp.interpret
+              (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+                (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct
+                  (encodeAD (d, choiceOut.1.1.2))))
+              (adversary.guess n choiceOut.1.2 ct)).run ()
+            return guessOut.1
+          else
+            return false)) =
+    F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
+      (a : ZMod (F.order d))
+      (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
+      (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
+      (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false := by
+  dsimp only [cramerShoupCCA2InnerSK]
+  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod d (a : ZMod (F.order d)) sk,
+    F.cramerShoupPhase1Oracle_eq_skNatOfZMod hasAD H isElem hmem d sk]
+  refine congrArg _ (funext fun choiceOut => ?_)
+  by_cases h : (isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2)) = true
+  · simp only [pmf_norm, h, ↓reduceIte, Bool.false_eq_true,
+      F.decodeBits4_dropFrame_encodeCramerShoupPublicKey, cramerShoupCCA2InnerB]
+    refine congrArg _ (funext fun b => ?_)
+    have hct :=
+      F.encodeCramerShoupEncrypt_skNatOfZMod H d (a : ZMod (F.order d))
+        (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
+        (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
+        (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))
+        (if bit then choiceOut.1.1.1.2 else choiceOut.1.1.1.1)
+        (encodeAD (d, choiceOut.1.1.2)) b
+    rw [hct, F.cramerShoupPhase2Oracle_eq_skNatOfZMod hasAD H isElem hmem d sk]
+  · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
+
 private theorem exists_length_encDesc_pure_le {d : ℕ → F.Desc}
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ∃ c k : ℕ, ∀ n, ∀ d' ∈ (PMF.pure (d n)).support,
@@ -1450,6 +1372,13 @@ private theorem exists_length_encDesc_pure_le {d : ℕ → F.Desc}
   rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
   subst hd'
   simpa only [encUnary_apply, List.length_replicate] using hck n
+
+private theorem order_pure_ge {d : ℕ → F.Desc} {m : ℕ → ℕ}
+    (hm : ∀ n, m n ≤ F.order (d n)) :
+    ∀ n, ∀ d' ∈ (PMF.pure (d n)).support, m n ≤ F.order d' := by
+  intro n d' hd'
+  rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
+  exact hd' ▸ hm n
 
 private theorem negligible_advantage_of_eight_le {g₀ g₁ h₀ h₁ : ℕ → Game}
     (hmid : Negligible fun n => Game.advantage (h₀ n) (h₁ n))
@@ -1490,33 +1419,14 @@ theorem advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le
           (F.cramerShoupADEncryptProb encAD H d) (F.cramerShoupADDecryptOpt H isElem d)
           adversary bit n) =
       (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
-        (ProbComp.eval (F.sampleCramerShoupSK n (d n))).bind fun sk =>
-          F.cramerShoupCCA2InnerSK true (fun p => encAD p.2) H isElem (d n) adversary bit n
-            (a : ZMod (F.order (d n)))
-            (sk.1.1 : ZMod (F.order (d n))) (sk.1.2 : ZMod (F.order (d n)))
-            (sk.2.1.1 : ZMod (F.order (d n))) (sk.2.1.2 : ZMod (F.order (d n)))
-            (sk.2.2.1 : ZMod (F.order (d n))) (sk.2.2.2 : ZMod (F.order (d n))) false := by
+        F.cramerShoupCCA2SampledSK true (fun p => encAD p.2) H isElem (d n) adversary bit n
+          (a : ZMod (F.order (d n))) := by
     simp only [pmf_norm, cca2ADGameOn, cramerShoupKeyGenProb, cramerShoupADEncryptProb,
-      cramerShoupValid, F.smul_encode, F.cca2ADPhase1Oracle_cramerShoupADDecryptOpt]
-    refine congrArg _ (funext fun a => congrArg _ (funext fun sk => ?_))
-    dsimp only [cramerShoupCCA2InnerSK]
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-    rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod (d n) (a : ZMod (F.order (d n))) sk,
-      F.cramerShoupPhase1Oracle_eq_skNatOfZMod true H isElem hmem (d n) sk]
-    refine congrArg _ (funext fun choiceOut => ?_)
-    by_cases h : (isElem (d n, choiceOut.1.1.1.1) && isElem (d n, choiceOut.1.1.1.2)) = true
-    · simp only [pmf_norm, h, ↓reduceIte, Bool.false_eq_true,
-      F.cca2ADPhase2Oracle_cramerShoupADDecryptOpt,
-      F.decodeBits4_dropFrame_encodeCramerShoupPublicKey, cramerShoupCCA2InnerB]
-      refine congrArg _ (funext fun b => ?_)
-      have hct :=
-        F.encodeCramerShoupEncrypt_skNatOfZMod H (d n) (a : ZMod (F.order (d n)))
-          (sk.1.1 : ZMod (F.order (d n))) (sk.1.2 : ZMod (F.order (d n)))
-          (sk.2.1.1 : ZMod (F.order (d n))) (sk.2.1.2 : ZMod (F.order (d n)))
-          (sk.2.2.1 : ZMod (F.order (d n))) (sk.2.2.2 : ZMod (F.order (d n)))
-          (if bit then choiceOut.1.1.1.2 else choiceOut.1.1.1.1) (encAD choiceOut.1.1.2) b
-      rw [hct, F.cramerShoupPhase2Oracle_eq_skNatOfZMod true H isElem hmem (d n) sk]
-    · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
+      cramerShoupValid, F.smul_encode, F.cca2ADPhase1Oracle_cramerShoupADDecryptOpt,
+      F.cca2ADPhase2Oracle_cramerShoupADDecryptOpt, cramerShoupCCA2SampledSK, bind_assoc, pure_bind]
+    exact congrArg _ (funext fun a => congrArg _ (funext fun sk =>
+      F.cramerShoupCCA2InnerSK_false_eq true (fun p => encAD p.2) H isElem hmem (d n)
+        adversary bit n a sk))
   rw [hgame0, cramerShoupADGroupCCA2Game,
     F.cramerShoupMsgCCA2Game_pure_eq_innerSK true (fun p => encAD p.2) H isElem d adversary bit n]
   exact F.advantage_cramerShoupCCA2InnerSK_le true (fun p => encAD p.2) H isElem (d n)
@@ -1549,10 +1459,7 @@ theorem DDH.indcca2ADOn_cramerShoup
       (F.cramerShoupKeyGenProb d) (F.cramerShoupADEncryptProb encAD H d)
       (F.cramerShoupADDecryptOpt H isElem d) := by
   have hgroup : F.cramerShoupADGroupINDCCA2 encAD (fun n => PMF.pure (d n)) H isElem :=
-    hDDH.cramerShoupADGroupINDCCA2 encAD hH hisElem hmem hCR hm0
-      (fun n d' hd' => by
-        rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
-        exact hd' ▸ hm n)
+    hDDH.cramerShoupADGroupINDCCA2 encAD hH hisElem hmem hCR hm0 (F.order_pure_ge hm)
       hinv (F.exists_length_encDesc_pure_le hd)
   intro adversary hA
   dsimp only [INDCCA2ADOn, Game.Indistinguishable]
@@ -1580,34 +1487,16 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
         (cca2GameOn (F.cramerShoupValid isElem d) encBits (F.cramerShoupKeyGenProb d)
           (F.cramerShoupEncryptProb H d) (F.cramerShoupDecryptOpt H isElem d) adversary bit n) =
       (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
-        (ProbComp.eval (F.sampleCramerShoupSK n (d n))).bind fun sk =>
-          F.cramerShoupCCA2InnerSK false (fun _ => []) H isElem (d n) adversary.toADUnit bit n
-            (a : ZMod (F.order (d n)))
-            (sk.1.1 : ZMod (F.order (d n))) (sk.1.2 : ZMod (F.order (d n)))
-            (sk.2.1.1 : ZMod (F.order (d n))) (sk.2.1.2 : ZMod (F.order (d n)))
-            (sk.2.2.1 : ZMod (F.order (d n))) (sk.2.2.2 : ZMod (F.order (d n))) false := by
+        F.cramerShoupCCA2SampledSK false (fun _ => []) H isElem (d n) adversary.toADUnit bit n
+          (a : ZMod (F.order (d n))) := by
     simp only [pmf_norm, cca2GameOn, cramerShoupKeyGenProb, cramerShoupEncryptProb,
-      cramerShoupValid, F.smul_encode, F.cca2Phase1Oracle_cramerShoupDecryptOpt]
+      cramerShoupValid, F.smul_encode, F.cca2Phase1Oracle_cramerShoupDecryptOpt,
+      F.cca2Phase2Oracle_cramerShoupDecryptOpt, cramerShoupCCA2SampledSK, bind_assoc, pure_bind]
     refine congrArg _ (funext fun a => congrArg _ (funext fun sk => ?_))
-    dsimp only [cramerShoupCCA2InnerSK, CCA2AdversaryOf.toADUnit]
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-    rw [eval_run_interpret_map_bind,
-      F.encodeCramerShoupPublicKey_eq_skNatOfZMod (d n) (a : ZMod (F.order (d n))) sk,
-      F.cramerShoupPhase1Oracle_eq_skNatOfZMod false H isElem hmem (d n) sk]
-    refine congrArg _ (funext fun choiceOut => ?_)
-    by_cases h : (isElem (d n, choiceOut.1.1.1) && isElem (d n, choiceOut.1.1.2)) = true
-    · simp only [pmf_norm, h, ↓reduceIte, Bool.false_eq_true,
-      F.cca2Phase2Oracle_cramerShoupDecryptOpt, F.decodeBits4_dropFrame_encodeCramerShoupPublicKey,
-      cramerShoupCCA2InnerB]
-      refine congrArg _ (funext fun b => ?_)
-      have hct :=
-        F.encodeCramerShoupEncrypt_skNatOfZMod H (d n) (a : ZMod (F.order (d n)))
-          (sk.1.1 : ZMod (F.order (d n))) (sk.1.2 : ZMod (F.order (d n)))
-          (sk.2.1.1 : ZMod (F.order (d n))) (sk.2.1.2 : ZMod (F.order (d n)))
-          (sk.2.2.1 : ZMod (F.order (d n))) (sk.2.2.2 : ZMod (F.order (d n)))
-          (if bit then choiceOut.1.1.2 else choiceOut.1.1.1) [] b
-      rw [hct, F.cramerShoupPhase2Oracle_eq_skNatOfZMod false H isElem hmem (d n) sk]
-    · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
+    rw [← F.cramerShoupCCA2InnerSK_false_eq false (fun _ => []) H isElem hmem (d n)
+      adversary.toADUnit bit n a sk]
+    dsimp only [CCA2AdversaryOf.toADUnit]
+    rw [eval_run_interpret_map_bind]
   rw [hgame0, cramerShoupGroupCCA2Game,
     F.cramerShoupMsgCCA2Game_pure_eq_innerSK false (fun _ => []) H isElem d adversary.toADUnit
       bit n]
@@ -1639,10 +1528,7 @@ theorem DDH.indcca2On_cramerShoup
       (F.cramerShoupKeyGenProb d) (F.cramerShoupEncryptProb H d)
       (F.cramerShoupDecryptOpt H isElem d) := by
   have hgroup : F.cramerShoupGroupINDCCA2 (fun n => PMF.pure (d n)) H isElem :=
-    hDDH.cramerShoupGroupINDCCA2 hH hisElem hmem hCR hm0
-      (fun n d' hd' => by
-        rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
-        exact hd' ▸ hm n)
+    hDDH.cramerShoupGroupINDCCA2 hH hisElem hmem hCR hm0 (F.order_pure_ge hm)
       hinv (F.exists_length_encDesc_pure_le hd)
   intro adversary hA
   dsimp only [INDCCA2On, Game.Indistinguishable]

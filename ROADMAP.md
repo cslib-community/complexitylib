@@ -1,7 +1,7 @@
 # Roadmap
 
-The directions Complexitylib aims to cover, grouped by area.
-This file lists directions only: status, progress and completion notes live on the linked issues and pull requests, module docstrings describe what is proved, and the [README](README.md) and the curated formal abstracts present completed results.
+The directions cslib-frontier aims to cover, grouped by area.
+This file lists directions only: status, progress and completion notes live on the linked issues and pull requests, module docstrings describe what is proved, and the [results inventory](results/README.md) collects completed named results.
 A PR edits this file only when it opens or closes a direction.
 Each entry states its direction's scope in at most a few sentences, one sentence per line.
 A direction leaves this file only when it is completed or deliberately dropped, and there is no deferred tier.
@@ -12,6 +12,13 @@ Search Mathlib, CSLib and this library before starting, and check upstream work.
 
 The [pre-rewrite roadmap](https://github.com/cslib-community/cslib-frontier/blob/c89dd48c/ROADMAP.md) is the archive of past detail and design records, including the FHE industrial context, the first-order design decisions and the repository's history.
 The [version before the scope-only rewrite of 2026-11-08](https://github.com/cslib-community/cslib-frontier/blob/9886447e2/ROADMAP.md) holds the progress notes removed in that rewrite.
+
+## STOC submission 733
+
+- **Remaining Add/XNOR source clauses** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
+  Exact reachable-state counting DP and the faster all-count/balance prepass of Lemma 8/Theorem 7;
+  small-operand bounds, reduction multiplicity, sparsification and repaired ideal-model claims.
+  Preserve the well-formed typed-input model, computed projection depth and explicit bit resources.
 
 ## Programs
 
@@ -29,417 +36,6 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 | A Verso guide with a chapter per area | [#585](https://github.com/cslib-community/cslib-frontier/issues/585) |
 | Randomized Word RAM: broader expected-time rules and simulation bridges | [#1124](https://github.com/cslib-community/cslib-frontier/issues/1124) |
 | Proof automation: predictable polynomial-time certificate search | [#1155](https://github.com/cslib-community/cslib-frontier/issues/1155) |
-| STOC manuscript headline formalizations, including quantitative bounds and source obstructions | [#2527](https://github.com/cslib-community/cslib-frontier/issues/2527) |
-
-For submission 733 in [#2527](https://github.com/cslib-community/cslib-frontier/issues/2527),
-the fixed-operator run/cosine product, uniform bit-1 average, arbitrary-width
-forward/backward projection, exact common-power stripping, carry decomposition,
-forced solution parity, unique positional cut, and adjacent swap collision with
-arbitrary common context are implemented. The all-bit run factorization, actual
-transfer/distribution bridge, explicit diagonalization/spectral sum and quantitative
-decay/bit-one extremality (Theorem 5) are also implemented. The all-main-results
-objective remains open. The actual guard-based polynomial-time NP-completeness
-reduction, every positive rational width restriction, and the direct linear-width
-3-SAT map are implemented, with explicit encoding-length bounds. Theorem 2's
-sparsification/disjunction resource refinement, exact reduction multiplicity,
-multitape bit-runtime certificates, native meet-in-the-middle resources, small-operand
-bounds, source multitape streaming-class enumeration and dissection time/space
-certificates,
-and ideal-chain
-search/decision lower bounds still need proofs. Executable bit-table reachability
-with recursive pointer/Boolean cost bounds, exact forward/backward class-counter
-DP and computed balance, both uniform per-class means, and the exact expected
-operator-flip weight are implemented. Quarter-indexed forward/backward class streaming
-and the counter-directed dissection now have unrestricted decision/witness correctness,
-exact indexed multiplicities, output-sensitive chain-call counts and a retained dictionary
-node bound in terms of the actual maximum smaller-class size. Their native resource
-composition is now supplied by the fixed-loop endpoint
-described below; the source multitape bit-model bridge remains open.
-Native forward counter preprocessing now executes from standard encoded input
-through halt, preserving indexed multiplicities, with at most $43(q+1)2^p$
-instructions and a conservative full accessed-storage certificate that includes
-counter word widths and registers. Original-input native projection and backward preprocessing now reuse the same
-counter kernel through explicit operand reversal and complement conjugacy. They
-include input-fit, charged projection/initialization/halt and prefix memory-support
-certificates. Native class streaming, dictionary allocation/reuse and integrated native
-dissection resources are supplied by the later endpoint below; the source
-multitape bit-model certificate remains open. Neither preprocessing certificate
-alone completes Lemma 8 or Theorem 7.
-The native balance traversal now reads both actual counter arrays, including
-complemented backward addresses, and returns their exact maximum smaller-class
-size in at most $14\cdot2^p+7$ instructions including halt. Every continuing
-prefix preserves the entire memory, so the scan adds eighteen registers and no
-occupied memory cells. This certificate requires the already constructed arrays;
-their joint original-input execution with class streaming and dictionary storage
-is now supplied below. The scan alone does not complete the integrated endpoint.
-Native first-quarter construction now clears actual low-key heads and stores
-all indexed full-state/witness records with charged instruction, halt, word-fit
-and prefix-support certificates. Native operator reversal, inverse head lookup
-and pointer-based full-state recovery on bucket hits are also proved and checked
-in a consecutive native pipeline. Direct full-state dictionary retention now
-consumes actual bucket hits without an output array. Native sparse-address
-insertion/lookup, distinct-state release and exact memory restoration have
-per-bucket instruction and prefix-support proofs. A read-only single-hit backward
-probe now has an exact full-state/tag/witness execution theorem; its local bucket
-iteration and early exit are proved. The composed whole-class streaming code now executes packed-index filtering,
-bucket scanning and early exit, with checked success/exhaustion clients and
-a no-store prefix theorem. The linked scan also exports the actual hit node,
-packed indices, recovered state and dictionary payload provenance. This physical
-contract alone does not prove original-chain witness correctness. A bounded scan
-reconstruction theorem now derives a full original-chain solution from actual filled
-retained entries and semantic backward bucket records, including collision replacement
-and zero packed witnesses. Native projected preparation/filtering and consecutive
-retention-to-probe composition still need to establish its construction premises.
-Consecutive original-input executable clients now cover native projection, both
-preparations, retention, streaming hits and returned-register reconstruction, including
-positive projection width, zero width and collisions. They use one-word quarters
-with self-inverse fourth-quarter operations and one retained second-quarter index;
-these restrictions do not establish the general construction premises.
-General native backward preparation now derives full inverse-state bucket records
-and original packed indices for arbitrary operand lists and widths, including
-non-self-inverse additions. The complete native selected-class enumerator now connects
-these buckets to a decision and witness endpoint, described below. The later
-native endpoint supplies global iteration and RAM resources; the source bit model
-remains open.
-Forward first-quarter preparation followed by forward second-quarter retention now
-derives its exact retained dictionary, top and provenance from actual native stores,
-with a checked direction-distinguishing client and preservation of all forward buckets.
-Separate inverse fourth-quarter preparation now preserves this actual forward
-dictionary and derives both native bucket families and the exact dictionary equation.
-The bounded `dualProbe_exec` composes those constructions, native register transfers,
-inverse-bucket head loading and third-quarter scanning, proving any reported hit
-solves the original chain. Complete clients check direction-sensitive operands,
-zero witness tags, dirty outside memory, an actual hit and a miss. These results
-now compute both bucket selections from a class value and the original middle
-quarters: native projection/reversal and inverse/forward query evaluation feed
-saved addresses into retention and scanning. The generic original-input
-`projectedProbe_exec` proves hit soundness with every setup/projection/query stage
-charged. Native forward/complemented backward counter indices are also computed;
-this bounded API does not read counter contents or choose orientation; the new
-composed endpoint below does. Checked clients
-include non-self-inverse addition, colliding full-state low keys, multiword
-projection order, nonzero counter indices and whole-program zero-width/local-miss
-runs. The older bounded API fixes the middle-quarter words; the new full-class
-`searchClass_exec` computes their bounds and iterates both natively. From original
-arrays it derives both bucket families, the complete forward-class dictionary,
-valid release chain and full opposite stream. Its tag is nonzero exactly when the
-selected class has an original indexed solution, a zero tag proves class absence,
-and returned registers reconstruct the original witness. The packed predicate is
-proved equivalent to existing `Dissection.Meets`. General finite termination/time
-includes all setup/projection/preparation and actual bucket hits; early exit and
-exhaustion are proved, with empty-quarter, zero-width and collision clients.
-This completes the selected-class native decision milestone, not the global endpoint.
-The backward-record consumer below cannot substitute for the forward dictionary
-required by original-chain probe soundness.
-Consecutive backward preparation followed by native forward retention now derives
-its dictionary and payload provenance from computed inverse records, with operand,
-other-memory and register frames. This bounded component is not the full backward
-class enumerator: projected query and inverse continuation/probe composition remain open.
-A separate charged native forward query now preserves all memory and its packed
-index; a layout lemma shows retention preserves every computed inverse bucket.
-The arbitrary-width query and zero-width collision clients are checked.
-The bounded projected preparation/query/probe and original-chain reconstruction
-connection is now supplied by `projectedProbe_exec` above; these older components
-do not by themselves provide whole-class completeness.
-The new `Driver.dissection_exec` milestone constructs both native projected counter
-tables, computes their actual balance before retaining classes, and selects the
-smaller retained side by loading those table cells. Inverse retention uses the
-reversed/complemented chain with a proved original-class/witness correspondence;
-it does not use the older backward helper as a forward dictionary substitute.
-Both directions release their actual dictionary chains, restore witness registers,
-and frame original input and counter tables. A fixed-size native outer while
-loop now covers all low-bit classes unless an actual valid hit exits early. It
-computes its range by a native shift, passes actual class/complement registers
-to the same proved counter-selected subroutines, advances exactly one class after
-a miss and exits at the bound on a hit without destroying the witness. Its raw-input
-endpoint proves global hit/miss equivalence, original witness soundness and exact
-computed balance, with a conservative charged finite instruction bound.
-The complete client checks strict inverse and forward selection, empty-quarter
-exhaustion, zero-width multiplicity collisions, actual release and final counters.
-The native outer search has exactly 812 instructions; the complete preprocessing
-and search block has 960 (961 with halt), independent of class count and scalar
-values. The conservative bound adds 7·2^p+6 to the earlier unrolled reference cost,
-charging setup, complement arithmetic, branches, increment and loop control.
-This completes the fixed-size outer-control functional/finite-time milestone.
-The new `Driver.original_resources` endpoint now derives global native work and
-simultaneous compiled-prefix nonzero support from standard initialized original
-quarter arrays. Actual retained/streamed indexed counts equal the computed class
-counters; their sums are the two half-word populations. The probe is write-free,
-and actual counter selection bounds the retained count by the computed maximum
-of minima. Each release restores the zero dictionary tail, so the proof reuses
-one lifetime allowance instead of accumulating historical allocation. A compact
-layout derives input fit and logarithmic physical word/address capacity, including
-full-state slots and half-word multiplicity values. Preprocessing, all array and
-quarter setup, both orientations, release, loop control and halt are charged.
-For quarter lengths $k,k,k,k+r$ with $p≤k$, block time is at most
-$1000(4k+r+1)2^{2k+r}$ instructions, plus halt; simultaneous occupied memory is at
-most $1000(4k+r+1)(2^{k+r}+\mu)$ words, plus forty registers. The maximum
-$\mu$ is the actual computed balance, not a class mean. Every compiled prefix is
-word-bounded; multiplying occupied words and registers by the derived width
-accounts for stored word contents. Checked clients include strict inverse
-selection, non-self-inverse addition, collisions, empty misses and zero width.
-The new `original_output_resources` appends an actual native output serializer.
-It writes a length-prefixed status/operator array, derives an ordinary original
-witness or exhaustive miss, and preserves the computed balance. Both orientations
-emit all bits, including leading zeros; inverse output moves native destination
-cursors backwards. The added time is at most $7q+53$ native instructions, plus
-the final halt, and every compiled prefix adds the same conservative linear
-allowance to the prior occupied-cell bound. Forty registers and the original
-derived physical width suffice. The complete block has 1,108 instructions (1,109
-with halt), independent of quarter lengths. The six-state `OutputCodec.decoder`
-is also an actual deterministic multitape machine: it converts the encoded
-represented word array to an optional raw bit witness in at most $6q+9$ steps
-and zero work-tape space. Empty hits and misses have distinct encodings.
-The standalone codec begins with the output array already encoded. The new
-`BitExecution.solveBitsCertificate` now connects original-order framed quarter
-operands through actual bit-machine suffix reversal, sparse initialization,
-clocked execution of the real native program, output-memory readback and decoding.
-`original_bits_correct` derives an exhaustive miss or a sound original witness
-without supplied simulation or semantic conclusions. Input framing is bounded by
-$4q(2m+1)+4$ bits. The generic reusable `Program.clockedListCertificate` exposes
-charged initialization, simulator and reader profiles; physical state bounds use
-the derived width and $q+1+j$ stored cells after $j$ steps, including zero bindings.
-That original bit simulator remains a fixed-parameter family. The new
-`ProgramGeneration` and `GeneratedRunInput` stages now uniformly compute and emit
-the actual native executable, physical width, binary clock and initialized sparse
-state from original input words. Quarter lengths come from the arrays. A fixed
-303-expression literal template is proved equal to the native literals for every
-runtime metadata input; filling the reused graph produces exactly the reviewed
-1,109-instruction program. A concrete row encoding/parser has program roundtrip,
-injective binary wire and at most five fields per instruction. The complete
-`packetCertificate` has polynomial bit time, simultaneous workspace and encoded
-packet size in original input length, with constants independent of runtime
-metadata. Powers use unary size exponents and binary values/clock, so preparation
-does not materialize exponentially long unary numbers. `packet_original` and
-`original_correct` connect the real computed program/configuration/state to the
-actual native run and exhaustive absence or original witness, without executable
-or semantic correctness premises.
-Uniform execution is now proved by `UniformExecution.packetExecutionCertificate`
-and `sourceCertificate`: one machine reads a runtime encoded program, computes
-halt parking, executes a binary-counted opcode interpreter, reads the actual
-memory output and runs the witness decoder. `original_machine` places its tape
-count, finite state set and resource constant before all original inputs, deriving
-exhaustive absence or a sound original-chain witness with no simulation premise.
-The reusable `Interpreter.step_serialize` covers every native program/state,
-including faults; its `clocked_resources` charges time in the binary clock and a
-polynomial of the maximum complete encoded prefix state, with no clock multiplier
-in simultaneous workspace. Parking, source/packet preparation and output
-materialization are separately charged. This is a uniform bit-computability
-bridge with explicit overhead, not the source's sharp asymptotic result.
-The original runtime interpreter still retains zero bindings. The separate
-`CompactExecution` implementation now filters at initialization and after every
-actual native step, preserving exact normalized prefix semantics and output.
-Its real compactor has cubic scan time and linear workspace in its input wire.
-`original_compact_encoding` and `original_compact_trajectory` derive a bound on
-every retained prefix using computed-balance native support and physical word and
-address widths, including arbitrarily long post-halt parking. This is a changed
-implementation, not a live-support bound asserted for the old sparse execution.
-`Source.prepareCertificate` additionally computes the paper's consecutive
-`k,k,k,q-3k` cut from one operand list, first operand seed, zero target and explicit
-`min(p,m,k)` projection depth. Its single uniform source machine proves exhaustive
-absence or an original-order witness; admitted depths make the cap inert, and all
-quarter remainders are handled. `compact_trajectory_bound` connects its actual
-prepared packet to the retained-prefix bound.
-A separate uniform deterministic multitape radix sorter now implements stable
-key-bit filtering and a runtime-width loop. Its time is
-`O((w+1)(I+(n+1)Q(B)))` and charged simultaneous space is `O(I+Q(B))`,
-where `B` includes actual maximum record/payload width and `Q` is a fixed
-monotone polynomial. Every prefix's record volume and workspace are bounded.
-`AddXNORSortedRecords` derives original projected-quarter and forward retained-class
-membership, packed-witness recovery and physical widths, preserving collisions.
-Those sorting observers consume already materialized lists. `SourceQuarter.run`
-now integrates real original-input cut/seed/depth/projection, packed-index generation,
-chain evaluation and sorting for the first projected quarter. One uniform machine
-has time and charged prefix-peak space `(2^k+1)Q(I+1)` for fixed polynomial `Q`,
-original input bit length `I` and computed `k=(N-1)/4`. Original packed-witness
-correctness and an input-wire bound polynomial in `N,m` are derived. This route
-bypasses sparse RAM interpretation/cubic compaction for the quarter stages.
-`SortedMeet.run` now composes actual original-input half generation in both
-directions, tagged full-state radix matching, one-record streaming scan and
-original-order packed-witness decoding. Its one uniform multitape machine proves
-exhaustive miss and sound witnesses, without assuming a dictionary or supplied
-simulation. The inverse route actually reverses operands and complements states;
-addition is not treated as self-inverse. The composed certificate charges both
-materialized half lists and every intermediate phase/output, not only the scan's
-retained state. These general profiles have not been reduced to a global source
-asymptotic. This full-state fallback does not use projection depth for smaller
-classes and does not supply the desired smaller-class peak space. Projected class
-enumeration/counting, computed orientation, bounded-batch access and arena
-reuse/release remain open; the complete old uniform execution keeps its old costs.
-A separate `ClassStreaming` execution now computes actual per-class occurrence
-counts and their maximum smaller count before retaining anything, sorts one
-computed smaller full-state class, streams opposite-side packed words and passes
-only input/counter/hit between classes. Original-input witness/miss and one
-uniform bit-machine execution are proved. Every retaining prefix has a derived
-smaller-count bound and a physical full-state/packed-payload wire bound; the
-composed profiles separately charge all callback, sorting, clock and output tapes.
-This implementation scans every half word for each class and uses linear lookup;
-callbacks still charge polynomial workspace in their retained input. It does not
-prove the sharp source global bounds. Efficient projected-quarter joins, actual
-DP count tables, resource-faithful class access and linear auxiliary workspace
-remain to be integrated, rather than inferred from retained list size.
-`BatchedAccess` now computes capacity from actual retained counts, buffers opposite
-occurrences, radix-sorts/matches full batches, releases them and flushes the final
-partial batch. Its original-input witness/miss and one uniform machine are proved.
-Retention/buffering use structural linear insertion, avoiding polynomial callbacks
-on complete retained arrays. A derived record-volume amortization includes every
-retained reread at a flush. It is not a bit-time theorem: the actual counter loop
-still copies captured retained/buffer state, and insertion copies growing buffers.
-Those costs, repeated class/count scans, efficient projected-quarter joins and
-persistent-tape producer/access composition remain open before sharp global time
-and simultaneous peak space can be concluded. Earlier implementations and all
-their costs are unchanged.
-`GroupedQuarter.run` now composes the real original-input first-quarter generator
-and sorter with a one-pass nested-frame equal-key writer. The machine retains
-only a previous key; a large colliding group is output without a growing-group
-state or repeated group copying. Exact grouped wire/order/occurrence semantics
-and a uniform quarter-scale time/charged-peak-space bound are proved, including
-physical record widths and callback/framing temporaries. These quarter buckets
-are not the complete two-quarter classes. `ClassJoin` now assembles actual
-forward/inverse quarter-query generation, tagged sorting/grouping, exhaustive
-packed-pair joins, count-only group products and per-pair streamed full-state
-reconstruction from original input. Its fixed runtime outer loop visits every
-computed forward class and produces a binary count table; zero counts have
-original packed-word exhaustive-miss semantics. The stored table has the derived
-quarter-scale bound `2^p (4k+7)`. Actual uniform bit certificates include every
-composed phase and table/control copying. The installed count consumer now
-bypasses groups: one pass over sorted tagged quarter records stores one key and
-three binary counters. Its actual multitape time is `I+(n+1)P(B)` and charged
-all-prefix space is `I+P(B)`, where `B` includes the maximum physical row and
-the binary encoding of `n^2+1`. Retention now also uses a real nested streamed
-join: parity filters produce the two occurrence runs, each replay is charged
-to actual emitted pairs, and grouped control sums callback work and takes peak
-workspace. Its time and charged every-prefix space are `(N+M+G+1)P(B)` for
-quarter records N, emitted class pairs M, groups G and maximum physical row B.
-For generated groups G is at most N; selected M is bounded by computed balance.
-Filtered runs, current group and materialized class output are all charged. `ClassBalance` now derives unique complete
-half words, exact original-half counter counts in both directions, computed
-balance and count-selected retention. `JoinedDissection` assembles that retention
-with actual opposite-quarter batch generation,
-fixed all-class release/iteration, source preparation and original witness
-readback; witness/miss and returned computed-balance correctness are proved.
-Actual counts now also select a single whole-class match when the larger
-class fits retained size plus the four quarter populations. That direct branch
-avoids per-pair dictionary/buffer state copies. The allowance is at most `11*2^k`
-on the source cut; every direct list prefix has a derived quarter-plus-balance
-wire bound and total direct matched record volume is at most the two half
-populations. These are list/record bounds, not internal TM resource inequalities.
-The installed fallback is now `ClassBatches`, replacing the per-pair dictionary/
-growing-buffer path. It regenerates quarter groups for a bounded row-aligned
-window and sends only completed batches to the retained matcher, then releases
-them. Selected-left/right Cartesian emission skips unselected pairs; binary
-rank/count state and output emission use the real streaming kernel. The retained
-dictionary is projected out before pair/full-state callbacks. Capacity includes
-quarter volume, which pays for restart scans. Derived window coverage/provenance,
-capacity-plus-quarter output size, quarter-scale labels and global repeated-input
-volume include padding, collisions, empty groups and partial rows. Every logical
-output prefix has a computed balance-plus-quarter wire bound. These are record/
-wire charges, not closed bit-resource inequalities. No full opposite class or
-half-space scan is executed by this fallback. Empty dictionaries skip opposite generation by proved matcher
-soundness. The total class pair population across classes is bounded by
-the two half populations, without a class-mean hypothesis. This is a population
-bound, not bit time. Count-table and simultaneous retained/live-buffer prefix
-encodings are bounded separately from machine temporaries; generated-record
-prefixes no longer need a packed-counter-limit hypothesis.
-The source's fast reachable-state count prepass remains unimplemented on this
-sorted-list route. Nested consumer loops now use the encoded streaming kernel:
-each list is read once, time sums actual callback/framing/state-copy rounds,
-and workspace uses actual callback/prefix-state/token maxima. The all-class
-search uses the same fixed loop on uniformly generated binary class-index data;
-its derived wire is `2^p(2p+1)`, within quarter scale at the capped source depth.
-It sums executed class rounds rather than multiplying maximum class time.
-Class dictionaries are released; only a found pair survives into the next round.
-The actual balance certificate now streams count minima into one scalar maximum,
-with derived prefix width, bypassing table construction/reversal/reduction.
-Preparation, half-array construction and the installed readback machine have proved polynomial bounds
-in the physical original input, using derived search-result payload size.
-The per-pair retained/buffer copy path is no longer installed. The actual sorted-list
-source certificate now has proved worst-case half-exponential bit time and
-quarter-exponential-plus-computed-balance all-prefix workspace, including retained
-preparation and simultaneous intermediates (`SourceResources.sourceCertificate_bounds`). Per-batch parameter copies and repeated quarter
-scans are now explicitly amortized by actual class populations plus capacity. Neither a traversal sum nor
-the now-composed actual bit clock establishes the target source asymptotics.
-`SortedMatchBounds` now normalizes the installed matcher certificate, including tagging,
-radix passes, witness scan and framed argument/intermediate copies. `MatcherResources`
-derives its physical widths from original generated records, sums the actual fallback
-matching clocks over all class/batch labels, and bounds each matching prefix workspace
-by computed maximum balance plus quarter allowance times one fixed width polynomial.
-This closes matching clocks rather than treating records as unit cost.
-`ProducerResources` now normalizes the installed inverse quarter, class sorting/counting
-and projected count certificates, including real preparation, generation, tagging, sorting
-and binary counter widths. Both count orientations have an original-input all-class phase
-sum; opposite counting repeated at generated restart labels is amortized by actual capacity.
-Full-state reconstruction of actual windows also has a summed phase allowance and
-every-batch prefix workspace bound, including pair/output/callback tapes.
-`BatchResources` now composes the installed scalar count/division, retained-context
-copies, quarter regeneration/sort, bounded window, full-state reconstruction and
-two-orientation matcher into the actual guarded label callback. Its source-cut sum is
-half-exponential and each callback's all-prefix workspace is
-quarter-plus-computed-balance, with polynomial factors in original physical widths.
-Padding labels and both computed orientations are included. `BatchLoopResources` now
-charges generated-label setup/fold control and derives parked prefix witness widths.
-`SourceResources` composes retained preparation and simultaneous ambient frames into the
-whole source certificate. `WholeRunResources.sourceCertificate_bounds` gives the
-preparation-to-readback envelope: time is bounded by the installed balance
-prepass allowance plus `(classTime + numberOfClasses + 1) * P(originalInputBits)`, and space
-by the prepass workspace plus `(classSpace + numberOfClasses + 1) * P(originalInputBits)`.
-`classTime` is the sum of installed searches, `classSpace` their maximum, including all
-internal search costs; neither is a supplied runtime contract. The installed outer-loop
-callback copies, every prefix state, generated labels and boundary phases are now composed
-in original widths. A generic envelope for the unchanged streaming fold supplies actual
-callback sums versus workspace maxima. `BalanceResources` closes the installed balance
-prepass: regenerated counts, scalar min/max, labels, copies and every prefix fit
-half-exponential time and quarter-exponential space at the actual source cut, with
-polynomial factors in original physical input width. Its `sourceCertificate_search_bounds`
-composes this into the whole run. `SearchResources` additionally normalizes actual
-class-pair/full-state emission and all selected direct-search clocks/workspaces,
-including computed orientation/materialization and producer/matcher tapes. Its
-`sourceCertificate_restart_bounds` leaves installed selected restarted-search sum/max
-expressions explicit. `SourceResources.source_restart_bounds` now closes them using
-actual generated-label capacities, original-width scalar polynomials and computed balance;
-`sourceCertificate_bounds` composes them with the DIRECT, balance and whole-run envelopes.
-This proves the actual uniform original-input solver's worst-case bit time
-`2^(q/2) P(I)` and simultaneous space `(2^(q/4) + mu_d) P(I)`, including every callback,
-control/frame, intermediate and readback tape. Integer divisions use floors; the fourth
-quarter keeps every residue. The input supplies original typed words and requested depth,
-with computed depth `d = min(requestedDepth, wordWidth, q/4)`; no generated dictionary, runtime
-bound, witness conclusion or direct-case restriction is a premise. These are the
-worst-case resource bounds, not the source's faster count/prepass clauses or ALL-main.
-The complete client couples the general bounds to correctness and checks real
-restarted arithmetic hit/miss and backward-retention cases. The source reachable-state-DP all-count and faster
-quarter-time prepass remain open.
-The sharp global bit inequalities follow from actual certificate composition, not
-encoding or record-volume bounds alone. Older solver sources are preserved; the new
-direct route bypasses their interpreter without removing their costs from their own
-certificates. A real streaming default filter also removes whole-list accumulator
-copying, with `O(I+(n+1)P(B))` time and `O(I+P(B))` charged space. It is an alternative
-component, not installed in the existing cubic-filter uniform execution. Those old
-charges must remain in any composed execution bound. The total metadata reader's
-defaults and empty/malformed raw input handling are not a full source-input validator.
-Association-list scan time and polynomial internal interpreter workspace remain;
-filtering and a retained encoding bound do not prove sharp source bit time/peak space.
-The sorted-list route now composes resource-faithful access and all transient/output
-workspace into the stated sharp global bit time/space bounds. This does not establish
-the source's reachable-state-DP all-count or faster quarter-time balance prepass.
-Small-operand resources, reduction multiplicity and sparsification refinements, and
-repaired ideal-model bounds remain open as well. The faster prepass and other source
-clauses still prevent closing Lemma 8/Theorem 7 or 733 ALL-main. Earlier component
-contracts above are not individually the global resource endpoint.
-The pointer/Boolean and counter-operation
-models do not replace native bit-runtime or peak-space certificates. The actual fixed
-WordRAM reachable-state array program now has an unrestricted standard-input-to-halt
-correctness theorem, charged initialization and iteration, and a complete access-transcript
-storage bound: at most $45(q+1)2^m$ instructions and
-$(6\cdot2^m+4q+42)(\lfloor\log_2(3\cdot2^m+2q+12)\rfloor+1)$ stored bits including
-registers. This is a native WordRAM endpoint, not a multitape bit-time or sparse-list
-certificate; the broader missing inventory above remains open. Exact witness search
-with concrete word-step/trie
-operation counts, uniform solution counts and planted size bias, parity/Hamming
-geometry, and all of Lemma 7's difference propagation are implemented. Lemma 10's
-literal lazy simulator has a checked injectivity obstruction; this invalidates
-that exact simulation claim, not Theorem 8's inequality. A repaired lower-bound
-proof remains part of the objective.
-Empirical CDCL and solution-count observations are not asymptotic theorems.
 
 ### Landmark theorems, in priority order
 
@@ -518,7 +114,7 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
   The homomorphic property of Definition 15.14 needs an exact or statistical-closeness formulation, since its exact distributional condition fails for the implemented sampler.
 - **Garbled circuits and Yao's protocol** ([#3236](https://github.com/cslib-community/cslib-frontier/issues/3236)): Prove exact correctness and concrete simulation privacy of point-and-permute garbling for arbitrary-basis circuits, with privacy bounded by the sum of `n + size` PRF advantages.
   Prove semi-honest security of Yao's two-party protocol, with oblivious transfer realized by a protocol through an advantage-preserving composition theorem instead of an ideal batched OT oracle, and an asymptotic PPT statement from a word-level pseudorandom function.
-  Extensions are output to both parties, free-XOR and half-gates.
+  Extensions are output to both parties, and polynomial-time free-XOR and half-gates privacy.
 - **General**: Reusable adaptive reductions, public-key encryption, universal-instance zero knowledge, hard-core predicates and hardness amplification, and connections to learning and average-case hardness.
 
 ### Zero-knowledge proof systems toward libzk ([#643](https://github.com/cslib-community/cslib-frontier/issues/643))
@@ -591,23 +187,24 @@ Containments, separations, closure properties, complete problems and reductions 
 - **Randomized primality tests** ([#2917](https://github.com/cslib-community/cslib-frontier/issues/2917)): the Euler-liar and strong-liar bounds `2 · #liars ≤ φ(n)` and the Rabin–Monier bound `4 · #strong liars ≤ φ(n)` (`n ≠ 9`) for odd composite `n`, and explicit Miller–Rabin and Solovay–Strassen verifiers putting the primes in `coRP` independently of AKS.
   The Solovay–Strassen verifier ([#2958](https://github.com/cslib-community/cslib-frontier/issues/2958)) uses the polynomial-time Jacobi symbol and a gcd step, since non-units can satisfy Euler's congruence.
 - **Space hierarchy:** the space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold its input.
-- **Space:** Savitch bounds for general space-constructible functions.
+- **Space:** `NSPACE(s) ⊆ DTIME(2^{O(s)})` for `log n ≤ s(n)`, generalizing `NL ⊆ P` ([#4083](https://github.com/cslib-community/cslib-frontier/issues/4083), milestone 2); `NSPACE(s) ⊆ DSPACE(s²)` is [NSPACE_subset_DSPACE_sq](CslibFrontier/Computability/Complexity/Classes/Space/Nondeterministic/Savitch.lean).
 - **Catalytic space and KMPS collapses** ([#2521](https://github.com/cslib-community/cslib-frontier/issues/2521)): native `CSPACE(s,c)` with nondeterministic and randomized variants, restoring the catalyst on every branch.
   Koucký–Mertz–Pyne–Sami's [*Collapsing Catalytic Classes*](https://arxiv.org/abs/2504.08444) with its parameter ranges and oracle promises: `CL = CNL = CPrL = CBPL`, compress-or-compute simulation, catalytic Savitch and complementation, randomized space–catalyst tradeoffs, hierarchy collapses and lossy-space consequences.
 - **Robust catalytic extensions** ([#2521](https://github.com/cslib-community/cslib-frontier/issues/2521)): the Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648), tracked separately from KMPS.
   Their broader collapse is conditional on an explicit circuit-hardness assumption, and their resetting-error and time regimes are kept distinct from the unconditional KMPS results.
-- **Randomized logspace** ([#459](https://github.com/cslib-community/cslib-frontier/issues/459), [#474](https://github.com/cslib-community/cslib-frontier/issues/474)): two-sided `BPL` amplification, the random-walk proof of `USTCON ∈ RL`, Nisan's generator with its read-once fooling theorem ([#3187](https://github.com/cslib-community/cslib-frontier/issues/3187)), space-efficient computation and configuration-graph bridge, `BPL ⊆ L²`, and Saks–Zhou's `BPL ⊆ L^{3/2}`.
-  The Saks–Zhou iteration as pure mathematics is [#3247](https://github.com/cslib-community/cslib-frontier/issues/3247), a milestone of [#474](https://github.com/cslib-community/cslib-frontier/issues/474).
-  The preprint route to native `RL = L` is [#1444](https://github.com/cslib-community/cslib-frontier/issues/1444), with its estimator in [#1721](https://github.com/cslib-community/cslib-frontier/issues/1721).
+- **Classical randomized-space proof reuse** ([#1444](https://github.com/cslib-community/cslib-frontier/issues/1444)): audit and simplify the existing `RL ⊆ NL ⊆ DSPACE(log² n)` proof in [LogSpace/Savitch.lean](CslibFrontier/Computability/Complexity/Classes/LogSpace/Savitch.lean).
+  Reuse support semantics, midpoint reachability, compact configuration graphs and native space simulation; share lemmas and refactor real clients while preserving encodings and workspace bounds.
+  `RL = L` remains unresolved; this classical-first milestone has no preprint-estimator dependency.
+- **Further classical randomized logspace** ([#459](https://github.com/cslib-community/cslib-frontier/issues/459)): two-sided `BPL` amplification, the random-walk proof of `USTCON ∈ RL`, Nisan's generator with its read-once fooling theorem ([#3187](https://github.com/cslib-community/cslib-frontier/issues/3187)), space-efficient computation and configuration-graph bridge, `BPL ⊆ DSPACE(log² n)`, and Saks–Zhou's `BPL ⊆ DSPACE(log^{3/2} n)`.
+  The Saks–Zhou iteration as pure mathematics is [#3247](https://github.com/cslib-community/cslib-frontier/issues/3247); these two-sided results are separate from the one-sided Savitch milestone.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888](https://github.com/cslib-community/cslib-frontier/issues/888)): the native inclusion for arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility, via Tree Evaluation.
-  The paper's time–space separation corollaries (including for linear space), a curated headline abstract with independent review, Cook–Mertz malformed-input handling and the refined `O(ℓ + H log(ℓ + 2))` bound are [#2855](https://github.com/cslib-community/cslib-frontier/issues/2855).
+  The paper's time–space separation corollaries (including for linear space), Cook–Mertz malformed-input handling and the refined `O(ℓ + H log(ℓ + 2))` bound are [#2855](https://github.com/cslib-community/cslib-frontier/issues/2855).
 - **Time–space lower bounds for nondeterministic linear time** ([#2896](https://github.com/cslib-community/cslib-frontier/issues/2896)): the Arora–Barak bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` by virtual padding and the Lipton–Viglas `n^(√2 − ε)` form, from the speedup and slowdown lemmas for `TISP` and `Σ₂TIME`.
   Beyond these: the textbook `√(t·s)` speedup, the golden-ratio deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT through a quasi-linear-size Cook–Levin reduction.
-- **Alternating classes:** alternating time and space classes and bounded-alternation characterizations of PH; sharp bounds for sublinear space, distinct from polynomial-space simulation.
+- **Alternating classes** ([#4086](https://github.com/cslib-community/cslib-frontier/issues/4086)): the remaining Chandra–Kozen–Stockmeyer bridges `ATIME t ⊆ DSPACE t`, `NSPACE s ⊆ ATIME (s ^ 2)` and `DTIME (2 ^ O(s)) ⊆ ASPACE s` (`ATIME`, `ASPACE` and `ASPACE s ⊆ DTIME (2 ^ O(s))` are done), and bounded-alternation characterizations of PH; sharp bounds for sublinear space, distinct from polynomial-space simulation.
 - **Alternating logspace, `P ⊆ AL`** ([#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)): play the circuit-value game on the tableau of a polynomial-time machine in logarithmic space.
   This needs a word game machine whose round reads the input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape.
-  The direction includes adding `AL = P` to the alternation abstract.
 - **Pebble games and space lower bounds** ([#2995](https://github.com/cslib-community/cslib-frontier/issues/2995)): black, black-white and reversible pebbling on digraphs, with exact prices and register evaluation.
   The direction covers Bennett's game on paths ([#3163](https://github.com/cslib-community/cslib-frontier/issues/3163)), Li–Tromp–Vitányi's reachable-configuration characterization and erasure and time–space trade-offs, including whether `3 ^ k` is optimal for `k + 1` pebbles ([#3199](https://github.com/cslib-community/cslib-frontier/issues/3199)), the Hopcroft–Paul–Valiant `O(n / log n)` bound with the matching Paul–Tarjan–Celoni family, and Gilbert–Tarjan and Lengauer–Tarjan trade-offs.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -669,22 +266,21 @@ Numeric predicates are computed from the universe size, not supplied as unverifi
 In dependency order:
 
 - **Ordered completeness:** SAT, 3SAT, 3COL, independent set, clique and vertex cover NP-complete under first-order or quantifier-free projections; REACH NL-complete under first-order reductions.
-- **Projections:** projection reducibility on finite structure classes and the standard ordered machine-encoding bridge.
+- **Projections** ([#1244](https://github.com/cslib-community/cslib-frontier/issues/1244)): projection reducibility on finite structure classes, its reflexivity and transitivity, and the standard ordered machine-encoding bridge.
   The classical qfp convention excludes BIT (Immerman–Landau, Definition 3.6), and arbitrary quantifier-free combinations of input relations are not projections.
 - **Circuit Value P-completeness:** Circuit Value is P-complete under first-order reductions, via `REACHa → MCVP → CVP` (Immerman, Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time machines (the machine-level `P ⊆ AL`, see [#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)) and the translation to `encCircuitValue`.
 - **Restricted-domain numeric certificates:** numeric certificates for further restricted-domain families; canonical BIT on a restricted domain need not be first-order definable.
 - **Order-free reductions:** SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded problems.
 - **Synthesis rules and regular-language quantifiers:** extend the synthesis rules to nested operator bodies and give regular-language quantifiers their ordered characteristic-word semantics.
-- **FO(TC) = NL on ordered structures** ([#1246](https://github.com/cslib-community/cslib-frontier/issues/1246)): both inclusions, with NL ⊆ FO(TC) via configuration-graph reachability under the ordered encoding.
-  Separately, the native NL closure facts the in-compiler inductive counting bypasses: intersection, union, logspace reductions and NL^NL = NL.
-- **Further logical characterizations:** on ordered structures, FO(DTC) = L, SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing); then order-invariant and fixed-point queries and uniform translations between syntax, structures and algorithms.
+- **Native NL closure facts:** the closure properties that the in-compiler inductive counting of FO(TC) ⊆ NL bypasses: intersection, union, logspace reductions and NL^NL = NL.
+- **Further logical characterizations:** on ordered structures, FO(DTC) = L ([#4084](https://github.com/cslib-community/cslib-frontier/issues/4084); DTC semantics and FO(DTC) ⊆ FO(TC) are in place, both inclusions remain), SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing); then order-invariant and fixed-point queries and uniform translations between syntax, structures and algorithms.
 - **Witness-carrying reductions:** a witness-carrying reduction structure once a client needs one, for example size bounds for Cook–Levin.
-- **Logical lower-bound methods** ([locality track](https://github.com/cslib-community/cslib-frontier/issues/3015)): Ehrenfeucht–Fraïssé games (also with constants), pebble games with finite-variable equivalence, Hanf and Gaifman locality with Gaifman's normal form and the exact locality ranks `2 ^ (n - 1) - 1` and `2 ^ n - 1` (Libkin, Exercises 4.10 and 4.11), and counting and fixed-point expressiveness with Cai–Fürer–Immerman separations, linked to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
+- **Logical lower-bound methods** ([locality track](https://github.com/cslib-community/cslib-frontier/issues/3015)): Ehrenfeucht–Fraïssé games (also with constants), Hanf and Gaifman locality with Gaifman's normal form and the exact locality ranks `2 ^ (n - 1) - 1` and `2 ^ n - 1` (Libkin, Exercises 4.10 and 4.11), and counting and fixed-point expressiveness with Cai–Fürer–Immerman separations, linked to the ordered capture theorems, where FO(≤, BIT) defines EVEN.
 - **Nondefinability applications** ([locality track](https://github.com/cslib-community/cslib-frontier/issues/3015), [#3483](https://github.com/cslib-community/cslib-frontier/issues/3483)): game-free locality proofs for connectivity, acyclicity and being a tree; transitive closure and reachability, with an exponential lower bound on the locality radius and FO ⊊ FO(TC) on unordered graphs; then Libkin's balanced binary trees and same generation, planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`.
-- **Undecidability in the finite** ([#2886](https://github.com/cslib-community/cslib-frontier/issues/2886)): Trakhtenbrot's theorem over any vocabulary with a binary relation symbol (Libkin, Theorem 9.2), transferred from raw relational sentences to Mathlib's `L.Sentence` through a computable `Primcodable` bridge.
+- **Undecidability in the finite:** Trakhtenbrot's theorem for Mathlib's `L.Sentence` beyond finite relational languages with a binary symbol: infinite vocabularies (with a primitive recursive arity map), vocabularies whose only non-unary symbols have arity at least three, and languages with function symbols.
 - **Logic and automata on words** ([#2885](https://github.com/cslib-community/cslib-frontier/issues/2885)): Büchi–Elgot–Trakhtenbrot (MSO = regular on finite words), FO[<] ⊊ MSO, and FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is [#3075](https://github.com/cslib-community/cslib-frontier/issues/3075) and FO ⇒ star-free, by composition of rank-`k` types, is [#3469](https://github.com/cslib-community/cslib-frontier/issues/3469)), with decidability of first-order definability for regular languages.
-  Homomorphic-image closure of regular languages (upstream to cslib), the non-elementary formula-to-automaton lower bound, Büchi's theorem for ω-words (S1S), and MSO on finite trees (Thatcher–Wright, Doner) and infinite trees (Rabin, S2S).
-- **Asymptotic probabilities** ([#2967](https://github.com/cslib-community/cslib-frontier/issues/2967)): 0-1 laws for `G(n, 1/2)` and for uniform structures over finite relational vocabularies, extended to constant edge probabilities, unlabelled structures and classes defined by parametric axioms such as the simple-graph axioms.
+  Homomorphic-image closure of regular languages (upstream to CSLib), the non-elementary formula-to-automaton lower bound, Büchi's theorem for ω-words (S1S), and MSO on finite trees (Thatcher–Wright, Doner) and infinite trees (Rabin, S2S).
+- **Asymptotic probabilities** ([#4080](https://github.com/cslib-community/cslib-frontier/issues/4080)): beyond the 0-1 laws for graphs with constant edge probability and for uniform structures over finite relational vocabularies, laws for constant probabilities other than 1/2 over other relational vocabularies, for unlabelled structures and for classes defined by parametric axioms such as the simple-graph axioms.
   Then the Kolaitis–Vardi laws for fixed-point and finite-variable infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit initialization, auxiliary relations and domain conventions; invariant-preservation rules and reachability in DynFO as a target.
   Relate logical update restrictions to the stateful-algorithm interfaces through explicit translations.
@@ -692,7 +288,7 @@ In dependency order:
 Independent of that order:
 
 - **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/cslib-frontier/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); a certified polynomial-time algorithm; and `k`-dimensional Weisfeiler–Leman.
-  Also the Immerman–Lander correspondence with the counting logic C² and its finite-variable extensions, and Cai–Fürer–Immerman graphs.
+  Also the Immerman–Lander correspondence between color refinement and C², its extension relating `k`-dimensional Weisfeiler–Leman to C^(k+1), and Cai–Fürer–Immerman graphs ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085), building on Hella's bijective pebble games).
 - **Vollmer's generalized quantifier framework** ([#399](https://github.com/cslib-community/cslib-frontier/issues/399)): Vollmer's survey [*A Generalized Quantifier Concept in Computational Complexity Theory*](https://arxiv.org/abs/cs/9809115), covering ordered leaf words, explicit uniformity and input-access models, finite-monoid classification and generalized logical quantifiers.
   The formalization must keep the paper's resource models and quantifier bounds.
 
@@ -723,8 +319,8 @@ Define logspace and DLOGTIME uniformity with explicit gate-address, direct-conne
   Also W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exact exponential algorithms** ([#3013](https://github.com/cslib-community/cslib-frontier/issues/3013)): the Bellman–Held–Karp dynamic program for TSP, correct against brute force in `n² · 2ⁿ` unit-cost operations and deciding `TSP` and `HamCycle`, and inclusion–exclusion counting of Hamiltonian paths (Karp; Bax) in `2ⁿ · poly(n)` time and polynomial space, with the space bound in a model that measures it.
   Also machine-level certificates for these algorithms, and further exact algorithms such as subset convolution and inclusion–exclusion colouring.
-- **Exponential-time SAT** ([#894](https://github.com/cslib-community/cslib-frontier/issues/894)): Schöning, PPZ and PPSZ on the randomized word RAM with exact laws, amplification and time bounds, and a curated abstract for Schöning.
-  PPZ and PPSZ abstracts and the uniform `o(n)` forms of the PPSZ bounds, with `w` growing in `n`, are optional.
+- **Exponential-time SAT** ([#894](https://github.com/cslib-community/cslib-frontier/issues/894)): Schöning, PPZ and PPSZ on the randomized word RAM with exact laws, amplification and time bounds.
+  The uniform `o(n)` forms of the PPSZ bounds, with `w` growing in `n`, are optional.
   Also further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 - **APSP class** ([#3076](https://github.com/cslib-community/cslib-frontier/issues/3076)): equivalences of APSP with the (min,+) product, negative triangle, minimum-weight cycle, replacement paths, metricity and (min,+) product verification (Vassilevska Williams–Williams), and with radius and median (Abboud–Grandoni–Vassilevska Williams, SODA 2015).
   Also `-∞` weights, general (min,⊙) structures and output-sensitive listing (Vassilevska Williams–Williams Theorem 4.3) for negative triangle, word-RAM realizations with bit-length costs and Kerr's `Ω(n³)` bound for (min,+) straight-line programs; Bellman–Ford with negative-cycle reporting is [#3053](https://github.com/cslib-community/cslib-frontier/issues/3053).
@@ -966,8 +562,7 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 - **Chain decompositions** ([#3371](https://github.com/cslib-community/cslib-frontier/issues/3371)): for finite posets, Mirsky's theorem, Dilworth's theorem by Fulkerson's reduction to König's theorem, and a Hopcroft–Karp minimum chain cover with an `O(n^{5/2})` charged bound.
   Also the Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite posets of finite width by compactness, the perfection of comparability graphs and their complements, weighted versions, a sparse entry point that charges building the comparability lists, and a RAM-model or Turing-machine realization of the chain-cover solver.
 - **Global minimum cut** ([#3369](https://github.com/cslib-community/cslib-frontier/issues/3369)): Karger's and Karger–Stein's contraction algorithms with their per-cut bounds and the `C(n, 2)` bound on the number of minimum cuts ([#3489](https://github.com/cslib-community/cslib-frontier/issues/3489)), and Stoer–Wagner via maximum adjacency orderings in `O(n³)` and `O(n m + n² log n)` time and over real weights.
-  Also Nagamochi–Ibaraki sparse certificates, Karger's near-linear algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the enumeration and cactus representation of all minimum cuts, and Queyranne's symmetric submodular minimization.
-  Derive the untracked Karger theorems from the block-tracking ones ([#3539](https://github.com/cslib-community/cslib-frontier/issues/3539)).
+  Also Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity, Karger's near-linear algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the enumeration and cactus representation of all minimum cuts, and Queyranne's symmetric submodular minimization.
 - **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)): existence of cut-equivalent trees, flow-equivalence, the minimum-cut triangle inequality and the `n - 1` bound on distinct minimum-cut values, and Gusfield's construction with `n - 1` Edmonds–Karp calls and a charged running time ([#3285](https://github.com/cslib-community/cslib-frontier/issues/3285), [#3320](https://github.com/cslib-community/cslib-frontier/issues/3320)).
   The construction should return the tree's edge weights from the maximum-flow values, and the theory should cover real-valued capacities.
 - **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/cslib-frontier/issues/3373)): preflows, valid labelings, optimality at termination with a gap minimum cut, and the operation bounds of the generic Goldberg–Tarjan algorithm with an executable scheduler.
@@ -1000,6 +595,9 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
   Also NP-hardness of the decision version (Karp, within [#2904](https://github.com/cslib-community/cslib-frontier/issues/2904)), even with unit weights by reduction from vertex cover, and a polynomial-time certificate for the heuristic with an executable shortest-path oracle.
 - **Metric k-center** ([#3281](https://github.com/cslib-community/cslib-frontier/issues/3281)): Gonzalez's farthest-first 2-approximation with a machine-level running time, and its matching hardness: the combinatorial dominating-set gap, NP-completeness of dominating set on encoded graphs ([#3416](https://github.com/cslib-community/cslib-frontier/issues/3416)), and that a polynomial-time `ρ`-approximation with `ρ < 2` implies `P = NP` ([#3515](https://github.com/cslib-community/cslib-frontier/issues/3515)).
   Also the Hochbaum–Shmoys threshold algorithm, k-supplier and k-median.
+- **State-space search** ([#3669](https://github.com/cslib-community/cslib-frontier/issues/3669)): search problems and two-player games given implicitly by actions, results and goal or terminal tests, as in Russell and Norvig's *Artificial Intelligence: A Modern Approach*.
+  Generic best-first search over an abstract frontier with its uninformed instances, A* with admissible and consistent heuristics, and minimax with alpha-beta pruning.
+  Costs are node expansions and generations counted in CSLib's query model, including the bound that A* with a consistent heuristic expands each state at most once.
 
 ### Sorting and selection
 
@@ -1012,7 +610,7 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 
 - **Competitive-analysis framework:** request sequences, online strategies, offline optima and competitive ratios with additive constants, distinguishing deterministic and randomized strategies and oblivious and adaptive adversaries.
   Compare algorithms in the same action and cost model, including initialization.
-- **Adaptive search trees** ([#3143](https://github.com/cslib-community/cslib-frontier/issues/3143)): for splay trees, the Access Lemma with arbitrary positive weights, the Balance, Static Optimality, Static Finger and Working Set theorems with explicit constants, the update bounds (insertion, deletion, join and split), Sleator–Tarjan's Unified Theorem and Cole's Dynamic Finger theorem; and a BST access-and-rotation model with Wilber-style lower bounds.
+- **Adaptive search trees** ([#3143](https://github.com/cslib-community/cslib-frontier/issues/3143)): for splay trees, the Access Lemma with arbitrary positive weights, the Balance, Static Optimality, Static Finger and Working Set theorems with explicit constants, the update bounds, Sleator–Tarjan's Unified Theorem and Cole's Dynamic Finger theorem; and a BST access-and-rotation model with Wilber-style lower bounds.
   State dynamic optimality as a conjectural research target with explicit strategy and sequence quantifiers.
 - **Beyond deterministic ski rental and list update** ([#3057](https://github.com/cslib-community/cslib-frontier/issues/3057), [#3492](https://github.com/cslib-community/cslib-frontier/issues/3492)): randomized strategies against oblivious and adaptive adversaries; randomized ski rental with the tight discrete ratio `1/(1 - (1 - 1/B)^B) ≤ e/(e-1)` (upper and lower bounds), continuous-time ski rental, and the asymptotic `e/(e-1)` lower bound with an additive constant; randomized list update (BIT, COMB) and list update with insertions and deletions.
   Also randomized paging (marking, `H_k`), which needs a behavioural or bounded-horizon variant of countably supported randomized strategies.
@@ -1026,10 +624,10 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 ### Algorithmic game theory ([#2900](https://github.com/cslib-community/cslib-frontier/issues/2900))
 
 - **Computing equilibria** ([#3149](https://github.com/cslib-community/cslib-frontier/issues/3149)): membership in `PLS` and PLS-completeness of finding a pure Nash equilibrium of a congestion game (Fabrikant–Papadimitriou–Talwar), including the symmetric case, by reduction from local Max-Cut (PLS-complete by Schäffer–Yannakakis or by reductions from `LocalOpt`), through an explicit local-search problem interface and succinct game encodings; polynomial-time algorithms for symmetric network congestion games; exponentially long better-response paths.
-  Mixed Nash equilibria of finite games (Nash's theorem) and PPAD-completeness of computing them.
+  PPAD-completeness of computing mixed Nash equilibria of finite games.
 - **Bimatrix games and Lemke–Howson** ([#3334](https://github.com/cslib-community/cslib-frontier/issues/3334), [#3391](https://github.com/cslib-community/cslib-frontier/issues/3391)): the parity argument that a nondegenerate bimatrix game has an odd number of Nash equilibria, and two-player Nash in PPAD through oriented Lemke–Howson paths (Shapley's index), bit-size bounds on the rational vertices, a TFNP encoding of games and a polynomial-time pivoting map into end-of-line.
-  Degenerate games by lexicographic perturbation, giving Nash's theorem for all bimatrix games; the Lemke–Howson path as an algorithm; the Savani–von Stengel exponential lower bound.
-- **Equilibrium concepts and dynamics:** mixed and correlated equilibria between pure Nash and coarse correlated equilibria; swap regret and convergence to correlated equilibria, extending the Hedge dynamics of [#3034](https://github.com/cslib-community/cslib-frontier/issues/3034); last-iterate convergence of no-regret dynamics; bandit feedback and sampled play; convergence time of better-response dynamics in potential games.
+  Degenerate games by lexicographic perturbation, extending the Lemke–Howson argument to all bimatrix games; the Lemke–Howson path as an algorithm; the Savani–von Stengel exponential lower bound.
+- **Equilibrium concepts and dynamics:** correlated equilibria between mixed Nash and coarse correlated equilibria ([#4074](https://github.com/cslib-community/cslib-frontier/issues/4074)); swap regret and convergence to correlated equilibria, extending the Hedge dynamics of [#3034](https://github.com/cslib-community/cslib-frontier/issues/3034); last-iterate convergence of no-regret dynamics; bandit feedback and sampled play; convergence time of better-response dynamics in potential games.
 - **Price of anarchy:** Wardrop equilibrium existence and essential uniqueness for continuous nondecreasing latencies (Beckmann's convex potential); the Pigou bound for general latency classes and polynomial latencies of bounded degree; worst-case networks for latency classes without the constant functions (parallel links and unions of paths); the M/M/1 and M/G/1 delay bounds (Roughgarden 2003); Braess's paradox; weighted and mixed-strategy atomic congestion games.
 - **Price of stability and potential games** ([#3035](https://github.com/cslib-community/cslib-frontier/issues/3035)): the price of stability by the potential method, including the `H_k` bound for network cost-sharing games, the tight price of stability of affine congestion games below the potential-method bound `2`, and price-of-stability bounds for undirected and weighted network design.
   Strong Nash equilibria of fair cost-sharing games, with their price of anarchy, their existence in special network classes (Epstein–Feldman–Mansour 2009) and a network without one; the Monderer–Shapley characterization of potential games as congestion games.
@@ -1114,7 +712,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 
 - **Efficient universal simulation** ([#800](https://github.com/cslib-community/cslib-frontier/issues/800)): A universal function that runs in time `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D` and largest input symbol `M`, with a storage bound in terms of the simulated machine's space rather than its time.
   Both a clocked form and an unclocked form that runs until the simulated machine halts are in scope.
-- **Plain computability** ([#862](https://github.com/cslib-community/cslib-frontier/issues/862)): Complete the plain calculus ([#608](https://github.com/cslib-community/cslib-frontier/issues/608)), delete the tidy calculus, keeping only a machine-level kernel inside the Machines layer, and switch the abstract bridges to the shared predicate.
+- **Plain computability** ([#862](https://github.com/cslib-community/cslib-frontier/issues/862)): Complete the plain calculus ([#608](https://github.com/cslib-community/cslib-frontier/issues/608)) and delete the tidy calculus, keeping only a machine-level kernel inside the Machines layer.
 - **Certificate APIs and automation** ([#1155](https://github.com/cslib-community/cslib-frontier/issues/1155)): Predictable certificate search, with fixed heartbeat budgets on regression goals, failures that name the subterm lacking a certificate, and cheap syntax-directed composition for glue code, using Cook–Levin and GGM as regression clients.
   Improve configuration views, tape partitions and handoff identities only where several clients benefit, keeping machine transitions out of global simp.
 - **Certificate coverage** ([#1155](https://github.com/cslib-community/cslib-frontier/issues/1155)): Infer encodings for ordinary functional expressions through constructor, projection, lookup and composition rules, and generalize list, bounded-table, cache and nested-loop invariants where clients need them.
@@ -1122,7 +720,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Certified PRG stretching** ([#2784](https://github.com/cslib-community/cslib-frontier/issues/2784)): Certify PRG stretching with seed length, rounds and generator cost kept separate.
   A related target is the adaptive arbitrary-word cipher with its hash-then-MAC/EtM construction ([#2749](https://github.com/cslib-community/cslib-frontier/issues/2749)).
 - **Mathlib TM2:** Sublinear work-space comparisons and a linear-space forward simulation.
-- **Single-tape lower bounds** ([#2884](https://github.com/cslib-community/cslib-frontier/issues/2884)): Crossing-sequence lower bounds for cslib `SingleTapeTM` deciders, including the quadratic palindrome lower bound with a matching `O(n²)` single-tape decider.
+- **Single-tape lower bounds** ([#2884](https://github.com/cslib-community/cslib-frontier/issues/2884)): Crossing-sequence lower bounds for CSLib `SingleTapeTM` deciders, including the quadratic palindrome lower bound with a matching `O(n²)` single-tape decider.
   A linear-time multi-tape palindrome decider gives the one-tape/two-tape time separation.
   The gap theorem that single-tape deciders in time `o(n log n)` accept only regular languages ([#2965](https://github.com/cslib-community/cslib-frontier/issues/2965)), and its nondeterministic analogue under the accept measure.
 - **Generic RAM:** Uniform arbitrary-program dispatch with general width-selection and input-fit theorems, and simulation of operations by programs over smaller bases.
@@ -1146,6 +744,12 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Perfect hashing** ([#3276](https://github.com/cslib-community/cslib-frontier/issues/3276)): the static FKS two-level table over typed cells, with 3-probe lookups, at most `5n + 2` cells, and construction in expected `O(n)` seed draws and hash evaluations.
   Its word-RAM realization with `w`-bit seeds and headers, charged bucketing and layout, an unbounded Las Vegas construction and a bridge to `w`-bit cell probes.
   FKS's `k x mod p mod s` family with its `n + o(n)` refinement and deterministic construction, dynamic perfect hashing (Dietzfelbinger et al.), and the Fredman–Komlós lower bound on the description size of perfect hash families.
+- **Ropes** ([#3670](https://github.com/cslib-community/cslib-frontier/issues/3670)): a persistent sequence over an arbitrary element type, stored as an AVL-balanced binary tree with bounded non-empty chunks at its leaves and verified against `List`.
+  Indexing, concatenation by join and positional splitting, with insertion, range erasure, extraction and replacement derived from split and join.
+  Explicit cost bounds in `TimeM` on the same definitions, counting internal nodes inspected and elements copied: join linear in the height difference and split logarithmic in the length.
+- **B-trees** ([#3674](https://github.com/cslib-community/cslib-frontier/issues/3674)): comparison bounds for B-tree operations in CSLib's query model, with linear and binary in-node search, and the `⌈log₂(n + 1)⌉` comparison lower bound for search.
+  Read-only operations behind a node-access oracle, whose query counts equal the node-visit counts.
+  B+-trees, with only separator keys in interior nodes and every entry in a leaf: structure, queries, updates, bulk loading and the same cost bounds.
 
 ### Parallel, external-memory and distributed models
 
@@ -1154,7 +758,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Memory hierarchies:** External-memory and ideal-cache models with explicit capacity and block-size parameters, with scanning, B-tree operations, blocked matrix multiplication and cache-oblivious sorting as clients.
   Connect arithmetic-step, memory-access and cache-miss bounds through concrete realizations, including replacement and initialization conventions.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round, message-size and randomness conventions, with locality lower bounds, communication-to-round reductions and corresponding algorithmic examples.
-  Targets include general graphs with port numbering, Linial's `O(Δ²)` colouring, `(Δ + 1)`-colouring and MIS on bounded-degree graphs, CONGEST message bounds, and randomized LOCAL algorithms such as Luby's MIS.
+  Targets include general graphs with port numbering, Linial's `O(Δ²)` colouring, `(Δ + 1)`-colouring and MIS on bounded-degree graphs, CONGEST message bounds, and randomized LOCAL algorithms.
 - **Luby's MIS** ([#3270](https://github.com/cslib-community/cslib-frontier/issues/3270)): the random-priority variant of Luby's algorithm with Las Vegas correctness, the half-edge removal lemma, `O(log n)` phases except with probability `n^-c`, the expected phase count, and a LOCAL message-passing formalization with `O(log n)` rounds.
   Luby's original marking algorithm with its pairwise-independent analysis and NC derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound, and the Kuhn–Moscibroda–Wattenhofer lower bounds.
 - **Locality on cycles and paths** ([#3009](https://github.com/cslib-community/cslib-frontier/issues/3009)): Cole–Vishkin colouring, Linial's `log*` lower bound, and round bounds of the form `(log* n) / 2 + c` for 3-colouring and MIS on cycles, with matching upper and lower constants.
@@ -1177,13 +781,13 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and formulas under a polynomial-time assignment, so that clients stop passing `CNF.eval`, `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
 - **Indicator-expectation and conversion lemmas:** Factor the indicator-expectation identities from PCP's second-moment calculation, and recurring cardinality and logarithm conversions, once a second client benefits.
 - **Divide-and-conquer recurrences** ([#3042](https://github.com/cslib-community/cslib-frontier/issues/3042)): A master theorem over `ℕ` with explicit constants for inequality recurrences in all three polynomial cases, with `IsBigO` forms, matching `Θ` bounds for equality recurrences, and case 3 under the general regularity condition.
-  Move hand-solved recurrences onto it where the generic constant suffices, keeping cslib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.
+  Move hand-solved recurrences onto it where the generic constant suffices, keeping CSLib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.
 
 ### OpenAI math results ([#1002](https://github.com/cslib-community/cslib-frontier/issues/1002))
 
 Review Lance Fortnow's [expository rewrites](https://github.com/fortnow/AI-Papers) of the OpenAI math papers and his [TCS catalogue](https://lance.fortnow.com/openai-math-tcs.htm) of the openai/math release, and extract the in-scope results, both headline theorems and minor lemmas useful in their own right.
-Prove each against Complexitylib's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
-The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
+Prove each against cslib-frontier's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
+The openai/math formalizations are Apache 2.0, as is cslib-frontier, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
 
 - **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter running in time `2^{O_k(n log log n / √log n)}` at arbitrary density, by recursive tensor contraction.
   The intended route combines the fixed-density bound `2^{O_{k,D}(n / √log n)}` (Theorem D.1 with `ℓ = 1`) with the Lemma D.2 construction, applied natively to the model-counter interface.
@@ -1194,5 +798,4 @@ The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptatio
 ## Documentation and repository
 
 - **The guide** ([#585](https://github.com/cslib-community/cslib-frontier/issues/585)): A chapter per area, including Foundations (bit strings, Fourier analysis, PMF and `ProbComp`, codes), proof complexity, descriptive complexity, and Word RAM and algorithms, reusing checked examples.
-- **Curated formal abstracts:** Improve readability, and compare each changed abstract with its final source statements.
 - **Archive `complexitylib-v1`:** Archive the repository once its remaining work is dispositioned.

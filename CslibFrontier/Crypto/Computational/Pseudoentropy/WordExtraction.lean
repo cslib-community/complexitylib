@@ -12,6 +12,7 @@ public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.MatrixExtraction
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Crypto.Computational.Pseudoentropy.LabelExtraction
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -124,7 +125,7 @@ theorem isPPTOn_extractedWordTest {α : Type} {input : α ↪ List Bool} {count 
     (.snd input sampleEnc)).bind_with (second := fun p => test p.1)
     (htest.preprocess ((hparam.comp (.fst _ resultEnc)).prod (.snd _ resultEnc)))
   refine hword.congr fun input => ?_
-  simp only [ProbComp.eval_bind, eval_extractWordLabels, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, eval_extractWordLabels]
 
 open Filter in
 /-- An efficient indexed family of word extractors is computationally uniform relative to fixed
@@ -184,8 +185,7 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
   refine h.congr fun n => ?_
   have hpublic : ProbComp.eval ((fun value => pair.encode n value.1) <$>
       pair.latentSample n) = ProbComp.eval (Prod.fst <$> pair.sample n) := by
-    simp only [ProbComp.eval_map, pair.eval_latentSample, pair.eval_sample, PMF.map_comp,
-      Function.comp_def]
+    simp only [pmf_norm, pair.eval_latentSample, pair.eval_sample]
   simp only [count, ProbComp.eval_bind, eval_extractWordLabels,
     eval_extractWordLabelsIdeal, PMF.bind_map, Function.comp_def, extractLabelsIdeal,
     ProbComp.eval_replicate_congr hpublic

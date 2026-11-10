@@ -424,6 +424,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.CNF.Sparsification
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM Cslib.GenericRAM
 open CountingSparsify SubexponentialSAT SubexponentialSAT.SparsePolyCounter
 open BranchedSparseCNFCounter
+open Sparsify (rounds)
 
 private abbrev LeafInput := Context × CNF ℕ
 private abbrev encLeafInput := encPair encContext encCNF

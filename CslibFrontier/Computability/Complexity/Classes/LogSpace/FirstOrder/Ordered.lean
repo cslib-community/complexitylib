@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Logics.FirstOrder.Ordered.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # Canonical ordered first-order model checking in logarithmic space
@@ -145,22 +146,7 @@ theorem atomicCompiler_correct {a : EncodedStructure} (ha : v.WellFormed a)
   · intro k r R ts P b T F B regs xs h0 hv hxs hB hinstr
     have ht (i : Fin r) := eval_termExpr h0 hv hxs (ts i)
     cases R with
-    | inl R =>
-      set x : Fin r → Fin a.1 := fun m => (ts m).realize (Sum.elim val xs)
-      have hi : v.index ⟨_, R⟩ < a.2.length := ha.1 ▸ v.index_lt _
-      have htab : v.table a ⟨_, R⟩ = a.2[v.index ⟨_, R⟩] := List.getD_eq_getElem _ _ hi
-      have hj : tupleIndex x < a.2[v.index ⟨_, R⟩].length := by
-        rw [← htab, ha.length_table]
-        exact tupleIndex_lt x
-      have hpos := eval_bitExprWith ha h0 (v.index_lt ⟨_, R⟩).le
-        (fun m => termExpr fv base (ts m)) x ht
-      refine ⟨a.2[v.index ⟨_, R⟩][tupleIndex x], ?_, ?_⟩
-      · change _ ↔ RelMap R x
-        simp only [Vocabulary.relMap_decode, htab]
-        rw [List.getD_eq_getElem _ _ hj]
-      · refine Reaches.read hinstr hB ?_
-        rw [hpos, getElem?_encStructure_tableStart_two_mul_add_one hi hj]
-        cases a.2[v.index ⟨_, R⟩][tupleIndex x] <;> exact Reaches.refl _
+    | inl R => exact reaches_read_bitExprWith ha R h0 hB hinstr ht
     | inr R =>
       cases R with
       | le =>
@@ -269,9 +255,7 @@ theorem queryLanguage_mem_L (φ : (language L).Sentence) :
     have hreachGuard : (modelChecker v φ).Reaches (encStructure a)
         ((modelChecker v φ).Running (((encStructure a).length + 1) ^ v.maxArity))
         (E, regs₁) (if a.1 < 2 then F else E + 1, regs₁) := by
-      refine Reaches.lt hguard hB₁ ?_
-      simp only [eval_reg, eval_const, h0₁ hwf]
-      exact Reaches.refl _
+      cp_step [h0₁ hwf]
     by_cases hn : 2 ≤ a.1
     · let _ : Fact (2 ≤ a.1) := ⟨hn⟩
       rw [ite_eq_right (Nat.not_lt.mpr hn)] at hreachGuard

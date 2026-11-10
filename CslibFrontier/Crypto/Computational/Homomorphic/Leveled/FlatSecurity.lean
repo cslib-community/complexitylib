@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecuri
 public import CslibFrontier.Languages.Probabilistic.BoundedUniform
 import CslibFrontier.Probability.PMF.Option.Bind
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Probabilistic.BoundedUniform
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
@@ -91,19 +92,8 @@ theorem isPPT_flatLeveledAdversary {E : Scheme}
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     (flatLeveledAdversary E attempts depth capacity adversary).IsPPT := by
-  have htag (first second : Bool) :
-      ComputableInPolyTime (tagLeveledChoice first second)
-        (encPair (encPair encBool encBool) encBits)
-        (encPair (encPair encBool encBool) encBits) := by
-    unfold tagLeveledChoice
-    exact (ComputableInPolyTime.fst _ _).prod
-      (ComputableInPolyTime.bitsCons (by fun_prop)
-        (ComputableInPolyTime.bitsCons (by fun_prop) (ComputableInPolyTime.snd _ _)))
-  have hswap : ComputableInPolyTime swapLeveledChoice
-      (encPair (encPair encBool encBool) encBits)
-      (encPair (encPair encBool encBool) encBits) := by
-    unfold swapLeveledChoice
-    fun_prop
+  have htag := computableInPolyTime_tagLeveledChoice
+  have hswap := computableInPolyTime_swapLeveledChoice
   have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
   have hlev := isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity
   constructor
@@ -190,9 +180,7 @@ private theorem sum_link_games (E : Scheme) (depth capacity : ℕ → ℕ)
       dsimp only [Encryption.game, Encryption.gameOn, Scheme.exactLinkAdversary]
       simp only [dite_eq_left_of_eq_true (eq_true hpos), bind_assoc, ProbComp.eval_bind,
         ProbComp.eval_uniform]
-      rw [PMF.bind_comm]
-      congr 1; funext i
-      rw [PMF.bind_comm]
+      pmf_swap
       rfl
     rw [hlaw, Game.succProbability_uniform]
     simp_rw [Game.succProbability_uniform]
@@ -244,8 +232,7 @@ private theorem eval_flatLeveledAdversary (E : Scheme) (attempts depth capacity 
         else PMF.pure false := by
   dsimp only [Encryption.game, Encryption.gameOn, flatLeveledAdversary]
   simp only [bind_assoc, ProbComp.eval_bind]
-  rw [PMF.bind_comm]
-  congr 1 with index : 1
+  pmf_swap with index
   cases index with
   | none =>
     simp [leveledAdversary, rejectLeveledChoice, ProbComp.eval_bind]

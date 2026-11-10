@@ -76,8 +76,7 @@ private noncomputable def handler (q : Bool × List Bool) : StateT ℕ PMF (List
   fun s => PMF.pure ([q.1], s + 1)
 
 private noncomputable def observe (program : WordOracleComp Bool (List Bool)) (s : ℕ) :=
-  (OracleComp.interpret
-    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler) program).run s
+  ProbOracleComp.runWith handler program s
 
 -- One polynomial tape law works for both key lengths; the query counter is retained jointly.
 example : ∃ (budget : ℕ → ℕ)

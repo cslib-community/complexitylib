@@ -8,9 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
+public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationRounds
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
+import CslibFrontier.Computability.Complexity.FineGrained.SearchStep
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Foundations.Data.List.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
@@ -59,8 +61,9 @@ and fixed-parameter leaf-count (`W.card ≤ 2 ^ (N / B + 1)`) hypotheses into `C
 library adaptation of Appendix A.2–A.3 (Lemmas A.2–A.3, pp. 46–47). The module
 `CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound` supplies this hypothesis from
 an explicit integer parameter budget. Under `CountingTreeBound`, running `step M K g` for
-`rounds B φ = 2 ^ (n / B + 2)` steps visits every leaf of the counting-sparsification tree and
-returns `φ.modelCount` (`CountingSparsify.search_eq_modelCount`). Given a total leaf routine `g`
+`Sparsify.rounds B φ = 2 ^ (n / B + 2)` steps (the round count shared with `Sparsify`) visits
+every leaf of the counting-sparsification tree and returns `φ.modelCount`
+(`CountingSparsify.search_eq_modelCount`). Given a total leaf routine `g`
 with `hg : ComputableInO g encCNF encNat t t` and a global bound `ht` holding for every
 `ψ : CNF ℕ` (`(t ψ : ℝ) ≤ c * (2 ^ (δ * ψ.length) * (|encCNF ψ| + 1) ^ e) + c`),
 `CountingSparsify.exists_computableInO_search` yields a combined time-and-space certificate
@@ -79,8 +82,8 @@ parameter uniformity and the native subexponential counting endpoint remain sepa
 * `Cslib.Complexity.CountingSparsify.State`, `Cslib.Complexity.CountingSparsify.leafWeight`,
   `Cslib.Complexity.CountingSparsify.leafUpdate`, `Cslib.Complexity.CountingSparsify.step`,
   `Cslib.Complexity.CountingSparsify.root`, `Cslib.Complexity.CountingSparsify.init`,
-  `Cslib.Complexity.CountingSparsify.rounds`, `Cslib.Complexity.CountingSparsify.search`: the
-  counting-sparsification search.
+  `Cslib.Complexity.CountingSparsify.search`: the counting-sparsification search, which runs for
+  `Cslib.Complexity.Sparsify.rounds` rounds.
 * `Cslib.Complexity.CountingSparsify.occBound`: the sparse leaf clause-density bound
   `2 * ∑ j ∈ Finset.range K, countingThreshold M j`.
 * `Cslib.Complexity.CountingSparsify.CountingTreeBound`: the fixed-parameter depth and leaf-count
@@ -123,6 +126,7 @@ open scoped List
 namespace CountingSparsify
 
 open ClauseSet.Sparsification (CountingBranchingRule)
+open Sparsify (rounds computableInPolyTime_rounds length_encNat_rounds rounds_add_one_le)
 
 /-! ### Auxiliary binary-encoding bound -/
 
@@ -173,10 +177,6 @@ def root (k : ℕ) (φ : CNF ℕ) : CNF ℕ :=
 /-- The initial state of the counting-sparsification search on `φ`. -/
 def init (k : ℕ) (φ : CNF ℕ) : State :=
   (φ.distinctVars.length, ([root k φ], 0))
-
-/-- The number of rounds of the search, `2 ^ (n / B + 2)` on formulas with `n` occurring
-variables. -/
-def rounds (B : ℕ) (φ : CNF ℕ) : ℕ := 2 ^ (φ.distinctVars.length / B + 2)
 
 /-- **The counting-sparsification search**: run `step M K g` for `rounds B φ` rounds from
 `init k φ`, and report the accumulated model count. -/
@@ -556,7 +556,8 @@ private theorem computableInPolyTime_inner (M K : ℕ) :
   unfold encState encCNF
   fun_prop
 
-private theorem computableInPolyTime_leafUpdate :
+/-- Popping a sparse leaf and adding its weighted count is polynomial-time. -/
+theorem computableInPolyTime_leafUpdate :
     ComputableInPolyTime (fun p : State × ℕ => leafUpdate p.1 p.2)
       (encPair encState encNat) encState := by
   have hvars := SAT.computableInPolyTime_distinctVars
@@ -581,12 +582,6 @@ private theorem computableInPolyTime_init (k : ℕ) :
   unfold init root encState encCNF
   fun_prop
 
-private theorem computableInPolyTime_rounds (B : ℕ) :
-    ComputableInPolyTime (rounds B) encCNF encNat := by
-  have hvars := SAT.computableInPolyTime_distinctVars
-  unfold rounds encCNF
-  fun_prop
-
 /-- Separate step time and workspace: a polynomial in the encoded state and counter-output
 lengths, plus the corresponding resource of `g` when it runs on a sparse head formula. -/
 private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u : CNF ℕ → ℕ}
@@ -604,47 +599,13 @@ private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u
           u (s.2.1.headD []) +
             ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ d
         else 0) := by
-  obtain ⟨dE, eE, hE⟩ :=
+  -- Elaborate the instance first: unifying it directly against `step M K g` times out.
+  have h := exists_computableInO_searchStep
     (by unfold encState; fun_prop :
-      ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState encBool).exists_degree
-  obtain ⟨dI, eI, hI⟩ := (id' (encIn := encState)).exists_degree
-  obtain ⟨dS, eS, hS⟩ := (computableInPolyTime_isSparse_head M K).exists_degree
-  obtain ⟨dH, eH, hH⟩ := computableInPolyTime_headCNF.exists_degree
-  obtain ⟨dN, eN, hN⟩ := (computableInPolyTime_inner M K).exists_degree
-  obtain ⟨dU, eU, hU⟩ := computableInPolyTime_leafUpdate.exists_degree
-  set D := dE + dI + dS + dH + dN + dU + 1
-  have hE' := (hE.mono (d' := D) (e' := eE) (by omega) le_rfl).inO
-  have hI' := (hI.mono (d' := D) (e' := eI) (by omega) le_rfl).inO
-  have hS' := (hS.mono (d' := D) (e' := eS) (by omega) le_rfl).inO
-  have hH' := (hH.mono (d' := D) (e' := eH) (by omega) le_rfl).inO
-  have hN' := (hN.mono (d' := D) (e' := eN) (by omega) le_rfl).inO
-  have hU' := (hU.mono (d' := D) (e' := eU) (by omega) le_rfl).inO
-  have hleaf := hU'.comp (hI'.prod (hg.comp hH'))
-  have h := hE'.ite hI' (hS'.ite hleaf hN')
-  have hpair_le (s : State) (c : ℕ) :
-      ((encPair encState encNat (s, c)).length + 1) ^ D ≤
-        4 ^ D * ((encState s).length + (encNat c).length + 1) ^ D := by
-    rw [← mul_pow]
-    refine Nat.pow_le_pow_left ?_ D
-    simp only [length_encPair]
-    omega
-  refine ⟨D, h.mono (4 ^ D + 5) (fun s => ?_) (fun s => ?_)⟩ <;>
-  · simp only [Function.comp_apply]
-    have hp := hpair_le s (g (s.2.1.headD []))
-    have h4D : 1 ≤ 4 ^ D := Nat.one_le_pow _ _ (by decide)
-    generalize 4 ^ D = F at hp h4D ⊢
-    generalize ((encState s).length + 1) ^ D = P
-    generalize t (s.2.1.headD []) = T
-    generalize u (s.2.1.headD []) = U
-    generalize ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ D = Q at hp ⊢
-    generalize ((encPair encState encNat (s, g (s.2.1.headD []))).length + 1) ^ D = R at hp ⊢
-    have hFP := Nat.le_mul_of_pos_left P h4D
-    have hFT := Nat.le_mul_of_pos_left T h4D
-    have hFU := Nat.le_mul_of_pos_left U h4D
-    cases s.2.1.isEmpty <;>
-      cases isSparse (countingThreshold M) K (s.2.1.headD []) <;>
-      simp only [Bool.false_eq_true, ite_false, ite_true, and_true, and_false,
-        Bool.true_eq_false, Nat.add_mul, Nat.mul_add] <;> omega
+      ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState encBool)
+    (computableInPolyTime_isSparse_head M K) computableInPolyTime_headCNF
+    (computableInPolyTime_inner M K) computableInPolyTime_leafUpdate hg
+  exact h
 
 end PolyTime
 
@@ -684,8 +645,7 @@ theorem polyBounded_stateBound (K L_coeff : ℕ) :
 private theorem polyBounded_length_encNat_rounds (B : ℕ) :
     PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) fun φ => (encNat (rounds B φ)).length := by
   refine (PolyBounded.self.add (PolyBounded.const 3)).mono fun φ => ?_
-  rw [rounds, CNF.length_distinctVars, encNat_two_pow, List.length_append,
-    List.length_replicate, List.length_singleton]
+  rw [length_encNat_rounds]
   have hn := φ.numVars_le_length_vars.trans (SAT.length_vars_le φ)
   have hdiv := Nat.div_le_self φ.numVars B
   omega
@@ -920,12 +880,7 @@ private theorem search_time_bound (K M B L_coeff d dn di : ℕ)
       ((encNat (rounds B φ)).length + 1) ^ 2 ≤ Cp * ((encCNF φ).length + 1) ^ E := by
     omega
   have hR : ((rounds B φ + 1 : ℕ) : ℝ) ≤ 5 * 2 ^ ((1 / B : ℝ) * φ.numVars) := by
-    have h₁ : rounds B φ + 1 ≤ 5 * 2 ^ (φ.numVars / B) := by
-      have : rounds B φ = 4 * 2 ^ (φ.numVars / B) := by
-        rw [rounds, CNF.length_distinctVars, pow_add]
-        ring
-      have : 1 ≤ 2 ^ (φ.numVars / B) := Nat.one_le_two_pow
-      omega
+    have h₁ : rounds B φ + 1 ≤ 5 * 2 ^ (φ.numVars / B) := rounds_add_one_le B φ
     have h₂ : ((2 ^ (φ.numVars / B) : ℕ) : ℝ) ≤ 2 ^ ((1 / B : ℝ) * φ.numVars) := by
       rw [Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast, one_div_mul_eq_div]
       exact Real.rpow_le_rpow_of_exponent_le (by norm_num) Nat.cast_div_le

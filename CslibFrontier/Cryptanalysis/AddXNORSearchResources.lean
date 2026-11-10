@@ -824,7 +824,10 @@ theorem classSearch_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Mono
 
 /-- Whole original-input resource composition after normalizing selected direct searches.
 Only actual selected restarted-search clocks/workspaces remain explicit. Those expressions
-are not hypotheses; sharp normalization of them is still required for the full source theorem. -/
+are not hypotheses. `SourceResources.sourceCertificate_bounds` closes their normalization:
+on well-formed typed inputs, whole-run time is `2^(q/2) P(I)` and all-prefix space is
+`(2^(q/4) + mu_d) P(I)`, with integer floors. Exact counting DP and the faster prepass
+remain separate source obligations. -/
 theorem sourceCertificate_restart_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
     ∀ (m p : ℕ) (s : BitVec m) (tail : List (BitVec m)),
       let original := Source.ofWords p s tail

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.Nat.Radix
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 
 /-!
 # Updating one digit of a finite-function radix code
@@ -29,12 +29,8 @@ theorem finFunctionFinEquiv_update_add {b L : ℕ} (f : Fin L → Fin b) (i : Fi
     (d : Fin b) :
     (finFunctionFinEquiv (Function.update f i d)).val + (f i).val * b ^ i.val =
       (finFunctionFinEquiv f).val + d.val * b ^ i.val := by
-  have hfun : (fun j => (Function.update f i d j).val * b ^ j.val) =
-      Function.update (fun j => (f j).val * b ^ j.val) i (d.val * b ^ i.val) := by
-    funext j
-    by_cases h : j = i <;> simp [h]
-  rw [finFunctionFinEquiv_apply, finFunctionFinEquiv_apply, hfun,
-    sum_update_of_mem (mem_univ i), sdiff_singleton_eq_erase,
+  rw [finFunctionFinEquiv_apply, finFunctionFinEquiv_apply,
+    sum_apply_update_of_mem (mem_univ i) (fun j (c : Fin b) => c.val * b ^ j.val),
     ← add_sum_erase univ (fun j => (f j).val * b ^ j.val) (mem_univ i)]
   ac_rfl
 

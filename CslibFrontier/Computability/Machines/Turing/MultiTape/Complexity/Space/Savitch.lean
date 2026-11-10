@@ -35,7 +35,8 @@ decider runs in space polynomial in `n`, charging the stack of frames, the count
 test (`Cslib.Reachability.exists_polyBounded_space_savitch`); its time is exponential.
 
 The decider retains the whole input, so this is the polynomial-space consequence of Savitch's
-theorem; the quadratic bound `NSPACE(s) ⊆ DSPACE(s ^ 2)` for sublinear `s` is not claimed.
+theorem. The quadratic bound `NSPACE(s) ⊆ DSPACE(s ^ 2)`, including sublinear `s`, is
+`Turing.MultiTapeNTM.exists_decidableInTimeAndSpace_sq`, which never copies the input.
 
 ## Main definitions
 

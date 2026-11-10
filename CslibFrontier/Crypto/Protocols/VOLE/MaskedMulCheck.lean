@@ -14,6 +14,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Full honest receiver views of masked VOLE multiplication checks
@@ -122,8 +123,7 @@ private def maskedSetupEquiv (left right output : ι → Fin n) (w : Fin n → F
       Fin.init, Pi.sub_apply]
     simp only [add_sub_cancel_left]
     rw [Fin.snoc_init_self]
-    congr 1
-    funext j
+    congr 1 with j : 1
     ring
   right_inv qda := by
     rcases qda with ⟨q, d, a⟩
@@ -241,8 +241,7 @@ theorem maskedMulCheck_complete (left right output : ι → Fin n) :
     intro c hc
     rw [← ProbOracleComp.sample]
     simp only [pmf_norm, ProbOracleComp.runWith_sample, ProbComp.eval_uniform]
-    congr 1
-    funext r
+    congr 1 with r : 1
     simp only [VOLECorrelation.receiverView,
       maskedMulCheckReply_correct left right output w c
         (valid_of_mem_support_voleIdealDist hc) r h, ite_true]
@@ -266,8 +265,7 @@ theorem maskedMulCheckView_eq (left right output : ι → Fin n) (w : Fin n → 
     ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, OracleComp.interpret_bind,
     OracleComp.interpret_pure, VOLECorrelation.senderView, ProbOracleComp.runWith_bind,
     ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, pure_bind]
-  congr 1
-  funext c
+  congr 1 with c : 1
   rw [← ProbOracleComp.sample]
   simp [ProbOracleComp.runWith_sample, PMF.bind_map, PMF.bind_const, ProbComp.eval_uniform,
     Function.comp_def]
@@ -324,25 +322,7 @@ theorem maskedMulCheckView_eq_simulate (left right output : ι → Fin n) (w : F
       ProbComp.eval (maskedMulCheckSimulate left right output) := by
   rw [maskedMulCheckView_eq]
   simp only [pmf_norm, voleIdealDist, maskedMulCheckSimulate, ProbComp.eval_uniform]
-  conv_lhs =>
-    arg 2
-    ext u
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  congr 1
-  funext delta
-  conv_lhs =>
-    arg 2
-    ext u
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  conv_rhs =>
-    arg 2
-    ext q
-    rw [PMF.bind_comm]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext r
+  pmf_swap with r delta
   exact maskedView_fixed left right output w delta r h
 
 /-- No event on the complete receiver view distinguishes the honest execution from simulation. -/

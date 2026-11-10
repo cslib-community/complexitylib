@@ -41,7 +41,9 @@ Actual per-batch copies, quarter rescans and all callback tapes remain charged.
 Balance reduction uses one
 scalar. Preparation/readback have derived polynomial physical-input resource
 bounds. Logical list occupancy does not imply sharp internal TM workspace.
-Sharp global bit resources remain open.
+On well-formed typed inputs, `SourceResources.sourceCertificate_bounds` proves whole-run
+`2^(q/2) P(I)` bit time and `(2^(q/4) + mu_d) P(I)` all-prefix space (integer floors).
+The exact counting DP, faster prepass and other paper clauses remain open.
 
 ## Main definitions
 

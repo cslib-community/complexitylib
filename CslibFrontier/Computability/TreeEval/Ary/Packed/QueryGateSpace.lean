@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.QueryGate
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 
 /-!
 # Native components of the same-input packed interpolation loop
@@ -71,43 +72,17 @@ theorem runFrom_one_encoding_le (encG : γ ↪ List Bool) (encT : τ ↪ List Bo
       16 * ((encParams encG q).length + 1) + B + 2 := by
   have hcaller := sumState_encoding_le encG q table j hj.le hp
   have hnext := sumState_encoding_le encG q table (j + 1) (by omega) hp
-  by_cases hizero : i = 0
-  · subst i
-    simp only [QueryMachine.runFrom_zero, encMachineState, encSum_inl, List.length_cons]
-    omega
-  by_cases hifinal : i = T + 2
-  · subst i
-    rw [runFrom_one q N start answer w table j T hj hpre hhalt hanswer]
-    simp only [encMachineState, encSum_inl, List.length_cons]
-    omega
-  have hiT : i - 1 ≤ T := by omega
-  have hentry : (machine q N start answer).runFrom w (.inl (sumState q table j)) 1 =
-      .inr (sumState q table j, start (sumState q table j)) := by
-    apply QueryMachine.withCalls_step_call
-    · change decide (q.2.2.2 ≤ (sumState q table j).2.1) = false
-      rw [sumState_counter]
-      exact decide_eq_false (by omega)
-    · change (if (sumState q table j).2.1 < q.2.2.2 then
-        some (start (sumState q table j)) else none) = _
-      rw [sumState_counter]
-      simp only [hj, ↓reduceIte]
-  rw [show i = 1 + (i - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hprefix := QueryMachine.withCalls_runFrom_subroutine_prefix
-    (controller q) N (request start) (resume answer) w
-    (sumState q table j) (start (sumState q table j)) (i - 1)
-    (fun k hk => hpre k (by omega))
-  rw [show (machine q N start answer).runFrom w
-      (.inr (sumState q table j, start (sumState q table j))) (i - 1) =
-      .inr (sumState q table j, N.runFrom w (start (sumState q table j)) (i - 1))
-    from hprefix]
-  have hcallee := hsize (i - 1) hiT
-  rw [show (encMachineState encG encT
-      (.inr (sumState q table j,
-        N.runFrom w (start (sumState q table j)) (i - 1)))).length =
-      2 * (encState encG (sumState q table j)).length +
-        (encT (N.runFrom w (start (sumState q table j)) (i - 1))).length + 2 from
-    QueryMachine.withCalls_encoding_inr_length (encState encG) encT _ _]
-  omega
+  rw [← resume_sumState q table j answer _ hanswer] at hnext
+  refine (QueryMachine.withCalls_runFrom_call_encoding_le (controller q) N (request start)
+    (resume answer) w (encState encG) encT ?_ ?_ hpre hhalt hcaller hnext hsize i hi).trans
+    (by omega)
+  · change decide (q.2.2.2 ≤ (sumState q table j).2.1) = false
+    rw [sumState_counter]
+    exact decide_eq_false (by omega)
+  · change (if (sumState q table j).2.1 < q.2.2.2 then
+      some (start (sumState q table j)) else none) = _
+    rw [sumState_counter]
+    simp only [hj, ↓reduceIte]
 
 /-- Concatenating table calls preserves one uniform physical-state bound for the whole
 assignment loop, including all callee steps rather than only completed-call boundaries. -/
@@ -126,28 +101,14 @@ theorem exists_runFrom_sumState_encoding_le (encG : γ ↪ List Bool)
       ∀ i ≤ T, (encMachineState encG encT
         ((machine q N start answer).runFrom w (.inl (initial q)) i)).length ≤
         16 * ((encParams encG q).length + 1) + B + 2 := by
-  induction j with
-  | zero =>
-    refine ⟨0, rfl, ?_⟩
-    intro i hi
-    have hizero : i = 0 := by omega
-    subst i
-    have hcaller := sumState_encoding_le encG q table 0 (by omega) hp
-    simp only [sumState_zero] at hcaller
-    simp only [QueryMachine.runFrom_zero, encMachineState, encSum_inl, List.length_cons]
-    omega
-  | succ j ih =>
-    obtain ⟨T, hT, hbound⟩ := ih (by omega)
-    obtain ⟨U, hpre, hhalt, hans, hsize⟩ := hsupplier j (by omega)
-    refine ⟨T + (U + 2), ?_, ?_⟩
-    · rw [QueryMachine.runFrom_add, hT]
-      exact runFrom_one q N start answer w table j U (by omega) hpre hhalt hans
-    · intro i hi
-      by_cases hiT : i ≤ T
-      · exact hbound i hiT
-      · rw [show i = T + (i - T) by omega, QueryMachine.runFrom_add, hT]
-        exact runFrom_one_encoding_le encG encT q N start answer w table j U B
-          (by omega) hp hpre hhalt hans hsize (i - T) (by omega)
+  have h0 := sumState_encoding_le encG q table 0 (Nat.zero_le _) hp
+  refine QueryMachine.exists_runFrom_chain_encoding_le (encMachineState encG encT)
+    (fun j => .inl (sumState q table j)) j
+    (by simp only [encMachineState, encSum_inl, List.length_cons]; omega) fun i hi => ?_
+  obtain ⟨U, hpre, hhalt, hans, hsize⟩ := hsupplier i (by omega)
+  exact ⟨U + 2, runFrom_one q N start answer w table i U (by omega) hpre hhalt hans,
+    runFrom_one_encoding_le encG encT q N start answer w table i U B (by omega) hp
+      hpre hhalt hans hsize⟩
 
 /-- Supplier initialization is charged before making each request. -/
 theorem request_inSpace (encG : γ ↪ List Bool) (encT : τ ↪ List Bool)
