@@ -7,7 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
 -- vendored: `spaceUsed` is `space` since cslib #1133; `transformsTapes_inputFromWord` is
--- `transformsTapes_inputFromWord_fun`, as the name is taken by a run-path lemma here
+-- `transformsTapes_inputFromWord_fun`, as the name is taken by a run-path lemma here; the step
+-- encodings `encArg` and `encRes` are private `abbrev`s rather than local notations
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.StepMachine.Comp
@@ -333,20 +334,26 @@ variable {f : StepMachine σf Bool Bool} {g : StepMachine σg Bool Bool} {Tf Sf 
     (Sg : σg → ℕ) (s : CompState σf σg) : ℕ :=
   Sf s.f + Sg s.g.1 + (encCompState encF encG s).length
 
-/-- The encoding of the arguments of a step. -/
-local notation "encArg" => encPair (encCompState encF encG) (encOption encBool)
+/-- The encoding of the arguments of a step of `g.comp f`: the state, framed, followed by the
+symbol read, which is empty for `none` and `true` followed by the bit for `some`. -/
+private abbrev encArg (encF : σf ↪ List Bool) (encG : σg ↪ List Bool) :
+    CompState σf σg × Option Bool ↪ List Bool :=
+  encPair (encCompState encF encG) (encOption encBool)
 
-/-- The encoding of the results of a step. -/
-local notation "encRes" => encPair (encCompState encF encG) (encPair encSign encBits)
+/-- The encoding of the results of a step of `g.comp f`: the state, framed, followed by the head
+move, framed, and the emitted word in binary. -/
+private abbrev encRes (encF : σf ↪ List Bool) (encG : σg ↪ List Bool) :
+    CompState σf σg × SignType × List Bool ↪ List Bool :=
+  encPair (encCompState encF encG) (encPair encSign encBits)
 
 lemma length_encArg_le (p : CompState σf σg × Option Bool) :
-    (encArg p).length ≤ 2 * (encCompState encF encG p.1).length + 3 := by
+    (encArg encF encG p).length ≤ 2 * (encCompState encF encG p.1).length + 3 := by
   rw [length_encPair]
   cases p.2 <;> simp
 
 /-! The parts of a step, against the size `L` of the state and the bounds of the step. -/
 
-lemma encArg_bigO : (fun p : CompState σf σg × Option Bool => (encArg p).length) ≼
+lemma encArg_bigO : (fun p : CompState σf σg × Option Bool => (encArg encF encG p).length) ≼
     fun p => (encCompState encF encG p.1).length :=
   .of_le_linear 2 3 fun p => length_encArg_le p
 
@@ -396,10 +403,10 @@ lemma stepF_inO (hf : f.ResourceCertificate encF Tf Sf) :
     ComputableInO (fun p : CompState σf σg × Option Bool =>
       ((⟨p.1.g, p.1.phase, (f.step p.1.f p.2).1,
           (f.step p.1.f p.2).2.2.foldl .push p.1.cd⟩ : CompState σf σg),
-        (f.step p.1.f p.2).2.1, ([] : List Bool))) encArg encRes
+        (f.step p.1.f p.2).2.1, ([] : List Bool))) (encArg encF encG) (encRes encF encG)
       (fun p => compTime encF encG Tf Sf Tg p.1) fun p => compSpace encF encG Sf Sg p.1 := by
   have hr := hf.computable_step.comp' (g := fun p : CompState σf σg × Option Bool => (p.1.f, p.2))
-    (encIn := encArg) (by fun_prop)
+    (encIn := encArg encF encG) (by fun_prop)
   -- the emitted word is within the space of `f`, the rest within the size of the state
   obtain ⟨cf, hcf⟩ := hf.computable_step.length_le
   have hn : (fun p : CompState σf σg × Option Bool => (f.step p.1.f p.2).2.2.length) ≼
@@ -434,13 +441,13 @@ lemma stepG_inO (hg : g.ResourceCertificate encG Tg Sg) :
           moveOn p.1.cd.len p.1.g.2 (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1), .rewindStart,
           f.init, .start (moveOn p.1.cd.len p.1.g.2 (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)⟩ :
           CompState σf σg), (0 : SignType), (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.2))
-      encArg encRes
+      (encArg encF encG) (encRes encF encG)
       (fun p => compTime encF encG Tf Sf Tg p.1) fun p => compSpace encF encG Sf Sg p.1 := by
-  have hsym := Countdown.symbol_inO.comp' (encIn := encArg)
+  have hsym := Countdown.symbol_inO.comp' (encIn := encArg encF encG)
     (g := fun p : CompState σf σg × Option Bool => (p.1.g.2, p.1.cd)) (by fun_prop)
-  have hr := hg.computable_step.comp' (encIn := encArg)
+  have hr := hg.computable_step.comp' (encIn := encArg encF encG)
     (g := fun p : CompState σf σg × Option Bool => (p.1.g.1, p.1.cd.symbol p.1.g.2)) (by fun_prop)
-  have hq := moveOn_inO.comp' (encIn := encArg)
+  have hq := moveOn_inO.comp' (encIn := encArg encF encG)
     (g := fun p : CompState σf σg × Option Bool => (p.1.cd.len, p.1.g.2,
       (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)) (by fun_prop)
   -- the head of `g` and the countdown are within the size of the state
@@ -492,7 +499,7 @@ lemma rewind_inO : ComputableInO (fun p : CompState σf σg × Option Bool =>
         ((⟨p.1.g, .rewind, p.1.f, p.1.cd⟩ : CompState σf σg), (-1 : SignType), ([] : List Bool))
       else if p.2.isNone then ((⟨p.1.g, .run, p.1.f, p.1.cd⟩ : CompState σf σg), 1, [])
       else ((⟨p.1.g, p.1.phase, p.1.f, p.1.cd⟩ : CompState σf σg), -1, []))
-      encArg encRes
+      (encArg encF encG) (encRes encF encG)
       (fun p => compTime encF encG Tf Sf Tg p.1) fun p => compSpace encF encG Sf Sg p.1 := by
   have hAt := (encArg_bigO (encF := encF) (encG := encG)).trans
     (time_bigO (Tf := Tf) (Sf := Sf) (Tg := Tg)).2.1
@@ -536,10 +543,10 @@ public theorem ResourceCertificate.comp (hf : f.ResourceCertificate encF Tf Sf)
       simp only [compTime, compSpace] at this ⊢
       omega
   computable_step := by
-    have hph := decideEq' (encIn := encArg) CompPhase.run
+    have hph := decideEq' (encIn := encArg encF encG) CompPhase.run
       (v := fun p : CompState σf σg × Option Bool => p.1.phase) (by fun_prop)
     have hfh := hf.computable_halt.comp' (g := fun p : CompState σf σg × Option Bool => p.1.f)
-      (encIn := encArg) (by fun_prop)
+      (encIn := encArg encF encG) (by fun_prop)
     have h := hph.ite (hfh.ite (stepG_inO (f := f) (Tf := Tf) (Sf := Sf) hg)
       (stepF_inO (Tg := Tg) (Sg := Sg) hf)) (rewind_inO (Tf := Tf) (Sf := Sf) (Tg := Tg) (Sg := Sg))
     refine (h.of_enc_eq fun p => by
