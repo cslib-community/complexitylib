@@ -150,7 +150,7 @@ public lemma Act.apply_tape (a : Act) (x : List ℕ) (c : SCfg) (i : ℕ) :
   rcases Nat.lt_or_ge i c.workTapes.length with hi | hi
   · exact ⟨_, getD_applyTapes _ _ hi⟩
   · refine ⟨(none, 0), ?_⟩
-    rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
+    rw [Tape.apply_none_zero, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
       (by simpa [Act.apply, length_applyTapes_eq] using hi)]
 
 lemma head_apply (t : Tape) (a : TapeAct) :
