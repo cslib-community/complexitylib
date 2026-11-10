@@ -9,8 +9,8 @@ module
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Basic
 public import CslibFrontier.Crypto.Computational.Homomorphic.Evaluation
-import Mathlib.Data.List.GetD
 import CslibFrontier.Tactic.SuppCases
+import Mathlib.Data.List.GetD
 
 /-!
 # Correctness of depth-budgeted homomorphic encryption

@@ -39,9 +39,9 @@ import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
-import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Goldwasser–Micali public-key encryption
