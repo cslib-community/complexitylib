@@ -215,9 +215,10 @@ loops, random samples or subprograms that need their own specifications, or bran
 `simp` cannot decide. On `WP w c x Q`, `∃ y, ExecWithin w c x y T ∧ P y` or their exact
 forms, it executes data instructions and conditionals and leaves the postcondition at the data
 reached. It stops at a loop, a random sample or a program given by name and leaves `WP w c' y Q'`:
-continue with `refine WP.of_execWithin h ?_` from a specification `h` of `c'`, or with
-`wram_call`, then run `wram_exec` again. A conditional the facts do not decide splits into goals
-tagged `pos` and `neg`; `wram_exec -split` stops there instead. `wram_simp` simplifies register
+continue with `refine WP.of_execWithin h ?_` from a specification `h` of `c'` (with
+`refine WP.Exact.of_exec h ?_` on an exact goal), or with `wram_call`, then run `wram_exec`
+again. A conditional the facts do not decide splits into goals tagged `pos` and `neg`;
+`wram_exec -split` stops there instead. `wram_simp` simplifies register
 and memory reads in the remaining postcondition, and `wram_bounded` proves `y.Bounded w` for data
 built by writes from bounded data, leaving the fitting conditions it cannot prove. The
 [symbolic-execution clients](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each step
@@ -226,9 +227,11 @@ with nothing to execute. Calls, register renaming and memory frames are covered 
 [routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames).
 
 If `ram_eval` does not close its goal, check that every program given by name is among its simp
-lemmas, that `n` covers the iterations of every loop, and that the facts in context decide each
-condition the run tests and each fitting condition. A loop with a symbolic iteration count
-needs an invariant, such as `ExecWithin.loop_count` in the
+lemmas, that `n` covers the iterations of every loop, and that the simp lemmas decide each
+condition the run tests: pass a hypothesis such as `h : x.regs i < x.regs j` explicitly, as in
+`ram_eval [p, h]`, because its `simp` call does not read hypotheses from the context. Fitting
+conditions are decided from the `Fits` hypotheses in context. A loop with a symbolic iteration
+count needs an invariant, such as `ExecWithin.loop_count` in the
 [counting-loop chapter](../algorithms-and-memory/wordram-and-bridges.md#proving-a-constant-cost-counting-loop),
 not a larger `n`.
 
