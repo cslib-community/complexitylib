@@ -5527,6 +5527,8 @@ public import CslibFrontier.Logics.SecondOrder.Coloring
 public import CslibFrontier.Logics.SecondOrder.Encoding
 public import CslibFrontier.Logics.SecondOrder.Existential
 public import CslibFrontier.Logics.SecondOrder.Grounding
+public import CslibFrontier.Logics.SecondOrder.Horn
+public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
 public import CslibFrontier.Logics.SecondOrder.IndependentSet
 public import CslibFrontier.Logics.SecondOrder.Projection
 public import CslibFrontier.Logics.SecondOrder.Reduction
