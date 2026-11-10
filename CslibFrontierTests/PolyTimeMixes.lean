@@ -23,7 +23,7 @@ set_option maxHeartbeats 2000 in
 hypothesis. The default search on this shape can run to its heartbeat limit. -/
 example {f : α → ℤ} (hf : ComputableInPolyTime f enc encIntBin) :
     ComputableTidilyInPolyTime (fun a => [f a]) enc (encList encIntBin) := by
-  fail_if_success fun_prop (config := { maxSteps := 32 })
+  fail_if_success fun_prop (config := { maxSteps := 16 })
   have hf := hf.tidy
   fun_prop
 

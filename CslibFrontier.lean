@@ -3325,7 +3325,6 @@ public import CslibFrontier.Computability.PolyTime.GaloisRingUnits
 public import CslibFrontier.Computability.PolyTime.Graph.RotationSystem
 public import CslibFrontier.Computability.PolyTime.GreedyLabelSchedule
 public import CslibFrontier.Computability.PolyTime.GreedySlotScore
-public import CslibFrontier.Computability.PolyTime.Int.Compare
 public import CslibFrontier.Computability.PolyTime.Int.DotProduct
 public import CslibFrontier.Computability.PolyTime.Int.ExactDiv
 public import CslibFrontier.Computability.PolyTime.Int.Jet
