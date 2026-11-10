@@ -16,6 +16,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.Rewinding.Consistency
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Computational soundness of Kilian's protocol
@@ -352,17 +353,13 @@ variable {H V}
 private theorem mem_support_kilianFirst {P : KilianProver α} {n : ℕ}
     {s : List Bool × (α × List Bool) × List Bool} (hs : s ∈ (kilianFirst P n).support) :
     s.1.length = n ∧ s.2 ∈ (ProbComp.eval (P.commit n s.1)).support := by
-  simp only [kilianFirst, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff, BitString.eval_sampleList] at hs
-  obtain ⟨k, hk, out, hout, rfl⟩ := hs
+  supp_cases hs [kilianFirst, BitString.eval_sampleList] with ⟨k, hk, out, hout, rfl⟩
   exact ⟨BitString.length_of_mem_support_uniformList hk, hout⟩
 
 private theorem length_of_mem_support_kilianRun {P : KilianProver α} {n : ℕ}
     {s : List Bool × (α × List Bool) × List Bool} {r : List (List Bool) × KilianResponse}
     (hr : r ∈ (kilianRun V P n s).support) : ∀ ρ ∈ r.1, ρ.length = V.coins s.2.1.1 := by
-  simp only [kilianRun, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff] at hr
-  obtain ⟨ρs, hρs, response, -, rfl⟩ := hr
+  supp_cases hr [kilianRun] with ⟨ρs, hρs, response, -, rfl⟩
   rw [kilianChallenges, ProbComp.mem_support_replicate_iff] at hρs
   intro ρ hρ
   exact BitString.length_of_mem_support_uniformList (by simpa using hρs.2 ρ hρ)
