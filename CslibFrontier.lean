@@ -953,6 +953,11 @@ public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasure
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthThree
 public import CslibFrontier.Computability.Circuit.Arithmetic.Determinant
 public import CslibFrontier.Computability.Circuit.Arithmetic.DeterminantalComplexity
