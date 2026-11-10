@@ -201,6 +201,14 @@ move a fixed register bank through the traversal's own nine-register word stack 
 `9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
 stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
 
+Each worklist transition, in the catalogue traversal and in the visitor, begins by popping one
+entry with `pop_entry`, which writes only the reserved stack and keeps the controller registers.
+[`Traversal.Arena.preserved_of_stack_frame`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalStackFrame.lean)
+turns that frame into the invariant facts that do not mention the stack: heap pointer, output
+count, caller controls, memory outside the stack, prime bitmap and the pending arrays' readback,
+bounds and floor. A new transition should take these facts from it rather than re-deriving
+them. Visitor callers apply it to the `comap (preprocessingRegisters r)` views of both states.
+
 Both root controllers reuse
 [`Traversal.initializeRoot_exec`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).
 It proves the actual four setup instructions and seven-word root push in 68 instructions,

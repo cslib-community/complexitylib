@@ -857,6 +857,7 @@ public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalResource
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalRoot
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalSkip
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStack
+public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStackFrame
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalTime
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalVisit
