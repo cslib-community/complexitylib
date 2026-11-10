@@ -4097,6 +4097,11 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import CslibFrontier.DataStructure.BTree.Basic
+public import CslibFrontier.DataStructure.BTree.Cost.Erase
+public import CslibFrontier.DataStructure.BTree.Cost.Insert
+public import CslibFrontier.DataStructure.BTree.Cost.OfSortedList
+public import CslibFrontier.DataStructure.BTree.Cost.Query
+public import CslibFrontier.DataStructure.BTree.Cost.Range
 public import CslibFrontier.DataStructure.BTree.Erase.Basic
 public import CslibFrontier.DataStructure.BTree.Erase.MinMax
 public import CslibFrontier.DataStructure.BTree.Height
