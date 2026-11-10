@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Block
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Assigns
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
 import CslibFrontier.Foundations.Data.List.Lookup
@@ -80,6 +81,11 @@ variable {L : Language.{u, v}} [L.IsRelational] (v : Vocabulary L)
 theorem length_assignChain (b r k : ℕ) (e : ℕ → Expr) : (assignChain b r k e).length = k := by
   simp [assignChain]
 
+/-- `assignChain` is the shifted block of assignments. -/
+theorem assignChain_eq (b r k : ℕ) (e : ℕ → Expr) :
+    assignChain b r k e = (assignsCode b r k e).map Instr.shift := by
+  simp [assignChain, assignsCode, List.map_map, Function.comp_def]
+
 /-- The test of the closure loop: positive exactly when the current tuple differs from the
 target tuple. -/
 @[expose] def testExpr (base k : ℕ) (z : Fin k → Expr) : Expr :=
@@ -104,6 +110,14 @@ theorem lt_eval_testExpr {base k n : ℕ} {z : Fin k → Expr} {regs : List ℕ}
 
 /-- Digit `i` in base `n` (register `0`) of register `r`: the decoding of a code into a tuple. -/
 @[expose] def digitE (r i : ℕ) : Expr := Expr.mod (Expr.div (reg r) (pow (reg 0) i)) (reg 0)
+
+/-- With `n` in register `0` and a code `g < n ^ k` in register `r`, `digitE r i` is digit `i` of
+the tuple `finFunctionFinEquiv.symm g`. -/
+theorem eval_digitE {regs : List ℕ} {r k n : ℕ} (h0 : regs.getD 0 0 = n) (g : Fin (n ^ k))
+    (hg : regs.getD r 0 = g) (i : Fin k) :
+    (digitE r i).eval regs = finFunctionFinEquiv.symm g i := by
+  rw [finFunctionFinEquiv_symm_apply_val]
+  simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg, hg, h0]
 
 /-- `|x - y|` for registers `x` and `y`: positive exactly when they differ. -/
 @[expose] def distE (x y : ℕ) : Expr := add (sub (reg x) (reg y)) (sub (reg y) (reg x))
@@ -303,40 +317,18 @@ private theorem codeAt_right {P : CounterProgram} {b b' : ℕ} {l₁ l₂ : List
   hb ▸ (codeAt_append.mp h).2
 
 /-- Straight-line assignments, when each expression ignores the registers assigned. -/
-theorem reaches_assignChain {P : CounterProgram} {w : List Bool} {B b r : ℕ} {e : ℕ → Expr} :
-    ∀ {k : ℕ}, P.CodeAt b (assignChain b r k e) → ∀ {regs : List ℕ}, r + k ≤ regs.length →
-    (∀ i < k, ∀ regs' : List ℕ, (∀ j, (j < r ∨ r + k ≤ j) → regs'.getD j 0 = regs.getD j 0) →
-      (e i).eval regs' = (e i).eval regs) →
-    (∀ x ∈ regs, x ≤ B) → (∀ i < k, (e i).eval regs ≤ B) →
+theorem reaches_assignChain {P : CounterProgram} {w : List Bool} {B b r : ℕ} {e : ℕ → Expr}
+    {k : ℕ} (hP : P.CodeAt b (assignChain b r k e)) {regs : List ℕ} (hlen : r + k ≤ regs.length)
+    (he : ∀ i < k, ∀ regs' : List ℕ, (∀ j, (j < r ∨ r + k ≤ j) → regs'.getD j 0 = regs.getD j 0) →
+      (e i).eval regs' = (e i).eval regs)
+    (hB : ∀ x ∈ regs, x ≤ B) (heB : ∀ i < k, (e i).eval regs ≤ B) :
     ∃ regs', P.Reaches w (P.Oblivious B) (b, 0 :: regs) (b + k, 0 :: regs') ∧
       regs'.length = regs.length ∧
       (∀ j, (j < r ∨ r + k ≤ j) → regs'.getD j 0 = regs.getD j 0) ∧
-      (∀ i < k, regs'.getD (r + i) 0 = (e i).eval regs) ∧ ∀ x ∈ regs', x ≤ B
-  | 0, _, regs, _, _, hB, _ =>
-    ⟨regs, Reaches.refl _, rfl, fun _ _ => rfl, fun i hi => absurd hi (by omega), hB⟩
-  | k + 1, hP, regs, hlen, he, hB, heB => by
-    have hP' : P.CodeAt b (assignChain b r k e ++
-        [(Instr.assign (r + k) (e k) (b + k + 1)).shift]) := by
-      simpa [assignChain, List.range_succ] using hP
-    obtain ⟨regs₁, hr₁, hlen₁, hout₁, hin₁, hB₁⟩ := reaches_assignChain (w := w)
-      (codeAt_left hP') (by omega)
-      (fun i hi regs' h => he i (by omega) regs' fun j hj => h j (by omega)) hB
-      (fun i hi => heB i (by omega))
-    have hk : P.instr (b + k) = (Instr.assign (r + k) (e k) (b + k + 1)).shift :=
-      (codeAt_right hP' (by rw [length_assignChain]; rfl)) 0 (by simp)
-    have hek : (e k).eval regs₁ = (e k).eval regs :=
-      he k (by omega) regs₁ fun j hj => hout₁ j (by omega)
-    refine ⟨regs₁.set (r + k) ((e k).eval regs₁),
-      hr₁.trans (Reaches.sassign hk (Nat.zero_le B) hB₁ ?_), ?_, ?_, ?_, ?_⟩
-    · rw [show b + (k + 1) = b + k + 1 by omega]; exact Reaches.refl _
-    · rw [List.length_set, hlen₁]
-    · intro j hj
-      rw [List.getD_set_ne (by omega), hout₁ j (by omega)]
-    · intro i hi
-      rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hi | rfl
-      · rw [List.getD_set_ne (by omega), hin₁ i hi]
-      · rw [List.getD_set_self (by omega), hek]
-    · exact List.forall_mem_set_of_forall_mem hB₁ (hek ▸ heB k (by omega))
+      (∀ i < k, regs'.getD (r + i) 0 = (e i).eval regs) ∧ ∀ x ∈ regs', x ≤ B := by
+  obtain ⟨regs', hr, hrest⟩ := reaches_assignsCode (w := w)
+    (codeAt_padded b (assignsCode b r k e)) hlen he hB heB
+  exact ⟨regs', Reaches.unpad (Nat.zero_le B) (assignChain_eq b r k e ▸ hP) hr, hrest⟩
 
 private theorem pair_apply_lt {A : Type*} {k : ℕ} (xs ys : Fin k → A) (i : Fin (2 * k))
     (h : (i : ℕ) < k) : TC.pair xs ys i = xs ⟨i, h⟩ := by
@@ -406,6 +398,15 @@ theorem Kept.facts {B base d n : ℕ} {regs regs' : List ℕ} {α : Type} {fv : 
     base + d ≤ regs'.length ∧ regs'.getD 0 0 = n ∧ ∀ x, regs'.getD (fv x) 0 = val x :=
   ⟨by rw [hk.1]; exact hd, by rw [hk.2.1 0 hbase, h0], fun x => by rw [hk.2.1 _ (hfv x), hv]⟩
 
+/-- A term compiled by `termE` computes its value, given correct atomic handlers. -/
+theorem eval_termE_of_atomic {w : List Bool} {α : Type} {fv : α → ℕ} {val : α → Fin a.1}
+    (hC : (ModelChecker.atomicCompiler v fv 0).Correct w fv 0 val) {regs : List ℕ}
+    (h0 : regs.getD 0 0 = a.1) (hv : ∀ x, regs.getD (fv x) 0 = val x)
+    (t : (language L).Term α) : (termE fv t).eval regs = ((t.realize val : Fin a.1) : ℕ) := by
+  have := hC.term regs (Fin.elim0 : Fin 0 → Fin a.1) h0 hv (fun i => i.elim0) (t.relabel Sum.inl)
+  rw [Term.realize_relabel] at this
+  exact this
+
 variable (v a P B Post R) in
 /-- The hypotheses of the compiler correctness proof. -/
 structure Env : Prop where
@@ -432,11 +433,8 @@ variable (v a P B Post R) in
 
 theorem eval_termE (hE : Env v a P B Post R) {α : Type} (fv : α → ℕ) (val : α → Fin a.1)
     {regs : List ℕ} (h0 : regs.getD 0 0 = a.1) (hv : ∀ x, regs.getD (fv x) 0 = val x)
-    (t : (language L).Term α) : (termE fv t).eval regs = ((t.realize val : Fin a.1) : ℕ) := by
-  have := (hE.atomic fv 0 val).term regs (Fin.elim0 : Fin 0 → Fin a.1) h0 hv (fun i => i.elim0)
-    (t.relabel Sum.inl)
-  rw [Term.realize_relabel] at this
-  exact this
+    (t : (language L).Term α) : (termE fv t).eval regs = ((t.realize val : Fin a.1) : ℕ) :=
+  eval_termE_of_atomic (hE.atomic fv 0 val) h0 hv t
 
 theorem correct_ofFO (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
     (φ : (language L).Formula α) :
@@ -702,5 +700,26 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
         (keyC _ 0 _ rfl (Nat.zero_le _) hk₀ (List.getD_set_self hlen) hn)⟩
 
 end Correct
+
+variable (v) in
+omit [L.IsRelational] in
+/-- The register bound `(N + 1) ^ (d + k)` of a decider, for input length `N` and maximal input
+arity `d`, dominates `1`, the cardinality `n`, `n ^ k`, `N` and the size of every input table. -/
+theorem decider_bounds (a : EncodedStructure) (k : ℕ) :
+    1 ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
+    a.1 ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
+    a.1 ^ k ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
+    (encStructure a).length ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
+    ∀ i, a.1 ^ arityAt v i ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) := by
+  have hm0 : v.maxArity ≠ 0 := by simp [Vocabulary.maxArity]
+  have hN : 1 ≤ (encStructure a).length + 1 := Nat.le_add_left 1 _
+  have hmono : ((encStructure a).length + 1) ^ v.maxArity ≤
+      ((encStructure a).length + 1) ^ (v.maxArity + k) := Nat.pow_le_pow_right hN (by omega)
+  have hn : a.1 ≤ (encStructure a).length + 1 :=
+    (card_le_length_encStructure a).trans (Nat.le_succ _)
+  refine ⟨Nat.one_le_pow _ _ hN, ?_, ?_, (length_le_pow_maxArity v a).trans hmono,
+    fun i => (pow_arityAt_le v a i).trans hmono⟩
+  · exact hn.trans ((Nat.le_self_pow hm0 _).trans hmono)
+  · exact (Nat.pow_le_pow_left hn k).trans (Nat.pow_le_pow_right hN (by omega))
 
 end Cslib.Logic.FO.Ordered.TCModelChecker

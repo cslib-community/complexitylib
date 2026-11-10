@@ -37,6 +37,8 @@ algorithm relies on.
 * `Relation.RelatesInSteps.add_iff`, `Relation.RelatesWithinSteps.add_iff`: walks split at any
   point; the second is the midpoint recursion.
 * `Relation.RelatesInSteps.add_mul_of_cycle`: pumping a cycle any number of times.
+* `Relation.RelatesWithinSteps.succ_iff_of_unique`: a walk from an element with a unique
+  successor starts with a step to it.
 * `Relation.RelatesWithinSteps.two_mul_iff`, `Relation.RelatesWithinSteps.two_pow_succ_iff`,
   `Relation.RelatesWithinSteps.one_iff`: the recursion of Savitch's algorithm and its base case.
 * `Relation.ReflTransGen.relatesWithinSteps_of_encard_le`,
@@ -148,6 +150,23 @@ theorem RelatesWithinSteps.two_pow_succ_iff {i : ℕ} :
     RelatesWithinSteps r a c (2 ^ (i + 1)) ↔
       ∃ b, RelatesWithinSteps r a b (2 ^ i) ∧ RelatesWithinSteps r b c (2 ^ i) := by
   rw [Nat.pow_succ', RelatesWithinSteps.two_mul_iff]
+
+/-! ### Walks along unique successors -/
+
+/-- **A walk leaves through the unique successor.** When `b` is the only successor of `a`, a walk
+of at most `n + 1` steps from `a` to some `c ≠ a` is a step to `b` followed by a walk of at most
+`n` steps from `b`. -/
+theorem RelatesWithinSteps.succ_iff_of_unique (hab : r a b) (huniq : ∀ b', r a b' → b' = b)
+    (hac : a ≠ c) : RelatesWithinSteps r a c (n + 1) ↔ RelatesWithinSteps r b c n := by
+  constructor
+  · rintro ⟨m, hm, h⟩
+    cases m with
+    | zero => exact absurd h.zero hac
+    | succ m =>
+      obtain ⟨t, ht, h'⟩ := RelatesInSteps.succ'_iff.mp h
+      exact ⟨m, by omega, huniq t ht ▸ h'⟩
+  · rintro ⟨m, hm, h⟩
+    exact ⟨m + 1, by omega, h.head a b c m hab⟩
 
 /-! ### Walks on few elements are short -/
 

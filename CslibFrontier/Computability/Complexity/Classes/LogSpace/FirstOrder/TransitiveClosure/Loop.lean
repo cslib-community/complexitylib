@@ -48,9 +48,7 @@ theorem reaches_digits {P : CounterProgram} {w : List Bool} {B b r d k n : ℕ}
       (∀ i : Fin k, regs'.getD (d + i) 0 = finFunctionFinEquiv.symm g i) ∧
       ∀ x ∈ regs', x ≤ B := by
   have hdig : ∀ i : Fin k, (digitE r i).eval regs = finFunctionFinEquiv.symm g i :=
-    fun i => by
-      rw [finFunctionFinEquiv_symm_apply_val]
-      simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg, hg, h0]
+    eval_digitE h0 g hg
   obtain ⟨regs', hr, hlen', hout, hin, hB'⟩ := reaches_assignChain (w := w) hP hlen
     (fun i hi regs' h => by
       simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg]
