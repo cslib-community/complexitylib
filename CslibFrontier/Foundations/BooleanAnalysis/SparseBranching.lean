@@ -294,13 +294,13 @@ theorem eval_zero_univariateParityTruncatedSum [Fintype ι] [DecidableEq ι] [Co
 replacement polynomial `q x i v` restores `bitVal ℤ (x v)` at `T = 0`,
 `(univariateParityTruncatedSum I P ℓ q).eval 0 ≡ commonZeroCount I P [ZMOD 2 ^ ℓ]`. -/
 theorem eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount [Fintype ι] [DecidableEq ι]
-    (I : Finset κ) (P : κ → Finset (Finset ι)) {ℓ : ℕ} (hℓ : 1 ≤ ℓ)
+    (I : Finset κ) (P : κ → Finset (Finset ι)) (ℓ : ℕ)
     (q : (ι → Bool) → κ → ι → Polynomial ℤ)
     (hq0 : ∀ x : ι → Bool, ∀ i ∈ I, ∀ M ∈ P i, ∀ v ∈ M, (q x i v).eval 0 = bitVal ℤ (x v)) :
     (univariateParityTruncatedSum I P ℓ q).eval 0 ≡
       (commonZeroCount I P : ℤ) [ZMOD (2 : ℤ) ^ ℓ] := by
   rw [eval_zero_univariateParityTruncatedSum I P ℓ q hq0]
-  exact sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P hℓ
+  exact sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P ℓ
 
 /-- **§5.3, eq. (5.5b) (exact recovery of $N(\mathcal{P})$ from $S_\ell(H(0)) \bmod 2^\ell$)**:
 when `Fintype.card ι < ℓ` and every replacement polynomial `q x i v` restores `bitVal ℤ (x v)` at

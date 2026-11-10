@@ -1029,18 +1029,17 @@ theorem bucketOverflow_le {ι Q : Type*} {U n_max c_b : ℕ}
 
 /-! ## Section 5: Master word-level space accounting (`succinctWords`) -/
 
-/-- **Master succinct word-space bound:** if `n_max ≤ U` and the auxiliary bit budget `B_aux` is at
-most `C_aux * n_max * Dynamic.logLogFactor n_max`, then storing `n_max` quotients of
+/-- **Master succinct word-space bound:** if the auxiliary bit budget `B_aux` is at most
+`C_aux * n_max * Dynamic.logLogFactor n_max`, then storing `n_max` quotients of
 `quotientBits U n_max` bits, `n_max` values of `valBits V` bits, `B_aux` auxiliary bits (with
 additive word overhead `C_pad`), and `C_hdr` header/hash words uses at most
 `Dynamic.succinctWords (C_aux + 5) (C_pad + C_hdr) U V w n_max` words across all `w`. -/
 theorem succinct_space_le_succinctWords {U V w n_max B_aux C_aux C_pad C_hdr : ℕ}
-    (hnU : n_max ≤ U)
     (haux : B_aux ≤ C_aux * n_max * Dynamic.logLogFactor n_max) :
     (n_max * quotientBits U n_max + n_max * valBits V + B_aux + w - 1) / w + C_pad + C_hdr ≤
       Dynamic.succinctWords (C_aux + 5) (C_pad + C_hdr) U V w n_max := by
   unfold Dynamic.succinctWords
-  have hqv := quotient_val_bits_le_optBits (V := V) hnU
+  have hqv := quotient_val_bits_le_optBits (U := U) (V := V) (n := n_max)
   have hnum :
       n_max * quotientBits U n_max + n_max * valBits V + B_aux + w - 1 ≤
         Dynamic.optBits U V n_max + (C_aux + 5) * n_max * Dynamic.logLogFactor n_max + w - 1 := by
@@ -1223,7 +1222,7 @@ theorem globalMetaLen_le_of_bucketBits_pos {n : ℕ} (hb : 0 < bucketBits n) :
 `Values`, the 9 `LocalMeta` sub-arrays of length `totalMicroBuckets n_max`, `GlobalMeta`, and
 `C_hdr` header/hash words is at most `Dynamic.succinctWords 79 (35 + C_hdr) U V w n_max` across
 all `w`. -/
-theorem tableArrays_words_le_succinctWords {U V w n_max C_hdr : ℕ} (hnU : n_max ≤ U) :
+theorem tableArrays_words_le_succinctWords {U V w n_max C_hdr : ℕ} :
     packedWords n_max (quotientBits U n_max) w +
       packedWords n_max (valBits V) w +
       9 * packedWords (totalMicroBuckets n_max) (effBucketPosBits n_max) w +
@@ -1261,7 +1260,7 @@ theorem tableArrays_words_le_succinctWords {U V w n_max C_hdr : ℕ} (hnU : n_ma
       (U := U) (V := V) (w := w) (n_max := n_max)
       (B_aux := localMetaLen n_max * effBucketPosBits n_max +
         globalMetaLen n_max * globalPtrBits n_max)
-      (C_aux := 74) (C_pad := 35) (C_hdr := C_hdr) hnU haux
+      (C_aux := 74) (C_pad := 35) (C_hdr := C_hdr) haux
   have hassoc :
       n_max * quotientBits U n_max + n_max * valBits V +
         localMetaLen n_max * effBucketPosBits n_max +

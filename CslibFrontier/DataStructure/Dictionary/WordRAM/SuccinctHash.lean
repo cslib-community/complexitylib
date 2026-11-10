@@ -288,7 +288,7 @@ theorem space_le_succinctWords {U V w n_max : ℕ}
     space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max := by
   have hh := hashSpace_le hw hnU hU
   have htab := totalSpace_le_succinctWords (U := U) (V := V) (w := w) (n_max := n_max)
-    (h_space := hashSpace U w n_max) hnU
+    (h_space := hashSpace U w n_max)
   have h12345 := div_add_packedWords_le
     (Dynamic.optBits U V n_max + 79 * n_max * Dynamic.logLogFactor n_max) 35
     (2 * n_max) 1 w

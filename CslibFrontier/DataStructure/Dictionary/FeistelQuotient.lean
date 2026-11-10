@@ -33,7 +33,7 @@ tables ([Arbitman, Naor and Segev, FOCS 2010, Claim 5.7][ArbitmanNaorSegev2010];
 [Bender, Conway, Farach-Colton, Kuszmaul and Tagliavini, *J. ACM* 2023, Section 7, arXiv
 pp. 31–33][BenderConwayFarachColtonKuszmaulTagliavini2023]) together with the universal
 bit-accounting inequality comparing quotient + value storage against the information-theoretic
-optimum `Dynamic.optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` across all `0 ≤ n ≤ U`.
+optimum `Dynamic.optBits U V n = ⌈log₂ C(U, n)⌉ + n * ⌈log₂ V⌉` for every `n`.
 
 Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 `b = bucketBits n = ⌊log₂ n⌋ - 3 * logLogFactor n`:
@@ -45,7 +45,7 @@ Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
 3. From `(bucket, keyQuotient b u)`, `feistelReconstruct b h1 bucket (keyQuotient b u)` recovers
    `u` uniquely (`feistelReconstruct_feistelBucket`). Consequently, distinct keys sharing the same
    quotient always map to distinct Feistel buckets (`feistelBucket_ne_of_keyQuotient_eq_of_ne`).
-4. Across all `0 ≤ n ≤ U`, storing `n` quotients of `quotientBits U n` bits and `n` values of
+4. For every `n`, storing `n` quotients of `quotientBits U n` bits and `n` values of
    `valBits V = ⌈log₂ V⌉` bits uses at most
    `Dynamic.optBits U V n + 5 * n * Dynamic.logLogFactor n` bits (`quotient_val_bits_le_optBits`).
 
@@ -64,7 +64,7 @@ Given a universe bound `U`, capacity `n ≤ U`, and bucket bit-width
   `feistelBucket_ne_of_keyQuotient_eq_of_ne`: exact invertibility of Feistel quotienting.
 * `pow_le_pow_mul_choose`: `U ^ n ≤ n ^ n * U.choose n` for all `n ≤ U`.
 * `quotient_bits_le_choose`, `quotient_val_bits_le_optBits`: universal succinct bit accounting
-  valid for all `0 ≤ n ≤ U`.
+  valid for all `n`.
 * `expect_card_feistelXor_eq_on`, `expect_feistelXor_mul_sub_one_le_on`,
   `expect_feistelXor_overflow_le_on`: pairwise and 3-wise independence bounds for Feistel bucket and
   micro-chain collisions and bucket overflow.
@@ -272,13 +272,23 @@ theorem pow_le_pow_mul_choose {U n : ℕ} (hnU : n ≤ U) :
     U ^ n ≤ n ^ n * U.choose n := by
   simpa [Nat.choose_self, Nat.mul_comm] using Nat.choose_mul_pow_le hnU n
 
-/-- Universal quotient bit bound: for every `n ≤ U`, storing `n` quotients of `quotientBits U n`
-bits uses at most `⌈log₂ C(U, n)⌉ + 5 * n * Dynamic.logLogFactor n` bits. -/
-theorem quotient_bits_le_choose {U n : ℕ} (hnU : n ≤ U) :
+/-- Universal quotient bit bound: for every `n`, storing `n` quotients of `quotientBits U n` bits
+uses at most `⌈log₂ C(U, n)⌉ + 5 * n * Dynamic.logLogFactor n` bits. When `U < n` the binomial
+vanishes and `quotientBits U n ≤ 3 * Dynamic.logLogFactor n + 1`. -/
+theorem quotient_bits_le_choose {U n : ℕ} :
     n * quotientBits U n ≤
       Nat.clog 2 (U.choose n) + 5 * n * Dynamic.logLogFactor n := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · simp
+  rcases lt_or_ge U n with hUn | hnU
+  · have hll : 1 ≤ Dynamic.logLogFactor n := Dynamic.one_le_logLogFactor n
+    have hkey : keyBits U ≤ Nat.log 2 n + 1 := Nat.clog_le_of_le_pow
+      (hUn.le.trans (Nat.lt_pow_succ_log_self (by decide) n).le)
+    have hq : quotientBits U n ≤ 3 * Dynamic.logLogFactor n + 1 := by
+      unfold quotientBits bucketBits
+      omega
+    rw [Nat.choose_eq_zero_of_lt hUn, Nat.clog_zero_right, Nat.zero_add]
+    nlinarith [Nat.mul_le_mul_left n hq]
   · have hU : 1 ≤ U := hn.trans_le hnU
     have hpow_key : 2 ^ keyBits U ≤ 2 * U := Nat.pow_clog_le_mul Nat.one_lt_two (by omega)
     have hpow_n : n ≤ 2 ^ (bucketBits n + 3 * Dynamic.logLogFactor n + 1) :=
@@ -314,13 +324,13 @@ theorem quotient_bits_le_choose {U n : ℕ} (hnU : n ≤ U) :
     rw [hsplit, Nat.mul_add] at hexp
     nlinarith
 
-/-- Universal quotient + value bit bound: for every `n ≤ U` and `V`, storing `n` quotients of
+/-- Universal quotient + value bit bound: for every `n` and `V`, storing `n` quotients of
 `quotientBits U n` bits and `n` values of `valBits V = ⌈log₂ V⌉` bits uses at most
 `Dynamic.optBits U V n + 5 * n * Dynamic.logLogFactor n` bits. -/
-theorem quotient_val_bits_le_optBits {U V n : ℕ} (hnU : n ≤ U) :
+theorem quotient_val_bits_le_optBits {U V n : ℕ} :
     n * (quotientBits U n + valBits V) ≤
       Dynamic.optBits U V n + 5 * n * Dynamic.logLogFactor n := by
-  have hq := quotient_bits_le_choose hnU
+  have hq := quotient_bits_le_choose (U := U) (n := n)
   unfold Dynamic.optBits valBits
   linarith
 

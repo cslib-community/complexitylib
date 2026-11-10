@@ -300,17 +300,16 @@ theorem sumCoeffsBelow_sum {α A : Type*} [Semiring A] (s : Finset α) (ℓ : �
   refine sum_congr rfl fun j _ => ?_
   rw [Polynomial.finsetSum_coeff]
 
-/-- **Equation (5.4) (congruence modulo `2 ^ ℓ`)**: for `ℓ ≥ 1`, summing the truncated product of
-parity factors of `monomialSum ℤ (P i) x` over `x : ι → Bool` recovers `commonZeroCount I P`
-modulo `2 ^ ℓ`. -/
+/-- **Equation (5.4) (congruence modulo `2 ^ ℓ`)**: summing the truncated product of parity factors
+of `monomialSum ℤ (P i) x` over `x : ι → Bool` recovers `commonZeroCount I P` modulo `2 ^ ℓ`. -/
 theorem sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount [Fintype ι] [DecidableEq ι]
-    (I : Finset κ) (P : κ → Finset (Finset ι)) {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
+    (I : Finset κ) (P : κ → Finset (Finset ι)) (ℓ : ℕ) :
     (∑ x : ι → Bool,
       Polynomial.sumCoeffsBelow ℓ (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum ℤ (P i) x))) ≡
       (commonZeroCount I P : ℤ) [ZMOD (2 : ℤ) ^ ℓ] := by
   rw [← sum_prod_even_monomialSum_eq_commonZeroCount I P]
   exact Int.ModEq.sum fun x _ =>
-    Polynomial.sumCoeffsBelow_prod_parityFactor_modEq I hℓ (fun i => monomialSum ℤ (P i) x)
+    Polynomial.sumCoeffsBelow_prod_parityFactor_modEq I ℓ (fun i => monomialSum ℤ (P i) x)
 
 /-- **Equation (5.4) (exact recovery via `% 2 ^ ℓ`)**: when `Fintype.card ι < ℓ` (in particular for
 `ℓ = Fintype.card ι + 1`), reducing the cube sum of truncated parity-factor products modulo
@@ -320,12 +319,11 @@ theorem emod_sum_sumCoeffsBelow_prod_parityFactor_eq_commonZeroCount [Fintype ι
     (∑ x : ι → Bool,
       Polynomial.sumCoeffsBelow ℓ (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum ℤ (P i) x))) %
       ((2 : ℤ) ^ ℓ) = commonZeroCount I P := by
-  have hℓ1 : 1 ≤ ℓ := by omega
   have hmod :
       (∑ x : ι → Bool,
         Polynomial.sumCoeffsBelow ℓ (∏ i ∈ I, Polynomial.parityFactor ℓ (monomialSum ℤ (P i) x))) %
         ((2 : ℤ) ^ ℓ) = (commonZeroCount I P : ℤ) % ((2 : ℤ) ^ ℓ) :=
-    sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P hℓ1
+    sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P ℓ
   rw [hmod, Int.emod_eq_of_lt (Nat.cast_nonneg _)]
   have hle : (commonZeroCount I P : ℤ) ≤ (2 : ℤ) ^ Fintype.card ι := by
     exact_mod_cast commonZeroCount_le_two_pow I P

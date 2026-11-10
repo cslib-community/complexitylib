@@ -597,12 +597,11 @@ theorem sum_seedClusterBound_sub_one_goodTop_le {U w₀ n : ℕ} (hU : U ≤ 2 ^
             𝔼 β : Bot, (2 ^ j : ℝ) * (if scaleOverload b hT S' u' j β then (1 : ℝ) else 0) :=
           Finset.expect_sum_comm _ _ _
       _ ≤ ∑ j ∈ Finset.Icc 1 b, (2 ^ j : ℝ) * (288 / (2 ^ j : ℝ) ^ 2) := by
-          refine Finset.sum_le_sum fun j hj => ?_
-          rw [Finset.mem_Icc] at hj
+          refine Finset.sum_le_sum fun j _ => ?_
           rw [Fintype.expect_eq_sum_div_card, ← Finset.mul_sum, mul_div_assoc,
             ← Fintype.expect_eq_sum_div_card]
           exact mul_le_mul_of_nonneg_left
-            (expect_scaleOverload_le hkT S' hu'_notMem hS'_card h8 hj.1) (by positivity)
+            (expect_scaleOverload_le hkT S' hu'_notMem hS'_card h8) (by positivity)
       _ ≤ 288 := sum_Icc_two_pow_mul_div_sq_le b
   rw [Fintype.expect_eq_sum_div_card] at hexp
   have hcard_pos : (0 : ℝ) < (Fintype.card Bot : ℝ) := Nat.cast_pos.mpr Fintype.card_pos
