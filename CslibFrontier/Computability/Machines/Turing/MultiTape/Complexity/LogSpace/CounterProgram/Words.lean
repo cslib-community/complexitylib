@@ -107,35 +107,6 @@ private theorem bounded4 {B a₀ a₁ a₂ a₃ : ℕ} (h₀ : a₀ ≤ B) (h₁
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   omega
 
-/-- **A read-and-count loop.** Label `c` reads the input at `e`; on `true`, label `c + 1`
-increments register `u` and returns to `c`, and on anything else the loop exits to `exit`. If the
-read is `true` exactly below `n` on the registers `ρ j`, the loop runs from `ρ j` to `ρ n`. -/
-private theorem reachesOut_count {P : CounterProgram} {w : List Bool} {B c u exit n : ℕ}
-    {e : Expr} (ρ : ℕ → List ℕ) (hc : P.instr c = read e (c + 1) exit exit)
-    (hc' : P.instr (c + 1) = assign u (add (reg u) (const 1)) c)
-    (hρ : ∀ j < n, (ρ j).set u ((add (reg u) (const 1)).eval (ρ j)) = ρ (j + 1))
-    (hB : ∀ j ≤ n, ∀ r ∈ ρ j, r ≤ B) (htrue : ∀ j < n, w[e.eval (ρ j)]? = some true)
-    (hend : w[e.eval (ρ n)]? ≠ some true) :
-    ∀ j ≤ n, P.ReachesOut w (P.Active B) (c, ρ j) (exit, ρ n) [] := by
-  intro j hj
-  induction h : n - j generalizing j with
-  | zero =>
-    obtain rfl : j = n := by omega
-    refine ReachesOut.read hc (hB j hj) ?_
-    have hexit : readLabel (c + 1) exit exit w[e.eval (ρ j)]? = exit := by
-      match hw : w[e.eval (ρ j)]? with
-      | none => rfl
-      | some false => rfl
-      | some true => exact absurd hw hend
-    rw [hexit]
-    exact ReachesOut.refl _
-  | succ _ ih =>
-    refine ReachesOut.read hc (hB j hj) ?_
-    rw [htrue j (by omega)]
-    refine ReachesOut.assign hc' (hB j hj) ?_
-    rw [hρ j (by omega)]
-    exact ih (j + 1) (by omega) (by omega)
-
 /-! ### Reading the header: the length of the framed word and the unary count -/
 
 /-- The header code: label `0` and `1` count the framed word into register `0`, labels `2` and `3`

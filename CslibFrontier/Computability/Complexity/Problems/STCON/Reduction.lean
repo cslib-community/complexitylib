@@ -214,29 +214,6 @@ private theorem bounded_regs {L u v y : ℕ} (hL : L ≤ B) (hu : u ≤ B) (hv :
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   omega
 
-/-- The input length is counted by reading the markers of the framed input. -/
-private theorem reachesOut_count (hL : w.length ≤ B) : ∀ j ≤ w.length,
-    (writer ntm D).ReachesOut (frame w) ((writer ntm D).Active B) (0, [j, 0, 0, 0])
-      (2, [w.length, 0, 0, 0]) [] := by
-  intro j hj
-  induction h : w.length - j generalizing j with
-  | zero =>
-    have : j = w.length := by omega
-    subst this
-    refine ReachesOut.read (show (writer ntm D).instr 0 = _ from rfl)
-      (bounded_regs hL (by omega) (by omega) (by omega)) ?_
-    simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-      getElem?_frame_two_mul_length, readLabel]
-    exact ReachesOut.refl _
-  | succ m ih =>
-    refine ReachesOut.read (show (writer ntm D).instr 0 = _ from rfl)
-      (bounded_regs (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-      getElem?_frame_two_mul (show j < w.length by omega), readLabel]
-    refine ReachesOut.assign (show (writer ntm D).instr 1 = _ from rfl)
-      (bounded_regs (by omega) (by omega) (by omega) (by omega)) ?_
-    simpa using ih (j + 1) (by omega) (by omega)
-
 /-- A counting loop writing `M` set bits. -/
 private theorem reachesOut_ones {b body exit M : ℕ} {bound : Expr}
     (hcode : (writer ntm D).CodeAt b (forCode b 1 bound body exit))
@@ -414,7 +391,14 @@ theorem computableInLogSpace_configurationInstance :
     (i₀ := S) (by omega)
   obtain ⟨regs, hmat, hregs⟩ := reachesOut_matrix (ntm := ntm) (D := D) w hL hN h2
     (i₀ := VB) (by omega)
-  have hchain := (reachesOut_count (ntm := ntm) (D := D) w hL 0 (Nat.zero_le _)).trans
+  -- the input length is counted by reading the markers of the framed input
+  have hcount := reachesOut_count (P := writer ntm D) (n := w.length) (fun j => [j, 0, 0, 0])
+    (u := 0) (show (writer ntm D).instr 0 = _ from rfl) (show (writer ntm D).instr 1 = _ from rfl)
+    (fun _ _ => by simp) (fun j hj => bounded_regs (hj.trans hL) (by omega) (by omega) (by omega))
+    (fun j hj => by simpa using getElem?_frame_two_mul hj)
+    (by simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
+      getElem?_frame_two_mul_length]; decide) 0 (Nat.zero_le _)
+  have hchain := hcount.trans
     (hones₁.trans (ReachesOut.emit (show (writer ntm D).instr 6 = _ from rfl)
       (hreg _ (by omega)) (hones₂.trans (ReachesOut.emit
         (show (writer ntm D).instr 11 = _ from rfl) (hreg _ (by omega))
