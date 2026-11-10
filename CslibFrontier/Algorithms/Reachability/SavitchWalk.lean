@@ -36,7 +36,7 @@ each step of the run from `u` to `v` stays put or follows an edge
 (`Cslib.Reachability.Walk.eq_or_edge_iterate`), because each target remains reachable from the
 previous one at its level (`Cslib.Reachability.Walk.chain_iterate`).
 
-The time and space of a step on multi-tape machines are in
+The space of a step on multi-tape machines is in
 `Cslib.Computability.Machines.Turing.MultiTape.Complexity.Space.SavitchWalk`.
 
 ## Main definitions

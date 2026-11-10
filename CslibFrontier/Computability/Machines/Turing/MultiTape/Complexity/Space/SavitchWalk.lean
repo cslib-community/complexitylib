@@ -40,7 +40,10 @@ and the width together with the state, whose stack holds the targets with their 
 words of width `w` (`Cslib.Reachability.Walk.computableInSpace_roundStep`). The states of a run
 from a target at level `d` have size `O((d + 1) * (d + w + 1))`
 (`Cslib.Reachability.Walk.length_encState_le`), so every round of such a run takes work space
-`O((d + 1) * (d + w + 1) + |p| + edgeMax Se p w)`: the `O(d * w)` bits of Savitch's algorithm.
+`O((d + 1) * (d + w + 1) + |p| + edgeMax Se p w)`. This is not `O(d * w)` in general: the levels
+are written in unary, and after `d` splits the pending levels `0, 0, 1, …, d - 1` alone take
+`Θ(d ^ 2)` bits. When the depth is at most the width, as for the `2 ^ w` vertices of width `w`,
+which need depth `d = w`, the bound becomes `O(w ^ 2 + |p| + edgeMax Se p w)`.
 Iterating the rounds under a binary counter of steps, the state after any number `n` of steps
 costs the same work space, plus that of the inputs and `O(log n)` for the counter
 (`Cslib.Reachability.Walk.computableInSpace_run`).
