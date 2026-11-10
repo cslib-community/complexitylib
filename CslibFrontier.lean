@@ -5796,6 +5796,7 @@ public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 public import CslibFrontier.Probability.BitString.ToeplitzHash
 public import CslibFrontier.Probability.BoundedDifferences
 public import CslibFrontier.Probability.Chernoff
+public import CslibFrontier.Probability.ChiSquare
 public import CslibFrontier.Probability.Coding.PrefixFreeEntropy
 public import CslibFrontier.Probability.Coding.SetSeparator
 public import CslibFrontier.Probability.Collision
@@ -5832,6 +5833,7 @@ public import CslibFrontier.Probability.HashFamily.MultiplyShift
 public import CslibFrontier.Probability.HashFamily.Polynomial
 public import CslibFrontier.Probability.HashFamily.Uniform
 public import CslibFrontier.Probability.HashIsolation
+public import CslibFrontier.Probability.Hellinger
 public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.IID.CollisionCount
 public import CslibFrontier.Probability.IID.CrossCollisionCount
