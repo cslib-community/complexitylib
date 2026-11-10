@@ -633,8 +633,8 @@ theorem eval_runTwoRound {α : Type} (reply1 reply2 : List Bool → List Bool)
     ProbComp.eval (runTwoRound reply1 reply2 prog s) =
       ProbOracleComp.runWith
         (fun q state => PMF.pure (twoRoundStep reply1 reply2 q.2 state)) prog s := by
-  simpa [runTwoRound, ProbOracleComp.runWith, OracleComp.runWith] using
-    ProbOracleComp.eval_run_interpret
+  simpa [runTwoRound] using
+    ProbOracleComp.eval_run_interpret_eq_runWith
       (fun q state => pure (twoRoundStep reply1 reply2 q.2 state)) prog s
 
 /-- Sample the honest prover's random masks and commitment seeds, returning `(bits, seeds)`. -/
@@ -689,14 +689,13 @@ theorem run_gmwProver_fst {α : Type} (generator : List Bool → List Bool) (s m
     let step := twoRoundStep (honestReply1 generator m φ state.2)
       (honestReply2 s φ state.2) q.2 state.1
     PMF.pure (step.1, (step.2, state.2))
-  have hsim := ProbOracleComp.run_interpret_simulation P.respond oracle' relate
+  have hsim := ProbOracleComp.runWith_simulation P.respond oracle' relate
     (fun q state => by
       rcases state with ⟨st, _ | coins⟩ <;>
         simp [P, gmwProver, relate, oracle', PMF.bind_map, Function.comp_def]) prog P.init
   have hmap := congrArg (PMF.map Prod.fst) hsim
-  have hlhs : (((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
-        prog).run P.init).bind (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
+  have hlhs : ((ProbOracleComp.runWith P.respond prog P.init).bind
+        (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
       (P.run prog P.init).map Prod.fst := by
     simp only [pmf_norm, Prover.run]
     have hconst : ∀ x : α × P.State, PMF.map (fun _ : State' => x.1) (relate x.2) = PMF.pure x.1 :=
@@ -705,13 +704,13 @@ theorem run_gmwProver_fst {α : Type} (generator : List Bool → List Bool) (s m
   rw [hlhs] at hmap; rw [hmap]
   simp only [pmf_norm, P, gmwProver, relate]
   congr 1 with coins : 1
-  have hstate := ProbOracleComp.run_interpret_map_state
+  have hstate := ProbOracleComp.runWith_map_state
     (fun q (st : ℕ × List Bool) => PMF.pure (twoRoundStep (honestReply1 generator m φ coins)
         (honestReply2 s φ coins) q.2 st))
     oracle' (fun st => (st, coins)) (fun q st => by simp [oracle']) prog (0, [false, false, false])
   have hstate_fst := congrArg (PMF.map Prod.fst) hstate
   simp only [PMF.map_comp, Function.comp_def] at hstate_fst
-  rw [← hstate_fst, eval_runTwoRound]; rfl
+  rw [← hstate_fst, eval_runTwoRound]
 
 /-- The PPT program realizing the honest GMW prover's interaction with a verifier `prog`. -/
 noncomputable def gmwInteract (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)

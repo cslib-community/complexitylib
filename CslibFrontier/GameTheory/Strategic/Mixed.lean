@@ -43,6 +43,8 @@ learner that faces the expected cost vectors has the same regret as the player i
 ## Main results
 
 * `Cslib.GameTheory.sum_productWeight`: the product weights of probability vectors sum to `1`.
+* `Cslib.GameTheory.sum_productWeight_mul_apply`: the expectation of a function of one coordinate
+  under the product weights is its expectation under that coordinate's mixed strategy.
 * `Cslib.GameTheory.productWeight_single`: point masses multiply to the point mass at a profile.
 * `Cslib.GameTheory.productDist_sum`: expectations under `productDist` are sums over profiles.
 * `Cslib.GameTheory.CostGame.sum_mul_deviationCost`: averaging the expected cost vector against
@@ -113,6 +115,26 @@ theorem sum_productWeight {p : ∀ i, S i → ℝ} (hp : ∀ i, ∑ a, p i a = 1
   unfold productWeight
   rw [← Fintype.prod_sum]
   exact prod_eq_one fun i _ => hp i
+
+/-- The expectation of a function of coordinate `i` under the product weights is its expectation
+under `p i`, if the other `p j` are probability vectors. -/
+theorem sum_productWeight_mul_apply {p : ∀ i, S i → ℝ} {i : ι}
+    (hp : ∀ j, j ≠ i → ∑ a, p j a = 1) (g : S i → ℝ) :
+    ∑ s, productWeight p s * g (s i) = ∑ a, p i a * g a := by
+  set q := Function.update p i fun a => p i a * g a
+  have hqi : ∀ a, q i a = p i a * g a := fun a => congrFun (Function.update_self i _ p) a
+  have hqj : ∀ j ∈ univ.erase i, ∀ a, q j a = p j a := fun j hj a =>
+    congrFun (Function.update_of_ne (ne_of_mem_erase hj) _ p) a
+  have hq : ∀ s, productWeight p s * g (s i) = ∏ j, q j (s j) := fun s => by
+    rw [productWeight_def, ← mul_prod_erase univ (fun j => p j (s j)) (mem_univ i),
+      ← mul_prod_erase univ (fun j => q j (s j)) (mem_univ i), hqi,
+      prod_congr rfl fun j hj => hqj j hj (s j)]
+    ring
+  have hrest : ∏ j ∈ univ.erase i, ∑ a, q j a = 1 := prod_eq_one fun j hj =>
+    (sum_congr rfl fun a _ => hqj j hj a).trans (hp j (ne_of_mem_erase hj))
+  rw [sum_congr rfl fun s _ => hq s, ← Fintype.prod_sum q,
+    ← mul_prod_erase univ (fun j => ∑ a, q j a) (mem_univ i), hrest, mul_one]
+  simp only [hqi]
 
 /-- The **product distribution** of the mixed strategies `p i`, as a finitely supported
 distribution on profiles. -/
