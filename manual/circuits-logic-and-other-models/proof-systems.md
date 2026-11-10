@@ -500,9 +500,84 @@ width-guarded interpretations reject malformed scopes. [Crossover clients](../..
 check every standardized shape, both first-gadget outcomes, explicit witnesses and rejected
 boundary tuples, while retaining the existing CNF crossover tests.
 
-These are finite relation semantics. They do not prove planar embedding/substitution,
-normalization from a failed delta-matroid condition (the source's omitted Lemma 6 proof),
-a hardness theorem or a new native runtime certificate. These obligations remain part of
+These Figure 1 results concern finite relation semantics. Geometric realization and substitution,
+a hardness theorem and a new native runtime certificate remain part of
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Ordered normalization from a cyclic exchange failure
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Normalization`. For any arity `n`,
+`Normalization.exists_construction` takes a nonempty self-complementary relation
+`R : Set (Fin n → Bool)` whose `cyclicDifferenceRelation R` is not an even delta-matroid.
+It proves `4 ≤ n` and supplies a `Construction R`. Nonemptiness is essential: failure caused
+solely by an empty relation supplies no exchange witness. This is an original reconstruction
+of the combinatorial argument omitted from Dvořák–Kupec, ICALP 2015, §4, printed p. 440,
+Lemma 6; it does not yet prove that lemma's planar-expressibility conclusion.
+
+The construction chooses a feasible twist and a cyclic starting port, then records a finite
+`Program n 4`. The only reductions are adjacent identification, including the last-to-first
+edge, and a cap at arity at least six that identifies old ports 1 and 3 and hides old port 2.
+The latter retains free order `0,1,4,…`. Adjacent identification conditions the removed cyclic
+difference to zero; the cap conditions old differences 1 and 2 to agree. The exact formulas
+in `BitString.CyclicDifference.Boundary` rule out new forbidden pairs during the descent.
+Cyclic rotations preserve orientation; no arbitrary port permutation is used.
+
+`Construction.target` is standardized in the final four-port order. `Construction.gadget`
+executes the trace on an actual `PPGadget` over two symbols: the original `R` and binary
+disequality. Its initial body contains one `R` literal and one or two disequalities per port.
+Subsequent steps only relabel scopes; every cap adds one fresh auxiliary. No constants or
+equality symbol are added. `Construction.body_bounds` gives at most `1+2n` constraints and
+`5n` total scope occurrences; `Construction.numAux_bound` gives at most `3n-4` allocated
+auxiliaries, including unused labels. `Program.reductions_bound` counts nonrotation operations,
+not the length of an arbitrary trace.
+
+`CSP.PrimitivePositive.Operations` supplies the reusable `PPGadget.relabelFree` and
+`PPGadget.substitute` operations, preserving exact scope widths and existential semantics.
+The [normalization tests](../../CslibFrontierTests/PlanarNormalization.lean) exercise failed-exchange
+families at arities 6, 8 and 12, repeated caps, a feasible-quartet finish, proper-support
+compression, rotation, wraparound deletion, actual auxiliary witnesses and empty/nullary guards.
+The guide composes the construction with its gadget and size bounds using ordinary imports.
+
+These are combinatorial and finite-semantic bounds. Relation decisions and a chosen construction
+are fixed-relation data; no uniform native runtime or binary encoded-size bound is asserted.
+Geometric realization of the recorded operations, ordered planar substitution, hardness and
+completion of the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Original-language gadgets for the nonselfdual branch
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget`.
+`NonSelfDual.exists_oneHotGadget` gives an actual `PPGadget arity sem
+(BitString.oneHotRelation (Fin 3))` when the language has none of the six common Schaefer
+polymorphisms and unary complement is also not a common polymorphism. Different language
+relations may witness these failures; their arities are unrestricted. Pins and disequality
+are constructed internally, rather than added to the alphabet.
+`RelationMinor.exists_disequalityGadget` needs only absence of the six Schaefer operations,
+so it also applies to self-complementary languages.
+
+`RelationMinor.Construction` records finite ordered recipes. Its atom, projection, adjacent
+equality/disequality deletion, cofactor, single-coordinate flip, cyclic rotation and binary
+intersection constructors retain their intermediate relations and enabling constructions.
+`Construction.gadget` executes this tree over the original alphabet. The reusable
+`PPGadget.atom`, `conj`, `retarget` and port operations preserve exact scope widths and
+existential semantics. Conjunction appends bodies with disjoint auxiliary blocks, including
+when the same gadget is used several times. `NonSelfDual.triangleGadget` appends the ternary
+body and three NAND bodies on ports `(0,1)`, `(1,2)`, `(2,0)`, with fresh auxiliaries for
+each occurrence. Survivor order is retained by projection; a cyclic rotation changes only
+the starting port.
+
+The constants descent follows Dvořák–Kupec, ICALP 2015, §2, printed pp. 437–438, Lemma 3.
+The arbitrary-arity parity and majority minor proofs reconstruct the argument omitted from
+Lemma 4, printed pp. 438–439; they are identified as original reconstructions. Unary pin
+relations are distinct from unary constant operations. The [minor and triangle tests](../../CslibFrontierTests/PlanarNonSelfDual.lean),
+[rotation tests](../../CslibFrontierTests/PlanarNonSelfDualRotation.lean) and
+[interpreter tests](../../CslibFrontierTests/PlanarConstructionGadget.lean) cover actual witnesses,
+rejection, fresh auxiliaries, nullary atoms and malformed widths. In particular, the interpreter
+tests derive the gadgets from a single one-in-three symbol without primitive pins or disequality.
+
+These results prove finite primitive-positive semantics. The selected witnesses are fixed-language
+data; no uniform preprocessing cost is asserted. The recorded recipes and concrete bodies support
+subsequent geometric proofs, but do not establish ordered planar substitution, a native reduction
+or planar hardness. Those obligations and the full solver/dichotomy remain open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations
