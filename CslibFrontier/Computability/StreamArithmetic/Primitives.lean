@@ -1420,16 +1420,16 @@ theorem abs_clipUnitPrefix_div_sub_streamVal_le {x : ℕ → ℤ} (hx : IsSigned
   have hVK : V ≤ (2 : ℝ) ^ K := mul_le_of_le_one_left h2K_pos.le hx_mem.2
   have hMR : (M : ℝ) = min ((2 : ℝ) ^ K) (max 0 (P : ℝ)) := by
     dsimp only [M]; push_cast; rfl
-  have hm_le : (M : ℝ) ≤ max V (P : ℝ) := by
-    rw [hMR]; exact (min_le_right _ _).trans (max_le_max_right _ hV0)
-  have hle_m : min V (P : ℝ) ≤ (M : ℝ) := by
-    rw [hMR]
-    exact le_min ((min_le_left _ _).trans hVK) ((min_le_right _ _).trans (le_max_right _ _))
-  have hpos_rhs : (P : ℝ) ≤ V + |(P : ℝ) - V| := by linarith [le_abs_self ((P : ℝ) - V)]
-  have hneg_rhs : V - |(P : ℝ) - V| ≤ (P : ℝ) := by linarith [neg_le_abs ((P : ℝ) - V)]
-  have hdiff : |(M : ℝ) - V| ≤ |(P : ℝ) - V| := abs_sub_le_iff.mpr
-    ⟨by linarith [hm_le, max_le (le_add_of_nonneg_right (abs_nonneg ((P : ℝ) - V))) hpos_rhs],
-     by linarith [hle_m, le_min (sub_le_self V (abs_nonneg ((P : ℝ) - V))) hneg_rhs]⟩
+  -- Clamping to `[0, 2 ^ K]` fixes `V` and is nonexpansive.
+  have hdiff : |(M : ℝ) - V| ≤ |(P : ℝ) - V| :=
+    calc |(M : ℝ) - V|
+        = |min ((2 : ℝ) ^ K) (max (P : ℝ) 0) - min ((2 : ℝ) ^ K) (max V 0)| := by
+          rw [hMR, max_comm 0 (P : ℝ), max_eq_left hV0, min_eq_right hVK]
+      _ ≤ max |(2 : ℝ) ^ K - (2 : ℝ) ^ K| |max (P : ℝ) 0 - max V 0| :=
+          abs_min_sub_min_le_max _ _ _ _
+      _ ≤ |(P : ℝ) - V| := by
+          rw [sub_self, abs_zero, max_eq_right (abs_nonneg _)]
+          exact abs_max_sub_max_le_abs _ _ _
   rw [hcast]
   refine le_trans ?_ (by simpa only [abs_sub_comm] using abs_streamVal_sub_streamPrefix_le hx K)
   rw [streamPrefix_eq_intPrefix_div]
