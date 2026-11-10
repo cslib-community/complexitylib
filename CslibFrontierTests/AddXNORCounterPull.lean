@@ -8,6 +8,7 @@ module
 
 import all CslibFrontier.Cryptanalysis.AddXNORCounterPull
 import all CslibFrontier.Cryptanalysis.AddXNORCounterSerialization
+import all CslibFrontier.Cryptanalysis.AddXNORClasses
 import all CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.BinaryPairSums
 import all CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
 import all CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
@@ -45,7 +46,7 @@ example : run (((3, 1), (false, true)), initial) =
     [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 1), (7, 0)] := by decide
 
 /-- The two actual sorted pulls align by state before the approved binary addition pass.
-The zip here specifies pairing; its efficient tape implementation remains open. -/
+The zip specifies pairing; the CounterPairing client checks its executable replacement. -/
 example {m : ℕ} (table : WordTable ℕ m) (a : BitVec m) :
     BinaryPairSums.run
       (((run (((m, a.toNat), (false, false)), graph table.read)).map Prod.snd).zip
@@ -58,6 +59,21 @@ example {m : ℕ} (table : WordTable ℕ m) (a : BitVec m) :
     simp only [BinaryPairSums.run, List.getElem_map, List.getElem_zip, graph,
       List.getElem_ofFn]
     rw [pulled_read, pulled_read, WordTable.countAdvance_read]
+    rfl
+
+/-- The inverse layer uses the same pairing semantics and the actual backward counter update. -/
+example {m : ℕ} (table : WordTable ℕ m) (a : BitVec m) :
+    BinaryPairSums.run
+      (((run (((m, a.toNat), (true, false)), graph table.read)).map Prod.snd).zip
+        ((run (((m, a.toNat), (true, true)), graph table.read)).map Prod.snd)) =
+      (graph (WordTable.countBackAdvance (stateKey a) table).ret.read).map Prod.snd := by
+  rw [run_table_eq, run_table_eq]
+  apply List.ext_getElem
+  · simp [BinaryPairSums.run, graph]
+  · intro i hi hj
+    simp only [BinaryPairSums.run, List.getElem_map, List.getElem_zip, graph,
+      List.getElem_ofFn]
+    rw [pulled_read, pulled_read, WordTable.countBackAdvance_read]
     rfl
 
 /-- One source-derived machine/cost witness works for both original counter directions. -/

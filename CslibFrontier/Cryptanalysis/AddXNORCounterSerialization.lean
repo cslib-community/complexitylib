@@ -26,9 +26,9 @@ input are `2^m` times a polynomial in the original operator count, including zer
 counters and coinciding branches. Counter width is derived from the original DP.
 
 This is an arithmetic/serialization stage, not a complete bit-machine DP compiler.
-The separate `CounterPull` route implements state-keyed pull permutations.
-Preparing/interleaving this pair layout, the operand loop and readback still need
-resource-faithful tape composition. In particular this theorem does
+The separate `CounterPairing` route realizes the pull/pair/add pass in numeric
+state order. Initialization, numeric-key restoration, the operand loop and readback
+still need resource-faithful tape composition. In particular this theorem does
 not establish Lemma 8's faster all-count prepass or replace the installed solver.
 
 ## Main results

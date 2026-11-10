@@ -2614,8 +2614,9 @@ and the output is a framed list of binary counters.
 
 This certificate starts **after** the two pull transformations and interleaving.
 It includes the addition pass's input/output and callback temporaries, but does
-not charge generation of that input. The state-keyed permutations below address
-the pulls; pairing, initialization, the operand loop and readback still need composition
+not charge generation of that input. The state-keyed pull/pair/add route below
+addresses those stages; initialization, indexing for reuse, the operand loop and
+readback still need composition
 to obtain Lemma 8's $O^*(2^p)$ all-count prepass. The installed dissection
 certificate and its proved whole-run bound are unchanged. The checked client is
 [`AddXNORCounterSerialization.lean`](../../CslibFrontierTests/AddXNORCounterSerialization.lean);
@@ -2633,16 +2634,34 @@ original forward/backward counter tables. The polynomial covers unary width,
 binary operands/counters, mapping, sorting, framing and simultaneous buffers;
 the counter-bit bound is derived from the original operator count.
 
-The addition client checks both sorted pulls followed by pairing and the
-approved `BinaryPairSums` pass. This is a semantic composition using `List.zip`,
-not a sharp machine certificate for interleaving. The generic zip compiler
-copies the remaining list and would introduce a quadratic table-volume factor.
-An efficient pairing implementation, table initialization, the complete operand
-loop with reuse, and readback remain necessary for Lemma 8's faster prepass.
-The new state-keyed table uses numeric order; the earlier `WordTable.entries`
-layout uses recursive low-bit child order, so they are not silently identified.
-Build and check the integrated client from the repository root with
-`lake build CslibFrontierTests.AddXNORCounterPull --wfail --iofail`.
+The earlier addition examples specify alignment with `List.zip`; the executable
+replacement is now in
+[`AddXNORCounterPairing.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterPairing.lean).
+It reads the original keyed counter table once and emits both actual relocations,
+using the generated key $2\,\text{state}+\text{side}$. One radix sort makes each
+state's two counters consecutive. `AdjacentPairs` retains one payload, emits its
+pair with the next payload, then clears its state. `BinaryPairSums` executes the
+binary addition. `pairs_table` derives exact alignment; `layer_table` proves the
+native `countAdvance` or `countBackAdvance` result for arbitrary tables and both
+directions. No caller supplies an alignment, execution or resource conclusion.
+
+`layer_computable` charges the mapper, sort, pairing and adder, with a linear
+record-volume factor times a polynomial in header and maximum record width.
+`source_certificate` derives time and charged every-prefix workspace
+$O(2^p P(p+q+1))$ on the actual original forward/backward counter tables. The
+input, doubled tagged records, sort buffers, retained counter, paired output,
+binary-arithmetic temporaries and final count list are included. The generic
+adjacent writer discards an unmatched final record; the source proof derives an
+even stream with exactly two records per state, including zeros and equal counts.
+
+The output is a counter list in numeric state order. Efficiently restoring its
+keys for another pass, table initialization, the complete operand loop with
+reuse and readback remain necessary for the full DP and Lemma 8's faster prepass.
+The older `WordTable.entries` uses recursive low-bit-child order; that order is
+kept distinct. The checked clients include actual forward and inverse updates,
+zero width, zero counters, collisions and non-self-inverse addition. From the
+repository root run
+`lake build CslibFrontierTests.AddXNORCounterPairing --wfail --iofail`.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),

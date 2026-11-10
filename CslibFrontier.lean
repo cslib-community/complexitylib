@@ -2599,6 +2599,7 @@ public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Gener
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Native
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Simulation
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.AdjacentPairs
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.BinaryPairSums
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyCount
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyGrouping
@@ -3737,6 +3738,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
 public import CslibFrontier.Cryptanalysis.AddXNORClasses
 public import CslibFrontier.Cryptanalysis.AddXNORCompactExecution
+public import CslibFrontier.Cryptanalysis.AddXNORCounterPairing
 public import CslibFrontier.Cryptanalysis.AddXNORCounterPull
 public import CslibFrontier.Cryptanalysis.AddXNORCounterSerialization
 public import CslibFrontier.Cryptanalysis.AddXNORCounting

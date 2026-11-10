@@ -34,14 +34,16 @@ Zero counters are physical records, not omitted support entries.
 
 `run_graph` proves exact occurrence preservation for a complete table. The
 uniform execution charges mapping, sorting and simultaneous materialization.
-Interleaving the two outputs, initialization, operand iteration and readback
-remain separate obligations before claiming the faster all-count prepass.
+`CounterPairing` composes the relocations with tagged sorting, streaming pairing
+and binary addition. Initialization, numeric-key restoration, operand iteration
+and readback remain separate before claiming the faster all-count prepass.
 
 ## Main results
 
 * `run_graph`, `run_table_eq`: the exact recursive pulls, in canonical state order.
 * `run_computable`: one machine, with linear record volume and polynomial scalar-width cost.
 * `source_certificate`: derived bit time and prefix workspace on actual original DP counters.
+* `record_polyTime`: reusable scalar/one-record relocation for the combined branch writer.
 -/
 
 public section
@@ -211,9 +213,12 @@ def width (input : Input) : ℕ :=
   (parameterEncoding parameters).length +
     streamRecordLength (encPair encNat encNat) rows + 1
 
-private theorem emit_polyTime : ComputableInPolyTime
-    (fun q : Parameters × (ℕ × ℕ) => [(image q.1 q.2.1, q.2.2)])
-    (encPair parameterEncoding (encPair encNat encNat)) encNatPairList := by
+/-- Execute one original counter relocation. The polynomial is in the scalar header and
+one record, so a caller can emit both branches without passing a complete table to arithmetic. -/
+theorem record_polyTime : ComputableInPolyTime
+    (fun ((parameters, (state, counter)) : Parameters × (ℕ × ℕ)) =>
+      (image parameters state, counter))
+    (encPair parameterEncoding (encPair encNat encNat)) (encPair encNat encNat) := by
   let input := encPair parameterEncoding (encPair encNat encNat)
   have w : ComputableInPolyTime (fun q : Parameters × (ℕ × ℕ) => q.1.1.1) input encUnary := by
     fun_prop
@@ -235,9 +240,14 @@ private theorem emit_polyTime : ComputableInPolyTime
     (natStep_polyTime.comp ((w.prod complement).prod (operator.prod operand)))
   have key := inverse.ite bw fw
   have row := key.prod (ComputableInPolyTime.snd parameterEncoding (encPair encNat encNat)).snd'
+  exact row.of_enc_eq (fun ⟨⟨⟨m, a⟩, inverse, operator⟩, state, counter⟩ => rfl)
+
+private theorem emit_polyTime : ComputableInPolyTime
+    (fun q : Parameters × (ℕ × ℕ) => [(image q.1 q.2.1, q.2.2)])
+    (encPair parameterEncoding (encPair encNat encNat)) encNatPairList := by
   have single : ComputableTidilyInPolyTime (fun r : ℕ × ℕ => [r])
       (encPair encNat encNat) encNatPairList := .of_linear (.of_frame (fun _ => by simp))
-  exact (single.computableInPolyTime.comp row).of_enc_eq (fun _ => rfl)
+  exact (single.computableInPolyTime.comp record_polyTime).of_enc_eq (fun _ => rfl)
 
 private theorem mapped_computable : ∃ P : ℕ → ℕ, Cslib.PolynomiallyBounded P ∧ Monotone P ∧
     ComputableInO mapped encoding encNatPairList
