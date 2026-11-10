@@ -4453,9 +4453,11 @@ public import CslibFrontier.Foundations.Analysis.Fourier.ZModMultiples
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModProd
 public import CslibFrontier.Foundations.Analysis.HarmonicMean
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.Basic
+public import CslibFrontier.Foundations.Analysis.InnerProductSpace.CHSH
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.GramSchmidtOrtho
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.MetricProjection
 public import CslibFrontier.Foundations.Analysis.InnerProductSpace.NearlyOrthogonal
+public import CslibFrontier.Foundations.Analysis.InnerProductSpace.PiL2
 public import CslibFrontier.Foundations.Analysis.Lattice.Covolume
 public import CslibFrontier.Foundations.Analysis.Lattice.Dual
 public import CslibFrontier.Foundations.Analysis.Lattice.Fourier
@@ -4484,6 +4486,7 @@ public import CslibFrontier.Foundations.Analysis.SpecialFunctions.PolynomialSwit
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Sqrt
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Basic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Bounds
 public import CslibFrontier.Foundations.Analysis.SpecificLimits.DescFactorial
 public import CslibFrontier.Foundations.BooleanAnalysis.AffineDegree
@@ -5118,6 +5121,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.TimeLayer.Fin
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Toeplitz
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Transvection
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UniformGram
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Vertex
 public import CslibFrontier.Foundations.LinearAlgebra.PivotSpace
 public import CslibFrontier.Foundations.LinearAlgebra.PlaneRotation

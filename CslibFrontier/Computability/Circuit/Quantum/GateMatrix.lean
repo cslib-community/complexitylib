@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Quantum.Basic
 public import CslibFrontier.Foundations.Quantum.Pauli
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
 
 /-!
 # Bit-indexed matrices of the NOT, Hadamard and CNOT gates
@@ -75,9 +76,8 @@ theorem cnotMatrix_mul_self : cnotMatrix * cnotMatrix = 1 := by
   cases a <;> cases b <;> cases c <;> cases d <;>
     simp [Matrix.mul_apply, cnotMatrix_apply, Fintype.sum_prod_type]
 
-theorem cnotMatrix_mem_unitaryGroup : cnotMatrix ∈ unitaryGroup (Bool × Bool) ℂ := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, cnotMatrix_isHermitian.eq,
-    cnotMatrix_mul_self]
+theorem cnotMatrix_mem_unitaryGroup : cnotMatrix ∈ unitaryGroup (Bool × Bool) ℂ :=
+  cnotMatrix_isHermitian.mem_unitaryGroup_of_mul_self cnotMatrix_mul_self
 
 theorem cnot_apply (y x : Fin 2 → Bool) :
     (cnot : Matrix (Fin 2 → Bool) (Fin 2 → Bool) ℂ) y x =
