@@ -609,10 +609,10 @@ theorem initTableCode_exec {w base w₀ b b' k : ℕ} {x : Data 240}
       y.regs 0 = base ∧
       TableRep base w w₀ b b' k y.mem ∧
       (∀ a, (a < tabBase base w₀ b b' k ∨ base + space w w₀ b b' k ≤ a) → y.mem a = x.mem a) := by
-  set t := reducedTrinomialStep w₀ b b'
-  set c := reducedChunkBits t
-  set p := reducedPackShift t w
-  set s := seedWords w₀ b b' k
+  set t := reducedTrinomialStep w₀ b b' with ht
+  set c := reducedChunkBits t with hc_def
+  set p := reducedPackShift t w with hp_def
+  set s := seedWords w₀ b b' k with hs
   have hc_lt : 2 * c < w := two_mul_reducedChunkBits_lt_of_fits_space hc hfit_space
   have hpow_2c_lt : 2 ^ (2 * c) < 2 ^ w := Nat.pow_lt_pow_right one_lt_two hc_lt
   have hfit_2c : Fits w (2 ^ (2 * c)) := hpow_2c_lt
@@ -627,62 +627,21 @@ theorem initTableCode_exec {w base w₀ b b' k : ℕ} {x : Data 240}
   have hfit_mask_p : Fits w (2 ^ p - 1) :=
     hfit_2c.of_le ((Nat.sub_le _ _).trans (Nat.pow_le_pow_right two_pos hp_le))
   have hfit_2c_val : Fits w (2 * c) := hfit_2c.of_le (le_of_lt Nat.lt_two_pow_self)
-  set d1 := x.set 1 s
-  have e1 : Exec w (.op (.const 1 s) : Code .exact 240) x d1 1 := Exec.const hfit_s
-  set d2 := d1.set 1 (base + s)
-  have e2 : Exec w (.op (.exactBin .add 1 0 1) : Code .exact 240) d1 d2 1 :=
-    exec_exactBin (by simp +decide [d1, hbase]) hfit_tBase
-  set d3 := d2.set 2 0
-  have e3 : Exec w (.op (.const 2 0) : Code .exact 240) d2 d3 1 := Exec.const (by fits)
-  set d4 := d3.set 3 (2 ^ (2 * c))
-  have e4 : Exec w (.op (.const 3 (2 ^ (2 * c))) : Code .exact 240) d3 d4 1 := Exec.const hfit_2c
-  set d5 := d4.set 4 c
-  have e5 : Exec w (.op (.const 4 c) : Code .exact 240) d4 d5 1 := Exec.const hfit_c
-  set d6 := d5.set 5 (2 ^ c - 1)
-  have e6 : Exec w (.op (.const 5 (2 ^ c - 1)) : Code .exact 240) d5 d6 1 := Exec.const hfit_mask_c
-  set d7 := d6.set 6 1
-  have e7 : Exec w (.op (.const 6 1) : Code .exact 240) d6 d7 1 := Exec.const (by fits)
-  set d8 := d7.set 7 p
-  have e8 : Exec w (.op (.const 7 p) : Code .exact 240) d7 d8 1 := Exec.const hfit_p
-  set d9 := d8.set 8 (2 ^ p - 1)
-  have e9 : Exec w (.op (.const 8 (2 ^ p - 1)) : Code .exact 240) d8 d9 1 := Exec.const hfit_mask_p
-  set d10 := d9.set 9 (2 * c)
-  have e10 : Exec w (.op (.const 9 (2 * c)) : Code .exact 240) d9 d10 1 := Exec.const hfit_2c_val
-  set d11 := d10.set 18 (2 ^ (2 * c) - 1)
-  have e11 : Exec w (.op (.const 18 (2 ^ (2 * c) - 1)) : Code .exact 240) d10 d11 1 :=
-    Exec.const (by fits)
-  have esetup :=
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq e11)))))))))
   have hfit_end : Fits w (tabBase base w₀ b b' k + reducedTableWords t w) := by
     simpa only [tabBase, space, tableWords, Nat.add_assoc] using hfit_space
-  obtain ⟨y, eloop, hy0, hyword, hyentry, hyout⟩ :=
-    clmulTabLoop_exec (tBase := tabBase base w₀ b b' k) (t := t) hc_lt hfit_end
-      (2 ^ (2 * c)) 0 d11 (Nat.zero_add _) rfl
-      (by simp +decide [d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, tabBase, s])
-      (by simp +decide [d11, d10, d9, d8, d7, d6, d5, d4, d3])
-      (by simp +decide [d11, d10, d9, d8, d7, d6, d5, d4, c, t])
-      (by simp +decide [d11, d10, d9, d8, d7, d6, d5, c, t])
-      (by simp +decide [d11, d10, d9, d8, d7, d6, c, t])
-      (by simp +decide [d11, d10, d9, d8, d7])
-      (by simp +decide [d11, d10, d9, d8, p, t])
-      (by simp +decide [d11, d10, d9, p, t])
-      (by simp +decide [d11, d10, c, t])
-      (by simp +decide [d11, c, t])
-      (by intro _ h; simp at h)
-      (by intro _ h; omega)
-  have hd11_0 : d11.regs 0 = base := by
-    simp +decide [d11, d10, d9, d8, d7, d6, d5, d4, d3, d2, d1, hbase]
-  refine ⟨y, ?_, hy0.trans hd11_0, ⟨hyword, hyentry⟩, ?_⟩
-  · simpa only [initTableCode, initTableSetupCode, initTableSteps,
-      show 1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + 1))))))))) +
-        (31 * 2 ^ (2 * c) + 2) = 31 * 2 ^ (2 * c) + 13 by omega] using esetup.seq eloop
-  · intro a ha
-    have ha' : a < tabBase base w₀ b b' k + (0 >>> p) ∨
-        tabBase base w₀ b b' k + reducedTableWords t w ≤ a := by
-      simp only [Nat.zero_shiftRight, Nat.add_zero]
-      dsimp only [space, tableWords, tabBase, t] at ha ⊢
-      omega
-    exact hyout a ha'
+  unfold initTableCode initTableSetupCode
+  wram_exec [hbase, ← ht, ← hc_def, ← hp_def, ← hs]
+  wram_call (clmulTabLoop_exec (tBase := tabBase base w₀ b b' k) (t := t) hc_lt hfit_end
+    (2 ^ (2 * c)) 0 _ (Nat.zero_add _) rfl (by wram_simp [tabBase, s]) (by wram_simp)
+    (by wram_simp [c, t]) (by wram_simp [c, t]) (by wram_simp [c, t]) (by wram_simp)
+    (by wram_simp [p, t]) (by wram_simp [p, t]) (by wram_simp [c, t]) (by wram_simp [c, t])
+    (by intro _ h; simp at h) (by intro _ h; omega))
+    with y ⟨hy0, hyword, hyentry, hyout⟩
+  refine ⟨by simp only [initTableSteps, c, t], hy0.trans (by wram_simp [hbase]),
+    ⟨hyword, hyentry⟩, fun a ha => hyout a ?_⟩
+  simp only [Nat.zero_shiftRight, Nat.add_zero]
+  dsimp only [space, tableWords, tabBase, t] at ha ⊢
+  omega
 
 /-- `ExecWithin` corollary of `initTableCode_exec`. -/
 theorem initTableCode_execWithin {w base w₀ b b' k : ℕ} {x : Data 240}
@@ -1506,38 +1465,10 @@ private theorem hornerSetupCode_exec {w base w₀ b b' k : ℕ}
   have hfit_mask_p : Fits w (2 ^ p - 1) :=
     hfit_2c.of_le ((Nat.sub_le _ _).trans (Nat.pow_le_pow_right two_pos hp_le))
   have hfit_2c_val : Fits w (2 * c) := hfit_2c.of_le (le_of_lt Nat.lt_two_pow_self)
-  set s1 := x.set 4 (seedWords w₀ b b' k)
-  have e1 : Exec w (.op (.const 4 (seedWords w₀ b b' k)) : Code .exact 240) x s1 1 :=
-    Exec.const hfit_s
-  set s2 := s1.set 4 (tabBase base w₀ b b' k)
-  have e2 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 240) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0, tabBase]) hfit_tBase
-  set s3 := s2.set 5 c
-  have e3 : Exec w (.op (.const 5 c) : Code .exact 240) s2 s3 1 := Exec.const hfit_c
-  set s4 := s3.set 6 (2 ^ c - 1)
-  have e4 : Exec w (.op (.const 6 (2 ^ c - 1)) : Code .exact 240) s3 s4 1 := Exec.const hfit_mask_c
-  set s5 := s4.set 7 p
-  have e5 : Exec w (.op (.const 7 p) : Code .exact 240) s4 s5 1 := Exec.const hfit_p
-  set s6 := s5.set 8 (2 ^ p - 1)
-  have e6 : Exec w (.op (.const 8 (2 ^ p - 1)) : Code .exact 240) s5 s6 1 := Exec.const hfit_mask_p
-  set s7 := s6.set 9 (2 * c)
-  have e7 : Exec w (.op (.const 9 (2 * c)) : Code .exact 240) s6 s7 1 := Exec.const hfit_2c_val
-  set s8 := s7.set 18 (2 ^ (2 * c) - 1)
-  have e8 : Exec w (.op (.const 18 (2 ^ (2 * c) - 1)) : Code .exact 240) s7 s8 1 :=
-    Exec.const (by fits)
-  have hexec := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq e8))))))
-  refine ⟨s8, hexec, ?_⟩
-  refine ⟨by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h0],
-    by simp +decide [s8, s7, s6, s5, s4, s3, s2],
-    by simp +decide [s8, s7, s6, s5, s4, s3],
-    by simp +decide [s8, s7, s6, s5, s4],
-    by simp +decide [s8, s7, s6, s5],
-    by simp +decide [s8, s7, s6],
-    by simp +decide [s8, s7],
-    by simp +decide [s8], ?_, rfl⟩
-  intro r hr
-  dsimp only [s8, s7, s6, s5, s4, s3, s2, s1, Data.set]
-  repeat rw [Function.update_of_ne (by intro h; have := congrArg Fin.val h; omega)]
+  simp only [t, c, p] at *
+  unfold hornerSetupCode
+  wram_exec [h0, show base + seedWords w₀ b b' k = tabBase base w₀ b b' k from rfl]
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun r hr => ?_, rfl⟩ <;> wram_simp [h0, t, c, p]
 
 /-- Register invariant preserved across all Stage 3 Horner operations. -/
 @[expose] def HornerConsts (base w w₀ b b' k r_val : ℕ) (x : Data 240) : Prop :=
