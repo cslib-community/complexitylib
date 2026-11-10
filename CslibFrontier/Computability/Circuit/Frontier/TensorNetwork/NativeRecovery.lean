@@ -732,8 +732,7 @@ theorem exists_pval_interp_eq_add (hirr : Irreducible ((monicOf fl).map (Int.cas
       Lagrange.ringInterpolate univ (fun i => π (ζ i)) fun i => val N fl (w.getD i []) := by
     conv_lhs => rw [Lagrange.eq_ringInterpolate (f := pval N fl (interp N fl ζl w)) hvs (by
       rw [card_univ, Fintype.card_fin]; exact degree_pval_interp_lt ζl w)]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [← hζl, eval_pval_interp ζl w hinv i.2]
   -- The image of the interpolant over `B` takes the values `π (r i)`.
   have hdeg : ((Lagrange.ringInterpolate univ ζ r).map π).degree <

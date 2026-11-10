@@ -284,8 +284,7 @@ theorem ecomplexityFun_le_succ {i j : ι} (hij : i ≠ j) {n : ℕ}
     f fun k => if h : k = i then h ▸ decode m else v ⟨k, h⟩
   have hanswer (x : ∀ k, X k) : answer (encode (view j x)) (view i x) = f x := by
     simp only [answer]
-    congr 1
-    funext k
+    congr 1 with k : 1
     by_cases h : k = i
     · subst h
       simp [hdecode]

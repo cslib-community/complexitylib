@@ -192,7 +192,7 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
       F.withSeed.ddhRealGame (F.seededSetup setup seedLen) distinguisher n := by
   simp only [pmf_norm, ddhRealGame, seededDDHDistinguisher, seededSetup, withSeed,
     Cslib.BitString.eval_sampleList]
-  congr 1; funext d
+  congr 1 with d : 1
   change _ =
     (Cslib.BitString.uniformList (seedLen n d)).bind fun a =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
@@ -201,7 +201,7 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
             ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
               F.encode d ((α * β) • F.generator d)))
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext α
+  congr 1 with α : 1
   conv_rhs => rw [PMF.bind_comm]
 
 /-- In `ddhIdealGame`, `seededDDHDistinguisher` simulates `F.withSeed.ddhIdealGame` under
@@ -214,7 +214,7 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
       F.withSeed.ddhIdealGame (F.seededSetup setup seedLen) distinguisher n := by
   simp only [pmf_norm, ddhIdealGame, seededDDHDistinguisher, seededSetup, withSeed,
     Cslib.BitString.eval_sampleList]
-  congr 1; funext d
+  congr 1 with d : 1
   change _ =
     (Cslib.BitString.uniformList (seedLen n d)).bind fun a =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
@@ -224,9 +224,9 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
               ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
                 F.encode d (γ • F.generator d)))
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext α
+  congr 1 with α : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext β
+  congr 1 with β : 1
   conv_rhs => rw [PMF.bind_comm]
 
 /-- `seededDDHDistinguisher` is uniform strict PPT whenever `seedLen` is polynomial-time computable
@@ -432,8 +432,8 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
     simp only [pmf_norm, linearHashSeedLen, Cslib.BitString.uniformList, seededHash_eq_bind, source,
       test]
     conv_rhs => rw [PMF.bind_comm]
-    congr 1; funext seed
-    congr 1; funext γ
+    congr 1 with seed : 1
+    congr 1 with γ : 1
     have hpad := F.ofFn_paddedGeneratorMultiple (hbound d hd) γ
     have hhash :
         F.linearHashKDF keyLen bound ((d, List.ofFn seed), F.encode d (γ • F.generator d)) =

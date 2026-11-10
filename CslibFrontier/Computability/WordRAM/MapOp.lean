@@ -450,16 +450,14 @@ theorem Op.mapOp_comp (ψ : B'.Hom B'') (φ : B.Hom B') (o : Op B r) :
 theorem Program.mapOp_id (p : Program B r) : p.mapOp (Basis.Hom.id B) = p := by
   simp only [Program.mapOp]
   conv_rhs => rw [← List.map_id p]
-  congr 1
-  funext i
+  congr 1 with i : 1
   cases i <;> simp [Instr.mapOp]
 
 /-- Translating a program along a composition of basis homomorphisms composes the translations. -/
 theorem Program.mapOp_comp (ψ : B'.Hom B'') (φ : B.Hom B') (p : Program B r) :
     p.mapOp (ψ.comp φ) = (p.mapOp φ).mapOp ψ := by
   simp only [Program.mapOp, List.map_map]
-  congr 1
-  funext i
+  congr 1 with i : 1
   cases i <;> simp [Instr.mapOp, Op.mapOp_comp]
 
 end Cslib.WordRAM

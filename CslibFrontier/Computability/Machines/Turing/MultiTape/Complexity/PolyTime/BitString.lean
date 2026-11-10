@@ -75,8 +75,7 @@ namespace Turing.MultiTapeTM
 /-- Reversing a most-significant-first word gives its little-endian binary decoding. -/
 theorem ofBits_reverse (w : List Bool) : ofBits w.reverse = Cslib.BitString.binaryValue w := by
   rw [ofBits, List.foldr_reverse, Cslib.BitString.binaryValue]
-  congr 1
-  funext v b
+  congr 1 with v b : 2
   rw [Nat.bit_val]
 
 /-- The encoding charges every bit and every delimiter in the enumerated words. -/

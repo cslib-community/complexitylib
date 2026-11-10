@@ -60,8 +60,7 @@ private theorem hidden_head (adversary : Distinguisher) (n : ℕ) :
     ProbComp.eval_pure, PMF.bind_const]
   rw [PMF.bind_comm]
   convert PMF.bind_const (ProbComp.eval (adversary (n + 1) [])) (PMF.uniformOfFintype Bool) using 1
-  congr 1
-  funext guess
+  congr 1 with guess : 1
   ext bit
   cases guess <;> cases bit <;> simp [PMF.bind_apply]
 

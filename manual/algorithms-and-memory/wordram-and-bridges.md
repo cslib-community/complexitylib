@@ -57,6 +57,15 @@ The routine specification supplies its instruction allowance and full postcondit
 routine body stays closed. A fixed-time existential contract and a time-indexed `WP` contract
 are both supported. In the latter case, bind `y`, the returned allowance, and its postcondition.
 
+The same tactics prove exact instruction counts. On a goal `Exec w c x y T` or
+`∃ y, Exec w c x y T ∧ P y`, `wram_exec` runs with the rules of `WP.Exact`, the
+weakest-precondition form of `Exec`, and closes the final count `t = T` with `omega` when it can;
+a count it cannot close remains as the first conjunct of the goal. At a stop, continue from an
+exact specification with `refine WP.Exact.of_exec h ?_`, or apply an exact contract
+`∃ y, Exec w c x y T ∧ P y` with `wram_call`. `WP.Exact.toWP` weakens an exact count to a bound.
+The [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check exact
+counts through a conditional, a wrong count left as a goal and a call to an exact specification.
+
 For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
 Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
 outside the bank. Memory and register projections of bank views are normalized once. Preparation,

@@ -129,8 +129,7 @@ theorem voleWorld_eval {α : Type}
     simp only [pmf_norm, PMF.map, PMF.bind_const] at houtput
     refine houtput.trans ?_
     change (voleIdealDist F n).bind _ = _
-    congr 1
-    funext c
+    congr 1 with c : 1
     change ((OracleComp.interpret
       (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
       program).run c).map Prod.fst = _

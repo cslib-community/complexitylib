@@ -308,8 +308,7 @@ theorem serialize_bits_inSpace (e : Q ≃ Fin s) :
 theorem word_encodeResidue {b : ℕ} [NeZero b] (n : ℕ) :
     word b (n % b) = List.ofFn (encodeResidue (n : ZMod b)) := by
   unfold word
-  congr 1
-  funext j
+  congr 1 with j
   simp only [encodeResidue, equivFin_symm_apply, ZMod.val_natCast]
 
 private theorem windowWord_encode {b : ℕ} (cells : List ℕ)

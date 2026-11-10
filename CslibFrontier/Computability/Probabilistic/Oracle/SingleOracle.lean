@@ -58,8 +58,7 @@ theorem WordOracleComp.run_interpret_singleOracle {State : Type} (i₀ : ι)
     ProbOracleComp.runWith (fun q : Unit × List Bool => oracle (i₀, q.2)) p s := by
   rw [WordOracleComp.singleOracle, ProbOracleComp.runWith, ProbOracleComp.runWith,
     OracleComp.runWith, OracleComp.runWith, OracleComp.interpret_interpret]
-  congr 2
-  funext q
+  congr 2 with q : 1
   cases q <;> simp only [OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_query]
 
 /-- Routing a strict oracle-PPT single-channel program to channel `i₀ : ι` preserves

@@ -589,7 +589,7 @@ theorem eval_sufCmaGame_etmToMACForger (E : SymmetricCipher) (M : MACScheme)
                M.verify km pair.1 pair.2))) := by
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
     simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-    congr 1; funext ke
+    congr 1 with ke : 1
     simp only [ProbOracleComp.runWith_map, PMF.bind_map, Function.comp_def, Prod.map_fst,
       Prod.map_snd, id_eq]
   simp only [hinner]
@@ -918,7 +918,7 @@ theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MAC
                M.verify km pair.1 pair.2))) := by
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
     simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-    congr 1; funext ke
+    congr 1 with ke : 1
     simp only [ProbOracleComp.runWith_map, PMF.bind_map, Function.comp_def, Prod.map_fst,
       Prod.map_snd, id_eq]
   simp only [hinner]
@@ -2119,7 +2119,7 @@ private theorem run_prfCipherForgetfulWithBadOracle_map_fst (adversary : OracleD
         simp only [Bool.and_eq_true, beq_iff_eq] at hlenEq
         have hmsgLen : (if bit then dropFrame payload else unframe payload).length = n := by
           cases bit <;> simp [hlenEq]
-        congr 1; funext r
+        congr 1 with r : 1
         have hpad :
             (BitString.uniformList n).map
               (fun pad => (r ++ List.zipWith xor (pad.take n)

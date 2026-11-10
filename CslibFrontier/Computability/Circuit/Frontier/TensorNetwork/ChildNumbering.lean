@@ -233,8 +233,7 @@ theorem childEdgeList_eq :
     List.map_map, List.map_map]
   congr 1
   · rw [← List.ofFn_getElem_eq_map]
-    congr 1
-    funext j
+    congr 1 with j : 1
     simp only [childEdgeEquiv, childVertexEquiv, Equiv.symm_trans_apply,
       finSumFinEquiv_symm_castLE, Equiv.sumCongr_symm, Equiv.sumCongr_apply, Sum.map_inl,
       Sum.map_inr, childSrc, childTgt, Sum.elim_inl, Equiv.trans_apply, finSumFinEquiv_apply_left,
@@ -242,8 +241,7 @@ theorem childEdgeList_eq :
       rankEquiv_symm_apply_val, Equiv.refl_apply, Function.comp_apply, count_take_ofFn,
       Fin.getElem_fin]
   · rw [← List.ofFn_getElem_eq_map]
-    congr 1
-    funext j
+    congr 1 with j : 1
     simp only [childEdgeEquiv, childVertexEquiv, Equiv.symm_trans_apply,
       finSumFinEquiv_symm_apply_natAdd, Equiv.sumCongr_symm, Equiv.sumCongr_apply, Sum.map_inr,
       childSrc, childTgt, Sum.elim_inr, Sum.map_inl, Equiv.trans_apply,

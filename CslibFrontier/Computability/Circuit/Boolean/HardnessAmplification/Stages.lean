@@ -168,8 +168,7 @@ theorem bitSynthesis_glPredictor (enc : F ≃ BitString w) {C : BooleanFunction 
       funext v
       rw [hc]
       simp only [single_apply]
-      congr 1
-      funext k
+      congr 1 with k : 1
       change Fin.append xb (fun k _ => r k) k v = _
       rw [append_apply]
     have h1 : Synthesis interpretation S₁

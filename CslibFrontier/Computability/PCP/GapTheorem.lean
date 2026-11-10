@@ -19,10 +19,11 @@ every formula `φ` in 3-CNF with `m` clauses yields a constraint graph `gapGraph
 alphabet `Σ₀ = Bool × (Fin 6 → Bool)` with polynomially many vertices and edges in
 `m` (`exists_card_gapGraph_le`), which is satisfiable exactly when `φ` is
 (`satisfiable_gapGraph_iff`), and whose value is at least the universal constant
-`Cslib.PCP.Dinur.gap` when `φ` is unsatisfiable (`gap_le_unsatVal_gapGraph`). As the
-construction can be carried out in polynomial time [Dinur, Theorem 4.1][Dinur2005], telling the
-two cases apart is as hard as 3-SAT: this is the PCP theorem in its gap form. This module proves
-its combinatorial half; the polynomial-time half is `Cslib.PCP.Encoded.isPolyTime_gapGraph`.
+`Cslib.PCP.Dinur.gap` when `φ` is unsatisfiable (`gap_le_unsatVal_gapGraph`). Dinur's
+construction can be carried out in polynomial time [Dinur, Theorem 4.1][Dinur2005], so telling the
+two cases apart is as hard as 3-SAT: this is the PCP theorem in its gap form. This module proves the
+combinatorial statement for a noncomputable rendering of the construction, which the PCP theorem
+does not use.
 
 The construction:
 
@@ -35,10 +36,14 @@ The construction:
    `1 / |E|`, the value reaches the threshold, while the size grows by a factor polynomial in `|E|`.
 
 Everything here is a noncomputable definition: the expanders of preprocessing are chosen
-non-constructively (`Cslib.RotationMap.expanderFamily`). The polynomial-time realization, which
-needs explicit expanders [Dinur, Lemma 2.2][Dinur2005], is the separate pipeline
-`Cslib.PCP.Encoded.gapGraph` in `CslibFrontier.Computability.PCP.Encoded.GapTheorem`, built on the
-explicit arithmetic expander family; it is the construction the PCP theorem uses.
+non-constructively (`Cslib.RotationMap.expanderFamily`). The polynomial-time construction that the
+PCP theorem uses, which needs explicit expanders [Dinur, Lemma 2.2][Dinur2005], is the separate
+pipeline `Cslib.PCP.Encoded.gapGraph` in `CslibFrontier.Computability.PCP.Encoded.GapTheorem`. It
+is not a computable version of `gapGraph`: it composes the graph of the formula without
+preprocessing it first, and it preprocesses with the explicit arithmetic expander family, of much
+larger degree, which needs the larger killing rate `2 ^ 324 + 1` in place of `2 ^ 94 + 1`. Both
+rest on the same analysis of preprocessing and powering for an arbitrary expander family, in
+`CslibFrontier.Computability.PCP.Amplification.Family`.
 As the function `gapGraph` is fixed, the theorems below are not mere existence statements, which
 would be trivial: a function deciding satisfiability could output one fixed graph of each kind.
 

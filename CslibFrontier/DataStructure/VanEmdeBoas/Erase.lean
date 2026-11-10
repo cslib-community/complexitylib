@@ -158,15 +158,13 @@ private theorem empty_of_bounds_eq {t : Tree d} (ht : t.Valid) {m : ℕ}
       ∀ y, ¬(t.withBounds none).Contains y := by
   cases t with
   | leaf b =>
-    simp only [bounds] at hb
-    subst b
+    obtain rfl : b = some (m, m) := hb
     refine ⟨?_, rfl, not_contains_of_bounds_none rfl⟩
     simp [withBounds, Valid, Extrema, bounds, Contains]
   | @node d b s c =>
-    simp only [bounds] at hb
-    subst b
-    obtain ⟨he, hs, hc, ho, hmin⟩ := ht
-    simp only [Extrema, bounds] at he
+    have he := ht.extrema_of_bounds hb
+    obtain rfl : b = some (m, m) := hb
+    obtain ⟨-, hs, hc, ho, hmin⟩ := ht
     have hcb : ∀ i, (c i).bounds = none := by
       intro i
       cases hbi : (c i).bounds with
