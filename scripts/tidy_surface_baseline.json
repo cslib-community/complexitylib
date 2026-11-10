@@ -47,7 +47,7 @@
  "CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/SpaceBudget.lean": 2,
  "CslibFrontier/Computability/Probabilistic/Adaptive.lean": 5,
  "CslibFrontier/Computability/Probabilistic/Oracle.lean": 1,
- "CslibFrontier/Computability/Probabilistic/Oracle/Composition.lean": 12,
+ "CslibFrontier/Computability/Probabilistic/Oracle/Composition.lean": 8,
  "CslibFrontier/Computability/Probabilistic/Oracle/Iteration.lean": 3,
  "CslibFrontier/Computability/Probabilistic/Oracle/Normalization.lean": 4,
  "CslibFrontier/Computability/Probabilistic/Oracle/Parameter.lean": 2,

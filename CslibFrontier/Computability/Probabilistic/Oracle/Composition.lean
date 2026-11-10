@@ -32,17 +32,16 @@ unbounded reply is not oracle PPT (`CslibFrontierTests.OraclePPT`).
 * `Cslib.Probability.IsPPTOn.isOraclePPTOn`: closed PPT programs are oracle PPT via `sample`.
 * `Cslib.Probability.IsOraclePPTOn.isPPTOn`: conversely, a sampled closed program certified
   without external channels is closed PPT.
-* `Cslib.Probability.IsOraclePPTOn.bind`, `.bind_with`, `.pair`, `.keep_input`, `.map`,
+* `Cslib.Probability.IsOraclePPTOn.bind`, `.bind_with`, `.pair'`, `.keep_input`, `.map`,
   `.map_with`, `.preprocess`: composition with charged intermediate data.
 * `Cslib.Probability.IsOraclePPTOn.cond`, `.ite`, `.finite_cases`: dispatch to one branch.
-* `Cslib.Probability.IsOraclePPTOn.iterate_spec`, `.iterateWith_spec`,
-  `.iterateWith_of_bounded_growth`, `.iterate_of_bounded_growth`: bounded adaptive loops.
-* `Cslib.Probability.IsOraclePPTOn.query_take'`, `.pair'`, `.preprocess'`, `.map'`,
-  `.map_with'`, `.cond'`, `.ite'`, `.finite_cases'`, `.iterate_spec'`, `.iterateWith_spec'`,
-  `.iterateWith_of_bounded_growth'`, `.iterate_of_bounded_growth'`: the same rules with plain
-  `ComputableInPolyTime` side conditions. These primed names are transitional (#608, #862): once
-  the remaining callers migrate, the unprimed names are restated with plain hypotheses and the
-  primed ones are removed.
+* `Cslib.Probability.IsOraclePPTOn.iterate_spec'`, `.iterateWith_spec`,
+  `.iterateWith_of_bounded_growth'`, `.iterate_of_bounded_growth'`: bounded adaptive loops.
+* `Cslib.Probability.IsOraclePPTOn.query_take'`, `.preprocess'`, `.map'`, `.map_with'`, `.cond'`,
+  `.ite'`, `.finite_cases'`, `.iterateWith_spec'`: the rules above whose unprimed form still takes
+  `ComputableTidilyInPolyTime` side conditions, with plain `ComputableInPolyTime` ones. The primed
+  names are transitional (#608, #862): once the remaining callers migrate, the unprimed tidy
+  forms are removed and every primed rule takes the unprimed name.
 
 ## References
 
@@ -96,14 +95,6 @@ theorem bind {first : α → WordOracleComp Operation β} {second : β → WordO
   (hfirst.isTidyOraclePPTOn.bind hsecond.isTidyOraclePPTOn).isOraclePPTOn
 
 /-- Retain efficiently computed input data beside an oracle result. -/
-@[fun_prop]
-theorem pair {program : α → WordOracleComp Operation γ} {f : α → β}
-    (hprogram : IsOraclePPTOn input output program)
-    (hf : ComputableTidilyInPolyTime f input middle) :
-    IsOraclePPTOn input (encPair middle output) (fun a => (fun b => (f a, b)) <$> program a) :=
-  (hprogram.isTidyOraclePPTOn.pair (.of_tidy hf)).isOraclePPTOn
-
-/-- `Cslib.Probability.IsOraclePPTOn.pair` with a plain polynomial-time certificate. -/
 @[fun_prop]
 theorem pair' {program : α → WordOracleComp Operation γ} {f : α → β}
     (hprogram : IsOraclePPTOn input output program)
@@ -232,27 +223,6 @@ theorem finite_cases' {Tag : Type} [Finite Tag] {tagEncoding : Tag ↪ List Bool
 /-- A bounded adaptive loop is strict oracle PPT when one invariant bounds every reachable
 state. The invariant holds for every possible result under every stateful oracle, and it is also
 established for the final state. Every iteration may query the shared oracle. -/
-theorem iterate_spec {initial : α → σ} {count : α → ℕ}
-    {step : σ → WordOracleComp Operation σ}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
-    (hstep : IsOraclePPTOn stateEncoding stateEncoding step)
-    (invariant : α → ℕ → σ → Prop) (hbase : ∀ a, invariant a 0 (initial a))
-    (hpreserve : ∀ a i state, i < count a → invariant a i state →
-      ∀ next ∈ OracleComp.support (step state), invariant a (i + 1) next)
-    {size : α → ℕ} (hsize : PolyBounded (fun a => (input a).length) size)
-    (hbound : ∀ a i state, i ≤ count a → invariant a i state →
-      (stateEncoding state).length ≤ size a) :
-    IsOraclePPTOn input stateEncoding
-        (fun a => OracleComp.iterate (count a) step (initial a)) ∧
-      ∀ a, ∀ state ∈ OracleComp.support (OracleComp.iterate (count a) step (initial a)),
-        invariant a (count a) state :=
-  let h := IsTidyOraclePPTOn.iterate_spec (.of_tidy hcount) (.of_tidy hinitial)
-    hstep.isTidyOraclePPTOn invariant hbase hpreserve hsize hbound
-  ⟨h.1.isOraclePPTOn, h.2⟩
-
-/-- `Cslib.Probability.IsOraclePPTOn.iterate_spec` with plain polynomial-time count and initial
-state. -/
 theorem iterate_spec' {initial : α → σ} {count : α → ℕ}
     {step : σ → WordOracleComp Operation σ}
     (hcount : ComputableInPolyTime count input encUnary)
@@ -317,22 +287,6 @@ theorem iterateWith_spec' {initial : α → σ} {count : α → ℕ}
 
 /-- Captured-input steps may grow by a polynomially bounded amount depending on that input, for
 every possible next state under every stateful oracle. -/
-theorem iterateWith_of_bounded_growth {initial : α → σ} {count : α → ℕ}
-    {step : α → σ → WordOracleComp Operation σ}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
-    (hstep : IsOraclePPTOn (encPair input stateEncoding) stateEncoding
-      (fun pair => step pair.1 pair.2))
-    {growth : α → ℕ} (hpoly : PolyBounded (fun a => (input a).length) growth)
-    (hgrowth : ∀ a state, ∀ next ∈ OracleComp.support (step a state),
-      (stateEncoding next).length ≤ (stateEncoding state).length + growth a) :
-    IsOraclePPTOn input stateEncoding
-      (fun a => OracleComp.iterate (count a) (step a) (initial a)) :=
-  (IsTidyOraclePPTOn.iterateWith_of_bounded_growth (.of_tidy hcount) (.of_tidy hinitial)
-    hstep.isTidyOraclePPTOn hpoly hgrowth).isOraclePPTOn
-
-/-- `Cslib.Probability.IsOraclePPTOn.iterateWith_of_bounded_growth` with plain polynomial-time
-count and initial state. -/
 theorem iterateWith_of_bounded_growth' {initial : α → σ} {count : α → ℕ}
     {step : α → σ → WordOracleComp Operation σ}
     (hcount : ComputableInPolyTime count input encUnary)
@@ -348,20 +302,6 @@ theorem iterateWith_of_bounded_growth' {initial : α → σ} {count : α → ℕ
     hstep.isTidyOraclePPTOn hpoly hgrowth).isOraclePPTOn
 
 /-- A strict oracle PPT step with constant growth can be repeated a polynomial number of times. -/
-theorem iterate_of_bounded_growth {initial : α → σ} {count : α → ℕ}
-    {step : σ → WordOracleComp Operation σ}
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
-    (hstep : IsOraclePPTOn stateEncoding stateEncoding step)
-    {growth : ℕ} (hgrowth : ∀ state, ∀ next ∈ OracleComp.support (step state),
-      (stateEncoding next).length ≤ (stateEncoding state).length + growth) :
-    IsOraclePPTOn input stateEncoding (fun a => OracleComp.iterate (count a) step (initial a)) :=
-  iterateWith_of_bounded_growth (step := fun _ => step) hcount hinitial
-    (hstep.preprocess (ComputableTidilyInPolyTime.snd input stateEncoding))
-    (.const growth) (fun _ => hgrowth)
-
-/-- `Cslib.Probability.IsOraclePPTOn.iterate_of_bounded_growth` with plain polynomial-time count
-and initial state. -/
 theorem iterate_of_bounded_growth' {initial : α → σ} {count : α → ℕ}
     {step : σ → WordOracleComp Operation σ}
     (hcount : ComputableInPolyTime count input encUnary)

@@ -442,15 +442,15 @@ theorem isOraclePPT_twoQueryNonceMACForger :
         List.take p.1 <$>
           ProbOracleComp.query
             ((), encPair encBits encBits (List.replicate p.1 false, List.replicate p.1 false))) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   have hq1 : IsOraclePPTOn (encPair (encPair encUnary encBits) encBits) encBits
       (fun q : (ℕ × List Bool) × List Bool =>
         List.take q.1.1 <$>
           ProbOracleComp.query
             ((), encPair encBits encBits
               (List.replicate q.1.1 true, true :: List.replicate (q.1.1 - 1) false))) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
-  have hstep1 := hq1.map_with
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
+  have hstep1 := hq1.map_with'
     (output := encPair (encPair encBits encBits) encBits)
     (f := fun (q : (ℕ × List Bool) × List Bool) t₁ =>
       ((List.replicate q.1.1 false, true :: List.replicate (q.1.1 - 1) false),
@@ -518,13 +518,13 @@ theorem isOraclePPT_twoQueryRandomMACForger :
       (fun p : ℕ × List Bool =>
         List.take (2 * p.1 + 2) <$>
           ProbOracleComp.query ((), List.replicate p.1 false)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   have hq1 : IsOraclePPTOn (encPair (encPair encUnary encBits) encBits) encBits
       (fun q : (ℕ × List Bool) × List Bool =>
         List.take (2 * q.1.1 + 2) <$>
           ProbOracleComp.query ((), List.replicate q.1.1 true)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
-  have hstep1 := hq1.map_with
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
+  have hstep1 := hq1.map_with'
     (output := encPair encBits encBits)
     (f := fun (q : (ℕ × List Bool) × List Bool) raw₁ =>
       (List.replicate q.1.1 false, raw₁))

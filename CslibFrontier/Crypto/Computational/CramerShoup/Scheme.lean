@@ -419,9 +419,9 @@ def CCA2AdversaryOf.toADUnit {Msg : Type} (adversary : CCA2AdversaryOf Msg) :
 theorem CCA2AdversaryOf.IsPPT.toADUnit {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : CCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     adversary.toADUnit.IsPPT encMsg (encFinEnum Unit) where
-  choose := (hA.choose.on.map
+  choose := (hA.choose.on.map'
     (((ComputableInPolyTime.fst (encPair encMsg encMsg) encBits).prod (.const ())).prod
-      (ComputableInPolyTime.snd (encPair encMsg encMsg) encBits)).tidy).isOraclePPT
+      (ComputableInPolyTime.snd (encPair encMsg encMsg) encBits))).isOraclePPT
   guess := hA.guess
 
 /-- `CCA2AdversaryOf.toADUnit` preserves per-stage decryption-query bounds. -/

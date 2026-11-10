@@ -280,9 +280,10 @@ theorem IsOraclePPTOn.interpret_bitQueries
       (fun pair : α × (Unit × List Bool) × Unit =>
         (fun r => (r, ())) <$> (List.take 1 <$> ProbOracleComp.query
           (spec := fun _ : Unit × List Bool => List Bool) ((), request pair.2.1.2))) :=
-    (IsOraclePPTOn.query_take () (request := fun pair : α × (Unit × List Bool) × Unit =>
-      request pair.2.1.2) (limit := fun _ => 1) (hrequest.comp (by fun_prop))
-      (by fun_prop)).map (by fun_prop)
+    (IsOraclePPTOn.query_take' () (request := fun pair : α × (Unit × List Bool) × Unit =>
+      request pair.2.1.2) (limit := fun _ => 1)
+      ((ComputableInPolyTime.of_tidy hrequest).comp' (by fun_prop)) (by fun_prop)).map'
+      (by fun_prop)
   have hsub := hprogram.run_interpret_preprocess_open (State := Unit)
     (handler := fun _ q _ => (fun r => (r, ())) <$> (List.take 1 <$> ProbOracleComp.query
       (spec := fun _ : Unit × List Bool => List Bool) ((), request q.2)))
@@ -293,7 +294,7 @@ theorem IsOraclePPTOn.interpret_bitQueries
       obtain ⟨r, hr, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
       obtain ⟨r', -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hr
       exact ⟨trivial, List.length_take_le _ _, Nat.le_add_right _ _⟩)
-  refine (hsub.map (ComputableTidilyInPolyTime.fst output (encFinEnum Unit))).congr
+  refine (hsub.map' (ComputableInPolyTime.fst output (encFinEnum Unit))).congr
     fun a State oracle s => ?_
   congr 2
   rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]
