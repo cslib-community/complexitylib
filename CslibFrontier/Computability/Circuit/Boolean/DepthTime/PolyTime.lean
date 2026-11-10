@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial-time circuit depths
@@ -94,11 +95,9 @@ theorem computableInPolyTime_wireDepthsCode {α : Type} {input : α ↪ List Boo
     ComputableInPolyTime (fun a => wireDepthsCode (inputCount a) (gates a))
       input (encList encUnary) := by
   have hcount := (length_list encGate).comp hgates
-  have hnPoly : PolyBounded (fun a => (input a).length) inputCount := by
-    simpa only [encUnary_apply, List.length_replicate] using hn.polyBounded_length
+  have hnPoly : PolyBounded (fun a => (input a).length) inputCount := by growth_poly
   have hgPoly : PolyBounded (fun a => (input a).length) (fun a => (gates a).length) := by
-    simpa only [encUnary_apply, List.length_replicate, Function.comp_def] using
-      hcount.polyBounded_length
+    growth_poly
   have hinit : ComputableInPolyTime (fun a => List.replicate (inputCount a) 0)
       input (encList encUnary) := by fun_prop
   apply foldl' hgates hinit computableInPolyTime_depthStep
@@ -123,8 +122,7 @@ theorem computableInPolyTime_depthCode {α : Type} {input : α ↪ List Bool}
   have htable := computableInPolyTime_wireDepthsCode hn hcode.fst'
   have hcount := (length_list encGate).comp hcode.fst'
   have hbound : PolyBounded (fun a => (input a).length) (fun a => (code a).1.length) := by
-    simpa only [encUnary_apply, List.length_replicate, Function.comp_def] using
-      hcount.polyBounded_length
+    growth_poly
   have hget : ComputableInPolyTime
       (fun p : (List ℕ × ℕ) × ℕ => p.1.1.getD p.2 0)
       (encPair (encPair (encList encUnary) encUnary) encNat) encUnary :=
