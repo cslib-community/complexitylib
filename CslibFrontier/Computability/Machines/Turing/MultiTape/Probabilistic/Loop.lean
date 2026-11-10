@@ -31,9 +31,9 @@ with its tapes, oracle channels and external oracle state.
 ## Main results
 
 * `Turing.MultiTapePTM.RunsWords.repeatUntilBlank_round`: one round followed by the remaining loop.
-* `Turing.MultiTapePTM.RunsWords.repeatUntilBlank`: `rounds` rounds governed by an invariant run
-  `OracleComp.iterate rounds step` within `rounds * (t + 1)` steps, preserving the joint law of
-  the tape words and the external oracle state.
+* `Turing.MultiTapePTM.RunsWords.repeatUntilBlank`: `rounds + 1` rounds governed by an invariant
+  run `OracleComp.iterate rounds step` followed by `last` within `(rounds + 1) * (t + 1)` steps,
+  preserving the joint law of the tape words and the external oracle state.
 
 ## References
 

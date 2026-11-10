@@ -1917,7 +1917,7 @@ theorem edmondsKarpM_correct {n : ℕ} {N : Network (Fin n)} {adj : Fin n → Li
 /-- **Edmonds–Karp `TimeM` complexity bound** ([EdmondsKarp1972], Theorem 1, p. 251; [CLRS2009],
 Theorem 26.8, p. 729): `edmondsKarpM N adj` terminates in at most
 `(N.symArcs.card * (n / 2) + 2) * (adjSteps adj + 5 * n)` charged ticks (`O(|V| |E|^2)` when
-`adjSteps adj = O(|E|)`).
+`adjSteps adj = O(|E|)` and `|V| = O(|E|)`).
 
 **Limitations / cost model:** each charged tick treats `Vector` indexing/update (`FlowMatrix`),
 `Finset.insert`, `ℕ` arithmetic, and `N.cap u v` evaluation as unit-cost primitives; persistent

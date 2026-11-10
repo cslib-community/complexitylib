@@ -32,7 +32,7 @@ machine and polynomial work for every encoded instance.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 2.3.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CookLevin
 
@@ -44,8 +44,7 @@ variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 @[fun_prop]
 theorem computableInPolyTime_tableau (tm : MultiTapeTM k Bool State) :
     ComputableInPolyTime (fun q : List Bool × ℕ × ℕ => tableau tm q.1 q.2.1 q.2.2)
-      (encPair encBits (encPair encUnary encUnary))
-      (encList (encList (encPair encVar encBool))) := by
+      (encPair encBits (encPair encUnary encUnary)) (Cslib.Logic.PL.encCNFOver encVar) := by
   unfold tableau
   refine (((by fun_prop : ComputableInPolyTime _ _ _).listAppend' ?_).listAppend' ?_).listAppend'
     (by fun_prop)

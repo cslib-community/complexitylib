@@ -59,7 +59,9 @@ values:
   polynomial space (`Cslib.Complexity.Interaction.evaluate_eq`,
   `Cslib.Complexity.Interaction.computableInPolySpace_evaluate`), in exponential time.
 
-The converse inclusion `PSPACE ⊆ IP`, and so `IP = PSPACE`, is not formalized here.
+The converse inclusion `PSPACE ⊆ IP` (`Cslib.Complexity.PSPACE_subset_IP`), and with it
+`IP = PSPACE` (`Cslib.Complexity.IP_eq_PSPACE`), is proved downstream in
+`CslibFrontier.Computability.Complexity.Classes.IP.Shamir`.
 
 ## Main definitions
 

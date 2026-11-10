@@ -46,7 +46,7 @@ base scheme, or fixed-key evaluation without a predetermined budget.
   Theorems 3 and 4][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 

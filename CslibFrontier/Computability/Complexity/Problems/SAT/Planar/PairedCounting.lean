@@ -33,7 +33,7 @@ source cells recovers the source assignment. Counts use only occurring variables
 These are original counting and assignment-correspondence proofs for `PairedCompile`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 

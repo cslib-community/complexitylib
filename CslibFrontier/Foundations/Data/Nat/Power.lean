@@ -40,7 +40,7 @@ Elementary inequalities on powers and products of natural numbers: powers of pol
   moments*, proof of Theorem 2.1][AlonMatiasSzegedy1999]
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

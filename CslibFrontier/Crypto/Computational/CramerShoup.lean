@@ -371,8 +371,8 @@ theorem cramerShoupMsgCCA2Game_eq_game1
   refine congrArg _ (funext fun τ₂ => ?_)
   conv_rhs => rw [PMF.bind_comm (PMF.uniformOfFintype (ZMod (F.order d)))]
   refine congrArg _ (funext fun choiceOut => ?_)
-  by_cases h : (isElem (d, encodeMsg (d, choiceOut.1.1.1.1)) &&
-      isElem (d, encodeMsg (d, choiceOut.1.1.1.2))) = true
+  by_cases h : (isElem (d, encodeMsg (d, csChoiceMsg₀ choiceOut.1)) &&
+      isElem (d, encodeMsg (d, csChoiceMsg₁ choiceOut.1))) = true
   · simp only [h, ↓reduceIte]
   · simp only [h, Bool.false_eq_true, ↓reduceIte, PMF.bind_const]
 
@@ -411,8 +411,8 @@ private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
   rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod d α ((s, t), ((s₁, t₁), (s₂, t₂))),
     F.cramerShoupPhase1Oracle_eq_skNatOfZMod hasAD H isElem hmem d ((s, t), ((s₁, t₁), (s₂, t₂)))]
   refine congrArg _ (funext fun choiceOut => ?_)
-  by_cases h : (isElem (d, encodeMsg (d, choiceOut.1.1.1.1)) &&
-      isElem (d, encodeMsg (d, choiceOut.1.1.1.2))) = true
+  by_cases h : (isElem (d, encodeMsg (d, csChoiceMsg₀ choiceOut.1)) &&
+      isElem (d, encodeMsg (d, csChoiceMsg₁ choiceOut.1))) = true
   · simp only [h, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure]
     rw [F.encodeCramerShoupChallenge_eq_skNatOfZMod H d ((s, t), ((s₁, t₁), (s₂, t₂))),
       F.cramerShoupPhase2Oracle_eq_skNatOfZMod hasAD H isElem hmem d ((s, t), ((s₁, t₁), (s₂, t₂)))]
@@ -470,10 +470,10 @@ private noncomputable def cramerShoupExactCollisionInner
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
   let choice := choiceOut.1
-  if isElem (d, encodeMsg (d, choice.1.1.1)) &&
-      isElem (d, encodeMsg (d, choice.1.1.2)) then
-    let m := if bit then encodeMsg (d, choice.1.1.2) else encodeMsg (d, choice.1.1.1)
-    let ad := encodeAD (d, choice.1.2)
+  if isElem (d, encodeMsg (d, csChoiceMsg₀ choice)) &&
+      isElem (d, encodeMsg (d, csChoiceMsg₁ choice)) then
+    let m := if bit then encodeMsg (d, csChoiceMsg₁ choice) else encodeMsg (d, csChoiceMsg₀ choice)
+    let ad := encodeAD (d, csChoiceAD choice)
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
     runFinderOracle (F.cramerShoupCollisionPhase2Reply hasAD H isElem d sk ct ad)
       (fun req =>
@@ -532,23 +532,24 @@ private theorem advantage_cramerShoupGame2_game3_le_exactCollision
   refine bind_apply_le_add_bind_apply _ _ _ _ true fun σ₂ => ?_
   refine bind_apply_le_add_bind_apply _ _ _ _ true fun τ₂ => ?_
   refine bind_apply_le_add_bind_apply _ _ _ _ true fun choiceOut => ?_
-  by_cases h : (isElem (d, encodeMsg (d, choiceOut.1.1.1.1)) &&
-      isElem (d, encodeMsg (d, choiceOut.1.1.1.2))) = true
+  by_cases h : (isElem (d, encodeMsg (d, csChoiceMsg₀ choiceOut.1)) &&
+      isElem (d, encodeMsg (d, csChoiceMsg₁ choiceOut.1))) = true
   · simp only [h, ↓reduceIte]
     let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
     let v := F.encode d (β • F.generator d)
     let w := F.encode d (γ • F.generator d)
-    let m := if bit then encodeMsg (d, choiceOut.1.1.1.2) else encodeMsg (d, choiceOut.1.1.1.1)
-    let ad := encodeAD (d, choiceOut.1.1.2)
+    let m := if bit then encodeMsg (d, csChoiceMsg₁ choiceOut.1)
+      else encodeMsg (d, csChoiceMsg₀ choiceOut.1)
+    let ad := encodeAD (d, csChoiceAD choiceOut.1)
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
     have hrun :
         (ProbComp.eval ((OracleComp.interpret
           (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-          (adversary.guess n choiceOut.1.2 ct)).run ())).bind
+          (adversary.guess n (csChoiceState choiceOut.1) ct)).run ())).bind
             (fun guessOut => PMF.pure guessOut.1) =
         runStatelessOracle (F.cramerShoupPhase2Reply hasAD H isElem d sk ct ad)
-          (adversary.guess n choiceOut.1.2 ct) PMF.pure := rfl
+          (adversary.guess n (csChoiceState choiceOut.1) ct) PMF.pure := rfl
     rw [hrun]
     refine runStatelessOracle_le_runFinderOracle
       (F.cramerShoupPhase2Reply hasAD H isElem d sk ct ad)
@@ -565,7 +566,7 @@ private theorem advantage_cramerShoupGame2_game3_le_exactCollision
         simp [cramerShoupPhase2Reply, cramerShoupCollisionPhase2Reply, hbad])
       (fun req hbad => by
         rw [← F.isCramerShoupCollision_eq_isCollisionFor H n d _ _ ct ad]; exact hbad)
-      (adversary.guess n choiceOut.1.2 ct) PMF.pure true
+      (adversary.guess n (csChoiceState choiceOut.1) ct) PMF.pure true
   · simp only [h, Bool.false_eq_true, ↓reduceIte]
     exact ⟨le_self_add, le_self_add⟩
 
@@ -601,10 +602,11 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
         (adversary.choose n pk)).run ())).bind fun choiceOut =>
         let choice := choiceOut.1
         (ProbComp.eval
-          (if isElem (d, encodeMsg (d, choice.1.1.1)) &&
-              isElem (d, encodeMsg (d, choice.1.1.2)) then
-            let m := if bit then encodeMsg (d, choice.1.1.2) else encodeMsg (d, choice.1.1.1)
-            let ad := encodeAD (d, choice.1.2)
+          (if isElem (d, encodeMsg (d, csChoiceMsg₀ choice)) &&
+              isElem (d, encodeMsg (d, csChoiceMsg₁ choice)) then
+            let m := if bit then encodeMsg (d, csChoiceMsg₁ choice)
+              else encodeMsg (d, csChoiceMsg₀ choice)
+            let ad := encodeAD (d, csChoiceAD choice)
             let ct := F.encodeCramerShoupChallenge H d sk v w m ad
             ((OracleComp.interpret
               (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -629,8 +631,8 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
       F.cramerShoupPhase1Oracle_eq_skNatOfZMod hasAD H isElem hmem d
         ((s, t), ((s₁, t₁), (s₂, t₂)))]
     refine congrArg _ (funext fun choiceOut => ?_)
-    by_cases h : (isElem (d, encodeMsg (d, choiceOut.1.1.1.1)) &&
-        isElem (d, encodeMsg (d, choiceOut.1.1.1.2))) = true
+    by_cases h : (isElem (d, encodeMsg (d, csChoiceMsg₀ choiceOut.1)) &&
+        isElem (d, encodeMsg (d, csChoiceMsg₁ choiceOut.1))) = true
     · simp only [pmf_norm, h, ↓reduceIte]
       rw [F.encodeCramerShoupChallenge_eq_skNatOfZMod H d
           ((s, t), ((s₁, t₁), (s₂, t₂))),
@@ -895,12 +897,11 @@ private theorem length_encodeCramerShoupPublicKey_le {d : F.Desc} {B : ℕ}
     (F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d)) sk).length ≤
       2 * (F.encDesc d).length + 44 * B + 30 := by
   rw [F.encodeCramerShoupPublicKey_encode]
+  suffices h : ∀ pk, (F.encodeCramerShoupPublicKeyValues d pk).length ≤
+      2 * (F.encDesc d).length + 44 * B + 30 by exact h _
+  intro pk
   unfold encodeCramerShoupPublicKeyValues
-  have h4 := F.length_encBits4_encode_le hB
-    (F.cramerShoupPublicKey d α sk.1.1 sk.1.2 sk.2.1.1 sk.2.1.2 sk.2.2.1 sk.2.2.2).1
-    (F.cramerShoupPublicKey d α sk.1.1 sk.1.2 sk.2.1.1 sk.2.1.2 sk.2.2.1 sk.2.2.2).2.1
-    (F.cramerShoupPublicKey d α sk.1.1 sk.1.2 sk.2.1.1 sk.2.1.2 sk.2.2.1 sk.2.2.2).2.2.1
-    (F.cramerShoupPublicKey d α sk.1.1 sk.1.2 sk.2.1.1 sk.2.1.2 sk.2.2.1 sk.2.2.2).2.2.2
+  have h4 := F.length_encBits4_encode_le hB (csPkU pk) (csPkH pk) (csPkH₁ pk) (csPkH₂ pk)
   simp only [length_encPair]
   lia
 
@@ -999,7 +1000,7 @@ theorem DDH.cramerShoupMsgINDCCA2
   intro d hd α β γ δ τ δ₁ δ₂ ξ choiceOut hchoice mElem
   rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hchoice
   have hpk := hpk_le hd α δ δ₁ δ₂
-  have hst : choiceOut.1.2.length ≤ Lst n :=
+  have hst : (csChoiceState choiceOut.1).length ≤ Lst n :=
     (hstate n _ Unit _ () choiceOut.2 choiceOut.1 hchoice).trans (by dsimp only [Lst]; gcongr)
   have hct := F.length_encBits4_encode_le (hB_le hd)
     (β • F.generator d) (γ • F.generator d)
@@ -1007,8 +1008,8 @@ theorem DDH.cramerShoupMsgINDCCA2
     ((β * (δ₁ + F.cramerShoupHashMod H d
       (encBits4 (F.encode d (β • F.generator d), F.encode d (γ • F.generator d),
         F.encode d (projHash F d (δ - α * τ) τ (β • F.generator d) (γ • F.generator d) + mElem),
-        encodeAD (d, choiceOut.1.1.2))) * δ₂) + (γ - α * β) * ξ) • F.generator d)
-  refine (hQ₂_raw n choiceOut.1.2 _).mono ?_
+        encodeAD (d, csChoiceAD choiceOut.1))) * δ₂) + (γ - α * β) * ξ) • F.generator d)
+  refine (hQ₂_raw n (csChoiceState choiceOut.1) _).mono ?_
   dsimp only [Q₂, Lct] at hct ⊢; gcongr
 
 /-- **Theorem 12.9 & Exercise 12.27 (asymptotic ideal-game 1CCA security for group-element
@@ -1160,15 +1161,16 @@ private noncomputable def cramerShoupCCA2InnerB
     (β : ZMod (F.order d)) : Game :=
   let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
   let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
-  let m := if bit then choiceOut.1.1.1.2 else choiceOut.1.1.1.1
-  let adBits := encodeAD (d, choiceOut.1.1.2)
+  let m := if bit then csChoiceMsg₁ choiceOut.1 else csChoiceMsg₀ choiceOut.1
+  let adBits := encodeAD (d, csChoiceAD choiceOut.1)
   let ct := F.encodeCramerShoupEncrypt H d
-    (F.encode d pkVal.1, F.encode d pkVal.2.1,
-      F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2) m adBits β.val
+    (F.encode d (csPkU pkVal), F.encode d (csPkH pkVal),
+      F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal)) m adBits β.val
   (ProbComp.eval ((OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct adBits))
-    (adversary.guess n choiceOut.1.2 ct)).run ())).bind (fun guessOut => PMF.pure guessOut.1)
+    (adversary.guess n (csChoiceState choiceOut.1) ct)).run ())).bind
+    (fun guessOut => PMF.pure guessOut.1)
 
 private noncomputable def cramerShoupCCA2InnerSK
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
@@ -1182,7 +1184,7 @@ private noncomputable def cramerShoupCCA2InnerSK
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
-  if isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2) then
+  if isElem (d, csChoiceMsg₀ choiceOut.1) && isElem (d, csChoiceMsg₁ choiceOut.1) then
     if useExactB then
       let β ← PMF.uniformOfFintype (ZMod (F.order d))
       F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
@@ -1202,9 +1204,9 @@ private noncomputable def cramerShoupCCA2SampledSK
     (α : ZMod (F.order d)) : Game :=
   (ProbComp.eval (F.sampleCramerShoupSK n d)).bind fun sk =>
     F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n α
-      (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-      (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-      (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false
+      ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+      ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+      ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d)) false
 
 private noncomputable def cramerShoupCCA2UniformSK
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
@@ -1251,7 +1253,7 @@ private theorem advantage_cramerShoupCCA2InnerSK_le
   peel_binds α σ τ σ₁ τ₁ σ₂ τ₂
   dsimp only [cramerShoupCCA2InnerSK]
   peel_binds choiceOut
-  by_cases h : (isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2)) = true
+  by_cases h : (isElem (d, csChoiceMsg₀ choiceOut.1) && isElem (d, csChoiceMsg₁ choiceOut.1)) = true
   · simp only [h, ↓reduceIte, Bool.false_eq_true]
     exact F.advantage_bind_sampleExp_le n d
       (F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
@@ -1290,40 +1292,41 @@ private theorem cramerShoupCCA2InnerSK_false_eq
         (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
       (adversary.choose n pk)).run ())).bind (fun choiceOut =>
         ProbComp.eval
-          (if (isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2)) = true then do
+          (if (isElem (d, csChoiceMsg₀ choiceOut.1) &&
+              isElem (d, csChoiceMsg₁ choiceOut.1)) = true then do
             let b ← F.sampleExp n d
             let ct := F.encodeCramerShoupEncrypt H d (decodeBits4 (dropFrame pk))
-              (if bit then choiceOut.1.1.1.2 else choiceOut.1.1.1.1)
-              (encodeAD (d, choiceOut.1.1.2)) b
+              (if bit then csChoiceMsg₁ choiceOut.1 else csChoiceMsg₀ choiceOut.1)
+              (encodeAD (d, csChoiceAD choiceOut.1)) b
             let guessOut ← (OracleComp.interpret
               (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
                 (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct
-                  (encodeAD (d, choiceOut.1.1.2))))
-              (adversary.guess n choiceOut.1.2 ct)).run ()
+                  (encodeAD (d, csChoiceAD choiceOut.1))))
+              (adversary.guess n (csChoiceState choiceOut.1) ct)).run ()
             return guessOut.1
           else
             return false)) =
     F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
       (a : ZMod (F.order d))
-      (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-      (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-      (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)) false := by
+      ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+      ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+      ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d)) false := by
   dsimp only [cramerShoupCCA2InnerSK]
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod d (a : ZMod (F.order d)) sk,
     F.cramerShoupPhase1Oracle_eq_skNatOfZMod hasAD H isElem hmem d sk]
   refine congrArg _ (funext fun choiceOut => ?_)
-  by_cases h : (isElem (d, choiceOut.1.1.1.1) && isElem (d, choiceOut.1.1.1.2)) = true
+  by_cases h : (isElem (d, csChoiceMsg₀ choiceOut.1) && isElem (d, csChoiceMsg₁ choiceOut.1)) = true
   · simp only [pmf_norm, h, ↓reduceIte, Bool.false_eq_true,
       F.decodeBits4_dropFrame_encodeCramerShoupPublicKey, cramerShoupCCA2InnerB]
     refine congrArg _ (funext fun b => ?_)
     have hct :=
       F.encodeCramerShoupEncrypt_skNatOfZMod H d (a : ZMod (F.order d))
-        (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-        (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-        (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))
-        (if bit then choiceOut.1.1.1.2 else choiceOut.1.1.1.1)
-        (encodeAD (d, choiceOut.1.1.2)) b
+        ((csSkS sk : ℕ) : ZMod (F.order d)) ((csSkT sk : ℕ) : ZMod (F.order d))
+        ((csSkS₁ sk : ℕ) : ZMod (F.order d)) ((csSkT₁ sk : ℕ) : ZMod (F.order d))
+        ((csSkS₂ sk : ℕ) : ZMod (F.order d)) ((csSkT₂ sk : ℕ) : ZMod (F.order d))
+        (if bit then csChoiceMsg₁ choiceOut.1 else csChoiceMsg₀ choiceOut.1)
+        (encodeAD (d, csChoiceAD choiceOut.1)) b
     rw [hct, F.cramerShoupPhase2Oracle_eq_skNatOfZMod hasAD H isElem hmem d sk]
   · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
 

@@ -22,7 +22,7 @@ power of the existing parameter budget. This derives local kernel fits from loga
 These coarse resource estimates are original. Charged subquadratic time is a separate bound.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing
 

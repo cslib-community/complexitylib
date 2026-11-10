@@ -30,8 +30,8 @@ A binary constraint on labels written in `k` bits is a conjunction of clauses of
 excluding each pair of labels the constraint forbids [Arora and Barak, Chapter 11][AroraBarak09].
 `Graph.toCNF` writes a constraint graph this way, and splitting the clauses to width three
 (`Cslib.Complexity.toThreeSAT`) gives a gap-preserving reduction from MAX-2CSP to MAX-3SAT: every
-violated edge leaves a falsified clause, and each edge produces at most `|α| ^ 2 * (2 k - 2)`
-clauses.
+violated edge leaves a falsified clause, and each edge produces at most
+`|α| ^ 2 * max 1 (2 k - 2)` clauses.
 From the gap of Dinur's construction (`Cslib.Complexity.GapTwoCSP_npHard`) over `128 = 2 ^ 7`
 symbols, MAX-3SAT is NP-hard to approximate within `1 - 1 / (3 * 2 ^ 77)`: the loss is the factor
 `128 ^ 2 * 12 = 3 * 2 ^ 16`. That MAX-3SAT is NP-hard to approximate within some constant is due to
@@ -296,8 +296,8 @@ theorem mem_no_GapThreeSAT (hs : s < 1) :
 
 /-- **MAX-2CSP reduces to MAX-3SAT**: for labels written in `k` bits along an equivalence `e`, the
 gap problem of MAX-2CSP with soundness `s < 1` reduces in polynomial time to that of MAX-3SAT with
-soundness `1 - (1 - s) / (|α| ^ 2 * (2 k - 2))`, through `Cslib.PCP.Encoded.Graph.toCNF` and
-splitting to width three. -/
+soundness `1 - (1 - s) / (|α| ^ 2 * max 1 (2 k - 2))`, through `Cslib.PCP.Encoded.Graph.toCNF`
+and splitting to width three. -/
 theorem polyTimeReducible_GapTwoCSP_GapThreeSAT {α : Type} [Fintype α] {k : ℕ}
     (e : α ≃ (Fin k → Bool)) (hs : s < 1) :
     PromiseProblem.PolyTimeReducible (Graph.encoding encConstraintTable) encCNF

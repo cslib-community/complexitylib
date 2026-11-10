@@ -24,7 +24,7 @@ size, without making a claim about the complexity of the functions those circuit
 * `Cslib.Circuits.Boolean.length_encCode_le`: a bound in the input, output and gate counts.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

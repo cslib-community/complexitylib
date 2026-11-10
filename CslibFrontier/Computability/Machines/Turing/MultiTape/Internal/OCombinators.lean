@@ -24,7 +24,7 @@ bounds that same word for workspace. Concatenation and framed pairing retain the
 All construction proofs use only plain certificates and machine-level combinators.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInO
 
 universe u

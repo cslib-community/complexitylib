@@ -34,7 +34,7 @@ Adapted from Computability/Probabilistic/Presample.lean on the cslib `crypto` br
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the common stateful substitution theorem.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

@@ -28,7 +28,7 @@ weights (Theorem 6.1).
 
 Bounding the syntactic state space `pendingBiasStates p k` yields finite-state width bounds under
 bounded fan-in (`2 ^ k`), bounded integer internal weights on a row basis
-(`∏ i ∈ rows, (1 + ∑ j, |w i j|)` and `(1 + k * W) ^ rows.card`), or column-constant internal
+(`∏ i ∈ rows, (1 + ∑ j, |w i j|)` and `(1 + k * W) ^ rows.card`), or row-constant internal
 weights (`k + 1`).
 
 On the input side, the complete gate valuation is determined by the direct input summary
@@ -362,7 +362,7 @@ theorem card_pendingBiasStates_le_pow_intWeight (p : Program signature n g) (k W
       omega
     _ = (1 + k * W) ^ rows.card := by simp
 
-/-- **Section 6.1 (Column-constant internal weights).** If every future gate `k + i` assigns a
+/-- **Section 6.1 (Row-constant internal weights).** If every future gate `k + i` assigns a
 single weight `β i` to all `k` earlier gates, the pending-bias state depends only on the Hamming
 weight of the prefix and has at most `k + 1` values. -/
 theorem card_pendingBiasStates_le_add_one_of_row_const (p : Program signature n g) (k : ℕ)

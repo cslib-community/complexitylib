@@ -23,7 +23,7 @@ This narrow topic module keeps the `Fin.snoc` dependency and append-specific pro
 append API changes; consumers import this module alongside `Block.Realizes.update` as needed.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.Block
 

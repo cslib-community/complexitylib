@@ -195,8 +195,8 @@ theorem StackTape.length_le_of_read_eq_none (tape : StackTape Symbol) {m : ℕ}
   simp only [hget, Option.join_some] at this
   exact hne this
 
-/-- A tape whose cells are blank from displacement `m` on, on both sides, uses at most
-`2 * m + 1` cells. -/
+/-- A tape whose cells are blank at every displacement of absolute value greater than `m` uses at
+most `2 * m + 1` cells. -/
 theorem BiTape.spaceUsed_le_of_read_eq_none (tape : BiTape Symbol) {m : ℕ}
     (hleft : ∀ j, m ≤ j → tape.read (Int.negSucc j) = none)
     (hright : ∀ j, m ≤ j → tape.read ((j : ℤ) + 1) = none) : tape.spaceUsed ≤ 2 * m + 1 := by
@@ -386,8 +386,8 @@ end Views
 
 section Size
 
-/-- A tape representing contents whose head and non-blank cells lie within distance `s` of `0`
-is stored in at most `4 * s + 1` cells relative to its head. -/
+/-- A tape representing contents whose head and non-blank cells lie at distance less than `s` from
+`0` is stored in at most `4 * s + 1` cells relative to its head. -/
 theorem _root_.Cslib.Turing.BiTape.Represents.spaceUsed_le {tape : BiTape Bool}
     {contents : ℤ → Option Bool} {head : ℤ} (h : tape.Represents contents head) {s : ℕ}
     (hhead : head.natAbs < s) (hcells : ∀ z, contents z ≠ none → z.natAbs < s) :

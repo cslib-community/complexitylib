@@ -41,7 +41,7 @@ come from countably many machines with control `Fin m`
   (oracle Turing machines).
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeMachine
 

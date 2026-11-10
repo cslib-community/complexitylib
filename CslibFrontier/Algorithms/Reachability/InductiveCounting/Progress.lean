@@ -24,7 +24,7 @@ in the intended loop ranges. The check is not an additional graph or reachabilit
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.6][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.InductiveCounting
 
