@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
@@ -40,6 +41,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.PartialETH
@@ -47,7 +49,25 @@ import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
+import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
+import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
+import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
+import CslibFrontier.Logics.FirstOrder.Locality.Hanf
+import CslibFrontier.Logics.FirstOrder.Locality.Reachability
+import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
+import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
+import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
+import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
+import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
+import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
+import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
+import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
+import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
+import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -757,3 +777,401 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+/-!
+## Descriptive complexity and finite model theory
+
+Capture theorems, undecidability in the finite, 0-1 laws, logic on words, and the game and
+locality methods for nondefinability. Source theorem numbers and locators are copied from the
+defining modules' documentation. Refinements and remarks that those modules present as their own
+are not registered.
+-/
+
+register_result "immerman-vardi" where
+  title := "Immerman–Vardi: FO(LFP) captures polynomial time on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1986, theorem := "Theorem 1", locator := "Section 3" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.lfpDefinable_iff_encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.LFPDefinable.of_encodedLanguage_mem_P
+  ]
+  scope := "Queries over a finite relational vocabulary on canonically ordered structures Fin n \
+    with n ≥ 2. Order, BIT, 0, 1 and max are canonical numeric symbols computed from n, not \
+    input tables. A query is defined by one checked FO(LFP) sentence iff its language is in \
+    native P under encStructure (unary cardinality, then framed truth tables); malformed \
+    table shapes and universes below two are rejected."
+
+register_result "fo-tc-nl" where
+  title := "FO(TC) is contained in NL on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 3.1", locator := unverified },
+    { paper := Immerman1988, theorem := "Corollary 3", locator := unverified },
+    { paper := Szelepcsenyi1987, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.TCDefinable.encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.PosTCDefinable.encodedLanguage_mem_NL
+  ]
+  scope := "A query defined by one FO(TC) sentence over a finite relational vocabulary with the \
+    canonical numeric symbols, on Fin n with n ≥ 2, is in native NL under encStructure; \
+    malformed tables and cardinalities below two are rejected. Closure is reflexive \
+    transitive closure on tuples of fixed width. Closures under negation are compiled \
+    directly by inductive counting rather than by appeal to NL = coNL. The converse \
+    NL ⊆ FO(TC) is not formalized."
+
+register_result "trakhtenbrot" where
+  title := "Trakhtenbrot: finite satisfiability is undecidable"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.RawFormula.not_computablePred_finSat,
+    Cslib.Logic.FO.RawFormula.not_rePred_finValid,
+    Cslib.Logic.FO.RawFormula.not_rePred_not_finSat,
+    Cslib.Logic.FO.RawFormula.exists_finValid_not_of_rePred,
+    Cslib.Logic.FO.RawFormula.exists_finValid_unprovable
+  ]
+  scope := "Library-local raw relational formulas (RawFormula, with equality and relation \
+    symbols named by natural numbers), not Mathlib L.Sentence; the reduction uses unboundedly \
+    many symbols of arity at most three. FinSat asks for some, FinValid for every, finite \
+    nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
+    reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
+    Libkin's form for a fixed vocabulary with a binary relation symbol is a separate entry; \
+    a computable bridge to Mathlib sentences is not formalized."
+
+register_result "trakhtenbrot-binary" where
+  title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.RawFormula.not_exists_computable_finSat_of_mem,
+    Cslib.Logic.FO.RawFormula.not_exists_rePred_finValid_of_mem,
+    Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_not_of_rePred,
+    Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_unprovable
+  ]
+  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
+    symbol, no computable procedure is correct for finite satisfiability on the raw \
+    sentences over σ, and the finitely valid sentences over σ are not r.e. Raw \
+    library-local syntax with finite nonempty models; a computable translation from \
+    Mathlib's L.Sentence is not formalized."
+
+register_result "zero-one-law-graphs" where
+  title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := GlebskiiKoganLiogonkiiTalanov1969, theorem := unverified,
+      locator := unverified },
+    { paper := Fagin1976, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := unverified, locator := "Chapter 12" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.graph.zero_one_law,
+    Cslib.Logic.FO.graph.tendsto_randomGraphProb_one_iff,
+    Cslib.Logic.FO.graph.tendsto_randomGraphProb_zero_iff,
+    Cslib.Logic.FO.graph.not_exists_sentence_of_not_tendsto,
+    Cslib.Logic.FO.graph.not_exists_sentence_even_card,
+    Cslib.Logic.FO.graph.not_definable_even_card,
+    Cslib.Logic.FO.graph.not_exists_sentence_evenEdges
+  ]
+  scope := "First-order sentences of Mathlib's language of graphs under the uniform labelled \
+    random graph G(n, 1/2) on Fin n. The limit probability is 1 exactly for the \
+    consequences of the theory of the random graph and 0 exactly when the negation is one. \
+    Consequences: even vertex count and even edge count are not first-order definable. \
+    Other edge probabilities and unlabelled random graphs are not covered."
+
+register_result "zero-one-law-rado" where
+  title := "The Rado graph and the almost-sure theory of G(n, 1/2)"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Fagin1976, theorem := unverified, locator := unverified },
+    { paper := Rado1964, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := unverified, locator := "Section 12.3" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.graph.tendsto_randomGraphProb_one_iff_radoGraph,
+    Cslib.Logic.FO.graph.tendsto_randomGraphProb_zero_iff_radoGraph,
+    Cslib.Logic.FO.graph.nonempty_iso_radoGraph,
+    Cslib.Logic.FO.graph.nonempty_embedding_radoGraph,
+    Cslib.Logic.FO.graph.nonempty_compl_iso_radoGraph
+  ]
+  scope := "A sentence of the language of graphs holds almost surely in G(n, 1/2) iff it holds \
+    in the Rado graph SimpleGraph.radoGraph on ℕ, and almost never otherwise. Structure \
+    theory for countable simple graphs: uniqueness among graphs with every extension \
+    property, universality for induced embeddings, and self-complementarity."
+
+register_result "zero-one-law-relational" where
+  title := "The 0-1 law for finite relational vocabularies"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := GlebskiiKoganLiogonkiiTalanov1969, theorem := unverified,
+      locator := unverified },
+    { paper := Fagin1976, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := unverified, locator := "Chapter 12" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Relational.zero_one_law,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_one_iff,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_zero_iff,
+    Cslib.Logic.FO.Relational.not_exists_sentence_even_card,
+    Cslib.Logic.FO.Relational.not_definable_even_card
+  ]
+  scope := "Relational languages with finitely many relation symbols, none nullary, under the \
+    uniform measure on L-structures on {0, …, n - 1}. The limit is 1 exactly for the \
+    consequences of the extension theory and 0 exactly when the negation is one. The law \
+    fails with a nullary symbol. For Language.graph the measure is uniform on directed \
+    graphs with loops, so this is not the G(n, 1/2) law."
+
+register_result "buchi-elgot-trakhtenbrot" where
+  title := "Büchi–Elgot–Trakhtenbrot: MSO-definable languages are the regular languages"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Buchi1960, theorem := unverified, locator := unverified },
+    { paper := Elgot1961, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 7.21", locator := unverified },
+    { paper := Thomas1997, theorem := unverified, locator := "Section 3" }
+  ]
+  theorems := [
+    Cslib.Logic.WordMSO.definable_iff_isRegular,
+    Cslib.Logic.WordMSO.definable_of_isRegular
+  ]
+  scope := "Languages of finite words over a finite alphabet; MSO over word structures with \
+    positions, <, letter predicates and set variables, including the empty word. Regularity \
+    is Mathlib's Language.IsRegular. The direction MSO ⇒ regular, proved in the ToRegular \
+    module, holds over every alphabet."
+
+register_result "fo-mso-separation" where
+  title := "FO[<] is strictly weaker than MSO on finite words"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Corollary 7.27", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.WordMSO.not_foDefinable_even,
+    Cslib.Logic.WordMSO.exists_definable_not_foDefinable,
+    Cslib.Logic.WordMSO.exists_isRegular_not_foDefinable,
+    Cslib.Logic.WordMSO.not_exists_sentence_language_eq_even
+  ]
+  scope := "Even length is MSO-definable and regular but not definable in FO[<] with letter \
+    predicates (no BIT), over any nonempty alphabet; over one letter this is the \
+    first-order half of Libkin's Corollary 7.27 for (aa)*. Over the empty alphabet every \
+    language is first-order definable."
+
+register_result "star-free-fo" where
+  title := "Star-free languages are first-order definable; even length is not star-free"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Theorem 7.26 and Corollary 7.27",
+      locator := unverified },
+    { paper := McNaughtonPapert1971, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Language.IsStarFree.foDefinable,
+    Cslib.Logic.WordMSO.not_isStarFree_even,
+    Cslib.Logic.WordMSO.exists_isRegular_not_isStarFree
+  ]
+  scope := "The direction star-free ⇒ FO[<] of McNaughton–Papert, over any alphabet, possibly \
+    infinite. With the FO[<] separation it gives that even length (over one letter, (aa)*) \
+    is regular but not star-free, over any nonempty alphabet. The remark that FO ⇒ \
+    star-free fails over an infinite alphabet is not registered."
+
+register_result "mcnaughton-papert" where
+  title := "McNaughton–Papert: first-order definable equals star-free on finite words"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Theorem 7.26", locator := unverified },
+    { paper := McNaughtonPapert1971, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.WordMSO.foDefinable_iff_isStarFree,
+    Cslib.Logic.WordMSO.FODefinable.isStarFree
+  ]
+  scope := "Languages of finite words over a finite alphabet, FO[<] with letter predicates and \
+    no BIT. The direction FO ⇒ star-free needs the finite alphabet; the proof adapts \
+    Libkin's induction on quantifier rank."
+
+register_result "ehrenfeucht-fraisse" where
+  title := "The Ehrenfeucht–Fraïssé theorem"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Ehrenfeucht1961, theorem := unverified, locator := unverified },
+    { paper := Fraisse1954, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := unverified, locator := "Chapter 3" },
+    { paper := EbbinghausFlum1999, theorem := unverified, locator := "Chapter 2" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.duplicatorWins_iff_forall_realize_iff,
+    Cslib.Logic.FO.duplicatorWins_iff_forall_formula,
+    Cslib.Logic.FO.duplicatorWins_iff_forall_sentence,
+    Cslib.Logic.FO.duplicatorWins_of_forall_realize_iff,
+    Cslib.Logic.FO.exists_finite_quantifierRank_le_realize_iff,
+    Cslib.Logic.FO.elementarilyEquivalent_iff_forall_duplicatorWins
+  ]
+  scope := "Mathlib first-order languages with finitely many relation symbols; structures may \
+    be finite or infinite. Duplicator wins the n-round game from tuples a, b iff they \
+    satisfy the same formulas of quantifier rank at most n. The equivalences need \
+    L.IsRelational; the Hintikka direction needs only finitely many relation symbols. Also: \
+    finitely many rank-n formulas up to equivalence, and elementary equivalence as winning \
+    every finite game."
+
+register_result "even-linear-orders" where
+  title := "EVEN is not first-order definable on finite linear orders"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Kolaitis2007, theorem := unverified, locator := "Chapter 2" },
+    { paper := Libkin2004, theorem := "Theorem 3.6 and Corollary 3.12",
+      locator := "Chapter 3" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.FiniteLinearOrder.duplicatorWins_iff_card,
+    Cslib.Logic.FO.FiniteLinearOrder.realize_iff_of_two_pow_le_card,
+    Cslib.Logic.FO.FiniteLinearOrder.exists_sentence_of_card_ne,
+    Cslib.Logic.FO.FiniteLinearOrder.not_exists_sentence_realize_iff_even
+  ]
+  scope := "Finite linear orders in Mathlib's language of orders (pure FO(≤); with BIT, EVEN \
+    is definable). Duplicator wins the n-round game iff the orders have equal size or both \
+    have at least 2^n - 1 elements, the sharp form in Kolaitis's survey; Libkin states the \
+    sufficient condition with threshold 2^n. EVEN is not definable even above any size \
+    threshold."
+
+register_result "connectivity-not-fo" where
+  title := "Connectivity is not first-order definable"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Corollary 3.19", locator := unverified },
+    { paper := EbbinghausFlum1999, theorem := unverified, locator := "Chapter 2" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Connectivity.not_exists_sentence_connected,
+    Cslib.Logic.FO.Connectivity.not_exists_sentence_connected_of_le_card
+  ]
+  scope := "Finite simple graphs as structures of Mathlib's language of graphs, with no \
+    built-in order or arithmetic, also when only graphs with at least t vertices are \
+    considered. Proved by Ehrenfeucht–Fraïssé games through a reduction from EVEN on finite \
+    linear orders."
+
+register_result "bipartite-acyclic-not-fo" where
+  title := "Bipartiteness and acyclicity are not first-order definable"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Exercises 3.4 and 3.5(3)", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.GraphProperties.not_exists_sentence_isBipartite,
+    Cslib.Logic.FO.GraphProperties.not_exists_sentence_isBipartite_of_le_card,
+    Cslib.Logic.FO.GraphProperties.not_exists_sentence_isAcyclic,
+    Cslib.Logic.FO.GraphProperties.not_exists_sentence_isAcyclic_of_le_card
+  ]
+  scope := "Mathlib's SimpleGraph.IsBipartite and SimpleGraph.IsAcyclic on finite simple graphs \
+    in the pure language of graphs, also above any size threshold. Proved by adapting \
+    Libkin's reduction from EVEN on finite linear orders (Corollary 3.19)."
+
+register_result "hanf-gaifman-locality" where
+  title := "Hanf and Gaifman locality of first-order logic"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Theorem 4.12 and Corollary 4.13",
+      locator := "Sections 4.2–4.3" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Locality.HanfEquiv.duplicatorWins,
+    Cslib.Logic.FO.Locality.HanfEquiv.realize_iff,
+    Cslib.Logic.FO.Locality.realize_sentence_iff_of_nbhdIso,
+    Cslib.Logic.FO.Locality.hanfEquiv_of_nbhdIso,
+    Cslib.Logic.FO.Locality.NbhdIso.duplicatorWins,
+    Cslib.Logic.FO.Locality.NbhdIso.realize_iff,
+    Cslib.Logic.FO.Locality.NbhdIso.formula_realize_iff
+  ]
+  scope := "Finite structures. Hanf: equivalence at radius (3^n - 1)/2 gives Duplicator the \
+    n-round game, so formulas of quantifier rank at most n agree; this form assumes M \
+    nonempty. Gaifman: tuples with isomorphic radius-(3^(n+1) - 1)/2 neighborhoods agree on \
+    such formulas. Game statements hold for every language, formula statements need a \
+    relational one. Gaifman's normal form is not formalized."
+
+register_result "locality-graph-properties" where
+  title := "Being a tree is not first-order definable; locality bounds for graph properties"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Exercise 4.6",
+      locator := "Section 4.1, Figure 4.2 (p. 48); Theorem 4.12 and the remark after \
+        Corollary 4.13 (p. 52); Exercise 4.6 (p. 63)" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Locality.not_exists_sentence_isTree,
+    Cslib.Logic.FO.Locality.not_exists_sentence_isTree_of_le_card,
+    Cslib.Logic.FO.Locality.card_le_of_realize_iff_connected,
+    Cslib.Logic.FO.Locality.card_le_of_realize_iff_isTree,
+    Cslib.Logic.FO.Locality.card_le_of_realize_iff_isAcyclic
+  ]
+  scope := "Finite simple graphs in the pure language of graphs, by Hanf locality. A sentence \
+    of quantifier rank q holding exactly in the connected graphs on V forces \
+    |V| ≤ 2·3^q + 1; for trees or acyclic graphs, |V| ≤ 2·3^q. The constants come from \
+    Hanf's radius and are not claimed sharp. The module's sharper bounds for q ≥ 1 are \
+    not registered."
+
+register_result "transitive-closure-not-fo" where
+  title := "Transitive closure and reachability are not first-order definable"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := unverified,
+      locator := "Section 4.1, Figure 4.1 (p. 46); after Definition 4.7 (p. 49); \
+        Section 4.3 (p. 54)" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Locality.not_exists_formula_reflTransGen,
+    Cslib.Logic.FO.Locality.not_exists_formula_transGen,
+    Cslib.Logic.FO.Locality.not_exists_formula_reachable,
+    Cslib.Logic.FO.Locality.card_le_of_realize_iff_reflTransGen,
+    Cslib.Logic.FO.Locality.card_le_of_realize_iff_transGen,
+    Cslib.Logic.FO.Locality.two_pow_le_of_gaifman_radius
+  ]
+  scope := "Finite structures of the pure language of graphs, by Gaifman locality. No formula \
+    in two free variables defines the reflexive–transitive or transitive closure of the \
+    edge relation, or reachability in finite simple graphs; on the successor relation of \
+    Fin N, rank q forces N ≤ 2·3^(q+1). Any Gaifman radius for rank n is at least \
+    2^(n-1); the exact rank 2^n - 1 is not formalized. Constants are not claimed sharp."
+
+register_result "fo-tc-strict" where
+  title := "FO(TC) is strictly more expressive than FO on finite structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := unverified,
+      locator := "Definition 10.20 (p. 199); Section 4.1" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.TC.exists_formula_reflTransGen,
+    Cslib.Logic.FO.TC.exists_formula_not_fo_equivalent
+  ]
+  scope := "Unordered finite structures of Mathlib's language of graphs, read as directed \
+    graphs. One well-formed FO(TC) formula defines the reflexive–transitive closure of the \
+    edge relation (the library's closure operator is reflexive), and no first-order \
+    formula is equivalent to it on all finite structures."
+
+register_result "color-refinement" where
+  title := "Color refinement: stabilization, coarsest equitable partition and soundness"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := GroheKerstingMladenovSelman2014, theorem := unverified,
+      locator := "Section 1 (Introduction), paragraph \"Colour Refinement on Matrices\"" }
+  ]
+  theorems := [
+    SimpleGraph.ker_refinementColoring_eq,
+    SimpleGraph.isEquitable_stableColoring,
+    SimpleGraph.isGreatest_ker_stableColoring,
+    SimpleGraph.not_exists_iso_of_colorHistogram_ne,
+    SimpleGraph.isEmpty_iso_of_colorHistogram_ne,
+    SimpleGraph.forall_colorHistogram_eq_iff,
+    SimpleGraph.IsRegularOfDegree.colorHistogram_eq
+  ]
+  scope := "Finite LocallyFinite simple graphs with an arbitrary initial coloring χ₀ with k₀ \
+    classes. The partition is stable from round |V| - k₀ and is the coarsest equitable \
+    partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
+    the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
+    test is incomplete (equal-order d-regular graphs). No k-dimensional Weisfeiler–Leman, \
+    fractional isomorphism or certified algorithm."
