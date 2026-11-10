@@ -9,8 +9,6 @@ module
 
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctHash
 public import CslibFrontier.DataStructure.WordRAM.Randomized.StateTransition
-import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctValidHistory
-import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctHash
 
 /-!
 # Register Wiring and Per-Operation Native Dispatch for the Succinct Dictionary

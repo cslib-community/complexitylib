@@ -20,6 +20,9 @@ import CslibFrontier.Algorithms.WordRAM.ThreeSum.Decision.Registers
 The existing snapshot, prime-table builder and layout programs prepare the same physical
 regions as before. The caller then computes its value envelope before the first root.
 Every stage executes actual native code and retains the computed frontend descriptors.
+
+The stage contracts it composes are private to the proof-only companion
+`ChanHe.PreprocessingSetup`; this module reads them through `import all`.
 -/
 
 public section

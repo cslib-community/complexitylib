@@ -13,10 +13,6 @@ import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabPool
 import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabMove
 import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabDemote
 import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabOps
-import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctMicroChain
-import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSearch
-import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctChainOps
-import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctBucketOps
 import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctDeleteOps
 
 /-!
@@ -25,7 +21,11 @@ import all CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctDeleteOps
 This module proves `(Memory.spec w).ValidHistory` for all `Memory.Prog` operations of the
 fixed-capacity succinct dictionary (`queryBodyProg`, `insertBodyProg`, `deletePrepProg`, and
 `deleteFinishProg`), discharging the admissibility obligation required when extracting native
-Word-RAM `Code` via `Realizes.code_spec`.
+Word-RAM `Code` via `Realizes.code_spec`. The proofs unfold the unexposed programs of the tail and
+slab operation modules and reuse private bound lemmas of `SuccinctTailOps`, `SuccinctSlabPool`,
+`SuccinctSlabMove`, `SuccinctSlabDemote` and `SuccinctDeleteOps`; from `SuccinctSlabOps` they need
+only the bodies of `lastSlotOfProg`, `pushBackTailWriteProg`, `pushBackSlotProg` and
+`popBackSlotProg`. This module reads all of these through `import all`.
 
 ## Main definitions
 
@@ -60,12 +60,12 @@ open Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
 /-! ## Section 1: `ValidMem`, `ValidProg` combinators, and bit-packed array primitives -/
 
 /-- A memory state is well-formed at word size `w` and has frontier at least `F`. -/
-def ValidMem (w F : ℕ) (s : Memory.State) : Prop :=
+@[expose] def ValidMem (w F : ℕ) (s : Memory.State) : Prop :=
   Memory.WellFormed w s ∧ F ≤ s.frontier
 
 /-- A `Memory.Prog` client produces a valid memory history from `s` whenever `ValidMem w F s`
 holds. -/
-def ValidProg {α : Type} (w F : ℕ) (s : Memory.State) (p : Memory.Prog α) : Prop :=
+@[expose] def ValidProg {α : Type} (w F : ℕ) (s : Memory.State) (p : Memory.Prog α) : Prop :=
   ValidMem w F s → (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p)
 
 theorem validMem_clientState {α : Type} {w F : ℕ} {s : Memory.State} {p : Memory.Prog α}

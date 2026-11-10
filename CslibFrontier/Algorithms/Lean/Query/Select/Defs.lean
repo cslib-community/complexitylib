@@ -56,13 +56,13 @@ variable {α : Type}
 
 /-- The lower median of the nonempty group `x :: xs`: sort it with `mergeSort` and take the entry
 at index `(length - 1) / 2`. -/
-def groupMedian (x : α) (xs : List α) : FreeM (LEQuery α) α := do
+@[expose] def groupMedian (x : α) (xs : List α) : FreeM (LEQuery α) α := do
   let s ← mergeSort (x :: xs)
   return s.getD (xs.length / 2) x
 
 /-- The lower medians of consecutive groups of five elements of `xs`; the last group may be
 shorter. -/
-def medians : List α → FreeM (LEQuery α) (List α)
+@[expose] def medians : List α → FreeM (LEQuery α) (List α)
   | [] => return []
   | x :: xs => do
     let m ← groupMedian x (xs.take 4)
@@ -74,7 +74,7 @@ decreasing_by simp only [List.length_drop, List.length_cons]; omega
 /-- Split `xs` into the elements below, equivalent to, and above the pivot `p`, preserving their
 order. An element `x` is above `p` when `x ≤ p` fails, below `p` when `x ≤ p` holds and `p ≤ x`
 fails, and equivalent otherwise; this takes at most two comparisons per element. -/
-def partition3 (p : α) : List α → FreeM (LEQuery α) (List α × List α × List α)
+@[expose] def partition3 (p : α) : List α → FreeM (LEQuery α) (List α × List α × List α)
   | [] => return ([], [], [])
   | x :: xs => do
     let (L, E, G) ← partition3 p xs
@@ -97,7 +97,7 @@ abbrev selectSideBound (n : ℕ) : ℕ := n - 3 * (((n + 4) / 5 - 1) / 2) - 1
 
 /-- Deterministic selection by the median of medians: an element of rank `k` of `xs`, or `none`
 when `xs.length ≤ k`. -/
-def select (k : ℕ) (xs : List α) : FreeM (LEQuery α) (Option α) :=
+@[expose] def select (k : ℕ) (xs : List α) : FreeM (LEQuery α) (Option α) :=
   if _hsmall : xs.length ≤ selectCutoff then do
     let s ← mergeSort xs
     return s[k]?
