@@ -62,12 +62,13 @@ attribute [fo_realize]
 /-- `fo_simp` simplifies with the simp set `fo_realize`, unfolding the realization of first-order
 formulas, projection formulas and the relations of interpreted structures, and, where
 `CslibFrontier.Tactic.FirstOrder` is imported, the definitions of concrete interpretations and
-projections. `fo_simp [h₁, h₂] at l` adds simp lemmas and a location, as for `simp only`. -/
-syntax (name := foSimp) "fo_simp" (simpArgs)? (location)? : tactic
+projections. `fo_simp (config := c) (disch := tac) [h₁, h₂] at l` passes a configuration,
+discharger, extra simp lemmas and a location through, as for `simp only`. -/
+syntax (name := foSimp) "fo_simp" optConfig (discharger)? (simpArgs)? (location)? : tactic
 
 macro_rules
-  | `(tactic| fo_simp $[[$args,*]]? $[at $location]?) =>
+  | `(tactic| fo_simp $cfg:optConfig $[$disch]? $[[$args,*]]? $[at $location]?) =>
     let args := args.map (·.getElems) |>.getD #[]
-    `(tactic| simp only [fo_realize, $args,*] $[at $location]?)
+    `(tactic| simp $cfg:optConfig $[$disch]? only [fo_realize, $args,*] $[at $location]?)
 
 end Cslib.Tactic.FirstOrder
