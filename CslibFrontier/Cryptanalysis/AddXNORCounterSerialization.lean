@@ -26,13 +26,15 @@ input are `2^m` times a polynomial in the original operator count, including zer
 counters and coinciding branches. Counter width is derived from the original DP.
 
 This is an arithmetic/serialization stage, not a complete bit-machine DP compiler.
-Constructing and interleaving the two pulled tables, the operand loop and readback
-still need resource-faithful tape implementations. In particular this theorem does
+The separate `CounterPull` route implements state-keyed pull permutations.
+Preparing/interleaving this pair layout, the operand loop and readback still need
+resource-faithful tape composition. In particular this theorem does
 not establish Lemma 8's faster all-count prepass or replace the installed solver.
 
 ## Main results
 
 * `forward_layer`, `backward_layer`: exact agreement with the native DP update.
+* `forward_layer_append`, `backward_layer_cons`: the next original-input counter table.
 * `layer_certificate`: one uniform binary-addition machine, with source-derived bounds.
 -/
 

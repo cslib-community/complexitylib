@@ -2193,8 +2193,8 @@ Its retained-list lookup is linear, and the certified callbacks currently charge
 polynomial time/workspace in the complete retained input. Sorting's simultaneous
 input/output buffers and these callback costs remain in the composed profiles.
 This earlier route alone does not conclude sharp $O^*(2^{q/2})$ global time or
-$O^*(2^{q/4}+\mu_p)$ peak space. The later `SourceResources.sourceCertificate_bounds`
-paragraph gives the whole-run bounds for the assembled projected-quarter route,
+$O^*(2^{q/4}+\mu_p)$ peak space ($\mu_d=\mu_p$ when $p$ fits). The later
+`SourceResources.sourceCertificate_bounds` paragraph gives the whole-run bounds for the assembled projected-quarter route,
 which replaces these retained-list callbacks.
 The older `SortedMeet` and compacting interpreter implementations are unchanged.
 
@@ -2614,13 +2614,35 @@ and the output is a framed list of binary counters.
 
 This certificate starts **after** the two pull transformations and interleaving.
 It includes the addition pass's input/output and callback temporaries, but does
-not charge generation of that input. Resource-faithful tape permutations,
-pairing, initialization, the operand loop and readback still need composition
+not charge generation of that input. The state-keyed permutations below address
+the pulls; pairing, initialization, the operand loop and readback still need composition
 to obtain Lemma 8's $O^*(2^p)$ all-count prepass. The installed dissection
 certificate and its proved whole-run bound are unchanged. The checked client is
 [`AddXNORCounterSerialization.lean`](../../CslibFrontierTests/AddXNORCounterSerialization.lean);
 from the repository root run
 `lake build CslibFrontierTests.AddXNORCounterSerialization --wfail --iofail`.
+
+[`AddXNORCounterPull.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterPull.lean)
+now implements those permutations by streaming binary state/counter records
+through the original step or its actual inverse, then radix-sorting the keys.
+There is no per-state table lookup. `run_table_eq` proves that the output is
+exactly the selected native recursive pull in ascending numeric state order,
+including all zero counters. `source_certificate` fixes one uniform multitape
+machine with time and charged prefix workspace $O(2^p P(p+q+1))$ on the actual
+original forward/backward counter tables. The polynomial covers unary width,
+binary operands/counters, mapping, sorting, framing and simultaneous buffers;
+the counter-bit bound is derived from the original operator count.
+
+The addition client checks both sorted pulls followed by pairing and the
+approved `BinaryPairSums` pass. This is a semantic composition using `List.zip`,
+not a sharp machine certificate for interleaving. The generic zip compiler
+copies the remaining list and would introduce a quadratic table-volume factor.
+An efficient pairing implementation, table initialization, the complete operand
+loop with reuse, and readback remain necessary for Lemma 8's faster prepass.
+The new state-keyed table uses numeric order; the earlier `WordTable.entries`
+layout uses recursive low-bit child order, so they are not silently identified.
+Build and check the integrated client from the repository root with
+`lake build CslibFrontierTests.AddXNORCounterPull --wfail --iofail`.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),

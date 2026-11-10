@@ -3737,6 +3737,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
 public import CslibFrontier.Cryptanalysis.AddXNORClasses
 public import CslibFrontier.Cryptanalysis.AddXNORCompactExecution
+public import CslibFrontier.Cryptanalysis.AddXNORCounterPull
 public import CslibFrontier.Cryptanalysis.AddXNORCounterSerialization
 public import CslibFrontier.Cryptanalysis.AddXNORCounting
 public import CslibFrontier.Cryptanalysis.AddXNORDecay
