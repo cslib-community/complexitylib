@@ -2726,9 +2726,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.D
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Fold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.BitGame
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.BitList
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunProp
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.IterateUntil
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPrime
