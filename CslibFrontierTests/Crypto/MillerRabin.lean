@@ -6,7 +6,7 @@ Authors: Karn Seth
 
 import CslibFrontier.Crypto.Computational.MillerRabin
 import CslibFrontier.Crypto.Computational.ModulusGeneration
-import CslibFrontier.Foundations.NumberTheory.Primality.PrimeDensity
+import CslibFrontier.Foundations.NumberTheory.PrimeDensity
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
@@ -16,15 +16,16 @@ Concrete instances of the guarantees in `CslibFrontier/Crypto/Computational/Mill
 `CslibFrontier/Crypto/Computational/ModulusGeneration.lean`:
 
 * the Carmichael numbers `561 = 3 · 11 · 17` and `1105 = 5 · 13 · 17`, which fool the Fermat test
-  for every base coprime to them, pass `t` Miller–Rabin rounds with probability at most `2⁻ᵗ`;
+  for every base coprime to them, pass `t` Miller–Rabin rounds with probability at most `2⁻ᵗ`,
+  and two rounds on `561` pass with probability at most `1 / 4`;
 * the primes `2` and `7919` always pass;
-* at `n = 16` the random prime generator returns a number that is not prime with probability at
-  most `3 · 16² · 2⁻¹⁶`, only returns `16`-bit numbers, and returns the smallest and the largest
-  `16`-bit primes, `32771` and `65521`, with the same probability;
+* at `n = 0` the random prime generator always fails, and at `n = 16` it returns a number that is
+  not prime with probability at most `3 · 16² · 2⁻¹⁶`, only returns `16`-bit numbers, and returns
+  the smallest and the largest `16`-bit primes, `32771` and `65521`, with the same probability;
 * at least a `1 / 48` fraction of the `16`-bit numbers are prime, so at `n = 16` the random prime
   generator fails with probability at most `2⁻¹⁶` and the modulus generator with probability at
   most `1538 · 2⁻¹⁶`;
-* the test and both generators are strict PPT programs.
+* programs built from the generators by polynomial-time post-processing are strict PPT.
 -/
 
 namespace CslibFrontierTests.Crypto.MillerRabin
@@ -41,6 +42,15 @@ example (t : ℕ) : ProbComp.eval (millerRabinTest 561 t) true ≤ (2 ^ t)⁻¹ 
 /-- One round on `561` passes with probability at most `1 / 2`. -/
 example : ProbComp.eval (millerRabinRound 561) true ≤ 2⁻¹ :=
   eval_millerRabinRound_le_of_not_prime (by norm_num)
+
+/-- Two rounds on `561` pass with probability at most `1 / 4`: the rounds are independent, so
+the probability is the square of that of one round. -/
+example : ProbComp.eval (millerRabinTest 561 2) true ≤ 4⁻¹ := by
+  rw [eval_millerRabinTest_true]
+  calc ProbComp.eval (millerRabinRound 561) true ^ 2 ≤ 2⁻¹ ^ 2 := by
+        gcongr
+        exact eval_millerRabinRound_le_of_not_prime (by norm_num)
+    _ = 4⁻¹ := by rw [← ENNReal.inv_pow]; norm_num
 
 /-- Forty rounds on `1105` pass with probability at most `2⁻⁴⁰`. -/
 example : ProbComp.eval (millerRabinTest 1105 40) true ≤ (2 ^ 40)⁻¹ :=
@@ -60,12 +70,11 @@ example : ProbComp.eval (millerRabinRound 2) true = 1 :=
 example (t : ℕ) : ProbComp.eval (millerRabinTest 7919 t) true = 1 :=
   eval_millerRabinTest_of_prime (by norm_num) t
 
-/-- `t` rounds all pass with the `t`-th power of the probability that one round passes. -/
-example (n t : ℕ) :
-    ProbComp.eval (millerRabinTest n t) true = ProbComp.eval (millerRabinRound n) true ^ t :=
-  eval_millerRabinTest_true n t
+/-! ### Random primes -/
 
-/-! ### Random primes at `n = 16` -/
+/-- At `n = 0` the generator makes no attempt and always fails. -/
+example : ProbComp.eval (randomPrime 0) = PMF.pure none := by
+  simp [randomPrime]
 
 /-- A candidate is a given `16`-bit number with probability `2⁻¹⁵`. -/
 example : ProbComp.eval (primeCandidate 16) 65521 = (2 ^ 15)⁻¹ :=
@@ -80,13 +89,13 @@ example :
 /-- Every output of the generator at `n = 16` is a `16`-bit number. -/
 example {p : ℕ} (hp : some p ∈ (ProbComp.eval (randomPrime 16)).support) :
     2 ^ 15 ≤ p ∧ p < 2 ^ 16 :=
-  mem_support_randomPrime (by norm_num) hp
+  mem_support_randomPrime hp
 
 /-- The smallest and the largest `16`-bit primes are returned with the same probability. -/
 example :
     ProbComp.eval (randomPrime 16) (some 32771) = ProbComp.eval (randomPrime 16) (some 65521) :=
   eval_randomPrime_some_eq (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+    (by norm_num)
 
 /-! ### Density and failure bounds -/
 
@@ -105,17 +114,24 @@ example : (ProbComp.eval (genModulus 16)).toOuterMeasure {out | ¬ ∃ p q,
   refine (toOuterMeasure_genModulus_invalid_le_inv_two_pow (by norm_num)).trans_eq ?_
   norm_num
 
-/-! ### Efficiency -/
+/-! ### Efficiency of client programs -/
 
-example : Probability.IsPPTOn (encPair encNat encUnary) encBool
-    fun x : ℕ × ℕ => millerRabinTest x.1 x.2 :=
-  isPPTOn_millerRabinTest
+/-- A client that only records whether the generator found a prime is strict PPT. -/
+example : Probability.IsPPTOn encUnary encBool fun n => Option.isSome <$> randomPrime n :=
+  isPPTOn_randomPrime.map (by fun_prop)
 
-example : Probability.IsPPTOn encUnary (encOption encNat) randomPrime :=
-  isPPTOn_randomPrime
+/-- A client of the modulus generator that publishes only the modulus `N = p q`, as the public
+part of an RSA key does, is strict PPT. -/
+example : Probability.IsPPTOn encUnary (encOption encNat) fun n =>
+    (fun out : Option (ℕ × ℕ × ℕ) => out.elim none fun t => some t.1) <$> genModulus n :=
+  isPPTOn_genModulus.map (by fun_prop)
 
-example : Probability.IsPPTOn encUnary (encOption (encPair encNat (encPair encNat encNat)))
-    genModulus :=
-  isPPTOn_genModulus
+/-- Re-testing each output of the generator with `n` more rounds, a second Miller–Rabin pass on
+the same input, is strict PPT: the test composes with the generator through `bind_with`. -/
+example : Probability.IsPPTOn encUnary encBool
+    (fun n => randomPrime n >>= fun found => millerRabinTest (found.elim 0 id) n) :=
+  isPPTOn_randomPrime.bind_with
+    (isPPTOn_millerRabinTest.preprocess
+      (prepare := fun x : ℕ × Option ℕ => (x.2.elim 0 id, x.1)) (by fun_prop))
 
 end CslibFrontierTests.Crypto.MillerRabin

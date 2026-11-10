@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
+import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 
 /-!
 # Mathematical recurrences and quadratic potential for Karger–Stein (`FastCut`)
@@ -577,16 +578,6 @@ theorem half_mul_two_div_eq {s : ℕ} (hs : 1 ≤ s) :
     _ = ((2 : ℝ≥0∞) * 1) / ((2 : ℝ≥0∞) * (s : ℝ≥0∞)) := by rw [one_mul, mul_one]
     _ = (1 : ℝ≥0∞) / (s : ℝ≥0∞) := ENNReal.mul_div_mul_left 1 (s : ℝ≥0∞) h20 h2t
 
-private theorem one_sub_inv_nat {s : ℕ} (hs : 1 ≤ s) :
-    (1 : ℝ≥0∞) - (1 : ℝ≥0∞) / (s : ℝ≥0∞) = ((s - 1 : ℕ) : ℝ≥0∞) / (s : ℝ≥0∞) := by
-  have hs0 : (s : ℝ≥0∞) ≠ 0 := by exact_mod_cast (by omega : s ≠ 0)
-  have hst : (s : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top s
-  refine ENNReal.sub_eq_of_eq_add (ENNReal.div_ne_top (by norm_num) hs0) ?_
-  rw [div_eq_mul_inv, div_eq_mul_inv, ← add_mul]
-  have hsub : ((s - 1 : ℕ) : ℝ≥0∞) + 1 = (s : ℝ≥0∞) := by
-    exact_mod_cast Nat.sub_add_cancel hs
-  rw [hsub, ← div_eq_mul_inv, ENNReal.div_self hs0 hst]
-
 /-- At the root depth budget `d = 2 * Nat.log 2 n`, `2 / (d + 30) = 1 / (Nat.log 2 n + 15)`. -/
 theorem root_hit_prob_eq (n : ℕ) :
     (2 : ℝ≥0∞) / ((2 * Nat.log 2 n + 30 : ℕ) : ℝ≥0∞) =
@@ -611,18 +602,6 @@ theorem fastCutTrials_pos (n : ℕ) :
   unfold fastCutTrials
   nlinarith
 
-private theorem one_sub_inv_pow_le_half {M : ℕ} (hM1 : 1 ≤ M) :
-    ((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / (M : ℝ≥0∞)) ^ M ≤ (1 : ℝ≥0∞) / 2 := by
-  rw [one_sub_inv_nat hM1, ennreal_div_pow]
-  have hM_pow0 : ((M : ℝ≥0∞) ^ M) ≠ 0 := pow_ne_zero M (by exact_mod_cast (by omega : M ≠ 0))
-  have hM_powt : ((M : ℝ≥0∞) ^ M) ≠ ⊤ := ENNReal.pow_ne_top (ENNReal.natCast_ne_top M)
-  have h20 : (2 : ℝ≥0∞) ≠ 0 := by norm_num
-  have h2t : (2 : ℝ≥0∞) ≠ ⊤ := by norm_num
-  rw [ENNReal.div_le_iff_le_mul (Or.inl hM_pow0) (Or.inl hM_powt)]
-  rw [← ENNReal.mul_div_right_comm]
-  rw [ENNReal.le_div_iff_mul_le (Or.inl h20) (Or.inl h2t), one_mul, mul_comm]
-  exact_mod_cast two_mul_pred_pow_le_pow hM1
-
 /-- Elementary failure probability bound for `fastCutTrials n` independent `FastCut` trees:
 `(1 - 1 / (Nat.log 2 n + 15)) ^ fastCutTrials n ≤ 1 / (2 * n)`. -/
 theorem fastCutHighProb_failure_le (n : ℕ) :
@@ -634,7 +613,8 @@ theorem fastCutHighProb_failure_le (n : ℕ) :
     (((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) ^ (Nat.log 2 n + 15)) ^
         (Nat.log 2 n + 2)
       ≤ ((1 : ℝ≥0∞) / 2) ^ (Nat.log 2 n + 2) :=
-        pow_le_pow_left' (one_sub_inv_pow_le_half (by omega)) _
+        pow_le_pow_left' (by simpa only [one_div] using
+          ENNReal.one_sub_inv_pow_le_inv_two (k := Nat.log 2 n + 15) (by omega)) _
     _ = (1 : ℝ≥0∞) / ((2 ^ (Nat.log 2 n + 2) : ℕ) : ℝ≥0∞) := by
         simp only [div_eq_mul_inv, mul_pow, one_pow, ENNReal.inv_pow, Nat.cast_pow, Nat.cast_ofNat]
     _ ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by

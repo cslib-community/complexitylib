@@ -362,8 +362,11 @@ probability (`eval_randomPrime_some_eq`); the generator is uniform strict PPT on
 (`isPPTOn_genModulus`). Its outputs are not certified, so it is not a `PMF ModulusDesc` or
 `BalancedModulus.Desc` family. The density of the `n`-bit primes ([katzlindell20][katzlindell20],
 Theorem 9.32), proved in
-[`PrimeDensity.lean`](../../CslibFrontier/Foundations/NumberTheory/Primality/PrimeDensity.lean)
-(`Nat.two_pow_sub_one_le_three_mul_card_primes`) by Erdős's central binomial argument, makes a
+[`PrimeDensity.lean`](../../CslibFrontier/Foundations/NumberTheory/PrimeDensity.lean)
+(`Nat.two_pow_sub_one_le_three_mul_card_primes`) by Erdős's central binomial argument
+(`Nat.centralBinom_le_pow_card_primes_Ico`, in
+[`CentralBinomPrimes.lean`](../../CslibFrontier/Foundations/NumberTheory/CentralBinomPrimes.lean),
+which `PrimeWindow.lean` shares), makes a
 candidate prime with probability at least `1 / (3 n)` for `n > 1`
 (`inv_three_mul_le_toOuterMeasure_primeCandidate_prime`). So for `n > 1` the generator returns
 `none` with probability at most `2⁻ⁿ` (`eval_randomPrime_none_le_inv_two_pow`), and `genModulus`

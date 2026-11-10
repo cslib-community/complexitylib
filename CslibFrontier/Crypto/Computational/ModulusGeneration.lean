@@ -23,10 +23,10 @@ import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.Retry
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Foundations.Data.BitString.Counter
-import CslibFrontier.Foundations.NumberTheory.Primality.PrimeDensity
+import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
+import CslibFrontier.Foundations.NumberTheory.PrimeDensity
 import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
-import Mathlib.Analysis.Complex.Exponential
 
 /-!
 # Random prime and modulus generation
@@ -43,7 +43,7 @@ The guarantees of [KatzLindell2020], Section 9.2.1, proved here are:
 * it returns `none` with probability at most `ρ ^ (3 n²)`, where `ρ` is the probability that a
   uniform `n`-bit candidate is not prime, since a prime candidate always passes;
 * for `n > 1`, `ρ ≤ 1 - 1 / (3 n)` by the density of the `n`-bit primes ([KatzLindell2020],
-  Theorem 9.32, in `CslibFrontier/Foundations/NumberTheory/Primality/PrimeDensity.lean`), so the
+  Theorem 9.32, in `CslibFrontier/Foundations/NumberTheory/PrimeDensity.lean`), so the
   generator returns `none` with probability at most `2⁻ⁿ`;
 * every output is an `n`-bit number, and all `n`-bit primes are returned with the same
   probability, so conditioned on returning a prime the output is a uniform `n`-bit prime;
@@ -249,26 +249,6 @@ private theorem eval_retry_primeAttempt_some (n : ℕ) (a : ℕ × Bool) :
           (ProbComp.eval (primeAttempt n)).toOuterMeasure {a | ¬ a.2 = true} ^ i :=
   OracleComp.evalWith_retry_some _ _ _ _ _
 
-/-- **Union bound for retries.** If one run returns a good result in `bad` with probability at
-most `ε`, then `fuel` retries return a result in `bad` with probability at most `fuel ε`. -/
-private theorem toOuterMeasure_retry_le {α : Type} (good : α → Prop) [DecidablePred good]
-    (program : ProbComp α) (bad : Set α) {ε : ℝ≥0∞}
-    (h : (ProbComp.eval program).toOuterMeasure {a | good a ∧ a ∈ bad} ≤ ε) (fuel : ℕ) :
-    (ProbComp.eval (OracleComp.retry good program fuel)).toOuterMeasure (some '' bad) ≤
-      fuel * ε := by
-  induction fuel with
-  | zero => simp [PMF.toOuterMeasure_pure_apply]
-  | succ fuel ih =>
-    rw [OracleComp.retry_succ, ProbComp.eval_bind]
-    calc _ ≤ (ProbComp.eval program).toOuterMeasure {a | good a ∧ a ∈ bad} + fuel * ε := by
-          refine Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun a _ ha => ?_
-          by_cases hgood : good a
-          · have hbad : a ∉ bad := fun hmem => ha ⟨hgood, hmem⟩
-            simp [hgood, hbad, PMF.toOuterMeasure_pure_apply]
-          · simpa [hgood] using ih
-      _ ≤ ε + fuel * ε := by gcongr
-      _ = (fuel + 1 : ℕ) * ε := by push_cast; ring
-
 /-- **The generator returns a number that is not prime with probability at most `3 n² 2⁻ⁿ`**
 ([KatzLindell2020], Section 9.2.1): by a union bound, each of the `3 n²` attempts passes the
 test on a number that is not prime with probability at most `2⁻ⁿ`. -/
@@ -279,8 +259,11 @@ theorem toOuterMeasure_randomPrime_not_prime_le (n : ℕ) :
       {found | ∃ p, found = some p ∧ ¬ p.Prime} = some '' {a : ℕ × Bool | ¬ a.1.Prime} := by
     ext found
     rcases found with _ | ⟨q, _ | _⟩ <;> simp
-  have h := toOuterMeasure_retry_le (fun attempt : ℕ × Bool => attempt.2 = true) (primeAttempt n)
-    {a | ¬ a.1.Prime} (toOuterMeasure_primeAttempt_not_prime_le n) (3 * n ^ 2)
+  have h : (ProbComp.eval (OracleComp.retry (fun attempt : ℕ × Bool => attempt.2 = true)
+      (primeAttempt n) (3 * n ^ 2))).toOuterMeasure (some '' {a : ℕ × Bool | ¬ a.1.Prime}) ≤
+      (3 * n ^ 2 : ℕ) * (2 ^ n)⁻¹ :=
+    OracleComp.toOuterMeasure_evalWith_retry_le _ _ _ _
+      (toOuterMeasure_primeAttempt_not_prime_le n) _
   rw [eval_randomPrime, PMF.toOuterMeasure_map_apply, hpre]
   simpa using h
 
@@ -337,29 +320,12 @@ theorem toOuterMeasure_primeCandidate_not_prime_le {n : ℕ} (hn : 1 < n) :
   Probability.PMF.toOuterMeasure_compl_le_one_sub _ {p : ℕ | p.Prime}
     (inv_three_mul_le_toOuterMeasure_primeCandidate_prime hn)
 
-/-- `(1 - 1 / k) ^ k ≤ 1 / 2` for `0 < k`, since `(1 - 1 / k) ^ k ≤ e⁻¹`. -/
-private theorem one_sub_inv_pow_le_inv_two {k : ℕ} (hk : 0 < k) :
-    (1 - (k : ℝ≥0∞)⁻¹) ^ k ≤ 2⁻¹ := by
-  have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
-  have h0 : (0 : ℝ) ≤ 1 - 1 / k := sub_nonneg.2 (div_le_one_of_le₀ hk' (by positivity))
-  have hreal : (1 - 1 / (k : ℝ)) ^ k ≤ 2⁻¹ := by
-    refine (Real.one_sub_div_pow_le_exp_neg hk').trans ?_
-    rw [Real.exp_neg]
-    exact inv_anti₀ two_pos (by linarith [Real.add_one_le_exp 1])
-  have hcast : 1 - (k : ℝ≥0∞)⁻¹ = ENNReal.ofReal (1 - 1 / k) := by
-    rw [ENNReal.ofReal_sub 1 (q := 1 / (k : ℝ)) (by positivity), ENNReal.ofReal_one, one_div,
-      ENNReal.ofReal_inv_of_pos (by exact_mod_cast hk), ENNReal.ofReal_natCast]
-  calc (1 - (k : ℝ≥0∞)⁻¹) ^ k = ENNReal.ofReal ((1 - 1 / k) ^ k) := by
-        rw [hcast, ENNReal.ofReal_pow h0]
-    _ ≤ ENNReal.ofReal 2⁻¹ := ENNReal.ofReal_le_ofReal hreal
-    _ = 2⁻¹ := by rw [ENNReal.ofReal_inv_of_pos two_pos, ENNReal.ofReal_ofNat]
-
 /-- `ρ ^ (3 n²) ≤ 2⁻ⁿ` for `1 < n`, where `ρ` is the probability that a uniform `n`-bit
 candidate is not prime. -/
 private theorem toOuterMeasure_primeCandidate_not_prime_pow_le {n : ℕ} (hn : 1 < n) :
     (ProbComp.eval (primeCandidate n)).toOuterMeasure {p | ¬ p.Prime} ^ (3 * n ^ 2) ≤
       (2 ^ n)⁻¹ := by
-  have hk := one_sub_inv_pow_le_inv_two (k := 3 * n) (by omega)
+  have hk := ENNReal.one_sub_inv_pow_le_inv_two (k := 3 * n) (by omega)
   push_cast at hk
   calc _ ≤ (1 - (3 * n : ℝ≥0∞)⁻¹) ^ (3 * n ^ 2) := by
         gcongr
@@ -377,8 +343,10 @@ theorem eval_randomPrime_none_le_inv_two_pow {n : ℕ} (hn : 1 < n) :
   (eval_randomPrime_none_le n).trans (toOuterMeasure_primeCandidate_not_prime_pow_le hn)
 
 /-- **Every output of the generator is an `n`-bit number.** -/
-theorem mem_support_randomPrime {n p : ℕ} (hn : 0 < n)
+theorem mem_support_randomPrime {n p : ℕ}
     (hp : some p ∈ (ProbComp.eval (randomPrime n)).support) : 2 ^ (n - 1) ≤ p ∧ p < 2 ^ n := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [randomPrime] at hp
   rw [eval_randomPrime, PMF.support_map] at hp
   obtain ⟨found, hfound, hmap⟩ := hp
   rcases found with _ | ⟨q, b⟩
@@ -395,11 +363,15 @@ theorem mem_support_randomPrime {n p : ℕ} (hn : 0 < n)
 
 /-- **The probability of returning an `n`-bit prime `p`** is the probability `2⁻⁽ⁿ⁻¹⁾` of drawing
 `p` as a candidate, times the expected number of attempts. It does not depend on `p`. -/
-theorem eval_randomPrime_some {n p : ℕ} (hn : 0 < n) (hlow : 2 ^ (n - 1) ≤ p)
-    (hhigh : p < 2 ^ n) (hp : p.Prime) :
+theorem eval_randomPrime_some {n p : ℕ} (hlow : 2 ^ (n - 1) ≤ p) (hhigh : p < 2 ^ n)
+    (hp : p.Prime) :
     ProbComp.eval (randomPrime n) (some p) =
       (2 ^ (n - 1))⁻¹ * ∑ i ∈ Finset.range (3 * n ^ 2),
         (ProbComp.eval (primeAttempt n)).toOuterMeasure {a | ¬ a.2 = true} ^ i := by
+  have hn : 0 < n := Nat.pos_of_ne_zero fun h => by
+    subst h
+    simp only [zero_tsub, pow_zero] at hlow hhigh
+    omega
   have hpre : (fun found : Option (ℕ × Bool) => found.map Prod.fst) ⁻¹' {some p} =
       ↑({some (p, true), some (p, false)} : Finset (Option (ℕ × Bool))) := by
     ext found
@@ -414,11 +386,11 @@ theorem eval_randomPrime_some {n p : ℕ} (hn : 0 < n) (hlow : 2 ^ (n - 1) ≤ p
 /-- **Conditioned on returning a prime, the output is a uniform `n`-bit prime**
 ([KatzLindell2020], Section 9.2.1): any two `n`-bit primes are returned with the same
 probability. -/
-theorem eval_randomPrime_some_eq {n p q : ℕ} (hn : 0 < n) (hp : p.Prime) (hq : q.Prime)
+theorem eval_randomPrime_some_eq {n p q : ℕ} (hp : p.Prime) (hq : q.Prime)
     (hp_low : 2 ^ (n - 1) ≤ p) (hp_high : p < 2 ^ n) (hq_low : 2 ^ (n - 1) ≤ q)
     (hq_high : q < 2 ^ n) :
     ProbComp.eval (randomPrime n) (some p) = ProbComp.eval (randomPrime n) (some q) := by
-  rw [eval_randomPrime_some hn hp_low hp_high hp, eval_randomPrime_some hn hq_low hq_high hq]
+  rw [eval_randomPrime_some hp_low hp_high hp, eval_randomPrime_some hq_low hq_high hq]
 
 /-! ### Moduli -/
 
@@ -450,7 +422,7 @@ private theorem eval_genModulus (n : ℕ) :
 ([KatzLindell2020], Section 9.2.3) except with probability at most `2 ρ ^ (3 n²) + 6 n² 2⁻ⁿ`,
 where `ρ` is the probability that a uniform `n`-bit candidate is not prime: by a union bound over
 its two runs. -/
-theorem toOuterMeasure_genModulus_invalid_le {n : ℕ} (hn : 0 < n) :
+theorem toOuterMeasure_genModulus_invalid_le (n : ℕ) :
     (ProbComp.eval (genModulus n)).toOuterMeasure {out | ¬ ∃ p q, out = some (p * q, p, q) ∧
         p.Prime ∧ q.Prime ∧ 2 ^ (n - 1) ≤ p ∧ p < 2 ^ n ∧ 2 ^ (n - 1) ≤ q ∧ q < 2 ^ n} ≤
       2 * ((ProbComp.eval (primeCandidate n)).toOuterMeasure {p | ¬ p.Prime} ^ (3 * n ^ 2) +
@@ -461,12 +433,12 @@ theorem toOuterMeasure_genModulus_invalid_le {n : ℕ} (hn : 0 < n) :
     {found | ¬ ∃ p, found = some p ∧ p.Prime} _ _ fun first hfirst hfirst' => ?_).trans
     (add_le_add hfound le_rfl)
   obtain ⟨p, rfl, hp⟩ := not_not.1 hfirst'
-  have hp_bits := mem_support_randomPrime hn hfirst
+  have hp_bits := mem_support_randomPrime hfirst
   refine (Probability.PMF.toOuterMeasure_bind_le_add _ _
     {found | ¬ ∃ p, found = some p ∧ p.Prime} _ 0 fun second hsecond hsecond' => ?_).trans
     ((add_zero _).trans_le hfound)
   obtain ⟨q, rfl, hq⟩ := not_not.1 hsecond'
-  have hq_bits := mem_support_randomPrime hn hsecond
+  have hq_bits := mem_support_randomPrime hsecond
   rw [nonpos_iff_eq_zero, PMF.toOuterMeasure_apply_eq_zero_iff, PMF.support_pure,
     Set.disjoint_singleton_left]
   exact fun h => h ⟨p, q, rfl, hp, hq, hp_bits.1, hp_bits.2, hq_bits.1, hq_bits.2⟩
@@ -478,7 +450,7 @@ theorem toOuterMeasure_genModulus_invalid_le_inv_two_pow {n : ℕ} (hn : 1 < n) 
         p.Prime ∧ q.Prime ∧ 2 ^ (n - 1) ≤ p ∧ p < 2 ^ n ∧ 2 ^ (n - 1) ≤ q ∧ q < 2 ^ n} ≤
       (6 * n ^ 2 + 2) * (2 ^ n)⁻¹ := by
   have h := toOuterMeasure_primeCandidate_not_prime_pow_le hn
-  refine (toOuterMeasure_genModulus_invalid_le (by omega)).trans ?_
+  refine (toOuterMeasure_genModulus_invalid_le n).trans ?_
   calc _ ≤ (2 : ℝ≥0∞) * ((2 ^ n)⁻¹ + 3 * (n : ℝ≥0∞) ^ 2 * (2 ^ n)⁻¹) := by gcongr
     _ = (6 * (n : ℝ≥0∞) ^ 2 + 2) * (2 ^ n)⁻¹ := by ring
 

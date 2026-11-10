@@ -45,6 +45,9 @@ complement the support and law statements of `CslibFrontier.Languages.Probabilis
 
 * `Cslib.OracleComp.mem_supportWith_retry`: a returned result is good and a result of one run.
 * `Cslib.OracleComp.evalWith_retry_none`: the loop fails with probability `q ^ fuel`.
+* `Cslib.OracleComp.toOuterMeasure_evalWith_retry_le`: a union bound: if one run returns a good
+  result in `bad` with probability at most `ε`, the loop returns one with probability at most
+  `fuel ε`.
 * `Cslib.OracleComp.evalWith_retry_some`: the loop returns a good result `a` with probability
   `P(a) (1 + q + ⋯ + q ^ (fuel - 1))`, where `P(a)` is the probability that one run returns `a`.
 * `Cslib.OracleComp.expectedCost_retry`, `Cslib.OracleComp.expectedCost_retry_le_two_mul`: the
@@ -124,6 +127,24 @@ theorem evalWith_retry_none_le {q : ℝ≥0∞}
     evalWith h (retry good program fuel) none ≤ q ^ fuel := by
   rw [evalWith_retry_none]
   gcongr
+
+/-- **Union bound for retries.** If one run returns a good result in `bad` with probability at
+most `ε`, then the loop returns a result in `bad` with probability at most `fuel ε`. -/
+theorem toOuterMeasure_evalWith_retry_le (bad : Set α) {ε : ℝ≥0∞}
+    (hbad : (evalWith h program).toOuterMeasure {a | good a ∧ a ∈ bad} ≤ ε) (fuel : ℕ) :
+    (evalWith h (retry good program fuel)).toOuterMeasure (some '' bad) ≤ fuel * ε := by
+  induction fuel with
+  | zero => simp [PMF.toOuterMeasure_pure_apply]
+  | succ fuel ih =>
+    rw [retry_succ, evalWith_bind]
+    calc _ ≤ (evalWith h program).toOuterMeasure {a | good a ∧ a ∈ bad} + fuel * ε := by
+          refine Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun a _ ha => ?_
+          by_cases hgood : good a
+          · have hnot : a ∉ bad := fun hmem => ha ⟨hgood, hmem⟩
+            simp [hgood, hnot, PMF.toOuterMeasure_pure_apply]
+          · simpa [hgood] using ih
+      _ ≤ ε + fuel * ε := by gcongr
+      _ = (fuel + 1 : ℕ) * ε := by push_cast; ring
 
 /-- The loop returns `a` with probability `P(a) (1 + q + ⋯ + q ^ (fuel - 1))` when `a` is good,
 and never otherwise, where `P(a)` is the probability that one run returns `a` and `q` is the

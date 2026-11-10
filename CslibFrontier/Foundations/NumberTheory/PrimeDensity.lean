@@ -10,9 +10,8 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Prime.Defs
 public import Mathlib.Order.Interval.Finset.Nat
+import CslibFrontier.Foundations.NumberTheory.CentralBinomPrimes
 import Mathlib.Data.Nat.Choose.Central
-import Mathlib.Data.Nat.Choose.Factorization
-import Mathlib.NumberTheory.Primorial
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.NormNum.Prime
 
@@ -24,13 +23,12 @@ For every `n > 1`, at least a `1 / (3 n)` fraction of the `n`-bit numbers, those
 states without proof. It is what makes the random prime generator of Algorithm 9.34 succeed with
 high probability.
 
-For `n ≥ 13` the proof follows Erdős's proof of Bertrand's postulate, as in
-`Mathlib/NumberTheory/Bertrand.lean`. Write `m = 2 ^ (n - 1)` and factor the central binomial
-coefficient `C(2 m, m)`. Its prime factors are at most `2 m`, and the primes in `(2 m / 3, m]` do
-not divide it. The primes up to `√(2 m)` contribute at most `(2 m) ^ √(2 m)`, the other primes up
-to `2 m / 3` at most their product, which is below `4 ^ (2 m / 3)`, and each prime in `[m, 2 m)`
-at most `2 m`. Comparing with `4 ^ m < m C(2 m, m)` bounds the number of primes in `[m, 2 m)`
-from below. The cases `1 < n < 13` are checked against explicit lists of primes.
+For `n ≥ 13` the proof follows Erdős's proof of Bertrand's postulate. Write `m = 2 ^ (n - 1)`.
+Erdős's upper bound on the central binomial coefficient `C(2 m, m)` in terms of the number `K` of
+primes in `[m, 2 m)` (`Nat.centralBinom_le_pow_card_primes_Ico`, in
+`CslibFrontier/Foundations/NumberTheory/CentralBinomPrimes.lean`) gives
+`C(2 m, m) ≤ (2 m) ^ √(2 m) 4 ^ (2 m / 3) (2 m) ^ K`. Comparing with `4 ^ m < m C(2 m, m)` bounds
+`K` from below. The cases `1 < n < 13` are checked against explicit lists of primes.
 
 ## Main results
 
@@ -94,91 +92,6 @@ private theorem two_pow_le_card_primes_small (n : ℕ) (hn : 1 < n) (h13 : n < 1
       2447, 2459, 2467, 2473] (by decide)
       (by simp only [List.forall_mem_cons]; norm_num) (by norm_num)
 
-/-- The primes up to `2 m / 3` contribute at most `(2 m) ^ √(2 m) 4 ^ (2 m / 3)` to the central
-binomial coefficient `C(2 m, m)`: those up to `√(2 m)` at most `2 m` each, and the others at
-most their product. -/
-private theorem prod_range_pow_factorization_centralBinom_le (m : ℕ) (hm : 0 < m) :
-    ∏ x ∈ Finset.range (2 * m / 3 + 1), x ^ m.centralBinom.factorization x ≤
-      (2 * m) ^ Nat.sqrt (2 * m) * 4 ^ (2 * m / 3) := by
-  let f : ℕ → ℕ := fun x => x ^ m.centralBinom.factorization x
-  let S := {p ∈ Finset.range (2 * m / 3 + 1) | Nat.Prime p}
-  have hS : ∏ x ∈ S, f x = ∏ x ∈ Finset.range (2 * m / 3 + 1), f x := by
-    refine Finset.prod_filter_of_ne fun p _ h => ?_
-    by_contra hp
-    apply h
-    dsimp only [f]
-    rw [factorization_eq_zero_of_not_prime m.centralBinom hp, _root_.pow_zero]
-  change ∏ x ∈ Finset.range (2 * m / 3 + 1), f x ≤ _
-  rw [← hS, ← Finset.prod_filter_mul_prod_filter_not S (· ≤ sqrt (2 * m))]
-  apply mul_le_mul'
-  · refine (Finset.prod_le_prod fun p _ => (?_ : f p ≤ 2 * m)).trans ?_
-    · exact pow_factorization_choose_le (by omega)
-    have : (Finset.Icc 1 (sqrt (2 * m))).card = sqrt (2 * m) := by
-      rw [card_Icc, Nat.add_sub_cancel]
-    rw [Finset.prod_const]
-    refine pow_right_mono₀ (by omega) ((Finset.card_le_card fun x hx => ?_).trans this.le)
-    obtain ⟨h1, h2⟩ := Finset.mem_filter.1 hx
-    exact Finset.mem_Icc.mpr ⟨(Finset.mem_filter.1 h1).2.one_lt.le, h2⟩
-  · refine le_trans ?_ (primorial_le_four_pow (2 * m / 3))
-    refine (Finset.prod_le_prod fun p hp => (?_ : f p ≤ p)).trans ?_
-    · obtain ⟨h1, h2⟩ := Finset.mem_filter.1 hp
-      refine (pow_right_mono₀ (Finset.mem_filter.1 h1).2.one_lt.le ?_).trans (pow_one p).le
-      exact Nat.factorization_choose_le_one (sqrt_lt'.mp <| not_le.1 h2)
-    refine Finset.prod_le_prod_of_subset_of_one_le (fun x hx => (Finset.mem_filter.1 hx).1) ?_
-    exact fun p hp _ => (Finset.mem_filter.1 hp).2.one_lt.le
-
-/-- A prime power factor of `C(2 m, m)` at a number in `(2 m / 3, 2 m]` is at most `2 m`, and it is
-trivial unless the number is a prime in `[m, 2 m)`. -/
-private theorem pow_factorization_centralBinom_le_ite {m x : ℕ} (hm : 2 < m)
-    (hx : x ∈ Finset.Ico (2 * m / 3 + 1) (2 * m + 1)) :
-    x ^ m.centralBinom.factorization x ≤
-      if x ∈ (Finset.Ico m (2 * m)).filter Nat.Prime then 2 * m else 1 := by
-  rw [Finset.mem_Ico] at hx
-  split_ifs with hS
-  · exact pow_factorization_choose_le (by omega)
-  by_cases hpx : x.Prime
-  · have hxm : x ≤ m := le_of_not_gt fun hgt => by
-      apply hS; rw [Finset.mem_filter, Finset.mem_Ico]
-      refine ⟨⟨hgt.le, ?_⟩, hpx⟩
-      rcases (show x < 2 * m ∨ x = 2 * m by omega) with h | h
-      · exact h
-      · exfalso
-        have := hpx.eq_one_or_self_of_dvd 2 ⟨m, h⟩
-        omega
-    rw [Nat.factorization_centralBinom_of_two_mul_self_lt_three_mul hm hxm (by omega), pow_zero]
-  · rw [factorization_eq_zero_of_not_prime _ hpx, pow_zero]
-
-/-- The numbers in `(2 m / 3, 2 m]` contribute at most `(2 m) ^ K` to the central binomial
-coefficient `C(2 m, m)`, where `K` is the number of primes in `[m, 2 m)`. -/
-private theorem prod_Ico_pow_factorization_centralBinom_le (m : ℕ) (hm : 2 < m) :
-    ∏ x ∈ Finset.Ico (2 * m / 3 + 1) (2 * m + 1), x ^ m.centralBinom.factorization x ≤
-      (2 * m) ^ ((Finset.Ico m (2 * m)).filter Nat.Prime).card := by
-  calc ∏ x ∈ Finset.Ico (2 * m / 3 + 1) (2 * m + 1), x ^ m.centralBinom.factorization x
-      ≤ ∏ x ∈ Finset.Ico (2 * m / 3 + 1) (2 * m + 1),
-          (if x ∈ (Finset.Ico m (2 * m)).filter Nat.Prime then 2 * m else 1) :=
-        Finset.prod_le_prod fun x hx => pow_factorization_centralBinom_le_ite hm hx
-    _ = ∏ x ∈ (Finset.Ico (2 * m / 3 + 1) (2 * m + 1)).filter
-          (· ∈ (Finset.Ico m (2 * m)).filter Nat.Prime), 2 * m :=
-        (Finset.prod_filter _ _).symm
-    _ = (2 * m) ^ ((Finset.Ico (2 * m / 3 + 1) (2 * m + 1)).filter
-          (· ∈ (Finset.Ico m (2 * m)).filter Nat.Prime)).card := Finset.prod_const _
-    _ ≤ _ := Nat.pow_le_pow_right (by omega)
-          (Finset.card_le_card fun x hx => (Finset.mem_filter.mp hx).2)
-
-/-- Erdős's upper bound on the central binomial coefficient in terms of the number `K` of primes
-in `[m, 2 m)`: `C(2 m, m) ≤ (2 m) ^ √(2 m) 4 ^ (2 m / 3) (2 m) ^ K`. -/
-private theorem centralBinom_le_pow_card_primes (m : ℕ) (hm : 2 < m) :
-    m.centralBinom ≤ (2 * m) ^ Nat.sqrt (2 * m) * 4 ^ (2 * m / 3) *
-      (2 * m) ^ ((Finset.Ico m (2 * m)).filter Nat.Prime).card := by
-  have hsplit : m.centralBinom =
-      (∏ x ∈ Finset.range (2 * m / 3 + 1), x ^ m.centralBinom.factorization x) *
-        ∏ x ∈ Finset.Ico (2 * m / 3 + 1) (2 * m + 1), x ^ m.centralBinom.factorization x := by
-    rw [Finset.prod_range_mul_prod_Ico _ (by omega)]
-    exact (Nat.prod_pow_factorization_centralBinom m).symm
-  rw [hsplit]
-  exact mul_le_mul' (prod_range_pow_factorization_centralBinom_le m (by omega))
-    (prod_Ico_pow_factorization_centralBinom_le m hm)
-
 /-- `9 n² (2 + 2 ^ (n + 1)) ≤ 4 ^ (n - 1)` for `n ≥ 14`. -/
 private theorem nine_mul_sq_mul_le_two_pow (n : ℕ) (hn : 14 ≤ n) :
     9 * n ^ 2 * (2 + 2 * 2 ^ n) ≤ 2 ^ (2 * n - 2) := by
@@ -236,7 +149,7 @@ private theorem two_pow_le_card_primes_large (n : ℕ) (hn : 13 ≤ n) :
   by_contra hlt; push Not at hlt
   have H2 := Nat.four_pow_lt_mul_centralBinom m hm4
   have H3 : m.centralBinom ≤ (2 * m) ^ Nat.sqrt (2 * m) * 4 ^ (2 * m / 3) * (2 * m) ^ K := by
-    rw [← hK]; exact centralBinom_le_pow_card_primes m (by omega)
+    rw [← hK]; exact Nat.centralBinom_le_pow_card_primes_Ico m (by omega)
   generalize hs : Nat.sqrt (2 * m) = s at hnum H3
   have e0 : 2 * m = 2 ^ n := by rw [← hmdef, h2m]
   have e1 : (2 * m) ^ s = 2 ^ (n * s) := by rw [e0, pow_mul]

@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.NumberTheory.PrimeCounting
+import CslibFrontier.Foundations.NumberTheory.CentralBinomPrimes
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Data.Nat.Prime.Factorial
 import Mathlib.NumberTheory.Bertrand
@@ -35,8 +36,10 @@ coefficient, so no prime-number-theorem hypothesis is assumed.
 
 Adapted from [Anthropic's
 PrimesInWindow.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Util/PrimesInWindow.lean).
-Its central-binomial and concavity estimates adapt `Mathlib/NumberTheory/Bertrand.lean`,
-originally by Patrick Stevens and Bolton Bailey; that source credit is retained.
+Its concavity estimate adapts `Mathlib/NumberTheory/Bertrand.lean`, originally by Patrick Stevens
+and Bolton Bailey; that source credit is retained. Erdős's bound on the central binomial
+coefficient is `Nat.centralBinom_le_pow_card_primes_Ioc`, in
+`CslibFrontier/Foundations/NumberTheory/CentralBinomPrimes.lean`.
 -/
 
 @[expose] public section
@@ -57,80 +60,7 @@ private theorem mem_bertrandPrimes {n p : ℕ} :
   simp only [bertrandPrimes, mem_filter, mem_Ioc]
 
 /-!
-## 1. Erdős's upper bound for the central binomial coefficient -/
-
-/-- Every prime power in `C(2n, n)` is at most `2n`, so `|s|` of them multiply to at most
-`(2n)^|s|`.
--/
-private theorem prod_pow_factorization_le {n : ℕ} (hn : 0 < n) (s : Finset ℕ) :
-    ∏ p ∈ s, p ^ n.centralBinom.factorization p ≤ (2 * n) ^ s.card :=
-  prod_le_pow_card _ _ _ fun _ _ => Nat.pow_factorization_choose_le (by omega)
-
-/-- The primes in `(√(2n), n]` contribute at most `4^(2n/3)` to `C(2n, n)`: their exponent is at
-most 1, it is 0 above `2n/3`, and the product of the primes up to `2n/3` is at most `4^(2n/3)`.
-Adapted from Mathlib, Mathlib/NumberTheory/Bertrand.lean, Apache 2.0.
--/
-private theorem prod_middle_le {n : ℕ} (hn : 2 < n) (s : Finset ℕ)
-    (hs : ∀ p ∈ s, p.Prime ∧ Nat.sqrt (2 * n) < p ∧ p ≤ n) :
-    ∏ p ∈ s, p ^ n.centralBinom.factorization p ≤ 4 ^ (2 * n / 3) :=
-  calc ∏ p ∈ s, p ^ n.centralBinom.factorization p
-      ≤ ∏ p ∈ s, (if p ≤ 2 * n / 3 then p else 1) := by
-        refine prod_le_prod fun p hp => ?_
-        obtain ⟨hprime, hsqrt, hpn⟩ := hs p hp
-        split_ifs with h3
-        · exact (pow_right_mono₀ hprime.one_lt.le
-            (Nat.factorization_choose_le_one (Nat.sqrt_lt'.mp hsqrt))).trans (pow_one p).le
-        · rw [Nat.factorization_centralBinom_of_two_mul_self_lt_three_mul hn hpn (by omega),
-            pow_zero]
-    _ = ∏ p ∈ s.filter (· ≤ 2 * n / 3), p := (prod_filter _ _).symm
-    _ ≤ primorial (2 * n / 3) := by
-        refine prod_le_prod_of_subset_of_one_le (fun p hp => ?_)
-          fun p hp _ => (mem_filter.1 hp).2.one_lt.le
-        obtain ⟨hps, hp3⟩ := mem_filter.1 hp
-        exact mem_filter.2 ⟨mem_range.2 (by omega), (hs p hps).1⟩
-    _ ≤ 4 ^ (2 * n / 3) := primorial_le_four_pow _
-
-/-- Erdős's bound, keeping the primes of `(n, 2n]`: `C(2n, n) ≤ (2n)^√(2n) · 4^(2n/3) · (2n)^k`,
-where `k` is the number of primes in `(n, 2n]`. Mathlib proves the case `k = 0` on the way to
-Bertrand's postulate (`centralBinom_le_of_no_bertrand_prime`).  Adapted from Mathlib,
-Mathlib/NumberTheory/Bertrand.lean, Apache 2.0.
--/
-private theorem centralBinom_le (n : ℕ) (hn : 2 < n) :
-    n.centralBinom ≤
-      (2 * n) ^ Nat.sqrt (2 * n) * 4 ^ (2 * n / 3) * (2 * n) ^ (bertrandPrimes n).card := by
-  -- `C(2n, n)` is the product of its prime powers over the set `T` of the primes up to `2n`.
-  set T := (range (2 * n + 1)).filter Nat.Prime with hT
-  have hprod : ∏ p ∈ T, p ^ n.centralBinom.factorization p = n.centralBinom :=
-    (prod_filter_of_ne fun p _ h => by
-      contrapose h
-      rw [Nat.factorization_eq_zero_of_not_prime _ h, pow_zero]).trans
-      n.prod_pow_factorization_centralBinom
-  -- Split the primes at `n`, and those up to `n` at `√(2n)`.
-  rw [← hprod, ← prod_filter_mul_prod_filter_not T (· ≤ n),
-    ← prod_filter_mul_prod_filter_not (T.filter (· ≤ n)) (· ≤ Nat.sqrt (2 * n))]
-  refine mul_le_mul' (mul_le_mul' ?_ ?_) ?_
-  · -- There are at most `√(2n)` primes up to `√(2n)`.
-    have hsub : (T.filter (· ≤ n)).filter (· ≤ Nat.sqrt (2 * n)) ⊆ Icc 1 (Nat.sqrt (2 * n)) := by
-      intro p hp
-      simp only [hT, mem_filter, mem_range] at hp
-      obtain ⟨⟨⟨-, hprime⟩, -⟩, hsqrt⟩ := hp
-      exact mem_Icc.mpr ⟨hprime.one_lt.le, hsqrt⟩
-    exact (prod_pow_factorization_le (by omega) _).trans (pow_right_mono₀ (by omega)
-      ((card_le_card hsub).trans_eq (by rw [Nat.card_Icc, Nat.add_sub_cancel])))
-  · -- The primes in `(√(2n), n]`.
-    refine prod_middle_le hn _ fun p hp => ?_
-    simp only [hT, mem_filter, mem_range, not_le] at hp
-    obtain ⟨⟨⟨-, hprime⟩, hpn⟩, hsqrt⟩ := hp
-    exact ⟨hprime, hsqrt, hpn⟩
-  · -- The primes above `n` are those of `(n, 2n]`.
-    refine (prod_pow_factorization_le (by omega) _).trans
-      (pow_right_mono₀ (by omega) (card_le_card fun p hp => ?_))
-    simp only [hT, mem_filter, mem_range] at hp
-    obtain ⟨⟨hp2n, hprime⟩, hnp⟩ := hp
-    exact mem_bertrandPrimes.2 ⟨⟨by omega, by omega⟩, hprime⟩
-
-/-!
-## 2. The elementary estimate `n^6 · (2n)^(6√(2n)) ≤ 2^n` for `n ≥ 16562` -/
+## 1. The elementary estimate `n^6 · (2n)^(6√(2n)) ≤ 2^n` for `n ≥ 16562` -/
 
 /-- For `a ≥ 0` the function `log x + √(2x) · log (2x) - a x` is concave for `x > 1/2`. Adapted from
 Mathlib, Mathlib/NumberTheory/Bertrand.lean, Apache 2.0 (there inside
@@ -209,7 +139,7 @@ private theorem pow_mul_pow_sqrt_le_two_pow {n : ℕ} (hn : 16562 ≤ n) :
   linarith [hreal, mul_le_mul_of_nonneg_right hsqrt hlog]
 
 /-!
-## 3. The count for `n ≥ 16562` -/
+## 2. The count for `n ≥ 16562` -/
 
 /-- `2^n ≤ (2n)^(2k)` for `n ≥ 16562`.  If it failed, the sixth power of `4^n < n · (2n)^√(2n) ·
 4^(2n/3) · (2n)^k` would give `2^(12n) < (n^6 (2n)^(6√(2n))) · 2^(8n) · 2^(3n) ≤ 2^(12n)`.
@@ -221,7 +151,7 @@ private theorem two_pow_le_of_large {n : ℕ} (hn : 16562 ≤ n) :
   have herdos : 4 ^ n < n * ((2 * n) ^ Nat.sqrt (2 * n) * 4 ^ (2 * n / 3)
       * (2 * n) ^ (bertrandPrimes n).card) :=
     (Nat.four_pow_lt_mul_centralBinom n (by omega)).trans_le
-      (Nat.mul_le_mul_left _ (centralBinom_le n (by omega)))
+      (Nat.mul_le_mul_left _ (centralBinom_le_pow_card_primes_Ioc n (by omega)))
   have hsmall := pow_mul_pow_sqrt_le_two_pow hn
   have hmiddle : 4 ^ (6 * (2 * n / 3)) ≤ 4 ^ (4 * n) :=
     Nat.pow_le_pow_right (by norm_num) (by omega)
@@ -236,7 +166,7 @@ private theorem two_pow_le_of_large {n : ℕ} (hn : 16562 ≤ n) :
         rw [mul_comm 4 n, pow_mul 4 n 4, show (4 : ℕ) ^ n = 2 ^ n * 2 ^ n by rw [← mul_pow]; rfl]
         ring
 
-/-- The count of step 3 with natural logarithms: `n log 2 ≤ 2 k log (2n)`. -/
+/-- The count of step 2 with natural logarithms: `n log 2 ≤ 2 k log (2n)`. -/
 private theorem mul_log_two_le_card_bertrandPrimes_mul_log {n : ℕ} (hn : 16562 ≤ n) :
     (n : ℝ) * Real.log 2 ≤ 2 * (bertrandPrimes n).card * Real.log (2 * n) := by
   have hpow : (2 : ℝ) ^ n ≤ (2 * (n : ℝ)) ^ (2 * (bertrandPrimes n).card) := by
@@ -246,7 +176,7 @@ private theorem mul_log_two_le_card_bertrandPrimes_mul_log {n : ℕ} (hn : 16562
   exact_mod_cast hlog
 
 /-!
-## 4. Half-open windows `[x/2, x)` with real endpoints -/
+## 3. Half-open windows `[x/2, x)` with real endpoints -/
 
 /-- For a real `x ≥ 4` the natural number `n = ⌈x/2⌉ - 1`, written below as `(⌈x⌉ - 1) / 2`,
 satisfies `n ≥ 1`, `n ≥ x/4` and `2n < x`, and every natural number in `(n, 2n]` lies in `[x/2,
@@ -322,7 +252,7 @@ theorem exists_forall_mul_div_log_le_card_primes :
       _ ≤ (S.card : ℝ) := hone
 
 /-!
-## 5. The window `[√D/2, √D)` used in the modular reduction -/
+## 4. The window `[√D/2, √D)` used in the modular reduction -/
 
 /-- There is a `c > 0` such that, for every natural number `D ≥ 16`, every finite set of natural
 numbers that contains all primes `p` with `√D/2 ≤ p < √D` has at least `c · √D / log D`
