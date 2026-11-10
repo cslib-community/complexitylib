@@ -43,7 +43,7 @@ open scoped BigOperators
 variable {w : ℕ}
 
 /-- Reduce all shifted partial products and finish their sum with carry lookahead. -/
-def multiply (w : ℕ) : Circuit signature (w + w) w :=
+@[expose] def multiply (w : ℕ) : Circuit signature (w + w) w :=
   sumPairs (w + w) w (List.ofFn fun i : Fin w => pairWithZero (partialProduct w i))
 
 /-- The circuit computes the modular product of arbitrary input words. -/

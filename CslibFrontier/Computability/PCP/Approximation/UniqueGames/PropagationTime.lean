@@ -25,6 +25,10 @@ number of vertices. Khot observes that propagation runs in polynomial time
 [Khot, Section 2.4][Khot2010]. The explicit charge and its analysis are this formalization's own,
 in the cost model below.
 
+The cost analysis reuses the private traversal invariants and list lemmas of
+`UniqueGames.Propagation` (such as `unvisited` and `Step`), which this module reads through
+`import all`.
+
 ## Cost model
 
 The charges are for a RAM-style implementation in which the vertex table and the incidence lists

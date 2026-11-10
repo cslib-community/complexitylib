@@ -3296,6 +3296,7 @@ public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.IncidenceBran
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import CslibFrontier.Computability.PolyTime.BudgetTuples
 public import CslibFrontier.Computability.PolyTime.CNF.BranchedSparseCNFCounter
+public import CslibFrontier.Computability.PolyTime.CNF.DeclaredInput
 public import CslibFrontier.Computability.PolyTime.CNF.GreedyParityContext
 public import CslibFrontier.Computability.PolyTime.CNF.GreedyParitySearch
 public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter

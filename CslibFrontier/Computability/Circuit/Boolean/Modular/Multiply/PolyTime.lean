@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.Multiply
-import all CslibFrontier.Computability.Circuit.Boolean.Modular.Multiply
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.PartialProduct.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
