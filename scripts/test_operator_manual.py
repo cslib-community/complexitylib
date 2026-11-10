@@ -11,8 +11,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from check_operator_manual import (STALE_SOURCE_ANCHOR, book_input_errors, check, comment_depths,
-                                   source_anchor_error)
+from check_operator_manual import (MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR, book_input_errors,
+                                   check, comment_depths, source_anchor_error)
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -166,6 +166,67 @@ class ManualChecks(unittest.TestCase):
             self.assertTrue(any(STALE_SOURCE_ANCHOR in e for e in self.errors()))
             self.anchor_link(10_000)
             self.assertTrue(any("out of bounds" in e for e in self.errors()))
+
+    def test_link_text_must_name_the_anchored_declaration(self):
+        (self.repo / "CslibFrontierTests/Anchored.lean").write_text(ANCHORED_SOURCE)
+        lines = ANCHORED_SOURCE.splitlines()
+        at = {text: lines.index(text) + 1 for text in (
+            "/-- A documented definition. -/", "def one : Nat := 1",
+            "@[simp] theorem one_eq : one = 1 := rfl", "private noncomputable def two : Nat :=",
+            "/-- Prose that happens to start a line with a keyword:", "def three : Nat := 3",
+            "namespace Anchored", 'example : "/-" = "/-" := rfl')}
+        url = "../../CslibFrontierTests/Anchored.lean#L{}"
+        passing = [
+            ("one", at["/-- A documented definition. -/"]),  # docstring opener
+            ("Anchored.one", at["def one : Nat := 1"]),  # text more qualified than the name
+            ("`one_eq`", at["@[simp] theorem one_eq : one = 1 := rfl"]),  # attribute, code span
+            ("Anchored.two", at["private noncomputable def two : Nat :="]),  # modifiers
+            ("Pair", at["/-- Prose that happens to start a line with a keyword:"]),
+            ("Anchored.lean", at["def one : Nat := 1"]),  # a file, not a declaration
+            ("CslibFrontierTests.Anchored", at["def one : Nat := 1"]),  # the module
+            ("here", at["def one : Nat := 1"]),  # prose names no declaration of the file
+            ("hidden", at["def three : Nat := 3"]),  # only commented out in this file
+            ("moved", at["def one : Nat := 1"]),  # declared in another file
+            ("three", f"{at['namespace Anchored']}-L{at['def three : Nat := 3']}"),  # range
+        ]
+        self.doc.write_text(self.doc.read_text() + "".join(
+            f"\n[{text}]({url.format(line)})\n" for text, line in passing))
+        self.assertEqual(self.errors(), [])
+        wrong = [url.format(at["@[simp] theorem one_eq : one = 1 := rfl"]),
+                 url.format(at['example : "/-" = "/-" := rfl']),
+                 url.format(f"{at['namespace Anchored']}-L{at['def one : Nat := 1'] - 2}")]
+        self.doc.write_text(self.doc.read_text()
+                            + "".join(f"\n[Anchored.one]({u})\n" for u in wrong))
+        declared = f"declared at L{at['/-- A documented definition. -/']}"
+        self.assertEqual(self.errors(), [
+            f"workflows/first.md: {MISNAMED_SOURCE_ANCHOR} ({declared}): {u}" for u in wrong])
+
+    def test_exact_declaration_name_takes_precedence(self):
+        source = "module\n\ndef toX : Nat := 0\n\ntheorem Complete.toX : True := trivial\n"
+        (self.repo / "CslibFrontierTests/Exact.lean").write_text(source)
+        url = "../../CslibFrontierTests/Exact.lean#L{}"
+        self.doc.write_text(self.doc.read_text()
+                            + f"\n[toX]({url.format(3)}) [Ns.Complete.toX]({url.format(5)})\n")
+        self.assertEqual(self.errors(), [])
+        self.doc.write_text(self.doc.read_text() + f"\n[Complete.toX]({url.format(3)})\n")
+        self.assertEqual(self.errors(), [
+            f"workflows/first.md: {MISNAMED_SOURCE_ANCHOR} (declared at L5): {url.format(3)}"])
+
+    def test_misnamed_check_leaves_stale_anchors_to_the_start_check(self):
+        lines = ANCHORED_SOURCE.splitlines()
+        url = self.anchor_link(lines.index("theorem in a docstring is not a declaration. -/") + 1)
+        self.assertEqual(self.errors(), [f"workflows/first.md: {STALE_SOURCE_ANCHOR}: {url}"])
+        # A listed anchor that starts another declaration is tolerated and counts as used.
+        self.doc.write_text(self.doc.read_text().replace(f"[one]({url})", ""))
+        line = lines.index("def three : Nat := 3") + 1
+        self.anchor_link(line)
+        self.assertTrue(self.errors())
+        entry = ("CslibFrontierTests/Anchored.lean", line)
+        with mock.patch("check_operator_manual.STALE_SOURCE_ANCHORS", {entry}):
+            result = check(self.repo)
+            self.assertEqual(result["errors"], [])
+            self.assertEqual(result["allowed_stale_source_anchors"], [f"{entry[0]}#L{line}"])
+            self.assertEqual(result["unused_stale_source_anchor_entries"], [])
 
 
 class SourceLineAnchors(unittest.TestCase):

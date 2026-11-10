@@ -52,9 +52,10 @@ with the untracked book products.
 2. Open the complete client. Verify that the model, encoding, hypotheses and resource claim
    agree with the explanation; inspect a meaningful edge or failure case.
 3. Run `python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`.
-   The checker validates local paths and Markdown anchors, visual markup, the book's chapter
-   lists, excerpt registration and unique exact excerpt matches in current source; its controls
-   exercise failure and recovery.
+   The checker validates local paths and Markdown anchors, source line anchors (each starts a
+   declaration and, when its link text names a declaration of the linked file, that one), visual
+   markup, the book's chapter lists, excerpt registration and unique exact excerpt matches in
+   current source; its controls exercise failure and recovery.
    Both are required in CI and run before Lean work in full and quick `scripts/check.sh` modes.
    They need only Python, without publishing tools or regenerated research data. Inserting unrelated
    lines above an excerpt is allowed. Changing, removing or duplicating its text needs attention.
