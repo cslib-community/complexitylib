@@ -40,13 +40,6 @@ namespace Cslib.Logic.PL.CSP.Table
 
 open Cslib.BitString
 
-private theorem oneHot_eq_ofFn (width : ℕ) (i : Fin width) :
-    oneHot width i = List.ofFn (fun j : Fin width => decide (j = i)) := by
-  apply List.ext_getElem
-  · simp [oneHot]
-  · intro j hj hk
-    simp [oneHot, Fin.ext_iff, eq_comm]
-
 /-- The guarded table relation is precisely the usual exactly-one relation. -/
 theorem booleanRelation_exactlyOne {V : Type*} (scope : List V) :
     booleanRelation arity sem (exactlyOne scope) = oneHotRelation (Fin scope.length) := by
@@ -58,11 +51,11 @@ theorem booleanRelation_exactlyOne {V : Type*} (scope : List V) :
   constructor
   · rintro ⟨i, hi, he⟩
     refine ⟨⟨i, hi⟩, ?_⟩
-    rw [oneHot_eq_ofFn scope.length ⟨i, hi⟩] at he
+    rw [listSingle_eq_ofFn (⟨i, hi⟩ : Fin scope.length)] at he
     exact List.ofFn_injective he
   · rintro ⟨i, hi⟩
     change (fun j => decide (j = i)) = x at hi
-    exact ⟨i, i.isLt, by rw [oneHot_eq_ofFn scope.length i, hi]⟩
+    exact ⟨i, i.isLt, by rw [listSingle_eq_ofFn i, hi]⟩
 
 /-- The new connector table is an even delta-matroid for every nonempty scope.
 Repeated names in the supplied scope do not change this local relation claim. -/
@@ -155,17 +148,17 @@ private theorem count_eq_one_iff {n : ℕ} (x : Fin n → Bool) :
     (List.ofFn x).count true = 1 ↔ ∃ k, ∀ j, x j = decide (j = k) := by
   constructor
   · intro h
-    obtain ⟨k, hk, he⟩ := exists_oneHot_of_count_true h
+    obtain ⟨k, hk, he⟩ := exists_listSingle_of_count_true h
     have hk' : k < n := by simpa using hk
     have hh : (fun j : Fin n => decide (j = (⟨k, hk'⟩ : Fin n))) = x := by
       apply List.ofFn_injective
-      have he' : oneHot n k = List.ofFn x := by simpa only [List.length_ofFn] using he
-      rwa [oneHot_eq_ofFn n ⟨k, hk'⟩] at he'
+      have he' : listSingle n k = List.ofFn x := by simpa only [List.length_ofFn] using he
+      rwa [listSingle_eq_ofFn (⟨k, hk'⟩ : Fin n)] at he'
     exact ⟨⟨k, hk'⟩, fun j => congrFun hh.symm j⟩
   · rintro ⟨k, hk⟩
     have he : x = (fun j => decide (j = k)) := funext hk
-    rw [he, ← oneHot_eq_ofFn]
-    exact count_true_oneHot k.isLt
+    rw [he, ← listSingle_eq_ofFn]
+    exact count_true_listSingle k.isLt
 
 private def outputEquiv (n : ℕ) : Fin n ⊕ Unit ≃ Fin (n + 1) :=
   (Equiv.sumCongr (Equiv.refl _) finOneEquiv.symm).trans finSumFinEquiv
