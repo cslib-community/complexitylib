@@ -94,13 +94,14 @@ Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono
 [PMF/Finiteness.lean](../../CslibFrontier/Probability/PMF/Finiteness.lean) and discharge each side
 condition with `by finiteness`, in place, instead of assembling it from `ENNReal.add_ne_top`,
 `ENNReal.sum_ne_top` and `PMF.apply_ne_top`. The module makes Mathlib's `finiteness` know that a
-mass `p a`, an event probability `p.toOuterMeasure s` and a finite sum of finite terms are finite;
-Mathlib already covers sums, products, powers, casts and inverses of nonzero terms, and local
-hypotheses. A factor with no such reason, such as an arbitrary `x : ℝ≥0∞`, makes it fail, often
-only after Aesop's rule-application limit; add a hypothesis `x ≠ ∞` or prove that factor
-separately. Each call costs roughly 100 to 700 heartbeats of Aesop search and positivity, so
-where the explicit term is a single `PMF.apply_ne_top _ _` keep the term. To compare success
-probabilities, import [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
+mass `p a`, an event probability `p.toOuterMeasure s` and a finite sum of finite terms are finite,
+and that a term is finite given `h : x < _` or `h : ∀ i, f i ≠ ∞`; Mathlib already covers sums,
+products, powers, casts and inverses of nonzero terms, and hypotheses `x ≠ ∞`. A factor with no
+such reason, such as an arbitrary `x : ℝ≥0∞`, makes it fail, often only after Aesop's
+rule-application limit; add a hypothesis `x ≠ ∞` or prove that factor separately. Each call
+costs roughly 100 to 700 heartbeats of Aesop search and positivity, so where the explicit term is
+a single `PMF.apply_ne_top _ _` keep the term. To compare success probabilities, import
+[Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
 `apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
 `Game.succProbability`. The [checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover
 each rule and the failure.

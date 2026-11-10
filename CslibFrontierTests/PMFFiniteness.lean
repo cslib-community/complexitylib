@@ -45,6 +45,16 @@ example (p : PMF α) (B : ι → Set α) (s : Finset ι) :
 -- A factor known finite from a hypothesis.
 example (x : ℝ≥0∞) (hx : x ≠ ∞) (p : PMF α) (a : α) : x * p a ≠ ∞ := by finiteness
 
+-- A sum known finite as a whole: the sum rule does not commit to its terms first.
+example (f : ι → ℝ≥0∞) (s : Finset ι) (h : ∑ i ∈ s, f i < ∞) : ∑ i ∈ s, f i ≠ ∞ := by
+  finiteness
+
+-- A bound by any value.
+example (x : ℝ≥0∞) (h : x < 1) (p : PMF α) (a : α) : x + p a ≠ ∞ := by finiteness
+
+-- Terms known finite from a quantified hypothesis.
+example (f : ι → ℝ≥0∞) (s : Finset ι) (h : ∀ i, f i ≠ ∞) : ∑ i ∈ s, f i ≠ ∞ := by finiteness
+
 -- Comparing success probabilities reduces to comparing the masses of `true`.
 example (g₁ g₂ : Cslib.Crypto.Game) (h : g₁ true ≤ g₂ true) :
     g₁.succProbability ≤ g₂.succProbability := by
