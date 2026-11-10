@@ -20,12 +20,6 @@
  "CslibFrontier/Computability/Interactive/AuxZK.lean": {
   "encPair ?1.index (encPair encBits encBits)": 5
  },
- "CslibFrontier/Computability/WordRAM/Turing.lean": {
-  "encPair encUnary (encPi encNat)": 3
- },
- "CslibFrontier/Computability/WordRAM/Turing/ListOutput.lean": {
-  "encPair encUnary (encPi encNat)": 3
- },
  "CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean": {
   "encPair encUnary (encPair encBits encBool)": 4
  },
