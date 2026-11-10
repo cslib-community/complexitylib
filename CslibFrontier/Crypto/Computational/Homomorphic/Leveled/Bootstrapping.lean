@@ -62,8 +62,7 @@ theorem correct_fixedWidth_indCPA {E : Scheme} {secretWidth ciphertextWidth budg
     (hboot : Scheme.Bootstrappable D)
     (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun (n, pk, bit) => E.encrypt n pk bit))
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits (fun (n, pk, bit) => E.encrypt n pk bit))
     (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1))
@@ -89,8 +88,7 @@ theorem exists_scheme_of_polynomiallyBounded {E : Scheme}
     (hboot : Scheme.Bootstrappable D)
     (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun (n, pk, bit) => E.encrypt n pk bit))
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits (fun (n, pk, bit) => E.encrypt n pk bit))
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
       encBits (fun (n, pk, C, cts) => E.evaluate n pk C cts))
@@ -107,7 +105,7 @@ theorem exists_scheme_of_polynomiallyBounded {E : Scheme}
       PolynomiallyBounded (fun n => 3 * secretWidth n + 1) ∧
       PolynomiallyBounded (fun n => ciphertextWidth n + 1) ∧
       IsPPTOn encUnary (encPair encBits encBits) (scheme D budget).keyGen ∧
-      IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+      IsPPTOn (encKeyedInput encBool) encBits
         (fun (n, pk, bit) => (scheme D budget).encrypt n pk bit) ∧
       ComputableInPolyTime
         (fun ((n, sk, c) : ℕ × List Bool × List Bool) => (scheme D budget).decrypt n sk c)
@@ -138,8 +136,7 @@ for key generation, encryption and evaluation, and one deterministic polynomial 
 theorem schemeFamily_spec {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun (n, pk, bit) => E.encrypt n pk bit))
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits (fun (n, pk, bit) => E.encrypt n pk bit))
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
       encBits (fun (n, pk, C, cts) => E.evaluate n pk C cts))
