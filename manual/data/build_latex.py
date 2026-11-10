@@ -61,7 +61,9 @@ MATH = {'ℕ': r'\mathbb{N}', 'ℝ': r'\mathbb{R}', 'ℓ': r'\ell', '→': r'\to
         '⊕': r'\oplus', '∞': r'\infty', '−': '-', '×': r'\times', 'Γ': r'\Gamma',
         'Σ': r'\Sigma', 'α': r'\alpha', 'β': r'\beta', 'δ': r'\delta', 'ε': r'\varepsilon',
         'η': r'\eta', 'ι': r'\iota', 'κ': r'\kappa', 'λ': r'\lambda', 'μ': r'\mu',
-        'σ': r'\sigma', '₁': '_1', '₂': '_2', 'ᵢ': '_i', 'ⱼ': '_j', '¹': '^1', '²': '^2', '³': '^3'}
+        'σ': r'\sigma', '₁': '_1', '₂': '_2', 'ᵢ': '_i', 'ⱼ': '_j', '¹': '^1', '²': '^2', '³': '^3',
+        '⁰': '^0', 'ₖ': '_k', 'ᵖ': '^p', '₊': '_+', 'Π': r'\Pi', '⊇': r'\supseteq',
+        '⊄': r'\nsubseteq', '✗': r'\times'}
 
 
 def inline_tex(text):

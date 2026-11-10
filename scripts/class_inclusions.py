@@ -113,6 +113,8 @@ LITERATURE = [
      "`Ajtai1983`)"),
 ]
 
+PANEL_COLUMNS = 10
+
 GRIDS = [
     ("Uniform classes", UNIFORM),
     ("Nonuniform circuit classes", CIRCUIT),
@@ -203,11 +205,8 @@ def grid_table(title, grid, theorems, problems):
     proved, refuted = close(nodes, facts, complements=False)
     literature = [f for f in LITERATURE if f[0] in grid and f[2] in grid]
     known, false = close(nodes, literature, complements=grid is UNIFORM)
-    lines = [f"## {title}", "",
-             "| ⊆ | " + " | ".join(nodes) + " |",
-             "|---|" + "---|" * len(nodes)]
+    rows = {a: [] for a in nodes}
     for a in nodes:
-        cells = []
         for b in nodes:
             pair = (a, b)
             if pair in proved and pair not in known or pair in refuted and pair not in false:
@@ -226,11 +225,22 @@ def grid_table(title, grid, theorems, problems):
                 cell = "(✗)"
             else:
                 cell = "?"
-            cells.append(cell)
-        lines.append(f"| **{a}** | " + " | ".join(cells) + " |")
+            rows[a].append(cell)
+    panels = -(-len(nodes) // PANEL_COLUMNS)
+    width = -(-len(nodes) // panels)
+    lines = [f"## {title}", ""]
+    for start in range(0, len(nodes), width):
+        columns = nodes[start:start + width]
+        if panels > 1:
+            lines += [f"Columns {columns[0]} to {columns[-1]}:", ""]
+        lines += ["| ⊆ | " + " | ".join(columns) + " |",
+                  "|------|" + "---|" * len(columns)]
+        for a in nodes:
+            lines.append(f"| **{a}** | " + " | ".join(rows[a][start:start + width]) + " |")
+        lines.append("")
     used = sorted({(a, b, d) for a, _, b, d in facts},
                   key=lambda f: (nodes.index(f[0]), nodes.index(f[1]), f[2]))
-    lines += ["", "<details><summary>Theorems used</summary>", "",
+    lines += ["<details><summary>Theorems used</summary>", "",
               "| Statement | Declaration |", "|---|---|"]
     for a, b, declaration in used:
         relation = next(r for x, r, y, d in facts if (x, y, d) == (a, b, declaration))

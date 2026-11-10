@@ -82,6 +82,7 @@ STEPS = (
 
 # Run by scripts/check.sh before the cache bootstrap, in both full and quick modes.
 PREFLIGHT = {
+    "Class inclusion tables are current": "python3 -B scripts/class_inclusions.py --check",
     "Operator manual links and excerpts": "python3 -B scripts/check_operator_manual.py",
 }
 

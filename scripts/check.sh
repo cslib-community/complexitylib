@@ -46,6 +46,7 @@ finish() {
 }
 # Run on both the full and quick routes. Lean-only edits can invalidate a manual excerpt,
 # and these stdlib checks can report drift before a cold checkout restores any build cache.
+run "class inclusion tables are current" python3 -B scripts/class_inclusions.py --check
 run "operator manual links and excerpts" python3 -B scripts/check_operator_manual.py
 run "operator manual tooling tests" python3 -B scripts/test_operator_manual.py
 if ((status)); then
