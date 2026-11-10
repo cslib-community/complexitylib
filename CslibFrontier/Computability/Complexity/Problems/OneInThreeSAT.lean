@@ -77,7 +77,7 @@ theorem computableInPolyTime_clause_count :
       (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encUnary := by
   apply ComputableInPolyTime.countPWithInput
   · fun_prop
-  · fun_prop [Literal.eval, SAT.assignment]
+  · fun_prop [SAT.assignment]
 
 /-- An exact-one clause is verified in polynomial time. -/
 @[fun_prop]

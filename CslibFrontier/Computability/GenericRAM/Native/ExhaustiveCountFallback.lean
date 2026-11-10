@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
+import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import CslibFrontier.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
@@ -571,7 +572,7 @@ theorem computableInPolyTime_evalCNF_word :
     ComputableInPolyTime (fun p : CNF ℕ × List Bool => p.1.eval (fun v => p.2.getD v false))
       (encPair encCNF encBits) encBool := by
   unfold encCNF
-  fun_prop [CNF.eval, Clause.eval, Literal.eval]
+  fun_prop
 
 /-- Native resource certificate for `countCNFExhaustive` over `(encUnary, encCNF) → encNat`. -/
 noncomputable def countCNFExhaustiveCertificate :

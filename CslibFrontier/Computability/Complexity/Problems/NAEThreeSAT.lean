@@ -88,13 +88,13 @@ theorem computableInPolyTime_complementClause :
       (fun p : (CNF ℕ × List Bool) × Clause ℕ =>
         p.2.eval (fun v => !SAT.assignment p.1.1 p.1.2 v))
       (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encBool := by
-  fun_prop [Clause.eval, Literal.eval, SAT.assignment]
+  fun_prop [SAT.assignment]
 
 /-- NAE evaluation of an arbitrary certificate takes native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  fun_prop [verifier, CNF.evalNAE, CNF.eval]
+  fun_prop [verifier, CNF.evalNAE]
 
 /-- Unrestricted NAE satisfiability belongs to NP. -/
 theorem mem_NP : NAESAT ∈ NP encCNF :=

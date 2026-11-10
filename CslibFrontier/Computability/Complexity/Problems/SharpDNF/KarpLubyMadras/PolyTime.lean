@@ -86,7 +86,7 @@ private def dnfValue (c : Ctx) (φ : DNF ℕ) : Bool := DNF.eval (ctxValue c) φ
 private theorem computableInPolyTime_litValue : ComputableInPolyTime
     (fun p : Ctx × Literal ℕ => litValue p.1 p.2) (encPair encCtx (encPair encNat encBool))
     encBool := by
-  unfold litValue Literal.eval
+  unfold litValue
   fun_prop
 
 attribute [local fun_prop] computableInPolyTime_litValue
