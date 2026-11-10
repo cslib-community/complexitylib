@@ -140,7 +140,7 @@ structure CertificateLemma where
 /-- The certificate lemmas, applied when they are in scope. This module does not import them,
 which would make it depend on the machine layers. A lemma that requires an output encoding comes
 before the general lemma with the same head, and its module imports that lemma's module.
-`CslibFrontierTests/PolynomialGrowth.lean` checks that each lemma is proved in its `module`. -/
+The drift check in the `PolynomialGrowth` test checks that each lemma is proved in its `module`. -/
 def certificateLemmas : List CertificateLemma :=
   [{ name := `Turing.MultiTapeTM.ComputableInPolyTime.polyBounded
      head := `Turing.MultiTapeTM.ComputableInPolyTime
