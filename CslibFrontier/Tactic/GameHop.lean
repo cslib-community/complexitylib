@@ -147,17 +147,17 @@ open Cslib.Crypto Cslib.Probability
 
 /-! ### Expression inspection and head normalization helpers -/
 
-/-- Substitute top-level `let` bindings (and local `let` `fvar`s of `PMF`/`Game` type) at the
-root of `e` (definitionally equal by `zeta`/`zetaDelta`). -/
+/-- Head-beta-reduce and substitute top-level `let` bindings (and local `let` `fvar`s of
+`PMF`/`Game` type) at the root of `e` (definitionally equal by `beta`/`zeta`/`zetaDelta`). -/
 private meta partial def stripSpineLetsM (e : Expr) : MetaM Expr := do
-  match e.cleanupAnnotations with
+  match e.cleanupAnnotations.headBeta with
   | .letE _ _ val body _ => stripSpineLetsM (body.instantiate1 val)
   | .fvar fvarId =>
     let decl ← fvarId.getDecl
     if let some val := decl.value? then
       if (← whnfR decl.type).isAppOf ``PMF then
         return ← stripSpineLetsM val
-    return e.cleanupAnnotations
+    return e.cleanupAnnotations.headBeta
   | e' => return e'
 
 /-- Cast a proof `h : a' = b'` to `a = b` when `a ≡ a'` and `b ≡ b'` definitionally. -/
@@ -251,20 +251,31 @@ private meta partial def normalizeBindHead (e : Expr) : MetaM (Expr × Option Ex
       return (eFinal, ← chainEqOpt e eFinal hTot? hRest?)
     if p0.isAppOfArity ``PMF.map 4 then
       let margs := p0.getAppArgs
+      let α₀ := margs[0]!
       let g := margs[2]!
       let q := margs[3]!
-      let hMap ← mkAppM ``PMF.map_bind #[q, g, f]
-      let rhs := (← inferType hMap).getAppArgs[2]!
+      let hMap ← mkAppM ``PMF.bind_map #[q, g, f]
+      let xName := match g.cleanupAnnotations with
+        | .lam n _ _ _ => n
+        | _ => match f.cleanupAnnotations with
+          | .lam n _ _ _ => n
+          | _ => `x
+      let compName := if xName.isAnonymous then `x else xName
+      let newLam ← withLocalDecl compName .default α₀ fun x => do
+        let gx := (mkApp g x).headBeta
+        let fgx := (mkApp f gx).headBeta
+        mkLambdaFVars #[x] fgx
+      let rhs ← mkAppM ``PMF.bind #[q, newLam]
       let hMap ← castEqProof cur rhs hMap
       let hTot? ← chainEqOpt e rhs hCur? (some hMap)
       let (eFinal, hRest?) ← normalizeBindHead rhs
       return (eFinal, ← chainEqOpt e eFinal hTot? hRest?)
     if p0.isAppOfArity ``Cslib.ProbComp.eval 2 then
       let innerProg ← stripSpineLetsM (p0.getAppArgs[1]!)
-      if innerProg.isAppOfArity ``Functor.map 5 then
+      if innerProg.isAppOfArity ``Functor.map 6 then
         let fargs := innerProg.getAppArgs
-        let g := fargs[3]!
-        let m := fargs[4]!
+        let g := fargs[4]!
+        let m := fargs[5]!
         let hEvalMap ← mkAppM ``Cslib.ProbComp.eval_map #[g, m]
         let mapped := (← inferType hEvalMap).getAppArgs[2]!
         let curMapped ← mkAppM ``PMF.bind #[mapped, f]
@@ -314,7 +325,7 @@ private meta def parseStage? (e : Expr) : MetaM (Option ParsedStage) := do
     let f := args[3]!
     let bName := match f.cleanupAnnotations with
       | .lam n _ _ _ => n
-      | _ => `x
+      | _ => .anonymous
     return some { head := .pmfBind α β μ, binderType := α, binderName := bName, cont := f }
   if e0.isAppOfArity ``Bind.bind 6 then
     let args := e0.getAppArgs
@@ -325,7 +336,7 @@ private meta def parseStage? (e : Expr) : MetaM (Option ParsedStage) := do
       let f := args[5]!
       let bName := match f.cleanupAnnotations with
         | .lam n _ _ _ => n
-        | _ => `x
+        | _ => .anonymous
       return some { head := .pmfBind α β μ, binderType := α, binderName := bName, cont := f }
   if e0.isAppOfArity ``Game.runStatelessOracle 4 then
     let args := e0.getAppArgs
@@ -335,7 +346,7 @@ private meta def parseStage? (e : Expr) : MetaM (Option ParsedStage) := do
     let next := args[3]!
     let bName := match next.cleanupAnnotations with
       | .lam n _ _ _ => n
-      | _ => `x
+      | _ => .anonymous
     return some { head := .statelessOracle α o prog, binderType := α, binderName := bName,
                   cont := next }
   return none
@@ -553,9 +564,9 @@ private meta def tryOneStepSwapMatch? (target : ParsedStage) (e : Expr) (s₀ : 
   let (swapped, hSwap) ← swapAdjacentStages e s₀
   return some (swapped, hSwap)
 
-/-- Peel a single coupled stage from `goal`, using `reqName?` if provided.
-Returns `some newGoal` on success or `none` if the leading stages cannot be coupled. -/
-private meta def peelOneStage? (goal : MVarId) (reqName? : Option Name) :
+/-- Inner implementation of `peelOneStage?`; callers wrap this in `saveState`/`restore` so any
+speculative target replacement is rolled back cleanly when returning `none`. -/
+private meta def peelOneStageCore? (goal : MVarId) (reqName? : Option Name) :
     MetaM (Option MVarId) := goal.withContext do
   let origTarget ← instantiateMVars (← goal.getType)
   let some (mode, dec) ← classifyPeelGoal? origTarget | return none
@@ -645,6 +656,18 @@ private meta def peelOneStage? (goal : MVarId) (reqName? : Option Name) :
         let newT3 ← dec3.rebuild L3 R3
         return some (← g3.replaceTargetDefEq newT3)
     return some g3
+
+/-- Peel a single coupled stage from `goal`, using `reqName?` if provided.
+Returns `some newGoal` on success, or restores `Meta.SavedState` and returns `none` if the leading
+stages cannot be coupled (preventing leaked metavariables from head normalization or swaps). -/
+private meta def peelOneStage? (goal : MVarId) (reqName? : Option Name) :
+    MetaM (Option MVarId) := do
+  let saved ← saveState
+  match ← peelOneStageCore? goal reqName? with
+  | some newGoal => return some newGoal
+  | none =>
+    saved.restore
+    return none
 
 /-- Binder name or `_` placeholder accepted by `peel_binds`. -/
 syntax peelBinder := ident <|> "_"
@@ -835,18 +858,39 @@ private meta def HopMode.mkHopProp (m : HopMode) (a b ε : Expr) : MetaM Expr :=
   | .closeTo α =>
     mkAppOptM ``CloseTo #[some α, some a, some b, some ε]
 
-/-- Try elaborating `stx` at expected type `ty` without committing on failure. -/
-private meta def tryElabTyped? (stx : Syntax) (ty : Expr) : TacticM (Option Expr) := do
+/-- Run a speculative `TacticM` elaboration `act`, rolling back both `Tactic.SavedState` and
+`Core.State.messages` whenever `act` throws, logs an error message, or fails `check` (e.g. when
+`elabByTactic` logs an error and synthesizes `sorryAx` without throwing). -/
+private meta def runCleanProbe? {α : Type} (check : α → MetaM Bool) (act : TacticM α) :
+    TacticM (Option α) := do
   let saved ← saveState
+  let savedMsgs ← Core.getMessageLog
+  Core.resetMessageLog
   try
-    let e ← Term.withoutErrToSorry do
+    let res ← Term.withoutErrToSorry act
+    let probeMsgs ← Core.getMessageLog
+    if probeMsgs.hasErrors || !(← check res) then
+      saved.restore
+      Core.setMessageLog savedMsgs
+      return none
+    Core.setMessageLog (savedMsgs ++ probeMsgs)
+    return some res
+  catch _ =>
+    saved.restore
+    Core.setMessageLog savedMsgs
+    return none
+
+/-- Try elaborating `stx` at expected type `ty` without committing on failure, logged errors,
+`sorryAx`, or uninstantiated metavariables. -/
+private meta def tryElabTyped? (stx : Syntax) (ty : Expr) : TacticM (Option Expr) :=
+  runCleanProbe?
+    (fun e => do
+      let tyInst ← instantiateMVars ty
+      return !e.hasSorry && !tyInst.hasSorry && !e.hasExprMVar && !tyInst.hasExprMVar)
+    do
       let v ← Term.elabTermEnsuringType stx (some ty)
       Term.synthesizeSyntheticMVarsNoPostponing
       instantiateMVars v
-    return some e
-  catch _ =>
-    saved.restore
-    return none
 
 /-- Assign a zero-error hop proof to `hopGoal` from `hEq : a = b`. -/
 private meta def assignZeroEqHop (hopGoal : MVarId) (mode : HopMode)
@@ -971,22 +1015,14 @@ private meta def solveHopGoalWith (hopGoal : MVarId) (mode : HopMode)
   let hopTy ← instantiateMVars (← hopGoal.getType)
   -- Fast path: elaborate `uStx` once standalone and match endpoints at `.instances` transparency
   -- so distinct `def` games never trigger costly `whnf` unfolding.
-  let rawElab? ← do
-    let saved ← saveState
-    try
-      let e ← Term.withoutErrToSorry do
-        let v ← Term.elabTerm uStx none
-        Term.synthesizeSyntheticMVarsNoPostponing
-        instantiateMVars v
+  let rawElab? ← runCleanProbe?
+    (fun (e, ty) => pure (!e.hasSorry && !ty.hasSorry && !e.hasExprMVar && !ty.hasExprMVar))
+    do
+      let v ← Term.elabTerm uStx none
+      Term.synthesizeSyntheticMVarsNoPostponing
+      let e ← instantiateMVars v
       let ty ← instantiateMVars (← inferType e)
-      if e.hasExprMVar || ty.hasExprMVar then
-        saved.restore
-        pure none
-      else
-        pure (some (e, ty))
-    catch _ =>
-      saved.restore
-      pure none
+      return (e, ty)
   if let some (uExpr, uTy) := rawElab? then
     if ← tryAssignElaboratedHop hopGoal mode a b εMVar uExpr uTy then
       return

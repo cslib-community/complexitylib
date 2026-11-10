@@ -198,6 +198,72 @@ example (d₁ : PMF ℕ) (d₂ : PMF Bool) (d₃ : PMF (Fin 2))
     exact hgh a b c
   · rfl
 
+/-- Regression (1): binderless `peel_binds` rolls back `Meta.SavedState` cleanly when a subsequent
+stage normalizes (`ProbComp.eval (do ...)`) and fails to match, without leaking metavariables. -/
+example (μ : PMF ℕ) (m₁ : ProbComp ℕ) (m₂ : ProbComp Bool)
+    (k₁ : ℕ → ℕ → ProbComp Bool) (k₂ : ℕ → Bool → ProbComp Bool) (ε : ℝ≥0)
+    (h : ∀ a ∈ μ.support,
+      Game.advantage
+        (ProbComp.eval (do let x ← m₁; k₁ a x))
+        (ProbComp.eval (do let y ← m₂; k₂ a y)) ≤ ε) :
+    Game.advantage
+      (μ.bind fun a => ProbComp.eval (do let x ← m₁; k₁ a x))
+      (μ.bind fun a => ProbComp.eval (do let y ← m₂; k₂ a y)) ≤ ε := by
+  peel_binds
+  exact h a a_mem
+
+/-- Reducible identity alias for testing `dsimp` inside `game_trans ... using [by ...]`. -/
+abbrev idGame (g : Game) : Game := g
+
+/-- Regression (2): `game_trans ... using [by ..., ...]` rolls back failed forward `by ...` probes
+(including logged tactic errors and `sorryAx`) to `revTy`. -/
+example (g₀ g₁ g₂ : Game) (ε₀ ε₁ : ℝ≥0)
+    (h_rev : Game.advantage g₁ g₀ ≤ ε₀)
+    (h₁ : Game.advantage g₁ g₂ ≤ ε₁) :
+    Game.advantage g₀ g₂ ≤ ε₀ + ε₁ := by
+  game_trans [idGame g₁] using [by dsimp only [idGame]; exact h_rev, h₁]
+
+example (g₀ g₀' g₁ g₂ : Game) (ε₀ ε₁ : ℝ≥0)
+    (heq : g₀ = g₀')
+    (h_rev : Game.advantage g₁ g₀' ≤ ε₀)
+    (h₁ : Game.advantage g₁ g₂ ≤ ε₁) :
+    Game.advantage g₀ g₂ ≤ ε₀ + ε₁ := by
+  game_trans [g₁] using [by subst heq; exact h_rev, h₁]
+
+/-- Regression (3): `normalizeBindHead` pushes `(q.map g).bind f` via `PMF.bind_map` and
+`ProbComp.eval (g <$> m >>= k)` via `ProbComp.eval_map` + `PMF.bind_map`. -/
+example (q : PMF ℕ) (g : ℕ → Bool) (f₁ f₂ : Bool → Game) (ε : ℝ≥0)
+    (h : ∀ x ∈ q.support, Game.advantage (f₁ (g x)) (f₂ (g x)) ≤ ε) :
+    Game.advantage ((q.map g).bind f₁) ((q.map g).bind f₂) ≤ ε := by
+  peel_binds x
+  exact h x x_mem
+
+example (m : ProbComp ℕ) (g : ℕ → Bool) (k₁ k₂ : Bool → ProbComp Bool) (ε : ℝ≥0)
+    (h : ∀ x ∈ (ProbComp.eval m).support,
+      Game.advantage (ProbComp.eval (k₁ (g x))) (ProbComp.eval (k₂ (g x))) ≤ ε) :
+    Game.advantage
+      (ProbComp.eval (do let y ← g <$> m; k₁ y))
+      (ProbComp.eval (do let y ← g <$> m; k₂ y)) ≤ ε := by
+  peel_binds x
+  exact h x x_mem
+
+/-- Regression (4): `peel_binds` head-beta-reduces inline `Encryption.advantage (fun b n => do ...)`
+lambdas under `ProbComp.eval`. -/
+example (m : ℕ → ProbComp ℕ) (k : Bool → ℕ → ℕ → ProbComp Bool) (n : ℕ) (ε : ℝ≥0)
+    (h : ∀ x ∈ (ProbComp.eval (m n)).support,
+      Game.advantage (ProbComp.eval (k false n x)) (ProbComp.eval (k true n x)) ≤ ε) :
+    Encryption.advantage (fun b n => do let x ← m n; k b n x) n ≤ ε := by
+  peel_binds x
+  exact h x x_mem
+
+/-- Binder-name preference nit: when LHS continuation is a variable `f` and RHS has an explicit
+lambda `fun namedDraw => ...`, binderless `peel_binds` adopts `namedDraw`. -/
+example (μ : PMF ℕ) (f g : ℕ → Game) (ε : ℝ≥0)
+    (h : ∀ namedDraw ∈ μ.support, Game.advantage (f namedDraw) (g namedDraw) ≤ ε) :
+    Game.advantage (μ.bind f) (μ.bind fun namedDraw => g namedDraw) ≤ ε := by
+  peel_binds
+  exact h namedDraw namedDraw_mem
+
 /-! ### Negative tests and diagnostics -/
 
 -- `game_trans` reports `using` count mismatches clearly.
