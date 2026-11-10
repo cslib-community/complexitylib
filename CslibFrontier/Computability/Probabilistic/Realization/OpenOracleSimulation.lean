@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -204,24 +205,19 @@ theorem isOraclePPTOn_run [Finite Operation] {input : α ↪ List Bool}
       rintro a i ⟨cfg, state⟩ hi ⟨hcfg, hs, hsize⟩ next hnext
       cases hcontrol : cfg.tapes.state with
       | none =>
-        simp only [step, hcontrol] at hnext
-        obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+        supp_cases hnext [step, hcontrol] with rfl
         exact ⟨hcfg.mono le_rfl (Nat.le_succ i) le_rfl, hs, by
           dsimp only at hsize ⊢
           nlinarith⟩
       | some control =>
-        simp only [step, hcontrol] at hnext
-        obtain ⟨coin, _, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
+        supp_cases hnext [step, hcontrol] with ⟨coin, -, hnext⟩
         cases haction : machine.tr control cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols
             cfg.answerSymbols coin with
         | step action symbol move =>
-          simp only [haction] at hnext
-          obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+          supp_cases hnext [haction] with rfl
           exact ⟨hcfg.step action symbol move, hs, by dsimp only at hsize ⊢; nlinarith⟩
         | query channel control =>
-          simp only [haction] at hnext
-          obtain ⟨⟨answer, state'⟩, hanswer, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-          obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+          supp_cases hnext [haction] with ⟨⟨answer, state'⟩, hanswer, rfl⟩
           obtain ⟨hs', hreply, hgrowth⟩ := hpreserve a _ state hs (answer, state') hanswer
           have hb := hbudget a (cfg.channels channel).1 ((hcfg.query channel).trans hi.le)
           exact ⟨hcfg.receive channel control answer (hreply.trans hb), hs', by
