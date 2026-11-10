@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.UP
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Oracle
+import CslibFrontier.Computability.Complexity.Classes.Oracle.CanonicalReplay
 import CslibFrontier.Computability.Complexity.Classes.P.Complement
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Aggregation
 import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
@@ -37,11 +38,13 @@ The proof combines deterministic instruction-indexed oracle replay
    contributes `fYes q_i` when step `i` submits query `q_i` and the guessed reply bit is `true`,
    `fNo q_i` when step `i` submits `q_i` and the guessed reply bit is `false`, and `1` (for bit
    `false`) or `0` (for bit `true`) at local and halted instructions.
-2. Multiplying these step factors over `i < |answers|` produces a `#P` path count that is positive
-   if and only if `answers` equals the canonical transcript `machine.oracleReplies`. When `fYes`
-   and `fNo` are bounded by `1` (`A ∈ UP ∩ coUP`), the path count is `1` on the canonical
-   transcript and `0` on every other transcript.
-3. Summing over all transcript words of the polynomial clock length therefore certifies any
+2. Multiplying these step factors over `i < |answers|` produces a `#P` path count
+   (`Cslib.Complexity.replayPathCount`) that is positive if and only if `answers` equals the
+   canonical transcript `machine.oracleReplies`. When `fYes` and `fNo` are bounded by `1`
+   (`A ∈ UP ∩ coUP`), the path count is `1` on the canonical transcript and `0` on every other
+   transcript.
+3. Summing over all transcript words of the polynomial clock length
+   (`Cslib.Complexity.replayWeightedSum`) therefore certifies any
    polynomial-time predicate of `(a, output (f a))` in `NP` (or `UP`). Applying this to the output
    bits of a `P^A` decider yields `P^A ⊆ NP ∩ coNP` (and `P^A ⊆ UP ∩ coUP`), and applying it to an
    `NP^A` verifier on `encPair enc encBits` yields `NP^A = NP`.
@@ -125,104 +128,6 @@ theorem union_mem_PWithOracle {L₁ L₂ : Set α} (h₁ : L₁ ∈ PWithOracle 
 theorem mem_PWithOracle_compl_self (A : Set (List Bool)) : Aᶜ ∈ PWithOracle A encBits :=
   compl_mem_PWithOracle (mem_PWithOracle_self A)
 
-/-! ### Step-certified oracle replay in `#P` -/
-
-section Replay
-
-variable {k : ℕ} {Control Operation : Type} [DecidableEq Operation]
-
-/-- The `#P` sum over all transcripts of length `T a` whose replayed output satisfies `P`. -/
-private def replayAcceptCount (machine : MultiTapePTM k Bool Control Operation)
-    (input : α → List Bool) (T : α → ℕ) (fYes fNo : List Bool → ℕ)
-    (P : α × List Bool → Bool) (a : α) : ℕ :=
-  ∑ w : Fin (T a) → Bool,
-    replayPathCount machine input fYes fNo (a, List.ofFn w) *
-      if P (a, machine.replayOutput (input a) (List.ofFn w)) then 1 else 0
-
-private theorem replayAcceptCount_mem_SharpP [Finite Control] [Finite Operation]
-    (machine : MultiTapePTM k Bool Control Operation) {input : α → List Bool}
-    {T : α → ℕ} {fYes fNo : List Bool → ℕ} {P : α × List Bool → Bool}
-    (hinput : ComputableInPolyTime input enc encBits)
-    (hT : ComputableInPolyTime T enc encUnary)
-    (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits)
-    (hP : ComputableInPolyTime P (encPair enc encBits) encBool) :
-    replayAcceptCount machine input T fYes fNo P ∈ SharpP enc := by
-  have hpath := replayPathCount_mem_SharpP machine hinput hYes hNo
-  have hout : ComputableInPolyTime
-      (fun x : α × List Bool => P (x.1, machine.replayOutput (input x.1) x.2))
-      (encPair enc encBits) encBool := by
-    have hpair : ComputableInPolyTime
-        (fun x : α × List Bool => (input x.1, x.2))
-        (encPair enc encBits) (encPair encBits encBits) := by fun_prop
-    exact hP.comp ((ComputableInPolyTime.fst enc encBits).prod
-      (machine.computableInPolyTime_replayOutput.comp hpair))
-  have hmask : (fun x : α × List Bool =>
-      if P (x.1, machine.replayOutput (input x.1) x.2) then 1 else 0) ∈
-      SharpP (encPair enc encBits) :=
-    SharpP.ite_mem hout SharpP.one_mem SharpP.zero_mem
-  exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hmask) hT
-
-private theorem replayAcceptCount_pos_iff (machine : MultiTapePTM k Bool Control Operation)
-    (input : α → List Bool) (T : α → ℕ) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
-    (hYes : ∀ q, g q = true ↔ 0 < fYes q) (hNo : ∀ q, g q = false ↔ 0 < fNo q)
-    (P : α × List Bool → Bool) (a : α) :
-    0 < replayAcceptCount machine input T fYes fNo P a ↔
-      P (a, machine.replayOutput (input a) (machine.oracleReplies g (T a) (input a))) = true := by
-  unfold replayAcceptCount
-  rw [Finset.sum_pos_iff]
-  simp only [mem_univ, true_and, CanonicallyOrderedAdd.mul_pos,
-    replayPathCount_pos_iff machine input hYes hNo, List.length_ofFn]
-  constructor
-  · rintro ⟨w, hw, hP⟩
-    rw [← hw]
-    cases h : P (a, machine.replayOutput (input a) (List.ofFn w))
-    · simp [h] at hP
-    · rfl
-  · intro hP
-    have hlen : (machine.oracleReplies g (T a) (input a)).length = T a :=
-      machine.length_oracleReplies g (T a) (input a)
-    have hw₀ : List.ofFn (fun i : Fin (T a) =>
-        (machine.oracleReplies g (T a) (input a))[i.val]'(by omega)) =
-        machine.oracleReplies g (T a) (input a) :=
-      (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
-    refine ⟨fun i => (machine.oracleReplies g (T a) (input a))[i.val]'(by omega), hw₀, ?_⟩
-    rw [hw₀, hP]
-    decide
-
-private theorem replayAcceptCount_eq_ite_of_le_one
-    (machine : MultiTapePTM k Bool Control Operation)
-    (input : α → List Bool) (T : α → ℕ) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
-    (hYes_le : ∀ q, fYes q ≤ 1) (hNo_le : ∀ q, fNo q ≤ 1)
-    (hYes : ∀ q, g q = true ↔ 0 < fYes q) (hNo : ∀ q, g q = false ↔ 0 < fNo q)
-    (P : α × List Bool → Bool) (a : α) :
-    replayAcceptCount machine input T fYes fNo P a =
-      if P (a, machine.replayOutput (input a) (machine.oracleReplies g (T a) (input a))) then 1
-      else 0 := by
-  have hlen : (machine.oracleReplies g (T a) (input a)).length = T a :=
-    machine.length_oracleReplies g (T a) (input a)
-  let w₀ : Fin (T a) → Bool :=
-    fun i => (machine.oracleReplies g (T a) (input a))[i.val]'(by omega)
-  have hw₀ : List.ofFn w₀ = machine.oracleReplies g (T a) (input a) :=
-    (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
-  unfold replayAcceptCount
-  rw [Finset.sum_eq_single w₀]
-  · have hpos : 0 < replayPathCount machine input fYes fNo (a, List.ofFn w₀) := by
-      rw [replayPathCount_pos_iff machine input hYes hNo, List.length_ofFn]
-      exact hw₀
-    have hle := replayPathCount_le_one machine input hYes_le hNo_le (a, List.ofFn w₀)
-    have heq : replayPathCount machine input fYes fNo (a, List.ofFn w₀) = 1 := by omega
-    rw [heq, one_mul, hw₀]
-  · intro w _ hw
-    have hnot : ¬0 < replayPathCount machine input fYes fNo (a, List.ofFn w) := by
-      rw [replayPathCount_pos_iff machine input hYes hNo, List.length_ofFn, ← hw₀]
-      exact fun h => hw (List.ofFn_injective h)
-    have hz : replayPathCount machine input fYes fNo (a, List.ofFn w) = 0 := by omega
-    rw [hz, zero_mul]
-  · intro hmem
-    exact False.elim (hmem (mem_univ w₀))
-
-end Replay
-
 /-! ### Oracle lowness of `NP ∩ coNP` -/
 
 open Classical in
@@ -237,29 +142,25 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_NP {f : α → β} {P : α ×
     {a | P (a, output (f a)) = true} ∈ NP enc := by
   obtain ⟨fYes, hYes_mem, hYes⟩ := mem_NP_iff_exists_SharpP.mp hA_np
   obtain ⟨fNo, hNo_mem, hNo⟩ := mem_NP_iff_exists_SharpP.mp hA_conp
-  obtain ⟨program, hcert, hprogram⟩ := hf
-  obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  let g : List Bool → Bool := fun q => decide (q ∈ A)
-  have hYes' (q : List Bool) : g q = true ↔ 0 < fYes q := by
-    simp only [g, decide_eq_true_eq, hYes q]
-  have hNo' (q : List Bool) : g q = false ↔ 0 < fNo q := by
-    simp only [g, decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo q]
-  let T : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hT : ComputableInPolyTime T enc encUnary :=
-    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
+  obtain ⟨k, m, machine, p, hout⟩ := hf.exists_replayOutput
+  have hYes' (q : List Bool) : decide (q ∈ A) = true ↔ 0 < fYes q := by
+    simp only [decide_eq_true_eq, hYes q]
+  have hNo' (q : List Bool) : decide (q ∈ A) = false ↔ 0 < fNo q := by
+    simp only [decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo q]
+  let T : α → ℕ := fun a => p.eval (enc a).length
+  have hT : ComputableInPolyTime T enc encUnary := by
+    dsimp only [T]
+    fun_prop
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
     ComputableInPolyTime.id'
+  -- weight each transcript by the indicator of `P` on its replayed output
+  let F : α × List Bool → ℕ := fun x => if P x then 1 else 0
+  have hF : F ∈ SharpP (encPair enc encBits) := SharpP.ite_mem hP SharpP.one_mem SharpP.zero_mem
   refine mem_NP_iff_exists_SharpP.mpr
-    ⟨replayAcceptCount machine (fun a => enc a) T fYes fNo P,
-      replayAcceptCount_mem_SharpP machine hinput hT hYes_mem hNo_mem hP, fun a => ?_⟩
-  rw [replayAcceptCount_pos_iff machine (fun a => enc a) T hYes' hNo' P a,
-    machine.replayOutput_oracleReplies g (T a) (enc a)]
-  have hrun_a := hrun a (languageOracle A)
-  rw [hprogram a] at hrun_a
-  change P (a, output (f a)) = true ↔ _
-  rw [← hrun_a]
-  rfl
+    ⟨replayWeightedSum machine (fun a => enc a) T fYes fNo F,
+      replayWeightedSum_mem_SharpP machine hinput hT hYes_mem hNo_mem hF, fun a => ?_⟩
+  rw [replayWeightedSum_pos_iff machine (fun a => enc a) T hYes' hNo' F a, hout a]
+  by_cases h : P (a, output (f a)) = true <;> simp [F, h]
 
 /-- **Polynomial-time predicates of word-valued `FP^(NP ∩ coNP)` functions lie in `NP`.** -/
 theorem ComputableInPolyTimeWithOracle.mem_NP {f : α → List Bool} {P : α × List Bool → Bool}
@@ -376,15 +277,10 @@ theorem forall_NPWithOracle_eq_NP_iff :
 
 /-- **The union of `NP^A` over `A ∈ NP ∩ coNP` is `NP`.** -/
 theorem iUnion_NPWithOracle_NP_inter_coNP (enc : α ↪ List Bool) :
-    (⋃ A ∈ NP encBits ∩ coNP encBits, NPWithOracle A enc) = NP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (NPWithOracle_eq_NP_of_mem_NP_of_mem_coNP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    refine Set.mem_iUnion₂.mpr ⟨∅, ⟨P_subset_NP hempty, P_subset_coNP hempty⟩, ?_⟩
-    exact NP_subset_NPWithOracle ∅ enc hL
+    (⋃ A ∈ NP encBits ∩ coNP encBits, NPWithOracle A enc) = NP enc :=
+  (Set.iUnion₂_congr fun _ hA => NPWithOracle_eq_NP_of_mem_NP_of_mem_coNP hA.1 hA.2 enc).trans
+    (Set.biUnion_const (s := NP encBits ∩ coNP encBits)
+      ⟨∅, P_subset_NP empty_mem_P, P_subset_coNP empty_mem_P⟩ _)
 
 /-- **`P = NP` if and only if every `NP` oracle is low for `P`.** -/
 theorem P_eq_NP_iff_forall_PWithOracle_eq_P :
@@ -426,40 +322,35 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_UP {f : α → β} {P : α ×
     {a | P (a, output (f a)) = true} ∈ UP enc := by
   obtain ⟨fYes, hYes_mem, hYes_le, hYes_iff⟩ := hA_up
   obtain ⟨fNo, hNo_mem, hNo_le, hNo_iff⟩ := hA_coup
-  obtain ⟨program, hcert, hprogram⟩ := hf
-  obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  let g : List Bool → Bool := fun q => decide (q ∈ A)
-  have hYes' (q : List Bool) : g q = true ↔ 0 < fYes q := by
+  obtain ⟨k, m, machine, p, hout⟩ := hf.exists_replayOutput
+  have hYes' (q : List Bool) : decide (q ∈ A) = true ↔ 0 < fYes q := by
     have hle := hYes_le q
     rw [show (0 < fYes q) ↔ fYes q = 1 by omega]
-    simp only [g, decide_eq_true_eq, hYes_iff q]
-  have hNo' (q : List Bool) : g q = false ↔ 0 < fNo q := by
+    simp only [decide_eq_true_eq, hYes_iff q]
+  have hNo' (q : List Bool) : decide (q ∈ A) = false ↔ 0 < fNo q := by
     have hle := hNo_le q
     rw [show (0 < fNo q) ↔ fNo q = 1 by omega]
-    simp only [g, decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo_iff q]
-  let T : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hT : ComputableInPolyTime T enc encUnary :=
-    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
+    simp only [decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo_iff q]
+  let T : α → ℕ := fun a => p.eval (enc a).length
+  have hT : ComputableInPolyTime T enc encUnary := by
+    dsimp only [T]
+    fun_prop
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
     ComputableInPolyTime.id'
-  refine ⟨replayAcceptCount machine (fun a => enc a) T fYes fNo P,
-    replayAcceptCount_mem_SharpP machine hinput hT hYes_mem hNo_mem hP,
+  -- weight each transcript by the indicator of `P` on its replayed output
+  let F : α × List Bool → ℕ := fun x => if P x then 1 else 0
+  have hF : F ∈ SharpP (encPair enc encBits) := SharpP.ite_mem hP SharpP.one_mem SharpP.zero_mem
+  have heval (a : α) : replayWeightedSum machine (fun a => enc a) T fYes fNo F a =
+      if P (a, output (f a)) then 1 else 0 := by
+    rw [replayWeightedSum_eq_of_le_one machine (fun a => enc a) T hYes_le hNo_le hYes' hNo' F a,
+      hout a]
+  refine ⟨replayWeightedSum machine (fun a => enc a) T fYes fNo F,
+    replayWeightedSum_mem_SharpP machine hinput hT hYes_mem hNo_mem hF,
     fun a => ?_, fun a => ?_⟩
-  · rw [replayAcceptCount_eq_ite_of_le_one machine (fun a => enc a) T hYes_le hNo_le hYes' hNo' P a]
+  · rw [heval a]
     split_ifs <;> omega
-  · rw [replayAcceptCount_eq_ite_of_le_one machine (fun a => enc a) T hYes_le hNo_le hYes' hNo' P a,
-      machine.replayOutput_oracleReplies g (T a) (enc a)]
-    have hrun_a := hrun a (languageOracle A)
-    rw [hprogram a] at hrun_a
-    change P (a, output (f a)) = true ↔ _
-    rw [← hrun_a]
-    change P (a, OracleComp.interpret (m := Id) (fun q => [g q.2])
-      (machine.run (pure false) (fun op word => OracleComp.query (op, word)) (T a) (enc a))) =
-        true ↔ _
-    cases P (a, OracleComp.interpret (m := Id) (fun q => [g q.2])
-      (machine.run (pure false) (fun op word => OracleComp.query (op, word)) (T a) (enc a))) <;>
-      decide
+  · rw [heval a]
+    by_cases h : P (a, output (f a)) = true <;> simp [h]
 
 /-- **Polynomial-time predicates of word-valued `FP^(UP ∩ coUP)` functions lie in `UP`.** -/
 theorem ComputableInPolyTimeWithOracle.mem_UP {f : α → List Bool} {P : α × List Bool → Bool}

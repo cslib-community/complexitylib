@@ -219,8 +219,7 @@ theorem DescribedNetwork.contraction_entry {R : Type*} [CommSemiring R]
   simp only [wordBits, ExplicitTensorNetwork.portBits]
   congr 1
   refine List.map_congr_left fun v _ => ?_
-  congr 2
-  funext i
+  congr 2 with i : 1
   exact getD_ofFn x i
 
 /-! ### Writing a tensor network out -/

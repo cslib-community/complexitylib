@@ -319,22 +319,22 @@ variable {T : Type} [AddCommMonoid T] [PartialOrder T] [IsOrderedAddMonoid T]
 private def unmarked (P : Fin t × κ → Fin t × κ → Bool) : ℕ :=
   (Finset.univ.filter fun p : (Fin t × κ) × (Fin t × κ) => P p.1 p.2 = false).card
 
+/-- Setting one `false` entry `a` of a Boolean table `f` to `true` removes exactly `a` from its
+`false` entries. Shared by `unmarked_markPair` and `blockUnmarked_markPair`. -/
+private theorem card_filter_eq_false_mark {α : Type*} [Fintype α] [DecidableEq α]
+    {f g : α → Bool} {a : α} (ha : f a = false) (hg : ∀ p, g p = if p = a then true else f p) :
+    (Finset.univ.filter fun p => f p = false).card =
+      (Finset.univ.filter fun p => g p = false).card + 1 := by
+  have : (Finset.univ.filter fun p => g p = false) =
+      (Finset.univ.filter fun p => f p = false).erase a := by
+    ext p
+    by_cases hp : p = a <;> simp [hg, hp]
+  rw [this, Finset.card_erase_add_one (by simpa using ha)]
+
 private theorem unmarked_markPair {P : Fin t × κ → Fin t × κ → Bool} {x y : Fin t × κ}
     (h : P x y = false) : unmarked P = unmarked (NegTri.markPair P x y) + 1 := by
   rw [unmarked, unmarked]
-  have : (Finset.univ.filter fun p : (Fin t × κ) × (Fin t × κ) =>
-        NegTri.markPair P x y p.1 p.2 = false) =
-      (Finset.univ.filter fun p : (Fin t × κ) × (Fin t × κ) => P p.1 p.2 = false).erase (x, y) := by
-    ext ⟨x', y'⟩
-    rw [Finset.mem_filter, Finset.mem_erase, Finset.mem_filter]
-    simp only [NegTri.markPair, Finset.mem_univ, true_and, ne_eq, Prod.mk.injEq]
-    by_cases hxy : x' = x ∧ y' = y
-    · obtain ⟨rfl, rfl⟩ := hxy
-      simp
-    · rw [ite_eq_right hxy]
-      exact ⟨fun h => ⟨hxy, h⟩, fun h => h.2⟩
-  rw [this, Finset.card_erase_of_mem (by simpa using h), Nat.sub_add_cancel]
-  exact Finset.card_pos.2 ⟨(x, y), by simpa using h⟩
+  exact card_filter_eq_false_mark (a := (x, y)) h fun _ => by simp [NegTri.markPair, Prod.ext_iff]
 
 private theorem cost_drainBlock_le (oracle : {ι : Type} → Q ι → ι)
     (weight : {ι : Type} → Q ι → T)
@@ -439,19 +439,7 @@ private theorem blockUnmarked_markPair {P : Fin t × κ → Fin t × κ → Bool
     {i j : κ} (h : P (a, i) (b, j) = false) :
     blockUnmarked P a b = blockUnmarked (NegTri.markPair P (a, i) (b, j)) a b + 1 := by
   rw [blockUnmarked, blockUnmarked]
-  have : (Finset.univ.filter fun p : κ × κ =>
-        NegTri.markPair P (a, i) (b, j) (a, p.1) (b, p.2) = false) =
-      (Finset.univ.filter fun p : κ × κ => P (a, p.1) (b, p.2) = false).erase (i, j) := by
-    ext ⟨i', j'⟩
-    simp only [NegTri.markPair, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_erase,
-      ne_eq, Prod.mk.injEq]
-    by_cases hij : i' = i ∧ j' = j
-    · obtain ⟨rfl, rfl⟩ := hij
-      simp
-    · rw [ite_eq_right hij]
-      exact ⟨fun h => ⟨hij, h⟩, fun h => h.2⟩
-  rw [this, Finset.card_erase_of_mem (by simpa using h), Nat.sub_add_cancel]
-  exact Finset.card_pos.2 ⟨(i, j), by simpa using h⟩
+  exact card_filter_eq_false_mark (a := (i, j)) h fun _ => by simp [NegTri.markPair, Prod.ext_iff]
 
 private theorem drainBlock_spec (oracle : {ι : Type} → Q ι → ι)
     {find : Matrix κ κ (MinTropical R) → Matrix κ κ (MinTropical R) →

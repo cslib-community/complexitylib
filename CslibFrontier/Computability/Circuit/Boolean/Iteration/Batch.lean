@@ -22,7 +22,7 @@ import Mathlib.Tactic.Positivity
 A circuit with `r * n` inputs and outputs applies `f^[T]` to each of `r` independent `n`-bit
 states (`blockMap`). All members share one checkpoint table: the orbit prefixes of all members
 are looked up in one batched dictionary, and each member finishes on its own. For `r ≤ 2 ^ n` and
-`0 < L ≤ 2 ^ n` this costs at most `100000 * batchBudget n s (2 ^ n) r L` gates
+`0 < L` this costs at most `100000 * batchBudget n s (2 ^ n) r L` gates
 (`batched_fixed_power`), where
 `batchBudget n s M r L = r * L * s + (n + 1) ^ 3 * (r * L + M / L + 1)`;
 the storage term `M / L` is paid once rather than `r` times. Balancing `L` gives
@@ -290,8 +290,7 @@ lie in `S`, one shared checkpoint table costs `S.card / L` in the batched tradeo
 not be invariant: later states may leave it. The circuit is only required to be correct on the
 displayed input domain. All gates are charged; the time to construct the circuit is not bounded. -/
 theorem batched_fixed_power_on_prefixes (c : Circuit signature n n)
-    (S : Finset (BitString n)) (r T L : ℕ) (hrN : r ≤ 2 ^ n) (hL : 0 < L)
-    (hLN : L ≤ 2 ^ n) :
+    (S : Finset (BitString n)) (r T L : ℕ) (hrN : r ≤ 2 ^ n) (hL : 0 < L) :
     ∃ out : Circuit signature (r * n) (r * n),
       out.ComputesOn interpretation
         {x | ∀ member : Fin r, ∀ i : Fin L,
@@ -299,6 +298,30 @@ theorem batched_fixed_power_on_prefixes (c : Circuit signature n n)
         (blockMap (c.eval interpretation)^[T] r) ∧
       out.size ≤ 100000 * batchBudget n c.size S.card r L := by
   classical
+  wlog hLN : L ≤ 2 ^ n generalizing L
+  · -- A longer prefix only strengthens the promise, and for a nonempty batch the budget at
+    -- `L = 2 ^ n` is at most the budget at `L`.
+    have hNL : 2 ^ n < L := not_le.1 hLN
+    rcases Nat.eq_zero_or_pos r with rfl | hr
+    · refine ⟨(c.iterate T).replicate 0, fun x _ => ?_, ?_⟩
+      · rw [Circuit.eval_replicate]
+        funext i
+        simp only [blockMap, Circuit.eval_iterate]
+      · rw [Circuit.size_replicate, Nat.zero_mul]
+        exact Nat.zero_le _
+    obtain ⟨out, hout, hs⟩ := this (2 ^ n) (Nat.two_pow_pos n) le_rfl
+    refine ⟨out, fun x hx => hout fun member i => hx member ⟨i, i.isLt.trans hNL⟩, hs.trans ?_⟩
+    have hcard : S.card ≤ 2 ^ n := by simpa using Finset.card_le_univ S
+    have hdiv : S.card / 2 ^ n ≤ 1 := Nat.div_le_of_le_mul (by omega)
+    have hrL : r * (2 ^ n + 1) ≤ r * L := Nat.mul_le_mul_left r hNL
+    rw [Nat.mul_add_one] at hrL
+    have h1 : r * 2 ^ n * c.size ≤ r * L * c.size :=
+      Nat.mul_le_mul_right c.size (Nat.mul_le_mul_left r hNL.le)
+    have h2 : (n + 1) ^ 3 * (r * 2 ^ n + S.card / 2 ^ n + 1) ≤
+        (n + 1) ^ 3 * (r * L + S.card / L + 1) :=
+      Nat.mul_le_mul_left _ (by have := Nat.zero_le (S.card / L); omega)
+    unfold batchBudget
+    exact Nat.mul_le_mul_left 100000 (Nat.add_le_add h1 h2)
   let f := c.eval interpretation
   by_cases hT : T < 2 * L
   · refine ⟨(c.iterate T).replicate r, ?_, ?_⟩
@@ -347,13 +370,13 @@ theorem batched_fixed_power_on_prefixes (c : Circuit signature n n)
 by all `r` trajectories. The batch may have more members than `S` has states. -/
 theorem batched_fixed_power_on (c : Circuit signature n n) (S : Finset (BitString n))
     (r T L : ℕ) (hS : ∀ x ∈ S, c.eval interpretation x ∈ S)
-    (hrN : r ≤ 2 ^ n) (hL : 0 < L) (hLN : L ≤ 2 ^ n) :
+    (hrN : r ≤ 2 ^ n) (hL : 0 < L) :
     ∃ out : Circuit signature (r * n) (r * n),
       out.ComputesOn interpretation
         {x | ∀ member : Fin r, directProductInput x member ∈ S}
         (blockMap (c.eval interpretation)^[T] r) ∧
       out.size ≤ 100000 * batchBudget n c.size S.card r L := by
-  obtain ⟨out, hout, hs⟩ := batched_fixed_power_on_prefixes c S r T L hrN hL hLN
+  obtain ⟨out, hout, hs⟩ := batched_fixed_power_on_prefixes c S r T L hrN hL
   refine ⟨out, ?_, hs⟩
   intro x hx
   apply hout
@@ -365,17 +388,17 @@ theorem batched_fixed_power_on (c : Circuit signature n n) (S : Finset (BitStrin
     | succ t ih => simpa only [Function.iterate_succ_apply'] using hS _ ih
   exact hiter i.val
 
-/-- **Batched fixed powers.** For `r ≤ 2 ^ n` and `0 < L ≤ 2 ^ n`, some circuit of size at most
+/-- **Batched fixed powers.** For `r ≤ 2 ^ n` and `0 < L`, some circuit of size at most
 `100000 * batchBudget n c.size (2 ^ n) r L` applies `T` steps of `c` to each of `r` independent
 states. -/
 theorem batched_fixed_power (c : Circuit signature n n) (r T L : ℕ) (hrN : r ≤ 2 ^ n)
-    (hL : 0 < L) (hLN : L ≤ 2 ^ n) :
+    (hL : 0 < L) :
     ∃ out : Circuit signature (r * n) (r * n),
       out.Computes interpretation (blockMap (c.eval interpretation)^[T] r) ∧
       out.size ≤ 100000 * batchBudget n c.size (2 ^ n) r L := by
   classical
   obtain ⟨out, hout, hs⟩ := batched_fixed_power_on c Finset.univ r T L
-    (fun _ _ => Finset.mem_univ _) hrN hL hLN
+    (fun _ _ => Finset.mem_univ _) hrN hL
   refine ⟨out, fun x => hout (fun _ => Finset.mem_univ _), ?_⟩
   simpa only [Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] using hs
 
@@ -390,14 +413,13 @@ theorem optimizedBatchBudget_one (n s M : ℕ) :
 
 private theorem exists_batchBudget_le_optimizedBatchBudget (n s M r : ℕ) (hr : 0 < r)
     (hM : M ≤ 2 ^ n) :
-    ∃ L : ℕ, 0 < L ∧ L ≤ 2 ^ n ∧
-      (batchBudget n s M r L : ℝ) ≤ 3 * optimizedBatchBudget n s M r := by
+    ∃ L : ℕ, 0 < L ∧ (batchBudget n s M r L : ℝ) ≤ 3 * optimizedBatchBudget n s M r := by
   have hb : (n + 1) ^ 3 ≤ r * (s + (n + 1) ^ 3) := by
     have := Nat.mul_le_mul_right (s + (n + 1) ^ 3) hr
     omega
-  obtain ⟨L, hL, hLN, h⟩ := exists_le_three_mul_add_sqrt (r * (s + (n + 1) ^ 3)) ((n + 1) ^ 3)
+  obtain ⟨L, hL, -, h⟩ := exists_le_three_mul_add_sqrt (r * (s + (n + 1) ^ 3)) ((n + 1) ^ 3)
     M (2 ^ n) (by positivity) hb hM (by positivity)
-  refine ⟨L, hL, hLN, ?_⟩
+  refine ⟨L, hL, ?_⟩
   have he : batchBudget n s M r L = r * (s + (n + 1) ^ 3) * L + (n + 1) ^ 3 * (M / L + 1) := by
     unfold batchBudget
     ring
@@ -414,9 +436,9 @@ theorem batched_fixed_power_on_optimized (c : Circuit signature n n)
         (blockMap (c.eval interpretation)^[T] r) ∧
       (out.size : ℝ) ≤ 300000 * optimizedBatchBudget n c.size S.card r := by
   have hcard : S.card ≤ 2 ^ n := by simpa using Finset.card_le_univ S
-  obtain ⟨L, hL, hLN, hopt⟩ := exists_batchBudget_le_optimizedBatchBudget n c.size S.card r hr
+  obtain ⟨L, hL, hopt⟩ := exists_batchBudget_le_optimizedBatchBudget n c.size S.card r hr
     hcard
-  obtain ⟨out, hout, hs⟩ := batched_fixed_power_on c S r T L hS hrN hL hLN
+  obtain ⟨out, hout, hs⟩ := batched_fixed_power_on c S r T L hS hrN hL
   refine ⟨out, hout, ?_⟩
   have hs' : (out.size : ℝ) ≤ 100000 * (batchBudget n c.size S.card r L : ℝ) := by
     exact_mod_cast hs
@@ -428,9 +450,9 @@ theorem batched_fixed_power_optimized (c : Circuit signature n n) (r T : ℕ) (h
     ∃ out : Circuit signature (r * n) (r * n),
       out.Computes interpretation (blockMap (c.eval interpretation)^[T] r) ∧
       (out.size : ℝ) ≤ 300000 * optimizedBatchBudget n c.size (2 ^ n) r := by
-  obtain ⟨L, hL, hLN, hopt⟩ := exists_batchBudget_le_optimizedBatchBudget n c.size (2 ^ n) r hr
+  obtain ⟨L, hL, hopt⟩ := exists_batchBudget_le_optimizedBatchBudget n c.size (2 ^ n) r hr
     le_rfl
-  obtain ⟨out, hout, hs⟩ := batched_fixed_power c r T L hrN hL hLN
+  obtain ⟨out, hout, hs⟩ := batched_fixed_power c r T L hrN hL
   refine ⟨out, hout, ?_⟩
   have hs' : (out.size : ℝ) ≤ 100000 * (batchBudget n c.size (2 ^ n) r L : ℝ) := by
     exact_mod_cast hs
@@ -438,16 +460,16 @@ theorem batched_fixed_power_optimized (c : Circuit signature n n) (r T : ℕ) (h
 
 /-! ### Batched input times -/
 
-/-- **Batched input times.** For `r ≤ 2 ^ n` and `0 < L ≤ 2 ^ n`, some circuit of size at most
+/-- **Batched input times.** For `r ≤ 2 ^ n` and `0 < L`, some circuit of size at most
 `m * (100000 * batchBudget n c.size (2 ^ n) r L + 4 * (r * n))` iterates `c` on each of `r`
 independent states for that member's own number of steps, given by `m` input bits. -/
 theorem batched_variable_time (c : Circuit signature n n) (r m L : ℕ) (hrN : r ≤ 2 ^ n)
-    (hL : 0 < L) (hLN : L ≤ 2 ^ n) :
+    (hL : 0 < L) :
     ∃ out : Circuit signature (r * (n + m)) (r * n),
       out.Computes interpretation (blockMap (inputTimeIterate (c.eval interpretation) m) r) ∧
       out.size ≤ m * (100000 * batchBudget n c.size (2 ^ n) r L + 4 * (r * n)) :=
   exists_circuit_blockMap (synthesis_batched_binary_powering (c.eval interpretation) _
-    (fun j _ => batched_fixed_power c r (2 ^ j) L hrN hL hLN) (inputs (r * (n + m)))
+    (fun j _ => batched_fixed_power c r (2 ^ j) L hrN hL) (inputs (r * (n + m)))
     (fun x member i => directProductInput x member (Fin.castAdd m i))
     (fun x member j => directProductInput x member (Fin.natAdd n j))
     (fun _ _ => ⟨_, rfl⟩) fun _ _ => ⟨_, rfl⟩)
@@ -458,9 +480,9 @@ theorem batched_variable_time_optimized (c : Circuit signature n n) (r m : ℕ) 
     ∃ out : Circuit signature (r * (n + m)) (r * n),
       out.Computes interpretation (blockMap (inputTimeIterate (c.eval interpretation) m) r) ∧
       (out.size : ℝ) ≤ m * (300000 * optimizedBatchBudget n c.size (2 ^ n) r + 4 * (r * n)) := by
-  obtain ⟨L, hL, hLN, hopt⟩ := exists_batchBudget_le_optimizedBatchBudget n c.size (2 ^ n) r hr
+  obtain ⟨L, hL, hopt⟩ := exists_batchBudget_le_optimizedBatchBudget n c.size (2 ^ n) r hr
     le_rfl
-  obtain ⟨out, hout, hs⟩ := batched_variable_time c r m L hrN hL hLN
+  obtain ⟨out, hout, hs⟩ := batched_variable_time c r m L hrN hL
   refine ⟨out, hout, ?_⟩
   have hs' : (out.size : ℝ) ≤
       m * (100000 * (batchBudget n c.size (2 ^ n) r L : ℝ) + 4 * (r * n)) := by

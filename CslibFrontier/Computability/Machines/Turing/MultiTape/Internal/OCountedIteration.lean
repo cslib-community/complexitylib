@@ -28,7 +28,6 @@ No unary representation of the runtime count is materialized.
 namespace Turing.MultiTapeTM.ComputableInO
 
 open Internal.BinaryCounter
-open ComputableTidilyInO (length_encNat_mono)
 
 variable {γ β : Type} [Inhabited β] {encIn : γ ↪ List Bool} {encB : β ↪ List Bool}
 

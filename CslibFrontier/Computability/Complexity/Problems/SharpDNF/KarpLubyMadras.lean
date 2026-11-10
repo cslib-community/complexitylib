@@ -14,6 +14,7 @@ public import CslibFrontier.Languages.Probabilistic.Repeat
 import CslibFrontier.Probability.Chernoff
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.Product
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.GCongr
@@ -429,8 +430,7 @@ theorem approxWithin_estimate (φ : DNF V) {p : ℕ} (hp : 0 < p) (t : ℕ) :
     nlinarith [abs_nonneg ((s : ℝ) - μ)]
   have hbad : ((ProbComp.eval (OracleComp.countTrue (trialBudget φ p t) (trial φ))).toOuterMeasure
       goodᶜ).toReal ≤ (1 / 2 : ℝ) ^ t := by
-    refine (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-      (MeasureTheory.measure_mono hsub)).trans (hchern.trans ?_)
+    refine (Probability.PMF.toOuterMeasure_toReal_mono _ hsub).trans (hchern.trans ?_)
     have hexp : (t + 1 : ℝ) ≤ (1 / p) ^ 2 * μ / 3 := by
       rw [hμ, hK_def]
       push_cast

@@ -2,7 +2,7 @@
 
 ## Unbounded natural registers
 
-[CslibFrontier/Computability/RAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/RAM/Defs.lean) defines `Cslib.RAM` over the upstream URM register store. Registers hold arbitrary natural numbers; inputs occupy the initial registers, the remainder starts at zero, and register zero is the output. Instructions include constants, addition, truncated subtraction, multiplication, indirect loads/stores and a positive branch. Falling past the program list halts; subsequent clocked runs stutter. A partial evaluator and relational execution are linked by determinism and run/evaluation correspondence [complexitylib][complexitylib].
+[CslibFrontier/Computability/RAM/Defs.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/RAM/Defs.lean) defines `Cslib.RAM` over the upstream URM register store. Registers hold arbitrary natural numbers; inputs occupy the initial registers, the remainder starts at zero, and register zero is the output. Instructions include constants, addition, truncated subtraction, multiplication, indirect loads/stores and a positive branch. Falling past the program list halts; subsequent clocked runs stutter. A partial evaluator and relational execution are linked by determinism and run/evaluation correspondence [cslib-frontier][complexitylib].
 
 This is an adaptation of Cook–Reckhow-style RAM, not a literal copy: its data are naturals rather than integers, multiplication is supplied, and the initial register input is a convention rather than charged finite-alphabet I/O. Those choices matter before comparing complexity classes [cookreckhow73][cookreckhow73].
 
@@ -36,7 +36,7 @@ The local documentation maps the real instance to Erickson–van der Hoog–Milt
 
 ## Known Limitations
 
-The source survey does not establish a uniform finite encoding of exact real inputs, nor a native certificate for every algebraic interpretation. It does not identify the natural RAM, generic RAM and upstream typed-bank RAM by naming alone. `UPSTREAM.md` records coordination with an upstream typed RAM design; no local semantic identification with that design was found in the inspected sources.
+The source survey does not establish a uniform finite encoding of exact real inputs, nor a native certificate for every algebraic interpretation. It does not identify the natural RAM, generic RAM and upstream typed-bank RAM by naming alone. An upstream typed-bank RAM proposal (CSLib #1158) was closed unmerged on 2026-11-02; no local semantic identification with that design was found in the inspected sources.
 
 [complexitylib]: ../sources.md#complexitylib
 [cookreckhow73]: ../sources.md#cookreckhow73

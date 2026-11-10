@@ -200,31 +200,25 @@ private theorem eval_run_plantedHandler
     (hbound : ∀ msg, msg.length = n → ∀ σ ∈ (ProbComp.eval (S.sign x.2 msg)).support,
       σ.length ≤ b)
     {α : Type} (program : WordOracleComp Unit α) :
-    (OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-        (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s)))
+    ProbOracleComp.runWith (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s))
       ((OracleComp.interpret
         (OracleComp.sumHandler
           (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
           (plantedHandler S H depth n k (front ++ (x.1, []) :: back) front.length b))
-        program).run [])).run [] =
-    (ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifFin j))
-        ((scheme S H depth hH hlen hcap).indexedSigningOracle n
-          (secretKey k (front ++ x :: back)))) program).run [])).map
+        program).run []) [] =
+    (ProbOracleComp.runWith (fun q s => ProbComp.eval
+      ((scheme S H depth hH hlen hcap).indexedSigningOracle n (secretKey k (front ++ x :: back))
+        q s)) program []).map
       (fun r => (r, otsLogOf H front.length k r.2)) := by
-  rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_run_interpret]
-  have hsim := ProbOracleComp.run_interpret_map_state_of_invariant
+  rw [ProbOracleComp.runWith_run_interpret]
+  have hsim := ProbOracleComp.runWith_map_state_of_invariant
     (oracle := fun (q : Unit × List Bool) (signed : List (ℕ × List Bool)) => ProbComp.eval
       ((scheme S H depth hH hlen hcap).indexedSigningOracle n
         (secretKey k (front ++ x :: back)) q signed))
     (oracle' := fun (q : Unit × List Bool) (state : List (ℕ × List Bool) × List (List Bool)) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-          (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s)))
+      (ProbOracleComp.runWith (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s))
         ((plantedHandler S H depth n k (front ++ (x.1, []) :: back) front.length b q).run
-          state.1)).run state.2).map
-            (fun result => (result.1.1, result.1.2, result.2)))
+          state.1) state.2).map (fun result => (result.1.1, result.1.2, result.2)))
     (represent := fun signed => (signed, otsLogOf H front.length k signed))
     (invariant := fun _ => True) (by simp)
     (step := by
@@ -237,10 +231,10 @@ private theorem eval_run_plantedHandler
             (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
               (fun q s => ProbComp.eval (S.oneTimeSigningOracle x.2 q s)))
             (ProbOracleComp.sample p)) state = (ProbComp.eval p).map (·, state) :=
-        fun p state => ProbOracleComp.run_interpret_sample _ p state
+        fun p state => ProbOracleComp.runWith_sample _ p state
       rintro ⟨⟨⟩, w⟩ signed -
       unfold IndexedSignatureScheme.indexedSigningOracle plantedHandler
-      simp only [scheme, StateT.run]
+      simp only [scheme, StateT.run, ProbOracleComp.runWith, OracleComp.runWith]
       generalize IndexedSignatureScheme.requestDecoder.decode w = r
       obtain ⟨u, m⟩ := r
       dsimp only
@@ -277,7 +271,7 @@ private theorem eval_run_plantedHandler
           hpureApply])
     program [] trivial
   rw [show otsLogOf H front.length k [] = [] from rfl] at hsim
-  rw [← hsim, PMF.map_comp]
+  erw [← hsim, PMF.map_comp]
   rfl
 
 /-- The run of the forger against the honest indexed signing oracle on the keys `keys`. -/
@@ -317,9 +311,9 @@ private theorem eval_eufOneTimeGame_oneTimeForgerAt
               fun back => (realRun S H depth hH hlen hcap adversary n k (front ++ x :: back)).map
                 (otsWin S H n i k (front ++ x :: back)) := by
   simp only [SignatureScheme.eufOneTimeGame, oneTimeForgerAt, ProbComp.eval_bind,
-    ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind,
-    StateT.run_bind, ProbOracleComp.run_interpret_sample, OracleComp.interpret_pure,
-    StateT.run_pure, plantKeys, BitString.eval_sampleList, PMF.map_bind,
+    ProbComp.eval_pure, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
+    plantKeys, BitString.eval_sampleList, PMF.map_bind,
     PMF.bind_bind, PMF.pure_bind, PMF.pure_map]
   refine PMF.bind_congr_on_support _ _ _ fun x hx => ?_
   refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
@@ -332,9 +326,9 @@ private theorem eval_eufOneTimeGame_oneTimeForgerAt
   rw [eval_run_plantedHandler hH hlen hcap hklen (hbound x hx) (adversary n _)]
   have hpk : publicKey H k (front ++ (x.1, []) :: back) = publicKey H k (front ++ x :: back) := by
     simp [publicKey]
-  rw [hpk, PMF.bind_map, realRun, ← PMF.bind_pure_comp]
-  congr 1
-  funext r
+  rw [hpk, PMF.bind_map, realRun, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ← PMF.bind_pure_comp]
+  congr 1 with r : 1
   simp only [Function.comp_apply, otsWin, List.getD_append_cons_length]
 
 /-- The real experiment: the hash key, the one-time keys and the forger's run. -/
@@ -474,8 +468,7 @@ theorem eval_leafIndex (n : ℕ) :
       (PMF.uniformOfFintype (Fin (2 ^ depth n))).map Fin.val := by
   simp only [leafIndex, ProbComp.eval_map, BitString.eval_sampleList,
     BitString.uniformList_boundedBinaryValue]
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact Nat.min_eq_right i.isLt.le
 
 variable {S H depth} in
@@ -485,8 +478,8 @@ private theorem eval_eufOneTimeGame_oneTimeForger (bound : ℕ → ℕ) (adversa
       (PMF.uniformOfFintype (Fin (2 ^ depth n))).bind fun i =>
         ProbComp.eval (S.eufOneTimeGame (oneTimeForgerAt S H depth bound adversary i.val) n) := by
   simp only [SignatureScheme.eufOneTimeGame, oneTimeForger, ProbComp.eval_bind,
-    ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind,
-    StateT.run_bind, ProbOracleComp.run_interpret_sample, eval_leafIndex, PMF.bind_map,
+    ProbComp.eval_pure, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, eval_leafIndex, PMF.bind_map,
     PMF.bind_bind, Function.comp_def]
   rw [PMF.bind_comm]
 

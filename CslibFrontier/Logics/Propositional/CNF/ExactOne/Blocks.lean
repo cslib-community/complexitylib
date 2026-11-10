@@ -77,19 +77,11 @@ theorem clauseClauses_shift (offset i : ℕ) (c : Clause V) :
     intro l _
     exact complementBlock_shift _ _ _ _
 
-/-- The indexed list at a shifted starting position is the original list with shifted indices. -/
-private theorem zipIdx_start {A : Type*} (xs : List A) (start offset : ℕ) :
-    xs.zipIdx (offset + start) = (xs.zipIdx start).map fun c => (c.1, offset + c.2) := by
-  induction xs generalizing start with
-  | nil => rfl
-  | cons a xs ih => simp [List.zipIdx_cons, ih, Nat.add_assoc]
-
 /-- Starting a compiler at a nonzero index renames just its fresh auxiliaries. -/
 theorem formulaFrom_eq_relabel (start : ℕ) (φ : CNF V) :
     formulaFrom start φ = (formula φ).relabel (shift start) := by
   unfold formulaFrom formula
-  rw [show φ.zipIdx start = (φ.zipIdx 0).map (fun c => (c.1, start + c.2)) from
-    by simpa only [Nat.add_zero] using zipIdx_start φ 0 start]
+  rw [List.zipIdx_eq_map_add (l := φ) (i := start)]
   simp only [CNF.relabel, List.flatMap_def, List.map_flatten, List.map_map,
     Function.comp_def]
   apply congrArg List.flatten
@@ -120,9 +112,7 @@ theorem compileBlocks_eq_flatMap (start : ℕ) (bs : List (CNF V)) :
   | cons b bs ih =>
     simp only [compileBlocks, List.zipIdx_cons, List.flatMap_cons]
     rw [ih]
-    have he : bs.zipIdx 1 = (bs.zipIdx 0).map (fun c => (c.1, 1 + c.2)) :=
-      zipIdx_start bs 0 1
-    rw [he, List.flatMap_map]
+    rw [List.zipIdx_eq_map_add (l := bs) (i := 1), List.flatMap_map]
     congr 1
     simp only [List.flatMap_def]
     apply congrArg List.flatten

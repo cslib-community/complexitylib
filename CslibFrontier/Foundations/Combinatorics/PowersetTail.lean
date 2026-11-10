@@ -253,8 +253,7 @@ theorem four_mul_sum_card_filter_notMem_le (A : Finset (Finset U)) (S : Finset U
         (mul_le_mul_of_nonneg_right (by exact_mod_cast card_le_card (filter_subset _ S))
           (by positivity))
     have h2 : (0 : ℝ) ≤ 2 ^ #S * ((j + 1) * 2 ^ j * (3 / 4) ^ #S) := by positivity
-    have h3 : (#S : ℝ) * N ≤ #S * (2 * (27 / 32) ^ r * 2 ^ #S) :=
-      mul_le_mul_of_nonneg_left hNr (by positivity)
+    have h3 : (#S : ℝ) * N ≤ #S * (2 * (27 / 32) ^ r * 2 ^ #S) := by gcongr
     nlinarith
   · -- Few bad points: most members of the family avoid many points.
     have hmainR : 4 * ∑ i ∈ bad, (#{x ∈ A | x ⊆ S ∧ i ∉ x} : ℝ) ≤

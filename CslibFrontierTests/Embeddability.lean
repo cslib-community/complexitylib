@@ -70,8 +70,7 @@ example {ε : ℝ} (hε : ε < 1 / 2) : ¬ IsEmbeddable aliceInput bobGuessesAli
   set q : PMF (Unit × Bool) := ρ.map fun r => ((), fB () r)
   have hmap : (aliceInput.bind fun xy => ρ.map fun r => (xy, (fA xy.1 r, fB xy.2 r))) =
       aliceInput.bind fun xy => q.map (xy, ·) := by
-    congr 1
-    funext xy
+    congr 1 with xy : 1
     exact (PMF.map_comp _ _ _).symm
   rw [hmap, bobGuessesAlice, Cslib.Probability.PMF.dist_bind_pair] at h
   have hsum : (∑ a : Bool × Unit, (aliceInput a).toReal * dist q (PMF.pure ((), a.1))) =

@@ -67,42 +67,15 @@ theorem profileFormula_relabel (i offset : ℕ) (c : Clause ℕ) :
     (profileFormula (clauseProfile c)).relabel (profileVariableMap i offset c) =
       (CNF.PositiveExactOne.formula (CNF.FromSAT.clause i c)).relabel
         (CNF.PositiveExactOne.shift offset) := by
-  rcases c with _ | ⟨⟨p, bp⟩, _ | ⟨⟨q, bq⟩, _ | ⟨⟨r, br⟩, rest⟩⟩⟩
-  · simp [clauseProfile, profileFormula, profileSource, profileVariableMap,
+  rcases c with _ | ⟨⟨p, _ | _⟩, _ | ⟨⟨q, _ | _⟩, _ | ⟨⟨r, _ | _⟩, rest⟩⟩⟩ <;>
+    simp [clauseProfile, profileFormula, profileSource, profileVariableMap,
       CNF.FromSAT.clause, CNF.FromSAT.core, CNF.FromSAT.padding, CNF.FromSAT.aux,
-      CNF.FromSAT.forcePadding, CNF.PositiveExactOne.formula,
+      CNF.FromSAT.lift, CNF.FromSAT.forcePadding, CNF.PositiveExactOne.formula,
       CNF.PositiveExactOne.clauseClauses, CNF.PositiveExactOne.positiveLiteral,
       CNF.PositiveExactOne.complementBlock, CNF.PositiveExactOne.auxiliary,
       CNF.PositiveExactOne.shift, CNF.relabel, Clause.relabel,
       CNF.ExactOneGadget.disjunctionClauses, CNF.ExactOneGadget.forceFalseClauses,
-      CNF.ExactOneGadget.complementClauses, Std.Sat.Literal.negate]
-  · cases bp <;>
-      simp [clauseProfile, profileFormula, profileSource, profileVariableMap,
-        CNF.FromSAT.clause, CNF.FromSAT.core, CNF.FromSAT.padding, CNF.FromSAT.aux,
-        CNF.FromSAT.lift, CNF.FromSAT.forcePadding, CNF.PositiveExactOne.formula,
-        CNF.PositiveExactOne.clauseClauses, CNF.PositiveExactOne.positiveLiteral,
-        CNF.PositiveExactOne.complementBlock, CNF.PositiveExactOne.auxiliary,
-        CNF.PositiveExactOne.shift, CNF.relabel, Clause.relabel,
-        CNF.ExactOneGadget.disjunctionClauses, CNF.ExactOneGadget.forceFalseClauses,
-        CNF.ExactOneGadget.complementClauses, Std.Sat.Literal.negate, List.getD]
-  · cases bp <;> cases bq <;>
-      simp [clauseProfile, profileFormula, profileSource, profileVariableMap,
-        CNF.FromSAT.clause, CNF.FromSAT.core, CNF.FromSAT.padding, CNF.FromSAT.aux,
-        CNF.FromSAT.lift, CNF.FromSAT.forcePadding, CNF.PositiveExactOne.formula,
-        CNF.PositiveExactOne.clauseClauses, CNF.PositiveExactOne.positiveLiteral,
-        CNF.PositiveExactOne.complementBlock, CNF.PositiveExactOne.auxiliary,
-        CNF.PositiveExactOne.shift, CNF.relabel, Clause.relabel,
-        CNF.ExactOneGadget.disjunctionClauses, CNF.ExactOneGadget.forceFalseClauses,
-        CNF.ExactOneGadget.complementClauses, Std.Sat.Literal.negate, List.getD]
-  · cases bp <;> cases bq <;> cases br <;>
-      simp [clauseProfile, profileFormula, profileSource, profileVariableMap,
-        CNF.FromSAT.clause, CNF.FromSAT.core, CNF.FromSAT.aux,
-        CNF.FromSAT.lift, CNF.PositiveExactOne.formula,
-        CNF.PositiveExactOne.clauseClauses, CNF.PositiveExactOne.positiveLiteral,
-        CNF.PositiveExactOne.complementBlock, CNF.PositiveExactOne.auxiliary,
-        CNF.PositiveExactOne.shift, CNF.relabel, Clause.relabel,
-        CNF.ExactOneGadget.disjunctionClauses, CNF.ExactOneGadget.forceFalseClauses,
-        CNF.ExactOneGadget.complementClauses, Std.Sat.Literal.negate, List.getD]
+      CNF.ExactOneGadget.complementClauses, Std.Sat.Literal.negate, List.getD]
 
 /-- The profile partition retains the actual output formula, clause order, and variable names. -/
 theorem rawFormula_eq_profiles (φ : CNF ℕ) :

@@ -55,8 +55,7 @@ private theorem extrema_insert_of_contains {t t' : Tree d} (ht : t.Valid)
     {m M x : ℕ} (hb : t.bounds = some (m, M))
     (hb' : t'.bounds = some (min m x, max M x)) (hx : x < universeSize d)
     (hs : ∀ y, t'.Contains y ↔ y = x ∨ t.Contains y) : t'.Extrema := by
-  have he := ht.extrema
-  simp only [Extrema, hb] at he
+  have he := ht.extrema_of_bounds hb
   simp only [Extrema, hb']
   refine ⟨Nat.le_trans (min_le_right m x) (le_max_right M x), max_lt he.2.1 hx, ?_, ?_, ?_⟩
   · apply (hs _).mpr
@@ -213,8 +212,7 @@ private theorem insert_spec {t : Tree d} (ht : t.Valid) {x : ℕ}
           or_false] using hs y
       | some b =>
         obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
+        have he := ht.extrema_of_bounds rfl
         have hset : ∀ y, ((leaf (some (m, M))).insert x).Contains y ↔
             y = x ∨ (leaf (some (m, M))).Contains y := by
           intro y

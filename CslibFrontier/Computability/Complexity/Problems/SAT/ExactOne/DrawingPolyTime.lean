@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawi
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.SAT
+import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 import CslibFrontier.Foundations.Geometry.Orthogonal.Macrocell
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
@@ -65,15 +66,6 @@ local instance : ListEncoding encPoint encRoute :=
 local instance : SizedListEncoding encPoint encRoute :=
   inferInstanceAs (SizedListEncoding encPoint (encList encPoint))
 
-private theorem point_add :
-    ComputableInPolyTime (fun p : Point × Point => p.1 + p.2)
-      (encPair encPoint encPoint) encPoint := by
-  refine .of_tidy ?_
-  change ComputableTidilyInPolyTime
-    (fun p : Point × Point => (p.1.1 + p.2.1, p.1.2 + p.2.2)) _ _
-  unfold encPoint
-  fun_prop
-
 private theorem point_scale (k : ℕ) :
     ComputableInPolyTime (fun p : Point => k • p) encPoint encPoint := by
   refine .of_tidy ?_
@@ -82,23 +74,8 @@ private theorem point_scale (k : ℕ) :
   unfold encPoint
   fun_prop
 
-private theorem point_direction :
-    ComputableInPolyTime (fun p : Point × Point => direction p.1 p.2)
-      (encPair encPoint encPoint) encPoint := by
-  refine .of_tidy ?_
-  unfold direction encPoint
-  fun_prop
-
-private theorem route_translate :
-    ComputableInPolyTime (fun p : Point × Route => translate p.1 p.2)
-      (encPair encPoint encRoute) encRoute := by
-  refine .of_tidy ?_
-  change ComputableTidilyInPolyTime
-    (fun p : Point × Route => p.2.map fun q => (q.1 + p.1.1, q.2 + p.1.2)) _ _
-  unfold encPoint encRoute
-  fun_prop
-
-attribute [local fun_prop] point_add point_scale point_direction route_translate
+attribute [local fun_prop] computableInPolyTime_pointAdd point_scale
+  computableInPolyTime_direction computableInPolyTime_translate
 
 /-- Position lookup compares binary graph labels and scans only the declared vertex list. -/
 @[fun_prop]
@@ -157,7 +134,7 @@ theorem sourceDirection :
           (ExactOne.sourceRoute p.1.1 p.1.2 p.2).getD 1 (0, 0)))
       encSourceIndex (encPair encPoint encPoint) := by fun_prop
   simpa only [Function.comp_def, ExactOne.sourceDirection] using
-    ComputableInPolyTime.of_tidy (point_direction.tidy.comp hp)
+    ComputableInPolyTime.of_tidy (computableInPolyTime_direction.tidy.comp hp)
 
 private theorem route_dilate (k : ℕ) :
     ComputableInPolyTime (dilateRoute k) encRoute encRoute := by
@@ -289,7 +266,7 @@ theorem positiveExterior (j : ℕ) :
         ExactOne.positiveExterior p.1.1 p.1.2 p.2 j)
       (encPair encInput encUnary) encRoute := by
   have he := (exteriorRoute positiveScale positiveRadius).tidy.comp (sourceIndex j).tidy
-  have h := route_translate.tidy.comp
+  have h := computableInPolyTime_translate.tidy.comp
     ((ComputableTidilyInPolyTime.const positiveTranslation).prod he)
   simpa only [Function.comp_def, ExactOne.positiveExterior] using ComputableInPolyTime.of_tidy h
 
@@ -385,7 +362,7 @@ private def incidenceFor (profile : ClauseProfile) (e : LocalIncidence) (p : Blo
 
 private theorem incidenceFor_poly (profile : ClauseProfile) (e : LocalIncidence) :
     ComputableTidilyInPolyTime (incidenceFor profile e) encBlockInput encRoute := by
-  have hs := route_translate.tidy.comp
+  have hs := computableInPolyTime_translate.tidy.comp
     (blockOrigin.prod (ComputableTidilyInPolyTime.const e.2.2))
   have he (j : ℕ) := (positiveExterior j).tidy.comp blockIndex
   unfold incidenceFor
@@ -429,8 +406,9 @@ private theorem placedBlockFor_poly (tag : ClauseProfile × PortAssignment) :
     apply ComputableTidilyInPolyTime.mapConst
     intro l _
     exact (blockVariable l.1).prod (ComputableTidilyInPolyTime.const l.2)
-  have hp := point_add.tidy.comp (blockOrigin.prod (ComputableTidilyInPolyTime.const
-    ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).clausePosition a.2)))
+  have hp := computableInPolyTime_pointAdd.tidy.comp
+    (blockOrigin.prod (ComputableTidilyInPolyTime.const
+      ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).clausePosition a.2)))
   have hr := ComputableTidilyInPolyTime.mapConst
     ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).incidenceRoutes.filter
       fun e => e.1 == a.2) (fun e _ => incidenceFor_poly tag.1 e)
@@ -469,8 +447,9 @@ private theorem auxiliaryBlockFor_poly (tag : ClauseProfile × PortAssignment) :
     induction xs with
     | nil => exact ComputableTidilyInPolyTime.const []
     | cons v xs ih =>
-      have hp := point_add.tidy.comp (blockOrigin.prod (ComputableTidilyInPolyTime.const
-        ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).variablePosition v.2)))
+      have hp := computableInPolyTime_pointAdd.tidy.comp
+        (blockOrigin.prod (ComputableTidilyInPolyTime.const
+          ((collaredPrefixGeometry (profilePrefixGeometry tag.1) tag.2).variablePosition v.2)))
       rcases v with ⟨(j | a) | a, n⟩
       · exact ih
       · exact ((blockVariable _).prod hp).cons' ih
@@ -541,8 +520,9 @@ private theorem sourceVariablePosition :
   have hb := ComputableTidilyInPolyTime.unary_to_binary.comp hi
   have hg := graphDrawing.tidy.comp (ComputableTidilyInPolyTime.fst encInput encNat)
   have hp := drawingPosition.tidy.comp (hg.prod hb)
-  have h := point_add.tidy.comp (((point_scale positiveScale).tidy.comp hp).prod
-    (ComputableTidilyInPolyTime.const positiveTranslation))
+  have h := computableInPolyTime_pointAdd.tidy.comp
+    (((point_scale positiveScale).tidy.comp hp).prod
+      (ComputableTidilyInPolyTime.const positiveTranslation))
   simpa only [Function.comp_def] using h
 
 private theorem positiveSourcePositions :

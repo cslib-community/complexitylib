@@ -31,6 +31,8 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.mem_support_uniformOfFintype`: every value has positive uniform mass.
 * `Cslib.Probability.PMF.uniformOfFintype_finset_map_val`: subtype and finite-set uniform
   laws agree.
+* `Cslib.Probability.PMF.uniformOfFintype_bind_equiv`: reparametrizing a uniform draw by a
+  bijection leaves an experiment unchanged.
 * `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_map`: the first component of a uniform pair is
   uniform, and mapping over two independent uniform draws is mapping over a uniform pair.
@@ -77,6 +79,14 @@ theorem uniformOfFintype_finset_map_val (s : Finset α) [Nonempty s] :
   · intro b hb
     simp [Set.indicator_apply, Ne.symm hb]
 
+-- Moved from `CslibFrontier/Crypto/Computational/DiffieHellman.lean` (Samuel Schlesinger), where
+-- it was private, so that the garbling and Diffie–Hellman modules share one statement.
+/-- Reparametrizing a uniform draw by a bijection does not change an experiment. -/
+theorem uniformOfFintype_bind_equiv [Fintype α] [Nonempty α] (e : α ≃ α) (f : α → PMF β) :
+    (uniformOfFintype α).bind (fun a => f (e a)) = (uniformOfFintype α).bind f := by
+  change (uniformOfFintype α).bind (f ∘ e) = (uniformOfFintype α).bind f
+  rw [← PMF.bind_map, uniformOfFintype_map_equiv]
+
 variable [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
 
 /-- The first component of a uniform pair is uniform. -/
@@ -85,8 +95,7 @@ theorem uniformOfFintype_prod_map_fst :
   rw [← uniformOfFintype_prod, PMF.map_bind]
   simp only [PMF.map_comp, Function.comp_def]
   calc _ = (uniformOfFintype α).bind PMF.pure := by
-        congr 1
-        funext a
+        congr 1 with a : 1
         exact PMF.map_const _ _
     _ = _ := PMF.bind_pure _
 

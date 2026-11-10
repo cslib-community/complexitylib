@@ -12,6 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -199,23 +200,12 @@ theorem isPPTOn_run_signingOracle (S : WordSignatureScheme) {adversary : Forger}
   have hinitial : ComputableInPolyTime (fun _ : Caller => ([] : List (List Bool)))
       encCaller (encList encBits) :=
     ComputableInPolyTime.const []
-  have hresources : ComputableInPolyTime
+  have hresources : PolyBounded (fun pair => (encPair encCaller encBits pair).length)
       (fun pair : Caller × List Bool =>
-        c * (2 * pair.1.2.2.length + pair.2.length + 2) ^ d + 2 * pair.2.length + 2)
-      (encPair encCaller encBits) encUnary := by
-    have hskLen : ComputableInPolyTime (fun pair : Caller × List Bool => pair.1.2.2.length)
-        (encPair encCaller encBits) encUnary :=
-      ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.fst _ _).snd'.snd'
-    have hqLen : ComputableInPolyTime (fun pair : Caller × List Bool => pair.2.length)
-        (encPair encCaller encBits) encUnary :=
-      ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.snd _ _)
-    have htwoSk := (ComputableInPolyTime.const 2).unary_mul' hskLen
-    have htwoQ := (ComputableInPolyTime.const 2).unary_mul' hqLen
-    have hinner := (htwoSk.unary_add' hqLen).unary_add' (.const 2)
-    have hpow := (ComputableInPolyTime.const c).unary_mul'
-      ((ComputableInPolyTime.unary_pow d).comp hinner)
-    exact (hpow.unary_add' htwoQ).unary_add' (.const 2)
-  refine ((hadversary.run_interpret_preprocess_open' (External := Empty)
+        c * (2 * pair.1.2.2.length + pair.2.length + 2) ^ d + 2 * pair.2.length + 2) := by
+    growth_poly [(ComputableInPolyTime.fst encCaller encBits).snd'.snd',
+      ComputableInPolyTime.snd encCaller encBits]
+  refine ((hadversary.run_interpret_preprocess_open_of_polyBounded (External := Empty)
     (handler := fun (caller : Caller) request state =>
       ProbOracleComp.sample (S.signingOracle caller.2.2 request state))
     (prepare := fun caller : Caller => (caller.1, caller.2.1))

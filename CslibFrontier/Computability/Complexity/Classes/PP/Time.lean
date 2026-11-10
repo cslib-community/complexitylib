@@ -13,10 +13,10 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.Probability
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
-import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 
 /-!
 # Unbounded-error probabilistic time
@@ -196,33 +196,22 @@ theorem mem_PP_iff_exists_mem_PPTIME {α : Type} {enc : α ↪ List Bool} {A : S
   constructor
   · rintro ⟨p, V, hV, hA⟩
     -- sample a random string and run the verifier on it
-    let program (a : α) : ProbComp Bool :=
-      (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length)
-    have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
-      (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
-    have hprogram : IsPPTOn enc encBool program := hcount.sampleList.map_with hV
-    obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
+    obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ :=
+      (isPPTOn_sampleVerify p hV).exists_halting_machine
     refine ⟨d, c * 2 ^ d, c, k, State, hfinite, machine,
       MultiTapePTM.DecidesByMajorityInTime.mono (t := fun a => c * ((enc a).length + 1) ^ d)
         (fun a => ⟨hhalt (enc a), ?_⟩) fun a => Nat.mul_add_one_pow_le_two_pow c d _⟩
     -- the encoded output `[true]` has the probability of `true`
-    have htrue :
-        (ProbComp.eval (program a)).map encBool [true] = ProbComp.eval (program a) true := by
+    have htrue (μ : PMF Bool) : μ.map encBool [true] = μ true := by
       simp [PMF.map_apply, encBool_apply]
-    rw [← heval a, htrue]
-    simp only [program, ProbComp.eval_map, BitString.eval_sampleList]
-    rw [MultiTapePTM.half_lt_uniformList_map_iff]
+    rw [← heval a, htrue, ProbComp.eval_map, BitString.eval_sampleList,
+      MultiTapePTM.half_lt_uniformList_map_iff]
     exact hA a
   · rintro ⟨d, c₁, c₂, k, State, hfinite, machine, hA⟩
     -- replay the coins
     refine ⟨Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂,
       fun x => decide (machine.runClosedCoins x.2 (enc x.1) = [true]),
-      ComputableInPolyTime.decide_eq'
-        ((MultiTapePTM.computableInPolyTime_runClosedCoins machine).comp
-          ((ComputableInPolyTime.snd enc encBits).prod
-            ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
-              (ComputableInPolyTime.fst enc encBits))))
-        (ComputableInPolyTime.const [true]), fun a => ?_⟩
+      MultiTapePTM.computableInPolyTime_decide_runClosedCoins machine, fun a => ?_⟩
     have heval : (Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂).eval (enc a).length =
         c₁ * (enc a).length ^ d + c₂ := by
       simp

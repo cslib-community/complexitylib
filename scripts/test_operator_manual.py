@@ -11,7 +11,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from check_operator_manual import book_input_errors, check
+from check_operator_manual import (STALE_SOURCE_ANCHOR, book_input_errors, check, comment_depths,
+                                   source_anchor_error)
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -19,10 +20,43 @@ with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
     book = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(book)
 
+# A Lean file whose lines exercise the source line anchor rule (#3991).
+ANCHORED_SOURCE = """\
+/- Copyright header. -/
+module
+
+/-! # Anchored declarations -/
+
+namespace Anchored
+
+/-- A documented definition. -/
+def one : Nat := 1
+
+@[simp] theorem one_eq : one = 1 := rfl
+
+private noncomputable def two : Nat :=
+  2
+
+/-- Prose that happens to start a line with a keyword:
+theorem in a docstring is not a declaration. -/
+structure Pair where
+  /-- A field docstring. -/
+  fst : Nat
+  snd : Nat
+
+/- A commented-out block:
+def hidden : Nat := 0 -/
+example : "/-" = "/-" := rfl
+
+def three : Nat := 3
+
+end Anchored
+"""
+
 
 class ManualChecks(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-check-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-check-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.manual = self.repo / "manual"
@@ -106,12 +140,88 @@ class ManualChecks(unittest.TestCase):
     def test_manual_without_builder_skips_chapter_lists(self):
         self.assertFalse(check(self.repo)["book_inputs_checked"])
 
+    def anchor_link(self, line):
+        (self.repo / "CslibFrontierTests/Anchored.lean").write_text(ANCHORED_SOURCE)
+        url = f"../../CslibFrontierTests/Anchored.lean#L{line}"
+        self.doc.write_text(self.doc.read_text() + f"\n[one]({url})\n")
+        return url
+
+    def test_drifted_source_line_anchor_fails_and_repoint_passes(self):
+        good = ANCHORED_SOURCE.splitlines().index("def one : Nat := 1") + 1
+        url = self.anchor_link(good + 1)
+        self.assertEqual(self.errors(), [f"workflows/first.md: {STALE_SOURCE_ANCHOR}: {url}"])
+        self.doc.write_text(self.doc.read_text().replace(f"#L{good + 1})", f"#L{good})"))
+        self.assertEqual(self.errors(), [])
+
+    def test_stale_anchor_allowlist_covers_only_listed_lines(self):
+        line = ANCHORED_SOURCE.splitlines().index("  2") + 1
+        self.anchor_link(line)
+        entry, unused = ("CslibFrontierTests/Anchored.lean", line), ("CslibFrontierTests/Other.lean", 3)
+        with mock.patch("check_operator_manual.STALE_SOURCE_ANCHORS", {entry, unused}):
+            result = check(self.repo)
+            self.assertEqual(result["errors"], [])
+            self.assertEqual(result["allowed_stale_source_anchors"], [f"{entry[0]}#L{line}"])
+            self.assertEqual(result["unused_stale_source_anchor_entries"], [f"{unused[0]}#L3"])
+            self.anchor_link(line - 2)
+            self.assertTrue(any(STALE_SOURCE_ANCHOR in e for e in self.errors()))
+            self.anchor_link(10_000)
+            self.assertTrue(any("out of bounds" in e for e in self.errors()))
+
+
+class SourceLineAnchors(unittest.TestCase):
+    """A relative `.lean#L` link must start a declaration, attribute, docstring or section."""
+
+    def setUp(self):
+        self.lines = ANCHORED_SOURCE.splitlines()
+
+    def problem(self, fragment):
+        return source_anchor_error(fragment, self.lines)
+
+    def line_of(self, text):
+        return self.lines.index(text) + 1
+
+    def test_declaration_attribute_and_docstring_starts_pass(self):
+        for text in ("/-- A documented definition. -/", "def one : Nat := 1",
+                     "@[simp] theorem one_eq : one = 1 := rfl", "private noncomputable def two : Nat :=",
+                     "structure Pair where", 'example : "/-" = "/-" := rfl',
+                     "def three : Nat := 3"):
+            with self.subTest(text=text):
+                self.assertIsNone(self.problem(f"L{self.line_of(text)}"))
+
+    def test_drifted_anchor_fails(self):
+        for text in ("  2", "", "end Anchored", "theorem in a docstring is not a declaration. -/",
+                     "  /-- A field docstring. -/", "def hidden : Nat := 0 -/"):
+            with self.subTest(text=text):
+                self.assertEqual(self.problem(f"L{self.line_of(text)}"), STALE_SOURCE_ANCHOR)
+
+    def test_whole_file_link_passes(self):
+        self.assertIsNone(self.problem("L1"))
+        self.assertIsNone(self.problem(f"L1-L{len(self.lines)}"))
+
+    def test_range_may_start_at_a_section_but_a_single_line_may_not(self):
+        for text in ("/-! # Anchored declarations -/", "namespace Anchored"):
+            with self.subTest(text=text):
+                start = self.line_of(text)
+                self.assertIsNone(self.problem(f"L{start}-L{len(self.lines)}"))
+                self.assertEqual(self.problem(f"L{start}"), STALE_SOURCE_ANCHOR)
+        self.assertEqual(self.problem(f"L{self.line_of('  2')}-L{len(self.lines)}"),
+                         STALE_SOURCE_ANCHOR)
+
+    def test_out_of_bounds_is_reported_first(self):
+        self.assertEqual(self.problem(f"L{len(self.lines) + 1}"), "source line anchor out of bounds")
+        self.assertEqual(self.problem(f"L3-L{len(self.lines) + 1}"), "source line anchor out of bounds")
+
+    def test_comment_depth_ignores_strings_and_line_comments(self):
+        depths = comment_depths(['def s := "/-"  -- /- not a comment', "/- outer /- inner -/",
+                                 "still inside -/", "def t := 0"])
+        self.assertEqual(depths, [0, 0, 1, 0])
+
 
 class BookRegistration(unittest.TestCase):
     """Run the chapter-list check with the real builder on placeholder copies of its pages."""
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-registration-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-registration-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.manual = self.repo / "manual"
@@ -163,7 +273,7 @@ class BookInputs(unittest.TestCase):
     """Exercise the actual assembler, replacing only Git and publishing-tool rendering."""
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-book-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-book-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / "manual"
         (self.root / "data").mkdir(parents=True)
@@ -311,7 +421,7 @@ class BookInputs(unittest.TestCase):
 
 class PortableLinks(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-links-")
+        self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name)
         self.root = self.repo / 'manual'

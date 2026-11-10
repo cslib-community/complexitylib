@@ -84,8 +84,7 @@ theorem parity_isDensityLimit {n : ℕ} {p : ℝ} (hp : 0 ≤ p) (hp' : p ≤ 1)
       (fun P : Fin n → Bool => if ∃ i, P i = true then (1 : ℝ) else 0) =
         1 - (1 - p) ^ n := by
     convert bernoulliAverage_nonempty (ι := Fin n) p using 1
-    · congr 1
-      funext P
+    · congr 1 with P : 1
       split_ifs <;> rfl
     · simp
   rw [he] at hh
@@ -161,18 +160,13 @@ private theorem finite_budget_of_cost {n d : ℕ} (hd : 0 < d)
     rw [Real.pow_rpow_inv_natCast (by positivity) (Nat.ne_of_gt hd)] at hh
     exact hh
   have hcost' : m * (32 * C) ≤ r := (le_div_iff₀ (by positivity)).mp hcost
-  have hstep : C * (m + 1) ≤ r / 16 := by nlinarith
-  have hpow := pow_le_pow_left₀ (show 0 ≤ C * (m + 1) by positivity) hstep d
+  -- raise `16 C (m + 1) ≤ n ^ (1 / d)` to the `d`-th power and use `16 ≤ 16 ^ d`
+  have hstep : 16 * (C * (m + 1)) ≤ r := by nlinarith
+  have hpow := pow_le_pow_left₀ (by positivity) hstep d
   have hrootpow : r ^ d = (n : ℝ) := Real.rpow_inv_natCast_pow (by positivity) (Nat.ne_of_gt hd)
-  rw [div_pow, hrootpow] at hpow
-  have hden : (16 : ℝ) ≤ (16 : ℝ) ^ d := by
-    simpa only [pow_one] using
-      pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 16) (Nat.succ_le_of_lt hd)
-  have hh : 16 * ((n : ℝ) / (16 : ℝ) ^ d) ≤ n := by
-    rw [← mul_div_assoc]
-    apply (div_le_iff₀ (by positivity)).mpr
-    nlinarith [mul_nonneg (show (0 : ℝ) ≤ n by positivity) (sub_nonneg.mpr hden)]
-  exact (mul_le_mul_of_nonneg_left hpow (by norm_num)).trans hh
+  rw [hrootpow, mul_pow] at hpow
+  have h16 : (16 : ℝ) ≤ 16 ^ d := le_self_pow₀ (by norm_num) (Nat.ne_of_gt hd)
+  exact le_trans (mul_le_mul_of_nonneg_right h16 (by positivity)) hpow
 
 universe u in
 /-- **Korten's communication lower bound for parity** [Korten, Theorem 3][Korten2026]: for every

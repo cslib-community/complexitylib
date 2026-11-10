@@ -130,35 +130,20 @@ public theorem exec_prepareSigned {w L m N Q : ℕ} (x : Data 160)
       (∀ a, a < 4 ∨ 4 + 2 * (N * D m) ≤ a → y.mem a = x.mem a) := by
   have hb := matrix_transfer_bounds L m N Q
   have hs : Fits w (snapshotBase L m N Q + 5) := allocated_fits hfit (by omega)
-  let z := ((x.set Reg.source (snapshotBase L m N Q + 5)).set Reg.destination 4).set
-    Reg.length (2 * (N * D m))
   have hz : ExecWithin (B := .standard) w (ram[
       Reg.source ← Reg.snapshot + Reg.five;
       Reg.destination ← Reg.four;
-      Reg.length ← Reg.matrixWords ]) x z 3 := by
-    ram_eval [z, hp.snapshot, hp.five, hp.four, hp.matrixWords, hs,
+      Reg.length ← Reg.matrixWords ]) x
+      (((x.set Reg.source (snapshotBase L m N Q + 5)).set Reg.destination 4).set
+        Reg.length (2 * (N * D m))) 3 := by
+    ram_eval [hp.snapshot, hp.five, hp.four, hp.matrixWords, hs,
       Reg.source, Reg.snapshot, Reg.five, Reg.destination, Reg.four, Reg.length, Reg.matrixWords]
-  have zp : Parameters L m N Q z :=
-    ((hp.set_work Reg.source (by decide) _).set_work Reg.destination (by decide) _).set_work
-      Reg.length (by decide) _
-  obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, Reg.source, Reg.destination, Reg.length] using
-      allocated_fits hfit (show snapshotBase L m N Q + 5 + 2 * (N * D m) ≤
-        memoryEnd L m N Q + 16 by omega))
-    (by simpa [z, Reg.source, Reg.destination, Reg.length] using
-      allocated_fits hfit (show 4 + 2 * (N * D m) ≤ memoryEnd L m N Q + 16 by omega))
-    (Or.inr (Or.inl (by simpa [z, Reg.source, Reg.destination, Reg.length] using hb.1)))
-  have hy : y.mem = ArrayCopy.copyPrefix x.mem (snapshotBase L m N Q + 5) 4
-      (2 * (N * D m)) := by simpa [z, Reg.source, Reg.destination, Reg.length] using hm
-  refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_, ?_⟩
-  · have hlen : z.regs Reg.length = 2 * (N * D m) := by simp [z]
-    rw [hlen] at he
-    exact (hz.seq he).mono (by omega)
-  · intro i hi
-    rw [hy]
+  obtain ⟨y, he, hy, hm, -⟩ :=
+    exec_setupCopy x hp hfit hz (by omega) (by omega) (Or.inr (Or.inl (by omega)))
+  refine ⟨y, he, hy, fun i hi => ?_, fun a ha => ?_⟩
+  · rw [hm]
     exact ArrayCopy.copyPrefix_read hi
-  · intro a ha
-    rw [hy]
+  · rw [hm]
     exact ArrayCopy.copyPrefix_outside (by rcases ha with ha | ha <;> omega)
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

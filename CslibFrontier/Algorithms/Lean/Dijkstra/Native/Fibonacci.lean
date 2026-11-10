@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Fibonacci.Cost
 public import CslibFrontier.Computability.WordRAM.Realization.Program.Standard
 public import CslibFrontier.Computability.WordRAM.Realization.Absorb
+import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Export
 import CslibFrontier.DataStructure.PriorityQueue.FibonacciHeap.Native.Backend
 import CslibFrontier.DataStructure.PriorityQueue.FibonacciHeap.Native.Initialize
 import CslibFrontier.Algorithms.WordRAM.Dijkstra.ListEncode
@@ -121,12 +122,7 @@ private theorem target_realizes : Realizes .exact targetProgram targetInput
   have he := FibonacciHeap.layout_abs_congr (n := d.1.1.1.1) (base := d.1.1.1.2) (s := s)
     (s' := ⟨Function.update s.mem (d.1.1.2.base + d.1.2) (d.2.1 + d.2.2 + 1), s.frontier⟩) hframe
   have hx0 : s.mem (d.1.1.2.base + d.1.2) ≠ 0 := by assumption
-  have hdecode : Dictionary.Memory.decode (s.mem (d.1.1.2.base + d.1.2)) =
-      some (s.mem (d.1.1.2.base + d.1.2) - 1) := by
-    cases hx : s.mem (d.1.1.2.base + d.1.2) with
-    | zero => exact False.elim (hx0 hx)
-    | succ x => rfl
-  rw [hdecode] at hop
+  rw [Dictionary.Memory.decode_of_ne_zero hx0] at hop
   obtain ⟨⟨old, hOld, hle⟩, hkey⟩ := hop hc
   refine ⟨hwindow, halloc, ⟨d.1.2, hv⟩, K, old, rfl, hK, ?_, ?_, hle, hkey⟩
   · change FibonacciHeap.Inv d.1.1.1.1 K ((FibonacciHeap.layout d.1.1.1.1 d.1.1.1.2).abs
@@ -216,28 +212,18 @@ private theorem relax_realizes : Realizes .exact (fun d : RelaxArgs =>
     subst vcur
     have hA : AdjacencyList.Memory.Inv (Memory.inputGraph G.n G.m) G.adj s := hf.2.1.2.1
     have hi : i < (G.adj u).length := hv.1
-    have htgt := hA.holds.target u i hi
-    change s.mem (G.n + 4 + 2 * (s.mem (3 + u.val) + i)) = ((G.adj u)[i]).1.val at htgt
-    have hwt := hA.holds.weight u i hi
-    change s.mem (G.n + 4 + (2 * (s.mem (3 + u.val) + i) + 1)) = ((G.adj u)[i]).2 at hwt
+    obtain ⟨hoff, hlast, htgt, hwt⟩ := Memory.inputGraph_edge hA u hi
     have hbound : s.mem (G.n + 4 + 2 * (s.mem (3 + u.val) + i)) < G.n := by
       rw [htgt]
       exact ((G.adj u)[i]).1.isLt
     first
     | have hbad : ¬s.mem (G.n + 4 + 2 * (s.mem (3 + u.val) + i)) < G.n := by assumption
       exact False.elim (hbad hbound)
-    | have hoff : 3 + u.val < s.frontier := hA.offsets_allocated.lt_frontier (by
-        change u.val < G.n + 1
-        have hu := u.isLt
-        omega)
-      have hlast := hA.edges_allocated.lt_frontier (hA.holds.edge_lt u hi)
-      change G.n + 4 + (2 * (s.mem (3 + u.val) + i) + 1) < s.frontier at hlast
-      first
-      | exact hmem.frontier_fits.of_le (by omega)
-      | rw [htgt, hwt]
-        refine targetSafe_of_relax_valid G T hnFit hK hT s hf u ((G.adj u)[i]).1 du i
-          ((G.adj u)[i]).2 (AdjacencyList.step_edge G.adj u hi) hv hdu ?_ hfit hwindow
-        exact G.le_maxWeight (List.getElem_mem hi)
+    | exact hmem.frontier_fits.of_le (by omega)
+    | rw [htgt, hwt]
+      refine targetSafe_of_relax_valid G T hnFit hK hT s hf u ((G.adj u)[i]).1 du i
+        ((G.adj u)[i]).2 (AdjacencyList.step_edge G.adj u hi) hv hdu ?_ hfit hwindow
+      exact G.le_maxWeight (List.getElem_mem hi)
 
 private abbrev ScanArgs := Env × (ℕ × ℕ)
 private def scanInput := appendWords envInput (WordEncoding.encode (α := ℕ × ℕ))
@@ -281,16 +267,7 @@ private theorem scan_realizes : Realizes .exact scanProgram scanInput
     subst m
     subst vcur
     have hA : AdjacencyList.Memory.Inv (Memory.inputGraph G.n G.m) G.adj s := hf.2.1.2.1
-    have hoff : 3 + u.val < s.frontier := hA.offsets_allocated.lt_frontier (by
-      change u.val < G.n + 1
-      have hu := u.isLt
-      omega)
-    have hnext : 3 + (u.val + 1) < s.frontier := hA.offsets_allocated.lt_frontier (by
-      change u.val + 1 < G.n + 1
-      have hu := u.isLt
-      omega)
-    have hsucc := hA.holds.offset_succ u
-    change s.mem (3 + (u.val + 1)) = s.mem (3 + u.val) + (G.adj u).length at hsucc
+    obtain ⟨hoff, hnext, hsucc⟩ := Memory.inputGraph_degree hA u
     first
     | exact hmem.fits_of_lt_frontier hoff
     | exact hmem.fits_of_lt_frontier hnext
@@ -562,8 +539,7 @@ private theorem initial_loop_safe (G : ListInstance) {w : ℕ}
   have hK : Fits w (G.n * G.maxWeight) := hfit.of_le (by nlinarith)
   have hT : Dictionary.Memory.Valid T w G.n (G.n * G.maxWeight + 1) :=
     ⟨rfl, hfit.of_le (by nlinarith)⟩
-  have hf : f = G.n + 2 * G.m + 4 := by
-    simp only [f, Memory.State.init, G.encode_length]
+  have hf : f = G.n + 2 * G.m + 4 := Memory.frontier_init G
   have hwindow : Fits w (base + (9 * G.n + 5)) := hfit.of_le (by
     dsimp only [base]
     rw [hf]
@@ -688,16 +664,12 @@ theorem realizes_run : Realizes .exact (fun _ : Unit => run)
   case hsafe.right.right.right.left =>
     rcases h with ⟨G, rfl, hfit⟩
     change Fits w ((Memory.State.init G.encode).frontier + G.n + (9 * G.n + 5))
-    have hf : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := by
-      simp only [Memory.State.init, G.encode_length]
-    rw [hf]
+    rw [Memory.frontier_init]
     exact hfit.of_le (by nlinarith)
   case hsafe.right.right.right.right.isTrue.left.left =>
     rcases h with ⟨G, rfl, hfit⟩
     change Fits w ((Memory.State.init G.encode).frontier + G.source.val)
-    have hf : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := by
-      simp only [Memory.State.init, G.encode_length]
-    rw [hf]
+    rw [Memory.frontier_init]
     exact hfit.of_le (by have hs := G.source.isLt; nlinarith)
   case hsafe.right.right.right.right.isTrue.left.right =>
     rcases h with ⟨G, rfl, hfit⟩
@@ -706,9 +678,7 @@ theorem realizes_run : Realizes .exact (fun _ : Unit => run)
     rcases h with ⟨G, rfl, hfit⟩
     simp only [StateTransitionSpec.clientResult, allocProgram_run]
     change Fits w ((Memory.State.init G.encode).frontier + G.n + (9 * G.n + 5))
-    have hf : (Memory.State.init G.encode).frontier = G.n + 2 * G.m + 4 := by
-      simp only [Memory.State.init, G.encode_length]
-    rw [hf]
+    rw [Memory.frontier_init]
     exact hfit.of_le (by nlinarith)
   case hsafe.right.right.right.right.isTrue.right.left.right =>
     rcases h with ⟨G, rfl, hfit⟩
@@ -731,19 +701,6 @@ theorem realizes_run : Realizes .exact (fun _ : Unit => run)
       allocProgram_run, hn, hs, hm, ht]
     exact initial_loop_safe G hfit
 
-private theorem realizes_run_return : Realizes .exact (fun _ : Unit => do run; pure 0)
-    (WordEncoding.encode (α := Unit)) word
-    (fun w _ s => ∃ G : ListInstance, s = Memory.State.init G.encode ∧
-      Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) (fun _ _ => 0) := by
-  have hReturn : Realizes .exact (fun _ : Unit × Unit => pure 0)
-      (appendWords (WordEncoding.encode (α := Unit)) (WordEncoding.encode (α := Unit))) word
-      (fun _ _ _ => True) (fun _ _ => 0) := by realize
-  apply (realizes_run.bind₀ hReturn).consequence
-  · intro w d s _ _ h
-    exact ⟨h, trivial⟩
-  · intro _ _
-    exact le_rfl
-
 /-- One flat exact-basis program, chosen before all graphs and widths, computes every distance
 within the sharper reachable-vertex Fibonacci bound. Its actual prefix, memory client and halt
 are charged, and its entire final memory/frontier is the original memory client's final state.
@@ -757,51 +714,17 @@ theorem exists_program_state :
             (Memory.spec w).clientState (Memory.State.init G.encode) run ∧
           steps + 1 ≤ C * (G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1)) ∧
           ∀ v : Fin G.n, y.mem (G.outAddr v) = encodeDist (G.dist G.source v) := by
-  obtain ⟨r, C, pc, prog, frontier, _, he⟩ :=
-    realizes_run_return.exists_standard_init_program_state_from_words 0
-  refine ⟨r, 402 * (C + 1), pc, prog, frontier, ?_⟩
-  intro G w hfit
-  obtain ⟨hvalid, hdist, hcost⟩ := run_spec G hfit
-  have hfront : Fits w (G.encode.length + 1) := by
-    rw [G.encode_length]
-    exact hfit.of_le (by nlinarith)
-  have hv : (Memory.spec w).ValidHistory (Memory.State.init G.encode)
-      ((Memory.spec w).clientHistory (Memory.State.init G.encode) (do run; pure 0)) := by
-    rw [(Memory.spec w).clientHistory_bind run (fun _ : Unit => (pure 0 : Memory.Prog ℕ))]
-    simpa only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_pure',
-      List.append_nil] using hvalid
-  obtain ⟨y, steps, hrun, hhalt, hstate, _, htime⟩ :=
-    he w () G.encode (fun i => Fin.elim0 i) (Nat.zero_le _) hfront
-      (G.inputFits_encode hfit) ⟨G, rfl, hfit⟩ hv
-  have hs : (Memory.spec w).clientState (Memory.State.init G.encode) (do run; pure 0) =
-      (Memory.spec w).clientState (Memory.State.init G.encode) run := by
-    rw [StateTransitionSpec.clientState_bind]
-    rfl
-  have hm : memoryCost (do run; pure 0) (Memory.State.init G.encode) =
-      memoryCost run (Memory.State.init G.encode) := by
-    simpa only [PFunctor.FreeM.bind_eq_bind, memoryCost_pure, Nat.add_zero] using
-      (memoryCost_bind run (fun _ : Unit => (pure 0 : Memory.Prog ℕ))
-        (Memory.State.init G.encode))
-  change memoryState frontier y = (Memory.spec w).clientState (Memory.State.init G.encode)
-    (do run; pure 0) at hstate
-  rw [hs] at hstate
-  change steps + 1 ≤ C * (memoryCost (do run; pure 0)
-    (Memory.State.init G.encode) + 0 + 1) + 1 at htime
-  rw [hm] at htime
-  have hr : (Memory.spec w).clientResult (inputState G.encode) (do run; pure 0) = 0 := by
-    rw [(Memory.spec w).clientResult_bind run (fun _ : Unit => (pure 0 : Memory.Prog ℕ))]
-    rfl
-  rw [hr] at hhalt
-  rw [← memoryCost_eq_totalCost w] at hcost
-  refine ⟨y, steps, hrun, hhalt, hstate, ?_, ?_⟩
-  · have hn : 1 ≤ G.n := by have := G.source.isLt; omega
-    have hmin : 1 ≤ min G.n (G.m + 1) := le_min hn (by omega)
-    have hpos : 1 ≤ G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1) := by
-      have := Nat.mul_le_mul hmin (show 1 ≤ Nat.log 2 G.n + 1 by omega)
-      omega
-    nlinarith [Nat.mul_le_mul_left C hcost, Nat.mul_le_mul_left C hpos]
-  · intro v
-    have hm := congrArg (fun s : Memory.State => s.mem (G.outAddr v)) hstate
-    exact hm.trans (hdist v)
+  obtain ⟨r, C, pc, prog, frontier, he⟩ := Native.exists_program_state
+    (fun G => 400 * (G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1))) realizes_run run_spec
+  refine ⟨r, 401 * C, pc, prog, frontier, fun G w hfit => ?_⟩
+  obtain ⟨y, steps, hrun, hhalt, hstate, htime, hdist⟩ := he G w hfit
+  refine ⟨y, steps, hrun, hhalt, hstate, ?_, hdist⟩
+  -- The bound is positive, since the source is a vertex.
+  have hn : 1 ≤ G.n := by have := G.source.isLt; omega
+  have hmin : 1 ≤ min G.n (G.m + 1) := le_min hn (by omega)
+  have hpos : 1 ≤ G.m + min G.n (G.m + 1) * (Nat.log 2 G.n + 1) := by
+    have := Nat.mul_le_mul hmin (show 1 ≤ Nat.log 2 G.n + 1 by omega)
+    omega
+  nlinarith [Nat.mul_le_mul_left C hpos]
 
 end Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci

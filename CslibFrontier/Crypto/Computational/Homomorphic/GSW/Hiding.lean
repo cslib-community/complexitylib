@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Basic
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 public import CslibFrontier.Crypto.Game.Statistical
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Statistical hiding of GSW ciphertexts under a uniform public matrix
@@ -118,15 +119,14 @@ private noncomputable def shiftedGuess (bit : Bool)
 private theorem maskedMatrices_bind_shiftedGuess (bit : Bool) :
     (maskedMatrices n m w).bind (shiftedGuess choose guess bit) =
       uniformPublicGame choose guess bit := by
-  simp only [maskedMatrices, shiftedGuess, uniformPublicGame, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, encryptWithCoins_eq_decomposeMatrix]
+  simp only [pmf_norm, maskedMatrices, shiftedGuess, uniformPublicGame,
+    encryptWithCoins_eq_decomposeMatrix]
   congr 1 with A : 1
   exact PMF.bind_comm _ _ _
 
 private theorem independentMatrices_bind_shiftedGuess (bit : Bool) :
     (independentMatrices n m w).bind (shiftedGuess choose guess bit) = idealGame choose guess := by
-  simp only [independentMatrices, shiftedGuess, idealGame, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, independentMatrices, shiftedGuess, idealGame]
   congr 1 with A : 1
   rw [PMF.bind_comm _ (choose A)]
   congr 1 with choice : 1

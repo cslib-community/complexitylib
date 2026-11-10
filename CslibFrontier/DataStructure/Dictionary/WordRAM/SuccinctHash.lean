@@ -100,9 +100,8 @@ def initSteps (U n_max : ℕ) : ℕ :=
   2 + ReducedKWise.initTableSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) +
     ReducedKWise.resampleSteps (qBits U n_max) (hashB n_max) (totalMicroBits n_max) 3
 
-theorem qBits_pos (U n_max : ℕ) : 0 < qBits U n_max := by
-  unfold qBits
-  omega
+theorem qBits_pos (U n_max : ℕ) : 0 < qBits U n_max :=
+  lt_max_of_lt_right Nat.one_pos
 
 theorem quotientBits_le_qBits (U n_max : ℕ) : quotientBits U n_max ≤ qBits U n_max :=
   le_max_left _ _
@@ -1080,6 +1079,34 @@ theorem validProg_deleteFinishWithHash {U V w n_max : ℕ}
 
 /-! ## Section 5: Dictionary-level `DictStateInv` + `probeExcess` transition specifications -/
 
+/-- The Feistel dispatch shared by the dictionary-level specifications. The masks and shifts of the
+`*WithHashProg` programs recover the bucket, quotient and micro-bucket of key `u`, the bucket and
+micro-bucket are in range, and under `DictStateInv` the dispatched query precondition holds (it is
+also the precondition of the first phase of `delete`). -/
+private theorem dispatch_spec {U V w₀ n_max w base : ℕ}
+    (hwf : DictParamsWf U V w₀ n_max)
+    (henv : DictEnvGen w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max)) base)
+    (θ : QuotHashSeed U n_max) {s_abs : Dictionary.State U} {s : Memory.State}
+    (hinv : DictStateInv U V w₀ n_max base θ s_abs s) (u : Fin U) :
+    let h_q := hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val)
+    (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1)) =
+        feistelBucket (bucketBits n_max) (hValOfSeed U n_max θ) u.val ∧
+      u.val >>> bucketBits n_max = keyQuotient (bucketBits n_max) u.val ∧
+      h_q >>> bucketBits n_max = mOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) ∧
+      feistelBucket (bucketBits n_max) (hValOfSeed U n_max θ) u.val < numBuckets n_max ∧
+      mOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) < numMicroPerBucket n_max ∧
+      QueryWithHashPre U V w₀ n_max w ((base, u.val), h_q) s := by
+  intro h_q
+  obtain ⟨L, hb_inv⟩ := hinv.hbucket
+  have hb_eq := and_mask_xor_eq_feistelBucket (bucketBits n_max) u.val h_q
+  have hb_lt := feistelBucket_lt (bucketBits n_max) (hValOfSeed U n_max θ) u.val
+  have hm_lt := mOfSeed_lt U n_max θ (keyQuotient (bucketBits n_max) u.val)
+  refine ⟨hb_eq, Nat.shiftRight_eq_div_pow u.val (bucketBits n_max), rfl, hb_lt, hm_lt, hwf,
+    u.isLt, hValOfSeed_lt U n_max θ _, ?_⟩
+  dsimp only
+  rw [hb_eq]
+  exact hb_inv.searchMicroChainPre henv hb_lt hm_lt
+
 /-- Dictionary-level specification of `queryWithHashProg`: establishes `QueryWithHashPre`, leaves
 `s` unchanged, returns `s_abs u`, and uses at most `26 + 8 * probeExcess` memory cost. -/
 theorem queryWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
@@ -1102,17 +1129,7 @@ theorem queryWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
   let b := feistelBucket (bucketBits n_max) h1 u.val
   let q := keyQuotient (bucketBits n_max) u.val
   let m := mOfSeed U n_max θ q
-  have hb_eq : (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1)) =
-      b := and_mask_xor_eq_feistelBucket (bucketBits n_max) u.val h_q
-  have hq_eq : u.val >>> bucketBits n_max = q := Nat.shiftRight_eq_div_pow u.val (bucketBits n_max)
-  have hm_eq : h_q >>> bucketBits n_max = m := rfl
-  have hb_lt : b < numBuckets n_max := feistelBucket_lt (bucketBits n_max) h1 u.val
-  have hm_lt : m < numMicroPerBucket n_max := mOfSeed_lt U n_max θ q
-  have hpre : QueryWithHashPre U V w₀ n_max w d s := by
-    refine ⟨hwf, u.isLt, hValOfSeed_lt U n_max θ q, ?_⟩
-    dsimp only [d]
-    rw [hb_eq, hq_eq, hm_eq]
-    exact hb_inv.searchMicroChainPre henv hb_lt hm_lt
+  obtain ⟨hb_eq, hq_eq, hm_eq, hb_lt, hm_lt, hpre⟩ := dispatch_spec (w := w) hwf henv θ hinv u
   have hprog_eq : prog = queryBodyProg U V w₀ n_max (hashSpace U w₀ n_max) (((base, b), q), m) := by
     change queryBodyProg U V w₀ n_max (hashSpace U w₀ n_max)
       (((base, (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1))),
@@ -1164,20 +1181,13 @@ theorem insertWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
   let b := feistelBucket (bucketBits n_max) h1 u.val
   let q := keyQuotient (bucketBits n_max) u.val
   let m := mOfSeed U n_max θ q
-  have hb_eq : (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1)) =
-      b := and_mask_xor_eq_feistelBucket (bucketBits n_max) u.val h_q
-  have hq_eq : u.val >>> bucketBits n_max = q := Nat.shiftRight_eq_div_pow u.val (bucketBits n_max)
-  have hm_eq : h_q >>> bucketBits n_max = m := rfl
-  have hb_lt : b < numBuckets n_max := feistelBucket_lt (bucketBits n_max) h1 u.val
-  have hm_lt : m < numMicroPerBucket n_max := mOfSeed_lt U n_max θ q
+  obtain ⟨hb_eq, hq_eq, hm_eq, hb_lt, hm_lt, -, hu, hh_q, hsearch⟩ :=
+    dispatch_spec (w := w) hwf henv θ hinv u
   have hq_lt : q < 2 ^ quotientBits U n_max := keyQuotient_lt_two_pow_quotientBits hwf.2.1 u.isLt
   have hv_lt : v < 2 ^ valBits V :=
     hval.2.trans_le (Nat.le_pow_clog (by decide) V)
-  have hpre : InsertWithHashPre U V w₀ n_max w d s := by
-    refine ⟨hwf, u.isLt, hValOfSeed_lt U n_max θ q, ?_⟩
-    dsimp only [d]
-    rw [hb_eq, hq_eq, hm_eq]
-    exact ⟨hb_inv.searchMicroChainPre henv hb_lt hm_lt, hq_lt, hv_lt⟩
+  have hpre : InsertWithHashPre U V w₀ n_max w d s :=
+    ⟨hwf, hu, hh_q, hsearch, hq_eq.trans_lt hq_lt, hv_lt⟩
   have hprog_eq : prog =
       insertBodyProg U V w₀ n_max (hashSpace U w₀ n_max) ((((base, b), q), v), m) := by
     change insertBodyProg U V w₀ n_max (hashSpace U w₀ n_max)
@@ -1207,10 +1217,9 @@ theorem insertWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
   have htot_dom : totalSlots n_max gm' =
       (Dictionary.dom (Function.update s_abs u (some v))).card := by
     rw [hgm'_eq, htot', hB_eq, hinv.htot]
-    by_cases his : (s_abs u).isSome
-    · rw [ite_eq_left his, Dictionary.card_dom_insert_eq_of_isSome his]
-    · have hnone : s_abs u = none := Option.not_isSome_iff_eq_none.mp his
-      rw [ite_eq_right his, Dictionary.card_dom_insert_eq_of_eq_none hnone]
+    split_ifs with his
+    · exact (Dictionary.card_dom_insert_eq_of_isSome his v).symm
+    · exact (Dictionary.card_dom_insert_eq_of_eq_none (Option.not_isSome_iff_eq_none.mp his) v).symm
   have hprobe := (chain_and_overflow_le_probeExcess θ hb_inv u).2.2
   refine ⟨hpre, ?_, ?_, ⟨⟨L', ?_⟩, htot_dom⟩, ?_⟩
   · rw [hs'_eq]; exact hf
@@ -1265,17 +1274,7 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
   let b := feistelBucket (bucketBits n_max) h1 u.val
   let q := keyQuotient (bucketBits n_max) u.val
   let m := mOfSeed U n_max θ q
-  have hb_eq : (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1)) =
-      b := and_mask_xor_eq_feistelBucket (bucketBits n_max) u.val h_q
-  have hq_eq : u.val >>> bucketBits n_max = q := Nat.shiftRight_eq_div_pow u.val (bucketBits n_max)
-  have hm_eq : h_q >>> bucketBits n_max = m := rfl
-  have hb_lt : b < numBuckets n_max := feistelBucket_lt (bucketBits n_max) h1 u.val
-  have hm_lt : m < numMicroPerBucket n_max := mOfSeed_lt U n_max θ q
-  have hpre_prep : QueryWithHashPre U V w₀ n_max w d_prep s := by
-    refine ⟨hwf, u.isLt, hValOfSeed_lt U n_max θ q, ?_⟩
-    dsimp only [d_prep]
-    rw [hb_eq, hq_eq, hm_eq]
-    exact hb_inv.searchMicroChainPre henv hb_lt hm_lt
+  obtain ⟨hb_eq, hq_eq, hm_eq, hb_lt, hm_lt, hpre_prep⟩ := dispatch_spec (w := w) hwf henv θ hinv u
   have hprep_eq : prog_prep =
       deletePrepProg U V w₀ n_max (hashSpace U w₀ n_max) (((base, b), q), m) := by
     change deletePrepProg U V w₀ n_max (hashSpace U w₀ n_max)
@@ -1330,10 +1329,9 @@ theorem deleteWithHashProg_dict_spec {U V w₀ n_max w base : ℕ}
   have htot_dom : totalSlots n_max gm' =
       (Dictionary.dom (Function.update s_abs u none)).card := by
     rw [hgm'_eq, htot', hB_eq, hinv.htot]
-    by_cases his : (s_abs u).isSome
-    · rw [ite_eq_left his, Dynamic.card_dom_delete_eq_of_isSome his]
-    · have hnone : s_abs u = none := Option.not_isSome_iff_eq_none.mp his
-      rw [ite_eq_right his, Dynamic.card_dom_delete_eq_of_eq_none hnone]
+    split_ifs with his
+    · exact (Dynamic.card_dom_delete_eq_of_isSome his).symm
+    · exact (Dynamic.card_dom_delete_eq_of_eq_none (Option.not_isSome_iff_eq_none.mp his)).symm
   have hprobe := (chain_and_overflow_le_probeExcess θ hb_inv u).2.2
   have hcost_prep := hprep_spec.2.1
   refine ⟨(congrArg ((Memory.spec 0).clientResult s) hprep_eq).trans hprep_val,

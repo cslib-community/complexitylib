@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Arithmetic
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Native radix decoding
@@ -62,8 +63,7 @@ variable {L : Language} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)] {α : T
 theorem realize_quotientEq (B x q r : (language L).Term α) (v : α → Fin n) :
     (quotientEq L B x q r).Realize v ↔
       (x.realize v).val = (r.realize v).val + (B.realize v).val * (q.realize v).val := by
-  simp only [quotientEq, Formula.realize_iExs, Formula.realize_inf, realize_mulEq, realize_addEq,
-    Term.realize_relabel, Term.realize_var, Function.comp_def, Sum.elim_inl, Sum.elim_inr]
+  fo_simp [quotientEq, Function.comp_def]
   constructor
   · rintro ⟨u, hu, he⟩
     lia
@@ -82,10 +82,7 @@ theorem realize_decode {d : ℕ} (B x : (language L).Term α)
       (∀ i, ((w i).realize v).val < (B.realize v).val) ∧
       Nat.ofDigits (B.realize v).val (List.ofFn fun i => ((w i).realize v).val) =
         (x.realize v).val := by
-  simp only [decode, Formula.realize_inf, realize_digits, Formula.realize_iExs,
-    Formula.realize_equal, Formula.realize_iInf, realize_quotientEq, Term.realize_var,
-    Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr,
-    Fin.ext_iff, realize_zero_val, and_assoc]
+  fo_simp [decode, Function.comp_def, Fin.ext_iff, and_assoc]
   constructor
   · rintro ⟨hw, q, hq0, hqe, hs⟩
     exact ⟨hw, (Nat.ofDigits_eq_of_quotients _ (fun i => (q i).val) hqe hs).trans hq0⟩

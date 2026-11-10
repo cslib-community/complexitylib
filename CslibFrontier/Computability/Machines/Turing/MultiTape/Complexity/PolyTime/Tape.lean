@@ -186,11 +186,9 @@ theorem stackTape_cons {symbol : α → Option Symbol} {tape : α → StackTape 
     (hsymbol : ComputableTidilyInPolyTime symbol input (encOption enc))
     (htape : ComputableTidilyInPolyTime tape input (encStackTape enc)) :
     ComputableTidilyInPolyTime (fun a => StackTape.cons (symbol a) (tape a)) input
-      (encStackTape enc) := by
-  have hlist : ComputableTidilyInPolyTime
-      (fun a => if (symbol a).isSome || !(tape a).toList.isEmpty
-        then symbol a :: (tape a).toList else []) input (encList (encOption enc)) := by fun_prop
-  exact hlist.of_enc_eq (fun a => by rw [encStackTape_apply, StackTape.cons_toList])
+      (encStackTape enc) :=
+  ComputableInPolyTime.tidy (ComputableInPolyTime.stackTape_cons hsymbol.computableInPolyTime
+    htape.computableInPolyTime)
 
 /-- Map symbols to occupied cells with the certified list map. -/
 @[fun_prop]

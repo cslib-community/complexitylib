@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Time
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
@@ -159,10 +160,7 @@ private theorem clockedBounds_aux (cA cD cO C₂ : ℕ) : ∃ K, ∀ {n A D N J 
     (Nat.pow_le_pow_right hY1 (by omega))
   have hX4Y2 : (n + 1) ^ 4 * (J + 1) ^ 2 ≤ W := Nat.mul_le_mul (Nat.pow_le_pow_right hX1 (by omega))
     (Nat.pow_le_pow_right hY1 (by omega))
-  have hY2 : (J + 1) ^ 2 ≤ W := by
-    have := Nat.mul_le_mul (Nat.one_le_pow 5 (n + 1) hX1)
-      (Nat.pow_le_pow_right hY1 (show 2 ≤ 3 by omega))
-    rwa [one_mul] at this
+  have hY2 : (J + 1) ^ 2 ≤ W := by grind
   -- the pieces
   have hU' : 100000 * (P * (n + 1)) ^ 4 * (J + 1) ^ 2 ≤ 100000 * P ^ 5 * W := by
     have hmono := Nat.mul_le_mul
@@ -275,12 +273,7 @@ theorem computableInO_timeDiagonal {J : ℕ → ℕ} (hJ : TimeConstructible J) 
     have hbounds (x : List Bool) (hs : shortDesc x = true) := by
       have hA : ((unframe x).length + 1) ^ dd ≤ cA * (x.length + 1) :=
         (hcA _).trans (Nat.mul_le_mul_left _ ((of_decide_eq_true hs).trans (Nat.le_succ _)))
-      have hN : (encList encUnary (x.map eBit)).length ≤ 3 * x.length :=
-        (length_encList_le encUnary _ (b := 1) fun s hs => by
-          obtain ⟨b, -, rfl⟩ := List.mem_map.mp hs
-          cases b
-          · exact Nat.zero_le _
-          · exact le_rfl).trans (by rw [List.length_map]; omega)
+      have hN := length_encList_map_eBit_le x
       have hD := hcD x
       have hE := hcO x
       dsimp only [Function.comp_apply, encBits_apply] at hD hE
@@ -333,8 +326,7 @@ theorem setOf_timeDiagonal_notMem_DTIME_of_frequently_le {f J : ℕ → ℕ}
     simp only [List.length_append, length_frame, pad, List.length_replicate]
     omega
   have hshort : Diagonal.shortDesc (frame (eDesc (desc eS eBit tm)) ++ pad) = true := by
-    rw [Diagonal.shortDesc, unframe_frame_append, hlen]
-    exact decide_eq_true hcode
+    grind [Diagonal.shortDesc, unframe_frame_append]
   have htime : c₁ * f (frame (eDesc (desc eS eBit tm)) ++ pad).length + c₂ ≤
       J (frame (eDesc (desc eS eBit tm)) ++ pad).length := by
     rw [hlen]

@@ -120,7 +120,7 @@ theorem gridPointWords_eq (n N e H : ℕ) :
   rw [ExecutableGenerator.output, filterMap_map_eq_flatMap_toList, Generator.grid,
     gridPointWords, ← List.map_coe_finRange_eq_range]
   simp only [List.flatMap_map, List.flatMap_assoc]
-  congr 1; funext t; congr 1; funext p; congr 1; funext r
+  congr 1 with t : 1; congr 1 with p : 1; congr 1 with r : 1
   exact pointWords_eq n N e (fun i => (![t, p, r] i).val + 1)
 
 /-- `outputWord` agrees with `encodeOutput (ExecutableGenerator.output n N e H)`. -/

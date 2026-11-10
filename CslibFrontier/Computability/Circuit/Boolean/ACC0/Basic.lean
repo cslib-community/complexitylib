@@ -242,8 +242,7 @@ theorem modGate_mem_ACC0 (q : ℕ) : Language.ofSlices (modGate q) ∈ ACC0 :=
 /-- **Parity is in `AC⁰[2]`.** -/
 theorem parity_mem_AC0Mod_two : Language.ofSlices parity ∈ AC0Mod 2 := by
   have h : Language.ofSlices parity = Language.ofSlices (modGate 2) := by
-    congr 1
-    funext n
+    congr 1 with n : 1
     exact (modGate_two_eq_parity n).symm
   rw [h]
   exact modGate_mem_AC0Mod 2

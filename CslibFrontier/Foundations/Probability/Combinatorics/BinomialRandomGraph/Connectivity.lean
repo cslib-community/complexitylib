@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (Mathlib, `Mathlib/Probability/Combinatorics/BinomialRandomGraph/`)
 
-public import CslibFrontier.Foundations.MeasureTheory.Constructions.SimpleGraph
+public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
@@ -81,26 +81,16 @@ namespace SimpleGraph
 variable {V : Type*}
 
 /-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
-`(1 - p) ^ |t|`. -/
+`(1 - p) ^ |t|`: the constant pattern `false` in `SimpleGraph.binomialRandom_edgePattern`. -/
 theorem binomialRandom_disjoint_edgeSet [Countable V] (p : I) (t : Finset (Sym2 V))
     (ht : ∀ e ∈ t, ¬e.IsDiag) :
     G(V, p) {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} = toNNReal (σ p) ^ #t := by
-  rw [binomialRandom_eq_map, Measure.map_apply measurable_fromEdgeSet
-    (measurableSet_disjoint_edgeSet _), setBernoulli_apply']
-  have : (fun q : Sym2 V → Prop => {i | q i}) ⁻¹'
-      (fromEdgeSet ⁻¹' {G | Disjoint (t : Set (Sym2 V)) G.edgeSet}) =
-      Set.pi (t : Set (Sym2 V)) (fun _ => {False}) := by
-    ext q
-    simp only [Set.mem_preimage, Set.mem_ofPred_eq, edgeSet_fromEdgeSet, Set.disjoint_left,
-      Set.mem_sdiff, Set.mem_pi, Finset.mem_coe, Set.mem_singleton_iff, eq_iff_iff, iff_false]
-    exact ⟨fun h e he hq => h he ⟨hq, ht e he⟩, fun h e he hq => h e he hq.1⟩
-  rw [this, Measure.infinitePi_pi _ (fun _ _ => measurableSet_singleton _)]
-  rw [Finset.prod_congr rfl (g := fun _ => (toNNReal (σ p) : ENNReal))]
-  · simp
-  intro e he
-  rw [bernoulliMeasure_apply_of_notMem_of_mem p (measurableSet_singleton _)]
-  · simpa using ht e he
-  · simp
+  have h := binomialRandom_edgePattern p t ht fun _ => false
+  simp only [Bool.false_eq_true, iff_false, ↓reduceIte, Finset.prod_const] at h
+  rw [← h]
+  congr 1
+  ext G
+  simp [Set.disjoint_left]
 
 /-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
 `(1 - p) ^ |t|`. -/
@@ -314,8 +304,7 @@ theorem binomialRandom_real_not_connected_le {n : ℕ} (hn : 0 < n) (p : I)
     have hhalf : r k ≤ 1 / 2 := by nlinarith
     obtain ⟨j, rfl⟩ : ∃ j, k = j + 2 := ⟨k - 2, by rw [mem_Icc] at hk; omega⟩
     calc r (j + 2) ^ (j + 2) = r (j + 2) ^ 2 * r (j + 2) ^ j := by ring
-      _ ≤ 16 * y * (1 / 2) ^ j :=
-          mul_le_mul h2 (pow_le_pow_left₀ hr0 hhalf j) (by positivity) (by positivity)
+      _ ≤ 16 * y * (1 / 2) ^ j := by gcongr
       _ = 64 * y * (1 / 2) ^ (j + 2) := by ring
   have hsum : ∑ k ∈ Icc 2 m, 64 * y * (1 / 2 : ℝ) ^ k ≤ 32 * y := by
     rw [← mul_sum, ← Finset.Ico_add_one_right_eq_Icc]

@@ -282,8 +282,7 @@ theorem ecomplexity_memRight_holds_le [Fintype Y] [Finite Z] (I : Ineq (Fin n �
     omega
   rw [hcard] at h
   refine le_of_eq_of_le ?_ h
-  congr 1
-  funext a b
+  congr 1 with a b : 2
   simp only [MemRight, Set.mem_ofPred_eq, holds_sum_elim_sum_elim_iff]
 
 /-- **The search at an inequality of `Γ_A`** [Krajíček, proof of Theorem 6.4][Krajicek1997]. Let

@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Time.SigmaTwoChain
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.LookupRun
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Space
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
@@ -500,14 +501,7 @@ theorem TISP_subset_SigmaTwoTIME {t s τ : ℕ → ℕ}
   have hP : ComputableInO (fun a => (enc a).map eBit) enc (encList encUnary)
       (fun a => (enc a).length) (fun a => (enc a).length) :=
     computableInO_map_eBit.comp_linear (ComputableInO.of_eq (encMid := encBits) fun _ => rfl)
-  have hPlen : ∀ a, (encList encUnary ((enc a).map eBit)).length ≤ 3 * (enc a).length :=
-    fun a => by
-      have := length_encList_le encUnary ((enc a).map eBit) (b := 1) fun x hx => by
-        obtain ⟨y, -, rfl⟩ := List.mem_map.mp hx
-        simp only [encUnary_apply, List.length_replicate]
-        cases y <;> decide
-      rw [List.length_map] at this
-      omega
+  have hPlen (a : α) := length_encList_map_eBit_le (enc a)
   refine mem_SigmaTwoTIME_of_virtualRun (ι := enc) (g := indicator A) (M := M)
     (T := fun a => c * (t (enc a).length + 1)) (S := fun a => c * (s (enc a).length + 1))
     (fun a => hM a) hP inputSymbol_stream_inO (fun a q _ => rfl)
