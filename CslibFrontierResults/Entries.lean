@@ -53,6 +53,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
@@ -1043,6 +1044,25 @@ register_result "even-linear-orders" where
     have at least 2^n - 1 elements, the sharp form in Kolaitis's survey; Libkin states the \
     sufficient condition with threshold 2^n. EVEN is not definable even above any size \
     threshold."
+
+register_result "monadic-small-model" where
+  title := "Löwenheim: the small model property for monadic sentences"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Lowenheim1915, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Monadic.duplicatorWins_of_encard,
+    Cslib.Logic.FO.Monadic.realize_iff_of_encard,
+    Cslib.Logic.FO.Monadic.exists_substructure_realize,
+    Cslib.Logic.FO.Monadic.exists_fin_realize
+  ]
+  scope := "Mathlib relational languages whose relation symbols have arity at most one, with \
+    finitely many unary symbols; nullary symbols are allowed. A sentence of quantifier rank q \
+    with a nonempty model has one on Fin (n + 1) with n + 1 ≤ max q 1 * 2 ^ k for k unary \
+    symbols, through a substructure of the given model. The explicit bound and its proof by \
+    Ehrenfeucht–Fraïssé games are proved here; Löwenheim is cited for the small model \
+    property only. The decision procedure for finite satisfiability is not yet formalized."
 
 register_result "connectivity-not-fo" where
   title := "Connectivity is not first-order definable"
