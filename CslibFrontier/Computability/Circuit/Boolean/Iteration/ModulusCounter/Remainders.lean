@@ -33,8 +33,8 @@ binary length `m = Ω(2 ^ k / k ^ 2)` (`ModulusCounter.hard_power_requires_long_
 
 * `Cslib.Circuits.Boolean.Iteration.ModulusCounter.remainder`: fixed-integer remainder on `k`-bit
   words.
-* `Cslib.Circuits.Boolean.Iteration.counterInput`, `Cslib.Circuits.Boolean.Iteration.counterOutput`:
-  input packing and state extraction for remainder reductions.
+* `Cslib.Circuits.Boolean.Iteration.counterInput`: input packing for remainder reductions; the
+  counter state is read back with `Cslib.BitString.sndBits`.
 * `Cslib.Circuits.Boolean.Iteration.inputTimeRemainder`: two-input remainder on `m` numerator bits
   and `k` modulus bits.
 
@@ -287,10 +287,6 @@ variable {k : ℕ}
 def counterInput (x : BitString k) : BitString (k + k) :=
   ModulusCounter.pack (word x) 0
 
-/-- Extract the `k`-bit counter state from a `2 k`-bit state. -/
-def counterOutput (y : BitString (k + k)) : BitString k :=
-  fun i => y (Fin.natAdd k i)
-
 /-- The modulus word of `counterInput x` has natural value `(word x).toNat`. -/
 @[simp] theorem counterInput_modulus_toNat (x : BitString k) :
     (ModulusCounter.leftWord (counterInput x)).toNat = (word x).toNat := by
@@ -302,10 +298,11 @@ def counterOutput (y : BitString (k + k)) : BitString k :=
   simp [counterInput]
 
 private theorem counterRemainder_spec (T : ℕ) (x : BitString k) :
-    counterOutput ((counterStep k)^[T] (counterInput x)) = ModulusCounter.remainder T x := by
+    BitString.sndBits ((counterStep k)^[T] (counterInput x)) = ModulusCounter.remainder T x := by
   rw [counterStep, ModulusCounter.iterate_power]
   funext i
-  dsimp only [counterOutput, counterInput, ModulusCounter.power]
+  rw [BitString.sndBits_apply]
+  dsimp only [counterInput, ModulusCounter.power]
   rw [ModulusCounter.leftWord_pack, ModulusCounter.rightWord_pack]
   simp only [ModulusCounter.pack, Fin.append_right]
   by_cases hz : (word x).toNat = 0

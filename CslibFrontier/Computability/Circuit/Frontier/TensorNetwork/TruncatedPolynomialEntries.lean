@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 
 /-!
 # Direct truncated contraction with polynomial-time entries
@@ -50,8 +51,8 @@ theorem truncDirectCertificate_le_of_isPolynomial
   have hFp : PolyBounded id F :=
     ((PolyBounded.const Kd).mul (((PolyBounded.self.add hEp).add
       (PolyBounded.const 1)).pow Kd)).mul (hEp.add (PolyBounded.const 1))
-  obtain ⟨aF, dF, hF⟩ := hFp.exists_le
-  refine ⟨aF + dF, fun P ℓ r G => ?_⟩
+  obtain ⟨KF, hF⟩ := hFp.exists_le_succ_pow
+  refine ⟨KF, fun P ℓ r G => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length
   have hL : (DescribedNetwork.encDescribed encT G).length ≤ n := by
     enc_len [n]
@@ -66,17 +67,15 @@ theorem truncDirectCertificate_le_of_isPolynomial
         _ = E n := by simp only [E, mul_pow]; ring
     exact ⟨by omega, by omega⟩
   obtain ⟨hT, hS⟩ := hKd P ℓ r G (E n) (E n) he
-  have hbound : F n ≤ (aF + dF) * (n + 1) ^ (aF + dF) :=
-    (hF n).trans (Nat.mul_le_mul (by omega)
-      (Nat.pow_le_pow_right (by omega) (by omega)))
+  have hbound : F n ≤ KF * (n + 1) ^ KF := hF _ le_rfl n
   refine ⟨?_, ?_⟩
   · calc (truncDirectCertificate entry ce).time (P, ℓ, r, G)
         ≤ Kd * (n + E n + 1) ^ Kd * 2 ^ G.numEdges * (E n + 1) := hT
       _ = F n * 2 ^ G.numEdges := by simp only [F]; ring
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) * 2 ^ G.numEdges := by gcongr
+      _ ≤ KF * (n + 1) ^ KF * 2 ^ G.numEdges := by gcongr
   · calc (truncDirectCertificate entry ce).space (P, ℓ, r, G)
         ≤ Kd * (n + E n + 1) ^ Kd := hS
       _ ≤ F n := Nat.le_mul_of_pos_right _ (by omega)
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) := hbound
+      _ ≤ KF * (n + 1) ^ KF := hbound
 
 end Cslib.Circuits.Frontier

@@ -55,7 +55,7 @@ By induction, if `f (2N - d) ^ b < (2N) ^ b` then the formula is refutable in wi
   simple*][BenSassonWigderson2001]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

@@ -18,6 +18,7 @@ import CslibFrontier.Foundations.Data.Nat.CeilDiv
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.SqrtLog
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # High-incidence branching for Lemma D.2
@@ -189,10 +190,9 @@ theorem threshold_eq_ceil {n : ℕ} (hn : 1 ≤ n) (sys : List (List (List ℕ))
   · simp only [Nat.ceilDiv_eq_add_pred_div]
     exact Nat.div_le_div_right (by have := le_max_right 1 N; omega)
 
-/-- **Few branching variables** (p. 54): if every variable is below `n`, at most `n / ⌈√λ⌉`
-variables lie in more than `D*` scopes, where `⌈√λ⌉ = ⌊√(λ - 1)⌋ + 1`. -/
-theorem length_branchVars_le {n : ℕ} {sys : List (List (List ℕ))}
-    (hvars : ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n) :
+/-- **Few branching variables** (p. 54): at most `n / ⌈√λ⌉` variables lie in more than `D*`
+scopes, where `⌈√λ⌉ = ⌊√(λ - 1)⌋ + 1`. -/
+theorem length_branchVars_le (n : ℕ) (sys : List (List (List ℕ))) :
     (branchVars n sys).length ≤ n / ((Nat.clog 2 n - 1).sqrt + 1) := by
   rcases Nat.lt_or_ge n 2 with hn | hn
   · have hc : Nat.clog 2 n = 0 := Nat.clog_of_right_le_one (by omega) 2
@@ -207,18 +207,17 @@ theorem length_branchVars_le {n : ℕ} {sys : List (List (List ℕ))}
   have hD : threshold n sys = q * s := threshold_eq_mul hn sys
   have hN : N ≤ q * n := (le_max_right 1 N).trans (Nat.le_ceilDiv_mul (by omega))
   calc (branchVars n sys).length ≤ N / threshold n sys :=
-        HeavyBranchFold.length_heavyVarList_le_div (by rw [hD]; positivity) hvars
+        HeavyBranchFold.length_heavyVarList_le_div n sys (by rw [hD]; positivity)
     _ ≤ (q * n) / (q * s) := by rw [hD]; exact Nat.div_le_div_right hN
     _ = n / s := Nat.mul_div_mul_left n s hq_pos
 
 /-- **Few branching variables**, against `⌊√⌊log₂ n⌋⌋`: for `n ≥ 2`, at most
 `n / ⌊√⌊log₂ n⌋⌋` variables lie in more than `D*` scopes. -/
-theorem length_branchVars_le_div_sqrt_log {n : ℕ} {sys : List (List (List ℕ))} (hn : 2 ≤ n)
-    (hvars : ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n) :
+theorem length_branchVars_le_div_sqrt_log {n : ℕ} (sys : List (List (List ℕ))) (hn : 2 ≤ n) :
     (branchVars n sys).length ≤ n / Nat.sqrt (Nat.log 2 n) := by
   have hlog : 1 ≤ Nat.log 2 n := Nat.le_log_of_pow_le Nat.one_lt_two (by simpa using hn)
   have hsqrt : 0 < Nat.sqrt (Nat.log 2 n) := Nat.sqrt_pos.mpr hlog
-  exact (length_branchVars_le hvars).trans
+  exact (length_branchVars_le n sys).trans
     (Nat.div_le_div_left (Nat.sqrt_log_two_le_sqrt_clog_two_sub_one_add_one n) hsqrt)
 
 /-- **The number of scope incidences** under the hypotheses of Lemma D.2:
@@ -272,17 +271,17 @@ theorem threshold_le_pow {k c n : ℕ} {sys : List (List (List ℕ))} (h : IsSpa
 
 /-! ### Reduced branches -/
 
-/-- **A reduced branch keeps at least half the variables** (p. 54): for `n ≥ 3` and every variable
-below `n`, it has `n' = n - |S|` free variables and `n ≤ 2 n'`. -/
+/-- **A reduced branch keeps at least half the variables** (p. 54): for `n ≥ 3`, it has
+`n' = n - |S|` free variables and `n ≤ 2 n'`. -/
 theorem IsReducedBranch.le_two_mul {n n' : ℕ} {sys sys' : List (List (List ℕ))} (hn : 3 ≤ n)
-    (hvars : ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n) (hb : IsReducedBranch n sys n' sys') :
+    (hb : IsReducedBranch n sys n' sys') :
     n' = n - (branchVars n sys).length ∧ n ≤ 2 * n' := by
   obtain ⟨vals, -, hred⟩ := hb
   have hn' := HeavyBranchFold.prepareBranch_freeVars_eq.2 sys' hred
   have hlam : 2 ≤ Nat.clog 2 n := (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).2 (by omega)
   have hs : 2 ≤ (Nat.clog 2 n - 1).sqrt + 1 := by
     have := Nat.sqrt_pos.mpr (by omega : 0 < Nat.clog 2 n - 1); omega
-  have hS := (length_branchVars_le hvars).trans (Nat.div_le_div_left hs (by norm_num))
+  have hS := (length_branchVars_le n sys).trans (Nat.div_le_div_left hs (by norm_num))
   have := Nat.div_mul_le_self n 2
   exact ⟨hn', by omega⟩
 
@@ -303,7 +302,7 @@ variables per scope and scopes per variable. Also `n ≤ 2 n'`. -/
 theorem isSparseBranch_of_isReducedBranch {k c n n' : ℕ} {sys sys' : List (List (List ℕ))}
     (h : IsSparseSystem k c n sys) (hn : 5 ≤ n) (hk : 2 ^ ((c + 1) * k) ≤ n)
     (hb : IsReducedBranch n sys n' sys') : IsSparseBranch k (2 * c + 4) n' sys' ∧ n ≤ 2 * n' := by
-  obtain ⟨-, hn2⟩ := hb.le_two_mul (by omega) h.vars_lt
+  obtain ⟨-, hn2⟩ := hb.le_two_mul (by omega)
   obtain ⟨vals, -, hred⟩ := hb
   set S := branchVars n sys
   have hS_nd : S.Nodup := HeavyBranchFold.nodup_heavyVarList _ _ _
@@ -459,9 +458,7 @@ theorem exists_count_certificate :
   have hstep : PolyBounded
       (fun p : ℕ × List (List (List ℕ)) => (encPair encUnary encSparseSystem p).length)
       (fun p => HeavyBranchFold.stepOverhead
-        (HeavyBranchFold.encBranchInput (branchInput p.1 p.2)).length) :=
-    (PolyBounded.of_polynomiallyBounded _ HeavyBranchFold.polynomiallyBounded_stepOverhead).comp
-      computableInPolyTime_branchInput.polyBounded_length
+        (HeavyBranchFold.encBranchInput (branchInput p.1 p.2)).length) := by growth_poly
   obtain ⟨C, d, hCd⟩ := ((hPrep.1.add hPrep.2).add (hstep.add hstep)).exists_le
   refine ⟨C + d, fun solver csolver hbound => ?_⟩
   have hc := HeavyBranchFold.countByBranching_computableInO csolver

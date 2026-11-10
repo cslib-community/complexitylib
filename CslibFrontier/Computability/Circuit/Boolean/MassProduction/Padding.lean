@@ -31,7 +31,7 @@ Consequently an eventual rational-rate bound extends to every positive input len
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.MassProduction
 

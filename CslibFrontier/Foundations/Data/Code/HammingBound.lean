@@ -67,7 +67,7 @@ balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words, so some code
   [MacWilliamsSloane1977]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Code
 

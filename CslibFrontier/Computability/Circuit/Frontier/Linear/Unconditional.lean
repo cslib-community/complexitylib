@@ -44,7 +44,7 @@ For the explicit Cauchy matrices `1 / (i - (N + j))` this gives, for fan-in two:
   over prime fields.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

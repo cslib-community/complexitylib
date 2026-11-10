@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Basic.Complex.Basic
 public import Mathlib.LinearAlgebra.Matrix.Hermitian
 public import Mathlib.LinearAlgebra.UnitaryGroup
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
 
 /-!
 # The Pauli matrices `X` and `Z`
@@ -78,11 +79,11 @@ theorem pauliZ_mul_self : pauliZ * pauliZ = 1 := by
 theorem pauliZ_mul_pauliX : pauliZ * pauliX = -(pauliX * pauliZ) := by
   ext b c; cases b <;> cases c <;> simp [Matrix.mul_apply]
 
-theorem pauliX_mem_unitaryGroup : pauliX ∈ unitaryGroup Bool ℂ := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, pauliX_isHermitian.eq, pauliX_mul_self]
+theorem pauliX_mem_unitaryGroup : pauliX ∈ unitaryGroup Bool ℂ :=
+  pauliX_isHermitian.mem_unitaryGroup_of_mul_self pauliX_mul_self
 
-theorem pauliZ_mem_unitaryGroup : pauliZ ∈ unitaryGroup Bool ℂ := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, pauliZ_isHermitian.eq, pauliZ_mul_self]
+theorem pauliZ_mem_unitaryGroup : pauliZ ∈ unitaryGroup Bool ℂ :=
+  pauliZ_isHermitian.mem_unitaryGroup_of_mul_self pauliZ_mul_self
 
 @[simp] theorem pauliX_mulVec (v : Bool → ℂ) (b : Bool) : (pauliX *ᵥ v) b = v (!b) := by
   cases b <;> simp [mulVec, dotProduct]

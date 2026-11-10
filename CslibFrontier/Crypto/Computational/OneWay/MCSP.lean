@@ -301,12 +301,10 @@ of `2 ^ m` bits. -/
 theorem isOraclePPT_mcspDistinguisher (d : ℕ)
     (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
     IsOraclePPT encBool (mcspDistinguisher p V d) := by
-  have hV := hV.tidy
   apply IsOraclePPTOn.isOraclePPT
   exact IsOraclePPTOn.bind_with
-    (isOraclePPTOn_queryTable.preprocess (computableInPolyTime_tableQueries d).tidy)
-    ((isPPTOn_mcspRun (.of_tidy hV)).preprocess
-      (computableInPolyTime_tableInstance d)).isOraclePPTOn
+    (isOraclePPTOn_queryTable.preprocess' (computableInPolyTime_tableQueries d))
+    ((isPPTOn_mcspRun hV).preprocess (computableInPolyTime_tableInstance d)).isOraclePPTOn
 
 /-! ### The advantage of the distinguisher -/
 

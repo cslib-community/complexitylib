@@ -25,7 +25,7 @@ import Mathlib.Tactic.NormNum
 These are original integer-coordinate facts about the fixed paired-port interface.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Orthogonal.PairedPorts
 

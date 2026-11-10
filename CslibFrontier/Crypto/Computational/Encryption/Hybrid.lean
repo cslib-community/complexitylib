@@ -354,11 +354,10 @@ theorem isPPTOn_demKeyGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool} {keyLen : ℕ → ℕ}
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -395,8 +394,7 @@ stages have native certificates. -/
 theorem isPPTOn_demKeyGame {Msg : Type} {encMsg : Msg ↪ List Bool}
     {keyLen : ℕ → ℕ} (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -412,10 +410,9 @@ theorem isPPTOn_demGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -428,8 +425,7 @@ symmetric encryption and both adversary stages have native certificates. -/
 @[fun_prop]
 theorem isPPTOn_demGame {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -465,7 +461,7 @@ theorem DEMOneTimeKeyINDCPAOf.demOneTimeKeyINDCPAOn {Msg : Type} {encMsg : Msg �
     (h : DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym := by
   intro adversary hadversary
   simpa only [eval_demKeyGame_restrict] using
@@ -505,7 +501,7 @@ theorem DEMOneTimeINDCPAOf.demOneTimeINDCPAOn {Msg : Type} {encMsg : Msg ↪ Lis
     (h : DEMOneTimeINDCPAOf encMsg encryptSym)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     DEMOneTimeINDCPAOn valid encMsg encryptSym :=
   DEMOneTimeKeyINDCPAOf.demOneTimeKeyINDCPAOn h hvalid
 
@@ -573,9 +569,8 @@ theorem isPPTOn_hybridEncrypt {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
-    IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
+    IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, pk, msg⟩ => hybridEncrypt encaps encryptSym n pk msg) := by
   let E0 := encPair encUnary (encPair encBits encMsg)
   let E1 := encPair E0 (encPair encBits encBits)
@@ -598,13 +593,13 @@ theorem computableInPolyTime_hybridDecrypt {Msg : Type} {encMsg : Msg ↪ List B
     {decryptSym : ℕ → List Bool → List Bool → Option Msg}
     (hdecaps : ComputableInPolyTime
       (fun ⟨n, sk, ctKem⟩ => decaps n sk ctKem)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      (encKeyedInput encBits) (encOption encBits))
     (hdecryptSym : ComputableInPolyTime
       (fun ⟨n, k, ctDem⟩ => decryptSym n k ctDem)
-      (encPair encUnary (encPair encBits encBits)) (encOption encMsg)) :
+      (encKeyedInput encBits) (encOption encMsg)) :
     ComputableInPolyTime
       (fun ⟨n, sk, ct⟩ => hybridDecrypt decaps decryptSym n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encMsg) := by
+      (encKeyedInput encBits) (encOption encMsg) := by
   let I := encPair encUnary (encPair encBits encBits)
   have hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
   have hrest := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
@@ -750,8 +745,7 @@ adversary are. -/
 theorem isPPT_hybridToKEMDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : AdversaryOf Msg}
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     (hadversary : AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
     IsPPT encBool (hybridToKEMDistinguisher encryptSym adversary bit) := by
   let E0 := encPair encUnary encBits
@@ -782,8 +776,7 @@ hybrid adversary are. -/
 theorem isPPT_hybridToKEMHiddenBitDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : AdversaryOf Msg}
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg))
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg))
     (hadversary : AdversaryOf.IsPPT encMsg adversary) :
     IsPPT encBool (hybridToKEMHiddenBitDistinguisher encryptSym adversary) := by
   let E0 := encPair encUnary encBits
@@ -1065,8 +1058,7 @@ theorem KEMINDCPA.hybrid_indcpa {keyLen : ℕ → ℕ} {Msg : Type} {encMsg : Ms
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
     INDCPAOf encMsg keyGen (hybridEncrypt encaps encryptSym) := by
   intro adversary hadversary
   have hkemFalse := hkem (hybridToKEMDistinguisher encryptSym adversary false)
@@ -1120,13 +1112,12 @@ theorem KEMINDCPA.hybrid_indcpaOn {keyLen : ℕ → ℕ} {Msg : Type} {encMsg : 
     (hdem : DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hpk : ∀ n pk m₀ m₁, valid n pk m₀ m₁ = valid n [] m₀ m₁)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits (fun ⟨n, k, msg⟩ => encryptSym n k msg)) :
     INDCPAOn valid encMsg keyGen (hybridEncrypt encaps encryptSym) := by
   intro adversary hadversary
   have hA' := hadversary.restrict hvalid
@@ -1162,8 +1153,7 @@ theorem otpDecrypt_otpEncrypt (n : ℕ) (k : List Bool) (bit : Bool) :
 /-- One-time pad encryption is uniform strict PPT. -/
 @[fun_prop]
 theorem isPPTOn_otpEncrypt :
-    IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun ⟨n, k, bit⟩ => otpEncrypt n k bit) :=
+    IsPPTOn (encKeyedInput encBool) encBits (fun ⟨n, k, bit⟩ => otpEncrypt n k bit) :=
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBool)
   (ComputableInPolyTime.bitsCons
     (ComputableInPolyTime.bool_xor.comp'
@@ -1175,7 +1165,7 @@ theorem isPPTOn_otpEncrypt :
 theorem computableInPolyTime_otpDecrypt :
     ComputableInPolyTime
       (fun ⟨n, k, ct⟩ => otpDecrypt n k ct)
-      (encPair encUnary (encPair encBits encBits)) encBool :=
+      (encKeyedInput encBits) encBool :=
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   ComputableInPolyTime.bool_xor.comp'
     (((ComputableInPolyTime.headD false).comp' hp2.fst').prod
@@ -1251,8 +1241,7 @@ time in unary. -/
 @[fun_prop]
 theorem isPPTOn_otpKeyWordEncrypt {keyLen : ℕ → ℕ}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) :=
+    IsPPTOn (encKeyedInput encBits) encBits (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) :=
   let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   ((hkeyLen.comp' hp1).bitsXorWithInput (hp2.fst'.cons' (hp2.snd'.cons' (.const [])))).isPPTOn
@@ -1265,7 +1254,7 @@ theorem computableInPolyTime_otpKeyWordDecrypt {keyLen : ℕ → ℕ}
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
         otpKeyWordDecrypt keyLen p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits :=
+      (encKeyedInput encBits) encBits :=
   let hp1 := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
   let hp2 := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   (hkeyLen.comp' hp1).bitsXorWithInput (hp2.fst'.cons' (hp2.snd'.cons' (.const [])))
@@ -1341,8 +1330,7 @@ theorem otpWordDecrypt_otpWordEncrypt {n : ℕ} (k : List Bool) {m : List Bool}
 /-- One-time pad word encryption is uniform strict PPT. -/
 @[fun_prop]
 theorem isPPTOn_otpWordEncrypt :
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun ⟨n, k, m⟩ => otpWordEncrypt n k m) :=
+    IsPPTOn (encKeyedInput encBits) encBits (fun ⟨n, k, m⟩ => otpWordEncrypt n k m) :=
   isPPTOn_otpKeyWordEncrypt ComputableInPolyTime.id'
 
 /-- One-time pad word decryption is computable in polynomial time. -/
@@ -1350,7 +1338,7 @@ theorem isPPTOn_otpWordEncrypt :
 theorem computableInPolyTime_otpWordDecrypt :
     ComputableInPolyTime
       (fun ⟨n, k, ct⟩ => otpWordDecrypt n k ct)
-      (encPair encUnary (encPair encBits encBits)) encBits :=
+      (encKeyedInput encBits) encBits :=
   computableInPolyTime_otpKeyWordDecrypt ComputableInPolyTime.id'
 
 /-- A uniform `n`-bit key masks any challenge word perfectly in `demGame otpWordEncrypt`, so the

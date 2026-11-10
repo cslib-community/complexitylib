@@ -29,7 +29,7 @@ standard finite-symbol encodings; the final Boolean answer is recoded to `encBoo
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.1][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -81,7 +81,7 @@ multiplication.
   unary position.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

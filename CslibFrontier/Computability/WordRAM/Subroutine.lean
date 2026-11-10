@@ -31,8 +31,9 @@ State-transition data-structure implementations built on `SubroutineBase` live i
 
 * `Cslib.WordRAM.SubroutineCode`, `Cslib.WordRAM.SubroutineBase`: uniform relocatable machine code
   and step-independent initialization/framing bundle for a Word-RAM subroutine.
-* `Cslib.WordRAM.SubroutineCode.initFresh`, `Cslib.WordRAM.SubroutineCode.initClear`: `O(1)` fresh
-  initialization on zeroed memory and generic `O(space)` dirty-memory re-initialization.
+* `Cslib.WordRAM.SubroutineCode.initFresh`, `Cslib.WordRAM.SubroutineCode.initClear`: fresh
+  initialization on zeroed memory, with no zero-fill pass, and generic dirty-memory
+  re-initialization, which zero-fills the block before setup.
 * `Cslib.WordRAM.SubroutineCode.toDynamicProgram`: standalone `DynamicProgram` projection.
 * `Cslib.WordRAM.SubroutineCode.initFreshProg`, `Cslib.WordRAM.SubroutineCode.initClearProg`,
   `Cslib.WordRAM.SubroutineCode.opProg`: compiled flat programs.
@@ -145,7 +146,9 @@ namespace SubroutineCode
 
 variable {B B' : Basis} {r_ds k_init : ℕ}
 
-/-- `O(1)` initializer when `[frontier, frontier + space)` is already zeroed (e.g. `Data.init`). -/
+/-- Initializer when `[frontier, frontier + space)` is already zeroed (e.g. `Data.init`): runs
+`allocSpan` then `initSetup`, with no zero-fill pass. `SubroutineBase.initFresh_exec` bounds it by
+`SubroutineBase.initTime` instructions (`spanTime + setupTime`). -/
 def initFresh (P : SubroutineCode B r_ds k_init) : Code B r_ds :=
   .seq P.allocSpan P.initSetup
 
@@ -159,8 +162,9 @@ def zeroFillCode (P : SubroutineCode B r_ds k_init) : Code B r_ds :=
        (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
     (.op (.const P.zeroReg 0))
 
-/-- Generic `O(space)` reusable initializer on arbitrary dirty memory (`zeroFillCode` +
-`initSetup`). -/
+/-- Generic reusable initializer on arbitrary dirty memory (`allocSpan`, then `zeroFillCode`, then
+`initSetup`). `SubroutineBase.initClear_exec` bounds it by `initTime + 4 * space + 6`
+instructions. -/
 def initClear (P : SubroutineCode B r_ds k_init) : Code B r_ds :=
   .seq P.allocSpan (.seq P.zeroFillCode P.initSetup)
 
@@ -399,7 +403,8 @@ theorem initFresh_exec (C : SubroutineBase P Result valid w base params s₀) {x
   rw [hm₁] at hmod
   exact ⟨y, he₁.seq he₂, hfr₂, hrep, hpot, hmod⟩
 
-/-- Relocated `O(1)` fresh initialization along any injective register embedding `f`. -/
+/-- Relocated fresh initialization along any injective register embedding `f`, in `C.initTime`
+instructions. -/
 theorem initFresh_rename (C : SubroutineBase P Result valid w base params s₀)
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
     (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
@@ -442,7 +447,8 @@ theorem initClear_exec (C : SubroutineBase P Result valid w base params s₀) {x
     simpa only [Finset.union_idempotent] using hmod₂.trans hmod₃
   exact ⟨y, (he₁.seq (he₂.seq he₃)).mono (by unfold initTime; omega), hfr₃, hrep, hpot, hmod⟩
 
-/-- Relocated `O(space)` dirty-memory initialization along any injective register embedding `f`. -/
+/-- Relocated dirty-memory initialization along any injective register embedding `f`, in
+`C.initTime + 4 * C.space + 6` instructions. -/
 theorem initClear_rename (C : SubroutineBase P Result valid w base params s₀)
     {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
     (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
@@ -486,11 +492,11 @@ namespace SubroutineCode
 
 variable {B : Basis} {r_ds k_init : ℕ}
 
-/-- Compiled flat `Program B r_ds` for `O(1)` fresh zeroed-memory initialization. -/
+/-- Compiled flat `Program B r_ds` for fresh zeroed-memory initialization (`initFresh`). -/
 def initFreshProg (P : SubroutineCode B r_ds k_init) : Program B r_ds :=
   P.initFresh.program P.output
 
-/-- Compiled flat `Program B r_ds` for `O(space)` dirty-memory reusable initialization. -/
+/-- Compiled flat `Program B r_ds` for dirty-memory reusable initialization (`initClear`). -/
 def initClearProg (P : SubroutineCode B r_ds k_init) : Program B r_ds :=
   P.initClear.program P.output
 

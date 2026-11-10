@@ -19,7 +19,7 @@ competitive and lower-bound predicates for
 `CslibFrontier.DataStructure.Online.SkiRental.Randomized`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.SkiRentalRandomized
 

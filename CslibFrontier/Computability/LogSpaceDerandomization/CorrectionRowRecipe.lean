@@ -120,12 +120,8 @@ variable {Q G g Xs Z Zt f M}
 
 include A in
 /-- Positive usage density makes every terminal conditioning slice nonempty. -/
-theorem usage_nonempty (y : V) : ({t | Zt t y} : Finset Ζ).Nonempty := by
-  apply dens_ne_zero.mp
-  intro he
-  have hπ := A.density y
-  rw [he] at hπ
-  exact A.π_pos.ne' (by simpa using hπ.symm)
+theorem usage_nonempty (y : V) : ({t | Zt t y} : Finset Ζ).Nonempty :=
+  dens_pos.mp (by exact_mod_cast A.π_pos.trans_eq (A.density y).symm)
 
 /-- The true conditional mean follows from primitive gate and pair-count laws. -/
 theorem expect_atom (hf : 0 < f) (hG : ∀ x y, 0 ≤ G x y)

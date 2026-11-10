@@ -28,7 +28,7 @@ changing their drawing.
 These finite-route reversal lemmas and proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Orthogonal
 

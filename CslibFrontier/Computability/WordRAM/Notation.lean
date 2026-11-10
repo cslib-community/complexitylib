@@ -53,9 +53,11 @@ identifiers: `ram` and `width` remain ordinary names.
   (`Cslib.WordRAM.reduceFits`), so that a bound implied by a fact such as `Fits w (base + n)`
   needs no statement of its own, or else by the given simp lemmas. Programs given by name are
   unfolded by passing their definitions among the simp lemmas, as in `ram_eval [myProgram, h]`.
-  When it fails, the error names the failing step: the goal has neither form, `simp` cannot
-  evaluate the program, the interpreter returns `none`, a condition remains undecided (shown), or
-  `omega` cannot prove the instruction bound (shown). `ram_eval` and `ram_exact_eval` both
+  When it fails, the error names the failing step: the goal has neither form, a given simp lemma
+  does not elaborate, `simp` cannot evaluate the program, the interpreter returns `none`, a
+  condition remains undecided (shown), or `omega` cannot prove the instruction bound (shown).
+  Under `try` and `first`, which discard the message, it fails without this replay, at the cost of
+  the attempt alone. `ram_eval` and `ram_exact_eval` both
   expand to the internal tactic `ram_eval_core`, which holds the shared simp set and steps; they
   differ only in the simp lemmas for the instructions of the basis.
 
@@ -171,7 +173,13 @@ scoped macro_rules
 /-- Symbolically execute structured code on a goal `ExecWithin w c x y T` or `Exec w c x y T`,
 allowing each loop the given number of iterations (default `0`). Whether a written number fits a
 word is decided by `omega` from the `Fits` hypotheses in context (`Cslib.WordRAM.reduceFits`),
-or by the given simp lemmas. -/
+or by the given simp lemmas.
+
+On failure the error names the step that failed: the goal has neither form, a given simp lemma
+does not elaborate, `simp` cannot evaluate the program (pass its definition, as in
+`ram_eval [myProgram]`), the interpreter returns `none` (a fault, or too few loop iterations), a
+branch or `Fits` condition remains (shown), or `omega` cannot prove the instruction bound (shown).
+Under `try` or `first`, which discard the message, it fails without working out which step. -/
 scoped syntax (name := ramEval) "ram_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? :
   tactic
 
@@ -207,22 +215,33 @@ private meta def firstTarget? : TacticM (Option MessageData) := do
   g.withContext do
     return some (← addMessageContext (indentExpr (← instantiateMVars (← g.getType))))
 
+/-- Whether `ex` was raised while elaborating one of the caller's simp lemmas `args`, judged by its
+position: an unknown or ill-typed lemma is reported at the lemma. -/
+private meta def inSimpArg (args : Array Syntax) (ex : Exception) : Bool := Id.run do
+  let some pos := ex.getRef.getPos? | return false
+  return args.any fun arg => match arg.getPos?, arg.getTailPos? with
+    | some start, some stop => decide (start ≤ pos ∧ pos < stop)
+    | _, _ => false
+
 /-- The error of `ram_eval` when `simp` fails on the interpreter goal. -/
-private meta def simpFailed (name : String) (ex : Exception) : MessageData :=
-  m!"{name}: simp could not evaluate the program:{indentD ex.toMessageData}\nPass the \
-    program's definition among the simp lemmas, as in `{name} [myProgram]`."
+private meta def simpFailed (name : String) (args : Array Syntax) (ex : Exception) : MessageData :=
+  if inSimpArg args ex then
+    m!"{name}: a given simp lemma does not elaborate:{indentD ex.toMessageData}"
+  else
+    m!"{name}: simp could not evaluate the program:{indentD ex.toMessageData}\nPass the \
+      program's definition among the simp lemmas, as in `{name} [myProgram]`."
 
 /-- After both rules of `ram_eval` failed, replay them step by step to name the step that failed:
-the goal does not have the form of either rule, `simp` fails, the program does not run to
-completion, or `omega` does not prove the instruction bound. -/
-private meta def explain (name : String) (fuel : TSyntax `num) (simpCall : TSyntax `tactic) :
-    TacticM (Option MessageData) := withoutRecover do
+the goal does not have the form of either rule, a simp lemma in `args` does not elaborate, `simp`
+fails, the program does not run to completion, or `omega` does not prove the instruction bound. -/
+private meta def explain (name : String) (fuel : TSyntax `num) (simpCall : TSyntax `tactic)
+    (args : Array Syntax) : TacticM (Option MessageData) := withoutRecover do
   let g ← getMainGoal
   if ← succeeds (← `(tactic| apply Cslib.WordRAM.ExecWithin.of_eval (fuel := $fuel))) then
     let h :: rest ← getUnsolvedGoals | return none
     setGoals [h]
     try evalTactic simpCall
-    catch ex => return some (simpFailed name ex)
+    catch ex => return some (simpFailed name args ex)
     discard <| succeeds (← `(tactic| rfl))
     if let g :: _ ← getUnsolvedGoals then
       if let some (_, lhs, _) := (← instantiateMVars (← g.getType)).eq? then
@@ -242,7 +261,7 @@ private meta def explain (name : String) (fuel : TSyntax `num) (simpCall : TSynt
     return none
   if ← succeeds (← `(tactic| apply Cslib.WordRAM.Exec.of_eval (fuel := $fuel))) then
     try evalTactic simpCall
-    catch ex => return some (simpFailed name ex)
+    catch ex => return some (simpFailed name args ex)
     return none
   g.withContext do
     return some m!"{name}: expected a goal `ExecWithin w c x y T` or `Exec w c x y T`, got\
@@ -279,9 +298,13 @@ scoped elab_rules : tactic
            try rfl)))
     catch ex =>
       unless ex matches .error .. do throw ex
+      -- Without error recovery, as under `try` and `first`, the message is discarded, so an
+      -- expected failure does not pay for the replay.
+      unless (← read).recover do throw ex
       let s ← saveState
       -- The replay may exhaust the heartbeats left; the original error is then reported.
-      let msg? ← tryCatchRuntimeEx (RamEval.explain name.getString n simpCall) fun _ => pure none
+      let msg? ← tryCatchRuntimeEx
+        (RamEval.explain name.getString n simpCall (args.getElems.map (·.raw))) fun _ => pure none
       s.restore
       let some msg := msg? | throw ex
       throwError msg

@@ -556,8 +556,7 @@ theorem toHamPath_mem_iff (x : Graph × ℕ × ℕ) : toHamPath x ∈ HamPath �
 /-- The reduction `DirHamPath.toHamPath` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toHamPath :
-    ComputableInPolyTime toHamPath (encPair encGraph (encPair encNat encNat))
-      (encPair encGraph (encPair encNat encNat)) := by
+    ComputableInPolyTime toHamPath encPathInstance encPathInstance := by
   have hsv := Graph.computableInPolyTime_splitVertex
   unfold toHamPath
   fun_prop
@@ -566,8 +565,7 @@ end DirHamPath
 
 /-- `DirHamPath` reduces to `HamPath` in polynomial time via `DirHamPath.toHamPath`. -/
 theorem polyTimeReducible_DirHamPath_HamPath :
-    PolyTimeReducible (encPair encGraph (encPair encNat encNat))
-      (encPair encGraph (encPair encNat encNat)) DirHamPath HamPath :=
+    PolyTimeReducible encPathInstance encPathInstance DirHamPath HamPath :=
   ⟨DirHamPath.toHamPath, DirHamPath.computableInPolyTime_toHamPath,
     fun x => (DirHamPath.toHamPath_mem_iff x).symm⟩
 
@@ -578,11 +576,11 @@ theorem polyTimeReducible_DirHamCycle_HamCycle :
     fun G => (Graph.split_mem_HamCycle_iff G).symm⟩
 
 /-- `HamPath` is `NP`-hard. -/
-theorem HamPath_npHard : NPHard (encPair encGraph (encPair encNat encNat)) HamPath :=
+theorem HamPath_npHard : NPHard encPathInstance HamPath :=
   DirHamPath_npHard.trans polyTimeReducible_DirHamPath_HamPath
 
 /-- **`HamPath` is NP-complete** [Sipser, Theorem 7.55][Sipser2013]. -/
-theorem HamPath_npComplete : NPComplete (encPair encGraph (encPair encNat encNat)) HamPath :=
+theorem HamPath_npComplete : NPComplete encPathInstance HamPath :=
   ⟨HamPath.mem_NP, HamPath_npHard⟩
 
 /-- `HamCycle` is `NP`-hard. -/

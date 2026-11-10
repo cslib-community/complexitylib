@@ -31,7 +31,7 @@ bounds on every frontier of the layouts by Gaussian scores.
   real bound on the frontiers.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

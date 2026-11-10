@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.FastContractio
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 
 /-!
 # Polynomial truncation order from a contraction over `A_P`
@@ -339,20 +340,17 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         ((((PolyBounded.const Kd).mul (((PolyBounded.self.add hEp).add
           (PolyBounded.const 1)).pow Kd)).mul (PolyBounded.const (2 ^ (C * s₀)))).mul
           ((hEp.mul (PolyBounded.const (2 ^ (Ke * s₀)))).add (PolyBounded.const 1)))
-    obtain ⟨a, d, had⟩ := hFp.exists_le
-    refine ⟨a + d + K₀, fun s P ℓ r G hs hP hPD hℓ hℓD hA => ?_⟩
+    obtain ⟨KF, hKF⟩ := hFp.exists_le_succ_pow
+    refine ⟨KF + K₀, fun s P ℓ r G hs hP hPD hℓ hℓD hA => ?_⟩
     obtain ⟨hsm, hmC, hkC⟩ := hshape C s r G hA
     set n := (encTrunc encT (P, ℓ, r, G)).length with hn
     set Xs := 2 ^ (K₀ * s / Nat.sqrt (Nat.log 2 s)) with hXs
     have hXs1 : 1 ≤ Xs := Nat.one_le_two_pow
-    have hFn := had n
-    simp only [id] at hFn
-    have hK : a * (n + 1) ^ d * Xs ≤ (a + d + K₀) * (n + 1) ^ (a + d + K₀) *
-        2 ^ ((a + d + K₀) * s / Nat.sqrt (Nat.log 2 s)) :=
-      Nat.mul_le_mul (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega)))
-        (Nat.pow_le_pow_right (by norm_num)
-          (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))))
-    have hKs : a * (n + 1) ^ d ≤ (a + d + K₀) * (n + 1) ^ (a + d + K₀) := by gcongr <;> omega
+    have hFn : F n ≤ (KF + K₀) * (n + 1) ^ (KF + K₀) := hKF _ (Nat.le_add_right _ _) n
+    have hK : (KF + K₀) * (n + 1) ^ (KF + K₀) * Xs ≤ (KF + K₀) * (n + 1) ^ (KF + K₀) *
+        2 ^ ((KF + K₀) * s / Nat.sqrt (Nat.log 2 s)) :=
+      Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num)
+        (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))))
     have hgt : (NativeCertificate.ofPolyTime truncGuard_polyTime).time (P, ℓ, r, G) ≤ pg n :=
       (bg (P, ℓ, r, G)).1
     have hgs : (NativeCertificate.ofPolyTime truncGuard_polyTime).space (P, ℓ, r, G) ≤ pg n :=
@@ -464,9 +462,9 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         have h2 : F2 n ≤ Xs * F2 n := Nat.le_mul_of_pos_left _ hXs1
         have e : Xs * F n = Xs * pg n + Xs * F1 n + Xs * F2 n := by simp only [F]; ring
         omega
-      have hFX : Xs * F n ≤ a * (n + 1) ^ d * Xs := by
-        calc Xs * F n ≤ Xs * (a * (n + 1) ^ d) := Nat.mul_le_mul_left _ hFn
-          _ = a * (n + 1) ^ d * Xs := by ring
+      have hFX : Xs * F n ≤ (KF + K₀) * (n + 1) ^ (KF + K₀) * Xs := by
+        calc Xs * F n ≤ Xs * ((KF + K₀) * (n + 1) ^ (KF + K₀)) := Nat.mul_le_mul_left _ hFn
+          _ = (KF + K₀) * (n + 1) ^ (KF + K₀) * Xs := by ring
       split
       · next hg =>
         have := (hfast hg).1
