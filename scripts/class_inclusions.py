@@ -118,7 +118,7 @@ GRIDS = [
     ("Nonuniform circuit classes", CIRCUIT),
 ]
 
-THEOREM = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:public\s+|private\s+|protected\s+)*theorem\s+"
+THEOREM = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:public\s+|private\s+|protected\s+)*(?:theorem|lemma)\s+"
                      r"(?:Cslib\.)?(?:Complexity\.)?([^\s(:{\[]+)", re.M)
 RELATIONS = ("not_subset", "ssubset", "subset", "eq")
 
