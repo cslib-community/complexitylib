@@ -22,10 +22,10 @@ context's raw history, computes exact rational retention and emits the source ma
 on computed completion. The full query/mark/rewind/virtual-input/processor program
 has the derived joint native law, with response-dependent local execution.
 
-Context is fixed at code construction. A uniform runtime-context scheduler and
-adaptive restart loop remain open, as do the native quantitative upper endpoint
-and common-oracle optimum comparison. This is a concrete implementation connection
-for [Wang2027], Theorem 5 p. 12/App. A.5 p. 16, not its complete native realization.
+Context is fixed at code construction here. The runtime-context scheduler and restart
+loop are in `Feedback`, and the Theorem 5 upper endpoint and optimum comparison are in
+`BatchPlanner`, `BatchOutput` and `BatchOptimum`. This module is one step of the
+native realization of [Wang2027], Theorem 5 p. 12/App. A.5 p. 16.
 No new public tidy interface or common full-reply clock is used.
 
 ## Main results

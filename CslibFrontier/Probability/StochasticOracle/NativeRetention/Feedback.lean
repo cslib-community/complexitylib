@@ -32,9 +32,10 @@ the raw State transport ABI. The `_with_request` constructors compile a pure
 request planner on a separate query tape while retaining the State context;
 `BatchPlanner` and `BatchAdmission` instantiate and prove fresh source batches.
 The default scalar opportunity/reservation counts are not a labeled
-source used-set or measured physical clock. General source-admitted planning
-and Theorem 5 upper/optimum transfer remain open, as do the broader source
-representation and Theorem 6 specialization gaps. The source conventions are
+source used-set or measured physical clock. This module only supplies the feedback
+loop: the Theorem 5 upper, lower and optimum results for the named controller are in
+`BatchPlanner`, `BatchOutput` and `BatchOptimum`. Unrestricted source-policy
+realization and the Theorem 6 specialization remain open. The source conventions are
 [Wang2027], model pp. 4--6, Theorem 5 p. 12/Appendix A.5 p. 16.
 
 ## Main definitions
