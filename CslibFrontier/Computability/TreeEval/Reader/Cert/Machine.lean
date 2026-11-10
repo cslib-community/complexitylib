@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Step
 public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
+import CslibFrontier.Tactic.Space
 
 /-!
 # The Tree Evaluation read machine within its space budget
@@ -78,17 +79,10 @@ private theorem offsetT_inSpace {st : Tuple × Bool → List Frame}
 /-- **The address** on tuples. -/
 private theorem addrT_inSpace :
     ComputableInSpace addrT encTuple (encOption encNat) fun x => stepBudget (x, false) := by
-  have ht (k : Fin 7) :=
-    budget_finite (encC := encBool) (fun t : Fin 7 => decide (t = k)) tag_inSpace
-  have h := budget_ite (ht 0) (budget_optionSome n₁_inSpace)
-    (budget_ite (ht 1) (budget_optionSome (budget_natAdd (succ_inSpace ell_inSpace) n₁_inSpace))
-    (budget_ite (ht 4)
-      (budget_optionSome (budget_natAdd (offsetT_inSpace stack_inSpace) n₁_inSpace))
-      (budget_ite (ht 5)
-        (budget_optionSome (budget_natAdd (offsetT_inSpace rest_inSpace) n₁_inSpace))
-        (budget_const (encB := encOption encNat) none len_le_stepBudget))))
-  refine (onTuple h).of_enc_eq fun x => ?_
-  simp only [addrT, decide_eq_true_eq]
+  refine onTuple (f := fun y => addrT y.1) ?_
+  have := len_le_stepBudget
+  have := @offsetT_inSpace
+  space [addrT]
 
 /-! ### On states -/
 

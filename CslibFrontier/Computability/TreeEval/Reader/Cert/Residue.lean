@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.TreeEval.Reader.Defs
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
+import CslibFrontier.Tactic.Space
 
 /-!
 # Residues within linear work space
@@ -31,53 +32,30 @@ namespace Reader
 
 open Turing MultiTapeTM ComputableInSpace
 
-/-- The projections of a triple. -/
-private theorem proj3 :
-    ComputableInSpace (fun q : ℕ × ℕ × ℕ => q.1) encNat3 encNat
-      (fun q => (encNat3 q).length) ∧
-    ComputableInSpace (fun q : ℕ × ℕ × ℕ => q.2.1) encNat3 encNat
-      (fun q => (encNat3 q).length) ∧
-    ComputableInSpace (fun q : ℕ × ℕ × ℕ => q.2.2) encNat3 encNat
-      (fun q => (encNat3 q).length) :=
-  ⟨fst _ _, fst' (snd _ _), snd' (snd _ _)⟩
-
 /-- The sum modulo `p`, from `(p, a, b)`. -/
 theorem addMod_inSpace :
     ComputableInSpace (fun q : ℕ × ℕ × ℕ => addMod q.1 q.2.1 q.2.2) encNat3 encNat
       fun q => (encNat3 q).length := by
-  obtain ⟨hp, ha, hb⟩ := proj3
-  exact budget_comp_lin natMod (linear_mul _)
-    (budget_prod (budget_comp_lin natAdd linear_succ (budget_prod ha hb)) hp)
+  space [addMod]
 
 /-- The product modulo `p`, from `(p, a, b)`. -/
 theorem mulMod_inSpace :
     ComputableInSpace (fun q : ℕ × ℕ × ℕ => mulMod q.1 q.2.1 q.2.2) encNat3 encNat
       fun q => (encNat3 q).length := by
-  obtain ⟨hp, ha, hb⟩ := proj3
-  exact budget_comp_lin natMod (linear_mul _)
-    (budget_prod (budget_comp_lin natMul (linear_mul _) (budget_prod ha hb)) hp)
+  space [mulMod]
 
 /-- The negation modulo `p`, from `(p, a)`. -/
 theorem negMod_inSpace :
     ComputableInSpace (fun q : ℕ × ℕ => negMod q.1 q.2) (encPair encNat encNat) encNat
       fun q => (encPair encNat encNat q).length := by
-  have hp := fst encNat encNat
-  have hm := budget_comp_lin natMod (linear_mul _) (budget_prod (snd encNat encNat) hp)
-  exact budget_comp_lin natMod (linear_mul _)
-    (budget_prod (budget_comp_lin natSub linear_succ (budget_prod hm hp)) hp)
+  space [negMod]
 
 /-- The residue of `x` or of `1 - x` modulo `p`, from `((p, x), b)`. -/
 theorem chi_inSpace :
     ComputableInSpace (fun q : (ℕ × ℕ) × Bool => chi q.1.1 q.2 q.1.2)
       (encPair (encPair encNat encNat) encBool) encNat
       fun q => (encPair (encPair encNat encNat) encBool q).length := by
-  have hpx := fst (encPair encNat encNat) encBool
-  have hp := fst' hpx
-  have hmod := budget_comp_lin natMod (linear_mul _) (budget_prod (snd' hpx) hp)
-  have hneg := budget_comp_linear negMod_inSpace hpx
-  have hadd := budget_comp_linear addMod_inSpace
-    (budget_prod hp (budget_prod (budget_const 1 (.refl _)) hneg))
-  exact (budget_ite (snd _ _) hmod hadd).of_enc_eq fun q => by simp only [chi]
+  space [chi, addMod, negMod]
 
 /-- One factor of a power modulo `p`, on `(p, a, acc)`. -/
 private def powStep (q : ℕ × ℕ × ℕ) : ℕ × ℕ × ℕ := (q.1, q.2.1, mulMod q.1 q.2.2 q.2.1)
@@ -101,9 +79,7 @@ theorem unitInv_inSpace :
       fun q => (encPair encNat encNat q).length := by
   have hp := fst encNat encNat
   have hstep : ComputableInSpace powStep encNat3 encNat3 fun q => (encNat3 q).length := by
-    obtain ⟨hp, ha, hacc⟩ := proj3
-    exact budget_prod hp (budget_prod ha
-      (budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod hacc ha))))
+    space [powStep, mulMod]
   have hinit := budget_prod hp (budget_prod (budget_comp_lin natSucc linear_succ (snd _ _))
     (budget_comp_lin natMod (linear_mul _) (budget_prod (budget_const 1 (.refl _)) hp)))
   have hn := budget_comp_lin natPred linear_succ (budget_comp_lin natPred linear_succ hp)
