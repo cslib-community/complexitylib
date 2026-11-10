@@ -57,7 +57,7 @@ the coordinates `i ∉ J`, bounds the others. Taking `A = 9 ^ (K / ε)` and
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

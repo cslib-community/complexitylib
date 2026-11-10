@@ -31,7 +31,7 @@ Automation registrations copied from cslib PR #1069 at
 `1d14c55a10cfe3fe4463cffa61a7f02f0d56f502`. The base API is imported from cslib PR #1068.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 

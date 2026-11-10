@@ -30,7 +30,7 @@ and the callee's actual logarithmic-width obligation. No width depends on input 
 These coarse polynomial bounds are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 

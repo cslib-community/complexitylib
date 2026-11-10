@@ -34,7 +34,7 @@ Theorem 3.1, printed pp. 48–51. This module supplies the prefix prerequisite, 
 theorem or a message-domain extension.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PRGStretch
 

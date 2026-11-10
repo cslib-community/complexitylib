@@ -21,7 +21,7 @@ This is an internal implementation API. The scatter position is the existing cou
 formula, whose range follows from the original input length, rather than an execution oracle.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

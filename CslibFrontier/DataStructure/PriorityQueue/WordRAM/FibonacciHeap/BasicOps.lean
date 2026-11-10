@@ -42,7 +42,7 @@ This file proves the exact-Word-RAM specifications for:
   Chapter 19][CLRS2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 

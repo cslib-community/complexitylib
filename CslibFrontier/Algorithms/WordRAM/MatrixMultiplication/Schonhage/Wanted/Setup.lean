@@ -20,7 +20,7 @@ public import CslibFrontier.Algorithms.MatrixMultiplication.Schonhage.BandBounds
   original four input words, preserving every original query word.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

@@ -20,7 +20,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
   native digit decoding, inverse-table lookup and guarded signed matrix loads.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation
 

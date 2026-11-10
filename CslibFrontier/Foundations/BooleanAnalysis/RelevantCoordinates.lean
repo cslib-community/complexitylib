@@ -53,7 +53,7 @@ Schwartz–Zippel on the cube, a nonzero influence is therefore at least `2 ^ (1
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

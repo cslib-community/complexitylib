@@ -25,7 +25,7 @@ prime table and reservations, then executes every actual descriptor and recursio
 The native composition proofs are original. No runtime algorithm or fit advice is supplied.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing
 

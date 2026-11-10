@@ -72,7 +72,7 @@ inputs are isolated too, and need as many formulas and terms
 * [R. Paturi, P. Pudlák, F. Zane, *Satisfiability Coding Lemma*][PaturiPudlakZane1999]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

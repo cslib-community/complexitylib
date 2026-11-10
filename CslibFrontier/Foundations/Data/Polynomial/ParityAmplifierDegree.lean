@@ -45,7 +45,7 @@ of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH].
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (Lemma 5.2 and Section 5.3)
 -/
 
-@[expose] public noncomputable section
+public noncomputable section
 
 namespace Polynomial
 

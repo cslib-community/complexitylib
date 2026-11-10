@@ -35,7 +35,7 @@ Adapted from Crypto/Computational/OneWay/Collision.lean on the cslib `crypto` br
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the shared nonnegative game API.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 

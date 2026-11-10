@@ -46,7 +46,7 @@ Adapted from Crypto/Computational/Pseudoentropy/OneWay.lean on the cslib `crypto
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using typed saved seeds and nonnegative security games.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Pseudoentropy.HashPair
 

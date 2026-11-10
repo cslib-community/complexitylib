@@ -22,7 +22,7 @@ This is a bounded preparation component under the ordinary native 3SUM objective
 whole 3SUM algorithm or a pruned-query evaluation theorem.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation
 

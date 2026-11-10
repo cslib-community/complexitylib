@@ -38,7 +38,7 @@ these results give no efficiency guarantee for finding a suitable matrix.
   and its application to sparse partial functions in Section 1.4.2.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString.LinearHash
 

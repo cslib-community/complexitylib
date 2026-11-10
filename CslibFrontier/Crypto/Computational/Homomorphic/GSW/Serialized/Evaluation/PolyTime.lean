@@ -28,7 +28,7 @@ raw words, without shape, noise, support or security assumptions.
 * [Gentry, Sahai and Waters, Sections 3.1 and 3.3][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW
 

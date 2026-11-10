@@ -27,7 +27,7 @@ memory word, including address and arithmetic temporaries, has polynomial magnit
 These native representation bounds are original and use the generic width-prefix API.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing
 

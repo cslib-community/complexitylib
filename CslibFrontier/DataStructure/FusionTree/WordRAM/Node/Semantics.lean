@@ -29,7 +29,7 @@ exclusive-or neighbor selection, including exact hits.
 * [FredmanWillard1993]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.FusionTree.WordRAM.NodeSemantics
 

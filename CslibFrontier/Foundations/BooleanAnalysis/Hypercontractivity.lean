@@ -64,7 +64,7 @@ The case `q = ∞` of the `(2, q)` theorem is not covered: `‖·‖_q` is defin
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

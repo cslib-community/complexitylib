@@ -16,7 +16,7 @@ Concrete values of the schedule at `s = 2 ^ 10`, an active call there, and a non
 the certificate: some root call satisfies `ActiveBounds`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.Computability.Circuit.Frontier.TensorNetwork.Schedule
 

@@ -26,7 +26,7 @@ import Mathlib.Data.List.GetD
   all have length `M`.
 -/
 
-@[expose] public section
+public section
 
 namespace List
 

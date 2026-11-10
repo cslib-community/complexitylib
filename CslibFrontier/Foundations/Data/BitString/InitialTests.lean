@@ -45,7 +45,7 @@ weight at most `h` (`Cslib.BitString.card_filter_weight_le_le`). The distance bo
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], §6.1
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

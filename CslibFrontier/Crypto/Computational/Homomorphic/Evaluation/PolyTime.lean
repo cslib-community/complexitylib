@@ -27,7 +27,7 @@ and security assumptions play no role in this runtime statement.
   of raw Boolean circuit code, uniformly across its input and output arities.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Scheme
 

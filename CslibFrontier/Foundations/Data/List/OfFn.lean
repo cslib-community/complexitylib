@@ -41,7 +41,7 @@ other keys may repeat. The key order need only be a partial order.
 * [OpenAI2026RationalHitting]
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

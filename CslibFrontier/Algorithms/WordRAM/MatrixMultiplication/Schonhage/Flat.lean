@@ -22,7 +22,7 @@ The final halt returns the output block's address. Its length is `10^L` and its 
 the canonical signed encodings of the public mathematical values.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
 

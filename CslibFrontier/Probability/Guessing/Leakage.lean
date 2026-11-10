@@ -25,7 +25,7 @@ observations. The guessing strategy may be randomized and its output type may be
   uniform-coordinate specialization.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

@@ -20,7 +20,7 @@ The proof follows the indexed-copy uniqueness argument in `CNF.ThreeOccurrence`.
 * `Cslib.Logic.PL.occurrences_nodup`: clause and literal indices distinguish all occurrences.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

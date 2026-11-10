@@ -30,7 +30,7 @@ row-major indexing; they introduce no alternative notion of a residue class or c
 * `QuerySpec.before_eq_totalChunks`: the native catalogue count is the existing finite count.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ExactTriangle.QuerySpec
 

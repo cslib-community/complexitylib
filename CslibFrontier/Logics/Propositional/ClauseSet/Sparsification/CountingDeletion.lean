@@ -37,7 +37,7 @@ survival and the later insertion-event balance remains separate.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.card_counting_deleted_marked_le`: deletion charge.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.ClauseSet.Sparsification
 

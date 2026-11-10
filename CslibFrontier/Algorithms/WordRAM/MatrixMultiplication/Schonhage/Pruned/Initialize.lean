@@ -24,7 +24,7 @@ This continuation lemma is an internal implementation API for the complete initi
 theorems in `Pruned.Flat` and `Pruned.Width`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

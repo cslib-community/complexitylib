@@ -52,7 +52,7 @@ once `k p ≥ 1` (`Fintype.half_le_dens_filter_exists_apply_mem`): by Bernoulli'
   at most `1 / 2`.
 -/
 
-@[expose] public section
+public section
 
 open Finset
 open scoped BigOperators

@@ -22,7 +22,7 @@ number for `y`.
 * `Fin.card_filter_append`: counting entries satisfying a predicate across `Fin.append`.
 -/
 
-@[expose] public section
+public section
 
 namespace Fin
 

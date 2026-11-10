@@ -44,7 +44,7 @@ at most `r` good entries has weight at least `2 ^ r`.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 7.4][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

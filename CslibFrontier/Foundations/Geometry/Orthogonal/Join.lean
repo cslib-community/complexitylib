@@ -28,7 +28,7 @@ lemmas identify its support, final endpoint, segment list, and Manhattan wire le
 These finite polygonal-route gluing lemmas and proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Orthogonal
 

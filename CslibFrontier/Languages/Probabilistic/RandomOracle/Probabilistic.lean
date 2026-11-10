@@ -38,7 +38,7 @@ Extends the crypto-branch lazy-sampling proof at `5ff69ca93402e7c947208dc56396d6
 to the disjoint-sum interface of `ProbOracleComp`, reusing the general state simulation rule.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.RandomOracle
 

@@ -38,7 +38,7 @@ Adapted from Probability/EntropyConcentration.lean on the cslib `crypto` branch 
 
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

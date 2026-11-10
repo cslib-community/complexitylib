@@ -14,7 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 The logspace-to-polynomial-time bridge applied to the new list lookup.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.Tests.LogSpaceCounterWords
 

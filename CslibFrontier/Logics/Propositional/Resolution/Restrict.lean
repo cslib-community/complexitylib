@@ -27,7 +27,7 @@ assignments that extend `ρ`.
   extension of `ρ`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

@@ -27,7 +27,7 @@ No decryption-circuit, bootstrappability or circular-security premise is hidden 
 * [Gentry, Sahai and Waters, Sections 3.1–3.2][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW.DepthParameters
 

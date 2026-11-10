@@ -23,7 +23,7 @@ by an oracle. All other controls and every memory cell are preserved by the valu
 These finite native arithmetic proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 

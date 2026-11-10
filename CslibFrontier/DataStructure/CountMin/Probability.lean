@@ -43,7 +43,7 @@ to the number of rows. In particular, `2 ≤ w * ε` gives failure at most `2⁻
   and its Applications*][CormodeMuthukrishnan2005], Section 4.1, Theorem 1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.CountMin
 

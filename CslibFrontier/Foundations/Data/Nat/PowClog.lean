@@ -23,7 +23,7 @@ that its clients do not import the `Nat` logarithm hub.
 * `Nat.pow_clog_lt_mul`: `b ^ ⌈log_b n⌉ < b * n` for `1 < b` and `n ≠ 0`.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

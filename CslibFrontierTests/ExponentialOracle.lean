@@ -20,7 +20,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Q
 exponentially long words, through the preprocessing rule.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.ExponentialOracle
 

@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 
 /-! # Logspace pair manipulation built from the word operations -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.Tests.LogSpaceWords
 

@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
 
 /-! # BPPpath: explicit path counts for concrete languages -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.Tests.BPPpath
 

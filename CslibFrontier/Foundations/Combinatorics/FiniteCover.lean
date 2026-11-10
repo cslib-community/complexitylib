@@ -34,7 +34,7 @@ the exponential estimates used for the density corollary.
 * `Cslib.exists_cover_of_density`: covers from density.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

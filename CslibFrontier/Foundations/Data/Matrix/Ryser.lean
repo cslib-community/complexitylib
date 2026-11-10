@@ -38,7 +38,7 @@ one empty Boolean assignment.
 The proof is adapted from the saved Complexitylib development at revision `5b8acca7`.
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

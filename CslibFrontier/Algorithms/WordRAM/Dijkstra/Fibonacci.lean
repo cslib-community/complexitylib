@@ -40,7 +40,7 @@ its remaining clients.
   Algorithms*][CLRS2009], Section 24.3 (p. 662).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.Dijkstra
 

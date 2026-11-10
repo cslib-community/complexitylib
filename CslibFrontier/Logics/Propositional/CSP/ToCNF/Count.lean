@@ -25,7 +25,7 @@ The exact-count formulation is an original library lemma about the existing comp
   exact counts for systems and for the width-guarded compiler on its valid domain.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

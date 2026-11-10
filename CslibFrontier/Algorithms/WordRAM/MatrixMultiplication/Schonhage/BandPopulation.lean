@@ -21,7 +21,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
   population in `6L+5` instructions, preserves memory and changes only its four local registers.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation
 

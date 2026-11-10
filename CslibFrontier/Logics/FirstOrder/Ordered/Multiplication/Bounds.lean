@@ -30,7 +30,7 @@ Every bound applies to arbitrary universe sizes, including sizes between powers 
   These bounds support the carry-table variant of the source's packed short sums.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.FO.Ordered.Multiplication
 

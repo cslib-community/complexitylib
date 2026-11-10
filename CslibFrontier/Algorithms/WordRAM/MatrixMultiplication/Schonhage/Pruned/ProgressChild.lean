@@ -22,7 +22,7 @@ scanning the parent's actual list; that count, its contents and the fresh direct
 at the same returned state as the execution.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

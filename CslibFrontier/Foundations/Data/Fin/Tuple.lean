@@ -17,7 +17,7 @@ The addition of Christian Reitwiessner's branch `crei/tidy-universal` (and of cs
 `Cslib.Foundations.Data.Fin.Tuple`: appending constant tuples gives a constant tuple.
 -/
 
-@[expose] public section
+public section
 
 namespace Fin
 

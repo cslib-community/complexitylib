@@ -25,7 +25,7 @@ deterministic commitment-dependent challenges.
 * `SigmaProtocol.map_respond_challenge_eq_of_transcript_eq`: choose challenges from commitments.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 

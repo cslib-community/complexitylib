@@ -26,7 +26,7 @@ fixed widths has, in each window of bits, the bits of the corresponding field.
 * `Nat.testBit_add_two_pow_mul_add_two_pow_mul`: the bits of three packed fields.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

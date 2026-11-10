@@ -20,7 +20,7 @@ Iterated applications of a function compose across step counts (`Function.iterat
 * `Function.iterate_trans`: if `f^[m] a = b` and `f^[n] b = c`, then `f^[n + m] a = c`.
 -/
 
-@[expose] public section
+public section
 
 namespace Function
 

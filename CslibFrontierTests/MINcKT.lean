@@ -18,7 +18,7 @@ Concrete non-vacuity checks for `CslibFrontier.Computability.Kolmogorov.MKtP`,
 `CslibFrontier.Computability.Kolmogorov.MINcKT`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov.Tests
 

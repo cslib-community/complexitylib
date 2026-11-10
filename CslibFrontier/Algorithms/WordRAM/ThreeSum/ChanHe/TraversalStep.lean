@@ -25,7 +25,7 @@ program, and skipped entries retain the same charged pop as live entries.
 These control-flow composition proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

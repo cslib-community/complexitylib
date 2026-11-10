@@ -31,7 +31,7 @@ public import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
   bound `2r + 2` is needed: the radius-`1` ball of the triangle is the whole triangle, which has
   no ball path. -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Tests.FOLocalityGraphProperties
 

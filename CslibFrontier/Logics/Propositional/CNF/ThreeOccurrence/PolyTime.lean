@@ -32,7 +32,7 @@ binary natural labels are never expanded into unary labels.
 * [C. H. Papadimitriou, *Computational Complexity*, Proposition 9.3][Papadimitriou94]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF
 

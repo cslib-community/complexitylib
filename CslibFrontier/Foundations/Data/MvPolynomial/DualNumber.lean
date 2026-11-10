@@ -25,7 +25,7 @@ the real part of `P(z + ε v)` is `P(z)` (`MvPolynomial.fst_aeval_dualNumber`) a
 * `MvPolynomial.snd_aeval_dualNumber`: Taylor expansion over the dual numbers.
 -/
 
-@[expose] public section
+public section
 
 open TrivSqZeroExt
 open scoped DualNumber

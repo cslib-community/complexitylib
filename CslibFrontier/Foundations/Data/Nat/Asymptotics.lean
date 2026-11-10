@@ -38,7 +38,7 @@ fixed multiple of `(n + 1) ^ k` is eventually at most `b ^ n`
   `∀ᶠ n in atTop, (n + 1) ^ k * n < b ^ n` for `1 < b`.
 -/
 
-@[expose] public section
+public section
 
 open Filter
 

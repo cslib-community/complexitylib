@@ -33,7 +33,7 @@ replaces approximately sampled values by exactly sampled ones.
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023], Section 3.11.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

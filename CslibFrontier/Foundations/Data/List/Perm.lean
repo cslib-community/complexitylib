@@ -22,7 +22,7 @@ forest in the order in which a linked list visits their roots.
 * `List.Perm.exists_perm_map_eq`: the lifted permutation.
 -/
 
-@[expose] public section
+public section
 
 namespace List
 

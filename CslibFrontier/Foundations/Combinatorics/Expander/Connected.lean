@@ -57,7 +57,7 @@ has diameter `O(log |V|)`; Reingold derives this from vertex expansion instead
   applications*][HooryLinialWigderson2006]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.RotationMap
 

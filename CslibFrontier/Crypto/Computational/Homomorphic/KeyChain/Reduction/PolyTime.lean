@@ -35,7 +35,7 @@ test. No security, correctness or fixed-width hypothesis is used in these runtim
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Section 11.2][BonehShoup2023]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Scheme
 

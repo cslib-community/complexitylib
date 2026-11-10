@@ -23,7 +23,7 @@ This internal implementation API composes the actual router and stores. The fini
 permutation is proved from occurrence counts; it is neither supplied nor checked by an oracle.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

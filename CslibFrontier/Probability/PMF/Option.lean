@@ -22,7 +22,7 @@ whole joint law. This recovers an aborted commitment's mass without discarding t
 * `Cslib.Probability.PMF.ext_prod_option`: the marginal and erased projection determine the law.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

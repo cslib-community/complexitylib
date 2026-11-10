@@ -23,7 +23,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
 This is an internal implementation API of the complete routing program.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

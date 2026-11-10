@@ -29,7 +29,7 @@ dependency.
   constant per-call error `ε`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.OracleComp
 

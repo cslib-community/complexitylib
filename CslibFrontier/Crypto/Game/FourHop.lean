@@ -22,7 +22,7 @@ the two intermediate games are compared directly. The endpoint advantage is then
 * `Cslib.Crypto.Game.advantage_four_hop_le`: the endpoint bound for a symmetric four-game chain.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Game
 

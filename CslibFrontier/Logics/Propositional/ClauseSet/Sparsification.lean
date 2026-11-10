@@ -47,7 +47,7 @@ of their clauses.
   SAT*][CalabroImpagliazzoPaturi2006]
 -/
 
-@[expose] public section
+public section
 
 universe u
 

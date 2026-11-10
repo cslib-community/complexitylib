@@ -41,7 +41,7 @@ binomial coefficients), are at most `6 / 10` of all sets when `100 (t + 1)² ≤
   complexity*][Smolensky1987]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

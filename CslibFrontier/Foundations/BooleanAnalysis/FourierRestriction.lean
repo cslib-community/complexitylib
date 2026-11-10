@@ -47,7 +47,7 @@ distance from `f` the weight of `f` outside the subsets of `J`
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

@@ -25,7 +25,7 @@ preserves full multiplicities; the complete descriptor program enumerates the ex
 Execution uses a positive logarithmic physical width and fixed code per exponent.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Frontend
 

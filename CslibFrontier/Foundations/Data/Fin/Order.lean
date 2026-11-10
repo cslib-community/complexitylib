@@ -37,7 +37,7 @@ The value type needs only a partial order. Also bounds the sum of all indices in
 * [OpenAI2026RationalHitting]
 -/
 
-@[expose] public section
+public section
 
 /-- In a monotone finite array, every repeated value has an equal neighbor. -/
 theorem Fin.exists_ne_apply_eq_iff_adjacent {α : Type*} [PartialOrder α] {count : ℕ}

@@ -17,7 +17,7 @@ Malformed output capacity, unpaid cells and binary-large chunk widths are reject
 output loop. The native certificate includes the actual output's storage.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.TreeEvalRawOutput
 
