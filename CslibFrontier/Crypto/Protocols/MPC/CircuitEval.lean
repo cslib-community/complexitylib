@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import Cslib.Computability.Circuit.Boolean.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Multi-Party Boolean Circuit Evaluation in the Shared-Multiplication Hybrid Model
@@ -497,8 +498,7 @@ private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
     · simp [lineSteps, lineDist, sharedMulWorld, sharedMulFunctionality,
         hw (wires 0), hw (wires 1), PMF.map, Function.comp_def]
     · intro r_line hr wire
-      simp only [lineDist, ProbComp.eval_map, PMF.mem_support_map_iff] at hr
-      obtain ⟨ans, hans, rfl⟩ := hr
+      supp_cases hr [lineDist] with ⟨ans, hans, rfl⟩
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       simp only [lineSteps, Steps.outputAt, deliverMulOracle, Round.deliverOracle]
       refine Wire.lastCases ?_ (fun wire => ?_) wire
@@ -509,8 +509,7 @@ private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
     · simp [lineSteps, lineDist, sharedMulWorld, sharedMulFunctionality,
         hw (wires 0), hw (wires 1), PMF.map, Function.comp_def]
     · intro r_line hr wire
-      simp only [lineDist, ProbComp.eval_map, PMF.mem_support_map_iff] at hr
-      obtain ⟨ans, hans, rfl⟩ := hr
+      supp_cases hr [lineDist] with ⟨ans, hans, rfl⟩
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       simp only [lineSteps, Steps.outputAt, deliverMulOracle, Round.deliverOracle]
       refine Wire.lastCases ?_ (fun wire => ?_) wire
@@ -559,9 +558,7 @@ theorem evalWith_progSteps {m inputCount g : ℕ} [NeZero m]
         (fun i => (progSteps m p).outputAt i (st i) (r_p i)) (hsum_p r_p hr_p)).1
       rw [hline]
     · intro r_prog hr_prog wire
-      simp only [progDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hr_prog
-      obtain ⟨r_p, hr_p, r_line, hr_line, rfl⟩ := hr_prog
+      supp_cases hr_prog [progDist, bind_pure_comp] with ⟨r_p, hr_p, r_line, hr_line, rfl⟩
       have hline := (evalWith_lineSteps x_flat p line
         (fun i => (progSteps m p).outputAt i (st i) (r_p i)) (hsum_p r_p hr_p)).2 r_line hr_line
       simpa [progSteps] using hline wire
@@ -837,9 +834,7 @@ private theorem evalWith_outCoordsSteps {m k : ℕ} [NeZero m]
         (deliverCoord coord.1 ans i)) (fun r j => by simp [hst r j])).1
       rw [hnext]
     · intro recv hrecv i
-      simp only [outCoordsDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hrecv
-      obtain ⟨ans, hans, r_tail, hr_tail, rfl⟩ := hrecv
+      supp_cases hrecv [outCoordsDist, bind_pure_comp] with ⟨ans, hans, r_tail, hr_tail, rfl⟩
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       have hnext := (ih (fun i => (singleCoordSteps m k coord).outputAt i (st i)
         (deliverCoord coord.1 ans i)) (fun r j => by simp [hst r j])).2 r_tail hr_tail i
@@ -1176,8 +1171,7 @@ theorem snd_eq_circuitFunctionality_of_mem_support_evalWith {m n k : ℕ} [NeZer
         (gmwCircuitSchedule m n k C) i) × ((i : Fin m) → BitString k)}
     (hres : res ∈ ((gmwCircuitProtocol m n k C).evalWith (sharedMulWorld m) x).support) :
     res.2 = circuitFunctionality m n k C x := by
-  rw [evalWith_gmwCircuitProtocol, PMF.mem_support_map_iff] at hres
-  obtain ⟨_, _, rfl⟩ := hres
+  supp_cases hres [evalWith_gmwCircuitProtocol] with ⟨_, _, rfl⟩
   rfl
 
 /-- Simulator for `gmwCircuitProtocol m n k C` (Proposition 7.5.11, pp. 706–707; cf.
