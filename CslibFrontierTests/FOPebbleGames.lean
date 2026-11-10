@@ -173,19 +173,18 @@ private theorem eq_add_one_of_ne {i p : Fin 2} (h : p ≠ i) : p = i + 1 := by
   revert i p
   decide
 
-/-- The forth step of the `2`-pebble game on loopless symmetric graphs: if every pair `(c, x)` of
-`V` has a counterpart `(d, y)` in `W` with the same equality and adjacency type, Duplicator can
-answer any move while keeping a partial isomorphism. -/
-theorem forth_graph (hV : ∀ x : V, ¬ RelMap adj ![x, x]) (hW : ∀ y : W, ¬ RelMap adj ![y, y])
+/-- One move of the `2`-pebble game on loopless symmetric graphs: moving pebble `i` to `c` and `d`
+keeps a partial isomorphism when `c` and `d` have the same equality and adjacency type relative to
+the other pebble. -/
+theorem partialIsoOn_update_graph (hV : ∀ x : V, ¬ RelMap adj ![x, x])
+    (hW : ∀ y : W, ¬ RelMap adj ![y, y])
     (hVs : ∀ x y : V, RelMap adj ![x, y] → RelMap adj ![y, x])
     (hWs : ∀ x y : W, RelMap adj ![x, y] → RelMap adj ![y, x])
-    (hext : ∀ (c x : V) (y : W), ∃ d : W, (c = x ↔ d = y) ∧
-      (RelMap adj ![c, x] ↔ RelMap adj ![d, y]))
     {S : Set (Fin 2)} {a : Fin 2 → V} {b : Fin 2 → W} (h : PartialIsoOn Language.graph S a b)
-    (i : Fin 2) (c : V) : ∃ d : W,
-      PartialIsoOn Language.graph (insert i S) (Function.update a i c) (Function.update b i d) := by
-  obtain ⟨d, hdeq, hdadj⟩ := hext c (a (i + 1)) (b (i + 1))
-  refine ⟨d, partialIsoOn_graph_iff.2 fun p hp q hq => ?_⟩
+    (i : Fin 2) (c : V) (d : W) (hdeq : c = a (i + 1) ↔ d = b (i + 1))
+    (hdadj : RelMap adj ![c, a (i + 1)] ↔ RelMap adj ![d, b (i + 1)]) :
+    PartialIsoOn Language.graph (insert i S) (Function.update a i c) (Function.update b i d) := by
+  refine partialIsoOn_graph_iff.2 fun p hp q hq => ?_
   have hcases : ∀ p ∈ insert i S, p = i ∨ (p = i + 1 ∧ i + 1 ∈ S) := by
     intro p hp
     by_cases hpi : p = i
@@ -207,6 +206,32 @@ theorem forth_graph (hV : ∀ x : V, ¬ RelMap adj ![x, x]) (hW : ∀ y : W, ¬ 
   · rw [hupd_a, hupd_b]
     exact (partialIsoOn_graph_iff.1 h) _ hS _ hS
 
+/-- The forth step of the `2`-pebble game on loopless symmetric graphs: if every pair `(c, x)` of
+`V` has a counterpart `(d, y)` in `W` with the same equality and adjacency type, Duplicator can
+answer any move while keeping a partial isomorphism. -/
+theorem forth_graph (hV : ∀ x : V, ¬ RelMap adj ![x, x]) (hW : ∀ y : W, ¬ RelMap adj ![y, y])
+    (hVs : ∀ x y : V, RelMap adj ![x, y] → RelMap adj ![y, x])
+    (hWs : ∀ x y : W, RelMap adj ![x, y] → RelMap adj ![y, x])
+    (hext : ∀ (c x : V) (y : W), ∃ d : W, (c = x ↔ d = y) ∧
+      (RelMap adj ![c, x] ↔ RelMap adj ![d, y]))
+    {S : Set (Fin 2)} {a : Fin 2 → V} {b : Fin 2 → W} (h : PartialIsoOn Language.graph S a b)
+    (i : Fin 2) (c : V) : ∃ d : W,
+      PartialIsoOn Language.graph (insert i S) (Function.update a i c) (Function.update b i d) :=
+  let ⟨d, hdeq, hdadj⟩ := hext c (a (i + 1)) (b (i + 1))
+  ⟨d, partialIsoOn_update_graph hV hW hVs hWs h i c d hdeq hdadj⟩
+
+theorem irrefl_fin (x : Fin 6) : ¬ RelMap adj ![x, x] :=
+  relMap_adj_fin.not.2 (SimpleGraph.cycleGraph 6).irrefl
+
+theorem irrefl_twoTriangles (y : Bool × Fin 3) : ¬ RelMap adj ![y, y] :=
+  relMap_adj_twoTriangles.not.2 twoTriangles.irrefl
+
+theorem symm_fin (x y : Fin 6) (h : RelMap adj ![x, y]) : RelMap adj ![y, x] :=
+  relMap_adj_fin.2 (relMap_adj_fin.1 h).symm
+
+theorem symm_twoTriangles (x y : Bool × Fin 3) (h : RelMap adj ![x, y]) : RelMap adj ![y, x] :=
+  relMap_adj_twoTriangles.2 (relMap_adj_twoTriangles.1 h).symm
+
 /-- Every pair of vertices of `C₆` has a counterpart in `2C₃` with the same equality and adjacency
 type, and conversely. -/
 theorem extension_fin_twoTriangles : ∀ (c x : Fin 6) (y : Bool × Fin 3), ∃ d : Bool × Fin 3,
@@ -223,19 +248,12 @@ theorem extension_twoTriangles_fin : ∀ (c x : Bool × Fin 3) (y : Fin 6), ∃ 
 pebbles placed: being a partial isomorphism on the placed pebbles is a back-and-forth invariant. -/
 theorem pebbleWinsForever_fin_twoTriangles (a : Fin 2 → Fin 6) (b : Fin 2 → Bool × Fin 3) :
     PebbleWinsForever Language.graph ∅ a b := by
-  have hV : ∀ x : Fin 6, ¬ RelMap adj ![x, x] := fun _ =>
-    relMap_adj_fin.not.2 (SimpleGraph.cycleGraph 6).irrefl
-  have hW : ∀ y : Bool × Fin 3, ¬ RelMap adj ![y, y] := fun _ =>
-    relMap_adj_twoTriangles.not.2 twoTriangles.irrefl
-  have hVs : ∀ x y : Fin 6, RelMap adj ![x, y] → RelMap adj ![y, x] :=
-    fun _ _ h => relMap_adj_fin.2 (relMap_adj_fin.1 h).symm
-  have hWs : ∀ x y : Bool × Fin 3, RelMap adj ![x, y] → RelMap adj ![y, x] :=
-    fun _ _ h => relMap_adj_twoTriangles.2 (relMap_adj_twoTriangles.1 h).symm
   refine IsPebbleBackAndForth.pebbleWinsForever
     (I := fun S a b => PartialIsoOn Language.graph S a b)
     ⟨id, fun h i c => ?_, fun h i d => ?_⟩ (partialIsoOn_empty a b)
-  · exact forth_graph hV hW hVs hWs (fun c x y => extension_fin_twoTriangles c x y) h i c
-  · obtain ⟨c, hc⟩ := forth_graph hW hV hWs hVs
+  · exact forth_graph irrefl_fin irrefl_twoTriangles symm_fin symm_twoTriangles
+      (fun c x y => extension_fin_twoTriangles c x y) h i c
+  · obtain ⟨c, hc⟩ := forth_graph irrefl_twoTriangles irrefl_fin symm_twoTriangles symm_fin
       (fun c x y => extension_twoTriangles_fin c x y) h.symm i d
     exact ⟨c, hc.symm⟩
 

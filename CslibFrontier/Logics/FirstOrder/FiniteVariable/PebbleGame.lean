@@ -192,7 +192,9 @@ theorem PebbleWins.of_subset : ∀ {n : ℕ} {S T : Set (Fin k)} {a : Fin k → 
       fun i c => (h.forth i c).imp fun _ hd => hd.of_subset (Set.insert_subset_insert hST),
       fun i d => (h.back i d).imp fun _ hc => hc.of_subset (Set.insert_subset_insert hST)⟩
 
-private theorem eqOn_update_insert {α : Type*} {S : Set (Fin k)} {a a' : Fin k → α}
+/-- Moving pebble `i` to the same element in two assignments that agree on the placed pebbles `S`
+gives assignments that agree on `insert i S`. -/
+theorem eqOn_update_insert {α : Type*} {S : Set (Fin k)} {a a' : Fin k → α}
     (h : Set.EqOn a a' S) (i : Fin k) (c : α) :
     Set.EqOn (Function.update a i c) (Function.update a' i c) (insert i S) := by
   intro j hj
@@ -285,7 +287,7 @@ theorem PebbleWinsForever.pebbleWins {S : Set (Fin k)} {a : Fin k → M} {b : Fi
 
 /-- If, for each `n`, some answer `d` from a finite type wins the `n`-th of a sequence of games
 that gets harder with `n`, then a single answer wins all of them. -/
-private theorem exists_forall_of_forall_exists [Finite N] {p : ℕ → N → Prop}
+theorem exists_forall_of_forall_exists [Finite N] {p : ℕ → N → Prop}
     (hp : ∀ {m n : ℕ} {d : N}, m ≤ n → p n d → p m d) (h : ∀ n, ∃ d, p n d) : ∃ d, ∀ n, p n d := by
   have := Fintype.ofFinite N
   by_contra hne
