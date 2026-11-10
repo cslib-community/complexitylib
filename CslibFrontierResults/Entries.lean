@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
+import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -644,6 +645,26 @@ register_result "nl-in-p" where
     injective encodings. The stronger recognizer result permits nonterminating \
     branches with logarithmic workspace; deterministic polynomial-time \
     configuration reachability decides acceptance."
+
+register_result "ladner-density" where
+  title := "Ladner's density theorem for polynomial-time many-one reducibility"
+  topic := "structural complexity"
+  sources := [
+    { paper := Ladner1975a, theorem := unverified, locator := unverified },
+    { paper := Schoening1982, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.exists_isDecidable_notMem_P_lt,
+    Cslib.Complexity.exists_mem_NP_notMem_P_lt,
+    Cslib.Complexity.NPComplete.exists_NP_not_P_not_npComplete_lt,
+    Cslib.Complexity.exists_isDecidable_between_of_notMem_P,
+    Cslib.Complexity.exists_mem_NP_between_of_notMem_P
+  ]
+  scope := "Problems on binary words (encBits); total deterministic multi-tape polynomial-time \
+    many-one reductions. Between any two decidable problems A <ₘᵖ B on bit words (respectively \
+    in NP) with B ∉ P, there is a decidable problem C (respectively in NP) strictly between \
+    them; if P ≠ NP, every NP-complete language on bit words has an NP-intermediate language \
+    strictly below it. The hypothesis B ∉ P is required (∅ <ₘᵖ {[true]} has no intermediate)."
 
 register_result "ppz-success" where
   title := "PPZ success probability for k-SAT"

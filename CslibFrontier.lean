@@ -1766,6 +1766,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Immune.RecursiveCor
 public import CslibFrontier.Computability.Complexity.Classes.Inclusions
 public import CslibFrontier.Computability.Complexity.Classes.Ladner
 public import CslibFrontier.Computability.Complexity.Classes.Ladner.Basic
+public import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 public import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.Ladner.Stages
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
@@ -1884,6 +1885,8 @@ public import CslibFrontier.Computability.Complexity.Classes.QMA.MA
 public import CslibFrontier.Computability.Complexity.Classes.QMA.NP
 public import CslibFrontier.Computability.Complexity.Classes.RP
 public import CslibFrontier.Computability.Complexity.Classes.RP.Closure
+public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable
+public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.Classes
 public import CslibFrontier.Computability.Complexity.Classes.RepeatedTrials
 public import CslibFrontier.Computability.Complexity.Classes.SBP
 public import CslibFrontier.Computability.Complexity.Classes.SBP.Amplification
@@ -2836,6 +2839,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.SqrtLog
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.SqrtLog.Budget
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Unpair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain

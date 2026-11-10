@@ -9,9 +9,9 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.P.Countable
+public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Clocked
-import CslibFrontier.Computability.Complexity.Classes.Immune
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Partrec
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
@@ -30,7 +30,9 @@ Schöning's uniform diagonalization theorem [Schöning][Schoening1982]
 of sets of bit words, both closed under finite variations, and let `A₁ ∉ C₁` and `A₂ ∉ C₂` be
 decidable. Then some `G ∈ P` makes the set `G.ite A₁ A₂`, which agrees with `A₁` on `G` and with
 `A₂` off `G`, belong to neither class. This set is decidable, reduces to the marked union of `A₁`
-and `A₂`, and reduces to `A₂` when `A₁ ∈ P` and `A₂` is neither empty nor everything.
+and `A₂`, and reduces to `A₂` when `A₁ ∈ P` and `A₂` is neither empty nor everything. The two
+predicates on classes live in
+`CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable`.
 
 The proof is delayed diagonalization. Stage `k` separates the mixed set from the member of index
 `k / 2` of the first family (even `k`) or the second family (odd `k`). The words of length `n` are
@@ -46,9 +48,6 @@ machines run within polynomial clocks (`Cslib.Complexity.recursivelyPresentable_
 
 ## Main definitions
 
-* `Cslib.Complexity.RecursivelyPresentable`: the class of the sets `{a | F (i, a) = true}` for a
-  computable `F`, with the index `i` in unary.
-* `Cslib.Complexity.ClosedUnderFiniteVariation`: closure under finite symmetric differences.
 * `Cslib.Complexity.markedUnion`: `false :: x` for `x ∈ A₁` and `true :: x` for `x ∈ A₂`.
 
 ## Main results
@@ -59,8 +58,7 @@ machines run within polynomial clocks (`Cslib.Complexity.recursivelyPresentable_
 * `Cslib.Complexity.isDecidable_ite`, `Cslib.Complexity.polyTimeReducible_ite_markedUnion`,
   `Cslib.Complexity.polyTimeReducible_ite_of_mem_P`: the mixed set is decidable and reduces to the
   marked union, and to `A₂` when `A₁ ∈ P`.
-* `Cslib.Complexity.recursivelyPresentable_P`, `Cslib.Complexity.closedUnderFiniteVariation_P`:
-  `P` meets the hypotheses.
+* `Cslib.Complexity.recursivelyPresentable_P`: `P` is recursively presentable.
 * `Cslib.Complexity.exists_mem_P_ite_notMem_P`: the theorem with `C₁ = P`.
 
 ## Implementation notes
@@ -70,8 +68,10 @@ the source statement. Decidable sets and presentations are computed by total nat
 (`Turing.MultiTapeTM.IsComputable`). The reduction to `A₂` takes a member and a non-member of
 `A₂` in place of the hypothesis that `A₂` is neither empty nor everything.
 
-Ladner's density theorem, the application to the polynomial-time degree of a decidable set
-outside `P`, is not formalized here: it needs a recursive presentation of that degree.
+Ladner's density theorem, obtained by presenting polynomial-time degrees and cones, is proved in
+`CslibFrontier.Computability.Complexity.Classes.Ladner.Density`, and recursive presentations of
+`NP`, `PSPACE`, `PH`, and `EXP` are in
+`CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.Classes`.
 
 ## References
 
@@ -422,25 +422,6 @@ theorem exists_mem_P_forall_ite_ne {A₁ A₂ : Set (List Bool)} (hA₁ : IsDeci
   · rw [hD]
     exact D_ne hS hinf false i
 
-/-- A class of sets is **recursively presentable** when it is the class of the sets
-`{a | F (i, a) = true}`, `i : ℕ`, for a computable `F`. Such a class is nonempty, so the empty class
-is not recursively presentable. -/
-@[expose] def RecursivelyPresentable {α : Type} (enc : α ↪ List Bool) (C : Set (Set α)) : Prop :=
-  ∃ F : ℕ × α → Bool, IsComputable F (encPair encUnary enc) encBool ∧
-    C = Set.range fun i => {a | F (i, a) = true}
-
-/-- A class of sets is **closed under finite variations** when it contains every set finitely
-different from one of its members. -/
-@[expose] def ClosedUnderFiniteVariation {α : Type} (C : Set (Set α)) : Prop :=
-  ∀ ⦃L L' : Set α⦄, L ∈ C → (L ∆ L').Finite → L' ∈ C
-
-/-- A set outside a class closed under finite variations is infinitely different from each of its
-members. -/
-theorem ClosedUnderFiniteVariation.infinite_symmDiff {α : Type} {C : Set (Set α)}
-    (hC : ClosedUnderFiniteVariation C) {A L : Set α} (hA : A ∉ C) (hL : L ∈ C) :
-    (A ∆ L).Infinite :=
-  fun hfin => hA (hC hL (symmDiff_comm A L ▸ hfin))
-
 /-- **Schöning's uniform diagonalization theorem.** Let `C₁`, `C₂` be recursively presentable
 classes of sets of words, closed under finite variations, and `A₁ ∉ C₁`, `A₂ ∉ C₂` decidable. Some
 `G ∈ P` makes the set agreeing with `A₁` on `G` and with `A₂` off `G` belong to neither class. -/
@@ -512,11 +493,6 @@ theorem polyTimeReducible_ite_of_mem_P {α : Type} {enc : α ↪ List Bool} {G A
 
 /-! ### `P` is recursively presentable -/
 
-/-- **`P` is closed under finite variations.** -/
-theorem closedUnderFiniteVariation_P {α : Type} (enc : α ↪ List Bool) :
-    ClosedUnderFiniteVariation (P enc) := fun L L' hL hfin =>
-  symmDiff_symmDiff_cancel_left L L' ▸ symmDiff_mem_P hL hfin.mem_P
-
 namespace UniformDiagonalization
 
 open Ladner (runIndexed clock exists_index_of_mem_P)
@@ -541,14 +517,26 @@ theorem exists_setOf_pIndexed_eq {A : Set (List Bool)} (h : A ∈ P encBits) (B 
   cases f w <;> decide
 
 /-- The presentation of `P` with the clock capped at `c`. -/
-private def pIndexedCap (p : (ℕ × List Bool) × ℕ) : Bool :=
-  decide (runIndexed p.1.1 p.1.2 (Ladner.capPow (2 * p.1.2.length + 2) p.1.1 p.2) =
-    ([eBit true], true))
+def pIndexedCap : (ℕ × List Bool) × ℕ → Bool
+  | ((i, w), c) =>
+    decide (runIndexed i w (Ladner.capPow (2 * w.length + 2) i c) = ([eBit true], true))
 
-private theorem computableInPolyTime_pIndexedCap :
+theorem computableInPolyTime_pIndexedCap :
     ComputableInPolyTime pIndexedCap (encPair (encPair encUnary encBits) encUnary) encBool := by
-  unfold pIndexedCap
+  have heq : pIndexedCap = fun p =>
+      decide (runIndexed p.1.1 p.1.2 (Ladner.capPow (2 * p.1.2.length + 2) p.1.1 p.2) =
+        ([eBit true], true)) := by
+    funext ⟨⟨_, _⟩, _⟩
+    rfl
+  rw [heq]
   fun_prop
+
+theorem pIndexedCap_eq_pIndexed_of_le {i : ℕ} {w : List Bool} {c : ℕ}
+    (hc : clock i w.length ≤ c) :
+    pIndexedCap ((i, w), c) = pIndexed (i, w) := by
+  rw [clock] at hc
+  simp only [pIndexedCap, pIndexed, Ladner.capPow, clock, min_eq_left hc]
+  rfl
 
 theorem clock_le_two_pow (i l : ℕ) : clock i l ≤ 2 ^ ((l + 1) * i) := by
   rw [clock, pow_mul]
