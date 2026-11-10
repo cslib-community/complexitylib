@@ -3669,6 +3669,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.DEMCCA
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.PolyTime
+public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyCPA
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
 public import CslibFrontier.Crypto.Computational.EvenMansour
 public import CslibFrontier.Crypto.Computational.Factoring.PollardRho
@@ -3790,6 +3791,7 @@ public import CslibFrontier.Crypto.Computational.IndexedSignature
 public import CslibFrontier.Crypto.Computational.IndexedSignature.Counter
 public import CslibFrontier.Crypto.Computational.IndexedSignature.Double
 public import CslibFrontier.Crypto.Computational.IndexedSignature.Seeded
+public import CslibFrontier.Crypto.Computational.KeyExchange
 public import CslibFrontier.Crypto.Computational.Kilian
 public import CslibFrontier.Crypto.Computational.Kilian.Micali
 public import CslibFrontier.Crypto.Computational.Kilian.MicaliSoundness
