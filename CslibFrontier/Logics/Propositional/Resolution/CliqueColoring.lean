@@ -46,7 +46,7 @@ weaker hypothesis `8 l (⌊log₂ n⌋ + 3) k ≤ n` besides `2 l² ≤ r`
 (`Cslib.Circuits.Monotone.two_pow_lt_size_of_separates`), so every refutation has more than
 `2 ^ l / 2` lines (`Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring`). For
 `n ≥ 2 ^ 40` and `⌊√n⌋ < k ≤ ⌊√n⌋ + 2`, every refutation of `Clique_{n,k} ∧ Color_{n,k-1}` has
-more than `2 ^ (⌊√⌊√n⌋⌋ / 2) / 2` lines, where `⌊√⌊√n⌋⌋ = ⌊n^{1/4}⌋`
+more than `2 ^ ⌊⌊√⌊√n⌋⌋ / 2⌋ / 2` lines, where `⌊√⌊√n⌋⌋ = ⌊n^{1/4}⌋`
 (`Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_of_sqrt_lt`). This is
 [Krajíček, Corollary 7.3(1)][Krajicek1997], which combines his Theorem 6.1 with the Alon–Boppana
 bound (his Theorem 7.2) for `k = ⌈√n⌉ + 1`, a value in this range, and obtains `2 ^ Ω(n^{1/4})`
@@ -198,7 +198,7 @@ theorem CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring {l s : ℕ} (hl
 /-- **An `n^{1/4}` exponential resolution lower bound for clique–colouring formulas**
 [Krajíček, Corollary 7.3(1)][Krajicek1997]. For `n ≥ 2 ^ 40` and `⌊√n⌋ < k ≤ ⌊√n⌋ + 2`, such as
 `k = ⌈√n⌉ + 1`, every resolution refutation of `Clique_{n,k} ∧ Color_{n,k-1}` has more than
-`2 ^ (⌊√⌊√n⌋⌋ / 2) / 2` lines. -/
+`2 ^ ⌊⌊√⌊√n⌋⌋ / 2⌋ / 2` lines. -/
 theorem CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_of_sqrt_lt {s : ℕ}
     (hn : 2 ^ 40 ≤ n) (hk : n.sqrt < k) (hk' : k ≤ n.sqrt + 2)
     (h : (CNF.cliqueColoring n k (k - 1)).RefutableInSize s) :

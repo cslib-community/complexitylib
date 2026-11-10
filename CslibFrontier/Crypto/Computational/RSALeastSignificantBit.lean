@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.RSATrapdoor
+public import CslibFrontier.Foundations.Data.BitString.List.Binary
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Data.Nat.Size
 
@@ -20,16 +21,17 @@ the exact inversion of RSA from a perfect least-significant-bit predictor.
 For odd `N` and `k ≥ 1`, the parity of `2 ^ k * x % N` is the parity of `⌊2 ^ k * x / N⌋`
 (`two_pow_mul_mod_mod_two`), and `2 ^ k * x % N` is the RSA preimage of `2 ^ (k * e) * y % N`
 when `y = x ^ e % N`. So the parities answered on the `m` public queries `2 ^ (k * e) * y % N`,
-`k = 1, …, m`, are the binary digits of `⌊2 ^ m * x / N⌋` (`lsbDigits`), which determines `x`
-once `N ≤ 2 ^ m` (`lsbRecover`). The inverter `lsbInverter` runs a predictor on these queries and
+`k = 1, …, m`, are the most-significant-first binary digits (`BitString.binaryValue`) of
+`⌊2 ^ m * x / N⌋` (`binaryValue_testBit_two_pow_mul_mod`), which determines `x` once
+`N ≤ 2 ^ m` (`lsbRecover`). The inverter `lsbInverter` runs a predictor on these queries and
 recovers `x` exactly whenever the predictor is always correct on the modulus (`eval_lsbInverter`).
 
 ## Main definitions
 
 * `Cslib.Crypto.rsaLSBGame`, `Cslib.Crypto.RSAHardCoreLSB`: the least-significant-bit prediction
   experiment and the assumption that every uniform PPT predictor has negligible bias.
-* `Cslib.Crypto.lsbQueries`, `Cslib.Crypto.lsbDigits`, `Cslib.Crypto.lsbRecover`: the doubling
-  queries, the most-significant-first value of answered parities and the final rounding.
+* `Cslib.Crypto.lsbQueries`, `Cslib.Crypto.lsbRecover`: the doubling queries, and the final
+  rounding of the most-significant-first value of the answered parities.
 * `Cslib.Crypto.lsbInverter`: the inverter that queries a predictor on the `N.size` doubling
   queries.
 
@@ -112,27 +114,24 @@ theorem two_pow_mul_rsaEval (N e k x : ℕ) :
 @[expose] def lsbQueries (N e y m : ℕ) : List ℕ :=
   (List.range m).map fun k => 2 ^ ((k + 1) * e) * y % N
 
-/-- The value of a list of binary digits read most significant first. -/
-@[expose] def lsbDigits (bits : List Bool) : ℕ :=
-  bits.foldl (fun value bit => 2 * value + bit.toNat) 0
-
-/-- Recover `x` from `q = ⌊2 ^ m * x / N⌋` as `⌈q * N / 2 ^ m⌉`. -/
+/-- Recover `x` from the most-significant-first digits `bits` of `q = ⌊2 ^ m * x / N⌋` as
+`⌈q * N / 2 ^ m⌉`. -/
 @[expose] def lsbRecover (N m : ℕ) (bits : List Bool) : ℕ :=
-  (lsbDigits bits * N + 2 ^ m - 1) / 2 ^ m
+  (BitString.binaryValue bits * N + 2 ^ m - 1) / 2 ^ m
 
 private theorem toNat_decide_mod_two (v : ℕ) : (decide (v % 2 = 1)).toNat = v % 2 := by
   rcases Nat.mod_two_eq_zero_or_one v with h | h <;> simp [h]
 
 /-- The parities of the doubled residues are the binary digits of `⌊2 ^ m * x / N⌋`. -/
-theorem lsbDigits_testBit {N x : ℕ} (hN : Odd N) (hx : x < N) (m : ℕ) :
-    lsbDigits ((List.range m).map fun k => (2 ^ (k + 1) * x % N).testBit 0) =
+theorem binaryValue_testBit_two_pow_mul_mod {N x : ℕ} (hN : Odd N) (hx : x < N) (m : ℕ) :
+    BitString.binaryValue ((List.range m).map fun k => (2 ^ (k + 1) * x % N).testBit 0) =
       2 ^ m * x / N := by
   induction m with
-  | zero => simp [lsbDigits, Nat.div_eq_of_lt hx]
+  | zero => simp [BitString.binaryValue, Nat.div_eq_of_lt hx]
   | succ m ih =>
-    rw [List.range_succ, List.map_append, lsbDigits, List.foldl_append, ← lsbDigits, ih]
-    simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil, Nat.testBit_zero,
-      toNat_decide_mod_two, two_pow_mul_mod_mod_two hN (k := m + 1) (by omega)]
+    rw [List.range_succ, List.map_append, List.map_singleton, BitString.binaryValue_snoc, ih]
+    simp only [Nat.testBit_zero, toNat_decide_mod_two,
+      two_pow_mul_mod_mod_two hN (k := m + 1) (by omega)]
     have hhalf : 2 ^ (m + 1) * x / N / 2 = 2 ^ m * x / N := by
       rw [Nat.div_div_eq_div_mul, pow_succ, mul_comm (2 ^ m) 2, mul_assoc, mul_comm N 2,
         Nat.mul_div_mul_left _ _ two_pos]
@@ -141,7 +140,7 @@ theorem lsbDigits_testBit {N x : ℕ} (hN : Odd N) (hx : x < N) (m : ℕ) :
 
 /-- Rounding `⌊2 ^ m * x / N⌋ * N / 2 ^ m` up recovers `x` once `N ≤ 2 ^ m`. -/
 theorem lsbRecover_eq {N x m : ℕ} (hx : x < N) (hm : N ≤ 2 ^ m) (bits : List Bool)
-    (hbits : lsbDigits bits = 2 ^ m * x / N) : lsbRecover N m bits = x := by
+    (hbits : BitString.binaryValue bits = 2 ^ m * x / N) : lsbRecover N m bits = x := by
   have hN : 0 < N := by omega
   have hP : 0 < 2 ^ m := Nat.two_pow_pos m
   unfold lsbRecover
@@ -160,7 +159,7 @@ theorem lsbRecover_lsbQueries {N e x m : ℕ} (hN : Odd N) (hx : x < N) (hm : N 
     (oracle : ℕ → Bool) (horacle : ∀ z < N, oracle (rsaEval N e z) = z.testBit 0) :
     lsbRecover N m ((lsbQueries N e (rsaEval N e x) m).map oracle) = x := by
   apply lsbRecover_eq hx hm
-  rw [← lsbDigits_testBit hN hx m, lsbQueries, List.map_map]
+  rw [← binaryValue_testBit_two_pow_mul_mod hN hx m, lsbQueries, List.map_map]
   congr 1
   apply List.map_congr_left
   intro k _

@@ -2339,14 +2339,11 @@ private theorem mul_card_stepRehash_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [Fi
     have := List.toFinset_card_le ks
     omega
   have hwalk := two_mul_walkBadAt_maxLoop_le hk₁ hk₂ hm hloop_ge hloop_le hks_card u
+  rw [Nat.mul_assoc 2] at hwalk
   calc (max n_max 1 * max MaxLoop 1) * _
       ≤ (max n_max 1 * max MaxLoop 1) *
           #{θ : Θ₁ × Θ₂ | WalkBadAt (h₁ θ.1) (h₂ θ.2) ks.toFinset u MaxLoop} :=
         Nat.mul_le_mul_left _ (Finset.card_le_card hsub)
-    _ ≤ 2 * (max n_max 1 * max MaxLoop 1) *
-          #{θ : Θ₁ × Θ₂ | WalkBadAt (h₁ θ.1) (h₂ θ.2) ks.toFinset u MaxLoop} := by
-        rw [Nat.mul_assoc 2]
-        exact Nat.le_mul_of_pos_left _ (by decide)
     _ ≤ 3 * Fintype.card (Θ₁ × Θ₂) := by omega
 
 /-- Turns a seed count against the load factor `max n_max 1 * max MaxLoop 1` into the

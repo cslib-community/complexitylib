@@ -67,7 +67,7 @@ says that spectral expanders are edge expanders [Arora and Barak, Section 21.2][
   applications*][HooryLinialWigderson2006]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.RotationMap
 

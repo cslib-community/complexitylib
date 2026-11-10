@@ -34,7 +34,7 @@ Code, scratch and exchange constants are uniform before all runtime sizes, bases
 * `realizes_allocLayout`, `allocLayout_exec`: certify the unchanged allocator used by Dijkstra.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.Initialize
 

@@ -21,7 +21,7 @@ import CslibFrontier.Algorithms.MatrixMultiplication.Schonhage.Tiling
   the native guard. Row-major matrix addresses are computed only after that guard.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 

@@ -95,7 +95,7 @@ theorem profileFormula_length_le (p : ClauseProfile) : (profileFormula p).length
 
 /-- The local incidence table has one route per literal, in each actual profile clause. -/
 theorem profileGeometry_incidence_count (p : ClauseProfile) (i : Fin 22) :
-    ((profileGeometry p).incidenceRoutes.filter fun e => e.1 == i.val).length =
+    ((profileGeometry p).incidenceRoutes.filter fun e => e.clauseIndex == i.val).length =
       ((profileFormula p).getD i.val []).length := by
   fin_cases p <;> fin_cases i <;> decide +kernel
 
@@ -103,8 +103,8 @@ theorem profileGeometry_incidence_count (p : ClauseProfile) (i : Fin 22) :
 theorem profileGeometry_literal_indices (p : ClauseProfile) (i : Fin 22)
     {l : Literal (CNF.PositiveExactOneCompile.Variable ℕ)} {e : LocalIncidence}
     (he : (l, e) ∈ ((profileFormula p).getD i.val []).zip
-      ((profileGeometry p).incidenceRoutes.filter fun e => e.1 == i.val)) :
-    e.2.1 = (profileVariables p).idxOf l.1 := by
+      ((profileGeometry p).incidenceRoutes.filter fun e => e.clauseIndex == i.val)) :
+    e.variableIndex = (profileVariables p).idxOf l.1 := by
   have hall : (((profileFormula p).getD i.val []).zip
       ((profileGeometry p).incidenceRoutes.filter fun e => e.1 == i.val)).all
         (fun a => a.2.2.1 == (profileVariables p).idxOf a.1.1) = true := by

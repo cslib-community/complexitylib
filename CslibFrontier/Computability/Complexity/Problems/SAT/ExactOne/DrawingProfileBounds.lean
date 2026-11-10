@@ -28,7 +28,7 @@ variables are repeated, and are deliberately excluded from these injectivity sta
 These are original support and prefix-index arguments for the actual drawing compiler.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

@@ -490,7 +490,7 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
       (encPair F.encDesc encMsg) encBits)
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool
       (fun input => F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit input.1
         input.2) := by
@@ -683,7 +683,7 @@ theorem advantage_elGamalCPAGame_le (setup : ℕ → PMF F.Desc)
 /-- `elGamalToDDHDistinguisher` is uniform strict PPT whenever `adversary` is. -/
 theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.elGamalToDDHDistinguisher adversary bit input.1 input.2) :=
   F.isPPTOn_elGamalMsgToDDHDistinguisher
     (ComputableTidilyInPolyTime.const true).computableInPolyTime F.computableInPolyTime_encodeBit hA
@@ -970,8 +970,7 @@ def SecureKDF (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Boo
     (msgLen : ℕ → ℕ) : Prop :=
   Game.Indistinguishable (F.kdfRealGame setup H) (F.kdfIdealGame setup msgLen)
     fun distinguisher =>
-      IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encBool (fun input => distinguisher input.1 input.2)
+      IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)
 
 /-- The DDH distinguisher constructed from a Hashed ElGamal IND-CPA adversary ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, w)`, pass `(d, u)` as the
@@ -1015,7 +1014,7 @@ exactly. -/
 theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.hashedElGamalToDDHDistinguisher H adversary bit input.1 input.2) := by
   let encTuple := encPair encBits (encPair encBits encBits)
   let EIn := encPair encUnary (encPair F.encDesc encTuple)
@@ -1095,7 +1094,7 @@ exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguish
 `hashedElGamalToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
 theorem isPPTOn_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.hashedElGamalToKDFDistinguisher adversary bit input.1 input.2) :=
   F.isPPTOn_hashedElGamalToDDHDistinguisher (H := fun p => p.2)
     (ComputableInPolyTime.snd F.encDesc encBits) hA bit

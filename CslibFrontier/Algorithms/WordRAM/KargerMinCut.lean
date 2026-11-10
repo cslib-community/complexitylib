@@ -149,8 +149,7 @@ theorem fits_workspace_of_logWidth_three {n w : ℕ} (hn : 2 ≤ n) (hw : logWid
   obtain ⟨d, rfl⟩ : ∃ d, n = d + 2 := ⟨n - 2, by omega⟩
   nlinarith
 
-/-- Under `2 ≤ n` and `logWidth 3 n ≤ w`, `highProbTrials n` and intermediate `n * (n - 1)` and
-`Nat.log 2 n + 2` values fit in `w`-bit words. -/
+/-- Under `2 ≤ n` and `logWidth 3 n ≤ w`, `highProbTrials n` fits in `w`-bit words. -/
 theorem fits_highProbTrials_of_logWidth_three {n w : ℕ} (hn : 2 ≤ n) (hw : logWidth 3 n ≤ w) :
     Fits w (highProbTrials n) := by
   refine (fits_of_lt_pow (k := 3) (n := n) ?_).mono hw

@@ -39,10 +39,10 @@ theorem adaptiveVerifier_isOraclePPTOn :
   apply IsOraclePPTOn.bind_with (middle := encBits)
   · exact (isPPTOn_sampleList.preprocess (.const 1)).isOraclePPTOn
   · apply IsOraclePPTOn.bind_with (middle := encBits)
-    · exact IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop)
+    · exact IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop)
     · dsimp only
       apply IsOraclePPTOn.bind_with (middle := encBits)
-      · exact IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop)
+      · exact IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop)
       · fun_prop
 
 /-- A deterministic two-round handler exposes the verifier's complete output jointly with the
