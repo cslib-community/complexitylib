@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Columns
 public import CslibFrontier.Logics.FirstOrder.Ordered.Packing
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -91,12 +92,9 @@ private theorem realize_localChecks (h e s x y z j : (language L).Term α)
           ((z.realize v).val.testBit ((j.realize v).val + t)).toNat + 2 * c (t + 1) ∧
         c t + BitString.mulColumn (x.realize v).val (y.realize v).val
           ((j.realize v).val + t) < n := by
-  simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-      Sum.elim_inl, Sum.elim_inr]; exact hspace)) only
-    [localChecks, Formula.realize_iAlls, Formula.realize_imp, Formula.realize_inf,
-      Formula.realize_not, Formula.realize_iExs, realize_le, realize_addEq, realize_shiftLeft,
-      realize_packedField, realize_carryStep, Term.realize_var, Term.realize_relabel,
-      Function.comp_def, Sum.elim_inl, Sum.elim_inr, realize_one_val, not_le, and_assoc]
+  fo_simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
+      Sum.elim_inl, Sum.elim_inr]; exact hspace))
+    [localChecks, Function.comp_def, not_le, and_assoc]
   constructor
   · intro hf t ht
     have ht1 : t + 1 < n := lt_of_le_of_lt (by lia) (s.realize v).isLt
@@ -141,11 +139,9 @@ public theorem realize_blockChecks (h e s x y z j : (language L).Term α)
           ((z.realize v).val.testBit ((j.realize v).val + t)).toNat + 2 * c (t + 1) ∧
         c t + BitString.mulColumn (x.realize v).val (y.realize v).val
           ((j.realize v).val + t) < n := by
-  simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-      Sum.elim_inl, Sum.elim_inr]; first | assumption | lia)) only
-    [blockChecks, Formula.realize_iExs, Formula.realize_inf, realize_addEq, realize_shiftLeft,
-      realize_packedField, realize_localChecks, Term.realize_var, Term.realize_relabel,
-      Function.comp_def, Sum.elim_inl, Sum.elim_inr, realize_zero_val, and_assoc]
+  fo_simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
+      Sum.elim_inl, Sum.elim_inr]; first | assumption | lia))
+    [blockChecks, realize_localChecks, Function.comp_def, and_assoc]
   constructor
   · rintro ⟨u, hj', ht', ha, ha', hb, hb', hl⟩
     refine ⟨(fun r => u (.inl r)), ?_, ?_, hl⟩

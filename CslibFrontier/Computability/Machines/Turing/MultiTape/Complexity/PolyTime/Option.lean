@@ -21,23 +21,27 @@ its fallback may be computed from the input; no inhabitant of the value type is 
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionSome`: construct an optional value.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionGetD`: read an option with a fallback
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionSome`: construct an optional value.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetD`: read an option with a fallback
   supplied as part of the input.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput`: the composition rule.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome`: test a computed optional value.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput`: branch on an optional
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput`: the composition rule.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionIsSome`: test a computed optional value.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionElimWithInput`: branch on an optional
   value while retaining the original input, including empty value types.
 
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionMapWithInput`: map an optional value
-  with a callback certified jointly with its captured original input.
+The plain forms `Turing.MultiTapeTM.ComputableInPolyTime.optionSome`, `.optionGetD`,
+`.optionGetDWithInput`, `.optionIsSome` and `.optionElimWithInput` are in
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives`, which
+this file publicly imports. So is `Turing.MultiTapeTM.ComputableInPolyTime.optionMapWithInput`,
+which maps an optional value with a callback certified jointly with its captured original input;
+it has no tidy form here.
 
 ## References
 
 Uses Christian Reitwiessner's option encoding and degree-bounded machine calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

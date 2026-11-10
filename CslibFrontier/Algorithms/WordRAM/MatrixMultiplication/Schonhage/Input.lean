@@ -28,7 +28,7 @@ width. Output and scratch are disjoint concrete blocks immediately after the inp
 The encodings are from [AlmanWilliams2026, Section 2.4.1]; see `Encoding` for provenance.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
 

@@ -154,10 +154,6 @@ theorem repeatShape_append (t : ℕ) (g h : List (IPMove × ℕ)) :
     repeatShape t (g ++ h) = repeatShape t g ++ repeatShape t h := by
   simp [repeatShape]
 
-theorem transcriptLength_toAM (g : List (IPMove × ℕ)) :
-    AMGame.transcriptLength (toAM g) = transcriptLength g := by
-  simp [AMGame.transcriptLength, transcriptLength, toAM, Function.comp_def]
-
 /-- A bit string is the concatenation of `t` strings of `n` bits exactly when its blocks are
 those strings. -/
 theorem eq_ofList_flatMap_iff {t n : ℕ} (r : BitString (t * n)) (F : ℕ → BitString n) :

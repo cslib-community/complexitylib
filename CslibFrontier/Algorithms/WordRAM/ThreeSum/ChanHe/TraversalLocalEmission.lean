@@ -23,7 +23,7 @@ emission API as catalogue production, with publication explicitly disabled.
 This local theorem does not supply a solver execution or a complete initialized decision result.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

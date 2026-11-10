@@ -16,7 +16,7 @@ Concrete instantiations of the bit-string Shannon entropy and statistical distan
 `sum_filter_mass_le_ge_of_entropy_ge`, `entropy_ofList_take_ge`, and `entropy_append_uniform`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF.BitStringEntropyTests
 

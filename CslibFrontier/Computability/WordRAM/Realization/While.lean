@@ -246,38 +246,16 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
   let env : Fin k → Fin r := fun i => src (Fin.castAdd l i)
   let bs := Fin.append env st
   let idle := tmp (Fin.last (l + (l + n + 1)))
-  have hst : Function.Injective st := by
-    intro i j hij
-    apply Fin.ext
-    have hh := congrArg Fin.val (hi hij)
-    exact hh
-  have hbt : Function.Injective bt := by
-    intro i j hij
-    apply Fin.ext
-    have hh := congrArg Fin.val (hi hij)
-    dsimp only [whileBodySlot] at hh
-    omega
-  have hbdis : ∀ i j, bs i ≠ bt j := by
-    intro i j
-    refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-    · simpa only [bs, Fin.append_left] using hd (Fin.castAdd l i) (whileBodySlot j)
-    · simp only [bs, Fin.append_right]
-      intro hij
-      have hh := congrArg Fin.val (hi hij)
-      dsimp only [whileStateSlot, whileBodySlot] at hh
-      omega
-  have hbf : ∀ j, bt j ≠ frontier := fun j => hf _
-  have hbs : ∀ i, bs i ≠ frontier := by
-    intro i
-    refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-    · simpa only [bs, Fin.append_left] using hs (Fin.castAdd l i)
-    · simpa only [bs, Fin.append_right] using hf (whileStateSlot i)
+  have hst : Function.Injective st := fun i j h => Fin.ext (congrArg Fin.val (hi h) :)
+  have hsb (i : Fin l) (j : Fin (l + n + 1)) : whileStateSlot (n := n) i ≠ whileBodySlot j :=
+    Fin.ne_of_val_ne (by simp only [whileStateSlot, whileBodySlot]; omega)
+  have hbi : Function.Injective (whileBodySlot (l := l) (n := n)) := fun i j h =>
+    Fin.ext (by have := congrArg Fin.val h; dsimp only [whileBodySlot] at this; omega)
+  obtain ⟨hbt, hbdis, hbf, hbs⟩ :=
+    bodyBank_layout (env := env) hi hbi hsb (fun _ _ => hd _ _) hf (fun _ => hs _)
   obtain ⟨hnw, hrun⟩ := he frontier bs bt hbt hbdis hbf hbs
-  have houtdis : ∀ i j : Fin l, bt (Fin.castAdd (n + 1) i) ≠ st j := by
-    intro i j hij
-    have hh := congrArg Fin.val (hi hij)
-    dsimp only [whileBodySlot, whileStateSlot] at hh
-    omega
+  have houtdis : ∀ i j : Fin l, bt (Fin.castAdd (n + 1) i) ≠ st j :=
+    fun i j => hi.ne (hsb j _).symm
   refine ⟨?_, ?_⟩
   · simpa [whileEmit, whileBody, Code.ReadsWidth, copyBank_not_readsWidth] using hnw
   · rintro w ⟨d, a₀⟩ x hx hin hsafe hv
@@ -288,11 +266,8 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
       ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
     have hcond (q : σ × Memory.State) (y : Data r) (hI : I q y) :
         (cond.rename bs).Holds y ↔ guard d q.1 := by
-      have hb : y.regs ∘ bs = (appendWords input output) (d, q.1) := by
-        funext i
-        refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-        · simpa [bs, appendWords, Fin.appendEquiv] using hI.2.2.1 i
-        · simpa [bs, appendWords, Fin.appendEquiv] using hI.2.2.2.1 i
+      have hb : y.regs ∘ bs = (appendWords input output) (d, q.1) :=
+        regs_comp_append_eq_appendWords input output hI.2.2.1 hI.2.2.2.1
       cases cond <;> simp only [Cond.rename, Cond.Holds, guard, test] <;>
         simp only [← hb, Function.comp_apply]
     have step (q : σ × Memory.State) (y : Data r) (hI : I q y)
@@ -303,13 +278,8 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
             (C * (memoryCost (body (d, q.1)) q.2 + work (d, q.1) q.2 + 1) + (l + 1)) ∧
           I (iterationStep body d q) z := by
       obtain ⟨hyb, hym, hye, hys, hyframe⟩ := hI
-      have hinput : y.regs ∘ bs = (appendWords input output) (d, q.1) := by
-        funext i
-        refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-        · simpa [bs, appendWords, Fin.appendEquiv] using hye i
-        · simpa [bs, appendWords, Fin.appendEquiv] using hys i
-      obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d, q.1) y hyb hinput
-        (hym ▸ hdom) (hym ▸ hvalid)
+      obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d, q.1) y hyb
+        (regs_comp_append_eq_appendWords input output hye hys) (hym ▸ hdom) (hym ▸ hvalid)
       rw [hym] at hu hum huo
       rw [clientState_width] at hum
       simp only [clientResult_width] at huo

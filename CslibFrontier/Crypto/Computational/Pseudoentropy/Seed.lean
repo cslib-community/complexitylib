@@ -28,7 +28,7 @@ The entropy chain rule accounts for every seed bit, including coins unused by th
 `H(observation) + H(bit | observation) + H(seed | observation, bit) = seed length`.
 Thus the third source in the later extraction argument retains the unused randomness too.
 The seed also bounds the information in a single outcome, giving an explicit exponential
-concentration bound for independent repetitions of the pair.
+lower-tail bound on the total conditional information of independent repetitions of the pair.
 
 ## Main definitions
 
@@ -223,8 +223,11 @@ theorem mass_ge (n : ℕ) (result : pair.Observation n × Bool)
   simpa [Fintype.card_fun, Real.logb_pow] using
     PMF.uniform_map_mass_ge (seed.output n) result hresult
 
-/-- Independent repetitions concentrate their conditional information around the Shannon
-entropy of the pair. The loss accounts for the sampler's full saved seed length. -/
+/-- Lower-tail bound for independent repetitions: for `0 ≤ ε`, the total conditional information
+of the hidden bits given their observations is at most `repetitions` times the conditional entropy
+`PMF.conditionalEntropy (pair.joint n)` of the bit given the observation, minus `ε`, with
+probability at most `Real.exp (-2 * ε ^ 2 / (repetitions * (seed.length n : ℝ) ^ 2))`. No
+upper-tail bound is stated. The loss accounts for the sampler's full saved seed length. -/
 theorem conditionalSurprisal_concentration (n repetitions : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
     ((PMF.pi (fun _ : Fin repetitions => pair.joint n)).toOuterMeasure {outcomes |
       ∑ i, PMF.surprisal (PMF.conditionalSnd (pair.joint n) (outcomes i).1) (outcomes i).2 ≤

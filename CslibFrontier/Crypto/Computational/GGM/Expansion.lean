@@ -227,7 +227,7 @@ theorem expansionGame_generated (generator : List Bool → List Bool)
     (adversary : OracleDistinguisher) (n depth : ℕ) (hdepth : depth < n) :
     ProbComp.eval (expansionGame generator (generator <$> BitString.sampleList n)
       adversary n depth) = ProbComp.eval (hybridGame generator adversary n depth) := by
-  have h := ProbOracleComp.run_interpret_map_state_of_invariant
+  have h := ProbOracleComp.runWith_map_state_of_invariant
     (fun request cache => ProbComp.eval (frontierOracle generator n depth request.2 cache))
     (fun request cache => ProbComp.eval
       (expansionOracle generator (generator <$> BitString.sampleList n) n depth request.2 cache))
@@ -236,7 +236,7 @@ theorem expansionGame_generated (generator : List Bool → List Bool)
     (fun request => expansionOracle_generated_step generator n depth hdepth request.2)
     (adversary n []) [] (by simp)
   have houtput := congrArg (PMF.map Prod.fst) h
-  simpa [expansionGame, hybridGame, ProbOracleComp.eval_run_interpret,
+  simpa [expansionGame, hybridGame, ProbOracleComp.eval_run_interpret_eq_runWith,
     expandCache, PMF.map_comp, Function.comp_def] using houtput.symm
 
 private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
@@ -356,7 +356,7 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
     _ = (PMF.uniformOfFintype (BitString depth → BitString (2 * n))).bind earlier := by
       dsimp only [earlier]
       rw [hearlier]
-      simp only [expansionGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
+      simp only [expansionGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith]
       congr 4 with request cache : 2
       by_cases hquery : request.2.length = n
       · simp only [pmf_norm, expansionOracle, hquery, ite_true, ProbComp.eval_memoize,
@@ -369,7 +369,7 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
     _ = _ := by
       dsimp only [later]
       rw [hlater]
-      simp only [hybridGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
+      simp only [hybridGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith]
       congr 4 with request cache : 2
       by_cases hquery : request.2.length = n <;>
         simp [frontierOracle, hquery, ProbComp.eval_memoize, PMF.map, Function.comp_def]

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.GateVectorCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Tactic.EncLen
@@ -76,42 +77,13 @@ theorem runFrom_one_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s)
       2 * callerSpace params + B + 2 := by
   have hcaller := prefixState_encoding_le params values j hj.le hp
   have hnext := prefixState_encoding_le params values (j + 1) (by omega) hp
-  by_cases htzero : t = 0
-  · subst t
-    simp only [QueryMachine.runFrom_zero, encState, encSum_inl, List.length_cons]
-    omega
-  by_cases htfinal : t = T + 2
-  · subst t
-    rw [runFrom_one M e params values w j T hj hpre hhalt hanswer]
-    simp only [encState, encSum_inl, List.length_cons]
-    omega
-  have htT : t - 1 ≤ T := by omega
-  have hentry : (machine M e).runFrom w (.inl (prefixState params values j)) 1 =
-      .inr (prefixState params values j, start (prefixState params values j)) := by
-    apply QueryMachine.withCalls_step_call
-    · change decide (params.2 ≤ j) = false
-      exact decide_eq_false (by omega)
-    · change (if j < params.2 then some (start (prefixState params values j)) else none) = _
-      simp only [hj, ↓reduceIte]
-  rw [show t = 1 + (t - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hprefix := QueryMachine.withCalls_runFrom_subroutine_prefix
-    caller (Interpolation.machine M e) request resume w
-    (prefixState params values j) (start (prefixState params values j)) (t - 1)
-    (fun u hu => hpre u (by omega))
-  rw [show (machine M e).runFrom w
-      (.inr (prefixState params values j, start (prefixState params values j))) (t - 1) =
-      .inr (prefixState params values j,
-        (Interpolation.machine M e).runFrom w (start (prefixState params values j)) (t - 1))
-    from hprefix]
-  have hcallee := hsize (t - 1) htT
-  rw [show (encState (.inr (prefixState params values j,
-      (Interpolation.machine M e).runFrom w
-        (start (prefixState params values j)) (t - 1)))).length =
-      2 * (encCaller (prefixState params values j)).length +
-        (Interpolation.encState ((Interpolation.machine M e).runFrom w
-          (start (prefixState params values j)) (t - 1))).length + 2 from
-    QueryMachine.withCalls_encoding_inr_length encCaller Interpolation.encState _ _]
-  omega
+  rw [← resume_prefix params values j _ hanswer] at hnext
+  refine QueryMachine.withCalls_runFrom_call_encoding_le caller (Interpolation.machine M e)
+    request resume w encCaller Interpolation.encState ?_ ?_ hpre hhalt hcaller hnext hsize t ht
+  · change decide (params.2 ≤ j) = false
+    exact decide_eq_false (by omega)
+  · change (if j < params.2 then some (start (prefixState params values j)) else none) = _
+    simp only [hj, ↓reduceIte]
 
 /-- Concatenated coordinate calls obey one bound at all physical clocks. -/
 theorem exists_runFrom_prefix_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s)
@@ -130,27 +102,13 @@ theorem exists_runFrom_prefix_encoding_le (M : MultiTapeTM k Bool Q) (e : Q ≃ 
     ∃ T, (machine M e).runFrom w (initial params) T = .inl (prefixState params values j) ∧
       ∀ t ≤ T, (encState ((machine M e).runFrom w (initial params) t)).length ≤
         2 * callerSpace params + B + 2 := by
-  induction j with
-  | zero =>
-    refine ⟨0, rfl, ?_⟩
-    intro t ht
-    have : t = 0 := by omega
-    subst t
-    have hc := prefixState_encoding_le params values 0 (by omega) hp
-    change (encCaller (prefixState params values 0)).length + 1 ≤ _
-    omega
-  | succ j ih =>
-    obtain ⟨T, hT, hbound⟩ := ih (by omega)
-    obtain ⟨U, hpre, hhalt, hans, hsize⟩ := hsupplier j (by omega)
-    refine ⟨T + (U + 2), ?_, ?_⟩
-    · rw [QueryMachine.runFrom_add, hT]
-      exact runFrom_one M e params values w j U (by omega) hpre hhalt hans
-    · intro t ht
-      by_cases htT : t ≤ T
-      · exact hbound t htT
-      · rw [show t = T + (t - T) by omega, QueryMachine.runFrom_add, hT]
-        exact runFrom_one_encoding_le M e params values w j U B (by omega) hp
-          hpre hhalt hans hsize (t - T) (by omega)
+  have h0 := prefixState_encoding_le params values 0 (Nat.zero_le _) hp
+  refine QueryMachine.exists_runFrom_chain_encoding_le encState
+    (fun j => .inl (prefixState params values j)) j
+    (by change (encCaller (prefixState params values 0)).length + 1 ≤ _; omega) fun i hi => ?_
+  obtain ⟨U, hpre, hhalt, hans, hsize⟩ := hsupplier i (by omega)
+  exact ⟨U + 2, runFrom_one M e params values w i U (by omega) hpre hhalt hans,
+    runFrom_one_encoding_le M e params values w i U B (by omega) hp hpre hhalt hans hsize⟩
 
 /-- Only the binary chunk-index metadata grows when the requested coordinate increases. -/
 theorem setChunk_encoding_mono (params : QueryGate.Params Interpolation.Context)

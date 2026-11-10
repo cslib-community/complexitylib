@@ -33,7 +33,7 @@ error bound on a normalized acceptance probability.
 * [T. Watson, *The Complexity of Estimating Min-Entropy*][Watson2012], Sections 1.1 and 3.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

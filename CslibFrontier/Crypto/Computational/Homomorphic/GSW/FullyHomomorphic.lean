@@ -68,7 +68,7 @@ Neither theorem asserts lattice hardness, a worst-case reduction, or circuit pri
 * [C. Gentry, A. Sahai and B. Waters, Sections 3.2–3.4][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW.DepthParameters
 

@@ -13,6 +13,7 @@ public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.PolyTime
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Foundations.Data.List.Fold
+import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
@@ -587,12 +588,8 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
   have hpoly : (L + 1) ^ dn + (L + 1) ^ di ≤ 2 * P := by grind
   have hrnd : (stateBound K α φ + 1) ^ d + stateBound K α φ +
       ((encNat (rounds M φ)).length + 1) ^ 2 ≤ C₁ * P := by
-    have h₁ : (stateBound K α φ + 1) ^ d ≤ (c₂ + 1) ^ d * (L + 1) ^ (3 * d) := by
-      rw [pow_mul, ← mul_pow]
-      refine Nat.pow_le_pow_left ?_ d
-      have : 1 ≤ (L + 1) ^ 3 := Nat.one_le_pow _ _ (Nat.succ_pos L)
-      have e₁ : (c₂ + 1) * (L + 1) ^ 3 = c₂ * (L + 1) ^ 3 + (L + 1) ^ 3 := by ring
-      omega
+    have h₁ : (stateBound K α φ + 1) ^ d ≤ (c₂ + 1) ^ d * (L + 1) ^ (3 * d) :=
+      Nat.add_one_pow_le_of_le_mul_pow (Nat.succ_pos L) hsb d
     have h₂ : ((encNat (rounds M φ)).length + 1) ^ 2 ≤ 16 * (L + 1) ^ 2 := by
       rw [henc]
       have : N / M + 3 + 1 ≤ 4 * (L + 1) := by
@@ -604,7 +601,6 @@ theorem decidableInExpTime_search {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K 
     have h₄ := hP 3 (by omega)
     have h₅ := hP 2 (by omega)
     have h₆ := Nat.mul_le_mul_left ((c₂ + 1) ^ d) h₃
-    have h₇ := Nat.mul_le_mul_left c₂ (hsb.trans (Nat.mul_le_mul_left c₂ h₄) |>.trans le_rfl)
     calc (stateBound K α φ + 1) ^ d + stateBound K α φ + ((encNat (rounds M φ)).length + 1) ^ 2
         ≤ (c₂ + 1) ^ d * P + c₂ * P + 16 * P := by
           have := hsb.trans (Nat.mul_le_mul_left c₂ h₄)

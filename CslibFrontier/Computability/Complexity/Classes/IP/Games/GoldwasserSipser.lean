@@ -91,37 +91,6 @@ open Finset Turing.MultiTapeTM Filter
 
 variable {α : Type}
 
-namespace IPGame
-
-@[simp] theorem evalShape_nil (n : ℕ) : evalShape [] n = [] := rfl
-
-theorem evalShape_cons (v : IPMove) (p : Polynomial ℕ) (G : List (IPMove × Polynomial ℕ)) (n : ℕ) :
-    evalShape ((v, p) :: G) n = (v, p.eval n) :: evalShape G n := rfl
-
-theorem evalShape_append (G H : List (IPMove × Polynomial ℕ)) (n : ℕ) :
-    evalShape (G ++ H) n = evalShape G n ++ evalShape H n := by
-  simp [evalShape]
-
-theorem verifierBits_append (g h : List (IPMove × ℕ)) :
-    verifierBits (g ++ h) = verifierBits g + verifierBits h := by
-  induction g with
-  | nil => simp [verifierBits, AMGame.arthurBits]
-  | cons x g ih =>
-    obtain ⟨_ | _, n⟩ := x
-    · rw [List.cons_append, verifierBits_verifier, verifierBits_verifier, ih, Nat.add_assoc]
-    · rw [List.cons_append, verifierBits_prover, verifierBits_prover, ih]
-
-theorem verifierBits_le_transcriptLength (g : List (IPMove × ℕ)) :
-    verifierBits g ≤ transcriptLength g := by
-  rw [← transcriptLength_toAM, transcriptLength_eq_arthurBits_add_merlinBits]
-  exact Nat.le_add_right _ _
-
-theorem verifierMoves_evalShape (G : List (IPMove × Polynomial ℕ)) (n : ℕ) :
-    verifierMoves (evalShape G n) = (G.map Prod.fst).count .verifier := by
-  simp [verifierMoves, evalShape, Function.comp_def]
-
-end IPGame
-
 namespace Emulation
 
 open IPGame

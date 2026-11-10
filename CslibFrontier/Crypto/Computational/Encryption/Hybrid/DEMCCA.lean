@@ -203,32 +203,17 @@ private theorem eval_run_substituted_phase {α : Type}
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request (s : Unit) => pure (reply request, s))) program).run ())).map
             (fun result => (result.1, state)) := by
-  let ext := OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-    (fun request s => ProbComp.eval (oracle request s))
-  have hsim := ProbOracleComp.run_interpret_map_state
+  have hsim := ProbOracleComp.runWith_map_state
     (fun request (s : Unit) => PMF.pure (reply request, s))
-    (fun request => OracleComp.interpret ext (handler request))
+    (fun request => ProbOracleComp.runWith (fun q s => ProbComp.eval (oracle q s))
+      (handler request))
     (fun _ : Unit => state) (fun request s => by
       have h := congrArg ProbComp.eval (hstep request)
-      simp only [ProbOracleComp.eval_run_interpret, ProbComp.eval_pure] at h
-      simpa only [PMF.pure_map, ext, StateT.run] using h.symm) program ()
-  rw [ProbOracleComp.eval_run_interpret, OracleComp.interpret_interpret]
-  have hhandler : (fun q => OracleComp.interpret ext
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler q)) =
-      OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-        (fun request => OracleComp.interpret ext (handler request)) := by
-    funext q
-    cases q with
-    | inl m =>
-      simp only [OracleComp.sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
-        OracleComp.interpret_query, ext]
-    | inr request => rfl
-  change (OracleComp.interpret
-    (fun q => OracleComp.interpret ext
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler q))
-      program).run state = _
-  rw [hhandler, ← hsim, ProbOracleComp.eval_run_interpret]
-  rfl
+      rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
+      simpa only [PMF.pure_map] using h.symm) program ()
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_interpret_sumHandler,
+    ← hsim, ProbOracleComp.eval_run_interpret_eq_runWith]
+  simp only [ProbComp.eval_pure]
 
 private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)
     (decaps : ℕ → List Bool → List Bool → Option (List Bool))
@@ -321,8 +306,8 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
         (hybridToOneTimeCCAAdversary E keyGen encaps decaps ctBound decBound adversary) bit n) := by
   symm
   simp only [pmf_norm, hybridDEMGame, SymmetricCipher.ccaOneTimeGame, hybridToOneTimeCCAAdversary,
-    ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.run_interpret_sample]
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_sample]
   rw [PMF.bind_comm]
   apply PMF.bind_congr_on_support
   intro keys _
@@ -331,7 +316,8 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
   intro encapsulated _
   apply PMF.bind_congr_on_support
   intro k hk
-  simpa only [ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret] using
+  simpa only [ProbComp.eval_bind, ProbComp.eval_pure,
+    ProbOracleComp.eval_run_interpret_eq_runWith] using
     eval_run_hybridDEMContinuation E decaps ctBound decBound adversary bit n keys.1 keys.2
       encapsulated.2 k (hct k hk) (hdec k hk)
 

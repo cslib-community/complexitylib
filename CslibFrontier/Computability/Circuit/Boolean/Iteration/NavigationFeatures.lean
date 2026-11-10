@@ -22,8 +22,9 @@ circuits.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Iteration.inputLeft`: first `n`-bit state of a `(n + n)`-bit input.
-* `Cslib.Circuits.Boolean.Iteration.inputRight`: second `n`-bit state of a `(n + n)`-bit input.
+* `Cslib.Circuits.Boolean.Iteration.inputLeft`, `Cslib.Circuits.Boolean.Iteration.inputRight`: the
+  two `n`-bit states of a `(n + n)`-bit input, as abbreviations of `Cslib.BitString.fstBits` and
+  `Cslib.BitString.sndBits`, whose lemmas apply to them.
 
 ## Main results
 
@@ -49,13 +50,13 @@ attribute [local instance] lexOrder
 
 variable {n : ℕ}
 
-/-- The first `n`-bit state in a pair input. -/
-def inputLeft (z : BitString (n + n)) : BitString n :=
-  fun i => z (Fin.castAdd n i)
+/-- The first `n`-bit state in a pair input: `BitString.fstBits` at `a = b = n`. -/
+abbrev inputLeft (z : BitString (n + n)) : BitString n :=
+  BitString.fstBits z
 
-/-- The second `n`-bit state in a pair input. -/
-def inputRight (z : BitString (n + n)) : BitString n :=
-  fun i => z (Fin.natAdd n i)
+/-- The second `n`-bit state in a pair input: `BitString.sndBits` at `a = b = n`. -/
+abbrev inputRight (z : BitString (n + n)) : BitString n :=
+  BitString.sndBits z
 
 /-- Evaluate a depth circuit on an available state and widen its output to `n + 3` bits. -/
 theorem synthesis_depthWord (f : BitString n → BitString n)
