@@ -491,22 +491,15 @@ theorem clmulTabLoop_exec {w tabBase b : ℕ}
       · have hplt : prevIdx < idx := hprev_lt hv0
         have hne : tabBase + prevIdx ≠ tabBase + idx := by omega
         rw [Function.update_of_ne hne, hinv prevIdx hplt, hprev_u, hprev_v]
-    have hbody : WP.Exact w clmulTabBody x fun z t => t = 17 ∧
-        ∃ y, Exec w clmulTabLoop z y (19 * rem + 2) ∧ y.regs 0 = tabBase ∧
-          (∀ i < 2 ^ (2 * b), y.mem (tabBase + i) = clmul (i >>> b) (i &&& (2 ^ b - 1))) ∧
-          ∀ a, (a < tabBase + idx ∨ tabBase + 2 ^ (2 * b) ≤ a) → y.mem a = x.mem a := by
-      unfold clmulTabBody
-      wram_exec [h0, h1, h3, h4, h5, ← hu, ← hv, ← hprev, hprev_mem, clmul_eq_bit_mul_xor]
-      exact (ih (idx + 1) _ (by omega) (by wram_simp [h0]) (by wram_simp) (by wram_simp [h2])
-        (by wram_simp [h3]) (by wram_simp [h4]) (by wram_simp [h5]) fun i hi => by
-          rcases eq_or_ne i idx with rfl | hne
-          · wram_simp [u, v]
-          · wram_simp [hinv i (by omega)]).elim fun y ⟨hrec, hy0, hytab, hyout⟩ =>
-        ⟨y, hrec, hy0, hytab, fun a ha => by rw [hyout a (by omega)]; wram_simp⟩
-    obtain ⟨z, t, hb, rfl, y, hrec, hy⟩ := hbody
-    refine ⟨y, ?_, hy⟩
-    simpa only [clmulTabLoop, show 17 + (19 * rem + 2) + 2 = 19 * (rem + 1) + 2 by omega] using
-      Exec.loop_iter hc hb hrec
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter hc ?_)
+    unfold clmulTabBody
+    wram_exec [h0, h1, h3, h4, h5, ← hu, ← hv, ← hprev, hprev_mem, clmul_eq_bit_mul_xor]
+    wram_call (ih (idx + 1) _ (by omega) (by wram_simp [h0]) (by wram_simp) (by wram_simp [h2])
+      (by wram_simp [h3]) (by wram_simp [h4]) (by wram_simp [h5]) fun i hi => by
+        rcases eq_or_ne i idx with rfl | hne
+        · wram_simp [u, v]
+        · wram_simp [hinv i (by omega)]) with y ⟨hy0, hytab, hyout⟩
+    exact ⟨by omega, hy0, hytab, fun a ha => by rw [hyout a (by omega)]; wram_simp⟩
 
 /-! ## Section 3: Table construction (`initTableCode`) and seed resampling (`resampleCode`) -/
 
@@ -1359,25 +1352,18 @@ theorem innerClmulLoop_exec {w tabBase b q x_rem sh_x : ℕ}
             rw [← Nat.shiftLeft_xor_distrib]
         _ = clmul xc y_rem <<< (sh_x + sh_y) := by
             rw [← clmul_split_right]
-    have hbody : WP.Exact w innerClmulBody s fun z t => t = 9 ∧
-        ∃ y, Exec w innerClmulLoop z y (11 * rem_j + 2) ∧
-          y.regs 2 = acc ^^^ (clmul xc y_rem <<< (sh_x + sh_y)) ∧
-          (∀ r : Fin 18, r ≠ 2 ∧ r ≠ 14 ∧ r ≠ 15 ∧ r ≠ 16 ∧ r ≠ 17 → y.regs r = s.regs r) ∧
-          y.mem = s.mem := by
-      unfold innerClmulBody
-      wram_exec [h2, h4, h5, h7, h8, h13, h14, h15, h16, ← hxc, ← hyc, ← hidx, hmem_idx]
-      exact (ih (y_rem >>> b) (sh_y + b) (acc ^^^ (clmul xc yc <<< (sh_x + sh_y))) _ hy_shr_lt
-        hy_shr_bound hacc'_lt hfit_sh' (by wram_simp) (by wram_simp [h4]) (by wram_simp [h5])
-        (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp [h13])
-        (by wram_simp) (by wram_simp) (by wram_simp [Nat.add_assoc]) (by exact htab)).elim
-        fun y ⟨hrec, hy2, hy_regs, hy_mem⟩ => ⟨y, hrec, hy2.trans hxor, fun r hr => by
-          obtain ⟨hr2, hr14, hr15, hr16, hr17⟩ := hr
-          rw [hy_regs r ⟨hr2, hr14, hr15, hr16, hr17⟩]
-          wram_simp, hy_mem⟩
-    obtain ⟨z, t, hb, rfl, y, hrec, hy⟩ := hbody
-    refine ⟨y, ?_, hy⟩
-    simpa only [innerClmulLoop, show 9 + (11 * rem_j + 2) + 2 = 11 * (rem_j + 1) + 2 by omega] using
-      Exec.loop_iter hc hb hrec
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter hc ?_)
+    unfold innerClmulBody
+    wram_exec [h2, h4, h5, h7, h8, h13, h14, h15, h16, ← hxc, ← hyc, ← hidx, hmem_idx]
+    wram_call (ih (y_rem >>> b) (sh_y + b) (acc ^^^ (clmul xc yc <<< (sh_x + sh_y))) _ hy_shr_lt
+      hy_shr_bound hacc'_lt hfit_sh' (by wram_simp) (by wram_simp [h4]) (by wram_simp [h5])
+      (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp [h13])
+      (by wram_simp) (by wram_simp) (by wram_simp [Nat.add_assoc]) (by exact htab))
+      with y ⟨hy2, hy_regs, hy_mem⟩
+    exact ⟨by omega, hy2.trans hxor, fun r hr => by
+        obtain ⟨hr2, hr14, hr15, hr16, hr17⟩ := hr
+        rw [hy_regs r ⟨hr2, hr14, hr15, hr16, hr17⟩]
+        wram_simp, hy_mem⟩
 
 /-- Body of `outerClmulLoop`: computes `x_chunk_sh = (x_rem &&& mask_b) <<< b`, initializes the
 inner loop over `L` limbs of `u` starting at shift `shift_i`, runs `innerClmulLoop`, and advances
@@ -1497,32 +1483,25 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
             rw [← Nat.shiftLeft_xor_distrib]
         _ = clmul x_rem u <<< sh_x := by
             rw [← clmul_split_left]
-    have hbody : WP.Exact w outerClmulBody s fun z t => t = 11 * L + 10 ∧
-        ∃ y, Exec w outerClmulLoop z y ((11 * L + 12) * rem_i + 2) ∧
-          y.regs 2 = acc ^^^ (clmul x_rem u <<< sh_x) ∧
-          (∀ r : Fin 18, r.val < 10 ∧ r ≠ 2 → y.regs r = s.regs r) ∧ y.mem = s.mem := by
-      unfold outerClmulBody
-      wram_exec [h1, h4, h5, h6, h11, h12, ← hxc]
-      wram_call (innerClmulLoop_exec hb hw hfit_tabEnd hx_bound L u 0 acc _ hu_limbs
-        (by simpa using hu_bound) hacc_lt hfit_inner_sh (by wram_simp [h2]) (by wram_simp [h4])
-        (by wram_simp [h5]) (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9])
-        (by wram_simp [hxc]) (by wram_simp) (by wram_simp) (by wram_simp) (by exact htab))
-        with s6 ⟨hs6_2, hs6_regs, hs6_mem⟩
-      wram_exec [hs6_regs, h4, h8, h10, h11, h12]
-      exact (ih (x_rem >>> b) (sh_x + b) (acc ^^^ (clmul xc u <<< sh_x)) _ hx_shr_lt hx_shr_bound
-        hacc'_lt hfit_sh' (by wram_simp [hs6_regs, h1]) (by wram_simp [hs6_2, hxc])
-        (by wram_simp [hs6_regs, h4]) (by wram_simp [hs6_regs, h5]) (by wram_simp [hs6_regs, h6])
-        (by wram_simp [hs6_regs, h7]) (by wram_simp [hs6_regs, h8]) (by wram_simp [hs6_regs, h9])
-        (by wram_simp) (by wram_simp) (by wram_simp)
-        (by intro i hi; wram_simp [hs6_mem, htab i hi])).elim
-        fun y ⟨hrec, hy2, hy_regs, hy_mem⟩ => ⟨y, hrec, hy2.trans hxor, fun r hr => by
-          obtain ⟨hr_lt, hr2⟩ := hr
-          rw [hy_regs r ⟨hr_lt, hr2⟩]
-          wram_simp [hs6_regs], hy_mem.trans hs6_mem⟩
-    obtain ⟨z, t, hb, rfl, y, hrec, hy⟩ := hbody
-    refine ⟨y, ?_, hy⟩
-    simpa only [outerClmulLoop, show 11 * L + 10 + ((11 * L + 12) * rem_i + 2) + 2 =
-      (11 * L + 12) * (rem_i + 1) + 2 by ring] using Exec.loop_iter hc hb hrec
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter hc ?_)
+    unfold outerClmulBody
+    wram_exec [h1, h4, h5, h6, h11, h12, ← hxc]
+    wram_call (innerClmulLoop_exec hb hw hfit_tabEnd hx_bound L u 0 acc _ hu_limbs
+      (by simpa using hu_bound) hacc_lt hfit_inner_sh (by wram_simp [h2]) (by wram_simp [h4])
+      (by wram_simp [h5]) (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9])
+      (by wram_simp [hxc]) (by wram_simp) (by wram_simp) (by wram_simp) (by exact htab))
+      with s6 ⟨hs6_2, hs6_regs, hs6_mem⟩
+    wram_exec [hs6_regs, h4, h8, h10, h11, h12]
+    wram_call (ih (x_rem >>> b) (sh_x + b) (acc ^^^ (clmul xc u <<< sh_x)) _ hx_shr_lt hx_shr_bound
+      hacc'_lt hfit_sh' (by wram_simp [hs6_regs, h1]) (by wram_simp [hs6_2, hxc])
+      (by wram_simp [hs6_regs, h4]) (by wram_simp [hs6_regs, h5]) (by wram_simp [hs6_regs, h6])
+      (by wram_simp [hs6_regs, h7]) (by wram_simp [hs6_regs, h8]) (by wram_simp [hs6_regs, h9])
+      (by wram_simp) (by wram_simp) (by wram_simp)
+      (by intro i hi; wram_simp [hs6_mem, htab i hi])) with y ⟨hy2, hy_regs, hy_mem⟩
+    exact ⟨by ring, hy2.trans hxor, fun r hr => by
+        obtain ⟨hr_lt, hr2⟩ := hr
+        rw [hy_regs r ⟨hr_lt, hr2⟩]
+        wram_simp [hs6_regs], hy_mem.trans hs6_mem⟩
 
 /-- 16-instruction straight-line reduction block on `Data 18`: loads `r`, `q = 2 * r`,
 `2 ^ r - 1`, and `2 ^ q - 1` from `base + 0 .. base + 3` into registers `10..13` and replaces `c`
@@ -1758,37 +1737,29 @@ theorem hornerLoop_exec {w base b U M k : ℕ}
       have hlast : Fin.castLE hm (Fin.last m) = ⟨m, hm_lt⟩ := rfl
       simp only [hcast, hlast]
       ring
-    have hbody : WP.Exact w hornerBody s fun z n => n = (11 * L + 12) * L + 28 ∧
-        ∃ y, Exec w hornerLoop z y (((11 * L + 12) * L + 30) * m + 2) ∧ y.regs 0 = base ∧
-          y.regs 1 = u.val ∧ y.regs 2 = (TrinomialField.equivFin t (acc * x_field ^ (m + 1) +
-            ∑ i : Fin (m + 1), c_field (Fin.castLE hm i) * x_field ^ (i : ℕ))).val ∧
-          y.mem = s.mem := by
-      unfold hornerBody
-      wram_exec [h2, h3, h6, h8, h9]
-      wram_call (outerClmulLoop_exec hb hw hfit_tabEnd hu_limbs hu_bound L acc_val 0 0 _
-        hacc_limbs (by simpa using hacc_bound) (by positivity) hfit_2Lb (by wram_simp [h1])
-        (by wram_simp) (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp [h6])
-        (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp)
-        (by wram_simp) (by wram_simp) (by exact htab.2.2.2.2.2.2.2.2))
-        with s6 ⟨hs6_2, hs6_low, hs6_mem⟩
-      simp only [Nat.shiftLeft_zero, Nat.zero_xor] at hs6_2
-      wram_exec
-      wram_call (reduceStepCode_exec (by rw [hs6_mem]; exact htab) hw hfit_end8 hcl_lt
-        (by wram_simp [hs6_low, h0]) hs6_2 (by wram_simp [hs6_low, h8]))
-        with s7 ⟨hs7_2, hs7_low, hs7_mem⟩
-      wram_exec [hs7_low, hs6_low, hs7_mem, hs6_mem, h0, hmem_seed, hs7_2, t, hxor_val]
-      exact (ih hm_le acc_next _ (by wram_simp [hs7_mem, hs6_mem]; exact ⟨htab, hseed⟩)
-        (by wram_simp [hs7_low, hs6_low, h0]) (by wram_simp [hs7_low, hs6_low, h1])
-        (by wram_simp [t])
-        (by wram_simp [hs7_low, hs6_low]) (by wram_simp [hs7_low, hs6_low, h4])
-        (by wram_simp [hs7_low, hs6_low, h5]) (by wram_simp [hs7_low, hs6_low, h6])
-        (by wram_simp [hs7_low, hs6_low, h7]) (by wram_simp [hs7_low, hs6_low, h8])
-        (by wram_simp [hs7_low, hs6_low, h9])).elim fun y ⟨hrec, hy0, hy1, hy2, hy_mem⟩ =>
-        ⟨y, hrec, hy0, hy1, by rw [hy2, hsum], by rw [hy_mem]; wram_simp [hs7_mem, hs6_mem]⟩
-    obtain ⟨z, t', hb, rfl, y, hrec, hy⟩ := hbody
-    refine ⟨y, ?_, hy⟩
-    simpa only [hornerLoop, show (11 * L + 12) * L + 28 + (((11 * L + 12) * L + 30) * m + 2) + 2 =
-      ((11 * L + 12) * L + 30) * (m + 1) + 2 by ring] using Exec.loop_iter hc hb hrec
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter hc ?_)
+    unfold hornerBody
+    wram_exec [h2, h3, h6, h8, h9]
+    wram_call (outerClmulLoop_exec hb hw hfit_tabEnd hu_limbs hu_bound L acc_val 0 0 _
+      hacc_limbs (by simpa using hacc_bound) (by positivity) hfit_2Lb (by wram_simp [h1])
+      (by wram_simp) (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp [h6])
+      (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp)
+      (by wram_simp) (by wram_simp) (by exact htab.2.2.2.2.2.2.2.2))
+      with s6 ⟨hs6_2, hs6_low, hs6_mem⟩
+    simp only [Nat.shiftLeft_zero, Nat.zero_xor] at hs6_2
+    wram_exec
+    wram_call (reduceStepCode_exec (by rw [hs6_mem]; exact htab) hw hfit_end8 hcl_lt
+      (by wram_simp [hs6_low, h0]) hs6_2 (by wram_simp [hs6_low, h8]))
+      with s7 ⟨hs7_2, hs7_low, hs7_mem⟩
+    wram_exec [hs7_low, hs6_low, hs7_mem, hs6_mem, h0, hmem_seed, hs7_2, t, hxor_val]
+    wram_call (ih hm_le acc_next _ (by wram_simp [hs7_mem, hs6_mem]; exact ⟨htab, hseed⟩)
+      (by wram_simp [hs7_low, hs6_low, h0]) (by wram_simp [hs7_low, hs6_low, h1])
+      (by wram_simp [t])
+      (by wram_simp [hs7_low, hs6_low]) (by wram_simp [hs7_low, hs6_low, h4])
+      (by wram_simp [hs7_low, hs6_low, h5]) (by wram_simp [hs7_low, hs6_low, h6])
+      (by wram_simp [hs7_low, hs6_low, h7]) (by wram_simp [hs7_low, hs6_low, h8])
+      (by wram_simp [hs7_low, hs6_low, h9])) with y ⟨hy0, hy1, hy2, hy_mem⟩
+    exact ⟨by ring, hy0, hy1, by rw [hy2, hsum], by rw [hy_mem]; wram_simp [hs7_mem, hs6_mem]⟩
 
 /-- 13-instruction setup block for `evalCode k`: initializes `reg 8 = 1`, `reg 9 = 0`,
 `reg 2 = 0`, `reg 3 = k`, loads `b`, `2 ^ b - 1`, `L` from `base + 5 .. base + 7` into `reg 4..6`,
