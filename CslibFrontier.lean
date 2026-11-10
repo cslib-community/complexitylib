@@ -5267,6 +5267,7 @@ public import CslibFrontier.Logics.FirstOrder.Operator.Basic
 public import CslibFrontier.Logics.FirstOrder.Operator.Definability
 public import CslibFrontier.Logics.FirstOrder.Operator.Definability.Finite
 public import CslibFrontier.Logics.FirstOrder.Operator.Definability.Polarity
+public import CslibFrontier.Logics.FirstOrder.Operator.DeterministicTransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Operator.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
 public import CslibFrontier.Logics.FirstOrder.Operator.LeastFixedPoint.Tuple
@@ -5286,6 +5287,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.BitArithmetic
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitSum
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitSum.Encoding
 public import CslibFrontier.Logics.FirstOrder.Ordered.Constants
+public import CslibFrontier.Logics.FirstOrder.Ordered.DeterministicTransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Certificate
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Composition
