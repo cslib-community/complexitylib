@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.BooleanAnalysis.Bernoulli
 public import CslibFrontier.Probability.Product
+public import CslibFrontier.Probability.PMF.Coin
 public import Mathlib.Analysis.Complex.Exponential
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.Probability.ProbabilityMassFunction.Constructions
@@ -29,7 +30,7 @@ its input independently with probability `p` [Guruswami, Rudra and Sudan, Sectio
 [Shannon, Section 16][Shannon1948], of capacity `1 - h₂(p)` bits per use. Here it is the probability
 mass function `Cslib.BitString.bsc p x` on received words `y : ι → Bool`, the translate by `x` of
 the noise `Cslib.BitString.bscNoise p`, an independent product (`Cslib.Probability.PMF.pi`) of
-coins `Cslib.BitString.flipBit p` showing `true` with probability `p`. It delivers `y` with
+coins `Cslib.Probability.PMF.coin p` showing `true` with probability `p`. It delivers `y` with
 probability `p ^ d (1 - p) ^ (n - d)`, where `d` is the Hamming distance of `x` and `y`
 (`Cslib.BitString.bsc_apply_toReal`); the noise has the law of a random mask of rate `p`
 (`Cslib.BitString.bscNoise_apply_toReal`), so its weight is binomially distributed and exceeds
@@ -45,12 +46,8 @@ they are maximum-likelihood decoders (`Cslib.BitString.bsc_apply_toReal_le_of_is
 Achievability of the capacity `1 - h₂(p)` by random codes is in
 `CslibFrontier.Probability.BitString.BinarySymmetricChannel.Achievability`.
 
-`Mathlib`'s `PMF.bernoulli` is deprecated, so the bit-flip coin is defined directly with
-`PMF.ofFintype`.
-
 ## Main definitions
 
-* `Cslib.BitString.flipBit`: a coin showing `true` with probability `p`.
 * `Cslib.BitString.bscNoise`: the noise of `BSC_p`, independent bit flips.
 * `Cslib.BitString.bsc`: the binary symmetric channel.
 * `Cslib.BitString.decodingError`: the error probability of a code on `BSC_p` at a message.
@@ -94,32 +91,21 @@ variable {ι : Type*} [Fintype ι]
 
 /-! ### The channel -/
 
-/-- A coin showing `true` (flip the bit) with probability `p`. -/
-noncomputable def flipBit (p : I) : PMF Bool :=
-  PMF.ofFintype (fun b => if b then ENNReal.ofReal p else ENNReal.ofReal (1 - p)) (by
-    rw [Fintype.sum_bool, ite_eq_left rfl, ite_eq_right Bool.false_ne_true,
-      ← ENNReal.ofReal_add p.2.1 (sub_nonneg.mpr p.2.2), add_sub_cancel, ENNReal.ofReal_one])
-
-theorem flipBit_apply_toReal (p : I) (b : Bool) :
-    (flipBit p b).toReal = if b then (p : ℝ) else 1 - p := by
-  cases b
-  · simp [flipBit, p.2.2]
-  · simp [flipBit, p.2.1]
-
 /-- The noise of the binary symmetric channel: every coordinate is flipped independently with
 probability `p`. -/
 noncomputable def bscNoise (p : I) : PMF (ι → Bool) :=
-  Probability.PMF.pi fun _ => flipBit p
+  Probability.PMF.pi fun _ => Probability.PMF.coin p
 
 /-- The noise of `BSC_p` is the product of independent coins of bias `p`, one per coordinate. -/
-theorem bscNoise_eq_pi (p : I) : bscNoise (ι := ι) p = Probability.PMF.pi fun _ => flipBit p := by
+theorem bscNoise_eq_pi (p : I) :
+    bscNoise (ι := ι) p = Probability.PMF.pi fun _ => Probability.PMF.coin p := by
   rw [bscNoise]
 
 /-- The noise of `BSC_p` has the law of a random mask of rate `p`. -/
 theorem bscNoise_apply_toReal (p : I) (e : ι → Bool) :
     (bscNoise p e).toReal = bernoulliWeight p e := by
   rw [bscNoise, Probability.PMF.pi_apply, ENNReal.toReal_prod, bernoulliWeight]
-  exact prod_congr rfl fun i _ => flipBit_apply_toReal p (e i)
+  exact prod_congr rfl fun i _ => Probability.PMF.coin_apply_toReal p (e i)
 
 /-- The **binary symmetric channel** `BSC_p` on words `ι → Bool`: on input `x` it delivers
 `x + e`, where the noise `e` flips every bit independently with probability `p`. -/

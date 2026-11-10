@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Tactic.FirstOrder.Init
 public import Mathlib.ModelTheory.Semantics
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # First-order interpretations
@@ -240,9 +241,7 @@ theorem realize_onBoundedFormula {n : ℕ} (φ : L'.BoundedFormula α n) (v : α
   induction φ with
   | falsum => simp [onBoundedFormula, BoundedFormula.Realize]
   | equal t₁ t₂ =>
-    simp only [onBoundedFormula, Formula.realize_iInf, Formula.realize_equal, Term.realize_var,
-      BoundedFormula.Realize, realize_termVar t₁, realize_termVar t₂]
-    exact ⟨fun h => Model.ext (funext h), fun h _ => by rw [h]⟩
+    fo_simp [onBoundedFormula, BoundedFormula.Realize, realize_termVar t₁, realize_termVar t₂]
   | rel R ts =>
     simp only [onBoundedFormula, Formula.realize_relabel, BoundedFormula.Realize]
     change _ ↔ (I.rel R).Realize fun p => ((ts p.1).realize (Sum.elim v xs)).1 p.2
@@ -252,8 +251,7 @@ theorem realize_onBoundedFormula {n : ℕ} (φ : L'.BoundedFormula α n) (v : α
     simp only [onBoundedFormula, Formula.Realize, BoundedFormula.realize_imp] at *
     rw [ihφ, ihψ]
   | all φ ih =>
-    simp only [onBoundedFormula, Formula.realize_iAlls, Formula.realize_imp,
-      Formula.realize_relabel, BoundedFormula.realize_all]
+    fo_simp [onBoundedFormula]
     refine ⟨fun h y => ?_, fun h y hy => ?_⟩
     · rw [← ih, ← sumElim_comp_snocVar]
       exact h y.1 y.2
@@ -338,11 +336,11 @@ by `J` in the structure interpreted by `I`. -/
 def compEquiv [Finite κ] (J : Interpretation L' L'' κ)
     (I : Interpretation L L' ι) : J.Model (I.Model M) ≃[L''] (J.comp I).Model M where
   toFun x := ⟨fun p => (x.1 p.1).1 p.2, by
-    simp only [comp, Formula.realize_inf, Formula.realize_iInf, Formula.realize_relabel]
-    exact ⟨fun j => (x.1 j).2, (realize_onFormula J.domain x.1).2 x.2⟩⟩
+    fo_simp [comp]
+    exact ⟨fun j => (x.1 j).2, x.2⟩⟩
   invFun z := ⟨fun j => ⟨fun i => z.1 (j, i), by
     have h := z.2
-    simp only [comp, Formula.realize_inf, Formula.realize_iInf, Formula.realize_relabel] at h
+    fo_simp [comp] at h
     exact h.1 j⟩, by
     have h := z.2
     simp only [comp, Formula.realize_inf] at h
@@ -373,7 +371,7 @@ theorem realize_comp_domain [Finite κ] (J : Interpretation L' L'' κ) (I : Inte
     (v : κ × ι → M) :
     (J.comp I).domain.Realize v ↔ ∃ h : ∀ j, I.domain.Realize fun i => v (j, i),
       @Formula.Realize L' (I.Model M) _ κ J.domain fun j => Model.mk (fun i => v (j, i)) (h j) := by
-  simp only [comp, Formula.realize_inf, Formula.realize_iInf, Formula.realize_relabel]
+  fo_simp [comp]
   exact ⟨fun h => ⟨h.1, (realize_onFormula J.domain _).1 h.2⟩,
     fun ⟨h, h'⟩ => ⟨h, (realize_onFormula J.domain _).2 h'⟩⟩
 

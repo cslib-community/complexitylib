@@ -244,8 +244,7 @@ theorem kwise_five_wise_wordram_nonvacuous (x : Data 18)
   have hfit_end : Fits 64 (0 + 8 + 5) := by rw [fits_iff]; decide
   have hfit_n : Fits 64 (max 64 2) := by rw [fits_iff]; decide
   have hfit_U : Fits 64 (max 1000 2 + 1) := by rw [fits_iff]; decide
-  have hfit_q : Fits 64 (2 ^ trinomialDeg 1000 10) := by
-    rw [htr, fits_iff]; decide
+  have hfit_q : Fits 64 (2 ^ trinomialDeg 1000 10) := KWise.fits_two_pow_trinomialDeg hw
   obtain ⟨y, hy_exec, hy_tab, -, -⟩ :=
     KWise.initTableCode_execWithin h0 h1 h2 h3 hfit_sp hfit_n hfit_U hfit_q
   refine ⟨⟨y, hy_exec, hy_tab⟩,

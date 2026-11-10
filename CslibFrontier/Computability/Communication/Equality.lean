@@ -46,7 +46,7 @@ equality (`ecomplexityFun_not_equality`).
 * [E. Kushilevitz and N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Communication
 

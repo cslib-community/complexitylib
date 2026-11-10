@@ -108,12 +108,6 @@ theorem getElem_wire (sites : List Point) (r : Route) (i : ℕ) (hi : i < r.leng
         signal sites r[i] (r.getD (i + 1) r[i]) lane) := by
   simp only [wire, List.getElem_map, List.getElem_zipIdx, Nat.zero_add, List.getElem_dropLast]
 
-/-- The side lookup recovers each cardinal neighbor's side. -/
-theorem side_neighbor (p : Point) (s : Fin 4) :
-    side p (p + PairedPorts.neighbor s) = s := by
-  rcases p with ⟨x, y⟩
-  fin_cases s <;> simp [side, PlanarCompile.side, PairedPorts.neighbor]
-
 /-- All four actual entry and exit values within each retained wire cell agree. -/
 theorem wire_cells_agree {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
@@ -366,7 +360,7 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
   · intro p _
     exact PairedCrossover.eval_canonicalExtension _ _
 
-/-- Compatible local assignments satisfy the actual output exactly when the source holds. -/
+/-- Compatible local assignments satisfy the actual output if the source holds. -/
 theorem eval_rawFormula_of_compatible {φ : CNF ℕ} (τ : ℕ → Bool) (σ : Variable → Bool)
     (hcompat : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
       ∀ c ∈ wire (crossingSites φ) (occurrencePath φ o), ∀ lane,

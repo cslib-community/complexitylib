@@ -24,7 +24,7 @@ and intersections.
   unions, and intersections.
 -/
 
-@[expose] public section
+public section
 
 namespace Language
 

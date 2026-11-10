@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalCall
+import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalLocalDelivery
 
 /-!
 # Charged native output delivery for one traversal node
@@ -65,21 +66,24 @@ theorem deliveryState_mem (x : Data 128) : (deliveryState x).mem =
     Function.update x.mem (x.regs outputs + x.regs outputCount)
       (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) := rfl
 
+/-- Publication differs from local delivery only in the output counter and the table store. -/
+private theorem deliveryState_regs_eq_local (x : Data 128) (i : Fin 128) (hc : i ≠ outputCount) :
+    (deliveryState x).regs i = (localDeliveryState x).regs i := by
+  simp only [deliveryState, localDeliveryState, Data.set_regs, Data.write_regs,
+    Function.update_apply, hc, ↓reduceIte]
+  by_cases ht : i = temporary
+  · simp only [eq_true ht, ↓reduceIte]
+  · simp only [ht, ↓reduceIte]
+
 /-- The appended pointer is the existing node layout's packed base. -/
 theorem deliveryState_packed (x : Data 128) : (deliveryState x).regs packed =
-    (NodePacking.layout ((nodeState x).comap kernel)).packed := by
-  change x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6) =
-    x.regs heap + 3 + (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6))
-  omega
+    (NodePacking.layout ((nodeState x).comap kernel)).packed :=
+  (deliveryState_regs_eq_local x _ (by decide)).trans (localDeliveryState_packed x)
 
 /-- All allocated node output, residues and histogram lie below the new fresh heap. -/
 theorem deliveryState_heap (x : Data 128) : (deliveryState x).regs heap =
-    (NodePacking.layout ((nodeState x).comap kernel)).endpoint := by
-  change x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6) +
-      4 * x.regs groups + x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6) + x.regs selected =
-    x.regs heap + 3 + (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) +
-      4 * x.regs groups + (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) + x.regs selected
-  omega
+    (NodePacking.layout ((nodeState x).comap kernel)).endpoint :=
+  (deliveryState_regs_eq_local x _ (by decide)).trans (localDeliveryState_heap x)
 
 /-- Exactly one node is appended to the output table. -/
 theorem deliveryState_count (x : Data 128) :
@@ -88,25 +92,16 @@ theorem deliveryState_count (x : Data 128) :
 /-- Each delivered count was read from its actual count-prefixed heavy array. -/
 theorem deliveryState_heavy_length (x : Data 128) (j : Fin 3) :
     (deliveryState x).regs (heavyLength j) =
-      x.mem ((NodePacking.layout ((nodeState x).comap kernel)).descriptor j) := by
-  fin_cases j
-  · rfl
-  · rfl
-  · change x.mem (x.regs heap + 1 + x.regs (slot 2) + 1 + x.regs (slot 4)) =
-      x.mem (x.regs heap + 2 + (x.regs (slot 2) + x.regs (slot 4)))
-    congr 1
-    omega
+      x.mem ((NodePacking.layout ((nodeState x).comap kernel)).descriptor j) :=
+  (deliveryState_regs_eq_local x _ (by fin_cases j <;> decide)).trans
+    (localDeliveryState_heavy_length x j)
 
 /-- Each delivered data pointer is the existing heavy-array base. -/
 theorem deliveryState_heavy_base (x : Data 128) (j : Fin 3) :
     (deliveryState x).regs (heavyBase j) =
-      (NodePacking.layout ((nodeState x).comap kernel)).heavy j := by
-  fin_cases j
-  · rfl
-  · rfl
-  · change x.regs heap + 1 + x.regs (slot 2) + 1 + x.regs (slot 4) + 1 =
-      x.regs heap + 2 + (x.regs (slot 2) + x.regs (slot 4)) + 1
-    omega
+      (NodePacking.layout ((nodeState x).comap kernel)).heavy j :=
+  (deliveryState_regs_eq_local x _ (by fin_cases j <;> decide)).trans
+    (localDeliveryState_heavy_base x j)
 
 /-- Output delivery preserves the node builder's exact heavy/packed readback and allocation
 frame. The sole external output-pointer store is recorded explicitly in the before-memory. -/
@@ -170,26 +165,8 @@ theorem deliver_preserves : ∀ i : Fin 128, i ≠ heap → i ≠ outputCount �
 /-- The explicit delivered state retains every non-output controller and stack register. -/
 theorem deliveryState_preserves (x : Data 128) (i : Fin 128)
     (hh : i ≠ heap) (hc : i ≠ outputCount) (ht : i ≠ temporary)
-    (hi : i.val < 88 ∨ 96 ≤ i.val) : (deliveryState x).regs i = x.regs i := by
-  have hp : i ≠ packed := by intro he; subst i; norm_num [packed] at hi
-  have he : i ≠ endpoint := by intro he; subst i; norm_num [endpoint] at hi
-  have hl (j : Fin 3) : i ≠ heavyLength j := by
-    intro hj
-    have hv := congrArg Fin.val hj
-    dsimp only [heavyLength] at hv
-    have := j.isLt
-    omega
-  have hb (j : Fin 3) : i ≠ heavyBase j := by
-    intro hj
-    have hv := congrArg Fin.val hj
-    dsimp only [heavyBase] at hv
-    have := j.isLt
-    omega
-  simp only [deliveryState, Data.set_regs, Data.write_regs, Function.update_of_ne hh,
-    Function.update_of_ne hc, Function.update_of_ne ht, Function.update_of_ne hp,
-    Function.update_of_ne he, Function.update_of_ne (hl 0), Function.update_of_ne (hl 1),
-    Function.update_of_ne (hl 2), Function.update_of_ne (hb 0), Function.update_of_ne (hb 1),
-    Function.update_of_ne (hb 2)]
+    (hi : i.val < 88 ∨ 96 ≤ i.val) : (deliveryState x).regs i = x.regs i :=
+  (deliveryState_regs_eq_local x i hc).trans (localDeliveryState_preserves x i hh ht hi)
 
 /-- Every intermediate address and the output-count increment fit once the final endpoint fits.
 The output table precedes the fresh allocation, so its store cannot change a heavy-count load. -/

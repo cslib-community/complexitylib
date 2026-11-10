@@ -35,7 +35,10 @@ open Cslib.WordRAM
 /-- Positive logarithmic physical width, including empty inputs. -/
 @[expose] def width (κ d n : ℕ) : ℕ := widthCoefficient κ d * Nat.clog 2 (n + 2)
 
-/-- The original polynomial magnitude restriction and logarithmic physical-width threshold.
+/-- The original polynomial magnitude restriction and logarithmic physical-width threshold
+`width κ 123357 input.length`, where `123357` is the width coefficient of the concrete callee
+`ExactTriangle.ParameterSelecting.callee`. Unfolded, the threshold is
+`(335535060 * κ + 2032454293) * Nat.clog 2 (input.length + 2)`.
 This admits every width above the threshold, independently of the particular input values. -/
 @[expose] def Admissible (κ : ℕ) (input : List ℤ) (W : ℕ) : Prop :=
   width κ 123357 input.length ≤ W ∧

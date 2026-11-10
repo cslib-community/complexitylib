@@ -23,6 +23,9 @@ The complete shifted word is generated from unary width and shift. Every emitted
 wire is charged. Out-of-range raw shifts have total behavior; the exact circuit theorem uses a
 valid shift.
 
+The code equation is proved stage by stage against the private bit formulas `partialProductBit` of
+`Modular.PartialProduct`, which this module reads through `import all`.
+
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Modular.partialProductCode`: raw circuit code for a shifted partial

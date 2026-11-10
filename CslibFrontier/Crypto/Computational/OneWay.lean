@@ -179,6 +179,6 @@ theorem not_oneWay_of_inverse (f : List Bool → List Bool) (inverse : ℕ → L
 /-- Constant functions are not one-way: the empty word is always a preimage. -/
 theorem not_oneWay_const (word : List Bool) : ¬ OneWay (fun _ => word) :=
   not_oneWay_of_inverse _ (fun _ _ => [])
-    (ComputableTidilyInPolyTime.const []).isPPT (fun _ => rfl)
+    (ComputableInPolyTime.const []).isPPT (fun _ => rfl)
 
 end Cslib.Crypto

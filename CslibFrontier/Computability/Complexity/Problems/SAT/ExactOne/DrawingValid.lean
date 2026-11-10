@@ -31,7 +31,7 @@ splice into the original routes, and all contacts are checked on full real suppo
 The global replacement and its continuous geometric correctness proof are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

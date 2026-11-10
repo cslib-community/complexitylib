@@ -51,7 +51,7 @@ obtained non-constructively, from a counting argument
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*, Chapter 18][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 
