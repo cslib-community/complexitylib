@@ -26,8 +26,9 @@ over a language whose symbol types are arbitrary, and Mathlib has no `Primcodabl
 plain computability vocabulary (`ComputablePred`, `REPred`) need such an instance. `RawFormula`
 is `Denumerable` through `Nat.pair`, so its `Primcodable` instance is immediate and its
 constructors and structural recursion are primitive recursive
-(`CslibFrontier/Logics/FirstOrder/Raw/Primrec.lean`). A computable translation to Mathlib's
-`L.Sentence` for a relational language with symbols indexed by `ℕ` is left as future work.
+(`CslibFrontier/Logics/FirstOrder/Raw/Primrec.lean`). For a relational language with finitely many
+relation symbols, `CslibFrontier/Logics/FirstOrder/Raw/BoundedFormula.lean` translates Mathlib's
+bounded formulas into `RawFormula` and back, and codes them through the translation.
 
 A formula is interpreted in any type `M` by a relation interpretation `I : ℕ → List M → Prop`
 (the meaning of `rel r args` under an assignment `v` is `I r (args.map v)`) and an assignment

@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Protocols.VOLE.MaskedMulCheck
 public import CslibFrontier.Computability.Interactive.StrategyEffect
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Masked VOLE views against adaptive receivers
@@ -273,12 +274,7 @@ theorem maskedMulCheckReceiverView_eq_simulate (left right output : ι → Fin n
       ProbComp.eval (maskedMulCheckReceiverSimulate left right output V z) := by
   rw [maskedMulCheckReceiverView_eq, maskedMulCheckReceiverSimulate_eq]
   simp only [pmf_norm, voleIdealDist]
-  conv_lhs =>
-    arg 2
-    ext u
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
-  congr 1 with delta : 1
+  pmf_swap with delta
   have hprefix := uniform_maskedPrefix w delta (fun u v => do
     let c := voleSample u v delta
     let verifier ← receiverLaw c.receiverView (V z)
@@ -303,15 +299,7 @@ theorem maskedMulCheckReceiverView_eq_simulate (left right output : ι → Fin n
   simp_rw [hshare]
   dsimp only [voleSample]
   simp_rw [hcorr]
-  congr 1 with q : 1
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with d : 1
-  rw [PMF.bind_comm]
-  congr 1 with v : 1
-  rw [PMF.bind_comm]
-  congr 1 with challenge : 1
-  rw [PMF.bind_comm]
-  congr 1 with pair : 1
+  pmf_swap with q v d challenge pair
   rcases pair with ⟨r, continuation⟩
   simpa only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] using
     uniform_maskedReply left right output w delta q d r h (fun reply => do

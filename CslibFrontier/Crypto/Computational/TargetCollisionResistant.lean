@@ -31,6 +31,8 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Finiteness
+import CslibFrontier.Crypto.Game.Order
 
 /-!
 # Target collision resistance and universal one-way hash families
@@ -293,8 +295,7 @@ theorem TargetCollisionResistantOn.mono
   intro adversary hadversary
   refine negligible_of_eventually_le (hTCR.negligible adversary hadversary) ?_
   filter_upwards [hsub] with n hn
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+  apply Game.succProbability_mono
   simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure]
   apply PMF.bind_apply_mono_on_support; intro choice _
   apply PMF.bind_apply_mono_on_support; intro k _
@@ -1300,8 +1301,7 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
   have hpos : (0 : ℝ≥0) < dyadicSize bound := by exact_mod_cast dyadicSize_pos bound
   rw [htree_eq, hred_eq, Game.succProbability_uniform, Fintype.card_fin,
     mul_div_cancel₀ _ hpos.ne']
-  have hmono := ENNReal.toNNReal_mono
-    (ne_of_lt (ENNReal.sum_lt_top.mpr fun s _ => (PMF.apply_ne_top _ _).lt_top)) hsum_le
+  have hmono := ENNReal.toNNReal_mono (by finiteness) hsum_le
   rwa [ENNReal.toNNReal_sum fun s _ => PMF.apply_ne_top _ _] at hmono
 
 /-- Extend any `KeyedCompressionFamily` `C` (`2 * C.blockLen n → C.blockLen n` under

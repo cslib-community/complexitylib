@@ -602,21 +602,8 @@ theorem computableInPolyTime_inputHashEvalWord {α : Type} {encode : α ↪ List
     ComputableInPolyTime
       (fun a => inputHashEvalWord (n₁ a) (m₁ a) (evalWord₁ (n a)) (j a) (u a))
       encode encBits := by
-  unfold inputHashEvalWord
-  have hzWord := ComputableInPolyTime.bitsRowWithInput hn₁ (ComputableInPolyTime.const 0)
-    (ComputableInPolyTime.bitsTakeWithInput hu hn₁)
-  have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
-  have hinSeed := ComputableInPolyTime.bitsRowWithInput hsq (ComputableInPolyTime.const 0)
-    (ComputableInPolyTime.bitsTakeWithInput (ComputableInPolyTime.bitsDropWithInput hu hn₁) hsq)
-  have hbase := ComputableInPolyTime.bitsRowWithInput hm₁ (ComputableInPolyTime.const 0)
-    (heval₁.comp (hn.prod hzWord))
-  have hfull := computableInPolyTime_wordHash hn₁ hinSeed hzWord
-  have hr := ComputableInPolyTime.unary_sub' hn₁ (ComputableInPolyTime.unary_sub' hn₁ hj)
-  have hpad := (ComputableInPolyTime.bitsReplicate false).comp
-    (ComputableInPolyTime.unary_sub' hn₁ hr)
-  exact ComputableInPolyTime.bitsAppend
-    (ComputableInPolyTime.bitsAppend hbase hinSeed)
-    (ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsTakeWithInput hfull hr) hpad)
+  simp only [inputHashEvalWord]
+  fun_prop
 
 /-- Plain polynomial-time certificate for `shrunkHashEvalWord`. -/
 @[fun_prop]
@@ -632,19 +619,8 @@ theorem computableInPolyTime_shrunkHashEvalWord {α : Type} {encode : α ↪ Lis
     ComputableInPolyTime
       (fun a => shrunkHashEvalWord (n₁ a) (m₁ a) (evalWord₁ (n a)) (j a) (raw a))
       encode encBits := by
-  unfold shrunkHashEvalWord inputHashInLen inputHashOutLen outHashLen
-  have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
-  have hinLen₂ := ComputableInPolyTime.unary_add' hn₁ hsq
-  have houtLen₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
-  have houtH := ComputableInPolyTime.unary_sub' hinLen₂ (ComputableInPolyTime.const 1)
-  have houtSeedLen := ComputableInPolyTime.unary_mul' houtH houtLen₂
-  have hinner := ComputableInPolyTime.bitsTakeWithInput hraw hinLen₂
-  have houtSeed := ComputableInPolyTime.bitsRowWithInput houtSeedLen
-    (ComputableInPolyTime.const 0)
-    (ComputableInPolyTime.bitsTakeWithInput
-      (ComputableInPolyTime.bitsDropWithInput hraw hinLen₂) houtSeedLen)
-  have hy₂ := computableInPolyTime_inputHashEvalWord hn₁ hm₁ hn hj heval₁ hinner
-  exact ComputableInPolyTime.bitsAppend houtSeed (computableInPolyTime_wordHash houtH houtSeed hy₂)
+  simp only [shrunkHashEvalWord, inputHashInLen, inputHashOutLen, outHashLen]
+  fun_prop
 
 theorem inputHashEvalWord_packWord {n₁ m₁ : ℕ} (evalWord₁ : List Bool → List Bool)
     (j : ℕ) (w : InputHashedInput n₁) :
@@ -730,35 +706,12 @@ theorem isPPT_shrunkHashEscapeInverter {n₁ m₁ : ℕ → ℕ}
     (hA : IsPPT encBits A) :
     IsPPT encBits (shrunkHashEscapeInverter n₁ m₁ A) := by
   apply IsPPTOn.isPPT
-  have hn0 := ComputableInPolyTime.fst encUnary encBits
-  have hw0 := hn₁.comp hn0
-  refine (ComputableInPolyTime.unary_mul' hw0 hw0).sampleList.bind_with ?_
-  have hp1 := ComputableInPolyTime.fst (encPair encUnary encBits) encBits
-  have hn1' := hn0.comp hp1
-  have hw1 := hn₁.comp hn1'
-  have hm1 := hm₁.comp hn1'
-  have houtH := ComputableInPolyTime.unary_sub'
-    (ComputableInPolyTime.unary_add' hw1 (ComputableInPolyTime.unary_mul' hw1 hw1))
-    (ComputableInPolyTime.const 1)
-  have hinOut := ComputableInPolyTime.unary_add'
-    (ComputableInPolyTime.unary_add' hm1 (ComputableInPolyTime.unary_mul' hw1 hw1)) hw1
-  refine (ComputableInPolyTime.unary_mul' houtH hinOut).sampleList.bind_with ?_
-  have hp2 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encBits) encBits
-  have houtSeed := ComputableInPolyTime.snd (encPair (encPair encUnary encBits) encBits) encBits
-  have hinSeed := (ComputableInPolyTime.snd (encPair encUnary encBits) encBits).comp hp2
-  have hp1' := hp1.comp hp2
-  have hn := hn0.comp hp1'
-  have hzWord := (ComputableInPolyTime.snd encUnary encBits).comp hp1'
-  have hw := hn₁.comp hn
-  have hzPad := ComputableInPolyTime.bitsRowWithInput hw (ComputableInPolyTime.const 0) hzWord
-  have hinp := ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsAppend hzPad hinSeed)
-    houtSeed
-  refine (hA.on.preprocess (hn.prod hinp)).bind_with (ComputableInPolyTime.isPPTOn ?_)
-  have hp3 := ComputableInPolyTime.fst
-    (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits
-  have hraw := ComputableInPolyTime.snd
-    (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBits
-  exact ComputableInPolyTime.bitsTakeWithInput hraw (hw.comp hp3)
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  refine (ComputableInPolyTime.sampleList
+    (by unfold outHashLen inputHashOutLen inputHashInLen; fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
 
 private def shrunkTupleEquiv (n₁ m₁ : ℕ) :
     (BitString n₁ × (Fin n₁ → BitString n₁) ×

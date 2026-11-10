@@ -14,6 +14,7 @@ public import Mathlib.Logic.Function.DependsOn
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # The Nisan–Wigderson generator and its reconstruction
@@ -309,9 +310,7 @@ theorem hardwiredExperiment_nextBitPredictor_pure (D : Design ℓ n a m)
   simp only [hardwiredExperiment, nextBitPredictor_pure, monad_bind_eq_bind, ← PMF.bind_pure_comp,
     PMF.bind_bind,
     Function.comp_apply, PMF.pure_bind]
-  rw [PMF.bind_comm]
-  congr 1 with r : 1
-  rw [PMF.bind_comm]
+  pmf_swap
   rfl
 
 /-- **The Nisan–Wigderson reconstruction for deterministic tests**, with explicit hardwiring. If

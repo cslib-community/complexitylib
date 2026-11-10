@@ -30,7 +30,8 @@ because NL is closed under complementation ([Immerman1988], Corollary 3; [Szelep
 Here both polarities are compiled directly. A closure at polarity `true` is evaluated by a
 bounded guessed path. A closure at polarity `false` (under an odd number of negations, counted
 afresh inside each closure body) is evaluated by an inductive-counting block whose tests run the
-compiled body at both polarities. The converse inclusion NL ⊆ FO(TC) remains open.
+compiled body at both polarities. The converse inclusion NL ⊆ FO(positive TC), and with it
+FO(TC) = NL, is in `Classes.LogSpace.FirstOrder.TransitiveClosure.Converse`.
 
 ## Main definitions
 

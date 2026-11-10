@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.VOLE.Circuit
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Soundness of the circuit-bound ideal VOLE session
@@ -92,15 +93,7 @@ theorem circuitCheck_eval_execute (C : Circuit (arithSignature F) (p + k) m)
       (ProbComp.uniform (CircuitMulGate C → F)) =
       PMF.uniformOfFintype (CircuitMulGate C → F) := ProbComp.eval_uniform _
   simp only [huniform, ProbOracleComp.interpret_query, OracleComp.sumHandler, PMF.pure_bind]
-  rw [PMF.bind_comm]
-  congr 1 with st : 1
-  rw [PMF.bind_comm]
-  congr 1 with first : 1
-  rw [PMF.bind_comm]
-  congr 1 with r : 1
-  rw [PMF.bind_comm]
-  congr 1 with response : 1
-  rw [PMF.bind_comm]
+  pmf_swap
   rfl
 
 
