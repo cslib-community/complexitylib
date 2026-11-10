@@ -96,7 +96,7 @@ structure IsPythagoreanProjection (K : Set E) (proj : E → E) : Prop where
 [Hazan2022, Theorem 2.1]. -/
 theorem isPythagoreanProjection_metricProjection {K : Set E} (hne : K.Nonempty)
     (hc : IsComplete K) (hK : Convex ℝ K) : IsPythagoreanProjection K (metricProjection K) :=
-  ⟨metricProjection_mem hne hc hK, fun y _ hz => norm_metricProjection_sub_le hne hc hK y hz⟩
+  ⟨metricProjection_mem hne hc hK, fun y _ hz => norm_metricProjection_sub_le hc hK y hz⟩
 
 omit [InnerProductSpace ℝ E] in
 /-- Unconstrained gradient descent: the identity is a Pythagorean projection onto the whole

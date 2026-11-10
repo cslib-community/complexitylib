@@ -88,6 +88,8 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
 * `Cslib.Crypto.negacyclicMul_comm`, `Cslib.Crypto.rotMatrix_negacyclicMul`,
   `Cslib.Crypto.negacyclicMul_assoc`: commutativity and associativity of negacyclic polynomial
   multiplication.
+* `Cslib.Crypto.sum_abs_rotMatrix_apply`, `Cslib.Crypto.abs_negacyclicMul_le_sum_abs_mul`: rows of
+  the negacyclic matrix are signed rearrangements, giving the `ℓ₁`-`ℓ∞` product bound.
 * `Cslib.Crypto.innerPoly_moduleSISMap_eq`, `Cslib.Crypto.innerPoly_moduleSISMap_add_sub`:
   adjoint identity for `moduleSISMap` and noisy bilinear cancellation.
 * `Cslib.Crypto.decodePolyMsg_encodePolyMsg_add_noise`: bounded-error recovery for
@@ -298,6 +300,28 @@ theorem negacyclicMul_sum {n : ℕ} {R : Type*} [Ring R] {ι : Type*} (s : Finse
   | empty => simp
   | insert i s hi ih =>
     rw [Finset.sum_insert hi, negacyclicMul_add, ih, Finset.sum_insert hi]
+
+/-- Each row of `rotMatrix a` is a signed rearrangement of `a`, so its absolute values sum to
+the `ℓ₁` norm of `a`. -/
+theorem sum_abs_rotMatrix_apply {n : ℕ} (a : Fin n → ℤ) (i : Fin n) :
+    ∑ j, |rotMatrix a i j| = ∑ j, |a j| :=
+  calc ∑ j, |rotMatrix a i j| = ∑ j, |a (negacyclicSwap i j)| :=
+        Finset.sum_congr rfl fun j _ => by
+          rw [rotMatrix_apply_eq_negacyclicSwap]
+          split_ifs <;> simp only [abs_neg]
+    _ = ∑ j, |a j| := (negacyclicSwapEquiv i).sum_comp fun j => |a j|
+
+/-- **`ℓ₁`-`ℓ∞` bound for negacyclic multiplication**: if `‖b‖_∞ ≤ β`, then every coefficient of
+`negacyclicMul a b` has absolute value at most `‖a‖₁ · β`. -/
+theorem abs_negacyclicMul_le_sum_abs_mul {n β : ℕ} {a b : Fin n → ℤ} (hb : ∀ j, |b j| ≤ β)
+    (i : Fin n) : |negacyclicMul a b i| ≤ (∑ j, |a j|) * β :=
+  calc |negacyclicMul a b i|
+      = |∑ j : Fin n, rotMatrix a i j * b j| := rfl
+    _ ≤ ∑ j : Fin n, |rotMatrix a i j * b j| := Finset.abs_sum_le_sum_abs _ _
+    _ ≤ ∑ j : Fin n, |rotMatrix a i j| * β := Finset.sum_le_sum fun j _ => by
+      rw [abs_mul]
+      exact mul_le_mul_of_nonneg_left (hb j) (abs_nonneg _)
+    _ = (∑ j, |a j|) * β := by rw [← Finset.sum_mul, sum_abs_rotMatrix_apply]
 
 /-- Polynomial inner product `⟨b, r⟩ = ∑ j : Fin k, negacyclicMul (b j) (r j)` over
 `R[X] / (X^n + 1)`. -/

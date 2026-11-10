@@ -74,13 +74,12 @@ example : ¬ IndistinguishableWithAdvice (fun _ => []) (fun n => PMF.pure (List.
   not_computationallyIndistinguishable_pure_uniformList _ (Filter.eventually_ge_atTop 1)
     (computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr h)
 
-/-- Stretching a nonuniform one-bit PRG to `3 * n + 1` bits, the GMW length, and feeding it to the
-auxiliary-input GMW theorem. -/
+/-- A nonuniform one-bit PRG feeds the auxiliary-input GMW theorem directly; the theorem stretches
+it to the GMW length `3 * n + 1` itself. -/
 example {generator : List Bool → List Bool} (h : NonuniformPRG generator (fun n => n + 1))
     {α : Type} {enc : α ↪ List Bool} {A : Set α} (hA : A ∈ Complexity.NP enc) :
     ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge :=
-  (h.amplify (fun n => 3 * n + 1) (by fun_prop) (fun n => by omega))
-    |>.exists_auxiliaryInputZeroKnowledge_of_mem_NP (fun _ => le_rfl) hA
+  h.exists_auxiliaryInputZeroKnowledge_of_mem_NP hA
 
 private noncomputable def fairPair : Pseudoentropy.SamplablePair where
   Observation _ := Unit

@@ -143,8 +143,7 @@ for every `n`. -/
 theorem sentenceProb_uniformStructure_nullary (R : L.Relations 0) (n : ℕ) :
     sentenceProb (uniformStructure n) (Relations.formula R Fin.elim0) = 1 / 2 := by
   rw [sentenceProb_def, ← structProb_uniformStructure_relMap R (Fin.elim0 : Fin 0 → Fin n)]
-  congr 1
-  funext S
+  congr 1 with S : 1
   let := S
   refine propext ?_
   rw [Sentence.Realize, Formula.realize_rel]

@@ -91,8 +91,10 @@ theorem exists_runFrom_prefix (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (para
 /-- Changing the requested coordinate preserves the actual field point and loop limit. -/
 theorem setChunk_gateParams {p r m : ℕ} (N b σ i previous chunk stride : ℕ)
     (x : Fin (k * 3 + 1) → Fin r → ZMod p) :
-    setChunk (QueryGate.gateParams (s := 2 ^ m) (N, b, σ, i, m, previous, stride) x) chunk =
-      QueryGate.gateParams (s := 2 ^ m) (N, b, σ, i, m, chunk, stride) x := rfl
+    setChunk (QueryGate.gateParams (s := 2 ^ m)
+        (⟨N, b, σ, i, m, previous, stride⟩ : Interpolation.Context) x) chunk =
+      QueryGate.gateParams (s := 2 ^ m)
+          (⟨N, b, σ, i, m, chunk, stride⟩ : Interpolation.Context) x := rfl
 
 /-- Every coordinate is returned at its first halt, with its actual physical state bound. -/
 theorem coordinate_supplier_bounded {p q r m : ℕ} [Fact p.Prime] [Finite Q]
@@ -103,7 +105,8 @@ theorem coordinate_supplier_bounded {p q r m : ℕ} [Fact p.Prime] [Finite Q]
     (hsp : 2 ^ m ≤ p) (h : Fin (2 ^ m) ↪ ZMod p) (hh : ∀ a, h a = (a.val : ZMod p)) :
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
-    let context : Interpolation.Context := (w.length, b, σ, i.val, m, chunk.val, r * m)
+    let context : Interpolation.Context :=
+        (⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩ : Interpolation.Context)
     let params := QueryGate.gateParams (s := 2 ^ m) context x
     ∃ T z,
       (∀ t < T, (Interpolation.machine M e).halted

@@ -678,7 +678,7 @@ theorem map_encOption_game0Opt {β : Type} (enc : β ↪ List Bool)
 theorem map_encOption_bernoulliAttemptOpt {β : Type} (enc : β ↪ List Bool) (out : β) :
     (bernoulliAttemptOpt out).map (encOption enc) = bernoulliAttempt (enc out) := by
   simp only [bernoulliAttemptOpt, bernoulliAttempt, PMF.map_comp, Function.comp_def]
-  congr 1; funext ch_guess
+  congr 1 with ch_guess : 1
   cases [false, false, false] == ch_guess <;> rfl
 
 theorem eval_game0Opt_eq_bind_bernoulliAttemptOpt {β : Type} (enc : β ↪ List Bool)

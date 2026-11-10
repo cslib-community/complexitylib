@@ -665,13 +665,25 @@ theorem validProg_promoteLoop {U V w n_max h_space : ℕ} {d : ((ℕ × ℕ) × 
   exact validProg_iterate d.2 d.1.2 s
     (fun a' s' h => validProg_promoteStep (x := (d.1.1, a')) hw hnU hU hV hb_pos h.2.1) hsafe
 
+/-- The parameter bounds recorded by `DictEnvGen` for concrete parameters `mkDictParams`. -/
+private theorem dictEnvGen_mk_bounds {w' U V w n_max h_space base : ℕ}
+    (h : DictEnvGen w' (mkDictParams U V w n_max h_space) base) :
+    0 < w ∧ n_max ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w := by
+  obtain ⟨U', V', w₀, n', _, hw, hnU, hU, hV, heq⟩ := h.params
+  have hU' : U = U' := by simpa using congrArg dpU heq
+  have hV' : V = V' := by simpa using congrArg dpV heq
+  have hw' : w = w₀ := by simpa using congrArg dpW heq
+  have hn' : n_max = n' := by simpa using congrArg dpNMax heq
+  subst hU' hV' hw' hn'
+  exact ⟨hw, hnU, hU, hV⟩
+
 theorem validProg_promoteSlab {U V w n_max h_space : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) (hV : V ≤ 2 ^ w)
     (hb_pos : 0 < bucketBits n_max)
     (hdenv : DictEnvGen w (mkDictParams U V w n_max h_space) d.1)
     (hpre : PromoteSlabInv U V w n_max h_space d.1 d.2 s) :
     ValidProg w (dictFrontier U V w n_max h_space d.1) s
       (promoteSlabProg U V w n_max h_space d) := by
+  obtain ⟨hw, hnU, hU, hV⟩ := dictEnvGen_mk_bounds hdenv
   obtain ⟨hloopK, _, hsafe⟩ :=
     iterate_promoteStepProg_spec (w := w) hw hb_pos (slabSize n_max) 0 s
       (by omega) (promoteLoopInv_zero hpre)
@@ -882,7 +894,7 @@ theorem validProg_pushBackSlot {U V w n_max h_space : ℕ}
       refine ⟨hb, htail1, hslab1, by rw [hrb1, hc], fun b'' hb'' hne => ?_, by omega⟩
       rw [(hother1 b'' hb'' hne).1, (hother1 b'' hb'' hne).2]
       exact hinv.multi_r_bounds hb_pos b'' hb''
-    exact validProg_promoteSlab (d := (base', b')) hw hnU hU hV hb_pos hdenv hpre_prom
+    exact validProg_promoteSlab (d := (base', b')) hb_pos hdenv hpre_prom
 
 theorem validProg_popBackSlot {U V w n_max h_space : ℕ}
     {d : ℕ × ℕ} {s : Memory.State}
@@ -1104,12 +1116,12 @@ theorem validProg_searchMicroChain {U V w n_max h_space : ℕ}
     hw (searchMicroChainProg_spec henv hb hm hinv hchain hc_lt).2.2.1
 
 theorem validProg_resolveOvfStep {U V w n_max h_space : ℕ}
-    (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
     {d : (ℕ × ℕ) × (ℕ × ℕ)} {s : Memory.State}
     (hpre : ResolveOvfStepPre U V w n_max h_space w d s) :
     ValidProg w (dictFrontier U V w n_max h_space d.1.1) s
       (resolveOvfStepProg U V w n_max h_space d) := by
-  rcases hpre with ⟨_, hb, hj_bc, hinv, hp, _⟩
+  rcases hpre with ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩
+  have hw : 0 < w := (dictEnvGen_mk_bounds henv).1
   have hb0 : bucketBits n_max ≠ 0 := by omega
   have hK : 0 < slabSize n_max := slabSize_pos n_max
   have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
@@ -1143,7 +1155,7 @@ theorem validProg_ovfStep {U V w n_max h_space : ℕ}
   unfold ovfStepProg
   simp only [pure_bind]
   refine validProg_bind
-    (validProg_resolveOvfStep (d := (x.1.1, x.2.1.1.1)) hw hb_pos
+    (validProg_resolveOvfStep (d := (x.1.1, x.2.1.1.1))
       ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩) ?_
   rw [clientState_resolveOvfStepProg,
     (clientResult_resolveOvfStepProg (d := (x.1.1, x.2.1.1.1)) s hb_pos hb hj_bc hinv hp).1]
@@ -1223,10 +1235,11 @@ theorem validProg_searchOverflow {U V w n_max h_space : ℕ}
       (validProg_pure _)
 
 theorem validProg_searchBucket {U V w n_max h_space : ℕ}
-    (hw : 0 < w) {d : ((ℕ × ℕ) × ℕ) × ℕ} {s : Memory.State}
+    {d : ((ℕ × ℕ) × ℕ) × ℕ} {s : Memory.State}
     (hpre : SearchMicroChainPre U V w n_max h_space w d s) :
     ValidProg w (dictFrontier U V w n_max h_space d.1.1.1) s
       (searchBucketProg U V w n_max h_space d) := by
+  have hw : 0 < w := (dictEnvGen_mk_bounds hpre.1).1
   obtain ⟨L, hchain, hc_lt⟩ := hpre.2.2.2.2
   unfold searchBucketProg
   simp only [pure_bind]
@@ -1243,7 +1256,7 @@ theorem validProg_queryBody {U V w n_max h_space : ℕ}
   obtain ⟨L, hchain, hc_lt⟩ := hpre.2.2.2.2
   unfold queryBodyProg
   simp only [pure_bind]
-  refine validProg_bind (validProg_searchBucket hw hpre) ?_
+  refine validProg_bind (validProg_searchBucket hpre) ?_
   have hsb := searchBucketProg_spec hpre.1 hpre.2.1 hpre.2.2.1 hpre.2.2.2.1 hchain hc_lt
   rw [hsb.1]
   refine validProg_ite (fun hf1 => ?_) (fun _ => validProg_pure _)
@@ -1354,7 +1367,7 @@ theorem validProg_insertBody {U V w n_max h_space : ℕ}
   obtain ⟨L, hchain, hc_lt⟩ := hsb_pre.2.2.2.2
   unfold insertBodyProg
   simp only [pure_bind]
-  refine validProg_bind (validProg_searchBucket (d := (d.1.1, d.2)) hw hsb_pre) ?_
+  refine validProg_bind (validProg_searchBucket (d := (d.1.1, d.2)) hsb_pre) ?_
   have hsb := searchBucketProg_spec hsb_pre.1 hsb_pre.2.1 hsb_pre.2.2.1 hsb_pre.2.2.2.1 hchain hc_lt
   rw [hsb.1]
   refine validProg_ite (fun hf1 => ?_) (fun _ => ?_)
@@ -1378,7 +1391,7 @@ theorem validProg_deletePrep {U V w n_max h_space : ℕ}
   obtain ⟨L, hchain, hc_lt⟩ := hpre.2.2.2.2
   unfold deletePrepProg
   simp only [pure_bind]
-  refine validProg_bind (validProg_searchBucket (d := d) hw hpre) ?_
+  refine validProg_bind (validProg_searchBucket (d := d) hpre) ?_
   have hsb := searchBucketProg_spec hpre.1 hpre.2.1 hpre.2.2.1 hpre.2.2.2.1 hchain hc_lt
   rw [hsb.1]
   refine validProg_ite (fun hf1 => ?_) (fun _ => validProg_pure _)

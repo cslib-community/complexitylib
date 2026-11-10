@@ -15,6 +15,7 @@ The [native exact-counting chapter](native-counting.md) separately treats the fi
 | Counting Cook–Levin | Accepted verifier witnesses → satisfying assignments | [SharpSAT_sharpPComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/CookLevin/Counting.lean#L57) uses the parsimonious construction; branch/witness multiplicity matters. |
 | Savitch at polynomial space | NTM space recognition/deciding → DTM polynomial space | [NPSPACE_eq_PSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/Savitch.lean#L66), with a native explicit-stack midpoint-reachability implementation. |
 | Savitch at logarithmic space | NL → deterministic squared-logarithmic space | [NL_subset_DSPACE_log2_sq](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/Savitch.lean#L72). A single fully general `NSPACE(s) ⊆ DSPACE(s²)` endpoint is not claimed here. |
+| Classical one-sided randomized space | RL → NL → deterministic squared-logarithmic space | [RL_subset_DSPACE_log2_sq](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/Savitch.lean) composes the existing accepting-coin-path bridge with native Savitch. This is already a library theorem; the current [reuse/refinement milestone](https://github.com/cslib-community/cslib-frontier/issues/1444) does not claim `RL = L`. |
 | Immerman–Szelepcsényi | Nondeterministic work space and complement | [NSPACE_eq_coNSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/Nondeterministic.lean#L115) assumes `log₂ n ≤ s(n)` pointwise, with no constructibility hypothesis. [NL_eq_coNL](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/Complement.lean#L88) specializes it. |
 | Reingold | Encoded undirected graph connectivity → native logarithmic workspace | [USTCON_mem_L](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/USTCON.lean#L78), with concrete graph transformations and a charged ReadMachine/StepMachine implementation. |
 | TQBF and AP | Native PSPACE, quantified Boolean formulas and binary alternation | [TQBF_pspaceComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/TQBF.lean#L87) and [AP_eq_PSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Alternation/Savitch.lean#L379). Until the formal abstracts were retired on 2026-11-08, the [alternation abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/CslibFrontierAbstracts/AlternationAbstract.lean) restated `AP = PSPACE` over its own alternating machine. |
@@ -40,6 +41,37 @@ Shamir's paper establishes the IP/PSPACE characterization; the library reaches i
 Toda's original paper establishes PH containment in randomized parity and polynomial-time reducibility to PP. The library's headline takes the standard counting-oracle form and implements one selected output bit of a #P function. These are related formulations; the exact formal oracle interface and off-encoding quantifiers are part of the library statement. The publisher's original abstract was checked; no claim is made that every intermediate formal lemma was matched to a numbered original lemma. [toda1991][toda1991]
 
 Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. cslib-frontier combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
+
+## Apply the classical randomized quadratic-space bound
+
+Import `CslibFrontier.Computability.Complexity.Classes.LogSpace.Savitch` and work in
+`Cslib.Complexity`. Apply `RL_subset_DSPACE_log2_sq` to a certificate `h : A ∈ RL enc`;
+the result is `A ∈ DSPACE enc (fun n => Nat.log2 n ^ 2)`. It composes the accepting-coin-path
+bridge `RL_subset_NL` with native Savitch simulation. It establishes a deterministic workspace
+bound, not polynomial time or `RL = L`; the support argument does not apply to two-sided `BPL`.
+
+The complete [LogSpaceSavitch client](../../CslibFrontierTests/LogSpaceSavitch.lean) uses the
+existing logspace first-bit reader to place words beginning in `true` in `RL`, obtains the
+quadratic-space native decider, and checks accepted, rejected and empty inputs. Its runtime
+client also checks that named runtime structures preserve the original framed encoding and
+that projection certificates retain the caller's space budget.
+
+For machine-level reuse, [LogSpace/Savitch.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Savitch.lean)
+uses `Runtime`, `SimulationRound`, `RoundSetup` and `EdgeParams` structures.
+Their `enc_structure` encodings preserve the original nesting: parameters and width share a
+frame before the recursion state is paired with them. Generated field and constructor
+certificates drive the space proofs; generated `enc*_budget` projections retain the caller’s
+workspace budget. `SimulationRound.ofRound` is the explicit boundary to the generic Savitch
+round algorithm; option inspection/defaults use the shared `ComputableInSpace.budget_option*`
+rules. Binary vertex width returned in unary uses `ComputableInSpace.natSizeUnary` from
+[InSpace/NatSize.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/InSpace/NatSize.lean),
+also used by the inductive-counting simulator. Keep it distinct from `natSize`, which returns
+binary output. Neither operation expands the original number to unary. The original input
+remains read-only; these API changes do not weaken the charged workspace or stack bound.
+
+The callback proofs use `space`: `query_inSpace` is `space [query]`, while `next_inSpace` supplies the existing round, initialization and representation-conversion certificates before `space [next]`. This proves linear workspace in the encoded state. It does not bound repeated state growth.
+
+The separate state proof exposes that accounting. `length_encRuntime` gives the exact framing cost; [length_encState_le_of_bounds](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Space/Reachability/Bounds.lean) turns the actual stack invariant and linear depth/width bounds into a quadratic bound. The common scale is `Nat.log2 n + 1`, including empty inputs. [NatLength](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/NatLength.lean) shares the logarithmic bound for binary values below a power of `n + 2`. `QueryMachine.computableInSpace` then combines the callback certificates, state bound, termination and output correctness into the native workspace theorem.
 
 ## Deterministic time in square-root space
 
