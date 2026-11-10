@@ -74,10 +74,22 @@ conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Cheb
 `∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
-satisfying `P` and the remaining coordinates form two independent products.
+satisfying `P` and the remaining coordinates form two independent products. Its corollaries
+`pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
+coordinates satisfying `P`, or reading it along an injection `e` of index types as
+`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
+counting tuples when the factors are not uniform. `pi_map_curry` in
+[Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
+indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
+[Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
+box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+[PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
+`PMF.bernoulli` is deprecated.
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
-rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
+rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
+and curry independent coins of different biases, and compute the probability that three coins all
+show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
@@ -1112,6 +1124,24 @@ example (test : List Bool × Bool × ℕ → Bool)
 <!-- /worked-example -->
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
+
+`ppt` pays a search cost at every call, even on small goals. When a file certifies many inverters or reductions, or `ppt` fails on an adversary call whose inputs need preparation, compose the rules directly. Start with `IsPPTOn.isPPT`, then bind each sampled word with `(ComputableInPolyTime.sampleList h).bind_with`. Call the adversary through `IsPPT.preprocess`, which takes separate tidy certificates for the parameter and auxiliary input; `ComputableInPolyTime.tidy` converts plain ones. Close the deterministic leaves with `fun_prop`. The more general `IsPPTOn.preprocess` takes one certificate for the pair. Given `.prod` of two projections, it cannot infer the preparation function, so `fun_prop` meets goals with unassigned metavariables. The [InaccessibleEntropy client](../../CslibFrontierTests/Crypto/InaccessibleEntropy.lean) checks this pattern on a small inverter:
+
+<!-- excerpt: ppt-explicit-adversary-call -->
+```lean
+example {A : ℕ → List Bool → ProbComp (List Bool)} (hA : IsPPT encBits A) :
+    IsPPT encBits (fun n y => do
+      let pad ← Cslib.BitString.sampleList n
+      let raw ← A n (y ++ pad)
+      return raw.take n) := by
+  apply IsPPTOn.isPPT
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
+```
+
+The inverters in the [InaccessibleEntropy development](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/OneWay.lean) are certified this way. In November 2026 a `ppt` call there cost about 11,000–14,000 heartbeats even on small goals, against a few hundred for the explicit proof. Without the right definition hints, a call could exhaust Aesop's rule limit.
 
 ## Bound a centered-binomial sampler tail
 

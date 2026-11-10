@@ -138,8 +138,7 @@ theorem realize_pullback_comp (hI : I.Admissible) {β : Type*}
     (C.pullback φ).Realize (fun p => (J.comp C).unrank M (v p.1) p.2) ↔
       φ.Realize (M := I.map hI M)
         (fun p => J.unrank (I.map hI M) (Fin.cast (J.card_comp C hI M) (v p.1)) p.2) := by
-  simp only [Certificate.pullback, Formula.realize_relabel, Function.comp_def,
-    J.unrank_comp C hI, flattenTuple_apply]
+  fo_simp [Certificate.pullback, Function.comp_def, J.unrank_comp C hI, flattenTuple_apply]
   exact C.realize_onFormula hI φ
     (fun q => J.unrank (I.map hI M) (Fin.cast (J.card_comp C hI M) (v q.1)) q.2)
 
@@ -167,8 +166,7 @@ noncomputable def comp {J : DomainInterpretation L' L'' l} (C' : J.Certificate)
     exact (C'.realize_bit (I.map hI M) fun a => Fin.cast _ (v a)).trans
       (by simp only [Fin.val_cast])
   realize_const M c i := by
-    simp only [Formula.realize_relabel, Function.comp_def, J.unrank_comp C hI,
-      flattenTuple_finProdFinEquiv_apply]
+    fo_simp [Function.comp_def, J.unrank_comp C hI, flattenTuple_finProdFinEquiv_apply]
     rw [C.realize_onFormula hI (C'.const c) (J.unrank (I.map hI M) (Fin.cast _ i)),
       C'.realize_const (I.map hI M), Fin.val_cast, ← J.card_comp C hI M]
 
