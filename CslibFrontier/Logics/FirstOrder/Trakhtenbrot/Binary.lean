@@ -145,10 +145,8 @@ binary relation symbol, every r.e. set of finitely valid sentences misses some f
 sentence over `σ`. -/
 theorem exists_isSentenceOver_finValid_not_of_rePred {σ : Set (ℕ × ℕ)} {s : ℕ} (hs : (s, 2) ∈ σ)
     {S : RawFormula → Prop} (hS : REPred S) (hsound : ∀ φ, S φ → FinValid φ) :
-    ∃ φ, IsSentenceOver σ φ ∧ FinValid φ ∧ ¬S φ := by
-  by_contra hne
-  exact not_exists_rePred_finValid_of_mem hs ⟨S, hS, fun φ hφ =>
-    ⟨hsound φ, fun h => by_contra fun hS' => hne ⟨φ, hφ, h, hS'⟩⟩⟩
+    ∃ φ, IsSentenceOver σ φ ∧ FinValid φ ∧ ¬S φ :=
+  hS.exists_not_of_not_exists_rePred_iff (not_exists_rePred_finValid_of_mem hs) hsound
 
 /-- **No sound and complete proof system for finite validity over a binary relation.** If
 `P φ π` ("`π` is a proof of `φ`") is a decidable relation and only finitely valid sentences have
@@ -157,10 +155,8 @@ over `σ` has no proof. -/
 theorem exists_isSentenceOver_finValid_unprovable {σ : Set (ℕ × ℕ)} {s : ℕ} (hs : (s, 2) ∈ σ)
     {β : Type*} [Primcodable β] {P : RawFormula → β → Prop}
     (hP : ComputablePred (Function.uncurry P)) (hsound : ∀ φ π, P φ π → FinValid φ) :
-    ∃ φ, IsSentenceOver σ φ ∧ FinValid φ ∧ ∀ π, ¬P φ π := by
-  obtain ⟨φ, hσ, hφ, hS⟩ := exists_isSentenceOver_finValid_not_of_rePred hs
-    (ComputablePred.rePred_exists hP) fun φ ⟨π, h⟩ => hsound φ π h
-  exact ⟨φ, hσ, hφ, fun π h => hS ⟨π, h⟩⟩
+    ∃ φ, IsSentenceOver σ φ ∧ FinValid φ ∧ ∀ π, ¬P φ π :=
+  hP.exists_forall_not_of_not_exists_rePred_iff (not_exists_rePred_finValid_of_mem hs) hsound
 
 end RawFormula
 

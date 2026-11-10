@@ -33,8 +33,8 @@ so that the set of symbol codes of a given arity is primitive recursive. It is a
 global instance: Mathlib has no `Primcodable` instance for bounded formulas, and if it gains one
 (`Mathlib/ModelTheory/Encoding.lean` lists one as a TODO), a global instance here would form a
 diamond. Clients write `open scoped FirstOrder.Language.BoundedFormula.RawCoding` to use it as an
-instance. The coding is canonical up to primitive recursive equivalence: `id` is primitive
-recursive between the codings induced by two `Encodable` instances on the symbols
+instance. Up to primitive recursive equivalence the coding does not depend on the encoding of the
+symbols: `id` is primitive recursive between the codings induced by two `Encodable` instances
 (`FirstOrder.Language.BoundedFormula.primrec_id_primcodableRaw`).
 
 The semantics agree: `toRaw φ` holds under a raw interpretation compatible with a structure, and an
@@ -149,10 +149,6 @@ theorem isSome_varOfRaw {y : ℕ} :
       · exact h
   · simp only [Option.isSome_none, Bool.false_eq_true, false_iff]
     omega
-
-theorem get_varOfRaw_eq {y : ℕ} {v : α ⊕ Fin n} (hv : varOfRaw n y = some v) (h) :
-    (varOfRaw n y).get h = v := by
-  simp [hv]
 
 end Vars
 
@@ -304,7 +300,7 @@ theorem fromRaw_toRaw : ∀ {n} (φ : L.BoundedFormula α n), fromRaw n φ.toRaw
     have key : ∀ (y : ℕ) (h : (varOfRaw (α := α) n y).isSome), y = rawVar v →
         Term.var (L := L) ((varOfRaw n y).get h) = ts i := by
       rintro y h rfl
-      rw [hv, get_varOfRaw_eq (varOfRaw_rawVar v)]
+      rw [hv, Option.get_of_eq_some h (varOfRaw_rawVar v)]
     exact key _ _ (by simp [hv])
   | _, imp φ ψ => by
     rw [toRaw_imp, fromRaw, fromRaw_toRaw φ, fromRaw_toRaw ψ]
@@ -460,7 +456,7 @@ end Coding
 
 /-! ### Independence of the symbol encoding -/
 
-section Canonical
+section SymbolEncoding
 
 variable [Primcodable α] [Finite (Σ l, L.Relations l)] [L.IsRelational]
 
@@ -486,8 +482,9 @@ private theorem toRaw_eq_rename (e₁ e₂ : Encodable (Σ l, L.Relations l)) :
   | imp φ ψ ihφ ihψ => simp only [toRaw_imp, RawFormula.rename, ihφ, ihψ]
   | all φ ih => simp only [toRaw_all, RawFormula.rename, ih]
 
-/-- **The raw coding is canonical**: for two encodings `e₁`, `e₂` of the relation symbols, the
-identity is primitive recursive from the coding induced by `e₁` to the one induced by `e₂`. -/
+/-- **The raw coding does not depend on the symbol encoding**: for two encodings `e₁`, `e₂` of the
+relation symbols, the identity is primitive recursive from the coding induced by `e₁` to the one
+induced by `e₂`. -/
 theorem primrec_id_primcodableRaw (e₁ e₂ : Encodable (Σ l, L.Relations l)) :
     @Primrec _ _ (@primcodableRaw L α n _ e₁ _ _) (@primcodableRaw L α n _ e₂ _ _) id := by
   let _ := e₁
@@ -498,7 +495,7 @@ theorem primrec_id_primcodableRaw (e₁ e₂ : Encodable (Σ l, L.Relations l)) 
   simp only [hσ]
   exact Primrec.encode.comp (RawFormula.primrec₂_rename.comp (Primrec.const σ) primrec_toRaw)
 
-end Canonical
+end SymbolEncoding
 
 /-! ### Semantics -/
 
@@ -552,12 +549,17 @@ end BoundedFormula
 
 namespace Sentence
 
-/-- A sentence is **finitely satisfiable** when it holds in some finite nonempty structure. -/
+/-- A sentence is **finitely satisfiable** when it holds in some finite nonempty structure. The
+structure's carrier ranges over `Type`, which loses nothing since every finite structure has an
+isomorphic copy on some `Fin n`. This is not Mathlib's
+`FirstOrder.Language.Theory.IsFinitelySatisfiable`, which asks that every finite subset of a theory
+have some (possibly infinite) model. -/
 @[expose]
 def FinSat (φ : L.Sentence) : Prop :=
   ∃ (M : Type) (_ : L.Structure M) (_ : Finite M) (_ : Nonempty M), M ⊨ φ
 
-/-- A sentence is **finitely valid** when it holds in every finite nonempty structure. -/
+/-- A sentence is **finitely valid** when it holds in every finite nonempty structure whose
+carrier is in `Type`. -/
 @[expose]
 def FinValid (φ : L.Sentence) : Prop :=
   ∀ (M : Type) [L.Structure M] [Finite M] [Nonempty M], M ⊨ φ

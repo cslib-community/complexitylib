@@ -144,19 +144,15 @@ theorem not_computablePred_finValid (R : L.Relations 2) : ¬ComputablePred (FinV
 /-- **Incompleteness for finite validity.** For a finite relational language with a binary relation
 symbol `R`, every r.e. set of finitely valid sentences misses some finitely valid sentence. -/
 theorem exists_finValid_not_of_rePred (R : L.Relations 2) {S : L.Sentence → Prop} (hS : REPred S)
-    (hsound : ∀ φ, S φ → FinValid φ) : ∃ φ, FinValid φ ∧ ¬S φ := by
-  by_contra hne
-  exact not_rePred_finValid R (hS.of_eq fun φ =>
-    ⟨hsound φ, fun h => by_contra fun hs => hne ⟨φ, h, hs⟩⟩)
+    (hsound : ∀ φ, S φ → FinValid φ) : ∃ φ, FinValid φ ∧ ¬S φ :=
+  hS.exists_not_of_not_rePred (not_rePred_finValid R) hsound
 
 /-- **No sound and complete proof system for finite validity.** For a finite relational language
 with a binary relation symbol `R`: if `P φ π` ("`π` is a proof of `φ`") is a decidable relation and
 only finitely valid sentences have proofs, then some finitely valid sentence has no proof. -/
 theorem exists_finValid_unprovable (R : L.Relations 2) {β : Type*} [Primcodable β]
     {P : L.Sentence → β → Prop} (hP : ComputablePred (Function.uncurry P))
-    (hsound : ∀ φ π, P φ π → FinValid φ) : ∃ φ, FinValid φ ∧ ∀ π, ¬P φ π := by
-  obtain ⟨φ, hφ, hS⟩ := exists_finValid_not_of_rePred R (ComputablePred.rePred_exists hP)
-    fun φ ⟨π, h⟩ => hsound φ π h
-  exact ⟨φ, hφ, fun π h => hS ⟨π, h⟩⟩
+    (hsound : ∀ φ π, P φ π → FinValid φ) : ∃ φ, FinValid φ ∧ ∀ π, ¬P φ π :=
+  hP.exists_forall_not_of_not_rePred (not_rePred_finValid R) hsound
 
 end FirstOrder.Language.Sentence

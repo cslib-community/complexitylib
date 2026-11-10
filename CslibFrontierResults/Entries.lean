@@ -862,8 +862,8 @@ register_result "trakhtenbrot-sentence" where
     symbols; the negative results need a binary symbol. Sentences are coded by \
     primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
     recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
-    Function symbols, infinite vocabularies and vocabularies without a binary symbol are \
-    not covered."
+    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
+    have arity at least three are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"

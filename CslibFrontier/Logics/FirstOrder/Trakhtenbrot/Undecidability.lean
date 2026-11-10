@@ -208,20 +208,16 @@ theorem not_computablePred_finValid : ¬ComputablePred FinValid := fun h =>
 /-- **Incompleteness for finite validity.** Every r.e. set of finitely valid sentences misses some
 finitely valid sentence. -/
 theorem exists_finValid_not_of_rePred {S : RawFormula → Prop} (hS : REPred S)
-    (hsound : ∀ φ, S φ → FinValid φ) : ∃ φ, FinValid φ ∧ ¬S φ := by
-  by_contra hne
-  exact not_rePred_finValid (hS.of_eq fun φ =>
-    ⟨hsound φ, fun h => by_contra fun hs => hne ⟨φ, h, hs⟩⟩)
+    (hsound : ∀ φ, S φ → FinValid φ) : ∃ φ, FinValid φ ∧ ¬S φ :=
+  hS.exists_not_of_not_rePred not_rePred_finValid hsound
 
 /-- **No sound and complete proof system for finite validity.** If `P φ π` ("`π` is a proof of
 `φ`") is a decidable relation and only finitely valid sentences have proofs, then some finitely
 valid sentence has no proof. -/
 theorem exists_finValid_unprovable {β : Type*} [Primcodable β] {P : RawFormula → β → Prop}
     (hP : ComputablePred (Function.uncurry P)) (hsound : ∀ φ π, P φ π → FinValid φ) :
-    ∃ φ, FinValid φ ∧ ∀ π, ¬P φ π := by
-  obtain ⟨φ, hφ, hS⟩ := exists_finValid_not_of_rePred (ComputablePred.rePred_exists hP)
-    fun φ ⟨π, h⟩ => hsound φ π h
-  exact ⟨φ, hφ, fun π h => hS ⟨π, h⟩⟩
+    ∃ φ, FinValid φ ∧ ∀ π, ¬P φ π :=
+  hP.exists_forall_not_of_not_rePred not_rePred_finValid hsound
 
 end RawFormula
 
