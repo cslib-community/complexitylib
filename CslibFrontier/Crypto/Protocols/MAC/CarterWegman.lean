@@ -32,6 +32,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.Negligible
@@ -1630,7 +1631,7 @@ noncomputable def prfCounterSlotGame (seed : PMF K) (family : List Bool → List
 
 /-- The multi-query fresh-nonce PRF-masked Carter–Wegman issued-counter EUF-CMA experiment
 (after [BonehShoup2023], Section 7.5, Theorem 7.10), where the signer's counter schedule `nonce`
-fixes the nonces and `checkCounterGlobal` accepts only issued counter indices
+fixes the nonces and `checkCounterEUF` accepts only issued counter indices
 (`pads[idx]? = some r`), rejecting unissued `idx`. -/
 noncomputable def prfCounterGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
     (n : ℕ) (nonce : ℕ → List Bool) (hash : K → M → BitString n)
@@ -1639,7 +1640,7 @@ noncomputable def prfCounterGame (seed : PMF K) (family : List Bool → List Boo
 
 /-- The multi-query fresh-nonce PRF-masked Carter–Wegman issued-slot strong SUF-CMA experiment
 (after [BonehShoup2023], Section 7.5, Theorem 7.10), where the signer's counter schedule `nonce`
-fixes the nonces and `checkCounterStrong` accepts only issued counter indices
+fixes the nonces and `checkCounterSUF` accepts only issued counter indices
 (`pads[idx]? = some r`), rejecting unissued `idx`. -/
 noncomputable def prfCounterStrongGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
     (n : ℕ) (nonce : ℕ → List Bool) (hash : K → M → BitString n)
@@ -2003,13 +2004,6 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfCounterStrongGame
 
 end PRFCounter
 
-private theorem probOracleComp_runWith_liftRight {Query α State : Type} {spec : Query → Type}
-    (oracle : (q : Query) → StateT State PMF (spec q))
-    (prog : OracleComp spec α) (s : State) :
-    ProbOracleComp.runWith oracle (OracleComp.liftRight prog) s =
-      (OracleComp.interpret oracle prog).run s :=
-  OracleComp.runWith_sumHandler_liftRight _ oracle prog s
-
 private theorem sumHandler_liftLeft_support_append {Query Elem : Type} {spec : Query → Type}
     (right : (q : Query) → StateT (List Elem) PMF (spec q))
     (hright : ∀ q tr₁ res, res ∈ (right q tr₁).support → ∃ s, res.2 = tr₁ ++ s) :
@@ -2345,7 +2339,7 @@ theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [De
     (((OracleComp.interpret nonceSimHandler prog).run tr).bind fun res =>
       (PMF.uniformOfFintype (N → Y)).bind fun table =>
         post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
-  simpa only [probOracleComp_runWith_liftRight] using
+  simpa only [ProbOracleComp.runWith_liftRight, OracleComp.runWith] using
     probOracleComp_uniform_bind_run_interpret_nonceFnHandler hash k (OracleComp.liftRight prog)
       tr post c hpost
 
@@ -3576,7 +3570,7 @@ theorem uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
     (((OracleComp.interpret randomNonceSimHandler prog).run tr).bind fun res =>
       (PMF.uniformOfFintype (N → Y)).bind fun table =>
         post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
-  simpa only [probOracleComp_runWith_liftRight] using
+  simpa only [ProbOracleComp.runWith_liftRight, OracleComp.runWith] using
     probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler hash k
       (OracleComp.liftRight prog) tr post c hpost
 
@@ -3718,7 +3712,8 @@ theorem randomNonceSimHandler_not_nodup_le {α : Type} [Fintype N] [Nonempty N] 
       else 1 := by
   have h := probOracleComp_randomNonceSimHandler_not_nodup_le hprog.probOracleComp tr
   rwa [show OracleComp.interpret (fun q => ProbOracleComp.query q) prog =
-    OracleComp.liftRight prog from rfl, probOracleComp_runWith_liftRight] at h
+    OracleComp.liftRight prog from rfl, ProbOracleComp.runWith_liftRight,
+    OracleComp.runWith] at h
 
 variable [DecidableEq M] [DecidableEq N] [DecidableEq Y]
 
@@ -3970,7 +3965,8 @@ theorem randomNonceStrongGame_le_sum_add_max {seed : PMF K} {hash : K → M → 
   have h := seed_uniform_probOracleComp_checkRandomNonceSUF_le_sum_add_max hh
     (hforger s).probOracleComp (fun x => x)
   simpa only [show OracleComp.interpret (fun q => ProbOracleComp.query q) (forger.forge s) =
-    OracleComp.liftRight (forger.forge s) from rfl, probOracleComp_runWith_liftRight] using h
+    OracleComp.liftRight (forger.forge s) from rfl, ProbOracleComp.runWith_liftRight,
+    OracleComp.runWith] using h
 
 /-- **Ideal randomized Carter–Wegman SUF-CMA security** ([BonehShoup2023], Section 7.4,
 Theorem 7.9, p. 270): under `IsDeltaUniversalHash seed hash ε`, any `Q`-query-bounded

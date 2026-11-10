@@ -40,7 +40,7 @@ Computability/Probabilistic/Composition.lean on the cslib `crypto` branch at
 calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

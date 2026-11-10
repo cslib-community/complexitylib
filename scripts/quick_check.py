@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Conservative affected-client checks; never a replacement for the six validation gates."""
+"""Conservative affected-client checks; never a replacement for the full check."""
 
 from __future__ import annotations
 
@@ -19,15 +19,24 @@ class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
 
 
+ENCODING_RATCHET = (
+    "encoding readability ratchet",
+    [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"])
+
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
-# to one runs that check (with `{base}`, the merge base) instead of falling back to all six gates.
+# to one runs that check (with `{base}`, the merge base) instead of falling back to the full check.
 # Any other non-Lean change, including every Python change under `scripts/`, still falls back.
 DATA_CHECKS = {
     # Read only by its ratchet, which needs no build (`.github/workflows/lean_action_ci.yml`).
-    "scripts/encoding_readability_baseline.json": (
-        "encoding readability ratchet",
-        [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"]),
+    "scripts/encoding_readability_baseline.json": ENCODING_RATCHET,
 }
+
+# The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
+# files under these roots (its default selection), the encoding ratchet the modules under
+# `ENCODING_ROOT`. Each takes seconds; the post-build audits need whole-library outputs that quick
+# mode does not build, so they stay in the full check.
+HYGIENE_ROOTS = ("CslibFrontier/", "CslibFrontierTests/")
+ENCODING_ROOT = "CslibFrontier/"
 
 
 # `lake lint` runs this driver; quick mode passes it flags that only Batteries' runLinter accepts.
@@ -229,6 +238,15 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     checks = [(label, [base if part == "{base}" else part for part in command])
               for path, (label, command) in DATA_CHECKS.items() if path in {p for _, p in changes}]
     changes = [(status, path) for status, path in changes if path not in DATA_CHECKS]
+    hygiene = sorted(path for _, path in changes if path.startswith(HYGIENE_ROOTS))
+    if hygiene:
+        checks.insert(0, ("source hygiene (changed files)",
+                          [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp",
+                           "--", *hygiene]))
+    ratchet = (ENCODING_RATCHET[0], [base if part == "{base}" else part
+                                     for part in ENCODING_RATCHET[1]])
+    if ratchet not in checks and any(path.startswith(ENCODING_ROOT) for _, path in changes):
+        checks.append(ratchet)
     modules, aggregates, roots = source_modules(root)
     visible = set(git(root, "ls-files", "-z").split("\0")) | {p for _, p in changes}
     by_path = {path: module for module, path in modules.items()}
@@ -306,12 +324,13 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     try:
         plan = make_plan(root, options.base)
     except (FullCheck, OSError, ValueError, TypeError) as error:
-        print(f"Quick check falls back to all six gates: {error}", flush=True)
-        return subprocess.run([str(root / "scripts/check.sh")], cwd=root).returncode
+        print(f"Quick check falls back to the full check: {error}", flush=True)
+        return subprocess.run([str(root / "scripts/check.sh"), "--base", options.base],
+                              cwd=root).returncode
     print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected build targets.",
           flush=True)
     print("This is not full validation: lint covers only the affected library modules, and the "
-          "test, style and init-import gates are skipped.", flush=True)
+          "test, style, init-import gates and post-build audits are skipped.", flush=True)
     for label, command in plan.checks:
         status = run_check(root, command, label)
         if status:

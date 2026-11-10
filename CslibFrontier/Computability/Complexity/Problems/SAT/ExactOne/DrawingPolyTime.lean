@@ -30,9 +30,8 @@ Coordinates and original source labels use binary encodings. Clause, literal, an
 use unary counters bounded by the emitted lists. The finite profile and collar choices are fixed
 independently of the input; there is no enumeration of the coordinate rectangle.
 
-## Main definitions
-
-* `DrawingNative.encInput`: the source formula and its supplied binary-coordinate drawing.
+The input, a source formula with its supplied binary-coordinate drawing, is encoded by
+`DrawingFinitePolyTime.encInput`.
 
 ## Main results
 
@@ -49,10 +48,7 @@ These are original native certificates for the explicit drawing construction.
 namespace Cslib.Complexity.SAT.ExactOne.DrawingNative
 
 open Cslib.Logic.PL Orthogonal Turing.MultiTapeTM
-
-/-- The encoded source formula and its supplied drawing. -/
-abbrev encInput : (CNF ℕ × Graph.OrthogonalDrawing) ↪ List Bool :=
-  encPair encCNF Graph.encOrthogonalDrawing
+open DrawingFinitePolyTime (encInput)
 
 /-- Listed graphs retain binary vertex labels; edge positions use unary counters. -/
 abbrev encSourceIndex : ((Graph × Graph.OrthogonalDrawing) × ℕ) ↪ List Bool :=

@@ -34,7 +34,7 @@ charges both blocks of independent trials, their counts, and signed subtraction.
   Algorithm 8][NISTFIPS203]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

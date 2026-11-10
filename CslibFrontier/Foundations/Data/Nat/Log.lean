@@ -34,7 +34,7 @@ stays polynomial after logarithmically many rounds. Similarly `2 ^ (⌊log₂ n�
 * `Nat.clog_two_add_two_le_three_mul_log_two`: `⌈log₂ (n + 2)⌉ ≤ 3 ⌊log₂ n⌋` for `n ≥ 2`.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

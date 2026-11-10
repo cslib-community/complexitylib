@@ -13,7 +13,6 @@ public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncide
 public import CslibFrontier.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 import CslibFrontier.Tactic.EncLen
 import all CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert
-import all CslibFrontier.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
@@ -41,6 +40,9 @@ bounded-incidence, bounded-width $\mathbb{F}_2$ polynomial-system branch evaluat
 `evalBoundedIncidenceBranch` of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
 (§§3.4–3.5, §4.7, §§5.3–5.5, Proposition 5.3, and Appendix B.2–B.3, pp. 24–26, 34–35, 37–39,
 48–50).
+
+The certificate reuses the private encodings and polynomial-time lemmas of
+`BoundedIncidenceStepCert`, which this module completes and reads through `import all`.
 
 ## Main definitions
 

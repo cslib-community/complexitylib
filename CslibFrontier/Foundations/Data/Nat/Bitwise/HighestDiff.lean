@@ -23,7 +23,7 @@ import Batteries.Data.Nat.Bitwise.Lemmas
 See [FredmanWillard1993] for longest-prefix selection in fusion nodes.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

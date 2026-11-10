@@ -60,7 +60,7 @@ or antitone Boolean function on `n` coordinates with variance `σ²` has total i
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

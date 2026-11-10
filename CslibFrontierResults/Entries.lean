@@ -58,6 +58,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
@@ -74,6 +75,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -786,6 +788,27 @@ register_result "williams-square-root-space" where
     multitape machines, read-only input and visited-work-cell space; classes absorb \
     affine constants. No time-constructibility or monotonicity hypothesis."
 
+register_result "blum-mansour-swap-regret" where
+  title := "Blum–Mansour reduction from swap regret to external regret"
+  topic := "online learning"
+  sources := [
+    { paper := BlumMansour2007, theorem := "Theorem 5 and Corollary 7", locator := "p. 1313" },
+    { paper := Roughgarden2013CS364A, theorem := "Theorem 2.1",
+      locator := "Lecture 18, Section 2, pp. 3–5" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.OnlineLearning.Experts.swap_regret_le_sum_regret,
+    Cslib.MachineLearning.OnlineLearning.Experts.blumMansour_swap_regret_le,
+    Cslib.MachineLearning.OnlineLearning.Experts.blumMansour_swap_regret_le_sqrt
+  ]
+  scope := "Experts setting with a finite set of n actions and arbitrary real loss sequences. \
+    The reduction assumes the learner plays a stationary vector of the copies' distributions \
+    and that copy j has regret at most R j on the losses scaled by the learner's probability of \
+    j; it then bounds the swap regret against every swapping function by the sum of the R j. \
+    With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
+    2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
+    chosen classically; no running time is charged."
+
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
   topic := "cryptography"
@@ -1146,6 +1169,30 @@ register_result "pebble-games-fo-k" where
     assignments, so for k > 0 the statements are vacuous on empty structures. Libkin states \
     the results for the infinitary logic L^k_∞ω on finite structures; the remark before \
     Proposition 11.8 reduces rank n to FO^k."
+
+register_result "bijective-pebble-games-c-k" where
+  title := "The bijective pebble-game characterization of finite-variable counting logic C^k"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 4.5",
+      locator := "Section 4.1; the round-indexed form is in the proof of Theorem 5.2" },
+    { paper := Hella1996, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_iff_forall_realize_iff,
+    Cslib.Logic.FO.bijPebbleWinsForever_iff_forall_realize_iff
+  ]
+  scope := "Mathlib first-order languages with finitely many relation symbols, finite \
+    structures; k-variable counting formulas reuse variables and have equality and relational \
+    atoms and the counting quantifiers 'at least m'. Duplicator wins the n-round bijective \
+    k-pebble game (Spoiler picks the pebble, then Duplicator the bijection) from a position \
+    (S, a, b) iff a and b satisfy the same C^k formulas of quantifier rank at most n with free \
+    variables in S; the infinite game corresponds to all C^k formulas. The easy direction holds \
+    for arbitrary structures; the hard direction fails for infinite ones (N and R in the empty \
+    language). Positions are total assignments, so for k > 0 the statements are vacuous on \
+    empty structures. Cai, Furer and Immerman state the characterization on graphs, for the \
+    equivalent game in which the players exchange sets of equal size."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
