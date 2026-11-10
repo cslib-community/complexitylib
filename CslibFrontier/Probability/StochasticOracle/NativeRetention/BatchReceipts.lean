@@ -23,8 +23,12 @@ No alphabet truncation or finite hidden-state abstraction is performed.
 against the actual accepted source receipts. `completion_eq` consequently identifies
 the executed guard with the exact receipt event in `NativeBatch.Retained`, rather
 than assuming a representation identity. `BatchUpper` proves native selected-epoch
-stopping and numerical progress/survival-sum bill bounds. Complete certified-output
-success/deadline transfer and the common-oracle optimum comparison remain open.
+stopping and numerical progress/survival-sum bill bounds. `BatchOutput` assembles
+certified halted tape-output success/deadline for the named `BatchPlanner.controller`.
+`BatchOptimum` supplies lower/upper/competitive bounds for OPT over admitted
+finite-control selection-only native machines on the same oracle and seed.
+The original runtime codec, fixed block upper scheduler and finite opportunity/
+cutoff interface remain restrictions; unrestricted source coverage is open.
 -/
 
 public section

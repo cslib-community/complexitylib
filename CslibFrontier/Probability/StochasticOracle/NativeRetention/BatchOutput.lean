@@ -49,16 +49,21 @@ not success; this event does not redefine the accrued bill on divergent paths. -
     (BatchReceipts.proposal x) (world.memory.privateState.history.map some)
 
 open scoped Classical in
+/-- The fixed original-input cover/dual certificate used to count successful
+outputs. Failed decoded families need not have source provenance. -/
+@[expose] def accept (x : Input) (hx : Valid x) (C : Finset (Fin x.rows.length)) : Bool :=
+  decide ((instanceOf x hx).covered (C.image Fin.val) = (instanceOf x hx).ground ∧
+    (instanceOf x hx).cost (C.image Fin.val) ≤
+      (x.rho : ℝ) * ∑ e ∈ (instanceOf x hx).ground, (instanceOf x hx).dual e)
+
+open scoped Classical in
 /-- Successful native output means a halted, decoded original family with full
 coverage, its derived dual bound, and the source's oracle-only deadline. -/
 @[expose] def certified (limits : Limits n) (x : Input) (hx : Valid x)
     (outcome : Option (World k R Unit (ServerState n Private) input)) : Bool :=
   outcome.any fun world =>
     (NativeOpenSelection.result (decodeFamily x.rows.length) world).any fun C =>
-      decide ((instanceOf x hx).covered (C.image Fin.val) = (instanceOf x hx).ground ∧
-        (instanceOf x hx).cost (C.image Fin.val) ≤
-          (x.rho : ℝ) * ∑ e ∈ (instanceOf x hx).ground, (instanceOf x hx).dual e ∧
-        world.memory.privateState.elapsed ≤ limits.deadline)
+      accept x hx C && decide (world.memory.privateState.elapsed ≤ limits.deadline)
 
 /-- The actual constructed native program transports receipt completion to
 certified halted tape output under one fixed sampler and seed. This is a lower
@@ -112,8 +117,9 @@ theorem output_controller (width : ℕ) :
       simpa only [Option.isNone_none, ↓reduceIte, hout] using hdecode
     have hcert : certified limits state.work.system hv (some next) = true := by
       simp only [certified, Option.any_some, hsuccess]
-      change decide (_ ∧ _ ∧ _) = true
-      exact decide_eq_true ⟨hcover, hcost, hmem ▸ hdeadline⟩
+      change (_ && decide _) = true
+      apply Bool.and_eq_true_iff.mpr
+      exact ⟨decide_eq_true ⟨hcover, hcost⟩, decide_eq_true (hmem ▸ hdeadline)⟩
     simpa only [hsystem] using hcert
 
 /-- On this fixed compiled controller, the issued-horizon retained-completion

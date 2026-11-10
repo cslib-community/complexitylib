@@ -950,8 +950,9 @@ This is a concrete one-turn native packet-protocol bridge. It does not decompose
 an arbitrary open PTM's query boundaries, retain arbitrary unexported work-tape
 state, handle unbounded local stopping or prove the arbitrary-turn behavioral
 representation required by Theorem 5 and the full two-turn lower optimum in
-Theorem 6. General response alphabets, native query/output adapter realization,
-canonical-label recovery and the upper-selector compiler also remain open.
+Theorem 6. Later sections derive native query epochs and the concrete block controller.
+General response alphabets and external PTM/query encodings, canonical-label
+recovery and arbitrary source-policy compilation remain open.
 The earlier Theorem 4 resource/asymptotic/hardness gaps remain. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
@@ -1153,7 +1154,8 @@ that encoding. The raw interface is a channel plus a bit-string request. To use
 the source's oracle-turn quantitative theorems, first use the stopping epochs
 in the following sections, including the checked concurrent-batch protocol.
 The finite behavioral Theorem 5/6 APIs cannot be applied directly to raw
-instruction ticks; whole-policy quantitative transfer still needs proof.
+instruction ticks. The later native selected-epoch APIs perform this transfer;
+`BatchOutput` and `BatchOptimum` give the named controller's quantitative bounds.
 
 ### Stopping at the next query or halt
 
@@ -1533,17 +1535,21 @@ excluding canceled calls. It checks the two correlated output/completion cases a
 runs the generated local machine with the existing source memory, including its
 cancellation invoice. This serialization is currently a semantic data conversion.
 The local theorem starts with `encInput` already on its input tape. The native
-reader below now copies the full raw reply to a work buffer; parsing it into that
-encoded retention input, preparing the local tapes, selecting the next whole
-batch, stopping at the source budget/deadline and returning the final cover still
-require a constructed native loop. The current local phase must not be used as an
-assumed successful upper-policy witness for the optimum comparison. No finite
-response/metadata approximation is introduced, and the caller must not treat an
-offline proposal list as an actual oracle policy.
+reader copies the full reply to a work buffer. The later `BatchPlanner.controller`
+composes original-input loading, parsing, runtime-context updates, source-batch
+planning, local retention, repeated guarded execution and final tape output.
+`BatchOutput.upper_controller` proves its certified success/deadline and bill
+bounds. `BatchOptimum` proves lower/upper/competitive bounds for OPT over admitted
+finite-control selection-only native machines sharing the oracle and seed.
+The local phase alone is not the successful upper-policy witness; the complete
+named implementation and its proved joint feedback law are used. No finite
+response/metadata approximation or publicly available offline proposal list is
+assumed.
 
-The source native optimum/envelope comparison still needs that uniformly successful
-upper realization, along with source WSC subinstance/role and residual-label codecs
-and external PTM encodings. A latent scenario is never assumed publicly visible.
+The fixed block scheduler, original runtime codec and configured finite opportunity/
+cutoff interface restrict the implemented model. Source WSC subinstance/role and
+residual-label codecs and unrestricted external PTM representation remain open.
+A latent scenario is never assumed publicly visible.
 Fixed finite call opportunities and external nonnegative real clocks remain interface
 conventions; compiled physical timers and general measurable/nonatomic laws are not
 established. The trace preserves divergent mass and its earlier receipts, but equality
@@ -1606,12 +1612,12 @@ native adaptive selector. `NativeRetention.compiled` still realizes only its loc
 phase. The strict oracle-PPT calculus only copies a supplied bounded reply prefix;
 it cannot read an arbitrary invoice followed by later proposal slots under an
 input-only polynomial clock. The unbounded native reader and sequential laws
-below remove that common-clock obstruction. A full realization still needs the
-runtime parser, local-input preparation, scheduler compilation and complete loop. The
-source excludes local computation from its deadline, so that stronger strict-PPT
-clock is not a source requirement. No native upper probability/cost bound or
-native optimum comparison follows merely by assuming the missing realization.
-The prior native lower and retained-receipt quantitative results remain separate.
+below remove that common-clock obstruction. The later `BatchPlanner.controller`
+composes the parser, local preparation, batch scheduler and full guarded loop for
+the concrete supported scheduler. Its native upper probability/cost and optimum
+results are proved in `BatchOutput`/`BatchOptimum`; they do not follow from an
+assumed realization of the raw program. The source excludes local computation
+from its deadline, so the stronger strict-PPT clock is not a source requirement.
 
 
 ### Native full replies and unbounded phase composition
@@ -1940,14 +1946,15 @@ matching warm checkout, run:
 scripts/build.sh CslibFrontierTests.NativeRetentionFeedback
 ```
 
-This completes this concrete raw-State transport controller. Its request remains
-framed State bytes, not a preselected nonempty source batch packet, and its scalar
-opportunity count is not an exactly-once labeled used-set. Reservation exhaustion
-is not observed physical deadline enforcement. Source batch planning/admission,
-reached selected-batch envelopes and native upper success/survival-sum bill/deadline/
-common-oracle optimum comparison for that same admitted controller remain open,
-along with external encodings, general measurable interfaces and divergent-path
-cost packaging. No unrestricted Theorem 5/6 or ALL-main completion is claimed.
+This completes the concrete raw-State transport component. By itself its request
+is framed State bytes, not a preselected source batch, and its scalar opportunity
+count is not an exactly-once labeled used-set. The `BatchPlanner`/`BatchAdmission`
+composition below adds actual batch planning, admission and authenticated history
+for the named controller. `BatchOutput` and `BatchOptimum` then derive its native
+success/deadline/bill and common-oracle lower/upper/competitive bounds.
+Reservation exhaustion is not a physical clock. External encodings, general
+measurable interfaces and broader divergent-path cost packaging remain open;
+no unrestricted Theorem 5/6 or ALL-main completion is claimed.
 
 For a constructed source-batch request planner, import
 `CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAdmission`.
@@ -2024,7 +2031,13 @@ and all stopped-bill bounds for that one compiled program.
 
 Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum`
 for the common-oracle comparison. `costs` ranges over all finite-control native
-competitors admitted by `SelectionOnly`, with certified tape-output success at
+competitors admitted by `SelectionOnly` for `BatchOutput.accept`, the fixed input
+cover/dual certificate criterion: provenance is
+required only for counted certified successes, and failed decoded families may be
+unsupported. The [admission client](../../CslibFrontierTests/NativeRetentionSuccessAdmission.lean)
+executes a no-query native program on a satisfiable instance and proves this class
+strictly includes policies excluded by all-output provenance. Competitors require
+certified tape-output success at
 least $\eta$ on the same sampler, seed and original encoded input. `optimum` is
 the infimum of their actual extended expected bills; attainment and integrability
 are not assumed. `LowerEnvelopes` quantifies the reached selected-epoch coverage,
@@ -2034,11 +2047,30 @@ bound the optimum by its survival sum, $\overline c r_a/\underline p$ and
 $\overline c u$. With matching envelopes, `competitive` bounds the named
 controller's bill by $\mathrm{OPT}/\eta$ for positive $\eta$.
 
+`BatchOptimum.success_le` bounds the actual certified tape-success probability of
+any admitted competitor by $P[\mathrm{Bin}(v,\overline p)\ge r_b]$, where
+$v=\min(u,\lfloor D/\ell\rfloor)$. It uses the source's reached revealed-progress
+and actual batch-latency envelopes. `feasible_success_le` gives the same necessary
+bound on a feasible target $\eta$ under uniform latency envelopes over admitted
+competitors. Neither a physical turn cap nor a success-law identity is a premise.
+The [deadline client](../../CslibFrontierTests/NativeRetentionDeadline.lean) checks
+positive certified tape readback against a real native terminal law and derives
+empty feasibility/OPT infinity for positive success on nonempty ground at zero
+oracle deadline, even with one advertised turn and arbitrary source randomness.
+The separate [positive-duration native client](../../CslibFrontierTests/NativeBatchSuccess.lean)
+discharges the underlying native deadline theorem's reached latency assumptions.
+
+
 The source model (PDF p. 5) explicitly excludes local computation from deadline
 $D$. Elapsed time here counts oracle batch maxima, cutoffs and cancellation.
 Competitors share the configured finite opportunity/cutoff interface and original
 runtime input codec. The upper implementation is the fixed block scheduler;
 these are material restrictions, not unrestricted source Theorem 5 coverage.
+In particular, the planner fixes label blocks and sends framed runtime contexts;
+it is not an interpreter for an arbitrary source policy's adaptive opportunity,
+query-string and cutoff choices. A source codec/interpreter must preserve the
+same oracle's response law and accrued resources, rather than posit a transfer
+contract. General measurable oracle laws and external PTM encodings remain open.
 
 The [correlated numerical client](../../CslibFrontierTests/NativeRetentionUpperCorrelated.lean)
 applies the same constructed numerical controller to two simultaneous calls.
@@ -2071,7 +2103,9 @@ success/bill/optimum results. From the repository root:
 scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
   CslibFrontierTests.NativeRetentionUpper \
   CslibFrontierTests.NativeRetentionUpperNonempty \
-  CslibFrontierTests.NativeRetentionUpperCorrelated --wfail --iofail
+  CslibFrontierTests.NativeRetentionUpperCorrelated \
+  CslibFrontierTests.NativeRetentionDeadline \
+  CslibFrontierTests.NativeRetentionSuccessAdmission --wfail --iofail
 ```
 
 This establishes a concrete supported scheduler and source-admitted native loop.

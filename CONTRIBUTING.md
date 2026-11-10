@@ -363,7 +363,8 @@ maintained account without repeating the investigation or relying on earlier con
 Keep the Agent Operator's Manual short and directed at the person driving the agents; put
 participant procedures in the Operator's Manual and historical evidence in its supplement.
 Place a new section where its topic belongs in a chapter rather than at the end: sections that
-concurrent PRs append at the same place conflict in the merge queue.
+concurrent PRs append at the same place conflict in the merge queue. Put a new algorithm endpoint
+on the matching topic page listed under `manual/algorithms-and-memory/index.md`, in topic order.
 
 Keep executable Lean examples in `CslibFrontierTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second

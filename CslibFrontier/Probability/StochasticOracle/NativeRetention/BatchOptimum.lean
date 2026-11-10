@@ -18,6 +18,8 @@ import Mathlib.Tactic
 [Wang2027], Theorem 5, PDF p. 12, Appendix A.5 p. 16. Competitors share one
 actual source sampler and initial hidden seed. Their code, randomness and tape
 memory are unrestricted within the finite-control discrete native interface.
+Admission requires provenance only for families counted as certified successes;
+fabricated failed outputs are permitted, as in the source selection-only convention.
 The cost includes every accrued receipt, including prefixes of divergent paths;
 no integrability or bounded total bill is assumed. Source envelopes concern only
 positive-probability selected epochs. External WSC encodings and general measurable
@@ -31,6 +33,7 @@ not a claim of unrestricted source Theorem 5/6 coverage.
 * `lower`: the success-level lower envelope for the infimum over every admitted competitor.
 * `upper`: the constructed controller supplies feasible survival-sum, mean and budget bounds.
 * `competitive`: matching envelopes give the source factor `1/η` against that infimum.
+* `success_le`, `feasible_success_le`: the effective-turn binomial deadline obstruction.
 -/
 
 public section
@@ -38,6 +41,7 @@ noncomputable section
 namespace Cslib.Probability.StochasticOracle.NativeRetention.BatchOptimum
 open Turing NativeOpenExecution ConcurrentBatch NativeBatch Trace Quantitative
 open AdaptiveSelection PartialCover
+open BatchOutput (accept)
 open scoped NNReal ENNReal
 open MeasureTheory
 variable {n : ℕ} {Private : Type}
@@ -58,6 +62,14 @@ theorem finite_covered (x : Input) (hx : Valid x) (C : Finset (Fin x.rows.length
     (finiteInstance x hx).covered C = (instanceOf x hx).covered (C.image Fin.val) := by
   exact (Finset.image_biUnion (f := Fin.val) (s := C) (t := (instanceOf x hx).sets)).symm
 
+/-- Every accepted family is a cover of the original finite-index instance. -/
+theorem accept_covers (x : Input) (hx : Valid x) (C : Finset (Fin x.rows.length))
+    (h : accept x hx C = true) :
+    (finiteInstance x hx).covered C = (finiteInstance x hx).ground := by
+  have hc := (of_decide_eq_true h).1
+  rw [finite_covered]
+  exact hc
+
 /-- Actual attained expected bills of admitted native competitors meeting the
 certified-output success requirement, all on one source oracle and original input. -/
 @[expose] def costs (limits : Limits n) (sample : Sampler n Private)
@@ -70,7 +82,7 @@ certified-output success requirement, all on one source oracle and original inpu
         World k Control Unit (ServerState n Private) (GuardedStartup.encoding data))
     NativeUnboundedExecution.SelectionOnly machine (environment limits sample)
       (candidateParser (n := n) data.startup.system.rows.length)
-      (decodeFamily data.startup.system.rows.length) (fun _ => true) world ∧
+      (decodeFamily data.startup.system.rows.length) (accept data.startup.system hx) world ∧
     η ≤ ((NativeUnboundedExecution.terminal machine (environment limits sample) world).map
       (BatchOutput.certified limits data.startup.system hx)) true ∧
     v = expected limits sample machine charge (limits.turns + 1) world}
@@ -95,7 +107,7 @@ structure LowerEnvelopes (limits : Limits n) (sample : Sampler n Private)
         World k Control Unit (ServerState n Private) (GuardedStartup.encoding data))
     NativeUnboundedExecution.SelectionOnly machine (environment limits sample)
       (candidateParser (n := n) data.startup.system.rows.length)
-      (decodeFamily data.startup.system.rows.length) (fun _ => true) world →
+      (decodeFamily data.startup.system.rows.length) (accept data.startup.system hx) world →
     ∀ t < limits.turns + 1, ∀ o ∈ ((select limits sample machine
       (law limits sample machine t world)).map (Quantitative.observe limits)).support,
       (∀ next ∈ (conditional limits sample machine (law limits sample machine t world) o).support,
@@ -109,6 +121,23 @@ structure LowerEnvelopes (limits : Limits n) (sample : Sampler n Private)
           (Coverage.proposal data.startup.system.rows.length) h x then 1 else 0) ≤ p) ∧
       (o.issued = true → c ≤ Quantitative.conditionalMean limits sample machine
         (law limits sample machine t world) o charge)
+
+/-- Certified tape output implies native certificate acceptance on every outcome
+law. This forgets only the deadline check and preserves actual tape readback. -/
+theorem certified_le_accepted {k : ℕ} {Control : Type} {input : List Bool}
+    (limits : Limits n) (x : Input) (hx : Valid x)
+    (μ : PMF (Option (World k Control Unit (ServerState n Private) input))) :
+    (μ.map (BatchOutput.certified limits x hx)) true ≤
+      (μ.map (Coverage.nativeSuccess (accept x hx))) true := by
+  apply PMF.map_true_mono
+  intro result _ hcert
+  cases result with
+  | none => simp [BatchOutput.certified] at hcert
+  | some next =>
+    simp only [BatchOutput.certified, Option.any_some] at hcert
+    obtain ⟨C, hc, hgood⟩ := (Option.any_eq_true _ _).mp hcert
+    simp only [Coverage.nativeSuccess, Option.any_some, hc, Option.any_some]
+    exact (Bool.and_eq_true_iff.mp hgood).1
 
 /-- Source success-level lower bound on the true common-oracle native optimum.
 Every competitor is quantified by `LowerEnvelopes`; neither a supplied lower
@@ -125,31 +154,14 @@ theorem lower (limits : Limits n) (sample : Sampler n Private)
   obtain ⟨k, Control, hfinite, machine, hselect, hsuccess, rfl⟩ := hv
   let world : World k Control Unit (ServerState n Private) (GuardedStartup.encoding data) :=
     ⟨machine.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
-  let accept := fun C : Finset (Fin data.startup.system.rows.length) =>
-    decide ((finiteInstance data.startup.system hx).covered C =
-      (finiteInstance data.startup.system hx).ground)
-  have hs : η ≤ ((NativeUnboundedExecution.terminal machine (environment limits sample) world).map
-      (Coverage.nativeSuccess accept)) true := by
-    apply hsuccess.trans
-    apply PMF.map_true_mono
-    intro result _ hcert
-    cases result with
-    | none => simp [BatchOutput.certified] at hcert
-    | some next =>
-      simp only [BatchOutput.certified, Option.any_some] at hcert
-      obtain ⟨C, hc, hgood⟩ := (Option.any_eq_true _ _).mp hcert
-      simp only [decide_eq_true_eq] at hgood
-      simp only [Coverage.nativeSuccess, Option.any_some, hc, Option.any_some]
-      apply decide_eq_true
-      change (finiteInstance data.startup.system hx).covered C =
-        (instanceOf data.startup.system hx).ground
-      rw [finite_covered]
-      exact hgood.1
+  let accepts := accept data.startup.system hx
+  have hs := hsuccess.trans (certified_le_accepted limits data.startup.system hx
+    (NativeUnboundedExecution.terminal machine (environment limits sample) world))
   have hl := Coverage.success_cost_lower limits sample machine
     (finiteInstance data.startup.system hx) b r p c hr world
-    (NativeBatch.initial_invariant limits seed) rfl accept
-    (fun C hC => of_decide_eq_true hC)
-    (by intro fuel next hn C hC _; exact hselect fuel next hn C hC rfl)
+    (NativeBatch.initial_invariant limits seed) rfl accepts
+    (accept_covers data.startup.system hx)
+    hselect
     (fun t ht o ho => by
       obtain ⟨hcap, _, _⟩ := H.bounds k Control hfinite machine hselect t ht o ho
       exact hcap)
@@ -214,8 +226,10 @@ theorem upper (width : ℕ) :
   have hm : expected limits sample program charge (limits.turns + 1) world ∈
       costs limits sample data seed hx η := by
     refine ⟨impl.tapes, impl.Controls, impl.finite, program, ?_, hη.trans hsuccess, rfl⟩
-    exact BatchAdmission.selectionOnly_controller width Private limits sample data seed ell
+    have hs := BatchAdmission.selectionOnly_controller width Private limits sample data seed ell
       hn hw hc hbudget.le he hcut hd hx
+    intro fuel next hn C hC _
+    exact hs fuel next hn C hC rfl
   have hle : optimum limits sample data seed hx η ≤
       expected limits sample program charge (limits.turns + 1) world := sInf_le hm
   exact ⟨hle.trans htail, hle.trans hmean, hle.trans hbudgetCost,
@@ -278,8 +292,10 @@ theorem competitive (width : ℕ) :
   have hm : expected limits sample program charge (limits.turns + 1) world ∈
       costs limits sample data seed hx η := by
     refine ⟨impl.tapes, impl.Controls, impl.finite, program, ?_, hη.trans hsuccess, rfl⟩
-    exact BatchAdmission.selectionOnly_controller width Private limits sample data seed ell
+    have hs := BatchAdmission.selectionOnly_controller width Private limits sample data seed ell
       hn hw hc hbudget.le he hcut hd hx
+    intro fuel next hn C hC _
+    exact hs fuel next hn C hC rfl
   refine ⟨?_, sInf_le hm⟩
   have hηtop : η ≠ ∞ := ne_top_of_le_ne_top ENNReal.one_ne_top
     (hη.trans (hsuccess.trans (PMF.coe_le_one _ _)))
@@ -292,5 +308,73 @@ theorem competitive (width : ℕ) :
       simp only [div_eq_mul_inv]
       ac_rfl
     _ ≤ _ := hl
+
+/-- Source Theorem 5(2), second sentence, for every admitted native competitor.
+The effective turn count is derived from actual positive-probability batch latency,
+not supplied as a physical turn cap. No independent responses, integrability or
+successful-output representation premise is used. -/
+theorem success_le {k : ℕ} {Control : Type} (hfinite : Finite Control)
+    (limits : Limits n) (sample : Sampler n Private) (data : GuardedStartup.Input)
+    (seed : Private) (hx : Valid data.startup.system)
+    (machine : MultiTapePTM k Bool Control Unit) (b r : ℕ)
+    (hr : ∀ q < r, b * q < (instanceOf data.startup.system hx).ground.card)
+    (p : Set.Icc (0 : ℝ) 1) (c : ℝ≥0∞) (ℓ : ℝ≥0) (hℓ : 0 < ℓ)
+    (H : LowerEnvelopes limits sample data seed hx b (ENNReal.ofReal p) c) :
+    let world := (⟨machine.initialConfig (GuardedStartup.encoding data),
+      ⟨ConcurrentBatch.initial seed, []⟩⟩ :
+        World k Control Unit (ServerState n Private) (GuardedStartup.encoding data))
+    NativeUnboundedExecution.SelectionOnly machine (environment limits sample)
+      (candidateParser (n := n) data.startup.system.rows.length)
+      (decodeFamily data.startup.system.rows.length) (accept data.startup.system hx) world →
+    Deadline.LowerLatency limits sample machine world ℓ →
+    ((NativeUnboundedExecution.terminal machine (environment limits sample) world).map
+      (BatchOutput.certified limits data.startup.system hx)) true ≤ ENNReal.ofReal
+      (∫ j, (if r ≤ j then (1 : ℝ) else 0)
+        ∂ProbabilityTheory.binomial (Deadline.effectiveTurns limits ℓ) p) := by
+  dsimp only
+  intro hselect Hlat
+  let world : World k Control Unit (ServerState n Private) (GuardedStartup.encoding data) :=
+    ⟨machine.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
+  apply (certified_le_accepted limits data.startup.system hx _).trans
+  apply Deadline.success_binomial limits sample machine (finiteInstance data.startup.system hx)
+    b r hr world (NativeBatch.initial_invariant limits seed) rfl
+    (accept data.startup.system hx)
+    (accept_covers data.startup.system hx)
+    hselect
+    (fun t ht o ho => by
+      obtain ⟨hcap, _, _⟩ := H.bounds k Control hfinite machine hselect t ht o ho
+      exact hcap)
+    p ℓ hℓ ?_ Hlat
+  intro t ht o ho
+  have hturn : t < limits.turns + 1 :=
+    (ht.trans_le (min_le_left _ _)).trans (Nat.lt_succ_self _)
+  obtain ⟨_, hprob, _⟩ := H.bounds k Control hfinite machine hselect t hturn o ho
+  exact hprob
+
+/-- Theorem 5(2)'s necessary success-target bound. Feasibility means an actual
+admitted finite-control competitor attains that target; the binomial conclusion
+and the effective physical turn count are both derived. -/
+theorem feasible_success_le (limits : Limits n) (sample : Sampler n Private)
+    (data : GuardedStartup.Input) (seed : Private) (hx : Valid data.startup.system)
+    (η : ℝ≥0∞) (b r : ℕ)
+    (hr : ∀ q < r, b * q < (instanceOf data.startup.system hx).ground.card)
+    (p : Set.Icc (0 : ℝ) 1) (c : ℝ≥0∞) (ℓ : ℝ≥0) (hℓ : 0 < ℓ)
+    (H : LowerEnvelopes limits sample data seed hx b (ENNReal.ofReal p) c)
+    (Hlat : ∀ (k : ℕ) (Control : Type) (_ : Finite Control)
+      (machine : MultiTapePTM k Bool Control Unit),
+      let world := (⟨machine.initialConfig (GuardedStartup.encoding data),
+        ⟨ConcurrentBatch.initial seed, []⟩⟩ :
+          World k Control Unit (ServerState n Private) (GuardedStartup.encoding data))
+      NativeUnboundedExecution.SelectionOnly machine (environment limits sample)
+        (candidateParser (n := n) data.startup.system.rows.length)
+        (decodeFamily data.startup.system.rows.length) (accept data.startup.system hx) world →
+      Deadline.LowerLatency limits sample machine world ℓ)
+    (hfeasible : (costs limits sample data seed hx η).Nonempty) :
+    η ≤ ENNReal.ofReal (∫ j, (if r ≤ j then (1 : ℝ) else 0)
+      ∂ProbabilityTheory.binomial (Deadline.effectiveTurns limits ℓ) p) := by
+  obtain ⟨v, hv⟩ := hfeasible
+  obtain ⟨k, Control, hfinite, machine, hselect, hsuccess, _⟩ := hv
+  exact hsuccess.trans (success_le hfinite limits sample data seed hx machine b r hr p c ℓ hℓ H
+    hselect (Hlat k Control hfinite machine hselect))
 
 end Cslib.Probability.StochasticOracle.NativeRetention.BatchOptimum

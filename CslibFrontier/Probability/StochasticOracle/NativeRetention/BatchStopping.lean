@@ -25,8 +25,12 @@ no finite response alphabet or independent responses are required. Source admiss
 and history authentication are supplied by `BatchAdmission.run_aligned` for the
 constructed native program. This is the pathwise guard/progress connection.
 `BatchReceipts` and `BatchUpper` build its selected-epoch and numerical receipt-cost
-transfer. Complete certified-output success/deadline transfer and the common-oracle
-optimum comparison remain open.
+transfer. `BatchOutput.upper_controller` proves certified halted tape-output
+success/deadline and bill bounds for the same named `BatchPlanner.controller`.
+`BatchOptimum` proves lower/upper/competitive bounds for OPT over admitted
+finite-control selection-only native machines sharing the oracle and seed.
+The fixed block scheduler, original runtime codec and finite opportunity/cutoff
+interface remain material restrictions; unrestricted source coverage is open.
 -/
 
 public section
