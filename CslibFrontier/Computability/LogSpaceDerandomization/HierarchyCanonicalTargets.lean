@@ -84,8 +84,7 @@ theorem stage_pilot_eq_canonical (hD : D ≠ 0) (C : Matrix V V ℝ) :
     HP.toHierarchyParams.pilot (canonicalChannel ident r.terminal.rate)
       (canonicalChannel ident r.terminal.rate) r.terminal.rate C := by
   simp only [pilot_eq]
-  congr 1
-  funext G
+  congr 1 with G : 1
   exact stage_columnDetector_eq_canonical HP D ident r hr hD G
 
 /-- All genuine correction iterates use the same canonical target, with every role and

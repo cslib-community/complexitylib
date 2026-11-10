@@ -410,74 +410,7 @@ private theorem isOraclePPTOn_etmToMACHandler (E : SymmetricCipher) {tagBound : 
       (encPair encBits (encFinEnum Unit))
       (fun pair : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
         etmToMACHandler E pair.1.1.1 (tagBound pair.1.1.1) pair.1.2 pair.2.1 pair.2.2) := by
-  let ECaller := encPair (encPair encUnary encBits) encBits
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  unfold etmToMACHandler
-  have hcond : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        p.2.1.2.length == p.1.1.1)
-      EIn encBool :=
-    (ComputableTidilyInPolyTime.unary_beq
-      (ComputableTidilyInPolyTime.length_bits.comp (by dsimp only [EIn]; fun_prop))
-      (by dsimp only [EIn, ECaller]; fun_prop)).computableInPolyTime
-  have hencArg : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        (p.1.1.1, p.1.2, p.2.1.2))
-      EIn (encPair encUnary (encPair encBits encBits)) := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have henc : IsOraclePPTOn (Operation := Unit) EIn encBits
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        ProbOracleComp.sample (E.encrypt p.1.1.1 p.1.2 p.2.1.2)) :=
-    (E.encrypt_ppt.preprocess hencArg).isOraclePPTOn (Operation := Unit)
-  have hqReq : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool => q.2)
-      (encPair EIn encBits) encBits := by
-    fun_prop
-  have hqN : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        q.1.1.1.1)
-      (encPair EIn encBits) encUnary := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hqLim : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        tagBound q.1.1.1.1)
-      (encPair EIn encBits) encUnary :=
-    htagBound.comp hqN
-  have hq : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits) encBits
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        List.take (tagBound q.1.1.1.1) <$> ProbOracleComp.query ((), q.2)) :=
-    IsOraclePPTOn.query_take' (Operation := Unit) () hqReq hqLim
-  have hpairArg : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool) ×
-          List Bool =>
-        (r.1.2, r.2))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits encBits) := by
-    fun_prop
-  have hmap : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool) ×
-          List Bool =>
-        (encPair encBits encBits (r.1.2, r.2), ()))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits (encFinEnum Unit)) :=
-    ComputableTidilyInPolyTime.prod hpairArg.encoded (ComputableTidilyInPolyTime.const ())
-  have hqMap : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits)
-      (encPair encBits (encFinEnum Unit))
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        (fun tag => (encPair encBits encBits (q.2, tag), ())) <$>
-          (List.take (tagBound q.1.1.1.1) <$> ProbOracleComp.query ((), q.2))) :=
-    hq.map_with hmap
-  have hyes : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits (encFinEnum Unit))
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => do
-        let c ← ProbOracleComp.sample (E.encrypt p.1.1.1 p.1.2 p.2.1.2)
-        (fun tag => (encPair encBits encBits (c, tag), ())) <$>
-          (List.take (tagBound p.1.1.1) <$> ProbOracleComp.query ((), c))) :=
-    henc.bind_with hqMap
-  have hno : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits (encFinEnum Unit))
-      (fun _ : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        pure ([], ())) :=
-    (ComputableInPolyTime.const ([], ())).isOraclePPTOn (Operation := Unit)
-  exact IsOraclePPTOn.cond' hcond hyes hno
+  ppt [etmToMACHandler]
 
 /-- `etmToMACForger` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
 theorem isOraclePPT_etmToMACForger (E : SymmetricCipher) (M : MACScheme) {tagBound : ℕ → ℕ}
@@ -656,7 +589,7 @@ theorem eval_sufCmaGame_etmToMACForger (E : SymmetricCipher) (M : MACScheme)
                M.verify km pair.1 pair.2))) := by
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
     simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-    congr 1; funext ke
+    congr 1 with ke : 1
     simp only [ProbOracleComp.runWith_map, PMF.bind_map, Function.comp_def, Prod.map_fst,
       Prod.map_snd, id_eq]
   simp only [hinner]
@@ -813,77 +746,7 @@ private theorem isOraclePPTOn_etmToOneTimeMACHandler (E : SymmetricCipher) {tagB
       (encPair encBits encBool)
       (fun pair : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
         etmToOneTimeMACHandler E pair.1.1.1 (tagBound pair.1.1.1) pair.1.2 pair.2.1 pair.2.2) := by
-  let ECaller := encPair (encPair encUnary encBits) encBits
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) encBool)
-  unfold etmToOneTimeMACHandler
-  have hcond : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        !p.2.2 && (p.2.1.2.length == p.1.1.1))
-      EIn encBool :=
-    (ComputableTidilyInPolyTime.bool_and.comp
-      ((ComputableTidilyInPolyTime.bool_not.comp (by dsimp only [EIn]; fun_prop)).prod
-        (ComputableTidilyInPolyTime.unary_beq
-          (ComputableTidilyInPolyTime.length_bits.comp (by dsimp only [EIn]; fun_prop))
-          (by dsimp only [EIn, ECaller]; fun_prop)))).computableInPolyTime
-  have hencArg : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        (p.1.1.1, p.1.2, p.2.1.2))
-      EIn (encPair encUnary (encPair encBits encBits)) := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have henc : IsOraclePPTOn (Operation := Unit) EIn encBits
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        ProbOracleComp.sample (E.encrypt p.1.1.1 p.1.2 p.2.1.2)) :=
-    (E.encrypt_ppt.preprocess hencArg).isOraclePPTOn (Operation := Unit)
-  have hqReq : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool => q.2)
-      (encPair EIn encBits) encBits := by
-    fun_prop
-  have hqN : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        q.1.1.1.1)
-      (encPair EIn encBits) encUnary := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hqLim : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        tagBound q.1.1.1.1)
-      (encPair EIn encBits) encUnary :=
-    htagBound.comp hqN
-  have hq : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits) encBits
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        List.take (tagBound q.1.1.1.1) <$> ProbOracleComp.query ((), q.2)) :=
-    IsOraclePPTOn.query_take' (Operation := Unit) () hqReq hqLim
-  have hpairArg : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool) ×
-          List Bool =>
-        (r.1.2, r.2))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits encBits) := by
-    fun_prop
-  have hmap : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool) ×
-          List Bool =>
-        (encPair encBits encBits (r.1.2, r.2), true))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits encBool) :=
-    ComputableTidilyInPolyTime.prod hpairArg.encoded (ComputableTidilyInPolyTime.const true)
-  have hqMap : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits)
-      (encPair encBits encBool)
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        (fun tag => (encPair encBits encBits (q.2, tag), true)) <$>
-          (List.take (tagBound q.1.1.1.1) <$> ProbOracleComp.query ((), q.2))) :=
-    hq.map_with hmap
-  have hyes : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits encBool)
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => do
-        let c ← ProbOracleComp.sample (E.encrypt p.1.1.1 p.1.2 p.2.1.2)
-        (fun tag => (encPair encBits encBits (c, tag), true)) <$>
-          (List.take (tagBound p.1.1.1) <$> ProbOracleComp.query ((), c))) :=
-    henc.bind_with hqMap
-  have hno : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits encBool)
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        pure ([], p.2.2)) :=
-    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by dsimp only [EIn, ECaller]; fun_prop)).isOraclePPTOn (Operation := Unit)
-  exact IsOraclePPTOn.cond' hcond hyes hno
+  ppt [etmToOneTimeMACHandler]
 
 /-- `etmToOneTimeMACForger` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
 theorem isOraclePPT_etmToOneTimeMACForger (E : SymmetricCipher) (M : MACScheme)
@@ -1055,7 +918,7 @@ theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MAC
                M.verify km pair.1 pair.2))) := by
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
     simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-    congr 1; funext ke
+    congr 1 with ke : 1
     simp only [ProbOracleComp.runWith_map, PMF.bind_map, Function.comp_def, Prod.map_fst,
       Prod.map_snd, id_eq]
   simp only [hinner]
@@ -1195,74 +1058,7 @@ private theorem isOraclePPTOn_etmToCPAHandler (M : MACScheme) :
       (encPair encBits (encFinEnum Unit))
       (fun pair : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
         etmToCPAHandler M pair.1.1.1 pair.1.2 pair.2.1 pair.2.2) := by
-  let ECaller := encPair (encPair encUnary encBits) encBits
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  unfold etmToCPAHandler
-  have hqReqTidy : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hnTidy : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => p.1.1.1)
-      EIn encUnary := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hcond : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        ((unframe p.2.1.2).length == p.1.1.1) && ((dropFrame p.2.1.2).length == p.1.1.1))
-      EIn encBool :=
-    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
-  have hqReq : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
-      EIn encBits :=
-    hqReqTidy.computableInPolyTime
-  have hqLim : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => M.msgLen p.1.1.1)
-      EIn encUnary :=
-    M.computableInPolyTime_msgLen_comp hnTidy.computableInPolyTime
-  have hq : IsOraclePPTOn (Operation := Unit) EIn encBits
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        List.take (M.msgLen p.1.1.1) <$> ProbOracleComp.query ((), p.2.1.2)) :=
-    IsOraclePPTOn.query_take' (Operation := Unit) () hqReq hqLim
-  have hsignArg : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        (q.1.1.2, q.2))
-      (encPair EIn encBits) (encPair encBits encBits) := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hsign : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits) encBits
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        ProbOracleComp.sample (M.sign q.1.1.2 q.2)) :=
-    (M.sign_ppt.preprocess hsignArg).isOraclePPTOn (Operation := Unit)
-  have hpairArg : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool) ×
-          List Bool =>
-        (r.1.2, r.2))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits encBits) := by
-    fun_prop
-  have hmap : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool) ×
-          List Bool =>
-        (encPair encBits encBits (r.1.2, r.2), ()))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits (encFinEnum Unit)) :=
-    ComputableTidilyInPolyTime.prod hpairArg.encoded (ComputableTidilyInPolyTime.const ())
-  have hsignMap : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits)
-      (encPair encBits (encFinEnum Unit))
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        (fun tag => (encPair encBits encBits (q.2, tag), ())) <$>
-          ProbOracleComp.sample (M.sign q.1.1.2 q.2)) :=
-    hsign.map_with hmap
-  have hyes : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits (encFinEnum Unit))
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) => do
-        let c ← List.take (M.msgLen p.1.1.1) <$> ProbOracleComp.query ((), p.2.1.2)
-        (fun tag => (encPair encBits encBits (c, tag), ())) <$>
-          ProbOracleComp.sample (M.sign p.1.2 c)) :=
-    hq.bind_with hsignMap
-  have hno : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits (encFinEnum Unit))
-      (fun _ : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Unit) =>
-        pure ([], ())) :=
-    (ComputableInPolyTime.const ([], ())).isOraclePPTOn (Operation := Unit)
-  exact IsOraclePPTOn.cond' hcond hyes hno
+  ppt [etmToCPAHandler]
 
 /-- `etmToCPAAdversary` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
 theorem isOraclePPT_etmToCPAAdversary (M : MACScheme) {adversary : OracleDistinguisher}
@@ -1336,8 +1132,7 @@ theorem isOraclePPT_etmToCPAAdversary (M : MACScheme) {adversary : OracleDisting
           (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (etmToCPAHandler M caller.1.1 caller.2))
-          (adversary caller.1.1 [])).run ()) :=
-    hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))
+          (adversary caller.1.1 [])).run ()) := by ppt
   unfold etmToCPAAdversary
   exact (hkm.bind_with hrunMap).isOraclePPT
 
@@ -1507,79 +1302,7 @@ private theorem isOraclePPTOn_etmToOneTimeCPAHandler (M : MACScheme) :
       (encPair encBits encBool)
       (fun pair : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
         etmToOneTimeCPAHandler M pair.1.1.1 pair.1.2 pair.2.1 pair.2.2) := by
-  let ECaller := encPair (encPair encUnary encBits) encBits
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) encBool)
-  unfold etmToOneTimeCPAHandler
-  have hqReqTidy : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hnTidy : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.1.1.1)
-      EIn encUnary := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hstateTidy : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.2)
-      EIn encBool := by
-    dsimp only [EIn]; fun_prop
-  have hcond : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        !p.2.2 && ((unframe p.2.1.2).length == p.1.1.1) && ((dropFrame p.2.1.2).length == p.1.1.1))
-      EIn encBool :=
-    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
-  have hqReq : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => p.2.1.2)
-      EIn encBits :=
-    hqReqTidy.computableInPolyTime
-  have hqLim : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => M.msgLen p.1.1.1)
-      EIn encUnary :=
-    M.computableInPolyTime_msgLen_comp hnTidy.computableInPolyTime
-  have hq : IsOraclePPTOn (Operation := Unit) EIn encBits
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        List.take (M.msgLen p.1.1.1) <$> ProbOracleComp.query ((), p.2.1.2)) :=
-    IsOraclePPTOn.query_take' (Operation := Unit) () hqReq hqLim
-  have hsignArg : ComputableInPolyTime
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        (q.1.1.2, q.2))
-      (encPair EIn encBits) (encPair encBits encBits) := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hsign : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits) encBits
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        ProbOracleComp.sample (M.sign q.1.1.2 q.2)) :=
-    (M.sign_ppt.preprocess hsignArg).isOraclePPTOn (Operation := Unit)
-  have hpairArg : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool) ×
-          List Bool =>
-        (r.1.2, r.2))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits encBits) := by
-    fun_prop
-  have hmap : ComputableTidilyInPolyTime
-      (fun r : ((((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool) ×
-          List Bool =>
-        (encPair encBits encBits (r.1.2, r.2), true))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits encBool) :=
-    ComputableTidilyInPolyTime.prod hpairArg.encoded (ComputableTidilyInPolyTime.const true)
-  have hsignMap : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits)
-      (encPair encBits encBool)
-      (fun q : (((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool)) × List Bool =>
-        (fun tag => (encPair encBits encBits (q.2, tag), true)) <$>
-          ProbOracleComp.sample (M.sign q.1.1.2 q.2)) :=
-    hsign.map_with hmap
-  have hyes : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits encBool)
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) => do
-        let c ← List.take (M.msgLen p.1.1.1) <$> ProbOracleComp.query ((), p.2.1.2)
-        (fun tag => (encPair encBits encBits (c, tag), true)) <$>
-          ProbOracleComp.sample (M.sign p.1.2 c)) :=
-    hq.bind_with hsignMap
-  have hno : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits encBool)
-      (fun p : ((ℕ × List Bool) × List Bool) × ((Unit × List Bool) × Bool) =>
-        pure ([], p.2.2)) :=
-    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by dsimp only [EIn, ECaller]; fun_prop)).isOraclePPTOn (Operation := Unit)
-  exact IsOraclePPTOn.cond' hcond hyes hno
+  ppt [etmToOneTimeCPAHandler]
 
 /-- `etmToOneTimeCPAAdversary` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
 theorem isOraclePPT_etmToOneTimeCPAAdversary (M : MACScheme) {adversary : OracleDistinguisher}
@@ -1653,8 +1376,7 @@ theorem isOraclePPT_etmToOneTimeCPAAdversary (M : MACScheme) {adversary : Oracle
           (OracleComp.sumHandler
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (etmToOneTimeCPAHandler M caller.1.1 caller.2))
-          (adversary caller.1.1 [])).run false) :=
-    hrun.map' (ComputableInPolyTime.fst encBool encBool)
+          (adversary caller.1.1 [])).run false) := by ppt
   unfold etmToOneTimeCPAAdversary
   exact (hkm.bind_with hrunMap).isOraclePPT
 
@@ -1795,23 +1517,6 @@ theorem advantage_cpaOneTimeGame_encryptThenMAC_eq (E : SymmetricCipher) (M : MA
 
 /-! #### Asymptotic Security of Encrypt-then-MAC (Boneh–Shoup Theorem 9.2) -/
 
-private theorem exists_mac_tag_length_bound (M : MACScheme) :
-    ∃ tagBound : ℕ → ℕ,
-      ComputableInPolyTime tagBound encUnary encUnary ∧
-      ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
-        ∀ c, c.length = M.msgLen n →
-        ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n := by
-  obtain ⟨ck, dk, hlenKey⟩ := M.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlenSign⟩ := M.sign_ppt.length_le
-  have hmsgLen := M.msgLen_polyTime.tidy
-  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds,
-    .of_tidy (by fun_prop), fun n km hkm c hc tag htag => ?_⟩
-  have hkmLen := hlenKey n km hkm
-  have htagLen := hlenSign (km, c) tag htag
-  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hkmLen
-  simp only [length_encPair, encBits_apply, hc] at htagLen
-  exact htagLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
-
 /-- **SUF-CMA security implies Ciphertext Integrity for Encrypt-then-MAC** ([BonehShoup2023],
 Section 9.4.1, Theorem 9.2, Part 1, printed pp. 367–368): if `M` is strongly unforgeable
 (`M.SUFCMA`), then `encryptThenMAC E M hctLen` satisfies `CiphertextIntegrity`. -/
@@ -1821,7 +1526,7 @@ theorem ciphertextIntegrity_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (hmac : M.SUFCMA) :
     (encryptThenMAC E M hctLen).CiphertextIntegrity := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.CiphertextIntegrity.of_negligible
   intro adversary hadversary
   have hmacNeg := hmac.negligible (etmToMACForger E M tagBound adversary)
@@ -1918,7 +1623,7 @@ theorem oneTimeCiphertextIntegrity_encryptThenMAC (E : SymmetricCipher) (M : MAC
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (hmac : M.OneTimeSUFCMA) :
     (encryptThenMAC E M hctLen).OneTimeCiphertextIntegrity := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.OneTimeCiphertextIntegrity.of_negligible
   intro adversary hadversary
   have hmacNeg := hmac.negligible (etmToOneTimeMACForger E M tagBound adversary)
@@ -2151,70 +1856,7 @@ private theorem isOraclePPTOn_cpaToPrfHandler (bit : Bool) :
       (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         cpaToPrfHandler pair.1.1 bit pair.2.1 pair.2.2) := by
-  let ECaller := encPair encUnary encBits
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  unfold cpaToPrfHandler
-  have hqReqTidy : ComputableTidilyInPolyTime
-      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => p.2.1.2)
-      EIn encBits := by
-    dsimp only [EIn]; fun_prop
-  have hnTidy : ComputableTidilyInPolyTime
-      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => p.1.1)
-      EIn encUnary := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hcond : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
-        ((unframe p.2.1.2).length == p.1.1) && ((dropFrame p.2.1.2).length == p.1.1))
-      EIn encBool :=
-    (by fun_prop : ComputableTidilyInPolyTime _ EIn encBool).computableInPolyTime
-  have hr : IsOraclePPTOn (Operation := Unit) EIn encBits
-      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
-        ProbOracleComp.sample (BitString.sampleList p.1.1)) :=
-    (ComputableInPolyTime.sampleList hnTidy.computableInPolyTime).isOraclePPTOn (Operation := Unit)
-  have hqReq : ComputableInPolyTime
-      (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool => q.2)
-      (encPair EIn encBits) encBits := by
-    fun_prop
-  have hqLim : ComputableInPolyTime
-      (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool => q.1.1.1)
-      (encPair EIn encBits) encUnary := by
-    dsimp only [EIn, ECaller]; fun_prop
-  have hq : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits) encBits
-      (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        List.take q.1.1.1 <$> ProbOracleComp.query ((), q.2)) :=
-    IsOraclePPTOn.query_take' (Operation := Unit) () hqReq hqLim
-  have hmsg : ComputableInPolyTime
-      (fun r : (((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool) × List Bool =>
-        if bit then dropFrame r.1.1.2.1.2 else unframe r.1.1.2.1.2)
-      (encPair (encPair EIn encBits) encBits) encBits := by
-    dsimp only [EIn]; cases bit <;> fun_prop
-  have hmap : ComputableInPolyTime
-      (fun r : (((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool) × List Bool =>
-        (r.1.2 ++ List.zipWith xor r.2
-          (if bit then dropFrame r.1.1.2.1.2 else unframe r.1.1.2.1.2), ()))
-      (encPair (encPair EIn encBits) encBits)
-      (encPair encBits (encFinEnum Unit)) :=
-    (ComputableInPolyTime.bitsAppend (by fun_prop)
-      (ComputableInPolyTime.bitsZipWithInput xor (by fun_prop) hmsg)).prod
-      (ComputableInPolyTime.const ())
-  have hqMap : IsOraclePPTOn (Operation := Unit) (encPair EIn encBits)
-      (encPair encBits (encFinEnum Unit))
-      (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × Unit)) × List Bool =>
-        (fun pad => (q.2 ++ List.zipWith xor pad
-          (if bit then dropFrame q.1.2.1.2 else unframe q.1.2.1.2), ())) <$>
-          (List.take q.1.1.1 <$> ProbOracleComp.query ((), q.2))) :=
-    hq.map_with' hmap
-  have hyes : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits (encFinEnum Unit))
-      (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => do
-        let r ← ProbOracleComp.sample (BitString.sampleList p.1.1)
-        (fun pad => (r ++ List.zipWith xor pad
-          (if bit then dropFrame p.2.1.2 else unframe p.2.1.2), ())) <$>
-          (List.take p.1.1 <$> ProbOracleComp.query ((), r))) :=
-    hr.bind_with hqMap
-  have hno : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits (encFinEnum Unit))
-      (fun _ : (ℕ × List Bool) × ((Unit × List Bool) × Unit) => pure ([], ())) :=
-    (ComputableInPolyTime.const ([], ())).isOraclePPTOn (Operation := Unit)
-  exact IsOraclePPTOn.cond' hcond hyes hno
+  ppt [cpaToPrfHandler]
 
 /-- `cpaToPrfDistinguisher` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
 theorem isOraclePPT_cpaToPrfDistinguisher {adversary : OracleDistinguisher}
@@ -2460,7 +2102,7 @@ private theorem run_prfCipherForgetfulWithBadOracle_map_fst (adversary : OracleD
         simp only [Bool.and_eq_true, beq_iff_eq] at hlenEq
         have hmsgLen : (if bit then dropFrame payload else unframe payload).length = n := by
           cases bit <;> simp [hlenEq]
-        congr 1; funext r
+        congr 1 with r : 1
         have hpad :
             (BitString.uniformList n).map
               (fun pad => (r ++ List.zipWith xor (pad.take n)

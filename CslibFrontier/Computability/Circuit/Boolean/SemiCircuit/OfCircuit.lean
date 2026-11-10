@@ -65,8 +65,7 @@ theorem eval_lineGate {g : ℕ} (line : Line (fullSignature 2 Bool) n g) (val : 
       fullInterpretation line.op fun a => val (wireName (line.wires a)) := by
   obtain ⟨op | c, w⟩ := line
   · simp only [lineGate, Gate.eval, Arg.eval_node, fullInterpretation]
-    congr 1
-    funext a
+    congr 1 with a : 1
     obtain ⟨_ | _ | k, ha⟩ := a
     · rfl
     · rfl

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
+import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -30,7 +31,8 @@ the input are stored in logarithmic space.
   `log₂ N + 2` digits.
 * `Turing.MultiTapeTM.length_encNat_le_of_le_pow`: numbers at most `(N + 1) ^ d` have at most
   `(d + 1) * (log₂ N + 1)` digits.
-
+* `Turing.MultiTapeTM.length_encNat_le_of_le_pow_add_two`: the shifted bound for `(N + 2) ^ d`,
+  including an empty original input.
 * `Turing.MultiTapeTM.length_encNat_le_of_le_mul_pow`: the corresponding bound with a
   constant coefficient.
 
@@ -71,6 +73,14 @@ theorem length_encNat_le_of_le_pow {r N d : ℕ} (h : r ≤ (N + 1) ^ d) :
     _ = 2 ^ (d * (Nat.log2 N + 1)) := by rw [← pow_mul, Nat.mul_comm]
     _ < 2 ^ ((d + 1) * (Nat.log2 N + 1)) :=
       Nat.pow_lt_pow_right (by norm_num) (by nlinarith)
+
+/-- A polynomial in `N + 2` has logarithmic binary length, including at `N = 0`. -/
+theorem length_encNat_le_of_le_pow_add_two {r N d : ℕ} (h : r ≤ (N + 2) ^ d) :
+    (encNat r).length ≤ (d + 1) * (Nat.log2 N + 2) := by
+  refine (length_encNat_le_of_le_pow (N := N + 1) h).trans ?_
+  have hlog : Nat.log2 (N + 1) ≤ Nat.log2 N + 1 := by
+    simpa only [Nat.log2_eq_log_two] using Nat.log_add_one_le 2 N
+  exact Nat.mul_le_mul_left _ (by omega)
 
 /-- A number bounded by a constant times a fixed power has logarithmic binary length. -/
 theorem length_encNat_le_of_le_mul_pow {M A D L : ℕ} (h : M ≤ A * (L + 1) ^ D) :

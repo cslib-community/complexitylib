@@ -314,8 +314,7 @@ theorem om_decision (R : ℕ) (i : P) :
 theorem om_decision_eq_decision_succ {R : ℕ} (hR : t + 1 ≤ R) (i : P) :
     (om P t).decision F adv x R i = (om P t).decision F adv x (t + 1) i := by
   rw [om_decision, om_decision]
-  congr 1
-  funext c
+  congr 1 with c : 1
   rw [omValue, omValue, omResolve_state_eq_tree F adv x hR,
     omResolve_state_eq_tree F adv x le_rfl]
 
@@ -327,8 +326,7 @@ theorem solvesByzantineAgreement_om (hn : 3 * t < Fintype.card P) {R : ℕ} (hR 
     (om P t).SolvesByzantineAgreement t R where
   agreement F hF adv x i hi j hj := by
     rw [om_decision, om_decision]
-    congr 1
-    funext c
+    congr 1 with c : 1
     exact omValue_eq_omValue F adv x hF hn hR hi hj c
   validity F hF adv x v hv i hi := by
     rw [om_decision]

@@ -11,10 +11,12 @@ public import CslibFrontier.Crypto.Computational.Nonuniform.Basic
 public import CslibFrontier.Crypto.Computational.PseudorandomGenerator
 public import CslibFrontier.Crypto.Computational.Stretch.Quantitative
 public import CslibFrontier.Languages.Probabilistic.UniformNat
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
@@ -96,8 +98,7 @@ theorem real_hop (generator : List Bool → List Bool) (n total i : ℕ) (hi : i
         iterate generator n (total - (i + 1)) (challenge ++ suffix))) =
       hybrid generator n total i := by
   have hcount : total - i = total - (i + 1) + 1 := by lia
-  simp only [generatorEnsemble, PMF.monad_bind_eq_bind, PMF.bind_map, hybrid,
-    uniformList_add, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm, generatorEnsemble, hybrid, uniformList_add]
   apply PMF.bind_congr_on_support
   intro seed hseed
   congr 1 with suffix : 1
@@ -112,7 +113,7 @@ theorem ideal_hop (generator : List Bool → List Bool) (n total i : ℕ) :
         iterate generator n (total - (i + 1)) (challenge ++ suffix))) =
       hybrid generator n total (i + 1) := by
   rw [hybrid, show n + (i + 1) = (n + 1) + i by lia, uniformList_add (n + 1) i]
-  simp only [PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [pmf_norm]
 
 /-- Embed one challenge at a chosen hop; out-of-range hops reject on both sides. -/
 noncomputable def hop (generator : List Bool → List Bool) (count : ℕ → ℕ)
@@ -206,8 +207,7 @@ theorem eval_reduction (generator : List Bool → List Bool) (count : ℕ → �
     ProbComp.eval (reduction generator count adversary n challenge) =
       (PMF.uniformOfFintype (Fin (2 ^ (Nat.log 2 (count n) + 1)))).bind
         (fun i => ProbComp.eval (hop generator count adversary n i.val challenge)) := by
-  simp only [reduction, ProbComp.eval_bind, eval_sampleBoundedIndex, PMF.bind_map,
-    Function.comp_def, hop_min]
+  simp only [pmf_norm, reduction, eval_sampleBoundedIndex, hop_min]
 
 /-- The real challenge at a fixed hop realizes the earlier hybrid experiment. -/
 theorem eval_real_hop (generator : List Bool → List Bool) (count : ℕ → ℕ)
@@ -223,8 +223,7 @@ theorem eval_real_hop (generator : List Bool → List Bool) (count : ℕ → ℕ
     have h := congrArg (fun distribution : PMF (List Bool) =>
       distribution.bind (fun word => ProbComp.eval (adversary n word)))
       (real_hop generator n (count n) i hi)
-    simpa only [hop, hi, ↓reduceIte, ProbComp.eval_bind, eval_sampleList, PMF.monad_bind_eq_bind,
-      PMF.bind_bind, PMF.bind_map, Function.comp_def] using h
+    simpa only [pmf_norm, hop, hi, ↓reduceIte, eval_sampleList] using h
   · simp [hop, hi, PMF.bind_const]
 
 /-- The ideal challenge at a fixed hop realizes the next hybrid experiment. -/
@@ -241,8 +240,7 @@ theorem eval_ideal_hop (generator : List Bool → List Bool) (count : ℕ → �
     have h := congrArg (fun distribution : PMF (List Bool) =>
       distribution.bind (fun word => ProbComp.eval (adversary n word)))
       (ideal_hop generator n (count n) i)
-    simpa only [hop, hi, ↓reduceIte, ProbComp.eval_bind, eval_sampleList, PMF.monad_bind_eq_bind,
-      PMF.bind_bind, PMF.bind_map, Function.comp_def] using h
+    simpa only [pmf_norm, hop, hi, ↓reduceIte, eval_sampleList] using h
   · simp [hop, hi, PMF.bind_const]
 
 /-- Exact loss of the uniform reduction, including the padded sampling outcomes. -/
@@ -263,8 +261,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     rw [eval_prgRealGame]
     change (generatorEnsemble generator n).bind _ = _
     simp_rw [eval_reduction]
-    rw [PMF.bind_comm]
-    congr 1 with i : 1
+    pmf_swap with i
     exact eval_real_hop generator count adversary n i.val
   have hideal : ProbComp.eval (prgIdealGame (fun n => n + 1)
       (reduction generator count adversary) n) =
@@ -274,8 +271,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     rw [eval_prgIdealGame]
     change (uniformList (n + 1)).bind _ = _
     simp_rw [eval_reduction]
-    rw [PMF.bind_comm]
-    congr 1 with i : 1
+    pmf_swap with i
     exact eval_ideal_hop generator count adversary n i.val
   have havg := Game.advantage_hybrid_average
     (fun i => (hybrid generator n (count n) i).bind

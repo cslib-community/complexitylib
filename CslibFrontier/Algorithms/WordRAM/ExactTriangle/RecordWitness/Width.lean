@@ -57,6 +57,24 @@ theorem outputBase_lt_window {m n Q : ℕ} (hN : D m ^ 18 ≤ n) :
     omega
   exact (hout.trans hword).trans_lt (CallableProduct.source_admission hN).2.2
 
+/-- Every pointer and temporary of a per-record caller fits from the original producer word
+bound and the actual chunk count, once the caller's output slice `out` precedes the product
+window. Shared by the plain and box witness callers, which differ only in that slice. -/
+theorem physical_fits_of_lt_window {w n d g p A heap Q out : ℕ}
+    (hheap : heap ≤ PreparationInput.wordBound n d g p A) (hQ : Q ≤ n ^ 2)
+    (hout : out < CallableProduct.windowSize n Q) (hW : admissionWidth n d g p A ≤ w + 2) :
+    Fits (w + 2) (4 * heap + 4 * CallableProduct.windowSize n Q + out + 4 * Q + 4 * d +
+      2 * (n * d) + 9 * (n * n) + 4 * n + g + 4096) := by
+  have hwindow : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) :=
+    CallableProduct.windowSize_mono_right n hQ
+  have hout := hout.le.trans hwindow
+  have he : Fits (w + 2) (envelope n d g p A) := by
+    exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
+  apply he.of_le
+  unfold envelope
+  rw [pow_two] at hQ hwindow hout ⊢
+  omega
+
 /-- Every pointer and temporary of the actual per-record caller fits from the original
 producer word bound and the actual chunk count. No intermediate fit certificate is supplied. -/
 theorem physical_fits {w m n g p A heap Q : ℕ}
@@ -65,16 +83,8 @@ theorem physical_fits {w m n g p A heap Q : ℕ}
     (hW : admissionWidth n (D m) g p A ≤ w + 2) :
     Fits (w + 2) (4 * heap + 4 * CallableProduct.windowSize n Q +
       QueriedProduct.outputBase (19 * m) m n Q + 4 * Q + 4 * D m +
-      2 * (n * D m) + 9 * (n * n) + 4 * n + g + 4096) := by
-  have hwindow : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) :=
-    CallableProduct.windowSize_mono_right n hQ
-  have hout := (outputBase_lt_window (Q := Q) hN).le.trans hwindow
-  have he : Fits (w + 2) (envelope n (D m) g p A) := by
-    exact fits_of_clog_lt (by unfold admissionWidth at hW; omega)
-  apply he.of_le
-  unfold envelope
-  rw [pow_two] at hQ hwindow hout ⊢
-  omega
+      2 * (n * D m) + 9 * (n * n) + 4 * n + g + 4096) :=
+  physical_fits_of_lt_window hheap hQ (outputBase_lt_window hN) hW
 
 /-- Two signed additions use the original envelope `2A`; the physical compiler extension
 is included in the same original-input threshold. -/

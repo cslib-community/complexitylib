@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.RepeatedExtraction
 public import CslibFrontier.Languages.Probabilistic.LinearHash
 import CslibFrontier.Computability.Probabilistic.LinearHash
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -116,9 +117,8 @@ theorem eval_extractMatrixLabels {Observation Label : Type} (inputBits outputBit
   have hrow (word : List Bool) : listRow inputBits 0 word =
       List.ofFn (ofList inputBits word) :=
     listRow_eq_ofFn inputBits (0 : Fin 1) word
-  simp only [extractMatrixLabels, extractLabels, bind_pure_comp, ProbComp.eval_map,
-    ProbComp.eval_uniform, eval_sampleList, uniformList, PMF.map_comp, Function.comp_def,
-    hrow, LinearHash.wordHash_eq_ofFn, ofList_ofFn, blocksEquiv_apply]
+  simp only [pmf_norm, extractMatrixLabels, extractLabels, bind_pure_comp, ProbComp.eval_uniform,
+    eval_sampleList, uniformList, hrow, LinearHash.wordHash_eq_ofFn, ofList_ofFn, blocksEquiv_apply]
 
 /-- The ideal word program agrees with the finite ideal distribution, retaining the full seed. -/
 theorem eval_extractMatrixLabelsIdeal {Observation : Type} (source : ProbComp Observation)
@@ -131,7 +131,7 @@ theorem eval_extractMatrixLabelsIdeal {Observation : Type} (source : ProbComp Ob
   simp only [extractMatrixLabelsIdeal, ProbComp.eval_bind, ProbComp.eval_pure,
     extractLabelsIdeal, ProbComp.eval_uniform, eval_sampleList, uniformList,
     Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind]
-  simp only [PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm]
 
 /-- In the ideal experiment, the public matrix seed and digest together form one uniform word.
 The continuation may depend on all retained observations. -/
@@ -148,7 +148,7 @@ theorem eval_extractMatrixLabelsIdeal_bind {Observation Output : Type}
   simp only [extractMatrixLabelsIdeal, ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList]
   rw [uniformList_add]
-  simp only [PMF.bind_bind, PMF.bind_map, PMF.pure_bind, Function.comp_def]
+  simp only [pmf_norm]
 
 /-- An independently uniform ideal hash can be sampled after processing the observations. -/
 theorem eval_extractMatrixLabelsIdeal_append {Observation : Type}
@@ -165,8 +165,7 @@ theorem eval_extractMatrixLabelsIdeal_append {Observation : Type}
           return front ++ suffix) := by
   rw [eval_extractMatrixLabelsIdeal_bind source count inputBits outputBits
     (fun observations suffix => (fun front => front ++ suffix) <$> next observations)]
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    BitString.eval_sampleList]
+  simp only [pmf_norm, BitString.eval_sampleList]
   congr 1 with observations : 1
   simp only [PMF.map, Function.comp_def]
   rw [PMF.bind_comm]

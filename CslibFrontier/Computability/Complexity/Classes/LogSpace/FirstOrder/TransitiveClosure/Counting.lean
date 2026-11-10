@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Loop
 public import CslibFrontier.Algorithms.Reachability.InductiveCounting.Semantics
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # Inductive counting for negated closures
@@ -387,9 +388,8 @@ private theorem scan_enter (hw : w₁ = b + 14 + 5 * k + wb.length)
     (hx : x < n ^ k) :
     P.Reaches w (P.Oblivious B) (b + 3, 0 :: regs) (b + 5, 0 :: regs) := by
   obtain ⟨-, -, -, h4, h5, -⟩ := countTestCode_parts hw hP
-  refine Reaches.slt h4 (Nat.zero_le B) hB ?_
-  rw [ite_eq_left (by simp only [eval_reg, eval_pow, h0, hX]; exact hx)]
-  exact reaches_noop h5 hB
+  cp_step [h0, hX, hx]
+  cp_step
 
 private theorem scan_leave (hw : w₁ = b + 14 + 5 * k + wb.length)
     (hP : P.CodeAt b (countTestCode b base k src wb et ef T R)) {x : ℕ} {regs : List ℕ}
@@ -398,9 +398,7 @@ private theorem scan_leave (hw : w₁ = b + 14 + 5 * k + wb.length)
     P.Reaches w (P.Oblivious B) (b + 3, 0 :: regs)
       (w₁ + 10 + et.length + ef.length, 0 :: regs) := by
   obtain ⟨-, -, -, h4, -⟩ := countTestCode_parts hw hP
-  refine Reaches.slt h4 (Nat.zero_le B) hB ?_
-  rw [ite_eq_right (by simp only [eval_reg, eval_pow, h0, hX]; omega)]
-  exact Reaches.refl _
+  cp_step [h0, hX, Nat.not_lt.mpr hx]
 
 private theorem scan_post {i y x m : ℕ} {regsT regs : List ℕ} (hy : y < n ^ k)
     (hinv : ScanInv B base E s₀ i y x m (countRound E s₀ i) regsT regs) :
@@ -626,13 +624,15 @@ private theorem scan_mid (hw : w₁ = b + 14 + 5 * k + wb.length)
     {Sel : Finset ℕ} {regsT regs regs₂ regs₃ : List ℕ}
     (hpre : TestPre B base E s₀ regs₀ i y regsT) (hinv : ScanInv B base E s₀ i y x x Sel regsT regs)
     (hmem : x ∈ countRound E s₀ i) (hk₂ : Kept B (base + 7) regs regs₂)
-    (hk₃ : Kept B (base + 7 + 2 * k) regs₂ regs₃) :
+    (hk₃ : Kept B (base + 7 + 2 * k) regs₂ regs₃) {xs ys : Fin k → Fin n}
+    (hxs : ∀ j : Fin k, regs₂.getD (base + 7 + j) 0 = xs j)
+    (hys : ∀ j : Fin k, regs₂.getD (base + 7 + k + j) 0 = ys j) :
     ∃ regs₄, P.Reaches w (P.Oblivious B) (w₁, 0 :: regs₃) (w₁ + 2, 0 :: regs₄) ∧
       Kept B (base + 5) regs regs₄ ∧ Kept B base regs₀ regs₄ ∧ base + 9 + 4 * k ≤ regs₄.length ∧
       regs₄.getD (base + 4) 0 = x ∧ regs₄.getD (base + 3) 0 = y ∧
       regs₄.getD (base + 5) 0 = Sel.card + 1 ∧ regs₄.getD (base + 6) 0 = regs.getD (base + 6) 0 ∧
-      (∀ j : Fin k, regs₄.getD (base + 7 + j) 0 = regs₂.getD (base + 7 + j) 0) ∧
-      ∀ j : Fin k, regs₄.getD (base + 7 + k + j) 0 = regs₂.getD (base + 7 + k + j) 0 := by
+      (∀ j : Fin k, regs₄.getD (base + 7 + j) 0 = xs j) ∧
+      ∀ j : Fin k, regs₄.getD (base + 7 + k + j) 0 = ys j := by
   obtain ⟨hkR, hlen, -, -, -, hY⟩ := scan_facts hpre hinv
   obtain ⟨-, hX, hsub, hlt, hS, -⟩ := hinv
   have hx : x ∉ Sel := fun h => Nat.lt_irrefl _ (hlt x h)
@@ -651,9 +651,9 @@ private theorem scan_mid (hw : w₁ = b + 14 + 5 * k + wb.length)
     fun j => ?_, fun j => ?_⟩
   · rw [hout₄ _ (by omega), hk₃.2.1 _ (by omega), hk₂.2.1 _ (by omega)]
   · have := j.isLt
-    rw [hout₄ _ (by omega), hk₃.2.1 _ (by omega)]
+    rw [hout₄ _ (by omega), hk₃.2.1 _ (by omega), hxs]
   · have := j.isLt
-    rw [hout₄ _ (by omega), hk₃.2.1 _ (by omega)]
+    rw [hout₄ _ (by omega), hk₃.2.1 _ (by omega), hys]
 
 private theorem scan_next_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
     (hP : P.CodeAt b (countTestCode b base k src wb et ef T R)) (hB1 : 1 ≤ B) {i y x : ℕ}
@@ -738,11 +738,8 @@ private theorem scan_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
       (by rw [hk₂.2.1 _ (by omega)]; exact hinv.2.1) hxs).bind fun regs₃ ⟨hk₃, hpath⟩ => ?_)
     have hmem : x ∈ countRound E s₀ i := by rw [← hxs]; exact mem_countRound_iff.mpr hpath
     obtain ⟨regs₄, hr₄, hk₄, hk₀₄, hlen₄, hX₄, hY₄, hS₄, hH₄, hxs₄, hys₄⟩ :=
-      scan_mid (w := w) hw hP hNB hpre hinv hmem hk₂ hk₃
+      scan_mid (w := w) hw hP hNB hpre hinv hmem hk₂ hk₃ hxs₂ hys₂
     have hB₄ := hk₄.2.2
-    have hxs₄' : ∀ j : Fin k, regs₄.getD (base + 7 + j) 0 = xs j := fun j => (hxs₄ j).trans (hxs₂ j)
-    have hys₄' : ∀ j : Fin k, regs₄.getD (base + 7 + k + j) 0 = ys j := fun j =>
-      (hys₄ j).trans (hys₂ j)
     have hedge : codeEdge E x y = true ↔ E xs ys := by rw [← hxs, ← hys]; exact codeEdge_code xs ys
     have hlenH : base + 7 ≤ (regs₄.set (base + 6) 1).length := by
       rw [List.length_set]; omega
@@ -755,7 +752,7 @@ private theorem scan_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
           exact hnext _ _ (scanInv_hit hinv hmem hk₄ hS₄ (by omega) hB1 (Or.inl hxy)) hlenH
         · exact Sound.of_oblivious hB1 (reaches_dist_ne h15 hB₄ (by rw [hX₄, hY₄]; exact hxy))
             (Sound.halt hB1 hR (fun _ => hPost _ rfl) hB₄)
-      · refine (het regs₄ xs ys hk₀₄ hxs₄' hys₄').bind fun regs₅ ⟨hk₅, hE⟩ => ?_
+      · refine (het regs₄ xs ys hk₀₄ hxs₄ hys₄).bind fun regs₅ ⟨hk₅, hE⟩ => ?_
         have hk₄₅ : Kept B (base + 5) regs regs₅ := hk₄.trans (hk₅.mono (by omega))
         refine Sound.of_oblivious hB1 (reaches_setH h17 hB1 hk₅.2.2) ?_
         exact hnext _ _ (scanInv_hit hinv hmem hk₄₅ (by rw [hk₅.2.1 _ (by omega), hS₄])
@@ -766,7 +763,7 @@ private theorem scan_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
       · exact Sound.of_oblivious hB1 (reaches_dist_eq h19 hB₄ (by rw [hX₄, hY₄, hxy]))
           (Sound.halt hB1 hR (fun _ => hPost _ rfl) hB₄)
       refine Sound.of_oblivious hB1 (reaches_dist_ne h19 hB₄ (by rw [hX₄, hY₄]; exact hxy))
-        ((hef regs₄ xs ys hk₀₄ hxs₄' hys₄').bind fun regs₅ ⟨hk₅, hE⟩ => ?_)
+        ((hef regs₄ xs ys hk₀₄ hxs₄ hys₄).bind fun regs₅ ⟨hk₅, hE⟩ => ?_)
       have hk₄₅ : Kept B (base + 5) regs regs₅ := hk₄.trans (hk₅.mono (by omega))
       exact hnext _ _ (scanInv_nohit hinv hmem hk₄₅ (by rw [hk₅.2.1 _ (by omega), hS₄])
         (by rw [hk₅.2.1 _ (by omega), hH₄]) fun h => h.elim hxy fun h' => hE (hedge.mp h'))
@@ -840,12 +837,8 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
         (by rw [hk₂.2.1 _ (by omega)]; exact hI) hiB
         (by rw [hk₂.2.1 _ (by omega)]; exact hinv.2.1) hxs hpath).bind fun regs₃ hk₃ => ?_)
       obtain ⟨regs₄, hr₄, hk₄, hk₀₄, hlen₄, hX₄, hY₄, hS₄, hH₄, hxs₄, hys₄⟩ :=
-        scan_mid (w := w) hw hP hNB hpre hinv hmem hk₂ hk₃
+        scan_mid (w := w) hw hP hNB hpre hinv hmem hk₂ hk₃ hxs₂ hys₂
       have hB₄ := hk₄.2.2
-      have hxs₄' : ∀ j : Fin k, regs₄.getD (base + 7 + j) 0 = xs j := fun j =>
-        (hxs₄ j).trans (hxs₂ j)
-      have hys₄' : ∀ j : Fin k, regs₄.getD (base + 7 + k + j) 0 = ys j := fun j =>
-        (hys₄ j).trans (hys₂ j)
       have hedge : codeEdge E x y = true ↔ E xs ys := by
         rw [← hxs, ← hys]; exact codeEdge_code xs ys
       have hlenH : base + 7 ≤ (regs₄.set (base + 6) 1).length := by
@@ -859,7 +852,7 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
       by_cases hE : E xs ys
       · refine Complete.choice hr₄ (by omega) h12 (Or.inl ?_)
         refine Complete.choice (reaches_noop h13 hB₄) (by omega) h14 (Or.inr ?_)
-        refine (het regs₄ xs ys hk₀₄ hxs₄' hys₄' hE).bind fun regs₅ hk₅ => ?_
+        refine (het regs₄ xs ys hk₀₄ hxs₄ hys₄ hE).bind fun regs₅ hk₅ => ?_
         have hk₄₅ : Kept B (base + 5) regs regs₅ := hk₄.trans (hk₅.mono (by omega))
         refine Complete.of_oblivious (reaches_setH h17 hB1 hk₅.2.2) ?_
         exact hnext _ (scanInv_hit hinv hmem hk₄₅ (by rw [hk₅.2.1 _ (by omega), hS₄])
@@ -867,7 +860,7 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
           (by rw [List.length_set, hk₄₅.1]; omega)
       · refine Complete.choice hr₄ (by omega) h12 (Or.inr ?_)
         refine Complete.of_oblivious (reaches_dist_ne h19 hB₄ (by rw [hX₄, hY₄]; exact hxy))
-          ((hef regs₄ xs ys hk₀₄ hxs₄' hys₄' hE).bind fun regs₅ hk₅ => ?_)
+          ((hef regs₄ xs ys hk₀₄ hxs₄ hys₄ hE).bind fun regs₅ hk₅ => ?_)
         have hk₄₅ : Kept B (base + 5) regs regs₅ := hk₄.trans (hk₅.mono (by omega))
         exact hnext _ (scanInv_nohit hinv hmem hk₄₅ (by rw [hk₅.2.1 _ (by omega), hS₄])
           (by rw [hk₅.2.1 _ (by omega), hH₄]) fun h => h.elim hxy fun h' => hE (hedge.mp h'))
@@ -962,6 +955,80 @@ private def YInv (i y : ℕ) (regs : List ℕ) : Prop :=
     regs.getD (base + 2) 0 = prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y ∧
     regs.getD (base + 3) 0 = y
 
+/-- The exit of the candidate loop at `y = n ^ k`: store the size of round `i + 1` and advance
+to the next round head. -/
+private theorem count_y_exit (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
+    (hbase : 0 < base) (hNB : n ^ k ≤ B) {i y : ℕ} {regs : List ℕ}
+    (hinv : YInv B base E s₀ regs₀ i y regs) (hy : n ^ k ≤ y) :
+    ∃ regs', P.Reaches w (P.Oblivious B) (b + 5, 0 :: regs) (b + 2, 0 :: regs') ∧
+      RoundInv B base E s₀ regs₀ (i + 1) regs' := by
+  obtain ⟨-, -, -, -, -, c6, -, -, -, c10, c11, -⟩ := countCode_parts hP
+  obtain ⟨⟨hk, hlen, h0, hI, -, -⟩, hi1, hD, hY⟩ := hinv
+  have hfull : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y =
+      (countRound E s₀ (i + 1)).card := InductiveCounting.prefixCount_of_le (by omega)
+  have hcB : (countRound E s₀ (i + 1)).card ≤ B := card_countRound_le.trans hNB
+  obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w) (v := (countRound E s₀ (i + 1)).card) c10
+    (by rw [eval_reg, hD, hfull]) hcB hk.2.2
+  obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := i + 1) c11
+    (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hI]) (by omega) hB₁
+  have hB := hk.2.2
+  refine ⟨_, Reaches.trans ?_ (hr₁.trans hr₂), ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · cp_step [hY, h0, Nat.not_lt.mpr hy]
+  · exact (hk.set_right (by omega) hcB).set_right le_rfl (by omega)
+  · simp only [List.length_set]; omega
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
+  · exact List.getD_set_self (by simp only [List.length_set]; omega)
+  · omega
+  · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega)]
+
+/-- Entering the test of a candidate `y < n ^ k`: the state before the test. -/
+private theorem count_y_enter (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
+    {i y : ℕ} {regs : List ℕ} (hinv : YInv B base E s₀ regs₀ i y regs) (hy : y < n ^ k) :
+    P.Reaches w (P.Oblivious B) (b + 5, 0 :: regs) (b + 6, 0 :: regs) ∧
+      TestPre B base E s₀ regs₀ i y regs := by
+  obtain ⟨-, -, -, -, -, c6, -⟩ := countCode_parts hP
+  obtain ⟨⟨hk, hlen, h0, hI, -, hC⟩, hi1, -, hY⟩ := hinv
+  have hB := hk.2.2
+  refine ⟨?_, hk, hlen, h0, hI, by omega, hC, hY, hy⟩
+  cp_step [hY, h0, hy]
+
+/-- After the test of `y`: add its outcome to the prefix count and advance to the candidate
+`y + 1`. -/
+private theorem count_y_record (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
+    (hNB : n ^ k ≤ B) {i y : ℕ} {regs regs' : List ℕ}
+    (hinv : YInv B base E s₀ regs₀ i y regs) (hy : y < n ^ k)
+    (hk' : Kept B (base + 4) regs regs')
+    (hH : regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) :
+    ∃ regs'', P.Reaches w (P.Oblivious B) (b + t₁.length + 6, 0 :: regs') (b + 5, 0 :: regs'') ∧
+      YInv B base E s₀ regs₀ i (y + 1) regs'' := by
+  obtain ⟨-, -, -, -, -, -, -, c8, c9, -⟩ := countCode_parts hP
+  obtain ⟨⟨hk, hlen, h0, hI, hi, hC⟩, hi1, hD, hY⟩ := hinv
+  have hlen' : regs'.length = regs.length := hk'.1
+  have hD' : regs'.getD (base + 2) 0 =
+      prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y := by
+    rw [hk'.2.1 _ (by omega), hD]
+  have hY' : regs'.getD (base + 3) 0 = y := by rw [hk'.2.1 _ (by omega), hY]
+  have hcard : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1) =
+      prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y +
+        if y ∈ countRound E s₀ (i + 1) then 1 else 0 :=
+    InductiveCounting.prefixCount_succ y
+  have hcB : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1) ≤ B :=
+    InductiveCounting.prefixCount_le.trans hNB
+  obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w)
+    (v := prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1)) c8
+    (by rw [eval_add, eval_reg, eval_reg, hD', hH, hcard]) hcB hk'.2.2
+  obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := y + 1) c9
+    (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hY']) (by omega) hB₁
+  refine ⟨_, hr₁.trans hr₂, ⟨?_, ?_, ?_, ?_, hi, ?_⟩, hi1, ?_, ?_⟩
+  · exact ((hk.trans (hk'.mono (by omega))).set_right (by omega) hcB).set_right (by omega)
+      (by omega)
+  · simp only [List.length_set]; omega
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 0 (by omega), h0]
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 _ (by omega), hI]
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 _ (by omega), hC]
+  · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega)]
+  · exact List.getD_set_self (by simp only [List.length_set]; omega)
+
 private theorem count_y_sound (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
     (hbase : 0 < base) (hB1 : 1 ≤ B) (hNB : n ^ k ≤ B)
     (ht₁ : ∀ i y regs, TestPre B base E s₀ regs₀ i y regs →
@@ -972,65 +1039,18 @@ private theorem count_y_sound (hP : P.CodeAt b (countCode b base k dst t₁ t₂
     (hnext : ∀ regs, RoundInv B base E s₀ regs₀ (i + 1) regs → Sound P w B Post (b + 2) regs T G) :
     ∀ e y regs, n ^ k - y = e → YInv B base E s₀ regs₀ i y regs →
       Sound P w B Post (b + 5) regs T G := by
-  obtain ⟨-, -, -, -, -, c6, -, c8, c9, c10, c11, -⟩ := countCode_parts hP
   intro e
   induction e with
   | zero =>
     intro y regs he hinv
-    obtain ⟨⟨hk, hlen, h0, hI, -, -⟩, hi1, hD, hY⟩ := hinv
-    have hfull : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y =
-        (countRound E s₀ (i + 1)).card := InductiveCounting.prefixCount_of_le (by omega)
-    have hcB : (countRound E s₀ (i + 1)).card ≤ B := card_countRound_le.trans hNB
-    obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w) (v := (countRound E s₀ (i + 1)).card) c10
-      (by rw [eval_reg, hD, hfull]) hcB hk.2.2
-    obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := i + 1) c11
-      (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hI]) (by omega) hB₁
-    refine Sound.of_oblivious hB1 ((Reaches.slt c6 (Nat.zero_le B) hk.2.2 ?_).trans
-      (hr₁.trans hr₂)) (hnext _ ⟨?_, ?_, ?_, ?_, ?_, ?_⟩)
-    · rw [ite_eq_right (by rw [eval_reg, eval_pow, eval_reg, hY, h0]; omega)]
-      exact Reaches.refl _
-    · exact (hk.set_right (by omega) hcB).set_right le_rfl (by omega)
-    · simp only [List.length_set]; omega
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
-    · exact List.getD_set_self (by simp only [List.length_set]; omega)
-    · omega
-    · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega)]
+    obtain ⟨regs', hr, hinv'⟩ := count_y_exit (w := w) hP hbase hNB hinv (by omega)
+    exact Sound.of_oblivious hB1 hr (hnext _ hinv')
   | succ e ih =>
     intro y regs he hinv
-    obtain ⟨⟨hk, hlen, h0, hI, hi, hC⟩, hi1, hD, hY⟩ := hinv
-    have hy : y < n ^ k := by omega
-    have hpre : TestPre B base E s₀ regs₀ i y regs :=
-      ⟨hk, hlen, h0, hI, by omega, hC, hY, hy⟩
-    refine Sound.of_oblivious hB1 (Reaches.slt c6 (Nat.zero_le B) hk.2.2 ?_)
-      ((ht₁ i y regs hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
-    · rw [ite_eq_left (by rw [eval_reg, eval_pow, eval_reg, hY, h0]; exact hy)]
-      exact Reaches.refl _
-    have hlen' : regs'.length = regs.length := hk'.1
-    have hD' : regs'.getD (base + 2) 0 =
-        prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y := by
-      rw [hk'.2.1 _ (by omega), hD]
-    have hY' : regs'.getD (base + 3) 0 = y := by rw [hk'.2.1 _ (by omega), hY]
-    have hcard : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1) =
-        prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y +
-          if y ∈ countRound E s₀ (i + 1) then 1 else 0 :=
-      InductiveCounting.prefixCount_succ y
-    have hcB : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1) ≤ B :=
-      InductiveCounting.prefixCount_le.trans hNB
-    obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w)
-      (v := prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1)) c8
-      (by rw [eval_add, eval_reg, eval_reg, hD', hH, hcard]) hcB hk'.2.2
-    obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := y + 1) c9
-      (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hY']) (by omega) hB₁
-    refine Sound.of_oblivious hB1 (hr₁.trans hr₂) (ih (y + 1) _ (by omega)
-      ⟨⟨?_, ?_, ?_, ?_, hi, ?_⟩, hi1, ?_, ?_⟩)
-    · exact ((hk.trans (hk'.mono (by omega))).set_right (by omega) hcB).set_right (by omega)
-        (by omega)
-    · simp only [List.length_set]; omega
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 0 (by omega), h0]
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 _ (by omega), hI]
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 _ (by omega), hC]
-    · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega)]
-    · exact List.getD_set_self (by simp only [List.length_set]; omega)
+    obtain ⟨hr, hpre⟩ := count_y_enter (w := w) hP hinv (by omega)
+    refine Sound.of_oblivious hB1 hr ((ht₁ i y regs hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
+    obtain ⟨regs'', hr', hinv'⟩ := count_y_record (w := w) hP hNB hinv (by omega) hk' hH
+    exact Sound.of_oblivious hB1 hr' (ih (y + 1) _ (by omega) hinv')
 
 private theorem count_y_complete (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
     (hbase : 0 < base) (hNB : n ^ k ≤ B)
@@ -1042,79 +1062,63 @@ private theorem count_y_complete (hP : P.CodeAt b (countCode b base k dst t₁ t
     (hnext : ∀ regs, RoundInv B base E s₀ regs₀ (i + 1) regs → Complete P w (b + 2) regs T G) :
     ∀ e y regs, n ^ k - y = e → YInv B base E s₀ regs₀ i y regs →
       Complete P w (b + 5) regs T G := by
-  obtain ⟨-, -, -, -, -, c6, -, c8, c9, c10, c11, -⟩ := countCode_parts hP
   intro e
   induction e with
   | zero =>
     intro y regs he hinv
-    obtain ⟨⟨hk, hlen, h0, hI, -, -⟩, hi1, hD, hY⟩ := hinv
-    have hfull : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y =
-        (countRound E s₀ (i + 1)).card := InductiveCounting.prefixCount_of_le (by omega)
-    have hcB : (countRound E s₀ (i + 1)).card ≤ B := card_countRound_le.trans hNB
-    obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w) (v := (countRound E s₀ (i + 1)).card) c10
-      (by rw [eval_reg, hD, hfull]) hcB hk.2.2
-    obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := i + 1) c11
-      (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hI]) (by omega) hB₁
-    refine Complete.of_oblivious ((Reaches.slt c6 (Nat.zero_le B) hk.2.2 ?_).trans
-      (hr₁.trans hr₂)) (hnext _ ⟨?_, ?_, ?_, ?_, ?_, ?_⟩)
-    · rw [ite_eq_right (by rw [eval_reg, eval_pow, eval_reg, hY, h0]; omega)]
-      exact Reaches.refl _
-    · exact (hk.set_right (by omega) hcB).set_right le_rfl (by omega)
-    · simp only [List.length_set]; omega
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
-    · exact List.getD_set_self (by simp only [List.length_set]; omega)
-    · omega
-    · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega)]
+    obtain ⟨regs', hr, hinv'⟩ := count_y_exit (w := w) hP hbase hNB hinv (by omega)
+    exact Complete.of_oblivious hr (hnext _ hinv')
   | succ e ih =>
     intro y regs he hinv
-    obtain ⟨⟨hk, hlen, h0, hI, hi, hC⟩, hi1, hD, hY⟩ := hinv
-    have hy : y < n ^ k := by omega
-    have hpre : TestPre B base E s₀ regs₀ i y regs :=
-      ⟨hk, hlen, h0, hI, by omega, hC, hY, hy⟩
-    refine Complete.of_oblivious (Reaches.slt c6 (Nat.zero_le B) hk.2.2 ?_)
-      ((ht₁ i y regs hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
-    · rw [ite_eq_left (by rw [eval_reg, eval_pow, eval_reg, hY, h0]; exact hy)]
-      exact Reaches.refl _
-    have hlen' : regs'.length = regs.length := hk'.1
-    have hD' : regs'.getD (base + 2) 0 =
-        prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y := by
-      rw [hk'.2.1 _ (by omega), hD]
-    have hY' : regs'.getD (base + 3) 0 = y := by rw [hk'.2.1 _ (by omega), hY]
-    have hcard : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1) =
-        prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y +
-          if y ∈ countRound E s₀ (i + 1) then 1 else 0 :=
-      InductiveCounting.prefixCount_succ y
-    have hcB : prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1) ≤ B :=
-      InductiveCounting.prefixCount_le.trans hNB
-    obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w)
-      (v := prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i (y + 1)) c8
-      (by rw [eval_add, eval_reg, eval_reg, hD', hH, hcard]) hcB hk'.2.2
-    obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := y + 1) c9
-      (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hY']) (by omega) hB₁
-    refine Complete.of_oblivious (hr₁.trans hr₂) (ih (y + 1) _ (by omega)
-      ⟨⟨?_, ?_, ?_, ?_, hi, ?_⟩, hi1, ?_, ?_⟩)
-    · exact ((hk.trans (hk'.mono (by omega))).set_right (by omega) hcB).set_right (by omega)
-        (by omega)
-    · simp only [List.length_set]; omega
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 0 (by omega), h0]
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 _ (by omega), hI]
-    · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hk'.2.1 _ (by omega), hC]
-    · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega)]
-    · exact List.getD_set_self (by simp only [List.length_set]; omega)
+    obtain ⟨hr, hpre⟩ := count_y_enter (w := w) hP hinv (by omega)
+    refine Complete.of_oblivious hr ((ht₁ i y regs hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
+    obtain ⟨regs'', hr', hinv'⟩ := count_y_record (w := w) hP hNB hinv (by omega) hk' hH
+    exact Complete.of_oblivious hr' (ih (y + 1) _ (by omega) hinv')
 
-/-- `Y := code z₀` at the end of the rounds, and the final test of it against round `n ^ k`. -/
-private theorem count_final {i : ℕ} {regs : List ℕ} (hbase : 0 < base) (hNB : n ^ k ≤ B)
+/-- Entering the candidate loop of round `i` with `i + 1 < n ^ k`: clear the prefix count and the
+candidate. -/
+private theorem count_round_enter (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
+    (hbase : 0 < base) {i : ℕ} {regs : List ℕ}
+    (hinv : RoundInv B base E s₀ regs₀ i regs) (hlt : i + 1 < n ^ k) :
+    ∃ regs', P.Reaches w (P.Oblivious B) (b + 2, 0 :: regs) (b + 5, 0 :: regs') ∧
+      YInv B base E s₀ regs₀ i 0 regs' := by
+  obtain ⟨-, -, c3, c4, c5, -⟩ := countCode_parts hP
+  obtain ⟨hk, hlen, h0, hI, hi, hC⟩ := hinv
+  obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w) (v := 0) c4 rfl (Nat.zero_le B) hk.2.2
+  obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := 0) c5 rfl (Nat.zero_le B) hB₁
+  have hB := hk.2.2
+  refine ⟨_, Reaches.trans ?_ (hr₁.trans hr₂), ⟨?_, ?_, ?_, ?_, hi, ?_⟩, hlt, ?_, ?_⟩
+  · cp_step [hI, h0, hlt]
+  · exact (hk.set_right (by omega) (Nat.zero_le B)).set_right (by omega) (Nat.zero_le B)
+  · simp only [List.length_set]; omega
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hI]
+  · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hC]
+  · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega),
+      InductiveCounting.prefixCount_zero]
+  · exact List.getD_set_self (by simp only [List.length_set]; omega)
+
+/-- Leaving the rounds at `i + 1 = n ^ k`: `Y := code z₀`, ready for the final test of it
+against round `n ^ k`. -/
+private theorem count_final (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
+    (hbase : 0 < base) (hNB : n ^ k ≤ B)
     (hdst : ∀ regs, (∀ j < base, regs.getD j 0 = regs₀.getD j 0) →
       ∀ j, (dst j).eval regs = z₀ j)
-    (hinv : RoundInv B base E s₀ regs₀ i regs) (hiN : i + 1 = n ^ k) :
-    (codeE k dst).eval regs = finFunctionFinEquiv z₀ ∧ (finFunctionFinEquiv z₀ : ℕ) ≤ B ∧
+    {i : ℕ} {regs : List ℕ} (hinv : RoundInv B base E s₀ regs₀ i regs) (hiN : i + 1 = n ^ k) :
+    P.Reaches w (P.Oblivious B) (b + 2, 0 :: regs)
+        (b + t₁.length + 11, 0 :: regs.set (base + 3) (finFunctionFinEquiv z₀)) ∧
       TestPre B base E s₀ regs₀ i (finFunctionFinEquiv z₀) (regs.set (base + 3)
         (finFunctionFinEquiv z₀)) ∧
       ((finFunctionFinEquiv z₀ : ℕ) ∈ countRound E s₀ (i + 1) ↔ Relation.ReflTransGen E s₀ z₀) := by
+  obtain ⟨-, -, c3, -, -, -, -, -, -, -, -, c12, -⟩ := countCode_parts hP
   obtain ⟨hk, hlen, h0, hI, hi, hC⟩ := hinv
   have hzB : (finFunctionFinEquiv z₀ : ℕ) ≤ B := (finFunctionFinEquiv z₀).isLt.le.trans hNB
-  refine ⟨eval_codeE h0 (hdst regs hk.2.1), hzB, ⟨hk.set_right (by omega) hzB, ?_, ?_, ?_,
-    by omega, ?_, ?_, (finFunctionFinEquiv z₀).isLt⟩, by rw [hiN]; exact mem_countRound_pow⟩
+  obtain ⟨hr₁, -⟩ := reaches_assign (w := w) c12 (eval_codeE h0 (hdst regs hk.2.1)) hzB hk.2.2
+  have hB := hk.2.2
+  refine ⟨Reaches.trans ?_ hr₁,
+    ⟨hk.set_right (by omega) hzB, ?_, ?_, ?_, by omega, ?_, ?_, (finFunctionFinEquiv z₀).isLt⟩,
+    by rw [hiN]; exact mem_countRound_pow⟩
+  · cp_step [hI, h0, show ¬i + 1 < n ^ k by omega]
   · simp only [List.length_set]; omega
   · rw [List.getD_set_ne (by omega), h0]
   · rw [List.getD_set_ne (by omega), hI]
@@ -1137,52 +1141,27 @@ private theorem count_round_sound (hP : P.CodeAt b (countCode b base k dst t₁ 
     ∀ e i regs, n ^ k - i = e → RoundInv B base E s₀ regs₀ i regs →
       Sound P w B Post (b + 2) regs T (fun regs' =>
         Kept B base regs₀ regs' ∧ ¬ Relation.ReflTransGen E s₀ z₀) := by
-  obtain ⟨-, -, c3, c4, c5, -, -, -, -, -, -, c12, -, c14⟩ := countCode_parts hP
+  obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, c14⟩ := countCode_parts hP
   intro e
   induction e with
   | zero => intro i regs he hinv; have := hinv.2.2.2.2.1; omega
   | succ e ih =>
     intro i regs he hinv
-    have hinv' := hinv
-    obtain ⟨hk, hlen, h0, hI, hi, hC⟩ := hinv'
     by_cases hlt : i + 1 < n ^ k
-    · obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w) (v := 0) c4 rfl (Nat.zero_le B) hk.2.2
-      obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := 0) c5 rfl (Nat.zero_le B) hB₁
-      refine Sound.of_oblivious hB1 ((Reaches.slt c3 (Nat.zero_le B) hk.2.2 ?_).trans
-        (hr₁.trans hr₂)) (count_y_sound hP hbase hB1 hNB ht₁
-          (fun regs' hinv'' => ih (i + 1) regs' (by omega) hinv'') _ 0
-          ((regs.set (base + 2) 0).set (base + 3) 0) rfl ⟨⟨?_, ?_, ?_, ?_, hi, ?_⟩, hlt, ?_, ?_⟩)
-      · rw [ite_eq_left
-          (by rw [eval_add, eval_reg, eval_const, eval_pow, eval_reg, hI, h0]; exact hlt)]
-        exact Reaches.refl _
-      · exact (hk.set_right (by omega) (Nat.zero_le B)).set_right (by omega) (Nat.zero_le B)
-      · simp only [List.length_set]; omega
-      · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
-      · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hI]
-      · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hC]
-      · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega),
-          InductiveCounting.prefixCount_zero]
-      · exact List.getD_set_self (by simp only [List.length_set]; omega)
-    · have hiN : i + 1 = n ^ k := by omega
-      obtain ⟨hval, hzB, hpre, hmem⟩ := count_final hbase hNB hdst hinv hiN
-      obtain ⟨hr₁, -⟩ := reaches_assign (w := w) c12 hval hzB hk.2.2
-      refine Sound.of_oblivious hB1 ((Reaches.slt c3 (Nat.zero_le B) hk.2.2 ?_).trans hr₁)
-        ((ht₂ i _ _ hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
-      · rw [ite_eq_right
-          (by rw [eval_add, eval_reg, eval_const, eval_pow, eval_reg, hI, h0]; exact hlt)]
-        exact Reaches.refl _
+    · obtain ⟨regs', hr, hinv'⟩ := count_round_enter (w := w) hP hbase hinv hlt
+      exact Sound.of_oblivious hB1 hr (count_y_sound hP hbase hB1 hNB ht₁
+        (fun regs' hinv'' => ih (i + 1) regs' (by omega) hinv'') _ 0 regs' rfl hinv')
+    · obtain ⟨hr, hpre, hmem⟩ := count_final (w := w) hP hbase hNB hdst hinv (by omega)
+      refine Sound.of_oblivious hB1 hr ((ht₂ i _ _ hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
       have hB' := hk'.2.2
       by_cases hreach : Relation.ReflTransGen E s₀ z₀
       · rw [ite_eq_left (hmem.mpr hreach)] at hH
-        refine Sound.of_oblivious hB1 (Reaches.slt c14 (Nat.zero_le B) hB' ?_)
-          (Sound.halt hB1 hR (fun _ => hPost _ rfl) hB')
-        rw [ite_eq_right (by rw [eval_reg, eval_const, hH]; omega)]
-        exact Reaches.refl _
+        refine Sound.of_oblivious hB1 ?_ (Sound.halt hB1 hR (fun _ => hPost _ rfl) hB')
+        cp_step [hH]
       · rw [ite_eq_right fun h => hreach (hmem.mp h)] at hH
-        refine Sound.of_oblivious hB1 (Reaches.slt c14 (Nat.zero_le B) hB' ?_)
+        refine Sound.of_oblivious hB1 ?_
           (Sound.exit ⟨hpre.1.trans (hk'.mono (by omega)), hreach⟩)
-        rw [ite_eq_left (by rw [eval_reg, eval_const, hH]; omega)]
-        exact Reaches.refl _
+        cp_step [hH]
 
 private theorem count_round_complete (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
     (hbase : 0 < base) (hNB : n ^ k ≤ B)
@@ -1199,45 +1178,22 @@ private theorem count_round_complete (hP : P.CodeAt b (countCode b base k dst t�
     (hreach : ¬ Relation.ReflTransGen E s₀ z₀) :
     ∀ e i regs, n ^ k - i = e → RoundInv B base E s₀ regs₀ i regs →
       Complete P w (b + 2) regs T (Kept B base regs₀) := by
-  obtain ⟨-, -, c3, c4, c5, -, -, -, -, -, -, c12, -, c14⟩ := countCode_parts hP
+  obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, c14⟩ := countCode_parts hP
   intro e
   induction e with
   | zero => intro i regs he hinv; have := hinv.2.2.2.2.1; omega
   | succ e ih =>
     intro i regs he hinv
-    have hinv' := hinv
-    obtain ⟨hk, hlen, h0, hI, hi, hC⟩ := hinv'
     by_cases hlt : i + 1 < n ^ k
-    · obtain ⟨hr₁, hB₁⟩ := reaches_assign (w := w) (v := 0) c4 rfl (Nat.zero_le B) hk.2.2
-      obtain ⟨hr₂, -⟩ := reaches_assign (w := w) (v := 0) c5 rfl (Nat.zero_le B) hB₁
-      refine Complete.of_oblivious ((Reaches.slt c3 (Nat.zero_le B) hk.2.2 ?_).trans
-        (hr₁.trans hr₂)) (count_y_complete hP hbase hNB ht₁
-          (fun regs' hinv'' => ih (i + 1) regs' (by omega) hinv'') _ 0
-          ((regs.set (base + 2) 0).set (base + 3) 0) rfl ⟨⟨?_, ?_, ?_, ?_, hi, ?_⟩, hlt, ?_, ?_⟩)
-      · rw [ite_eq_left
-          (by rw [eval_add, eval_reg, eval_const, eval_pow, eval_reg, hI, h0]; exact hlt)]
-        exact Reaches.refl _
-      · exact (hk.set_right (by omega) (Nat.zero_le B)).set_right (by omega) (Nat.zero_le B)
-      · simp only [List.length_set]; omega
-      · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
-      · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hI]
-      · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), hC]
-      · rw [List.getD_set_ne (by omega), List.getD_set_self (by omega),
-          InductiveCounting.prefixCount_zero]
-      · exact List.getD_set_self (by simp only [List.length_set]; omega)
-    · have hiN : i + 1 = n ^ k := by omega
-      obtain ⟨hval, hzB, hpre, hmem⟩ := count_final hbase hNB hdst hinv hiN
-      obtain ⟨hr₁, -⟩ := reaches_assign (w := w) c12 hval hzB hk.2.2
-      refine Complete.of_oblivious ((Reaches.slt c3 (Nat.zero_le B) hk.2.2 ?_).trans hr₁)
-        ((ht₂ i _ _ hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
-      · rw [ite_eq_right
-          (by rw [eval_add, eval_reg, eval_const, eval_pow, eval_reg, hI, h0]; exact hlt)]
-        exact Reaches.refl _
+    · obtain ⟨regs', hr, hinv'⟩ := count_round_enter (w := w) hP hbase hinv hlt
+      exact Complete.of_oblivious hr (count_y_complete hP hbase hNB ht₁
+        (fun regs' hinv'' => ih (i + 1) regs' (by omega) hinv'') _ 0 regs' rfl hinv')
+    · obtain ⟨hr, hpre, hmem⟩ := count_final (w := w) hP hbase hNB hdst hinv (by omega)
+      refine Complete.of_oblivious hr ((ht₂ i _ _ hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
       rw [ite_eq_right fun h => hreach (hmem.mp h)] at hH
-      refine Complete.of_oblivious (Reaches.slt c14 (Nat.zero_le B) hk'.2.2 ?_)
-        (Complete.refl (hpre.1.trans (hk'.mono (by omega))))
-      rw [ite_eq_left (by rw [eval_reg, eval_const, hH]; omega)]
-      exact Reaches.refl _
+      have hB' := hk'.2.2
+      refine Complete.of_oblivious (B := B) ?_ (Complete.refl (hpre.1.trans (hk'.mono (by omega))))
+      cp_step [hH]
 
 private theorem count_init (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
     (hbase : 0 < base) (hB1 : 1 ≤ B) {regs : List ℕ}

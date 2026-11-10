@@ -15,8 +15,6 @@ public import CslibFrontier.Foundations.Data.BitString.Combination
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.Finset.Sort
 public import Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
@@ -1391,6 +1389,18 @@ theorem slotDiff_replace_le {U' n' X : ℕ} (h : DynamicMatching.Scheme U' n')
     have hrel := DynamicMatching.relocDist_replace_le h x_old x_new hSle hrep_le
     omega
 
+/-- `DynamicMatching.expect_le_of_le_add_mul_rounds` for a key set `S` of at most `n'` keys, with
+the logarithm taken at the capacity `n'` instead of `|S|`. -/
+private theorem expect_le_mul_clog_of_le_add_mul_rounds {U' n' : ℕ} {S : Finset (Fin U')}
+    (hS : S.card ≤ n') (cost : DynamicMatching.Scheme U' n' → ℕ) (a b : ℕ)
+    (hcost : ∀ h, cost h ≤ a + b * DynamicMatching.rounds h S) :
+    (∑ h : DynamicMatching.Scheme U' n',
+      (DynamicMatching.schemePMF U' n' h).toReal * (cost h : ℝ)) ≤
+      ((a + 3 * b : ℕ) : ℝ) * (Nat.clog 2 (max n' 2) : ℝ) :=
+  (DynamicMatching.expect_le_of_le_add_mul_rounds hS cost a b hcost).trans <|
+    mul_le_mul_of_nonneg_left
+      (by exact_mod_cast Nat.clog_mono_right 2 (max_le_max_right 2 hS)) (Nat.cast_nonneg _)
+
 /-- Expected `O(log (max n' 2))` slot-relocation bound for fresh-key insertion (`Lemma 3.7`) across
 any scheme-indexed family `e` with fixed active key set `S`. -/
 theorem expect_slotDiff_insertNew_le {U' n' X m : ℕ} (hm' : m + 1 ≤ n')
@@ -1401,28 +1411,14 @@ theorem expect_slotDiff_insertNew_le {U' n' X m : ℕ} (hm' : m + 1 ≤ n')
       (DynamicMatching.schemePMF U' n' h).toReal *
         (slotDiff (e h) (insertNew hm' h (e h) u v hv (hu h)) : ℝ)) ≤
       16 * (Nat.clog 2 (max n' 2) : ℝ) := by
-  have hm : m ≤ n' := Nat.le_of_succ_le hm'
   have hS_card : S.card = m := by
     have h0 := card_activeSet (e fun _ => Equiv.refl _)
     rwa [hact] at h0
-  have hSle : S.card ≤ n' := hS_card.le.trans hm
-  have hpt : ∀ h : DynamicMatching.Scheme U' n',
-      (slotDiff (e h) (insertNew hm' h (e h) u v hv (hu h)) : ℝ) ≤
-        4 + 4 * (DynamicMatching.rounds h S : ℝ) := by
-    intro h
-    have hnat := slotDiff_insertNew_le hm' h (e h) (hz h) u v hv (hu h)
-    rw [hact h] at hnat
-    have hR : (slotDiff (e h) (insertNew hm' h (e h) u v hv (hu h)) : ℝ) ≤
-        ((4 * (DynamicMatching.rounds h S + 1) : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (DynamicMatching.schemePMF U' n') hpt
-  have h2 := DynamicMatching.expect_rounds_le (U' := U') hSle
-  have hclog_mono : (Nat.clog 2 (max S.card 2) : ℝ) ≤ Nat.clog 2 (max n' 2) := by
-    exact_mod_cast Nat.clog_mono_right 2 (max_le_max_right 2 hSle)
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max n' 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max n' 2)
-  linarith
+  refine (expect_le_mul_clog_of_le_add_mul_rounds (hS_card.le.trans (Nat.le_of_succ_le hm')) _
+    4 4 fun h => ?_).trans_eq (by norm_num)
+  have hnat := slotDiff_insertNew_le hm' h (e h) (hz h) u v hv (hu h)
+  rw [hact h] at hnat
+  omega
 
 /-- Expected `O(log (max n' 2))` slot-relocation bound for inserting a fresh key `(u, v)` into the
 canonical encoding `encode _ h s hb hs` of any fixed dictionary `s` (`Lemma 3.7`). -/
@@ -1455,24 +1451,11 @@ theorem expect_slotDiff_deleteMem_le {U' n' X m : ℕ} (hm' : m + 1 ≤ n')
   have hS_card : S.card = m + 1 := by
     have h0 := card_activeSet (e fun _ => Equiv.refl _)
     rwa [hact] at h0
-  have hSle : S.card ≤ n' := hS_card.le.trans hm'
-  have hpt : ∀ h : DynamicMatching.Scheme U' n',
-      (slotDiff (e h) (deleteMem hm' h (e h) u (hu h)) : ℝ) ≤
-        4 + 4 * (DynamicMatching.rounds h S : ℝ) := by
-    intro h
-    have hnat := slotDiff_deleteMem_le hm' h (e h) (hz h) u (hu h)
-    rw [hact h] at hnat
-    have hR : (slotDiff (e h) (deleteMem hm' h (e h) u (hu h)) : ℝ) ≤
-        ((4 * (DynamicMatching.rounds h S + 1) : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (DynamicMatching.schemePMF U' n') hpt
-  have h2 := DynamicMatching.expect_rounds_le (U' := U') hSle
-  have hclog_mono : (Nat.clog 2 (max S.card 2) : ℝ) ≤ Nat.clog 2 (max n' 2) := by
-    exact_mod_cast Nat.clog_mono_right 2 (max_le_max_right 2 hSle)
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max n' 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max n' 2)
-  linarith
+  refine (expect_le_mul_clog_of_le_add_mul_rounds (hS_card.le.trans hm') _ 4 4
+    fun h => ?_).trans_eq (by norm_num)
+  have hnat := slotDiff_deleteMem_le hm' h (e h) (hz h) u (hu h)
+  rw [hact h] at hnat
+  omega
 
 /-- Expected `O(log (max n' 2))` slot-relocation bound for deleting an active key `u` from the
 canonical encoding `encode hm' h s hb hs` of any fixed dictionary `s` (`Lemma 3.7`). -/
@@ -1505,26 +1488,11 @@ theorem expect_slotDiff_replace_le {U' n' X : ℕ}
   have hS_card : S.card = n' := by
     have h0 := card_activeSet (e fun _ => Equiv.refl _)
     rwa [hact] at h0
-  have hSle : S.card ≤ n' := hS_card.le
-  have hpt : ∀ h : DynamicMatching.Scheme U' n',
-      (slotDiff (e h)
-        (replace h (e h) x_old x_new v_new hv (hx_old h) (hx_new h)) : ℝ) ≤
-        14 + 8 * (DynamicMatching.rounds h S : ℝ) := by
-    intro h
-    have hnat := slotDiff_replace_le h (e h) x_old x_new v_new hv (hx_old h) (hx_new h)
-    rw [hact h] at hnat
-    have hR : (slotDiff (e h)
-        (replace h (e h) x_old x_new v_new hv (hx_old h) (hx_new h)) : ℝ) ≤
-        ((8 * DynamicMatching.rounds h S + 14 : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (DynamicMatching.schemePMF U' n') hpt
-  have h2 := DynamicMatching.expect_rounds_le (U' := U') hSle
-  have hclog_eq : max S.card 2 = max n' 2 := by rw [hS_card]
-  rw [hclog_eq] at h2
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max n' 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max n' 2)
-  linarith
+  refine (expect_le_mul_clog_of_le_add_mul_rounds hS_card.le _ 14 8
+    fun h => ?_).trans_eq (by norm_num)
+  have hnat := slotDiff_replace_le h (e h) x_old x_new v_new hv (hx_old h) (hx_new h)
+  rw [hact h] at hnat
+  omega
 
 /-- Expected `O(log (max n' 2))` slot-relocation bound for atomic leaf replacement (`Section 5.2`)
 on the canonical encoding `encode le_rfl h s hb hs` of any fixed `n'`-key dictionary `s`. -/

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Interpretation
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Formula-defined constants in interpreted structures
@@ -135,8 +136,7 @@ theorem realize_onFormula (h : D.Valid M) (φ : L'[[γ]].Formula α) (v : α →
       (fun p => (Sum.elim (D.value h) v p.1).val p.2) ↔ φ.Realize v := by
     rw [I.realize_onFormula]
     exact BoundedFormula.realize_constantsVarsEquiv
-  simp only [onFormula, Formula.realize_iExs, Formula.realize_inf, Formula.realize_iInf,
-    Formula.realize_relabel]
+  fo_simp [onFormula]
   constructor
   · rintro ⟨xs, hxs, hφ⟩
     have heq : xs = fun p => (D.value h p.1).val p.2 := by

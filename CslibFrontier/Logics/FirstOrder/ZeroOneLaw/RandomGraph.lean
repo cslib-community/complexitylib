@@ -11,8 +11,11 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.EvenEdges
 public import CslibFrontier.Probability.PMF
 public import Mathlib.Combinatorics.SimpleGraph.Finite
 public import Mathlib.Combinatorics.SimpleGraph.Operations
+public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
+import CslibFrontier.Foundations.MeasureTheory.Constructions.SimpleGraph
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -31,6 +34,10 @@ probability exactly `1/2`. Toggling one potential edge is such an involution, so
 edge is present with probability `1/2`, and for `n ≥ 2` the number of edges is even with
 probability exactly `1/2`.
 
+`randomGraph n` is Mathlib's binomial random graph `G(Fin n, p)` (`SimpleGraph.binomialRandom`) at
+`p = 1/2`: under both, every labelled graph on `Fin n` has the same probability
+(`Cslib.Logic.FO.graph.binomialRandom_real_eq_randomGraphProb`).
+
 ## Main definitions
 
 * `Cslib.Logic.FO.graph.randomGraph`: the uniform distribution on `SimpleGraph (Fin n)`.
@@ -45,6 +52,8 @@ probability exactly `1/2`.
   involution exchanging a property and its negation.
 * `Cslib.Logic.FO.graph.randomGraphProb_adj`: each potential edge has probability `1/2`.
 * `Cslib.Logic.FO.graph.randomGraphProb_evenEdges`: an even number of edges has probability `1/2`.
+* `Cslib.Logic.FO.graph.binomialRandom_real_eq_randomGraphProb`: `G(Fin n, 1/2)` is the uniform
+  random graph.
 
 ## References
 
@@ -98,8 +107,7 @@ theorem randomGraphProb_le_one (n : ℕ) (P : SimpleGraph (Fin n) → Prop) :
 
 theorem randomGraphProb_mono {n : ℕ} {P Q : SimpleGraph (Fin n) → Prop} (h : ∀ G, P G → Q G) :
     randomGraphProb n P ≤ randomGraphProb n Q :=
-  ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono fun G hG => h G hG)
+  PMF.toOuterMeasure_toReal_mono _ fun G hG => h G hG
 
 @[simp]
 theorem randomGraphProb_false (n : ℕ) : randomGraphProb n (fun _ => False) = 0 := by
@@ -168,5 +176,44 @@ theorem randomGraphProb_evenEdges {n : ℕ} (hn : 2 ≤ n) :
   have huv : u ≠ v := Fin.ne_of_val_ne zero_ne_one
   exact randomGraphProb_eq_half_of_involutive (toggleEdge u v) (toggleEdge_involutive u v)
     (SimpleGraph.evenEdges_symmDiff_edge_iff huv)
+
+/-! ### `G(n, 1/2)` is the uniform random graph -/
+
+section Binomial
+
+open MeasureTheory unitInterval
+open scoped SimpleGraph
+
+/-- **`G(n, 1/2)` is the uniform random graph.** At `p = 1/2` every labelled graph on `Fin n` has
+the same probability `2 ^ (-n (n - 1) / 2)`, so the probability of a graph property in
+`G(Fin n, p)` is its probability `randomGraphProb n P` in `Cslib.Logic.FO.graph.randomGraph`. -/
+theorem binomialRandom_real_eq_randomGraphProb {p : I} (hp : (p : ℝ) = 1 / 2) (n : ℕ)
+    (P : SimpleGraph (Fin n) → Prop) :
+    G(Fin n, p).real {G | P G} = randomGraphProb n P := by
+  classical
+  have hσ : toNNReal (σ p) = toNNReal p := NNReal.eq (by
+    rw [coe_toNNReal, coe_toNNReal, coe_symm_eq, hp]
+    norm_num)
+  -- Every graph has the same probability `c`.
+  obtain ⟨c, hc⟩ : ∃ c : ENNReal, ((toNNReal p : ENNReal) ^ (Nat.card (Fin n)).choose 2) = c :=
+    ⟨_, rfl⟩
+  have hsingle : ∀ G : SimpleGraph (Fin n), G(Fin n, p) {G} = c := fun G => by
+    have hle : G.edgeSet.ncard ≤ (Nat.card (Fin n)).choose 2 := by
+      rw [← SimpleGraph.coe_edgeFinset, Set.ncard_coe_finset, Nat.card_eq_fintype_card]
+      exact G.card_edgeFinset_le_card_choose_two
+    rw [SimpleGraph.binomialRandom_singleton, hσ, ← pow_add, Nat.add_sub_cancel' hle, hc]
+  have hset : ∀ S : Set (SimpleGraph (Fin n)), G(Fin n, p) S = S.ncard * c := fun S => by
+    rw [← Set.coe_toFinset S, ← sum_measure_singleton, Finset.sum_congr rfl fun G _ => hsingle G,
+      Finset.sum_const, nsmul_eq_mul, Set.ncard_coe_finset]
+  -- Total mass one forces `c = 1 / #(SimpleGraph (Fin n))`.
+  have hc' : c = (Nat.card (SimpleGraph (Fin n)) : ENNReal)⁻¹ := by
+    refine ENNReal.eq_inv_of_mul_eq_one_left ?_
+    rw [mul_comm, ← Set.ncard_univ, ← hset, measure_univ]
+  rw [randomGraphProb_eq, measureReal_def, hset, hc', ENNReal.toReal_mul, ENNReal.toReal_inv,
+    ENNReal.toReal_natCast, ENNReal.toReal_natCast, div_eq_mul_inv,
+    ← Nat.card_coe_set_eq {G | P G}]
+  rfl
+
+end Binomial
 
 end Cslib.Logic.FO.graph

@@ -124,20 +124,23 @@ theorem IsCommonIndep.card_le_eRk_add_eRk [DecidableEq α] {M₁ M₂ : Matroid 
   rw [← Set.encard_coe_eq_coe_finsetCard, Finset.coe_sdiff]
   exact encard_le_eRk_add_eRk (Finset.coe_subset.mpr hIE) hI.indep_left hI.indep_right _
 
+/-- The ranks of finite sets are finite, so the `ℕ` rank sum of `U` and `E \ U` casts back to the
+`ℕ∞` one. Shared by the `ℕ` rank forms of weak duality and of Edmonds' theorem. -/
+private theorem cast_toNat_eRk_add_toNat_eRk [DecidableEq α] (M₁ M₂ : Matroid α)
+    (E U : Finset α) :
+    (((M₁.eRk (U : Set α)).toNat + (M₂.eRk ((E \ U : Finset α) : Set α)).toNat : ℕ) : ℕ∞) =
+      M₁.eRk (U : Set α) + M₂.eRk ((E \ U : Finset α) : Set α) := by
+  rw [Nat.cast_add, ENat.natCast_toNat (M₁.isRkFinite_of_finite U.finite_toSet).eRk_lt_top.ne,
+    ENat.natCast_toNat (M₂.isRkFinite_of_finite (E \ U).finite_toSet).eRk_lt_top.ne]
+
 /-- **Weak duality for matroid intersection** (`ℕ` rank): for any common independent subset `I ⊆ E`
 and any `U : Finset α`, `I.card ≤ (M₁.eRk ↑U).toNat + (M₂.eRk ↑(E \ U)).toNat`. -/
 theorem IsCommonIndep.card_le_rk_add_rk [DecidableEq α] {M₁ M₂ : Matroid α} {E I : Finset α}
     (hI : IsCommonIndep M₁ M₂ I) (hIE : I ⊆ E) (U : Finset α) :
     I.card ≤ (M₁.eRk (U : Set α)).toNat + (M₂.eRk ((E \ U : Finset α) : Set α)).toNat := by
   have he := hI.card_le_eRk_add_eRk hIE U
-  have h1_ne : M₁.eRk (U : Set α) ≠ ⊤ :=
-    (M₁.isRkFinite_of_finite U.finite_toSet).eRk_lt_top.ne
-  have h2_ne : M₂.eRk ((E \ U : Finset α) : Set α) ≠ ⊤ :=
-    (M₂.isRkFinite_of_finite (E \ U).finite_toSet).eRk_lt_top.ne
-  have hcast : (I.card : ℕ∞) ≤
-      (((M₁.eRk (U : Set α)).toNat + (M₂.eRk ((E \ U : Finset α) : Set α)).toNat : ℕ) : ℕ∞) := by
-    rwa [Nat.cast_add, ENat.natCast_toNat h1_ne, ENat.natCast_toNat h2_ne]
-  exact Nat.cast_le.mp hcast
+  rw [← cast_toNat_eRk_add_toNat_eRk] at he
+  exact_mod_cast he
 
 /-- A common independent subset `I ⊆ E` attaining `M₁.eRk ↑U + M₂.eRk ↑(E \ U)` for some `U` is
 maximum among all common independent subsets of `E`. -/
@@ -847,14 +850,8 @@ theorem exists_commonIndep_card_eq_rk_add_rk (M₁ M₂ : Matroid α) (E : Finse
     ∃ I U : Finset α, U ⊆ E ∧ IsMaxCommonIndep M₁ M₂ E I ∧
       I.card = (M₁.eRk (U : Set α)).toNat + (M₂.eRk ((E \ U : Finset α) : Set α)).toNat := by
   obtain ⟨I, U, hUE, hmax, heq⟩ := exists_commonIndep_card_eq_eRk_add_eRk M₁ M₂ E
-  have h1_ne : M₁.eRk (U : Set α) ≠ ⊤ :=
-    (M₁.isRkFinite_of_finite U.finite_toSet).eRk_lt_top.ne
-  have h2_ne : M₂.eRk ((E \ U : Finset α) : Set α) ≠ ⊤ :=
-    (M₂.isRkFinite_of_finite (E \ U).finite_toSet).eRk_lt_top.ne
-  have hcast : (I.card : ℕ∞) =
-      (((M₁.eRk (U : Set α)).toNat + (M₂.eRk ((E \ U : Finset α) : Set α)).toNat : ℕ) : ℕ∞) := by
-    rw [heq, Nat.cast_add, ENat.natCast_toNat h1_ne, ENat.natCast_toNat h2_ne]
-  exact ⟨I, U, hUE, hmax, Nat.cast_injective hcast⟩
+  rw [← cast_toNat_eRk_add_toNat_eRk] at heq
+  exact ⟨I, U, hUE, hmax, Nat.cast_injective heq⟩
 
 /-- **Edmonds' matroid intersection theorem** (min–max form; [Edmonds1970]; [Schrijver2017],
 Theorem 10.9): for matroids `M₁ M₂ : Matroid α` and a finite candidate ground set `E : Finset α`,

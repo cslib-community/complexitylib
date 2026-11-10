@@ -267,6 +267,39 @@ theorem extractBit_zero (arrBase b w : ℕ) (q : Fin (2 ^ b)) :
   rw [extractPacked_zero]
   rfl
 
+/-- A packed read only depends on the `packedWords b d w` words of its array. -/
+private theorem extractPacked_congr {arrBase b d w : ℕ} {mem₁ mem₂ : ℕ → ℕ}
+    (h : ∀ a, arrBase ≤ a → a < arrBase + packedWords b d w → mem₁ a = mem₂ a) :
+    extractPacked arrBase b d w mem₁ = extractPacked arrBase b d w mem₂ := by
+  ext q
+  dsimp only [extractPacked]
+  have hlt := shiftRight_lt_packedWords b d w q
+  generalize q.val >>> slotPackShift b d w = wIdx at hlt ⊢
+  rw [h (arrBase + wIdx) (by omega) (by omega)]
+
+/-- A `1`-bit read only depends on the `packedWords b 1 w` words of its array. -/
+private theorem extractBit_congr {arrBase b w : ℕ} {mem₁ mem₂ : ℕ → ℕ}
+    (h : ∀ a, arrBase ≤ a → a < arrBase + packedWords b 1 w → mem₁ a = mem₂ a) :
+    extractBit arrBase b w mem₁ = extractBit arrBase b w mem₂ := by
+  ext q
+  dsimp only [extractBit]
+  rw [extractPacked_congr h]
+
+/-- Writing a packed array leaves a read of a disjoint packed array unchanged. -/
+private theorem extractPacked_writePackedMem_of_disjoint {arr₁ arr₂ b d₁ d₂ w : ℕ}
+    (mem : ℕ → ℕ) (q : Fin (2 ^ b)) (val : ℕ)
+    (hdisj : arr₁ + packedWords b d₁ w ≤ arr₂ ∨ arr₂ + packedWords b d₂ w ≤ arr₁) :
+    extractPacked arr₁ b d₁ w (writePackedMem arr₂ b d₂ w mem q val) =
+      extractPacked arr₁ b d₁ w mem :=
+  extractPacked_congr fun _ h₁ h₂ => writePackedMem_outside _ _ _ _ _ _ _ (by omega)
+
+/-- Writing a packed array leaves a `1`-bit read of a disjoint packed array unchanged. -/
+private theorem extractBit_writePackedMem_of_disjoint {arr₁ arr₂ b d₂ w : ℕ}
+    (mem : ℕ → ℕ) (q : Fin (2 ^ b)) (val : ℕ)
+    (hdisj : arr₁ + packedWords b 1 w ≤ arr₂ ∨ arr₂ + packedWords b d₂ w ≤ arr₁) :
+    extractBit arr₁ b w (writePackedMem arr₂ b d₂ w mem q val) = extractBit arr₁ b w mem :=
+  extractBit_congr fun _ h₁ h₂ => writePackedMem_outside _ _ _ _ _ _ _ (by omega)
+
 /-! ## Section 2: Quotient-filter memory layout, `space_le`, and `extractFilterState` -/
 
 /-- Address `base + ReducedKWise.space w w₀ (quotBits w₀ n) (quotBits w₀ n) 5` storing the
@@ -416,46 +449,26 @@ in `mem`. -/
   isRunStart := extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem
   remAt := extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem
 
+/-- The four slot arrays sit back to back, from `fullBase` up to `base + space`. -/
+private theorem slotArrays_layout (base w w₀ n k : ℕ) :
+    occBase base w w₀ n = fullBase base w w₀ n + packedWords (quotBits w₀ n) 1 w ∧
+      runBase base w w₀ n = occBase base w w₀ n + packedWords (quotBits w₀ n) 1 w ∧
+      remBase base w w₀ n = runBase base w w₀ n + packedWords (quotBits w₀ n) 1 w ∧
+      remBase base w w₀ n + packedWords (quotBits w₀ n) (remBits w₀ k) w =
+        base + space w w₀ n k :=
+  ⟨rfl, rfl, rfl, remBase_add_packedWords_eq base w w₀ n k⟩
+
 theorem extractFilterState_congr {base w w₀ n k : ℕ} {mem₁ mem₂ : ℕ → ℕ}
     (h : ∀ a, fullBase base w w₀ n ≤ a → a < base + space w w₀ n k → mem₁ a = mem₂ a) :
     extractFilterState base w w₀ n k mem₁ = extractFilterState base w w₀ n k mem₂ := by
-  have hfull : extractBit (fullBase base w w₀ n) (quotBits w₀ n) w mem₁ =
-      extractBit (fullBase base w w₀ n) (quotBits w₀ n) w mem₂ := by
-    ext q
-    dsimp only [extractBit, extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q
-    generalize q.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    rw [h (fullBase base w w₀ n + wIdx) (by omega)
-      (by dsimp only [space, fullBase, remSeedAddr]; omega)]
-  have hocc : extractBit (occBase base w w₀ n) (quotBits w₀ n) w mem₁ =
-      extractBit (occBase base w w₀ n) (quotBits w₀ n) w mem₂ := by
-    ext q
-    dsimp only [extractBit, extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q
-    generalize q.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    rw [h (occBase base w w₀ n + wIdx)
-      (by dsimp only [occBase]; omega)
-      (by dsimp only [space, occBase, fullBase, remSeedAddr]; omega)]
-  have hrun : extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem₁ =
-      extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem₂ := by
-    ext q
-    dsimp only [extractBit, extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q
-    generalize q.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    rw [h (runBase base w w₀ n + wIdx)
-      (by dsimp only [runBase, occBase]; omega)
-      (by dsimp only [space, runBase, occBase, fullBase, remSeedAddr]; omega)]
-  have hrem : extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem₁ =
-      extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem₂ := by
-    ext q
-    dsimp only [extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) (remBits w₀ k) w q
-    generalize q.val >>> slotPackShift (quotBits w₀ n) (remBits w₀ k) w = wIdx at hlt ⊢
-    rw [h (remBase base w w₀ n + wIdx)
-      (by dsimp only [remBase, runBase, occBase]; omega)
-      (by rw [← remBase_add_packedWords_eq]; omega)]
+  obtain ⟨hocc, hrun, hrem, hend⟩ := slotArrays_layout base w w₀ n k
   dsimp only [extractFilterState]
-  rw [hfull, hocc, hrun, hrem]
+  rw [FilterState.mk.injEq]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact extractBit_congr fun a h₁ h₂ => h a h₁ (by omega)
+  · exact extractBit_congr fun a h₁ h₂ => h a (by omega) (by omega)
+  · exact extractBit_congr fun a h₁ h₂ => h a (by omega) (by omega)
+  · exact extractPacked_congr fun a h₁ h₂ => h a (by omega) (by omega)
 
 /-- Zeroed slot arrays `[fullBase, base + space)` represent `FilterState.empty`. -/
 theorem extractFilterState_of_zero {base w w₀ n k : ℕ} {mem : ℕ → ℕ}
@@ -466,45 +479,22 @@ theorem extractFilterState_of_zero {base w w₀ n k : ℕ} {mem : ℕ → ℕ}
   dsimp only [extractFilterState, FilterState.empty]
   congr <;> funext q <;> simp
 
+/-! Each slot-array write changes its own field; the other three arrays are disjoint from it. -/
+
 @[simp]
 theorem extractFilterState_writeFull (base w w₀ n k : ℕ) (mem : ℕ → ℕ)
     (q : Fin (2 ^ quotBits w₀ n)) (bval : Bool) :
     extractFilterState base w w₀ n k
       (writeBitMem (fullBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
       (extractFilterState base w w₀ n k mem).setFull q bval := by
-  have hfull : extractBit (fullBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (fullBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      Function.update (extractBit (fullBase base w w₀ n) (quotBits w₀ n) w mem) q bval :=
-    extractBit_writeBitMem _ _ _ _ _ _
-  have hocc : extractBit (occBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (fullBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractBit (occBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked, writeBitMem]
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx
-    dsimp only [occBase]
-    omega
-  have hrun : extractBit (runBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (fullBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked, writeBitMem]
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx
-    dsimp only [runBase, occBase]
-    omega
-  have hrem : extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w
-      (writeBitMem (fullBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem := by
-    ext q'
-    dsimp only [extractPacked, writeBitMem]
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) (remBits w₀ k) w = wIdx
-    dsimp only [remBase, runBase, occBase]
-    omega
+  obtain ⟨hocc, hrun, hrem, -⟩ := slotArrays_layout base w w₀ n k
   dsimp only [extractFilterState, FilterState.setFull]
-  rw [hfull, hocc, hrun, hrem]
+  rw [FilterState.mk.injEq]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact extractBit_writeBitMem _ _ _ _ _ _
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractPacked_writePackedMem_of_disjoint _ _ _ (by omega)
 
 @[simp]
 theorem extractFilterState_writeOcc (base w w₀ n k : ℕ) (mem : ℕ → ℕ)
@@ -512,40 +502,14 @@ theorem extractFilterState_writeOcc (base w w₀ n k : ℕ) (mem : ℕ → ℕ)
     extractFilterState base w w₀ n k
       (writeBitMem (occBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
       (extractFilterState base w w₀ n k mem).setOcc q bval := by
-  have hfull : extractBit (fullBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (occBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractBit (fullBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked, writeBitMem]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q'
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    dsimp only [occBase]
-    omega
-  have hocc : extractBit (occBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (occBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      Function.update (extractBit (occBase base w w₀ n) (quotBits w₀ n) w mem) q bval :=
-    extractBit_writeBitMem _ _ _ _ _ _
-  have hrun : extractBit (runBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (occBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked, writeBitMem]
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx
-    dsimp only [runBase]
-    omega
-  have hrem : extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w
-      (writeBitMem (occBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem := by
-    ext q'
-    dsimp only [extractPacked, writeBitMem]
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) (remBits w₀ k) w = wIdx
-    dsimp only [remBase, runBase]
-    omega
+  obtain ⟨hocc, hrun, hrem, -⟩ := slotArrays_layout base w w₀ n k
   dsimp only [extractFilterState, FilterState.setOcc]
-  rw [hfull, hocc, hrun, hrem]
+  rw [FilterState.mk.injEq]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractBit_writeBitMem _ _ _ _ _ _
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractPacked_writePackedMem_of_disjoint _ _ _ (by omega)
 
 @[simp]
 theorem extractFilterState_writeRunStart (base w w₀ n k : ℕ) (mem : ℕ → ℕ)
@@ -553,41 +517,14 @@ theorem extractFilterState_writeRunStart (base w w₀ n k : ℕ) (mem : ℕ → 
     extractFilterState base w w₀ n k
       (writeBitMem (runBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
       (extractFilterState base w w₀ n k mem).setRunStart q bval := by
-  have hfull : extractBit (fullBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (runBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractBit (fullBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked, writeBitMem]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q'
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    dsimp only [runBase, occBase]
-    omega
-  have hocc : extractBit (occBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (runBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractBit (occBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked, writeBitMem]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q'
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    dsimp only [runBase]
-    omega
-  have hrun : extractBit (runBase base w w₀ n) (quotBits w₀ n) w
-      (writeBitMem (runBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      Function.update (extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem) q bval :=
-    extractBit_writeBitMem _ _ _ _ _ _
-  have hrem : extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w
-      (writeBitMem (runBase base w w₀ n) (quotBits w₀ n) w mem q bval) =
-      extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem := by
-    ext q'
-    dsimp only [extractPacked, writeBitMem]
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) (remBits w₀ k) w = wIdx
-    dsimp only [remBase]
-    omega
+  obtain ⟨hocc, hrun, hrem, -⟩ := slotArrays_layout base w w₀ n k
   dsimp only [extractFilterState, FilterState.setRunStart]
-  rw [hfull, hocc, hrun, hrem]
+  rw [FilterState.mk.injEq]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractBit_writeBitMem _ _ _ _ _ _
+  · exact extractPacked_writePackedMem_of_disjoint _ _ _ (by omega)
 
 @[simp]
 theorem extractFilterState_writeRem (base w w₀ n k : ℕ) (mem : ℕ → ℕ)
@@ -595,43 +532,14 @@ theorem extractFilterState_writeRem (base w w₀ n k : ℕ) (mem : ℕ → ℕ)
     extractFilterState base w w₀ n k
       (writePackedMem (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem q r.val) =
       (extractFilterState base w w₀ n k mem).setRem q r := by
-  have hfull : extractBit (fullBase base w w₀ n) (quotBits w₀ n) w
-      (writePackedMem (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem q r.val) =
-      extractBit (fullBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q'
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    dsimp only [remBase, runBase, occBase]
-    omega
-  have hocc : extractBit (occBase base w w₀ n) (quotBits w₀ n) w
-      (writePackedMem (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem q r.val) =
-      extractBit (occBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q'
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    dsimp only [remBase, runBase]
-    omega
-  have hrun : extractBit (runBase base w w₀ n) (quotBits w₀ n) w
-      (writePackedMem (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem q r.val) =
-      extractBit (runBase base w w₀ n) (quotBits w₀ n) w mem := by
-    ext q'
-    dsimp only [extractBit, extractPacked]
-    have hlt := shiftRight_lt_packedWords (quotBits w₀ n) 1 w q'
-    rw [writePackedMem_outside]
-    generalize q'.val >>> slotPackShift (quotBits w₀ n) 1 w = wIdx at hlt ⊢
-    dsimp only [remBase]
-    omega
-  have hrem : extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w
-      (writePackedMem (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem q r.val) =
-      Function.update
-        (extractPacked (remBase base w w₀ n) (quotBits w₀ n) (remBits w₀ k) w mem) q r :=
-    extractPacked_writePackedMem _ _ _ _ _ _ _
+  obtain ⟨hocc, hrun, hrem, -⟩ := slotArrays_layout base w w₀ n k
   dsimp only [extractFilterState, FilterState.setRem]
-  rw [hfull, hocc, hrun, hrem]
+  rw [FilterState.mk.injEq]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractBit_writePackedMem_of_disjoint _ _ _ (by omega)
+  · exact extractPacked_writePackedMem _ _ _ _ _ _ _
 
 /-! ## Section 3: Slot modular arithmetic and memory layout offsets -/
 

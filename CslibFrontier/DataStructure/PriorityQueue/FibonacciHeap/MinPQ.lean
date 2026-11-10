@@ -381,8 +381,7 @@ theorem methods_spec (hn : Fits w n) (hV : Fits w V) (hI : Inv n U s g)
     have heq : PriorityQueue.MinPQ.stepAlloc (allocState (s, g)) (.decreaseKey h u') =
         (allocState (Function.update s h (some u'), g), ()) := by
       simp only [PriorityQueue.MinPQ.stepAlloc, huv]
-      congr 2
-      funext h'
+      congr 2 with h' : 1
       by_cases hh : h' = h
       · subst hh
         simp [allocState, hs.2]

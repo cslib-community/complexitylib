@@ -994,16 +994,6 @@ open ComputableInPolyTime
 local notation "CPT" => ComputableInPolyTime
 variable {α : Type} {input : α ↪ List Bool}
 
-private theorem er_ite_decide {β : Type} {encB : β ↪ List Bool}
-    {cond : α → Prop} [∀ a, Decidable (cond a)] {yes no : α → β}
-    (hc : CPT (fun a => decide (cond a)) input encBool)
-    (hyes : CPT yes input encB) (hno : CPT no input encB) :
-    CPT (fun a => if cond a then yes a else no a) input encB := by
-  simpa only [decide_eq_true_eq] using hc.ite' hyes hno
-private theorem er_decide_ne {β : Type} {encB : β ↪ List Bool}
-    [DecidableEq β] {l r : α → β} (hl : CPT l input encB) (hr : CPT r input encB) :
-    CPT (fun a => decide (l a ≠ r a)) input encBool := by
-  simpa only [Function.comp_def, _root_.decide_not] using bool_not.comp (hl.decide_eq' hr)
 private theorem er_map {β γ : Type} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
     {list : α → List β} {f : α × β → γ} (hlist : CPT list input (encList encB))
     (hf : CPT f (encPair input encB) encC) :
@@ -1072,11 +1062,11 @@ private theorem er_pairBasisNat {a d x y : α → ℕ} (ha : CPT a input encNat)
     (hd : CPT d input encNat) (hx : CPT x input encNat) (hy : CPT y input encNat) :
     CPT (fun i => pairBasisNat (a i) (d i) (x i) (y i)) input encIntBin := by
   have h1 : CPT _ input encIntBin := .const 1; have h0 : CPT _ input encIntBin := .const 0
-  have had := er_ite_decide (decide_and (hx.decide_eq' ha) (hy.decide_eq' hd)) h1 h0
-  have hda := er_ite_decide (decide_and (hx.decide_eq' hd) (hy.decide_eq' ha)) h1 h0
-  exact er_ite_decide (ha.decide_eq' hd)
-    (er_ite_decide (decide_and (hx.decide_eq' ha) (hy.decide_eq' ha)) h1 h0)
-    (er_ite_decide (binary_lt' ha hd) (er_intBin_add had hda) (er_intBin_sub hda had))
+  have had := ite_decide (decide_and (hx.decide_eq' ha) (hy.decide_eq' hd)) h1 h0
+  have hda := ite_decide (decide_and (hx.decide_eq' hd) (hy.decide_eq' ha)) h1 h0
+  exact ite_decide (ha.decide_eq' hd)
+    (ite_decide (decide_and (hx.decide_eq' ha) (hy.decide_eq' ha)) h1 h0)
+    (ite_decide (binary_lt' ha hd) (er_intBin_add had hda) (er_intBin_sub hda had))
 
 /-- `encodeAuxDigits` is computable in polynomial time from binary `r` and digit lists `u`. -/
 @[fun_prop] theorem computableInPolyTime_encodeAuxDigits {r : α → ℕ} {u : α → List ℕ × List ℕ}
@@ -1160,9 +1150,9 @@ private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
       (er_intBin_sub (er_intBin_sub
           (intBin_mul' (er_intBin_sub (er_intBin_natCast_unary hm1) (hc0.comp' hp1))
             (listGetDWithInput hf1 hp2 0))
-          (er_ite_decide (unary_lt' (.const 0) hp2) (intBin_mul' (er_intBin_natCast_unary hp2)
+          (ite_decide (unary_lt' (.const 0) hp2) (intBin_mul' (er_intBin_natCast_unary hp2)
               (listGetDWithInput hf1 (unary_sub' hp2 (.const 1)) 0)) (.const 0)))
-        (er_ite_decide (unary_lt' hp2 hm1)
+        (ite_decide (unary_lt' hp2 hm1)
           (intBin_mul' (er_intBin_natCast_unary (unary_sub' hm1 hp2))
             (listGetDWithInput hf1 (unary_add' hp2 (.const 1)) 0)) (.const 0)))
   have pm := hm.polyBounded; have pA := hA₀.polyBounded; have pj := hj.polyBounded
@@ -1199,8 +1189,8 @@ private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
   have horb := er_all (unary_range' hQ)
     (decide_or (decide_and (hy1s.decide_eq' hu2s) (hy2s.decide_eq' hu1s))
       (decide_and (hy1s.decide_eq' hu1s) (hy2s.decide_eq' hu2s)))
-  have hm := er_countP (unary_range' hQ) (er_decide_ne hu2s hu1s)
-  have hd := er_countP (unary_range' hQ) (er_decide_ne hy1s hu2s)
+  have hm := er_countP (unary_range' hQ) (decide_ne hu2s hu1s)
+  have hd := er_countP (unary_range' hQ) (decide_ne hy1s hu2s)
   have hfacR := er_binary_factorial (unary_sub' hR (.const 1))
   exact horb.ite'
     ((of_tidy .intBin_sum).comp' (er_map (unary_range' hR)
@@ -1228,13 +1218,13 @@ private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
   have hstep : CPT
       (fun q : (((List ℕ × List ℕ) × (List ℕ × List ℕ)) × List ℤ) × ℕ => stepFn q.1.1 q.1.2 q.2)
       (encPair encS encUnary) (encList encIntBin) :=
-    er_ite_decide
+    ite_decide
       ((listGetDWithInput hq1.fst'.snd'.fst' hq2 0).decide_eq'
         (listGetDWithInput hq1.fst'.fst'.snd' hq2 0))
       (er_map hp (intBin_mul' (ht.comp' hm1) hm2))
       (er_map (unary_range' (unary_add' ((length_list encIntBin).comp' hp) (.const 1)))
         (er_intBin_sub (intBin_mul' (ht.comp' hk1) (listGetDWithInput (hp.comp' hk1) hk2 0))
-          (er_ite_decide (unary_lt' (.const 0) hk2)
+          (ite_decide (unary_lt' (.const 0) hk2)
             (listGetDWithInput (hp.comp' hk1) (unary_sub' hk2 (.const 1)) 0) (.const 0))))
   have pQ := hQ.polyBounded
   have hB : PolyBounded (fun a => (input a).length)
@@ -1280,7 +1270,7 @@ private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
     (er_intBin_sub (heq.ite'
       (er_intBin_natCast (er_binary_factorial (unary_sub' hR (.const 1)))) (.const 0)) hm0)
   exact er_map (unary_range' ((of_tidy .unary_max).comp' (hR.prod (.const 1))))
-    (er_intBin_add (er_ite_decide (hp2.decide_eq' (.const 0)) (hc0.comp' hp1) (.const 0))
+    (er_intBin_add (ite_decide (hp2.decide_eq' (.const 0)) (hc0.comp' hp1) (.const 0))
       (intBin_mul' (hm0.comp' hp1) (listGetDWithInput (hphi.comp' hp1) hp2 0)))
 
 /-- `auxReplacementRowCoeffsIdx` is computable in polynomial time per `(u_idx, y_idx)` pair from

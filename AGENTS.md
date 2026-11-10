@@ -170,14 +170,20 @@ repository with its own Git object database for such operations.
 Before Git recovery or nonstandard object manipulation, verify the actual Git common directory,
 object alternates, and storage sharing. The experimental repository must not use the shared
 database through a gitfile, alternate object directory, or hard-linked object files. Never delete
-objects, refs, worktree registrations, or metadata belonging to another session.
+objects, refs, worktree registrations, or metadata belonging to another session. Worktrees also
+share one stash stack, so `git stash pop` can apply and drop another session's entry: never push,
+pop, apply or drop stash entries in a shared checkout or its worktrees. Keep work in progress as a
+commit on your own branch or as a patch file in your scratch directory
+([procedure and recovery](manual/workflows/agent-operations.md#isolate-work-and-build-outputs)).
 
 Keep mutable build outputs separate. Integration experiments must be contained so their failure
 cannot damage the user's checkout or another worker's repository.
 
 Machines are shared between agents. Stop only processes and tasks you started, by PID or task
 ID; never use pattern-based kills such as `pkill -f`, which also hit other agents' builds. Keep
-scratch files under a directory or name unique to your agent.
+scratch files under a directory or name unique to your agent. Concurrent Lean builds can
+exhaust the host's file handles before its processors; agree on a limit on concurrent builds
+(see [the troubleshooting chapter](manual/workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 
 ### Placement and reuse
 
@@ -188,9 +194,13 @@ concrete and the change is small; otherwise record a specific follow-up with dec
 consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
-Do not prove a lemma that the library, Mathlib or core already has, even privately: use it, or make
-a private original public. After a build, `python3 scripts/parallel_defs.py --theorems` lists the
-theorems a change adds or modifies whose statement already exists; CI posts the same notice.
+Do not prove a lemma that the library, CSLib, Mathlib or core already has, even privately or by
+re-deriving it inline inside another proof: use it, or make a private original public. After a
+build, `python3 scripts/parallel_defs.py --theorems` lists the theorems a change adds or modifies
+whose statement already exists; CI posts the same notice. It cannot see a fact re-derived inside a
+proof, so search for an existing lemma first. When a proof you add or change needs a substantial
+argument that another proof makes, derive it once; the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says when a shared lemma pays.
 
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
@@ -248,16 +258,22 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs this sequence. Both full and quick modes require those manual checks;
-CI runs them too, with the tests included in its Python tooling suite. These stdlib-only checks
-need no PDF tools or generated research data. They catch source/link drift and malformed visual
-markup; they do not replace the required review of both manuals' meaning and usability.
-CI runs the same six Lean checks.
-For Lean, dependency or build changes, all six gates must pass on the final source revision before
+optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
+CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
+hygiene, the encoding readability ratchet, documentation pins, and the post-build tidy statement
+ratchet, result registry and changed-file lints. Changed-file checks compare with the merge base
+of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining step
+stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
+fails when the workflow gains a step that is neither mirrored nor recorded there, or when a
+mirrored step runs a line or sets an option that the local run does not repeat. Both full and
+quick modes require the manual checks; these stdlib-only checks need no PDF tools or generated
+research data. They catch source/link drift and malformed visual markup; they do not replace the
+required review of both manuals' meaning and usability.
+For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
 repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-when hosted coverage is unavailable; changes to validation machinery also need direct checks of
-the changed behavior. Required CI and merge-group checks still apply.
+(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
+need direct checks of the changed behavior. Required CI and merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
@@ -266,9 +282,12 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
-validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. The one exception is
+it does not fetch. It also runs source hygiene on the changed library and test files and, when a
+library module changed, the encoding readability ratchet: both read only sources and take seconds.
+Quick mode lints only the affected library modules, skips the global test/style/init-import gates
+and the post-build audits, which need whole-library outputs, and is not full validation. Non-Lean
+changes, deletions/renames, changed aggregates, unsupported layouts and ambiguous change/import
+analysis fall back to the full check. The one exception is
 `scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
 encoding-readability lint instead. Quick success alone does not satisfy the full validation
 requirement above; documentation-only checks need not invoke quick mode.
@@ -430,6 +449,9 @@ Read the actual definitions and statements. For substantive mathematics, explain
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
 Check new and changed statements against [Encodings in statements](#encodings-in-statements).
+Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
+a new copy of an argument the library already makes is a finding when the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 

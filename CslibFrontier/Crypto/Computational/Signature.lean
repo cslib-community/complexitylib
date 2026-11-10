@@ -465,7 +465,7 @@ theorem length_le_one_of_mem_support_run_oneTimeSigningOracle (S : SignatureSche
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))) prog).run []).support) :
     queried.length ≤ 1 := by
-  refine ProbOracleComp.run_interpret_invariant
+  refine ProbOracleComp.runWith_invariant
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun s => s.length ≤ 1) ?_ prog [] (by simp) result queried h
   intro ⟨⟨⟩, req⟩ s hs a s' hmem

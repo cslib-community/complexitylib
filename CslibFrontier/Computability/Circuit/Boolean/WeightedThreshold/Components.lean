@@ -333,7 +333,7 @@ theorem lt_of_inputSupport_card_le_two (p : Program signature n g)
   push Not at hn
   obtain ⟨U, hsplit, hU⟩ := exists_split_of_inputSupport_card_le_two p h2 L (by omega)
   obtain ⟨P, Q, b, hb, hP, hQ⟩ :=
-    exists_rectangle_of_split p readout hreadout U ∅ ∅ (empty_subset _) (empty_subset _) hsplit
+    exists_rectangle_of_split p readout hreadout U ∅ ∅ hsplit
   have hsum := card_filter_subset_add_card_filter_subset_compl_le p U
   set gU := (univ.filter fun j => inputSupport p j ⊆ U ∧ ¬ inputSupport p j ⊆ ∅).card with hgU
   set gV := (univ.filter fun j => inputSupport p j ⊆ Uᶜ ∧ ¬ inputSupport p j ⊆ ∅).card with hgV
@@ -504,20 +504,11 @@ theorem lt_of_blocks (p : Program signature n g)
     rw [hU, disjoint_biUnion_right]
     intro b' hb'
     exact (hF b' (h𝒢 hb')).symm
-  have hAU : A ⊆ U :=
-    biUnion_subset_biUnion_of_subset_left _ (filter_subset _ _)
-  have hB₀U : B₀ ⊆ Uᶜ := by
-    rw [hB₀, subset_compl_iff_disjoint_right, disjoint_biUnion_left]
-    intro b hb
-    have hb' := mem_sdiff.mp (mem_filter.mp hb).1
-    exact hdisjU b hb'.1 hb'.2
-  have hFUc : F ⊆ Uᶜ := subset_compl_iff_disjoint_right.mpr hFU
-  have hFB₀U : F ∪ B₀ ⊆ Uᶜ := union_subset hFUc hB₀U
   have hdisjFB₀ : Disjoint F B₀ := by
     rw [hB₀, disjoint_biUnion_right]
     intro b hb
     exact (hF b (sdiff_subset (mem_filter.mp hb).1)).symm
-  obtain ⟨P, Q, v, hv, hP, hQ⟩ := exists_rectangle_of_cut_with_fixed p U A (F ∪ B₀) hAU hFB₀U
+  obtain ⟨P, Q, v, hv, hP, hQ⟩ := exists_rectangle_of_cut_with_fixed p U A (F ∪ B₀)
   have hconst : ∀ x ∈ P, ∀ y ∈ Q, f (glue U x y) = readout v := by
     intro x hx y hy
     rw [← hreadout, hv x hx y hy]

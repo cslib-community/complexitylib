@@ -333,20 +333,6 @@ def test (N : Polynomial ℕ) (x : (Graph × Graph) × List Bool) : Bool :=
       (x.2.take (N.eval (encPair encGraph encGraph x.1).length))
       (x.2.drop (N.eval (encPair encGraph encGraph x.1).length))
 
-private theorem bool_or'_pt {α : Type} {encA : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableInPolyTime left encA encBool)
-    (hright : ComputableInPolyTime right encA encBool) :
-    ComputableInPolyTime (fun a => left a || right a) encA encBool :=
-  ComputableInPolyTime.bool_or.comp (hleft.prod hright)
-
-private theorem decide_ne_pt {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    [DecidableEq β] {left right : α → β}
-    (hleft : ComputableInPolyTime left encA encB)
-    (hright : ComputableInPolyTime right encA encB) :
-    ComputableInPolyTime (fun x => decide (left x ≠ right x)) encA encBool := by
-  simpa only [Function.comp_def, decide_not] using
-    ComputableInPolyTime.bool_not.comp (hleft.decide_eq' hright)
-
 private theorem computableInPolyTime_check {γ : Type} {input : γ ↪ List Bool}
     {n E : γ → ℕ} {adj : γ → Bool → ℕ → ℕ → Bool} {u v : γ → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -393,11 +379,11 @@ private theorem computableInPolyTime_check {γ : Type} {input : γ ↪ List Bool
   have hc₁ := (ComputableInPolyTime.bitsGetDWithInput huq
     ((hnq.unary_mul' hnq).unary_add' ((hi.unary_mul' hnq).unary_add' hj)) false).beq
     (hfi.decide_eq' hj)
-  have hc₂ := bool_or'_pt (hi.decide_eq' hj) (decide_ne_pt hfi hfj)
+  have hc₂ := (hi.decide_eq' hj).bool_or' (hfi.decide_ne hfj)
   have hc₃ := (ComputableInPolyTime.bitsGetDWithInput huq
     ((hfi.unary_mul' hnq).unary_add' hfj) false).beq
     (ComputableInPolyTime.bitsGetDWithInput huq ((hi.unary_mul' hnq).unary_add' hj) false)
-  have hc₄ := bool_or'_pt (hi.decide_eq' hj) (decide_ne_pt hτi hτj)
+  have hc₄ := (hi.decide_eq' hj).bool_or' (hτi.decide_ne hτj)
   have hc₅ := (ComputableInPolyTime.bitsGetDWithInput huq
     ((hτi.unary_mul' hnq).unary_add' hτj) false).beq
     (hadj hx (ComputableInPolyTime.bitsGetDWithInput hvq (.const 0) false) hi hj)
@@ -426,7 +412,7 @@ theorem computableInPolyTime_test (N : Polynomial ℕ) :
     (ComputableInPolyTime.unary_eval N).comp
       ((ComputableInPolyTime.encoding_length (encPair encGraph encGraph)).comp (.fst _ encBits))
   unfold test
-  exact bool_or'_pt (decide_ne_pt hn₂ hn₁)
+  exact (hn₂.decide_ne hn₁).bool_or'
     (computableInPolyTime_check hn₁ hE
       (fun hg hb hi hj => hb.ite
         (Graph.computableInPolyTime_adjIndex hg.fst'.snd' hi hj)

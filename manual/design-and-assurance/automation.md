@@ -2,6 +2,75 @@
 
 The automation layer searches for proofs of explicit mathematical contracts. It generally reuses named certificates and compositional rules; it is not a compiler that can assign a polynomial bound to an arbitrary Lean program. In particular, a short tactic call hides a checked derivation, but the model, algorithm and invariant still have to be right. [cslib-frontier][complexitylib]
 
+## Find the tactic for a goal
+
+The tables below list the tactics and commands the library provides for general use, by the goal
+each proves; helper macros written for the proofs of a single module are left out. The
+module column omits the common prefix `CslibFrontier.`; import that module, and for a scoped
+tactic also open the namespace named in its row. Each reference is the most complete account of
+the tactic, in this chapter or another, or its checked clients when no chapter covers it; the
+clients show the imports and local context. Search tactics such as `polytime` and `fits` either
+close the goal or fail with a diagnostic. Execution and reduction tactics such as `wram_exec`,
+`fo_reduction` and `realize` leave the obligations they cannot prove as goals; their references
+say which.
+
+**Resource certificates**
+
+| Tactic | Module | Goal | Reference |
+|---|---|---|---|
+| `polytime`, `polytime [f, g]` | `Tactic.PolyTime`; `Tactic.WordRAM` for RAM certificates | `ComputableInPolyTime f encIn encOut`, or its tidy form; registered RAM certificates | [Named certificates](#named-certificates-and-polynomial-time) |
+| `ppt`, `ppt [f, g]` | `Tactic.PPT` | `IsPPTOn`, `IsPPT`, `IsOraclePPTOn`, `IsOraclePPT` | [Named certificates](#named-certificates-and-polynomial-time), [other resource predicates](#other-resource-predicates) |
+| `@[program_certificate h*]` (attribute) | `Tactic.PolyTime.Init` | registers a certificate for `polytime`, `logspace`, `ppt` and `stateful` | [Named certificates](#named-certificates-and-polynomial-time) |
+| `logspace` | `Tactic.LogSpace` | `ComputableInLogSpace f encIn encOut` | [Other resource predicates](#other-resource-predicates), [checked clients](../../CslibFrontierTests/LogSpaceTactic.lean) |
+| `space`, `space [f]` | `Tactic.Space` | `ComputableInSpace f encIn encOut S`, with an explicit budget `S` | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
+| `degree` | `Tactic.Degree` | `ComputableInDegree f encIn encOut d e` | [Preserve explicit polynomial degrees](#preserve-explicit-polynomial-degrees) |
+| `fun_prop` (Mathlib) | `Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists` | `ComputableInO f encIn encOut T S` | [Assemble joint time and space bounds](#assemble-joint-time-and-space-bounds) |
+| `option_match_to_elim` | `Tactic.OptionMatch` | any goal with an option match, before resource automation | [Rewrite option matches](#rewrite-option-matches-before-resource-automation) |
+| `growth_poly`, `growth_poly [h]` | `Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation` | `PolyBounded size cost`, `Cslib.PolynomiallyBounded p` | [Composing polynomial resource envelopes](../machines-and-classes/native-and-resources.md#composing-polynomial-resource-envelopes) |
+| `bigO` (scoped, `Turing.MultiTapeTM`) | `Computability.Machines.Turing.MultiTape.Complexity.BigOLe` | `u ≼ v` (`BigOLe`) | [Source docstring](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/BigOLe.lean#L123) |
+| `stateful` | `Tactic.Stateful`; `Tactic.WordRAM` for RAM controllers | `Hoare` and `CostHoare` contracts of `StateTransitionSpec`; registered `WordRAM.Refines` controllers | [Other resource predicates](#other-resource-predicates), [checked clients](../../CslibFrontierTests/StatefulRefinement.lean) |
+
+**Encodings and arithmetic**
+
+| Tactic | Module | Goal | Reference |
+|---|---|---|---|
+| `enc_structure eS : S where f₁ : e₁, …` (command) | `Computability.Machines.Turing.MultiTape.Encodings.Structure` | declares the encoding of a structure and its rules | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
+| `enc_inductive eT : T where …` (command) | `Computability.Machines.Turing.MultiTape.Encodings.Inductive` | declares the encoding of an inductive type and its rules | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
+| `enc_len`, `enc_len [l] at h ⊢` | `Tactic.EncLen` | a linear bound on encoded lengths | [Close encoded-length arithmetic](#close-encoded-length-arithmetic) |
+| `fits`, `fits [h]` | `Tactic.Fits` | `Fits w v` or `v < 2 ^ w` | [Close word-size bounds](#close-word-size-bounds) |
+
+**Word-RAM and counter programs**
+
+| Tactic | Module | Goal | Reference |
+|---|---|---|---|
+| `ram_eval`, `ram_eval n [p, h]` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.Notation` | `ExecWithin w c x y T`, `Exec w c x y T` | [Execute word-RAM code](#execute-word-ram-code) |
+| `ram_exact_eval n [p, h]` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.ExactNotation` | the same, over the exact basis | [Execute word-RAM code](#execute-word-ram-code) |
+| `wram_exec`, `wram_exec -split (disch := t) [h]` | `Computability.WordRAM.SymbolicExec` | `WP w c x Q`, `∃ y, ExecWithin w c x y T ∧ P y`, and the `Exec` forms | [Execute word-RAM code](#execute-word-ram-code) |
+| `wram_simp [h] at l` | `Computability.WordRAM.SymbolicExec` | reads of registers and memory after `Data.set` and `Data.write` | [Execute word-RAM code](#execute-word-ram-code) |
+| `wram_bounded` | `Computability.WordRAM.SymbolicExec` | `y.Bounded w` for data built by writes | [Execute word-RAM code](#execute-word-ram-code) |
+| `wram_call h with pats`, `wram_call h renamed hf with pats` | `Computability.WordRAM.SymbolicExec.Call` | a `WP` or `WP.Exact` goal at a call of the routine that `h` specifies | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
+| `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
+| `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
+| `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `cp_step`, `cp_step [h]` | `Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` | one step of `P.Reaches w Q (l, regs) s'` for a counter program | [Step through counter programs](#step-through-counter-programs) |
+
+**Circuits, logic and probability**
+
+| Tactic | Module | Goal | Reference |
+|---|---|---|---|
+| `synthesis_available` | `Tactic.Synthesis` | membership of a wire among those already available | [Circuit construction](#circuit-construction), [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) |
+| `synthesis_step b using r` | `Tactic.Synthesis` | appends the rule `r` to the builder `b` | [Circuit construction](#circuit-construction) |
+| `fo_qf`, `fo_iso_closed` | `Tactic.FirstOrder` | quantifier-freeness; closure of a class under isomorphism (`IsoClosed`) | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FirstOrderAutomation.lean) |
+| `fo_simp [h] at l` | `Tactic.FirstOrder` | unfolds the realization of formulas and interpreted structures | [Logical descriptions](#logical-descriptions) |
+| `fo_reduction I [h]` | `Tactic.FirstOrder` | `FO.QFReduces K K'`, `FO.Reduces K K'` through the interpretation `I` | [Logical descriptions](#logical-descriptions) |
+| `fo_definable`, `fo_wf [φ]` | `Tactic.FOOperator` | `Operator.Definable …`; formation conditions of explicit formulas | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FOOperators.lean) |
+| `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
+
+The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
+simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, `cp_simps`, used by `cp_step`, and
+`fo_realize`, used by `fo_simp`, and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`,
+`FirstOrder` and `FODefinable`.
+
 ## Assemble joint time and space bounds
 
 Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists`
@@ -34,11 +103,40 @@ encoding lengths and prove the remaining growth inequalities. The tactic does no
 those bounds or supply missing callback certificates. The [deterministic workflow](../workflows/deterministic-workflows.md)
 explains the joint certificate and charged-space convention in context.
 
+## Preserve explicit polynomial degrees
+
+Import `CslibFrontier.Tactic.Degree` and `open Turing.MultiTapeTM` to use `degree` for
+`ComputableInDegree f encIn encOut d e`. Degree `d` bounds both time and workspace;
+degree `e` bounds encoded output length. In particular, `1 1` retains linear time,
+linear space and linear output growth, rather than merely proving some polynomial bound.
+The complete [DegreeTactic client](../../CslibFrontierTests/DegreeTactic.lean) checks option
+matches and list-head/default composition with these explicit encodings:
+
+```lean
+example : ComputableInDegree (fun l : List ℕ => (l.head?).getD 0)
+    (encList encUnary) encUnary 1 1 := by
+  degree
+```
+
+`degree` rewrites supported option matches to `Option.elim`, then invokes `fun_prop`, using
+reflexivity and linear arithmetic for degree side conditions. It does not unfold named
+routines: first `unfold` a local wrapper, or provide its registered certificate. The
+[Universal step client](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/Complexity.lean)
+uses this for tape reads, writes and fixed-direction moves, then composes their certificates.
+The named read/move lemmas remain useful to other modules even when their proofs are one line.
+
+This is composition of existing resource rules, not degree inference for arbitrary programs.
+The new option-elimination and list-head rules apply at `1 1` and require an inhabited payload;
+the tactic may solve other degrees only when the imported rules and arithmetic permit it.
+Finite-enumeration matches, dependent matches and missing callback or loop-growth certificates
+still need explicit reasoning. Use `polytime` when the contract needs only an unspecified
+polynomial; use `fun_prop` with explicit bounds for `ComputableInO`.
+
 ## Named certificates and polynomial time
 
-[`program_certificate`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime/Init.lean#L17) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index prevents a RAM certificate from accidentally solving a Turing-machine goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
+[`program_certificate`](../../CslibFrontier/Tactic/PolyTime/Init.lean) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index prevents a RAM certificate from accidentally solving a Turing-machine goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
 
-[`polytime`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime.lean#L25) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
+[`polytime`](../../CslibFrontier/Tactic/PolyTime.lean) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
 
 Before searching, `polytime` and `ppt` prepare the goal the same way. `polytime [f, g]` (or
 `ppt [f, g]`) unfolds the definitions `f` and `g` in the goal and inlines the `let`s this exposes;
@@ -48,6 +146,14 @@ add the certificates stored in fields of local structures as local facts: a sche
 fields such as `S.encrypt_ppt`, an admissibility hypothesis `hA` its stage certificates. A hint
 that does not occur in the goal is an error. The checked
 [client](../../CslibFrontierTests/OraclePPTTactic.lean) shows each step.
+
+When either tactic fails without a timeout, its error can name one subterm that a compositional
+attempt could not certify. Both tactics decide once per file which imported rules plain search
+may use, so only the first call in a file pays for that; a heartbeat budget on one call covers it
+only if that proof is elaborated first. `[local irreducible]` on an imported definition that is
+not `Prop`-valued, such as an encoding, makes each call in its scope decide again: slower, with
+the same results. The [checked controls](../../CslibFrontierTests/PolyTimeRuleClassCache.lean)
+cover local registrations and both reducibility cases.
 
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
@@ -85,12 +191,59 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 
 | Tactic/interface | Input contract and strategy | Boundary |
 |---|---|---|
-| [`logspace`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/LogSpace.lean#L15) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
-| [`ppt`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PPT.lean#L18) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
-| [`stateful`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/Stateful.lean#L14) | Local semantic/operation-cost Hoare contracts and Aesop rules | Intermediate assertions and implementations for bind/link are supplied explicitly; total machine time remains separate |
-| [`wordram`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/WordRAM.lean#L16) | Registered controller/refinement and polynomial-time certificates | Width, basis and fixed-code realization matter; host-language continuation work is not automatically free |
+| [`logspace`](../../CslibFrontier/Tactic/LogSpace.lean) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
+| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
+| [`stateful`](../../CslibFrontier/Tactic/Stateful.lean) | Local semantic/operation-cost Hoare contracts and Aesop rules | Intermediate assertions and implementations for bind/link are supplied explicitly; total machine time remains separate |
+
+[`Tactic.WordRAM`](../../CslibFrontier/Tactic/WordRAM.lean) adds no tactic of its own. Importing it lets `stateful` reuse controller refinements (`WordRAM.Refines`) and `polytime` reuse RAM polynomial-time certificates (`WordRAM.ComputableInPolyTime`, `WordRAM.UniformComputableInPolyTime`) registered with `program_certificate`. Width, basis and fixed-code realization still matter, and host-language continuation work is not free: `Refines.bind`, `branch`, `prepend` and `call` choose intermediate assertions and charged preparation code explicitly. The [controller clients](../../CslibFrontierTests/WordRAMController.lean) use both tactics.
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
+
+## Execute word-RAM code
+
+Two tactics run structured word-RAM programs (`Cslib.WordRAM.Code`) in proofs. `ram_eval`
+evaluates a whole run; `wram_exec` steps through the straight-line parts of a correctness proof
+and leaves the rest to specifications.
+
+Import `CslibFrontier.Computability.WordRAM.Notation` and `open Cslib.WordRAM` to use `ram_eval`;
+like the `ram[ … ]` notation, it is scoped. On a goal `ExecWithin w c x y T` or `Exec w c x y T`
+it runs the interpreter `Code.eval` with `simp` and closes the goal when the run reaches `y`
+within `T` instructions, or exactly `T` for `Exec`. The data `x` may be arbitrary as long as
+`simp` decides every condition the run tests. With `y` a metavariable, as after
+`refine ⟨?y, ?run, ?post⟩`, it computes `y`. `ram_eval n` allows each loop `n` iterations, and the
+default `0` suits loop-free code. Pass programs given by name and facts about the data as simp
+lemmas, as in `ram_eval 3 [count]`. Fitting conditions are decided by `omega` from the `Fits`
+hypotheses in context, as described [below](#close-word-size-bounds). `ram_exact_eval`, in
+`CslibFrontier.Computability.WordRAM.ExactNotation`, does the same over the exact basis, and
+uses its simp lemmas to show that subtractions do not go below zero and that divisors are
+nonzero. The [interpreter clients](../../CslibFrontierTests/WordRAM.lean) run straight-line code
+on arbitrary data and at a symbolic word size, a counting loop with three iterations, and a
+renamed program.
+
+Import `CslibFrontier.Computability.WordRAM.SymbolicExec` to use `wram_exec` when a run reaches
+loops, random samples or subprograms that need their own specifications, or branches on facts
+`simp` cannot decide. On `WP w c x Q`, `∃ y, ExecWithin w c x y T ∧ P y` or their exact
+forms, it executes data instructions and conditionals and leaves the postcondition at the data
+reached. It stops at a loop, a random sample or a program given by name and leaves `WP w c' y Q'`:
+continue with `refine WP.of_execWithin h ?_` from a specification `h` of `c'` (with
+`refine WP.Exact.of_exec h ?_` on an exact goal), or with `wram_call`, then run `wram_exec`
+again. A conditional the facts do not decide splits into goals tagged `pos` and `neg`;
+`wram_exec -split` stops there instead. `wram_simp` simplifies register
+and memory reads in the remaining postcondition, and `wram_bounded` proves `y.Bounded w` for data
+built by writes from bounded data, leaving the fitting conditions it cannot prove. The
+[symbolic-execution clients](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check each step
+and the diagnostics for a goal of the wrong form, a value that cannot be evaluated and a program
+with nothing to execute. Calls, register renaming and memory frames are covered in
+[routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames).
+
+If `ram_eval` does not close its goal, check that every program given by name is among its simp
+lemmas, that `n` covers the iterations of every loop, and that the simp lemmas decide each
+condition the run tests: pass a hypothesis such as `h : x.regs i < x.regs j` explicitly, as in
+`ram_eval [p, h]`, because its `simp` call does not read hypotheses from the context. Fitting
+conditions are decided from the `Fits` hypotheses in context. A loop with a symbolic iteration
+count needs an invariant, such as `ExecWithin.loop_count` in the
+[counting-loop chapter](../algorithms-and-memory/wordram-and-bridges.md#proving-a-constant-cost-counting-loop),
+not a larger `n`.
 
 ## Certify and reuse memory methods
 
@@ -128,15 +281,17 @@ code and charging contract; the complete clients above supply imports and local 
 
 ## Circuit construction
 
-[`synthesis_step`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/Synthesis.lean#L13) applies an explicitly supplied synthesis rule and locates its required wires among available values. `Synthesis.Builder` retains earlier wires and accumulates certified cost. Membership search itself adds no gates. Reusing a computed value preserves sharing; invoking a new construction charges its bound. A final budget check verifies the chosen construction fits the target, but does not search globally for an optimal circuit.
+[`synthesis_step`](../../CslibFrontier/Tactic/Synthesis.lean) applies an explicitly supplied synthesis rule and locates its required wires among available values. `Synthesis.Builder` retains earlier wires and accumulates certified cost. Membership search itself adds no gates. Reusing a computed value preserves sharing; invoking a new construction charges its bound. A final budget check verifies the chosen construction fits the target, but does not search globally for an optimal circuit.
+
+`synthesis_available` is that membership search on its own: it proves that a function is among the available wires, through the unions, ranges and indexed unions a builder's wire set is made of, and fails rather than adding a gate when it is not. The [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) uses it for every gate input and for the selected outputs.
 
 This contract answers a recurrent concern in the transcript: removing proof bookkeeping must not silently introduce gates. The [circuit case study](../development-history/case-studies.md) connects that concern to PR #520 and to the subsequent decision not to pursue general budget-guided synthesis in that session. The present tactic source is the authority for its current capabilities.
 
 ## Logical descriptions
 
-[`FirstOrder.lean`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/FirstOrder.lean) provides `fo_qf`, `fo_iso_closed`, `fo_simp` and `fo_reduction`. They separate syntactic obligations and structural semantic rewrites from the mathematical proof that a reduction expresses the intended property. High-level composition lemmas avoid expanding every pullback into raw syntax.
+[`FirstOrder.lean`](../../CslibFrontier/Tactic/FirstOrder.lean) provides `fo_qf`, `fo_iso_closed`, `fo_simp` and `fo_reduction`. They separate syntactic obligations and structural semantic rewrites from the mathematical proof that a reduction expresses the intended property. High-level composition lemmas avoid expanding every pullback into raw syntax.
 
-[`FOOperator.lean`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/FOOperator.lean#L14) similarly synthesizes a single uniform formula for a family through `fo_definable`, with `fo_wf` handling supported well-formedness/positivity obligations. This does not mean a different formula may be selected separately for each structure. Fixed-point operators, positivity and interpretation legality remain mathematical constraints. The [logic survey](../circuits-logic-and-other-models/index.md) records the distinction between interpretation, quantifier-free reduction and projection.
+[`FOOperator.lean`](../../CslibFrontier/Tactic/FOOperator.lean) similarly synthesizes a single uniform formula for a family through `fo_definable`, with `fo_wf` handling supported well-formedness/positivity obligations. This does not mean a different formula may be selected separately for each structure. Fixed-point operators, positivity and interpretation legality remain mathematical constraints. The [logic survey](../circuits-logic-and-other-models/index.md) records the distinction between interpretation, quantifier-free reduction and projection.
 
 ## Close encoded-length arithmetic
 
@@ -162,6 +317,46 @@ inspect its bounds, supply missing arithmetic facts or name a local encoding lem
 lemma reports the underlying name-resolution error; check its spelling, namespace and import.
 The tactic neither invents a growth bound nor searches for an encoding definition to unfold.
 
+## Close negligibility bounds
+
+Asymptotic security theorems finish by showing that a concrete advantage or failure bound is
+`Cslib.Crypto.Negligible`. Import `CslibFrontier.Tactic.Negligible` and close such a goal with
+`negligible`, `negligible using hle` or `negligible eventually hle` instead of restating a real
+upper bound as an `ℝ≥0` mirror expression and threading `negligible_of_le`, `NNReal.coe_*` and
+`Pi.add_apply` by hand. The [checked clients](../../CslibFrontierTests/NegligibleTactic.lean) cover
+dyadic reciprocals, polynomial and birthday numerators, parameter shifts and scalings, square roots,
+geometric terms, range sums, local `let` definitions, unary `ComputableInPolyTime` certificates,
+`ℝ≥0` and `ℝ` upper bounds, and failure diagnostics. To check them, run
+`lake build CslibFrontierTests.NegligibleTactic --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md).
+
+Plain `negligible` normalizes pointwise `Pi` operations, unit fractions `1 / x` and natural-number
+casts, derives `PolynomiallyBounded` facts from local `ℕ → ℕ` `let` bindings and unary
+`ComputableInPolyTime f encUnary encUnary` hypotheses in context, and runs `fun_prop` with
+`norm_num`, `positivity` and `omega` on side conditions. Through the closure rules in
+`CslibFrontier.Crypto.Negligible.Dyadic`, it handles `((2 : ℝ≥0) ^ n)⁻¹`, `(1 : ℝ≥0) / 2 ^ n`,
+polynomial and birthday ratios such as `(Q n : ℝ≥0) ^ 2 / (2 * 2 ^ n)` and
+`((Q n).choose 2 : ℝ≥0) / 2 ^ n`, constant scaling and division, `NNReal.sqrt`, geometric powers
+`ratio ^ n` with `ratio < 1`, parameter schedules (`ε (n + c)`, `ε (c + n)`, `ε (c * n)` and
+`ε (n / c)` for `0 < c`), and uniform `Finset.range (Q n)` sums.
+
+When the quantitative step gives an inequality rather than a syntactic expression in the goal, pass
+it directly with `negligible using hle` for a pointwise bound `∀ n, …` or
+`negligible eventually hle` for an asymptotic bound `∀ᶠ n in Filter.atTop, …`. Both forms accept
+bounds in `ℝ≥0` (`f n ≤ B n`) and in `ℝ` (`(f n : ℝ) ≤ B n`, including `.toReal` bounds on
+`Game.succProbability`). On a real bound, the tactic applies `negligible_of_coe_le` or
+`negligible_of_eventually_coe_le` and pushes `Real.toNNReal` structurally across sums, products,
+quotients, reciprocals, natural powers, `Real.sqrt`, `Finset.sum` and casts before invoking
+`fun_prop`.
+
+If the target is not `Cslib.Crypto.Negligible f`, the diagnostic reports the unexpected goal. If
+`using` or `eventually` cannot match `hle` as an `ℝ≥0` or `ℝ` upper bound on `f`, it reports the
+expected inequality shape. If `fun_prop` cannot discharge the resulting `ℝ≥0` bound, the diagnostic
+displays the normalized residual `Negligible` goal; supply the missing `Negligible` or
+`PolynomiallyBounded` fact in context, or bound an indexed sum first with
+`Negligible.sum_range_of_le`. The tactic discharges asymptotic decay from a proved quantitative
+bound; it does not perform game hops or probability rewrites itself.
+
 ## Close word-size bounds
 
 Word-RAM instructions need a fitting condition `Fits w v`, which unfolds to `v < 2 ^ w`, for
@@ -175,6 +370,13 @@ a wider word, conjunctions and negations of fitting facts, a product bound and b
 To check them, run `lake build CslibFrontierTests.FitsTactic --wfail --iofail` from the repository
 root after [setup](../workflows/getting-started.md).
 
+`ram_eval` and `ram_exact_eval` decide the fitting conditions of the values they write the same
+way, with the simplification procedure `Cslib.WordRAM.reduceFits`. It uses only the hypotheses
+that mention `Fits`, and at most 16 of them; past that it only matches a hypothesis of the same
+statement. A value that fits by a larger fitting fact in context therefore needs no named
+`Fits` statement among their simp lemmas. These tactics' modules import `CslibFrontier.Tactic.Fits`,
+so their clients can call `fits` without importing it.
+
 A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
 are atoms for `omega`: give a bound on one as a term, as in
 `fits [Nat.mul_le_mul_right b hc]`. A hypothesis about a different word width is related to `w`
@@ -185,9 +387,59 @@ If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic r
 If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
 missing bound, for instance on a product or on a value read from memory.
 
+## Reorder independent samples
+
+Two experiments that draw the same independent samples in different orders have the same law.
+Import `CslibFrontier.Tactic.PMFSwap` and, after `simp only [pmf_norm]`, prove the equation with
+`pmf_swap`. It matches the samples of the two sides by their distributions, not their positions,
+moves them to the front with `PMF.bind_comm` and strips them. It closes the goal when the remaining
+continuations agree up to reducible unfolding, trying the matches of repeated distributions; `simp
+[PMF.bind_comm]` instead loops on two samples of one distribution. That search has a budget of 256
+steps, renewed after stripping each sample whose distribution occurs once on each side. When it
+runs out, `pmf_swap` fails rather than guess an order: many samples of one distribution, such as
+six drawn in reverse order, exceed it. Then strip or reorder some samples first. If no order makes
+the sides agree, it strips the common samples, first those whose distribution occurs once on each
+side, and leaves the equation of the continuations. `pmf_swap with x y` skips the search, strips
+exactly two samples the same way and names them.
+
+When both sides draw the same distributions and differ only in what they return, the goal does
+not determine which sample to strip. Choose it with `pmf_hoist q`, which moves the samples of `q`
+toward the front of their chains anywhere in the goal, or in a hypothesis with `at h`, then strip
+it with `congr 1 with x : 1`. A sample whose distribution mentions an earlier sample never moves
+past it; the diagnostic lists the samples of both sides and marks those dependencies. The
+[checked clients](../../CslibFrontierTests/PMFSwap.lean) cover each form and diagnostic.
+
+## Step through counter programs
+
+A reachability proof for a counter program (`Turing.CounterProgram.Reaches`) goes through its
+instructions one at a time. Import
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` and
+take each step with `cp_step` instead of `refine Reaches.assign h hB ?_` followed by
+`simp only [eval_add, eval_reg, …]`. The tactic reads the instruction at the current label from a
+hypothesis `P.instr l = i`, or by evaluation when the program is concrete. It applies the rule of
+that instruction: assignment, comparison or read, plus the oblivious and shifted rules when
+`CounterProgram.AllBranches` or `CounterProgram.Block` is imported. It proves the register bound
+from a hypothesis and simplifies the next configuration with the simp set `cp_simps`. Pass the
+values of the registers read, the input bit read and the outcome of a comparison as simp lemmas,
+as in `cp_step [h0, hw]`. The goal closes when the configuration reached is the target or a
+hypothesis. The [checked clients](../../CslibFrontierTests/CounterProgramStep.lean) cover running,
+oblivious and shifted steps, a concrete program and the diagnostics. The shape check of the
+[logspace model checker](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder.lean)
+is a library client.
+
+A label that is still a conditional, or a `match` on an input bit the lemmas do not give, stops the
+tactic with a diagnostic: split into cases and pass the outcome, as in `by_cases h : 0 < n` followed
+by `cp_step [h]`. A side condition the tactic
+cannot prove, typically a register bound that is not a hypothesis, is named in the error; state it
+with `have` first, as in `have hB := hk.2.2`. For a step followed by a reachability fact `hrest`
+from a lemma, leave the step as a goal with `refine Reaches.trans ?_ hrest` and close it by
+`cp_step`; the oblivious steps of the
+[counting loop](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder/TransitiveClosure/Counting.lean)
+are written this way.
+
 ## Proof style as interface maintenance
 
-The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/AGENTS.md#proof-hygiene)
+The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](../../AGENTS.md#proof-hygiene)
 
 Readable `do` notation, named intermediate circuit values and named state fields are recurring client-facing priorities. Inspect representative source clients and before/after PRs to assess these benefits; a raw tactic count does not demonstrate usability. The historical study does not measure an automation success rate: such a rate would need a denominator of attempted goals, failures, manual repairs and timeouts.
 
