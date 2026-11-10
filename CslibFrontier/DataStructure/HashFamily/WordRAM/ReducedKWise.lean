@@ -2276,9 +2276,9 @@ private theorem packOutStep_exec {w t b' evalVal : ℕ}
     calc reducedOutShift c b' m ≤ b' := reducedOutShift_le c b' m
       _ ≤ w := hb'_le
       _ < 2 ^ w := Nat.lt_two_pow_self
-  set limb := getLimb c evalVal m
-  set masked := limb &&& reducedOutMask c b' m
-  set shifted := masked <<< reducedOutShift c b' m
+  set limb := getLimb c evalVal m with hlimb_def
+  set masked := limb &&& reducedOutMask c b' m with hmasked_def
+  set shifted := masked <<< reducedOutShift c b' m with hshifted_def
   set next2 := packLimbs c (m + 1) (getLimb c evalVal) &&& (2 ^ b' - 1)
   have hmasked_lt : masked < 2 ^ c :=
     lt_of_le_of_lt Nat.and_le_right (reducedOutMask_lt c b' m)
@@ -2304,36 +2304,10 @@ private theorem packOutStep_exec {w t b' evalVal : ℕ}
   have hnext2_lt : next2 < 2 ^ w := by
     calc next2 < 2 ^ b' := and_two_pow_sub_one_lt _ b'
       _ ≤ 2 ^ w := Nat.pow_le_pow_right two_pos hb'_le
-  set s1 := x.set 10 (reducedOutMask c b' m)
-  have e1 : Exec w (.op (.const 10 (reducedOutMask c b' m)) : Code .exact 240) x s1 1 :=
-    Exec.const hfit_mask
-  set s2 := s1.set 11 (reducedOutShift c b' m)
-  have e2 : Exec w (.op (.const 11 (reducedOutShift c b' m)) : Code .exact 240) s1 s2 1 :=
-    Exec.const hfit_shift
-  set s3 := s2.set 12 masked
-  have e3 : Exec w (.op (.exactBin .and 12 (accReg m) 10) : Code .exact 240) s2 s3 1 :=
-    exec_exactBin
-      (by
-        dsimp only [s2, s1, Data.set, BinOp.evalExact]
-        rw [Function.update_of_ne (accReg_ne_low m (by decide)),
-          Function.update_of_ne (accReg_ne_low m (by decide)),
-          Function.update_of_ne (by decide : (10 : Fin 240) ≠ 11),
-          Function.update_self, hacc m hm])
-      (lt_trans hmasked_lt hpow_c_lt)
-  set s4 := s3.set 12 shifted
-  have e4 : Exec w (.op (.exactBin .shiftLeft 12 12 11) : Code .exact 240) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, shifted]) hshifted_lt
-  set s5 := s4.set 2 next2
-  have e5 : Exec w (.op (.exactBin .xor 2 2 12) : Code .exact 240) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1, hnext2_eq]) hnext2_lt
-  refine ⟨s5, e1.seq (e2.seq (e3.seq (e4.seq e5))),
-    by simp +decide [s5, s4, s3, s2, s1],
-    by simp +decide [s5, s4, s3, s2, s1],
-    by simp +decide [s5],
-    fun i hi => ?_, rfl⟩
-  dsimp only [s5, s4, s3, s2, s1, Data.set]
-  repeat rw [Function.update_of_ne (accReg_ne_low i (by decide))]
-  exact hacc i hi
+  unfold packOutStep
+  wram_exec [show x.regs (accReg m) = limb from hacc m hm, ← hmasked_def, ← hshifted_def,
+    hnext2_eq]
+  exact ⟨by wram_simp, by wram_simp, by wram_simp, fun i hi => by wram_simp [hacc i hi]; rfl, rfl⟩
 
 private theorem packOutCode_exec {w t b' evalVal : ℕ}
     (hc_lt : 2 * reducedChunkBits t < w)
