@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Na
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.RunsWords
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.RewindInput
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Fair-bit and bounded-prefix oracle query machines
@@ -74,9 +75,7 @@ theorem computesTidily_coinMachine (x : List Bool) :
     rw [Config.step, htapes]
     exact Cfg.ext_zero_tapes rfl rfl (by simp [Turing.Action.apply, wordsCfg])
   · rintro ⟨finalCfg, finalState⟩ hfinal op
-    obtain ⟨bit, _, heq⟩ := (PMF.mem_support_bind_iff _ _ _).mp hfinal
-    rw [PMF.mem_support_pure_iff] at heq
-    rcases Prod.mk.inj heq with ⟨rfl, rfl⟩
+    supp_cases hfinal
     simp [Config.step, hbuf op]
 
 /-! ### Bounded-prefix query machine -/
@@ -451,11 +450,8 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
           (Sequential.start (ofDeterministic (rewindInput Bool)) result.1)) result.2).support,
         final.1.tapes.state = none := by
     rintro result hresult ⟨finalCfg, finalState⟩ hfinal
-    rw [hcore] at hresult
-    obtain ⟨⟨answer, s₁⟩, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hresult
-    rw [run_interpret_runOracleConfigFrom_ofDeterministic, hrew answer,
-      PMF.mem_support_pure_iff] at hfinal
-    rcases Prod.mk.inj hfinal with ⟨rfl, rfl⟩
+    supp_cases hresult [hcore] with ⟨⟨answer, s₁⟩, -, rfl⟩
+    supp_cases hfinal [run_interpret_runOracleConfigFrom_ofDeterministic, hrew answer]
     rfl
   have htotal : 4 * q.length + 2 * limit + 6 = tCore + tRew := by
     dsimp only [tCore, t₁, t₂, tRew]
@@ -472,12 +468,7 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
       wordsCfg_state, Option.map_none, id_eq]
     rfl
   · rintro ⟨finalCfg, finalState⟩ hfinal other
-    rw [PMF.bind_map] at hfinal
-    obtain ⟨⟨answer, s₁⟩, _, hfinal⟩ := (PMF.mem_support_bind_iff _ _ _).mp hfinal
-    dsimp only [Function.comp_def] at hfinal
-    rw [run_interpret_runOracleConfigFrom_ofDeterministic, hrew answer, PMF.pure_map,
-      PMF.mem_support_pure_iff] at hfinal
-    rcases Prod.mk.inj hfinal with ⟨rfl, rfl⟩
+    supp_cases hfinal [run_interpret_runOracleConfigFrom_ofDeterministic, hrew]
     by_cases heq : other = op
     · subst other
       simp [Sequential.right, Sequential.start, QueryTakeCore.config]

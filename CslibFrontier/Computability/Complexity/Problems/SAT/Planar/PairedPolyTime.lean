@@ -11,7 +11,6 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedC
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathPolyTime
 import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
-import CslibFrontier.Computability.PolyTime.Int.Compare
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
