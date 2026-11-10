@@ -7,7 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 
 /-!
@@ -16,7 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSp
 These estimates separate linear bank and assignment-capacity storage from logarithmic metadata.
 In particular, the chunk width used at each stack level is bounded by the binary block width,
 not by the block width itself. This distinction prevents a spurious horizon-times-block term.
-The final estimate assembles these bounds with one candidate and one suspended caller.
+The final estimate bounds the uniform schedule allowance of the initialized evaluator.
 -/
 
 public section
@@ -313,31 +314,23 @@ theorem initialized_allowance_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N b σ q : 
   change _ ≤ (init + 4 * H + reply + cr + 2) * R
   nlinarith only [hinit, hraw, hraw1, hcontext, hreply, hR]
 
-/-- The complete sequential search has the fixed-machine square-root-simulation storage shape. -/
-theorem space_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N b q : ℕ, 0 < b →
-    space k s Q N b q ≤ C * (b + q * (b.size + 1) + N.size + 1) := by
+/-- The uniform schedule allowance has the fixed-machine square-root-simulation storage shape. -/
+theorem scheduleAllowance_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N b q : ℕ, 0 < b →
+    InitializedEvaluator.scheduleAllowance k s Q N b q ≤
+      C * (b + q * (b.size + 1) + N.size + 1) := by
   obtain ⟨c, hc⟩ := initialized_allowance_le k s Q
-  refine ⟨c * (2 * (k + 1) + 2) + 64 * (k + 2) + 2, ?_⟩
+  refine ⟨c * (2 * (k + 1) + 2), ?_⟩
   intro N b q hb
-  let R := b + q * (b.size + 1) + N.size + 1
-  have hbs : b.size ≤ b := by simpa only [length_encNat_eq_size] using length_encNat_le_self b
-  have hqs : q.size ≤ q := by simpa only [length_encNat_eq_size] using length_encNat_le_self q
   have hq : q ≤ q * (b.size + 1) := Nat.le_mul_of_pos_right _ (by omega)
   have hcounter := counter_encoding_le k q (3 ^ ((k + 1) * q)) le_rfl
   rw [length_encNat_eq_size] at hcounter
-  have hbound := hc N b (3 ^ ((k + 1) * q)) q hb
   have harg : b + q * (b.size + 1) + N.size + (3 ^ ((k + 1) * q)).size + 1 ≤
-      (2 * (k + 1) + 2) * R := by dsimp only [R]; nlinarith
-  have hmul := Nat.mul_le_mul_left c harg
-  have hcaller : 2 * callerSpace k (N, b, q) + 2 ≤ (64 * (k + 2) + 2) * R := by
-    simp only [callerSpace, encArgs, length_encPair, length_encNat_eq_size]
-    dsimp only [R]
-    nlinarith
-  have hinit := hbound.trans hmul
-  change 2 * callerSpace k (N, b, q) +
-    InitializedEvaluator.allowance k s Q N b (3 ^ ((k + 1) * q)) q + 2 ≤ _
+      (2 * (k + 1) + 2) * (b + q * (b.size + 1) + N.size + 1) := by nlinarith
   calc
-    _ ≤ (64 * (k + 2) + 2) * R + c * ((2 * (k + 1) + 2) * R) := by omega
-    _ = _ := by dsimp only [R]; ring
+    _ ≤ c * (b + q * (b.size + 1) + N.size + (3 ^ ((k + 1) * q)).size + 1) :=
+      hc N b (3 ^ ((k + 1) * q)) q hb
+    _ ≤ c * ((2 * (k + 1) + 2) * (b + q * (b.size + 1) + N.size + 1)) :=
+      Nat.mul_le_mul_left c harg
+    _ = _ := by ring
 
 end Turing.MultiTapePTM.BlockComputation.ScheduleSearch

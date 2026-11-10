@@ -7,14 +7,15 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of native root classification and schedule search)
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchCorrect
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
 
 /-!
 # Root decisions and sequential search regressions
 
 Both accepting and rejecting halted roots stop search; a live root advances the counter.
 Header classification includes the existing decoder's unused-control-rank behavior. Counter
-tests cover the exact first excluded schedule and the zero-horizon boundary.
+tests cover the exact first excluded schedule and the zero-horizon boundary. The resumption
+tests run the generic search through Williams's initialized evaluator.
 -/
 
 public section
@@ -51,14 +52,40 @@ example : ScheduleCounter.valid 0 (1, 0) = false := by decide
 def returned (first second : ℕ) : InitializedEvaluator.State 0 (Fin 1) :=
   .inr (.inl ((1, 1, 0, 1, 3, 8, 64), (17, 1, 2), [first, second, 17, 17], [], none))
 
-example : ScheduleSearch.resume code ((1, 1, 1), 1, none) (returned 18 17) =
+example : InitializedEvaluator.outcome code ((1, 1, 1), returned 18 17) = some false := by
+  decide
+example : InitializedEvaluator.outcome code ((1, 1, 1), returned 18 19) = some true := by
+  decide
+example : InitializedEvaluator.outcome code ((1, 1, 1), returned 20 17) = none := by decide
+
+/-- A source that halts on its first step without accepting. -/
+def stop : MultiTapeTM 0 Bool (Fin 1) := MultiTapeTM.ofTr 0 fun _ _ _ =>
+  { inputTape := .zero, workTapes := Fin.elim0, output := none, state := none }
+
+/-- Williams's initialized evaluator for `stop`, as a generic schedule-search evaluator. -/
+noncomputable abbrev evaluator : ScheduleSearch.Evaluator :=
+  InitializedEvaluator.scheduleEvaluator stop code
+
+example : ScheduleSearch.resume evaluator ((1, 1, 1), 1, none) (returned 18 17) =
     ((1, 1, 1), 1, some false) := by decide
-example : ScheduleSearch.resume code ((1, 1, 1), 1, none) (returned 18 19) =
+example : ScheduleSearch.resume evaluator ((1, 1, 1), 1, none) (returned 18 19) =
     ((1, 1, 1), 1, some true) := by decide
-example : ScheduleSearch.resume code ((1, 1, 1), 1, none) (returned 20 17) =
+example : ScheduleSearch.resume evaluator ((1, 1, 1), 1, none) (returned 20 17) =
     ((1, 1, 1), 2, none) := by decide
 example : (ScheduleSearch.caller 0).halted ((1, 1, 1), 1, some false) = true := by decide
 example : (ScheduleSearch.caller 0).halted ((1, 1, 1), 3, none) = true := by decide
 example : (ScheduleSearch.caller 0).halted ((1, 1, 1), 2, none) = false := by decide
+
+/-- The generic search theorem applies to the Williams instance. -/
+example (w : List Bool) (b q : ℕ) [NeZero b] : ∃ T,
+    (ScheduleSearch.machine evaluator 0).halted
+      ((ScheduleSearch.machine evaluator 0).runFrom w
+        (ScheduleSearch.initial evaluator (w.length, b, q)) T) = true ∧
+    ScheduleSearch.answer ((ScheduleSearch.machine evaluator 0).runFrom w
+      (ScheduleSearch.initial evaluator (w.length, b, q)) T) =
+        RootDecision.boundaryDecision stop w (q * b) := by
+  obtain ⟨T, hhalt, hanswer, -⟩ := ScheduleSearch.exists_runFrom_boundaryDecision
+    (InitializedEvaluator.scheduleEvaluator_correct stop code) w b q
+  exact ⟨T, hhalt, hanswer⟩
 
 end CslibFrontierTests.ScheduleSearch

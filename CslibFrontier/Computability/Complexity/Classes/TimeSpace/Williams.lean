@@ -94,8 +94,8 @@ private theorem le_affine_sqrt_of_sq_le {x y C : ℕ} (h : x ^ 2 ≤ C * (y + 1)
 square-root-time-log-time resource, including its input-length scan. -/
 theorem williams_driver_space_le (k s : ℕ) (Q : Type) (c₁ c₂ : ℕ) :
     ∃ C, ∀ N x : ℕ, N ≤ x →
-      Driver.space k s Q N (c₁ * x + c₂) ≤
-        C * Nat.sqrt (x * (Nat.log2 x + 1)) + C := by
+      Driver.space k (InitializedEvaluator.scheduleAllowance k s Q) BalancedParameters.parameters
+        N (c₁ * x + c₂) ≤ C * Nat.sqrt (x * (Nat.log2 x + 1)) + C := by
   obtain ⟨c, hc⟩ := Driver.space_sq_le k s Q
   obtain ⟨K, hK⟩ := affine_max_product_le c₁ c₂
   refine ⟨c * K + 1, ?_⟩
@@ -130,7 +130,8 @@ theorem DTIME_subset_DSPACE_sqrt {α : Type*} (enc : α ↪ List Bool) (t : ℕ 
     rw [← ha]
     simpa only [Turing.MultiTapeNTM.initCfg] using h.1
   obtain ⟨simTime, simFactor, k', Q', hfinite', simulator, hsim⟩ :=
-    Driver.computableInSpace_decision M e inputEncoding clock hclock
+    Driver.computableInSpace_decision (InitializedEvaluator.scheduleEvaluator_correct M e)
+      BalancedParameters.parameters inputEncoding clock hclock
   obtain ⟨C, hC⟩ := williams_driver_space_le k (Fintype.card Q) Q c₁ c₂
   refine mem_DSPACE_iff.mpr ⟨simFactor * C, simFactor * C, ?_, k', Q', hfinite', simulator, ?_⟩
   · exact fun a => simTime ⟨enc a, ⟨a, rfl⟩⟩

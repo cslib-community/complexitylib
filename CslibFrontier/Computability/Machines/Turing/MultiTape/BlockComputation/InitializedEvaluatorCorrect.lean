@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluator
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializerBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluatorCorrect
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 
 /-!
 # Initialized same-input evaluation of the encoded block tree
@@ -18,6 +20,12 @@ The fixed machine selects its packing parameters, allocates its actual padded ba
 per clock, and enters the concrete evaluator. Its final bank decodes to the existing encoded
 tree's root. Every physical clock in both phases is covered by an explicit allowance. Outer
 time and schedule search and the standard Turing-machine compilation remain separate tasks.
+
+## Main results
+
+* `InitializedEvaluator.scheduleEvaluator_correct`: the packaged evaluator is correct for its
+  source machine within `scheduleAllowance`, the allowance at the first excluded schedule
+  number.
 -/
 
 public section
@@ -192,5 +200,37 @@ theorem exists_runFrom_decode_root [Finite Q] (M : MultiTapeTM k Bool Q) (e : Q 
       (RawController.Query.queryStateBound (ConcreteSupplier.encContext ctx).length
         p d r q (ConcreteSupplier.replySpace k s Q w.length b σ q m (2 ^ m)
           limit p d r)) hentry hspace
+
+open MultiTapeTM QueryReplay in
+/-- Schedule metadata enters the candidate allowance only through its binary encoded size. -/
+theorem allowance_schedule_mono (k s : ℕ) (Q : Type) (N b q σ τ : ℕ) (hστ : σ ≤ τ) :
+    allowance k s Q N b σ q ≤ allowance k s Q N b τ q := by
+  have h := length_encNat_mono hστ
+  simp only [allowance, Initializer.space, Initializer.prepare,
+    Initializer.bankCells, parameters, Initializer.encMetadata, Initializer.encArgs,
+    encParameters, RawController.Query.queryStateBound, ConcreteSupplier.encContext,
+    ConcreteSupplier.replySpace, ConcreteSupplier.gateSpace, ConcreteSupplier.metadataSpace,
+    QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields, encNat3, length_encPair]
+  omega
+
+/-- One candidate allowance, uniformly enlarged to the first excluded schedule metadata. -/
+@[expose] noncomputable def scheduleAllowance (k s : ℕ) (Q : Type) (N b q : ℕ) : ℕ :=
+  allowance k s Q N b (3 ^ ((k + 1) * q)) q
+
+/-- The packaged initialized evaluator is correct for its source machine: each in-range
+schedule halts with the classified root, which is the boundary decision exactly for the actual
+schedule, within the uniform schedule allowance. -/
+theorem scheduleEvaluator_correct [Finite Q] (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) :
+    (scheduleEvaluator M e).Correct M (scheduleAllowance k s Q) := by
+  intro w b _ q σ hσ
+  obtain ⟨U, bank, hrun, hdecode, hhalt, hsize⟩ := exists_runFrom_decode_root M e w b σ q
+  refine ⟨U, hhalt, ?_, fun t ht =>
+    (hsize t ht).trans (allowance_schedule_mono k s Q w.length b q σ _ hσ.le)⟩
+  change outcome e ((w.length, b, q), (machine M e).runFrom w (start k s (w.length, b, σ, q)) U) = _
+  rw [hrun]
+  change RootDecision.classify k e (b, _) = _
+  rw [hdecode, RootDecision.classify_ofFn_eq_decision_decode]
+  exact RootDecision.decision_eval_eq_boundary M e w b σ
 
 end Turing.MultiTapePTM.BlockComputation.InitializedEvaluator

@@ -8,37 +8,32 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearch
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Foundations.Data.Nat.BinarySize
 
 /-!
 # Uniform physical storage for sequential schedule search
 
-All candidate executions share one allowance evaluated at the first excluded schedule number.
-This power occurs only in mathematical bounds: the machine's actual guard streams schedule rows.
-Only one suspended caller and one concrete initialized evaluator are retained at any clock.
+All candidate executions share one evaluator allowance `A N b q`, independent of the schedule
+number. The first excluded schedule number occurs only in mathematical bounds: the machine's
+actual guard streams schedule rows. Only one suspended caller and one evaluator are retained at
+any clock.
 -/
 
 public section
 
 namespace Turing.MultiTapePTM.BlockComputation.ScheduleSearch
 
-open MultiTapeTM Cslib.TreeEval.Ary.Packed
-open QueryReplay
+open MultiTapeTM
 
 /-- Actual search arguments and a binary counter through the first excluded schedule number. -/
 @[expose] noncomputable def callerSpace (k : ℕ) (args : Args) : ℕ :=
   let (_, _, q) := args
   8 * ((encArgs args).length + 2 * (k + 1) * q + 1)
 
-/-- One candidate allowance, uniformly enlarged to the first excluded schedule metadata. -/
-@[expose] noncomputable def candidateSpace (k s : ℕ) (Q : Type) (N b q : ℕ) : ℕ :=
-  InitializedEvaluator.allowance k s Q N b (3 ^ ((k + 1) * q)) q
-
-/-- One retained caller plus one initialized concrete evaluator, with call framing. -/
-@[expose] noncomputable def space (k s : ℕ) (Q : Type) (N b q : ℕ) : ℕ :=
-  2 * callerSpace k (N, b, q) + candidateSpace k s Q N b q + 2
+/-- One retained caller plus one evaluator within allowance `A N b q`, with call framing. -/
+@[expose] noncomputable def space (k : ℕ) (A : ℕ → ℕ → ℕ → ℕ) (N b q : ℕ) : ℕ :=
+  2 * callerSpace k (N, b, q) + A N b q + 2
 
 /-- The complete schedule counter uses only linearly many horizon bits. -/
 theorem counter_encoding_le (k q σ : ℕ) (hσ : σ ≤ 3 ^ ((k + 1) * q)) :
@@ -60,76 +55,48 @@ theorem caller_encoding_le (k N b q σ : ℕ) (result : Option Bool)
   simp only [encCaller, length_encPair, callerSpace]
   omega
 
-/-- Schedule metadata enters the candidate allowance only through its binary encoded size. -/
-theorem allowance_schedule_mono (k s : ℕ) (Q : Type) (N b q σ τ : ℕ) (hστ : σ ≤ τ) :
-    InitializedEvaluator.allowance k s Q N b σ q ≤
-      InitializedEvaluator.allowance k s Q N b τ q := by
-  have h := length_encNat_mono hστ
-  simp only [InitializedEvaluator.allowance, Initializer.space, Initializer.prepare,
-    Initializer.bankCells, parameters, Initializer.encMetadata, Initializer.encArgs,
-    encParameters, RawController.Query.queryStateBound, ConcreteSupplier.encContext,
-    ConcreteSupplier.replySpace, ConcreteSupplier.gateSpace, ConcreteSupplier.metadataSpace,
-    QueryGate.encParams, Interpolation.encContext_apply,
-    Interpolation.encContextFields, encNat3, length_encPair]
-  omega
-
-/-- Every accepted schedule's concrete execution allowance fits the uniform candidate bound. -/
-theorem candidate_allowance_le (k s : ℕ) (Q : Type) (N b q σ : ℕ)
-    (hσ : σ ≤ 3 ^ ((k + 1) * q)) :
-    InitializedEvaluator.allowance k s Q N b σ q ≤ candidateSpace k s Q N b q :=
-  allowance_schedule_mono k s Q N b q σ _ hσ
-
 /-- Resumption cannot pass the first excluded schedule number. -/
-theorem resume_counter_le {k s : ℕ} {Q : Type} (e : Q ≃ Fin s)
-    (N b q σ : ℕ) (result : Option Bool) (returned : InitializedEvaluator.State k Q)
+theorem resume_counter_le {k : ℕ} (E : Evaluator)
+    (N b q σ : ℕ) (result : Option Bool) (returned : E.State)
     (hpending : pending k ((N, b, q), σ, result) = true) :
-    cursor (resume e ((N, b, q), σ, result) returned) ≤ 3 ^ ((k + 1) * q) := by
+    cursor (resume E ((N, b, q), σ, result) returned) ≤ 3 ^ ((k + 1) * q) := by
   have hp := hpending
   simp only [pending, Bool.and_eq_true] at hp
   have hv : ScheduleCounter.valid k (σ, q) = true := hp.2
   have hσ := ScheduleCounter.succ_le_bound hv
-  cases ho : outcome e ((N, b, q), returned) <;>
+  cases ho : E.outcome ((N, b, q), returned) <;>
     simp only [resume, ho, cursor] <;> omega
 
 /-- Each physical prefix of one candidate stores just one caller and the actual callee. -/
-theorem runFrom_one_encoding_le {k s : ℕ} {Q : Type} [Finite Q]
-    (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (N b q σ : ℕ) (result : Option Bool)
-    (w : List Bool) (T : ℕ)
+theorem runFrom_one_encoding_le {k : ℕ} (E : Evaluator) (A : ℕ → ℕ → ℕ → ℕ)
+    (N b q σ : ℕ) (result : Option Bool) (w : List Bool) (T : ℕ)
     (hpending : pending k ((N, b, q), σ, result) = true)
-    (hpre : ∀ u < T, (InitializedEvaluator.machine M e).halted
-      ((InitializedEvaluator.machine M e).runFrom w
-        (InitializedEvaluator.start k s (N, b, σ, q)) u) = false)
-    (hhalt : (InitializedEvaluator.machine M e).halted
-      ((InitializedEvaluator.machine M e).runFrom w
-        (InitializedEvaluator.start k s (N, b, σ, q)) T) = true)
-    (hsize : ∀ u ≤ T, (InitializedEvaluator.encState
-      ((InitializedEvaluator.machine M e).runFrom w
-        (InitializedEvaluator.start k s (N, b, σ, q)) u)).length ≤ candidateSpace k s Q N b q)
+    (hpre : ∀ u < T, E.machine.halted (E.machine.runFrom w (E.start (N, b, σ, q)) u) = false)
+    (hhalt : E.machine.halted (E.machine.runFrom w (E.start (N, b, σ, q)) T) = true)
+    (hsize : ∀ u ≤ T, (E.encState (E.machine.runFrom w (E.start (N, b, σ, q)) u)).length ≤
+      A N b q)
     (t : ℕ) (ht : t ≤ T + 2) :
-    (encState ((machine M e).runFrom w (.inl ((N, b, q), σ, result)) t)).length ≤
-      space k s Q N b q := by
+    (encState E ((machine E k).runFrom w (.inl ((N, b, q), σ, result)) t)).length ≤
+      space k A N b q := by
   let c : CallerState := ((N, b, q), σ, result)
-  let start := InitializedEvaluator.start (Q := Q) k s (N, b, σ, q)
+  let start := E.start (N, b, σ, q)
   have hp := hpending
   simp only [pending, Bool.and_eq_true] at hp
   have hv : ScheduleCounter.valid k (σ, q) = true := hp.2
   have hσ := (ScheduleCounter.valid_eq_true_iff k σ q).mp hv
   have hcaller := caller_encoding_le k N b q σ result hσ.le
-  have hnext : (encCaller (resume e c
-      ((InitializedEvaluator.machine M e).runFrom w start T))).length ≤
+  have hnext : (encCaller (resume E c (E.machine.runFrom w start T))).length ≤
       callerSpace k (N, b, q) := by
-    change (encCaller (match outcome e ((N, b, q),
-      (InitializedEvaluator.machine M e).runFrom w start T) with
+    change (encCaller (match E.outcome ((N, b, q), E.machine.runFrom w start T) with
       | some answer => ((N, b, q), σ, some answer)
       | none => ((N, b, q), σ + 1, none))).length ≤ _
-    cases ho : outcome e ((N, b, q), (InitializedEvaluator.machine M e).runFrom w start T) <;>
+    cases ho : E.outcome ((N, b, q), E.machine.runFrom w start T) <;>
       apply caller_encoding_le <;> omega
-  have hreq : request (Q := Q) k s c = some start := by
+  have hreq : request E k c = some start := by
     simp only [request, c, hpending, ↓reduceIte, start]
   have hlive : (caller k).halted c = false := by
     simp only [caller, c, hpending, Bool.not_true]
-  exact QueryMachine.withCalls_runFrom_call_encoding_le (caller k)
-    (InitializedEvaluator.machine M e) (request k s) (resume e) w encCaller
-    InitializedEvaluator.encState hlive hreq hpre hhalt hcaller hnext hsize t ht
+  exact QueryMachine.withCalls_runFrom_call_encoding_le (caller k) E.machine (request E k)
+    (resume E) w encCaller E.encState hlive hreq hpre hhalt hcaller hnext hsize t ht
 
 end Turing.MultiTapePTM.BlockComputation.ScheduleSearch

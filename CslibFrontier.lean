@@ -2639,6 +2639,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.NormalizePoint
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchCorrect
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchParameters
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplay
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.QueryReplayAccess

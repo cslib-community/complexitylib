@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
 public import Mathlib.Algebra.Order.Floor.Div
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchParameters
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 
 /-!
@@ -19,6 +20,7 @@ The block width is a power of two near the square root of the time guess times i
 length. The horizon is ceiling division by this positive width. Computing these parameters
 uses space linear in the actual binary time guess and does not require a time-constructibility
 hypothesis. The square inequalities state the approximation without real-valued square roots.
+`parameters` packages the choice for the increasing-guess search.
 -/
 
 public section
@@ -191,5 +193,14 @@ theorem horizon_inSpace : ComputableInSpace horizon encNat encNat
       (fun T => (encNat T).length) := of_inO (ComputableInO.of_eq (f := id) fun _ => rfl)
   exact (budget_natDiv (budget_natPred (budget_natAdd hid blockWidth_inSpace))
     blockWidth_inSpace).of_enc_eq fun T => by rw [horizon, Nat.ceilDiv_eq_add_pred_div]
+
+/-- Williams's balanced block width and horizon as increasing-guess parameters. -/
+@[expose] def parameters : OuterSearch.Parameters where
+  blockWidth := blockWidth
+  horizon := horizon
+  blockWidth_pos := blockWidth_pos
+  coverage := coverage
+  blockWidth_inSpace := blockWidth_inSpace
+  horizon_inSpace := horizon_inSpace
 
 end Turing.MultiTapePTM.BlockComputation.BalancedParameters
