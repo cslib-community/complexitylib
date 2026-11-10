@@ -11,6 +11,7 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrd
 public import CslibFrontier.Logics.FirstOrder.Interpretation
 public import Mathlib.Combinatorics.SimpleGraph.Maps
 public import Mathlib.ModelTheory.Graph
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Data.Finset.Sort
 import Mathlib.Tactic.FinCases
 
@@ -235,8 +236,7 @@ theorem realize_definedAdjFormula (δ : L.Formula (Fin 2)) (v : Fin 2 × Unit �
     funext i; fin_cases i <;> rfl
   have h₂ : (v ∘ fun i : Fin 2 => (Fin.rev i, ())) = ![v (1, ()), v (0, ())] := by
     funext i; fin_cases i <;> rfl
-  simp only [definedAdjFormula, Formula.realize_inf, Formula.realize_not, Formula.realize_equal,
-    Term.realize_var, Formula.realize_sup, Formula.realize_relabel, h₁, h₂, definedGraph_adj]
+  fo_simp [definedAdjFormula, h₁, h₂, definedGraph_adj]
 
 /-- The one-dimensional interpretation of the language of graphs in `L` defined by `δ`. -/
 noncomputable def graphInterp (δ : L.Formula (Fin 2)) :

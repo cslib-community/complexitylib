@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Operator.Quantifiers
 public import Mathlib.Logic.Equiv.Fin.Basic
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Shared syntax for pulling operator formulas back to tuples
@@ -144,7 +145,7 @@ theorem realize_termGraph {k : ℕ} (args : Fin k → L'.Term α)
     FirstOrder.Language.Formula.realize_iInf]
   apply forall_congr'
   intro i
-  simp only [FirstOrder.Language.Formula.realize_equal, Term.realize_var, Term.realize_relabel]
+  fo_simp
   rfl
 
 include hf in
@@ -156,8 +157,7 @@ theorem realize_applyTerms (I : Interpretation shape M) {k : ℕ}
     (applyTerms f args φ).Realize I ρ v ↔
       φ.Realize I ρ (Sum.elim v ((blockEquiv e k).symm
         (fun i => (args i).realize (fun a => e (fun j => v (a, j)))))) := by
-  simp only [applyTerms, Formula.realize_exs, Formula.realize_conj,
-    Formula.realize_ofFO, realize_termGraph f e hf]
+  fo_simp [applyTerms, realize_termGraph f e hf]
   constructor
   · rintro ⟨xs, hx, hφ⟩
     have heq := congrArg (blockEquiv e k).symm (funext hx)

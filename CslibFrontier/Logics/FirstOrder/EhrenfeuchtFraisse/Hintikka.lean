@@ -11,6 +11,7 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import Mathlib.Basic.Finite.Prod
 public import Mathlib.Basic.Finite.Sigma
 public import Mathlib.Basic.Finite.Sum
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Data.Set.Finite.Range
 
 /-!
@@ -237,9 +238,7 @@ theorem realize_hintikka [Finite (Σ l, L.Relations l)] :
     exact realize_atomicDiagram T a
   | n + 1, k, T, a => by
     rw [RankType.succ_ext_iff, rankType_succ, hintikka]
-    simp only [BoundedFormula.realize_inf, BoundedFormula.realize_iInf,
-      BoundedFormula.realize_ex, BoundedFormula.realize_all, BoundedFormula.realize_iSup,
-      realize_hintikka, realize_atomicDiagram, Subtype.forall, Subtype.exists, exists_prop,
+    fo_simp [realize_hintikka, realize_atomicDiagram, Subtype.forall, Subtype.exists,
       exists_eq_right', and_assoc]
     refine and_congr Iff.rfl ?_
     rw [Set.ext_iff]

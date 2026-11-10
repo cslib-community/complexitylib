@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Operator.Polarity
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Blocks of quantifiers in operator formulas
@@ -59,7 +60,7 @@ variable {L : Language.{u, v}} {O : Type s} {shape : O → Shape}
       | inl a => rfl
       | inr i => exact i.elim0
   | succ n ih =>
-    simp only [exs, realize_ex, ih, realize_relabel]
+    fo_simp [exs, ih]
     constructor
     · rintro ⟨x, xs, h⟩
       refine ⟨Fin.cons x xs, ?_⟩

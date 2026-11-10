@@ -257,9 +257,9 @@ private theorem packedFormula_complete (v : Fin 3 → Fin n) (hn : 257 ≤ n)
   rw [hck] at hgk
   let u : (Fin 5 ⊕ Fin 8) → Fin n :=
     Sum.elim ![⟨h, hhn⟩, ⟨e, hen⟩, ⟨s, hsn⟩, ⟨m, hmn⟩, ⟨k, hkn⟩] g
-  simp only [packedFormula, Formula.realize_iExs]
+  fo_simp [packedFormula]
   refine ⟨u, ?_⟩
-  simp only [Formula.realize_inf, and_assoc]
+  fo_simp [and_assoc]
   refine ⟨?_, ?_, ?_, ?_⟩
   · rw [realize_parameters]
     exact ⟨hlo, hhi, rfl, rfl, hem, hsh, hspace, hkw, hks, hcap⟩
@@ -298,7 +298,7 @@ no candidate output satisfies it when the product is outside `Fin n`. -/
 @[simp, fo_realize]
 public theorem realize_multiplication (v : Fin 3 → Fin n) :
     (multiplication L).Realize v ↔ (v 0).val * (v 1).val = (v 2).val := by
-  simp only [multiplication, Formula.realize_sup]
+  fo_simp [multiplication]
   constructor
   · rintro (hsmall | hlarge)
     · fo_simp [Multiplication.smallFormula] at hsmall

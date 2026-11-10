@@ -48,7 +48,7 @@ structure `Fin n` with `2 ≤ n`.
 * `Cslib.Logic.FO.Ordered.realize_succInclusion`: the inclusion preserves truth.
 * `Cslib.Logic.FO.Ordered.realize_elimSuccWith`, `Cslib.Logic.FO.Ordered.realize_elimSucc`:
   elimination preserves truth.
-* `Cslib.Logic.FO.Ordered.IsQF.elimSuccWith`: elimination through a quantifier-free definition
+* `Cslib.Logic.FO.Ordered.isQF_elimSuccWith`: elimination through a quantifier-free definition
   preserves quantifier-freeness.
 
 ## References
@@ -144,10 +144,11 @@ noncomputable def elimSucc {k : ℕ} :
   elimSuccWith (successor L)
 
 /-- Successor elimination through a quantifier-free `σ` preserves quantifier-freeness. -/
-theorem IsQF.elimSuccWith {σ : (language L).Formula (Fin 2)} (hσ : σ.IsQF) {k : ℕ}
+@[aesop safe apply (rule_sets := [FirstOrder])]
+theorem isQF_elimSuccWith {σ : (language L).Formula (Fin 2)} (hσ : σ.IsQF) {k : ℕ}
     {φ : (language (succLanguage L)).BoundedFormula α k} (h : φ.IsQF) :
     (elimSuccWith σ φ).IsQF := by
-  refine FO.IsQF.unfoldSymbols _ (fun R => ?_) h
+  refine isQF_unfoldSymbols _ (fun R => ?_) h
   rcases R with (R | R) | R
   · exact (BoundedFormula.IsAtomic.rel _ _).isQF
   · cases R

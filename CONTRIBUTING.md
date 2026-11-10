@@ -218,7 +218,7 @@ Maintainers decide scope and acceptance, and arrange the independent API and cor
 required by [AGENTS.md](AGENTS.md#review-cycle). Contributors need not install a maintainer's
 agent tooling to submit a change.
 
-Use the [validation sequence](AGENTS.md#validation-sequence) for the six project gates and
+Use the [validation sequence](AGENTS.md#validation-sequence) for the project gates and
 when focused local checks or hosted CI supply the required evidence. `scripts/build.sh` and
 `scripts/check.sh` attempt cache restoration automatically. Bootstrap cold checkouts before MCP
 elaboration with `scripts/cache/ensure.sh`; retry for missing outputs or changed dependencies,

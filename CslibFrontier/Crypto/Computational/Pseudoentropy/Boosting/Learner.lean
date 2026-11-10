@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Probabilistic.Selection
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -109,10 +110,7 @@ theorem eval_weightedTrial_bind {Code : Type} (candidates : ProbComp Code) (sour
       ProbComp.eval (weightedTrial source mask (fun value => candidates >>= fun code =>
         test code value)) := by
   simp only [weightedTrial, ProbComp.eval_bind]
-  rw [PMF.bind_comm]
-  congr 1 with value : 1
-  rw [PMF.bind_comm]
-  congr 1 with active : 1
+  pmf_swap with value active
   cases active <;> simp only [Bool.false_eq_true, ite_false, ite_true, PMF.bind_const,
     ProbComp.eval_bind]
 

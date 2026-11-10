@@ -108,7 +108,7 @@ private theorem radixFormula_sound {k : ℕ} (v : Fin 2 × Fin k → Fin n)
     rw [hBe]
     exact one_lt_pow₀ (by decide) (by lia)
   rw [Radix.realize_cardinality (t 1) _ (Sum.elim v w) hB hBn] at hN
-  simp only [t, Term.realize_var, Sum.elim_inr] at hN
+  fo_simp [t] at hN
   have hn : 1 ≤ Nat.ofDigits (w (.inl 1)).val
       (List.ofFn fun i => (w (.inr (.inl i))).val) := by
     rw [hN.2]
@@ -116,8 +116,7 @@ private theorem radixFormula_sound {k : ℕ} (v : Fin 2 × Fin k → Fin n)
     lia
   rw [Radix.realize_convert (t 1)
     (fun i => .var (.inr (.inr (.inl i)))) _ _ (Sum.elim v w) hB hBn hn] at hX hY
-  simp only [t, Term.realize_var, Sum.elim_inr, Sum.elim_inl, hN.2,
-    ofDigits_rev (fun i => v (0, i)), ofDigits_rev (fun i => v (1, i))] at hX hY
+  fo_simp [t, hN.2, ofDigits_rev (fun i => v (0, i)), ofDigits_rev (fun i => v (1, i))] at hX hY
   rw [Radix.realize_bitIndex (t 1) (t 0)
     _ _ (Sum.elim v w) he hBe hBn hX.2.1 hY.2.1] at hb
   simpa only [t, Term.realize_var, Sum.elim_inr, ← hX.2.2, ← hY.2.2] using hb
@@ -187,7 +186,7 @@ noncomputable def smallFormula (L : Language) (k : ℕ) :
 private theorem smallFormula_sound {k : ℕ} (v : Fin 2 × Fin k → Fin n)
     (hf : (smallFormula L k).Realize v) :
     (lexRank (fun i => v (0, i))).testBit (lexRank (fun i => v (1, i))) = true := by
-  simp only [smallFormula, Formula.realize_iSup] at hf
+  fo_simp [smallFormula] at hf
   obtain ⟨a, x, y, hf⟩ := hf
   split_ifs at hf with hb
   · fo_simp [and_assoc] at hf
@@ -210,7 +209,7 @@ private theorem smallFormula_complete {k : ℕ} (v : Fin 2 × Fin k → Fin n) (
     simp only [lexRank_apply, x, Fin.val_cast, ha]
   have hb' : (lexRank (x 0)).testBit (lexRank (x 1)) = true := by
     simpa only [hx] using hb
-  simp only [smallFormula, Formula.realize_iSup]
+  fo_simp [smallFormula]
   refine ⟨a, x 0, x 1, ?_⟩
   fo_simp [ite_eq_left hb']
   exact ⟨⟨by lia, fun _ => rfl⟩, fun _ => rfl⟩
@@ -233,7 +232,7 @@ theorem realize_tupleBit (v : Fin 2 × Fin k → Fin n) :
   by_cases hk : k = 0
   · subst k
     simp [tupleBit, lexRank_apply]
-  · simp only [tupleBit, ite_eq_right hk, Formula.realize_sup]
+  · fo_simp [tupleBit, ite_eq_right hk]
     constructor
     · rintro (h | h)
       · exact TupleBit.smallFormula_sound v h

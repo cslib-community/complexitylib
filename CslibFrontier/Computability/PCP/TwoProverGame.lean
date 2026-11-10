@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.CorrelatedSampling.Embeddability
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.Product.Event
 import CslibFrontier.Probability.PMF.Filter
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.StatisticalDistance.Event
@@ -141,26 +142,6 @@ theorem winProb_shared_le_value [Nonempty A] [Nonempty B] {R : Type*} (ρ : PMF 
 end Finite
 
 /-! ### Parallel repetition -/
-
-/-- The probability that every coordinate of an independent tuple lies in its own event is the
-product of the probabilities. -/
-theorem _root_.Cslib.Probability.PMF.toOuterMeasure_pi_forall {ι : Type*} [Fintype ι]
-    {α : ι → Type*} [∀ i, Finite (α i)] (p : ∀ i, PMF (α i)) (E : ∀ i, Set (α i)) :
-    (Probability.PMF.pi p).toOuterMeasure {u | ∀ i, u i ∈ E i} =
-      ∏ i, (p i).toOuterMeasure (E i) := by
-  classical
-  have := fun i => Fintype.ofFinite (α i)
-  simp only [PMF.toOuterMeasure_apply, tsum_fintype, Set.indicator_apply, Set.mem_ofPred_eq,
-    Probability.PMF.pi_apply]
-  rw [Fintype.prod_sum]
-  refine Finset.sum_congr rfl fun u _ => ?_
-  by_cases hu : ∀ i, u i ∈ E i
-  · rw [ite_eq_left hu]
-    exact Finset.prod_congr rfl fun i _ => (ite_eq_left (hu i)).symm
-  · rw [ite_eq_right hu]
-    push Not at hu
-    obtain ⟨i, hi⟩ := hu
-    exact (Finset.prod_eq_zero (Finset.mem_univ i) (ite_eq_right hi)).symm
 
 /-- The **`n`-fold parallel repetition** [Holenstein, Definition 2.3][Holenstein2009]: `n`
 independent pairs of questions, accepted when every coordinate is accepted. -/

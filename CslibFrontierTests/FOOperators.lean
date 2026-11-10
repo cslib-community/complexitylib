@@ -111,7 +111,7 @@ example (v : Bool → Bool) :
   simp only [fo_realize]
   apply iff_of_eq
   congr 1 with i : 1
-  simp only [Matrix.cons_val_fin_one, Term.realize_var]
+  simp only [Matrix.cons_val_fin_one]
 
 end Parameters
 

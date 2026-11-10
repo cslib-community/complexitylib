@@ -431,6 +431,19 @@ private theorem exists_oneTimeTagBound (M : MACScheme) :
   simp only [length_encPair, encBits_apply] at h1
   exact h1.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
 
+/-- Every `MACScheme` admits a plain polynomial-time bound `tagBound : ℕ → ℕ` on the length of tags
+produced on `M.msgLen n`-bit messages under keys sampled from `M.keyGen n`. -/
+theorem exists_tag_length_bound_of_length_eq (M : MACScheme) :
+    ∃ tagBound : ℕ → ℕ,
+      ComputableInPolyTime tagBound encUnary encUnary ∧
+      ∀ n, ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
+        ∀ msg, msg.length = M.msgLen n →
+        ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n := by
+  obtain ⟨bound, hpoly, hb⟩ := M.exists_oneTimeTagBound
+  have hlen := M.msgLen_polyTime
+  refine ⟨fun n => bound n (M.msgLen n), by fun_prop,
+    fun n sk hsk msg hmsg tag htag => by simpa only [hmsg] using hb n sk hsk msg tag htag⟩
+
 /-- Full EUF-CMA security implies one-time EUF-CMA security for any `MACScheme`. -/
 theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA := by
   obtain ⟨bound, hbound_poly, htagBound⟩ := M.exists_oneTimeTagBound
