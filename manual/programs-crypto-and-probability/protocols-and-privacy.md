@@ -2192,9 +2192,10 @@ output-sensitive projected-quarter join and dynamic-programming count tables.
 Its retained-list lookup is linear, and the certified callbacks currently charge
 polynomial time/workspace in the complete retained input. Sorting's simultaneous
 input/output buffers and these callback costs remain in the composed profiles.
-Thus no sharp $O^*(2^{q/2})$ global time or $O^*(2^{q/4}+mu_p)$ peak space is
-concluded. Integrating the efficient projected-quarter generator/counting/access
-route and replacing polynomial retained-list callback overhead remain necessary.
+This earlier route alone does not conclude sharp $O^*(2^{q/2})$ global time or
+$O^*(2^{q/4}+\mu_p)$ peak space. The later `SourceResources.sourceCertificate_bounds`
+paragraph gives the whole-run bounds for the assembled projected-quarter route,
+which replaces these retained-list callbacks.
 The older `SortedMeet` and compacting interpreter implementations are unchanged.
 
 `BatchedAccess.run` refines retained-class access with an actual **bounded
@@ -2218,18 +2219,18 @@ single-record inputs enter polynomial callbacks, excluding growing retained or
 probe arrays. The composed uniform machine certificates separately include all
 sort/scan buffers, intermediate tapes, initialization and readback.
 
-**The volume bound is not a bit-time bound.** The current counter combinator
-copies captured retained/buffer state between rounds, and linear list insertion
+**The volume bound is not a bit-time bound.** In this earlier route, the counter
+combinator copies captured retained/buffer state between rounds, and linear insertion
 copies the growing buffer. These costs remain in `sourceCertificate.time/space`;
 a factor comparable to retained size times streamed words can therefore persist
 in bit time even though no per-record dictionary search is executed. The source
-class/count generation still repeats half-word scans. No sharp global time or
-peak-space theorem is concluded, and retained volume alone does not discharge
-all auxiliary-space obligations. Efficient projected-quarter joins/count tables,
-a producer that writes batch records without whole-state copying, persistent
-retained tapes across batches, and the final simultaneous resource proof remain
-open. This is an original batching refinement of the source's membership stage;
-the older ClassStreaming/SortedMeet/CompactExecution routes remain unchanged.
+class/count generation in this earlier route still repeats half-word scans.
+Its volume bounds alone give no sharp global time or peak-space theorem and do
+not discharge auxiliary-space obligations. The later assembled route replaces
+these costs; see `SourceResources.sourceCertificate_bounds` below for its
+whole-run theorem. This is an original batching refinement of the source's
+membership stage; the older ClassStreaming/SortedMeet/CompactExecution routes
+remain unchanged.
 
 `GroupedQuarter.run` adds a **one-pass equal-key writer** after the actual
 original-input quarter generator and radix sorter. It computes Core's
@@ -2598,6 +2599,28 @@ prepass remain unproved. The old association-list/cubic-filter interpreter is
 unchanged; the resource theorem uses the assembled sorted-list route. Other
 small-operand, multiplicity, sparsification and ideal-model paper objectives also
 remain open.
+
+The reachable-state counter DP now has a concrete binary-addition stage in
+[`AddXNORCounterSerialization.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterSerialization.lean).
+`forward_layer_append` and `backward_layer_cons` identify the streamed sums with
+the next original-input DP table, including repeated states and zero counters.
+`layer_certificate` fixes one multitape machine before all widths and operands.
+On the derived interleaved pulled-table input, both its bit time and charged
+prefix workspace are at most $O(2^p P(q+1))$ for a fixed monotone polynomial $P$.
+The $q+1$ counter-bit budget follows from the original operator count; addition
+is executed on binary strings rather than charged as a unit-cost operation.
+The input uses framed binary pairs (first coordinate framed, second unframed),
+and the output is a framed list of binary counters.
+
+This certificate starts **after** the two pull transformations and interleaving.
+It includes the addition pass's input/output and callback temporaries, but does
+not charge generation of that input. Resource-faithful tape permutations,
+pairing, initialization, the operand loop and readback still need composition
+to obtain Lemma 8's $O^*(2^p)$ all-count prepass. The installed dissection
+certificate and its proved whole-run bound are unchanged. The checked client is
+[`AddXNORCounterSerialization.lean`](../../CslibFrontierTests/AddXNORCounterSerialization.lean);
+from the repository root run
+`lake build CslibFrontierTests.AddXNORCounterSerialization --wfail --iofail`.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),
