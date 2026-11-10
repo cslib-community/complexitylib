@@ -421,6 +421,27 @@ scripts/build.sh \
   CslibFrontierTests.ProofComplexity.AlgebraicCNF
 ```
 
+## Finite crossover gadget semantics
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Crossover` for Dvořák–Kupec, ICALP 2015,
+§4, printed pp. 440–441, Figure 1. `BitString.cross` equates opposite ports in cyclic order;
+`nearCross` additionally permits `0001` and `1110`. `IsStandardizedInconsistent` requires
+self-complementarity, inclusion of CROSS, and the source's upper restriction. Its exact
+classification has eight shapes, selected by three optional complementary tuple pairs.
+
+The actual four-constraint `Crossover.figureOneAStandardized` is a `PPGadget` with three
+auxiliaries. Its target is NEAR-CROSS exactly when the input relation contains `0001` or
+`0010`, and CROSS otherwise. The actual two-constraint `Crossover.figureOneB` uses one auxiliary
+and defines CROSS from NEAR-CROSS. Numbered scope positions match the source's diagram;
+width-guarded interpretations reject malformed scopes. [Crossover clients](../../CslibFrontierTests/PlanarCrossover.lean)
+check every standardized shape, both first-gadget outcomes, explicit witnesses and rejected
+boundary tuples, while retaining the existing CNF crossover tests.
+
+These are finite relation semantics. They do not prove planar embedding/substitution,
+normalization from a failed delta-matroid condition (the source's omitted Lemma 6 proof),
+a hardness theorem or a new native runtime certificate. These obligations remain part of
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
 ## Three resolution representations
 
 | Representation | What it supplies | Cost |

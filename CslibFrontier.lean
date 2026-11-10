@@ -5417,6 +5417,7 @@ public import CslibFrontier.Logics.Propositional.CSP.HardCore
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
 public import CslibFrontier.Logics.Propositional.CSP.Permanent
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
