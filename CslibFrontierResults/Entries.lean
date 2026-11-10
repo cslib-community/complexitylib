@@ -189,11 +189,13 @@ register_result "alternation-aspace-dtime" where
     { paper := Sipser2013, theorem := unverified, locator := "Section 10.3" }
   ]
   theorems := [
+    Turing.MultiTapeATM.RecognizesInSpace.mem_DTIME,
     Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE,
     Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE_of_log2_le
   ]
   scope := "One finite-state alternating multi-tape machine per problem with least-fixed-point \
-    acceptance and work space c₁·s(n) + c₂ along every computation prefix; DTIME is \
+    acceptance and work space s(n) (RecognizesInSpace.mem_DTIME, branches need not halt) or \
+    c₁·s(n) + c₂ with every branch halting (ASPACE) along every computation prefix; DTIME is \
     deterministic decision within c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when \
     log₂ n ≤ s(n); no constructibility hypothesis; the converse inclusion is not included; \
     arbitrary injective encodings."

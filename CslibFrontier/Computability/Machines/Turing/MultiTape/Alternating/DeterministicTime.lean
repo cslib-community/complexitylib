@@ -64,12 +64,8 @@ noncomputable def reachableAccepts (input : List Bool) : Bool :=
 /-- **Marking the reachable views decides acceptance** under any space bound. -/
 theorem reachableAccepts_iff {input : List Bool} {s : ℕ}
     (hs : atm.toPTM.toNTM.RunsInSpace input s) :
-    atm.reachableAccepts input = true ↔ atm.Accepts input := by
-  rw [accepts_iff_exists_viewAcceptsWithin, reachableAccepts]
-  refine markAccepts_iff (fun v hv w hw => ?_)
-    ((MultiTapeNTM.mem_reachableViews_iff hs).mpr .refl)
-  rw [MultiTapeNTM.mem_reachableViews_iff hs] at hv ⊢
-  exact hv.tail (MultiTapeNTM.viewStep_of_mem_viewSucc hw)
+    atm.reachableAccepts input = true ↔ atm.Accepts input :=
+  markAccepts_iff_of_mem_iff fun _ => MultiTapeNTM.mem_reachableViews_iff hs
 
 open scoped Classical in
 /-- **Space-bounded alternation within exponential time**: if every computation prefix of `atm`

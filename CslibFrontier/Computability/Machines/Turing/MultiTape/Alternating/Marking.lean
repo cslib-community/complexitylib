@@ -55,6 +55,8 @@ polynomial-time in the instance and the unary `N`
 * `Turing.MultiTapeATM.mem_markStep_iterate_iff`: `i + 1` rounds mark the views accepting within
   `i` moves.
 * `Turing.MultiTapeATM.markAccepts_iff`: marking decides acceptance on a closed list of views.
+* `Turing.MultiTapeATM.markAccepts_iff_of_mem_iff`: marking the reachable views decides
+  acceptance.
 * `Turing.MultiTapeATM.boundedAccepts_iff`: under a space bound, marking the views found by enough
   rounds of search decides acceptance.
 * `Turing.MultiTapeATM.computableInPolyTime_markGood`: the marking test is polynomial-time.
@@ -184,6 +186,17 @@ end Marking
 
 /-! ### Marking the reachable views -/
 
+/-- **Marking the reachable views decides acceptance**: if `found` lists exactly the views
+reachable from the initial view, marking it and testing the initial view decides acceptance. -/
+theorem markAccepts_iff_of_mem_iff {input : List Bool} {found : List (FiniteCfg k Bool State)}
+    (hfound : ∀ v, v ∈ found ↔
+      Relation.ReflTransGen atm.toPTM.toNTM.ViewStep (atm.toPTM.toNTM.initView input) v) :
+    atm.markAccepts found (atm.toPTM.toNTM.initView input) = true ↔ atm.Accepts input := by
+  rw [accepts_iff_exists_viewAcceptsWithin]
+  refine markAccepts_iff (fun v hv w hw => ?_) ((hfound _).mpr .refl)
+  rw [hfound] at hv ⊢
+  exact hv.tail (MultiTapeNTM.viewStep_of_mem_viewSucc hw)
+
 variable (atm) in
 /-- **Space-bounded acceptance by marking**: mark the views found by the truncated breadth-first
 search of `N` rounds, and test the initial view. -/
@@ -195,12 +208,8 @@ views. -/
 theorem boundedAccepts_iff {input : List Bool} {s N : ℕ}
     (hs : atm.toPTM.toNTM.RunsInSpace input s)
     (hN : 2 ^ (2 * MultiTapeNTM.coreLengthBound k State input.length s + 1) ≤ N) :
-    atm.boundedAccepts input N = true ↔ atm.Accepts input := by
-  rw [accepts_iff_exists_viewAcceptsWithin, boundedAccepts]
-  refine markAccepts_iff (fun v hv w hw => ?_)
-    ((MultiTapeNTM.mem_boundedSearch_iff hs hN).mpr .refl)
-  rw [MultiTapeNTM.mem_boundedSearch_iff hs hN] at hv ⊢
-  exact hv.tail (MultiTapeNTM.viewStep_of_mem_viewSucc hw)
+    atm.boundedAccepts input N = true ↔ atm.Accepts input :=
+  markAccepts_iff_of_mem_iff fun _ => MultiTapeNTM.mem_boundedSearch_iff hs hN
 
 /-! ### Polynomial time -/
 
