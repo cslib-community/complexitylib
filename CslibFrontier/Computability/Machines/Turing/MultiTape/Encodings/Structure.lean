@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public meta import Lean.Elab.Command
 
 /-!
@@ -21,6 +22,7 @@ of its fields, with everything a certificate needs to work with it:
 * `eS_apply`, unfolding `eS` to `eSFields` of the tuple;
 * `eS_fields_deg`, the linear map from a structure to the tuple of its fields;
 * for each field `f`, the linear rules `eS_f_deg` and `eS_f_inO`;
+* for each field `f`, `eS_f_budget`, retaining a caller’s workspace budget;
 * the constructor rules `eS_mk_deg`, on tuples, and `eS_mk_inO`, which adds up the bounds of its
   arguments.
 
@@ -96,6 +98,12 @@ private def component (ns : Name) (h : Term) (i n : Nat) : MacroM Term := do
       ComputableInDegree $proj $eS $e 1 1 := $body))
     elabCommand (← `(@[scoped fun_prop] public theorem $(app name s!"_{f.getId}_inO"):ident :
       ComputableInO $proj $eS $e $linE $linE := ComputableInDegree.inO_one $deg))
+    elabCommand (← `(public theorem $(app name s!"_{f.getId}_budget"):ident
+      {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {g : γ → $S}
+      (h : ComputableInSpace g encIn $eS S) :
+      ComputableInSpace (fun a => $proj (g a)) encIn $e S :=
+        ComputableInSpace.budget_comp_linear
+          (ComputableInSpace.of_inO (ComputableInDegree.inO_one $deg)) h))
   let p := mkIdent `p
   let comps ← (List.range n).toArray.mapM fun i => do
     let mut t : Term ← `($p)

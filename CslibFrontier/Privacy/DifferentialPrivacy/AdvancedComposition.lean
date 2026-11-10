@@ -371,9 +371,8 @@ theorem DifferentiallyPrivate.advancedComposition_sqrt {Adj : D → D → Prop}
       (k * δ + ENNReal.ofReal δ') := by
   rcases le_or_gt 1 δ' with hδ1 | hδ1
   · intro x y _ S
-    refine (Probability.PMF.toOuterMeasure_le_one _ _).trans (le_add_left (le_add_left ?_))
-    rw [← ENNReal.ofReal_one]
-    exact ENNReal.ofReal_le_ofReal hδ1
+    exact (Probability.PMF.toOuterMeasure_le_one _ _).trans
+      (le_add_left (le_add_left (ENNReal.one_le_ofReal.mpr hδ1)))
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · intro x y _ S
     have h0 : Privacy.adaptiveComposition M 0 x = Privacy.adaptiveComposition M 0 y :=

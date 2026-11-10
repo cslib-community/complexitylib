@@ -163,7 +163,7 @@ private theorem eval_gameOn_kemToPKEAdversary (keyLen : ℕ → ℕ)
   simp only [pmf_norm, gameOn, kemToPKEAdversary, kemToPKEChoose, BitString.eval_sampleList,
     ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.msgs, encPair_apply, encBits_apply,
     unframe_frame_append, dropFrame_frame_append, apply_ite ProbComp.eval]
-  congr 1; funext keys
+  congr 1 with keys : 1
   refine PMF.bind_congr_on_support _ _ _ fun k₀ hk₀ => ?_
   refine PMF.bind_congr_on_support _ _ _ fun k₁ hk₁ => ?_
   simp [BitString.length_of_mem_support_uniformList hk₀,
@@ -194,9 +194,9 @@ theorem eval_gameOn_kemToPKEAdversary_true (keyLen : ℕ → ℕ)
   rw [eval_gameOn_kemToPKEAdversary]
   simp only [pmf_norm, kemIdealGame, kemIdealGameWith, kemRealGameWith, encryptKeyEncaps,
     BitString.eval_sampleList, ↓reduceIte]
-  congr 1; funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
-  congr 1; funext k
+  congr 1 with k : 1
   rw [PMF.bind_comm]
 
 /-- **Exact loss-one reduction** for the encrypted-key KEM of [BonehShoup2023], Exercise 11.9(e).

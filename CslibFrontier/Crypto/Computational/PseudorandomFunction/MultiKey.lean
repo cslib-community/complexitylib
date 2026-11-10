@@ -486,7 +486,7 @@ private theorem eval_prfRealGame_prfMultiReduction (hfamily : PseudorandomFuncti
         (fun request : Fin t × List Bool =>
           PMF.pure (eagerOracle family t j n blocks (prfOracle family n (List.ofFn value)) tables
             request))) (adversary n []))).trans ?_
-  congr 1; funext keys; congr 1; funext tables; congr 2; funext req; obtain ⟨i, query⟩ := req
+  congr 1 with keys : 1; congr 1 with tables : 1; congr 2 with req : 1; obtain ⟨i, query⟩ := req
   simp only [eagerOracle, hybridOracle]
   split_ifs with hlt heq
   · rfl
@@ -520,7 +520,7 @@ private theorem eval_prfIdealGame_prfMultiReduction (hfamily : PseudorandomFunct
         (fun request : Fin t × List Bool =>
           PMF.pure (eagerOracle family t j n blocks (randomFunctionOracle n table) tables
             request))) (adversary n []))).trans ?_
-  congr 1; funext keys; congr 1; funext tables; congr 2; funext req; obtain ⟨i, query⟩ := req
+  congr 1 with keys : 1; congr 1 with tables : 1; congr 2 with req : 1; obtain ⟨i, query⟩ := req
   simp only [eagerOracle, hybridOracle]
   by_cases hlt : i.val < j
   · have hi : i ≠ ⟨j, hj⟩ := fun h => by

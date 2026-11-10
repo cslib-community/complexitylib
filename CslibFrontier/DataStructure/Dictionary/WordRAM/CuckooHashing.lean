@@ -5701,9 +5701,7 @@ theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
     (hfr : x₁.regs 1 = base + space c_exp n_max)
     (hpar : ∀ j : Fin 2, x₁.regs (![3, 4] j) = ![n_max, U] j)
     (hz : ∀ a ∈ (Block.mk base (space c_exp n_max)).footprint, x₁.mem a = 0)
-    (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
-    (hfit_ev : Fits w (maxEvictions n_max))
-    (hfit_U : Fits w (max U 2 + 1)) :
+    (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w) :
     ∃ ν₀ : PMF (Seed c_exp n_max U (tableBits n_max) × Data 19),
       ExecCodeDist w (initSetup c_exp n_max) x₁ (ν₀.map Prod.snd) (setupSteps c_exp n_max U) ∧
       (∀ θ, (ν₀.map Prod.fst) θ ≤ 2 * seedLaw c_exp n_max U (tableBits n_max) θ) ∧
@@ -5712,7 +5710,22 @@ theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
         Rep w base c_exp n_max U V (Dictionary.empty U) p.2 ∧
         (0 : ℕ) ≤ 0 ∧
         Modifies (Block.mk base (space c_exp n_max)).footprint x₁.mem p.2.mem := by
+  have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
+    lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
   have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_ev : Fits w (maxEvictions n_max) :=
+    hfit_q.of_le ((maxEvictions_le_tableSize n_max).trans
+      (Nat.pow_le_pow_right two_pos (Probability.le_trinomialDeg U (tableBits n_max))))
+  have hfit_U : Fits w (max U 2 + 1) := by
+    have hU : max U 2 ≤ 2 ^ Probability.trinomialDeg U (tableBits n_max) :=
+      (Nat.le_pow_clog one_lt_two _).trans (Nat.pow_le_pow_right two_pos
+        ((le_max_left _ _).trans
+          (Probability.trinomialTargetBits_le_trinomialDeg U (tableBits n_max))))
+    have hpow : 2 ^ Probability.trinomialDeg U (tableBits n_max) * 2 ≤ 2 ^ w := by
+      rw [← pow_succ]
+      exact Nat.pow_le_pow_right two_pos (by omega)
+    rw [fits_iff]
+    omega
   obtain ⟨μ_init, hdist, hseed, hsupp⟩ :=
     initSetup_spec (V := V) hx₁ hb hfr (hpar 0) (hpar 1) hz hfit_ev hfit_U hfit_q
   let ν₀ : PMF (Seed c_exp n_max U (tableBits n_max) × Data 19) :=
@@ -6103,7 +6116,7 @@ noncomputable def impl (w base c_exp n_max U V : ℕ)
       exact Data.put_of_fits hfit)
     (span_exec := fun hx hfr hpar => cuckoo_span_exec hfit_end hfit_ev hx hfr hpar)
     (setup_exec := fun hx₁ hb hfr hpar hz =>
-      initSetup_coupled_spec hx₁ hb hfr hpar hz hw hfit_ev hfit_U)
+      initSetup_coupled_spec hx₁ hb hfr hpar hz hw)
     (step_exec := fun {_s} o ν hv hseed hsupp =>
       opCode_coupled_step_spec o ν (isCuckooHashFamily_tableBits hU).rehash_prob_le_half
         hv hseed hsupp hw hfit_end hfit_ev hfit_V)
