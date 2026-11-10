@@ -442,7 +442,7 @@ noncomputable def modLinkAdversary (coins depth capacity : ℕ → ℕ)
 computable in polynomial time in unary. -/
 theorem isPPT_modLinkAdversary {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {test : ℕ → (List (List Bool) × List (List (List Bool))) → ProbComp Bool}
     (htest : IsPPTOn
@@ -1063,7 +1063,7 @@ noncomputable def modLeveledAdversary (E : Scheme) (coins depth capacity : ℕ �
 depth, and capacity are. -/
 theorem isPPT_modLeveledAdversary {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
     {coins depth capacity : ℕ → ℕ}
@@ -1105,7 +1105,7 @@ theorem isPPT_modLeveledAdversary {E : Scheme}
 /-- Specialization of `isPPT_modLeveledAdversary` to `2 * n` coins per modular index sample. -/
 theorem isPPT_modLeveledAdversary_two_mul {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
     {depth capacity : ℕ → ℕ}
@@ -1461,7 +1461,7 @@ such that:
    bounded in `n`. -/
 theorem exists_leveledAdversary_overhead {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
     {width budget capacity : ℕ → ℕ}
@@ -1484,12 +1484,12 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       ComputableInPolyTime (fun (n, coins) => evalKey n coins)
         (encPair encUnary encBits) (encPair encBits encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
-        (encPair (encPair encUnary (encPair encBits encBool)) encBits) encBits ∧
+        (encPair (encKeyedInput encBool) encBits) encBits ∧
       ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
         (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair encBool encBool) encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
-        (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
+        (encPair Encryption.encGuessInput encBits) encBool ∧
       (∀ n, ProbComp.eval (E.keyGen n) =
         (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
       (∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →

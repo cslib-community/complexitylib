@@ -260,15 +260,15 @@ lake exe checkInitImports
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
 optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
 CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability ratchet, documentation pins, and the post-build tidy statement
-ratchet, result registry and changed-file lints. Changed-file checks compare with the merge base
-of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining step
-stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
-fails when the workflow gains a step that is neither mirrored nor recorded there, or when a
-mirrored step runs a line or sets an option that the local run does not repeat. Both full and
-quick modes require the manual checks; these stdlib-only checks need no PDF tools or generated
-research data. They catch source/link drift and malformed visual markup; they do not replace the
-required review of both manuals' meaning and usability.
+hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
+post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
+compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
+why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
+context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
+there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
+generated research data. They catch source/link drift and malformed visual markup; they do not
+replace the required review of both manuals' meaning and usability.
 For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
 repeat it locally merely to satisfy a second reporting requirement. Use local full validation

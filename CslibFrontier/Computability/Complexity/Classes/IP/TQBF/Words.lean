@@ -51,7 +51,8 @@ All are polynomial-time in their unary or binary inputs.
 
 * `Cslib.Complexity.QBFProtocol.connectiveMod`, `Cslib.Complexity.QBFProtocol.operatorMod`,
   `Cslib.Complexity.QBFProtocol.hornerMod`: arithmetic modulo `p`.
-* `Cslib.Complexity.QBFProtocol.canonPt`, `Cslib.Complexity.QBFProtocol.updatePt`: points.
+* `Cslib.Complexity.QBFProtocol.canonPt`, `Cslib.Complexity.QBFProtocol.updatePt`,
+  `Cslib.Complexity.QBFProtocol.encPt`: points and their encoding.
 * `Cslib.Complexity.QBFProtocol.decodeReply`, `Cslib.Complexity.QBFProtocol.encodeReply`: replies.
 * `Cslib.Complexity.QBFProtocol.sampleMod`: samples.
 
@@ -339,6 +340,11 @@ section PolyTime
 
 open ComputableInPolyTime
 
+/-- Points as lists of pairs `(x, v)` of a variable `x` in binary and its value `v` in unary, as
+`lookupPt`, `normPt` and `updatePt` read them: the pairs are framed and concatenated in order,
+each with its variable framed. -/
+abbrev encPt : List (ℕ × ℕ) ↪ List Bool := encList (encPair encNat encUnary)
+
 variable {γ : Type} {encIn : γ ↪ List Bool}
 
 @[fun_prop]
@@ -381,7 +387,7 @@ theorem computableInPolyTime_hornerMod {p z : γ → ℕ} {l : γ → List ℕ}
 
 @[fun_prop]
 theorem computableInPolyTime_lookupPt {pt : γ → List (ℕ × ℕ)} {w : γ → ℕ}
-    (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary)))
+    (hpt : ComputableInPolyTime pt encIn encPt)
     (hw : ComputableInPolyTime w encIn encNat) :
     ComputableInPolyTime (fun x => lookupPt (pt x) (w x)) encIn encUnary := by
   unfold lookupPt
@@ -393,9 +399,9 @@ theorem computableInPolyTime_lookupPt {pt : γ → List (ℕ × ℕ)} {w : γ �
 theorem computableInPolyTime_normPt {p : γ → ℕ} {xs : γ → List ℕ}
     {pt : γ → List (ℕ × ℕ)} (hp : ComputableInPolyTime p encIn encUnary)
     (hxs : ComputableInPolyTime xs encIn (encList encNat))
-    (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary))) :
+    (hpt : ComputableInPolyTime pt encIn encPt) :
     ComputableInPolyTime (fun x => normPt (p x) (xs x) (pt x)) encIn
-      (encList (encPair encNat encUnary)) := by
+      encPt := by
   unfold normPt
   fun_prop
 
@@ -403,11 +409,11 @@ theorem computableInPolyTime_normPt {p : γ → ℕ} {xs : γ → List ℕ}
 theorem computableInPolyTime_updatePt {p : γ → ℕ} {xs : γ → List ℕ}
     {pt : γ → List (ℕ × ℕ)} {v z : γ → ℕ} (hp : ComputableInPolyTime p encIn encUnary)
     (hxs : ComputableInPolyTime xs encIn (encList encNat))
-    (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary)))
+    (hpt : ComputableInPolyTime pt encIn encPt)
     (hv : ComputableInPolyTime v encIn encNat)
     (hz : ComputableInPolyTime z encIn encUnary) :
     ComputableInPolyTime (fun x => updatePt (p x) (xs x) (pt x) (v x) (z x)) encIn
-      (encList (encPair encNat encUnary)) := by
+      encPt := by
   unfold updatePt
   fun_prop
 
