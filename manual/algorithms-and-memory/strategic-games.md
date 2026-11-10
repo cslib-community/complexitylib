@@ -3,7 +3,7 @@
 [Chapter index](index.md) · [Online and streaming models](online-and-streaming.md)
 
 This page covers finite strategic games in cost-minimization form, potential games, mixed Nash
-equilibria and Nash's theorem, atomic and nonatomic congestion games, price-of-anarchy and
+equilibria and Nash's theorem, correlated equilibria, atomic and nonatomic congestion games, price-of-anarchy and
 price-of-stability bounds, fair cost-sharing games, strong Nash equilibria, no-regret (Hedge)
 dynamics, and bimatrix games with the Lemke–Howson parity argument. Most of it is mathematics about real-valued costs or payoffs with no machine model. The
 exception is the membership of pure Nash equilibria of explicit congestion games in `PLS`, which
@@ -141,6 +141,36 @@ with `expectedCost`, which `sum_mul_deviationCost_eq_expectedCost` writes as the
 [Strategic.lean](../../CslibFrontierTests/GameTheory/Strategic.lean) does this for uniform mixing
 in matching pennies. The existence proof is nonconstructive: nothing here computes an
 equilibrium or bounds the complexity of finding one.
+
+## Correlated equilibria
+
+[Correlated.lean](../../CslibFrontier/GameTheory/Strategic/Correlated.lean) defines
+`IsCorrelatedEquilibrium σ` for a finitely supported distribution `σ` on profiles, by switching
+functions as in [roughgarden13cs364a][roughgarden13cs364a], Lecture 18, §1. For every player `i`
+and every `δ : S i → S i`, the expected cost of `i` under `σ` is at most its expected cost after
+replacing its recommendation `s i` by `δ (s i)`. `isCorrelatedEquilibrium_iff` gives the
+conditional form, Definition 3.3 of Lecture 13: for every recommendation `a` and deviation `b`,
+compare the expected costs on the event `s i = a`. Both sides are multiplied by the probability
+of the event, so the condition makes sense when that probability is zero. The iff needs
+`[∀ i, DecidableEq (S i)]` but no finiteness.
+
+The equilibrium concepts are nested as in Figure 2 of Lecture 13, and each inclusion has a lemma:
+
+- `IsPureNash.isCorrelatedEquilibrium`: a pure Nash equilibrium as a point mass;
+- `IsMixedNash.isCorrelatedEquilibrium`: the product distribution `productDist` of a mixed Nash
+  equilibrium. Conditioned on its own recommendation, a player still faces the others' mixed
+  strategies;
+- `IsCorrelatedEquilibrium.isCoarseCorrelatedEquilibrium`: constant switching functions are fixed
+  deviations.
+
+`exists_isCorrelatedEquilibrium` follows from Nash's theorem; it takes `[Finite ι]`,
+`[∀ i, Finite (S i)]` and `[∀ i, Nonempty (S i)]`. The checked examples in the test file
+[GameTheory/Correlated.lean](../../CslibFrontierTests/GameTheory/Correlated.lean) show that the
+inclusions are strict. The traffic light of Lecture 13, §3.4, mixes the pure equilibria (stop, go) and (go, stop)
+evenly: it is a correlated equilibrium but not the product distribution of any mixed strategies.
+In Rock–Paper–Scissors, the uniform distribution on the six outcomes without a tie is a coarse
+correlated equilibrium but not a correlated equilibrium. Since `a + 1` beats `a` there, a player
+recommended `a` gains by switching to `a + 2`.
 
 ## Atomic congestion games
 
@@ -429,6 +459,11 @@ checks the following:
   mixed equilibria in the Prisoner's Dilemma;
 - Proposition 3.1 on a constant equilibrium sequence.
 
+[CslibFrontierTests/GameTheory/Correlated.lean](../../CslibFrontierTests/GameTheory/Correlated.lean)
+checks the bridges to correlated equilibria on these games and the strict hierarchy: the traffic
+light is a correlated equilibrium that is not a product distribution, and the no-tie distribution
+of Rock–Paper–Scissors is a coarse correlated equilibrium that is not correlated.
+
 The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
 price-of-anarchy bound to the two-link game for every horizon.
 [CslibFrontierTests/GameTheory/Stability.lean](../../CslibFrontierTests/GameTheory/Stability.lean) checks
@@ -468,9 +503,8 @@ game.
 
 ## Known Limitations
 
-Correlated equilibria (with swap regret, tracked in
-[#4074](https://github.com/cslib-community/cslib-frontier/issues/4074)), existence of Wardrop flows,
-and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
+Swap regret and the convergence of no-swap-regret dynamics to correlated equilibria (Lecture 18,
+§1), existence of Wardrop flows, and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
 [roughgarden03][roughgarden03] for classes without the constant functions (diverse classes on
 parallel links, Theorem 4.5, and inhomogeneous classes on unions of paths, Theorem 4.9) and the
 M/M/1 and M/G/1 delay functions of its Section 5 are not formalized. Nor are the tight price of

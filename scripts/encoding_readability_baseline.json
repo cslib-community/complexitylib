@@ -1,27 +1,6 @@
 {
- "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/NativeChildPolyTime.lean": {
-  "encList (encPair encNat encNat)": 4
- },
- "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/NativeRecovery.lean": {
-  "encList (encList encNat)": 6
- },
- "CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean": {
-  "encList (encPair encNat encBool)": 6
- },
- "CslibFrontier/Computability/Circuit/Quantum/PathNetworkPolyTime.lean": {
-  "encPair (encList encNat) (encList encNat)": 3
- },
- "CslibFrontier/Computability/Circuit/Rational/Runtime/Determinant.lean": {
-  "encList (encList encIntBin)": 8
- },
- "CslibFrontier/Computability/Complexity/Classes/IP/TQBF/Words.lean": {
-  "encList (encPair encNat encUnary)": 3
- },
  "CslibFrontier/Computability/Complexity/Classes/P/WordRAM.lean": {
   "encPair encUnary (encPi encNat)": 4
- },
- "CslibFrontier/Computability/Interactive/AuxZK.lean": {
-  "encPair ?1.index (encPair encBits encBits)": 5
  },
  "CslibFrontier/Computability/MCSP/PartialNP.lean": {
   "encList (encOption encBool)": 4
@@ -43,17 +22,5 @@
  },
  "CslibFrontier/Computability/WordRAM/Turing/ListOutput.lean": {
   "encPair encUnary (encPi encNat)": 3
- },
- "CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean": {
-  "encPair encUnary (encPair encBits encBool)": 4
- },
- "CslibFrontier/Crypto/Computational/Hybrid/SavedPrediction.lean": {
-  "encList (encPair ?1 encBool)": 3
- },
- "CslibFrontier/Crypto/Computational/Kilian.lean": {
-  "encPair encBits (encPair ?1 encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean": {
-  "encPair encUnary (encPair encBits encBits)": 9
  }
 }

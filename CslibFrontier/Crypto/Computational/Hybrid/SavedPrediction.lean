@@ -28,6 +28,7 @@ This avoids requiring an efficient inverse for an arbitrary observation or param
 
 * `Description`, `evaluate`: finite saved data and a total deterministic evaluator.
 * `save`, `splice`, `sample`: sample the context and coins before receiving an observation.
+* `encLabeledExamples`: the encoding of the labeled examples that the test reads.
 * `codeBound`: bound every saved description independently of the source algorithms.
 
 ## Main results
@@ -157,6 +158,12 @@ attribute [program_certificate] isPPTOn_save
 
 variable {α : Type}
 
+/-- A list of labeled examples `(x, b)`, as the coordinate test reads them after its parameter: each
+example is the observation `x` encoded by `encoding` and paired with its label bit `b`, with `x`
+framed. The examples are framed and concatenated in order. -/
+abbrev encLabeledExamples (encoding : α ↪ List Bool) : List (α × Bool) ↪ List Bool :=
+  encList (encPair encoding encBool)
+
 /-- Sample and save the surrounding examples before any target observation is supplied. -/
 noncomputable def splice (sample : α ↪ List Bool) (base : List Bool)
     (replacement original : ProbComp (α × Bool)) (before after : ℕ)
@@ -203,11 +210,10 @@ theorem eval_splice (encoding : α ↪ List Bool) (base : List Bool)
     (replacement original : ProbComp (α × Bool)) (before after c d width : ℕ) (trial : Bool)
     (test : List (α × Bool) → ProbComp Bool) (raw : List Bool → List Bool → List Bool)
     (hrealize : ∀ values budget,
-      c * ((encPair encBits (encList (encPair encoding encBool))
-        (base, values)).length + 1) ^ d ≤ budget →
+      c * ((encPair encBits (encLabeledExamples encoding) (base, values)).length + 1) ^ d ≤
+        budget →
       ProbComp.eval (test values) = (uniformList budget).map (fun coins =>
-        (raw coins (encPair encBits (encList (encPair encoding encBool))
-          (base, values))).headD false))
+        (raw coins (encPair encBits (encLabeledExamples encoding) (base, values))).headD false))
     (observation : α) (hwidth : (encoding observation).length ≤ width) :
     ProbComp.eval ((fun code => evaluate raw code (encoding observation)) <$>
       splice encoding base replacement original before after c d width trial) =
@@ -232,11 +238,10 @@ theorem eval_sample (encoding : α ↪ List Bool) (base : List Bool)
     (replacement original : ProbComp (α × Bool)) (count c d width : ℕ)
     (test : List (α × Bool) → ProbComp Bool) (raw : List Bool → List Bool → List Bool)
     (hrealize : ∀ values budget,
-      c * ((encPair encBits (encList (encPair encoding encBool))
-        (base, values)).length + 1) ^ d ≤ budget →
+      c * ((encPair encBits (encLabeledExamples encoding) (base, values)).length + 1) ^ d ≤
+        budget →
       ProbComp.eval (test values) = (uniformList budget).map (fun coins =>
-        (raw coins (encPair encBits (encList (encPair encoding encBool))
-          (base, values))).headD false))
+        (raw coins (encPair encBits (encLabeledExamples encoding) (base, values))).headD false))
     (observation : α) (hwidth : (encoding observation).length ≤ width) :
     ProbComp.eval ((fun code => evaluate raw code (encoding observation)) <$>
       sample encoding base replacement original count c d width) =
@@ -363,7 +368,7 @@ theorem length_sample_le (encoding : α ↪ List Bool) (base : List Bool)
 for either the public parameter or observation representation is required. -/
 theorem exists_evaluator {Param : Type} {input : Param ↪ List Bool} {output : α ↪ List Bool}
     {test : Param → List (α × Bool) → ProbComp Bool}
-    (htest : IsPPTOn (encPair input (encList (encPair output encBool)))
+    (htest : IsPPTOn (encPair input (encLabeledExamples output))
       encBool (fun pair => test pair.1 pair.2)) :
     ∃ (c d : ℕ) (predict : List Bool → List Bool → Bool),
       ComputableInPolyTime (fun pair => predict pair.1 pair.2)
