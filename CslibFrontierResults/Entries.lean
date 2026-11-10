@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
+import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
@@ -178,6 +179,23 @@ register_result "alternation-apspace-exp" where
   scope := "One finite-state alternating multi-tape machine per problem with least-fixed-point \
     acceptance, polynomial work space along every computation prefix and every branch halting; \
     EXP is deterministic decision within c₁·2^(n^d) + c₂ steps, with any space bound; \
+    arbitrary injective encodings."
+
+register_result "alternation-aspace-dtime" where
+  title := "Chandra–Kozen–Stockmeyer: alternating space s is within deterministic time 2^O(s)"
+  topic := "space complexity"
+  sources := [
+    { paper := ChandraKozenStockmeyer1981, theorem := unverified, locator := "Section 3" },
+    { paper := Sipser2013, theorem := unverified, locator := "Section 10.3" }
+  ]
+  theorems := [
+    Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE,
+    Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE_of_log2_le
+  ]
+  scope := "One finite-state alternating multi-tape machine per problem with least-fixed-point \
+    acceptance and work space c₁·s(n) + c₂ along every computation prefix; DTIME is \
+    deterministic decision within c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when \
+    log₂ n ≤ s(n); no constructibility hypothesis; the converse inclusion is not included; \
     arbitrary injective encodings."
 
 register_result "reingold" where

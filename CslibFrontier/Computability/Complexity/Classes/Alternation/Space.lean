@@ -100,8 +100,8 @@ def AL (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State) (c : ℕ),
     atm.DecidesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)}
 
-/-- **`APSPACE` is the union of the classes `ASPACE (n ^ k)`** [Chandra, Kozen and
-Stockmeyer][ChandraKozenStockmeyer1981]. -/
+/-- **`APSPACE` is the union of the classes `ASPACE (n ^ k)`** [Chandra, Kozen and Stockmeyer,
+Section 3][ChandraKozenStockmeyer1981] [Sipser, Section 10.3][Sipser2013]. -/
 theorem mem_APSPACE_iff_exists_mem_ASPACE {A : Set α} :
     A ∈ APSPACE enc ↔ ∃ k, A ∈ ASPACE enc (· ^ k) := by
   constructor
@@ -112,8 +112,8 @@ theorem mem_APSPACE_iff_exists_mem_ASPACE {A : Set α} :
   · rintro ⟨d, k, State, hfin, atm, c₁, c₂, hA⟩
     exact ⟨k, State, hfin, atm, _, by growth_poly, hA⟩
 
-/-- **`AL` is `ASPACE(log₂ n)`**: the bounds `c * (log₂ n + 1)` and `c₁ * log₂ n + c₂` give the
-same problems. -/
+/-- **`AL` is `ASPACE(log₂ n)`** [Sipser, Section 10.3][Sipser2013]: the bounds `c * (log₂ n + 1)`
+and `c₁ * log₂ n + c₂` give the same problems. -/
 theorem AL_eq_ASPACE : AL enc = ASPACE enc Nat.log2 := by
   ext A
   constructor
