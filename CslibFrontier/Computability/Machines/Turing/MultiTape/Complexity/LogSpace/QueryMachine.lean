@@ -252,68 +252,40 @@ theorem passNext_inSpace
   have hs : ComputableInSpace (fun p : PassState σ' × Bool => p.1.1)
       (encPair (encPass encS') encBool) encS'
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp_lin (fst _ _) (.refl _) hq1
+    fst' hq1
   have hrest : ComputableInSpace (fun p : PassState σ' × Bool => p.1.2)
       (encPair (encPass encS') encBool) (encPair encNat (encOption encBool))
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp_lin (snd _ _) (.refl _) hq1
+    snd' hq1
   have hpos : ComputableInSpace (fun p : PassState σ' × Bool => p.1.2.1)
       (encPair (encPass encS') encBool) encNat
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp_lin (fst _ _) (.refl _) hrest
+    fst' hrest
   have hfd : ComputableInSpace (fun p : PassState σ' × Bool => p.1.2.2)
       (encPair (encPass encS') encBool) (encOption encBool)
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp_lin (snd _ _) (.refl _) hrest
+    snd' hrest
   have hb : ComputableInSpace (fun p : PassState σ' × Bool => p.2)
       (encPair (encPass encS') encBool) encBool
       fun p => (encPair (encPass encS') encBool p).length := snd _ _
   have hsucc : ComputableInSpace (fun p : PassState σ' × Bool => p.1.2.1 + 1)
       (encPair (encPass encS') encBool) encNat
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp_lin natSucc linear_succ hpos
-  have hlenS : (fun p : PassState σ' × Bool => (encS' p.1.1).length) ≼
-      fun p => (encPair (encPass encS') encBool p).length :=
-    .of_le fun p => by simp only [length_encPair]; omega
+    budget_natSucc hpos
   have hqs : ComputableInSpace (fun p : PassState σ' × Bool => M'.query p.1.1)
       (encPair (encPass encS') encBool) encNat
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp hquery hs hlenS
+    budget_comp_linear hquery hs
   have heq : ComputableInSpace
       (fun p : PassState σ' × Bool => decide (p.1.2.1 = M'.query p.1.1))
       (encPair (encPass encS') encBool) encBool
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp natEq (budget_prod hpos hqs)
-      (((hpos.prod hqs).length_le).trans (.add (.refl _) (.refl _)))
+    budget_natEq hpos hqs
   have hsome : ComputableInSpace (fun p : PassState σ' × Bool => some p.2)
       (encPair (encPass encS') encBool) (encOption encBool)
       fun p => (encPair (encPass encS') encBool p).length :=
-    budget_comp_lin (of_inO (.of_linear OptionEncoding.some))
-      (.refl _) hb
+    budget_optionSome hb
   exact budget_prod hs (budget_prod hsucc (budget_ite heq hsome hfd))
-
-section EndOfPass
-
-variable (encS' : σ' ↪ List Bool)
-
-theorem fst_inSpace : ComputableInSpace (fun q : PassState σ' => q.1) (encPass encS') encS'
-    fun q => (encPass encS' q).length := fst _ _
-
-theorem stateRead_inSpace :
-    ComputableInSpace (fun q : PassState σ' => (q.1, q.2.2)) (encPass encS')
-      (encStateRead encS') fun q => (encPass encS' q).length :=
-  budget_prod (fst_inSpace encS') (budget_comp_lin (snd _ _) (.refl _) (snd _ _))
-
-theorem length_stateRead_le :
-    (fun q : PassState σ' => (encStateRead encS' (q.1, q.2.2)).length) ≼
-      fun q => (encPass encS' q).length :=
-  .of_le fun q => by simp only [length_encPair]; omega
-
-theorem length_fst_le :
-    (fun q : PassState σ' => (encS' q.1).length) ≼ fun q => (encPass encS' q).length :=
-  .of_le fun q => by simp only [length_encPair]; omega
-
-end EndOfPass
 
 theorem passEmit_inSpace
     (hemit : ComputableInSpace M'.emit (encStateRead encS') encBits
@@ -321,9 +293,9 @@ theorem passEmit_inSpace
     (hhalted : ComputableInSpace M'.halted encS' encBool fun s => (encS' s).length) :
     ComputableInSpace (passEmit M') (encPass encS') encBits
       fun q => (encPass encS' q).length :=
-  budget_ite (budget_comp hhalted (fst_inSpace encS') (length_fst_le encS'))
+  budget_ite (budget_comp_linear hhalted (fst _ _))
     (budget_const [] (.refl _))
-    (budget_comp hemit (stateRead_inSpace encS') (length_stateRead_le encS'))
+    (budget_comp_linear hemit (budget_prod (fst _ _) (snd' (snd _ _))))
 
 theorem passEnd_inSpace
     (hnext : ComputableInSpace M'.next (encStateRead encS') encS'
@@ -332,9 +304,9 @@ theorem passEnd_inSpace
     ComputableInSpace (passEnd M') (encPass encS') (encPass encS')
       fun q => (encPass encS' q).length :=
   budget_prod
-    (budget_ite (budget_comp hhalted (fst_inSpace encS') (length_fst_le encS'))
-      (fst_inSpace encS')
-      (budget_comp hnext (stateRead_inSpace encS') (length_stateRead_le encS')))
+    (budget_ite (budget_comp_linear hhalted (fst _ _))
+      (fst _ _)
+      (budget_comp_linear hnext (budget_prod (fst _ _) (snd' (snd _ _)))))
     (budget_prod (budget_const 0 (.refl _)) (budget_const none (.refl _)))
 
 theorem passCont_inSpace
@@ -342,13 +314,13 @@ theorem passCont_inSpace
     ComputableInSpace (passCont M') (encPass encS') encBool
       fun q => (encPass encS' q).length :=
   budget_finite (encC := encBool) not
-    (budget_comp hhalted (fst_inSpace encS') (length_fst_le encS'))
+    (budget_comp_linear hhalted (fst _ _))
 
 theorem passFinish_inSpace
     (hfinish : ComputableInSpace M'.finish encS' encBits fun s => (encS' s).length) :
     ComputableInSpace (passFinish M') (encPass encS') encBits
       fun q => (encPass encS' q).length :=
-  budget_comp (f := fun q : PassState σ' => q.1) hfinish (fst_inSpace encS') (length_fst_le encS')
+  budget_comp_linear hfinish (fst _ _)
 
 end Parts
 
