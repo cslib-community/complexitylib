@@ -17,9 +17,10 @@ import CslibFrontier.Probability.Entropy.Fano
 Garbled material must encode whatever the evaluator can recover from it but a simulator's view
 hides. This module proves that one-world entropy argument for an observation `C`, a hidden value
 `X : α` (for example the output-wire label selected by the input labels in `C`) and garbled
-material `G` of `m` bits. Suppose that, in a simulated view at statistical distance at most `ε`
-from the real one, `X` keeps `t` bits of entropy given `C`. Suppose also that, in the real view,
-a decoder recovers `X` from `(C, G)` except with probability `δ`. Then
+material `G` of `m` bits.
+Suppose that, in a simulated law of `(C, X)` at statistical distance at most `ε` from the real
+law of `(C, X)`, `X` keeps `t` bits of entropy given `C`. Let `δ` be the error probability in
+the real law of a deterministic decoder recovering `X` from `(C, G)`. Then
 `t - ε log₂ |α| - (1 + ε) h₂(ε / (1 + ε)) - h₂(δ) - δ log₂ (|α| - 1) ≤ m`.
 
 The argument combines three steps. Continuity of conditional entropy moves the bound `t` to the
@@ -76,9 +77,9 @@ private theorem conditionalEntropy_le_add {Ω G : Type*} [Finite C] [Finite α] 
 
 /-- **Size lower bound for garbled material.** Let `real` be the real joint law of an observation
 `C`, a hidden value `X : α` and garbled material `G` of `m` bits, and let `ideal` be a simulated
-law of `(C, X)` at statistical distance at most `ε` from the real one, in which `X` keeps at least
-`t` bits of entropy given `C`. If `decode` recovers `X` from `(C, G)` except with probability `δ`
-in the real view, then
+law of `(C, X)` at statistical distance at most `ε` from the real law of `(C, X)`, in which `X`
+keeps at least `t` bits of entropy given `C`. With `δ` the probability under `real` that
+`decode (C, G) ≠ X`, we have
 `t - ε log₂ |α| - (1 + ε) h₂(ε / (1 + ε)) - h₂(δ) - δ log₂ (|α| - 1) ≤ m`. -/
 theorem sub_le_bitLength_of_recover [Fintype C] [Fintype α] {m : ℕ}
     (real : PMF (C × α × BitString m)) (ideal : PMF (C × α)) (decode : C × BitString m → α)

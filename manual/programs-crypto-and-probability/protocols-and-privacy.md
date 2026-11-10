@@ -681,7 +681,7 @@ realization, composition/UC and full malicious MPC remain separate obligations.
 
 The statement is concrete and single-instance: the circuit, input and distinguisher are fixed and the keyed function is arbitrary, so the bound is meaningful only when the reductions' PRF advantages are small. In the `prv.sim` game of [bhr12][bhr12] (formalized together with conventional-circuit topology/size inverters and coarse-grained adaptive privacy `prv1` in the abstract garbling-scheme framework; see [Security games and primitive families](security-games-and-primitives.md#garbling-schemes)) the adversary chooses the circuit and input itself; a bound for that game follows by averaging over its choice, but this transfer is not formalized. Running time is not tracked: there are no cost bounds for garbling, evaluation, the simulator or the reductions. Nothing here is asymptotic or polynomial-time; there is no connection to the word-level `PseudorandomFunction`; and this scheme has no table-size optimizations. Free XOR and half gates are covered in the subsections below, as separate constructions with single-instance simulation privacy under circular correlation robustness. Adversary-chosen circuits and inputs, asymptotic and polynomial-time cost bounds, a formalized query-legality condition for circular correlation robustness, and instantiation in the garbling-scheme interface of [bhr12][bhr12] remain in [#3236](https://github.com/cslib-community/cslib-frontier/issues/3236). Theorem numbers of [bhr12][bhr12] and [lp09][lp09] were not checked, since their full texts were inaccessible in this pass. Checked instances are in [CslibFrontierTests/Crypto/Garbling.lean](../../CslibFrontierTests/Crypto/Garbling.lean).
 
-[Primitives/Garbling/SizeLowerBound.lean](../../CslibFrontier/Crypto/Primitives/Garbling/SizeLowerBound.lean) proves the generic one-world garbled-payload bit-length lower bound `sub_le_bitLength_of_recover`: if a simulated view within statistical distance `ε` of the real view leaves at least `t` bits of conditional entropy in a hidden value `X : α` given the observation `C`, and in the real view a deterministic decoder recovers `X` from `(C, G)` for an `m`-bit payload `G : BitString m` with error probability at most `δ`, then `t - ε log₂ |α| - condEntropyModulus ε - (h₂(δ) + δ log₂ (|α| - 1)) ≤ m` (attained with zero slack by the one-time pad in [CslibFrontierTests/Crypto/GarblingSizeLowerBound.lean](../../CslibFrontierTests/Crypto/GarblingSizeLowerBound.lean)). This packages the single-world transfer, chain-rule and Fano steps; the multi-world gate-specific Shannon-type inequalities for AND and XOR gates and the single-gate random-oracle model of Januzelli, Rosulek and Roy are not formalized here.
+[Primitives/Garbling/SizeLowerBound.lean](../../CslibFrontier/Crypto/Primitives/Garbling/SizeLowerBound.lean) proves the generic one-world garbled-payload bit-length lower bound `sub_le_bitLength_of_recover`: if a simulated law of `(C, X)` within statistical distance `ε` of the real law of `(C, X)` leaves at least `t` bits of conditional entropy in a hidden value `X : α` given the observation `C`, and in the real view a deterministic decoder recovers `X` from `(C, G)` for an `m`-bit payload `G : BitString m` with error probability `δ` (the probability under the real law that it outputs a value other than `X`), then `t - ε log₂ |α| - condEntropyModulus ε - (h₂(δ) + δ log₂ (|α| - 1)) ≤ m`, where `h₂` is binary entropy in bits and `condEntropyModulus ε = (1 + ε) h₂(ε / (1 + ε))` (attained with zero slack by the one-time pad in [CslibFrontierTests/Crypto/GarblingSizeLowerBound.lean](../../CslibFrontierTests/Crypto/GarblingSizeLowerBound.lean)). This packages the single-world transfer (`sub_le_conditionalEntropy_of_dist_le`), chain-rule and Fano steps; the multi-world gate-specific Shannon-type inequalities for AND and XOR gates and the single-gate random-oracle model of Januzelli, Rosulek and Roy [jrr25][jrr25] are not formalized here.
 
 ### Free XOR
 
@@ -813,8 +813,8 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [bs23]: ../sources.md#bs23
 [cgks98]: ../sources.md#cgks98
 [ckkz12]: ../sources.md#ckkz12
-[complexitylib]: ../sources.md#complexitylib
 [cks20]: ../sources.md#cks20
+[complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [dworkroth14]: ../sources.md#dworkroth14
 [gkwy20]: ../sources.md#gkwy20
@@ -822,6 +822,7 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [grs12]: ../sources.md#grs12
 [heath24]: ../sources.md#heath24
 [iknp03]: ../sources.md#iknp03
+[jrr25]: ../sources.md#jrr25
 [kov17]: ../sources.md#kov17
 [ks08]: ../sources.md#ks08
 [lp09]: ../sources.md#lp09

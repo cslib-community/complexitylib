@@ -757,6 +757,11 @@ Svante Janson, Tomasz Łuczak and Andrzej Ruciński. *Random Graphs*. Wiley-Inte
 
 William B. Johnson, Joram Lindenstrauss. “Extensions of Lipschitz Mappings into a Hilbert Space.” In *Conference in Modern Analysis and Probability (New Haven, Conn., 1982)*, Contemporary Mathematics 26, 189–206. American Mathematical Society, 1984. https://doi.org/10.1090/conm/026/737400 . Bibliographic data from the DOI record; the manual attributes only the existence of low-distortion linear embeddings of `n` points into `O(log n / ε²)` dimensions to this paper.
 
+<a id="jrr25"></a>
+## jrr25
+
+Jules Januzelli, Mike Rosulek, Lawrence Roy. "Lower Bounds for Garbled Circuits from Shannon-Type Information Inequalities." *Advances in Cryptology – CRYPTO 2025*, 2025. Full version: Cryptology ePrint Archive, Paper 2025/876, https://eprint.iacr.org/2025/876 . Bibliographic metadata from the ePrint record; the paper's numbered lemmas were not checked against the full text. Cited at topic level as motivation for the generic one-world conditional-entropy transfer and Fano size bound; the paper's multi-world gate-specific Shannon-type inequalities and single-gate random-oracle model are not formalized.
+
 <a id="kargerstein96"></a>
 ## kargerstein96
 
@@ -1311,6 +1316,11 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 ## williamsonshmoys11
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
+
+<a id="winter16"></a>
+## winter16
+
+Andreas Winter. "Tight Uniform Continuity Bounds for Quantum Entropies: Conditional Entropy, Relative Entropy Distance and Energy Constraints." *Communications in Mathematical Physics* 347(1), 291–313, 2016. https://doi.org/10.1007/s00220-016-2609-8 . Cited at topic level for the classical special case of the conditional-entropy continuity bound with observation-independent modulus `(1 + ε) h₂(ε / (1 + ε))`; no specific theorem or lemma number from the journal text is claimed.
 
 <a id="yao77"></a>
 ## yao77
