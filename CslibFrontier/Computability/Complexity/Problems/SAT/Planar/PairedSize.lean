@@ -30,7 +30,8 @@ inputs, without a geometric validity assumption.
 
 ## References
 
-The unchanged path estimates are reused from `Planar.Size`.
+The unchanged path estimates are reused from
+`CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathBounds`.
 -/
 
 public section

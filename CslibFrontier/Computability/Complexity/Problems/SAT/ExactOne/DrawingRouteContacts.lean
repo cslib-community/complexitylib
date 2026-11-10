@@ -17,8 +17,11 @@ import Mathlib.Data.List.GetD
 
 ## Main results
 
-* `positiveStem_different_boxes_disjoint`: closed replacement boxes stay disjoint.
-* `positiveStem_foreign_exterior_disjoint`: exterior routes avoid other clause boxes.
+* `positiveStem_different_boxes_disjoint`: local prefixes of different clauses have disjoint
+  supports.
+* `positiveExterior_foreign_box`: exterior routes avoid other clauses' closed boxes.
+* `positiveStem_foreign_exterior_disjoint`: a local prefix is disjoint from the exterior routes
+  of other clauses.
 * `positiveIncidenceRoute_endpoints`: actual clause and globally shared variable endpoints.
 * `positiveIncidenceRoute_contacts`: full real-support contacts only at actual common endpoints.
 
