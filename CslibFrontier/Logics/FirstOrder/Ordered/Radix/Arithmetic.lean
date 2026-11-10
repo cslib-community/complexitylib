@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication
 public import CslibFrontier.Foundations.Data.Nat.Radix
+import CslibFrontier.Tactic.FirstOrder
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -104,9 +105,7 @@ theorem realize_cell (B a b y c z c' : (language L).Term α) (v : α → Fin n) 
       (a.realize v).val * (b.realize v).val + (y.realize v).val + (c.realize v).val =
         (z.realize v).val + (B.realize v).val * (c'.realize v).val ∧
       (a.realize v).val * (b.realize v).val + (y.realize v).val + (c.realize v).val < n := by
-  simp only [cell, Formula.realize_iExs, Formula.realize_inf, realize_mulEq, realize_addEq,
-    Term.realize_var, Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr,
-    and_assoc]
+  fo_simp [cell, Function.comp_def, and_assoc]
   constructor
   · rintro ⟨u, hp, ht, hs, hu, he⟩
     have := (u 2).isLt
@@ -134,10 +133,7 @@ theorem realize_affine {d : ℕ} (B b : (language L).Term α)
           (List.ofFn fun i => ((x i).realize v).val) +
         Nat.ofDigits (B.realize v).val (List.ofFn fun i => ((y i).realize v).val) =
         Nat.ofDigits (B.realize v).val (List.ofFn fun i => ((z i).realize v).val) := by
-  simp only [affine, Formula.realize_inf, realize_le,
-    realize_digits, Formula.realize_iExs, Formula.realize_equal, Term.realize_var,
-    realize_zero_val, Fin.ext_iff, Formula.realize_iInf, realize_cell, Term.realize_relabel,
-    Function.comp_def, Sum.elim_inl, Sum.elim_inr, Fin.le_def, and_assoc]
+  fo_simp [affine, Fin.ext_iff, Function.comp_def, Fin.le_def, and_assoc]
   constructor
   · rintro ⟨hb, hx, hy, hz, c, hc0, hce, hc, hstep⟩
     refine ⟨hb, hx, hy, hz, ?_⟩
