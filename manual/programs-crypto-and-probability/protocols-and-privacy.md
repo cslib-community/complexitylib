@@ -2495,7 +2495,8 @@ $$
 The direct-branch client derives both whole-source bounds on a real original input
 with two colliding low-bit classes, and checks a full-state miss with complete
 projected collisions. The arithmetic fallback client checks that the residual still
-contains its full class-search costs. These residual expressions are actual certificate costs, not supplied runtime
+contains its full class-search costs. These residual expressions are actual certificate
+costs, not supplied runtime
 hypotheses. `SourceResources.source_restart_bounds`, described below, now normalizes
 both for the general restarted branch and composes the whole-run bounds.
 

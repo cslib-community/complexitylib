@@ -67,8 +67,8 @@ theorem window_state_wire (bounds : ℕ × ℕ) (groups : List (List SortedMatch
     (encPair encNat encNat (streamState bounds (fun q => advance q.1 q.2) groups j)).length ≤
       (encPair encNat encNat bounds).length := by
   have h := state_le bounds groups j
-  have a := ComputableTidilyInO.length_encNat_mono h.1
-  have b := ComputableTidilyInO.length_encNat_mono h.2
+  have a := length_encNat_mono h.1
+  have b := length_encNat_mono h.2
   simp only [length_encPair]
   omega
 

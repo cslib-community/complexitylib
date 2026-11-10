@@ -73,7 +73,7 @@ private theorem lengthCertificate_bounds :
     let M := A (10*(B+1))
     have state (j : ℕ) : (encNat ((rows.take j).foldl (fun n _ => n+1) 0)).length ≤ B := by
       simp only [List.foldl_add_const, Nat.zero_add, Nat.one_mul]
-      exact (ComputableTidilyInO.length_encNat_mono (List.length_take_le' j rows)).trans countWire
+      exact (length_encNat_mono (List.length_take_le' j rows)).trans countWire
     have sw : NativeCertificate.foldStateWidth encNat (fun (_ : Bool) n (_ : SortedMatch.Record) =>
         n+1) args ≤ B := by
       apply Finset.sup_le
@@ -182,8 +182,8 @@ private theorem cutCertificate_bounds :
           dsimp only [cutNext]
           split <;> dsimp only <;> omega)
       have h := inv j hj
-      have a := ComputableTidilyInO.length_encNat_mono h.1
-      have b := ComputableTidilyInO.length_encNat_mono h.2
+      have a := length_encNat_mono h.1
+      have b := length_encNat_mono h.2
       change (encNat (streamState bounds (fun q => cutNext q.1 q.2) rows j).1).length ≤
         (encNat bounds.1).length at a
       change (encNat (streamState bounds (fun q => cutNext q.1 q.2) rows j).2).length ≤
@@ -345,7 +345,7 @@ private theorem populationCertificate_bounds :
       intro row hr
       exact (le_listMax (f := fun row => (er row).length) (List.mem_filter.mp hr).1).trans rowWire
     have sideCount (r : Bool) : (encNat (KeyJoin.side r rows).length).length ≤ B :=
-      (ComputableTidilyInO.length_encNat_mono (sideLength r)).trans countWire
+      (length_encNat_mono (sideLength r)).trans countWire
     have lb (r : Bool) := (lengths (KeyJoin.side r rows) B (sideCount r) (sideWire r)).trans
       (Nat.mul_le_mul_right (L B) (Nat.add_le_add_right (sideLength r) 1))
     have sl := sides false rows B rowWire
@@ -480,7 +480,7 @@ private theorem groupWindowCertificate_bounds :
       intro row hr
       exact (le_listMax (f := fun row => (er row).length) (List.mem_filter.mp hr).1).trans rowWire
     have sideCount (r : Bool) : (encNat (KeyJoin.side r rows).length).length ≤ B :=
-      (ComputableTidilyInO.length_encNat_mono (sideLength r)).trans countWire
+      (length_encNat_mono (sideLength r)).trans countWire
     have sl := sides false rows B rowWire
     have sr := sides true rows B rowWire
     have lengthBound := (lengths rs B (sideCount true) (sideWire true)).trans
@@ -590,7 +590,7 @@ theorem windowCallback_bounds :
     have countWire (j : ℕ) (hj : j < groups.length) : (encNat groups[j].length).length ≤ B := by
       have n := (List.sublist_flatten_of_mem (List.getElem_mem hj)).length_le
       have square : groups[j].length ≤ groups.flatten.length^2+1 := by nlinarith only [n]
-      have w := ComputableTidilyInO.length_encNat_mono square
+      have w := length_encNat_mono square
       dsimp only [B, windowWidth, en, er] at w ⊢
       omega
     have each (j : ℕ) (hj : j < groups.length) :
