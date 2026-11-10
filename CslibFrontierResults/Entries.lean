@@ -919,7 +919,8 @@ register_result "zero-one-law-relational" where
     theorems extend it to a constant probability 0 < p R < 1 for each relation symbol R, with \
     the same almost-sure sentences for every such p. That extension is an adaptation of \
     Fagin's proof made here; no primary source for it was found, and none of the listed \
-    sources is claimed for it. With p R equal to 0 or 1 the characterization fails. \
+    sources is claimed for it. With p R equal to 0 or 1 the characterization by the \
+    extension theory fails, although the 0-1 law survives (the symbol is a.s. empty or full). \
     Unlabelled structures and probabilities depending on n are not covered."
 
 register_result "buchi-elgot-trakhtenbrot" where

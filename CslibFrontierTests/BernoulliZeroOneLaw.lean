@@ -13,8 +13,9 @@ import CslibFrontierTests.RelationalZeroOneLaw
 The law for the language of graphs at edge probability `1/3` (random directed graphs with loops),
 with a sentence of limit `1` and one of limit `0`; exact probabilities of atomic facts; the bridge
 to the uniform random structure at `p = 1/2`; and the two hypotheses. With `p = 0` or `p = 1` the
-almost-sure sentences are no longer the consequences of the extension theory, and a nullary
-relation symbol of probability `1/3` breaks the law.
+almost-sure sentences are no longer the consequences of the extension theory (the 0-1 law itself
+survives, since the symbol is then empty or full), and a nullary relation symbol of probability
+`1/3` breaks the law.
 -/
 
 namespace CslibFrontierTests.BernoulliZeroOneLaw
@@ -117,7 +118,7 @@ example (n : ℕ) :
       uniformStructure n :=
   bernoulliStructure_eq_uniformStructure (fun _ => rfl) n
 
-/-! ### `0 < p` is needed -/
+/-! ### The characterization needs `0 < p` -/
 
 /-- With edge probability `0` no element has a loop, so `someLoop` has probability `0` for every
 `n`. -/
@@ -143,7 +144,7 @@ example : Relational.extensionTheory Language.graph ⊨ᵇ someLoop ∧
   simp only [sentenceProb_someLoop_zero] at h
   exact zero_ne_one (tendsto_nhds_unique tendsto_const_nhds h)
 
-/-! ### `p < 1` is needed -/
+/-! ### The characterization needs `p < 1` -/
 
 /-- With edge probability `1` every element has a loop, so "some element has no loop" has
 probability `0` for every `n`. -/
@@ -165,7 +166,8 @@ theorem sentenceProb_someNoLoop_one (n : ℕ) :
         simp only [structProb_not, structProb_bernoulliStructure_relMap, Set.Icc.coe_one,
           sub_self, Finset.sum_const_zero]
 
-/-- So with `p = 1` a consequence of the extension theory does not hold almost surely. -/
+/-- So with `p = 1` a consequence of the extension theory does not hold almost surely: the
+characterization of the almost-sure sentences needs `p < 1`. -/
 example : Relational.extensionTheory Language.graph ⊨ᵇ
       (closeEx (Fin 1) (rel₂ adj (0 : Fin 1) 0).not : Language.graph.Sentence) ∧
     ¬Tendsto (fun n => sentenceProb (bernoulliStructure (L := Language.graph) (fun _ => 1) n)

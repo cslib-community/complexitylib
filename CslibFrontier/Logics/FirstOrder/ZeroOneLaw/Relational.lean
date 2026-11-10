@@ -38,7 +38,12 @@ The hypothesis that no relation symbol is nullary is needed: a nullary relation 
 probability exactly `1/2` for every `n` (`Cslib.Logic.FO.not_zero_one_law_of_nullary`), and with
 probability exactly `p R` under `bernoulliStructure p n`
 (`Cslib.Logic.FO.not_zero_one_law_bernoulliStructure_of_nullary`). The hypothesis `0 < p R < 1` is
-needed too: with `p R = 0` the extension axiom asking for an `R`-fact fails in every structure.
+needed for the characterization by `T` and for the independence of `p`, not for the 0-1 law
+itself. With `p R = 0` the symbol `R` is empty with probability `1`, so an extension axiom asking
+for an `R`-fact fails with probability `1` for every `n`; with `p R = 1` the symbol is full, and
+one asking for a missing `R`-fact fails likewise. A symbol with `p R ∈ {0, 1}` can be replaced by
+`⊥` or `⊤`, and the law for the remaining symbols then applies; that reduction is not formalized
+here.
 
 For `L = Language.graph` the measure `μₙ` is uniform on directed graphs with loops, so this theorem
 does not specialize to the 0-1 law for the uniform random simple graph `G(n, 1/2)`, which is
