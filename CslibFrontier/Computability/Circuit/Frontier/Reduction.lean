@@ -57,10 +57,10 @@ For a dense set `log_q |S| ≈ n`, so a small circuit gives a graph whose cycle 
 * `Cslib.Circuits.Frontier.Network.ncard_accepted_le_pow`,
   `Cslib.Circuits.Frontier.Network.logb_ncard_accepted_le`: frontier demand for any network.
 * `Cslib.Circuits.Frontier.pow_ncard_compl_read_lt`: the support lemma for circuits.
-* `Cslib.Circuits.Frontier.cycleRank_le_of_read`: the same bound from any set of read inputs whose
-  complement carries few assignments.
 * `Cslib.Circuits.Frontier.cycleRank_le`: the cycle rank of the graph of a circuit that reads all
   but few of its inputs.
+* `Cslib.Circuits.Frontier.cycleRank_le_of_read`: the same bound from any set of read inputs whose
+  complement carries few assignments.
 * `Cslib.Circuits.Frontier.logb_ncard_le_width`: every layout of the graph of such a circuit is
   wide.
 * `Cslib.Circuits.Frontier.exists_graph_of_decides`: the reduction theorem.

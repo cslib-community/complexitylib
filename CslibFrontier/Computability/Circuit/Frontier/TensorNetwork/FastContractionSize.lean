@@ -385,13 +385,15 @@ theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.sc
     omega
   refine length_encFrame_le (N := wide x) (fl := x.fl) (fun s hs => ?_) hpre.1 hstored ?_
     (Nat.le_add_left _ _)
-  · have hsm : s ∈ children x := List.mem_of_getElem? hs
-    obtain ⟨hj1, hi1, hβ, hg1⟩ := mem_children.mp hsm
+  · obtain ⟨j, i, β, g⟩ := s
+    obtain ⟨hj1, hi1, hβ, hg1⟩ := mem_children.mp (List.mem_of_getElem? hs)
     have hlen := ((BudgetTuples.mem_budgetTuples (weights_pos _)).mp hβ).1
-    obtain ⟨hpj, hlj⟩ := hj s.1
+    obtain ⟨hpj, hlj⟩ := hj j
+    -- reduce the projections of `(j, i, β, g)` in the goal, which `omega` does not see through
+    dsimp only
     refine ⟨by omega, by omega, ?_, fun b hb => ?_, by omega⟩
     · rw [hlen, weights, NativeChild.modeWeights, List.length_map, List.length_range]
-      have h1 : (packing x).2.1 * (2 ^ (level x ((nodes x).getD s.1 0) + 1) * nodePrec x s.1) ≤
+      have h1 : (packing x).2.1 * (2 ^ (level x ((nodes x).getD j 0) + 1) * nodePrec x j) ≤
           m ^ 2 * (4 * m * (p + 40 * m ^ 2)) :=
         Nat.mul_le_mul hP (Nat.mul_le_mul hlj hpj)
       have h2 : m ^ 2 * (4 * m * (p + 40 * m ^ 2)) = 4 * (m ^ 3 * p) + 160 * m ^ 5 := by ring
