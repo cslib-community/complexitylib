@@ -45,8 +45,8 @@ class Step:
 
 
 STEPS = (
-    # Before the build in CI; here the Lean-gated tests below run too instead of skipping, since
-    # Lean is installed. Includes the manual checker's tests that check.sh's preflight also runs.
+    # CI runs this before installing Lean, so the suite's Lean-gated tests skip there; here Lean is
+    # installed and they run. It includes the manual checker's tests that check.sh runs first.
     Step("Test Python tooling", ("python3 -m unittest discover -s scripts -p 'test_*.py'",)),
     Step("Source hygiene", ("python3 -B scripts/check_hygiene.py --check-simp",)),
     Step("Encoding readability ratchet (changed modules)",
