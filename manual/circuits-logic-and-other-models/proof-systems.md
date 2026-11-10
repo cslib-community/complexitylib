@@ -474,7 +474,9 @@ formalized. Two helpers support these results:
 [`NS.exists_isProof_of_sum`](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Combination.lean)
 turns a finite combination of inputs into a certificate with the same degree bound, and
 [`PC.IsProof.mono`](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Invariant.lean)
-enlarges the input list.
+enlarges the input list. `Algebraic.setOf_mem_boolAxioms` identifies the members of
+`boolAxioms σ R` with the set `SOS.Psatz.booleanAxioms σ R` that Positivstellensatz refutations
+take as equations ([sum-of-squares](#sum-of-squares)).
 
 [The Boolean CNF encoding](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/Boolean.lean)
 substitutes `X v` for the positive literal coordinate and `1 - X v` for the negative one in

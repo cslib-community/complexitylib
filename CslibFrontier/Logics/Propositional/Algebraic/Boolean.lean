@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.MultilinearExtension
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Combination
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Invariant
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
+public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.CNF
 public import Mathlib.Data.Fintype.Pi
 import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 import Mathlib.Combinatorics.Nullstellensatz
@@ -54,6 +55,9 @@ formalized here.
 
 ## Main results
 
+* `Cslib.Logic.PL.Algebraic.setOf_mem_boolAxioms`: the members of `boolAxioms σ R` are exactly
+  the Boolean axioms `Cslib.Logic.PL.SOS.Psatz.booleanAxioms σ R` of Positivstellensatz
+  refutations.
 * `Cslib.Logic.PL.NS.IsProof.not_isBoolSolution`, `Cslib.Logic.PL.PC.IsProof.not_isBoolSolution`:
   soundness.
 * `Cslib.Logic.PL.NS.refutableInDegree_of_forall_not_isBoolSolution`: completeness of
@@ -111,6 +115,13 @@ theorem mem_boolAxioms [Fintype σ] {p : MvPolynomial σ R} :
 theorem boolAxiom_mem_boolAxioms [Fintype σ] (i : σ) :
     (boolAxiom i : MvPolynomial σ R) ∈ boolAxioms σ R :=
   mem_boolAxioms.2 ⟨i, rfl⟩
+
+/-- The members of the list `boolAxioms σ R` form the set `SOS.Psatz.booleanAxioms σ R`, the
+Boolean axioms that Positivstellensatz refutations take as equations: the two encodings of the
+Boolean axioms agree. -/
+theorem setOf_mem_boolAxioms [Fintype σ] :
+    {p | p ∈ boolAxioms σ R} = SOS.Psatz.booleanAxioms σ R :=
+  Set.ext fun _ => mem_boolAxioms.trans SOS.Psatz.mem_booleanAxioms.symm
 
 /-- A Boolean axiom has total degree at most two. -/
 theorem totalDegree_boolAxiom_le (i : σ) : (boolAxiom i : MvPolynomial σ R).totalDegree ≤ 2 := by
