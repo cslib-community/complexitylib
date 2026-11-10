@@ -34,8 +34,9 @@ import Mathlib.Tactic.Ring
 # Savitch's theorem for general space bounds
 
 A nondeterministic machine whose computation paths on an input of length `n` visit at most `S`
-work cells is simulated by a deterministic machine within space `O((S + log₂ n + 1) ^ 2)`
-[Savitch1970], with no constructibility assumption on `S`. The simulation runs Savitch's midpoint
+work cells is simulated by a deterministic machine within space `O((S + log₂ n + 1) ^ 2)`: this is
+Savitch's theorem [Savitch1970]. No constructibility of `S` is assumed; as in Sipser's proof of
+Theorem 8.5 [Sipser2013], the machine tries growing bounds. The simulation runs Savitch's midpoint
 recursion with an explicit stack (`Cslib.Reachability.Savitch.step`) on the compact configuration
 graph of the machine (`Turing.MultiTapeNTM.ConfigurationGraph`), whose vertices omit the input. A
 vertex of the graph of radix `B` is stored as a word of `W = O(log B)` bits, so the stack of at
@@ -45,11 +46,13 @@ recursion needs exactly one input bit, at the input head of its source vertex.
 
 The space bound `S` is not computed. The machine counts the input in binary and then tries the
 radices `roundRadix State n j = 4 ^ j * startRadix State n` of
-`Turing.MultiTapeNTM.ConfigurationGraph.roundRadix` in turn, as Immerman's inductive counting does
-for nondeterministic space. In round `j`, a first recursion asks whether an overflowing vertex, one
-with a step leaving the radix, is reachable from the start vertex; if it is, the machine moves on
-to round `j + 1`. Otherwise every reachable view fits the radix, and a second recursion on the same
-graph asks whether an accepting halted vertex is reachable, which decides acceptance. A machine
+`Turing.MultiTapeNTM.ConfigurationGraph.roundRadix` in turn, the radices of Immerman's inductive
+counting for nondeterministic space; Sipser's proof of Theorem 8.5 likewise tries the space bounds
+`1, 2, 3, …` and checks whether the machine uses more. In round `j`, a first recursion asks
+whether an overflowing vertex, one with a step leaving the radix, is reachable from the start
+vertex; if it is, the machine moves on to round `j + 1`. Otherwise every reachable view fits the
+radix, and a second recursion on the same graph asks whether an accepting halted vertex is
+reachable, which decides acceptance. A machine
 within space `S` has no reachable overflow from round `4 * S + 1` on
 (`Turing.MultiTapeNTM.ConfigurationGraph.fits_roundRadix_of_runsInSpace`), so every round has
 vertices of `O(S + log₂ n + 1)` bits. To have a single target, the graph on words gains a sink, the
@@ -93,8 +96,8 @@ constructibility, and arbitrary instances under an encoding into `List Bool`.
 
 * [W. J. Savitch, *Relationships between nondeterministic and deterministic tape
   complexities*][Savitch1970]
-* [M. Sipser, *Introduction to the Theory of Computation*, 3rd edition, Section 8.4, final
-  paragraph (p. 351)][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, 3rd edition, Theorem 8.5 and its proof,
+  and Section 8.4, final paragraph (p. 351)][Sipser2013]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Theorem 4.14][AroraBarak09]
 * [N. Immerman, *Nondeterministic Space Is Closed under Complementation*][Immerman1988]
 -/
@@ -974,7 +977,8 @@ namespace Turing.MultiTapeNTM
 
 open MultiTapeTM ConfigurationGraph SquareSavitch
 
-/-- **Savitch's theorem** [Savitch1970], for general space bounds and without constructibility. A
+/-- **Savitch's theorem** [Savitch1970], for general space bounds. No constructibility is assumed:
+the machine tries growing bounds, as in Sipser's proof of Theorem 8.5 [Sipser2013]. A
 problem recognized by a nondeterministic machine whose computation paths on `enc a` visit at most
 `S a` work cells, and whose branches need not halt, is decided by a deterministic machine within
 space `O((S a + log₂ |enc a| + 1) ^ 2)`: Savitch's midpoint recursion on the compact configuration
