@@ -175,6 +175,59 @@ theorem matQ_mulVec_le_iff :
 
 /-! ### Nondegeneracy and boundedness -/
 
+omit [Fintype M] [DecidableEq M] [DecidableEq N] in
+/-- A row where `A y` attains the bound `1` of `Q` is a pure best response of player 1 to every
+nonnegative rescaling of `y`. -/
+private theorem isPureBestResponse₁_smul_of_eq_one {c : ℝ} (hc : 0 ≤ c)
+    (hy : ∀ i, (G.A *ᵥ y) i ≤ 1) {i : M} (hi : (G.A *ᵥ y) i = 1) :
+    G.IsPureBestResponse₁ (c • y) i := by
+  rw [isPureBestResponse₁_iff]
+  intro i'
+  simp only [mulVec_smul, Pi.smul_apply, smul_eq_mul, hi, mul_one]
+  exact (mul_le_mul_of_nonneg_left (hy i') hc).trans_eq (mul_one _)
+
+omit [Fintype N] [DecidableEq M] [DecidableEq N] in
+/-- A column where `x B` attains the bound `1` of `P` is a pure best response of player 2 to
+every nonnegative rescaling of `x`. -/
+private theorem isPureBestResponse₂_smul_of_eq_one {c : ℝ} (hc : 0 ≤ c)
+    (hx : ∀ j, (x ᵥ* G.B) j ≤ 1) {j : N} (hj : (x ᵥ* G.B) j = 1) :
+    G.IsPureBestResponse₂ (c • x) j := by
+  rw [isPureBestResponse₂_iff]
+  intro j'
+  simp only [smul_vecMul, Pi.smul_apply, smul_eq_mul, hj, mul_one]
+  exact (mul_le_mul_of_nonneg_left (hx j') hc).trans_eq (mul_one _)
+
+omit [DecidableEq M] [DecidableEq N] in
+/-- The counting step shared by `IsNondegenerate.isNondegenerateSystem_matP` and
+`IsNondegenerate.isNondegenerateSystem_matQ`: if a nonnegative `x` has its other-side labels `T`
+among the pure best responses `S` to its normalization, and `S` is no larger than the support of
+every mixed strategy, then the zeros of `x` and `T` together number at most `card ι`. -/
+private theorem card_filter_eq_zero_add_card_le {ι κ : Type*} [Fintype ι] [Finite κ]
+    {x : ι → ℝ} (hx₀ : ∀ i, 0 ≤ x i) {T : Finset κ} (h0 : x = 0 → T = ∅) {S : (ι → ℝ) → κ → Prop}
+    (hS : ∀ z, IsMixedStrategy z → {k | S z k}.ncard ≤ (Function.support z).ncard)
+    (hT : x ≠ 0 → 0 < ∑ i, x i → ∀ k ∈ T, S ((∑ i, x i)⁻¹ • x) k) :
+    #(univ.filter fun i => x i = 0) + #T ≤ Fintype.card ι := by
+  classical
+  have hsum := card_filter_add_card_filter_not (s := univ) fun i => x i = 0
+  rw [card_univ] at hsum
+  by_cases hx0 : x = 0
+  · rw [h0 hx0, card_empty, add_zero]
+    exact card_le_univ _
+  have hpos : 0 < ∑ i, x i := by
+    obtain ⟨i, hi⟩ := Function.ne_iff.1 hx0
+    exact (sum_pos_iff_of_nonneg fun j _ => hx₀ j).2 ⟨i, mem_univ _, (hx₀ i).lt_of_ne' hi⟩
+  have hsupp : (Function.support ((∑ i, x i)⁻¹ • x)).ncard =
+      #(univ.filter fun i => ¬x i = 0) := by
+    rw [Function.support_const_smul_of_ne_zero _ _ (inv_ne_zero hpos.ne'),
+      ← Set.ncard_coe_finset]
+    congr 1
+    ext i
+    simp
+  have h1 := (Set.ncard_le_ncard (s := (T : Set κ)) (fun k hk => hT hx0 hpos k hk)
+    (Set.toFinite _)).trans (hS _ (isMixedStrategy_inv_sum_smul hx₀ hx0))
+  rw [Set.ncard_coe_finset, hsupp] at h1
+  omega
+
 omit [DecidableEq N] in
 /-- The best response polytope `P` of a nondegenerate game is a nondegenerate system: a point of
 `P` has at most `card M` labels. -/
@@ -183,46 +236,18 @@ theorem IsNondegenerate.isNondegenerateSystem_matP (hG : G.IsNondegenerate) :
   classical
   rw [isNondegenerateSystem_iff]
   intro x hx
-  obtain ⟨hx₀, -⟩ := matP_mulVec_le_iff.1 hx
-  rw [← card_toLeft_add_card_toRight]
+  obtain ⟨hx₀, hxB⟩ := matP_mulVec_le_iff.1 hx
   have hL : (tightRows G.matP (rhsP M N) x).toLeft = univ.filter fun i => x i = 0 := by
     ext i
     simp
-  have hsupp : (Function.support x).ncard = #(univ.filter fun i => ¬x i = 0) := by
-    rw [← Set.ncard_coe_finset]
-    congr 1
-    ext i
+  rw [← card_toLeft_add_card_toRight, hL]
+  refine card_filter_eq_zero_add_card_le hx₀ ?_ (isNondegenerate_iff.1 hG).1 ?_
+  · rintro rfl
+    ext j
     simp
-  have hsum := card_filter_add_card_filter_not (s := univ) fun i => x i = 0
-  rw [card_univ] at hsum
-  rw [hL]
-  by_cases hx0 : x = 0
-  · subst hx0
-    have hR : (tightRows G.matP (rhsP M N) 0).toRight = ∅ := by
-      ext j
-      simp
-    rw [hR, card_empty, add_zero]
-    exact card_le_univ _
-  set xn := (∑ i, x i)⁻¹ • x
-  have hxn : IsMixedStrategy xn := isMixedStrategy_inv_sum_smul hx₀ hx0
-  have hpos : 0 < ∑ i, x i := by
-    obtain ⟨i, hi⟩ := Function.ne_iff.1 hx0
-    exact (sum_pos_iff_of_nonneg fun j _ => hx₀ j).2 ⟨i, mem_univ _, (hx₀ i).lt_of_ne' hi⟩
-  have hsupp' : Function.support xn = Function.support x :=
-    Function.support_const_smul_of_ne_zero _ _ (inv_ne_zero hpos.ne')
-  have hR : ((tightRows G.matP (rhsP M N) x).toRight : Set N) ⊆
-      {j | G.IsPureBestResponse₂ xn j} := by
-    intro j hj
-    rw [mem_coe, mem_toRight, inr_mem_tightRows_matP] at hj
-    rw [Set.mem_ofPred_eq, isPureBestResponse₂_iff]
-    intro j'
-    simp only [xn, smul_vecMul, Pi.smul_apply, smul_eq_mul, hj, mul_one]
-    exact mul_le_mul_of_nonneg_left ((matP_mulVec_le_iff.1 hx).2 j')
-      (inv_nonneg.2 hpos.le) |>.trans_eq (mul_one _)
-  have h1 := (Set.ncard_le_ncard hR (Set.toFinite _)).trans
-    ((isNondegenerate_iff.1 hG).1 xn hxn)
-  rw [Set.ncard_coe_finset, hsupp', hsupp] at h1
-  omega
+  intro _ hpos j hj
+  rw [mem_toRight, inr_mem_tightRows_matP] at hj
+  exact isPureBestResponse₂_smul_of_eq_one (inv_nonneg.2 hpos.le) hxB hj
 
 omit [DecidableEq M] in
 /-- The best response polytope `Q` of a nondegenerate game is a nondegenerate system: a point of
@@ -232,46 +257,18 @@ theorem IsNondegenerate.isNondegenerateSystem_matQ (hG : G.IsNondegenerate) :
   classical
   rw [isNondegenerateSystem_iff]
   intro y hy
-  obtain ⟨-, hy₀⟩ := matQ_mulVec_le_iff.1 hy
-  rw [← card_toLeft_add_card_toRight]
+  obtain ⟨hyA, hy₀⟩ := matQ_mulVec_le_iff.1 hy
   have hR : (tightRows G.matQ (rhsQ M N) y).toRight = univ.filter fun j => y j = 0 := by
     ext j
     simp
-  have hsupp : (Function.support y).ncard = #(univ.filter fun j => ¬y j = 0) := by
-    rw [← Set.ncard_coe_finset]
-    congr 1
-    ext j
+  rw [← card_toLeft_add_card_toRight, hR, add_comm]
+  refine card_filter_eq_zero_add_card_le hy₀ ?_ (isNondegenerate_iff.1 hG).2 ?_
+  · rintro rfl
+    ext i
     simp
-  have hsum := card_filter_add_card_filter_not (s := univ) fun j => y j = 0
-  rw [card_univ] at hsum
-  rw [hR]
-  by_cases hy0 : y = 0
-  · subst hy0
-    have hL : (tightRows G.matQ (rhsQ M N) 0).toLeft = ∅ := by
-      ext i
-      simp
-    rw [hL, card_empty, zero_add]
-    exact card_le_univ _
-  set yn := (∑ j, y j)⁻¹ • y
-  have hyn : IsMixedStrategy yn := isMixedStrategy_inv_sum_smul hy₀ hy0
-  have hpos : 0 < ∑ j, y j := by
-    obtain ⟨j, hj⟩ := Function.ne_iff.1 hy0
-    exact (sum_pos_iff_of_nonneg fun j _ => hy₀ j).2 ⟨j, mem_univ _, (hy₀ j).lt_of_ne' hj⟩
-  have hsupp' : Function.support yn = Function.support y :=
-    Function.support_const_smul_of_ne_zero _ _ (inv_ne_zero hpos.ne')
-  have hL : ((tightRows G.matQ (rhsQ M N) y).toLeft : Set M) ⊆
-      {i | G.IsPureBestResponse₁ yn i} := by
-    intro i hi
-    rw [mem_coe, mem_toLeft, inl_mem_tightRows_matQ] at hi
-    rw [Set.mem_ofPred_eq, isPureBestResponse₁_iff]
-    intro i'
-    simp only [yn, mulVec_smul, Pi.smul_apply, smul_eq_mul, hi, mul_one]
-    exact mul_le_mul_of_nonneg_left ((matQ_mulVec_le_iff.1 hy).1 i')
-      (inv_nonneg.2 hpos.le) |>.trans_eq (mul_one _)
-  have h1 := (Set.ncard_le_ncard hL (Set.toFinite _)).trans
-    ((isNondegenerate_iff.1 hG).2 yn hyn)
-  rw [Set.ncard_coe_finset, hsupp', hsupp] at h1
-  omega
+  intro _ hpos i hi
+  rw [mem_toLeft, inl_mem_tightRows_matQ] at hi
+  exact isPureBestResponse₁_smul_of_eq_one (inv_nonneg.2 hpos.le) hyA hi
 
 omit [Fintype N] [DecidableEq N] in
 /-- With positive payoffs to player 2, the best response polytope `P` is bounded: its recession
@@ -362,19 +359,11 @@ theorem isNash_of_completelyLabeled (hx : G.matP *ᵥ x ≤ rhsP M N) (hy : G.ma
   refine isNash_iff.2 ⟨isBestResponse₁_iff.2 ⟨isMixedStrategy_inv_sum_smul hx₀ hx0, ?_⟩,
     isBestResponse₂_iff.2 ⟨isMixedStrategy_inv_sum_smul hy₀ hy0, ?_⟩⟩
   · intro i hi
-    rw [isPureBestResponse₁_iff]
-    intro i'
     have hxi : x i ≠ 0 := fun h => by simp [h] at hi
-    have h1 := (hcl₁ i).resolve_left hxi
-    simp only [mulVec_smul, Pi.smul_apply, smul_eq_mul, h1, mul_one]
-    exact (mul_le_mul_of_nonneg_left (hy₁ i') hsy).trans_eq (mul_one _)
+    exact isPureBestResponse₁_smul_of_eq_one hsy hy₁ ((hcl₁ i).resolve_left hxi)
   · intro j hj
-    rw [isPureBestResponse₂_iff]
-    intro j'
     have hyj : y j ≠ 0 := fun h => by simp [h] at hj
-    have h1 := (hcl₂ j).resolve_right hyj
-    simp only [smul_vecMul, Pi.smul_apply, smul_eq_mul, h1, mul_one]
-    exact (mul_le_mul_of_nonneg_left (hx₁ j') hsx).trans_eq (mul_one _)
+    exact isPureBestResponse₂_smul_of_eq_one hsx hx₁ ((hcl₂ j).resolve_right hyj)
 
 /-- A Nash equilibrium `(x, y)` of a game with positive payoffs, rescaled by the inverse
 equilibrium payoffs, is a feasible completely labelled pair of `P × Q`

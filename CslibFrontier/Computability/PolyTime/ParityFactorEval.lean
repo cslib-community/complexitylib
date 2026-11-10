@@ -1053,7 +1053,7 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     (hk : ComputableInPolyTime k encIn encUnary) :
     ComputableInPolyTime (fun x => cauchyCoeff (p x) (q x) (k x)) encIn encIntBin := by
   have hp1 := fst encIn encUnary; have hi := snd encIn encUnary
-  exact (of_tidy ComputableTidilyInPolyTime.intBin_sum).comp'
+  exact ComputableInPolyTime.intBin_sum.comp'
     (mapWithInput (range.comp' (unary_add' hk (const 1)))
       (intBin_mul' (listGetDWithInput (hp.comp' hp1) hi 0)
         (listGetDWithInput (hq.comp' hp1) (unary_sub.comp' ((hk.comp' hp1).prod hi)) 0)))

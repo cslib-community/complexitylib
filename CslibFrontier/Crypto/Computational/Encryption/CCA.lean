@@ -737,8 +737,8 @@ theorem eval_cca2Game_restrict {Msg Out : Type} (valid : ℕ → List Bool → M
   simp only [cca2Game, cca2GameOn, CCA2AdversaryOf.restrict, ↓reduceIte,
     OracleComp.interpret_bind, OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext keys
-  congr 1; funext choiceOut
+  congr 1 with keys : 1
+  congr 1 with choiceOut : 1
   cases valid n keys.1 choiceOut.1.1.1 choiceOut.1.1.2 <;>
     simp [OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure, PMF.bind_const]
 
@@ -1432,8 +1432,8 @@ theorem eval_cca2MultiGame_restrict {Msg Out : Type} (valid : ℕ → List Bool 
     OracleComp.interpret_bind, OracleComp.interpret_pure,
     StateT.run_bind, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
     PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext keys
-  congr 1; funext choiceOut
+  congr 1 with keys : 1
+  congr 1 with choiceOut : 1
   cases choiceOut.1.1.all (fun p => valid n keys.1 p.1 p.2) <;>
     simp [OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure, PMF.bind_const]
 
@@ -1611,8 +1611,8 @@ theorem eval_cca2MultiGameOn_toMulti {Msg Out : Type}
   simp only [cca2MultiGameOn, cca2GameOn, CCA2AdversaryOf.toMulti, OracleComp.interpret_map,
     StateT.run_map, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map,
     Function.comp_def, List.all_cons, List.all_nil, Bool.and_true]
-  congr 1; funext keys
-  congr 1; funext choiceOut
+  congr 1 with keys : 1
+  congr 1 with choiceOut : 1
   by_cases h : valid n keys.1 choiceOut.1.1.1 choiceOut.1.1.2 = true
   · simp [h, cca2MultiPhase2Oracle_singleton]
   · simp [h]
@@ -2467,7 +2467,7 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
     simp only [ProbComp.eval_bind, hguess]
     cases bit
     · simp only [Bool.false_eq_true, ↓reduceIte, cca2MultiHybridCont, ProbComp.eval_bind]
-      congr 1; funext ctsFront
+      congr 1 with ctsFront : 1
       rw [List.drop_eq_getElem_cons hlt, ← htarget_eq, List.mapM_cons]
       simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
       exact PMF.bind_comm _ _ _
@@ -2475,10 +2475,10 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
       rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some, ← htarget_eq,
         List.mapM_append, List.mapM_cons, List.mapM_nil]
       simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-      congr 1; funext ctsFront
+      congr 1 with ctsFront : 1
       rw [PMF.bind_comm]
-      congr 1; funext ct
-      congr 1; funext ctsBack
+      congr 1 with ct : 1
+      congr 1 with ctsBack : 1
       rw [List.append_assoc, List.singleton_append]
   · simp only [hcond, Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure, StateT.run_pure,
       ProbComp.eval_pure, PMF.pure_bind]

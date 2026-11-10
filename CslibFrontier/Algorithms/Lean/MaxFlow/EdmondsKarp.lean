@@ -1342,10 +1342,12 @@ private theorem expandLayerM_preserves {n : ℕ} {N : Network (Fin n)} {f : N.Fl
     (us : List (Fin n)) (hus : ∀ u ∈ us, u ∈ baseSt.frontier)
     {st : BfsState f} (hst : StepInv f d baseSt.revPath st) :
     StepInv f d baseSt.revPath (expandLayerM f adj us st).ret ∧
+      (∀ w rp, vget st.revPath w = some rp →
+        vget (expandLayerM f adj us st).ret.revPath w = some rp) ∧
       (∀ u ∈ us, ∀ v ∈ adj u, 0 < f.resCap u v →
         (vget (expandLayerM f adj us st).ret.revPath v).isSome = true) := by
   induction us generalizing st with
-  | nil => exact ⟨hst, by simp⟩
+  | nil => exact ⟨hst, fun _ _ h => h, by simp⟩
   | cons u us' ih =>
     have hu_front : u ∈ baseSt.frontier := hus u List.mem_cons_self
     have hus' : ∀ x ∈ us', x ∈ baseSt.frontier := fun x hx => hus x (List.mem_cons_of_mem u hx)
@@ -1363,45 +1365,16 @@ private theorem expandLayerM_preserves {n : ℕ} {N : Network (Fin n)} {f : N.Fl
     · rename_i rp_u' hget
       have hrp_eq : rp_u' = rp_u := Option.some.inj (hget.symm.trans hrp_st)
       subst rp_u'
-      obtain ⟨hst_mid, _, hcov_u⟩ :=
+      obtain ⟨hst_mid, hmono_mid, hcov_u⟩ :=
         scanNeighborsM_preserves hinv.isSome_iff (st.tblValid.walk u rp_u hget) hu_valid
           hu_lt hu_dist (adj u) (st.tblValid.mem_isSome u rp_u hget) hst
-      obtain ⟨hst_end, hcov_us⟩ := ih hus' hst_mid
-      have hmono_expand : ∀ xs : List (Fin n), (∀ x ∈ xs, x ∈ baseSt.frontier) →
-          ∀ s0 : BfsState f, StepInv f d baseSt.revPath s0 →
-          ∀ w rp, vget s0.revPath w = some rp →
-            vget (expandLayerM f adj xs s0).ret.revPath w = some rp := by
-        intro xs
-        induction xs with
-        | nil => intro _ s0 _ _ _ h; exact h
-        | cons x xs' ihx =>
-          intro hxs s0 hs0 w rp hw
-          have hx_f : x ∈ baseSt.frontier := hxs x List.mem_cons_self
-          obtain ⟨hx_lt, hx_dist⟩ := (hinv.mem_frontier x).mp hx_f
-          have hx_sb : (vget baseSt.revPath x).isSome = true :=
-            (hinv.isSome_iff x).mpr ⟨hx_lt, Nat.le_of_eq hx_dist⟩
-          obtain ⟨rp_x, hrpx_b⟩ := Option.isSome_iff_exists.mp hx_sb
-          have hrpx_s0 : vget s0.revPath x = some rp_x := hs0.mono_base x rp_x hrpx_b
-          simp only [expandLayerM, TimeM.ret_bind]
-          split
-          · rename_i hnone_x
-            rw [hrpx_s0] at hnone_x
-            simp at hnone_x
-          · rename_i rp_x' hget_x
-            have hrpx_eq : rp_x' = rp_x := Option.some.inj (hget_x.symm.trans hrpx_s0)
-            subst rp_x'
-            obtain ⟨hs1, hmono1, _⟩ := scanNeighborsM_preserves hinv.isSome_iff
-              (s0.tblValid.walk x rp_x hget_x) (hinv.valid_revPath x rp_x hrpx_b)
-              hx_lt hx_dist (adj x) (s0.tblValid.mem_isSome x rp_x hget_x) hs0
-            exact ihx (fun y hy => hxs y (List.mem_cons_of_mem x hy)) _ hs1 w rp (hmono1 w rp hw)
-      refine ⟨hst_end, ?_⟩
+      obtain ⟨hst_end, hmono_end, hcov_us⟩ := ih hus' hst_mid
+      refine ⟨hst_end, fun w rp hw => hmono_end w rp (hmono_mid w rp hw), ?_⟩
       intro x hx v hv hpos
       rcases List.mem_cons.mp hx with rfl | hx'
-      · have hmid_v := hcov_u v hv hpos
-        obtain ⟨rp_v, hrpv⟩ := Option.isSome_iff_exists.mp hmid_v
-        have hend_v := hmono_expand us' hus' _ hst_mid v rp_v hrpv
+      · obtain ⟨rp_v, hrpv⟩ := Option.isSome_iff_exists.mp (hcov_u v hv hpos)
         simp only [TimeM.ret_bind]
-        rw [hend_v]
+        rw [hmono_end v rp_v hrpv]
         rfl
       · exact hcov_us x hx' v hv hpos
 
@@ -1421,7 +1394,7 @@ private theorem layerInv_step {n : ℕ} {N : Network (Fin n)} {f : N.Flow}
       have hsome : (vget baseSt.revPath w).isSome = true := by simp [st0] at hw; simp [hw]
       obtain ⟨hlt, hle⟩ := (hinv.isSome_iff w).mp hsome
       exact ⟨hinv.valid_revPath w rp hw, hlt, by omega⟩
-  obtain ⟨hst, hcov⟩ := expandLayerM_preserves hinv baseSt.frontier (fun _ h => h) hst0
+  obtain ⟨hst, -, hcov⟩ := expandLayerM_preserves hinv baseSt.frontier (fun _ h => h) hst0
   dsimp only
   have hsome_iff : ∀ v : Fin n,
       (vget (expandLayerM f adj baseSt.frontier st0).ret.revPath v).isSome
@@ -2023,6 +1996,21 @@ private theorem edmondsKarpLoopM_spec {n : ℕ} {N : Network (Fin n)}
         rw [hrem, Nat.add_mul, Nat.one_mul]
       exact ⟨hno, hcut, hk_sym, hk_pos, by omega⟩
 
+/-- `edmondsKarpLoopM_spec` for the call made by `edmondsKarpM`: zero flow, no augmentations yet
+and `adjSteps adj * (n / 2)` fuel. Shared by `edmondsKarpM_correct` and `edmondsKarpM_time_le`. -/
+private theorem edmondsKarpLoopM_spec_init {n : ℕ} {N : Network (Fin n)}
+    {adj : Fin n → List (Fin n)} (hadj : AdjValid N adj) (hst : N.s ≠ N.t) :
+    let call := edmondsKarpLoopM N adj (adjSteps adj * (n / 2)) (initFlowMatrixM N).ret 0
+    (¬ ∃ p, call.ret.flow.IsAugmentingPath p) ∧
+      call.ret.cut = call.ret.flow.reachableCut ∧
+      call.ret.augmentations ≤ maxAugmentations N ∧
+      call.ret.augmentations ≤ n * N.posArcs.card ∧
+      call.time ≤ (maxAugmentations N - 0 + 1) * (adjSteps adj + 5 * n) := by
+  refine edmondsKarpLoopM_spec hadj hst _ 0 _ (fun _ => Network.Flow.zero N) (fun _ => [])
+    ?_ (fun _ ht => absurd ht (Nat.not_lt_zero _)) (initFlowMatrixM_toFlow N).symm
+  simp only [maxAugmentations, Nat.add_zero]
+  exact Nat.mul_le_mul_right _ (card_symArcs_le_adjSteps hadj)
+
 /-- **Edmonds–Karp correctness theorem** ([EdmondsKarp1972], Theorem 1, p. 251; [CLRS2009],
 Theorems 26.6 & 26.8, pp. 723, 729): on any integral network `N : Network (Fin n)` with `N.s ≠ N.t`
 and valid candidate neighbor lists `adj`, `edmondsKarpM N adj` returns an integral maximum flow
@@ -2040,14 +2028,7 @@ theorem edmondsKarpM_correct {n : ℕ} {N : Network (Fin n)} {adj : Fin n → Li
       out.augmentations ≤ n * N.posArcs.card := by
   unfold edmondsKarpM
   simp only [TimeM.ret_bind, hst, ↓reduceIte, countAdjM_ret]
-  have hfuel : maxAugmentations N ≤ adjSteps adj * (n / 2) + 0 := by
-    simp only [maxAugmentations, Nat.add_zero]
-    exact Nat.mul_le_mul_right _ (card_symArcs_le_adjSteps hadj)
-  have hseq0 : N.IsShortestAugmentingSeq 0 (fun _ => Network.Flow.zero N) (fun _ => []) :=
-    fun _ ht => absurd ht (Nat.not_lt_zero _)
-  obtain ⟨hno, hcut_eq, haug_sym, haug_pos, _⟩ :=
-    edmondsKarpLoopM_spec hadj hst (adjSteps adj * (n / 2)) 0 (initFlowMatrixM N).ret
-      (fun _ => Network.Flow.zero N) (fun _ => []) hfuel hseq0 (initFlowMatrixM_toFlow N).symm
+  obtain ⟨hno, hcut_eq, haug_sym, haug_pos, _⟩ := edmondsKarpLoopM_spec_init hadj hst
   let out := (edmondsKarpLoopM N adj (adjSteps adj * (n / 2)) (initFlowMatrixM N).ret 0).ret
   change out.flow.IsMaxFlow ∧ N.IsMinCut out.cut ∧ out.flow.value = (N.cutCapacity out.cut : ℤ) ∧
     out.cut = out.flow.reachableCut ∧ out.augmentations ≤ N.symArcs.card * (n / 2) ∧
@@ -2078,14 +2059,7 @@ theorem edmondsKarpM_time_le {n : ℕ} {N : Network (Fin n)} {adj : Fin n → Li
     have hbase : 2 * n + (1 + 0) ≤ 2 * (adjSteps adj + 5 * n) := by omega
     exact le_trans hbase (Nat.mul_le_mul_right _ (by omega))
   · simp only [hst, ↓reduceIte, TimeM.time_bind, countAdjM_time, countAdjM_ret]
-    have hfuel : maxAugmentations N ≤ adjSteps adj * (n / 2) + 0 := by
-      simp only [maxAugmentations, Nat.add_zero]
-      exact Nat.mul_le_mul_right _ (card_symArcs_le_adjSteps hadj)
-    have hseq0 : N.IsShortestAugmentingSeq 0 (fun _ => Network.Flow.zero N) (fun _ => []) :=
-      fun _ ht => absurd ht (Nat.not_lt_zero _)
-    obtain ⟨_, _, _, _, hloop_t⟩ :=
-      edmondsKarpLoopM_spec hadj hst (adjSteps adj * (n / 2)) 0 (initFlowMatrixM N).ret
-        (fun _ => Network.Flow.zero N) (fun _ => []) hfuel hseq0 (initFlowMatrixM_toFlow N).symm
+    obtain ⟨_, _, _, _, hloop_t⟩ := edmondsKarpLoopM_spec_init hadj hst
     simp only [maxAugmentations, Nat.sub_zero] at hloop_t
     have hmul : (N.symArcs.card * (n / 2) + 2) * (adjSteps adj + 5 * n) =
         (adjSteps adj + 5 * n) + (N.symArcs.card * (n / 2) + 1) * (adjSteps adj + 5 * n) := by

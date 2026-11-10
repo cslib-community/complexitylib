@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedCompile
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathPolyTime
+import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.PolyTime.Int.Compare
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -104,22 +105,6 @@ private theorem computable_center : ComputableInPolyTime center encPoint encPoin
   unfold encPoint
   fun_prop
 
-private theorem computable_translate :
-    ComputableInPolyTime (fun p : Point × Route => translate p.1 p.2)
-      (encPair encPoint encRoute) encRoute := by
-  change ComputableInPolyTime (fun p : Point × Route =>
-    p.2.map fun q => (q.1 + p.1.1, q.2 + p.1.2)) _ _
-  unfold encPoint encRoute
-  fun_prop
-
-private theorem computable_pointAdd :
-    ComputableInPolyTime (fun p : Point × Point => p.1 + p.2)
-      (encPair encPoint encPoint) encPoint := by
-  change ComputableInPolyTime (fun p : Point × Point =>
-    (p.1.1 + p.2.1, p.1.2 + p.2.2)) _ _
-  unfold encPoint
-  fun_prop
-
 private theorem computable_dropLast :
     ComputableInPolyTime (List.dropLast (α := Point)) encRoute encRoute := by
   have htake : ComputableInPolyTime (fun p : Route × ℕ => p.1.take p.2)
@@ -131,8 +116,8 @@ private theorem computable_dropLast :
   exact htake.comp (ComputableInPolyTime.id'.prod
     (ComputableInPolyTime.unary_sub' (ComputableInPolyTime.length_list encPoint) (.const 1)))
 
-attribute [local fun_prop] computable_side computable_cellOrigin
-  computable_center computable_translate computable_pointAdd computable_dropLast
+attribute [local fun_prop] computable_side computable_cellOrigin computable_center
+  computableInPolyTime_translate computableInPolyTime_pointAdd computable_dropLast
 
 open PlanarCompile (computable_distinctPoints)
 

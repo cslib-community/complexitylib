@@ -12,6 +12,7 @@ public import Mathlib.ModelTheory.Satisfiability
 public import Mathlib.Order.Filter.AtTopBot.Basic
 public import Mathlib.Topology.Instances.Real.Lemmas
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Union
 import Mathlib.Topology.Algebra.Monoid
 import Mathlib.Topology.Order.Basic
@@ -106,8 +107,7 @@ theorem structProb_le_one (P : L.Structure α → Prop) : structProb μ P ≤ 1 
 variable {μ} in
 theorem structProb_mono {P Q : L.Structure α → Prop} (h : ∀ S, P S → Q S) :
     structProb μ P ≤ structProb μ Q :=
-  ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono fun S hS => h S hS)
+  PMF.toOuterMeasure_toReal_mono _ fun S hS => h S hS
 
 @[simp]
 theorem structProb_false : structProb μ (fun _ => False) = 0 := by

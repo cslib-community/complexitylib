@@ -150,8 +150,7 @@ theorem distinguishingGame_keyDistinguisher (keys : PMF (List Bool))
   simp only [distinguishingGame, keyDistinguisher, publicKeyGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext pk
+  congr 1 with pk : 1
   rw [PMF.bind_comm]
   rfl
 

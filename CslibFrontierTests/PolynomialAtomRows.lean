@@ -183,7 +183,7 @@ private noncomputable def continued : State (Fin 2) :=
 private theorem preserved : output continued = output reference := by
   exact PolynomialAtomRow.witness.stationaryContinuation_eval_eq
     (s := univ) (n := fun _ => 2) (Δ := increments) (a := initial) (truth := truth)
-    (θ := 10000) (η := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (θ := 10000) (η := 1) (by norm_num) (by norm_num) (by norm_num)
     2 1 1 (by norm_num) no_overflow
     (fun y _ => by fin_cases y <;> norm_num [truth])
     (fun y _ => by fin_cases y <;> norm_num [truth]) (by intros; norm_num) 0 (mem_univ 0)

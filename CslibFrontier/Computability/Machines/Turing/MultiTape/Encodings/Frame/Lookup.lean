@@ -20,6 +20,7 @@ They depend only on the framing format, independently of either machine construc
 * `Turing.MultiTapeTM.getElem?_frame_append`: the marker and data bit at each framed position.
 * `Turing.MultiTapeTM.getElem?_frame_append_length`: the terminator after the framed pairs.
 * `Turing.MultiTapeTM.getElem?_frame_append_boundary`: every bit of the suffix beyond the frame.
+* `Turing.MultiTapeTM.length_frame_append`: the length of a frame followed by a suffix.
 -/
 
 public section
@@ -43,7 +44,8 @@ theorem getElem?_frame_append (u v : List Bool) {i : ℕ} (hi : i < u.length) :
 private theorem frame_append_eq_flatMap (u v : List Bool) :
     frame u ++ v = (u.flatMap fun b => [true, b]) ++ false :: v := by simp [frame]
 
-private theorem length_flatMap_pair (u : List Bool) :
+/-- The pairs of a frame have twice the length of the word. -/
+theorem length_flatMap_pair (u : List Bool) :
     (u.flatMap fun b => [true, b]).length = 2 * u.length := by
   have := length_frame u
   simp only [frame, List.length_append, List.length_singleton] at this
@@ -63,5 +65,10 @@ theorem getElem?_frame_append_boundary (u v : List Bool) (j : ℕ) :
   rw [frame_append_eq_flatMap, List.getElem?_append_right (by omega), hlen,
     (by omega : 2 * u.length + 1 + j - 2 * u.length = j + 1)]
   rfl
+
+/-- A frame followed by a suffix has length `2 |u| + 1 + |v|`. -/
+theorem length_frame_append (u v : List Bool) :
+    (frame u ++ v).length = 2 * u.length + 1 + v.length := by
+  rw [List.length_append, length_frame]
 
 end Turing.MultiTapeTM

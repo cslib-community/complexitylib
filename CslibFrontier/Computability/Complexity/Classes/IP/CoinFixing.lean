@@ -161,8 +161,7 @@ private theorem run_interpret_iterate_eq_coins
     rw [OracleComp.iterate_succ_bind, OracleComp.interpret_bind, StateT.run_bind,
       Probability.PMF.monad_bind_eq_bind, run_interpret_finiteStep_sample,
       BitString.uniformList_succ, PMF.bind_bind, PMF.bind_bind]
-    congr 1
-    funext b
+    congr 1 with b : 1
     simp only [ih, PMF.bind_map, Function.comp_def, List.foldlM_cons, OracleComp.interpret_bind,
       StateT.run_bind, Probability.PMF.monad_bind_eq_bind]
     exact PMF.bind_comm _ _ _
@@ -177,8 +176,7 @@ theorem run_interpret_runOracle_eq_coins (t : ℕ) (x : List Bool) (s : S) :
   rw [← MultiTapePTM.finiteRunFrom_take_runOracle, MultiTapeMachine.finiteRunFrom,
     OracleComp.interpret_map, StateT.run_map, run_interpret_iterate_eq_coins,
     _root_.PMF.monad_map_eq_map, PMF.map_bind]
-  congr 1
-  funext r
+  congr 1 with r : 1
   rw [OracleComp.interpret_map, StateT.run_map, run_interpret_foldlM_pure,
     _root_.PMF.monad_map_eq_map]
 
@@ -206,8 +204,7 @@ theorem acceptProb_eq_sum {V : WordOracleComp Operation Bool} {t : ℕ} {x : Lis
         ((fun z => decide (z.1 = [true])) ∘ fun p => (Turing.MultiTapeTM.encBool p.1, p.2))
           true := by
     rw [acceptProb]
-    congr 2
-    funext z
+    congr 2 with z : 1
     obtain ⟨_ | _, _⟩ := z <;> rfl
   rw [hl, h, PMF.map_bind, BitString.uniformList, PMF.bind_map, PMF.bind_apply, tsum_fintype,
     Finset.mul_sum]

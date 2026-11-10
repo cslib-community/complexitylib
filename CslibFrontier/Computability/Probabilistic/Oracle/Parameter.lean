@@ -152,7 +152,7 @@ theorem IsOraclePPT.run_interpret_preprocess' {Caller State : Type}
 result retains the handler's final state and every external oracle's state, and a local
 invariant charges reply length and all added encoded storage. -/
 theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
-    [DecidableEq External] [Finite External] {input : Caller ↪ List Bool}
+    [DecidableEq External] {input : Caller ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool}
     {handler : Caller → Operation × List Bool → State →
@@ -182,7 +182,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
 /-- `Cslib.Probability.IsOraclePPT.run_interpret_preprocess_open` with plain polynomial-time
 preparation, initial state and resource allowance. -/
 theorem IsOraclePPT.run_interpret_preprocess_open' {External Caller State : Type}
-    [DecidableEq External] [Finite External] {input : Caller ↪ List Bool}
+    [DecidableEq External] {input : Caller ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool}
     {handler : Caller → Operation × List Bool → State →
@@ -212,7 +212,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open' {External Caller State : Type
 /-- `Cslib.Probability.IsOraclePPT.run_interpret_preprocess_open'` with an allowance that is only
 polynomially bounded in the encoded caller and request, not computed. -/
 theorem IsOraclePPT.run_interpret_preprocess_open_of_polyBounded {External Caller State : Type}
-    [DecidableEq External] [Finite External] {input : Caller ↪ List Bool}
+    [DecidableEq External] {input : Caller ↪ List Bool}
     {operationEncoding : Operation ↪ List Bool}
     {stateEncoding : State ↪ List Bool}
     {handler : Caller → Operation × List Bool → State →

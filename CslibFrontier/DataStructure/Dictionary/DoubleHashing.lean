@@ -2412,6 +2412,17 @@ theorem sum_probeCount_oddStride_of_whp_kWiseIndependent
         probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
           (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
         (2 + b₁ top₁ + b₂ top₂) * B_card := by
+    -- Deterministic fallback for a bad top seed: every probe count is at most `n_max + 1`.
+    have hdet :
+        (∑ bot : Θ_bot₁ × Θ_bot₂,
+          probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
+            (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
+          (n_max + 1) * B_card := by
+      calc
+        _ ≤ ∑ _bot : Θ_bot₁ × Θ_bot₂, (n_max + 1) :=
+            Finset.sum_le_sum fun bot _ =>
+              probeCount_le_add_one (hrep ((top₁, bot.1), (top₂, bot.2))).toTableRep hdom u
+        _ = (n_max + 1) * B_card := by simp [B_card, Nat.mul_comm]
     by_cases h1 : Good₁ top₁
     · by_cases h2 : Good₂ top₂
       · have hgood := sum_probeCount_oddStride_le_of_kWiseIndependent
@@ -2419,29 +2430,9 @@ theorem sum_probeCount_oddStride_of_whp_kWiseIndependent
           (T := fun bot : Θ_bot₁ × Θ_bot₂ => T ((top₁, bot.1), (top₂, bot.2)))
           (fun bot => hrep ((top₁, bot.1), (top₂, bot.2))) hdom u
         simpa [b₁, b₂, h1, h2, B_card] using hgood
-      · have hdet :
-            (∑ bot : Θ_bot₁ × Θ_bot₂,
-              probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
-                (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
-              (n_max + 1) * B_card := by
-          calc
-            _ ≤ ∑ _bot : Θ_bot₁ × Θ_bot₂, (n_max + 1) :=
-                Finset.sum_le_sum fun bot _ =>
-                  probeCount_le_add_one (hrep ((top₁, bot.1), (top₂, bot.2))).toTableRep hdom u
-            _ = (n_max + 1) * B_card := by simp [B_card, Nat.mul_comm]
-        refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
+      · refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
         simp [b₁, b₂, h1, h2]
-    · have hdet :
-          (∑ bot : Θ_bot₁ × Θ_bot₂,
-            probeCount (T ((top₁, bot.1), (top₂, bot.2))) u
-              (oddStridePerm (H₁ top₁ bot.1) (H₂ top₂ bot.2) u)) ≤
-            (n_max + 1) * B_card := by
-        calc
-          _ ≤ ∑ _bot : Θ_bot₁ × Θ_bot₂, (n_max + 1) :=
-              Finset.sum_le_sum fun bot _ =>
-                probeCount_le_add_one (hrep ((top₁, bot.1), (top₂, bot.2))).toTableRep hdom u
-          _ = (n_max + 1) * B_card := by simp [B_card, Nat.mul_comm]
-      refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
+    · refine hdet.trans (Nat.mul_le_mul_right B_card ?_)
       simp only [b₁, b₂, h1, not_false_eq_true, ↓reduceIte, mul_one]
       omega
   have hrearrange :

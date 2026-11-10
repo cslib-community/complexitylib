@@ -704,7 +704,7 @@ theorem run_gmwProver_fst {α : Type} (generator : List Bool → List Bool) (s m
     simp only [hconst]; rfl
   rw [hlhs] at hmap; rw [hmap]
   simp only [pmf_norm, P, gmwProver, relate]
-  congr 1; funext coins
+  congr 1 with coins : 1
   have hstate := ProbOracleComp.run_interpret_map_state
     (fun q (st : ℕ × List Bool) => PMF.pure (twoRoundStep (honestReply1 generator m φ coins)
         (honestReply2 s φ coins) q.2 st))

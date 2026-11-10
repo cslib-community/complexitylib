@@ -120,12 +120,9 @@ theorem indepSetFree_franklWilsonGraph {p d : ℕ} (hp : 0 < p) :
     have hmod : #(i.1.1 ∩ j.1.1) % p = d % p := not_ne_iff.1 (ht.1 i.2 j.2 hne)
     have hlt : #(i.1.1 ∩ j.1.1) < d := by
       refine lt_of_le_of_ne ((card_le_card inter_subset_left).trans_eq i.1.2) fun h3 => hne ?_
-      apply Subtype.ext
-      have h1 : i.1.1 ∩ j.1.1 = i.1.1 :=
-        eq_of_subset_of_card_le inter_subset_left (by rw [h3, i.1.2])
-      have h2 : i.1.1 ∩ j.1.1 = j.1.1 :=
-        eq_of_subset_of_card_le inter_subset_right (by rw [h3, j.1.2])
-      rw [← h1, h2]
+      have hsub : i.1.1 ⊆ j.1.1 :=
+        inter_eq_left.1 (eq_of_subset_of_card_le inter_subset_left (by rw [h3, i.1.2]))
+      exact Subtype.ext (eq_of_subset_of_card_le hsub (by rw [i.1.2, j.1.2]))
     have e1 := Nat.div_add_mod (#(i.1.1 ∩ j.1.1)) p
     have e2 := Nat.div_add_mod d p
     rw [hL, mem_image]

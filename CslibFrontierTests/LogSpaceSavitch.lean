@@ -5,6 +5,8 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Savitch
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Savitch
 
 /-!
@@ -14,6 +16,8 @@ Words of a fixed width and the start word written as `(x + 2 ^ W).bits.dropLast`
 phase of the query machine; the recursion deciding acceptance for a machine without work tapes
 that accepts every input, so that the hypotheses of the machine-level theorem are satisfiable; and
 the class inclusions `NL ⊆ DSPACE(log² n)` and `RL ⊆ DSPACE(log² n)` on concrete problems.
+A nontrivial first-bit language checks the RL bridge and the quadratic-space conclusion on
+accepting, rejecting and empty inputs.
 -/
 
 namespace CslibFrontierTests.LogSpaceSavitch
@@ -46,11 +50,12 @@ private theorem accepts_acceptMachine (w : List Bool) : acceptMachine.Accepts w 
 
 -- While counting, the query machine holds the number of input bits read, and at the end of the
 -- input it starts the recursion.
-example (D : ℕ) : (machine acceptMachine D).run [true, false, true] 2 = (2, false, idle) :=
+example (D : ℕ) : (machine acceptMachine D).run [true, false, true] 2 = ⟨2, false, .ofRound idle⟩ :=
   run_of_le _ (by decide)
 
 example (D : ℕ) :
-    (machine acceptMachine D).run [true, false] 3 = (2, true, initRound acceptMachine D 2) :=
+    (machine acceptMachine D).run [true, false] 3 =
+      ⟨2, true, .ofRound (initRound acceptMachine D 2)⟩ :=
   run_length_succ [true, false]
 
 /-- The recursion on the graph on words decides acceptance, here of every input. -/
@@ -85,5 +90,50 @@ example {α : Type} (enc : α ↪ List Bool) : RL enc ⊆ DSPACE enc fun n => Na
 example {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ L enc) :
     A ∈ DSPACE enc fun n => Nat.log2 n ^ 2 :=
   RL_subset_DSPACE_log2_sq (L_subset_RL h)
+
+/-! ### A nontrivial language through the RL and native Savitch bridges -/
+
+/-- Words beginning in `true`; the empty word is rejected. -/
+private def startsTrue : Set (List Bool) := {w | w.headD false = true}
+
+private theorem startsTrue_mem_RL : startsTrue ∈ RL encBits :=
+  L_subset_RL ⟨_, ComputableInLogSpace.bitsHeadD false, fun _ => Iff.rfl⟩
+
+example : [true, false] ∈ startsTrue := by simp [startsTrue]
+example : [false, true] ∉ startsTrue := by simp [startsTrue]
+example : [] ∉ startsTrue := by simp [startsTrue]
+
+/-- An actual logspace client reaches the deterministic quadratic-space endpoint. -/
+example : startsTrue ∈ DSPACE encBits fun n => Nat.log2 n ^ 2 :=
+  RL_subset_DSPACE_log2_sq startsTrue_mem_RL
+
+/-- The native simulation supplies a total decider, not just a graph-level reachability fact. -/
+example : ∃ c₁ c₂ t, DecidableInTimeAndSpace startsTrue encBits t
+    fun w => c₁ * Nat.log2 (encBits w).length ^ 2 + c₂ :=
+  mem_DSPACE_iff.mp (RL_subset_DSPACE_log2_sq startsTrue_mem_RL)
+
+/-! ### Named runtime fields preserve the encoded words -/
+
+example (s : Runtime) : encRuntime s =
+    encPair encNat (encPair encBool (Cslib.Reachability.Savitch.encRound encParam))
+      (s.counter, s.started,
+        (((s.round.setup.params.radix, s.round.setup.params.inputLength,
+          s.round.setup.params.symbol), s.round.setup.width), s.round.recursion)) := rfl
+
+example (q : ((ℕ × ℕ × Option Bool) × ℕ) × Cslib.Reachability.Savitch.State) :
+    encSimulationRound (.ofRound q) = Cslib.Reachability.Savitch.encRound encParam q := rfl
+
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {s : α → Runtime}
+    (hs : ComputableInSpace s enc encRuntime S) :
+    ComputableInSpace (fun a => (s a).round.setup.params.radix) enc encNat S :=
+  encEdgeParams_radix_budget (encRoundSetup_params_budget
+    (encSimulationRound_setup_budget (encRuntime_round_budget hs)))
+
+example : halted ⟨0, false, ⟨⟨⟨0, 0, none⟩, 0⟩, ⟨[], .ret true⟩⟩⟩ = false := rfl
+example : halted ⟨0, true, ⟨⟨⟨0, 0, none⟩, 0⟩, ⟨[], .ret true⟩⟩⟩ = true := rfl
+example : finish ⟨0, true, ⟨⟨⟨0, 0, none⟩, 0⟩, ⟨[], .ret false⟩⟩⟩ = [false] := rfl
+
+example : ComputableInSpace Nat.size encNat encUnary fun n => (encNat n).length :=
+  ComputableInSpace.natSizeUnary
 
 end CslibFrontierTests.LogSpaceSavitch

@@ -277,8 +277,7 @@ private lemma getD_flatten_eq_rowEntry {jets : List (List ℤ)} {J : ℕ}
 /-- `detRows` of `cramerColZeroRows (hermiteRows nodes J) jets.flatten` equals the determinant of
 `Polynomial.hermiteMatrix` with column `(0, 0)` replaced by `(i, j) ↦ rowEntry jets i j`. -/
 theorem detRows_cramerColZeroRows_hermiteRows (nodes : List ℤ) (J : ℕ) (jets : List (List ℤ))
-    (hQ : 0 < nodes.length) (hJ : 0 < J)
-    (hjets_len : jets.length = nodes.length) (hjets_row : ∀ row ∈ jets, row.length = J) :
+    (hQ : 0 < nodes.length) (hJ : 0 < J) (hjets_row : ∀ row ∈ jets, row.length = J) :
     detRows (cramerColZeroRows (hermiteRows nodes J) jets.flatten) =
       ((Polynomial.hermiteMatrix (fun i : Fin nodes.length => nodes[i]) J).updateCol
         (⟨0, hQ⟩, ⟨0, hJ⟩) fun r => rowEntry jets r.1 r.2).det := by
@@ -297,8 +296,17 @@ theorem detRows_cramerColZeroRows_hermiteRows (nodes : List ℤ) (J : ℕ) (jets
     funext ⟨i, j⟩
     have her : (e (i, j) : ℕ) = j.val + J * i.val := rfl
     rw [her]
-    have hi' : i.val < jets.length := by omega
-    exact getD_flatten_eq_rowEntry hjets_row ⟨i.val, hi'⟩ j
+    by_cases hi' : i.val < jets.length
+    · exact getD_flatten_eq_rowEntry hjets_row ⟨i.val, hi'⟩ j
+    · -- Rows past the end of `jets` read as zero on both sides.
+      have hlen : jets.flatten.length = jets.length * J := by
+        rw [List.length_flatten, List.map_eq_replicate_iff.2 hjets_row, List.sum_replicate,
+          smul_eq_mul]
+      rw [rowEntry, List.getD_eq_default _ _ (not_lt.1 hi'), List.getD_nil,
+        List.getD_eq_default _ _ ?_]
+      calc jets.flatten.length = jets.length * J := hlen
+        _ ≤ i.val * J := Nat.mul_le_mul_right J (not_lt.1 hi')
+        _ ≤ j.val + J * i.val := by rw [Nat.mul_comm]; exact Nat.le_add_left _ _
   rw [detRows_cramerColZeroRows _ _ hpos, ofRows_hermiteRows, Matrix.updateCol_reindex,
     he0, hrhs, Matrix.det_reindex_self]
 
@@ -311,7 +319,6 @@ theorem detRows_cramerColZeroRows_eq_mul_eval_zero {nodes : List ℤ} {J : ℕ} 
     {jets : List (List ℤ)} {H : Polynomial ℚ}
     (hdeg : H.natDegree < nodes.length * J)
     (hH0 : H.eval 0 = (H_zero : ℚ))
-    (hjets_len : jets.length = nodes.length)
     (hjets_row : ∀ row ∈ jets, row.length = J)
     (hjets : ∀ (i : Fin nodes.length) (j : Fin J),
       (rowEntry jets i j : ℚ) = (Ω : ℚ) * (Polynomial.taylor (nodes[i] : ℚ) H).coeff j) :
@@ -347,7 +354,7 @@ theorem detRows_cramerColZeroRows_eq_mul_eval_zero {nodes : List ℤ} {J : ℕ} 
     simp only [Matrix.map_apply, Matrix.updateCol_apply]
     split_ifs <;> rfl
   rw [hmap_update, ← Int.cast_det] at hcramer
-  rw [detRows_cramerColZeroRows_hermiteRows nodes J jets hQ hJ hjets_len hjets_row,
+  rw [detRows_cramerColZeroRows_hermiteRows nodes J jets hQ hJ hjets_row,
     detRows_hermiteRows]
   apply Int.cast_injective (α := ℚ)
   rw [← hcramer]
@@ -363,13 +370,12 @@ theorem hermiteRecoverZero_eq_of_rowEntry {nodes : List ℤ} {J : ℕ} {Ω H_zer
     (hnodup : nodes.Nodup) (hΩ : Ω ≠ 0)
     (hdeg : H.natDegree < nodes.length * J)
     (hH0 : H.eval 0 = (H_zero : ℚ))
-    (hjets_len : jets.length = nodes.length)
     (hjets_row : ∀ row ∈ jets, row.length = J)
     (hjets : ∀ (i : Fin nodes.length) (j : Fin J),
       (rowEntry jets i j : ℚ) = (Ω : ℚ) * (Polynomial.taylor (nodes[i] : ℚ) H).coeff j) :
     hermiteRecoverZero nodes J Ω jets = H_zero := by
   rw [hermiteRecoverZero,
-    detRows_cramerColZeroRows_eq_mul_eval_zero hdeg hH0 hjets_len hjets_row hjets]
+    detRows_cramerColZeroRows_eq_mul_eval_zero hdeg hH0 hjets_row hjets]
   exact Int.ediv_mul_left_exact H_zero (mul_ne_zero hΩ (detRows_hermiteRows_ne_zero hnodup J))
 
 /-- **Exact confluent Hermite Cramer recovery (`getElem` form, [OpenAI2026ETH] eq. (B.1)).** -/
@@ -387,7 +393,7 @@ theorem hermiteRecoverZero_eq {nodes : List ℤ} {J : ℕ} {Ω H_zero : ℤ}
       ((jets[i.val]'hi)[j.val]'hj : ℚ) =
         (Ω : ℚ) * (Polynomial.taylor (nodes[i] : ℚ) H).coeff j) :
     hermiteRecoverZero nodes J Ω jets = H_zero := by
-  refine hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hjets_len hjets_row fun i j => ?_
+  refine hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hjets_row fun i j => ?_
   have hi : i.val < jets.length := by omega
   have hj : j.val < (jets[i.val]'hi).length := by
     rw [hjets_row _ (List.getElem_mem hi)]; exact j.isLt
@@ -400,7 +406,6 @@ theorem hermiteRecoverModPowTwo_eq {nodes : List ℤ} {J ℓ : ℕ} {Ω H_zero c
     (hnodup : nodes.Nodup) (hΩ : Ω ≠ 0)
     (hdeg : H.natDegree < nodes.length * J)
     (hH0 : H.eval 0 = (H_zero : ℚ))
-    (hjets_len : jets.length = nodes.length)
     (hjets_row : ∀ row ∈ jets, row.length = J)
     (hjets : ∀ (i : Fin nodes.length) (j : Fin J),
       (rowEntry jets i j : ℚ) = (Ω : ℚ) * (Polynomial.taylor (nodes[i] : ℚ) H).coeff j)
@@ -408,7 +413,7 @@ theorem hermiteRecoverModPowTwo_eq {nodes : List ℤ} {J ℓ : ℕ} {Ω H_zero c
     (hdvd : (2 : ℤ) ^ ℓ ∣ H_zero - count) :
     hermiteRecoverModPowTwo nodes J ℓ Ω jets = count := by
   rw [hermiteRecoverModPowTwo,
-    hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hjets_len hjets_row hjets]
+    hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hjets_row hjets]
   exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 
 /-- Multi-coordinate count recovery modulo `2 ^ ℓ` ([OpenAI2026ETH], Appendix B.3): summing the
@@ -424,7 +429,6 @@ theorem modPowTwo_sum_hermiteRecoverZero_eq {nodes : List ℤ} {J ℓ : ℕ} {Ω
       have hsZ : s.val < H_zeros.length := by omega
       (Hs[s.val]'hsH).natDegree < nodes.length * J ∧
       (Hs[s.val]'hsH).eval 0 = ((H_zeros[s.val]'hsZ : ℤ) : ℚ) ∧
-      coordJets[s].length = nodes.length ∧
       (∀ row ∈ coordJets[s], row.length = J) ∧
       (∀ (i : Fin nodes.length) (j : Fin J),
         (rowEntry coordJets[s] i j : ℚ) =
@@ -436,9 +440,9 @@ theorem modPowTwo_sum_hermiteRecoverZero_eq {nodes : List ℤ} {J ℓ : ℕ} {Ω
     apply List.ext_getElem (by simp [hlen_Z])
     intro s hs hs'
     simp only [List.length_map] at hs
-    obtain ⟨hdeg, hH0, hjlen, hjrow, hj⟩ := hcoord ⟨s, hs⟩
+    obtain ⟨hdeg, hH0, hjrow, hj⟩ := hcoord ⟨s, hs⟩
     simp only [List.getElem_map]
-    exact hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hjlen hjrow hj
+    exact hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hjrow hj
   rw [hmap]
   exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 

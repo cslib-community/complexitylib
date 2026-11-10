@@ -1008,8 +1008,7 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
       | zero => rfl
       | succ n ih =>
         simp only [iterate]
-        congr 1
-        funext b
+        congr 1 with b : 1
         exact ih b)) (some ty)
     mkLambdaFVars #[d] (mkApp2 (← instantiateMVars h) n a)
   else

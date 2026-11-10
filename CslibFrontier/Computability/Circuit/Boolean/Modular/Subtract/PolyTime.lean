@@ -49,11 +49,6 @@ private theorem notCode_eq {w : ℕ} (i : Fin w) :
     (fun _ => Fin.natAdd w i)
   exact h
 
-private theorem firstCode_eq (w : ℕ) :
-    ([], List.range w) = (Circuit.wiring signature (Fin.castAdd w : Fin w → Fin (w + w))).code := by
-  simpa using (Circuit.code_wiring_eq_map (σ := signature)
-    (f := (Fin.castAdd w : Fin w → Fin (w + w))) (g := id) fun _ => rfl).symm
-
 private theorem outputCode_eq (w : ℕ) :
     ([], List.range w) =
       (Circuit.wiring signature (fun i : Fin w => i.castSucc)).code := by
@@ -75,7 +70,8 @@ private theorem inputsCode_eq (w : ℕ) : inputsCode w = (subtractInputs w).code
       notCode_eq ⟨i, by simpa using hi⟩
   have ht : ([(Op.const true, [])], [w + w]) =
       (Circuit.oneGate (σ := signature) (n := w + w) (.const true) Fin.elim0).code := rfl
-  rw [inputsCode, he, firstCode_eq, ht, appendCodes_code, appendCode_code, appendCode_code]
+  rw [inputsCode, he, ← Circuit.code_wiring_castAdd (σ := signature) (m := w) w, ht,
+    appendCodes_code, appendCode_code, appendCode_code]
   rfl
 
 /-- Generate the full modular subtractor, including the shared carry and discarded carry-out. -/

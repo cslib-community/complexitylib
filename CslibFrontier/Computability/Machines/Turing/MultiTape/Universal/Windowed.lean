@@ -402,8 +402,7 @@ private def realView (t : Tape) : ATape := (fun z => cellAt t (z - t.head), t.he
 private lemma realView_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
     realView (t.apply a) = absApply (realView t) a := by
   simp only [realView, absApply, head_apply]
-  congr 1
-  funext z
+  congr 1 with z : 1
   exact cellAt_apply t a t.head z
 
 private lemma sign_bounds (m : SignType) : -1 ≤ (m : ℤ) ∧ (m : ℤ) ≤ 1 := by

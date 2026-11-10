@@ -215,10 +215,8 @@ theorem eval_splice (encoding : α ↪ List Bool) (base : List Bool)
         (fun trial => spliceTest replacement original before after test (observation, trial))
         trial) := by
   simp only [splice, save, trialPredictor, spliceTest, map_bind, map_pure, ProbComp.eval_bind]
-  congr 1
-  funext front
-  congr 1
-  funext back
+  congr 1 with front : 1
+  congr 1 with back : 1
   let desc : Description := ⟨true, trial,
     encPair encBits (encList (encPair encoding encBool)) (base, front),
     encList (encPair encoding encBool) back, []⟩
@@ -245,10 +243,8 @@ theorem eval_sample (encoding : α ↪ List Bool) (base : List Bool)
       ProbComp.eval (bitPredictor
         (fun trial => sequenceTest replacement original count test (observation, trial))) := by
   simp only [sample, bitPredictor, sequenceTest, trialPredictor, map_bind, ProbComp.eval_bind]
-  congr 1
-  funext trial
-  congr 1
-  funext split
+  congr 1 with trial : 1
+  congr 1 with split : 1
   by_cases hsplit : split < count
   · simpa only [hsplit, ite_true, trialPredictor] using
       eval_splice encoding base replacement original split (count - split - 1) c d width trial

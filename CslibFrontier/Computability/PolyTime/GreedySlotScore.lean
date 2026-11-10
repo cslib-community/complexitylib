@@ -87,7 +87,6 @@ normalizers `numEdges * C` or `Q * n` by `1`.
 namespace Cslib.BalancedSchedules
 
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
 open scoped BigOperators
 
 /-! ### Section 1: Radix-`r` candidate word decoder and bijections -/
@@ -941,7 +940,6 @@ end
 public section
 namespace Cslib.BalancedSchedules
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
 
 /-- All-prefix live-state bit-length bound for the inner `IndexFold.run selectSlotStep` loop across
 every visited prefix `j ≤ r ^ Q` (never multiplying workspace by `r ^ Q`). -/

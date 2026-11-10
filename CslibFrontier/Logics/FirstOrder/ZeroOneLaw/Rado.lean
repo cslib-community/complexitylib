@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Rado
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 public import Mathlib.Combinatorics.SimpleGraph.Maps
+import CslibFrontier.Foundations.ModelTheory.Graph
 import Mathlib.Data.Fintype.EquivFin
 
 /-!
@@ -153,26 +154,6 @@ theorem tendsto_randomGraphProb_zero_iff_radoGraph (φ : Language.graph.Sentence
 
 /-! ### Uniqueness, universality and self-complementarity -/
 
-/-- An equivalence of graph-language structures `G.structure ≃ H.structure` is a graph
-isomorphism. -/
-private def isoOfEquiv {V W : Type*} {G : SimpleGraph V} {H : SimpleGraph W}
-    (f : @Language.Equiv Language.graph V W G.structure H.structure) : G ≃g H where
-  toEquiv := @Language.Equiv.toEquiv _ _ _ G.structure H.structure f
-  map_rel_iff' {a b} := by
-    let := G.structure
-    let := H.structure
-    exact f.map_rel adj ![a, b]
-
-/-- An embedding of graph-language structures `G.structure ↪ H.structure` is an induced graph
-embedding. -/
-private def embeddingOfEmbedding {V W : Type*} {G : SimpleGraph V} {H : SimpleGraph W}
-    (f : @Language.Embedding Language.graph V W G.structure H.structure) : G ↪g H where
-  toEmbedding := @Language.Embedding.toEmbedding _ _ _ G.structure H.structure f
-  map_rel_iff' {a b} := by
-    let := G.structure
-    let := H.structure
-    exact f.map_rel adj ![a, b]
-
 /-- **Uniqueness of the Rado graph.** Every countable simple graph with every extension property
 is isomorphic to the Rado graph, by the back-and-forth argument [Libkin2004, Section 12.3]. -/
 theorem nonempty_iso_radoGraph {V : Type*} [Countable V] (G : SimpleGraph V)
@@ -183,7 +164,7 @@ theorem nonempty_iso_radoGraph {V : Type*} [Countable V] (G : SimpleGraph V)
   have hN := model_randomGraphTheory_iff.1 model_radoGraph
   obtain ⟨f, -⟩ := equiv_between_cg cg_of_countable cg_of_countable default
     (isExtensionPair_of_hasExtension hN.2) (isExtensionPair_of_hasExtension hV.2)
-  exact ⟨isoOfEquiv f⟩
+  exact ⟨.ofLanguageEquiv f⟩
 
 /-- **Universality of the Rado graph.** Every countable simple graph is an induced subgraph of the
 Rado graph [Rado1964]. -/
@@ -194,7 +175,7 @@ theorem nonempty_embedding_radoGraph {V : Type*} [Countable V] (G : SimpleGraph 
   have hN := model_randomGraphTheory_iff.1 model_radoGraph
   obtain ⟨f, -⟩ := embedding_from_cg (show Structure.CG Language.graph V from cg_of_countable)
     default (isExtensionPair_of_hasExtension hN.2)
-  exact ⟨embeddingOfEmbedding f⟩
+  exact ⟨.ofLanguageEmbedding f⟩
 
 /-- The Rado graph is isomorphic to its complement. -/
 theorem nonempty_compl_iso_radoGraph :

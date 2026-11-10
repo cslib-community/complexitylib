@@ -34,6 +34,35 @@ encoding lengths and prove the remaining growth inequalities. The tactic does no
 those bounds or supply missing callback certificates. The [deterministic workflow](../workflows/deterministic-workflows.md)
 explains the joint certificate and charged-space convention in context.
 
+## Preserve explicit polynomial degrees
+
+Import `CslibFrontier.Tactic.Degree` and `open Turing.MultiTapeTM` to use `degree` for
+`ComputableInDegree f encIn encOut d e`. Degree `d` bounds both time and workspace;
+degree `e` bounds encoded output length. In particular, `1 1` retains linear time,
+linear space and linear output growth, rather than merely proving some polynomial bound.
+The complete [DegreeTactic client](../../CslibFrontierTests/DegreeTactic.lean) checks option
+matches and list-head/default composition with these explicit encodings:
+
+```lean
+example : ComputableInDegree (fun l : List ℕ => (l.head?).getD 0)
+    (encList encUnary) encUnary 1 1 := by
+  degree
+```
+
+`degree` rewrites supported option matches to `Option.elim`, then invokes `fun_prop`, using
+reflexivity and linear arithmetic for degree side conditions. It does not unfold named
+routines: first `unfold` a local wrapper, or provide its registered certificate. The
+[Universal step client](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/Complexity.lean)
+uses this for tape reads, writes and fixed-direction moves, then composes their certificates.
+The named read/move lemmas remain useful to other modules even when their proofs are one line.
+
+This is composition of existing resource rules, not degree inference for arbitrary programs.
+The new option-elimination and list-head rules apply at `1 1` and require an inhabited payload;
+the tactic may solve other degrees only when the imported rules and arithmetic permit it.
+Finite-enumeration matches, dependent matches and missing callback or loop-growth certificates
+still need explicit reasoning. Use `polytime` when the contract needs only an unspecified
+polynomial; use `fun_prop` with explicit bounds for `ComputableInO`.
+
 ## Named certificates and polynomial time
 
 [`program_certificate`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Tactic/PolyTime/Init.lean#L17) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index prevents a RAM certificate from accidentally solving a Turing-machine goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
@@ -174,6 +203,13 @@ on their names, and the goal may also be written `v < 2 ^ w`. The
 a wider word, conjunctions and negations of fitting facts, a product bound and both diagnostics.
 To check them, run `lake build CslibFrontierTests.FitsTactic --wfail --iofail` from the repository
 root after [setup](../workflows/getting-started.md).
+
+`ram_eval` and `ram_exact_eval` decide the fitting conditions of the values they write the same
+way, with the simplification procedure `Cslib.WordRAM.reduceFits`. It uses only the hypotheses
+that mention `Fits`, and at most 16 of them; past that it only matches a hypothesis of the same
+statement. A value that fits by a larger fitting fact in context therefore needs no named
+`Fits` statement among their simp lemmas. These tactics' modules import `CslibFrontier.Tactic.Fits`,
+so their clients can call `fits` without importing it.
 
 A side condition used once can be proved where it is used, as the argument `(by fits)`. Products
 are atoms for `omega`: give a bound on one as a term, as in
