@@ -454,123 +454,12 @@ noncomputable def scheme (S : SignatureScheme) (H : KeyedHashFamily) : IndexedSi
 
 section Simulator
 
-private theorem computableInPolyTime_biTape_mk₁ :
-    ComputableInPolyTime (Cslib.Turing.BiTape.mk₁ (Symbol := Bool))
-      encBits (encBiTape encBool) := by
-  have hhead : ComputableInPolyTime (fun v : List Bool => v[0]?) encBits (encOption encBool) :=
-    ComputableInPolyTime.bitsGetElem? .id' (.const 0)
-  have hright : ComputableInPolyTime
-      (fun v : List Bool => Cslib.Turing.StackTape.mapSome v.tail)
-      encBits (encStackTape encBool) :=
-    (ComputableInPolyTime.stackTape_mapSome encBool).comp
-      (ComputableInPolyTime.bitsToList.comp ComputableInPolyTime.bitsTail)
-  apply (ComputableInPolyTime.biTape_mk hhead (.const Cslib.Turing.StackTape.nil)
-    hright).of_enc_eq
-  intro values
-  cases values <;> rfl
-
-private theorem computableInPolyTime_finiteConfig_parts {k : ℕ} {Control : Type}
-    [Finite Control] :
-    ComputableInPolyTime
-      (fun cfg : FiniteConfig k Bool Control Unit => (cfg.tapes, cfg.channels))
-      encFiniteConfig
-      (encPair encFiniteCfg (encPi (encPair encBits (encBiTape encBool)))) :=
-  .of_eq fun _ => rfl
-
-theorem computableInPolyTime_finiteConfig_tapes {k : ℕ} {Control : Type}
-    [Finite Control] :
-    ComputableInPolyTime
-      (FiniteConfig.tapes (k := k) (Symbol := Bool) (State := Control) (Oracle := Unit))
-      encFiniteConfig encFiniteCfg :=
-  computableInPolyTime_finiteConfig_parts.fst'
-
-theorem computableInPolyTime_finiteConfig_channels {k : ℕ} {Control : Type}
-    [Finite Control] :
-    ComputableInPolyTime
-      (FiniteConfig.channels (k := k) (Symbol := Bool) (State := Control) (Oracle := Unit))
-      encFiniteConfig (encPi (encPair encBits (encBiTape encBool))) :=
-  computableInPolyTime_finiteConfig_parts.snd'
-
-private theorem computableInPolyTime_finiteConfig_mk {k : ℕ} {Control α : Type}
-    [Finite Control] {input : α ↪ List Bool}
-    {tapes : α → FiniteCfg k Bool Control}
-    {channels : α → Unit → List Bool × Cslib.Turing.BiTape Bool}
-    (htapes : ComputableInPolyTime tapes input encFiniteCfg)
-    (hchannels : ComputableInPolyTime channels input
-      (encPi (encPair encBits (encBiTape encBool)))) :
-    ComputableInPolyTime
-      (fun a => (⟨tapes a, channels a⟩ : FiniteConfig k Bool Control Unit))
-      input encFiniteConfig :=
-  (htapes.prod hchannels).of_enc_eq fun _ => rfl
-
-theorem computableInPolyTime_finiteConfig_answerSymbols {k : ℕ} {Control : Type}
-    [Finite Control] :
-    ComputableInPolyTime
-      (FiniteConfig.answerSymbols (k := k) (Symbol := Bool) (State := Control) (Oracle := Unit))
-      encFiniteConfig (encFinite (Unit → Option Bool)) := by
-  have hheads : ComputableInPolyTime
-      (fun cfg : FiniteConfig k Bool Control Unit => fun ch => (cfg.channels ch).2.head)
-      encFiniteConfig (encPi (encOption encBool)) :=
-    ComputableInPolyTime.pi fun ch =>
-      (ComputableInPolyTime.biTape_head encBool).comp
-        (((ComputableInPolyTime.pi_apply _ ch).comp
-          computableInPolyTime_finiteConfig_channels).snd')
-  exact (ComputableInPolyTime.of_finite id).comp hheads
-
-theorem computableInPolyTime_finiteConfig_step {k : ℕ} {Control : Type}
-    [Finite Control] (action : Action k Bool Control)
-    (symbol : Unit → Option Bool) (move : Unit → SignType) :
-    ComputableInPolyTime
-      (fun cfg : FiniteConfig k Bool Control Unit => cfg.step action symbol move)
-      encFiniteConfig encFiniteConfig := by
-  unfold FiniteConfig.step
-  refine computableInPolyTime_finiteConfig_mk
-    ((ComputableInPolyTime.finiteCfg_step action).comp computableInPolyTime_finiteConfig_tapes)
-    (ComputableInPolyTime.pi fun ch => ?_)
-  have hch := (ComputableInPolyTime.pi_apply (encPair encBits (encBiTape encBool)) ch).comp
-    (computableInPolyTime_finiteConfig_channels (k := k) (Control := Control))
-  exact (ComputableInPolyTime.bitsAppend hch.fst' (.const (symbol ch).toList)).prod
-    (ComputableInPolyTime.biTape_step (none, move ch) hch.snd')
-
-theorem computableInPolyTime_finiteConfig_receive {k : ℕ} {Control α : Type}
-    [Finite Control] {input : α ↪ List Bool}
-    {cfg : α → FiniteConfig k Bool Control Unit} {answer : α → List Bool}
-    (hcfg : ComputableInPolyTime cfg input encFiniteConfig)
-    (hanswer : ComputableInPolyTime answer input encBits)
-    (channel : Unit) (next : Control) :
-    ComputableInPolyTime (fun a => (cfg a).receive channel next (answer a))
-      input encFiniteConfig := by
-  unfold FiniteConfig.receive
-  have ht := computableInPolyTime_finiteConfig_tapes.comp hcfg
-  have htapes := ComputableInPolyTime.finiteCfg_mk
-    (ComputableInPolyTime.finiteCfg_input.comp ht)
-    (.const (some next))
-    (ComputableInPolyTime.finiteCfg_inputPos.comp ht)
-    (ComputableInPolyTime.finiteCfg_workTapes.comp ht)
-    (ComputableInPolyTime.finiteCfg_output.comp ht)
-  have hchannels := ComputableInPolyTime.pi_update
-    (computableInPolyTime_finiteConfig_channels.comp hcfg)
-    ((ComputableInPolyTime.const []).prod (computableInPolyTime_biTape_mk₁.comp hanswer))
-    channel
-  exact computableInPolyTime_finiteConfig_mk htapes hchannels
-
-theorem computableInPolyTime_finiteConfig_init {k : ℕ} {Control α : Type}
-    [Finite Control] {input : α ↪ List Bool} {word : α → List Bool}
-    (hword : ComputableInPolyTime word input encBits) (state : Control) :
-    ComputableInPolyTime
-      (fun a => FiniteConfig.init (k := k) (Oracle := Unit) state (word a))
-      input encFiniteConfig := by
-  unfold FiniteConfig.init
-  exact computableInPolyTime_finiteConfig_mk
-    (ComputableInPolyTime.finiteCfg_init hword state)
-    (.const (fun _ => ([], Cslib.Turing.BiTape.nil)))
-
 theorem computableInPolyTime_finiteConfig_reqWord {k : ℕ} {Control α : Type} [Finite Control]
     {encIn : α ↪ List Bool} {cfg : α → FiniteConfig k Bool Control Unit}
     (hcfg : ComputableInPolyTime cfg encIn encFiniteConfig) :
     ComputableInPolyTime (fun a => ((cfg a).channels ()).1) encIn encBits :=
   ((ComputableInPolyTime.pi_apply (encPair encBits (encBiTape encBool)) ()).comp
-    (computableInPolyTime_finiteConfig_channels.comp hcfg)).fst'
+    (ComputableInPolyTime.finiteConfig_channels.comp hcfg)).fst'
 
 /-- Finite-tag transition dispatch on `FiniteConfig`: given polynomial-time projections for a
 `FiniteConfig` `cfg` and a coin `coin`, plus polynomial-time handlers for the halted branch, each
@@ -600,7 +489,7 @@ theorem computableInPolyTime_finiteConfig_cases {k : ℕ} {Control α β : Type}
           | .step action symbol move => onStep action symbol move a
           | .query () next => onQuery next a)
       encIn encOut := by
-  have htapes := computableInPolyTime_finiteConfig_tapes.comp hcfg
+  have htapes := ComputableInPolyTime.finiteConfig_tapes.comp hcfg
   let Tag := Option Control × Option Bool × (Fin k → Option Bool) × (Unit → Option Bool) × Bool
   let encTag : Tag ↪ List Bool :=
     encPair (encFinite (Option Control))
@@ -615,7 +504,7 @@ theorem computableInPolyTime_finiteConfig_cases {k : ℕ} {Control α β : Type}
     (ComputableInPolyTime.finiteCfg_state.comp htapes).prod
       ((ComputableInPolyTime.finiteCfg_inputSymbol.comp htapes).prod
         ((ComputableInPolyTime.finiteCfg_workTapeSymbols.comp htapes).prod
-          ((computableInPolyTime_finiteConfig_answerSymbols.comp hcfg).prod hcoin)))
+          ((ComputableInPolyTime.finiteConfig_answerSymbols.comp hcfg).prod hcoin)))
   let branch (choice : Tag) (a : α) : β :=
     match choice.1 with
     | none => onHalt a
@@ -695,12 +584,12 @@ private theorem computableInPolyTime_simStep {k : ℕ} {Control : Type} [Finite 
   have hcond := hrZero.bool_and' hisNone
   exact (computableInPolyTime_finiteConfig_cases machine hcfg hcoin hacc
     (fun action symbol move =>
-      ((computableInPolyTime_finiteConfig_step action symbol move).comp hcfg).prod hqOpt)
+      ((ComputableInPolyTime.finiteConfig_step action symbol move).comp hcfg).prod hqOpt)
     (fun next =>
       hcond.ite
-        ((computableInPolyTime_finiteConfig_receive hcfg hreply () next).prod
+        ((ComputableInPolyTime.finiteConfig_receive hcfg hreply () next).prod
           ((ComputableInPolyTime.optionSome encBits).comp hr.snd'))
-        ((computableInPolyTime_finiteConfig_receive hcfg (.const []) () next).prod
+        ((ComputableInPolyTime.finiteConfig_receive hcfg (.const []) () next).prod
           hqOpt))).of_enc_eq fun _ => rfl
 
 private theorem computableInPolyTime_simRun_raw {k : ℕ} {Control : Type} [Finite Control]
@@ -722,7 +611,7 @@ private theorem computableInPolyTime_simRun_raw {k : ℕ} {Control : Type} [Fini
   have hinit : ComputableInPolyTime
       (fun p : P => (FiniteConfig.init machine.initial p.1, (none : Option (List Bool))))
       encP encAcc :=
-    (computableInPolyTime_finiteConfig_init hword machine.initial).prod (.const none)
+    (ComputableInPolyTime.finiteConfig_init hword machine.initial).prod (.const none)
   obtain ⟨cCfg, hcCfg⟩ :=
     length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Unit)
   let inv (p : P) (consumed : List Bool) (acc : Acc) : Prop :=
@@ -812,7 +701,8 @@ private theorem computableInPolyTime_simRun_raw {k : ℕ} {Control : Type} [Fini
       encAcc (encPair encBits (encOption encBits)) := by
     have hbuilt :=
       (((ComputableInPolyTime.fst encFiniteConfig (encOption encBits)).trans
-        (computableInPolyTime_finiteConfig_tapes (k := k) (Control := Control))).trans
+        (ComputableInPolyTime.finiteConfig_tapes (k := k) (State := Control)
+          (Oracle := Unit))).trans
         ComputableInPolyTime.finiteCfg_output).prod
         (ComputableInPolyTime.snd encFiniteConfig (encOption encBits))
     exact hbuilt.of_enc_eq fun _ => rfl
