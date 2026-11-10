@@ -440,7 +440,8 @@ theorem RunsWords.inputFromWord {machine : MultiTapePTM k Bool State Operation}
       simpa only [PMF.map_comp, Function.comp_def, hF_wordsCfg] using hmapF
   · intro final hfinal op
     supp_cases hfinal [hinRun, ProbOracleComp.runWith_map, eraseF,
-      run_interpret_runOracleConfigFrom_ofDeterministic] with ⟨_, ⟨_, ⟨⟨mid₀, s₃⟩, hmid₀, rfl⟩, rfl⟩, rfl⟩
+      run_interpret_runOracleConfigFrom_ofDeterministic] with
+      ⟨_, ⟨_, ⟨⟨mid₀, s₃⟩, hmid₀, rfl⟩, rfl⟩, rfl⟩
     exact (h.mem_support oracle s cfgIn rfl hbuf hmid₀).2 op
 
 /-- `machine` with its output written to work tape `(Fin.last k).castAdd 2` and its input read from

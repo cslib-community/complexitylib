@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Cached expansions between adjacent GGM levels
@@ -83,11 +84,7 @@ theorem expansionOracle_bounds (generator : List Bool → List Bool) (sample : P
       (cacheEncoding result.2).length ≤
         (cacheEncoding cache).length + 4 * query.length + 4 * n + 3 := by
   by_cases hquery : query.length = n
-  · simp only [expansionOracle, hquery, ite_true, ProbComp.eval_bind,
-      PMF.mem_support_bind_iff] at hresult
-    obtain ⟨⟨expansion, next⟩, hsample, hresult⟩ := hresult
-    simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
-    subst result
+  · supp_cases hresult [expansionOracle, hquery] with ⟨⟨expansion, next⟩, hsample, rfl⟩
     have hvalues : ∀ value ∈ ((ProbComp.eval sample).map (List.take (2 * n))).support,
         value.length ≤ 2 * n := by
       intro value hvalue
@@ -106,9 +103,7 @@ theorem expansionOracle_bounds (generator : List Bool → List Bool) (sample : P
     simp only [List.length_take] at hgrowth
     dsimp
     lia
-  · simp only [expansionOracle, hquery, ite_false, ProbComp.eval_pure,
-      PMF.mem_support_pure_iff] at hresult
-    subst result
+  · supp_cases hresult [expansionOracle, hquery]
     exact ⟨hcache, by simp, by dsimp; lia⟩
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
@@ -177,11 +172,7 @@ private theorem frontierOracle_preserves_labels (generator : List Bool → List 
       (ProbComp.eval (frontierOracle generator n depth query cache)).support) :
     ∀ entry ∈ cache', entry.2.length = n := by
   by_cases hquery : query.length = n
-  · simp only [frontierOracle, hquery, ite_true, ProbComp.eval_bind,
-      PMF.mem_support_bind_iff] at hresult
-    obtain ⟨⟨seed, next⟩, hseed, hresult⟩ := hresult
-    simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hresult
-    rw [hresult.2]
+  · supp_cases hresult [frontierOracle, hquery] with ⟨⟨seed, next⟩, hseed, rfl, rfl⟩
     have hsample : (seed, next) ∈
         (memoize (fun _ : List Bool => BitString.uniformList n)
           (query.take depth) cache).support := by
@@ -189,9 +180,8 @@ private theorem frontierOracle_preserves_labels (generator : List Bool → List 
     exact (RandomOracle.memoize_invariant (fun _ : List Bool => BitString.uniformList n)
       (fun _ seed => seed.length = n) (query.take depth) cache hcache
       (fun _ h => BitString.length_of_mem_support_uniformList h) (seed, next) hsample).2
-  · simp only [frontierOracle, hquery, ite_false, ProbComp.eval_pure,
-      PMF.mem_support_pure_iff, Prod.mk.injEq] at hresult
-    simpa only [hresult.2] using hcache
+  · supp_cases hresult [frontierOracle, hquery]
+    exact hcache
 
 private theorem expansionOracle_generated_step (generator : List Bool → List Bool) (n depth : ℕ)
     (hdepth : depth < n) (query : List Bool) (cache : Cache)
