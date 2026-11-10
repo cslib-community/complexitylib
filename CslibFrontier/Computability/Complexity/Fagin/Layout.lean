@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Fagin.Power
 public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Existential second-order layout of framed structure encodings
@@ -136,11 +137,8 @@ theorem nextBase_and_getElem?_frame_of_realize_frameChunkSentence
         (RelMap outBitRel ![p] ↔ (frame w)[(p : ℕ) - base]? = some true)) := by
   have hlen : (frame w).length = 2 * w.length + 1 := length_frame w
   have hMB : w.length < B := by omega
-  simp only [frameChunkSentence, Sentence.realize_inf, realize_closeAll,
-    Formula.realize_imp, Formula.realize_inf, Formula.realize_iff, Formula.realize_not,
-    Formula.realize_iExs, Formula.realize_iAlls, realize_rel₂, realize_rel₁,
-    realize_varEq, realize_isZero hlt, realize_succ hlt, realize_atVar,
-    realize_isFirstOut hlt hMB hdom, Sum.elim_inl, Sum.elim_inr] at hreal
+  fo_simp [frameChunkSentence, realize_isZero hlt, realize_succ hlt,
+    realize_isFirstOut hlt hMB hdom] at hreal
   rcases hreal with ⟨⟨⟨hfunc, hzero⟩, hstep⟩, hend⟩
   have hmap : ∀ m ≤ w.length, ∀ (j p : Fin B), (j : ℕ) = m →
       (RelMap mapRel ![j, p] ↔ (p : ℕ) = base + 2 * m) := by
@@ -202,11 +200,8 @@ theorem realize_frameChunkSentence_of_canonical
     (frameChunkSentence r inDom inBit baseRel nextBaseRel mapRel outBitRel).Realize (Fin B) := by
   have hlen : (frame w).length = 2 * w.length + 1 := length_frame w
   have hMB : w.length < B := by omega
-  simp only [frameChunkSentence, Sentence.realize_inf, realize_closeAll,
-    Formula.realize_imp, Formula.realize_inf, Formula.realize_iff, Formula.realize_not,
-    Formula.realize_iExs, Formula.realize_iAlls, realize_rel₂, realize_rel₁,
-    realize_varEq, realize_isZero hlt, realize_succ hlt, realize_atVar,
-    realize_isFirstOut hlt hMB hdom, Sum.elim_inl, Sum.elim_inr]
+  fo_simp [frameChunkSentence, realize_isZero hlt, realize_succ hlt,
+    realize_isFirstOut hlt hMB hdom]
   refine ⟨⟨⟨fun v ⟨h1, h2⟩ => ?_, fun v hv0 => ?_⟩, fun v hv => ?_⟩, fun v hv => ?_⟩
   · rw [hmap] at h1 h2; exact Fin.ext (by omega)
   · rw [hmap, hbase, hv0]; omega
@@ -514,8 +509,7 @@ private theorem realize_layoutInRaw_iff (a : EncodedStructure) {B : ℕ}
   let _ := ESO.varLanguage.structure (arity := layoutArity v.count) R
   have hrawB : (encStructure a).length < B := by have := length_frame (encStructure a); omega
   have hlt : ∀ x : Fin 2 → Fin B, RelMap v.layoutLt x ↔ x 0 < x 1 := fun _ => Iff.rfl
-  simp only [layoutInRaw, Formula.realize_iExs, Formula.realize_inf,
-    FO.realize_rel₁, FO.realize_lt hlt, Sum.elim_inl, Sum.elim_inr, Matrix.cons_val_zero]
+  fo_simp [layoutInRaw, FO.realize_lt hlt]
   refine ⟨fun ⟨y, hy, hjy⟩ => ?_, fun hj => ⟨![⟨(encStructure a).length, hrawB⟩],
     (hbase_last _).2 rfl, by simpa [Fin.lt_def] using hj⟩⟩
   have hy' := (hbase_last (y 0)).1 hy
@@ -536,8 +530,7 @@ private theorem realize_layoutMatrix_sound {a : EncodedStructure} (ha : v.WellFo
   let _ := ESO.varLanguage.structure (arity := fun _ : Bool => 1) I_in
   let _ := ESO.varLanguage.structure (arity := layoutArity v.count) R
   have hlt : ∀ x : Fin 2 → Fin B, RelMap v.layoutLt x ↔ x 0 < x 1 := fun _ => Iff.rfl
-  simp only [layoutMatrix, Sentence.realize_inf, FO.realize_closeAll,
-    Formula.realize_iff, FO.realize_rel₁, FO.realize_isZero hlt] at hR
+  fo_simp [layoutMatrix, FO.realize_isZero hlt] at hR
   rcases hR with ⟨⟨⟨hbase0, hchunk0⟩, hchunks⟩, houter⟩
   rw [Sentence.Realize, Formula.realize_iInf] at hchunks
   have hbase0' : ∀ z : Fin B, RelMap (v.layoutBase 0) ![z] ↔ (z : ℕ) = 0 := fun z => hbase0 ![z]
@@ -629,8 +622,7 @@ private theorem realize_layoutMatrix_complete {a : EncodedStructure} (ha : v.Wel
     intro m p hp
     change (encStructure a)[(p : ℕ)]? = some true ↔ _
     rw [v.getElem?_encStructure_of_lt_prefix ha hp]
-  simp only [layoutMatrix, Sentence.realize_inf, FO.realize_closeAll,
-    Formula.realize_iff, FO.realize_rel₁, FO.realize_isZero hlt]
+  fo_simp [layoutMatrix, FO.realize_isZero hlt]
   refine ⟨⟨⟨fun x => hbase0 (x 0), ?_⟩, ?_⟩, ?_⟩
   · refine FO.realize_frameChunkSentence_of_canonical hlt (v.length_frame_encUnary_lt ha hB)
       (v.realize_layoutIsElem_iff a B I_in R) (v.realize_top_iff_getElem?_encUnary a B I_in R)

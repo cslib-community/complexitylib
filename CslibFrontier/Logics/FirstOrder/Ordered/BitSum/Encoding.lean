@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Packing
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.SumTree
+import CslibFrontier.Tactic.FirstOrder
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -118,9 +119,7 @@ theorem realize_treeAddress (m j b q a : (language L).Term α) (v : α → Fin n
     (treeAddress L m j b q a).Realize v ↔ (j.realize v).val ≤ (m.realize v).val ∧
       BitString.sumTreeAddress (m.realize v).val (j.realize v).val (b.realize v).val
         (q.realize v).val = (a.realize v).val := by
-  simp only [treeAddress, Formula.realize_iExs, Formula.realize_inf, realize_addEq,
-    realize_natEq, realize_shiftLeft, Term.realize_var, Term.realize_relabel, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, and_assoc]
+  fo_simp [treeAddress, Function.comp_def, and_assoc]
   constructor
   · rintro ⟨u, h0, h1, h2, h3, h4, h5⟩
     have he : (u 0).val = (m.realize v).val - (j.realize v).val := by lia
@@ -164,10 +163,7 @@ theorem realize_nodeValue (m h : (language L).Term α) (w : Fin 8 → (language 
     (nodeValue L m h w j q z).Realize v ↔
       EncodesNode (m.realize v).val (h.realize v).val (fun r => ((w r).realize v).val)
         (j.realize v).val (q.realize v).val (z.realize v).val := by
-  simp only [nodeValue, Formula.realize_iAlls, Formula.realize_iff, Formula.realize_inf,
-    Formula.realize_iExs, realize_bit, realize_le, realize_treeAddress, realize_packedBit,
-    Term.realize_var, Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr,
-    hj, true_and]
+  fo_simp [nodeValue, Function.comp_def, hj]
   constructor
   · intro hn b
     constructor

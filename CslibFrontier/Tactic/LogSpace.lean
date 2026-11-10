@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
+public import CslibFrontier.Tactic.FailureNote
 public import CslibFrontier.Tactic.LogSpace.Init
 public import CslibFrontier.Tactic.PolyTime.Init
 
@@ -24,6 +25,7 @@ Named `program_certificate` proofs are tried before their implementations unfold
 certificates use recomputing logspace composition, including calls
 on prepared tuple arguments. Search stays in `ComputableInLogSpace`: it never converts a goal
 to polynomial time or to a tidy predicate. Importing this module adds no `fun_prop` transition.
+When the search fails, its error ends with a note naming the certificates and bounds to supply.
 
 ## Main definitions
 
@@ -110,9 +112,14 @@ open Lean Meta Elab Tactic in
 elab "logspace" : tactic => withMainContext do
   let target := (← instantiateMVars (← getMainTarget)).consumeMData
   unless target.isAppOf ``Turing.MultiTapeTM.ComputableInLogSpace do
-    throwError "expected a plain logspace certificate"
-  evalTactic (← `(tactic| solve |
-    aesop (config := { terminal := true, enableSimp := false })
-      (rule_sets := [LogSpace])))
+    throwError "logspace expects a goal `ComputableInLogSpace f encIn encOut`, \
+      got{indentExpr target}"
+  Cslib.Tactic.withFailureNote m!"logspace composes `@[fun_prop]` rules and named \
+      `program_certificate`s for `ComputableInLogSpace`. Supply a certificate for each local \
+      routine, with the goal's encodings. An answer vector `(List.range (r a)).map (f a)` also \
+      needs a hypothesis `∀ a, r a ≤ k`." do
+    evalTactic (← `(tactic| solve |
+      aesop (config := { terminal := true, enableSimp := false })
+        (rule_sets := [LogSpace])))
 
 end

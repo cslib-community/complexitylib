@@ -465,7 +465,6 @@ theorem arguments_fit {U V n_max w base : ℕ}
     Fits w (encode o i) := by
   have h0 : Fits w 0 := fits_zero w
   have hsp : 4 ≤ space n_max := by unfold space; omega
-  have h1 : Fits w 1 := hS.of_le (by omega)
   have hu_fit : ∀ u : Fin U, Fits w u.val := fun u => by
     rw [fits_iff]
     have hpow : 2 ^ hashBits U n_max ≤ 2 ^ w :=
@@ -482,7 +481,7 @@ theorem arguments_fit {U V n_max w base : ℕ}
     have hv_lt : v < V := hv.2
     simp only [encode]
     split_ifs
-    · exact h1
+    · fits
     · exact hu_fit u
     · exact hV.of_le (by omega)
     · exact h0
@@ -766,9 +765,8 @@ private theorem allocSpan_spec {n_max w base : ℕ} (hS : Fits w (base + space n
     {x : Data rHash} (hfr : x.regs frontierReg = base) :
     ∃ x₁, ExecWithin w (allocSpan n_max) x x₁ 3 ∧ x₁.mem = x.mem ∧
       x₁.regs baseReg = base ∧ x₁.regs frontierReg = base + space n_max := by
-  have f₁ : Fits w (space n_max) := hS.of_le (by omega)
   refine ⟨?z, ?e, ?_, ?_, ?_⟩
-  case e => ram_exact_eval [allocSpan, hfr, f₁, hS]
+  case e => ram_exact_eval [allocSpan, hfr, hS]
   · rfl
   · simp +decide
   · simp +decide
@@ -785,10 +783,6 @@ private theorem storeHeader_spec {U V n_max w base : ℕ}
       Rep U V n_max w base b (Dictionary.empty U) y ∧
       Modifies (Block.mk base (space n_max)).footprint x.mem y.mem := by
   have hsp : 4 ≤ space n_max := by unfold space; omega
-  have f0 : Fits w 0 := fits_zero w
-  have f1 : Fits w 1 := hS.of_le (by omega)
-  have fb1 : Fits w (base + 1) := hS.of_le (by omega)
-  have fb2 : Fits w (base + 1 + 1) := hS.of_le (by omega)
   have fb3 : Fits w (base + 1 + 1 + 1) := hS.of_le (by omega)
   have fM : Fits w (bucketBits n_max) := fits_bucketBits hw
   have fw0 : Fits w (hashBits U n_max) := fits_hashBits hw
@@ -800,7 +794,7 @@ private theorem storeHeader_spec {U V n_max w base : ℕ}
           (base + 1 + 1) (hashBits U n_max)).write (base + 1 + 1 + 1) 0).mem := by
     refine ⟨?z, ?e, ?_, ?_, ?_⟩
     case e =>
-      ram_exact_eval [storeHeader, hbase, hb, f0, f1, fb1, fb2, fb3, fM, fw0]
+      ram_exact_eval [storeHeader, hbase, hb, fb3, fM, fw0]
     · simp +decide [hfr]
     · simp +decide [hbase]
     · rfl
@@ -980,15 +974,13 @@ private theorem evalBucket_spec {U V n_max w base : ℕ}
   intro bk
   have hbase := hr.reg_base
   have hseed := hr.mem_seed
-  have fb : Fits w b.val := hseed ▸ hr.bounded.2 base
-  have fu : Fits w u.val := hu ▸ hr.bounded.1 argU
   obtain ⟨x₁, he1, hm1, hregB1, hregX1, hbase1, htag1, hargU1, hargV1⟩ :
       ∃ x₁, Exec w prepHash x x₁ 2 ∧ x₁.mem = x.mem ∧
         x₁.regs regB = b.val ∧ x₁.regs regX = u.val ∧
         x₁.regs baseReg = base ∧ x₁.regs tagReg = x.regs tagReg ∧
         x₁.regs argU = u.val ∧ x₁.regs argV = x.regs argV := by
     refine ⟨?z, ?e, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-    case e => ram_exact_eval [prepHash, hbase, hseed, hu, fb, fu]
+    case e => ram_exact_eval [prepHash, hbase, hseed, hu]
     · rfl
     · simp +decide
     · simp +decide
@@ -1024,14 +1016,6 @@ private theorem evalBucket_spec {U V n_max w base : ℕ}
     (Data.extend_regs_of_notMem _ _ (not_mem_range_hashEmbed (by decide))).trans hargV1
   have hbk_lt : bk < numBuckets n_max := multiplyShift_lt_numBuckets b u
   have hsp : 4 + numBuckets n_max + 3 * n_max = space n_max := rfl
-  have f0 : Fits w 0 := fits_zero w
-  have f1 : Fits w 1 := hS.of_le (by omega)
-  have f4 : Fits w 4 := hS.of_le (by omega)
-  have fhb : Fits w (base + 4) := hS.of_le (by omega)
-  have fnb : Fits w (numBuckets n_max) := hS.of_le (by omega)
-  have fkb : Fits w (base + 4 + numBuckets n_max) := hS.of_le (by omega)
-  have fnm : Fits w n_max := hS.of_le (by omega)
-  have fvb : Fits w (base + 4 + numBuckets n_max + n_max) := hS.of_le (by omega)
   have fxb : Fits w (base + 4 + numBuckets n_max + n_max + n_max) := hS.of_le (by omega)
   have fhbk : Fits w (base + 4 + bk) := hS.of_le (by omega)
   have fcur : Fits w (x₂.mem (base + 4 + bk)) := hx₂_bdd.2 _
@@ -1054,7 +1038,7 @@ private theorem evalBucket_spec {U V n_max w base : ℕ}
         y.regs found = 0 := by
     refine ⟨?_, ?e3, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     case e3 =>
-      ram_exact_eval [loadBucketHead, hbase2, hout2, f0, f1, f4, fhb, fnb, fkb, fnm, fvb, fxb,
+      ram_exact_eval [loadBucketHead, hbase2, hout2, fxb,
         fhbk, fcur]
     · rfl
     · simp +decide [hbase2]
@@ -1115,7 +1099,6 @@ private theorem findInChain_spec {U n_max w base sz : ℕ}
     have hsp : 4 + numBuckets n_max + 3 * n_max = space n_max := rfl
     have fidx : Fits w idx₀ := hS.of_le (by omega)
     have fkaddr : Fits w (keyBase base n_max + idx₀) := hS.of_le (by unfold keyBase; omega)
-    have fkey : Fits w (x.mem (keyBase base n_max + idx₀)) := hx.2 _
     by_cases hhit : mem (keyBase base n_max + idx₀) = u.val
     · have hhit_x : x.mem (keyBase base n_max + idx₀) = u.val := hmem ▸ hhit
       obtain ⟨x₁, he1, hm1, hbase1, htag1, hargU1, hargV1, hout1, hz1, ho1,
@@ -1139,7 +1122,7 @@ private theorem findInChain_spec {U n_max w base sz : ℕ}
         refine ⟨?_, ?e1, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
         case e1 =>
           ram_exact_eval [findInChainBody, hcur, ho, hz, hkb, hu, hhit_x, Nat.add_sub_cancel,
-            fidx, fkaddr, fkey]
+            fidx, fkaddr]
         · rfl
         · simp +decide
         · simp +decide
@@ -1165,7 +1148,6 @@ private theorem findInChain_spec {U n_max w base sz : ℕ}
     · have hhit_x : x.mem (keyBase base n_max + idx₀) ≠ u.val := hmem ▸ hhit
       have hnext_x : x.mem (nextBase base n_max + idx₀) = ptr' := hmem ▸ hnext
       have fnaddr : Fits w (nextBase base n_max + idx₀) := hS.of_le (by unfold nextBase; omega)
-      have fnext : Fits w (x.mem (nextBase base n_max + idx₀)) := hx.2 _
       obtain ⟨x₁, he1, hm1, hbase1, htag1, hargU1, hargV1, hout1, hz1, ho1,
           hhb1, hkb1, hvb1, hxb1, hcur1, hfnd1⟩ :
           ∃ x₁, Exec w findInChainBody x x₁ 7 ∧
@@ -1186,7 +1168,7 @@ private theorem findInChain_spec {U n_max w base sz : ℕ}
         refine ⟨?_, ?e2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
         case e2 =>
           ram_exact_eval [findInChainBody, hcur, ho, hz, hkb, hxb, hu, hhit_x, Nat.add_sub_cancel,
-            fidx, fkaddr, fkey, fnaddr, fnext]
+            fidx, fkaddr, fnaddr]
         · rfl
         · simp +decide
         · simp +decide
@@ -1265,7 +1247,6 @@ private theorem finishQuery_spec {U V n_max w base : ℕ}
     let v := x.mem (valBase base n_max + i)
     have hv_lt : v < V := hr.vals_lt u v hsu'
     have fvaddr : Fits w (valBase base n_max + i) := hS.of_le (by unfold valBase; omega)
-    have fv : Fits w (y.mem (valBase base n_max + i)) := hy_bdd.2 _
     have fv1 : Fits w (y.mem (valBase base n_max + i) + 1) := by
       rw [hmy]
       exact hV.of_le (by omega)
@@ -1274,7 +1255,7 @@ private theorem finishQuery_spec {U V n_max w base : ℕ}
           z.regs baseReg = base ∧ z.regs outReg = y.mem (valBase base n_max + i) + 1 := by
       refine ⟨?_, ?e, ?_, ?_, ?_⟩
       case e =>
-        ram_exact_eval [finishOp, finishQuery, htag, hz, ho, hyf, hvb, hym, fvaddr, fv, fv1]
+        ram_exact_eval [finishOp, finishQuery, htag, hz, ho, hyf, hvb, hym, fvaddr, fv1]
       · rfl
       · simp +decide [hbase]
       · simp +decide
@@ -1444,9 +1425,7 @@ private theorem finishInsertMiss_spec {U V n_max w base : ℕ}
   have hcard_eq : (Dictionary.dom s').card = sz + 1 :=
     Dictionary.card_dom_insert_eq_of_eq_none hsu v
   have hmsz : y.mem (base + 3) = sz := hmy ▸ hr.mem_sz
-  have f3 : Fits w 3 := hS.of_le (by omega)
   have fb3 : Fits w (base + 3) := hS.of_le (by omega)
-  have fsz : Fits w sz := hS.of_le (by omega)
   have fsz1 : Fits w (sz + 1) := hS.of_le (by omega)
   have fkaddr : Fits w (keyBase base n_max + sz) := hS.of_le (by unfold keyBase; omega)
   have fvaddr : Fits w (valBase base n_max + sz) := hS.of_le (by unfold valBase; omega)
@@ -1464,7 +1443,7 @@ private theorem finishInsertMiss_spec {U V n_max w base : ℕ}
     case e =>
       ram_exact_eval [finishOp, finishInsert, finishInsertMiss,
         hbase, htag, hargU, hargV, hout, hz, ho, hhb, hkb, hvb, hxb, hyf,
-        hmsz, hne1, hne2, hne3, f3, fb3, fsz, fsz1, fkaddr, fvaddr, fhaddr, fnaddr]
+        hmsz, hne1, hne2, hne3, fb3, fsz1, fkaddr, fvaddr, fhaddr, fnaddr]
     · rfl
     · simp +decide [hbase]
   have hz_bdd : z.Bounded w := he.within.bounded hy_bdd

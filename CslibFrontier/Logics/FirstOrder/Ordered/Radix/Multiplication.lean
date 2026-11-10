@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Decode
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Native multiplication of radix words
@@ -78,10 +79,8 @@ theorem realize_multiply {d m : ℕ} (B : (language L).Term α)
     realize_affine (d := d) (B.relabel Sum.inl) b' x' y' z' (Sum.elim v w)
       (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using hB)
       (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using hBn)
-  simp only [multiply, Formula.realize_inf, realize_digits, Formula.realize_iExs,
-    Formula.realize_iInf, Formula.realize_equal, ha, Term.realize_var, Term.realize_relabel,
-    Function.comp_def, Sum.elim_inl, Sum.elim_inr, Fin.ext_iff, realize_zero_val,
-    List.ofFn_const, Nat.ofDigits_replicate_zero, Nat.add_zero, and_assoc]
+  fo_simp [multiply, ha, Function.comp_def, Fin.ext_iff, List.ofFn_const,
+    Nat.ofDigits_replicate_zero, Nat.add_zero, and_assoc]
   constructor
   · rintro ⟨hx, hy, hz, w, hw0, hwe, hs⟩
     refine ⟨hx, hy, hz, ?_⟩

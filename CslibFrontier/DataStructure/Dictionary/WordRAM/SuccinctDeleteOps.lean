@@ -174,9 +174,14 @@ theorem deletePrepProg_bucket_spec {U V w₀ n_max h_space w base b q_target m :
   dsimp only [gm, d, prog, prep]
   have hsb := searchBucketProg_bucket_spec hinv henv hb hm_eq hm_lt (q_target := q_target)
   dsimp only at hsb
+  unfold deletePrepProg
+  simp only [pure_bind]
+  rw [StateTransitionSpec.clientState_bind, StateTransitionSpec.clientResult_bind,
+    memoryCost_bind_of_clientState_eq hsb.1, hsb.1]
   set res := (Memory.spec 0).clientResult s
     (searchBucketProg U V w₀ n_max h_space (((base, b), q_target), m))
   have hres := hsb.2.2
+  have hc := hsb.2.1
   by_cases hex : ∃ j < bCount n_max (gmAt base U V w₀ n_max h_space s.mem) b,
       quotAt base U w₀ n_max h_space s.mem
         (slotOf n_max (gmAt base U V w₀ n_max h_space s.mem) b j) = q_target
@@ -187,87 +192,19 @@ theorem deletePrepProg_bucket_spec {U V w₀ n_max h_space w base b q_target m :
         slotOf n_max (gmAt base U V w₀ n_max h_space s.mem) b
           (bCount n_max (gmAt base U V w₀ n_max h_space s.mem) b - 1) < n_max :=
       (slotOf_lt_and_injective hinv.hslot).1 b hb _ (by omega)
-    have hprep_eq :
-        (Memory.spec 0).clientResult s
-          (deletePrepProg U V w₀ n_max h_space (((base, b), q_target), m)) =
-        (res,
-          quotAt base U w₀ n_max h_space s.mem
-            (slotOf n_max (gmAt base U V w₀ n_max h_space s.mem) b
-              (bCount n_max (gmAt base U V w₀ n_max h_space s.mem) b - 1))) := by
-      unfold deletePrepProg
-      simp only [pure_bind]
-      rw [StateTransitionSpec.clientResult_bind, hsb.1]
-      change (Memory.spec 0).clientResult s
-        (if res.1.1 = 1 then do
-           let phys_last ← lastSlotOfProg U V w₀ n_max h_space (base, b)
-           let q_last ← readQuotProg U w₀ n_max h_space (base, phys_last)
-           pure (res, q_last)
-         else pure (((0, 0), 0), 0)) = _
-      rw [ite_eq_left hf1, StateTransitionSpec.clientResult_bind, clientState_lastSlotOfProg,
-        clientResult_lastSlotOfProg (base, b) s hinv.hslot hb hbc,
-        StateTransitionSpec.clientResult_bind, clientState_readQuotProg,
-        clientResult_readQuotProg s hphys_last_lt]
-      rfl
-    refine ⟨?_, ?_, ?_, ?_⟩
-    · unfold deletePrepProg
-      simp only [pure_bind]
-      rw [StateTransitionSpec.clientState_bind, hsb.1]
-      change (Memory.spec 0).clientState s
-        (if res.1.1 = 1 then do
-           let phys_last ← lastSlotOfProg U V w₀ n_max h_space (base, b)
-           let q_last ← readQuotProg U w₀ n_max h_space (base, phys_last)
-           pure (res, q_last)
-         else pure (((0, 0), 0), 0)) = s
-      rw [ite_eq_left hf1, StateTransitionSpec.clientState_bind, clientState_lastSlotOfProg,
-        StateTransitionSpec.clientState_bind, clientState_readQuotProg]
-      rfl
-    · unfold deletePrepProg
-      simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind]
-      rw [memoryCost_bind, hsb.1]
-      change memoryCost (searchBucketProg U V w₀ n_max h_space (((base, b), q_target), m)) s +
-        memoryCost (if res.1.1 = 1 then _ else _) s ≤ _
-      rw [ite_eq_left hf1, memoryCost_bind, clientState_lastSlotOfProg,
-        memoryCost_bind, memoryCost_readQuotProg, clientState_readQuotProg, memoryCost_pure]
-      have hc1 := hsb.2.1
-      have hc2 := memoryCost_lastSlotOfProg_le U V w₀ n_max h_space (base, b) s
-      omega
-    · rw [hprep_eq]
-      exact quotAt_lt base U w₀ n_max h_space s.mem _
-    · rw [ite_eq_left hex, hprep_eq]
-      exact ⟨hf1, hj_lt, hq_match, hphys_eq, rfl⟩
+    rw [ite_eq_left hf1, ite_eq_left hex, StateTransitionSpec.clientState_bind,
+      StateTransitionSpec.clientResult_bind,
+      memoryCost_bind_of_clientState_eq (clientState_lastSlotOfProg ..),
+      clientState_lastSlotOfProg, clientResult_lastSlotOfProg (base, b) s hinv.hslot hb hbc,
+      StateTransitionSpec.clientState_bind, StateTransitionSpec.clientResult_bind,
+      memoryCost_bind_of_clientState_eq (clientState_readQuotProg ..), clientState_readQuotProg,
+      clientResult_readQuotProg s hphys_last_lt, memoryCost_readQuotProg, memoryCost_pure]
+    have hc2 := memoryCost_lastSlotOfProg_le U V w₀ n_max h_space (base, b) s
+    exact ⟨rfl, by omega, quotAt_lt base U w₀ n_max h_space s.mem _,
+      hf1, hj_lt, hq_match, hphys_eq, rfl⟩
   · rw [ite_eq_right hex] at hres
-    have hne1 : res.1.1 ≠ 1 := by omega
-    have hprep_eq :
-        (Memory.spec 0).clientResult s
-          (deletePrepProg U V w₀ n_max h_space (((base, b), q_target), m)) =
-        (((0, 0), 0), 0) := by
-      unfold deletePrepProg
-      simp only [pure_bind]
-      rw [StateTransitionSpec.clientResult_bind, hsb.1]
-      change (Memory.spec 0).clientResult s
-        (if res.1.1 = 1 then _ else pure (((0, 0), 0), 0)) = _
-      rw [ite_eq_right hne1]
-      rfl
-    refine ⟨?_, ?_, ?_, ?_⟩
-    · unfold deletePrepProg
-      simp only [pure_bind]
-      rw [StateTransitionSpec.clientState_bind, hsb.1]
-      change (Memory.spec 0).clientState s
-        (if res.1.1 = 1 then _ else pure (((0, 0), 0), 0)) = s
-      rw [ite_eq_right hne1]
-      rfl
-    · unfold deletePrepProg
-      simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind]
-      rw [memoryCost_bind, hsb.1]
-      change memoryCost (searchBucketProg U V w₀ n_max h_space (((base, b), q_target), m)) s +
-        memoryCost (if res.1.1 = 1 then _ else pure (((0, 0), 0), 0)) s ≤ _
-      rw [ite_eq_right hne1, memoryCost_pure]
-      have := hsb.2.1
-      omega
-    · rw [hprep_eq]
-      exact Nat.two_pow_pos _
-    · rw [ite_eq_right hex, hprep_eq]
-      exact ⟨rfl, rfl⟩
+    rw [ite_eq_right (show res.1.1 ≠ 1 by omega), ite_eq_right hex, memoryCost_pure]
+    exact ⟨rfl, by omega, Nat.two_pow_pos _, rfl, rfl⟩
 
 /-! ## Section 2: `deleteSwapProg`, `deleteFoundProg`, and `deleteFinishProg` via `realize` -/
 

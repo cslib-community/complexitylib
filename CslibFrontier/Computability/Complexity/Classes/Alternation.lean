@@ -28,6 +28,14 @@ instances, with a bound of the length `n` of the encoded instance, up to constan
   (`Turing.MultiTapeATM.DecidesInSpace`): every computation path visits at most that many
   work-tape cells, and every branch halts.
 
+Chandra, Kozen and Stockmeyer bound the space of an alternating machine without asking it to
+halt; that is recognition within space (`Turing.MultiTapeATM.RecognizesInSpace`). The classes use
+the deciding form of Sipser instead, in which every branch also halts. The deterministic
+simulation `ASPACE s ⊆ DTIME (2 ^ O(log₂ n + s))`
+(`Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE`, in
+`CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime`) is proved for
+recognizers, so it holds in either convention, with no constructibility hypothesis.
+
 Space counts visited work-tape cells: the input tape is read-only and the output tape write-only.
 A time bound gives a space bound, so `ATIME t ⊆ ASPACE t` (`Cslib.Complexity.ATIME_subset_ASPACE`).
 
@@ -77,18 +85,19 @@ alternating machine with a binary alphabet and finitely many states, with respec
 def AP (enc : α ↪ List Bool) : Set (Set α) :=
   {A | MultiTapeATM.DecidableInPolyTime A enc}
 
-/-- **Alternating time** [Chandra, Kozen and Stockmeyer][ChandraKozenStockmeyer1981]
+/-- **Alternating time** [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981]
 [Sipser, Section 10.3][Sipser2013]: the problems decided within time `O(t n)`, that is
 `c₁ * t n + c₂`, by an alternating machine with a binary alphabet and finitely many states, on
 instances whose encoding under `enc` has length `n`. -/
 def ATIME (enc : α ↪ List Bool) (t : ℕ → ℕ) : Set (Set α) :=
   {A | ∃ c₁ c₂ : ℕ, MultiTapeATM.DecidableInTime A enc fun a => c₁ * t (enc a).length + c₂}
 
-/-- **Alternating space** [Chandra, Kozen and Stockmeyer][ChandraKozenStockmeyer1981]
+/-- **Alternating space** [Chandra, Kozen and Stockmeyer, Section 3][ChandraKozenStockmeyer1981]
 [Sipser, Section 10.3][Sipser2013]: the problems decided within space `O(s n)`, that is
 `c₁ * s n + c₂`, by one alternating machine with a binary alphabet and finitely many states, along
-every computation path and with every branch halting, on instances whose encoding under `enc` has
-length `n`. -/
+every computation path, on instances whose encoding under `enc` has length `n`. Following Sipser's
+deciders, every branch also halts; Chandra, Kozen and Stockmeyer do not ask for halting, which is
+`Turing.MultiTapeATM.RecognizesInSpace`. -/
 def ASPACE (enc : α ↪ List Bool) (s : ℕ → ℕ) : Set (Set α) :=
   {A | ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State)
     (c₁ c₂ : ℕ), atm.DecidesInSpace enc A fun a => c₁ * s (enc a).length + c₂}
@@ -129,8 +138,8 @@ theorem ATIME_subset_ASPACE {t : ℕ → ℕ} : ATIME enc t ⊆ ASPACE enc t := 
   refine ⟨k, State, hfin, atm, k * c₁, k * (c₂ + 1), hA.decidesInSpace.mono fun a => ?_⟩
   rw [Nat.mul_assoc, ← Nat.mul_add, Nat.add_assoc]
 
-/-- **`AP` is the union of the classes `ATIME (n ^ k)`** [Chandra, Kozen and
-Stockmeyer][ChandraKozenStockmeyer1981]. -/
+/-- **`AP` is the union of the classes `ATIME (n ^ k)`** [Chandra, Kozen and Stockmeyer,
+Section 3][ChandraKozenStockmeyer1981] [Sipser, Section 10.3][Sipser2013]. -/
 theorem mem_AP_iff_exists_mem_ATIME : A ∈ AP enc ↔ ∃ k, A ∈ ATIME enc (· ^ k) := by
   constructor
   · rintro ⟨t, ht, hA⟩

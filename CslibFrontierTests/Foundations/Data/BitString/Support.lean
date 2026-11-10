@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Data.BitString.Support
 
-/-! # Unit tests for `Cslib.BitString.supportOfList` -/
+/-! # Unit tests for `Cslib.BitString.supportOfList` and `Cslib.BitString.indicatorList` -/
 
 namespace CslibFrontierTests.BitString.Support
 
@@ -42,5 +42,13 @@ example {w : List Bool} (hw : w.length = 3)
   ⟨supportOfList_injective_of_length hw rfl h,
     by rw [card_supportOfList_of_length hw, supportOfList_injective_of_length hw rfl h]; rfl,
     by decide, by decide⟩
+
+-- 4. `indicatorList` inverts `supportOfList`, counts the subset, and sets bits on `insert`.
+example : indicatorList ({1, 3} : Finset (Fin 4)) = [false, true, false, true] ∧
+    supportOfList 4 (indicatorList ({1, 3} : Finset (Fin 4))) = {1, 3} ∧
+    (indicatorList ({1, 3} : Finset (Fin 4))).count true = 2 ∧
+    indicatorList (insert 0 ({1, 3} : Finset (Fin 4))) = [true, true, false, true] :=
+  ⟨by decide, supportOfList_indicatorList _, count_true_indicatorList _,
+    by rw [indicatorList_insert]; decide⟩
 
 end CslibFrontierTests.BitString.Support

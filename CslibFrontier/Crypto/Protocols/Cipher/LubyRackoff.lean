@@ -23,6 +23,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Uniform
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -564,10 +565,7 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
                 PMF.pure ((v, p.1 + f₁ p.2 + x.1), (x.2, true)))
               (ans, (cache', false)) = 0 := by
           refine (PMF.apply_eq_zero_iff _ _).mpr fun hmem => ?_
-          rw [PMF.mem_support_bind_iff] at hmem
-          obtain ⟨⟨y₃, c₂⟩, -, hmem'⟩ := hmem
-          rw [PMF.mem_support_pure_iff] at hmem'
-          exact Bool.noConfusion (congrArg (fun x => x.2.2) hmem')
+          supp_cases hmem
         have h2 :
             ((PMF.uniformOfFintype G).bind fun w =>
               PMF.pure ((v, w),
@@ -575,10 +573,7 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
                   ((false, p.1 + f₁ p.2), -p.2 + v) :: cache, true)))
               (ans, (cache', false)) = 0 := by
           refine (PMF.apply_eq_zero_iff _ _).mpr fun hmem => ?_
-          rw [PMF.mem_support_bind_iff] at hmem
-          obtain ⟨w, -, hmem'⟩ := hmem
-          rw [PMF.mem_support_pure_iff] at hmem'
-          exact Bool.noConfusion (congrArg (fun x => x.2.2) hmem')
+          supp_cases hmem
         rw [h1, h2]
       | none =>
         simp only [Option.isSome_none]
@@ -603,19 +598,13 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
     rcases st with ⟨cache, bad⟩
     simp only at hst
     subst hst
-    simp only [realRoundHandler, Probability.PMF.monad_bind_eq_bind,
-      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at hx
-    obtain ⟨⟨y₂, c₁⟩, -, ⟨y₃, c₂⟩, -, rfl⟩ := hx
+    supp_cases hx [realRoundHandler] with ⟨⟨y₂, c₁⟩, -, ⟨y₃, c₂⟩, -, rfl⟩
     simp
   absorb_second p st hst x hx := by
     rcases st with ⟨cache, bad⟩
     simp only at hst
     subst hst
-    simp only [idealRoundHandler, Probability.PMF.monad_bind_eq_bind,
-      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at hx
-    obtain ⟨vw, -, rfl⟩ := hx
+    supp_cases hx [idealRoundHandler] with ⟨vw, rfl⟩
     simp
 
 /-- Reconstruct the round-function cache of `idealRoundHandler f₁` from the query cache. -/

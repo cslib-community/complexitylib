@@ -352,9 +352,10 @@ then characterizes optimality without assuming a solver.
 [Augmenting-walk tests](../../CslibFrontierTests/EdgeCSPWalk.lean) include doubled equality
 constraints, actual returned paths, odd unsatisfiable units, repeated constraint positions,
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
-prefix is invalid. The routine takes an improving comparison labeling as input: finding that
-labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
-The full solver and planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+prefix is invalid. This routine takes an improving comparison labeling as input. The fresh
+forest search below instead starts from the base labeling alone and stops at exhaustion,
+augmentation or a blossom. Whole-blossom contraction/lifting, the full solver and planar
+dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 For explicit tables, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting`.
 In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
@@ -371,8 +372,9 @@ an actual existing `Walk`, its decoder equation, augmentation correctness and th
 half-Hamming exchange bound. `none` is a helper failure or width rejection, not an unsatisfiability
 answer. [Native augmentation tests](../../CslibFrontierTests/EdgeCSPAugmentingNative.lean) exercise
 returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
-The supplied improving comparison remains necessary; forest/blossom search and the full solver
-are still open.
+The supplied improving comparison remains necessary for this two-phase routine. The fresh search
+below has no comparison input, and its native compiler is documented separately below.
+Whole-blossom contraction/lifting and the full solver remain open.
 
 The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
 `occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
@@ -475,14 +477,117 @@ variables, with the actual `Walk.take`/`snoc` nonextension test against every us
 of orientation. Its direct local-exchange proof avoids the source proof's temporary smaller
 timestamp and handles timestamp zero. See [DAG tests](../../CslibFrontierTests/EdgeCSPDAG.lean) for repeated
 original constraints, exact deletion, extra-child rerooting, meeting paths, odd parity and failed
-invariants. Algorithm 1's forest/Lemma 34, blossom search, native runtime and the full planar
-endpoint remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+invariants. The fresh search below derives these DAG hypotheses from its actual execution;
+whole-blossom contraction/lifting and the full planar endpoint remain open under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 `CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations` supplies disjoint linked-trail
 concatenation, trail reversal and f-prefix inheritance. Reversal preserves the underlying
 trail, but arbitrary f-walk reversal can fail even with even delta-matroid constraints.
 The [operation tests](../../CslibFrontierTests/EdgeCSPWalkOperations.lean) exhibit that failure, overlapping
 incidence rejection and why endpoint consistency needs a positive proper prefix.
+
+## Fresh forest search and its three outcomes
+
+Import `CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom` and
+`CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality`. `Forest.search sem f` executes
+Algorithm 1's chronological forest growth without a supplied improving comparison. Its roots
+are the actual defective variables. Expansions are newest first, timestamps count older
+expansions from zero, and repeated original constraints retain distinct copied nodes. Each
+continuation removes a selected incidence from the finite work list. The result is an exhausted
+log, an augmentation meeting, or a blossom meeting; recursive contraction is a separate step.
+
+`search_terminal_isFDAG` proves Lemma 34 for both the actual partial forest and its terminal
+pruned graph, using only `EdgeInstance` and base-label validity. No even-delta-matroid premise
+is needed here. Pruning removes all current-copy outgoing arcs before inserting the second
+incoming port, while retaining the discovered variables as isolated supported nodes.
+`scan_isFDAG` provides the corresponding partial-scan invariant.
+
+For even delta-matroid constraints, three fresh-run endpoints use the instance hypotheses and
+the actual result equation, deriving forest and event invariants internally:
+
+- `search_exhausted_isOptimalLabeling` proves minimum defect count among all valid labelings.
+  Its alternative counting proof combines local `IsEvenDeltaMatroid.card_disagree_le` with
+  accounting over distinct occurring variables. It needs no finite universe of variable names,
+  comparison labeling or supplied optimality certificate.
+- `search_augment_correct` proves that the returned `m.walk` is augmenting, its flip is valid,
+  and exactly two defects disappear. Prefix validity comes from the two directed ancestries;
+  it does not assume that arbitrary f-walk reversal preserves validity.
+- `search_blossom_correct` proves that the actual `m.blossomData` succeeds. Its preparatory flip
+  is valid and preserves defect count, and its cycle satisfies `Walk.IsBlossom`. The
+  Definition 39 interface includes a closed nonempty incidence trail, defective base,
+  consistent internal variables, distinct copied steps and a complete timestamped f-DAG
+  with feasibility and no shortcuts.
+
+`Walk.DistinctCopies` requires one timestamp per step and no repeated copied constraint
+(position, timestamp). Original constraints may recur at different timestamps.
+`Trace.blossom_times_nodup` derives the stronger distinct-timestamp property for both actual
+extractor outcomes. This makes explicit the two-arm geometry needed by Lemma 40 when it
+invokes Corollary 36. A graph union alone can hide a four-port shared copy. The
+[kernel-checked counterexample](../../CslibFrontierTests/EdgeCSPBlossomCopies.lean) satisfies
+the former union-only conditions but has an invalid proper prefix; its original instance is
+UNSAT while the corresponding table contraction is SAT. A positive actual-search test retains
+a repeated original constraint at distinct times. Search programs and native codes are unchanged.
+
+Both least-common-ancestor cases are covered. A variable ancestor is a defective root and needs
+no preparation. At a constraint ancestor, the computed root path is flipped and the copied
+constraint rerooted, retaining the other child ports. `blossom_metadata` and `blossom_isFDAG`
+certify the actual stored pivot and timestamps. The preparation proof uses chronological prefix
+transfer followed by Lemma 37; it is an alternative to the paper's repeated deletions.
+
+These statements follow KKR v6, Algorithm 1 (printed p. 0:10), Lemma 34 (pp. 0:15–0:16),
+Proposition 38 (p. 0:18), Definition 39/Lemma 41 (pp. 0:19–0:20), and Lemma 45
+(pp. 0:22–0:23). Variables require only decidable equality; local common parity may be odd.
+The reusable `Walk.Subpath`, `Walk.Visits` and `DAGPaths.Preparation` APIs support the actual
+prefix/suffix arguments. `Walk.nodup_edges_snoc` is now public and used by `IsWalk.snoc`.
+Import `CslibFrontier.Foundations.Data.BitString.DeltaMatroid.ExchangeBound` separately to use
+the local disagreement-count lemma directly.
+
+[Forest execution tests](../../CslibFrontierTests/EdgeCSPForest.lean),
+[terminal tests](../../CslibFrontierTests/EdgeCSPForestTerminal.lean),
+[event tests](../../CslibFrontierTests/EdgeCSPForestEvents.lean) and
+[optimality tests](../../CslibFrontierTests/EdgeCSPForestOptimality.lean) cover both ancestor cases,
+nonempty preparation, repeated constraints, timestamp zero, odd parity and sparse binary names.
+The exhausted example with a connected feasible-pair graph still has two unavoidable defects.
+These mathematical results compose with the native compiler below. Whole-blossom
+contraction/lifting and the complete solver/dichotomy remain outside this layer;
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) stays open.
+
+## Native fresh forest search
+
+Import `CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec` for the program, native
+certificate, exact bridge and semantic specification. The namespace is
+`Cslib.Complexity.CSP.EdgeForest`. `Input` contains an explicit `CSP Table Nat` and one
+occurrence-bit buffer in constraint-then-port order. `encInput` frames the CSP before the
+Boolean list. Original names, table arities and public output occurrence indices are binary;
+internal work records use unary constraint/scope positions. Every clock traverses actual lists.
+
+`computableInPolyTime_run` is an ordinary native polynomial-time certificate on the complete
+encoded input, including malformed tables and arbitrary buffers. The outer clock is the actual
+occurrence count plus one; stopped states freeze the first event. The full log remains in its
+original encoded field, and final output conversion happens once after iteration.
+
+`run_eq` requires only exact buffer width and identifies the complete output with the existing
+`Forest.search`. `run_eq_none_iff` shows that width mismatch is the only rejection: `none` is not
+an unsatisfiability answer. `code` and `decode` retain original roots, newest-first expansions,
+partial meetings and implicit timestamps; external out-of-range indices are rejected.
+`decode_run` recovers the exact typed source result from a correctly sized buffer. These
+representation theorems assume no edge condition, validity or evenness.
+
+`run_spec` adds the edge-instance condition, valid initial labels and even delta-matroid
+constraints. It transfers the three mathematical guarantees to the actual decoded native result:
+optimality, valid two-defect augmentation, or valid defect-count-preserving blossom preparation.
+Decoded event tags alone establish none of these semantic claims. There is no improving comparison
+input, contraction step or recursive solver in this routine.
+
+`PolyTime.CSP.Edge.Buffer` holds the shared enumeration/label operations and certificates;
+the existing `EdgeAugmenting` namespace and public imports remain available. The
+[native forest tests](../../CslibFrontierTests/EdgeCSPForestNative.lean) cover all three outcomes,
+partial meetings, repeated original constraints, scan order, malformed tables, width rejection,
+invalid indices and names up to `2^250`. An end-to-end client derives a valid zero-defect labeling
+from the actual decoded augmentation. The existing native augmentation regression suite remains
+unchanged. Full recursive solving, geometric realization/recognition and the planar dichotomy
+remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Finite crossover gadget semantics
 

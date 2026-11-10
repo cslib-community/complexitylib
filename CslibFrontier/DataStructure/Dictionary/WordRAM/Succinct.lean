@@ -144,7 +144,6 @@ theorem span_exec_succinct {U V w n_max base : ℕ}
       x₁.regs baseReg = base ∧
       x₁.regs frontierReg = base + space U V w n_max ∧
       (∀ j : Fin 0, x₁.regs ((subroutineCode U V w n_max).initParams j) = Fin.elim0 j) := by
-  have hfit_sp : Fits w (space U V w n_max) := hfit.of_le (Nat.le_add_left _ _)
   let s₁ := x.set baseReg (x.regs frontierReg)
   let s₂ := s₁.set curReg (space U V w n_max)
   let s₃ := s₂.set frontierReg (base + space U V w n_max)
@@ -153,7 +152,7 @@ theorem span_exec_succinct {U V w n_max base : ℕ}
     ExecWithin.copy
   have e₂ : ExecWithin (B := .exact) w
       (.op (.const curReg (space U V w n_max))) s₁ s₂ 1 :=
-    ExecWithin.const hfit_sp
+    ExecWithin.const (by fits)
   have e₃ : ExecWithin (B := .exact) w
       (.op (.exactBin .add frontierReg frontierReg curReg)) s₂ s₃ 1 := by
     apply ExecWithin.op
