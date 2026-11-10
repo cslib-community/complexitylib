@@ -23,6 +23,8 @@ abstract state in the randomized state-transition certificates.
   support are equal.
 * `Cslib.Probability.PMF.tsum_mul_add_of_support`: a summand that is constant on the support
   leaves the expectation as that constant.
+* `Cslib.Probability.PMF.tsum_mul_le_of_support`: an integrand bounded on the support has
+  expectation at most that bound.
 -/
 
 public section
@@ -49,5 +51,17 @@ theorem tsum_mul_add_of_support (p : PMF α) {g f : α → ℝ≥0∞} {c : ℝ�
   rw [tsum_mul_congr_support p (g := fun a => c + f a) fun a ha => by rw [hg a ha]]
   simp only [mul_add]
   rw [tsum_add, ENNReal.tsum_mul_right, p.tsum_coe, one_mul]
+
+/-- An integrand bounded by `c` on the support has expectation at most `c`. This is the
+support-restricted form of `Cslib.Probability.PMF.tsum_mul_le_of_forall_le`. -/
+theorem tsum_mul_le_of_support (p : PMF α) {f : α → ℝ≥0∞} {c : ℝ≥0∞}
+    (h : ∀ a ∈ p.support, f a ≤ c) :
+    ∑' a, p a * f a ≤ c := by
+  calc ∑' a, p a * f a ≤ ∑' a, p a * c := by
+        refine tsum_le_tsum fun a => ?_
+        by_cases ha : a ∈ p.support
+        · exact mul_le_mul_right (h a ha) _
+        · rw [(PMF.apply_eq_zero_iff p a).mpr ha, zero_mul, zero_mul]
+    _ = c := by rw [ENNReal.tsum_mul_right, p.tsum_coe, one_mul]
 
 end Cslib.Probability.PMF

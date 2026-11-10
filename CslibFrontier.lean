@@ -868,6 +868,7 @@ public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalResource
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalRoot
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalSkip
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStack
+public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStackFrame
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalTime
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalVisit
@@ -3269,6 +3270,7 @@ public import CslibFrontier.Computability.Pebbling.Pyramid
 public import CslibFrontier.Computability.Pebbling.Reversible
 public import CslibFrontier.Computability.Pebbling.ReversiblePath
 public import CslibFrontier.Computability.Pebbling.ReversiblePathReachable
+public import CslibFrontier.Computability.Pebbling.Words
 public import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
@@ -4350,6 +4352,7 @@ public import CslibFrontier.DataStructure.Stack.Native
 public import CslibFrontier.DataStructure.Stack.Spec
 public import CslibFrontier.DataStructure.StateTransition
 public import CslibFrontier.DataStructure.StateTransition.Amortized
+public import CslibFrontier.DataStructure.StateTransition.ClientSimps.Init
 public import CslibFrontier.DataStructure.StateTransition.Composition
 public import CslibFrontier.DataStructure.StateTransition.CostHoare
 public import CslibFrontier.DataStructure.StateTransition.Hoare
@@ -5270,6 +5273,7 @@ public import CslibFrontier.Logics.BooleanClone.Generated
 public import CslibFrontier.Logics.BooleanClone.Post
 public import CslibFrontier.Logics.FirstOrder.Atom
 public import CslibFrontier.Logics.FirstOrder.Basic
+public import CslibFrontier.Logics.FirstOrder.DefinitionalExpansion
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph
@@ -5279,6 +5283,9 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame
 public import CslibFrontier.Logics.FirstOrder.Interpretation
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Constants
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Encoding
@@ -5342,6 +5349,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Decode
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Multiplication
 public import CslibFrontier.Logics.FirstOrder.Ordered.Reduction
 public import CslibFrontier.Logics.FirstOrder.Ordered.StrictOrder
+public import CslibFrontier.Logics.FirstOrder.Ordered.Successor
 public import CslibFrontier.Logics.FirstOrder.Ordered.TransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Ordered.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.Tuple.Flatten
@@ -5853,5 +5861,7 @@ public import CslibFrontier.Tactic.Realize
 public import CslibFrontier.Tactic.Space
 public import CslibFrontier.Tactic.Stateful
 public import CslibFrontier.Tactic.Stateful.Init
+public import CslibFrontier.Tactic.SuppCases
+public import CslibFrontier.Tactic.SuppCases.Init
 public import CslibFrontier.Tactic.Synthesis
 public import CslibFrontier.Tactic.WordRAM
