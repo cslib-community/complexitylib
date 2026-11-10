@@ -253,8 +253,7 @@ theorem eval_spliceEncryptedKeyLink_original (n : ℕ) (before : List (List Bool
   simp only [spliceEncryptedKeyLink, encryptKeyLinkHybrid, ProbComp.eval_bind,
     ProbComp.eval_pure]
   rw [PMF.bind_comm]
-  congr 1
-  funext front
+  congr 1 with front : 1
   rw [← PMF.bind_bind, hmiddle]
 
 /-- A zero-bit challenge recovers the full next hybrid distribution, retaining all other
@@ -271,8 +270,7 @@ theorem eval_spliceEncryptedKeyLink_zero (n : ℕ) (before : List (List Bool × 
   simp only [spliceEncryptedKeyLink, encryptKeyLinkHybrid, ProbComp.eval_bind,
     ProbComp.eval_pure]
   rw [PMF.bind_comm]
-  congr 1
-  funext front
+  congr 1 with front : 1
   rw [← PMF.bind_bind, hmiddle]
 
 /-- Sample an intermediate bit hybrid with the target key drawn first. Only public keys and
@@ -295,16 +293,13 @@ theorem eval_publicKeyLinkHybrid_zero (n beforeCount afterCount : ℕ) :
   simp only [publicKeyLinkHybrid, publicKeyChainHybrid, ProbComp.eval_bind]
   rw [← E.eval_generateKeys_splice n beforeCount afterCount]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext next
+  congr 1 with next : 1
   apply Probability.PMF.bind_congr_on_support
   intro before hbefore
   have hlength := ((ProbComp.mem_support_replicate_iff beforeCount (E.keyGen n) before).mp
     hbefore).1
-  congr 1
-  funext predecessor
-  congr 1
-  funext after
+  congr 1 with predecessor : 1
+  congr 1 with after : 1
   rw [← hlength, ← E.encryptKeyLinkHybrid_zero]
 
 /-- With a fixed supported secret length, the final bit boundary is the preceding link
@@ -316,16 +311,14 @@ theorem eval_publicKeyLinkHybrid_length (n beforeCount afterCount width : ℕ)
   simp only [publicKeyLinkHybrid, publicKeyChainHybrid, ProbComp.eval_bind]
   rw [← E.eval_generateKeys_splice n beforeCount afterCount]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext next
+  congr 1 with next : 1
   apply Probability.PMF.bind_congr_on_support
   intro before hbefore
   have hlength := ((ProbComp.mem_support_replicate_iff beforeCount (E.keyGen n) before).mp
     hbefore).1
   apply Probability.PMF.bind_congr_on_support
   intro predecessor hpredecessor
-  congr 1
-  funext after
+  congr 1 with after : 1
   rw [← hlength, ← hwidth predecessor hpredecessor, ← E.encryptKeyLinkHybrid_length]
 
 end Cslib.Crypto.Homomorphic.Scheme

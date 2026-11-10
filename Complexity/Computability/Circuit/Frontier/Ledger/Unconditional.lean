@@ -64,10 +64,7 @@ variable {U : Type u} [Finite U] [Nontrivial U] {S : ∀ n, Set (Fin n → U)} {
 finite commutative monoid `M` with `log |M| ≤ β(n)`, has `s` ordinary inner gates with
 `(r - 1) s > (2 - ε) n`. -/
 theorem eventually_two_sub_mul_lt_mul_card_of_ledger {r : ℕ} (hr : 2 ≤ r)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hSK : DenseRectangleFree S K)
     {β : ℕ → ℝ} (hβ : β =o[atTop] fun n => (n : ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1) (special : Fin c.size → Prop) [DecidablePred special] (M : Type w)
@@ -76,8 +73,7 @@ theorem eventually_two_sub_mul_lt_mul_card_of_ledger {r : ℕ} (hr : 2 ≤ r)
         Ledger special c.program I M → Real.log (Nat.card M) ≤ β n → c.Decides I Acc (S n) →
           (2 - ε) * n < (r - 1) * (c.program.innerGates.filter fun g => ¬special g).card := by
   simpa only [div_one, one_add_one_eq_two] using
-    eventually_lt_mul_card_of_ledger.{u, v, w} hr one_pos (layoutBound_one (r + 1)) hfree hK
-      hdense hβ hε
+    eventually_lt_mul_card_of_ledger.{u, v, w} hr one_pos (layoutBound_one (r + 1)) hSK hβ hε
 
 /-- **The unconditional frontier lower bound with aggregate gates.** Under the hypotheses of
 `eventually_two_sub_mul_lt_mul_card_of_ledger`, for every `ε > 0` and all large `n`, every circuit
@@ -85,10 +81,7 @@ deciding `S_n`, over any basis and interpretation on `U`, whose gates have fan-i
 except for `k` special gates of any fan-in that aggregate in a finite commutative monoid `T`, with
 `k log |T| ≤ β(n)`, has `s` ordinary inner gates with `(r - 1) s > (2 - ε) n`. -/
 theorem eventually_two_sub_mul_lt_mul_card_of_aggregates {r : ℕ} (hr : 2 ≤ r)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hSK : DenseRectangleFree S K)
     {β : ℕ → ℝ} (hβ : β =o[atTop] fun n => (n : ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1) (special : Fin c.size → Prop) [DecidablePred special] (T : Type w)
@@ -99,8 +92,7 @@ theorem eventually_two_sub_mul_lt_mul_card_of_aggregates {r : ℕ} (hr : 2 ≤ r
         c.Decides I Acc (S n) →
           (2 - ε) * n < (r - 1) * (c.program.innerGates.filter fun g => ¬special g).card := by
   simpa only [div_one, one_add_one_eq_two] using
-    eventually_lt_mul_card_of_aggregates.{u, v, w} hr one_pos (layoutBound_one (r + 1)) hfree hK
-      hdense hβ hε
+    eventually_lt_mul_card_of_aggregates.{u, v, w} hr one_pos (layoutBound_one (r + 1)) hSK hβ hε
 
 /-- **The Gaussian frontier lower bound with a ledger, at ordinary fan-in two.** Under the
 hypotheses of `eventually_two_sub_mul_lt_mul_card_of_ledger`, for every `ε > 0` and all large `n`,
@@ -109,10 +101,7 @@ most two except for special gates of any fan-in with a ledger in a finite commut
 with `log |M| ≤ β(n)`, has more than `(L - ε) n` ordinary inner gates, where
 `L = 1 + π / (3 arccos ((1 + 2√2)/4)) ≈ 4.5625`. -/
 theorem eventually_gaussian_sub_mul_lt_card_of_ledger
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hSK : DenseRectangleFree S K)
     {β : ℕ → ℝ} (hβ : β =o[atTop] fun n => (n : ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1) (special : Fin c.size → Prop) [DecidablePred special] (M : Type w)
@@ -122,7 +111,7 @@ theorem eventually_gaussian_sub_mul_lt_card_of_ledger
           (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n <
             (c.program.innerGates.filter fun g => ¬special g).card := by
   have h := eventually_lt_mul_card_of_ledger.{u, v, w} (r := 2) le_rfl
-    (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian hfree hK hdense hβ hε
+    (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian hSK hβ hε
   rw [Gaussian.one_add_inv_two_mul_gaussianCoefficient] at h
   filter_upwards [h] with n hn σ I Acc c special _ M _ _ hfan hled hM hdec
   simpa only [Nat.cast_ofNat, show (2 : ℝ) - 1 = 1 by norm_num, one_mul] using
@@ -134,10 +123,7 @@ every circuit deciding `S_n`, over any basis and interpretation on `U`, whose ga
 most two except for `k` special gates of any fan-in that aggregate in a finite commutative monoid
 `T`, with `k log |T| ≤ β(n)`, has more than `(L - ε) n` ordinary inner gates. -/
 theorem eventually_gaussian_sub_mul_lt_card_of_aggregates
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
+    (hSK : DenseRectangleFree S K)
     {β : ℕ → ℝ} (hβ : β =o[atTop] fun n => (n : ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1) (special : Fin c.size → Prop) [DecidablePred special] (T : Type w)
@@ -149,7 +135,7 @@ theorem eventually_gaussian_sub_mul_lt_card_of_aggregates
           (1 + Real.pi / (3 * Real.arccos ((1 + 2 * Real.sqrt 2) / 4)) - ε) * n <
             (c.program.innerGates.filter fun g => ¬special g).card := by
   have h := eventually_lt_mul_card_of_aggregates.{u, v, w} (r := 2) le_rfl
-    (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian hfree hK hdense hβ hε
+    (mul_pos two_pos Gaussian.gaussianCoefficient_pos) layoutBound_gaussian hSK hβ hε
   rw [Gaussian.one_add_inv_two_mul_gaussianCoefficient] at h
   filter_upwards [h] with n hn σ I Acc c special _ T _ _ hfan hagg hT hdec
   simpa only [Nat.cast_ofNat, show (2 : ℝ) - 1 = 1 by norm_num, one_mul] using

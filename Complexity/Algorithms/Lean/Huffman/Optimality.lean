@@ -592,9 +592,7 @@ theorem exists_cherry_weightedPathLength_le {γ β : Type*}
       exact hperm.symm.trans (leaves_rotateDeepestLeft_perm (CodeTree.branch l r)).symm
     have hD_ds : ∀ d ∈ ds, d ≤ (CodeTree.branch l r).maxDepth := by
       intro d hd
-      have hmem_snd : d ∈ S₁.leafDepths.map Prod.snd := by
-        rw [hS₁_depths]
-        exact List.mem_cons_of_mem _ (List.mem_cons_of_mem _ hd)
+      have hmem_snd : d ∈ S₁.leafDepths.map Prod.snd := by grind
       rcases List.mem_map.mp hmem_snd with ⟨p, hp, rfl⟩
       have hle := CodeTree.snd_le_maxDepth_of_mem_leafDepths hp
       rwa [maxDepth_rotateDeepestLeft] at hle
@@ -709,8 +707,7 @@ theorem IsHuffmanBuild.weightedPathLength_le {α β : Type*}
     (T' : CodeTree α) (hT' : T'.leaves.Perm syms) :
     T.weightedPathLength w ≤ T'.weightedPathLength w := by
   have hS : (T'.map CodeTree.leaf).leaves.Perm (syms.map CodeTree.leaf) := by
-    rw [CodeTree.leaves_map]
-    exact hT'.map CodeTree.leaf
+    grind [CodeTree.leaves_map]
   have hle := hbuild.weightedPathLength_le_join (T'.map CodeTree.leaf) hS
   rwa [CodeTree.join_map_leaf] at hle
 

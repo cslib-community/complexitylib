@@ -93,7 +93,7 @@ class CredentialTests(unittest.TestCase):
                 self.assertNotIn(token, out.getvalue())
             self.assertEqual(stat.S_IMODE(args.handoff.stat().st_mode), 0o600)
             self.assertEqual(stat.S_IMODE(args.password_file.stat().st_mode), 0o640)
-            self.assertTrue(args.password_file.read_text().startswith("cache-publisher:$2y$12$"))
+            self.assertTrue(args.password_file.read_text().startswith("cache-publisher:$2y$04$"))
             verified = subprocess.run(["htpasswd", "-vi", str(args.password_file), args.user],
                                       input=(token + "\n").encode(), capture_output=True)
             self.assertEqual(verified.returncode, 0)

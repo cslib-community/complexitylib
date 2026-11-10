@@ -391,11 +391,6 @@ theorem two_pow_mul_countUnsat_johnsonAssignment_le_length {k : ℕ} {φ : CNF V
   rw [hsplit, mul_right_comm] at h
   exact Nat.le_of_mul_le_mul_right (h.trans hw) (by positivity)
 
-/-- A clause with three distinct variables has three distinct literals. -/
-theorem CNF.IsExactThreeDistinct.card_toFinset_eq {φ : CNF V}
-    (hφ : φ.IsExactThreeDistinct) {c : Clause V} (hc : c ∈ φ) : c.toFinset.card = 3 := by
-  rw [List.toFinset_card_of_nodup ((hφ c hc).nodup_map_fst.of_map _), (hφ c hc).length_eq]
-
 /-- **The `7 / 8` guarantee**: on an exact 3-CNF formula with three distinct variables per
 clause, Johnson's algorithm falsifies at most `1 / 8` of the clauses. -/
 theorem CNF.IsExactThreeDistinct.eight_mul_countUnsat_johnsonAssignment_le {φ : CNF V}
@@ -419,20 +414,9 @@ proportion that an assignment satisfies, `1 - φ.unsatVal`. -/
 theorem one_sub_inv_two_pow_mul_le_johnsonAssignment {k : ℕ} {φ : CNF V}
     (hk : ∀ c ∈ φ, k ≤ c.toFinset.card) :
     (1 - (2 : ℝ)⁻¹ ^ k) * (1 - φ.unsatVal) ≤
-      1 - (φ.countUnsat (johnsonAssignment φ) : ℝ) / φ.length := by
-  have h : ((2 ^ k * φ.countUnsat (johnsonAssignment φ) : ℕ) : ℝ) ≤ φ.length := by
-    exact_mod_cast two_pow_mul_countUnsat_johnsonAssignment_le_length hk
-  push_cast at h
-  have hval := φ.unsatVal_nonneg
-  have hpow : (2 : ℝ)⁻¹ ^ k ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
-  have hdiv : (φ.countUnsat (johnsonAssignment φ) : ℝ) / φ.length ≤ (2 : ℝ)⁻¹ ^ k := by
-    rcases Nat.eq_zero_or_pos φ.length with h0 | hpos
-    · rw [h0, Nat.cast_zero, div_zero]
-      positivity
-    · rw [div_le_iff₀ (by exact_mod_cast hpos), inv_pow, ← div_eq_inv_mul,
-        le_div_iff₀ (by positivity)]
-      linarith
-  nlinarith [mul_nonneg (sub_nonneg.2 hpow) hval]
+      1 - (φ.countUnsat (johnsonAssignment φ) : ℝ) / φ.length :=
+  CNF.one_sub_inv_two_pow_mul_le_of_two_pow_mul_countUnsat_le
+    (two_pow_mul_countUnsat_johnsonAssignment_le_length hk)
 
 /-- **The `7 / 8` approximation ratio** for MAX-E3SAT with three distinct variables per clause. -/
 theorem CNF.IsExactThreeDistinct.seven_div_eight_mul_le_johnsonAssignment {φ : CNF V}

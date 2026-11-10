@@ -831,10 +831,8 @@ distributions for every adversary and security parameter. -/
     (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) :
     structuredSISGame M adversary security = moduleSISGame M adversary security := by
   unfold structuredSISGame moduleSISGame encodeMatrix decodeVec
-  congr 1
-  funext A
-  congr 1
-  funext word
+  congr 1 with A : 1
+  congr 1 with word : 1
   have h := isSolution_expandModuleMatrix_iff (β := M.β security) A
     (unflattenPolyVec (GeneralSIS.decodeVec (M.k security * M.n security) word))
   rw [flattenPolyVec_unflattenPolyVec] at h

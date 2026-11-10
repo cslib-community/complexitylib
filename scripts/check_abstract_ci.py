@@ -65,14 +65,15 @@ def gh_get(endpoint: str, *, paginate: bool = False):
     return json.loads(result.stdout)
 
 
-def gh_download_artifact(repository: str, run_id: int, artifact_name: str, destination: Path) -> None:
+def gh_download_artifact(repository: str, run_id: int, artifact_name: str, destination: Path,
+                         timeout: int = 120) -> None:
     command = [
         "gh", "run", "download", str(run_id),
         "--repo", repository,
         "--name", artifact_name,
         "--dir", str(destination),
     ]
-    subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)
+    subprocess.run(command, check=True, capture_output=True, text=True, timeout=timeout)
 
 
 def require(condition: bool, message: str) -> None:

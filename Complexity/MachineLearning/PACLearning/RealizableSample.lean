@@ -32,6 +32,9 @@ form of realizability in [ShalevShwartzBenDavid2014, Definition 2.1].
   outputs a concept of the version space.
 - `isRealizableBy_map_graph`: the pushforward along the graph of a concept of `C` is realizable
   by `C`.
+- `realizableDistributions_empty`, `isPACLearnerFor_realizableDistributions_empty`: the empty
+  class realizes no distribution, so every learner PAC-learns it; this discharges the empty case
+  of the sample-complexity corollaries.
 
 ## References
 
@@ -42,6 +45,7 @@ form of realizability in [ShalevShwartzBenDavid2014, Definition 2.1].
 public section
 
 open MeasureTheory Set
+open scoped NNReal
 
 namespace Cslib.MachineLearning.PACLearning
 
@@ -91,5 +95,17 @@ theorem isRealizableBy_map_graph [MeasurableEq β] (P : Measure α) {C : Concept
     ext x
     simp
   rw [this, measure_empty]
+
+/-- No distribution is realizable by the empty class. -/
+@[simp]
+theorem realizableDistributions_empty : realizableDistributions (∅ : ConceptClass α β) = ∅ :=
+  Set.eq_empty_of_forall_notMem fun _ ⟨_, hc, _⟩ => Set.notMem_empty _ hc
+
+/-- Over the distributions realizable by the empty class, which are none, every learner is an
+`(ε, δ)`-PAC learner. -/
+theorem isPACLearnerFor_realizableDistributions_empty {m : ℕ} (A : Learner α β m)
+    (ε δ : Set.Ioo (0 : ℝ≥0) 1) :
+    IsPACLearnerFor m ε δ (∅ : ConceptClass α β) (realizableDistributions ∅) :=
+  ⟨A, fun D _ hD => by simp only [realizableDistributions_empty, Set.mem_empty_iff_false] at hD⟩
 
 end Cslib.MachineLearning.PACLearning

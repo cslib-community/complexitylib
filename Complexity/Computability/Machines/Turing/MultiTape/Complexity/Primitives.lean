@@ -23,12 +23,14 @@ time and space.
 ## Main definitions
 
 * `Turing.MultiTapeTM.encUnary`: natural numbers in unary.
-* `Turing.MultiTapeTM.encInt`: integers as a sign followed by a unary magnitude.
+* `Turing.MultiTapeTM.encIntUnary`: integers in unary, as a sign bit followed by a unary
+  magnitude.
 
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableTidilyInDegree.eq`: equality, for any encoding.
-* successor, predecessor and zero test in unary, and adding one or subtracting one on integers.
+* successor, predecessor and zero test in unary, and adding one or subtracting one on unary
+  integers.
 -/
 
 namespace Turing.MultiTapeTM
@@ -52,9 +54,10 @@ end ComputableTidilyInDegree
 
 /-! ### Integers -/
 
-/-- Integers: `false` followed by `n` in unary for `n ≥ 0`, and `true` followed by `n` in unary for
-`-(n + 1)`. -/
-@[expose] public def encInt : ℤ ↪ List Bool :=
+/-- Integers in **unary**: `false` followed by `n` ones for `n ≥ 0`, and `true` followed by `n`
+ones for `-(n + 1)`. The code of `z` has `z.natAbs + 1` bits when `0 ≤ z` and `z.natAbs` bits when
+`z < 0`; `Turing.MultiTapeTM.encIntBin` is the binary sign-magnitude encoding. -/
+@[expose] public def encIntUnary : ℤ ↪ List Bool :=
   ⟨fun z => match z with
     | .ofNat n => false :: List.replicate n true
     | .negSucc n => true :: List.replicate n true,
@@ -62,38 +65,43 @@ end ComputableTidilyInDegree
     cases a <;> cases b <;> simp_all [List.replicate_inj]⟩
 
 @[simp]
-public lemma encInt_ofNat (n : ℕ) : encInt (Int.ofNat n) = false :: List.replicate n true := rfl
-
-@[simp]
-public lemma encInt_natCast (n : ℕ) : encInt (n : ℤ) = false :: List.replicate n true := rfl
-
-@[simp]
-public lemma encInt_zero : encInt 0 = [false] := rfl
-
-@[simp]
-public lemma encInt_natCast_add_one (n : ℕ) :
-    encInt ((n : ℤ) + 1) = false :: true :: List.replicate n true :=
+public lemma encIntUnary_ofNat (n : ℕ) :
+    encIntUnary (Int.ofNat n) = false :: List.replicate n true :=
   rfl
 
 @[simp]
-public lemma encInt_negSucc (n : ℕ) : encInt (Int.negSucc n) = true :: List.replicate n true :=
+public lemma encIntUnary_natCast (n : ℕ) :
+    encIntUnary (n : ℤ) = false :: List.replicate n true :=
   rfl
 
-public lemma length_encInt (z : ℤ) :
-    (encInt z).length = if z < 0 then (-z).toNat else z.toNat + 1 := by
+@[simp]
+public lemma encIntUnary_zero : encIntUnary 0 = [false] := rfl
+
+@[simp]
+public lemma encIntUnary_natCast_add_one (n : ℕ) :
+    encIntUnary ((n : ℤ) + 1) = false :: true :: List.replicate n true :=
+  rfl
+
+@[simp]
+public lemma encIntUnary_negSucc (n : ℕ) :
+    encIntUnary (Int.negSucc n) = true :: List.replicate n true :=
+  rfl
+
+public lemma length_encIntUnary (z : ℤ) :
+    (encIntUnary z).length = if z < 0 then (-z).toNat else z.toNat + 1 := by
   rcases z with n | n <;> simp [Int.negSucc_lt_zero]
 
-public lemma length_encInt_add_one_le (z : ℤ) :
-    (encInt (z + 1)).length ≤ (encInt z).length + 1 := by
-  rw [length_encInt, length_encInt]; split_ifs <;> omega
+public lemma length_encIntUnary_add_one_le (z : ℤ) :
+    (encIntUnary (z + 1)).length ≤ (encIntUnary z).length + 1 := by
+  rw [length_encIntUnary, length_encIntUnary]; split_ifs <;> omega
 
-public lemma length_encInt_sub_one_le (z : ℤ) :
-    (encInt (z - 1)).length ≤ (encInt z).length + 1 := by
-  rw [length_encInt, length_encInt]; split_ifs <;> omega
+public lemma length_encIntUnary_sub_one_le (z : ℤ) :
+    (encIntUnary (z - 1)).length ≤ (encIntUnary z).length + 1 := by
+  rw [length_encIntUnary, length_encIntUnary]; split_ifs <;> omega
 
-namespace EncInt
+namespace EncIntUnary
 
-/-- Adds one to an encoded integer. -/
+/-- Adds one to a unary encoded integer. -/
 @[simps q₀ step final]
 def succT : Transducer Bool (Fin 3) where
   q₀ := 0
@@ -106,7 +114,7 @@ def succT : Transducer Bool (Fin 3) where
   length_step_le q b := by fin_cases q <;> cases b <;> simp
   length_final_le q := by split_ifs <;> simp
 
-/-- Subtracts one from an encoded integer. -/
+/-- Subtracts one from a unary encoded integer. -/
 @[simps q₀ step final]
 def predT : Transducer Bool (Fin 3) where
   q₀ := 0
@@ -119,22 +127,22 @@ def predT : Transducer Bool (Fin 3) where
   length_step_le q b := by fin_cases q <;> cases b <;> simp
   length_final_le q := by split_ifs <;> simp
 
-end EncInt
+end EncIntUnary
 
 namespace ComputableTidilyInDegree
 
-open EncInt in
-public theorem int_succ : ComputableTidilyInDegree (· + 1) encInt encInt 1 1 := by
+open EncIntUnary in
+public theorem int_succ : ComputableTidilyInDegree (· + 1) encIntUnary encIntUnary 1 1 := by
   refine .of_linear (succT.computableTidilyInLinearTimeAndSpace fun z => ?_)
   have hc := Transducer.run_eq_self succT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with n | _ | n
   · simp [hc]
   · rfl
-  · change encInt (Int.negSucc n) = _
+  · change encIntUnary (Int.negSucc n) = _
     simp [hc, List.replicate_succ]
 
-open EncInt in
-public theorem int_pred : ComputableTidilyInDegree (· - 1) encInt encInt 1 1 := by
+open EncIntUnary in
+public theorem int_pred : ComputableTidilyInDegree (· - 1) encIntUnary encIntUnary 1 1 := by
   refine .of_linear (predT.computableTidilyInLinearTimeAndSpace fun z => ?_)
   have hc := Transducer.run_eq_self predT 2 (fun b => by cases b <;> rfl) rfl
   rcases z with (_ | n) | n

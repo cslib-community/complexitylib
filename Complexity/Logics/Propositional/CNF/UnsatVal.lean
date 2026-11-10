@@ -37,11 +37,16 @@ of the clauses (`CNF.IsExactThreeDistinct.unsatVal_le_one_eighth`). Håstad show
 
 * `Cslib.Logic.PL.CNF.countUnsat_eq_card`: the number of falsified clauses as a cardinality over
   clause indices.
+* `Cslib.Logic.PL.CNF.countUnsat_congr`: the count depends only on the variables of the formula.
 * `Cslib.Logic.PL.CNF.unsatVal_eq_zero_iff`: the value vanishes exactly on satisfiable formulas.
 * `Cslib.Logic.PL.CNF.length_pos_of_unsatVal_pos`: a formula of positive value has a clause.
+* `Cslib.Logic.PL.CNF.one_sub_inv_two_pow_mul_le_of_two_pow_mul_countUnsat_le`: an assignment
+  falsifying at most `2 ^ -k` of the clauses is a `1 - 2 ^ -k` approximation for MAX-SAT.
 * `Cslib.Logic.PL.Clause.IsExactThreeDistinct.expect_eval_eq_false`,
   `Cslib.Logic.PL.Clause.IsExactThreeDistinct.expect_eval_eq_true`: a uniform random assignment
   falsifies a clause with three distinct variables with probability `1 / 8`.
+* `Cslib.Logic.PL.CNF.IsExactThreeDistinct.card_toFinset_eq`: every clause of a formula with three
+  distinct variables per clause has three distinct literals.
 * `Cslib.Logic.PL.CNF.IsExactThreeDistinct.unsatVal_le_one_eighth`,
   `Cslib.Logic.PL.CNF.IsExactThreeDistinct.exists_countUnsat_le_div_eight`: the `7 / 8`
   random-assignment bound.
@@ -83,6 +88,20 @@ theorem CNF.countUnsat_relabel (φ : CNF V) (f : V → W) (τ : W → Bool) :
     (φ.relabel f).countUnsat τ = φ.countUnsat (τ ∘ f) := by
   simp only [CNF.countUnsat, CNF.relabel, List.countP_map]
   exact List.countP_congr fun c _ => by simp [Function.comp_def]
+
+/-- The number of falsified clauses depends only on the values of the variables of the
+formula. -/
+theorem CNF.countUnsat_congr {σ τ : V → Bool} {φ : CNF V} (h : ∀ v ∈ φ.vars, σ v = τ v) :
+    φ.countUnsat σ = φ.countUnsat τ := by
+  refine List.countP_congr fun c hc => ?_
+  have hc' : ∀ v ∈ CNF.vars [c], σ v = τ v := fun v hv => by
+    obtain ⟨c', hc'', b, hb⟩ := CNF.mem_vars.1 hv
+    rw [List.mem_singleton] at hc''
+    subst hc''
+    exact h v (CNF.mem_vars.2 ⟨c', hc, b, hb⟩)
+  have he : CNF.eval σ [c] = CNF.eval τ [c] := CNF.eval_congr hc'
+  simp only [CNF.eval, List.all_cons, List.all_nil, Bool.and_true] at he
+  rw [he]
 
 /-! ### The value of a formula -/
 
@@ -143,6 +162,25 @@ theorem length_pos_of_unsatVal_pos {φ : CNF V} (h : 0 < φ.unsatVal) : 0 < φ.l
   exact lt_irrefl _ h
 
 end CNF
+
+/-- **From a clause-count guarantee to an approximation ratio**: an assignment that falsifies at
+most `2 ^ -k` of the clauses satisfies at least `1 - 2 ^ -k` times the largest proportion of the
+clauses that an assignment satisfies, `1 - φ.unsatVal`. -/
+theorem CNF.one_sub_inv_two_pow_mul_le_of_two_pow_mul_countUnsat_le {k : ℕ} {φ : CNF V}
+    {σ : V → Bool} (hσ : 2 ^ k * φ.countUnsat σ ≤ φ.length) :
+    (1 - (2 : ℝ)⁻¹ ^ k) * (1 - φ.unsatVal) ≤ 1 - (φ.countUnsat σ : ℝ) / φ.length := by
+  have h : ((2 ^ k * φ.countUnsat σ : ℕ) : ℝ) ≤ φ.length := by exact_mod_cast hσ
+  push_cast at h
+  have hval := φ.unsatVal_nonneg
+  have hpow : (2 : ℝ)⁻¹ ^ k ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
+  have hdiv : (φ.countUnsat σ : ℝ) / φ.length ≤ (2 : ℝ)⁻¹ ^ k := by
+    rcases Nat.eq_zero_or_pos φ.length with h0 | hpos
+    · rw [h0, Nat.cast_zero, div_zero]
+      positivity
+    · rw [div_le_iff₀ (by exact_mod_cast hpos), inv_pow, ← div_eq_inv_mul,
+        le_div_iff₀ (by positivity)]
+      linarith
+  nlinarith [mul_nonneg (sub_nonneg.2 hpow) hval]
 
 /-! ### Exact 3-clauses with distinct variables and the `7 / 8` random assignment bound -/
 
@@ -263,6 +301,11 @@ theorem CNF.IsExactThreeDistinct.expect_countUnsat {φ : CNF ι}
     ring
 
 end FintypeCube
+
+/-- A clause with three distinct variables has three distinct literals. -/
+theorem CNF.IsExactThreeDistinct.card_toFinset_eq [DecidableEq V] {φ : CNF V}
+    (hφ : φ.IsExactThreeDistinct) {c : Clause V} (hc : c ∈ φ) : c.toFinset.card = 3 := by
+  rw [List.toFinset_card_of_nodup ((hφ c hc).nodup_map_fst.of_map _), (hφ c hc).length_eq]
 
 /-- Relabelling a clause along a map that is injective on its variables preserves
 `Clause.IsExactThreeDistinct`. -/

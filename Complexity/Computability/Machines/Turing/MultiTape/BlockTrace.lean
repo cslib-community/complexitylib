@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
+import Complexity.Computability.Machines.Turing.MultiTape.Run
 
 /-!
 # Native time-block traces
@@ -38,6 +39,8 @@ these local trace lemmas do not implement its pending graph/packing obligations.
 * `Turing.MultiTapeTM.workTapePos_runFrom_abs_sub_le`: local head displacement.
 * `Turing.MultiTapeTM.workTapes_runFrom_eq_of_outside_window`: unchanged exterior cells.
 * `Turing.MultiTapeTM.output_eq_append_blockEmitted`: separate old output from new output.
+* `Turing.MultiTapeTM.ComputesInTimeAndSpace.output_runFrom_prefix`: a machine computing a word
+  has written a prefix of it after any number of steps.
 -/
 
 @[expose] public section
@@ -149,6 +152,18 @@ theorem exists_output_suffix (cfg : Cfg k Symbol State input) (duration : ℕ) :
       · have h := Option.length_toList_le (o := action.output)
         simp only [List.length_append]
         omega
+
+variable {tm} in
+/-- A machine computing `out` within time `t` has, after any number of steps, written a prefix of
+`out`, and all of `out` from `t` steps on. -/
+theorem ComputesInTimeAndSpace.output_runFrom_prefix {x out : List Symbol} {t s : ℕ}
+    (h : tm.ComputesInTimeAndSpace x out t s) (J : ℕ) :
+    (tm.runFrom (tm.initCfg x) J).output <+: out := by
+  rcases le_total t J with htJ | hJt
+  · rw [(h.runFrom_of_le htJ).2]
+  · obtain ⟨e, he, -⟩ := tm.exists_output_suffix (tm.runFrom (tm.initCfg x) J) (t - J)
+    rw [← MultiTapeTM.runFrom_add, Nat.add_sub_cancel' hJt, (h.runFrom_of_le le_rfl).2] at he
+    exact ⟨e, he.symm⟩
 
 /-- Only the output newly emitted by this segment. The old prefix is explicitly discarded. -/
 noncomputable def blockEmitted (cfg : Cfg k Symbol State input) (duration : ℕ) : List Symbol :=

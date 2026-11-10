@@ -47,6 +47,9 @@ steps (`Turing.MultiTapeATM.acceptsWithin_add_iff_of_next_eq`,
 
 * `Turing.MultiTapeATM.acceptsWithin_add_iff_of_next_eq`,
   `Turing.MultiTapeATM.haltsWithin_add_iff_of_next_eq`: moves that do not matter.
+* `Turing.MultiTapeATM.acceptsWithin_iff_of_phase`, `Turing.MultiTapeATM.haltsWithin_iff_of_phase`:
+  a phase of `τ` running steps whose two moves agree.
+* `Turing.MultiTapeATM.HaltsWithin.mono`: halting within `n` moves is halting within more.
 * `Turing.MultiTapeATM.GuessVerify.haltsWithin_lift_tag`: halting through the guessing phase.
 * `Turing.MultiTapeATM.GuessVerify.acceptsWithin_lift_none`,
   `Turing.MultiTapeATM.GuessVerify.haltsWithin_lift_none`: the verifying phase.
@@ -159,6 +162,43 @@ theorem haltsWithin_add_iff_of_next_eq {f : Cfg k Symbol State input → Cfg k S
     rw [ih fun j hj b => ?_, Function.iterate_succ_apply]
     simpa only [Function.iterate_succ_apply] using h (j + 1) (by omega) b
 
+/-- **Halting within `n` moves is halting within more.** -/
+theorem HaltsWithin.mono {n n' : ℕ} {c : Cfg k Symbol State input} (h : atm.HaltsWithin n c)
+    (hn : n ≤ n') : atm.HaltsWithin n' c := by
+  induction n generalizing n' c with
+  | zero =>
+    have hc := haltsWithin_zero.mp h
+    intro coins _
+    rw [stepCoins_of_halted atm hc]
+    exact hc
+  | succ n ih =>
+    obtain ⟨n', rfl⟩ : ∃ m, n' = m + 1 := ⟨n' - 1, by omega⟩
+    exact haltsWithin_succ.mpr fun b => ih (haltsWithin_succ.mp h b) (by omega)
+
+/-- A halted configuration halts within any number of moves. -/
+theorem haltsWithin_of_halted {n : ℕ} {c : Cfg k Symbol State input} (h : c.state = none) :
+    atm.HaltsWithin n c :=
+  (haltsWithin_zero.mpr h).mono (Nat.zero_le n)
+
+/-- **A phase of running steps.** If the two moves agree along the first `τ` steps of `f` from
+`c`, which stay running, and reach `d`, then `c` halts within `n` moves exactly when `τ ≤ n` and
+`d` halts within `n - τ`. -/
+theorem haltsWithin_iff_of_phase {f : Cfg k Symbol State input → Cfg k Symbol State input}
+    {τ : ℕ} {c d : Cfg k Symbol State input}
+    (hnext : ∀ j < τ, ∀ b, atm.next b (f^[j] c) = f^[j + 1] c)
+    (hrun : ∀ j ≤ τ, (f^[j] c).state ≠ none) (hd : f^[τ] c = d) (n : ℕ) :
+    atm.HaltsWithin n c ↔ τ ≤ n ∧ atm.HaltsWithin (n - τ) d := by
+  by_cases hn : τ ≤ n
+  · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hn
+    rw [haltsWithin_add_iff_of_next_eq hnext, hd]
+    simp
+  · have h := haltsWithin_add_iff_of_next_eq (n := 0) (atm := atm) (m := n) (c := c)
+      (fun j hj => hnext j (by omega))
+    rw [add_zero] at h
+    rw [h, haltsWithin_zero]
+    simp only [hn, false_and, iff_false]
+    exact hrun n (by omega)
+
 end HaltsWithin
 
 /-! ### Moves that do not matter -/
@@ -193,6 +233,26 @@ theorem acceptsWithin_add_iff_of_next_eq {f : Cfg k Bool State input → Cfg k B
     rw [show m + 1 + n = m + n + 1 by omega, acceptsWithin_succ_of_next_eq h0,
       Function.iterate_succ_apply, ih fun j hj b => ?_]
     simpa only [Function.iterate_succ_apply] using h (j + 1) (by omega) b
+
+/-- **A phase of running steps.** If the two moves agree along the first `τ` steps of `f` from
+`c`, which stay running, and reach `d`, then `c` accepts within `n` moves exactly when `τ ≤ n` and
+`d` accepts within `n - τ`. -/
+theorem acceptsWithin_iff_of_phase {f : Cfg k Bool State input → Cfg k Bool State input}
+    {τ : ℕ} {c d : Cfg k Bool State input}
+    (hnext : ∀ j < τ, ∀ b, atm.next b (f^[j] c) = f^[j + 1] c)
+    (hrun : ∀ j ≤ τ, (f^[j] c).state ≠ none) (hd : f^[τ] c = d) (n : ℕ) :
+    atm.AcceptsWithin n c ↔ τ ≤ n ∧ atm.AcceptsWithin (n - τ) d := by
+  by_cases hn : τ ≤ n
+  · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hn
+    rw [acceptsWithin_add_iff_of_next_eq hnext, hd]
+    simp
+  · have h := acceptsWithin_add_iff_of_next_eq (n := 0) (atm := atm) (m := n) (c := c)
+      (fun j hj => hnext j (by omega))
+    rw [add_zero] at h
+    rw [h]
+    simp only [hn, false_and, iff_false]
+    obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hrun n (by omega))
+    exact not_acceptsWithin_zero atm hq
 
 end Deterministic
 

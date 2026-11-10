@@ -128,13 +128,12 @@ theorem isPolyTime_composeEdge (number : ComposeSlot α ≃ Fin width)
     {edge : Input → Edge (α → α → Bool)} {index : Input → ℕ}
     {coins : Input → Rand α} {query : Input → Query}
     {coinsEncoding : Rand α ↪ List Bool} {queryEncoding : Query ↪ List Bool}
-    (hedge : ComputableInPolyTime edge input (Edge.encoding (encPi (encPi encBool))))
+    (hedge : ComputableInPolyTime edge input (Edge.encoding encConstraintTable))
     (hindex : ComputableInPolyTime index input encUnary)
     (hcoins : ComputableInPolyTime coins input coinsEncoding)
     (hquery : ComputableInPolyTime query input queryEncoding) :
     ComputableInPolyTime (fun x => composeEdge number (edge x) (index x) (coins x) (query x))
-      input (Edge.encoding (encPair (encPi (encPi encBool))
-        (encPair coinsEncoding queryEncoding))) :=
+      input (Edge.encoding (encTableCoinsQuery coinsEncoding queryEncoding)) :=
   Encoded.HadamardTester.implementation.isPolyTime_composeEdge number hedge hindex hcoins hquery
 
 /-- The verifier's edge predicate charges all supplied finite tables and query answers. -/
@@ -144,7 +143,7 @@ theorem isPolyTime_composeEval (coinsEncoding : Rand α ↪ List Bool)
     ComputableInPolyTime
       (fun p : ((α → α → Bool) × Rand α × Query) ×
           (Bool × (Query → Bool)) × (Bool × (Query → Bool)) => composeEval p.1 p.2.1 p.2.2)
-      (encPair (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding))
+      (encPair (encTableCoinsQuery coinsEncoding queryEncoding)
         (encPair (encPair encBool (encPi encBool)) (encPair encBool (encPi encBool)))) encBool :=
   Encoded.HadamardTester.implementation.isPolyTime_composeEval encBool coinsEncoding queryEncoding
 
@@ -154,9 +153,8 @@ and the complete output graph. The finite alphabet and supplied lists are fixed.
 theorem isPolyTime_compose (number : ComposeSlot α ≃ Fin width) (coins : List (Rand α))
     (queries : List Query) (coinsEncoding : Rand α ↪ List Bool)
     (queryEncoding : Query ↪ List Bool) :
-    ComputableInPolyTime (compose number coins queries)
-      (encoding (encPi (encPi encBool)))
-      (encoding (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding))) :=
+    ComputableInPolyTime (compose number coins queries) (encoding encConstraintTable)
+      (encoding (encTableCoinsQuery coinsEncoding queryEncoding)) :=
   Encoded.HadamardTester.implementation.isPolyTime_compose number coins queries coinsEncoding
     queryEncoding
 
@@ -170,10 +168,10 @@ def composeTabulated (number : ComposeSlot α ≃ Fin width) (coins : List (Rand
 input graph in their own input representation. Every output constraint table is charged. -/
 @[fun_prop]
 theorem isPolyTime_composeTabulated {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding encConstraintTable))
     (number : ComposeSlot α ≃ Fin width) (coins : List (Rand α)) (queries : List Query) :
     ComputableInPolyTime (fun x => (graph x).composeTabulated number coins queries)
-      input (encoding (encPi (encPi encBool))) :=
+      input (encoding encConstraintTable) :=
   Encoded.HadamardTester.implementation.isPolyTime_composeTabulated hgraph number coins queries
 
 /-- Each original edge produces one edge for every supplied pair of coins and query. -/

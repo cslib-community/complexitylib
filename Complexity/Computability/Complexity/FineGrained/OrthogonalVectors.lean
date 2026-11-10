@@ -365,8 +365,7 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
     omega
   have hpowN (x : StreamState × ℕ) (s : StreamState) (hs : (encStreamState s).length ≤ B x) :
       (encStreamState s).length + 1 ≤ (B x + 1) := by omega
-  have hD (x : StreamState × ℕ) (d : ℕ) (hd : d ≤ D) : (B x + 1) ^ d ≤ (B x + 1) ^ D :=
-    Nat.pow_le_pow_right (Nat.succ_pos _) hd
+  have hD (x : StreamState × ℕ) (d : ℕ) (hd : d ≤ D) : (B x + 1) ^ d ≤ (B x + 1) ^ D := by gcongr
   obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.iterate_unary_stream_sum hN hE hF
     (R := fun x _ => (cN + cE + 3) * (B x + 1) ^ D) (Q := fun x => (cN' + cE') * (B x + 1) ^ D)
     (B := B)

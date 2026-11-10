@@ -595,8 +595,7 @@ theorem overlappingStreamIdealGame_apply_true (n : ℕ) :
       ((PMF.uniformOfFintype ((BitString n × BitString n) × (BitString n × BitString n))).map
         (fun out => out.1.2 + out.2.1)).map (fun s => decide (s = 0)) := by
     rw [PMF.map_comp]
-    congr 1
-    funext out
+    congr 1 with out : 1
     simp [funext_iff, BooleanRing.add_eq_zero']
   rw [hfactor, hdiff, PMF.map_apply, tsum_fintype]
   simp [PMF.uniformOfFintype_apply, eq_comm (a := true)]

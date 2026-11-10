@@ -1866,8 +1866,7 @@ private theorem ilangoReduction_time_bound (d₁ d₂ : ℕ) (G : BipartitePermu
     calc ((encPair encBipartitePermutationGraph encUnary (G, M)).length + 1) ^ d₂
         ≤ (3 * M * (L + 1)) ^ d₂ := Nat.pow_le_pow_left hpair_len d₂
       _ = 3 ^ d₂ * (M ^ d₂ * (L + 1) ^ d₂) := by simp only [mul_pow, mul_assoc]
-      _ ≤ 3 ^ d₂ * (2 ^ (C * G.1) * (L + 1) ^ D) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul hMd₂ hd₂_le)
+      _ ≤ 3 ^ d₂ * (2 ^ (C * G.1) * (L + 1) ^ D) := by gcongr
   have ht1 : L ≤ 2 ^ (C * G.1) * (L + 1) ^ D := hL_le.trans (Nat.le_mul_of_pos_left _ hX1)
   have ht2 : (L + 1) ^ d₁ ≤ 2 ^ (C * G.1) * (L + 1) ^ D :=
     hd₁_le.trans (Nat.le_mul_of_pos_left _ hX1)

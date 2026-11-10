@@ -134,19 +134,6 @@ theorem represents_tapeOfList (xs : List Symbol) :
 
 /-! ## Phase 2: Run `SingleTapeTM` transitions on work tape `0` -/
 
-/-- Convert an optional `Turing.Dir` to a `SignType` head movement. -/
-def dirToSign : Option _root_.Turing.Dir → SignType
-  | none => .zero
-  | some .left => .neg
-  | some .right => .pos
-
-lemma biTape_step_dirToSign (t : BiTape Symbol) (wr : Option Symbol)
-    (dir : Option _root_.Turing.Dir) :
-    t.step (some wr, dirToSign dir) = (t.write wr).optionMove dir := by
-  cases dir with
-  | none => rfl
-  | some d => cases d <;> rfl
-
 section RunOnWork
 
 variable [Inhabited Symbol] [Fintype Symbol]
@@ -157,7 +144,7 @@ def runOnWork (tm : SingleTapeTM Symbol) : MultiTapeTM 1 Symbol tm.State :=
   ofTr tm.q₀ fun q _ work =>
     let res := tm.tr q (work 0)
     { inputTape := .zero
-      workTapes := fun _ => (some res.1.symbol, dirToSign res.1.movement)
+      workTapes := fun _ => (some res.1.symbol, SingleTapeTM.dirToSign res.1.movement)
       output := none
       state := res.2 }
 
@@ -185,8 +172,8 @@ theorem SimRel.step {tm : SingleTapeTM Symbol} {input : List Symbol}
     simp only [runOnWork, tr_ofTr, hhead]
     refine ⟨⟨rfl, ?_⟩, by simp [Action.apply]⟩
     have hrep := hsim.work.step (some (tm.tr q t.head).1.symbol,
-      dirToSign (tm.tr q t.head).1.movement)
-    rw [biTape_step_dirToSign] at hrep
+      SingleTapeTM.dirToSign (tm.tr q t.head).1.movement)
+    rw [SingleTapeTM.biTape_step_dirToSign] at hrep
     exact hrep
 
 theorem SimRel.runFrom_of_relatesInSteps {tm : SingleTapeTM Symbol} {input : List Symbol}

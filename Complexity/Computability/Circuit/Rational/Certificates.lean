@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.Circuit.Rational.CyclotomicGrid
+import Complexity.Foundations.Data.MvPolynomial.SchwartzZippel
 import Mathlib.LinearAlgebra.Matrix.CharP
 
 /-!
@@ -312,7 +313,7 @@ lemma determinant_ne_zero (χ : AddChar (ZMod M) K) (hχ : χ.IsPrimitive)
 lemma degree_le (χ : AddChar (ZMod M) K)
     (L : Matrix (Fin q) (Fin q) (Affine.Form n)) :
     (determinant χ N L).totalDegree ≤ 3 * q * M ^ 2 := by
-  have hh := FiniteGrid.det_totalDegree_le (polynomial χ N L) (3 * M)
+  have hh := MvPolynomial.totalDegree_det_le (polynomial χ N L) (3 * M)
     (PencilDeformation.entry_degree χ (coefficients L) (fun i => (i.val : K)))
   simp only [Fintype.card_prod, Fintype.card_fin, ZMod.card] at hh
   exact hh.trans_eq (by ring)

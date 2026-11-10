@@ -56,6 +56,7 @@ it then takes each value on exactly half of the inputs (`card_filter_parityOn_eq
 * `Cslib.parityOn_add`, `Cslib.BitString.exists_eq_parityOn_iff`: the parities are the linear
   Boolean functions.
 * `Cslib.parity_update_not`: flipping any bit flips the parity.
+* `Cslib.parity_snoc`: appending a bit exclusive-ors it into the parity.
 * `Cslib.card_filter_parityOn_eq`, `Cslib.dens_filter_parityOn_eq`: the parity on a nonempty set
   takes each value on half of the inputs.
 * `Cslib.card_filter_parity_eq_true`: parity of `n ≥ 1` bits is true on `2 ^ (n - 1)` inputs.
@@ -195,6 +196,12 @@ theorem parityOn_update_not (hi : i ∈ s) (x : ι → Bool) :
 theorem parity_update_not {n : ℕ} (x : BitString n) (i : Fin n) :
     parity n (update x i !x i) = !parity n x :=
   parityOn_update_not (mem_univ i) x
+
+/-- Appending a bit exclusive-ors it into the parity. -/
+theorem parity_snoc {n : ℕ} (x : BitString n) (b : Bool) :
+    parity (n + 1) (Fin.snoc x b) = (parity n x ^^ b) := by
+  simp only [parity, parityOn_eq_sum, Fin.sum_univ_castSucc, Fin.snoc_castSucc, Fin.snoc_last,
+    Bool.add_eq_xor]
 
 section Fintype
 

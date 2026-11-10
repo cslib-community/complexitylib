@@ -367,11 +367,9 @@ theorem DecidableInSubexpTime.of_expReduction {f : α → β} {m : α → ℕ}
   calc (((2 ^ (C * m a) * (L + 1) ^ D + t (f a) : ℕ) : ℝ))
       = P + (t (f a) : ℝ) := hLHS
     _ ≤ K₁ * (X₁ * P ^ (e + 1)) := hstep1
-    _ ≤ K₁ * (K₀ * (X * ((L : ℝ) + 1) ^ E)) :=
-        mul_le_mul_of_nonneg_left hstep2 (by positivity)
+    _ ≤ K₁ * (K₀ * (X * ((L : ℝ) + 1) ^ E)) := by gcongr
     _ = K * (X * ((L : ℝ) + 1) ^ E) := by simp only [K, mul_assoc]
-    _ ≤ ⌈K⌉₊ * (X * ((L : ℝ) + 1) ^ E) :=
-        mul_le_mul_of_nonneg_right hK_ceil (by positivity)
+    _ ≤ ⌈K⌉₊ * (X * ((L : ℝ) + 1) ^ E) := by gcongr
 
 end Reduction
 

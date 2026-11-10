@@ -128,8 +128,7 @@ theorem fastLeaves_of (hS : FastSizes)
         ≤ KB * ((KS + 1) * (n + 1) ^ KS) ^ KB :=
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hx1 _)
       _ = KB * (KS + 1) ^ KB * (n + 1) ^ (KS * KB) := by rw [mul_pow, ← pow_mul]; ring
-      _ ≤ K * (n + 1) ^ K :=
-          Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+      _ ≤ K * (n + 1) ^ K := by gcongr <;> omega
   have hexp : KB * s / Nat.sqrt (Nat.log 2 s) ≤ K * s / Nat.sqrt (Nat.log 2 s) :=
     Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))
   exact ⟨hT.trans (Nat.mul_le_mul hpoly (Nat.pow_le_pow_right (by norm_num) hexp)),

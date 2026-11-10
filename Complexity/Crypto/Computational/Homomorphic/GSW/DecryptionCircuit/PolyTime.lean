@@ -108,13 +108,11 @@ private theorem decoderCode_eq (w : ℕ) : decoderCode w = (decodeWord w).code :
           (Formula.input ⟨w - 1, by omega⟩).xor (.input ⟨w - 2, by omega⟩) := by
         simp only [Formula.rename, Formula.xor, Formula.and, Formula.or, Formula.not,
           Formula.gate_bind]
-        congr 1
-        funext i
+        congr 1 with i : 1
         fin_cases i <;> simp only [Matrix.cons_val_zero', Matrix.cons_val_succ',
           Formula.gate_bind]
         all_goals
-          congr 1
-          funext j
+          congr 1 with j : 1
           fin_cases j <;> simp only [Matrix.cons_val_zero', Matrix.cons_val_succ',
             Formula.gate_bind, Formula.input_bind, wires]
         all_goals congr 1

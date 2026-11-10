@@ -5,6 +5,7 @@
 <!-- What changes, why, and which issue does it address?
 For mathematical changes, state the claim and important assumptions. Where relevant, explain
 the source-to-Lean mapping or why existing definitions could not be reused.
+New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception.
 If selected abstracts are affected, describe their updates and link the relevant review. -->
 
 ## Manual impact

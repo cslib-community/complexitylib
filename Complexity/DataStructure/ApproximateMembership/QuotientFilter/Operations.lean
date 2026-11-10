@@ -306,10 +306,7 @@ theorem orderedInsert_eq_take_append_drop_of_pairwise {α : Type*} [LinearOrder 
     obtain ⟨hx_le, hpw_xs⟩ := List.pairwise_cons.mp hpw
     by_cases hle : r ≤ x
     · have hlt : decide (x < r) = false := decide_eq_false (not_lt.mpr hle)
-      have hzero : xs.countP (· < r) = 0 := by
-        rw [List.countP_eq_zero]
-        intro y hy
-        simp [not_lt.mpr (le_trans hle (hx_le y hy))]
+      have hzero : xs.countP (· < r) = 0 := by grind
       simp [hle, hlt, hzero]
     · have hlt : decide (x < r) = true := decide_eq_true (lt_of_not_ge hle)
       simp [hle, hlt, ih hpw_xs]
@@ -370,11 +367,7 @@ theorem length_filter_range_eq_of_iff {ℓ s : ℕ} (hs : s ≤ ℓ) (P : ℕ �
     ((List.range ℓ).filter P).length = s := by
   have hr : List.range ℓ = List.range s ++ (List.range (ℓ - s)).map (s + ·) := by
     rw [← List.range_add, Nat.add_sub_of_le hs]
-  have h1 : (List.range s).filter P = List.range s := by
-    rw [List.filter_eq_self]
-    intro i hi
-    have hi_lt : i < s := List.mem_range.mp hi
-    exact (hP i (lt_of_lt_of_le hi_lt hs)).mpr hi_lt
+  have h1 : (List.range s).filter P = List.range s := by grind [List.filter_eq_self]
   have h2 : ((List.range (ℓ - s)).map (s + ·)).filter P = [] := by
     rw [List.filter_eq_nil_iff]
     intro i hi
@@ -1205,13 +1198,7 @@ theorem IntervalValid.deleteCluster_intervalValid {U b f : ℕ} {S : Finset (Fin
   have hpw : xs.Pairwise (· ≤ ·) := pairwise_le_bucketRun S quot rem q
   have herase_split : xs.erase r = xs.take k ++ xs.drop (k + 1) :=
     erase_eq_take_append_drop_of_pairwise hpw hr_mem
-  have hk_lt : k < xs.length := by
-    by_contra! hge
-    have h1 := congrArg List.length herase_split
-    simp only [List.length_erase_of_mem hr_mem, List.length_append, List.length_take,
-      List.length_drop] at h1
-    have hpos : 0 < xs.length := List.length_pos_iff.mpr hxs_ne
-    omega
+  have hk_lt : k < xs.length := by grind [List.length_append, List.length_take, List.length_drop]
   have hs₀_eq : s₀ = runOffset S quot rem o a := hinv.calcRunStart_eq hocc ha.le
   have hs_eq : s = s₀ + k := by
     rw [hs₀_eq]
@@ -1509,12 +1496,7 @@ theorem maximal_full_eq_or_disjoint {b : ℕ} (isFull : Fin (2 ^ b) → Bool)
   · left
     push Not at hdisj
     obtain ⟨i, hi_le, j, hj_lt, heq⟩ := hdisj
-    have hi_lt : i < ℓ₁ := by
-      rcases lt_or_eq_of_le hi_le with hlt | rfl
-      · exact hlt
-      · have h1 := hend₁
-        rw [heq, hfull₂ j hj_lt] at h1
-        cases h1
+    have hi_lt : i < ℓ₁ := by grind
     have hij : i = j := by
       rcases lt_trichotomy i j with hlt | rfl | hgt
       · have h1 : probeSlot b (backSlot b o₁ 1) (1 + i) =
@@ -1623,11 +1605,7 @@ theorem deleteCluster_outside {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b
     · simp [h1, hshift.1, hshift.2]
     · simp only [h1]
       by_cases h2 : s = s₀
-      · have hs₀_lt_e : s₀ < e := by
-          have : (hasMore = true) := by
-            cases h : hasMore <;> simp_all
-          simp only [hasMore, Bool.and_eq_true, decide_eq_true_eq] at this
-          omega
+      · have hs₀_lt_e : s₀ < e := by grind
         have hne_s₀ : p ≠ probeSlot b o s₀ := hp s₀ hs₀_lt_e
         simp [h2, hne_s₀, hshift.1, hshift.2]
       · simp [h2, hshift.1, hshift.2]
@@ -2074,9 +2052,7 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
         rw [hst'_def, isFull_deleteCluster, ite_eq_left rfl]
       have hback'_p₂ : st'.isFull (backSlot b p₂ 1) = false := by
         have h1 : backSlot b p₂ 1 = probeSlot b o₀ (e - 1) := by
-          have hp₂ : p₂ = probeSlot b (probeSlot b o₀ (e - 1)) 1 := by
-            dsimp only [p₂]
-            rw [probeSlot_add, show e - 1 + 1 = e by omega]
+          have hp₂ : p₂ = probeSlot b (probeSlot b o₀ (e - 1)) 1 := by grind [probeSlot_add]
           rw [hp₂, backSlot_probeSlot_self]
         rw [h1]
         exact hend'_left

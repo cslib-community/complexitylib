@@ -352,11 +352,7 @@ theorem listPredecessor_eq_none_iff (q : ℕ) (xs : List ℕ) :
       · have hlt : q < x := by omega
         simpa [listPredecessor, hs, Option.or, hx, hlt] using ht
     | some y =>
-      have ht : ¬ ∀ x ∈ xs, q < x := by
-        intro hall
-        have hn := ih.mpr hall
-        rw [hs] at hn
-        contradiction
+      have ht : ¬ ∀ x ∈ xs, q < x := by grind
       simp [listPredecessor, hs, Option.or, ht]
 
 theorem listPredecessor_append (q : ℕ) (xs ys : List ℕ) :

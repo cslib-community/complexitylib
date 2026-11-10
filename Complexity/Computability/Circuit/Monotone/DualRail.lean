@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Monotone.Basic
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
+import Complexity.Computability.Circuit.Encoding.Layer
 import Mathlib.Data.List.GetD
 
 /-!
@@ -319,16 +320,12 @@ theorem ofFn_railBitString (x : BitString n) :
   rw [List.getElem_ofFn]
   exact List.getD_eq_getElem _ _ h₂
 
-private theorem isCodeFrom_code_fst {σ : Signature} (c : Circuit σ n m) :
-    Program.IsCodeFrom σ n 0 c.code.1 :=
-  Program.isSome_ofCode_iff.1 (by rw [Circuit.code, Program.ofCode_code]; rfl)
-
 /-- The dual-rail code of a De Morgan circuit `c` is a valid monotone circuit code. -/
 theorem isSome_ofCode_dualRail (c : Circuit Boolean.signature n m) :
     (Circuit.ofCode (2 * n + 1) m (dualCode c.code.1, c.code.2.map (railWire true)) :
       Option (Circuit signature (2 * n + 1) m)).isSome := by
   rw [Circuit.isSome_ofCode_iff]
-  refine ⟨isCodeFrom_dualCode (isCodeFrom_code_fst c), by simp [Circuit.code], fun i hi => ?_⟩
+  refine ⟨isCodeFrom_dualCode c.isCodeFrom_code, by simp [Circuit.code], fun i hi => ?_⟩
   simp only [Circuit.code, List.mem_map, List.mem_ofFn] at hi
   obtain ⟨_, ⟨j, rfl⟩, rfl⟩ := hi
   have := (c.outputs j).toNat_lt
@@ -373,7 +370,7 @@ theorem eval_dualRail (c : Circuit Boolean.signature n m) (x : BitString n) (j :
   rw [Circuit.eval_eq_getD _ _ false, Circuit.eval_eq_getD _ _ false, code_dualRail,
     toNat_outputs_dualRail, ofFn_railBitString]
   have hc : Program.IsCodeFrom Boolean.signature (List.ofFn x).length 0 c.code.1 := by
-    simpa using isCodeFrom_code_fst c
+    simpa using c.isCodeFrom_code
   rw [evalCode_dualCode _ hc]
   apply getD_railBits_true
   have := (c.outputs j).toNat_lt

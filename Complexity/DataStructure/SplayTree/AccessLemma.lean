@@ -41,7 +41,15 @@ charges one unit when no rotations occur and the exact rotation count otherwise.
   `splay_splayTime_amortized_le_of_mem`: Sleator and Tarjan's **Access Lemma**
   ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658).
 * `potential_sub_potential_le_sum_logb`: fixed-weight net potential drop bound
-  `Φ(t₁) - Φ(t₂) ≤ ∑_{y ∈ t₁} log₂(W / w(y))` ([SleatorTarjan1985b], Section 2, p. 659).
+  `Φ(t₁) - Φ(t₂) ≤ ∑_{y ∈ t₁} log₂(W / w(y))` ([SleatorTarjan1985b], Section 2, p. 659), with
+  the potential bounds `sum_logb_weight_le_potential` and `potential_le_sum_logb_of_le`.
+* `splaySeqTime_le_fixed_weights`: the general fixed-weight access-sequence bound
+  `∑ⱼ (3 log₂(W / w(xⱼ)) + 1) + ∑_{y ∈ t} log₂(W / w(y))` for accesses to present items
+  ([SleatorTarjan1985b], Section 2, p. 659), from which the static finger bound follows.
+* `potential_le_potential_of_le`, `potential_reweight_root_le`: potential change under weight
+  reassignment; decreasing weights, or moving weight onto the root key without changing the total,
+  does not increase the potential ([SleatorTarjan1985b], Section 2, proof of Theorem 4, p. 660;
+  Section 3, Lemma 2, pp. 663–664).
 * `splaySeqTime_le_balance`: **Balance Theorem** ([SleatorTarjan1985b], Section 2, Theorem 1,
   p. 659), bounding any sequence of `m` accesses (present or absent) on an `n`-element splay tree
   by `(3m + n) log₂ n + m`.
@@ -740,7 +748,9 @@ theorem splayMax_rotations_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
 
 /-! ### Fixed-Weight Potential Drop, Balance Theorem, and Static Optimality -/
 
-private theorem sum_logb_weight_le_potential {w : α → ℝ} (hw : ∀ y, 0 < w y)
+/-- Lower potential bound: each node's rank is at least the logarithm of its own key's weight, so
+`∑ y ∈ t, log₂ w(y) ≤ Φ(t)` ([SleatorTarjan1985b], Section 2, p. 659). -/
+theorem sum_logb_weight_le_potential {w : α → ℝ} (hw : ∀ y, 0 < w y)
     {t : BinaryTree α} (ht : Ordered t) :
     ∑ y ∈ elements t, Real.logb 2 (w y) ≤ potential w t := by
   induction t with
@@ -763,7 +773,9 @@ private theorem sum_logb_weight_le_potential {w : α → ℝ} (hw : ∀ y, 0 < w
     simp only [elements, Finset.sum_insert ha, Finset.sum_union hdis, potential_node]
     linarith [ihl hl, ihr hr]
 
-private theorem potential_le_sum_logb_of_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
+/-- Upper potential bound: if the total weight is at most `W`, every rank is at most `log₂ W`, so
+`Φ(t) ≤ ∑ y ∈ t, log₂ W` ([SleatorTarjan1985b], Section 2, p. 659). -/
+theorem potential_le_sum_logb_of_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
     {t : BinaryTree α} (ht : Ordered t) {W : ℝ} (hW : subtreeWeight w t ≤ W) :
     potential w t ≤ ∑ _y ∈ elements t, Real.logb 2 W := by
   induction t with
@@ -1017,6 +1029,101 @@ theorem splaySeqTime_le_static_optimality (xs : List α) {t : BinaryTree α} (ht
       have hlog_nonneg : 0 ≤ Real.logb 2 ((xs.length : ℝ) / xs.count y) :=
         Real.logb_nonneg (by norm_num) hdiv_ge
       nlinarith
+    linarith
+
+/-- **Fixed-weight access-sequence bound** ([SleatorTarjan1985b], Section 2, p. 659; the common
+argument behind Theorems 1–3): for any positive weights `w` with total tree weight at most `W`,
+a sequence `xs` of accesses to present keys costs at most the summed Access Lemma bounds plus the
+net potential drop,
+`splaySeqTime xs t ≤ ∑ⱼ (3 log₂(W / w(xⱼ)) + 1) + ∑ y ∈ t, log₂(W / w(y))`. -/
+theorem splaySeqTime_le_fixed_weights {w : α → ℝ} (hw : ∀ y, 0 < w y) (xs : List α)
+    {t : BinaryTree α} (ht : Ordered t) (hxs : ∀ x ∈ xs, x ∈ elements t) {W : ℝ}
+    (hW : subtreeWeight w t ≤ W) :
+    (splaySeqTime xs t : ℝ) ≤ (xs.map fun x => 3 * Real.logb 2 (W / w x) + 1).sum +
+      ∑ y ∈ elements t, Real.logb 2 (W / w y) := by
+  rcases eq_or_ne t .nil with rfl | hne
+  · have hxs_nil : xs = [] := by
+      rcases xs with _ | ⟨x, xs⟩
+      · rfl
+      · have hx := hxs x List.mem_cons_self
+        simp [elements] at hx
+    subst hxs_nil
+    simp [elements]
+  have hWpos : 0 < W := (subtreeWeight_pos hw hne).trans_le hW
+  have htel := splaySeqTime_present_telescoping hw xs ht hxs
+  obtain ⟨ho_end, he_end⟩ := splaySeq_ordered_and_elements xs ht
+  have hdrop := potential_sub_potential_le_sum_logb hw ht ho_end he_end.symm hWpos hW
+  have hmap : (xs.map fun x => 3 * Real.logb 2 (subtreeWeight w t / w x) + 1).sum ≤
+      (xs.map fun x => 3 * Real.logb 2 (W / w x) + 1).sum := by
+    refine List.sum_le_sum fun x hx => ?_
+    have hlog : Real.logb 2 (subtreeWeight w t / w x) ≤ Real.logb 2 (W / w x) :=
+      Real.logb_le_logb_of_le (by norm_num)
+        (div_pos (subtreeWeight_pos hw hne) (hw x))
+        (div_le_div_of_nonneg_right hW (hw x).le)
+    linarith
+  linarith
+
+/-! ### Weight Changes
+
+The weights in the Access Lemma are analysis parameters, so a proof may change them between
+operations at the cost of the resulting potential change ([SleatorTarjan1985b], Section 3,
+Lemma 2, pp. 663–664: decreasing the weight of an item takes non-positive amortized time). The
+Working Set Theorem ([SleatorTarjan1985b], Section 2, Theorem 4, pp. 659–660) reassigns weights
+after each access while the accessed item is at the root; `potential_reweight_root_le` bounds
+that potential change. -/
+
+/-- Pointwise smaller weights on the keys of `t` give a smaller total weight. -/
+theorem subtreeWeight_le_subtreeWeight {w w' : α → ℝ} {t : BinaryTree α}
+    (hle : ∀ y ∈ elements t, w' y ≤ w y) :
+    subtreeWeight w' t ≤ subtreeWeight w t := by
+  induction t with
+  | nil => exact le_rfl
+  | node a l r ihl ihr =>
+    have ha := hle a (by simp)
+    have hl := ihl fun y hy => hle y (by simp [hy])
+    have hr := ihr fun y hy => hle y (by simp [hy])
+    simp only [subtreeWeight_node]
+    linarith
+
+/-- Decreasing weights never increases the potential ([SleatorTarjan1985b], Section 3, Lemma 2,
+pp. 663–664): if `0 < w' y ≤ w y` for every key `y` of `t`, then `Φ_{w'}(t) ≤ Φ_w(t)`. -/
+theorem potential_le_potential_of_le {w w' : α → ℝ} (hw' : ∀ y, 0 < w' y) {t : BinaryTree α}
+    (hle : ∀ y ∈ elements t, w' y ≤ w y) :
+    potential w' t ≤ potential w t := by
+  induction t with
+  | nil => exact le_rfl
+  | node a l r ihl ihr =>
+    have hl := ihl fun y hy => hle y (by simp [hy])
+    have hr := ihr fun y hy => hle y (by simp [hy])
+    have hrk : nodeRank w' (.node a l r) ≤ nodeRank w (.node a l r) :=
+      Real.logb_le_logb_of_le (by norm_num) (subtreeWeight_pos hw' (by simp))
+        (subtreeWeight_le_subtreeWeight hle)
+    simp only [potential_node]
+    linarith
+
+/-- **Root weight reassignment** ([SleatorTarjan1985b], Section 2, proof of Theorem 4, p. 660):
+if the key `x` is at the root of an `Ordered` tree `t`, and new positive weights `w'` keep the total
+weight of `t` unchanged while not increasing the weight of any other key of `t`, then the
+potential does not increase. The root's size is unchanged, and every other node's subtree avoids
+`x`, so its size can only decrease. -/
+theorem potential_reweight_root_le {w w' : α → ℝ} (hw' : ∀ y, 0 < w' y) {t : BinaryTree α}
+    (ht : Ordered t) {x : α} (hroot : rootKey t = some x)
+    (hW : subtreeWeight w' t = subtreeWeight w t) (hle : ∀ y ∈ elements t, y ≠ x → w' y ≤ w y) :
+    potential w' t ≤ potential w t := by
+  cases t with
+  | nil => simp at hroot
+  | node a l r =>
+    obtain rfl : a = x := by simpa using hroot
+    obtain ⟨_, _, hla, har⟩ := ht
+    have hl : potential w' l ≤ potential w l :=
+      potential_le_potential_of_le hw' fun y hy =>
+        hle y (by simp [hy]) (hla y hy).ne
+    have hr : potential w' r ≤ potential w r :=
+      potential_le_potential_of_le hw' fun y hy =>
+        hle y (by simp [hy]) (har y hy).ne'
+    have hrk : nodeRank w' (.node a l r) = nodeRank w (.node a l r) := by
+      simp only [nodeRank, hW]
+    simp only [potential_node]
     linarith
 
 /-! ### Unit-Weight Update Lemma Specialization and `OrderedSet` Companion Bounds

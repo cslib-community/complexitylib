@@ -41,7 +41,7 @@ compares the network with a uniform permutation of `2 * n`-bit blocks for determ
 fixing the private coins of the adversary (`ProbOracleComp.coinLaw`) transfers it to randomized
 ones (`advantage_lubyRackoffRandomRounds_prpIdealGame_le`).
 
-**Four rounds** ([LubyRackoff1988]; [KatzLindell2020], Proposition 6.29): the four-round cipher
+**Four rounds** ([LubyRackoff1988]; [KatzLindell2020], Section 8.6): the four-round cipher
 `lubyRackoff4Cipher` (keys `k₁ ++ k₂ ++ k₃ ++ k₄`) is a strong pseudorandom permutation, secure
 against adversaries that may also decrypt (`PseudorandomFunction.strongPRP_lubyRackoff4Cipher`);
 strongly secure block ciphers are [BonehShoup2023], Section 4.1.3 and Exercise 4.9. The proof has
@@ -88,7 +88,7 @@ and the finite-group bound
   Section 4.1.3 (p. 101), Exercise 4.9 (p. 169), Section 4.5 (printed pp. 141–147), Theorem 4.9
   (p. 143) and Exercise 4.26 (pp. 174–175).
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020]:
-  Proposition 6.29.
+  Section 8.6.
 * [M. Luby, C. Rackoff, *How to Construct Pseudorandom Permutations from Pseudorandom
   Functions*][LubyRackoff1988].
 -/
@@ -1161,7 +1161,7 @@ theorem advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le
     Fintype.card_fin, Fintype.card_bool, Finset.prod_const, Finset.card_univ, Nat.cast_pow,
     Nat.cast_ofNat] using h
 
-/-- **Four-round Luby–Rackoff theorem** ([LubyRackoff1988]; [KatzLindell2020], Proposition 6.29;
+/-- **Four-round Luby–Rackoff theorem** ([LubyRackoff1988]; [KatzLindell2020], Section 8.6;
 strongly secure block ciphers as in [BonehShoup2023], Section 4.1.3 and Exercise 4.9): the
 four-round Luby–Rackoff cipher built from a pseudorandom function is a strong pseudorandom
 permutation against oracle-PPT distinguishers. -/

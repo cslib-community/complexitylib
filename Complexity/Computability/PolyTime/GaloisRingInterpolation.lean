@@ -52,6 +52,8 @@ This is the interpolation step of the contraction algorithm of [OpenAI2026ETH]
 * `Cslib.GaloisRingArith.padd`, `Cslib.GaloisRingArith.psmul`, `Cslib.GaloisRingArith.pmulLinear`,
   `Cslib.GaloisRingArith.peval`: polynomial arithmetic.
 * `Cslib.GaloisRingArith.interp`: Lagrange interpolation.
+* `Cslib.GaloisRingArith.encPoly`, `Cslib.GaloisRingArith.encElems`: the encodings of polynomials
+  and of lists of elements of `A_p`, as lists of coefficient lists with entries in binary.
 
 ## Main results
 
@@ -268,6 +270,21 @@ theorem small_one : Small p fl (one fl) := by
   have : 1 < 2 ^ (p + 1) := Nat.one_lt_two_pow (by omega)
   split <;> omega
 
+open Turing.MultiTapeTM in
+/-- Polynomials in `z` over `A_p` as lists of coefficients, constant first, each coefficient its
+coefficient list with entries in binary: the concatenation of the framed coefficients, each the
+concatenation of its framed entries, each encoded by `encNat`. -/
+abbrev encPoly : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
+open Turing.MultiTapeTM in
+/-- Lists of elements of `A_p`, such as interpolation nodes or values, each element its coefficient
+list with entries in binary: the concatenation of the framed elements, each the concatenation of
+its framed entries, each encoded by `encNat`. This is the layout of `encPoly`; the name records the
+role. -/
+abbrev encElems : List (List ℕ) ↪ List Bool :=
+  encList (encList encNat)
+
 theorem length_encList_le_of_small {c : List ℕ} (h : Small p fl c) :
     (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encNat c).length ≤
       fl.length * (2 * (p + 1) + 1) :=
@@ -277,8 +294,7 @@ theorem length_encList_le_of_small {c : List ℕ} (h : Small p fl c) :
 `n (2 e (2 p + 3) + 1)` long. -/
 theorem length_encPoly_le {P : List (List ℕ)} {n : ℕ} (hlen : P.length ≤ n)
     (h : ∀ c ∈ P, Small p fl c) :
-    (Turing.MultiTapeTM.encList (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encNat) P).length ≤
-      n * (2 * (fl.length * (2 * (p + 1) + 1)) + 1) := by
+    (encPoly P).length ≤ n * (2 * (fl.length * (2 * (p + 1) + 1)) + 1) := by
   rw [Turing.MultiTapeTM.length_encList]
   calc (P.map fun c => 2 * (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encNat c).length + 1).sum
       ≤ (P.map fun c => 2 * (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encNat c).length +
@@ -366,10 +382,8 @@ private theorem getDPolyTime {P : α → List (List ℕ)} {k : α → ℕ}
 theorem computableInPolyTime_padd {p : α → ℕ} {fl : α → List ℕ} {P Q : α → List (List ℕ)}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
-    (hP : ComputableInPolyTime P encIn (encList (encList encNat)))
-    (hQ : ComputableInPolyTime Q encIn (encList (encList encNat))) :
-    ComputableInPolyTime (fun x => padd (p x) (fl x) (P x) (Q x)) encIn
-      (encList (encList encNat)) := by
+    (hP : ComputableInPolyTime P encIn encPoly) (hQ : ComputableInPolyTime Q encIn encPoly) :
+    ComputableInPolyTime (fun x => padd (p x) (fl x) (P x) (Q x)) encIn encPoly := by
   have h1 := ComputableInPolyTime.fst encIn encUnary
   have h2 := ComputableInPolyTime.snd encIn encUnary
   have hmax : ComputableInPolyTime (fun x => max (P x).length (Q x).length) encIn encUnary :=
@@ -386,9 +400,8 @@ theorem computableInPolyTime_psmul {p : α → ℕ} {fl c : α → List ℕ} {P 
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
     (hc : ComputableInPolyTime c encIn (encList encNat))
-    (hP : ComputableInPolyTime P encIn (encList (encList encNat))) :
-    ComputableInPolyTime (fun x => psmul (p x) (fl x) (c x) (P x)) encIn
-      (encList (encList encNat)) := by
+    (hP : ComputableInPolyTime P encIn encPoly) :
+    ComputableInPolyTime (fun x => psmul (p x) (fl x) (c x) (P x)) encIn encPoly := by
   have h1 := ComputableInPolyTime.fst encIn (encList encNat)
   have h2 := ComputableInPolyTime.snd encIn (encList encNat)
   exact ComputableInPolyTime.mapWithInput hP
@@ -401,9 +414,8 @@ theorem computableInPolyTime_pmulLinear {p : α → ℕ} {fl v : α → List ℕ
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
     (hv : ComputableInPolyTime v encIn (encList encNat))
-    (hP : ComputableInPolyTime P encIn (encList (encList encNat))) :
-    ComputableInPolyTime (fun x => pmulLinear (p x) (fl x) (v x) (P x)) encIn
-      (encList (encList encNat)) := by
+    (hP : ComputableInPolyTime P encIn encPoly) :
+    ComputableInPolyTime (fun x => pmulLinear (p x) (fl x) (v x) (P x)) encIn encPoly := by
   have h1 := ComputableInPolyTime.fst encIn encUnary
   have h2 := ComputableInPolyTime.snd encIn encUnary
   exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp
@@ -432,7 +444,7 @@ private theorem polyBounded_small {p : α → ℕ} {fl : α → List ℕ} {n : �
 theorem computableInPolyTime_peval {p : α → ℕ} {fl z : α → List ℕ} {P : α → List (List ℕ)}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
-    (hP : ComputableInPolyTime P encIn (encList (encList encNat)))
+    (hP : ComputableInPolyTime P encIn encPoly)
     (hz : ComputableInPolyTime z encIn (encList encNat)) :
     ComputableInPolyTime (fun x => peval (p x) (fl x) (P x) (z x)) encIn (encList encNat) := by
   simp only [peval, List.foldr_eq_foldl_reverse]
@@ -458,10 +470,9 @@ theorem computableInPolyTime_basisNum {p : α → ℕ} {fl : α → List ℕ} {v
     {i : α → ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
-    (hv : ComputableInPolyTime v encIn (encList (encList encNat)))
+    (hv : ComputableInPolyTime v encIn encElems)
     (hi : ComputableInPolyTime i encIn encUnary) :
-    ComputableInPolyTime (fun x => basisNum (p x) (fl x) (v x) (i x)) encIn
-      (encList (encList encNat)) := by
+    ComputableInPolyTime (fun x => basisNum (p x) (fl x) (v x) (i x)) encIn encPoly := by
   let encS := encList (encList encNat)
   have hstep : ComputableInPolyTime
       (fun q : (α × List (List ℕ)) × ℕ => if q.2 = i q.1.1 then q.1.2
@@ -497,7 +508,7 @@ theorem computableInPolyTime_basisDen {p : α → ℕ} {fl : α → List ℕ} {v
     {i : α → ℕ}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
-    (hv : ComputableInPolyTime v encIn (encList (encList encNat)))
+    (hv : ComputableInPolyTime v encIn encElems)
     (hi : ComputableInPolyTime i encIn encUnary) :
     ComputableInPolyTime (fun x => basisDen (p x) (fl x) (v x) (i x)) encIn (encList encNat) := by
   have hstep : ComputableInPolyTime
@@ -524,10 +535,8 @@ values as lists of coefficient lists. -/
 theorem computableInPolyTime_interp {p : α → ℕ} {fl : α → List ℕ} {v y : α → List (List ℕ)}
     (hp : ComputableInPolyTime p encIn encUnary)
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
-    (hv : ComputableInPolyTime v encIn (encList (encList encNat)))
-    (hy : ComputableInPolyTime y encIn (encList (encList encNat))) :
-    ComputableInPolyTime (fun x => interp (p x) (fl x) (v x) (y x)) encIn
-      (encList (encList encNat)) := by
+    (hv : ComputableInPolyTime v encIn encElems) (hy : ComputableInPolyTime y encIn encElems) :
+    ComputableInPolyTime (fun x => interp (p x) (fl x) (v x) (y x)) encIn encPoly := by
   let encS := encList (encList encNat)
   have hstep : ComputableInPolyTime
       (fun q : (α × List (List ℕ)) × ℕ => padd (p q.1.1) (fl q.1.1) q.1.2

@@ -32,6 +32,8 @@ These implementation and approximation lemmas are original formalization results
 
 ## Main definitions
 
+* `encLyubashevskySignWithRandomness`: the encoding of a signing input with its commitment
+  randomness.
 * `lyubashevskySignPostprocess`: native deterministic signing from a candidate random vector.
 * `lyubashevskySignAttemptNative`: one strict fair-bit signing attempt.
 * `lyubashevskySignBoundedNative`: a unary-budget bounded signing program.
@@ -60,6 +62,13 @@ abbrev LyubashevskySignInput :=
 @[expose] def encLyubashevskySignInput : LyubashevskySignInput ↪ List Bool :=
   encPair encLyubashevskyParams
     (encPair (encList (encList encIntBin)) (encPair (encList (encList encIntBin)) encBits))
+
+/-- Input `(input, y)` of the native commitment, with the commitment randomness `y` in binary: the
+signing input encoded by `encLyubashevskySignInput`, then `y : List ℤ` as a list of binary
+integers. The signing postprocessing takes the same input, and the native response takes it paired
+with the challenge bits. The signing input is framed, and so is each integer. -/
+abbrev encLyubashevskySignWithRandomness : LyubashevskySignInput × List ℤ ↪ List Bool :=
+  encPair encLyubashevskySignInput (encList encIntBin)
 
 /-- Native commitment from public matrix rows and commitment randomness. -/
 def lyubashevskySignCommitment
@@ -91,19 +100,19 @@ def lyubashevskySignPostprocess (hash : List Bool × List Bool → List Bool)
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySignCommitment :
     ComputableInPolyTime lyubashevskySignCommitment
-      (encPair encLyubashevskySignInput (encList encIntBin)) encBits := by
-  unfold lyubashevskySignCommitment encLyubashevskySignInput encLyubashevskyParams
-    LyubashevskyParams.n LyubashevskyParams.m LyubashevskyParams.q
+      encLyubashevskySignWithRandomness encBits := by
+  unfold lyubashevskySignCommitment encLyubashevskySignWithRandomness encLyubashevskySignInput
+    encLyubashevskyParams LyubashevskyParams.n LyubashevskyParams.m LyubashevskyParams.q
   fun_prop
 
 /-- Polynomial-time computation of the native response. -/
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySignResponse :
     ComputableInPolyTime lyubashevskySignResponse
-      (encPair (encPair encLyubashevskySignInput (encList encIntBin)) encBits)
+      (encPair encLyubashevskySignWithRandomness encBits)
       (encList encIntBin) := by
-  unfold lyubashevskySignResponse encLyubashevskySignInput encLyubashevskyParams
-    LyubashevskyParams.m LyubashevskyParams.k
+  unfold lyubashevskySignResponse encLyubashevskySignWithRandomness encLyubashevskySignInput
+    encLyubashevskyParams LyubashevskyParams.m LyubashevskyParams.k
   fun_prop
 
 /-- The actual signing postprocessing is polynomial-time for a polynomial-time hash. -/
@@ -112,8 +121,7 @@ theorem computableInPolyTime_lyubashevskySignPostprocess
     {hash : List Bool × List Bool → List Bool}
     (hhash : ComputableInPolyTime hash (encPair encBits encBits) encBits) :
     ComputableInPolyTime (lyubashevskySignPostprocess hash)
-      (encPair encLyubashevskySignInput (encList encIntBin))
-      (encOption (encPair encBits encBits)) := by
+      encLyubashevskySignWithRandomness encCommitResponseOrAbort := by
   let e := encPair encLyubashevskySignInput (encList encIntBin)
   have hw := computableInPolyTime_lyubashevskySignCommitment
   have hmsg : ComputableInPolyTime (fun x : LyubashevskySignInput × List ℤ => x.1.2.2.2)
@@ -148,7 +156,7 @@ noncomputable def lyubashevskySignAttemptNative (hash : List Bool × List Bool �
 theorem isPPTOn_lyubashevskySignAttemptNative
     {hash : List Bool × List Bool → List Bool}
     (hhash : ComputableInPolyTime hash (encPair encBits encBits) encBits) :
-    IsPPTOn encLyubashevskySignInput (encOption (encPair encBits encBits))
+    IsPPTOn encLyubashevskySignInput encCommitResponseOrAbort
       (lyubashevskySignAttemptNative hash) := by
   have hγ : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.γ)
       encLyubashevskySignInput encNat := by
@@ -289,7 +297,7 @@ theorem isPPTOn_lyubashevskySignBoundedNative
     {hash : List Bool × List Bool → List Bool}
     (hhash : ComputableInPolyTime hash (encPair encBits encBits) encBits) :
     IsPPTOn (encPair encLyubashevskySignInput encUnary)
-      (encOption (encPair encBits encBits)) (lyubashevskySignBoundedNative hash) := by
+      encCommitResponseOrAbort (lyubashevskySignBoundedNative hash) := by
   have hattempt := (isPPTOn_lyubashevskySignAttemptNative hhash).preprocess
     (ComputableInPolyTime.fst encLyubashevskySignInput encUnary)
   apply (hattempt.replicate (ComputableInPolyTime.snd _ _)).map

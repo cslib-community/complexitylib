@@ -210,12 +210,9 @@ theorem advantage_encryptKeyEncaps_eq (keyLen : ℕ → ℕ)
       (ProbComp.eval (kemRealGame keyGen (encryptKeyEncaps keyLen encrypt) distinguisher n))
       (ProbComp.eval
         (kemIdealGame keyLen keyGen (encryptKeyEncaps keyLen encrypt) distinguisher n)) =
-    Game.advantage
-      (ProbComp.eval (gameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length)
-        keyGen encrypt (kemToPKEAdversary keyLen distinguisher) false n))
-      (ProbComp.eval (gameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length)
-        keyGen encrypt (kemToPKEAdversary keyLen distinguisher) true n)) := by
-  rw [eval_gameOn_kemToPKEAdversary_false, eval_gameOn_kemToPKEAdversary_true]
+    Encryption.advantage (gameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) keyGen encrypt
+      (kemToPKEAdversary keyLen distinguisher)) n := by
+  rw [advantage, eval_gameOn_kemToPKEAdversary_false, eval_gameOn_kemToPKEAdversary_true]
 
 /-- **Semantically secure word encryption gives a secure KEM** ([BonehShoup2023],
 Exercise 11.9(e)). The native reduction only samples keys and runs the supplied distinguisher. -/

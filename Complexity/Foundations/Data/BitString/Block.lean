@@ -29,12 +29,14 @@ positions of one block takes that block from the first tuple and every other blo
 * `Cslib.BitString.blocksEquiv`: cutting a tuple into its blocks; its inverse reads entry `p` of
   the tuple in its block (`BitString.blocksEquiv_symm_apply`).
 * `Cslib.BitString.blockBits`: the positions of the entries of a block.
-* `Cslib.BitString.listBlock`: a block of a list (`BitString.listBlock_ofFn`).
+* `Cslib.BitString.listBlock`: a block of a list (`BitString.listBlock_ofFn`,
+  `BitString.listBlock_flatMap`).
 
 ## Main results
 
 * `Cslib.BitString.pairwiseDisjoint_blockBits`: blocks occupy disjoint positions.
 * `Cslib.BitString.block_piecewise`: gluing two tuples along one block.
+* `Cslib.BitString.ofFn_blocksEquiv_symm`: concatenating blocks concatenates their lists.
 -/
 
 @[expose] public section
@@ -120,5 +122,30 @@ theorem listBlock_ofFn (z : Fin (m * k) → α) (i : Fin m) :
   ext
   simp only [finProdFinEquiv_apply_val]
   rw [Nat.mul_comm, Nat.add_comm]
+
+/-- Block `i` of a concatenation of blocks of uniform length `k` is block `i` itself. -/
+theorem listBlock_flatMap {β : Type*} (f : β → List α) (hf : ∀ b, (f b).length = k)
+    (l : List β) (i : ℕ) (hi : i < l.length) :
+    listBlock k (l.flatMap f) i = f l[i] := by
+  induction l generalizing i with
+  | nil => simp at hi
+  | cons b l ih =>
+    rw [List.flatMap_cons]
+    rcases i with _ | i
+    · rw [listBlock, Nat.zero_mul, List.drop_zero, List.take_left' (hf b), List.getElem_cons_zero]
+    · rw [listBlock, Nat.succ_mul, Nat.add_comm, ← List.drop_drop, List.drop_left' (hf b),
+        List.getElem_cons_succ]
+      exact ih i (by simpa using hi)
+
+/-- The list of the concatenation of blocks is the concatenation of the lists of the blocks. -/
+theorem ofFn_blocksEquiv_symm (z : Fin m → Fin k → α) :
+    List.ofFn (blocksEquiv.symm z) = (List.ofFn fun i => List.ofFn (z i)).flatten := by
+  rw [List.ofFn_mul]
+  congr 1
+  refine List.ofFn_inj.2 (funext fun i => List.ofFn_inj.2 (funext fun j => ?_))
+  rw [← congrFun (congrFun (block_blocksEquiv_symm z) i) j, block_apply]
+  refine congrArg _ (Fin.ext ?_)
+  simp only [finProdFinEquiv_apply_val]
+  rw [Nat.add_comm, Nat.mul_comm]
 
 end Cslib.BitString

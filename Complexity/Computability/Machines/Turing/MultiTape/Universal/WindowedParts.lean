@@ -67,8 +67,8 @@ end Primitives
 
 /-! ### Sizes -/
 
-private lemma one_le_length_encInt (z : ℤ) : 1 ≤ (encInt z).length := by
-  rw [length_encInt]; split_ifs <;> omega
+private lemma one_le_length_encIntUnary (z : ℤ) : 1 ≤ (encIntUnary z).length := by
+  rw [length_encIntUnary]; split_ifs <;> omega
 
 private lemma length_encList_drop_le {α : Type} (enc : α ↪ List Bool) (l : List α) (i : ℕ) :
     (encList enc (l.drop i)).length ≤ (encList enc l).length :=
@@ -77,19 +77,19 @@ private lemma length_encList_drop_le {α : Type} (enc : α ↪ List Bool) (l : L
 /-- Cutting does not lengthen a window. -/
 private lemma length_eTape_cut_le (r : ℕ) (t : Tape) :
     (eTape (cut r t)).length ≤ (eTape t).length := by
-  have h₁ := one_le_length_encInt t.head
+  have h₁ := one_le_length_encIntUnary t.head
   have h₂ := length_encList_take_le eSym t.left r
   have h₃ := length_encList_take_le eSym t.right (r + 1)
-  simp only [cut, eTape_apply, length_encPair, encInt_zero, List.length_singleton]
+  simp only [cut, eTape_apply, length_encPair, encIntUnary_zero, List.length_singleton]
   omega
 
 /-- Pasting gives a window no longer than the two windows together. -/
 private lemma length_eTape_paste_le (r : ℕ) (o i : Tape) :
     (eTape (paste r o i)).length ≤ (eTape o).length + (eTape i).length := by
-  have h₁ := one_le_length_encInt o.head
+  have h₁ := one_le_length_encIntUnary o.head
   have h₂ := length_encList_drop_le eSym o.left r
   have h₃ := length_encList_drop_le eSym o.right (r + 1)
-  simp only [paste, eTape_apply, length_encPair, encInt_zero, List.length_singleton,
+  simp only [paste, eTape_apply, length_encPair, encIntUnary_zero, List.length_singleton,
     encList_append, List.length_append]
   omega
 
@@ -137,7 +137,7 @@ private lemma cut_inO : ComputableTidilyInO (fun q : ℕ × Tape => cut q.1 q.2)
   have hl := (takeU eSym).comp_linear (ht.snd'.fst'.prod hr)
   have hr' := (takeU eSym).comp_linear
     (ht.snd'.snd'.prod (ComputableTidilyInDegree.unary_succ.inO_one.comp_linear hr))
-  exact (((const (encMid := encInt) (0 : ℤ)).prod (hl.prod hr')).of_enc_eq (encOut := eTape)
+  exact (((const (encMid := encIntUnary) (0 : ℤ)).prod (hl.prod hr')).of_enc_eq (encOut := eTape)
     (g := fun q : ℕ × Tape => cut q.1 q.2) fun _ => rfl).mono 8 (fun q => by omega)
     fun q => by omega
 
@@ -153,7 +153,7 @@ private lemma paste_inO : ComputableTidilyInO (fun q : ℕ × Tape × Tape => pa
   have hl := happ.comp_linear (hi.snd'.fst'.prod ((dropU eSym).comp_linear (ho.snd'.fst'.prod hr)))
   have hr' := happ.comp_linear (hi.snd'.snd'.prod ((dropU eSym).comp_linear
     (ho.snd'.snd'.prod (ComputableTidilyInDegree.unary_succ.inO_one.comp_linear hr))))
-  exact (((const (encMid := encInt) (0 : ℤ)).prod (hl.prod hr')).of_enc_eq (encOut := eTape)
+  exact (((const (encMid := encIntUnary) (0 : ℤ)).prod (hl.prod hr')).of_enc_eq (encOut := eTape)
     (g := fun q : ℕ × Tape × Tape => paste q.1 q.2.1 q.2.2) fun _ => rfl).mono 16
     (fun q => by omega) fun q => by omega
 

@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of rare mean and correlated noise tail bounds)
 
-public import Complexity.Foundations.Probability.HeavyCountTail
+public import Complexity.Computability.LogSpaceDerandomization.HeavyCountTail
 import Complexity.Foundations.Data.Finset.Expect
 
 /-!

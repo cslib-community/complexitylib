@@ -64,6 +64,10 @@ of a machine; time-bounded complexity for a machine model needs a universal mach
   `Cslib.Kolmogorov.DescriptionMethod.exists_ecomplexity_universal_le_of_partrec_eval`: generic
   partial-recursiveness and additive-optimality bridges for description methods with a `Partrec`
   evaluation function.
+* `Cslib.Kolmogorov.DescriptionMethod.exists_ecomplexity_universal_le_of_partrec`: a partial
+  recursive decoder costs a constant number of extra bits.
+* `Cslib.Kolmogorov.DescriptionMethod.primrec₂_universal_runFor`: the clocked runs of `universal`
+  are primitive recursive.
 * `Cslib.Kolmogorov.DescriptionMethod.ecomplexity_universal_le`,
   `Cslib.Kolmogorov.DescriptionMethod.etimeBoundedComplexity_universal_le`: the constant is the
   length of the header.
@@ -220,6 +224,28 @@ theorem exists_ecomplexity_universal_le_of_partrec_eval {α : Type*} [Primcodabl
   obtain ⟨c, hc⟩ := isAdditivelyOptimal_universal.exists_ecomplexity_le (M.map dec)
     (IsPartrec.of_partrec_eval heval hprod hdec)
   exact ⟨c, fun x => (hc (dec x)).trans (add_le_add_left (M.ecomplexity_map_le dec x) c)⟩
+
+/-- **Invariance for partial recursive decoders**: if a partial recursive function `f` outputs `x`
+on the program `q`, then `x` has a description under `universal` at most a constant longer than
+`q`, the constant depending only on `f`. -/
+theorem exists_ecomplexity_universal_le_of_partrec {f : List Bool →. ℕ} (hf : Partrec f) :
+    ∃ c : ℕ, ∀ q x, x ∈ f q → universal.ecomplexity x ≤ q.length + c := by
+  obtain ⟨c, hc⟩ := Code.exists_code.mp hf
+  refine ⟨(codeHeader c).length, fun q x hx => ?_⟩
+  have h : universal.Produces (codeHeader c ++ q) x := by
+    rw [universal_produces_codeHeader_append, ofCode_produces_iff, hc]
+    simpa using hx
+  exact (ecomplexity_le_length h).trans (by rw [List.length_append, Nat.cast_add, add_comm])
+
+/-- The clocked runs of the universal method are primitive recursive in the program and the
+fuel. -/
+theorem primrec₂_universal_runFor :
+    Primrec₂ fun (q : List Bool) (t : ℕ) => (universal.run q).runFor t := by
+  have hd := primrec_decodeSelfDelimiting
+  exact Primrec₂.mk <| (Code.primrec_evaln.comp (Primrec.pair (Primrec.pair Primrec.snd
+    ((Primrec.ofNat Code).comp
+      (Primrec.list_foldr_nat_bit.comp (Primrec.fst.comp (hd.comp Primrec.fst)))))
+    (Primrec.encode.comp (Primrec.snd.comp (hd.comp Primrec.fst))))).of_eq fun _ => rfl
 
 /-- Every natural number has a description under the universal method. -/
 theorem ecomplexity_universal_ne_top (x : ℕ) : universal.ecomplexity x ≠ ⊤ :=

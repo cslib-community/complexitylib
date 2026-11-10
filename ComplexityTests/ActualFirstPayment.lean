@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: local-only (tests of numerical actual first-signal noise payments)
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.FirstPayment
 import all ComplexityTests.HierarchyRawMoment
 
 /-! Actual capped bins, nonzero residuals, chosen steps and zero/empty boundaries. -/

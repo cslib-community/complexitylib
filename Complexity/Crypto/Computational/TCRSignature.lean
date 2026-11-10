@@ -36,9 +36,8 @@ import Complexity.Tactic.PPT
 When hashing messages before signing under a target collision-resistant hash family (UOWHF), placing
 a single hash key in the public verification key fails: an adversary seeing `k` in `pk` before
 choosing its signing query and forgery could search for full collisions rather than target
-collisions ([BonehShoup2023], Section 13.2.1, pp. 521–522). Instead, construction `(13.2)` of
-[BonehShoup2023], Section 13.2.1 samples a **fresh hash key `k` inside every signature** and signs
-the pair `(k, H(k, m))`:
+collisions. Instead, construction `(13.2)` of [BonehShoup2023], Section 13.2.1 (p. 533) samples a
+**fresh hash key `k` inside every signature** and signs the pair `(k, H(k, m))`:
 
 * **Source mapping**: [BonehShoup2023], Section 13.2.1 states construction `(13.2)` and Theorem 13.2
   for extending the message space of an unrestricted many-time EUF-CMA base signature scheme. Here
@@ -123,7 +122,7 @@ the pair `(k, H(k, m))`:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Version 0.6][BonehShoup2023],
-  Section 13.2.1 (construction `(13.2)` and Theorem 13.2, pp. 521–524) and Section 14.6.
+  Section 13.2.1 (construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534) and Section 14.6.
 * [M. Naor, M. Yung, *Universal One-Way Hash Functions and their Cryptographic
   Applications*][NaorYung1989], Sections 2–4.
 * [J. Rompel, *One-Way Functions are Necessary and Sufficient for Secure Signatures*][Rompel1990].

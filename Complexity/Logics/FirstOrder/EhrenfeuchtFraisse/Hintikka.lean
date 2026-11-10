@@ -286,14 +286,6 @@ theorem duplicatorWins_iff_forall_realize_iff [L.IsRelational] [Finite (Σ l, L.
       (φ.Realize default a ↔ φ.Realize default b) :=
   ⟨fun h _ hφ => h.realize_iff hφ, duplicatorWins_of_forall_realize_iff⟩
 
-private theorem realize_toFormula_relabel {P : Type*} [L.Structure P] {k : ℕ}
-    (φ : L.BoundedFormula Empty k) (a : Fin k → P) :
-    (φ.toFormula.relabel (Sum.elim Empty.elim id : Empty ⊕ Fin k → Fin k)).Realize a ↔
-      φ.Realize default a := by
-  rw [Formula.realize_relabel, BoundedFormula.realize_toFormula,
-    Subsingleton.elim ((a ∘ Sum.elim Empty.elim id) ∘ Sum.inl) default]
-  rfl
-
 /-- **The Ehrenfeucht–Fraïssé theorem for formulas with free variables.** For a relational
 language with finitely many relation symbols, Duplicator wins the `n`-round game from `(a, b)`
 exactly when `a` and `b` satisfy the same formulas `φ : L.Formula (Fin k)` of quantifier rank at

@@ -604,8 +604,7 @@ theorem leafCertificate_le_of_packetShape
   set N := (encCall encT x).length + ES with hN
   have hR : (encCall encT x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + ES + 1 ≤
       (N + 1) ^ 2 := by
-    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤ (N + 1) * N :=
-      Nat.mul_le_mul (by omega) (by omega)
+    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤ (N + 1) * N := by gcongr <;> omega
     nlinarith
   have hpow : K * ((encCall encT x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + ES +
       1) ^ K ≤ 2 * K * (N + 1) ^ (2 * K) :=
@@ -755,16 +754,14 @@ theorem exists_packetFactor_le (C c : ℕ) : ∃ K : ℕ, ∀ s m p : ℕ, 2 ≤
         ≤ ((c₀ + 2) * (c + 1) * (μ + 1)) * (2 ^ c₀ * 2 ^ (μ / 32768)) * (μ + 1) :=
           Nat.mul_le_mul (Nat.mul_le_mul h1 hA') h2
       _ = (c₀ + 2) * (c + 1) * 2 ^ c₀ * ((μ + 1) ^ 2 * 2 ^ (μ / 32768)) := by ring
-      _ ≤ (c₀ + 2) * (c + 1) * 2 ^ c₀ * (16 * 2 ^ (μ / 2) * 2 ^ (μ / 32768)) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ h3)
+      _ ≤ (c₀ + 2) * (c + 1) * 2 ^ c₀ * (16 * 2 ^ (μ / 2) * 2 ^ (μ / 32768)) := by gcongr
       _ = 16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * (2 ^ (μ / 2) * 2 ^ (μ / 32768)) := by ring
       _ ≤ 16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s := Nat.mul_le_mul_left _ (h4.trans h5)
   have hE' : ((lam + 1) * (c + 1) + 1) * A ≤ 16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ :=
     (Nat.le_div_iff_mul_le (by omega)).mpr hE
   calc (A * p + 2) ^ A ≤ (2 ^ ((lam + 1) * (c + 1) + 1)) ^ A := Nat.pow_le_pow_left hbase _
     _ = 2 ^ (((lam + 1) * (c + 1) + 1) * A) := by rw [← pow_mul]
-    _ ≤ 2 ^ (16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ) :=
-        Nat.pow_le_pow_right (by norm_num) hE'
+    _ ≤ 2 ^ (16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ) := by gcongr
 
 /-- **The leaf factor is subexponential.** For all constants `C`, `c` and `s₀` there is `K` such
 that, for `s ≤ m ≤ C s`, `M ≤ 2 m` and `p ≤ n`, writing `A = 2 ^ (⌊log₂ m⌋ / 32768)`,

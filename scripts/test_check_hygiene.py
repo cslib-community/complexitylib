@@ -642,6 +642,81 @@ class AbstractReadmeTests(unittest.TestCase):
         self.assertEqual(check_hygiene.check_abstract_readmes(), [])
 
 
+class RoadmapTests(unittest.TestCase):
+    URL = "https://github.com/cslib-community/complexitylib/issues/"
+
+    def errors(self, text: str) -> list[str]:
+        return check_hygiene.check_roadmap(text)
+
+    def test_inline_links_and_short_entries_pass(self) -> None:
+        text = (f"# Roadmap\n\n- **Direction** ([#585]({self.URL}585)): Prove the theorem.\n"
+                f"  A second sentence, [with a link]({self.URL}1).\n\n| Program | [#2]({self.URL}2) |\n"
+                "\nIndependent of that order:\n\n1. **Ordered**: short.\n")
+        self.assertEqual(self.errors(text), [])
+
+    def test_reference_definitions_fail(self) -> None:
+        text = f"- **Direction**\n\n[#585]: {self.URL}585\n   [archive]: {self.URL}1\n"
+        self.assertEqual(self.errors(text), [
+            "ROADMAP.md:3: reference definition `[#585]:`; write the link inline instead, since "
+            "definitions collected at the end of the file conflict across queued PRs "
+            "(CONTRIBUTING.md, Documentation)",
+            "ROADMAP.md:4: reference definition `[archive]:`; write the link inline instead, "
+            "since definitions collected at the end of the file conflict across queued PRs "
+            "(CONTRIBUTING.md, Documentation)",
+        ])
+
+    def test_continuation_line_is_not_a_definition(self) -> None:
+        self.assertEqual(self.errors("- **D**: scope\n  [Lemma 3]: the key step.\n"), [])
+
+    def test_issue_references_must_be_inline(self) -> None:
+        text = "- **Direction** ([#9999]); see [the issue][#9998] and [#7][] or [#12]: text\n"
+        self.assertEqual(self.errors(text), [
+            f"ROADMAP.md:1: `[#9999]` is not an inline link; write it as `[#9999]({self.URL}9999)`",
+            f"ROADMAP.md:1: `[#9998]` is not an inline link; write it as `[#9998]({self.URL}9998)`",
+            f"ROADMAP.md:1: `[#7]` is not an inline link; write it as `[#7]({self.URL}7)`",
+            f"ROADMAP.md:1: `[#12]` is not an inline link; write it as `[#12]({self.URL}12)`",
+        ])
+
+    def test_nested_items_fail_also_after_a_blank_line(self) -> None:
+        for text in ("- **D**: scope.\n  - a sub-point\n",
+                     "- **D**: scope.\n  1. another\n",
+                     "- **D**: scope.\n\n  - Progress: did X.\n  - Remaining: Y.\n"):
+            errors = self.errors(text)
+            self.assertEqual(len(errors), 1, text)
+            self.assertTrue(errors[0].startswith("ROADMAP.md:1: nested list item"), errors[0])
+
+    def test_long_entry_fails_and_links_count_as_their_text(self) -> None:
+        limit = check_hygiene.ROADMAP_ENTRY_MAX
+        url = self.URL + "1" * 300
+        fits = f"- [x]({url}) " + "a" * (limit - len("- x "))
+        self.assertEqual(self.errors(fits + "\n"), [])
+        over = "- **D**: " + "b" * limit + "\n  continued.\n"
+        errors = self.errors(over)
+        self.assertEqual(len(errors), 1)
+        self.assertIn(f"ROADMAP.md:1: entry has {len('- **D**: ') + limit + len(' continued.')} "
+                      f"characters of Markdown, counting links as their text (limit {limit})",
+                      errors[0])
+
+    def test_length_counts_loose_lazy_and_ordered_items(self) -> None:
+        long = "x" * check_hygiene.ROADMAP_ENTRY_MAX
+        for text in (f"- **D**: s.\n\n  {long}\n",
+                     f"- **D**: s.\n{long}\n",
+                     f"1. **D**: {long}\n"):
+            errors = self.errors(text)
+            self.assertEqual(len(errors), 1, text[:30])
+            self.assertIn("characters of Markdown", errors[0])
+
+    def test_entry_ends_at_blocks_and_unindented_paragraphs(self) -> None:
+        long = "y" * check_hygiene.ROADMAP_ENTRY_MAX
+        for text in (f"- **D**: s.\n| {long} |\n", f"- **D**: s.\n# {long}\n",
+                     f"- **D**: s.\n\n{long}\n"):
+            self.assertEqual(self.errors(text), [], text[:30])
+
+    def test_repository_roadmap_passes(self) -> None:
+        text = (check_hygiene.ROOT / "ROADMAP.md").read_text(encoding="utf-8")
+        self.assertEqual(check_hygiene.check_roadmap(text), [])
+
+
 class CitationTests(unittest.TestCase):
     keys = frozenset({"AroraBarak09", "Ilango2020FOCS", "Sipser2013"})
 

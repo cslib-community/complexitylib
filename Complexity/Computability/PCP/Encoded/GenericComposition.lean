@@ -140,14 +140,13 @@ theorem isPolyTime_composeEdge [Fintype α] [Finite I] [Finite P] [Finite R] [Fi
     {edge : Input → Edge (α → α → Bool)} {index : Input → ℕ}
     {coins : Input → R} {query : Input → Q}
     {coinsEncoding : R ↪ List Bool} {queryEncoding : Q ↪ List Bool}
-    (hedge : ComputableInPolyTime edge input (Edge.encoding (encPi (encPi encBool))))
+    (hedge : ComputableInPolyTime edge input (Edge.encoding encConstraintTable))
     (hindex : ComputableInPolyTime index input encUnary)
     (hcoins : ComputableInPolyTime coins input coinsEncoding)
     (hquery : ComputableInPolyTime query input queryEncoding) :
     ComputableInPolyTime
       (fun x => composeEdge impl number (edge x) (index x) (coins x) (query x))
-      input (Edge.encoding (encPair (encPi (encPi encBool))
-        (encPair coinsEncoding queryEncoding))) := by
+      input (Edge.encoding (encTableCoinsQuery coinsEncoding queryEncoding)) := by
   have hnumber : ComputableInPolyTime (fun ω => (number (.inr (.inr ω))).val)
       coinsEncoding encUnary := .of_finite _
   have hposition : ComputableInPolyTime
@@ -172,7 +171,7 @@ theorem isPolyTime_composeEval [Fintype α] [Fintype Q] [Finite R] [Finite Γ] [
     ComputableInPolyTime
       (fun p : ((α → α → Bool) × R × Q) ×
           (Γ × (Q → Γ)) × (Γ × (Q → Γ)) => composeEval impl p.1 p.2.1 p.2.2)
-      (encPair (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding))
+      (encPair (encTableCoinsQuery coinsEncoding queryEncoding)
         (encPair (encPair symbolEncoding (encPi symbolEncoding))
           (encPair symbolEncoding (encPi symbolEncoding)))) encBool :=
   .of_finite _
@@ -184,9 +183,8 @@ theorem isPolyTime_compose [Fintype α] [Finite I] [Finite P] [Finite R] [Finite
     (number : ComposeSlot I P R ≃ Fin width) (coins : List R)
     (queries : List Q) (coinsEncoding : R ↪ List Bool)
     (queryEncoding : Q ↪ List Bool) :
-    ComputableInPolyTime (compose impl number coins queries)
-      (encoding (encPi (encPi encBool)))
-      (encoding (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding))) := by
+    ComputableInPolyTime (compose impl number coins queries) (encoding encConstraintTable)
+      (encoding (encTableCoinsQuery coinsEncoding queryEncoding)) := by
   have hdarts : ComputableInPolyTime (composeDarts (α := α) coins queries)
       (encoding (encPi (encPi encBool)))
       (encList (encPair (encPair encUnary coinsEncoding) queryEncoding)) := by
@@ -206,10 +204,10 @@ input graph in their own input representation. Every output constraint table is 
 @[fun_prop]
 theorem isPolyTime_composeTabulated [Fintype α] [Finite I] [Finite P] [Finite R]
     [Fintype Q] [DecidableEq Q] [Fintype Γ] [BEq Γ] {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableInPolyTime graph input (encoding (encPi (encPi encBool))))
+    (hgraph : ComputableInPolyTime graph input (encoding encConstraintTable))
     (number : ComposeSlot I P R ≃ Fin width) (coins : List R) (queries : List Q) :
     ComputableInPolyTime (fun x => composeTabulated impl number coins queries (graph x))
-      input (encoding (encPi (encPi encBool))) :=
+      input (encoding encConstraintTable) :=
   (isPolyTime_tabulateConstraints
     (isPolyTime_composeEval impl (encFinite Γ) (encFinite R) (encFinite Q))).comp
       ((isPolyTime_compose impl number coins queries (encFinite R) (encFinite Q)).comp hgraph)

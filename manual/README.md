@@ -51,10 +51,11 @@ python3 scripts/check_operator_manual.py
 python3 scripts/test_operator_manual.py
 ```
 
-Run these commands from the repository root. The first checks local links and identity of
-contextual Lean excerpts against the current source; the second exercises failure cases
-of that checker. Neither compiles Lean or establishes that the prose describes the right
-mathematics. Check affected complete clients through Lake as the workflows describe.
+Run these commands from the repository root. The first checks local links, visual markup, the
+book's chapter lists and the identity of contextual Lean excerpts against the current source;
+the second exercises failure cases of that checker. Neither compiles Lean or establishes that
+the prose describes the right mathematics. Check affected complete clients through Lake as the
+workflows describe.
 
 ## Read or build the manuals
 

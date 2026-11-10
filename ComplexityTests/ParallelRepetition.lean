@@ -9,7 +9,7 @@ import ComplexityTests.TwoProverGame
 
 /-! # Holenstein's parallel repetition theorem
 
-The CHSH game has value `3/4` (`ComplexityTests.TwoProverGame.value_chsh`), so the theorem
+The CHSH game has value `3/4` (`Cslib.PCP.TwoProverGame.value_chsh`), so the theorem
 bounds the value of its `n`-fold repetition by `(1 - (1/4)³ / 6000)^{n / 2}`, and the product
 strategies bound it below by `(3/4)^n`. For every
 game of value below one, the value of the repetition tends to zero. The theorem is consistent with
@@ -21,7 +21,7 @@ namespace ComplexityTests.ParallelRepetition
 
 open Filter Topology
 open Cslib.PCP
-open ComplexityTests.TwoProverGame (chsh value_chsh)
+open Cslib.PCP.TwoProverGame (chsh value_chsh)
 
 -- The parallel repetition theorem for CHSH: `|A| |B| = 4`, so the exponent is `n / 2`. With the
 -- product strategies, `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`.

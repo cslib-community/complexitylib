@@ -250,9 +250,7 @@ private theorem testBit_ne_of_min_highestDiff {n w q : ℕ} {keys : Fin n → �
       q >>> (highestDiff w (keys j) q + 1)) :
     (keys i).testBit (highestDiff w (keys j) q) ≠ q.testBit (highestDiff w (keys j) q) := by
   have hlt := (highestDiff_lt_iff_shiftRight_eq (hbound i) hq (hmiss i)).mpr hprefix
-  have heq : highestDiff w (keys i) q = highestDiff w (keys j) q := by
-    have := hmin i
-    omega
+  have heq : highestDiff w (keys i) q = highestDiff w (keys j) q := by grind
   simpa only [heq] using (highestDiff_spec (hbound i) hq (hmiss i)).2.1
 
 /-- If the query takes the one branch at its first divergence from a longest-prefix key,
@@ -269,11 +267,7 @@ private theorem le_iff_sketch_le_lowerBoundary {n w q : ℕ} {keys : Fin n → �
     shiftRight_highestDiff_add_one_eq (hbound j) hq (hmiss j)
   by_cases hiprefix : keys i >>> (p + 1) = q >>> (p + 1)
   · have hne := testBit_ne_of_min_highestDiff hbound hq hmiss j hmin i hiprefix
-    have hi : (keys i).testBit p = false := by
-      change (keys i).testBit p ≠ q.testBit p at hne
-      cases h : (keys i).testBit p
-      · rfl
-      · exact False.elim (hne (h.trans hbit.symm))
+    have hi : (keys i).testBit p = false := by grind
     have hlt : keys i < q := Nat.lt_of_testBit p hi hbit
       (fun b hb => Nat.testBit_eq_of_shiftRight_eq hiprefix (by omega))
     exact iff_of_true hlt.le (sketch_le_lowerBoundary hiprefix hi)
@@ -313,11 +307,7 @@ private theorem le_iff_sketch_lt_upperBoundary {n w q : ℕ} {keys : Fin n → �
     shiftRight_highestDiff_add_one_eq (hbound j) hq (hmiss j)
   by_cases hiprefix : keys i >>> (p + 1) = q >>> (p + 1)
   · have hne := testBit_ne_of_min_highestDiff hbound hq hmiss j hmin i hiprefix
-    have hi : (keys i).testBit p = true := by
-      change (keys i).testBit p ≠ q.testBit p at hne
-      cases h : (keys i).testBit p
-      · exact False.elim (hne (h.trans hbit.symm))
-      · rfl
+    have hi : (keys i).testBit p = true := by grind
     have hlt : q < keys i := Nat.lt_of_testBit p hbit hi
       (fun b hb => (Nat.testBit_eq_of_shiftRight_eq hiprefix (by omega)).symm)
     exact iff_of_false (not_le_of_gt hlt)

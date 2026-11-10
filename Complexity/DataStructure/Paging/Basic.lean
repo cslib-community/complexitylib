@@ -139,9 +139,7 @@ theorem validStep_miss_subset {k : Nat} {s s' : Finset α} {p : α}
 theorem validStep_insert {k : Nat} {s : Finset α} {p : α}
     (hs : s.card < k) (hp : p ∉ s) :
     ValidStep k s p (insert p s) := by
-  have hcard : (insert p s).card ≤ k := by
-    rw [Finset.card_insert_of_notMem hp]
-    omega
+  have hcard : (insert p s).card ≤ k := by grind
   refine ⟨Nat.le_of_lt hs, hcard, Finset.mem_insert_self p s, ?_⟩
   simp only [hp, ↓reduceIte, Finset.Subset.refl]
 

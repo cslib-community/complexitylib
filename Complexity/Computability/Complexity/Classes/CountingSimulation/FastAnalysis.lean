@@ -119,8 +119,7 @@ theorem two_mul_sub_one_le_fuel {m p N D : ℕ} (hm : D + 2 ≤ m) (hp : p ≤ D
   have hE1 : (245760 * (p / m + 1) + 37) * m / σ ≤ 245797 * k + 245797 :=
     (Nat.div_le_div_right hX).trans (Nat.mul_div_le_mul_div_add _ _ _)
   have hE2 : 1398101 * k ≤ fuelConst * Y / Nat.sqrt (Nat.log 2 Y) := by
-    have h1 : fuelConst * Y / (3 * σ) ≤ fuelConst * Y / Nat.sqrt (Nat.log 2 Y) :=
-      Nat.div_le_div_left hσ' hσ'0
+    have h1 : fuelConst * Y / (3 * σ) ≤ fuelConst * Y / Nat.sqrt (Nat.log 2 Y) := by gcongr
     have h2 : fuelConst * Y / (3 * σ) = fuelConst * Y / σ / 3 := by
       rw [Nat.div_div_eq_div_mul, Nat.mul_comm σ 3]
     have h3 : fuelConst * k ≤ fuelConst * Y / σ := by

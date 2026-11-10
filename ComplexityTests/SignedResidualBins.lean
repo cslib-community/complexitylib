@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 
-import Complexity.Foundations.Probability.SignedResidualBins
+import Complexity.Computability.LogSpaceDerandomization.SignedResidualBins
 import Mathlib.Tactic.FinCases
 
 /-! Nonconstant signed residuals, clipped routing, raw ranks and substituted preparations. -/

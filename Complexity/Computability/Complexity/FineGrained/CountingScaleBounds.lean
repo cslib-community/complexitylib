@@ -149,8 +149,7 @@ theorem interpolationScale_two_pow_mul_le (k n : ℕ) :
     calc interpolationScale (2 ^ (k + 1) * n)
         = interpolationScale (2 * (2 ^ k * n)) := by rw [pow_succ', mul_assoc]
       _ ≤ 8 * interpolationScale (2 ^ k * n) := interpolationScale_two_mul_le _
-      _ ≤ 8 * ((8 : ℝ) ^ k * interpolationScale n) :=
-          mul_le_mul_of_nonneg_left ih (by norm_num)
+      _ ≤ 8 * ((8 : ℝ) ^ k * interpolationScale n) := by gcongr
       _ = (8 : ℝ) ^ (k + 1) * interpolationScale n := by rw [pow_succ', mul_assoc]
 
 /-- Scaling the argument by `C` multiplies `interpolationScale` by at most `8 ^ C`. -/

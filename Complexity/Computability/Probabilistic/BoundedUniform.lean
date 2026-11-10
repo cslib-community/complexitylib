@@ -92,22 +92,22 @@ theorem isPPTOn_sampleIntegerBox {α : Type} {input : α ↪ List Bool}
     (hradius : ComputableInPolyTime radius input encUnary)
     (hdimension : ComputableInPolyTime dimension input encUnary)
     (hattempts : ComputableInPolyTime attempts input encUnary) :
-    IsPPTOn input (encOption (encList encInt))
+    IsPPTOn input (encOption (encList encIntUnary))
       (fun a => sampleIntegerBox (radius a) (dimension a) (attempts a)) :=
   let e1 := encPair input (encOption encUnary)
-  let e2 := encOption encInt
+  let e2 := encOption encIntUnary
   let hb := ((ComputableInPolyTime.const 2).unary_mul' hradius).unary_add' (.const 1)
   let hcoord := ComputableInPolyTime.optionElimWithInput
     (body := fun (p : α × Option ℕ) (i : ℕ) => some ((i : ℤ) - radius p.1))
     (.snd input (encOption encUnary)) (.const none)
     (((ComputableInPolyTime.snd e1 encUnary).prod
       (((ComputableInPolyTime.fst e1 encUnary).trans (.fst input (encOption encUnary))).trans
-        hradius)).trans (ComputableInPolyTime.int_natCast_sub.trans (.optionSome encInt)))
+        hradius)).trans (ComputableInPolyTime.int_natCast_sub.trans (.optionSome encIntUnary)))
   let e3 := encList e2; let p2 := ComputableInPolyTime.snd e3 e2
-  let hcollect : ComputableInPolyTime collectBox e3 (encOption (encList encInt)) :=
+  let hcollect : ComputableInPolyTime collectBox e3 (encOption (encList encIntUnary)) :=
     (ComputableInPolyTime.allWithInput .id' p2.optionIsSome).ite
       ((ComputableInPolyTime.mapWithInput .id' (p2.optionGetDWithInput (.const 0))).trans
-        (.optionSome (encList encInt))) (.const none)
+        (.optionSome (encList encIntUnary))) (.const none)
   (((isPPTOn_sampleUniformInterval hb hattempts).map_with hcoord).replicate
     hdimension).map hcollect
 
@@ -116,13 +116,13 @@ radius; failure encodes as the empty word. -/
 theorem length_enc_sampleIntegerBox {radius dimension attempts : ℕ}
     {result : Option (List ℤ)}
     (h : result ∈ (ProbComp.eval (sampleIntegerBox radius dimension attempts)).support) :
-    (encOption (encList encInt) result).length ≤ dimension * (2 * radius + 3) + 1 := by
+    (encOption (encList encIntUnary) result).length ≤ dimension * (2 * radius + 3) + 1 := by
   cases result with
   | none => simp
   | some out =>
     obtain ⟨hlen, hbox⟩ := sampleIntegerBox_support h
-    have hlist := length_encList_le (b := radius + 1) encInt out fun z hz => by
-      obtain ⟨_, _⟩ := hbox z hz; rw [length_encInt]; split_ifs <;> omega
+    have hlist := length_encList_le (b := radius + 1) encIntUnary out fun z hz => by
+      obtain ⟨_, _⟩ := hbox z hz; rw [length_encIntUnary]; split_ifs <;> omega
     rw [hlen, show 2 * (radius + 1) + 1 = 2 * radius + 3 by omega] at hlist
     simp only [encOption_some, List.length_cons]; omega
 

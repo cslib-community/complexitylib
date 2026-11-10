@@ -301,9 +301,7 @@ theorem lt_effBucketCap_of_bucketBits_eq_zero {n : ℕ} (hb : bucketBits n = 0) 
 `effBucketCap n = 4 * (slabScale n) ^ 3`. -/
 theorem effBucketCap_eq_four_mul_slabScale_cubed_of_pos {n : ℕ} (hb : 0 < bucketBits n) :
     effBucketCap n = 4 * (slabScale n) ^ 3 := by
-  have hle : 3 * Dynamic.logLogFactor n ≤ Nat.log 2 n := by
-    unfold bucketBits at hb
-    omega
+  have hle : 3 * Dynamic.logLogFactor n ≤ Nat.log 2 n := by grind [bucketBits]
   have hm : microBits n = 3 * Dynamic.logLogFactor n := min_eq_right hle
   unfold effBucketCap numMicroPerBucket slabScale
   rw [hm, Nat.mul_comm 3 (Dynamic.logLogFactor n), pow_mul]
@@ -329,12 +327,7 @@ theorem effBucketPosBits_le (n : ℕ) :
     unfold effBucketCap numMicroPerBucket
     rw [Nat.pow_add]
     ring
-  have hpow : min n (effBucketCap n) + 1 ≤ 2 ^ (microBits n + 3) := by
-    have hmin : min n (effBucketCap n) ≤ effBucketCap n := Nat.min_le_right _ _
-    rw [hcap] at hmin
-    have hpos := Nat.two_pow_pos (microBits n + 2)
-    rw [Nat.pow_succ]
-    omega
+  have hpow : min n (effBucketCap n) + 1 ≤ 2 ^ (microBits n + 3) := by grind
   have hclog : Nat.clog 2 (min n (effBucketCap n) + 1) ≤ microBits n + 3 :=
     Nat.clog_le_of_le_pow hpow
   have h1 := microBits_le_three_mul_logLogFactor n
@@ -382,9 +375,7 @@ theorem slabSize_eq_sq_of_pos {n : ℕ} (hb : 0 < bucketBits n) :
 /-- When `0 < bucketBits n`, `numBuckets n * (slabScale n) ^ 3 ≤ n`. -/
 theorem numBuckets_mul_slabScale_cubed_le {n : ℕ} (hb : 0 < bucketBits n) :
     numBuckets n * (slabScale n) ^ 3 ≤ n := by
-  have hle : 3 * Dynamic.logLogFactor n < Nat.log 2 n := by
-    unfold bucketBits at hb
-    omega
+  have hle : 3 * Dynamic.logLogFactor n < Nat.log 2 n := by grind [bucketBits]
   have hn : 0 < n := by
     by_contra h0
     have hn0 : n = 0 := by omega
@@ -968,8 +959,7 @@ theorem tsum_uniform_probeExcess_twoStage_le {ι₁ ι₂ : Type*}
           sum_le_sum fun i₁ _ => hinner i₁
       _ = (∑ i₁ : ι₁, (if i₁ ∈ G then 3 else 2 * #(S.erase u))) * Fintype.card ι₂ := by
           rw [← sum_mul]
-      _ ≤ ((3 + C_bad) * Fintype.card ι₁) * Fintype.card ι₂ :=
-          Nat.mul_le_mul_right _ houter
+      _ ≤ ((3 + C_bad) * Fintype.card ι₁) * Fintype.card ι₂ := by gcongr
       _ = (3 + C_bad) * Fintype.card (ι₁ × ι₂) := by
           rw [Fintype.card_prod, mul_assoc]
   calc (∑' p : ι₁ × ι₂,
@@ -1160,9 +1150,7 @@ theorem globalMetaLen_mul_globalPtrBits_le (n : ℕ) :
     by_cases hb : bucketBits n = 0
     · have hvar : globalMetaVarLen n = 0 := by simp [globalMetaVarLen, hb]
       rw [hvar, Nat.zero_mul, Nat.add_zero]
-      have hlog : Nat.log 2 n ≤ 3 * Dynamic.logLogFactor n := by
-        unfold bucketBits at hb
-        omega
+      have hlog : Nat.log 2 n ≤ 3 * Dynamic.logLogFactor n := by grind [bucketBits]
       have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by decide) n
       have hpow : n + 1 ≤ 2 ^ (3 * Dynamic.logLogFactor n + 1) :=
         (by omega : n + 1 ≤ 2 ^ (Nat.log 2 n + 1)).trans
@@ -1205,18 +1193,14 @@ theorem globalMetaLen_le_of_bucketBits_pos {n : ℕ} (hb : 0 < bucketBits n) :
     globalMetaLen n ≤ n := by
   have hb0 : bucketBits n ≠ 0 := by omega
   have hll1 := Dynamic.one_le_logLogFactor n
-  have hlog4 : 4 ≤ Nat.log 2 n := by
-    unfold bucketBits at hb
-    omega
+  have hlog4 : 4 ≤ Nat.log 2 n := by grind [bucketBits]
   have hclog4 : 4 ≤ Nat.clog 2 (max n 4) :=
     (hlog4.trans (Nat.log_mono_right (le_max_left n 4))).trans (Nat.log_le_clog 2 _)
   have hll2 : 2 ≤ Dynamic.logLogFactor n := by
     unfold Dynamic.logLogFactor
     rw [show (2 : ℕ) = Nat.clog 2 4 by decide]
     exact Nat.clog_mono_right 2 hclog4
-  have hlog7 : 7 ≤ Nat.log 2 n := by
-    unfold bucketBits at hb
-    omega
+  have hlog7 : 7 ≤ Nat.log 2 n := by grind [bucketBits]
   have hclog5 : 5 ≤ Nat.clog 2 (max n 4) :=
     ((by omega : 5 ≤ Nat.log 2 n).trans (Nat.log_mono_right (le_max_left n 4))).trans
       (Nat.log_le_clog 2 _)
@@ -1234,8 +1218,7 @@ theorem globalMetaLen_le_of_bucketBits_pos {n : ℕ} (hb : 0 < bucketBits n) :
   have hS2_16 : 16 ≤ slabSize n := by
     rw [hK]
     nlinarith
-  have hdiv : n / slabSize n ≤ n / 16 :=
-    Nat.div_le_div_left hS2_16 (by decide)
+  have hdiv : n / slabSize n ≤ n / 16 := by gcongr
   have h5 : 3 + 4 * slabScale n + 2 * (2 * (slabScale n) ^ 2) ≤ 5 * (slabScale n) ^ 2 := by
     nlinarith
   have hm5 :

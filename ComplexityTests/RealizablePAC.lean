@@ -4,14 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.MachineLearning.PACLearning.DoubleSample
 import Complexity.MachineLearning.PACLearning.FiniteClass
 import Complexity.MachineLearning.PACLearning.GrowthFunction
+import Complexity.MachineLearning.PACLearning.VCUpperBound
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! Checks for distribution-free realizable PAC learning: realizability, consistency and empirical
 risk minimization on concrete distributions and learners; the finite-class Occam bound with
-explicit parameters, including a matching nonvacuity check that zero examples do not suffice; and
-the growth function and VC dimension of threshold concepts on `ℕ` and of all Boolean concepts. -/
+explicit parameters, including a matching nonvacuity check that zero examples do not suffice; the
+growth function and VC dimension of threshold concepts on `ℕ` and of all Boolean concepts; and
+ε-nets and the VC upper bound for thresholds, with an explicit sample size and a matching check
+that zero examples do not suffice; and the double-sample swap and ghost-sample bounds on concrete
+samples. -/
 
 namespace ComplexityTests.RealizablePAC
 
@@ -90,7 +95,7 @@ theorem measurableSet_misclassified_constants :
 theorem isPACLearnerFor_constants_three : IsPACLearnerFor 3 half half
     (constants : Set (Bool → Bool)) (realizableDistributions (constants : Set (Bool → Bool))) := by
   refine isPACLearnerFor_realizableDistributions_of_log_card_add_log_inv_le
-    measurableSet_misclassified_constants ⟨_, const_mem_constants true⟩ ?_
+    measurableSet_misclassified_constants ?_
   simp only [card_constants, half, Nat.cast_ofNat, NNReal.coe_div, NNReal.coe_one,
     NNReal.coe_ofNat, inv_div, div_one]
   linarith [Real.log_two_lt_d9]
@@ -133,7 +138,7 @@ example : 1 ≤ sampleComplexity IsPACLearnerFor (constants : Set (Bool → Bool
     unfold sampleComplexity at h0
     rwa [h0] at hmem
   · refine (sampleComplexity_realizableDistributions_le_of_finite
-      measurableSet_misclassified_constants ⟨_, const_mem_constants true⟩ half half).trans ?_
+      measurableSet_misclassified_constants half half).trans ?_
     refine Nat.ceil_le.2 ?_
     simp only [card_constants, half, Nat.cast_ofNat, NNReal.coe_div, NNReal.coe_one,
       NNReal.coe_ofNat, inv_div, div_one]
@@ -193,19 +198,19 @@ example : growthFunction thresholds 2 = 3 := by
     (fun W hW => card_le_one_of_setShatters_thresholds hW) (C := thresholds) 2
   refine le_antisymm (by simpa using hle) ?_
   have hsub : (({![true, true], ![false, true], ![false, false]} : Finset (Fin 2 → Bool)) :
-      Set (Fin 2 → Bool)) ⊆ restrictions thresholds ![0, 1] := by
+      Set (Fin 2 → Bool)) ⊆ restriction thresholds ![0, 1] := by
     intro v hv
     simp only [Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
       Set.mem_singleton_iff] at hv
-    rw [mem_restrictions]
+    rw [mem_restriction]
     rcases hv with rfl | rfl | rfl
     · exact ⟨fun x => decide (0 ≤ x), ⟨0, rfl⟩, by decide⟩
     · exact ⟨fun x => decide (1 ≤ x), ⟨1, rfl⟩, by decide⟩
     · exact ⟨fun x => decide (2 ≤ x), ⟨2, rfl⟩, by decide⟩
   calc 3 = (({![true, true], ![false, true], ![false, false]} : Finset (Fin 2 → Bool)) :
         Set (Fin 2 → Bool)).ncard := by rw [Set.ncard_coe_finset]; decide
-    _ ≤ (restrictions thresholds ![0, 1]).ncard := Set.ncard_le_ncard hsub (Set.toFinite _)
-    _ ≤ growthFunction thresholds 2 := ncard_restrictions_le_growthFunction _ _
+    _ ≤ (restriction thresholds ![0, 1]).ncard := Set.ncard_le_ncard hsub (Set.toFinite _)
+    _ ≤ growthFunction thresholds 2 := ncard_restriction_le_growthFunction _ _
 
 theorem hasFiniteVCDim_thresholds : HasFiniteVCDim thresholds :=
   hasFiniteVCDim_iff.2 ⟨1, fun _ hW => card_le_one_of_setShatters_thresholds hW⟩
@@ -241,5 +246,153 @@ example (m : ℕ) : growthFunction (Set.univ : ConceptClass ℕ Bool) m = 2 ^ m 
 /-- A finite class realizes at most as many labelings as it has concepts. -/
 example (m : ℕ) : growthFunction (constants : Set (Bool → Bool)) m ≤ 2 :=
   card_constants ▸ growthFunction_le_card constants m
+
+/-! ### ε-nets and the VC upper bound -/
+
+/-- Under a point mass at `0`, the one-point sample `0` is a `1 / 2`-net for thresholds: every
+threshold of mass at least `1 / 2` contains `0`. -/
+example : IsEpsNet (Measure.dirac (0 : ℕ)) thresholds (1 / 2) ![0] := by
+  rintro g - hg
+  refine ⟨0, ?_⟩
+  by_contra h
+  have h0 : g 0 = false := by simpa using h
+  have : (Measure.dirac (0 : ℕ)) {z | g z = true} = 0 := by
+    simp [h0]
+  rw [this] at hg
+  exact absurd hg (by simp)
+
+/-- The empty sample is not a `1 / 2`-net for thresholds under a point mass: the threshold at `0`
+has mass one and no sample point. -/
+example : ¬ IsEpsNet (Measure.dirac (0 : ℕ)) thresholds (1 / 2) (Fin.elim0 : Fin 0 → ℕ) := by
+  refine not_isEpsNet_iff.2 ⟨fun x => decide (0 ≤ x), ⟨0, rfl⟩, ?_, fun i => i.elim0⟩
+  simp only [zero_le, decide_true, Set.ofPred_true, measure_univ]
+  exact ENNReal.ofReal_le_one.2 (by norm_num)
+
+/-- **The ε-net theorem for thresholds**, a class of VC dimension one: under every distribution on
+`ℕ`, `m ≥ (8 / ε) (log (48 / ε) + log (4 / δ))` samples fail to be an ε-net with probability at
+most `δ`. -/
+example (μ : Measure ℕ) [IsProbabilityMeasure μ] {ε δ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
+    (hδ : 0 < δ) (hδ1 : δ ≤ 1) {m : ℕ} (hm : vcSampleSize 1 ε δ ≤ m) :
+    Measure.pi (fun _ : Fin m => μ) {S | ¬ IsEpsNet μ thresholds ε S} ≤ ENNReal.ofReal δ :=
+  measure_pi_not_isEpsNet_le_of_vcSampleSize_le μ
+    (fun _ hW => card_le_one_of_setShatters_thresholds hW) hε hε1 hδ hδ1 hm
+
+/-- Thresholds on `ℕ` are PAC learnable in the realizable setting. -/
+example : IsPACLearnable thresholds (realizableDistributions thresholds) :=
+  isPACLearnable_realizableDistributions_of_hasFiniteVCDim hasFiniteVCDim_thresholds
+
+/-- The empty class realizes no distribution, so zero examples learn it and its realizable sample
+complexity is `0`; this is why the VC and Occam corollaries need no nonemptiness hypothesis. -/
+example : sampleComplexity IsPACLearnerFor (∅ : ConceptClass ℕ Bool) half half
+    (realizableDistributions ∅) = 0 :=
+  Nat.eq_zero_of_le_zero
+    (Nat.sInf_le (isPACLearnerFor_realizableDistributions_empty (fun _ _ => false) half half))
+
+/-- `vcSampleSize 1 (1 / 2) (1 / 2) = 16 (log 96 + log 8) ≤ 112`, since `96 ≤ 2 ^ 7` and
+`log 2 < 0.7`. -/
+theorem vcSampleSize_one_half_half_le : vcSampleSize 1 (1 / 2) (1 / 2) ≤ 112 := by
+  have h96 : Real.log 96 ≤ 7 * Real.log 2 := by
+    calc Real.log 96 ≤ Real.log ((2 : ℝ) ^ 7) := Real.log_le_log (by norm_num) (by norm_num)
+      _ = 7 * Real.log 2 := by rw [Real.log_pow]; norm_num
+  have h8 : Real.log 8 = 3 * Real.log 2 := by
+    rw [show (8 : ℝ) = 2 ^ 3 by norm_num, Real.log_pow]
+    norm_num
+  rw [vcSampleSize, show (48 : ℝ) / (1 / 2) = 96 by norm_num,
+    show (4 : ℝ) / (1 / 2) = 8 by norm_num, h8]
+  push_cast
+  nlinarith [Real.log_two_lt_d9]
+
+/-- **An explicit VC sample size**: `112` examples learn thresholds to accuracy and confidence
+`1 / 2` over every realizable distribution on `ℕ`. -/
+theorem isPACLearnerFor_thresholds_112 :
+    IsPACLearnerFor 112 half half thresholds (realizableDistributions thresholds) := by
+  refine isPACLearnerFor_realizableDistributions_of_vcSampleSize_le
+    (fun _ hW => card_le_one_of_setShatters_thresholds hW) ?_
+  simp only [half, NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat, Nat.cast_ofNat]
+  exact vcSampleSize_one_half_half_le
+
+/-- Zero examples do not suffice for thresholds: the hypothesis output on the empty sample is wrong
+with probability one under a point mass at `0` labeled by the threshold at `0` or at `1`. -/
+theorem not_isPACLearnerFor_thresholds_zero :
+    ¬ IsPACLearnerFor 0 half half thresholds (realizableDistributions thresholds) := by
+  rintro ⟨A, hA⟩
+  set h0 := A fun i => i.elim0
+  set t : ℕ := if h0 0 then 1 else 0
+  set D : Measure (ℕ × Bool) := Measure.dirac (0, !h0 0)
+  have hD : D ∈ realizableDistributions thresholds := by
+    refine ⟨fun x => decide (t ≤ x), ⟨t, rfl⟩, ?_⟩
+    cases h : h0 0 <;> simp [D, error, t, h]
+  have key := hA D hD
+  rw [IsRealizableBy.optimalError_eq_zero hD, zero_add] at key
+  have hset : {S : LabeledSample ℕ Bool 0 | ((half.val : ℝ≥0) : ℝ≥0∞) < error D (A S)} =
+      Set.univ := by
+    refine Set.eq_univ_of_forall fun S => ?_
+    have hS : S = fun i => i.elim0 := Subsingleton.elim _ _
+    have herr : error D (A S) = 1 := by
+      rw [hS]
+      simp [D, error, h0]
+    change ((half.val : ℝ≥0) : ℝ≥0∞) < error D (A S)
+    rw [herr, half]
+    exact_mod_cast (by norm_num : (1 / 2 : ℝ≥0) < 1)
+  rw [hset, measure_univ, half] at key
+  exact absurd key (by exact_mod_cast (by norm_num : ¬ (1 : ℝ≥0) ≤ 1 / 2))
+
+/-- The realizable sample complexity of thresholds at `(1/2, 1/2)` lies in `[1, 112]`. -/
+example : 1 ≤ sampleComplexity IsPACLearnerFor thresholds half half
+      (realizableDistributions thresholds) ∧
+    sampleComplexity IsPACLearnerFor thresholds half half
+      (realizableDistributions thresholds) ≤ 112 := by
+  refine ⟨Nat.one_le_iff_ne_zero.2 fun h0 => not_isPACLearnerFor_thresholds_zero ?_,
+    Nat.sInf_le isPACLearnerFor_thresholds_112⟩
+  have hmem := Nat.sInf_mem (⟨112, isPACLearnerFor_thresholds_112⟩ :
+    {m | IsPACLearnerFor m half half thresholds (realizableDistributions thresholds)}.Nonempty)
+  unfold sampleComplexity at h0
+  rwa [h0] at hmem
+
+/-- The loss class of thresholds has growth function at most `m + 1`. -/
+example (m : ℕ) : growthFunction (lossClass thresholds) m ≤ m + 1 :=
+  (growthFunction_lossClass_le thresholds m).trans (by
+    simpa using growthFunction_le_add_one_pow
+      (fun W hW => card_le_one_of_setShatters_thresholds hW) m)
+
+/-! ### Double samples -/
+
+/-- Swapping preserves the product distribution on an uncountable domain as well: two i.i.d.
+Lebesgue samples of length `3` on `ℝ`. -/
+example (σ : Fin 3 → Bool) :
+    MeasurePreserving (swapSamples σ)
+      ((Measure.pi fun _ : Fin 3 => (volume : Measure ℝ)).prod (Measure.pi fun _ => volume))
+      ((Measure.pi fun _ : Fin 3 => (volume : Measure ℝ)).prod (Measure.pi fun _ => volume)) :=
+  measurePreserving_swapSamples volume σ
+
+/-- Swapping the only coordinate exchanges the two samples; swapping none leaves them alone. -/
+example (z : (Fin 1 → Bool) × (Fin 1 → Bool)) :
+    swapSamples (fun _ => true) z = (z.2, z.1) ∧ swapSamples (fun _ => false) z = z := by
+  constructor <;> ext i <;> simp
+
+/-- Swap counting on a nontrivial event: if the two one-point samples must differ at `0` with the
+first equal to `true`, at most one of the two swaps of any double sample lands in the event, so
+the event has probability at most `1 / 2` under every product distribution. -/
+example (μ : Measure Bool) [IsProbabilityMeasure μ] :
+    (Measure.pi (fun _ : Fin 1 => μ)).prod (Measure.pi fun _ : Fin 1 => μ)
+      {z | z.1 0 = true ∧ z.2 0 = false} ≤ 1 / 2 := by
+  refine measure_prod_le_of_card_filter_swapSamples_mem_le μ .of_discrete _ fun z => ?_
+  refine le_trans (b := ((1 : ℕ) : ℝ≥0∞))
+    (Nat.cast_le.2 (Finset.card_le_one.2 fun σ hσ τ hτ => funext fun i => ?_)) ?_
+  · obtain rfl : i = 0 := Subsingleton.elim _ _
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq,
+      fst_swapSamples_apply, snd_swapSamples_apply] at hσ hτ
+    cases hσ0 : σ 0 <;> cases hτ0 : τ 0 <;> simp_all
+  · rw [Nat.cast_one, pow_one, ENNReal.mul_div_cancel two_ne_zero ENNReal.ofNat_ne_top]
+
+/-- The ghost-sample bound with a point-mass second sample: if every first sample in `B` pairs with
+the constant sample `true` inside `J`, then `ν B ≤ (ν × δ_true) J`. -/
+example (ν : Measure (Fin 1 → Bool)) (B : Set (Fin 1 → Bool))
+    (J : Set ((Fin 1 → Bool) × (Fin 1 → Bool))) (hBJ : ∀ S ∈ B, (S, fun _ => true) ∈ J) :
+    ν B ≤ ν.prod (Measure.dirac fun _ => true) J := by
+  have h := mul_measure_le_measure_prod ν (Measure.dirac fun _ => true) B .of_discrete 1
+    fun S hS => (Measure.dirac_apply_of_mem (a := fun _ => true) (s := Prod.mk S ⁻¹' J)
+      (hBJ S hS)).ge
+  rwa [one_mul] at h
 
 end ComplexityTests.RealizablePAC

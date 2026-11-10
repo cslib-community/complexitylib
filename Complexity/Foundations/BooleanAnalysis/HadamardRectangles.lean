@@ -41,6 +41,8 @@ For probability weights this is the bias bound behind the Chor–Goldreich two-s
   product over rectangles.
 * `Cslib.BitString.card_mul_le_two_pow_of_dotProduct_eq`: the monochromatic inner-product rectangle
   bound.
+* `Cslib.BitString.sum_signVal_dotProduct_mul_signVal_dotProduct`: the rows of the sign matrix are
+  orthogonal.
 * `Cslib.BitString.sum_sq_sum_mul_signVal_dotProduct`: Parseval's identity for the Hadamard
   transform.
 * `Cslib.BitString.sq_sum_mul_signVal_dotProduct_le`: Lindsey's lemma with real weights.
@@ -110,28 +112,30 @@ theorem card_mul_le_two_pow_of_dotProduct_eq (A B : Finset (ι → Bool)) (b : B
 
 variable [DecidableEq ι]
 
+/-- **Orthogonality of the rows of the sign matrix** `(-1)^{x ⬝ᵥ y}`: distinct rows are orthogonal,
+and every row has squared length `2 ^ |ι|`. -/
+theorem sum_signVal_dotProduct_mul_signVal_dotProduct (x x' : ι → Bool) :
+    ∑ y : ι → Bool, signVal (x ⬝ᵥ y) * signVal (x' ⬝ᵥ y) =
+      if x = x' then 2 ^ Fintype.card ι else 0 := by
+  have hsign (y : ι → Bool) : signVal (x ⬝ᵥ y) * signVal (x' ⬝ᵥ y) =
+      if (x + x') ⬝ᵥ y then -1 else 1 := by
+    rw [← signVal_xor, add_dotProduct]
+    rfl
+  by_cases hxx : x = x'
+  · subst hxx
+    simp [signVal_mul_self]
+  · have hne : x + x' ≠ 0 := fun h => hxx (funext fun i => by
+      have hi := congrFun h i
+      simp only [Pi.add_apply, Pi.zero_apply] at hi
+      revert hi
+      cases x i <;> cases x' i <;> decide)
+    simp only [hsign, sum_ite_dotProduct, hne, hxx, ite_false]
+
 /-- **Parseval's identity for the Hadamard transform.** For real weights `a` on the bit strings
 indexed by `ι`, the transform `y ↦ ∑ₓ a(x) (-1)^{x ⬝ᵥ y}` has squared norm `2 ^ |ι|` times that of
 `a`: the sign matrix `(-1)^{x ⬝ᵥ y}` has orthogonal rows of squared length `2 ^ |ι|`. -/
 theorem sum_sq_sum_mul_signVal_dotProduct (a : (ι → Bool) → ℝ) :
     ∑ y : ι → Bool, (∑ x, a x * signVal (x ⬝ᵥ y)) ^ 2 = 2 ^ Fintype.card ι * ∑ x, a x ^ 2 := by
-  classical
-  have horth (x x' : ι → Bool) :
-      ∑ y : ι → Bool, signVal (x ⬝ᵥ y) * signVal (x' ⬝ᵥ y) =
-        if x = x' then 2 ^ Fintype.card ι else 0 := by
-    have hsign (y : ι → Bool) : signVal (x ⬝ᵥ y) * signVal (x' ⬝ᵥ y) =
-        if (x + x') ⬝ᵥ y then -1 else 1 := by
-      rw [← signVal_xor, add_dotProduct]
-      rfl
-    by_cases hxx : x = x'
-    · subst hxx
-      simp [signVal_mul_self]
-    · have hne : x + x' ≠ 0 := fun h => hxx (funext fun i => by
-        have hi := congrFun h i
-        simp only [Pi.add_apply, Pi.zero_apply] at hi
-        revert hi
-        cases x i <;> cases x' i <;> decide)
-      simp only [hsign, sum_ite_dotProduct, hne, hxx, ite_false]
   calc
     ∑ y : ι → Bool, (∑ x, a x * signVal (x ⬝ᵥ y)) ^ 2 =
         ∑ y : ι → Bool, ∑ x, ∑ x', a x * a x' * (signVal (x ⬝ᵥ y) * signVal (x' ⬝ᵥ y)) := by
@@ -144,7 +148,8 @@ theorem sum_sq_sum_mul_signVal_dotProduct (a : (ι → Bool) → ℝ) :
     _ = ∑ x, ∑ x', a x * a x' * ∑ y : ι → Bool, signVal (x ⬝ᵥ y) * signVal (x' ⬝ᵥ y) := by
       simp only [mul_sum]
     _ = 2 ^ Fintype.card ι * ∑ x, a x ^ 2 := by
-      simp only [horth, mul_ite, mul_zero, sum_ite_eq, mem_univ, ite_true, mul_sum]
+      simp only [sum_signVal_dotProduct_mul_signVal_dotProduct, mul_ite, mul_zero, sum_ite_eq,
+        mem_univ, ite_true, mul_sum]
       exact sum_congr rfl fun x _ => by ring
 
 /-- **Lindsey's lemma with weights.** For real weights `a` and `b` on the bit strings indexed by

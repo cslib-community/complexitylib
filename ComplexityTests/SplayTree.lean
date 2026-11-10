@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.DataStructure.SplayTree.Impl
+public import Complexity.DataStructure.SplayTree.WorkingSet
 public import ComplexityTests.OrderedSet
 
 /-!
@@ -29,6 +30,9 @@ These kernel-checked examples (using no `native_decide`) exercise:
    restructure the concrete tree (reducing repeat-query rotations to `0`) while preserving
    `Finset` semantics and satisfying both continuous (`realHistoryCost`) and discrete
    (`amortizedCharge`) amortized bounds.
+6. Working-set numbers (`workingSetNumbers`, `recencyRank`), finger distances (`fingerDist`), and
+   non-vacuity instances of the **Working Set Theorem** (`splaySeqTime_le_working_set`) and
+   **Static Finger Theorem** (`splaySeqTime_le_static_finger`).
 -/
 
 public section
@@ -222,5 +226,63 @@ example :
        finalState) = ({2, 3, 4, 5, 6, 7} : Finset ℕ) := by decide
   dsimp only at helt
   exact ⟨rfl, helt_rep.trans helt, hreal, hcost⟩
+
+-- 6. Static Finger and Working Set Theorems.
+
+-- 6a. Working-set numbers `t(j)` count *distinct* keys since the previous access of the same key
+-- (repeats of `2` count once), and all distinct earlier keys for a first access.
+example :
+    workingSetNumbers [1, 2, 2, 2, 1] = [0, 1, 0, 0, 1] ∧
+      workingSetNumbers [1, 2, 1, 3, 2, 1] = [0, 1, 1, 2, 2, 2] ∧
+      workingSetNumbers [1, 2, 3, 1, 2, 3] = [0, 1, 2, 2, 2, 2] ∧
+      workingSetNumbers ([] : List ℕ) = [] ∧
+      recencyRank 4 [3, 3, 4, 5] = 1 ∧
+      recencyRank 9 [3, 3, 4] = 2 := by
+  decide
+
+-- 6b. Finger distances on `rightSpine7` from finger `4` are `|y - 4|` on the keys, and count only
+-- stored keys for absent `y`.
+example :
+    (List.range 7).map (fingerDist (elements rightSpine7) 4 ∘ (· + 1)) = [3, 2, 1, 0, 1, 2, 3] ∧
+      fingerDist (elements rightSpine7) 4 0 = 3 ∧
+      fingerDist (elements rightSpine7) 4 99 = 3 := by
+  decide
+
+-- 6c. Working Set Theorem instance: repeated access to the deepest key of `rightSpine7` costs `9`
+-- (`6` rotations, then `1` each), within `4m + 6 ∑ log₂(t(j) + 1) + n (1 + 2 log₂ n)` with
+-- `t = [0, 0, 0, 0]`.
+private def repeat7 : List ℕ := [7, 7, 7, 7]
+
+example : splaySeqTime repeat7 rightSpine7 = 9 := by decide
+
+example : (splaySeqTime repeat7 rightSpine7 : ℝ) ≤ 16 + 7 * (1 + 2 * Real.logb 2 7) := by
+  have h := splaySeqTime_le_working_set repeat7 ordered_rightSpine7 (by decide)
+  have hws : workingSetNumbers repeat7 = [0, 0, 0, 0] := by decide
+  have hcard : (elements rightSpine7).card = 7 := by decide
+  rw [hws, hcard] at h
+  norm_num [repeat7] at h ⊢
+  linarith
+
+-- 6d. Static Finger Theorem instance with finger `7`: alternating accesses to `6` and `7` have
+-- finger distances `[1, 0, 1, 0, 1, 0]` and cost `10`.
+private def alternating : List ℕ := [6, 7, 6, 7, 6, 7]
+
+example : splaySeqTime alternating rightSpine7 = 10 := by decide
+
+example : (splaySeqTime alternating rightSpine7 : ℝ) ≤ 60 + 7 * (2 + 2 * Real.logb 2 7) := by
+  have h := splaySeqTime_le_static_finger alternating ordered_rightSpine7 (by decide)
+    (f := 7) (by decide)
+  have hd : alternating.map (fingerDist (elements rightSpine7) 7) = [1, 0, 1, 0, 1, 0] := by
+    decide
+  have hcard : (elements rightSpine7).card = 7 := by decide
+  have hlen : alternating.length = 6 := rfl
+  have hmap :
+      (alternating.map fun x => Real.logb 2 ((fingerDist (elements rightSpine7) 7 x : ℝ) + 1)) =
+        ([1, 0, 1, 0, 1, 0] : List ℕ).map fun k : ℕ => Real.logb 2 ((k : ℝ) + 1) := by
+    rw [← hd, List.map_map]
+    rfl
+  rw [hmap, hcard, hlen] at h
+  norm_num [Real.logb_self_eq_one] at h
+  linarith
 
 end ComplexityTests.SplayTree

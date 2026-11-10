@@ -196,8 +196,7 @@ private theorem exists_state_and_node_bounds {f : α × ℕ → β} {ν : α →
       nlinarith
     calc (encB (f (a, k))).length
         ≤ cb * ((encPair encA encNat (a, k)).length + 1) ^ db := h1
-      _ ≤ cb * ((c_p + 1) * ((encA a).length + 1) ^ d_st) ^ db :=
-          Nat.mul_le_mul_left cb (Nat.pow_le_pow_left h3 db)
+      _ ≤ cb * ((c_p + 1) * ((encA a).length + 1) ^ d_st) ^ db := by gcongr
       _ = cb * (c_p + 1) ^ db * ((encA a).length + 1) ^ (d_st * db) := by
           rw [mul_pow, ← pow_mul, ← mul_assoc]
 
@@ -254,8 +253,7 @@ theorem DecidableInExpTime.of_exhaustiveSearch {f : α × ℕ → β} {ν : α �
     have h₁ : (2 : ℝ) ^ (δ * μB b) ≤ 2 ^ (δ * ((c * μA a + c : ℕ) : ℝ)) :=
       Real.rpow_le_rpow_of_exponent_le (by norm_num)
         (mul_le_mul_of_nonneg_left (by exact_mod_cast hb_mu) hδ)
-    have h₂ : (((encB b).length : ℝ) + 1) ^ e ≤ ((ndBound a : ℝ) + 1) ^ e :=
-      pow_le_pow_left₀ (by positivity) (by exact_mod_cast Nat.add_le_add_right hb_enc 1) e
+    have h₂ : (((encB b).length : ℝ) + 1) ^ e ≤ ((ndBound a : ℝ) + 1) ^ e := by gcongr
     have h₃ := mul_le_mul h₁ h₂ (by positivity) (by positivity)
     have h₄ := mul_le_mul_of_nonneg_left h₃ (Nat.cast_nonneg k_dec : (0 : ℝ) ≤ k_dec)
     have h₅ := (ht b).trans (add_le_add h₄ le_rfl)
@@ -343,8 +341,7 @@ theorem DecidableInExpTime.of_exhaustiveSearch {f : α × ℕ → β} {ν : α �
         have hpow1 : (1 : ℝ) ≤ ((L : ℝ) + 1) ^ d_nd :=
           one_le_pow₀ (by linarith [(L.cast_nonneg : (0 : ℝ) ≤ L)])
         nlinarith
-      calc ((ndBound a : ℝ) + 1) ^ e ≤ (((c_nd : ℝ) + 1) * ((L : ℝ) + 1) ^ d_nd) ^ e :=
-            pow_le_pow_left₀ (by positivity) hnb_le e
+      calc ((ndBound a : ℝ) + 1) ^ e ≤ (((c_nd : ℝ) + 1) * ((L : ℝ) + 1) ^ d_nd) ^ e := by gcongr
         _ = ((c_nd : ℝ) + 1) ^ e * ((L : ℝ) + 1) ^ (d_nd * e) := by rw [mul_pow, ← pow_mul]
         _ ≤ ((c_nd : ℝ) + 1) ^ e * P := by
             refine mul_le_mul_of_nonneg_left ?_ (by positivity)

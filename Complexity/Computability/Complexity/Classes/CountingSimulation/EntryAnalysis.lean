@@ -107,8 +107,7 @@ theorem onSchedule_rootCall {P C r : ℕ} {G : DescribedNetwork T}
 /-- Dividing the precision by the logarithmic allowance restores a linear root bound. -/
 theorem normalizedPrecision_le {m s P D : ℕ} (hsm : s ≤ m)
     (hP : P ≤ D * s * (Nat.log 2 s + 1)) : normalizedPrecision m P ≤ D * s := by
-  have hlog : Nat.log 2 s + 1 ≤ Nat.log 2 m + 1 := Nat.add_le_add_right
-    (Nat.log_mono_right hsm) 1
+  have hlog : Nat.log 2 s + 1 ≤ Nat.log 2 m + 1 := by gcongr
   have hp := hP.trans (Nat.mul_le_mul_left (D * s) hlog)
   have h := Nat.div_le_div_right (c := Nat.log 2 m + 1) hp
   rw [Nat.mul_div_cancel _ (Nat.succ_pos _)] at h
@@ -139,8 +138,7 @@ theorem clock_le {C D s P r : ℕ} {fl : List ℕ} {G : DescribedNetwork T} (hs 
   have hsy : s ≤ y := by omega
   have hq : 1 ≤ Nat.sqrt (Nat.log 2 s) := Nat.one_le_sqrt_log_two hs
   have hq' : Nat.sqrt (Nat.log 2 s) ≤ Nat.sqrt (Nat.log 2 y) := Nat.sqrt_log_two_mono hsy
-  calc fuelConst * y / Nat.sqrt (Nat.log 2 y) ≤ fuelConst * y / Nat.sqrt (Nat.log 2 s) :=
-        Nat.div_le_div_left hq' hq
+  calc fuelConst * y / Nat.sqrt (Nat.log 2 y) ≤ fuelConst * y / Nat.sqrt (Nat.log 2 s) := by gcongr
     _ ≤ fuelConst * (C + D) * s / Nat.sqrt (Nat.log 2 s) := by
         refine Nat.div_le_div_right ?_
         rw [Nat.mul_assoc]
@@ -406,9 +404,7 @@ theorem exists_entryLeaves_le
           Nat.mul_le_mul (Nat.mul_le_mul_right _ hWK) hE1
       _ = KB * cW ^ KB * cE * Y ^ ((24 + C) * KB + C) * 2 ^ (KB * s / S + s / S) := by
           rw [pow_add, pow_add]; ring
-      _ ≤ K * Y ^ K * 2 ^ (K * s / S) :=
-          Nat.mul_le_mul (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hY1 (by omega)))
-            (Nat.pow_le_pow_right (by norm_num) hexp)
+      _ ≤ K * Y ^ K * 2 ^ (K * s / S) := by gcongr <;> omega
   · calc _ ≤ KB * ((encCall encT y).length + C * (s + L + 1) ^ C + 1) ^ KB := hSp
       _ ≤ KB * cW ^ KB * Y ^ ((24 + C) * KB) := hWK
       _ ≤ K * Y ^ K := by

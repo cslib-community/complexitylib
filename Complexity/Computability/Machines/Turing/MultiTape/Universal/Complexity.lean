@@ -25,8 +25,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 # The cost of a step of the simulation
 
 States, symbols and moves are encoded in unary (`Turing.MultiTapeTM.encUnary`), head positions on
-the work tapes as integers (`Turing.MultiTapeTM.encInt`), the position of the input head in binary
-(`Turing.MultiTapeTM.encNat`), and a structure as the framed tuple of its fields.
+the work tapes as unary integers (`Turing.MultiTapeTM.encIntUnary`), the position of the input head
+in binary (`Turing.MultiTapeTM.encNat`), and a structure as the framed tuple of its fields.
 
 Reading, writing and moving on a zipper are computable in linear time and space
 (`Turing.MultiTapeTM.ComputableInDegree` with degrees one). A step of
@@ -82,7 +82,7 @@ enc_structure eDesc : Desc where
   tapes : encUnary, q₀ : encUnary, table : (encList (encPair eKey eAct))
 
 /-- Work tapes, as their fields. -/
-enc_structure eTape : Tape where head : encInt, left : (encList eSym), right : (encList eSym)
+enc_structure eTape : Tape where head : encIntUnary, left : (encList eSym), right : (encList eSym)
 
 /-- Configurations, as their fields. -/
 enc_structure eCfg : SCfg where state : eSym, inputPos : encNat, workTapes : (encList eTape)
@@ -202,15 +202,15 @@ lemma length_eTape_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
   obtain ⟨w, m⟩ := a
   have := length_encList_eq_le l
   have := length_encList_eq_le r
-  have := length_encInt_add_one_le h
-  have := length_encInt_sub_one_le h
+  have := length_encIntUnary_add_one_le h
+  have := length_encIntUnary_sub_one_le h
   rcases w with _ | o <;> rcases m with _ | _ | _ <;>
     simp only [Tape.apply, Tape.move, Tape.write, Tape.read, Option.elim, eTape_apply,
       length_encPair, encList_cons, List.length_append, length_frame, encOption_some,
       List.length_cons, List.headD_cons, List.tail_cons] <;> omega
 
 lemma four_le_length_eTape (t : Tape) : 4 ≤ (eTape t).length := by
-  have : 1 ≤ (encInt t.head).length := by rw [length_encInt]; split_ifs <;> omega
+  have : 1 ≤ (encIntUnary t.head).length := by rw [length_encIntUnary]; split_ifs <;> omega
   simp only [eTape_apply, length_encPair]
   omega
 

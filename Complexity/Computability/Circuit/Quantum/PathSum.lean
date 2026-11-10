@@ -31,7 +31,10 @@ simulations, which places `BQP` in the counting classes
 (`Complexity/Computability/Complexity/Classes/BQP/Counting.lean`). The same holds for the
 probability that every qubit of a list `S` reads `1`, with the pairs of paths ending in the same
 register in which every qubit of `S` is one (`Cslib.Quantum.onesProb_eq_onesGap`); the acceptance
-gap is the case `S = [0]`.
+gap is the case `S = [0]`. Pairs of paths from two different basis states `x` and `x'` give the
+overlap of the two final states on those outcomes (`Cslib.Quantum.sum_onesAt_star_run_mul_run`),
+the projected pair gap `Cslib.Quantum.onesPairGap S gs x x'` over `2^h`; these are the entries of
+the acceptance operator of a quantum verifier on its witness space.
 
 ## Main definitions
 
@@ -41,6 +44,8 @@ gap is the case `S = [0]`.
 * `Cslib.Quantum.onesTerm`, `Cslib.Quantum.onesGap`: the signed count of pairs of paths of the
   probability that every qubit of a list reads `1`.
 * `Cslib.Quantum.acceptGap`: its case of qubit `0`, for the acceptance probability.
+* `Cslib.Quantum.onesPairTerm`, `Cslib.Quantum.onesPairGap`: the same for pairs of paths from two
+  registers.
 
 ## Main results
 
@@ -48,6 +53,7 @@ gap is the case `S = [0]`.
 * `Cslib.Quantum.run_ofCodes_apply`: amplitudes are path sums.
 * `Cslib.Quantum.onesProb_eq_onesGap`, `Cslib.Quantum.acceptProb_eq_acceptGap`: probabilities are
   projected gaps over `2^h`.
+* `Cslib.Quantum.sum_onesAt_star_run_mul_run`: overlaps are projected pair gaps over `2^h`.
 * `Cslib.Quantum.onesGap_nonneg_and_le`, `Cslib.Quantum.onesGap_nil_eq_two_pow`: so projected
   gaps lie between `0` and `2^h`, with `2^h` for the empty list.
 * `Cslib.Quantum.acceptGap_nil`: the acceptance gap of the empty circuit is the bit of qubit `0`.
@@ -139,6 +145,29 @@ def onesGap (S : List ℕ) (gs : List GateCode) (x : List Bool) : ℤ :=
 /-- The acceptance gap: the projected gap of qubit `0`. -/
 def acceptGap (gs : List GateCode) (x : List Bool) : ℤ := onesGap [0] gs x
 
+/-- The signed contribution of a pair of paths, one from the register `x` and one from `x'`, to the
+overlap of the two final states on the outcomes in which every qubit of `S` reads `1`: the product
+of their signs when both end in the same register with every qubit of `S` equal to one, and `0`
+otherwise. For `x = x'` this is `onesTerm` (`Cslib.Quantum.onesTerm_eq_onesPairTerm`). -/
+def onesPairTerm (S : List ℕ) (gs : List GateCode) (x x' π π' : List Bool) : ℤ :=
+  match pathRun gs x π, pathRun gs x' π' with
+  | (s, σ), (s', σ') =>
+    if s = s' ∧ (S.all fun j => s.getD j false) = true then (if σ ^^ σ' then -1 else 1) else 0
+
+/-- The **projected pair gap** of `S` on the registers `x` and `x'`: the sum of `onesPairTerm S`
+over all pairs of paths. For `x = x'` this is `onesGap` (`Cslib.Quantum.onesGap_eq_onesPairGap`). -/
+def onesPairGap (S : List ℕ) (gs : List GateCode) (x x' : List Bool) : ℤ :=
+  ∑ π : Fin (hadamardCount gs) → Bool, ∑ π' : Fin (hadamardCount gs) → Bool,
+    onesPairTerm S gs x x' (List.ofFn π) (List.ofFn π')
+
+theorem onesTerm_eq_onesPairTerm (S : List ℕ) (gs : List GateCode) (x π π' : List Bool) :
+    onesTerm S gs x π π' = onesPairTerm S gs x x π π' :=
+  rfl
+
+theorem onesGap_eq_onesPairGap (S : List ℕ) (gs : List GateCode) (x : List Bool) :
+    onesGap S gs x = onesPairGap S gs x x :=
+  rfl
+
 /-- The contribution of a pair of paths to the acceptance gap: the product of their signs when both
 end in the same register with qubit `0` equal to one, and `0` otherwise. -/
 theorem onesTerm_zero (gs : List GateCode) (x π π' : List Bool) :
@@ -146,6 +175,18 @@ theorem onesTerm_zero (gs : List GateCode) (x π π' : List Bool) :
       if (pathRun gs x π).1 = (pathRun gs x π').1 ∧ (pathRun gs x π).1.headD false = true then
         (if (pathRun gs x π).2 ^^ (pathRun gs x π').2 then -1 else 1) else 0 := by
   simp only [onesTerm, List.all_cons, List.all_nil, Bool.and_true]
+  generalize pathRun gs x π = r
+  obtain ⟨s, σ⟩ := r
+  cases s <;> rfl
+
+/-- The contribution of a pair of paths from two registers to the acceptance overlap: the product
+of their signs when both end in the same register with qubit `0` equal to one, and `0`
+otherwise. -/
+theorem onesPairTerm_zero (gs : List GateCode) (x x' π π' : List Bool) :
+    onesPairTerm [0] gs x x' π π' =
+      if (pathRun gs x π).1 = (pathRun gs x' π').1 ∧ (pathRun gs x π).1.headD false = true then
+        (if (pathRun gs x π).2 ^^ (pathRun gs x' π').2 then -1 else 1) else 0 := by
+  simp only [onesPairTerm, List.all_cons, List.all_nil, Bool.and_true]
   generalize pathRun gs x π = r
   obtain ⟨s, σ⟩ := r
   cases s <;> rfl
@@ -265,23 +306,23 @@ private theorem pathTerm_eq (gs : List GateCode) (x y π : List Bool) :
       if (pathRun gs x π).1 = y then (if (pathRun gs x π).2 then -1 else 1) else 0 :=
   rfl
 
-private theorem onesTerm_eq (S : List ℕ) (gs : List GateCode) (x π π' : List Bool) :
-    onesTerm S gs x π π' =
-      if (pathRun gs x π).1 = (pathRun gs x π').1 ∧
+private theorem onesPairTerm_eq (S : List ℕ) (gs : List GateCode) (x x' π π' : List Bool) :
+    onesPairTerm S gs x x' π π' =
+      if (pathRun gs x π).1 = (pathRun gs x' π').1 ∧
           (S.all fun j => (pathRun gs x π).1.getD j false) = true then
-        (if (pathRun gs x π).2 ^^ (pathRun gs x π').2 then -1 else 1) else 0 :=
+        (if (pathRun gs x π).2 ^^ (pathRun gs x' π').2 then -1 else 1) else 0 :=
   rfl
 
 /-- Summing the products of two path contributions over the outcomes in which every qubit of `S`
 reads `1` gives the contribution of the pair. -/
-private theorem sum_onesAt_pathTerm_mul (S : List ℕ) (gs : List GateCode) (x π π' : List Bool)
+private theorem sum_onesAt_pathTerm_mul (S : List ℕ) (gs : List GateCode) (x x' π π' : List Bool)
     (hx : x.length = m) :
-    ∑ y ∈ onesAt m S, pathTerm gs x (List.ofFn y) π * pathTerm gs x (List.ofFn y) π' =
-      onesTerm S gs x π π' := by
+    ∑ y ∈ onesAt m S, pathTerm gs x (List.ofFn y) π * pathTerm gs x' (List.ofFn y) π' =
+      onesPairTerm S gs x x' π π' := by
   have hs : (pathRun gs x π).1.length = m := (length_foldl_pathStep gs x π false).trans hx
-  simp only [pathTerm_eq, onesTerm_eq]
+  simp only [pathTerm_eq, onesPairTerm_eq]
   generalize pathRun gs x π = r at hs ⊢
-  generalize pathRun gs x π' = r'
+  generalize pathRun gs x' π' = r'
   obtain ⟨s, σ⟩ := r
   obtain ⟨s', σ'⟩ := r'
   dsimp only at hs ⊢
@@ -307,16 +348,25 @@ private theorem sum_onesAt_pathTerm_mul (S : List ℕ) (gs : List GateCode) (x �
     · simp [hss, Ne.symm hss]
   · simp only [h₀, ite_false, mt hacc.mpr h₀, Bool.false_eq_true, and_false]
 
+/-- The products of the amplitude gaps of the outcomes in which every qubit of `S` reads `1` sum to
+the projected pair gap of `S`. -/
+private theorem sum_onesAt_pathGap_mul (S : List ℕ) (gs : List GateCode) (x x' : List Bool)
+    (hx : x.length = m) :
+    ∑ y ∈ onesAt m S, pathGap gs x (List.ofFn y) * pathGap gs x' (List.ofFn y) =
+      onesPairGap S gs x x' := by
+  simp only [pathGap, Finset.sum_mul_sum, onesPairGap]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun π _ => ?_
+  rw [Finset.sum_comm]
+  exact Finset.sum_congr rfl fun π' _ => sum_onesAt_pathTerm_mul S gs x x' _ _ hx
+
 /-- The squared amplitude gaps of the outcomes in which every qubit of `S` reads `1` sum to the
 projected gap of `S`. -/
 private theorem sum_onesAt_pathGap_sq (S : List ℕ) (gs : List GateCode) (x : List Bool)
     (hx : x.length = m) :
     ∑ y ∈ onesAt m S, pathGap gs x (List.ofFn y) ^ 2 = onesGap S gs x := by
-  simp only [pathGap, sq, Finset.sum_mul_sum, onesGap]
-  rw [Finset.sum_comm]
-  refine Finset.sum_congr rfl fun π _ => ?_
-  rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun π' _ => sum_onesAt_pathTerm_mul S gs x _ _ hx
+  simp only [sq]
+  exact sum_onesAt_pathGap_mul S gs x x hx
 
 /-- **Probabilities are projected gaps over `2^h`**: for well-formed codes, the probability that
 every qubit of `S` reads `1` is `onesGap S` divided by `2^h`, where `h` counts the Hadamard
@@ -344,6 +394,26 @@ theorem acceptProb_eq_acceptGap (gs : List GateCode) (hgs : ∀ g ∈ gs, g.Well
     acceptProb m gs x =
       (acceptGap gs (List.ofFn (inputState m x)) : ℝ) / 2 ^ hadamardCount gs := by
   rw [acceptGap, acceptProb_eq_onesProb, onesProb_eq_onesGap gs hgs]
+
+/-- **Overlaps are projected pair gaps over `2^h`**: for well-formed codes, the overlap
+`∑_{y ∈ onesAt m S} conj ⟨y|C|x⟩ ⟨y|C|x'⟩` of the final states from the basis states `x` and `x'` on
+the outcomes in which every qubit of `S` reads `1` is `onesPairGap S` divided by `2^h`. The
+amplitudes are real, so no conjugate remains on the right. -/
+theorem sum_onesAt_star_run_mul_run (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellFormed m)
+    (S : List ℕ) (x x' : Fin m → Bool) :
+    ∑ y ∈ onesAt m S, star ((Circuit.run (Circuit.ofCodes m gs) x).ofLp y) *
+        (Circuit.run (Circuit.ofCodes m gs) x').ofLp y =
+      (onesPairGap S gs (List.ofFn x) (List.ofFn x') : ℂ) / 2 ^ hadamardCount gs := by
+  have hr : (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) ^ hadamardCount gs *
+      (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) ^ hadamardCount gs = 1 / 2 ^ hadamardCount gs := by
+    rw [← mul_pow, ← Complex.ofReal_mul, ← mul_inv, Real.mul_self_sqrt (by norm_num)]
+    simp
+  simp only [run_ofCodes_apply gs hgs, star_mul', star_pow, Complex.star_def, Complex.conj_ofReal,
+    map_intCast]
+  rw [← sum_onesAt_pathGap_mul S gs _ _ (List.length_ofFn), Int.cast_sum, Finset.sum_div]
+  refine Finset.sum_congr rfl fun y _ => ?_
+  rw [Int.cast_mul, div_eq_mul_one_div, ← hr]
+  ring
 
 /-- **A projected gap is a count between `0` and `2 ^ h`** for well-formed codes on the register
 `X`, since it is `2 ^ h` times a probability. -/

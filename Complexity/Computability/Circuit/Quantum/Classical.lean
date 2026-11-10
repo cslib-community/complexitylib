@@ -201,6 +201,40 @@ theorem readBit_classicalRun_of_forall_notMem {gs : List GateCode} (h : IsClassi
     rw [all_readBit_classicalStep x _ (hread g (List.mem_cons_self ..) g'
       (List.mem_cons_of_mem _ hg'))]
 
+/-- Classical codes none of which targets `q` leave bit `q` unchanged. -/
+theorem readBit_classicalRun_of_forall_ne {gs : List GateCode} {q : ℕ}
+    (h : ∀ g ∈ gs, g.2.1 ≠ q) (x : Fin m → Bool) :
+    readBit (classicalRun gs x) q = readBit x q := by
+  induction gs generalizing x with
+  | nil => rfl
+  | cons g gs ih =>
+    rw [classicalRun_cons, ih (fun g' hg' => h g' (List.mem_cons_of_mem _ hg')),
+      readBit_classicalStep]
+    simp [Ne.symm (h g (List.mem_cons_self ..))]
+
+/-- **Classical codes with distinct targets that no code reads** flip each target exactly when the
+controls of its code are one on the initial string. -/
+theorem readBit_classicalRun_of_mem {gs : List GateCode} (hlt : ∀ g ∈ gs, g.2.1 < m)
+    (hnd : (gs.map fun g => g.2.1).Nodup) (hread : ∀ g ∈ gs, ∀ g' ∈ gs, g.2.1 ∉ g'.2.2)
+    (x : Fin m → Bool) {g : GateCode} (hg : g ∈ gs) :
+    readBit (classicalRun gs x) g.2.1 = (readBit x g.2.1 ^^ g.2.2.all (readBit x)) := by
+  induction gs generalizing x with
+  | nil => simp at hg
+  | cons g₀ gs ih =>
+    rw [List.map_cons, List.nodup_cons] at hnd
+    rw [classicalRun_cons]
+    rcases List.mem_cons.mp hg with rfl | hg
+    · rw [readBit_classicalRun_of_forall_ne
+        (fun g' hg' h => hnd.1 (List.mem_map.mpr ⟨g', hg', h⟩)), readBit_classicalStep]
+      simp [hlt g (List.mem_cons_self ..)]
+    · rw [ih (fun g' hg' => hlt g' (List.mem_cons_of_mem _ hg')) hnd.2
+        (fun g₁ h₁ g₂ h₂ => hread g₁ (List.mem_cons_of_mem _ h₁) g₂ (List.mem_cons_of_mem _ h₂))
+        _ hg, readBit_classicalStep,
+        all_readBit_classicalStep x _ (hread g₀ (List.mem_cons_self ..) g
+          (List.mem_cons_of_mem _ hg))]
+      have hne : g.2.1 ≠ g₀.2.1 := fun h => hnd.1 (List.mem_map.mpr ⟨g, hg, h⟩)
+      simp [hne]
+
 /-- An exclusive or over a range in which only the term `i₀` can be nonzero. -/
 theorem foldl_xor_range (T i₀ : ℕ) (f : ℕ → Bool) (b : Bool) (hf : ∀ i < T, i ≠ i₀ → f i = false) :
     (List.range T).foldl (fun b i => b ^^ f i) b = (b ^^ (decide (i₀ < T) && f i₀)) := by

@@ -151,9 +151,7 @@ private theorem error_step {D E M wg wo vg vo n : ℤ} (c : Bool)
         (wg * (vg - E * (if c then 1 else 0))) (wo * (vo - E * (if c then 1 else 0)))
     _ = wg * (M * |vg - E * (if c then 1 else 0)|) +
         (M * wo) * |vo - E * (if c then 1 else 0)| := by ring
-    _ ≤ wg * (n * E) + D * E :=
-      add_le_add (mul_le_mul_of_nonneg_left hvg hg)
-        (mul_le_mul herr hbad (abs_nonneg _) hD)
+    _ ≤ wg * (n * E) + D * E := by gcongr
     _ ≤ D * (n * E) + D * E :=
       add_le_add (mul_le_mul_of_nonneg_right (show wg ≤ D by omega) (mul_nonneg hn hE)) le_rfl
     _ = (n + 1) * (D * E) := by ring

@@ -115,8 +115,7 @@ private theorem keyGenCoefficients_ofFn {d q : ℕ} (hq : 0 < q)
     List.ofFn (fun i => ((A *ᵥ (Int.cast ∘ s)) i + (e i : ZMod q)).val) := by
   let : NeZero q := ⟨hq.ne'⟩
   rw [keyGenCoefficients, List.map_range_eq_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp only [List.getD_ofFn, List.map_ofFn, Function.comp_def]
   have h := ListMatrix.intCast_dotProduct_matrix_ofFn A s i
   simp only [List.getD_ofFn, ZMod.cast_eq_val, Function.comp_def] at h
@@ -522,8 +521,7 @@ private theorem decryptSecretCoeffs_ofFn {k n q : ℕ} (hq : 0 < q)
       List.ofFn fun l : Fin n => (s j l : ZMod q).val := by
   unfold decryptSecretCoeffs
   rw [List.map_range_eq_ofFn]
-  congr 1
-  funext l
+  congr 1 with l : 1
   have hidx : (finProdFinEquiv (j, l)).val = j.val * n + l.val := by
     simp [finProdFinEquiv, mul_comm, add_comm]
   have hlen : j.val * n + l.val < k * n := by
@@ -548,8 +546,7 @@ private theorem decryptProducts_ofFn {k n q : ℕ} (hq : 0 < q)
         (negacyclicMul (ct.1 j) (fun l => (s j l : ZMod q)) l).val := by
   unfold decryptProducts
   rw [List.map_range_eq_ofFn]
-  congr 1
-  funext j
+  congr 1 with j : 1
   have hu : (List.ofFn fun i : Fin (k + 1) => List.ofFn fun j : Fin n =>
       (extendCiphertext ct i j).val).getD (j.val + 1) [] =
       List.ofFn fun l : Fin n => (ct.1 j l).val := by
@@ -588,8 +585,7 @@ private theorem decryptBits_ofFn {k n q : ℕ} (hq : 0 < q)
   let : NeZero q := ⟨hq.ne'⟩
   rw [decryptBits_def]
   rw [List.map_range_eq_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   have hv : (List.ofFn fun i : Fin (k + 1) => List.ofFn fun j : Fin n =>
       (extendCiphertext ct i j).val).getD 0 [] =
       List.ofFn fun l : Fin n => (ct.2 l).val := by

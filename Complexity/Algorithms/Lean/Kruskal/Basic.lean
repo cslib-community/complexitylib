@@ -201,6 +201,22 @@ theorem Perm.totalWeight_eq {n : ℕ} {W : Type} [AddCommMonoid W]
     totalWeight es₁ = totalWeight es₂ :=
   (h.map WeightedEdge.weight).sum_eq
 
+/-- Deleting edges of nonnegative weight does not increase the total weight. -/
+theorem Sublist.totalWeight_le {n : ℕ} {W : Type}
+    [AddCommMonoid W] [Preorder W] [IsOrderedAddMonoid W]
+    {es₁ es₂ : List (WeightedEdge n W)} (h : es₁.Sublist es₂)
+    (hnonneg : ∀ e ∈ es₂, 0 ≤ e.weight) :
+    totalWeight es₁ ≤ totalWeight es₂ := by
+  induction h with
+  | slnil => exact le_rfl
+  | cons e _ ih =>
+    rw [totalWeight_cons]
+    exact le_add_of_nonneg_of_le (hnonneg e List.mem_cons_self)
+      (ih fun x hx => hnonneg x (List.mem_cons_of_mem e hx))
+  | cons_cons e _ ih =>
+    rw [totalWeight_cons, totalWeight_cons]
+    exact add_le_add le_rfl (ih fun x hx => hnonneg x (List.mem_cons_of_mem e hx))
+
 /-- Partition obtained by merging the endpoints of every edge in `es` starting from `p`. -/
 @[expose] def edgePartitionFrom {n : ℕ} {W : Type} (p : Partition n)
     (es : List (WeightedEdge n W)) : Partition n :=
@@ -452,9 +468,7 @@ private theorem exists_perm_cons_of_numComponents_add_length_eq_succ {n : ℕ} {
       · exact (hperm.cons e).trans (List.Perm.swap f e L₁)
       · simpa only [edgePartitionFrom_cons] using hpart
     · rw [Partition.merge_of_rel hrel] at h
-      have hacyc : IsAcyclicFrom p L₀ := by
-        unfold IsAcyclicFrom
-        omega
+      have hacyc : IsAcyclicFrom p L₀ := by grind [IsAcyclicFrom]
       refine ⟨e, L₀, List.Perm.refl _, ?_, hacyc⟩
       rw [edgePartitionFrom_cons, Partition.merge_of_rel hrel]
 
@@ -880,6 +894,15 @@ theorem kruskalEdges_isMinSpanningForest {n : ℕ} {W : Type}
     hpart.trans (Perm.edgePartition_eq (sortEdges_perm es)).symm
   exact totalWeight_kruskalScan_le (Partition.discrete n) (sortEdges_sorted es)
     ⟨hsub', hacyc, hpart'⟩
+
+/-- With nonnegative weights, Kruskal's forest weighs at most its whole input. -/
+theorem totalWeight_kruskalEdges_le {n : ℕ} {W : Type}
+    [AddCommMonoid W] [LinearOrder W] [IsOrderedAddMonoid W]
+    (es : List (WeightedEdge n W)) (hnonneg : ∀ e ∈ es, 0 ≤ e.weight) :
+    totalWeight (kruskalEdges es) ≤ totalWeight es :=
+  (Sublist.totalWeight_le (kruskalScan_sublist _ _)
+    fun e he => hnonneg e ((sortEdges_perm es).subset he)).trans
+    (Perm.totalWeight_eq (sortEdges_perm es)).le
 
 /-- **Kruskal's minimum spanning tree theorem** ([Cormen et al., Section 23.2, p. 631][CLRS2009]):
 when `es` connects `Fin n` into a single component (`(edgePartition es).numComponents = 1`),

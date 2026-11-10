@@ -118,15 +118,12 @@ theorem eval_chooseLinkAt_eq_map_coins (E : Scheme)
     ProbComp.eval_replicate_of_uniformList beforeCount keyCoins _ _ hkey,
     ProbComp.eval_replicate_of_uniformList afterCount keyCoins _ _ hkey,
     hkey, PMF.bind_map, Function.comp_def]
-  congr 1
-  funext front
+  congr 1 with front : 1
   rw [BitString.uniformList_bind_split _ _ (fun middle back =>
     PMF.pure (finish ((BitString.listRows beforeCount keyCoins front).map (evaluateKey n))
       (evaluateKey n middle) ((BitString.listRows afterCount keyCoins back).map (evaluateKey n))))]
-  congr 1
-  funext middle
-  congr 1
-  funext back
+  congr 1 with middle : 1
+  congr 1 with back : 1
   dsimp only [finish]
   split <;> rfl
 
@@ -162,11 +159,9 @@ theorem eval_modLinkAdversary_choose_eq_map_coins (E : Scheme)
   simp only [modLinkAdversary, ProbComp.eval_bind, sampleModIndex, ProbComp.sampleModNat,
     ProbComp.sampleBinaryNat, ProbComp.eval_map, BitString.eval_sampleList,
     PMF.bind_map, Function.comp_def]
-  congr 1
-  funext first
+  congr 1 with first : 1
   rw [BitString.uniformList_bind_split _ _ (fun second rest => PMF.pure (finish first second rest))]
-  congr 1
-  funext second
+  congr 1 with second : 1
   dsimp only [finish, index]
   split_ifs with hi hj
   · have hsize : depth n - index (depth n) first - 1 + index (depth n) first + 1 =

@@ -88,8 +88,7 @@ theorem generatorEnsemble_eq_outputDist {generator : List Bool → List Bool} {l
       List.ofFn := by
   simp only [generatorEnsemble, BitString.uniformList, PRG.wordFamily,
     PRG.Generator.outputDist, PRG.Generator.coe_mk, PMF.map_comp]
-  congr 1
-  funext seed
+  congr 1 with seed : 1
   exact (BitString.ofFn_ofList (by simpa using hlen (List.ofFn seed))).symm
 
 /-- The finite and word experiments coincide for every uniformly realized test. -/

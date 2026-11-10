@@ -11,6 +11,7 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.MultiKey
 public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Languages.Probabilistic.Oracle.CoinFixing
+public import Complexity.Crypto.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.BitString.List.Operations
@@ -403,7 +404,7 @@ theorem computableInPolyTime_evenMansourEncrypt {P : ℕ → List Bool → List 
     (hP : ComputableInPolyTime (fun p : ℕ × List Bool => P p.1 p.2)
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime (fun t : ℕ × List Bool × List Bool => evenMansourEncrypt P t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpre : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool =>
         (t.1, evenMansourPreKeyWord (splitTwoKeys t.1 t.2.1).1 t.2.2))
@@ -429,7 +430,7 @@ theorem computableInPolyTime_evenMansourDecrypt {P_inv : ℕ → List Bool → L
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => evenMansourDecrypt P_inv t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpost : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool =>
         (t.1, evenMansourPostKeyWord (splitTwoKeys t.1 t.2.1).2 t.2.2))
@@ -455,7 +456,7 @@ theorem computableInPolyTime_singleKeyEvenMansourEncrypt {P : ℕ → List Bool 
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => singleKeyEvenMansourEncrypt P t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpre : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => (t.1, evenMansourPreKeyWord t.2.1 t.2.2))
       (encPair encUnary (encPair encBits encBits)) (encPair encUnary encBits) := by
@@ -477,7 +478,7 @@ theorem computableInPolyTime_singleKeyEvenMansourDecrypt {P_inv : ℕ → List B
       (encPair encUnary encBits) encBits) :
     ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => singleKeyEvenMansourDecrypt P_inv t.1 t.2.1 t.2.2)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hpost : ComputableInPolyTime
       (fun t : ℕ × List Bool × List Bool => (t.1, evenMansourPostKeyWord t.2.1 t.2.2))
       (encPair encUnary (encPair encBits encBits)) (encPair encUnary encBits) := by
@@ -1245,16 +1246,13 @@ theorem eval_evenMansourWordRealGame (adversary : EvenMansourDistinguisher) (n :
   simp only [evenMansourWordRealGame, evenMansourProbRealGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
     ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind]
-  congr 1
-  funext π
+  congr 1 with π : 1
   rw [← PMF.uniformOfFintype_map_equiv (twoKeyEquiv n), PMF.bind_map, BitString.uniformList,
     PMF.bind_map]
-  congr 1
-  funext z
+  congr 1 with z : 1
   simp only [Function.comp_apply, twoKeyEquiv, Equiv.coe_fn_mk,
     evalProbTwoPerms_evenMansourWordAdapter]
-  congr 2
-  funext request
+  congr 2 with request : 1
   rw [evenMansourKeyedWordOracle_eq_twoPermWordOracle π List.length_ofFn request]
 
 /-- Evaluating `singleKeyEvenMansourWordRealGame` produces the exact same distribution as running
@@ -1265,14 +1263,11 @@ theorem eval_singleKeyEvenMansourWordRealGame (adversary : EvenMansourDistinguis
   simp only [singleKeyEvenMansourWordRealGame, singleKeyEvenMansourProbRealGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
     ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind]
-  congr 1
-  funext π
+  congr 1 with π : 1
   rw [BitString.uniformList, PMF.bind_map]
-  congr 1
-  funext k
+  congr 1 with k : 1
   simp only [Function.comp_apply, evalProbTwoPerms_evenMansourWordAdapter]
-  congr 2
-  funext request
+  congr 2 with request : 1
   rw [singleKeyEvenMansourKeyedWordOracle_eq_twoPermWordOracle π List.length_ofFn request,
     BitString.ofList_ofFn]
 

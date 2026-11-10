@@ -158,6 +158,50 @@ class QuickCheckTests(unittest.TestCase):
                 else:
                     self.write(path, old)
 
+    def test_encoding_baseline_change_runs_its_lint_instead_of_falling_back(self):
+        baseline = "scripts/encoding_readability_baseline.json"
+        self.write(baseline, "{}\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        base = self.git("rev-parse", "HEAD")
+        lint = ("encoding readability ratchet",
+                [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
+        self.write(baseline, '{"Demo/Base.lean": {}}\n')
+        plan = self.plan()
+        self.assertEqual((plan.targets, plan.checks), ([], [lint]))
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        plan = self.plan()
+        self.assertEqual(plan.checks, [lint])
+        self.assertIn("DemoTests.Client", plan.targets)
+        # Code under `scripts/`, other data files and a deleted baseline still fall back.
+        for path in ("scripts/check_encoding_readability.py", "scripts/tidy_surface_baseline.json"):
+            with self.subTest(path=path):
+                self.write(path, "changed\n")
+                with self.assertRaisesRegex(quick.FullCheck, "non-Lean change"):
+                    self.plan()
+                (self.root / path).unlink()
+        (self.root / baseline).unlink()
+        with self.assertRaisesRegex(quick.FullCheck, "deleted"):
+            self.plan()
+
+    def test_data_checks_run_before_the_build_and_stop_it_on_failure(self):
+        plan = quick.Plan("base", ["Demo.Base"], [("lint", ["lint", "--base", "base"])])
+        for lint_status, expected in ((0, [["lint", "--base", "base"],
+                                           ["lake", "build", "--wfail", "--iofail", "Demo.Base"],
+                                           ["lake", "exe", "mk_all", "--check"]]),
+                                      (3, [["lint", "--base", "base"]])):
+            with self.subTest(lint_status=lint_status):
+                calls = []
+
+                def run(root, command, label):
+                    calls.append(command)
+                    return lint_status if command[0] == "lint" else 0
+
+                with patch.object(quick, "make_plan", return_value=plan), \
+                     patch.object(quick, "run_check", side_effect=run):
+                    self.assertEqual(quick.main([], self.root), lint_status)
+                self.assertEqual(calls, expected)
+
     def test_deleted_or_renamed_module_falls_back(self):
         (self.root / "Demo/Base.lean").rename(self.root / "Demo/Renamed.lean")
         with self.assertRaises(quick.FullCheck):

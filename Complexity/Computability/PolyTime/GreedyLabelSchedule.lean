@@ -63,7 +63,7 @@ or missing positions to `0` via `wordToSchedule`.
 * `greedySchedulePass`, `normalizeEmptyFactorSchedules`, `constructBalancedSchedules`: full greedy
   pass, empty-scope factor normalization, and complete schedule constructor.
 * `constructedVarSchedule`, `constructedFactorSchedule`: typed schedule bridges.
-* `encScheduleParams`, `encOuterAcc`, `greedySchedulePassCertificate`,
+* `encScheduleParams`, `encOuterAcc`, `encCompleteSchedules`, `greedySchedulePassCertificate`,
   `constructBalancedSchedulesCertificate`: encodings and uniform `NativeCertificate`s.
 
 ## Main results
@@ -576,6 +576,12 @@ def encOuterAcc :
     (ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ)))) ↪ List Bool :=
   encPair encScheduleParams encPartialSchedules
 
+/-- Encoding of a pair `(varSched, facSched)` of complete schedule tables, with labels in binary:
+the framed list of variable schedule words, then the list of factor schedule words. Each list is
+the concatenation of its framed words, each word the concatenation of its framed labels. -/
+abbrev encCompleteSchedules : List (List ℕ) × List (List ℕ) ↪ List Bool :=
+  encPair (encList (encList encNat)) (encList (encList encNat))
+
 end Cslib.BalancedSchedules
 
 end
@@ -793,8 +799,6 @@ private abbrev encOuterSlot : (OuterSt × (Bool × ℕ)) ↪ List Bool :=
   encPair encOuterSt (encPair encBool encUnary)
 private abbrev encFinIn : ((OuterSt × (Bool × ℕ)) × List ℕ) ↪ List Bool :=
   encPair encOuterSlot (encList encNat)
-private abbrev encOutWords : (List (List ℕ) × List (List ℕ)) ↪ List Bool :=
-  encPair (encList (encList encNat)) (encList (encList encNat))
 
 private theorem computableInPolyTime_pendingSlotOfState :
     ComputableInPolyTime pendingSlotOfState encOuterSt encSlotOpt := by
@@ -875,7 +879,7 @@ private theorem computableInPolyTime_outerInit :
       (ComputableInPolyTime.replicate hp.snd'.fst' (.const none)))
 
 private theorem computableInPolyTime_finalizeBalancedSchedules :
-    ComputableInPolyTime finalizeBalancedSchedules encOuterAcc encOutWords := by
+    ComputableInPolyTime finalizeBalancedSchedules encOuterAcc encCompleteSchedules := by
   let eEdges := encList (encPair encNat encNat)
   let ePar := encPair (encPair encUnary (encPair encUnary encUnary))
     (encPair (encPair encNat encNat) eEdges)
@@ -921,11 +925,11 @@ private noncomputable def mkConstructCert
     (cAcc : NativeCertificate
       (fun p : ScheduleParams => (IndexFold.run greedySlotStepBody (outerCount p) (outerInit p)).2)
       encScheduleParams encOuterAcc)
-    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encOutWords) :
+    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encCompleteSchedules) :
     NativeCertificate
       (fun p : ScheduleParams =>
         constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
-      encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) :=
+      encScheduleParams encCompleteSchedules :=
   (cFinal.comp cAcc).congr fun ⟨⟨n, m, Q⟩, ⟨r, C⟩, edges⟩ => by
     have hp := run_greedySlotStepBody_params ((n, m, Q), (r, C), edges)
       (List.replicate n none, List.replicate m none) (n + m)
@@ -949,7 +953,7 @@ noncomputable def constructBalancedSchedulesCertificate :
     NativeCertificate
       (fun ((n, m, Q), (r, C), edges) =>
         constructBalancedSchedules n m Q r C edges)
-      encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) :=
+      encScheduleParams encCompleteSchedules :=
   mkConstructCert
     (mkOuterAccCert
       (NativeCertificate.ofPolyTime computableInPolyTime_outerCount)
@@ -1229,7 +1233,7 @@ private theorem mkConstructCert_bounds
     (cAcc : NativeCertificate
       (fun p : ScheduleParams => (IndexFold.run greedySlotStepBody (outerCount p) (outerInit p)).2)
       encScheduleParams encOuterAcc)
-    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encOutWords)
+    (cFinal : NativeCertificate finalizeBalancedSchedules encOuterAcc encCompleteSchedules)
     {pPass : ℕ → ℕ} {cFinalC dFinal : ℕ}
     (hpPass : Cslib.PolynomiallyBounded pPass) (hmPass : Monotone pPass)
     (hPass : ∀ p : ScheduleParams,
@@ -1292,7 +1296,7 @@ theorem computableInO_constructBalancedSchedules :
       ComputableInO
         (fun ((n, m, Q), (r, C), edges) =>
           constructBalancedSchedules n m Q r C edges)
-        encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat)))
+        encScheduleParams encCompleteSchedules
         (fun p => let ((_, _, Q), (r, _), _) := p; (r ^ Q + 1) * poly (encScheduleParams p).length)
         (fun p => poly (encScheduleParams p).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := constructBalancedSchedulesCertificate_bounds
@@ -1305,7 +1309,7 @@ theorem computableInPolySpace_constructBalancedSchedules :
     ComputableInPolySpace
       (fun ((n, m, Q), (r, C), edges) =>
         constructBalancedSchedules n m Q r C edges)
-      encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) := by
+      encScheduleParams encCompleteSchedules := by
   obtain ⟨poly, hpoly, c, hc, hl⟩ := computableInO_constructBalancedSchedules
   exact ⟨_, fun n => c * (poly n + 1), by fun_prop, hc, hl⟩
 

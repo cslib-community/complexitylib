@@ -47,6 +47,9 @@ Theorem 4.5 (pp. 21–25).
 
 * `Cslib.BitString.LinearHash.isThreeWiseIndependentHash_affineHash`: `affineHash` is `3`-wise
   independent for all `k, n : ℕ`.
+* `Cslib.BitString.LinearHash.isKWiseIndependentHash_dotProduct_cons_true`: the one-bit family
+  `x ↦ t ⬝ (1, x)` is `3`-wise independent, a sample space of `2 ^ (d + 1)` points for `2 ^ d`
+  inputs [AlonBabaiItai1986].
 * `Cslib.BitString.LinearHash.isThreeWiseIndependentHash_prefixProj_affineHash`: truncated Boolean
   affine hashing is `3`-wise independent.
 * `Cslib.BitString.LinearHash.toReal_map_adjustAffineSeed_eq`: mapping a uniform seed by
@@ -57,6 +60,8 @@ Theorem 4.5 (pp. 21–25).
 
 ## References
 
+* [N. Alon, L. Babai, A. Itai, *A fast and simple randomized parallel algorithm for the maximal
+  independent set problem*][AlonBabaiItai1986]
 * [I. Haitner, T. Holenstein, O. Reingold, S. Vadhan, H. Wee, *Inaccessible Entropy II: IE
   Functions and Universal One-Way Hashing*, Section 4.2, Theorem 4.5, pp. 21–25][HHRVW2020]
 -/
@@ -222,6 +227,34 @@ theorem isThreeWiseIndependentHash_affineHash (k n : ℕ) :
       change rows i ⬝ᵥ x + (rows i ⬝ᵥ x₁ + c₁ i) = c₃ i
       cases h1 : rows i ⬝ᵥ x₁ <;> cases h3 : rows i ⬝ᵥ x <;>
         cases hc1 : c₁ i <;> cases hc3 : c₃ i <;> simp_all [Bool.add_eq_xor]
+
+/-- **One-bit affine hashing as a single dot product** is three-wise independent:
+`x ↦ t ⬝ (1, x)` for a uniformly random `t ∈ {0,1}^(d+1)`. It is the one-row family `affineHash`
+with seed `(Fin.tail t, t 0)`. Labelling `n` points by `d = ⌈log₂ n⌉` binary digits gives a
+three-wise independent sample space of `2 ^ (d + 1) < 4 n` points [AlonBabaiItai1986]. -/
+theorem isKWiseIndependentHash_dotProduct_cons_true (d : ℕ) :
+    IsKWiseIndependentHash 3
+      (fun (t : BitString (d + 1)) (x : BitString d) => t ⬝ᵥ Fin.cons true x) := by
+  let e : BitString (d + 1) ≃ (Fin 1 → BitString d) × BitString 1 :=
+    { toFun := fun t => (fun _ => Fin.tail t, fun _ => t 0)
+      invFun := fun s => Fin.cons (s.2 0) (s.1 0)
+      left_inv := fun t => Fin.cons_self_tail t
+      right_inv := fun s => by
+        refine Prod.ext (funext fun i => ?_) (funext fun i => ?_)
+        · rw [Subsingleton.elim i 0]
+          exact Fin.tail_cons (α := fun _ => Bool) (s.2 0) (s.1 0)
+        · rw [Subsingleton.elim i 0]
+          exact Fin.cons_zero (α := fun _ => Bool) (s.2 0) (s.1 0) }
+  have heq : (fun (t : BitString (d + 1)) (x : BitString d) => t ⬝ᵥ Fin.cons true x) =
+      fun t x => Equiv.funUnique (Fin 1) Bool (affineHash (e t) x) := by
+    funext t x
+    change t ⬝ᵥ Matrix.vecCons true x = Fin.tail t ⬝ᵥ x + t 0
+    rw [Matrix.dotProduct_cons, add_comm (Matrix.vecHead t * true)]
+    change Fin.tail t ⬝ᵥ x + (t 0 && true) = Fin.tail t ⬝ᵥ x + t 0
+    rw [Bool.and_true]
+  rw [heq]
+  exact ((isThreeWiseIndependentHash_affineHash 1 d).comp_seedEquiv e).map_equiv
+    (Equiv.funUnique (Fin 1) Bool)
 
 /-! ### Prefix restriction and fixed-width zero padding -/
 

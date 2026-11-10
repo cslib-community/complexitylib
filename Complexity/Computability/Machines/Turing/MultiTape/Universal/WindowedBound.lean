@@ -93,7 +93,7 @@ theorem length_eWin_le {D B h L : ℕ} {w : Win} (hw : WInv D B h L w) :
   obtain ⟨q, ts⟩ := w
   have h₁ := length_eSym_le hw.state
   have h₂ := length_encList_le eTape ts (b := 2 * h + 4 + 2 * L * (2 * B + 3)) fun t ht => by
-    have hi := length_encInt_le t.head
+    have hi := length_encIntUnary_le t.head
     have hl := length_cells_le fun o ho => hw.val t ht o (List.mem_append_left t.right ho)
     have hr := length_cells_le fun o ho => hw.val t ht o (List.mem_append_right t.left ho)
     have hh := hw.head t ht
@@ -125,16 +125,11 @@ theorem WInv.extract {D B h L : ℕ} {w : Win} (hw : WInv D B h L w) (r : ℕ) :
     simp only [cut, List.mem_append] at ho
     exact hw.val t ht o (List.mem_append.mpr (ho.imp List.mem_of_mem_take List.mem_of_mem_take))
 
-private lemma q₀_le' (d : Desc) : d.q₀ ≤ descLen d := by
-  simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
-
-private lemma tapes_le' (d : Desc) : d.tapes ≤ descLen d := by
-  simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
-
 /-- The windows of the initial configuration. -/
 theorem winv_initWin (d : Desc) (x : List ℕ) :
     WInv (descLen d) (descLen d + listMax id x + 1) 0 (x.length + 1) (initWin d x) := by
-  refine ⟨by simpa [initWin] using q₀_le' d, by simpa [initWin] using tapes_le' d, ?_, ?_, ?_⟩ <;>
+  refine ⟨by simpa [initWin] using Universal.q₀_le d, by simpa [initWin] using Universal.tapes_le d,
+    ?_, ?_, ?_⟩ <;>
     simp only [initWin, List.mem_cons, List.mem_replicate] <;> rintro t (rfl | ⟨-, rfl⟩)
   · simp
   · simp
@@ -259,39 +254,6 @@ private lemma valLe_applyTapes {B : ℕ} {ts : List Tape} (hts : ∀ t ∈ ts, V
         ih (fun t ht => hts t (List.mem_cons_of_mem _ ht))
           (fun a ha => has a (List.mem_cons_of_mem _ ha))⟩
 
-private lemma length_act_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) :
-    (eAct e.2).length ≤ descLen d := by
-  have := length_le_encList_of_mem (encPair eKey eAct) he
-  simp only [descLen, eDesc_apply, length_encPair] at this ⊢
-  omega
-
-private lemma getD_le_length (o : Option ℕ) : o.getD 0 ≤ (eSym o).length := by
-  cases o <;> simp
-
-private lemma state_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) :
-    e.2.state.getD 0 ≤ descLen d := by
-  have := length_act_le he
-  have := getD_le_length e.2.state
-  simp only [eAct_apply, length_encPair] at *
-  omega
-
-private lemma output_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) :
-    e.2.output.getD 0 ≤ descLen d := by
-  have := length_act_le he
-  have := getD_le_length e.2.output
-  simp only [eAct_apply, length_encPair] at *
-  omega
-
-private lemma write_le {d : Desc} {e : Key × Act} (he : e ∈ d.table) {ta : TapeAct}
-    (hta : ta ∈ e.2.workTapes) : (ta.1.getD none).getD 0 ≤ descLen d := by
-  have h₁ := length_act_le he
-  have h₂ := length_le_encList_of_mem eTA hta
-  have h₃ := getD_le_length (ta.1.getD none)
-  have h₄ : (eSym (ta.1.getD none)).length ≤ (encOption eSym ta.1).length := by
-    cases ta.1 <;> simp
-  simp only [eAct_apply, length_encPair] at *
-  omega
-
 /-- The three outcomes of a step: halted, no transition, or a transition from the table. -/
 private lemma stepWith_cases (d : Desc) (c : SCfg) (a : Option ℕ) :
     stepWith d c a = (c, none) ∨ stepWith d c a = (⟨none, c.inputPos, c.workTapes⟩, none) ∨
@@ -392,19 +354,6 @@ private lemma valLe_extract {B r : ℕ} {w : Win} (h : ∀ t ∈ w.2, ValLe B t)
   exact h t ht o (List.mem_append.mpr (ho.imp List.mem_of_mem_take List.mem_of_mem_take))
 
 /-! ### The windowed simulation -/
-
-/-- The windowed simulation of `n + 2` steps: the first half on cut windows, pasted back, then the
-second half. -/
-theorem sim_add_two (d : Desc) (n : ℕ) (w : Win) :
-    sim d (n + 2) w =
-      (restore ((n + 2) / 2) (restore (firstHalf (n + 2)) w
-          (sim d (firstHalf (n + 2)) (extract (firstHalf (n + 2)) w)).1)
-        (sim d ((n + 2) / 2) (extract ((n + 2) / 2) (restore (firstHalf (n + 2)) w
-          (sim d (firstHalf (n + 2)) (extract (firstHalf (n + 2)) w)).1))).1,
-        (sim d (firstHalf (n + 2)) (extract (firstHalf (n + 2)) w)).2 ++
-          (sim d ((n + 2) / 2) (extract ((n + 2) / 2) (restore (firstHalf (n + 2)) w
-            (sim d (firstHalf (n + 2)) (extract (firstHalf (n + 2)) w)).1))).2) := by
-  rw [sim]
 
 private lemma firstHalf_lt (n : ℕ) : firstHalf (n + 2) < n + 2 := by
   simp only [firstHalf]; omega

@@ -125,8 +125,7 @@ private theorem negative_budget {n g r l t : ℕ} (hl : 1 ≤ l) (hg : 2 * l ^ 2
 private theorem two_mul_mul_two_pow_lt (l : ℕ) : 2 * l * 2 ^ l < 8 ^ (l / 2 + 1) := by
   have hl : l ≤ 2 * (l / 2) + 1 := by omega
   have ha : l / 2 + 1 ≤ 2 ^ (l / 2) := Nat.lt_two_pow_self
-  calc 2 * l * 2 ^ l ≤ 2 * (2 * (l / 2) + 1) * 2 ^ (2 * (l / 2) + 1) :=
-        Nat.mul_le_mul (Nat.mul_le_mul_left 2 hl) (Nat.pow_le_pow_right (by omega) hl)
+  calc 2 * l * 2 ^ l ≤ 2 * (2 * (l / 2) + 1) * 2 ^ (2 * (l / 2) + 1) := by gcongr
     _ < 4 * 2 ^ (l / 2) * 2 ^ (2 * (l / 2) + 1) :=
         Nat.mul_lt_mul_of_pos_right (by omega) (by positivity)
     _ = 8 ^ (l / 2 + 1) := by rw [show (8 : ℕ) = 2 ^ 3 from rfl, ← pow_mul]; ring

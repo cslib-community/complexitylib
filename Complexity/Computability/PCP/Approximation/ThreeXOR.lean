@@ -24,8 +24,9 @@ each output clause.
 This is the elementary reduction in the proof of [Håstad, Theorem 6.1, p. 831][Hastad2001].
 His sign-product equation `xyz = 1` corresponds to XOR `false` here. The local counting argument
 is applied to entire systems, with a plain polynomial-time certificate over framed encodings.
-This module does not establish hardness of MAX-E3LIN, small-soundness Label Cover, or the
-perfect-completeness hardness theorem for MAX-E3SAT.
+This module does not establish hardness of MAX-E3LIN or the perfect-completeness hardness
+theorem for MAX-E3SAT; small-soundness Label Cover is in
+`Complexity.Computability.PCP.Approximation.LabelCover.SmallSoundness`.
 
 ## Main definitions
 
@@ -145,7 +146,7 @@ above assume that every scope has exactly three entries. -/
 @[fun_prop]
 theorem computableInPolyTime_toCNFBounded_parity {V : Type} (encV : V ↪ List Bool) :
     ComputableInPolyTime (CSP.toCNFBounded 3 CSP.paritySem)
-      (encCSP encBool encV) (encList (encList (encPair encV encBool))) :=
+      (encCSP encBool encV) (encCNFOver encV) :=
   computableInPolyTime_toCNFBounded_of_finite encBool encV 3 CSP.paritySem
 
 end Cslib.Complexity.CSP

@@ -318,8 +318,7 @@ private theorem errors_le {M b σ : ℕ} (hM : 1 ≤ M) (hb : 1 ≤ b)
       (D : ℝ) / ((q : ℝ) - 1) ≤ 3 * (1 / (18 * ((d : ℝ) + 1))) := by
     linarith
   have hne : (d : ℝ) + 1 ≠ 0 := by positivity
-  calc _ ≤ 6 * ((d : ℝ) + 1) * (3 * (1 / (18 * ((d : ℝ) + 1)))) :=
-        mul_le_mul_of_nonneg_left hsum (by positivity)
+  calc _ ≤ 6 * ((d : ℝ) + 1) * (3 * (1 / (18 * ((d : ℝ) + 1)))) := by gcongr
     _ = 1 := by field_simp; ring
 
 /-- The final size bound: for the circuit size `s = 2 ^ σ + 2` after fixing the ignored bits,
@@ -348,8 +347,7 @@ private theorem final_lt {M b σ : ℕ} (hM : 1 ≤ M) (hb : 1 ≤ b)
         rw [show 16 ^ σ = 2 ^ (4 * σ) by rw [pow_mul]; norm_num, show 5 * σ = 4 * σ + σ by ring,
           pow_add 2 (4 * σ) σ, ← pow_mul, show 4 * b * 9 = 36 * b by ring]
         ring
-    _ ≤ 3 * 2 ^ 25 * (M ^ 3 * b ^ 6) * 2 ^ (36 * b) * 2 ^ b :=
-        Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) h5σ)
+    _ ≤ 3 * 2 ^ 25 * (M ^ 3 * b ^ 6) * 2 ^ (36 * b) * 2 ^ b := by gcongr
     _ < 2 ^ 27 * M ^ 3 * b ^ 6 * 2 ^ (37 * b) := by
         rw [show 37 * b = 36 * b + b by ring, pow_add 2 (36 * b) b]
         have : 0 < M ^ 3 * b ^ 6 * 2 ^ (36 * b) * 2 ^ b := by positivity

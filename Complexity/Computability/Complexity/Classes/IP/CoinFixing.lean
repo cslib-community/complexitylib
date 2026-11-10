@@ -140,8 +140,8 @@ private theorem run_interpret_finiteStep_sample
       PMF.bind_const]
   | some c =>
     simp only [map_pure, pure_bind, bind_map_left, OracleComp.interpret_bind, StateT.run_bind,
-      MultiTapePTM.run_interpret_sample_uniform_bool, Probability.PMF.monad_bind_eq_bind,
-      PMF.bind_map]
+      ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform,
+      Probability.PMF.monad_bind_eq_bind, PMF.bind_map]
     rfl
 
 /-- A clocked loop drawing fair coins averages the loops with fixed coins. -/

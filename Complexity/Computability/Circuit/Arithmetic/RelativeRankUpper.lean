@@ -291,8 +291,7 @@ private theorem div_le_abs_sum_of_card_le {k : ℕ} {w : Fin d → ℤ}
   have hden : 4 * ((a : ℝ) / √2) + 2 ≤ 5 * τ := by linarith
   have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
   have hA : (k : ℝ) / (5 * τ) ≤ k * |(a : ℝ) / √2 - b| := by
-    calc (k : ℝ) / (5 * τ) ≤ k / (4 * ((a : ℝ) / √2) + 2) :=
-          div_le_div_of_nonneg_left hk0 (by positivity) hden
+    calc (k : ℝ) / (5 * τ) ≤ k / (4 * ((a : ℝ) / √2) + 2) := by gcongr
       _ = k * (1 / (4 * ((a : ℝ) / √2) + 2)) := by ring
       _ ≤ k * |(a : ℝ) / √2 - b| := mul_le_mul_of_nonneg_left h17 hk0
   have hF1 : (F : ℝ) ≤ k / √2 := hF ▸ Int.floor_le _

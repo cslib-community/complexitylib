@@ -239,8 +239,7 @@ theorem PrivateCoin.ecomplexity_le_add_clog [Finite X] [Finite Y] {n : ℕ}
           rw [show (-2 * n : ℝ) = -(2 * n) by ring, Real.exp_neg,
             ← div_eq_mul_inv, div_lt_one (Real.exp_pos _)]
           exact four_pow_lt_exp_two_mul hn
-        calc 4 ^ n * Real.exp (-2 * δ ^ 2 * T) ≤ 4 ^ n * Real.exp (-2 * n) :=
-              mul_le_mul_of_nonneg_left hexp (by positivity)
+        calc 4 ^ n * Real.exp (-2 * δ ^ 2 * T) ≤ 4 ^ n * Real.exp (-2 * n) := by gcongr
           _ < 1 := this
 
 end Cslib.Communication

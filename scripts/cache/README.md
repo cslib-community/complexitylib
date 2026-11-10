@@ -59,8 +59,8 @@ instead of allowing a downloader to race compilation; ordinary cache misses and 
 timeouts remain optional. The helpers never remove Git locks; forced termination can still
 leave one behind.
 
-Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
-with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
+Lean CI, API docs and Comparator call this helper with `--lean-action`, preserving the Mathlib URL
+handling that lean-action had (API docs still run lean-action, with its own Mathlib fetch disabled): unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
@@ -69,8 +69,10 @@ the Actions cache and then uses the same missing-only restore. Cache failures re
 installation and validation failures remain strict.
 
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
-about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
-not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
+about 600 MB) from the Actions cache, so that no run depends on a GitHub release download. Lean CI,
+the guide and Comparator no longer run `leanprover/lean-action`: with every feature off it only
+reinstalled elan from GitHub releases, without retries, so a release outage failed every run. On a
+miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
 
@@ -107,8 +109,11 @@ following builds while preserving the public cache's authorization boundary.
   code), hashes and traces. It omits only `ir/**/*.setup.json` and `ir/**/*.irsetup.json`: Lake's
   transient compiler setup inputs. Lake writes these inside a compilation action and does not
   require them to reuse completed modules. Other JSON files are retained. File-type/link checks
-  still cover omitted entries; the 100,000-file, 4 GiB unpacked and 1 GiB compressed payload limits
-  are unchanged. Packing reports retained and omitted counts/sizes, including on a limit miss.
+  still cover omitted entries. The payload limits are 300,000 files, 12 GiB unpacked and 4 GiB
+  compressed; a full build measured 101,848 files, 4.64 GB and 1.67 GB on November 8, 2026. The
+  earlier 100,000-file, 4 GiB and 1 GiB limits had been outgrown, which silently disabled the
+  handoff. Packing reports retained and omitted counts/sizes, and in Actions a limit miss or any
+  other unavailable handoff is a workflow warning on the run summary.
 - **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
   (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
   restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
@@ -246,8 +251,10 @@ not automatic provisioning. There is no SSH upload or S3 service dependency.
 
 The deployed MIT origin is **https://complexitycache.csail.mit.edu**. The
 [dated deployment status](../../tools/cache-origin/README.md#mit-deployment-status) records the
-installed source and completed host checks. A real-build publication/cold restore and integration
-approval remain; keep MIT CI publication disabled and GCS readers active during these checks.
+installed source and completed host checks. As of November 7, 2026, main CI publishes real builds
+successfully to MIT and GCS, and `cache-server-publish` is restricted to `main`. GCS remains the
+default reader. A real MIT cold restore, recovery exercise and separate reader-cutover approval
+remain before changing that default.
 
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
@@ -275,15 +282,16 @@ explain this boundary and cleanup of **both origins, Actions caches/handoffs and
 before rebuilding with restoration disabled. The GCS-only trust description above applies until
 the explicit reader cutover.
 
-Before activation, commission the actual server: verify TLS, upload authentication, Unix-socket
-permissions, service restart, storage limits and GC; prove concurrent conflicting uploads cannot
-replace a key; test unauthorized PUT and all DELETE requests; then cold-restore a real build through
-the public HTTPS origin. CI checks the same nginx routes over loopback TLS, but cannot establish
+For a new installation, commission the actual server before enabling publication: verify TLS,
+upload authentication, Unix-socket permissions, service restart, storage limits and GC; prove
+concurrent conflicting uploads cannot replace a key; test unauthorized PUT and all DELETE requests.
+Before reader cutover, cold-restore a real build through the public HTTPS origin and exercise
+recovery. CI checks the same nginx routes over loopback TLS, but cannot establish
 the target host's identity, permissions or disk configuration.
 
 A repository administrator can prepare the GitHub environment `cache-server-publish`, restrict it
-to `main`, and configure the following using the privately supplied publisher password. Keep the
-publication switch disabled until the commissioning evidence and integration are approved.
+to `main`, and configure the following using the privately supplied publisher password. On a new
+installation, keep publication disabled until the commissioning evidence and integration are approved.
 
 | Kind | Name |
 |---|---|

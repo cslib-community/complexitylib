@@ -147,8 +147,8 @@ theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.isOraclePPTOn
   obtain ⟨c, d, ht⟩ := ht.exists_le
   refine ⟨inferInstance, k, State, hfinite,
     Turing.MultiTapePTM.ofDeterministic machine, c, d, fun a OracleState oracle state => ?_⟩
-  rw [map_pure, Cslib.OracleComp.interpret_pure,
-    Turing.MultiTapePTM.run_interpret_runOracle_ofDeterministic]
+  change PMF.pure _ = Cslib.ProbOracleComp.runWith oracle _ state
+  rw [Turing.MultiTapePTM.run_interpret_runOracle_ofDeterministic]
   exact congrArg (fun word => PMF.pure (word, state))
     ((hmachine a).mono (ht a) le_rfl).runFrom_initCfg.2.symm
 
@@ -163,6 +163,6 @@ theorem Turing.MultiTapeTM.ComputableInPolyTime.isOraclePPTOn
   obtain ⟨c, d, k, State, hfinite, machine, hmachine⟩ := Internal.NormalForm.polyTime h
   refine ⟨inferInstance, k, State, hfinite,
     Turing.MultiTapePTM.ofDeterministic machine, c, d, fun a OracleState oracle state => ?_⟩
-  rw [map_pure, Cslib.OracleComp.interpret_pure,
-    Turing.MultiTapePTM.run_interpret_runOracle_ofDeterministic]
+  change PMF.pure _ = Cslib.ProbOracleComp.runWith oracle _ state
+  rw [Turing.MultiTapePTM.run_interpret_runOracle_ofDeterministic]
   exact congrArg (fun word => PMF.pure (word, state)) (hmachine a).runFrom_initCfg.2.symm

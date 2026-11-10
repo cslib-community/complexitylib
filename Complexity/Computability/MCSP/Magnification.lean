@@ -921,8 +921,7 @@ theorem exists_complexity_yesSet_le_of_NP_subset_PPoly
       _ ≤ C₁ * N ^ D₁ := by
         rw [← Nat.pow_mul, ← pow_add, show 2 + 2 * c₀ = D₁ by unfold D₁; omega]
         exact Nat.mul_le_mul_right _ (by unfold C₁; omega)
-  have hCD : C₁ * N ^ D₁ ≤ c * N ^ c :=
-    Nat.mul_le_mul (le_max_left C₁ D₁) (Nat.pow_le_pow_right hN_pos (le_max_right C₁ D₁))
+  have hCD : C₁ * N ^ D₁ ≤ c * N ^ c := by gcongr <;> omega
   calc complexity interpretation (single ((GapMCSP.yesSet s).slice (2 ^ n)))
       ≤ 2 ^ n * (stateWidth n (s n) * (M + 3)) := hcomp
     _ ≤ 2 ^ n * (c * N ^ c) := Nat.mul_le_mul_left (2 ^ n) (hprod.trans hCD)

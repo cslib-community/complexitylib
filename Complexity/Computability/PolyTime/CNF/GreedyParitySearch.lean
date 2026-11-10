@@ -49,6 +49,7 @@ and the outer `3n`-round loop.
 * `Cslib.Logic.PL.CNF.candidateTupleCount`, `Cslib.Logic.PL.CNF.encodeTestTuple`,
   `Cslib.Logic.PL.CNF.decodeTestTuple`, `Cslib.Logic.PL.CNF.materializeTestRow`: base-`2m` codec
   and length-`m` mod-`2` parity-test row materializer.
+* `Cslib.Logic.PL.CNF.encTestPairs`: the encoding of test tuples, with clause indices in unary.
 * `Cslib.Logic.PL.CNF.selectBestTestRow`, `Cslib.Logic.PL.CNF.greedyParityRows`,
   `Cslib.Logic.PL.CNF.selectBestTestRowCertificate`,
   `Cslib.Logic.PL.CNF.greedyParityRowsCertificate`: streaming selector, `3n`-round greedy loop, and
@@ -242,10 +243,15 @@ theorem exists_fin_of_lt_candidateTupleCount {m P j : ℕ} (hj : j < candidateTu
     apply List.ext_getElem (by simp only [length_decodeTestTuple, List.length_ofFn])
     intro i _ _; simp only [List.getElem_ofFn, Prod.mk.eta]
 
+/-- Test tuples `γ = ((e₁, c₁), …, (e_P, c_P))` with clause indices in unary: the concatenation of
+the framed pairs, each pair the framed unary clause index `e` followed by the bit `c`. -/
+abbrev encTestPairs : List (ℕ × Bool) ↪ List Bool :=
+  encList (encPair encUnary encBool)
+
 /-- `decodeTestTuple m P j` is computable in polynomial time from unary `(m, P)` and binary `j`. -/
 @[fun_prop] theorem computableInPolyTime_decodeTestTuple :
     ComputableInPolyTime (fun (((m, P), j) : (ℕ × ℕ) × ℕ) => decodeTestTuple m P j)
-      (encPair (encPair encUnary encUnary) encNat) (encList (encPair encUnary encBool)) := by
+      (encPair (encPair encUnary encUnary) encNat) encTestPairs := by
   let encElem := encPair encUnary encBool; let encState := encPair encNat (encList encElem)
   let encQ := encPair (encPair encUnary encState) encBool
   let step (m : ℕ) (state : ℕ × List (ℕ × Bool)) : ℕ × List (ℕ × Bool) :=
@@ -318,7 +324,7 @@ theorem exists_fin_of_lt_candidateTupleCount {m P j : ℕ} (hj : j < candidateTu
     {m P j : α → ℕ} (hm : ComputableInPolyTime m input encUnary)
     (hP : ComputableInPolyTime P input encUnary) (hj : ComputableInPolyTime j input encNat) :
     ComputableInPolyTime (fun a => decodeTestTuple (m a) (P a) (j a))
-      input (encList (encPair encUnary encBool)) := by
+      input encTestPairs := by
   -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := computableInPolyTime_decodeTestTuple.comp' ((hm.prod hP).prod hj)
   exact h
@@ -388,7 +394,7 @@ theorem count_true_materializeTestRow_decodeTestTuple_le (m P j : ℕ) :
 /-- `materializeTestRow` is computable in polynomial time from unary `m` and `(e, c)` pairs. -/
 @[fun_prop] theorem computableInPolyTime_materializeTestRow :
     ComputableInPolyTime (fun p : ℕ × List (ℕ × Bool) => materializeTestRow p.1 p.2)
-      (encPair encUnary (encList (encPair encUnary encBool))) encBits := by
+      (encPair encUnary encTestPairs) encBits := by
   unfold materializeTestRow
   let encElem := encPair encUnary encBool; let encIn := encPair encUnary (encList encElem)
   have hrange := ComputableInPolyTime.range.comp'
@@ -421,7 +427,7 @@ theorem count_true_materializeTestRow_decodeTestTuple_le (m P j : ℕ) :
 
 @[fun_prop] theorem computableInPolyTime_materializeTestRow' {α : Type} {input : α ↪ List Bool}
     {m : α → ℕ} {γ : α → List (ℕ × Bool)} (hm : ComputableInPolyTime m input encUnary)
-    (hγ : ComputableInPolyTime γ input (encList (encPair encUnary encBool))) :
+    (hγ : ComputableInPolyTime γ input encTestPairs) :
     ComputableInPolyTime (fun a => materializeTestRow (m a) (γ a)) input encBits := by
   -- Elaborate `.comp'` before unifying with the goal to avoid unfolding `ComputableInPolyTime`.
   have h := computableInPolyTime_materializeTestRow.comp' (hm.prod hγ)

@@ -109,7 +109,7 @@ example : Turing.moveInputPosNat 0 9 .neg = 1 ∧
 example :
     ComputableInPolyTime
       (fun p : ℕ × ℤ => decide (|p.2 - (-1 : SignType)| ≤ (p.1 : ℤ)))
-      (encPair encUnary encInt) encBool ∧
+      (encPair encUnary encIntUnary) encBool ∧
     PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} SAT ∧
     PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} UNSAT :=
   ⟨by fun_prop,

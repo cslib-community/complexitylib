@@ -27,8 +27,8 @@ polynomial time, so the lexicographic minimum is a polynomial-time selector, for
 
 Different sequences have different left cuts (`Cslib.Complexity.leftCut_injective`), so there are
 uncountably many P-selective sets (`Cslib.Complexity.not_countable_PSel`). In contrast, only
-countably many sets are decidable by machines, so P-selective sets need not be decidable; that
-count of machines is not formalized here.
+countably many sets are decidable by machines (`Turing.MultiTapeTM.countable_setOf_isDecidable`), so
+P-selective sets need not be decidable.
 
 ## Main definitions
 

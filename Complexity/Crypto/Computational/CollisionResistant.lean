@@ -31,7 +31,7 @@ one parameter `n`.) Standard uniform formulations therefore index both compressi
 `H : List Bool → List Bool → List Bool` by a public key `k ← {0, 1}^n` sampled uniformly at
 security parameter `n`; the adversary receives `(1^n, k)` and wins by outputting a pair `(m₁, m₂)`
 of valid inputs with `m₁ ≠ m₂` and `H k m₁ = H k m₂` ([BonehShoup2023], Sections 8.1–8.2;
-[KatzLindell2020], Section 5.1).
+[KatzLindell2020], Section 6.1).
 
 Parameterizing the experiment by a validity predicate `valid : ℕ → List Bool → Bool` accommodates
 both fixed-input-length compression families (`validCompressionInput n x := (x.length == 2 * n)`,
@@ -91,7 +91,7 @@ p. 290). Standard keyed word-level collision resistance (`CollisionFinder`, `Col
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 8.1 (Definition 8.2 and Fig. 8.3, printed pp. 290–291).
-* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 5.1.
+* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 6.1.
 -/
 
 @[expose] public section

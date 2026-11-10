@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Probability.RootMetric.Slices
+public import Complexity.Computability.LogSpaceDerandomization.RootMetric.Slices
 
 /-! # Conditional integration with unequal and empty slices
 

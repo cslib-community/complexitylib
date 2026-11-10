@@ -28,6 +28,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import Complexity.Tactic.EncLen
 
 /-!
 # Contracting an explicit tensor network by direct summation
@@ -348,8 +349,7 @@ private theorem length_runPrefix_sumStep_le (x : ℕ × ℕ × ExplicitTensorNet
   have h := length_encNat_le_of_lt_two_pow
     (Nat.mod_lt (((List.range j).map (lowBits d.numEdges)).map (weightMod P d)).sum
       (Nat.two_pow_pos P))
-  simp only [encContractionInput, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [encContractionInput]
 
 /-- **The bounds of direct summation**, on every input `(P, r, d)`: polynomial workspace in the
 input length, and time `2 ^ m + 1` times a polynomial in the input length, where `m` is the number
@@ -546,9 +546,7 @@ theorem directContractionBinaryCertificate_bounds :
       fun x => (encContractionInput (capPrecision x)).length :=
     PolyBounded.of_forall_le 3 1 fun x => by
       have := min_le_left (encExplicitNetwork x.2.2).length x.1
-      simp only [capPrecision, encContractionInput, length_encPair, encUnary_apply,
-        List.length_replicate, pow_one]
-      omega
+      enc_len [capPrecision, encContractionInput, pow_one]
   refine ⟨hcap.2.add (hspace.comp hlen), fun x =>
     (NativeCertificate.ofPolyTime capPrecision_polyTime).time x + T (capPrecision x),
     hcap.1.add (hT.comp hlen), fun x => ?_⟩

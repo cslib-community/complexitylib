@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Bind
+import Complexity.Tactic.EncLen
 
 /-!
 # Stateless tree signatures from an indexed signature scheme
@@ -350,9 +351,7 @@ private theorem length_le_encChainInput (x : ChainInput) :
     x.parameter ≤ (encChainInput x).length ∧ x.secret.length ≤ (encChainInput x).length ∧
       x.bits.length ≤ (encChainInput x).length := by
   rcases x with ⟨⟨n, k⟩, bits⟩
-  simp only [ChainInput.parameter, ChainInput.secret, ChainInput.bits, encChainInput,
-    length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-  omega
+  enc_len [ChainInput.parameter, ChainInput.secret, ChainInput.bits, encChainInput]
 
 include hcoins in
 /-- The chain is computable in polynomial time: every node key and signature on the path is
@@ -379,7 +378,7 @@ theorem computableInPolyTime_certify :
         (nodeKey S T coins x.parameter x.secret path).2.length ≤ Bk x := by
     dsimp only [ChainInput.bits] at hpath
     have hle : (encChainInput (x.1, path)).length ≤ (encChainInput x).length := by
-      simp only [encChainInput, length_encPair, encBits_apply]; omega
+      enc_len [encChainInput]
     have h := (hnodeLen (x.1, path)).trans
       (Nat.mul_le_mul_left ck (Nat.pow_le_pow_left (Nat.add_le_add_right hle 1) dk))
     exact ⟨(length_le_encPair_left encBits encBits _).trans h,
@@ -540,7 +539,7 @@ private theorem computableInPolyTime_chainCheck :
   intro q state e he
   have hmem := length_le_encList_of_mem (encPair encBits encBits) (List.of_mem_zip he).2
   have hle : (encList (encPair encBits encBits) q.2.2).length ≤ (encIn q).length := by
-    simp only [encIn, length_encPair]; omega
+    enc_len [encIn]
   simp only [verifyStep, length_encPair, encBits_apply, encBool_apply, List.length_singleton]
     at hmem ⊢
   omega

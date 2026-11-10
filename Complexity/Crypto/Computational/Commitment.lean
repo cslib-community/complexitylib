@@ -416,8 +416,7 @@ theorem distinguishingGame_uniformList_naorReceiverDistinguisher (m : ℕ)
   unfold distinguishingGame naorReceiverDistinguisher
   simp only [ProbComp.eval_bind, PMF.monad_bind_eq_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext choice
+  congr 1 with choice : 1
   have h := congrArg
     (fun p : PMF (List Bool) => p.bind fun c => ProbComp.eval (receiver.guess n choice.2 c))
     (uniformList_map_naorCommit_id m choice.1.1 (if bit then choice.1.2.2 else choice.1.2.1))

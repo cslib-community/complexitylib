@@ -27,7 +27,16 @@ related mechanical fixes when they share a contract and validation; split at ind
 boundaries rather than creating a PR per cleanup. Include a checked client for a new API and
 instances showing that bundled hypotheses can be met. Preserve
 the original authors and licenses when porting code; cite mathematical sources in module
-docstrings through [references.bib](references.bib), whose entries stay sorted by key.
+docstrings through [references.bib](references.bib), whose entries stay sorted by key. Two
+branches that add entries between the same neighbours conflict as text;
+`scripts/resolve_bib_conflict.py` merges the file entry by entry and refuses when both sides
+changed one entry. To have `git merge` use it for `references.bib`, run once per clone:
+`git config merge.bibkeys.driver 'python3 scripts/resolve_bib_conflict.py --driver %O %A %B'`.
+The `mk_all` import aggregates have a similar opt-in driver, which merges their import lines as
+sets and writes them sorted:
+`git config merge.leanagg.driver 'python3 scripts/resolve_aggregate_conflict.py %O %A %B'`.
+Without it, git merges them as text; regenerate them with `lake exe mk_all` rather than trusting a
+hand or `merge=union` merge.
 
 Develop against representative clients and state the public contract: model or encodings,
 mathematical behavior, and resource or security claim. Test automation on ordinary expressions,
@@ -94,6 +103,29 @@ Two places keep projections, as standing exceptions:
   lambda in a section `variable` of a `public section` elaborates to `sorry`, with only a warning
   ([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Use projections there,
   or bind the hypothesis in the theorem's own signature.
+
+**Readable encodings** ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)).
+An encoding is part of what a statement claims, so statements show it; they should not make the
+reader parse the same nested encoding again and again. Name a compound encoding that recurs in a
+module's statements with a documented, reducible `abbrev`, give domain encodings their own names,
+declare field-tuple structure encodings with `enc_structure`, and keep unary versus binary,
+representations and framing visible in the name or its docstring. For example, the query-machine
+certificates take
+`ComputableInSpace M.next (encStateRead encS) encS fun p => (encStateRead encS p).length`
+rather than restating `encPair encS (encOption encBool)` twice; `encStateRead` is documented as a
+state paired with the bit read, with the state framed. Because the name is reducible, the
+statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
+see through it; syntactic tools such as `omega` do not. New and changed statements follow the
+exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
+checks the repetition rule. Abstracts stay fully spelled out.
+
+To sweep an area, `python3 scripts/check_encoding_readability.py --list Complexity/Logics` lists
+its repeated compound encodings with their declarations, ignoring the baseline, and the local
+notations that abbreviate a compound encoding. A sweep must leave every statement unchanged:
+compare each changed public declaration's type with its type on `main`, either after
+`Lean.Meta.deltaExpand` of the new names and of the reducible type synonyms they mention, or with
+`isDefEq` at reducible transparency. Expanding only the new names is not enough: a coercion's type
+argument can read `CNF V` on one side and `List (List (V × Bool))` on the other.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
@@ -183,13 +215,20 @@ the root checkout and, when `<branch>` exists only on `origin`, checks it out tr
 `origin/<branch>`). Pass `--source-only` to skip the initial copy; the
 [cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
 Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
-every docstring citation key has an entry there
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib`, that
+every docstring citation key has an entry there and that `ROADMAP.md` entries are short scope
+statements with inline links
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both. On pull requests CI also runs
+than restate signatures with `example … := name`. CI runs both, and also
+`python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
+public statements ([#1656](https://github.com/cslib-community/complexitylib/issues/1656)). It
+enforces its baseline only in the modules a pull request changes, and merge groups only report,
+so `main` can drift above the baseline; the next change to a drifted module names the encoding
+or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
+options. On pull requests CI also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
@@ -227,10 +266,17 @@ findings without requiring a duplicate local run.
 
 Keep each fact in one maintained location. The README explains the purpose and points to useful
 entry points; module docstrings explain the mathematics and API; checked Lean examples show usage.
-ROADMAP lists open directions only; status and progress live on issues and PRs, so a PR does not
-edit ROADMAP unless it opens or closes a direction. UPSTREAM records coordination and exceptional
-integration decisions, while source markers record module status. Batch measurements and
-validation/review evidence belong in commit or PR descriptions.
+ROADMAP lists open directions only, grouped by area.
+Each entry states one direction's scope in a few sentences, one sentence per line, with its issue
+linked inline as `[#N](https://github.com/cslib-community/complexitylib/issues/N)`.
+Status and progress live on issues and PRs, so a PR edits ROADMAP only when it opens or closes a
+direction, and a direction leaves ROADMAP only when it is completed or deliberately dropped.
+`scripts/check_hygiene.py` rejects link reference definitions, nested bullets and entries over 600
+characters of Markdown (a link counts as its text): definitions appended to the end of the file and
+growing progress notes conflicted between PRs in the merge queue.
+UPSTREAM records coordination and exceptional integration decisions, while source markers record
+module status.
+Batch measurements and validation/review evidence belong in commit or PR descriptions.
 Link to these sources instead of repeating them in new guides. Add a separate document only when
 it provides useful explanation that does not already have a suitable home.
 
@@ -279,6 +325,8 @@ where they teach a reusable method or a model boundary. Agents should be able to
 maintained account without repeating the investigation or relying on earlier conversations.
 Keep the Agent Operator's Manual short and directed at the person driving the agents; put
 participant procedures in the Operator's Manual and historical evidence in its supplement.
+Place a new section where its topic belongs in a chapter rather than at the end: sections that
+concurrent PRs append at the same place conflict in the merge queue.
 
 Keep executable Lean examples in `ComplexityTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second

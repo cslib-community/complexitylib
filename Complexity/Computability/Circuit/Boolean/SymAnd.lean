@@ -9,7 +9,6 @@ module
 
 public import Complexity.Foundations.BooleanAnalysis.LowDegree
 public import Mathlib.Data.Int.ModEq
-import Mathlib.Algebra.BigOperators.ModEq
 
 /-!
 # `SYM ∘ AND` circuits
@@ -24,11 +23,9 @@ polynomial constructions that produce such circuits.
 
 The size of a circuit is the number of AND gates (`SymAnd.size`) and its fan-in is the largest
 AND fan-in (`SymAnd.fanIn`). Read in a commutative ring, the number of satisfied AND gates is a sum
-of monomials (`SymAnd.natCast_count_eq_sum`). Conversely, an integer-valued function of degree at
-most `D` on the cube agrees modulo any positive `M` with the number of satisfied AND gates in a
-multiset of at most `M * (n + 1) ^ D` gates of fan-in at most `D`
-(`SymAnd.exists_countP_modEq_of_mem_lowDegree`): each integer coefficient is replaced by its
-least nonnegative residue modulo `M`.
+of monomials (`SymAnd.natCast_count_eq_sum`). The converse, an integer-valued function of degree
+at most `D` as an AND count modulo `M`, is the canonical circuit `SymAnd.ofLowDegree` of
+`Complexity.Computability.Circuit.Boolean.SymAnd.Mobius`.
 
 ## Main definitions
 
@@ -39,8 +36,6 @@ least nonnegative residue modulo `M`.
 ## Main results
 
 * `Cslib.Circuits.Boolean.SymAnd.natCast_count_eq_sum`: the count as a sum of monomials.
-* `Cslib.Circuits.Boolean.SymAnd.exists_countP_modEq_of_mem_lowDegree`: low-degree integer
-  functions are AND counts modulo `M`.
 
 ## References
 
@@ -113,50 +108,6 @@ the gates. -/
 theorem natCast_count_eq_sum {R : Type*} [CommRing R] (C : SymAnd ι) (x : ι → Bool) :
     (C.count x : R) = (C.gates.map fun S => monomial R S x).sum :=
   natCast_countP_eq_sum C.gates x
-
-/-- **Low-degree integer functions are AND counts modulo `M`.** For `c` of degree at most `D` on
-the cube and `M > 0`, some multiset of at most `M * (n + 1) ^ D` sets of at most `D` positions
-has, at every point, a number of satisfied sets congruent to `c` modulo `M`: take each monomial of
-`c` with multiplicity its coefficient's least nonnegative residue modulo `M`. -/
-theorem exists_countP_modEq_of_mem_lowDegree [Fintype ι] {D : ℕ} {c : (ι → Bool) → ℤ}
-    (hc : c ∈ lowDegree ℤ ι D) {M : ℕ} (hM : 0 < M) :
-    ∃ G : Multiset (Finset ι), (∀ S ∈ G, #S ≤ D) ∧
-      Multiset.card G ≤ M * (Fintype.card ι + 1) ^ D ∧
-      ∀ x, ((G.countP fun S => ∀ i ∈ S, x i = true : ℕ) : ℤ) ≡ c x [ZMOD M] := by
-  classical
-  have hspan : monomial ℤ '' {S : Finset ι | #S ≤ D} =
-      Set.range fun S : {S : Finset ι // #S ≤ D} => monomial ℤ (S : Finset ι) := by
-    ext f
-    simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_range, Subtype.exists, exists_prop]
-  rw [lowDegree, hspan, Submodule.mem_span_range_iff_exists_fun] at hc
-  obtain ⟨a, ha⟩ := hc
-  refine ⟨(Finset.univ : Finset {S : Finset ι // #S ≤ D}).val.bind fun S =>
-      Multiset.replicate (a S % M).toNat (S : Finset ι), ?_, ?_, ?_⟩
-  · intro S hS
-    obtain ⟨T, -, hT⟩ := Multiset.mem_bind.1 hS
-    rw [Multiset.eq_of_mem_replicate hT]
-    exact T.2
-  · rw [Multiset.card_bind]
-    change ∑ S, Multiset.card (Multiset.replicate (a S % M).toNat (S : Finset ι)) ≤ _
-    simp only [Multiset.card_replicate]
-    calc ∑ S, (a S % M).toNat ≤ ∑ _S : {S : Finset ι // #S ≤ D}, M :=
-          Finset.sum_le_sum fun S _ => by
-            rw [Int.toNat_le]
-            exact (Int.emod_lt_of_pos _ (by exact_mod_cast hM)).le
-      _ = M * Fintype.card {S : Finset ι // #S ≤ D} := by
-          rw [Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_comm]
-      _ ≤ M * (Fintype.card ι + 1) ^ D := by
-          refine Nat.mul_le_mul_left M ?_
-          rw [Fintype.card_subtype]
-          exact card_filter_card_le_le_pow D
-  · intro x
-    rw [natCast_countP_eq_sum, Multiset.map_bind, Multiset.sum_bind, ← ha]
-    simp only [Multiset.map_replicate, Multiset.sum_replicate, Finset.sum_apply, Pi.smul_apply,
-      smul_eq_mul, nsmul_eq_mul]
-    change ∑ S, _ ≡ _ [ZMOD M]
-    refine Int.ModEq.sum fun S _ => Int.ModEq.mul_right _ ?_
-    rw [Int.toNat_of_nonneg (Int.emod_nonneg _ (by exact_mod_cast hM.ne'))]
-    exact Int.mod_modEq _ _
 
 /-- The `SYM ∘ AND` circuit reading the single input `t`: one AND gate `{t}` and the output
 "at least one satisfied gate". -/

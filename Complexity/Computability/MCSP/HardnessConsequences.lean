@@ -253,8 +253,7 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     calc 2 ^ cLen a * (2 * cLen a + 1)
         ≤ (K a + 1) * (2 * (K a + 1)) := Nat.mul_le_mul hpow_le hlin_le
       _ = 2 * (K a + 1) ^ 2 := by ring
-      _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 :=
-          Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left hKa 2)
+      _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 := by gcongr
   have henum : ComputableInPolyTime (fun a => BitString.enumList (cLen a))
       encIn (encList encBits) :=
     bitsEnumList hcLen hsize_enum hbudget_enum
@@ -279,14 +278,11 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     have hlenT_le : lenT + 1 ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by
       calc lenT + 1
           ≤ c_T * ((encIn p.1).length + 1) ^ d_T + 1 := Nat.add_le_add_right (hT_len p.1) 1
-        _ ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 :=
-            Nat.add_le_add_right
-              (Nat.mul_le_mul_left c_T (Nat.pow_le_pow_left (by omega) d_T)) 1
+        _ ≤ c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1 := by gcongr
     calc 2 ^ m p.1 * (2 * m p.1 + 1)
         ≤ (lenT + 1) * (2 * (lenT + 1)) := Nat.mul_le_mul hpow hlog
       _ = 2 * (lenT + 1) ^ 2 := by ring
-      _ ≤ 2 * (c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1) ^ 2 :=
-          Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left hlenT_le 2)
+      _ ≤ 2 * (c_T * ((encPair encIn encBits p).length + 1) ^ d_T + 1) ^ 2 := by gcongr
   have haccept : ComputableInPolyTime
       (fun q : ((γ × List Bool) × List Bool) × Bool =>
         q.2 == tableValue (T q.1.1.1) q.1.2)
@@ -452,9 +448,7 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
             (single (M.slice (2 * x.length + 1 + (R (z x)).arity))) + 2 := hc
       _ ≤ c_M * (2 * x.length + 1 + (R (z x)).arity + 1) ^ d_M + 2 :=
           Nat.add_le_add_right (hM_size _) 2
-      _ ≤ c_M * (2 * x.length + 1 + m_bound x.length + 1) ^ d_M + 2 :=
-          Nat.add_le_add_right (Nat.mul_le_mul_left c_M
-            (Nat.pow_le_pow_left (by omega) d_M)) 2
+      _ ≤ c_M * (2 * x.length + 1 + m_bound x.length + 1) ^ d_M + 2 := by gcongr
   -- Compose the unary bounds explicitly: one `fun_prop` over the unfolded nest is too slow.
   have hid : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary := .id'
   have hc (a : ℕ) : ComputableInPolyTime (fun _ : ℕ => a) encUnary encUnary := .const a

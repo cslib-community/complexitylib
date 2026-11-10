@@ -149,12 +149,9 @@ theorem advantage_encryptKeyEncaps_cca_eq (keyLen : ℕ → ℕ)
         decrypt distinguisher n))
       (ProbComp.eval (kemCCAIdealGame keyLen keyGen (encryptKeyEncaps keyLen encrypt)
         decrypt distinguisher n)) =
-    Game.advantage
-      (ProbComp.eval (cca2GameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length)
-        encBits keyGen encrypt decrypt (kemToCCAAdversary keyLen distinguisher) false n))
-      (ProbComp.eval (cca2GameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length)
-        encBits keyGen encrypt decrypt (kemToCCAAdversary keyLen distinguisher) true n)) := by
-  rw [eval_cca2GameOn_kemToCCAAdversary_false, eval_cca2GameOn_kemToCCAAdversary_true]
+    Encryption.advantage (cca2GameOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) encBits keyGen
+      encrypt decrypt (kemToCCAAdversary keyLen distinguisher)) n := by
+  rw [advantage, eval_cca2GameOn_kemToCCAAdversary_false, eval_cca2GameOn_kemToCCAAdversary_true]
 
 /-- **CCA-secure word PKE gives adaptive decapsulation security** ([BonehShoup2023],
 Exercise 12.5(f)). The KEM adversary receives one challenge and may query adaptively afterwards;

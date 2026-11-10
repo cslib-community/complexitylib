@@ -317,8 +317,7 @@ theorem two_pow_two_mul_sqrt_lt_size_of_separates {n k : ℕ} (hk : 2 ≤ k) (hn
   · have edges := edgeCount_le_succ_size_of_separates hk hkn hC
     have pairs := sq_half_le_edgeCount n
     have arithmetic := fourPow_sqrt_add_two_le k hk (by omega)
-    have scaled : (k ^ 4 / 2) ^ 2 ≤ (n / 2) ^ 2 :=
-      Nat.pow_le_pow_left (Nat.div_le_div_right hn) 2
+    have scaled : (k ^ 4 / 2) ^ 2 ≤ (n / 2) ^ 2 := by gcongr
     rw [pow_mul]
     norm_num
     omega

@@ -392,7 +392,7 @@ theorem eventually_lt_mul_innerSize_of_isTotallyRegular_isPolynomial (hr : 2 ≤
   filter_upwards [eventually_lt_mul_innerSize_of_isTotallyRegular_affine.{u} hr hA hlayout hε]
     with N hN
   intro F _ _ σ I hI M c hM hfan hc
-  obtain ⟨c', -, hinner, hfan', hc'⟩ := hc.exists_affine hI
+  obtain ⟨c', -, hinner, hfan', -, hc'⟩ := hc.exists_affine hI
   rw [← hinner]
   exact hN F M c' hM ((hfan' r).mpr hfan) hc'
 

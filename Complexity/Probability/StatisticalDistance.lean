@@ -12,6 +12,7 @@ public import Complexity.Probability.PMF
 public import Mathlib.MeasureTheory.Measure.TotalVariation.Defs
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Mathlib.MeasureTheory.Measure.TotalVariation.Basic
 
 /-!
@@ -56,8 +57,8 @@ theorem dist_filter [Fintype α] (p : PMF α) (event : Set α)
     dist p (p.filter event hevent) = (p.toOuterMeasure eventᶜ).toReal := by
   classical
   have hpositive := (toOuterMeasure_toReal_pos_iff p event).mpr hevent
-  have hprobability : (p.toOuterMeasure event).toReal ≤ 1 := by
-    simpa using ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one p event)
+  have hprobability : (p.toOuterMeasure event).toReal ≤ 1 :=
+    toOuterMeasure_toReal_le_one p event
   have habsolute (a : α) : |(p a).toReal - ((p.filter event hevent) a).toReal| =
       ((p.filter event hevent) a).toReal - (p a).toReal +
         2 * (if a ∈ eventᶜ then (p a).toReal else 0) := by

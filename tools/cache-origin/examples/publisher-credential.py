@@ -62,12 +62,12 @@ def install(args):
         if info.st_size and not args.rotate:
             raise ValueError("An account is installed; explicit --rotate is required")
     password = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")
-    result = subprocess.run(["htpasswd", "-niBC", "12", args.user],
+    result = subprocess.run(["htpasswd", "-niBC", "4", args.user],
                             input=(password + "\n").encode(), capture_output=True, check=True)
     # htpasswd -n emits an additional blank line on some Apache versions.
     record = result.stdout.rstrip(b"\n") + b"\n"
-    if not re.fullmatch(re.escape(args.user).encode() + rb":\$2[aby]\$12\$[./A-Za-z0-9]{53}\n", record):
-        raise ValueError("htpasswd did not produce the required bcrypt cost-12 record")
+    if not re.fullmatch(re.escape(args.user).encode() + rb":\$2[aby]\$04\$[./A-Za-z0-9]{53}\n", record):
+        raise ValueError("htpasswd did not produce the required bcrypt cost-4 record")
     # Write/fsync the private handoff before switching the active password. A
     # failed installation leaves recoverable handoff material, never a lost key.
     descriptor = os.open(args.handoff, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -81,7 +81,7 @@ def install(args):
         os.fsync(target.fileno())
     sync_directory(args.handoff.parent)
     atomic_hash(args.password_file, record, gid)
-    print("Installed bcrypt cost-12 publisher hash; private handoff: " + str(args.handoff))
+    print("Installed bcrypt cost-4 publisher hash; private handoff: " + str(args.handoff))
 
 
 def main():

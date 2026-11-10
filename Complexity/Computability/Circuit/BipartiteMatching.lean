@@ -131,6 +131,17 @@ theorem IsMatching.mono {E F : Finset (V × W)} (hE : IsMatching E) (hFE : F ⊆
     IsMatching F :=
   fun e he e' he' h => hE e (hFE he) e' (hFE he') h
 
+/-- Adding to a matching an edge whose endpoints are both unmatched gives a matching. -/
+theorem IsMatching.insert [DecidableEq V] [DecidableEq W] {E : Finset (V × W)} (hE : IsMatching E)
+    {e : V × W} (h₁ : ∀ e' ∈ E, e'.1 ≠ e.1) (h₂ : ∀ e' ∈ E, e'.2 ≠ e.2) :
+    IsMatching (insert e E) := by
+  intro x hx y hy hxy
+  rcases Finset.mem_insert.1 hx with rfl | hxE <;> rcases Finset.mem_insert.1 hy with rfl | hyE
+  · rfl
+  · exact absurd (hxy.imp Eq.symm Eq.symm) (by simpa using ⟨h₁ y hyE, h₂ y hyE⟩)
+  · exact absurd hxy (by simpa using ⟨h₁ x hxE, h₂ x hxE⟩)
+  · exact hE x hxE y hyE hxy
+
 /-- A single edge is a matching. -/
 theorem isMatching_singleton (e : V × W) : IsMatching ({e} : Finset (V × W)) := by
   simp [IsMatching]

@@ -54,14 +54,14 @@ variable {V : Type} [DecidableEq V] (enc : V ↪ List Bool)
 /-- Removing repeated literals from a clause is polynomial-time. -/
 theorem Clause.computableInPolyTime_eraseDupLits :
     ComputableInPolyTime (Clause.eraseDupLits (V := V))
-      (encList (encPair enc encBool)) (encList (encPair enc encBool)) := by
+      (encClause enc) (encClause enc) := by
   unfold Clause.eraseDupLits
   fun_prop
 
 /-- Removing repeated literals from every clause is polynomial-time. -/
 theorem CNF.computableInPolyTime_eraseDupLits :
     ComputableInPolyTime (CNF.eraseDupLits (V := V))
-      (encList (encList (encPair enc encBool))) (encList (encList (encPair enc encBool))) := by
+      (encCNFOver enc) (encCNFOver enc) := by
   have := Clause.computableInPolyTime_eraseDupLits enc
   unfold CNF.eraseDupLits
   fun_prop
@@ -69,8 +69,7 @@ theorem CNF.computableInPolyTime_eraseDupLits :
 /-- Setting a variable is polynomial-time. -/
 theorem CNF.computableInPolyTime_restrict :
     ComputableInPolyTime (fun p : (V × Bool) × CNF V => p.2.restrict p.1.1 p.1.2)
-      (encPair (encPair enc encBool) (encList (encList (encPair enc encBool))))
-      (encList (encList (encPair enc encBool))) := by
+      (encPair (encPair enc encBool) (encCNFOver enc)) (encCNFOver enc) := by
   unfold CNF.restrict
   fun_prop
 
@@ -78,14 +77,13 @@ omit [DecidableEq V] in
 /-- Johnson's weight, in binary, is polynomial-time in a unary bound `L` and the formula. -/
 theorem CNF.computableInPolyTime_johnsonWeight :
     ComputableInPolyTime (fun p : ℕ × CNF V => p.2.johnsonWeight p.1)
-      (encPair encUnary (encList (encList (encPair enc encBool)))) encNat := by
+      (encPair encUnary (encCNFOver enc)) encNat := by
   unfold CNF.johnsonWeight
   fun_prop
 
 /-- Setting a variable does not lengthen the encoding of a formula. -/
 theorem CNF.length_encList_restrict_le (v : V) (b : Bool) (ψ : CNF V) :
-    (encList (encList (encPair enc encBool)) (ψ.restrict v b)).length ≤
-      (encList (encList (encPair enc encBool)) ψ).length :=
+    (encCNFOver enc (ψ.restrict v b)).length ≤ (encCNFOver enc ψ).length :=
   (length_encList_map_le _ _ fun _ _ =>
     length_encList_sublist _ List.filter_sublist).trans
     (length_encList_sublist _ List.filter_sublist)
@@ -94,9 +92,9 @@ theorem CNF.length_encList_restrict_le (v : V) (b : Bool) (ψ : CNF V) :
 theorem CNF.computableInPolyTime_restrict' {α : Type} {input : α ↪ List Bool} {v : α → V}
     {b : α → Bool} {ψ : α → CNF V} (hv : ComputableInPolyTime v input enc)
     (hb : ComputableInPolyTime b input encBool)
-    (hψ : ComputableInPolyTime ψ input (encList (encList (encPair enc encBool)))) :
+    (hψ : ComputableInPolyTime ψ input (encCNFOver enc)) :
     ComputableInPolyTime (fun a => (ψ a).restrict (v a) (b a)) input
-      (encList (encList (encPair enc encBool))) := by
+      (encCNFOver enc) := by
   have h := (CNF.computableInPolyTime_restrict enc).comp ((hv.prod hb).prod hψ)
   exact h
 
@@ -104,7 +102,7 @@ omit [DecidableEq V] in
 /-- Johnson's weight of a computed formula with a computed unary bound is polynomial-time. -/
 theorem CNF.computableInPolyTime_johnsonWeight' {α : Type} {input : α ↪ List Bool}
     {L : α → ℕ} {ψ : α → CNF V} (hL : ComputableInPolyTime L input encUnary)
-    (hψ : ComputableInPolyTime ψ input (encList (encList (encPair enc encBool)))) :
+    (hψ : ComputableInPolyTime ψ input (encCNFOver enc)) :
     ComputableInPolyTime (fun a => (ψ a).johnsonWeight (L a)) input encNat := by
   have h := (CNF.computableInPolyTime_johnsonWeight enc).comp (hL.prod hψ)
   exact h
@@ -143,12 +141,12 @@ private theorem johnson_eq_foldl (φ : CNF V) :
 /-- **Johnson's algorithm is polynomial-time**, for any encoding of the variables. -/
 theorem computableInPolyTime_johnson :
     ComputableInPolyTime (johnson (V := V))
-      (encList (encList (encPair enc encBool))) (encList enc) := by
+      (encCNFOver enc) (encList enc) := by
   have hlist := CNF.computableInPolyTime_distinctVars enc
   have hinit := (CNF.computableInPolyTime_eraseDupLits enc).prod
-    (const (encIn := encList (encList (encPair enc encBool))) (encOut := encList enc) [])
+    (const (encIn := encCNFOver enc) (encOut := encList enc) [])
   have hfold := foldlWithInput_of_bounded_growth
-    (encA := enc) (encB := encPair (encList (encList (encPair enc encBool))) (encList enc))
+    (encA := enc) (encB := encPair (encCNFOver enc) (encList enc))
     (list := fun φ : CNF V => φ.distinctVars)
     (step := fun (φ : CNF V) (s : CNF V × List V) (v : V) =>
       if (s.1.restrict v true).johnsonWeight φ.vars.length ≤

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.BooleanAnalysis.Noise
-import Mathlib.Analysis.SpecialFunctions.Exp
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 
@@ -89,17 +89,9 @@ theorem sum_fourierCoeff_sq_le_three_mul_noiseSensitivity {δ : ℝ} (hδ : δ �
   have hδ0 : 0 ≤ δ := by nlinarith [(Nat.cast_nonneg t : (0 : ℝ) ≤ t)]
   have h0 : 0 ≤ 1 - 2 * δ := by linarith
   have h1 : 1 - 2 * δ ≤ 1 := by linarith
-  have hexp : Real.exp (-2) ≤ 1 / 3 := by
-    rw [Real.exp_neg, inv_eq_one_div, div_le_div_iff₀ (Real.exp_pos 2) (by norm_num)]
-    linarith [Real.add_one_le_exp 2]
   have key (S : Finset ι) (hS : t < #S) : (1 - 2 * δ) ^ #S ≤ 1 / 3 := by
-    calc (1 - 2 * δ) ^ #S ≤ (1 - 2 * δ) ^ (t + 1) :=
-          pow_le_pow_of_le_one h0 h1 (Nat.succ_le_of_lt hS)
-      _ ≤ Real.exp (-(2 * δ)) ^ (t + 1) :=
-          pow_le_pow_left₀ h0 (by linarith [Real.add_one_le_exp (-(2 * δ))]) _
-      _ = Real.exp ((t + 1 : ℕ) * -(2 * δ)) := (Real.exp_nat_mul _ _).symm
-      _ ≤ Real.exp (-2) := Real.exp_le_exp.2 (by push_cast; nlinarith)
-      _ ≤ 1 / 3 := hexp
+    refine (pow_le_pow_of_le_one h0 h1 (Nat.succ_le_of_lt hS)).trans ?_
+    exact Real.pow_le_one_third h0 le_rfl (by push_cast; nlinarith)
   rw [noiseSensitivity_eq_sum, mul_sum]
   calc ∑ S with t < #S, fourierCoeff (fun x => signVal (f x)) S ^ 2
       ≤ ∑ S with t < #S,

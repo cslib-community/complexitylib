@@ -11,6 +11,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
+import Complexity.Tactic.EncLen
 
 /-!
 # Left folds with bounds of given degrees
@@ -75,15 +76,13 @@ public theorem ComputableTidilyInDegree.foldl' {γ α β : Type} {encIn : γ ↪
         2 * B x + 1 + (encL (list x)).length := fun x i hi => by
     have h₁ := hstates x i hi.le
     have h₂ := hS.length_elem_le (list x) _ (List.getElem_mem hi)
-    simp only [length_encPair]
-    omega
+    enc_len
   have hrest : ∀ x, ∀ i ≤ (list x).length,
       (encPair encL encB ((list x).drop i, ((list x).take i).foldl step (init x))).length ≤
         2 * (encL (list x)).length + 1 + B x := fun x i hi => by
     have h₁ := hstates x i hi
     have h₂ := hS.length_drop_le (list x) i
-    simp only [length_encPair]
-    omega
+    enc_len
   have haD : a ≤ D := Nat.le_mul_of_pos_left _ (lt_of_lt_of_le Nat.one_pos (le_max_left _ _))
   obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.foldl (encA := encA) (encL := encL)
     (encBA := encPair encB encA) (encS := encPair encL encB)

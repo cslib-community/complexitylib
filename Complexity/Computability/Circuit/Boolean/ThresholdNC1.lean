@@ -298,8 +298,7 @@ theorem exists_deMorgan_simulation_of_fanInAtMost {F : ℕ} (C : Circuit signatu
   · refine (Circuit.depth_simulate_le _ _).trans
       (C.depthWith_le_mul_depth fun k => (Op.depth_deMorganCircuit_le _).trans ?_)
     have hk : (C.program.lines k).op.arity ≤ F := hlines k
-    exact Nat.add_le_add_left
-      (Nat.mul_le_mul_left 23 (Nat.clog_mono_right 2 (Nat.add_le_add_right hk 1))) 2
+    gcongr
 
 end Threshold
 
@@ -387,8 +386,7 @@ theorem mem_NC_succ_of_threshold_fanInAtMost {L : Language Bool} {i c : ℕ} {s 
       have h1 := he n
       nlinarith
     calc D.depth ≤ (2 + 23 * Nat.clog 2 (F n + 1)) * C.depth := hDd
-      _ ≤ ((23 * e + 2) * (Nat.log 2 n + 1)) * (c * (Nat.log 2 n + 1) ^ i) :=
-        Nat.mul_le_mul hlog hCd
+      _ ≤ ((23 * e + 2) * (Nat.log 2 n + 1)) * (c * (Nat.log 2 n + 1) ^ i) := by gcongr
       _ = c * (23 * e + 2) * (Nat.log 2 n + 1) ^ (i + 1) := by ring
   · refine hDs.trans ?_
     beta_reduce

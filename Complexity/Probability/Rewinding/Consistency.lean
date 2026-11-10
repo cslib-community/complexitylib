@@ -11,6 +11,7 @@ public import Complexity.Probability.Rewinding
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # Rewinding against a committed table
@@ -179,11 +180,9 @@ theorem le_add_mul_sqrt_disagreement {ε : ℝ}
   set d : S → ℝ := fun s =>
     (((run s).bind fun r => (run s).bind fun r' => PMF.pure (E s r r')) true).toReal
   have hp (s : S) : 0 ≤ p s ∧ p s ≤ 1 :=
-    ⟨ENNReal.toReal_nonneg, ENNReal.toReal_le_of_le_ofReal zero_le_one
-      (by rw [ENNReal.ofReal_one]; exact Probability.PMF.toOuterMeasure_le_one _ _)⟩
+    ⟨ENNReal.toReal_nonneg, Probability.PMF.toOuterMeasure_toReal_le_one _ _⟩
   have hd (s : S) : 0 ≤ d s ∧ d s ≤ 1 :=
-    ⟨ENNReal.toReal_nonneg, ENNReal.toReal_le_of_le_ofReal zero_le_one
-      (by rw [ENNReal.ofReal_one]; exact PMF.coe_le_one _ _)⟩
+    ⟨ENNReal.toReal_nonneg, Probability.PMF.toReal_apply_le_one _ _⟩
   obtain ⟨s₀, hs₀⟩ := first.support_nonempty
   have hε : 0 ≤ ε := ENNReal.toReal_nonneg.trans (hcons s₀ hs₀ fun _ => false)
   have hpoint (s : S) (hs : s ∈ first.support) : p s ≤ ε + M * √(d s) := by
@@ -205,10 +204,8 @@ theorem le_add_mul_sqrt_disagreement {ε : ℝ}
     calc p s ≤ (μ.toOuterMeasure
           {r | acc s r = true ∧ ∀ j b, opens s r j b = true → b = π j}).toReal +
           ∑ j ∈ Finset.range M, (a j (!π j)).toReal := by
-          rw [← ENNReal.toReal_sum fun j _ => hfin _, ← ENNReal.toReal_add (hfin _)
-            (ENNReal.sum_ne_top.mpr fun j _ => hfin _)]
-          exact ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hfin _,
-            ENNReal.sum_ne_top.mpr fun j _ => hfin _⟩) hsplit
+          rw [← ENNReal.toReal_sum fun j _ => hfin _]
+          exact ENNReal.toReal_le_add hsplit (hfin _) (ENNReal.sum_ne_top.mpr fun j _ => hfin _)
       _ ≤ ε + ∑ _j ∈ Finset.range M, √(d s) :=
           add_le_add (hcons s hs π) (Finset.sum_le_sum hmin)
       _ = ε + M * √(d s) := by simp

@@ -81,8 +81,7 @@ theorem ComputableInO.comp_polyTime {f : β → γ} {g : α → β} {T S : β �
     have hS' : S (g a) ≤ (c + 1) ^ b * L ^ (d + e₀ * b) :=
       (hS a).trans (hpow.trans (Nat.mul_le_mul_left _
         (Nat.pow_le_pow_right hL (Nat.le_add_left _ _))))
-    calc L ^ d + S (g a) ≤ L ^ (d + e₀ * b) + (c + 1) ^ b * L ^ (d + e₀ * b) :=
-          Nat.add_le_add hd hS'
+    calc L ^ d + S (g a) ≤ L ^ (d + e₀ * b) + (c + 1) ^ b * L ^ (d + e₀ * b) := by gcongr
       _ = ((c + 1) ^ b + 1) * L ^ (d + e₀ * b) := by rw [Nat.add_mul, Nat.one_mul, Nat.add_comm]
       _ ≤ _ := Nat.mul_le_mul (by omega) (Nat.le_succ _)
 

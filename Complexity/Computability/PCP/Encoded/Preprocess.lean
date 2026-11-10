@@ -96,7 +96,7 @@ theorem isPolyTime_preprocess (fallback truth : C) (rotate : ℕ × (ℕ × D) �
     (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
     ComputableInPolyTime (preprocess fallback truth rotate labels)
-      (encoding enc) (encoding (encOption (encPair encBool enc))) := by
+      (encoding enc) (encoding (encDegreeReduceConstraint enc)) := by
   have hdegree := isPolyTime_degreeReduce (enc := enc) fallback labels rotate hrotate
   unfold preprocess
   fun_prop
@@ -178,9 +178,11 @@ private theorem toGraph_append_inverse (vertices : ℕ) (left right : List (Edge
     (eval : C → α → α → Bool) :
     ((Graph.mk vertices (left ++ right)).toGraph eval) =
       (((Graph.mk vertices left).toGraph eval).union
-        ((Graph.mk vertices right).toGraph eval)).comap (appendEdgeEquiv left right).symm := by
+        ((Graph.mk vertices right).toGraph eval)).comap
+          (List.appendIndexEquiv left right).symm := by
   simpa only [ConstraintGraph.comap_comap, Equiv.self_comp_symm, ConstraintGraph.comap_id] using
-    congrArg (fun graph : ConstraintGraph ℕ _ α => graph.comap (appendEdgeEquiv left right).symm)
+    congrArg
+      (fun graph : ConstraintGraph ℕ _ α => graph.comap (List.appendIndexEquiv left right).symm)
       (toGraph_append vertices left right eval)
 
 /-- Appending a fully enumerated family of trivial edges realizes
@@ -199,7 +201,7 @@ private theorem addTrivial_represents {V L L' : Type} (g : Graph C) (eval : C �
         ((R.addTrivial H).toConstraintGraph.map number).comap e := by
   obtain ⟨eg, hg⟩ := hg
   obtain ⟨eh, hh⟩ := hextra
-  let e := ((appendEdgeEquiv g.edges (extra.map fun p => Edge.mk p.1 p.2 truth)).symm.trans
+  let e := ((List.appendIndexEquiv g.edges (extra.map fun p => Edge.mk p.1 p.2 truth)).symm.trans
     (Equiv.sumCongr eg eh)).trans (Equiv.prodSumDistrib V L L').symm
   refine ⟨e, ?_⟩
   change (Graph.mk g.vertices

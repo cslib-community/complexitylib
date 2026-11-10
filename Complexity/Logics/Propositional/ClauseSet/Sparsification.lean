@@ -124,8 +124,7 @@ theorem ClauseSet.Sparsification.exists_sum_choose_le {k : ℕ} (hk : 1 ≤ k) {
     exact (pow_le_pow_iff_left₀ (by positivity) (by positivity) (by omega)).mp hpow
   calc (∑ j ∈ range (ρ + 1), (Λ.choose j : ℝ))
       ≤ Real.exp (Λ / T) * (T : ℝ) ^ ρ := hsum
-    _ ≤ (2 : ℝ) ^ (ε / 2 * N) * (2 : ℝ) ^ (ε / 2 * N) :=
-        mul_le_mul hexp hTρ (by positivity) (by positivity)
+    _ ≤ (2 : ℝ) ^ (ε / 2 * N) * (2 : ℝ) ^ (ε / 2 * N) := by gcongr
     _ = 2 ^ (ε * N) := by
         rw [← Real.rpow_add (by norm_num)]
         ring_nf

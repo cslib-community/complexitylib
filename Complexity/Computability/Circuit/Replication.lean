@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.SourceComplexity
 public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Parallel
+public import Complexity.Foundations.Data.BitString.Block
 import Complexity.Computability.Circuit.Simulation
 public import Mathlib.Logic.Equiv.Fin.Basic
 
@@ -36,6 +37,8 @@ cost is monotone even at zero copies, where a separate empty circuit suffices.
 
 ## Main results
 
+* `Cslib.Circuits.block_blockMap`: the output blocks of `blockMap f k x` are `f` applied to the
+  input blocks (`Cslib.BitString.block`).
 * `Cslib.Circuits.Circuit.eval_parallelFamily_apply`,
   `Cslib.Circuits.Circuit.cost_program_parallelFamily`: blockwise semantics and additive cost.
 * `Cslib.Circuits.Circuit.eval_replicate`,
@@ -76,6 +79,13 @@ def directProduct (f : (Fin n → U) → U) (k : ℕ) : (Fin (k * n) → U) → 
     (x : Fin (k * n) → U) (j : Fin k) (i : Fin m) :
     blockMap f k x (finProdFinEquiv (j, i)) = f (directProductInput x j) i := by
   simp [blockMap]
+
+/-- Block `j` of the outputs of `blockMap f k x` is `f` on input block `j`. -/
+theorem block_blockMap (f : (Fin n → U) → Fin m → U) (x : Fin (k * n) → U) :
+    BitString.block (blockMap f k x) = fun j => f (BitString.block x j) := by
+  funext j i
+  rw [BitString.block_apply, blockMap_apply]
+  rfl
 
 namespace Circuit
 

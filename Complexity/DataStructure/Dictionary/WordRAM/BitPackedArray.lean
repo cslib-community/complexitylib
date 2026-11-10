@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Computability.WordRAM.ExactLog
 public import Complexity.DataStructure.WordRAM.Randomized.StateTransition
 public import Mathlib.Data.Nat.Bitwise
+import Complexity.Computability.WordRAM.SymbolicExec
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -831,153 +832,34 @@ theorem addrSetupCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
       x₁.regs 8 = 2 ^ highWidth k w idx - 1 := by
   obtain ⟨s14, he_off, hmem14, hs14_0, hs14_1, hs14_2, hs14_3, hs14_4, hs14_5, hs14_8, hs14_9⟩ :=
     offsetSetupCode_execWithin hw hkw hidx hbase hr1 hr8 hr9 hfit_idx hfit_end
-  have hfit_w : Fits w w := Nat.lt_two_pow_self
-  have hfit_k : Fits w k := hfit_w.of_le hkw
-  have hfit_one : Fits w 1 := (Nat.pow_lt_pow_iff_right one_lt_two).mpr hw
-  have hfit_zero : Fits w 0 := hfit_one.of_le (by omega)
   have hbOff_lt : bitOffset k w idx < w := bitOffset_lt hw
-  have hfit_sub_b : Fits w (w - bitOffset k w idx) := hfit_w.of_le (by omega)
   have hk0_le_k : lowWidth k w idx ≤ k := Nat.min_le_left _ _
-  have hfit_k1 : Fits w (highWidth k w idx) := hfit_k.of_le (by unfold highWidth; omega)
-  set s15 := s14.set 6 (w - bitOffset k w idx)
-  have heval15 : BinOp.evalExact .sub (s14.regs 8) (s14.regs 5) = some (w - bitOffset k w idx) := by
-    simp [BinOp.evalExact, hs14_5, hs14_8, hbOff_lt.le]
-  have e15 : Exec w (.op (.exactBin .sub 6 8 5) : Code .exact 10) s14 s15 1 :=
-    exec_exactBin heval15 hfit_sub_b
-  have hs15_9 : s15.regs 9 = k := by simp +decide [s15, hs14_9]
-  set s16 := s15.set 6 (lowWidth k w idx)
-  have e16 : ExecWithin w (.branch (.lt 9 6) (.op (.copy 6 9)) (.op (.copy 6 6)) : Code .exact 10)
-      s15 s16 3 := by
-    by_cases hlt_k : k < w - bitOffset k w idx
-    · have hc : (Cond.lt (9 : Fin 10) 6).Holds s15 := by
-        simp +decide [Cond.Holds, s15, hs15_9, hlt_k]
-      have hmin : lowWidth k w idx = k := Nat.min_eq_left hlt_k.le
-      have ec : Exec w (.op (.copy 6 9) : Code .exact 10) s15 s16 1 := by
-        simpa +decide [s16, hmin, hs15_9]
-          using (Exec.copy (B := .exact) (w := w) (d := 6) (s := 9) (x := s15))
-      exact ⟨1 + 1, by omega, Exec.branch_pos hc ec⟩
-    · have hc : ¬(Cond.lt (9 : Fin 10) 6).Holds s15 := by
-        simp +decide [Cond.Holds, s15, hs15_9, hlt_k]
-      have hmin : lowWidth k w idx = w - bitOffset k w idx :=
-        Nat.min_eq_right (not_lt.mp hlt_k)
-      have ec : Exec w (.op (.copy 6 6) : Code .exact 10) s15 s16 1 := by
-        simpa +decide [s16, hmin, s15]
-          using (Exec.copy (B := .exact) (w := w) (d := 6) (s := 6) (x := s15))
-      exact ⟨1 + 2, by omega, Exec.branch_neg hc ec⟩
-  set s17 := s16.set 8 (highWidth k w idx)
-  have e17 : Exec w (.op (.exactBin .sub 8 9 6) : Code .exact 10) s16 s17 1 :=
-    exec_exactBin (by
-      simp [BinOp.evalExact, s16, hs15_9, hk0_le_k, highWidth]) hfit_k1
   have hk1_lt_w : highWidth k w idx < w := highWidth_lt hw hkw
-  have hfit_pow1 : Fits w (2 ^ highWidth k w idx) :=
-    (Nat.pow_lt_pow_iff_right one_lt_two).mpr hk1_lt_w
-  have hfit_mask1 : Fits w (2 ^ highWidth k w idx - 1) := hfit_pow1.of_le (Nat.sub_le _ _)
-  set s18 := s17.set 9 1
-  have e18 : Exec w (.op (.const 9 1) : Code .exact 10) s17 s18 1 := Exec.const hfit_one
-  set s19 := s18.set 8 (2 ^ highWidth k w idx)
-  have e19 : Exec w (.op (.exactBin .shiftLeft 8 9 8) : Code .exact 10) s18 s19 1 :=
-    exec_exactBin (by simp +decide [s18, s17, Nat.shiftLeft_eq]) hfit_pow1
-  set s20 := s19.set 8 (2 ^ highWidth k w idx - 1)
-  have e20 : Exec w (.op (.exactBin .sub 8 8 9) : Code .exact 10) s19 s20 1 :=
-    exec_exactBin (by simp [BinOp.evalExact, s19, s18, Nat.one_le_two_pow]) hfit_mask1
-  set s21 := s20.set 7 0
-  have e21 : Exec w (.op (.const 7 0) : Code .exact 10) s20 s21 1 := Exec.const hfit_zero
-  have hs21_mem : s21.mem = x.mem := hmem14
-  have hs21_0 : s21.regs 0 = base + offset := by
-    simp +decide [s21, s20, s19, s18, s17, s16, s15, hs14_0]
-  have hs21_1 : s21.regs 1 = idx := by
-    simp +decide [s21, s20, s19, s18, s17, s16, s15, hs14_1]
-  have hs21_2 : s21.regs 2 = x.regs 2 := by
-    simp +decide [s21, s20, s19, s18, s17, s16, s15, hs14_2]
-  have hs21_3 : s21.regs 3 = base + offset + wordOffset k w idx := by
-    simp +decide [s21, s20, s19, s18, s17, s16, s15, hs14_3]
-  have hs21_4 : s21.regs 4 = base + offset + wordOffset k w idx + 1 := by
-    simp +decide [s21, s20, s19, s18, s17, s16, s15, hs14_4]
-  have hs21_5 : s21.regs 5 = bitOffset k w idx := by
-    simp +decide [s21, s20, s19, s18, s17, s16, s15, hs14_5]
-  have hs21_6 : s21.regs 6 = lowWidth k w idx := by
-    simp +decide [s21, s20, s19, s18, s17, s16]
-  have hs21_8 : s21.regs 8 = 2 ^ highWidth k w idx - 1 := by
-    simp +decide [s21, s20]
-  have hs21_9 : s21.regs 9 = 1 := by
-    simp +decide [s21, s20, s19, s18]
-  have e_mask : ∃ x₁ : Data 10,
-      ExecWithin w
-        (.branch (.eq 6 7)
-          (.op (.copy 7 7))
-          (.seq (.op (.exactBin .sub 7 6 9))
-          (.seq (.op (.exactBin .shiftLeft 7 9 7))
-          (.seq (.op (.exactBin .sub 9 7 9))
-                (.op (.exactBin .add 7 7 9))))) : Code .exact 10)
-        s21 x₁ 6 ∧
-      x₁.mem = s21.mem ∧
-      x₁.regs 0 = s21.regs 0 ∧
-      x₁.regs 1 = s21.regs 1 ∧
-      x₁.regs 2 = s21.regs 2 ∧
-      x₁.regs 3 = s21.regs 3 ∧
-      x₁.regs 4 = s21.regs 4 ∧
-      x₁.regs 5 = s21.regs 5 ∧
-      x₁.regs 6 = s21.regs 6 ∧
-      x₁.regs 7 = 2 ^ lowWidth k w idx - 1 ∧
-      x₁.regs 8 = s21.regs 8 := by
-    by_cases hk0_0 : lowWidth k w idx = 0
-    · have hc : (Cond.eq (6 : Fin 10) 7).Holds s21 := by
-        simp +decide [Cond.Holds, s21, hs21_6, hk0_0]
-      have hs21_set7 : s21.set 7 (s21.regs 7) = s21 := by
-        cases s21; simp [Data.set]
-      have ec : Exec w (.op (.copy 7 7) : Code .exact 10) s21 s21 1 := by
-        simpa [hs21_set7] using (Exec.copy (B := .exact) (w := w) (d := 7) (s := 7) (x := s21))
-      refine ⟨s21, ⟨1 + 1, by omega, Exec.branch_pos hc ec⟩,
-        rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, ?_, rfl⟩
-      simp +decide [s21, hk0_0]
-    · have hc : ¬(Cond.eq (6 : Fin 10) 7).Holds s21 := by
-        simp +decide [Cond.Holds, s21, hs21_6, hk0_0]
-      have hk0_pos : 1 ≤ lowWidth k w idx := Nat.pos_of_ne_zero hk0_0
-      have hk0_le_w : lowWidth k w idx ≤ w := hk0_le_k.trans hkw
-      have hk0_sub_lt : lowWidth k w idx - 1 < w := by omega
-      have hfit_sub1 : Fits w (lowWidth k w idx - 1) := hfit_w.of_le hk0_sub_lt.le
-      have hfit_pow0 : Fits w (2 ^ (lowWidth k w idx - 1)) :=
-        (Nat.pow_lt_pow_iff_right one_lt_two).mpr hk0_sub_lt
-      have hfit_sub_pow0 : Fits w (2 ^ (lowWidth k w idx - 1) - 1) :=
-        hfit_pow0.of_le (Nat.sub_le _ _)
-      have hpow0_sum :
-          2 ^ (lowWidth k w idx - 1) + (2 ^ (lowWidth k w idx - 1) - 1) =
-            2 ^ lowWidth k w idx - 1 := by
-        have hpos : 1 ≤ 2 ^ (lowWidth k w idx - 1) := Nat.one_le_two_pow
-        have hpow : 2 ^ lowWidth k w idx = 2 * 2 ^ (lowWidth k w idx - 1) := by
-          conv_lhs => rw [← Nat.sub_add_cancel hk0_pos]
-          rw [Nat.pow_succ']
-        omega
-      have hfit_mask0 : Fits w (2 ^ lowWidth k w idx - 1) := by
-        change 2 ^ lowWidth k w idx - 1 < 2 ^ w
-        have hle : 2 ^ lowWidth k w idx ≤ 2 ^ w := Nat.pow_le_pow_right (by decide) hk0_le_w
-        have hpos : 1 ≤ 2 ^ lowWidth k w idx := Nat.one_le_two_pow
-        omega
-      set m1 := s21.set 7 (lowWidth k w idx - 1)
-      have em1 : Exec w (.op (.exactBin .sub 7 6 9) : Code .exact 10) s21 m1 1 :=
-        exec_exactBin (by simp [BinOp.evalExact, hs21_6, hs21_9, hk0_pos]) hfit_sub1
-      set m2 := m1.set 7 (2 ^ (lowWidth k w idx - 1))
-      have em2 : Exec w (.op (.exactBin .shiftLeft 7 9 7) : Code .exact 10) m1 m2 1 :=
-        exec_exactBin (by simp +decide [m1, hs21_9, Nat.shiftLeft_eq]) hfit_pow0
-      set m3 := m2.set 9 (2 ^ (lowWidth k w idx - 1) - 1)
-      have em3 : Exec w (.op (.exactBin .sub 9 7 9) : Code .exact 10) m2 m3 1 :=
-        exec_exactBin (by simp [BinOp.evalExact, m2, m1, hs21_9, Nat.one_le_two_pow]) hfit_sub_pow0
-      set m4 := m3.set 7 (2 ^ lowWidth k w idx - 1)
-      have em4 : Exec w (.op (.exactBin .add 7 7 9) : Code .exact 10) m3 m4 1 :=
-        exec_exactBin (by simp [BinOp.evalExact, m3, m2, hpow0_sum]) hfit_mask0
-      refine ⟨m4, ⟨4 + 2, by omega,
-        Exec.branch_neg hc (em1.seq (em2.seq (em3.seq em4)))⟩, rfl, ?_⟩
-      simp +decide [m4, m3, m2, m1]
-  obtain ⟨x₁, hex_mask, hmem, hr0, hr1', hr2, hr3, hr4, hr5, hr6, hr7, hr8'⟩ := e_mask
-  obtain ⟨t_m, ht_m, he_m⟩ := hex_mask
-  obtain ⟨t16, ht16, he16⟩ := e16
-  have he_mask_all : Exec w maskSetupCode s14 x₁ (1 + (t16 + (1 + (1 + (1 + (1 + (1 + t_m))))))) :=
-    e15.seq (he16.seq (e17.seq (e18.seq (e19.seq (e20.seq (e21.seq he_m))))))
-  refine ⟨x₁, ⟨10 + (1 + (t16 + (1 + (1 + (1 + (1 + (1 + t_m))))))), by omega,
-    he_off.seq he_mask_all⟩,
-    hmem.trans hs21_mem,
-    hr0.trans hs21_0, hr1'.trans hs21_1, hr2.trans hs21_2, hr3.trans hs21_3,
-    hr4.trans hs21_4, hr5.trans hs21_5, hr6.trans hs21_6, hr7, hr8'.trans hs21_8⟩
+  have hk1 : k - lowWidth k w idx = highWidth k w idx := rfl
+  have hfit_le (v : ℕ) (hv : v ≤ w) : Fits w v := Nat.lt_two_pow_self.trans_le' hv
+  have hfit_pow (v : ℕ) (hv : v < w) : Fits w (2 ^ v) := Nat.pow_lt_pow_right one_lt_two hv
+  have hfit_pow_sub (v : ℕ) (hv : v ≤ w) : Fits w (2 ^ v - 1) :=
+    (Nat.sub_lt (Nat.two_pow_pos _) one_pos).trans_le (Nat.pow_le_pow_right two_pos hv)
+  have hsum : ¬lowWidth k w idx = 0 →
+      2 ^ (lowWidth k w idx - 1) + (2 ^ (lowWidth k w idx - 1) - 1) = 2 ^ lowWidth k w idx - 1 := by
+    intro h
+    have : 2 ^ lowWidth k w idx = 2 ^ (lowWidth k w idx - 1) * 2 := by
+      rw [← Nat.pow_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel (Nat.pos_of_ne_zero h)]
+    have := @Nat.one_le_two_pow (lowWidth k w idx - 1)
+    omega
+  refine WP.exists_execWithin ?_
+  unfold addrSetupCode maskSetupCode
+  refine WP.seq (WP.of_execWithin he_off.within ?_)
+  wram_exec -split [hs14_5, hs14_8, hfit_le]
+  refine WP.cut (fun y t => t ≤ 3 ∧
+    y = (s14.set 6 (w - bitOffset k w idx)).set 6 (lowWidth k w idx)) ?_ ?_
+  · wram_exec [hs14_9]
+    · rw [lowWidth, Nat.min_eq_left hc.le]
+    · rw [lowWidth, Nat.min_eq_right (by omega)]
+  · rintro y t ⟨ht, rfl⟩
+    wram_exec [hs14_9, hk1, hfit_le, hfit_pow, hfit_pow_sub, hsum, Nat.one_shiftLeft,
+      Nat.one_le_two_pow]
+    all_goals wram_simp [hs14_0, hs14_1, hs14_2, hs14_3, hs14_4, hs14_5, hmem14, hc, pow_zero]
 
 /-- `readPackedCode` executes deterministically in at most `34` instructions, placing
 `readPacked (base + offset) k w x.mem idx` into `reg 2` while preserving `reg 0`, `reg 1`, and
@@ -1004,7 +886,6 @@ theorem readPackedCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
   set addr₀ := base + offset + wOff
   set addr₁ := base + offset + wOff + 1
   have hm0_fit : Fits w (x.mem addr₀) := hx.2 addr₀
-  have hm1_fit : Fits w (x.mem addr₁) := hx.2 addr₁
   have hshr0_fit : Fits w (x.mem addr₀ >>> bOff) :=
     hm0_fit.of_le (by rw [Nat.shiftRight_eq_div_pow]; exact Nat.div_le_self _ _)
   have hlow_lt : (x.mem addr₀ >>> bOff) &&& (2 ^ k₀ - 1) < 2 ^ k₀ := by
@@ -1013,8 +894,7 @@ theorem readPackedCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
   have hk0_le_w : k₀ ≤ w := (Nat.min_le_left _ _).trans hkw
   have hlow_fit : Fits w ((x.mem addr₀ >>> bOff) &&& (2 ^ k₀ - 1)) :=
     hlow_lt.trans_le (Nat.pow_le_pow_right (by decide) hk0_le_w)
-  have hzero_fit : Fits w 0 := Nat.two_pow_pos w
-  have hshr1_fit : Fits w (x.mem addr₁ >>> 0) := hm1_fit
+  have hshr1_fit : Fits w (x.mem addr₁ >>> 0) := hx.2 addr₁
   have hhigh_lt : (x.mem addr₁ >>> 0) &&& (2 ^ k₁ - 1) < 2 ^ k₁ := by
     rw [Nat.and_two_pow_sub_one_eq_mod]
     exact Nat.mod_lt _ (by positivity)
@@ -1027,44 +907,18 @@ theorem readPackedCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
     refine shiftLeft_lt_two_pow_of_lt hhigh_lt ?_
     have := lowWidth_add_highWidth k w idx
     omega
+  have hread : ((x.mem addr₀ >>> bOff) &&& (2 ^ k₀ - 1)) ^^^
+      (((x.mem addr₁ >>> 0) &&& (2 ^ k₁ - 1)) <<< k₀) = readPacked (base + offset) k w x.mem idx :=
+    rfl
   have hread_fit : Fits w (readPacked (base + offset) k w x.mem idx) :=
     (readPacked_lt (base + offset) k w x.mem idx).trans_le
       (Nat.pow_le_pow_right (by decide) hkw)
-  set r1 := x₁.set 9 (x.mem addr₀)
-  have er1 : Exec w (.op (.load 9 3) : Code .exact 10) x₁ r1 1 := by
-    simpa [r1, hr3, hmem₁] using (Exec.load (B := .exact) (w := w) (d := 9) (a := 3) (x := x₁))
-  set r2 := r1.set 9 (x.mem addr₀ >>> bOff)
-  have er2 : Exec w (.op (.exactBin .shiftRight 9 9 5) : Code .exact 10) r1 r2 1 :=
-    exec_exactBin (by simp +decide [r1, hr5]) hshr0_fit
-  set r3 := r2.set 9 ((x.mem addr₀ >>> bOff) &&& (2 ^ k₀ - 1))
-  have er3 : Exec w (.op (.exactBin .and 9 9 7) : Code .exact 10) r2 r3 1 :=
-    exec_exactBin (by simp +decide [r2, r1, hr7]) hlow_fit
-  set r4 := r3.set 2 (x.mem addr₁)
-  have hr4_r3 : r3.regs 4 = addr₁ := by simp +decide [r3, r2, r1, hr4]
-  have hmem_r3 : r3.mem = x.mem := hmem₁
-  have er4 : Exec w (.op (.load 2 4) : Code .exact 10) r3 r4 1 := by
-    simpa [r4, hr4_r3, hmem_r3] using
-      (Exec.load (B := .exact) (w := w) (d := 2) (a := 4) (x := r3))
-  set r5 := r4.set 7 0
-  have er5 : Exec w (.op (.const 7 0) : Code .exact 10) r4 r5 1 := Exec.const hzero_fit
-  set r6 := r5.set 2 (x.mem addr₁ >>> 0)
-  have er6 : Exec w (.op (.exactBin .shiftRight 2 2 7) : Code .exact 10) r5 r6 1 :=
-    exec_exactBin (by simp +decide [r5, r4]) hshr1_fit
-  set r7 := r6.set 2 ((x.mem addr₁ >>> 0) &&& (2 ^ k₁ - 1))
-  have er7 : Exec w (.op (.exactBin .and 2 2 8) : Code .exact 10) r6 r7 1 :=
-    exec_exactBin (by simp +decide [r6, r5, r4, r3, r2, r1, hr8']) hhigh_fit
-  set r8 := r7.set 2 (((x.mem addr₁ >>> 0) &&& (2 ^ k₁ - 1)) <<< k₀)
-  have er8 : Exec w (.op (.exactBin .shiftLeft 2 2 6) : Code .exact 10) r7 r8 1 :=
-    exec_exactBin (by simp +decide [r7, r6, r5, r4, r3, r2, r1, hr6]) hshl_fit
-  set r9 := r8.set 2 (readPacked (base + offset) k w x.mem idx)
-  have er9 : Exec w (.op (.exactBin .xor 2 9 2) : Code .exact 10) r8 r9 1 :=
-    exec_exactBin (by simp +decide [r8, r7, r6, r5, r4, r3, readPacked, addr₀, addr₁, wOff, bOff,
-      k₀, k₁]) hread_fit
-  obtain ⟨t₁, ht₁, he₁⟩ := hex₁
-  have he_fin : Exec w readPackedFinishCode x₁ r9 9 :=
-    er1.seq (er2.seq (er3.seq (er4.seq (er5.seq (er6.seq (er7.seq (er8.seq er9)))))))
-  refine ⟨r9, ⟨t₁ + 9, by omega, he₁.seq he_fin⟩, hmem₁, ?_⟩
-  simp +decide [r9, r8, r7, r6, r5, r4, r3, r2, r1, hr0, hr1']
+  refine WP.exists_execWithin ?_
+  unfold readPackedCode readPackedFinishCode
+  refine WP.seq (WP.of_execWithin hex₁ ?_)
+  wram_exec [hr3, hr4, hr5, hr6, hr7, hr8', hmem₁, hshr0_fit, hlow_fit, hshr1_fit, hhigh_fit,
+    hshl_fit, hread, hread_fit]
+  wram_simp [hr0, hr1', hmem₁]
 
 /-- `writePackedCode` executes deterministically in at most `45` instructions, updating
 `x.mem` to `writePacked (base + offset) k w x.mem idx val` while preserving `reg 0 = base + offset`,
@@ -1092,167 +946,46 @@ theorem writePackedCode_execWithin {base offset N k w idx val : ℕ} {x : Data 1
   set k₁ := highWidth k w idx
   set addr₀ := (base + offset) + wOff
   set addr₁ := (base + offset) + wOff + 1
-  set old₀ := (x.mem addr₀ >>> bOff) &&& (2 ^ k₀ - 1)
-  set val₀ := val &&& (2 ^ k₀ - 1)
-  set mem₁ := Function.update x.mem addr₀ (x.mem addr₀ ^^^ ((old₀ ^^^ val₀) <<< bOff))
-  set old₁ := (mem₁ addr₁ >>> 0) &&& (2 ^ k₁ - 1)
-  set val₁ := (val >>> k₀) &&& (2 ^ k₁ - 1)
-  have hm0_fit : Fits w (x.mem addr₀) := hx.2 addr₀
-  have hshr0_fit : Fits w (x.mem addr₀ >>> bOff) :=
-    hm0_fit.of_le (by rw [Nat.shiftRight_eq_div_pow]; exact Nat.div_le_self _ _)
-  have hold0_lt : old₀ < 2 ^ k₀ := by
-    dsimp only [old₀]
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
-  have hval0_lt : val₀ < 2 ^ k₀ := by
-    dsimp only [val₀]
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
   have hk0_le_w : k₀ ≤ w := (Nat.min_le_left _ _).trans hkw
-  have hold0_fit : Fits w old₀ := hold0_lt.trans_le (Nat.pow_le_pow_right (by decide) hk0_le_w)
-  have hval0_fit : Fits w val₀ := hval0_lt.trans_le (Nat.pow_le_pow_right (by decide) hk0_le_w)
-  have hδ0_lt : old₀ ^^^ val₀ < 2 ^ k₀ := Nat.xor_lt_two_pow hold0_lt hval0_lt
-  have hδ0_fit : Fits w (old₀ ^^^ val₀) :=
-    hδ0_lt.trans_le (Nat.pow_le_pow_right (by decide) hk0_le_w)
-  have hsh0_lt : (old₀ ^^^ val₀) <<< bOff < 2 ^ w := by
-    refine shiftLeft_lt_two_pow_of_lt hδ0_lt ?_
-    have := bitOffset_add_lowWidth_le (k := k) (idx := idx) hw
-    omega
-  have hsh0_fit : Fits w ((old₀ ^^^ val₀) <<< bOff) := hsh0_lt
-  have hnew0_fit : Fits w (x.mem addr₀ ^^^ ((old₀ ^^^ val₀) <<< bOff)) :=
-    Nat.xor_lt_two_pow hm0_fit hsh0_lt
-  have hm1_fit : Fits w (mem₁ addr₁) := by
-    dsimp only [mem₁]
-    rw [Function.update_of_ne (by omega)]
-    exact hx.2 addr₁
-  have hzero_fit : Fits w 0 := Nat.two_pow_pos w
-  have hshr1_fit : Fits w (mem₁ addr₁ >>> 0) := hm1_fit
-  have hold1_lt : old₁ < 2 ^ k₁ := by
-    dsimp only [old₁]
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
-  have hval1_lt : val₁ < 2 ^ k₁ := by
-    dsimp only [val₁]
-    rw [Nat.and_two_pow_sub_one_eq_mod]
-    exact Nat.mod_lt _ (by positivity)
   have hk1_le_w : k₁ ≤ w := by
     have := lowWidth_add_highWidth k w idx
     omega
-  have hold1_fit : Fits w old₁ := hold1_lt.trans_le (Nat.pow_le_pow_right (by decide) hk1_le_w)
-  have hval_shr_fit : Fits w (val >>> k₀) :=
-    hfit_val.of_le (by rw [Nat.shiftRight_eq_div_pow]; exact Nat.div_le_self _ _)
-  have hval1_fit : Fits w val₁ := hval1_lt.trans_le (Nat.pow_le_pow_right (by decide) hk1_le_w)
+  have hmask_lt (v j : ℕ) : v &&& (2 ^ j - 1) < 2 ^ j := by
+    rw [Nat.and_two_pow_sub_one_eq_mod]
+    exact Nat.mod_lt _ (by positivity)
+  have hshr_fit (v j : ℕ) (hv : Fits w v) : Fits w (v >>> j) :=
+    hv.of_le (by rw [Nat.shiftRight_eq_div_pow]; exact Nat.div_le_self _ _)
+  generalize hold₀ : (x.mem addr₀ >>> bOff) &&& (2 ^ k₀ - 1) = old₀
+  generalize hval₀ : val &&& (2 ^ k₀ - 1) = val₀
+  generalize hold₁ : (x.mem addr₁ >>> 0) &&& (2 ^ k₁ - 1) = old₁
+  generalize hval₁ : (val >>> k₀) &&& (2 ^ k₁ - 1) = val₁
+  have hold0_lt : old₀ < 2 ^ k₀ := hold₀ ▸ hmask_lt _ _
+  have hval0_lt : val₀ < 2 ^ k₀ := hval₀ ▸ hmask_lt _ _
+  have hold1_lt : old₁ < 2 ^ k₁ := hold₁ ▸ hmask_lt _ _
+  have hval1_lt : val₁ < 2 ^ k₁ := hval₁ ▸ hmask_lt _ _
+  have hfit_of {v j : ℕ} (hv : v < 2 ^ j) (hj : j ≤ w) : Fits w v :=
+    hv.trans_le (Nat.pow_le_pow_right (by decide) hj)
+  have hxor_fit {a b : ℕ} (ha : Fits w a) (hb : Fits w b) : Fits w (a ^^^ b) :=
+    Nat.xor_lt_two_pow ha hb
+  have hδ0_lt : old₀ ^^^ val₀ < 2 ^ k₀ := Nat.xor_lt_two_pow hold0_lt hval0_lt
   have hδ1_lt : old₁ ^^^ val₁ < 2 ^ k₁ := Nat.xor_lt_two_pow hold1_lt hval1_lt
-  have hδ1_fit : Fits w (old₁ ^^^ val₁) :=
-    hδ1_lt.trans_le (Nat.pow_le_pow_right (by decide) hk1_le_w)
-  have hsh1_lt : (old₁ ^^^ val₁) <<< 0 < 2 ^ w := hδ1_fit
-  have hsh1_fit : Fits w ((old₁ ^^^ val₁) <<< 0) := hsh1_lt
-  have hnew1_fit : Fits w (mem₁ addr₁ ^^^ ((old₁ ^^^ val₁) <<< 0)) :=
-    Nat.xor_lt_two_pow hm1_fit hsh1_lt
-  set w1 := x₁.set 9 (x.mem addr₀)
-  have ew1 : Exec w (.op (.load 9 3) : Code .exact 10) x₁ w1 1 := by
-    simpa [w1, hr3, hmem₁, addr₀] using
-      (Exec.load (B := .exact) (w := w) (d := 9) (a := 3) (x := x₁))
-  set w2 := w1.set 9 (x.mem addr₀ >>> bOff)
-  have ew2 : Exec w (.op (.exactBin .shiftRight 9 9 5) : Code .exact 10) w1 w2 1 :=
-    exec_exactBin (by simp +decide [w1, hr5]) hshr0_fit
-  set w3 := w2.set 9 old₀
-  have ew3 : Exec w (.op (.exactBin .and 9 9 7) : Code .exact 10) w2 w3 1 :=
-    exec_exactBin (by simp +decide [w2, w1, hr7, old₀]) hold0_fit
-  set w4 := w3.set 7 val₀
-  have ew4 : Exec w (.op (.exactBin .and 7 2 7) : Code .exact 10) w3 w4 1 :=
-    exec_exactBin (by simp +decide [w3, w2, w1, hr2', hr7, val₀]) hval0_fit
-  set w5 := w4.set 9 (old₀ ^^^ val₀)
-  have ew5 : Exec w (.op (.exactBin .xor 9 9 7) : Code .exact 10) w4 w5 1 :=
-    exec_exactBin (by simp +decide [w4, w3]) hδ0_fit
-  set w6 := w5.set 9 ((old₀ ^^^ val₀) <<< bOff)
-  have ew6 : Exec w (.op (.exactBin .shiftLeft 9 9 5) : Code .exact 10) w5 w6 1 :=
-    exec_exactBin (by simp +decide [w5, w4, w3, w2, w1, hr5]) hsh0_fit
-  set w7 := w6.set 7 (x.mem addr₀)
-  have hr3_w6 : w6.regs 3 = addr₀ := by simp +decide [w6, w5, w4, w3, w2, w1, hr3, addr₀]
-  have hmem_w6 : w6.mem = x.mem := hmem₁
-  have ew7 : Exec w (.op (.load 7 3) : Code .exact 10) w6 w7 1 := by
-    simpa [w7, hr3_w6, hmem_w6] using
-      (Exec.load (B := .exact) (w := w) (d := 7) (a := 3) (x := w6))
-  set w8 := w7.set 9 (x.mem addr₀ ^^^ ((old₀ ^^^ val₀) <<< bOff))
-  have ew8 : Exec w (.op (.exactBin .xor 9 7 9) : Code .exact 10) w7 w8 1 :=
-    exec_exactBin (by simp +decide [w7, w6]) hnew0_fit
-  set w9 := w8.write addr₀ (x.mem addr₀ ^^^ ((old₀ ^^^ val₀) <<< bOff))
-  have hr3_w8 : w8.regs 3 = addr₀ := by simp +decide [w8, w7, hr3_w6]
-  have hr9_w8 : w8.regs 9 = x.mem addr₀ ^^^ ((old₀ ^^^ val₀) <<< bOff) := by simp +decide [w8]
-  have ew9 : Exec w (.op (.store 3 9) : Code .exact 10) w8 w9 1 := by
-    simpa [w9, hr3_w8, hr9_w8] using
-      (Exec.store (B := .exact) (w := w) (a := 3) (s := 9) (x := w8))
-  have hw9_mem : w9.mem = mem₁ := by
-    change Function.update w8.mem addr₀ (x.mem addr₀ ^^^ ((old₀ ^^^ val₀) <<< bOff)) = mem₁
-    have hw8_mem : w8.mem = x.mem := hmem₁
-    rw [hw8_mem]
-  have hw9_0 : w9.regs 0 = base + offset := by
-    simp +decide [w9, Data.write, w8, w7, w6, w5, w4, w3, w2, w1, hr0]
-  have hw9_1 : w9.regs 1 = idx := by
-    simp +decide [w9, Data.write, w8, w7, w6, w5, w4, w3, w2, w1, hr1']
-  have hw9_2 : w9.regs 2 = val := by
-    simp +decide [w9, Data.write, w8, w7, w6, w5, w4, w3, w2, w1, hr2']
-  have hw9_4 : w9.regs 4 = addr₁ := by
-    simp +decide [w9, Data.write, w8, w7, w6, w5, w4, w3, w2, w1, hr4, addr₁]
-  have hw9_6 : w9.regs 6 = k₀ := by
-    simp +decide [w9, Data.write, w8, w7, w6, w5, w4, w3, w2, w1, hr6]
-  have hw9_8 : w9.regs 8 = 2 ^ k₁ - 1 := by
-    simp +decide [w9, Data.write, w8, w7, w6, w5, w4, w3, w2, w1, hr8']
-  set w10 := w9.set 5 0
-  have ew10 : Exec w (.op (.const 5 0) : Code .exact 10) w9 w10 1 := Exec.const hzero_fit
-  set w11 := w10.set 9 (mem₁ addr₁)
-  have hr4_w10 : w10.regs 4 = addr₁ := by simp +decide [w10, hw9_4]
-  have hmem_w10 : w10.mem = mem₁ := hw9_mem
-  have ew11 : Exec w (.op (.load 9 4) : Code .exact 10) w10 w11 1 := by
-    simpa [w11, hr4_w10, hmem_w10] using
-      (Exec.load (B := .exact) (w := w) (d := 9) (a := 4) (x := w10))
-  set w12 := w11.set 9 (mem₁ addr₁ >>> 0)
-  have ew12 : Exec w (.op (.exactBin .shiftRight 9 9 5) : Code .exact 10) w11 w12 1 :=
-    exec_exactBin (by simp +decide [w11, w10]) hshr1_fit
-  set w13 := w12.set 9 old₁
-  have ew13 : Exec w (.op (.exactBin .and 9 9 8) : Code .exact 10) w12 w13 1 :=
-    exec_exactBin (by simp +decide [w12, w11, w10, hw9_8, old₁]) hold1_fit
-  set w14 := w13.set 7 (val >>> k₀)
-  have ew14 : Exec w (.op (.exactBin .shiftRight 7 2 6) : Code .exact 10) w13 w14 1 :=
-    exec_exactBin (by simp +decide [w13, w12, w11, w10, hw9_2, hw9_6]) hval_shr_fit
-  set w15 := w14.set 7 val₁
-  have ew15 : Exec w (.op (.exactBin .and 7 7 8) : Code .exact 10) w14 w15 1 :=
-    exec_exactBin (by simp +decide [w14, w13, w12, w11, w10, hw9_8, val₁]) hval1_fit
-  set w16 := w15.set 9 (old₁ ^^^ val₁)
-  have ew16 : Exec w (.op (.exactBin .xor 9 9 7) : Code .exact 10) w15 w16 1 :=
-    exec_exactBin (by simp +decide [w15, w14, w13]) hδ1_fit
-  set w17 := w16.set 9 ((old₁ ^^^ val₁) <<< 0)
-  have ew17 : Exec w (.op (.exactBin .shiftLeft 9 9 5) : Code .exact 10) w16 w17 1 :=
-    exec_exactBin (by simp +decide [w16, w15, w14, w13, w12, w11, w10]) hsh1_fit
-  set w18 := w17.set 7 (mem₁ addr₁)
-  have hr4_w17 : w17.regs 4 = addr₁ := by
-    simp +decide [w17, w16, w15, w14, w13, w12, w11, w10, hw9_4]
-  have hmem_w17 : w17.mem = mem₁ := hw9_mem
-  have ew18 : Exec w (.op (.load 7 4) : Code .exact 10) w17 w18 1 := by
-    simpa [w18, hr4_w17, hmem_w17] using
-      (Exec.load (B := .exact) (w := w) (d := 7) (a := 4) (x := w17))
-  set w19 := w18.set 9 (mem₁ addr₁ ^^^ ((old₁ ^^^ val₁) <<< 0))
-  have ew19 : Exec w (.op (.exactBin .xor 9 7 9) : Code .exact 10) w18 w19 1 :=
-    exec_exactBin (by simp +decide [w18, w17]) hnew1_fit
-  set w20 := w19.write addr₁ (mem₁ addr₁ ^^^ ((old₁ ^^^ val₁) <<< 0))
-  have hr4_w19 : w19.regs 4 = addr₁ := by simp +decide [w19, w18, hr4_w17]
-  have hr9_w19 : w19.regs 9 = mem₁ addr₁ ^^^ ((old₁ ^^^ val₁) <<< 0) := by simp +decide [w19]
-  have ew20 : Exec w (.op (.store 4 9) : Code .exact 10) w19 w20 1 := by
-    simpa [w20, hr4_w19, hr9_w19] using
-      (Exec.store (B := .exact) (w := w) (a := 4) (s := 9) (x := w19))
-  obtain ⟨t₁, ht₁, he₁⟩ := hex₁
-  have he_fin : Exec w writePackedFinishCode x₁ w20 20 :=
-    ew1.seq (ew2.seq (ew3.seq (ew4.seq (ew5.seq (ew6.seq (ew7.seq (ew8.seq (ew9.seq (ew10.seq
-      (ew11.seq (ew12.seq (ew13.seq (ew14.seq (ew15.seq (ew16.seq (ew17.seq (ew18.seq
-        (ew19.seq ew20))))))))))))))))))
-  refine ⟨w20, ⟨t₁ + 20, by omega, he₁.seq he_fin⟩, ?_, ?_⟩
-  · change Function.update w19.mem addr₁ (mem₁ addr₁ ^^^ ((old₁ ^^^ val₁) <<< 0)) =
-      writePacked (base + offset) k w x.mem idx val
-    have hw19_mem : w19.mem = mem₁ := hw9_mem
-    rw [hw19_mem]
-    rfl
-  · simp +decide [w20, Data.write, w19, w18, w17, w16, w15, w14, w13, w12, w11, w10,
-      hw9_0, hw9_1, hw9_2]
+  have hsh0_fit : Fits w ((old₀ ^^^ val₀) <<< bOff) := by
+    refine shiftLeft_lt_two_pow_of_lt hδ0_lt ?_
+    have := bitOffset_add_lowWidth_le (k := k) (idx := idx) hw
+    omega
+  have hsh1_fit : Fits w ((old₁ ^^^ val₁) <<< 0) := hfit_of hδ1_lt hk1_le_w
+  refine WP.exists_execWithin ?_
+  unfold writePackedCode writePackedFinishCode
+  refine WP.seq (WP.of_execWithin hex₁ ?_)
+  wram_exec [hr2', hr3, hr4, hr5, hr6, hr7, hr8', hmem₁, hold₀, hval₀, hold₁, hval₁,
+    hshr_fit _ _ (hx.2 addr₀), hshr_fit _ _ (hx.2 addr₁), hshr_fit _ _ hfit_val,
+    hfit_of hold0_lt hk0_le_w, hfit_of hval0_lt hk0_le_w, hfit_of hold1_lt hk1_le_w,
+    hfit_of hval1_lt hk1_le_w, hfit_of hδ0_lt hk0_le_w, hfit_of hδ1_lt hk1_le_w, hsh0_fit,
+    hsh1_fit, hxor_fit (hx.2 addr₀) hsh0_fit, hxor_fit (hx.2 addr₁) hsh1_fit]
+  refine ⟨?_, by wram_simp [hr0, hr1', hr2']⟩
+  subst hold₀ hval₀ hold₁ hval₁
+  have hne : base + offset + wordOffset k w idx + 1 ≠ base + offset + wordOffset k w idx := by omega
+  simp only [Data.write_mem, Data.set_mem, hmem₁, writePacked, Function.update_of_ne hne]
+  rfl
 
 end Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray

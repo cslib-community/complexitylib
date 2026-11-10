@@ -183,8 +183,7 @@ theorem DecidableInTimeO.inter {p : α → Bool} (hp : ComputableInPolyTime p en
       rw [pow_succ]
       nlinarith [(Nat.cast_nonneg (enc a).length : (0 : ℝ) ≤ _)]
     have hd : (((enc a).length : ℝ) + 1) ^ d ≤ ((enc a).length + 1) ^ (d + 1) :=
-      pow_le_pow_right₀ (by linarith [(Nat.cast_nonneg (enc a).length : (0 : ℝ) ≤ _)])
-        (Nat.le_succ d)
+        by gcongr <;> linarith
     have hc : (0 : ℝ) ≤ c := Nat.cast_nonneg c
     have hpos : (0 : ℝ) ≤ ((enc a).length + 1) ^ (d + 1) := by positivity
     split_ifs with hpa

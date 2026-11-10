@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Mathlib.Algebra.Order.BigOperators.Expect
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Data.Fintype.Pi
+import Complexity.Foundations.Analysis.SpecialFunctions.LogSum
 import Complexity.Foundations.Data.Finset.Expect
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic.FieldSimp
@@ -18,7 +19,6 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 import Mathlib.Logic.Equiv.Prod
-import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 import Mathlib.Combinatorics.Pigeonhole
 
 /-!
@@ -492,18 +492,6 @@ end Projection
 
 /-! ### Korten's entropy lemma -/
 
-/-- The log-sum inequality, from Jensen's inequality for `x log x`. -/
-theorem sum_mul_log_ge {β : Type*} [Fintype β] [Nonempty β] {m : β → ℝ}
-    (hm : ∀ b, 0 ≤ m b) :
-    (∑ b, m b) * Real.log ((∑ b, m b) / Fintype.card β) ≤ ∑ b, m b * Real.log (m b) := by
-  have hc : (0 : ℝ) < Fintype.card β := by exact_mod_cast Fintype.card_pos
-  have h := Real.convexOn_mul_log.map_sum_le (t := univ) (w := fun _ => (Fintype.card β : ℝ)⁻¹)
-    (p := m) (fun _ _ => by positivity) (by simp [card_univ]) (fun b _ => hm b)
-  simp only [smul_eq_mul, ← mul_sum] at h
-  rw [show (Fintype.card β : ℝ)⁻¹ * ∑ b, m b = (∑ b, m b) / Fintype.card β by ring] at h
-  have h2 := mul_le_mul_of_nonneg_left h hc.le
-  rwa [← mul_assoc, mul_div_cancel₀ _ hc.ne', ← mul_assoc, mul_inv_cancel₀ hc.ne', one_mul] at h2
-
 /-- The logarithm of the size of the fiber of a uniform point of `X` under a map to `β` is on
 average at least `log |X| - log |β|`. -/
 theorem expect_log_card_fiber {α β : Type*} [Fintype β] [Nonempty β] [DecidableEq β]
@@ -517,7 +505,8 @@ theorem expect_log_card_fiber {α β : Type*} [Fintype β] [Nonempty β] [Decida
       (f := g) (by intro x hx; exact mem_univ _) ).symm
   have hN : (0 : ℝ) < X.card := by exact_mod_cast card_pos.mpr hX
   have hB : (0 : ℝ) < Fintype.card β := by exact_mod_cast Fintype.card_pos
-  have h := sum_mul_log_ge (m := m) (by intro b; dsimp [m]; positivity)
+  have h := Real.sum_mul_log_div_card_le univ (x := m) (by intro b _; dsimp [m]; positivity)
+  rw [card_univ] at h
   rw [hsum, Real.log_div hN.ne' hB.ne'] at h
   have he : (∑ x ∈ X, Real.log (X.filter (fun y => g y = g x)).card) =
       ∑ b, m b * Real.log (m b) := by

@@ -564,8 +564,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   have hRs := (bS (P, fl, r, G')).2.trans (mS (show n ≤ Z by omega))
   have h1 := had Z
   simp only [id] at h1
-  have hK : a * (Z + 1) ^ d ≤ (a + d) * (Z + 1) ^ (a + d) :=
-    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+  have hK : a * (Z + 1) ^ d ≤ (a + d) * (Z + 1) ^ (a + d) := by gcongr <;> omega
   refine ⟨?_, ?_⟩
   · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_time,
       Function.comp_apply]
@@ -580,8 +579,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
           by simp only [Tf]; ring
         omega
       have hT2 : (Z + 2) * 2 ≤ Tf Z := by simp only [Tf]; omega
-      have h4 : X * ((Z + 2) * 2 * E) ≤ X * (Tf Z * E) :=
-        Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hT2)
+      have h4 : X * ((Z + 2) * 2 * E) ≤ X * (Tf Z * E) := by gcongr
       omega
     have hfin : X * (Tf Z * (E + 1)) ≤ (a + d) * (Z + 1) ^ (a + d) * X * (E + 1) := by
       calc X * (Tf Z * (E + 1)) ≤ X * (a * (Z + 1) ^ d * (E + 1)) :=
@@ -669,8 +667,7 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
   have hMs := (bM (P, ℓ, r, G)).2.trans (mM (show n ≤ W by omega))
   have h1 := had W
   simp only [id] at h1
-  have hK : a * (W + 1) ^ d ≤ (a + d) * (W + 1) ^ (a + d) :=
-    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+  have hK : a * (W + 1) ^ d ≤ (a + d) * (W + 1) ^ (a + d) := by gcongr <;> omega
   refine ⟨?_, ?_⟩
   · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_time]
     have hTe' := hTe.trans (Nat.mul_le_mul hNy (Nat.add_le_add_right hEng _))

@@ -5,10 +5,10 @@ Authors: Christian Reitwiessner
 -/
 module
 
-import Complexity.Foundations.Probability.RootMetric.ConditionalWalk
-import Complexity.Foundations.Probability.SignedResidualBins
-import all Complexity.Foundations.Probability.DetectedHierarchy
-import all Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
+import Complexity.Computability.LogSpaceDerandomization.RootMetric.ConditionalWalk
+import Complexity.Computability.LogSpaceDerandomization.SignedResidualBins
+import all Complexity.Computability.LogSpaceDerandomization.DetectedHierarchy
+import all Complexity.Computability.LogSpaceDerandomization.CorrectionHierarchy
 import Mathlib.Tactic.FinCases
 
 /-!

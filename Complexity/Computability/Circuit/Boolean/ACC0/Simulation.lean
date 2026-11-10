@@ -114,8 +114,7 @@ theorem size_modMultUnboundedCircuit_le (q : ℕ) (op : MultOp) :
     change (modCircuitOfMajority (Signature.Hom.id _) q
       ((majorityDeMorganCircuit (K + (K + 2))).mapOp deMorganToUnbounded)).size ≤
       2100 * (max q 1 * N + 1) ^ 3
-    have hcube : (K + 1) ^ 3 ≤ (max q 1 * N + 1) ^ 3 :=
-      Nat.pow_le_pow_left (Nat.add_le_add_right hK 1) 3
+    have hcube : (K + 1) ^ 3 ≤ (max q 1 * N + 1) ^ 3 := by gcongr
     calc (modCircuitOfMajority (Signature.Hom.id _) q
           ((majorityDeMorganCircuit (K + (K + 2))).mapOp deMorganToUnbounded)).size
         ≤ 1 + (K + 1) * (2 * (2 +
@@ -182,9 +181,7 @@ theorem exists_unbounded_simulation_modGate {n m : ℕ} (q : ℕ) (C : Circuit e
         (depth_modMultUnboundedCircuit_le q _).trans ?_).trans
         (Nat.mul_le_mul_left _ (depth_multCircuit_le C)))
     have har := arity_lines_multCircuit_le C k
-    exact Nat.add_le_add_left
-      (Nat.mul_le_mul_left 23
-        (Nat.clog_mono_right 2 (Nat.add_le_add_right (Nat.mul_le_mul_left (2 * max q 1) har) 3))) 6
+    gcongr
 
 /-- **De Morgan circuits simulate `MOD_q` circuits in polynomial size**: every circuit over the
 `AC⁰[q]` basis of `n` inputs and `s` gates has an equivalent fan-in-two De Morgan circuit of size
@@ -205,8 +202,7 @@ theorem exists_deMorgan_simulation_modGate {n m : ℕ} (q : ℕ) (C : Circuit ex
           ≤ (max q 1 * (n + C.size + 1)) ^ 3 := Nat.pow_le_pow_left hK 3
         _ = (max q 1) ^ 3 * (n + C.size + 1) ^ 3 := by ring
     calc U.size ≤ C.size * (2100 * (max q 1 * (n + C.size) + 1) ^ 3) := hUs
-      _ ≤ (n + C.size + 1) * (2100 * ((max q 1) ^ 3 * (n + C.size + 1) ^ 3)) :=
-        Nat.mul_le_mul h1 (Nat.mul_le_mul_left 2100 h2)
+      _ ≤ (n + C.size + 1) * (2100 * ((max q 1) ^ 3 * (n + C.size + 1) ^ 3)) := by gcongr
       _ = 2100 * (max q 1) ^ 3 * (n + C.size + 1) ^ 4 := by ring
   have hnU : n + U.size ≤ 2100 * (max q 1) ^ 3 * (n + C.size + 1) ^ 4 := by
     have hQ3 : 1 ≤ (max q 1) ^ 3 := Nat.one_le_pow 3 _ hQ
@@ -257,8 +253,7 @@ theorem ACMod_subset_AC_succ (q i : ℕ) : ACMod q i ⊆ AC (i + 1) := by
     have hlog : 6 + 23 * Nat.clog 2 (2 * max q 1 * (n + C.size) + 3) ≤
         (23 * e + 6) * (Nat.log 2 n + 1) := by nlinarith
     calc D.depth ≤ (6 + 23 * Nat.clog 2 (2 * max q 1 * (n + C.size) + 3)) * C.depth := hDd
-      _ ≤ ((23 * e + 6) * (Nat.log 2 n + 1)) * (c * (Nat.log 2 n + 1) ^ i) :=
-        Nat.mul_le_mul hlog hCd
+      _ ≤ ((23 * e + 6) * (Nat.log 2 n + 1)) * (c * (Nat.log 2 n + 1) ^ i) := by gcongr
       _ = (23 * e + 6) * c * (Nat.log 2 n + 1) ^ (i + 1) := by ring
   · refine hDs.trans ?_
     beta_reduce
