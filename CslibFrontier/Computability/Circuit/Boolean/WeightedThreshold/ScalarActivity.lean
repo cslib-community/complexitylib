@@ -120,12 +120,8 @@ theorem eval_eq_of_weightedSum_between (p : Program signature n g) (w : Fin n �
     have hgate₃ := eval_gate_eq p x₃ j
     rw [sum_inputWeight_eq_mul_weightedSum hc] at hgate₁ hgate₂ hgate₃
     have hsum₂₁ : (∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₂ k).toNat) =
-        ∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₁ k).toNat := by
-      refine sum_congr rfl fun k _ => ?_
-      by_cases hkj : k < j
-      · rw [ih k hkj]
-      · rw [gateWeight_eq_zero_of_le p j k (le_of_not_gt hkj)]
-        ring
+        ∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₁ k).toNat :=
+      sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p j) ih
     have hsum₃₁ : (∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₃ k).toNat) =
         ∑ k : Fin g, gateWeight p j k * (p.eval interpretation x₁ k).toNat := by
       rw [heval₁₃]
@@ -167,13 +163,8 @@ theorem eval_eq_of_weightedSum_eq (p : Program signature n g) (w : Fin n → ℝ
   | h j ih =>
     obtain ⟨c, hc⟩ := hw j
     rw [eval_gate_eq, eval_gate_eq, sum_inputWeight_eq_mul_weightedSum hc,
-      sum_inputWeight_eq_mul_weightedSum hc, h]
-    congr 3
-    refine sum_congr rfl fun k _ => ?_
-    by_cases hkj : k < j
-    · rw [ih k hkj]
-    · rw [gateWeight_eq_zero_of_le p j k (le_of_not_gt hkj)]
-      ring
+      sum_inputWeight_eq_mul_weightedSum hc, h,
+      sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p j) ih]
 
 /-- Inputs with equal scalar score have identical input-reading transcripts. -/
 private theorem transcript_eq_of_weightedSum_eq (p : Program signature n g) (w : Fin n → ℝ)
@@ -485,30 +476,52 @@ theorem two_pow_lt_mul_sum_choose_gateActivity_of_direction
   (two_pow_lt_mul_card_attainableTranscripts_of_direction p readout w hw hreadout hf).trans_le
     (Nat.mul_le_mul_left _ (card_attainableTranscripts_le_sum_choose_gateActivity p))
 
+/-- A single-output circuit whose output is the input wire `i` computes the dictator `x ↦ x i`, a
+one-change threshold function of `x i`; a two-sided `K`-rectangle-free function computed this way
+has `2 ^ n < 16 * K ^ 2`. -/
+private theorem circuit_two_pow_lt_of_output_eq_input (c : Circuit signature n 1) {i : Fin n}
+    (hi : c.outputs 0 = .input i) {f : Cslib.BooleanFunction n} {K : ℕ}
+    (hcomputes : ∀ x, c.eval interpretation x 0 = f x)
+    (hf : ∀ b : Bool, Frontier.RectangleFree {x | f x = b} K) :
+    2 ^ n < 16 * K ^ 2 := by
+  have h := two_pow_lt_of_multilevel (Pi.single i (1 : ℝ)) (fun t => decide (1 ≤ t))
+    (ChangesAtMost.decide_le 1) (fun x => ?_) hf
+  · simp at h
+    linarith
+  rw [← hcomputes x]
+  simp only [Circuit.eval, Function.comp_apply, hi, Program.trace, Wire.elim_input]
+  cases hx : x i <;> simp [Pi.single_apply, hx]
+
 /-- Single-output circuit form of `two_pow_lt_mul_sum_choose_of_direction`. -/
 theorem circuit_two_pow_lt_mul_sum_choose_of_direction (c : Circuit signature n 1)
-    (houtput : ∃ gate, c.outputs 0 = .gate gate) (w : Fin n → ℝ)
-    (hw : ∀ j : Fin c.size, ∃ a : ℝ, inputWeight c.program j = a • w)
+    (w : Fin n → ℝ) (hw : ∀ j : Fin c.size, ∃ a : ℝ, inputWeight c.program j = a • w)
     {f : Cslib.BooleanFunction n} {K : ℕ}
     (hcomputes : ∀ x, c.eval interpretation x 0 = f x)
     (hf : ∀ b : Bool, Frontier.RectangleFree {x | f x = b} K) :
     2 ^ n < 16 * K ^ 2 *
       ∑ j ∈ range (inputActivity c.program + 1), (inputGates c.program).card.choose j := by
-  obtain ⟨gate, hgate⟩ := houtput
-  apply two_pow_lt_mul_sum_choose_of_direction c.program (fun z => z gate) w hw ?_ hf
-  simpa only [Circuit.eval_of_output_eq_gate hgate] using hcomputes
+  match hout : c.outputs 0 with
+  | .input i =>
+    exact (circuit_two_pow_lt_of_output_eq_input c hout hcomputes hf).trans_le
+      (Nat.le_mul_of_pos_right _ (sum_pos' (fun _ _ => Nat.zero_le _) ⟨0, by simp, by simp⟩))
+  | .gate gate =>
+    apply two_pow_lt_mul_sum_choose_of_direction c.program (fun z => z gate) w hw ?_ hf
+    simpa only [Circuit.eval_of_output_eq_gate hout] using hcomputes
 
 /-- Single-output circuit form of `two_pow_lt_mul_sum_choose_gateActivity_of_direction`. -/
 theorem circuit_two_pow_lt_mul_sum_choose_gateActivity_of_direction (c : Circuit signature n 1)
-    (houtput : ∃ gate, c.outputs 0 = .gate gate) (w : Fin n → ℝ)
-    (hw : ∀ j : Fin c.size, ∃ a : ℝ, inputWeight c.program j = a • w)
+    (w : Fin n → ℝ) (hw : ∀ j : Fin c.size, ∃ a : ℝ, inputWeight c.program j = a • w)
     {f : Cslib.BooleanFunction n} {K : ℕ}
     (hcomputes : ∀ x, c.eval interpretation x 0 = f x)
     (hf : ∀ b : Bool, Frontier.RectangleFree {x | f x = b} K) :
     2 ^ n < 16 * K ^ 2 * ∑ j ∈ range (gateActivity c.program + 1), c.size.choose j := by
-  obtain ⟨gate, hgate⟩ := houtput
-  apply two_pow_lt_mul_sum_choose_gateActivity_of_direction c.program (fun z => z gate) w hw ?_ hf
-  simpa only [Circuit.eval_of_output_eq_gate hgate] using hcomputes
+  match hout : c.outputs 0 with
+  | .input i =>
+    exact (circuit_two_pow_lt_of_output_eq_input c hout hcomputes hf).trans_le
+      (Nat.le_mul_of_pos_right _ (sum_pos' (fun _ _ => Nat.zero_le _) ⟨0, by simp, by simp⟩))
+  | .gate gate =>
+    apply two_pow_lt_mul_sum_choose_gateActivity_of_direction c.program (fun z => z gate) w hw ?_ hf
+    simpa only [Circuit.eval_of_output_eq_gate hout] using hcomputes
 
 /-! ### Real-score realization of ordered class indices -/
 

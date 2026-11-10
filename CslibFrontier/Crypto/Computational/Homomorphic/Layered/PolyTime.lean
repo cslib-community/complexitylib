@@ -210,16 +210,9 @@ theorem isPPTOn_evaluateLayers
   have hrow : (encList encBits outputs).length ≤
       ((layers a).getD state.1 []).length *
         (2 * (secretWidth (n a) + ciphertextWidth (n a)) + 1) := by
-    rw [length_encList]
-    calc
-      (outputs.map fun ciphertext => 2 * (encBits ciphertext).length + 1).sum ≤
-          (outputs.map fun _ => 2 * (secretWidth (n a) + ciphertextWidth (n a)) + 1).sum :=
-        List.sum_le_sum fun ciphertext hc => by
-          have := hbounds.2 ciphertext hc
-          simp only [encBits_apply]
-          omega
-      _ = ((layers a).getD state.1 []).length *
-          (2 * (secretWidth (n a) + ciphertextWidth (n a)) + 1) := by simp [hbounds.1]
+    rw [← hbounds.1]
+    exact length_encList_le encBits outputs fun ciphertext hc => by
+      simpa only [encBits_apply] using hbounds.2 ciphertext hc
   have hlayer : ((layers a).getD state.1 []).length ≤
       (encList (encList Boolean.Layered.encNode) (layers a)).length := by
     by_cases hi : state.1 < (layers a).length

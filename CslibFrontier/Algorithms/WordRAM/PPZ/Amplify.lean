@@ -232,8 +232,7 @@ theorem roundSuccessProb_ge {k : ℕ} (hk : 1 ≤ k) {φ : CNF (Fin n)} (hsat : 
 theorem succeeds_partialAssignmentAt (φ : CNF (Fin n)) (mem : ℕ → ℕ) (base : ℕ) :
     succeeds φ (partialAssignmentAt mem base n) = φ.eval (assignmentAt mem base n) := by
   unfold succeeds
-  congr 1
-  funext v
+  congr 1 with v : 1
   simp only [partialAssignmentAt, assignmentAt]
   rcases h : mem (base + v) with _ | _ | m <;> rfl
 

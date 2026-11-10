@@ -55,19 +55,28 @@ theorem prefixState_encoding_le (k : ℕ) (metadata : Metadata) (j : ℕ)
   simp only [length_encNat_eq_size] at hcursor hbank
   nlinarith
 
-/-- All actual physical allocation clocks obey one explicit state bound. -/
-theorem length_runFrom_le (k : ℕ) (metadata : Metadata) (w : List Bool)
-    (j : ℕ) (hj : j ≤ bankCells k metadata) :
+/-- Every physical clock obeys one explicit state bound: the machine halts at the last allocation
+clock and stays put afterwards. -/
+theorem length_runFrom_le (k : ℕ) (metadata : Metadata) (w : List Bool) (j : ℕ) :
     (encState ((machine k).runFrom w (metadata, 0, [], 1) j)).length ≤ space k metadata := by
-  rw [runFrom_prefix k metadata w j hj]
-  exact prefixState_encoding_le k metadata j hj
+  by_cases hj : j ≤ bankCells k metadata
+  · rw [runFrom_prefix k metadata w j hj]
+    exact prefixState_encoding_le k metadata j hj
+  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le (by omega : bankCells k metadata ≤ j)
+  have hhalt : (machine k).halted
+      ((machine k).runFrom w (metadata, 0, [], 1) (bankCells k metadata)) = true := by
+    rcases metadata with ⟨args, m, r, alphabet, p⟩
+    exact halted_complete k args m r alphabet p w
+  have hfix : ∀ s, (machine k).halted s = true → ∀ n, (machine k).runFrom w s n = s :=
+    fun s hs n => Function.iterate_fixed (by simp [QueryMachine.step, hs]) n
+  rw [QueryMachine.runFrom_add, hfix _ hhalt n, runFrom_prefix k metadata w _ le_rfl]
+  exact prefixState_encoding_le k metadata _ le_rfl
 
-/-- In particular, the runtime-selected initialization has a bound through its final clock. -/
-theorem length_runFrom_prepare_le (k s : ℕ) (args : Args) (w : List Bool)
-    (j : ℕ) (hj : j ≤ bankCells k ((prepare k s args).1)) :
+/-- In particular, the runtime-selected initialization has a bound at every clock. -/
+theorem length_runFrom_prepare_le (k s : ℕ) (args : Args) (w : List Bool) (j : ℕ) :
     (encState ((machine k).runFrom w (prepare k s args) j)).length ≤
       space k ((prepare k s args).1) :=
-  length_runFrom_le k ((prepare k s args).1) w j hj
+  length_runFrom_le k ((prepare k s args).1) w j
 
 /-- Selected initialization uses linear value-width storage, apart from its retained metadata. -/
 theorem space_prepare_le (k s N b σ q : ℕ) :

@@ -160,17 +160,7 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
     (hC : ComputableInPolyTime C (encPair enc encBits) encNat) :
     ∃ code : α → CircuitCode, ComputableInPolyTime code enc encCode ∧
       ∀ a u, u.length = n a → binaryValue (evalCircuitOutputs (code a) u) = C (a, u) := by
-  obtain ⟨c, d, hbound⟩ := hC.polyBounded_length.exists_le
-  let m (a : α) := c * (2 * (enc a).length + n a + 2) ^ d
-  have hm : ComputableInPolyTime m enc encUnary :=
-    ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const c)
-      ((ComputableInPolyTime.unary_pow d).comp
-        (ComputableInPolyTime.unary_add'
-          (ComputableInPolyTime.unary_add'
-            (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
-              (ComputableInPolyTime.encoding_length enc))
-            hn)
-          (ComputableInPolyTime.const 2)))
+  obtain ⟨m, hm, hbits⟩ := exists_length_bits_le hn hC
   have hword : ComputableInPolyTime
       (fun p : α × List Bool => binaryWord (m p.1) (C p)) (encPair enc encBits) encBits := by
     have hbits := (ComputableInPolyTime.of_eq (f := Nat.bits)
@@ -185,12 +175,7 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
     simpa only [binaryWord, Function.comp_def] using hplain
   have hword_len (a : α) (u : List Bool) (hu : u.length = n a) :
       (binaryWord (m a) (C (a, u))).length = m a := by
-    have hb := hbound (a, u)
-    simp only [encNat_apply, length_encPair, encBits_apply, hu] at hb
-    have hbits : (C (a, u)).bits.length ≤ m a := by
-      rw [show 2 * (enc a).length + 1 + n a + 1 =
-        2 * (enc a).length + n a + 2 by omega] at hb
-      exact hb
+    have := hbits a u hu
     simp only [binaryWord, List.length_append, List.length_replicate, List.length_reverse]
     omega
   obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes hn hm

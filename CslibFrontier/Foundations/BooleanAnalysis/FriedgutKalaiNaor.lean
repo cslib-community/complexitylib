@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.BooleanAnalysis.Anticoncentration
 public import CslibFrontier.Foundations.BooleanAnalysis.LevelWeight
+import CslibFrontier.Probability.BitString.Rademacher
 import CslibFrontier.Probability.KWiseIndependent.TugOfWar
 
 /-!
@@ -105,22 +106,6 @@ theorem mul_le_sq_sub_of_sq_eq_one {f l δ : ℝ} (hf : f ^ 2 = 1) (hδ₀ : 0 �
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
-/-- The sign `signVal` has square one. -/
-private theorem signVal_sq (b : Bool) : signVal b ^ 2 = 1 := by rw [sq, signVal_mul_self]
-
-/-- The sign `signVal` has mean zero. -/
-private theorem expect_signVal_bool : 𝔼 b : Bool, signVal b = 0 := by
-  rw [Fintype.expect_bool]; norm_num
-
-/-- **Parseval's identity for a homogeneous degree-one function**:
-`𝔼 (∑ᵢ aᵢ xᵢ) ^ 2 = ∑ᵢ aᵢ ^ 2`. This is the unbiasedness of the tug-of-war estimator
-(`Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign`) for the identity hash family, whose
-seed `x : ι → Bool` is uniformly random. -/
-theorem expect_sum_mul_signVal_sq (a : ι → ℝ) :
-    𝔼 x : ι → Bool, (∑ i, a i * signVal (x i)) ^ 2 = ∑ i, a i ^ 2 :=
-  (Probability.isKWiseIndependentHash_id (X := ι) (Y := Bool) 2).expect_sq_sum_mul_sign
-    signVal_sq expect_signVal_bool univ a
-
 /-- **The variance of the square of a homogeneous degree-one function**: for `ℓ = ∑ᵢ aᵢ xᵢ`,
 `Var[ℓ ^ 2] = 2 ∑_{i ≠ j} aᵢ ^ 2 aⱼ ^ 2 = 2 ((∑ᵢ aᵢ ^ 2) ^ 2 - ∑ᵢ aᵢ ^ 4)`
 [O'Donnell, Exercise 1.20][ODonnell2014]. This is the variance of the tug-of-war estimator
@@ -130,9 +115,9 @@ theorem expect_sum_mul_signVal_sq_sub_expect_sq (a : ι → ℝ) :
     𝔼 x : ι → Bool, ((∑ i, a i * signVal (x i)) ^ 2 -
         𝔼 y : ι → Bool, (∑ i, a i * signVal (y i)) ^ 2) ^ 2 =
       2 * ((∑ i, a i ^ 2) ^ 2 - ∑ i, a i ^ 4) := by
-  rw [expect_sum_mul_signVal_sq]
+  rw [expect_sq_sum_mul_signVal]
   exact Probability.IsKWiseIndependentHash.expect_sq_sum_mul_sign_sub_sq
-    (Probability.isKWiseIndependentHash_id (X := ι) (Y := Bool) 4) signVal_sq expect_signVal_bool
+    (Probability.isKWiseIndependentHash_id (X := ι) (Y := Bool) 4) signVal_sq expect_bool_signVal
     univ a
 
 /-- **The FKN Theorem**, coefficient form: if a Boolean function `f`, read as signs, has
@@ -155,7 +140,7 @@ theorem exists_one_sub_le_abs_fourierCoeff_singleton {f : (ι → Bool) → Bool
     rw [show (fun x => F x * (a i * signVal (x i))) = fun x => a i * (F x * chi ℝ {i} x) from
       funext fun x => by rw [chi_singleton]; ring, ← mul_expect, sq]
     rfl
-  have hℓℓ : 𝔼 x, ℓ x ^ 2 = A := expect_sum_mul_signVal_sq a
+  have hℓℓ : 𝔼 x, ℓ x ^ 2 = A := expect_sq_sum_mul_signVal a
   have hFsq (x : ι → Bool) : F x ^ 2 = 1 := by simp only [hF, sq, signVal_mul_self]
   have hFF : 𝔼 x, F x ^ 2 = 1 := by simp only [hFsq, Fintype.expect_const]
   -- `δ' = 𝔼 (F - ℓ) ^ 2 = 1 - W^1[f] ≤ δ`

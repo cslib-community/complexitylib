@@ -88,15 +88,18 @@ collisions. Instead, construction `(13.2)` of [BonehShoup2023], Section 13.2.1 (
 ## Main definitions
 
 * `Cslib.Crypto.TCRSignature.otsBudget`, `Cslib.Crypto.TCRSignature.otsParam`,
-  `Cslib.Crypto.TCRSignature.otsParamInv`, `Cslib.Crypto.TCRSignature.otsMsg`: injective one-time
-  parameter schedule and fixed-length `(k, digest)` message encoding.
+  `Cslib.Crypto.TCRSignature.otsParamInv`, `Cslib.Crypto.TCRSignature.otsMsg`,
+  `Cslib.Crypto.TCRSignature.otsForgeryOf`: injective one-time parameter schedule, fixed-length
+  `(k, digest)` message encoding, and fixed-length forgery translator.
 * `Cslib.Crypto.TCRSignature.keyDecoder`, `Cslib.Crypto.TCRSignature.sigDecoder`,
   `Cslib.Crypto.TCRSignature.keyGen`, `Cslib.Crypto.TCRSignature.sign`,
   `Cslib.Crypto.TCRSignature.verify`, `Cslib.Crypto.TCRSignature.scheme`: the fresh-key TCR
   hash-and-sign capacity-`1` indexed signature scheme.
-* `Cslib.Crypto.TCRSignature.simStep`, `Cslib.Crypto.TCRSignature.simRun`: deterministic
-  finite-configuration step and coin-driven run used to commit the first valid signing query before
-  sampling the hash key `k` and replay with a reply afterward.
+* `Cslib.Crypto.TCRSignature.simStep`, `Cslib.Crypto.TCRSignature.simRun`,
+  `Cslib.Crypto.TCRSignature.simPkOf`, `Cslib.Crypto.TCRSignature.simWordOf`,
+  `Cslib.Crypto.TCRSignature.simFuelOf`: deterministic finite-configuration step, coin-driven run,
+  and encoded input/fuel helpers used to commit the first valid signing query before sampling the
+  hash key `k` and replay with a reply afterward.
 * `Cslib.Crypto.TCRSignature.oneTimeForger`, `Cslib.Crypto.TCRSignature.tcrAdversary`: the one-time
   signature forger and two-stage target-collision adversary.
 
@@ -226,6 +229,16 @@ theorem computableInPolyTime_otsMsg_comp (H : KeyedHashFamily) {α : Type}
   have hpad := (ComputableInPolyTime.bitsReplicate false).comp hpadLen
   exact (ComputableInPolyTime.bitsAppend hrowK hrowD).bitsAppend hpad
 
+/-- Compose `otsMsg H` with `H.eval` in polynomial time. -/
+theorem computableInPolyTime_otsMsg_eval_comp (H : KeyedHashFamily) {α : Type}
+    {input : α ↪ List Bool} {n : α → ℕ} {k msg : α → List Bool}
+    (hn : ComputableInPolyTime n input encUnary)
+    (hk : ComputableInPolyTime k input encBits)
+    (hmsg : ComputableInPolyTime msg input encBits) :
+    ComputableInPolyTime
+      (fun a => otsMsg H (n a) (k a) (H.eval (n a) (k a) (msg a))) input encBits :=
+  computableInPolyTime_otsMsg_comp H hn hk ((hn.prod (hk.prod hmsg)).trans H.polyTime)
+
 /-! ### The capacity-`1` fresh-key TCR hash-and-sign scheme -/
 
 /-- Total decoder for `(n, key)` words encoded with `encPair encUnary encBits`. -/
@@ -237,6 +250,26 @@ def keyDecoder : Decoder (encPair encUnary encBits) :=
 @[expose]
 def sigDecoder : Decoder (encPair encBits encBits) :=
   Decoder.bits.pair Decoder.bits
+
+/-- Translate a `(msg, sig)` word pair at parameter `n` into the underlying fixed-length
+`(otsMsg H n k (H.eval n k msg), ots)` forgery candidate for `S`. -/
+@[expose]
+def otsForgeryOf (H : KeyedHashFamily) (n : ℕ) (msg sig : List Bool) :
+    List Bool × List Bool :=
+  let parsedSig := sigDecoder.decode sig
+  (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 msg), parsedSig.2)
+
+theorem computableInPolyTime_otsForgeryOf_comp (H : KeyedHashFamily) {α : Type}
+    {input : α ↪ List Bool} {n : α → ℕ} {msg sig : α → List Bool}
+    (hn : ComputableInPolyTime n input encUnary)
+    (hmsg : ComputableInPolyTime msg input encBits)
+    (hsig : ComputableInPolyTime sig input encBits) :
+    ComputableInPolyTime
+      (fun a => otsForgeryOf H (n a) (msg a) (sig a))
+      input (encPair encBits encBits) := by
+  have hparsed := hsig.trans sigDecoder.computableInPolyTime
+  exact ((computableInPolyTime_otsMsg_eval_comp H hn hparsed.fst' hmsg).prod
+    hparsed.snd').of_enc_eq fun _ => rfl
 
 /-- Sample a one-time key pair `(otvk, otsk) ← S.keyGen (otsParam H n)` and bundle `n` with each
 half via `encPair encUnary encBits`. -/
@@ -323,8 +356,7 @@ theorem sign_ppt (S : SignatureScheme) (H : KeyedHashFamily) :
     have hqN := hqIn.trans hn
     have hqSk := hqIn.trans hotsk
     have hqMsg := hqIn.trans hmsg
-    have hdigest := (hqN.prod (hqK.prod hqMsg)).trans H.polyTime
-    have hM := computableInPolyTime_otsMsg_comp H hqN hqK hdigest
+    have hM := computableInPolyTime_otsMsg_eval_comp H hqN hqK hqMsg
     have hots := S.isPPTOn_sign_comp hqSk hM
     have henc : ComputableInPolyTime (encPair encBits encBits)
         (encPair encBits encBits) encBits := .of_eq fun _ => rfl
@@ -361,8 +393,7 @@ theorem verify_polyTime (S : SignatureScheme) (H : KeyedHashFamily) :
   have huEq := ComputableInPolyTime.unary_beq' hu (.const 0)
   have hkLenEq := ComputableInPolyTime.unary_beq'
     (hk.trans ComputableInPolyTime.length_bits) (hn.trans H.keyLen_polyTime)
-  have hdigest := (hn.prod (hk.prod hmsg)).trans H.polyTime
-  have hM := computableInPolyTime_otsMsg_comp H hn hk hdigest
+  have hM := computableInPolyTime_otsMsg_eval_comp H hn hk hmsg
   have hv := S.computableInPolyTime_verify_comp hotvk hM hots
   exact ((huEq.bool_and' hkLenEq).bool_and' hv).of_enc_eq fun _ => rfl
 
@@ -1118,6 +1149,21 @@ def outDecoder : Decoder (encPair encUnary (encPair encBits encBits)) :=
 def stateDecoder : Decoder (encPair (encPair encBits encBits) encBits) :=
   (Decoder.bits.pair Decoder.bits).pair Decoder.bits
 
+/-- Bundled public key `(n, otvk)` passed to an adversary against `scheme` or `wordScheme`. -/
+@[expose]
+def simPkOf (n : ℕ) (otvk : List Bool) : List Bool :=
+  encPair encUnary encBits (n, otvk)
+
+/-- Encoded machine input `(n, simPkOf n otvk)` for a simulated adversary run. -/
+@[expose]
+def simWordOf (n : ℕ) (otvk : List Bool) : List Bool :=
+  encPair encUnary encBits (n, simPkOf n otvk)
+
+/-- Polynomial step/reply budget `c * ((simWordOf n otvk).length + 1) ^ d` on `(n, otvk)`. -/
+@[expose]
+def simFuelOf (c d n : ℕ) (otvk : List Bool) : ℕ :=
+  c * ((simWordOf n otvk).length + 1) ^ d
+
 /-- One-time signature forger at security parameter `M = otsParam H n`: recovers
 `n := otsParamInv H M`, samples coins and a uniform hash key `k`, dry-runs `simRun` on `[]`,
 queries its external one-time signing oracle at most once on `otsMsg H n k (H.eval n k m₀)` (with
@@ -1129,25 +1175,22 @@ noncomputable def oneTimeForger {k : ℕ} {Control : Type}
   fun M otvk =>
     let n := otsParamInv H M
     if otsParam H n = M then do
-      let pk := encPair encUnary encBits (n, otvk)
-      let word := encPair encUnary encBits (n, pk)
-      let fuel := c * (word.length + 1) ^ d
+      let word := simWordOf n otvk
+      let fuel := simFuelOf c d n otvk
       let coins ← ProbOracleComp.sample (BitString.sampleList fuel)
       let hashKey ← ProbOracleComp.sample (BitString.sampleList (H.keyLen n))
       let r0 := simRun machine word [] coins
       match r0.2 with
       | none =>
         let out := outDecoder.decode r0.1
-        let parsedSig := sigDecoder.decode out.2.2
-        return (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 out.2.1), parsedSig.2)
+        return otsForgeryOf H n out.2.1 out.2.2
       | some m₀ =>
         let ots ← List.take (sigBound n) <$>
           ProbOracleComp.query ((), otsMsg H n hashKey (H.eval n hashKey m₀))
         let reply := (encPair encBits encBits (hashKey, ots)).take fuel
         let r1 := simRun machine word reply coins
         let out := outDecoder.decode r1.1
-        let parsedSig := sigDecoder.decode out.2.2
-        return (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 out.2.1), parsedSig.2)
+        return otsForgeryOf H n out.2.1 out.2.2
     else
       pure ([], [])
 
@@ -1161,9 +1204,8 @@ noncomputable def tcrAdversary {k : ℕ} {Control : Type}
     (machine : MultiTapePTM k Bool Control Unit) (c d : ℕ) : TargetCollisionFinder where
   choose n := do
     let keys ← S.keyGen (otsParam H n)
-    let pk := encPair encUnary encBits (n, keys.1)
-    let word := encPair encUnary encBits (n, pk)
-    let fuel := c * (word.length + 1) ^ d
+    let word := simWordOf n keys.1
+    let fuel := simFuelOf c d n keys.1
     let coins ← BitString.sampleList fuel
     let r0 := simRun machine word [] coins
     return (r0.2.getD [], encPair (encPair encBits encBits) encBits (keys, coins))
@@ -1171,9 +1213,8 @@ noncomputable def tcrAdversary {k : ℕ} {Control : Type}
     let saved := stateDecoder.decode stateWord
     let keys := saved.1
     let coins := saved.2
-    let pk := encPair encUnary encBits (n, keys.1)
-    let word := encPair encUnary encBits (n, pk)
-    let fuel := c * (word.length + 1) ^ d
+    let word := simWordOf n keys.1
+    let fuel := simFuelOf c d n keys.1
     let r0 := simRun machine word [] coins
     match r0.2 with
     | none =>
@@ -1188,9 +1229,7 @@ theorem computableInPolyTime_wordOf {α : Type} {input : α ↪ List Bool}
     {n : α → ℕ} {pk : α → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
     (hpk : ComputableInPolyTime pk input encBits) :
-    ComputableInPolyTime
-      (fun a => encPair encUnary encBits (n a, encPair encUnary encBits (n a, pk a)))
-      input encBits := by
+    ComputableInPolyTime (fun a => simWordOf (n a) (pk a)) input encBits := by
   have henc : ComputableInPolyTime (encPair encUnary encBits)
       (encPair encUnary encBits) encBits := .of_eq fun _ => rfl
   exact henc.comp (hn.prod (henc.comp (hn.prod hpk)))
@@ -1199,14 +1238,29 @@ theorem computableInPolyTime_fuelOf {α : Type} {input : α ↪ List Bool}
     (c d : ℕ) {n : α → ℕ} {pk : α → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
     (hpk : ComputableInPolyTime pk input encBits) :
-    ComputableInPolyTime
-      (fun a =>
-        c * ((encPair encUnary encBits (n a, encPair encUnary encBits (n a, pk a))).length + 1) ^ d)
-      input encUnary := by
+    ComputableInPolyTime (fun a => simFuelOf c d (n a) (pk a)) input encUnary := by
   have hlen := ComputableInPolyTime.length_bits.comp (computableInPolyTime_wordOf hn hpk)
   have hbase := hlen.unary_add' (.const 1)
   have hpow := (ComputableInPolyTime.unary_pow d).comp hbase
   exact (ComputableInPolyTime.const c).unary_mul' hpow
+
+private theorem computableInPolyTime_simReplay_comp {k : ℕ} {Control α : Type}
+    [Finite Control] {input : α ↪ List Bool}
+    (machine : MultiTapePTM k Bool Control Unit)
+    {word hk ots : α → List Bool} {fuel : α → ℕ} {coins : α → List Bool}
+    (hword : ComputableInPolyTime word input encBits)
+    (hhk : ComputableInPolyTime hk input encBits)
+    (hots : ComputableInPolyTime ots input encBits)
+    (hfuel : ComputableInPolyTime fuel input encUnary)
+    (hcoins : ComputableInPolyTime coins input encBits) :
+    ComputableInPolyTime
+      (fun a => simRun machine (word a)
+        ((encPair encBits encBits (hk a, ots a)).take (fuel a)) (coins a))
+      input (encPair encBits (encOption encBits)) := by
+  have henc : ComputableInPolyTime (encPair encBits encBits)
+      (encPair encBits encBits) encBits := .of_eq fun _ => rfl
+  have hreply := ComputableInPolyTime.bitsTakeWithInput ((hhk.prod hots).trans henc) hfuel
+  exact computableInPolyTime_simRun_comp machine hword hreply hcoins
 
 /-- `oneTimeForger` is uniformly strict oracle PPT whenever `sigBound` is computable in plain
 polynomial time on unary `n`. -/
@@ -1231,10 +1285,7 @@ theorem isOraclePPT_oneTimeForger {k : ℕ} {Control : Type} [Finite Control]
   have hfuel := computableInPolyTime_fuelOf c d hn hotvk
   have hcoins : IsOraclePPTOn (Operation := Unit) encIn encBits
       (fun p : In => ProbOracleComp.sample
-        (BitString.sampleList
-          (c * ((encPair encUnary encBits
-            (otsParamInv H p.1, encPair encUnary encBits (otsParamInv H p.1, p.2))).length +
-              1) ^ d))) :=
+        (BitString.sampleList (simFuelOf c d (otsParamInv H p.1) p.2))) :=
     hfuel.sampleList.isOraclePPTOn
   have hhashKey : IsOraclePPTOn (Operation := Unit) (encPair encIn encBits) encBits
       (fun q : In × List Bool => ProbOracleComp.sample
@@ -1251,105 +1302,70 @@ theorem isOraclePPT_oneTimeForger {k : ℕ} {Control : Type} [Finite Control]
   have hmN : ComputableInPolyTime (fun q : Mid => otsParamInv H q.1.1.1) encMid encUnary :=
     hn.comp hmIn
   have hmWord : ComputableInPolyTime
-      (fun q : Mid => encPair encUnary encBits
-        (otsParamInv H q.1.1.1, encPair encUnary encBits (otsParamInv H q.1.1.1, q.1.1.2)))
-      encMid encBits :=
+      (fun q : Mid => simWordOf (otsParamInv H q.1.1.1) q.1.1.2) encMid encBits :=
     hword.comp hmIn
   have hmFuel : ComputableInPolyTime
-      (fun q : Mid =>
-        c * ((encPair encUnary encBits
-          (otsParamInv H q.1.1.1, encPair encUnary encBits
-            (otsParamInv H q.1.1.1, q.1.1.2))).length + 1) ^ d)
-      encMid encUnary :=
+      (fun q : Mid => simFuelOf c d (otsParamInv H q.1.1.1) q.1.1.2) encMid encUnary :=
     hfuel.comp hmIn
   have hmR0 := computableInPolyTime_simRun_comp machine hmWord (.const []) hmCoins
-  have hmExtract : ComputableInPolyTime
-      (fun r : ℕ × List Bool =>
-        let out := outDecoder.decode r.2
-        let parsedSig := sigDecoder.decode out.2.2
-        (otsMsg H r.1 parsedSig.1 (H.eval r.1 parsedSig.1 out.2.1), parsedSig.2))
-      (encPair encUnary encBits) (encPair encBits encBits) := by
-    have hrN := ComputableInPolyTime.fst encUnary encBits
-    have hrOut := (ComputableInPolyTime.snd encUnary encBits).trans outDecoder.computableInPolyTime
-    have hrMsg := hrOut.snd'.fst'
-    have hrSig := hrOut.snd'.snd'.trans sigDecoder.computableInPolyTime
-    have hrK' := hrSig.fst'
-    have hrOts' := hrSig.snd'
-    have hrDig := (hrN.prod (hrK'.prod hrMsg)).trans H.polyTime
-    have hrMStar := computableInPolyTime_otsMsg_comp H hrN hrK' hrDig
-    have hbuilt := hrMStar.prod hrOts'
-    exact hbuilt.of_enc_eq fun _ => rfl
+  have hmOut0 := hmR0.fst'.trans outDecoder.computableInPolyTime
   have hbranchNone : IsOraclePPTOn (Operation := Unit) encMid (encPair encBits encBits)
       (fun q : Mid =>
-        let r0 := simRun machine (encPair encUnary encBits
-          (otsParamInv H q.1.1.1, encPair encUnary encBits (otsParamInv H q.1.1.1, q.1.1.2)))
-          [] q.1.2
+        let r0 := simRun machine (simWordOf (otsParamInv H q.1.1.1) q.1.1.2) [] q.1.2
         let out := outDecoder.decode r0.1
-        let parsedSig := sigDecoder.decode out.2.2
-        pure (otsMsg H (otsParamInv H q.1.1.1) parsedSig.1
-          (H.eval (otsParamInv H q.1.1.1) parsedSig.1 out.2.1), parsedSig.2)) :=
-    (((hmN.prod hmR0.fst').trans hmExtract).of_enc_eq fun _ => rfl).isOraclePPTOn
+        pure (otsForgeryOf H (otsParamInv H q.1.1.1) out.2.1 out.2.2)) :=
+    ((computableInPolyTime_otsForgeryOf_comp H hmN hmOut0.snd'.fst' hmOut0.snd'.snd').of_enc_eq
+      fun _ => rfl).isOraclePPTOn
   have hmM0 := hmR0.snd'.optionGetDWithInput (.const [])
-  have hmOtsReq := computableInPolyTime_otsMsg_comp H hmN hmK
-    ((hmN.prod (hmK.prod hmM0)).trans H.polyTime)
+  have hmOtsReq := computableInPolyTime_otsMsg_eval_comp H hmN hmK hmM0
   have hqueryOts : IsOraclePPTOn (Operation := Unit) encMid encBits
       (fun q : Mid => List.take (sigBound (otsParamInv H q.1.1.1)) <$>
         ProbOracleComp.query ((),
           otsMsg H (otsParamInv H q.1.1.1) q.2
             (H.eval (otsParamInv H q.1.1.1) q.2
-              ((simRun machine (encPair encUnary encBits
-                (otsParamInv H q.1.1.1, encPair encUnary encBits (otsParamInv H q.1.1.1, q.1.1.2)))
+              ((simRun machine (simWordOf (otsParamInv H q.1.1.1) q.1.1.2)
                 [] q.1.2).2.getD [])))) :=
     IsOraclePPTOn.query_take' () (hmOtsReq.of_enc_eq fun _ => rfl)
       ((hmN.trans hsigBound).of_enc_eq fun _ => rfl)
   have hpostSome : ComputableInPolyTime
       (fun r : Mid × List Bool =>
         let n := otsParamInv H r.1.1.1.1
-        let word := encPair encUnary encBits (n, encPair encUnary encBits (n, r.1.1.1.2))
-        let fuel := c * (word.length + 1) ^ d
+        let word := simWordOf n r.1.1.1.2
+        let fuel := simFuelOf c d n r.1.1.1.2
         let reply := (encPair encBits encBits (r.1.2, r.2)).take fuel
         let r1 := simRun machine word reply r.1.1.2
         let out := outDecoder.decode r1.1
-        let parsedSig := sigDecoder.decode out.2.2
-        (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 out.2.1), parsedSig.2))
+        otsForgeryOf H n out.2.1 out.2.2)
       (encPair encMid encBits) (encPair encBits encBits) := by
     have hrMid := ComputableInPolyTime.fst encMid encBits
     have hrOts := ComputableInPolyTime.snd encMid encBits
-    have henc : ComputableInPolyTime (encPair encBits encBits)
-        (encPair encBits encBits) encBits := .of_eq fun _ => rfl
-    have hfullReply := ((hrMid.trans hmK).prod hrOts).trans henc
-    have hreplyTake := ComputableInPolyTime.bitsTakeWithInput hfullReply (hrMid.trans hmFuel)
-    have hr1 := computableInPolyTime_simRun_comp machine
-      (hrMid.trans hmWord) hreplyTake (hrMid.trans hmCoins)
-    have hbuilt := ((hrMid.trans hmN).prod hr1.fst').trans hmExtract
-    exact hbuilt.of_enc_eq fun _ => rfl
+    have hr1 := computableInPolyTime_simReplay_comp machine
+      (hrMid.trans hmWord) (hrMid.trans hmK) hrOts (hrMid.trans hmFuel) (hrMid.trans hmCoins)
+    have hrOut1 := hr1.fst'.trans outDecoder.computableInPolyTime
+    exact (computableInPolyTime_otsForgeryOf_comp H
+      (hrMid.trans hmN) hrOut1.snd'.fst' hrOut1.snd'.snd').of_enc_eq fun _ => rfl
   have hbranchSome := hqueryOts.map_pair' hpostSome
   have hmatch : IsOraclePPTOn (Operation := Unit) encMid (encPair encBits encBits)
       (fun q : Mid =>
         let n := otsParamInv H q.1.1.1
-        let pk := encPair encUnary encBits (n, q.1.1.2)
-        let word := encPair encUnary encBits (n, pk)
-        let fuel := c * (word.length + 1) ^ d
+        let word := simWordOf n q.1.1.2
+        let fuel := simFuelOf c d n q.1.1.2
         let r0 := simRun machine word [] q.1.2
         match r0.2 with
         | none =>
           let out := outDecoder.decode r0.1
-          let parsedSig := sigDecoder.decode out.2.2
-          pure (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 out.2.1), parsedSig.2)
+          pure (otsForgeryOf H n out.2.1 out.2.2)
         | some m₀ => do
           let ots ← List.take (sigBound n) <$>
             ProbOracleComp.query ((), otsMsg H n q.2 (H.eval n q.2 m₀))
           let reply := (encPair encBits encBits (q.2, ots)).take fuel
           let r1 := simRun machine word reply q.1.2
           let out := outDecoder.decode r1.1
-          let parsedSig := sigDecoder.decode out.2.2
-          return (otsMsg H n parsedSig.1 (H.eval n parsedSig.1 out.2.1), parsedSig.2)) := by
+          return otsForgeryOf H n out.2.1 out.2.2) := by
     have hite := IsOraclePPTOn.cond' hmR0.snd'.optionIsSome hbranchSome hbranchNone
     refine hite.congr fun q State oracle s => ?_
     dsimp only
-    cases hopt : (simRun machine (encPair encUnary encBits
-        (otsParamInv H q.1.1.1, encPair encUnary encBits (otsParamInv H q.1.1.1, q.1.1.2)))
-        [] q.1.2).2 with
+    cases hopt : (simRun machine (simWordOf (otsParamInv H q.1.1.1) q.1.1.2) [] q.1.2).2 with
     | none => rfl
     | some m₀ =>
       simp only [Option.isSome_some, ↓reduceIte, Option.getD_some]
@@ -1378,14 +1394,11 @@ theorem isPPT_tcrAdversary {k : ℕ} {Control : Type} [Finite Control]
     have hword := computableInPolyTime_wordOf hn hkeys.fst'
     have hfuel := computableInPolyTime_fuelOf c d hn hkeys.fst'
     have hcoins : IsPPTOn encKIn encBits
-        (fun p : KIn => BitString.sampleList
-          (c * ((encPair encUnary encBits
-            (p.1, encPair encUnary encBits (p.1, p.2.1))).length + 1) ^ d)) :=
+        (fun p : KIn => BitString.sampleList (simFuelOf c d p.1 p.2.1)) :=
       (hfuel.of_enc_eq fun _ => rfl).sampleList
     have hpost : ComputableInPolyTime
         (fun q : KIn × List Bool =>
-          let word := encPair encUnary encBits (q.1.1, encPair encUnary encBits (q.1.1, q.1.2.1))
-          let r0 := simRun machine word [] q.2
+          let r0 := simRun machine (simWordOf q.1.1 q.1.2.1) [] q.2
           (r0.2.getD [], encPair (encPair encBits encBits) encBits (q.1.2, q.2)))
         (encPair encKIn encBits) (encPair encBits encBits) := by
       have hqIn := ComputableInPolyTime.fst encKIn encBits
@@ -1396,8 +1409,7 @@ theorem isPPT_tcrAdversary {k : ℕ} {Control : Type} [Finite Control]
       have hencState : ComputableInPolyTime (encPair (encPair encBits encBits) encBits)
           (encPair (encPair encBits encBits) encBits) encBits := .of_eq fun _ => rfl
       have hst := ((hqIn.trans hkeys).prod hqCoins).trans hencState
-      have hbuilt := hm0.prod hst
-      exact hbuilt.of_enc_eq fun _ => rfl
+      exact (hm0.prod hst).of_enc_eq fun _ => rfl
     exact (hkg.bind_pair (hcoins.map_pair hpost)).congr fun _ => rfl
   find := by
     let FIn := ℕ × List Bool × List Bool
@@ -1418,39 +1430,31 @@ theorem isPPT_tcrAdversary {k : ℕ} {Control : Type} [Finite Control]
     have hbranchNone : IsPPTOn encFIn encBits
         (fun p : FIn =>
           let saved := stateDecoder.decode p.2.1
-          let word := encPair encUnary encBits (p.1, encPair encUnary encBits (p.1, saved.1.1))
-          let r0 := simRun machine word [] saved.2
+          let r0 := simRun machine (simWordOf p.1 saved.1.1) [] saved.2
           pure (outDecoder.decode r0.1).2.1) :=
       (((hr0.fst'.trans outDecoder.computableInPolyTime).snd'.fst').of_enc_eq fun _ => rfl).isPPTOn
     have hm0 := hr0.snd'.optionGetDWithInput (.const [])
-    have hM0 := computableInPolyTime_otsMsg_comp H hn hhashKey
-      ((hn.prod (hhashKey.prod hm0)).trans H.polyTime)
+    have hM0 := computableInPolyTime_otsMsg_eval_comp H hn hhashKey hm0
     have hsignOts := S.isPPTOn_sign_comp (hkeys.snd'.of_enc_eq fun _ => rfl)
       (hM0.of_enc_eq fun _ => rfl)
     have hpostSome : ComputableInPolyTime
         (fun q : FIn × List Bool =>
           let saved := stateDecoder.decode q.1.2.1
-          let word := encPair encUnary encBits (q.1.1, encPair encUnary encBits (q.1.1, saved.1.1))
-          let fuel := c * (word.length + 1) ^ d
+          let word := simWordOf q.1.1 saved.1.1
+          let fuel := simFuelOf c d q.1.1 saved.1.1
           let reply := (encPair encBits encBits (q.1.2.2, q.2)).take fuel
           let r1 := simRun machine word reply saved.2
           (outDecoder.decode r1.1).2.1)
         (encPair encFIn encBits) encBits := by
       have hqIn := ComputableInPolyTime.fst encFIn encBits
       have hqOts := ComputableInPolyTime.snd encFIn encBits
-      have henc : ComputableInPolyTime (encPair encBits encBits)
-          (encPair encBits encBits) encBits := .of_eq fun _ => rfl
-      have hfullReply := ((hqIn.trans hhashKey).prod hqOts).trans henc
-      have hreplyTake := ComputableInPolyTime.bitsTakeWithInput hfullReply (hqIn.trans hfuel)
-      have hr1 := computableInPolyTime_simRun_comp machine
-        (hqIn.trans hword) hreplyTake (hqIn.trans hcoins)
-      have hbuilt := (hr1.fst'.trans outDecoder.computableInPolyTime).snd'.fst'
-      exact hbuilt.of_enc_eq fun _ => rfl
+      have hr1 := computableInPolyTime_simReplay_comp machine
+        (hqIn.trans hword) (hqIn.trans hhashKey) hqOts (hqIn.trans hfuel) (hqIn.trans hcoins)
+      exact ((hr1.fst'.trans outDecoder.computableInPolyTime).snd'.fst').of_enc_eq fun _ => rfl
     have hbranchSome := hsignOts.map_pair hpostSome
     have hcondFIn : ComputableInPolyTime
         (fun p : FIn => decide ((simRun machine
-          (encPair encUnary encBits
-            (p.1, encPair encUnary encBits (p.1, (stateDecoder.decode p.2.1).1.1)))
+          (simWordOf p.1 (stateDecoder.decode p.2.1).1.1)
           [] (stateDecoder.decode p.2.1).2).2.isSome = true))
         encFIn encBool :=
       hisSome.of_enc_eq fun _ => rfl
@@ -1458,8 +1462,7 @@ theorem isPPT_tcrAdversary {k : ℕ} {Control : Type} [Finite Control]
     refine hite.congr fun p => ?_
     dsimp only [tcrAdversary]
     cases hopt : (simRun machine
-        (encPair encUnary encBits
-          (p.1, encPair encUnary encBits (p.1, (stateDecoder.decode p.2.1).1.1)))
+        (simWordOf p.1 (stateDecoder.decode p.2.1).1.1)
         [] (stateDecoder.decode p.2.1).2).2 with
     | none => rfl
     | some m₀ =>
@@ -1498,9 +1501,9 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
         (ProbComp.eval
           (targetCollisionGame H.keyLen H.eval (fun _ _ => true)
             (tcrAdversary S H machine c d) n)) := by
-  let pkOf (otvk : List Bool) : List Bool := encPair encUnary encBits (n, otvk)
-  let wordOf (otvk : List Bool) : List Bool := encPair encUnary encBits (n, pkOf otvk)
-  let fuelOf (otvk : List Bool) : ℕ := c * ((wordOf otvk).length + 1) ^ d
+  let pkOf := simPkOf n
+  let wordOf := simWordOf n
+  let fuelOf := simFuelOf c d n
   let otsDist (keys : List Bool × List Bool) (coins hashKey : List Bool) : PMF (List Bool) :=
     match (simRun machine (wordOf keys.1) [] coins).2 with
     | none => PMF.pure []
@@ -1564,10 +1567,10 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
       PMF.pure_bind, μ, PMF.monad_bind_eq_bind, PMF.map_bind]
     congr 1
     funext keys
-    rw [hdecodeAdv (pkOf keys.1), OracleComp.interpret_map, StateT.run_map,
-      _root_.PMF.monad_map_eq_map,
-      hmachine (n, pkOf keys.1) _ _ [],
-      ← machine.finiteRunFrom_take_runOracle (fuelOf keys.1) (wordOf keys.1)]
+    rw [hdecodeAdv (encPair encUnary encBits (n, keys.1)), OracleComp.interpret_map,
+      StateT.run_map, _root_.PMF.monad_map_eq_map,
+      hmachine (n, encPair encUnary encBits (n, keys.1)) _ _ []]
+    erw [← machine.finiteRunFrom_take_runOracle (fuelOf keys.1) (wordOf keys.1)]
     simp only [finiteRunFrom, OracleComp.interpret_map, StateT.run_map,
       _root_.PMF.monad_map_eq_map, PMF.map_comp]
     rw [iterate_finiteStep_from_empty S H machine n keys.2 (fuelOf keys.1) (fuelOf keys.1)
@@ -1575,7 +1578,8 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
     simp only [PMF.map_bind, PMF.bind_bind]
     congr 1
     funext coins
-    dsimp only [otsDist, winIdx, finalOut, simRun, wordOf, pkOf, fuelOf]
+    dsimp only [otsDist, winIdx, finalOut, simRun, wordOf, pkOf, fuelOf,
+      simWordOf, simPkOf, simFuelOf]
     cases hopt : ((coins.foldl (simStep machine [])
         (FiniteConfig.init machine.initial
           (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))), none)).2) with
@@ -1597,7 +1601,8 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
     funext coins
     congr 1
     funext hashKey
-    dsimp only [otsDist, winOts, finalOut, wordOf, pkOf, fuelOf]
+    dsimp only [otsDist, winOts, finalOut, wordOf, pkOf, fuelOf,
+      simWordOf, simPkOf, simFuelOf, otsForgeryOf]
     cases hopt : (simRun machine
         (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))) [] coins).2 with
     | none =>
@@ -1629,7 +1634,7 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
     funext coins
     congr 1
     funext hashKey
-    dsimp only [otsDist, winTcr, finalOut, wordOf, pkOf, fuelOf]
+    dsimp only [otsDist, winTcr, finalOut, wordOf, pkOf, fuelOf, simWordOf, simPkOf, simFuelOf]
     cases hopt : (simRun machine
         (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))) [] coins).2 with
     | none =>
@@ -1648,7 +1653,7 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
     rcases Prod.mk.inj heq2 with ⟨rfl, rfl⟩
     have hhkLen : hashKey.length = H.keyLen n :=
       BitString.length_of_mem_support_uniformList hhk
-    dsimp only [winIdx, pkOf] at hwin
+    dsimp only [winIdx, pkOf, simPkOf] at hwin
     simp only [Bool.and_eq_true, Bool.not_eq_true', verify, keyDecoder.decode_enc, Bool.and_assoc,
       beq_iff_eq] at hwin
     obtain ⟨hnotSigned, hu0, hk'Len, hverifyS⟩ := hwin
@@ -1761,6 +1766,14 @@ theorem exists_reduction_indexedEufCmaGame_le (S : SignatureScheme) (H : KeyedHa
 
 end Reductions
 
+/-- Any `Negligible` function remains `Negligible` after precomposing with `otsParam H`. -/
+theorem negligible_comp_otsParam {f : ℕ → ℝ≥0} (hf : Negligible f) (H : KeyedHashFamily) :
+    Negligible (fun n => f (otsParam H n)) :=
+  hf.comp_of_polynomial_bound (bound := id)
+    (Filter.tendsto_atTop_mono (le_otsParam H) Filter.tendsto_id)
+    PolynomiallyBounded.id
+    (Filter.Eventually.of_forall (le_otsParam H))
+
 end TCRSignature
 
 /-- **Fresh-key TCR hash-and-sign security** ([BonehShoup2023], Section 13.2.1, Theorem 13.2,
@@ -1776,14 +1789,10 @@ theorem SignatureScheme.OneTimeEUFCMA.indexedEUFCMA_tcrSignature
   intro adversary hadversary
   obtain ⟨otForger, tcrAdv, hotPPT, htcrPPT, hbound⟩ :=
     TCRSignature.exists_reduction_indexedEufCmaGame_le S H hadversary
-  have hotNeg :=
-    (hS.negligible otForger hotPPT).comp_of_polynomial_bound
-      (bound := id)
-      (Filter.tendsto_atTop_mono (TCRSignature.le_otsParam H) Filter.tendsto_id)
-      PolynomiallyBounded.id
-      (Filter.Eventually.of_forall (TCRSignature.le_otsParam H))
-  have htcrNeg := hH.negligible tcrAdv htcrPPT
-  exact negligible_of_le (hotNeg.add htcrNeg) hbound
+  exact negligible_of_le
+    ((TCRSignature.negligible_comp_otsParam (hS.negligible otForger hotPPT) H).add
+      (hH.negligible tcrAdv htcrPPT))
+    hbound
 
 /-- **Capacity-`2` indexed signatures from one-way functions and target collision-resistant hash
 families**: combining Lamport's one-time signature scheme (`OneWay.exists_oneTimeSignature`),

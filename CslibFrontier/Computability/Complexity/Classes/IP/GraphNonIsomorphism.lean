@@ -159,10 +159,8 @@ private theorem relabelFin_eq_flatten (A : Fin n → Fin n → Bool) (k : Fin n 
     relabelFin A k = (List.ofFn fun r : Fin n => List.ofFn fun s : Fin n =>
       A ((rankPerm k).symm r) ((rankPerm k).symm s)).flatten := by
   rw [relabelFin, List.ofFn_mul]
-  congr 2
-  funext r
-  congr 1
-  funext s
+  congr 2 with r : 1
+  congr 1 with s : 1
   have : (⟨r * n + s, by nlinarith [r.isLt, s.isLt]⟩ : Fin (n * n)) = finProdFinEquiv (r, s) := by
     ext
     simp only [finProdFinEquiv_apply_val]
@@ -174,8 +172,7 @@ theorem relabelFin_comp {A A' : Fin n → Fin n → Bool} {k : Fin n → ℕ}
     (hk : Function.Injective k) (σ : Equiv.Perm (Fin n)) (hA : ∀ i j, A' (σ i) (σ j) = A i j) :
     relabelFin A' k = relabelFin A (k ∘ σ) := by
   rw [relabelFin, relabelFin, rankPerm_comp hk]
-  congr
-  funext t
+  congr with t : 1
   simp only [Equiv.symm_trans_apply]
   rw [← hA, Equiv.apply_symm_apply, Equiv.apply_symm_apply]
 
@@ -315,11 +312,9 @@ private theorem eval_relabelMessage (G : Graph) :
       (fun rows => relabel G (rows.map (BitString.boundedBinaryValue (2 ^ keyWidth n)))) ∘
         BitString.listRows n (keyWidth n) from rfl,
     ← PMF.map_comp, BitString.uniformList_listRows, PMF.map_comp, relabelDist]
-  congr 1
-  funext R
+  congr 1 with R : 1
   simp only [Function.comp_apply, relabel_eq]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp [keyAt, keyValue, List.getD_eq_getElem?_getD, n]
 
 /-! ### Hiding -/

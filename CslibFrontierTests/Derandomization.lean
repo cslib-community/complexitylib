@@ -38,8 +38,7 @@ example {n : ℕ} (f : BooleanFunction n) :
   intro hf
   have hc : complexity interpretation (single f) ≤ 2 ^ n * (2 * n + 3) + 1 := by
     simpa using complexity_le_of_dependsOn (s := univ) (f := f) fun _ _ _ => by
-      congr 1
-      funext i
+      congr 1 with i : 1
       simp_all
   have h := hf f hc
   have hs : (3 : ℝ) ≤ (2 ^ n * (2 * n + 3) + 1 : ℕ) := by

@@ -1083,19 +1083,13 @@ def hashedElGamalToKDFDistinguisher (adversary : Encryption.WordAdversary) (bit 
   adversary.guess n choice.2 ct
 
 /-- In the real KDF game, `hashedElGamalToKDFDistinguisher` simulates `hashedElGamalIdealDDHGame`
-exactly. -/
+exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguisher`. -/
 @[simp] theorem kdfRealGame_hashedElGamalToKDFDistinguisher (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool) (adversary : Encryption.WordAdversary) (bit : Bool)
     (n : ℕ) :
     F.kdfRealGame setup H (F.hashedElGamalToKDFDistinguisher adversary bit) n =
-      F.hashedElGamalIdealDDHGame setup H adversary bit n := by
-  simp only [kdfRealGame, hashedElGamalToKDFDistinguisher, hashedElGamalIdealDDHGame,
-    ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+      F.hashedElGamalIdealDDHGame setup H adversary bit n :=
+  F.ddhIdealGame_hashedElGamalToDDHDistinguisher setup H adversary bit n
 
 /-- In the ideal KDF game, `hashedElGamalToKDFDistinguisher` simulates
 `hashedElGamalUniformPadGame` exactly. -/
@@ -1111,50 +1105,14 @@ exactly. -/
     rw [PMF.bind_comm]
   rw [PMF.bind_comm]
 
-/-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is. -/
+/-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is: it is
+`hashedElGamalToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
 theorem isPPTOn_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
     (hA : adversary.IsPPT) (bit : Bool) :
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => F.hashedElGamalToKDFDistinguisher adversary bit input.1 input.2) := by
-  let encTuple := encPair encBits (encPair encBits encBits)
-  let EIn := encPair encUnary (encPair F.encDesc encTuple)
-  let EChoice := encPair (encPair encBits encBits) encBits
-  let E := encPair EIn EChoice
-  have hin2 := ComputableInPolyTime.snd encUnary (encPair F.encDesc encTuple)
-  have hd_in := (ComputableInPolyTime.fst F.encDesc encTuple).comp hin2
-  have htuple_in := (ComputableInPolyTime.snd F.encDesc encTuple).comp hin2
-  have hu_in := (ComputableInPolyTime.fst encBits (encPair encBits encBits)).comp htuple_in
-  have hvw_in := (ComputableInPolyTime.snd encBits (encPair encBits encBits)).comp htuple_in
-  have hp1 := ComputableInPolyTime.fst EIn EChoice
-  have hp2 := ComputableInPolyTime.snd EIn EChoice
-  have hn := (ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).comp hp1
-  have hv := ((ComputableInPolyTime.fst encBits encBits).comp hvw_in).comp hp1
-  have hw := ((ComputableInPolyTime.snd encBits encBits).comp hvw_in).comp hp1
-  have hmsgs := (ComputableInPolyTime.fst (encPair encBits encBits) encBits).comp hp2
-  have hst := (ComputableInPolyTime.snd (encPair encBits encBits) encBits).comp hp2
-  have hm : ComputableInPolyTime
-      (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
-            (List Bool × List Bool) × List Bool =>
-        if bit then p.2.1.2 else p.2.1.1) E encBits := by
-    cases bit
-    · exact (ComputableInPolyTime.fst encBits encBits).comp hmsgs
-    · exact (ComputableInPolyTime.snd encBits encBits).comp hmsgs
-  unfold hashedElGamalToKDFDistinguisher
-  refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1)))
-    ((ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).prod
-      (hd_in.prod hu_in).encoding_comp)).bind_with ?_
-  exact hA.guess.preprocess
-    (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
-          (List Bool × List Bool) × List Bool =>
-      (p.1.1, p.2.2, encPair encBits encBits
-        (p.1.2.2.2.1,
-          Cslib.BitString.listXor p.1.2.2.2.2.length
-            [p.1.2.2.2.2, if bit then p.2.1.2 else p.2.1.1])))
-    (hn.prod (hst.prod (hv.prod (computableInPolyTime_listXor_pair hw hm)).encoding_comp))
+      encBool (fun input => F.hashedElGamalToKDFDistinguisher adversary bit input.1 input.2) :=
+  F.isPPTOn_hashedElGamalToDDHDistinguisher (H := fun p => p.2)
+    (ComputableInPolyTime.snd F.encDesc encBits) hA bit
 
 /-- In `hashedElGamalUniformPadGame`, the uniform `msgLen n`-bit pad masks any challenge message
 word perfectly via `Cslib.BitString.listXor pad.length [pad, m]`, so the experiments for

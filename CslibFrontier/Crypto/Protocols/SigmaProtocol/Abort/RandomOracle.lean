@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.FiatShamir
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.View
 public import CslibFrontier.Probability.IID
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Bounded aborting Fiat–Shamir signing in the shared random oracle
@@ -93,9 +94,8 @@ theorem fiatShamirAbortSign_fixedHash (P : SigmaProtocol X Y T C (Option Z))
   induction K with
   | zero => simp [fiatShamirAbortSign]
   | succ K ih =>
-    simp only [fiatShamirAbortSign, interpret_bind, interpret_map, interpret_query,
-      PMF.monad_map_eq_map, PMF.pure_map, PMF.monad_bind_eq_bind, PMF.pure_bind, ih,
-      interpret_pure, PMF.monad_pure_eq_pure, List.ofFn_succ, List.map_cons]
+    simp only [pmf_norm, fiatShamirAbortSign, interpret_bind, interpret_map, interpret_query, ih,
+      interpret_pure, List.ofFn_succ, List.map_cons]
     simp only [show Fin.tail coins = (fun i => coins i.succ) from rfl]
     cases hr : P.respond x y (coins 0).2 (hash (msg, (coins 0).1)) <;>
       simp [fsAbortSignStep, hr]
@@ -133,8 +133,7 @@ theorem fiatShamir_sign_run_eq_of_transcript_eq {Query R : Type}
           OracleComp.query (hashPoint (msg, coin.1)))).run state := by
   have hk := bind_respond_challenge_eq_of_transcript_eq P h
     (fun w => (answer (hashPoint (msg, w))).run state)
-  simpa only [interpret_map, interpret_query, StateT.run_map,
-    PMF.monad_map_eq_map, PMF.map_bind, PMF.map_comp, Function.comp_def] using
+  simpa only [pmf_norm, interpret_map, interpret_query, StateT.run_map] using
     congrArg (PMF.map fun view => ((view.1, view.2.2.1), view.2.2.2)) hk
 
 variable {R : Type} (P : SigmaProtocol X Y T C (Option Z))
@@ -154,11 +153,9 @@ theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state 
       (interpret answer (fiatShamirAbortSign P (x, y) msg K coins)).run first.2).map
       fun later =>
         ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
-  simp only [iid, PMF.monad_bind_eq_bind, PMF.bind_bind, Fin.cons_zero,
-    Fin.tail_cons, fiatShamirAbortSign, run_interpret_bind, run_interpret_pure,
-    PMF.monad_pure_eq_pure, PMF.map, Function.comp_def, PMF.pure_bind]
-  congr 1
-  funext coin
+  simp only [pmf_norm, iid, Fin.cons_zero, Fin.tail_cons, fiatShamirAbortSign, run_interpret_bind,
+    run_interpret_pure, PMF.map]
+  congr 1 with coin : 1
   exact PMF.bind_comm _ _ _
 
 /-- Sequential witness invariance retains the complete final external state of all attempts.
@@ -174,8 +171,7 @@ theorem fiatShamirAbortSign_run_eq_of_transcript_eq {x x' : X} {y : Y}
   | succ K ih =>
     rw [fiatShamirAbortSign_run_succ, fiatShamirAbortSign_run_succ,
       fiatShamir_sign_run_eq_of_transcript_eq (fun x => x) P answer h msg state]
-    congr 1
-    funext first
+    congr 1 with first : 1
     rw [ih]
 
 end View

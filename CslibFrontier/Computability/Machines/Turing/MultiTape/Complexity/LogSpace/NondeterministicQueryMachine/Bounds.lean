@@ -40,6 +40,24 @@ theorem step_check_words {input : List Bool} (choice : Bool)
   rw [step_check I P F C choice _ rfl]
   cases hc : ws C <;> simp [Cfg.workTapeSymbols, wordsCfg, tapeOfList_zero, Cfg.withState, hc]
 
+/-- A path stays in a window when its configurations before `cut` and its suffix from `cut` do. -/
+private theorem inWindow_of_drop {k' : ℕ} {S : Type} {ntm : MultiTapeNTM k' Bool S}
+    {input : List Bool} (p : ntm.RunPath input) (cut : Fin (p.length + 1)) {s : ℕ}
+    (hpre : ∀ j : Fin (p.length + 1), j.val < cut.val → ∀ i, (p j).workTapePos i ∈ window s)
+    (htail : MultiTapeNTM.RunPath.InWindow (p.drop cut) s) : p.InWindow s := by
+  rintro _ ⟨j, rfl⟩ i
+  by_cases hj : j.val < cut.val
+  · exact hpre j hj i
+  · have hindex : j.val - cut.val < (p.drop cut).length + 1 := by
+      simp only [RelSeries.drop_length]; omega
+    have h := htail _ ⟨⟨j.val - cut.val, hindex⟩, rfl⟩ i
+    have heq : (p.drop cut) ⟨j.val - cut.val, hindex⟩ = p j := by
+      dsimp [RelSeries.drop]
+      congr 1
+      apply Fin.ext
+      simp only [Nat.sub_add_cancel (by omega : cut.val ≤ j.val)]
+    rwa [heq] at h
+
 /-- Any prefix begun at a finalizer stays in its deterministic window, including arbitrary
 halted self-loop padding after the finalizer ends. -/
 theorem finish_inWindow {input : List Bool} {ws : Fin k → List Bool} {out : List Bool}
@@ -152,19 +170,8 @@ theorem choose_inWindow {input : List Bool} (Inv : (Fin k → List Bool) → Pro
             (by simp only [RelSeries.drop_length, cut, hlen]; omega) (p.drop cut) rfl
             ws' (out ++ e) hInv'
           simpa [cut, hblank] using hcoin.symm
-      rintro _ ⟨j, rfl⟩ i
-      by_cases hj : j.val < cut.val
-      · exact hbefore j j.isLt (by dsimp [cut] at hj; omega) i
-      · have hindex : j.val - cut.val < (p.drop cut).length + 1 := by
-          simp only [RelSeries.drop_length]; omega
-        have h := htail _ ⟨⟨j.val - cut.val, hindex⟩, rfl⟩ i
-        have heq : (p.drop cut) ⟨j.val - cut.val, hindex⟩ = p j := by
-          dsimp [RelSeries.drop]
-          congr 1
-          apply Fin.ext
-          simp only [Nat.sub_add_cancel (by omega : cut.val ≤ j.val)]
-        rw [heq] at h
-        exact h
+      exact inWindow_of_drop p cut
+        (fun j hj i => hbefore j j.isLt (by dsimp [cut] at hj; omega) i) htail
   exact aux p.length p rfl ws out hInv hhead
 
 /-- **The complete native loop uses one common window on every computation prefix.** Tidy
@@ -190,29 +197,21 @@ theorem runsInSpace_of_transforms {input : List Bool}
     simp [initState, wordsCfg]
   have hwin := MultiTapeNTM.RunPath.inWindow_of_space_le (p := q₀)
     (by simp [hqhead]) hspace
+  have hpre (j : Fin (p.length + 1)) (hj : j.val ≤ q.length) :
+      ∀ i, (p.toRunPath j).workTapePos i ∈ window s := fun i => by
+    rw [follows_init I P F C p.toRunPath q hmap j j.isLt (by omega)]
+    exact hwin _ (hmem _ ⟨_, rfl⟩) i
   have hpwin : MultiTapeNTM.RunPath.InWindow p.toRunPath s := by
-    rintro _ ⟨j, rfl⟩ i
-    by_cases hj : j.val ≤ q.length
-    · rw [follows_init I P F C p.toRunPath q hmap j j.isLt (by omega)]
-      exact hwin _ (hmem _ ⟨_, rfl⟩) i
-    · have hq : q.length < p.length + 1 := by omega
-      let cut : Fin (p.length + 1) := ⟨q.length, hq⟩
+    by_cases hq : q.length < p.length + 1
+    · let cut : Fin (p.length + 1) := ⟨q.length, hq⟩
       have hcfg : p.toRunPath cut = wordsCfg input (some .choose) ws e := by
         have h := follows_init I P F C p.toRunPath q hmap q.length hq (Nat.lt_succ_self _)
         change p.toRunPath cut = q.last.mapState initState at h
         simpa [hlast', hqlast, initState] using h
-      have htail := choose_inWindow I P F C Inv hP hF (p.toRunPath.drop cut)
-        hInv (by simpa using hcfg)
-      have hindex : j.val - cut.val < (p.toRunPath.drop cut).length + 1 := by
-        simp only [RelSeries.drop_length]; omega
-      have h := htail _ ⟨⟨j.val - cut.val, hindex⟩, rfl⟩ i
-      have heq : (p.toRunPath.drop cut) ⟨j.val - cut.val, hindex⟩ = p.toRunPath j := by
-        dsimp [RelSeries.drop]
-        congr 1
-        apply Fin.ext
-        simp only [Nat.sub_add_cancel (by dsimp [cut]; omega : cut.val ≤ j.val)]
-      rw [heq] at h
-      exact h
+      exact inWindow_of_drop p.toRunPath cut (fun j hj => hpre j hj.le)
+        (choose_inWindow I P F C Inv hP hF (p.toRunPath.drop cut) hInv (by simpa using hcfg))
+    · rintro _ ⟨j, rfl⟩
+      exact hpre j (by omega)
   exact MultiTapeNTM.RunPath.InWindow.space_le hpwin
 
 end Turing.NondeterministicQueryMachine.Native

@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 
 /-! Tests of `enc_structure`. -/
 
@@ -33,5 +34,13 @@ example {p q : Point} (h : ePoint p = ePoint q) : p = q := ePoint.injective h
 
 example : ComputableInDegree (fun p : Point => Point.mk p.x p.y p.z) ePoint ePoint 1 1 := by
   fun_prop (disch := lia)
+
+-- Reading fields and rebuilding the structure, with the bounds checked once.
+example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoint
+    (fun p => 8 * ((ePoint p).length + 1)) fun p => 8 * ((ePoint p).length + 1) := by
+  refine .mono (by fun_prop) 16 (fun p => ?_) fun p => ?_ <;>
+  · simp only [ePoint_apply, length_encPair]
+    have := ((List.tail_sublist p.z).flatMap (frame ∘ encUnary)).length_le
+    omega
 
 end CslibFrontierTests.StructureEncoding

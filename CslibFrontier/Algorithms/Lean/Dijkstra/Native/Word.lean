@@ -73,8 +73,7 @@ private theorem relaxTarget_eq {n : ℕ} (ins dec : ℕ → ℕ → Memory.Prog 
         dec v (du + c)) := by
   unfold relaxTarget Dictionary.Memory.query Dictionary.Memory.insert Block.get Block.set
   simp only [bind_assoc, pure_bind]
-  congr 1
-  funext x
+  congr 1 with x : 1
   cases x <;> simp [Dictionary.Memory.decode]
 
 private theorem link_relaxEdge {n K V w : ℕ}
@@ -104,13 +103,11 @@ private theorem link_relaxEdge {n K V w : ℕ}
   unfold relaxEdge
   refine (PFunctor.FreeM.liftM_bind M (edge u i) _).trans ?_
   rw [he]
-  congr 1
-  funext vc
+  congr 1 with vc : 1
   rcases vc with ⟨v, c⟩
   refine (PFunctor.FreeM.liftM_bind M (getDist v) _).trans ?_
   rw [hg]
-  congr 1
-  funext old
+  congr 1 with old : 1
   cases old with
   | none =>
     exact (PFunctor.FreeM.liftM_bind M (setDist v (du + c)) _).trans
@@ -138,12 +135,9 @@ theorem relaxWord_eq {n K V w : ℕ}
   simp_rw [← hins, ← hdec]
   unfold relaxWord AdjacencyList.Memory.edge Block.get
   simp only [bind_assoc, pure_bind]
-  congr 1
-  funext a
-  congr 1
-  funext t
-  congr 1
-  funext c
+  congr 1 with a : 1
+  congr 1 with t : 1
+  congr 1 with c : 1
   by_cases ht : t < n
   · simpa only [ite_eq_left ht, dite_eq_left ht] using
       relaxTarget_eq ins dec T ⟨t, ht⟩ du c
@@ -181,10 +175,8 @@ theorem scanWord_eq {n K V w : ℕ}
     pure ())
   unfold AdjacencyList.Memory.degree Block.get
   simp only [bind_assoc, pure_bind]
-  congr 1
-  funext a
-  congr 1
-  funext b
+  congr 1 with a : 1
+  congr 1 with b : 1
   have hb : (fun x : ℕ × ℕ => do
       relaxWord ins dec T A n u du x.2; pure (x.2 + 1)) =
       (fun x : ℕ × ℕ => do
@@ -230,8 +222,7 @@ theorem loopStepWord_eq {n K V w : ℕ}
   have hstep : loopStep M x =
       Bind.bind (α := Option (Fin n × ℕ)) (pq .extractMin) cont := by
     unfold loopStep
-    congr 1
-    funext e
+    congr 1 with e : 1
     change Option (Fin n × ℕ) at e
     cases e <;> rfl
   change _ = loopStep M x
@@ -239,8 +230,7 @@ theorem loopStepWord_eq {n K V w : ℕ}
   unfold loopStepWord cont
   rw [← hex, ← PFunctor.FreeM.bind_pure_comp]
   simp only [PFunctor.FreeM.bind_eq_bind, bind_assoc, pure_bind, Function.comp_apply]
-  congr 1
-  funext e
+  congr 1 with e : 1
   cases e with
   | none => rfl
   | some e =>
@@ -270,8 +260,7 @@ theorem loopStepWord_eq_of_erasure {n K V w : ℕ}
   unfold loopStepWord loopStep
   rw [← PFunctor.FreeM.bind_pure_comp]
   simp only [PFunctor.FreeM.bind_eq_bind, bind_assoc, pure_bind, Function.comp_apply]
-  congr 1
-  funext e
+  congr 1 with e : 1
   change Option (Fin n × ℕ) at e
   cases e with
   | none => rfl
@@ -406,16 +395,11 @@ theorem runWord_eq_binary
       pure (⟨n, H⟩ : Σ n, BinaryHeap.Memory.Layout n)) extract ins dec = Memory.run := by
   unfold runWord Memory.run
   simp only [bind_assoc, pure_bind]
-  congr 1
-  funext n
-  congr 1
-  funext src
-  congr 1
-  funext m
-  congr 1
-  funext T
-  congr 1
-  funext H
+  congr 1 with n : 1
+  congr 1 with src : 1
+  congr 1 with m : 1
+  congr 1 with T : 1
+  congr 1 with H : 1
   by_cases hs : src < n
   · simp only [ite_eq_left hs, dite_eq_left hs]
     exact clientWord_eq (BinaryHeap.Memory.ops H) (extract ⟨n, H⟩)

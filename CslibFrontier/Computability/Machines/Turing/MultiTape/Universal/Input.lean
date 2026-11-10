@@ -141,7 +141,7 @@ private theorem inputSymbol_pair_inO :
   have hstate (q : ℕ × List ℕ) (j : ℕ) :
       (encNat (streamState q.1 inputNext q.2 j)).length ≤ B q := by
     rw [input_state]
-    exact ComputableTidilyInO.length_encNat_mono (Nat.sub_le _ _)
+    exact length_encNat_mono (Nat.sub_le _ _)
   have helem (q : ℕ × List ℕ) (j : ℕ) (hj : j < q.2.length) : q.2[j] ≤ N q := by
     simpa [encUnary_apply] using length_le_encList_of_mem encUnary (List.getElem_mem hj)
   have hstream := ComputableTidilyInTimeAndSpace.streamFold_pair_sum
@@ -170,10 +170,7 @@ private theorem inputSymbol_pair_inO :
         simpa only [Nat.mul_one] using Nat.mul_le_mul_left (N q + 1) hpow
       have hfc := Nat.mul_le_mul_left cF
         ((Nat.add_le_add_right (hstate q q.2.length) 1).trans hzB)
-      have hk : K * (B q + 1) ^ 2 * N q ≤ K * Z := by
-        have hm := Nat.mul_le_mul_left ((B q + 1) ^ 2) (Nat.le_succ (N q))
-        simpa only [Z, Nat.mul_assoc, Nat.mul_comm ((B q + 1) ^ 2)] using
-          Nat.mul_le_mul_left K hm
+      have hk : K * (B q + 1) ^ 2 * N q ≤ K * Z := by grind
       have hr : (2 * B q + 1 + N q) + (B q + N q) + 1 ≤ 5 * Z := by omega
       have hsum : cF * ((encNat (streamState q.1 inputNext q.2 q.2.length)).length + 1) +
           (2 * B q + 1 + N q) + K * (B q + 1) ^ 2 * N q + (B q + N q) + 1 ≤
@@ -193,10 +190,7 @@ private theorem inputSymbol_pair_inO :
         _ ≤ C * Z := Nat.mul_le_mul_right Z hcoeff
         _ ≤ C * (Z + 1) := Nat.mul_le_mul_left C (Nat.le_succ _)
     · let Z := 2 * B q + N q + 2
-      have hf : (encNat (streamState q.1 inputNext q.2 q.2.length)).length + 1 ≤ Z := by
-        have := hstate q q.2.length
-        dsimp only [Z]
-        omega
+      have hf : (encNat (streamState q.1 inputNext q.2 q.2.length)).length + 1 ≤ Z := by grind
       have hfc := Nat.mul_le_mul_left cF hf
       have hr : B q + N q + 1 ≤ Z := by dsimp only [Z]; omega
       have hsum : cF * ((encNat (streamState q.1 inputNext q.2 q.2.length)).length + 1) +

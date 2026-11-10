@@ -93,7 +93,6 @@ when `w = 0`; clearing theorems hold in any `CommRing K`; and Cramer recovery re
 namespace Cslib.CommonCountingAccum
 
 open Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
 
 attribute [local irreducible] ComputableInPolyTime
 
@@ -1258,8 +1257,7 @@ theorem hermiteRecoverZero_extractCoordNodeJets_eq {J ℓ : ℕ} {Ω H_zero : �
     Cslib.Circuits.Rational.hermiteRecoverZero nodes J Ω (extractCoordNodeJets J u nodeJets) =
       H_zero := by
   have hshape := isTableShape_extractCoordNodeJets J u nodeJets
-  exact Cslib.Circuits.Rational.hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0
-    (hshape.1.trans hlen) hshape.2
+  exact Cslib.Circuits.Rational.hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hshape.2
     (rowEntry_extractCoordNodeJets_eq_taylor Ω nodes nodeJets hlen P hclear u)
 
 /-- Full multi-coordinate modular count recovery `S_ℓ(H(0)) ≡ count (mod 2 ^ ℓ)` from `Ω`-scaled

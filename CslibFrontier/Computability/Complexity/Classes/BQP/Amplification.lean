@@ -120,9 +120,7 @@ theorem base_lt_width : base w k < width w k t := by
 
 theorem answer_lt_width : answer w k t < width w k t := by
   unfold answer width Counter.level
-  have : k * (t + 1) + t < (k + 1) * (t + 1) := by
-    rw [Nat.add_mul k, Nat.one_mul]
-    omega
+  have : k * (t + 1) + t < (k + 1) * (t + 1) := by grind
   omega
 
 theorem base_le_answer : base w k ≤ answer w k t := by
@@ -259,8 +257,7 @@ theorem ofCodes_copiesCodes {gs : List GateCode} (hgs : ∀ g ∈ gs, WellFormed
       ((List.finRange k).map block).flatMap (Circuit.mapWires · (Circuit.ofCodes w gs)) := by
   rw [copiesCodes, Circuit.ofCodes_flatMap, ← List.map_coe_finRange_eq_range, List.flatMap_map,
     List.flatMap_map]
-  congr 1
-  funext j
+  congr 1 with j : 1
   exact Circuit.ofCodes_map_shift _ hgs
 
 theorem pairwise_block :

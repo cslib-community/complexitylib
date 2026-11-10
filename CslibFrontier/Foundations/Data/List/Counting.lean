@@ -17,6 +17,8 @@ import Mathlib.Data.List.Nodup
 ## Main results
 
 * `List.length_flatMap_le`: blocks of bounded length have bounded total length.
+* `List.length_flatMap_of_forall_length_eq`: blocks of a common length `k` have total length
+  `|l| k`.
 * `List.decide_mem_eq_any`: membership as a scan of the list.
 * `List.not_any_one_lt_countP_iff_nodup`: duplicate-freeness as a scan of the list.
 * `List.countP_and_not_add_countP_and`: members satisfying one predicate split by whether
@@ -38,6 +40,16 @@ theorem List.length_flatMap_le {α β : Type*} {l : List α} {f : α → List β
     have hl := ih fun b hb => h b (List.mem_cons_of_mem _ hb)
     rw [List.flatMap_cons, List.length_append, List.length_cons, Nat.succ_mul]
     omega
+
+/-- Blocks of exactly `k` elements each, one for each element of `l`, have exactly `|l| k`
+elements in total. -/
+theorem List.length_flatMap_of_forall_length_eq {α β : Type*} {l : List α} {f : α → List β}
+    {k : ℕ} (h : ∀ a ∈ l, (f a).length = k) : (l.flatMap f).length = l.length * k := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    rw [List.flatMap_cons, List.length_append, List.length_cons, Nat.succ_mul,
+      h a List.mem_cons_self, ih fun b hb => h b (List.mem_cons_of_mem _ hb), Nat.add_comm]
 
 /-- Membership in a list as a scan of the list, the form in which polynomial-time membership tests
 are certified. -/

@@ -66,6 +66,7 @@ post-branching free-variable domain-examination bounds of
 
 * `Cslib.BitString.branchExamScaleCoeff`
 * `Cslib.Logic.PL.CNF.parityBranchExamScaleCoeff`
+* `Cslib.Logic.PL.CNF.ParityRowBranchExamBound`
 
 ## Main results
 
@@ -74,11 +75,13 @@ post-branching free-variable domain-examination bounds of
 * `div_sqrt_clog_le_interpolationScale`
 * `Feasible.mul_rowCost_le_interpolationScale`
 * `two_mul_numNodes_mul_numGroups_le_interpolationScale`
+* `Cslib.Complexity.SubexponentialSAT.exp_le_two_rpow_two_mul`
 * `Cslib.BitString.Feasible.branch_domainExaminationBound_le_two_pow_interpolationScale`
 * `Cslib.BitString.sum_branchAssignments_le_two_pow_interpolationScale`
 * `Cslib.BitString.sum_branch_domainExaminationBound_le_two_pow_interpolationScale`
 * `CNF.branch_domainExaminationBound_parityRowSystem_le_two_pow_interpolationScale`
 * `CNF.sum_branch_domainExaminationBound_parityRowSystem_le_two_pow_interpolationScale`
+* `CNF.parityRowBranchExamBound_of_schedule`
 * `CNF.exists_branch_schedule_and_examBound_parityRowSystem_of_le_clog_pow`
 * `CNF.exists_greedy_parityRowSystem_branch_schedule_and_examBound_of_le_clog_pow`
 
@@ -385,6 +388,12 @@ theorem two_mul_numNodes_mul_numGroups_le_interpolationScale {n n' : ℕ}
 
 end Cslib.Complexity.SubexponentialSAT.ReplacementParams
 
+/-- For `0 ≤ x`, `Real.exp x ≤ (2 : ℝ) ^ (2 * x)` since `1 < 2 * Real.log 2`. -/
+theorem Cslib.Complexity.SubexponentialSAT.exp_le_two_rpow_two_mul {x : ℝ} (hx : 0 ≤ x) :
+    Real.exp x ≤ (2 : ℝ) ^ (2 * x) := by
+  rw [Real.rpow_def_of_pos two_pos, Real.exp_le_exp]
+  nlinarith [Real.log_two_gt_d9]
+
 namespace Cslib.BitString
 
 open Finset
@@ -400,11 +409,6 @@ variable {ι : Type*} {n' : ℕ}
 single-branch domain-examination count against `(2 : ℝ) ^ (A * interpolationScale n)`. -/
 def branchExamScaleCoeff (β k c : ℕ) : ℕ :=
   2 + 65792 * (k * (2 * c + 4) + 4) * (β + 3)
-
-private theorem exp_le_two_rpow_two_mul {x : ℝ} (hx : 0 ≤ x) :
-    Real.exp x ≤ (2 : ℝ) ^ (2 * x) := by
-  rw [Real.rpow_def_of_pos two_pos, Real.exp_le_exp]
-  nlinarith [Real.log_two_gt_d9]
 
 /-- **Section 5.5 single-branch `interpolationScale` domain-examination bound (printed p. 39):**
 When `16384 ≤ Fintype.card ι`, `Fintype.card ι ≤ 2 * n'`, `n' ≤ Fintype.card ι`,
@@ -669,6 +673,90 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le_two_pow_interpo
   exact sum_branch_domainExaminationBound_le_two_pow_interpolationScale
     (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) hn hb₀ hM examSum hexam
 
+/-- Post-branching Section 6.3 schedule feasibility, `ReplacementDesign` existence, and single- /
+multi-branch `2 ^ (A * interpolationScale (Fintype.card V))` domain-examination bounds for
+`φ.parityRowSystem rows` at width cap `k`, density exponent `β_B`, row-weight cap `W`, and
+heavy-variable threshold `b₀`. -/
+abbrev CNF.ParityRowBranchExamBound [Fintype V] [DecidableEq V]
+    (φ : CNF V) (k β_B W b₀ : ℕ) (rows : List (Fin φ.length → Bool))
+    (e : ↥(univ \ heavyVars univ (univ : Finset (Fin rows.length))
+      (fun j => equationScope (φ.parityRowSystem rows j)) b₀) ≃ Fin n') : Prop :=
+  let S := heavyVars univ (univ : Finset (Fin rows.length))
+    (fun j => equationScope (φ.parityRowSystem rows j)) b₀
+  (Fintype.card V ≤ 2 * n' ∧ n' ≤ Fintype.card V) ∧
+  (∀ b : V → Bool,
+    ∃ (hF : Feasible (2 * β_B + 5) n' (b₀ + 1) (max (k * (W * 2 ^ k)) 1)
+        (∑ f : {j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n',
+          #(branchAugmentedScope S e univ (φ.parityRowSystem rows) b f)))
+      (D : ReplacementDesign
+        (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
+        (numNodes n') (numGroups n') (intervalStart (2 * β_B + 5) n')
+        (rowBound (2 * β_B + 5) n') (tauRat n')),
+      ∀ s_active : Finset
+          ({j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n'),
+        let d := k * (rows.length + 2 * (branchPrecision (Fintype.card V) - 1))
+        let q := (d * rowBound (2 * β_B + 5) n') / numNodes n'
+        let C := hF.toCountingDesign D s_active
+        (∑ t : Fin (numNodes n'),
+            (#{p : Finset (Fin n') × Finset (Fin n') | #p.1 ≤ q ∧ p.2 ⊆ p.1} : ℝ) *
+              (2 * (#(C.measurementBox t) : ℝ) *
+                ∑ g : Fin (numGroups n'), (Fintype.card (C.LocalCube t g) : ℝ))) ≤
+          (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
+            interpolationScale (Fintype.card V))) ∧
+  ∀ (examSum : (V → Bool) → ℝ),
+    (∀ b ∈ branchAssignments S,
+      examSum b ≤
+        (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
+          interpolationScale (Fintype.card V))) →
+    (∑ b ∈ branchAssignments S, examSum b) ≤
+      (2 : ℝ) ^ (((CNF.parityBranchExamScaleCoeff k β_B + 32 : ℕ) : ℝ) *
+        interpolationScale (Fintype.card V))
+
+/-- Upgrade the discrete free-variable, branch-count, and per-branch `ReplacementDesign`
+schedule guarantees of `SparseParitySchedule` to `CNF.ParityRowBranchExamBound` whenever
+`16384 ≤ Fintype.card V` and `rows.length ≤ 6 * Fintype.card V`. -/
+theorem CNF.parityRowBranchExamBound_of_schedule [Fintype V] [DecidableEq V]
+    {φ : CNF V} {k β_B W b₀ : ℕ} {rows : List (Fin φ.length → Bool)}
+    (e : ↥(univ \ heavyVars univ (univ : Finset (Fin rows.length))
+      (fun j => equationScope (φ.parityRowSystem rows j)) b₀) ≃ Fin n')
+    (hlen : rows.length ≤ 6 * Fintype.card V)
+    (hn16384 : 16384 ≤ Fintype.card V)
+    (hn_le : Fintype.card V ≤ 2 * n')
+    (hbranches :
+      #(branchAssignments
+          (heavyVars univ (univ : Finset (Fin rows.length))
+            (fun j => equationScope (φ.parityRowSystem rows j)) b₀)) ≤
+        2 ^ (Fintype.card V / (Nat.clog 2 (Fintype.card V)).sqrt))
+    (hfeas : ∀ b : V → Bool,
+      Feasible (2 * β_B + 5) n' (b₀ + 1) (max (k * (W * 2 ^ k)) 1)
+        (∑ f : {j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n',
+          #(branchAugmentedScope
+            (heavyVars univ (univ : Finset (Fin rows.length))
+              (fun j => equationScope (φ.parityRowSystem rows j)) b₀)
+            e univ (φ.parityRowSystem rows) b f)) ∧
+      Nonempty
+        (ReplacementDesign
+          (branchAugmentedScope
+            (heavyVars univ (univ : Finset (Fin rows.length))
+              (fun j => equationScope (φ.parityRowSystem rows j)) b₀)
+            e univ (φ.parityRowSystem rows) b)
+          (numNodes n') (numGroups n') (intervalStart (2 * β_B + 5) n')
+          (rowBound (2 * β_B + 5) n') (tauRat n'))) :
+    CNF.ParityRowBranchExamBound φ k β_B W b₀ rows e := by
+  have hn'_le : n' ≤ Fintype.card V := by
+    have heq :
+        #(univ \ heavyVars univ (univ : Finset (Fin rows.length))
+            (fun j => equationScope (φ.parityRowSystem rows j)) b₀) = n' := by
+      simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_congr e
+    rw [← heq]
+    exact card_le_univ _
+  refine ⟨⟨hn_le, hn'_le⟩, fun b => ?_, fun examSum hexam => ?_⟩
+  · obtain ⟨hF, ⟨D⟩⟩ := hfeas b
+    exact ⟨hF, D, fun s_active =>
+      CNF.branch_domainExaminationBound_parityRowSystem_le_two_pow_interpolationScale
+        rows hF D s_active hlen hn16384 hn_le hn'_le⟩
+  · exact sum_branchAssignments_le_two_pow_interpolationScale hn16384 hbranches examSum hexam
+
 /-- **End-to-end Section 6.3 schedule feasibility, `ReplacementDesign` existence, and
 `2 ^ (A * interpolationScale n)` examination bound for `CNF.parityRowSystem`**:
 For any `k C_B β_B : ℕ`, there exists `N₁ ≥ 16384` such that for any width-`≤ k` CNF `φ : CNF V`
@@ -701,52 +789,15 @@ theorem CNF.exists_branch_schedule_and_examBound_parityRowSystem_of_le_clog_pow
           let S := heavyVars univ (univ : Finset (Fin rows.length))
             (fun j => equationScope (φ.parityRowSystem rows j)) b₀
           ∀ (e : ↥(univ \ S) ≃ Fin n'),
-            (Fintype.card V ≤ 2 * n' ∧ n' ≤ Fintype.card V) ∧
-            (∀ b : V → Bool,
-              ∃ (hF : Feasible (2 * β_B + 5) n' (b₀ + 1) (max (k * (W * 2 ^ k)) 1)
-                  (∑ f : {j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n',
-                    #(branchAugmentedScope S e univ (φ.parityRowSystem rows) b f)))
-                (D : ReplacementDesign
-                  (branchAugmentedScope S e univ (φ.parityRowSystem rows) b)
-                  (numNodes n') (numGroups n') (intervalStart (2 * β_B + 5) n')
-                  (rowBound (2 * β_B + 5) n') (tauRat n')),
-                ∀ s_active : Finset
-                    ({j : Fin rows.length // j ∈ (univ : Finset (Fin rows.length))} ⊕ Fin n'),
-                  let d := k * (rows.length + 2 * (branchPrecision (Fintype.card V) - 1))
-                  let q := (d * rowBound (2 * β_B + 5) n') / numNodes n'
-                  let C := hF.toCountingDesign D s_active
-                  (∑ t : Fin (numNodes n'),
-                      (#{p : Finset (Fin n') × Finset (Fin n') | #p.1 ≤ q ∧ p.2 ⊆ p.1} : ℝ) *
-                        (2 * (#(C.measurementBox t) : ℝ) *
-                          ∑ g : Fin (numGroups n'), (Fintype.card (C.LocalCube t g) : ℝ))) ≤
-                    (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
-                      interpolationScale (Fintype.card V))) ∧
-            ∀ (examSum : (V → Bool) → ℝ),
-              (∀ b ∈ branchAssignments S,
-                examSum b ≤
-                  (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
-                    interpolationScale (Fintype.card V))) →
-              (∑ b ∈ branchAssignments S, examSum b) ≤
-                (2 : ℝ) ^ (((CNF.parityBranchExamScaleCoeff k β_B + 32 : ℕ) : ℝ) *
-                  interpolationScale (Fintype.card V)) := by
+            CNF.ParityRowBranchExamBound φ k β_B W b₀ rows e := by
   obtain ⟨N₀, _, hsched⟩ := CNF.exists_branch_schedule_parityRowSystem_of_le_clog_pow k C_B β_B
   refine ⟨max N₀ 16384, le_max_right _ _,
     fun {V _ _ φ n' B W} hk hN₁ hm hB hW_bound {rows} hW hlen => ?_⟩
   intro b₀ S e
-  have hN₀ : N₀ ≤ Fintype.card V := (le_max_left _ _).trans hN₁
-  have hn16384 : 16384 ≤ Fintype.card V := (le_max_right _ _).trans hN₁
-  obtain ⟨_, ⟨hn_le, _⟩, hbranches, hfeas⟩ := hsched hk hN₀ hm hB hW_bound hW hlen e
-  have hn'_le : n' ≤ Fintype.card V := by
-    have heq : #(univ \ S) = n' := by
-      simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_congr e
-    rw [← heq]
-    exact card_le_univ (univ \ S)
-  refine ⟨⟨hn_le, hn'_le⟩, fun b => ?_, fun examSum hexam => ?_⟩
-  · obtain ⟨hF, ⟨D⟩⟩ := hfeas b
-    refine ⟨hF, D, fun s_active => ?_⟩
-    exact CNF.branch_domainExaminationBound_parityRowSystem_le_two_pow_interpolationScale
-      rows hF D s_active hlen hn16384 hn_le hn'_le
-  · exact sum_branchAssignments_le_two_pow_interpolationScale hn16384 hbranches examSum hexam
+  obtain ⟨_, ⟨hn_le, _⟩, hbranches, hfeas⟩ :=
+    hsched hk ((le_max_left _ _).trans hN₁) hm hB hW_bound hW hlen e
+  exact CNF.parityRowBranchExamBound_of_schedule e hlen
+    ((le_max_right _ _).trans hN₁) hn_le hbranches hfeas
 
 /-- **End-to-end Lemma 6.1 + Lemma 6.2 + Section 6.3 greedy parity-test schedule with
 `2 ^ (A * interpolationScale n)` domain-examination bounds**:
@@ -793,62 +844,22 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule_and_examBound_of_le_cl
               let S := heavyVars univ (univ : Finset (Fin (A i).length))
                 (fun j => equationScope (φ.parityRowSystem (A i) j)) b₀
               ∀ ⦃n' : ℕ⦄ (e : ↥(univ \ S) ≃ Fin n'),
-                (Fintype.card V ≤ 2 * n' ∧ n' ≤ Fintype.card V) ∧
-                (∀ b : V → Bool,
-                  ∃ (hF : Feasible (2 * β_B + 5) n' (b₀ + 1) (max (k * (D₀ * 2 ^ k)) 1)
-                      (∑ f : {j : Fin (A i).length //
-                          j ∈ (univ : Finset (Fin (A i).length))} ⊕ Fin n',
-                        #(branchAugmentedScope S e univ (φ.parityRowSystem (A i)) b f)))
-                    (D : ReplacementDesign
-                      (branchAugmentedScope S e univ (φ.parityRowSystem (A i)) b)
-                      (numNodes n') (numGroups n') (intervalStart (2 * β_B + 5) n')
-                      (rowBound (2 * β_B + 5) n') (tauRat n')),
-                    ∀ s_active : Finset
-                        ({j : Fin (A i).length //
-                            j ∈ (univ : Finset (Fin (A i).length))} ⊕ Fin n'),
-                      let d := k * ((A i).length + 2 * (branchPrecision (Fintype.card V) - 1))
-                      let q := (d * rowBound (2 * β_B + 5) n') / numNodes n'
-                      let C := hF.toCountingDesign D s_active
-                      (∑ t : Fin (numNodes n'),
-                          (#{p : Finset (Fin n') × Finset (Fin n') | #p.1 ≤ q ∧ p.2 ⊆ p.1} : ℝ) *
-                            (2 * (#(C.measurementBox t) : ℝ) *
-                              ∑ g : Fin (numGroups n'), (Fintype.card (C.LocalCube t g) : ℝ))) ≤
-                        (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
-                          interpolationScale (Fintype.card V))) ∧
-                ∀ (examSum : (V → Bool) → ℝ),
-                  (∀ b ∈ branchAssignments S,
-                    examSum b ≤
-                      (2 : ℝ) ^ ((CNF.parityBranchExamScaleCoeff k β_B : ℝ) *
-                        interpolationScale (Fintype.card V))) →
-                  (∑ b ∈ branchAssignments S, examSum b) ≤
-                    (2 : ℝ) ^ (((CNF.parityBranchExamScaleCoeff k β_B + 32 : ℕ) : ℝ) *
-                      interpolationScale (Fintype.card V)) := by
+                CNF.ParityRowBranchExamBound φ k β_B D₀ b₀ (A i) e := by
   obtain ⟨N₀, _, hgreedy_sched⟩ :=
     CNF.exists_greedy_parityRowSystem_branch_schedule_of_le_clog_pow k C_B β_B
   refine ⟨max N₀ 16384, le_max_right _ _,
     fun {V _ _} φ {B} hk hN₁ hB1 hB_le hm => ?_⟩
   intro D₀ P b₀
-  have hN₀ : N₀ ≤ Fintype.card V := (le_max_left _ _).trans hN₁
-  have hn16384 : 16384 ≤ Fintype.card V := (le_max_right _ _).trans hN₁
-  obtain ⟨A₀, hlen0, hw0, hgreedy⟩ := hgreedy_sched φ hk hN₀ hB1 hB_le hm
+  obtain ⟨A₀, hlen0, hw0, hgreedy⟩ :=
+    hgreedy_sched φ hk ((le_max_left _ _).trans hN₁) hB1 hB_le hm
   refine ⟨A₀, hlen0, hw0, fun A γ h0 hA hγ => ?_⟩
   obtain ⟨hcount, hstage⟩ := hgreedy A γ h0 hA hγ
   refine ⟨hcount, fun i hi => ?_⟩
   obtain ⟨hlen_i, hstage_e⟩ := hstage i hi
-  refine ⟨hlen_i, fun {n'} e => ?_⟩
+  refine ⟨hlen_i, ?_⟩
+  intro S n' e
   obtain ⟨⟨hn_le, _⟩, hbranches, hfeas⟩ := hstage_e e
-  have hn'_le : n' ≤ Fintype.card V := by
-    have heq :
-        #(univ \ heavyVars univ (univ : Finset (Fin (A i).length))
-            (fun j => equationScope (φ.parityRowSystem (A i) j)) b₀) = n' := by
-      simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_congr e
-    rw [← heq]
-    exact card_le_univ _
-  refine ⟨⟨hn_le, hn'_le⟩, fun b => ?_, fun examSum hexam => ?_⟩
-  · obtain ⟨hF, ⟨D⟩⟩ := hfeas b
-    refine ⟨hF, D, fun s_active => ?_⟩
-    exact CNF.branch_domainExaminationBound_parityRowSystem_le_two_pow_interpolationScale
-      (A i) hF D s_active hlen_i hn16384 hn_le hn'_le
-  · exact sum_branchAssignments_le_two_pow_interpolationScale hn16384 hbranches examSum hexam
+  exact CNF.parityRowBranchExamBound_of_schedule e hlen_i
+    ((le_max_right _ _).trans hN₁) hn_le hbranches hfeas
 
 end Cslib.Logic.PL

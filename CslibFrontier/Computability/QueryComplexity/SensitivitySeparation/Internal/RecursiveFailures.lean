@@ -121,9 +121,7 @@ theorem targetFailures_singleton {k r h : ℕ} {I : Type} (T : Tournament k)
   have hc := (Finset.mem_filter.mp hi).2.1
   obtain ⟨c, hc'⟩ := Finset.card_eq_one.mp hc
   have hne : (targetFailures F x i).Nonempty := hc' ▸ Finset.singleton_nonempty c
-  have hm : targetWitness F x hr i ∈ targetFailures F x i := by
-    simp only [targetWitness, dite_eq_left hne]
-    exact hne.choose_spec
+  have hm : targetWitness F x hr i ∈ targetFailures F x i := by grind [targetWitness]
   rw [hc', Finset.mem_singleton] at hm
   simpa [hm] using hc'
 
@@ -137,9 +135,7 @@ theorem gateFailures_singleton {k r h : ℕ} {I : Type} (T : Tournament k)
   have hc := (Finset.mem_filter.mp hi).2.2
   obtain ⟨j, hc'⟩ := Finset.card_eq_one.mp hc
   have hne : (gateFailures T label F q x i).Nonempty := hc' ▸ Finset.singleton_nonempty j
-  have hm : gateWitness T label F q x i ∈ gateFailures T label F q x i := by
-    simp only [gateWitness, dite_eq_left hne]
-    exact hne.choose_spec
+  have hm : gateWitness T label F q x i ∈ gateFailures T label F q x i := by grind [gateWitness]
   rw [hc', Finset.mem_singleton] at hm
   simpa [hm] using hc'
 

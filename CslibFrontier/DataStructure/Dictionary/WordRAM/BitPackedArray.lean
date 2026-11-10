@@ -192,8 +192,10 @@ theorem bitOffset_lt {k w idx : ℕ} (hw : 0 < w) :
   Nat.mod_lt _ hw
 
 /-- Fundamental global bit identity: `wordOffset k w idx * w + bitOffset k w idx = idx * k`. -/
-theorem wordOffset_mul_add_bitOffset {k w idx : ℕ} (hw : 0 < w) :
+theorem wordOffset_mul_add_bitOffset {k w idx : ℕ} :
     wordOffset k w idx * w + bitOffset k w idx = idx * k := by
+  rcases Nat.eq_zero_or_pos w with rfl | hw
+  · simp [bitOffset]
   rw [wordOffset_eq_mul_div hw, bitOffset_eq_mul_mod, Nat.mul_comm _ w, Nat.div_add_mod]
 
 /-- For every `idx < N`, `wordOffset k w idx + 1 < packedWords N k w`. -/
@@ -498,8 +500,8 @@ theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ �
     · left
       calc idx * k + k = (idx + 1) * k := by ring
         _ ≤ idx' * k := Nat.mul_le_mul_right k hgt
-  have hid0 : wOff * w + bOff = idx * k := wordOffset_mul_add_bitOffset hw
-  have hid0' : wOff' * w + bOff' = idx' * k := wordOffset_mul_add_bitOffset hw
+  have hid0 : wOff * w + bOff = idx * k := wordOffset_mul_add_bitOffset
+  have hid0' : wOff' * w + bOff' = idx' * k := wordOffset_mul_add_bitOffset
   have hsum : k₀ + k₁ = k := lowWidth_add_highWidth k w idx
   have hsum' : k₀' + k₁' = k := lowWidth_add_highWidth k w idx'
   have hle0 : bOff + k₀ ≤ w := bitOffset_add_lowWidth_le hw

@@ -412,13 +412,8 @@ theorem eval_eq_of_inputSummary_eq_lt (p : Program signature n g) {x y : Fin n �
     rw [eval_gate_eq p x gate, eval_gate_eq p y gate]
     have hin : (∑ i, inputWeight p gate i * (x i).toNat) =
         ∑ i, inputWeight p gate i * (y i).toNat := h gate hgate
-    rw [hin]
-    congr 3
-    apply sum_congr rfl
-    intro prior _
-    by_cases hprior : prior < gate
-    · rw [ih (fun j hj => h j (by omega)) prior (by omega)]
-    · rw [gateWeight_eq_zero_of_le p gate prior (le_of_not_gt hprior), zero_mul, zero_mul]
+    rw [hin, sum_mul_toNat_congr_of_lt (gateWeight_eq_zero_of_le p gate)
+      fun prior hprior => ih (fun j hj => h j (by omega)) prior (by omega)]
 
 /-- Equal direct input summaries produce identical complete gate valuations. -/
 theorem eval_eq_of_inputSummary_eq (p : Program signature n g) {x y : Fin n → Bool}
