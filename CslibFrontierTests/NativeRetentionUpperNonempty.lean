@@ -32,43 +32,19 @@ private theorem response {k : ℕ} {R : Type} {input : List Bool}
           (conditional lim sampler machine prior o).support) :
     ∃ receipt, next.records = some receipt :: o.history ∧
       receipt.report 0 = some (some [true], 1) := by
-  simp only [conditional, PMF.mem_support_bind_iff] at hn
-  obtain ⟨picked, hp, hn⟩ := hn
-  obtain ⟨hp, he⟩ := PMF.mem_support_of_posterior _ _ _ ho _ hp
-  have his := congrArg Observation.issued he
-  change batchIssued lim picked.checkpoint = o.issued at his
-  rw [hi] at his
-  have hh := congrArg Observation.history he
-  change picked.before.records = o.history at hh
-  simp only [respond, PMF.mem_support_map_iff] at hn
-  obtain ⟨phase, hr, rfl⟩ := hn
-  cases hc : picked.checkpoint with
-  | none => simp [hc, batchIssued, sourceSignal] at his
-  | some hit =>
-    cases hit with
-    | ready w => simp [hc, batchIssued, sourceSignal] at his
-    | pending chosen =>
-      cases chosen with
-      | halted w => simp [hc, batchIssued, sourceSignal] at his
-      | «local» w => simp [hc, batchIssued, sourceSignal] at his
-      | query w op control =>
-        cases op
-        cases ha : admit lim w.memory.privateState (w.config.channels ()).queryBuffer with
-        | none => simp [hc, batchIssued, sourceSignal, ha] at his
-        | some batch =>
-          simp only [hc, respondSource, phaseStep, dispatch, environment,
-            serve_accepted _ _ _ _ _ ha, sampler, PMF.pure_map,
-            PMF.mem_support_pure_iff] at hr
-          subst phase
-          refine ⟨_, by rw [hh]; rfl, ?_⟩
-          have hslot : (batch.slots 0).isSome = true := by
-            obtain ⟨i, hi⟩ := batch.nonempty
-            have he : i = 0 := Subsingleton.elim _ _
-            simpa [active, he] using hi
-          cases hvalue : batch.slots 0 with
-          | none => simp [hvalue] at hslot
-          | some word => simp [ConcurrentBatch.observe, hvalue, path,
-              CallTrace.report, CallTrace.response]
+  apply History.conditional_issued_property lim sampler machine
+    (fun receipt => receipt.report 0 = some (some [true], 1)) prior o ho hi next hn
+  intro world batch _ paths privateState hs
+  simp only [sampler, PMF.mem_support_pure_iff] at hs
+  cases hs
+  have hslot : (batch.slots 0).isSome = true := by
+    obtain ⟨i, hi⟩ := batch.nonempty
+    have he : i = 0 := Subsingleton.elim _ _
+    simpa [active, he] using hi
+  cases hvalue : batch.slots 0 with
+  | none => simp [hvalue] at hslot
+  | some word => simp [ConcurrentBatch.observe, hvalue, path,
+      CallTrace.report, CallTrace.response]
 
 private def data : GuardedStartup.Input := ⟨⟨⟨[[0]], [1], [1], 1, []⟩, 1, 1, []⟩, 1⟩
 private theorem valid : Valid data.startup.system := by

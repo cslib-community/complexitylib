@@ -229,4 +229,42 @@ theorem run_end {P : Type} (env : Environment Unit P) (fuel : ℕ)
     have ha : outcome.state.allotments ≠ 0 := by omega
     simp [RuntimeControl.stopped, ht, hp, ha, hd] at hs
 
+/-- On retained completion the executed result is the decoded original-family
+mask, with its dual certificate and actual source deadline. No successful-output
+or observed-duration conclusion is supplied as a premise. -/
+theorem aligned_completed_result {Private : Type} (limits : Limits n)
+    (width budget : ℕ) (ell : ℝ≥0) (state : RuntimeControl.State)
+    (memory : Memory Unit (ServerState n Private))
+    (ha : BatchAdmission.Aligned limits width budget ell state memory)
+    (hx : Valid state.work.system)
+    (hc : NativeBatch.Retained.complete (instanceOf state.work.system hx)
+      state.work.system.rho (proposal state.work.system)
+        (memory.privateState.history.map some) = true) :
+    decodeFamily state.work.system.rows.length (RuntimeControl.result state) =
+        some (outputFamily (Packets.assemble state.work)) ∧
+      (instanceOf state.work.system hx).covered
+        ((outputFamily (Packets.assemble state.work)).image Fin.val) =
+          (instanceOf state.work.system hx).ground ∧
+      (instanceOf state.work.system hx).cost
+        ((outputFamily (Packets.assemble state.work)).image Fin.val) ≤
+          (state.work.system.rho : ℝ) * ∑ e ∈ (instanceOf state.work.system hx).ground,
+            (instanceOf state.work.system hx).dual e ∧
+      memory.privateState.elapsed ≤ limits.deadline := by
+  have hd : (Packets.decision state.work).1 = true := by
+    rw [aligned_completion_eq limits width budget ell state memory ha hx]
+    exact hc
+  have hv : Valid (Packets.assemble state.work) :=
+    ⟨hx.weight_nonneg, hx.dual_nonneg, hx.feasible⟩
+  have hi : instanceOf (Packets.assemble state.work) hv = instanceOf state.work.system hx := by
+    unfold instanceOf
+    congr 1
+  have hcover := completed_output (Packets.assemble state.work) hv hd
+  rw [hi] at hcover
+  have hemit : RuntimeControl.result state = output (Packets.assemble state.work) :=
+    ite_eq_left hd
+  refine ⟨?_, hcover.1, hcover.2, ?_⟩
+  · rw [hemit]
+    exact decode_output _
+  · exact ha.invariant.1.2.2.1
+
 end Cslib.Probability.StochasticOracle.NativeRetention.BatchReceipts

@@ -2008,6 +2008,22 @@ embeds the source finite masks into the original natural row indices without
 truncating the response alphabet or hidden metadata. The final certified-output
 success event and common-oracle optimum comparison are not yet assembled.
 
+`BatchReceipts.aligned_completed_result` gives the pathwise output/deadline
+implication: actual receipt completion decodes the runtime result to its original
+family, proves the full-cover dual-weight certificate, and bounds actual source
+elapsed time by the deadline. The correlated first-cover client checks this on
+its real supported source reply. Transporting this implication to the final native
+certified-success probability and the common-oracle optimum remains open.
+
+The [correlated numerical client](../../CslibFrontierTests/NativeRetentionUpperCorrelated.lean)
+applies the same constructed numerical controller to two simultaneous calls.
+One shared fair bit makes both invoices one or both two; their joint event has
+probability $1/2$, whereas the product of the marginals is $1/4$.
+Both calls return the covering singleton, so actual issued productivity is one and
+the conditional batch invoice is at most four. The client derives these envelopes
+from the supported joint sampler and concludes the first-batch retained-completion
+bound and expected complete bill at most four. No response independence is assumed.
+
 The [admitted batch client](../../CslibFrontierTests/NativeRetentionBatchAdmission.lean)
 checks fresh concurrent pairs, shared unbounded hidden invoices, cancellation and
 original-context/history-dependent next requests and actual selected-epoch stopping.
@@ -2025,7 +2041,8 @@ invoice-envelope example. From the repository root:
 ```bash
 scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
   CslibFrontierTests.NativeRetentionUpper \
-  CslibFrontierTests.NativeRetentionUpperNonempty --wfail --iofail
+  CslibFrontierTests.NativeRetentionUpperNonempty \
+  CslibFrontierTests.NativeRetentionUpperCorrelated --wfail --iofail
 ```
 
 This establishes a concrete supported scheduler and source-admitted native loop.

@@ -149,6 +149,52 @@ theorem conditional_no_call_done (prior : PMF (State n k Private Control input))
         | none => simp [sourceBoundary, ha] at hb
         | some batch => simp [hh, batchIssued, sourceSignal, ha] at hi
 
+/-- Transfer an actual supported oracle-response property to a positive-mass
+issued conditional epoch. This preserves the selected batch and hidden sampler;
+clients need not repeat posterior/dispatch decomposition. -/
+theorem conditional_issued_property (P : Exchange n → Prop)
+    (prior : PMF (State n k Private Control input)) (o : Observation n)
+    (ho : o ∈ ((select limits sample machine prior).map (Quantitative.observe limits)).support)
+    (hi : o.issued = true) (next : State n k Private Control input)
+    (hn : next ∈ (conditional limits sample machine prior o).support)
+    (H : ∀ (world : World k Control Unit (ServerState n Private) input) (batch : Batch n),
+      admit limits world.memory.privateState (world.config.channels ()).queryBuffer = some batch →
+      ∀ paths privateState,
+        (paths, privateState) ∈ (sample world.memory.privateState batch).support →
+        P (StochasticOracle.ConcurrentBatch.observe limits
+          (limits.deadline - world.memory.privateState.elapsed) batch paths)) :
+    ∃ receipt, next.records = some receipt :: o.history ∧ P receipt := by
+  simp only [conditional, PMF.mem_support_bind_iff] at hn
+  obtain ⟨picked, hp, hn⟩ := hn
+  obtain ⟨_, he⟩ := PMF.mem_support_of_posterior _ _ _ ho _ hp
+  have his := congrArg Observation.issued he
+  change batchIssued limits picked.checkpoint = o.issued at his
+  rw [hi] at his
+  have hh := congrArg Observation.history he
+  change picked.before.records = o.history at hh
+  simp only [respond, PMF.mem_support_map_iff] at hn
+  obtain ⟨phase, hr, rfl⟩ := hn
+  cases hc : picked.checkpoint with
+  | none => simp [hc, batchIssued, sourceSignal] at his
+  | some hit =>
+    cases hit with
+    | ready world => simp [hc, batchIssued, sourceSignal] at his
+    | pending chosen =>
+      cases chosen with
+      | halted world => simp [hc, batchIssued, sourceSignal] at his
+      | «local» world => simp [hc, batchIssued, sourceSignal] at his
+      | query world op control =>
+        cases op
+        cases ha : admit limits world.memory.privateState
+            (world.config.channels ()).queryBuffer with
+        | none => simp [hc, batchIssued, sourceSignal, ha] at his
+        | some batch =>
+          simp only [hc, respondSource, phaseStep, dispatch, environment,
+            serve_accepted _ _ _ _ _ ha, PMF.map_comp, PMF.mem_support_map_iff] at hr
+          obtain ⟨⟨paths, privateState⟩, hs, hphase⟩ := hr
+          cases hphase
+          exact ⟨_, by rw [hh]; rfl, H world batch ha paths privateState hs⟩
+
 /-- The source selection stage changes no earlier receipt history, even when
 silent native computation is unbounded or divergent. -/
 theorem selected_history (prior : PMF (State n k Private Control input))

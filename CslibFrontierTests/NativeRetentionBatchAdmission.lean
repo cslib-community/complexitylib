@@ -507,4 +507,33 @@ theorem native_epoch_stopping : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     (by norm_num) (by intro _; norm_num [limits]) (by norm_num [data, limits])
     rfl (by decide) original_valid t ht o ho
 
+/-- Actual full first-response completion yields a decoded covering output,
+its dual certificate, and the same source ledger's physical deadline bound. -/
+example (seed first : ℕ) :
+    ∃ C : Finset (Fin 2),
+      decodeFamily 2 (RuntimeControl.result (fullState seed first)) = some C ∧
+      (instanceOf (data 3).startup.system original_valid).covered (C.image Fin.val) =
+        (instanceOf (data 3).startup.system original_valid).ground ∧
+      (instanceOf (data 3).startup.system original_valid).cost (C.image Fin.val) ≤
+        ((data 3).startup.system.rho : ℝ) *
+          ∑ e ∈ (instanceOf (data 3).startup.system original_valid).ground,
+            (instanceOf (data 3).startup.system original_valid).dual e ∧
+      (fullMemory seed first).privateState.elapsed ≤ limits.deadline := by
+  have ha := BatchAdmission.after_reply_aligned limits (sample true) 2 3 1
+    (by decide) (by decide) (by decide) (by norm_num)
+    (by intro _; norm_num [limits]) (by norm_num [limits]) initial (start seed)
+    (initial_aligned seed) initial_live _ _ (full_supported seed first)
+  change BatchAdmission.Aligned limits 2 3 1 (fullState seed first) (fullMemory seed first) at ha
+  have hd : (Packets.decision (fullState seed first).work).1 = true := by
+    by_contra h
+    have hz : RuntimeControl.result (fullState seed first) = [] := by
+      simp only [RuntimeControl.result, h, ↓reduceIte]
+    rw [(full_stops seed first).2] at hz
+    have hl := congrArg List.length hz
+    norm_num at hl
+  have hc := BatchReceipts.aligned_completion_eq limits 2 3 1 _ _ ha original_valid
+  rw [hd] at hc
+  have hout := BatchReceipts.aligned_completed_result limits 2 3 1 _ _ ha original_valid hc.symm
+  exact ⟨_, hout⟩
+
 end CslibFrontierTests.NativeRetentionBatchAdmission
