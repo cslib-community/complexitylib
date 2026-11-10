@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalInvariant
+public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStackFrame
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 
 /-!
@@ -45,45 +45,21 @@ theorem skip_transition {a : Arena} {w : ℕ} {target : List Node}
       (Cursor.mk es ns).Invariant a w target y ∧
       (Cursor.mk es ns).work < (Cursor.mk (e :: es) ns).work := by
   obtain ⟨y, hy, hstack, hloaded, hframe, hp⟩ := pop_entry x e es h2 hcap h.stack
-  have hreg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
-      y.regs i = x.regs i := hp i (Or.inl hi') (Or.inr hi)
-  have hheap : y.regs heap = x.regs heap := hreg _ (by decide) (by decide)
-  have hcount : y.regs outputCount = x.regs outputCount := hreg _ (by decide) (by decide)
-  have hcontrols : a.Controls y := h.controls.congr (by
-    intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact hreg i (by omega) (by omega))
+  obtain ⟨hheap, hcount, hcontrols, hmem, -, hstored, hends, hbitmap, hfloor⟩ :=
+    Arena.preserved_of_stack_frame x y ha h.controls h.bitmap h.stored h.around h.ends h.floor
+      hframe (fun i hi hi' => hp i (Or.inl hi') (Or.inr hi))
   have hbody := body_skip hy hloaded hcontrols.2.2.2.2.2.2.2.2.2.1 hskip
-  have hmem (p : ℕ) (hp : p < a.stack ∨ a.stack + a.capacity ≤ p) : y.mem p = x.mem p := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
   have hstep := Entry.step_of_skip (Nat.primesLE a.m) a.Λ e es hskip
   have hdec := Math.potential_step (Nat.primesLE a.m) a.Λ e.task (es.map Entry.task)
   rw [hstep] at hdec
   change (Cursor.mk es ns).work + 1 ≤ (Cursor.mk (e :: es) ns).work at hdec
   refine ⟨y, hbody, ?_, by omega⟩
-  refine ⟨hbody.bounded h.bounded, hcontrols, ?_, hstack, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    hcount.trans h.count, ?_, ?_, ?_, ?_, ?_⟩
-  · intro q hq
-    rw [hmem _ (Or.inl (by have := ha.1; omega))]
-    exact h.bitmap q hq
-  · exact h.depth.2
-  · intro d hd
-    exact h.valid d (List.mem_cons_of_mem e hd)
-  · intro d hd
-    exact (h.stored d (List.mem_cons_of_mem e hd)).of_stack_frame
-      ((h.around d (List.mem_cons_of_mem e hd)).mono_capacity (by
-        have ht := ha.2.1
-        have hf := ha.2.2.1
-        omega)) hframe
-  · intro d hd
-    exact h.around d (List.mem_cons_of_mem e hd)
-  · intro d hd j
-    rw [hheap]
-    exact h.ends d (List.mem_cons_of_mem e hd) j
-  · rw [hheap]
-    exact h.floor
+  refine ⟨hbody.bounded h.bounded, hcontrols, hbitmap, hstack, h.depth.2,
+    fun d hd => h.valid d (List.mem_cons_of_mem e hd),
+    fun d hd => hstored d (List.mem_cons_of_mem e hd),
+    fun d hd => h.around d (List.mem_cons_of_mem e hd),
+    fun d hd => hends d (List.mem_cons_of_mem e hd), hfloor, ?_, hcount.trans h.count, ?_, ?_,
+    ?_, ?_, ?_⟩
   · rw [hheap]
     have hb := h.heapBudget
     have hd := Nat.mul_le_mul_right (allocationSize a.n a.m a.N) (Nat.le_of_lt

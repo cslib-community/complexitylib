@@ -29,7 +29,9 @@ specifications: it executes data instructions and conditionals, and stops at a l
 sample and at a program given by name, leaving the goal `WP w c y Q` with the data `y` reached.
 `Cslib.WordRAM.WP.of_execWithin` then continues from a specification of `c`, and `wram_exec`
 resumes on the remaining program; on a `WP.Exact` goal, `Cslib.WordRAM.WP.Exact.of_exec` continues
-from an exact specification.
+from an exact specification. At a loop whose condition holds, `Cslib.WordRAM.WP.loop_iter` continues
+into its body, leaving at its end the loop again from the data reached, where an induction
+hypothesis applies; `Cslib.WordRAM.WP.Exact.loop_iter` is the same rule for exact counts.
 
 The registers and memory cells an instruction reads are simplified as it executes, with the simp
 set `wram_simps`. Reads after `Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce by
@@ -82,6 +84,8 @@ a program.
   before the rest of a program.
 * `Cslib.WordRAM.WP.bounded`: the data reached from word-sized data is word-sized.
 * `Cslib.WordRAM.WP.name`: a name for the data reached, at a stop.
+* `Cslib.WordRAM.WP.loop_iter`, `Cslib.WordRAM.WP.Exact.loop_iter`: an iteration of a loop whose
+  condition holds, to continue into its body at a stop.
 * `Cslib.WordRAM.WP.Exact.exists_exec`, `Cslib.WordRAM.WP.Exact.exec`: back to `Exec`; the rules
   `Cslib.WordRAM.WP.Exact.seq`, `Cslib.WordRAM.WP.Exact.const`, … are those of `WP`, and
   `Cslib.WordRAM.WP.Exact.toWP` weakens an exact count to a bound.
@@ -210,6 +214,15 @@ theorem branch_eq {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j =
     (hneg : ¬a = b → WP w neg x fun y T => Q y (T + 2)) :
     WP w (.branch (.eq i j) pos neg) x Q :=
   branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
+
+/-- An iteration of a loop whose condition holds: run the body, then the loop again from the data
+it reaches. The test and the jump back count two instructions, as in `ExecWithin.loop_iter`; the
+count of the body is added last, as in `WP.seq`. -/
+theorem loop_iter {body : Code B r} (hc : cond.Holds x)
+    (h : WP w body x fun y T₁ => WP w (.loop cond body) y fun z T₂ => Q z (T₂ + T₁ + 2)) :
+    WP w (.loop cond body) x Q :=
+  let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
+  ⟨_, T₁ + T₂ + 2, ExecWithin.loop_iter hc he₁ he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
 
 /-! ### Data instructions
 
@@ -367,6 +380,15 @@ theorem branch_eq {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j =
     (hneg : ¬a = b → WP.Exact w neg x fun y T => Q y (T + 2)) :
     WP.Exact w (.branch (.eq i j) pos neg) x Q :=
   branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
+
+/-- An iteration of a loop whose condition holds: run the body, then the loop again from the data
+it reaches, adding the two counts and the two instructions of the test and the jump back. -/
+theorem loop_iter {body : Code B r} (hc : cond.Holds x)
+    (h : WP.Exact w body x fun y T₁ =>
+      WP.Exact w (.loop cond body) y fun z T₂ => Q z (T₂ + T₁ + 2)) :
+    WP.Exact w (.loop cond body) x Q :=
+  let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
+  ⟨_, T₁ + T₂ + 2, .loop_iter hc he₁ he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
 
 section Ops
 

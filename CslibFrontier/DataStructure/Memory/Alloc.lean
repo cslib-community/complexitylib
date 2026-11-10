@@ -323,23 +323,20 @@ def allocPair : Prog (A₁.Handle × A₂.Handle) := do
 theorem clientHistory_allocPair (s : State) :
     (spec w).clientHistory s (allocPair A₁ A₂) = (spec w).clientHistory s A₁.alloc ++
       (spec w).clientHistory ((spec w).clientState s A₁.alloc) A₂.alloc := by
-  rw [allocPair, (spec w).clientHistory_bind, (spec w).clientHistory_bind]
-  exact congrArg (_ ++ ·) (List.append_nil _)
+  simp only [allocPair, client_simps, List.append_nil]
 
 /-- The memory after both allocations. -/
 theorem clientState_allocPair (s : State) :
     (spec w).clientState s (allocPair A₁ A₂) =
       (spec w).clientState ((spec w).clientState s A₁.alloc) A₂.alloc := by
-  rw [allocPair, (spec w).clientState_bind, (spec w).clientState_bind]
-  rfl
+  simp only [allocPair, client_simps]
 
 /-- Both handles. -/
 theorem clientResult_allocPair (s : State) :
     (spec w).clientResult s (allocPair A₁ A₂) =
       ((spec w).clientResult s A₁.alloc,
         (spec w).clientResult ((spec w).clientState s A₁.alloc) A₂.alloc) := by
-  rw [allocPair, (spec w).clientResult_bind, (spec w).clientResult_bind]
-  rfl
+  simp only [allocPair, client_simps]
 
 variable {A₁}
 

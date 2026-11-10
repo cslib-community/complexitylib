@@ -25,8 +25,7 @@ The map `φ ↦ interpret D θ φ` is primitive recursive whenever `D` and `θ` 
 (`Cslib.Logic.FO.RawFormula.primrec₂_interpret`). This is what the reductions in this library
 need: Mathlib-syntax interpretations (`Cslib.Logic.FO.Interpretation`,
 `CslibFrontier/Logics/FirstOrder/Interpretation.lean`) are multi-dimensional and handle Mathlib's
-`L.Formula`, but they choose enumerations of finite types and are noncomputable, and Mathlib's
-formulas have no `Primcodable` instance.
+`L.Formula`, but they choose enumerations of finite types and are noncomputable.
 
 ## Main definitions
 

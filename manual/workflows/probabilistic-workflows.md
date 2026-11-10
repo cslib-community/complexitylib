@@ -1031,6 +1031,30 @@ normal form; it does not unfold support membership or probability masses. The ch
 To prove that two normal forms differ only in the order of independent samples, use `pmf_swap`
 ([Reorder independent samples](../design-and-assurance/automation.md#reorder-independent-samples)).
 
+## Invert a support membership
+
+A proof that starts from `h : x ∈ m.support` usually needs the intermediate results that produced
+`x`. Import [SuppCases.lean](../../CslibFrontier/Tactic/SuppCases.lean) in the proof and call
+`supp_cases h with ⟨a, ha, b, hb, rfl⟩`. It rewrites `h` through every `bind`, `map`, `pure`,
+`if` and uniform draw of `m`, for a `PMF`, `ProbComp.eval`, or `OracleComp.supportWith` and
+`OracleComp.support` (so `ProbComp`), into existentials in program order, then applies the
+`rcases` pattern. A uniform draw contributes only its witness, a returned pair is split into its
+components, and a conditional becomes a disjunction, so a pattern such as `⟨-, h⟩ | ⟨-, h⟩` splits
+it. Without `with`, `supp_cases h` destructures completely, substitutes every equation that has a
+local variable on one side and closes the goal when two different constructors are equated, such
+as `false = true`; the names it introduces are inaccessible, so use this form when the rest of the
+proof refers to hypotheses only by type, through `‹_›`, `assumption` or `omega`.
+
+When `m` is a definition or a local `let`, pass it as in `supp_cases h [realRoundHandler]` or
+`supp_cases h [ν_det]`; the same list takes a hypothesis that decides a condition. The tactic fails
+when `h` is not a support membership, and when `supp_norm` cannot rewrite it, usually because
+something needs unfolding first. `simp only [supp_norm] at h` gives the rewritten form without
+destructuring it. Membership in a `dite` and an `ExecRand` derivation are not covered; induct on
+the derivation and call `supp_cases` in each case, as the proofs in
+[Structured.lean](../../CslibFrontier/Computability/WordRAM/Randomized/Structured.lean) do. The
+checked examples, including the failure messages, are in
+[SuppCases.lean](../../CslibFrontierTests/SuppCases.lean).
+
 ## Certify a closed randomized routine
 
 Use `IsPPTOn input output program` when the required conclusion is a uniform, strict polynomial-time implementation on encoded types. The encodings are embeddings into bit lists. One finite-control fair-coin machine and one polynomial clock must work for every input, with exact equality of encoded output laws. Output writing is charged. This is the contract to request before proving a probabilistic routine efficient.

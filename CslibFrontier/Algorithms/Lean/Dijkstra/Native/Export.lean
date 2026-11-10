@@ -86,21 +86,16 @@ theorem exists_program_state {p : Memory.Prog Unit} (c : ListInstance → ℕ)
   -- The trailing `pure 0` adds no memory operation.
   have hv : (Memory.spec w).ValidHistory (Memory.State.init G.encode)
       ((Memory.spec w).clientHistory (Memory.State.init G.encode) (do p; pure 0)) := by
-    rw [(Memory.spec w).clientHistory_bind p (fun _ : Unit => (pure 0 : Memory.Prog ℕ))]
-    simpa only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_pure',
-      List.append_nil] using hvalid
+    simpa only [client_simps, List.append_nil] using hvalid
   obtain ⟨y, steps, hrun, hhalt, hstate, _, htime⟩ :=
     he w () G.encode (fun i => Fin.elim0 i) (Nat.zero_le _) hfront
       (G.inputFits_encode hfit) ⟨G, rfl, hfit⟩ hv
   have hs : (Memory.spec w).clientState (Memory.State.init G.encode) (do p; pure 0) =
       (Memory.spec w).clientState (Memory.State.init G.encode) p := by
-    rw [StateTransitionSpec.clientState_bind]
-    rfl
+    simp only [client_simps]
   have hm : memoryCost (do p; pure 0) (Memory.State.init G.encode) =
       memoryCost p (Memory.State.init G.encode) := by
-    simpa only [PFunctor.FreeM.bind_eq_bind, memoryCost_pure, Nat.add_zero] using
-      (memoryCost_bind p (fun _ : Unit => (pure 0 : Memory.Prog ℕ))
-        (Memory.State.init G.encode))
+    simp only [client_simps, Nat.add_zero]
   change memoryState frontier y = (Memory.spec w).clientState (Memory.State.init G.encode)
     (do p; pure 0) at hstate
   rw [hs] at hstate
@@ -108,8 +103,7 @@ theorem exists_program_state {p : Memory.Prog Unit} (c : ListInstance → ℕ)
     (Memory.State.init G.encode) + 0 + 1) + 1 at htime
   rw [hm] at htime
   have hr : (Memory.spec w).clientResult (inputState G.encode) (do p; pure 0) = 0 := by
-    rw [(Memory.spec w).clientResult_bind p (fun _ : Unit => (pure 0 : Memory.Prog ℕ))]
-    rfl
+    simp only [client_simps]
   rw [hr] at hhalt
   rw [← memoryCost_eq_totalCost w] at hcost
   refine ⟨y, steps, hrun, hhalt, hstate, ?_, ?_⟩

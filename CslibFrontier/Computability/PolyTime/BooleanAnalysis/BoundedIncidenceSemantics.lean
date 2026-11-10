@@ -312,44 +312,44 @@ private theorem auxDim_le_of_twenty_le {n' : ℕ} (hn : 20 ≤ n') :
     _ ≤ 2 ^ (Nat.clog 2 n' - 1) := Nat.pow_le_pow_right (by omega) hdiv
     _ ≤ n' := (Nat.pow_pred_clog_lt_self (by omega : 1 < 2) (by omega : 1 < n')).le
 
-/-- Passing `checkBranchFeasible` implies `validBranchEvalParams` on `prepareBranchEvalInput`. -/
-theorem validBranchEvalParams_prepare_of_feasible {N₀_branch n' : ℕ}
-    {eqs' : List (List (List ℕ))} (hfeas : checkBranchFeasible N₀_branch (n', eqs') = true) :
-    validBranchEvalParams (prepareBranchEvalInput (n', eqs')) = true := by
-  have hf := feasible_of_checkBranchFeasible hfeas
-  dsimp only [prepareBranchEvalInput] at hf
-  obtain ⟨_, _, _, hF⟩ := hf
-  have hchk := hfeas
-  unfold checkBranchFeasible at hchk
-  simp only [Bool.and_eq_true] at hchk
-  have hvars_b : checkVarsLt n' eqs' = true := hchk.1.1.2
-  have hcan_b : checkCanonicalSystem eqs' = true := hchk.1.2
-  set β := ParameterCheck.chooseBeta (Nat.clog 2 n')
-    (branchMaxFactorIncidence n' eqs') (branchMaxFactorWidth n' eqs')
-  set r := ReplacementParams.numGroups n'
-  set Q := ReplacementParams.numNodes n'
+private theorem scheduleParams_bounds_of_feasible {β n' b w M' : ℕ}
+    (hF : ReplacementParams.Feasible β n' b w M') :
+    let r := ReplacementParams.numGroups n'
+    let Q := ReplacementParams.numNodes n'
+    let R := ReplacementParams.rowBound β n'
+    let A₀ := ReplacementParams.intervalStart β n'
+    Q ≤ n' ∧ R ≤ n' ∧ r ≤ n' ∧ A₀ ≤ n' + 1 ∧ A₀ + R ≤ Q + 1 ∧ r ^ (2 * Q) ≤ n' := by
+  intro r Q R A₀
   have hr2 : 2 ≤ r := hF.two_le_numGroups
-  have hR1 : 1 ≤ ReplacementParams.rowBound β n' := hF.one_le_rowBound
-  have hRQ : ReplacementParams.rowBound β n' < Q := hF.rowBound_lt_numNodes
+  have hR1 : 1 ≤ R := hF.one_le_rowBound
+  have hRQ : R < Q := hF.rowBound_lt_numNodes
   have hvb : 2 * Q * r ^ 2 ≤ n' := hF.var_balance
   have hQ1 : 1 ≤ Q := by omega
   have hr_sq : 4 ≤ r ^ 2 := Nat.pow_le_pow_left hr2 2
   have hQn : Q ≤ n' := (by omega : Q ≤ 2 * Q * 4).trans ((Nat.mul_le_mul_left _ hr_sq).trans hvb)
+  have hRn : R ≤ n' := by omega
   have hrn : r ≤ n' :=
     (by omega : r ≤ 2 * 1 * (2 * r)).trans
       ((Nat.mul_le_mul (Nat.mul_le_mul_left 2 hQ1)
         (by rw [sq]; exact Nat.mul_le_mul_right r hr2)).trans hvb)
-  have hI : ReplacementParams.intervalStart β n' + (ReplacementParams.rowBound β n' - 1) ≤ Q :=
-    hF.intervalStart_add_le_numNodes (by omega)
-  have hIR : ReplacementParams.intervalStart β n' + ReplacementParams.rowBound β n' ≤ Q + 1 := by
-    omega
-  have haux : r ^ (2 * Q) ≤ n' := auxDim_le_of_twenty_le hF.twenty_le
+  have hI : A₀ + (R - 1) ≤ Q := hF.intervalStart_add_le_numNodes (by omega)
+  exact ⟨hQn, hRn, hrn, by omega, by omega, auxDim_le_of_twenty_le hF.twenty_le⟩
+
+/-- Passing `checkBranchFeasible` implies `validBranchEvalParams` on `prepareBranchEvalInput`. -/
+theorem validBranchEvalParams_prepare_of_feasible {N₀_branch n' : ℕ}
+    {eqs' : List (List (List ℕ))} (hfeas : checkBranchFeasible N₀_branch (n', eqs') = true) :
+    validBranchEvalParams (prepareBranchEvalInput (n', eqs')) = true := by
+  obtain ⟨_, _, _, hF⟩ := feasible_of_checkBranchFeasible hfeas
+  have hchk := hfeas
+  unfold checkBranchFeasible at hchk
+  simp only [Bool.and_eq_true] at hchk
+  obtain ⟨hQn, _, hrn, _, hIR, haux⟩ := scheduleParams_bounds_of_feasible hF
   unfold validBranchEvalParams prepareBranchEvalInput ParameterCheck.computeScheduleParams
   dsimp only
   rw [Nat.min_eq_right hQn, Nat.min_eq_right hrn]
   simp only [Bool.and_eq_true, decide_eq_true_eq]
-  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hF.one_le_n, hr2⟩, hR1⟩, hRQ⟩, hQn⟩, hrn⟩, hIR⟩, haux⟩, hvars_b⟩, hcan_b⟩,
-    le_rfl⟩
+  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hF.one_le_n, hF.two_le_numGroups⟩, hF.one_le_rowBound⟩,
+    hF.rowBound_lt_numNodes⟩, hQn⟩, hrn⟩, hIR⟩, haux⟩, hchk.1.1.2⟩, hchk.1.2⟩, le_rfl⟩
 
 private theorem listScopeFamily_map_equationVars (n' : ℕ) (eqs' : List (List (List ℕ)))
     (f : Fin eqs'.length) :
@@ -435,6 +435,17 @@ private theorem card_listScopeFamily_augScopes_le (n' : ℕ) (eqs' : List (List 
     rw [card_singleton]
     exact one_le_branchMaxFactorWidth n' eqs'
 
+private theorem getD_normalizeScheduleWord_eq_wordToSchedule {Q r : ℕ} (hr : 1 ≤ r)
+    {w : List ℕ} (hw : ∀ x ∈ w, x < max r 1) (t : Fin Q) :
+    (normalizeScheduleWord Q r w).getD t.1 0 = (BalancedSchedules.wordToSchedule hr Q w t).1 := by
+  have hx : w.getD t.1 0 < r := by
+    by_cases ht : t.1 < w.length
+    · rw [List.getD_eq_getElem _ 0 ht]
+      simpa only [Nat.max_eq_left hr] using hw _ (List.getElem_mem ht)
+    · rw [List.getD_eq_default _ 0 (not_lt.mp ht)]; exact hr
+  simp only [normalizeScheduleWord, List.getD_map_range _ 0 t.2, Nat.max_eq_left hr,
+    Nat.mod_eq_of_lt hx, BalancedSchedules.wordToSchedule, hx, ↓reduceDIte]
+
 private theorem balancedSchedule_construct_of_scopes {n' Q r b w : ℕ}
     (augScopes : List (List ℕ)) (hn : 1 ≤ n') (hr : 1 ≤ r) (hQ : 1 ≤ Q) (hbw : 0 < b + w)
     (hb : ∀ v : Fin n', #{f : Fin augScopes.length | v ∈ listScopeFamily n' augScopes f} ≤ b)
@@ -470,38 +481,24 @@ private theorem balancedSchedule_construct_of_scopes {n' Q r b w : ℕ}
     dsimp only [scopeFactorOf, scopeVarOf] at h1 h2
     subst h1; subst h2; rfl
   have hb_edge : ∀ e : Fin edges.length,
-      #{e' : Fin edges.length | (edge e').2 = (edge e).2} ≤ b := fun e => by
-    have hsub : (univ.filter fun e' : Fin edges.length => (edge e').2 = (edge e).2).image
-        (fun e' => (edge e').1) ⊆ univ.filter fun f => (edge e).2 ∈ scope f := by
-      intro f hf
-      obtain ⟨e', he', rfl⟩ := mem_image.mp hf
-      rw [mem_filter] at he' ⊢
-      refine ⟨mem_univ _, ?_⟩
-      rw [← he'.2]
-      exact (finToScopeIncidence n' augScopes e').2.2
-    have hinj_on : Set.InjOn (fun e' : Fin edges.length => (edge e').1)
-        ↑(univ.filter fun e' : Fin edges.length => (edge e').2 = (edge e).2) := by
-      intro e₁ he₁ e₂ he₂ hf_eq
-      rw [mem_coe, mem_filter] at he₁ he₂
-      exact hinj_edge (Prod.ext hf_eq (he₁.2.trans he₂.2.symm))
-    exact (Finset.card_image_of_injOn hinj_on).symm.trans_le
-      ((card_le_card hsub).trans (hb (edge e).2))
+      #{e' : Fin edges.length | (edge e').2 = (edge e).2} ≤ b := fun e =>
+    (Finset.card_le_card_of_injOn (fun e' => (edge e').1)
+      (fun e' he' => by
+        rw [mem_coe, mem_filter] at he'
+        exact mem_filter.mpr ⟨mem_univ _, by
+          rw [← he'.2]; exact (finToScopeIncidence n' augScopes e').2.2⟩)
+      (fun e₁ he₁ e₂ he₂ hf_eq => by
+        rw [mem_coe, mem_filter] at he₁ he₂
+        exact hinj_edge (Prod.ext hf_eq (he₁.2.trans he₂.2.symm)))).trans (hb (edge e).2)
   have hw_edge : ∀ e : Fin edges.length,
-      #{e' : Fin edges.length | (edge e').1 = (edge e).1} ≤ w := fun e => by
-    have hsub : (univ.filter fun e' : Fin edges.length => (edge e').1 = (edge e).1).image
-        (fun e' => (edge e').2) ⊆ scope (edge e).1 := by
-      intro v hv
-      obtain ⟨e', he', rfl⟩ := mem_image.mp hv
-      rw [mem_filter] at he'
-      rw [← he'.2]
-      exact (finToScopeIncidence n' augScopes e').2.2
-    have hinj_on : Set.InjOn (fun e' : Fin edges.length => (edge e').2)
-        ↑(univ.filter fun e' : Fin edges.length => (edge e').1 = (edge e).1) := by
-      intro e₁ he₁ e₂ he₂ hv_eq
-      rw [mem_coe, mem_filter] at he₁ he₂
-      exact hinj_edge (Prod.ext (he₁.2.trans he₂.2.symm) hv_eq)
-    exact (Finset.card_image_of_injOn hinj_on).symm.trans_le
-      ((card_le_card hsub).trans (hw (edge e).1))
+      #{e' : Fin edges.length | (edge e').1 = (edge e).1} ≤ w := fun e =>
+    (Finset.card_le_card_of_injOn (fun e' => (edge e').2)
+      (fun e' he' => by
+        rw [mem_coe, mem_filter] at he'
+        rw [← he'.2]; exact (finToScopeIncidence n' augScopes e').2.2)
+      (fun e₁ he₁ e₂ he₂ hv_eq => by
+        rw [mem_coe, mem_filter] at he₁ he₂
+        exact hinj_edge (Prod.ext (he₁.2.trans he₂.2.symm) hv_eq))).trans (hw (edge e).1)
   have hinc' : 2 * (b + w) * ((r ^ Q) ^ 2) ^ 2 ≤ edges.length := by
     rw [length_scopeIncidencesList]
     have hpow : ((r ^ Q) ^ 2) ^ 2 = (r ^ (2 * Q)) ^ 2 := by
@@ -517,24 +514,16 @@ private theorem balancedSchedule_construct_of_scopes {n' Q r b w : ℕ}
   let d := BalancedSchedules.constructedFactorSchedule hr n' augScopes.length Q (b + w) edges
   have ha_eq : varAssignOfList hr n' Q scheds.1 = a := by
     funext v t; apply Fin.ext
-    dsimp only [scheds]
-    have hv_lt : v.1 < (BalancedSchedules.constructBalancedSchedules
-        n' augScopes.length Q r (b + w) edges).1.length := by
+    have hv_lt : v.1 < scheds.1.length := by
       rw [BalancedSchedules.length_fst_constructBalancedSchedules]; exact v.2
-    obtain ⟨hlen_w, hlt_w⟩ := hwf.1 _ (List.getElem_mem hv_lt)
-    have ht_lt : t.1 < (BalancedSchedules.constructBalancedSchedules
-        n' augScopes.length Q r (b + w) edges).1[v.1].length := by rw [hlen_w]; exact t.2
-    have hx_lt : (BalancedSchedules.constructBalancedSchedules
-        n' augScopes.length Q r (b + w) edges).1[v.1][t.1] < r := by
-      simpa only [Nat.max_eq_left hr] using hlt_w _ (List.getElem_mem ht_lt)
-    simp only [val_varAssignOfList, normalizeVarSchedules, List.getD_map_range _ [] v.2,
-      List.getD_eq_getElem _ [] hv_lt, normalizeScheduleWord, List.getD_map_range _ 0 t.2,
-      List.getD_eq_getElem _ 0 ht_lt, Nat.max_eq_left hr, Nat.mod_eq_of_lt hx_lt, a,
-      BalancedSchedules.constructedVarSchedule, BalancedSchedules.wordToSchedule, hx_lt,
-      ↓reduceDIte]
+    rw [val_varAssignOfList, normalizeVarSchedules, List.getD_map_range _ [] v.2]
+    dsimp only [scheds]
+    rw [List.getD_eq_getElem _ [] hv_lt,
+      getD_normalizeScheduleWord_eq_wordToSchedule hr (hwf.1 _ (List.getElem_mem hv_lt)).2 t]
+    simp only [a, BalancedSchedules.constructedVarSchedule]
+    rw [← List.getD_eq_getElem _ [] hv_lt]
   have hd_eq : factorAssignOfList hr n' Q augScopes scheds.2 = d := by
     funext f t; apply Fin.ext
-    dsimp only [scheds]
     by_cases hemp : scope f = ∅
     · have hno_e : ¬ ∃ e : Fin edges.length, (edge e).1 = f := by
         rintro ⟨e, rfl⟩
@@ -544,41 +533,25 @@ private theorem balancedSchedule_construct_of_scopes {n' Q r b w : ℕ}
       have hd0 : d f = fun _ => ⟨0, hr⟩ := by
         dsimp only [d]; rw [← hedges_eq]; exact hempty f hno_e
       rw [factorAssignOfList_of_empty hr n' Q augScopes _ hemp t, hd0]
-    · have hf_lt : f.1 < (BalancedSchedules.constructBalancedSchedules
-          n' augScopes.length Q r (b + w) edges).2.length := by
+    · have hf_lt : f.1 < scheds.2.length := by
         rw [BalancedSchedules.length_snd_constructBalancedSchedules]; exact f.2
-      obtain ⟨hlen_w, hlt_w⟩ := hwf.2 _ (List.getElem_mem hf_lt)
-      have ht_lt : t.1 < (BalancedSchedules.constructBalancedSchedules
-          n' augScopes.length Q r (b + w) edges).2[f.1].length := by rw [hlen_w]; exact t.2
-      have hx_lt : (BalancedSchedules.constructBalancedSchedules
-          n' augScopes.length Q r (b + w) edges).2[f.1][t.1] < r := by
-        simpa only [Nat.max_eq_left hr] using hlt_w _ (List.getElem_mem ht_lt)
       have hfalse : (canonicalScopeVars n' (augScopes.getD f.1 [])).isEmpty = false :=
         Bool.eq_false_iff.mpr fun h => hemp ((canonicalScopeVars_isEmpty_iff n' augScopes f).mp h)
-      simp only [val_factorAssignOfList, normalizeScopeSchedules, List.getD_map_range _ [] f.2,
-        hfalse, Bool.false_eq_true, ↓reduceIte, List.getD_eq_getElem _ [] hf_lt,
-        normalizeScheduleWord, List.getD_map_range _ 0 t.2, List.getD_eq_getElem _ 0 ht_lt,
-        Nat.max_eq_left hr, Nat.mod_eq_of_lt hx_lt, d,
-        BalancedSchedules.constructedFactorSchedule, BalancedSchedules.wordToSchedule, hx_lt,
-        ↓reduceDIte]
+      rw [val_factorAssignOfList, normalizeScopeSchedules, List.getD_map_range _ [] f.2]
+      simp only [hfalse, Bool.false_eq_true, ↓reduceIte]
+      dsimp only [scheds]
+      rw [List.getD_eq_getElem _ [] hf_lt,
+        getD_normalizeScheduleWord_eq_wordToSchedule hr (hwf.2 _ (List.getElem_mem hf_lt)).2 t]
+      simp only [d, BalancedSchedules.constructedFactorSchedule]
+      rw [← List.getD_eq_getElem _ [] hf_lt]
   refine ⟨fun u => ?_, fun t g => ?_⟩
   · rw [ha_eq, hd_eq]
     have hcard_inc : Fintype.card (ScopeIncidence scope) = edges.length := by
       simpa only [Fintype.card_fin] using Fintype.card_congr (scopeIncidenceEquivFin n' augScopes)
     have hocc_eq : occupancy (incidenceLabel (scopeVarOf scope) (scopeFactorOf scope) a d) u =
-        occupancy (fun i : Fin edges.length => (a (edge i).2, d (edge i).1)) u := by
-      unfold occupancy
-      exact Fintype.card_congr
-        { toFun := fun ⟨e, he⟩ =>
-            ⟨scopeIncidenceEquivFin n' augScopes e, by
-              simpa only [edge, finToScopeIncidence_scopeIncidenceEquivFin,
-                incidenceLabel] using he⟩
-          invFun := fun ⟨i, hi⟩ =>
-            ⟨finToScopeIncidence n' augScopes i, by simpa only [incidenceLabel, edge] using hi⟩
-          left_inv := fun ⟨e, _⟩ =>
-            Subtype.ext (finToScopeIncidence_scopeIncidenceEquivFin _ _ e)
-          right_inv := fun ⟨i, _⟩ =>
-            Subtype.ext (scopeIncidenceEquivFin_finToScopeIncidence _ _ i) }
+        occupancy (fun i : Fin edges.length => (a (edge i).2, d (edge i).1)) u :=
+      Fintype.card_congr ((scopeIncidenceEquivFin n' augScopes).subtypeEquiv fun e => by
+        simp only [edge, incidenceLabel, finToScopeIncidence_scopeIncidenceEquivFin])
     have hu := hocc_inc u
     rw [hedges_eq] at hu
     have hpow : (r ^ Q) ^ 2 = r ^ (2 * Q) := by rw [← pow_mul, mul_comm Q 2]
@@ -611,9 +584,7 @@ theorem exists_refines_prepare_of_feasible {N₀_branch n' : ℕ} {eqs' : List (
         data.Refines augScopes D ∧
         data.measurementMatrix.length = D.h * #(measurementIndices Q r A₀ R) ∧
         r * data.measurementMatrix.length ≤ n' := by
-  have hf := feasible_of_checkBranchFeasible hfeas
-  dsimp only [prepareBranchEvalInput] at hf
-  obtain ⟨_, _, _, hF⟩ := hf
+  obtain ⟨_, _, _, hF⟩ := feasible_of_checkBranchFeasible hfeas
   dsimp only [prepareBranchEvalInput, ParameterCheck.computeScheduleParams]
   set b := branchMaxFactorIncidence n' eqs'
   set w := branchMaxFactorWidth n' eqs'
@@ -624,22 +595,13 @@ theorem exists_refines_prepare_of_feasible {N₀_branch n' : ℕ} {eqs' : List (
   set R := ReplacementParams.rowBound β n'
   set A₀ := ReplacementParams.intervalStart β n'
   have h1n : 1 ≤ n' := hF.one_le_n
-  have hr2 : 2 ≤ r := hF.two_le_numGroups
-  have hr1 : 1 ≤ r := by omega
+  have hr1 : 1 ≤ r := by have := hF.two_le_numGroups; omega
   have hR1 : 1 ≤ R := hF.one_le_rowBound
-  have hRQ : R < Q := hF.rowBound_lt_numNodes
-  have hQ1 : 1 ≤ Q := by omega
+  have hQ1 : 1 ≤ Q := by have := hF.rowBound_lt_numNodes; omega
   have hvb : 2 * Q * r ^ 2 ≤ n' := hF.var_balance
-  have hr_sq : 4 ≤ r ^ 2 := Nat.pow_le_pow_left hr2 2
-  have hQn : Q ≤ n' := (by omega : Q ≤ 2 * Q * 4).trans ((Nat.mul_le_mul_left _ hr_sq).trans hvb)
-  have hRn : R ≤ n' := by omega
-  have hrn : r ≤ n' :=
-    (by omega : r ≤ 2 * 1 * (2 * r)).trans
-      ((Nat.mul_le_mul (Nat.mul_le_mul_left 2 hQ1)
-        (by rw [sq]; exact Nat.mul_le_mul_right r hr2)).trans hvb)
-  have hI_top : A₀ + (R - 1) ≤ Q := hF.intervalStart_add_le_numNodes (by omega)
-  have hA₀n : A₀ ≤ n' + 1 := by omega
-  have haux : r ^ (2 * Q) ≤ n' := auxDim_le_of_twenty_le hF.twenty_le
+  obtain ⟨hQn, hRn, hrn, hA₀n, _, haux⟩ :
+      Q ≤ n' ∧ R ≤ n' ∧ r ≤ n' ∧ A₀ ≤ n' + 1 ∧ A₀ + R ≤ Q + 1 ∧ r ^ (2 * Q) ≤ n' :=
+    scheduleParams_bounds_of_feasible hF
   let augScopes := withNeutralScopesList (eqs'.map equationVars) n'
   have hsum_aug : (∑ f : Fin augScopes.length, #(listScopeFamily n' augScopes f)) = M' :=
     sum_card_listScopeFamily_augScopes n' eqs'
@@ -776,50 +738,41 @@ end Stage1
 
 section Stage2Local
 
+private theorem foldl_applyGroupBits_of_ne {n' v : ℕ} (Vg : List ℕ) (ug : List Bool)
+    {l : List ℕ} (hl : ∀ j ∈ l, Vg.getD j n' ≠ v) (init : Bool) :
+    l.foldl (fun cur j => if Vg.getD j n' == v then ug.getD j false else cur) init = init := by
+  induction l generalizing init with
+  | nil => rfl
+  | cons j js ih =>
+    simp only [List.foldl_cons, beq_false_of_ne (hl j List.mem_cons_self), Bool.false_eq_true,
+      ↓reduceIte]
+    exact ih (fun k hk => hl k (List.mem_cons_of_mem j hk)) init
+
 private theorem getD_applyGroupBits_mem {n' : ℕ} {Vg : List ℕ} (hnodup : Vg.Nodup)
     (hlt : ∀ w ∈ Vg, w < n') (ug base : List Bool) (j₀ : Fin Vg.length) :
     (applyGroupBits n' Vg ug base).getD Vg[j₀] false = ug.getD j₀.1 false := by
-  obtain ⟨j₀, hj₀⟩ := j₀
-  simp only [Fin.getElem_fin]
-  have hv_lt : Vg[j₀] < n' := hlt Vg[j₀] (List.getElem_mem hj₀)
-  rw [applyGroupBits, List.getD_map_range _ false hv_lt]
-  suffices ∀ k ≤ Vg.length,
-      (List.range k).foldl (fun cur j => if Vg.getD j n' == Vg[j₀] then ug.getD j false else cur)
-        (base.getD Vg[j₀] false) =
-      if j₀ < k then ug.getD j₀ false else base.getD Vg[j₀] false by
-    simpa only [hj₀, ↓reduceIte] using this Vg.length le_rfl
-  intro k hk
-  induction k with
-  | zero => simp only [List.range_zero, List.foldl_nil, Nat.not_lt_zero, ↓reduceIte]
-  | succ k ih =>
-    have hk_lt : k < Vg.length := by omega
-    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, ih (by omega),
-      List.getD_eq_getElem Vg n' hk_lt]
-    by_cases hkj : k = j₀
-    · subst hkj
-      simp only [beq_self_eq_true, ↓reduceIte, Nat.lt_succ_self]
-    · have hne : Vg[k] ≠ Vg[j₀] := fun heq =>
-        hkj ((hnodup.getElem_inj_iff (hi := hk_lt) (hj := hj₀)).mp heq)
-      have hbeq : (Vg[k] == Vg[j₀]) = false := beq_false_of_ne hne
-      have hiff : (j₀ < k + 1) ↔ (j₀ < k) := by omega
-      simp only [hbeq, Bool.false_eq_true, ↓reduceIte, hiff]
+  have hv_lt : Vg[j₀] < n' := hlt Vg[j₀] (List.getElem_mem j₀.2)
+  have hsplit : List.range Vg.length =
+      List.range j₀.1 ++ [j₀.1] ++ (List.range (Vg.length - (j₀.1 + 1))).map (j₀.1 + 1 + ·) := by
+    conv_lhs => rw [show Vg.length = j₀.1 + 1 + (Vg.length - (j₀.1 + 1)) by omega]
+    rw [List.range_add, List.range_succ]
+  rw [applyGroupBits, List.getD_map_range _ false hv_lt, hsplit, List.foldl_append,
+    List.foldl_append, List.foldl_cons, List.foldl_nil, List.getD_eq_getElem Vg n' j₀.2]
+  simp only [Fin.getElem_fin, beq_self_eq_true, ↓reduceIte]
+  refine foldl_applyGroupBits_of_ne Vg ug (fun k hk => ?_) _
+  obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hk
+  rw [List.mem_range] at hd
+  rw [List.getD_eq_getElem Vg n' (by omega)]
+  exact fun heq => absurd ((hnodup.getElem_inj_iff).mp heq) (by omega)
 
 private theorem getD_applyGroupBits_not_mem {n' v : ℕ} {Vg : List ℕ} (hv_lt : v < n')
     (hnot : v ∉ Vg) (ug base : List Bool) :
     (applyGroupBits n' Vg ug base).getD v false = base.getD v false := by
   rw [applyGroupBits, List.getD_map_range _ false hv_lt]
-  suffices ∀ k ≤ Vg.length,
-      (List.range k).foldl (fun cur j => if Vg.getD j n' == v then ug.getD j false else cur)
-        (base.getD v false) = base.getD v false from this Vg.length le_rfl
-  intro k hk
-  induction k with
-  | zero => rfl
-  | succ k ih =>
-    have hk_lt : k < Vg.length := by omega
-    have hne : Vg[k] ≠ v := fun heq => hnot (heq ▸ List.getElem_mem hk_lt)
-    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, ih (by omega),
-      List.getD_eq_getElem Vg n' hk_lt, beq_false_of_ne hne]
-    rfl
+  refine foldl_applyGroupBits_of_ne Vg ug (fun j hj => ?_) _
+  rw [List.mem_range] at hj
+  rw [List.getD_eq_getElem Vg n' hj]
+  exact fun heq => hnot (heq ▸ List.getElem_mem hj)
 
 private noncomputable def groupIdxEquiv {n' r : ℕ} {vGroups_t : List (List ℕ)}
     {varAssign : Fin n' → Fin r}
