@@ -420,10 +420,8 @@ private theorem relabel_append_spec {δ γ : Type*} (fb : γ) (T : CodeTree δ)
     · rw [hbr_xs, hxs_split, List.append_assoc]; simp only [relabel, hl_app_ys, hr_app_ys]
     · rw [hbr_xs, CodeTree.leaves_branch, hl_leaves, hr_leaves, ← hxs_split]
     · have hzip_succ : ∀ (us : List γ) (ds : List ℕ),
-          (us.zip ds).map (fun p => (p.1, p.2 + 1)) = us.zip (ds.map (· + 1)) := by
-        intro us; induction us with
-        | nil => simp
-        | cons u us ihu => intro ds; cases ds <;> simp [ihu]
+          (us.zip ds).map (fun p => (p.1, p.2 + 1)) = us.zip (ds.map (· + 1)) :=
+        fun _ _ => List.zip_map_right.symm
       have hdl_len : xs₁.length = ((l.leafDepths.map Prod.snd).map (· + 1)).length := by
         rw [List.length_map, List.length_map, hlen₁, ← CodeTree.map_fst_leafDepths l,
           List.length_map]
@@ -505,8 +503,8 @@ theorem exists_cherry_weightedPathLength_le {γ β : Type*}
     have hS₁_wpl : S₁.weightedPathLength W =
         zipCost W (u :: v :: tail) ((CodeTree.branch l r).maxDepth ::
           (CodeTree.branch l r).maxDepth :: ds) := by
-      have hzip_self : ∀ L : List (γ × ℕ), L = (L.map Prod.fst).zip (L.map Prod.snd) := by
-        intro L; induction L with | nil => rfl | cons p ps ih => exact congrArg (p :: ·) ih
+      have hzip_self : ∀ L : List (γ × ℕ), L = (L.map Prod.fst).zip (L.map Prod.snd) := fun L => by
+        simpa only [List.unzip_fst, List.unzip_snd] using (List.zip_unzip L).symm
       rw [CodeTree.weightedPathLength_eq_sum_leafDepths, hzip_self S₁.leafDepths,
         CodeTree.map_fst_leafDepths, hS₁_leaves, hS₁_depths]
       rfl
