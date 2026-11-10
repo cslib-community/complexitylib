@@ -42,7 +42,7 @@ Adapted from Computability/Probabilistic/Iteration.lean on the cslib `crypto` br
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

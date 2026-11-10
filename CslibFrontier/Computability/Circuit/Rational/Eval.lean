@@ -34,7 +34,7 @@ transported along ring homomorphisms, and they lift back along homomorphisms ref
   [Schlesinger2026RationalHitting] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

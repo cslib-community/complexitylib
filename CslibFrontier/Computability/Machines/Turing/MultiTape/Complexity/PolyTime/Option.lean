@@ -37,7 +37,7 @@ its fallback may be computed from the input; no inhabitant of the value type is 
 Uses Christian Reitwiessner's option encoding and degree-bounded machine calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

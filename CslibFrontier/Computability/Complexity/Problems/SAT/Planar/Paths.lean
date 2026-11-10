@@ -40,7 +40,7 @@ These shared certificates serve both continuous geometry and logical wire correc
 These certificates refer to the original canonical path construction in the imported compiler.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.PlanarCompile
 

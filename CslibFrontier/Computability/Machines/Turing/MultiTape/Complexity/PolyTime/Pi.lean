@@ -11,7 +11,6 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.Pol
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
@@ -20,21 +19,23 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 Programs construct finite tables as ordinary functions and use ordinary application and update.
 The certificates store the complete table using `encPi` and the existing list machinery.
 The index type is fixed independently of the input; values need not be finite or inhabited.
+The plain construction, access and update rules are proved in the internal primitives module and
+re-exported here; the `polytime` tactic applies the computed-index rules. This module adds the
+tidy forms of construction and fixed-index access that tidy proofs still use.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.ofFn`, `.pi`: construct fixed finite families.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply`, `.pi_update`: fixed-index access.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply'`: computed-index access.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval`: lookup from an encoded table/index pair.
+* `Turing.MultiTapeTM.ComputableInPolyTime.ofFn`, `.pi`: construct fixed finite families.
+* `Turing.MultiTapeTM.ComputableInPolyTime.pi_apply`, `.pi_update`: fixed-index access.
+* `Turing.MultiTapeTM.ComputableInPolyTime.pi_apply'`, `.pi_update'`: computed-index access.
 
 ## References
 
 Adapts Computability/Probabilistic/Pi.lean on the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the tidy deterministic calculus.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8` to plain polynomial time.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
@@ -59,31 +60,5 @@ theorem pi [Fintype Index] {values : α → Index → Value}
 theorem pi_apply [Fintype Index] (enc : Value ↪ List Bool) (i : Index) :
     ComputableTidilyInPolyTime (fun values : Index → Value => values i) (encPi enc) enc :=
   (ComputableInPolyTime.pi_apply enc i).tidy
-
-/-- Update a fixed table entry while charging for all preserved entries. -/
-@[fun_prop]
-theorem pi_update [Fintype Index] [DecidableEq Index]
-    {values : α → Index → Value} {value : α → Value}
-    (hvalues : ComputableTidilyInPolyTime values input (encPi enc))
-    (hvalue : ComputableTidilyInPolyTime value input enc) (i : Index) :
-    ComputableTidilyInPolyTime (fun a => Function.update (values a) i (value a))
-      input (encPi enc) :=
-  (ComputableInPolyTime.pi_update hvalues.computableInPolyTime hvalue.computableInPolyTime
-    i).tidy
-
-/-- Read a computed index of a fixed finite table, charging the index and all stored entries. -/
-theorem pi_apply' [Fintype Index] {indexEncoding : Index ↪ List Bool}
-    {values : α → Index → Value} {index : α → Index}
-    (hvalues : ComputableTidilyInPolyTime values input (encPi enc))
-    (hindex : ComputableTidilyInPolyTime index input indexEncoding) :
-    ComputableTidilyInPolyTime (fun a => values a (index a)) input enc :=
-  hindex.finite_cases (fun i => (pi_apply enc i).comp hvalues)
-
-/-- Evaluate a stored table at a stored index. The product view is registered with `fun_prop`;
-for separately computed tables and indices, apply `pi_apply'` to their certificates. -/
-@[fun_prop]
-theorem pi_eval [Fintype Index] (indexEncoding : Index ↪ List Bool) (enc : Value ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun pair : (Index → Value) × Index => pair.1 pair.2)
-      (encPair (encPi enc) indexEncoding) enc := pi_apply' (fst _ _) (snd _ _)
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime

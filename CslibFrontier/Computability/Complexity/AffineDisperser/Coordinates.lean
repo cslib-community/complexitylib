@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Foundations.Data.List.OfFn
 public import Mathlib.RingTheory.Trace.Defs
+import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -94,14 +95,6 @@ theorem fieldOfBits_listXor (B : Basis (Fin n) (ZMod 2) F) (words : List (List B
       Function.comp_apply]
     rfl
 
-
-private theorem sum_map_flatMap {α β M : Type*} [AddCommMonoid M] (l : List α)
-    (g : α → List β) (f : β → M) :
-    ((l.flatMap g).map f).sum = (l.map fun a => ((g a).map f).sum).sum := by
-  induction l with
-  | nil => simp
-  | cons a l ih => simp [List.flatMap_cons, ih]
-
 /-- The coordinates of the product `B u * B w` in the multiplication table `tab`. -/
 def tableEntry (tab : List (List (List Bool))) (u w : ℕ) : List Bool :=
   (tab.getD u []).getD w []
@@ -123,7 +116,7 @@ coordinates `fieldMul tab a b` is the product of those with coordinates `a` and 
 theorem fieldOfBits_fieldMul {B : Basis (Fin n) (ZMod 2) F} {tab : List (List (List Bool))}
     (htab : IsMulTable B tab) (a b : List Bool) :
     fieldOfBits B (fieldMul tab a b) = fieldOfBits B a * fieldOfBits B b := by
-  rw [fieldMul, htab.1, fieldOfBits_listXor, sum_map_flatMap, List.sum_map_range]
+  rw [fieldMul, htab.1, fieldOfBits_listXor, List.sum_map_flatMap, List.sum_map_range]
   simp_rw [List.map_map, Function.comp_def, List.sum_map_range]
   rw [fieldOfBits, fieldOfBits, ofBits, ofBits, Finset.sum_mul_sum]
   refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun w _ => ?_

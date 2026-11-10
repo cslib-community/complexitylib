@@ -18,8 +18,12 @@ import Mathlib.Tactic.Linarith
 The two local constructions compose without another occurrence splitter or planarization.
 Every source clause contributes at most thirteen signed exact-one clauses; replacing their
 negative occurrences contributes at most thirteen times as many positive clauses. These are
-bounds on actual emitted lists. Every source variable keeps its occurrence count and no new
-variable occurs more than three times.
+bounds on actual emitted lists. No new variable occurs more than three times
+(`FromSAT.count_aux_formula`, `PositiveExactOne.count_aux_formula`). The first stage keeps only
+the first three literals of a clause (`FromSAT.clause`). For inputs of clause width at most
+three, every source variable keeps its occurrence count through both stages
+(`FromSAT.count_inl_formula`, `PositiveExactOne.count_inl_formula`), and the model count and
+satisfiability are preserved.
 
 ## Main definitions
 
@@ -28,7 +32,8 @@ variable occurs more than three times.
 
 ## Main results
 
-* `oneModelCount_formula`, `oneSatisfiable_formula`: parsimony and correctness.
+* `oneModelCount_formula`, `oneSatisfiable_formula`: parsimony and correctness, for inputs of
+  clause width at most three.
 * `length_formula_le`, `length_vars_formula_le`: explicit constant-factor bounds.
 
 ## References

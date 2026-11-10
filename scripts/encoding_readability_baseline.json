@@ -17,38 +17,8 @@
  "CslibFrontier/Computability/Complexity/Classes/IP/TQBF/Words.lean": {
   "encList (encPair encNat encUnary)": 3
  },
- "CslibFrontier/Computability/Complexity/Classes/LogSpace/Randomized/PairedPorts.lean": {
-  "encPair ?1 (encPair encNat encNat)": 3
- },
  "CslibFrontier/Computability/Complexity/Classes/P/WordRAM.lean": {
   "encPair encUnary (encPi encNat)": 4
- },
- "CslibFrontier/Computability/Complexity/Classes/ValiantVazirani/Reduction.lean": {
-  "encList (encList (encPair encVar encBool))": 3
- },
- "CslibFrontier/Computability/Complexity/CookLevin/Clauses.lean": {
-  "encList (encList (encPair encVar encBool))": 8
- },
- "CslibFrontier/Computability/Complexity/Parameterized/ColorCoding.lean": {
-  "encPair encGraph (encList encNat)": 3
- },
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian.lean": {
-  "encPair encGraph (encPair encNat encNat)": 6
- },
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Directed.lean": {
-  "encPair encGraph (encPair encNat encNat)": 5
- },
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Undirected.lean": {
-  "encPair encGraph (encPair encNat encNat)": 4
- },
- "CslibFrontier/Computability/Complexity/Problems/IntegerProgramming.lean": {
-  "encList (encPair (encList encNat) encNat)": 8
- },
- "CslibFrontier/Computability/Complexity/Problems/OneInThreeSAT.lean": {
-  "encList (encPair encNat encBool)": 3
- },
- "CslibFrontier/Computability/Complexity/Problems/SubsetSum.lean": {
-  "encPair (encList encNat) encNat": 7
  },
  "CslibFrontier/Computability/Interactive/AuxZK.lean": {
   "encPair ?1.index (encPair encBits encBits)": 5
@@ -104,33 +74,8 @@
  "CslibFrontier/Crypto/Computational/Hybrid/SavedPrediction.lean": {
   "encList (encPair ?1 encBool)": 3
  },
- "CslibFrontier/Crypto/Computational/IndexedSignature/Seeded.lean": {
-  "encPair encBits (encPair encUnary encBits)": 3
- },
  "CslibFrontier/Crypto/Computational/Kilian.lean": {
   "encPair encBits (encPair ?1 encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/MAC.lean": {
-  "encPair (encPair encBits encBits) encBits": 9,
-  "encPair encBits (encPair encBits encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/Nonuniform/Basic.lean": {
-  "encPair (encPair encUnary encBits) encBits": 4
- },
- "CslibFrontier/Crypto/Computational/Pseudoentropy/DenseMask.lean": {
-  "encList (encPair encBits encBool)": 4
- },
- "CslibFrontier/Crypto/Computational/Pseudoentropy/LabelExtraction.lean": {
-  "encList (encPair encBits encBool)": 4
- },
- "CslibFrontier/Crypto/Computational/Pseudoentropy/WordExtraction.lean": {
-  "encPair (encList encBits) (encPair encBits encBits)": 6
- },
- "CslibFrontier/Crypto/Computational/SchnorrSignature.lean": {
-  "encPair ?1.encDesc (encPair encBits (encPair encBits encBits))": 3
- },
- "CslibFrontier/Crypto/Computational/TCRSignature.lean": {
-  "encPair encUnary (encPair encBits encBits)": 4
  },
  "CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean": {
   "encPair encUnary (encPair encBits encBits)": 9

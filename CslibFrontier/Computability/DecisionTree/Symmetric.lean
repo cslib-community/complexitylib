@@ -41,7 +41,7 @@ free bits are queried.
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

@@ -70,7 +70,8 @@ def forcePadding (i k : ℕ) : CNF (Variable V) :=
   forceFalseClauses (aux i k) (aux i (8 + 3 * k))
     (aux i (9 + 3 * k)) (aux i (10 + 3 * k))
 
-/-- Replace one clause by exact-three exact-one clauses, retaining every source occurrence once. -/
+/-- Replace one clause by exact-three exact-one clauses, retaining each of its first three source
+occurrences once. Literals after the third are dropped. -/
 def clause (i : ℕ) : Clause V → CNF (Variable V)
   | [] => core i (padding i 0) (padding i 1) (padding i 2) ++
       forcePadding i 0 ++ forcePadding i 1 ++ forcePadding i 2
@@ -104,7 +105,7 @@ def assignment (φ : CNF V) (σ : V → Bool) : Variable V → Bool
   | Sum.inl v => σ v
   | Sum.inr (i, k) => auxiliaryValue σ (φ[i]?.getD []) k
 
-/-- A clause contributes between four and thirteen clauses. -/
+/-- A clause contributes at most thirteen clauses. -/
 theorem length_clause_le (i : ℕ) (c : Clause V) : (clause i c).length ≤ 13 := by
   rcases c with _ | ⟨p, _ | ⟨q, _ | ⟨r, rest⟩⟩⟩ <;>
     simp [clause, core, disjunctionClauses, forcePadding, forceFalseClauses]

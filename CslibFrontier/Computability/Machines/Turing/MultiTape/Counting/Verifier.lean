@@ -38,7 +38,7 @@ captured-input construction follows `Computability.Probabilistic.PPT.Capture`, w
 credit recorded there; the present singleton lift retains exact occurrence multiplicity.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeCTM
 

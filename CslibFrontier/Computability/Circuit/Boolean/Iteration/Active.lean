@@ -40,7 +40,7 @@ circuits exist for each `T` and `L`; nothing here bounds the time to construct t
   *Square-root circuit bounds for iterated functions*][Schlesinger2026IteratedFunctions].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Iteration
 

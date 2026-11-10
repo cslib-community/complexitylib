@@ -12,14 +12,23 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBoun
 /-!
 # A common coefficient and degree for polynomial bounds
 
-`PolyBounded.exists_le_self_pow` absorbs a polynomial's coefficient and degree into one constant
-when the size is positive. This is useful when assembling resource envelopes whose time bound
-also contains a separate, possibly exponential, factor.
+`PolyBounded.exists_le_succ_pow` absorbs a polynomial's coefficient and degree into one constant
+`K * (size + 1) ^ K` that may be enlarged freely, and `PolyBounded.exists_le_self_pow` does the same
+with `size ^ K` when the size is positive. These are useful when assembling resource envelopes whose
+time bound also contains a separate, possibly exponential, factor.
 -/
 
 public section
 
 namespace Turing.MultiTapeTM.PolyBounded
+
+/-- A polynomial bound can use one constant as both coefficient and degree, and any larger
+constant also works. -/
+theorem exists_le_succ_pow {α : Type*} {size u : α → ℕ} (h : PolyBounded size u) :
+    ∃ K : ℕ, ∀ K' ≥ K, ∀ a, u a ≤ K' * (size a + 1) ^ K' := by
+  obtain ⟨c, d, hu⟩ := h.exists_le
+  exact ⟨c + d, fun K' hK' a => (hu a).trans
+    (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega)))⟩
 
 /-- A polynomial bound at positive sizes can use one constant as both coefficient and degree.
 No bound at size zero is asserted. -/

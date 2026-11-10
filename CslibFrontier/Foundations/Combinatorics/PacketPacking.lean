@@ -513,7 +513,7 @@ theorem occupancy_labels_mul_le {Δ : ℕ} (hrow : ∀ v, #{e | rowOf e = v} ≤
     rw [Fintype.card_prod, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin, ← pow_add,
       two_mul]
   rw [← hcard]
-  refine occupancy_mul_card_le_of_variance_bound _ Fintype.card_pos Δ ?_ (hcard ▸ hM) γ
+  refine occupancy_mul_card_le_of_variance_bound _ Δ ?_ (hcard ▸ hM) γ
   exact potential_labels_le rowOf colOf a r hrow hcol
 
 end Labels

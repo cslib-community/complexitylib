@@ -38,7 +38,7 @@ Karp–Lipton theorem [Karp and Lipton][KarpLipton1980], [Arora and Barak, Theor
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

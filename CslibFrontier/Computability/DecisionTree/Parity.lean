@@ -31,7 +31,7 @@ restricted parity queries every free bit (`DecisionTree.card_free_le_complexity_
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

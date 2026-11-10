@@ -29,7 +29,7 @@ Extends the finite-table calculus in
 `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

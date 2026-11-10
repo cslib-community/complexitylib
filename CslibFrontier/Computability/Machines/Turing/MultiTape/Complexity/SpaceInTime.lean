@@ -31,7 +31,7 @@ configuration count of `Turing.MultiTapeTM.haltsAt_le_card`.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.1][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

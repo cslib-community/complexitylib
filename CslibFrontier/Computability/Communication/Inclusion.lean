@@ -33,7 +33,7 @@ for `≤` with value `true`, by antisymmetry (`isFoolingSet_le`)
 * [E. Kushilevitz and N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Communication
 

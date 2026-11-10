@@ -12,10 +12,18 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. Definitions a
 - [Online and streaming models](online-and-streaming.md): demand paging, competitive analysis, splay-tree amortized bounds (balance, static optimality, static finger, working set), Count-Min and native streaming folds.
 - [Strategic games, congestion and the price of anarchy](strategic-games.md): cost games, potential games, Rosenthal's theorem, smoothness and coarse correlated equilibria, the `5/2` and `4/3` price-of-anarchy bounds, and the odd number of Nash equilibria of nondegenerate bimatrix games (Lemke–Howson).
 - [Borrowed registers and native Tree Evaluation](catalytic-and-tree-evaluation.md): exact restoration, explicit gate-table inputs, Cook–Mertz workspace, and fan-in/packed variants.
-- [Representative algorithm endpoints](algorithm-endpoints.md): what the algorithm modules (and the since-retired formal abstracts that restated some of them) prove, their cost models (some charge no running time) and their limitations. The page's section headings list the algorithms covered.
+- [Representative algorithm endpoints](algorithm-endpoints.md): what the algorithm modules (and the since-retired formal abstracts that restated some of them) prove, their cost models (some charge no running time) and their limitations. The topic pages, whose section headings list the algorithms covered:
+  - [3SUM and Exact Triangle native pipelines](three-sum-and-exact-triangle.md)
+  - [Approximation and exact exponential algorithms](approximation-algorithms.md)
+  - [Dictionaries, hashing and randomized algorithms](dictionaries-hashing-and-randomized.md)
+  - [Dynamic programming and string algorithms](dynamic-programming-and-strings.md)
+  - [Linear programming, optimization and lattices](optimization-and-duality.md)
+  - [Network flows, cuts and matching](flows-cuts-and-matching.md)
+  - [Shortest paths, traversals, Euler circuits and arborescences](graph-paths-and-traversal.md)
+  - [Sorting, selection and recurrences](sorting-and-recurrences.md)
 - [Mechanism design](mechanism-design.md): single-parameter mechanisms, Myerson's Lemma, Vickrey and knapsack auctions, VCG, Myerson's optimal auction, Bayes–Nash equilibrium, revenue equivalence and the first-price auction; incentive properties only, with no running time charged. The same page covers social welfare functions and Arrow's impossibility theorem.
 
-<!-- Maintenance: keep the "Representative algorithm endpoints" entry above generic. To add an algorithm, add a section to algorithm-endpoints.md where its topic belongs; do not append topics to this entry, because concurrent appends to one line conflict in the merge queue. -->
+<!-- Maintenance: keep the "Representative algorithm endpoints" entry above generic. To add an algorithm, add a section to the matching topic page where its topic belongs; do not append topics to this entry, because concurrent appends to one line conflict in the merge queue. A new topic page gets one line in the sorted list above. -->
 
 ## Taxonomy
 

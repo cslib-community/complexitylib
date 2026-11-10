@@ -15,7 +15,7 @@ public import Mathlib.Data.Nat.Digits.Lemmas
 
 `Nat.Morton.index a b` interleaves the binary row and column digits, with the row digit in
 the higher bit of each pair. Its inverse projections are `row` and `column`. For a square
-of side `2^k`, the four contiguous blocks of length `4^k` are exactly its four quadrants.
+of side `2^(k+1)`, the four contiguous blocks of length `4^k` are exactly its four quadrants.
 
 These elementary digit identities adapt Spec/Sec3/Theorem17/ZOrder.lean, lines 39–151, at
 anthropics/formal-math revision 16a5ce41304fcdaea4e0be7c132e1c361dc26da5. The native counter

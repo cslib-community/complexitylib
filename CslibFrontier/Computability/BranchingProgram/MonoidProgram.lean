@@ -20,8 +20,8 @@ letter at a position `i` and selects an element of `M` by a function `α → M` 
 an input the program computes the product of the selected elements, the first instruction leftmost
 (`MonoidProgram.eval`); evaluation is a monoid homomorphism from programs under concatenation
 (`MonoidProgram.eval_mul`) [BarringtonTherien1988]. Programs are covariant in the monoid
-(`MonoidProgram.map`), and contravariant in the alphabet (`MonoidProgram.comap`) and in the
-positions (`MonoidProgram.rename`).
+(`MonoidProgram.map`) and in the positions (`MonoidProgram.rename`), and contravariant in the
+alphabet (`MonoidProgram.comap`).
 
 Branching programs of width `w` are the programs over `Function.End (Fin w)`, and permutation
 branching programs those over `Equiv.Perm (Fin w)`; since `(σ * τ) a = σ (τ a)`, the last

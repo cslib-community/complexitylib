@@ -67,11 +67,11 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
     obtain ⟨hle₂, hcont₂⟩ := IsCostBounded.liftBind_iff.mp hk₂
     -- One budget step: the growth bound for `q` and the remaining `(k₁, k₂ - cost₂ q)` calls add
     -- up to the budget for `(k₁ + cost₁ q, k₂)` calls. Shared by both channels below.
-    have hbudget (b : σ → ℝ≥0∞) (δ δ' : ℝ≥0∞) (y : spec q × σ)
-        (hb : b y.2 ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ') :
-        b y.2 + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' ≤
+    have hbudget (b : σ → ℝ≥0∞) (δ δ' : ℝ≥0∞) (t : σ)
+        (hb : b t ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ') :
+        b t + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' ≤
           b s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ + (k₂ : ℝ≥0∞) * δ' :=
-      calc b y.2 + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ'
+      calc b t + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ'
           ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ' +
               (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' :=
             add_le_add (add_le_add hb le_rfl) le_rfl
@@ -101,8 +101,8 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
           simp only [K, B₁, B₂]
           refine add_le_add (mul_le_mul_of_nonneg_left ?_ zero_le)
             (mul_le_mul_of_nonneg_left ?_ zero_le)
-          · exact hbudget budget₁ δ₁₁ δ₁₂ y (hgrow₁ q s hs y hmem hy)
-          · exact hbudget budget₂ δ₂₁ δ₂₂ y (hgrow₂ q s hs y hmem hy)
+          · exact hbudget budget₁ δ₁₁ δ₁₂ y.2 (hgrow₁ q s hs y hmem hy)
+          · exact hbudget budget₂ δ₂₁ δ₂₂ y.2 (hgrow₂ q s hs y hmem hy)
       · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
     calc ∑' y, (handler q s) y *
           ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}

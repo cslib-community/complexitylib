@@ -191,8 +191,7 @@ theorem CNF.card_branchAssignments_heavyVars_parityRowSystem_le {φ : CNF V} {k 
           (fun i => equationScope (φ.parityRowSystem rows i)) b₀)) ≤
       2 ^ (((k * (W * 2 ^ k)) * rows.length) / b₀) := by
   refine (card_branchAssignments_heavyVars_le univ univ
-    (fun i => equationScope (φ.parityRowSystem rows i)) hb₀
-    (fun _ _ => subset_univ _)).trans ?_
+    (fun i => equationScope (φ.parityRowSystem rows i)) hb₀).trans ?_
   exact Nat.pow_le_pow_right (by omega)
     (Nat.div_le_div_right (CNF.totalIncidence_parityRowSystem_le hk hW))
 

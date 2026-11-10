@@ -42,8 +42,8 @@ An affine map from `BitString d` is determined by its values at `0` and at the u
 * `Cslib.BitString.card_isAffine_le`: at most `2 ^ (n (d + 1))` maps from `BitString d` to
   `BitString n` are affine.
 * `Cslib.BitString.exists_affine_of_add_add`: a Boolean function satisfying
-  `g (u + w) = g u + g w + g 0` and depending only on a finite set `M` is `g u = g 0 + ∑ i ∈ T, u i`
-  for some `T ⊆ M`.
+  `g (u + u' + u'') = g u + g u' + g u''` and depending only on a finite set `M` is
+  `g u = g 0 + ∑ i ∈ T, u i` for some `T ⊆ M`.
 * `Cslib.BitString.eq_add_sum_of_step`: prefix sums of a step recurrence `z (j + 1) = z j + f j`
   over `𝔽₂`.
 

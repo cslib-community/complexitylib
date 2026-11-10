@@ -78,7 +78,8 @@ theorem dyadicSize_le (bound : ℕ) : dyadicSize bound ≤ 2 * (bound + 1) := by
   simp only [dyadicSize]
   rw [Nat.log_pow Nat.one_lt_two, pow_succ, Nat.mul_comm]
 
-/-- The sampling range grows only linearly with its bound. -/
+/-- The sampling range is polynomially bounded as a function of its bound. The linear bound is
+`dyadicSize_le`. -/
 @[fun_prop] theorem dyadicSize_polynomiallyBounded : PolynomiallyBounded dyadicSize := by
   change PolynomiallyBounded (fun n => 2 ^ (Nat.log 2 n + 1))
   simpa only [one_mul] using polynomiallyBounded_two_pow_mul_log 1

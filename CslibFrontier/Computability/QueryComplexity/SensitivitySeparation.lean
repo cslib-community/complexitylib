@@ -62,7 +62,7 @@ the separation.
   Conjecture*][Huang2019]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

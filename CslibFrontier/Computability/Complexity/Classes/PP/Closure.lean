@@ -36,7 +36,7 @@ accepts exactly when the verifier accepts at most half of its random strings. He
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -23,6 +23,7 @@ oracle run may receive a long word.
 ## Main definitions
 
 * `Turing.MultiTapeTM.encFiniteCfg`: encode ordinary finite binary storage.
+* `Turing.MultiTapeTM.encChannels`: encode the query buffer and answer tape of every channel.
 * `Turing.MultiTapeTM.encFiniteConfig`: include the fixed family of oracle channels.
 
 ## Main results
@@ -62,6 +63,12 @@ noncomputable def encFiniteCfg : FiniteCfg k Bool State ↪ List Bool where
     encFiniteCfg cfg = encPair encBits (encPair (encFinite (Option State))
       (encPair encUnary (encPair (encPi (encBiTape encBool)) encBits)))
       (cfg.input, cfg.state, cfg.inputPos.val, cfg.workTapes, cfg.output) := rfl
+
+/-- The oracle channels of a configuration, as a table in `Fintype.equivFin` order of the oracles.
+Each entry is a pair: the framed pending request word, then the complete answer tape. -/
+noncomputable abbrev encChannels {Oracle : Type} [Fintype Oracle] :
+    (Oracle → List Bool × BiTape Bool) ↪ List Bool :=
+  encPi (encPair encBits (encBiTape encBool))
 
 /-- Store the ordinary finite configuration and all pending requests and answer tapes. -/
 noncomputable def encFiniteConfig {Oracle : Type} [Fintype Oracle] :

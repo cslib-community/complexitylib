@@ -34,7 +34,7 @@ Huang's theorem `deg(f) ≤ s(f)²` [Huang2019] and the Nisan–Szegedy bound `b
 * [G. Midrijanis, *Exact quantum query complexity for total Boolean functions*][Midrijanis2004]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

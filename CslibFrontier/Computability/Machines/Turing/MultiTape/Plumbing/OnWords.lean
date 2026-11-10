@@ -14,7 +14,7 @@ import Cslib.Foundations.Data.Fin.Tuple
 
 The existing machine and fixed-machine run laws are reexported from the Internal kernel.
 -/
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 /-- A tidily computable function is computed by a machine with binary alphabet and finitely many
 states that reads its input from a work tape `i` and writes its output to a different work tape

@@ -25,6 +25,7 @@ witnesses read them in this form (`Cslib.Complexity.mem_NP_of_colorOf`).
 ## Main definitions
 
 * `Cslib.Complexity.colorOf`: the color of a vertex in a list of colors.
+* `Cslib.Complexity.encColoredGraph`: graphs with a list of vertex colors.
 
 ## Main results
 
@@ -66,6 +67,10 @@ the entry of `cs` at the first occurrence of `v`, and `0` when there is none. -/
 @[expose]
 def colorOf (G : Graph) (cs : List ℕ) (v : ℕ) : ℕ := cs.getD (G.1.idxOf v) 0
 
+/-- Graphs with vertex colors: the graph (`encGraph`), framed, then the list of colors parallel to
+its vertex list (`Cslib.Complexity.colorOf`), each color framed and in binary. -/
+abbrev encColoredGraph : Graph × List ℕ ↪ List Bool := encPair encGraph (encList encNat)
+
 /-- The list of the colors of the declared vertices under `c` gives every declared vertex its
 color. -/
 @[simp]
@@ -79,7 +84,7 @@ theorem colorOf_map {G : Graph} {c : ℕ → ℕ} {v : ℕ} (hv : v ∈ G.1) :
 @[fun_prop]
 theorem computableInPolyTime_colorOf :
     ComputableInPolyTime (fun p : (Graph × List ℕ) × ℕ => colorOf p.1.1 p.1.2 p.2)
-      (encPair (encPair encGraph (encList encNat)) encNat) encNat := by
+      (encPair encColoredGraph encNat) encNat := by
   unfold colorOf
   fun_prop [Graph.computableInPolyTime_fst]
 

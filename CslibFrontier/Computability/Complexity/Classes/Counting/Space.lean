@@ -40,7 +40,7 @@ claim that the image of an arbitrary encoding is decidable.
 * [L. Fortnow, *Counting Complexity*][Fortnow1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

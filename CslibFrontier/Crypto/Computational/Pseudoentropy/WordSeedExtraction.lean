@@ -181,7 +181,7 @@ theorem isPPTOn_extractWordSeeds {α : Type} {input : α ↪ List Bool}
     (houtput : ComputableInPolyTime outputBits input encUnary)
     (hsamples : ComputableInPolyTime samples input
       (encList (encPair (encPair encBits encBool) encBits))) :
-    IsPPTOn input (encPair (encList (encPair encBits encBool)) (encPair encBits encBits))
+    IsPPTOn input (encPair encLabeledSamples (encPair encBits encBits))
       (fun a => extractWordSeeds (count a) (seedBits a) (outputBits a) (samples a)) := by
   unfold extractWordSeeds
   ppt

@@ -20,7 +20,7 @@ only decreases the magnitude, so its prefix bound follows from the encoded input
 numeric value of the dividend. No global encoding-search rule or raw transport is added.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Shift a natural digit by a natural radius, returning an ordinary sign-magnitude integer.

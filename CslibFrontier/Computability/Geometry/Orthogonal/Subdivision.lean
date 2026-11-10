@@ -38,7 +38,7 @@ Uses the point and route encodings from `Orthogonal.Encoding`.
 This bounded compiler is an original construction.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Orthogonal
 

@@ -51,7 +51,7 @@ reject in both classes.
 * [S. Fenner, *PP-Lowness and a Simple Definition of AWPP*][Fenner2003]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

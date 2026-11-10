@@ -1808,7 +1808,7 @@ theorem relocDist_replace_le {U' n' : ℕ} (h : Scheme U' n')
   omega
 
 /-- A scheme-indexed cost bounded by `a + b * rounds h A` for every scheme `h` has expectation at
-most `(a + 3 b) log (max |A| 2)`: average the pointwise bound and apply `expect_rounds_le`. -/
+most `(a + 3 b) * ⌈log₂ (max |A| 2)⌉`: average the pointwise bound and apply `expect_rounds_le`. -/
 theorem expect_le_of_le_add_mul_rounds {U' n' : ℕ} {A : Finset (Fin U')}
     (hA : A.card ≤ n') (cost : Scheme U' n' → ℕ) (a b : ℕ)
     (hcost : ∀ h, cost h ≤ a + b * rounds h A) :

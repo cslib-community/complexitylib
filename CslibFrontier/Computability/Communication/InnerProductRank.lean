@@ -46,7 +46,7 @@ labelled `true` (`two_pow_sub_one_le_card_true_leaves_of_run_eq_dotProduct`). Th
 * [E. Kushilevitz and N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

@@ -27,7 +27,7 @@ unary value is required.
   computed dimensions, indices and input word.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

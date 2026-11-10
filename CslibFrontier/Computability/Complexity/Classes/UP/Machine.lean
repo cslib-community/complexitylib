@@ -36,7 +36,7 @@ The actual guess-and-verify construction and its formalization credits are in
 exact accepting-count equality.
 -/
 
-@[expose] public section
+public section
 
 open Turing
 

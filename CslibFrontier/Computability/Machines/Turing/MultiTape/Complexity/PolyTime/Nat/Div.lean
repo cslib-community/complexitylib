@@ -32,7 +32,7 @@ including divisor zero. The fixed-divisor interface follows by composition.
 The machine realization uses the invariant-based loop calculus in `PolyTime.Iteration`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

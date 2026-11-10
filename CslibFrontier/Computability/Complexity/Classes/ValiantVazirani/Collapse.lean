@@ -50,7 +50,7 @@ relative to such a promise problem is `RP` (`Cslib.Complexity.RPWithPromiseOracl
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

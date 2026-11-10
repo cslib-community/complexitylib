@@ -39,7 +39,7 @@ The specification interface is adapted from `IsPolyTime.list_foldl_spec` in the 
 `crypto` branch.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

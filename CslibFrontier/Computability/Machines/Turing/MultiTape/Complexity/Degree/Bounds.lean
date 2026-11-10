@@ -22,7 +22,7 @@ Charged `ComputableInO` bounds also give degree certificates: a lower workspace 
 encoded output at that lower degree, even when the time bound has a higher degree.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 
 namespace ComputableInDegree

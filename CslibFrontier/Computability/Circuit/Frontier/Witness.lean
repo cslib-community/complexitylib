@@ -60,7 +60,7 @@ For families over `Fin n`, the first gives the hypotheses of the worst-case clai
 * [E. Kushilevitz, N. Nisan, *Communication Complexity*, Ch. 1][KushilevitzNisan1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

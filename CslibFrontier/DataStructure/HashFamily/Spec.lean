@@ -410,7 +410,8 @@ theorem kWiseSpec_contract_evalOps {Seed : Type u} {k U m : ℕ}
 termination_by ops.length
 decreasing_by exact length_lt_of_afterCurrentEpoch_eq_some hafter
 
-/-- Every distribution satisfying `(kWiseSpec k U m).Contract ops` also satisfies
+/-- Every distribution whose supported transcripts match `ops` (`TranscriptMatches ops`) and
+which satisfies `(kWiseSpec k U m).Contract ops` also satisfies
 `(whpKWiseSpec k U m δ).Contract ops` for any `δ : ℝ≥0∞`. -/
 theorem whpKWiseSpec_contract_of_kWiseSpec {k U m : ℕ} [NeZero m] (δ : ℝ≥0∞)
     {ops : List (Op U)} {μ : PMF (List (Label U m))}

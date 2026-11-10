@@ -55,7 +55,7 @@ agree with a set of bias at most `b_n` on large rectangles on at most a
   `averageCaseBound_four`: the average-case claims.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

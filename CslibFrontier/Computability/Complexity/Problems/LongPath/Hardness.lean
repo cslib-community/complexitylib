@@ -179,39 +179,37 @@ private theorem computableInPolyTime_copyLabel {γ : Type} {enc : γ ↪ List Bo
     idxOfWithInput hV hv
   exact unary_to_binary.comp (hpair.comp (hi.prod (by fun_prop)))
 
-private abbrev encInst : Graph × ℕ × ℕ ↪ List Bool := encPair encGraph (encPair encNat encNat)
-
 /-- Building a pendant copy is polynomial-time, with the copy index in unary. -/
 theorem computableInPolyTime_pendantCopy :
     ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => pendantCopy p.1 p.2)
-      (encPair (encPair encGraph (encPair encNat encNat)) encUnary) encGraph := by
+      (encPair encPathInstance encUnary) encGraph := by
   have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
   have hG : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => p.1.1)
-      (encPair encInst encUnary) encGraph := by fun_prop
+      (encPair encPathInstance encUnary) encGraph := by fun_prop
   have hi : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => p.2)
-      (encPair encInst encUnary) encUnary := by fun_prop
+      (encPair encPathInstance encUnary) encUnary := by fun_prop
   have h0 : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => Nat.pair p.2 0)
-      (encPair encInst encUnary) encNat :=
+      (encPair encPathInstance encUnary) encNat :=
     unary_to_binary.comp (hpair.comp (hi.prod (const 0)))
   have h1 : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => Nat.pair p.2 1)
-      (encPair encInst encUnary) encNat :=
+      (encPair encPathInstance encUnary) encNat :=
     unary_to_binary.comp (hpair.comp (hi.prod (const 1)))
   have hs : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => copyLabel p.1.1 p.2 p.1.2.1)
-      (encPair encInst encUnary) encNat :=
+      (encPair encPathInstance encUnary) encNat :=
     computableInPolyTime_copyLabel hG hi (by fun_prop)
   have ht : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => copyLabel p.1.1 p.2 p.1.2.2)
-      (encPair encInst encUnary) encNat :=
+      (encPair encPathInstance encUnary) encNat :=
     computableInPolyTime_copyLabel hG hi (by fun_prop)
   have hV : ComputableInPolyTime
       (fun p : (Graph × ℕ × ℕ) × ℕ => p.1.1.1.map (copyLabel p.1.1 p.2))
-      (encPair encInst encUnary) (encList encNat) := by
+      (encPair encPathInstance encUnary) (encList encNat) := by
     refine mapWithInput (by unfold encGraph at hG; exact hG.fst') ?_
     exact computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _)) (snd _ _)
   have hE : ComputableInPolyTime
       (fun p : (Graph × ℕ × ℕ) × ℕ =>
         p.1.1.2.map fun e => (copyLabel p.1.1 p.2 e.1, copyLabel p.1.1 p.2 e.2))
-      (encPair encInst encUnary) (encList (encPair encNat encNat)) := by
+      (encPair encPathInstance encUnary) (encList (encPair encNat encNat)) := by
     refine mapWithInput (by unfold encGraph at hG; exact hG.snd') ?_
     exact (computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _))
       (snd _ _).fst').prod
@@ -535,9 +533,9 @@ Hamiltonian path from `s` to `t` exactly when its pendant copy has a path on two
 the graph has. -/
 theorem LongPath_npHard : NPHard (encPair encGraph encNat) LongPath := by
   have hk : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length + 2)
-      (encPair encGraph (encPair encNat encNat)) encNat := by
+      encPathInstance encNat := by
     have hn : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
-        (encPair encGraph (encPair encNat encNat)) encUnary :=
+        encPathInstance encUnary :=
       (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
     exact unary_to_binary.comp (by fun_prop)
   refine HamPath_npHard.trans ⟨fun x => (HamPath.pendantCopy x 0, x.1.distinctVertices.length + 2),

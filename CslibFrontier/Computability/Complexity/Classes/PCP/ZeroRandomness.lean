@@ -44,7 +44,7 @@ classes with zero randomness are therefore classes of deterministic verification
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

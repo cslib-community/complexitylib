@@ -40,7 +40,7 @@ shared dictionary lookups have returned candidate mark and compressed-edge recor
   *Square-root circuit bounds for iterated functions*][Schlesinger2026IteratedFunctions].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Iteration
 

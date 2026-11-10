@@ -136,7 +136,7 @@ theorem toPartition_mem_iff (x : List ℕ × ℕ) : toPartition x ∈ Partition 
 /-- The reduction to `Partition` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toPartition :
-    ComputableInPolyTime toPartition (encPair (encList encNat) encNat) (encList encNat) := by
+    ComputableInPolyTime toPartition encSubsetSum (encList encNat) := by
   unfold toPartition
   fun_prop
 
@@ -144,7 +144,7 @@ end SubsetSum
 
 /-- `SubsetSum` reduces to `Partition` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_Partition :
-    PolyTimeReducible (encPair (encList encNat) encNat) (encList encNat) SubsetSum Partition :=
+    PolyTimeReducible encSubsetSum (encList encNat) SubsetSum Partition :=
   ⟨SubsetSum.toPartition, SubsetSum.computableInPolyTime_toPartition,
     fun x => (SubsetSum.toPartition_mem_iff x).symm⟩
 

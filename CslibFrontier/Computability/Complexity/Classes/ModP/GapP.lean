@@ -33,7 +33,7 @@ and the GapP ring operations of [Fenner, Fortnow and Kurtz][FennerFortnowKurtz19
 * [S. Fenner, L. Fortnow, S. Kurtz, *Gap-definable counting classes*][FennerFortnowKurtz1994]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

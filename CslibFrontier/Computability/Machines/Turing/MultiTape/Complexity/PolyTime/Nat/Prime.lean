@@ -28,7 +28,7 @@ A natural `p` is prime exactly when `2 ≤ p` and no `m` with `2 ≤ m < p` divi
 * `Turing.MultiTapeTM.ComputableInPolyTime.unary_decide_prime`: in polynomial time.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

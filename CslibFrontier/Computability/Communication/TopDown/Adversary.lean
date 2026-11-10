@@ -33,7 +33,7 @@ the first message needs no mirror step, which saves one round
 * [O. Korten, *Top-Down Lower Bounds for All Depths*][Korten2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Communication.RoundProtocol
 

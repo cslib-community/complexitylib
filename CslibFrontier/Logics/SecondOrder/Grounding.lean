@@ -17,6 +17,8 @@ import Mathlib.Tactic.FinCases
 
 The reductions in this module use order-free first-order interpretations. Input structures have
 no built-in order or numeric predicates; these results are order-free variants of the standard ones.
+The input language is relational (`FirstOrder.Language.IsRelational`): it has no function or
+constant symbols.
 
 Every existential second-order definable class of finite structures that contains every empty
 structure is order-free reducible to the class `cnf.SAT` of satisfiable CNF structures
@@ -782,10 +784,11 @@ open FO FO.TaggedInterpretation
 variable {L : Language.{u, v}} [L.IsRelational]
 
 /-- **Every existential second-order definable class containing every empty structure is
-order-free reducible to SAT** [Immerman, Chapter 7][Immerman1999]. The reduction grounds the
-defining sentence (`Cslib.Logic.ESO.Sentence.groundInterpretation`). The empty-structure hypothesis
-cannot be dropped in general: an interpretation of positive dimension maps every empty input to
-the empty CNF structure, which is satisfiable. -/
+order-free reducible to SAT** [Immerman, Chapter 7][Immerman1999]. The input language is
+relational. The reduction grounds the defining sentence
+(`Cslib.Logic.ESO.Sentence.groundInterpretation`). The empty-structure hypothesis cannot be dropped
+in general: an interpretation of positive dimension maps every empty input to the empty CNF
+structure, which is satisfiable. -/
 theorem Definable.reduces_SAT {K : Set (Bundled.{w} L.Structure)} (hK : Definable K)
     (hempty : ∀ M : Bundled.{w} L.Structure, IsEmpty M → M ∈ K) : Reduces K cnf.SAT.{w} := by
   obtain ⟨Φ, hΦ⟩ := hK
@@ -809,18 +812,18 @@ theorem Definable.reduces_SAT {K : Set (Bundled.{w} L.Structure)} (hK : Definabl
         Sentence.realize_subsingletonSentence]
 
 /-- **SAT is complete for existential second-order logic under order-free reductions**: a class
-containing every empty structure is existential second-order definable exactly when it is
-order-free reducible to SAT. -/
+of structures of a relational language containing every empty structure is existential
+second-order definable exactly when it is order-free reducible to SAT. -/
 theorem definable_iff_reduces_SAT {K : Set (Bundled.{w} L.Structure)}
     (hempty : ∀ M : Bundled.{w} L.Structure, IsEmpty M → M ∈ K) :
     Definable K ↔ Reduces K cnf.SAT.{w} :=
   ⟨fun h => h.reduces_SAT hempty, fun h => cnf.definable_SAT.of_reduces h⟩
 
 /-- **Every existential second-order definable class is order-free reducible to SAT on the
-nonempty structures**: some first-order interpretation maps every nonempty finite structure inside
-SAT exactly when it is in the class. This is an order-free variant of
-[Immerman, Chapter 7][Immerman1999], whose structures are ordered and have at least two elements.
-The construction reduces the class with every empty structure added. -/
+nonempty structures**, over a relational language: some first-order interpretation maps every
+nonempty finite structure inside SAT exactly when it is in the class. This is an order-free variant
+of [Immerman, Chapter 7][Immerman1999], whose structures are ordered and have at least two
+elements. The construction reduces the class with every empty structure added. -/
 theorem Definable.exists_interpretation_SAT_of_nonempty {K : Set (Bundled.{w} L.Structure)}
     (hK : Definable K) : ∃ (ι : Type) (_ : Finite ι) (I : Interpretation L cnf ι),
       ∀ (M : Bundled.{w} L.Structure) [Finite M] [Nonempty M],

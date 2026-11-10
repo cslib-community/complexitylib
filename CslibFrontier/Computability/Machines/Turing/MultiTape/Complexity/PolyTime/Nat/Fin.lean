@@ -21,7 +21,7 @@ and encoding are fixed independently of the runtime input.
 * `Turing.MultiTapeTM.ComputableInPolyTime.unary_finMod`: modular finite indices.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

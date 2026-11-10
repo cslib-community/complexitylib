@@ -23,10 +23,10 @@ For a `1`-based index `m ≥ 1`, `lowbit m` is the value `2 ^ k` of the least si
 `m` (conventionally written `m & -m` in two's-complement arithmetic), and node `m` aggregates the
 half-open `0`-based index interval `[m - lowbit m, m)`:
 
-* **Downward query chains (`downChain`):** stepping `m ↦ m - lowbit m` strictly doubles the trailing
+* **Downward query chains (`downChain`):** stepping `m ↦ m - lowbit m` at least doubles the trailing
   power-of-two factor (`two_mul_lowbit_le_lowbit_sub`), terminating in at most `⌊log₂ m⌋ + 1` steps
   (`length_downChain_le_log`) and partitioning `[0, m)`.
-* **Upward update chains (`upChain`):** stepping `m ↦ m + lowbit m` up to `n` likewise strictly
+* **Upward update chains (`upChain`):** stepping `m ↦ m + lowbit m` up to `n` likewise at least
   doubles `lowbit` (`two_mul_lowbit_le_lowbit_add`), terminating in at most `⌊log₂ n⌋ + 1` steps
   (`length_upChain_le_log`) and visiting precisely those nodes `idx ≤ n` whose interval
   `[idx - lowbit idx, idx)` contains `m - 1` (`mem_upChain_iff`).

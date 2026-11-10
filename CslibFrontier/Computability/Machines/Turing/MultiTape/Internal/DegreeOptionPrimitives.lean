@@ -17,7 +17,7 @@ Construction and fixed-default elimination reuse the encoding capability's degre
 The Boolean test retains its constant output degree. No higher tidy calculus is used.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInDegree
 open Internal.WordPredicates
 

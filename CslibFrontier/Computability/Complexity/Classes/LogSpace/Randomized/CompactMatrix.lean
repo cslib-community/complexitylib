@@ -38,8 +38,9 @@ remain separate.
   interpretation.
 * `Turing.MultiTapePTM.ConfigurationGraph.compactCoinMatrix_mulVec_one_le`: the entire matrix is
   substochastic, including unreachable and invalid IDs.
-* `Turing.MultiTapePTM.ConfigurationGraph.compactCoinMatrix_pow_accept`: exact finite-time
-  acceptance on the ambient box, from the original logarithmic-space witness.
+* `Turing.MultiTapePTM.ConfigurationGraph.compactCoinMatrix_pow_accept`: the acceptance count
+  over `2 ^ t` on the ambient box, from the original logarithmic-space witness; over a field of
+  characteristic zero, the exact finite-time acceptance probability.
 
 ## References
 
@@ -56,8 +57,10 @@ open MultiTapeNTM.ConfigurationGraph Matrix
 variable {k : ℕ} {State : Type} [Fintype State] (machine : MultiTapePTM k Bool State)
   (R : Type*) [Field R]
 
-/-- The actual fair-coin transition probabilities on every ID in the radix box. Invalid IDs
-and overflowing transitions have zero entries; coincident coin successors have weight one. -/
+/-- Half the fair-coin transition count, as an element of the field `R`, on every ID in the radix
+box. Invalid IDs and overflowing transitions have zero entries; coincident coin successors have
+count two. Over a field of characteristic zero the entries are the actual fair-coin transition
+probabilities; in characteristic two every entry is zero. -/
 @[expose] noncomputable def compactCoinMatrix (B : ℕ) (w : List Bool) :
     Matrix (Fin (vertexBound (k := k) B)) (Fin (vertexBound (k := k) B)) R :=
   fun u v => (coinCountWithSymbol machine B w.length u v
@@ -134,8 +137,10 @@ derives the required bound internally; no separately supplied ID or fit premise 
 
 variable {machine}
 
-/-- The ambient compact matrix has exactly the machine's finite-time acceptance probability
-at its actual start. Only the original logarithmic-space witness is assumed; the finite reachable
+/-- Over any field `R`, the `t`-th power of the ambient compact matrix applied to the
+accepting-halt indicator has the entry `machine.acceptCoins w t / 2 ^ t` at the machine's actual
+start. Over a field of characteristic zero this is exactly the machine's finite-time acceptance
+probability. Only the original logarithmic-space witness is assumed; the finite reachable
 set, canonical representations, fit bounds and start-ID bound are all derived in the proof. -/
 theorem compactCoinMatrix_pow_accept (c : ℕ) {w : List Bool}
     (hs : machine.toNTM.RunsInSpace w (c * (Nat.log2 w.length + 1))) (t : ℕ) :

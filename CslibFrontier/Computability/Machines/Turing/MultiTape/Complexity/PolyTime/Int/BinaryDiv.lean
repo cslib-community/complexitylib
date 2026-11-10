@@ -36,7 +36,7 @@ The proof uses Lean's `Int.emod_natAbs_of_nonneg` and `Int.emod_natAbs_of_neg` a
 arithmetic certificates in `PolyTime/Int/Binary` and `PolyTime/Nat/BinaryDiv`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

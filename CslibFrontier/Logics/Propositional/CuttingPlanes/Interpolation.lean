@@ -153,7 +153,7 @@ private theorem lineOK_of_isProof {Γ : Set (Ineq V)} {ls : List (Ineq V)} (h : 
       | obtain ⟨j₁, hj₁, e₁⟩ := exists_lt_of_mem (J := c • I₁) hI₁
         exact Or.inr (Or.inr ⟨j₁, j₁, I₁, I₁, hj₁, hj₁, e₁, e₁, fun σ h₁ _ => h₁.nsmul c⟩)
       | obtain ⟨j₁, hj₁, e₁⟩ := exists_lt_of_mem (J := I₁.div c) hI₁
-        exact Or.inr (Or.inr ⟨j₁, j₁, I₁, I₁, hj₁, hj₁, e₁, e₁, fun σ h₁ _ => h₁.div hc hdvd⟩)
+        exact Or.inr (Or.inr ⟨j₁, j₁, I₁, I₁, hj₁, hj₁, e₁, e₁, fun σ h₁ _ => h₁.div hdvd⟩)
   | nil => simp at hj
 
 variable {X Y Z : Type*}

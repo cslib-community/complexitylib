@@ -29,7 +29,7 @@ continuous drawing proof and the literal-count proof can use it without importin
 This is an original consequence of the canonical path contact classification.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.PlanarCompile
 

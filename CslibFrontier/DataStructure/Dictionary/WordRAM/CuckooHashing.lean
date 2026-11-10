@@ -5686,15 +5686,6 @@ def cuckooCode (c_exp n_max : ℕ) : SubroutineCode .exact 19 2 where
   input := fun i => decide (0 < i.val)
   output := 2
 
-/-- The width bound `2 * trinomialDeg U (tableBits n_max) ≤ w` makes the size
-`2 ^ trinomialDeg U (tableBits n_max)` of the trinomial hash field fit in a word. -/
-private theorem fits_two_pow_trinomialDeg {w n_max U : ℕ}
-    (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w) :
-    Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) := by
-  have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
-    (tableBits_pos n_max).trans_le (Probability.le_trinomialDeg U (tableBits n_max))
-  exact Nat.pow_lt_pow_right (by decide) (by omega)
-
 theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
     (hx₁ : x₁.Bounded w)
     (hb : x₁.regs 0 = base)
@@ -5712,7 +5703,7 @@ theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
         Modifies (Block.mk base (space c_exp n_max)).footprint x₁.mem p.2.mem := by
   have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
     lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   have hfit_ev : Fits w (maxEvictions n_max) :=
     hfit_q.of_le ((maxEvictions_le_tableSize n_max).trans
       (Nat.pow_le_pow_right two_pos (Probability.le_trinomialDeg U (tableBits n_max))))
@@ -5780,7 +5771,7 @@ theorem opCode_coupled_step_spec {w base c_exp n_max U V : ℕ}
       (∑' p, ν p * (T_step p + ∑' q, (μ_step p) q * (0 : ℕ))) ≤
         (stepWorstCharge c_exp n_max U s o : ℝ≥0∞) + ∑' p, ν p * (0 : ℕ) := by
   classical
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   let μ_raw : Seed c_exp n_max U (tableBits n_max) × Data 19 → PMF (Data 19) := fun p =>
     if hp : Rep w base c_exp n_max U V s p.2 ∧ argMatch o p.2.regs then
       Classical.choose
@@ -6167,7 +6158,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
   classical
   intro C
   have hfam := isCuckooHashFamily_tableBits hU
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   induction ops generalizing ks s ν with
   | nil =>
     obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
@@ -6405,7 +6396,7 @@ theorem cuckoo_seq_expected_amortized (w base c_exp n_max U V : ℕ)
             (Dictionary.empty U) ops : ℝ≥0∞) := by
   classical
   intro C
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   obtain ⟨x₁, ⟨t_span, ht_span, he_span⟩, hm₁, hb₁, hfr₁, h3₁, h4₁⟩ :=
     allocSpan_execWithin hfr h3 h4 hfit_end hfit_ev
   have hx₁_bdd : x₁.Bounded w := he_span.bounded hx

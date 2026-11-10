@@ -44,7 +44,7 @@ are polynomials in the length of the encoded pair `(a, w₁)`, hence in the leng
 * [L. Stockmeyer, *The polynomial-time hierarchy*][Stockmeyer1976]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

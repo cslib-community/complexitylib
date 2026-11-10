@@ -45,14 +45,15 @@ vertex, and each block names the entry of the vertex list whose position is its 
 (`Graph.decodeVertexList`). The verifiers check that the decoded list contains every declared
 vertex exactly once and nothing else (`Graph.verifyOrdering`), and then the endpoint, length and
 edge conditions. Every ordering has a certificate of length `n ^ 2` for instances of encoded
-length `n`. Path instances `(G, s, t)` are encoded by `encPair encGraph (encPair encNat encNat)`,
-cycle instances by `encGraph`.
+length `n`. Path instances `(G, s, t)` are encoded by `Cslib.Complexity.encPathInstance`, the graph
+followed by the two endpoints in binary, and cycle instances by `encGraph`.
 
 ## Main definitions
 
 * `Cslib.Complexity.Graph.IsDirHamPath`, `Cslib.Complexity.DirHamPath`.
 * `Cslib.Complexity.Graph.IsDirHamCycle`, `Cslib.Complexity.DirHamCycle`.
 * `Cslib.Complexity.HamPath`, `Cslib.Complexity.HamCycle`.
+* `Cslib.Complexity.encPathInstance`: the encoding of path instances `(G, s, t)`.
 * `Cslib.Complexity.Graph.arcBool`, `Cslib.Complexity.Graph.chainBool`,
   `Cslib.Complexity.Graph.cycleChainBool`: executable tests on lists of vertices.
 * `Cslib.Complexity.DirHamPath.verifier`, `Cslib.Complexity.DirHamCycle.verifier`,
@@ -65,11 +66,11 @@ cycle instances by `encGraph`.
 * `Cslib.Complexity.Graph.mem_DirHamCycle_cons_iff`: closing a Hamiltonian path with an arc back
   to its start gives a Hamiltonian cycle, when no other arc enters the start.
 * `Cslib.Complexity.DirHamPath.isVerifier`, `Cslib.Complexity.DirHamPath.mem_NP`:
-  `DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat))`.
+  `DirHamPath ∈ NP encPathInstance`.
 * `Cslib.Complexity.DirHamCycle.isVerifier`, `Cslib.Complexity.DirHamCycle.mem_NP`:
   `DirHamCycle ∈ NP encGraph`.
 * `Cslib.Complexity.HamPath.isVerifier`, `Cslib.Complexity.HamPath.mem_NP`:
-  `HamPath ∈ NP (encPair encGraph (encPair encNat encNat))`.
+  `HamPath ∈ NP encPathInstance`.
 * `Cslib.Complexity.HamCycle.isVerifier`, `Cslib.Complexity.HamCycle.mem_NP`:
   `HamCycle ∈ NP encGraph`.
 
@@ -334,6 +335,10 @@ end Graph
 
 open Turing.MultiTapeTM ComputableInPolyTime
 
+/-- Instances `(G, s, t)` of the path problems `DirHamPath` and `HamPath`: the graph (`encGraph`),
+framed, then the endpoint `s`, framed, and the endpoint `t`, both in binary. -/
+abbrev encPathInstance : Graph × ℕ × ℕ ↪ List Bool := encPair encGraph (encPair encNat encNat)
+
 namespace Graph
 
 /-- Executable arc test of a directed graph: `(u, v)` is an edge of `G`. -/
@@ -519,7 +524,7 @@ def verifier : (Graph × ℕ × ℕ) × List Bool → Bool :=
 /-- `DirHamPath.verifier` verifies `DirHamPath` with certificates of length `n ^ 2` for instances
 of encoded length `n`. -/
 theorem isVerifier :
-    IsVerifier (encPair encGraph (encPair encNat encNat)) (Polynomial.X ^ 2) verifier DirHamPath :=
+    IsVerifier encPathInstance (Polynomial.X ^ 2) verifier DirHamPath :=
   Graph.isVerifier_verifyOrdering
     (P := fun (x : Graph × ℕ × ℕ) p => p.head? = some x.2.1 ∧ p.getLast? = some x.2.2 ∧
       p.IsChain fun u v => (u, v) ∈ x.1.2)
@@ -530,13 +535,12 @@ theorem isVerifier :
 /-- The `DirHamPath` verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier
-      (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool :=
-  Graph.computableInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
+    ComputableInPolyTime verifier (encPair encPathInstance encBits) encBool :=
+  Graph.computableInPolyTime_verifyOrdering (by unfold encPathInstance encGraph; fun_prop)
     (computableInPolyTime_pathCheck Graph.computableInPolyTime_arcBool)
 
 /-- `DirHamPath` belongs to `NP`. -/
-theorem mem_NP : DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
+theorem mem_NP : DirHamPath ∈ NP encPathInstance :=
   ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end DirHamPath
@@ -587,7 +591,7 @@ def verifier : (Graph × ℕ × ℕ) × List Bool → Bool :=
 /-- `HamPath.verifier` verifies `HamPath` with certificates of length `n ^ 2` for instances of
 encoded length `n`. -/
 theorem isVerifier :
-    IsVerifier (encPair encGraph (encPair encNat encNat)) (Polynomial.X ^ 2) verifier HamPath := by
+    IsVerifier encPathInstance (Polynomial.X ^ 2) verifier HamPath := by
   rintro ⟨G, s, t⟩
   rw [mem_HamPath_iff]
   refine Graph.isVerifier_verifyOrdering
@@ -600,13 +604,12 @@ theorem isVerifier :
 /-- The `HamPath` verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier
-      (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool :=
-  Graph.computableInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
+    ComputableInPolyTime verifier (encPair encPathInstance encBits) encBool :=
+  Graph.computableInPolyTime_verifyOrdering (by unfold encPathInstance encGraph; fun_prop)
     (computableInPolyTime_pathCheck Graph.computableInPolyTime_adjBool)
 
 /-- `HamPath` belongs to `NP`. -/
-theorem mem_NP : HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
+theorem mem_NP : HamPath ∈ NP encPathInstance :=
   ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end HamPath

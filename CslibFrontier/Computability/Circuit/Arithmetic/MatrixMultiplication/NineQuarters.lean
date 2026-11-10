@@ -45,7 +45,7 @@ over `ℚ`.
   Exponent*][OpenAI2026MatrixMultiplication]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic.MatrixMultiplication
 

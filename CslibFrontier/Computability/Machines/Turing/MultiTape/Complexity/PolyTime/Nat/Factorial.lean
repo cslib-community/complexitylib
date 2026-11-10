@@ -27,7 +27,7 @@ each factor has at most `n` bits, so the running product grows by at most `n` bi
 * `Turing.MultiTapeTM.ComputableInPolyTime.binary_factorial`: `n !` in binary.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

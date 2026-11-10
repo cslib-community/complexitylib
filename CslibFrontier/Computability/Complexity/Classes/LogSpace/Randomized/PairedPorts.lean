@@ -41,6 +41,7 @@ Turing-machine register encodings.
 * `Cslib.Complexity.PairedTimeLayerFamily`: Turing-machine-independent family of polynomial-size
   strict-upper-triangular substochastic matrices with paired ports and logarithmic-space local
   evaluators.
+* `Cslib.Complexity.encPortQuery`: the encoding of the port queries of its local evaluators.
 
 ## Main results
 
@@ -481,6 +482,11 @@ theorem exists_compactTimeLayer_of_mem_RL (h : A ∈ RL enc) :
     rw [finTimeLayer_compactCoinMatrix_acceptance]
     simp [hnot ha]
 
+/-- Port queries `(a, u, p)` of a `Cslib.Complexity.PairedTimeLayerFamily`: the instance `a` under
+`enc`, framed, then the vertex `u`, framed, and the port `p`, both in binary. -/
+abbrev encPortQuery {α : Type} (enc : α ↪ List Bool) : α × ℕ × ℕ ↪ List Bool :=
+  encPair enc (encPair encNat encNat)
+
 /-- A Turing-machine-independent family of polynomial-size strict-upper-triangular substochastic
 matrices over `ℝ` indexed by `a : α` (under encoding `enc`), equipped with bounded-degree paired
 ports (`2` outgoing ports and `dIn` incoming ports per vertex) and deterministic logarithmic-space
@@ -578,16 +584,15 @@ structure PairedTimeLayerFamily {α : Type} (enc : α ↪ List Bool) where
     ComputableInLogSpace (fun (a, u) => acceptBool a u) (encPair enc encNat) encBool
   /-- Deterministic logarithmic-space computability of `outCount`. -/
   computableInLogSpace_outCount :
-    ComputableInLogSpace (fun (a, u, p) => outCount a u p)
-      (encPair enc (encPair encNat encNat)) encNat
+    ComputableInLogSpace (fun (a, u, p) => outCount a u p) (encPortQuery enc) encNat
   /-- Deterministic logarithmic-space computability of `outPortNat`. -/
   computableInLogSpace_outPortNat :
     ComputableInLogSpace (fun (a, u, p) => outPortNat a u p)
-      (encPair enc (encPair encNat encNat)) (encOption (encPair encNat encNat))
+      (encPortQuery enc) (encOption (encPair encNat encNat))
   /-- Deterministic logarithmic-space computability of `inPortNat`. -/
   computableInLogSpace_inPortNat :
     ComputableInLogSpace (fun (a, v, q) => inPortNat a v q)
-      (encPair enc (encPair encNat encNat)) (encOption (encPair encNat encNat))
+      (encPortQuery enc) (encOption (encPair encNat encNat))
 
 namespace PairedTimeLayerFamily
 

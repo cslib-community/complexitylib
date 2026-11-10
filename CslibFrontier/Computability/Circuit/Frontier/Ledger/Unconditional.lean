@@ -46,7 +46,7 @@ fixed `m` cost nothing in the leading term.
   fan-in two.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

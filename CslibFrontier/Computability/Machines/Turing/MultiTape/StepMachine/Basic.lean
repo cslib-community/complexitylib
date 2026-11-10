@@ -41,10 +41,10 @@ logarithmic space halts within polynomially many steps.
 
 * `Turing.StepMachine.Simulates.exists_haltsAt`: a simulating machine halts when the simulated
   system does, with the same output.
-* `Turing.StepMachine.HaltsAt.lt_three_pow`: a machine whose states take at most `s` bits halts
-  within `(n + 2) * 3 ^ s` steps.
-* `Turing.StepMachine.HaltsAt.lt_pow_of_log`: in space `c * log₂ (n + 2)`, a machine halts within
-  `(n + 2) ^ (2 * c + 1)` steps.
+* `Turing.StepMachine.HaltsAt.lt_three_pow`: a machine whose states take at most `s` bits, if it
+  halts, does so within `(n + 2) * 3 ^ s` steps.
+* `Turing.StepMachine.HaltsAt.lt_pow_of_log`: in space `c * log₂ (n + 2)`, a machine that halts
+  does so within `(n + 2) ^ (2 * c + 1)` steps.
 -/
 
 @[expose] public section
@@ -246,9 +246,9 @@ theorem HaltsAt.injOn_core {t : ℕ} (ht : m.HaltsAt input t) :
   · exact ht.core_ne_of_lt m h hj hij
   · exact ht.core_ne_of_lt m h hi hij.symm
 
-/-- **A machine whose states take at most `s` bits halts within `(n + 2) * 3 ^ s` steps** on an
-input of length `n`: its runs never repeat a state and a head position before halting, and there
-are fewer than `3 ^ s` words of at most `s` bits. -/
+/-- **A machine whose states take at most `s` bits, if it halts, does so within
+`(n + 2) * 3 ^ s` steps** on an input of length `n`: its runs never repeat a state and a head
+position before halting, and there are at most `3 ^ s` words of at most `s` bits. -/
 theorem HaltsAt.lt_three_pow (enc : σ ↪ List Bool) {s t : ℕ}
     (hs : ∀ i, (enc (m.run input i).state).length ≤ s) (ht : m.HaltsAt input t) :
     t < (input.length + 2) * 3 ^ s := by
@@ -271,7 +271,8 @@ theorem HaltsAt.lt_three_pow (enc : σ ↪ List Bool) {s t : ℕ}
   omega
 
 /-- **Logarithmic space gives polynomial time**: a machine whose states take at most
-`c * log₂ (n + 2)` bits halts within `(n + 2) ^ (2 * c + 1)` steps on an input of length `n`. -/
+`c * log₂ (n + 2)` bits, if it halts, does so within `(n + 2) ^ (2 * c + 1)` steps on an input of
+length `n`. -/
 theorem HaltsAt.lt_pow_of_log (enc : σ ↪ List Bool) {c t : ℕ}
     (hs : ∀ i, (enc (m.run input i).state).length ≤ c * Nat.log 2 (input.length + 2))
     (ht : m.HaltsAt input t) : t < (input.length + 2) ^ (2 * c + 1) := by

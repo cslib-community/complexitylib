@@ -412,9 +412,9 @@ private theorem computableInPolyTime_replayStep {k : ℕ} {Control : Type} [Fini
     ComputableInPolyTime.bitsTakeWithInput ((hstep.snd'.trans henc).of_enc_eq fun _ => rfl) hlimit
   exact (computableInPolyTime_finiteConfig_cases machine hcfg hcoin hcfg
     (fun action symbol move =>
-      (computableInPolyTime_finiteConfig_step action symbol move).comp hcfg)
+      (ComputableInPolyTime.finiteConfig_step action symbol move).comp hcfg)
     (fun next =>
-      computableInPolyTime_finiteConfig_receive hcfg hreply () next)).of_enc_eq fun _ => rfl
+      ComputableInPolyTime.finiteConfig_receive hcfg hreply () next)).of_enc_eq fun _ => rfl
 
 private theorem computableInPolyTime_replayCfg_raw {k : ℕ} {Control : Type} [Finite Control]
     (machine : MultiTapePTM k Bool Control Unit) :
@@ -430,7 +430,8 @@ private theorem computableInPolyTime_replayCfg_raw {k : ℕ} {Control : Type} [F
     (ComputableInPolyTime.snd _ _).fst'
   have htrace : ComputableInPolyTime (fun p : P => p.2.2) encP (encList encTraceStep) :=
     (ComputableInPolyTime.snd _ _).snd'
-  have hinit := computableInPolyTime_finiteConfig_init (k := k) hword machine.initial
+  have hinit :=
+    ComputableInPolyTime.finiteConfig_init (k := k) (Oracle := Unit) hword machine.initial
   obtain ⟨cCfg, hcCfg⟩ :=
     length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Unit)
   let inv (p : P) (consumed : List TraceStep)
@@ -907,7 +908,7 @@ private theorem isPPTOn_tcrMultiAdversary_find {k : ℕ} {Control : Type} [Finit
     have hrFull := ComputableInPolyTime.snd encMIn (encList encTraceStep)
     have hrCfg := computableInPolyTime_replayCfg_comp machine
       ((hrMIn.trans hmFIn).trans hfuel) ((hrMIn.trans hmFIn).trans hword) hrFull
-    have hrTapes := computableInPolyTime_finiteConfig_tapes.comp hrCfg
+    have hrTapes := ComputableInPolyTime.finiteConfig_tapes.comp hrCfg
     have hrOut := ComputableInPolyTime.finiteCfg_output.comp hrTapes
     exact ((hrOut.trans msgSigDecoder.computableInPolyTime).fst').of_enc_eq fun _ => rfl
   have hyes := hmid.bind_pair (hpostLoop.map_pair hpostOut)
