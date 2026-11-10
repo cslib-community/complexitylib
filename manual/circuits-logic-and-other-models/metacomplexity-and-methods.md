@@ -2838,3 +2838,14 @@ The sharper source counter and parsed ragged weighted execution are now certifie
 above. The table preprocessing/dispatch endpoints are also covered above. General graph
 degree-rule/partition endpoints and the remaining graph clauses keep ALL-main open. The source
 composition is OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.
+
+### Signed class-bound normalization stage
+
+`CslibFrontier.Computability.PolyTime.CNF.SignedClassBounds` provides `normalize`, an actual
+ordered binary list traversal reusing the approved scalar interval normalizer. Negative upper
+bounds become the impossible natural interval $[1,0]$; negative lower bounds clamp to zero.
+`normalize_ofFn` preserves original labels, `bounds_iff` proves simultaneous equivalence for
+all nonnegative class cardinalities, and `normalize_polytime` charges reads and output writes.
+The client `CslibFrontierTests.PaperEndpoints.SignedClassBounds` checks empty lists, contradictory
+intervals and 512-bit bounds. This is a frontend stage: complete signed graph counter/resource
+composition, alternative admission and model transfers remain in ROADMAP. No entry is removed.

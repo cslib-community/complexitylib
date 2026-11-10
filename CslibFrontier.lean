@@ -3397,6 +3397,7 @@ public import CslibFrontier.Computability.PolyTime.CNF.RegularInducedCore
 public import CslibFrontier.Computability.PolyTime.CNF.RegularInducedInterval
 public import CslibFrontier.Computability.PolyTime.CNF.SigmaRho
 public import CslibFrontier.Computability.PolyTime.CNF.SigmaRhoInput
+public import CslibFrontier.Computability.PolyTime.CNF.SignedClassBounds
 public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import CslibFrontier.Computability.PolyTime.CNF.SparsePolyCompile
 public import CslibFrontier.Computability.PolyTime.CNF.TwoBoundaryFrontend

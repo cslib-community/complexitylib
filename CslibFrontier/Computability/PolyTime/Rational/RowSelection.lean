@@ -40,6 +40,14 @@ an untrusted-byte parser or a transfer to a different machine model.
 * `basis_selected_iff`, `basis_rank_of_consistent`: actual raw-frame branch semantics.
 * `boolean_count`: exact multiplicity on all declared Boolean variables.
 * `select_polytime`, `exists_certificate`: complete binary machine time and workspace.
+
+## References
+
+* [ChenJiangZhu2027], Lemma 3.1, PDF pp.10–11.
+* Bart M. P. Jansen and Astrid Pieterse, *Optimal sparsification for some binary CSPs
+  using low-degree polynomials*, MFCS 2016, article 71,
+  DOI: 10.4230/LIPIcs.MFCS.2016.71; journal version, ACM TOCT 11(4), article 28 (2019),
+  DOI: 10.1145/3349618. Row-selection attribution follows the cited lemma.
 -/
 
 public section
