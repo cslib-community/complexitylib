@@ -10,11 +10,13 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Constructible
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
+public import CslibFrontier.Computability.Complexity.Classes.Space
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.NondeterministicBudget
 import CslibFrontier.Computability.Complexity.Classes.Constructible.Space
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.Savitch
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
@@ -23,7 +25,7 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
-# The nondeterministic space diagonal
+# The nondeterministic space hierarchy theorem
 
 `Cslib.Complexity.nspaceDiagonal G` is the set of words `x` of length `n` on which the description
 cut from the start of `x` (`Cslib.Complexity.Diagonal.tinyCut`) does not accept `x`, under the
@@ -41,6 +43,25 @@ exponential length where it is tiny (`Cslib.Complexity.Diagonal.tinyDesc`), the 
 exactly when the diagonal rejects (`Cslib.Complexity.nspaceDiagonal_notMem_NSPACE`). This is the
 diagonal argument of [Sipser, Theorem 9.3][Sipser2013] for nondeterministic machines.
 
+Conversely, the universal recognizer within a budget
+(`Turing.MultiTapeTM.Universal.exists_recognizesInSpace_bAccepts`) guesses a run of the decoded
+description, reading the input in place, and so recognizes the complement of the diagonal within
+space `O(G n + log n)` for a space-constructible `G`. By the Immerman–Szelepcsényi theorem
+[Immerman1988] [Szelepcsenyi1987] the diagonal itself is then in `NSPACE G` when `log₂ n ≤ G n`
+(`Cslib.Complexity.nspaceDiagonal_mem_NSPACE`). Hence the nondeterministic space hierarchy:
+
+* `NSPACE f ⊂ NSPACE g` for a space-constructible `g` with `log₂ n ≤ g n`, when every
+  `c * f n + c` is eventually below `g n` (`Cslib.Complexity.NSPACE_ssubset_NSPACE`);
+* `NL ⊂ NSPACE (log₂ n ^ 2)` (`Cslib.Complexity.NL_ssubset_NSPACE_log2_sq`), and more generally
+  `NSPACE (log₂ n ^ (k + 1)) ⊂ NSPACE (log₂ n ^ (k + 2))`
+  (`Cslib.Complexity.NSPACE_log2_pow_ssubset_NSPACE_log2_pow_succ`);
+* `NSPACE (n ^ k) ⊂ NSPACE (n ^ (k + 1))` (`Cslib.Complexity.NSPACE_pow_ssubset_NSPACE_pow_succ`).
+* `NL ⊂ PSPACE` (`Cslib.Complexity.NL_ssubset_PSPACE`), from Savitch's `NL ⊆ DSPACE (log₂ n ^ 2)`
+  and the deterministic hierarchy.
+
+The gap `f = o(g)` and the lower bound `log n ≤ g n` are those of the deterministic theorem
+(`Cslib.Complexity.DSPACE_ssubset_DSPACE`).
+
 ## Main definitions
 
 * `Cslib.Complexity.nspaceDiagonal`: the nondeterministic diagonal within a space budget.
@@ -51,11 +72,19 @@ diagonal argument of [Sipser, Theorem 9.3][Sipser2013] for nondeterministic mach
   exactly when its description accepts within any budget above the size of its configurations.
 * `Cslib.Complexity.not_recognizesInSpace_nspaceDiagonal`: no nondeterministic machine recognizes
   the diagonal within space `O(f)`.
-* `Cslib.Complexity.nspaceDiagonal_notMem_NSPACE`: the diagonal is not in `NSPACE f`.
+* `Cslib.Complexity.nspaceDiagonal_notMem_NSPACE`, `Cslib.Complexity.nspaceDiagonal_mem_NSPACE`:
+  the diagonal within space `G` is not in `NSPACE f` for `f = o(G)`, and is in `NSPACE G`.
+* `Cslib.Complexity.NSPACE_ssubset_NSPACE`: the nondeterministic space hierarchy theorem.
+* `Cslib.Complexity.NL_ssubset_NSPACE_log2_sq`,
+  `Cslib.Complexity.NSPACE_log2_pow_ssubset_NSPACE_log2_pow_succ`,
+  `Cslib.Complexity.NSPACE_pow_ssubset_NSPACE_pow_succ`, `Cslib.Complexity.NL_ssubset_PSPACE`: its
+  corollaries.
 
 ## References
 
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
+* [N. Immerman, *Nondeterministic Space Is Closed under Complementation*][Immerman1988]
+* [R. Szelepcsényi, *The Method of Forcing for Nondeterministic Automata*][Szelepcsenyi1987]
 -/
 
 public section
@@ -230,5 +259,16 @@ theorem NSPACE_pow_ssubset_NSPACE_pow_succ (k : ℕ) :
     (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)))
     (eventually_mul_pow_add_le_succ_pow k)).trans_subset (NSPACE_subset_of_le_mul_add (2 ^ (k + 1))
       1 fun n => by simpa using Nat.mul_add_one_pow_le_two_pow 1 (k + 1) n)
+
+/-- **Nondeterministic logarithmic space is strictly within polynomial space**
+[Sipser, Corollary 9.6][Sipser2013]: `NL ⊆ DSPACE (log₂ n ^ 2)` by Savitch's theorem
+(`Cslib.Complexity.NL_subset_DSPACE_log2_sq`), which is strictly within
+`DSPACE (log₂ n ^ 3) ⊆ PSPACE` by the deterministic space hierarchy. -/
+theorem NL_ssubset_PSPACE : NL encBits ⊂ PSPACE encBits :=
+  (NL_subset_DSPACE_log2_sq.trans_ssubset
+    (DSPACE_log2_pow_ssubset_DSPACE_log2_pow_succ 1)).trans_subset
+    <| (DSPACE_mono (s₂ := fun n => (n + 1) ^ 3) fun n =>
+      Nat.pow_le_pow_left ((Nat.log2_le_self n).trans (Nat.le_succ n)) 3).trans
+    (DSPACE_subset_PSPACE (by fun_prop))
 
 end Cslib.Complexity

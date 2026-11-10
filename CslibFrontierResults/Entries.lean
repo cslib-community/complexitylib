@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
@@ -166,7 +167,26 @@ register_result "space-hierarchy" where
   scope := "DSPACE f ⊂ DSPACE g on binary words for space-constructible g with ⌊log₂ n⌋ ≤ g n \
     when every c·f(n)+c is eventually below g(n): the textbook gap and logarithmic threshold. \
     DSPACE is total deterministic decision by one native multi-tape machine within \
-    O(s n) work cells. The nondeterministic space hierarchy is not part of this entry."
+    O(s n) work cells. The nondeterministic space hierarchy is the entry nspace-hierarchy."
+
+register_result "nspace-hierarchy" where
+  title := "The nondeterministic space hierarchy"
+  topic := "space complexity"
+  sources := [
+    { paper := Sipser2013, theorem := unverified, locator := unverified },
+    { paper := Immerman1988, theorem := unverified, locator := unverified },
+    { paper := Szelepcsenyi1987, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.NSPACE_ssubset_NSPACE,
+    Cslib.Complexity.NL_ssubset_NSPACE_log2_sq
+  ]
+  scope := "NSPACE f ⊂ NSPACE g on binary words for space-constructible g with ⌊log₂ n⌋ ≤ g n \
+    when every c·f(n)+c is eventually below g(n), the same hypotheses as the deterministic \
+    hierarchy. NSPACE is decision by one finite-state native nondeterministic multi-tape machine \
+    within c₁·s(n) + c₂ work cells along every computation prefix, every branch halting. The \
+    diagonal is in NSPACE g by Immerman–Szelepcsényi complementation of a budgeted universal \
+    recognizer that reads its input in place."
 
 register_result "alternation" where
   title := "Chandra–Kozen–Stockmeyer: AP equals PSPACE"

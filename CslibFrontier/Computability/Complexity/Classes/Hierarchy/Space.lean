@@ -68,7 +68,9 @@ hierarchy theorem [Stearns, Hartmanis and Lewis][StearnsHartmanisLewis1965],
 * `DSPACE (n ^ k) ⊂ DSPACE (n ^ (k + 1))` (`Cslib.Complexity.DSPACE_pow_ssubset_DSPACE_pow_succ`);
 * `L ⊂ PSPACE` (`Cslib.Complexity.L_ssubset_PSPACE`).
 
-The gap `f = o(g)` and the lower bound `log n ≤ g n` are the textbook ones.
+The gap `f = o(g)` and the lower bound `log n ≤ g n` are the textbook ones. The nondeterministic
+space hierarchy, under the same hypotheses, is in
+`CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace`.
 
 ## Main definitions
 
@@ -88,6 +90,9 @@ The gap `f = o(g)` and the lower bound `log n ≤ g n` are the textbook ones.
   `Cslib.Complexity.DSPACE_log2_pow_ssubset_DSPACE_log2_pow_succ`,
   `Cslib.Complexity.DSPACE_pow_ssubset_DSPACE_pow_succ`, `Cslib.Complexity.L_ssubset_PSPACE`: its
   corollaries.
+* `Cslib.Complexity.eventually_mul_log2_pow_add_le`,
+  `Cslib.Complexity.eventually_mul_pow_add_le_succ_pow`: the gaps between consecutive powers of
+  `log₂ n` and of `n`, shared with the nondeterministic corollaries.
 
 ## References
 
