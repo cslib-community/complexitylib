@@ -23,8 +23,9 @@ The finite universe is the whole type; use a subtype for a restricted universe.
 
 Only batch construction and its mathematical bill/risk guarantees are proved.
 A native binary implementation/resource certificate, response token-bill and
-latency execution, asymptotic approximation corollaries and encoded Set Cover
-hardness remain separate obligations; this is not completion of Theorem 4.
+latency execution and encoded Set Cover hardness remain separate obligations;
+this is not completion of Theorem 4. `PartialCoverAsymptotics` derives the source
+asymptotic approximation corollaries from the numerical factor below.
 
 ## Main results
 

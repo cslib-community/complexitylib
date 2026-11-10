@@ -3368,6 +3368,7 @@ public import CslibFrontier.Computability.Probabilistic.NativeBatch
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Coverage
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.History
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.InitialEpoch
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Retained
@@ -6051,6 +6052,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Respons
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeControl
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Selector
 public import CslibFrontier.Probability.StochasticOracle.PartialCover
+public import CslibFrontier.Probability.StochasticOracle.PartialCoverAsymptotics
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverGreedy
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverRisk
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverThreshold

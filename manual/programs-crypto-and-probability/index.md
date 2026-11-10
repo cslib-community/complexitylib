@@ -312,8 +312,20 @@ in [the bibliography](../../references.bib). The checked clients are in
   joint law with random correlated bills and latencies. This finite-table model
   assumes individual caps at every resource outcome; it does not construct a
   native sampler or charge local computation.
-  Native binary time/space and asymptotic approximation
-  consequences and hardness transfer remain open, as do Theorems 5–6.
+  Import [PartialCoverAsymptotics](../../CslibFrontier/Probability/StochasticOracle/PartialCoverAsymptotics.lean)
+  for `factor`, exactly the ceiling/logarithmic factor in `greedy_risk_bill`.
+  `fixed_failure` proves $O(\log^2 n)$ for fixed $p,\eta\in(0,1)$;
+  `polynomial_failure` proves $O(\log n)$ when $\log(1/\delta_n)$ lies eventually
+  between fixed positive multiples of $\log n$, the source's
+  $\delta_n=n^{-\Theta(1)}$ regime. The
+  [asymptotic client](../../CslibFrontierTests/StochasticOraclePartialCoverAsymptotics.lean)
+  checks fixed failure and the nonconstant budget $\delta_n=1/n$.
+  Native binary time/space composition remains open: the executable greedy scan
+  and rational threshold search have no uniform native machine/resource certificate.
+  Set Cover approximation hardness is tracked in
+  [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
+  not supplied as a premise.
+  Unrestricted Theorems 5–6 also remain open.
   From a configured checkout, check the complete
   [StochasticOracleMulticoverGreedy](../../CslibFrontierTests/StochasticOracleMulticoverGreedy.lean)
   client with `lake build CslibFrontierTests.StochasticOracleMulticoverGreedy` for
@@ -816,7 +828,8 @@ outside the constructive retention algorithm.
 Theorem 5 remains incomplete at unrestricted source scope: these are finite-alphabet
 behavioral kernels, without a realization/representation theorem for every encoded
 selection-only PTM or general measurable alphabets. Native encoded machine resources
-also remain open. Theorem 4's native runtime/asymptotic/hardness claims remain open.
+also remain open. Theorem 4's native runtime and hardness claims remain open;
+its asymptotic factors are now proved.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
 
@@ -953,7 +966,7 @@ representation required by Theorem 5 and the full two-turn lower optimum in
 Theorem 6. Later sections derive native query epochs and the concrete block controller.
 General response alphabets and external PTM/query encodings, canonical-label
 recovery and arbitrary source-policy compilation remain open.
-The earlier Theorem 4 resource/asymptotic/hardness gaps remain. ROADMAP preserves
+The earlier Theorem 4 native resource/hardness gaps remain. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
 review and validation procedures are unchanged. No curated abstract depends on
@@ -1556,7 +1569,7 @@ established. The trace preserves divergent mass and its earlier receipts, but eq
 with a cofinal infinite-instruction path-cost law and real integrability are separate
 obligations. Divergence has no native terminal-world bill.
 
-Theorem 4's native resource/asymptotic/hardness gaps remain. Neither unrestricted
+Theorem 4's native resource/hardness gaps remain. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes. The Agent Operator's Manual requires no edit because human direction,
 ownership, review and validation procedures are unchanged.
@@ -2059,6 +2072,16 @@ empty feasibility/OPT infinity for positive success on nonempty ground at zero
 oracle deadline, even with one advertised turn and arbitrary source randomness.
 The separate [positive-duration native client](../../CslibFrontierTests/NativeBatchSuccess.lean)
 discharges the underlying native deadline theorem's reached latency assumptions.
+The [positive-deadline correlated client](../../CslibFrontierTests/NativeRetentionDeadlinePositive.lean)
+uses a satisfiable singleton instance, two concurrent opportunities, deadline one,
+latency one, and a shared fair bit controlling both coverage and invoices.
+The named controller's actual certified tape-success probability is exactly $1/2$;
+all admitted competitors on that same oracle have necessary target $\eta\le1/2$.
+The client derives the reached source envelopes for arbitrary competitors using
+[InitialEpoch](../../CslibFrontier/Computability/Probabilistic/NativeBatch/InitialEpoch.lean):
+positive-probability first issued histories preserve the original selected-batch
+joint law through arbitrary silent computation, hidden control and rejected requests.
+It assumes neither a conditional representation identity nor competitor termination.
 
 
 The source model (PDF p. 5) explicitly excludes local computation from deadline
