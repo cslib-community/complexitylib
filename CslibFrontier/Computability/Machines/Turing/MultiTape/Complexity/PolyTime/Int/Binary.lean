@@ -112,11 +112,6 @@ private theorem intBin_code : ComputableInPolyTime encIntBin encIntBin encBits :
 private theorem natBits : ComputableInPolyTime Nat.bits encNat encBits :=
   of_eq fun _ => rfl
 
-/-- Boolean equality on its fixed finite input domain. -/
-private theorem bool_beq : ComputableInPolyTime (fun p : Bool × Bool => p.1 == p.2)
-    (encPair encBool encBool) encBool :=
-  of_finite _
-
 /-- Whether a binary integer is negative: the sign bit of its code. -/
 @[fun_prop]
 theorem intBin_isNeg :
@@ -165,7 +160,7 @@ theorem intBin_add : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 + p.2)
   have hsb := intBin_isNeg.comp (snd encIntBin encIntBin)
   have hma := intBin_natAbs.comp (fst encIntBin encIntBin)
   have hmb := intBin_natAbs.comp (snd encIntBin encIntBin)
-  have h := (bool_beq.comp (hsa.prod hsb)).ite'
+  have h := (hsa.beq hsb).ite'
     (intBin_signMagnitude.comp (hsa.prod (binary_add.comp (hma.prod hmb))))
     ((binary_le.comp (hmb.prod hma)).ite'
       (intBin_signMagnitude.comp (hsa.prod (binary_sub.comp (hma.prod hmb))))
