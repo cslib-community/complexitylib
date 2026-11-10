@@ -4008,6 +4008,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.OneHot
 public import CslibFrontier.Crypto.Primitives.Garbling.Privacy
 public import CslibFrontier.Crypto.Primitives.Garbling.Rerandomizable
 public import CslibFrontier.Crypto.Primitives.Garbling.Scheme
+public import CslibFrontier.Crypto.Primitives.Garbling.SizeLowerBound
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Basic
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Garble
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Oblivious
@@ -5713,7 +5714,9 @@ public import CslibFrontier.Probability.DDGTree.KnuthYao
 public import CslibFrontier.Probability.Divergence
 public import CslibFrontier.Probability.Entropy
 public import CslibFrontier.Probability.Entropy.BitString
+public import CslibFrontier.Probability.Entropy.Continuity
 public import CslibFrontier.Probability.Entropy.Fano
+public import CslibFrontier.Probability.Entropy.Guessing
 public import CslibFrontier.Probability.Entropy.Pi
 public import CslibFrontier.Probability.EntropyConcentration
 public import CslibFrontier.Probability.EntropyExtraction
