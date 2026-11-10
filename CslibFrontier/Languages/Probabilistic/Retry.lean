@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Expected
 public import CslibFrontier.Languages.Probabilistic.Vector
 import CslibFrontier.Probability.PMF.BindFailure
-import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.EventBind
 
 /-!

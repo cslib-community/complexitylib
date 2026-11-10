@@ -52,7 +52,7 @@ namespace Cslib.Probability.PMF
 
 open scoped ENNReal
 
-variable {α β : Type*}
+variable {α : Type*}
 
 /-- Every event has finite probability, including on an infinite ambient type.
 Adapted from the cslib `crypto` branch at `5ff69ca`. -/

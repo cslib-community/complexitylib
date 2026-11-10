@@ -36,11 +36,13 @@ stages (`toOuterMeasure_rate_ge`).
 
 ## References
 
-The `ENNReal` event-composition lemmas were extracted from Renfei Zhou's Karger algorithm
-development.
+`toOuterMeasure_bind_toReal`, `toOuterMeasure_bind_failure_le` and
+`toOuterMeasure_bind_failure_toReal_le` are adapted from Probability/PMF.lean on the cslib `crypto`
+branch at `5ff69ca93402e7c947208dc56396d6d86203ccd8`. The `ENNReal` event-composition lemmas were
+extracted from Renfei Zhou's Karger algorithm development.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

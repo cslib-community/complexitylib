@@ -31,7 +31,7 @@ pointwise implication on the support (`map_true_mono`), satisfies union bounds
   `PMF.map`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

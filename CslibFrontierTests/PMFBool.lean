@@ -27,9 +27,8 @@ example : (PMF.pure true) false = 0 := by
 example (p : PMF Bool) (h : p true = 1 / 4) : p false = 3 / 4 := by
   have hsum := PMF.apply_true_add_apply_false p
   have hq : (1 / 4 : ENNReal) + 3 / 4 = 1 := by
-    rw [ENNReal.div_add_div_same]
-    norm_num
-    exact ENNReal.div_self (by norm_num) (by norm_num)
+    rw [ENNReal.div_add_div_same, show (1 : ENNReal) + 3 = 4 by norm_num,
+      ENNReal.div_self (by norm_num) (by norm_num)]
   rw [h] at hsum
   exact (ENNReal.add_right_inj (by simp)).1 (hsum.trans hq.symm)
 

@@ -16,7 +16,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.BitString.List
-import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PMFSwap
 

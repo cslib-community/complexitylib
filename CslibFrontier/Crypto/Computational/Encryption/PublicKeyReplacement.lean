@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
-import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT

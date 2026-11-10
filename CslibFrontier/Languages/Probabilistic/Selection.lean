@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Iteration
-import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Languages.Probabilistic.Concentration
 import CslibFrontier.Probability.PMF.EventBind
