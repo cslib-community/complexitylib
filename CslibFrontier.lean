@@ -4577,6 +4577,7 @@ public import CslibFrontier.Foundations.Combinatorics.BinomialTail
 public import CslibFrontier.Foundations.Combinatorics.Bregman
 public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial
+public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
