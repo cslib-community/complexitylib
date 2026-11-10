@@ -5153,6 +5153,7 @@ public import CslibFrontier.GameTheory.Mechanism.SingleParameter
 public import CslibFrontier.GameTheory.Mechanism.VCG
 public import CslibFrontier.GameTheory.Mechanism.Vickrey
 public import CslibFrontier.GameTheory.Mechanism.VirtualValue
+public import CslibFrontier.GameTheory.MixedStrategy
 public import CslibFrontier.GameTheory.SocialChoice.Arrow
 public import CslibFrontier.GameTheory.SocialChoice.GibbardSatterthwaite
 public import CslibFrontier.GameTheory.SocialChoice.Ranking

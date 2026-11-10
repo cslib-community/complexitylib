@@ -309,9 +309,9 @@ vanishes on `(0, ∞)` (see `one_le_pigouBound`).
 [Bimatrix/Basic.lean](../../CslibFrontier/GameTheory/Bimatrix/Basic.lean) defines
 `BimatrixGame M N`, a two-player game with payoff matrices `A B : Matrix M N ℝ`. Unlike
 `CostGame`, players maximize payoffs, following von Stengel [vonstengel07][vonstengel07]. Mixed
-strategies are plain vectors with `IsMixedStrategy x` (nonnegative, summing to `1`), as in
-`Strategic/Mixed.lean`; `isMixedStrategy_iff_mem_range_weights` identifies them with the weights of
-`Convexity.StdSimplex`. The module defines best responses, `IsNash` and `IsNondegenerate`, the
+strategies are plain vectors with `IsMixedStrategy x` (nonnegative, summing to `1`), defined in
+[MixedStrategy.lean](../../CslibFrontier/GameTheory/MixedStrategy.lean);
+`isMixedStrategy_iff_mem_range_weights` identifies them with the weights of `Convexity.StdSimplex`. The module defines best responses, `IsNash` and `IsNondegenerate`, the
 source's Definition 3.2: no mixed strategy with support of size `k` has more than `k` pure best
 responses. It proves the best response condition (`isBestResponse₁_iff`, Proposition 3.1) and the
 equal support sizes of equilibria of nondegenerate games (`IsNash.ncard_support_eq`,
