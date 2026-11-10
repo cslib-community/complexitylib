@@ -59,8 +59,8 @@ paths, or the membership of two-player Nash in PPAD.
 * `BimatrixGame.IsNondegenerate.odd_ncard_isNash`: a nondegenerate bimatrix game has an odd
   number of Nash equilibria ([vonStengel2007], Corollary 3.7).
 * `BimatrixGame.IsNondegenerate.exists_isNash`: a nondegenerate bimatrix game has a Nash
-  equilibrium. The name `BimatrixGame.exists_isNash` is left for Nash's theorem for all bimatrix
-  games.
+  equilibrium. Nash's theorem for all bimatrix games is `BimatrixGame.exists_isNash` in
+  `CslibFrontier.GameTheory.Bimatrix.Existence`.
 
 ## References
 

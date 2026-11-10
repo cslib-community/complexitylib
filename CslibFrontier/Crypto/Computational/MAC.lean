@@ -21,9 +21,9 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -430,6 +430,19 @@ private theorem exists_oneTimeTagBound (M : MACScheme) :
   have h1 := hlens (sk, msg) tag htag
   simp only [length_encPair, encBits_apply] at h1
   exact h1.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
+
+/-- Every `MACScheme` admits a plain polynomial-time bound `tagBound : ℕ → ℕ` on the length of tags
+produced on `M.msgLen n`-bit messages under keys sampled from `M.keyGen n`. -/
+theorem exists_tag_length_bound_of_length_eq (M : MACScheme) :
+    ∃ tagBound : ℕ → ℕ,
+      ComputableInPolyTime tagBound encUnary encUnary ∧
+      ∀ n, ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
+        ∀ msg, msg.length = M.msgLen n →
+        ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n := by
+  obtain ⟨bound, hpoly, hb⟩ := M.exists_oneTimeTagBound
+  have hlen := M.msgLen_polyTime
+  refine ⟨fun n => bound n (M.msgLen n), by fun_prop,
+    fun n sk hsk msg hmsg tag htag => by simpa only [hmsg] using hb n sk hsk msg tag htag⟩
 
 /-- Full EUF-CMA security implies one-time EUF-CMA security for any `MACScheme`. -/
 theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA := by
@@ -1728,11 +1741,7 @@ theorem PseudorandomFunction.eufCma_prfMAC
   intro adversary hadversary
   have hdist := hprf.secure (macToPrfDistinguisher adversary)
     (isOraclePPT_macToPrfDistinguisher hadversary)
-  have hgeom : Negligible (fun n => (1 : ℝ≥0) / 2 ^ n) := by
-    simpa only [one_div, inv_pow] using
-      negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)
-  exact negligible_of_le (hdist.add hgeom)
-    (succProbability_eufCmaGame_prfMAC_le hprf.polyTime hprf.length_eq adversary)
+  negligible using succProbability_eufCmaGame_prfMAC_le hprf.polyTime hprf.length_eq adversary
 
 /-- **PRF-to-SUF-CMA security theorem** [Boneh and Shoup, Theorem 6.2][BonehShoup2023]:
 every uniform `PseudorandomFunction` yields a strongly unforgeable (`SUFCMA`) `MACScheme`. -/

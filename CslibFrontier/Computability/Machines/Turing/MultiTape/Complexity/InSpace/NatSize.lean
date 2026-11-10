@@ -27,7 +27,7 @@ namespace Turing.MultiTapeTM.ComputableInSpace
 theorem natSize :
     ComputableInSpace Nat.size encNat encNat (fun n => (encNat n).length) := by
   have hlen := (of_inO ComputableInO.lengthNat).weaken
-    (show (fun w : List Bool => w.length + 1) ≼ fun w => (encBits w).length from
+    (show (fun w : List Bool => w.length) ≼ fun w => (encBits w).length from
       .of_le_linear 1 1 fun w => by simp [encBits_apply])
   refine (hlen.of_encIn_eq Nat.bits (fun _ => rfl)).of_enc_eq ?_
   intro n

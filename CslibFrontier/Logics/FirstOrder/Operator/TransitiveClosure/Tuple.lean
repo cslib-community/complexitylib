@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
 public import CslibFrontier.Logics.FirstOrder.Operator.Tuple
+import CslibFrontier.Foundations.Relation.Transport
 
 /-!
 # Pulling transitive-closure formulas back to tuples
@@ -72,16 +73,6 @@ theorem blockEquiv_pair {M N : Type*} (e : (Fin d → M) ≃ N) {k : ℕ}
         rw [Nat.mul_add, Nat.mul_comm d k]
         omega)
     rw [h, pair, Fin.cast_cast, Fin.cast_eq_self, Fin.append_right]
-
-/-- Reachability is invariant under a bijection that carries one edge relation to the other. -/
-private theorem reflTransGen_equiv {A B : Type*} (g : A ≃ B) (r : A → A → Prop)
-    (p : B → B → Prop) (h : ∀ a b, r a b ↔ p (g a) (g b)) (a b : A) :
-    Relation.ReflTransGen r a b ↔ Relation.ReflTransGen p (g a) (g b) := by
-  refine ⟨fun hab => Relation.ReflTransGen.lift g (fun x y hxy => (h x y).mp hxy) a b hab,
-    fun hab => ?_⟩
-  have := Relation.ReflTransGen.lift g.symm (r := p) (p := r)
-    (fun x y hxy => (h _ _).mpr (by simpa only [Equiv.apply_symm_apply] using hxy)) _ _ hab
-  simpa only [Function.onFun, Equiv.symm_apply_apply] using this
 
 /-- Lay out the flattened coordinates of two endpoint tuples as one closure tuple. -/
 @[expose] def endpointMap {β : Type*} {k : ℕ} : β ⊕ Fin (2 * k * d) → β ⊕ Fin (2 * (k * d)) :=
@@ -168,10 +159,10 @@ private theorem realize_applyTerms_tc {k : ℕ} (args : Fin (2 * k) → L'.Term 
       fun i => pair P Q (Fin.cast (Nat.mul_assoc 2 k d) i) := by
     rw [Equiv.symm_apply_eq, blockEquiv_pair, Equiv.apply_symm_apply, Equiv.apply_symm_apply,
       pair_left_right]
-  have key := reflTransGen_equiv (blockEquiv e k)
-    (fun xs ys => φs.Realize interpretation ρs
+  have key := Relation.reflTransGen_equiv_iff (blockEquiv e k)
+    (r := fun xs ys => φs.Realize interpretation ρs
       (Sum.elim (Sum.elim v (fun i => pair P Q (Fin.cast (Nat.mul_assoc 2 k d) i))) (pair xs ys)))
-    (fun xs ys => φt.Realize interpretation ρt
+    (s := fun xs ys => φt.Realize interpretation ρt
       (Sum.elim (fun a => e (fun i => v (a, i))) (pair xs ys)))
     (hφ _) P Q
   rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply] at key

@@ -143,7 +143,7 @@ private def finish (depth : α → ℕ) (p : State α × ℕ) : State α :=
 
 private theorem length_polyTime : ComputableInPolyTime List.length encBits encNat :=
   ComputableInO.lengthNat.computableInPolyTime
-    (PolyBounded.of_forall_le 1 2 fun _ => by simp)
+    (PolyBounded.of_forall_le 1 1 fun _ => by simp)
     (PolyBounded.of_forall_le 1 1 fun _ => by simp)
 
 private theorem finish_polyTime {enc : α ↪ List Bool} {depth : α → ℕ}

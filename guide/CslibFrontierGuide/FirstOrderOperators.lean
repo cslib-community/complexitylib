@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 import VersoManual
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
 import CslibFrontier.Logics.FirstOrder.Operator.Relabel
@@ -133,14 +134,18 @@ because there is still one empty tuple.
 The semantic API proves reflexivity, inclusion of body edges, and composition of paths.
 {name}`Cslib.Logic.FO.Ordered.TCDefinable.encodedLanguage_mem_NL` gives the easy half of
 Immerman's capture theorem: on canonically ordered structures, every query defined by one FO(TC)
-sentence lies in native `NL`. The converse, NL ⊆ FO(TC), is not yet proved.
+sentence lies in native `NL`. The converse,
+{name}`Cslib.Logic.FO.Ordered.PosTCDefinable.of_encodedLanguage_mem_NL`, defines every native `NL`
+query by one sentence with a single positive closure, so
+{name}`Cslib.Logic.FO.Ordered.tcDefinable_iff_encodedLanguage_mem_NL` states FO(TC) = NL.
 
 {name}`Cslib.Logic.FO.Ordered.FullTupleInterpretation.onTCSentence` transports FO(TC) sentences
 along a full-tuple interpretation, as `onLFPSentence` does for FO(LFP). A closure over pairs of
 width-`w` target tuples becomes one over pairs of width-`w * k` source tuples. Each closure keeps
 its polarity, so positive sentences stay positive, and truth on `Fin (n ^ k)` equals truth of the
-pullback on `Fin n`. A machine configuration can thus be coded by a fixed number of elements of a
-polynomially larger universe and its reachability still be expressed over the input universe.
+pullback on `Fin n`. The converse uses this: a machine configuration is coded by a fixed number of
+elements of a polynomially larger universe, one per register, and its reachability is still
+expressed over the input universe.
 
 # Constructing Formulas from Predicates
 %%%

@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Probabilistic.Fold
 import CslibFrontier.Computability.Probabilistic.Finite
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -3766,9 +3767,7 @@ private theorem eval_simSharedMulSteps_progSteps {m n g : ℕ} [NeZero m] (I : F
       I.restrict_def, simSharedMulSteps_append, Steps.outputAt_append, bind_pure_comp]
     refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun r_p hr_p => ?_
     have hw := hsum_p r_p hr_p
-    rw [PMF.bind_comm]
-    refine congrArg (PMF.bind (ProbComp.eval (simSharedMulSteps I (GMWCircuit.progSteps m p)
-      (I.restrict st) (I.restrict r_p)))) (funext fun sub₁ => ?_)
+    pmf_swap with sub₁
     rw [← simSharedMulSteps_lineSteps I x_flat p line
       (fun i => (GMWCircuit.progSteps m p).outputAt i (st i) (r_p i)) hw
       (fun i => encOTSubCoins _ i.1 (sub₁ i).1)
@@ -4659,8 +4658,7 @@ private theorem eval_simSharedMulSteps_outCoordsSteps {m k : ℕ} [NeZero m]
         (simSharedMulSteps_singleCoordSteps I coord L a_table y_acc ans)
     simp only [bind_map_left, Functor.map_map] at hstep1
     simp_rw [hstep1, ProbComp.eval_bind]
-    rw [PMF.bind_comm]
-    refine congrArg (PMF.bind _) (funext fun r => ?_)
+    pmf_swap with r
     let mul := simSharedMulPure m I
       (fun s => (a_table s coord.1 coord.2, GMWCircuit.constShare true s)) ans r
     have hih := congrArg

@@ -4,11 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Space
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Marking
 
 /-!
-# Tests: alternating space, `APSPACE ⊆ EXP` and `AL ⊆ P`
+# Tests: alternating space, `APSPACE ⊆ EXP`, `AL ⊆ P` and `ASPACE s ⊆ DTIME (2 ^ O(s))`
 
 A one-state machine that emits its move and halts decides `Set.univ` (existential) and `∅`
 (universal) within space `0`, so both are in `AL`, `APSPACE`, `P` and `EXP` through the explicit
@@ -252,5 +254,27 @@ example (input : List Bool) :
       (2 ^ (2 * MultiTapeNTM.coreLengthBound 0 Unit input.length 0 + 1)) = true :=
   (MultiTapeATM.boundedAccepts_iff (MultiTapeNTM.runsInSpace_zero_tapes _ _ _) le_rfl).mpr
     (accepts_loop input)
+
+/-- Marking the views found by breadth-first search until closed needs no bound on the number of
+views: it rejects for the universal machine and accepts for the existential one. -/
+example (input : List Bool) :
+    (loopOrAccept true).reachableAccepts input = false ∧
+      (loopOrAccept false).reachableAccepts input = true := by
+  rw [← Bool.not_eq_true, MultiTapeATM.reachableAccepts_iff
+    (MultiTapeNTM.runsInSpace_zero_tapes _ _ (s := 0)), MultiTapeATM.reachableAccepts_iff
+    (MultiTapeNTM.runsInSpace_zero_tapes _ _ (s := 0))]
+  exact ⟨not_accepts_loop input, accepts_loop input⟩
+
+/-! ### Alternating space within deterministic exponential time -/
+
+/-- The recognizer with an infinite branch puts `∅` in `DTIME (2 ^ O(log₂ n))`. -/
+example : ∃ c, (∅ : Set (List Bool)) ∈ DTIME encBits fun n => 2 ^ (c * (Nat.log2 n + 0 + 1)) :=
+  recognizesInSpace_empty.mem_DTIME (s := fun n => 0 * (Nat.log2 n + 1)) |>.imp
+    fun _ h => DTIME_mono (fun _ => by simp) h
+
+/-- `ASPACE (log₂ n) ⊆ DTIME (2 ^ O(log₂ n))` on the universal logspace decider. -/
+example : ∃ c, (∅ : Set (List Bool)) ∈ DTIME encBits fun n => 2 ^ (c * Nat.log2 n) :=
+  exists_mem_DTIME_of_mem_ASPACE_of_log2_le (fun _ => le_rfl)
+    (AL_eq_ASPACE ▸ ⟨0, Unit, inferInstance, emitMove true, 0, decidesInSpace_empty⟩)
 
 end CslibFrontierTests.AlternatingSpace

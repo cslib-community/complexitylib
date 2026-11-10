@@ -14,8 +14,8 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.I
 
 These `fun_prop` rules extend those of `InSpace.FunProp` to values of finite types. A function of
 a value of a finite type (`budget_finite`) costs no workspace beyond the value. Conditions may be
-decidable propositions (`budget_iteProp`), equalities on a finite type (`budget_decideEq`) or
-Boolean connectives.
+decidable propositions (`budget_iteProp`), their negations (`budget_decideNot`), equalities on a
+finite type (`budget_decideEq`) or Boolean connectives.
 
 The rules reach `fun_prop` only where this module is imported, directly or through
 `CslibFrontier.Tactic.Space`. A direct `fun_prop` client that needs them imports this module.
@@ -26,7 +26,7 @@ is a projection of a hypothesis, state that projection first, for example
 
 ## Main results
 
-* `budget_iteProp`, `budget_decideEq`: decidable conditions within the budget.
+* `budget_iteProp`, `budget_decideNot`, `budget_decideEq`: decidable conditions within the budget.
 * `budget_boolNot`, `budget_boolAnd`, `budget_boolOr`: Boolean connectives within the budget.
 -/
 
@@ -45,6 +45,14 @@ theorem budget_iteProp {p : α → Prop} [DecidablePred p] {f g : α → β}
     (hf : ComputableInSpace f encIn encB Bs) (hg : ComputableInSpace g encIn encB Bs) :
     ComputableInSpace (fun x => if p x then f x else g x) encIn encB Bs :=
   (budget_ite hc hf hg).of_enc_eq fun x => by simp only [decide_eq_true_eq]
+
+/-- The negation of a decidable proposition, within the budget. This covers `≠` conditions. -/
+@[fun_prop]
+theorem budget_decideNot {p : α → Prop} [DecidablePred p]
+    (hp : ComputableInSpace (fun x => decide (p x)) encIn encBool Bs) :
+    ComputableInSpace (fun x => decide ¬p x) encIn encBool Bs :=
+  (budget_finite (encC := encBool) (fun b : Bool => !b) hp).of_enc_eq fun x => by
+    simp only [decide_not]
 
 /-- Equality of two values of a finite type, within the budget. -/
 @[fun_prop]

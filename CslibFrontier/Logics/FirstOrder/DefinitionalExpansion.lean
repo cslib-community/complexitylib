@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Tactic.FirstOrder.Init
 public import Mathlib.ModelTheory.Complexity
 
 /-!
@@ -22,7 +23,7 @@ argument variables. If every replacement defines its symbol in a structure `M`, 
 preserves truth in `M` (`Cslib.Logic.FO.realize_unfoldSymbols`).
 
 The definitions may use quantifiers, so the translation of a quantifier-free formula need not
-be quantifier-free; it is when every relation definition is (`Cslib.Logic.FO.IsQF.unfoldSymbols`).
+be quantifier-free; it is when every relation definition is (`Cslib.Logic.FO.isQF_unfoldSymbols`).
 Function symbols are replaced with Mathlib's `Term.substFunc`.
 
 `Cslib.Logic.FO.Interpretation.onFormula` also replaces each relation symbol by a formula. It
@@ -38,7 +39,7 @@ keep its constants and functions.
 
 * `Cslib.Logic.FO.realize_unfoldSymbols`, `Cslib.Logic.FO.realize_unfoldSymbols_formula`: the
   translation preserves truth in every structure where the definitions hold.
-* `Cslib.Logic.FO.IsQF.unfoldSymbols`: quantifier-free relation definitions preserve
+* `Cslib.Logic.FO.isQF_unfoldSymbols`: quantifier-free relation definitions preserve
   quantifier-freeness.
 -/
 
@@ -74,7 +75,8 @@ private theorem isQF_subst {β : Type*} {n : ℕ} {φ : L'.BoundedFormula β n} 
 
 /-- **Unfolding by quantifier-free relation definitions preserves quantifier-freeness.** Function
 symbols may be replaced by arbitrary terms. -/
-theorem IsQF.unfoldSymbols (tf : ∀ {n : ℕ}, L.Functions n → L'.Term (Fin n))
+@[aesop safe apply (rule_sets := [FirstOrder])]
+theorem isQF_unfoldSymbols (tf : ∀ {n : ℕ}, L.Functions n → L'.Term (Fin n))
     {rf : ∀ {n : ℕ}, L.Relations n → L'.Formula (Fin n)} (hrf : ∀ {n : ℕ} (R : L.Relations n),
       (rf R).IsQF) {k : ℕ} {φ : L.BoundedFormula α k} (h : φ.IsQF) :
     (unfoldSymbols tf rf φ).IsQF :=

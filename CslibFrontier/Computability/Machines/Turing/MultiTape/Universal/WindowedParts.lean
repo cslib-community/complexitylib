@@ -45,13 +45,6 @@ open ComputableInO
 
 /-! ### Sizes -/
 
-private lemma one_le_length_encIntUnary (z : ℤ) : 1 ≤ (encIntUnary z).length := by
-  rw [length_encIntUnary]; split_ifs <;> omega
-
-private lemma length_encList_drop_le {α : Type} (enc : α ↪ List Bool) (l : List α) (i : ℕ) :
-    (encList enc (l.drop i)).length ≤ (encList enc l).length :=
-  ((List.drop_sublist i l).flatMap (frame ∘ enc)).length_le
-
 /-- Cutting does not lengthen a window. -/
 private lemma length_eTape_cut_le (r : ℕ) (t : Tape) :
     (eTape (cut r t)).length ≤ (eTape t).length := by
@@ -65,22 +58,11 @@ private lemma length_eTape_cut_le (r : ℕ) (t : Tape) :
 private lemma length_eTape_paste_le (r : ℕ) (o i : Tape) :
     (eTape (paste r o i)).length ≤ (eTape o).length + (eTape i).length := by
   have h₁ := one_le_length_encIntUnary o.head
-  have h₂ := length_encList_drop_le eSym o.left r
-  have h₃ := length_encList_drop_le eSym o.right (r + 1)
+  have h₂ := length_encList_sublist eSym (List.drop_sublist r o.left)
+  have h₃ := length_encList_sublist eSym (List.drop_sublist (r + 1) o.right)
   simp only [paste, eTape_apply, length_encPair, encIntUnary_zero, List.length_singleton,
     encList_append, List.length_append]
   omega
-
-/-- Mapping a function that does not lengthen elements does not lengthen the encoded list. -/
-private lemma length_encList_map_le {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    {f : α → β} (hf : ∀ a, (encB (f a)).length ≤ (encA a).length) (l : List α) :
-    (encList encB (l.map f)).length ≤ (encList encA l).length := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    have := hf a
-    simp only [List.map_cons, encList_cons, List.length_append, length_frame]
-    omega
 
 /-- Zipping with a function whose values are no longer than its two arguments together. -/
 private lemma length_encList_zipWith_le {α β γ : Type} {encA : α ↪ List Bool}
@@ -118,8 +100,8 @@ private lemma paste_inO : ComputableInO (fun q : ℕ × Tape × Tape => paste q.
     fun q => (encPair encUnary (encPair eTape eTape) q).length := by
   unfold paste
   refine .mono (by fun_prop) 64 (fun q => ?_) fun q => ?_ <;>
-  · have h₁ := length_encList_drop_le eSym q.2.1.left q.1
-    have h₂ := length_encList_drop_le eSym q.2.1.right (q.1 + 1)
+  · have h₁ := length_encList_sublist eSym (List.drop_sublist q.1 q.2.1.left)
+    have h₂ := length_encList_sublist eSym (List.drop_sublist (q.1 + 1) q.2.1.right)
     simp only [eTape_apply, length_encPair, encUnary_apply, List.length_replicate] at *
     omega
 
@@ -137,7 +119,7 @@ theorem extract_inO :
     (g := fun p : ℕ × Win => extract p.1 p.2) fun _ => rfl).mono 8 (fun p => ?_) fun p => ?_
   all_goals
     obtain ⟨r, s, ts⟩ := p
-    have h₁ := length_encList_map_le (length_eTape_cut_le r) ts
+    have h₁ := length_encList_map_le eTape eTape (l := ts) fun t _ => length_eTape_cut_le r t
     have h₂ : listMax (fun a => (encPair encUnary eTape (r, a)).length) ts ≤
         2 * (encUnary r).length + 1 + (encList eTape ts).length :=
       listMax_le fun a ha => by
@@ -350,22 +332,12 @@ private lemma wFin_inO : ComputableInO wFin
 
 /-! #### Sizes -/
 
-private lemma length_read_le (t : Tape) : (eSym t.read).length ≤ (eTape t).length := by
-  have : (eSym (t.right.headD none)).length ≤ (encList eSym t.right).length := by
-    cases t.right <;> simp; omega
-  simp only [Tape.read, eTape_apply, length_encPair] at *
-  omega
-
-private lemma length_encList_tail_le {α : Type} (enc : α ↪ List Bool) (l : List α) :
-    (encList enc l.tail).length ≤ (encList enc l).length :=
-  ((List.tail_sublist l).flatMap (frame ∘ enc)).length_le
-
 private lemma length_read_headD_le (l : List Tape) :
     (eSym (l.headD default).read).length ≤ (encList eTape l).length := by
   cases l with
   | nil => exact le_of_eq rfl
   | cons t l =>
-    have := length_read_le t
+    have := length_eSym_read_le t
     simp only [List.headD_cons, encList_cons, List.length_append, length_frame]
     omega
 
@@ -373,7 +345,7 @@ private lemma length_eWCtx_wCtx_le (x : Desc × Win) :
     (eWCtx (wCtx x)).length ≤ 4 * (encPair eDesc eWin x).length + 8 := by
   have h₁ := length_inSym_le (wHead x).read
   have h₂ := length_read_headD_le x.2.2
-  have h₃ := length_encList_tail_le eTape x.2.2
+  have h₃ := length_encList_sublist eTape (List.tail_sublist x.2.2)
   have h₄ : (encNat (inPos (wHead x).read)).length ≤ 1 :=
     (length_encNat_le _).trans (inPos_le _)
   simp only [wCtx, wHead, eCfg_apply, length_encPair] at *

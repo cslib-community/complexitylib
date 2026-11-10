@@ -692,6 +692,16 @@ Carl Hierholzer. “Ueber die Möglichkeit, einen Linienzug ohne Wiederholung un
 
 Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudorandom Generator from Any One-Way Function.” *SIAM Journal on Computing* 28(4), 1364–1396, 1999. https://doi.org/10.1137/S0097539793244708 . Publisher abstract checked; full article not independently audited.
 
+<a id="hk21"></a>
+## hk21
+
+David Heath, Vladimir Kolesnikov. “One Hot Garbling.” *ACM CCS 2021*, 574–593. https://doi.org/10.1145/3460120.3484764 . Full version: Cryptology ePrint Archive, Paper 2022/798, https://eprint.iacr.org/2022/798 . The ePrint full text was read in this pass for §4.1 (p. 10): the binary-to-one-hot conversion expands a GGM tree, sending two encrypted values per level and a final correction, `2(n − 1) + 1` ciphertexts in all. Cited as the origin of one-hot garbling. The library's single-ciphertext construction is the one of [heath24](#heath24), not this one, and its obliviousness reduction is original rather than a transcription of this paper's proof.
+
+<a id="hkn24"></a>
+## hkn24
+
+David Heath, Vladimir Kolesnikov, Lucien K. L. Ng. “Garbled Circuit Lookup Tables with Logarithmic Number of Ciphertexts.” *EUROCRYPT 2024*. Full version: Cryptology ePrint Archive, Paper 2024/369, https://eprint.iacr.org/2024/369 . The ePrint full text was read in this pass for Definition 1 (circular correlation robustness, following Zahur–Rosulek–Evans, with `Δ ∈ 1{0,1}^{κ−1}`), Figure 1 (p. 10, the interface of one-hot garbling, credited to [hk21](#hk21); it states `(2n − 1)κ` bits, the count of [hk21](#hk21), whereas Theorem 1 uses the `(n − 1)κ` of [heath24](#heath24)), Lemma 1 and the display after it (`T(f)ᵀ · H(x) = f(x)` and its garbled form), Theorem 1 (p. 19, cost `2ⁿm + (n − 1)κ + nmκ` per gate, matching the cost breakdown on p. 20) and the proof of Theorem 3 (obliviousness; the `n − 1` one-hot rows are simulated by uniform strings, as shown in [hk21](#hk21)).
+
 <a id="hmu06"></a>
 ## hmu06
 
@@ -766,6 +776,11 @@ Svante Janson, Tomasz Łuczak and Andrzej Ruciński. *Random Graphs*. Wiley-Inte
 ## johnsonlindenstrauss84
 
 William B. Johnson, Joram Lindenstrauss. “Extensions of Lipschitz Mappings into a Hilbert Space.” In *Conference in Modern Analysis and Probability (New Haven, Conn., 1982)*, Contemporary Mathematics 26, 189–206. American Mathematical Society, 1984. https://doi.org/10.1090/conm/026/737400 . Bibliographic data from the DOI record; the manual attributes only the existence of low-distortion linear embeddings of `n` points into `O(log n / ε²)` dimensions to this paper.
+
+<a id="jrr25"></a>
+## jrr25
+
+Jake Januzelli, Mike Rosulek, Lawrence Roy. "Lower Bounds for Garbled Circuits from Shannon-Type Information Inequalities." *Advances in Cryptology – CRYPTO 2025*, 2025. Full version: Cryptology ePrint Archive, Paper 2025/876, https://eprint.iacr.org/2025/876 . Bibliographic metadata from the ePrint record; the paper's numbered lemmas were not checked against the full text. Cited at topic level as motivation for the generic one-world conditional-entropy transfer and Fano size bound; the paper's multi-world gate-specific Shannon-type inequalities and single-gate random-oracle model are not formalized.
 
 <a id="kargerstein96"></a>
 ## kargerstein96
@@ -1012,6 +1027,11 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
 
+<a id="nash51"></a>
+## nash51
+
+John Nash. "Non-Cooperative Games." *Annals of Mathematics* 54(2), 286–295, 1951. https://doi.org/10.2307/1969529 . Bibliographic data from the DOI record. Theorem 1 ("every finite game has an equilibrium point") and its proof by Brouwer's theorem were checked on printed p. 288 of the scan at https://www.cs.upc.edu/~ia/nash51.pdf during the agent review of [#4105](https://github.com/cslib-community/cslib-frontier/pull/4105) on 2026-11-10.
+
 <a id="nisan07"></a>
 ## nisan07
 
@@ -1031,6 +1051,11 @@ Noam Nisan and Avi Wigderson. *Hardness vs Randomness*. Journal of Computer and 
 ## nordstrom15
 
 Jakob Nordström. *New Wine into Old Wineskins: A Survey of Some Pebbling Classics with Supplemental Results*, manuscript version of 25 March 2015. https://www.jakobnordstrom.se/docs/publications/PebblingSurveyTMP.pdf . Definition 1.1 (black pebble game), Proposition 2.5 (sliding), Theorem 4.1 (complete binary trees), Definition 4.5 and Theorem 4.8 (pyramids) were checked.
+
+<a id="np01"></a>
+## np01
+
+Moni Naor and Benny Pinkas. "Efficient Oblivious Transfer Protocols." *Proceedings of the Twelfth Annual ACM-SIAM Symposium on Discrete Algorithms (SODA 2001)*, 448–457, SIAM, 2001. Bibliographic metadata checked against `references.bib` (`NaorPinkas2001`); cited only as general background for DDH-based oblivious transfer without internal SODA 2001 locators (the SODA text was not inspected). The formalized protocol is a variant of [bs23](#bs23), Section 23.5.7, Figure 23.17 with the Remark 23.6 check, known sender exponent, and per-branch `(rᵢ, sᵢ)` randomization, proved directly.
 
 <a id="odifreddi99"></a>
 ## odifreddi99
@@ -1326,6 +1351,11 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 ## williamsonshmoys11
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
+
+<a id="winter16"></a>
+## winter16
+
+Andreas Winter. "Tight Uniform Continuity Bounds for Quantum Entropies: Conditional Entropy, Relative Entropy Distance and Energy Constraints." *Communications in Mathematical Physics* 347(1), 291–313, 2016. https://doi.org/10.1007/s00220-016-2609-8 . Cited at topic level for the classical special case of the conditional-entropy continuity bound with observation-independent modulus `(1 + ε) h₂(ε / (1 + ε))`; no specific theorem or lemma number from the journal text is claimed.
 
 <a id="yannakakis91"></a>
 ## yannakakis91

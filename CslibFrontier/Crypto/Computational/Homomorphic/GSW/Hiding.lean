@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Basic
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 public import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Statistical hiding of GSW ciphertexts under a uniform public matrix
@@ -121,15 +122,12 @@ private theorem maskedMatrices_bind_shiftedGuess (bit : Bool) :
       uniformPublicGame choose guess bit := by
   simp only [pmf_norm, maskedMatrices, shiftedGuess, uniformPublicGame,
     encryptWithCoins_eq_decomposeMatrix]
-  congr 1 with A : 1
-  exact PMF.bind_comm _ _ _
+  pmf_swap
 
 private theorem independentMatrices_bind_shiftedGuess (bit : Bool) :
     (independentMatrices n m w).bind (shiftedGuess choose guess bit) = idealGame choose guess := by
   simp only [pmf_norm, independentMatrices, shiftedGuess, idealGame]
-  congr 1 with A : 1
-  rw [PMF.bind_comm _ (choose A)]
-  congr 1 with choice : 1
+  pmf_swap with A choice
   have h := congrArg (fun law => law.bind (guess choice.2))
     (uniform_decomposeMatrix_add
       (((if bit then choice.1.2 else choice.1.1).toNat : ZMod (2 ^ w)) • gadgetMatrix n w))

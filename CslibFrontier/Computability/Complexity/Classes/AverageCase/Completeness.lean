@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Foundations.Data.Nat.Doubling
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # Levin's theorem: bounded halting is complete for `DistNP`
@@ -310,12 +311,10 @@ theorem distHard_problem : DistHard DistNP problem := by
         uniformBH_dist_encode, hP]
       have hkey := two_pow_length_header_code_mul_le hcdf hden0 c x
       have h0 : (2 : ℝ≥0∞) ^ (header c (code num den x)).length ≠ 0 := pow_ne_zero _ two_ne_zero
-      have htop : (2 : ℝ≥0∞) ^ (header c (code num den x)).length ≠ ⊤ :=
-        ENNReal.pow_ne_top ENNReal.ofNat_ne_top
       calc L.ens.dist x.length x
           = (2 ^ (header c (code num den x)).length)⁻¹ *
               (2 ^ (header c (code num den x)).length * L.ens.dist x.length x) := by
-            rw [← mul_assoc, ENNReal.inv_mul_cancel h0 htop, one_mul]
+            rw [← mul_assoc, ENNReal.inv_mul_cancel h0 (by finiteness), one_mul]
         _ ≤ (2 ^ (header c (code num den x)).length)⁻¹ *
               ((2 ^ (2 * c.length + 4) * (6 * x.length + 5) ^ 2 * (2 * x.length + 1) ^ 2 : ℕ) :
                 ℝ≥0∞) := mul_le_mul_of_nonneg_left hkey zero_le

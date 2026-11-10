@@ -50,7 +50,8 @@ example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoi
     omega
 
 /-! The command resolves the structure through `open`, a parent structure is the single field
-`toParent`, as in the constructor, and the constructor need not be called `mk`. -/
+`toParent`, as in the constructor, and the constructor need not be called `mk`. The projections
+are those of the checked structure, even where another declaration shares their name. -/
 
 namespace Inner
 
@@ -68,9 +69,15 @@ structure Triple extends Inner.Pair where
   /-- The new field. -/
   w : ℕ
 
+/-- Not the projection `Inner.Pair.fst`: under `open Inner`, `Pair.fst` could name either. -/
+def Pair.fst (p : Inner.Pair) : ℕ := p.fst + 1
+
 open Inner in
 /-- Pairs, through `open`. -/
 enc_structure ePair : Pair where fst : encNat, snd : encBool
+
+-- The field rule is about the projection, not the decoy `Pair.fst` above.
+example : ComputableInDegree Inner.Pair.fst ePair encNat 1 1 := ePair_fst_deg
 
 /-- Triples, as the encoded parent and the new field. -/
 enc_structure eTriple : Triple where toPair : ePair, w : encUnary
@@ -99,7 +106,9 @@ error: enc_structure: `n` is not a field of `Point`; the fields of `Point` in de
 #guard_msgs in
 enc_structure eUnknown : Point where x : encNat, n : encBits, z : (encList encUnary)
 
-/-- error: enc_structure: field `y` is listed twice -/
+/--
+error: enc_structure: field `y` is listed twice; the fields of `Point` in declaration order are `x`, `y`, `z`
+-/
 #guard_msgs in
 enc_structure eTwice : Point where x : encNat, y : encBits, y : encBits, z : (encList encUnary)
 
@@ -131,6 +140,17 @@ enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
 /-- error: enc_structure: `Nat` is not a structure -/
 #guard_msgs in
 enc_structure eNat : Nat where succ : encNat
+
+/-- A class, whose field takes the instance as an instance argument. -/
+class Klass where
+  /-- The field. -/
+  k : ℕ
+
+/--
+error: enc_structure: `Klass` is a class; only structures, whose fields are explicit, can be encoded
+-/
+#guard_msgs in
+enc_structure eKlass : Klass where k : encNat
 
 /-! A failed check declares nothing. -/
 
