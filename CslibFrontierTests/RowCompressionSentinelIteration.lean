@@ -138,7 +138,7 @@ private theorem coupling (j : ℕ) (hj : j ≤ 2) :
           firstRank univ 3 (modifiedRun j).defaultValue (modifiedRun j).row ≤ 2) := by
   apply iterate_sentinelState_of_sum_abs_lt (s := univ) (marked := {0}) (n := fun _ => 3)
     (K := 3) (ρ := fun _ => 1) (Δ := increments) (a := initial) (R := 2) (L := 100)
-    2 (subset_univ _) (by norm_num) (by intros; norm_num) (by norm_num) (by norm_num)
+    2 (subset_univ _) (by norm_num) (by norm_num) (by norm_num)
     _ (fun i hi => (modified_ceilings i hi).1) (fun i hi => (modified_ceilings i hi).2) j hj
   intro y hy
   have hy0 : y = 0 := mem_singleton.mp hy

@@ -626,7 +626,7 @@ structure Feasible (β n b w M : ℕ) : Prop where
       1028 * ((β : ℝ) + 3) * (Nat.clog 2 (Nat.clog 2 n) : ℝ) ^ 2 / Real.sqrt (Nat.clog 2 n)
 
 /-- Eventually in `n`, all `n`-only structural thresholds of Lemma 4.8 hold simultaneously. -/
-private theorem eventually_thresholds {β : ℕ} (hβ : 1 ≤ β) :
+private theorem eventually_thresholds {β : ℕ} :
     ∀ᶠ n : ℕ in atTop,
       20 ≤ n ∧ 2 ≤ numGroups n ∧ 32 ≤ rowBound β n ∧ 6 * rowBound β n ≤ numNodes n ∧
         4 * Nat.clog 2 n ^ β * 2 ^ (2 * (Nat.clog 2 n / 128)) ≤ n ∧
@@ -682,15 +682,21 @@ private theorem eventually_thresholds {β : ℕ} (hβ : 1 ≤ β) :
         _ ≤ lam := hnu_sqrt.le
     exact_mod_cast hprod_r
   have h2pow_n : 2 ^ (lam - 1) ≤ n := (Nat.pow_pred_clog_lt_self one_lt_two (by omega)).le
+  have h16 : (16 : ℝ) ≤ Real.sqrt lam :=
+    (Real.le_sqrt (by norm_num) (Nat.cast_nonneg _)).mpr (by exact_mod_cast hlam)
   have hβnu_le : β * nu ≤ lam / 4 := by
-    have h16 : (16 : ℝ) ≤ Real.sqrt lam :=
-      (Real.le_sqrt (by norm_num) (Nat.cast_nonneg _)).mpr (by exact_mod_cast hlam)
     have h4 : ((β * nu : ℕ) : ℝ) * 4 ≤ lam := by
       calc ((β * nu : ℕ) : ℝ) * 4 = 4 * (β : ℝ) * nu * 1 := by push_cast; ring
         _ ≤ 2048 * ((β : ℝ) + 3) * (nu : ℝ) * Real.sqrt lam := by gcongr <;> linarith
         _ ≤ lam := hnu_sqrt.le
     exact (Nat.le_div_iff_mul_le (by norm_num)).mpr (by exact_mod_cast h4)
-  have hnu_le : nu ≤ lam / 4 := (Nat.le_mul_of_pos_left nu hβ).trans hβnu_le
+  have hnu_le : nu ≤ lam / 4 := by
+    have h4 : (nu : ℝ) * 4 ≤ lam := by
+      calc (nu : ℝ) * 4 = 4 * 1 * nu * 1 := by ring
+        _ ≤ 2048 * ((β : ℝ) + 3) * (nu : ℝ) * Real.sqrt lam := by
+            gcongr <;> linarith [Nat.cast_nonneg (α := ℝ) β]
+        _ ≤ lam := hnu_sqrt.le
+    exact (Nat.le_div_iff_mul_le (by norm_num)).mpr (by exact_mod_cast h4)
   have hlam_pow : lam ≤ 2 ^ nu := Nat.le_pow_clog one_lt_two lam
   have hbal1 : 4 * lam ^ β * 2 ^ (2 * (lam / 128)) ≤ n := by
     calc 4 * lam ^ β * 2 ^ (2 * (lam / 128))
@@ -719,7 +725,7 @@ theorem exists_feasible {β : ℕ} (hβ : 1 ≤ β) :
       1 ≤ b → b ≤ Nat.clog 2 n ^ β →
       1 ≤ w → w ≤ Nat.clog 2 n ^ β →
       n ≤ M → M ≤ b * n → Feasible β n b w M := by
-  obtain ⟨n₀, hn₀⟩ := eventually_atTop.mp (eventually_thresholds hβ)
+  obtain ⟨n₀, hn₀⟩ := eventually_atTop.mp eventually_thresholds
   refine ⟨max n₀ 20, le_max_right _ _, fun {n b w M} hn hb₁ hb₂ hw₁ hw₂ hnM _hMbn => ?_⟩
   obtain ⟨h20, hr, hR, hRQ, hbal1, hbal2⟩ := hn₀ n ((le_max_left _ _).trans hn)
   have hlam_pos : 1 ≤ Nat.clog 2 n := Nat.clog_pos one_lt_two (by omega)
@@ -769,11 +775,11 @@ theorem exists_feasible_of_le_const {β : ℕ} (hβ : 1 ≤ β) :
   exact hfeas hn hb₁ (hb₂.trans hβ_le_pow) hw₁ (hw₂.trans hβ_le_pow) hnM hMbn
 
 /-- Equation (4.18) in `IsBigO` form: `rowCost β = O(ν² / √λ)`. -/
-theorem isBigO_rowCost {β : ℕ} (hβ : 1 ≤ β) :
+theorem isBigO_rowCost {β : ℕ} :
     rowCost β =O[atTop] fun n : ℕ =>
       (Nat.clog 2 (Nat.clog 2 n) : ℝ) ^ 2 / Real.sqrt (Nat.clog 2 n) := by
   refine IsBigO.of_bound (1028 * ((β : ℝ) + 3)) ?_
-  filter_upwards [eventually_thresholds hβ] with n ⟨_, hr, hR, hRQ, _, _⟩
+  filter_upwards [eventually_thresholds (β := β)] with n ⟨_, hr, hR, hRQ, _, _⟩
   have hnonneg : 0 ≤ rowCost β n := by
     unfold rowCost tau
     have hlog1 : 0 ≤ Real.log (2 * (numNodes n : ℝ) / rowBound β n) :=
@@ -786,19 +792,19 @@ theorem isBigO_rowCost {β : ℕ} (hβ : 1 ≤ β) :
   exact rowCost_le hr hR hRQ
 
 /-- The counting-cost factor `rowCost β n` tends to `0` as `n → ∞`. -/
-theorem tendsto_rowCost {β : ℕ} (hβ : 1 ≤ β) :
+theorem tendsto_rowCost {β : ℕ} :
     Tendsto (rowCost β) atTop (𝓝 0) :=
-  (isBigO_rowCost hβ).trans_tendsto
+  isBigO_rowCost.trans_tendsto
     ((tendsto_clog_pow_div_sqrt 2).comp (Nat.tendsto_clog_atTop one_lt_two))
 
 /-- `rowCost β` is `o(1)` as `n → ∞`. -/
-theorem isLittleO_rowCost_one {β : ℕ} (hβ : 1 ≤ β) :
+theorem isLittleO_rowCost_one {β : ℕ} :
     rowCost β =o[atTop] fun _ : ℕ => (1 : ℝ) :=
-  (isLittleO_one_iff ℝ).mpr (tendsto_rowCost hβ)
+  (isLittleO_one_iff ℝ).mpr tendsto_rowCost
 
 /-- `n * rowCost β n` is `O(interpolationScale n)`, linking Lemma 4.8 directly to the counting
 scale of `CountingScale.lean`. -/
-theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} (hβ : 1 ≤ β) :
+theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} :
     (fun n : ℕ => (n : ℝ) * rowCost β n) =O[atTop] interpolationScale := by
   have hscale : (fun n : ℕ =>
       (Nat.clog 2 (Nat.clog 2 n) : ℝ) ^ 2 / Real.sqrt (Nat.clog 2 n)) =O[atTop]
@@ -852,14 +858,15 @@ theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} (hβ : 1 ≤ β) :
         = (nu : ℝ) ^ 2 * (1 / Real.sqrt lam) := div_eq_mul_one_div _ _
       _ ≤ (K * LL) ^ 2 * (Real.sqrt 2 / Real.sqrt L) := by gcongr
       _ = K ^ 2 * Real.sqrt 2 * (LL ^ 2 / Real.sqrt L) := by ring
-  have hmul := (isBigO_refl (fun n : ℕ => (n : ℝ)) atTop).mul ((isBigO_rowCost hβ).trans hscale)
+  have hmul :=
+    (isBigO_refl (fun n : ℕ => (n : ℝ)) atTop).mul ((isBigO_rowCost (β := β)).trans hscale)
   unfold interpolationScale
   simpa only [mul_div_assoc] using hmul
 
 /-- Multiplying `rowCost β n` by `n` gives a sublinear counting exponent `o(n)`. -/
-theorem isLittleO_mul_rowCost {β : ℕ} (hβ : 1 ≤ β) :
+theorem isLittleO_mul_rowCost {β : ℕ} :
     (fun n : ℕ => (n : ℝ) * rowCost β n) =o[atTop] fun n : ℕ => (n : ℝ) :=
-  (isBigO_mul_rowCost_interpolationScale hβ).trans_isLittleO isLittleO_interpolationScale
+  isBigO_mul_rowCost_interpolationScale.trans_isLittleO isLittleO_interpolationScale
 
 end ReplacementParams
 

@@ -468,7 +468,7 @@ theorem iterate_sentinelState_of_clippedError_le {s : Finset ι} {n : ℕ → �
     dsimp only [L] at hd
     dsimp only [R]
     nlinarith
-  exact iterate_sentinelState_of_sum_abs_lt m hmarked hK hKn hR hL hvar
+  exact iterate_sentinelState_of_sum_abs_lt m hmarked hK hR hL hvar
     (fun i hi => (hceil i hi).1) (fun i hi => (hceil i hi).2)
 
 end Cslib.RowCompression

@@ -15,7 +15,7 @@ import Mathlib.Tactic.Linarith
 
 Replace the first coordinate at a finite set of marked endpoints by one common positive
 sentinel, leaving every second coordinate unchanged. When the modified first rank and size
-threshold are at most `R ≥ 0`, and both old and sentinel first coordinates at marked endpoints
+threshold are at most `R`, and both old and sentinel first coordinates at marked endpoints
 are strictly above `3R`, the original and modified calculations have identical ranks, thresholds,
 and new defaults. Compression is identity in both channels at marked endpoints, and sentinel
 replacement commutes with the actual update on every retained endpoint.
@@ -79,13 +79,13 @@ theorem sentinelFirst_of_not_mem (hy : y ∉ marked) : sentinelFirst marked L w 
   simp [sentinelFirst, hy]
 
 /-- A padded first rank below the ceiling is unchanged by replacing larger first coordinates. -/
-theorem firstRank_eq_sentinelFirst (hK : 0 < K) (hR : 0 ≤ R) (hL : R < L)
+theorem firstRank_eq_sentinelFirst (hL : R < L)
     (hw : ∀ y ∈ s, y ∈ marked → R < w y 0)
     (hq : firstRank s K z (sentinelFirst marked L w) ≤ R) :
     firstRank s K z w = firstRank s K z (sentinelFirst marked L w) := by
   have hrank : kthLargest K s (fun y => w y 0) =
       kthLargest K s (fun y => sentinelFirst marked L w y 0) := by
-    apply kthLargest_eq_of_eq_or_gt hK hR _ (kthLargest_le_firstRank.trans hq)
+    apply kthLargest_eq_of_eq_or_gt _ (kthLargest_le_firstRank.trans hq)
     intro y hy
     by_cases hm : y ∈ marked
     · exact Or.inr ⟨hw y hy hm, by rwa [sentinelFirst_zero_of_mem hm]⟩
@@ -93,13 +93,13 @@ theorem firstRank_eq_sentinelFirst (hK : 0 < K) (hR : 0 ≤ R) (hL : R < L)
   exact congrArg (max z) hrank
 
 /-- The actual size threshold is unchanged, including its floor and old-default terms. -/
-theorem threshold_eq_sentinelFirst (hn : 0 < n) (hR : 0 ≤ R) (hL : R < L)
+theorem threshold_eq_sentinelFirst (hL : R < L)
     (hw : ∀ y ∈ s, y ∈ marked → R < w y 0)
     (hu : threshold s n ρ z (sentinelFirst marked L w) ≤ R) :
     threshold s n ρ z w = threshold s n ρ z (sentinelFirst marked L w) := by
   have hrank : kthLargest n s (fun y => entrySize (w y)) =
       kthLargest n s (fun y => entrySize (sentinelFirst marked L w y)) := by
-    apply kthLargest_eq_of_eq_or_gt hn hR _
+    apply kthLargest_eq_of_eq_or_gt _
       (((le_max_right _ _).trans (le_max_right _ _)).trans hu)
     intro y hy
     by_cases hm : y ∈ marked
@@ -111,7 +111,7 @@ theorem threshold_eq_sentinelFirst (hn : 0 < n) (hR : 0 ≤ R) (hL : R < L)
   exact congrArg (fun q => max z (max ρ q)) hrank
 
 /-- Both actual rank quantities, and consequently the new default, agree exactly. -/
-theorem newDefault_eq_sentinelFirst (hn : 0 < n) (hK : 0 < K) (hR : 0 ≤ R) (hL : R < L)
+theorem newDefault_eq_sentinelFirst (hL : R < L)
     (hw : ∀ y ∈ s, y ∈ marked → R < w y 0)
     (hq : firstRank s K z (sentinelFirst marked L w) ≤ R)
     (hu : threshold s n ρ z (sentinelFirst marked L w) ≤ R) :
@@ -120,10 +120,10 @@ theorem newDefault_eq_sentinelFirst (hn : 0 < n) (hK : 0 < K) (hR : 0 ≤ R) (hL
     max (threshold s n ρ z (sentinelFirst marked L w))
       (min (firstRank s K z (sentinelFirst marked L w))
         (3 * threshold s n ρ z (sentinelFirst marked L w)))
-  rw [threshold_eq_sentinelFirst hn hR hL hw hu, firstRank_eq_sentinelFirst hK hR hL hw hq]
+  rw [threshold_eq_sentinelFirst hL hw hu, firstRank_eq_sentinelFirst hL hw hq]
 
 /-- The bounded modified first rank itself forces strict cardinality of the marked set. -/
-theorem card_marked_lt_of_sentinelFirst (hK : 0 < K) (hR : 0 ≤ R) (hL : R < L)
+theorem card_marked_lt_of_sentinelFirst (hK : 0 < K) (hL : R < L)
     (hmarked : marked ⊆ s) (hq : firstRank s K z (sentinelFirst marked L w) ≤ R) :
     #marked < K := by
   classical
@@ -131,21 +131,23 @@ theorem card_marked_lt_of_sentinelFirst (hK : 0 < K) (hR : 0 ≤ R) (hL : R < L)
   have hsub : marked ⊆ {y ∈ s | R < sentinelFirst marked L w y 0} := by
     intro y hy
     exact mem_filter.mpr ⟨hmarked hy, by rwa [sentinelFirst_zero_of_mem hy]⟩
-  have hlt := (lt_kthLargest_iff hK hR).mpr (hc.trans (card_le_card hsub))
+  have hlt :=
+    (lt_kthLargest_iff hK (firstRank_nonneg.trans hq)).mpr (hc.trans (card_le_card hsub))
   exact (not_lt_of_ge (kthLargest_le_firstRank.trans hq)) hlt
 
 /-- Original and sentinel entries are both in the identity region at every marked retained ID.
 The second coordinate is untouched, even if it is signed or large. -/
-theorem update_eq_self_of_mem_sentinelFirst (hn : 0 < n) (hR : 0 ≤ R) (hL : 3 * R < L)
+theorem update_eq_self_of_mem_sentinelFirst (hL : 3 * R < L)
     (hw : ∀ y ∈ s, y ∈ marked → 3 * R < w y 0)
     (hu : threshold s n ρ z (sentinelFirst marked L w) ≤ R)
     (hy : y ∈ s) (hm : y ∈ marked) :
     update s n K ρ z w y = w y ∧
       update s n K ρ z (sentinelFirst marked L w) y = sentinelFirst marked L w y := by
+  have hR : 0 ≤ R := threshold_nonneg.trans hu
   have hL' : R < L := by linarith
   have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
   have hu' : threshold s n ρ z w ≤ R :=
-    (threshold_eq_sentinelFirst hn hR hL' hw' hu).trans_le hu
+    (threshold_eq_sentinelFirst hL' hw' hu).trans_le hu
   constructor
   · apply update_eq_self_of_three_mul_le
     exact (by linarith [hw y hy hm] : 3 * threshold s n ρ z w ≤ w y 0).trans
@@ -158,23 +160,23 @@ theorem update_eq_self_of_mem_sentinelFirst (hn : 0 < n) (hR : 0 ≤ R) (hL : 3 
 
 /-- Sentinel replacement commutes with the concrete compression update on every retained ID.
 This also gives equality of both channels off the marked set; it assumes no row-output law. -/
-theorem sentinelFirst_update (hK : 0 < K) (hKn : K ≤ n) (hR : 0 ≤ R) (hL : 3 * R < L)
+theorem sentinelFirst_update (hL : 3 * R < L)
     (hw : ∀ y ∈ s, y ∈ marked → 3 * R < w y 0)
     (hq : firstRank s K z (sentinelFirst marked L w) ≤ R)
     (hu : threshold s n ρ z (sentinelFirst marked L w) ≤ R) (hy : y ∈ s) :
     sentinelFirst marked L (update s n K ρ z w) y =
       update s n K ρ z (sentinelFirst marked L w) y := by
-  have hn : 0 < n := hK.trans_le hKn
   by_cases hm : y ∈ marked
-  · obtain ⟨ho, hs⟩ := update_eq_self_of_mem_sentinelFirst hn hR hL hw hu hy hm
+  · obtain ⟨ho, hs⟩ := update_eq_self_of_mem_sentinelFirst hL hw hu hy hm
     rw [hs]
     funext ν
     simp only [sentinelFirst, ho]
-  · have hL' : R < L := by linarith
+  · have hR : 0 ≤ R := threshold_nonneg.trans hu
+    have hL' : R < L := by linarith
     have hw' : ∀ y ∈ s, y ∈ marked → R < w y 0 := by grind
     rw [sentinelFirst_of_not_mem hm]
     unfold update
-    rw [threshold_eq_sentinelFirst hn hR hL' hw' hu,
-      newDefault_eq_sentinelFirst hn hK hR hL' hw' hq hu, sentinelFirst_of_not_mem hm]
+    rw [threshold_eq_sentinelFirst hL' hw' hu,
+      newDefault_eq_sentinelFirst hL' hw' hq hu, sentinelFirst_of_not_mem hm]
 
 end Cslib.RowCompression
