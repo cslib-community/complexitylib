@@ -776,6 +776,13 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 - **Divide-and-conquer recurrences** ([#3042](https://github.com/cslib-community/cslib-frontier/issues/3042)): A master theorem over `ℕ` with explicit constants for inequality recurrences in all three polynomial cases, with `IsBigO` forms, matching `Θ` bounds for equality recurrences, and case 3 under the general regularity condition.
   Move hand-solved recurrences onto it where the generic constant suffices, keeping CSLib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.
 
+### STOC 2027 source correspondence ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527))
+
+The submission program owns the full source-to-Lean acceptance inventory.
+The directions below preserve the original source quantifiers and resource obligations.
+
+- **One-query bounded-demand alternative (1575, Proposition A.3):** The optional additional parsimonious construction and its complete resource composition, after the advertised main clauses.
+
 ### OpenAI math results ([#1002](https://github.com/cslib-community/cslib-frontier/issues/1002))
 
 Review Lance Fortnow's [expository rewrites](https://github.com/fortnow/AI-Papers) of the OpenAI math papers and his [TCS catalogue](https://lance.fortnow.com/openai-math-tcs.htm) of the openai/math release, and extract the in-scope results, both headline theorems and minor lemmas useful in their own right.

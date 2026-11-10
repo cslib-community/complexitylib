@@ -144,6 +144,54 @@ The [bipartiteness tester](../../CslibFrontier/Computability/PropertyTesting/Den
 
 [Canonical testers](../../CslibFrontier/Computability/PropertyTesting/DenseGraph/Canonical.lean) formalize the one-sided half of Goldreich–Trevisan's Theorem 2 (Theorem 4.5). A property `P` of graphs on `Fin n` is `IsInvariant` when it is closed under relabelling. Then `IsFar.comap` (their Claim 2.1, from `editDist_comap_equiv`) says that relabelling preserves the distance to `P`. `canonicalTester n s hs D` samples a uniform permutation `σ`, queries all pairs among `σ 0, …, σ (s - 1)` (`queryInduced`) and accepts exactly when the induced labelled graph on `Fin s` has property `D`. It makes `s.choose 2` queries (`isQueryBounded_canonicalTester`), and `acceptProb_canonicalTester` gives its acceptance probability as an event over `σ`. `InducedOf P K` says that `K` is an induced subgraph (`K ⊴ H`) of some graph `H` with property `P`; it is itself invariant (`isInvariant_inducedOf`). `acceptProb_canonicalTester_eq_one_iff` shows that a canonical tester is perfectly complete on `P` exactly when `D` contains `InducedOf P`. The main theorem, `isOneSidedTester_canonicalTester`, takes a one-sided tester with `q` queries for an invariant `P` (adaptive or not). It gives the canonical tester with `min (2q) n` sample vertices and decision property `InducedOf P`, which is one-sided for `P` with the same proximity and `(2q).choose 2` queries. `OneSidedTestable.canonical` states this for families. The proof runs the original tester against a lazily sampled relabelling (`Cslib.RandomPermutation`) and uses induction on the query bound in place of the paper's vertex-uncovering tester. The proximity enters only through `IsFar.comap`, so the result does not depend on how the distance is normalized. Limitations: the two-sided half (`O(q)` sample vertices after error reduction and their Lemma 4.4) is not formalized. The decision property `InducedOf P` depends on `n`, as the paper allows. Deciding by `P` itself (their §4.2.4, Proposition D.2 and Corollary 5.9) is not addressed. The theorems count queries, not running time. The [checked examples](../../CslibFrontierTests/DenseGraphTestingCanonical.lean) show that triangle-freeness is invariant and derive the canonical triangle tester from `oneSidedTestable_cliqueFree_three`. On three vertices the canonical tester rejects the triangle with certainty and accepts the empty graph. Of two trivial decision properties, rejecting everything is not perfectly complete and accepting everything is. With two sample vertices the triangle is accepted with certainty, so that tester is not sound. For the labelled property "`0` and `1` are adjacent", which is not invariant and has a one-query one-sided tester, the canonical tester accepts the far empty graph with certainty, so the invariance hypothesis is needed.
 
+## Exact finite counterexamples
+
+For the circumference-eight circle, import
+[`QuarterQCD`](../../CslibFrontier/GameTheory/FacilityLocation/QuarterQCD.lean).
+`weights` computes the squared opposite arcs with floor four and `cost` normalizes
+by their sum. Coordinates must be canonical, in $[0,8)$; the three reports are in
+increasing order. `quarterQCD_counterexample` gives an improving first-agent report
+from $(0,3,4)$ to $(1,3,4)$ and ratio $137/116>7/6$. `witness_optimum` proves the
+optimum is four against every real canonical facility location. The restricted
+ordered-report strategyproofness predicate is already false. This does not provide
+the paper's general graph mechanism search. See the
+[complete checked client](../../CslibFrontierTests/PaperEndpoints/QuarterQCD.lean).
+
+For the six rational least-squares observations, import
+[`NonRange`](../../CslibFrontier/Statistics/LeastSquares/NonRange.lean).
+`scatter` is centered cross-scatter, $\sum xy-(\sum x)(\sum y)/|S|$.
+`nonrange_optimum` identifies the unique minimizing four-set and proves that no
+real plane cuts it out on the saddle lift $(x,y,xy)$. The rational oriented-volume
+certificates cover the fifteen four-lift determinants. Indices are zero based;
+`retained` is the source's points 2, 3, 5 and 6. This finite obstruction does not
+supply an integral-stability algorithm. The
+[checked client](../../CslibFrontierTests/PaperEndpoints/NonRange.lean) also constructs
+an empty lifted-plane range, distinguishing the range notion from the failed optimum.
+
+## Weighted least-squares monotonicity and rounding
+
+Import [`Monotone`](../../CslibFrontier/Statistics/LeastSquares/Monotone.lean) and open
+`Cslib.LeastSquares`. A base Gram matrix `G` and normal-equation right-hand side `g`
+represent fixed observations. `rankOneEstimate G g x y a` is the actual estimate
+$(G+a x x^\top)^{-1}(g+a x y)$ for one added observation.
+Supply `hG : G.PosDef` and a nonnegative weight to `rankOneEstimate_eq` for its
+Sherman–Morrison formula. `rankOneEstimate_monotone_or_antitone` covers every linear
+target `e`; the direction depends on the data and target.
+
+For a finite set of observations `s`, `weightedEstimate` adds their contributions
+to the fixed base. `exists_round_weights` rounds weights in $[0,1]$ to endpoints
+without increasing the target. `exists_round_weights_loss_lt` bounds lost mass
+strictly below any positive `k` bounding the number of genuinely fractional weights.
+Both require the fixed base itself to be positive definite, even after all variable
+observations are removed. The [checked client](../../CslibFrontierTests/PaperEndpoints/MonotoneRounding.lean)
+includes different endpoint estimates and two observations with opposite responses.
+
+These are the monotonicity and rounding steps of STOC submission 1326, Lemma 3.1,
+Theorem 3.3 and Remark 3.5 (PDF pp. 6–7). They do not yet prove the full general-position
+stability theorem: sparse-optimum existence, attainment, and deriving a spanning
+backbone from retained mass at least $2d$ remain necessary. A caller cannot infer
+those hypotheses merely from feasibility of the original weighted estimate.
+
 ## Known Limitations
 
 The examples use semantic hypotheses and real probability/analysis. These results provide formal sample/query guarantees and formal bridges to PAC/query models. Claims of polynomial native training time or succinct executable output hypotheses require separate resource theorems. Keep these limitations in view when choosing a learning model: the notions of efficiency differ.
