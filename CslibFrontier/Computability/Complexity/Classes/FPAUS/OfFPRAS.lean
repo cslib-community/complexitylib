@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Approximate counting gives almost uniform sampling for self-reducible families
@@ -380,15 +381,10 @@ private theorem mem_support_walkStep {p t m extra : ℕ} {s s' : WalkState α}
       (s.2.2.2 = true ∧ ∃ e₀ ∈ (ProbComp.eval (R.nodeEstimate A p t (R.child s.1 false))).support,
         ∃ e₁ ∈ (ProbComp.eval (R.nodeEstimate A p t (R.child s.1 true))).support,
         ∃ o, s' = R.advance s e₀ e₁ o) := by
-  cases hrun : s.2.2.2
-  · refine Or.inl ⟨rfl, ?_⟩
-    simpa only [walkStep, hrun, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure,
-      PMF.support_pure, Set.mem_singleton_iff] using h
-  · refine Or.inr ⟨rfl, ?_⟩
-    simp only [walkStep, hrun, ↓reduceIte, ProbComp.eval_bind, PMF.mem_support_bind_iff,
-      ProbComp.eval_map, PMF.mem_support_map_iff] at h
-    obtain ⟨e₀, he₀, e₁, he₁, o, -, rfl⟩ := h
-    exact ⟨e₀, he₀, e₁, he₁, o, rfl⟩
+  supp_cases h [walkStep, apply_ite ProbComp.eval]
+    with ⟨hrun, e₀, he₀, e₁, he₁, o, -, rfl⟩ | ⟨hrun, rfl⟩
+  · exact Or.inr ⟨hrun, e₀, he₀, e₁, he₁, o, rfl⟩
+  · exact Or.inl ⟨by simpa using hrun, rfl⟩
 
 /-- A bound on the encoded estimates returned at nodes no longer than `x`, from a length bound
 `c (n + 1) ^ d` for the counter. -/
