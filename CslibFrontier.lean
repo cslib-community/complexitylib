@@ -5313,9 +5313,11 @@ public import CslibFrontier.Logics.FirstOrder.ProjectionFormula
 public import CslibFrontier.Logics.FirstOrder.QuantifierFree
 public import CslibFrontier.Logics.FirstOrder.QuantifierRank
 public import CslibFrontier.Logics.FirstOrder.Raw.Basic
+public import CslibFrontier.Logics.FirstOrder.Raw.BoundedFormula
 public import CslibFrontier.Logics.FirstOrder.Raw.FinSat
 public import CslibFrontier.Logics.FirstOrder.Raw.Graph
 public import CslibFrontier.Logics.FirstOrder.Raw.Interpret
+public import CslibFrontier.Logics.FirstOrder.Raw.Levels
 public import CslibFrontier.Logics.FirstOrder.Raw.Primrec
 public import CslibFrontier.Logics.FirstOrder.Raw.Sentence
 public import CslibFrontier.Logics.FirstOrder.Raw.Uniformize
@@ -5326,6 +5328,7 @@ public import CslibFrontier.Logics.FirstOrder.Subformula
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Arithmetic
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Evaln
+public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 public import CslibFrontier.Logics.FirstOrder.Tuple
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw

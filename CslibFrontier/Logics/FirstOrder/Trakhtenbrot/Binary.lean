@@ -46,9 +46,9 @@ procedure to be correct on sentences over `σ`, a set that may contain a single 
 symbol, so they are strictly stronger statements.
 
 **Scope.** The sentences are library-local `Cslib.Logic.FO.RawFormula`s, with equality and
-relation symbols named by natural numbers; a vocabulary is a set of pairs (symbol, arity). A
-computable translation from Mathlib's `L.Sentence` is not formalized (see the module documentation
-of `CslibFrontier/Logics/FirstOrder/Raw/Basic.lean`).
+relation symbols named by natural numbers; a vocabulary is a set of pairs (symbol, arity). The
+same theorems for Mathlib's `L.Sentence`, over a finite relational language with a binary symbol,
+are in `CslibFrontier/Logics/FirstOrder/Trakhtenbrot/Sentence.lean`.
 
 ## Main definitions
 

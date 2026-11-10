@@ -44,7 +44,8 @@ The map `c ↦ haltSentence c` is primitive recursive.
 **Scope.** The textbook proofs encode Turing machine runs directly; here the encoded computation
 is Mathlib's step-bounded evaluator `Nat.Partrec.Code.evaln`, which plays the same role. The
 sentences are library-local `Cslib.Logic.FO.RawFormula`s, not Mathlib `L.Sentence`s (see the
-module documentation of `CslibFrontier/Logics/FirstOrder/Raw/Basic.lean`). The reduction uses
+module documentation of `CslibFrontier/Logics/FirstOrder/Raw/Basic.lean`; the transfer to
+`L.Sentence` is `CslibFrontier/Logics/FirstOrder/Trakhtenbrot/Sentence.lean`). The reduction uses
 relation symbols of arity at most three, but unboundedly many of them; Libkin's Theorem 9.2 is
 stated for every vocabulary with at least one binary relation symbol. That sharpening interprets
 the vocabulary in one binary relation and is

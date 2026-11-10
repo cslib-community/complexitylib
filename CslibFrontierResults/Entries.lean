@@ -46,6 +46,7 @@ import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Probability.Extractor.TwoSource
 
@@ -739,3 +740,22 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+register_result "trakhtenbrot" where
+  title := "Trakhtenbrot: finite satisfiability is r.e. but undecidable"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.rePred_finSat,
+    FirstOrder.Language.Sentence.not_computablePred_finSat,
+    FirstOrder.Language.Sentence.not_rePred_finValid,
+    FirstOrder.Language.Sentence.exists_finValid_unprovable
+  ]
+  scope := "Mathlib sentences of a relational language with finitely many relation symbols; \
+    the negative results need a binary symbol. Sentences are coded by primcodableRaw, a \
+    scoped instance, independent of the symbol encoding up to primitive recursive \
+    equivalence. Finite structures are nonempty. Function symbols, infinite vocabularies \
+    and vocabularies without a binary symbol are not covered."
