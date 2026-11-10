@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
@@ -626,6 +627,23 @@ register_result "first-order-logspace" where
     structure encoding and malformed-input rejection. Includes empty structures and \
     nullary relations; excludes constants and built-in order/BIT from the cited FO \
     convention."
+
+register_result "immerman-nl-capture" where
+  title := "Immerman: FO(TC) and FO(positive TC) capture NL on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 3.1", locator := unverified },
+    { paper := Immerman1988, theorem := "Corollary 3", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.tcDefinable_iff_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.posTCDefinable_iff_encodedLanguage_mem_NL
+  ]
+  scope := "Canonically ordered finite structures over a finite relational vocabulary, with \
+    universes Fin n, n ≥ 2, and numeric symbols order, BIT, zero, one and maximum computed \
+    from the size. One FO(TC) sentence defines the query iff its source-only encoded language \
+    (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
+    universes below two are rejected."
 
 register_result "nl-in-p" where
   title := "NL is contained in P"
