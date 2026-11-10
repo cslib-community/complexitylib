@@ -23,6 +23,7 @@ import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Tactic.GameHop
 
 /-!
 # Multiplicative Cramer–Shoup Encryption Scheme and Adaptive Projective-Hash Rejection
@@ -1605,22 +1606,16 @@ theorem advantage_cramerShoupGame3_game3Half_le
       (F.cramerShoupGame3Half hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
       (Q₁ : ℝ≥0) / (m : ℝ≥0) := by
   dsimp only [cramerShoupGame3, cramerShoupGame3Half, PMF.monad_bind_eq_bind]
-  refine advantage_bind_le_of_support (setup n) _ _ fun d hd => ?_
-  let U := PMF.uniformOfFintype (ZMod (F.order d))
-  refine advantage_bind_le_nnreal _ _ _ fun α =>
-    advantage_bind_le_nnreal _ _ _ fun β =>
-      advantage_bind_le_nnreal _ _ _ fun γ => ?_
+  peel_binds d α β γ
   rw [uniform_sub_mul_bind (F.order d) α]
-  refine advantage_bind_le_nnreal _ _ _ fun δ =>
-    advantage_bind_le_nnreal _ _ _ fun τ => ?_
+  peel_binds δ τ
   rw [uniform_sub_mul_bind (F.order d) α]
-  refine advantage_bind_le_nnreal U _ _ fun δ₁ => ?_
+  peel_binds δ₁
   conv_lhs => enter [1, 2, τ₁]; rw [uniform_sub_mul_bind (F.order d) α]
   simp only [F.encodeCramerShoupPublicKey_fiber_eq]
-  rw [advantage_bind_comm U U]
-  refine advantage_bind_le_nnreal U _ _ fun δ₂ => ?_
-  rw [advantage_bind_comm U U]
-  refine advantage_bind_le_nnreal U _ _ fun τ₂ => ?_
+  let U := PMF.uniformOfFintype (ZMod (F.order d))
+  rw [advantage_bind_comm U U]; peel_binds δ₂
+  rw [advantage_bind_comm U U]; peel_binds τ₂
   exact (advantage_runStatelessOracle_bind_le U
     (fun τ₁ => F.cramerShoupPhase1Reply hasAD H isElem d
       (F.skNatOfZMod d (δ - α * τ) τ (δ₁ - α * τ₁) τ₁ (δ₂ - α * τ₂) τ₂))
@@ -1628,12 +1623,12 @@ theorem advantage_cramerShoupGame3_game3Half_le
     (fun τ₁ req => F.isCramerShoupBadDH H isElem d α
       (F.skNatOfZMod d (δ - α * τ) τ (δ₁ - α * τ₁) τ₁ (δ₂ - α * τ₂) τ₂)
       (splitCramerShoupQuery hasAD req).1 (splitCramerShoupQuery hasAD req).2)
-    _ (hQ₁ d hd α δ δ₁ δ₂)
+    _ (hQ₁ d d_mem α δ δ₁ δ₂)
     (fun τ₁ req hbad =>
       F.cramerShoupPhase1Reply_fiber_eq_of_not_bad hasAD H isElem hmem d α δ τ δ₁ τ₁ δ₂ τ₂ req hbad)
     (fun req => F.tsum_isCramerShoupBadDH_phase1_le H isElem hmem d α δ τ δ₁ δ₂ τ₂
       (splitCramerShoupQuery hasAD req).1 (splitCramerShoupQuery hasAD req).2)).trans
-      (F.div_order_le_div_of_le hm0 (hm d hd))
+      (F.div_order_le_div_of_le hm0 (hm d d_mem))
 
 /-- **Game 4** (corresponding to Game 5 of [BonehShoup2023], Section 12.5.3, printed p. 492,
 adapted to $\mathcal{E}_{\mathrm{MCS}}$ with associated data): both Phase 1 and Phase 2 decryption
@@ -1681,16 +1676,10 @@ theorem advantage_cramerShoupGame3Half_game4_le
       (F.cramerShoupGame4 hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
       (Q₂ : ℝ≥0) / (m : ℝ≥0) := by
   dsimp only [cramerShoupGame3Half, cramerShoupGame4, PMF.monad_bind_eq_bind]
-  refine advantage_bind_le_of_support (setup n) _ _ fun d hd => ?_
+  peel_binds d α β γ δ τ δ₁
   let U := PMF.uniformOfFintype (ZMod (F.order d))
-  refine advantage_bind_le_nnreal _ _ _ fun α =>
-    advantage_bind_le_nnreal _ _ _ fun β =>
-      advantage_bind_le_nnreal _ _ _ fun γ => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun δ =>
-    advantage_bind_le_nnreal _ _ _ fun τ => ?_
-  refine advantage_bind_le_nnreal U _ _ fun δ₁ => ?_
   rw [advantage_bind_comm U U]
-  refine advantage_bind_le_nnreal U _ _ fun δ₂ => ?_
+  peel_binds δ₂
   have hcomm (k : ZMod (F.order d) → ZMod (F.order d) → ((Msg × Msg) × AD) × List Bool → Game) :
       (U.bind fun τ₁ => U.bind fun τ₂ =>
         runStatelessOracle (F.cramerShoupDHPhase1Reply hasAD H isElem d α δ δ₁ δ₂)
@@ -1704,7 +1693,7 @@ theorem advantage_cramerShoupGame3Half_game4_le
       funext fun τ₁ => bind_runStatelessOracle_comm _ _ _ (k τ₁)]
     exact bind_runStatelessOracle_comm _ _ _ _
   rw [hcomm, hcomm]
-  refine advantage_runStatelessOracle_le_of_support _ _ _ _ fun choiceOut hchoice => ?_
+  peel_binds choiceOut
   by_cases hvalid : (isElem (d, encodeMsg (d, choiceOut.1.1.1.1)) &&
       isElem (d, encodeMsg (d, choiceOut.1.1.1.2))) = true
   · simp only [hvalid, ↓reduceIte]
@@ -1726,7 +1715,7 @@ theorem advantage_cramerShoupGame3Half_game4_le
       exact congrArg _ (funext fun τ₂ => uniform_sub_bind (F.order d) (ρ * τ₂) (fun τ₁ => f τ₁ τ₂))
     conv_lhs => enter [1]; rw [hshift_one]
     conv_lhs => enter [2]; rw [hshift_one]
-    refine advantage_bind_le_nnreal U _ _ fun ξ => ?_
+    peel_binds ξ
     have hct_eq : ∀ τ₂ : ZMod (F.order d),
         F.encodeCramerShoupChallenge H d
           (F.skNatOfZMod d (δ - α * τ) τ (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂)
@@ -1740,7 +1729,7 @@ theorem advantage_cramerShoupGame3Half_game4_le
         ZMod.natCast_zmod_val]
     have hq2 : (adversary.guess n choiceOut.1.2 (ct₀ ξ)).IsQueryBounded Q₂ := by
       simpa only [ct₀, v, w, ad, ρ, he_eq] using
-        hQ₂ d hd α β γ δ τ δ₁ δ₂ ξ choiceOut hchoice mElem
+        hQ₂ d d_mem α β γ δ τ δ₁ δ₂ ξ choiceOut choiceOut_mem mElem
     exact (advantage_runStatelessOracle_bind_le U
       (fun τ₂ => F.cramerShoupCollisionPhase2Reply hasAD H isElem d
         (F.skNatOfZMod d (δ - α * τ) τ (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂)
@@ -1759,7 +1748,7 @@ theorem advantage_cramerShoupGame3Half_game4_le
       (fun req =>
         F.tsum_isCramerShoupBadDH_phase2_le H isElem hmem d α β γ δ τ δ₁ δ₂ ξ e ad
           (splitCramerShoupQuery hasAD req).1 (splitCramerShoupQuery hasAD req).2)).trans
-      (F.div_order_le_div_of_le hm0 (hm d hd))
+      (F.div_order_le_div_of_le hm0 (hm d d_mem))
   · simp only [hvalid, Bool.false_eq_true, ↓reduceIte, PMF.bind_const, Game.advantage_self, zero_le]
 
 /-- **Game 3 $\to$ Game 4 bound** ([BonehShoup2023], Section 12.5.3, equations (12.26)–(12.27),
@@ -1780,14 +1769,13 @@ theorem advantage_cramerShoupGame3_game4_le
       (F.cramerShoupGame3 hasAD encodeMsg encodeAD setup H isElem adversary bit n)
       (F.cramerShoupGame4 hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
       ((Q₁ + Q₂ : ℕ) : ℝ≥0) / (m : ℝ≥0) := by
-  refine (Game.advantage_triangle _
-    (F.cramerShoupGame3Half hasAD encodeMsg encodeAD setup H isElem adversary bit n) _).trans ?_
-  refine (add_le_add
-    (F.advantage_cramerShoupGame3_game3Half_le hasAD encodeMsg encodeAD setup H isElem hmem
-      adversary bit n Q₁ m hm0 hm hQ₁)
-    (F.advantage_cramerShoupGame3Half_game4_le hasAD encodeMsg encodeAD setup H isElem hmem
-      adversary bit n Q₂ m hm0 hm hQ₂)).trans_eq ?_
-  push_cast; ring
+  game_trans [F.cramerShoupGame3Half hasAD encodeMsg encodeAD setup H isElem adversary bit n]
+    using [
+      F.advantage_cramerShoupGame3_game3Half_le hasAD encodeMsg encodeAD setup H isElem hmem
+        adversary bit n Q₁ m hm0 hm hQ₁,
+      F.advantage_cramerShoupGame3Half_game4_le hasAD encodeMsg encodeAD setup H isElem hmem
+        adversary bit n Q₂ m hm0 hm hQ₂]
+  exact le_of_eq (by push_cast; ring)
 
 /-- **Game 5** (corresponding to Game 6 of [BonehShoup2023], Section 12.5.3, printed p. 493, adapted
 to $\mathcal{E}_{\mathrm{MCS}}$ with associated data): replace the masked challenge component
@@ -1849,11 +1837,9 @@ theorem advantage_cramerShoupGame4_game5_le
       (F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
       1 / (m : ℝ≥0) := by
   dsimp only [cramerShoupGame4, cramerShoupGame5, PMF.monad_bind_eq_bind]
-  refine advantage_bind_le_of_support (setup n) _ _ fun d hd => ?_
-  refine advantage_bind_le_nnreal _ _ _ fun α =>
-    advantage_bind_le_nnreal _ _ _ fun β => ?_
+  peel_binds d α β
   refine (advantage_uniform_bind_of_eq_of_ne (α * β) _ _ fun γ hγ => ?_).trans
-    (by simpa only [Nat.cast_one] using F.div_order_le_div_of_le (Q := 1) hm0 (hm d hd))
+    (by simpa only [Nat.cast_one] using F.div_order_le_div_of_le (Q := 1) hm0 (hm d d_mem))
   refine congrArg _ (funext fun δ => ?_)
   rw [PMF.bind_comm]; conv_rhs => rw [PMF.bind_comm]
   refine congrArg _ (funext fun δ₁ => ?_)

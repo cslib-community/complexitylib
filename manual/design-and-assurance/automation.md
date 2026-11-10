@@ -121,6 +121,63 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
 
+## Step game hops and align shared random draws
+
+Import `CslibFrontier.Tactic.GameHop` to step cryptographic hybrid arguments without repeating
+`Game.advantage_triangle`, `Game.advantage_comm`, `NNReal.coe_le_coe`, or nested
+`Game.advantage_bind_le_of_support` boilerplate. Both tactics keep intermediate games and variable
+couplings explicit in the proof script and perform no backtracking search. The complete
+[checked clients](../../CslibFrontierTests/GameHopTactic.lean) exercise every supported goal shape
+and negative diagnostic; run
+`lake build CslibFrontierTests.GameHopTactic --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md). Representative library proofs using them include the
+[Cramer–Shoup 1CCA hops](../../CslibFrontier/Crypto/Computational/CramerShoup.lean),
+[Cramer–Shoup adaptive rejection](../../CslibFrontier/Crypto/Computational/CramerShoup/Scheme.lean),
+and
+[Naor–Reingold security](../../CslibFrontier/Crypto/Computational/NaorReingold/Security.lean).
+
+Use `game_trans [g₁, g₂, ...]` (or `game_trans g₁, g₂, ...`) on goals of the form
+`Game.advantage G₀ Gₖ ≤ B` (`ℝ≥0`), `(Game.advantage G₀ Gₖ : ℝ) ≤ B` (`ℝ`),
+`Encryption.advantage exp n ≤ B`, `Game.succProbability G₀ ≤ Game.succProbability Gₖ + B` (in
+`ℝ≥0` or `ℝ`, in either addition order), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop subgoal
+per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
+`using [h₀, h₁, ...]` discharges hops directly (use `_` to leave a hop open for tactic proof),
+automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, lifting `ℝ≥0`
+advantage bounds into `ℝ`, turning game equalities `A = B` or `B = A` into zero error, and closing
+a fully instantiated sum bound when it holds by `rfl`, associativity/commutativity of `+` (with
+zeros), or `ring`. With no intermediate list, `game_trans` unfolds `Encryption.advantage` or
+reduces a `Game.succProbability` difference bound to `Game.advantage`, and `game_trans using [h]`
+closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
+`CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
+to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
+[Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).
+
+Use `peel_binds` (or `peel_binds x₁ x₂ ...`) on `Game.advantage`, `Encryption.advantage`,
+`CloseTo`, or `PMF` equality goals. It first normalizes outer `ProbComp.eval` monadic binds,
+`PMF` monad notation, and left-nested `PMF.bind_bind` at the root without unfolding named
+experiment definitions, then peels shared leading `PMF.bind` and `Game.runStatelessOracle` stages.
+Each peeled stage introduces the draw `xᵢ` and its support witness `xᵢ_mem : xᵢ ∈ μ.support` (use
+`_` for anonymous binders). When the two leading distributions are not definitionally equal,
+`peel_binds` checks whether either side's second stage is independent of its first and matches the
+opposite leading stage, applying one `PMF.bind_comm`, `Game.bind_runStatelessOracle_comm`, or
+`Game.runStatelessOracle_comm` swap automatically before peeling. Omitting binder names peels all
+shared leading stages and retains the existing lambda binder names.
+
+Intermediate hybrid games and multi-step couplings across identical distributions (such as
+reordering uniform draws over `ZMod q`) remain explicit choices: `peel_binds` couples identical
+leading distributions in place rather than guessing from bound variable names, so unfold named game
+wrappers and perform any deeper `PMF.bind_comm` / `Game.advantage_bind_comm` reordering before
+peeling. When a trailing sum bound needs cast rewriting or monotonicity (such as `push_cast; ring`
+or `gcongr`), `game_trans` leaves that single ground inequality open.
+
+If `peel_binds` reports that leading stages do not match and cannot be aligned by a single
+independent swap, check whether an inner draw mentions the outer binder or lies more than one stage
+deep, or apply a distribution-replacement lemma (such as modular-sampling or until-bad bounds)
+before peeling the remaining prefix. If `game_trans` reports a `using` count mismatch, check that
+`m` intermediate items are paired with `m + 1` hop proofs (using `_` for hops proved
+interactively); if it reports that a hop proof's type does not match the expected hop, verify the
+intermediate game list order and parameter arguments.
+
 ## Certify and reuse memory methods
 
 Import `CslibFrontier.Tactic.Realize` for a memory-client goal
