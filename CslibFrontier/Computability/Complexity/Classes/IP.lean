@@ -14,7 +14,6 @@ public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
-import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.QueryBounds
 import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Foundations.Analysis.ENNRealNatDiv

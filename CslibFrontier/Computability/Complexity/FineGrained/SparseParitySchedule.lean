@@ -29,6 +29,10 @@ Theorem 2.2, printed pp. 38–39):
    uses a sufficiently large `c = c(k)` to bound both the equation count and monomial sparsity.
    For any width-`≤ k` CNF
    `φ : CNF V`:
+   - `CNF.totalIncidence_mul_le_of_card_equationScope_le`: when every equation scope of
+     `φ.parityRowSystem rows` has at most `w` variables, `rows.length ≤ 6 * Fintype.card V`, and
+     `(6 * w) * s ≤ b₀`, the total incidence times `s` is at most `b₀ * Fintype.card V`, the
+     heavy-variable budget `hM` of the branching bounds.
    - `CNF.totalIncidence_parityRowSystem_le_six_mul`: when `rows.length ≤ 6 * Fintype.card V` and
      `∀ r ∈ rows, weight r ≤ W`, total variable-equation incidence across `φ.parityRowSystem rows`
      is at most `(6 * (k * (W * 2 ^ k))) * Fintype.card V`.
@@ -81,6 +85,7 @@ Theorem 2.2, printed pp. 38–39):
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.totalIncidence_mul_le_of_card_equationScope_le`
 * `Cslib.Logic.PL.CNF.totalIncidence_parityRowSystem_le_six_mul`
 * `Cslib.Logic.PL.CNF.card_le_two_mul_freeVar_parityRowSystem`
 * `Cslib.Logic.PL.CNF.card_branchAugmentedScope_parityRowSystem_le`
@@ -117,7 +122,7 @@ variables, there are at most `6 * Fintype.card V` rows, and `(6 * w) * s ≤ b�
 incidence times the branching divisor `s` is at most `b₀ * Fintype.card V`. This is the
 hypothesis `hM` of `card_le_two_mul_freeVar_of_heavyVars` and
 `card_branchAssignments_heavyVars_le_two_pow_div`. -/
-private theorem totalIncidence_mul_le_of_card_equationScope_le [Fintype V] [DecidableEq V]
+theorem CNF.totalIncidence_mul_le_of_card_equationScope_le [Fintype V] [DecidableEq V]
     {φ : CNF V} {rows : List (Fin φ.length → Bool)} {w s b₀ : ℕ}
     (hscope : ∀ j : Fin rows.length, #(equationScope (φ.parityRowSystem rows j)) ≤ w)
     (hlen : rows.length ≤ 6 * Fintype.card V) (h_thresh : (6 * w) * s ≤ b₀) :
@@ -170,7 +175,7 @@ theorem CNF.card_le_two_mul_freeVar_parityRowSystem [Fintype V] [DecidableEq V]
         (heavyVars univ (univ : Finset (Fin rows.length))
           (fun j => equationScope (φ.parityRowSystem rows j)) b₀)) ≤
       2 ^ (Fintype.card V / s_div) := by
-  have hM := totalIncidence_mul_le_of_card_equationScope_le
+  have hM := CNF.totalIncidence_mul_le_of_card_equationScope_le
     (CNF.card_equationScope_parityRowSystem_le hk hW) hlen h_thresh
   exact ⟨card_le_two_mul_freeVar_of_heavyVars univ
       (fun j => equationScope (φ.parityRowSystem rows j)) hs_div hM e,
@@ -341,7 +346,7 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le [Fintype V] [De
       (2 : ℝ) ^ (Fintype.card V / s_div) *
         (2 * (numNodes n' : ℝ) * (numGroups n' : ℝ) *
           Real.exp (((16 * k + 4 : ℕ) : ℝ) * (n' : ℝ) * rowCost β n')) := by
-  have hM := totalIncidence_mul_le_of_card_equationScope_le
+  have hM := CNF.totalIncidence_mul_le_of_card_equationScope_le
     (CNF.card_equationScope_parityRowSystem_le hk hW) hlen h_thresh
   have h16 : k * (2 * 6 + 4) + 4 = 16 * k + 4 := by ring
   simpa only [h16] using
@@ -714,7 +719,7 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule_of_le_clog_pow (k C_B 
           (fun j => equationScope (φ.parityRowSystem (A i) j)) *
         (Nat.clog 2 (Fintype.card V)).sqrt ≤
       b₀ * Fintype.card V :=
-    totalIncidence_mul_le_of_card_equationScope_le hscope_D₀ hlen_i (Nat.le_succ _)
+    CNF.totalIncidence_mul_le_of_card_equationScope_le hscope_D₀ hlen_i (Nat.le_succ _)
   have hcard : Fintype.card V ≤ 2 * n' ∧ Fintype.card V / 2 ≤ n' :=
     card_le_two_mul_freeVar_of_heavyVars univ
       (fun j => equationScope (φ.parityRowSystem (A i) j)) hsqrt hM_le e
