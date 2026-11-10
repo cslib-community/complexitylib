@@ -37,7 +37,7 @@ Under the hypotheses of the cited theorems, the expected probe count is at most 
 $(2 L + 1)$-wise independence (`expect_probeCount_oddStride_of_kWiseIndependent`) and at most `3`
 under Double Tabulation with an explicit code bound
 (`expect_probeCount_oddStride_doubleTab_of_codeBound_le`). For the exponent `c_exp`, the bound `3`
-needs `doubleTabThreshold c_exp ≤ n_max` (`expect_probeCount_oddStride_doubleTab_le`), where
+is proved for `doubleTabThreshold c_exp ≤ n_max` (`expect_probeCount_oddStride_doubleTab_le`), where
 `doubleTabThreshold c_exp = 2 ^ (2 * doubleTabMinB c_exp) ≥ 2 ^ 25088`. Below the threshold the
 proof uses only the deterministic bound `probeCount ≤ n_max + 1` (`probeCount_le_add_one`), valid
 for every probe permutation family representing the table; together the two cases give
