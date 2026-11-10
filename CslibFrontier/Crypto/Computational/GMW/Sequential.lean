@@ -917,14 +917,12 @@ theorem spaceBound_of_encFiniteConfig {k : ℕ} {Control : Type} [Finite Control
     FiniteConfig.SpaceBound (encFiniteConfig cfg).length (encFiniteConfig cfg).length 0 cfg := by
   have htape (tape : Cslib.Turing.BiTape Bool) :
       tape.spaceUsed ≤ (encBiTape encBool tape).length + 1 := by
-    have hL : tape.left.length ≤ (encStackTape encBool tape.left).length := by
+    have hstack (t : Cslib.Turing.StackTape Bool) : t.length ≤ (encStackTape encBool t).length := by
       rw [encStackTape_apply]
       exact SizedListEncoding.length_le (encA := encOption encBool)
-        (encL := encList (encOption encBool)) tape.left.toList
-    have hR : tape.right.length ≤ (encStackTape encBool tape.right).length := by
-      rw [encStackTape_apply]
-      exact SizedListEncoding.length_le (encA := encOption encBool)
-        (encL := encList (encOption encBool)) tape.right.toList
+        (encL := encList (encOption encBool)) t.toList
+    have hL := hstack tape.left
+    have hR := hstack tape.right
     simp only [Cslib.Turing.BiTape.spaceUsed, encBiTape_apply, length_encPair]; omega
   have hpi {Index Value : Type} [Fintype Index] (enc : Value ↪ List Bool)
       (values : Index → Value) (i : Index) :
