@@ -11,6 +11,7 @@ public import CslibFrontier.DataStructure.WordRAM.StateTransition
 public import CslibFrontier.Computability.WordRAM.Randomized.Expected
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.SupportTsum
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Composable Randomized Word-RAM State-Transition Implementations
@@ -474,8 +475,7 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
       exact hseed θ
     have hsupp_det : ∀ p ∈ ν_det.support, rep p.1 s p.2 ∧ argMatch o p.2.regs := by
       intro p hp
-      rw [PMF.mem_support_map_iff] at hp
-      obtain ⟨t, ht, rfl⟩ := hp
+      supp_cases hp [ν_det] with ⟨t, ht, rfl⟩
       have hts := hs t ht
       obtain ⟨_, hrep, harg⟩ := hsupp t ht
       exact ⟨hts ▸ hrep, harg⟩
@@ -495,9 +495,7 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
         rw [PMF.map_comp]
         rfl
       · intro q' hq'
-        dsimp only [μ_step] at hq'
-        rw [PMF.mem_support_map_iff] at hq'
-        obtain ⟨q, hq, rfl⟩ := hq'
+        supp_cases hq' [μ_step] with ⟨q, hq, rfl⟩
         obtain ⟨hdec, hrep', hmod⟩ := hq_det q hq
         refine ⟨(D.stepFn s o).2, ?_, hdec, hrep', hmod⟩
         rw [hs t ht]
@@ -513,11 +511,7 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
       exact hseed_det' θ'
     · intro _
       refine ⟨(D.stepFn s o).1, fun q hq => ?_⟩
-      rw [PMF.mem_support_bind_iff] at hq
-      obtain ⟨t, _, hq_step⟩ := hq
-      dsimp only [μ_step] at hq_step
-      rw [PMF.mem_support_map_iff] at hq_step
-      obtain ⟨_, _, rfl⟩ := hq_step
+      supp_cases hq [μ_step] with ⟨t, -, _, -, rfl⟩
       rfl
     · -- Pull the deterministic amortization back along `proj`. On the support the abstract
       -- state is pinned to `s`, so the per-state charge is the constant `charge s o`.
@@ -850,10 +844,7 @@ theorem frame_caller_dist (C : StateTransitionImpl P D w base params s₀)
       ∑' t, ν t * (C.potential t.seed (t.data.comap f) : ℝ≥0∞) := by
   refine ⟨fun θ => by rw [C.frameStateDist_map_seed]; exact hseed θ, ?_, ?_⟩
   · intro q hq
-    rw [frameStateDist, PMF.mem_support_bind_iff] at hq
-    obtain ⟨t, ht, hq_map⟩ := hq
-    rw [PMF.mem_support_map_iff] at hq_map
-    obtain ⟨x', hx', rfl⟩ := hq_map
+    supp_cases hq [frameStateDist] with ⟨t, ht, x', hx', rfl⟩
     obtain ⟨hb', hreg, hmem⟩ := hframe t ht x' hx'
     exact (C.frame_caller (hrep t ht) hb' hreg hdisj hmem).1
   · rw [frameStateDist, Cslib.Probability.PMF.tsum_bind_mul]
@@ -935,14 +926,9 @@ theorem frame_caller_dist_ofFn (C : StateTransitionImpl P D w base params s₀)
     C.frame_caller_dist hseed_rel hrep_rel hdisj hframe_rel
   refine ⟨fun θ => by rw [C.frameDist_map_fst]; exact hseed θ, ?_, ?_⟩
   · intro q hq
-    rw [hdist, PMF.mem_support_map_iff] at hq
-    obtain ⟨q_rel, hq_rel, rfl⟩ := hq
+    supp_cases hq [hdist] with ⟨q_rel, hq_rel, rfl⟩
     have hq_s : q_rel.state = s := by
-      rw [frameStateDist, PMF.mem_support_bind_iff] at hq_rel
-      obtain ⟨t, ht, hq_map⟩ := hq_rel
-      rw [PMF.mem_support_map_iff] at ht hq_map
-      obtain ⟨_, _, rfl⟩ := ht
-      obtain ⟨_, _, rfl⟩ := hq_map
+      supp_cases hq_rel [frameStateDist] with ⟨_, ⟨_, -, rfl⟩, _, -, rfl⟩
       rfl
     exact hq_s ▸ hrep' q_rel hq_rel
   · rw [hdist, Cslib.Probability.PMF.tsum_map_mul, hpot', Cslib.Probability.PMF.tsum_map_mul]
@@ -1177,10 +1163,7 @@ theorem call_rename (C : StateTransitionImpl P D w base params s₀)
     intro hd
     obtain ⟨s, hs⟩ := hsingle hd
     refine ⟨s, fun t' ht' => ?_⟩
-    simp only [ν_prep, frameStateDist, PMF.mem_support_bind_iff] at ht'
-    obtain ⟨t, ht, ht_map⟩ := ht'
-    rw [PMF.mem_support_map_iff] at ht_map
-    obtain ⟨_, _, rfl⟩ := ht_map
+    supp_cases ht' [ν_prep, frameStateDist] with ⟨t, ht, _, -, rfl⟩
     exact hs t ht
   have hseed_prep : ∀ θ, (ν_prep.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
     intro θ
@@ -1190,10 +1173,7 @@ theorem call_rename (C : StateTransitionImpl P D w base params s₀)
       D.valid t'.state o ∧ C.rep t'.seed t'.state (t'.data.comap f) ∧
         C.argMatch o (t'.data.comap f).regs := by
     intro t' ht'
-    simp only [ν_prep, frameStateDist, PMF.mem_support_bind_iff] at ht'
-    obtain ⟨t, ht, ht_map⟩ := ht'
-    rw [PMF.mem_support_map_iff] at ht_map
-    obtain ⟨x', hx', rfl⟩ := ht_map
+    supp_cases ht' [ν_prep, frameStateDist] with ⟨t, ht, x', hx', rfl⟩
     obtain ⟨_, _, hfr_x'⟩ := hprep t ht
     obtain ⟨hb', hreg, hmem, harg⟩ := hfr_x' x' hx'
     exact ⟨(hrep t ht).1,

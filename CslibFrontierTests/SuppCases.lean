@@ -114,6 +114,13 @@ example (p : ProbComp ℕ) (x : ℕ) (h : x ∈ (double p).support) : Even x := 
   supp_cases h [double]
   exact even_two_mul _
 
+-- A distribution bound by a local `let` is unfolded the same way.
+example (μ : PMF ℕ) (x : ℕ) : x ∈ (μ.map (2 * ·)).support → Even x := by
+  let ν := μ.map (2 * ·)
+  intro (h : x ∈ ν.support)
+  supp_cases h [ν]
+  exact even_two_mul _
+
 /-! ### `supp_norm` on its own -/
 
 example (μ : PMF ℕ) (ν : ℕ → PMF ℕ) (x : ℕ) :
@@ -140,7 +147,7 @@ example (μ : PMF ℕ) (x : ℕ) (h : x ∈ μ.support) : True := by
 
 -- The program is a definition that the simp set cannot see through.
 /--
-error: supp_cases: the simp set `supp_norm` does not apply to `h`. If the distribution is a named definition, unfold it with `supp_cases h [foo_def]`.
+error: supp_cases: the simp set `supp_norm` does not apply to `h`. If the distribution is a definition or a local `let`, unfold it with `supp_cases h [foo]`.
   x ∈ OracleComp.support (double p)
 `simp` made no progress
 -/

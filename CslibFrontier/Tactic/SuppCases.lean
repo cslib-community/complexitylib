@@ -189,8 +189,8 @@ elab_rules : tactic
       evalTactic (← `(tactic| simp only [$normSet:ident, $args,*] at $h:ident))
     catch ex =>
       throwError "supp_cases: the simp set `supp_norm` does not apply to `{h.getId}`. If the \
-        distribution is a named definition, unfold it with `supp_cases {h.getId} [foo_def]`.\
-        {indentExpr type}\n{ex.toMessageData}"
+        distribution is a definition or a local `let`, unfold it with \
+        `supp_cases {h.getId} [foo]`.{indentExpr type}\n{ex.toMessageData}"
     if (← getUnsolvedGoals).isEmpty then return
     match pat with
     | some pat => evalTactic (← `(tactic| rcases $h:ident with $pat))
