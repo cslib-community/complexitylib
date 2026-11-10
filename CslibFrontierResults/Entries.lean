@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
@@ -739,3 +740,20 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+register_result "translational-time-hierarchy" where
+  title := "Deterministic time hierarchy below every power of the logarithm, by translation"
+  topic := "time complexity"
+  sources := [
+    { paper := FortnowSanthanam2006, theorem := "Lemma 5", locator := "Section 3.3" }
+  ]
+  theorems := [
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow,
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_log_rpow
+  ]
+  scope := "DTIME(n^a) is strictly inside DTIME(g) whenever g(n) >= n^a (ln n)^eps eventually, \
+    for every integer a >= 1 and real eps > 0, on bit strings with native multitape DTIME. \
+    Derived by translation (padding) from the library's polylogarithmic-gap diagonal theorem; \
+    the source lemma is the translation method, not this statement. Only the bounds n^a are \
+    covered, not arbitrary time-constructible t, and this is not W. J. Paul's fixed-tape \
+    hierarchy."

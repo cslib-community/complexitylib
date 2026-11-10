@@ -1736,6 +1736,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Computability.Complexity.Classes.IP.CoinFixing
