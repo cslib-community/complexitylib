@@ -245,6 +245,7 @@ public import CslibFrontier.Algorithms.Reachability.InductiveCounting.Semantics
 public import CslibFrontier.Algorithms.Reachability.Reingold
 public import CslibFrontier.Algorithms.Reachability.ReingoldEval
 public import CslibFrontier.Algorithms.Reachability.Savitch
+public import CslibFrontier.Algorithms.Reachability.SavitchWalk
 public import CslibFrontier.Algorithms.Reachability.ShortestWalk
 public import CslibFrontier.Algorithms.ShortestPaths.FloydWarshall
 public import CslibFrontier.Algorithms.ShortestPaths.NegativeTriangle
@@ -2857,6 +2858,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.S
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.SavitchWalk
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Translate
