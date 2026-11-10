@@ -678,8 +678,8 @@ support witness `x_mem : x ∈ μ.support`.
 
 * `peel_binds` peels all shared leading stages (performing a one-step independent `PMF.bind_comm`
   swap when a leading distribution matches the opposite side's second stage).
-* `peel_binds x₁ x₂ ...` peels exactly those stages using the given binder names (`_` for
-  anonymous binders). -/
+* `peel_binds x₁ x₂ ...` peels exactly those stages using the given binder names (`_` names the
+  draw `x` and leaves its support witness inaccessible). -/
 syntax (name := peelBinds) "peel_binds" (ppSpace colGt peelBinder)* : tactic
 
 elab_rules : tactic

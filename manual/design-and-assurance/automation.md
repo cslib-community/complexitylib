@@ -416,7 +416,7 @@ Import `CslibFrontier.Tactic.GameHop` to step cryptographic hybrid arguments wit
 `Game.advantage_bind_le_of_support` boilerplate. Both tactics keep intermediate games and variable
 couplings explicit in the proof script and perform no backtracking search. The complete
 [checked clients](../../CslibFrontierTests/GameHopTactic.lean) exercise every supported goal shape
-and negative diagnostic; run
+and pin the user-facing error for each rejected input they cover; run
 `lake build CslibFrontierTests.GameHopTactic --wfail --iofail` from the repository root after
 [setup](../workflows/getting-started.md). Representative library proofs using them include the
 [Cramer–Shoup 1CCA hops](../../CslibFrontier/Crypto/Computational/CramerShoup.lean),
@@ -444,8 +444,8 @@ Use `peel_binds` (or `peel_binds x₁ x₂ ...`) on `Game.advantage`, `Encryptio
 `CloseTo`, or `PMF` equality goals. It first normalizes outer `ProbComp.eval` monadic binds,
 `PMF` monad notation, and left-nested `PMF.bind_bind` at the root without unfolding named
 experiment definitions, then peels shared leading `PMF.bind` and `Game.runStatelessOracle` stages.
-Each peeled stage introduces the draw `xᵢ` and its support witness `xᵢ_mem : xᵢ ∈ μ.support` (use
-`_` for anonymous binders). When the two leading distributions are not definitionally equal,
+Each peeled stage introduces the draw `xᵢ` and its support witness `xᵢ_mem : xᵢ ∈ μ.support`
+(`_` names the draw `x` and leaves the witness inaccessible). When the two leading distributions are not definitionally equal,
 `peel_binds` checks whether either side's second stage is independent of its first and matches the
 opposite leading stage, applying one `PMF.bind_comm`, `Game.bind_runStatelessOracle_comm`, or
 `Game.runStatelessOracle_comm` swap automatically before peeling. Omitting binder names peels all

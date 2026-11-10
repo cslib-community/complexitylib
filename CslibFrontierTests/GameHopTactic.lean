@@ -215,8 +215,10 @@ example (μ : PMF ℕ) (m₁ : ProbComp ℕ) (m₂ : ProbComp Bool)
 /-- Reducible identity alias for testing `dsimp` inside `game_trans ... using [by ...]`. -/
 abbrev idGame (g : Game) : Game := g
 
-/-- Regression (2): `game_trans ... using [by ..., ...]` rolls back failed forward `by ...` probes
-(including logged tactic errors and `sorryAx`) to `revTy`. -/
+/-- Coverage for `using [by ...]` hop proofs that need the expected type or the reversed
+orientation.
+These are not regression tests for review finding 2: they also pass without its logged-error/
+`sorryAx` probe rollback, and no input that reaches that path has been found. -/
 example (g₀ g₁ g₂ : Game) (ε₀ ε₁ : ℝ≥0)
     (h_rev : Game.advantage g₁ g₀ ≤ ε₀)
     (h₁ : Game.advantage g₁ g₂ ≤ ε₁) :
@@ -264,6 +266,13 @@ example (μ : PMF ℕ) (f g : ℕ → Game) (ε : ℝ≥0)
   peel_binds
   exact h namedDraw namedDraw_mem
 
+/-- `peel_binds _` names the draw `x` and leaves its support witness inaccessible. -/
+example (μ : PMF ℕ) (f g : ℕ → Game) (ε : ℝ≥0)
+    (h : ∀ y ∈ μ.support, Game.advantage (f y) (g y) ≤ ε) :
+    Game.advantage (μ.bind f) (μ.bind g) ≤ ε := by
+  peel_binds _
+  exact h x ‹_›
+
 /-! ### Negative tests and diagnostics -/
 
 -- `game_trans` reports `using` count mismatches clearly.
@@ -274,28 +283,78 @@ error: game_trans: 1 intermediate item(s) produce 2 hop(s), but `using` supplied
 example (g₀ g₁ : Game) (h : Game.advantage g₀ g₁ ≤ 1) : Game.advantage g₀ g₁ ≤ 1 := by
   game_trans [g₀] using [h]
 
--- Negative `fail_if_success` checks for `peel_binds` and `game_trans`.
-example (_d₁ : PMF ℕ) (_d₂ : ℕ → PMF Bool) (_d₃ : PMF Bool)
-    (_f : ℕ → Bool → Game) (_g : Bool → ℕ → Game)
-    (_g₀ _g₁ _g₂ : Game) (_h : Game.advantage _g₀ _g₂ ≤ 1) : True := by
-  -- Inner distribution depends on outer binder, so `peel_binds` refuses to swap `d₂ a` past `a`:
-  fail_if_success
-    have : Game.advantage (_d₁.bind fun a => (_d₂ a).bind fun b => _f a b)
-        (_d₃.bind fun b => _d₁.bind fun a => _g b a) ≤ 1 := by
-      peel_binds b
-  -- Leading distributions differ and cannot swap:
-  fail_if_success
-    have : Game.advantage (_d₁.bind fun a => _f a true) (_d₃.bind fun b => _g b 0) ≤ 1 := by
-      peel_binds
-  -- Wrong hop endpoints in `using` fail immediately without unfolding games:
-  fail_if_success
-    have : Game.advantage _g₀ _g₂ ≤ 1 := by
-      game_trans [_g₁] using [_h, _h]
-  -- Bare `game_trans` on an already-normalized `Game.advantage` goal requires intermediates:
-  fail_if_success
-    have : Game.advantage _g₀ _g₁ ≤ 1 := by
-      game_trans
-  trivial
+-- The only stage that could align with the right-hand `d₂ 0` is `d₂ a`, whose distribution depends
+-- on the outer binder `a`, so no independent swap exists. Dependence makes the swap ineligible
+-- before it is attempted, so the user-facing message is the generic alignment error.
+/--
+error: peel_binds: leading stages do not match and cannot be aligned by a single independent swap
+  Game.advantage (d₁.bind fun a => (d₂ a).bind fun b => f a b) ((d₂ 0).bind g) ≤ 1
+-/
+#guard_msgs in
+example (d₁ : PMF ℕ) (d₂ : ℕ → PMF Bool) (f : ℕ → Bool → Game) (g : Bool → Game) :
+    Game.advantage (d₁.bind fun a => (d₂ a).bind fun b => f a b) ((d₂ 0).bind g) ≤ 1 := by
+  peel_binds
+
+-- Leading distributions differ and neither side has a matching independent second stage.
+/--
+error: peel_binds: leading stages do not match and cannot be aligned by a single independent swap
+  Game.advantage (d₁.bind fun a => f a true) (d₃.bind fun b => g b 0) ≤ 1
+-/
+#guard_msgs in
+example (d₁ : PMF ℕ) (d₃ : PMF Bool) (f : ℕ → Bool → Game) (g : Bool → ℕ → Game) :
+    Game.advantage (d₁.bind fun a => f a true) (d₃.bind fun b => g b 0) ≤ 1 := by
+  peel_binds
+
+-- The named form reports which requested stage could not be peeled.
+/--
+error: peel_binds: could not peel stage `a`; leading distributions do not match and cannot be
+aligned by a single independent swap
+  Game.advantage (d₁.bind fun a => f a true) (d₃.bind fun b => g b 0) ≤ 1
+-/
+#guard_msgs in
+example (d₁ : PMF ℕ) (d₃ : PMF Bool) (f : ℕ → Bool → Game) (g : Bool → ℕ → Game) :
+    Game.advantage (d₁.bind fun a => f a true) (d₃.bind fun b => g b 0) ≤ 1 := by
+  peel_binds a
+
+-- `peel_binds` rejects goals outside its supported shapes.
+/--
+error: peel_binds: expected a `Game.advantage`, `Encryption.advantage`, `CloseTo`, or `PMF`
+equality goal
+  1 ≤ 2
+-/
+#guard_msgs in
+example : (1 : ℕ) ≤ 2 := by
+  peel_binds
+
+-- A `using` term with the wrong hop endpoints is reported at that term.
+/--
+error: game_trans: hop proof has type
+  g₀.advantage g₂ ≤ 1
+which does not match expected hop (up to symmetry or equality)
+  g₀.advantage g₁ ≤ ?ε_0
+-/
+#guard_msgs in
+example (g₀ g₁ g₂ : Game) (h : Game.advantage g₀ g₂ ≤ 1) : Game.advantage g₀ g₂ ≤ 1 := by
+  game_trans [g₁] using [h, h]
+
+-- Bare `game_trans` on an already-normalized `Game.advantage` goal needs intermediates.
+/--
+error: game_trans: supply at least one intermediate game/distribution (e.g. `game_trans [g₁]`)
+or `using [h]`
+-/
+#guard_msgs in
+example (g₀ g₁ : Game) : Game.advantage g₀ g₁ ≤ 1 := by
+  game_trans
+
+-- `game_trans` rejects goals outside its supported shapes.
+/--
+error: game_trans: expected a `Game.advantage`, `Encryption.advantage`,
+`Game.succProbability ≤ Game.succProbability + B`, or `CloseTo` goal
+  n ≤ n
+-/
+#guard_msgs in
+example (n : ℕ) : n ≤ n := by
+  game_trans [n]
 
 end CslibFrontierTests.GameHopTactic
 end
