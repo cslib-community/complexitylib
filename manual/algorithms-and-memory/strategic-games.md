@@ -130,7 +130,10 @@ results:
 [Bimatrix/Existence.lean](../../CslibFrontier/GameTheory/Bimatrix/Existence.lean) derives
 `BimatrixGame.exists_isNash` for every bimatrix game with nonempty strategy sets, with no
 nondegeneracy hypothesis. It views the game as a two-player cost game indexed by `Bool` with the
-negated payoffs, lifting both strategy sets to a common universe.
+negated payoffs, lifting both strategy sets to a common universe. Each player's expected cost
+vector is the negated matrix–vector product of expected payoffs, by `sum_productWeight_mul_apply`
+in `Mixed.lean`: under the product weights, a function of one player's strategy has its expectation
+under that player's mixed strategy.
 
 To check a candidate equilibrium, compute `deviationCost` for each pure strategy and compare it
 with `expectedCost`, which `sum_mul_deviationCost_eq_expectedCost` writes as their average.

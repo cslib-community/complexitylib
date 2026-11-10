@@ -746,9 +746,9 @@ register_result "nash-existence" where
   title := "Nash's theorem: every finite game has a mixed Nash equilibrium"
   topic := "game theory"
   sources := [
-    { paper := Nash1951, theorem := "Theorem 1", locator := unverified },
+    { paper := Nash1951, theorem := "Theorem 1", locator := "p. 288" },
     { paper := Roughgarden2013CS364A, theorem := unverified,
-      locator := "Lecture 13, Section 3.3" }
+      locator := "Lecture 13, Section 3.3, p. 5" }
   ]
   theorems := [
     Cslib.GameTheory.CostGame.exists_isMixedNash
@@ -764,7 +764,7 @@ register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"
   topic := "game theory"
   sources := [
-    { paper := Nash1951, theorem := "Theorem 1", locator := unverified }
+    { paper := Nash1951, theorem := "Theorem 1", locator := "p. 288" }
   ]
   theorems := [
     Cslib.GameTheory.BimatrixGame.exists_isNash

@@ -83,21 +83,17 @@ private theorem deviationCost_false (G : BimatrixGame M N) (p : ∀ b, Strat M N
     (hp : ∑ a, p false a = 1) (i : M) :
     G.toCostGame.deviationCost p false (ULift.up i)
       = -(G.A *ᵥ fun j => p true (ULift.up j)) i := by
+  have hp' : ∀ b, b ≠ true → ∑ a, p b a = 1 := by
+    rintro (_ | _) hb
+    exacts [hp, absurd rfl hb]
   rw [CostGame.deviationCost_def]
   calc ∑ s, productWeight p s * G.toCostGame.cost false (update s false (ULift.up i))
-      = ∑ s, productWeight (update p true fun c => p true c * -G.A i (ULift.down c)) s := by
-        refine sum_congr rfl fun s _ => ?_
-        simp only [productWeight_def, Fintype.prod_bool, update_self,
-          update_of_ne (show false ≠ true by decide), update_of_ne (show true ≠ false by decide),
-          toCostGame]
-        ring
+      = ∑ s, productWeight p s * (fun c : Strat M N true => -G.A i (ULift.down c)) (s true) :=
+        sum_congr rfl fun s _ => by
+          simp only [toCostGame, update_self, update_of_ne (show true ≠ false by decide)]
     _ = -(G.A *ᵥ fun j => p true (ULift.up j)) i := by
-        simp only [productWeight_def]
-        rw [← Fintype.prod_sum
-            (fun b => update p true (fun c => p true c * -G.A i (ULift.down c)) b),
-          Fintype.prod_bool]
-        simp only [update_self, update_of_ne (show false ≠ true by decide), hp, mul_one]
-        rw [sum_strat_true]
+        rw [sum_productWeight_mul_apply hp' fun c : Strat M N true => -G.A i (ULift.down c),
+          sum_strat_true]
         simp only [mulVec, dotProduct, ← sum_neg_distrib, mul_neg, mul_comm]
 
 /-- The expected cost vector of the column player is the negated vector of its expected
@@ -106,21 +102,17 @@ private theorem deviationCost_true (G : BimatrixGame M N) (p : ∀ b, Strat M N 
     (hp : ∑ a, p true a = 1) (j : N) :
     G.toCostGame.deviationCost p true (ULift.up j)
       = -((fun i => p false (ULift.up i)) ᵥ* G.B) j := by
+  have hp' : ∀ b, b ≠ false → ∑ a, p b a = 1 := by
+    rintro (_ | _) hb
+    exacts [absurd rfl hb, hp]
   rw [CostGame.deviationCost_def]
   calc ∑ s, productWeight p s * G.toCostGame.cost true (update s true (ULift.up j))
-      = ∑ s, productWeight (update p false fun c => p false c * -G.B (ULift.down c) j) s := by
-        refine sum_congr rfl fun s _ => ?_
-        simp only [productWeight_def, Fintype.prod_bool, update_self,
-          update_of_ne (show false ≠ true by decide), update_of_ne (show true ≠ false by decide),
-          toCostGame]
-        ring
+      = ∑ s, productWeight p s * (fun c : Strat M N false => -G.B (ULift.down c) j) (s false) :=
+        sum_congr rfl fun s _ => by
+          simp only [toCostGame, update_self, update_of_ne (show false ≠ true by decide)]
     _ = -((fun i => p false (ULift.up i)) ᵥ* G.B) j := by
-        simp only [productWeight_def]
-        rw [← Fintype.prod_sum
-            (fun b => update p false (fun c => p false c * -G.B (ULift.down c) j) b),
-          Fintype.prod_bool]
-        simp only [update_self, update_of_ne (show true ≠ false by decide), hp, one_mul]
-        rw [sum_strat_false]
+        rw [sum_productWeight_mul_apply hp' fun c : Strat M N false => -G.B (ULift.down c) j,
+          sum_strat_false]
         simp only [vecMul, dotProduct, ← sum_neg_distrib, mul_neg]
 
 /-- **Nash's theorem** for bimatrix games ([Nash1951], Theorem 1): every bimatrix game with

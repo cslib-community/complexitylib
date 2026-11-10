@@ -990,7 +990,7 @@ Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptogra
 <a id="nash51"></a>
 ## nash51
 
-John Nash. "Non-Cooperative Games." *Annals of Mathematics* 54(2), 286–295, 1951. https://doi.org/10.2307/1969529 . Bibliographic data from the DOI record. The available scans could not be read as text in this pass; the statement and number of Theorem 1 ("every finite game has an equilibrium point") and its Brouwer proof were checked against secondary descriptions, including Lecture 20 of [roughgarden13cs364a](#roughgarden13cs364a), on 2026-11-10. No page locator is claimed.
+John Nash. "Non-Cooperative Games." *Annals of Mathematics* 54(2), 286–295, 1951. https://doi.org/10.2307/1969529 . Bibliographic data from the DOI record. Theorem 1 ("every finite game has an equilibrium point") and its proof by Brouwer's theorem were checked on printed p. 288 of the scan at https://www.cs.upc.edu/~ia/nash51.pdf during the agent review of [#4105](https://github.com/cslib-community/cslib-frontier/pull/4105) on 2026-11-10.
 
 <a id="nisan92"></a>
 ## nisan92
