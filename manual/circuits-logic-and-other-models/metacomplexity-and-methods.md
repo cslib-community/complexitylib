@@ -1801,9 +1801,9 @@ A formal client proves both empty-graph optimum values and instantiates the comp
 finite/cofinite endpoint. Enumeration occurs only in the test oracle.
 
 The general degree-rule optimization ROADMAP entry is removed. The precise remaining mandatory
-inventory is encoding/model transfers: the recorded raw admission and signed/succinct input
-cases, and transition-level realization of the backend. Arbitrary-rational row selection is
-supplied earlier in this chapter.
+inventory is the remaining encoding/model transfers: source-claimed succinct input cases and
+the remaining backend transition-level endpoints. Signed counting/optimization and the total-decoder
+weighted endpoint are documented below; arbitrary-rational row selection appears earlier.
 The explicit canonical matrix/unary declaration and native charged-word model remain visible;
 this endpoint supplies none of those transfers. Optional Proposition A.3 stays last. ALL-main
 and the independent paperwide audit remain open.
@@ -2284,6 +2284,21 @@ query writing, both counting calls and binary reconstruction/output are charged 
 machine certificates, rather than inferred from output length. All declared assignments are
 counted, including unused variables; small sizes use the rounded theorem's actual direct paths.
 This supplies Theorem 7.1's weighted-row frontend and counting resources for this explicit encoding.
+
+`CslibFrontier.Computability.Complexity.FineGrained.WeightedRawCounting` offers a separate
+**total-decoder admission** policy. `runDecoded` accepts every word as the existing decoder's
+value, then the actual counter checks its declaration, positive weights and normalized demands.
+This is a denotation convention, not canonical-frame validation: for example, `[]` decodes to the
+empty system and has count one, whereas the canonical parser rejects it. Both policies agree on
+canonical admitted encodings. `exists_countDecoded_sharp_certificate` charges decoding,
+admission and the complete counter. `exists_countDecoded_machine` extracts a single finite-state,
+binary-alphabet Turing machine with sharp transition time, independent polynomial work-tape space
+and polynomial binary-output length on every word. `exists_countDecoded_machine_realEta` gives
+the same machine with the source real clock above the cutoff. These endpoints retain the explicit
+unary declaration; no succinct-declaration or arbitrary external-format parser is inferred.
+The checked client `CslibFrontierTests.PaperEndpoints.WeightedRawCounting` derives simultaneous
+counts for a decoder alias, mixed-length equations with an unused variable, and a contradiction
+from one actual finite machine.
 
 From the repository root run `scripts/build.sh CslibFrontierTests.WeightedRagged`.
 The [complete client](../../CslibFrontierTests/WeightedRagged.lean) couples one actual machine with
@@ -2871,4 +2886,5 @@ scalar signed normalization and the actual unsigned machines; no auxiliary assig
 is supplied. Both count and optimum endpoints include empty graphs and contradictory intervals.
 `CslibFrontierTests.PaperEndpoints.SignedDegreeRuleOptimum` executes the normalization, tiny
 original-label counting, distribution, scans and optional scalar reconstruction on negative,
-512-bit, exact-size and empty cases. Raw/succinct/model transfers remain open in ROADMAP.
+512-bit, exact-size and empty cases. Remaining succinct/model transfers stay in ROADMAP; the
+total-decoder weighted transfer is supplied by `WeightedRawCounting` above.

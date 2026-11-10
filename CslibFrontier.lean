@@ -2169,6 +2169,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.WeightedCompari
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedCountingPlan
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedCountingResources
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedRaggedResources
+public import CslibFrontier.Computability.Complexity.FineGrained.WeightedRawCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
 public import CslibFrontier.Computability.Complexity.Gradel

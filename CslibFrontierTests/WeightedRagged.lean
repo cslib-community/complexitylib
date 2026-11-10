@@ -22,7 +22,7 @@ namespace CslibFrontierTests.WeightedRagged
 open Cslib.Logic.PL.WeightedRow Cslib.Logic.PL.WeightedRow.BinaryRagged Turing.MultiTapeTM
 
 /-- A genuinely ragged system, with an 81-bit coefficient and an unused declared variable. -/
-def mixed : Input := (3, [([], 0), ([(0, true, 1)], 1),
+@[expose] def mixed : Input := (3, [([], 0), ([(0, true, 1)], 1),
   ([(0, true, 2 ^ 80), (0, false, 3), (1, true, 5)], 2 ^ 80 + 5)])
 
 example : admit 0 mixed = true := by decide
@@ -34,7 +34,7 @@ example : BinaryPlan.WithinBudget mixed.1 0 (BinaryPlan.compile 0 mixed.1 mixed.
 example : Fintype.card {σ // Holds mixed σ} = 2 := by decide
 
 /-- Empty contradictions pass structural admission and are rejected by actual normalization. -/
-def contradiction : Input := (3, [([], 1)])
+@[expose] def contradiction : Input := (3, [([], 1)])
 example : admit 0 contradiction = true := by decide
 example : Fintype.card {σ // Holds contradiction σ} = 0 := by decide
 example : admit 0 (0, [([], 0)]) = true := by decide

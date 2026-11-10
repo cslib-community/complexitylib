@@ -781,7 +781,7 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 The submission program owns the full source-to-Lean acceptance inventory.
 The directions below preserve the original source quantifiers and resource obligations.
 
-- **Encoding and model transfers (1575):** Alternative raw admission and succinct declarations where claimed, and transition-level realizations for the recorded backend; preserve each source's exact representation and native resource convention.
+- **Encoding and model transfers (1575):** Succinct declarations where claimed, and remaining transition-level realizations for the recorded backend; preserve each source's exact representation and native resource convention.
 - **One-query bounded-demand alternative (1575, Proposition A.3):** The optional additional parsimonious construction and its complete resource composition, after the advertised main clauses.
 
 ### OpenAI math results ([#1002](https://github.com/cslib-community/cslib-frontier/issues/1002))
