@@ -28,7 +28,7 @@ vertex, including when different source literal positions use the same variable.
 These finite-coordinate matching and indexing proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

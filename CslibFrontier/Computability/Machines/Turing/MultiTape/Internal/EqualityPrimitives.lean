@@ -24,7 +24,7 @@ Plain word leaves feed a reachable-prefix fold. Both encoded inputs are charged,
 original product time bound and linear workspace bound; no higher tidy calculus is imported.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 namespace ComputableInDegree
 

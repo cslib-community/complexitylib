@@ -51,10 +51,14 @@ This module proves that the Sigma-protocol security notions transfer across the 
   false statement can reach a non-doomed commitment, and from a doomed commitment at most one
   challenge in `C` has an accepting response.
 * **Straight-line knowledge soundness** (`SpecialSoundness.knowledgeSound_of_extractor`,
-  `SpecialSoundness.knowledgeSound`, `SpecialSoundness.efficientKnowledgeSound`): any straight-line
-  extractor that succeeds on accepting transcripts of true statements is knowledge sound with error
-  `1 / |C|`; in particular, the classical witness chooser `P.witnessChooser R` gives
-  `KnowledgeSound`, and a polynomial-time straight-line extractor gives
+  `SpecialSoundness.knowledgeSound`, `SpecialSoundness.efficientKnowledgeSound`): for a 2-special
+  sound `P`, any straight-line extractor that returns a valid witness on every accepting
+  transcript of a true statement makes `P.toInteractiveVerifier` knowledge sound with error
+  `1 / |C|`. Special soundness is used only to obtain plain soundness on false statements. The
+  classical witness chooser `P.witnessChooser R` ignores the transcript and is such an extractor,
+  so for it `KnowledgeSound` says no more than `SpecialSoundness.sound`.
+  `SpecialSoundness.efficientKnowledgeSound` takes that property and a polynomial-time
+  realization of an extractor family as hypotheses and concludes
   `Verifier.EfficientKnowledgeSound`.
 * **Honest-verifier zero knowledge** (`SpecialHVZK.hvzk`, `SpecialHVZK.hvzk_zero`,
   `EfficientSpecialHVZK.efficientHVZK`): `P.SpecialHVZK R simulate` and a `ProbComp` simulator
@@ -78,7 +82,8 @@ This module proves that the Sigma-protocol security notions transfer across the 
 * `SigmaProtocol.toInteractiveVerifier`, `SigmaProtocol.toInteractiveProver`,
   `SigmaProtocol.toInteractiveReduction`: the interactive verifier, prover and reduction.
 * `SigmaProtocol.rbrState`: the round-by-round state function on prefixes of `P.interactiveSpec`.
-* `SigmaProtocol.witnessChooser`: the classical straight-line witness chooser.
+* `SigmaProtocol.witnessChooser`: the classical witness chooser, a noncomputable straight-line
+  extractor that ignores the transcript.
 * `SigmaProtocol.interactiveSim`: the interactive transcript simulator induced by a
   challenge-conditioned simulator.
 * `SigmaProtocol.Encoding.toInteractiveEncoding`: interactive word encodings induced by a
@@ -94,7 +99,12 @@ This module proves that the Sigma-protocol security notions transfer across the 
   round-by-round soundness and plain-model soundness with error `1 / |C|`.
 * `SigmaProtocol.SpecialSoundness.knowledgeSound_of_extractor`,
   `SigmaProtocol.SpecialSoundness.knowledgeSound`,
-  `SigmaProtocol.SpecialSoundness.efficientKnowledgeSound`: knowledge-soundness transfer.
+  `SigmaProtocol.SpecialSoundness.efficientKnowledgeSound`: from 2-special soundness,
+  straight-line knowledge soundness with error `1 / |C|` for an extractor that returns a valid
+  witness on every accepting transcript of a true statement. That property is a hypothesis in the
+  first and third and is proved for `P.witnessChooser R` in the second. The third, for an indexed
+  family, also assumes a polynomial-time realization of the extractor and concludes
+  `Verifier.EfficientKnowledgeSound`.
 * `SigmaProtocol.SpecialHVZK.hvzk`, `SigmaProtocol.SpecialHVZK.hvzk_zero`,
   `SigmaProtocol.EfficientSpecialHVZK.efficientHVZK`: HVZK and efficient HVZK transfer.
 -/
@@ -360,9 +370,10 @@ theorem SpecialSoundness.sound {W : Type} {R : W → Y → Prop}
 
 /-! ### Knowledge soundness and efficient knowledge soundness transfer -/
 
-/-- Any straight-line extractor `E` that recovers a valid witness from accepting transcripts on
-statements in `language (Function.swap R)` makes `P.toInteractiveVerifier` knowledge sound with
-error `1 / |C|`. -/
+/-- For a 2-special sound `P`, any straight-line extractor `E` that recovers a valid witness from
+every accepting transcript on statements in `language (Function.swap R)` makes
+`P.toInteractiveVerifier` knowledge sound with error `1 / |C|`. Special soundness is used only for
+plain soundness on statements outside that language. -/
 theorem SpecialSoundness.knowledgeSound_of_extractor {W : Type} {R : W → Y → Prop}
     {extract : Y → T → C → Z → C → Z → W}
     (h : P.SpecialSoundness R extract)
@@ -385,14 +396,17 @@ theorem SpecialSoundness.knowledgeSound_of_extractor {W : Type} {R : W → Y →
     rintro r ⟨⟨x', hx', -⟩, -⟩
     exact ⟨x', Set.mem_univ x', hx'⟩
 
-/-- The classical witness chooser on transcripts, picking a witness for `y` whenever one exists. -/
+/-- The classical witness chooser: it ignores the transcript and picks a witness for `y` whenever
+one exists. -/
 noncomputable def witnessChooser (P : SigmaProtocol X Y T C Z) {W : Type} [Nonempty W]
     (R : W → Y → Prop) :
     Y → Transcript P.interactiveSpec → Unit → W :=
   fun y _ _ => Classical.epsilon (fun w => R w y)
 
 /-- **Knowledge soundness transfer**: 2-special soundness of `P` implies straight-line
-`KnowledgeSound` in the plain model with error `1 / |C|` for `P.witnessChooser R`. -/
+`KnowledgeSound` in the plain model with error `1 / |C|` for `P.witnessChooser R`. That extractor
+is noncomputable and ignores the transcript, so this says no more than `SpecialSoundness.sound`:
+nothing is extracted from the prover's messages. -/
 theorem SpecialSoundness.knowledgeSound {W : Type} [Nonempty W] {R : W → Y → Prop}
     {extract : Y → T → C → Z → C → Z → W}
     (h : P.SpecialSoundness R extract) :
@@ -522,9 +536,11 @@ theorem isPPTOn_interactiveSimWord {enc : Encoding I YF TF CF ZF}
 variable [∀ i, Fintype (CF i)] [∀ i, Nonempty (CF i)]
 
 /-- **Efficient knowledge soundness transfer**: if `PF` is special sound at every index and a
-polynomial-time straight-line extractor family `E` recovers valid witnesses on accepting
-transcripts of true statements, then `fun i => (PF i).toInteractiveVerifier` satisfies
-`Verifier.EfficientKnowledgeSound` with error `fun i => 1 / |CF i|`. -/
+polynomial-time straight-line extractor family `E` recovers a valid witness on every accepting
+transcript of every true statement, then `fun i => (PF i).toInteractiveVerifier` satisfies
+`Verifier.EfficientKnowledgeSound` with error `fun i => 1 / |CF i|`. Both the correctness of `E`
+(`hE`) and its polynomial-time realization (`hpoly`) are hypotheses; special soundness is used
+only for plain soundness on false statements. -/
 theorem SpecialSoundness.efficientKnowledgeSound
     {RF : ∀ i, WF i → YF i → Prop}
     {extract : ∀ i, YF i → TF i → CF i → ZF i → CF i → ZF i → WF i}

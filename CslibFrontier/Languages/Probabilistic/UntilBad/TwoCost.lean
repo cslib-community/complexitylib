@@ -29,7 +29,7 @@ dependency.
   constant per-call error `ε`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.OracleComp
 
@@ -39,8 +39,8 @@ open scoped ENNReal
 from a good state `¬bad s` turn bad with probability at most
 `cost₁ q * budget₁ s + cost₂ q * budget₂ s`, raising `budget₁` by at most
 `cost₁ q * δ₁₁ + cost₂ q * δ₁₂` and `budget₂` by at most `cost₁ q * δ₂₁ + cost₂ q * δ₂₂`. Then a
-program with `IsCostBounded cost₁ program k₁` and `IsCostBounded cost₂ program k₂` reaches a bad
-state from `s` with probability at most
+program with `IsCostBounded cost₁ program k₁` and `IsCostBounded cost₂ program k₂`, started in a
+good state `s`, ends in a bad state with probability at most
 `k₁ * (budget₁ s + k₁ * δ₁₁ + k₂ * δ₁₂) + k₂ * (budget₂ s + k₁ * δ₂₁ + k₂ * δ₂₂)`. -/
 theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
     {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}
@@ -67,11 +67,11 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
     obtain ⟨hle₂, hcont₂⟩ := IsCostBounded.liftBind_iff.mp hk₂
     -- One budget step: the growth bound for `q` and the remaining `(k₁, k₂ - cost₂ q)` calls add
     -- up to the budget for `(k₁ + cost₁ q, k₂)` calls. Shared by both channels below.
-    have hbudget (b : σ → ℝ≥0∞) (δ δ' : ℝ≥0∞) (y : spec q × σ)
-        (hb : b y.2 ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ') :
-        b y.2 + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' ≤
+    have hbudget (b : σ → ℝ≥0∞) (δ δ' : ℝ≥0∞) (t : σ)
+        (hb : b t ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ') :
+        b t + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' ≤
           b s + ((k₁ + cost₁ q : ℕ) : ℝ≥0∞) * δ + (k₂ : ℝ≥0∞) * δ' :=
-      calc b y.2 + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ'
+      calc b t + (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ'
           ≤ b s + (cost₁ q : ℝ≥0∞) * δ + (cost₂ q : ℝ≥0∞) * δ' +
               (k₁ : ℝ≥0∞) * δ + ((k₂ - cost₂ q : ℕ) : ℝ≥0∞) * δ' :=
             add_le_add (add_le_add hb le_rfl) le_rfl
@@ -101,8 +101,8 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
           simp only [K, B₁, B₂]
           refine add_le_add (mul_le_mul_of_nonneg_left ?_ zero_le)
             (mul_le_mul_of_nonneg_left ?_ zero_le)
-          · exact hbudget budget₁ δ₁₁ δ₁₂ y (hgrow₁ q s hs y hmem hy)
-          · exact hbudget budget₂ δ₂₁ δ₂₂ y (hgrow₂ q s hs y hmem hy)
+          · exact hbudget budget₁ δ₁₁ δ₁₂ y.2 (hgrow₁ q s hs y hmem hy)
+          · exact hbudget budget₂ δ₂₁ δ₂₂ y.2 (hgrow₂ q s hs y hmem hy)
       · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
     calc ∑' y, (handler q s) y *
           ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
@@ -137,7 +137,8 @@ theorem toOuterMeasure_bad_le_two_budgets {ι σ β : Type} {spec : ι → Type}
 /-- **Two-channel accumulated bad-state probability**: let each call `q` from a good state `¬bad s`
 turn bad with probability at most `cost₁ q * budget s + cost₂ q * ε`, and raise `budget` by at most
 `cost₁ q * δ₁ + cost₂ q * δ₂`. Then a program with `IsCostBounded cost₁ program k₁` and
-`IsCostBounded cost₂ program k₂` reaches a bad state from `s` with probability at most
+`IsCostBounded cost₂ program k₂`, started in a good state `s`, ends in a bad state with probability
+at most
 `k₁ * (budget s + k₁ * δ₁ + k₂ * δ₂) + k₂ * ε`. -/
 theorem toOuterMeasure_bad_le_two {ι σ β : Type} {spec : ι → Type}
     {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}

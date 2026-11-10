@@ -108,9 +108,11 @@ theorem testBit_lowestDiffBit_ne {a b : ℕ} (h : a ≠ b) :
   (lowestDiffBitAux_spec _ a b h le_rfl).1
 
 /-- Below `lowestDiffBit a b`, the bits of `a` and `b` agree. -/
-theorem testBit_eq_of_lt_lowestDiffBit {a b i : ℕ} (h : a ≠ b) (hi : i < lowestDiffBit a b) :
-    a.testBit i = b.testBit i :=
-  (lowestDiffBitAux_spec _ a b h le_rfl).2 i hi
+theorem testBit_eq_of_lt_lowestDiffBit {a b i : ℕ} (hi : i < lowestDiffBit a b) :
+    a.testBit i = b.testBit i := by
+  obtain rfl | h := eq_or_ne a b
+  · rfl
+  · exact (lowestDiffBitAux_spec _ a b h le_rfl).2 i hi
 
 /-- The Cole–Vishkin colour of a node with colour `a` whose successor has colour `b`: twice the
 least differing bit position, plus the bit of `a` there [Cole and Vishkin][ColeVishkin1986]. -/

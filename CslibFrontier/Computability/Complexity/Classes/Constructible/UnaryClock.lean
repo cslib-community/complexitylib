@@ -20,12 +20,12 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 
 A time-constructible bound `T` is computed in binary within `O(T n)` steps
 (`Cslib.Complexity.TimeConstructible`). Some constructions need a clock in unary instead: a run of
-true cells on a work tape that a machine consumes one cell per step. Converting `T n` exactly
-from binary to unary by counting down takes `O((T n + 1) ^ 2)` steps
-(`Turing.MultiTapeTM.ComputableInO.natToUnary`), which is too slow for linear clocks.
+true cells on a work tape that a machine consumes one cell per step. The exact conversion of
+`T n` from binary to unary (`Turing.MultiTapeTM.ComputableInO.natToUnary`) writes its result on the
+output tape; this file prepares a clock on a work tape instead.
 
-Rounding up to a power of two avoids the conversion. The binary word of `T n` has
-`Nat.size (T n)` digits, and doubling a unary counter once per digit writes
+Rounding up to a power of two keeps the clock a single doubling counter. The binary word of
+`T n` has `Nat.size (T n)` digits, and doubling a unary counter once per digit writes
 `c * 2 ^ Nat.size (T n)` cells. The `i`-th doubling costs `O(c * 2 ^ i)`, so the doublings cost
 `O(c * 2 ^ Nat.size (T n)) = O(T n + 1)` together. The rounded clock lies between
 `c * (T n + 1)` and `c * (2 * T n + 1)` (`Nat.two_pow_size_le`).

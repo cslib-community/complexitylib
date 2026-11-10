@@ -273,7 +273,7 @@ theorem Pruned.result_eq_piecewise_full {n : ℕ} (a : LeftStr n → ℤ) (b : R
 /-! ### Lemma 10, second claim: the calls that are made and the sets passed to them -/
 
 /-- Test relevance for an initial label sequence against the matching prefix of an output tuple.
-Longer label sequences fail the depth condition.
+Only positions below `L` are tested: labels of `τ` at positions `L` and beyond are unconstrained.
 -/
 def Vertex.Contributes {k L : ℕ} (τ : Vertex k) (w : OutStr L) : Prop :=
   ∀ (ℓ : Fin k) (h : (ℓ : ℕ) < L), (τ ℓ).Contributes (w ⟨ℓ, h⟩)

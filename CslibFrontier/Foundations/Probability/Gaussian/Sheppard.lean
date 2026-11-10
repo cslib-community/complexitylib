@@ -70,7 +70,7 @@ The event that `t` lies between `x` and `y`, the lower one strictly below `t`, i
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory Real Set
 open scoped NNReal ENNReal RealInnerProductSpace Interval

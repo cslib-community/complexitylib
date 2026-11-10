@@ -158,8 +158,8 @@ theorem elements_erase {t : BinaryTree α} (ht : Ordered t) (x : α) :
           Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxl]
       · have he : x = a := le_antisymm (le_of_not_gt ha) (le_of_not_gt hx)
         subst he
-        have hx : x ∉ elements l ∪ elements r := by grind
-        rw [elements_glue, elements, Finset.erase_insert hx]
+        rw [elements_glue, elements,
+          Finset.erase_insert (Ordered.notMem_elements_union ⟨hl, hr, hla, har⟩)]
 
 /-- The binary-search-tree invariant survives deletion. -/
 theorem ordered_erase {t : BinaryTree α} (ht : Ordered t) (x : α) :

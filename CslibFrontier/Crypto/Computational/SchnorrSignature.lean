@@ -14,9 +14,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
@@ -76,6 +76,8 @@ eavesdropping security are provided by `SchnorrIdentification` and `SchnorrEaves
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSigVerifyBits`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrRecoverCommitBits`: bit-encoded Schnorr signature
   key generation, commitment, response, signing, verification, and commitment recovery.
+* `Cslib.Crypto.PrimeOrderGroupFamily.encSchnorrBitsInput`: the input encoding `(d, a, b, c)` of
+  the bit-level response and commitment-recovery maps.
 * `Cslib.Crypto.PrimeOrderGroupFamily.challengeEmbedding`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrBitSigma`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMScheme`,
@@ -215,6 +217,11 @@ theorem isPPTOn_schnorrCommitBits :
     IsPPTOn (encPair F.encDesc encBits) encBits (fun input => pure (F.schnorrCommitBits input)) :=
   F.computableInPolyTime_schnorrCommitBits.isPPTOn
 
+/-- Input `(d, a, b, c)` of the bit-level Schnorr response and commitment-recovery maps: a group
+description `d`, then three bit words. The description and the first two words are framed. -/
+abbrev encSchnorrBitsInput : F.Desc × List Bool × List Bool × List Bool ↪ List Bool :=
+  encPair F.encDesc (encPair encBits (encPair encBits encBits))
+
 /-- Bit-level Schnorr response: given `(d, sk, r, roOut)` where `sk` is the encoded secret key, `r`
 is the encoded commitment randomness, and `roOut` is the random-oracle challenge bit string, compute
 `((ofBits r + ofBits roOut * ofBits sk) % F.order d).bits`. -/
@@ -235,8 +242,7 @@ def schnorrRespondBits (input : F.Desc × List Bool × List Bool × List Bool) :
 
 /-- **Bit-level Schnorr response is computable in polynomial time**. -/
 theorem computableInPolyTime_schnorrRespondBits :
-    ComputableInPolyTime F.schnorrRespondBits
-      (encPair F.encDesc (encPair encBits (encPair encBits encBits))) encBits := by
+    ComputableInPolyTime F.schnorrRespondBits F.encSchnorrBitsInput encBits := by
   let encIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
   have hd : ComputableInPolyTime
       (fun p : F.Desc × List Bool × List Bool × List Bool => p.1) encIn F.encDesc := by fun_prop
@@ -255,8 +261,7 @@ theorem computableInPolyTime_schnorrRespondBits :
 
 /-- `schnorrRespondBits` lifted to `ProbComp` is uniform strict PPT. -/
 theorem isPPTOn_schnorrRespondBits :
-    IsPPTOn (encPair F.encDesc (encPair encBits (encPair encBits encBits))) encBits
-      (fun input => pure (F.schnorrRespondBits input)) :=
+    IsPPTOn F.encSchnorrBitsInput encBits (fun input => pure (F.schnorrRespondBits input)) :=
   F.computableInPolyTime_schnorrRespondBits.isPPTOn
 
 /-- Deterministic bit-encoded Schnorr signing from explicit coins and a random-oracle challenge
@@ -317,8 +322,7 @@ def schnorrRecoverCommitBits (input : F.Desc × List Bool × List Bool × List B
 
 /-- **Bit-level Schnorr commitment recovery is computable in polynomial time**. -/
 theorem computableInPolyTime_schnorrRecoverCommitBits :
-    ComputableInPolyTime F.schnorrRecoverCommitBits
-      (encPair F.encDesc (encPair encBits (encPair encBits encBits))) encBits := by
+    ComputableInPolyTime F.schnorrRecoverCommitBits F.encSchnorrBitsInput encBits := by
   let encIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
   have hd : ComputableInPolyTime
       (fun p : F.Desc × List Bool × List Bool × List Bool => p.1) encIn F.encDesc := by fun_prop
@@ -594,24 +598,7 @@ theorem negligible_eufCmaGame_schnorrFamilyROMScheme {M : Type} [DecidableEq M]
         (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :
     Negligible fun n =>
       Game.succProbability (eufCmaGame (F.schnorrFamilyROMScheme (d n) (hm n)) (A n)) := by
-  have hpoly₁ : PolynomiallyBounded (fun n => Qs n * (Qs n + Qro n)) := hQs.mul (hQs.add hQro)
-  have hpoly₂ : PolynomiallyBounded (fun n => Qro n + 1) := hQro.add (PolynomiallyBounded.const 1)
-  have hterm₁ : Negligible fun n => (Qs n * (Qs n + Qro n) : ℕ) * (1 / F.order (d n) : ℝ≥0) :=
-    horder.polynomiallyBounded_mul hpoly₁
-  have hterm₂ : Negligible fun n => (Qro n + 1 : ℕ) * (1 / 2 ^ k n : ℝ≥0) :=
-    hchallenge.polynomiallyBounded_mul hpoly₂
-  have hterm₃ : Negligible fun n =>
-      NNReal.sqrt ((Qro n + 1 : ℕ) * Game.succProbability
-        (oneWayGame (schnorrKeyGen (F.generator (d n)))
-          (fun α u => α • F.generator (d n) = u)
-          (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :=
-    Negligible.sqrt (hDL.polynomiallyBounded_mul hpoly₂)
-  refine negligible_of_le ((hterm₁.add hterm₂).add hterm₃) fun n => ?_
-  rw [← NNReal.coe_le_coe, Pi.add_apply, Pi.add_apply, NNReal.coe_add, NNReal.coe_add,
-    NNReal.coe_mul, NNReal.coe_mul, Real.coe_sqrt, NNReal.coe_mul, NNReal.coe_div, NNReal.coe_div,
-    NNReal.coe_one, NNReal.coe_pow, NNReal.coe_ofNat, NNReal.coe_natCast, NNReal.coe_natCast,
-    NNReal.coe_natCast, Nat.cast_mul, Nat.cast_add, Nat.cast_add, Nat.cast_one,
-    mul_one_div, mul_one_div]
-  exact F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
+  negligible using fun n =>
+    F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
 
 end Cslib.Crypto.PrimeOrderGroupFamily

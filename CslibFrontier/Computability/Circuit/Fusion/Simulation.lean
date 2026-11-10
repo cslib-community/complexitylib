@@ -31,7 +31,7 @@ atoms. The simulation is CSLib's native gate replacement.
   [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Fusion
 

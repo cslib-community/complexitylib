@@ -28,9 +28,11 @@ Keep the library modules that define programs free of this import, so that it st
 On arbitrary data, `ram_eval [myProgram]` from
 [`Notation`](../../CslibFrontier/Computability/WordRAM/Notation.lean) proves an `ExecWithin` or
 `Exec` goal by running `Code.eval` with `simp`; `ram_exact_eval` does the same for `Basis.exact`
-programs. A failure names its step: the goal form, a program `simp` cannot unfold, a `none` result
-(a fault, or a loop needing more iterations, as in `ram_eval 3 [myProgram]`), an undecided branch
-or an instruction bound that `omega` cannot prove; the last two are shown. The
+programs. A failure names its step: the goal form, a given simp lemma that does not elaborate, a
+program `simp` cannot unfold, a `none` result (a fault, or a loop needing more iterations, as in
+`ram_eval 3 [myProgram]`), an undecided branch or an instruction bound that `omega` cannot prove;
+the last two are shown. Under `try` or `first` the tactic skips this diagnosis, so an expected
+failure costs only the attempt. The
 [diagnostic examples](../../CslibFrontierTests/WordRAMEvalDiagnostics.lean) check each message.
 
 ## Proving a constant-cost counting loop

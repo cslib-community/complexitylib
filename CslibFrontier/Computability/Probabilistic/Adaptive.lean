@@ -47,7 +47,7 @@ Adapted from Computability/Probabilistic/Adaptive.lean on the cslib `crypto` bra
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, reusing the tidy fold calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

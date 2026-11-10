@@ -26,7 +26,7 @@ absent from the actual vertex list, and splicing never introduces an additional 
 The finite-profile counting and incidence-indexing proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 
@@ -35,7 +35,7 @@ open Cslib.Logic.PL Orthogonal
 /-- Collars and source-boundary extensions preserve every local incidence's clause index. -/
 theorem clauseGeometry_incidence_count (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
     (i : ℕ) (c : Clause ℕ) (j : Fin 22) :
-    ((clauseGeometry φ d i c).incidenceRoutes.filter fun e => e.1 == j.val).length =
+    ((clauseGeometry φ d i c).incidenceRoutes.filter fun e => e.clauseIndex == j.val).length =
       ((profileFormula (clauseProfile c)).getD j.val []).length := by
   simpa only [clauseGeometry, collaredPrefixGeometry, profilePrefixGeometry,
     LocalGeometry.toPrefix, List.filter_map, List.length_map, Function.comp_def] using
@@ -44,19 +44,19 @@ theorem clauseGeometry_incidence_count (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
 /-- Every placed actual clause has exactly one route per literal position. -/
 theorem positiveClauseBlock_route_count (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
     (i : ℕ) (c : Clause ℕ) {pc : PositivePlacedClause} (hpc : pc ∈ positiveClauseBlock φ d i c) :
-    pc.2.2.length = pc.1.length := by
+    pc.routes.length = pc.clause.length := by
   obtain ⟨⟨cl, j⟩, hj, rfl⟩ := List.mem_map.mp hpc
   obtain ⟨hindex, hcl⟩ := List.mem_zipIdx' hj
   have hbound := profileFormula_length_le (clauseProfile c)
   have he : (profileFormula (clauseProfile c)).getD j [] = cl :=
     (List.getD_eq_getElem _ _ hindex).trans hcl.symm
-  simpa only [List.length_map, Clause.length_relabel, he] using
-    clauseGeometry_incidence_count φ d i c ⟨j, by omega⟩
+  simpa only [PositivePlacedClause.routes, PositivePlacedClause.clause, List.length_map,
+    Clause.length_relabel, he] using clauseGeometry_incidence_count φ d i c ⟨j, by omega⟩
 
 /-- Every actual emitted clause has exactly one actual incidence route per literal. -/
 theorem positivePlacedClauses_route_count (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)
     {pc : PositivePlacedClause} (hpc : pc ∈ positivePlacedClauses φ d) :
-    pc.2.2.length = pc.1.length := by
+    pc.routes.length = pc.clause.length := by
   obtain ⟨c, _, hc⟩ := List.mem_flatMap.mp hpc
   exact positiveClauseBlock_route_count φ d c.2 c.1 hc
 
@@ -77,7 +77,7 @@ theorem positiveDrawing_edgeCount (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
       (SAT.incidenceGraph (CNF.PositiveExactOneCompile.formula φ)).2.length := by
   rw [CNF.PositiveExactOneCompile.formula, SAT.incidenceGraph_compact,
     SAT.length_edges_incidenceGraph]
-  change ((positivePlacedClauses φ d).flatMap fun c => c.2.2).length = _
+  change ((positivePlacedClauses φ d).flatMap fun pc => pc.routes).length = _
   rw [← positivePlacedClauses_formula φ d, CNF.length_vars, List.length_flatMap, List.map_map]
   congr 1
   apply List.map_congr_left
