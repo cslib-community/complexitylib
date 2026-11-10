@@ -25,6 +25,7 @@ families recover the source's real-valued supremum; the empty-family value here 
 
 * `selectorProcess_mono`, `selectorProcess_union_le`: monotonicity and source subadditivity.
 * `selectorProcess_singleton`: a single vector recovers its coordinate sum.
+* `selectorMean_empty`: the empty vector family has zero selector expectation.
 
 ## References
 
@@ -45,6 +46,11 @@ noncomputable def selectorProcess (T : Set (ι → ℝ≥0∞)) (X : Finset ι) 
 noncomputable def selectorMean [Fintype ι] (p : ℝ) (T : Set (ι → ℝ≥0∞)) : ℝ≥0∞ :=
   ∑ x : ι → Bool, ENNReal.ofReal (BitString.bernoulliWeight p x) *
     selectorProcess T (univ.filter fun i => x i)
+
+/-- The empty vector family has zero expectation, including at the boundary densities. -/
+@[simp] theorem selectorMean_empty [Fintype ι] (p : ℝ) :
+    selectorMean p (∅ : Set (ι → ℝ≥0∞)) = 0 := by
+  simp [selectorMean, selectorProcess]
 
 omit [DecidableEq ι] in
 /-- Selecting more coordinates increases every nonnegative selector process. -/

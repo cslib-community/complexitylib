@@ -2182,6 +2182,7 @@ of cost at most `1/2`. `IsWeaklySmall p A` instead gives an actual probability w
 `coverScore` is at least **two** on `A`. The factor is part of the definition, not a loss in a
 later theorem. `selectorProcess` takes a supremum of nonnegative coordinate sums; its extended
 nonnegative codomain also handles unbounded vector families and assigns zero to an empty family.
+`selectorMean_empty` proves that an empty vector family also has zero product expectation.
 
 The definitions follow Talagrand's
 [2010 author manuscript](https://michel.talagrand.net/preprints/small.pdf):
@@ -2200,9 +2201,9 @@ factor-two change in the universal constant. These are proved reductions, not re
 the conjectures.
 
 The checked [SpreadFamilies clients](../../CslibFrontierTests/SpreadFamilies.lean) use a
-one-coordinate cover, a concrete non-small whole cube, a non-spread point mass, a selector value
-and a kernel majorant. Run `scripts/build.sh CslibFrontierTests.SpreadFamilies` from the repository
-root. The thinning theorem and monotone-coupling development on
+one-coordinate cover, a concrete non-small whole cube, a non-spread point mass, a selector value,
+an empty-family expectation and a kernel majorant. Run
+`scripts/build.sh CslibFrontierTests.SpreadFamilies` from the repository root. The thinning theorem and monotone-coupling development on
 [PR #2525](https://github.com/cslib-community/cslib-frontier/pull/2525) are not yet on the base
 branch of this framework. Instantiating these reductions with that theorem remains the next
 milestone of [#4330](https://github.com/cslib-community/cslib-frontier/issues/4330); this framework

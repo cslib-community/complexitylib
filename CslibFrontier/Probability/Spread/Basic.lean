@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib: finite set-family spreadness and smallness)
 
 public import CslibFrontier.Probability.PMF
 public import CslibFrontier.Foundations.BooleanAnalysis.Bernoulli
@@ -99,15 +99,6 @@ omit [Fintype ι] in
 @[simp] theorem upperKernel_empty (q : ℝ) (J : Finset ι) : upperKernel q ∅ J = 1 := by
   simp [upperKernel]
 
-/-- Product event probabilities are nonnegative for an actual Bernoulli parameter. -/
-theorem productProb_nonneg {p : ℝ} (hp : 0 ≤ p) (hp' : p ≤ 1) (A : Set (Finset ι)) :
-    0 ≤ productProb p A := by
-  classical
-  have h := BitString.bernoulliAverage_mono hp hp' (f := fun _ : ι → Bool => 0)
-    (g := fun x => A.indicator 1 (univ.filter fun i => x i)) (fun x => by
-      by_cases hx : univ.filter (fun i => x i) ∈ A <;> simp [hx])
-  simpa only [BitString.bernoulliAverage_const, productProb] using h
-
 /-- Restricted product event probabilities are nonnegative for a Bernoulli parameter. -/
 theorem theta_nonneg {α : ℝ} (hα : 0 ≤ α) (hα' : α ≤ 1) (A : Set (Finset ι))
     (J : Finset ι) : 0 ≤ theta α A J := by
@@ -116,6 +107,11 @@ theorem theta_nonneg {α : ℝ} (hα : 0 ≤ α) (hα' : α ≤ 1) (A : Set (Fin
     (g := fun x => A.indicator 1 (J.filter fun i => x i)) (fun x => by
       by_cases hx : J.filter (fun i => x i) ∈ A <;> simp [hx])
   simpa only [BitString.bernoulliAverage_const, theta] using h
+
+/-- Product event probabilities are nonnegative, as restriction to the entire ground set. -/
+theorem productProb_nonneg {p : ℝ} (hp : 0 ≤ p) (hp' : p ≤ 1) (A : Set (Finset ι)) :
+    0 ≤ productProb p A :=
+  theta_nonneg hp hp' A univ
 
 /-- Increasing the retention rate increases every upper-event thinning probability. -/
 theorem theta_mono {α β : ℝ} (hα : 0 ≤ α) (hαβ : α ≤ β) (hβ : β ≤ 1)

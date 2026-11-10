@@ -57,6 +57,11 @@ theorem selector_two_units :
     selectorProcess ({fun _ : Fin 2 => (1 : ℝ≥0∞)} : Set (Fin 2 → ℝ≥0∞)) {0, 1} = 2 := by
   simp
 
+/-- An empty vector family on two coordinates has zero expectation at density one third. -/
+theorem selector_mean_empty :
+    selectorMean (1 / 3) (∅ : Set (Fin 2 → ℝ≥0∞)) = 0 := by
+  simp
+
 /-- An actual kernel moment bound instantiates the majorant theorem without any conjecture. -/
 theorem kernel_majorant : ∃ η : PMF (Finset (Fin 2)), ∀ J,
     upperKernel (1 / 4) {0} J ≤ coverScore (1 / 4) η J := by
