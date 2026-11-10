@@ -26,7 +26,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Computational.Encryption.DecryptionBound
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
@@ -823,20 +823,17 @@ theorem eval_interleavedCca2GameOn_toInterleaved {Msg Out : Type}
     OracleComp.iterate_succ, OracleComp.iterate_zero, initInterleavedLoopState,
     interleavedRoundStep, interleavedCcaWordOracle, interleavedCcaOracle,
     InterleavedLoopState.state, InterleavedLoopState.lastReply, InterleavedLoopState.forbidden,
-    ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.state,
-    cca2MultiPhase2Oracle_nil, OracleComp.interpret_bind, StateT.run_bind,
-    OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.bind_bind, PMF.pure_bind]
+    ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.state, cca2MultiPhase2Oracle_nil,
+    runWith_norm, pmf_norm]
   apply PMF.bind_congr_on_support
   intro keys _
   apply PMF.bind_congr_on_support
   intro choiceOut _
   by_cases hvalid : valid n keys.1 choiceOut.1.1.1 choiceOut.1.1.2 = true
-  · simp only [hvalid, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
-      PMF.pure_bind, encodeCCAResponseWord_inl_some, List.headD_cons, List.tail_cons,
-      cca2MultiPhase2Oracle_singleton]
-  · simp only [hvalid, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind,
-      encodeCCAResponseWord_inl_none, List.headD_nil, OracleComp.interpret_pure, StateT.run_pure]
+  · simp only [hvalid, ↓reduceIte, encodeCCAResponseWord_inl_some, List.headD_cons,
+      List.tail_cons, cca2MultiPhase2Oracle_singleton, runWith_norm, pmf_norm]
+  · simp only [hvalid, Bool.false_eq_true, ↓reduceIte, encodeCCAResponseWord_inl_none,
+      List.headD_nil, runWith_norm, pmf_norm]
 
 /-- **Interleaved multi-challenge CCA security implies single-challenge 1CCA security**
 ([BonehShoup2023], Section 12.1, Definition 12.2, printed p. 468). -/
@@ -1905,9 +1902,7 @@ private theorem eval_run_multiPhase2FilterHandler_phase1 {Out α : Type}
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
         (cca2MultiPhase2Oracle encOut decrypt n sk cts))
       prog).run ()) := by
-  rw [OracleComp.interpret_map, StateT.run_map, ProbComp.eval_map,
-    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.eval_run_interpret_eq_runWith,
-    ProbOracleComp.runWith_run_interpret, PMF.map_comp]
+  simp only [runWith_norm, pmf_norm]
   have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (cca2MultiPhase2Oracle encOut decrypt n sk cts q s))
     (oracle' := fun q (state : Unit × Unit) =>
@@ -1926,10 +1921,8 @@ private theorem eval_run_multiPhase2FilterHandler_phase1 {Out α : Type}
       by_cases hmem : req ∈ cts
       · simp [cca2MultiPhase2Oracle, multiPhase2FilterHandler, hmem, ProbComp.eval_pure]
       · unfold cca2MultiPhase2Oracle multiPhase2FilterHandler
-        simp only [hmem, decide_false, Bool.false_eq_true, ↓reduceIte, Functor.map_map,
-          ProbOracleComp.runWith_map, ProbOracleComp.runWith_query, cca2Phase1Oracle,
-          ProbComp.eval_pure, PMF.pure_map]
-        simp only [Prod.map_apply, id_eq, List.take_of_length_le (hdecBound req)])
+        simp only [hmem, decide_false, Bool.false_eq_true, ↓reduceIte, cca2Phase1Oracle,
+          List.take_of_length_le (hdecBound req), runWith_norm, pmf_norm])
     prog ()
   have hfst := congrArg (PMF.map fun x => (x.1, ())) hsim.symm
   have hid1 : (fun x : α × (Unit × Unit) => (x.1, ())) = fun x => (x.1, x.2.2) := rfl
@@ -1955,7 +1948,7 @@ private theorem eval_interpret_interleavedInnerRound {Msg Out : Type} [Inhabited
       (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit st)).map
       (fun st' => (st', ())) := by
   unfold interleavedInnerRound interleavedRoundStep
-  simp only [OracleComp.interpret_bind, StateT.run_bind, ProbComp.eval_bind, PMF.map_bind]
+  simp only [runWith_norm, pmf_norm]
   apply PMF.bind_congr_on_support
   rintro ⟨⟨q, state'⟩, ⟨⟩⟩ _
   cases q with
@@ -1963,17 +1956,11 @@ private theorem eval_interpret_interleavedInnerRound {Msg Out : Type} [Inhabited
     simp only [CCAQuery.isChallenge, ↓reduceIte, CCAQuery.challengePair,
       interleavedCcaWordOracle, interleavedCcaOracle]
     by_cases hv : valid n pk m₀ m₁ = true
-    · simp only [hv, ↓reduceIte]
-      rw [ProbOracleComp.eval_run_interpret_eq_runWith]
-      simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
-        ProbOracleComp.runWith_pure, PMF.bind_map, Function.comp_def, PMF.bind_bind, PMF.pure_bind,
-        ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_map, encodeCCAResponseWord_inl_some]
-    · simp [hv, OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
+    · simp only [hv, ↓reduceIte, encodeCCAResponseWord_inl_some, runWith_norm, pmf_norm]
+    · simp [hv, runWith_norm, pmf_norm]
   | decrypt c =>
-    simp only [CCAQuery.isChallenge, Bool.false_eq_true, ↓reduceIte,
-      CCAQuery.decryptCiphertext, bind_pure_comp, Functor.map_map,
-      OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query]
-    dsimp only [cca2MultiPhase2Oracle, interleavedCcaWordOracle, interleavedCcaOracle, StateT.run]
+    simp only [CCAQuery.isChallenge, Bool.false_eq_true, ↓reduceIte, CCAQuery.decryptCiphertext,
+      cca2MultiPhase2Oracle, interleavedCcaWordOracle, interleavedCcaOracle, runWith_norm, pmf_norm]
     by_cases hmem : c ∈ st.2.2
     · simp [hmem, ProbComp.eval_pure, encOption]
     · simp [hmem, ProbComp.eval_pure, List.take_of_length_le (hdecBound c)]
@@ -2372,9 +2359,8 @@ private theorem eval_cca2GameOn_interleavedToSingleAt_of_le {Msg Out : Type} [In
         else
           return ((default, default), rejectInterleavedSingleState) by
       funext pk; unfold interleavedToSingleAt; dsimp only; split_ifs <;> rfl]
-  simp only [hltFalse, Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
-    StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind,
-    ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.state]
+  simp only [hltFalse, Bool.false_eq_true, ↓reduceIte, ChoiceOut.msg₀, ChoiceOut.msg₁,
+    ChoiceOut.state, runWith_norm, pmf_norm]
   have hconst : (fun keys : List Bool × List Bool =>
       ProbComp.eval (if valid n keys.1 default default then do
         let ct ← encrypt n keys.1 (if bit then default else default)
@@ -2395,8 +2381,7 @@ private theorem eval_cca2GameOn_interleavedToSingleAt_of_le {Msg Out : Type} [In
         dsimp only
         rw [decode_rejectInterleavedSingleState]
         rfl
-      simp only [hv, ↓reduceIte, hrej, OracleComp.interpret_pure, StateT.run_pure,
-        ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind, PMF.bind_const]
+      simp only [hv, ↓reduceIte, hrej, PMF.bind_const, runWith_norm, pmf_norm]
     · simp only [hv, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
   rw [hconst, PMF.bind_const]
 
@@ -2543,25 +2528,11 @@ theorem eval_cca2GameOn_interleavedToSingle {Msg Out : Type} [Inhabited Msg]
           ProbComp.eval
             (cca2GameOn valid encOut keyGen encrypt decrypt
               (interleavedToSingleAt valid encrypt decBound adversary i.val) bit n)) := by
-  simp only [cca2GameOn, interleavedToSingle, ProbComp.eval_bind,
-    ProbOracleComp.eval_run_interpret_eq_runWith]
-  have hsample (keys : List Bool × List Bool) :
-      ProbOracleComp.runWith
-        (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s))
-        (do
-          let split ← ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q n))
-          (interleavedToSingleAt valid encrypt decBound adversary split).choose n keys.1) () =
-      (PMF.uniformOfFintype (Fin (dyadicSize (Q n)))).bind (fun i =>
-        (ProbOracleComp.runWith
-            (fun q s => ProbComp.eval (cca2Phase1Oracle encOut decrypt n keys.2 q s))
-            ((interleavedToSingleAt valid encrypt decBound adversary i.val).choose n keys.1)
-            ())) := by
-    rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbComp.eval_sampleDyadicIndex]
-    simp only [PMF.bind_map, Function.comp_def]
   have hguess (i : ℕ) :
       (interleavedToSingleAt valid encrypt decBound adversary i).guess =
         (interleavedToSingleAt valid encrypt decBound adversary 0).guess := rfl
-  simp only [hsample, hguess, PMF.bind_bind]
+  simp only [cca2GameOn, interleavedToSingle, ProbComp.eval_sampleDyadicIndex, hguess,
+    runWith_norm, pmf_norm]
   exact PMF.bind_comm _ _ _
 
 /-- **Quantitative signed hybrid gap for interleaved multi-challenge CCA** ([BonehShoup2023],

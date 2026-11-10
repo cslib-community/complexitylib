@@ -46,8 +46,8 @@ position, the unit clause fixing an input, or (tag `3`, payload `0`) the unit cl
 output; every other number gives a tautology. The formula `succinctCNF tm x n T` lists the clauses
 of all numbers below `2 ^ clauseBits k State T`.
 
-The formula is satisfiable exactly when some input of length `n` extending `x` makes the machine
-write exactly `[true]` within `T` steps (`satisfiable_succinctCNF_iff`). The proof compares it
+The formula is satisfiable exactly when, on some input of length `n` extending `x`, the machine
+has written exactly `[true]` after `T` steps (`satisfiable_succinctCNF_iff`). The proof compares it
 with `tseitinSatCNF` of the tableau gate list, through the labelling of wires (`wireLabel`) and
 the inverse decoding of labels (`wireOf`); the labels of references agree with their resolved wire
 numbers (`wireLabel_resolve`, `wireOf_label`).
@@ -71,7 +71,8 @@ numbers (`wireLabel_resolve`, `wireOf_label`).
 * `Cslib.Circuits.Boolean.Tableau.satisfiable_succinctCNF_iff_tseitin`: the formula is
   equisatisfiable with the Tseitin formula of the tableau.
 * `Cslib.Circuits.Boolean.Tableau.satisfiable_succinctCNF_iff`: the formula is satisfiable exactly
-  when some completion of `x` is accepted within `T` steps.
+  when, on some input of length `n` extending `x`, the machine has written exactly `[true]` after
+  `T` steps.
 * `Cslib.Circuits.Boolean.Tableau.length_succinctCNF`,
   `Cslib.Circuits.Boolean.Tableau.length_of_mem_succinctCNF`,
   `Cslib.Circuits.Boolean.Tableau.lt_two_pow_labelBits_of_mem_vars`: there are
@@ -647,8 +648,9 @@ theorem satisfiable_succinctCNF_iff_tseitin {n T : ℕ} (hn : n < 2 * T) {x : Li
       dsimp only
       rw [wireOf_label hra, wireOf_label hrb]
 
-/-- **The tableau formula on labels is satisfiable** exactly when some input of length `n`
-extending `x` makes `tm` write exactly `[true]` within `T` steps, for `n < 2 T`. -/
+/-- **The tableau formula on labels is satisfiable** exactly when, on some input of length `n`
+extending `x`, the machine `tm` has written exactly `[true]` after `T` steps, whether or not it
+has halted, for `n < 2 T` and `x` of length at most `n`. -/
 theorem satisfiable_succinctCNF_iff {n T : ℕ} (hn : n < 2 * T) {x : List Bool}
     (hx : x.length ≤ n) :
     (succinctCNF tm x n T).Satisfiable ↔ ∃ y : List Bool, y.length = n ∧ x <+: y ∧

@@ -23,7 +23,8 @@ operations per digit (`synthesis_threshold`).
 
 For the transient depth, the query `transientDepth f x ≤ v` asks whether `f^[v] x` is periodic:
 one input-time iteration and one periodicity test. This gives transient depths in at most
-`200000 * (n + 1) ^ 2 * powerBudget n s (2 ^ n) L` gates (`depth_circuit`), and
+`depthBudget n s L` gates (`depth_circuit`), itself at most
+`200000 * (n + 1) ^ 2 * powerBudget n s (2 ^ n) L`, and
 `600000 * (n + 1) ^ 2 * optimizedBudget n s (2 ^ n)` balanced (`depth_circuit_optimized`). The
 dictionary construction of `Iteration.Depth` avoids the factor `(n + 1) ^ 2`.
 

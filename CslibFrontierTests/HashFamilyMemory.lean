@@ -54,7 +54,7 @@ example : (Memory.spec 8).toRandomized.withCoins.toSpec.DemonicValid empty
 example : ((Memory.spec 8).toRandomized.withCoins.run
       (run 1 2 ((tableSpec 2 1).obliviousClient ops)) empty).map Prod.fst =
     evalOps (Probability.PMF.uniformOfFintype (Fin 2 → Fin (2 ^ 1))) (fun θ u => θ u) ops :=
-  run_obliviousClient (w := 8) (by omega) ops empty
+  run_obliviousClient (w := 8) ops empty
 
 /-- The run makes at most `1 + 4 + 7 = 12` calls: one allocation, a fill of two cells, and the
 operations, at one call per lookup and four per resample. -/
@@ -96,7 +96,7 @@ theorem bounded : BoundedEpochKeys 2 ops := by
 example : (kWiseSpec 2 2 (2 ^ 1)).Contract ops
     (((Memory.spec 8).toRandomized.withCoins.run
       (run 1 2 ((tableSpec 2 1).obliviousClient ops)) empty).map Prod.fst) :=
-  kWiseSpec_contract_run (by omega) bounded empty
+  kWiseSpec_contract_run bounded empty
 
 /-! ## A coin-using hop over a coin-using hop -/
 

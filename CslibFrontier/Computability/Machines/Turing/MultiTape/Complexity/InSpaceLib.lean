@@ -162,6 +162,7 @@ theorem natLt :
       fun p => (encPair encNat encNat p).length + 1 :=
   of_inO ComputableInO.natLt
 
+/-- **Truncated subtraction**, `b - a` from `(a, b)`: the second component minus the first. -/
 theorem natSub :
     ComputableInSpace (fun p : ℕ × ℕ => p.2 - p.1) (encPair encNat encNat) encNat
       fun p => (encPair encNat encNat p).length + 1 :=

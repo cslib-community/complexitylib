@@ -23,7 +23,7 @@ over a complete gate basis, complementing
   functions computable with at most `s` gates are those of complexity at most `s`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

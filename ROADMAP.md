@@ -281,7 +281,7 @@ In dependency order:
 Independent of that order:
 
 - **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/cslib-frontier/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); a certified polynomial-time algorithm; and `k`-dimensional Weisfeiler–Leman.
-  Also the Immerman–Lander correspondence with the counting logic C² and its finite-variable extensions C^k with Hella's bijective pebble games, and Cai–Fürer–Immerman graphs ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085), building on the `k`-pebble games and `FO^k`).
+  Also the Immerman–Lander correspondence between color refinement and C², its extension relating `k`-dimensional Weisfeiler–Leman to C^(k+1), and Cai–Fürer–Immerman graphs ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085), building on Hella's bijective pebble games).
 - **Vollmer's generalized quantifier framework** ([#399](https://github.com/cslib-community/cslib-frontier/issues/399)): Vollmer's survey [*A Generalized Quantifier Concept in Computational Complexity Theory*](https://arxiv.org/abs/cs/9809115), covering ordered leaf words, explicit uniformity and input-access models, finite-monoid classification and generalized logical quantifiers.
   The formalization must keep the paper's resource models and quantifier bounds.
 
@@ -771,7 +771,6 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 - **Gaussian density and projection laws** ([#2733](https://github.com/cslib-community/cslib-frontier/issues/2733)): Identify the positive-width normalized Gaussian weight with a scaled standard Gaussian, whose scalar projections have variance `(s ‖z‖)² / (2π)`, including the zero vector and dimension zero.
   Prove the discrete-coset convolution projection and mod-one bound ([#2734](https://github.com/cslib-community/cslib-frontier/issues/2734)); efficient sampling and the quantum reduction belong to [#1213](https://github.com/cslib-community/cslib-frontier/issues/1213).
 - **One sensitivity API:** Define the sensitivity measures over any `Fintype` in CSLib and drop the separate measures of the sensitivity-separation development.
-- **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and formulas under a polynomial-time assignment, so that clients stop passing `CNF.eval`, `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
 - **Indicator-expectation and conversion lemmas:** Factor the indicator-expectation identities from PCP's second-moment calculation, and recurring cardinality and logarithm conversions, once a second client benefits.
 - **Divide-and-conquer recurrences** ([#3042](https://github.com/cslib-community/cslib-frontier/issues/3042)): A master theorem over `ℕ` with explicit constants for inequality recurrences in all three polynomial cases, with `IsBigO` forms, matching `Θ` bounds for equality recurrences, and case 3 under the general regularity condition.
   Move hand-solved recurrences onto it where the generic constant suffices, keeping CSLib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.

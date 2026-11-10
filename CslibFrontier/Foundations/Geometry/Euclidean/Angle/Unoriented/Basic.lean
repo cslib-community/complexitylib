@@ -27,7 +27,7 @@ For unit vectors `x` and `y`, `InnerProductGeometry.angle x y = Real.arccos ⟪x
 * `InnerProductGeometry.angle_eq_two_mul_arctan`: the half-angle formula for vectors of equal norm.
 -/
 
-@[expose] public section
+public section
 
 open Real
 open scoped RealInnerProductSpace

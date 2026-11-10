@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Logics.FirstOrder.Ordered.Encoding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 import CslibFrontier.Computability.Machines.Turing.MultiTape.InputAt
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # First-order input symbols for native deterministic machines
@@ -52,10 +53,7 @@ theorem realize_inputSymbol {a : EncodedStructure} (ha : v.WellFormed a)
       (encStructure a).length = x.val := by
     simpa only [Matrix.cons_fin_one] using v.realize_inputLength ha hB x
   rcases s with _ | b
-  · simp only [inputSymbol, Formula.realize_sup, realize_natEq, Term.realize_var,
-      Matrix.cons_val_zero, Formula.realize_iExs, Formula.realize_inf,
-      Formula.realize_relabel, Formula.realize_not, realize_le, Function.comp_def,
-      Sum.elim_inl, Sum.elim_inr, not_le, hlen, Fin.lt_def, inputAt_eq_none_iff]
+  · fo_simp [inputSymbol, Function.comp_def, not_le, hlen, Fin.lt_def, inputAt_eq_none_iff]
     refine or_congr Iff.rfl ⟨fun ⟨xs, hx, hp⟩ => by omega, fun hp => ?_⟩
     exact ⟨![⟨(encStructure a).length, hB⟩], rfl, hp⟩
   · have hdata (q : Fin B) (hq : q.val < (encStructure a).length) :
@@ -69,10 +67,8 @@ theorem realize_inputSymbol {a : EncodedStructure} (ha : v.WellFormed a)
           (xs 0).val < (xs 1).val ∧ (xs 0).val + 1 = p.val ∧
           (if b then v.inputBit.Realize ![xs 0] else ¬v.inputBit.Realize ![xs 0]) := by
       simp only [inputSymbol, Formula.realize_iExs, Formula.realize_inf]
-      cases b <;> simp only [Bool.false_eq_true, ↓reduceIte, Formula.realize_relabel,
-        Formula.realize_not, realize_le, realize_addEq, realize_one_val,
-        Term.realize_var, Function.comp_def, Sum.elim_inl, Sum.elim_inr,
-        hlen, not_le, Fin.lt_def, Matrix.cons_fin_one, and_assoc]
+      cases b <;> fo_simp [↓reduceIte, Function.comp_def, hlen, not_le, Fin.lt_def,
+        Matrix.cons_fin_one, and_assoc]
     rw [hform, inputAt_eq_some_iff]
     constructor
     · rintro ⟨xs, hlen, hlt, hs, hb⟩

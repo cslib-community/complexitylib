@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import CslibFrontier.Logics.FirstOrder.Locality.Gaifman
+import CslibFrontier.Foundations.Data.Fintype.FiberEquiv
 import Mathlib.Data.Set.Card
 import Mathlib.SetTheory.Cardinal.NatCard
 
@@ -133,10 +134,7 @@ private theorem exists_equiv_compl {α β Q : Type*} [Finite α] {κa : α → Q
     have h2 := Set.ncard_inter_add_ncard_sdiff_eq_ncard B t
     rw [hA, hB]
     omega
-  refine ⟨Equiv.ofFiberEquiv (f := fun x : (sᶜ : Set α) => κa x)
-    (g := fun y : (tᶜ : Set β) => κb y) fun q => (Finite.card_eq.1 (key q)).some, fun x => ?_⟩
-  exact Equiv.ofFiberEquiv_map (f := fun x : (sᶜ : Set α) => κa x)
-    (g := fun y : (tᶜ : Set β) => κb y) _ x
+  exact Equiv.exists_apply_eq_iff_card_fiber_eq.2 key
 
 /-! ### Hanf-equivalence -/
 

@@ -39,7 +39,7 @@ say which.
 | `enc_len`, `enc_len [l] at h ⊢` | `Tactic.EncLen` | a linear bound on encoded lengths | [Close encoded-length arithmetic](#close-encoded-length-arithmetic) |
 | `fits`, `fits [h]` | `Tactic.Fits` | `Fits w v` or `v < 2 ^ w` | [Close word-size bounds](#close-word-size-bounds) |
 
-**Word-RAM programs**
+**Word-RAM and counter programs**
 
 | Tactic | Module | Goal | Reference |
 |---|---|---|---|
@@ -52,6 +52,7 @@ say which.
 | `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `cp_step`, `cp_step [h]` | `Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` | one step of `P.Reaches w Q (l, regs) s'` for a counter program | [Step through counter programs](#step-through-counter-programs) |
 
 **Circuits, logic and probability**
 
@@ -66,8 +67,9 @@ say which.
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
-simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, and `fo_realize`, used by `fo_simp`,
-and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`, `FirstOrder` and `FODefinable`.
+simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, `cp_simps`, used by `cp_step`, and
+`fo_realize`, used by `fo_simp`, and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`,
+`FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
 
@@ -406,6 +408,93 @@ toward the front of their chains anywhere in the goal, or in a hypothesis with `
 it with `congr 1 with x : 1`. A sample whose distribution mentions an earlier sample never moves
 past it; the diagnostic lists the samples of both sides and marks those dependencies. The
 [checked clients](../../CslibFrontierTests/PMFSwap.lean) cover each form and diagnostic.
+
+## Step game hops and align shared random draws
+
+Import `CslibFrontier.Tactic.GameHop` to step cryptographic hybrid arguments without repeating
+`Game.advantage_triangle`, `Game.advantage_comm`, `NNReal.coe_le_coe`, or nested
+`Game.advantage_bind_le_of_support` boilerplate. Both tactics keep intermediate games and variable
+couplings explicit in the proof script and perform no backtracking search. The complete
+[checked clients](../../CslibFrontierTests/GameHopTactic.lean) exercise every supported goal shape
+and pin the user-facing error for each rejected input they cover; run
+`lake build CslibFrontierTests.GameHopTactic --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md). Representative library proofs using them include the
+[Cramer–Shoup 1CCA hops](../../CslibFrontier/Crypto/Computational/CramerShoup.lean),
+[Cramer–Shoup adaptive rejection](../../CslibFrontier/Crypto/Computational/CramerShoup/Scheme.lean),
+and
+[Naor–Reingold security](../../CslibFrontier/Crypto/Computational/NaorReingold/Security.lean).
+
+Use `game_trans [g₁, g₂, ...]` (or `game_trans g₁, g₂, ...`) on goals of the form
+`Game.advantage G₀ Gₖ ≤ B` (`ℝ≥0`), `(Game.advantage G₀ Gₖ : ℝ) ≤ B` (`ℝ`),
+`Encryption.advantage exp n ≤ B`, `Game.succProbability G₀ ≤ Game.succProbability Gₖ + B` (in
+`ℝ≥0` or `ℝ`, in either addition order), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop subgoal
+per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
+`using [h₀, h₁, ...]` discharges hops directly (use `_` to leave a hop open for tactic proof),
+automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, lifting `ℝ≥0`
+advantage bounds into `ℝ`, turning game equalities `A = B` or `B = A` into zero error, and closing
+a fully instantiated sum bound when it holds by `rfl`, associativity/commutativity of `+` (with
+zeros), or `ring`. With no intermediate list, `game_trans` unfolds `Encryption.advantage` or
+reduces a `Game.succProbability` difference bound to `Game.advantage`, and `game_trans using [h]`
+closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
+`CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
+to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
+[Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).
+
+Use `peel_binds` (or `peel_binds x₁ x₂ ...`) on `Game.advantage`, `Encryption.advantage`,
+`CloseTo`, or `PMF` equality goals. It first normalizes outer `ProbComp.eval` monadic binds,
+`PMF` monad notation, and left-nested `PMF.bind_bind` at the root without unfolding named
+experiment definitions, then peels shared leading `PMF.bind` and `Game.runStatelessOracle` stages.
+Each peeled stage introduces the draw `xᵢ` and its support witness `xᵢ_mem : xᵢ ∈ μ.support`
+(`_` names the draw `x` and leaves the witness inaccessible). When the two leading distributions are not definitionally equal,
+`peel_binds` checks whether either side's second stage is independent of its first and matches the
+opposite leading stage, applying one `PMF.bind_comm`, `Game.bind_runStatelessOracle_comm`, or
+`Game.runStatelessOracle_comm` swap automatically before peeling. Omitting binder names peels all
+shared leading stages and retains the existing lambda binder names.
+
+Intermediate hybrid games and multi-step couplings across identical distributions (such as
+reordering uniform draws over `ZMod q`) remain explicit choices: `peel_binds` couples identical
+leading distributions in place rather than guessing from bound variable names, so unfold named game
+wrappers and perform any deeper `PMF.bind_comm` / `Game.advantage_bind_comm` reordering before
+peeling. For a `PMF.bind` chain, `pmf_hoist q` from
+[Reorder independent samples](#reorder-independent-samples) moves the samples of `q` to the front
+first. When a trailing sum bound needs cast rewriting or monotonicity (such as `push_cast; ring`
+or `gcongr`), `game_trans` leaves that single ground inequality open.
+
+If `peel_binds` reports that leading stages do not match and cannot be aligned by a single
+independent swap, check whether an inner draw mentions the outer binder or lies more than one stage
+deep, or apply a distribution-replacement lemma (such as modular-sampling or until-bad bounds)
+before peeling the remaining prefix. If `game_trans` reports a `using` count mismatch, check that
+`m` intermediate items are paired with `m + 1` hop proofs (using `_` for hops proved
+interactively); if it reports that a hop proof's type does not match the expected hop, verify the
+intermediate game list order and parameter arguments.
+
+## Step through counter programs
+
+A reachability proof for a counter program (`Turing.CounterProgram.Reaches`) goes through its
+instructions one at a time. Import
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` and
+take each step with `cp_step` instead of `refine Reaches.assign h hB ?_` followed by
+`simp only [eval_add, eval_reg, …]`. The tactic reads the instruction at the current label from a
+hypothesis `P.instr l = i`, or by evaluation when the program is concrete. It applies the rule of
+that instruction: assignment, comparison or read, plus the oblivious and shifted rules when
+`CounterProgram.AllBranches` or `CounterProgram.Block` is imported. It proves the register bound
+from a hypothesis and simplifies the next configuration with the simp set `cp_simps`. Pass the
+values of the registers read, the input bit read and the outcome of a comparison as simp lemmas,
+as in `cp_step [h0, hw]`. The goal closes when the configuration reached is the target or a
+hypothesis. The [checked clients](../../CslibFrontierTests/CounterProgramStep.lean) cover running,
+oblivious and shifted steps, a concrete program and the diagnostics. The shape check of the
+[logspace model checker](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder.lean)
+is a library client.
+
+A label that is still a conditional, or a `match` on an input bit the lemmas do not give, stops the
+tactic with a diagnostic: split into cases and pass the outcome, as in `by_cases h : 0 < n` followed
+by `cp_step [h]`. A side condition the tactic
+cannot prove, typically a register bound that is not a hypothesis, is named in the error; state it
+with `have` first, as in `have hB := hk.2.2`. For a step followed by a reachability fact `hrest`
+from a lemma, leave the step as a goal with `refine Reaches.trans ?_ hrest` and close it by
+`cp_step`; the oblivious steps of the
+[counting loop](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder/TransitiveClosure/Counting.lean)
+are written this way.
 
 ## Proof style as interface maintenance
 

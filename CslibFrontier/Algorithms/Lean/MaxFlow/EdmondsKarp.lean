@@ -1879,7 +1879,7 @@ private theorem edmondsKarpLoopM_spec_init {n : ℕ} {N : Network (Fin n)}
       call.ret.cut = call.ret.flow.reachableCut ∧
       call.ret.augmentations ≤ maxAugmentations N ∧
       call.ret.augmentations ≤ n * N.posArcs.card ∧
-      call.time ≤ (maxAugmentations N - 0 + 1) * (adjSteps adj + 5 * n) := by
+      call.time ≤ (maxAugmentations N + 1) * (adjSteps adj + 5 * n) := by
   refine edmondsKarpLoopM_spec hadj hst _ 0 _ (fun _ => Network.Flow.zero N) (fun _ => [])
     ?_ (fun _ ht => absurd ht (Nat.not_lt_zero _)) (initFlowMatrixM_toFlow N).symm
   simp only [maxAugmentations, Nat.add_zero]
@@ -1917,7 +1917,7 @@ theorem edmondsKarpM_correct {n : ℕ} {N : Network (Fin n)} {adj : Fin n → Li
 /-- **Edmonds–Karp `TimeM` complexity bound** ([EdmondsKarp1972], Theorem 1, p. 251; [CLRS2009],
 Theorem 26.8, p. 729): `edmondsKarpM N adj` terminates in at most
 `(N.symArcs.card * (n / 2) + 2) * (adjSteps adj + 5 * n)` charged ticks (`O(|V| |E|^2)` when
-`adjSteps adj = O(|E|)`).
+`adjSteps adj = O(|E|)` and `|V| = O(|E|)`).
 
 **Limitations / cost model:** each charged tick treats `Vector` indexing/update (`FlowMatrix`),
 `Finset.insert`, `ℕ` arithmetic, and `N.cap u v` evaluation as unit-cost primitives; persistent
@@ -1934,7 +1934,7 @@ theorem edmondsKarpM_time_le {n : ℕ} {N : Network (Fin n)} {adj : Fin n → Li
     exact le_trans hbase (Nat.mul_le_mul_right _ (by omega))
   · simp only [hst, ↓reduceIte, TimeM.time_bind, countAdjM_time, countAdjM_ret]
     obtain ⟨_, _, _, _, hloop_t⟩ := edmondsKarpLoopM_spec_init hadj hst
-    simp only [maxAugmentations, Nat.sub_zero] at hloop_t
+    simp only [maxAugmentations] at hloop_t
     have hmul : (N.symArcs.card * (n / 2) + 2) * (adjSteps adj + 5 * n) =
         (adjSteps adj + 5 * n) + (N.symArcs.card * (n / 2) + 1) * (adjSteps adj + 5 * n) := by
       rw [show N.symArcs.card * (n / 2) + 2 = 1 + (N.symArcs.card * (n / 2) + 1) by omega,

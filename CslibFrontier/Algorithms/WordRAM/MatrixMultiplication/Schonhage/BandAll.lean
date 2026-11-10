@@ -20,7 +20,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
   all bands of one matrix side. Catalogue cells retain the existing flat leaf numbering.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation
 

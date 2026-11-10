@@ -477,13 +477,33 @@ final message signature `(u, msg, last)` (when at depth `d - 1`). -/
 
 section ForgerEfficiency
 
-local notation "encNodeCache" => encList (encPair encBits encUnary)
-local notation "encEdgeCache" => encList (encPair (encPair encBits encUnary) encBits)
-local notation "encKeys" => encList (encPair encBits encBits)
-local notation "encPlantedState" =>
+/-- The visited node-to-slot cache, encoded as a list of entries; each entry is a node path in
+binary followed by its slot in unary, the path framed. -/
+private abbrev encNodeCache : NodeSlotCache ↪ List Bool :=
+  encList (encPair encBits encUnary)
+
+/-- The edge-signature cache, encoded as a list of entries; each entry is an edge (a node path in
+binary followed by the edge bit in unary, the path framed), framed, followed by its signature in
+binary. -/
+private abbrev encEdgeCache : EdgeSigCache ↪ List Bool :=
+  encList (encPair (encPair encBits encUnary) encBits)
+
+/-- A list of pairs of words, such as the pre-sampled node key pairs or a certificate chain;
+each pair is its first word in binary, framed, followed by its second word in binary. -/
+private abbrev encKeys : List (List Bool × List Bool) ↪ List Bool :=
+  encList (encPair encBits encBits)
+
+/-- The state of `plantedTreeHandler`, encoded as a nested pair: the visited node cache (framed)
+and the edge-signature cache, framed together, followed by the queried messages (framed), the
+sampled leaves (framed) and the abort flag. Each list holds its words in binary. -/
+private abbrev encPlantedState : PlantedState ↪ List Bool :=
   encPair (encPair encNodeCache encEdgeCache)
     (encPair (encList encBits) (encPair (encList encBits) encBool))
-local notation "encPlantedCert" =>
+
+/-- The chain state of `certifyPlanted`, encoded as a nested pair: the node path in binary
+(framed), the slot in unary (framed) and the certificates (a list of key/signature word pairs),
+framed together, followed by the visited node cache (framed) and the edge-signature cache. -/
+private abbrev encPlantedCert : PlantedCertState ↪ List Bool :=
   encPair (encPair encBits (encPair encUnary (encList (encPair encBits encBits))))
     (encPair encNodeCache encEdgeCache)
 
@@ -639,13 +659,14 @@ private theorem plantedLoopInv_step (S : IndexedSignatureScheme) {Mv Me : ℕ} (
     plantedLoopInv Mv Me a (i + 1) next := by
   rcases a with ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩
   rcases state with ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩
-  dsimp only [plantedLoopInv] at hinv
+  -- the memoization bounds below are stated for the spelled-out cache encodings
+  dsimp only [plantedLoopInv, encNodeCache, encEdgeCache] at hinv
   obtain ⟨hnode, hidx, hcertsLen, hcerts, hvis, hedg, hvisLen, hedgLen⟩ := hinv
   simp only [certifyStepPlanted, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hnext
   obtain ⟨⟨childIdx, visited'⟩, hvisStep, ⟨σ, edges'⟩, hedgStep, hnext⟩ := hnext
   have hnext := OracleComp.eq_of_mem_supportWith_pure hnext
   subst hnext
-  dsimp only [plantedLoopInv]
+  dsimp only [plantedLoopInv, encNodeCache, encEdgeCache]
   have hvBound := ProbOracleComp.memoize_call_size_le encBits encUnary
     (fun _ => pure (min visited.length keys.length))
     (node ++ [leaf.getD node.length false]) visited Mv
@@ -762,7 +783,7 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     rcases a with ⟨⟨keys, targetCap, ⟨n, leaf⟩⟩, ⟨visited, edges⟩⟩
     have hk := length_le_length_encList (encPair encBits encBits) keys
     simp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
-      CertLoopIn.edges, encLoopIn, length_encPair, encUnary_apply, List.length_replicate,
+      CertLoopIn.edges, encLoopIn, encKeys, length_encPair, encUnary_apply, List.length_replicate,
       encBits_apply]
     omega
   have hd : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
@@ -854,10 +875,12 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
   · intro a i ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi hinv
     have hle := plantedLoopInv_enc_bounds (hi.trans (Nat.sub_le _ _)) hinv
     dsimp only [plantedLoopInv] at hinv
-    dsimp only at hle
+    -- `encPlantedCert` spells out the certificate encoding that `hle` calls `encKeys`
+    dsimp only [encKeys] at hle
     obtain ⟨hnode, hidx, -⟩ := hinv
     obtain ⟨hcB, hvB, heB⟩ := hle
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, hnode]
+    simp only [encKeys, length_encPair, encBits_apply, encUnary_apply, List.length_replicate,
+      hnode]
     omega
 
 /-- Caller tuple for `plantedTreeHandler`: `(((n, vk), target), keys)`. -/
@@ -1026,8 +1049,9 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       have hloopB := plantedLoopInv_enc_bounds (Nat.sub_le (depth c.1.1.1) 1) hloop
       dsimp only [plantedLoopInv, CertLoopIn.keys, CertLoopIn.sigCap,
         CertLoopIn.parameter] at hloop
+      -- `encodeSignature` and the memoization bound spell out the encodings
       dsimp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.visited,
-        CertLoopIn.edges] at hloopB
+        CertLoopIn.edges, encKeys, encNodeCache, encEdgeCache] at hloopB
       obtain ⟨hnode, hidx, -, -, hvis', hedg', -, -⟩ := hloop
       obtain ⟨hcB, hvB, heB⟩ := hloopB
       have hsub := Nat.sub_le (depth c.1.1.1) 1
@@ -1046,7 +1070,7 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       refine ⟨⟨hvis', heLast.2.1⟩, ?_, ?_⟩
       · have hσLen : σ.length ≤ sigCap c.1.1.1 := heLast.1
         simp only [encodeSignature, length_encPair, encBits_apply, hleafLen]
-        dsimp only [plantedResourceAllowance]
+        dsimp only [plantedResourceAllowance, encKeys]
         omega
       · have hslCons : (encList encBits (leaf :: seenLeaves)).length ≤
             (encList encBits seenLeaves).length + (2 * depth c.1.1.1 + 2) := by
@@ -1056,7 +1080,7 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
             depth c.1.1.1 * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) +
               (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) := Nat.succ_mul _ _
         rw [plantedState_length_eq, plantedState_length_eq]
-        dsimp only [plantedResourceAllowance]
+        dsimp only [plantedResourceAllowance, encKeys, encNodeCache, encEdgeCache]
         omega
   · have hres := OracleComp.eq_of_mem_supportWith_pure hresult
     subst hres

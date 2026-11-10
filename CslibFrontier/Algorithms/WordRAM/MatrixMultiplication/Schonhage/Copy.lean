@@ -19,7 +19,7 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.En
   possible disjoint address orders, with its charged `7n+4` bound.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
 

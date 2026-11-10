@@ -93,29 +93,26 @@ with target two more than the number of distinct vertices of the first entry. -/
 def toLongPath (l : List (Graph × ℕ × ℕ)) : Graph × ℕ :=
   (pendantUnion l, (l.headD default).1.distinctVertices.length + 2)
 
-private abbrev encInst : Graph × ℕ × ℕ ↪ List Bool := encPair encGraph (encPair encNat encNat)
-
 /-- The cross-composition `toLongPath` is polynomial-time. -/
 theorem computableInPolyTime_toLongPath :
-    ComputableInPolyTime toLongPath (encList (encPair encGraph (encPair encNat encNat)))
-      (encPair encGraph encNat) := by
-  have hz : ComputableInPolyTime (fun l : List (Graph × ℕ × ℕ) => l.zipIdx) (encList encInst)
-      (encList (encPair encInst encUnary)) :=
-    (ComputableTidilyInPolyTime.zipIdx encInst).computableInPolyTime
+    ComputableInPolyTime toLongPath (encList encPathInstance) (encPair encGraph encNat) := by
+  have hz : ComputableInPolyTime (fun l : List (Graph × ℕ × ℕ) => l.zipIdx)
+      (encList encPathInstance) (encList (encPair encPathInstance encUnary)) :=
+    (ComputableTidilyInPolyTime.zipIdx encPathInstance).computableInPolyTime
   have hc := computableInPolyTime_pendantCopy
   unfold encGraph at hc
-  have hU : ComputableInPolyTime pendantUnion (encList encInst) encGraph := by
+  have hU : ComputableInPolyTime pendantUnion (encList encPathInstance) encGraph := by
     unfold pendantUnion encGraph
     exact (flatMapWithInput hz (hc.fst'.comp (snd _ _))).prod
       (flatMapWithInput hz (hc.snd'.comp (snd _ _)))
   have hk : ComputableInPolyTime
       (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1.distinctVertices.length + 2)
-      (encList encInst) encNat := by
+      (encList encPathInstance) encNat := by
     have hh : ComputableInPolyTime (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1)
-        (encList encInst) encGraph := (headD (encA := encInst) default).fst'
+        (encList encPathInstance) encGraph := (headD (encA := encPathInstance) default).fst'
     have hn : ComputableInPolyTime
         (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1.distinctVertices.length)
-        (encList encInst) encUnary :=
+        (encList encPathInstance) encUnary :=
       (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp hh)
     exact unary_to_binary.comp (by fun_prop)
   exact hU.prod hk
@@ -225,17 +222,17 @@ the polynomial equivalence relation of having equally many distinct vertices: `t
 the disjoint union of the pendant copies, whose target is two more than the common number of
 distinct vertices. -/
 theorem HamPath.orCrossComposes_LongPath :
-    ORCrossComposes (encPair encGraph (encPair encNat encNat)) HamPath (encPair encGraph encNat)
-      Prod.snd LongPath := by
+    ORCrossComposes encPathInstance HamPath (encPair encGraph encNat) Prod.snd LongPath := by
   have hkey : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
-      (encPair encGraph (encPair encNat encNat)) encUnary :=
+      encPathInstance encUnary :=
     (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
   refine ⟨_, HamPath.toLongPath, fun n => n + 2, IsPolyEquivalence.of_key hkey, by fun_prop,
     HamPath.computableInPolyTime_toLongPath, fun l hl hrel => ?_, fun n l hl _ hlen => ?_⟩
   · exact HamPath.toLongPath_mem_iff hl fun x hx y hy => of_decide_eq_true (hrel x hx y hy)
   · obtain ⟨y, l', rfl⟩ := List.exists_cons_of_ne_nil hl
     have h1 := Graph.length_distinctVertices_le y.1
-    have h2 := length_le_encPair_left encGraph (encPair encNat encNat) y
+    have h2 : (encGraph y.1).length ≤ (encPathInstance y).length :=
+      length_le_encPair_left encGraph (encPair encNat encNat) y
     have h3 := hlen y List.mem_cons_self
     change y.1.distinctVertices.length + 2 ≤ n + Nat.log 2 (l'.length + 1) + 2
     omega

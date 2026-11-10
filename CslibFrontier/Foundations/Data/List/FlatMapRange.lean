@@ -19,10 +19,10 @@ blocks `f 0, …, f (n - 1)`, in increasing or decreasing order.
 
 ## Main results
 
-* `List.isChain_flatMap_range`, `List.isChain_flatMap_range_reverse`: nonempty chained blocks,
+* `List.isChain_flatMap_range`, `List.isChain_flatMap_reverse_range`: nonempty chained blocks,
   each linked to the next one, form a chain.
 * `List.head?_flatMap_range`, `List.getLast?_flatMap_range`,
-  `List.head?_flatMap_range_reverse`, `List.getLast?_flatMap_range_reverse`: the first and last
+  `List.head?_flatMap_reverse_range`, `List.getLast?_flatMap_reverse_range`: the first and last
   entries come from the first and last nonempty end blocks.
 -/
 
@@ -45,7 +45,7 @@ theorem isChain_flatMap_range (hne : ∀ a < n, f a ≠ [])
     exact fun a ha => hlink a (by omega)
 
 /-- Nonempty chains indexed by `n - 1, …, 0`, each linked to the previous, form a chain. -/
-theorem isChain_flatMap_range_reverse (hne : ∀ a < n, f a ≠ [])
+theorem isChain_flatMap_reverse_range (hne : ∀ a < n, f a ≠ [])
     (hblock : ∀ a < n, (f a).IsChain R)
     (hlink : ∀ a, a + 1 < n → ∀ x ∈ (f (a + 1)).getLast?, ∀ y ∈ (f a).head?, R x y) :
     ((range n).reverse.flatMap f).IsChain R := by
@@ -70,7 +70,7 @@ theorem getLast?_flatMap_range (hn : 0 < n) (h : f (n - 1) ≠ []) :
   rw [range_succ, flatMap_append, flatMap_singleton, getLast?_append_of_ne_nil _ h]
 
 /-- With a nonempty block `n - 1`, the blocks in decreasing order start with its head. -/
-theorem head?_flatMap_range_reverse (hn : 0 < n) (h : f (n - 1) ≠ []) :
+theorem head?_flatMap_reverse_range (hn : 0 < n) (h : f (n - 1) ≠ []) :
     ((range n).reverse.flatMap f).head? = (f (n - 1)).head? := by
   obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
   rw [Nat.zero_add, Nat.add_sub_cancel] at h ⊢
@@ -78,7 +78,7 @@ theorem head?_flatMap_range_reverse (hn : 0 < n) (h : f (n - 1) ≠ []) :
     head?_append_of_ne_nil _ h]
 
 /-- With a nonempty block `0`, the blocks in decreasing order end with its last entry. -/
-theorem getLast?_flatMap_range_reverse (hn : 0 < n) (h : f 0 ≠ []) :
+theorem getLast?_flatMap_reverse_range (hn : 0 < n) (h : f 0 ≠ []) :
     ((range n).reverse.flatMap f).getLast? = (f 0).getLast? := by
   obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
   rw [Nat.zero_add, range_succ_eq_map, reverse_cons, flatMap_append, flatMap_singleton,

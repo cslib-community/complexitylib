@@ -18,8 +18,9 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 # A time hierarchy for the word RAM
 
 For a time-constructible, polynomially bounded `T` with `n ≤ T n`, some problem is decided by one
-fixed word-RAM program over `Basis.additive` within `O(T(n) ^ 5)` instructions, at logarithmic
-word sizes, and by no such program within `O(T n)` instructions
+fixed word-RAM program over `Basis.additive` within `O(T(n) ^ 5)` instructions at every word size
+of at least `logWidth k n`, for a constant `k > 0`, and no such program, for any `k > 0`, decides
+it within `O(T n)` instructions at every word size of at least `logWidth k n`
 (`Cslib.WordRAM.exists_mem_RAMTIME_pow_five_notMem_RAMTIME`). Equivalently,
 `RAMTIME .additive encBits T ⊂ RAMTIME .additive encBits (T ^ 5)`
 (`Cslib.WordRAM.RAMTIME_ssubset_RAMTIME_pow_five`).
@@ -136,8 +137,9 @@ private theorem exists_polylogBound_clock_le_pow_five (k : ℕ) : ∃ M, ∀ {n 
 
 /-- **A time hierarchy for the word RAM.** For a time-constructible, polynomially bounded `T` with
 `n ≤ T n`, some problem is decided by one fixed program over `Basis.additive` within `O(T(n) ^ 5)`
-instructions at logarithmic word sizes, and by no fixed program over `Basis.additive` within
-`O(T n)` instructions at logarithmic word sizes. -/
+instructions at every word size of at least `logWidth k n`, for a constant `k > 0`, and no fixed
+program over `Basis.additive`, for any `k > 0`, decides it within `O(T n)` instructions at every
+word size of at least `logWidth k n`. -/
 theorem exists_mem_RAMTIME_pow_five_notMem_RAMTIME {T : ℕ → ℕ} (hT : TimeConstructible T)
     (hn : ∀ n, n ≤ T n) (hpoly : PolynomiallyBounded T) :
     ∃ A : Set (List Bool), A ∈ RAMTIME .additive encBits (fun n => T n ^ 5) ∧
