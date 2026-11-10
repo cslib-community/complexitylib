@@ -27,10 +27,10 @@ import Mathlib.Data.List.GetD
 We define standard string encodings for instances of the Partial Minimum Circuit Size Problem
 (`Cslib.PartialMCSP.Instance`) and prove that `PartialMCSP` belongs to `NP` under both encodings:
 * `Cslib.PartialMCSP.enc`: encodes the $2^n$-entry truth table over `Option Bool` using
-  `encList (encOption encBool)` followed by the threshold in unary (`encUnary`), matching
-  [Hirahara2022, ECCC TR22-119, Definition 8.4, p. 30].
+  `encTable` (`encList (encOption encBool)`) followed by the threshold in unary (`encUnary`),
+  matching [Hirahara2022, ECCC TR22-119, Definition 8.4, p. 30].
 * `Cslib.PartialMCSP.encBinary`: encodes the $2^n$-entry truth table over `Option Bool` using
-  `encList (encOption encBool)` followed by the threshold in binary (`encNat`), matching
+  `encTable` followed by the threshold in binary (`encNat`), matching
   `Cslib.MCSP.encInstance` and [Ilango2020FOCS, Section II.B; ECCC TR20-183, Section 2.2].
 
 A certificate for `PartialMCSP` is a circuit with at most `MCSP.budget n s` gates, in the format
@@ -48,6 +48,7 @@ giving a polynomial-time many-one reduction from `MCSP` to `PartialMCSP`
 ## Main definitions
 
 * `Cslib.PartialMCSP.toRaw`: raw data of an instance as a truth table list and a threshold.
+* `Cslib.PartialMCSP.encTable`: encoding of a partial truth table as a list of `Option Bool`.
 * `Cslib.PartialMCSP.enc`: encoding of `PartialMCSP.Instance` with unary threshold.
 * `Cslib.PartialMCSP.encBinary`: encoding of `PartialMCSP.Instance` with binary threshold.
 * `Cslib.PartialMCSP.tableEntry`: lookup of an input bitstring in a partial truth-table list.
@@ -94,32 +95,37 @@ def toRaw : Instance ↪ List (Option Bool) × ℕ :=
 
 theorem toRaw_apply (x : Instance) : toRaw x = (List.ofFn x.table, x.threshold) := rfl
 
+/-- Encoding of a partial truth table as the framed list (`encList`) of its entries, each encoded
+by `encOption encBool`: `*` (`none`) as the empty word and a specified bit `b` as `[true, b]`. -/
+abbrev encTable : List (Option Bool) ↪ List Bool :=
+  encList (encOption encBool)
+
 /-- Instances of `PartialMCSP` encoded by the framed list of `Option Bool` truth-table entries
 followed by the threshold in unary [Hirahara2022, ECCC TR22-119, Definition 8.4, p. 30]. -/
 def enc : Instance ↪ List Bool :=
-  toRaw.trans (encPair (encList (encOption encBool)) encUnary)
+  toRaw.trans (encPair encTable encUnary)
 
 theorem enc_apply (x : Instance) :
-    enc x = encPair (encList (encOption encBool)) encUnary (List.ofFn x.table, x.threshold) :=
+    enc x = encPair encTable encUnary (List.ofFn x.table, x.threshold) :=
   rfl
 
 /-- Instances of `PartialMCSP` encoded by the framed list of `Option Bool` truth-table entries
 followed by the threshold in binary [Ilango2020FOCS, Section II.B; ECCC TR20-183, Section 2.2]. -/
 def encBinary : Instance ↪ List Bool :=
-  toRaw.trans (encPair (encList (encOption encBool)) encNat)
+  toRaw.trans (encPair encTable encNat)
 
 theorem encBinary_apply (x : Instance) :
-    encBinary x = encPair (encList (encOption encBool)) encNat (List.ofFn x.table, x.threshold) :=
+    encBinary x = encPair encTable encNat (List.ofFn x.table, x.threshold) :=
   rfl
 
 private theorem two_pow_le_length_encList_table (x : Instance) :
-    2 ^ x.arity ≤ (encList (encOption encBool) (List.ofFn x.table)).length := by
+    2 ^ x.arity ≤ (encTable (List.ofFn x.table)).length := by
   have h := SizedListEncoding.length_le (encA := encOption encBool)
-    (encL := encList (encOption encBool)) (List.ofFn x.table)
+    (encL := encTable) (List.ofFn x.table)
   simpa using h
 
 private theorem two_pow_le_length_enc_of_encT (encT : ℕ ↪ List Bool) (x : Instance) :
-    2 ^ x.arity ≤ (encPair (encList (encOption encBool)) encT (toRaw x)).length := by
+    2 ^ x.arity ≤ (encPair encTable encT (toRaw x)).length := by
   have h := two_pow_le_length_encList_table x
   rw [toRaw_apply, length_encPair]
   dsimp only
@@ -146,7 +152,7 @@ def verifier (p : Instance × List Bool) : Bool :=
 
 private theorem certLength_le_enc_of_encT (encT : ℕ ↪ List Bool) (x : Instance) :
     certLength x.arity (MCSP.budget x.arity x.threshold) ≤
-      MCSP.certPolynomial.eval (encPair (encList (encOption encBool)) encT (toRaw x)).length :=
+      MCSP.certPolynomial.eval (encPair encTable encT (toRaw x)).length :=
   have hT := two_pow_le_length_enc_of_encT encT x
   MCSP.certLength_sampleBudget_le ((Nat.lt_two_pow_self).le.trans hT) hT
 
@@ -216,7 +222,7 @@ theorem verifier_eq_tableVerifier (p : Instance × List Bool) :
 theorem computableInPolyTime_tableEntry :
     ComputableInPolyTime
       (fun p : List (Option Bool) × List Bool => tableEntry p.1 p.2)
-      (encPair (encList (encOption encBool)) encBits) (encOption encBool) := by
+      (encPair encTable encBits) (encOption encBool) := by
   unfold tableEntry
   exact listGetDWithInput (fst _ _)
     (bitsBoundedBinaryValueWithInput
@@ -227,9 +233,8 @@ theorem computableInPolyTime_tableEntry :
 /-- The verifier on raw data is computable in polynomial time. -/
 theorem computableInPolyTime_tableVerifier :
     ComputableInPolyTime tableVerifier
-      (encPair (encPair (encList (encOption encBool)) encNat) encBits) encBool := by
-  let encT := encList (encOption encBool)
-  let encP := encPair encT encBits
+      (encPair (encPair encTable encNat) encBits) encBool := by
+  let encP := encPair encTable encBits
   have haccept : ComputableInPolyTime
       (fun p : (List (Option Bool) × List Bool) × Bool =>
         (tableEntry p.1.1 p.1.2).getD p.2 == p.2)
@@ -250,7 +255,7 @@ theorem computableInPolyTime_verifier_encBinary :
   have hraw : ComputableInPolyTime
       (fun p : Instance × List Bool => ((List.ofFn p.1.table, p.1.threshold), p.2))
       (encPair encBinary encBits)
-      (encPair (encPair (encList (encOption encBool)) encNat) encBits) :=
+      (encPair (encPair encTable encNat) encBits) :=
     .of_eq fun _ => rfl
   rw [funext verifier_eq_tableVerifier]
   exact computableInPolyTime_tableVerifier.comp hraw
@@ -261,12 +266,12 @@ theorem computableInPolyTime_id_enc_encBinary :
     ComputableInPolyTime id enc encBinary := by
   have hraw : ComputableInPolyTime
       (fun x : Instance => (List.ofFn x.table, x.threshold))
-      enc (encPair (encList (encOption encBool)) encUnary) :=
+      enc (encPair encTable encUnary) :=
     .of_eq fun _ => rfl
   have hconv : ComputableInPolyTime
       (fun r : List (Option Bool) × ℕ => (r.1, r.2))
-      (encPair (encList (encOption encBool)) encUnary)
-      (encPair (encList (encOption encBool)) encNat) :=
+      (encPair encTable encUnary)
+      (encPair encTable encNat) :=
     (fst _ _).prod (unary_to_binary.comp (snd _ _))
   exact (hconv.comp hraw).of_enc_eq fun _ => rfl
 
@@ -296,15 +301,16 @@ private theorem foldl_cons_some (l : List Bool) (acc : List (Option Bool)) :
     simp [ih, List.map_append]
 
 private theorem computableInPolyTime_bitsMapSome :
-    ComputableInPolyTime (List.map some) encBits (encList (encOption encBool)) := by
+    ComputableInPolyTime (List.map some) encBits encTable := by
   have hfold := foldl_of_bounded_growth (encA := encBool) (encL := encBits)
-    (encB := encList (encOption encBool))
+    (encB := encTable)
     (step := fun acc b => some b :: acc) (init := fun _ => [])
     (by fun_prop : ComputableInPolyTime List.reverse encBits encBits) (const [])
     (show ComputableInPolyTime
       (fun p : List (Option Bool) × Bool => some p.2 :: p.1)
-      (encPair (encList (encOption encBool)) encBool) (encList (encOption encBool)) by fun_prop)
+      (encPair encTable encBool) encTable by fun_prop)
     (growth := 5) (fun acc b => by
+      dsimp only [encTable]
       rw [encList_cons, List.length_append]
       have hb : (frame (encOption encBool (some b))).length = 5 := by cases b <;> rfl
       omega)
@@ -321,7 +327,7 @@ theorem computableInPolyTime_ofTotal_encBinary :
     .of_eq fun _ => rfl
   have hmap : ComputableInPolyTime
       (fun p : List Bool × ℕ => (p.1.map some, p.2))
-      (encPair encBits encNat) (encPair (encList (encOption encBool)) encNat) :=
+      (encPair encBits encNat) (encPair encTable encNat) :=
     (computableInPolyTime_bitsMapSome.comp (fst encBits encNat)).prod (snd encBits encNat)
   refine (hmap.comp hraw).of_enc_eq fun x => ?_
   have hofFn : (List.ofFn x.table).map some = List.ofFn (Instance.ofTotal x).table := by

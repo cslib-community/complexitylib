@@ -77,7 +77,7 @@ over `B` computes it on the bits `(encIn a).map Bool.toNat` of its input, within
 instructions at every word size of at least `W |encIn a|`, for polynomially bounded `T` and `W`. -/
 theorem turingComputableInPolyTime_iff_exists_computesInTime (φ : Basis.additive.Hom B)
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat)) {f : α → ℕ} :
+      encWidthOperands (encOption encNat)) {f : α → ℕ} :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn encNat ↔
       ∃ (r : ℕ) (p : Program B r) (T W : ℕ → ℕ), PolynomiallyBounded T ∧
         PolynomiallyBounded W ∧ p.ComputesInTime (fun _ a => (encIn a).map Bool.toNat)
@@ -144,7 +144,7 @@ word-RAM side (`Cslib.WordRAM.UniformComputableInPolyTime.polyBounded`); without
 `Cslib.WordRAM.turingComputableInPolyTime_iff_exists_computesInTime`. -/
 theorem turingComputableInPolyTime_iff_uniformComputableInPolyTime (φ : Basis.additive.Hom B)
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat)) {f : α → ℕ}
+      encWidthOperands (encOption encNat)) {f : α → ℕ}
     (hf : PolyBounded (fun a => (encIn a).length) f) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn encNat ↔
       UniformComputableInPolyTime B f (fun _ a => (encIn a).map Bool.toNat)
