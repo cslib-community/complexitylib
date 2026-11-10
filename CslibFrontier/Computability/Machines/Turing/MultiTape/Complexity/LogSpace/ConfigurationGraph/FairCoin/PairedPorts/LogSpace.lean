@@ -622,27 +622,20 @@ private theorem computableInLogSpace_portGuard (k D d P : ℕ) :
     ((ComputableInLogSpace.fst encNat encNat).comp hap)
   have hlp := computableInLogSpace_natBitLength.comp
     ((ComputableInLogSpace.snd encNat encNat).comp hap)
-  have hln_len : ∃ C, ∀ x : Triple,
-      (encNat (encNat x.1.length).length).length ≤ C * (Nat.log2 (encTriple x).length + 1) := by
-    refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
-    have hw_le : w.length ≤ (encTriple (w, a, p)).length := by
+  -- each field length fits in the triple, so its bit length is logarithmic
+  have hfield : ∀ g : Triple → ℕ, (∀ x, g x ≤ (encTriple x).length) →
+      ∃ C, ∀ x, (encNat (g x)).length ≤ C * (Nat.log2 (encTriple x).length + 1) :=
+    fun g hg => ⟨1, fun x => by simpa using length_encNat_le_log2 (hg x)⟩
+  have hln_len := hfield (fun x => (encNat x.1.length).length) fun ⟨w, a, p⟩ =>
+    (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans (by
       simp only [encTriple, length_encPair, encBits_apply]
-      omega
-    have hln_le : (encNat w.length).length ≤ (encTriple (w, a, p)).length :=
-      (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hw_le
-    simpa using length_encNat_le_log2 hln_le
-  have hap_le : ∀ x : Triple, (encNat (Prod.fst x.2)).length ≤ (encTriple x).length ∧
-      (encNat (Prod.snd x.2)).length ≤ (encTriple x).length := fun ⟨w, a, p⟩ => by
+      omega)
+  have hla_len := hfield (fun x => (encNat (Prod.fst x.2)).length) fun ⟨w, a, p⟩ => by
     simp only [encTriple, length_encPair]
     omega
-  have hla_len : ∃ C, ∀ x : Triple,
-      (encNat (encNat (Prod.fst x.2)).length).length ≤
-        C * (Nat.log2 (encTriple x).length + 1) :=
-    ⟨1, fun x => by simpa using length_encNat_le_log2 (hap_le x).1⟩
-  have hlp_len : ∃ C, ∀ x : Triple,
-      (encNat (encNat (Prod.snd x.2)).length).length ≤
-        C * (Nat.log2 (encTriple x).length + 1) :=
-    ⟨1, fun x => by simpa using length_encNat_le_log2 (hap_le x).2⟩
+  have hlp_len := hfield (fun x => (encNat (Prod.snd x.2)).length) fun ⟨w, a, p⟩ => by
+    simp only [encTriple, length_encPair]
+    omega
   have hlengths := ComputableInLogSpace.pair hln (ComputableInLogSpace.pair hla hlp)
   have hlen_bound := pair_length_log hln_len (pair_length_log hla_len hlp_len)
   have hln_s : ComputableInSpace napLen encNAP encNat fun z => (encNAP z).length :=
