@@ -161,7 +161,7 @@ theorem SharpP.encoded_comp_mem_of_computableInPolyTimeWithOracle
     dsimp only [T]
     fun_prop
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
-    ComputableInPolyTime.id'
+    .of_eq fun _ => rfl
   have hmem := replayWeightedSum_mem_SharpP machine hinput hT hYes_mem hNo_mem hF
   convert hmem using 1
   funext a

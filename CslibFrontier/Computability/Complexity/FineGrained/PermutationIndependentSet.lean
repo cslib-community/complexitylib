@@ -799,8 +799,6 @@ theorem mem_ThreeColoring_iff_exists_bpisOfColoring (H : Graph) :
 
 /-! ### Polynomial-time computability of the reduction -/
 
-attribute [local irreducible] ComputableInPolyTime
-
 @[local fun_prop]
 private theorem computableInPolyTime_unary_log_two :
     ComputableInPolyTime (Nat.log 2) encUnary encUnary :=

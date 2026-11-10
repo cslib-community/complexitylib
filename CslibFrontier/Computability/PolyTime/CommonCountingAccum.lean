@@ -94,8 +94,6 @@ namespace Cslib.CommonCountingAccum
 
 open Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
 
-attribute [local irreducible] ComputableInPolyTime
-
 -- Local performance shortcut: bypass repeated `Module ℚ≥0`/`Module ℚ` instance searches.
 private local instance (priority := 10000) {A B : Type*} [NonAssocSemiring A] [NonAssocSemiring B] :
     AddMonoidHomClass (A →+* B) A B := RingHomClass.toAddMonoidHomClass

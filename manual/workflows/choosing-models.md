@@ -62,7 +62,7 @@ Binary and unary naturals are different contracts. A loop count computed into `e
 
 An arbitrary embedding supplies neither a decoder nor a decision procedure for malformed strings. Native correctness on values encoded by `enc` is a statement about valid inputs. If the application accepts arbitrary bytes, supply the parser, its correctness and its resource bound. Inspect any malformed-input guarantee in the chosen model checker rather than inferring it from injectivity.
 
-To reuse a theorem under different encodings, match its representation first. For a function certified from `oldIn` to `oldOut`, supply efficient identity translations from `newIn` to `oldIn` and from `oldOut` to `newOut`, then compose. If the encoded words are literally equal, [ComputableInPolyTime.of_eq](../../CslibFrontier/Computability/Machines/Turing/MultiTape/PolyTime.lean) gives the copy-machine case. A mathematical bijection by itself is insufficient to preserve complexity.
+To reuse a theorem under different encodings, match its representation first. For a function certified from `oldIn` to `oldOut`, supply efficient identity translations from `newIn` to `oldIn` and from `oldOut` to `newOut`, then compose. If the encoded words are literally equal, [ComputableInPolyTime.of_eq](../../CslibFrontier/Computability/Machines/Turing/MultiTape/PolyTime.lean) gives the copy-machine case. When a certificate is stated for another function or encoding whose output words agree by `rfl`, transport it with `ComputableInPolyTime.of_enc_eq h fun _ => rfl`: the predicate does not unfold, so Lean does not accept such certificates as interchangeable without this step. A mathematical bijection by itself is insufficient to preserve complexity.
 
 ## Check uniformity and implementation
 

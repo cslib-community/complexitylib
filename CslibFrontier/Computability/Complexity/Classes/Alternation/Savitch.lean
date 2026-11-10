@@ -297,7 +297,7 @@ theorem computableInPolyTime_savitchVerifier :
       encBool := by
   have hword : ComputableInPolyTime (fun x : α × List Bool => enc x.1) (encPair enc encBits)
       encBits :=
-    (ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
+    (ComputableInPolyTime.of_eq (f := enc) (encOut := encBits) fun _ => rfl).comp
       (ComputableInPolyTime.fst enc encBits)
   have hwidth : ComputableInPolyTime (fun x : α × List Bool => ntm.codeWidth c d (enc x.1))
       (encPair enc encBits) encUnary :=

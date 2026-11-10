@@ -349,8 +349,6 @@ end LocalMap
 
 /-! ## Polynomial-time computability of local map operations -/
 
-attribute [local irreducible] ComputableInPolyTime
-
 section PolyTime
 
 open ComputableInPolyTime CSP

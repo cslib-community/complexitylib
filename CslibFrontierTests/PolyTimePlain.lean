@@ -118,7 +118,8 @@ example {β γ : Type} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
   refine ⟨.of_eq fun _ => rfl, ?_, ?_,
     ComputableInTimeAndSpace.computableInPolyTime (t := fun n => n + 1) (s := fun w => 2 ^ w.length)
       (by fun_prop) (computableInTimeAndSpace_id.mono (fun _ => le_rfl) (fun _ => Nat.zero_le _)),
-    (by polytime : ComputableInPolyTime (fun w : List Bool => w.headD false) encBits encBool),
+    computableInPolyTime_def.mp
+      (by polytime : ComputableInPolyTime (fun w : List Bool => w.headD false) encBits encBool),
     by fun_prop, by fun_prop, ⟨by fun_prop, by fun_prop⟩, by fun_prop, by fun_prop,
     ⟨by fun_prop, by fun_prop⟩, by fun_prop, by fun_prop, by fun_prop, by polytime,
     mem_P.mpr ⟨fun w => w.headD false, by polytime, fun _ => Iff.rfl⟩,

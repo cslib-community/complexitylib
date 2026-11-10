@@ -112,8 +112,8 @@ theorem polyTimeTuringAutoreducible_of_polyTimeReducible_fixedPointFree
   refine ⟨fun a => (fun reply => decide (reply = [true])) <$>
     (List.take 1 <$> OracleComp.query ((), encA (f a))), ?_, fun a q hq => ?_, fun a => ?_⟩
   · simp only [OracleComp.interpret_map, OracleComp.interpret_query]
-    exact (IsOraclePPTOn.query_take' () hf (limit := fun _ => 1) (by fun_prop)).map'
-      (by fun_prop)
+    exact (IsOraclePPTOn.query_take' () (hf.of_enc_eq fun _ => rfl) (limit := fun _ => 1)
+      (by fun_prop)).map' (by fun_prop)
   · simp only [OracleComp.queriesWith_map, OracleComp.queriesWith_query,
       List.mem_singleton] at hq
     subst hq

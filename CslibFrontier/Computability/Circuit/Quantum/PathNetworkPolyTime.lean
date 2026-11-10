@@ -252,7 +252,7 @@ theorem computableInPolyTime_network {neg : α → ℕ} {S : α → List ℕ} {X
           (cons' (unary_add' (unary_mul' (const 2) (snd _ _)) (const 1)) (const [])))).prod
           (const _)))
   -- Elaborated without an expected type: propagating one into `comp` makes the unifier try
-  -- `?f ∘ ?g =?= fun a => …` and fail only after unfolding `ComputableInPolyTime`.
+  -- `?f ∘ ?g =?= fun a => …` before the arguments are known.
   have hnet := computableInPolyTime_equivProd_symm.comp
     ((unary_mul' (const 2) (unary_mul' (const 2) hN)).prod hverts)
   unfold network

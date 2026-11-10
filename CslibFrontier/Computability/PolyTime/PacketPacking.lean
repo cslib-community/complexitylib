@@ -346,8 +346,6 @@ abbrev PackingInput : Type := (ℕ × ℕ × ℕ) × ℕ × List (ℕ × ℕ)
   encPair (encPair encUnary (encPair encUnary encUnary)) (encPair encNat (encList (encPair encNat
     encNat)))
 
-attribute [local irreducible] ComputableInPolyTime
-
 /-- The capped label length, in unary. -/
 private theorem computableInPolyTime_cappedLength :
     ComputableInPolyTime (fun p : LabelParams => cappedLength p.1.1 p.1.2 p.2.length)

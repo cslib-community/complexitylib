@@ -84,7 +84,7 @@ theorem isPPTOn_pedersenCommitProb :
   have hr : ComputableInPolyTime
       (fun p : (ℕ × F.PedersenKey × List Bool) × ℕ => p.2.bits)
       (encPair E encNat) encBits :=
-    (ComputableInPolyTime.of_eq fun _ => rfl).comp (ComputableInPolyTime.snd E encNat)
+    (ComputableInPolyTime.snd E encNat).of_enc_eq fun _ => rfl
   have heval := F.pedersenPublicOperations.computableInPolyTime_commit
     (hk.comp hinput) (hm.comp hinput) hr
   unfold pedersenCommitProb

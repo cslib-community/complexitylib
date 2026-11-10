@@ -536,8 +536,6 @@ section PolyTime
 
 open ComputableInPolyTime
 
-attribute [local irreducible] ComputableInPolyTime
-
 private theorem computableInPolyTime_headCNF :
     ComputableInPolyTime (fun s : State => s.2.1.headD []) encState encCNF :=
   (headD (encA := encCNF) []).comp (id' (encIn := encState)).snd'.fst'

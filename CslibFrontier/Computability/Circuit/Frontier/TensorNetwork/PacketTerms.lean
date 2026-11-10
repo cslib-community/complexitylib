@@ -106,8 +106,6 @@ namespace NativePacket
 
 open GaloisRingArith TensorNetwork Turing.MultiTapeTM Cslib.GenericRAM
 
-attribute [local irreducible] ComputableInPolyTime
-
 /-! ### The `2`-adic valuation by halving -/
 
 /-- The valuation by halving is `padicValNat 2` whenever the fuel exceeds the valuation. -/
