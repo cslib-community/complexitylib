@@ -953,6 +953,8 @@ public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.CircuitRank
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.DegreeEstimates
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ProductRank
@@ -4488,6 +4490,7 @@ public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Hyperbolic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogSum
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.RationalRamp
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.RpowAbsSum
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Sqrt
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Bounds

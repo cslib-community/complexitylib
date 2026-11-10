@@ -131,6 +131,9 @@ structure Good : Prop where
   q_le_rpow : p.q ≤ (p.n : ℝ) ^ (-(2 : ℝ) / 5)
   /-- `q ≤ 1 / 2`. -/
   q_le_half : p.q ≤ 1 / 2
+  /-- `n ≥ 2 ^ 20`: with `q_le_rpow` this gives `q ^ (1 / 4) ≤ 1 / 4`, the smallness of `q` used
+  by `Params.Good.q_rpow_quarter_le` and through it by the degree estimates. -/
+  n_ge : 2 ^ 20 ≤ p.n
 
 variable {p}
 
