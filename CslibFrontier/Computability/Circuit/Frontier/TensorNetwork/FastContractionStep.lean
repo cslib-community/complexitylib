@@ -84,10 +84,9 @@ theorem map_min_of_mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {
 
 /-- **The children of an active call** are the states of a node, a point, a tuple of weight below
 the node's precision and a group. -/
-theorem mem_children {c : State} : c ∈ children x ↔
-    c.1 < (nodes x).length ∧ c.2.1 < numPoints x ∧
-      c.2.2.1 ∈ BudgetTuples.budgetTuples (weights x c.1) (nodePrec x c.1) ∧ c.2.2.2 < 64 := by
-  obtain ⟨j, i, β, g⟩ := c
+theorem mem_children {j i g : ℕ} {β : List ℕ} : (j, i, β, g) ∈ children x ↔
+    j < (nodes x).length ∧ i < numPoints x ∧
+      β ∈ BudgetTuples.budgetTuples (weights x j) (nodePrec x j) ∧ g < 64 := by
   simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
     List.mem_range, List.mem_map, Prod.mk.injEq]
   constructor

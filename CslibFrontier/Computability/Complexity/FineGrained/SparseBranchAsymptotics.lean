@@ -580,20 +580,8 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le_two_pow_interpo
         examSum b) ≤
       (2 : ℝ) ^ (((branchExamScaleCoeff β k 6 + 32 : ℕ) : ℝ) *
         interpolationScale (Fintype.card V)) := by
-  have hM :
-      totalIncidence (univ : Finset (Fin rows.length))
-          (fun j => equationScope (φ.parityRowSystem rows j)) *
-        (Nat.clog 2 (Fintype.card V)).sqrt ≤
-      b₀ * Fintype.card V := by
-    calc totalIncidence (univ : Finset (Fin rows.length))
-            (fun j => equationScope (φ.parityRowSystem rows j)) *
-          (Nat.clog 2 (Fintype.card V)).sqrt
-        ≤ ((6 * (k * (W * 2 ^ k))) * Fintype.card V) *
-            (Nat.clog 2 (Fintype.card V)).sqrt :=
-          Nat.mul_le_mul_right _ (CNF.totalIncidence_parityRowSystem_le_six_mul hk hW hlen)
-      _ = ((6 * (k * (W * 2 ^ k))) * (Nat.clog 2 (Fintype.card V)).sqrt) * Fintype.card V := by
-          ring
-      _ ≤ b₀ * Fintype.card V := Nat.mul_le_mul_right _ h_thresh
+  have hM := CNF.totalIncidence_mul_le_of_card_equationScope_le
+    (CNF.card_equationScope_parityRowSystem_le hk hW) hlen h_thresh
   exact sum_branch_domainExaminationBound_le_two_pow_interpolationScale
     (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) hn hM examSum hexam
 

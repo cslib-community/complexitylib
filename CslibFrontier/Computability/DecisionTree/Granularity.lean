@@ -37,7 +37,7 @@ the bound.
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DecisionTree
 

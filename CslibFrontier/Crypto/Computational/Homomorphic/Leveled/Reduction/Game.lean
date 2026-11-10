@@ -51,7 +51,7 @@ power-of-two index rounding, and the four-way branch selector with one inactive 
 * [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2, Theorem 4][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 

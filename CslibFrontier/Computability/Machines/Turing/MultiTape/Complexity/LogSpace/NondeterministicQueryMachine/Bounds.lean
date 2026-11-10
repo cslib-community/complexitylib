@@ -23,7 +23,7 @@ move no heads. Repeating the routines does not multiply the window by the number
   stays in the common routine window, assuming a preserved invariant on tape words.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.NondeterministicQueryMachine.Native
 

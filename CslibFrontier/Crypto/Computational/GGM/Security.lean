@@ -41,7 +41,7 @@ Adapted from Crypto/Computational/GGM/Security.lean on the cslib `crypto` branch
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the shared typed oracle and game calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 

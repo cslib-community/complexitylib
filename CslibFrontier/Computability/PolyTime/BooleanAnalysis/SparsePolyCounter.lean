@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -293,15 +294,6 @@ abbrev SparseSystemInput.heavyThreshold (inp : SparseSystemInput) : ℕ := inp.2
 
 /-- Equation list `eqs` of a `SparseSystemInput`. -/
 abbrev SparseSystemInput.equations (inp : SparseSystemInput) : List (List (List ℕ)) := inp.2.2
-
-/-- Number of variables `n` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputNumVars (inp : HeavyBranchFold.BranchInput) : ℕ := inp.1
-
-/-- Branching variable list `S` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputVars (inp : HeavyBranchFold.BranchInput) : List ℕ := inp.2.1
-
-/-- Equation list `eqs` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputEquations (inp : HeavyBranchFold.BranchInput) : List (List (List ℕ)) := inp.2.2
 
 /-- Native encoding of `SparseSystemInput` (`n` and `k_deg` unary, `s_div` and `b₀` binary). -/
 def encSparseSystemInput : SparseSystemInput ↪ List Bool :=
@@ -1028,8 +1020,7 @@ theorem exists_guardedBranchCertificate_time_le (N₀_branch N₁ : ℕ)
       (fun p => (NativeCertificate.ofPolyTime
           (computableInPolyTime_checkBranchFeasible N₀_branch)).time p +
         (NativeCertificate.ofPolyTime computableInPolyTime_prepareBranchEvalInput).time p +
-        ((2 ^ N₁ + 1) * P_ex p + Q_ex p)) :=
-    (hok.1.add hp.1).add (((PolyBounded.const (2 ^ N₁ + 1)).mul hP).add hQ)
+        ((2 ^ N₁ + 1) * P_ex p + Q_ex p)) := by growth_poly
   obtain ⟨C_br, d_br, hCd⟩ := hpoly.exists_le
   refine ⟨C_br, d_br, fun ⟨n', eqs'⟩ hthresh => ?_⟩
   simp only [guardedBranchCertificate, ExhaustiveCountFallback.guardedBranchOfPolyTime,
@@ -1053,7 +1044,7 @@ noncomputable def guardedBranchingCertificate (N₀_branch : ℕ)
   let csolver := guardedBranchCertificate N₀_branch cBranch
   { time := fun inp =>
       HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-        (2 ^ (branchInputVars inp).length + 1) *
+        (2 ^ inp.vars.length + 1) *
           (HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
             HeavyBranchFold.maxReducedCost csolver.time inp)
     space := fun inp => HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
@@ -1135,9 +1126,7 @@ theorem sparsePolyCounterCertificate_time_le_of_feasible (N₀_top N₀_branch :
   have hto := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_toBranchInput
   have hstep : PolyBounded (fun inp => (encSparseSystemInput inp).length)
       (fun inp => HeavyBranchFold.stepOverhead
-        (HeavyBranchFold.encBranchInput (toBranchInput inp)).length) :=
-    (PolyBounded.of_polynomiallyBounded _ HeavyBranchFold.polynomiallyBounded_stepOverhead).comp
-      computableInPolyTime_toBranchInput.polyBounded_length
+        (HeavyBranchFold.encBranchInput (toBranchInput inp)).length) := by growth_poly
   obtain ⟨C_ov, d_ov, hCov⟩ := ((hok.1.add hto.1).add (hstep.add hstep)).exists_le
   refine ⟨C_ov, d_ov, fun inp R_branch htop hR => ?_⟩
   have hmax : HeavyBranchFold.maxReducedCost (guardedBranchCertificate N₀_branch cBranch).time
@@ -1201,8 +1190,7 @@ theorem exists_real_exp_bound_countSparsePolySystem {ι : Type} {encI : ι ↪ L
   have hproj_len := computableInPolyTime_exhaustProj.polyBounded_length.comp hmk.polyBounded_length
   have hQ : PolyBounded (fun x => (encI x).length)
       (fun x => cMk.time x + (NativeCertificate.ofPolyTime computableInPolyTime_exhaustProj).time
-        (mk x) + Q_ex ((mk x).1, (mk x).2.2)) :=
-    (hcMk.1.add (hpr.1.comp hmk.polyBounded_length)).add (hQ0.comp hproj_len)
+        (mk x) + Q_ex ((mk x).1, (mk x).2.2)) := by growth_poly
   obtain ⟨cm, dm, hcm⟩ := hcMk.1.exists_le
   have ht_fast' (x : ι) (hx : checkTopFeasible N₀_top (mk x) = true) :
       (cFast.time x : ℝ) ≤

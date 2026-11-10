@@ -73,7 +73,7 @@ Departures from the source, all original:
   (§2.1, pp. 6–7), proof of Lemma 15 and Claims 16 and 17 (§5, pp. 12–13)
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic
 

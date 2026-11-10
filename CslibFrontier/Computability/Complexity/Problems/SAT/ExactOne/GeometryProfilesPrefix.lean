@@ -31,7 +31,7 @@ nonincident vertices and the isolation of the cell boundary.
 These are original geometric certificates for the cited exact-one clause constructions.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

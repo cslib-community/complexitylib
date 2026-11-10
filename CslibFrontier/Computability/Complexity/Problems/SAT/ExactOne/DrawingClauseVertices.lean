@@ -30,7 +30,7 @@ centers cannot lie in any clause box.
 These global vertex-separation proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

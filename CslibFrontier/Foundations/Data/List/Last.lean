@@ -23,7 +23,7 @@ of a concatenated walk is computed.
 * `List.getLastD_append`.
 -/
 
-@[expose] public section
+public section
 
 namespace List
 

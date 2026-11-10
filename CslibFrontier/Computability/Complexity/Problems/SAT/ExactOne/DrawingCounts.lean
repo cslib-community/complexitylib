@@ -26,7 +26,7 @@ absent from the actual vertex list, and splicing never introduces an additional 
 The finite-profile counting and incidence-indexing proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

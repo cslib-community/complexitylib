@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
 public import CslibFrontier.Crypto.Game.CloseTo
+public import CslibFrontier.Crypto.Game.Order
 public import CslibFrontier.Crypto.Game.UntilBad
 public import CslibFrontier.Languages.Probabilistic.Norm
 public import CslibFrontier.Probability.PMF.Bind
@@ -41,9 +42,6 @@ bind-coupling plumbing:
 
 ## Main results
 
-* `Cslib.Crypto.Game.succProbability_le_add_of_advantage_le`,
-  `Cslib.Crypto.Game.coe_succProbability_le_add_of_advantage_le`: bound a game's success probability
-  by another game's success probability plus their distinguishing advantage.
 * `Cslib.Crypto.Game.coe_advantage_triangle_add`: real-valued triangle step combining two hop
   bounds.
 * `Cslib.Crypto.Game.coe_advantage_bind_le_of_support`,
@@ -60,23 +58,6 @@ namespace Cslib.Crypto.Game
 
 open Probability
 open scoped ENNReal NNReal
-
-/-- Bounding `advantage g₀ g₁ ≤ B` bounds `succProbability g₀ ≤ succProbability g₁ + B`. -/
-theorem succProbability_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ≥0}
-    (h : advantage g₀ g₁ ≤ B) :
-    succProbability g₀ ≤ succProbability g₁ + B := by
-  have htri := advantage_triangle g₀ g₁ (PMF.pure false)
-  rw [advantage_pure_false, advantage_pure_false, add_comm] at htri
-  exact htri.trans (add_le_add le_rfl h)
-
-/-- Real-valued version of `succProbability_le_add_of_advantage_le`. -/
-theorem coe_succProbability_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ}
-    (h : (advantage g₀ g₁ : ℝ) ≤ B) :
-    (succProbability g₀ : ℝ) ≤ (succProbability g₁ : ℝ) + B := by
-  have htri := NNReal.coe_le_coe.mpr
-    (succProbability_le_add_of_advantage_le (g₀ := g₀) (g₁ := g₁) le_rfl)
-  rw [NNReal.coe_add] at htri
-  exact htri.trans (add_le_add le_rfl h)
 
 /-- Combine two real-valued game-hop bounds across an intermediate game. -/
 theorem coe_advantage_triangle_add (g₀ g₁ g₂ : Game) {ε₁ ε₂ : ℝ}
