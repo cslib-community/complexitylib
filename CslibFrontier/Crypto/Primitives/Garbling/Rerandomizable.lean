@@ -13,60 +13,71 @@ public import CslibFrontier.Languages.Probabilistic.Basic
 /-!
 # Rerandomizable garbling schemes
 
-A *rerandomizable garbling scheme* (RGS), as restated by Acharya, Hazay, Kolesnikov and
-Prabhakaran [AcharyaHazayKolesnikovPrabhakaran2024, Definition 3], is a projective garbling
-scheme with an extra algorithm `rerand` that takes a garbled circuit `gc` and returns a
-fresh-looking garbled circuit `gc'` together with one label permutation per input wire. Applying
-the permutations to the input labels of `gc` gives the input labels of `gc'`, so an evaluator
-holding an encoding for `gc` can move to `gc'` without the garbler. All randomness is explicit:
-`garble f r` garbles `f` with coins `r`, and `rerand gc r'` rerandomizes with coins `r'`.
-Decoding is folded into `evaluate`.
+A *rerandomizable garbling scheme* (RGS), adapting Acharya, Hazay, Kolesnikov and Prabhakaran
+[AcharyaHazayKolesnikovPrabhakaran2024, Definition 3] (full version, ePrint 2024/383), is a
+projective garbling scheme with an extra algorithm `rerand` that takes a garbled circuit `gc` and
+returns a fresh-looking garbled circuit `gc'` together with one label permutation per input wire.
+Applying the permutations to the input labels of `gc` gives the input labels of `gc'`, so an
+evaluator holding an encoding for `gc` can move to `gc'` without the garbler. All randomness is
+explicit: `garble f r` garbles `f` with coins `r`, and `rerand gc r'` rerandomizes with coins `r'`.
+Decoding is folded into `evaluate`. Unlike `Cslib.Crypto.Garbling.Scheme` (`CslibFrontier/Crypto/Primitives/Garbling/Scheme.lean`),
+which is typed by `List Bool`, indexed by a security parameter, and intentionally omits projective
+structure, `RerandomizableGarbling` exposes per-wire label pairs so per-wire permutations can act
+directly on encodings.
 
-*Randomness composition* says that a rerandomized garbling is itself an honest garbling, with
-coins `explainGb r r'` computed from the garbling coins and the rerandomization coins, and that
-two rerandomizations compose into one with coins `explainRerand r₁ r₂`. The garbling half is part
-of Definition 3; the rerandomizing half is Definition 19 of the full version. With it,
-correctness of fresh garblings implies correctness of rerandomized ones
-(`rerandCorrect_of_correct`).
+*Randomness composition* (`RandomnessComposition`) says that a rerandomized garbling is itself an
+honest garbling, with coins `explainGb r r'` computed from the garbling coins and the
+rerandomization coins, and that two rerandomizations compose into one with coins
+`explainRerand r₁ r₂`. The garbling half adapts the randomness-composition property of
+Definition 3, while `explainRerand` is an explicit two-step rerandomization-composition axiom of
+this formalization. With `garble_explainGb`, correctness of fresh garblings implies correctness of
+rerandomized ones (`rerandCorrect_of_correct`).
 
 Two security notions are compared, each as a pair of probabilistic programs; the projective
 encoding is `encode`, and `permEncoding` and `permInput` apply wire permutations.
 
-* **Rerandomization privacy** (`rerandReal`, `rerandIdeal`; Definition 3): given the garbling
-  coins `r`, the rerandomized circuit and the rerandomized encoding of `x` look like a fresh
-  garbling of `f` with an honest encoding of `x`.
-* **Explainability** (Definition 9). Explainable garbling (`explainGbReal`, `explainGbIdeal`):
-  given an encoding of `x` for `gc` and a rerandomization of `gc`, the coins `explainGb r r'`
-  look like the coins of a fresh garbling. Explainable rerandomization (`explainRerandReal`,
+* **Rerandomization privacy** (`rerandReal`, `rerandIdeal`; adapting Definition 3): given the
+  garbling coins `r`, the rerandomized circuit and the rerandomized encoding of `x` look like a
+  fresh garbling of `f` with an honest encoding of `x`.
+* **Explainability** (adapting Definition 9, p. 33 of ePrint 2024/383). Explainable garbling
+  (`explainGbReal`, `explainGbIdeal`): given an encoding of `x` for `gc` and a rerandomization of
+  `gc` over uniformly sampled garbling and rerandomization coins, the coins `explainGb r r'` look
+  like the coins of a fresh garbling. Explainable rerandomization (`explainRerandReal`,
   `explainRerandIdeal`): given a rerandomization `gc₁` of `gc` and a rerandomization `gc₂` of
-  `gc₁`, the coins `explainRerand r₁ r₂` look like coins that rerandomize `gc` directly.
+  `gc₁` over uniformly sampled coins, the coins `explainRerand r₁ r₂` look like coins that
+  rerandomize `gc` directly.
 
-The main results formalize, in sampled-coin form, the reduction in the proof of Theorem 4 of the
-full version (Appendix C) from explainability to rerandomization privacy, with explicit
-reductions. The advantage of any distinguisher against explainable garbling *equals* the
-rerandomization-privacy advantage of `explainGbReduction` (`explainGbAdvantage_eq`). The
-advantage against explainable rerandomization is at most the sum of the rerandomization-privacy
-advantages of two reductions (`explainRerandAdvantage_le`), through one intermediate hybrid. Both
-use the inverse data of `RandomnessComposition.Invertible`: the garbling explanation is a
-bijection in the garbling coins with an explicit inverse, the rerandomization explanation is a
-bijection in its first argument,
-and some rerandomization coins undo each rerandomization step. The rerandomization bound also
-needs that the label action respects composition of permutations.
+This development proves two generic single-instance reductions relating sampled-coin
+explainability to rerandomization privacy under explicit algebraic invertibility hypotheses
+(`RandomnessComposition.Invertible`). The advantage of any distinguisher against explainable
+garbling *equals* the rerandomization-privacy advantage of `explainGbReduction`
+(`explainGbAdvantage_eq`). The advantage against explainable rerandomization is at most the sum of
+the rerandomization-privacy advantages of two reductions (`explainRerandAdvantage_le`), through one
+intermediate hybrid. Both reductions use the inverse data of `RandomnessComposition.Invertible`
+(introduced for this development): the garbling explanation is a bijection in the garbling coins
+with an explicit inverse, the rerandomization explanation is a bijection in its first argument, and
+some rerandomization coins undo each rerandomization step. The rerandomization bound also assumes
+that the label action respects composition of permutations.
 
-When the explanation maps are bijective in their *second* argument, the fixed-coin forms of
-explainability and rerandomization privacy hold with zero error (`eval_explainGbFixedReal`,
-`eval_explainRerandFixedReal`, `eval_rerandReal`).
+When the explanation maps are bijective in their *second* argument, rerandomization privacy and the
+stronger fixed-coin explainability variants (`explainGbFixedReal`, `explainRerandFixedReal`, which
+hold the base coins `r` and `r₁` fixed rather than sampling them) hold with zero error
+(`eval_explainGbFixedReal`, `eval_explainRerandFixedReal`, `eval_rerandReal`).
 
 ## Scope
 
-The explainability experiments of the main bounds sample the garbling coins `r` (and `r₁`)
-uniformly. The paper's explainability definition holds them fixed, which is stronger; the
-fixed-coin experiments appear here only in the zero-error results. Likewise `rerandReal` samples
-`r`, while Definition 3 asks for privacy at every fixed `r`; the fixed-coin assumption implies the
-sampled one, so this weakens the hypothesis side. The statements are single-instance:
-the function, input and distinguisher are fixed, and running time is not tracked, so no
-asymptotic security or efficiency of the reductions is claimed. The inverse data of
-`RandomnessComposition.Invertible` are explicit hypotheses of this formalization.
+In `explainGbReal`/`explainGbIdeal` and `explainRerandReal`/`explainRerandIdeal`, the garbling and
+rerandomization coins are sampled uniformly (matching the sampled-coin experiment structure of
+Definition 9 in ePrint 2024/383, p. 33), whereas the fixed-coin variants `explainGbFixed*` and
+`explainRerandFixed*` appear in the zero-error bijectivity lemmas. On the hypothesis side,
+`rerandReal` samples `r` uniformly whereas Definition 3 quantifies over fixed `r`; because privacy
+at every fixed `r` implies privacy for uniformly sampled `r`, the sampled-`r` assumption used by
+the reductions is weaker. The generic reductions `explainGbAdvantage_eq` and
+`explainRerandAdvantage_le`, together with the two-step composition field `explainRerand` and the
+inverse structure `RandomnessComposition.Invertible`, are results and hypotheses of this
+development rather than transcriptions of a numbered theorem in the paper. All statements are
+single-instance: the function, input and distinguisher are fixed, and running time is not tracked,
+so no asymptotic security or efficiency of the reductions is claimed.
 
 ## Main definitions
 
@@ -525,7 +536,7 @@ theorem explainGbAdvantage_eq (rc : G.RandomnessComposition) (hinv : rc.Invertib
 
 variable (G) in
 /-- The intermediate hybrid of the explainable-rerandomization argument: the encoding and the
-first circuit come from an independent fresh garbling. -/
+first rerandomized circuit come from an independent fresh garbling. -/
 private noncomputable def explainRerandHybrid (f : F)
     (x : Fin m → Bool) : ProbComp (G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins) := do
   let r ← ProbComp.uniform G.Coins
