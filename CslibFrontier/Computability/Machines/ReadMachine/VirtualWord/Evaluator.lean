@@ -186,7 +186,7 @@ theorem value_word (δ : Bool × Bool → Bool) (cut : ℕ) (suffix x : List Boo
 /-- Header decoding is native in the charged consumer state. -/
 theorem data_inSpace : ComputableInSpace data encState encData
     (fun s => (encState s).length) :=
-  budget_comp_linear Runtime.header_inSpace (fst _ _)
+  budget_comp_linear (f := fun s : State => s.1) Runtime.header_inSpace (fst _ _)
 
 /-- The virtual length is computed from binary cut and the stored suffix only. -/
 theorem width_inSpace : ComputableInSpace (fun s => width (data s)) encState encNat

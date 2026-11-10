@@ -188,7 +188,7 @@ theorem length_resume_le (enc : σ ↪ List Bool) (p : Runtime.Input)
 /-- Decoding the retained header uses native space linear in the charged state. -/
 theorem data_inSpace (enc : σ ↪ List Bool) : ComputableInSpace data (encState enc) encData
     (fun s => (encState enc s).length) :=
-  budget_comp_linear Runtime.header_inSpace (fst _ _)
+  budget_comp_linear (f := fun s : State σ => s.1) Runtime.header_inSpace (fst _ _)
 
 /-- The virtual width is computed without allocating the virtual input. -/
 theorem width_inSpace (enc : σ ↪ List Bool) :
