@@ -428,6 +428,13 @@ theorem exactMod (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : 
 theorem exactWidth (h : Q (x.set d w) 1) : WP.Exact w (.op (.exactWidth d)) x Q :=
   of_exec (Exec.op (Op.eval_exactWidth w d x)) h
 
+/-- An operation `f` of any basis on the registers `args`, with fitting value `v`, as over
+`Basis.additive`; `hv` evaluates `f` on the values of the registers. -/
+theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r}
+    (hv : B.interp w f (fun a => x.regs (args a)) = some v) (hfit : Fits w v)
+    (h : Q (x.set d v) 1) : WP.Exact w (.op (.alu f d args)) x Q :=
+  of_exec (Exec.alu hv hfit) h
+
 end Ops
 
 end WP.Exact

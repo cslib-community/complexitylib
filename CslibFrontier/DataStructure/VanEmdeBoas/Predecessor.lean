@@ -85,6 +85,40 @@ private theorem minimum_any_iff {d x : ℕ} {t : Tree d} :
   | none => simp [minimum, hb]
   | some b => obtain ⟨m, M⟩ := b; simp [minimum, hb]
 
+private theorem pred_of_max_lt {d m M x : ℕ} {t : Tree d} (ht : t.Valid)
+    (hb : t.bounds = some (m, M)) (hM : M < x) :
+    t.Contains M ∧ M < x ∧ ∀ z, t.Contains z → z < x → z ≤ M :=
+  have he := ht.extrema_of_bounds hb
+  ⟨he.2.2.2.1, hM, fun z hz _ => (he.2.2.2.2 z hz).2⟩
+
+private theorem cluster_lt_split {d : ℕ} {j i : Fin (universeSize d)} {a b : ℕ}
+    (hb : b < universeSize d) (h : j.val * universeSize d + a < i.val * universeSize d + b) :
+    j.val < i.val ∨ j = i ∧ a < b := by
+  rcases lt_trichotomy j.val i.val with hlt | heq | hgt
+  · exact Or.inl hlt
+  · rw [heq] at h
+    exact Or.inr ⟨Fin.ext heq, by omega⟩
+  · have := index_lt_index (b := a) hb hgt
+    omega
+
+private theorem pred_cluster_ans {d m M x : ℕ} {s : Tree d}
+    {c : Fin (universeSize d) → Tree d} (ht : (node (some (m, M)) s c).Valid)
+    {k : Fin (universeSize d)} {b : ℕ} (hb : (c k).Contains b)
+    (hlt : k.val * universeSize d + b < x)
+    (hle : ∀ l a, (c l).Contains a → l.val * universeSize d + a < x →
+      l.val ≤ k.val ∧ (l = k → a ≤ b)) :
+    (node (some (m, M)) s c).Contains (k.val * universeSize d + b) ∧
+      k.val * universeSize d + b < x ∧
+      ∀ z, (node (some (m, M)) s c).Contains z → z < x → z ≤ k.val * universeSize d + b := by
+  refine ⟨⟨m, M, rfl, Or.inr ⟨k, b, hb, rfl⟩⟩, hlt, fun z hz hzx => ?_⟩
+  rcases hz with ⟨_, _, ⟨⟩, rfl | ⟨l, a, ha, rfl⟩⟩
+  · exact (ht.2.2.2.2 k b hb).le
+  · obtain ⟨hlk, hab⟩ := hle l a ha hzx
+    rcases Nat.lt_or_eq_of_le hlk with hlt | hEq
+    · exact (index_lt_index ((ht.2.2.1 l).contains_lt ha) hlt).le
+    · obtain rfl : l = k := Fin.ext hEq
+      exact Nat.add_le_add_left (hab rfl) _
+
 /-- A returned key is the greatest represented key strictly below the query; failure certifies
 that every represented key is at least the query. No bound on the query is required. -/
 theorem predecessor_spec {d : ℕ} {t : Tree d} (ht : t.Valid) (x : ℕ) :
@@ -95,49 +129,37 @@ theorem predecessor_spec {d : ℕ} {t : Tree d} (ht : t.Valid) (x : ℕ) :
   | zero =>
     cases t with
     | leaf b =>
-      cases b with
-      | none => simp [predecessor, Contains]
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        have he := ht.extrema_of_bounds rfl
+      rcases b with _ | ⟨m, M⟩
+      · simp [predecessor, Contains]
+      · have he := ht.extrema_of_bounds rfl
         by_cases hM : M < x
-        · rw [predecessor, ite_eq_left hM]
-          exact ⟨he.2.2.2.1, hM, fun z hz _ => (he.2.2.2.2 z hz).2⟩
+        · rw [predecessor, ite_eq_left hM]; exact pred_of_max_lt ht rfl hM
         · by_cases hm : m < x
           · rw [predecessor, ite_eq_right hM, ite_eq_left hm]
-            refine ⟨he.2.2.1, hm, ?_⟩
-            intro z hz hzx
-            obtain ⟨m', M', hb, hz⟩ := hz
-            cases hb
-            rcases hz with rfl | rfl <;> omega
+            refine ⟨he.2.2.1, hm, fun z hz hzx => ?_⟩
+            obtain ⟨_, _, hb, rfl | rfl⟩ := hz <;> cases hb <;> omega
           · rw [predecessor, ite_eq_right hM, ite_eq_right hm]
-            intro z hz
-            have := (he.2.2.2.2 z hz).1
-            omega
+            exact fun z hz => by have := (he.2.2.2.2 z hz).1; omega
   | succ d ih =>
     cases t with
     | node b s c =>
-      cases b with
-      | none => simp [predecessor, Contains]
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        have he := ht.extrema_of_bounds rfl
+      rcases b with _ | ⟨m, M⟩
+      · simp [predecessor, Contains]
+      · have he := ht.extrema_of_bounds rfl
         by_cases hM : M < x
         · rw [predecessor, ite_eq_left hM]
-          exact ⟨he.2.2.2.1, hM, fun z hz _ => (he.2.2.2.2 z hz).2⟩
+          exact pred_of_max_lt ht rfl hM
         · by_cases hm : x ≤ m
           · rw [predecessor, ite_eq_right hM, ite_eq_left hm]
-            intro z hz
-            exact hm.trans (he.2.2.2.2 z hz).1
-          · have hi : x / universeSize d < universeSize d := by
-              apply (Nat.div_lt_iff_lt_mul (universeSize_pos d)).mpr
-              exact Nat.lt_of_le_of_lt (show x ≤ M by omega) he.2.1
+            exact fun z hz => hm.trans (he.2.2.2.2 z hz).1
+          · have hi : x / universeSize d < universeSize d :=
+              (Nat.div_lt_iff_lt_mul (universeSize_pos d)).mpr
+                (Nat.lt_of_le_of_lt (show x ≤ M by omega) he.2.1)
             let i : Fin (universeSize d) := ⟨x / universeSize d, hi⟩
             have hx : x = i.val * universeSize d + x % universeSize d := by
               simpa only [i, Nat.mul_comm] using (Nat.div_add_mod x (universeSize d)).symm
-            have hoc : ∀ j y, (c j).Contains y → s.Contains j.val := by
-              intro j y hy
-              exact (ht.2.2.2.1 j).mpr (bounds_isSome_of_contains hy)
+            have hoc : ∀ j y, (c j).Contains y → s.Contains j.val :=
+              fun j y hy => (ht.2.2.2.1 j).mpr (bounds_isSome_of_contains hy)
             rw [predecessor, ite_eq_right hM, ite_eq_right hm, dite_eq_left hi]
             by_cases hc : (c i).minimum.any (· < x % universeSize d) = true
             · rw [ite_eq_left hc]
@@ -145,65 +167,37 @@ theorem predecessor_spec {d : ℕ} {t : Tree d} (ht : t.Valid) (x : ℕ) :
               cases hpred : (c i).predecessor (x % universeSize d) with
               | none =>
                 simp only [hpred] at hp
-                obtain ⟨cm, cM, hb, hlt⟩ := minimum_any_iff.mp hc
-                have := hp cm ((ht.2.2.1 i).contains_minimum hb)
-                omega
+                obtain ⟨cm, _, hb, hlt⟩ := minimum_any_iff.mp hc
+                exact absurd (hp cm ((ht.2.2.1 i).contains_minimum hb)) (by omega)
               | some y =>
-                simp only [hpred] at hp
-                simp only [Option.map_some]
-                refine ⟨⟨m, M, rfl, Or.inr ⟨i, y, hp.1, rfl⟩⟩, ?_, ?_⟩
-                · exact (Nat.add_lt_add_left hp.2.1 (i.val * universeSize d)).trans_eq hx.symm
-                · intro z hz hzx
-                  obtain ⟨m', M', hb, hz⟩ := hz
-                  cases hb
-                  rcases hz with rfl | ⟨j, a, ha, rfl⟩
-                  · exact (ht.2.2.2.2 i y hp.1).le
-                  · have hja := cluster_coordinates (i := j.val) (universeSize_pos d)
-                      ((ht.2.2.1 j).contains_lt ha)
-                    have hji : j.val ≤ i.val := by
-                      have h := Nat.div_le_div_right (c := universeSize d) (Nat.le_of_lt hzx)
-                      simpa only [i, hja.1] using h
-                    by_cases hij' : j = i
-                    · subst j
-                      have hlow : a < x % universeSize d := by omega
-                      exact Nat.add_le_add_left (hp.2.2 a ha hlow) (i.val * universeSize d)
-                    · have hlt : j.val < i.val := by
-                        have : j.val ≠ i.val := fun h => hij' (Fin.ext h)
-                        omega
-                      exact (index_lt_index ((ht.2.2.1 j).contains_lt ha) hlt).le
+                simp only [hpred, Option.map_some] at hp ⊢
+                refine pred_cluster_ans ht hp.1
+                  ((Nat.add_lt_add_left hp.2.1 _).trans_eq hx.symm) fun l a ha hzx => ?_
+                rcases cluster_lt_split (Nat.mod_lt _ (universeSize_pos d))
+                    (hx ▸ hzx) with hlt | ⟨rfl, hlow⟩
+                · exact ⟨hlt.le, fun h => absurd (congrArg Fin.val h) (by omega)⟩
+                · exact ⟨le_rfl, fun _ => hp.2.2 a ha hlow⟩
             · rw [ite_eq_right hc]
               have hge : ∀ a, (c i).Contains a → x % universeSize d ≤ a := by
                 intro a ha
                 obtain ⟨⟨cm, cM⟩, hb⟩ := Option.isSome_iff_exists.mp (bounds_isSome_of_contains ha)
-                have hce := (ht.2.2.1 i).extrema_of_bounds hb
-                have hn : ¬cm < x % universeSize d := by
-                  intro hlt
-                  exact hc (minimum_any_iff.mpr ⟨cm, cM, hb, hlt⟩)
-                have := (hce.2.2.2.2 a ha).1
+                have hcm : ¬cm < x % universeSize d := fun h =>
+                  hc (minimum_any_iff.mpr ⟨cm, cM, hb, h⟩)
+                have := ((ht.2.2.1 i).extrema_of_bounds hb).2.2.2.2 a ha
                 omega
               have hearlier : ∀ j a, (c j).Contains a →
                   j.val * universeSize d + a < x → j.val < i.val := by
                 intro j a ha hax
-                have hja := cluster_coordinates (i := j.val) (universeSize_pos d)
-                  ((ht.2.2.1 j).contains_lt ha)
-                have hji : j.val ≤ i.val := by
-                  have h := Nat.div_le_div_right (c := universeSize d) (Nat.le_of_lt hax)
-                  simpa only [i, hja.1] using h
-                by_cases hlt : j.val < i.val
+                rcases cluster_lt_split (Nat.mod_lt _ (universeSize_pos d))
+                    (hx ▸ hax) with hlt | ⟨rfl, hlow⟩
                 · exact hlt
-                · have hij' : i = j := Fin.ext (by omega)
-                  subst j
-                  have := hge a ha
-                  omega
+                · exact absurd (hge a ha) (by omega)
               have hp := ih ht.2.1 i.val
               cases hpred : s.predecessor i.val with
               | none =>
                 simp only [hpred] at hp
-                refine ⟨he.2.2.1, by omega, ?_⟩
-                intro z hz hzx
-                obtain ⟨m', M', hb, hz⟩ := hz
-                cases hb
-                rcases hz with rfl | ⟨j, a, ha, rfl⟩
+                refine ⟨he.2.2.1, by omega, fun z hz hzx => ?_⟩
+                rcases hz with ⟨_, _, ⟨⟩, rfl | ⟨j, a, ha, rfl⟩⟩
                 · exact le_rfl
                 · have := hearlier j a ha hzx
                   have := hp j.val (hoc j a ha)
@@ -217,25 +211,10 @@ theorem predecessor_spec {d : ℕ} {t : Tree d} (ht : t.Valid) (x : ℕ) :
                 dsimp only
                 rw [dite_eq_left hj, maximum, hb]
                 simp only [Option.map_some]
-                refine ⟨⟨m, M, rfl, Or.inr ⟨k, cM, hce.2.2.2.1, rfl⟩⟩, ?_, ?_⟩
-                · exact (index_lt_index (b := x % universeSize d) hce.2.1 hp.2.1).trans_eq hx.symm
-                · intro z hz hzx
-                  obtain ⟨m', M', hb', hz⟩ := hz
-                  cases hb'
-                  rcases hz with rfl | ⟨l, a, ha, rfl⟩
-                  · exact (ht.2.2.2.2 k cM hce.2.2.2.1).le
-                  · have hli := hearlier l a ha hzx
-                    have hlk := hp.2.2 l.val (hoc l a ha) hli
-                    by_cases hlk' : l = k
-                    · subst l
-                      exact Nat.add_le_add_left (hce.2.2.2.2 a ha).2
-                        (k.val * universeSize d)
-                    · have hlt : l.val < k.val := by
-                        have : l.val ≠ k.val := fun h => hlk' (Fin.ext h)
-                        change l.val < j
-                        change l.val ≠ j at this
-                        omega
-                      exact (index_lt_index ((ht.2.2.1 l).contains_lt ha) hlt).le
+                exact pred_cluster_ans ht hce.2.2.2.1
+                  ((index_lt_index hce.2.1 hp.2.1).trans_eq hx.symm) fun l a ha hzx =>
+                  ⟨hp.2.2 l.val (hoc l a ha) (hearlier l a ha hzx),
+                    fun hlk => (hce.2.2.2.2 a (hlk ▸ ha)).2⟩
 
 /-- A successful result is exactly the greatest represented key strictly less than the query. -/
 theorem predecessor_eq_some_iff {d : ℕ} {t : Tree d} (ht : t.Valid) (x y : ℕ) :
@@ -244,22 +223,12 @@ theorem predecessor_eq_some_iff {d : ℕ} {t : Tree d} (ht : t.Valid) (x y : ℕ
   have hp := predecessor_spec ht x
   cases h : t.predecessor x with
   | none =>
-    simp only [h] at hp
-    simp only [reduceCtorEq, false_iff]
-    intro hy
-    have := hp y hy.1
-    omega
+    simp only [h, reduceCtorEq, false_iff] at hp ⊢
+    exact fun hy => absurd (hp y hy.1) (by omega)
   | some z =>
-    simp only [h] at hp
-    constructor
-    · intro hy
-      cases hy
-      exact hp
-    · intro hy
-      have := hp.2.2 y hy.1 hy.2.1
-      have := hy.2.2 z hp.1 hp.2.1
-      congr 1
-      omega
+    simp only [h, Option.some.injEq] at hp ⊢
+    exact ⟨fun hzy => hzy ▸ hp, fun hy =>
+      Nat.le_antisymm (hy.2.2 z hp.1 hp.2.1) (hp.2.2 y hy.1 hy.2.1)⟩
 
 /-- Failure is exactly the absence of a represented key strictly below the query. -/
 theorem predecessor_eq_none_iff {d : ℕ} {t : Tree d} (ht : t.Valid) (x : ℕ) :
@@ -268,11 +237,8 @@ theorem predecessor_eq_none_iff {d : ℕ} {t : Tree d} (ht : t.Valid) (x : ℕ) 
   cases h : t.predecessor x with
   | none => simp only [h] at hp; exact ⟨fun _ => hp, fun _ => rfl⟩
   | some y =>
-    simp only [h] at hp
-    simp only [reduceCtorEq, false_iff]
-    intro hn
-    have := hn y hp.1
-    omega
+    simp only [h, reduceCtorEq, false_iff] at hp ⊢
+    exact fun hn => absurd (hn y hp.1) (by omega)
 
 /-- A valid node with a query strictly above its cached minimum always has a strict predecessor
 in `[0, universeSize d)`. -/
