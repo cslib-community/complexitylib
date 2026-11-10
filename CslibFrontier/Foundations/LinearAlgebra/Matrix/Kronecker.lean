@@ -41,7 +41,7 @@ multiplicativity of rank used for Claim 7(3) of
 circuits*][LimayeSrinivasanTavenas2021], pp. 6–7.
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

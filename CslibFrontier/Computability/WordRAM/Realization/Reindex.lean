@@ -23,7 +23,7 @@ certificates while keeping other live words framed.
   along a fixed register-index map.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.Realization.Realizes
 

@@ -517,7 +517,7 @@ theorem clause_avoidance_check : ∀ e ∈ incidenceRoutes, ∀ i : Fin 74,
   have hi' := List.all_eq_true.mp h.2.2.2 i (List.mem_finRange i)
   simpa only [Bool.or_eq_true, beq_iff_eq, hi, false_or] using hi'
 
-/-- Four simple orthogonal access routes, each with its prescribed endpoints. -/
+/-- Four orthogonal access routes, each with its prescribed endpoints. -/
 theorem access_endpoints : ∀ i, IsOrthogonal (accessRoute i) ∧
     (accessRoute i).head? = some (boundaryPort i) ∧
       (accessRoute i).getLast? = some (variablePosition (splitTerminal i)) := by decide +kernel

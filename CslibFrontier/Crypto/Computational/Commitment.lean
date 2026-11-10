@@ -50,6 +50,7 @@ The general public-parameter interface is in `Commitment/Basic`.
   requiring that no two seeds of length `n` open to `false` and `true` with the same commitment.
 * `Cslib.Crypto.naorBindingProb`, `Cslib.Crypto.naorBindingError`: the probability over a uniform
   receiver string `r` of length `length n` that `NaorBinding generator n r` fails.
+* `Cslib.Crypto.encBitOpening`: the encoding of a bit-commitment opening `(b, seed)`.
 * `Cslib.Crypto.BitCommitmentScheme`: a two-message statistically binding, computationally hiding
   bit commitment scheme.
 

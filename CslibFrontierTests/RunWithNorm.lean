@@ -10,7 +10,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 /-!
 # Tests for `runWith_norm`
 
-Verifies that `simp only [runWith_norm, pmf_norm]` confluently normalizes:
+Verifies that `simp only [runWith_norm, pmf_norm]` (`runWith_norm` is priority-ordered) reduces:
 1. black-box `WordOracleComp` adversaries inside closed
    `ProbComp.eval ((OracleComp.interpret …).run s)` experiments (including nested stateful reduction
    handlers) to `ProbOracleComp.runWith`, without getting stuck inside `StateT.run`;

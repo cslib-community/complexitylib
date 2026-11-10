@@ -41,7 +41,7 @@ within space `c₁ * (log₂ n) ^ 2 + c₂` on encoded instances of length `n`.
   paragraph (p. 351)][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

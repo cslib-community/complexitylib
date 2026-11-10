@@ -53,7 +53,7 @@ ensembles `PMF (List Bool)` and protocol transcripts.
   under `CloseTo`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Game
 

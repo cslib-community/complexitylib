@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Computability.WordRAM.Multiword.Workspace
 import Mathlib.Data.Nat.Bitwise
+-- `import all` only so that `Nat.land`, `Nat.lor` and `Nat.xor` unfold to `Nat.bitwise`, as in
+-- `Mathlib.Data.Nat.Bitwise`; core does not expose their bodies.
 import all Init.Data.Nat.Bitwise.Basic
 
 /-!

@@ -58,7 +58,7 @@ differentiating in every coordinate of `S`, the derivative is a nonzero constant
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

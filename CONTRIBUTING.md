@@ -111,7 +111,8 @@ preference:
 2. Use `Function.uncurry`, `Prod.map` or composed projections, as the plain calculus rules
    already do.
 3. Turn a recurring tuple context into a small `structure` with named fields.
-4. If restructuring is too invasive, add named `abbrev` accessors such as `Ctx.desc`.
+4. If restructuring is too invasive, add named `abbrev` accessors such as
+   `LocalIncidence.route`.
 
 The rewritten form should stay definitionally equal to the old one, so that clients and automation
 (`fun_prop`, `@[program_certificate]`) keep working. Single projections (`p.1`) and
@@ -171,12 +172,25 @@ statements about `evalWith`; see `CslibFrontier/Languages/Probabilistic/Semantic
 Under an ordinary `import`, importers rebuild only when a module's exported `.olean` changes. That
 file holds public statements, exposed bodies, attributes of public declarations, and the axioms
 each public declaration depends on. Editing docstrings, private declarations, proofs or
-non-exposed bodies leaves it unchanged, unless a proof edit changes that axiom set. `import all`
-also loads private information, so such edits do reach its clients.
+non-exposed bodies leaves it unchanged, with two exceptions: a proof edit that changes that axiom
+set, and a body that the module itself rewrites with `simp [f]` or `rw [f]`. That rewrite
+generates the equation lemma `f.eq_1`, whose statement is the body, and stores it in the exported
+file even when `f` is private (Lean v4.36; `unfold f`, `dsimp only [f]` and `rfl` did not in our
+tests, [#4243](https://github.com/cslib-community/cslib-frontier/issues/4243)). `import all` also
+loads private information, so such edits do reach its clients.
 
 - **What is a helper.** A helper is proof plumbing: a step meaningful only inside one proof, or a
   fact about a module-local construction, encoding or intermediate quantity. Helpers are `private`
   by default. Keep `@[expose]` for bodies that downstream proofs unfold.
+- **What `@[expose]` reaches.** A section-level `@[expose]` affects only the section's `def`-kind
+  declarations and derived instances. Theorems, structures and inductives ignore it, and
+  abbreviations and non-Prop instances are exposed without it. A header over a section with
+  nothing to expose only suggests that bodies are exported; `check_changed_files.py` rejects one in
+  a changed file, so write `public section`. When a public proof needs a body that is not exposed,
+  Lean may report `Expected a definition with an exposed body`, or only an indirect failure:
+  `omega`, `decide` or a projection that cannot see through the definition in a client, or the
+  definition's own `@[simps]` lemmas rejected as not `rfl`. Expose that definition, or state the
+  lemma the client needs.
 - **What stays public, even if nothing outside the module uses it yet.** Facts stated only in terms
   of public definitions that a user of those definitions would expect: characterizations (`_iff`),
   bounds, monotonicity and closure properties, simp and extensionality equations, invariance
@@ -192,6 +206,12 @@ also loads private information, so such edits do reach its clients.
 - Ordinary imports cannot name private declarations. When privatizing, update the tests and
   results inventory entries that name them in the same PR, or give a companion module
   `import all`.
+- **Before reaching for `import all`.** Prefer a public lemma, such as an equation lemma for an
+  unexposed definition, or `@[expose]` on the one definition whose body importers unfold. An
+  exposed body is interface, so editing it rebuilds every importer; through `import all`, private
+  and body edits rebuild only that client. Each remaining `import all` states its reason in one
+  sentence, in the importer's module docstring or a comment beside the import, naming the private
+  lemmas or unexposed bodies it reads.
 - For an audit, `python3 scripts/audit_queries.py references PREFIX` lists where each declaration
   under a source path is referenced, and `duplicates` lists declarations with alpha-equivalent
   statements in different modules. Uses through `rfl`, `decide`, simp sets or instances leave no
@@ -250,8 +270,9 @@ statements with inline links
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
-listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both, and also
+listed in a module docstring's "Main …" sections must exist, a new test file must do more
+than restate signatures with `example … := name`, and an `@[expose] … section` header must have a
+definition to expose. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
 public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
 enforces its baseline only in the modules a pull request changes, and merge groups only report,
@@ -363,7 +384,8 @@ maintained account without repeating the investigation or relying on earlier con
 Keep the Agent Operator's Manual short and directed at the person driving the agents; put
 participant procedures in the Operator's Manual and historical evidence in its supplement.
 Place a new section where its topic belongs in a chapter rather than at the end: sections that
-concurrent PRs append at the same place conflict in the merge queue.
+concurrent PRs append at the same place conflict in the merge queue. Put a new algorithm endpoint
+on the matching topic page listed under `manual/algorithms-and-memory/index.md`, in topic order.
 
 Keep executable Lean examples in `CslibFrontierTests/` or the checked Verso guide and link their
 complete source, including imports and local context. Use checked excerpts rather than a second

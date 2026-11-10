@@ -35,9 +35,10 @@ refinement on feasible prepared inputs (`prepareBranchEvalInput (n', eqs')` unde
 `checkBranchFeasible N₀_branch (n', eqs') = true`), and Stage-2 local assignment/cube bridges for
 Proposition 5.3 of [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
 (§§3.4–3.5, §4.6, §§5.3–5.5, Proposition 5.3, and Appendix B.2–B.3, pp. 24–26, 33–34, 37–39,
-48–50). Invalid raw inputs return `0`, `validDesignShape` enforces unary resource-dimension bounds
-rather than semantic validity of arbitrary designs, and exact root-count recovery on feasible
-prepared inputs follows in `BoundedIncidenceExactness`.
+48–50). Raw inputs rejected by `validBranchEvalParams` or `validDesignShape` return `0`; neither
+guard tests that the input is a feasible prepared input. `validDesignShape` enforces unary
+resource-dimension bounds rather than semantic validity of arbitrary designs, and exact root-count
+recovery on feasible prepared inputs follows in `BoundedIncidenceExactness`.
 
 Given `inp = ((n', k'), (b, w, M', β), (r, Q, R, A₀), eqs') : BranchEvalInput`:
 
@@ -240,9 +241,11 @@ pp. 37–39): on feasible prepared inputs (`prepareBranchEvalInput (n', eqs')` w
 `checkBranchFeasible N₀_branch (n', eqs') = true`), evaluates the exact number of common `𝔽₂`
 roots of `eqs'` on `{0, 1}^{n'}` via greedy balanced scheduling, Lemma 4.7 replacement-design
 construction, two-pass measurement-fiber Taylor jet accumulation, and Hermite–Cramer modular
-recovery. Invalid raw `BranchEvalInput` tuples fail `validBranchEvalParams` or the unary
+recovery. Raw `BranchEvalInput` tuples rejected by `validBranchEvalParams` or by the unary
 resource-dimension guard `validDesignShape` (which bounds measurement and group dimensions rather
-than certifying arbitrary designs) and return `0`. -/
+than certifying arbitrary designs) return `0`. Neither guard checks that the tuple is a feasible
+prepared input, and `M'` and `β` are not read. For an accepted tuple that is not a feasible
+prepared input, only the bound `evalBoundedIncidenceBranch_le_two_pow` is proved. -/
 def evalBoundedIncidenceBranch (inp : BranchEvalInput) : ℕ :=
   if !validBranchEvalParams inp then 0
   else

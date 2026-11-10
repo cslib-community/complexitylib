@@ -29,7 +29,7 @@ message authentication codes.
   `Cslib.BitString.toOuterMeasure_addRight_mem_list_le`: exact finite-set and list-cache collision
   probabilities for a shifted uniform block.
 -/
-@[expose] public section
+public section
 namespace Cslib.BitString
 open Probability
 open scoped ENNReal

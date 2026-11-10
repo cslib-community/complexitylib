@@ -41,7 +41,7 @@ expressions in the component bounds and collapsed by `fun_prop`.
   never exceed one of their arguments.
 -/
 
-@[expose] public section
+public section
 
 /-- An explicit polynomial bound `c * (n + 1) ^ d` is a bound `O(n ^ d)`. -/
 theorem Nat.mul_add_one_pow_le_two_pow (c d n : ℕ) :

@@ -39,7 +39,7 @@ security assumptions.
 * [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Scheme
 

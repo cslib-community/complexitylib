@@ -27,7 +27,7 @@ of a replacement.
 * `Cslib.Circuits.Circuit.exists_simulation_depth_le`: simulation with bounds on size and depth.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

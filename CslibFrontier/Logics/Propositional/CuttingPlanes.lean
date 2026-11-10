@@ -229,8 +229,8 @@ theorem nonneg_add_leOne (v : V) : nonneg v + leOne v = -contra := by
 /-! ### Rounded division -/
 
 /-- **Rounded division** by `c` [Chvátal][Chvatal1973]: `∑ᵥ (aᵥ / c) xᵥ ≥ ⌈b / c⌉`, where `aᵥ / c`
-is integer division. It is sound when `c > 0` divides every coefficient
-(`Cslib.Logic.PL.Ineq.Holds.div`), the only case cutting planes use. -/
+is integer division. It is sound when `c` divides every coefficient
+(`Cslib.Logic.PL.Ineq.Holds.div`); cutting planes use it only for `c > 0`. -/
 @[expose] def div (I : Ineq V) (c : ℕ) : Ineq V :=
   ⟨I.coeff.mapRange (· / (c : ℤ)) (Int.zero_ediv _), -(-I.bound / c)⟩
 
@@ -252,10 +252,14 @@ theorem smul_coeff_div {I : Ineq V} {c : ℕ} (hdvd : ∀ v, (c : ℤ) ∣ I.coe
   simp only [Finsupp.smul_apply, coeff_div, smul_eq_mul]
   exact Int.mul_ediv_cancel' (hdvd v)
 
-/-- **Soundness of rounded division**: if `c > 0` divides every coefficient of `I`, every 0/1
-assignment satisfying `I` satisfies `I.div c`. -/
-theorem Holds.div {σ : V → Bool} {I : Ineq V} {c : ℕ} (hc : 0 < c)
+/-- **Soundness of rounded division**: if `c` divides every coefficient of `I`, every 0/1
+assignment satisfying `I` satisfies `I.div c`. At `c = 0`, `I.div 0` is `0 ≥ 0`. -/
+theorem Holds.div {σ : V → Bool} {I : Ineq V} {c : ℕ}
     (hdvd : ∀ v, (c : ℤ) ∣ I.coeff v) (h : I.Holds σ) : (I.div c).Holds σ := by
+  obtain rfl | hc := Nat.eq_zero_or_pos c
+  · have h0 : I.div 0 = 0 := by ext <;> simp
+    rw [h0]
+    exact le_of_eq (lhs_zero σ).symm
   unfold Holds at h ⊢
   rw [bound_div_le_iff hc, ← lhs_of_coeff_eq_smul σ (smul_coeff_div hdvd).symm]
   exact h
@@ -446,7 +450,7 @@ theorem holds (h : IsProof Γ ls) {σ : V → Bool} (hσ : ∀ I ∈ Γ, I.Holds
   | leOne _ v ih => exact List.forall_mem_cons.2 ⟨holds_leOne σ v, fun _ => ih⟩ _ hI
   | add _ h₁ h₂ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).add (ih h₂), fun _ => ih⟩ _ hI
   | smul _ c _ h₁ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).nsmul c, fun _ => ih⟩ _ hI
-  | div _ c hc hdvd h₁ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).div hc hdvd, fun _ => ih⟩ _ hI
+  | div _ c _ hdvd h₁ ih => exact List.forall_mem_cons.2 ⟨(ih h₁).div hdvd, fun _ => ih⟩ _ hI
 
 /-- One step of `Cslib.Logic.PL.CuttingPlanes.IsProof.comp`: replaying a line `J` on top of
 `ls'' ++ ls` covers the lines of `J :: ls'` with one more line. -/

@@ -20,8 +20,8 @@ A *clause set* is a finite set of clauses, each a finite set of literals: the se
 formula in conjunctive normal form, in which the order and repetition of clauses and literals do
 not matter. Set operations on clauses (subclauses, differences) are what the sparsification lemma
 works with. A formula in conjunctive normal form and its clause set have the same solutions
-(`CNF.sat_toClauseSet_iff`), and a clause set is the clause set of a formula listing its clauses
-(`ClauseSet.eval_toCNF_eq_true_iff`).
+(`CNF.sat_toClauseSet_iff`), and a clause set has the same solutions as a formula listing its
+clauses (`ClauseSet.eval_toCNF_eq_true_iff`).
 
 ## Main definitions
 
