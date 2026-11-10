@@ -128,7 +128,7 @@ theorem computableInPolyTime_literal :
     ComputableInPolyTime
       (fun p : (CNF ℕ × List Bool) × Literal ℕ => Literal.eval (assignment p.1.1 p.1.2) p.2)
       (encPair (encPair encCNF encBits) (encPair encNat encBool)) encBool := by
-  fun_prop [Literal.eval, assignment]
+  fun_prop [assignment]
 
 /-- Evaluating a clause with the certificate assignment is polynomial-time. -/
 @[fun_prop]
@@ -136,13 +136,13 @@ theorem computableInPolyTime_clause :
     ComputableInPolyTime
       (fun p : (CNF ℕ × List Bool) × Clause ℕ => Clause.eval (assignment p.1.1 p.1.2) p.2)
       (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encBool := by
-  fun_prop [Clause.eval, Literal.eval, assignment]
+  fun_prop [assignment]
 
 /-- The SAT verifier is polynomial-time, including on certificates of arbitrary length. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  fun_prop [verifier, CNF.eval]
+  fun_prop [verifier]
 
 /-- Satisfiability is in NP, with certificates of length equal to the encoded formula length. -/
 theorem mem_NP : SAT ∈ NP encCNF :=

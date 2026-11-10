@@ -248,13 +248,24 @@ noncomputable def ddhIdealGame (setup : ℕ → PMF F.Desc)
     (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
       F.encode d (γ • F.generator d)))
 
+/-- A Diffie–Hellman tuple `(u, v, w)` of group elements, each given by its encoding word, as in
+the tuple `(encode (α • g), encode (β • g), encode (γ • g))` of the DDH experiments. The words `u`
+and `v` are framed; `w` is not. -/
+abbrev encDDHTuple : List Bool × List Bool × List Bool ↪ List Bool :=
+  encPair encBits (encPair encBits encBits)
+
+/-- Input `(1ⁿ, d, u, v, w)` of a DDH distinguisher: the security parameter `n` in unary, the
+group description `d` encoded by `F.encDesc`, and the tuple `(u, v, w)` encoded by `encDDHTuple`.
+The parameter and the description are framed. -/
+abbrev encDDHInput : ℕ × F.Desc × List Bool × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair F.encDesc encDDHTuple)
+
 /-- The Decisional Diffie–Hellman assumption for a family and a setup law: every uniform strict PPT
 distinguisher has negligible advantage between `ddhRealGame` and `ddhIdealGame`. -/
 def DDH (setup : ℕ → PMF F.Desc) : Prop :=
   Game.Indistinguishable (F.ddhRealGame setup) (F.ddhIdealGame setup)
     fun distinguisher =>
-      IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encBool (fun input => distinguisher input.1 input.2)
+      IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)
 
 /-- Turn a CDH adversary into a DDH distinguisher by testing whether its candidate shared element
 equals the challenge third element. -/
@@ -384,7 +395,7 @@ theorem isPPTOn_cdhToDDHDistinguisher
     {adversary : ℕ → F.Desc × List Bool × List Bool → ProbComp (List Bool)}
     (hA : IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits encBits))) encBits
       (fun input => adversary input.1 input.2)) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.cdhToDDHDistinguisher adversary input.1 input.2) := by
   let EIn := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   have h2 := ComputableInPolyTime.snd encUnary
@@ -575,9 +586,9 @@ theorem encodeDDHRerandomize_val (d : F.Desc) (u v w : F.Carrier d)
 theorem computableInPolyTime_encodeDDHRerandomize :
     ComputableInPolyTime F.encodeDDHRerandomize
       (encPair F.encDesc
-        (encPair (encPair encBits (encPair encBits encBits))
+        (encPair encDDHTuple
           (encPair encNat (encPair encNat encNat))))
-      (encPair encBits (encPair encBits encBits)) := by
+      encDDHTuple := by
   let encTuple := encPair encBits (encPair encBits encBits)
   let encExps := encPair encNat (encPair encNat encNat)
   have hd := ComputableInPolyTime.fst F.encDesc (encPair encTuple encExps)
@@ -724,9 +735,8 @@ noncomputable def ddhSelfReduceDistinguisher
 /-- `ddhSelfReduceDistinguisher` is uniform strict PPT whenever `distinguisher` is (original). -/
 theorem isPPTOn_ddhSelfReduceDistinguisher
     {distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool}
-    (hD : IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => distinguisher input.1 input.2)) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    (hD : IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)) :
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.ddhSelfReduceDistinguisher distinguisher input.1 input.2) := by
   let encTuple := encPair encBits (encPair encBits encBits)
   let encExps := encPair encNat (encPair encNat encNat)
@@ -844,8 +854,7 @@ theorem DDH.ddhRerandomizeGame {F : PrimeOrderGroupFamily} {setup : ℕ → PMF 
       (F.ddhRerandomizeGame setup
         (fun d => (α' d • F.generator d, β' d • F.generator d, γ' d • F.generator d)))
       fun distinguisher =>
-        IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-          encBool (fun input => distinguisher input.1 input.2) := by
+        IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2) := by
   intro distinguisher hD
   refine negligible_of_eventually_le (hDDH distinguisher hD) (hγ'.mono fun n hn => ?_)
   exact (F.advantage_ddhRerandomizeGame_eq setup α β α' β' γ' distinguisher n hn).le
@@ -1028,8 +1037,7 @@ theorem ddh_of_worstCase {setup : ℕ → PMF F.Desc}
       (F.ddhWorstCaseGame setup
         (fun d => (α' d • F.generator d, β' d • F.generator d, γ' d • F.generator d)))
       fun distinguisher =>
-        IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-          encBool (fun input => distinguisher input.1 input.2)) :
+        IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)) :
     F.DDH setup := by
   intro distinguisher hD
   have hgeom : Negligible fun n => (6 / 2 ^ n : ℝ≥0) := by
@@ -1083,7 +1091,7 @@ def ddhIdealRefTuple (d : F.Desc) : List Bool × List Bool × List Bool :=
 /-- `ddhRealRefTuple` is computable in polynomial time. -/
 theorem computableInPolyTime_ddhRealRefTuple :
     ComputableInPolyTime F.ddhRealRefTuple F.encDesc
-      (encPair encBits (encPair encBits encBits)) := by
+      encDDHTuple := by
   have hz := F.computableInPolyTime_smul.comp
     (ComputableInPolyTime.id'.prod ((ComputableInPolyTime.const 0).prod
       F.computableInPolyTime_generator))
@@ -1092,7 +1100,7 @@ theorem computableInPolyTime_ddhRealRefTuple :
 /-- `ddhIdealRefTuple` is computable in polynomial time. -/
 theorem computableInPolyTime_ddhIdealRefTuple :
     ComputableInPolyTime F.ddhIdealRefTuple F.encDesc
-      (encPair encBits (encPair encBits encBits)) := by
+      encDDHTuple := by
   have hg := F.computableInPolyTime_generator
   have hz := F.computableInPolyTime_smul.comp
     (ComputableInPolyTime.id'.prod ((ComputableInPolyTime.const 0).prod hg))
@@ -1180,10 +1188,9 @@ noncomputable def ddhAmplifiedDecider
 `invEps` is computable in polynomial time in unary ([BonehShoup2023], Exercise 10.10, p. 426). -/
 theorem isPPTOn_ddhAmplifiedDecider
     {distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool}
-    (hD : IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => distinguisher input.1 input.2))
+    (hD : IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2))
     {invEps : ℕ → ℕ} (hinvEps : ComputableInPolyTime invEps encUnary encUnary) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.ddhAmplifiedDecider distinguisher invEps input.1 input.2) := by
   let encTuple := encPair encBits (encPair encBits encBits)
   let EIn := encPair encUnary (encPair F.encDesc encTuple)

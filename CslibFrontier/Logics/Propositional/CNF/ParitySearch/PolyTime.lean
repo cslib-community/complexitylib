@@ -67,7 +67,7 @@ polynomial-time. -/
 theorem computableInPolyTime_countUnsat_mem :
     ComputableInPolyTime (fun p : CNF V × List V => p.1.countUnsat fun v => decide (v ∈ p.2))
       (encPair (encCNFOver enc) (encList enc)) encUnary := by
-  unfold CNF.countUnsat Clause.eval Literal.eval
+  unfold CNF.countUnsat
   fun_prop
 
 /-- One step of the search, reading the formula, is polynomial-time. -/

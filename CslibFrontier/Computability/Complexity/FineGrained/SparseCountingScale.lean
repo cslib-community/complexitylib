@@ -236,7 +236,7 @@ theorem tendsto_numGroups_atTop : Tendsto numGroups atTop atTop := by
   rw [tendsto_atTop_atTop]
   intro B
   obtain ⟨n₀, _, hfeas⟩ := exists_feasible_of_le_const (le_refl 1)
-  have hev := (tendsto_rowCost (le_refl 1)).eventually
+  have hev := (tendsto_rowCost (β := 1)).eventually
     (gt_mem_nhds (show (0 : ℝ) < 1 / ((B : ℝ) + 1) by positivity))
   obtain ⟨N, hN⟩ := eventually_atTop.mp (hev.and (eventually_ge_atTop n₀))
   refine ⟨N, fun n hn => ?_⟩
