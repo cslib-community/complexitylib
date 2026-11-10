@@ -145,10 +145,9 @@ theorem run_runtime : ∃ t s : Input → ℕ,
     simp only [length_encPair,encUnary_apply,List.length_replicate]
     exact (((PolyBounded.const 2).mul hlength).add (.const 1)).add hp
   have ht : PolyBounded runtimeSize
-      (fun x => (encInput x).length + (cb.time x + (budget x + 1)^2) +
+      (fun x => (encInput x).length + (cb.time x + budget x) +
         ca.time (x,budget x)) :=
-    (hlength.add ((hcb.1.comp hlength).add ((hp.add (.const 1)).pow 2))).add
-      (hca.1.comp hword)
+    (hlength.add ((hcb.1.comp hlength).add hp)).add (hca.1.comp hword)
   have hs : PolyBounded runtimeSize
       (fun x => (encInput x).length + (cb.space x + budget x) +
         ca.space (x,budget x)) :=
