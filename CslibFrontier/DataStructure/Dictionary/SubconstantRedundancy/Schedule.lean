@@ -614,7 +614,375 @@ structure ConcentrationReady : Prop where
   id_collision_bound : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ P.depth →
     (P.nHigh ℓ) ^ 2 * (P.nFloor ℓ) ^ 2 ≤ 4 * 2 ^ P.idBits ℓ
 
-
 end TreeSchedule
+
+/-! ## Section 4: Quantitative bounds for the canonical integer schedule -/
+
+/-- Level scale `s_ℓ`: `Nat.iterLog ℓ U` for `ℓ < k`, and `r` for `ℓ ≥ k`. -/
+@[expose]
+def levelScale (U r k ℓ : ℕ) : ℕ :=
+  if ℓ < k then Nat.iterLog ℓ U else r
+
+theorem targetSize_eq_levelScale_pow {n U r k ℓ : ℕ} (h1 : 1 ≤ ℓ) :
+    targetSize n U r k ℓ = (levelScale U r k ℓ) ^ 9 := by
+  dsimp only [targetSize, levelScale]
+  rw [ite_eq_right (by omega)]
+  split_ifs <;> rfl
+
+theorem r_le_levelScale {U r ℓ : ℕ} (h1 : 1 ≤ ℓ) (hU : 4 * r ≤ Nat.log 2 U) :
+    r ≤ levelScale U r (treeDepth U r) ℓ := by
+  dsimp only [levelScale]
+  split_ifs with hlt
+  · rcases eq_or_lt_of_le h1 with rfl | hgt
+    · simpa only [Nat.iterLog_succ, Nat.iterLog_zero] using (by omega : r ≤ Nat.log 2 U)
+    · have h4 := lt_iterLog_of_lt_treeDepth (Nat.succ_le_of_lt hgt) hlt
+      omega
+  · exact le_rfl
+
+/-- Across all `0 ≤ ℓ < treeDepth U r`, consecutive target sizes shrink by at least `2 ^ 18`
+(`= 4 ^ 9`). -/
+theorem two_pow_eighteen_mul_targetSize_succ_le {n U r ℓ : ℕ}
+    (hr : minRedundancyRatio ≤ r)
+    (hU : 4 * r ≤ Nat.log 2 U)
+    (hn : 2 ^ 18 * (Nat.log 2 U) ^ 9 ≤ n)
+    (hlt : ℓ < treeDepth U r) :
+    let k := treeDepth U r
+    2 ^ 18 * targetSize n U r k (ℓ + 1) ≤ targetSize n U r k ℓ := by
+  intro k
+  have hk2 : 2 ≤ k := two_le_treeDepth U r
+  have hr256 : 256 ≤ r := hr
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hpos
+  · dsimp only [targetSize]
+    rw [ite_eq_right (by omega), ite_eq_left (by omega), ite_eq_left rfl]
+    simpa only [Nat.iterLog_succ, Nat.iterLog_zero] using hn
+  · rw [targetSize_eq_levelScale_pow (by omega), targetSize_eq_levelScale_pow hpos]
+    have h4pow : (2 : ℕ) ^ 18 = 4 ^ 9 := by decide
+    rw [h4pow, ← Nat.mul_pow]
+    refine Nat.pow_le_pow_left ?_ 9
+    dsimp only [levelScale]
+    rw [ite_eq_left hlt]
+    by_cases hlt1 : ℓ + 1 < k
+    · rw [ite_eq_left hlt1]
+      set s := Nat.iterLog (ℓ + 1) U
+      have hs_gt : 4 * r < s := lt_iterLog_of_lt_treeDepth (by omega) hlt1
+      have hs_ge : 4 ≤ s := by omega
+      have hsq : s ^ 2 ≤ 2 ^ s := Nat.sq_le_two_pow hs_ge
+      have h4s : 4 * s ≤ 2 ^ s := by nlinarith
+      have hX_pos : 0 < Nat.iterLog ℓ U := by
+        by_contra h0
+        have : s = 0 := by
+          dsimp only [s]
+          rw [Nat.iterLog_succ, Nat.eq_zero_of_le_zero (not_lt.mp h0)]
+          decide
+        omega
+      have hpow_le : 2 ^ s ≤ Nat.iterLog ℓ U := by
+        dsimp only [s]
+        rw [Nat.iterLog_succ]
+        exact Nat.pow_log_le_self 2 hX_pos.ne'
+      exact h4s.trans hpow_le
+    · rw [ite_eq_right hlt1]
+      have hℓ_eq : ℓ = k - 1 := by omega
+      rcases eq_or_lt_of_le hk2 with hk_eq | hk_gt
+      · have hℓ1 : ℓ = 1 := by omega
+        subst hℓ1
+        simpa only [Nat.iterLog_succ, Nat.iterLog_zero] using hU
+      · have hgt := lt_iterLog_of_lt_treeDepth (by omega : 2 ≤ ℓ) hlt
+        omega
+
+theorem targetSize_le_of_step {n U r k : ℕ}
+    (hstep : ∀ j < k, 2 ^ 18 * targetSize n U r k (j + 1) ≤ targetSize n U r k j) :
+    ∀ ℓ ≤ k, targetSize n U r k ℓ ≤ n := by
+  intro ℓ hℓ
+  induction ℓ with
+  | zero => simp [targetSize]
+  | succ j ih =>
+    have hj : j < k := Nat.lt_of_succ_le hℓ
+    have h1 := hstep j hj
+    have h2 := ih hj.le
+    omega
+
+theorem targetSize_pos {n U r k ℓ : ℕ}
+    (hn : 1 ≤ n) (hr : 1 ≤ r) (hU : 4 * r ≤ Nat.log 2 U) (hℓ : ℓ ≤ treeDepth U r)
+    (hk : k = treeDepth U r) :
+    1 ≤ targetSize n U r k ℓ := by
+  subst hk
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hpos
+  · simpa only [targetSize, ↓reduceIte] using hn
+  · rw [targetSize_eq_levelScale_pow hpos]
+    exact Nat.one_le_pow 9 _ (hr.trans (r_le_levelScale hpos hU))
+
+theorem numNodes_mul_targetSize_bounds {n U r k ℓ : ℕ}
+    (hpos : 1 ≤ targetSize n U r k ℓ) (hle : targetSize n U r k ℓ ≤ n) :
+    numNodes n U r k ℓ * targetSize n U r k ℓ ≤ n ∧
+      n < 2 * numNodes n U r k ℓ * targetSize n U r k ℓ := by
+  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ_pos
+  · dsimp only [numNodes, cumBranchBits, targetSize]
+    simp only [↓reduceIte, pow_zero, one_mul]
+    omega
+  · set T := targetSize n U r k ℓ
+    have hmax : max T 1 = T := max_eq_left hpos
+    have hS : cumBranchBits n U r k ℓ = Nat.log 2 (n / T) := by
+      dsimp only [cumBranchBits]
+      rw [ite_eq_right hℓ_pos.ne', hmax]
+    set q := n / T
+    have hq1 : 1 ≤ q := (Nat.le_div_iff_mul_le hpos).mpr (by linarith [one_mul T])
+    have hlo : numNodes n U r k ℓ ≤ q := by
+      dsimp only [numNodes]
+      rw [hS]
+      exact Nat.pow_log_le_self 2 (by omega : q ≠ 0)
+    have hhi : q < 2 * numNodes n U r k ℓ := by
+      dsimp only [numNodes]
+      rw [hS, mul_comm 2, ← pow_succ]
+      exact Nat.lt_pow_succ_log_self Nat.one_lt_two q
+    refine ⟨(Nat.mul_le_mul_right T hlo).trans (Nat.div_mul_le_self n T), ?_⟩
+    have hdiv := Nat.div_add_mod n T
+    have hmod := Nat.mod_lt n hpos
+    have hq1_le : q + 1 ≤ 2 * numNodes n U r k ℓ := by omega
+    calc n = T * q + n % T := hdiv.symm
+      _ < T * q + T := Nat.add_lt_add_left hmod _
+      _ = (q + 1) * T := by ring
+      _ ≤ (2 * numNodes n U r k ℓ) * T := Nat.mul_le_mul_right T hq1_le
+
+theorem targetSize_le_nFloor_and_lt {n U r k ℓ : ℕ}
+    (hpos : 1 ≤ targetSize n U r k ℓ) (hle : targetSize n U r k ℓ ≤ n) :
+    targetSize n U r k ℓ ≤ nFloor n U r k ℓ ∧
+      nFloor n U r k ℓ < 2 * targetSize n U r k ℓ := by
+  obtain ⟨hlo, hhi⟩ := numNodes_mul_targetSize_bounds hpos hle
+  have hN_pos : 0 < numNodes n U r k ℓ := Nat.two_pow_pos _
+  refine ⟨(Nat.le_div_iff_mul_le hN_pos).mpr (by rwa [Nat.mul_comm]), ?_⟩
+  refine (Nat.div_lt_iff_lt_mul hN_pos).mpr ?_
+  linarith
+
+theorem cumBranchBits_add_seventeen_le {n U r k ℓ : ℕ}
+    (hpos_cur : 1 ≤ targetSize n U r k ℓ)
+    (hpos_next : 1 ≤ targetSize n U r k (ℓ + 1))
+    (hle_cur : targetSize n U r k ℓ ≤ n)
+    (hstep : 2 ^ 18 * targetSize n U r k (ℓ + 1) ≤ targetSize n U r k ℓ) :
+    cumBranchBits n U r k ℓ + 17 ≤ cumBranchBits n U r k (ℓ + 1) := by
+  have hle_next : targetSize n U r k (ℓ + 1) ≤ n := by omega
+  obtain ⟨hlo, _⟩ := numNodes_mul_targetSize_bounds hpos_cur hle_cur
+  obtain ⟨_, hhi⟩ := numNodes_mul_targetSize_bounds hpos_next hle_next
+  set T_next := targetSize n U r k (ℓ + 1)
+  have hmul : (2 ^ 17 * numNodes n U r k ℓ) * (2 * T_next) <
+      numNodes n U r k (ℓ + 1) * (2 * T_next) := by
+    calc (2 ^ 17 * numNodes n U r k ℓ) * (2 * T_next)
+        = numNodes n U r k ℓ * (2 ^ 18 * T_next) := by ring
+      _ ≤ numNodes n U r k ℓ * targetSize n U r k ℓ := Nat.mul_le_mul_left _ hstep
+      _ ≤ n := hlo
+      _ < 2 * numNodes n U r k (ℓ + 1) * T_next := hhi
+      _ = numNodes n U r k (ℓ + 1) * (2 * T_next) := by ring
+  have hlt_N : 2 ^ (cumBranchBits n U r k ℓ + 17) < 2 ^ cumBranchBits n U r k (ℓ + 1) := by
+    rw [Nat.pow_add, Nat.mul_comm _ (2 ^ 17)]
+    exact Nat.lt_of_mul_lt_mul_right hmul
+  have hlt_exp := (Nat.pow_lt_pow_iff_right Nat.one_lt_two).mp hlt_N
+  omega
+
+theorem nFloor_succ_eq_div {n U r k ℓ : ℕ}
+    (hle : cumBranchBits n U r k ℓ ≤ cumBranchBits n U r k (ℓ + 1)) :
+    nFloor n U r k (ℓ + 1) = nFloor n U r k ℓ / branchFactor n U r k ℓ := by
+  dsimp only [nFloor, numNodes, branchFactor, branchBits]
+  rw [Nat.div_div_eq_div_mul, ← Nat.pow_add, Nat.add_sub_of_le hle]
+
+theorem two_mul_delta_le_nFloor_of_eight_le {n U r k ℓ : ℕ}
+    (h8 : 8 ≤ nFloor n U r k ℓ) :
+    2 * delta n U r k ℓ ≤ nFloor n U r k ℓ := by
+  set y := nFloor n U r k ℓ
+  set d := delta n U r k ℓ
+  have hd3 : d ^ 3 ≤ y ^ 2 := Nat.pow_nthRoot_le (.inl (by decide))
+  have hcube : (2 * d) ^ 3 ≤ y ^ 3 := by
+    calc (2 * d) ^ 3 = 8 * d ^ 3 := by ring
+      _ ≤ 8 * y ^ 2 := Nat.mul_le_mul_left 8 hd3
+      _ ≤ y * y ^ 2 := Nat.mul_le_mul_right _ h8
+      _ = y ^ 3 := (pow_succ' y 2).symm
+  exact (Nat.pow_le_pow_iff_left (by decide : 3 ≠ 0)).mp hcube
+
+theorem ten_mul_delta_le_branchFactor_mul_delta_succ {n U r k ℓ : ℕ}
+    (hS : cumBranchBits n U r k ℓ + 17 ≤ cumBranchBits n U r k (ℓ + 1))
+    (hx8 : 8 ≤ nFloor n U r k (ℓ + 1)) :
+    10 * delta n U r k ℓ ≤ branchFactor n U r k ℓ * delta n U r k (ℓ + 1) := by
+  set B := branchFactor n U r k ℓ
+  set y := nFloor n U r k ℓ
+  set x := nFloor n U r k (ℓ + 1)
+  set d_cur := delta n U r k ℓ
+  set d_next := delta n U r k (ℓ + 1)
+  have hB : 2 ^ 17 ≤ B := by
+    dsimp only [B, branchFactor, branchBits]
+    exact Nat.pow_le_pow_right Nat.two_pos (by omega)
+  have hx_eq : x = y / B := nFloor_succ_eq_div (by omega)
+  have hy_lt : y < B * (x + 1) := by
+    have hB_pos : 0 < B := by positivity
+    have hdiv := Nat.div_add_mod y B
+    have hmod := Nat.mod_lt y hB_pos
+    rw [← hx_eq] at hdiv
+    linarith
+  have hy_le : y ≤ 2 * B * x := by nlinarith
+  have hd_next_pos : 1 ≤ d_next := by
+    dsimp only [d_next, delta]
+    rw [Nat.le_nthRoot_iff (by decide)]
+    nlinarith
+  have hx2_le : x ^ 2 ≤ 8 * d_next ^ 3 := by
+    have hlt : x ^ 2 < (d_next + 1) ^ 3 := Nat.lt_pow_nthRoot_add_one (by decide) (x ^ 2)
+    have hle2 : d_next + 1 ≤ 2 * d_next := by omega
+    calc x ^ 2 ≤ (d_next + 1) ^ 3 := hlt.le
+      _ ≤ (2 * d_next) ^ 3 := Nat.pow_le_pow_left hle2 3
+      _ = 8 * d_next ^ 3 := by ring
+  have hd_cur3 : d_cur ^ 3 ≤ y ^ 2 := Nat.pow_nthRoot_le (.inl (by decide))
+  have hcube : (10 * d_cur) ^ 3 ≤ (B * d_next) ^ 3 := by
+    have hB_num : 32000 ≤ B := by
+      have : (2 : ℕ) ^ 17 = 131072 := by decide
+      omega
+    calc (10 * d_cur) ^ 3 = 1000 * d_cur ^ 3 := by ring
+      _ ≤ 1000 * y ^ 2 := Nat.mul_le_mul_left 1000 hd_cur3
+      _ ≤ 1000 * (2 * B * x) ^ 2 := Nat.mul_le_mul_left 1000 (Nat.pow_le_pow_left hy_le 2)
+      _ = 4000 * B ^ 2 * x ^ 2 := by ring
+      _ ≤ 4000 * B ^ 2 * (8 * d_next ^ 3) := Nat.mul_le_mul_left _ hx2_le
+      _ = 32000 * (B ^ 2 * d_next ^ 3) := by ring
+      _ ≤ B * (B ^ 2 * d_next ^ 3) := Nat.mul_le_mul_right _ hB_num
+      _ = (B * d_next) ^ 3 := by ring
+  exact (Nat.pow_le_pow_iff_left (by decide : 3 ≠ 0)).mp hcube
+
+theorem four_mul_branchBits_add_idBits_succ_le {n U r k ℓ : ℕ}
+    (hle : cumBranchBits n U r k ℓ ≤ cumBranchBits n U r k (ℓ + 1))
+    (hx1 : 1 ≤ nFloor n U r k (ℓ + 1)) :
+    4 * branchBits n U r k ℓ + idBits n U r k (ℓ + 1) ≤ idBits n U r k ℓ := by
+  set s := branchBits n U r k ℓ
+  set x := nFloor n U r k (ℓ + 1)
+  set y := nFloor n U r k ℓ
+  have hstep : 2 ^ s * x ≤ y := by
+    dsimp only [s, x, y, branchFactor]
+    rw [nFloor_succ_eq_div hle]
+    exact Nat.mul_div_le _ _
+  have hy1 : 1 ≤ y := by
+    calc 1 ≤ 1 * 1 := by decide
+      _ ≤ 2 ^ s * x := Nat.mul_le_mul (Nat.two_pow_pos s) hx1
+      _ ≤ y := hstep
+  set a := Nat.clog 2 (2 * max x 1)
+  set b := Nat.clog 2 (2 * max y 1)
+  have hmx : max x 1 = x := max_eq_left hx1
+  have hmy : max y 1 = y := max_eq_left hy1
+  have ha1 : 1 ≤ a := by
+    dsimp only [a]
+    rw [hmx]
+    exact (show 1 = Nat.clog 2 2 by decide) ▸ Nat.clog_mono_right 2 (by omega)
+  have hpow_lt : 2 ^ (a - 1) < 2 * x := by
+    by_contra hge
+    have hcl := Nat.clog_le_of_le_pow (hmx.symm ▸ not_lt.mp hge)
+    omega
+  have hlt_pow : 2 ^ (s + (a - 1)) < 2 ^ b := by
+    calc 2 ^ (s + (a - 1)) = 2 ^ s * 2 ^ (a - 1) := Nat.pow_add 2 s (a - 1)
+      _ < 2 ^ s * (2 * x) := Nat.mul_lt_mul_of_pos_left hpow_lt (Nat.two_pow_pos s)
+      _ = 2 * (2 ^ s * x) := by ring
+      _ ≤ 2 * y := Nat.mul_le_mul_left 2 hstep
+      _ = 2 * max y 1 := by rw [hmy]
+      _ ≤ 2 ^ b := Nat.le_pow_clog Nat.one_lt_two _
+  have hlt_exp := (Nat.pow_lt_pow_iff_right Nat.one_lt_two).mp hlt_pow
+  change 4 * s + 4 * a ≤ 4 * b
+  omega
+
+theorem nHigh_sq_mul_nFloor_sq_le_four_mul_two_pow_idBits {n U r k ℓ : ℕ}
+    (h1 : 1 ≤ ℓ) (h8 : 8 ≤ nFloor n U r k ℓ) :
+    (nHigh n U r k ℓ) ^ 2 * (nFloor n U r k ℓ) ^ 2 ≤ 4 * 2 ^ idBits n U r k ℓ := by
+  set y := nFloor n U r k ℓ
+  have hd : 2 * delta n U r k ℓ ≤ y := two_mul_delta_le_nFloor_of_eight_le h8
+  have hnh : nHigh n U r k ℓ ≤ 2 * y := by
+    dsimp only [nHigh]
+    rw [ite_eq_right (by omega)]
+    omega
+  have hmy : max y 1 = y := max_eq_left (by omega)
+  have h2y_pow : 2 * y ≤ 2 ^ Nat.clog 2 (2 * max y 1) := by
+    rw [hmy]
+    exact Nat.le_pow_clog Nat.one_lt_two (2 * y)
+  calc (nHigh n U r k ℓ) ^ 2 * y ^ 2
+      ≤ (2 * y) ^ 2 * y ^ 2 := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left hnh 2)
+    _ ≤ (2 * y) ^ 4 := by nlinarith [sq_nonneg y]
+    _ ≤ (2 ^ Nat.clog 2 (2 * max y 1)) ^ 4 := Nat.pow_le_pow_left h2y_pow 4
+    _ = 2 ^ idBits n U r k ℓ := by
+        dsimp only [idBits]
+        rw [← Nat.pow_mul, Nat.mul_comm 4]
+    _ ≤ 4 * 2 ^ idBits n U r k ℓ := by omega
+
+theorem numNodes_mul_delta_mul_levelScale_cubed_le {n U r k ℓ : ℕ}
+    (h1 : 1 ≤ ℓ)
+    (hpos : 1 ≤ targetSize n U r k ℓ)
+    (hle : targetSize n U r k ℓ ≤ n) :
+    numNodes n U r k ℓ * delta n U r k ℓ * (levelScale U r k ℓ) ^ 3 ≤ n := by
+  set N := numNodes n U r k ℓ
+  set d := delta n U r k ℓ
+  set s := levelScale U r k ℓ
+  obtain ⟨hNT, _⟩ := numNodes_mul_targetSize_bounds hpos hle
+  rw [targetSize_eq_levelScale_pow h1] at hNT
+  have hNy : N * nFloor n U r k ℓ ≤ n := Nat.mul_div_le n N
+  have hd3 : d ^ 3 ≤ (nFloor n U r k ℓ) ^ 2 := Nat.pow_nthRoot_le (.inl (by decide))
+  have hcube : (N * d * s ^ 3) ^ 3 ≤ n ^ 3 := by
+    calc (N * d * s ^ 3) ^ 3
+        = N ^ 3 * d ^ 3 * s ^ 9 := by ring
+      _ ≤ N ^ 3 * (nFloor n U r k ℓ) ^ 2 * s ^ 9 := by gcongr
+      _ = (N * nFloor n U r k ℓ) ^ 2 * (N * s ^ 9) := by ring
+      _ ≤ n ^ 2 * n := Nat.mul_le_mul (Nat.pow_le_pow_left hNy 2) hNT
+      _ = n ^ 3 := (pow_succ n 2).symm
+  exact (Nat.pow_le_pow_iff_left (by decide : 3 ≠ 0)).mp hcube
+
+theorem idBits_pred_le_mul_levelScale {n U r ℓ : ℕ}
+    (hr : minRedundancyRatio ≤ r)
+    (h2 : 2 ≤ ℓ) (hℓ : ℓ ≤ treeDepth U r)
+    (hpos_pred : 1 ≤ targetSize n U r (treeDepth U r) (ℓ - 1))
+    (hle_pred : targetSize n U r (treeDepth U r) (ℓ - 1) ≤ n) :
+    let k := treeDepth U r
+    idBits n U r k (ℓ - 1) ≤ 148 * levelScale U r k ℓ := by
+  intro k
+  have hr256 : 256 ≤ r := hr
+  obtain ⟨hlo, hhi⟩ := targetSize_le_nFloor_and_lt hpos_pred hle_pred
+  have hpred1 : 1 ≤ ℓ - 1 := by omega
+  have hpred_lt : ℓ - 1 < k := by omega
+  have hT_eq : targetSize n U r k (ℓ - 1) = (Nat.iterLog (ℓ - 1) U) ^ 9 := by
+    rw [targetSize_eq_levelScale_pow hpred1]
+    dsimp only [levelScale]
+    rw [ite_eq_left hpred_lt]
+  set X := Nat.iterLog (ℓ - 1) U
+  set s := levelScale U r k ℓ
+  have hs_ge : 256 ≤ s := by
+    dsimp only [s, levelScale]
+    split_ifs with hlt
+    · have := lt_iterLog_of_lt_treeDepth h2 hlt
+      omega
+    · exact hr256
+  have hlogX_le : Nat.log 2 X ≤ 4 * s := by
+    dsimp only [s, levelScale]
+    split_ifs with hlt
+    · obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_le h2
+      have heq : Nat.iterLog ℓ U = Nat.log 2 X := by
+        dsimp only [X]
+        rw [hm, show 2 + m - 1 = 1 + m by omega, show 2 + m = (1 + m) + 1 by omega,
+          Nat.iterLog_succ]
+      omega
+    · have hℓ_eq : ℓ = k := by omega
+      obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_le h2
+      have heq : Nat.iterLog k U = Nat.log 2 X := by
+        dsimp only [X]
+        rw [← hℓ_eq, hm, show 2 + m - 1 = 1 + m by omega, show 2 + m = (1 + m) + 1 by omega,
+          Nat.iterLog_succ]
+      rw [← heq]
+      exact iterLog_treeDepth_le (by omega)
+  have hX_lt : X < 2 ^ (4 * s + 1) :=
+    (Nat.lt_pow_succ_log_self Nat.one_lt_two X).trans_le
+      (Nat.pow_le_pow_right Nat.two_pos (by omega))
+  have hy_pos : 1 ≤ nFloor n U r k (ℓ - 1) := hpos_pred.trans hlo
+  have h2y_le : 2 * max (nFloor n U r k (ℓ - 1)) 1 ≤ 2 ^ (36 * s + 11) := by
+    rw [max_eq_left hy_pos]
+    have h1 : 2 * nFloor n U r k (ℓ - 1) ≤ 4 * X ^ 9 := by
+      dsimp only [k] at hT_eq ⊢
+      rw [hT_eq] at hhi
+      omega
+    calc 2 * nFloor n U r k (ℓ - 1)
+        ≤ 4 * X ^ 9 := h1
+      _ ≤ 4 * (2 ^ (4 * s + 1)) ^ 9 := Nat.mul_le_mul_left 4 (Nat.pow_le_pow_left hX_lt.le 9)
+      _ = 2 ^ (36 * s + 11) := by
+          have h4 : (4 : ℕ) = 2 ^ 2 := by decide
+          rw [h4, ← Nat.pow_mul, ← Nat.pow_add]
+          congr 1; ring
+  have hcl : Nat.clog 2 (2 * max (nFloor n U r k (ℓ - 1)) 1) ≤ 36 * s + 11 :=
+    Nat.clog_le_of_le_pow h2y_le
+  dsimp only [idBits]
+  omega
 
 end Cslib.DataStructure.Dictionary.SubconstantRedundancy
