@@ -31,7 +31,8 @@ It also records the equivalence with `Turing.MultiTapeTM.ComputableTidilyInSpace
 
 * `Turing.MultiTapeTM.ComputableInSpace.of_inO`, `.exists_inO`: conversion with `ComputableInO`
   retaining the realizing machine.
-* `Turing.MultiTapeTM.ComputableInSpace.comp`, `.prod`, `.append`, `.ite`: plain closure rules.
+* `Turing.MultiTapeTM.ComputableInSpace.comp`, `.prod`, `.append`, `.ite`, `.constZero`: plain
+  closure rules.
 * `Turing.MultiTapeTM.ComputableInSpace.iterate`, `.foldl`, `.foldlWith`: plain space-bounded
   loops.
 -/
@@ -161,6 +162,12 @@ theorem ite {α β : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool}
   let ⟨_, hf⟩ := hf.exists_inO
   let ⟨_, hg⟩ := hg.exists_inO
   of_inO (hc.ite hf hg)
+
+/-- A fixed output needs no work cells: its length is absorbed into the constant factor, so the
+bound weakens to any other bound by `mono_le`. -/
+theorem constZero {α β : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool} (b : β) :
+    ComputableInSpace (fun _ : α => b) encIn encB fun _ => 0 :=
+  of_inO (ComputableInO.constZero b)
 
 theorem const {α β : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool} (b : β) :
     ComputableInSpace (fun _ : α => b) encIn encB fun a => (encIn a).length :=
