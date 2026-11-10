@@ -41,7 +41,7 @@ correctness or bootstrappability premise is needed for this security transfer.
   Section 2.1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.FixedKey
 

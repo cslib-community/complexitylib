@@ -20,7 +20,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
   coefficient, with its inner population loops and all outer controls charged.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation
 

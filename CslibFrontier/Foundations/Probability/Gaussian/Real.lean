@@ -36,7 +36,7 @@ Three estimates for the real Gaussian distribution `gaussianReal μ v`:
 * `ProbabilityTheory.gaussianReal_meas_ge_le`: Chebyshev's inequality for a Gaussian.
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory Real Set
 open scoped NNReal ENNReal

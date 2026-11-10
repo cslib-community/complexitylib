@@ -17,7 +17,7 @@ import Mathlib.Data.Fintype.Fin
 Concrete degree and evaluation checks for `Polynomial.parityFactor` over `R[X]`.
 -/
 
-@[expose] public noncomputable section
+public noncomputable section
 
 namespace Polynomial.ParityAmplifierDegreeTests
 

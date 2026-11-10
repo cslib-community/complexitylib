@@ -17,7 +17,7 @@ Concrete costs, the tight break-even instance, the `B = 1` edge case, and nonvac
 deterministic lower bound for `CslibFrontier.DataStructure.Online.SkiRental`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.SkiRental
 

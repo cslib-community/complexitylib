@@ -61,7 +61,7 @@ measures, functions of disjoint sets of coordinates are independent
 * [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 4.3][AlonSpencer2016]
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory Finset
 

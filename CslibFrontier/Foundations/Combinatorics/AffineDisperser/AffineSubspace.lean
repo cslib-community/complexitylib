@@ -34,7 +34,7 @@ has no `Field Bool` instance, so a basis of the direction is not available over 
   Boolean Circuits*, Definition 2.1][MishraSanthanam2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

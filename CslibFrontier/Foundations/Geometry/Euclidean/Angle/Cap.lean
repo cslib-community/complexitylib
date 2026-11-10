@@ -58,7 +58,7 @@ inner product is at least `(3 κ ^ 2 - 1) / 2`, which exceeds `2 κ ^ 2 - 1` by 
   proofs*][Szorenyi2009]
 -/
 
-@[expose] public section
+public section
 
 open Real Finset
 open scoped RealInnerProductSpace

@@ -30,7 +30,7 @@ on `PMF` into `PMF.pure`/`PMF.bind` (cslib #1129), and real-valued probability m
   real-valued outcome masses of a two-stage experiment (cslib #1062).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

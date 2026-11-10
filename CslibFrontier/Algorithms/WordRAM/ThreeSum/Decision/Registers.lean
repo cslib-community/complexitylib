@@ -22,7 +22,7 @@ public import CslibFrontier.Computability.WordRAM.Call
 These finite bank proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 

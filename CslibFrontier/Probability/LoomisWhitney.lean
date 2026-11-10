@@ -33,7 +33,7 @@ Han's inequality is Shearer's lemma for entropy for it.
   ordered sets and graphs*][ChungGrahamFranklShearer1986]
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

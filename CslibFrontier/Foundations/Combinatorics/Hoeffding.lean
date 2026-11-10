@@ -39,7 +39,7 @@ Markov's inequality with `s = 4 t / |R|` bounds each tail.
   variables*][Hoeffding1963]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

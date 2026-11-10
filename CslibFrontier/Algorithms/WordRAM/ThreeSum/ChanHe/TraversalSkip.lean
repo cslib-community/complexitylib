@@ -25,7 +25,7 @@ Both space reservations improve because the transition measure decreases without
 These native composition and invariant proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

@@ -34,7 +34,7 @@ a division ring.
 * [OpenAI2026RationalHitting]
 -/
 
-@[expose] public section
+public section
 
 namespace LinearMap
 

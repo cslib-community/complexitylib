@@ -36,7 +36,7 @@ are (without proving the multiplicative `poly(ℓ, d)` runtime factor relative t
 * [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2, Theorem 4][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 

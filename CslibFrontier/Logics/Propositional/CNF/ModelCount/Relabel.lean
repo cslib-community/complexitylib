@@ -25,7 +25,7 @@ outside that support are harmless, including when the source variable type is in
 These are original elementary transport proofs for the existing occurring-variable model count.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF
 

@@ -33,7 +33,7 @@ Goldreich–Levin subset-sum decoder. Adapted from the cslib `crypto` branch at 
 * [L. Trevisan, *CS276 Lecture 12: Goldreich–Levin*, Lemma 4][Trevisan2009GL]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

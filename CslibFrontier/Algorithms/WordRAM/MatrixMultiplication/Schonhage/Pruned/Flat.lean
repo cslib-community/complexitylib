@@ -26,7 +26,7 @@ These initialized-run theorems, `runs_wide` in `Pruned.Width` and `exec_kernel` 
 internal implementation APIs exported for proof composition.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

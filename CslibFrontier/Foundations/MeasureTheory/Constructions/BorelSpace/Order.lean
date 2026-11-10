@@ -22,7 +22,7 @@ interval between two measurable real functions is measurable (`measurableSet_set
 * `measurableSet_setOf_mem_uIoc`: `{ω | t ∈ Ι (f ω) (g ω)}` is measurable for measurable `f`, `g`.
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory Set
 open scoped Interval

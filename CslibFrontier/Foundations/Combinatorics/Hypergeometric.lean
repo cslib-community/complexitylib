@@ -41,7 +41,7 @@ Chebyshev's inequality `X < m ≤ μ` with probability at most `μ / (μ - m)²`
   expected number of elements.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

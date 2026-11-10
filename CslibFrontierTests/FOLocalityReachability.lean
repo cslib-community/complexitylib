@@ -29,7 +29,7 @@ import Mathlib.Tactic.NormNum
 * **FO(TC).** The FO(TC) formula of `exists_formula_reflTransGen` defines `≤` on every successor
   relation `(Fin N, ⋖)`, which no first-order formula does. -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Tests.FOLocalityReachability
 

@@ -16,7 +16,7 @@ public import CslibFrontier.Foundations.Data.Polynomial.CoeffNorm1
 Smoke tests for the `ℓ₁` coefficient norm `Polynomial.coeffNorm1` on `ℤ[X]`.
 -/
 
-@[expose] public section
+public section
 
 namespace Polynomial.CoeffNorm1Tests
 

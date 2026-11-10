@@ -46,7 +46,7 @@ assignments are the bijections, and the sum is the permanent of the coefficient 
 * [E. Ben-Sasson, S. Kopparty, *Affine dispersers from subspace polynomials*][BenSassonKopparty2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

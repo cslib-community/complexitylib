@@ -27,7 +27,7 @@ The stage execution lemmas and node invariants here are internal implementation 
 exported for proof composition across modules. Callers use `Pruned.Kernel` or `Pruned.Flat`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

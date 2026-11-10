@@ -44,7 +44,7 @@ induction over `Fin n` reaches every finite coordinate type.
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

@@ -51,7 +51,7 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 * [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.3, pp. 46–47][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

@@ -52,7 +52,7 @@ probability at most `(3^{31} / 2^{53})^s ≤ 8^{-s}`. Summed over `s ≥ 1`, thi
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

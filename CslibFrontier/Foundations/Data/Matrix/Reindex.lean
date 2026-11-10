@@ -24,7 +24,7 @@ characterization.
 * `Matrix.reindex_eq_iff`: `reindex eₘ eₙ A = M ↔ ∀ i j, M (eₘ i) (eₙ j) = A i j`.
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

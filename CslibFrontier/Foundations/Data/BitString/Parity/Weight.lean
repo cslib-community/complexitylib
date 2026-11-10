@@ -23,7 +23,7 @@ from both `BitString.Parity` and `BitString.Threshold`, so that neither of them 
 * `Cslib.isSymmetric_parity`: parity is symmetric.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

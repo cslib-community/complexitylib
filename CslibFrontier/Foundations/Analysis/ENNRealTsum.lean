@@ -21,7 +21,7 @@ public import Mathlib.Topology.Instances.ENNReal.Lemmas
 * `ENNReal.tsum_iSup_of_monotone`: the exchange of `tsum` and a monotone `iSup`.
 -/
 
-@[expose] public section
+public section
 
 open scoped ENNReal
 

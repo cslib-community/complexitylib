@@ -25,7 +25,7 @@ occurring in a formula. The variable type may be infinite or empty.
 This is an elementary counting property of the existing compaction construction.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF
 

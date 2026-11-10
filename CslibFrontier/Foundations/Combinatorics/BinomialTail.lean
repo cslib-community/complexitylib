@@ -57,7 +57,7 @@ For the unbiased case `p = 1 / 2` in counting form on `ι → Bool`, see
   pp. 34–35.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

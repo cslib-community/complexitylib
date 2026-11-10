@@ -25,7 +25,7 @@ bounds. Summing the finitely many exceptions, it is bounded everywhere by a cons
 * `Cslib.PolynomiallyBounded.exists_le_mul_two_pow`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PolynomiallyBounded
 

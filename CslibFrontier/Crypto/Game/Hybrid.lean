@@ -32,7 +32,7 @@ advantage bounds that follow from them are stated in the nonnegative reals.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 9.3.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Game
 

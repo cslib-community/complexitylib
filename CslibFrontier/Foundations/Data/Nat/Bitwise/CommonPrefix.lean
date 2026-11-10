@@ -32,7 +32,7 @@ proof of [Bogdanov and Trevisan, Claim 20][BogdanovTrevisan2006].
 * [A. Bogdanov, L. Trevisan, *Average-Case Complexity*][BogdanovTrevisan2006]
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

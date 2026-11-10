@@ -23,7 +23,7 @@ It does not evaluate the product or reconstruct answers. Stage execution lemmas 
 supporting modules are internal implementation APIs; consumers use this theorem or `runs`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

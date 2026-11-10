@@ -34,7 +34,7 @@ belong to both level sets; no injectivity or tie-breaking assumption is required
   [ThresholdCircuitRepresentations2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Finset
 

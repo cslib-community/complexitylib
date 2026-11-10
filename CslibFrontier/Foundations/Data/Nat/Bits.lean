@@ -32,7 +32,7 @@ with initial value zero reconstructs the original number.
 * `Nat.size_div_two_add_one`: halving a positive number removes one binary digit.
 -/
 
-@[expose] public section
+public section
 
 open scoped BigOperators
 

@@ -38,7 +38,7 @@ conference version, Lemmas 4.2 and 4.4, pp. 748–750. That source uses Gaussian
 ternary challenges; the present statement concerns this library's box secrets and binary challenges.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 

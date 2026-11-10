@@ -13,7 +13,7 @@ public import CslibFrontier.Probability.PMF.TwoBranch
 /-! The shared PMF success rule applies directly to probabilistic-program clients, without a
 graph-algorithm import or a second ProbComp-specific probability API. -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.ProbCompEvent
 

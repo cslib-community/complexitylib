@@ -70,7 +70,7 @@ satisfiability and coloring problems (`Cslib.Probability.PMF.prod_one_sub_le_pi_
   [MoserTardos2010]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

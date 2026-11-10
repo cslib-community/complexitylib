@@ -48,7 +48,7 @@ Directly adapted from [Collisions.lean](https://github.com/anthropics/formal-mat
 
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.ThreeSum.ChanHe
 

@@ -44,7 +44,7 @@ Adapted from Probability/StatisticalDistance.lean on the cslib `crypto` branch a
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`. The metric itself remains the upstream one.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

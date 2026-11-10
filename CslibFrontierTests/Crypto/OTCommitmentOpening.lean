@@ -10,7 +10,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Opening.PolyTime
 
 /-! Actual list checker clients, including every malformed-length direction. -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.MPC.OTCommitment.Tests
 

@@ -25,7 +25,7 @@ This is a semantic transport result. It assigns no native cost to calling or arg
 equal histories can be used with the existing `totalCost` function at any chosen charge.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.StateTransitionSpec
 

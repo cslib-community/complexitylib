@@ -56,7 +56,7 @@ For probability weights this is the bias bound behind the Chor–Goldreich two-s
   [ThresholdCircuitRepresentations2026]
 -/
 
-@[expose] public section
+public section
 
 open Matrix Finset
 

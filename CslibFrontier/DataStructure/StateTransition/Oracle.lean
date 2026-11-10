@@ -28,7 +28,7 @@ This bridge is its own module so that the state-transition layer does not import
 * `link_eq_interpret`: linking is interpretation by the methods.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure
 

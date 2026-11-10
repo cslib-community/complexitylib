@@ -44,7 +44,7 @@ Adapts the cslib `crypto` branch's state simulation API at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8` to the typed sum of sampling and external calls.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.ProbOracleComp
 

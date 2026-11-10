@@ -26,7 +26,7 @@ this bounds `(1 - p) ^ n` from above by `1 / (1 + n * p)`.
 * `Real.one_sub_pow_le_one_div_one_add_mul`: `(1 - p) ^ n ≤ 1 / (1 + n * p)` for `0 ≤ p ≤ 1`.
 -/
 
-@[expose] public section
+public section
 
 namespace Real
 

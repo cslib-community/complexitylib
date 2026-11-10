@@ -38,7 +38,7 @@ probability over the masks and over a uniformly random guess.
 * [O. Goldreich, L. Levin, *A Hard-Core Predicate for All One-Way Functions*][GoldreichLevin1989]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.GoldreichLevin
 

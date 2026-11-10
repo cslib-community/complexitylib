@@ -31,7 +31,7 @@ They are generalized from the canonical incidence-path occupancy proofs.
   monotone with respect to `List.Forall₂ (· ≤ ·)`.
 -/
 
-@[expose] public section
+public section
 
 namespace List
 

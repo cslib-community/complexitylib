@@ -63,7 +63,7 @@ soundness error `1 / 3` (`ZeroKnowledgeProof`) and at negligible soundness `(1 /
 [#2316]: https://github.com/cslib-community/cslib-frontier/issues/2316
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 

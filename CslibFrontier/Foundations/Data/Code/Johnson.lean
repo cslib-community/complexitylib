@@ -60,7 +60,7 @@ a list size within the `q d n` of Theorem 7.3.1 (Exercise 7.7 states `2 q n`). A
 * [V. Guruswami, A. Rudra, M. Sudan, *Essential Coding Theory*][GuruswamiRudraSudan2019]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Code
 

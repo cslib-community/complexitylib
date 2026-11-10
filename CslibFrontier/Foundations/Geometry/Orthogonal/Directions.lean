@@ -27,7 +27,7 @@ have distinct directions at any common initial vertex, including parallel listed
 The elementary cardinal-ray separation and proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Orthogonal
 

@@ -25,7 +25,7 @@ certificate.
   `f n ≤ p.eval n` for all `n`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

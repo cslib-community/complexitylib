@@ -22,7 +22,7 @@ Elementary bounds comparing factorials and powers.
 * `Nat.pow_self_le_three_pow_mul_factorial`: `n ^ n ≤ 3 ^ n * n!`.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

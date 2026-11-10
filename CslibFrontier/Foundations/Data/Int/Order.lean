@@ -29,7 +29,7 @@ value of sums and prefix sums of lists of integers bounded termwise.
 * `List.natAbs_getD_le_of_forall`: `getD` with default `0` preserves elementwise `natAbs` bounds.
 -/
 
-@[expose] public section
+public section
 
 namespace Int
 

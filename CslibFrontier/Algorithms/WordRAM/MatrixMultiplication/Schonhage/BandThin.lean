@@ -23,7 +23,7 @@ The result concerns shared-band preparation and encoding only. Pruned queries, p
 the whole ordinary 3SUM endpoint remain separate obligations.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandPreparation
 

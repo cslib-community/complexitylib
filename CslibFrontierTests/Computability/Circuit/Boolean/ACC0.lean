@@ -16,7 +16,7 @@ Concrete evaluations of `modGate` and non-vacuity witnesses for `ACC0` and `SIZE
 `CslibFrontier.Computability.Circuit.Boolean.ACC0`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.Computability.Circuit.Boolean.ACC0
 

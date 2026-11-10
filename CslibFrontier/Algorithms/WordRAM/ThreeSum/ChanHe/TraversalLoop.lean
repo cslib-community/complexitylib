@@ -28,7 +28,7 @@ These native composition and resource proofs are original. Initialized-input pre
 composition is a separate obligation.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

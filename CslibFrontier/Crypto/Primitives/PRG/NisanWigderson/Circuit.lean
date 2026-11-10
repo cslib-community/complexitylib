@@ -44,7 +44,7 @@ accepts outputs of the generator with probability `ε` more than uniform strings
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Chapter 20
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PRG.NisanWigderson
 

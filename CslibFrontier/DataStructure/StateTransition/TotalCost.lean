@@ -23,7 +23,7 @@ cost then follows from counting its operations by kind.
   sum of state-independent bounds on the charges of the operations.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.StateTransitionSpec
 

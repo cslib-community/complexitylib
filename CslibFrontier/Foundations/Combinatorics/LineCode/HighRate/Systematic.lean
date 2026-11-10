@@ -35,7 +35,7 @@ the `f i`, so it inherits their line parity.
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.LineCode
 

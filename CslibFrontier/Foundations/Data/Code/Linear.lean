@@ -33,7 +33,7 @@ codeword, so the minimum distance of a linear code is the least weight of a nonz
   [MacWilliamsSloane1977]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Code
 

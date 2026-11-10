@@ -37,7 +37,7 @@ at least one, is therefore universal and Δ-universal.
   Equality*][WegmanCarter1981]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.IsPairwiseIndependentHash
 

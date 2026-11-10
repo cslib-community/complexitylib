@@ -47,7 +47,7 @@ effective parameter selection and native resource bounds remain separate consume
 * [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.3][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.ClauseSet.Sparsification
 

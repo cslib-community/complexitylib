@@ -32,7 +32,7 @@ and exact quotient identities for division by `m` with remainder strictly below 
   of `k * ℓ + i` over `k < n`.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

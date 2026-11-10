@@ -22,7 +22,7 @@ The footprints are the concrete intervals used by the native program. These fact
 execution or fit hypotheses; they provide the spatial part of the node induction.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

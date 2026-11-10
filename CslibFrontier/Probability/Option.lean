@@ -20,7 +20,7 @@ import Mathlib.Topology.Algebra.InfiniteSum.Constructions
 * `tsum_option_eq`: split a nonnegative extended-real sum into failure and successful outcomes.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

@@ -32,7 +32,7 @@ with average at least `x₀` have `arccos`-sum at most their number times `arcco
 * `Real.sum_arccos_le_card_mul_arccos`: Jensen's inequality for `arccos` on `[0, 1]`.
 -/
 
-@[expose] public section
+public section
 
 open Set
 

@@ -65,7 +65,7 @@ Divergences are in nats and entropies in bits, so the bridges divide by `log 2`.
   Theorem 2.4.1 (mutual information) and Lemma 11.6.1 (Pinsker).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

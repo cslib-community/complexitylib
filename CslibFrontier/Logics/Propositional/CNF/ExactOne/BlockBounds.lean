@@ -26,7 +26,7 @@ the preceding signed-block lengths gives disjoint intervals for distinct origina
 These are original list-index identities for the explicit compiler.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF.PositiveExactOne
 

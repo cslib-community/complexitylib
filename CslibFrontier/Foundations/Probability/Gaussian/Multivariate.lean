@@ -56,7 +56,7 @@ a centered Gaussian of variance `‖WithLp.toLp 2 a‖ ^ 2`, the squared Euclide
   carries events to the standard Gaussian measure on `EuclideanSpace ℝ ι`.
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory
 open scoped ENNReal NNReal RealInnerProductSpace

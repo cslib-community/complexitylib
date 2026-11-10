@@ -24,7 +24,7 @@ import CslibFrontier.Computability.WordRAM.Call
 This native composition proof is original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.NodePacking
 

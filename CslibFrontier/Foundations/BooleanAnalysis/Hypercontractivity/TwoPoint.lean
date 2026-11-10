@@ -42,7 +42,7 @@ the left side by it, and two monotonicity arguments for derivatives show
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

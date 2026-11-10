@@ -29,7 +29,7 @@ tag/payload delivery keep the original calling boundary.
 The queue and its algorithmic references are in `Cslib.DataStructure.Queue.Spec`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.Queue.WordRAM
 

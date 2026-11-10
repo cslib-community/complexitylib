@@ -34,7 +34,7 @@ is proved separately; matrix computation and cryptographic security remain separ
   Conceptually-Simpler, Asymptotically-Faster, Attribute-Based*, Section 3.1][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW
 

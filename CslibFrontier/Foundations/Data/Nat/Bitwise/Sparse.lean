@@ -30,7 +30,7 @@ natural-number arithmetic, independently of a machine word width or execution co
 These extend Mathlib's finite-set/binary-digit correspondence.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

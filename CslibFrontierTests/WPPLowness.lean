@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.WPP.Lowness
 
 /-! # Concrete SPP, LWPP, and WPP oracles and axiom guards for oracle lowness -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.WPPLowness
 

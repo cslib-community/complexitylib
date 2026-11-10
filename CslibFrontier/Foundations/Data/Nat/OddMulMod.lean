@@ -27,7 +27,7 @@ indices `s : Fin (2 ^ (M - 1))` satisfy `(Δ * (2 * s.val + 1)) % 2 ^ M = r`. Fo
   `(fun s => (Δ * (2 * s.val + 1)) % 2 ^ M = r)).card ≤ Δ` for `0 < Δ`.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

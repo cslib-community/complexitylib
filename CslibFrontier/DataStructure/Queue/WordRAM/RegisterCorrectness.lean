@@ -28,7 +28,7 @@ introduced. The native register representation and paid dispatcher are separate 
 The queue and its algorithmic references are in `Cslib.DataStructure.Queue.Spec`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.Queue.WordRAM.RegisterMetadata
 

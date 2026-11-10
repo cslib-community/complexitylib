@@ -35,7 +35,7 @@ public endpoint already quantifies over one uniform constant.
 * [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*][CLRS2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.Dijkstra
 
