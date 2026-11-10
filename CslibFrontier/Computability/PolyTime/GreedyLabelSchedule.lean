@@ -542,7 +542,6 @@ theorem constructBalancedSchedules_balanced {E m n Q r : ℕ}
       (∀ t : Fin Q, ∀ g : Fin r,
         occupancy (fun v => a v t) g * r ≤ 2 * n) := by
   dsimp only
-  have hD : 0 < (r ^ Q) ^ 2 := Nat.pow_pos (Nat.pow_pos hr)
   have hE : 0 < E :=
     (by positivity : 0 < 2 * (b + w) * ((r ^ Q) ^ 2) ^ 2).trans_le hincidenceSize
   have hcardB : Fintype.card ((Fin Q → Fin r) × (Fin Q → Fin r)) = (r ^ Q) ^ 2 := by
@@ -551,9 +550,8 @@ theorem constructBalancedSchedules_balanced {E m n Q r : ℕ}
     (fun e => (constructedVarSchedule hr n m Q (b + w) (edgesOfFin edge) (edge e).2,
       constructedFactorSchedule hr n m Q (b + w) (edgesOfFin edge) (edge e).1))
     (fun t v => constructedVarSchedule hr n m Q (b + w) (edgesOfFin edge) v t)
-    (b + w) (by simp only [Fintype.card_fin]; exact hE) (by rw [hcardB]; exact hD) hbw
+    (b + w) (by simp only [Fintype.card_fin]; exact hE) hbw
     (by simp only [Fintype.card_fin]; omega) (by simp only [Fintype.card_fin]; omega)
-    (by simp only [Fintype.card_fin]; omega)
     (by simpa only [Fintype.card_fin, hcardB] using hincidenceSize)
     (by simpa only [Fintype.card_fin] using hgroupSize)
     (by simpa only [Fintype.card_fin] using

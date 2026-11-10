@@ -396,13 +396,14 @@ theorem sink_triple {s : Memory.State} {k c vk kk vc kc cost : ℕ} {next : Prog
 /-- **Sift-down** repairs a downward defect at heap position `k` of a heap of size `S` within
 `10 (⌊log₂ S⌋ - ⌊log₂ k⌋) + 6` memory units. -/
 theorem siftDown_triple (hn : Fits w n) {S : ℕ} {s : Memory.State} {k : ℕ}
-    (hA : L.arrays.Allocated s) (hk : 1 ≤ k) (hkS : k ≤ S) (hshape : HeapShape n L.base S s.mem)
+    (hA : L.arrays.Allocated s) (hkS : k ≤ S) (hshape : HeapShape n L.base S s.mem)
     (hord : DownOrdered (heapEntry n L.base s.mem) S k) :
     Triple w s (siftDown L S k) (10 * (Nat.log 2 S - Nat.log 2 k) + 6)
       fun _ s' => HeapInv n L.base S s'.mem ∧ Rearranges L s s' := by
   rw [siftDown]
   split
   next h2 =>
+    have hk := h2.1
     have hSn := hshape.size_le
     have hvk := hshape.vertex_lt k hk hkS
     have hvl := hshape.vertex_lt (2 * k) (by omega) h2.2
@@ -426,7 +427,7 @@ theorem siftDown_triple (hn : Fits w n) {S : ℕ} {s : Memory.State} {k : ℕ}
       obtain ⟨hs', hga, hgc, hgo, -, -⟩ :=
         hshape.swap (a := k) (b := c) hk hkS (by omega) hcS (by omega)
       have hr := Rearranges.swap (L := L) hshape hk hkS (b := c) (by omega) hcS (by omega)
-      refine (siftDown_triple hn (hr.frontier_eq ▸ hA) (by omega) hcS hs'
+      refine (siftDown_triple hn (hr.frontier_eq ▸ hA) hcS hs'
         (hord.swap hck hcS (fun i _ hiS hia => hmin i hiS hia) hlt hga hgc hgo)).mono
         (by rw [hlogc c hck]) fun _ _ h => ⟨h.1, hr.trans h.2⟩
     refine (?_ : Triple w s _ (10 * (Nat.log 2 S - (Nat.log 2 k + 1)) + 6 + 10) _).mono
@@ -695,7 +696,7 @@ theorem extractMin_triple (hL : L.Valid w K) {s : Memory.State} (hs : Inv L s) :
         Triple.write_bind (heap_lt hA (by omega)) (hL.n_fits.of_le hlast.le) <|
         Triple.write_bind (pos_lt hA hlast) (hL.n_fits.of_le (by omega)) ?_
       refine Triple.bind (c₁ := 10 * (Nat.log 2 (S - 1) - Nat.log 2 1) + 6) (c₂ := 1)
-        (Triple.mono (siftDown_triple hL.n_fits hA le_rfl (by omega) hshape' hdown) le_rfl ?_)
+        (Triple.mono (siftDown_triple hL.n_fits hA (by omega) hshape' hdown) le_rfl ?_)
       rintro _ s' ⟨hinv', hr⟩
       refine Triple.write_bind (hr.frontier_eq ▸ hs.size_lt hL) (hL.n_fits.of_le (by omega)) <|
         Triple.pure ?_

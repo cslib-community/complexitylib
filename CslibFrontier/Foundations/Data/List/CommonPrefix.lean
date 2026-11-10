@@ -155,13 +155,15 @@ theorem lcpLen_sub_one_le_lcpLen_tail (u v : List α) :
 
 /-- Lists that agree on their first `m` entries have the same longest common prefix with any
 list `x`, up to `m`. -/
-theorem min_lcpLen_eq_of_take_eq {u v : List α} (x : List α) {m : ℕ} (hu : m ≤ u.length)
-    (hv : m ≤ v.length) (h : u.take m = v.take m) :
+theorem min_lcpLen_eq_of_take_eq {u v : List α} (x : List α) {m : ℕ}
+    (h : u.take m = v.take m) :
     min (lcpLen x u) m = min (lcpLen x v) m := by
   have key : ∀ k ≤ m, k ≤ lcpLen x u ↔ k ≤ lcpLen x v := by
     intro k hk
     have huk : u.take k = v.take k := by
       rw [← Nat.min_eq_left hk, ← take_take, h, take_take]
+    have hlen := congrArg length huk
+    rw [length_take, length_take] at hlen
     rw [le_lcpLen_iff, le_lcpLen_iff, huk]
     exact ⟨fun ⟨h1, _, h3⟩ => ⟨h1, by omega, h3⟩, fun ⟨h1, _, h3⟩ => ⟨h1, by omega, h3⟩⟩
   have h1 := (key (min (lcpLen x u) m) (Nat.min_le_right _ _)).mp (Nat.min_le_left _ _)

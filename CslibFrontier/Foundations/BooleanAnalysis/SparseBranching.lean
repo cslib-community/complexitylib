@@ -33,7 +33,7 @@ This module completes the algebraic and combinatorial infrastructure of Sections
    `(k * R_deg) * (#I + 2 * (ℓ - 1))` (`Cslib.BitString.natDegree_univariateParityCoord_le`,
    `Cslib.BitString.natDegree_univariateParityTruncatedSum_le`). For integer-coefficient
    replacements `q : (ι → Bool) → κ → ι → ℤ[X]`, evaluating at $T = 0$ is congruent to
-   `commonZeroCount I P` modulo $2^\ell$ when `1 ≤ ℓ`
+   `commonZeroCount I P` modulo $2^\ell$
    (`Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount`) and recovers
    `commonZeroCount I P` via `(· % 2 ^ ℓ)` when `Fintype.card ι < ℓ`
    (`Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`). Note that
@@ -86,7 +86,7 @@ This module completes the algebraic and combinatorial infrastructure of Sections
   $\deg_T \le (k R_{\mathrm{deg}})(m_{\mathrm{test}} + 2(\ell - 1))$.
 * `Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount` and
   `Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`: equation (5.5)
-  congruence (for `1 ≤ ℓ`) and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
+  congruence and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
   $T = 0$ under integer-coefficient replacements.
 * `Cslib.BitString.commonZeroCount_eq_sum_relabelRestrictedMonomials`: additive branch decomposition
   of `commonZeroCount` into `commonZeroCount` over the relabeled free-variable cube `ι' → Bool`.
@@ -294,13 +294,13 @@ theorem eval_zero_univariateParityTruncatedSum [Fintype ι] [DecidableEq ι] [Co
 replacement polynomial `q x i v` restores `bitVal ℤ (x v)` at `T = 0`,
 `(univariateParityTruncatedSum I P ℓ q).eval 0 ≡ commonZeroCount I P [ZMOD 2 ^ ℓ]`. -/
 theorem eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount [Fintype ι] [DecidableEq ι]
-    (I : Finset κ) (P : κ → Finset (Finset ι)) {ℓ : ℕ} (hℓ : 1 ≤ ℓ)
+    (I : Finset κ) (P : κ → Finset (Finset ι)) (ℓ : ℕ)
     (q : (ι → Bool) → κ → ι → Polynomial ℤ)
     (hq0 : ∀ x : ι → Bool, ∀ i ∈ I, ∀ M ∈ P i, ∀ v ∈ M, (q x i v).eval 0 = bitVal ℤ (x v)) :
     (univariateParityTruncatedSum I P ℓ q).eval 0 ≡
       (commonZeroCount I P : ℤ) [ZMOD (2 : ℤ) ^ ℓ] := by
   rw [eval_zero_univariateParityTruncatedSum I P ℓ q hq0]
-  exact sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P hℓ
+  exact sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount I P ℓ
 
 /-- **§5.3, eq. (5.5b) (exact recovery of $N(\mathcal{P})$ from $S_\ell(H(0)) \bmod 2^\ell$)**:
 when `Fintype.card ι < ℓ` and every replacement polynomial `q x i v` restores `bitVal ℤ (x v)` at
