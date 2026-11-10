@@ -633,6 +633,37 @@ omitting any one of the three fields gives an adversary that wins with probabili
 Concrete checks are in
 [`CslibFrontierTests/Crypto/VariableLengthMAC.lean`](../../CslibFrontierTests/Crypto/VariableLengthMAC.lean).
 
+A weak pseudorandom function only has to look random on uniformly random inputs. In
+[`Computational/WeakPRF.lean`](../../CslibFrontier/Crypto/Computational/WeakPRF.lean)
+(Katz–Lindell 3rd ed., Exercises 3.28 and 4.9 [katzlindell20][katzlindell20]),
+`WeakPseudorandomFunction` gives the distinguisher an oracle that returns a fresh uniform input
+together with its value under the keyed function or under a random function, and
+`PseudorandomFunction.weakPseudorandomFunction` proves that every pseudorandom function is weak.
+The converse fails: `zeroPatch` maps the all-zero input to itself and leaves every other value
+unchanged. `advantage_weakPrfRealGame_zeroPatch_le` shows that the patch moves the weak real game
+by at most `Q / 2 ^ n` against an adversary making at most `Q` calls, so
+`WeakPseudorandomFunction.zeroPatch` keeps weak security, while
+`not_pseudorandomFunction_zeroPatch` and `not_eufCma_prfMAC_zeroPatch` break full
+pseudorandomness and the direct MAC with probability `1`. From any pseudorandom function this
+gives `PseudorandomFunction.exists_weak_not_pseudorandom` and
+`PseudorandomFunction.exists_weak_not_eufCma_prfMAC`. Another answer to Exercise 3.28(b)
+evaluates the function after rounding odd inputs to even ones; the zero patch is simpler and
+separates the same notions. Encryption from a weak pseudorandom function (Exercise 3.28(d)) is not formalized.
+
+For polynomial-evaluation hashing of messages shorter than `ℓ` over a finite field, import
+[`Protocols/MAC/PolynomialEvaluation.lean`](../../CslibFrontier/Crypto/Protocols/MAC/PolynomialEvaluation.lean)
+(Katz–Lindell 3rd ed., §4.5.2, Theorem 4.17 and Exercise 4.22). A message with its length code
+appended is evaluated at the key in one of four coefficient layouts.
+`PolynomialEvaluation.isDeltaUniversalHash_hash` proves the textbook layout `ℓ / |F|`-difference
+universal for any injective length code. For the layouts of Exercise 4.22(a) and (c),
+`isDeltaUniversalHash_fixedTopHash` and `isDeltaUniversalHash_ascendingHash` prove the same bound
+when, in addition, no positive length is coded as zero, and `not_isDeltaUniversalHash_fixedTopHash`
+and `not_isDeltaUniversalHash_ascendingHash` give a key-independent collision when the length `1`
+is coded as zero. The constant-term layout of Exercise 4.22(b) is never difference universal
+(`not_isDeltaUniversalHash_constantTermHash`). Concrete checks over `ZMod 5` and for the zero patch
+are in
+[`CslibFrontierTests/Crypto/WeakPRFAndPolyMAC.lean`](../../CslibFrontierTests/Crypto/WeakPRFAndPolyMAC.lean).
+
 [IndexedSignatureScheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/IndexedSignature.lean#L89) signs index/message pairs with polynomially bounded capacity; the oracle refuses repeated or out-of-range signing indices. The syntax is stateless but the game enforces single use. Counter wrappers and Merkle signature clients turn that contract into stateful signing, whereas [TreeSignature.scheme](../../CslibFrontier/Crypto/Computational/TreeSignature.lean#L550) and [TreeSignature/Security.lean](../../CslibFrontier/Crypto/Computational/TreeSignature/Security.lean#L4763) upgrade any indexed EUF-CMA scheme of capacity at least `2` plus a pseudorandom function (or one-way function) to a stateless `SignatureScheme` (`eufCMA_scheme`, `IndexedSignatureScheme.IndexedEUFCMA.exists_eufCMA_of_prf`, `exists_eufCMA_of_oneWay`) by sampling a uniform leaf and deriving internal node keys and signing coins from the PRF [bs23][bs23]; `TreeSignature.sign` returns `[]` outside the `n`-bit message domain. Composing Lamport, depth-`1` Merkle trees, PRFs from one-way functions, and stateless tree signatures gives [OneWay.exists_eufCMA_of_hashFamily](../../CslibFrontier/Crypto/Computational/TreeSignature/Security.lean#L4821) from a one-way function and a collision-resistant hash family. Without full collision resistance, [`TCRSignature.scheme`](../../CslibFrontier/Crypto/Computational/TCRSignature.lean) adapts Boneh–Shoup §13.2.1, construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534 [bs23][bs23] to a capacity-`1` `IndexedSignatureScheme` over a one-time signature scheme `S` and an unrestricted target collision-resistant `KeyedHashFamily` `H` without storing a hash key in `pk` (`SignatureScheme.OneTimeEUFCMA.indexedEUFCMA_tcrSignature`; concrete checks and an explicit `1`-probability break against a constant hash family are in [`CslibFrontierTests/Crypto/TCRSignature.lean`](../../CslibFrontierTests/Crypto/TCRSignature.lean)), and [`IndexedSignatureScheme.double`](../../CslibFrontier/Crypto/Computational/IndexedSignature/Double.lean) doubles any indexed scheme of capacity at least `1` to constant capacity `2` with plug-and-pray loss `2` (Boneh–Shoup §14.6.1, construction `(14.4)` on p. 597, and Exercise 13.2 [bs23][bs23]; `IndexedSignatureScheme.IndexedEUFCMA.double`). Composing Lamport one-time signatures, `TCRSignature.scheme`, `IndexedSignatureScheme.double`, and `TreeSignature` yields `OneWay.exists_eufCMA_of_targetCollisionResistant`: instantiating `H` with `naorYungHash` proves `OneWayPermutation.exists_eufCMA` (Naor–Yung §4 / Theorem 2 [naoryung89][naoryung89]), while instantiating `H` with `rompelHash` in [`Rompel.lean`](../../CslibFrontier/Crypto/Computational/Rompel.lean) removes the permutation hypothesis to yield `OneWay.exists_indexedEUFCMA_two` and `OneWay.exists_counterEUFCMA_two` on arbitrary-length `List Bool` messages, `OneWay.exists_eufCMA` and `exists_oneWay_iff_exists_signature` on `SignatureScheme`'s `n`-bit message domain, and—after applying [`TCRSignature.wordScheme`](../../CslibFrontier/Crypto/Computational/TCRSignature/ManyTime.lean) (`SignatureScheme.EUFCMA.eufCMA_wordScheme`)—`OneWay.exists_wordEUFCMA` and `exists_oneWay_iff_exists_wordSignature` on unrestricted `List Bool` messages ([rompel90][rompel90]; client checks and message-space separation witnesses in [`CslibFrontierTests/Crypto/Rompel.lean`](../../CslibFrontierTests/Crypto/Rompel.lean)). Keep the indexed game's no-repeat invariant distinct from durable storage in a deployed stateful implementation: no filesystem or crash-recovery model is asserted here.
 
 Collision-resistant hashing alone gives these stateless signatures.
