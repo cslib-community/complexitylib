@@ -266,7 +266,7 @@ private theorem general_resources (k β Ncut : ℕ) (hk : 2 ≤ k) :
   let hp := prepare_polytime
   let prep := NativeCertificate.ofPolyTime hp
   have hprep := NativeCertificate.ofPolyTime_isPolynomial hp
-  have hv := SparseCNFLeafCounter.computableInPolyTime_validDeclaredInput k
+  have hv := CNF.computableInPolyTime_validDeclaredInput k
     (ComputableInPolyTime.id' (encIn := encUnary))
   let cv := NativeCertificate.ofPolyTime hv
   have hcv := NativeCertificate.ofPolyTime_isPolynomial hv

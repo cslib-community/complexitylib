@@ -20,10 +20,12 @@ normalization, size gates, query writing, counting and binary reconstruction are
 
 ## Main results
 
-* `exists_count_sharp_certificate`: natural binary intervals and sharp native resources.
+* `exists_count_sharp_certificate`, `exists_count_realEta_certificate`: natural binary intervals
+  and sharp native resources.
 * `Signed.exists_count_sharp_certificate`: signed intervals with direct empty-graph handling.
 * `Signed.exists_count_realEta_certificate`: the source single-log-log clock and global workspace.
-* `Signed.exists_decide_realEta_certificate`: actual binary positivity decision with the same rate.
+* `Signed.exists_decide_sharp_certificate`, `Signed.exists_decide_realEta_certificate`: actual
+  binary positivity decision with the same rate.
 -/
 
 public section
