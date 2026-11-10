@@ -18,6 +18,7 @@ import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.RandomPermutation
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad
+import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
 import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
@@ -942,7 +943,7 @@ private theorem toOuterMeasure_hasVCollision_le {α : Type}
     ((OracleComp.interpret (memoize (fun _ : G × G => PMF.uniformOfFintype (G × G)))
       program).run qc).toOuterMeasure {x | hasVCollision x.2 = true} ≤
       (n * qc.length + n.choose 2 : ℕ) * (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  refine RandomPermutation.toOuterMeasure_bad_choose_two_le
+  refine OracleComp.toOuterMeasure_bad_choose_two_le
     (bad := fun s : List ((G × G) × (G × G)) => hasVCollision s = true)
     List.length (Fintype.card G : ℝ≥0∞)⁻¹
     (fun p s hs => ?_) (fun p s _ y hy _ => ?_) hn (Bool.eq_false_iff.mp hqc)

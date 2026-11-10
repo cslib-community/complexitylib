@@ -11,6 +11,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomOracle
 public import CslibFrontier.Languages.Probabilistic.UntilBad
 public import Mathlib.Data.Fintype.Perm
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Data.Finset.Card
@@ -86,8 +87,6 @@ with polymorphic bidirectional query deduplication over arbitrary `[DecidableEq 
   `Cslib.RandomPermutation.run_interpret_answer_complete`,
   `Cslib.RandomPermutation.uniform_interpret_eq_lazy`: exact eager/lazy equivalence for
   bidirectional random permutations.
-* `Cslib.RandomPermutation.toOuterMeasure_bad_choose_two_le`: quadratic union bound
-  `(n * size s + n.choose 2) * δ` for bad events with linearly growing step probability.
 * `Cslib.RandomPermutation.uniformPerm_bind_apply_le_forgetful`,
   `Cslib.RandomPermutation.forgetfulAnswer_bind_apply_le_uniformPerm`,
   `Cslib.RandomPermutation.toOuterMeasure_forgetfulAnswer_le_pairwise_and_length_le_add`,
@@ -1687,58 +1686,6 @@ private theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
 
 /-! ### Quadratic union bound for linearly growing collision sets -/
 
-/-- If each oracle call from a good state `s` turns bad with probability at most `size s * δ` and
-increases `size` by at most `1`, then an adaptive program making at most `n` queries reaches a bad
-state from `s` with probability at most `(n * size s + n.choose 2) * δ`. -/
-theorem toOuterMeasure_bad_choose_two_le {ι σ β : Type} {spec : ι → Type}
-    {handler : (q : ι) → StateT σ PMF (spec q)} {bad : σ → Prop}
-    (size : σ → ℕ) (δ : ℝ≥0∞)
-    (hstep : ∀ q s, ¬bad s → (handler q s).toOuterMeasure {x | bad x.2} ≤ size s * δ)
-    (hgrow : ∀ q s, ¬bad s → ∀ x ∈ (handler q s).support, ¬bad x.2 → size x.2 ≤ size s + 1)
-    {program : OracleComp spec β} {n : ℕ} (hn : IsQueryBounded program n)
-    {s : σ} (hs : ¬bad s) :
-    ((OracleComp.interpret handler program).run s).toOuterMeasure {x | bad x.2} ≤
-      (n * size s + n.choose 2 : ℕ) * δ := by
-  induction hn generalizing s with
-  | pure a n =>
-    simp only [run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
-      PMF.toOuterMeasure_pure_apply, ite_eq_right (show (a, s) ∉ {x : β × σ | bad x.2} from hs)]
-    exact zero_le
-  | liftBind q cont n _ ih =>
-    classical
-    simp only [run_interpret_bind, run_interpret_query,
-      Probability.PMF.monad_bind_eq_bind, PMF.toOuterMeasure_bind_apply]
-    set K : ℝ≥0∞ := (n * (size s + 1) + n.choose 2 : ℕ) * δ
-    have hterm (y : spec q × σ) :
-        (handler q s) y *
-          ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤
-        (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) := by
-      by_cases hmem : y ∈ (handler q s).support
-      · refine mul_le_mul_of_nonneg_left ?_ zero_le
-        by_cases hy : bad y.2
-        · have : y ∈ {x : spec q × σ | bad x.2} := hy
-          rw [Set.indicator_of_mem this, Pi.one_apply]
-          exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-        · have : y ∉ {x : spec q × σ | bad x.2} := hy
-          rw [Set.indicator_of_notMem this, zero_add]
-          refine (ih y.1 hy).trans ?_
-          simp only [K]
-          gcongr
-          exact hgrow q s hs y hmem hy
-      · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
-    calc ∑' y, (handler q s) y *
-          ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
-        ≤ ∑' y, (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) :=
-          tsum_le_tsum hterm
-      _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
-          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            Probability.PMF.toOuterMeasure_eq_tsum_mul_indicator]
-      _ ≤ size s * δ + K := add_le_add (hstep q s hs) le_rfl
-      _ = ((n + 1) * size s + (n + 1).choose 2 : ℕ) * δ := by
-          simp only [K, Nat.choose_succ_succ' n 1, Nat.choose_one_right, Nat.cast_add,
-            Nat.cast_mul, Nat.cast_one]
-          ring
-
 omit [Nonempty α] in
 private theorem card_filter_invLookup_isSome_le (cache : Cache α) :
     (Finset.univ.filter fun y : α => (invLookup cache y).isSome = true).card ≤ cache.length := by
@@ -1752,7 +1699,7 @@ private theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     ((OracleComp.interpret forgetfulWithBad program).run (cache, false)).toOuterMeasure
       {x | x.2.2 = true} ≤
       (n * cache.length + n.choose 2 : ℕ) * (Fintype.card α : ℝ≥0∞)⁻¹ := by
-  refine toOuterMeasure_bad_choose_two_le (bad := fun st : Cache α × Bool => st.2 = true)
+  refine OracleComp.toOuterMeasure_bad_choose_two_le (bad := fun st : Cache α × Bool => st.2 = true)
     (fun st : Cache α × Bool => st.1.length)
     (Fintype.card α : ℝ≥0∞)⁻¹ ?_ ?_ hn Bool.false_ne_true
   · intro q ⟨c, b⟩ hb

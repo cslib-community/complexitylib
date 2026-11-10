@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Game.CloseTo
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
+public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 public import CslibFrontier.Languages.Probabilistic.Transcript
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
@@ -25,6 +26,11 @@ unmodified execution. It includes overwriting an existing entry with a different
 * `closeTo_run_interpret_memoize_cons`: visible-output closeness after prepending one entry.
 * `entry_mem_iff_lookup_isSome`: transcript query membership agrees with key lookup on the pair
   projection.
+* `coe_advantage_lazyProgramHandler_overwriteProgramHandler_choose_two_le`,
+  `advantage_lazyProgramHandler_overwriteProgramHandler_choose_two_le`,
+  `advantage_lazyProgramHandler_overwriteProgramHandler_le`,
+  `advantage_runWith_lazyProgramHandler_overwriteProgramHandler_choose_two_le`: `Game.advantage`
+  corollaries of the min-entropy adaptive random-oracle programming hop.
 
 This is an original application of the existing identical-until-bad and random-oracle laws.
 -/
@@ -34,7 +40,7 @@ public section
 namespace Cslib.RandomOracle
 
 open Crypto Probability OracleComp Interactive
-open scoped ENNReal
+open scoped ENNReal NNReal
 
 variable {Query Value α : Type} [DecidableEq Query]
 
@@ -46,20 +52,8 @@ private theorem visible_closeTo_of_untilBad {State : Type}
     CloseTo (((interpret first program).run state).map Prod.fst)
       (((interpret second program).run state).map Prod.fst)
       (((interpret second program).run state).toOuterMeasure {out | bad out.2}) := by
-  classical
-  intro event
-  let test : α × State → PMF Bool := fun out => PMF.pure (decide (out.1 ∈ event))
-  have ht (μ : PMF (α × State)) :
-      (μ.bind test) true = (μ.map Prod.fst).toOuterMeasure event := by
-    change (μ.map (fun out => decide (out.1 ∈ event))) true = _
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
-      PMF.toOuterMeasure_map_apply]
-    congr 1
-    ext out
-    simp
-  have hb := h.bind_apply_le program state test true
-  rw [ht, ht, h.bad_eq] at hb
-  exact hb
+  rw [← h.bad_eq]
+  exact (h.closeTo_run program state).map Prod.fst
 
 private noncomputable def replaceAnswer (distribution : Query → PMF Value)
     (target : Query) (value : Value) (q : Query) :
@@ -202,5 +196,124 @@ theorem entry_mem_iff_lookup_isSome {Query Value : Type} [DecidableEq Query]
     obtain ⟨entry, hmem, rfl⟩ := List.mem_map.mp hp
     subst heq
     exact ⟨entry, hmem, rfl⟩
+
+/-! ### `Game.advantage` bounds for adaptive random-oracle programming -/
+
+section AdvantageProgramming
+
+variable {Req Digest Log : Type} {Reply : Req → Type} {Coins : Req → Type}
+
+omit [DecidableEq Query] in
+/-- **Sharpened adaptive RO programming `Game.advantage` bound in `ℝ≥0∞` (`OracleComp`)**:
+postprocessing `lazyProgramHandler` vs. `overwriteProgramHandler` by `next` changes the game's
+acceptance probability by at most `(q_S * cache.length + q_S * q_H + q_S.choose 2) * δ`. -/
+theorem coe_advantage_lazyProgramHandler_overwriteProgramHandler_choose_two_le
+    [BEq Query] [LawfulBEq Query]
+    (dist : PMF Digest) (active : Req → Bool)
+    (inactive : (req : Req) → active req = false → Log → PMF (Reply req × Log))
+    (samplePre : (req : Req) → PMF (Coins req))
+    (point : (req : Req) → Coins req → Query)
+    (finish : (req : Req) → Coins req → Digest → Log → Reply req × Log)
+    {δ : ℝ≥0∞} (hminEnt : ∀ req, active req = true → ∀ q, ((samplePre req).map (point req)) q ≤ δ)
+    {program : OracleComp (Reply ⊕ₒ fun _ : Query => Digest) α} {q_S q_H : ℕ}
+    (hqS : IsCostBounded (Sum.elim (fun _ => 1) (fun _ => 0)) program q_S)
+    (hqH : IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 1)) program q_H)
+    (cache : List (Query × Digest)) (log : Log)
+    (next : α × (List (Query × Digest) × Log) → Game) :
+    (Game.advantage
+      (((interpret (lazyProgramHandler dist active inactive samplePre point finish)
+        program).run (cache, log)).bind next)
+      (((interpret (overwriteProgramHandler dist active inactive samplePre point finish)
+        program).run (cache, log)).bind next) : ℝ≥0∞) ≤
+      (q_S * cache.length + q_S * q_H + q_S.choose 2 : ℕ) * δ :=
+  Game.coe_advantage_bind_le_of_closeTo
+    (closeTo_run_lazyProgramHandler_overwriteProgramHandler_choose_two dist active inactive
+      samplePre point finish hminEnt hqS hqH cache log) next
+
+omit [DecidableEq Query] in
+/-- **Sharpened adaptive RO programming `Game.advantage` bound in `ℝ≥0` (`OracleComp`)**. -/
+theorem advantage_lazyProgramHandler_overwriteProgramHandler_choose_two_le
+    [BEq Query] [LawfulBEq Query]
+    (dist : PMF Digest) (active : Req → Bool)
+    (inactive : (req : Req) → active req = false → Log → PMF (Reply req × Log))
+    (samplePre : (req : Req) → PMF (Coins req))
+    (point : (req : Req) → Coins req → Query)
+    (finish : (req : Req) → Coins req → Digest → Log → Reply req × Log)
+    {δ : ℝ≥0}
+    (hminEnt : ∀ req, active req = true → ∀ q, ((samplePre req).map (point req)) q ≤ (δ : ℝ≥0∞))
+    {program : OracleComp (Reply ⊕ₒ fun _ : Query => Digest) α} {q_S q_H : ℕ}
+    (hqS : IsCostBounded (Sum.elim (fun _ => 1) (fun _ => 0)) program q_S)
+    (hqH : IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 1)) program q_H)
+    (cache : List (Query × Digest)) (log : Log)
+    (next : α × (List (Query × Digest) × Log) → Game) :
+    Game.advantage
+      (((interpret (lazyProgramHandler dist active inactive samplePre point finish)
+        program).run (cache, log)).bind next)
+      (((interpret (overwriteProgramHandler dist active inactive samplePre point finish)
+        program).run (cache, log)).bind next) ≤
+      (q_S * cache.length + q_S * q_H + q_S.choose 2 : ℕ) * δ := by
+  have h := coe_advantage_lazyProgramHandler_overwriteProgramHandler_choose_two_le dist active
+    inactive samplePre point finish hminEnt hqS hqH cache log next
+  exact ENNReal.coe_le_coe.mp (by simpa only [ENNReal.coe_mul, ENNReal.coe_natCast] using h)
+
+omit [DecidableEq Query] in
+/-- **Rectangular adaptive RO programming `Game.advantage` bound in `ℝ≥0` (`OracleComp`)**:
+`(q_S * (cache.length + q_S + q_H)) * δ` form. -/
+theorem advantage_lazyProgramHandler_overwriteProgramHandler_le
+    [BEq Query] [LawfulBEq Query]
+    (dist : PMF Digest) (active : Req → Bool)
+    (inactive : (req : Req) → active req = false → Log → PMF (Reply req × Log))
+    (samplePre : (req : Req) → PMF (Coins req))
+    (point : (req : Req) → Coins req → Query)
+    (finish : (req : Req) → Coins req → Digest → Log → Reply req × Log)
+    {δ : ℝ≥0}
+    (hminEnt : ∀ req, active req = true → ∀ q, ((samplePre req).map (point req)) q ≤ (δ : ℝ≥0∞))
+    {program : OracleComp (Reply ⊕ₒ fun _ : Query => Digest) α} {q_S q_H : ℕ}
+    (hqS : IsCostBounded (Sum.elim (fun _ => 1) (fun _ => 0)) program q_S)
+    (hqH : IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 1)) program q_H)
+    (cache : List (Query × Digest)) (log : Log)
+    (next : α × (List (Query × Digest) × Log) → Game) :
+    Game.advantage
+      (((interpret (lazyProgramHandler dist active inactive samplePre point finish)
+        program).run (cache, log)).bind next)
+      (((interpret (overwriteProgramHandler dist active inactive samplePre point finish)
+        program).run (cache, log)).bind next) ≤
+      (q_S * (cache.length + q_S + q_H) : ℕ) * δ := by
+  have h := Game.coe_advantage_bind_le_of_closeTo
+    (closeTo_run_lazyProgramHandler_overwriteProgramHandler dist active inactive samplePre point
+      finish hminEnt hqS hqH cache log) next
+  exact ENNReal.coe_le_coe.mp (by simpa only [ENNReal.coe_mul, ENNReal.coe_natCast] using h)
+
+omit [DecidableEq Query] in
+/-- **Sharpened adaptive RO programming `Game.advantage` bound in `ℝ≥0`
+(`ProbOracleComp.runWith`)**. -/
+theorem advantage_runWith_lazyProgramHandler_overwriteProgramHandler_choose_two_le
+    [BEq Query] [LawfulBEq Query]
+    (dist : PMF Digest) (active : Req → Bool)
+    (inactive : (req : Req) → active req = false → Log → PMF (Reply req × Log))
+    (samplePre : (req : Req) → PMF (Coins req))
+    (point : (req : Req) → Coins req → Query)
+    (finish : (req : Req) → Coins req → Digest → Log → Reply req × Log)
+    {δ : ℝ≥0}
+    (hminEnt : ∀ req, active req = true → ∀ q, ((samplePre req).map (point req)) q ≤ (δ : ℝ≥0∞))
+    {program : ProbOracleComp (Reply ⊕ₒ fun _ : Query => Digest) α} {q_S q_H : ℕ}
+    (hqS : IsCostBounded (Sum.elim (fun _ => 0) (Sum.elim (fun _ => 1) (fun _ => 0))) program q_S)
+    (hqH : IsCostBounded (Sum.elim (fun _ => 0) (Sum.elim (fun _ => 0) (fun _ => 1))) program q_H)
+    (cache : List (Query × Digest)) (log : Log)
+    (next : α × (List (Query × Digest) × Log) → Game) :
+    Game.advantage
+      ((ProbOracleComp.runWith
+        (lazyProgramHandler dist active inactive samplePre point finish) program
+          (cache, log)).bind next)
+      ((ProbOracleComp.runWith
+        (overwriteProgramHandler dist active inactive samplePre point finish) program
+          (cache, log)).bind next) ≤
+      (q_S * cache.length + q_S * q_H + q_S.choose 2 : ℕ) * δ := by
+  have h := Game.coe_advantage_bind_le_of_closeTo
+    (closeTo_runWith_lazyProgramHandler_overwriteProgramHandler_choose_two dist active inactive
+      samplePre point finish hminEnt hqS hqH cache log) next
+  exact ENNReal.coe_le_coe.mp (by simpa only [ENNReal.coe_mul, ENNReal.coe_natCast] using h)
+
+end AdvantageProgramming
 
 end Cslib.RandomOracle
