@@ -555,8 +555,8 @@ theorem sum_checkResidual_add_eq_zero_iff {p n T : ℕ} {alpha : ZMod p}
 /-- Schedule for the two-round commit-then-open `macCheckProtocol`: Round 1 broadcasts commitments
 `Comm` and Round 2 broadcasts `ResidualOpening p Coins`. -/
 @[expose, reducible] def macCheckSchedule (p n : ℕ) (Coins Comm : Type) : Schedule n noOracleSpec :=
-  broadcastSchedule n noOracleSpec Comm ++
-    broadcastSchedule n noOracleSpec (ResidualOpening p Coins)
+  allToAllSchedule n (spec := noOracleSpec) Comm ++
+    allToAllSchedule n (spec := noOracleSpec) (ResidualOpening p Coins)
 
 /-- Two-round commit-then-open `MACCheck` protocol over `CslibFrontier.Crypto.Protocols.MPC.Basic`,
 modeling steps 5–9 of [DamgardKellerLarraiaPastroSchollSmart2013], App. D.1, Fig. 10 (steps 1–4,

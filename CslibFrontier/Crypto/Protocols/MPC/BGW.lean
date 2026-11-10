@@ -45,8 +45,8 @@ unauthorized-coalition marginal uniformity in
 2. **1-Round Synchronous BGW/GRR Degree-Reduction Multiplication Gate
    (`bgwDegreeReductionProtocol`):**
    - Formalizes the 1-round $m$-party GRR degree-reduction multiplication gate over `noOracleSpec`
-     ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 6.1) using `pairwiseSteps` and
-     `deliverBroadcast` from `CslibFrontier.Crypto.Protocols.MPC.Broadcast`.
+     ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 6.1) using `allToAllStepsWith` and
+     `receivedScheduleOfInbox` from `CslibFrontier.Crypto.Protocols.MPC.AllToAll`.
    - Every supported execution on degree-$t$ shares of $a, b$ ($2t < m$) outputs genuine
      degree-$t$ Shamir shares of $a \cdot b$ (`output_bgwDegreeReductionProtocol_eq_share_mul`,
      `reconstruct_output_bgwDegreeReductionProtocol_eq_mul`).
@@ -353,15 +353,15 @@ private theorem eval_pi_uniform_randomness {m : ℕ} (params : Params F (Fin m))
 1. Each party `s : Fin m` holds input share pair `uv_s = (u_s, v_s) : F × F` and samples fresh
    degree-$t$ Shamir randomness `r_s : Randomness params`.
 2. Each party `s` sends the sub-share `share params r_s (u_s * v_s) i` to each party `i : Fin m`
-   via `pairwiseSteps`.
+   via `allToAllStepsWith`.
 3. Each party `i` outputs the Lagrange-recombined share
    `Polynomial.reconstruct params.point inbox_i`. -/
 @[expose] noncomputable def bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m)) :
-    Protocol m noOracleSpec (broadcastSchedule m noOracleSpec F)
+    Protocol m noOracleSpec (allToAllSchedule m (spec := noOracleSpec) F)
       (fun _ => F × F) (fun _ => Randomness params) (fun _ => F) where
   sampleCoins _ := ProbComp.uniform (Randomness params)
   steps :=
-    pairwiseSteps m (spec := noOracleSpec) (Msg := F)
+    allToAllStepsWith m (spec := noOracleSpec) (Msg := F)
       (State := fun _ => (F × F) × Randomness params)
       (Out := fun _ => F)
       (fun _ (uv_s, r_s) rcv => share params r_s (uv_s.1 * uv_s.2) rcv)
@@ -372,10 +372,10 @@ its coins `r_i`, and its received sub-share inbox `inbox_i : Fin m → F`. -/
 def bgwDegreeReductionViewOf {m : ℕ} (params : Params F (Fin m)) (i : Fin m)
     (uv_i : F × F) (r_i : Randomness params) (inbox_i : Fin m → F) :
     PartyView (fun _ => F × F) (fun _ => Randomness params)
-      (broadcastSchedule m noOracleSpec F) i where
+      (allToAllSchedule m (spec := noOracleSpec) F) i where
   input := uv_i
   coins := r_i
-  received := deliverBroadcast (spec := noOracleSpec) inbox_i i
+  received := receivedScheduleOfInbox (spec := noOracleSpec) i inbox_i (allPairs m)
 
 theorem evalWith_bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m))
     (uv : Fin m → F × F) :
@@ -388,12 +388,12 @@ theorem evalWith_bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m)
   rw [Protocol.evalWith_eq]
   dsimp only [bgwDegreeReductionProtocol]
   rw [eval_pi_uniform_randomness]
-  simp only [evalWith_pairwiseSteps, PMF.pure_map]
+  simp only [evalWith_allToAllStepsWith, PMF.pure_map]
   rw [PMF.map]
   refine congrArg (PMF.bind (PMF.uniformOfFintype (Fin m → Randomness params)))
     (funext fun r => congrArg PMF.pure ?_)
   refine Prod.ext (funext fun i => rfl) (funext fun i => ?_)
-  simp [Protocol.outputOfView, outputAt_pairwiseSteps, bgwDegreeReduceShare]
+  simp [Protocol.outputOfView, outputAt_allToAllStepsWith, bgwDegreeReduceShare]
 
 /-- Output correctness of `bgwDegreeReductionProtocol`: when `2 * params.threshold < m`
 ($t < m / 2$) and the inputs `uv` are degree-$t$ Shamir shares of `a` and `b`, every supported
@@ -403,7 +403,7 @@ theorem output_bgwDegreeReductionProtocol_eq_share_mul {m : ℕ} (params : Param
     (h2t : 2 * params.threshold < m)
     (r₁ r₂ : Randomness params) (a b : F)
     {res : ((i : Fin m) → PartyView (fun _ => F × F) (fun _ => Randomness params)
-        (broadcastSchedule m noOracleSpec F) i) × (Fin m → F)}
+        (allToAllSchedule m (spec := noOracleSpec) F) i) × (Fin m → F)}
     (hres : res ∈ ((bgwDegreeReductionProtocol params).evalWith noOracleWorld
         (fun i => (share params r₁ a i, share params r₂ b i))).support) :
     res.2 = fun i =>
@@ -421,7 +421,7 @@ theorem reconstruct_output_bgwDegreeReductionProtocol_eq_mul {m : ℕ} (params :
     (h2t : 2 * params.threshold < m)
     (r₁ r₂ : Randomness params) (a b : F)
     {res : ((i : Fin m) → PartyView (fun _ => F × F) (fun _ => Randomness params)
-        (broadcastSchedule m noOracleSpec F) i) × (Fin m → F)}
+        (allToAllSchedule m (spec := noOracleSpec) F) i) × (Fin m → F)}
     (hres : res ∈ ((bgwDegreeReductionProtocol params).evalWith noOracleWorld
         (fun i => (share params r₁ a i, share params r₂ b i))).support)
     {s : Finset (Fin m)} (hs : authorized params s) :
@@ -438,7 +438,7 @@ inbox. -/
 noncomputable def bgwDegreeReductionViewSim {m : ℕ} (params : Params F (Fin m))
     (I : Finset (Fin m)) (uvI : (i : I) → F × F) :
     ProbComp ((i : I) → PartyView (fun _ => F × F) (fun _ => Randomness params)
-      (broadcastSchedule m noOracleSpec F) i) := do
+      (allToAllSchedule m (spec := noOracleSpec) F) i) := do
   let p ← ProbComp.uniform
     (((i : I) → Randomness params) × ((s : (Iᶜ : Finset (Fin m))) → (I → F)))
   let (rI, hCompl) := p
@@ -494,7 +494,7 @@ theorem map_restrict_evalWith_bgwDegreeReductionProtocol {m : ℕ} (params : Par
 /-- Schedule for `bgwSumProtocol params`: one all-to-all point-to-point Shamir input-sharing phase
 followed by one all-to-all broadcast of summed shares. -/
 @[expose, reducible] def bgwSumSchedule (m : ℕ) (F : Type) : Schedule m noOracleSpec :=
-  broadcastSchedule m noOracleSpec F ++ broadcastSchedule m noOracleSpec F
+  allToAllSchedule m (spec := noOracleSpec) F ++ allToAllSchedule m (spec := noOracleSpec) F
 
 /-- Deterministic $m$-party functionality returning the sum `∑ j : Fin m, x j` to every party. -/
 @[expose] def bgwSumFunctionality (m : ℕ) : Functionality m (fun _ => F) (fun _ => F) :=
@@ -503,7 +503,7 @@ followed by one all-to-all broadcast of summed shares. -/
 /-- 2-round synchronous $m$-party BGW sum protocol over `noOracleSpec`
 ([AsharovLindell2017], Section 4.2, Protocol 4.1, for a circuit of addition gates):
 1. Each party `s : Fin m` samples degree-$t$ Shamir randomness `r_s : Randomness params` and sends
-   `share params r_s (x s) rcv` to each receiver `rcv : Fin m` via `pairwiseSteps`.
+   `share params r_s (x s) rcv` to each receiver `rcv : Fin m` via `allToAllStepsWith`.
 2. Each party `k : Fin m` sums its received shares `Y_k = ∑ s : Fin m, inbox_k s` and broadcasts
    `Y_k` via `broadcastSteps`.
 3. Each party reconstructs `Polynomial.reconstruct params.point Y`. -/
@@ -512,7 +512,7 @@ followed by one all-to-all broadcast of summed shares. -/
       (fun _ => F) (fun _ => Randomness params) (fun _ => F) where
   sampleCoins _ := ProbComp.uniform (Randomness params)
   steps :=
-    (pairwiseSteps m (spec := noOracleSpec) (Msg := F)
+    (allToAllStepsWith m (spec := noOracleSpec) (Msg := F)
       (State := fun _ => F × Randomness params)
       (Out := fun _ => Fin m → F)
       (fun _ (x_s, r_s) rcv => share params r_s x_s rcv)
@@ -533,10 +533,10 @@ def bgwSumViewOf {m : ℕ} (params : Params F (Fin m)) (i : Fin m)
   coins := r_i
   received :=
     Schedule.Received.append
-      (sc₁ := broadcastSchedule m noOracleSpec F)
-      (sc₂ := broadcastSchedule m noOracleSpec F)
-      (deliverBroadcast (spec := noOracleSpec) inbox_i i)
-      (deliverBroadcast (spec := noOracleSpec) Y i)
+      (sc₁ := allToAllSchedule m (spec := noOracleSpec) F)
+      (sc₂ := allToAllSchedule m (spec := noOracleSpec) F)
+      (receivedScheduleOfInbox (spec := noOracleSpec) i inbox_i (allPairs m))
+      (receivedScheduleOfInbox (spec := noOracleSpec) i Y (allPairs m))
 
 theorem evalWith_bgwSumProtocol {m : ℕ} (params : Params F (Fin m)) (x : Fin m → F) :
     (bgwSumProtocol params).evalWith noOracleWorld x =
@@ -548,13 +548,13 @@ theorem evalWith_bgwSumProtocol {m : ℕ} (params : Params F (Fin m)) (x : Fin m
   rw [Protocol.evalWith_eq]
   dsimp only [bgwSumProtocol]
   rw [eval_pi_uniform_randomness]
-  simp only [Steps.evalWith_append, evalWith_pairwiseSteps,
-    outputAt_pairwiseSteps, evalWith_broadcastSteps, PMF.pure_bind, PMF.pure_map]
+  simp only [Steps.evalWith_append, evalWith_allToAllStepsWith,
+    outputAt_allToAllStepsWith, evalWith_broadcastSteps, PMF.pure_bind, PMF.pure_map]
   rw [PMF.map]
   refine congrArg (PMF.bind (PMF.uniformOfFintype (Fin m → Randomness params)))
     (funext fun r => congrArg PMF.pure ?_)
   refine Prod.ext (funext fun i => rfl) (funext fun i => ?_)
-  simp [Protocol.outputOfView, Steps.outputAt_append, outputAt_pairwiseSteps,
+  simp [Protocol.outputOfView, Steps.outputAt_append, outputAt_allToAllStepsWith,
     outputAt_broadcastSteps]
 
 /-- Output correctness of `bgwSumProtocol`: on every execution in the support, every party outputs
