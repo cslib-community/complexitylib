@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.QueryBounds
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Computability.Probabilistic.Adaptive
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -24,7 +25,6 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Multi-session zero-knowledge simulator and PRG reduction for sequentially amplified GMW
@@ -662,6 +662,7 @@ theorem isPPTOn_sessionWithPadsStep_and_support {α Param : Type}
   have hstep := isPPTOn_attemptWithPadsStep machine hg hf
     (hn.comp' hp1) (hs.comp' hp1) (hm.comp' hp1) (hlimit.comp' hp1)
     (ha.comp' hp1) (hw.comp' hp1) (hstate.comp' hp1).fst' hp2
+  -- Not referenced by name: `growth_poly` in `hsizePoly` reads these from the context.
   have hstPoly : PolyBounded (fun p => (input p).length)
       (fun p => (encSt (state p).1).length) := (hstate.fst').polyBounded_length
   have hpadsPoly : PolyBounded (fun p => (input p).length)
