@@ -255,7 +255,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
       (PMF.uniformOfFintype (Fin (dyadicSize (schedule (n + 1))))).bind
         (fun idx => trial idx.val) := by
     simp only [pmf_norm, SignatureScheme.eufOneTimeGame, forger, sigToOwfForgerBody,
-      ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample,
+      ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_sample,
       eval_sampleDyadicIndex, List.length_replicate, beq_self_eq_true, Bool.true_and]
     rw [PMF.bind_comm]
     rfl
@@ -694,7 +694,7 @@ private theorem lamport_pointwise_le {f : List Bool → List Bool}
   · by_cases hsupp : out ∈ (lamportRunWith f hf adversary n pk (encList encBits w)).support
     · have hqlen : out.2.length ≤ 1 := by
         dsimp only [lamportRunWith] at hsupp
-        rw [ProbOracleComp.eval_run_interpret] at hsupp
+        rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hsupp
         exact (lamportScheme f hf).length_le_one_of_mem_support_run_oneTimeSigningOracle
           (encList encBits w) (adversary n pk) hsupp
       have hwin' := hwin
@@ -709,7 +709,8 @@ private theorem lamport_pointwise_le {f : List Bool → List Bool}
       have hrun_eq : lamportRunWith f hf adversary n pk (encList encBits w) out =
           lamportRunWith f hf adversary n pk (lamportDummySk w jStar) out := by
         dsimp only [lamportRunWith, lamportDummySk]
-        rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
+        rw [ProbOracleComp.eval_run_interpret_eq_runWith,
+          ProbOracleComp.eval_run_interpret_eq_runWith]
         exact (lamportScheme f hf).run_oneTimeSigningOracle_apply_eq_of_agree
           (encList encBits w) (lamportDummySk w jStar)
           (fun req hreq => lamportSign_eq_of_agreeAt hjStar_lt hw_len hreq)
