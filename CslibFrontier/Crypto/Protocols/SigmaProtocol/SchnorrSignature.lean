@@ -24,9 +24,10 @@ at most `Qs` signing calls and `Qro` hash calls by
 `Qs · (Qs + Qro) / q + (Qro + 1) / N + √((Qro + 1) · ε')`,
 
 where `N` is the number of challenges and `ε'` the probability that the forking reduction computes
-a discrete logarithm of the public key (`schnorr_succProbability_eufCmaGame_le`,
-[BonehShoup2023], Theorem 19.7 with Equation 19.21). These are exact laws for one group and one
-forger; the computational statement under the discrete-logarithm assumption is separate.
+a discrete logarithm of the public key (`schnorr_succProbability_eufCmaGame_le`). This is
+[BonehShoup2023], Theorem 19.7 with Equation 19.21, with `Qs · (Qs + Qro) / q` in place of the
+slightly larger `Qs · (Qs + Qro + 1) / q`. These are exact laws for one group and one forger; the
+computational statement under the discrete-logarithm assumption is separate.
 
 ## Main definitions
 
@@ -103,7 +104,9 @@ variable [DecidableEq C]
 form): with a nonzero base, a forger making at most `Qs` signing calls and `Qro` hash calls
 succeeds with probability at most `Qs · (Qs + Qro) / q + (Qro + 1) / N + √((Qro + 1) · ε')`, where
 `N` is the number of challenges and `ε'` the probability that the forking reduction computes a
-discrete logarithm of the public key, returning zero on a failed fork. -/
+discrete logarithm of the public key, returning zero on a failed fork. The first term is
+`Qs · (Qs + Qro) / q` in place of the slightly larger `Qs · (Qs + Qro + 1) / q` of
+Equation 19.21. -/
 theorem schnorr_succProbability_eufCmaGame_le (hg : g ≠ 0)
     (A : Forger G M (G × ZMod q) (M × G) C) {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro) :
     (Game.succProbability (eufCmaGame (fiatShamir (Function.Embedding.refl _) (schnorr ι g)

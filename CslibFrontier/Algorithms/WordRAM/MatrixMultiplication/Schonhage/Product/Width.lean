@@ -19,7 +19,8 @@ import CslibFrontier.Computability.WordRAM.Admission
 * `QueriedProduct.admissionWidth`: sufficient physical width, derived only from original scalar
   dimensions, entry magnitude and request count.
 * `QueriedProduct.runs_wide`: actual initialized product execution at every sufficiently wide
-  admitted width, with guaranteed input fit and no physical-width reads by the code.
+  admitted width, with guaranteed input fit. `QueriedProduct.not_readsWidth` separately shows
+  that the code reads no physical width.
 
 The logarithm applies to the explicit original-input magnitude/address envelope. Relating it
 to a polynomially bounded whole-3SUM input remains separate composition work under #1394.

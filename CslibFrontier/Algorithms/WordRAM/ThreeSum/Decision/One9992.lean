@@ -18,8 +18,9 @@ public import CslibFrontier.Computability.WordRAM.Time
 For each fixed polynomial magnitude exponent, one fixed standard Word-RAM program computes
 all reductions, parameters, primes and answers. It runs from canonical signed original input
 and decides zero-sum triples of distinct input positions, allowing repeated input values.
-Correctness holds at every length and every admitted wider physical width; one time coefficient
-and threshold precede all inputs and widths. The charged halt and prehalt prefix share a state.
+Correctness holds at every length and every physical width admitted by `Admissible`, that is
+at least `width κ 123357 n` at length `n`; one time coefficient and threshold precede all inputs
+and widths. The charged halt and prehalt prefix share a state.
 Every such prefix has polynomial original-input words and zero support above that envelope.
 
 The concrete automatic box callee has exponent `3-33/20000`. The actual ordinary reduction
@@ -36,7 +37,6 @@ machine and its `SolvedInTime` predicate are not imported.
 
 ## Main results
 
-* `Admissible.inputFits`: every admitted signed input fits its physical word size.
 * `boxFlatProgram_decidesInTime`: the fixed program decides distinct-position integer 3SUM.
 * `uniformDecidableInO_one9992`: uniform decision in time O(n^1.9992).
 * `exists_one9992_runs`: complete initialized charged execution at exponent 1.9992.

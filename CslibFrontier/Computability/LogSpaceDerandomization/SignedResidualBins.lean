@@ -174,9 +174,12 @@ variable {Ζ : Type*} [Fintype Ζ]
   {b : ℝ} {k : ℝ → ℝ}
   (L : P.CorrectionSampling X Y Xs Mid Midt f C i)
 
-/-- One direct/product bin contribution and the special negative correction. Summing bins
-includes the negative correction exactly once. Earlier tables are whole functions; negative
-and product-left factors have distinct endpoint/midpoint roles and usage slices. -/
+/-- One direct/product bin contribution plus the whole special negative correction, which
+does not depend on the bin scale `b`; summing this sample over several bins counts that
+correction once per bin. Bin assembly with a single negative correction uses the separate
+`HierarchyTask.rawPositiveSample` and `HierarchyTask.rawNegativeSample`. Earlier tables are
+whole functions; negative and product-left factors have distinct endpoint/midpoint roles
+and usage slices. -/
 @[expose] noncomputable def residualSample
     (Ya Yt Nt : Ω → V → Prop)
     [∀ s v, Decidable (Ya s v)] [∀ s v, Decidable (Yt s v)] [∀ s v, Decidable (Nt s v)]
@@ -213,9 +216,11 @@ theorem residualSample_eq_raw
   rw [heq]
   ring
 
-/-- All three signed means follow from primitive laws on the actual tuples. This is one
-bin contribution; the partition API sums positive contributions and `-E` is included once.
-No independence of estimated factors is asserted. -/
+/-- All three signed means follow from primitive laws on the actual tuples. This is the mean
+of one bin sample: the direct and product terms carry the cutoff `k` at scale `b`, and the
+whole `-E` is included, where `E` is correction iterate `i + 1`. Summing these means over
+several bins therefore repeats `-E` once per bin. No independence of estimated factors is
+asserted. -/
 theorem expect_residualSample
     (B : DenseSamplingLaws Yr Ya Yt k b 1)
     (N : P.CorrectionSampling X Y Xs Nr Nt f C i)

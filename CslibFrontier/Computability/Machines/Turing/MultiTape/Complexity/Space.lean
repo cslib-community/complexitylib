@@ -36,8 +36,9 @@ tag followed by its encoding padded by `Cslib.BitString.padWord`, and the accept
 word of all ones. The edge test `Turing.MultiTapeNTM.codeEdge` decodes both words by
 `Turing.MultiTapeTM.decodeFiniteCfg` and links the code of a view to the code of each view it
 steps to, and the code of a halted view with output `[true]` to every word with tag one. Malformed
-words decode to some view, which is harmless: they are not reachable from the code of the initial
-view. Acceptance is then reachability of the accepting code
+words with tag zero decode to some view, which is harmless: every word with tag zero reachable
+from the code of the initial view decodes to a view reachable from the initial view. Acceptance
+is then reachability of the accepting code
 (`Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep`), and the edge test, the initial code and
 the accepting code are polynomial-time.
 
@@ -257,7 +258,7 @@ theorem accepts_iff_reflTransGen_codeStep {input : List Bool} {width : ℕ}
     exact (hcodes finite hreach).tail ⟨length_viewCode (hwidth _ hreach),
       List.length_replicate .., (codeEdge_acceptCode).mpr ⟨hstate, houtput⟩⟩
   · intro hreach
-    -- every reachable code is the code of a reachable view, or has tag one after an accepting view
+    -- every reachable code decodes to a reachable view, or has tag one after an accepting view
     have hinv : ∀ code, Relation.ReflTransGen (ntm.CodeStep width)
         (viewCode width (ntm.initView input)) code →
         (∃ finite, decodeView code = some finite ∧

@@ -395,18 +395,12 @@ theorem ligeroRowComb_mul [Semiring F] (r : Fin m → F) (U : Matrix (Fin m) (Fi
     ligeroRowComb r U ᵥ* G = r ᵥ* (U * G) :=
   Matrix.vecMul_vecMul r U G
 
-/-- Pointwise form of `ligeroRowComb_mul` at column `j`. -/
-theorem ligeroRowComb_mul_apply [Semiring F] (r : Fin m → F) (U : Matrix (Fin m) (Fin l) F)
-    (G : Matrix (Fin l) (Fin n) F) (j : Fin n) :
-    (ligeroRowComb r U ᵥ* G) j = (r ᵥ* (U * G)) j :=
-  congrFun (ligeroRowComb_mul r U G) j
-
 /-- Expanding `((ligeroRowComb r U) ᵥ* G) j` as a linear combination of the encoded witness rows
 `((U i) ᵥ* G) j`. -/
 theorem ligeroRowComb_mul_eq_sum [CommSemiring F] (r : Fin m → F) (U : Matrix (Fin m) (Fin l) F)
     (G : Matrix (Fin l) (Fin n) F) (j : Fin n) :
     (ligeroRowComb r U ᵥ* G) j = ∑ i : Fin m, r i * ((U i) ᵥ* G) j := by
-  rw [ligeroRowComb_mul_apply]
+  rw [ligeroRowComb_mul]
   rfl
 
 /-- Target bilinear evaluation `(b ᵥ* U) ⬝ᵥ c` of a witness matrix `U : Matrix (Fin m) (Fin l) F` at
@@ -433,14 +427,14 @@ column check passes at every column `j`. -/
 theorem ligeroColumnCheck_honest [Semiring F] [DecidableEq F] (G : Matrix (Fin l) (Fin n) F)
     (U : Matrix (Fin m) (Fin l) F) (r : Fin m → F) (j : Fin n) :
     ligeroColumnCheck G (U * G) r (ligeroRowComb r U) j = true := by
-  simp [ligeroColumnCheck, ligeroRowComb_mul_apply]
+  simp [ligeroColumnCheck, ligeroRowComb_mul]
 
 /-- **Completeness of the Ligero evaluation check**: when `M = U * G`, `w = ligeroEval U b c`, and
 `v = ligeroRowComb b U`, the evaluation check passes at every column `j`. -/
 theorem ligeroEvalCheck_honest [Semiring F] [DecidableEq F] (G : Matrix (Fin l) (Fin n) F)
     (U : Matrix (Fin m) (Fin l) F) (b : Fin m → F) (c : Fin l → F) (j : Fin n) :
     ligeroEvalCheck G (U * G) b c (ligeroEval U b c) (ligeroRowComb b U) j = true := by
-  simp [ligeroEvalCheck, ligeroEval, ligeroRowComb_mul_apply]
+  simp [ligeroEvalCheck, ligeroEval, ligeroRowComb_mul]
 
 /-- **Ligero row-consistency soundness (exact probability)**: if some row `i₀` of `M` disagrees with
 the encoded witness row `(U i₀) ᵥ* G` at column `j`, then over a uniform challenge `r : Fin m → F`,

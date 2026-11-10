@@ -96,15 +96,9 @@ theorem voleWorld_cached_run {α : Type} (c : VOLECorrelation F n)
     rw [ProbOracleComp.runWith_lift] at h
     simp only [PMF.map_comp, Function.comp_def, OracleComp.evalWith, oracle] at h
     exact h.symm
-  · cases q with
-    | inl q =>
-      cases q
-      simp only [pmf_norm, oracle, OracleComp.sumHandler, StateT.lift, voleWorld_cached_sender]
-      rfl
-    | inr q =>
-      cases q
-      simp only [pmf_norm, oracle, OracleComp.sumHandler, StateT.lift, voleWorld_cached_receiver]
-      rfl
+  · rcases q with ⟨⟨⟩⟩ | ⟨⟨⟩⟩ <;>
+      simp only [pmf_norm, oracle, OracleComp.sumHandler, StateT.lift, voleWorld_cached_sender,
+        voleWorld_cached_receiver] <;> rfl
 
 /-- Sampling the cached correlation before execution preserves every output law, including
 for programs that never query setup. Each role still reads only its own fixed share. -/

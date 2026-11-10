@@ -149,12 +149,16 @@ theorem kthLargest_le_of_lt_imp {f g : α → R} {m : ℕ} (hk : 0 < k) (hkm : k
   rw [mem_filter] at hx ⊢
   exact ⟨hx.1, hfg x hx.1 hx.2⟩
 
-/-- Changing only values strictly above a nonnegative ceiling preserves every positive-order
-rank at most that ceiling. The bound may be an equality, and other values may be negative. -/
-theorem kthLargest_eq_of_eq_or_gt {f g : α → R} (hk : 0 < k) (ht : 0 ≤ t)
+/-- Changing only values strictly above a ceiling preserves every rank at most that ceiling. The
+bound may be an equality, and other values may be negative. -/
+theorem kthLargest_eq_of_eq_or_gt {f g : α → R}
     (h : ∀ x ∈ s, f x = g x ∨ (t < f x ∧ t < g x))
     (hg : kthLargest k s g ≤ t) : kthLargest k s f = kthLargest k s g := by
   classical
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine kthLargest_congr fun x hx => (h x hx).resolve_right fun hx' => ?_
+    exact (hx'.2.trans_le (le_kthLargest_of_le_card hx (Nat.zero_le _))).not_ge hg
+  have ht : 0 ≤ t := kthLargest_nonneg.trans hg
   have hfilter (a : R) (ha : a ≤ t) :
       ({x ∈ s | a < f x} : Finset α) = {x ∈ s | a < g x} := by
     ext x

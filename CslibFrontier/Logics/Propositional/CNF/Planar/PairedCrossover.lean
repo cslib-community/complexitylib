@@ -223,7 +223,8 @@ theorem terminal_values_canonicalExtension (a b : Bool) :
   intro s l
   fin_cases s <;> rfl
 
-/-- Every satisfying full assignment is determined by the left and top lane-zero inputs. -/
+/-- Every satisfying full assignment is determined by the left and bottom lane-zero inputs,
+`terminal 0 0` and `terminal 2 0`. -/
 theorem eq_canonicalExtension_of_holds {σ : Variable → Bool} (h : formula.eval σ = true) :
     σ = canonicalExtension (σ (terminal 0 0)) (σ (terminal 2 0)) := by
   obtain ⟨hb, hp⟩ := (eval_formula_iff σ).1 h

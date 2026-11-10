@@ -76,6 +76,8 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
 
 ## Main definitions
 
+* `Cslib.Crypto.encBitsTriple`: three bit words, the input encoding of MAC verification and of
+  nonce-based tagging.
 * `Cslib.Crypto.MACScheme`: uniform symmetric message authentication code on `msgLen n`-bit
   messages (defaulting to `n`-bit messages).
 * `Cslib.Crypto.MACScheme.signingPairOracle`, `sufCmaGame`, `SUFCMA`: pair-logging tagging oracle
@@ -94,6 +96,8 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
   ([Boneh and Shoup, Section 6.3][BonehShoup2023]).
 * `Cslib.Crypto.macLogHandler`, `Cslib.Crypto.macToPrfDistinguisher`: oracle logging handler and
   reduction turning a MAC forger into a PRF distinguisher.
+* `Cslib.Crypto.encNonceTaggedMessage`: the encoding of a nonce-tagged message
+  `((msg, nonce), tag)`.
 * `Cslib.Crypto.NonceMACForger`, `Cslib.Crypto.NonceMACScheme`: uniform nonce-based message
   authentication code (`sign : Key → Msg → Nonce → ProbComp Tag`) and adaptive forger
   ([Boneh and Shoup, Section 7.5, Attack Game 7.4][BonehShoup2023]).
@@ -172,6 +176,12 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped NNReal ENNReal
 
+/-- Three bit words `(x, y, z)`; `x` and `y` are framed, `z` is not. It encodes the verification
+input `(sk, msg, tag)` of a `MACScheme`, the tagging input `(sk, msg, nonce)` of a
+`NonceMACScheme`, and the part `(msg, nonce, tag)` of its verification input after the key. -/
+abbrev encBitsTriple : List Bool × List Bool × List Bool ↪ List Bool :=
+  encPair encBits (encPair encBits encBits)
+
 /-- A uniform symmetric message authentication code (MAC) on `msgLen n`-bit messages at security
 parameter `n` (defaulting to `msgLen = id`, i.e., `n`-bit messages), with plain polynomial-time
 message-length schedule, strict polynomial-time key generation and tag generation, deterministic
@@ -196,7 +206,7 @@ structure MACScheme where
   /-- Verification is computable in plain polynomial time on `(sk, msg, tag)`. -/
   verify_polyTime : ComputableInPolyTime
     (fun p : List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2)
-    (encPair encBits (encPair encBits encBits)) encBool
+    encBitsTriple encBool
   /-- Every tag produced by `sign` on a `msgLen n`-bit message under a supported secret key at
   security parameter `n` is accepted by `verify`. -/
   verify_sign : ∀ n sk, sk ∈ (ProbComp.eval (keyGen n)).support →
@@ -1768,6 +1778,12 @@ theorem PseudorandomFunction.oneTimeSUFCMA_prfMAC
 
 /-! ### Nonce-based message authentication codes (`NonceMACScheme`, Boneh–Shoup Section 7.5) -/
 
+/-- Nonce-tagged message `((msg, nonce), tag)`, the output of a nonce-based MAC forger and an
+entry of the signing oracle's log: the message, the nonce and the tag as bit words. The pair
+`(msg, nonce)` is framed, and within it the message. -/
+abbrev encNonceTaggedMessage : (List Bool × List Bool) × List Bool ↪ List Bool :=
+  encPair (encPair encBits encBits) encBits
+
 /-- An adaptive nonce-based MAC forger receives a unary security parameter and an auxiliary word,
 queries a nonce-respecting tagging oracle on encoded `(message, nonce)` pairs
 (`encPair encBits encBits (msg, nonce)`), and outputs a candidate `((message, nonce), tag)` triple
@@ -1801,12 +1817,11 @@ structure NonceMACScheme where
   /-- Key generation is uniformly strict PPT in the unary security parameter. -/
   keyGen_ppt : IsPPTOn encUnary encBits keyGen
   /-- Tag generation is uniformly strict PPT in the encoded `(sk, msg, nonce)`. -/
-  sign_ppt : IsPPTOn (encPair encBits (encPair encBits encBits)) encBits
-    (fun p => sign p.1 p.2.1 p.2.2)
+  sign_ppt : IsPPTOn encBitsTriple encBits (fun p => sign p.1 p.2.1 p.2.2)
   /-- Verification is computable in plain polynomial time on `(sk, msg, nonce, tag)`. -/
   verify_polyTime : ComputableInPolyTime
     (fun p : List Bool × List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2.1 p.2.2.2)
-    (encPair encBits (encPair encBits (encPair encBits encBits))) encBool
+    (encPair encBits encBitsTriple) encBool
   /-- Every tag produced by `sign` on a `msgLen n`-bit message and `nonceLen n`-bit nonce under a
   supported secret key at security parameter `n` is accepted by `verify`. -/
   verify_sign : ∀ n sk, sk ∈ (ProbComp.eval (keyGen n)).support →
@@ -1918,10 +1933,9 @@ noncomputable def eufCmaGame (M : NonceMACScheme) (adversary : NonceMACForger) (
 the unary security parameter and secret key. -/
 @[program_certificate]
 theorem isPPTOn_run_signingPairOracle (M : NonceMACScheme) {adversary : NonceMACForger}
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     IsPPTOn (encPair encUnary encBits)
-      (encPair (encPair (encPair encBits encBits) encBits)
-        (encList (encPair (encPair encBits encBits) encBits)))
+      (encPair encNonceTaggedMessage (encList encNonceTaggedMessage))
       (fun caller : ℕ × List Bool =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
@@ -1969,7 +1983,7 @@ theorem isPPTOn_run_signingPairOracle (M : NonceMACScheme) {adversary : NonceMAC
 oracle-PPT forger. -/
 @[program_certificate]
 theorem isPPTOn_sufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     IsPPTOn encUnary encBool (M.sufCmaGame adversary) :=
   M.keyGen_ppt.bind_with ((M.isPPTOn_run_signingPairOracle hadversary).bind_with
     (ComputableInPolyTime.isPPTOn (by
@@ -1980,7 +1994,7 @@ theorem isPPTOn_sufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
 auxiliary input. -/
 @[program_certificate]
 theorem isPPT_sufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     IsPPT encBool (fun n _ => M.sufCmaGame adversary n) :=
   ((M.isPPTOn_sufCmaGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
@@ -1988,7 +2002,7 @@ theorem isPPT_sufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
 oracle-PPT forger. -/
 @[program_certificate]
 theorem isPPTOn_eufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     IsPPTOn encUnary encBool (M.eufCmaGame adversary) :=
   M.keyGen_ppt.bind_with ((M.isPPTOn_run_signingPairOracle hadversary).bind_with
     (ComputableInPolyTime.isPPTOn (by
@@ -1999,7 +2013,7 @@ theorem isPPTOn_eufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
 auxiliary input. -/
 @[program_certificate]
 theorem isPPT_eufCmaGame (M : NonceMACScheme) {adversary : NonceMACForger}
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     IsPPT encBool (fun n _ => M.eufCmaGame adversary n) :=
   ((M.isPPTOn_eufCmaGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
@@ -2010,20 +2024,20 @@ def SUFCMA (M : NonceMACScheme) : Prop :=
   Game.Indistinguishable
     (fun adversary n => ProbComp.eval (M.sufCmaGame adversary n))
     (fun _ _ => PMF.pure false)
-    (IsOraclePPT (encPair (encPair encBits encBits) encBits))
+    (IsOraclePPT encNonceTaggedMessage)
 
 /-- Strong nonce-based unforgeability gives negligible SUF-CMA forgery probability for every
 oracle-PPT forger. -/
 theorem SUFCMA.negligible {M : NonceMACScheme} (h : M.SUFCMA)
     (adversary : NonceMACForger)
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n))) :=
   Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish nonce-based SUF-CMA security by bounding every oracle-PPT forger's success
 probability. -/
 theorem SUFCMA.of_negligible {M : NonceMACScheme}
-    (h : ∀ adversary, IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary →
+    (h : ∀ adversary, IsOraclePPT encNonceTaggedMessage adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n)))) :
     M.SUFCMA :=
   Game.Indistinguishable.of_negligible_succProbability h
@@ -2034,20 +2048,20 @@ def EUFCMA (M : NonceMACScheme) : Prop :=
   Game.Indistinguishable
     (fun adversary n => ProbComp.eval (M.eufCmaGame adversary n))
     (fun _ _ => PMF.pure false)
-    (IsOraclePPT (encPair (encPair encBits encBits) encBits))
+    (IsOraclePPT encNonceTaggedMessage)
 
 /-- Nonce-based EUF-CMA security gives negligible forgery probability for every oracle-PPT
 forger. -/
 theorem EUFCMA.negligible {M : NonceMACScheme} (h : M.EUFCMA)
     (adversary : NonceMACForger)
-    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    (hadversary : IsOraclePPT encNonceTaggedMessage adversary) :
     Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n))) :=
   Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish nonce-based EUF-CMA security by bounding every oracle-PPT forger's success
 probability. -/
 theorem EUFCMA.of_negligible {M : NonceMACScheme}
-    (h : ∀ adversary, IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary →
+    (h : ∀ adversary, IsOraclePPT encNonceTaggedMessage adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n)))) :
     M.EUFCMA :=
   Game.Indistinguishable.of_negligible_succProbability h

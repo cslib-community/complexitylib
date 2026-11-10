@@ -246,7 +246,7 @@ theorem isPPTOn_keyGen :
 include hH hlen in
 /-- Merkle signing is uniformly strict PPT. -/
 theorem isPPTOn_sign :
-    IsPPTOn (encPair encBits (encPair encUnary encBits)) encBits
+    IsPPTOn encIndexedSignInput encBits
       (fun (sk, u, msg) => sign S H sk u msg) := by
   let E := encPair encBits (encPair encUnary encBits)
   have hdec : ComputableTidilyInPolyTime (fun p : List Bool × ℕ × List Bool =>
@@ -290,7 +290,7 @@ theorem computableInPolyTime_verify :
     ComputableInPolyTime
       (fun ((pk, u, msg, sig) : List Bool × ℕ × List Bool × List Bool) =>
         verify S H depth pk u msg sig)
-      (encPair encBits (encPair encUnary (encPair encBits encBits))) encBool := by
+      (encPair encBits encIndexedSignedMessage) encBool := by
   apply ComputableInPolyTime.of_tidy
   let E := encPair encBits (encPair encUnary (encPair encBits encBits))
   have hpk : ComputableTidilyInPolyTime

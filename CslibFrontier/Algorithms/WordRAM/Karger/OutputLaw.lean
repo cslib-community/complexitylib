@@ -41,8 +41,9 @@ namespace Cslib.Algorithms.WordRAM.Karger
 open Cslib.WeightedCut Cslib.WordRAM
 
 /-- A compiled program whose output word has the law `μ`, supported on the weights of non-trivial
-cuts of `W`, halts on every path with such a weight, and outputs `minCut W` with the probability
-that `μ` gives it. -/
+cuts of `W`, halts on every path with such a weight, and outputs `minCut W` with at least the
+probability that `μ` gives it; it fails to do so with at most the probability that `μ` gives the
+other values. -/
 theorem program_of_law {r R T T' n w : ℕ} {c : Code .standard r} {out : Fin r}
     {input : List ℕ} {F : Finset ℕ} {W : Fin n → Fin n → ℕ} {μ : PMF ℕ}
     (h : ExecRandLaw w c (.init input) (fun y => Modifies F (Data.init (r := r) input).mem y.mem)

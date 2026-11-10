@@ -43,7 +43,11 @@ selects the family, and no native code dispatches on it.
 
 As in `MemoryBackend`, the selected tag's arguments are installed in registers before its body
 runs, uncharged, as a calling convention; decoding the answer executes no instruction. Bounds
-count the body's instructions only.
+count the body's instructions only. The fields `arg` and `answer` are unrestricted: `arg` is any
+function of the operation and `answer` any function of the operation and the program's result.
+Nothing requires them to be computable or charges for evaluating them, and the answer need not be
+held in a register: `Backend.exec` requires it to be `answer` applied to a result whose encoding
+the result registers hold.
 
 Memory charges do not depend on the word width (`totalCost_width`, `memoryCost_eq_totalCost`),
 so `memoryCost`, which is taken at width zero, is the charge that refinements state at width `w`.
@@ -150,7 +154,8 @@ variable {B : Basis} {ι : Type}
 
 /-- How the operations of `D` run on the bodies of `C`: each operation selects a tag, passes
 arguments to the tag's program and reads its answer from that program's result. Only the tag
-selects code. -/
+selects code. The maps `arg` and `answer` are unrestricted: they need not be computable, and
+evaluating them is not charged. -/
 structure Backend (D : StateTransitionSpec.{0, 0, 0}) (C : ι → Certificate B) where
   /-- The tag of each operation, typically its constructor. -/
   tag : D.Op → ι

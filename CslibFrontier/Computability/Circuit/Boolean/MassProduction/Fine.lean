@@ -111,7 +111,8 @@ def PipelineSizeBound (A E : ℕ) : Prop :=
 `ℓ ≤ 2 ^ h`, enough blocks for the rate precision `X`, the direction budget, a negligible last
 code copy and single copies of size at most `L` on `w` inputs, the `2 ^ D` copies of every
 function on `p + w` inputs cost a resource bank `R * L` with `X R ≤ (X + 2) 2 ^ p`, plus an
-overhead `O` exponentially smaller than `2 ^ (p + w)`. -/
+overhead `O ≤ (A₁ + 4 A₂) (2 ^ p + 2 ^ (D + h m)) (2 (p + w) + ℓ h m + D + 4) ^ (E₁ + E₂)`,
+under the contracts `SchedulerSizeBound A₁ E₁` and `PipelineSizeBound A₂ E₂`. -/
 theorem exists_complexity_le_of_bounds {A₁ E₁ A₂ E₂ : ℕ} (hS : SchedulerSizeBound A₁ E₁)
     (hP : PipelineSizeBound A₂ E₂) {X p w ℓ h m D L : ℕ} (hX : 0 < X) (hh : 0 < h) (hm : 0 < m)
     (hℓh : ℓ ≤ 2 ^ h) (hrate : X * (2 ^ (h * ℓ) - 1) ≤ m)

@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.ReplayParameter
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Substitution
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -92,15 +92,11 @@ theorem run_interpret_routeWordProgram (digestEncoding : Digest ↪ List Bool)
       ProbOracleComp.runWith
         (fun request => interpret handler (wordQuery digestEncoding request.1 request.2))
         program s := by
-  unfold routeWordProgram ProbOracleComp.runWith OracleComp.runWith
-  rw [interpret_interpret]
-  congr 2 with q : 1
-  cases q with
-  | inl n => simp [sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin]
-  | inr request =>
-    simp only [sumHandler, liftOracleForger, interpret_interpret]
-    congr 1 with q : 1
-    simp [ProbOracleComp.query, sumHandler]
+  have hlift
+      (p : OracleComp (ForgerSpec (List Bool) (List Bool) (List Bool) Digest) (List Bool)) :
+      liftOracleForger p = OracleComp.liftRight p := rfl
+  simp only [routeWordProgram, hlift, runWith_norm]
+  rfl
 
 /-- Native replay and typed routing commute as programs, before choosing any oracle world. -/
 theorem routeWordProgram_runCoins {k : ℕ} {Control : Type}

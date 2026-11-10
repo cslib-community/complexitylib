@@ -600,7 +600,7 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encMsg encAD) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun p =>
         F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit
           p.1 p.2) := by
@@ -645,7 +645,7 @@ theorem isPPTOn_cramerShoupADToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encBits encAD) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun p => F.cramerShoupADToDDHDistinguisher encAD H isElem adversary bit p.1 p.2) :=
   F.isPPTOn_cramerShoupMsgToDDHDistinguisher true
     (.of_tidy (ComputableTidilyInPolyTime.snd F.encDesc encBits))
@@ -660,7 +660,7 @@ theorem isPPTOn_cramerShoupToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encBits) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun p => F.cramerShoupToDDHDistinguisher H isElem adversary bit p.1 p.2) :=
   F.isPPTOn_cramerShoupMsgToDDHDistinguisher false
     (.of_tidy (ComputableTidilyInPolyTime.snd F.encDesc encBits)) (.of_tidy (.const []))

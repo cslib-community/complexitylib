@@ -154,9 +154,11 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZeroKnowledgeProo
           r.computableInPolyTime_forwardWitness.polynomiallyBounded_length_prod ha hw)
         hz hz' fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
 
-/-- **GMW for NP relations (from a pseudorandom generator).** Every NP relation has a
-computational zero-knowledge proof system for its language whose bundled witness check is the
-relation itself, so that its honest prover is complete for the relation's own witnesses. -/
+/-- **GMW for NP relations (from a pseudorandom generator).** Given a pseudorandom generator with
+stretch at least `3 * k + 1`, every NP relation has a computational zero-knowledge proof system
+for its language, in the polynomial-time-generable sense of `GenerableZeroKnowledge`, whose
+bundled witness check is the relation itself, so that its honest prover is complete for the
+relation's own witnesses. -/
 theorem PseudorandomGenerator.exists_zeroKnowledgeProof_of_npRelation
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)

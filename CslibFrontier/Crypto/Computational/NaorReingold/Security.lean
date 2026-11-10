@@ -31,6 +31,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.StatisticalDistance.Product
+import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -1446,38 +1447,16 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
   have hAdvRealApprox : Game.advantage exactDDHReal ddhReal ≤ ε := by
     simp only [ddhReal, ddhRealGame, PMF.monad_bind_eq_bind,
       eval_naorReingoldDescToDDHDistinguisher F inLen adv n]
-    refine Game.advantage_bind_le_of_support (setup n) _ _ fun d hd =>
-      Game.advantage_bind_le_nnreal _ _ _ fun α =>
-        Game.advantage_bind_le_nnreal _ _ _ fun β =>
-          Game.advantage_bind_le_nnreal _ _ _ fun i => hstep_err d hd α β (α * β) i
-  have hAdvIdealApprox : Game.advantage ddhIdeal exactDDHIdeal ≤ ε := by
-    rw [Game.advantage_comm]
+    peel_binds d α β i
+    exact hstep_err d d_mem α β (α * β) i
+  have hAdvIdealApprox : Game.advantage exactDDHIdeal ddhIdeal ≤ ε := by
     simp only [ddhIdeal, ddhIdealGame, PMF.monad_bind_eq_bind,
       eval_naorReingoldDescToDDHDistinguisher F inLen adv n]
-    refine Game.advantage_bind_le_of_support (setup n) _ _ fun d hd =>
-      Game.advantage_bind_le_nnreal _ _ _ fun α =>
-        Game.advantage_bind_le_nnreal _ _ _ fun β =>
-          Game.advantage_bind_le_nnreal _ _ _ fun γ =>
-            Game.advantage_bind_le_nnreal _ _ _ fun i => hstep_err d hd α β γ i
-  have hAdvTail : Game.advantage exactDDHIdeal tail ≤
-      (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal :=
-    advantage_exactDDHIdeal_le F setup m (adv n) n
-  rw [hEqReal]
-  calc Game.advantage exactDDHReal tail
-      ≤ Game.advantage exactDDHReal ddhReal + Game.advantage ddhReal tail :=
-        Game.advantage_triangle _ _ _
-    _ ≤ Game.advantage exactDDHReal ddhReal +
-          (Game.advantage ddhReal ddhIdeal + Game.advantage ddhIdeal tail) :=
-        add_le_add le_rfl (Game.advantage_triangle _ _ _)
-    _ ≤ Game.advantage exactDDHReal ddhReal +
-          (Game.advantage ddhReal ddhIdeal +
-            (Game.advantage ddhIdeal exactDDHIdeal + Game.advantage exactDDHIdeal tail)) :=
-        add_le_add le_rfl (add_le_add le_rfl (Game.advantage_triangle _ _ _))
-    _ ≤ ε + (Game.advantage ddhReal ddhIdeal +
-          (ε + (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal)) :=
-        add_le_add hAdvRealApprox (add_le_add le_rfl (add_le_add hAdvIdealApprox hAdvTail))
-    _ = Game.advantage ddhReal ddhIdeal + 2 * ε +
-          (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal := by ring
+    peel_binds d α β γ i
+    exact hstep_err d d_mem α β γ i
+  game_trans [exactDDHReal, ddhReal, ddhIdeal, exactDDHIdeal]
+    using [hEqReal, hAdvRealApprox, le_rfl, hAdvIdealApprox,
+      advantage_exactDDHIdeal_le F setup m (adv n) n]
 
 /-- **Quantitative single-distinguisher DDH security bound for the Naor–Reingold group-PRF**
 ([BonehShoup2023], Exercises 10.4 & 10.11; [NaorReingold2004], Theorem 4.1): if `adversary` makes at
@@ -1614,7 +1593,7 @@ theorem advantage_naorReingoldProbRealGame_wordRealGame_le (setup : ℕ → PMF 
       ((inLen n + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n := by
   simp only [naorReingoldProbRealGame, naorReingoldWordRealGame, naorReingoldWordOracle,
     PMF.monad_bind_eq_bind]
-  refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
+  peel_binds d
   simpa only [id_eq] using
     advantage_probNaorReingold_le F n (inLen n) d (adversary n (F.encDesc d)) id
 
@@ -1767,9 +1746,8 @@ theorem DDH.negligible_naorReingoldProbGame {F : PrimeOrderGroupFamily}
   refine negligible_of_le
     ((negligible_add_one_div_two_pow hinLen).add
       (hDDH.negligible_naorReingoldWordGame hinLen hadversary)) fun n => ?_
-  exact (Game.advantage_triangle _ (F.naorReingoldWordRealGame setup inLen adversary n) _).trans
-    (add_le_add (F.advantage_naorReingoldProbRealGame_wordRealGame_le setup inLen adversary n)
-      le_rfl)
+  game_trans [F.naorReingoldWordRealGame setup inLen adversary n]
+    using [F.advantage_naorReingoldProbRealGame_wordRealGame_le setup inLen adversary n, le_rfl]
 
 /-! ### Universal-hash bit-string Naor–Reingold PRF -/
 
@@ -2130,13 +2108,13 @@ theorem advantage_naorReingoldHashedIdeal_le (setup : ℕ → PMF F.Desc) (inLen
       (Q : ℝ≥0) * (NNReal.sqrt ((2 : ℝ≥0) ^ (outLen n) / (qMin : ℝ≥0)) / 2) := by
   simp only [naorReingoldHashedGroupIdealGame, naorReingoldHashedIdealGame, seededSetup,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  refine Game.advantage_bind_le_of_support (setup n) _ _ fun d hd => ?_
+  peel_binds d
   refine (advantage_naorReingoldHashedIdeal_at_le F inLen outLen bound adversary n Q d
-    (hbound d hd) (hQ d hd)).trans ?_
+    (hbound d d_mem) (hQ d d_mem)).trans ?_
   refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
   refine div_le_div_of_nonneg_right (NNReal.sqrt_le_sqrt.mpr ?_) (by norm_num)
   exact div_le_div_of_nonneg_left (by positivity) (by exact_mod_cast hq0)
-    (by exact_mod_cast hq d hd)
+    (by exact_mod_cast hq d d_mem)
 
 private noncomputable def hashedAdvGroup (F : PrimeOrderGroupFamily) (inLen outLen : ℕ → ℕ)
     (bound : F.Desc → ℕ) (adversary : OracleDistinguisher) (n : ℕ)
@@ -2412,27 +2390,11 @@ private theorem negligible_naorReingoldHashedGame_of_ideal_le {F : PrimeOrderGro
   have hstep1_neg := hDDH_seed.negligible_naorReingoldDescGame hinLen
     (isOraclePPTOn_hashedAdvGroup F hinLen houtLen hbound_poly hadversary)
   refine negligible_of_le (hstep1_neg.add hg_neg) fun n => ?_
-  calc Game.advantage
-        (F.naorReingoldHashedRealGame setup inLen outLen bound adversary n)
-        (F.naorReingoldHashedIdealGame setup inLen outLen bound adversary n)
-      ≤ Game.advantage
-          (F.naorReingoldHashedRealGame setup inLen outLen bound adversary n)
-          (naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n) +
-        Game.advantage
-          (naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n)
-          (F.naorReingoldHashedIdealGame setup inLen outLen bound adversary n) :=
-        Game.advantage_triangle _ _ _
-    _ ≤ Game.advantage
-          (naorReingoldDescRealGame F.withSeed
-            (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
-            (hashedAdvGroup F inLen outLen bound adversary) n)
-          (naorReingoldDescIdealGame F.withSeed
-            (F.seededSetup setup (F.linearHashSeedLen outLen bound)) inLen
-            (hashedAdvGroup F inLen outLen bound adversary) n) +
-        gBound n := by
-        rw [← advantage_naorReingoldHashedReal_groupIdeal_eq F setup inLen outLen bound
-          adversary n (hbound n)]
-        exact add_le_add le_rfl (hg_le n)
+  game_trans [naorReingoldHashedGroupIdealGame F setup inLen outLen bound adversary n]
+    using [le_rfl, hg_le n]
+  rw [advantage_naorReingoldHashedReal_groupIdeal_eq F setup inLen outLen bound adversary n
+    (hbound n)]
+  exact le_rfl
 
 /-- **Asymptotic DDH security of the universal-hash Naor–Reingold bit-string PRF** (paraphrase of
 [NaorReingold2004], Section 4.1, Construction 4.2, Theorem 4.3, and Remark 4.2): under
@@ -2501,16 +2463,15 @@ theorem DDH.negligible_naorReingoldHashedProbGame {F : PrimeOrderGroupFamily}
         ((inLen n + 1 : ℕ) : ℝ≥0) / (2 : ℝ≥0) ^ n := by
     simp only [naorReingoldHashedProbRealGame, naorReingoldHashedRealGame,
       naorReingoldHashedWordEval, PMF.monad_bind_eq_bind]
-    exact Game.advantage_bind_le_nnreal _ _ _ fun ds =>
-      advantage_probNaorReingold_le F n (inLen n) ds.1 (adversary n (F.withSeed.encDesc ds))
-        (fun w => F.linearHashKDF (fun _ => outLen n) bound (ds, w))
+    peel_binds ds
+    exact advantage_probNaorReingold_le F n (inLen n) ds.1 (adversary n (F.withSeed.encDesc ds))
+      (fun w => F.linearHashKDF (fun _ => outLen n) bound (ds, w))
   refine negligible_of_le
     ((negligible_add_one_div_two_pow hinLen).add
       (hDDH.negligible_naorReingoldHashedGame hinLen houtLen hbound_poly hdesc_poly hdesc hbound
         hq0 hq hneg hadversary)) fun n => ?_
-  exact (Game.advantage_triangle _
-    (F.naorReingoldHashedRealGame setup inLen outLen bound adversary n) _).trans
-    (add_le_add (hprob_le n) le_rfl)
+  game_trans [F.naorReingoldHashedRealGame setup inLen outLen bound adversary n]
+    using [hprob_le n, le_rfl]
 
 /-- **Constant-output-length hashed Naor–Reingold security under `F.DDH setup` alone**
 (original, combining `DDH.negligible_expected_inv_order` with Theorem 4.3, Remark 4.2, and Lemma 4.2

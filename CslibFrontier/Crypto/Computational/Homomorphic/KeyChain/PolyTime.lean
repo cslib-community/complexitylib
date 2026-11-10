@@ -38,6 +38,23 @@ assumption.
 
 @[expose] public section
 
+namespace Cslib.Crypto.Homomorphic
+
+open Turing.MultiTapeTM
+
+/-- The key pairs `[(pk₀, sk₀), …, (pk_d, sk_d)]` of a key chain, one per level, each key a bit
+word. Every entry is framed, and so is the public key inside it. -/
+abbrev encKeyChainKeys : List (List Bool × List Bool) ↪ List Bool :=
+  encList (encPair encBits encBits)
+
+/-- The encrypted links of a key chain, one per pair of adjacent levels: link `i` lists the
+ciphertext words encrypting the bits of `skᵢ` under `pkᵢ₊₁`, one word per bit. Every link is
+framed, and so is every ciphertext word inside it. -/
+abbrev encKeyChainLinks : List (List (List Bool)) ↪ List Bool :=
+  encList (encList encBits)
+
+end Cslib.Crypto.Homomorphic
+
 namespace Cslib.Crypto.Homomorphic.Scheme
 
 open Probability Turing.MultiTapeTM
@@ -55,8 +72,7 @@ include hkeyGen in
 theorem isPPTOn_generateKeys
     (hn : ComputableInPolyTime n input encUnary)
     (hdepth : ComputableInPolyTime depth input encUnary) :
-    IsPPTOn input (encList (encPair encBits encBits))
-      (fun a => E.generateKeys (n a) (depth a)) := by
+    IsPPTOn input encKeyChainKeys (fun a => E.generateKeys (n a) (depth a)) := by
   exact (hkeyGen.preprocess hn).replicate (by fun_prop)
 
 include hencrypt in
@@ -64,9 +80,8 @@ include hencrypt in
 @[fun_prop]
 theorem isPPTOn_encryptKeyLinks
     (hn : ComputableInPolyTime n input encUnary)
-    (hkeys : ComputableInPolyTime keys input (encList (encPair encBits encBits))) :
-    IsPPTOn input (encList (encList encBits))
-      (fun a => E.encryptKeyLinks (n a) (keys a)) := by
+    (hkeys : ComputableInPolyTime keys input encKeyChainKeys) :
+    IsPPTOn input encKeyChainLinks (fun a => E.encryptKeyLinks (n a) (keys a)) := by
   -- Pair each input with every adjacent key pair.
   have hpairs : ComputableInPolyTime
       (fun a => ((keys a).zip (keys a).tail).map fun b => (a, b))
@@ -90,7 +105,7 @@ theorem isPPTOn_generateKeyChain
     (hn : ComputableInPolyTime n input encUnary)
     (hdepth : ComputableInPolyTime depth input encUnary) :
     IsPPTOn input
-      (encPair (encList (encPair encBits encBits)) (encList (encList encBits)))
+      (encPair encKeyChainKeys encKeyChainLinks)
       (fun a => E.generateKeyChain (n a) (depth a)) := by
   apply (isPPTOn_generateKeys hkeyGen hn hdepth).bind_with
   have hlinks := isPPTOn_encryptKeyLinks hencrypt

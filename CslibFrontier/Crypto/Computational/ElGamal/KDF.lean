@@ -214,9 +214,9 @@ theorem isPPTOn_seededDDHDistinguisher {seedLen : ℕ → F.Desc → ℕ}
       (encPair encUnary F.encDesc) encUnary)
     {distinguisher : ℕ → F.withSeed.Desc × List Bool × List Bool × List Bool → ProbComp Bool}
     (hD : IsPPTOn
-      (encPair encUnary (encPair F.withSeed.encDesc (encPair encBits (encPair encBits encBits))))
+      F.withSeed.encDDHInput
       encBool (fun input => distinguisher input.1 input.2)) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.seededDDHDistinguisher seedLen distinguisher input.1 input.2) := by
   let EIn := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   have hprep : ComputableInPolyTime

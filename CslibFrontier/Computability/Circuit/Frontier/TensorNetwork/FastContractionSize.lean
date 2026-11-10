@@ -331,15 +331,6 @@ theorem active_numbers (ha : active x = true) (hM : x.edges ≤ x.scale) :
           Nat.pow_le_pow_right (by norm_num) (by omega)
       _ ≤ 4 * x.scale := by rw [pow_succ]; omega
 
-/-- The exponent tuple of a child of an active call is a tuple of weight below its node's
-precision. -/
-theorem mem_budgetTuples_of_mem_children {c : ChildCursor.State} (hc : c ∈ children x) :
-    c.2.2.1 ∈ BudgetTuples.budgetTuples (weights x c.1) (nodePrec x c.1) := by
-  simp only [children, ChildCursor.cursorList, ChildCursor.nodeBlock, ChildCursor.pointBlock,
-    ChildCursor.groupBlock, List.mem_flatMap, List.mem_range, List.mem_map] at hc
-  obtain ⟨j, -, i, -, β, hβ, g, -, rfl⟩ := hc
-  exact hβ
-
 /-- **The frames of an active call** with at most `m` edges at scale `m` have encoded length at
 most `64 (B + 1) ^ 3` for `B = frameBound x`. -/
 theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.scale)
@@ -395,8 +386,7 @@ theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.sc
   refine length_encFrame_le (N := wide x) (fl := x.fl) (fun s hs => ?_) hpre.1 hstored ?_
     (Nat.le_add_left _ _)
   · have hsm : s ∈ children x := List.mem_of_getElem? hs
-    obtain ⟨hj1, hi1, hg1⟩ := lt_of_mem_children hsm
-    have hβ := mem_budgetTuples_of_mem_children hsm
+    obtain ⟨hj1, hi1, hβ, hg1⟩ := mem_children.mp hsm
     have hlen := ((BudgetTuples.mem_budgetTuples (weights_pos _)).mp hβ).1
     obtain ⟨hpj, hlj⟩ := hj s.1
     refine ⟨by omega, by omega, ?_, fun b hb => ?_, by omega⟩

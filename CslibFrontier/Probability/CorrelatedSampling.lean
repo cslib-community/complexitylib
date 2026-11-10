@@ -446,8 +446,7 @@ theorem agree_ge (i j : I) :
 
 open scoped Cslib.Probability.PMF in
 /-- **Correlated sampling, disagreement.** The outputs of parties `i` and `j` differ with
-probability at most `2δ / (1 + δ) ≤ 2δ`, where `δ` is the statistical distance between `P i` and
-`P j`. -/
+probability at most `2δ`, where `δ` is the statistical distance between `P i` and `P j`. -/
 theorem disagree_le (i j : I) :
     ((shared P).toOuterMeasure {l | sample P i l ≠ sample P j l}).toReal ≤
       2 * dist (P i) (P j) := by

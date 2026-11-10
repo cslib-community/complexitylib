@@ -44,9 +44,6 @@ STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
     # Stale on main. #3981 moves this file's declarations.
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 243),
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 528),
-    # Stale on main. #3875 moves this file's declarations.
-    *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Interactive.lean", line)
-      for line in (197, 213, 226, 285, 342, 352, 395, 444, 600)),
     # Correct on main, but queued #3875 and #3977 move these declarations without repointing.
     *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Computational.lean", line)
       for line in (107, 217, 228, 243)),

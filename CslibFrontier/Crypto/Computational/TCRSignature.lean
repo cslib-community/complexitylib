@@ -325,7 +325,7 @@ theorem keyGen_ppt (S : SignatureScheme) (H : KeyedHashFamily) :
   exact hkg.map_pair hpost
 
 theorem sign_ppt (S : SignatureScheme) (H : KeyedHashFamily) :
-    IsPPTOn (encPair encBits (encPair encUnary encBits)) encBits
+    IsPPTOn encIndexedSignInput encBits
       (fun p => sign S H p.1 p.2.1 p.2.2) := by
   let In := List Bool × ℕ × List Bool
   let encIn : In ↪ List Bool := encPair encBits (encPair encUnary encBits)
@@ -374,7 +374,7 @@ theorem sign_ppt (S : SignatureScheme) (H : KeyedHashFamily) :
 theorem verify_polyTime (S : SignatureScheme) (H : KeyedHashFamily) :
     ComputableInPolyTime
       (fun p : List Bool × ℕ × List Bool × List Bool => verify S H p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encBits (encPair encUnary (encPair encBits encBits))) encBool := by
+      (encPair encBits encIndexedSignedMessage) encBool := by
   let In := List Bool × ℕ × List Bool × List Bool
   let encIn : In ↪ List Bool := encPair encBits (encPair encUnary (encPair encBits encBits))
   have hpk : ComputableInPolyTime (fun p : In => p.1) encIn encBits :=
@@ -1138,7 +1138,7 @@ section Reductions
 
 /-- Total decoder for raw `IndexedForger` outputs `(u, msg, sig)`. -/
 @[expose]
-def outDecoder : Decoder (encPair encUnary (encPair encBits encBits)) :=
+def outDecoder : Decoder encIndexedSignedMessage :=
   Decoder.unary.pair (Decoder.bits.pair Decoder.bits)
 
 /-- Total decoder for `tcrAdversary` saved state `(keys, coins)`. -/
@@ -1484,7 +1484,7 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
       (oracle : Unit × List Bool → StateT State PMF (List Bool)) s,
       (OracleComp.interpret
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
-          ((encPair encUnary (encPair encBits encBits)) <$> adversary input.1 input.2)).run s =
+          (encIndexedSignedMessage <$> adversary input.1 input.2)).run s =
       (OracleComp.interpret
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m)) oracle)
           (machine.runOracle
@@ -1744,7 +1744,7 @@ one-time forger `otForger` and a strict PPT two-stage `TargetCollisionFinder` `t
 `adversary`'s indexed forging probability at every security parameter `n`. -/
 theorem exists_reduction_indexedEufCmaGame_le (S : SignatureScheme) (H : KeyedHashFamily)
     {adversary : IndexedForger}
-    (hadversary : IsOraclePPT (encPair encUnary (encPair encBits encBits)) adversary) :
+    (hadversary : IsOraclePPT encIndexedSignedMessage adversary) :
     ∃ (otForger : Forger) (tcrAdv : TargetCollisionFinder),
       IsOraclePPT (encPair encBits encBits) otForger ∧
       tcrAdv.IsPPT ∧

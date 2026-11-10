@@ -78,7 +78,8 @@ def NC (i : ℕ) : Set (Language Bool) :=
 def AC (i : ℕ) : Set (Language Bool) :=
   PolylogDepth Unbounded.interpretation i
 
-/-- **TCⁱ**: polynomial size and depth `O((log n) ^ i)` with majority gates. -/
+/-- **TCⁱ**: polynomial size and depth `O((log n) ^ i)` with majority gates. Size counts gates, not
+wires: a majority gate may have any number of arguments and may read the same wire repeatedly. -/
 def TC (i : ℕ) : Set (Language Bool) :=
   PolylogDepth (Unbounded.extInterpretation majority) i
 

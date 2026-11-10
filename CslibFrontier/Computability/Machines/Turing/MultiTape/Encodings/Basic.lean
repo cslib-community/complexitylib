@@ -17,8 +17,8 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.Fra
 /-!
 # Word operations for encodings
 
-The building blocks of concrete encodings of pairs, options and lists, and their plain computability
-in linear time and space (`Turing.MultiTapeTM.ComputableInDegree` with degrees `1 1`).
+The building blocks of concrete encodings of pairs, options and lists, and their tidy computability
+in linear time and space (`Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace`).
 
 A word `w` is *framed* by writing each symbol `b` as `[true, b]` and appending `[false]`. A framed
 word marks its own end, so it can be followed by any word and still be read back.
@@ -33,8 +33,8 @@ word marks its own end, so it can be followed by any word and still be read back
 
 * `Turing.MultiTapeTM.frame_append_inj`: a framed word followed by another word determines both.
 * Functions that act on encoded values by `frame`, `unframe`, `dropFrame`, `List.cons true`,
-  `List.tail` or `List.take 1`, or that test the encoded value for emptiness, are computable
-  in linear time and space.
+  `List.tail` or `List.take 1`, or that test the encoded value for emptiness, are tidily
+  computable in linear time and space.
 -/
 
 namespace Turing.MultiTapeTM

@@ -294,10 +294,11 @@ private theorem exists_sorted_list {ι : Type*} (P : Finset ι) (key : ι → α
   · simpa using List.pairwise_iff_getElem.mp hsorted i j hi hj h
   · subst h; exact le_rfl
 
-/-- **Lemma 1 (sorted groups).** Sort `P` by the key `key` and cut it into `G` consecutive
-groups of `⌊|P| / G⌋` elements. If every `Ψ q` changes at most `T` times, some group `P'` is
-such that the functions `p ↦ Ψ q (key p)` are constant on `P'` for every `q ∈ Q` outside a set
-`Qbad` with `G |Qbad| ≤ T |Q|`. -/
+/-- **Lemma 1 (sorted groups).** If every `Ψ q` with `q ∈ Q` changes at most `T` times, there are
+a subset `P'` of `P` with at least `⌊|P| / G⌋` elements and a subset `Qbad` of `Q` with
+`G |Qbad| ≤ T |Q|` such that the functions `p ↦ Ψ q (key p)` are constant on `P'` for every
+`q ∈ Q` outside `Qbad`. In the proof, `P'` is one of the `G` consecutive groups of `⌊|P| / G⌋`
+elements of `P` sorted by `key`. -/
 theorem ChangesAtMost.exists_sorted_group {ι κ : Type*} (P : Finset ι) (Q : Finset κ) (key : ι → α)
     (Ψ : κ → α → β) {T G : ℕ} (hG : 0 < G) (hΨ : ∀ q ∈ Q, ChangesAtMost (Ψ q) T) :
     ∃ P' ⊆ P, ∃ Qbad ⊆ Q, P.card / G ≤ P'.card ∧ G * Qbad.card ≤ T * Q.card ∧

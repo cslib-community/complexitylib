@@ -161,8 +161,7 @@ private theorem dfsBody_enter_succ_exec {w base d ptr k : ℕ} {s : Data 32}
   have hm1 : (s.write ptr 0).mem (base + span d + (k + 1) * 2 + 1) = span k := by
     rw [Data.write_mem, Function.update_of_ne (by omega), Nat.mul_comm (k + 1) 2]
     exact htbl1
-  -- These bounds need `hk` or `hptr_end`; `ram_eval` derives the remaining ones (the table
-  -- offset and first table word from `hf_a1`, the child header from `hf_p5`, `k` from `hf_lw`).
+  -- Bounds that need `hk` or `hptr_end`; `ram_eval` reads them from context.
   have hf_a1 : Fits w (base + span d + (k + 1) * 2 + 1) := ha.of_le (by omega)
   have hf_p5 : Fits w (ptr + 5) := ha.of_le (by omega)
   have hf_lw : Fits w (base + span d + 2 * (d + 1) + (k + 1)) := ha.of_le (by omega)

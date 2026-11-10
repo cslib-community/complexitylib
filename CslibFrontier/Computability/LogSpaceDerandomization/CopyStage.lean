@@ -308,8 +308,8 @@ variable {V : Type*} {m : ℕ} {χ : ℝ → ℝ} {τ₀ τ₁ : ℝ} {r : Fin (
     (D : Matrix V V ℝ) : Matrix (V × Fin (m + 1)) (V × Fin (m + 1)) ℝ :=
   copySplit r (fun x y => copyFraction χ m (D x y)) D
 
-/-- The copies that can be active: the primary copies of a cover `A` of the parents, and all
-copies of the overloaded vertices `O`. -/
+/-- The copies that can be active: the primary copies of a cover `A` of the parents, and the
+extra copies `j ≠ 0` of the overloaded vertices `O`. -/
 @[expose] def copyCover [DecidableEq V] (A O : Finset V) : Finset (V × Fin (m + 1)) :=
   A ×ˢ {0} ∪ O ×ˢ univ.erase 0
 
