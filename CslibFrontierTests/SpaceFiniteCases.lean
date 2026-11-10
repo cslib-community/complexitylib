@@ -25,6 +25,6 @@ private def encEmpty : Empty ↪ List Bool := ⟨Empty.elim, fun value => value.
 
 example : ComputableInSpace (fun a : Empty => (Empty.elim a : Bool))
     encEmpty encBool (fun a => (encEmpty a).length) := by
-  exact finite_cases (tag := fun a : Empty => a)
+  exact finite_cases (tagEncoding := encEmpty) (tag := fun a : Empty => a)
     (branch := fun choice _ => Empty.elim choice)
     (of_finite _) (fun choice => Empty.elim choice)
