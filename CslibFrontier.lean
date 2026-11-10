@@ -5231,6 +5231,9 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame
 public import CslibFrontier.Logics.FirstOrder.Interpretation
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Constants
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Encoding
