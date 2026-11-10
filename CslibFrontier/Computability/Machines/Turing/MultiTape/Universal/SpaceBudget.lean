@@ -103,7 +103,9 @@ public abbrev eInS : Desc × List ℕ × ℕ × ℕ ↪ List Bool :=
 
 variable (d : Desc) (x : List ℕ) (b : ℕ)
 
-lemma take_two_append_take_two (o e : List ℕ) : (o.take 2 ++ e).take 2 = (o ++ e).take 2 := by
+/-- Keeping the first two symbols before appending more keeps the first two symbols. -/
+public lemma take_two_append_take_two (o e : List ℕ) :
+    (o.take 2 ++ e).take 2 = (o ++ e).take 2 := by
   simp only [List.take_append, List.take_take, List.length_take]
   congr 2
   omega
@@ -322,6 +324,14 @@ lemma keepTwo_deg : ComputableTidilyInDegree
     ((ComputableTidilyInDegree.fst (encList encUnary) eSym).prod
       (htoList.comp (ComputableTidilyInDegree.snd (encList encUnary) eSym)))
   exact (take_two_deg.comp happ).mono
+
+/-- The first two symbols of a list followed by an optional symbol, in time and space linear in the
+encoded input. -/
+public lemma keepTwo_inO : ComputableInO (fun p : List ℕ × Option ℕ => (p.1 ++ p.2.toList).take 2)
+    (encPair (encList encUnary) eSym) (encList encUnary)
+    (fun p => (encPair (encList encUnary) eSym p).length)
+    fun p => (encPair (encList encUnary) eSym p).length :=
+  .of_tidy keepTwo_deg.inO_one
 
 /-- The initial state, in the space of the description, the number of steps and the budget. -/
 private lemma foldInitS_inO : ComputableTidilyInO foldInitS eInS eSSt
@@ -593,7 +603,7 @@ public theorem computableTidilyInTimeAndSpace_budgetedUniversal : ∃ c,
 
 /-- The initial configuration is encoded within `11 * descLen d + 6` bits: the initial state, the
 input head at `1` and blank work tapes. -/
-private lemma length_eCfg_init_le : (eCfg (init d)).length ≤ 11 * descLen d + 6 := by
+public lemma length_eCfg_init_le : (eCfg (init d)).length ≤ 11 * descLen d + 6 := by
   have hq : d.q₀ ≤ descLen d := by
     simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
   have hk : d.tapes ≤ descLen d := by

@@ -20,9 +20,11 @@ finite machine transition tables in descriptive-complexity proofs.
 ## Main results
 
 * `PolarityDefinable.constant`: structure-independent truth values are definable.
+* `PolarityDefinable.exists_mem`, `PolarityDefinable.forall_mem`: disjunctions and conjunctions
+  over a fixed list, with definability required only of its members.
 * `PolarityDefinable.iEx`, `PolarityDefinable.iAll`: fixed finite choices and conjunctions.
 
-All three rules participate in the extensible `FODefinable` synthesis rule set.
+`constant`, `iEx` and `iAll` participate in the extensible `FODefinable` synthesis rule set.
 -/
 
 public section
@@ -46,18 +48,31 @@ theorem constant (p : Prop) :
   · exact truth.congr fun _ _ => iff_of_true trivial hp
   · exact falsity.congr fun _ _ => iff_of_false not_false hp
 
+/-- A disjunction over a fixed list preserves a certified polarity. -/
+theorem exists_mem {β : Type r} (l : List β) {P : β → ∀ i, (α → M i) → Prop}
+    (hP : ∀ b ∈ l, PolarityDefinable (L := L) policy mark sign M I ρ (P b)) :
+    PolarityDefinable (L := L) policy mark sign M I ρ (fun i v => ∃ b ∈ l, P b i v) := by
+  induction l with
+  | nil => exact falsity.congr fun _ _ => by simp
+  | cons b l ih =>
+    exact ((hP b (by simp)).disj (ih fun c hc => hP c (by simp [hc]))).congr fun _ _ => by simp
+
+/-- A conjunction over a fixed list preserves a certified polarity. -/
+theorem forall_mem {β : Type r} (l : List β) {P : β → ∀ i, (α → M i) → Prop}
+    (hP : ∀ b ∈ l, PolarityDefinable (L := L) policy mark sign M I ρ (P b)) :
+    PolarityDefinable (L := L) policy mark sign M I ρ (fun i v => ∀ b ∈ l, P b i v) := by
+  induction l with
+  | nil => exact truth.congr fun _ _ => by simp
+  | cons b l ih =>
+    exact ((hP b (by simp)).conj (ih fun c hc => hP c (by simp [hc]))).congr fun _ _ => by simp
+
 /-- A fixed finite disjunction preserves a certified polarity. -/
 theorem iEx {β : Type r} [Finite β] {P : β → ∀ i, (α → M i) → Prop}
     (hP : ∀ b, PolarityDefinable (L := L) policy mark sign M I ρ (P b)) :
     PolarityDefinable (L := L) policy mark sign M I ρ (fun i v => ∃ b, P b i v) := by
   classical
   let _ := Fintype.ofFinite β
-  have hlist (l : List β) : PolarityDefinable (L := L) policy mark sign M I ρ
-      (fun i v => ∃ b ∈ l, P b i v) := by
-    induction l with
-    | nil => exact falsity.congr fun _ _ => by simp
-    | cons b l ih => exact ((hP b).disj ih).congr fun _ _ => by simp
-  exact (hlist (Finset.univ : Finset β).toList).congr fun _ _ => by simp
+  exact (exists_mem (Finset.univ : Finset β).toList fun b _ => hP b).congr fun _ _ => by simp
 
 /-- A fixed finite conjunction preserves a certified polarity. -/
 theorem iAll {β : Type r} [Finite β] {P : β → ∀ i, (α → M i) → Prop}
@@ -65,12 +80,7 @@ theorem iAll {β : Type r} [Finite β] {P : β → ∀ i, (α → M i) → Prop}
     PolarityDefinable (L := L) policy mark sign M I ρ (fun i v => ∀ b, P b i v) := by
   classical
   let _ := Fintype.ofFinite β
-  have hlist (l : List β) : PolarityDefinable (L := L) policy mark sign M I ρ
-      (fun i v => ∀ b ∈ l, P b i v) := by
-    induction l with
-    | nil => exact truth.congr fun _ _ => by simp
-    | cons b l ih => exact ((hP b).conj ih).congr fun _ _ => by simp
-  exact (hlist (Finset.univ : Finset β).toList).congr fun _ _ => by simp
+  exact (forall_mem (Finset.univ : Finset β).toList fun b _ => hP b).congr fun _ _ => by simp
 
 attribute [aesop safe apply (rule_sets := [FODefinable])] constant iEx iAll
 
