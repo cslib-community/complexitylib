@@ -37,6 +37,7 @@ inductive-counting construction for logarithmic space.
 
 * `Cslib.Complexity.NSPACE_subset_of_le_mul_add`: constant factors and additive constants are
   absorbed.
+* `Cslib.Complexity.NSPACE_mono_of_eventually_le`: only the eventual values of the bound matter.
 * `Cslib.Complexity.compl_mem_NSPACE_of_recognizesInSpace`, `Cslib.Complexity.compl_mem_NSPACE`:
   closure under complement.
 * `Cslib.Complexity.mem_NSPACE_of_recognizesInSpace`: recognizers and deciders give the same class.
@@ -78,6 +79,23 @@ theorem NSPACE_subset_of_le_mul_add {s₁ s₂ : ℕ → ℕ} (c d : ℕ) (h : �
   have := Nat.mul_le_mul_left c₁ (h (enc a).length)
   rw [Nat.mul_add, ← Nat.mul_assoc] at this
   exact Nat.add_le_add_right this _ |>.trans (by omega)
+
+/-- `NSPACE` only depends on the space bound eventually: the finitely many other values are
+absorbed by the additive constant. -/
+theorem NSPACE_mono_of_eventually_le {s₁ s₂ : ℕ → ℕ} (h : ∀ᶠ n in Filter.atTop, s₁ n ≤ s₂ n) :
+    NSPACE enc s₁ ⊆ NSPACE enc s₂ := by
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp h
+  rintro A ⟨k, State, hfin, ntm, c₁, c₂, hA⟩
+  refine ⟨k, State, hfin, ntm, c₁, c₁ * ∑ n ∈ Finset.range N, s₁ n + c₂, hA.mono fun a => ?_⟩
+  have : s₁ (enc a).length ≤ s₂ (enc a).length + ∑ n ∈ Finset.range N, s₁ n := by
+    rcases le_or_gt N (enc a).length with h | h
+    · have := hN _ h
+      omega
+    · have := Finset.single_le_sum (f := s₁) (fun _ _ => Nat.zero_le _) (Finset.mem_range.mpr h)
+      omega
+  have := Nat.mul_le_mul_left c₁ this
+  rw [Nat.mul_add] at this
+  omega
 
 /-- **The complement of a problem recognized within space `O(s)` is decided within space `O(s)`**,
 every branch halting, when `log₂ n ≤ s n`. The recognizer's branches may run forever. -/

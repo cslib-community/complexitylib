@@ -7,10 +7,18 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Complexity.Classes.Constructible
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.NondeterministicBudget
+import CslibFrontier.Computability.Complexity.Classes.Constructible.Space
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -142,5 +150,85 @@ theorem nspaceDiagonal_notMem_NSPACE {f G : ℕ → ℕ} (hlog : ∀ n, 4 * Nat.
     (hfG : ∀ c, ∀ᶠ n in atTop, c * f n + c ≤ G n) : nspaceDiagonal G ∉ NSPACE encBits f := by
   rintro ⟨k, State, _, ntm, c₁, c₂, hA⟩
   exact not_recognizesInSpace_nspaceDiagonal hlog hfG ntm c₁ c₂ hA.recognizesInSpace
+
+open Diagonal in
+/-- **The nondeterministic diagonal within space `G` is in `NSPACE G`**, for a space-constructible
+`G` with `log₂ n ≤ G n`. The universal recognizer within a budget
+(`Turing.MultiTapeTM.Universal.exists_recognizesInSpace_bAccepts`) recognizes its complement within
+space `O(G n + log n)`: the tiny description is decoded in logarithmic space and the budget `G n`
+written in unary within space `O(G n)`. By the Immerman–Szelepcsényi theorem the complement of a
+problem so recognized is decided within the same space
+(`Cslib.Complexity.compl_mem_NSPACE_of_recognizesInSpace`). -/
+theorem nspaceDiagonal_mem_NSPACE {G : ℕ → ℕ} (hG : SpaceConstructible G)
+    (hlog : ∀ n, Nat.log2 n ≤ G n) : nspaceDiagonal G ∈ NSPACE encBits G := by
+  -- the description, in logarithmic space, with an encoding of logarithmic length
+  obtain ⟨tD, cD, hD⟩ := computableInLogSpace_decodeDesc_tinyCut
+  obtain ⟨cL, hL⟩ := exists_length_eDesc_decodeDesc_tinyCut_le
+  have hD' : ComputableInSpace (fun x => decodeDesc (tinyCut x)) encBits eDesc
+      fun x => G x.length + Nat.log2 x.length + 1 :=
+    ⟨tD, cD + cL, hD.mono (fun _ => le_rfl) fun x => by
+      simp only [encBits_apply]; nlinarith, fun x => (hL x).trans (by nlinarith)⟩
+  -- the budget `G n` in unary, within space `O(G n)`
+  obtain ⟨TG, hGb⟩ := hG.computableInO
+  have hB : ComputableInSpace (fun x : List Bool => G x.length) encBits encUnary
+      fun x => G x.length + Nat.log2 x.length + 1 :=
+    (ComputableInSpace.of_inO (ComputableInO.natToUnary.comp hGb)).weaken
+      (.of_le_linear 2 0 fun x => by omega)
+  obtain ⟨k, State, _, ntm, c, hrec⟩ := exists_recognizesInSpace_bAccepts encBits
+    (fun x => decodeDesc (tinyCut x)) (fun x => G x.length) _ hD' hB fun x => by
+      simp only [encBits_apply]; omega
+  exact compl_mem_NSPACE_of_recognizesInSpace hlog (c₁ := 2 * c) (c₂ := c)
+    (hrec.mono fun x => by
+      simp only [encBits_apply]
+      have := Nat.mul_le_mul_left c (hlog x.length)
+      nlinarith)
+
+/-! ### The nondeterministic space hierarchy theorem -/
+
+/-- **The nondeterministic space hierarchy theorem.** If `g` is space-constructible,
+`log₂ n ≤ g n`, and every `c * f n + c` is eventually below `g n`, then `NSPACE f` is strictly
+contained in `NSPACE g`. The nondeterministic diagonal within space `4 * g` separates the classes:
+it is in `NSPACE g` by the Immerman–Szelepcsényi theorem
+(`Cslib.Complexity.nspaceDiagonal_mem_NSPACE`), and not in `NSPACE f` by the diagonal argument
+(`Cslib.Complexity.nspaceDiagonal_notMem_NSPACE`). -/
+theorem NSPACE_ssubset_NSPACE {f g : ℕ → ℕ} (hg : SpaceConstructible g)
+    (hlog : ∀ n, Nat.log2 n ≤ g n) (hfg : ∀ c, ∀ᶠ n in atTop, c * f n + c ≤ g n) :
+    NSPACE encBits f ⊂ NSPACE encBits g := by
+  have hsub : NSPACE encBits f ⊆ NSPACE encBits g := NSPACE_mono_of_eventually_le <| by
+    filter_upwards [hfg 1] with n h
+    omega
+  refine (Set.ssubset_iff_of_subset hsub).mpr ⟨_, NSPACE_subset_of_le_mul_add 4 0
+    (fun n => (Nat.add_zero _).ge) (nspaceDiagonal_mem_NSPACE (hg.const_mul 4)
+      fun n => (hlog n).trans (Nat.le_mul_of_pos_left _ (by norm_num))),
+    nspaceDiagonal_notMem_NSPACE (fun n => Nat.mul_le_mul_left 4 (hlog n)) fun c => ?_⟩
+  filter_upwards [hfg c] with n h
+  omega
+
+/-- **Nondeterministic polylogarithmic space has a strict hierarchy**:
+`NSPACE (log₂ n ^ (k + 1)) ⊂ NSPACE (log₂ n ^ (k + 2))`. -/
+theorem NSPACE_log2_pow_ssubset_NSPACE_log2_pow_succ (k : ℕ) :
+    NSPACE encBits (Nat.log2 · ^ (k + 1)) ⊂ NSPACE encBits (Nat.log2 · ^ (k + 2)) :=
+  NSPACE_ssubset_NSPACE (spaceConstructible_log2_pow (k + 1))
+    (fun n => Nat.le_self_pow (by omega) _) fun c => eventually_mul_log2_pow_add_le (k + 1) c
+
+/-- **Nondeterministic logarithmic space is strictly within nondeterministic space `log² n`**:
+`NL = NSPACE (log₂ n)` (`Cslib.Complexity.NL_eq_NSPACE`), and the nondeterministic diagonal within
+space `4 * log₂ n ^ 2` separates them. -/
+theorem NL_ssubset_NSPACE_log2_sq : NL encBits ⊂ NSPACE encBits (Nat.log2 · ^ 2) := by
+  rw [NL_eq_NSPACE]
+  refine NSPACE_ssubset_NSPACE (spaceConstructible_log2_pow 1)
+    (fun n => Nat.le_self_pow (by omega) _) fun c => ?_
+  simpa using eventually_mul_log2_pow_add_le 1 c
+
+/-- **Nondeterministic polynomial space has a strict hierarchy**:
+`NSPACE (n ^ k) ⊂ NSPACE (n ^ (k + 1))`. The nondeterministic diagonal within space
+`4 * (n + 1) ^ (k + 1)` separates them. -/
+theorem NSPACE_pow_ssubset_NSPACE_pow_succ (k : ℕ) :
+    NSPACE encBits (· ^ k) ⊂ NSPACE encBits (· ^ (k + 1)) :=
+  (NSPACE_ssubset_NSPACE (g := fun n => (n + 1) ^ (k + 1))
+    (spaceConstructible_succ_pow (k + 1))
+    (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)))
+    (eventually_mul_pow_add_le_succ_pow k)).trans_subset (NSPACE_subset_of_le_mul_add (2 ^ (k + 1))
+      1 fun n => by simpa using Nat.mul_add_one_pow_le_two_pow 1 (k + 1) n)
 
 end Cslib.Complexity
