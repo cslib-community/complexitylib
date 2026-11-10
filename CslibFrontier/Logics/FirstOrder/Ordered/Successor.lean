@@ -48,6 +48,8 @@ structure `Fin n` with `2 ≤ n`.
 * `Cslib.Logic.FO.Ordered.realize_succInclusion`: the inclusion preserves truth.
 * `Cslib.Logic.FO.Ordered.realize_elimSuccWith`, `Cslib.Logic.FO.Ordered.realize_elimSucc`:
   elimination preserves truth.
+* `Cslib.Logic.FO.Ordered.IsQF.elimSuccWith`: elimination through a quantifier-free definition
+  preserves quantifier-freeness.
 
 ## References
 
@@ -107,7 +109,7 @@ abbrev succInclusion : language L →ᴸ language (succLanguage L) :=
 
 /-- Successor in the canonical `≤` vocabulary: strict order with no intermediate point.
 The formula universally quantifies one element; it is not quantifier-free. -/
-noncomputable def successor : (language L).Formula (Fin 2) :=
+@[expose] noncomputable def successor : (language L).Formula (Fin 2) :=
   (le L (.var 1) (.var 0)).not ⊓ Formula.iAlls Unit
     ((le L (.var (.inr ())) (.var (.inl 0))).not.imp
       (le L (.var (.inl 1)) (.var (.inr ()))))
@@ -141,6 +143,17 @@ noncomputable def elimSucc {k : ℕ} :
     (language (succLanguage L)).BoundedFormula α k → (language L).BoundedFormula α k :=
   elimSuccWith (successor L)
 
+/-- Successor elimination through a quantifier-free `σ` preserves quantifier-freeness. -/
+theorem IsQF.elimSuccWith {σ : (language L).Formula (Fin 2)} (hσ : σ.IsQF) {k : ℕ}
+    {φ : (language (succLanguage L)).BoundedFormula α k} (h : φ.IsQF) :
+    (elimSuccWith σ φ).IsQF := by
+  refine FO.IsQF.unfoldSymbols _ (fun R => ?_) h
+  rcases R with (R | R) | R
+  · exact (BoundedFormula.IsAtomic.rel _ _).isQF
+  · cases R
+    exact hσ
+  · exact (BoundedFormula.IsAtomic.rel _ _).isQF
+
 variable {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
 
 /-- On `Fin n` with `2 ≤ n`, the `≤` formula defines ordinary, non-wrapping successor. -/
@@ -169,7 +182,6 @@ theorem realize_succ (s t : (language (succLanguage L)).Term α) (v : α → Fin
   rfl
 
 /-- On `Fin n` with `2 ≤ n`, the inclusion of the ordered vocabulary preserves truth. -/
-@[simp]
 theorem realize_succInclusion (φ : (language L).Formula α) (v : α → Fin n) :
     ((succInclusion L).onFormula φ).Realize v ↔ φ.Realize v :=
   LHom.realize_onFormula _ _

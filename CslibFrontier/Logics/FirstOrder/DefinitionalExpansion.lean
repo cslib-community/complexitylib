@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import Mathlib.ModelTheory.Semantics
+public import Mathlib.ModelTheory.Complexity
 
 /-!
 # Unfolding defined symbols
@@ -22,7 +22,8 @@ argument variables. If every replacement defines its symbol in a structure `M`, 
 preserves truth in `M` (`Cslib.Logic.FO.realize_unfoldSymbols`).
 
 The definitions may use quantifiers, so the translation of a quantifier-free formula need not
-be quantifier-free. Function symbols are replaced with Mathlib's `Term.substFunc`.
+be quantifier-free; it is when every relation definition is (`Cslib.Logic.FO.IsQF.unfoldSymbols`).
+Function symbols are replaced with Mathlib's `Term.substFunc`.
 
 `Cslib.Logic.FO.Interpretation.onFormula` also replaces each relation symbol by a formula. It
 interprets a relational language on tuples cut out by a domain formula, so it changes the
@@ -37,6 +38,8 @@ keep its constants and functions.
 
 * `Cslib.Logic.FO.realize_unfoldSymbols`, `Cslib.Logic.FO.realize_unfoldSymbols_formula`: the
   translation preserves truth in every structure where the definitions hold.
+* `Cslib.Logic.FO.IsQF.unfoldSymbols`: quantifier-free relation definitions preserve
+  quantifier-freeness.
 -/
 
 public section
@@ -59,6 +62,26 @@ noncomputable def unfoldSymbols (tf : ∀ {n : ℕ}, L.Functions n → L'.Term (
   | _, .rel R ts => ((rf R).subst fun i => (ts i).substFunc tf).relabel id
   | _, .imp φ ψ => .imp (unfoldSymbols tf rf φ) (unfoldSymbols tf rf ψ)
   | _, .all φ => .all (unfoldSymbols tf rf φ)
+
+/-- Substituting terms for the free variables of a quantifier-free formula keeps it
+quantifier-free. -/
+private theorem isQF_subst {β : Type*} {n : ℕ} {φ : L'.BoundedFormula β n} (h : φ.IsQF)
+    (f : β → L'.Term α) : (φ.subst f).IsQF :=
+  BoundedFormula.IsQF.recOn h BoundedFormula.isQF_bot
+    (fun h => BoundedFormula.IsAtomic.isQF <|
+      BoundedFormula.IsAtomic.recOn h (fun _ _ => .equal _ _) fun _ _ => .rel _ _)
+    fun _ _ h₁ h₂ => h₁.imp h₂
+
+/-- **Unfolding by quantifier-free relation definitions preserves quantifier-freeness.** Function
+symbols may be replaced by arbitrary terms. -/
+theorem IsQF.unfoldSymbols (tf : ∀ {n : ℕ}, L.Functions n → L'.Term (Fin n))
+    {rf : ∀ {n : ℕ}, L.Relations n → L'.Formula (Fin n)} (hrf : ∀ {n : ℕ} (R : L.Relations n),
+      (rf R).IsQF) {k : ℕ} {φ : L.BoundedFormula α k} (h : φ.IsQF) :
+    (unfoldSymbols tf rf φ).IsQF :=
+  BoundedFormula.IsQF.recOn h BoundedFormula.isQF_bot
+    (fun h => BoundedFormula.IsAtomic.recOn h (fun _ _ => (BoundedFormula.IsAtomic.equal _ _).isQF)
+      fun R _ => (isQF_subst (hrf R) _).relabel id)
+    fun _ _ h₁ h₂ => h₁.imp h₂
 
 variable {M : Type*} [L.Structure M] [L'.Structure M]
   {tf : ∀ {n : ℕ}, L.Functions n → L'.Term (Fin n)}
