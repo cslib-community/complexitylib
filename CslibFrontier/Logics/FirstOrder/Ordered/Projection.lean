@@ -51,6 +51,9 @@ No reducibility relation, transitivity or hardness result is stated here.
 
 * `Cslib.Logic.FO.ProjectionFormula.realize_toOrdered`: the formula is realized as the literal
   selected by the numeric structure.
+* `Cslib.Logic.FO.Ordered.FullTupleInterpretation.realize_rel_ofProjection`,
+  `Cslib.Logic.FO.Ordered.FullTupleInterpretation.realize_rel_ofQFProjection`: the output
+  relations of the interpretations given by projection formulas.
 * `Cslib.Logic.FO.Ordered.FullTupleInterpretation.IsProjection.exists_literal`: each output bit
   is one input literal, chosen before the input relations.
 * `Cslib.Logic.FO.Ordered.FullTupleInterpretation.IsQFProjection.isProjection`,
@@ -159,6 +162,14 @@ theorem IsQFProjection.isProjection {I : FullTupleInterpretation L L' k} (h : I.
   let ⟨q, _, hq⟩ := h R
   ⟨q.subst toNumeric .leaf, hq⟩
 
+/-- On `Fin n` with `2 ≤ n`, the relation formulas of `ofProjection p` hold exactly when the
+literal selected by the canonical numeric structure holds. -/
+theorem realize_rel_ofProjection {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
+    (p : ∀ {r : ℕ}, L'.Relations r → ProjectionFormula numericLanguage L (Fin r × Fin k))
+    {r : ℕ} (R : L'.Relations r) (x : Fin r × Fin k → Fin n) :
+    ((ofProjection p).rel R).Realize x ↔ ((p R).select x).Realize x := by
+  rw [rel_ofProjection, ProjectionFormula.realize_toOrdered]
+
 /-- On `Fin n` with `2 ≤ n`, the relation formulas of `ofQFProjection q` hold exactly when the
 literal selected by the canonical `qfNumericLanguage` structure holds. -/
 theorem realize_rel_ofQFProjection {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
@@ -170,10 +181,10 @@ theorem realize_rel_ofQFProjection {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin 
       (fun l => ProjectionFormula.realize_toFormula_leaf l x),
     ProjectionFormula.realize_toFormula]
 
-/-- **Each output bit is one input literal** [Immerman and Landau, Definition 3.6]
-[ImmermanLandau1995]. For every output relation and every address, one literal of the input
-vocabulary, chosen before the input relations, has the truth value of the output bit under every
-interpretation of the input relations. -/
+/-- **Each output bit is one input literal**
+[Immerman and Landau, Definition 3.6][ImmermanLandau1995]. For every output relation and every
+address, one literal of the input vocabulary, chosen before the input relations, has the truth
+value of the output bit under every interpretation of the input relations. -/
 theorem IsProjection.exists_literal {I : FullTupleInterpretation L L' k} (h : I.IsProjection)
     {n : ℕ} [Fact (2 ≤ n)] {r : ℕ} (R : L'.Relations r) (x : Fin r × Fin k → Fin n) :
     ∃ l : InputLiteral L (Fin r × Fin k),

@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Successor
-import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # The numeric vocabulary of quantifier-free projections
@@ -35,12 +34,16 @@ quantifier, so the image of a quantifier-free formula need not be quantifier-fre
 * `Cslib.Logic.FO.Ordered.QFNumeric.zero`, `Cslib.Logic.FO.Ordered.QFNumeric.max`,
   `Cslib.Logic.FO.Ordered.QFNumeric.le`, `Cslib.Logic.FO.Ordered.QFNumeric.succ`: its terms and
   atoms.
+* `Cslib.Logic.FO.Ordered.numericSuccessor`: the successor relation as a `numericLanguage`
+  formula, the image of each successor atom under `toNumeric`.
 * `Cslib.Logic.FO.Ordered.toNumeric`: translation into `numericLanguage`.
 
 ## Main results
 
 * `Cslib.Logic.FO.Ordered.QFNumeric.realize_le`, `Cslib.Logic.FO.Ordered.QFNumeric.realize_succ`:
   the canonical meaning of the atoms.
+* `Cslib.Logic.FO.Ordered.realize_numericSuccessor`: `numericSuccessor` defines non-wrapping
+  successor on `Fin n`, `2 ≤ n`.
 * `Cslib.Logic.FO.Ordered.realize_toNumeric`: translation preserves truth on `Fin n`, `2 ≤ n`.
 
 ## References

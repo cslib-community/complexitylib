@@ -163,7 +163,7 @@ theorem relMap_copyMap (M : Ordered.Structure Language.graph) (a b : Fin M.size)
     RelMap (M := copyMap M) uRel ![pairElt M a b] ↔ RelMap Language.adj ![a, b] := by
   rw [FullTupleInterpretation.relMap_map_toDomainInterpretation two_pos]
   change (copy.rel uRel).Realize _ ↔ _
-  rw [copy, FullTupleInterpretation.rel_ofProjection, ProjectionFormula.realize_toOrdered]
+  rw [copy, FullTupleInterpretation.realize_rel_ofProjection]
   change RelMap Language.adj _ ↔ _
   refine iff_of_eq (congrArg (RelMap Language.adj) (funext fun i => ?_))
   change lexEquiv.symm (Fin.cast (FullTupleInterpretation.card_toDomainInterpretation M)

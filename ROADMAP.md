@@ -260,7 +260,6 @@ In dependency order:
 
 - **Ordered completeness:** SAT, 3SAT, 3COL, independent set, clique and vertex cover NP-complete under first-order or quantifier-free projections; REACH NL-complete under first-order reductions.
 - **Projections** ([#1244](https://github.com/cslib-community/cslib-frontier/issues/1244)): projection reducibility on finite structure classes, its reflexivity and transitivity, and the standard ordered machine-encoding bridge.
-  The projection predicates on full-tuple interpretations and the BIT-free quantifier-free guard vocabulary exist; the reducibility relation does not.
   The classical qfp convention excludes BIT (Immerman–Landau, Definition 3.6), and arbitrary quantifier-free combinations of input relations are not projections.
 - **Circuit Value P-completeness:** Circuit Value is P-complete under first-order reductions, via `REACHa → MCVP → CVP` (Immerman, Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time machines (the machine-level `P ⊆ AL`, see [#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)) and the translation to `encCircuitValue`.
 - **Restricted-domain numeric certificates:** numeric certificates for further restricted-domain families; canonical BIT on a restricted domain need not be first-order definable.
