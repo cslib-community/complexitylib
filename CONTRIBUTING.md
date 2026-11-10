@@ -172,12 +172,25 @@ statements about `evalWith`; see `CslibFrontier/Languages/Probabilistic/Semantic
 Under an ordinary `import`, importers rebuild only when a module's exported `.olean` changes. That
 file holds public statements, exposed bodies, attributes of public declarations, and the axioms
 each public declaration depends on. Editing docstrings, private declarations, proofs or
-non-exposed bodies leaves it unchanged, unless a proof edit changes that axiom set. `import all`
-also loads private information, so such edits do reach its clients.
+non-exposed bodies leaves it unchanged, with two exceptions: a proof edit that changes that axiom
+set, and a body that the module itself rewrites with `simp [f]` or `rw [f]`. That rewrite
+generates the equation lemma `f.eq_1`, whose statement is the body, and stores it in the exported
+file even when `f` is private (Lean v4.36; `unfold f`, `dsimp only [f]` and `rfl` did not in our
+tests, [#4243](https://github.com/cslib-community/cslib-frontier/issues/4243)). `import all` also
+loads private information, so such edits do reach its clients.
 
 - **What is a helper.** A helper is proof plumbing: a step meaningful only inside one proof, or a
   fact about a module-local construction, encoding or intermediate quantity. Helpers are `private`
   by default. Keep `@[expose]` for bodies that downstream proofs unfold.
+- **What `@[expose]` reaches.** A section-level `@[expose]` affects only the section's `def`-kind
+  declarations and derived instances. Theorems, structures and inductives ignore it, and
+  abbreviations and non-Prop instances are exposed without it. A header over a section with
+  nothing to expose only suggests that bodies are exported; `check_changed_files.py` rejects one in
+  a changed file, so write `public section`. When a public proof needs a body that is not exposed,
+  Lean may report `Expected a definition with an exposed body`, or only an indirect failure:
+  `omega`, `decide` or a projection that cannot see through the definition in a client, or the
+  definition's own `@[simps]` lemmas rejected as not `rfl`. Expose that definition, or state the
+  lemma the client needs.
 - **What stays public, even if nothing outside the module uses it yet.** Facts stated only in terms
   of public definitions that a user of those definitions would expect: characterizations (`_iff`),
   bounds, monotonicity and closure properties, simp and extensionality equations, invariance
@@ -257,8 +270,9 @@ statements with inline links
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
-listed in a module docstring's "Main …" sections must exist, and a new test file must do more
-than restate signatures with `example … := name`. CI runs both, and also
+listed in a module docstring's "Main …" sections must exist, a new test file must do more
+than restate signatures with `example … := name`, and an `@[expose] … section` header must have a
+definition to expose. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
 public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
 enforces its baseline only in the modules a pull request changes, and merge groups only report,
