@@ -12,8 +12,8 @@ public import Cslib.Computability.Circuit.Boolean.Counting
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Computability.Circuit.Counting
 import CslibFrontier.Foundations.Data.BitString.Basic
-import CslibFrontier.Probability.BitString.BinarySymmetricChannel
 import CslibFrontier.Probability.Concentration
+import CslibFrontier.Probability.PMF.Coin
 import CslibFrontier.Probability.PMF.Event
 
 /-!
@@ -146,10 +146,10 @@ theorem exists_finset_card_agree_lt (f : BooleanFunction n) (M : BitString n →
       ∀ g ∈ G, (#{x ∈ H | g x = f x} : ℝ) < a * #H + t := by
   classical
   -- Put `x` in the set with probability `M x`, independently.
-  let coin (x : BitString n) : PMF Bool := flipBit ⟨M x, hM x⟩
+  let coin (x : BitString n) : PMF Bool := Cslib.Probability.PMF.coin ⟨M x, hM x⟩
   let S : PMF (BitString n → Bool) := Cslib.Probability.PMF.pi coin
   have hcoin (x : BitString n) (b : Bool) : (coin x b).toReal = if b then M x else 1 - M x :=
-    flipBit_apply_toReal _ b
+    Cslib.Probability.PMF.coin_apply_toReal _ b
   have hN : (Fintype.card (BitString n) : ℝ) = 2 ^ n := by rw [BitString.card]; push_cast; rfl
   -- The size and the agreement of each predictor, as sums of independent scores.
   let size (b : Bool) : ℝ := if b then 1 else 0

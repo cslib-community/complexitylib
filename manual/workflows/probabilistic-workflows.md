@@ -74,10 +74,22 @@ conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Cheb
 `∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
-satisfying `P` and the remaining coordinates form two independent products.
+satisfying `P` and the remaining coordinates form two independent products. Its corollaries
+`pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
+coordinates satisfying `P`, or reading it along an injection `e` of index types as
+`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
+counting tuples when the factors are not uniform. `pi_map_curry` in
+[Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
+indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
+[Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
+box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+[PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
+`PMF.bernoulli` is deprecated.
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
-rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
+rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
+and curry independent coins of different biases, and compute the probability that three coins all
+show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
