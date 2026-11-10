@@ -139,6 +139,16 @@ applied to a bounded argument. Local `let` values and arithmetic definitions are
 `growth_poly [h]` adds a fact that is not in the context. Existing `Cslib.PolynomiallyBounded`
 goals use their `fun_prop` rules.
 
+A certificate gives a leaf only when the module proving its bound is imported. `Automation`
+imports none of them, so that it stays below the machine layers. For `ComputableInPolyTime`,
+import `MultiTape.Internal.PolyTimePrimitives` (also through `Complexity.PolyTime.Basic`) for the
+encoded output, and `MultiTape.Internal.PolyTimeLoops` (also through `Complexity.PolyTime.Fold`)
+for a unary value. The other certificates need `Complexity.PolySpace.Plain`,
+`Complexity.LogSpace`, `ResourceBounds.Degree` or `GenericRAM.Native.Certificate`. When a
+certificate in the context gives no leaf because its module is missing, the failure names the
+module to import; the [minimal-import examples](../../CslibFrontierTests/PolynomialGrowthImports.lean)
+check these messages.
+
 Substitution keeps the intermediate measure explicit. With an outer bound
 `hv : PolyBounded size' v` in the context, `growth_poly` bounds `v (g a)` by asking for the inner
 size, `PolyBounded size (fun a => size' (g a))`; it never guesses `size'`.

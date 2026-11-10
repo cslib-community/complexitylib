@@ -45,8 +45,12 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -77,8 +81,12 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -850,8 +858,7 @@ For even delta-matroid constraints,
 {name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
 two-phase routine. Its correctness requires an improving valid comparison
 labeling as input; it does not search for that labeling. The combined exchange
-count is bounded by half the initial occurrence Hamming distance. No native
-machine-runtime bound is claimed yet.
+count is bounded by half the initial occurrence Hamming distance.
 
 ```lean
 open Cslib.Logic.PL Cslib.Logic.PL.CSP in
@@ -865,4 +872,95 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 ```
 
 The test module also rejects final-only validity. A complete solver still needs
-DAG/forest/blossom search and the native runtime certificate.
+DAG/forest/blossom search and certification of the complete solver.
+
+
+For explicit tables, {name}`Cslib.Complexity.CSP.EdgeAugmenting.run` takes the CSP,
+two finite occurrence buffers and the excluded start. Its ordinary native certificate
+covers the full framed input, including malformed buffers and sparse binary names:
+
+```lean
+open Cslib.Complexity.CSP.EdgeAugmenting Turing.MultiTapeTM in
+example : ComputableInPolyTime (fun input => (run input).isSome)
+    encInput encBool := by fun_prop
+```
+
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_eq` identifies its output with the
+mathematical routine when buffer widths match.
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_spec` supplies an actual augmenting
+walk and the combined exchange bound given a valid improving comparison.
+A `none` output does not establish unsatisfiability. Finding the comparison remains open.
+The complete behavioral clients are in `CslibFrontierTests/EdgeCSPAugmentingNative.lean`.
+
+
+# Timestamped DAG Search Prerequisites
+
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG` combines base validity with all six KKR
+invariants. Copies use original constraint positions and timestamps; arcs use
+actual argument occurrences. Supported isolated nodes are retained. Finite ranks
+can be made injective without changing any required comparison.
+
+The earliest-copy deletion and rerooting theorems preserve the invariants after
+a feasible pair flip, with the source's leaf and degree hypotheses explicit.
+Rerooting keeps unselected children. The paired-copy theorem gives the directed
+path argument; original constraints may recur at distinct timestamps. Prefix
+validity is a conclusion, not part of the path certificate:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.DAG in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    {sem : Rel → List Bool → Bool} {f : OccurrenceLabeling F Bool}
+    {T : DAG F} {w : Walk F} {time : Occurrence F → ℕ}
+    (hp : DirectedPath T w time) (hT : T.IsFDAG sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) (n : ℕ) :
+    ValidLabeling sem ((w.take n).flip f) := hp.valid_take hT hM n
+```
+
+{name}`Cslib.Logic.PL.CSP.DAG.DirectedPath.isFWalk` also requires distinct
+endpoints and original internal consistency. Lemma 43 is formalized by
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG.flip_walk_of_no_prefix_extension`, using
+actual prefix extensions against every used incidence. Its direct-exchange proof
+handles timestamp zero without adding a smaller timestamp.
+
+For assembly, trail reversal preserves the underlying trail:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
+    (hw : w.IsWalk) : w.reverse.IsWalk := hw.reverse
+```
+
+Arbitrary f-walk reversal need not preserve prefix validity, even for even
+delta-matroid relations. Operation tests give a counterexample. These results
+still leave forest construction/Lemma 34, whole-blossom search, native cost and
+the full planar dichotomy open.
+
+
+# Finite Crossover Gadget Semantics
+
+{name}`Cslib.BitString.cross` equates opposite cyclic ports.
+{name}`Cslib.BitString.nearCross` additionally accepts `0001` and `1110`.
+{name}`Cslib.BitString.IsStandardizedInconsistent` has exactly eight shapes.
+The literal Dvořák–Kupec Figure 1(a) gadget targets CROSS or NEAR-CROSS according
+to which optional complementary pairs occur:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : figureOneARelation (standardizedRelation true false false) =
+    nearCross := figureOneARelation_standardized true false false
+```
+
+{name}`Cslib.Logic.PL.CSP.Crossover.figureOneAStandardized` exposes the selected
+target as an ordinary primitive-positive gadget. Figure 1(b) then defines CROSS
+from NEAR-CROSS using one existential auxiliary:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : ∃ b, figureOneB.body.eval nearSem
+    (Sum.elim ![false, true, false, true] b) = true :=
+  (figureOneB.correct _).mp (by decide)
+```
+
+Both bodies retain the source diagram's numbered port order and use guarded
+scope widths. These results concern finite semantics; planar substitution,
+Lemma 6 normalization, hardness and a new native runtime certificate remain open.
