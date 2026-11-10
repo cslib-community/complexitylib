@@ -18,7 +18,7 @@ Each example builds an explicit reduction to an arbitrary target set `B` of bit 
 prefixing one bit: `w ↦ b :: w`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.Tests.ReductionVariants
 

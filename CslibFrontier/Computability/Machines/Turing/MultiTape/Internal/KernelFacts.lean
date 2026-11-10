@@ -18,7 +18,7 @@ Machine declarations are moved from their original module without changing progr
 formulas. Higher computability-calculus theorems remain in the original facade.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

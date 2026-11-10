@@ -48,24 +48,25 @@ private meta def observeAll (action : TacticM Unit) : TacticM (Except Exception 
 elab (name := checkFailureScope) "check_failure_scope " outer:term ", " inner:term : tactic => do
   let outer ← Term.elabType outer
   let inner ← Term.elabType inner
-  let message ← failureMessage <| withFailureHint do
-    let nested ← failureMessage <| withFailureHint do
+  let message ← failureMessage <| Internal.withFailureHint "polytime" do
+    let nested ← failureMessage <| Internal.withFailureHint "polytime" do
       seedHint inner
       throwError "nested failure"
     checkHint nested "innerMissing" "outerMissing"
     -- The first nested invocation must restore the outer collector before it is populated.
     seedHint outer
-    let nested ← failureMessage <| withFailureHint do
+    let nested ← failureMessage <| Internal.withFailureHint "polytime" do
       seedHint inner
       throwError "nested failure"
     checkHint nested "innerMissing" "outerMissing"
     throwError "outer failure"
   checkHint message "outerMissing" "innerMissing"
   -- A successful invocation can have failed routes; neither exit may leave a collector behind.
-  withFailureHint (seedHint outer)
+  Internal.withFailureHint "polytime" (seedHint outer)
   unless (failureHint.getState (← getEnv)).isNone do
     throwError "failure hint escaped its invocation"
-  let message ← failureMessage <| withFailureHint (throwError "unseeded failure")
+  let message ← failureMessage <|
+    Internal.withFailureHint "polytime" (throwError "unseeded failure")
   unless message == "unseeded failure" do throwError "unexpected unseeded hint\n{message}"
   let raises : Array (TacticM Unit × (Exception → Bool)) := #[
     ((do Core.throwMaxHeartbeat `polytimeFailureHint `maxHeartbeats 1000),
@@ -74,7 +75,7 @@ elab (name := checkFailureScope) "check_failure_scope " outer:term ", " inner:te
     (throwInterruptException, Exception.isInterrupt)]
   for (raise, isExpected) in raises do
     let .error original ← observeAll raise | throwError "expected a resource or interrupt exception"
-    let .error wrapped ← observeAll <| withFailureHint do
+    let .error wrapped ← observeAll <| Internal.withFailureHint "polytime" do
       seedHint outer
       raise
       | throwError "expected the wrapped exception"

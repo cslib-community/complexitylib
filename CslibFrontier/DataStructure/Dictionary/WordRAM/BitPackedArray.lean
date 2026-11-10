@@ -763,7 +763,6 @@ theorem offsetSetupCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
   have hfit_addr0 : Fits w (base + offset + wordOffset k w idx) :=
     hfit_addr1.of_le (by omega)
   have hfit_wOff : Fits w (wordOffset k w idx) := hfit_addr0.of_le (by omega)
-  have hfit_one : Fits w 1 := hfit_addr1.of_le (by omega)
   have hfit_div_w : Fits w (idx / w) := hfit_idx.of_le (Nat.div_le_self idx w)
   have hfit_div_mul : Fits w ((idx / w) * k) :=
     hfit_wOff.of_le (Nat.le_add_right _ _)
@@ -772,7 +771,6 @@ theorem offsetSetupCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
   have hfit_mod_div : Fits w (((idx % w) * k) / w) :=
     hfit_mod_mul.of_le (Nat.div_le_self _ _)
   have hbOff_lt : bitOffset k w idx < w := bitOffset_lt hw
-  have hfit_bOff : Fits w (bitOffset k w idx) := hfit_w.of_le hbOff_lt.le
   set s3 := x.set 3 (idx / w)
   have e3 : Exec w (.op (.exactBin .div 3 1 8) : Code .exact 10) x s3 1 :=
     exec_exactBin (by simp [hr1, hr8, Nat.ne_of_gt hw]) hfit_div_w
@@ -793,7 +791,7 @@ theorem offsetSetupCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
     exec_exactBin (by simp +decide [s7, s6, s5, s4, wordOffset]) hfit_wOff
   set s9 := s8.set 5 (bitOffset k w idx)
   have e9 : Exec w (.op (.exactBin .mod 5 5 8) : Code .exact 10) s8 s9 1 :=
-    exec_exactBin (by simp [s8, s7, s6, s5, s4, s3, hr8, bitOffset, Nat.ne_of_gt hw]) hfit_bOff
+    exec_exactBin (by simp [s8, s7, s6, s5, s4, s3, hr8, bitOffset, Nat.ne_of_gt hw]) (by fits)
   have hs9_0 : s9.regs 0 = base + offset := by simp +decide [s9, s8, s7, s6, s5, s4, s3, hbase]
   have hs9_1 : s9.regs 1 = idx := by simp +decide [s9, s8, s7, s6, s5, s4, s3, hr1]
   have hs9_2 : s9.regs 2 = x.regs 2 := by simp +decide [s9, s8, s7, s6, s5, s4, s3]
@@ -805,7 +803,7 @@ theorem offsetSetupCode_execWithin {base offset N k w idx : ℕ} {x : Data 10}
   have e12 : Exec w (.op (.exactBin .add 3 0 3) : Code .exact 10) s9 s12 1 :=
     exec_exactBin (by simp +decide [hs9_0, hs9_3]) hfit_addr0
   set s13 := s12.set 4 1
-  have e13 : Exec w (.op (.const 4 1) : Code .exact 10) s12 s13 1 := Exec.const hfit_one
+  have e13 : Exec w (.op (.const 4 1) : Code .exact 10) s12 s13 1 := Exec.const (by fits)
   set s14 := s13.set 4 (base + offset + wordOffset k w idx + 1)
   have e14 : Exec w (.op (.exactBin .add 4 3 4) : Code .exact 10) s13 s14 1 :=
     exec_exactBin (by simp +decide [s13, s12]) hfit_addr1

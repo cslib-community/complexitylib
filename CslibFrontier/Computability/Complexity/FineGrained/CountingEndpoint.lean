@@ -75,7 +75,7 @@ Specifically:
 * [R. Impagliazzo, R. Paturi, *On the complexity of k-SAT*][ImpagliazzoPaturi2001]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF
 

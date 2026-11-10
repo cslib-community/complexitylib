@@ -79,8 +79,11 @@ structure DirectedPath (T : DAG F) (w : Walk F) (time : Occurrence F → ℕ) : 
     (inArc time s).copy = (inArc time t).copy → s = t
 
 omit [DecidableEq V] in
-private theorem linked_constraint {v : V} {ss : List (Occurrence F × Occurrence F)}
-    (h : Walk.Linked v ss) {s : Occurrence F × Occurrence F} (hs : s ∈ ss) : s.1.1 = s.2.1 := by
+/-- Every step of a linked incidence trail uses one original constraint position. -/
+theorem linked_constraint {v : V} {ss : List (Occurrence F × Occurrence F)}
+    (h : Walk.Linked v ss) {s : Occurrence F × Occurrence F} (hs : s ∈ ss) :
+    let (input, output) := s
+    input.1 = output.1 := by
   induction ss generalizing v with
   | nil => simp at hs
   | cons t ss ih =>

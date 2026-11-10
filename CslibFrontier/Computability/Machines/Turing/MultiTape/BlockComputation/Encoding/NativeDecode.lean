@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
@@ -397,11 +398,6 @@ private theorem readNat_field {n count : ℕ} (bits : BitString n) (field : BitS
   funext i
   exact hfield i
 
-private theorem getD_ofFn {n : ℕ} (bits : BitString n) (i : ℕ) (hi : i < n) :
-    (List.ofFn bits).getD i false = bits ⟨i, hi⟩ := by
-  rw [List.getD_eq_getElem _ _ (by simpa only [List.length_ofFn] using hi)]
-  simp only [List.getElem_ofFn]
-
 omit [Finite Q] in
 /-- The untyped payload agrees field by field with the explicit semantic codec. -/
 theorem toView_payload (e : Q ≃ Fin s) (b : ℕ) [NeZero b]
@@ -442,7 +438,7 @@ theorem toView_payload (e : Q ≃ Fin s) (b : ℕ) [NeZero b]
   have htrack (i : Fin 2) :
       (List.ofFn bits).getD (trackOffset k s b + i.val) false =
       fstBits (sndBits (sndBits (Fin.tail bits))) i := by
-    rw [getD_ofFn bits _ (by unfold trackOffset; have := i.isLt; omega)]
+    rw [List.getD_ofFn_of_lt bits (by unfold trackOffset; have := i.isLt; omega)]
     simp only [fstBits_apply, sndBits_apply, Fin.tail]
     congr 1
     ext
@@ -513,7 +509,7 @@ theorem parse_ofFn (e : Q ≃ Fin s) (b : ℕ) [NeZero b]
   have hlen : (List.ofFn bits).length = width k s b := List.length_ofFn
   have htag : (List.ofFn bits).headD false = bits ⟨0, width_pos k s b⟩ := by
     rw [List.headD_eq_head?_getD, List.head?_eq_getElem?]
-    exact getD_ofFn bits 0 (width_pos k s b)
+    exact List.getD_ofFn_of_lt bits (width_pos k s b) false
   simp only [parse, NeZero.ne b, hlen, ne_eq, not_true_eq_false, or_self, ↓reduceIte]
   rw [htag]
   by_cases h : bits ⟨0, width_pos k s b⟩ = true

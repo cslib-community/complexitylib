@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.TreeSignature.CoinHybrid
 public import CslibFrontier.Crypto.Computational.CollisionResistant
 public import CslibFrontier.Crypto.Computational.OneWay
+public import CslibFrontier.Crypto.Negligible.Dyadic
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -29,7 +30,6 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 import CslibFrontier.Crypto.Computational.OneWayToPRF
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -39,6 +39,7 @@ import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Tactic.Negligible
 
 /-!
 # Security of stateless tree signatures
@@ -476,13 +477,33 @@ final message signature `(u, msg, last)` (when at depth `d - 1`). -/
 
 section ForgerEfficiency
 
-local notation "encNodeCache" => encList (encPair encBits encUnary)
-local notation "encEdgeCache" => encList (encPair (encPair encBits encUnary) encBits)
-local notation "encKeys" => encList (encPair encBits encBits)
-local notation "encPlantedState" =>
+/-- The visited node-to-slot cache, encoded as a list of entries; each entry is a node path in
+binary followed by its slot in unary, the path framed. -/
+private abbrev encNodeCache : NodeSlotCache ↪ List Bool :=
+  encList (encPair encBits encUnary)
+
+/-- The edge-signature cache, encoded as a list of entries; each entry is an edge (a node path in
+binary followed by the edge bit in unary, the path framed), framed, followed by its signature in
+binary. -/
+private abbrev encEdgeCache : EdgeSigCache ↪ List Bool :=
+  encList (encPair (encPair encBits encUnary) encBits)
+
+/-- A list of pairs of words, such as the pre-sampled node key pairs or a certificate chain;
+each pair is its first word in binary, framed, followed by its second word in binary. -/
+private abbrev encKeys : List (List Bool × List Bool) ↪ List Bool :=
+  encList (encPair encBits encBits)
+
+/-- The state of `plantedTreeHandler`, encoded as a nested pair: the visited node cache (framed)
+and the edge-signature cache, framed together, followed by the queried messages (framed), the
+sampled leaves (framed) and the abort flag. Each list holds its words in binary. -/
+private abbrev encPlantedState : PlantedState ↪ List Bool :=
   encPair (encPair encNodeCache encEdgeCache)
     (encPair (encList encBits) (encPair (encList encBits) encBool))
-local notation "encPlantedCert" =>
+
+/-- The chain state of `certifyPlanted`, encoded as a nested pair: the node path in binary
+(framed), the slot in unary (framed) and the certificates (a list of key/signature word pairs),
+framed together, followed by the visited node cache (framed) and the edge-signature cache. -/
+private abbrev encPlantedCert : PlantedCertState ↪ List Bool :=
   encPair (encPair encBits (encPair encUnary (encList (encPair encBits encBits))))
     (encPair encNodeCache encEdgeCache)
 
@@ -638,13 +659,14 @@ private theorem plantedLoopInv_step (S : IndexedSignatureScheme) {Mv Me : ℕ} (
     plantedLoopInv Mv Me a (i + 1) next := by
   rcases a with ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩
   rcases state with ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩
-  dsimp only [plantedLoopInv] at hinv
+  -- the memoization bounds below are stated for the spelled-out cache encodings
+  dsimp only [plantedLoopInv, encNodeCache, encEdgeCache] at hinv
   obtain ⟨hnode, hidx, hcertsLen, hcerts, hvis, hedg, hvisLen, hedgLen⟩ := hinv
   simp only [certifyStepPlanted, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hnext
   obtain ⟨⟨childIdx, visited'⟩, hvisStep, ⟨σ, edges'⟩, hedgStep, hnext⟩ := hnext
   have hnext := OracleComp.eq_of_mem_supportWith_pure hnext
   subst hnext
-  dsimp only [plantedLoopInv]
+  dsimp only [plantedLoopInv, encNodeCache, encEdgeCache]
   have hvBound := ProbOracleComp.memoize_call_size_le encBits encUnary
     (fun _ => pure (min visited.length keys.length))
     (node ++ [leaf.getD node.length false]) visited Mv
@@ -761,7 +783,7 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     rcases a with ⟨⟨keys, targetCap, ⟨n, leaf⟩⟩, ⟨visited, edges⟩⟩
     have hk := length_le_length_encList (encPair encBits encBits) keys
     simp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
-      CertLoopIn.edges, encLoopIn, length_encPair, encUnary_apply, List.length_replicate,
+      CertLoopIn.edges, encLoopIn, encKeys, length_encPair, encUnary_apply, List.length_replicate,
       encBits_apply]
     omega
   have hd : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
@@ -853,10 +875,12 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
   · intro a i ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi hinv
     have hle := plantedLoopInv_enc_bounds (hi.trans (Nat.sub_le _ _)) hinv
     dsimp only [plantedLoopInv] at hinv
-    dsimp only at hle
+    -- `encPlantedCert` spells out the certificate encoding that `hle` calls `encKeys`
+    dsimp only [encKeys] at hle
     obtain ⟨hnode, hidx, -⟩ := hinv
     obtain ⟨hcB, hvB, heB⟩ := hle
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, hnode]
+    simp only [encKeys, length_encPair, encBits_apply, encUnary_apply, List.length_replicate,
+      hnode]
     omega
 
 /-- Caller tuple for `plantedTreeHandler`: `(((n, vk), target), keys)`. -/
@@ -1025,8 +1049,9 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       have hloopB := plantedLoopInv_enc_bounds (Nat.sub_le (depth c.1.1.1) 1) hloop
       dsimp only [plantedLoopInv, CertLoopIn.keys, CertLoopIn.sigCap,
         CertLoopIn.parameter] at hloop
+      -- `encodeSignature` and the memoization bound spell out the encodings
       dsimp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.visited,
-        CertLoopIn.edges] at hloopB
+        CertLoopIn.edges, encKeys, encNodeCache, encEdgeCache] at hloopB
       obtain ⟨hnode, hidx, -, -, hvis', hedg', -, -⟩ := hloop
       obtain ⟨hcB, hvB, heB⟩ := hloopB
       have hsub := Nat.sub_le (depth c.1.1.1) 1
@@ -1045,7 +1070,7 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       refine ⟨⟨hvis', heLast.2.1⟩, ?_, ?_⟩
       · have hσLen : σ.length ≤ sigCap c.1.1.1 := heLast.1
         simp only [encodeSignature, length_encPair, encBits_apply, hleafLen]
-        dsimp only [plantedResourceAllowance]
+        dsimp only [plantedResourceAllowance, encKeys]
         omega
       · have hslCons : (encList encBits (leaf :: seenLeaves)).length ≤
             (encList encBits seenLeaves).length + (2 * depth c.1.1.1 + 2) := by
@@ -1055,7 +1080,7 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
             depth c.1.1.1 * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) +
               (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) := Nat.succ_mul _ _
         rw [plantedState_length_eq, plantedState_length_eq]
-        dsimp only [plantedResourceAllowance]
+        dsimp only [plantedResourceAllowance, encKeys, encNodeCache, encEdgeCache]
         omega
   · have hres := OracleComp.eq_of_mem_supportWith_pure hresult
     subst hres
@@ -4472,13 +4497,6 @@ theorem succProbability_eufCmaGame_scheme_le (S : IndexedSignatureScheme) (T : S
     _ ≤ (_ + _) + _ := add_le_add hideal le_rfl
     _ = _ := by ring
 
-/-- Any depth schedule satisfying `n ≤ depth n` makes `(1 : ℝ≥0) / 2 ^ depth n` negligible. -/
-theorem negligible_inv_two_pow_of_le {depth : ℕ → ℕ} (h : ∀ n, n ≤ depth n) :
-    Negligible (fun n => (1 : ℝ≥0) / 2 ^ depth n) := by
-  refine negligible_of_le (negligible_geometric (ratio := 2⁻¹) (by norm_num)) fun n => ?_
-  rw [one_div, inv_pow]
-  exact inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (h n))
-
 private theorem exists_sigCap_polyTime (S : IndexedSignatureScheme) :
     ∃ sigCap : ℕ → ℕ,
       ComputableInPolyTime sigCap encUnary encUnary ∧
@@ -4515,9 +4533,6 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   obtain ⟨sigCap, hsigCapPoly, hsigCap⟩ := exists_sigCap_polyTime S
   obtain ⟨ck, dk, hkgLen⟩ := S.keyGen_ppt.length_le
   simp only [encUnary_apply, List.length_replicate] at hkgLen
-  obtain ⟨cd, dd, hdd⟩ := hdepth.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hdd
-  have hdepthPB : PolynomiallyBounded depth := PolynomiallyBounded.of_forall_le cd dd hdd
   apply SignatureScheme.EUFCMA.of_negligible
   intro adversary hA
   obtain ⟨εPrf, hεPrfNeg, hprfLe⟩ :=
@@ -4527,46 +4542,36 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]
     fun_prop
-  have hQPB : PolynomiallyBounded Q := by
-    dsimp only [Q]
-    fun_prop
   let slotBound (n : ℕ) : ℕ := Q n * depth n
   have hslotPoly : ComputableInPolyTime slotBound encUnary encUnary :=
     hQPoly.unary_mul' hdepth
-  have hdyadicPB : PolynomiallyBounded (fun n => dyadicSize (slotBound n)) :=
-    dyadicSize_polynomiallyBounded.comp (hQPB.mul hdepthPB)
   have hForgerPPT := isOraclePPT_indexedForger S hdepth hslotPoly hsigCapPoly hA
   have hIdxNeg := hS.negligible (indexedForger S depth slotBound sigCap adversary) hForgerPPT
-  have hCollNeg : Negligible (fun n => ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n)) :=
-    hdepthNeg.polynomiallyBounded_mul (hQPB.pow 2)
-  have htotNeg : Negligible (fun n =>
+  have hbound : ∀ n,
+      Game.succProbability
+        (ProbComp.eval
+          ((scheme S T (prfCoins family) N depth (computableInPolyTime_prfCoins hF.polyTime)
+            hN hdepth hcap hdepth_pos).eufCmaGame adversary n)) ≤
       (dyadicSize (slotBound n) : ℝ≥0) * Game.succProbability
         (ProbComp.eval
           (S.indexedEufCmaGame (indexedForger S depth slotBound sigCap adversary) n)) +
-      ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n) + εPrf n) :=
-    ((hIdxNeg.polynomiallyBounded_mul hdyadicPB).add hCollNeg).add hεPrfNeg
-  refine negligible_of_le htotNeg fun n => ?_
-  rw [eufCmaGame_scheme]
-  have hqBound : ∀ root ∈ (ProbComp.eval (S.keyGen n)).support,
-      (adversary n (encPair encUnary encBits (n, root.1))).IsQueryBounded (Q n) := by
-    intro root hroot
-    have hrk : root.1.length ≤ ck * (n + 1) ^ dk := by
-      have := (length_le_encPair_left encBits encBits root).trans (hkgLen n root hroot)
-      simpa only [encBits_apply] using this
-    have hpkLen : (encPair encUnary encBits (n, root.1)).length = 2 * n + 1 + root.1.length := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-    have hleQ : cq * (n + (encPair encUnary encBits (n, root.1)).length + 2) ^ dq ≤ Q n :=
-      Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq)
-    exact (hqb n _).1.mono hleQ
-  have hideal := succProbability_treeIdealGame_le S T depth N slotBound sigCap (hcap n)
-    (hdepth_pos n) (hwidth n) (hkgBudget n) (hsgBudget n) le_rfl (hsigCap n) adversary hqBound
-  have hcollLe : (Q n ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) ≤
-      ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n) := by
-    rw [Nat.cast_pow, div_eq_mul_inv, one_div]
-    exact mul_le_mul_of_nonneg_left
-      (inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (Nat.le_succ _))) zero_le
-  exact (hprfLe n).trans
-    (add_le_add (hideal.trans (add_le_add le_rfl hcollLe)) le_rfl)
+      (Q n ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) + εPrf n := fun n => by
+    rw [eufCmaGame_scheme]
+    have hqBound : ∀ root ∈ (ProbComp.eval (S.keyGen n)).support,
+        (adversary n (encPair encUnary encBits (n, root.1))).IsQueryBounded (Q n) := by
+      intro root hroot
+      have hrk : root.1.length ≤ ck * (n + 1) ^ dk := by
+        have := (length_le_encPair_left encBits encBits root).trans (hkgLen n root hroot)
+        simpa only [encBits_apply] using this
+      have hpkLen : (encPair encUnary encBits (n, root.1)).length = 2 * n + 1 + root.1.length := by
+        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+      have hleQ : cq * (n + (encPair encUnary encBits (n, root.1)).length + 2) ^ dq ≤ Q n :=
+        Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq)
+      exact (hqb n _).1.mono hleQ
+    have hideal := succProbability_treeIdealGame_le S T depth N slotBound sigCap (hcap n)
+      (hdepth_pos n) (hwidth n) (hkgBudget n) (hsgBudget n) le_rfl (hsigCap n) adversary hqBound
+    exact (hprfLe n).trans (add_le_add hideal le_rfl)
+  negligible using hbound
 
 /-- **Stateless EUF-CMA security of `TreeSignature.scheme` at `coinParam budget`**
 ([BonehShoup2023], Section 14.6.3, Theorem 14.6): instantiating the PRF parameter at

@@ -82,22 +82,6 @@ theorem access_cost (sites : List Point) (p q : Point) (l : Fin 2) :
   rw [access_eq_translate, wireLength_translate]
   exact ⟨(PairedPorts.access_route_sizes _ _).2, rfl⟩
 
-/-- The translated paired boundary belongs to its own closed cell. -/
-theorem boundary_mem_closedCell (c : Point) (s : Fin 4) (l : Fin 2) :
-    realPoint (boundary c s l) ∈ closedCell 120 c := by
-  rw [boundary, realPoint_add, add_comm, mem_closedCell_add_origin_iff]
-  fin_cases s <;> fin_cases l <;> norm_num [PairedPorts.boundaryPort, PairedPorts.offset, realPoint]
-
-/-- A paired boundary point is outside every open grid cell. -/
-theorem boundary_not_mem_openCell (c d : Point) (s : Fin 4) (l : Fin 2) :
-    realPoint (boundary c s l) ∉ openCell 120 d := by
-  intro hp
-  have hdc := cell_eq_of_mem_open_closed (by decide) hp (boundary_mem_closedCell c s l)
-  subst d
-  rw [boundary, realPoint_add, add_comm, mem_openCell_add_origin_iff] at hp
-  fin_cases s <;> fin_cases l <;>
-    norm_num [PairedPorts.boundaryPort, PairedPorts.offset, realPoint] at hp
-
 /-- A point of a translated cell's closed square outside its open square lies on one of the four
 edges, in local coordinates. -/
 private theorem on_edge_of_not_mem_openCell {c : Point} {x : ℝ × ℝ}
@@ -1157,7 +1141,7 @@ private theorem link_position_not_open {sites : List Point} {r : Route}
     realPoint pc.2.1 ∉ openCell 120 c := by
   obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-  rcases hpc with rfl | rfl <;> exact boundary_not_mem_openCell _ c _ _
+  rcases hpc with rfl | rfl <;> exact PairedPorts.boundary_not_mem_openCell _ c _ _
 
 private theorem original_interior_positions_disjoint (φ : CNF ℕ) (cells : List Point)
     (pcs : Point → List PlacedClause)

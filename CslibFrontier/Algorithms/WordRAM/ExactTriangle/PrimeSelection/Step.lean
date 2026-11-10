@@ -19,6 +19,9 @@ The actual strict-minimum update realizes the prefix-minimum invariant. The actu
 code advances the candidate and recomputes its square in two charged instructions. The
 counter must separately establish the value supplied to the minimum update; these local
 rules do not assume a complete modular-counting endpoint.
+
+The prefix-minimum invariant `BestBefore` and its update rules are private to the proof-only
+companion `PrimeSelection.Minimum`; this module reads them through `import all`.
 -/
 
 public section

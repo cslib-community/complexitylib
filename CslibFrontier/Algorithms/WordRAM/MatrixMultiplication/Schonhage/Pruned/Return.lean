@@ -23,7 +23,7 @@ They do not assume a child execution or its cost. All native accumulation and co
 instructions are proved and charged here.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

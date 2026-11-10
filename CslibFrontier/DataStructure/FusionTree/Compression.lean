@@ -30,7 +30,7 @@ subsequent correction needed to recover full-key predecessor ranks.
   with fusion trees*][FredmanWillard1993].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.FusionTree
 

@@ -49,11 +49,18 @@ alternating pattern of `k` moves, the verifier first. A public-coin verifier is 
 verifier that sends its coins as its messages, so `AMGameClass π ⊆ IPGameClass π` and
 `AM[k] ⊆ IP[k]`.
 
+The bookkeeping of shapes shared by the later constructions is here too: how
+`Cslib.Complexity.IPGame.evalShape`, `Cslib.Complexity.IPGame.verifierBits`,
+`Cslib.Complexity.IPGame.verifierMoves` and `Cslib.Complexity.IPGame.count` behave on
+concatenations, and the bound `Cslib.Complexity.IPGame.count_le_two_pow` of a count of a
+`0`/`1`-valued payoff.
+
 ## Main definitions
 
 * `Cslib.Complexity.IPMove`, `Cslib.Complexity.IPGame.count`, `Cslib.Complexity.IPGame.agrees`,
   `Cslib.Complexity.IPGame.run`, `Cslib.Complexity.IPGame.acceptedCoins`,
-  `Cslib.Complexity.IPGame.bestCount`, `Cslib.Complexity.IPGame.countAt`.
+  `Cslib.Complexity.IPGame.bestCount`, `Cslib.Complexity.IPGame.countAt`,
+  `Cslib.Complexity.IPGame.verifierMoves`.
 * `Cslib.Complexity.IsIPGameVerifier`, `Cslib.Complexity.IPGameClass`, `Cslib.Complexity.IPk`:
   `IP[k]`.
 
@@ -168,6 +175,28 @@ theorem verifierBits_verifier (n : ℕ) (g : List (IPMove × ℕ)) :
 theorem verifierBits_prover (n : ℕ) (g : List (IPMove × ℕ)) :
     verifierBits ((.prover, n) :: g) = verifierBits g := rfl
 
+theorem verifierBits_append (g h : List (IPMove × ℕ)) :
+    verifierBits (g ++ h) = verifierBits g + verifierBits h := by
+  induction g with
+  | nil => simp [verifierBits, AMGame.arthurBits]
+  | cons x g ih =>
+    obtain ⟨_ | _, n⟩ := x
+    · rw [List.cons_append, verifierBits_verifier, verifierBits_verifier, ih, Nat.add_assoc]
+    · rw [List.cons_append, verifierBits_prover, verifierBits_prover, ih]
+
+/-- The number of verifier moves of a private-coin game shape. -/
+def verifierMoves (g : List (IPMove × ℕ)) : ℕ := (g.map Prod.fst).count .verifier
+
+@[simp] theorem verifierMoves_nil : verifierMoves [] = 0 := rfl
+
+@[simp] theorem verifierMoves_verifier (n : ℕ) (g : List (IPMove × ℕ)) :
+    verifierMoves ((.verifier, n) :: g) = verifierMoves g + 1 := by
+  simp [verifierMoves]
+
+@[simp] theorem verifierMoves_prover (n : ℕ) (g : List (IPMove × ℕ)) :
+    verifierMoves ((.prover, n) :: g) = verifierMoves g := by
+  simp [verifierMoves]
+
 /-- The count of a private-coin game is `2 ^ B` times the value of the public-coin game with the
 same moves, where `B` is the number of bits the verifier sends. -/
 theorem count_eq_value (g : List (IPMove × ℕ)) (f : List Bool → ℕ) :
@@ -190,6 +219,29 @@ theorem count_eq_value (g : List (IPMove × ℕ)) (f : List Bool → ℕ) :
       rw [Finset.apply_sup'_eq_sup'_comp univ_nonempty (fun x : ℚ => 2 ^ verifierBits g * x)
         fun x y => mul_max_of_nonneg x y (by positivity)]
       exact sup'_congr univ_nonempty rfl fun y _ => ih _
+
+/-- A count of a `0`/`1`-bounded payoff is at most `2 ^ verifierBits g`. -/
+theorem count_le_two_pow (g : List (IPMove × ℕ)) (f : List Bool → ℕ) (hf : ∀ t, f t ≤ 1) :
+    count g f ≤ 2 ^ verifierBits g := by
+  have h := count_eq_value g f
+  have hv : AMGame.value true (toAM g) (fun t => (f t : ℚ)) ≤ 1 :=
+    AMGame.value_le_one _ _ fun t => by exact_mod_cast hf t
+  have : (count g f : ℚ) ≤ 2 ^ verifierBits g := by
+    rw [h]
+    have : (0 : ℚ) < 2 ^ verifierBits g := by positivity
+    nlinarith
+  exact_mod_cast this
+
+/-- The count of a concatenation of shapes: the count of the first shape, whose payoff is the count
+of the second. -/
+theorem count_append (g h : List (IPMove × ℕ)) (f : List Bool → ℕ) :
+    count (g ++ h) f = count g fun t => count h fun u => f (t ++ u) := by
+  induction g generalizing f with
+  | nil => rfl
+  | cons x g ih =>
+    obtain ⟨_ | _, n⟩ := x
+    · simp only [List.cons_append, count_verifier, ih, List.append_assoc]
+    · simp only [List.cons_append, count_prover, ih, List.append_assoc]
 
 /-! ### Verifiers with private coins -/
 
@@ -407,6 +459,19 @@ theorem exists_card_filter_run_eq_bestCount {ρ : ℕ}
 def evalShape (G : List (IPMove × Polynomial ℕ)) (n : ℕ) : List (IPMove × ℕ) :=
   G.map fun x => (x.1, x.2.eval n)
 
+@[simp] theorem evalShape_nil (n : ℕ) : evalShape [] n = [] := rfl
+
+theorem evalShape_cons (v : IPMove) (p : Polynomial ℕ) (G : List (IPMove × Polynomial ℕ)) (n : ℕ) :
+    evalShape ((v, p) :: G) n = (v, p.eval n) :: evalShape G n := rfl
+
+theorem evalShape_append (G H : List (IPMove × Polynomial ℕ)) (n : ℕ) :
+    evalShape (G ++ H) n = evalShape G n ++ evalShape H n := by
+  simp [evalShape]
+
+theorem verifierMoves_evalShape (G : List (IPMove × Polynomial ℕ)) (n : ℕ) :
+    verifierMoves (evalShape G n) = (G.map Prod.fst).count .verifier := by
+  simp [verifierMoves, evalShape, Function.comp_def]
+
 end IPGame
 
 open IPGame
@@ -519,6 +584,15 @@ theorem transcriptLength_eq_arthurBits_add_merlinBits (g : List (AMMove × ℕ))
     · simp only [AMGame.transcriptLength, List.map_cons, List.sum_cons, AMGame.arthurBits,
         merlinBits] at ih ⊢
       omega
+
+theorem transcriptLength_toAM (g : List (IPMove × ℕ)) :
+    AMGame.transcriptLength (toAM g) = transcriptLength g := by
+  simp [AMGame.transcriptLength, transcriptLength, toAM, Function.comp_def]
+
+theorem verifierBits_le_transcriptLength (g : List (IPMove × ℕ)) :
+    verifierBits g ≤ transcriptLength g := by
+  rw [← transcriptLength_toAM, transcriptLength_eq_arthurBits_add_merlinBits]
+  exact Nat.le_add_right _ _
 
 /-- The private-coin shape with the same moves as a public-coin shape. -/
 def ofAM (g : List (AMMove × ℕ)) : List (IPMove × ℕ) := g.map fun x => (x.1.toIP, x.2)

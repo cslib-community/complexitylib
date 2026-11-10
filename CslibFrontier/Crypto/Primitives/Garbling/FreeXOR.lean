@@ -33,6 +33,8 @@ free (`card_garbledRow`).
 
 ## Main definitions
 
+* `Cslib.Crypto.Garbling.FreeXOR.GarbledRow`, `Cslib.Crypto.Garbling.FreeXOR.GarbledSlot`: the
+  rows of a garbled table and their argument slots; `GarbledRow.gate` is the gate of a row.
 * `Cslib.Crypto.Garbling.FreeXOR.garbleWith`, `Cslib.Crypto.Garbling.FreeXOR.garble`: Free-XOR
   garbling, with given and with uniform offset and base labels.
 * `Cslib.Crypto.Garbling.FreeXOR.Garbled.run`: evaluation and decoding.
@@ -87,9 +89,14 @@ gate that is not free. -/
 abbrev GarbledRow (τ : Circuit.Topology n m s) (free : Fin s → Bool) : Type :=
   Σ g : {g : Fin s // free g = false}, Fin (τ.arity g.1) → Bool
 
+/-- The gate of a row. -/
+abbrev GarbledRow.gate {τ : Circuit.Topology n m s} {free : Fin s → Bool}
+    (r : GarbledRow τ free) : Fin s :=
+  r.1.1
+
 /-- The argument slots of the rows of a Free-XOR garbled table. -/
 abbrev GarbledSlot (τ : Circuit.Topology n m s) (free : Fin s → Bool) : Type :=
-  Σ r : GarbledRow τ free, Fin (τ.arity r.1.1)
+  Σ r : GarbledRow τ free, Fin (τ.arity r.gate)
 
 /-- Free gates have no rows: the table has `2 ^ a` rows for each gate of arity `a` that is not
 free, and none for the others. -/
@@ -168,8 +175,8 @@ private theorem step_iterate {L : Type} {step : (Wire n s → L) → Wire n s �
 /-- The colour flips of a row against a labelling: slot `k` flips when the row's colour differs
 from the colour of the label of its argument. -/
 private def flipped {τ : Circuit.Topology n m s} {free : Fin s → Bool} (A : Wire n s → K × Bool)
-    (r : GarbledRow τ free) (k : Fin (τ.arity r.1.1)) : Bool :=
-  r.2 k + (A (τ.wires r.1.1 k)).2
+    (r : GarbledRow τ free) (k : Fin (τ.arity r.gate)) : Bool :=
+  r.2 k + (A (τ.wires r.gate k)).2
 
 /-- Slot `k` is the first one where `e` is set. -/
 private def isFirst {a : ℕ} (e : Fin a → Bool) (k : Fin a) : Bool :=
@@ -207,13 +214,13 @@ private theorem sum_isFirst_and {a : ℕ} (e : Fin a → Bool) (b : Bool)
 
 private theorem exists_flipped_of_ne {τ : Circuit.Topology n m s} {free : Fin s → Bool}
     {A : Wire n s → K × Bool} {r : GarbledRow τ free}
-    (h : ¬ r.2 = fun k => (A (τ.wires r.1.1 k)).2) : ∃ k, flipped A r k = true := by
+    (h : ¬ r.2 = fun k => (A (τ.wires r.gate k)).2) : ∃ k, flipped A r k = true := by
   obtain ⟨k, hk⟩ := Function.ne_iff.mp h
   exact ⟨k, bool_add_eq_true_of_ne hk⟩
 
 private theorem flipped_eq_false_of_eq {τ : Circuit.Topology n m s} {free : Fin s → Bool}
     {A : Wire n s → K × Bool} {r : GarbledRow τ free}
-    (h : r.2 = fun k => (A (τ.wires r.1.1 k)).2) (k : Fin (τ.arity r.1.1)) :
+    (h : r.2 = fun k => (A (τ.wires r.gate k)).2) (k : Fin (τ.arity r.gate)) :
     flipped A r k = false := by
   rw [flipped, h]
   exact BooleanRing.add_self _
@@ -235,16 +242,16 @@ private theorem trace_gate_of_free
 /-- The output bit of a row against a labelling `A` on input `x`: whether the row's plaintext is
 the label of `A` or the other label of its gate. -/
 private def rowBit (A : Wire n C.size → K × Bool) (r : GarbledRow C.topology free) : Bool :=
-  C.program.trace I x (.gate r.1.1) + I (C.program.lines r.1.1).op
-    fun k : Fin (C.topology.arity r.1.1) =>
-      flipped A r k + C.program.trace I x (C.topology.wires r.1.1 k)
+  C.program.trace I x (.gate r.gate) + I (C.program.lines r.gate).op
+    fun k : Fin (C.topology.arity r.gate) =>
+      flipped A r k + C.program.trace I x (C.topology.wires r.gate k)
 
 /-- The query of the reduction for a slot: the key of the slot's argument under the labelling
 `A`, the slot's tweak, and a bit that is set only on the first flipped slot of a row whose output
 bit is set. -/
 def reductionQuery (A : Wire n C.size → K × Bool) (p : GarbledSlot C.topology free) :
     K × T × Bool :=
-  ((A (C.topology.wires p.1.1.1 p.2)).1, tw p, isFirst (flipped A p.1) p.2 && rowBit C I x A p.1)
+  ((A (C.topology.wires p.1.gate p.2)).1, tw p, isFirst (flipped A p.1) p.2 && rowBit C I x A p.1)
 
 /-- The query for a slot carries the slot's tweak. -/
 theorem reductionQuery_tweak (A : Wire n C.size → K × Bool) (p : GarbledSlot C.topology free) :
@@ -258,7 +265,7 @@ private theorem exists_flipped_of_rowBit (A : Wire n C.size → K × Bool)
   have hf : ∀ k, flipped A r k = false := fun k => Bool.eq_false_iff.mpr fun h' => hne ⟨k, h'⟩
   have h0 : rowBit C I x A r = false := by
     simp only [rowBit, hf, bool_false_add]
-    rw [← trace_gate' C I x r.1.1]
+    rw [← trace_gate' C I x r.gate]
     exact BooleanRing.add_self _
   exact Bool.false_ne_true (h0.symm.trans h)
 
@@ -419,9 +426,9 @@ theorem evaluate_eq_of_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdere
 gate for the bit that the colours encode, masked by the hash of the matching argument labels. -/
 @[expose] def garbleTable (δ : K) (W : Wire n C.size → K × Bool)
     (r : GarbledRow C.topology free) : K × Bool :=
-  label δ (W (.gate r.1.1)) (I (C.program.lines r.1.1).op fun k : Fin (C.topology.arity r.1.1) =>
-      r.2 k + (W (C.topology.wires r.1.1 k)).2) +
-    ∑ k, H (label δ (W (C.topology.wires r.1.1 k)) (r.2 k + (W (C.topology.wires r.1.1 k)).2)).1
+  label δ (W (.gate r.gate)) (I (C.program.lines r.gate).op fun k : Fin (C.topology.arity r.gate) =>
+      r.2 k + (W (C.topology.wires r.gate k)).2) +
+    ∑ k, H (label δ (W (C.topology.wires r.gate k)) (r.2 k + (W (C.topology.wires r.gate k)).2)).1
       (tw ⟨r, k⟩)
 
 /-- Garble a circuit with the offset `δ` and the base labels `base`. -/
@@ -489,8 +496,8 @@ filler. -/
 def simulateWith (τ : Circuit.Topology n m s) (free : Fin s → Bool) (H : K → T → K × Bool)
     (tw : GarbledSlot τ free → T) (y : Fin m → Bool) (A : Wire n s → K × Bool)
     (R : GarbledRow τ free → K × Bool) : View τ free K where
-  table r := if r.2 = (fun k => (A (τ.wires r.1.1 k)).2) then
-      A (.gate r.1.1) + ∑ k, H (A (τ.wires r.1.1 k)).1 (tw ⟨r, k⟩)
+  table r := if r.2 = (fun k => (A (τ.wires r.gate k)).2) then
+      A (.gate r.gate) + ∑ k, H (A (τ.wires r.gate k)).1 (tw ⟨r, k⟩)
     else R r
   input i := A (.input i)
   decoding o := (A (τ.outputs o)).2 + y o
@@ -524,8 +531,8 @@ flips against `A` read the oracle, and the others hash their label under `A`. -/
 private def reductionTable {τ : Circuit.Topology n m s} {free : Fin s → Bool}
     (H : K → T → K × Bool) (tw : GarbledSlot τ free → T) (A : Wire n s → K × Bool)
     (O : GarbledSlot τ free → K × Bool) (r : GarbledRow τ free) : K × Bool :=
-  A (.gate r.1.1) + ∑ k, if flipped A r k = true then O ⟨r, k⟩ else
-    H (A (τ.wires r.1.1 k)).1 (tw ⟨r, k⟩)
+  A (.gate r.gate) + ∑ k, if flipped A r k = true then O ⟨r, k⟩ else
+    H (A (τ.wires r.gate k)).1 (tw ⟨r, k⟩)
 
 /-- The view built by the reduction. -/
 private def reductionView (τ : Circuit.Topology n m s) {free : Fin s → Bool}
@@ -572,14 +579,14 @@ private theorem reductionTable_circular (hK : ∀ k : K, k + k = 0) (δ : K)
     (A : Wire n C.size → K × Bool) (r : GarbledRow C.topology free) :
     reductionTable H tw A (fun p => CorrelationRobust.circular H δ (reductionQuery C I tw x A p))
       r = garbleTable C I H tw δ (fun w => label δ (A w) (C.program.trace I x w)) r := by
-  have hb : ∀ k, r.2 k + (label δ (A (C.topology.wires r.1.1 k))
-      (C.program.trace I x (C.topology.wires r.1.1 k))).2 =
-        flipped A r k + C.program.trace I x (C.topology.wires r.1.1 k) := fun k => by
+  have hb : ∀ k, r.2 k + (label δ (A (C.topology.wires r.gate k))
+      (C.program.trace I x (C.topology.wires r.gate k))).2 =
+        flipped A r k + C.program.trace I x (C.topology.wires r.gate k) := fun k => by
     rw [label_snd, flipped, add_assoc]
   have hterm : ∀ k, (if flipped A r k = true then
       CorrelationRobust.circular H δ (reductionQuery C I tw x A ⟨r, k⟩) else
-        H (A (C.topology.wires r.1.1 k)).1 (tw ⟨r, k⟩)) =
-      label δ (H (label δ (A (C.topology.wires r.1.1 k)) (flipped A r k)).1 (tw ⟨r, k⟩))
+        H (A (C.topology.wires r.gate k)).1 (tw ⟨r, k⟩)) =
+      label δ (H (label δ (A (C.topology.wires r.gate k)) (flipped A r k)).1 (tw ⟨r, k⟩))
         (isFirst (flipped A r) k && rowBit C I x A r) := fun k => by
     cases hf : flipped A r k
     · have h0 : isFirst (flipped A r) k = false := by simp [isFirst, hf]
@@ -613,10 +620,10 @@ private theorem view_shift
 
 private theorem reductionTable_active {τ : Circuit.Topology n m s} {free : Fin s → Bool}
     (H : K → T → K × Bool) (tw : GarbledSlot τ free → T) {A : Wire n s → K × Bool}
-    {r : GarbledRow τ free} (h : r.2 = fun k => (A (τ.wires r.1.1 k)).2)
+    {r : GarbledRow τ free} (h : r.2 = fun k => (A (τ.wires r.gate k)).2)
     (O : GarbledSlot τ free → K × Bool) :
-    reductionTable H tw A O r = A (.gate r.1.1) + ∑ k, H (A (τ.wires r.1.1 k)).1 (tw ⟨r, k⟩) :=
-  congrArg (A (.gate r.1.1) + ·) (Finset.sum_congr rfl fun k _ =>
+    reductionTable H tw A O r = A (.gate r.gate) + ∑ k, H (A (τ.wires r.gate k)).1 (tw ⟨r, k⟩) :=
+  congrArg (A (.gate r.gate) + ·) (Finset.sum_congr rfl fun k _ =>
     ite_eq_right (by rw [flipped_eq_false_of_eq h k]; exact Bool.false_ne_true))
 
 /-- The oracle shift that moves each row with a flipped slot by `c`: on the query of the first
@@ -644,7 +651,7 @@ private theorem reductionTable_shift [DecidableEq K] [DecidableEq T] (htw : Func
       reductionTable H tw A (fun p => f (reductionQuery C I tw x A p)) r + c r := by
   simp only [reductionTable, shiftOracle_reductionQuery C I tw x htw A c]
   conv_rhs => rw [add_assoc, ← sum_ite_isFirst hr (c r), ← Finset.sum_add_distrib]
-  refine congrArg (A (.gate r.1.1) + ·) (Finset.sum_congr rfl fun k _ => ?_)
+  refine congrArg (A (.gate r.gate) + ·) (Finset.sum_congr rfl fun k _ => ?_)
   cases hf : flipped A r k
   · have h0 : isFirst (flipped A r) k = false := by simp [isFirst, hf]
     simp [h0]
@@ -655,7 +662,7 @@ private theorem reductionTable_shift [DecidableEq K] [DecidableEq T] (htw : Func
 private def mixTable (A : Wire n C.size → K × Bool)
     (ω : (K × T × Bool → K × Bool) × (GarbledRow C.topology free → K × Bool))
     (r : GarbledRow C.topology free) : K × Bool :=
-  if r.2 = (fun k => (A (C.topology.wires r.1.1 k)).2) then ω.2 r else
+  if r.2 = (fun k => (A (C.topology.wires r.gate k)).2) then ω.2 r else
     reductionTable H tw A (fun p => ω.1 (reductionQuery C I tw x A p)) r
 
 private theorem simulateWith_mixTable (y : Fin m → Bool) (A : Wire n C.size → K × Bool)
@@ -665,7 +672,7 @@ private theorem simulateWith_mixTable (y : Fin m → Bool) (A : Wire n C.size �
   ext1
   · funext r
     simp only [simulateWith, reductionView]
-    by_cases h : r.2 = fun k => (A (C.topology.wires r.1.1 k)).2
+    by_cases h : r.2 = fun k => (A (C.topology.wires r.gate k)).2
     · rw [ite_eq_left h, reductionTable_active H tw h]
     · rw [ite_eq_right h, mixTable, ite_eq_right h]
   all_goals rfl
@@ -777,7 +784,7 @@ private theorem idealGame_reduction [DecidableEq K] [Fintype T] [DecidableEq T]
       PMF.bind_const]
   rw [hL, Cslib.Probability.PMF.uniformOfFintype_map_of_shift fun c => ?_]
   refine ⟨Equiv.addRight (shiftOracle C I tw x A c, c), fun ω => funext fun r => ?_⟩
-  by_cases h : r.2 = fun k => (A (C.topology.wires r.1.1 k)).2
+  by_cases h : r.2 = fun k => (A (C.topology.wires r.gate k)).2
   · simp only [mixTable, Equiv.coe_addRight, Pi.add_apply, Prod.snd_add, ite_eq_left h]
   · simp only [mixTable, Equiv.coe_addRight, Pi.add_apply, Prod.fst_add, ite_eq_right h]
     exact reductionTable_shift C I H tw x htw A ω.1 c r (exists_flipped_of_ne h)

@@ -37,9 +37,10 @@ binary encoding `Cslib.Circuits.Boolean.encCode`.
 
 Together with `Cslib.Logic.PL.CNF.IsProof.ofCode_interpolantCode`, this is the effective form of
 feasible interpolation [Krajíček, Theorem 6.1][Krajicek1997], [Pudlák, Theorem 1][Pudlak1997]:
-the interpolant circuit of a refutation is computed from its lines in polynomial time. The bound is
-not explicit; each line is justified by scanning all pairs of earlier lines and all literals of the
-first, so the running time is polynomial in the number of lines and their widths.
+the interpolant circuit of a refutation whose shared variables are below `n` is computed from its
+lines in polynomial time. The bound is not explicit; each line is justified by scanning all pairs
+of earlier lines and all literals of the first, so the running time is polynomial in the number of
+lines and their widths.
 
 The same holds for the monotone interpolant (`Cslib.Logic.PL.CNF.monotoneInterpolantCode`), from
 the same input, with its output in the binary encoding of monotone circuits
@@ -341,8 +342,9 @@ variable [DecidableEq Y] [DecidableEq Z]
 resolution refutation (`Cslib.Logic.PL.CNF.interpolantCode`) is computed in polynomial time from
 the number of inputs in unary, the two formulas and the lines of the refutation. Shared variables
 are written in binary, private variables in any encodings `encY` and `encZ`, and the circuit code
-in the binary encoding `Cslib.Circuits.Boolean.encCode`. On a refutation, the code is that of a
-circuit computing an interpolant (`Cslib.Logic.PL.CNF.IsProof.ofCode_interpolantCode`). -/
+in the binary encoding `Cslib.Circuits.Boolean.encCode`. On a refutation whose shared variables
+are below the number of inputs, the code is that of a circuit computing an interpolant
+(`Cslib.Logic.PL.CNF.IsProof.ofCode_interpolantCode`). -/
 theorem CNF.computableInPolyTime_interpolantCode (encY : Y ↪ List Bool) (encZ : Z ↪ List Bool) :
     ComputableInPolyTime (fun p : ℕ × (CNF (ℕ ⊕ Y) × CNF (ℕ ⊕ Z)) ×
         List (Clause (ℕ ⊕ (Y ⊕ Z))) => CNF.interpolantCode p.1 p.2.1.1 p.2.1.2 p.2.2)
@@ -435,8 +437,8 @@ circuit of a resolution refutation (`Cslib.Logic.PL.CNF.monotoneInterpolantCode`
 polynomial time from the number of inputs in unary, the two formulas and the lines of the
 refutation, encoded as for `Cslib.Logic.PL.CNF.computableInPolyTime_interpolantCode`; the circuit
 code is written in the binary encoding `Cslib.Circuits.Monotone.encCode`. On a refutation whose
-shared variables occur only positively in `A` or only negatively in `B`, the code is that of a
-monotone circuit computing an interpolant
+shared variables are below the number of inputs and occur only positively in `A` or only
+negatively in `B`, the code is that of a monotone circuit computing an interpolant
 (`Cslib.Logic.PL.CNF.IsProof.ofCode_monotoneInterpolantCode`). -/
 theorem CNF.computableInPolyTime_monotoneInterpolantCode (encY : Y ↪ List Bool)
     (encZ : Z ↪ List Bool) :
