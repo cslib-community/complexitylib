@@ -12,11 +12,13 @@ public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalInvarian
 /-!
 # Worklist facts that survive a stack-only native step
 
-Popping a pending entry writes only the reserved native stack and leaves the persistent
-caller registers in place. Every invariant field that does not mention the stack therefore
-transfers to the popped state: the heap pointer and output count, the caller controls,
-memory outside the reserved interval, the prime bitmap and the readback, bounds and floor of
-the pending arrays.
+Popping a pending entry changes memory only inside the reserved native stack and keeps the
+persistent caller registers `71`–`95`. The worklist facts shared by the catalogue and visitor
+cursors therefore transfer to the popped state: the heap pointer and the floor below it, the
+output-count register, the caller controls, memory outside the reserved interval, the prime
+bitmap, and the readback and heap bounds of the pending entries. The lemma also records that the
+reserved stack fits in the gap below the floor. Callers still derive the other invariant fields,
+such as the output and its bounds, the heap budget and protected memory.
 
 Both the native traversal and the fused decision visitor pop an entry before each transition,
 so they share this argument.
@@ -34,9 +36,9 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
 open Cslib.WordRAM
 
-/-- A step that writes only the reserved native stack and keeps the persistent caller registers
-`71`–`95` preserves every worklist fact that does not mention the stack. For the entries `es`,
-the conclusions are, in order:
+/-- A step that changes memory only inside the reserved native stack and keeps the persistent
+caller registers `71`–`95` preserves the worklist facts shared by the catalogue and visitor
+cursors. For the entries `es`, the conclusions are, in order:
 
 * the heap pointer and output count are unchanged;
 * the caller controls still hold;

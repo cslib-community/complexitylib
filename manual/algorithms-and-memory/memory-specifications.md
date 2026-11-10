@@ -202,12 +202,14 @@ move a fixed register bank through the traversal's own nine-register word stack 
 stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
 
 Each worklist transition, in the catalogue traversal and in the visitor, begins by popping one
-entry with `pop_entry`, which writes only the reserved stack and keeps the controller registers.
+entry with `pop_entry`, which changes memory only inside the reserved stack and keeps the
+persistent caller registers 71–95.
 [`Traversal.Arena.preserved_of_stack_frame`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalStackFrame.lean)
-turns that frame into the invariant facts that do not mention the stack: heap pointer, output
-count, caller controls, memory outside the stack, prime bitmap and the pending arrays' readback,
-bounds and floor. A new transition should take these facts from it rather than re-deriving
-them. Visitor callers apply it to the `comap (preprocessingRegisters r)` views of both states.
+turns that frame into the worklist facts both cursors share: the heap pointer and the floor below
+it, the output-count register, caller controls, memory outside the stack, the prime bitmap, and
+the readback and heap bounds of the pending entries. A new transition should take these facts
+from it rather than re-deriving them. Visitor callers apply it to the
+`comap (preprocessingRegisters r)` views of both states.
 
 Both root controllers reuse
 [`Traversal.initializeRoot_exec`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).
