@@ -58,6 +58,20 @@ example (c : Prop) [Decidable c] (hc : c) (μ ν : PMF ℕ) (x : ℕ)
 example (μ : PMF ℕ) (h : (0, 2) ∈ (μ.map fun a => (a, 1)).support) : False := by
   supp_cases h
 
+-- An equation between applications of one constructor is inverted, and the goal is kept.
+example (μ : PMF ℕ) (y : ℕ) (h : some y ∈ (μ.map some).support) : y ∈ μ.support := by
+  supp_cases h
+  assumption
+
+example (μ : PMF ℕ) (y : ℕ) (h : Sum.inl y ∈ (μ.map (Sum.inl (β := Bool))).support) :
+    y ∈ μ.support := by
+  supp_cases h
+  assumption
+
+example (y : ℕ) (h : some y ∈ (PMF.pure (some 5)).support) : y = 5 := by
+  supp_cases h
+  rfl
+
 -- A value returned in the middle of a sequence is substituted into the rest.
 example (μ : PMF ℕ) (ν : ℕ → PMF ℕ) (x : ℕ) (hν : ∀ n, ∀ b ∈ (ν n).support, b ≤ n)
     (h : x ∈ (do let a ← μ; let b ← pure (a + 1); ν (2 * b) : PMF ℕ).support) :

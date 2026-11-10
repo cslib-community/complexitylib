@@ -113,10 +113,11 @@ private def isSupportMembership (e : Expr) : Bool :=
 
 /-- Destructure the hypotheses named `todo` in `g` completely: introduce the witness and proof of
 each existential, split conjunctions, case on disjunctions, close the goal at `False` or at an
-equation of distinct constructors, drop `True`, and substitute each equation one of whose sides is
-a local variable. Hypotheses are tracked by name, since substituting reintroduces the hypotheses
-that mention the eliminated variable under new identifiers; the names are fresh, so they show as
-inaccessible. Returns the remaining goals. -/
+equation of distinct constructors, invert an equation between applications of one constructor,
+drop `True`, and substitute each equation one of whose sides is a local variable. Hypotheses are
+tracked by name, since substituting reintroduces the hypotheses that mention the eliminated
+variable under new identifiers; the names are fresh, so they show as inaccessible. Returns the
+remaining goals. -/
 private partial def destruct (g : MVarId) : List Name → MetaM (List MVarId)
   | [] => return [g]
   | n :: todo => g.withContext do
@@ -150,9 +151,9 @@ private partial def destruct (g : MVarId) : List Name → MetaM (List MVarId)
       if lhs.isFVar || rhs.isFVar then
         if let some g' ← observing? (subst g d.fvarId) then
           return ← destruct g' todo
-      else if let some #[] ← observing? (g.cases d.fvarId) then
-        -- distinct constructors or literals
-        return []
+      else if let some gs ← observing? (g.cases d.fvarId) then
+        -- distinct constructors or literals close the goal; an injection leaves one goal
+        return ← gs.toList.flatMapM fun s => destruct s.mvarId todo
       destruct g todo
     | _ => destruct g todo
 
