@@ -5118,6 +5118,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.SubmatrixRobust
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.TimeLayer
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.TimeLayer.Fin
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Toeplitz
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.TraceRank
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Transvection
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UniformGram
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Vertex
