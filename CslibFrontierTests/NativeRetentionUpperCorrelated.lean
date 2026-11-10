@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper
+import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutput
 import Mathlib.Tactic
 
 /-!
@@ -209,3 +210,27 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
   refine ⟨?_, ?_⟩
   · simpa [lim] using hbudget
   · simpa only [hrho, lim] using hprogress
+
+/-- The terminal event comparison applies to actual halted tape readback under
+this same correlated invoice sampler and positive-dual original input. -/
+example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
+    (program : MultiTapePTM tapes Bool R Unit),
+    let μ := NativeUnboundedExecution.terminal program (environment lim sampler)
+      ⟨program.initialConfig (GuardedStartup.encoding data),
+        ⟨ConcurrentBatch.initial (), []⟩⟩
+    (μ.map (BatchOutput.retained data.startup.system valid)) true ≤
+      (μ.map (BatchOutput.certified lim data.startup.system valid)) true := by
+  obtain ⟨tapes, R, hR, program, hp⟩ :=
+    BatchOutput.exists_native_output_controller (n := 2) 2
+  refine ⟨tapes, R, hR, program, ?_⟩
+  exact hp Unit lim sampler data () 1 rfl (by decide) (by decide)
+    (by norm_num [data, lim]) (by norm_num) (by intro _; norm_num [lim])
+    (by norm_num [data, lim]) valid
+
+/-- Divergent terminal mass is never counted as receipt or tape success. -/
+example (tapes : ℕ) (R : Type) :
+    BatchOutput.retained data.startup.system valid
+      (none : Option (World tapes R Unit (ServerState 2 Unit) [])) = false ∧
+    BatchOutput.certified lim data.startup.system valid
+      (none : Option (World tapes R Unit (ServerState 2 Unit) [])) = false := by
+  exact ⟨rfl, rfl⟩

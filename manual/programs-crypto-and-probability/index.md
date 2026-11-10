@@ -2006,14 +2006,24 @@ It assumes neither integrability nor a bounded total bill. The source sampler,
 private seed and native process are the same throughout. The candidate parser
 embeds the source finite masks into the original natural row indices without
 truncating the response alphabet or hidden metadata. The final certified-output
-success event and common-oracle optimum comparison are not yet assembled.
+success bound and common-oracle optimum comparison remain to be assembled.
 
 `BatchReceipts.aligned_completed_result` gives the pathwise output/deadline
 implication: actual receipt completion decodes the runtime result to its original
 family, proves the full-cover dual-weight certificate, and bounds actual source
 elapsed time by the deadline. The correlated first-cover client checks this on
 its real supported source reply. Transporting this implication to the final native
-certified-success probability and the common-oracle optimum remains open.
+certified-success probability is provided by
+`BatchOutput.exists_native_output_controller`. It constructs the actual program,
+reads its halted output tape through `NativeOpenSelection.result`, and proves that
+terminal receipt-completion probability is at most native certified-success
+probability on the same terminal law and sampler. Divergent terminal mass counts
+as neither event. The source model (PDF p. 5) explicitly excludes local computation
+from deadline $D$; elapsed time here is the oracle ledger of sequential batch
+maxima, including cutoffs and cancellation. This is not a local instruction-time
+bound. The binomial completion bound still needs to be joined to this terminal
+event for one shared controller witness; separate existence statements do not
+establish that identity. The common-oracle optimum comparison remains open.
 
 The [correlated numerical client](../../CslibFrontierTests/NativeRetentionUpperCorrelated.lean)
 applies the same constructed numerical controller to two simultaneous calls.
@@ -2034,9 +2044,10 @@ The [nonempty numerical client](../../CslibFrontierTests/NativeRetentionUpperNon
 uses a positive-dual singleton cover and a sampler that returns that cover in its
 first batch with invoice one. It derives both issued-batch envelopes from the
 actual conditional law and instantiates the numerical theorem on the constructed
-program, without a supplied cost or success conclusion. The correlated client
-has unbounded history-dependent invoices and is not a uniform finite conditional
-invoice-envelope example. From the repository root:
+program, without a supplied cost or success conclusion. The admitted-batch client
+has unbounded history-dependent invoices; the correlated numerical client instead
+derives a finite conditional invoice envelope and also instantiates the actual
+compiled-output event comparison. From the repository root:
 
 ```bash
 scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
@@ -2046,9 +2057,10 @@ scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
 ```
 
 This establishes a concrete supported scheduler and source-admitted native loop.
-The complete certified-output success/deadline event and common-oracle optimum
-comparison for this same code remain open. Theorem 6's WSC/subinstance/role/residual specialization, external
-encodings, general measurable interfaces, compiled physical clocks and divergent
+The terminal compiled-output certification implication is proved. Its joint
+assembly with the numerical success lower bound and common-oracle optimum
+comparison for one shared controller witness remains open. Theorem 6's
+WSC/subinstance/role/residual specialization, external encodings, general measurable interfaces, compiled physical clocks and divergent
 path cost/integrability limits remain distinct obligations.
 
 Import `CslibFrontier.Probability.StochasticOracle.NativeRetention.ResponseExecution`
