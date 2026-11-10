@@ -55,7 +55,7 @@ unbounded-depth bootstrapping are separate results or obligations.
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Section 11.2][BonehShoup2023]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 
