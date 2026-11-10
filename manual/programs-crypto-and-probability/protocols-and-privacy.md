@@ -681,6 +681,8 @@ realization, composition/UC and full malicious MPC remain separate obligations.
 
 The statement is concrete and single-instance: the circuit, input and distinguisher are fixed and the keyed function is arbitrary, so the bound is meaningful only when the reductions' PRF advantages are small. In the `prv.sim` game of [bhr12][bhr12] (formalized together with conventional-circuit topology/size inverters and coarse-grained adaptive privacy `prv1` in the abstract garbling-scheme framework; see [Security games and primitive families](security-games-and-primitives.md#garbling-schemes)) the adversary chooses the circuit and input itself; a bound for that game follows by averaging over its choice, but this transfer is not formalized. Running time is not tracked: there are no cost bounds for garbling, evaluation, the simulator or the reductions. Nothing here is asymptotic or polynomial-time; there is no connection to the word-level `PseudorandomFunction`; and this scheme has no table-size optimizations. Free XOR and half gates are covered in the subsections below, as separate constructions with single-instance simulation privacy under circular correlation robustness. Adversary-chosen circuits and inputs, asymptotic and polynomial-time cost bounds, a formalized query-legality condition for circular correlation robustness, and instantiation in the garbling-scheme interface of [bhr12][bhr12] remain in [#3236](https://github.com/cslib-community/cslib-frontier/issues/3236). Theorem numbers of [bhr12][bhr12] and [lp09][lp09] were not checked, since their full texts were inaccessible in this pass. Checked instances are in [CslibFrontierTests/Crypto/Garbling.lean](../../CslibFrontierTests/Crypto/Garbling.lean).
 
+[Primitives/Garbling/SizeLowerBound.lean](../../CslibFrontier/Crypto/Primitives/Garbling/SizeLowerBound.lean) proves the generic one-world garbled-payload bit-length lower bound `sub_le_bitLength_of_recover`: if a simulated law of `(C, X)` within statistical distance `ε` of the real law of `(C, X)` leaves at least `t` bits of conditional entropy in a hidden value `X : α` given the observation `C`, and in the real view a deterministic decoder recovers `X` from `(C, G)` for an `m`-bit payload `G : BitString m` with error probability `δ` (the probability under the real law that it outputs a value other than `X`), then `t - ε log₂ |α| - condEntropyModulus ε - (h₂(δ) + δ log₂ (|α| - 1)) ≤ m`, where `h₂` is binary entropy in bits and `condEntropyModulus ε = (1 + ε) h₂(ε / (1 + ε))` (attained with zero slack by the one-time pad in [CslibFrontierTests/Crypto/GarblingSizeLowerBound.lean](../../CslibFrontierTests/Crypto/GarblingSizeLowerBound.lean)). This packages the single-world transfer (`sub_le_conditionalEntropy_of_dist_le`), chain-rule and Fano steps; the multi-world gate-specific Shannon-type inequalities for AND and XOR gates and the single-gate random-oracle model of Januzelli, Rosulek and Roy [jrr25][jrr25] are not formalized here.
+
 ### Free XOR
 
 [Primitives/Garbling/FreeXOR.lean](../../CslibFrontier/Crypto/Primitives/Garbling/FreeXOR.lean) is the free-XOR technique of Kolesnikov and Schneider [ks08][ks08]. It is a separate construction from the scheme above: it reuses `encode` and `decode` but has its own tables, evaluation and views. A Boolean `free` on the gates marks the XOR gates, and the hypothesis `hfree` says that each marked gate computes the sum in `Bool` of its arguments, for any arity. Labels live in `K × Bool` for an additive group `K` with `k + k = 0` (hypothesis `hK`). One secret offset `δ` links the two labels `W` and `W + (δ, true)` of every wire (`label`). A free gate has no garbled rows (`card_garbledRow`): its zero label is the sum of its arguments' zero labels (`propagate`), so the sum of their active labels is its active label (`label_add_label`, `sum_label`). Every other gate of arity `a` has `2 ^ a` point-and-permute rows masked by `Σₖ H (key of argument k) (tw slot)` for a hash `H : K → T → K × Bool`. `Garbled.run_garbleWith` proves exact correctness for every hash, tweak map, offset and base labelling.
@@ -742,6 +744,17 @@ Checked instances are in [CslibFrontierTests/Crypto/Yao.lean](../../CslibFrontie
 - `semiHonestAdvantage_iknp_receiver`: the advantage of every distinguisher `D` against `iknpReceiverSim` *equals* `CorrelationRobust.advantage H (iknpReduction H x D)`, since the unchosen entries are masked by `H j (tⱼ + s)` with `s` hidden.
 
 The scope limits of Yao's protocol apply: the base transfers are the ideal oracle, the statements are single-instance, efficiency is not tracked, and only semi-honest corruption is covered. Checked instances are in [CslibFrontierTests/Crypto/IKNP.lean](../../CslibFrontierTests/Crypto/IKNP.lean), including a constant hash family with positive correlation-robustness advantage.
+
+### Three-message DDH oblivious transfer
+
+[Protocols/MPC/DDHOT.lean](../../CslibFrontier/Crypto/Protocols/MPC/DDHOT.lean) formalizes a variant of the three-message 1-out-of-2 oblivious transfer protocol over a finite additive group `G` of exponent dividing `q` generated by `g` ([bs23][bs23], Section 23.5.7, Figure 23.17, Theorem 23.7, and Remark 23.6; DDH-based OT of this kind goes back to [np01][np01]) as a plain-world (`noOracleWorld`) two-party protocol `ddhOTProtocol g q` computing `otFunctionality G` (compatible with `batchOTSpec 1 G` in [Protocols/MPC/BatchOT.lean](../../CslibFrontier/Crypto/Protocols/MPC/BatchOT.lean)). Unlike Figure 23.17—where the sender samples `d ← G` without its discrete logarithm, encrypts both branches under one shared exponent, and performs no check—here in round 1 the sender (`0`) samples `a : ZMod q` and sends `u = a.val • g` (retaining `a`); in round 2 the receiver (`1`) samples `b : ZMod q`, sets `v = b.val • g`, and sends `ddhOTReceiverMsg g σ b u` (`(u - v, v)` if `σ` else `(v, u - v)`, satisfying `w₀ + w₁ = u`); in round 3 the sender checks `w₀ + w₁ = u` (Remark 23.6) and encrypts each branch `i ∈ {0, 1}` with its own fresh randomization coins `(rᵢ, sᵢ) : ZMod q × ZMod q` via `ddhOTEncryptBranch g u wᵢ mᵢ rᵢ sᵢ a` (which collapses to ElGamal encryption under `wᵢ` with exponent `rᵢ + a * sᵢ`, sending zeros if the check fails), and the receiver decrypts the chosen branch as `c_σ - b.val • e_σ` (`ddhOTReceiverOutput`).
+
+- `ddhOT_output_of_mem_support`: exact correctness (`r.2 = otOutputs x`) in every supported execution of `ddhOTProtocol g q`.
+- `idealJoint_ddhOT_sender` and `semiHonestAdvantage_ddhOT_sender`: under `∀ y : G, q • y = 0`, the simulator `ddhOTSenderSim g q` matches the corrupted sender's real joint distribution identically, giving `semiHonestAdvantage = 0` against every distinguisher `D`.
+- `semiHonestAdvantage_ddhOT_receiver_eq`: under `Fintype.card G = q` and generator surjectivity `∀ y : G, ∃ k : ZMod q, k.val • g = y`, the corrupted receiver's distinguishing advantage against `ddhOTReceiverSim g q` equals `Cslib.Crypto.DDH.advantage g q (ddhOTReduction g q x D)` (defined in [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean)) via the one-instance reduction `ddhOTReduction`.
+- `ddhOTSenderReply_eq_unchecked_of_add`, `ddhOTSenderReply_eq_zero_of_add_ne`, `ddhOTAttackBothMessages_eq`, `succProbability_ddhOTUncheckedIdealGame_le`, and `ddhOTUnchecked_malicious_receiver_advantage`: `ddhOTUncheckedProtocol` omits the `w₀ + w₁ = u` check ([bs23][bs23], Section 23.5.7.3, Remark 23.6), and in `ddhOTUncheckedRealGame` a deviating receiver sending `ddhOTAttackMsg g b₀ b₁ = (b₀.val • g, b₁.val • g)` against `ddhOTSenderReplyOf (ddhOTUncheckedProtocol g q)` recovers both `(m₀, m₁)` with probability `1`, whereas in `ddhOTUncheckedIdealGame S` any simulator `S` that freely chooses one query bit `τ` and receives only `m_τ` outputs `(m₀, m₁)` on uniform `(m₀, m₁) ← G × G` with probability at most `(Fintype.card G : ℝ)⁻¹`, giving distinguishing advantage at least `1 - (Fintype.card G : ℝ)⁻¹`.
+
+Scope limits: the DDH game (`Cslib.Crypto.DDH.realGame`, `Cslib.Crypto.DDH.randomGame`, `Cslib.Crypto.DDH.advantage` in [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean)) is single-instance over a fixed finite group `(G, g, q)` rather than a security-parameter family (`PrimeOrderGroupFamily.DDH` in [DiffieHellman.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean)); simulators and reductions carry no `IsPPT` / `ComputableInPolyTime` certificates; and the unchecked-protocol separation is a standalone simultaneous-recovery game rather than a general malicious-security or UC realization. Checked `ZMod 5` instances are in [CslibFrontierTests/Crypto/DDHOT.lean](../../CslibFrontierTests/Crypto/DDHOT.lean).
 
 ### Arithmetic garbling foundations
 
@@ -826,8 +839,8 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [bs23]: ../sources.md#bs23
 [cgks98]: ../sources.md#cgks98
 [ckkz12]: ../sources.md#ckkz12
-[complexitylib]: ../sources.md#complexitylib
 [cks20]: ../sources.md#cks20
+[complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [dworkroth14]: ../sources.md#dworkroth14
 [gkwy20]: ../sources.md#gkwy20
@@ -838,10 +851,12 @@ Only selected protocol endpoints and key definitions were traced. The source fil
 [hk21]: ../sources.md#hk21
 [hkn24]: ../sources.md#hkn24
 [iknp03]: ../sources.md#iknp03
+[jrr25]: ../sources.md#jrr25
 [kov17]: ../sources.md#kov17
 [ks08]: ../sources.md#ks08
 [ll24]: ../sources.md#ll24
 [lp09]: ../sources.md#lp09
+[np01]: ../sources.md#np01
 [yao86]: ../sources.md#yao86
 [yekhanin12]: ../sources.md#yekhanin12
 [zre15]: ../sources.md#zre15

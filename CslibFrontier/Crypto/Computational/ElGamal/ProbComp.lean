@@ -28,6 +28,7 @@ import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Strict-PPT ElGamal Key Generation, KEM Encapsulation, and `Encryption.INDCPAOn` Bridges
@@ -547,9 +548,7 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
     simp only [gameOn, elGamalKeyGenProb, elGamalEncryptProb, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval,
       encodeElGamalPublicKey_eq_encode, k]
-    congr 1 with a : 1
-    conv_rhs => rw [PMF.bind_comm]
-    congr 1 with choice : 1
+    pmf_swap with a choice
     by_cases hv : valid n
         (encPair F.encDesc encBits
           (d n, F.encode (d n) ((a : ZMod (F.order (d n))) • F.generator (d n))))
@@ -563,9 +562,7 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
     simp only [elGamalMsgCPAGameOn, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind,
       k]
-    congr 1 with α : 1
-    conv_rhs => rw [PMF.bind_comm]
-    congr 1 with choice : 1
+    pmf_swap with α choice
     split_ifs <;> simp only [PMF.bind_const]
   rw [hgame0, hgame1]
   exact F.advantage_bind_sampleExp_pair_le n (d n) k

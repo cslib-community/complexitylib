@@ -28,7 +28,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Inaccessible entropy and shrinking collision grids | [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Fixed-width native polynomial evaluation, accessible preimage subsets with eventual `1 / denom n` entropy gap, polynomial-size grids of `1`-bit shrinking candidates with an existential random-collision-resistant sequence (`exists_good_candidate`), and uniform `gridCount n`-way cascade concatenation |
 | Discrete logarithm and DDH | [CslibFrontier/Crypto/Computational/DiscreteLog.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiscreteLog.lean), [CslibFrontier/Crypto/Computational/DiffieHellman.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiffieHellman.lean) | Encoded prime-order group families, exact ideal group laws; public operations and samplers require separate certificates |
 | Decisional composite residuosity and Paillier encryption | [CslibFrontier/Crypto/Computational/CompositeResiduosity.lean](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean), [CslibFrontier/Crypto/Computational/Paillier.lean](../../CslibFrontier/Crypto/Computational/Paillier.lean), [CslibFrontier/Crypto/Computational/Paillier/Security.lean](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis |
-| Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
+| Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean), [CslibFrontier/Crypto/Computational/RSAAttacks.lean](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [CslibFrontier/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Module.lean](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), [CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean), [CslibFrontier/Crypto/Computational/LWE/Regev.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev.lean), [CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev.lean) | Explicit dimensions, modulus and noise/norm parameters (`2^w` binary matrix words in `Basic.lean`, arbitrary `[NeZero (q security)]` moduli, Ajtai collision extraction, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `ModuleSIS`, `RingSIS`, and `DecisionModuleLWE` in `SIS/Module.lean`, dual-Regev `ModuleLWE` public-key encryption in `SIS/ModuleEncryption.lean`, and plain-LWE Regev and GPV dual-Regev bit encryption at modulus `2^w` in `LWE/Regev*` and `LWE/DualRegev.lean`); classical uniform-PPT hardness hypotheses |
 
 For a one-bit expanding PRG, [Stretch/Prefix.lean](../../CslibFrontier/Crypto/Computational/Stretch/Prefix.lean)
@@ -440,6 +440,8 @@ polynomial-time `maxLen` (`advantage_publicKeyWordGame_le_qr`, factor-`2` QR los
 exact chosen-message advantage `1` whenever `z ∈ jacobiNegSet p q`
 (`advantage_jacobiAttackAdversary_eq_one`), witnessing the necessity of `J_N(z) = +1`.
 
+For the RSA least-significant-bit experiment and algebraic attacks on plain RSA, import [`RSALeastSignificantBit.lean`](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean) and [`RSAAttacks.lean`](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean) ([katzlindell20][katzlindell20], §9.2.5, pp. 334–336, §12.5.1, pp. 436–440, and §12.5.3, pp. 443–445; checked instances are in [`CslibFrontierTests/Crypto/RSALeastSignificantBit.lean`](../../CslibFrontierTests/Crypto/RSALeastSignificantBit.lean) and [`CslibFrontierTests/Crypto/RSAAttacks.lean`](../../CslibFrontierTests/Crypto/RSAAttacks.lean)). `rsaLSBGame` samples `desc ← gen n` and a uniform residue `x ← Fin desc.modulus` (matching `rsaInversionGame` rather than `(ZMod N)ˣ`), and `RSAHardCoreLSB gen` asks every uniform strict-PPT predictor on `(1^n, ((N, e), rsaEval N e x))` to have negligible `Game.guessingAdvantage` for `x.testBit 0`. For odd `N`, `two_pow_mul_mod_mod_two` equates the parity of `2 ^ k * x % N` (`k ≠ 0`) with that of `⌊2 ^ k * x / N⌋`, `lsbRecover_lsbQueries` recovers `x` from the parities of the preimages of the `m` doubling queries `2 ^ (k * e) * y % N` once `N ≤ 2 ^ m`, and `lsbInverter` wins `rsaInversionGame` with probability `1` given a predictor that is always correct on the modulus (`eval_lsbInverter`, `succProbability_rsaInversionGame_lsbInverter`; the noisy reconstruction of Theorem 12.31 for predictors with small bias and a PPT certificate for `lsbInverter` are not formalized). `RSAAttacks.lean` proves plain-RSA multiplicative malleability (`rsaEval_mul`, `rsaInvert_rsaEval_mul`), common-modulus recovery of units under coprime exponents via `zmodIntPow` (`commonModulusAttack_rsaEval`), unreduced short-message and pairwise-coprime CRT broadcast `e`-th root recovery (`rsaEval_eq_pow_of_pow_lt`, `eq_of_pow_eq_rsaEval`, `chineseRemainderOfList_rsaEval_eq_pow`, `eq_of_pow_eq_chineseRemainderOfList_rsaEval`), factoring `N` from `(N, φ(N))` (`factorOfTotient_eq`, `RSADesc.factorOfTotient_eq`), and the deterministic steps `RSADesc.pow_mul_sub_one_modEq_one` and `RSADesc.gcd_sub_one_proper` of Corollary 9.51 without claiming the randomized factoring bound.
+
 ### Elliptic curves over finite fields and Hasse's bound
 
 Import [`EllipticCurve/Hasse.lean`](../../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/Hasse.lean)
@@ -634,6 +636,22 @@ nonconstant counter schedule, are in
 and direct checks of the sampling lemmas are in
 [`CslibFrontierTests/BitStringCollision.lean`](../../CslibFrontierTests/BitStringCollision.lean).
 
+For the chosen-plaintext security of random-IV OFB mode, import
+[`Encryption/OFBMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/OFBMode.lean)
+(Katz–Lindell 3rd ed., §3.6.3, Figure 3.8, Definition 3.22, following the proof of Theorem 3.33
+[katzlindell20][katzlindell20]). `ofbCpaGame` is the left-or-right multiple-encryption experiment
+for a keyed block function. A query is a pair of block lists, and a pair whose lengths differ or
+exceed `ℓ` blocks encrypts the empty message (`ofbSelect`, `ofbBlocks`). `ofbReduction` turns an
+adversary into a PRF distinguisher that computes the keystream with its oracle
+(`ofbCpaGame_eq_realGame`, `isQueryBounded_ofbReduction`). If the queries ask at most `K` blocks in
+total (`OracleComp.IsCostBounded (ofbCost ℓ) adversary K`), `advantage_idealGame_ofbReduction_le`
+bounds the distance from fresh uniform ciphertexts by `K * (K + ℓ) / 2^n` using
+`toOuterMeasure_badChain_le`. `advantage_ofbCpaGame_le` then bounds the left-or-right advantage by
+the two PRF advantages plus `2 * K * (K + ℓ) / 2^n`, and
+`advantage_ofbCpaGame_randomFunction_le` gives `2 * K * (K + ℓ) / 2^n` for a uniform random
+function. The reduction is concrete; no PPT statement is made. Concrete checks are in
+[`CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean`](../../CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean).
+
 For hash functions built from a fixed permutation or block cipher, import
 [`Hash/Sponge.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Sponge.lean) and
 [`Hash/BlockCipherCompression.lean`](../../CslibFrontier/Crypto/Primitives/Hash/BlockCipherCompression.lean)
@@ -652,6 +670,31 @@ Theorem 7.5 is not formalized. Concrete checks are in
 [`CslibFrontierTests/Crypto/Sponge.lean`](../../CslibFrontierTests/Crypto/Sponge.lean).
 
 For the single-oracle real-versus-ideal formulation of authenticated encryption ([katzlindell20][katzlindell20], §5.2, Definition 5.4 and Theorem 5.5, pp. 152–153), import [`Encryption/RealIdealAE.lean`](../../CslibFrontier/Crypto/Computational/Encryption/RealIdealAE.lean). `SymmetricCipher.aeRealGame` answers `n`-bit encryption queries honestly (recording returned ciphertexts and answering decryption queries on them with `[]`) and decrypts fresh ciphertexts via `encOption encBits (E.decrypt n k ct)`, whereas `aeIdealGame` encrypts `List.replicate n false` and answers every decryption query with `[]`; `RealIdealAE` asks every `IsOraclePPT encBool` adversary to have negligible advantage, and `realIdealAE_iff_indcca_and_ciphertextIntegrity` and `realIdealAE_iff_authenticatedEncryption` prove equivalence with `INDCCA ∧ CiphertextIntegrity` and `AuthenticatedEncryption` via `cpaToAEAdversary`, `ciToAEAdversary`, and `aeToCCAAdversary`. [`Encryption/HalfBlockPRP.lean`](../../CslibFrontier/Crypto/Computational/Encryption/HalfBlockPRP.lean) formalizes the half-block construction `BlockCipher.halfBlockCipher` (`F_k(r ‖ m)` on `2 n`-bit blocks, Exercises 5.8 and 5.9, p. 165) and shows via the zero-query `allOnesForger` that it fails `CiphertextIntegrity`, `AuthenticatedEncryption`, and `RealIdealAE` for every block cipher (its CCA security under a strong PRP is not formalized); checked instances over an identity cipher are in [`CslibFrontierTests/Crypto/RealIdealAEAndHalfBlock.lean`](../../CslibFrontierTests/Crypto/RealIdealAEAndHalfBlock.lean).
+
+For fresh-message encryption unforgeability ([katzlindell20][katzlindell20], §5.2, Definition 5.2,
+p. 151, and Exercise 5.5, p. 165), import
+[`Encryption/EncForge.lean`](../../CslibFrontier/Crypto/Computational/Encryption/EncForge.lean).
+`SymmetricCipher.encForgeGame` and `SymmetricCipher.EncForge` test whether a uniform strict
+`IsOraclePPT encBits` adversary can produce a ciphertext decrypting to `some m` for a plaintext `m`
+not queried to `encForgeOracle`. Ciphertext integrity implies `EncForge`
+(`SymmetricCipher.succProbability_encForgeGame_le_ciGame`, `CiphertextIntegrity.encForge`), and
+ordinary fresh-message MAC security (`MACScheme.EUFCMA`, without `SUFCMA` or `E.INDCPA`) already
+suffices for `(encryptThenMAC E M hctLen).EncForge` (`succProbability_encForgeGame_encryptThenMAC_le`,
+`encForge_encryptThenMAC`, Exercise 5.5). The generic authenticated-encryption composition
+separations (Exercises 5.4 and 5.10, pp. 164–165) are in
+[`Encryption/CompositionCounterexamples.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CompositionCounterexamples.lean).
+`SymmetricCipher.tailFallback` (falling back to `E.decrypt n k ct.tail` when direct decryption
+returns `none` and `ct` is non-empty) preserves `INDCPA` and `EncForge` while breaking
+`OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`
+(`SymmetricCipher.tailFallback_counterexample`,
+`PseudorandomFunction.tailFallback_prfEncryptThenMAC_counterexample`, Exercise 5.10); and
+`MACScheme.redundantTag` (accepting `tag` or `tag.tail`) preserves `EUFCMA` while breaking `SUFCMA`,
+so `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` yet fails
+`CiphertextIntegrity` and `INDCCA` with advantage `1` for every `n ≥ 1`
+(`encryptThenMAC_redundantTag_counterexample`,
+`PseudorandomFunction.prfEncryptThenMACRedundantTag_counterexample`, Exercise 5.4). Concrete
+evaluations and composed `IsPPT` / `IsOraclePPT` checks on `echoFamily` are in
+[`CslibFrontierTests/Crypto/CompositionCounterexamples.lean`](../../CslibFrontierTests/Crypto/CompositionCounterexamples.lean).
 
 ## Authentication, signatures, and state
 
@@ -681,6 +724,18 @@ rather than prepended message lengths (`cbcLengthSuffixAttack_valid`), and ambig
 [`BitString.padBlocks`](../../CslibFrontier/Foundations/Data/BitString/PadBlocks.lean)), with concrete
 four-bit witnesses in
 [`CslibFrontierTests/Crypto/CBCMAC.lean`](../../CslibFrontierTests/Crypto/CBCMAC.lean).
+
+For variable-length messages under CBC-MAC, import
+[`BlockCipher/LengthPrependedCBCMAC.lean`](../../CslibFrontier/Crypto/Primitives/BlockCipher/LengthPrependedCBCMAC.lean)
+(Katz–Lindell 3rd ed., §4.4.1, Figure 4.2, and Exercise 4.18 [katzlindell20][katzlindell20]).
+`lengthPrependedCbcMac` runs basic CBC-MAC on a block-aligned message of at most `L` blocks with
+its encoded block count in front (`prependLength`, `blockCountBlock`). For an injective length
+encoding, no prepended input is a prefix of another (`not_isPrefix_prependLength`), so
+`prependLengthQueries` turns an adaptive distinguisher into a prefix-free CBC-MAC distinguisher.
+`abs_lengthPrependedRealSuccess_sub_lengthPrependedIdealSuccess_le` then bounds its advantage
+against a uniform random function by `q^2 * (L + 1)^2 / 2^n` for `q` queries. Like the prefix-free
+bound, this statement is information-theoretic. Concrete checks are in
+[`CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean`](../../CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean).
 
 For messages of varying length built from a fixed-length `MACScheme`, import
 [`Protocols/MAC/VariableLength.lean`](../../CslibFrontier/Crypto/Protocols/MAC/VariableLength.lean)
