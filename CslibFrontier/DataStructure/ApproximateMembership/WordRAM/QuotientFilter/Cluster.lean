@@ -3666,48 +3666,6 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
     hfit_space.of_le (by dsimp only [remSeedOff, space]; omega)
   have hfit_addr : Fits w (remSeedAddr base w w₀ n) :=
     hfit_space.of_le (by dsimp only [remSeedAddr, space]; omega)
-  set s1 := x.set (qfReg 30) (remSeedOff w w₀ n)
-  have e1 : Exec w (.op (.const (qfReg 30) (remSeedOff w w₀ n)) : Code .exact rQF) x s1 1 :=
-    Exec.const hfit_off
-  set s2 := s1.set (qfReg 0) (remSeedAddr base w w₀ n)
-  have e2 : Exec w (.op (.exactBin .add (qfReg 0) (qfReg 0) (qfReg 30)) : Code .exact rQF)
-      s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h0, remSeedAddr, remSeedOff]) hfit_addr
-  have hs2_α : (s2.comap kwiseMap).mem ((s2.comap kwiseMap).regs 0) < 2 ^ (w₀ - 1) := by
-    change s2.mem (s2.regs (qfReg 0)) < 2 ^ (w₀ - 1)
-    simp only [s2, s1, Data.set_mem, Data.set_regs, Function.update_self, hseed]
-    exact γ.isLt
-  have hs2_u : (s2.comap kwiseMap).regs 1 < 2 ^ w₀ := by
-    change s2.regs (qfReg 1) < 2 ^ w₀
-    simp only [s2, s1, Data.set_regs,
-      Function.update_of_ne (by decide : qfReg 1 ≠ qfReg 0),
-      Function.update_of_ne (by decide : qfReg 1 ≠ qfReg 30), h1]
-    exact u.isLt.trans_le hU
-  obtain ⟨y₀, ey₀, hy₀_0, hy₀_3, hy₀_mem⟩ :=
-    ReducedKWise.reduceKeyCode_exec (b := w₀) hw₀_pos hw₀ (s2.comap kwiseMap) hs2_α hs2_u
-  have e3 := ey₀.rename injective_kwiseMap
-  set s3 := y₀.extend kwiseMap s2
-  have hs3_mem : s3.mem = x.mem := hy₀_mem
-  have hs3_0 : s3.regs (qfReg 0) = remSeedAddr base w w₀ n := by
-    change (s3.comap kwiseMap).regs 0 = remSeedAddr base w w₀ n
-    rw [Data.comap_extend injective_kwiseMap, hy₀_0]
-    rfl
-  have hs3_3 : s3.regs (qfReg 3) = oddMulModWord w₀ γ.val u.val := by
-    change (s3.comap kwiseMap).regs 3 = oddMulModWord w₀ γ.val u.val
-    rw [Data.comap_extend injective_kwiseMap, hy₀_3]
-    have hmin : min w₀ (3 * w₀) = w₀ := min_eq_left (by omega)
-    have h0_s2 : (s2.comap kwiseMap).mem ((s2.comap kwiseMap).regs 0) = γ.val := hseed
-    have h1_s2 : (s2.comap kwiseMap).regs 1 = u.val := by
-      change s2.regs (qfReg 1) = u.val
-      simp +decide [s2, s1, h1]
-    rw [h0_s2, h1_s2, hmin, Nat.sub_self, Nat.shiftRight_zero]
-  set s4 := s3.set (qfReg 30) (remSeedOff w w₀ n)
-  have e4 : Exec w (.op (.const (qfReg 30) (remSeedOff w w₀ n)) : Code .exact rQF) s3 s4 1 :=
-    Exec.const hfit_off
-  set s5 := s4.set (qfReg 0) base
-  have e5 : Exec w (.op (.exactBin .sub (qfReg 0) (qfReg 0) (qfReg 30)) : Code .exact rQF)
-      s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, hs3_0, remSeedAddr, remSeedOff]) hfit_base
   have hfit_sh : Fits w (w₀ - remBits w₀ k) := by
     have : w₀ - remBits w₀ k ≤ w := (Nat.sub_le _ _).trans hw₀
     exact this.trans_lt Nat.lt_two_pow_self
@@ -3721,22 +3679,32 @@ theorem remEvalCode_exec {base w U w₀ n k : ℕ}
     have hpow : 2 ^ remBits w₀ k ≤ 2 ^ w :=
       Nat.pow_le_pow_right two_pos ((remBits_le_w₀ w₀ k).trans hw₀)
     exact hlt.trans_le hpow
-  set s6 := s5.set (qfReg 30) (w₀ - remBits w₀ k)
-  have e6 : Exec w (.op (.const (qfReg 30) (w₀ - remBits w₀ k)) : Code .exact rQF) s5 s6 1 :=
-    Exec.const hfit_sh
-  set s7 := s6.set (qfReg 3) (remHash U w₀ k γ u).val
-  have e7 : Exec w (.op (.exactBin .shiftRight (qfReg 3) (qfReg 3) (qfReg 30)) : Code .exact rQF)
-      s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, s5, s4, hs3_3, hrem_eq]) hfit_rem
-  refine ⟨s7, e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq e7))))), hs3_mem,
-    by simp +decide [s7, s6, s5],
-    by simp +decide [s7],
-    fun j hj => ?_⟩
+  have hmin : min w₀ (3 * w₀) = w₀ := min_eq_left (by omega)
+  have hle : remSeedOff w w₀ n ≤ remSeedAddr base w w₀ n := by simp [remSeedAddr, remSeedOff]
+  have hsub : remSeedAddr base w w₀ n - remSeedOff w w₀ n = base := by
+    simp [remSeedAddr, remSeedOff]
+  have hk1 : kwiseMap 1 = qfReg 1 := rfl
+  unfold remEvalCode
+  wram_exec [h0, show base + remSeedOff w w₀ n = remSeedAddr base w w₀ n from rfl]
+  wram_call (ReducedKWise.reduceKeyCode_exec (b := w₀) hw₀_pos hw₀
+    (((x.set (qfReg 30) (remSeedOff w w₀ n)).set (qfReg 0) (remSeedAddr base w w₀ n)).comap kwiseMap)
+    (by simp only [Data.comap_mem, Data.comap_regs]; wram_simp [hseed]; exact γ.isLt)
+    (by simp only [Data.comap_regs]; wram_simp [hk1, h1]; exact u.isLt.trans_le hU))
+    renamed injective_kwiseMap with y₀ ⟨⟨hy₀_0, hy₀_3, hy₀_mem⟩, hframe⟩
+  have hy0 : y₀.regs (qfReg 0) = remSeedAddr base w w₀ n := by
+    rw [show qfReg 0 = kwiseMap 0 from rfl, hy₀_0]
+    wram_simp
+  have hy3 : y₀.regs (qfReg 3) = oddMulModWord w₀ γ.val u.val := by
+    rw [show qfReg 3 = kwiseMap 3 from rfl, hy₀_3]
+    wram_simp [hseed, hk1, h1, hmin, Nat.shiftRight_zero]
+  wram_exec [hy0, hy3, hsub, hrem_eq]
+  refine ⟨by wram_simp [hy₀_mem], by wram_simp, by wram_simp, fun j hj => ?_⟩
   have hj0 : j ≠ qfReg 0 := Fin.ne_of_val_ne (by change j.val ≠ 0; omega)
   have hj3 : j ≠ qfReg 3 := Fin.ne_of_val_ne (by change j.val ≠ 3; omega)
   have hj30 : j ≠ qfReg 30 := Fin.ne_of_val_ne (by change j.val ≠ 30; omega)
-  have hs3_j : s3.regs j = s2.regs j := extend_kwiseMap_regs hj
-  simp [s7, s6, s5, s4, hs3_j, s2, s1, hj0, hj3, hj30]
+  wram_simp
+  rw [hframe j fun i h => by subst h; simp at hj; omega]
+  wram_simp
 
 /-- Load `base + off` into `qfReg d` (for `d ≠ 0`) from `qfReg 0 = base` in `2` instructions. -/
 @[expose] noncomputable def loadOffCode (d : Fin 248) (off : ℕ) : Code .exact rQF :=
