@@ -66,17 +66,17 @@ theorem permutation_inverse (c : Circuit signature n n) (p : Equiv.Perm (BitStri
   exact ⟨out, by simpa only [he, iterate_factorial_pred_eq_symm] using hout, hs⟩
 
 /-- **Encoded permutation inversion.** A permutation of a finite type of any universe, realized
-by a circuit on an injective encoding, has an inverse circuit whose storage term counts the
-type. -/
+by a circuit on an encoding, has an inverse circuit whose storage term counts the type. The
+encoding need not be injective, and any `0 < L` is allowed. -/
 theorem permutation_inverse_encoded (p : Equiv.Perm α) (e : α → BitString n)
-    (he : Function.Injective e) (c : Circuit signature n n)
-    (hc : ∀ x, c.eval interpretation (e x) = e (p x)) (L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^ n) :
+    (c : Circuit signature n n)
+    (hc : ∀ x, c.eval interpretation (e x) = e (p x)) (L : ℕ) (hL : 0 < L) :
     ∃ out : Circuit signature n n,
       (∀ x, out.eval interpretation (e x) = e (p.symm x)) ∧
       out.size ≤ 40000 * powerBudget n c.size (Fintype.card α) L := by
-  obtain ⟨out, hout, hs⟩ := fixed_power_encoded p Finset.univ e he.injOn c
+  obtain ⟨out, hout, hs⟩ := fixed_power_encoded p Finset.univ e c
     (fun _ _ => Finset.mem_univ _) (fun x _ => hc x)
-    (Nat.factorial (Fintype.card α) - 1) L hL hLN
+    (Nat.factorial (Fintype.card α) - 1) L hL
   refine ⟨out, fun x => ?_, by simpa using hs⟩
   simpa only [iterate_factorial_pred_eq_symm] using hout x (Finset.mem_univ x)
 

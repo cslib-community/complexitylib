@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 public import Mathlib.Data.Nat.Sqrt
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Subcube schemes for private information retrieval
@@ -101,8 +102,7 @@ theorem reconstruct_twoServer (i : ι) (r : Unit) (a : Bool → Bool) :
 theorem eval_serverQuery_twoServer (σ : Bool) (i : ι) :
     ProbComp.eval ((twoServer ι).serverQuery σ i) = PMF.uniformOfFintype (ι → Bool) := by
   rw [Scheme.eval_serverQuery, twoServer]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.map_bind,
-    PMF.pure_map]
+  simp only [pmf_norm, ProbComp.eval_uniform]
   exact PMF.uniformOfFintype_map_equiv (Equiv.addRight (Pi.single i σ : ι → Bool))
 
 /-- The two queries of the two-server scheme add up to `eᵢ`: together, the servers know `i`. -/
@@ -172,8 +172,7 @@ index. -/
 theorem eval_serverQuery_cube (σ : D → Bool) (i : D → ι) :
     ProbComp.eval ((cube D ι).serverQuery σ i) = PMF.uniformOfFintype (D → ι → Bool) := by
   rw [Scheme.eval_serverQuery, cube]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.map_bind,
-    PMF.pure_map]
+  simp only [pmf_norm, ProbComp.eval_uniform]
   exact PMF.uniformOfFintype_map_equiv
     (Equiv.addRight (fun l => Pi.single (i l) (σ l) : D → ι → Bool))
 

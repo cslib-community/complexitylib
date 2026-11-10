@@ -23,6 +23,9 @@ variables keeps its order under this renaming, even though compact names may hav
 * `Cslib.Logic.PL.CNF.distinctVars_relabel_of_injOn`,
   `Cslib.Logic.PL.CNF.numVars_relabel_of_injOn`, `Cslib.Logic.PL.CNF.numVars_relabel`: injective
   variable relabelings preserve `distinctVars` order and `numVars`.
+* `Cslib.Logic.PL.CNF.count_vars_relabel_of_injOn`,
+  `Cslib.Logic.PL.CNF.count_vars_relabel_le_of_injOn`: they also preserve literal-occurrence counts
+  and any uniform bound on them.
 * `Cslib.Logic.PL.CNF.distinctVars_compact`: exact ordered list of compact variable names.
 * `Cslib.Logic.PL.CNF.idxOf_distinctVars_compact`: graph vertex indices are preserved.
 
@@ -85,6 +88,32 @@ theorem numVars_relabel {f : V → W} (hf : Function.Injective f) (φ : CNF V) :
 
 variable [BEq V] [LawfulBEq V]
 
+omit [DecidableEq V] in
+/-- Relabeling injectively on the occurring variables preserves the literal-occurrence count of
+every occurring variable. -/
+theorem count_vars_relabel_of_injOn (φ : CNF V) (f : V → W)
+    (hf : Set.InjOn f {v | v ∈ φ.vars}) {v : V} (hv : v ∈ φ.vars) :
+    (φ.relabel f).vars.count (f v) = φ.vars.count v := by
+  rw [vars_relabel]
+  simp only [List.count_eq_countP, List.countP_map, Function.comp_def]
+  refine List.countP_congr fun w hw => ?_
+  simp only [beq_iff_eq]
+  exact ⟨fun h => hf hw hv h, congrArg f⟩
+
+omit [DecidableEq V] in
+/-- Relabeling injectively on the occurring variables preserves any uniform bound on
+literal-occurrence counts. -/
+theorem count_vars_relabel_le_of_injOn (φ : CNF V) (f : V → W)
+    (hf : Set.InjOn f {v | v ∈ φ.vars}) {B : ℕ} (h : ∀ v, φ.vars.count v ≤ B) (i : W) :
+    (φ.relabel f).vars.count i ≤ B := by
+  by_cases hi : i ∈ (φ.relabel f).vars
+  · rw [vars_relabel] at hi
+    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hi
+    rw [count_vars_relabel_of_injOn φ f hf hv]
+    exact h v
+  · rw [List.count_eq_zero.mpr hi]
+    exact Nat.zero_le _
+
 /-- Compaction preserves the exact order of the distinct variables. Any lawful Boolean
 equality on the original variable type gives the same first-occurrence names. -/
 theorem distinctVars_compact (φ : CNF V) :
@@ -116,24 +145,14 @@ theorem vars_compact (φ : CNF V) : φ.compact.vars = φ.vars.map φ.vars.idxOf 
 /-- Every used variable keeps its exact literal-occurrence count after compaction. -/
 theorem count_vars_compact (φ : CNF V) {v : V} (hv : v ∈ φ.vars) :
     φ.compact.vars.count (φ.vars.idxOf v) = φ.vars.count v := by
-  rw [vars_compact]
-  simp only [List.count_eq_countP, List.countP_map, Function.comp_def]
-  apply List.countP_congr
-  intro w _
-  simp only [beq_iff_eq]
-  rw [eq_comm, List.idxOf_inj hv, eq_comm]
+  simpa only [compact, List.idxOf, beq_eq_decide] using
+    count_vars_relabel_of_injOn φ φ.vars.idxOf (fun _ ha _ _ h => (List.idxOf_inj ha).1 h) hv
 
 /-- A bound on all original literal-occurrence counts also bounds every compact variable. -/
 theorem count_vars_compact_le (φ : CNF V) {k : ℕ} (h : ∀ v, φ.vars.count v ≤ k) :
     ∀ i, φ.compact.vars.count i ≤ k := by
-  intro i
-  by_cases hi : i ∈ φ.compact.vars
-  · rw [vars_compact] at hi
-    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hi
-    rw [count_vars_compact φ hv]
-    exact h v
-  · rw [List.count_eq_zero.mpr hi]
-    exact Nat.zero_le _
+  simpa only [compact, List.idxOf, beq_eq_decide] using
+    count_vars_relabel_le_of_injOn φ φ.vars.idxOf (fun _ ha _ _ h => (List.idxOf_inj ha).1 h) h
 
 end Cslib.Logic.PL.CNF
 

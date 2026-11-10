@@ -205,18 +205,8 @@ theorem exists_path_of_isLeafWord {s : σ} (hred : Reduced (R.toClauseSet s)) {w
       P.len = w.length ∧ Sparse θ (P.node P.len) ∧
       (range P.len).filter (fun i => P.dir i = true) =
         (range w.length).filter fun i => w.getD i false = true := by
-  classical
   have hns := hw.isNodeWord.not_isLeaf_take
-  have hch (i : ℕ) (hi : i < w.length) := R.exists_choice_next _ (hns i hi)
-  let size (i : ℕ) : ℕ := if hi : i < w.length then (hch i hi).choose else 0
-  let heart (i : ℕ) : Finset (Literal V) :=
-    if hi : i < w.length then (hch i hi).choose_spec.choose else ∅
-  have hspec (i : ℕ) (hi : i < w.length) :
-      Choice θ (R.toClauseSet (R.tree.walk s (w.take i))) (size i) (heart i) ∧
-        ∀ b, R.toClauseSet (R.next (R.tree.walk s (w.take i)) b) =
-          child (R.toClauseSet (R.tree.walk s (w.take i))) (size i) (heart i) b := by
-    simp only [size, heart, dite_eq_left hi]
-    exact (hch i hi).choose_spec.choose_spec
+  choose! size heart hspec using fun i (hi : i < w.length) => R.exists_choice_next _ (hns i hi)
   refine ⟨{ len := w.length
             node := fun i => R.toClauseSet (R.tree.walk s (w.take i))
             size := size

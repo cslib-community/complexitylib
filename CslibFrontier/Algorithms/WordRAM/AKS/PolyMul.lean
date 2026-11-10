@@ -249,8 +249,7 @@ private theorem inner_step {w a b t r n I : ℕ} {m : ℕ → ℕ} (H : Hyp w a 
   · rw [hz u (by decide), hyu, hp]
   · change Function.update y.mem (t + k₀) ((S % n + p * q) % n) = _
     rw [hJ, hym, view_update hk₀r]
-    congr 1
-    funext k'
+    congr 1 with k' : 1
     rw [partSum_succ, Function.update_apply, hp, hq]
     by_cases h : k' = k₀
     · subst h; simp [hk₀, hS, Nat.mod_add_mod]
@@ -299,8 +298,7 @@ private theorem outer_step {w a b t r n : ℕ} {m : ℕ → ℕ} (H : Hyp w a b 
     case mem =>
       simp only [Data.set_mem]
       rw [hI, hym₂]
-      congr 1
-      funext k'
+      congr 1 with k' : 1
       rw [partSum_row]
     all_goals simp +decide [hya₂, hyb₂, hyt₂, hyr₂, hyn₂, hyo₂, hyz₂]
   · simp only [Data.set_regs, Function.update_self, hI]

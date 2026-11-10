@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameChannel
+import CslibFrontier.Foundations.Data.Finset.Density
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -178,14 +179,6 @@ theorem affineSubstEquiv_apply (A : FrameChannel P H r) :
 
 end FrameChannel
 
-/-- Precomposing an event with a permutation of a finite uniform space keeps its probability. -/
-private theorem dens_filter_comp_equiv {ι : Type*} [Fintype ι] (e : ι ≃ ι) (p : ι → Prop)
-    [DecidablePred p] : dens {i | p (e i)} = dens {i | p i} := by
-  rw [dens_eq_card_div_card, dens_eq_card_div_card]
-  congr 2
-  exact card_nbij' e e.symm (fun i hi ↦ by simpa using hi) (fun i hi ↦ by simpa using hi)
-    (fun i _ ↦ e.symm_apply_apply i) fun i _ ↦ e.apply_symm_apply i
-
 variable {α : ZMod P} (hα : α ≠ 0) (β : ZMod P)
 
 include hα in
@@ -195,7 +188,7 @@ uniformly random frame-conditioned channel have the same law as the evaluations 
 theorem dens_eval_comp_affine (E : (ZMod P → Fin H → ZMod P) → Prop) [DecidablePred E] :
     dens {A : FrameChannel P H r | E fun y ↦ A.eval (α * y + β)} =
       dens {A : FrameChannel P H r | E A.eval} := by
-  rw [← dens_filter_comp_equiv (FrameChannel.affineSubstEquiv β hα) fun A ↦ E A.eval]
+  rw [← Fintype.dens_filter_comp_equiv (FrameChannel.affineSubstEquiv β hα) fun A ↦ E A.eval]
   simp only [FrameChannel.affineSubstEquiv_apply, FrameChannel.eval_comp_affineSubst]
 
 include hα in
@@ -207,7 +200,8 @@ theorem dens_pi_eval_comp_affine {ι : Type*} [Fintype ι] [DecidableEq ι]
     (E : (ι → ZMod P → Fin H → ZMod P) → Prop) [DecidablePred E] :
     dens {As : ι → FrameChannel P H r | E fun c y ↦ (As c).eval (α * y + β)} =
       dens {As : ι → FrameChannel P H r | E fun c ↦ (As c).eval} := by
-  rw [← dens_filter_comp_equiv (Equiv.piCongrRight fun _ ↦ FrameChannel.affineSubstEquiv β hα)
+  rw [← Fintype.dens_filter_comp_equiv
+    (Equiv.piCongrRight fun _ ↦ FrameChannel.affineSubstEquiv β hα)
     fun As : ι → FrameChannel P H r ↦ E fun c ↦ (As c).eval]
   simp only [Equiv.piCongrRight_apply, Pi.map_apply, FrameChannel.affineSubstEquiv_apply,
     FrameChannel.eval_comp_affineSubst]

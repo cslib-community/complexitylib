@@ -66,8 +66,7 @@ private theorem partialProductBitCode_eq (i j : Fin w) :
         partialProductBit w i j := by
       simp only [partialProductBit, h, ↓reduceDIte, Formula.rename, Formula.and,
         Formula.gate_bind]
-      congr 1
-      funext k
+      congr 1 with k : 1
       fin_cases k <;> rfl
     rw [hf] at ht
     simpa only [partialProductBitCode, h, ↓reduceIte] using ht

@@ -264,9 +264,6 @@ theorem modifies_demonic {α : Type} (p : D.Client α) {s s' : State} {a : α}
     exact ⟨fun _ _ _ => rfl, fun _ hb => .inl hb, le_rfl⟩
   | liftBind o k ih =>
     obtain ⟨hv_o, hv_k⟩ := (D.demonicValid_liftBind_iff _ o k).mp hv
-    have heq : link M.methods (.liftBind o k) =
-        (M.methods o).bind (fun r => link M.methods (k r)) := rfl
-    rw [heq] at hrun
     obtain ⟨r, s₁, tr₁, tr₂, hrun₁, hrun₂, rfl⟩ := (spec w).clientRun_bind_iff.mp hrun
     obtain ⟨hstep, hs₁⟩ := M.correct o hs hv_o hrun₁
     obtain ⟨hmod₁, hgrow₁, hroom₁⟩ := M.modifies o hs hv_o hrun₁

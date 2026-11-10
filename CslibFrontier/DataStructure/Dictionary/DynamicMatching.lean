@@ -71,6 +71,8 @@ and super-polynomial key universes are not formalized here.
   `matching_apply`: termination within `A.card` rounds and canonical injection properties.
 * `expect_roundsOn_le`, `expect_rounds_le`: expected round bound
   `𝔼[T] ≤ ⌈log₂ |A|⌉ + 2 ≤ 3 * ⌈log₂ (max |A| 2)⌉` ([LiLiangYuZhou2024, Claim 3.3]).
+* `expect_le_of_le_add_mul_rounds`: a cost bounded by `a + b * T` has expectation at most
+  `(a + 3 b) * ⌈log₂ (max |A| 2)⌉`.
 * `relocDist_insert_le`, `relocDist_delete_le`, `relocDist_replace_le`,
   `expect_relocDist_insert_le`, `expect_relocDist_delete_le`, `expect_relocDist_replace_le`:
   deterministic `O(T)` and expected `O(log (max |A| 2))` relocation bounds
@@ -125,6 +127,14 @@ private theorem ballItem_injective (U' n' : ℕ) : Function.Injective (ballItem 
 private theorem binItem_injective (U' n' : ℕ) : Function.Injective (binItem U' (n' := n')) :=
   fun _ _ h => Fin.ext (by simpa [binItem] using congrArg Fin.val h)
 
+@[simp]
+private theorem ballItem_ne_binItem {U' n' : ℕ} (a : Fin U') (b : Fin n') :
+    ballItem n' a ≠ binItem U' b := by
+  intro h
+  have hval := congrArg Fin.val h
+  simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
+  omega
+
 /-- Test whether a combined item `z : Fin (U' + n')` is a bin `binItem U' b`. -/
 def asBin? {U' n' : ℕ} (z : Fin (U' + n')) : Option (Fin n') :=
   if h : U' ≤ z.val then some ⟨z.val - U', by omega⟩ else none
@@ -174,10 +184,7 @@ private theorem ballItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B 
   constructor
   · rintro (⟨a', ha', heq⟩ | ⟨b, _, heq⟩)
     · exact ballItem_injective U' n' heq ▸ ha'
-    · exfalso
-      have hval : (binItem U' b).val = (ballItem n' a).val := congrArg Fin.val heq
-      simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-      omega
+    · exact absurd heq.symm (ballItem_ne_binItem a b)
   · intro ha; exact Or.inl ⟨a, ha, rfl⟩
 
 @[simp]
@@ -186,10 +193,7 @@ private theorem binItem_mem_activeItems {U' n' : ℕ} {A : Finset (Fin U')} {B :
   simp only [activeItems, mem_union, mem_map, Function.Embedding.coeFn_mk]
   constructor
   · rintro (⟨a, _, heq⟩ | ⟨b', hb', heq⟩)
-    · exfalso
-      have hval : (ballItem n' a).val = (binItem U' b).val := congrArg Fin.val heq
-      simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-      omega
+    · exact absurd heq (ballItem_ne_binItem a b)
     · exact binItem_injective U' n' heq ▸ hb'
   · intro hb; exact Or.inr ⟨b, hb, rfl⟩
 
@@ -207,9 +211,14 @@ private theorem card_activeItems {U' n' : ℕ} (A : Finset (Fin U')) (B : Finset
   intro z hzA hzB
   rcases mem_map.mp hzA with ⟨a, _, rfl⟩
   rcases mem_map.mp hzB with ⟨b, _, heq⟩
-  have hval : (binItem U' b).val = (ballItem n' a).val := congrArg Fin.val heq
-  simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-  omega
+  exact ballItem_ne_binItem a b heq.symm
+
+/-- With no active item there are no balls and no bins. -/
+private theorem eq_empty_of_not_nonempty_activeItems {U' n' : ℕ} {A : Finset (Fin U')}
+    {B : Finset (Fin n')} (h : ¬(activeItems A B).Nonempty) : A = ∅ ∧ B = ∅ := by
+  have hcard := card_activeItems A B
+  rw [not_nonempty_iff_eq_empty.mp h, card_empty] at hcard
+  exact ⟨card_eq_zero.mp (by omega), card_eq_zero.mp (by omega)⟩
 
 /-! ### Clockwise successor on a finite circle subset -/
 
@@ -357,11 +366,8 @@ private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (h
         · rintro ⟨hzP, hxz⟩
           exact ⟨Or.inr hzP, hgap z hzP hxz⟩
       have hmin_eq : (insert pStar P).min' hP' = P.min' hP := by
-        refine le_antisymm (min'_le _ _ (mem_insert_of_mem (min'_mem P hP))) ?_
-        refine le_min' (insert pStar P) hP' (P.min' hP) fun z hz => ?_
-        rcases mem_insert.mp hz with rfl | hzP
-        · exact le_trans (min'_le P x₀ hx₀_P) hx₀_lt.le
-        · exact min'_le P z hzP
+        rw [min'_insert pStar P hP]
+        exact min_eq_right ((min'_le P x₀ hx₀_P).trans hx₀_lt.le)
       dsimp only [clockwiseNextPos]
       simp only [hfilt_eq]
       split_ifs with hgt
@@ -394,11 +400,8 @@ private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (h
           · rintro ⟨hzP, hxz⟩
             exact ⟨Or.inr hzP, hxz⟩
         have hmin_eq : (insert pStar P).min' hP' = P.min' hP := by
-          refine le_antisymm (min'_le _ _ (mem_insert_of_mem (min'_mem P hP))) ?_
-          refine le_min' (insert pStar P) hP' (P.min' hP) fun z hz => ?_
-          rcases mem_insert.mp hz with rfl | hzP
-          · exact le_trans (min'_le P x₀ hx₀_P) hx₀_lt.le
-          · exact min'_le P z hzP
+          rw [min'_insert pStar P hP]
+          exact min_eq_right ((min'_le P x₀ hx₀_P).trans hx₀_lt.le)
         dsimp only [clockwiseNextPos]
         simp only [hfilt_eq]
         split_ifs with hgt
@@ -413,11 +416,8 @@ private theorem exists_insert_clockwiseNextPos {M : ℕ} {P : Finset (Fin M)} (h
     set x₀ := P.max' hP
     have hx₀_P : x₀ ∈ P := max'_mem P hP
     have hmin_pStar : (insert pStar P).min' hP' = pStar := by
-      refine le_antisymm (min'_le _ pStar (mem_insert_self pStar P)) ?_
-      refine le_min' (insert pStar P) hP' pStar fun z hz => ?_
-      rcases mem_insert.mp hz with rfl | hzP
-      · exact le_rfl
-      · exact (hall_gt z hzP).le
+      rw [min'_insert pStar P hP]
+      exact min_eq_left (le_min' P hP pStar fun z hz => (hall_gt z hz).le)
     refine ⟨x₀, hx₀_P, ?_, ?_, ?_⟩
     · have hgt_empty : ¬((insert pStar P).filter (x₀ < ·)).Nonempty := by
         rintro ⟨z, hz⟩
@@ -527,24 +527,15 @@ private theorem nextItem_mul_swap {M : ℕ} [DecidableEq (Fin M)] (π : Equiv.Pe
     {S : Finset (Fin M)} {x y₁ y₂ : Fin M}
     (hy₁ : y₁ ∈ S) (hy₂ : y₂ ∈ S) (hx₁ : x ≠ y₁) (hx₂ : x ≠ y₂) :
     nextItem (π * Equiv.swap y₁ y₂) S x = (Equiv.swap y₁ y₂) (nextItem π S x) := by
+  have hswap_mem : ∀ {z}, z ∈ S → Equiv.swap y₁ y₂ z ∈ S := by
+    intro z hz
+    rw [Equiv.swap_apply_def]
+    split_ifs <;> assumption
   have hmap : S.map (π * Equiv.swap y₁ y₂).toEmbedding = S.map π.toEmbedding := by
     ext p
     simp only [mem_map, Equiv.coe_toEmbedding, Equiv.Perm.mul_apply]
-    constructor
-    · rintro ⟨z, hz, rfl⟩
-      refine ⟨Equiv.swap y₁ y₂ z, ?_, rfl⟩
-      by_cases hz₁ : z = y₁
-      · subst hz₁; simpa using hy₂
-      · by_cases hz₂ : z = y₂
-        · subst hz₂; simpa using hy₁
-        · rw [Equiv.swap_apply_of_ne_of_ne hz₁ hz₂]; exact hz
-    · rintro ⟨z, hz, rfl⟩
-      refine ⟨Equiv.swap y₁ y₂ z, ?_, by simp⟩
-      by_cases hz₁ : z = y₁
-      · subst hz₁; simpa using hy₂
-      · by_cases hz₂ : z = y₂
-        · subst hz₂; simpa using hy₁
-        · rw [Equiv.swap_apply_of_ne_of_ne hz₁ hz₂]; exact hz
+    exact ⟨fun ⟨z, hz, h⟩ => ⟨_, hswap_mem hz, h⟩,
+      fun ⟨z, hz, h⟩ => ⟨_, hswap_mem hz, by simpa using h⟩⟩
   have hx_fix : (π * Equiv.swap y₁ y₂) x = π x := by
     simp [Equiv.Perm.mul_apply, Equiv.swap_apply_of_ne_of_ne hx₁ hx₂]
   dsimp only [nextItem]
@@ -639,9 +630,7 @@ theorem card_balls_roundStep_lt {U' n' : ℕ} (π : RoundPerm U' n')
     refine ⟨binItem U' b, mem_sdiff.mpr ⟨binItem_mem_activeItems.mpr hb, ?_⟩⟩
     intro hm
     rcases mem_map.mp hm with ⟨a, _, heq⟩
-    have hval : (ballItem n' a).val = (binItem U' b).val := congrArg Fin.val heq
-    simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-    omega
+    exact ballItem_ne_binItem a b heq
   rcases exists_nextItem_notMem π hQ hdiff with ⟨q, hqQ, hnext_notQ⟩
   rcases mem_map.mp hqQ with ⟨a, haA, rfl⟩
   have hnext_S : nextItem π S (ballItem n' a) ∈ S :=
@@ -722,6 +711,16 @@ theorem relocDist_triangle {U' n' : ℕ} (σ₁ σ₂ σ₃ : Fin U' → Option 
 
 private theorem stateAt_balls_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
     (B : Finset (Fin n')) (i : ℕ) : (stateAt h A B i).1 ⊆ A := by
+  induction i with
+  | zero => exact Subset.rfl
+  | succ i ih =>
+    dsimp only [stateAt]
+    split_ifs with hi
+    · exact sdiff_subset.trans ih
+    · exact ih
+
+private theorem stateAt_bins_subset {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin U'))
+    (B : Finset (Fin n')) (i : ℕ) : (stateAt h A B i).2 ⊆ B := by
   induction i with
   | zero => exact Subset.rfl
   | succ i ih =>
@@ -855,16 +854,7 @@ private theorem matchAux_spec {U' n' : ℕ} (h : Scheme U' n') (A : Finset (Fin 
         split_ifs at hab with hk
         simp only [hk, ↓reduceDIte]
         have hmem := roundMatchOpt_mem_bins hab
-        have hbB : b ∈ B := by
-          have hsub : (stateAt h A B k).2 ⊆ B := by
-            clear * -
-            induction k with
-            | zero => exact Subset.rfl
-            | succ j ihj =>
-              dsimp only [stateAt]; split_ifs with hj
-              · exact sdiff_subset.trans ihj
-              · exact ihj
-          exact hsub hmem.2
+        have hbB : b ∈ B := stateAt_bins_subset h A B k hmem.2
         dsimp only [roundStep]
         refine mem_sdiff.mpr ⟨hbB, fun hm => ?_⟩
         exact (mem_sdiff.mp hm).2 (mem_filter.mpr ⟨hmem.2, a, hmem.1, hab⟩)
@@ -997,12 +987,8 @@ private theorem two_mul_sum_card_balls_roundStep_le {U' n' : ℕ} {A : Finset (F
   set x := ballItem n' a
   have hxS : x ∈ S := ballItem_mem_activeItems.mpr ha
   set y₀ := binItem U' b₀
-  have hy₀ : y₀ ∈ S.erase x := by
-    refine mem_erase.mpr ⟨?_, binItem_mem_activeItems.mpr hb₀⟩
-    intro heq
-    have hval : y₀.val = x.val := congrArg Fin.val heq
-    simp only [x, y₀, ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-    omega
+  have hy₀ : y₀ ∈ S.erase x :=
+    mem_erase.mpr ⟨(ballItem_ne_binItem a b₀).symm, binItem_mem_activeItems.mpr hb₀⟩
   let fiber : Fin (U' + n') → Finset (RoundPerm U' n') := fun y =>
     Finset.univ.filter fun π => nextItem π S x = y
   have hfiber_card : ∀ y ∈ S.erase x, (fiber y).card = (fiber y₀).card := by
@@ -1307,6 +1293,36 @@ private theorem mem_sdiff_filter {α : Type*} [DecidableEq α] (s : Finset α) (
     [DecidablePred p] (x : α) : x ∈ s \ s.filter p ↔ x ∈ s ∧ ¬p x := by
   simp only [mem_sdiff, mem_filter]; tauto
 
+private theorem roundMatchOpt_eq_none_of_bins_empty {U' n' : ℕ} (π : RoundPerm U' n')
+    (A : Finset (Fin U')) (a : Fin U') :
+    roundMatchOpt π A ∅ a = none := by
+  cases h : roundMatchOpt π A ∅ a with
+  | none => rfl
+  | some b => exact absurd (roundMatchOpt_mem_bins h).2 (notMem_empty b)
+
+@[simp]
+private theorem mem_roundStep_fst {U' n' : ℕ} (π : RoundPerm U' n')
+    (A : Finset (Fin U')) (B : Finset (Fin n')) (a : Fin U') :
+    a ∈ (roundStep π (A, B)).1 ↔ a ∈ A ∧ roundMatchOpt π A B a = none := by
+  simp only [roundStep, mem_sdiff_filter]
+  cases roundMatchOpt π A B a <;> simp
+
+private theorem mem_roundStep_snd {U' n' : ℕ} (π : RoundPerm U' n')
+    (A : Finset (Fin U')) (B : Finset (Fin n')) (b : Fin n') :
+    b ∈ (roundStep π (A, B)).2 ↔ b ∈ B ∧ ∀ a, roundMatchOpt π A B a ≠ some b := by
+  simp only [roundStep, mem_sdiff_filter]
+  exact and_congr_right fun _ =>
+    ⟨fun h a hab => h ⟨a, (roundMatchOpt_mem_bins hab).1, hab⟩,
+     fun h ⟨a, _, hab⟩ => h a hab⟩
+
+private theorem card_filter_ne_le {α β : Type*} [Fintype α] [DecidableEq β]
+    {f g : α → β} (s : Finset α) (h : ∀ a, a ∉ s → g a = f a) :
+    (Finset.univ.filter fun a => f a ≠ g a).card ≤ s.card := by
+  refine card_le_card fun a ha => ?_
+  simp only [mem_filter, mem_univ, true_and] at ha
+  by_contra hns
+  exact ha (h a hns).symm
+
 /-- Inserting a single bin `bStar ∉ B` preserves `pairDiff ≤ 1` across `roundStep` and changes
 at most `1` ball's single-round match (`Claim 3.4` bin-insertion case,
 [LiLiangYuZhou2024, Section 3.1]). -/
@@ -1319,150 +1335,97 @@ private theorem roundStep_insert_bin {U' n' : ℕ} (π : RoundPerm U' n') (A : F
   have hS_ins : activeItems A (insert bStar B) = insert (binItem U' bStar) S := by
     ext z; simp only [S, activeItems, map_insert, mem_union, mem_insert]; tauto
   by_cases hSne : S.Nonempty
-  · have hzStar : binItem U' bStar ∉ S := by
-      simpa [S] using hbStar
+  · have hzStar : binItem U' bStar ∉ S := by simpa [S] using hbStar
     rcases exists_insert_nextItem π hSne hzStar with ⟨x₀, hx₀S, hnx₀, hnz, hnw⟩
     have hsame : ∀ a : Fin U', ballItem n' a ≠ x₀ →
         roundMatchOpt π A (insert bStar B) a = roundMatchOpt π A B a := by
       intro a hne
       by_cases ha : a ∈ A
-      · have hnext := hnw (ballItem n' a) (ballItem_mem_activeItems.mpr ha) hne
-        simp [roundMatchOpt, ha, hS_ins, S, hnext]
+      · simp [roundMatchOpt, ha, hS_ins, S, hnw _ (ballItem_mem_activeItems.mpr ha) hne]
       · simp [roundMatchOpt, ha]
-    rcases mem_activeItems_iff.mp hx₀S with ⟨a₀, ha₀A, rfl⟩ | ⟨b₀, hb₀B, rfl⟩
-    · -- `x₀ = ballItem n' a₀`
+    rcases mem_activeItems_iff.mp hx₀S with ⟨a₀, ha₀A, rfl⟩ | ⟨b₀, _, rfl⟩
+    · have hsame' : ∀ a, a ≠ a₀ →
+          roundMatchOpt π A (insert bStar B) a = roundMatchOpt π A B a :=
+        fun a ha => hsame a fun h => ha (ballItem_injective U' n' h)
       have ha₀_new : roundMatchOpt π A (insert bStar B) a₀ = some bStar := by
         simp [roundMatchOpt, ha₀A, hS_ins, hnx₀]
-      have hdiff_le : (Finset.univ.filter fun a =>
-          roundMatchOpt π A B a ≠ roundMatchOpt π A (insert bStar B) a).card ≤ 1 := by
-        refine (card_le_card (s := _) (t := {a₀}) ?_).trans (by simp)
-        intro a ha
-        simp only [mem_filter, mem_univ, true_and, mem_singleton] at ha ⊢
-        by_contra hne
-        exact ha (hsame a (fun h => hne (ballItem_injective U' n' h))).symm
-      refine ⟨?_, hdiff_le⟩
+      refine ⟨?_,
+        (card_filter_ne_le {a₀} fun a ha => hsame' a (mem_singleton.not.mp ha)).trans_eq
+          (card_singleton a₀)⟩
+      have hbins_iff : ∀ b, b ∈ (roundStep π (A, insert bStar B)).2 ↔
+          b ∈ (roundStep π (A, B)).2 ∨ roundMatchOpt π A B a₀ = some b := by
+        intro b
+        simp only [mem_roundStep_snd, mem_insert]
+        constructor
+        · rintro ⟨rfl | hbB, hno⟩
+          · exact absurd ha₀_new (hno a₀)
+          · by_cases hmatch : roundMatchOpt π A B a₀ = some b
+            · exact Or.inr hmatch
+            · refine Or.inl ⟨hbB, fun a => ?_⟩
+              rcases eq_or_ne a a₀ with rfl | ha
+              · exact hmatch
+              · simpa [hsame' a ha] using hno a
+        · rintro (⟨hbB, hno⟩ | hmatch)
+          · refine ⟨Or.inr hbB, fun a => ?_⟩
+            rcases eq_or_ne a a₀ with rfl | ha
+            · rw [ha₀_new]; exact fun h => hbStar ((Option.some.inj h) ▸ hbB)
+            · simpa [hsame' a ha] using hno a
+          · have hbB : b ∈ B := (roundMatchOpt_mem_bins hmatch).2
+            refine ⟨Or.inr hbB, fun a => ?_⟩
+            rcases eq_or_ne a a₀ with rfl | ha
+            · rw [ha₀_new]; exact fun h => hbStar ((Option.some.inj h) ▸ hbB)
+            · rw [hsame' a ha]
+              exact fun hab => ha (roundMatchOpt_injective π A B hab hmatch)
       cases hold : roundMatchOpt π A B a₀ with
       | none =>
-        have hballs : (roundStep π (A, insert bStar B)).1 =
-            (roundStep π (A, B)).1.erase a₀ := by
+        have hballs : (roundStep π (A, insert bStar B)).1 = (roundStep π (A, B)).1.erase a₀ := by
           ext a
-          simp only [roundStep, mem_sdiff_filter, mem_erase]
+          simp only [mem_roundStep_fst, mem_erase]
           rcases eq_or_ne a a₀ with rfl | ha
           · simp [ha₀_new]
-          · rw [hsame a (fun h => ha (ballItem_injective U' n' h))]; simp [ha]
-        have ha₀_rem : a₀ ∈ (roundStep π (A, B)).1 := by
-          simp [roundStep, ha₀A, hold]
+          · simp [hsame' a ha, ha]
+        have ha₀_rem : a₀ ∈ (roundStep π (A, B)).1 := (mem_roundStep_fst _ _ _ _).mpr ⟨ha₀A, hold⟩
         have hbins : (roundStep π (A, insert bStar B)).2 = (roundStep π (A, B)).2 := by
-          ext b
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
-          constructor
-          · rintro ⟨rfl | hbB, hno⟩
-            · exfalso; exact hno ⟨a₀, ha₀A, ha₀_new⟩
-            · refine ⟨hbB, ?_⟩
-              rintro ⟨a, haA, hab⟩
-              rcases eq_or_ne a a₀ with rfl | ha
-              · simp [hold] at hab
-              · exact hno ⟨a, haA,
-                  (hsame a (fun h => ha (ballItem_injective U' n' h))).trans hab⟩
-          · rintro ⟨hbB, hno⟩
-            have hbne : b ≠ bStar := fun h => hbStar (h ▸ hbB)
-            refine ⟨Or.inr hbB, ?_⟩
-            rintro ⟨a, haA, hab⟩
-            rcases eq_or_ne a a₀ with rfl | ha
-            · rw [ha₀_new] at hab; exact hbne (Option.some.inj hab).symm
-            · exact hno ⟨a, haA,
-                (hsame a (fun h => ha (ballItem_injective U' n' h))).symm.trans hab⟩
+          ext b; simp [hbins_iff, hold]
         simp [pairDiff, hballs, hbins, card_symmDiff_erase_of_mem ha₀_rem]
       | some b₁ =>
-        have hb₁B : b₁ ∈ B := (roundMatchOpt_mem_bins hold).2
         have hballs : (roundStep π (A, insert bStar B)).1 = (roundStep π (A, B)).1 := by
           ext a
-          simp only [roundStep, mem_sdiff_filter]
+          simp only [mem_roundStep_fst]
           rcases eq_or_ne a a₀ with rfl | ha
           · simp [hold, ha₀_new]
-          · rw [hsame a (fun h => ha (ballItem_injective U' n' h))]
+          · simp [hsame' a ha]
         have hb₁_not_rem : b₁ ∉ (roundStep π (A, B)).2 := by
-          simp only [roundStep, mem_sdiff_filter, not_and, Classical.not_not]
-          intro _; exact ⟨a₀, ha₀A, hold⟩
-        have hbins : (roundStep π (A, insert bStar B)).2 =
-            insert b₁ (roundStep π (A, B)).2 := by
-          ext b
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
-          constructor
-          · rintro ⟨rfl | hbB, hno⟩
-            · exfalso; exact hno ⟨a₀, ha₀A, ha₀_new⟩
-            · by_cases hbb₁ : b = b₁
-              · exact Or.inl hbb₁
-              · refine Or.inr ⟨hbB, ?_⟩
-                rintro ⟨a, haA, hab⟩
-                rcases eq_or_ne a a₀ with rfl | ha
-                · rw [hold] at hab; exact hbb₁ (Option.some.inj hab).symm
-                · exact hno ⟨a, haA,
-                    (hsame a (fun h => ha (ballItem_injective U' n' h))).trans hab⟩
-          · rintro (hb | ⟨hbB, hno⟩)
-            · rw [hb]
-              refine ⟨Or.inr hb₁B, ?_⟩
-              rintro ⟨a, haA, hab⟩
-              rcases eq_or_ne a a₀ with rfl | ha
-              · rw [ha₀_new] at hab
-                exact hbStar ((Option.some.inj hab) ▸ hb₁B)
-              · have hold_a : roundMatchOpt π A B a = some b₁ :=
-                  (hsame a (fun h => ha (ballItem_injective U' n' h))).symm.trans hab
-                exact ha (roundMatchOpt_injective π A B hold_a hold)
-            · refine ⟨Or.inr hbB, ?_⟩
-              rintro ⟨a, haA, hab⟩
-              rcases eq_or_ne a a₀ with rfl | ha
-              · rw [ha₀_new] at hab
-                exact hbStar ((Option.some.inj hab) ▸ hbB)
-              · exact hno ⟨a, haA,
-                  (hsame a (fun h => ha (ballItem_injective U' n' h))).symm.trans hab⟩
+          simp only [mem_roundStep_snd, not_and, not_forall, not_not]
+          exact fun _ => ⟨a₀, hold⟩
+        have hbins : (roundStep π (A, insert bStar B)).2 = insert b₁ (roundStep π (A, B)).2 := by
+          ext b; simp [hbins_iff, hold, or_comm, eq_comm]
         simp [pairDiff, hballs, hbins, card_symmDiff_insert_of_notMem hb₁_not_rem]
-    · -- `x₀ = binItem U' b₀`: no ball has `ballItem = x₀`, so all `roundMatchOpt` agree
-      have hall_same : ∀ a : Fin U',
-          roundMatchOpt π A (insert bStar B) a = roundMatchOpt π A B a := by
-        intro a
-        refine hsame a fun heq => ?_
-        have hval := congrArg Fin.val heq
-        simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-        omega
-      have hdiff_zero : (Finset.univ.filter fun a =>
-          roundMatchOpt π A B a ≠ roundMatchOpt π A (insert bStar B) a).card = 0 := by
-        simp [hall_same]
+    · have hall_same : ∀ a, roundMatchOpt π A (insert bStar B) a = roundMatchOpt π A B a :=
+        fun a => hsame a (ballItem_ne_binItem a b₀)
       have hballs : (roundStep π (A, insert bStar B)).1 = (roundStep π (A, B)).1 := by
-        ext a; simp [roundStep, hall_same]
+        ext a; simp [mem_roundStep_fst, hall_same]
       have hbStar_not_rem : bStar ∉ (roundStep π (A, B)).2 := fun hm =>
-        hbStar (sdiff_subset hm)
-      have hbins : (roundStep π (A, insert bStar B)).2 =
-          insert bStar (roundStep π (A, B)).2 := by
+        hbStar ((mem_roundStep_snd _ _ _ _).mp hm).1
+      have hbins : (roundStep π (A, insert bStar B)).2 = insert bStar (roundStep π (A, B)).2 := by
         ext b
-        simp only [roundStep, mem_sdiff_filter, mem_insert, hall_same]
+        simp only [mem_roundStep_snd, mem_insert, hall_same]
         constructor
         · rintro ⟨rfl | hbB, hno⟩
           · exact Or.inl rfl
           · exact Or.inr ⟨hbB, hno⟩
         · rintro (rfl | ⟨hbB, hno⟩)
-          · refine ⟨Or.inl rfl, ?_⟩
-            rintro ⟨a, _, hab⟩
-            exact hbStar (roundMatchOpt_mem_bins hab).2
+          · exact ⟨Or.inl rfl, fun a hab => hbStar (roundMatchOpt_mem_bins hab).2⟩
           · exact ⟨Or.inr hbB, hno⟩
-      refine ⟨?_, by omega⟩
+      refine ⟨?_, by simp [hall_same]⟩
       simp [pairDiff, hballs, hbins, card_symmDiff_insert_of_notMem hbStar_not_rem]
-  · -- `S = ∅`, so `A = ∅` and `B = ∅`
-    have hA : A = ∅ := by
-      ext a; simp only [notMem_empty, iff_false]
-      intro ha; exact hSne ⟨ballItem n' a, ballItem_mem_activeItems.mpr ha⟩
-    have hB : B = ∅ := by
-      ext b; simp only [notMem_empty, iff_false]
-      intro hb; exact hSne ⟨binItem U' b, binItem_mem_activeItems.mpr hb⟩
-    subst hA; subst hB
+  · obtain ⟨rfl, rfl⟩ := eq_empty_of_not_nonempty_activeItems hSne
     have hnone : ∀ (B' : Finset (Fin n')) (a : Fin U'), roundMatchOpt π ∅ B' a = none := by
       intro B' a; simp [roundMatchOpt]
     have hrs1 : roundStep π (∅, ∅) = (∅, ∅) := by simp [roundStep]
     have hrs2 : roundStep π (∅, {bStar}) = (∅, {bStar}) := by
       ext <;> simp [roundStep, hnone]
-    have hcard1 : ((∅ : Finset (Fin n')) ∆ {bStar}).card = 1 :=
-      card_symmDiff_insert_of_notMem (notMem_empty bStar)
-    simp [hnone, hrs1, hrs2, pairDiff, hcard1]
+    simp [hnone, hrs1, hrs2, pairDiff, symmDiff_def]
 
 /-- Inserting a single ball `aStar ∉ A` preserves `pairDiff ≤ 1` across `roundStep` and changes
 at most `2` balls' single-round matches (`Claim 3.4` ball-insertion case). -/
@@ -1481,214 +1444,137 @@ private theorem roundStep_insert_ball {U' n' : ℕ} (π : RoundPerm U' n') {A : 
         roundMatchOpt π (insert aStar A) B a = roundMatchOpt π A B a := by
       intro a hneStar hnex₀
       by_cases ha : a ∈ A
-      · have hmem : a ∈ insert aStar A := mem_insert_of_mem ha
-        simp [roundMatchOpt, ha, hmem, hS_ins, S,
-          hnw (ballItem n' a) (ballItem_mem_activeItems.mpr ha) hnex₀]
-      · have hnot : a ∉ insert aStar A := by simp [ha, hneStar]
-        simp [roundMatchOpt, ha, hnot]
+      · simp [roundMatchOpt, ha, mem_insert_of_mem ha, hS_ins, S,
+          hnw _ (ballItem_mem_activeItems.mpr ha) hnex₀]
+      · simp [roundMatchOpt, ha, hneStar]
     rcases mem_activeItems_iff.mp hx₀S with ⟨a₀, ha₀A, rfl⟩ | ⟨b₀, hb₀B, rfl⟩
-    · -- `x₀ = ballItem n' a₀`
-      have ha₀neStar : a₀ ≠ aStar := fun h => haStar (h ▸ ha₀A)
+    · have ha₀neStar : a₀ ≠ aStar := fun h => haStar (h ▸ ha₀A)
       have ha₀_new : roundMatchOpt π (insert aStar A) B a₀ = none := by
         simp [roundMatchOpt, mem_insert_of_mem ha₀A, hS_ins, hnx₀]
       have haStar_new : roundMatchOpt π (insert aStar A) B aStar = roundMatchOpt π A B a₀ := by
         simp [roundMatchOpt, ha₀A, hS_ins, S, hnz]
-      have hdiff_le : (Finset.univ.filter fun a =>
-          roundMatchOpt π A B a ≠ roundMatchOpt π (insert aStar A) B a).card ≤ 2 := by
-        refine (card_le_card (s := _) (t := {aStar, a₀}) ?_).trans (card_insert_le _ _)
-        intro a ha
-        simp only [mem_filter, mem_univ, true_and, mem_insert, mem_singleton] at ha ⊢
-        by_contra hnot
-        push Not at hnot
-        exact ha (hsame a hnot.1 (fun h => hnot.2 (ballItem_injective U' n' h))).symm
-      refine ⟨?_, hdiff_le⟩
+      have hsame' : ∀ a, a ≠ aStar → a ≠ a₀ →
+          roundMatchOpt π (insert aStar A) B a = roundMatchOpt π A B a :=
+        fun a ha₁ ha₂ => hsame a ha₁ fun h => ha₂ (ballItem_injective U' n' h)
+      refine ⟨?_, (card_filter_ne_le {aStar, a₀} fun a ha => by
+        simp only [mem_insert, mem_singleton, not_or] at ha
+        exact hsame' a ha.1 ha.2).trans Finset.card_le_two⟩
+      have hbins : (roundStep π (insert aStar A, B)).2 = (roundStep π (A, B)).2 := by
+        ext b
+        simp only [mem_roundStep_snd]
+        refine and_congr_right fun _ => ⟨fun hno a => ?_, fun hno a => ?_⟩
+        · rcases eq_or_ne a aStar with rfl | ha₁
+          · exact fun hab => haStar (roundMatchOpt_mem_bins hab).1
+          · rcases eq_or_ne a a₀ with rfl | ha₂
+            · rw [← haStar_new]; exact hno aStar
+            · simpa [hsame' a ha₁ ha₂] using hno a
+        · rcases eq_or_ne a aStar with rfl | ha₁
+          · rw [haStar_new]; exact hno a₀
+          · rcases eq_or_ne a a₀ with rfl | ha₂
+            · simp [ha₀_new]
+            · simpa [hsame' a ha₁ ha₂] using hno a
       cases hold : roundMatchOpt π A B a₀ with
       | none =>
         have haStar_not_rem : aStar ∉ (roundStep π (A, B)).1 := fun hm => haStar (sdiff_subset hm)
-        have hballs : (roundStep π (insert aStar A, B)).1 =
-            insert aStar (roundStep π (A, B)).1 := by
+        have hballs :
+            (roundStep π (insert aStar A, B)).1 = insert aStar (roundStep π (A, B)).1 := by
           ext a
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
+          simp only [mem_roundStep_fst, mem_insert]
           rcases eq_or_ne a aStar with rfl | ha₁
           · simp [haStar_new, hold]
           · rcases eq_or_ne a a₀ with rfl | ha₂
             · simp [ha₀neStar, ha₀A, ha₀_new, hold]
-            · rw [hsame a ha₁ (fun h => ha₂ (ballItem_injective U' n' h))]; simp [ha₁]
-        have hbins : (roundStep π (insert aStar A, B)).2 = (roundStep π (A, B)).2 := by
-          ext b
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
-          constructor
-          · rintro ⟨hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, haA, hab⟩
-            rcases eq_or_ne a a₀ with rfl | ha₂
-            · simp [hold] at hab
-            · have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-              exact hno ⟨a, Or.inr haA,
-                (hsame a ha₁ (fun h => ha₂ (ballItem_injective U' n' h))).trans hab⟩
-          · rintro ⟨hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, rfl | haA, hab⟩
-            · rw [haStar_new, hold] at hab; simp at hab
-            · rcases eq_or_ne a a₀ with rfl | ha₂
-              · rw [ha₀_new] at hab; simp at hab
-              · have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-                exact hno ⟨a, haA,
-                  (hsame a ha₁ (fun h => ha₂ (ballItem_injective U' n' h))).symm.trans hab⟩
+            · simp [hsame' a ha₁ ha₂, ha₁]
         simp [pairDiff, hballs, hbins, card_symmDiff_insert_of_notMem haStar_not_rem]
       | some b₁ =>
-        have ha₀_not_rem : a₀ ∉ (roundStep π (A, B)).1 := by
-          simp [roundStep, ha₀A, hold]
-        have hballs : (roundStep π (insert aStar A, B)).1 =
-            insert a₀ (roundStep π (A, B)).1 := by
+        have ha₀_not_rem : a₀ ∉ (roundStep π (A, B)).1 := by simp [mem_roundStep_fst, hold]
+        have hballs : (roundStep π (insert aStar A, B)).1 = insert a₀ (roundStep π (A, B)).1 := by
           ext a
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
-          by_cases ha₁ : a = aStar
-          · rw [ha₁]; simp [ha₀neStar.symm, haStar_new, hold, haStar]
-          · by_cases ha₂ : a = a₀
-            · rw [ha₂]; simp [ha₀A, ha₀_new]
-            · rw [hsame a ha₁ (fun h => ha₂ (ballItem_injective U' n' h))]; simp [ha₁, ha₂]
-        have hbins : (roundStep π (insert aStar A, B)).2 = (roundStep π (A, B)).2 := by
-          ext b
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
-          constructor
-          · rintro ⟨hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, haA, hab⟩
-            rcases eq_or_ne a a₀ with rfl | ha₂
-            · exact hno ⟨aStar, Or.inl rfl, haStar_new.trans hab⟩
-            · have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-              exact hno ⟨a, Or.inr haA,
-                (hsame a ha₁ (fun h => ha₂ (ballItem_injective U' n' h))).trans hab⟩
-          · rintro ⟨hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, rfl | haA, hab⟩
-            · exact hno ⟨a₀, ha₀A, haStar_new.symm.trans hab⟩
-            · rcases eq_or_ne a a₀ with rfl | ha₂
-              · rw [ha₀_new] at hab; simp at hab
-              · have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-                exact hno ⟨a, haA,
-                  (hsame a ha₁ (fun h => ha₂ (ballItem_injective U' n' h))).symm.trans hab⟩
+          simp only [mem_roundStep_fst, mem_insert]
+          rcases eq_or_ne a aStar with rfl | ha₁
+          · simp [ha₀neStar.symm, haStar_new, hold, haStar]
+          · rcases eq_or_ne a a₀ with rfl | ha₂
+            · simp [ha₀A, ha₀_new]
+            · simp [hsame' a ha₁ ha₂, ha₁, ha₂]
         simp [pairDiff, hballs, hbins, card_symmDiff_insert_of_notMem ha₀_not_rem]
-    · -- `x₀ = binItem U' b₀`
-      have hsame_A : ∀ a : Fin U', a ≠ aStar →
-          roundMatchOpt π (insert aStar A) B a = roundMatchOpt π A B a := by
-        intro a hneStar
-        refine hsame a hneStar fun heq => ?_
-        have hval := congrArg Fin.val heq
-        simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-        omega
+    · have hsame_A : ∀ a, a ≠ aStar →
+          roundMatchOpt π (insert aStar A) B a = roundMatchOpt π A B a :=
+        fun a hneStar => hsame a hneStar (ballItem_ne_binItem a b₀)
       have haStar_new : roundMatchOpt π (insert aStar A) B aStar =
           asBin? (nextItem π S (binItem U' b₀)) := by
         simp [roundMatchOpt, hS_ins, hnz]
-      have hdiff_le : (Finset.univ.filter fun a =>
-          roundMatchOpt π A B a ≠ roundMatchOpt π (insert aStar A) B a).card ≤ 1 := by
-        refine (card_le_card (s := _) (t := {aStar}) ?_).trans (by simp)
-        intro a ha
-        simp only [mem_filter, mem_univ, true_and, mem_singleton] at ha ⊢
-        by_contra hne
-        exact ha (hsame_A a hne).symm
-      refine ⟨?_, by omega⟩
+      refine ⟨?_,
+        ((card_filter_ne_le {aStar} fun a ha => hsame_A a (mem_singleton.not.mp ha)).trans_eq
+          (card_singleton aStar)).trans (by omega)⟩
       cases hbin : asBin? (nextItem π S (binItem U' b₀)) with
       | none =>
         have haStar_not_rem : aStar ∉ (roundStep π (A, B)).1 := fun hm => haStar (sdiff_subset hm)
-        have hballs : (roundStep π (insert aStar A, B)).1 =
-            insert aStar (roundStep π (A, B)).1 := by
-          ext a
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
+        have haStar_old : roundMatchOpt π A B aStar = none := by simp [roundMatchOpt, haStar]
+        have hall_same : ∀ a, roundMatchOpt π (insert aStar A) B a = roundMatchOpt π A B a := by
+          intro a
           rcases eq_or_ne a aStar with rfl | ha₁
-          · simp [haStar_new, hbin]
-          · rw [hsame_A a ha₁]; simp [ha₁]
+          · rw [haStar_new, hbin, haStar_old]
+          · exact hsame_A a ha₁
+        have hballs :
+            (roundStep π (insert aStar A, B)).1 = insert aStar (roundStep π (A, B)).1 := by
+          ext a; simp only [mem_roundStep_fst, mem_insert, hall_same]
+          by_cases ha : a = aStar <;> simp [ha, haStar_old]
         have hbins : (roundStep π (insert aStar A, B)).2 = (roundStep π (A, B)).2 := by
-          ext b
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
-          constructor
-          · rintro ⟨hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, haA, hab⟩
-            have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-            exact hno ⟨a, Or.inr haA, (hsame_A a ha₁).trans hab⟩
-          · rintro ⟨hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, rfl | haA, hab⟩
-            · rw [haStar_new, hbin] at hab; simp at hab
-            · have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-              exact hno ⟨a, haA, (hsame_A a ha₁).symm.trans hab⟩
+          ext b; simp [mem_roundStep_snd, hall_same]
         simp [pairDiff, hballs, hbins, card_symmDiff_insert_of_notMem haStar_not_rem]
       | some b₁ =>
         have hnext_b₀ : nextItem π S (binItem U' b₀) = binItem U' b₁ :=
           asBin?_eq_some_iff.mp hbin
         have hb₁B : b₁ ∈ B :=
           binItem_mem_activeItems.mp (hnext_b₀ ▸ nextItem_mem π hSne (binItem U' b₀))
-        have hno_ball_b₁ : ∀ a ∈ A, roundMatchOpt π A B a ≠ some b₁ := by
-          intro a haA hab
+        have hno_ball_b₁ : ∀ a, roundMatchOpt π A B a ≠ some b₁ := by
+          intro a hab
+          have haA : a ∈ A := (roundMatchOpt_mem_bins hab).1
           dsimp only [roundMatchOpt] at hab
           simp only [haA, ↓reduceIte] at hab
-          have hnext_a : nextItem π S (ballItem n' a) = binItem U' b₁ :=
-            asBin?_eq_some_iff.mp hab
           have hinj := nextItem_injective π S
             (ballItem_mem_activeItems.mpr haA) (binItem_mem_activeItems.mpr hb₀B)
-            (hnext_a.trans hnext_b₀.symm)
-          have hval := congrArg Fin.val hinj
-          simp only [ballItem, binItem, Fin.val_castAdd, Fin.val_natAdd] at hval
-          omega
-        have hb₁_rem : b₁ ∈ (roundStep π (A, B)).2 := by
-          simp only [roundStep, mem_sdiff_filter, hb₁B, true_and]
-          rintro ⟨a, haA, hab⟩
-          exact hno_ball_b₁ a haA hab
+            ((asBin?_eq_some_iff.mp hab).trans hnext_b₀.symm)
+          exact ballItem_ne_binItem a b₀ hinj
+        have hb₁_rem : b₁ ∈ (roundStep π (A, B)).2 :=
+          (mem_roundStep_snd _ _ _ _).mpr ⟨hb₁B, hno_ball_b₁⟩
         have hballs : (roundStep π (insert aStar A, B)).1 = (roundStep π (A, B)).1 := by
           ext a
-          simp only [roundStep, mem_sdiff_filter, mem_insert]
+          simp only [mem_roundStep_fst, mem_insert]
           rcases eq_or_ne a aStar with rfl | ha₁
           · simp [haStar_new, hbin, haStar]
-          · rw [hsame_A a ha₁]; simp [ha₁]
+          · simp [hsame_A a ha₁, ha₁]
         have hbins : (roundStep π (insert aStar A, B)).2 = (roundStep π (A, B)).2.erase b₁ := by
           ext b
-          simp only [roundStep, mem_sdiff_filter, mem_insert, mem_erase]
+          simp only [mem_roundStep_snd, mem_erase]
           constructor
           · rintro ⟨hbB, hno⟩
-            have hbb₁ : b ≠ b₁ := by
-              rintro rfl
-              exact hno ⟨aStar, Or.inl rfl, haStar_new.trans hbin⟩
-            refine ⟨hbb₁, hbB, ?_⟩
-            rintro ⟨a, haA, hab⟩
-            have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-            exact hno ⟨a, Or.inr haA, (hsame_A a ha₁).trans hab⟩
+            refine ⟨?_, hbB, fun a => ?_⟩
+            · rintro rfl; exact absurd (haStar_new.trans hbin) (hno aStar)
+            · by_cases ha : a = aStar
+              · simp [ha, roundMatchOpt, haStar]
+              · simpa [hsame_A a ha] using hno a
           · rintro ⟨hbb₁, hbB, hno⟩
-            refine ⟨hbB, ?_⟩
-            rintro ⟨a, rfl | haA, hab⟩
-            · rw [haStar_new, hbin] at hab
-              exact hbb₁ (Option.some.inj hab).symm
-            · have ha₁ : a ≠ aStar := fun h => haStar (h ▸ haA)
-              exact hno ⟨a, haA, (hsame_A a ha₁).symm.trans hab⟩
+            refine ⟨hbB, fun a => ?_⟩
+            by_cases ha : a = aStar
+            · rw [ha, haStar_new, hbin]; exact fun h => hbb₁ (Option.some.inj h).symm
+            · simpa [hsame_A a ha] using hno a
         simp [pairDiff, hballs, hbins, card_symmDiff_erase_of_mem hb₁_rem]
-  · -- `S = ∅`, so `A = ∅` and `B = ∅`
-    have hA : A = ∅ := by
-      ext a; simp only [notMem_empty, iff_false]
-      intro ha; exact hSne ⟨ballItem n' a, ballItem_mem_activeItems.mpr ha⟩
-    have hB : B = ∅ := by
-      ext b; simp only [notMem_empty, iff_false]
-      intro hb; exact hSne ⟨binItem U' b, binItem_mem_activeItems.mpr hb⟩
-    subst hA; subst hB
-    have hnone_empty : ∀ a : Fin U', roundMatchOpt π ∅ ∅ a = none := by
-      intro a; simp [roundMatchOpt]
-    have hnone_sing : ∀ a : Fin U', roundMatchOpt π {aStar} ∅ a = none := by
-      intro a
-      by_cases ha : a = aStar
-      · rw [ha]
-        have hS1 : activeItems ({aStar} : Finset (Fin U')) (∅ : Finset (Fin n')) =
-            {ballItem n' aStar} := by ext z; simp [activeItems]
-        have hmem := nextItem_mem π (singleton_nonempty (ballItem n' aStar)) (ballItem n' aStar)
-        rw [mem_singleton] at hmem
-        unfold roundMatchOpt
-        simp [hS1, hmem]
-      · simp [roundMatchOpt, ha]
+  · obtain ⟨rfl, rfl⟩ := eq_empty_of_not_nonempty_activeItems hSne
     have hrs1 : roundStep π (∅, ∅) = (∅, ∅) := by simp [roundStep]
     have hrs2 : roundStep π ({aStar}, ∅) = ({aStar}, ∅) := by
-      ext <;> simp [roundStep, hnone_sing]
-    have hcard1 : ((∅ : Finset (Fin U')) ∆ {aStar}).card = 1 :=
-      card_symmDiff_insert_of_notMem (notMem_empty aStar)
-    simp [hnone_empty, hnone_sing, hrs1, hrs2, pairDiff, hcard1]
+      ext <;> simp [roundStep, roundMatchOpt_eq_none_of_bins_empty]
+    simp [roundMatchOpt_eq_none_of_bins_empty, hrs1, hrs2, pairDiff, symmDiff_def]
+
+private theorem insert_eq_of_symmDiff_eq_singleton {α : Type*} [DecidableEq α] {s t : Finset α}
+    {x : α} (hx : s ∆ t = {x}) (hxt : x ∈ t) : t = insert x s := by
+  ext z
+  by_cases hz : z = x
+  · subst hz; simp [hxt]
+  · have hni : z ∉ s ∆ t := by rw [hx]; simp [hz]
+    simp only [mem_symmDiff, not_or, not_and, Classical.not_not] at hni
+    simp only [mem_insert, hz, false_or]
+    exact ⟨hni.2, hni.1⟩
 
 private theorem symmDiff_card_eq_one_cases {α : Type*} [DecidableEq α] {s t : Finset α}
     (h : (s ∆ t).card = 1) :
@@ -1696,22 +1582,8 @@ private theorem symmDiff_card_eq_one_cases {α : Type*} [DecidableEq α] {s t : 
   rcases card_eq_one.mp h with ⟨x, hx⟩
   have hmem : x ∈ s ∆ t := hx ▸ mem_singleton_self x
   rcases mem_symmDiff.mp hmem with ⟨hxs, hxt⟩ | ⟨hxt, hxs⟩
-  · refine Or.inr ⟨x, hxt, ?_⟩
-    ext z
-    by_cases hz : z = x
-    · subst hz; simp [hxs]
-    · have hni : z ∉ s ∆ t := by rw [hx]; simp [hz]
-      simp only [mem_symmDiff, not_or, not_and, Classical.not_not] at hni
-      simp only [mem_insert, hz, false_or]
-      exact ⟨hni.1, hni.2⟩
-  · refine Or.inl ⟨x, hxs, ?_⟩
-    ext z
-    by_cases hz : z = x
-    · subst hz; simp [hxt]
-    · have hni : z ∉ s ∆ t := by rw [hx]; simp [hz]
-      simp only [mem_symmDiff, not_or, not_and, Classical.not_not] at hni
-      simp only [mem_insert, hz, false_or]
-      exact ⟨hni.2, hni.1⟩
+  · exact Or.inr ⟨x, hxt, insert_eq_of_symmDiff_eq_singleton (symmDiff_comm s t ▸ hx) hxs⟩
+  · exact Or.inl ⟨x, hxs, insert_eq_of_symmDiff_eq_singleton hx hxt⟩
 
 /-- Single-round invariant of **Claim 3.4**: whenever `pairDiff AB AB' ≤ 1`, `roundStep π`
 preserves `pairDiff ≤ 1` and alters at most `2` balls' single-round match assignments. -/
@@ -1735,14 +1607,7 @@ private theorem pairDiff_roundStep_le_one {U' n' : ℕ} (π : RoundPerm U' n')
       subst hBeq
       rcases symmDiff_card_eq_one_cases hA1 with ⟨aStar, ha, rfl⟩ | ⟨aStar, ha, rfl⟩
       · exact roundStep_insert_ball π ha B
-      · obtain ⟨hpd, hcd⟩ := roundStep_insert_ball π ha B
-        rw [pairDiff_comm] at hpd
-        have hcd' : (Finset.univ.filter fun a =>
-            roundMatchOpt π (insert aStar A') B a ≠ roundMatchOpt π A' B a).card =
-            (Finset.univ.filter fun a =>
-              roundMatchOpt π A' B a ≠ roundMatchOpt π (insert aStar A') B a).card := by
-          congr 1; ext a; simp [ne_comm]
-        exact ⟨hpd, hcd' ▸ hcd⟩
+      · simpa only [pairDiff_comm, ne_comm] using roundStep_insert_ball π ha B
     · have hAeq : A = A' := symmDiff_eq_bot.mp (card_eq_zero.mp hA0)
       subst hAeq
       dsimp only
@@ -1750,13 +1615,7 @@ private theorem pairDiff_roundStep_le_one {U' n' : ℕ} (π : RoundPerm U' n')
       · obtain ⟨hpd, hcd⟩ := roundStep_insert_bin π A hb
         exact ⟨hpd, by omega⟩
       · obtain ⟨hpd, hcd⟩ := roundStep_insert_bin π A hb
-        rw [pairDiff_comm] at hpd
-        have hcd' : (Finset.univ.filter fun a =>
-            roundMatchOpt π A (insert bStar B') a ≠ roundMatchOpt π A B' a).card =
-            (Finset.univ.filter fun a =>
-              roundMatchOpt π A B' a ≠ roundMatchOpt π A (insert bStar B') a).card := by
-          congr 1; ext a; simp [ne_comm]
-        exact ⟨hpd, by omega⟩
+        simpa only [pairDiff_comm, ne_comm] using And.intro hpd (by omega : _ ≤ 2)
 
 private theorem pairDiff_stateAt_le_one {U' n' : ℕ} (h : Scheme U' n')
     {A A' : Finset (Fin U')} {B B' : Finset (Fin n')}
@@ -1830,6 +1689,26 @@ private theorem roundsOn_le_succ_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U'
       (card_le_card (filter_subset _ _)).trans (by simp)
     omega
 
+private theorem matchAux_eq_of_roundsOn_le {U' n' : ℕ} (h : Scheme U' n')
+    {A : Finset (Fin U')} {B : Finset (Fin n')} (hle : A.card ≤ B.card)
+    {M k : ℕ} (hRM : roundsOn h A B ≤ M) (hMk : M ≤ k) (hkU : k ≤ U') :
+    matchAux h A B k = matchAux h A B M := by
+  induction k with
+  | zero => rw [Nat.le_zero.mp hMk]
+  | succ k ih =>
+    rcases eq_or_lt_of_le hMk with rfl | hMlt
+    · rfl
+    · have hkM : M ≤ k := Nat.lt_succ_iff.mp hMlt
+      have hkU' : k < U' := Nat.lt_of_succ_le hkU
+      have hA_emp : (stateAt h A B k).1 = ∅ :=
+        stateAt_balls_eq_empty_of_roundsOn_le h hle (hRM.trans hkM)
+      funext a
+      dsimp only [matchAux]
+      rw [ih hkM hkU'.le]
+      cases matchAux h A B M a with
+      | some b => rfl
+      | none => simp [hkU', roundMatchOpt, hA_emp]
+
 /-- **Claim 3.4** relocation bound ([LiLiangYuZhou2024, Section 3.1]): under
 `pairDiff (A, B) (A', B') ≤ 1`, at most `2 * (roundsOn h A B + 1)` balls change their assigned bin
 (including any inserted or deleted ball). -/
@@ -1871,48 +1750,27 @@ private theorem relocDist_le_of_pairDiff_le_one {U' n' : ℕ} (h : Scheme U' n')
         _ ≤ Dk.card + Rk.card := card_union_le _ _
         _ ≤ 2 * k + 2 := Nat.add_le_add hDk hRk
         _ = 2 * (k + 1) := by ring
-  have hfreeze : ∀ k, M ≤ k → k ≤ U' →
-      matchAux h A B k = matchAux h A B M ∧ matchAux h A' B' k = matchAux h A' B' M := by
-    intro k hkM hkU
-    induction k with
-    | zero =>
-      have hM0 : M = 0 := Nat.le_zero.mp hkM
-      rw [hM0]; exact ⟨rfl, rfl⟩
-    | succ k ih =>
-      rcases eq_or_lt_of_le hkM with hMeq | hMlt
-      · rw [hMeq]; exact ⟨rfl, rfl⟩
-      · have hkM' : M ≤ k := Nat.lt_succ_iff.mp hMlt
-        have hkU' : k < U' := Nat.lt_of_succ_le hkU
-        obtain ⟨ih1, ih2⟩ := ih hkM' hkU'.le
-        have hmax_le : max (roundsOn h A B) (roundsOn h A' B') ≤ k := by
-          have hMU : M = max (roundsOn h A B) (roundsOn h A' B') :=
-            min_eq_right (by omega)
-          omega
-        have hA_emp : (stateAt h A B k).1 = ∅ :=
-          stateAt_balls_eq_empty_of_roundsOn_le h hle ((le_max_left _ _).trans hmax_le)
-        have hA'_emp : (stateAt h A' B' k).1 = ∅ :=
-          stateAt_balls_eq_empty_of_roundsOn_le h hle' ((le_max_right _ _).trans hmax_le)
-        refine ⟨?_, ?_⟩
-        · funext a
-          dsimp only [matchAux]
-          rw [ih1]
-          cases matchAux h A B M a with
-          | some b => rfl
-          | none => simp [hkU', roundMatchOpt, hA_emp]
-        · funext a
-          dsimp only [matchAux]
-          rw [ih2]
-          cases matchAux h A' B' M a with
-          | some b => rfl
-          | none => simp [hkU', roundMatchOpt, hA'_emp]
-  obtain ⟨hf1, hf2⟩ := hfreeze U' (min_le_left _ _) le_rfl
+  have hf : matchAux h A B U' = matchAux h A B M ∧ matchAux h A' B' U' = matchAux h A' B' M := by
+    by_cases hMU : M = U'
+    · rw [hMU]; exact ⟨rfl, rfl⟩
+    · have hmax : max (roundsOn h A B) (roundsOn h A' B') = M :=
+        (min_eq_right
+          (by have := min_le_left U' (max (roundsOn h A B) (roundsOn h A' B')); omega)).symm
+      exact ⟨matchAux_eq_of_roundsOn_le h hle ((le_max_left _ _).trans_eq hmax)
+          (min_le_left _ _) le_rfl,
+        matchAux_eq_of_roundsOn_le h hle' ((le_max_right _ _).trans_eq hmax)
+          (min_le_left _ _) le_rfl⟩
   have hT'_le : roundsOn h A' B' ≤ roundsOn h A B + 1 :=
     roundsOn_le_succ_of_pairDiff_le_one h hle hle' hp
   have hM_le : M ≤ roundsOn h A B + 1 :=
     (min_le_right _ _).trans (max_le (Nat.le_succ _) hT'_le)
   dsimp only [relocDist, matchOptOn]
-  rw [hf1, hf2]
+  rw [hf.1, hf.2]
   exact (haux_diff M le_rfl).trans (Nat.mul_le_mul_left 2 hM_le)
+
+private theorem pairDiff_erase_univ_le_one {U' n' : ℕ} (A : Finset (Fin U')) (x : Fin U') :
+    pairDiff (A, (Finset.univ : Finset (Fin n'))) (A.erase x, Finset.univ) ≤ 1 := by
+  by_cases hx : x ∈ A <;> simp [pairDiff, hx, card_symmDiff_erase_of_mem, erase_eq_of_notMem]
 
 /-- Single-key insertion relocation bound (`Claim 3.4`, `B = Finset.univ`). -/
 theorem relocDist_insert_le {U' n' : ℕ} (h : Scheme U' n')
@@ -1929,14 +1787,9 @@ theorem relocDist_insert_le {U' n' : ℕ} (h : Scheme U' n')
 /-- Single-key deletion relocation bound (`Claim 3.4`, `B = Finset.univ`). -/
 theorem relocDist_delete_le {U' n' : ℕ} (h : Scheme U' n')
     {A : Finset (Fin U')} (x : Fin U') (hA : A.card ≤ n') :
-    relocDist (matchOpt h A) (matchOpt h (A.erase x)) ≤ 2 * (rounds h A + 1) := by
-  have her : (A.erase x).card ≤ n' := card_erase_le.trans hA
-  have hp : pairDiff (A, (Finset.univ : Finset (Fin n')))
-      (A.erase x, (Finset.univ : Finset (Fin n'))) ≤ 1 := by
-    by_cases hx : x ∈ A
-    · simp [pairDiff, card_symmDiff_erase_of_mem hx]
-    · simp [pairDiff, erase_eq_of_notMem hx]
-  exact relocDist_le_of_pairDiff_le_one h (by simpa using hA) (by simpa using her) hp
+    relocDist (matchOpt h A) (matchOpt h (A.erase x)) ≤ 2 * (rounds h A + 1) :=
+  relocDist_le_of_pairDiff_le_one h (by simpa using hA)
+    (by simpa using card_erase_le.trans hA) (pairDiff_erase_univ_le_one A x)
 
 /-- Atomic key-replacement relocation bound (`Section 5.2` leaf minimap replacement
 `(A \ {x}) ∪ {y}` at fixed capacity `A.card ≤ n'`): decomposes through `A.erase x` without ever
@@ -1947,17 +1800,30 @@ theorem relocDist_replace_le {U' n' : ℕ} (h : Scheme U' n')
     relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) ≤ 4 * rounds h A + 6 := by
   have h1 := relocDist_delete_le h x hA
   have h2 := relocDist_insert_le h (A := A.erase x) y hrep
-  have hT : rounds h (A.erase x) ≤ rounds h A + 1 := by
-    have hp : pairDiff (A, (Finset.univ : Finset (Fin n')))
-        (A.erase x, (Finset.univ : Finset (Fin n'))) ≤ 1 := by
-      by_cases hx : x ∈ A
-      · simp [pairDiff, card_symmDiff_erase_of_mem hx]
-      · simp [pairDiff, erase_eq_of_notMem hx]
-    exact roundsOn_le_succ_of_pairDiff_le_one h (by simpa using hA)
-      (by simpa using card_erase_le.trans hA) hp
+  have hT : rounds h (A.erase x) ≤ rounds h A + 1 :=
+    roundsOn_le_succ_of_pairDiff_le_one h (by simpa using hA)
+      (by simpa using card_erase_le.trans hA) (pairDiff_erase_univ_le_one A x)
   have htri := relocDist_triangle (matchOpt h A) (matchOpt h (A.erase x))
     (matchOpt h (insert y (A.erase x)))
   omega
+
+/-- A scheme-indexed cost bounded by `a + b * rounds h A` for every scheme `h` has expectation at
+most `(a + 3 b) log (max |A| 2)`: average the pointwise bound and apply `expect_rounds_le`. -/
+theorem expect_le_of_le_add_mul_rounds {U' n' : ℕ} {A : Finset (Fin U')}
+    (hA : A.card ≤ n') (cost : Scheme U' n' → ℕ) (a b : ℕ)
+    (hcost : ∀ h, cost h ≤ a + b * rounds h A) :
+    (∑ h : Scheme U' n', (schemePMF U' n' h).toReal * (cost h : ℝ)) ≤
+      ((a + 3 * b : ℕ) : ℝ) * (Nat.clog 2 (max A.card 2) : ℝ) := by
+  have hpt : ∀ h, (cost h : ℝ) ≤ (a : ℝ) + (b : ℝ) * (rounds h A : ℝ) := fun h => by
+    exact_mod_cast hcost h
+  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
+  have h2 := expect_rounds_le (U' := U') hA
+  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
+    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
+  have hb := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg (α := ℝ) b)
+  have ha := mul_le_mul_of_nonneg_left hclog1 (Nat.cast_nonneg (α := ℝ) a)
+  push_cast
+  linarith
 
 /-- **Lemma 3.2** ([LiLiangYuZhou2024, Section 3.1]) for ball insertion:
 expected relocation cost is `O(log (max |A| 2))`. -/
@@ -1967,19 +1833,9 @@ theorem expect_relocDist_insert_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin 
       (schemePMF U' n' h).toReal * (relocDist (matchOpt h A) (matchOpt h (insert x A)) : ℝ)) ≤
       8 * (Nat.clog 2 (max A.card 2) : ℝ) := by
   have hA : A.card ≤ n' := (card_le_card (subset_insert x A)).trans hins
-  have hpt : ∀ h : Scheme U' n',
-      (relocDist (matchOpt h A) (matchOpt h (insert x A)) : ℝ) ≤ 2 + 2 * (rounds h A : ℝ) := by
-    intro h
-    have hnat := relocDist_insert_le h x hins
-    have hR : (relocDist (matchOpt h A) (matchOpt h (insert x A)) : ℝ) ≤
-        ((2 * (rounds h A + 1) : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
-  have h2 := expect_rounds_le (U' := U') hA
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
-  linarith
+  refine (expect_le_of_le_add_mul_rounds hA _ 2 2 fun h => ?_).trans_eq (by norm_num)
+  have := relocDist_insert_le h x hins
+  omega
 
 /-- **Lemma 3.2** for ball deletion: expected relocation cost is `O(log (max |A| 2))`. -/
 theorem expect_relocDist_delete_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin U')
@@ -1987,19 +1843,9 @@ theorem expect_relocDist_delete_le {U' n' : ℕ} {A : Finset (Fin U')} (x : Fin 
     (∑ h : Scheme U' n',
       (schemePMF U' n' h).toReal * (relocDist (matchOpt h A) (matchOpt h (A.erase x)) : ℝ)) ≤
       8 * (Nat.clog 2 (max A.card 2) : ℝ) := by
-  have hpt : ∀ h : Scheme U' n',
-      (relocDist (matchOpt h A) (matchOpt h (A.erase x)) : ℝ) ≤ 2 + 2 * (rounds h A : ℝ) := by
-    intro h
-    have hnat := relocDist_delete_le h x hA
-    have hR : (relocDist (matchOpt h A) (matchOpt h (A.erase x)) : ℝ) ≤
-        ((2 * (rounds h A + 1) : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
-  have h2 := expect_rounds_le (U' := U') hA
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
-  linarith
+  refine (expect_le_of_le_add_mul_rounds hA _ 2 2 fun h => ?_).trans_eq (by norm_num)
+  have := relocDist_delete_le h x hA
+  omega
 
 /-- **Lemma 3.2** for atomic ball replacement `(A.erase x) ∪ {y}`: expected relocation cost is
 `O(log (max |A| 2))`. -/
@@ -2009,19 +1855,8 @@ theorem expect_relocDist_replace_le {U' n' : ℕ} {A : Finset (Fin U')}
       (schemePMF U' n' h).toReal *
         (relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) : ℝ)) ≤
       18 * (Nat.clog 2 (max A.card 2) : ℝ) := by
-  have hpt : ∀ h : Scheme U' n',
-      (relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) : ℝ) ≤
-        6 + 4 * (rounds h A : ℝ) := by
-    intro h
-    have hnat := relocDist_replace_le h x y hA hrep
-    have hR : (relocDist (matchOpt h A) (matchOpt h (insert y (A.erase x))) : ℝ) ≤
-        ((4 * rounds h A + 6 : ℕ) : ℝ) := by exact_mod_cast hnat
-    push_cast at hR
-    linarith
-  have h1 := Cslib.Probability.PMF.sum_le_affine (schemePMF U' n') hpt
-  have h2 := expect_rounds_le (U' := U') hA
-  have hclog1 : (1 : ℝ) ≤ Nat.clog 2 (max A.card 2) := by
-    exact_mod_cast (Nat.lt_clog_iff_pow_lt Nat.one_lt_two).mpr (by simp : 2 ^ 0 < max A.card 2)
-  linarith
+  refine (expect_le_of_le_add_mul_rounds hA _ 6 4 fun h => ?_).trans_eq (by norm_num)
+  have := relocDist_replace_le h x y hA hrep
+  omega
 
 end Cslib.DataStructure.Dictionary.DynamicMatching

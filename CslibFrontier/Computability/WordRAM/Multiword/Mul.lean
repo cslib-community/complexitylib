@@ -66,10 +66,8 @@ private theorem value_cons (β : ℕ) (x : Data (r + 4)) (d : Fin (r + 4))
 private theorem value_eq_of_frame {β : ℕ} {x y : Data (r + 4)}
     {ds es : List (Fin (r + 4))}
     (hf : Frame x y ds) (he : ∀ i ∈ es, i ∉ ds ∧ i ≠ total ∧ i ≠ carry) :
-    value β y es = value β x es := by
-  unfold value
-  congr 1
-  exact List.map_congr_left fun i hi => hf.2 i (he i hi).1 (he i hi).2.1 (he i hi).2.2
+    value β y es = value β x es :=
+  value_congr fun i hi => hf.2 i (he i hi).1 (he i hi).2.1 (he i hi).2.2
 
 /-- The in-place form of `LimbUpdate.program`: five ordinary instructions for one multiply-add,
 overwriting the destination digit after reading it. -/
@@ -206,10 +204,7 @@ private theorem exec_row {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
             simp only [List.mem_singleton]
             rintro rfl
             exact hd0.2 (hbs i (by simp [hi])), hI i (hbs i (by simp [hi]))⟩)
-      have hvalds : value (radix w) z ds = value (radix w) x ds := by
-        unfold value
-        congr 1
-        exact List.map_congr_left hzds
+      have hvalds : value (radix w) z ds = value (radix w) x ds := value_congr hzds
       refine ⟨y, ?_, ?_, hyc, ?_, ?_⟩
       · simpa only [row, List.length_cons, Nat.mul_add, Nat.mul_one,
           Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using he.seq hey
@@ -326,10 +321,8 @@ private theorem exec_rows {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
     refine ⟨y, ?_, ?_, ?_, ?_⟩
     · ram_eval [rows, rowCost, y]
     · simpa only [List.append_nil, Bounded] using fun i hi => (hy i hi) ▸ hd i hi
-    · simp only [List.append_nil, value, List.map_nil, Nat.ofDigits_nil, zero_mul,
-        add_zero]
-      congr 1
-      exact List.map_congr_left hy
+    · rw [List.append_nil, value_congr hy]
+      simp [value]
     · simpa only [List.append_nil] using hf
   | cons a as ih =>
     cases os with
@@ -420,24 +413,17 @@ private theorem exec_rows {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
         have hva := h₀ a (hI a (has a (by simp))).2
         have hvb := value_eq_of_frame (β := radix w) (es := bs) hx₀ (fun i hi =>
           ⟨fun hm => (hds' i hm).2 (hbs i hi), hI i (hbs i hi)⟩)
-        have hvd : value (radix w) x₀ ds = value (radix w) x ds := by
-          unfold value
-          congr 1
-          exact List.map_congr_left fun i hi => h₀ i (digit_ne (hds' i hi).1).2.1
+        have hvd : value (radix w) x₀ ds = value (radix w) x ds :=
+          value_congr fun i hi => h₀ i (digit_ne (hds' i hi).1).2.1
         rw [hva, hvb, hvd]
         simp only [x₀, Data.set_regs, Function.update_self, add_zero]
         exact Nat.add_comm _ _
-      have huValAs : value (radix w) u as = value (radix w) x as := by
-        unfold value
-        congr 1
-        exact List.map_congr_left fun i hi => huI i (has i (by simp [hi]))
+      have huValAs : value (radix w) u as = value (radix w) x as :=
+        value_congr fun i hi => huI i (has i (by simp [hi]))
       have huValBs : value (radix w) u (zero :: bs) =
           radix w * value (radix w) x bs := by
-        rw [value_cons, huI zero hzI, hz, zero_add]
-        congr 1
-        unfold value
-        congr 1
-        exact List.map_congr_left fun i hi => huI i (hbs i hi)
+        rw [value_cons, huI zero hzI, hz, zero_add,
+          value_congr fun i hi => huI i (hbs i hi)]
       refine ⟨y, ?_, ?_, ?_, ?_⟩
       · have he₀ : Exec w (.op (.const (B := .standard) carry 0)) x x₀ 1 := by
           ram_eval [x₀]
@@ -558,16 +544,10 @@ theorem exec {w : ℕ} (hw : 2 ≤ w) (as bs ds os : List (Fin (r + 4)))
     (fun i hi => by rw [hui i (by simp [hi])]; exact ha i hi)
     (fun i hi => by rw [hui i (by simp [hi])]; exact hb i hi)
     (fun i hi => by rw [hu i hi]; have := one_lt_radix hw; omega)
-  have huval : value (radix w) u ds = 0 := by
-    unfold value
-    have hm : ds.map u.regs = List.replicate ds.length 0 := by
-      simpa only [List.map_const'] using List.map_congr_left hu
-    rw [hm, Nat.ofDigits_replicate_zero]
+  have huval : value (radix w) u ds = 0 := value_eq_zero_of_forall hu
   have hvals (es : List (Fin (r + 4))) (hes : es ⊆ as ++ bs) :
-      value (radix w) u es = value (radix w) x es := by
-    unfold value
-    congr 1
-    exact List.map_congr_left fun i hi => hui i (hes hi)
+      value (radix w) u es = value (radix w) x es :=
+    value_congr fun i hi => hui i (hes hi)
   refine ⟨y, ?_, hyb, ?_, ?_, ?_⟩
   · unfold program
     convert (exec_setup hw x).seq (heu.seq hey) using 1

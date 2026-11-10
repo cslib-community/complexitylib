@@ -159,8 +159,7 @@ theorem truncContraction_congr {entry entry' : T → List Bool → List ℕ} {P 
     G.truncContraction entry P ℓ = G.truncContraction entry' P ℓ := by
   have hG : truncHom P ℓ (G.polyContraction entry) = truncHom P ℓ (G.polyContraction entry') := by
     rw [truncHom_polyContraction, truncHom_polyContraction]
-    congr 1
-    funext t bs
+    congr 1 with t bs : 2
     exact truncHom_eq_iff.mpr fun j hj => by simpa only [coeff_ofCoeffList] using h t bs j hj
   refine List.map_congr_left fun j hj => truncHom_eq_iff.mp hG j (List.mem_range.mp hj)
 
@@ -299,8 +298,7 @@ theorem interpRecover_eq {P ℓ : ℕ} {fl : List ℕ}
     exact (degree_map_le.trans degree_le_natDegree).trans_lt (by exact_mod_cast hdeg)
   have hZ : Z' = Lagrange.ringInterpolate univ ζ fun i => val P fl (ys.getD i []) := by
     conv_lhs => rw [Lagrange.eq_ringInterpolate (fun i _ j _ hij => hunit hij) hdeg']
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact (hys i i.2).symm
   have hpval : pval P fl (interp P fl pts ys) = Z' := hg.trans hZ.symm
   refine List.map_congr_left fun j _ => ?_

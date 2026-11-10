@@ -3623,8 +3623,7 @@ theorem map_extractRemSeed_eval_remInitComp (base w w₀ n : ℕ) (x : Data rQF)
         (ProbComp.eval (ProbComp.unifFin (2 ^ (w₀ - 1) - 1))).map e := by
     dsimp only [remInitComp]
     rw [ProbComp.eval_bind, PMF.map_bind]
-    congr 1
-    funext γ
+    congr 1 with γ : 1
     simp only [ProbComp.eval_pure, PMF.pure_map, Function.comp_apply]
     congr 1
     apply Fin.ext

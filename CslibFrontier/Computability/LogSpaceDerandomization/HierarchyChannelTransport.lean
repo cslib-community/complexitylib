@@ -104,8 +104,7 @@ theorem pilot_equiv {A' B' : Type*} [Fintype A'] [Fintype B']
     (hX : ∀ a v, X a v ↔ X' (e a) v) (hY : ∀ b v, Y b v ↔ Y' (d b) v) :
     P.pilot X Y f C = P.pilot X' Y' f C := by
   simp only [pilot_eq]
-  congr 1
-  funext G
+  congr 1 with G : 1
   exact columnDetector_equiv X Y e d X' Y' hX hY P.ϕ P.ρ P.J P.K f G
 
 omit [Nonempty A] [Nonempty B] in
@@ -123,8 +122,7 @@ omit [Nonempty B] in
 theorem pilot_source_pi :
     P.pilot (fun (σ : R → A) v => X (σ s) v) Y f C = P.pilot X Y f C := by
   simp only [pilot_eq]
-  congr 1
-  funext G
+  congr 1 with G : 1
   exact columnDetector_source_pi X Y s P.ϕ P.ρ P.J P.K f G
 
 omit [Nonempty B] in
@@ -139,8 +137,7 @@ theorem pilot_pi :
     P.pilot (fun (σ : R → A) v => X (σ s) v)
       (fun (σ : T → B) v => Y (σ t) v) f C = P.pilot X Y f C := by
   simp only [pilot_eq]
-  congr 1
-  funext G
+  congr 1 with G : 1
   exact columnDetector_pi X Y s t P.ϕ P.ρ P.J P.K f G
 
 /-- Every genuine correction iterate has the same target after source-role reset. -/

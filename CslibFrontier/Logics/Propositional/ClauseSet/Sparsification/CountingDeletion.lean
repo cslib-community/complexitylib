@@ -33,6 +33,7 @@ survival and the later insertion-event balance remains separate.
 ## Main results
 
 * `Cslib.Logic.PL.ClauseSet.Sparsification.exists_mem_counting_node_subset`: root witnesses persist.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.reduced_counting_node`: path nodes stay reduced.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.card_counting_deleted_marked_le`: deletion charge.
 -/
 
@@ -63,6 +64,18 @@ theorem exists_mem_counting_node_subset
       (ψ := ψ t ∪ countingIntro (ψ t) (c t) (H t) (b t)) (mem_union_left _ hD)
     exact ⟨E, hE, hED.trans hDC⟩
 
+/-- Every node of an actual counting path from a reduced root is reduced: each later node is the
+output of `reduce`. -/
+theorem reduced_counting_node
+    (N : ℕ) (ψ : ℕ → ClauseSet V) (c : ℕ → ℕ) (H : ℕ → Finset (Literal V)) (b : ℕ → Bool)
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hred : Reduced (ψ 0)) {t : ℕ} (ht : t ≤ N) : Reduced (ψ t) := by
+  cases t with
+  | zero => exact hred
+  | succ t =>
+    rw [hstep t (by omega), countingChild_eq_reduce_union]
+    exact reduced_reduce _
+
 /-- The width-`j` marked clauses deleted at one actual counting step can be charged to that step's
 new marked insertion events of smaller width, with the source's `2 * θ (j - i)` charge bound.
 
@@ -81,12 +94,7 @@ theorem card_counting_deleted_marked_le {θ : ℕ → ℕ} (hθ : ∀ r, 1 ≤ �
   let I := countingIntro (ψ m) (c m) (H m) (b m) \ (ψ m ∪ ψ 0)
   set E := (ψ m).filter fun C => C ∉ ψ 0 ∧ C.card = j ∧ C ∉ ψ (m + 1)
   change E.card ≤ ∑ i ∈ Ico 1 j, 2 * θ (j - i) * (I.filter fun D => D.card = i).card
-  have hredm : Reduced (ψ m) := by
-    cases m with
-    | zero => exact hred
-    | succ m =>
-      rw [hstep m (by omega), countingChild_eq_reduce_union]
-      exact reduced_reduce _
+  have hredm := reduced_counting_node N ψ c H b hstep hred hm.le
   have hcover : E ⊆ (I.filter (·.card < j)).biUnion fun D =>
       (ψ m).filter fun C => C ∉ ψ 0 ∧ C.card = j ∧ D ⊆ C := by
     intro C hC

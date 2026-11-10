@@ -85,8 +85,7 @@ theorem complexity_le_card_add [Finite ι] {f : (ι → Bool) → β} (S : Finse
     (depth_graft_le _ _ _ hd).trans_eq (by rw [length_toList])⟩
   rw [eval_graft, ht]
   dsimp only
-  congr 1
-  funext j
+  congr 1 with j : 1
   by_cases hj : j ∈ S <;> simp [hj]
 
 end DecisionTree

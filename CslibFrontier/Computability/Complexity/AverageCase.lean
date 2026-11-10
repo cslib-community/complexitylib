@@ -336,10 +336,7 @@ theorem MildlyHardOnAverageToOneSidedApprox.mildlyHardOnAverageToApprox {g : ℕ
   refine (ENNReal.toReal_mono (PMF.apply_ne_top _ _) ?_).trans hn
   apply PMF.bind_apply_mono_on_support _ true
   intro x hx
-  have hlen : x.length = n := by
-    simp only [BitString.uniformList, PMF.mem_support_map_iff] at hx
-    rcases hx with ⟨y, -, rfl⟩
-    exact List.length_ofFn
+  have hlen : x.length = n := BitString.length_of_mem_support_uniformList hx
   rw [ProbComp.eval_map, PMF.map_comp]
   apply PMF.bind_apply_mono_on_support _ true
   intro v _
@@ -365,10 +362,7 @@ theorem MildlyHardOnAverageToOneSidedApproxDet.mildlyHardOnAverageToApproxDet {g
   filter_upwards [hH (fun x => H x - g x.length) hpoly'] with n hn
   refine (map_decide_le_of_imp _ _ ?_).trans hn
   intro x hx hdist
-  have hlen : x.length = n := by
-    simp only [BitString.uniformList, PMF.mem_support_map_iff] at hx
-    rcases hx with ⟨y, -, rfl⟩
-    exact List.length_ofFn
+  have hlen : x.length = n := BitString.length_of_mem_support_uniformList hx
   rw [hlen]
   unfold Nat.dist at hdist
   omega

@@ -152,14 +152,14 @@ theorem IsConsistent.measure_pi_lt_error_le_of_vcSampleSize_le {C : ConceptClass
     Measure.pi (fun _ : Fin m => D) {S | ENNReal.ofReal ε < error D (A S)} ≤
       ENNReal.ofReal δ := by
   obtain ⟨h8, hgrowth⟩ := growthFunction_le_of_vcSampleSize_le hC hε hε1 hδ hδ1 hm
-  have h2 : (2 : ℝ≥0∞) * growthFunction C (m + m) ≤ ENNReal.ofReal δ * 2 ^ ⌈ε * m / 2⌉₊ := by
-    have := ENNReal.ofReal_le_ofReal hgrowth
-    rwa [ENNReal.ofReal_mul (by norm_num : (0 : ℝ) ≤ 2), ENNReal.ofReal_ofNat,
-      ENNReal.ofReal_natCast, ENNReal.ofReal_mul' (by positivity),
-      ENNReal.ofReal_pow (by norm_num : (0 : ℝ) ≤ 2), ENNReal.ofReal_ofNat] at this
-  exact (ENNReal.mul_le_mul_iff_left (pow_ne_zero _ two_ne_zero)
-    (ENNReal.pow_ne_top ENNReal.ofNat_ne_top)).1
-    ((hA.measure_pi_lt_error_mul_two_pow_le hD h8).trans h2)
+  have hloss : (growthFunction (lossClass C) (m + m) : ℝ) ≤ growthFunction C (m + m) := by
+    exact_mod_cast growthFunction_lossClass_le C _
+  -- the ε-net theorem for the loss class, with its growth function bounded by that of `C`
+  calc Measure.pi (fun _ : Fin m => D) {S | ENNReal.ofReal ε < error D (A S)}
+      ≤ Measure.pi (fun _ : Fin m => D) {S | ¬ IsEpsNet D (lossClass C) ε S} :=
+        measure_mono_ae (hA.ae_not_isEpsNet_of_lt_error hD ε)
+    _ ≤ ENNReal.ofReal δ :=
+        measure_pi_not_isEpsNet_le_of_growthFunction_le D (lossClass C) h8 (by linarith)
 
 /-- **The VC upper bound for realizable PAC learning** on a countable domain
 [BlumerEhrenfeuchtHausslerWarmuth1989, Theorem 2.1]: a class whose shattered finite sets have at

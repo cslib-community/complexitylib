@@ -140,8 +140,7 @@ private theorem rank_of_ite_sandwich (o : ι) {p s : K} (hN : (Fintype.card ι :
     exact sum_ite_eq_zero_else_one (K := K) o
   have hDD : D * D = D := by
     rw [hD, Matrix.diagonal_mul_diagonal]
-    congr 1
-    funext i
+    congr 1 with i : 1
     split_ifs <;> simp
   have hA : ∀ i j, (J - 1) i j = if i = j then 0 else 1 := fun i j => by
     by_cases h : i = j <;> simp [hJ, h]

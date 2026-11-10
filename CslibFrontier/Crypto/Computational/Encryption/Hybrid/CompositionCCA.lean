@@ -153,8 +153,7 @@ private theorem interpret_substituted_unit {α : Type}
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request s => pure (reply request, s))) program := by
   rw [OracleComp.interpret_interpret]
-  congr 1
-  funext q
+  congr 1 with q : 1
   cases q with
   | inl m =>
     simp only [OracleComp.sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
@@ -194,15 +193,13 @@ private theorem run_hybridKEMCCAContinuation (E : SymmetricCipher)
     StateT.run_bind]
   rw [hchoose]
   simp only [bind_assoc]
-  congr 1
-  funext choice
+  congr 1 with choice : 1
   by_cases hv : ((ChoiceOut.msg₀ choice.1).length == n &&
       (ChoiceOut.msg₁ choice.1).length == n) = true
   · simp only [hv, ↓reduceIte, OracleComp.interpret_bind, StateT.run_bind,
       ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift,
       ProbComp.unifFin, OracleComp.interpret_query_eq_self, bind_map_left, bind_assoc]
-    congr 1
-    funext ctD
+    congr 1 with ctD : 1
     have hguess := interpret_substituted_unit
       (cca2Phase2Oracle encBits decaps n sk ctK)
       (fun request => if request.2 == encPair encBits encBits (ctK, ctD) then pure []
@@ -252,8 +249,7 @@ theorem eval_kemCCAIdealGame_hybridToKEMCCA (E : SymmetricCipher)
   intro kc _
   rw [← hlaw, PMF.bind_map]
   simp only [BitString.eval_sampleList]
-  congr 1
-  funext raw
+  congr 1 with raw : 1
   simp only [kemCCAContinuation, hybridToKEMCCA, encPair_apply, encBits_apply,
     unframe_frame_append, dropFrame_frame_append]
   exact congrArg ProbComp.eval
@@ -335,8 +331,7 @@ theorem eval_kemCCARealGame_hybridToKEMCCA (E : SymmetricCipher)
   rw [PMF.bind_congr_on_support _ _ _ hfixed]
   simp only [cca2GameOn, ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext choice
+  congr 1 with choice : 1
   by_cases hv : ((ChoiceOut.msg₀ choice.1).length == n &&
       (ChoiceOut.msg₁ choice.1).length == n) = true
   · simp only [hv, ↓reduceIte, hybridEncrypt, ProbComp.eval_bind, ProbComp.eval_map,
@@ -592,8 +587,7 @@ private theorem eval_kemCCARealGame_hiddenBit (E : SymmetricCipher)
     ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind, Function.comp_def,
     OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind, PMF.map_bind, PMF.pure_map]
   rw [PMF.bind_comm]
-  congr 1
-  funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
 
 private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
@@ -614,11 +608,9 @@ private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
     Function.comp_def, OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind,
     PMF.map_bind, PMF.pure_map]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext keys
+  congr 1 with keys : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext kc
+  congr 1 with kc : 1
   rw [PMF.bind_comm]
 
 /-- Exact signed real-world selector identity, before taking any absolute values. -/
@@ -635,10 +627,7 @@ theorem probability_kemCCARealGame_hybridToKEMCCAHiddenBit (E : SymmetricCipher)
         Game.succProbability (ProbComp.eval (kemCCARealGame keyGen encaps decaps
           (hybridToKEMCCA E F decBound adversary true) n))) / 2 := by
   rw [eval_kemCCARealGame_hiddenBit]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- Exact signed ideal-world selector identity, with the same bit and output conventions. -/
 theorem probability_kemCCAIdealGame_hybridToKEMCCAHiddenBit (E : SymmetricCipher)
@@ -654,10 +643,7 @@ theorem probability_kemCCAIdealGame_hybridToKEMCCAHiddenBit (E : SymmetricCipher
         Game.succProbability (ProbComp.eval (kemCCAIdealGame keyLen keyGen encaps decaps
           (hybridToKEMCCA E F decBound adversary true) n))) / 2 := by
   rw [eval_kemCCAIdealGame_hiddenBit]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    PMF.bind_apply_toReal, Fintype.sum_bool, PMF.uniformOfFintype_apply, Fintype.card_bool]
-  norm_num [PMF.toReal_false_eq_one_sub]
-  ring
+  exact Game.succProbability_uniform_bool_xor _
 
 /-- The two KEM hops have total loss two, with one native hidden-bit KEM reduction.
 The middle advantage is the existing actual-key DEM experiment, whose exact reduction to
@@ -691,23 +677,16 @@ theorem advantage_hybridCCA_le_two_mul (E : SymmetricCipher)
         (ProbComp.eval (hybridDEMGame E keyGen encaps' decaps' adversary false n))
         (ProbComp.eval (hybridDEMGame E keyGen encaps' decaps' adversary true n)) := by
   dsimp only
-  apply NNReal.coe_le_coe.mp
-  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, Game.coe_advantage,
-    probability_kemCCARealGame_hybridToKEMCCAHiddenBit,
-    probability_kemCCAIdealGame_hybridToKEMCCAHiddenBit,
-    eval_kemCCARealGame_hybridToKEMCCA E F keyGen encaps decaps decBound adversary _ n
+  have h := Game.advantage_le_two_mul_uniform_bool_xor
+    (fun bit => ProbComp.eval (kemCCARealGame keyGen encaps decaps
+      (hybridToKEMCCA E F decBound adversary bit) n))
+    (fun bit => ProbComp.eval (kemCCAIdealGame keyLen keyGen encaps decaps
+      (hybridToKEMCCA E F decBound adversary bit) n))
+  rw [← eval_kemCCARealGame_hiddenBit, ← eval_kemCCAIdealGame_hiddenBit] at h
+  simpa only [eval_kemCCARealGame_hybridToKEMCCA E F keyGen encaps decaps decBound adversary _ n
       hcorrect hbound,
     eval_kemCCAIdealGame_hybridToKEMCCA E keyLen F keyGen encaps decaps decBound adversary _ n
-      hlaw hbound]
-  have hscale (a b c d : ℝ) :
-      2 * |(1 + a - b) / 2 - (1 + c - d) / 2| = |(a - b) - (c - d)| := by
-    calc
-      _ = |2 * ((1 + a - b) / 2 - (1 + c - d) / 2)| := by rw [abs_mul]; norm_num
-      _ = _ := by congr 1; ring
-  rw [hscale]
-  have h (a b c d : ℝ) : |a - b| ≤ |(a - b) - (c - d)| + |c - d| := by
-    simpa only [sub_zero] using abs_sub_le (a - b) (c - d) (0 : ℝ)
-  exact h _ _ _ _
+      hlaw hbound] using h
 
 private theorem isPPTOn_postprocessed_encaps
     {F : ℕ → List Bool → List Bool}
