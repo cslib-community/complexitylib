@@ -336,10 +336,21 @@ visible; no expected class mean controls the maximum. The prepass-first order
 is a property of the certificate composition, not a separate allocation-order theorem.
 `SmallOperands.reachable_card_le` now proves Proposition 4's population bound,
 including wraparound and arbitrary seeds. Its exhaustive specification is not
-an efficient machine. The next small-operand obligation is a deduplicating DP
-with derived bit time linear in the bounded number of records per layer; do not
-substitute the old `2^m` array DP or a generic polynomial in the whole list.
-Theorem 7's source pipeline is assembled. The small-operand, multiplicity,
+an efficient machine. `SmallDP.runCertificate` now supplies the small-operand
+algorithm: test proximity to the two modular endpoints, project to
+`min (min s m + size(q) + 3) m`, reuse the actual counting DP, and read counter
+zero in linear time. `SmallProjection.solvable_iff_project` proves the lift;
+`SmallDP.original_correct` derives original-input decision correctness, while
+`source_parameter_bounds` charges actual bit time and every-prefix workspace by
+`2^s * P(m+s+q+1)`. The precheck and DP both contribute to the certificate even
+on rejection. Do not replace linear readback with a generic polynomial in the
+exponential table, or substitute the old full-width `2^m` array bound.
+`SmallAutomatic` additionally computes the maximum operand bit length, excluding
+the seed, from the original instance. Its original-input certificate includes
+that polynomial scan/setup, needs no magnitude advice, and derives
+`2^s * P(m+q+1)` time/space for any source magnitude bound satisfied by the operands.
+Its correctness theorem has no small-operand premise.
+Theorem 7's pipeline and the small-operand algorithm are assembled. Multiplicity,
 sparsification and repaired ideal-model clauses remain open in #2527/ROADMAP.
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.

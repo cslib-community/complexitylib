@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Cryptanalysis.AddXNORClassDepth
 public import CslibFrontier.Cryptanalysis.AddXNORDPDissection
 import CslibFrontier.Cryptanalysis.AddXNORSourceQuarter
+-- Read the unexposed input encoding/constructor to charge the original depth header.
 import all CslibFrontier.Cryptanalysis.AddXNORSource
 
 /-!

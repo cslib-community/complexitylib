@@ -22,9 +22,9 @@ modular displacement from the seed, possibly complemented. The finite corridor
 bounds distinct states, not indexed operator multiplicity. Modular wraparound,
 width zero and `s` above the physical width are included.
 
-The cardinality claim is separate from the source's bit-time decision claim:
-a resource-faithful deduplicating reachable-state machine is still needed for
-that algorithmic conclusion. Exhaustive operator enumeration is not such a machine.
+This module proves the population bound. `SmallAutomatic` supplies the original-input
+bit-time decision algorithm through `SmallDP`, an endpoint check and a narrow projected
+counting DP. The exhaustive operator enumeration here remains only its reachable-set specification.
 
 ## Main results
 

@@ -6,8 +6,10 @@ Authors: Christian Reitwiessner
 
 module
 
-import all CslibFrontier.Cryptanalysis.AddXNORSourceDepth
+import CslibFrontier.Cryptanalysis.AddXNORSourceDepth
+-- Evaluate the installed scalar prepass through its unexposed implementation dependencies.
 import all CslibFrontier.Cryptanalysis.AddXNORDPDissection
+-- Evaluate the unexposed exhaustive reachable-state specification on finite examples.
 import all CslibFrontier.Cryptanalysis.AddXNORSmallOperands
 
 /-!

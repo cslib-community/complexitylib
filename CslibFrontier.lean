@@ -3825,7 +3825,10 @@ public import CslibFrontier.Cryptanalysis.AddXNORRestartResources
 public import CslibFrontier.Cryptanalysis.AddXNORRuns
 public import CslibFrontier.Cryptanalysis.AddXNORSearch
 public import CslibFrontier.Cryptanalysis.AddXNORSearchResources
+public import CslibFrontier.Cryptanalysis.AddXNORSmallAutomatic
+public import CslibFrontier.Cryptanalysis.AddXNORSmallDP
 public import CslibFrontier.Cryptanalysis.AddXNORSmallOperands
+public import CslibFrontier.Cryptanalysis.AddXNORSmallProjection
 public import CslibFrontier.Cryptanalysis.AddXNORSortedMeet
 public import CslibFrontier.Cryptanalysis.AddXNORSortedQuarterMachine
 public import CslibFrontier.Cryptanalysis.AddXNORSortedRecords
@@ -4975,6 +4978,7 @@ public import CslibFrontier.Foundations.Data.BitString.Weight
 public import CslibFrontier.Foundations.Data.BitString.WeightInterval
 public import CslibFrontier.Foundations.Data.BitString.WordCount
 public import CslibFrontier.Foundations.Data.BitString.ZModTwo
+public import CslibFrontier.Foundations.Data.BitVec.IntCast
 public import CslibFrontier.Foundations.Data.Code.AsymptoticallyGood
 public import CslibFrontier.Foundations.Data.Code.BallVolume
 public import CslibFrontier.Foundations.Data.Code.Basic

@@ -1483,8 +1483,7 @@ The parameters satisfy Theorem 8's range. This trace already has a collision
 simulation as written, **not** Theorem 8's inequality; repairing the simulator
 and proving the adversary-quantified lower bound remain open.
 
-The full-paper objective remains open. Remaining endpoints are the small-operand
-bit-time algorithm, sparsification
+The full-paper objective remains open. Remaining endpoints are sparsification
 resource refinement, exact reduction multiplicity and repaired ideal-model
 search/decision lower bounds. The full source dissection pipeline, including
 the faster count prepass, is supplied by the later `DPDissection` route. The
@@ -2599,8 +2598,8 @@ These are the whole solver's worst-case time/space bounds, not the complete
 source Theorem 7 by themselves: the faster DP prepass is absent from this older
 route. The complete `DPDissection` pipeline is proved below. The old
 association-list/cubic-filter interpreter is unchanged; the resource theorem uses the assembled sorted-list route. Other
-small-operand, multiplicity, sparsification and ideal-model paper objectives also
-remain open.
+multiplicity, sparsification and ideal-model paper objectives also remain open;
+the small-operand algorithm is supplied by the later `SmallDP` route.
 
 The reachable-state counter DP now has a concrete binary-addition stage in
 [`AddXNORCounterSerialization.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterSerialization.lean).
@@ -2789,19 +2788,59 @@ width, `reachable_card_le` gives $|R_i|\le2(2q'+1)2^s=2(2i-1)2^s$.
 `eval_mem_corridor` derives this from actual modular additions and XNORs:
 after removing complement parity, each step changes an integer representative
 by at most $2^s$. Wraparound only reduces the size of the resulting finite image.
-The proof includes zero width, zero operands and high seeds. This completes the
-population inequality, **not** Proposition 4's $O^*(2^s)$ bit-time algorithm.
-The executable `reachable` definition still enumerates operator strings; it is
-only a specification and checked finite client, not the efficient algorithm.
-The next obligation is a deduplicating reachable-state machine with derived
-linear-per-record bit costs, composed across operands. The older full-state
-array DP costs $2^m$ and cannot supply the small-operand bound when $s<m$.
-Build the integrated wider-label and small-operand clients with
-`lake build CslibFrontierTests.AddXNORSourceDepth --wfail --iofail`.
+The proof includes zero width, zero operands and high seeds. This proves the
+population inequality. The executable `reachable` definition still enumerates
+operator strings; it is a specification and checked finite client, separate from
+the efficient algorithm below.
+The small-operand algorithm is now in
+[`AddXNORSmallDP.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSmallDP.lean), with its
+lifting proof in
+[`AddXNORSmallProjection.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSmallProjection.lean).
+It reuses the existing projected counting DP instead of adding a sorted-list DP.
+Set $S=\min(s,m)$, $R=q2^S$, and $p=\min(S+\operatorname{size}(q)+3,m)$.
+The necessary scalar check is $A_1\le R$ or $2^m-1-A_1\le R$; the initial
+operand is otherwise unrestricted. If this holds, the proved reachable corridor
+is close to a modular endpoint. The selected projection is either the full
+physical width or wider than the signed radius, so a reachable projected zero
+lifts to full-width zero.
+`solvable_iff_project` proves this, including wraparound and zero width; no
+projected answer or lifting oracle is a premise.
+
+`SmallDP.runCertificate` forms the scalar check and runs the actual original-input
+projection, counter initialization, operand loop and zero-counter readback.
+Both computations are charged even on rejection. Readback uses existing linear
+head/projection/binary-zero machines; a generic polynomial in the whole output
+table would not prove the claimed exponent. `original_correct` proves exact
+original-input decision under the source's operand bound. The derived inequality
+$2^p\le16(q+1)2^s$ and the existing DP profiles give
+`source_parameter_bounds`: actual uniform deterministic multitape bit time and
+simultaneous every-prefix workspace are at most $2^sP(m+s+q+1)$. Scalar setup,
+original data, materialized tables, counters, loop/sort/arithmetic temporaries,
+control copies and output all contribute.
+
+[`AddXNORSmallAutomatic.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSmallAutomatic.lean)
+removes the supplied magnitude parameter from the actual machine input.
+`computedBound` scans the maximum binary operand length, excluding the seed;
+its unary max/size fold has a derived polynomial preprocessing certificate.
+`runCertificate` installs this computed threshold and composes the complete
+narrow-DP machine. `original_correct` decides every original typed instance with
+no bound premise. For any $s$ such that every subsequent operand is below $2^s$,
+the computed threshold is at most $s$ and at most $m$.
+`source_parameter_bounds` therefore charges this same original-input execution
+by $2^sP(m+q+1)$ bit time and every-prefix workspace, including threshold scanning
+and installation. This completes Proposition 4's $O^*(2^s)$ decision algorithm
+in the stated typed-input model. It does not prove the stronger
+$\widetilde O(N+2^s)$ refinement that the source leaves open.
+
+The clients check a 32-bit wraparound hit using only a 32-entry projected table,
+a high-seed false positive from projection alone that the scalar check rejects,
+XNOR/empty/zero-width cases and thresholds beyond the physical width. Build with
+`lake build CslibFrontierTests.AddXNORSmallDP --wfail --iofail`; the earlier
+population/wider-label client remains `CslibFrontierTests.AddXNORSourceDepth`.
 
 The earlier sorted-list solver and its certificate remain available. The source
-Theorem 7 pipeline is now assembled; small-operand, multiplicity, sparsification
-and repaired ideal-model clauses remain open, so this does not complete the
+Theorem 7 pipeline and small-operand algorithm are now assembled. Multiplicity,
+sparsification and repaired ideal-model clauses remain open, so this does not complete the
 paper or the ALL-main objective. Per-class expectations still do not bound the
 expected maximum balance or give a typical-space theorem. Build the integrated
 large-binary-counter, colliding/zero-count, empty/residual-quarter and complete
