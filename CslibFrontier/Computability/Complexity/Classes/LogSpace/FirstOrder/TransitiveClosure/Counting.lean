@@ -286,34 +286,26 @@ private theorem lt_eval_distE {x y : ℕ} {regs : List ℕ} :
 private theorem reaches_noop {l l' : ℕ} {regs : List ℕ}
     (hl : P.instr l = (Instr.lt (const 0) (const 0) l' l').shift) (hB : ∀ r ∈ regs, r ≤ B) :
     P.Reaches w (P.Oblivious B) (l, 0 :: regs) (l', 0 :: regs) := by
-  refine Reaches.slt hl (Nat.zero_le B) hB ?_
-  rw [ite_self]
-  exact Reaches.refl _
+  cp_step
 
 private theorem reaches_assign {l i next v : ℕ} {e : Expr} {regs : List ℕ}
     (hl : P.instr l = (Instr.assign i e next).shift) (he : e.eval regs = v) (hv : v ≤ B)
     (hB : ∀ r ∈ regs, r ≤ B) :
     P.Reaches w (P.Oblivious B) (l, 0 :: regs) (next, 0 :: regs.set i v) ∧
       ∀ r ∈ regs.set i v, r ≤ B := by
-  refine ⟨Reaches.sassign hl (Nat.zero_le B) hB ?_, List.forall_mem_set_of_forall_mem hB hv⟩
-  rw [he]
-  exact Reaches.refl _
+  exact ⟨by cp_step [he], List.forall_mem_set_of_forall_mem hB hv⟩
 
 private theorem reaches_dist_eq {l yes no x y : ℕ} {regs : List ℕ}
     (hl : P.instr l = (Instr.lt (const 0) (distE x y) yes no).shift) (hB : ∀ r ∈ regs, r ≤ B)
     (h : regs.getD x 0 = regs.getD y 0) :
     P.Reaches w (P.Oblivious B) (l, 0 :: regs) (no, 0 :: regs) := by
-  refine Reaches.slt hl (Nat.zero_le B) hB ?_
-  rw [ite_eq_right fun h' => lt_eval_distE.mp h' h]
-  exact Reaches.refl _
+  cp_step [↓mt lt_eval_distE.mp (not_not.mpr h)]
 
 private theorem reaches_dist_ne {l yes no x y : ℕ} {regs : List ℕ}
     (hl : P.instr l = (Instr.lt (const 0) (distE x y) yes no).shift) (hB : ∀ r ∈ regs, r ≤ B)
     (h : regs.getD x 0 ≠ regs.getD y 0) :
     P.Reaches w (P.Oblivious B) (l, 0 :: regs) (yes, 0 :: regs) := by
-  refine Reaches.slt hl (Nat.zero_le B) hB ?_
-  rw [ite_eq_left (lt_eval_distE.mpr h)]
-  exact Reaches.refl _
+  cp_step [↓lt_eval_distE.mpr h]
 
 theorem eval_codeE {n k : ℕ} {z : Fin k → Expr} {zs : Fin k → Fin n} {regs : List ℕ}
     (h0 : regs.getD 0 0 = n) (hz : ∀ i, (z i).eval regs = zs i) :
@@ -398,7 +390,7 @@ private theorem scan_leave (hw : w₁ = b + 14 + 5 * k + wb.length)
     P.Reaches w (P.Oblivious B) (b + 3, 0 :: regs)
       (w₁ + 10 + et.length + ef.length, 0 :: regs) := by
   obtain ⟨-, -, -, h4, -⟩ := countTestCode_parts hw hP
-  cp_step [h0, hX, Nat.not_lt.mpr hx]
+  cp_step [h0, hX]
 
 private theorem scan_post {i y x m : ℕ} {regsT regs : List ℕ} (hy : y < n ^ k)
     (hinv : ScanInv B base E s₀ i y x m (countRound E s₀ i) regsT regs) :
@@ -973,7 +965,7 @@ private theorem count_y_exit (hP : P.CodeAt b (countCode b base k dst t₁ t₂ 
     (by rw [eval_add, eval_reg, eval_const, List.getD_set_ne (by omega), hI]) (by omega) hB₁
   have hB := hk.2.2
   refine ⟨_, Reaches.trans ?_ (hr₁.trans hr₂), ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · cp_step [hY, h0, Nat.not_lt.mpr hy]
+  · cp_step [hY, h0]
   · exact (hk.set_right (by omega) hcB).set_right le_rfl (by omega)
   · simp only [List.length_set]; omega
   · rw [List.getD_set_ne (by omega), List.getD_set_ne (by omega), h0]
@@ -1118,7 +1110,7 @@ private theorem count_final (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T
   refine ⟨Reaches.trans ?_ hr₁,
     ⟨hk.set_right (by omega) hzB, ?_, ?_, ?_, by omega, ?_, ?_, (finFunctionFinEquiv z₀).isLt⟩,
     by rw [hiN]; exact mem_countRound_pow⟩
-  · cp_step [hI, h0, show ¬i + 1 < n ^ k by omega]
+  · cp_step [hI, h0]
   · simp only [List.length_set]; omega
   · rw [List.getD_set_ne (by omega), h0]
   · rw [List.getD_set_ne (by omega), hI]
