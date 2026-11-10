@@ -1250,162 +1250,46 @@ theorem opEvalHashesCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_
   have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
   have hfit_tab : Fits w (singleTabSpace c_exp n_max) := hfit_btab.of_le (by omega)
   have hfit_base : Fits w base := hfit_btab.of_le (by omega)
-  set s1 := x.set regCond u.val
-  have e1 : Exec w (.op (.copy regCond regU) : Code .exact 16) x s1 1 := by
-    simpa [s1, hu] using (Exec.copy (B := .exact) (w := w) (d := regCond) (s := regU) (x := x))
-  have hs1_base : (s1.comap dtMap).regs 0 = base := by
-    simpa +decide [s1, dtMap, Data.comap] using hrep.regs_base
-  have hs1_key : (s1.comap dtMap).regs 1 = u.val := by
-    simp +decide [s1, dtMap, Data.comap]
-  obtain ⟨yPrim, hprim_exec, hyPrim_mem, hyPrim_base, hyPrim_key, hyPrim_out⟩ :=
-    DoubleTabulation.evalCode_exec u hs1_base hs1_key hrep.primary_rep
-      hfit_btab hfit_powB hfit_powM hu_fit
-  set s2 := yPrim.extend dtMap s1
-  have e2 : Exec w
-      ((DoubleTabulation.evalCode (numChars c_exp) (tupleLen c_exp) (charBits n_max)).rename dtMap)
-      s1 s2 (DoubleTabulation.evalSteps (numChars c_exp) (tupleLen c_exp)) :=
-    hprim_exec.rename injective_dtMap
-  have hs2_mem : s2.mem = x.mem := hyPrim_mem
-  have hs2_base : s2.regs regBase = base := by
-    change (s2.comap dtMap).regs 0 = base
-    rw [Data.comap_extend injective_dtMap]
-    exact hyPrim_base
-  have hs2_cond : s2.regs regCond = u.val := by
-    change (s2.comap dtMap).regs 1 = u.val
-    rw [Data.comap_extend injective_dtMap]
-    exact hyPrim_key
-  have hs2_addr : s2.regs regAddr = (primaryHash θ u).val := by
-    change (s2.comap dtMap).regs 2 = (primaryHash θ u).val
-    rw [Data.comap_extend injective_dtMap]
-    rcases θ with ⟨⟨T₁, T₂⟩, _⟩
-    exact hyPrim_out
-  have hs2_op : s2.regs regOp = x.regs regOp := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s1]
-  have hs2_u : s2.regs regU = u.val := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s1, hu]
-  have hs2_v : s2.regs regV = x.regs regV := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s1]
-  -- Execute opMidEvalCode
-  set s3 := s2.set regSave (primaryHash θ u).val
-  have e3 : Exec w (.op (.copy regSave regAddr) : Code .exact 16) s2 s3 1 := by
-    simpa [s3, hs2_addr] using
-      (Exec.copy (B := .exact) (w := w) (d := regSave) (s := regAddr) (x := s2))
-  set s4 := s3.set regAddr (singleTabSpace c_exp n_max)
-  have e4 : Exec w (.op (.const regAddr (singleTabSpace c_exp n_max)) : Code .exact 16) s3 s4 1 :=
-    Exec.const hfit_tab
-  set s5 := s4.set regBase (base + singleTabSpace c_exp n_max)
-  have e5 : Exec w (.op (.exactBin .add regBase regBase regAddr) : Code .exact 16) s4 s5 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s4, s3, hs2_base]) hfit_btab
-  have eMid : Exec w (opMidEvalCode c_exp n_max) s2 s5 3 := e3.seq (e4.seq e5)
-  -- Execute stride DoubleTabulation.evalCode
-  have hs5_base : (s5.comap dtMap).regs 0 = base + singleTabSpace c_exp n_max := by
-    simp +decide [s5, dtMap, Data.comap]
-  have hs5_key : (s5.comap dtMap).regs 1 = u.val := by
-    simp +decide [s5, s4, s3, dtMap, Data.comap, hs2_cond]
-  have hs5_mem : (s5.comap dtMap).mem = x.mem := hs2_mem
-  obtain ⟨yStr, hstr_exec, hyStr_mem, hyStr_base, _, hyStr_out⟩ :=
-    DoubleTabulation.evalCode_exec u hs5_base hs5_key (hs5_mem ▸ hrep.stride_rep)
-      hfit_b2tab hfit_powB hfit_powM1 hu_fit
-  set s6 := yStr.extend dtMap s5
-  have e6 : Exec w
-      ((DoubleTabulation.evalCode (numChars c_exp) (tupleLen c_exp) (charBits n_max)).rename dtMap)
-      s5 s6 (DoubleTabulation.evalSteps (numChars c_exp) (tupleLen c_exp)) :=
-    hstr_exec.rename injective_dtMap
-  have hs6_mem : s6.mem = x.mem := hyStr_mem.trans hs5_mem
-  have hs6_base : s6.regs regBase = base + singleTabSpace c_exp n_max := by
-    change (s6.comap dtMap).regs 0 = base + singleTabSpace c_exp n_max
-    rw [Data.comap_extend injective_dtMap]
-    exact hyStr_base
-  have hs6_addr : s6.regs regAddr = (rawStrideHash θ u).val := by
-    change (s6.comap dtMap).regs 2 = (rawStrideHash θ u).val
-    rw [Data.comap_extend injective_dtMap]
-    rcases θ with ⟨_, ⟨S₁, S₂⟩⟩
-    exact hyStr_out
-  have hs6_save : s6.regs regSave = (primaryHash θ u).val := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3]
-  have hs6_op : s6.regs regOp = x.regs regOp := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3, hs2_op]
-  have hs6_u : s6.regs regU = u.val := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3, hs2_u]
-  have hs6_v : s6.regs regV = x.regs regV := by
-    rw [Data.extend_regs_of_notMem _ _ (notMem_range_dtMap (by decide))]
-    simp +decide [s5, s4, s3, hs2_v]
-  -- Execute opPostEvalCode
   have hraw_lt := two_mul_rawStrideHash_add_one_lt θ u
   have hM_eq : 2 ^ bucketBits n_max = numBuckets n_max := rfl
   have hfit_2raw : Fits w ((rawStrideHash θ u).val + (rawStrideHash θ u).val) :=
     hfit_powM.of_le (by omega)
   have hfit_stride : Fits w ((strideHash θ u).val) :=
     hfit_powM.of_le (by have := (strideHash θ u).isLt; omega)
-  have hfit_so : Fits w (slotOffset c_exp n_max) := hS.of_le (by omega)
   have hfit_bso : Fits w (base + slotOffset c_exp n_max) := hS.of_le (by omega)
-  have hfit_m : Fits w (numBuckets n_max) := hS.of_le (by omega)
-  have hfit_0 : Fits w 0 := hS.of_le (by omega)
-  set s7 := s6.set regCond (singleTabSpace c_exp n_max)
-  have e7 : Exec w (.op (.const regCond (singleTabSpace c_exp n_max)) : Code .exact 16) s6 s7 1 :=
-    Exec.const hfit_tab
-  set s8 := s7.set regBase base
-  have e8 : Exec w (.op (.exactBin .sub regBase regBase regCond) : Code .exact 16) s7 s8 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s7, hs6_base]) hfit_base
-  set s9 := s8.set regCond 1
-  have e9 : Exec w (.op (.const regCond 1) : Code .exact 16) s8 s9 1 :=
-    Exec.const hfit_1
-  set s10 := s9.set regStride ((rawStrideHash θ u).val + (rawStrideHash θ u).val)
-  have e10 : Exec w (.op (.exactBin .add regStride regAddr regAddr) : Code .exact 16) s9 s10 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s9, s8, s7, hs6_addr]) hfit_2raw
-  set s11 := s10.set regStride (strideHash θ u).val
-  have e11 : Exec w (.op (.exactBin .add regStride regStride regCond) : Code .exact 16)
-      s10 s11 1 := by
-    refine Exec.alu ?_ hfit_stride
-    have hval : (rawStrideHash θ u).val + (rawStrideHash θ u).val + 1 = (strideHash θ u).val := by
-      rw [val_strideHash]
-      omega
-    simp +decide [StandardOp.evalExact, s10, s9, hval]
-  set s12 := s11.set regSlot (primaryHash θ u).val
-  have e12 : Exec w (.op (.copy regSlot regSave) : Code .exact 16) s11 s12 1 := by
-    simpa +decide [s12, s11, s10, s9, s8, s7, hs6_save] using
-      (Exec.copy (B := .exact) (w := w) (d := regSlot) (s := regSave) (x := s11))
-  set s13 := s12.set regSlotBase (slotOffset c_exp n_max)
-  have e13 : Exec w (.op (.const regSlotBase (slotOffset c_exp n_max)) : Code .exact 16)
-      s12 s13 1 :=
-    Exec.const hfit_so
-  set s14 := s13.set regSlotBase (base + slotOffset c_exp n_max)
-  have e14 : Exec w (.op (.exactBin .add regSlotBase regBase regSlotBase) : Code .exact 16)
-      s13 s14 1 :=
-    Exec.alu (by simp +decide [StandardOp.evalExact, s13, s12, s11, s10, s9, s8]) hfit_bso
-  set s15 := s14.set regMaskM (numBuckets n_max - 1)
-  have e15 : Exec w (.op (.const regMaskM (numBuckets n_max - 1)) : Code .exact 16) s14 s15 1 :=
-    Exec.const hfit_mask_M
-  set s16 := s15.set regM (numBuckets n_max)
-  have e16 : Exec w (.op (.const regM (numBuckets n_max)) : Code .exact 16) s15 s16 1 :=
-    Exec.const hfit_m
-  set s17 := s16.set regZero 0
-  have e17 : Exec w (.op (.const regZero 0) : Code .exact 16) s16 s17 1 :=
-    Exec.const hfit_0
-  have ePost : Exec w (opPostEvalCode c_exp n_max) s6 s17 11 :=
-    e7.seq (e8.seq (e9.seq (e10.seq (e11.seq
-      (e12.seq (e13.seq (e14.seq (e15.seq (e16.seq e17)))))))))
-  have eAll : ExecWithin w (opEvalHashesCode c_exp n_max) x s17 (hashEvalSteps c_exp) := by
-    refine (e1.within.seq (e2.within.seq (eMid.within.seq (e6.within.seq ePost.within)))).mono ?_
-    dsimp only [hashEvalSteps]
+  have hval : (rawStrideHash θ u).val + (rawStrideHash θ u).val + 1 = (strideHash θ u).val := by
+    rw [val_strideHash]
     omega
-  refine ⟨s17, eAll, hs6_mem,
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8],
-    by rw [probePerm_zero]; simp +decide [s17, s16, s15, s14, s13, s12],
-    by simp +decide [s17, s16, s15, s14],
-    by simp +decide [s17, s16, s15],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11],
-    by simp +decide [s17, s16],
-    by simp +decide [s17],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_op],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_u],
-    by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, hs6_v]⟩
+  refine WP.exists_execWithin (WP.Exact.toWP ?_)
+  unfold opEvalHashesCode opMidEvalCode opPostEvalCode
+  wram_exec [hu]
+  wram_call (DoubleTabulation.evalCode_exec u (x := (x.set regCond u.val).comap dtMap)
+    (by simp only [Data.comap_regs]; wram_simp; exact hrep.regs_base)
+    (by simp only [Data.comap_regs]; wram_simp) hrep.primary_rep hfit_btab hfit_powB hfit_powM
+    hu_fit) renamed injective_dtMap with yP ⟨⟨hyP_mem, hyP_base, hyP_key, hyP_out⟩, hyP_frame⟩
+  have hyP_addr : yP.regs regAddr = (primaryHash θ u).val := by
+    change yP.regs (dtMap 2) = _
+    rcases θ with ⟨⟨T₁, T₂⟩, _⟩
+    exact hyP_out
+  wram_exec [show yP.regs regBase = base from hyP_base, hyP_addr]
+  wram_call (DoubleTabulation.evalCode_exec u (x := (((yP.set regSave (primaryHash θ u).val).set
+      regAddr (singleTabSpace c_exp n_max)).set regBase (base + singleTabSpace c_exp n_max)).comap
+      dtMap)
+    (by simp only [Data.comap_regs]; wram_simp)
+    (by simp only [Data.comap_regs]; wram_simp; exact hyP_key)
+    (by simp only [Data.comap_mem, Data.set_mem, hyP_mem]; exact hrep.stride_rep)
+    hfit_b2tab hfit_powB hfit_powM1 hu_fit)
+    renamed injective_dtMap with yS ⟨⟨hyS_mem, hyS_base, -, hyS_out⟩, hyS_frame⟩
+  have hyS_addr : yS.regs regAddr = (rawStrideHash θ u).val := by
+    change yS.regs (dtMap 2) = _
+    rcases θ with ⟨_, ⟨S₁, S₂⟩⟩
+    exact hyS_out
+  wram_exec [show yS.regs regBase = base + singleTabSpace c_exp n_max from hyS_base, hyS_addr,
+    hyS_frame, hval]
+  rw [probePerm_zero]
+  wram_simp [hyS_frame, hyP_frame, hyS_mem, hyP_mem, hu]
+  simp only [hashEvalSteps]
+  omega
 
 /-- Lookup completion program `finishQueryCode` (`≤ 9` instructions): inspects `used[regSlot]`;
 if `0`, writes `0` (`none`) into `regOp`, and if `1`, loads `val[regSlot]` and writes
