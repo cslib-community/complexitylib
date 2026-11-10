@@ -35,8 +35,8 @@ pebbling: one stored value per pebble.
 * `Cslib.Pebbling.Descending.graph`: the dependency graph of a descending computation.
 * `Cslib.Pebbling.Descending.ready`: the readiness test on words.
 * `Cslib.Pebbling.Descending.diffIndex`: the first position where two words differ.
-* `Cslib.Pebbling.Descending.lookupD`, `Cslib.Pebbling.Descending.entry`: reading the table, and
-  computing the value of an index from it.
+* `Cslib.Pebbling.Descending.entry`: the value of an index computed from the table, reading the
+  stored values of its children with `List.lookup`.
 * `Cslib.Pebbling.Descending.tableStep`: one update of the table along a word walk.
 * `Cslib.Pebbling.Descending.Holds`: the table holds the values of the pebbled indices.
 
@@ -50,7 +50,7 @@ pebbling: one stored value per pebble.
 * `Cslib.Pebbling.Descending.holds_tableStep`,
   `Cslib.Pebbling.Descending.holds_tableStep_of_wordStep`: one move, or one step of a word walk,
   preserves the invariant.
-* `Cslib.Pebbling.Descending.lookupD_eq_of_tableStep`: a walk from the zero word to the word of
+* `Cslib.Pebbling.Descending.lookup_eq_of_tableStep`: a walk from the zero word to the word of
   `{v}` ends with the value of `v` in the table.
 * `Cslib.Pebbling.Descending.length_tableStep_le`: the table never exceeds `s` entries.
 
@@ -145,12 +145,6 @@ theorem reach_wordStep_ready_iff_blackPebblable
 @[expose] def diffIndex (u v : List Bool) : ℕ :=
   ((List.range u.length).find? fun i => u.getD i false != v.getD i false).getD u.length
 
-theorem diffIndex_le (u v : List Bool) : diffIndex u v ≤ u.length := by
-  unfold diffIndex
-  cases h : (List.range u.length).find? fun i => u.getD i false != v.getD i false with
-  | none => exact le_rfl
-  | some j => exact (List.mem_range.1 (List.mem_of_find?_eq_some h)).le
-
 /-- Flipping bit `i` makes `i` the first difference. -/
 theorem diffIndex_set {u : List Bool} {i : ℕ} (hi : i < u.length) {b : Bool}
     (hb : u.getD i false ≠ b) : diffIndex u (u.set i b) = i := by
@@ -231,36 +225,32 @@ theorem erase (h : Holds value C t) (v : Fin N) :
 
 end Holds
 
+/-- A pebbled index is stored with its value. -/
+theorem Holds.lookup_eq {C : Finset (Fin N)} {t : List (ℕ × U)} (h : Holds value C t)
+    {v : Fin N} (hv : v ∈ C) : t.lookup (v : ℕ) = some (value v) := by
+  obtain ⟨p, hp, hpv⟩ := List.mem_map.1 ((h.mem_keys v).2 ⟨v, hv, rfl⟩)
+  cases hlookup : t.lookup (v : ℕ) with
+  | none =>
+    exact absurd (List.lookup_eq_none_iff.1 hlookup p hp) (by simp [hpv])
+  | some x =>
+    obtain ⟨l₁, l₂, rfl, -⟩ := List.lookup_eq_some_iff.1 hlookup
+    exact congrArg some (h.value_eq ((v : ℕ), x) (by simp))
+
 /-! ### The table -/
 
 variable [Inhabited U]
 
-/-- The value stored for index `i`, or `default` when there is none. -/
-@[expose] def lookupD (t : List (ℕ × U)) (i : ℕ) : U :=
-  ((t.find? fun p => p.1 == i).map Prod.snd).getD default
-
-/-- A pebbled index is stored with its value. -/
-theorem Holds.lookupD_eq {C : Finset (Fin N)} {t : List (ℕ × U)} (h : Holds value C t)
-    {v : Fin N} (hv : v ∈ C) : lookupD t v = value v := by
-  obtain ⟨p, hp, hpv⟩ := List.mem_map.1 ((h.mem_keys v).2 ⟨v, hv, rfl⟩)
-  cases hfind : t.find? fun p => p.1 == (v : ℕ) with
-  | none => exact (List.find?_eq_none.1 hfind p hp (by simp [hpv])).elim
-  | some q =>
-    have hq := List.find?_some hfind
-    rw [beq_iff_eq] at hq
-    simp only [lookupD, hfind, Option.map_some, Option.getD_some]
-    rw [h.value_eq q (List.mem_of_find?_eq_some hfind), hq]
-
 variable (gates : ℕ → (Fin d → U) → U) (source : U)
 
 /-- The value of index `i` computed from the table: the source at `0`, otherwise the gate of `i`
-on the stored values of its children. -/
+on the stored values of its children (`default` for a child that is not stored). -/
 @[expose] def entry (t : List (ℕ × U)) (i : ℕ) : U :=
-  if i = 0 then source else gates i fun a => lookupD t (child i a)
+  if i = 0 then source else gates i fun a => (t.lookup (child i a)).getD default
 
 /-- One update of the table along a walk from `u` to `v`, with room for `s` entries: if `v` clears
-the first bit where the words differ, drop that index; if it sets it, store its value computed
-from the table. Equal words leave the table unchanged. -/
+the first bit where the words differ, drop that index; if it sets it and the table has fewer than
+`s` entries, store its value computed from the table. Equal words, and a set bit when the table is
+full, leave the table unchanged. -/
 @[expose] def tableStep (s : ℕ) (u v : List Bool) (t : List (ℕ × U)) : List (ℕ × U) :=
   if u = v then t
   else if u.getD (diffIndex u v) false then t.filter fun p => p.1 != diffIndex u v
@@ -276,17 +266,6 @@ theorem length_tableStep_le {s : ℕ} {u v : List Bool} {t : List (ℕ × U)} (h
   · exact (List.length_filter_le _ _).trans ht
   · simpa using h₃
   · exact ht
-
-/-- Every entry after a step is an old entry or the entry of the first difference. -/
-theorem mem_tableStep {s : ℕ} {u v : List Bool} {t : List (ℕ × U)} {p : ℕ × U}
-    (hp : p ∈ tableStep child gates source s u v t) :
-    p ∈ t ∨ p = (diffIndex u v, entry child gates source t (diffIndex u v)) := by
-  unfold tableStep at hp
-  split_ifs at hp with h₁ h₂ h₃
-  · exact Or.inl hp
-  · exact Or.inl (List.mem_of_mem_filter hp)
-  · exact (List.mem_cons.1 hp).symm
-  · exact Or.inl hp
 
 /-- **One move preserves the invariant.** If the table holds the values of `C`, and `D` is `C` or
 one legal move with at most `s` pebbles away, then after one step from the word of `C` to the word
@@ -323,7 +302,8 @@ theorem holds_tableStep (hchild : ∀ i, 0 < i → ∀ a, child i a < i)
         congr 1
         funext a
         have hlt : child v a < N := (hchild v (Nat.pos_of_ne_zero h0) a).trans v.isLt
-        exact h.lookupD_eq (v := ⟨child v a, hlt⟩) (hv _ ⟨Nat.pos_of_ne_zero h0, a, rfl⟩)
+        rw [h.lookup_eq (v := ⟨child v a, hlt⟩) (hv _ ⟨Nat.pos_of_ne_zero h0, a, rfl⟩),
+          Option.getD_some]
     rw [tableStep, ite_eq_right hne, hdiff, hbit, ite_eq_right Bool.false_ne_true, ite_eq_left hlen,
       hentry]
     exact h.insert hvC
@@ -365,7 +345,7 @@ theorem holds_tableStep_of_wordStep (hchild : ∀ i, 0 < i → ∀ a, child i a 
 which consecutive words are equal or one word move apart, tables built by `tableStep` from the
 empty table hold the values of the pebbled indices. When the walk reaches the word of `{v}`, the
 table returns the value of `v`. -/
-theorem lookupD_eq_of_tableStep (hchild : ∀ i, 0 < i → ∀ a, child i a < i)
+theorem lookup_eq_of_tableStep (hchild : ∀ i, 0 < i → ∀ a, child i a < i)
     (hzero : value 0 = source)
     (hsucc : ∀ i, 0 < i → i < N → value i = gates i fun a => value (child i a))
     {s : ℕ} (ws : ℕ → List Bool) (ts : ℕ → List (ℕ × U)) (n : ℕ)
@@ -374,7 +354,7 @@ theorem lookupD_eq_of_tableStep (hchild : ∀ i, 0 < i → ∀ a, child i a < i)
     (hts0 : ts 0 = [])
     (hts : ∀ j < n, ts (j + 1) = tableStep child gates source s (ws j) (ws (j + 1)) (ts j))
     {v : Fin N} (hend : ws n = indicatorList {v}) :
-    lookupD (ts n) v = value v := by
+    (ts n).lookup (v : ℕ) = some (value v) := by
   have key : ∀ j ≤ n, Holds value (supportOfList N (ws j)) (ts j) := by
     intro j hj
     induction j with
@@ -387,6 +367,6 @@ theorem lookupD_eq_of_tableStep (hchild : ∀ i, 0 < i → ∀ a, child i a < i)
         (hlen (j + 1) hj) (hstep j hj) (ih (by omega))
   have h := key n le_rfl
   rw [hend, supportOfList_indicatorList] at h
-  exact h.lookupD_eq (Finset.mem_singleton_self v)
+  exact h.lookup_eq (Finset.mem_singleton_self v)
 
 end Cslib.Pebbling.Descending

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.GGM.Reduction
 public import CslibFrontier.Crypto.Computational.PseudorandomGenerator
 import CslibFrontier.Crypto.Computational.Stretch
+import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -53,28 +54,18 @@ theorem GGM.pseudorandomFunction_of_indistinguishable {generator : List Bool →
     (hlength : ∀ seed, (generator seed).length = 2 * seed.length)
     (hsecure : ComputationallyIndistinguishable (generatorEnsemble generator)
       (fun n => BitString.uniformList (2 * n))) : PseudorandomFunction (GGM.eval generator) := by
-  have hgenerator := hgenerator.tidy
-  refine ⟨(Crypto.GGM.computableInPolyTime_eval (.of_tidy hgenerator)), fun key query _ =>
+  refine ⟨Crypto.GGM.computableInPolyTime_eval hgenerator, fun key query _ =>
     length_eval (fun seed => by rw [hlength]) key query, ?_⟩
-  intro adversary hadversary
-  obtain ⟨c, d, hqueries⟩ := hadversary.query_bounds
-  let count := fun n => c * (n + 2) ^ d
-  have hcount : ComputableTidilyInPolyTime count encUnary encUnary := by
-    unfold count
-    polytime
-  have hreduce := hsecure (reduction generator adversary count)
-    (isPPT_reduction (.of_tidy hgenerator) hadversary (.of_tidy hcount))
-  have hloss : PolynomiallyBounded (fun n => dyadicSize n * dyadicSize (count n)) := by
-    have := hcount.polynomiallyBounded
-    fun_prop
-  apply negligible_of_le (hreduce.polynomiallyBounded_mul hloss)
-  intro n
-  have hquery : (adversary n []).IsQueryBounded (count n) := by
-    simpa [count] using (hqueries n []).1
+  refine Game.Indistinguishable.of_queryBounded_reduction hsecure
+    (fun adversary count => reduction generator adversary count)
+    (fun n q => dyadicSize n * dyadicSize q) (fun _ _ => 0)
+    (fun adversary count hadversary hcount _ => isPPT_reduction hgenerator hadversary hcount)
+    (fun _ _ => by fun_prop)
+    (fun _ _ => negligible_zero)
+    fun adversary count n hquery => ?_
   have h := reduction_advantage generator adversary count n hquery
   simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind, ProbComp.eval_map,
-    BitString.eval_sampleList,
-    generatorEnsemble, Nat.cast_mul] using h.le
+    BitString.eval_sampleList, generatorEnsemble, Nat.cast_mul, add_zero] using h.le
 
 /-- A secure generator providing at least two full labels gives the GGM pseudorandom function.
 Surplus bits are ignored; the hypothesis accommodates seed length zero. -/

@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.PebblingWords
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 
 /-!
 # Tests: pebble configuration words in space
@@ -12,7 +13,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Pe
 The first difference, readiness and moves on concrete words for the path dependency map, in which
 each positive index depends on its predecessor; and the space certificates of readiness, of a move,
 of the stored values of the children and of the table updates instantiated on that map with a
-pebble bound depending on a parameter, so that their hypotheses are satisfiable.
+pebble bound depending on a parameter, so that their hypotheses are satisfiable; and Savitch's
+algorithm run on its moves.
 -/
 
 namespace CslibFrontierTests.SpacePebblingWords
@@ -71,6 +73,25 @@ example : ∃ T, ComputableInO (fun (p, u, v) => wordStep (ready (pathChild p)) 
     fun (p, u, v) => (encPair encNat (encPair encBits encBits) (p, u, v)).length +
       (encPair encNat encNat (p, diffIndex u v)).length + (encNat p).length :=
   (wordStep_inSpace pathChild_inSpace succ_inSpace).exists_inO
+
+/-- Savitch's algorithm decides reachability along moves on the path map, in the space of its stack
+plus the parameter and the space of the move test at the given width. -/
+example {γ : Type} {encIn : γ ↪ List Bool} {par width depth : γ → ℕ} {src dst : γ → List Bool}
+    {Tin Sin : γ → ℕ}
+    (hin : ComputableInO (fun x => (par x, width x, depth x, src x, dst x)) encIn
+      (Reachability.encArgs encNat) Tin Sin)
+    (hsrc : ∀ x, (src x).length = width x) (hdst : ∀ x, (dst x).length = width x) :
+    ∃ T, ComputableInO
+      (fun x => Reachability.savitch (wordStep (ready (pathChild (par x))) (par x + 1))
+        (width x) (depth x) (src x) (dst x))
+      encIn encBool T fun x => Sin x + (depth x + 1) * (depth x + width x + 1) +
+        (encNat (par x)).length + Reachability.edgeMax (fun (p, u, v) =>
+          (encPair encNat (encPair encBits encBits) (p, u, v)).length +
+            (encPair encNat encNat (p, diffIndex u v)).length + (encNat p).length)
+          (par x) (width x) := by
+  obtain ⟨_, hedge⟩ := (wordStep_inSpace pathChild_inSpace succ_inSpace).exists_inO
+  exact ⟨_, Reachability.computableInO_savitch
+    (edge := fun p u v => wordStep (ready (pathChild p)) (p + 1) u v) hedge hin hsrc hdst⟩
 
 /-- The stored values of the children on the path map, in linear space. -/
 example : ComputableInSpace

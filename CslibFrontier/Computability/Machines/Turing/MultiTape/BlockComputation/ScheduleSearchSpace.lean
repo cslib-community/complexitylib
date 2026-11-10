@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Foundations.Data.Nat.BinarySize
 
 /-!
@@ -127,35 +128,8 @@ theorem runFrom_one_encoding_le {k s : ℕ} {Q : Type} [Finite Q]
     simp only [request, c, hpending, ↓reduceIte, start]
   have hlive : (caller k).halted c = false := by
     simp only [caller, c, hpending, Bool.not_true]
-  by_cases hzero : t = 0
-  · subst t
-    change (encCaller c).length + 1 ≤ _
-    dsimp only [space, c, start] at hnext ⊢
-    omega
-  by_cases hfinal : t = T + 2
-  · subst t
-    rw [show (machine M e).runFrom w (.inl c) (T + 2) =
-        .inl (resume e c ((InitializedEvaluator.machine M e).runFrom w start T)) from
-      QueryMachine.withCalls_runFrom_call (caller k) (InitializedEvaluator.machine M e)
-        (request k s) (resume e) w c start T hlive hreq hpre hhalt]
-    change (encCaller (resume e c
-      ((InitializedEvaluator.machine M e).runFrom w start T))).length + 1 ≤ _
-    dsimp only [space, c, start] at hnext ⊢
-    omega
-  have hentry : (machine M e).runFrom w (.inl c) 1 = .inr (c, start) :=
-    QueryMachine.withCalls_step_call (caller k) (InitializedEvaluator.machine M e)
-      (request k s) (resume e) w c start hlive hreq
-  rw [show t = 1 + (t - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hpref := QueryMachine.withCalls_runFrom_subroutine_prefix (caller k)
-    (InitializedEvaluator.machine M e) (request k s) (resume e) w c start (t - 1)
-    (fun u hu => hpre u (by omega))
-  rw [show (machine M e).runFrom w (.inr (c, start)) (t - 1) =
-      .inr (c, (InitializedEvaluator.machine M e).runFrom w start (t - 1)) from hpref]
-  have hcallee := hsize (t - 1) (by omega)
-  change (encSum encCaller (encPair encCaller InitializedEvaluator.encState)
-    (.inr (c, (InitializedEvaluator.machine M e).runFrom w start (t - 1)))).length ≤ _
-  rw [QueryMachine.withCalls_encoding_inr_length]
-  dsimp only [space, c, start] at hcallee ⊢
-  omega
+  exact QueryMachine.withCalls_runFrom_call_encoding_le (caller k)
+    (InitializedEvaluator.machine M e) (request k s) (resume e) w encCaller
+    InitializedEvaluator.encState hlive hreq hpre hhalt hcaller hnext hsize t ht
 
 end Turing.MultiTapePTM.BlockComputation.ScheduleSearch

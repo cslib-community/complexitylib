@@ -25,55 +25,12 @@ namespace Cslib.Logic.FO.LFP.Tuple
 
 variable {L L' : Language} {d : ℕ}
 
-/-- Apply an element bijection independently to the blocks of a flattened relation tuple. -/
-def tupleEquiv {M N : Type} (e : (Fin d → M) ≃ N) (k : ℕ) :
-    (Fin (k * d) → M) ≃ (Fin k → N) where
-  toFun xs i := e (fun j => xs (finProdFinEquiv (i, j)))
-  invFun ys p := e.symm (ys (finProdFinEquiv.symm p).1) (finProdFinEquiv.symm p).2
-  left_inv xs := by
-    funext p
-    simp only [Equiv.symm_apply_apply, Prod.mk.eta, Equiv.apply_symm_apply]
-  right_inv ys := by
-    funext i
-    simp only [Equiv.symm_apply_apply, Equiv.apply_symm_apply]
+open Operator.Tuple
 
 variable {M N : Type} [L.Structure M] [L'.Structure N]
   (f : FOMap L L' d) (e : (Fin d → M) ≃ N)
   (hf : ∀ {α : Type} (φ : L'.Formula α) (v : α × Fin d → M),
     (f φ).Realize v ↔ φ.Realize (fun a => e (fun i => v (a, i))))
-
-include hf in
-/-- The translated term graph identifies precisely the encoded values of its arguments. -/
-theorem realize_termGraph {α : Type} {k : ℕ} (args : Fin k → L'.Term α)
-    (v : α × Fin d → M) (xs : Fin (k * d) → M) :
-    (termGraph f args).Realize (Sum.elim v xs) ↔
-      ∀ i, tupleEquiv e k xs i = (args i).realize (fun a => e (fun j => v (a, j))) := by
-  rw [termGraph, FirstOrder.Language.Formula.realize_relabel, hf,
-    FirstOrder.Language.Formula.realize_iInf]
-  apply forall_congr'
-  intro i
-  simp only [FirstOrder.Language.Formula.realize_equal, Term.realize_var, Term.realize_relabel]
-  rfl
-
-include hf in
-/-- Existential term naming has a unique coordinate witness, even for constants and nullary
-argument tuples. -/
-theorem realize_applyTerms {Γ : List ℕ} {α : Type} {k : ℕ}
-    (args : Fin k → L'.Term α)
-    (φ : RawFormula L Γ ((α × Fin d) ⊕ Fin (k * d)))
-    (ρ : Operator.RelEnv Γ M) (v : α × Fin d → M) :
-    (applyTerms f args φ).Realize interpretation ρ v ↔
-      φ.Realize interpretation ρ (Sum.elim v ((tupleEquiv e k).symm
-        (fun i => (args i).realize (fun a => e (fun j => v (a, j)))))) := by
-  simp only [applyTerms, Operator.Formula.realize_exs, Operator.Formula.realize_conj,
-    Operator.Formula.realize_ofFO, realize_termGraph f e hf]
-  constructor
-  · rintro ⟨xs, hx, hφ⟩
-    have heq := congrArg (tupleEquiv e k).symm (funext hx)
-    rw [Equiv.symm_apply_apply] at heq
-    exact heq ▸ hφ
-  · intro hφ
-    exact ⟨_, fun i => congrFun ((tupleEquiv e k).apply_symm_apply _) i, hφ⟩
 
 private theorem append_singleton {Γ : List ℕ} {A : Type} {k : ℕ}
     (R : Set (Fin k → A)) (ρ : Operator.RelEnv Γ A) :
@@ -114,11 +71,11 @@ private theorem prefixed_equiv {A B : Type} (e : A ≃ B)
 
 include hf in
 /-- Full-tuple pullback preserves truth for arbitrary scoped relation valuations, including
-nested operators. The relation valuations correspond blockwise through `tupleEquiv`. -/
+nested operators. The relation valuations correspond blockwise through `blockEquiv`. -/
 theorem realize_onFormula {Γ : List ℕ} {α : Type} (φ : RawFormula L' Γ α) :
     ∀ (ρs : Operator.RelEnv (Γ.map (· * d)) M) (ρt : Operator.RelEnv Γ N),
       (∀ {k} (r : Operator.RelVar Γ k) xs,
-        xs ∈ ρs (r.scale d) ↔ tupleEquiv e k xs ∈ ρt r) →
+        xs ∈ ρs (r.scale d) ↔ blockEquiv e k xs ∈ ρt r) →
       ∀ v : α × Fin d → M,
         (onFormula f φ).Realize interpretation ρs v ↔
           φ.Realize interpretation ρt (fun a => e (fun i => v (a, i))) := by
@@ -128,11 +85,7 @@ theorem realize_onFormula {Γ : List ℕ} {α : Type} (φ : RawFormula L' Γ α)
     exact hf φ v
   | rel r args =>
     intro ρs ρt hρ v
-    rw [onFormula, realize_applyTerms f e hf]
-    simpa only [Operator.Formula.Realize, Term.realize_var, Sum.elim_inr,
-      Equiv.apply_symm_apply] using
-      hρ r ((tupleEquiv e _).symm
-        (fun i => (args i).realize (fun a => e (fun j => v (a, j)))))
+    exact realize_applyTerms_rel f e hf _ _ r args ρs ρt (hρ r) v
   | neg φ ih =>
     intro ρs ρt hρ v
     exact not_congr (ih ρs ρt hρ v)
@@ -141,26 +94,12 @@ theorem realize_onFormula {Γ : List ℕ} {α : Type} (φ : RawFormula L' Γ α)
     exact and_congr (ihφ ρs ρt hρ v) (ihψ ρs ρt hρ v)
   | ex φ ih =>
     intro ρs ρt hρ v
-    simp only [onFormula, Operator.Formula.realize_exs, Operator.Formula.realize_relabel,
-      Operator.Formula.realize_ex, ih ρs ρt hρ]
-    constructor
-    · rintro ⟨xs, hx⟩
-      refine ⟨e xs, ?_⟩
-      convert hx using 1
-      funext a
-      cases a <;> rfl
-    · rintro ⟨x, hx⟩
-      refine ⟨e.symm x, ?_⟩
-      convert hx using 1
-      funext a
-      cases a with
-      | none => exact e.apply_symm_apply x
-      | some a => rfl
+    exact realize_exBlock e _ _ ρs v _ (ih ρs ρt hρ)
   | op k body args ih =>
     rename_i Γ' α'
     intro ρs ρt hρ v
     let vt : α' → N := fun a => e (fun i => v (a, i))
-    let ea := tupleEquiv e k
+    let ea := blockEquiv e k
     let xs := ea.symm (fun i => (args i).realize vt)
     let b : RawFormula L ((k * d) :: Γ'.map (· * d))
         (((α' × Fin d) ⊕ Fin (k * d)) ⊕ Fin (k * d)) :=
@@ -180,7 +119,7 @@ theorem realize_onFormula {Γ : List ℕ} {α : Type} (φ : RawFormula L' Γ α)
       simp only [b, Operator.Formula.realize_relabel]
       have hρ' : ∀ {j} (r : Operator.RelVar (k :: Γ') j) zs,
           zs ∈ Operator.RelEnv.cons (ea ⁻¹' R) ρs (r.scale d) ↔
-            tupleEquiv e j zs ∈ Operator.RelEnv.cons R ρt r := by
+            blockEquiv e j zs ∈ Operator.RelEnv.cons R ρt r := by
         intro j r zs
         cases r with
         | here => rfl
