@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Data.List.Nodup
 public import Mathlib.Logic.Function.Iterate
 public import Mathlib.Logic.Relation
+public import Mathlib.Order.Lattice.Nat
 
 /-!
 # Breadth-first search by rounds
@@ -22,20 +23,30 @@ closed under successors. So if at most `N` distinct elements are reachable from 
 `N` rounds from `[start]` (`Cslib.Reachability.search`) the found elements are exactly the
 reachable ones (`Cslib.Reachability.mem_search_iff`): each round before closure finds a new
 element. The number of rounds, not a search for a fixed point, keeps the algorithm a plain
-iteration, as polynomial-time certificates need.
+iteration, as polynomial-time certificates need. When no bound on the number of reachable
+elements is known in advance, the search runs until a round adds nothing: the closing round
+(`Cslib.Reachability.closingRound`) is the least number of rounds after which the found elements
+are closed, and they are then exactly the reachable ones
+(`Cslib.Reachability.mem_search_iff_of_closed`).
 
 ## Main definitions
 
 * `Cslib.Reachability.insertNew`: append an element to a list if not already present.
 * `Cslib.Reachability.expand`: one round of breadth-first search.
 * `Cslib.Reachability.search`: a number of rounds from a start element.
+* `Cslib.Reachability.closingRound`: the least number of rounds after which the search is closed.
 
 ## Main results
 
 * `Cslib.Reachability.nodup_search`: the found elements are distinct.
 * `Cslib.Reachability.reflTransGen_of_mem_search`: the found elements are reachable.
-* `Cslib.Reachability.mem_search_iff`: after as many rounds as there are reachable elements, the
-  found elements are the reachable ones.
+* `Cslib.Reachability.mem_search_iff_of_closed`: once a round adds nothing, the found elements are
+  the reachable ones.
+* `Cslib.Reachability.expand_search_eq_of_bound`, `Cslib.Reachability.mem_search_iff`: after as many
+  rounds as there are reachable elements, the search is closed and the found elements are the
+  reachable ones.
+* `Cslib.Reachability.closingRound_le`, `Cslib.Reachability.expand_search_ne_of_lt_closingRound`:
+  the closing round is the least round after which the search is closed.
 
 ## References
 
@@ -199,6 +210,28 @@ private theorem succ_le_length_search_or_closed (rounds : ℕ) (start : α) :
       · exact .inl (by rw [hsucc]; have := length_lt_expand hfix; omega)
       · exact absurd ih hfix
 
+/-- **A closed round finds every reachable element**: once a round adds nothing, the found elements
+are exactly those reachable from `start`. -/
+theorem mem_search_iff_of_closed {rounds : ℕ} {start a : α}
+    (hclosed : expand succ (search succ rounds start) = search succ rounds start) :
+    a ∈ search succ rounds start ↔ Relation.ReflTransGen (fun b c => c ∈ succ b) start a := by
+  refine ⟨reflTransGen_of_mem_search, fun h => ?_⟩
+  induction h with
+  | refl => exact start_mem_search rounds start
+  | tail _ hstep ih => exact expand_eq_self_iff.mp hclosed _ ih _ hstep
+
+/-- **Breadth-first search closes within as many rounds as there are reachable elements**: if every
+list of distinct elements reachable from `start` has at most `bound` entries, a round after at least
+`bound` rounds adds nothing. -/
+theorem expand_search_eq_of_bound {rounds bound : ℕ} {start : α}
+    (hbound : ∀ l : List α, l.Nodup →
+      (∀ b ∈ l, Relation.ReflTransGen (fun b c => c ∈ succ b) start b) → l.length ≤ bound)
+    (hrounds : bound ≤ rounds) :
+    expand succ (search succ rounds start) = search succ rounds start := by
+  refine (succ_le_length_search_or_closed rounds start).resolve_left fun hlen => ?_
+  have := hbound _ (nodup_search rounds start) fun b hb => reflTransGen_of_mem_search hb
+  omega
+
 /-- **After as many rounds as there are reachable elements, the found elements are the reachable
 ones.** If every list of distinct elements reachable from `start` has at most `bound` entries, then
 after at least `bound` rounds the found elements are closed under successors, so they include
@@ -207,14 +240,35 @@ theorem mem_search_iff {rounds bound : ℕ} {start a : α}
     (hbound : ∀ l : List α, l.Nodup →
       (∀ b ∈ l, Relation.ReflTransGen (fun b c => c ∈ succ b) start b) → l.length ≤ bound)
     (hrounds : bound ≤ rounds) :
-    a ∈ search succ rounds start ↔ Relation.ReflTransGen (fun b c => c ∈ succ b) start a := by
-  refine ⟨reflTransGen_of_mem_search, fun h => ?_⟩
-  have hclosed : expand succ (search succ rounds start) = search succ rounds start := by
-    refine (succ_le_length_search_or_closed rounds start).resolve_left fun hlen => ?_
-    have := hbound _ (nodup_search rounds start) fun b hb => reflTransGen_of_mem_search hb
-    omega
-  induction h with
-  | refl => exact start_mem_search rounds start
-  | tail _ hstep ih => exact expand_eq_self_iff.mp hclosed _ ih _ hstep
+    a ∈ search succ rounds start ↔ Relation.ReflTransGen (fun b c => c ∈ succ b) start a :=
+  mem_search_iff_of_closed (expand_search_eq_of_bound hbound hrounds)
+
+/-! ### Searching until closed -/
+
+/-- **The closing round**: the least number of rounds after which a round from `start` adds nothing,
+or `0` if the search never closes. Searching until closed takes this many rounds, a number that
+need not be known in advance. -/
+noncomputable def closingRound (succ : α → List α) (start : α) : ℕ :=
+  sInf {rounds | expand succ (search succ rounds start) = search succ rounds start}
+
+/-- The search is closed after the closing round, if it ever closes. -/
+theorem expand_search_closingRound {rounds : ℕ} {start : α}
+    (h : expand succ (search succ rounds start) = search succ rounds start) :
+    expand succ (search succ (closingRound succ start) start) =
+      search succ (closingRound succ start) start :=
+  Nat.sInf_mem (s := {rounds | expand succ (search succ rounds start) = search succ rounds start})
+    ⟨rounds, h⟩
+
+/-- The closing round is at most any round after which the search is closed. -/
+theorem closingRound_le {rounds : ℕ} {start : α}
+    (h : expand succ (search succ rounds start) = search succ rounds start) :
+    closingRound succ start ≤ rounds :=
+  Nat.sInf_le (s := {rounds | expand succ (search succ rounds start) = search succ rounds start}) h
+
+/-- Before the closing round, every round finds a new element. -/
+theorem expand_search_ne_of_lt_closingRound {rounds : ℕ} {start : α}
+    (h : rounds < closingRound succ start) :
+    expand succ (search succ rounds start) ≠ search succ rounds start :=
+  fun hclosed => absurd (closingRound_le hclosed) (Nat.not_le.mpr h)
 
 end Cslib.Reachability

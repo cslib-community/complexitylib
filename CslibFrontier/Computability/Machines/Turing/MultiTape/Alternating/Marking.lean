@@ -55,9 +55,13 @@ polynomial-time in the instance and the unary `N`
 * `Turing.MultiTapeATM.mem_markStep_iterate_iff`: `i + 1` rounds mark the views accepting within
   `i` moves.
 * `Turing.MultiTapeATM.markAccepts_iff`: marking decides acceptance on a closed list of views.
+* `Turing.MultiTapeATM.markAccepts_iff_of_mem_iff`: marking the reachable views decides
+  acceptance.
 * `Turing.MultiTapeATM.boundedAccepts_iff`: under a space bound, marking the views found by enough
   rounds of search decides acceptance.
 * `Turing.MultiTapeATM.computableInPolyTime_markGood`: the marking test is polynomial-time.
+* `Turing.MultiTapeATM.computableInPolyTime_markAccepts`: marking is polynomial-time in the found
+  views and the start view.
 * `Turing.MultiTapeATM.computableInPolyTime_boundedAccepts`: under a polynomial space bound,
   marking is polynomial-time in the instance and the unary number of views.
 
@@ -182,6 +186,17 @@ end Marking
 
 /-! ### Marking the reachable views -/
 
+/-- **Marking the reachable views decides acceptance**: if `found` lists exactly the views
+reachable from the initial view, marking it and testing the initial view decides acceptance. -/
+theorem markAccepts_iff_of_mem_iff {input : List Bool} {found : List (FiniteCfg k Bool State)}
+    (hfound : ∀ v, v ∈ found ↔
+      Relation.ReflTransGen atm.toPTM.toNTM.ViewStep (atm.toPTM.toNTM.initView input) v) :
+    atm.markAccepts found (atm.toPTM.toNTM.initView input) = true ↔ atm.Accepts input := by
+  rw [accepts_iff_exists_viewAcceptsWithin]
+  refine markAccepts_iff (fun v hv w hw => ?_) ((hfound _).mpr .refl)
+  rw [hfound] at hv ⊢
+  exact hv.tail (MultiTapeNTM.viewStep_of_mem_viewSucc hw)
+
 variable (atm) in
 /-- **Space-bounded acceptance by marking**: mark the views found by the truncated breadth-first
 search of `N` rounds, and test the initial view. -/
@@ -193,12 +208,8 @@ views. -/
 theorem boundedAccepts_iff {input : List Bool} {s N : ℕ}
     (hs : atm.toPTM.toNTM.RunsInSpace input s)
     (hN : 2 ^ (2 * MultiTapeNTM.coreLengthBound k State input.length s + 1) ≤ N) :
-    atm.boundedAccepts input N = true ↔ atm.Accepts input := by
-  rw [accepts_iff_exists_viewAcceptsWithin, boundedAccepts]
-  refine markAccepts_iff (fun v hv w hw => ?_)
-    ((MultiTapeNTM.mem_boundedSearch_iff hs hN).mpr .refl)
-  rw [MultiTapeNTM.mem_boundedSearch_iff hs hN] at hv ⊢
-  exact hv.tail (MultiTapeNTM.viewStep_of_mem_viewSucc hw)
+    atm.boundedAccepts input N = true ↔ atm.Accepts input :=
+  markAccepts_iff_of_mem_iff fun _ => MultiTapeNTM.mem_boundedSearch_iff hs hN
 
 /-! ### Polynomial time -/
 
@@ -236,6 +247,46 @@ theorem computableInPolyTime_markGood :
     (ComputableInPolyTime.allWithInput hsucc hmem) (ComputableInPolyTime.anyWithInput hsucc hmem)))
 
 open scoped Classical in
+/-- **Marking is polynomial-time** in the found views and the start view: the marked views are a
+sublist of the found views, and there are as many rounds of marking as found views, plus one. -/
+theorem computableInPolyTime_markAccepts :
+    ComputableInPolyTime (fun p : List (FiniteCfg k Bool State) × FiniteCfg k Bool State =>
+      atm.markAccepts p.1 p.2) (encPair (encList encFiniteCfg) encFiniteCfg) encBool := by
+  have hfound : ComputableInPolyTime
+      (fun p : List (FiniteCfg k Bool State) × FiniteCfg k Bool State => p.1)
+      (encPair (encList encFiniteCfg) encFiniteCfg) (encList encFiniteCfg) :=
+    ComputableInPolyTime.fst _ _
+  -- the number of rounds of marking
+  have hcount : ComputableInPolyTime
+      (fun p : List (FiniteCfg k Bool State) × FiniteCfg k Bool State => p.1.length + 1)
+      (encPair (encList encFiniteCfg) encFiniteCfg) encUnary :=
+    ComputableInPolyTime.unary_add.comp (((ComputableInPolyTime.length_list _).comp hfound).prod
+      (ComputableInPolyTime.const 1))
+  -- a round of marking
+  have hmark : ComputableInPolyTime (fun p : List (FiniteCfg k Bool State) ×
+      List (FiniteCfg k Bool State) => atm.markStep p.1 p.2)
+      (encPair (encList encFiniteCfg) (encList encFiniteCfg)) (encList encFiniteCfg) :=
+    ComputableInPolyTime.filterWithInput (ComputableInPolyTime.fst _ _)
+      (computableInPolyTime_markGood.comp (((ComputableInPolyTime.snd _ _).comp
+        (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _)))
+  -- the marked views are a sublist of the found views
+  have hmarked : ComputableInPolyTime
+      (fun p : List (FiniteCfg k Bool State) × FiniteCfg k Bool State =>
+        (atm.markStep p.1)^[p.1.length + 1] [])
+      (encPair (encList encFiniteCfg) encFiniteCfg) (encList encFiniteCfg) := by
+    refine ComputableInPolyTime.iterateWith hfound hcount (ComputableInPolyTime.const []) hmark
+      (hfound.polyBounded_length.add (.const 1)) fun p i _ => ?_
+    have hsub : ∀ j, ((atm.markStep p.1)^[j] []).Sublist p.1 := by
+      intro j
+      cases j with
+      | zero => exact List.nil_sublist _
+      | succ j =>
+        rw [Function.iterate_succ_apply']
+        exact List.filter_sublist
+    exact (length_encList_sublist _ (hsub i)).trans (Nat.le_succ _)
+  exact ComputableInPolyTime.decide_mem hmarked (ComputableInPolyTime.snd _ _)
+
+open scoped Classical in
 /-- **Space-bounded acceptance by marking is polynomial-time** in the instance and the unary
 number `N` of views, when the space bound is polynomial in the instance: the found and marked views
 are at most `N + 1` views of polynomial size, and there are at most `N + 2` rounds of marking. -/
@@ -250,35 +301,7 @@ theorem computableInPolyTime_boundedAccepts {α : Type} {enc : α ↪ List Bool}
     ComputableInPolyTime.finiteCfg_init ((ComputableInPolyTime.of_eq (encIn := enc)
       (encOut := encBits) (f := fun a => enc a) fun _ => rfl).comp (ComputableInPolyTime.fst _ _))
       ntm.q₀
-  have hfound := MultiTapeNTM.computableInPolyTime_boundedSearch (ntm := ntm) hs hpoly
-  -- the number of rounds of marking
-  have hcount : ComputableInPolyTime
-      (fun x : α × ℕ => (ntm.boundedSearch (enc x.1) x.2 x.2).length + 1)
-      (encPair enc encUnary) encUnary :=
-    ComputableInPolyTime.unary_add.comp (((ComputableInPolyTime.length_list _).comp hfound).prod
-      (ComputableInPolyTime.const 1))
-  -- a round of marking
-  have hmark : ComputableInPolyTime (fun p : List (FiniteCfg k Bool State) ×
-      List (FiniteCfg k Bool State) => atm.markStep p.1 p.2)
-      (encPair (encList encFiniteCfg) (encList encFiniteCfg)) (encList encFiniteCfg) :=
-    ComputableInPolyTime.filterWithInput (ComputableInPolyTime.fst _ _)
-      (computableInPolyTime_markGood.comp (((ComputableInPolyTime.snd _ _).comp
-        (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _)))
-  -- the marked views are a sublist of the found views
-  have hmarked : ComputableInPolyTime (fun x : α × ℕ =>
-      (atm.markStep (ntm.boundedSearch (enc x.1) x.2 x.2))^[(ntm.boundedSearch (enc x.1) x.2
-        x.2).length + 1] []) (encPair enc encUnary) (encList encFiniteCfg) := by
-    refine ComputableInPolyTime.iterateWith hfound hcount (ComputableInPolyTime.const []) hmark
-      (hfound.polyBounded_length.add (.const 1)) fun x i _ => ?_
-    have hsub : ∀ j, ((atm.markStep (ntm.boundedSearch (enc x.1) x.2 x.2))^[j] []).Sublist
-        (ntm.boundedSearch (enc x.1) x.2 x.2) := by
-      intro j
-      cases j with
-      | zero => exact List.nil_sublist _
-      | succ j =>
-        rw [Function.iterate_succ_apply']
-        exact List.filter_sublist
-    exact (length_encList_sublist _ (hsub i)).trans (Nat.le_succ _)
-  exact ComputableInPolyTime.decide_mem hmarked hinit
+  exact computableInPolyTime_markAccepts.comp
+    ((MultiTapeNTM.computableInPolyTime_boundedSearch (ntm := ntm) hs hpoly).prod hinit)
 
 end Turing.MultiTapeATM
