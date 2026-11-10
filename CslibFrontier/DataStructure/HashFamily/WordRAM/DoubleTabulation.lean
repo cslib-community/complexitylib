@@ -927,12 +927,14 @@ private theorem outerLoop_exec {w base c d b U M : ℕ} {x_init : Data 12}
             _ ≤ (c + 1) * d * 2 ^ b := Nat.le_mul_of_pos_right _ hb_pos
         dsimp only [space]
         omega)
-    have hmem_bot : x_init.mem (botAddr base c d b ⟨j, hj_lt⟩ (simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩)) =
-        (T₂ ⟨j, hj_lt⟩ (simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩)).val := hbot ⟨j, hj_lt⟩ _
-    have hbot_lt := botAddr_lt_base_add_space base c d b ⟨j, hj_lt⟩ (simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩)
-    have hxor_outer : (outerPrefixXor T₁ T₂ u j (by omega)).val ^^^
-        (T₂ ⟨j, hj_lt⟩ (simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩)).val = (outerPrefixXor T₁ T₂ u (j + 1) hj_succ).val :=
-      (val_outerPrefixXor_succ T₁ T₂ u hj_succ).symm
+    obtain ⟨yj, hyj⟩ : ∃ v, simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩ = v := ⟨_, rfl⟩
+    have hmem_bot : x_init.mem (botAddr base c d b ⟨j, hj_lt⟩ yj) = (T₂ ⟨j, hj_lt⟩ yj).val :=
+      hbot ⟨j, hj_lt⟩ yj
+    have hbot_lt := botAddr_lt_base_add_space base c d b ⟨j, hj_lt⟩ yj
+    have hxor_outer : (outerPrefixXor T₁ T₂ u j (by omega)).val ^^^ (T₂ ⟨j, hj_lt⟩ yj).val =
+        (outerPrefixXor T₁ T₂ u (j + 1) hj_succ).val := by
+      rw [← hyj]
+      exact (val_outerPrefixXor_succ T₁ T₂ u hj_succ).symm
     have hbot_next_le : base + c * d * 2 ^ b + j * 2 ^ b + 2 ^ b ≤ base + space c d b := by
       dsimp only [space]
       calc base + c * d * 2 ^ b + j * 2 ^ b + 2 ^ b
@@ -954,9 +956,8 @@ private theorem outerLoop_exec {w base c d b U M : ℕ} {x_init : Data 12}
         (by wram_simp [Nat.zero_mul, Nat.shiftRight_zero])
         (by wram_simp [val_innerPrefixXor_zero]) (by wram_simp [h10]) (by wram_simp [h11]))
         with s4 ⟨hs4_mem, hs4_0, hs4_1, hs4_2, hs4_3, hs4_4, hs4_5, hs4_8, hs4_10, hs4_11⟩
-      wram_exec [hs4_2, hs4_4, hs4_8, hs4_10, hs4_mem, hmem_bot, hxor_outer,
-        show base + c * d * 2 ^ b + j * 2 ^ b + (simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩).val =
-          botAddr base c d b ⟨j, hj_lt⟩ (simpleTabTuple T₁ (charDigits c b u) ⟨j, hj_lt⟩) from rfl]
+      wram_exec [hs4_2, hs4_4, hs4_8, hs4_10, hs4_mem, hyj, hmem_bot, hxor_outer,
+        show base + c * d * 2 ^ b + j * 2 ^ b + yj.val = botAddr base c d b ⟨j, hj_lt⟩ yj from rfl]
       exact ih (j + 1) _ (by omega) (by exact hs4_mem) (by wram_simp [hs4_0])
         (by wram_simp [hs4_1]) (by wram_simp) (by wram_simp [hs4_3]) (by wram_simp [hs4_4]; ring)
         (by wram_simp [hs4_5]) (by wram_simp [hs4_10]) (by wram_simp [hs4_11])
