@@ -45,7 +45,9 @@ DECLARED_NAME = re.compile(
     r"(?:@\[[^\]]*\]\s*)*(?:(?:private|protected|public|noncomputable|partial|unsafe|nonrec|meta"
     r"|scoped|local)\s+)*(?:class\s+(?:inductive|abbrev)|theorem|lemma|def|abbrev|structure|class"
     r"|inductive|opaque|instance(?:\s+\(priority\s*:=[^)]*\))?)\s+([^\s:({\[]+)")
-INLINE_LINK = re.compile(r"\[([^\]\n]+)\]\(\s*([^\s)]+)\s*\)")
+CODE_SPAN = re.compile(r"(`+).*?\1")
+# Label, then the URL with or without `<…>`, matching the targets `links()` reads.
+INLINE_LINK = re.compile(r"\[([^\]\n]+)\]\(\s*(?:<([^>\n]+)>|([^\s)]+))")
 # Anchors, as (Lean file, start line), that are stale or that queued pull requests will make
 # stale; the check tolerates them until they can be repointed without conflicting with or
 # ejecting those pull requests. Repoint the manual link and delete the entry (#3991). An entry
@@ -54,12 +56,10 @@ INLINE_LINK = re.compile(r"\[([^\]\n]+)\]\(\s*([^\s)]+)\s*\)")
 STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
     # Starts `computableInPolyTime_verify`, not the linked `scheme`; #4279 repoints it.
     ("CslibFrontier/Crypto/Computational/TreeSignature.lean", 550),
-    # Stale on main. #3728 edits the manual paragraph that links it.
-    ("CslibFrontier/Crypto/Computational/TreeSignature/Security.lean", 4779),
-    # Stale on main. #3981 moves this file's declarations.
+    # Stale on main. #4205 rewrites the manual sentence that links them.
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 243),
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 528),
-    # Correct on main, but queued #3875 and #3977 move these declarations without repointing.
+    # Stale on main. #3538 edits the adjacent manual line; repoint them after it lands.
     *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Computational.lean", line)
       for line in (107, 217, 228, 243)),
 }
@@ -169,7 +169,8 @@ def declarations(lines: list[str]) -> dict[str, list[tuple[int, int]]]:
     """Header lines `(first, last)`, 1-based, of each named unindented declaration by name.
 
     A header runs from the declaration's docstring opener or first attribute to the line naming
-    it; anonymous declarations (`example`, unnamed `instance`) and commented-out code are absent.
+    it, across line comments and `… in` lines; anonymous declarations (`example`, unnamed
+    `instance`) and commented-out code are absent.
     """
     found: dict[str, list[tuple[int, int]]] = {}
     lead = None
@@ -181,13 +182,18 @@ def declarations(lines: list[str]) -> dict[str, list[tuple[int, int]]]:
             lead = None
         elif line.startswith(("/--", "@[")):
             lead = lead or number
-        elif line[:1].strip() and not line.rstrip().endswith(" in"):
+        elif line[:1].strip() and not line.startswith("--") and not line.rstrip().endswith(" in"):
             lead = None
     return found
 
 
 def link_texts(text: str) -> list[tuple[str, str]]:
-    """`(display text, URL)` of each inline Markdown link outside fenced code."""
+    """`(display text, URL)` of each inline Markdown link, found as `links()` finds them.
+
+    Fenced code and code spans are skipped, so code showing a link is not a link, while a
+    code-formatted label (`` [`name`](…) ``) keeps its text. An optional `<…>` around the URL is
+    dropped.
+    """
     found, fence = [], None
     for line in text.splitlines():
         match = FENCE.match(line)
@@ -198,7 +204,10 @@ def link_texts(text: str) -> list[tuple[str, str]]:
         if match:
             fence = match[1]
             continue
-        found.extend(INLINE_LINK.findall(line))
+        # Blank out code spans, keeping offsets, and read each label from the original line.
+        masked = CODE_SPAN.sub(lambda span: " " * len(span[0]), line)
+        found.extend((line[link.start(1):link.end(1)], link[2] or link[3])
+                     for link in INLINE_LINK.finditer(masked))
     return found
 
 
@@ -213,12 +222,21 @@ def misnamed_anchor(display: str, module: str, fragment: str,
     """Header starts of the declaration the link text names, if the `L<a>[-L<b>]` fragment
     misses all of them; `None` when the anchor is right or the text names no declaration."""
     text = display.strip().strip("`").removeprefix("_root_.")
-    if text.endswith((".lean", ".md")) or module == text or module.endswith("." + text):
+    if text.endswith((".lean", ".md")):
         return None
     # An exact name match takes precedence, so `[toX]` and `[Complete.toX]` stay distinct when
-    # the file declares both.
-    headers = found.get(text) or [header for name, spans in found.items()
-                                  if names_declaration(text, name) for header in spans]
+    # the file declares both, and `[Foo](…/Foo.lean#L…)` is checked when `Foo.lean` declares
+    # `Foo`. Otherwise text naming the linked module is not checked, and qualified matches keep
+    # only the declared names sharing the most trailing components with the text, so
+    # `[Corr.Valid.add]` needs `Valid.add`, not a bare `add`.
+    headers = found.get(text)
+    if not headers:
+        if module == text or module.endswith("." + text):
+            return None
+        shared = {name: min(text.count("."), name.removeprefix("_root_.").count("."))
+                  for name in found if names_declaration(text, name)}
+        headers = [header for name, spans in found.items()
+                   if name in shared and shared[name] == max(shared.values()) for header in spans]
     bounds = [int(n) for n in re.findall(r"\d+", fragment)]
     # Line 1 links the whole file.
     if not headers or bounds[0] == 1 or any(

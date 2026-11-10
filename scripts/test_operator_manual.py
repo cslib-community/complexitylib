@@ -212,6 +212,53 @@ class ManualChecks(unittest.TestCase):
         self.assertEqual(self.errors(), [
             f"workflows/first.md: {MISNAMED_SOURCE_ANCHOR} (declared at L5): {url.format(3)}"])
 
+    def test_name_check_reads_links_as_the_link_scanner_does(self):
+        (self.repo / "CslibFrontierTests/Anchored.lean").write_text(ANCHORED_SOURCE)
+        line = ANCHORED_SOURCE.splitlines().index("def three : Nat := 3") + 1
+        url = f"../../CslibFrontierTests/Anchored.lean#L{line}"
+        # Code showing a link is not a link.
+        self.doc.write_text(self.doc.read_text()
+                            + f"\nWrite `[one]({url})` or ``[`one`]({url})``.\n")
+        self.assertEqual(self.errors(), [])
+        # A code-formatted label, an angle-bracketed URL and a titled link are links.
+        wrong = [f"[`one`]({url})", f"[one](<{url}>)", f'[one]({url} "title")']
+        self.doc.write_text(self.doc.read_text() + "".join(f"\n{link}\n" for link in wrong))
+        declared = "declared at L{}".format(ANCHORED_SOURCE.splitlines().index(
+            "/-- A documented definition. -/") + 1)
+        self.assertEqual(self.errors(), [
+            f"workflows/first.md: {MISNAMED_SOURCE_ANCHOR} ({declared}): {url}"] * len(wrong))
+
+    def test_header_spans_line_comments(self):
+        source = "module\n\n/-- Doc. -/\n-- A remark.\n@[simp]\ndef size : Nat := 0\n"
+        (self.repo / "CslibFrontierTests/Size.lean").write_text(source)
+        url = "../../CslibFrontierTests/Size.lean#L{}"
+        self.doc.write_text(self.doc.read_text() + "".join(
+            f"\n[size]({url.format(line)})\n" for line in (3, 5, 6)))
+        self.assertEqual(self.errors(), [])
+
+    def test_qualified_match_prefers_the_longest_declared_name(self):
+        source = "module\n\ndef add : Nat := 0\n\ntheorem Valid.add : True := trivial\n"
+        (self.repo / "CslibFrontierTests/Corr.lean").write_text(source)
+        url = "../../CslibFrontierTests/Corr.lean#L{}"
+        self.doc.write_text(self.doc.read_text()
+                            + f"\n[Corr.Valid.add]({url.format(5)}) [Ns.add]({url.format(3)})\n")
+        self.assertEqual(self.errors(), [])
+        self.doc.write_text(self.doc.read_text() + f"\n[Corr.Valid.add]({url.format(3)})\n")
+        self.assertEqual(self.errors(), [
+            f"workflows/first.md: {MISNAMED_SOURCE_ANCHOR} (declared at L5): {url.format(3)}"])
+
+    def test_declaration_named_like_its_file_is_checked(self):
+        source = "module\n\ndef helper : Nat := 0\n\nstructure Foo where\n  x : Nat\n"
+        (self.repo / "CslibFrontierTests/Foo.lean").write_text(source)
+        url = "../../CslibFrontierTests/Foo.lean#L{}"
+        # The module's full name is not a declaration, so it may link anywhere.
+        self.doc.write_text(self.doc.read_text() + f"\n[Foo]({url.format(5)}) "
+                            f"[CslibFrontierTests.Foo]({url.format(3)})\n")
+        self.assertEqual(self.errors(), [])
+        self.doc.write_text(self.doc.read_text() + f"\n[Foo]({url.format(3)})\n")
+        self.assertEqual(self.errors(), [
+            f"workflows/first.md: {MISNAMED_SOURCE_ANCHOR} (declared at L5): {url.format(3)}"])
+
     def test_misnamed_check_leaves_stale_anchors_to_the_start_check(self):
         lines = ANCHORED_SOURCE.splitlines()
         url = self.anchor_link(lines.index("theorem in a docstring is not a declaration. -/") + 1)
