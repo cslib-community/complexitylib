@@ -418,61 +418,59 @@ public lemma wTime_le' (c : WCtx) : wTime c ≤ 2 * ((eWCtx c).length + 1) ^ 3 :
     _ = ((eWCtx c).length + 1) ^ 3 + ((eWCtx c).length + 1) ^ 2 := by ring
     _ ≤ 2 * ((eWCtx c).length + 1) ^ 3 := by omega
 
+/-- A step of a machine whose description and configuration are read off the state of the fold,
+with the symbol found by a countdown `(k, cur)` that is also read off the state. The bounds hold
+when the description, configuration and current symbol together fit in the state. -/
+private lemma stepCount_inO {dc : CSt → Desc × SCfg} {k cur : CSt → ℕ}
+    (hdc : ComputableTidilyInO dc eCSt (encPair eDesc eCfg) (fun s => (eCSt s).length)
+      fun s => (eCSt s).length)
+    (hk : ComputableTidilyInO k eCSt encNat (fun s => (eCSt s).length) fun s => (eCSt s).length)
+    (hcur : ComputableTidilyInO cur eCSt encUnary (fun s => (eCSt s).length)
+      fun s => (eCSt s).length)
+    (hlen : ∀ s, 2 * (encPair eDesc eCfg (dc s)).length + cur s + 1 ≤ (eCSt s).length) :
+    ComputableTidilyInO
+      (fun s => stepWith (dc s).1 (dc s).2
+        (if (dc s).2.inputPos = 0 ∨ k s ≠ 0 then none else some (cur s)))
+      eCSt (encPair eCfg eSym) (fun s => ((eCSt s).length + 1) ^ 3)
+      fun s => (eCSt s).length + 1 := by
+  have hsym := countSym_inO (inputPos_inO hdc.snd') hk hcur
+  -- bridge for #862: tidy client of the plain `stepWith_inO`
+  refine (stepWith_inO.tidy.comp (hdc.prod hsym)).mono 100 (fun s => ?_) fun s => ?_
+  all_goals
+    set sym := if (dc s).2.inputPos = 0 ∨ k s ≠ 0 then none else some (cur s)
+    have hw := wTime_le' (dc s, sym)
+    have hctx : (eWCtx (dc s, sym)).length ≤ (eCSt s).length + 1 := by
+      have hsym : (eSym sym).length ≤ cur s + 1 := by
+        simp only [sym]
+        split_ifs <;> simp
+      have := hlen s
+      simp only [length_encPair] at hsym this ⊢
+      omega
+    have hcube := Nat.pow_le_pow_left (Nat.add_le_add_right hctx 1) 3
+    have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
+    have h8 : ((eCSt s).length + 1 + 1) ^ 3 ≤ 8 * ((eCSt s).length + 1) ^ 3 := by
+      have := Nat.pow_le_pow_left
+        (show (eCSt s).length + 1 + 1 ≤ 2 * ((eCSt s).length + 1) by omega) 3
+      rw [Nat.mul_pow] at this
+      omega
+    omega
+
 /-- A step of `g`, with the symbol found by the countdown. -/
 public lemma stepG_inO :
     ComputableTidilyInO (fun s : CSt => stepWith s.1.1.1.1 s.1.1.1.2 (gSym s.1))
     eCSt (encPair eCfg eSym) (fun s => ((eCSt s).length + 1) ^ 3) fun s => (eCSt s).length + 1 := by
   have hc := fst eCtl (encPair encNat encUnary)
-  have hg := hc.fst'.fst'
-  have hsym := countSym_inO (inputPos_inO hg.snd') hc.snd'.fst' hc.snd'.snd'
-  -- bridge for #862: tidy client of the plain `stepWith_inO`
-  refine (stepWith_inO.tidy.comp (hg.prod (hsym.of_enc_eq (g := fun s : CSt => gSym s.1)
-    fun _ => rfl))).mono 100 (fun s => ?_) fun s => ?_
-  all_goals
-    have hw := wTime_le' (s.1.1.1, gSym s.1)
-    have hctx : (eWCtx (s.1.1.1, gSym s.1)).length ≤ (eCSt s).length + 1 := by
-      have : (eSym (gSym s.1)).length ≤ s.1.2.2 + 1 := by
-        unfold gSym
-        split_ifs <;> simp
-      simp only [length_encPair, encUnary_apply, List.length_replicate] at this ⊢
-      omega
-    have hcube := Nat.pow_le_pow_left (Nat.add_le_add_right hctx 1) 3
-    have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
-    have h8 : ((eCSt s).length + 1 + 1) ^ 3 ≤ 8 * ((eCSt s).length + 1) ^ 3 := by
-      have := Nat.pow_le_pow_left
-        (show (eCSt s).length + 1 + 1 ≤ 2 * ((eCSt s).length + 1) by omega) 3
-      rw [Nat.mul_pow] at this
-      omega
-    dsimp only [eCSt] at *
-    omega
+  refine stepCount_inO hc.fst'.fst' hc.snd'.fst' hc.snd'.snd' fun s => ?_
+  simp only [length_encPair, encUnary_apply, List.length_replicate]
+  omega
 
 /-- A step of `f`, with the symbol found by the countdown over the input. -/
 public lemma stepF_inO : ComputableTidilyInO (fun s : CSt => stepWith s.1.1.2.1 s.1.1.2.2 (xSym s))
     eCSt (encPair eCfg eSym) (fun s => ((eCSt s).length + 1) ^ 3) fun s => (eCSt s).length + 1 := by
-  have hc := fst eCtl (encPair encNat encUnary)
   have hn := snd eCtl (encPair encNat encUnary)
-  have hg := hc.fst'.snd'
-  have hsym := countSym_inO (inputPos_inO hg.snd') hn.fst' hn.snd'
-  -- bridge for #862: tidy client of the plain `stepWith_inO`
-  refine (stepWith_inO.tidy.comp (hg.prod (hsym.of_enc_eq (g := xSym)
-    fun _ => rfl))).mono 100 (fun s => ?_) fun s => ?_
-  all_goals
-    have hw := wTime_le' (s.1.1.2, xSym s)
-    have hctx : (eWCtx (s.1.1.2, xSym s)).length ≤ (eCSt s).length + 1 := by
-      have : (eSym (xSym s)).length ≤ s.2.2 + 1 := by
-        unfold xSym
-        split_ifs <;> simp
-      simp only [length_encPair, encUnary_apply, List.length_replicate] at this ⊢
-      omega
-    have hcube := Nat.pow_le_pow_left (Nat.add_le_add_right hctx 1) 3
-    have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
-    have h8 : ((eCSt s).length + 1 + 1) ^ 3 ≤ 8 * ((eCSt s).length + 1) ^ 3 := by
-      have := Nat.pow_le_pow_left
-        (show (eCSt s).length + 1 + 1 ≤ 2 * ((eCSt s).length + 1) by omega) 3
-      rw [Nat.mul_pow] at this
-      omega
-    dsimp only [eCSt] at *
-    omega
+  refine stepCount_inO (fst eCtl (encPair encNat encUnary)).fst'.snd' hn.fst' hn.snd' fun s => ?_
+  simp only [length_encPair, encUnary_apply, List.length_replicate]
+  omega
 
 /-- The `g` branch of a step of the composition: a step of `g`, restarting `f`. -/
 lemma gBranch_inO : ComputableTidilyInO (fun s : CSt =>
