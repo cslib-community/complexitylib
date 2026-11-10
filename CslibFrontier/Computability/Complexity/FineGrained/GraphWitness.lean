@@ -23,6 +23,10 @@ supplied solutions. Every constructor and native resource premise of the shared 
 instantiated with the actual proved graph writer. The source is [ChenJiangZhu2027], Corollary 7.4
 and Appendix D.5 (PDF pp.26,37). Canonical explicit matrices/unary declarations are unchanged.
 
+The source fixes no raw graph format. Canonical explicit graph matrices and unary declarations
+are the library representation convention, not a missing source admission theorem. No parser for
+arbitrary external graph formats or succinct declaration transfer is claimed.
+
 ## Main definitions
 
 * `GraphWitness.selected`, `GraphWitness.decodeMatching`: original-set/subgraph decoding.

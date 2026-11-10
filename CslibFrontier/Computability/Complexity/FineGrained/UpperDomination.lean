@@ -20,6 +20,10 @@ is equivalent to an inclusion-minimal dominating set meeting the signed binary i
 This is [ChenJiangZhu2027], Proposition 7.6 / Corollary 7.4 (PDF pp. 26–27, 34–35).
 Unique-mark exact-set counting and optimization/witness recovery are separate source clauses.
 
+The source fixes no raw graph format. Canonical explicit graph matrices and unary declarations
+are the library representation convention, not a missing source admission theorem. No parser for
+arbitrary external graph formats or succinct declaration transfer is claimed.
+
 ## Main results
 
 * `exists_count_realEta_certificate`: exact set–marking count with actual sharp native resources.

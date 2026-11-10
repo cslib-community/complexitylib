@@ -550,7 +550,8 @@ canonical arbitrary-matrix endpoint.
 The source's Section 3 uses explicit instances and states $r=O(L)$ for the exact-one ground set.
 This frontend preserves the recorded unary declaration and typed binary word conventions; it
 adds no untrusted-byte parser, succinct-declaration guarantee or new backend transition-level
-realization. The broader encoding/model-transfer ROADMAP entry remains open, as does ALL-main.
+realization. The completed backend realization and current source/model scope are recorded in
+the final acceptance inventory below; independent ALL-main review remains required.
 
 ### Counting plans using the binary selector
 
@@ -762,8 +763,10 @@ space and $L^{O(1)}2^{O(\eta(n))}$ time, proving the fixed-linear $2n$ rescaling
 This covers the no-size-test fixed independent-domination rule in Corollary 7.2 and the local
 predicate of Appendix D.4, Proposition D.3. The continuation below supplies variable input
 cardinality bounds. Size distributions, general finite/cofinite rules, labeled partition matrices
-and the remaining graph applications are separate. Graph correctness uses the canonical simple undirected input; arbitrary raw matrix
-shapes have total polynomial construction/global space without an additional graph-admission claim.
+and the remaining graph applications are separate. Graph correctness uses canonical simple
+undirected inputs in the library encoding. Section 3 fixes no raw graph format, so this is a
+representation convention, not an outstanding source admission requirement. Arbitrary matrix
+shapes still have total polynomial construction and global space.
 Run `scripts/build.sh CslibFrontierTests.PaperEndpoints.IndependentDomination` from the root.
 The [complete checked client](../../CslibFrontierTests/PaperEndpoints/IndependentDomination.lean)
 checks empty/isolated/edge/path/triangle/star graphs, original counts and exact query budgets.
@@ -1013,7 +1016,8 @@ $\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$; rounded certificates include a
 and empty cases. Thresholds are varying signed binary inputs. Nonpositive thresholds count all
 induced matchings; impossible thresholds count zero, without exponential threshold decoding.
 The resource model remains the existing native word/resource model, with binary encodings,
-not a new bit-transition simulation or arbitrary-byte graph admission theorem.
+not a new bit-transition simulation. Section 3 fixes no raw graph format; the graph endpoints
+use the library encoding by convention, without claiming a validator for arbitrary byte formats.
 
 From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.InducedMatchingInterval`.
 The [complete checked client](../../CslibFrontierTests/PaperEndpoints/InducedMatchingInterval.lean)
@@ -1065,7 +1069,8 @@ $\eta(v)=v\log\log v/\sqrt{\log v}$ for $v\ge16$. Rounded certificates include a
 and empty cases. An empty graph returns zero and the empty word; an edgeless graph returns zero
 with every declared vertex unselected. No vertices or artificial positive weights are added.
 Raw malformed frames still have a total algorithm and polynomial workspace; graph correctness
-and sharp time use the existing canonical promise, not an added validation/admission theorem.
+and sharp time use canonical simple graphs in the library encoding. The source fixes no raw
+graph format, so an arbitrary-format validator is not an outstanding source requirement.
 The encoding remains nonsuccinct with a unary declaration, in the existing native resource model.
 
 From the checkout root run `scripts/build.sh CslibFrontierTests.PaperEndpoints.InducedMatchingOptimum`.
@@ -1128,11 +1133,11 @@ coefficient sums. A 32-vertex query construction has 63 variables per query with
 that construction test enumerates neither selections nor matchings. Tiny query/trace oracles are
 tests only; production certificates instantiate the approved unrestricted-density native counter.
 
-General sigma-rho rules and labeled degree matrices are supplied below. The width-three Upper
-Dominating Set refinement and four other graph predicates' full witness/optimum composition
-remain open. Corollary 7.5 is
-covered under the stated encoding; that milestone does not close the paperwide/ALL-main objective or alternative admission/
-succinct-encoding transfers.
+General sigma-rho rules, labeled degree matrices, the width-three Upper Dominating Set
+refinement and the other graph recovery/optimum compositions are supplied below. Corollary 7.5
+uses the library encoding by convention: Section 3 specifies no raw graph format and requires no
+alternative admission theorem. The final inventory below records source/model conventions;
+independent paperwide acceptance remains open.
 
 ### Upper domination through private-neighbor markings
 
@@ -1179,8 +1184,9 @@ Upper-domination optimum-value and actual witness extraction are supplied below.
 Matching and Upper Domination have full optimum/witness composition, as described below; the other
 four recovery specializations and their resources are supplied below. General Corollary 7.2
 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions are supplied below.
-Alternative admission/succinct encodings and the paperwide independent audit remain outstanding.
-These limits keep ALL-main open.
+Section 3 fixes no raw graph format; these graph endpoints use the library encoding by
+convention. The final inventory below records source/model conventions; independent paperwide
+acceptance remains open.
 
 ### Compute the upper-domination optimum value
 
@@ -1258,7 +1264,9 @@ The four other recovery specializations are supplied below, including runtime si
 independent domination. Its complete minimum-cardinality machine and resources are also supplied
 below. General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree
 partitions are supplied below, as is Proposition 7.6's width-three path-marker refinement with
-sharp resources. Alternative encodings/admission and the independent paperwide audit remain open.
+sharp resources. The source fixes no raw graph format; graph endpoints use the library encoding
+by convention. The final inventory below records source/model conventions; independent
+paperwide acceptance remains open.
 The initial pair counter is still not an exact unmarked-set counter. ALL-main is not completed by
 this witness endpoint.
 
@@ -1288,8 +1296,9 @@ The checked formula solver has an all-size rounded clock; fixed-affine dimension
 includes small and empty declarations and preserves the single loglog exponent. On canonical
 explicit matrices with unary vertex declarations, success is exactly conventional feasibility,
 and every returned word has length **exactly** the original vertex count. No gate bits are returned.
-Malformed-byte admission, succinct declarations and a transition-level bit simulation are separate
-inventory items; the native charged-word model remains the previously recorded one.
+The source fixes neither raw byte formats nor succinct declarations. These explicit library
+encodings are conventions; the finite-machine backend and model scope appear in the final
+acceptance inventory below.
 
 `GraphWitness.selected` decodes selections. Kernel witnesses retain arc orientation and satisfy
 `Digraph.IsKernel`; the source uses loopless digraphs, while the theorem also permits loops.
@@ -1370,8 +1379,8 @@ This closes the augmented width-four exact-set clause. The source's shared path-
 width-three construction on at most $6v+a-1$ variables is supplied in the next section, including
 count transport and sharp resources; it avoids the extra variables of ordinary clause splitting.
 The compact regular construction and independent-domination optimum recovery are completed below.
-Degree-rule optimization is supplied below; encoding/model transfers remain in the paperwide
-inventory.
+Degree-rule optimization is supplied below; the final acceptance inventory records the
+completed source/model correspondences.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 
@@ -1446,7 +1455,7 @@ $L^{O(1)}2^{O(\eta(v))}$ for $v\ge16$, with global polynomial workspace. No addi
 factor is hidden. Together with the exact count and query budgets above, this closes the
 shared-marker refinement of Proposition 7.6 in the recorded native/encoding model. The combined
 ROADMAP entry has been removed after the C.2 completion below. Degree-rule optimization is
-supplied later in this chapter; broader encoding/model transfers remain separate.
+supplied later in this chapter; the final acceptance inventory records the source/model scope.
 The reviewed width-four exact-set counter is unchanged.
 
 From the checkout root run:
@@ -1547,8 +1556,8 @@ traces, rather than enumerating auxiliaries. It checks exact/upper/lower interva
 512-bit signed bounds, degree-three cliques, declared isolates, direct empty dispatch and sizes
 three/six/four on two disjoint triangles. It also checks the actual gate-dependent query metadata,
 a formal zero count for a contradictory compiled plan, and the native count/decision interfaces.
-The C.2 ROADMAP entry is removed. Theorem 7.3 optimization is supplied below; encoding/model
-transfers and the independent paperwide audit remain open.
+The C.2 ROADMAP entry is removed. Theorem 7.3 optimization is supplied below, and the final
+acceptance inventory records the source/model scope. Independent paperwide acceptance stays open.
 
 ### Minimum independent-domination resources
 
@@ -1581,7 +1590,7 @@ minimum word. The all-size rounded certificate covers small and empty graphs. No
 size alone is used as a runtime proof, no desired runtime is a premise, and the single-loglog
 exponent is unchanged. This closes the remaining Corollary 7.4 clause for the recorded explicit
 matrix/unary-declaration native model, so only that ROADMAP entry is removed. The refined graph
-constructions are completed above; broader encoding/model transfers remain open.
+constructions are completed above; the final acceptance inventory records the source/model scope.
 `exists_attained_optimal_search` proves unconditional finite-graph success, including the empty
 graph: a finite maximal independent set dominates, so the actual search always returns a word.
 No threshold-output or runtime premise is substituted for those obligations.
@@ -1801,12 +1810,11 @@ A formal client proves both empty-graph optimum values and instantiates the comp
 finite/cofinite endpoint. Enumeration occurs only in the test oracle.
 
 The general degree-rule optimization ROADMAP entry is removed. The precise remaining mandatory
-inventory is the remaining encoding/model transfers: source-claimed succinct input cases and
-the remaining backend transition-level endpoints. Signed counting/optimization and the total-decoder
-weighted endpoint are documented below; arbitrary-rational row selection appears earlier.
-The explicit canonical matrix/unary declaration and native charged-word model remain visible;
-this endpoint supplies none of those transfers. Optional Proposition A.3 stays last. ALL-main
-and the independent paperwide audit remain open.
+inventory is summarized in the source/model acceptance table at the end of this chapter.
+Signed counting/optimization and the total-decoder weighted endpoint are documented below;
+arbitrary-rational row selection appears earlier. The explicit canonical matrix/unary declaration
+and native charged-output model remain visible. The source claims no succinct declarations.
+Optional Proposition A.3 stays last, and independent paperwide acceptance remains open.
 
 ### General polynomial-weight comparisons
 
@@ -1885,8 +1893,8 @@ the source joint table concerns nonnegative weight totals with arbitrary literal
 
 These are the existing native output-charged machine certificates and explicit binary frames,
 with a unary original variable declaration. They do not add an alternative raw parser, succinct
-declaration transfer or fresh transition-level realization of the reused backend. Other ALL-main
-clauses remain listed in ROADMAP.
+declaration transfer. The finite transition-level realization of the reused sharp backend is
+supplied by `IncidenceGeneralMachine` below; the source/model inventory there records the scope.
 
 From the checkout root run
 `scripts/build.sh CslibFrontierTests.PaperEndpoints.WeightedComparisonResources --wfail --iofail`.
@@ -2852,9 +2860,9 @@ and the actual source time/space witness. It also covers zero-variable contradic
 and an unbounded invalid-support family rejected in polynomial charged time at declared size zero.
 
 The sharper source counter and parsed ragged weighted execution are now certified as described
-above. The table preprocessing/dispatch endpoints are also covered above. General graph
-degree-rule/partition endpoints and the remaining graph clauses keep ALL-main open. The source
-composition is OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.
+above. The table preprocessing/dispatch and general graph degree-rule/partition endpoints are
+also covered above. The finite-machine endpoint and current acceptance inventory follow below.
+The source composition is OpenAI2026ETH Appendix D.3, PDF p.57, imported by STOC1575 Lemma 3.2 p.11.
 
 ### Signed class-bound normalization stage
 
@@ -2886,5 +2894,67 @@ scalar signed normalization and the actual unsigned machines; no auxiliary assig
 is supplied. Both count and optimum endpoints include empty graphs and contradictory intervals.
 `CslibFrontierTests.PaperEndpoints.SignedDegreeRuleOptimum` executes the normalization, tiny
 original-label counting, distribution, scans and optional scalar reconstruction on negative,
-512-bit, exact-size and empty cases. Remaining succinct/model transfers stay in ROADMAP; the
-total-decoder weighted transfer is supplied by `WeightedRawCounting` above.
+512-bit, exact-size and empty cases. The total-decoder weighted transfer is supplied by
+`WeightedRawCounting` above. The following inventory records the source/model acceptance scope.
+
+
+### STOC1575 source/model acceptance inventory
+
+The current implementation inventory is the table below. Earlier construction-layer sections
+record what each individual stage supplies; their local limitations are discharged by the later
+compositions named here. This inventory is an author handoff for independent ALL-main review,
+not independent approval of the paperwide claim.
+
+Section 3 of [ChenJiangZhu2027] (PDF p.10) counts bit operations and polynomial space in explicit
+input length $L\ge1$, and explicitly declares $[r]$ with $r=O(L)$. It specifies neither raw byte
+formats nor succinct declarations. Explicit library matrices, framed lists and unary declarations
+are representation conventions for that source scope. No arbitrary external-format validator,
+circuit-encoded graph or unbounded binary-declaration theorem is claimed or needed for these
+explicit-input statements. Such a separate extension would need its own resource analysis;
+in particular the library charges the binary count's output length to its space bound.
+
+`CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralMachine` now exposes
+the recorded sharp backend as one finite binary Turing machine. For every fixed $K\ge2$, its
+`exists_countGeneralParity_source_machine` chooses all machine data and constants before every
+$N\ge20$ and every valid clause list of width at most $K$. There is no bound on clause density.
+Upstream `ComputesInTimeAndSpace` records actual transition time and work-tape usage, with
+$$(N+M+1)^{O_K(1)}2^{O_K(\eta(N))}$$
+time, polynomial space and a separately bounded binary output, where
+$\eta(N)=N\log\log N/\sqrt{\log N}$. `exists_countGeneralParity_machine` also covers bounded
+sizes and rejection of invalid declarations/widths with the rounded clock. Free declared
+variables are counted, including when no variable occurs in the formula.
+
+`CslibFrontier.Computability.GenericRAM.Native.MachineBounds` provides the shared
+`NativeCertificate.exists_sharp_machine` adapter, also used by `WeightedRawCounting`.
+It unpacks the actual finite-machine witness in `NativeCertificate.computes` and absorbs only
+fixed multiplicative/additive constants into already proved bounds. It assumes no new execution
+semantics, oracle or faster runtime. The application endpoints derive its bound arguments from
+the actual counter certificates. Other frontend certificates already use the same upstream
+binary-machine semantics and compose actual writers, sequential calls and reconstruction.
+The existing real-eta bounds are in original variables after proved fixed-linear rescaling;
+no extra loglog factor is discarded.
+
+| Source clause | Implemented endpoint and representation/resource scope |
+| --- | --- |
+| Theorem 1.1, Section 4, Proposition 4.2 | `TwoBoundaryFrontend`: actual bounded-term DNF writer, one/two-query dispatch, exact difference and sharp native time/space in the declared dimension plus condition count; fixed-linear source rescaling where required. |
+| Lemma 3.1 | `PolyTime.Rational.RowSelection`: arbitrary rational original-row selection, original row indices, exact affine-solution preservation and binary preprocessing. |
+| Lemma 3.2 | `IncidenceGeneralResources` and `IncidenceGeneralMachine`: unrestricted-density fixed-width counting, original declarations, sharp single-loglog time and polynomial bit space/output. |
+| Lemma 3.3 and Appendix A.1 | `CardinalityInterval`: actual functional cardinality gates, linear auxiliary budget and binary construction/size tests. |
+| Theorems 1.2, 5.1–5.2 and Corollary 5.3 | `ExactOneCountingResources`: normalized original input, direct/reject/full-rank/partial-rank branches, signed constraints and bounded-width side formulas; no supplied basis, answer or runtime. |
+| Corollary 5.4 | `ExactCover`: actual incidence transposition and indexed-candidate count/decision resources, parameterized by candidate count, including unused or duplicate candidates. |
+| Theorems 1.3 and 6.3 | `VCOneTables`, `VCOneClosure` / `VCOneFrontend`, `VCOneDispatch` and `VCOneCountingResources`: explicit local tables of VC dimension at most one, injective individual scopes, arbitrary global overlap, canonical-table extraction and original counts. Arbitrary DNF is handled separately by the bounded-term frontend, without a false VC-one assumption. |
+| Theorem 7.1 | `WeightedRaggedResources` and `WeightedRawCounting`: fixed normalized demand bound, variable row lengths/empty rows, repeated mixed-polarity positive binary weights, signed targets, declared unused variables, canonical parsing or documented total-decoder admission, exact counts and sharp native resources. |
+| Corollary 7.2 and Theorem 7.3 | `SigmaRhoCountingResources`, `BoundedDegreePartitionCountingResources`, `DegreePartitionDistribution` and `DegreePartitionOptimum`: fixed finite/cofinite rules and fixed label dimension, varying size bounds, exact labeled counts, full ordered size-vector output and attained global min/max extraction. Signed wrappers are strict generalizations of the source natural bounds. Polynomial traversal claims keep the number of labels fixed. |
+| Corollary 7.4 and Appendix D | The independent-domination, digraph-kernel, perfect-matching-cut, dominating-induced-matching, induced-matching and upper-domination modules supply actual decision/recovery endpoints. The advertised minimum/maximum clauses have executable value and optimal-set extraction with whole-search native resources, including independent-domination minimum size. Simple graphs/loopless digraphs are the source promises. |
+| Corollary 7.5 | `InducedMatchingDistribution`: complete ordered edge-size coefficients, original matching multiplicities, no-size-test total counter, actual output writing and sharp time/polynomial space. |
+| Proposition 7.6 | `UpperDominationShared`: shared-marker width-three queries, general graph count bijection, literal-index and cubic-clause bounds, sequential reconstruction and closed sharp time/space. |
+| Proposition C.2 | `RegularInducedInterval`: fixed-degree regular induced-subgraph counts with varying size bounds; compact construction for fixed degree at least two with the stated variable/width/clause bounds, and the degree-one endpoint, exact counts and native resources. |
+| Lemma A.1 and Corollary A.2 | `WeightedComparisonConstruction`, `WeightedComparisonSource` and `WeightedComparisonDistribution`: general polynomially bounded integer weights/signed comparisons, uniform functional generator, unique extensions and correlated joint distributions; unrestricted binary weights are not substituted for the source polynomial-weight hypothesis. |
+| Proposition A.3 | Optional parsimonious bounded-demand alternative remains unimplemented and listed in ROADMAP. |
+
+The fresh checked client is `CslibFrontierTests.PaperEndpoints.IncidenceGeneralMachine`. It uses
+one finite machine and derives the $2^{20}$ count of twenty unused variables, empty-clause zero,
+empty-system one and out-of-range-index rejection without enumerating a twenty-variable cube.
+No advertised mandatory source clause is intentionally left as an assumed reduction or runtime
+contract in this inventory. Final independent ALL-main source/API/resource review is still
+required; any finding there must be recorded as a specific remaining clause before integration.

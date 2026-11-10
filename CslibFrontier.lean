@@ -1422,6 +1422,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Inciden
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryCorrectness
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralCounter
+public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralMachine
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGeneralResources
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceGroupCoefficients
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
@@ -2448,6 +2449,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
 public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace.Iteration
 public import CslibFrontier.Computability.GenericRAM.Native.HeavyBranchFold
 public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
+public import CslibFrontier.Computability.GenericRAM.Native.MachineBounds
 public import CslibFrontier.Computability.GenericRAM.Native.MeasurementFold
 public import CslibFrontier.Computability.GenericRAM.Native.Nat
 public import CslibFrontier.Computability.GenericRAM.Native.PolynomialOverhead

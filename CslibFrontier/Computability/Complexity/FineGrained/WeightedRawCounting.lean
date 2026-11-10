@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.FineGrained.WeightedRaggedResources
+import CslibFrontier.Computability.GenericRAM.Native.MachineBounds
 import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 
 /-!
@@ -98,28 +99,9 @@ theorem exists_countDecoded_machine (d : ℕ) :
       (∀ w, count w = if admit d (decoder.decode w) then
         Fintype.card {σ // Holds (decoder.decode w) σ} else 0) := by
   obtain ⟨count, cs, C, e, A, hs, ht, hc, _⟩ := exists_countDecoded_sharp_certificate d
-  obtain ⟨c, hm, hl⟩ := cs.computes
-  have hS (w : List Bool) : c * (cs.space w + 1) ≤ c * (C + 1) * (w.length + 1) ^ e := by
-    have hp : 1 ≤ (w.length + 1) ^ e := Nat.one_le_pow _ _ (by omega)
-    have h := hs w
-    calc _ ≤ c * (C * (w.length + 1) ^ e + (w.length + 1) ^ e) :=
-          Nat.mul_le_mul_left _ (by omega)
-      _ = _ := by ring
-  have hT (w : List Bool) : c * (cs.time w + 1) ≤ c * (C + 1) * (w.length + 1) ^ e *
-      2 ^ (A * Nat.logLogSqrtLogScale (decoder.decode w).1) := by
-    have hp : 1 ≤ (w.length + 1) ^ e := Nat.one_le_pow _ _ (by omega)
-    have hE := Nat.two_pow_pos (A * Nat.logLogSqrtLogScale (decoder.decode w).1)
-    have h := ht w
-    have hPE : 1 ≤ (w.length + 1) ^ e *
-        2 ^ (A * Nat.logLogSqrtLogScale (decoder.decode w).1) := by nlinarith
-    calc _ ≤ c * (C * (w.length + 1) ^ e *
-          2 ^ (A * Nat.logLogSqrtLogScale (decoder.decode w).1) +
-          (w.length + 1) ^ e * 2 ^ (A * Nat.logLogSqrtLogScale (decoder.decode w).1)) :=
-          Nat.mul_le_mul_left _ (by omega)
-      _ = _ := by ring
-  obtain ⟨k, State, hfinite, tm, htm⟩ := hm.mono hT hS
-  exact ⟨count, c * (C + 1), e, A, k, State, hfinite, tm, htm,
-    fun w => (hl w).trans (hS w), hc⟩
+  obtain ⟨B, k, State, hfinite, tm, hm, hl⟩ := cs.exists_sharp_machine C e A
+    (fun w => Nat.logLogSqrtLogScale (decoder.decode w).1) hs ht
+  exact ⟨count, B, e, A, k, State, hfinite, tm, hm, hl, hc⟩
 
 /-- The same finite machine has the source real eta time, retaining global polynomial workspace
 and output length even below the real-clock cutoff. -/

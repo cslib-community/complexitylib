@@ -20,6 +20,10 @@ and binary coefficient list. Each coefficient uses the approved functional endpo
 construction. The count is of conventional induced matching subgraphs, not markings or gate
 traces. This is [ChenJiangZhu2027], Corollary 7.5 / Appendix D.1 (PDF pp. 26, 34).
 
+The source fixes no raw graph format. Canonical explicit graph matrices and unary declarations
+are the library representation convention, not a missing source admission theorem. No parser for
+arbitrary external graph formats or succinct declaration transfer is claimed.
+
 ## Main definitions
 
 * `caseInput`: compute the actual endpoint equality test for an edge index.

@@ -19,6 +19,10 @@ self-reduction, then retain its original selection prefix. All formula wires are
 original vertex count, so fixing auxiliaries as well still uses linearly many feasibility calls.
 This realizes the witness clause of [ChenJiangZhu2027], Corollary 7.4 / Appendix D.5 (pp.26,37).
 
+The source fixes no raw graph format. Canonical explicit graph matrices and unary declarations
+are the library representation convention, not a missing source admission theorem. No parser for
+arbitrary external graph formats or succinct declaration transfer is claimed.
+
 ## Main definitions
 
 * `selected`: returned original bits as an ordinary vertex set.
