@@ -34,6 +34,7 @@ dimension of that slice. This is the factorization step of
 * `MvPolynomial.rankMeasure_sum_le`: the measure is subadditive.
 * `MvPolynomial.finrank_map_mixedOp_mul_le`: the operator of a product factors through an
   intermediate slice.
+* `MvPolynomial.rankMeasure_mul_le`: the resulting bound on the measure of a product.
 
 ## References
 
@@ -101,5 +102,21 @@ theorem finrank_map_mixedOp_mul_le {P : MvPolynomial σ K} {i j : ℕ}
     rw [map_mul, Module.End.mul_apply]
     exact Submodule.mem_map_of_mem (mixedOp_mem_bihomogeneous hP hp)
   exact (Submodule.finrank_mono h).trans (Submodule.finrank_map_le _ _)
+
+/-- A polynomial of one bidegree other than `km` has measure zero. -/
+theorem rankMeasure_eq_zero_of_ne {g : MvPolynomial σ K} {w : ℕ × ℕ}
+    (hg : g.IsWeightedHomogeneous (bidegWeight s) w) (h : w ≠ km) :
+    rankMeasure s km ab g = 0 := by
+  simp [rankMeasure, hg.weightedHomogeneousComponent_ne km h.symm, Submodule.map_zero]
+
+/-- The measure of a product `Q * P` of bidegree `km`, with `P` of bidegree `(i, j)`, is at most
+the dimension of the polynomials of bidegree `(a - i, b + j)`. -/
+theorem rankMeasure_mul_le {P Q : MvPolynomial σ K} {i j a b : ℕ}
+    (hQP : (Q * P).IsWeightedHomogeneous (bidegWeight s) km)
+    (hP : P.IsWeightedHomogeneous (bidegWeight s) (i, j)) (hi : i ≤ a) :
+    rankMeasure s km (a, b) (Q * P) ≤
+      Module.finrank K (weightedHomogeneousSubmodule K (bidegWeight s) (a - i, b + j)) := by
+  have h := finrank_map_mixedOp_mul_le hP Q (a - i) b
+  rwa [Nat.sub_add_cancel hi, ← hQP.weightedHomogeneousComponent_same] at h
 
 end MvPolynomial

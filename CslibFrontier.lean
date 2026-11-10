@@ -955,6 +955,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ProductRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasure
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
@@ -4971,6 +4972,7 @@ public import CslibFrontier.Foundations.Data.Nat.CeilQuarter
 public import CslibFrontier.Foundations.Data.Nat.Choose
 public import CslibFrontier.Foundations.Data.Nat.Choose.Central
 public import CslibFrontier.Foundations.Data.Nat.Choose.Entropy
+public import CslibFrontier.Foundations.Data.Nat.Choose.Multichoose
 public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum
