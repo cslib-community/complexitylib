@@ -13,10 +13,10 @@ public import CslibFrontier.Crypto.Protocols.Cipher.EvenMansour
 public import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 public import CslibFrontier.Crypto.Encoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -836,14 +836,7 @@ private theorem negligible_advantage_of_bitString_le {g₁ g₂ : ℕ → Game} 
     (hle : ∀ n, (Game.advantage (g₁ n) (g₂ n) : ℝ) ≤
       2 * (Q_e n : ℝ) * (Q_π n : ℝ) / (2 : ℝ) ^ n) :
     Negligible fun n => Game.advantage (g₁ n) (g₂ n) := by
-  have hpoly : PolynomiallyBounded fun n => 2 * Q_e n * Q_π n :=
-    ((PolynomiallyBounded.const 2).mul hQ_e).mul hQ_π
-  have hgeom : Negligible fun n => ((2 : ℝ≥0) ^ n)⁻¹ := by
-    simpa only [inv_pow] using negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)
-  refine negligible_of_le (hgeom.polynomiallyBounded_mul hpoly) fun n => ?_
-  rw [← NNReal.coe_le_coe]
-  simpa only [div_eq_mul_inv, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_inv, NNReal.coe_pow,
-    NNReal.coe_ofNat, Nat.cast_mul, Nat.cast_ofNat, mul_comm, mul_left_comm, mul_assoc] using hle n
+  negligible using hle
 
 /-- **Asymptotic two-key Even–Mansour security for polynomially query-bounded randomized
 distinguishers** ([EvenMansour1997]; [BonehShoup2023], Theorem 4.14): for any family of randomized

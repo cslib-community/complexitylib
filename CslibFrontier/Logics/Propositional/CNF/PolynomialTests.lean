@@ -615,8 +615,8 @@ theorem CNF.card_commonZeros_greedy (φ : CNF V) {P : ℕ}
 /-- **Quantitative bounds on compiled greedy systems** [OpenAI2026ETH, Lemma 6.2, p. 42]. If every
 clause of `φ` has length at most `k`, the initial matrix `A 0` has at most `3 n` rows each of
 weight at most `D₀`, and each round appends `testRow (γ i)` of list length `P`, then at any stage
-`i ≤ 3 n` the compiled system `(A i).map φ.parityRowMonomials` has at most `3 n + i` (`≤ 6 n`)
-equations, each of degree at most `k`, supported on `φ.vars.toFinset`, and containing at most
+`i ≤ 3 n` the compiled system `(A i).map φ.parityRowMonomials` has at most `6 n` equations, each
+of degree at most `k`, supported on `φ.vars.toFinset`, and containing at most
 `max D₀ P * 2 ^ k` monomials. -/
 theorem CNF.greedy_system_bounds (φ : CNF V) {k D₀ P : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (A : ℕ → List (Fin φ.length → Bool))

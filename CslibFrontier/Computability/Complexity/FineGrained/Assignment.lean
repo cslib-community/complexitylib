@@ -34,7 +34,7 @@ formula under a numbered assignment is polynomial-time
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 2.3][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

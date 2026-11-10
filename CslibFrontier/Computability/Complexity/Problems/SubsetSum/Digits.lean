@@ -35,7 +35,7 @@ sum [Sipser, Theorem 7.56][Sipser2013].
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

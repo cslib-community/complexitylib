@@ -22,7 +22,7 @@ Reassociation preserves the same data states and charged bound. This narrow proo
 module avoids extending the interface of the widely imported structured-code core.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.ExecWithin
 

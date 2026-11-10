@@ -162,7 +162,7 @@ private theorem spread_update {k : Nat} (t : Fin k → Int) (a : Fin k) (y : Int
 /-- Moving server `a` to `r` changes the spread by `2 * n * δ` when the distance from every other
 server changes by the same `δ`. Shared by `spread_update_zero` and `spread_update_last`. -/
 private theorem spread_update_of_forall_eq {n : Nat} (t : Fin (n + 1) → Int) (a : Fin (n + 1))
-    {r δ : Int} (h : ∀ j, |r - t j| - |t a - t j| = δ) :
+    {r δ : Int} (h : ∀ j ≠ a, |r - t j| - |t a - t j| = δ) :
     spread (Function.update t a r) = spread t + 2 * (n * δ) := by
   rw [spread_update]
   congr 2
@@ -170,14 +170,14 @@ private theorem spread_update_of_forall_eq {n : Nat} (t : Fin (n + 1) → Int) (
   have hrest : ∀ j ∈ Finset.univ.erase a, |r - Function.update t a r j| - |t a - t j| = δ :=
     fun j hj => by
       rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
-      exact h j
+      exact h j (Finset.ne_of_mem_erase hj)
   rw [Finset.sum_congr rfl hrest, Finset.sum_const, Finset.card_erase_of_mem (Finset.mem_univ _),
     Finset.card_univ, Fintype.card_fin, Function.update_self]
   simp only [sub_self, abs_zero, add_tsub_cancel_right, nsmul_eq_mul, zero_add]
 
 private theorem spread_update_zero {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone t) {r : Int}
     (hr : r ≤ t 0) : spread (Function.update t 0 r) = spread t + 2 * (n * (t 0 - r)) :=
-  spread_update_of_forall_eq t 0 fun j => by
+  spread_update_of_forall_eq t 0 fun j _ => by
     have := ht (Fin.zero_le j)
     rw [abs_of_nonpos (by linarith), abs_of_nonpos (by linarith)]
     ring
@@ -185,7 +185,7 @@ private theorem spread_update_zero {n : Nat} {t : Fin (n + 1) → Int} (ht : Mon
 private theorem spread_update_last {n : Nat} {t : Fin (n + 1) → Int} (ht : Monotone t) {r : Int}
     (hr : t (Fin.last n) ≤ r) :
     spread (Function.update t (Fin.last n) r) = spread t + 2 * (n * (r - t (Fin.last n))) :=
-  spread_update_of_forall_eq t (Fin.last n) fun j => by
+  spread_update_of_forall_eq t (Fin.last n) fun j _ => by
     have := ht (Fin.le_last j)
     rw [abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)]
     ring

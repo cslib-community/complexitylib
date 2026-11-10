@@ -26,6 +26,10 @@ Unary dimension and word width generate the full code of the actual raw-input de
 an assumed generator or runtime certificate. All matrix selectors and arithmetic circuits are
 charged, even on inputs outside key-generation or encryption support.
 
+The code equation is proved stage by stage against the private row selectors and decoder
+(`selectedRow`, `rowInputs`, `productInputs`, `decodeWord`) of `GSW.DecryptionCircuit`, which this
+module reads through `import all`.
+
 ## Main results
 
 * `Cslib.Crypto.Homomorphic.GSW.DecryptionCircuit.code_eq_code`: exact generated code.

@@ -39,7 +39,7 @@ exhaustive block inhabits that protocol; the concrete fast endpoint is supplied 
 The native composition and resource bookkeeping are original and reuse the finite reductions.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 

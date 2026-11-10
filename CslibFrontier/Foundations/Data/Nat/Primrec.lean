@@ -18,7 +18,7 @@ public import Mathlib.Computability.Primrec.List
 * `Primrec.list_foldr_nat_bit`: folding `Nat.bit` over a binary string is primitive recursive.
 -/
 
-@[expose] public section
+public section
 
 /-- Folding `Nat.bit` over a binary string, which inverts `Nat.bits` (`Nat.foldr_bit_bits`), is
 primitive recursive. -/

@@ -67,7 +67,7 @@ is `1 / 8`.
   `Cslib.Probability.IsPairwiseIndependentHash.dens_filter_notMem_image_le`: the probability that
   `S` hits a target is at most `μ`, and that it misses it at most `1 / μ`.
 * `Cslib.Probability.IsPairwiseIndependentHash.three_quarters_mul_le_dens_filter_mem_image`: the
-  set lower bound protocol.
+  hashing bound in the analysis of the set lower bound protocol.
 * `Cslib.Probability.IsPairwiseIndependentHash.card_filter_mem_image_mul_le`,
   `Cslib.Probability.IsPairwiseIndependentHash.card_filter_notMem_image_mul_le`: the same two
   bounds in counts.
@@ -364,9 +364,9 @@ theorem sub_le_dens_filter_mem_image [Field 𝕜] [LinearOrder 𝕜] [IsStrictOr
         exact natCast_sub_mul_sub_one_div_two_le _
     _ = _ := Fintype.expect_boole _
 
-/-- **The set lower bound protocol** of Goldwasser and Sipser: if `2 #S ≤ |Y|`, then `S` hits `y`
-with probability at least three quarters of the mean cell size `#S / |Y|`
-[Arora and Barak, Section 8.2][AroraBarak09]. -/
+/-- **The hashing bound in the analysis of the set lower bound protocol** of Goldwasser and Sipser:
+if `2 #S ≤ |Y|`, then `S` hits `y` with probability at least three quarters of the mean cell size
+`#S / |Y|` [Arora and Barak, Section 8.2][AroraBarak09]. -/
 theorem three_quarters_mul_le_dens_filter_mem_image (hh : IsPairwiseIndependentHash h)
     {S : Finset X} (y : Y) (hS : 2 * #S ≤ Fintype.card Y) :
     3 / 4 * (#S / Fintype.card Y : ℚ≥0) ≤ dens {i | y ∈ S.image (h i)} := by

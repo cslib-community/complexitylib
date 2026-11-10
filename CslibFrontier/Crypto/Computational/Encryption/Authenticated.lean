@@ -3000,10 +3000,13 @@ private theorem eval_ciGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher) (c
             ProbComp.eval_pure, PMF.pure_map]
       · simp only [↓reduceIte, ProbOracleComp.runWith_pure, ProbComp.eval_pure, PMF.pure_map]
 
-/-- Advantage between `ccaGame` and `ccaRejectGame` at challenge bit `bit` is bounded by the sum
-over `j ∈ Finset.range (Q n + 1)` of the CI winning probabilities of
-`ccaToCIAtIndexAdversary ctBound j bit adversary`. -/
-private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
+/-- **Decryption-rejection hop.** If a CCA adversary makes at most `Q n` queries and `ctBound n`
+bounds the ciphertext lengths of `n`-bit messages, its advantage between `ccaGame` and
+`ccaRejectGame` (which rejects every decryption query) at bit `bit` is at most the sum over
+`j ≤ Q n` of the CI winning probabilities of `ccaToCIAtIndexAdversary ctBound j bit adversary`.
+Use it with `sum_succProbability_ccaToCIAtIndexAdversary_le` to remove the decryption oracle
+from a reduction to `CiphertextIntegrity`. -/
+theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (adversary : CCAAdversary) (bit : Bool) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
     (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
@@ -3123,8 +3126,10 @@ theorem eval_ciGame_ccaToCIAdversary (E : SymmetricCipher) (ctBound Q : ℕ → 
   exact PMF.bind_comm _ _ _
 
 /-- The sum of CI winning probabilities over `j ∈ Finset.range (Q n + 1)` is at most
-`dyadicSize (Q n)` times the CI winning probability of `ccaToCIAdversary`. -/
-private theorem sum_succProbability_ccaToCIAtIndexAdversary_le (E : SymmetricCipher)
+`dyadicSize (Q n)` times the CI winning probability of the single adversary `ccaToCIAdversary`,
+which samples the index `j` uniformly. Use it after `advantage_ccaGame_ccaRejectGame_le_sum` to
+bound the decryption-rejection hop by one CI adversary. -/
+theorem sum_succProbability_ccaToCIAtIndexAdversary_le (E : SymmetricCipher)
     (ctBound Q : ℕ → ℕ) (bit : Bool) (adversary : CCAAdversary) (n : ℕ) :
     (∑ j ∈ Finset.range (Q n + 1),
       (Game.succProbability

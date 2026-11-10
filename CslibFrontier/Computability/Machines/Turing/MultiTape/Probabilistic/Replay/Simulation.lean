@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Data.Nat.Size
 import Mathlib.Data.Set.Finite.List
 
@@ -494,9 +495,7 @@ theorem computableInPolyTime_run [Finite Operation] {α : Type} {input : α ↪ 
       rw [Function.iterate_succ_apply']
       exact machine.spaceBound_answerStep g ih
   have hbound : PolyBounded (fun a => (input a).length)
-      (fun a => cf * ((input a).length + c * ((input a).length + 1) ^ d + 1 + 1)) :=
-    PolyBounded.mono (PolyBounded.of_polynomiallyBounded (fun a => (input a).length)
-      (bound := fun L => cf * (L + c * (L + 1) ^ d + 1 + 1)) (by fun_prop)) fun _ => le_rfl
+      (fun a => cf * ((input a).length + c * ((input a).length + 1) ^ d + 1 + 1)) := by growth_poly
   have hit := ComputableTidilyInPolyTime.iterate hcount hinit
     (machine.computableInPolyTime_answerStep hg).tidy hbound fun a i hi =>
       (hcf _ _ _ _ (hspace a i)).trans (Nat.mul_le_mul_left cf (by omega))
