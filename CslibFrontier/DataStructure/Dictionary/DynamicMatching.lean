@@ -1315,26 +1315,13 @@ private theorem mem_roundStep_snd {U' n' : ℕ} (π : RoundPerm U' n')
     ⟨fun h a hab => h ⟨a, (roundMatchOpt_mem_bins hab).1, hab⟩,
      fun h ⟨a, _, hab⟩ => h a hab⟩
 
-private theorem card_filter_ne_le_singleton {α β : Type*} [Fintype α] [DecidableEq β]
-    {f g : α → β} {x : α} (h : ∀ a, a ≠ x → g a = f a) :
-    (Finset.univ.filter fun a => f a ≠ g a).card ≤ 1 := by
-  classical
-  refine (card_le_card (s := _) (t := {x}) ?_).trans (by simp)
-  intro a ha
-  simp only [mem_filter, mem_univ, true_and, mem_singleton] at ha ⊢
-  by_contra hne
-  exact ha (h a hne).symm
-
-private theorem card_filter_ne_le_pair {α β : Type*} [Fintype α] [DecidableEq β]
-    {f g : α → β} {x y : α} (h : ∀ a, a ≠ x → a ≠ y → g a = f a) :
-    (Finset.univ.filter fun a => f a ≠ g a).card ≤ 2 := by
-  classical
-  refine (card_le_card (s := _) (t := {x, y}) ?_).trans (card_insert_le _ _)
-  intro a ha
-  simp only [mem_filter, mem_univ, true_and, mem_insert, mem_singleton] at ha ⊢
-  by_contra hnot
-  push Not at hnot
-  exact ha (h a hnot.1 hnot.2).symm
+private theorem card_filter_ne_le {α β : Type*} [Fintype α] [DecidableEq β]
+    {f g : α → β} (s : Finset α) (h : ∀ a, a ∉ s → g a = f a) :
+    (Finset.univ.filter fun a => f a ≠ g a).card ≤ s.card := by
+  refine card_le_card fun a ha => ?_
+  simp only [mem_filter, mem_univ, true_and] at ha
+  by_contra hns
+  exact ha (h a hns).symm
 
 /-- Inserting a single bin `bStar ∉ B` preserves `pairDiff ≤ 1` across `roundStep` and changes
 at most `1` ball's single-round match (`Claim 3.4` bin-insertion case,
@@ -1362,7 +1349,9 @@ private theorem roundStep_insert_bin {U' n' : ℕ} (π : RoundPerm U' n') (A : F
         fun a ha => hsame a fun h => ha (ballItem_injective U' n' h)
       have ha₀_new : roundMatchOpt π A (insert bStar B) a₀ = some bStar := by
         simp [roundMatchOpt, ha₀A, hS_ins, hnx₀]
-      refine ⟨?_, card_filter_ne_le_singleton hsame'⟩
+      refine ⟨?_,
+        (card_filter_ne_le {a₀} fun a ha => hsame' a (mem_singleton.not.mp ha)).trans_eq
+          (card_singleton a₀)⟩
       have hbins_iff : ∀ b, b ∈ (roundStep π (A, insert bStar B)).2 ↔
           b ∈ (roundStep π (A, B)).2 ∨ roundMatchOpt π A B a₀ = some b := by
         intro b
@@ -1467,7 +1456,9 @@ private theorem roundStep_insert_ball {U' n' : ℕ} (π : RoundPerm U' n') {A : 
       have hsame' : ∀ a, a ≠ aStar → a ≠ a₀ →
           roundMatchOpt π (insert aStar A) B a = roundMatchOpt π A B a :=
         fun a ha₁ ha₂ => hsame a ha₁ fun h => ha₂ (ballItem_injective U' n' h)
-      refine ⟨?_, card_filter_ne_le_pair hsame'⟩
+      refine ⟨?_, (card_filter_ne_le {aStar, a₀} fun a ha => by
+        simp only [mem_insert, mem_singleton, not_or] at ha
+        exact hsame' a ha.1 ha.2).trans Finset.card_le_two⟩
       have hbins : (roundStep π (insert aStar A, B)).2 = (roundStep π (A, B)).2 := by
         ext b
         simp only [mem_roundStep_snd]
@@ -1512,7 +1503,9 @@ private theorem roundStep_insert_ball {U' n' : ℕ} (π : RoundPerm U' n') {A : 
       have haStar_new : roundMatchOpt π (insert aStar A) B aStar =
           asBin? (nextItem π S (binItem U' b₀)) := by
         simp [roundMatchOpt, hS_ins, hnz]
-      refine ⟨?_, (card_filter_ne_le_singleton hsame_A).trans (by omega)⟩
+      refine ⟨?_,
+        ((card_filter_ne_le {aStar} fun a ha => hsame_A a (mem_singleton.not.mp ha)).trans_eq
+          (card_singleton aStar)).trans (by omega)⟩
       cases hbin : asBin? (nextItem π S (binItem U' b₀)) with
       | none =>
         have haStar_not_rem : aStar ∉ (roundStep π (A, B)).1 := fun hm => haStar (sdiff_subset hm)
