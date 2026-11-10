@@ -1344,6 +1344,7 @@ theorem clockedOutCountWithSymbol_budget (machine : MultiTapePTM k Bool State)
   have hcnt := coinCountWithSymbol_budget machine hB hn hu (budget_optionGetD 0 hvOpt) hsym hin
   refine (budget_ite hcond (budget_ite (budget_optionIsSome hvOpt) hcnt (budget_const 0 hin))
     (budget_const 0 hin)).of_enc_eq fun x => ?_
+  clear * -
   simp only [clockedOutCountWithSymbol, Bool.and_eq_true, decide_eq_true_eq]
   split_ifs <;> (try split) <;> simp_all
 
@@ -1381,6 +1382,7 @@ theorem clockedOutPortWithSymbols_budget (machine : MultiTapePTM k Bool State)
       enc (encOption (encPair encNat encNat)) S := budget_const none hin
   refine (budget_ite hcond (budget_ite (budget_optionIsSome hvOpt)
     (budget_optionSome (budget_prod hbVal hqIdx)) hnone) hnone).of_enc_eq fun x => ?_
+  clear * -
   simp only [clockedOutPortWithSymbols, Bool.and_eq_true, decide_eq_true_eq]
   split_ifs <;> (try split) <;> simp_all
 
@@ -1419,6 +1421,7 @@ theorem clockedInPortWithSymbols_budget (machine : MultiTapePTM k Bool State)
       enc (encOption (encPair encNat encNat)) S := budget_const none hin
   refine (budget_ite hcond (budget_ite (budget_optionIsSome huOpt)
     (budget_optionSome (budget_prod haVal hpIdx)) hnone) hnone).of_enc_eq fun x => ?_
+  clear * -
   simp only [clockedInPortWithSymbols, Bool.and_eq_true, decide_eq_true_eq]
   split_ifs <;> (try split) <;> simp_all
 

@@ -819,7 +819,6 @@ theorem computableInLogSpace_clockedOutCount (machine : MultiTapePTM k Bool Stat
     ComputableInLogSpace
       (fun (w, a, p) => clockedOutCount machine D d w a p)
       (encPair encBits (encPair encNat encNat)) encNat := by
-  have hguard := computableInLogSpace_portGuard k D d 2
   have hnap_log := computableInLogSpace_napOfSub k D d 2
   have hnap_len := length_napOfSub_log k D d 2
   have hidxOut_space : ComputableInSpace
@@ -854,7 +853,6 @@ theorem computableInLogSpace_clockedOutPort (machine : MultiTapePTM k Bool State
     ComputableInLogSpace
       (fun (w, a, p) => clockedOutPort machine D d w a p)
       (encPair encBits (encPair encNat encNat)) (encOption (encPair encNat encNat)) := by
-  have hguard := computableInLogSpace_portGuard k D d 2
   have hnap_log := computableInLogSpace_napOfSub k D d 2
   have hnap_len := length_napOfSub_log k D d 2
   have hidxOut_space : ComputableInSpace
@@ -931,7 +929,6 @@ theorem computableInLogSpace_clockedInPort (machine : MultiTapePTM k Bool State)
       (fun (w, b, q) => clockedInPort machine D d w b q)
       (encPair encBits (encPair encNat encNat)) (encOption (encPair encNat encNat)) := by
   let P := inPortBound machine
-  have hguard := computableInLogSpace_portGuard k D d P
   have hnap_log := computableInLogSpace_napOfSub k D d P
   have hnap_len := length_napOfSub_log k D d P
   have hv_space : ComputableInSpace
