@@ -1682,6 +1682,7 @@ public import CslibFrontier.Computability.Complexity.Classes.CeqP.Time
 public import CslibFrontier.Computability.Complexity.Classes.Constructible
 public import CslibFrontier.Computability.Complexity.Classes.Constructible.FunctionTime
 public import CslibFrontier.Computability.Complexity.Classes.Constructible.Log
+public import CslibFrontier.Computability.Complexity.Classes.Constructible.Space
 public import CslibFrontier.Computability.Complexity.Classes.Constructible.TwoPow
 public import CslibFrontier.Computability.Complexity.Classes.Constructible.UnaryClock
 public import CslibFrontier.Computability.Complexity.Classes.Counting.OracleSpace
@@ -1737,6 +1738,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Computability.Complexity.Classes.IP.CoinFixing

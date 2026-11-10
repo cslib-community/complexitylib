@@ -69,7 +69,7 @@ example (b : Bool) (x : List Bool) :
 /-- On the padded description of a machine answering `b`, the diagonal within space
 `(n + 1) ^ 2` answers `!b`, so its problem is neither empty nor everything. -/
 example (b : Bool) (pad : List Bool)
-    (hpad : 2 ^ (eDesc (desc unitNum eBit (answer b))).length ≤ pad.length) :
+    (hpad : 2 ^ 2 ^ (eDesc (desc unitNum eBit (answer b))).length ≤ pad.length) :
     spaceDiagonal (fun n => (n + 1) ^ 2) (frame (eDesc (desc unitNum eBit (answer b))) ++ pad) =
       !b := by
   have hD : 2 ≤ (eDesc (desc unitNum eBit (answer b))).length := by
@@ -78,20 +78,24 @@ example (b : Bool) (pad : List Bool)
   have hlen : (frame (eDesc (desc unitNum eBit (answer b))) ++ pad).length =
       2 * (eDesc (desc unitNum eBit (answer b))).length + 1 + pad.length := by
     rw [List.length_append, length_frame]
-  have hpow := Nat.lt_two_pow_self (n := (eDesc (desc unitNum eBit (answer b))).length)
   obtain ⟨hhalt, hout⟩ := runFrom_answer b (frame (eDesc (desc unitNum eBit (answer b))) ++ pad)
     (t := 2 ^ ((frame (eDesc (desc unitNum eBit (answer b))) ++ pad).length + 1) ^ 2)
     Nat.one_le_two_pow
-  refine spaceDiagonal_desc unitNum (answer b) pad _ ?_ ?_ hhalt hout
-  · rw [Diagonal.shortDesc, unframe_frame_append, hlen]
-    exact decide_eq_true (by omega)
-  · have hn := length_encNat_le ((List.map eBit (frame (eDesc (desc unitNum eBit
-      (answer b))) ++ pad)).length + 1)
-    simp only [cfgSpace, simSpace, List.length_map, hlen] at hn ⊢
-    change _ + 3 * (2 * (eDesc (desc unitNum eBit (answer b))).length + 5) * 2 *
-      ∑ i ∈ Finset.range 0, _ + 0 ≤ _
-    simp only [Finset.range_zero, Finset.sum_empty]
-    nlinarith
+  refine spaceDiagonal_desc unitNum (answer b) pad _ (Diagonal.tinyDesc_frame_append hpad) ?_
+    hhalt hout
+  have hn := length_encNat_le ((List.map eBit (frame (eDesc (desc unitNum eBit
+    (answer b))) ++ pad)).length + 1)
+  simp only [cfgSpace, simSpace, List.length_map, hlen] at hn ⊢
+  change _ + 3 * (2 * (eDesc (desc unitNum eBit (answer b))).length + 5) * 2 *
+    ∑ i ∈ Finset.range 0, _ + 0 ≤ _
+  simp only [Finset.range_zero, Finset.sum_empty]
+  nlinarith
+
+/-- A tiny description: one framed bit followed by enough padding. -/
+example : Diagonal.tinyDesc (frame [true] ++ List.replicate 16 false) = true := by decide
+
+/-- A description that is not tiny: the padding is too short. -/
+example : Diagonal.tinyDesc (frame [true, false] ++ List.replicate 2 false) = false := by decide
 
 /-! ### The space hierarchy theorem on concrete bounds -/
 
@@ -100,15 +104,23 @@ example (b : Bool) (pad : List Bool)
 example : {x | spaceDiagonal (fun n => (n + 1) ^ 2) x = true} ∈
     DSPACE encBits (fun n => (n + 1) ^ 2) \ DSPACE encBits fun n => n := by
   have hn (n : ℕ) : n ≤ (n + 1) ^ 2 := (Nat.le_succ n).trans (Nat.le_self_pow (by norm_num) _)
-  refine ⟨setOf_spaceDiagonal_mem_DSPACE (spaceConstructible_succ_pow 2) hn,
-    setOf_spaceDiagonal_notMem_DSPACE hn fun c => ?_⟩
+  refine ⟨setOf_spaceDiagonal_mem_DSPACE (spaceConstructible_succ_pow 2)
+    fun n => (Nat.log2_le_self n).trans (hn n), setOf_spaceDiagonal_notMem_DSPACE
+      (fun n => (Nat.mul_le_mul_left 4 (Nat.log2_le_self n)).trans
+        (by nlinarith [sq_nonneg ((n : ℤ) - 1)])) fun c => ?_⟩
   filter_upwards [eventually_ge_atTop c] with n hc
   nlinarith
+
+/-- The diagonal within space `log₂ n` is decided in logarithmic space: the diagonal reads its
+input in place. -/
+example : {x | spaceDiagonal Nat.log2 x = true} ∈ L encBits :=
+  mem_L_iff_mem_DSPACE.mpr (setOf_spaceDiagonal_mem_DSPACE spaceConstructible_log2 fun _ => le_rfl)
 
 /-- Linear space is strictly within space `(n + 1) ^ 2`. -/
 example : DSPACE encBits (fun n => n) ⊂ DSPACE encBits fun n => (n + 1) ^ 2 :=
   DSPACE_ssubset_DSPACE (spaceConstructible_succ_pow 2)
-    (fun n => (Nat.le_succ n).trans (Nat.le_self_pow (by norm_num) _)) fun c => by
+    (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by norm_num) _)))
+    fun c => by
       filter_upwards [eventually_ge_atTop c] with n hc
       nlinarith
 
@@ -116,9 +128,27 @@ example : DSPACE encBits (fun n => n) ⊂ DSPACE encBits fun n => (n + 1) ^ 2 :=
 `(n + 1) ^ 2`. -/
 example : DSPACE encBits (fun n => n + 1) ⊂ DSPACE encBits fun n => (n + 1) ^ 2 :=
   DSPACE_ssubset_DSPACE (spaceConstructible_succ_pow 2)
-    (fun n => (Nat.le_succ n).trans (Nat.le_self_pow (by norm_num) _)) fun c => by
+    (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by norm_num) _)))
+    fun c => by
       filter_upwards [eventually_ge_atTop c] with n hc
       nlinarith
+
+/-- At the logarithmic threshold: constant space is strictly within logarithmic space. -/
+example : DSPACE encBits (fun _ => 1) ⊂ L encBits := by
+  rw [show L encBits = DSPACE encBits Nat.log2 from Set.ext fun _ => mem_L_iff_mem_DSPACE]
+  refine DSPACE_ssubset_DSPACE spaceConstructible_log2 (fun _ => le_rfl) fun c => ?_
+  filter_upwards [eventually_ge_atTop (2 ^ (2 * c))] with n hn
+  have := (Nat.le_log2 (by have := Nat.one_le_two_pow (n := 2 * c); omega)).mpr hn
+  omega
+
+/-- Below linear space: space `log₂ n ^ 2` is strictly within space `log₂ n ^ 3`. -/
+example : DSPACE encBits (Nat.log2 · ^ 2) ⊂ DSPACE encBits (Nat.log2 · ^ 3) :=
+  DSPACE_log2_pow_ssubset_DSPACE_log2_pow_succ 1
+
+/-- Strict inclusion `L ⊂ DSPACE (log₂ n ^ 2)` yields an explicit language in
+`DSPACE (log₂ n ^ 2) \ L`. -/
+example : ∃ A ∈ DSPACE encBits (Nat.log2 · ^ 2), A ∉ L encBits :=
+  Set.exists_of_ssubset L_ssubset_DSPACE_log2_sq
 
 /-- Polynomial space powers form a strict chain
 (`DSPACE(n^0) ⊂ DSPACE(n^1) ⊂ DSPACE(n^2) ⊂ DSPACE(n^3)`). -/
