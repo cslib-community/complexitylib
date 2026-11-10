@@ -40,6 +40,11 @@ encodings: each field encoding must already be available as an ordinary term, an
 certificates are relative to those encodings. A recursive field is accepted only when such an
 encoding is supplied, for example `encUnary` for the field of `Nat.succ`. Fields that are
 propositions, indices or implicit arguments are not supported.
+
+Before declaring anything, the command checks that `T` is an inductive type without parameters or
+indices, that every constructor is listed once in declaration order, and that each has no
+implicit field and one encoding per field, of the field's type. A mistake is reported at its
+constructor, encoding or type.
 -/
 
 public meta section
@@ -56,6 +61,42 @@ syntax (name := encInductive) (docComment)? "enc_inductive " ident " : " ident "
 
 private def app (base : Name) (suffix : String) : Ident :=
   mkIdent (base.appendAfter suffix)
+
+/-- Check the constructor list of `enc_inductive` against the inductive type `T` before anything
+is declared: every constructor once, in declaration order, with one encoding of the right type
+per explicit field. -/
+private def checkConstructors (T : Ident) (cs : Array Ident) (encss : Array (Array Term)) :
+    CommandElabM Unit := do
+  let ty ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo T
+  let tyName := MessageData.ofConstName ty
+  let .inductInfo info ← getConstInfo ty |
+    throwErrorAt T "enc_inductive: `{tyName}` is not an inductive type"
+  unless info.numParams == 0 && info.numIndices == 0 do
+    throwErrorAt T "enc_inductive: `{tyName}` has parameters or indices, which are not supported"
+  let expected := info.ctors.map (·.replacePrefix ty .anonymous)
+  unless cs.toList.map (·.getId) == expected do
+    throwErrorAt T "enc_inductive: list every constructor of `{tyName}` once, in declaration \
+      order:{indentD (" ".intercalate (expected.map fun c => s!"| {c}"))}"
+  for c in cs, ctor in info.ctors, encs in encss do
+    let ctorName := MessageData.ofConstName ctor
+    -- the explicit fields' types, `none` for a type that depends on an earlier field
+    let fields ← liftTermElabM <| forallTelescopeReducing (← getConstInfo ctor).type fun xs _ => do
+      unless ← xs.allM fun x => return (← x.fvarId!.getBinderInfo).isExplicit do
+        throwErrorAt c "enc_inductive: `{ctorName}` has an implicit or instance field, which is \
+          not supported"
+      xs.mapM fun x => do
+        let τ ← inferType x
+        return if τ.hasFVar then none else some τ
+    unless fields.size == encs.size do
+      throwErrorAt c "enc_inductive: `{ctorName}` has {fields.size} explicit field(s), but \
+        {encs.size} encoding(s) are listed; give one encoding per field, in order"
+    -- Each encoding must have the type of its field; a dependent field is left to elaboration.
+    liftTermElabM do
+      for τ? in fields, enc in encs do
+        let some τ := τ? | continue
+        let embedding ← mkAppM ``Function.Embedding #[τ, ← mkAppM ``List #[mkConst ``Bool]]
+        discard <| Term.withoutErrToSorry <| Term.elabTermEnsuringType enc embedding
+      Term.synthesizeSyntheticMVarsNoPostponing
 
 /-- The right-nested tuple of `ts`, or `()` for none. -/
 private def tuple (ts : Array Term) : MacroM Term := do
@@ -98,6 +139,7 @@ private partial def summands (t : Expr) : Nat → MetaM (Array Expr)
   let name := eT.getId
   let n := cs.size
   let encss : Array (Array Term) := ess.map fun o => (o.map (·.getElems)).getD #[]
+  checkConstructors T cs encss
   let payloads ← liftMacroM <| encss.mapM tupleEnc
   -- the encoding of the sum of the payloads
   let mut sumEnc : Term := payloads.back!
