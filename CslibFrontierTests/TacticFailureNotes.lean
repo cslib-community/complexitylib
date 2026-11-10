@@ -17,7 +17,9 @@ import CslibFrontier.Tactic.Stateful
 
 Each search tactic below fails with its backend's error followed by a note saying what the user
 must supply, and the supplied input then closes the goal. `degree` and `logspace` first check the
-shape of the goal, so that a certificate of another kind in the context is not used for it.
+shape of the goal, so that a certificate of another kind in the context is not used for it. For the
+Aesop-backed tactics only the note is matched, as a substring, since Aesop's goal dump changes with
+its output format and rule sets.
 -/
 
 namespace CslibFrontierTests.TacticFailureNotes
@@ -67,25 +69,11 @@ example : (fun w : List Bool => w.length) = fun w => w.length := by
   logspace
 
 /--
-error: Tactic `aesop` failed, failed to prove the goal after exhaustive search.
-Initial goal:
-  r : List Bool → ℕ
-  g : List Bool → ℕ → Bool
-  hr : ComputableInLogSpace r encBits encUnary
-  hg : ComputableInLogSpace (fun p => g p.1 p.2) (encPair encBits encUnary) encBool
-  ⊢ ComputableInLogSpace (fun w => List.map (g w) (List.range (r w))) encBits encBits
-Remaining goals after safe rules:
-  r : List Bool → ℕ
-  g : List Bool → ℕ → Bool
-  hr : ComputableInLogSpace r encBits encUnary
-  hg : ComputableInLogSpace (fun p => g p.1 p.2) (encPair encBits encUnary) encBool
-  ⊢ ComputableInLogSpace (fun w => List.map (g w) (List.range (r w))) encBits encBits
-
 Note: logspace composes `@[fun_prop]` rules and named `program_certificate`s for
   `ComputableInLogSpace`. Supply a certificate for each local routine, with the goal's encodings. An
   answer vector `(List.range (r a)).map (f a)` also needs a hypothesis `∀ a, r a ≤ k`.
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, substring := true) in
 example (r : List Bool → ℕ) (g : List Bool → ℕ → Bool)
     (hr : ComputableInLogSpace r encBits encUnary)
     (hg : ComputableInLogSpace (fun p : List Bool × ℕ => g p.1 p.2) (encPair encBits encUnary)
@@ -138,20 +126,12 @@ def readThenBump : counter.Client ℕ := do
   counter.call true
 
 /--
-error: Tactic `aesop` failed, failed to prove the goal after exhaustive search.
-Initial goal:
-  ⊢ StateTransitionSpec.CostHoare (fun x x_1 => 1) (fun x => True) readThenBump (fun x x_1 => True)
-    fun x => 2
-Remaining goals after safe rules:
-  ⊢ StateTransitionSpec.CostHoare (fun x x_1 => 1) (fun x => True) readThenBump (fun x x_1 => True)
-    fun x => 2
-
 Note: stateful proves pure results and single calls from local contracts and the `Stateful` rule
   set, and does not unfold a client definition. Unfold it first, split a sequence with
   `StateTransitionSpec.CostHoare.bind` (or `Hoare.bind`) and an intermediate contract, and select an
   implementation with `StateTransitionSpec.CostHoare.link` (or `Hoare.link`).
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, substring := true) in
 example : counter.CostHoare (fun _ _ => 1) (fun _ => True) readThenBump (fun _ _ => True)
     (fun _ => 2) := by
   stateful
@@ -173,85 +153,56 @@ open FirstOrder Language Cslib.Logic Cslib.Logic.FO
 variable {L : Language}
 
 /--
-error: Tactic `aesop` failed, failed to prove the goal after exhaustive search.
-Initial goal:
-  L : Language
-  α : Type
-  n : ℕ
-  φ ψ : L.BoundedFormula α n
-  hφ : φ.IsQF
-  ⊢ (φ ⊓ ψ).IsQF
-Remaining goals after safe rules:
-  case hψ
-  L : Language
-  α : Type
-  n : ℕ
-  φ ψ : L.BoundedFormula α n
-  hφ : φ.IsQF
-  ⊢ ψ.IsQF
-
 Note: fo_qf proves quantifier-freeness from the rules of the Aesop rule set `FirstOrder` and
   hypotheses. Unfold a local definition first, assume `IsQF` for an abstract formula or
   interpretation, or register a lemma for a new combinator with `@[aesop safe apply (rule_sets :=
   [FirstOrder])]`.
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, substring := true) in
 example {α : Type} {n : ℕ} (φ ψ : L.BoundedFormula α n) (hφ : φ.IsQF) : (φ ⊓ ψ).IsQF := by
   fo_qf
 
-/--
-error: Tactic `aesop` failed, failed to prove the goal after exhaustive search.
-Initial goal:
-  L : Language
-  K : Set (CategoryTheory.Bundled L.Structure)
-  ⊢ IsoClosed K
-Remaining goals after safe rules:
-  L : Language
-  K : Set (CategoryTheory.Bundled L.Structure)
-  ⊢ IsoClosed K
+example {α : Type} {n : ℕ} (φ ψ : L.BoundedFormula α n) (hφ : φ.IsQF) (hψ : ψ.IsQF) :
+    (φ ⊓ ψ).IsQF := by
+  fo_qf
 
+/--
 Note: fo_iso_closed proves `IsoClosed K` from lemmas of the Aesop rule set `FirstOrder` and
   hypotheses. Assume it, or prove it for `K` and register the lemma with `@[aesop safe apply
   (rule_sets := [FirstOrder])]`.
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, substring := true) in
 example (K : Set (CategoryTheory.Bundled L.Structure)) : IsoClosed K := by
+  fo_iso_closed
+
+example (K : Set (CategoryTheory.Bundled L.Structure)) (hK : IsoClosed K) : IsoClosed K := by
+  fo_iso_closed
+
+/-- The class of all structures is closed under isomorphism, registered as the note advises. -/
+@[aesop safe apply (rule_sets := [FirstOrder])]
+theorem isoClosed_univ : IsoClosed (Set.univ : Set (CategoryTheory.Bundled L.Structure)) :=
+  IsoClosed.of_forall_imp fun _ _ _ _ _ => trivial
+
+example : IsoClosed (Set.univ : Set (CategoryTheory.Bundled L.Structure)) := by
   fo_iso_closed
 
 variable {ι : Type} {M : ι → Type} [∀ i, L.Structure (M i)] {α : Type}
 
 /--
-error: Tactic `aesop` failed, failed to prove the goal after exhaustive search.
-Initial goal:
-  L : Language
-  ι : Type
-  M : ι → Type
-  inst✝ : (i : ι) → L.Structure (M i)
-  α : Type
-  p : (i : ι) → M i → Prop
-  a : α
-  ⊢ Operator.Definable LFP.policy M (fun x => LFP.interpretation) (fun x {k} =>
-    Operator.RelEnv.empty) fun i v =>
-      p i (v a)
-Remaining goals after safe rules:
-  L : Language
-  ι : Type
-  M : ι → Type
-  inst : (i : ι) → L.Structure (M i)
-  α : Type
-  p : (i : ι) → M i → Prop
-  a : α
-  ⊢ Operator.Definable LFP.policy M (fun x => LFP.interpretation) (fun x {k} =>
-    Operator.RelEnv.empty) fun i v =>
-      p i (v a)
-
 Note: fo_definable composes the `Operator.Definable` rules of the Aesop rule set `FODefinable` and
   does not unfold definitions. Unfold a local predicate first, or prove definability of the
   operation and register it with `@[aesop safe apply (rule_sets := [FODefinable])]`;
   `Definable.of_formula` takes an explicit formula.
 -/
-#guard_msgs (whitespace := lax) in
+#guard_msgs (whitespace := lax, substring := true) in
 example (p : ∀ i, M i → Prop) (a : α) :
+    Operator.Definable (L := L) LFP.policy M (fun _ => LFP.interpretation)
+      (fun _ => Operator.RelEnv.empty) (fun i v => p i (v a)) := by
+  fo_definable
+
+example (p : ∀ i, M i → Prop) (a : α)
+    (hp : Operator.Definable (L := L) LFP.policy M (fun _ => LFP.interpretation)
+      (fun _ => Operator.RelEnv.empty) (fun i v => p i (v a))) :
     Operator.Definable (L := L) LFP.policy M (fun _ => LFP.interpretation)
       (fun _ => Operator.RelEnv.empty) (fun i v => p i (v a)) := by
   fo_definable

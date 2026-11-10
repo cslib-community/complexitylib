@@ -43,8 +43,9 @@ propositions, indices or implicit arguments are not supported.
 
 Before declaring anything, the command checks that `T` is an inductive type without parameters or
 indices, that every constructor is listed once in declaration order, and that each has no
-implicit field and one encoding per field, of the field's type. A mistake is reported at its
-constructor, encoding or type.
+implicit field and one encoding per field, of the field's type. A wrong type or constructor list
+is reported at `T`, with the expected list; a wrong field is reported at its constructor or
+encoding.
 -/
 
 public meta section
