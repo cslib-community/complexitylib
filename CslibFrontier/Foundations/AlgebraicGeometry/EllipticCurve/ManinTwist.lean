@@ -35,9 +35,14 @@ triples over `k[T]`, and then compares heights.
 
 * `WeierstrassCurve.Manin.d_P₀`: `d P₀ = 1`.
 * `WeierstrassCurve.Manin.parallelogram`: `d (P + Q) + d (P - Q) = 2 d P + 2 d Q`.
+
+## References
+
+* [Ju. I. Manin, *On cubic congruences to a prime modulus*][Manin1956], §2. The implementation
+  notes of `ManinHeight` explain how this development follows it.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -51,11 +56,11 @@ variable {k : Type*} [Field k]
 
 /-- The twist `Y² = X³ + α D X² + β D² X + γ D³` over `k[T]`, where `D = g(T)` for
 `g = X³ + α X² + β X + γ`. -/
-def twistPoly (α β γ : k) : WeierstrassCurve k[X] :=
+@[expose] def twistPoly (α β γ : k) : WeierstrassCurve k[X] :=
   ⟨0, C α * cubicPoly α β γ, 0, C β * cubicPoly α β γ ^ 2, C γ * cubicPoly α β γ ^ 3⟩
 
 /-- The twist over `k(T) = RatFunc k`. -/
-def twist (α β γ : k) : WeierstrassCurve (RatFunc k) :=
+@[expose] def twist (α β γ : k) : WeierstrassCurve (RatFunc k) :=
   (twistPoly α β γ).map (algebraMap k[X] (RatFunc k))
 
 variable (α β γ : k)
@@ -122,7 +127,8 @@ def d (P : (twist α β γ).toAffine.Point) : ℕ := max (xPair P).1.natDegree (
 
 lemma xPair_some {x y : RatFunc k} (h : (twist α β γ).toAffine.Nonsingular x y) :
     xPair (.some x y h) = ((x / algebraMap k[X] (RatFunc k) (cubicPoly α β γ)).num,
-      (x / algebraMap k[X] (RatFunc k) (cubicPoly α β γ)).denom) := rfl
+      (x / algebraMap k[X] (RatFunc k) (cubicPoly α β γ)).denom) := by
+  simp only [xPair]
 
 lemma isCoprime_xPair (P : (twist α β γ).toAffine.Point) :
     IsCoprime (xPair P).1 (xPair P).2 := by

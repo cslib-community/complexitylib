@@ -41,7 +41,7 @@ Weierstrass curve `W` into `Y² = g(X)` with the monic cubic
   Example 9.69 (p. 346) counts the points of `y² = f(x)` over `ℤ_p` through quadratic residues.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -83,10 +83,10 @@ section Cubic
 variable {R : Type*} [CommRing R]
 
 /-- The monic cubic `X³ + α X² + β X + γ`. -/
-def cubicPoly (α β γ : R) : R[X] := X ^ 3 + C α * X ^ 2 + C β * X + C γ
+@[expose] def cubicPoly (α β γ : R) : R[X] := X ^ 3 + C α * X ^ 2 + C β * X + C γ
 
 /-- The Weierstrass curve `Y² = X³ + α X² + β X + γ`. -/
-def ofCubic (α β γ : R) : WeierstrassCurve R := ⟨0, α, 0, β, γ⟩
+@[expose] def ofCubic (α β γ : R) : WeierstrassCurve R := ⟨0, α, 0, β, γ⟩
 
 variable (α β γ : R)
 
@@ -116,7 +116,7 @@ lemma cubicPoly_ne_zero : cubicPoly α β γ ≠ 0 :=
 end Cubic
 
 /-- The character sum `∑ₓ χ(x³ + α x² + β x + γ)` of the quadratic character `χ` of `F`. -/
-def cubicCharSum {F : Type*} [Field F] [Fintype F] [DecidableEq F] (α β γ : F) : ℤ :=
+@[expose] def cubicCharSum {F : Type*} [Field F] [Fintype F] [DecidableEq F] (α β γ : F) : ℤ :=
   ∑ x : F, quadraticChar F ((cubicPoly α β γ).eval x)
 
 /-! ### Completing the square -/

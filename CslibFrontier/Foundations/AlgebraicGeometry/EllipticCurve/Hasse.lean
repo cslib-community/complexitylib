@@ -21,7 +21,7 @@ and `P₁ - P₀` has height `q + 1 + S`, where `D = g(T)`. The parallelogram la
 force `d (P₁ - n • P₀) = n² + S n + q` for every integer `n`. Heights are nonnegative and `q` is
 odd, so `S² ≤ 4 q`. Together with the point count `#E(F) = q + 1 + S`
 (`WeierstrassCurve.natCard_point_eq`) this is Hasse's bound. The argument is Manin's elementary
-proof (1956).
+proof [Manin1956]; the implementation notes of `ManinHeight` map its steps to this development.
 
 The height of `P₁ - P₀` comes from the group law: `x(P₁ - P₀) / D = N / (T^q - T)²` with
 `N = D (D^m + 1)² - (α + T^q + T) (T^q - T)²` and `m = q / 2`. Since `T^q - T = ∏_c (T - c)`,
@@ -45,11 +45,13 @@ from Euler's criterion `g(c)^m = χ(g(c))` and from the simple roots of `g`.
 
 ## References
 
+* [Ju. I. Manin, *On cubic congruences to a prime modulus*][Manin1956], §2 (pp. 675–676) and
+  Lemma 2 (p. 676).
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Theorem 9.72
   (p. 351), which states the bound over `ZMod p` without proof.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -147,10 +149,6 @@ private lemma natDegree_num_denom_of_eq_div {x : RatFunc k} {M H : k[X]} (hM : M
   rw [natDegree_mul (RatFunc.num_ne_zero hx0) hH, natDegree_mul hM (RatFunc.denom_ne_zero x),
     hdeg] at this
   omega
-
-private lemma natDegree_sub_le_of_le' {f g : k[X]} {n : ℕ} (hf : f.natDegree ≤ n)
-    (hg : g.natDegree ≤ n) : (f - g).natDegree ≤ n :=
-  (natDegree_sub_le _ _).trans (max_le hf hg)
 
 end SimpleRoots
 
@@ -258,9 +256,12 @@ private lemma natDegree_d1Num (hF : ringChar F ≠ 2) :
     refine natDegree_pow_le.trans ?_
     rw [natDegree_cubicPoly, mul_comm]
   have hc := natDegree_cubicPoly α β γ
+  have hsub {f g : F[X]} {n : ℕ} (hf : f.natDegree ≤ n) (hg : g.natDegree ≤ n) :
+      (f - g).natDegree ≤ n := by
+    simpa only [max_self] using natDegree_sub_le_of_le hf hg
   refine lt_of_le_of_lt (b := 2 * Fintype.card F) ?_ (by omega)
   repeat' first
-    | with_reducible apply natDegree_sub_le_of_le'
+    | with_reducible apply hsub
     | with_reducible apply natDegree_add_le_of_degree_le
   · compute_degree
     omega

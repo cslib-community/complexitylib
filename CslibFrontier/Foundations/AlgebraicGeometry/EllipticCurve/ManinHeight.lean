@@ -35,13 +35,42 @@ triple over `k[X]`, gives a primitive triple of twice the height.
 * `WeierstrassCurve.Manin.isPrim_addSubMap`, `WeierstrassCurve.Manin.hgt_addSubMap`: the add-sub
   map preserves primitivity and doubles the height.
 
+## Implementation notes
+
+This file, `ManinTwist` and `Hasse` adapt Manin's elementary proof of Hasse's bound
+[Manin1956]. His §2 (pp. 675–676) follows the heights of a sequence of points on the twist,
+obtained from the Frobenius point by adding multiples of the generic point, shows that they satisfy
+the recurrence `d (n + 1) + d (n - 1) = 2 d n + 2`, and solves it in closed form. His Lemma 2
+(p. 676) is the cancellation count that brings the number of solutions into the height. The Lean
+development follows this plan but is not a literal transcription:
+
+* **The recurrence.** It is the parallelogram law `WeierstrassCurve.Manin.parallelogram`. That law
+  comes from conjugating Mathlib's add-sub map identity on the twist (`ManinTwist`) and comparing
+  heights of primitive triples (this file), rather than from Manin's own computation.
+* **The sequence index.** The closed form `WeierstrassCurve.Manin.d_P₁_sub_zsmul_P₀` is stated for
+  `P₁ - n • P₀`, with `P₁` the Frobenius point and `P₀` the generic point. Manin's sequence adds
+  the generic point, so his index corresponds to `-n`.
+* **The cancellation count.** Lemma 2 corresponds to `WeierstrassCurve.Manin.d_P₁_sub_P₀`: the
+  reduced denominator of `x(P₁ - P₀) / D` is `∏_c (T - c)^(1 + χ(g(c)))`, of degree `q + S`.
+* **Affine points and the point at infinity.** Manin counts the solutions of the congruence
+  `y² ≡ g(x)`, which are the affine points; there are `q + S` of them
+  (`WeierstrassCurve.natCard_equation`). The Lean endpoints count `W.toAffine.Point`, which also
+  contains the point at infinity, so `#E(F) = q + 1 + S` (`WeierstrassCurve.natCard_point_eq`).
+* **The quadratic term and characteristic three.** Manin works with a cubic without an `x²` term,
+  and removing that term needs `3` to be invertible. Here `g = X³ + α X² + β X + γ` keeps the
+  quadratic term, so only odd characteristic is needed (to complete the square), and
+  characteristic three is included.
+
 ## References
 
-* Yu. I. Manin's elementary proof of Hasse's bound (1956); Hasse's bound is Theorem 9.72 of
-  [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020] (p. 351).
+* [Ju. I. Manin, *On cubic congruences to a prime modulus*][Manin1956], Izv. Akad. Nauk SSSR
+  Ser. Mat. 20:5 (1956), pp. 673–678: §2 (pp. 675–676) and Lemma 2 (p. 676).
+* Hasse's bound is Theorem 9.72 of
+  [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020] (p. 351), which
+  states it without proof.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -66,7 +95,7 @@ def IsPrimTriple (w : Fin 3 → k[X]) : Prop := ∀ π : k[X], Prime π → ¬ �
 def hgt (w : Fin 3 → k[X]) : ℕ := Finset.univ.sup fun i ↦ (w i).natDegree
 
 /-- The symmetric product `(r r', r s' + s r', s s')` of the pairs `(r, s)` and `(r', s')`. -/
-def sym2Pair (r s r' s' : k[X]) : Fin 3 → k[X] := ![r * r', r * s' + s * r', s * s']
+@[expose] def sym2Pair (r s r' s' : k[X]) : Fin 3 → k[X] := ![r * r', r * s' + s * r', s * s']
 
 /-! ### The height of a triple -/
 

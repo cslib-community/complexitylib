@@ -922,6 +922,11 @@ Mark S. Manasse, Lyle A. McGeoch, Daniel D. Sleator. "Competitive Algorithms for
 
 Udi Manber and Gene Myers. "Suffix Arrays: A New Method for On-Line String Searches." *SIAM Journal on Computing* 22(5), 935–948, 1993; preliminary version in SODA 1990. https://doi.org/10.1137/0222058 . Bibliographic data from secondary indexes and the DOI record; the journal text is behind the SIAM paywall and was not inspected. The manual credits it with the suffix array and with the contrast between the plain `O(P log N)` binary search and the `O(P + log N)` search that reuses longest-common-prefix information, following the customary attribution; section and theorem numbers are not cited.
 
+<a id="manin56"></a>
+## manin56
+
+Ju. I. Manin. "On cubic congruences to a prime modulus." *Izvestiya Akademii Nauk SSSR. Seriya Matematicheskaya* 20(5), 673–678, 1956 (in Russian). https://www.mathnet.ru/eng/im3844 . Bibliographic metadata was checked against secondary sources; the Math-Net.ru page itself could not be opened and the paper was not inspected. The locators §2 (pp. 675–676: the recurrence for the heights of a sequence of points and its closed form) and Lemma 2 (p. 676: the cancellation count) were supplied by an independent reviewer who read the paper, and were not rechecked for this entry. The Lean modules under `CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/` adapt Manin's proof of Hasse's bound rather than transcribe it; the implementation notes of [`ManinHeight.lean`](../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/ManinHeight.lean) list the differences (projective rather than affine point count, reversed sequence index, a cubic that keeps its quadratic term so that characteristic three is included, and a recurrence derived from Mathlib's add-sub map).
+
 <a id="mathlib"></a>
 ## mathlib
 
