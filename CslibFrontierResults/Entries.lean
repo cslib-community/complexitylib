@@ -745,15 +745,20 @@ register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
   topic := "time complexity"
   sources := [
-    { paper := FortnowSanthanam2006, theorem := "Lemma 5", locator := "Section 3.3" }
+    { paper := FortnowSanthanam2006,
+      theorem := "Lemma 5 (the translation method only, not these statements)",
+      locator := "Section 3.3" }
   ]
   theorems := [
     Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow,
-    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_log_rpow
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_pow_mul_log_rpow_le,
+    Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div,
+    Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_of_two_pow_mul_rpow_le
   ]
   scope := "DTIME(n^a) is strictly inside DTIME(g) whenever g(n) >= n^a (ln n)^eps eventually, \
-    for every integer a >= 1 and real eps > 0, on bit strings with native multitape DTIME. \
+    for every integer a >= 1 and real eps > 0, and DTIME(2^n) is strictly inside DTIME(g) \
+    whenever g(n) >= 2^n n^eps eventually, on bit strings with native multitape DTIME. \
     Derived by translation (padding) from the library's polylogarithmic-gap diagonal theorem; \
-    the source lemma is the translation method, not this statement. Only the bounds n^a are \
-    covered, not arbitrary time-constructible t, and this is not W. J. Paul's fixed-tape \
-    hierarchy."
+    the source lemma is the translation method, not this statement. Only the bounds n^a and \
+    2^n are covered, not arbitrary time-constructible t, and this is not W. J. Paul's \
+    fixed-tape hierarchy."

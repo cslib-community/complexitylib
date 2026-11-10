@@ -13,16 +13,19 @@ import CslibFrontier.Computability.Complexity.Classes.Constructible
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
 import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 
 /-!
 # Deterministic time hierarchies below every power of the logarithm
 
 For every integer `a ≥ 1` and real `ε > 0`, deterministic time `O(n ^ a)` is strictly contained
-in deterministic time `O(n ^ a * (log n) ^ ε)` on bit strings.
+in deterministic time `O(n ^ a * (log n) ^ ε)` on bit strings, and `O(2 ^ n)` is strictly
+contained in `O(2 ^ n * n ^ ε)`. At `t = 2 ^ n` the gap `n ^ ε` is again `(log t) ^ ε`.
 
 The gap function is `iterSqrtLog p n`, which applies `v ↦ ⌊√v⌋ + 1` to `⌊log₂ n⌋ + 1` `p` times
 and so lies within constant factors of `(log n) ^ (1 / 2 ^ p)`. Suppose
@@ -35,11 +38,14 @@ and so lies within constant factors of `(log n) ^ (1 / 2 ^ p)`. Suppose
 `Cslib.Complexity.exists_DTIME_ssubset_DTIME_polylog`. Constant factors are absorbed by `DTIME`,
 so no gap is lost along the chain.
 
+For `2 ^ n` the chain is additive: `g_{j+1} n = g_j n + ⌊log₂ (g_j n + 1)⌋ / q + 1`, so
+`2 ^ g_{j+1}` is `2 ^ g_j` times about `(g_j n) ^ (1 / q)`, and `2 * q * k` steps exceed
+`2 ^ n` times the `k`-th power of `log (2 ^ n)`.
+
 This is the translation method [Fortnow and Santhanam, §3.3, Lemma 5][FortnowSanthanam2006]
 applied to a polylogarithmic-gap diagonal theorem. It covers the bounds `n ^ a` for integers
-`a ≥ 1` only. It is not W. J. Paul's hierarchy for a fixed number of tapes (*On time
-hierarchies*, 1979), and it does not give a `(log t) ^ ε` gap for arbitrary time-constructible
-`t`.
+`a ≥ 1` and `2 ^ n` only. It is not W. J. Paul's hierarchy for a fixed number of tapes
+[Paul1979], and it does not give a `(log t) ^ ε` gap for arbitrary time-constructible `t`.
 
 ## Main definitions
 
@@ -49,12 +55,17 @@ hierarchies*, 1979), and it does not give a `(log t) ^ ε` gap for arbitrary tim
 
 * `Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow`:
   `DTIME (n ^ a) ⊊ DTIME ((n * iterSqrtLog p n) ^ a)`.
-* `Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_log_rpow`: `DTIME (n ^ a) ⊊ DTIME g` whenever
-  `g n ≥ n ^ a * (log n) ^ ε` eventually, for some real `ε > 0`.
+* `Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_pow_mul_log_rpow_le`: `DTIME (n ^ a) ⊊ DTIME g`
+  whenever `g n ≥ n ^ a * (log n) ^ ε` eventually, for some real `ε > 0`.
+* `Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div`:
+  `DTIME (2 ^ n) ⊊ DTIME (2 ^ (n + ⌊log₂ (n + 1)⌋ / q))` for `q ≥ 1`.
+* `Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_of_two_pow_mul_rpow_le`:
+  `DTIME (2 ^ n) ⊊ DTIME g` whenever `g n ≥ 2 ^ n * n ^ ε` eventually, for some real `ε > 0`.
 
 ## References
 
 * [L. Fortnow and R. Santhanam, §3.3, Lemma 5][FortnowSanthanam2006]
+* [W. J. Paul, *On time hierarchies*][Paul1979] (cited for contrast; not formalized here)
 -/
 
 public section
@@ -241,11 +252,8 @@ private theorem eventually_iterSqrtLog_pow_le (p : ℕ) {a : ℕ} {ε : ℝ}
     simpa using Real.log_le_log (Real.exp_pos 1) this
   have hlog0 : 0 < Real.log n := by linarith
   have hL : ((Nat.log 2 n : ℕ) : ℝ) + 1 ≤ 3 * Real.log n := by
-    have hpow : ((2 : ℝ) ^ Nat.log 2 n) ≤ n := by
-      exact_mod_cast Nat.pow_log_le_self 2 (by omega)
-    have h1 : (Nat.log 2 n : ℝ) * Real.log 2 ≤ Real.log n := by
-      rw [← Real.log_pow]
-      exact Real.log_le_log (by positivity) hpow
+    have h1 : (Nat.log 2 n : ℝ) * Real.log 2 ≤ Real.log n :=
+      (le_div_iff₀ (Real.log_pos one_lt_two)).1 (by simpa [Real.logb] using Real.natLog_le_logb n 2)
     have h3 : (Nat.log 2 n : ℝ) * 0.6931471803 ≤ Real.log n :=
       (mul_le_mul_of_nonneg_left Real.log_two_gt_d9.le (Nat.cast_nonneg _)).trans h1
     linarith
@@ -276,7 +284,7 @@ private theorem eventually_iterSqrtLog_pow_le (p : ℕ) {a : ℕ} {ε : ℝ}
 `a ≥ 1` and real `ε > 0`, if `g n ≥ n ^ a * (log n) ^ ε` for all large `n`, then
 `DTIME (n ^ a) ⊊ DTIME g`. Choose `p` with `a / 2 ^ p < ε` and apply
 `Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow`. -/
-theorem DTIME_pow_ssubset_DTIME_of_log_rpow {a : ℕ} (ha : 1 ≤ a) {ε : ℝ} (hε : 0 < ε)
+theorem DTIME_pow_ssubset_DTIME_of_pow_mul_log_rpow_le {a : ℕ} (ha : 1 ≤ a) {ε : ℝ} (hε : 0 < ε)
     {g : ℕ → ℕ} (hg : ∀ᶠ n : ℕ in atTop, (n : ℝ) ^ a * Real.log n ^ ε ≤ g n) :
     DTIME encBits (fun n => n ^ a) ⊂ DTIME encBits g := by
   obtain ⟨p, hp⟩ := exists_nat_gt ((a : ℝ) / ε)
@@ -293,6 +301,168 @@ theorem DTIME_pow_ssubset_DTIME_of_log_rpow {a : ℕ} (ha : 1 ≤ a) {ε : ℝ} 
       exact (mul_le_mul_of_nonneg_left hr (by positivity)).trans hg
     exact_mod_cast this
   have hsep := DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow ha p
+  exact ⟨hsep.1.trans (DTIME_mono_of_eventually_le hle),
+    fun h => hsep.2 ((DTIME_mono_of_eventually_le hle).trans h)⟩
+
+/-! ### Exponential time -/
+
+/-- The additive padding chain for exponential time: `expChain q 0 n = n + 1`, and each step adds
+`⌊log₂ (v + 1)⌋ / q + 1`. -/
+private def expChain (q : ℕ) : ℕ → ℕ → ℕ
+  | 0, n => n + 1
+  | j + 1, n => expChain q j n + Nat.log 2 (expChain q j n + 1) / q + 1
+
+private theorem lt_expChain (q j n : ℕ) : n < expChain q j n := by
+  induction j with
+  | zero => exact Nat.lt_succ_self n
+  | succ j ih => exact Nat.lt_succ_of_le (ih.le.trans (Nat.le_add_right _ _))
+
+private theorem computableInPolyTime_expChain (q j : ℕ) :
+    ComputableInPolyTime (expChain q j) encNat encNat := by
+  induction j with
+  | zero => exact .binary_add' .id' (.const 1)
+  | succ j ih =>
+    exact .binary_add' (.binary_add' ih (.binary_div' (ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.binary_log_two.comp (.binary_add' ih (.const 1)))) (.const q)))
+      (.const 1)
+
+private theorem le_expChain (q j n : ℕ) :
+    n + 1 + j * (Nat.log 2 (n + 1) / q) ≤ expChain q j n := by
+  induction j with
+  | zero => simp [expChain]
+  | succ j ih =>
+    change _ ≤ expChain q j n + Nat.log 2 (expChain q j n + 1) / q + 1
+    have h : Nat.log 2 (n + 1) / q ≤ Nat.log 2 (expChain q j n + 1) / q :=
+      Nat.div_le_div_right (Nat.log_mono_right (by have := lt_expChain q j n; omega))
+    rw [add_one_mul]
+    omega
+
+/-- Far enough along, the additive chain exceeds the polylogarithmic gap at `2 ^ n`. -/
+private theorem eventually_polylog_le_expChain {q : ℕ} (hq : 1 ≤ q) (k : ℕ) :
+    ∀ᶠ n in atTop, (2 ^ n + 1) * (Nat.log 2 (2 ^ n + 1) + 1) ^ k ≤
+      2 ^ expChain q (2 * q * k) n := by
+  filter_upwards [eventually_ge_atTop (2 ^ (2 * q))] with n hn
+  set L := Nat.log 2 (n + 1) with hL
+  have h2n : 2 ≤ 2 ^ n :=
+    Nat.le_self_pow (by have := @Nat.one_le_two_pow (2 * q); omega) 2
+  have hLq : 2 * q ≤ L := Nat.le_log_of_pow_le (by norm_num) (by omega)
+  have hM : L + 1 ≤ 2 * (q * (L / q)) := by
+    have h1 := Nat.div_add_mod L q
+    have h2 := Nat.mod_lt L (by omega : 0 < q)
+    generalize q * (L / q) = e at h1 ⊢
+    generalize L % q = r at h1 h2
+    omega
+  have hlogn : Nat.log 2 (2 ^ n + 1) + 1 ≤ n + 1 := by
+    have hlt : 2 ^ n + 1 < 2 ^ (n + 1) := by rw [pow_succ]; omega
+    have : Nat.log 2 (2 ^ n + 1) < n + 1 := Nat.log_lt_of_lt_pow (by omega) hlt
+    omega
+  have hpow : (n + 1) ^ k ≤ 2 ^ (2 * q * k * (L / q)) := by
+    calc (n + 1) ^ k ≤ (2 ^ (L + 1)) ^ k :=
+          Nat.pow_le_pow_left (Nat.lt_pow_succ_log_self (by norm_num) _).le k
+      _ ≤ (2 ^ (2 * (q * (L / q)))) ^ k :=
+          Nat.pow_le_pow_left (Nat.pow_le_pow_right two_pos hM) k
+      _ = 2 ^ (2 * q * k * (L / q)) := by rw [← pow_mul]; congr 1; ring
+  have hchain : n + 1 + 2 * q * k * (L / q) ≤ expChain q (2 * q * k) n := le_expChain q _ n
+  calc (2 ^ n + 1) * (Nat.log 2 (2 ^ n + 1) + 1) ^ k ≤ (2 * 2 ^ n) * (n + 1) ^ k :=
+        Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left hlogn k)
+    _ ≤ 2 * 2 ^ n * 2 ^ (2 * q * k * (L / q)) := Nat.mul_le_mul_left _ hpow
+    _ = 2 ^ (n + 1 + 2 * q * k * (L / q)) := by rw [pow_add, pow_succ]; ring
+    _ ≤ _ := Nat.pow_le_pow_right two_pos hchain
+
+/-- **Deterministic exponential-time hierarchy with a root gap.** For every `q ≥ 1`,
+`DTIME (2 ^ n) ⊊ DTIME (2 ^ (n + ⌊log₂ (n + 1)⌋ / q))`; the gap factor
+`2 ^ (⌊log₂ (n + 1)⌋ / q)` is within a factor `2` of `(n + 1) ^ (1 / q)`. A collapse would
+transfer along the additive padding chain `g₀ n = n + 1`,
+`g_{j+1} n = g_j n + ⌊log₂ (g_j n + 1)⌋ / q + 1` to a collapse across the polylogarithmic gap of
+`Cslib.Complexity.exists_DTIME_ssubset_DTIME_polylog`. -/
+theorem DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div {q : ℕ} (hq : 1 ≤ q) :
+    DTIME encBits (fun n => 2 ^ n) ⊂
+      DTIME encBits (fun n => 2 ^ (n + Nat.log 2 (n + 1) / q)) := by
+  refine ⟨DTIME_mono fun n => Nat.pow_le_pow_right two_pos (Nat.le_add_right _ _),
+    fun hcollapse => ?_⟩
+  have hstep (j : ℕ) : DTIME encBits (fun n => 2 ^ expChain q (j + 1) n) ⊆
+      DTIME encBits (fun n => 2 ^ expChain q j n) :=
+    (DTIME_mono_of_le_mul_add (C := 2) fun n => by
+      change 2 ^ (expChain q j n + Nat.log 2 (expChain q j n + 1) / q + 1) ≤
+        2 * 2 ^ (expChain q j n + Nat.log 2 (expChain q j n + 1) / q) + 2
+      rw [pow_succ]
+      omega).trans
+    (DTIME_comp_subset_of_subset (f₁ := fun n => 2 ^ (n + Nat.log 2 (n + 1) / q))
+      (f₂ := fun n => 2 ^ n)
+      (fun a b h => Nat.pow_le_pow_right two_pos
+        (Nat.add_le_add h (Nat.div_le_div_right (Nat.log_mono_right (by omega)))))
+      (fun n => Nat.lt_two_pow_self.le.trans
+        (Nat.pow_le_pow_right two_pos (Nat.le_add_right _ _)))
+      (fun n => Nat.lt_two_pow_self.le) (computableInPolyTime_expChain q j) (lt_expChain q j)
+      hcollapse)
+  have hchain (J : ℕ) : DTIME encBits (fun n => 2 ^ expChain q J n) ⊆
+      DTIME encBits (fun n => 2 ^ n) := by
+    induction J with
+    | zero =>
+      exact DTIME_mono_of_le_mul_add (C := 2) fun n => by
+        change 2 ^ (n + 1) ≤ 2 * 2 ^ n + 2
+        rw [pow_succ]
+        omega
+    | succ J ih => exact (hstep J).trans ih
+  obtain ⟨k, hk⟩ := exists_DTIME_ssubset_DTIME_polylog
+  have hsep := hk (f := fun n => 2 ^ n) (g := fun n => 2 ^ expChain q (2 * q * k) n)
+    timeConstructible_two_pow (fun n => Nat.lt_two_pow_self.le)
+    (eventually_polylog_le_expChain hq k)
+  exact hsep.2 (hchain _)
+
+/-- `2 ^ (⌊log₂ (n + 1)⌋ / q)` is eventually at most `n ^ ε` once `1 / q < ε`. -/
+private theorem eventually_two_pow_log_div_le {q : ℕ} (hq : 1 ≤ q) {ε : ℝ}
+    (hε : 1 / (q : ℝ) < ε) :
+    ∀ᶠ n : ℕ in atTop, ((2 ^ (Nat.log 2 (n + 1) / q) : ℕ) : ℝ) ≤ (n : ℝ) ^ ε := by
+  have hq0 : (0 : ℝ) < q := by exact_mod_cast hq
+  have hT : Tendsto (fun n : ℕ => (n : ℝ) ^ (ε - 1 / q)) atTop atTop :=
+    (tendsto_rpow_atTop (sub_pos.2 hε)).comp tendsto_natCast_atTop_atTop
+  filter_upwards [hT.eventually_ge_atTop ((2 : ℝ) ^ (1 / (q : ℝ))), eventually_ge_atTop 1]
+    with n hT hn
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
+  obtain ⟨x, hx⟩ : ∃ x : ℝ, x = ((2 ^ (Nat.log 2 (n + 1) / q) : ℕ) : ℝ) := ⟨_, rfl⟩
+  have hx0 : 0 ≤ x := hx ▸ Nat.cast_nonneg _
+  have hxq : x ^ q ≤ 2 * n := by
+    have h1 : (2 ^ (Nat.log 2 (n + 1) / q)) ^ q ≤ 2 * n := by
+      rw [← pow_mul]
+      calc 2 ^ (Nat.log 2 (n + 1) / q * q) ≤ 2 ^ Nat.log 2 (n + 1) :=
+            Nat.pow_le_pow_right two_pos (Nat.div_mul_le_self _ _)
+        _ ≤ n + 1 := Nat.pow_log_le_self 2 (Nat.succ_ne_zero n)
+        _ ≤ 2 * n := by omega
+    rw [hx]
+    exact_mod_cast h1
+  rw [← hx]
+  calc x = (x ^ q) ^ (1 / (q : ℝ)) := by
+        rw [← Real.rpow_natCast, ← Real.rpow_mul hx0, mul_one_div_cancel hq0.ne', Real.rpow_one]
+    _ ≤ (2 * n) ^ (1 / (q : ℝ)) := Real.rpow_le_rpow (pow_nonneg hx0 _) hxq (by positivity)
+    _ = 2 ^ (1 / (q : ℝ)) * (n : ℝ) ^ (1 / (q : ℝ)) := Real.mul_rpow (by norm_num) hn0.le
+    _ ≤ (n : ℝ) ^ (ε - 1 / q) * (n : ℝ) ^ (1 / (q : ℝ)) :=
+        mul_le_mul_of_nonneg_right hT (Real.rpow_nonneg hn0.le _)
+    _ = (n : ℝ) ^ ε := by rw [← Real.rpow_add hn0]; congr 1; ring
+
+/-- **Deterministic exponential-time hierarchy below every power of `n`.** For every real
+`ε > 0`, if `g n ≥ 2 ^ n * n ^ ε` for all large `n`, then `DTIME (2 ^ n) ⊊ DTIME g`; at
+`t = 2 ^ n` the gap `n ^ ε` is `(log₂ t) ^ ε`. Choose `q` with `1 / q < ε` and apply
+`Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div`. -/
+theorem DTIME_two_pow_ssubset_DTIME_of_two_pow_mul_rpow_le {ε : ℝ} (hε : 0 < ε) {g : ℕ → ℕ}
+    (hg : ∀ᶠ n : ℕ in atTop, (2 : ℝ) ^ n * (n : ℝ) ^ ε ≤ g n) :
+    DTIME encBits (fun n => 2 ^ n) ⊂ DTIME encBits g := by
+  obtain ⟨q, hq⟩ := exists_nat_gt (1 / ε)
+  have hq1 : 1 ≤ q := by
+    have : (0 : ℝ) < q := (one_div_pos.2 hε).trans hq
+    have : 0 < q := by exact_mod_cast this
+    omega
+  have hqε : 1 / (q : ℝ) < ε := by
+    rw [div_lt_iff₀ (by positivity)]
+    rw [div_lt_iff₀ hε] at hq
+    linarith
+  have hle : ∀ᶠ n in atTop, 2 ^ (n + Nat.log 2 (n + 1) / q) ≤ g n := by
+    filter_upwards [hg, eventually_two_pow_log_div_le hq1 hqε] with n hg hr
+    have : ((2 ^ (n + Nat.log 2 (n + 1) / q) : ℕ) : ℝ) ≤ (g n : ℝ) := by
+      push_cast [pow_add] at hr ⊢
+      exact (mul_le_mul_of_nonneg_left hr (by positivity)).trans hg
+    exact_mod_cast this
+  have hsep := DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div hq1
   exact ⟨hsep.1.trans (DTIME_mono_of_eventually_le hle),
     fun h => hsep.2 ((DTIME_mono_of_eventually_le hle).trans h)⟩
 
