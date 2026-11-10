@@ -87,12 +87,9 @@ def efficiencyKey (statement : Expr) : MetaM (Name × Name × Bool) := do
   unless predicate == `Turing.MultiTapeTM.ComputableInPolyTime ||
       predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
       predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
-      predicate == `Cslib.Probability.IsPPTOn || predicate == `Cslib.Probability.IsPPT ||
-      predicate == `Cslib.WordRAM.Refines ||
-      predicate == `Cslib.WordRAM.ComputableInPolyTime ||
-      predicate == `Cslib.WordRAM.UniformComputableInPolyTime do
+      predicate == `Cslib.Probability.IsPPTOn || predicate == `Cslib.Probability.IsPPT do
     throwError "unsupported efficiency predicate `{predicate}` for `program_certificate`; \
-      expected TM polynomial time or logarithmic space, PPT, or a documented word-RAM certificate"
+      expected TM polynomial time or logarithmic space, or PPT"
   let argument := if predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
       predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
       predicate == `Turing.MultiTapeTM.ComputableInPolyTime then
@@ -149,11 +146,10 @@ private def hasGlobalFunProp (decl : Name) : CoreM Bool := do
 
 /-- `@[program_certificate]` registers an efficiency certificate for `polytime`, `logspace`
 and `ppt`. Its conclusion must be a `ComputableInPolyTime`, `ComputableTidilyInPolyTime`,
-`ComputableInLogSpace`, `IsPPTOn` or `IsPPT` statement, or one of the word-RAM predicates
-`WordRAM.Refines`, `WordRAM.ComputableInPolyTime`,
-`WordRAM.UniformComputableInPolyTime` used by `Tactic.WordRAM`. The indexed argument must apply
+`ComputableInLogSpace`, `IsPPTOn` or `IsPPT` statement. The indexed argument must apply
 a constant, possibly under an output encoding. Other predicates are rejected rather than indexed
-by an unrelated final argument.
+by an unrelated final argument. Word-RAM efficiency statements are `fun_prop` predicates; tag
+their certificates `@[fun_prop]` instead.
 Certificates are also registered with `fun_prop` for use in larger compositions, unless the same
 declaration already has a global registration.
 

@@ -9,7 +9,8 @@ module
 
 public import CslibFrontierTests.WordRAMDynamic
 public import CslibFrontier.DataStructure.Stack.Controller
-public import CslibFrontier.Tactic.WordRAM
+public import CslibFrontier.Computability.WordRAM.Controller
+public import CslibFrontier.Tactic.PolyTime
 
 /-!
 # Controller certificates on concrete code
@@ -17,7 +18,7 @@ public import CslibFrontier.Tactic.WordRAM
 An adaptive client of the exchange cell passes the first answer into a second exchange with one
 fixed continuation fragment. Additional tests exercise charged branching and initialization,
 both exact execution paths, the smallest admissible word width, rejection of a false budget, and
-the polynomial-time automation on the compiled stack controller.
+`fun_prop` reuse of the compiled stack controller's polynomial-time certificate.
 -/
 
 @[expose] public section
@@ -99,7 +100,6 @@ private theorem adaptive_refines {w v : ℕ} (hv : Fits w v) :
   Refines.bind_ofFn (first_refines hv) (fun _ => second_refines) (fun _ _ _ _ _ _ _ => le_rfl)
 
 /-- Initialization is an actual register write, followed by the composed adaptive certificate. -/
-@[program_certificate]
 private theorem initialized_refines {w v : ℕ} (hv : Fits w v) :
     Refines w (D := exchangeSpec w) (fun s x => s = 0 ∧ x = Data.init []) (swapBack w v) (mid w)
       (fun _ _ => 9)
@@ -165,20 +165,6 @@ theorem rejects_short_budget :
   have hn : t = 4 := (he.unique swap_executes).2
   omega
 
--- A second matching certificate must not hide the usable one or force its false premise.
-@[program_certificate]
-private theorem unusable_refines {w v : ℕ} (impossible : False) :
-    Refines w (D := exchangeSpec w) (fun s x => s = 0 ∧ x = Data.init []) (swapBack w v) (mid w)
-      (fun _ _ => 9)
-      (.seq (.op (.const 2 0)) (swapCode v)) := impossible.elim
-
-example {w v : ℕ} (hv : Fits w v) :
-    Refines w (D := exchangeSpec w) (fun s x => s = 0 ∧ x = Data.init []) (swapBack w v) (mid w)
-      (fun _ _ => 9)
-      (.seq (.op (.const 2 0)) (swapCode v)) := by
-  stateful
-
-@[program_certificate]
 private theorem nonuniform_positive_polytime :
     ComputableInPolyTime .standard DataStructure.Stack.Controller.positive (fun _ n => [n]) id :=
   DataStructure.Stack.Controller.positive_polytime.computableInPolyTime
@@ -188,11 +174,8 @@ attribute [local fun_prop] nonuniform_positive_polytime
 example :
     UniformComputableInPolyTime .standard DataStructure.Stack.Controller.positive
       (fun _ n => [n]) id ∧
-    UniformComputableInPolyTime .standard DataStructure.Stack.Controller.positive
-      (fun _ n => [n]) id ∧
-    ComputableInPolyTime .standard DataStructure.Stack.Controller.positive (fun _ n => [n]) id ∧
     ComputableInPolyTime .standard DataStructure.Stack.Controller.positive (fun _ n => [n]) id :=
-  ⟨by polytime, by fun_prop, by polytime, by fun_prop⟩
+  ⟨by fun_prop, by fun_prop⟩
 
 /-- The family puts its width in the instruction's literal, rather than reading it at runtime. -/
 private def widthCountdown (w : ℕ) : Code .standard 3 :=

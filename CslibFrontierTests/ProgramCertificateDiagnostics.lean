@@ -55,7 +55,7 @@ theorem wrongPredicate : NotEfficiency List.reverse := True.intro
 
 /--
 error: unsupported efficiency predicate `ProgramCertificateDiagnostics.NotEfficiency` for
-`program_certificate`; expected TM polynomial time or logarithmic space, PPT, or a documented word-RAM certificate
+`program_certificate`; expected TM polynomial time or logarithmic space, or PPT
 -/
 #guard_msgs (whitespace := lax) in
 attribute [program_certificate] wrongPredicate
@@ -64,7 +64,7 @@ theorem noProgram : True := True.intro
 
 /--
 error: unsupported efficiency predicate `True` for `program_certificate`; expected
-TM polynomial time or logarithmic space, PPT, or a documented word-RAM certificate
+TM polynomial time or logarithmic space, or PPT
 -/
 #guard_msgs (whitespace := lax) in
 attribute [program_certificate] noProgram
