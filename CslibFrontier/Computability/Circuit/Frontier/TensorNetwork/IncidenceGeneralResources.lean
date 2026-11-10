@@ -27,6 +27,10 @@ clause density, exact counts over all declared variables, deterministic binary t
 in n plus the clause count times the single-loglog exponential, and polynomial bit space.
 Weighted input reconstruction is separate.
 
+## Main definitions
+
+* `encCounter`: shared unary-declaration/binary-formula counter encoding.
+
 ## Main results
 
 * `exists_countGeneralParity_sharp_certificate`: global rounded time and polynomial workspace.
@@ -47,9 +51,10 @@ private abbrev Input := ℕ × CNF ℕ
 private abbrev Context := Unit × ℕ
 private abbrev FullInput := Unit × ℕ × CNF ℕ
 private abbrev LeafInput := Context × CNF ℕ
-private abbrev encInput := encPair encUnary encCNF
+/-- Shared counter input: framed unary declaration followed by the binary signed CNF. -/
+abbrev encCounter : (ℕ × CNF ℕ) ↪ List Bool := encPair encUnary encCNF
 private abbrev encContext := encPair encUnit encUnary
-private abbrev encFull := encPair encUnit encInput
+private abbrev encFull := encPair encUnit encCounter
 private abbrev encLeaf := encPair encContext encCNF
 
 private def dropLeaf (x : LeafInput) : Input := (x.1.2, x.2)
@@ -59,11 +64,11 @@ private def depth (k : ℕ) (n : ℕ) := countingDepthCoeff k (threshold k ((), 
 private noncomputable def leafCount (k β N₀ : ℕ) : LeafInput → ℕ :=
   normalizeDeclaredLeaf Prod.snd (countParity k β N₀ ∘ dropLeaf)
 
-private theorem dropLeaf_polytime : ComputableInPolyTime dropLeaf encLeaf encInput := by
+private theorem dropLeaf_polytime : ComputableInPolyTime dropLeaf encLeaf encCounter := by
   unfold dropLeaf
   fun_prop
 
-private theorem prepare_polytime : ComputableInPolyTime prepare encInput encFull := by
+private theorem prepare_polytime : ComputableInPolyTime prepare encCounter encFull := by
   unfold prepare
   fun_prop
 
@@ -76,7 +81,7 @@ private theorem leaf_certificate (k β : ℕ) (hk : 1 ≤ k) :
   obtain ⟨N₀, cp, A, hcp⟩ := exists_countParity_sharp_certificate k β hk
   let cd := NativeCertificate.ofPolyTime dropLeaf_polytime
   have hd := NativeCertificate.ofPolyTime_isPolynomial dropLeaf_polytime
-  have hcpS : PolyBounded (fun x : Input => (encInput x).length) cp.space :=
+  have hcpS : PolyBounded (fun x : Input => (encCounter x).length) cp.space :=
     (PolyBounded.of_polynomiallyBounded _ (bound := fun L => A * (L + 1) ^ A)
       (by fun_prop)).mono (fun x => (hcp x).2)
   let raw := cp.comp cd
@@ -91,14 +96,14 @@ private theorem leaf_certificate (k β : ℕ) (hk : 1 ≤ k) :
     ⟨fun x => raw.time x + post x, fun x => raw.space x + post x, hnorm⟩
   have hpost : PolyBounded (fun x : LeafInput => (encLeaf x).length) post :=
     ((PolyBounded.self.add hout).add (.const 1)).pow b
-  let V (x : LeafInput) := cd.time x + post x + A * ((encInput (dropLeaf x)).length + 1) ^ A
+  let V (x : LeafInput) := cd.time x + post x + A * ((encCounter (dropLeaf x)).length + 1) ^ A
   have hV : PolyBounded (fun x : LeafInput => (encLeaf x).length) V :=
     (hd.1.add hpost).add ((PolyBounded.const A).mul
       ((dropLeaf_polytime.polyBounded_length.add (.const 1)).pow A))
   obtain ⟨C, d, hCd⟩ := hV.exists_le
   refine ⟨N₀, cg, C, d, A, fun x => ?_, hraw.add hpost⟩
   have ht := (hcp (dropLeaf x)).1
-  change cp.time (dropLeaf x) ≤ A * ((encInput (dropLeaf x)).length + 1) ^ A *
+  change cp.time (dropLeaf x) ≤ A * ((encCounter (dropLeaf x)).length + 1) ^ A *
     2 ^ (A * Nat.logLogSqrtLogScale x.1.2) at ht
   have hp : cd.time x + post x ≤ (cd.time x + post x) *
       2 ^ (A * Nat.logLogSqrtLogScale x.1.2) :=
@@ -107,7 +112,7 @@ private theorem leaf_certificate (k β : ℕ) (hk : 1 ≤ k) :
         change cd.time x + cp.time (dropLeaf x) + post x = _
         omega
     _ ≤ (cd.time x + post x) * 2 ^ (A * Nat.logLogSqrtLogScale x.1.2) +
-        A * ((encInput (dropLeaf x)).length + 1) ^ A *
+        A * ((encCounter (dropLeaf x)).length + 1) ^ A *
           2 ^ (A * Nat.logLogSqrtLogScale x.1.2) := Nat.add_le_add hp ht
     _ = V x * 2 ^ (A * Nat.logLogSqrtLogScale x.1.2) := by dsimp only [V]; ring
     _ ≤ _ := Nat.mul_le_mul_right _ (hCd x)
@@ -121,13 +126,13 @@ private theorem size_bounds (k : ℕ) (hk : 2 ≤ k) :
   obtain ⟨p, hp, hb⟩ := sharp_parameters_polylog hk
   have hp' : Cslib.PolynomiallyBounded (fun n => p (Nat.clog 2 n)) := by fun_prop
   obtain ⟨C, d, hCd⟩ := Cslib.polynomiallyBounded_iff_le.mp hp'
-  have hN (x : Input) : x.1 ≤ (encInput x).length := by
-    simp only [encInput, length_encPair, encUnary_apply, List.length_replicate]
+  have hN (x : Input) : x.1 ≤ (encCounter x).length := by
+    simp only [encCounter, length_encPair, encUnary_apply, List.length_replicate]
     omega
-  have hDI : PolyBounded (fun x : Input => (encInput x).length) (fun x => depth k x.1) :=
+  have hDI : PolyBounded (fun x : Input => (encCounter x).length) (fun x => depth k x.1) :=
     PolyBounded.of_forall_le C d fun x => ((hb x.1).1.trans (hCd x.1)).trans
       (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (Nat.add_le_add_right (hN x) 1) d))
-  have hdrop := ComputableInPolyTime.snd encUnit encInput
+  have hdrop := ComputableInPolyTime.snd encUnit encCounter
   have hD := hDI.comp hdrop.polyBounded_length
   have hn : PolyBounded (fun x : FullInput => (encFull x).length) (fun x => x.2.1) :=
     (PolyBounded.self.mono hN).comp hdrop.polyBounded_length
@@ -257,11 +262,11 @@ private theorem fullSearch_prepare (k β N₀ : ℕ) (x : Input) :
     normalizeDeclaredLeaf_eq_div, Function.comp_apply, dropLeaf, id_eq]
 
 private theorem general_resources (k β Ncut : ℕ) (hk : 2 ≤ k) :
-    ∃ N₀ : ℕ, ∃ (cs : NativeCertificate (countGeneralParity k β N₀ Ncut) encInput encNat)
+    ∃ N₀ : ℕ, ∃ (cs : NativeCertificate (countGeneralParity k β N₀ Ncut) encCounter encNat)
       (D : ℕ), ∀ x : Input,
-      cs.time x ≤ D * ((encInput x).length + 1) ^ D *
+      cs.time x ≤ D * ((encCounter x).length + 1) ^ D *
         2 ^ (D * Nat.logLogSqrtLogScale x.1) ∧
-      cs.space x ≤ D * ((encInput x).length + 1) ^ D := by
+      cs.space x ≤ D * ((encCounter x).length + 1) ^ D := by
   obtain ⟨N₀, A, cfull, V, hV, htFull, hsFull⟩ := search_certificate k β hk
   let hp := prepare_polytime
   let prep := NativeCertificate.ofPolyTime hp
@@ -270,17 +275,17 @@ private theorem general_resources (k β Ncut : ℕ) (hk : 2 ≤ k) :
     (ComputableInPolyTime.id' (encIn := encUnary))
   let cv := NativeCertificate.ofPolyTime hv
   have hcv := NativeCertificate.ofPolyTime_isPolynomial hv
-  have hsmall : ComputableInPolyTime (fun x : Input => decide (x.1 < Ncut)) encInput encBool := by
-    unfold encInput
+  have hsmall : ComputableInPolyTime (fun x : Input => decide (x.1 < Ncut)) encCounter encBool := by
+    unfold encCounter
     fun_prop
   let cm := NativeCertificate.ofPolyTime hsmall
   have hcm := NativeCertificate.ofPolyTime_isPolynomial hsmall
-  let cr : NativeCertificate (fun _ : Input => (0 : ℕ)) encInput encNat :=
+  let cr : NativeCertificate (fun _ : Input => (0 : ℕ)) encCounter encNat :=
     NativeCertificate.ofPolyTime (ComputableInPolyTime.const 0)
   have hcr := NativeCertificate.ofPolyTime_isPolynomial
-    (show ComputableInPolyTime (fun _ : Input => (0 : ℕ)) encInput encNat from
+    (show ComputableInPolyTime (fun _ : Input => (0 : ℕ)) encCounter encNat from
       ComputableInPolyTime.const 0)
-  let cs : NativeCertificate (countGeneralParity k β N₀ Ncut) encInput encNat :=
+  let cs : NativeCertificate (countGeneralParity k β N₀ Ncut) encCounter encNat :=
     (NativeCertificate.branch cv
       (NativeCertificate.branch cm countCNFExhaustiveCertificate (cfull.comp prep)) cr).congr
         fun x => by
@@ -297,7 +302,7 @@ private theorem general_resources (k β Ncut : ℕ) (hk : 2 ≤ k) :
   let W (x : Input) := cv.time x + cv.space x + cm.time x + cm.space x +
     prep.time x + prep.space x + cr.time x + cr.space x +
     ((2 ^ Ncut + 1) * P x + Q x) + countCNFExhaustiveCertificate.space x + V (prepare x)
-  have hW : PolyBounded (fun x : Input => (encInput x).length) W :=
+  have hW : PolyBounded (fun x : Input => (encCounter x).length) W :=
     (((((((((hcv.1.add hcv.2).add hcm.1).add hcm.2).add hprep.1).add hprep.2).add
       hcr.1).add hcr.2).add (((PolyBounded.const (2 ^ Ncut + 1)).mul hP).add hQ)).add
       polyBounded_countCNFExhaustive_space).add (hV.comp hp.polyBounded_length)
@@ -344,7 +349,7 @@ private theorem general_resources (k β Ncut : ℕ) (hk : 2 ≤ k) :
   have hC : C ≤ D := by dsimp only [D]; omega
   have hd : d ≤ D := by dsimp only [D]; omega
   have hA : A + 1 ≤ D := by dsimp only [D]; omega
-  have hpoly : W x ≤ D * ((encInput x).length + 1) ^ D :=
+  have hpoly : W x ≤ D * ((encCounter x).length + 1) ^ D :=
     (hCd x).trans (Nat.mul_le_mul hC (Nat.pow_le_pow_right (by omega) hd))
   exact ⟨hraw.1.trans (Nat.mul_le_mul hpoly
     (Nat.pow_le_pow_right (by decide) (Nat.mul_le_mul_right _ hA))), hraw.2.trans hpoly⟩
@@ -353,10 +358,10 @@ private theorem general_resources (k β Ncut : ℕ) (hk : 2 ≤ k) :
 single-loglog native time and independent polynomial workspace. No resource premise remains. -/
 theorem exists_countGeneralParity_sharp_certificate (k : ℕ) (hk : 2 ≤ k) :
     ∃ β N₀ Ncut : ℕ, ∃ (cs : NativeCertificate (countGeneralParity k β N₀ Ncut)
-      (encPair encUnary encCNF) encNat) (D : ℕ),
-      (∀ x : ℕ × CNF ℕ, cs.time x ≤ D * ((encPair encUnary encCNF x).length + 1) ^ D *
+      encCounter encNat) (D : ℕ),
+      (∀ x : ℕ × CNF ℕ, cs.time x ≤ D * ((encCounter x).length + 1) ^ D *
         2 ^ (D * Nat.logLogSqrtLogScale x.1) ∧
-        cs.space x ≤ D * ((encPair encUnary encCNF x).length + 1) ^ D) ∧
+        cs.space x ≤ D * ((encCounter x).length + 1) ^ D) ∧
       (∀ x : ℕ × CNF ℕ, countGeneralParity k β N₀ Ncut x =
         if validDeclaredInput k x.1 x.2 then x.2.modelCountOn (Finset.range x.1) else 0) := by
   obtain ⟨β, Ncut, hcorrect⟩ := exists_countGeneralParity_eq_modelCountOn k hk
@@ -372,11 +377,11 @@ theorem exists_countGeneralParity_sharp_certificate (k : ℕ) (hk : 2 ≤ k) :
 In particular the source's n≥20 range needs no further size exception. -/
 theorem exists_countGeneralParity_real_sharp_certificate (k : ℕ) (hk : 2 ≤ k) :
     ∃ β N₀ Ncut : ℕ, ∃ (cs : NativeCertificate (countGeneralParity k β N₀ Ncut)
-      (encPair encUnary encCNF) encNat) (D : ℕ),
+      encCounter encNat) (D : ℕ),
       (∀ x : ℕ × CNF ℕ, countGeneralParity k β N₀ Ncut x =
         if validDeclaredInput k x.1 x.2 then x.2.modelCountOn (Finset.range x.1) else 0) ∧
       ∀ n, 16 ≤ n → ∀ φ : CNF ℕ,
-        let L := (encPair encUnary encCNF (n, φ)).length
+        let L := (encCounter (n, φ)).length
         (cs.time (n, φ) : ℝ) ≤ (D : ℝ) * (L + 1 : ℕ) ^ D *
           (2 : ℝ) ^ (((6 * D : ℕ) : ℝ) * Real.logLogSqrtLogScale n) ∧
         cs.space (n, φ) ≤ D * (L + 1) ^ D := by
@@ -386,7 +391,7 @@ theorem exists_countGeneralParity_real_sharp_certificate (k : ℕ) (hk : 2 ≤ k
   obtain ⟨ht, hs⟩ := hresource (n, φ)
   refine ⟨?_, hs⟩
   have htR : (cs.time (n, φ) : ℝ) ≤ (D : ℝ) *
-      ((encPair encUnary encCNF (n, φ)).length + 1 : ℕ) ^ D *
+      ((encCounter (n, φ)).length + 1 : ℕ) ^ D *
       (2 : ℝ) ^ (D * Nat.logLogSqrtLogScale n) := by exact_mod_cast ht
   exact htR.trans (mul_le_mul_of_nonneg_left
     (Nat.two_pow_mul_logLogSqrtLogScale_le D hn) (by positivity))
@@ -397,7 +402,7 @@ polynomial bit space. Input validity is exactly width and declaration; unused va
 The constants and machine are fixed before every N≥20 and every clause list. -/
 theorem exists_countGeneralParity_source_certificate (k : ℕ) (hk : 2 ≤ k) :
     ∃ β N₀ Ncut : ℕ, ∃ cs : NativeCertificate (countGeneralParity k β N₀ Ncut)
-      (encPair encUnary encCNF) encNat, ∃ C e A : ℕ,
+      encCounter encNat, ∃ C e A : ℕ,
       (∀ x : ℕ × CNF ℕ, countGeneralParity k β N₀ Ncut x =
         if validDeclaredInput k x.1 x.2 then x.2.modelCountOn (Finset.range x.1) else 0) ∧
       ∀ n, 20 ≤ n → ∀ φ : CNF ℕ, validDeclaredInput k n φ = true →
@@ -409,7 +414,7 @@ theorem exists_countGeneralParity_source_certificate (k : ℕ) (hk : 2 ≤ k) :
   let C := D * (20 * k + 4) ^ D
   let e := 2 * D
   refine ⟨β, N₀, Ncut, cs, C, e, 6 * D, hcorrect, fun n hn φ hv => ?_⟩
-  have hpoly : D * ((encInput (n, φ)).length + 1) ^ D ≤ C * (n + φ.length + 1) ^ e := by
+  have hpoly : D * ((encCounter (n, φ)).length + 1) ^ D ≤ C * (n + φ.length + 1) ^ e := by
     calc _ ≤ D * ((20 * k + 4) * (n + φ.length + 1) ^ 2) ^ D :=
           Nat.mul_le_mul_left D (Nat.pow_le_pow_left (SAT.length_declaredInput_le hv) D)
       _ = _ := by dsimp only [C, e]; rw [mul_pow, ← pow_mul]; ring

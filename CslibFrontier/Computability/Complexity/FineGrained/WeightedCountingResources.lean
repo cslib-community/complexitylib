@@ -31,7 +31,6 @@ open Cslib.Circuits.Frontier.IncidenceNetwork
 
 private abbrev Input := ℕ × List BinaryNormalization.Input
 private abbrev encInput := encPair encUnary (encList BinaryNormalization.encInput)
-private abbrev encCounter := encPair encUnary encCNF
 
 private theorem dimension_le {n d : ℕ} {p : Output} (hp : WithinBudget n d p) (b : Bool) :
     (counterInput b p).1 ≤ 2 * n := by

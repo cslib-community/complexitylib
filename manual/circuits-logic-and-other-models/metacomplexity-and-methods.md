@@ -2898,6 +2898,13 @@ original-label counting, distribution, scans and optional scalar reconstruction 
 `WeightedRawCounting` above. The following inventory records the source/model acceptance scope.
 
 
+The counter encodings used by the backend, exact-one, weighted and two-boundary resource
+compositions share `IncidenceNetwork.encCounter` from `IncidenceGeneralResources`.
+`ExactOne.BinaryPlan.exists_count_realEta_certificate` exposes Theorem 5.1 and the signed/side-CNF
+extensions directly with the real source clock; the same machine has an all-size rounded bound.
+When there are neither retained equations nor side clauses, `ExactOne.selectedPlan` returns
+$2^r$ directly, and both rational and binary preprocessors inherit that no-query branch.
+
 ### STOC1575 source/model acceptance inventory
 
 The current implementation inventory is the table below. Earlier construction-layer sections

@@ -20,7 +20,12 @@ The original binary clauses determine construction, rank, direct candidates and 
 The actual general-density width-three counter is instantiated, with sequential execution and
 binary subtraction. Polynomial workspace includes both outputs and all construction stages.
 The rounded exponent has one log-log factor. This is the signed-equation endpoint underlying
-[ChenJiangZhu2027], Theorem 6.3; connecting the actual table writer remains separate.
+[ChenJiangZhu2027], Theorems 5.1–5.2 and Corollary 5.3. The table composition is separate.
+
+## Main results
+
+* `exists_count_sharp_certificate`: original signed-equation counts and rounded sharp resources.
+* `exists_count_realEta_certificate`: the same machine with the real source clock.
 -/
 
 public section
@@ -31,7 +36,6 @@ open Cslib.Complexity Cslib.GenericRAM Turing.MultiTapeTM
 open Cslib.Circuits.Frontier.IncidenceNetwork
 open WeightedRow.BinaryPlan
 
-private abbrev encCounter := encPair encUnary encCNF
 
 private theorem counterInput_binary_polytime (β : Bool) :
     ComputableInPolyTime (counterInput β) encOutput encCounter := by
@@ -181,5 +185,29 @@ theorem exists_count_sharp_certificate :
           have := Nat.mul_le_mul_right E h
           nlinarith)
       _ ≤ _ := Nat.mul_le_mul_right E (hCe x)
+
+/-- Theorem 5.1 and its signed/side-CNF extensions, with the real source eta clock. The same
+machine has global polynomial workspace and its rounded certificate covers every small size. -/
+theorem exists_count_realEta_certificate :
+    ∃ count : Input → ℕ, ∃ cs : NativeCertificate count encInput encNat, ∃ C e A : ℕ,
+      (∀ x, cs.space x ≤ C * ((encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (B E : CNF (Fin n))
+        (_hb : ∀ c ∈ B, c.length ≤ 2) (_he : ∀ c ∈ E, c.length ≤ n)
+        (S : Fin E.length → Finset (Fin n)) (p : Fin E.length → Fin n → Bool)
+        (_h : ∀ i, (E.get i).Perm (signedClause (S i) (p i))),
+        let x : Input := (n, (B.relabel Fin.val, E.relabel Fin.val))
+        count x = sourceCount B S p ∧
+          (16 ≤ n → (cs.time x : ℝ) ≤ (C : ℝ) * ((encInput x).length + 1 : ℕ) ^ e *
+            (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) := by
+  obtain ⟨count, cs, C, e, A, hs, h⟩ := exists_count_sharp_certificate
+  refine ⟨count, cs, C, e, 6 * A, hs, ?_⟩
+  intro n B E hb he S p hp
+  refine ⟨(h B E hb he S p hp).1, fun hn => ?_⟩
+  have ht : (cs.time (n, (B.relabel Fin.val, E.relabel Fin.val)) : ℝ) ≤ (C : ℝ) *
+      ((encInput (n, (B.relabel Fin.val, E.relabel Fin.val))).length + 1 : ℕ) ^ e *
+        (2 : ℝ) ^ (A * Nat.logLogSqrtLogScale n) := by
+    exact_mod_cast (h B E hb he S p hp).2
+  exact ht.trans (mul_le_mul_of_nonneg_left
+    (Nat.two_pow_mul_logLogSqrtLogScale_le A hn) (by positivity))
 
 end Cslib.Logic.PL.ExactOne.BinaryPlan

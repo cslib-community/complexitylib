@@ -101,7 +101,7 @@ example : (preprocess ([] : CNF (Fin 40)) wideScopes (fun _ _ => true)).Budget 4
   (fun i _ => i == 0))
 
 /- No exact-one equations leaves all three declared bits counted. -/
-/-- info: ((2, 3, 0, 1), 8) -/
+/-- info: ((0, 8, 0, 0), 8) -/
 #guard_msgs in
 #eval let plan := preprocess ([] : CNF (Fin 3))
         (fun i : Fin 0 => Fin.elim0 i) (fun i => Fin.elim0 i)

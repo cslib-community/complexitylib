@@ -83,10 +83,12 @@ not a count over the Boolean cube. -/
     B.eval x = true ∧ ∀ i, Holds (S i) (p i) x).card
 
 /-- Compile retained original indices. With no rows, use the binary side CNF and
-an unsatisfiable second query; otherwise use the existing two-boundary compiler. -/
+an unsatisfiable second query when needed; an empty side formula returns the free count
+directly. Otherwise use the existing two-boundary compiler. -/
 @[expose] def selectedPlan (B : CNF V) (S : I → Finset V) (p : I → V → Bool) :
     List I → CountPlan V
-  | [] => .queries 0 (CNF.relabel Sum.inl B.dedup) [[]]
+  | [] => if B.isEmpty then .direct (2 ^ Fintype.card V)
+      else .queries 0 (CNF.relabel Sum.inl B.dedup) [[]]
   | j :: js => .queries js.length
       (sideQuery B (fun t => S ((j :: js).get t)) (fun t => p ((j :: js).get t)) false)
       (sideQuery B (fun t => S ((j :: js).get t)) (fun t => p ((j :: js).get t)) true)
@@ -212,12 +214,18 @@ theorem selectedPlan_correct (B : CNF V) (S : I → Finset V) (p : I → V → B
   cases is with
   | nil =>
     have hh (x : V → Bool) : ∀ i, Holds (S i) (p i) x := (hs x).mp (by simp)
-    simp only [selectedPlan, CountPlan.value, CountPlan.execute,
-      declaredCount_false, Nat.sub_zero, declaredCount_relabel]
-    apply Fintype.card_congr
-    apply Equiv.subtypeEquivRight
-    intro x
-    simp only [hh x, implies_true, and_true, CNF.eval_eq_true_iff, List.mem_dedup]
+    have hcount : declaredCount B.dedup = sourceCount B S p := by
+      apply Fintype.card_congr
+      apply Equiv.subtypeEquivRight
+      intro x
+      simp only [hh x, implies_true, and_true, CNF.eval_eq_true_iff, List.mem_dedup]
+    simp only [selectedPlan]
+    split_ifs with hB
+    · have he : B = [] := List.isEmpty_iff.mp hB
+      subst B
+      simpa [CountPlan.value, CountPlan.execute, declaredCount] using hcount
+    · simpa only [CountPlan.value, CountPlan.execute, declaredCount_false,
+        Nat.sub_zero, declaredCount_relabel] using hcount
   | cons j js =>
     change declaredCount (sideQuery B _ _ false) - declaredCount (sideQuery B _ _ true) = _
     unfold declaredCount
@@ -269,25 +277,28 @@ theorem selectedPlan_budget (B : CNF V) (hb : ∀ c ∈ B, c.length ≤ 2)
     (selectedPlan B S p is).Budget (Fintype.card V) := by
   cases is with
   | nil =>
-    refine ⟨by simp only [Fintype.card_sum, Fintype.card_fin]; omega, ?_, ?_⟩
-    · intro β c hc
-      cases β
-      · obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
-        have hm : d ∈ B := List.mem_dedup.mp hd
-        have hdlen : d.length ≤ 3 := (hb d hm).trans (by decide : 2 ≤ 3)
-        simpa only [Clause.relabel, List.length_map] using hdlen
-      · have hh : c = [] := List.mem_singleton.mp hc
-        simp [hh]
-    · intro β
-      cases β
-      · change (CNF.relabel Sum.inl B.dedup).length ≤ _
-        simp only [CNF.relabel, List.length_map]
-        have hd := dedup_binary_length B hb
-        have hr : 2 ≤ Fintype.card V := by omega
-        nlinarith
-      · change 1 ≤ _
-        have hr : 2 ≤ Fintype.card V := by omega
-        nlinarith
+    simp only [selectedPlan]
+    split_ifs
+    · trivial
+    · refine ⟨by simp only [Fintype.card_sum, Fintype.card_fin]; omega, ?_, ?_⟩
+      · intro β c hc
+        cases β
+        · obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
+          have hm : d ∈ B := List.mem_dedup.mp hd
+          have hdlen : d.length ≤ 3 := (hb d hm).trans (by decide : 2 ≤ 3)
+          simpa only [Clause.relabel, List.length_map] using hdlen
+        · have hh : c = [] := List.mem_singleton.mp hc
+          simp [hh]
+      · intro β
+        cases β
+        · change (CNF.relabel Sum.inl B.dedup).length ≤ _
+          simp only [CNF.relabel, List.length_map]
+          have hd := dedup_binary_length B hb
+          have hr : 2 ≤ Fintype.card V := by omega
+          nlinarith
+        · change 1 ≤ _
+          have hr : 2 ≤ Fintype.card V := by omega
+          nlinarith
   | cons j js =>
     have hk : js.length + 1 < Fintype.card V := by
       simpa only [List.length_cons] using hi

@@ -104,7 +104,7 @@ theorem exists_count_sharp_certificate :
   obtain ⟨β, N₀, Ncut, cp, D, hcp, hcorrect⟩ :=
     exists_countGeneralParity_sharp_certificate 3 (by decide)
   let counter := countGeneralParity 3 β N₀ Ncut
-  have hcpS : PolyBounded (fun x => (TwoBoundary.BinaryFrontend.encCounter x).length) cp.space :=
+  have hcpS : PolyBounded (fun x => (encCounter x).length) cp.space :=
     PolyBounded.of_forall_le D D fun x => (hcp x).2
   obtain ⟨ce, heS, O₀, hO₀, hceTime⟩ := TwoBoundary.BinaryFrontend.exists_execute_overhead cp hcpS
   obtain ⟨hf, ht⟩ := TwoBoundary.BinaryFrontend.selectors_polytime
@@ -116,8 +116,8 @@ theorem exists_count_sharp_certificate :
   let qf (x : Input) := TwoBoundary.BinaryFrontend.first (out x)
   let qt (x : Input) := TwoBoundary.BinaryFrontend.second (out x)
   let O (x : Input) := cc.time x + O₀ (out x)
-  let Bf (x : Input) := D * ((TwoBoundary.BinaryFrontend.encCounter (qf x)).length + 1) ^ D
-  let Bt (x : Input) := D * ((TwoBoundary.BinaryFrontend.encCounter (qt x)).length + 1) ^ D
+  let Bf (x : Input) := D * ((encCounter (qf x)).length + 1) ^ D
+  let Bt (x : Input) := D * ((encCounter (qt x)).length + 1) ^ D
   let W (x : Input) := O x + Bf x + Bt x
   have hlen := compile_polytime.polyBounded_length
   have hO : PolyBounded (fun x : Input => (encInput x).length) O :=

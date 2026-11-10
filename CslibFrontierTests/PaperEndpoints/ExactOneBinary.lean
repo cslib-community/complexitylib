@@ -55,3 +55,9 @@ example {n m : ℕ} (S : Fin m → Finset (Fin n)) (p : Fin m → Fin n → Bool
     (fun i => Fin.elim0 i) ([] : CNF (Fin 3))).execute (fun _ => bruteCount),
   (binaryPreprocess (fun i : Fin 0 => Fin.elim0 i)
     (fun i => Fin.elim0 i) ([] : CNF (Fin 1))).execute (fun _ => bruteCount))
+
+/- An empty family is a direct answer on large declarations, not a zero-row query pair. -/
+/-- info: (0, 1099511627776, 0, 0) -/
+#guard_msgs in
+#eval shape (binaryPreprocess (fun i : Fin 0 => Fin.elim0 i)
+  (fun i => Fin.elim0 i) ([] : CNF (Fin 40)))

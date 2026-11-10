@@ -19,9 +19,7 @@ with all multiplicative and additive constants absorbed. Fixed width is the only
 parameter: no count, decomposition, clock or realizing machine is supplied by the caller.
 The declaration is unary and literal indices are binary. Unused declared variables are retained.
 
-## Main definitions
-
-* `encCounter`: framed unary declaration followed by the binary signed CNF.
+The shared `encCounter` encoding is defined in `IncidenceGeneralResources`.
 
 ## Main results
 
@@ -38,9 +36,6 @@ The declaration is unary and literal indices are binary. Unused declared variabl
 public section
 namespace Cslib.Circuits.Frontier.IncidenceNetwork
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Complexity Turing.MultiTapeTM
-
-/-- Framed unary declared dimension followed by framed clauses with binary indices and signs. -/
-abbrev encCounter : (ℕ × CNF ℕ) ↪ List Bool := encPair encUnary encCNF
 
 /-- One finite binary machine executes the actual general-density counter on every declared
 input. Invalid width/indices return zero; no density bound or resource premise is required. -/

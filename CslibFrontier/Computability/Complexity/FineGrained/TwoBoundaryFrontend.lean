@@ -19,11 +19,11 @@ Instantiate the proved general-density fixed-width native counter in the actual 
 constructor. Empty condition lists make one counting call; nonempty lists make two sequential
 calls and a binary subtraction. Construction, query copies, output lengths and peak workspace
 are charged. The exponent depends on original declaration plus number of conditions, without
-assuming that this number is linear in the declaration. See [ChenJiangZhu2027], PDF pp. 4–5.
+assuming that this number is linear in the declaration. The counter input uses the shared
+`IncidenceNetwork.encCounter`. See [ChenJiangZhu2027], PDF pp. 4–5.
 
 ## Main definitions
 
-* `encCounter`: unary declared dimension and framed binary signed formula.
 * `execute`: actual one/two-query dispatch and binary reconstruction.
 
 ## Main results
@@ -52,9 +52,6 @@ open VCOne
 /-- Count the actual emitted queries and reconstruct, making only one call for no conditions. -/
 @[expose] def execute (counter : ℕ × CNF ℕ → ℕ) (o : Output) : ℕ :=
   if o.isLeft then counter (first o) else counter (first o) - counter (second o)
-
-/-- A unary declaration followed by the binary signed CNF; the declaration is framed. -/
-abbrev encCounter := encPair encUnary encCNF
 
 private theorem selectors_polytime :
     ComputableInPolyTime first encOutput encCounter ∧
