@@ -5273,6 +5273,8 @@ public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Definability
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
+public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Tuple
+public import CslibFrontier.Logics.FirstOrder.Operator.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.Addition
 public import CslibFrontier.Logics.FirstOrder.Ordered.Basic
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitArithmetic
@@ -5290,6 +5292,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.DomainInterpreta
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Encoding
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
+public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.TransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Ordered.Interpretation
 public import CslibFrontier.Logics.FirstOrder.Ordered.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication
