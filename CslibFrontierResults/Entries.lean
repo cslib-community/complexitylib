@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
@@ -129,6 +130,23 @@ register_result "savitch" where
     finite-state nondeterministic machine whose every computation prefix respects a \
     polynomial space bound and whose branches all halt. Not the parameterized quadratic-space \
     simulation."
+
+register_result "space-hierarchy" where
+  title := "Stearns–Hartmanis–Lewis: the deterministic space hierarchy"
+  topic := "space complexity"
+  sources := [
+    { paper := StearnsHartmanisLewis1965, theorem := unverified, locator := unverified },
+    { paper := Sipser2013, theorem := unverified, locator := unverified },
+    { paper := AroraBarak09, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.DSPACE_ssubset_DSPACE,
+    Cslib.Complexity.L_ssubset_DSPACE_log2_sq
+  ]
+  scope := "DSPACE f ⊂ DSPACE g on binary words for space-constructible g with ⌊log₂ n⌋ ≤ g n \
+    when every c·f(n)+c is eventually below g(n): the textbook gap and logarithmic threshold. \
+    DSPACE is total deterministic decision by one native multi-tape machine within \
+    O(s n) work cells. The nondeterministic space hierarchy is not part of this entry."
 
 register_result "alternation" where
   title := "Chandra–Kozen–Stockmeyer: AP equals PSPACE"
