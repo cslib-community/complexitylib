@@ -25,7 +25,8 @@ in probability bounds are `by finiteness`, whatever the shape of the bound.
 ## Main results
 
 * `ENNReal.Finiteness.sum_ne_top`: a finite sum of finite terms is finite, as a `finiteness` rule.
-* `PMF.apply_ne_top` and `Cslib.Probability.PMF.toOuterMeasure_ne_top` are `finiteness` rules.
+* `PMF.apply_ne_top`, `Cslib.Probability.PMF.toOuterMeasure_ne_top`: registered as `finiteness`
+  rules.
 
 ## Implementation notes
 
