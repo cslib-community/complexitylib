@@ -28,8 +28,8 @@ Small facts about list sums and lists of natural numbers.
   `List.blockRange w b`, starting at `List.blockStart w b`; the blocks below `B` are the numbers
   below `List.blockStart w B` (`List.flatMap_blockRange`). The pairs `g J + h` for `g < G`,
   `h < J` are the numbers below `G J` (`List.flatMap_range_mul`).
-* **Residue classes.** `List.residueClass J m g` is the numbers below `m` congruent to `g` modulo
-  `J`. Summing over the residue classes modulo `J > 0` sums over the list (`List.sum_filter_mod`),
+* **Residue classes.** `List.residueClass J m g` is the numbers `i` below `m` with `i % J = g`.
+  Summing over the residue classes modulo `J > 0` sums over the list (`List.sum_filter_mod`),
   and a residue class below `m` has at most `m / J + 1` numbers
   (`List.length_residueClass_le`).
 
@@ -126,8 +126,8 @@ theorem flatMap_range_mul (G J : ℕ) :
 
 /-! ### Residue classes -/
 
-/-- **The residue class of `g` modulo `J` below `m`**: the numbers below `m` congruent to `g`,
-in increasing order. -/
+/-- **The residue class of `g` modulo `J` below `m`**: the numbers `i` below `m` with
+`i % J = g`, in increasing order. It is empty when `0 < J ≤ g`. -/
 @[expose] def residueClass (J m g : ℕ) : List ℕ := (List.range m).filter (· % J = g)
 
 /-- Summing over the residue classes modulo `J > 0` sums over the list. -/
