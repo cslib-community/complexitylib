@@ -38,6 +38,19 @@ open Orthogonal
 /-- An incidence records its clause index, variable index, and clause-to-variable route. -/
 abbrev LocalIncidence := ℕ × ℕ × Route
 
+namespace LocalIncidence
+
+/-- The local index of the incident clause. -/
+abbrev clauseIndex (e : LocalIncidence) : ℕ := e.1
+
+/-- The local index of the incident variable. -/
+abbrev variableIndex (e : LocalIncidence) : ℕ := e.2.1
+
+/-- The route from the clause position to the variable position. -/
+abbrev route (e : LocalIncidence) : Route := e.2.2
+
+end LocalIncidence
+
 /-- Finite local replacement data. Variables and clauses have separate zero-based indices.
 `terminalVariables`, `boundaryPorts`, and `accessRoutes` have corresponding orders. -/
 structure LocalGeometry where
@@ -68,8 +81,8 @@ def clausePosition (g : LocalGeometry) (i : ℕ) : Point :=
 
 /-- Permitted contacts of two incidence routes: their shared graph endpoints. -/
 def commonEndpoints (g : LocalGeometry) (e f : LocalIncidence) : List Point :=
-  (if e.1 = f.1 then [g.clausePosition e.1] else []) ++
-    (if e.2.1 = f.2.1 then [g.variablePosition e.2.1] else [])
+  (if e.clauseIndex = f.clauseIndex then [g.clausePosition e.clauseIndex] else []) ++
+    (if e.variableIndex = f.variableIndex then [g.variablePosition e.variableIndex] else [])
 
 end LocalGeometry
 

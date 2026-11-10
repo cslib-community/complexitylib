@@ -120,9 +120,9 @@ private theorem local_clause_bounds (p : ClauseProfile) (s : PortAssignment) (i 
 private theorem local_route_bounds (p : ClauseProfile) (s : PortAssignment)
     {e : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes) :
-    ∀ q ∈ e.2.2, Rect 540000 540000 q := by
+    ∀ q ∈ e.route, Rect 540000 540000 q := by
   obtain ⟨f, hf, rfl⟩ := List.mem_map.mp he
-  dsimp only
+  dsimp only [LocalIncidence.route]
   split_ifs
   · intro q hq
     rw [collarPrefixRoute, List.mem_append] at hq
@@ -215,7 +215,7 @@ private theorem actual_incidenceRoute_bounds {φ : CNF ℕ} {d : Graph.Orthogona
     (he : e ∈ (clauseGeometry φ d i c).incidenceRoutes) :
     ∀ q ∈ positiveIncidenceRoute φ d i c e,
       Rect (1080000 * (W + 1)) (1080000 * (H + 1)) q := by
-  have hlocal : ∀ q ∈ translate (positiveBoxOrigin φ d i) e.2.2,
+  have hlocal : ∀ q ∈ translate (positiveBoxOrigin φ d i) e.route,
       Rect (1080000 * (W + 1)) (1080000 * (H + 1)) q := by
     intro q hq
     obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hq

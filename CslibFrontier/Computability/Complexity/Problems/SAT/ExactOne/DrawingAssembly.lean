@@ -42,9 +42,9 @@ open Cslib.Logic.PL Orthogonal
 def positiveFormulaDrawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
     FormulaDrawing (CNF.PositiveExactOneCompile.rawFormula φ) where
   variablePoint := positiveVariablePoint φ d
-  clausePoints := (positivePlacedClauses φ d).map fun pc => pc.2.1
+  clausePoints := (positivePlacedClauses φ d).map fun pc => pc.point
   incidenceRoute := fun o =>
-    ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).2.2.getD o.2.1 []
+    ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []
 
 private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
     (hc : ∀ pc ∈ pcs, pc.2.2.length = pc.1.length) :
@@ -83,8 +83,8 @@ theorem positiveFormulaDrawing_occurrence (φ : CNF ℕ) (d : Graph.OrthogonalDr
     {o : Occurrence (CNF.PositiveExactOneCompile.Variable ℕ)}
     (ho : o ∈ Cslib.Logic.PL.occurrences (CNF.PositiveExactOneCompile.rawFormula φ)) :
     ∃ pc ∈ positivePlacedClauses φ d,
-      pc.2.1 = (positiveFormulaDrawing φ d).clausePoints.getD o.1 (0, 0) ∧
-        (o.2.2, (positiveFormulaDrawing φ d).incidenceRoute o) ∈ pc.1.zip pc.2.2 := by
+      pc.point = (positiveFormulaDrawing φ d).clausePoints.getD o.1 (0, 0) ∧
+        (o.2.2, (positiveFormulaDrawing φ d).incidenceRoute o) ∈ pc.clause.zip pc.routes := by
   obtain ⟨hi, hj, hl⟩ := Cslib.Logic.PL.mem_occurrences.mp ho
   have hip : o.1 < (positivePlacedClauses φ d).length := by
     have h := congrArg List.length (positivePlacedClauses_formula φ d)
@@ -117,15 +117,15 @@ theorem clauseGeometry_literal_indices (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
     (i : ℕ) (c : Clause ℕ) (j : Fin 22)
     {l : Literal (CNF.PositiveExactOneCompile.Variable ℕ)} {e : LocalIncidence}
     (he : (l, e) ∈ ((profileFormula (clauseProfile c)).getD j.val []).zip
-      ((clauseGeometry φ d i c).incidenceRoutes.filter fun e => e.1 == j.val)) :
-    e.2.1 = (profileVariables (clauseProfile c)).idxOf l.1 := by
+      ((clauseGeometry φ d i c).incidenceRoutes.filter fun e => e.clauseIndex == j.val)) :
+    e.variableIndex = (profileVariables (clauseProfile c)).idxOf l.1 := by
   simp only [clauseGeometry, collaredPrefixGeometry, profilePrefixGeometry,
     LocalGeometry.toPrefix, List.filter_map, List.map_map, Function.comp_def,
     List.zip_map_right] at he
   obtain ⟨⟨lit, old⟩, hold, hle⟩ := List.mem_map.mp he
   have hidx := profileGeometry_literal_indices (clauseProfile c) j hold
   have hli : lit = l := congrArg Prod.fst hle
-  have hei : old.2.1 = e.2.1 := congrArg (fun a => a.2.2.1) hle
+  have hei : old.2.1 = e.variableIndex := congrArg (fun a => a.2.2.1) hle
   exact hei.symm.trans (hli ▸ hidx)
 
 /-- A paired actual literal and route comes from its certified local incidence record. -/
@@ -133,12 +133,12 @@ theorem positiveClauseBlock_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDrawin
     (i : ℕ) (c : Clause ℕ) {pc : PositivePlacedClause}
     (hpc : pc ∈ positiveClauseBlock φ d i c)
     {l : Literal (CNF.PositiveExactOneCompile.Variable ℕ)} {r : Route}
-    (hlr : (l, r) ∈ pc.1.zip pc.2.2) :
+    (hlr : (l, r) ∈ pc.clause.zip pc.routes) :
     ∃ e ∈ (clauseGeometry φ d i c).incidenceRoutes,
       r = positiveIncidenceRoute φ d i c e ∧
-        pc.2.1 = positiveBoxOrigin φ d i + (clauseGeometry φ d i c).clausePosition e.1 ∧
+        pc.point = positiveBoxOrigin φ d i + (clauseGeometry φ d i c).clausePosition e.clauseIndex ∧
         l.1 = profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) c
-          ((profileVariables (clauseProfile c)).getD e.2.1 (.inl (.inl 0))) := by
+          ((profileVariables (clauseProfile c)).getD e.variableIndex (.inl (.inl 0))) := by
   obtain ⟨⟨cl, j⟩, hj, rfl⟩ := List.mem_map.mp hpc
   change (l, r) ∈ (cl.relabel _).zip (List.map _ _) at hlr
   simp only [Clause.relabel, List.zip_map_left, List.zip_map_right, List.map_map,
@@ -172,9 +172,9 @@ theorem positiveFormulaDrawing_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDra
       e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes ∧
         (positiveFormulaDrawing φ d).incidenceRoute o = positiveIncidenceRoute φ d i φ[i] e ∧
         (positiveFormulaDrawing φ d).clausePoints.getD o.1 (0, 0) =
-          positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.1 ∧
+          positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.clauseIndex ∧
         o.2.2.1 = profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) φ[i]
-          ((profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0))) := by
+          ((profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0))) := by
   obtain ⟨pc, hpc, hp, hlr⟩ := positiveFormulaDrawing_occurrence φ d ho
   obtain ⟨⟨c, i⟩, hci, hpc⟩ := List.mem_flatMap.mp hpc
   obtain ⟨hi, hc⟩ := List.mem_zipIdx' hci
