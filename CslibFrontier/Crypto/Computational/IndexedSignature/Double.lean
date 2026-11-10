@@ -642,7 +642,7 @@ private theorem isOraclePPTOn_doubleHandler (S : IndexedSignatureScheme) {bound 
             ProbOracleComp.sample (S.sign pair.1.2.2 0 (requestDecoder.decode pair.2.1.2).2)
       else pure ([], pair.2.2))
   refine IsOraclePPTOn.ite' hfreshDec (IsOraclePPTOn.ite' hslotDec ?_ ?_)
-    (((ComputableTidilyInPolyTime.const []).prod hsigned).isOraclePPTOn)
+    (((ComputableInPolyTime.const []).prod (.of_tidy hsigned)).isOraclePPTOn)
   · have hqword := ((ComputableTidilyInPolyTime.const (encMid := encUnary) 0).prod hr2).encoded
     exact (IsOraclePPTOn.query_take' () (.of_tidy hqword) (.of_tidy hb)).map_with' hconsLog
   · have hsignLocal := (S.sign_ppt.preprocess

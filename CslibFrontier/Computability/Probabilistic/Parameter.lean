@@ -28,7 +28,7 @@ the definition does not permit a separate algorithm or nonuniform advice at each
 ## Main results
 
 * `Cslib.Probability.IsPPT.preprocess`: compute the parameter and auxiliary input efficiently.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPT`: run a deterministic word algorithm.
+* `Turing.MultiTapeTM.ComputableInPolyTime.isPPT`: run a deterministic word algorithm.
 
 ## References
 
@@ -79,8 +79,8 @@ end Cslib.Probability
 
 /-- Run a deterministic polynomial-time word algorithm on the auxiliary input. -/
 @[fun_prop]
-theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.isPPT {β : Type}
+theorem Turing.MultiTapeTM.ComputableInPolyTime.isPPT {β : Type}
     {output : β ↪ List Bool} {f : List Bool → β}
-    (h : ComputableTidilyInPolyTime f encBits output) :
+    (h : ComputableInPolyTime f encBits output) :
     Cslib.Probability.IsPPT output (fun _ input => pure (f input)) :=
-  (h.comp (ComputableTidilyInPolyTime.snd encUnary encBits)).isPPTOn
+  (h.comp' (ComputableInPolyTime.snd encUnary encBits)).isPPTOn
