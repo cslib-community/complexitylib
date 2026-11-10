@@ -19,11 +19,14 @@ hypothesis.
 The argument is the register-level one. A compact edge is a register step between the registers
 read from its endpoints, with the supplied symbol read through `inputSymbol`
 (`registerStepWith_of_edgeWithSymbol`); a deterministic machine steps uniquely on register tuples
-(`rightUnique_registerStepWith`); and valid IDs are determined by their registers
+(`rightUnique_registerStepWith`); and IDs below `vertexBound B` are determined by their registers
 (`readRegisters_injOn`).
 
 ## Main results
 
+* `Turing.MultiTapeNTM.ConfigurationGraph.pack_readRegisters_of_lt_vertexBound`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.readRegisters_injOn`: IDs below `vertexBound B` are
+  recovered from, and so determined by, their registers.
 * `Turing.MultiTapeNTM.ConfigurationGraph.registerStepWith_of_edgeWithSymbol`: a compact edge is a
   register step between the registers of its endpoints.
 * `Turing.MultiTapeNTM.ConfigurationGraph.edgeWithSymbol_target_unique`: target uniqueness for
@@ -38,26 +41,35 @@ namespace Turing.MultiTapeNTM.ConfigurationGraph
 
 variable {k : ℕ} {State : Type} [Fintype State]
 
-/-- IDs inside the compact box are determined by the registers read from them. -/
+/-- Every compact ID strictly below `vertexBound B` has positive radix `B`. -/
+theorem radix_pos_of_lt_vertexBound {B u : ℕ} (hu : u < vertexBound (k := k) B) : 0 < B := by
+  rcases Nat.eq_zero_or_pos B with rfl | hpos
+  · have : Nonempty (Register k) := ⟨.inputPos⟩
+    have hcard : Fintype.card (Register k) ≠ 0 := Fintype.card_ne_zero
+    simp [vertexBound, zero_pow hcard] at hu
+  · exact hpos
+
+/-- Packing `readRegisters B u` recovers any compact ID `u < vertexBound B`. -/
+theorem pack_readRegisters_of_lt_vertexBound {B u : ℕ} (hu : u < vertexBound (k := k) B) :
+    Cslib.Radix.pack B (readRegisters (k := k) B u) = u := by
+  have hB : 0 < B := radix_pos_of_lt_vertexBound hu
+  obtain ⟨x, hx, hval⟩ := Nat.exists_ofDigits_ofFn (B := B) (d := Fintype.card (Register k)) hu
+  let f : Register k → ℕ := fun i => x (Fintype.equivFin (Register k) i)
+  have hf_lt : ∀ i, f i < B := fun i => hx _
+  have hpack_f : Cslib.Radix.pack B f = u := by
+    unfold Cslib.Radix.pack
+    simpa only [f, Equiv.apply_symm_apply] using hval
+  have hread : readRegisters (k := k) B u = f := by
+    funext i
+    rw [← hpack_f]
+    exact Cslib.Radix.component_pack hB hf_lt i
+  rw [hread, hpack_f]
+
+/-- IDs below `vertexBound B` are determined by the registers read from them. -/
 theorem readRegisters_injOn {B u v : ℕ} (hu : u < vertexBound (k := k) B)
     (hv : v < vertexBound (k := k) B)
     (h : readRegisters (k := k) B u = readRegisters (k := k) B v) : u = v := by
-  have hpack {x : ℕ} (hx : x < vertexBound (k := k) B) :
-      Cslib.Radix.pack B (readRegisters (k := k) B x) = x := by
-    obtain ⟨d, hd, rfl⟩ := Nat.exists_ofDigits_ofFn hx
-    have hB : 0 < B := Nat.pos_of_ne_zero fun h0 => by
-      subst h0
-      have hcard : 0 < Fintype.card (Register k) := Fintype.card_pos_iff.mpr ⟨.inputPos⟩
-      simp [vertexBound, Nat.zero_pow hcard] at hx
-    have hread : readRegisters (k := k) B (Nat.ofDigits B (List.ofFn d)) =
-        fun i => d (Fintype.equivFin (Register k) i) := by
-      funext i
-      have := Cslib.Radix.component_pack hB (f := fun i => d (Fintype.equivFin (Register k) i))
-        (fun i => hd _) i
-      simpa [readRegisters, Cslib.Radix.pack] using this
-    rw [hread]
-    simp [Cslib.Radix.pack]
-  rw [← hpack hu, ← hpack hv, h]
+  rw [← pack_readRegisters_of_lt_vertexBound hu, ← pack_readRegisters_of_lt_vertexBound hv, h]
 
 /-- **A compact edge is a register step** between the registers read from its endpoints, for the
 input length `n` and the supplied symbol read through `inputSymbol`. -/

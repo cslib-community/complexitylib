@@ -77,30 +77,6 @@ section RadixAndListHelpers
 
 variable {k : ℕ}
 
-/-- Every compact ID strictly below `vertexBound B` has positive radix `B`. -/
-theorem radix_pos_of_lt_vertexBound {B u : ℕ} (hu : u < vertexBound (k := k) B) : 0 < B := by
-  rcases Nat.eq_zero_or_pos B with rfl | hpos
-  · have : Nonempty (Register k) := ⟨.inputPos⟩
-    have hcard : Fintype.card (Register k) ≠ 0 := Fintype.card_ne_zero
-    simp [vertexBound, zero_pow hcard] at hu
-  · exact hpos
-
-/-- Packing `readRegisters B u` recovers any compact ID `u < vertexBound B`. -/
-theorem pack_readRegisters_of_lt_vertexBound {B u : ℕ} (hu : u < vertexBound (k := k) B) :
-    Cslib.Radix.pack B (readRegisters (k := k) B u) = u := by
-  have hB : 0 < B := radix_pos_of_lt_vertexBound hu
-  obtain ⟨x, hx, hval⟩ := Nat.exists_ofDigits_ofFn (B := B) (d := Fintype.card (Register k)) hu
-  let f : Register k → ℕ := fun i => x (Fintype.equivFin (Register k) i)
-  have hf_lt : ∀ i, f i < B := fun i => hx _
-  have hpack_f : Cslib.Radix.pack B f = u := by
-    unfold Cslib.Radix.pack
-    simpa only [f, Equiv.apply_symm_apply] using hval
-  have hread : readRegisters (k := k) B u = f := by
-    funext i
-    rw [← hpack_f]
-    exact Cslib.Radix.component_pack hB hf_lt i
-  rw [hread, hpack_f]
-
 /-- Combine two optional natural targets into a strictly sorted duplicate-free list of length at
 most `2`. -/
 private def pairSortedTargets : Option ℕ → Option ℕ → List ℕ

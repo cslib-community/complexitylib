@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
-public import CslibFrontier.Logics.FirstOrder.Operator.DeterministicTransitiveClosure.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.DeterministicTransitiveClosure
+import CslibFrontier.Logics.FirstOrder.Operator.DeterministicTransitiveClosure.Tuple
 
 /-!
 # Deterministic logarithmic space in FO(DTC)
