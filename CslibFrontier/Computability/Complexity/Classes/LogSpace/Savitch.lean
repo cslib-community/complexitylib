@@ -34,7 +34,8 @@ within space `c₁ * (log₂ n) ^ 2 + c₂` on encoded instances of length `n`.
 ## References
 
 * [W. J. Savitch, *Relationships between nondeterministic and deterministic tape
-  complexities*][Savitch1970]
+  complexities*][Savitch1970]; journal text not inspected (paywalled), so no theorem number or
+  page is cited.
 * [W. M. Hoza, *Recent Progress on Derandomizing Space-Bounded Computation*, Section 4.3][Hoza2022]
 * [M. Sipser, *Introduction to the Theory of Computation*, 3rd edition, Section 8.4, final
   paragraph (p. 351)][Sipser2013]

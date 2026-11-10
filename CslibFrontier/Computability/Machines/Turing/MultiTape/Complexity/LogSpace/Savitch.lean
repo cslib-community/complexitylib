@@ -95,7 +95,8 @@ constructibility, and arbitrary instances under an encoding into `List Bool`.
 ## References
 
 * [W. J. Savitch, *Relationships between nondeterministic and deterministic tape
-  complexities*][Savitch1970]
+  complexities*][Savitch1970]; journal text not inspected (paywalled), so no theorem number or
+  page is cited.
 * [M. Sipser, *Introduction to the Theory of Computation*, 3rd edition, Theorem 8.5 and its proof,
   and Section 8.4, final paragraph (p. 351)][Sipser2013]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Theorem 4.14][AroraBarak09]
