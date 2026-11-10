@@ -286,14 +286,6 @@ private theorem poly_apply_le {α : Type} {f Lfn : α → ℕ} {c d L : ℕ}
     f a ≤ c * (L + 1) ^ d :=
   (hf a).trans (Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hla 1) d))
 
-private theorem hasPolySpace_branch {α β : Type} {eα : α ↪ List Bool} {eβ : β ↪ List Bool}
-    {p : α → Bool} {t e : α → β}
-    {cp : Cert p eα encBool} {ct : Cert t eα eβ} {ce : Cert e eα eβ}
-    (hcp : HasPolySpace cp) (hct : HasPolySpace ct) (hce : HasPolySpace ce) :
-    HasPolySpace (NativeCertificate.branch cp ct ce) :=
-  (hcp.add (hct.add hce)).mono fun a => by
-    simp only [NativeCertificate.branch_space]; split_ifs <;> omega
-
 private theorem polyBounded_option_elim {α β : Type}
     {eα : α ↪ List Bool} {eβ : β ↪ List Bool}
     {f : α → Option β} {gNone : α → ℕ} {gSome : α × β → ℕ}
@@ -1112,7 +1104,8 @@ private theorem exists_boundedIncidenceBranch_cert :
   let cZeroID := NativeCertificate.const (ei := eID) (em := encNat) 0
   let cStg2 := NativeCertificate.branch cGuard2 cCore cZeroID
   have hcStg2_sp : HasPolySpace cStg2 :=
-    hasPolySpace_branch hcGuard2.2 hcCore_sp (NativeCertificate.const_isPolynomial 0).2
+    ExhaustiveCountFallback.polyBounded_branch_space _ _ _
+      hcGuard2.2 hcCore_sp (NativeCertificate.const_isPolynomial 0).2
   let fnOut (idPair : BranchEvalInput × ReplacementDesignData) :=
     (idPair, (List.range (branchQ_u idPair.1)).map fun t =>
       let qs := mkNodeSubIn
@@ -1166,7 +1159,8 @@ private theorem exists_boundedIncidenceBranch_cert :
       congrArg encNat (congrFun heval_eq inp).symm⟩
   have hsp12 : HasPolySpace (cStg2.comp cStg1) := hasPolySpace_comp hcStg2_sp hPstg1_pb
   have hcFull_sp : PolyBounded (fun inp => (encBranchEvalInput inp).length) cFull.space :=
-    hasPolySpace_branch hcGuard1.2 hsp12 (NativeCertificate.const_isPolynomial 0).2
+    ExhaustiveCountFallback.polyBounded_branch_space _ _ _
+      hcGuard1.2 hsp12 (NativeCertificate.const_isPolynomial 0).2
   let P_all (inp : BranchEvalInput) : ℕ :=
     cGuard1.time inp + (encBranchEvalInput inp).length + P_stg1 inp + P_stg2 (mkDesignPair inp)
   have hPall_pb : PolyBounded (fun inp => (encBranchEvalInput inp).length) P_all :=
