@@ -207,6 +207,11 @@ theorem OrderedTableRep.tableInsert {U m : ℕ} (hm : 0 < m) {π : Fin U → Equ
         have hru : rank' u = (Dictionary.dom s).sup rank + 1 := Function.update_self u _ rank
         omega
       refine ⟨rank', fun w hw i hi => ?_⟩
+      have hTnone : T (targetSlot π T u hO) = none := by simpa [hsu] using htarget
+      have hne_target : ∀ {j : Fin m} {y : Fin U} {vy : ℕ},
+          T j = some (y, vy) → j ≠ targetSlot π T u hO := fun hT heq => by
+        rw [← heq, hT] at hTnone
+        cases hTnone
       rw [Dictionary.dom_insert] at hw ⊢
       rcases Finset.mem_insert.mp hw with rfl | hw_dom
       · rw [otherOccupiedSlots_tableInsert_self hm hrep.toTableRep w v hO] at hi
@@ -217,26 +222,16 @@ theorem OrderedTableRep.tableInsert {U m : ℕ} (hm : 0 < m) {π : Fin U → Equ
         rcases mem_otherOccupiedSlots_iff.mp hi_mem with ⟨y, vy, hTwi, hyw⟩
         have hy_dom : y ∈ Dictionary.dom s :=
           Dictionary.mem_dom_iff.mpr ⟨vy, (hrep.toTableRep.slot_spec _ y vy hTwi).1⟩
-        have hslot : π w i ≠ targetSlot π T w hO := by
-          intro heq
-          have hTnone : T (targetSlot π T w hO) = none := by simpa [hsu] using htarget
-          rw [← heq, hTwi] at hTnone
-          cases hTnone
         refine ⟨y, Finset.mem_erase.mpr ⟨hyw, Finset.mem_insert_of_mem hy_dom⟩, vy, ?_,
           hrank'_lt_u hy_dom⟩
-        rw [hupd, Function.update_of_ne hslot]
+        rw [hupd, Function.update_of_ne (hne_target hTwi)]
         exact hTwi
       · have hw_some : (s w).isSome := Dictionary.mem_dom_iff_isSome.mp hw_dom
         rw [hrep.toTableRep.missedProbes_tableInsert_of_isSome hm u v hO hw_some] at hi
         obtain ⟨y, hy_erase, vy, hTwi, hlt_rank⟩ := hrank w hw_dom i hi
         rcases Finset.mem_erase.mp hy_erase with ⟨hyw, hy_dom⟩
-        have hslot : π w i ≠ targetSlot π T u hO := by
-          intro heq
-          have hTnone : T (targetSlot π T u hO) = none := by simpa [hsu] using htarget
-          rw [← heq, hTwi] at hTnone
-          cases hTnone
         refine ⟨y, Finset.mem_erase.mpr ⟨hyw, Finset.mem_insert_of_mem hy_dom⟩, vy, ?_, ?_⟩
-        · rw [hupd, Function.update_of_ne hslot]
+        · rw [hupd, Function.update_of_ne (hne_target hTwi)]
           exact hTwi
         · rw [hrank'_mem hy_dom, hrank'_mem hw_dom]
           exact hlt_rank
@@ -516,17 +511,42 @@ private theorem partialDepSet_zero {U m : ℕ} (T : Table U m) (π : Fin U → E
   ext z
   simp [partialDepSet, directBlockers]
 
+private theorem directBlockers_eq_of_missedProbes_le {U m : ℕ} (T : Table U m)
+    (π : Fin U → Equiv.Perm (Fin m)) (r_ext : Fin U → ℕ) (x : Fin U) {r : ℕ}
+    (hr : missedProbes (otherOccupiedSlots T x) (π x) ≤ r) :
+    directBlockers T π r_ext x r = directBlockers T π r_ext x m := by
+  ext y
+  simp only [directBlockers, Finset.mem_filter, Finset.mem_univ, true_and]
+  exact and_congr_right fun _ => exists_congr fun i =>
+    ⟨fun ⟨_, h2, h3⟩ => ⟨i.isLt, h2, h3⟩, fun ⟨_, h2, h3⟩ => ⟨lt_of_lt_of_le h2 hr, h2, h3⟩⟩
+
+private theorem mem_partialDepSet_of_mem_directBlockers {U m : ℕ} (T : Table U m)
+    (π : Fin U → Equiv.Perm (Fin m)) (r_ext : Fin U → ℕ) {x y : Fin U} {r : ℕ}
+    (hy : y ∈ directBlockers T π r_ext x r) :
+    y ∈ partialDepSet T π r_ext x r :=
+  Finset.mem_biUnion.mpr ⟨y, hy, self_mem_depSet T π r_ext y⟩
+
+private theorem mem_depSet_of_mem_directBlockers {U m : ℕ} (T : Table U m)
+    (π : Fin U → Equiv.Perm (Fin m)) (r_ext : Fin U → ℕ) {x y : Fin U}
+    (hy : y ∈ directBlockers T π r_ext x m) :
+    y ∈ depSet T π r_ext x := by
+  rw [depSet_eq]
+  exact Finset.mem_insert_of_mem (mem_partialDepSet_of_mem_directBlockers T π r_ext hy)
+
+private theorem exists_val_of_map_fst_eq_some {U m : ℕ} {T : Table U m} {slot : Fin m}
+    {y : Fin U} (h : (T slot).map Prod.fst = some y) :
+    ∃ vy : ℕ, T slot = some (y, vy) := by
+  rcases Option.map_eq_some_iff.mp h with ⟨⟨y', vy⟩, hT, hfst⟩
+  dsimp only at hfst
+  subst hfst
+  exact ⟨vy, hT⟩
+
 private theorem partialDepSet_eq_of_missedProbes_le {U m : ℕ} (T : Table U m)
     (π : Fin U → Equiv.Perm (Fin m)) (r_ext : Fin U → ℕ) (x : Fin U) {r : ℕ}
     (hr : missedProbes (otherOccupiedSlots T x) (π x) ≤ r) :
     partialDepSet T π r_ext x r = partialDepSet T π r_ext x m := by
-  unfold partialDepSet directBlockers
-  congr 1
-  ext y
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-  refine and_congr_right fun _ => exists_congr fun i => ?_
-  have := i.isLt
-  exact ⟨fun ⟨_, h2, h3⟩ => ⟨this, h2, h3⟩, fun ⟨_, h2, h3⟩ => ⟨lt_of_lt_of_le h2 hr, h2, h3⟩⟩
+  unfold partialDepSet
+  rw [directBlockers_eq_of_missedProbes_le T π r_ext x hr]
 
 private theorem rank_le_and_depSet_subset_of_mem_depSet {U m : ℕ} (T : Table U m)
     (π : Fin U → Equiv.Perm (Fin m)) (r_ext : Fin U → ℕ) (x : Fin U) :
@@ -586,15 +606,10 @@ private theorem mem_dom_of_mem_depSet {U m : ℕ} {π : Fin U → Equiv.Perm (Fi
     · simp only [partialDepSet, directBlockers, Finset.mem_biUnion, Finset.mem_filter,
         Finset.mem_univ, true_and] at hz_part
       rcases hz_part with ⟨y, ⟨hy_lt, i, -, -, hTy⟩, hzy⟩
-      cases hTi : T (π x i) with
-      | none => simp [hTi] at hTy
-      | some p =>
-        rcases p with ⟨y', vy⟩
-        simp only [hTi, Option.map_some, Option.some.injEq] at hTy
-        subst hTy
-        have hy_dom : y' ∈ Dictionary.dom s :=
-          Dictionary.mem_dom_iff.mpr ⟨vy, (hrep.slot_spec _ y' vy hTi).1⟩
-        exact ih (r_ext y') (hn ▸ hy_lt) hy_dom rfl hzy
+      obtain ⟨vy, hTi⟩ := exists_val_of_map_fst_eq_some hTy
+      have hy_dom : y ∈ Dictionary.dom s :=
+        Dictionary.mem_dom_iff.mpr ⟨vy, (hrep.slot_spec _ y vy hTi).1⟩
+      exact ih (r_ext y) (hn ▸ hy_lt) hy_dom rfl hzy
 
 private theorem mem_dom_of_mem_partialDepSet {U m : ℕ} {π : Fin U → Equiv.Perm (Fin m)}
     {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T)
@@ -604,15 +619,10 @@ private theorem mem_dom_of_mem_partialDepSet {U m : ℕ} {π : Fin U → Equiv.P
   simp only [partialDepSet, directBlockers, Finset.mem_biUnion, Finset.mem_filter,
     Finset.mem_univ, true_and] at hz
   rcases hz with ⟨y, ⟨_, i, -, -, hTy⟩, hzy⟩
-  cases hTi : T (π x i) with
-  | none => simp [hTi] at hTy
-  | some p =>
-    rcases p with ⟨y', vy⟩
-    simp only [hTi, Option.map_some, Option.some.injEq] at hTy
-    subst hTy
-    have hy_dom : y' ∈ Dictionary.dom s :=
-      Dictionary.mem_dom_iff.mpr ⟨vy, (hrep.slot_spec _ y' vy hTi).1⟩
-    exact mem_dom_of_mem_depSet hrep r_ext hy_dom hzy
+  obtain ⟨vy, hTi⟩ := exists_val_of_map_fst_eq_some hTy
+  have hy_dom : y ∈ Dictionary.dom s :=
+    Dictionary.mem_dom_iff.mpr ⟨vy, (hrep.slot_spec _ y vy hTi).1⟩
+  exact mem_dom_of_mem_depSet hrep r_ext hy_dom hzy
 
 private theorem partialDepSet_subset_erase {U m : ℕ} {π : Fin U → Equiv.Perm (Fin m)}
     {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T)
@@ -967,16 +977,11 @@ private theorem toFinset_probePrefix_eq_image_directBlockers {U m : ℕ} (hm : 0
     refine ⟨y, ⟨hlt_y, ⟨i, hi_m⟩, hi_r, hi_mp, by simp [hTy]⟩, ?_⟩
     rw [landingSlot, probeAt_eq_of_lt hm (π y) hlt_mp_y, probeAt_eq_of_lt hm (π z) hi_m, hslot_y]
   · rintro ⟨y, ⟨_, i, hi_r, _, hTy⟩, rfl⟩
-    cases hTi : T (π z i) with
-    | none => simp [hTi] at hTy
-    | some p =>
-      rcases p with ⟨y', vy⟩
-      simp only [hTi, Option.map_some, Option.some.injEq] at hTy
-      subst hTy
-      obtain ⟨_, hlt_mp_y, hslot_y⟩ := hrep.slot_spec _ y' vy hTi
-      refine ⟨i.val, hi_r, ?_⟩
-      rw [probeAt_eq_of_lt hm (π z) i.isLt, landingSlot, probeAt_eq_of_lt hm (π y') hlt_mp_y,
-        ← hslot_y]
+    obtain ⟨vy, hTi⟩ := exists_val_of_map_fst_eq_some hTy
+    obtain ⟨_, hlt_mp_y, hslot_y⟩ := hrep.slot_spec _ y vy hTi
+    refine ⟨i.val, hi_r, ?_⟩
+    rw [probeAt_eq_of_lt hm (π z) i.isLt, landingSlot, probeAt_eq_of_lt hm (π y) hlt_mp_y,
+      ← hslot_y]
 
 private theorem depSet_subset_of_directBlockers_closed {U m : ℕ} (T : Table U m)
     (π : Fin U → Equiv.Perm (Fin m)) (r_ext : Fin U → ℕ) {C : Finset (Fin U)}
@@ -1066,6 +1071,22 @@ private theorem mem_rawQueue_succ_of_mem_probePrefix {U m : ℕ} (hm : 0 < m) (T
   · exact List.mem_append_left _ hmem
   · exact List.mem_append_right _ (List.mem_filter.mpr ⟨hj, by simpa using hmem⟩)
 
+private theorem keyAt_getD_mem_of_toFinset_subset {U m : ℕ} (hm : 0 < m)
+    {π : Fin U → Equiv.Perm (Fin m)} {s : Dictionary.State U} {T : Table U m}
+    (hrep : TableRep π s T) (x₀ : Fin U) {W : Finset (Fin U)} (hW : W ⊆ Dictionary.dom s)
+    {q : List (Fin m)} (hq : q.toFinset ⊆ W.image (landingSlot hm T π))
+    {i : ℕ} (hi : i < q.length) :
+    keyAt T x₀ (q.getD i ⟨0, hm⟩) ∈ W ∧
+      landingSlot hm T π (keyAt T x₀ (q.getD i ⟨0, hm⟩)) = q.getD i ⟨0, hm⟩ := by
+  have hmem : q.getD i ⟨0, hm⟩ ∈ q.toFinset := by
+    rw [List.mem_toFinset, List.getD_eq_getElem q ⟨0, hm⟩ hi]
+    exact List.getElem_mem hi
+  obtain ⟨y, hyW, hland⟩ := Finset.mem_image.mp (hq hmem)
+  have hkey : keyAt T x₀ (q.getD i ⟨0, hm⟩) = y := by
+    rw [← hland]
+    exact keyAt_landingSlot_of_mem_dom hm hrep x₀ (hW hyW)
+  exact ⟨hkey ▸ hyW, by rw [hkey, hland]⟩
+
 private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
     {π : Fin U → Equiv.Perm (Fin m)} {s : Dictionary.State U} {T : Table U m}
     (hrep : TableRep π s T) {rank : Fin U → ℕ}
@@ -1098,8 +1119,8 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
       refine ⟨?_, ?_⟩
       · dsimp only [rawQueue]
         rw [toFinset_probePrefix_eq_image_directBlockers hm hrep hrank u hx₀ hr₀_mp]
-        refine Finset.image_subset_image fun y hy => ?_
-        exact Finset.mem_biUnion.mpr ⟨y, hy, self_mem_depSet T π r_ext y⟩
+        exact Finset.image_subset_image fun y hy =>
+          mem_partialDepSet_of_mem_directBlockers T π r_ext hy
       · dsimp only [rawQueue]
         rw [length_probePrefix]
         omega
@@ -1108,19 +1129,8 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
       obtain ⟨hsub_c, hlen_c⟩ := ih c (Nat.lt_succ_self c) (le_of_lt hc_lt_w)
       have hc_len : c < (rawQueue hm T π x₀ r₀ c).length := by omega
       set q_c := rawQueue hm T π x₀ r₀ c
-      set slot_c := q_c.getD c ⟨0, hm⟩
-      set x_c := keyAt T x₀ slot_c
-      have hslot_c_mem : slot_c ∈ q_c.toFinset := by
-        rw [List.mem_toFinset]
-        have hget : slot_c = q_c[c] := List.getD_eq_getElem q_c ⟨0, hm⟩ hc_len
-        rw [hget]
-        exact List.getElem_mem hc_len
-      obtain ⟨y_c, hy_c_W, hland_yc⟩ := Finset.mem_image.mp (hsub_c hslot_c_mem)
-      have hxc_eq : x_c = y_c := by
-        dsimp only [x_c]
-        rw [← hland_yc]
-        exact keyAt_landingSlot_of_mem_dom hm hrep x₀ (hW_dom hy_c_W)
-      have hxc_W : x_c ∈ W := hxc_eq ▸ hy_c_W
+      set x_c := keyAt T x₀ (q_c.getD c ⟨0, hm⟩)
+      obtain ⟨hxc_W, _⟩ := keyAt_getD_mem_of_toFinset_subset hm hrep x₀ hW_dom hsub_c hc_len
       have hxc_dom : x_c ∈ Dictionary.dom s := hW_dom hxc_W
       have hdep_xc : depSet T π r_ext x_c ⊆ W :=
         (rank_lt_and_depSet_subset_of_mem_partialDepSet T π r_ext x₀ r₀ hxc_W).2
@@ -1138,17 +1148,9 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
           rw [toFinset_probePrefix_eq_image_directBlockers hm hrep hrank u
             (Finset.mem_insert_of_mem hxc_dom) le_rfl] at hj_pref
           rcases Finset.mem_image.mp hj_pref with ⟨y, hy_dir, rfl⟩
-          refine Finset.mem_image.mpr ⟨y, hdep_xc ?_, rfl⟩
-          rw [depSet_eq]
-          refine Finset.mem_insert_of_mem (Finset.mem_biUnion.mpr ⟨y, ?_, self_mem_depSet _ _ _ y⟩)
-          have hdir_eq : directBlockers T π r_ext x_c
-              (missedProbes (otherOccupiedSlots T x_c) (π x_c)) =
-              directBlockers T π r_ext x_c m := by
-            ext z
-            simp only [directBlockers, Finset.mem_filter, Finset.mem_univ, true_and]
-            refine and_congr_right fun _ => exists_congr fun i => ?_
-            exact ⟨fun ⟨_, h2, h3⟩ => ⟨i.isLt, h2, h3⟩, fun ⟨_, h2, h3⟩ => ⟨h2, h2, h3⟩⟩
-          rwa [← hdir_eq]
+          rw [directBlockers_eq_of_missedProbes_le T π r_ext x_c le_rfl] at hy_dir
+          exact Finset.mem_image.mpr
+            ⟨y, hdep_xc (mem_depSet_of_mem_directBlockers T π r_ext hy_dir), rfl⟩
       refine ⟨hsub_succ, ?_⟩
       by_contra hlt_succ
       have hlen_le_succ : q_c.length ≤ (rawQueue hm T π x₀ r₀ (c + 1)).length :=
@@ -1159,7 +1161,7 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
       let C := W.filter fun y => landingSlot hm T π y ∈ q'.toFinset
       have hdir0_C : directBlockers T π r_ext x₀ r₀ ⊆ C := by
         intro y hy
-        refine Finset.mem_filter.mpr ⟨Finset.mem_biUnion.mpr ⟨y, hy, self_mem_depSet _ _ _ y⟩, ?_⟩
+        refine Finset.mem_filter.mpr ⟨mem_partialDepSet_of_mem_directBlockers T π r_ext hy, ?_⟩
         have hmem0 : landingSlot hm T π y ∈ (rawQueue hm T π x₀ r₀ 0).toFinset := by
           dsimp only [rawQueue]
           rw [toFinset_probePrefix_eq_image_directBlockers hm hrep hrank u hx₀ hr₀_mp]
@@ -1169,11 +1171,9 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
       have hclosed_C : ∀ z ∈ C, directBlockers T π r_ext z m ⊆ C := by
         intro z hz y hy_dir
         rcases Finset.mem_filter.mp hz with ⟨hzW, hz_land⟩
-        have hyW : y ∈ W := by
-          refine (rank_lt_and_depSet_subset_of_mem_partialDepSet T π r_ext x₀ r₀ hzW).2 ?_
-          rw [depSet_eq]
-          exact Finset.mem_insert_of_mem
-            (Finset.mem_biUnion.mpr ⟨y, hy_dir, self_mem_depSet _ _ _ y⟩)
+        have hyW : y ∈ W :=
+          (rank_lt_and_depSet_subset_of_mem_partialDepSet T π r_ext x₀ r₀ hzW).2
+            (mem_depSet_of_mem_directBlockers T π r_ext hy_dir)
         refine Finset.mem_filter.mpr ⟨hyW, ?_⟩
         obtain ⟨a, ha_lt, hqa⟩ := List.mem_iff_getElem.mp (List.mem_toFinset.mp hz_land)
         have ha_le_c : a ≤ c := by omega
@@ -1190,8 +1190,7 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
             toFinset_probePrefix_eq_image_directBlockers hm hrep hrank u
               (Finset.mem_insert_of_mem (hW_dom hzW)) le_rfl]
           refine Finset.mem_image.mpr ⟨y, ?_, rfl⟩
-          rcases Finset.mem_filter.mp hy_dir with ⟨_, hlt_yz, i, _, hi_mp, hTi⟩
-          exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hlt_yz, i, hi_mp, hi_mp, hTi⟩
+          rwa [directBlockers_eq_of_missedProbes_le T π r_ext z le_rfl]
         have hy_a1 : landingSlot hm T π y ∈ rawQueue hm T π x₀ r₀ (a + 1) := by
           apply mem_rawQueue_succ_of_mem_probePrefix hm T π x₀ r₀ a
           rwa [hkey_a]
@@ -1254,21 +1253,9 @@ private theorem hasBFSWitness_of_partialDepSet {U m : ℕ} (hm : 0 < m)
       missedProbes (otherOccupiedSlots T (x b)) (π (x b)) < w := by
     intro b
     obtain ⟨hsub_b, hlen_b⟩ := hspec b.val (le_of_lt b.isLt)
-    have hb_len : b.val < (rawQueue hm T π x₀ r₀ b.val).length := by
-      have := b.isLt
-      omega
-    have hslot_mem : (rawQueue hm T π x₀ r₀ b.val).getD b.val ⟨0, hm⟩ ∈
-        (rawQueue hm T π x₀ r₀ b.val).toFinset := by
-      rw [List.mem_toFinset, List.getD_eq_getElem _ _ hb_len]
-      exact List.getElem_mem hb_len
-    obtain ⟨y, hyW, hland_y⟩ := Finset.mem_image.mp (hsub_b hslot_mem)
-    have hxb_eq : x b = y := by
-      dsimp only [x]
-      rw [← hland_y]
-      exact keyAt_landingSlot_of_mem_dom hm hrep x₀ (hW_dom hyW)
-    have hxb_W : x b ∈ W := hxb_eq ▸ hyW
-    refine ⟨hxb_W, by rw [hxb_eq, hland_y],
-      missedProbes_lt_card_of_mem_partialDepSet hrep hrank u x₀ r₀ hxb_W⟩
+    have hb_len : b.val < (rawQueue hm T π x₀ r₀ b.val).length := by have := b.isLt; omega
+    obtain ⟨hxb_W, hland_b⟩ := keyAt_getD_mem_of_toFinset_subset hm hrep x₀ hW_dom hsub_b hb_len
+    exact ⟨hxb_W, hland_b, missedProbes_lt_card_of_mem_partialDepSet hrep hrank u x₀ r₀ hxb_W⟩
   have hqueue_eq : ∀ b ≤ w,
       bfsQueue hm π x₀ w h x b = rawQueue hm T π x₀ r₀ b ∧
       (rawQueue hm T π x₀ r₀ b).length =
@@ -1313,21 +1300,17 @@ private theorem hasBFSWitness_of_partialDepSet {U m : ℕ} (hm : 0 < m)
     rw [← sum_fin_succ_eq h, ← (hqueue_eq w le_rfl).2, hlen_w]
   refine ⟨h, hr₀_pos, hsum_h, x, ?_, fun b => hW_erase (hxb_spec b).1, fun b => ?_⟩
   · intro b₁ b₂ heq
+    have hlen_lt (b : Fin w) : b.val < (rawQueue hm T π x₀ r₀ b.val).length := by
+      obtain ⟨_, hlen_b⟩ := hspec b.val (le_of_lt b.isLt)
+      have := b.isLt
+      omega
     have hland : landingSlot hm T π (x b₁) = landingSlot hm T π (x b₂) := congrArg _ heq
-    rw [(hxb_spec b₁).2.1, (hxb_spec b₂).2.1] at hland
-    obtain ⟨_, hlen_b1⟩ := hspec b₁.val (le_of_lt b₁.isLt)
-    obtain ⟨_, hlen_b2⟩ := hspec b₂.val (le_of_lt b₂.isLt)
-    have hb1_len : b₁.val < (rawQueue hm T π x₀ r₀ b₁.val).length := by
-      have := b₁.isLt; omega
-    have hb2_len : b₂.val < (rawQueue hm T π x₀ r₀ b₂.val).length := by
-      have := b₂.isLt; omega
-    rw [← getD_rawQueue_eq_of_le hm T π x₀ r₀ (le_of_lt b₁.isLt) hb1_len,
-      ← getD_rawQueue_eq_of_le hm T π x₀ r₀ (le_of_lt b₂.isLt) hb2_len] at hland
-    have hb1_w : b₁.val < (rawQueue hm T π x₀ r₀ w).length := hlen_w.symm ▸ b₁.isLt
-    have hb2_w : b₂.val < (rawQueue hm T π x₀ r₀ w).length := hlen_w.symm ▸ b₂.isLt
-    rw [List.getD_eq_getElem _ _ hb1_w, List.getD_eq_getElem _ _ hb2_w] at hland
-    have hr₀_m : r₀ ≤ m := hr₀_mp.trans (missedProbes_le _ _)
-    have hnodup_w := nodup_rawQueue hm T π x₀ hr₀_m w
+    rw [(hxb_spec b₁).2.1, (hxb_spec b₂).2.1,
+      ← getD_rawQueue_eq_of_le hm T π x₀ r₀ (le_of_lt b₁.isLt) (hlen_lt b₁),
+      ← getD_rawQueue_eq_of_le hm T π x₀ r₀ (le_of_lt b₂.isLt) (hlen_lt b₂),
+      List.getD_eq_getElem _ _ (hlen_w.symm ▸ b₁.isLt),
+      List.getD_eq_getElem _ _ (hlen_w.symm ▸ b₂.isLt)] at hland
+    have hnodup_w := nodup_rawQueue hm T π x₀ (hr₀_mp.trans (missedProbes_le _ _)) w
     exact Fin.ext (hnodup_w.getElem_inj_iff.mp hland)
   · dsimp only [bfsStepEvent]
     rw [(hqueue_eq b.val (le_of_lt b.isLt)).1]
@@ -1458,6 +1441,26 @@ private theorem card_filter_probeAt_eq_le_one (M : ℕ) (s : Fin (2 ^ (M - 1)))
   rw [Nat.ModEq, Nat.mod_eq_of_lt p₁.isLt, Nat.mod_eq_of_lt p₂.isLt] at hp_mod
   exact Fin.ext hp_mod
 
+private theorem card_filter_prod_probeAt_le (M : ℕ)
+    {F : Finset (Fin (2 ^ M) × Fin (2 ^ (M - 1)))} {S : Finset (Fin (2 ^ (M - 1)))}
+    (d : ℕ) (slot : Fin (2 ^ M))
+    (hF : ∀ ps ∈ F, ps.2 ∈ S ∧
+      probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M ps.1 ps.2) d = slot) :
+    F.card ≤ S.card := by
+  refine Finset.card_le_card_of_injOn Prod.snd (fun ps hps => (hF ps hps).1) ?_
+  intro ⟨p₁, s₁⟩ h₁ ⟨p₂, s₂⟩ h₂ (hs : s₁ = s₂)
+  subst hs
+  have hcard : (Finset.univ.filter fun p : Fin (2 ^ M) =>
+      probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M p s₁) d = slot).card ≤ 1 :=
+    card_filter_probeAt_eq_le_one M s₁ d slot
+  have hp₁ : p₁ ∈ Finset.univ.filter fun p : Fin (2 ^ M) =>
+      probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M p s₁) d = slot :=
+    Finset.mem_filter.mpr ⟨Finset.mem_univ p₁, (hF _ h₁).2⟩
+  have hp₂ : p₂ ∈ Finset.univ.filter fun p : Fin (2 ^ M) =>
+      probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M p s₁) d = slot :=
+    Finset.mem_filter.mpr ⟨Finset.mem_univ p₂, (hF _ h₂).2⟩
+  exact Prod.ext (Finset.card_le_one.mp hcard p₁ hp₁ p₂ hp₂) rfl
+
 private theorem card_filter_two_probes_eq_le (M : ℕ) {j₁ k_b : ℕ} (hjk : j₁ < k_b)
     (hkb : k_b < 2 ^ M) (slot₁ slot₂ : Fin (2 ^ M)) :
     (Finset.univ.filter fun ps : Fin (2 ^ M) × Fin (2 ^ (M - 1)) =>
@@ -1468,50 +1471,33 @@ private theorem card_filter_two_probes_eq_le (M : ℕ) {j₁ k_b : ℕ} (hjk : j
   set r := (slot₂.val + 2 ^ M - slot₁.val) % 2 ^ M
   let S_stride := (Finset.univ : Finset (Fin (2 ^ (M - 1)))).filter fun s =>
     (Δ * (2 * s.val + 1)) % 2 ^ M = r
-  have hsub : (Finset.univ.filter fun ps : Fin (2 ^ M) × Fin (2 ^ (M - 1)) =>
-      probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M ps.1 ps.2) j₁ = slot₁ ∧
-      probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M ps.1 ps.2) k_b = slot₂) ⊆
-      S_stride.biUnion (fun s =>
-        (Finset.univ.filter fun p : Fin (2 ^ M) =>
-          probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M p s) k_b = slot₂).map
-            ⟨fun p => (p, s), fun _ _ h => (Prod.mk.inj h).1⟩) := by
-    intro ⟨p, s⟩ hps
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hps
-    have hj₁_lt : j₁ < 2 ^ M := lt_trans hjk hkb
-    have h1 : (p.val + j₁ * (2 * s.val + 1)) % 2 ^ M = slot₁.val := by
-      simpa [probeAt_eq_of_lt (Nat.two_pow_pos M) _ hj₁_lt, oddStrideSeq, Fin.ext_iff] using hps.1
-    have h2 : (p.val + k_b * (2 * s.val + 1)) % 2 ^ M = slot₂.val := by
-      simpa [probeAt_eq_of_lt (Nat.two_pow_pos M) _ hkb, oddStrideSeq, Fin.ext_iff] using hps.2
-    have hsum_eq : p.val + k_b * (2 * s.val + 1) =
-        (p.val + j₁ * (2 * s.val + 1)) + Δ * (2 * s.val + 1) := by
-      have : k_b = j₁ + Δ := by omega
-      rw [this, Nat.add_mul, Nat.add_assoc]
-    have hmod_slot₂ : (slot₁.val + Δ * (2 * s.val + 1)) % 2 ^ M = slot₂.val := by
-      rw [← h1, Nat.mod_add_mod, ← hsum_eq, h2]
-    have hmod_r : (Δ * (2 * s.val + 1)) % 2 ^ M = r := by
-      have hcongr : ((slot₁.val + Δ * (2 * s.val + 1)) + (2 ^ M - slot₁.val)) % 2 ^ M =
-          (slot₂.val + (2 ^ M - slot₁.val)) % 2 ^ M := by
-        rw [← Nat.mod_add_mod, hmod_slot₂]
-      have h1_lt : slot₁.val ≤ 2 ^ M := le_of_lt slot₁.isLt
-      have hlhs : (slot₁.val + Δ * (2 * s.val + 1)) + (2 ^ M - slot₁.val) =
-          Δ * (2 * s.val + 1) + 2 ^ M := by omega
-      have hrhs : slot₂.val + (2 ^ M - slot₁.val) = slot₂.val + 2 ^ M - slot₁.val := by omega
-      rw [hlhs, hrhs, Nat.add_mod_right] at hcongr
-      exact hcongr
-    refine Finset.mem_biUnion.mpr ⟨s, Finset.mem_filter.mpr ⟨Finset.mem_univ s, hmod_r⟩, ?_⟩
-    exact Finset.mem_map.mpr ⟨p, Finset.mem_filter.mpr ⟨Finset.mem_univ p, hps.2⟩, rfl⟩
-  calc
-    _ ≤ (S_stride.biUnion _).card := Finset.card_le_card hsub
-    _ ≤ ∑ s ∈ S_stride,
-          ((Finset.univ.filter fun p : Fin (2 ^ M) =>
-            probeAt (Nat.two_pow_pos M) (oddStridePermOfPair M p s) k_b = slot₂).map _).card :=
-        Finset.card_biUnion_le
-    _ ≤ ∑ _s ∈ S_stride, 1 := by
-        refine Finset.sum_le_sum fun s _ => ?_
-        rw [Finset.card_map]
-        exact card_filter_probeAt_eq_le_one M s k_b slot₂
-    _ = S_stride.card := by simp
-    _ ≤ Δ := Nat.card_odd_mul_mod_eq_le M Δ r (by omega)
+  refine (card_filter_prod_probeAt_le M k_b slot₂ (S := S_stride) fun ⟨p, s⟩ hps => ?_).trans
+    (Nat.card_odd_mul_mod_eq_le M Δ r (by omega))
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hps
+  have hj₁_lt : j₁ < 2 ^ M := lt_trans hjk hkb
+  have h1 : (p.val + j₁ * (2 * s.val + 1)) % 2 ^ M = slot₁.val := by
+    simpa [probeAt_eq_of_lt (Nat.two_pow_pos M) _ hj₁_lt, oddStrideSeq, Fin.ext_iff]
+      using hps.1
+  have h2 : (p.val + k_b * (2 * s.val + 1)) % 2 ^ M = slot₂.val := by
+    simpa [probeAt_eq_of_lt (Nat.two_pow_pos M) _ hkb, oddStrideSeq, Fin.ext_iff]
+      using hps.2
+  have hsum_eq : p.val + k_b * (2 * s.val + 1) =
+      (p.val + j₁ * (2 * s.val + 1)) + Δ * (2 * s.val + 1) := by
+    have : k_b = j₁ + Δ := by omega
+    rw [this, Nat.add_mul, Nat.add_assoc]
+  have hmod_slot₂ : (slot₁.val + Δ * (2 * s.val + 1)) % 2 ^ M = slot₂.val := by
+    rw [← h1, Nat.mod_add_mod, ← hsum_eq, h2]
+  have hmod_r : (Δ * (2 * s.val + 1)) % 2 ^ M = r := by
+    have hcongr : ((slot₁.val + Δ * (2 * s.val + 1)) + (2 ^ M - slot₁.val)) % 2 ^ M =
+        (slot₂.val + (2 ^ M - slot₁.val)) % 2 ^ M := by
+      rw [← Nat.mod_add_mod, hmod_slot₂]
+    have h1_lt : slot₁.val ≤ 2 ^ M := le_of_lt slot₁.isLt
+    have hlhs : (slot₁.val + Δ * (2 * s.val + 1)) + (2 ^ M - slot₁.val) =
+        Δ * (2 * s.val + 1) + 2 ^ M := by omega
+    have hrhs : slot₂.val + (2 ^ M - slot₁.val) = slot₂.val + 2 ^ M - slot₁.val := by omega
+    rw [hlhs, hrhs, Nat.add_mod_right] at hcongr
+    exact hcongr
+  exact ⟨Finset.mem_filter.mpr ⟨Finset.mem_univ s, hmod_r⟩, hps.2⟩
 
 /-- **Single-Step Fiber Bound**: for any queue `q` with `q.toFinset.card ≤ w` and `w ≤ 2 ^ M`,
 `(stepFiber M w q slot_b d).card ≤ 2 ^ (M - 1) + w ^ 4`. -/
@@ -1535,25 +1521,9 @@ private theorem card_stepFiber_le (M : ℕ) {w : ℕ} (hw : w ≤ 2 ^ M) (q : Li
       true_and] at hps ⊢
     exact hps
   have hF₁ : F₁.card ≤ 2 ^ (M - 1) := by
-    have hsub₁ : F₁ ⊆ (Finset.univ : Finset (Fin (2 ^ (M - 1)))).biUnion fun s =>
-        (Finset.univ.filter fun p : Fin (2 ^ M) =>
-          probeAt hm (oddStridePermOfPair M p s) d = slot_b).map
-            ⟨fun p => (p, s), fun _ _ h => (Prod.mk.inj h).1⟩ := by
-      intro ⟨p, s⟩ hps
-      simp only [F₁, Finset.mem_filter, Finset.mem_univ, true_and] at hps
-      exact Finset.mem_biUnion.mpr ⟨s, Finset.mem_univ s,
-        Finset.mem_map.mpr ⟨p, Finset.mem_filter.mpr ⟨Finset.mem_univ p, hps⟩, rfl⟩⟩
-    calc
-      F₁.card ≤ _ := Finset.card_le_card hsub₁
-      _ ≤ ∑ s : Fin (2 ^ (M - 1)),
-            ((Finset.univ.filter fun p : Fin (2 ^ M) =>
-              probeAt hm (oddStridePermOfPair M p s) d = slot_b).map _).card :=
-          Finset.card_biUnion_le
-      _ ≤ ∑ _s : Fin (2 ^ (M - 1)), 1 := by
-          refine Finset.sum_le_sum fun s _ => ?_
-          rw [Finset.card_map]
-          exact card_filter_probeAt_eq_le_one M s d slot_b
-      _ = 2 ^ (M - 1) := by simp
+    simpa only [Finset.card_univ, Fintype.card_fin] using
+      card_filter_prod_probeAt_le M d slot_b (S := Finset.univ) fun ps hps =>
+        ⟨Finset.mem_univ _, (Finset.mem_filter.mp hps).2⟩
   have hF₂ : F₂.card ≤ w ^ 4 := by
     let P (k_b j₁ : Fin w) (slot₁ : Fin (2 ^ M)) :
         Finset (Fin (2 ^ M) × Fin (2 ^ (M - 1))) :=
@@ -1790,12 +1760,14 @@ private theorem card_filter_bfsStepEvent_le
     fun a => (h₁ θ.1 (xExt a), h₂ θ.2 (xExt a))
   let F (ps : Fin (w + 1) → Fin (2 ^ M) × Fin (2 ^ (M - 1))) : Finset (Θ₁ × Θ₂) :=
     Finset.univ.filter fun θ => evalSeed θ = ps
-  have hsub : (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-      ∀ b : Fin w,
-        bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b) ⊆
-      V.biUnion F := by
+  let S_ev : Finset (Θ₁ × Θ₂) := Finset.univ.filter fun θ =>
+    ∀ b : Fin w,
+      bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b
+  change S_ev.card * (2 ^ M * 2 ^ (M - 1)) ^ w ≤
+    (2 ^ (M - 1) + w ^ 4) ^ w * Fintype.card (Θ₁ × Θ₂)
+  have hsub : S_ev ⊆ V.biUnion F := by
     intro θ hθ
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hθ
+    simp only [S_ev, Finset.mem_filter, Finset.mem_univ, true_and] at hθ
     have hmem := mem_validTuples_of_bfsStepEvent x₀ h x (h₁ θ.1) (h₂ θ.2) hθ w le_rfl
     have hrest : restrictTuple (evalSeed θ) w le_rfl = evalSeed θ :=
       funext fun _ => rfl
@@ -1818,44 +1790,25 @@ private theorem card_filter_bfsStepEvent_le
       _ = (F₁.card * (2 ^ M) ^ (w + 1)) * (F₂.card * (2 ^ (M - 1)) ^ (w + 1)) := by ring
       _ = Fintype.card Θ₁ * Fintype.card Θ₂ := by rw [h1, h2]
       _ = Fintype.card (Θ₁ × Θ₂) := (Fintype.card_prod Θ₁ Θ₂).symm
-  have hmul : (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-      ∀ b : Fin w,
-        bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b).card *
-      (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) ≤
+  have hmul : S_ev.card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) ≤
       ((2 ^ M * 2 ^ (M - 1)) * (2 ^ (M - 1) + w ^ 4) ^ w) * Fintype.card (Θ₁ × Θ₂) := by
     calc
-      (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-          ∀ b : Fin w,
-            bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b).card *
-          (2 ^ M * 2 ^ (M - 1)) ^ (w + 1)
+      S_ev.card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1)
         ≤ (V.biUnion F).card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) :=
           Nat.mul_le_mul_right _ (Finset.card_le_card hsub)
       _ ≤ (∑ ps ∈ V, (F ps).card) * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) :=
           Nat.mul_le_mul_right _ Finset.card_biUnion_le
-      _ = ∑ ps ∈ V, (F ps).card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) :=
-          Finset.sum_mul _ _ _
-      _ = ∑ _ps ∈ V, Fintype.card (Θ₁ × Θ₂) :=
-          Finset.sum_congr rfl fun ps _ => hF_eq ps
+      _ = ∑ ps ∈ V, (F ps).card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) := Finset.sum_mul _ _ _
+      _ = ∑ _ps ∈ V, Fintype.card (Θ₁ × Θ₂) := Finset.sum_congr rfl fun ps _ => hF_eq ps
       _ = V.card * Fintype.card (Θ₁ × Θ₂) := by simp
       _ ≤ ((2 ^ M * 2 ^ (M - 1)) * (2 ^ (M - 1) + w ^ 4) ^ w) * Fintype.card (Θ₁ × Θ₂) :=
           Nat.mul_le_mul_right _ (card_validTuples_le M hwM h hsum w le_rfl)
   have hpos : 0 < 2 ^ M * 2 ^ (M - 1) := Nat.mul_pos (Nat.two_pow_pos M) (Nat.two_pow_pos (M - 1))
-  have hmul' : (2 ^ M * 2 ^ (M - 1)) *
-      ((Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-        ∀ b : Fin w,
-          bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b).card *
-        (2 ^ M * 2 ^ (M - 1)) ^ w) ≤
+  have hmul' : (2 ^ M * 2 ^ (M - 1)) * (S_ev.card * (2 ^ M * 2 ^ (M - 1)) ^ w) ≤
       (2 ^ M * 2 ^ (M - 1)) * ((2 ^ (M - 1) + w ^ 4) ^ w * Fintype.card (Θ₁ × Θ₂)) := by
     calc
-      (2 ^ M * 2 ^ (M - 1)) *
-          ((Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-            ∀ b : Fin w,
-              bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b).card *
-            (2 ^ M * 2 ^ (M - 1)) ^ w)
-        = (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-            ∀ b : Fin w,
-              bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) x₀ w h x b).card *
-          (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) := by ring
+      (2 ^ M * 2 ^ (M - 1)) * (S_ev.card * (2 ^ M * 2 ^ (M - 1)) ^ w)
+        = S_ev.card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1) := by ring
       _ ≤ ((2 ^ M * 2 ^ (M - 1)) * (2 ^ (M - 1) + w ^ 4) ^ w) * Fintype.card (Θ₁ × Θ₂) := hmul
       _ = (2 ^ M * 2 ^ (M - 1)) * ((2 ^ (M - 1) + w ^ 4) ^ w * Fintype.card (Θ₁ × Θ₂)) := by ring
   exact Nat.le_of_mul_le_mul_left hmul' hpos
@@ -1884,10 +1837,11 @@ private theorem card_degSeqFinset_le_four_pow (w : ℕ) :
       have := b.isLt
       dsimp only [degPrefSum]
       omega
-    let g₁ (b : Fin w) : Fin (2 * w) := ⟨degPrefSum w f₁ b.val, hlt f₁ hsum₁ b⟩
-    let g₂ (b : Fin w) : Fin (2 * w) := ⟨degPrefSum w f₂ b.val, hlt f₂ hsum₂ b⟩
+    let g (f : Fin (w + 1) → Fin (w + 1)) (hsum : ∑ a : Fin (w + 1), (f a).val = w)
+        (b : Fin w) : Fin (2 * w) :=
+      ⟨degPrefSum w f b.val, hlt f hsum b⟩
     have hg_mono (f : Fin (w + 1) → Fin (w + 1)) (hsum : ∑ a : Fin (w + 1), (f a).val = w) :
-        StrictMono (fun b : Fin w => (⟨degPrefSum w f b.val, hlt f hsum b⟩ : Fin (2 * w))) := by
+        StrictMono (g f hsum) := by
       intro b₁ b₂ hb
       rw [Fin.lt_def] at hb ⊢
       have hsub : Finset.univ.filter (fun a : Fin (w + 1) => a.val ≤ b₁.val) ⊆
@@ -1896,19 +1850,15 @@ private theorem card_degSeqFinset_le_four_pow (w : ℕ) :
         simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
         omega
       have hsum_le := Finset.sum_le_sum_of_subset (f := fun a : Fin (w + 1) => (f a).val) hsub
-      dsimp only [degPrefSum]
+      dsimp only [g, degPrefSum]
       omega
-    have himg' : Finset.univ.image g₁ = Finset.univ.image g₂ := by
-      have h1 : degPrefImage w f₁ = Finset.univ.image g₁ := by
-        dsimp only [degPrefImage, g₁]
-        refine Finset.image_congr fun b _ => ?_
-        simp [hlt f₁ hsum₁ b]
-      have h2 : degPrefImage w f₂ = Finset.univ.image g₂ := by
-        dsimp only [degPrefImage, g₂]
-        refine Finset.image_congr fun b _ => ?_
-        simp [hlt f₂ hsum₂ b]
-      rwa [← h1, ← h2]
-    have hg_eq : g₁ = g₂ :=
+    have himg_eq (f : Fin (w + 1) → Fin (w + 1)) (hsum : ∑ a : Fin (w + 1), (f a).val = w) :
+        degPrefImage w f = Finset.univ.image (g f hsum) := by
+      refine Finset.image_congr fun b _ => ?_
+      simp [g, hlt f hsum b]
+    have himg' : Finset.univ.image (g f₁ hsum₁) = Finset.univ.image (g f₂ hsum₂) := by
+      rwa [← himg_eq f₁ hsum₁, ← himg_eq f₂ hsum₂]
+    have hg_eq : g f₁ hsum₁ = g f₂ hsum₂ :=
       (hg_mono f₁ hsum₁).eq_of_range_eq (hg_mono f₂ hsum₂)
         (by simpa using congrArg (↑· : Finset (Fin (2 * w)) → Set (Fin (2 * w))) himg')
     have hpref_eq (b : ℕ) (hb : b ≤ w) :
@@ -1922,7 +1872,7 @@ private theorem card_degSeqFinset_le_four_pow (w : ℕ) :
           simp [Nat.le_of_lt_succ a.isLt]
         rw [hfilter_univ, hsum₁, hsum₂]
       · have hval := congrArg Fin.val (congrFun hg_eq ⟨b, hlt_b⟩)
-        dsimp only [g₁, g₂, degPrefSum] at hval
+        dsimp only [g, degPrefSum] at hval
         omega
     ext a
     rcases a with ⟨a_val, ha_lt⟩
@@ -1995,11 +1945,12 @@ private theorem four_pow_mul_card_hasBFSWitness_le
       ∀ b : Fin w,
         bfsStepEvent (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2))
           x₀ w (fun a => (f a).val) x b
-  have hsub : (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-      HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w) ⊆
-      (degSeqFinset w).biUnion fun f => X_set.biUnion fun x => E f x := by
+  let S_wit : Finset (Θ₁ × Θ₂) := Finset.univ.filter fun θ =>
+    HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w
+  change 4 ^ w * S_wit.card ≤ Fintype.card (Θ₁ × Θ₂)
+  have hsub : S_wit ⊆ (degSeqFinset w).biUnion fun f => X_set.biUnion fun x => E f x := by
     intro θ hθ
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hθ
+    simp only [S_wit, Finset.mem_filter, Finset.mem_univ, true_and] at hθ
     rcases hθ with ⟨h, _, hsum, x, hx_inj, hx_mem, hev⟩
     have hle_w (a : Fin (w + 1)) : h a ≤ w :=
       (Finset.single_le_sum (fun _ _ => Nat.zero_le _) (Finset.mem_univ a)).trans hsum.le
@@ -2018,19 +1969,15 @@ private theorem four_pow_mul_card_hasBFSWitness_le
     have hx_mem := Fintype.mem_piFinset.mp hx_pair.1
     have hne : ∀ b : Fin w, x b ≠ x₀ := fun b => (Finset.mem_erase.mp (hx_mem b)).1
     exact card_filter_bfsStepEvent_le hh₁ hh₂ hwk hwM x₀ (fun a => (f a).val) hsum x hx_pair.2 hne
-  have hsum_bi : (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-      HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w).card *
-      P_base ^ w ≤
+  have hsum_bi : S_wit.card * P_base ^ w ≤
       4 ^ w * (n_max ^ w * ((2 ^ (M - 1) + w ^ 4) ^ w * Fintype.card (Θ₁ × Θ₂))) := by
     calc
-      (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-          HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w).card *
-          P_base ^ w
+      S_wit.card * P_base ^ w
         ≤ ((degSeqFinset w).biUnion fun f => X_set.biUnion fun x => E f x).card * P_base ^ w :=
           Nat.mul_le_mul_right _ (Finset.card_le_card hsub)
-      _ ≤ (∑ f ∈ degSeqFinset w, ∑ x ∈ X_set, (E f x).card) * P_base ^ w := by
-          refine Nat.mul_le_mul_right _ (Finset.card_biUnion_le.trans ?_)
-          exact Finset.sum_le_sum fun f _ => Finset.card_biUnion_le
+      _ ≤ (∑ f ∈ degSeqFinset w, ∑ x ∈ X_set, (E f x).card) * P_base ^ w :=
+          Nat.mul_le_mul_right _
+            (Finset.card_biUnion_le.trans (Finset.sum_le_sum fun f _ => Finset.card_biUnion_le))
       _ = ∑ f ∈ degSeqFinset w, ∑ x ∈ X_set, (E f x).card * P_base ^ w := by
           rw [Finset.sum_mul]
           exact Finset.sum_congr rfl fun f _ => Finset.sum_mul _ _ _
@@ -2059,24 +2006,15 @@ private theorem four_pow_mul_card_hasBFSWitness_le
   have hpow_le : (16 * n_max * (2 ^ (M - 1) + w ^ 4)) ^ w ≤ P_base ^ w := by gcongr
   have hP_pos : 0 < P_base ^ w :=
     Nat.pow_pos (Nat.mul_pos (Nat.two_pow_pos M) (Nat.two_pow_pos (M - 1)))
-  have hmul_final :
-      (4 ^ w * (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-        HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w).card) *
-        P_base ^ w ≤
-      Fintype.card (Θ₁ × Θ₂) * P_base ^ w := by
+  have hmul_final : (4 ^ w * S_wit.card) * P_base ^ w ≤ Fintype.card (Θ₁ × Θ₂) * P_base ^ w := by
     calc
-      (4 ^ w * (Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-          HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w).card) *
-          P_base ^ w
-        = 4 ^ w * ((Finset.univ.filter fun θ : Θ₁ × Θ₂ =>
-            HasBFSWitness (Nat.two_pow_pos M) (oddStridePerm (h₁ θ.1) (h₂ θ.2)) D x₀ w).card *
-            P_base ^ w) := by ring
+      (4 ^ w * S_wit.card) * P_base ^ w = 4 ^ w * (S_wit.card * P_base ^ w) := by ring
       _ ≤ 4 ^ w * (4 ^ w * (n_max ^ w * ((2 ^ (M - 1) + w ^ 4) ^ w * Fintype.card (Θ₁ × Θ₂)))) :=
           Nat.mul_le_mul_left _ hsum_bi
-      _ = (4 * (4 * (n_max * (2 ^ (M - 1) + w ^ 4)))) ^ w * Fintype.card (Θ₁ × Θ₂) := by
-          rw [mul_pow, mul_pow, mul_pow]
+      _ = (16 * n_max * (2 ^ (M - 1) + w ^ 4)) ^ w * Fintype.card (Θ₁ × Θ₂) := by
+          simp only [mul_pow]
+          rw [show (16 : ℕ) = 4 * 4 from rfl, mul_pow]
           ring
-      _ = (16 * n_max * (2 ^ (M - 1) + w ^ 4)) ^ w * Fintype.card (Θ₁ × Θ₂) := by ring
       _ ≤ P_base ^ w * Fintype.card (Θ₁ × Θ₂) := Nat.mul_le_mul_right _ hpow_le
       _ = Fintype.card (Θ₁ × Θ₂) * P_base ^ w := Nat.mul_comm _ _
   exact Nat.le_of_mul_le_mul_right hmul_final hP_pos
@@ -2117,6 +2055,16 @@ private theorem sum_two_pow_sub_eq (a : ℕ) :
       have ih := sum_two_pow_sub_eq a n
       rw [hrest, pow_succ']
       omega
+
+private theorem mul_sum_Ico_le_of_mul_le {a n coeff K B : ℕ} {f : ℕ → ℕ}
+    (hle : ∀ w ∈ Finset.Ico a (a + n), K * (coeff * f w) ≤ 2 ^ (a + n - 1 - w) * B) :
+    K * (coeff * ∑ w ∈ Finset.Ico a (a + n), f w) ≤ 2 ^ n * B := by
+  calc
+    K * (coeff * ∑ w ∈ Finset.Ico a (a + n), f w)
+      = ∑ w ∈ Finset.Ico a (a + n), K * (coeff * f w) := by rw [Finset.mul_sum, Finset.mul_sum]
+    _ ≤ ∑ w ∈ Finset.Ico a (a + n), 2 ^ (a + n - 1 - w) * B := Finset.sum_le_sum hle
+    _ = (∑ w ∈ Finset.Ico a (a + n), 2 ^ (a + n - 1 - w)) * B := (Finset.sum_mul _ _ _).symm
+    _ ≤ 2 ^ n * B := Nat.mul_le_mul_right B (by have := sum_two_pow_sub_eq a n; omega)
 
 private theorem four_mul_n_max_sq_le_four_pow_maxProbeCutoff (n_max : ℕ) :
     4 * n_max * (n_max + 1) ≤ 4 ^ maxProbeCutoff n_max := by
@@ -2193,90 +2141,45 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
     rw [this, ← Finset.mul_sum, hC_sum_eq]
   have hnorm_two :
       2 * (∑ w ∈ Finset.Ico 1 L, w * C u w) ≤ Fintype.card (Θ₁ × Θ₂) := by
-    have hterm (w : ℕ) (hw : w ∈ Finset.Ico 1 L) :
-        2 ^ L * (w * C u w) ≤ 2 ^ (L - 1 - w) * Fintype.card (Θ₁ × Θ₂) := by
-      have hw_lt : w < L := (Finset.mem_Ico.mp hw).2
-      have hpow_L : 2 ^ L = 2 ^ (L - 1 - w) * 2 ^ (w + 1) := by
-        rw [← pow_add]
-        congr 1
-        omega
-      calc
-        2 ^ L * (w * C u w)
-          = 2 ^ (L - 1 - w) * ((w * 2 ^ (w + 1)) * C u w) := by
-            rw [hpow_L]
-            ring
-        _ ≤ 2 ^ (L - 1 - w) * (4 ^ w * C u w) :=
-            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (mul_two_pow_succ_le_four_pow w))
-        _ ≤ 2 ^ (L - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
-            Nat.mul_le_mul_left _ (hC_bound u (by omega))
-    have hIco_eq : Finset.Ico 1 L = Finset.Ico 1 (1 + (L - 1)) := by
-      congr 1
-      omega
-    have hsum_geom : (∑ w ∈ Finset.Ico 1 L, 2 ^ (L - 1 - w)) ≤ 2 ^ (L - 1) := by
-      have hgeom := sum_two_pow_sub_eq 1 (L - 1)
-      have h1L : 1 + (L - 1) - 1 = L - 1 := by omega
-      rw [← hIco_eq, h1L] at hgeom
-      omega
-    have hmul_L : 2 ^ (L - 1) * (2 * ∑ w ∈ Finset.Ico 1 L, w * C u w) ≤
+    have hIco_eq : Finset.Ico 1 L = Finset.Ico 1 (1 + (L - 1)) := by congr 1; omega
+    have hmul_L : 2 ^ (L - 1) * (2 * ∑ w ∈ Finset.Ico 1 (1 + (L - 1)), w * C u w) ≤
         2 ^ (L - 1) * Fintype.card (Θ₁ × Θ₂) := by
-      have h2L_split : 2 ^ (L - 1) * 2 = 2 ^ L := by
-        rw [← pow_succ, Nat.sub_add_cancel hL_pos]
+      refine mul_sum_Ico_le_of_mul_le (coeff := 2) fun w hw => ?_
+      have hw_lt : w < L := (Finset.mem_Ico.mp (hIco_eq ▸ hw)).2
+      have hpow_L : 2 ^ (L - 1) * 2 = 2 ^ (1 + (L - 1) - 1 - w) * 2 ^ (w + 1) := by
+        rw [← pow_succ, Nat.sub_add_cancel hL_pos, ← pow_add]
+        congr 1; omega
       calc
-        2 ^ (L - 1) * (2 * ∑ w ∈ Finset.Ico 1 L, w * C u w)
-          = 2 ^ L * ∑ w ∈ Finset.Ico 1 L, w * C u w := by rw [← Nat.mul_assoc, h2L_split]
-        _ = ∑ w ∈ Finset.Ico 1 L, 2 ^ L * (w * C u w) := Finset.mul_sum _ _ _
-        _ ≤ ∑ w ∈ Finset.Ico 1 L, 2 ^ (L - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
-            Finset.sum_le_sum hterm
-        _ = (∑ w ∈ Finset.Ico 1 L, 2 ^ (L - 1 - w)) * Fintype.card (Θ₁ × Θ₂) :=
-            (Finset.sum_mul _ _ _).symm
-        _ ≤ 2 ^ (L - 1) * Fintype.card (Θ₁ × Θ₂) := by gcongr
+        2 ^ (L - 1) * (2 * (w * C u w))
+          = 2 ^ (1 + (L - 1) - 1 - w) * ((w * 2 ^ (w + 1)) * C u w) := by
+            rw [← Nat.mul_assoc, hpow_L]; ring
+        _ ≤ 2 ^ (1 + (L - 1) - 1 - w) * (4 ^ w * C u w) :=
+            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (mul_two_pow_succ_le_four_pow w))
+        _ ≤ 2 ^ (1 + (L - 1) - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
+            Nat.mul_le_mul_left _ (hC_bound u (by omega))
+    rw [← hIco_eq] at hmul_L
     exact Nat.le_of_mul_le_mul_left hmul_L (Nat.two_pow_pos (L - 1))
   have hov_x₀ (x₀ : Fin U) :
       4 ^ L * (∑ w ∈ Finset.Ico L (2 * L), C x₀ w) ≤ 2 * Fintype.card (Θ₁ × Θ₂) := by
-    have hterm (w : ℕ) (hw : w ∈ Finset.Ico L (2 * L)) :
-        (2 ^ (L - 1) * 4 ^ L) * C x₀ w ≤ 2 ^ (2 * L - 1 - w) * Fintype.card (Θ₁ × Θ₂) := by
-      have hw_ge : L ≤ w := (Finset.mem_Ico.mp hw).1
-      have hw_lt : w < 2 * L := (Finset.mem_Ico.mp hw).2
-      have hpow_L1 : 2 ^ (L - 1) = 2 ^ (2 * L - 1 - w) * 2 ^ (w - L) := by
-        rw [← pow_add]
-        congr 1
-        omega
-      have hpow_4w : 4 ^ (w - L) * 4 ^ L = 4 ^ w := by
-        rw [← pow_add]
-        congr 1
-        omega
+    have hIco_eq : Finset.Ico L (2 * L) = Finset.Ico L (L + L) := by congr 1; omega
+    have h2L_split : 2 ^ L = 2 ^ (L - 1) * 2 := by rw [← pow_succ, Nat.sub_add_cancel hL_pos]
+    have hmul_L : 2 ^ (L - 1) * (4 ^ L * ∑ w ∈ Finset.Ico L (L + L), C x₀ w) ≤
+        2 ^ L * Fintype.card (Θ₁ × Θ₂) := by
+      refine mul_sum_Ico_le_of_mul_le (coeff := 4 ^ L) fun w hw => ?_
+      have hw_range := Finset.mem_Ico.mp (hIco_eq ▸ hw)
+      have hpow_L1 : 2 ^ (L - 1) = 2 ^ (L + L - 1 - w) * 2 ^ (w - L) := by
+        rw [← pow_add]; congr 1; omega
+      have hpow_4w : 4 ^ (w - L) * 4 ^ L = 4 ^ w := by rw [← pow_add]; congr 1; omega
       have hpow24 : 2 ^ (w - L) ≤ 4 ^ (w - L) := Nat.pow_le_pow_left (by decide) (w - L)
       calc
-        (2 ^ (L - 1) * 4 ^ L) * C x₀ w
-          = 2 ^ (2 * L - 1 - w) * ((2 ^ (w - L) * 4 ^ L) * C x₀ w) := by
-            rw [hpow_L1]
-            ring
-        _ ≤ 2 ^ (2 * L - 1 - w) * ((4 ^ (w - L) * 4 ^ L) * C x₀ w) := by gcongr
-        _ = 2 ^ (2 * L - 1 - w) * (4 ^ w * C x₀ w) := by rw [hpow_4w]
-        _ ≤ 2 ^ (2 * L - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
-            Nat.mul_le_mul_left _ (hC_bound x₀ hw_lt)
-    have hIco_eq : Finset.Ico L (2 * L) = Finset.Ico L (L + L) := by
-      congr 1
-      omega
-    have hsum_geom : (∑ w ∈ Finset.Ico L (2 * L), 2 ^ (2 * L - 1 - w)) ≤ 2 ^ L := by
-      have hgeom := sum_two_pow_sub_eq L L
-      have hLL : L + L - 1 = 2 * L - 1 := by omega
-      rw [← hIco_eq, hLL] at hgeom
-      omega
-    have hmul_L : 2 ^ (L - 1) * (4 ^ L * ∑ w ∈ Finset.Ico L (2 * L), C x₀ w) ≤
-        2 ^ (L - 1) * (2 * Fintype.card (Θ₁ × Θ₂)) := by
-      have h2L_split : 2 ^ L = 2 ^ (L - 1) * 2 := by
-        rw [← pow_succ, Nat.sub_add_cancel hL_pos]
-      calc
-        2 ^ (L - 1) * (4 ^ L * ∑ w ∈ Finset.Ico L (2 * L), C x₀ w)
-          = ∑ w ∈ Finset.Ico L (2 * L), (2 ^ (L - 1) * 4 ^ L) * C x₀ w := by
-            rw [← Nat.mul_assoc, Finset.mul_sum]
-        _ ≤ ∑ w ∈ Finset.Ico L (2 * L), 2 ^ (2 * L - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
-            Finset.sum_le_sum hterm
-        _ = (∑ w ∈ Finset.Ico L (2 * L), 2 ^ (2 * L - 1 - w)) * Fintype.card (Θ₁ × Θ₂) :=
-            (Finset.sum_mul _ _ _).symm
-        _ ≤ 2 ^ L * Fintype.card (Θ₁ × Θ₂) := by gcongr
-        _ = 2 ^ (L - 1) * (2 * Fintype.card (Θ₁ × Θ₂)) := by rw [h2L_split, Nat.mul_assoc]
+        2 ^ (L - 1) * (4 ^ L * C x₀ w)
+          = 2 ^ (L + L - 1 - w) * ((2 ^ (w - L) * 4 ^ L) * C x₀ w) := by
+            rw [hpow_L1]; ring
+        _ ≤ 2 ^ (L + L - 1 - w) * ((4 ^ (w - L) * 4 ^ L) * C x₀ w) := by gcongr
+        _ = 2 ^ (L + L - 1 - w) * (4 ^ w * C x₀ w) := by rw [hpow_4w]
+        _ ≤ 2 ^ (L + L - 1 - w) * Fintype.card (Θ₁ × Θ₂) :=
+            Nat.mul_le_mul_left _ (hC_bound x₀ hw_range.2)
+    rw [← hIco_eq, h2L_split, Nat.mul_assoc] at hmul_L
     exact Nat.le_of_mul_le_mul_left hmul_L (Nat.two_pow_pos (L - 1))
   have hov_two :
       2 * (n_max * ∑ x₀ ∈ insert u (Dictionary.dom s), ∑ w ∈ Finset.Ico L (2 * L), C x₀ w) ≤

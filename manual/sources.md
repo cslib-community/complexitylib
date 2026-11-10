@@ -24,6 +24,11 @@ Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenst
 
 Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibliographic Search." *Communications of the ACM* 18(6), 333–340, 1975. https://doi.org/10.1145/360825.360855 . Scanned copy in D. J. Bernstein's bibliography archive, https://cr.yp.to/bib/1975/aho.pdf , checked 2026-11-08 for Algorithms 1 and 3, Lemmas 1–3, Theorems 1, 2 and 4, and Figures 1 and 2.
 
+<a id="aik11"></a>
+## aik11
+
+Benny Applebaum, Yuval Ishai, Eyal Kushilevitz. "How to Garble Arithmetic Circuits." *52nd Annual IEEE Symposium on Foundations of Computer Science (FOCS 2011)*, 120–129, 2011. https://doi.org/10.1109/FOCS.2011.40 . Checked on 2026-11-10 against the author-hosted copy of the FOCS version, https://bennyapplebaum.sites.tau.ac.il/_files/ugd/f706bf_ccb157901f504e32a79d89a666f56de3.pdf , which has no printed page numbers: Definition 4.2 (affinization gadget), Definition 4.5 (perfect privacy of a gadget) and Section 5, Fact 5.1. Cited for the framework of affine key encodings over a ring (with per-wire keys) and for the notion of an affinization gadget; the four-value multiplication gadget formalized here is an explicit instance derived in the Lean source, not the general compiler of the paper.
+
 <a id="alonbabaisuzuki1991"></a>
 ## alonbabaisuzuki1991
 
@@ -42,7 +47,7 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 <a id="alonspencer2016"></a>
 ## alonspencer2016
 
-Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.3 for the bound `Pr[X = 0] ≤ Var X / (E X) ^ 2`, §4.4 for random graphs and threshold functions) were taken from secondary tables of contents and from an agent review, which placed the bound at Theorem 4.3.1. The book was not inspected in this pass, and the library cites section numbers only.
+Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.3 for the bound `Pr[X = 0] ≤ Var X / (E X) ^ 2`, §4.4 for random graphs and threshold functions) were taken from secondary tables of contents and from an agent review, which placed the bound at Theorem 4.3.1. The book was not inspected in this pass, and the library cites section numbers only. The 0-1 law for `G(n, p)` with constant `0 < p < 1` is cited at §10.4 ("Zero–One Laws", Chapter 10 "Random Graphs") from secondary tables of contents, consulted on 2026-11-10; one secondary summary placed it at §10.7 instead, so this locator is unverified and no theorem number is cited.
 
 <a id="alonyusterzwick1995"></a>
 ## alonyusterzwick1995
@@ -521,15 +526,15 @@ D. R. Fulkerson. "Note on Dilworth's Decomposition Theorem for Partially Ordered
 
 Craig Gentry. “Fully Homomorphic Encryption Using Ideal Lattices.” *STOC 2009*, 169–178. https://doi.org/10.1145/1536414.1536440 . Bibliographic data and theorem locator taken from the pinned repository; full text not independently re-audited here.
 
-<a id="ggm86"></a>
-## ggm86
-
-Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Functions.” *Journal of the ACM* 33(4), 792–807, 1986. Author-hosted version of record: https://www.wisdom.weizmann.ac.il/~oded/X/ggm-jacm.pdf . Adaptive function-test definition consulted.
-
 <a id="gglrs00"></a>
 ## gglrs00
 
 Oded Goldreich, Shafi Goldwasser, Eric Lehman, Dana Ron and Alex Samorodnitsky. *Testing Monotonicity*. Combinatorica 20(3), 301–337, 2000. https://doi.org/10.1007/s004930070011 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The journal version is paywalled, and the author-hosted pages could not be reached (connection reset), so the text was not inspected and no theorem locator is claimed. The manual attributes the edge tester for Boolean functions on the hypercube to this paper, as [roughgarden15cc](#roughgarden15cc) does.
+
+<a id="ggm86"></a>
+## ggm86
+
+Oded Goldreich, Shafi Goldwasser, Silvio Micali. “How to Construct Random Functions.” *Journal of the ACM* 33(4), 792–807, 1986. Author-hosted version of record: https://www.wisdom.weizmann.ac.il/~oded/X/ggm-jacm.pdf . Adaptive function-test definition consulted.
 
 <a id="gibbard73"></a>
 ## gibbard73
@@ -550,6 +555,11 @@ Shafi Goldwasser, Yael Tauman Kalai and Guy N. Rothblum. *Delegating Computation
 ## gkwy20
 
 Chun Guo, Jonathan Katz, Xiao Wang and Yu Yu. "Efficient and Secure Multiparty Computation from Fixed-Key Block Ciphers." *2020 IEEE Symposium on Security and Privacy (SP 2020)*, 825–841, 2020. https://doi.org/10.1109/SP40000.2020.00016 ; full version: Cryptology ePrint Archive, Report 2019/074, https://eprint.iacr.org/2019/074 . Cited at paper level for tweakable circular correlation robustness and its restriction on queries; no theorem or definition numbers are claimed.
+
+<a id="gm94"></a>
+## gm94
+
+Torbjörn Granlund, Peter L. Montgomery. "Division by Invariant Integers using Multiplication." *Proceedings of the ACM SIGPLAN 1994 Conference on Programming Language Design and Implementation (PLDI 1994)*, 61–72, 1994. https://doi.org/10.1145/178243.178249 . Checked on 2026-11-10 against the copy at https://gmplib.org/~tege/divcnst-pldi94.pdf : Section 4, Theorem 4.2 (multiply-and-shift division by an invariant integer, base 2, word size `N`, with a non-strict bound on the multiplier). The formalized identity is a radix-`p` variant with a strict bound, in the form of [ll24](#ll24) Lemma 5; the bound `m ≤ p ^ (k + 1)` on the chosen multiplier is proved in the Lean source.
 
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
@@ -641,6 +651,11 @@ Jason D. Hartline. *Mechanism Design and Approximation*, book manuscript; chapte
 ## hartmanis1968
 
 Juris Hartmanis. "Computational Complexity of One-Tape Turing Machine Computations." *Journal of the ACM* 15(2), 325–339, 1968. https://doi.org/10.1145/321450.321464 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it for the `n log n` lower bound on one-tape recognition of nonregular languages, as attributed in [Pighizzini 2009](#pighizzini2009), §1 and §4.
+
+<a id="heath24"></a>
+## heath24
+
+David Heath. "Efficient Arithmetic in Garbled Circuits." *Advances in Cryptology – EUROCRYPT 2024*, Lecture Notes in Computer Science 14655, 3–31, 2024. https://doi.org/10.1007/978-3-031-58740-5_1 . Full version: Cryptology ePrint Archive, Paper 2024/139, https://eprint.iacr.org/2024/139 . Locators follow the ePrint full version: §2.1 Definition 1 (circular correlation robustness), §3.2 Definitions 4 and 6 (switch systems and legality), §3.3 Construction 1 and Figure 2 (switch-system garbling and evaluation), §4 (pp. 13–14) and §4.1 `bin-to-hot` (p. 14, single-ciphertext binary-to-one-hot conversion, halving the material of Heath–Kolesnikov CCS 2021), and Appendix A, Theorem 4 and Figure 4 (obliviousness and its hybrids).
 
 <a id="heldkarp62"></a>
 ## heldkarp62
@@ -887,6 +902,11 @@ Carsten Lund, Lance Fortnow, Howard Karloff and Noam Nisan. *Algebraic Methods f
 
 Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOCS 2020, 1243–1254. https://doi.org/10.1109/FOCS46700.2020.00118 . Definition/theorem locators refer to the full version https://arxiv.org/abs/2009.11514v1 , §§2.3 and 3, pp. 8–9.
 
+<a id="ll24"></a>
+## ll24
+
+Hanjun Li, Tianren Liu. "How to Garble Mixed Circuits that Combine Boolean and Arithmetic Computations." *Advances in Cryptology – EUROCRYPT 2024, Part VI*, LNCS 14656, Springer, 2024. https://doi.org/10.1007/978-3-031-58751-1_12 . Full version: Cryptology ePrint Archive, Report 2023/1584, https://eprint.iacr.org/2023/1584 . Checked on 2026-11-10 against the ePrint version dated 2023-10-13 (page numbers below are those printed in that version): Section 2, pp. 4–5 (digit and bit representations) and equation (1), p. 6; Section 3.1, pp. 8–9 (global offset `Δ`, labels `(Δx + A, x + α)`, and the affinization gadget simulated from the label of `xy`, p. 9); Section 4.1, Figure 5, p. 20, and Lemma 4, pp. 20–21 (bit composition); Section 4.2, pp. 21–22 (division and remainder by a constant `N`, Lemma 5, p. 22); Section 5, pp. 23–24 (CRT reconstruction, Theorem 2, p. 24). The formalization uses additive pads over the ring where the paper uses XOR pads, and generalizes Section 5 to arbitrary pairwise coprime moduli.
+
 <a id="lll82"></a>
 ## lll82
 
@@ -921,6 +941,11 @@ Mark S. Manasse, Lyle A. McGeoch, Daniel D. Sleator. "Competitive Algorithms for
 ## manbermyers93
 
 Udi Manber and Gene Myers. "Suffix Arrays: A New Method for On-Line String Searches." *SIAM Journal on Computing* 22(5), 935–948, 1993; preliminary version in SODA 1990. https://doi.org/10.1137/0222058 . Bibliographic data from secondary indexes and the DOI record; the journal text is behind the SIAM paywall and was not inspected. The manual credits it with the suffix array and with the contrast between the plain `O(P log N)` binary search and the `O(P + log N)` search that reuses longest-common-prefix information, following the customary attribution; section and theorem numbers are not cited.
+
+<a id="manin56"></a>
+## manin56
+
+Ju. I. Manin. "On cubic congruences to a prime modulus." *Izvestiya Akademii Nauk SSSR. Seriya Matematicheskaya* 20(5), 673–678, 1956 (in Russian). https://www.mathnet.ru/eng/im3844 . Bibliographic metadata was checked against secondary sources; the Math-Net.ru page itself could not be opened and the paper was not inspected. The locators §2 (pp. 675–676: the recurrence for the heights of a sequence of points and its closed form) and Lemma 2 (p. 676: the cancellation count) were supplied by an independent reviewer who read the paper, and were not rechecked for this entry. The Lean modules under `CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/` adapt Manin's proof of Hasse's bound rather than transcribe it; the implementation notes of [`ManinHeight.lean`](../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/ManinHeight.lean) list the differences (projective rather than affine point count, reversed sequence index, a cubic that keeps its quadratic term so that characteristic three is included, and a recurrence derived from Mathlib's add-sub map).
 
 <a id="mathlib"></a>
 ## mathlib
@@ -987,15 +1012,15 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
 
-<a id="nisan92"></a>
-## nisan92
-
-Noam Nisan. *Pseudorandom Generators for Space-Bounded Computation*. Combinatorica 12(4), 449–461, 1992. DOI: [10.1007/BF01305237](https://doi.org/10.1007/BF01305237). The publisher copy is paywalled and was not consulted, so its theorem numbering is unverified. The statement was checked against S. Vadhan, *Pseudorandomness* (2012), §8.2.1, and P. Hatami and W. Hoza, *Paradigms for Unconditional Pseudorandom Generators* (2024), Definition 1.5 and §3.2. The Lean proof is the library's own derivation of the hashing argument in expectation form.
-
 <a id="nisan07"></a>
 ## nisan07
 
 Noam Nisan. "Introduction to Mechanism Design (for Computer Scientists)." Chapter 9 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 209–242. https://doi.org/10.1017/CBO9780511800481.011 . A university-hosted PDF of the book was consulted on 2026-11-08 for §9.2 (pp. 211–215): Definition 9.1 (social welfare and social choice functions), Definition 9.4 (manipulation and incentive compatibility), Definition 9.5 and Proposition 9.6 (one-voter monotonicity is equivalent to incentive compatibility), Definition 9.7 (dictator), Theorem 9.8 (Gibbard–Satterthwaite, for rules onto at least three alternatives), Definition 9.9 (moving a set `S` to the top, and the induced social welfare function), and the proof of Lemmas 9.10 and 9.11 (the claim that the outcome lies in `S`, transitivity, unanimity and IIA). The library's proof follows this reduction; its main theorem assumes three alternatives in the range rather than onto, which needs an extension of rankings of the range to all alternatives.
+
+<a id="nisan92"></a>
+## nisan92
+
+Noam Nisan. *Pseudorandom Generators for Space-Bounded Computation*. Combinatorica 12(4), 449–461, 1992. DOI: [10.1007/BF01305237](https://doi.org/10.1007/BF01305237). The publisher copy is paywalled and was not consulted, so its theorem numbering is unverified. The statement was checked against S. Vadhan, *Pseudorandomness* (2012), §8.2.1, and P. Hatami and W. Hoza, *Paradigms for Unconditional Pseudorandom Generators* (2024), Definition 1.5 and §3.2. The Lean proof is the library's own derivation of the hashing argument in expectation form.
 
 <a id="nisanwigderson94"></a>
 ## nisanwigderson94
@@ -1207,6 +1232,11 @@ Michael Sipser. *Introduction to the Theory of Computation*, third edition. Ceng
 
 Daniel D. Sleator, Robert E. Tarjan. “Amortized Efficiency of List Update and Paging Rules.” *Communications of the ACM* 28(2), 202–208, 1985. https://doi.org/10.1145/2786.2793 ; author PDF https://www.cs.cmu.edu/~sleator/papers/amortized-efficiency.pdf . Paging scope and equal-capacity specialization checked against source and local mapping. The list-update cost model of Section 2, Theorem 1 (`C_MF(s) ≤ 2C_A(s) + X_A(s) − F_A(s) − m`) and the remark after its proof (different initial lists, plus the initial inversion count) were checked against the author PDF on 2026-11-07 UTC.
 
+<a id="sleatortarjan85b"></a>
+## sleatortarjan85b
+
+Daniel Dominic Sleator, Robert Endre Tarjan. “Self-Adjusting Binary Search Trees.” *Journal of the ACM* 32(3), 652–686, 1985. https://doi.org/10.1145/3828.3835 ; author PDF https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf . The author PDF was consulted on 2026-11-08 for Section 2 (Lemma 1, Theorems 1–4, pp. 658–660) and Section 3, Lemma 2 (pp. 663–664).
+
 <a id="smithtutte41"></a>
 ## smithtutte41
 
@@ -1226,11 +1256,6 @@ Richard P. Stanley. *Topics in Algebraic Combinatorics*. Course notes, version o
 ## stoerwagner97
 
 Mechthild Stoer and Frank Wagner. "A Simple Min-Cut Algorithm." *Journal of the ACM* 44(4), 585–591, 1997. https://doi.org/10.1145/263867.263872 . Bibliographic metadata checked against the Crossref record on 2026-11-08. The publisher's PDF returned HTTP 403 and was not retried, so the paper was not inspected. Its numbering (the phase recursion as Theorem 2.1, the cut-of-the-phase lemma as Lemma 3.1) comes from secondary descriptions and is unverified, which is why the Lean docstrings name the results rather than the numbers. The 8-vertex example graph in `CslibFrontierTests/StoerWagner.lean` and the trace of the worked example's first phase come from the English Wikipedia article "Stoer–Wagner algorithm", consulted on 2026-11-08, not from the paper's figure. A. Frank's note on MA orderings was unreachable (connection failure), and the corresponding section of Schrijver's 2003 monograph was not consulted; neither is cited.
-
-<a id="sleatortarjan85b"></a>
-## sleatortarjan85b
-
-Daniel Dominic Sleator, Robert Endre Tarjan. “Self-Adjusting Binary Search Trees.” *Journal of the ACM* 32(3), 652–686, 1985. https://doi.org/10.1145/3828.3835 ; author PDF https://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf . The author PDF was consulted on 2026-11-08 for Section 2 (Lemma 1, Theorems 1–4, pp. 658–660) and Section 3, Lemma 2 (pp. 663–664).
 
 <a id="sudantrevisanvadhan01"></a>
 ## sudantrevisanvadhan01
@@ -1307,6 +1332,11 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
 
+<a id="yannakakis91"></a>
+## yannakakis91
+
+Mihalis Yannakakis. *Expressing Combinatorial Optimization Problems by Linear Programs*. Journal of Computer and System Sciences 43(3), 441–466, 1991. https://doi.org/10.1016/0022-0000(91)90024-Y . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The publisher page returned HTTP 403 and the primary text was not inspected. No theorem number is claimed; the factorization theorem and the rectangle covering bound are attributed to this paper as reported by [fmptw15](#fmptw15), Section 1 and Theorems 3 and 4.
+
 <a id="yao77"></a>
 ## yao77
 
@@ -1322,20 +1352,15 @@ Andrew Chi-Chih Yao. "New Algorithms for Bin Packing." *Journal of the ACM* 27(2
 
 F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *Proceedings of the 12th Annual ACM Symposium on Theory of Computing* (STOC 1980), 429–435. https://doi.org/10.1145/800141.804691 . The bibliographic data come from secondary indexes and search summaries; the paper was not inspected in this pass. The manual credits it, as secondary sources do, with the lemma that the optimal cost inherits the quadrangle inequality from a monotone weight satisfying it, and with the resulting monotonicity of optimal roots. Its lemma and theorem numbers are not cited.
 
-<a id="yekhanin12"></a>
-## yekhanin12
-
-Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
-
-<a id="yannakakis91"></a>
-## yannakakis91
-
-Mihalis Yannakakis. *Expressing Combinatorial Optimization Problems by Linear Programs*. Journal of Computer and System Sciences 43(3), 441–466, 1991. https://doi.org/10.1016/0022-0000(91)90024-Y . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. The publisher page returned HTTP 403 and the primary text was not inspected. No theorem number is claimed; the factorization theorem and the rectangle covering bound are attributed to this paper as reported by [fmptw15](#fmptw15), Section 1 and Theorems 3 and 4.
-
 <a id="yao86"></a>
 ## yao86
 
 Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)." *27th Annual Symposium on Foundations of Computer Science (FOCS 1986)*, 162–167, 1986. https://doi.org/10.1109/SFCS.1986.25 . Bibliographic data from the DOI record and secondary listings, cited as the customary origin of garbled circuits. The full text was not inspected in this pass.
+
+<a id="yekhanin12"></a>
+## yekhanin12
+
+Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretical Computer Science 6(3), 139–255, 2012. https://doi.org/10.1561/0400000030 . Definition 6.1 and Lemma 6.2 (§6.1.1, private information retrieval from perfectly smooth codes) were checked on 2026-11-08 against the author's draft at https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/LDC_now.pdf ; the numbering of the published monograph was not checked.
 
 <a id="younger67"></a>
 ## younger67

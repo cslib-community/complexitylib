@@ -94,7 +94,7 @@ def searchProgram : CounterProgram where
 namespace Search
 
 /-- Compute a step of the search. -/
-macro (name := searchStep) "search_step" : tactic => `(tactic| simp only [step_eq,
+local macro (name := searchStep) "search_step" : tactic => `(tactic| simp only [step_eq,
   CounterProgram.halted, CounterProgram.exec, CounterProgram.query, instr, searchProgram,
   Instr.exec, Instr.query, Instr.halts, eval_reg, eval_add, eval_const, eval_mul,
   List.getD_cons_succ, List.getD_cons_zero, Bool.false_eq_true, ↓reduceIte, withChoice,
@@ -203,7 +203,7 @@ private theorem rank_lt {cfg cfg' : Config} (h : progress I cfg < progress I cfg
   omega
 
 /-- Finish a case of `inv_step`, with additional facts for `simp`. -/
-macro (name := searchFinish) "search_finish" " [" ts:term,* "]" : tactic => `(tactic| (
+local macro (name := searchFinish) "search_finish" " [" ts:term,* "]" : tactic => `(tactic| (
   refine ⟨?_, rank_lt _ ?_ ?_⟩ <;>
   simp only [inv_mk, Bounded, Phase, Loop, progress, budget, List.getD_cons_succ,
     List.getD_cons_zero, List.set_cons_succ, List.set_cons_zero, true_and, and_true, and_self,
@@ -460,7 +460,7 @@ theorem mem_of_accepts (h : searchProgram.toNondeterministicQueryMachine.Accepts
 /-! ### An accepting branch -/
 
 /-- Take one step of an accepting branch with the given choice. -/
-macro (name := searchHead) "search_head" b:term : tactic => `(tactic| (
+local macro (name := searchHead) "search_head" b:term : tactic => `(tactic| (
   refine Branches.head (by simp [CounterProgram.halted, instr, searchProgram, Instr.halts]) $b ?_;
   search_step))
 
