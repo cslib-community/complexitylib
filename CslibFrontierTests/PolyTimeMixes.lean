@@ -19,11 +19,15 @@ variable {α : Type} {enc : α ↪ List Bool}
 
 set_option maxHeartbeats 2000 in
 -- Check that a bounded failed attempt and the explicit certificate fit a small heartbeat budget.
+-- The certificate route takes about 34 heartbeats, so the speculative attempt needs only a small
+-- step budget. `maxSteps` counts visited goals, not rules that fail to unify, so the heartbeat
+-- cost per step depends on how many candidate rules each goal has: 8 steps cost about 250 here
+-- and 16 about 1500.
 /-- The WPP singleton target: bound a failed tidy search before explicitly preparing the plain
-hypothesis. The default search on this shape can run to its heartbeat limit. -/
+hypothesis. -/
 example {f : α → ℤ} (hf : ComputableInPolyTime f enc encIntBin) :
     ComputableTidilyInPolyTime (fun a => [f a]) enc (encList encIntBin) := by
-  fail_if_success fun_prop (config := { maxSteps := 16 })
+  fail_if_success fun_prop (config := { maxSteps := 8 })
   have hf := hf.tidy
   fun_prop
 
