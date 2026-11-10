@@ -958,6 +958,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasure
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.Runs
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthThree
 public import CslibFrontier.Computability.Circuit.Arithmetic.Determinant
 public import CslibFrontier.Computability.Circuit.Arithmetic.DeterminantalComplexity
