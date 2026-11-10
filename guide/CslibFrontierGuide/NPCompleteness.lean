@@ -51,6 +51,7 @@ import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
 import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
+import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -87,6 +88,7 @@ import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
 import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
+import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -962,5 +964,40 @@ example : ∃ b, figureOneB.body.eval nearSem
 ```
 
 Both bodies retain the source diagram's numbered port order and use guarded
-scope widths. These results concern finite semantics; planar substitution,
-Lemma 6 normalization, hardness and a new native runtime certificate remain open.
+scope widths. These results concern finite semantics; geometric realization,
+planar substitution, hardness and a new native runtime certificate remain open.
+
+
+# Ordered Cyclic-Obstruction Normalization
+
+{name}`Cslib.Logic.PL.CSP.Normalization.exists_construction` treats arbitrary arity.
+Its input relation is nonempty and self-complementary, with a cyclic-difference
+relation failing the even delta-matroid axiom. It proves arity at least four and
+produces an ordered recipe and an actual gadget over the original relation and
+disequality. The finite constraint, scope-occurrence and auxiliary bounds compose:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {n : ℕ} (R : Set (Fin n → Bool)) (hne : R.Nonempty)
+    (hsc : IsSelfComplementary R)
+    (hbad : ¬IsEvenDeltaMatroid (cyclicDifferenceRelation R)) :
+    ∃ Q : Set (Fin 4 → Bool), IsStandardizedInconsistent Q ∧
+      ∃ g : PPGadget (Normalization.arity n) (Normalization.sem R) Q,
+        g.body.length ≤ 1 + 2 * n ∧ g.body.vars.length ≤ 5 * n ∧
+          g.numAux ≤ 3 * n - 4 := by
+  obtain ⟨_, ⟨c⟩⟩ := Normalization.exists_construction R hne hsc hbad
+  exact ⟨c.target, c.standardized, c.gadget, c.body_bounds.1, c.body_bounds.2,
+    c.numAux_bound⟩
+```
+
+The program uses cyclic rotations, adjacent zero-conditioned identifications and
+the specific cap identifying old ports 1 and 3 while hiding old port 2. It keeps
+the resulting free-port order. The initial body contains one original literal and
+one or two disequality spokes per original port; later steps relabel scopes.
+The bounds count constraints, scope occurrences and allocated auxiliaries, including
+unused labels. They assert neither native runtime nor binary encoded size.
+
+This is an original combinatorial reconstruction of the omitted argument behind
+Dvořák–Kupec Lemma 6, not its full planar-expressibility conclusion. Geometric
+realization and the full planar theorem remain open. Complete nonvacuous clients
+are in `CslibFrontierTests/PlanarNormalization.lean`.
