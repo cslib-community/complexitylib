@@ -2143,6 +2143,8 @@ public import CslibFrontier.Computability.Complexity.Problems.Clique
 public import CslibFrontier.Computability.Complexity.Problems.Clique.OfAdj
 public import CslibFrontier.Computability.Complexity.Problems.CliqueCover
 public import CslibFrontier.Computability.Complexity.Problems.Coloring
+public import CslibFrontier.Computability.Complexity.Problems.Copositivity
+public import CslibFrontier.Computability.Complexity.Problems.Copositivity.Witness
 public import CslibFrontier.Computability.Complexity.Problems.CountingSAT
 public import CslibFrontier.Computability.Complexity.Problems.DominatingSet
 public import CslibFrontier.Computability.Complexity.Problems.EUThreeSAT
@@ -4723,6 +4725,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.IndepNum
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.LovaszTheta
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Metric
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OddCycleTransversal
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Pentagon

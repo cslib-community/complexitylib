@@ -1012,10 +1012,20 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="motzkinstraus1965"></a>
+## motzkinstraus1965
+
+T. S. Motzkin and E. G. Straus. "Maxima for Graphs and a New Proof of a Theorem of Turán." *Canadian Journal of Mathematics* 17, 533–540, 1965. https://doi.org/10.4153/CJM-1965-053-6 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text was not inspected in this pass. The manual attributes to this paper the characterization `max_{x ∈ Δ} xᵀ A_G x = 1 - 1 / ω(G)` over the standard simplex; no internal theorem or section numbers are cited.
+
 <a id="mullersatterthwaite77"></a>
 ## mullersatterthwaite77
 
 Eitan Muller and Mark A. Satterthwaite. "The Equivalence of Strong Positive Association and Strategy-Proofness." *Journal of Economic Theory* 14(2), 412–418, 1977. https://doi.org/10.1016/0022-0531(77)90140-5 . Bibliographic data from secondary search summaries on 2026-11-08 UTC; the paper was not inspected. It is cited, from secondary accounts, for the equivalence of strategy-proofness and Maskin monotonicity (strong positive association) and for the theorem that a Maskin monotone rule with at least three outcomes is dictatorial. The library proves both through [Nisan](#nisan07)'s argument; no theorem number is claimed.
+
+<a id="murtykabadi1987"></a>
+## murtykabadi1987
+
+Katta G. Murty and Santosh N. Kabadi. "Some NP-Complete Problems in Quadratic and Nonlinear Programming." *Mathematical Programming* 39(2), 117–129, 1987. https://doi.org/10.1007/BF02592948 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text was not inspected in this pass. The manual cites it for the `coNP`-completeness of testing matrix copositivity (and `NP`-completeness of non-copositivity); no internal theorem or section numbers are cited.
 
 <a id="nagamochiibaraki92"></a>
 ## nagamochiibaraki92
