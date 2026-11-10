@@ -2073,6 +2073,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationR
 public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
+public import CslibFrontier.Computability.Complexity.Gradel
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.PolyTime
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.Program
 public import CslibFrontier.Computability.Complexity.ImmermanVardi
@@ -5529,6 +5530,7 @@ public import CslibFrontier.Logics.SecondOrder.Existential
 public import CslibFrontier.Logics.SecondOrder.Grounding
 public import CslibFrontier.Logics.SecondOrder.Horn
 public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
+public import CslibFrontier.Logics.SecondOrder.Horn.Ordered
 public import CslibFrontier.Logics.SecondOrder.IndependentSet
 public import CslibFrontier.Logics.SecondOrder.Projection
 public import CslibFrontier.Logics.SecondOrder.Reduction
