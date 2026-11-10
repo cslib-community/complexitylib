@@ -2001,7 +2001,7 @@ Initial reservations and opportunity allowances must cover the entire turn horiz
 `exists_native_upper_controller` consequently needs productivity and conditional
 mean invoice envelopes only on reached, issued batches. It derives binomial
 retained-completion probability, the complete actual accrued-bill survival sum,
-the bound $c r_a/p$, and finite expected bill for finite $c$ and positive $p$.
+the bounds $c r_a/p$ and $cu$, and finite expected bill for finite $c$ and positive $p$.
 It assumes neither integrability nor a bounded total bill. The source sampler,
 private seed and native process are the same throughout. The candidate parser
 embeds the source finite masks into the original natural row indices without
@@ -2013,13 +2013,19 @@ checks fresh concurrent pairs, shared unbounded hidden invoices, cancellation an
 original-context/history-dependent next requests and actual selected-epoch stopping.
 The [upper boundary client](../../CslibFrontierTests/NativeRetentionUpper.lean) checks
 zero expected cost for the actual original-input program on empty ground and a
-zero horizon, with arbitrary source sampler and hidden seed. The correlated client
+zero horizon, with arbitrary source sampler and hidden seed.
+The [nonempty numerical client](../../CslibFrontierTests/NativeRetentionUpperNonempty.lean)
+uses a positive-dual singleton cover and a sampler that returns that cover in its
+first batch with invoice one. It derives both issued-batch envelopes from the
+actual conditional law and instantiates the numerical theorem on the constructed
+program, without a supplied cost or success conclusion. The correlated client
 has unbounded history-dependent invoices and is not a uniform finite conditional
 invoice-envelope example. From the repository root:
 
 ```bash
 scripts/build.sh CslibFrontierTests.NativeRetentionBatchAdmission \
-  CslibFrontierTests.NativeRetentionUpper --wfail --iofail
+  CslibFrontierTests.NativeRetentionUpper \
+  CslibFrontierTests.NativeRetentionUpperNonempty --wfail --iofail
 ```
 
 This establishes a concrete supported scheduler and source-admitted native loop.

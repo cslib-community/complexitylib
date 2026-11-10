@@ -22,7 +22,7 @@ stopping-law premise. Hidden metadata and response correlations remain unrestric
 
 This is a stopping bridge for the concrete finite labeled block scheduler.
 Reached-only productivity gives the binomial lower bound on actual retained
-completion and the survival-sum/`c*r/p` bound on the complete actual accrued bill.
+completion and the survival-sum/`c*r/p`/`c*u` bounds on the complete actual accrued bill.
 A finite conditional invoice envelope implies finite total expectation as a
 conclusion. Complete certified-output success/deadline transfer and the
 common-oracle optimum comparison for that same code remain open.
@@ -236,6 +236,8 @@ theorem exists_native_upper_controller (width : ℕ) :
             (∑ t ∈ Finset.range limits.turns, binomialFailure p r t) ∧
         Quantitative.expected limits sample program charge (limits.turns + 1) world ≤
           (c : ℝ≥0∞) * ENNReal.ofReal (r / p) ∧
+        Quantitative.expected limits sample program charge (limits.turns + 1) world ≤
+          (c : ℝ≥0∞) * limits.turns ∧
         Quantitative.expected limits sample program charge (limits.turns + 1) world ≠ ∞ := by
   obtain ⟨tapes, R, hR, program, hstop⟩ := exists_native_stopping_controller (n := n) width
   refine ⟨tapes, R, hR, program, ?_⟩
@@ -275,6 +277,9 @@ theorem exists_native_upper_controller (width : ℕ) :
   have hmean := Retained.cost_mean limits sample program I data.startup.system.rho
     parse a r limits.turns hr p hp c world Hfull Hbefore Hcost
   rw [← History.final_expected_static limits sample program world hi charge rfl] at htail hmean
-  exact ⟨hprogress, htail, hmean, ne_top_of_le_ne_top (by finiteness) hmean⟩
+  have hbudgetCost := (Quantitative.cost_upper_budget limits sample program c limits.turns
+    world hi Hcost).1
+  rw [← History.final_expected_static limits sample program world hi charge rfl] at hbudgetCost
+  exact ⟨hprogress, htail, hmean, hbudgetCost, ne_top_of_le_ne_top (by finiteness) hmean⟩
 
 end Cslib.Probability.StochasticOracle.NativeRetention.BatchUpper
